@@ -28,3 +28,4 @@ export { isBrowser } from "./utility/environment";
 
 // Auto-initialize when the module is loaded.
 import "./core/runtimeBootstrap";
+console.log("nuclo");
