@@ -4,6 +4,7 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "nuclo/types"],
     "skipLibCheck": true,
 
     /* Bundler mode */
@@ -15,15 +16,11 @@
 
     /* Linting */
     "strict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "allowUnusedLabels": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
-    "types": [
-      "nuclo/types"
-    ]
+    "noUncheckedSideEffectImports": true
   },
   "include": ["src"]
 }
