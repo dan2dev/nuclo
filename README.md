@@ -207,13 +207,16 @@ type Product = { id: number; title: string; category: string };
 type State = { status: 'idle' | 'loading' | 'error'; products: Product[]; error?: string };
 
 let state: State = { status: 'idle', products: [] };
+let searchQuery = 'phone';
 
 async function fetchProducts() {
+  if (!searchQuery.trim()) return;
+
   state.status = 'loading';
   update();
 
   try {
-    const response = await fetch('https://dummyjson.com/products/search?q=phone');
+    const response = await fetch(`https://dummyjson.com/products/search?q=${searchQuery}`);
     const data = await response.json();
     state.products = data.products;
     state.status = 'idle';
@@ -225,7 +228,21 @@ async function fetchProducts() {
 }
 
 const app = div(
-  button('Load Products', on('click', fetchProducts)),
+  div(
+    input(
+      {
+        type: 'search',
+        placeholder: 'Search products...',
+        value: () => searchQuery
+      },
+      on('input', e => {
+        searchQuery = e.target.value;
+        update();
+      }),
+      on('keydown', e => e.key === 'Enter' && fetchProducts())
+    ),
+    button('Search', on('click', fetchProducts))
+  ),
 
   when(() => state.status === 'loading',
     div('Loading...')
@@ -240,7 +257,7 @@ const app = div(
       )
     )
   ).else(
-    div('No products loaded')
+    div('Click search to load products')
   )
 );
 
