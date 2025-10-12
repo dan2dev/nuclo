@@ -102,12 +102,12 @@ type Todo = { id: number; text: string; done: boolean };
 
 let todos: Todo[] = [];
 let nextId = 1;
-let input = '';
+let inputValue = '';
 
 function addTodo() {
-  if (!input.trim()) return;
-  todos.push({ id: nextId++, text: input, done: false });
-  input = '';
+  if (!inputValue.trim()) return;
+  todos.push({ id: nextId++, text: inputValue, done: false });
+  inputValue = '';
   update();
 }
 
@@ -116,8 +116,8 @@ const app = div(
 
   // Input
   div(
-    input({ value: () => input },
-      on('input', e => { input = e.target.value; update(); }),
+    input({ value: () => inputValue },
+      on('input', e => { inputValue = e.target.value; update(); }),
       on('keydown', e => e.key === 'Enter' && addTodo())
     ),
     button('Add', on('click', addTodo))
