@@ -203,17 +203,19 @@ render(app, document.body);
 ```ts
 import 'nuclo';
 
-type State = { status: 'idle' | 'loading' | 'error'; data: any[]; error?: string };
+type Product = { id: number; title: string; category: string };
+type State = { status: 'idle' | 'loading' | 'error'; products: Product[]; error?: string };
 
-let state: State = { status: 'idle', data: [] };
+let state: State = { status: 'idle', products: [] };
 
-async function fetchData() {
+async function fetchProducts() {
   state.status = 'loading';
   update();
 
   try {
-    const response = await fetch('/api/data');
-    state.data = await response.json();
+    const response = await fetch('https://dummyjson.com/products/search?q=phone');
+    const data = await response.json();
+    state.products = data.products;
     state.status = 'idle';
   } catch (err) {
     state.status = 'error';
@@ -223,16 +225,22 @@ async function fetchData() {
 }
 
 const app = div(
-  button('Load Data', on('click', fetchData)),
+  button('Load Products', on('click', fetchProducts)),
 
   when(() => state.status === 'loading',
     div('Loading...')
   ).when(() => state.status === 'error',
     div({ className: 'error' }, () => `Error: ${state.error}`)
-  ).when(() => state.data.length > 0,
-    list(() => state.data, item => div(item.name))
+  ).when(() => state.products.length > 0,
+    list(() => state.products, product =>
+      div(
+        { className: 'product-card' },
+        h3(product.title),
+        p(() => `Category: ${product.category}`)
+      )
+    )
   ).else(
-    div('No data loaded')
+    div('No products loaded')
   )
 );
 
