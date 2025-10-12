@@ -19,7 +19,7 @@ const counter = div(
   }))
 );
 
-render(counter);
+render(counter, document.body);
 ```
 
 ## Why nuclo?
@@ -52,7 +52,7 @@ const app = div(
   h1(() => `Count: ${count}`),
   button('Click', on('click', () => { count++; update(); }))
 );
-render(app);
+render(app, document.body);
 ```
 
 ### TypeScript Setup
@@ -90,7 +90,7 @@ const app = div(
   button('Reset', on('click', () => { count = 0; update(); }))
 );
 
-render(app);
+render(app, document.body);
 ```
 
 ### Todo List
@@ -143,7 +143,7 @@ const app = div(
   )
 );
 
-render(app);
+render(app, document.body);
 ```
 
 ### Real-time Search Filter
@@ -195,7 +195,7 @@ const app = div(
   )
 );
 
-render(app);
+render(app, document.body);
 ```
 
 ### Loading States & Async
@@ -236,7 +236,7 @@ const app = div(
   )
 );
 
-render(app);
+render(app, document.body);
 ```
 
 ---
