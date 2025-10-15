@@ -1,10 +1,8 @@
 # nuclo
 
-**A DOM library for people who peaked in the jQuery era and never looked back.**
+**A simple, explicit DOM library for building reactive user interfaces.**
 
-_Yes, this is yet another JavaScript library. We're aware. The ecosystem now has more libraries than actual developers. We're sorry. Or you're welcome? We're still figuring it out._
-
-Build reactive UIs without the magic tricks. Just functions, mutations, and a single `update()` call when you feel like it.
+Build reactive UIs without the magic. Just functions, plain JavaScript objects, and explicit `update()` calls. No virtual DOM, no complex state management, no build configuration required.
 
 ```ts
 import 'nuclo';
@@ -24,12 +22,12 @@ render(counter, document.body);
 
 ## Why nuclo?
 
-- **Zero magic** – Like a microwave with just one button. You press `update()`, stuff happens.
-- **No virtual DOM** – Why simulate the DOM when you can just... use the DOM? *taps forehead*
-- **Tiny footprint** – Smaller than your average React component's prop types
-- **Global API** – `div()` is everywhere, like that one friend who shows up uninvited but makes everything fun
-- **TypeScript-first** – All 140+ tags typed. Yes, even `<bdi>`. You're welcome.
-- **Real reactivity** – Updates only what changed. Your browser's repaint budget will thank you.
+- **Explicit and Predictable** – You control when updates happen with a simple `update()` call
+- **Direct DOM Manipulation** – Work directly with the DOM, no virtual layer in between
+- **Tiny Footprint** – Minimal bundle size, maximum performance
+- **Global Tag Builders** – Natural API with global functions for all HTML and SVG elements
+- **TypeScript-First** – Full type definitions for all 140+ HTML and SVG tags
+- **Fine-Grained Reactivity** – Only updates what changed, nothing more
 
 ---
 
@@ -270,7 +268,7 @@ render(app, document.body);
 
 ### 1. **Explicit Updates**
 
-Unlike React or Vue, nuclo doesn't auto-detect changes. You call `update()` when ready:
+nuclo doesn't auto-detect changes. You call `update()` when ready:
 
 ```ts
 let name = 'World';
@@ -285,11 +283,11 @@ update();
 
 **Advantages of explicit `update()`:**
 
-- **Performance**: Batch mutations like a responsible adult. One `update()` > ten thousand proxy getters watching your every variable assignment like helicopter parents.
-- **Control**: You're the boss of when pixels change. Perfect for animations, async chaos, or coordinating changes without asking a framework permission.
-- **Predictability**: Zero surprise re-renders. No "why did this component update 47 times?!" sessions in DevTools.
-- **Simplicity**: No proxies, no dependency graphs, no PhD required. Just objects and a function named `update()`. Revolutionary, we know.
-- **Debugging**: Put a breakpoint at `update()`. That's it. That's the whole debugging strategy.
+- **Performance**: Batch multiple mutations into a single update cycle
+- **Control**: You decide exactly when the UI should refresh
+- **Predictability**: Zero surprise re-renders, explicit update flow
+- **Simplicity**: No proxies, no dependency graphs, just objects and functions
+- **Debugging**: Set a breakpoint at `update()` to trace all state changes
 
 ```ts
 // Example: Batch updates for better performance
@@ -443,16 +441,16 @@ div({
 
 ### Batch Updates
 
-Mutate like you're stress-testing the array, then update once like you meant to do that:
+Make multiple changes, then update once:
 
 ```ts
-// Galaxy brain
+// Efficient: One update for all changes
 items.push(item1);
 items.push(item2);
 items.sort();
 update();
 
-// Smooth brain (but hey, it works)
+// Works but inefficient: Multiple updates
 items.push(item1);
 update();
 items.push(item2);
@@ -461,14 +459,14 @@ update();
 
 ### Object Identity for Lists
 
-Lists track items by reference. Mutate the object, not your soul:
+Lists track items by reference. Mutate objects in place:
 
 ```ts
-// The way
+// Good: Mutate the object
 todos[0].done = true;
 update();
 
-// The dark side (RIP that DOM element, we hardly knew ye)
+// Avoid: Creates new object, DOM element recreated
 todos[0] = { ...todos[0], done: true };
 update();
 ```
@@ -537,12 +535,12 @@ div(
 
 ## Performance
 
-- **No virtual DOM diffing** – We skip the middle-manager and talk directly to the DOM
-- **Fine-grained updates** – Only updates what changed. Like a surgeon, not a bulldozer.
-- **Element reuse** – Lists are smart enough to move elements instead of yeeting them into the void
-- **Branch preservation** – `when` branches stay alive unless conditions change. Low-key immortal.
+- **No virtual DOM diffing** – Direct DOM manipulation for maximum efficiency
+- **Fine-grained updates** – Only updates what changed, nothing more
+- **Element reuse** – Lists intelligently reuse DOM elements when items move
+- **Branch preservation** – Conditional branches persist until conditions change
 
-For high-frequency updates (animations, game loops, existential crises), batch mutations before calling `update()`.
+For high-frequency updates (animations, game loops), batch mutations before calling `update()`.
 
 ---
 
@@ -550,7 +548,7 @@ For high-frequency updates (animations, game loops, existential crises), batch m
 
 ### Inspect Markers
 
-Open DevTools, stare at the DOM like it owes you money:
+Open DevTools to see comment markers that help you understand the structure:
 
 ```html
 <!-- when-start-1 -->
@@ -563,26 +561,45 @@ Open DevTools, stare at the DOM like it owes you money:
 <!-- list-end -->
 ```
 
-These comment markers are your breadcrumbs. Follow them to victory.
+These markers identify conditional and list boundaries in the DOM.
 
 ### Common Issues
 
 **Content not updating?**
-- Did you call `update()`? (Asking because 80% of the time, you didn't)
-- Are your conditions/functions returning what you think they are? `console.log()` is your friend.
+- Ensure you're calling `update()` after state changes
+- Verify your reactive functions are returning the expected values
 
 **List items not reusing elements?**
-- Stop spreading objects like it's 2018. Mutate them.
-- Item references need to be stable, not having an identity crisis on every render.
+- Keep object references stable (mutate instead of replacing)
+- Avoid creating new objects when updating properties
 
 ---
 
 ## Roadmap
 
-- Keyed list variant (for when object identity isn't your thing)
-- Transition/animation helpers (make things swoosh)
-- Dev mode diagnostics (we'll yell at you when you forget `update()`)
-- SSR support (because apparently servers need to render HTML now)
+- Keyed list variant for explicit key-based tracking
+- Transition and animation helpers
+- Dev mode diagnostics and warnings
+- Server-side rendering (SSR) support
+
+---
+
+## Documentation
+
+Full documentation is available at [https://dan2dev.github.io/nuclo/](https://dan2dev.github.io/nuclo/)
+
+- [Getting Started](https://dan2dev.github.io/nuclo/getting-started.html)
+- [API Reference](https://dan2dev.github.io/nuclo/api.html)
+- [Examples](https://dan2dev.github.io/nuclo/examples.html)
+
+---
+
+## Author
+
+Created by **Danilo Celestino de Castro**
+
+- GitHub: [@dan2dev](https://github.com/dan2dev)
+- Twitter: [@dan2dev](https://twitter.com/dan2dev)
 
 ---
 
@@ -590,6 +607,6 @@ These comment markers are your breadcrumbs. Follow them to victory.
 
 MIT License - see [LICENSE.md](LICENSE.md) for details.
 
-This library is free and open source. When using nuclo, please include attribution in your documentation, application, or source code. See the [LICENSE.md](LICENSE.md) file for attribution examples.
+This library is free and open source. When using nuclo, please include attribution in your documentation or application.
 
-**TL;DR:** Use it freely, just give credit. It helps others discover this library!
+**TL;DR:** Use it freely, give credit where it's due!
