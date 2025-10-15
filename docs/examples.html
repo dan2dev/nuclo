@@ -6,6 +6,7 @@
     <meta name="description" content="nuclo Examples - Real-world code examples and patterns">
     <title>Examples - nuclo</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
 </head>
 <body>
     <nav class="navbar">
@@ -50,7 +51,7 @@
                     <h2>Counter</h2>
                     <p>The classic counter example showing basic state management and event handling.</p>
 
-                    <pre><code>import 'nuclo';
+                    <pre><code class="language-typescript">import 'nuclo';
 
 let counter = 0;
 
@@ -92,7 +93,7 @@ render(app, document.body);</code></pre>
                     <h2>Todo List</h2>
                     <p>A complete todo application with add, toggle, delete, and filter functionality.</p>
 
-                    <pre><code>import 'nuclo';
+                    <pre><code class="language-typescript">import 'nuclo';
 
 type Todo = { id: number; text: string; done: boolean };
 type Filter = 'all' | 'active' | 'completed';
@@ -232,7 +233,7 @@ render(app, document.body);</code></pre>
                     <h2>Search Filter</h2>
                     <p>Real-time search filtering with debouncing.</p>
 
-                    <pre><code>import 'nuclo';
+                    <pre><code class="language-typescript">import 'nuclo';
 
 type User = {
   id: number;
@@ -337,7 +338,7 @@ render(app, document.body);</code></pre>
                     <h2>Async Loading</h2>
                     <p>Handling asynchronous operations with loading states and error handling.</p>
 
-                    <pre><code>import 'nuclo';
+                    <pre><code class="language-typescript">import 'nuclo';
 
 type Product = { id: number; title: string; category: string; price: number };
 type State = {
@@ -447,7 +448,7 @@ render(app, document.body);</code></pre>
                     <h2>Form Handling</h2>
                     <p>Complete form with validation and submission.</p>
 
-                    <pre><code>import 'nuclo';
+                    <pre><code class="language-typescript">import 'nuclo';
 
 type FormData = {
   username: string;
@@ -632,7 +633,7 @@ render(app, document.body);</code></pre>
                     <h2>Nested Components</h2>
                     <p>Creating reusable component-like functions.</p>
 
-                    <pre><code>import 'nuclo';
+                    <pre><code class="language-typescript">import 'nuclo';
 
 type User = {
   id: number;
@@ -700,7 +701,7 @@ render(app, document.body);</code></pre>
                     <h2>Animations</h2>
                     <p>Smooth transitions with CSS and reactive styles.</p>
 
-                    <pre><code>import 'nuclo';
+                    <pre><code class="language-typescript">import 'nuclo';
 
 let isVisible = true;
 let opacity = 1;
@@ -757,7 +758,7 @@ render(app, document.body);</code></pre>
                     <h2>Simple Routing</h2>
                     <p>Client-side routing without a framework.</p>
 
-                    <pre><code>import 'nuclo';
+                    <pre><code class="language-typescript">import 'nuclo';
 
 type Route = 'home' | 'about' | 'contact' | 'notfound';
 
@@ -849,6 +850,11 @@ render(app, document.body);</code></pre>
         </div>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
     <script src="assets/js/main.js"></script>
 </body>
 </html>
