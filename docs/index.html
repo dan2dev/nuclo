@@ -28,8 +28,8 @@
     <header class="hero">
         <div class="container">
             <h1>nuclo</h1>
-            <p class="subtitle">A DOM library for people who peaked in the jQuery era and never looked back.</p>
-            <p class="description">Build reactive UIs without the magic tricks. Just functions, mutations, and a single <code>update()</code> call when you feel like it.</p>
+            <p class="subtitle">A simple, explicit DOM library for building reactive user interfaces.</p>
+            <p class="description">Build reactive UIs without the magic. Just functions, plain JavaScript objects, and explicit <code>update()</code> calls. No virtual DOM, no complex state management required.</p>
 
             <div class="code-example">
                 <pre><code class="language-typescript">import 'nuclo';
@@ -59,28 +59,28 @@ render(counter, document.body);</code></pre>
             <h2>Why nuclo?</h2>
             <div class="features-grid">
                 <div class="feature">
-                    <h3>🎯 Zero Magic</h3>
-                    <p>Like a microwave with just one button. You press <code>update()</code>, stuff happens.</p>
+                    <h3>🎯 Explicit & Predictable</h3>
+                    <p>You control when updates happen with a simple <code>update()</code> call. No surprises, no magic.</p>
                 </div>
                 <div class="feature">
-                    <h3>🚀 No Virtual DOM</h3>
-                    <p>Why simulate the DOM when you can just... use the DOM?</p>
+                    <h3>🚀 Direct DOM Manipulation</h3>
+                    <p>Work directly with the DOM. No virtual layer, maximum efficiency.</p>
                 </div>
                 <div class="feature">
                     <h3>📦 Tiny Footprint</h3>
-                    <p>Smaller than your average React component's prop types</p>
+                    <p>Minimal bundle size means faster load times and better performance.</p>
                 </div>
                 <div class="feature">
-                    <h3>🌍 Global API</h3>
-                    <p><code>div()</code> is everywhere, like that one friend who shows up uninvited but makes everything fun</p>
+                    <h3>🌍 Global Tag Builders</h3>
+                    <p>Natural API with global functions for all HTML and SVG elements.</p>
                 </div>
                 <div class="feature">
                     <h3>📘 TypeScript-First</h3>
-                    <p>All 140+ tags typed. Yes, even <code>&lt;bdi&gt;</code>. You're welcome.</p>
+                    <p>Full type definitions for all 140+ HTML and SVG tags out of the box.</p>
                 </div>
                 <div class="feature">
-                    <h3>⚡ Real Reactivity</h3>
-                    <p>Updates only what changed. Your browser's repaint budget will thank you.</p>
+                    <h3>⚡ Fine-Grained Reactivity</h3>
+                    <p>Only updates what changed, nothing more. Maximum efficiency.</p>
                 </div>
             </div>
         </div>
@@ -129,7 +129,7 @@ render(app, document.body);</code></pre>
 
             <div class="concept">
                 <h3>1. Explicit Updates</h3>
-                <p>Unlike React or Vue, nuclo doesn't auto-detect changes. You call <code>update()</code> when ready:</p>
+                <p>nuclo doesn't auto-detect changes. You call <code>update()</code> when ready:</p>
                 <pre><code class="language-typescript">let name = 'World';
 
 // Mutate freely
@@ -141,11 +141,11 @@ update();</code></pre>
                 <div class="concept-benefits">
                     <h4>Advantages:</h4>
                     <ul>
-                        <li><strong>Performance:</strong> Batch mutations. One <code>update()</code> &gt; ten thousand proxy getters</li>
-                        <li><strong>Control:</strong> You're the boss of when pixels change</li>
-                        <li><strong>Predictability:</strong> Zero surprise re-renders</li>
-                        <li><strong>Simplicity:</strong> No proxies, no dependency graphs, no PhD required</li>
-                        <li><strong>Debugging:</strong> Put a breakpoint at <code>update()</code>. That's it.</li>
+                        <li><strong>Performance:</strong> Batch multiple mutations into a single update cycle</li>
+                        <li><strong>Control:</strong> You decide exactly when the UI should refresh</li>
+                        <li><strong>Predictability:</strong> Zero surprise re-renders, explicit update flow</li>
+                        <li><strong>Simplicity:</strong> No proxies, no dependency graphs, just objects and functions</li>
+                        <li><strong>Debugging:</strong> Set a breakpoint at <code>update()</code> to trace all state changes</li>
                     </ul>
                 </div>
             </div>
@@ -213,6 +213,7 @@ div(
 
     <footer>
         <div class="container">
+            <p>Created by <strong>Danilo Celestino de Castro</strong> (<a href="https://github.com/dan2dev" target="_blank">@dan2dev</a>)</p>
             <p>MIT License - Free and Open Source</p>
             <p>
                 <a href="https://github.com/dan2dev/nuclo">GitHub</a> •

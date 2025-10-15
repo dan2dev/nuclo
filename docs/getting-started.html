@@ -116,17 +116,17 @@ render(app, document.body);</code></pre>
 
                 <section id="understanding-update">
                     <h2>Understanding update()</h2>
-                    <p>The <code>update()</code> function is the heart of nuclo's reactivity system. Unlike frameworks that automatically track changes, nuclo requires you to explicitly trigger updates.</p>
+                    <p>The <code>update()</code> function is the heart of nuclo's reactivity system. nuclo requires you to explicitly trigger updates, giving you full control over when the UI refreshes.</p>
 
                     <h3>Why explicit updates?</h3>
                     <div class="info-box">
                         <h4>Advantages:</h4>
                         <ul>
-                            <li><strong>Performance:</strong> Batch multiple mutations into a single update</li>
+                            <li><strong>Performance:</strong> Batch multiple mutations into a single update cycle</li>
                             <li><strong>Control:</strong> You decide exactly when the UI should refresh</li>
-                            <li><strong>Predictability:</strong> No surprise re-renders or mysterious update cycles</li>
-                            <li><strong>Simplicity:</strong> No proxies, observers, or dependency tracking</li>
-                            <li><strong>Debugging:</strong> Just set a breakpoint at <code>update()</code></li>
+                            <li><strong>Predictability:</strong> Zero surprise re-renders, explicit update flow</li>
+                            <li><strong>Simplicity:</strong> No proxies, no dependency graphs, just objects and functions</li>
+                            <li><strong>Debugging:</strong> Set a breakpoint at <code>update()</code> to trace all state changes</li>
                         </ul>
                     </div>
 
@@ -349,6 +349,7 @@ async function fetchData() {
 
     <footer>
         <div class="container">
+            <p>Created by <strong>Danilo Celestino de Castro</strong> (<a href="https://github.com/dan2dev" target="_blank">@dan2dev</a>)</p>
             <p>MIT License - Free and Open Source</p>
             <p>
                 <a href="https://github.com/dan2dev/nuclo">GitHub</a> •
