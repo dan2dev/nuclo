@@ -6,6 +6,7 @@
     <meta name="description" content="nuclo - A DOM library for people who peaked in the jQuery era and never looked back">
     <title>nuclo - Simple, Explicit DOM Manipulation</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
 </head>
 <body>
     <nav class="navbar">
@@ -31,7 +32,7 @@
             <p class="description">Build reactive UIs without the magic tricks. Just functions, mutations, and a single <code>update()</code> call when you feel like it.</p>
 
             <div class="code-example">
-                <pre><code>import 'nuclo';
+                <pre><code class="language-typescript">import 'nuclo';
 
 let count = 0;
 
@@ -91,13 +92,13 @@ render(counter, document.body);</code></pre>
 
             <div class="install-section">
                 <h3>Installation</h3>
-                <pre><code>npm install nuclo</code></pre>
+                <pre><code class="language-bash">npm install nuclo</code></pre>
             </div>
 
             <div class="usage-section">
                 <h3>Usage</h3>
                 <p>Simply import once to register all global functions:</p>
-                <pre><code>import 'nuclo';
+                <pre><code class="language-typescript">import 'nuclo';
 
 // Now use div(), update(), on(), list(), when(), render(), etc. globally
 let count = 0;
@@ -111,13 +112,13 @@ render(app, document.body);</code></pre>
             <div class="typescript-section">
                 <h3>TypeScript Setup</h3>
                 <p>Add to your <code>tsconfig.json</code>:</p>
-                <pre><code>{
+                <pre><code class="language-json">{
   "compilerOptions": {
     "types": ["nuclo/types"]
   }
 }</code></pre>
                 <p>Or in your <code>vite-env.d.ts</code>:</p>
-                <pre><code>/// &lt;reference types="nuclo/types" /&gt;</code></pre>
+                <pre><code class="language-typescript">/// &lt;reference types="nuclo/types" /&gt;</code></pre>
             </div>
         </div>
     </section>
@@ -129,7 +130,7 @@ render(app, document.body);</code></pre>
             <div class="concept">
                 <h3>1. Explicit Updates</h3>
                 <p>Unlike React or Vue, nuclo doesn't auto-detect changes. You call <code>update()</code> when ready:</p>
-                <pre><code>let name = 'World';
+                <pre><code class="language-typescript">let name = 'World';
 
 // Mutate freely
 name = 'Alice';
@@ -152,7 +153,7 @@ update();</code></pre>
             <div class="concept">
                 <h3>2. Reactive Functions</h3>
                 <p>Zero-arg functions become reactive:</p>
-                <pre><code>let count = 0;
+                <pre><code class="language-typescript">let count = 0;
 
 div(
   () => `Count: ${count}`,  // Updates when update() is called
@@ -163,7 +164,7 @@ div(
             <div class="concept">
                 <h3>3. Conditional Rendering</h3>
                 <p>First matching condition wins:</p>
-                <pre><code>when(() => user.isAdmin,
+                <pre><code class="language-typescript">when(() => user.isAdmin,
   div('Admin Panel')
 ).when(() => user.isLoggedIn,
   div('User Dashboard')
@@ -175,7 +176,7 @@ div(
             <div class="concept">
                 <h3>4. List Synchronization</h3>
                 <p>Lists use object identity to track items:</p>
-                <pre><code>list(() => items, (item, index) =>
+                <pre><code class="language-typescript">list(() => items, (item, index) =>
   div(() => `${index}: ${item.name}`)
 )</code></pre>
             </div>
@@ -221,6 +222,11 @@ div(
         </div>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
     <script src="assets/js/main.js"></script>
 </body>
 </html>

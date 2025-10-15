@@ -6,6 +6,7 @@
     <meta name="description" content="nuclo API Reference - Complete documentation for all functions and utilities">
     <title>API Reference - nuclo</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
 </head>
 <body>
     <nav class="navbar">
@@ -62,7 +63,7 @@
                     <p>Triggers a synchronous update of all reactive elements in the DOM. Call this function after mutating state to refresh the UI.</p>
 
                     <h3>Usage</h3>
-                    <pre><code>let count = 0;
+                    <pre><code class="language-typescript">let count = 0;
 
 button('Increment', on('click', () => {
   count++;
@@ -93,7 +94,7 @@ button('Increment', on('click', () => {
                     </ul>
 
                     <h3>Usage</h3>
-                    <pre><code>const app = div(
+                    <pre><code class="language-typescript">const app = div(
   h1('My App'),
   p('Hello, world!')
 );
@@ -123,7 +124,7 @@ render(app, document.body);</code></pre>
                     </ul>
 
                     <h3>Usage</h3>
-                    <pre><code>let todos = [
+                    <pre><code class="language-typescript">let todos = [
   { id: 1, text: 'Learn nuclo', done: false },
   { id: 2, text: 'Build app', done: false }
 ];
@@ -153,7 +154,7 @@ list(() => todos, (todo, index) =>
                     <h3>Important Notes</h3>
                     <div class="warning-box">
                         <h4>Object Identity Matters!</h4>
-                        <pre><code>// ✓ Good: Mutate the object
+                        <pre><code class="language-typescript">// ✓ Good: Mutate the object
 todos[0].done = true;
 update();
 
@@ -172,7 +173,7 @@ update();</code></pre>
                     </div>
 
                     <h3>Advanced Usage</h3>
-                    <pre><code>// Nested lists
+                    <pre><code class="language-typescript">// Nested lists
 list(() => categories, category =>
   div(
     h3(category.name),
@@ -203,7 +204,7 @@ list(() => todos.filter(t => !t.done), todo =>
                     </ul>
 
                     <h3>Basic Usage</h3>
-                    <pre><code>let isLoggedIn = false;
+                    <pre><code class="language-typescript">let isLoggedIn = false;
 
 when(() => isLoggedIn,
   div('Welcome back!')
@@ -212,7 +213,7 @@ when(() => isLoggedIn,
 );</code></pre>
 
                     <h3>Chaining Conditions</h3>
-                    <pre><code>let role = 'user'; // 'admin' | 'user' | 'guest'
+                    <pre><code class="language-typescript">let role = 'user'; // 'admin' | 'user' | 'guest'
 
 when(() => role === 'admin',
   div('Admin Panel')
@@ -223,7 +224,7 @@ when(() => role === 'admin',
 );</code></pre>
 
                     <h3>Multiple Elements</h3>
-                    <pre><code>when(() => showDetails,
+                    <pre><code class="language-typescript">when(() => showDetails,
   h2('Details'),
   p('Here are the details...'),
   button('Close', on('click', () => {
@@ -242,7 +243,7 @@ when(() => role === 'admin',
                     </ul>
 
                     <h3>Performance Benefits</h3>
-                    <pre><code>// Elements persist across updates if the same branch is active
+                    <pre><code class="language-typescript">// Elements persist across updates if the same branch is active
 let count = 0;
 
 when(() => count > 0,
@@ -257,7 +258,7 @@ count = 10; update();
 count = 15; update();  // Same div element throughout</code></pre>
 
                     <h3>Nested Conditionals</h3>
-                    <pre><code>when(() => user.isAuthenticated,
+                    <pre><code class="language-typescript">when(() => user.isAuthenticated,
   when(() => user.hasPermission,
     div('Protected Content')
   ).else(
@@ -288,14 +289,14 @@ count = 15; update();  // Same div element throughout</code></pre>
                     </ul>
 
                     <h3>Basic Usage</h3>
-                    <pre><code>button('Click me',
+                    <pre><code class="language-typescript">button('Click me',
   on('click', (e) => {
     console.log('Button clicked!', e);
   })
 );</code></pre>
 
                     <h3>Multiple Events</h3>
-                    <pre><code>input(
+                    <pre><code class="language-typescript">input(
   on('input', (e) => {
     value = e.target.value;
     update();
@@ -311,7 +312,7 @@ count = 15; update();  // Same div element throughout</code></pre>
 );</code></pre>
 
                     <h3>Event Options</h3>
-                    <pre><code>// Passive event for better scroll performance
+                    <pre><code class="language-typescript">// Passive event for better scroll performance
 div(
   on('scroll', handleScroll, { passive: true })
 );
@@ -327,7 +328,7 @@ button('Click once',
 );</code></pre>
 
                     <h3>Keyboard Events</h3>
-                    <pre><code>input(
+                    <pre><code class="language-typescript">input(
   on('keydown', (e) => {
     if (e.key === 'Enter') {
       handleSubmit();
@@ -338,7 +339,7 @@ button('Click once',
 );</code></pre>
 
                     <h3>Form Events</h3>
-                    <pre><code>form(
+                    <pre><code class="language-typescript">form(
   on('submit', (e) => {
     e.preventDefault();
     handleFormSubmit();
@@ -366,7 +367,7 @@ button('Click once',
                     </div>
 
                     <h3>Basic Usage</h3>
-                    <pre><code>// Just children
+                    <pre><code class="language-typescript">// Just children
 div('Hello, world!');
 
 // Attributes + children
@@ -426,7 +427,7 @@ g, defs, use, symbol, marker, clipPath, mask, pattern,
 linearGradient, radialGradient, stop, text, tspan, textPath</code></pre>
 
                     <h3>Usage</h3>
-                    <pre><code>const icon = svg(
+                    <pre><code class="language-typescript">const icon = svg(
   { viewBox: '0 0 24 24', width: '24', height: '24' },
   circle({ cx: '12', cy: '12', r: '10', fill: 'blue' }),
   path({ d: 'M12 2 L12 22', stroke: 'white', 'stroke-width': '2' })
@@ -438,7 +439,7 @@ linearGradient, radialGradient, stop, text, tspan, textPath</code></pre>
                     <p>Attributes are passed as an object. They can be static values or reactive functions.</p>
 
                     <h3>Static Attributes</h3>
-                    <pre><code>div({
+                    <pre><code class="language-typescript">div({
   id: 'main',
   className: 'container',
   'data-test': 'value',
@@ -446,7 +447,7 @@ linearGradient, radialGradient, stop, text, tspan, textPath</code></pre>
 });</code></pre>
 
                     <h3>Reactive Attributes</h3>
-                    <pre><code>div({
+                    <pre><code class="language-typescript">div({
   className: () => isActive ? 'active' : 'inactive',
   'aria-pressed': () => isActive,
   disabled: () => !isValid,
@@ -454,7 +455,7 @@ linearGradient, radialGradient, stop, text, tspan, textPath</code></pre>
 });</code></pre>
 
                     <h3>Style Attributes</h3>
-                    <pre><code>// Object style
+                    <pre><code class="language-typescript">// Object style
 div({
   style: {
     color: 'red',
@@ -474,7 +475,7 @@ div({
 });</code></pre>
 
                     <h3>Boolean Attributes</h3>
-                    <pre><code>input({
+                    <pre><code class="language-typescript">input({
   type: 'checkbox',
   checked: () => isChecked,
   disabled: () => isDisabled,
@@ -483,7 +484,7 @@ div({
 });</code></pre>
 
                     <h3>Special Attributes</h3>
-                    <pre><code>// className (maps to 'class')
+                    <pre><code class="language-typescript">// className (maps to 'class')
 div({ className: 'my-class' });
 
 // htmlFor (maps to 'for')
@@ -499,14 +500,14 @@ div({ 'data-id': '123', 'data-type': 'user' });</code></pre>
 
                     <h3>Event Modifiers</h3>
                     <p>Created with the <code>on()</code> function:</p>
-                    <pre><code>button('Click',
+                    <pre><code class="language-typescript">button('Click',
   on('click', handleClick),
   on('mouseenter', handleHover)
 );</code></pre>
 
                     <h3>Custom Modifiers</h3>
                     <p>You can create custom modifiers for reusable element logic:</p>
-                    <pre><code>// Example: Focus modifier
+                    <pre><code class="language-typescript">// Example: Focus modifier
 function focus() {
   return {
     __modifier: true,
@@ -541,6 +542,11 @@ input(focus());</code></pre>
         </div>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
     <script src="assets/js/main.js"></script>
 </body>
 </html>

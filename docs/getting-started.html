@@ -6,6 +6,7 @@
     <meta name="description" content="Getting Started with nuclo - Installation, setup, and your first application">
     <title>Getting Started - nuclo</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
 </head>
 <body>
     <nav class="navbar">
@@ -47,9 +48,9 @@
                 <section id="installation">
                     <h2>Installation</h2>
                     <p>Install nuclo via npm, yarn, or pnpm:</p>
-                    <pre><code>npm install nuclo</code></pre>
-                    <pre><code>yarn add nuclo</code></pre>
-                    <pre><code>pnpm add nuclo</code></pre>
+                    <pre><code class="language-bash">npm install nuclo</code></pre>
+                    <pre><code class="language-bash">yarn add nuclo</code></pre>
+                    <pre><code class="language-bash">pnpm add nuclo</code></pre>
 
                     <p>That's it! No additional dependencies, no complicated setup.</p>
                 </section>
@@ -60,7 +61,7 @@
 
                     <h3>Option 1: tsconfig.json</h3>
                     <p>Add to your <code>tsconfig.json</code>:</p>
-                    <pre><code>{
+                    <pre><code class="language-json">{
   "compilerOptions": {
     "types": ["nuclo/types"]
   }
@@ -68,7 +69,7 @@
 
                     <h3>Option 2: Environment Declaration File</h3>
                     <p>Create or modify your <code>vite-env.d.ts</code> (or similar):</p>
-                    <pre><code>/// &lt;reference types="nuclo/types" /&gt;</code></pre>
+                    <pre><code class="language-typescript">/// &lt;reference types="nuclo/types" /&gt;</code></pre>
 
                     <p>After this setup, you'll have full IntelliSense for all 140+ HTML and SVG tags, plus all nuclo utilities.</p>
                 </section>
@@ -77,7 +78,7 @@
                     <h2>Your First App</h2>
                     <p>Let's build a simple counter application to understand the basics:</p>
 
-                    <pre><code>import 'nuclo';
+                    <pre><code class="language-typescript">import 'nuclo';
 
 // State - just plain JavaScript variables
 let count = 0;
@@ -131,7 +132,7 @@ render(app, document.body);</code></pre>
 
                     <h3>Batching Updates</h3>
                     <p>One of the key benefits is the ability to batch multiple state changes:</p>
-                    <pre><code>// Good: Multiple changes, single update
+                    <pre><code class="language-typescript">// Good: Multiple changes, single update
 function handleSubmit() {
   user.name = 'Alice';
   user.email = 'alice@example.com';
@@ -157,7 +158,7 @@ function handleSubmit() {
                     <p>Any zero-argument function becomes reactive. nuclo will call these functions during updates to get the current value.</p>
 
                     <h3>Text Content</h3>
-                    <pre><code>let name = 'World';
+                    <pre><code class="language-typescript">let name = 'World';
 
 div(
   'Hello, ',
@@ -169,7 +170,7 @@ div(
 // the div will show "Hello, Alice!"</code></pre>
 
                     <h3>Attributes</h3>
-                    <pre><code>let isActive = false;
+                    <pre><code class="language-typescript">let isActive = false;
 
 div({
   className: () => isActive ? 'active' : 'inactive',
@@ -178,7 +179,7 @@ div({
 });</code></pre>
 
                     <h3>Styles</h3>
-                    <pre><code>let opacity = 1;
+                    <pre><code class="language-typescript">let opacity = 1;
 
 div({
   style: {
@@ -188,7 +189,7 @@ div({
 });</code></pre>
 
                     <h3>Complex Expressions</h3>
-                    <pre><code>let items = [1, 2, 3];
+                    <pre><code class="language-typescript">let items = [1, 2, 3];
 
 div(
   () => `You have ${items.length} item${items.length !== 1 ? 's' : ''}`
@@ -200,14 +201,14 @@ div(
                     <p>Use the <code>on()</code> modifier to attach event listeners:</p>
 
                     <h3>Basic Events</h3>
-                    <pre><code>button('Click me',
+                    <pre><code class="language-typescript">button('Click me',
   on('click', () => {
     console.log('Clicked!');
   })
 );</code></pre>
 
                     <h3>Multiple Events</h3>
-                    <pre><code>input(
+                    <pre><code class="language-typescript">input(
   on('input', (e) => {
     inputValue = e.target.value;
     update();
@@ -223,13 +224,13 @@ div(
 );</code></pre>
 
                     <h3>Event Options</h3>
-                    <pre><code>div(
+                    <pre><code class="language-typescript">div(
   on('scroll', handleScroll, { passive: true }),
   on('click', handleClick, { capture: true, once: true })
 );</code></pre>
 
                     <h3>Keyboard Events</h3>
-                    <pre><code>input(
+                    <pre><code class="language-typescript">input(
   on('keydown', (e) => {
     if (e.key === 'Enter') {
       handleSubmit();
@@ -244,7 +245,7 @@ div(
                     <h2>Best Practices</h2>
 
                     <h3>1. Batch Your Updates</h3>
-                    <pre><code>// Good
+                    <pre><code class="language-typescript">// Good
 function handleMultipleChanges() {
   state.field1 = value1;
   state.field2 = value2;
@@ -263,7 +264,7 @@ function handleMultipleChanges() {
 }</code></pre>
 
                     <h3>2. Use Computed Values</h3>
-                    <pre><code>// Extract complex logic into functions
+                    <pre><code class="language-typescript">// Extract complex logic into functions
 function activeCount() {
   return todos.filter(t => !t.done).length;
 }
@@ -273,7 +274,7 @@ div(
 );</code></pre>
 
                     <h3>3. Organize Code with Component Functions</h3>
-                    <pre><code>function UserCard(user) {
+                    <pre><code class="language-typescript">function UserCard(user) {
   return div(
     { className: 'user-card' },
     img({ src: user.avatar, alt: user.name }),
@@ -288,7 +289,7 @@ div(
 );</code></pre>
 
                     <h3>4. Keep State Simple</h3>
-                    <pre><code>// Just use plain objects and arrays
+                    <pre><code class="language-typescript">// Just use plain objects and arrays
 let user = {
   name: 'Alice',
   email: 'alice@example.com',
@@ -304,7 +305,7 @@ let todos = [
 ];</code></pre>
 
                     <h3>5. Handle Async Operations</h3>
-                    <pre><code>let status = 'idle'; // 'idle' | 'loading' | 'success' | 'error'
+                    <pre><code class="language-typescript">let status = 'idle'; // 'idle' | 'loading' | 'success' | 'error'
 let data = null;
 let error = null;
 
@@ -357,6 +358,11 @@ async function fetchData() {
         </div>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
     <script src="assets/js/main.js"></script>
 </body>
 </html>
