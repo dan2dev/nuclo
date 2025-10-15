@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="nuclo - A DOM library for people who peaked in the jQuery era and never looked back">
+    <title>nuclo - Simple, Explicit DOM Manipulation</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>nuclo</h1>
+                <span class="tagline">Simple. Explicit. Reactive.</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="getting-started.html">Getting Started</a></li>
+                <li><a href="api.html">API</a></li>
+                <li><a href="examples.html">Examples</a></li>
+                <li><a href="https://github.com/dan2dev/nuclo" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="container">
+            <h1>nuclo</h1>
+            <p class="subtitle">A DOM library for people who peaked in the jQuery era and never looked back.</p>
+            <p class="description">Build reactive UIs without the magic tricks. Just functions, mutations, and a single <code>update()</code> call when you feel like it.</p>
+
+            <div class="code-example">
+                <pre><code>import 'nuclo';
+
+let count = 0;
+
+const counter = div(
+  h1(() => `Count: ${count}`),
+  button('Increment', on('click', () => {
+    count++;
+    update();
+  }))
+);
+
+render(counter, document.body);</code></pre>
+            </div>
+
+            <div class="cta-buttons">
+                <a href="getting-started.html" class="btn btn-primary">Get Started</a>
+                <a href="https://github.com/dan2dev/nuclo" class="btn btn-secondary">View on GitHub</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="features">
+        <div class="container">
+            <h2>Why nuclo?</h2>
+            <div class="features-grid">
+                <div class="feature">
+                    <h3>🎯 Zero Magic</h3>
+                    <p>Like a microwave with just one button. You press <code>update()</code>, stuff happens.</p>
+                </div>
+                <div class="feature">
+                    <h3>🚀 No Virtual DOM</h3>
+                    <p>Why simulate the DOM when you can just... use the DOM?</p>
+                </div>
+                <div class="feature">
+                    <h3>📦 Tiny Footprint</h3>
+                    <p>Smaller than your average React component's prop types</p>
+                </div>
+                <div class="feature">
+                    <h3>🌍 Global API</h3>
+                    <p><code>div()</code> is everywhere, like that one friend who shows up uninvited but makes everything fun</p>
+                </div>
+                <div class="feature">
+                    <h3>📘 TypeScript-First</h3>
+                    <p>All 140+ tags typed. Yes, even <code>&lt;bdi&gt;</code>. You're welcome.</p>
+                </div>
+                <div class="feature">
+                    <h3>⚡ Real Reactivity</h3>
+                    <p>Updates only what changed. Your browser's repaint budget will thank you.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="quick-start">
+        <div class="container">
+            <h2>Quick Start</h2>
+
+            <div class="install-section">
+                <h3>Installation</h3>
+                <pre><code>npm install nuclo</code></pre>
+            </div>
+
+            <div class="usage-section">
+                <h3>Usage</h3>
+                <p>Simply import once to register all global functions:</p>
+                <pre><code>import 'nuclo';
+
+// Now use div(), update(), on(), list(), when(), render(), etc. globally
+let count = 0;
+const app = div(
+  h1(() => `Count: ${count}`),
+  button('Click', on('click', () => { count++; update(); }))
+);
+render(app, document.body);</code></pre>
+            </div>
+
+            <div class="typescript-section">
+                <h3>TypeScript Setup</h3>
+                <p>Add to your <code>tsconfig.json</code>:</p>
+                <pre><code>{
+  "compilerOptions": {
+    "types": ["nuclo/types"]
+  }
+}</code></pre>
+                <p>Or in your <code>vite-env.d.ts</code>:</p>
+                <pre><code>/// &lt;reference types="nuclo/types" /&gt;</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <section class="core-concepts">
+        <div class="container">
+            <h2>Core Concepts</h2>
+
+            <div class="concept">
+                <h3>1. Explicit Updates</h3>
+                <p>Unlike React or Vue, nuclo doesn't auto-detect changes. You call <code>update()</code> when ready:</p>
+                <pre><code>let name = 'World';
+
+// Mutate freely
+name = 'Alice';
+name = name.toUpperCase();
+
+// Update once when ready
+update();</code></pre>
+                <div class="concept-benefits">
+                    <h4>Advantages:</h4>
+                    <ul>
+                        <li><strong>Performance:</strong> Batch mutations. One <code>update()</code> &gt; ten thousand proxy getters</li>
+                        <li><strong>Control:</strong> You're the boss of when pixels change</li>
+                        <li><strong>Predictability:</strong> Zero surprise re-renders</li>
+                        <li><strong>Simplicity:</strong> No proxies, no dependency graphs, no PhD required</li>
+                        <li><strong>Debugging:</strong> Put a breakpoint at <code>update()</code>. That's it.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="concept">
+                <h3>2. Reactive Functions</h3>
+                <p>Zero-arg functions become reactive:</p>
+                <pre><code>let count = 0;
+
+div(
+  () => `Count: ${count}`,  // Updates when update() is called
+  { title: () => `Current: ${count}` }  // Attributes too
+)</code></pre>
+            </div>
+
+            <div class="concept">
+                <h3>3. Conditional Rendering</h3>
+                <p>First matching condition wins:</p>
+                <pre><code>when(() => user.isAdmin,
+  div('Admin Panel')
+).when(() => user.isLoggedIn,
+  div('User Dashboard')
+).else(
+  div('Please log in')
+)</code></pre>
+            </div>
+
+            <div class="concept">
+                <h3>4. List Synchronization</h3>
+                <p>Lists use object identity to track items:</p>
+                <pre><code>list(() => items, (item, index) =>
+  div(() => `${index}: ${item.name}`)
+)</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <section class="examples-preview">
+        <div class="container">
+            <h2>Examples</h2>
+            <div class="examples-grid">
+                <div class="example-card">
+                    <h3>Counter</h3>
+                    <p>The classic example showing state management and event handling</p>
+                    <a href="examples.html#counter" class="btn btn-small">View Example</a>
+                </div>
+                <div class="example-card">
+                    <h3>Todo List</h3>
+                    <p>Dynamic lists with add, toggle, and delete operations</p>
+                    <a href="examples.html#todo" class="btn btn-small">View Example</a>
+                </div>
+                <div class="example-card">
+                    <h3>Search Filter</h3>
+                    <p>Real-time filtering with computed values</p>
+                    <a href="examples.html#search" class="btn btn-small">View Example</a>
+                </div>
+                <div class="example-card">
+                    <h3>Async Loading</h3>
+                    <p>Handling async operations and loading states</p>
+                    <a href="examples.html#async" class="btn btn-small">View Example</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>MIT License - Free and Open Source</p>
+            <p>
+                <a href="https://github.com/dan2dev/nuclo">GitHub</a> •
+                <a href="https://github.com/dan2dev/nuclo/issues">Issues</a> •
+                <a href="https://www.npmjs.com/package/nuclo">NPM</a>
+            </p>
+        </div>
+    </footer>
+
+    <script src="assets/js/main.js"></script>
+</body>
+</html>
