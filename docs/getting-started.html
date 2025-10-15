@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Getting Started with nuclo - Installation, setup, and your first application">
+    <title>Getting Started - nuclo</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>nuclo</h1>
+                <span class="tagline">Simple. Explicit. Reactive.</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="getting-started.html" class="active">Getting Started</a></li>
+                <li><a href="api.html">API</a></li>
+                <li><a href="examples.html">Examples</a></li>
+                <li><a href="https://github.com/dan2dev/nuclo" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="docs-content">
+        <div class="container">
+            <aside class="sidebar">
+                <nav class="docs-nav">
+                    <h3>Getting Started</h3>
+                    <ul>
+                        <li><a href="#installation">Installation</a></li>
+                        <li><a href="#typescript-setup">TypeScript Setup</a></li>
+                        <li><a href="#first-app">Your First App</a></li>
+                        <li><a href="#understanding-update">Understanding update()</a></li>
+                        <li><a href="#reactive-functions">Reactive Functions</a></li>
+                        <li><a href="#event-handling">Event Handling</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <article class="docs-main">
+                <h1>Getting Started</h1>
+
+                <section id="installation">
+                    <h2>Installation</h2>
+                    <p>Install nuclo via npm, yarn, or pnpm:</p>
+                    <pre><code>npm install nuclo</code></pre>
+                    <pre><code>yarn add nuclo</code></pre>
+                    <pre><code>pnpm add nuclo</code></pre>
+
+                    <p>That's it! No additional dependencies, no complicated setup.</p>
+                </section>
+
+                <section id="typescript-setup">
+                    <h2>TypeScript Setup</h2>
+                    <p>nuclo is built with TypeScript and provides full type definitions for all APIs. To get global type definitions for all tag builders and utilities, add one of the following:</p>
+
+                    <h3>Option 1: tsconfig.json</h3>
+                    <p>Add to your <code>tsconfig.json</code>:</p>
+                    <pre><code>{
+  "compilerOptions": {
+    "types": ["nuclo/types"]
+  }
+}</code></pre>
+
+                    <h3>Option 2: Environment Declaration File</h3>
+                    <p>Create or modify your <code>vite-env.d.ts</code> (or similar):</p>
+                    <pre><code>/// &lt;reference types="nuclo/types" /&gt;</code></pre>
+
+                    <p>After this setup, you'll have full IntelliSense for all 140+ HTML and SVG tags, plus all nuclo utilities.</p>
+                </section>
+
+                <section id="first-app">
+                    <h2>Your First App</h2>
+                    <p>Let's build a simple counter application to understand the basics:</p>
+
+                    <pre><code>import 'nuclo';
+
+// State - just plain JavaScript variables
+let count = 0;
+
+// Create the UI
+const app = div(
+  h1(() => `Count: ${count}`),
+  button('Increment', on('click', () => {
+    count++;
+    update();
+  })),
+  button('Decrement', on('click', () => {
+    count--;
+    update();
+  })),
+  button('Reset', on('click', () => {
+    count = 0;
+    update();
+  }))
+);
+
+// Render to the DOM
+render(app, document.body);</code></pre>
+
+                    <h3>Breaking it down:</h3>
+                    <ol>
+                        <li><strong>Import:</strong> <code>import 'nuclo'</code> registers all global functions</li>
+                        <li><strong>State:</strong> Just use regular variables. No hooks, no stores, no magic.</li>
+                        <li><strong>Reactive UI:</strong> Use functions <code>() => ...</code> for dynamic content</li>
+                        <li><strong>Events:</strong> Use <code>on('event', handler)</code> to attach listeners</li>
+                        <li><strong>Updates:</strong> Call <code>update()</code> to refresh the UI after state changes</li>
+                        <li><strong>Render:</strong> Use <code>render(element, container)</code> to mount to the DOM</li>
+                    </ol>
+                </section>
+
+                <section id="understanding-update">
+                    <h2>Understanding update()</h2>
+                    <p>The <code>update()</code> function is the heart of nuclo's reactivity system. Unlike frameworks that automatically track changes, nuclo requires you to explicitly trigger updates.</p>
+
+                    <h3>Why explicit updates?</h3>
+                    <div class="info-box">
+                        <h4>Advantages:</h4>
+                        <ul>
+                            <li><strong>Performance:</strong> Batch multiple mutations into a single update</li>
+                            <li><strong>Control:</strong> You decide exactly when the UI should refresh</li>
+                            <li><strong>Predictability:</strong> No surprise re-renders or mysterious update cycles</li>
+                            <li><strong>Simplicity:</strong> No proxies, observers, or dependency tracking</li>
+                            <li><strong>Debugging:</strong> Just set a breakpoint at <code>update()</code></li>
+                        </ul>
+                    </div>
+
+                    <h3>Batching Updates</h3>
+                    <p>One of the key benefits is the ability to batch multiple state changes:</p>
+                    <pre><code>// Good: Multiple changes, single update
+function handleSubmit() {
+  user.name = 'Alice';
+  user.email = 'alice@example.com';
+  user.age = 30;
+  todos.push({ id: 1, text: 'New todo', done: false });
+  update(); // One update for all changes
+}
+
+// Works but inefficient: Update after each change
+function handleSubmit() {
+  user.name = 'Alice';
+  update();
+  user.email = 'alice@example.com';
+  update();
+  user.age = 30;
+  update();
+  // 3 updates instead of 1!
+}</code></pre>
+                </section>
+
+                <section id="reactive-functions">
+                    <h2>Reactive Functions</h2>
+                    <p>Any zero-argument function becomes reactive. nuclo will call these functions during updates to get the current value.</p>
+
+                    <h3>Text Content</h3>
+                    <pre><code>let name = 'World';
+
+div(
+  'Hello, ',
+  () => name,  // Reactive
+  '!'
+);
+
+// After name changes and update() is called,
+// the div will show "Hello, Alice!"</code></pre>
+
+                    <h3>Attributes</h3>
+                    <pre><code>let isActive = false;
+
+div({
+  className: () => isActive ? 'active' : 'inactive',
+  'aria-pressed': () => isActive,
+  disabled: () => !isActive
+});</code></pre>
+
+                    <h3>Styles</h3>
+                    <pre><code>let opacity = 1;
+
+div({
+  style: {
+    opacity: () => opacity,
+    display: () => opacity > 0 ? 'block' : 'none'
+  }
+});</code></pre>
+
+                    <h3>Complex Expressions</h3>
+                    <pre><code>let items = [1, 2, 3];
+
+div(
+  () => `You have ${items.length} item${items.length !== 1 ? 's' : ''}`
+);</code></pre>
+                </section>
+
+                <section id="event-handling">
+                    <h2>Event Handling</h2>
+                    <p>Use the <code>on()</code> modifier to attach event listeners:</p>
+
+                    <h3>Basic Events</h3>
+                    <pre><code>button('Click me',
+  on('click', () => {
+    console.log('Clicked!');
+  })
+);</code></pre>
+
+                    <h3>Multiple Events</h3>
+                    <pre><code>input(
+  on('input', (e) => {
+    inputValue = e.target.value;
+    update();
+  }),
+  on('focus', () => {
+    isFocused = true;
+    update();
+  }),
+  on('blur', () => {
+    isFocused = false;
+    update();
+  })
+);</code></pre>
+
+                    <h3>Event Options</h3>
+                    <pre><code>div(
+  on('scroll', handleScroll, { passive: true }),
+  on('click', handleClick, { capture: true, once: true })
+);</code></pre>
+
+                    <h3>Keyboard Events</h3>
+                    <pre><code>input(
+  on('keydown', (e) => {
+    if (e.key === 'Enter') {
+      handleSubmit();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  })
+);</code></pre>
+                </section>
+
+                <section id="best-practices">
+                    <h2>Best Practices</h2>
+
+                    <h3>1. Batch Your Updates</h3>
+                    <pre><code>// Good
+function handleMultipleChanges() {
+  state.field1 = value1;
+  state.field2 = value2;
+  state.field3 = value3;
+  update();
+}
+
+// Avoid
+function handleMultipleChanges() {
+  state.field1 = value1;
+  update();
+  state.field2 = value2;
+  update();
+  state.field3 = value3;
+  update();
+}</code></pre>
+
+                    <h3>2. Use Computed Values</h3>
+                    <pre><code>// Extract complex logic into functions
+function activeCount() {
+  return todos.filter(t => !t.done).length;
+}
+
+div(
+  () => `${activeCount()} tasks remaining`
+);</code></pre>
+
+                    <h3>3. Organize Code with Component Functions</h3>
+                    <pre><code>function UserCard(user) {
+  return div(
+    { className: 'user-card' },
+    img({ src: user.avatar, alt: user.name }),
+    h3(user.name),
+    p(user.bio)
+  );
+}
+
+// Use it
+div(
+  UserCard(currentUser)
+);</code></pre>
+
+                    <h3>4. Keep State Simple</h3>
+                    <pre><code>// Just use plain objects and arrays
+let user = {
+  name: 'Alice',
+  email: 'alice@example.com',
+  preferences: {
+    theme: 'dark',
+    notifications: true
+  }
+};
+
+let todos = [
+  { id: 1, text: 'Learn nuclo', done: true },
+  { id: 2, text: 'Build awesome app', done: false }
+];</code></pre>
+
+                    <h3>5. Handle Async Operations</h3>
+                    <pre><code>let status = 'idle'; // 'idle' | 'loading' | 'success' | 'error'
+let data = null;
+let error = null;
+
+async function fetchData() {
+  status = 'loading';
+  update();
+
+  try {
+    const response = await fetch('/api/data');
+    data = await response.json();
+    status = 'success';
+  } catch (err) {
+    error = err.message;
+    status = 'error';
+  }
+
+  update();
+}</code></pre>
+                </section>
+
+                <section class="next-steps">
+                    <h2>Next Steps</h2>
+                    <div class="card-grid">
+                        <a href="api.html" class="card">
+                            <h3>API Reference</h3>
+                            <p>Explore the complete API documentation</p>
+                        </a>
+                        <a href="examples.html" class="card">
+                            <h3>Examples</h3>
+                            <p>See nuclo in action with real-world examples</p>
+                        </a>
+                        <a href="https://github.com/dan2dev/nuclo/tree/main/examples" class="card">
+                            <h3>Code Examples</h3>
+                            <p>Browse the GitHub repository for more examples</p>
+                        </a>
+                    </div>
+                </section>
+            </article>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>MIT License - Free and Open Source</p>
+            <p>
+                <a href="https://github.com/dan2dev/nuclo">GitHub</a> •
+                <a href="https://github.com/dan2dev/nuclo/issues">Issues</a> •
+                <a href="https://www.npmjs.com/package/nuclo">NPM</a>
+            </p>
+        </div>
+    </footer>
+
+    <script src="assets/js/main.js"></script>
+</body>
+</html>

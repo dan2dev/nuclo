@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="nuclo API Reference - Complete documentation for all functions and utilities">
+    <title>API Reference - nuclo</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>nuclo</h1>
+                <span class="tagline">Simple. Explicit. Reactive.</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="getting-started.html">Getting Started</a></li>
+                <li><a href="api.html" class="active">API</a></li>
+                <li><a href="examples.html">Examples</a></li>
+                <li><a href="https://github.com/dan2dev/nuclo" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="docs-content">
+        <div class="container">
+            <aside class="sidebar">
+                <nav class="docs-nav">
+                    <h3>API Reference</h3>
+                    <ul>
+                        <li><a href="#core-functions">Core Functions</a></li>
+                        <li><a href="#update">update()</a></li>
+                        <li><a href="#render">render()</a></li>
+                        <li><a href="#list">list()</a></li>
+                        <li><a href="#when">when()</a></li>
+                        <li><a href="#on">on()</a></li>
+                        <li><a href="#tag-builders">Tag Builders</a></li>
+                        <li><a href="#html-tags">HTML Tags</a></li>
+                        <li><a href="#svg-tags">SVG Tags</a></li>
+                        <li><a href="#attributes">Attributes</a></li>
+                        <li><a href="#modifiers">Modifiers</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <article class="docs-main">
+                <h1>API Reference</h1>
+
+                <section id="core-functions">
+                    <h2>Core Functions</h2>
+                    <p>These are the fundamental functions you'll use in every nuclo application.</p>
+                </section>
+
+                <section id="update" class="api-section">
+                    <h2>update()</h2>
+                    <div class="signature">
+                        <code>update(): void</code>
+                    </div>
+
+                    <p>Triggers a synchronous update of all reactive elements in the DOM. Call this function after mutating state to refresh the UI.</p>
+
+                    <h3>Usage</h3>
+                    <pre><code>let count = 0;
+
+button('Increment', on('click', () => {
+  count++;
+  update(); // Trigger UI update
+}));</code></pre>
+
+                    <h3>Notes</h3>
+                    <ul>
+                        <li>Updates are synchronous and happen immediately</li>
+                        <li>Only reactive functions (zero-arg functions) are re-evaluated</li>
+                        <li>Batch multiple state changes before calling <code>update()</code> for better performance</li>
+                        <li>You can call <code>update()</code> as many times as needed, but batching is more efficient</li>
+                    </ul>
+                </section>
+
+                <section id="render" class="api-section">
+                    <h2>render()</h2>
+                    <div class="signature">
+                        <code>render(element: Element | Node, container: Element): void</code>
+                    </div>
+
+                    <p>Appends an element to a container in the DOM. This is typically used once at application startup.</p>
+
+                    <h3>Parameters</h3>
+                    <ul>
+                        <li><strong>element:</strong> The element to render (created with tag builders like <code>div()</code>)</li>
+                        <li><strong>container:</strong> The DOM element to append to (e.g., <code>document.body</code>)</li>
+                    </ul>
+
+                    <h3>Usage</h3>
+                    <pre><code>const app = div(
+  h1('My App'),
+  p('Hello, world!')
+);
+
+render(app, document.body);</code></pre>
+
+                    <h3>Notes</h3>
+                    <ul>
+                        <li>The element is appended to the container (not replaced)</li>
+                        <li>You can call <code>render()</code> multiple times to mount different elements</li>
+                        <li>Common pattern: render a single root element that contains your entire app</li>
+                    </ul>
+                </section>
+
+                <section id="list" class="api-section">
+                    <h2>list()</h2>
+                    <div class="signature">
+                        <code>list&lt;T&gt;(provider: () => T[], renderer: (item: T, index: number) => Node): DocumentFragment</code>
+                    </div>
+
+                    <p>Synchronizes an array to a list of DOM elements. Elements are reused when the same object reference appears in the array.</p>
+
+                    <h3>Parameters</h3>
+                    <ul>
+                        <li><strong>provider:</strong> A function that returns the current array</li>
+                        <li><strong>renderer:</strong> A function that creates a DOM element for each item</li>
+                    </ul>
+
+                    <h3>Usage</h3>
+                    <pre><code>let todos = [
+  { id: 1, text: 'Learn nuclo', done: false },
+  { id: 2, text: 'Build app', done: false }
+];
+
+list(() => todos, (todo, index) =>
+  div(
+    { className: () => todo.done ? 'done' : '' },
+    span(() => `${index + 1}. ${todo.text}`),
+    button('Toggle', on('click', () => {
+      todo.done = !todo.done;
+      update();
+    }))
+  )
+);</code></pre>
+
+                    <h3>How It Works</h3>
+                    <ul>
+                        <li>Tracks items by <strong>object identity</strong> (reference equality)</li>
+                        <li>When you call <code>update()</code>, the list provider is called</li>
+                        <li>nuclo compares the new array to the previous one</li>
+                        <li>Elements are reused for items that are the same reference</li>
+                        <li>New elements are created for new items</li>
+                        <li>Elements are removed for items no longer in the array</li>
+                        <li>Elements are reordered if items moved position</li>
+                    </ul>
+
+                    <h3>Important Notes</h3>
+                    <div class="warning-box">
+                        <h4>Object Identity Matters!</h4>
+                        <pre><code>// ✓ Good: Mutate the object
+todos[0].done = true;
+update();
+
+// ✗ Bad: Creates a new object, element will be recreated
+todos[0] = { ...todos[0], done: true };
+update();
+
+// ✓ Good: Mutate the array
+todos.push(newTodo);
+todos.sort((a, b) => a.id - b.id);
+update();
+
+// ✓ Also good: Reassign with filtered array
+todos = todos.filter(t => !t.done);
+update();</code></pre>
+                    </div>
+
+                    <h3>Advanced Usage</h3>
+                    <pre><code>// Nested lists
+list(() => categories, category =>
+  div(
+    h3(category.name),
+    list(() => category.items, item =>
+      div(item.name)
+    )
+  )
+);
+
+// Filtered lists
+list(() => todos.filter(t => !t.done), todo =>
+  div(todo.text)
+);</code></pre>
+                </section>
+
+                <section id="when" class="api-section">
+                    <h2>when()</h2>
+                    <div class="signature">
+                        <code>when(condition: () => boolean, ...content: Renderable[]): ConditionalBuilder</code>
+                    </div>
+
+                    <p>Conditionally renders content based on a boolean condition. Supports chaining with <code>.when()</code> and <code>.else()</code>.</p>
+
+                    <h3>Parameters</h3>
+                    <ul>
+                        <li><strong>condition:</strong> A function that returns a boolean</li>
+                        <li><strong>content:</strong> Elements to render when the condition is true</li>
+                    </ul>
+
+                    <h3>Basic Usage</h3>
+                    <pre><code>let isLoggedIn = false;
+
+when(() => isLoggedIn,
+  div('Welcome back!')
+).else(
+  div('Please log in')
+);</code></pre>
+
+                    <h3>Chaining Conditions</h3>
+                    <pre><code>let role = 'user'; // 'admin' | 'user' | 'guest'
+
+when(() => role === 'admin',
+  div('Admin Panel')
+).when(() => role === 'user',
+  div('User Dashboard')
+).else(
+  div('Guest View')
+);</code></pre>
+
+                    <h3>Multiple Elements</h3>
+                    <pre><code>when(() => showDetails,
+  h2('Details'),
+  p('Here are the details...'),
+  button('Close', on('click', () => {
+    showDetails = false;
+    update();
+  }))
+);</code></pre>
+
+                    <h3>How It Works</h3>
+                    <ul>
+                        <li>Evaluates conditions in order until one returns <code>true</code></li>
+                        <li>Renders the content for the first matching condition</li>
+                        <li>If no conditions match and <code>.else()</code> is provided, renders else content</li>
+                        <li>DOM elements are <strong>preserved</strong> if the active branch doesn't change</li>
+                        <li>Elements are only created/destroyed when switching between branches</li>
+                    </ul>
+
+                    <h3>Performance Benefits</h3>
+                    <pre><code>// Elements persist across updates if the same branch is active
+let count = 0;
+
+when(() => count > 0,
+  div('Count is positive')  // This div stays alive while count > 0
+).else(
+  div('Count is zero or negative')
+);
+
+// Multiple updates with count > 0 won't recreate the div
+count = 5; update();
+count = 10; update();
+count = 15; update();  // Same div element throughout</code></pre>
+
+                    <h3>Nested Conditionals</h3>
+                    <pre><code>when(() => user.isAuthenticated,
+  when(() => user.hasPermission,
+    div('Protected Content')
+  ).else(
+    div('Access Denied')
+  )
+).else(
+  div('Please log in')
+);</code></pre>
+                </section>
+
+                <section id="on" class="api-section">
+                    <h2>on()</h2>
+                    <div class="signature">
+                        <code>on&lt;K extends keyof HTMLElementEventMap&gt;(<br>
+                        &nbsp;&nbsp;event: K,<br>
+                        &nbsp;&nbsp;handler: (event: HTMLElementEventMap[K]) => void,<br>
+                        &nbsp;&nbsp;options?: AddEventListenerOptions<br>
+                        ): Modifier</code>
+                    </div>
+
+                    <p>Attaches an event listener to an element. Returns a modifier that can be passed to tag builders.</p>
+
+                    <h3>Parameters</h3>
+                    <ul>
+                        <li><strong>event:</strong> The event name (e.g., 'click', 'input', 'keydown')</li>
+                        <li><strong>handler:</strong> The event handler function</li>
+                        <li><strong>options:</strong> Optional event listener options (passive, capture, once)</li>
+                    </ul>
+
+                    <h3>Basic Usage</h3>
+                    <pre><code>button('Click me',
+  on('click', (e) => {
+    console.log('Button clicked!', e);
+  })
+);</code></pre>
+
+                    <h3>Multiple Events</h3>
+                    <pre><code>input(
+  on('input', (e) => {
+    value = e.target.value;
+    update();
+  }),
+  on('focus', () => {
+    isFocused = true;
+    update();
+  }),
+  on('blur', () => {
+    isFocused = false;
+    update();
+  })
+);</code></pre>
+
+                    <h3>Event Options</h3>
+                    <pre><code>// Passive event for better scroll performance
+div(
+  on('scroll', handleScroll, { passive: true })
+);
+
+// Capture phase
+div(
+  on('click', handleClick, { capture: true })
+);
+
+// One-time event
+button('Click once',
+  on('click', handleClick, { once: true })
+);</code></pre>
+
+                    <h3>Keyboard Events</h3>
+                    <pre><code>input(
+  on('keydown', (e) => {
+    if (e.key === 'Enter') {
+      handleSubmit();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  })
+);</code></pre>
+
+                    <h3>Form Events</h3>
+                    <pre><code>form(
+  on('submit', (e) => {
+    e.preventDefault();
+    handleFormSubmit();
+  }),
+
+  input({ type: 'text', name: 'username' },
+    on('input', (e) => {
+      username = e.target.value;
+      update();
+    })
+  ),
+
+  button({ type: 'submit' }, 'Submit')
+);</code></pre>
+                </section>
+
+                <section id="tag-builders">
+                    <h2>Tag Builders</h2>
+                    <p>nuclo provides builder functions for all HTML and SVG elements. Each function creates and returns a DOM element.</p>
+
+                    <h3>Signature</h3>
+                    <div class="signature">
+                        <code>tagName(...children: Renderable[]): HTMLElement<br>
+                        tagName(attributes: Attributes, ...children: Renderable[]): HTMLElement</code>
+                    </div>
+
+                    <h3>Basic Usage</h3>
+                    <pre><code>// Just children
+div('Hello, world!');
+
+// Attributes + children
+div(
+  { className: 'container', id: 'main' },
+  'Hello, world!'
+);
+
+// Nested elements
+div(
+  h1('Title'),
+  p('Paragraph'),
+  ul(
+    li('Item 1'),
+    li('Item 2')
+  )
+);</code></pre>
+                </section>
+
+                <section id="html-tags">
+                    <h2>HTML Tags</h2>
+                    <p>All standard HTML5 elements are available:</p>
+
+                    <h3>Document Structure</h3>
+                    <pre><code>html, head, body, header, footer, main, section, article, aside, nav</code></pre>
+
+                    <h3>Content Sectioning</h3>
+                    <pre><code>h1, h2, h3, h4, h5, h6, div, span, p, blockquote, pre, code</code></pre>
+
+                    <h3>Lists</h3>
+                    <pre><code>ul, ol, li, dl, dt, dd</code></pre>
+
+                    <h3>Forms</h3>
+                    <pre><code>form, input, textarea, button, select, option, label, fieldset, legend</code></pre>
+
+                    <h3>Tables</h3>
+                    <pre><code>table, thead, tbody, tfoot, tr, th, td, caption, col, colgroup</code></pre>
+
+                    <h3>Media</h3>
+                    <pre><code>img, video, audio, source, track, canvas, svg</code></pre>
+
+                    <h3>Interactive</h3>
+                    <pre><code>a, button, details, summary, dialog</code></pre>
+
+                    <h3>Text Formatting</h3>
+                    <pre><code>strong, em, mark, small, del, ins, sub, sup, abbr, cite, q, kbd, samp, var</code></pre>
+
+                    <p>And 100+ more! See the <a href="https://github.com/dan2dev/nuclo/blob/main/packages/nuclo/src/core/tagRegistry.ts" target="_blank">full list in the source code</a>.</p>
+                </section>
+
+                <section id="svg-tags">
+                    <h2>SVG Tags</h2>
+                    <p>All SVG elements are available for creating scalable vector graphics:</p>
+
+                    <pre><code>svg, circle, ellipse, line, path, polygon, polyline, rect,
+g, defs, use, symbol, marker, clipPath, mask, pattern,
+linearGradient, radialGradient, stop, text, tspan, textPath</code></pre>
+
+                    <h3>Usage</h3>
+                    <pre><code>const icon = svg(
+  { viewBox: '0 0 24 24', width: '24', height: '24' },
+  circle({ cx: '12', cy: '12', r: '10', fill: 'blue' }),
+  path({ d: 'M12 2 L12 22', stroke: 'white', 'stroke-width': '2' })
+);</code></pre>
+                </section>
+
+                <section id="attributes">
+                    <h2>Attributes</h2>
+                    <p>Attributes are passed as an object. They can be static values or reactive functions.</p>
+
+                    <h3>Static Attributes</h3>
+                    <pre><code>div({
+  id: 'main',
+  className: 'container',
+  'data-test': 'value',
+  'aria-label': 'Main content'
+});</code></pre>
+
+                    <h3>Reactive Attributes</h3>
+                    <pre><code>div({
+  className: () => isActive ? 'active' : 'inactive',
+  'aria-pressed': () => isActive,
+  disabled: () => !isValid,
+  hidden: () => !isVisible
+});</code></pre>
+
+                    <h3>Style Attributes</h3>
+                    <pre><code>// Object style
+div({
+  style: {
+    color: 'red',
+    fontSize: '16px',
+    backgroundColor: () => isActive ? 'blue' : 'gray'
+  }
+});
+
+// String style
+div({
+  style: 'color: red; font-size: 16px;'
+});
+
+// Reactive string style
+div({
+  style: () => `color: ${color}; font-size: ${size}px;`
+});</code></pre>
+
+                    <h3>Boolean Attributes</h3>
+                    <pre><code>input({
+  type: 'checkbox',
+  checked: () => isChecked,
+  disabled: () => isDisabled,
+  required: true,
+  readonly: false
+});</code></pre>
+
+                    <h3>Special Attributes</h3>
+                    <pre><code>// className (maps to 'class')
+div({ className: 'my-class' });
+
+// htmlFor (maps to 'for')
+label({ htmlFor: 'input-id' }, 'Label');
+
+// Data attributes
+div({ 'data-id': '123', 'data-type': 'user' });</code></pre>
+                </section>
+
+                <section id="modifiers">
+                    <h2>Modifiers</h2>
+                    <p>Modifiers are special objects that can be passed to tag builders to perform additional operations on elements.</p>
+
+                    <h3>Event Modifiers</h3>
+                    <p>Created with the <code>on()</code> function:</p>
+                    <pre><code>button('Click',
+  on('click', handleClick),
+  on('mouseenter', handleHover)
+);</code></pre>
+
+                    <h3>Custom Modifiers</h3>
+                    <p>You can create custom modifiers for reusable element logic:</p>
+                    <pre><code>// Example: Focus modifier
+function focus() {
+  return {
+    __modifier: true,
+    apply(element) {
+      requestAnimationFrame(() => element.focus());
+    }
+  };
+}
+
+// Usage
+input(focus());</code></pre>
+                </section>
+
+                <section class="notes">
+                    <h2>Type Definitions</h2>
+                    <p>All functions are fully typed with TypeScript. Add <code>"types": ["nuclo/types"]</code> to your tsconfig.json to get global type definitions.</p>
+
+                    <p>For detailed type information, see the <a href="https://github.com/dan2dev/nuclo/tree/main/types" target="_blank">types directory</a> in the repository.</p>
+                </section>
+            </article>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>MIT License - Free and Open Source</p>
+            <p>
+                <a href="https://github.com/dan2dev/nuclo">GitHub</a> •
+                <a href="https://github.com/dan2dev/nuclo/issues">Issues</a> •
+                <a href="https://www.npmjs.com/package/nuclo">NPM</a>
+            </p>
+        </div>
+    </footer>
+
+    <script src="assets/js/main.js"></script>
+</body>
+</html>
