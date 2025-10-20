@@ -1,5 +1,6 @@
 import "./style.css";
 import "nuclo";
+import { bg } from "./styling-poc";
 
 const appRoot = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -14,6 +15,7 @@ function decrement() {
 	counter--;
 	update();
 }
+
 function reset() {
 	counter = 0;
 	update();
@@ -22,6 +24,7 @@ function reset() {
 const app = div(
 	{ className: "app" },
 	h1(
+		bg("#FFFFFF33"),
 		"counter: ",
 		span(() => counter),
 	),
