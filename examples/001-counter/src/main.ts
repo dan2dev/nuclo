@@ -1,36 +1,21 @@
 import "./style.css";
 import "nuclo";
 import { bg } from "./styling-poc";
+import { store } from "./store";
 
 const appRoot = document.querySelector<HTMLDivElement>("#app")!;
 
-let counter = 0;
-
-function increment() {
-	counter++;
-	update();
-}
-
-function decrement() {
-	counter--;
-	update();
-}
-
-function reset() {
-	counter = 0;
-	update();
-}
-
 const app = div(
-	{ className: "app" },
-	h1(
-		bg("#FFFFFF33"),
-		"counter: ",
-		span(() => counter),
-	),
-	button("+", on("click", increment)),
-	button("reset", on("click", reset)),
-	button("-", on("click", decrement)),
+  // { className: "app" },
+  h1(
+    // s.grid("flex", "center").text("center"),
+    // bg("#FFFFFF33"),
+    "counter: ",
+    span(() => store.counter),
+  ),
+  button("+", on("click", store.increment)),
+  button("reset", on("click", store.reset)),
+  button("-", on("click", store.decrement)),
 );
 
 render(app, appRoot);
