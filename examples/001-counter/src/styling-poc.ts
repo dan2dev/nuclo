@@ -1,26 +1,36 @@
 const styleState = {
-	initialized: false,
-	sheet: new CSSStyleSheet(),
+  initialized: false,
+  sheet: new CSSStyleSheet(),
 };
 if (!styleState.initialized) {
-	styleState.initialized = true;
-	document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleState.sheet];
+  styleState.initialized = true;
+  document.adoptedStyleSheets = [
+    ...document.adoptedStyleSheets,
+    styleState.sheet,
+  ];
 }
-export const bg = (colorValue: string) => (el: ExpandedElement, index: number) => {
-	const className = `bg-${colorValue.replace("#", "")}`;
-	el.classList?.add(className);
-	styleState.sheet.insertRule(`
+export const bg =
+  (colorValue: string) => (el: ExpandedElement, index: number) => {
+    const className = `bg-${colorValue.replace("#", "")}`;
+    el.classList?.add(className);
+    styleState.sheet.insertRule(`
   .${className} {
     background-color: ${colorValue};
   }
 `);
-};
+  };
 
 export const bgRed = (el: ExpandedElement, index: number) => {
-	el.classList?.add("bg-red");
-	styleState.sheet.insertRule(`
+  el.classList?.add("bg-red");
+  styleState.sheet.insertRule(`
   .bg-red {
     background-color: red;
   }
 `);
 };
+
+export const cn =
+  <TTagName extends ElementTagName = ElementTagName>(className: string) =>
+  (node: ExpandedElement<TTagName>, index: number) => {
+    node.classList?.add(className);
+  };
