@@ -1,7 +1,8 @@
 import "./style.css";
 import "nuclo";
-import { bg, cn } from "./styling-poc";
+import { bg } from "./styling-poc";
 import { store } from "./store";
+import { cn } from "./cn";
 
 const appRoot = document.querySelector<HTMLDivElement>("#app")!;
 
