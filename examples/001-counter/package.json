@@ -11,9 +11,10 @@
   },
   "devDependencies": {
     "typescript": "~5.9.3",
-    "vite": "^7.1.11"
+    "vite": "^7.1.11",
+    "nuclo": "file:../../packages/nuclo"
   },
   "dependencies": {
-    "nuclo": "file:..\\..\\packages\\nuclo"
+    "nuclo": "file:../../packages/nuclo"
   }
 }

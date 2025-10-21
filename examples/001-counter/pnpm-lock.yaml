@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       nuclo:
-        specifier: file:..\..\packages\nuclo
+        specifier: file:../../packages/nuclo
         version: file:../../packages/nuclo
     devDependencies:
       typescript:

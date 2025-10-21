@@ -20,7 +20,13 @@
     "noUnusedParameters": false,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+
+    /* Paths */
+    "baseUrl": ".",
+    "paths": {
+      "nuclo": ["../../packages/nuclo/src/index.ts"]
+    }
   },
   "include": ["src"]
 }
