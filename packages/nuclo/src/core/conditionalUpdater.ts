@@ -9,54 +9,46 @@ import {
 } from "../utility/conditionalInfo";
 import { runCondition } from "../utility/conditions";
 
-function createElementFromConditionalInfo(conditionalInfo: ConditionalInfo): Element {
-  const element = document.createElement(conditionalInfo.tagName);
-
-  try {
-    applyModifiers(
-      element as ExpandedElement<ElementTagName>,
-      conditionalInfo.modifiers as ReadonlyArray<NodeMod<ElementTagName> | NodeModFn<ElementTagName>>,
-      0
-    );
-  } catch (error) {
-    console.error(`Error applying modifiers in conditional element "${conditionalInfo.tagName}":`, error);
-  }
-  return element;
-}
-
-function createCommentPlaceholder(conditionalInfo: ConditionalInfo): Comment {
-  return document.createComment(`conditional-${conditionalInfo.tagName}-hidden`);
-}
-
-function replaceNodeSafely(oldNode: Node, newNode: Node): void {
-  if (oldNode.parentNode) {
-    try {
-      oldNode.parentNode.replaceChild(newNode, oldNode);
-    } catch (error) {
-      console.error("Error replacing conditional node:", error);
-    }
-  }
-}
-
 function updateConditionalNode(node: Element | Comment): void {
   const conditionalInfo = getConditionalInfo(node);
-  if (!conditionalInfo) {
-    return;
-  }
+  if (!conditionalInfo) return;
 
   const shouldShow = runCondition(conditionalInfo.condition, (error) => {
     console.error("Error evaluating conditional condition:", error);
   });
+  
   const isElement = node.nodeType === Node.ELEMENT_NODE;
+  const needsUpdate = (shouldShow && !isElement) || (!shouldShow && isElement);
+  
+  if (!needsUpdate) return;
 
-  if (shouldShow && !isElement) {
-    const element = createElementFromConditionalInfo(conditionalInfo);
-    storeConditionalInfo(element, conditionalInfo);
-    replaceNodeSafely(node, element);
-  } else if (!shouldShow && isElement) {
-    const comment = createCommentPlaceholder(conditionalInfo);
-    storeConditionalInfo(comment, conditionalInfo);
-    replaceNodeSafely(node, comment);
+  let newNode: Node;
+  
+  if (shouldShow) {
+    // Create element and apply modifiers
+    newNode = document.createElement(conditionalInfo.tagName);
+    try {
+      applyModifiers(
+        newNode as ExpandedElement<ElementTagName>,
+        conditionalInfo.modifiers as ReadonlyArray<NodeMod<ElementTagName> | NodeModFn<ElementTagName>>,
+        0
+      );
+    } catch (error) {
+      console.error(`Error applying modifiers in conditional element "${conditionalInfo.tagName}":`, error);
+    }
+  } else {
+    // Create comment placeholder
+    newNode = document.createComment(`conditional-${conditionalInfo.tagName}-hidden`);
+  }
+
+  // Replace node and store info
+  if (node.parentNode) {
+    try {
+      node.parentNode.replaceChild(newNode, node);
+      storeConditionalInfo(newNode, conditionalInfo);
+    } catch (error) {
+      console.error("Error replacing conditional node:", error);
+    }
   }
 }
 
