@@ -10,6 +10,98 @@ interface StyleSetupConfig {
   size?: BreakpointConfig;
 }
 
+// Strong types for all utility classes
+type ColorName = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'pink' | 'indigo' | 'gray' | 'black' | 'white' | 'transparent' | 'gray-900' | 'gray-600';
+type SpacingValue = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 16 | 20 | 24 | 32 | 40 | 48 | 56 | 64;
+type SizeValue = SpacingValue | 'auto' | 'full' | 'screen' | '1/2' | '1/3' | '2/3' | '1/4' | '3/4';
+type FlexDirection = 'row' | 'row-reverse' | 'col' | 'col-reverse';
+type JustifyContent = 'start' | 'end' | 'center' | 'between' | 'around' | 'evenly';
+type AlignItems = 'start' | 'end' | 'center' | 'baseline' | 'stretch';
+type DisplayValue = 'block' | 'inline' | 'inline-block' | 'flex' | 'inline-flex' | 'grid' | 'hidden';
+type TextAlign = 'left' | 'center' | 'right' | 'justify';
+type FontWeight = 'thin' | 'light' | 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold' | 'black';
+type BorderRadius = 'none' | 'sm' | 'default' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
+
+// Utility class types
+type BackgroundColor = `bg-${ColorName}` | `bg-#${string}`;
+type TextColor = `text-${ColorName}` | `text-#${string}`;
+type Width = `w-${SizeValue}` | `w-${string}`;
+type Height = `h-${SizeValue}` | `h-${string}`;
+type Padding = `p-${SpacingValue}` | `p-${string}`;
+type PaddingTop = `pt-${SpacingValue}` | `pt-${string}`;
+type PaddingRight = `pr-${SpacingValue}` | `pr-${string}`;
+type PaddingBottom = `pb-${SpacingValue}` | `pb-${string}`;
+type PaddingLeft = `pl-${SpacingValue}` | `pl-${string}`;
+type PaddingX = `px-${SpacingValue}` | `px-${string}`;
+type PaddingY = `py-${SpacingValue}` | `py-${string}`;
+type Margin = `m-${SpacingValue}` | `m-${string}`;
+type MarginTop = `mt-${SpacingValue}` | `mt-${string}`;
+type MarginRight = `mr-${SpacingValue}` | `mr-${string}`;
+type MarginBottom = `mb-${SpacingValue}` | `mb-${string}`;
+type MarginLeft = `ml-${SpacingValue}` | `ml-${string}`;
+type MarginX = `mx-${SpacingValue}` | `mx-${string}`;
+type MarginY = `my-${SpacingValue}` | `my-${string}`;
+type Gap = `gap-${SpacingValue}` | `gap-${string}`;
+type TextAlignClass = `text-${TextAlign}`;
+type FontWeightClass = `font-${FontWeight}`;
+type BorderRadiusClass = `rounded-${BorderRadius}`;
+
+// Flexbox classes
+type FlexDirectionClass = `flex-${FlexDirection}`;
+type JustifyContentClass = `justify-${JustifyContent}`;
+type AlignItemsClass = `items-${AlignItems}`;
+
+// Display classes
+type DisplayClass = DisplayValue;
+
+// Combined utility class type
+type UtilityClass = 
+  | BackgroundColor
+  | TextColor
+  | Width
+  | Height
+  | Padding
+  | PaddingTop
+  | PaddingRight
+  | PaddingBottom
+  | PaddingLeft
+  | PaddingX
+  | PaddingY
+  | Margin
+  | MarginTop
+  | MarginRight
+  | MarginBottom
+  | MarginLeft
+  | MarginX
+  | MarginY
+  | Gap
+  | TextAlignClass
+  | FontWeightClass
+  | BorderRadiusClass
+  | FlexDirectionClass
+  | JustifyContentClass
+  | AlignItemsClass
+  | DisplayClass
+  | 'flex'
+  | 'grid'
+  | 'hidden'
+  | 'block'
+  | 'inline'
+  | 'inline-block'
+  | 'inline-flex';
+
+// Responsive class type
+type ResponsiveClasses<T extends BreakpointName> = {
+  [K in T]?: UtilityClass[];
+};
+
+// Main cn function type
+type CNFunction = {
+  (classes: UtilityClass[]): (el: ExpandedElement, index: number) => void;
+  (classes: string): (el: ExpandedElement, index: number) => void;
+  <T extends BreakpointName>(classes: ResponsiveClasses<T>): (el: ExpandedElement, index: number) => void;
+};
+
 // Global style state management
 const styleState = {
   initialized: false,
@@ -56,9 +148,9 @@ const colors = {
   black: '#000000',
   white: '#ffffff',
   transparent: 'transparent',
+  'gray-900': '#111827',
+  'gray-600': '#4b5563',
 } as const;
-
-type ColorName = keyof typeof colors;
 
 // Spacing scale (similar to Tailwind)
 const spacing = {
@@ -82,8 +174,6 @@ const spacing = {
   64: '16rem',
 } as const;
 
-type SpacingValue = keyof typeof spacing;
-
 // Width/Height utilities
 const sizeValues = {
   ...spacing,
@@ -96,8 +186,6 @@ const sizeValues = {
   '1/4': '25%',
   '3/4': '75%',
 } as const;
-
-type SizeValue = keyof typeof sizeValues;
 
 // Flexbox utilities
 const flexDirections = {
@@ -177,7 +265,33 @@ const borderRadius = {
 } as const;
 
 // Main styleSetup function
-export function styleSetup(config: StyleSetupConfig = {}) {
+export function styleSetup(config: StyleSetupConfig = {}): {
+  cn: CNFunction;
+  bg: (color: ColorName | string) => (el: ExpandedElement, index: number) => void;
+  text: (color: ColorName | string) => (el: ExpandedElement, index: number) => void;
+  m: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  mt: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  mr: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  mb: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  ml: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  mx: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  my: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  p: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  pt: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  pr: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  pb: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  pl: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  px: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  py: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  w: (value: SizeValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  h: (value: SizeValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  flex: (direction?: FlexDirection, justify?: JustifyContent, align?: AlignItems, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  d: (value: DisplayValue, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  textAlign: (value: TextAlign, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  fontWeight: (value: FontWeight, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  rounded: (value: BorderRadius, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+  gap: (value: SpacingValue | string, breakpoint?: BreakpointName) => (el: ExpandedElement, index: number) => void;
+} {
   const breakpoints = config.size || {};
 
   // Create responsive class name function
@@ -357,9 +471,9 @@ export function styleSetup(config: StyleSetupConfig = {}) {
   }
 
   // Main cn function that handles responsive classes and generates CSS
-  function cn(
-    classes: string | Record<BreakpointName, string[]> | string[]
-  ): (el: ExpandedElement, index: number) => void {
+  const cn: CNFunction = (
+    classes: UtilityClass[] | string | ResponsiveClasses<BreakpointName>
+  ): (el: ExpandedElement, index: number) => void => {
     return (el: ExpandedElement, index: number) => {
       if (typeof classes === 'string') {
         el.classList?.add(classes);
@@ -379,14 +493,14 @@ export function styleSetup(config: StyleSetupConfig = {}) {
       Object.entries(classes).forEach(([breakpoint, classList]) => {
         if (breakpoint in breakpoints) {
           // Apply classes with breakpoint prefix and generate responsive CSS
-          classList.forEach(cls => {
+          classList?.forEach(cls => {
             const responsiveClass = `${cls}-${breakpoint}`;
             el.classList?.add(responsiveClass);
             generateCSSForClass(cls, breakpoint);
           });
         } else {
           // Apply classes directly
-          classList.forEach(cls => {
+          classList?.forEach(cls => {
             el.classList?.add(cls);
             generateCSSForClass(cls);
           });
@@ -683,7 +797,7 @@ export function styleSetup(config: StyleSetupConfig = {}) {
     rounded: createBorderRadius,
     // Gap utility
     gap: (value: SpacingValue | string, breakpoint?: BreakpointName) => createGap(value, breakpoint),
-  };
+  } as const;
 }
 
 // Export individual utilities for backward compatibility

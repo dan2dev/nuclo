@@ -10,6 +10,14 @@ const style = styleSetup({
   size: {
     sm: "min-width: 600px and max-width: 1024px",
     lg: "min-width: 1025px",
+  },
+  colors: {
+    blue: "#007bff",
+    red: "#dc3545",
+    green: "#28a745",
+    gray: "#6c757d",
+    black: "#000000",
+    white: "#ffffff",
   }
 });
 
