@@ -1,1 +1,1 @@
-import "./simple-media-query";
+import "./enhanced-example";
