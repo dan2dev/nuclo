@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Query Test</title>
+    <style>
+        /* Test responsive classes */
+        .test-container {
+            border: 2px solid #000;
+            padding: 20px;
+            margin: 20px;
+        }
+        
+        /* Small screens: flex column, blue background */
+        @media (min-width: 640px) {
+            .flex-sm { display: flex; }
+            .flex-col-sm { flex-direction: column; }
+            .bg-primary-500-sm { background-color: #3b82f6; }
+            .w-full-sm { width: 100%; }
+            .h-full-sm { height: 100%; }
+            .p-4-sm { padding: 1rem; }
+        }
+        
+        /* Large screens: flex row, gray background */
+        @media (min-width: 1024px) {
+            .flex-lg { display: flex; }
+            .flex-row-lg { flex-direction: row; }
+            .bg-secondary-500-lg { background-color: #64748b; }
+            .w-500px-lg { width: 500px; }
+            .h-500px-lg { height: 500px; }
+            .p-6-lg { padding: 1.5rem; }
+        }
+        
+        /* Base styles */
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .flex-row { flex-direction: row; }
+        .bg-primary-500 { background-color: #3b82f6; }
+        .bg-secondary-500 { background-color: #64748b; }
+        .w-full { width: 100%; }
+        .w-500px { width: 500px; }
+        .h-full { height: 100%; }
+        .h-500px { height: 500px; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .text-white { color: white; }
+        .text-center { text-align: center; }
+        .font-bold { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Media Query Test</h1>
+    <p>Resize your browser window to see the responsive behavior:</p>
+    <ul>
+        <li><strong>Small screens (&lt; 640px):</strong> Default styles (blue background, column layout)</li>
+        <li><strong>Medium screens (640px - 1024px):</strong> Blue background, column layout</li>
+        <li><strong>Large screens (&gt; 1024px):</strong> Gray background, row layout</li>
+    </ul>
+    
+    <div class="test-container">
+        <h2>Test Container 1 - Using responsive classes</h2>
+        <div class="flex-sm flex-col-sm bg-primary-500-sm w-full-sm h-full-sm p-4-sm flex-lg flex-row-lg bg-secondary-500-lg w-500px-lg h-500px-lg p-6-lg">
+            <div class="text-white text-center font-bold">
+                This container should change layout and colors based on screen size
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-container">
+        <h2>Test Container 2 - Using base classes only</h2>
+        <div class="flex flex-col bg-primary-500 w-full h-full p-4">
+            <div class="text-white text-center font-bold">
+                This container uses base classes (no responsive behavior)
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Log current screen size
+        function logScreenSize() {
+            const width = window.innerWidth;
+            let size = 'small';
+            if (width >= 1024) size = 'large';
+            else if (width >= 640) size = 'medium';
+            
+            console.log(`Screen size: ${width}px (${size})`);
+        }
+        
+        logScreenSize();
+        window.addEventListener('resize', logScreenSize);
+    </script>
+</body>
+</html>
