@@ -1,3 +1,11 @@
+/**
+ * When Builder for nuclo
+ * 
+ * This module provides the when() function for conditional rendering with
+ * chaining support. It allows you to create complex conditional logic
+ * with multiple conditions and an else clause.
+ */
+
 import { isBrowser } from "../utility/environment";
 import { applyNodeModifier } from "../core/modifierProcessor";
 import { createMarkerPair, clearBetweenMarkers, insertNodesBefore } from "../utility/dom";
@@ -5,15 +13,30 @@ import { resolveCondition } from "../utility/conditions";
 import { modifierProbeCache } from "../utility/modifierPredicates";
 import { isFunction } from "../utility/typeGuards";
 
+/**
+ * A condition that can be evaluated for when() rendering.
+ * Can be a boolean value or a function that returns a boolean.
+ */
 type WhenCondition = boolean | (() => boolean);
+
+/**
+ * Content that can be rendered in a when() branch.
+ * Can be static values, DOM nodes, or functions.
+ */
 type WhenContent<TTagName extends ElementTagName = ElementTagName> = 
   NodeMod<TTagName> | NodeModFn<TTagName>;
 
+/**
+ * A group of content with an associated condition.
+ */
 interface WhenGroup<TTagName extends ElementTagName = ElementTagName> {
   condition: WhenCondition;
   content: WhenContent<TTagName>[];
 }
 
+/**
+ * Runtime information for a when() conditional renderer.
+ */
 interface WhenRuntime<TTagName extends ElementTagName = ElementTagName> {
   startMarker: Comment;
   endMarker: Comment;
@@ -31,79 +54,124 @@ interface WhenRuntime<TTagName extends ElementTagName = ElementTagName> {
   update(): void;
 }
 
+// Global set to track all active when runtimes
 const activeWhenRuntimes = new Set<WhenRuntime<any>>();
 
+/**
+ * Renders the content for a when() conditional renderer.
+ * 
+ * This function evaluates all conditions in order and renders the content
+ * for the first matching condition, or the else content if no conditions match.
+ * 
+ * @param runtime - The when runtime to render
+ */
 function renderWhenContent<TTagName extends ElementTagName>(
   runtime: WhenRuntime<TTagName>
 ): void {
   const { groups, elseContent, host, index, endMarker } = runtime;
 
-  let newActive: number | -1 | null = null;
+  // Find the first matching condition
+  let newActiveIndex: number | -1 | null = null;
   for (let i = 0; i < groups.length; i++) {
     if (resolveCondition(groups[i].condition)) {
-      newActive = i;
+      newActiveIndex = i;
       break;
     }
   }
-  if (newActive === null && elseContent.length) {
-    newActive = -1;
+  
+  // If no condition matched and there's else content, use else
+  if (newActiveIndex === null && elseContent.length > 0) {
+    newActiveIndex = -1;
   }
 
-  if (newActive === runtime.activeIndex) return;
+  // If the active branch hasn't changed, don't re-render
+  if (newActiveIndex === runtime.activeIndex) return;
 
+  // Clear existing content between markers
   clearBetweenMarkers(runtime.startMarker, runtime.endMarker);
-  runtime.activeIndex = newActive;
+  runtime.activeIndex = newActiveIndex;
 
-  if (newActive === null) return;
+  // If no branch is active, we're done
+  if (newActiveIndex === null) return;
 
-  const nodes: Node[] = [];
+  const nodesToInsert: Node[] = [];
 
-  const renderItems = (items: ReadonlyArray<WhenContent<TTagName>>): void => {
-    for (const item of items) {
-      if (isFunction(item)) {
-        if ((item as Function).length === 0) {
-          modifierProbeCache.delete(item as Function);
-          const node = applyNodeModifier(host, item, index);
-          if (node) nodes.push(node);
-          continue;
-        }
+  // Render the content for the active branch
+  if (newActiveIndex >= 0) {
+    renderItemsToNodes(groups[newActiveIndex].content, host, index, endMarker, nodesToInsert);
+  } else if (newActiveIndex === -1) {
+    renderItemsToNodes(elseContent, host, index, endMarker, nodesToInsert);
+  }
 
-        const realHost = host as unknown as Element & {
-          appendChild: (n: Node) => Node;
-          insertBefore: (n: Node, ref: Node | null) => Node;
-        };
-        const originalAppend = realHost.appendChild;
-        (realHost as unknown as Record<string, Function>).appendChild = function (n: Node) {
-          return (realHost as unknown as Record<string, Function>).insertBefore(
-            n,
-            endMarker
-          ) as Node;
-        };
-        try {
-          const maybeNode = applyNodeModifier(host, item, index);
-          if (maybeNode && !maybeNode.parentNode) {
-            nodes.push(maybeNode);
-          }
-        } finally {
-          (realHost as unknown as Record<string, Function>).appendChild = originalAppend;
-        }
+  // Insert all rendered nodes before the end marker
+  insertNodesBefore(nodesToInsert, endMarker);
+}
+
+/**
+ * Renders a list of items to DOM nodes.
+ * 
+ * This helper function processes each item in the content array and converts
+ * them to DOM nodes, handling both static content and reactive functions.
+ * 
+ * @param items - Array of content items to render
+ * @param host - The host element
+ * @param index - The current index
+ * @param endMarker - The end marker for insertion
+ * @param nodesToInsert - Array to collect rendered nodes
+ */
+function renderItemsToNodes<TTagName extends ElementTagName>(
+  items: ReadonlyArray<WhenContent<TTagName>>,
+  host: ExpandedElement<TTagName>,
+  index: number,
+  endMarker: Comment,
+  nodesToInsert: Node[]
+): void {
+  for (const item of items) {
+    if (isFunction(item)) {
+      // Handle reactive functions (zero parameters)
+      if ((item as Function).length === 0) {
+        modifierProbeCache.delete(item as Function);
+        const node = applyNodeModifier(host, item, index);
+        if (node) nodesToInsert.push(node);
         continue;
       }
 
-      const node = applyNodeModifier(host, item, index);
-      if (node) nodes.push(node);
+      // Handle non-reactive functions with complex DOM manipulation
+      const realHost = host as unknown as Element & {
+        appendChild: (n: Node) => Node;
+        insertBefore: (n: Node, ref: Node | null) => Node;
+      };
+      const originalAppend = realHost.appendChild;
+      
+      // Temporarily override appendChild to insert before end marker
+      (realHost as unknown as Record<string, Function>).appendChild = function (n: Node) {
+        return (realHost as unknown as Record<string, Function>).insertBefore(
+          n,
+          endMarker
+        ) as Node;
+      };
+      
+      try {
+        const maybeNode = applyNodeModifier(host, item, index);
+        if (maybeNode && !maybeNode.parentNode) {
+          nodesToInsert.push(maybeNode);
+        }
+      } finally {
+        // Restore original appendChild
+        (realHost as unknown as Record<string, Function>).appendChild = originalAppend;
+      }
+      continue;
     }
-  };
 
-  if (newActive >= 0) {
-    renderItems(groups[newActive].content);
-  } else if (newActive === -1) {
-    renderItems(elseContent);
+    // Handle static content
+    const node = applyNodeModifier(host, item, index);
+    if (node) nodesToInsert.push(node);
   }
-
-  insertNodesBefore(nodes, endMarker);
 }
 
+/**
+ * Implementation of the when builder that supports chaining.
+ */
 class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
   private groups: WhenGroup<TTagName>[] = [];
   private elseContent: WhenContent<TTagName>[] = [];
@@ -112,21 +180,44 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     this.groups.push({ condition: initialCondition, content });
   }
 
+  /**
+   * Adds another condition to the when chain.
+   * 
+   * @param condition - The condition to check
+   * @param content - Content to render if condition is true
+   * @returns The builder for chaining
+   */
   when(condition: WhenCondition, ...content: WhenContent<TTagName>[]): WhenBuilderImpl<TTagName> {
     this.groups.push({ condition, content });
     return this;
   }
 
+  /**
+   * Sets the else content for when no conditions match.
+   * 
+   * @param content - Content to render if no conditions match
+   * @returns The builder for chaining
+   */
   else(...content: WhenContent<TTagName>[]): WhenBuilderImpl<TTagName> {
     this.elseContent = content;
     return this;
   }
 
+  /**
+   * Renders the when conditional to the DOM.
+   * 
+   * @param host - The host element
+   * @param index - The current index
+   * @returns The start marker node
+   */
   render(host: ExpandedElement<TTagName>, index: number): Node | null {
+    // Server-side rendering support
     if (!isBrowser) return document.createComment("when-ssr");
 
+    // Create marker pair for tracking the when block
     const { start: startMarker, end: endMarker } = createMarkerPair("when");
 
+    // Create runtime for managing the when block
     const runtime: WhenRuntime<TTagName> = {
       startMarker,
       endMarker,
@@ -138,18 +229,27 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
       update: () => renderWhenContent(runtime),
     };
 
+    // Register runtime for updates
     activeWhenRuntimes.add(runtime);
 
+    // Insert markers into DOM
     const parent = host as unknown as Node & ParentNode;
     parent.appendChild(startMarker);
     parent.appendChild(endMarker);
 
+    // Initial render
     renderWhenContent(runtime);
 
     return startMarker;
   }
 }
 
+/**
+ * Creates a when builder function with chaining support.
+ * 
+ * @param builder - The builder implementation
+ * @returns A function with when() and else() methods
+ */
 function createWhenBuilderFunction<TTagName extends ElementTagName>(
   builder: WhenBuilderImpl<TTagName>
 ): WhenBuilder<TTagName> {
@@ -169,20 +269,53 @@ function createWhenBuilderFunction<TTagName extends ElementTagName>(
   }) as unknown as WhenBuilder<TTagName>;
 }
 
+/**
+ * Updates all active when runtimes.
+ * 
+ * This function is called by update() to refresh all when() conditional renderers.
+ */
 export function updateWhenRuntimes(): void {
   activeWhenRuntimes.forEach((runtime) => {
     try {
       runtime.update();
     } catch (error) {
+      // Remove failed runtimes to prevent memory leaks
       activeWhenRuntimes.delete(runtime);
     }
   });
 }
 
+/**
+ * Clears all when runtimes.
+ * 
+ * This function is used for cleanup and testing.
+ */
 export function clearWhenRuntimes(): void {
   activeWhenRuntimes.clear();
 }
 
+/**
+ * Creates a conditional renderer with chaining support.
+ * 
+ * The when() function creates a conditional renderer that can be chained
+ * with additional conditions and an else clause. The first matching condition
+ * will be rendered.
+ * 
+ * @param condition - The initial condition to check
+ * @param content - Content to render if condition is true
+ * @returns A when builder with chaining support
+ * 
+ * @example
+ * ```ts
+ * when(() => user.isAdmin,
+ *   div('Admin Panel')
+ * ).when(() => user.isLoggedIn,
+ *   div('User Dashboard')
+ * ).else(
+ *   div('Please log in')
+ * )
+ * ```
+ */
 export function when<TTagName extends ElementTagName = ElementTagName>(
   condition: WhenCondition,
   ...content: WhenContent<TTagName>[]

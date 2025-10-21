@@ -1,22 +1,39 @@
 /**
- * Typed event listener helper.
- *
- * Usage:
- *   button(
- *     "Click",
- *     on("click", (e) => {
- *       // e is correctly typed (e.g. MouseEvent for "click")
- *     })
- *   )
- *
- * Design notes:
- * - Returns a NodeModFn so it can be used like any other modifier.
- * - Produces no child node (returns void in the modifier body).
- * - Provides strong typing of the event object based on the DOM event name.
+ * Event Handler for nuclo
+ * 
+ * This module provides the on() function for attaching event listeners to elements
+ * with full TypeScript support for event types.
  */
 
 /**
- * Overload for standard HTMLElement events (strongly typed via lib.dom.d.ts)
+ * Creates an event listener modifier for HTML elements.
+ * 
+ * This function provides strongly-typed event handling for DOM elements.
+ * It returns a modifier that can be used with any tag builder.
+ * 
+ * @param type - The event type (e.g., 'click', 'input', 'change')
+ * @param listener - The event listener function
+ * @param options - Optional event listener options
+ * @returns A modifier function that attaches the event listener
+ * 
+ * @example
+ * ```ts
+ * button('Click me',
+ *   on('click', (e) => {
+ *     console.log('Button clicked!', e.target);
+ *   })
+ * )
+ * 
+ * input(
+ *   on('input', (e) => {
+ *     console.log('Input value:', e.target.value);
+ *   })
+ * )
+ * ```
+ */
+
+/**
+ * Overload for standard HTMLElement events with full type safety.
  */
 export function on<
   K extends keyof HTMLElementEventMap,
@@ -28,9 +45,14 @@ export function on<
 ): NodeModFn<TTagName>;
 
 /**
- * Fallback / custom event overload (arbitrary event names or custom event types).
- * Specify a custom event type with the E generic if needed:
- *   on<"my-event", CustomEvent<MyDetail>>("my-event", e => { ... })
+ * Overload for custom events or arbitrary event names.
+ * 
+ * @example
+ * ```ts
+ * on<"my-event", CustomEvent<MyDetail>>("my-event", e => {
+ *   console.log(e.detail);
+ * })
+ * ```
  */
 export function on<
   K extends string,
@@ -48,28 +70,39 @@ export function on(
   options?: boolean | AddEventListenerOptions
 ): NodeModFn<any> {
   return (parent: ExpandedElement<any>) => {
-    const el = parent as unknown as HTMLElement | null | undefined;
-    if (!el || typeof el.addEventListener !== "function") {
+    const element = parent as unknown as HTMLElement | null | undefined;
+    
+    // Validate that the element supports addEventListener
+    if (!element || typeof element.addEventListener !== "function") {
       return;
     }
 
-    const wrapped = (ev: Event) => {
+    // Wrap the listener with error handling
+    const wrappedListener = (ev: Event) => {
       try {
-        listener.call(el, ev);
+        listener.call(element, ev);
       } catch (error) {
+        // Log errors to console if available
         if (typeof console !== "undefined" && console.error) {
           console.error(`[nuclo:on] Error in '${type}' listener:`, error);
         }
       }
     };
 
-    el.addEventListener(type, wrapped as EventListener, options);
+    // Attach the event listener
+    element.addEventListener(type, wrappedListener as EventListener, options);
   };
 }
 
 /**
- * (Optional) Helper to detect an on()-produced modifier (placeholder for future use).
+ * Checks if a function is an on() modifier.
+ * 
+ * This is a utility function for detecting event listener modifiers.
+ * Currently used internally but may be useful for debugging.
+ * 
+ * @param fn - The function to check
+ * @returns True if the function is an on() modifier
  */
 export function isOnModifier(fn: unknown): boolean {
-  return typeof fn === "function" && Object.prototype.hasOwnProperty.call(fn, "__vcOn");
+  return typeof fn === "function" && Object.prototype.hasOwnProperty.call(fn, "__nucloOn");
 }

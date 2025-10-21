@@ -1,32 +1,27 @@
 /**
- * Shared helper for applying an array of modifiers to an element.
- * Consolidates the previously duplicated logic in several modules:
- *  - conditionalRenderer
- *  - conditionalUpdater
- *  - elementFactory
- *
- * Goal: single, optimized, well‑typed implementation.
- *
- * A "modifier" can:
- *  - Return (or be) primitives → appended as text
- *  - Return (or be) Node → appended (if not already a child)
- *  - Return (or be) attribute objects → merged into element
- *  - Be a NodeModFn invoked with (parent, index)
- *  - Be a zero‑arg function producing reactive text (handled upstream in applyNodeModifier)
- *
- * Indexing:
- *  - startIndex allows callers to continue an index sequence if needed.
- *  - Every successfully rendered child Node increments the local index.
+ * Apply Modifiers Utility for nuclo
+ * 
+ * This module provides utilities for applying arrays of modifiers to DOM elements.
+ * It consolidates the logic for processing modifiers across different parts of
+ * the nuclo system.
  */
+
 import { applyNodeModifier } from "../core/modifierProcessor";
 
+/**
+ * A modifier that can be applied to a DOM element.
+ * Can be a static value, a function that returns a value, or a function that modifies the element.
+ */
 export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
   | NodeMod<TTagName>
   | NodeModFn<TTagName>;
 
+/**
+ * Result of applying modifiers to an element.
+ */
 export interface ApplyModifiersResult<TTagName extends ElementTagName> {
   /**
-   * The element passed in (for fluent patterns if desired).
+   * The element that modifiers were applied to.
    */
   element: ExpandedElement<TTagName>;
   /**
@@ -40,50 +35,75 @@ export interface ApplyModifiersResult<TTagName extends ElementTagName> {
 }
 
 /**
- * Applies modifiers to an element, appending newly produced Nodes while avoiding
- * duplicate DOM insertions (i.e. only appends if parentNode differs).
- *
- * Returns meta information that callers can use for continuation indexing.
+ * Applies an array of modifiers to an element.
+ * 
+ * This function processes each modifier in sequence and appends any resulting
+ * DOM nodes to the element. It avoids duplicate DOM insertions by checking
+ * if nodes are already in the correct parent.
+ * 
+ * A "modifier" can be:
+ * - Primitives (strings, numbers) → appended as text nodes
+ * - DOM Nodes → appended directly
+ * - Attribute objects → applied to element
+ * - Functions → called and result processed
+ * - Zero-arg functions → create reactive text content
+ * 
+ * @param element - The element to apply modifiers to
+ * @param modifiers - Array of modifiers to apply
+ * @param startIndex - Starting index for modifier processing
+ * @returns Result with element, next index, and appended count
  */
 export function applyModifiers<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
   modifiers: ReadonlyArray<NodeModifier<TTagName>>,
   startIndex = 0
 ): ApplyModifiersResult<TTagName> {
+  // Handle empty modifiers array
   if (!modifiers || modifiers.length === 0) {
     return { element, nextIndex: startIndex, appended: 0 };
   }
 
-  let localIndex = startIndex;
-  let appended = 0;
+  let currentIndex = startIndex;
+  let appendedCount = 0;
   const parentNode = element as unknown as Node & ParentNode;
 
+  // Process each modifier in sequence
   for (let i = 0; i < modifiers.length; i += 1) {
-    const mod = modifiers[i];
-    // Fast null/undefined skip
-    if (mod == null) continue;
+    const modifier = modifiers[i];
+    
+    // Skip null/undefined modifiers
+    if (modifier == null) continue;
 
-    const produced = applyNodeModifier(element, mod, localIndex);
-    if (!produced) continue;
+    // Apply the modifier and get the resulting node
+    const producedNode = applyNodeModifier(element, modifier, currentIndex);
+    if (!producedNode) continue;
 
-    // Only append if the node isn't already where we expect
-    if (produced.parentNode !== parentNode) {
-      parentNode.appendChild(produced);
+    // Only append if the node isn't already in the correct parent
+    if (producedNode.parentNode !== parentNode) {
+      parentNode.appendChild(producedNode);
     }
-    localIndex += 1;
-    appended += 1;
+    
+    currentIndex += 1;
+    appendedCount += 1;
   }
 
   return {
     element,
-    nextIndex: localIndex,
-    appended
+    nextIndex: currentIndex,
+    appended: appendedCount
   };
 }
 
 /**
- * Convenience helper: apply modifiers and return the element (fluent style).
- * Discards meta information.
+ * Convenience helper that applies modifiers and returns the element.
+ * 
+ * This is a fluent-style helper that discards the meta information
+ * returned by applyModifiers.
+ * 
+ * @param element - The element to apply modifiers to
+ * @param modifiers - Array of modifiers to apply
+ * @param startIndex - Starting index for modifier processing
+ * @returns The element with modifiers applied
  */
 export function applyModifiersAndReturn<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,

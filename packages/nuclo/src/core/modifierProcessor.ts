@@ -1,3 +1,10 @@
+/**
+ * Modifier Processor for nuclo
+ * 
+ * This module handles the processing of modifiers (content, attributes, event handlers)
+ * that can be passed to tag builders. It supports both static values and reactive functions.
+ */
+
 import { applyAttributes } from "./attributeManager";
 import { createReactiveTextNode } from "./reactive";
 import { logError } from "../utility/errorHandler";
@@ -16,6 +23,14 @@ export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
 /**
  * Applies a modifier to a DOM element and returns the resulting node.
  * 
+ * This is the core function that processes all modifiers passed to tag builders.
+ * It handles:
+ * - Static values (strings, numbers, etc.) → text nodes
+ * - DOM nodes → append directly
+ * - Attribute objects → apply to element
+ * - Reactive functions (no params) → reactive text nodes
+ * - Non-reactive functions → call and process result
+ * 
  * @param parent - The parent element to apply the modifier to
  * @param modifier - The modifier to apply (can be a value, function, or object)
  * @param index - The index of this modifier for debugging purposes
@@ -28,17 +43,22 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 ): Node | null {
   if (modifier == null) return null;
 
-  // Handle function modifiers
+  // Handle function modifiers (both reactive and non-reactive)
   if (isFunction(modifier)) {
     return handleFunctionModifier(parent, modifier, index);
   }
 
-  // Handle non-function modifiers
+  // Handle static (non-function) modifiers
   return handleStaticModifier(parent, modifier, index);
 }
 
 /**
  * Handles function-based modifiers (both reactive and non-reactive).
+ * 
+ * @param parent - The parent element
+ * @param modifier - The function modifier
+ * @param index - The modifier index
+ * @returns The resulting DOM node or null
  */
 function handleFunctionModifier<TTagName extends ElementTagName>(
   parent: ExpandedElement<TTagName>,
@@ -58,13 +78,17 @@ function handleFunctionModifier<TTagName extends ElementTagName>(
 /**
  * Handles reactive functions that return primitive values.
  * These functions are called to create reactive text content.
+ * 
+ * @param fn - The reactive function
+ * @param index - The modifier index
+ * @returns A reactive text node or null
  */
 function handleReactiveFunction(
   fn: () => unknown,
   index: number,
 ): Node | null {
   try {
-    // Check cache for this function
+    // Check cache for this function to avoid repeated evaluation
     let record = modifierProbeCache.get(fn);
     if (!record) {
       const value = fn();
@@ -95,6 +119,11 @@ function handleReactiveFunction(
 
 /**
  * Handles static (non-function) modifiers.
+ * 
+ * @param parent - The parent element
+ * @param modifier - The static modifier
+ * @param index - The modifier index
+ * @returns The resulting DOM node or null
  */
 function handleStaticModifier<TTagName extends ElementTagName>(
   parent: ExpandedElement<TTagName>,
@@ -106,6 +135,11 @@ function handleStaticModifier<TTagName extends ElementTagName>(
 
 /**
  * Processes the result of a modifier and returns the appropriate DOM node.
+ * 
+ * @param parent - The parent element
+ * @param result - The modifier result
+ * @param index - The modifier index
+ * @returns The resulting DOM node or null
  */
 function processModifierResult<TTagName extends ElementTagName>(
   parent: ExpandedElement<TTagName>,
@@ -114,17 +148,17 @@ function processModifierResult<TTagName extends ElementTagName>(
 ): Node | null {
   if (result == null) return null;
 
-  // Handle primitive values (strings, numbers, etc.)
+  // Handle primitive values (strings, numbers, etc.) → create text nodes
   if (isPrimitive(result)) {
     return createTextFragment(index, String(result));
   }
 
-  // Handle DOM nodes
+  // Handle DOM nodes → return directly
   if (isNode(result)) {
     return result;
   }
 
-  // Handle attribute objects
+  // Handle attribute objects → apply to element
   if (isObject(result)) {
     applyAttributes(parent, result as ExpandedElementAttributes<TTagName>);
   }
@@ -135,6 +169,11 @@ function processModifierResult<TTagName extends ElementTagName>(
 /**
  * Creates a document fragment with a comment and text node for debugging.
  * Used for text content that needs to be tracked in the DOM.
+ * 
+ * @param index - The modifier index for debugging
+ * @param textContent - The text content (static string or reactive function)
+ * @param initialValue - Optional initial value for reactive functions
+ * @returns A document fragment with comment and text node
  */
 function createTextFragment(
   index: number,
