@@ -21,12 +21,18 @@ const style = styleSetup({
   }
 });
 
+const someStyle =   style.cn({
+  "sm": ["flex", "flex-col", "bg-blue", "w-full", "h-full", "p-4"],
+  "lg": ["flex", "flex-row", "bg-red", "w-500px", "h-500px", "p-6"],
+});
+
 const app = div(
   // Main container with responsive layout
-  style.cn({
-    "sm": ["flex", "flex-col", "bg-blue", "w-full", "h-full", "p-4"],
-    "lg": ["flex", "flex-row", "bg-red", "w-500px", "h-500px", "p-6"],
-  }),
+  // style.cn({
+  //   "sm": ["flex", "flex-col", "bg-blue", "w-full", "h-full", "p-4"],
+  //   "lg": ["flex", "flex-row", "bg-red", "w-500px", "h-500px", "p-6"],
+  // }),
+  someStyle,
   
   // Header section
   div(
@@ -43,7 +49,8 @@ const app = div(
   
   // Counter display
   div(
-    style.cn(["flex", "flex-row", "items-center", "justify-center", "p-6",  "rounded-xl", "m-2"]),
+    someStyle,
+    // style.cn(["flex", "flex-row", "items-center", "justify-center", "p-6",  "rounded-xl", "m-2"]),
     h2(
       style.cn(["text-blue", "font-extrabold", "text-center"]),
       "Counter: ",
