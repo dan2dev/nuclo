@@ -184,7 +184,7 @@ describe('Conditional Rendering (when)', () => {
     });
 
     it('should handle complex condition changes', () => {
-      let user = { role: 'guest' };
+      const user = { role: 'guest' };
       
       const whenFn = when(() => user.role === 'admin', 'Admin panel')
         .when(() => user.role === 'user', 'User dashboard')

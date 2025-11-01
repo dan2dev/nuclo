@@ -77,7 +77,7 @@ describe('Example Integration', () => {
   });
 
   it('should handle button clicks and style updates', () => {
-    let data = { color: "green" };
+    const data = { color: "green" };
 
     const app = div(
       button(

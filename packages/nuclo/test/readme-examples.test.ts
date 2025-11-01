@@ -166,7 +166,7 @@ describe('README.md examples', () => {
     it('should handle loading, error, and success states', () => {
       type State = { status: 'idle' | 'loading' | 'error'; data: any[]; error?: string };
 
-      let state: State = { status: 'idle', data: [] };
+      const state: State = { status: 'idle', data: [] };
 
       const app = div(
         button('Load Data', on('click', () => {
@@ -209,7 +209,7 @@ describe('README.md examples', () => {
   describe('API examples', () => {
     it('should support reactive attributes', () => {
       let isActive = false;
-      let isValid = true;
+      const isValid = true;
       let isVisible = true;
 
       const app = div({
