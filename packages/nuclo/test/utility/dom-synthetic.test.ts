@@ -39,7 +39,7 @@ describe('synthetic DOM failure / defensive branch coverage', () => {
       existing.textContent = 'existing';
       host.appendChild(existing);
 
-      let appendedCountBefore = host.childNodes.length;
+      const appendedCountBefore = host.childNodes.length;
       const mods: Array<NodeModFn<'div'>> = [
         (_parent: any) => existing // already has parent -> should skip append branch (length > 0 so treated as NodeModFn)
       ];
