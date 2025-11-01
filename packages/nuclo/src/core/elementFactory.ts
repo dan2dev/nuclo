@@ -1,5 +1,5 @@
 import { createConditionalElement, processConditionalModifiers } from "./conditionalRenderer";
-import { applyModifiers, NodeModifier } from "../internal/applyModifiers";
+import { applyModifiers, type NodeModifier } from "../internal/applyModifiers";
 
 export function createElementFactory<TTagName extends ElementTagName>(
   tagName: TTagName,

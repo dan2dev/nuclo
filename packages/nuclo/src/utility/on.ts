@@ -71,5 +71,5 @@ export function on(
  * (Optional) Helper to detect an on()-produced modifier (placeholder for future use).
  */
 export function isOnModifier(fn: unknown): boolean {
-  return typeof fn === "function" && Object.prototype.hasOwnProperty.call(fn, "__vcOn");
+  return typeof fn === "function" && Object.prototype.hasOwnProperty.call(fn, "__nucloOn");
 }

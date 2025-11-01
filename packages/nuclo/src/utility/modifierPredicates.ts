@@ -1,6 +1,5 @@
 import { isFunction, isNode, isObject } from "./typeGuards";
 
-type AnyModifier = unknown;
 type BooleanCondition = () => boolean;
 
 const modifierProbeCache = new WeakMap<Function, { value: unknown; error: boolean }>();
@@ -29,8 +28,8 @@ function isBooleanFunction(fn: Function): fn is BooleanCondition {
 }
 
 export function isConditionalModifier(
-  modifier: AnyModifier,
-  allModifiers: AnyModifier[],
+  modifier: unknown,
+  allModifiers: unknown[],
   currentIndex: number
 ): modifier is BooleanCondition {
   if (
@@ -52,7 +51,7 @@ export function isConditionalModifier(
   return hasAttributesOrElements;
 }
 
-export function findConditionalModifier(modifiers: AnyModifier[]): number {
+export function findConditionalModifier(modifiers: unknown[]): number {
   for (let i = 0; i < modifiers.length; i += 1) {
     if (isConditionalModifier(modifiers[i], modifiers, i)) {
       return i;

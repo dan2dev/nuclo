@@ -2,7 +2,7 @@ import { findConditionalModifier } from "./modifierProcessor";
 import { isBrowser } from "../utility/environment";
 import { storeConditionalInfo } from "../utility/conditionalInfo";
 import type { ConditionalInfo } from "../utility/conditionalInfo";
-import { applyModifiers, NodeModifier } from "../internal/applyModifiers";
+import { applyModifiers, type NodeModifier } from "../internal/applyModifiers";
 
 export function createConditionalElement<TTagName extends ElementTagName>(
   tagName: TTagName,
@@ -17,14 +17,16 @@ export function createConditionalElement<TTagName extends ElementTagName>(
       : (document.createComment(`conditional-${tagName}-ssr`) as unknown as ExpandedElement<TTagName>);
   }
 
+  const conditionalInfo: ConditionalInfo<TTagName> = { condition, tagName, modifiers };
+
   if (passed) {
     const el = createElementWithModifiers(tagName, modifiers);
-    storeConditionalInfo(el as Node, { condition, tagName, modifiers } as ConditionalInfo);
+    storeConditionalInfo(el as Node, conditionalInfo);
     return el;
   }
 
   const comment = document.createComment(`conditional-${tagName}-hidden`);
-  storeConditionalInfo(comment as Node, { condition, tagName, modifiers } as ConditionalInfo);
+  storeConditionalInfo(comment as Node, conditionalInfo);
   return comment as unknown as ExpandedElement<TTagName>;
 }
 

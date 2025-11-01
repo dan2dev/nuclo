@@ -7,11 +7,11 @@ export function runCondition(
   try {
     return condition();
   } catch (error) {
-    if (!onError) {
-      throw error;
+    if (onError) {
+      onError(error);
+      return false;
     }
-    onError(error);
-    return false;
+    throw error;
   }
 }
 
@@ -19,7 +19,5 @@ export function resolveCondition(
   value: ConditionInput,
   onError?: (error: unknown) => void
 ): boolean {
-  return typeof value === "function"
-    ? runCondition(value as () => boolean, onError)
-    : Boolean(value);
+  return typeof value === "function" ? runCondition(value, onError) : Boolean(value);
 }

@@ -41,7 +41,7 @@ function registerHtmlTag(target: Record<string, unknown>, tagName: ElementTagNam
 }
 
 export function registerGlobalTagBuilders(target: Record<string, unknown> = globalThis): void {
-  const marker = "__vc_tags_registered";
+  const marker = "__nuclo_tags_registered";
   if ((target as Record<string, boolean>)[marker]) return;
 
   HTML_TAGS.forEach((tagName) => registerHtmlTag(target, tagName));
