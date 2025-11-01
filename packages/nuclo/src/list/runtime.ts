@@ -3,22 +3,24 @@ import { arraysEqual } from "../utility/arrayUtils";
 import { resolveRenderable } from "../utility/renderables";
 import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsProvider } from "./types";
 
-const activeListRuntimes = new Set<ListRuntime<any>>();
+const activeListRuntimes = new Set<ListRuntime<unknown>>();
 
-function renderItem<TItem>(
-  runtime: ListRuntime<TItem>,
+function renderItem<TItem, TTagName extends ElementTagName>(
+  runtime: ListRuntime<TItem, TTagName>,
   item: TItem,
   index: number,
-): ExpandedElement<any> | null {
+): ExpandedElement<TTagName> | null {
   const result = runtime.renderItem(item, index);
-  return resolveRenderable(result, runtime.host, index);
+  return resolveRenderable<TTagName>(result, runtime.host, index);
 }
 
-function remove(record: ListItemRecord<unknown>): void {
+function remove<TItem, TTagName extends ElementTagName>(record: ListItemRecord<TItem, TTagName>): void {
   safeRemoveChild(record.element as unknown as Node);
 }
 
-export function sync<TItem>(runtime: ListRuntime<TItem>): void {
+export function sync<TItem, TTagName extends ElementTagName>(
+  runtime: ListRuntime<TItem, TTagName>
+): void {
   const { host, startMarker, endMarker } = runtime;
   const parent = (startMarker.parentNode ?? (host as unknown as Node & ParentNode)) as
     Node & ParentNode;
@@ -27,8 +29,8 @@ export function sync<TItem>(runtime: ListRuntime<TItem>): void {
 
   if (arraysEqual(runtime.lastSyncedItems, currentItems)) return;
 
-  const recordsByPosition = new Map<number, ListItemRecord<TItem>>();
-  const availableRecords = new Map<TItem, ListItemRecord<TItem>[]>();
+  const recordsByPosition = new Map<number, ListItemRecord<TItem, TTagName>>();
+  const availableRecords = new Map<TItem, ListItemRecord<TItem, TTagName>[]>();
 
   runtime.records.forEach((record) => {
     const items = availableRecords.get(record.item);
@@ -61,8 +63,8 @@ export function sync<TItem>(runtime: ListRuntime<TItem>): void {
     }
   });
 
-  const newRecords: Array<ListItemRecord<TItem>> = [];
-  const elementsToRemove = new Set<ListItemRecord<TItem>>(runtime.records);
+  const newRecords: Array<ListItemRecord<TItem, TTagName>> = [];
+  const elementsToRemove = new Set<ListItemRecord<TItem, TTagName>>(runtime.records);
   let nextSibling: Node = endMarker;
 
   for (let i = currentItems.length - 1; i >= 0; i--) {
@@ -102,14 +104,14 @@ export function sync<TItem>(runtime: ListRuntime<TItem>): void {
   runtime.lastSyncedItems = [...currentItems];
 }
 
-export function createListRuntime<TItem>(
+export function createListRuntime<TItem, TTagName extends ElementTagName = ElementTagName>(
   itemsProvider: ListItemsProvider<TItem>,
-  renderItem: ListRenderer<TItem>,
-  host: ExpandedElement<any>,
-): ListRuntime<TItem> {
+  renderItem: ListRenderer<TItem, TTagName>,
+  host: ExpandedElement<TTagName>,
+): ListRuntime<TItem, TTagName> {
   const { start: startMarker, end: endMarker } = createMarkerPair("list");
 
-  const runtime: ListRuntime<TItem> = {
+  const runtime: ListRuntime<TItem, TTagName> = {
     itemsProvider,
     renderItem,
     startMarker,

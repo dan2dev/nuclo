@@ -11,24 +11,20 @@ export function assignInlineStyles<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
   styles: StyleAssignment | null | undefined,
 ): void {
-  if (!element) return;
-  if (!element.style) return; // Guard against elements without style
-  if (!styles) return;
+  if (!element?.style || !styles) return;
 
-  Object.entries(styles).forEach(([property, value]) => {
+  for (const [property, value] of Object.entries(styles)) {
     if (value == null || value === '') {
-      // Try both camelCase and kebab-case removal
-      element.style!.removeProperty(property);
-      // Also set to empty string as fallback
-      (element.style as any)[property] = '';
+      element.style.removeProperty(property);
+      (element.style as Record<string, string>)[property] = '';
     } else {
       try {
-        (element.style as any)[property] = String(value);
+        (element.style as Record<string, string>)[property] = String(value);
       } catch {
         // Ignore invalid style properties
       }
     }
-  });
+  }
 }
 
 export function applyStyleAttribute<TTagName extends ElementTagName>(

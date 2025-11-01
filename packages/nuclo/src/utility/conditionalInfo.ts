@@ -1,7 +1,11 @@
-export interface ConditionalInfo {
+export interface ConditionalInfo<TTagName extends ElementTagName = ElementTagName> {
   condition: () => boolean;
-  tagName: string;
-  modifiers: Array<NodeMod<any> | NodeModFn<any>>;
+  tagName: TTagName;
+  modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>;
+}
+
+interface NodeWithConditionalInfo extends Node {
+  _conditionalInfo?: ConditionalInfo;
 }
 
 /**
@@ -13,11 +17,11 @@ const activeConditionalNodes = new Set<Node>();
 /**
  * Attach conditional info to a node and register it.
  */
-export function storeConditionalInfo(
+export function storeConditionalInfo<TTagName extends ElementTagName>(
   node: Node,
-  info: ConditionalInfo
+  info: ConditionalInfo<TTagName>
 ): void {
-  (node as any)._conditionalInfo = info;
+  (node as NodeWithConditionalInfo)._conditionalInfo = info;
   activeConditionalNodes.add(node);
 }
 
@@ -36,9 +40,9 @@ export function getActiveConditionalNodes(): ReadonlySet<Node> {
 }
 
 export function hasConditionalInfo(node: Node): boolean {
-  return Boolean((node as any)._conditionalInfo);
+  return Boolean((node as NodeWithConditionalInfo)._conditionalInfo);
 }
 
 export function getConditionalInfo(node: Node): ConditionalInfo | null {
-  return ((node as any)._conditionalInfo as ConditionalInfo | undefined) ?? null;
+  return (node as NodeWithConditionalInfo)._conditionalInfo ?? null;
 }

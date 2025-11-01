@@ -1,21 +1,21 @@
-export type ListRenderer<TItem> = (
+export type ListRenderer<TItem, TTagName extends ElementTagName = ElementTagName> = (
   item: TItem,
   index: number,
-) => ExpandedElement<any> | NodeModFn<any>;
+) => ExpandedElement<TTagName> | NodeModFn<TTagName> | Node | null;
 
-export type ListItemsProvider<TItem> = () => TItem[];
+export type ListItemsProvider<TItem> = () => readonly TItem[];
 
-export interface ListItemRecord<TItem> {
+export interface ListItemRecord<TItem, TTagName extends ElementTagName = ElementTagName> {
   item: TItem;
-  element: ExpandedElement<any>;
+  element: ExpandedElement<TTagName>;
 }
 
-export interface ListRuntime<TItem> {
+export interface ListRuntime<TItem, TTagName extends ElementTagName = ElementTagName> {
   itemsProvider: ListItemsProvider<TItem>;
-  renderItem: ListRenderer<TItem>;
+  renderItem: ListRenderer<TItem, TTagName>;
   startMarker: Comment;
   endMarker: Comment;
-  records: ListItemRecord<TItem>[];
-  host: ExpandedElement<any>;
-  lastSyncedItems: TItem[];
+  records: ListItemRecord<TItem, TTagName>[];
+  host: ExpandedElement<TTagName>;
+  lastSyncedItems: readonly TItem[];
 }
