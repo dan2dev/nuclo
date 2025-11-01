@@ -10,9 +10,9 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "nuclo": "file:../../packages/nuclo",
     "typescript": "~5.9.3",
-    "vite": "^7.1.11",
-    "nuclo": "file:../../packages/nuclo"
+    "vite": "^7.1.12"
   },
   "dependencies": {
     "nuclo": "file:../../packages/nuclo"
