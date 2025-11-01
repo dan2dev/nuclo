@@ -7,7 +7,8 @@
  */
 
 import { createConditionalElement, processConditionalModifiers } from "./conditionalRenderer";
-import { applyModifiers, NodeModifier } from "../internal/applyModifiers";
+import { applyModifiers } from "../internal/applyModifiers";
+import type { NodeModifier } from "../internal/applyModifiers";
 
 /**
  * Creates an element factory function for a specific HTML tag.

@@ -1,5 +1,4 @@
 // Comprehensive example demonstrating enhanced styling system features
-import "./style.css";
 import "nuclo";
 import { store } from "./store";
 import { utils } from "./styling-utilities";
@@ -487,122 +486,313 @@ const enhancedStyle = style.cn({
   ],
 });
 
+// Add custom CSS for the enhanced design
+const styleEl = document.createElement('style');
+styleEl.textContent = `
+  body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    margin: 0;
+    padding: 2rem;
+    font-family: system-ui, -apple-system, sans-serif;
+    transition: background 0.3s ease;
+  }
+
+  #app {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 2.5rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .header-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    margin: 0 0 1rem 0;
+    line-height: 1.2;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+    color: #64748b;
+    text-align: center;
+    margin: 0 0 1.5rem 0;
+    line-height: 1.6;
+    transition: color 0.3s ease;
+  }
+
+  .counter-display {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .counter-label {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    letter-spacing: 0.5px;
+  }
+
+  .counter-value {
+    font-size: 5rem;
+    font-weight: 900;
+    color: white;
+    margin: 0;
+    line-height: 1;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+  }
+
+  .counter-value:hover {
+    transform: scale(1.05);
+  }
+
+  .button-group {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn {
+    padding: 1rem 2rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border-radius: 16px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    min-width: 80px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+  }
+
+  .btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+  }
+
+  .btn-danger:active {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+  }
+
+  .btn-secondary:active {
+    transform: translateY(0);
+  }
+
+  .dark-mode-toggle {
+    display: flex;
+    justify-content: center;
+  }
+
+  .btn-outline {
+    background: white;
+    color: #667eea;
+    border: 2px solid #667eea;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+
+  .btn-outline:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+  }
+
+  .footer-text {
+    text-align: center;
+    color: white;
+    font-size: 0.875rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    line-height: 1.6;
+    transition: all 0.3s ease;
+  }
+
+  /* Dark mode styles */
+  html.dark body {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  }
+
+  html.dark .glass-card {
+    background: rgba(30, 41, 59, 0.95);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  html.dark .header-title {
+    background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  html.dark .subtitle {
+    color: #cbd5e1;
+  }
+
+  html.dark .counter-display {
+    background: linear-gradient(135deg, #4338ca 0%, #7c3aed 100%);
+    box-shadow: 0 10px 40px rgba(67, 56, 202, 0.5);
+  }
+
+  html.dark .btn-outline {
+    background: rgba(30, 41, 59, 0.8);
+    color: #818cf8;
+    border-color: #818cf8;
+  }
+
+  html.dark .btn-outline:hover {
+    background: #818cf8;
+    color: white;
+  }
+
+  html.dark .footer-text {
+    background: rgba(30, 41, 59, 0.5);
+    color: #e2e8f0;
+  }
+`;
+document.head.appendChild(styleEl);
+
+// Dark mode state management with localStorage persistence
+const DARK_MODE_KEY = 'nuclo-dark-mode';
+
+// Initialize dark mode from localStorage or default to false
+let isDarkMode = localStorage.getItem(DARK_MODE_KEY) === 'true';
+
+// Apply initial state
+if (isDarkMode) {
+  document.documentElement.classList.add('dark');
+} else {
+  document.documentElement.classList.remove('dark');
+}
+
+function toggleDark() {
+  isDarkMode = !isDarkMode;
+
+  // Update DOM
+  if (isDarkMode) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+
+  // Persist to localStorage
+  localStorage.setItem(DARK_MODE_KEY, String(isDarkMode));
+
+  // Update UI
+  update();
+}
+
 const app = div(
-  // Main container with enhanced responsive layout
-  enhancedStyle,
-  
-  // Header section with utility-based styling
+  // Header section
   div(
-    style.cn([
-      ...utils.components.card.elevated(),
-      ...utils.spacing.margin('4'),
-    ]),
+    { className: 'glass-card' },
     h1(
-      style.cn([
-        ...utils.typography.heading('4xl'),
-        ...utils.layout.centerHorizontal(),
-        ...utils.spacing.marginY('4'),
-      ]),
-      "Enhanced Nuclo Counter App"
+      { className: 'header-title' },
+      "Nuclo Counter"
     ),
     p(
-      style.cn([
-        ...utils.typography.body('lg'),
-        ...utils.layout.centerHorizontal(),
-        ...utils.spacing.marginY('2'),
-      ]),
-      "Built with enhanced styling system featuring utility functions, better performance, and comprehensive features!"
+      { className: 'subtitle' },
+      "A beautiful, reactive counter built with Nuclo's powerful utility system"
     ),
-    // Dark mode toggle with utility styling
     div(
-      style.cn([
-        ...utils.layout.center(),
-        ...utils.spacing.marginY('4'),
-      ]),
+      { className: 'dark-mode-toggle' },
       button(
-        "Toggle Dark Mode",
-        style.cn([
-          ...utils.components.button.outline(),
-          ...utils.animation.transition.colors(),
-        ]),
-        on("click", style.toggleDarkMode)
+        { className: 'btn btn-outline' },
+        () => isDarkMode ? "☀️ Light Mode" : "🌙 Dark Mode",
+        on("click", toggleDark)
       )
     )
   ),
-  
-  // Counter display with enhanced styling
+
+  // Counter display
   div(
-    style.cn([
-      ...utils.components.card.elevated(),
-      ...utils.layout.center(),
-      ...utils.spacing.padding('8'),
-      ...utils.spacing.marginY('6'),
-    ]),
+    { className: 'counter-display' },
+    p(
+      { className: 'counter-label' },
+      "CURRENT COUNT"
+    ),
     h2(
-      style.cn([
-        ...utils.typography.heading('6xl'),
-        ...utils.colors.primary('500'),
-        ...utils.spacing.marginY('2'),
-      ]),
-      "Counter: ",
-      span(
-        style.cn([
-          ...utils.typography.heading('6xl'),
-          ...utils.colors.danger(),
-          ...utils.animation.transition.all(),
-        ]),
-        () => store.counter
-      )
+      { className: 'counter-value' },
+      () => store.counter
     )
   ),
-  
-  // Enhanced button controls with utility styling
+
+  // Button controls
   div(
-    style.cn([
-      ...utils.layout.center(),
-      ...utils.spacing.gap('4'),
-      ...utils.spacing.marginY('6'),
-    ]),
+    { className: 'button-group' },
     button(
-      "+", 
-      style.cn([
-        ...utils.components.button.primary(),
-        ...utils.animation.hover.scale(),
-        ...utils.animation.transition.all(),
-      ]),
+      { className: 'btn btn-primary' },
+      "+",
       on("click", store.increment)
     ),
     button(
-      "Reset", 
-      style.cn([
-        ...utils.components.button.secondary(),
-        ...utils.animation.hover.scale(),
-        ...utils.animation.transition.all(),
-      ]),
+      { className: 'btn btn-secondary' },
+      "Reset",
       on("click", store.reset)
     ),
     button(
-      "-", 
-      style.cn([
-        ...utils.components.button.outline(),
-        ...utils.animation.hover.scale(),
-        ...utils.animation.transition.all(),
-      ]),
+      { className: 'btn btn-danger' },
+      "−",
       on("click", store.decrement)
     )
   ),
-  
-  // Enhanced footer with utility styling
+
+  // Footer
   div(
-    style.cn([
-      ...utils.layout.center(),
-      ...utils.typography.body(),
-      ...utils.spacing.padding('4'),
-      ...utils.colors.secondary('100'),
-      ...utils.borders.rounded('lg'),
-      ...utils.spacing.marginY('4'),
-    ]),
-    "Enhanced styling system with utility functions, better performance, comprehensive features, and improved developer experience!"
+    { className: 'footer-text' },
+    "Powered by Nuclo - Simple, explicit, and reactive"
   )
 );
 

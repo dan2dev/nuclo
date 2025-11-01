@@ -1,7 +1,7 @@
 import { applyModifiers } from "../internal/applyModifiers";
 import { isBrowser } from "../utility/environment";
+import type { ConditionalInfo } from "../utility/conditionalInfo";
 import {
-  ConditionalInfo,
   getConditionalInfo,
   storeConditionalInfo,
   getActiveConditionalNodes,
