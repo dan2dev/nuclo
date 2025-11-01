@@ -27,7 +27,7 @@ describe('arrayUtils', () => {
     });
 
     it('handles sparse arrays consistently', () => {
-      const sparse: Array<number | undefined> = [1, , 3];
+      const sparse: Array<number | undefined> = [1, undefined, 3];
       expect(arraysEqual(sparse, [1, undefined, 3])).toBe(true);
       expect(arraysEqual(sparse, [1, 2, 3])).toBe(false);
       expect(arraysEqual(sparse, [1, 2, 4])).toBe(false);

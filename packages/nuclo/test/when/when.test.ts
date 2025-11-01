@@ -142,7 +142,7 @@ describe('When Conditional Rendering', () => {
     });
 
     it('should work with complex conditions', () => {
-      let user = { role: 'guest' };
+      const user = { role: 'guest' };
       
       const whenFn = when(() => user.role === 'admin', 'Admin panel')
         .when(() => user.role === 'user', 'User dashboard')
@@ -169,7 +169,7 @@ describe('When Conditional Rendering', () => {
     });
 
     it('should handle multiple when instances', () => {
-      let condition1 = true;
+      const condition1 = true;
       let condition2 = false;
       
       // Create separate containers to avoid conflicts

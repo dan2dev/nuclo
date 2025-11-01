@@ -204,7 +204,7 @@ import 'nuclo';
 type Product = { id: number; title: string; category: string };
 type State = { status: 'idle' | 'loading' | 'error'; products: Product[]; error?: string };
 
-let state: State = { status: 'idle', products: [] };
+const state: State = { status: 'idle', products: [] };
 let searchQuery = 'phone';
 
 async function fetchProducts() {

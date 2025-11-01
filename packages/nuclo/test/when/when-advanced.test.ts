@@ -265,7 +265,7 @@ describe('when (advanced scenarios)', () => {
 
   describe('reactive content inside stable branch', () => {
     it('reactive text updates without branch rerender', () => {
-      let flag = true;
+      const flag = true;
       let value = 0;
       const block = when(
         () => flag,

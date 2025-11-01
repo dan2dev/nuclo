@@ -36,7 +36,7 @@ describe('CamelCase CSS Properties', () => {
   });
 
   it('should support camelCase CSS properties in reactive styles', () => {
-    let data = { color: "blue", size: 16 };
+    const data = { color: "blue", size: 16 };
 
     const element = (globalThis as any).div(
       "Dynamic Styles",
