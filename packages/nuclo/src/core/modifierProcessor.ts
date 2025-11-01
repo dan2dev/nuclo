@@ -23,7 +23,7 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
       try {
         let record = modifierProbeCache.get(modifier);
         if (!record) {
-          const value = modifier();
+          const value = (modifier as () => unknown)();
           record = { value, error: false };
           modifierProbeCache.set(modifier, record);
         }

@@ -16,10 +16,10 @@ export function assignInlineStyles<TTagName extends ElementTagName>(
   for (const [property, value] of Object.entries(styles)) {
     if (value == null || value === '') {
       element.style.removeProperty(property);
-      (element.style as Record<string, string>)[property] = '';
+      (element.style as unknown as Record<string, string>)[property] = '';
     } else {
       try {
-        (element.style as Record<string, string>)[property] = String(value);
+        (element.style as unknown as Record<string, string>)[property] = String(value);
       } catch {
         // Ignore invalid style properties
       }

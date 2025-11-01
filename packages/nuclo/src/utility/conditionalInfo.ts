@@ -5,7 +5,7 @@ export interface ConditionalInfo<TTagName extends ElementTagName = ElementTagNam
 }
 
 interface NodeWithConditionalInfo extends Node {
-  _conditionalInfo?: ConditionalInfo;
+  _conditionalInfo?: ConditionalInfo<keyof HTMLElementTagNameMap>;
 }
 
 /**
@@ -21,7 +21,7 @@ export function storeConditionalInfo<TTagName extends ElementTagName>(
   node: Node,
   info: ConditionalInfo<TTagName>
 ): void {
-  (node as NodeWithConditionalInfo)._conditionalInfo = info;
+  (node as NodeWithConditionalInfo)._conditionalInfo = info as ConditionalInfo<keyof HTMLElementTagNameMap>;
   activeConditionalNodes.add(node);
 }
 
@@ -43,6 +43,6 @@ export function hasConditionalInfo(node: Node): boolean {
   return Boolean((node as NodeWithConditionalInfo)._conditionalInfo);
 }
 
-export function getConditionalInfo(node: Node): ConditionalInfo | null {
+export function getConditionalInfo(node: Node): ConditionalInfo<keyof HTMLElementTagNameMap> | null {
   return (node as NodeWithConditionalInfo)._conditionalInfo ?? null;
 }
