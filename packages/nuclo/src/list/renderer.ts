@@ -8,8 +8,9 @@ export function list<TItem, TTagName extends ElementTagName = ElementTagName>(
   itemsProvider: ListItemsProvider<TItem>,
   render: ListRenderer<TItem, TTagName>,
 ): NodeModFn<TTagName> {
-  return (host: ExpandedElement<TTagName>) => {
+  return (host: ExpandedElement<TTagName>, index: number) => {
     const runtime = createListRuntime(itemsProvider, render, host);
-    return runtime.startMarker;
+    // Markers are inserted as side effects, function returns void
+    return;
   };
 }

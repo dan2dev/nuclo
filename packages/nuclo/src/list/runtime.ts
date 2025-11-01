@@ -3,7 +3,7 @@ import { arraysEqual } from "../utility/arrayUtils";
 import { resolveRenderable } from "../utility/renderables";
 import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsProvider } from "./types";
 
-const activeListRuntimes = new Set<ListRuntime<unknown>>();
+const activeListRuntimes = new Set<ListRuntime<unknown, keyof HTMLElementTagNameMap>>();
 
 function renderItem<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>,
@@ -125,7 +125,7 @@ export function createListRuntime<TItem, TTagName extends ElementTagName = Eleme
   parentNode.appendChild(startMarker);
   parentNode.appendChild(endMarker);
 
-  activeListRuntimes.add(runtime);
+  activeListRuntimes.add(runtime as ListRuntime<unknown, keyof HTMLElementTagNameMap>);
   sync(runtime);
 
   return runtime;

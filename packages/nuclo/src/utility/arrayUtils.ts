@@ -1,4 +1,4 @@
-export function arraysEqual<T>(a: T[], b: T[]): boolean {
+export function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
   if (a === b) return true;
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
