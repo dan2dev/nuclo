@@ -3,6 +3,7 @@ import { createReactiveTextNode } from "./reactive";
 import { logError } from "../utility/errorHandler";
 import { isFunction, isNode, isObject, isPrimitive } from "../utility/typeGuards";
 import { modifierProbeCache } from "../utility/modifierPredicates";
+
 export { isConditionalModifier, findConditionalModifier } from "../utility/modifierPredicates";
 
 export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
@@ -17,53 +18,35 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
   if (modifier == null) return null;
 
   if (isFunction(modifier)) {
+    // Handle zero-argument functions (reactive text)
     if (modifier.length === 0) {
       try {
-        let record = modifierProbeCache.get(modifier as Function);
+        let record = modifierProbeCache.get(modifier);
         if (!record) {
           const value = (modifier as () => unknown)();
           record = { value, error: false };
-          modifierProbeCache.set(modifier as Function, record);
+          modifierProbeCache.set(modifier, record);
         }
         if (record.error) {
-          const fragment = document.createDocumentFragment();
-          const comment = document.createComment(` text-${index} `);
-          const textNode = createReactiveTextNode(() => "");
-          fragment.appendChild(comment);
-          fragment.appendChild(textNode);
-          return fragment;
+          return createReactiveTextFragment(index, () => "");
         }
         const v = record.value;
         if (isPrimitive(v) && v != null) {
-          const fragment = document.createDocumentFragment();
-          const comment = document.createComment(` text-${index} `);
-          const textNode = createReactiveTextNode(modifier as () => Primitive, v);
-          fragment.appendChild(comment);
-          fragment.appendChild(textNode);
-          return fragment;
+          return createReactiveTextFragment(index, modifier as () => Primitive, v);
         }
         return null;
       } catch (error) {
-        modifierProbeCache.set(modifier as Function, { value: undefined, error: true });
+        modifierProbeCache.set(modifier, { value: undefined, error: true });
         logError("Error evaluating reactive text function:", error);
-        const fragment = document.createDocumentFragment();
-        const comment = document.createComment(` text-${index} `);
-        const textNode = createReactiveTextNode(() => "");
-        fragment.appendChild(comment);
-        fragment.appendChild(textNode);
-        return fragment;
+        return createReactiveTextFragment(index, () => "");
       }
     }
 
-    const produced = (modifier as NodeModFn<TTagName>)(parent, index);
+    // Handle NodeModFn functions
+    const produced = modifier(parent, index);
     if (produced == null) return null;
     if (isPrimitive(produced)) {
-      const fragment = document.createDocumentFragment();
-      const comment = document.createComment(` text-${index} `);
-      const textNode = document.createTextNode(String(produced));
-      fragment.appendChild(comment);
-      fragment.appendChild(textNode);
-      return fragment;
+      return createStaticTextFragment(index, produced);
     }
     if (isNode(produced)) return produced;
     if (isObject(produced)) {
@@ -72,19 +55,37 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
     return null;
   }
 
+  // Handle non-function modifiers
   const candidate = modifier as NodeMod<TTagName>;
   if (candidate == null) return null;
   if (isPrimitive(candidate)) {
-    const fragment = document.createDocumentFragment();
-    const comment = document.createComment(` text-${index} `);
-    const textNode = document.createTextNode(String(candidate));
-    fragment.appendChild(comment);
-    fragment.appendChild(textNode);
-    return fragment;
+    return createStaticTextFragment(index, candidate);
   }
   if (isNode(candidate)) return candidate;
   if (isObject(candidate)) {
     applyAttributes(parent, candidate as ExpandedElementAttributes<TTagName>);
   }
   return null;
+}
+
+function createReactiveTextFragment(
+  index: number,
+  resolver: () => Primitive,
+  preEvaluated?: unknown
+): DocumentFragment {
+  const fragment = document.createDocumentFragment();
+  const comment = document.createComment(` text-${index} `);
+  const textNode = createReactiveTextNode(resolver, preEvaluated);
+  fragment.appendChild(comment);
+  fragment.appendChild(textNode);
+  return fragment;
+}
+
+function createStaticTextFragment(index: number, value: Primitive): DocumentFragment {
+  const fragment = document.createDocumentFragment();
+  const comment = document.createComment(` text-${index} `);
+  const textNode = document.createTextNode(String(value));
+  fragment.appendChild(comment);
+  fragment.appendChild(textNode);
+  return fragment;
 }

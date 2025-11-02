@@ -9,22 +9,22 @@ import {
 } from "../utility/conditionalInfo";
 import { runCondition } from "../utility/conditions";
 
-function createElementFromConditionalInfo(conditionalInfo: ConditionalInfo): Element {
-  const element = document.createElement(conditionalInfo.tagName);
+function createElementFromConditionalInfo<TTagName extends ElementTagName>(
+  conditionalInfo: ConditionalInfo<TTagName>
+): ExpandedElement<TTagName> {
+  const element = document.createElement(conditionalInfo.tagName) as ExpandedElement<TTagName>;
 
   try {
-    applyModifiers(
-      element as ExpandedElement<ElementTagName>,
-      conditionalInfo.modifiers as ReadonlyArray<NodeMod<ElementTagName> | NodeModFn<ElementTagName>>,
-      0
-    );
+    applyModifiers(element, conditionalInfo.modifiers, 0);
   } catch (error) {
     console.error(`Error applying modifiers in conditional element "${conditionalInfo.tagName}":`, error);
   }
   return element;
 }
 
-function createCommentPlaceholder(conditionalInfo: ConditionalInfo): Comment {
+function createCommentPlaceholder<TTagName extends ElementTagName>(
+  conditionalInfo: ConditionalInfo<TTagName>
+): Comment {
   return document.createComment(`conditional-${conditionalInfo.tagName}-hidden`);
 }
 
@@ -51,8 +51,8 @@ function updateConditionalNode(node: Element | Comment): void {
 
   if (shouldShow && !isElement) {
     const element = createElementFromConditionalInfo(conditionalInfo);
-    storeConditionalInfo(element, conditionalInfo);
-    replaceNodeSafely(node, element);
+    storeConditionalInfo(element as Node, conditionalInfo);
+    replaceNodeSafely(node, element as Node);
   } else if (!shouldShow && isElement) {
     const comment = createCommentPlaceholder(conditionalInfo);
     storeConditionalInfo(comment, conditionalInfo);
