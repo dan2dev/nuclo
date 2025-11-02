@@ -10,7 +10,7 @@ export function list<TItem, TTagName extends ElementTagName = ElementTagName>(
 ): NodeModFn<TTagName> {
   return (host: ExpandedElement<TTagName>, index: number) => {
     const runtime = createListRuntime(itemsProvider, render, host);
-    // Markers are inserted as side effects, function returns void
-    return;
+    // Return the start marker comment node
+    return runtime.startMarker as any;
   };
 }
