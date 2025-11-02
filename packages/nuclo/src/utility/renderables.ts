@@ -1,20 +1,20 @@
 import { isFunction, isTagLike } from "./typeGuards";
 
-export function resolveRenderable(
+export function resolveRenderable<TTagName extends ElementTagName = ElementTagName>(
   result: unknown,
-  host: ExpandedElement<any>,
+  host: ExpandedElement<TTagName>,
   index: number
-): ExpandedElement<any> | null {
+): ExpandedElement<TTagName> | null {
   if (isFunction(result)) {
-    const element = (result as NodeModFn<any>)(host, index);
+    const element = (result as NodeModFn<TTagName>)(host, index);
     if (element && isTagLike(element)) {
-      return element as ExpandedElement<any>;
+      return element as ExpandedElement<TTagName>;
     }
     return null;
   }
 
   if (result && isTagLike(result)) {
-    return result as ExpandedElement<any>;
+    return result as ExpandedElement<TTagName>;
   }
 
   return null;

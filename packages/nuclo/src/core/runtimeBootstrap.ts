@@ -6,7 +6,7 @@ import { on } from "../utility/on";
 import { render } from "../utility/render";
 
 /**
- * Initializes the View Craft runtime by exposing tag builders and utilities.
+ * Initializes the nuclo runtime by exposing tag builders and utilities.
  */
 export function initializeRuntime(): void {
   registerGlobalTagBuilders();

@@ -21,7 +21,7 @@ describe('tagRegistry.registerGlobalTagBuilders', () => {
     registerGlobalTagBuilders(target);
 
     // Internal marker is set
-    expect((target as any).__vc_tags_registered).toBe(true);
+    expect((target as any).__nuclo_tags_registered).toBe(true);
 
     // All tags exist and are functions
     for (const tag of HTML_TAGS) {
@@ -130,7 +130,7 @@ describe('tagRegistry.registerGlobalTagBuilders', () => {
 
   it('marker prevents re-registration on the same target', () => {
     registerGlobalTagBuilders(target);
-    const markerBefore = (target as any).__vc_tags_registered;
+    const markerBefore = (target as any).__nuclo_tags_registered;
     expect(markerBefore).toBe(true);
 
     // Manually null out one builder to test that idempotent guard prevents recreation
@@ -144,13 +144,13 @@ describe('tagRegistry.registerGlobalTagBuilders', () => {
 
   it('can register on globalThis without throwing (smoke test)', () => {
     // Use a unique property to detect existing global registration state
-    const hadMarkerBefore = (globalThis as any).__vc_tags_registered;
+    const hadMarkerBefore = (globalThis as any).__nuclo_tags_registered;
     registerGlobalTagBuilders(); // default target is globalThis
-    expect((globalThis as any).__vc_tags_registered).toBe(true);
+    expect((globalThis as any).__nuclo_tags_registered).toBe(true);
 
     // If it was already registered by earlier imports, this should still pass
     registerGlobalTagBuilders();
-    expect((globalThis as any).__vc_tags_registered).toBe(true);
+    expect((globalThis as any).__nuclo_tags_registered).toBe(true);
 
     // Clean-up note: We intentionally do not remove the marker since other tests rely on global tags.
     // This test only asserts stability.
