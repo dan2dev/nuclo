@@ -8,12 +8,13 @@ const appRoot = document.querySelector<HTMLDivElement>("#app")!;
 // Apply global body styles
 createCSSClass("body-styles", {
 	margin: "0",
-	padding: "1rem",
+	padding: "0.5rem",
 	"min-height": "100vh",
 	display: "flex",
 	"place-items": "center",
 	"font-family": "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-	"line-height": "1.6",
+	"line-height": "1.5",
+	"font-size": "16px",
 	color: "#2d3748",
 	background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
 	"-webkit-font-smoothing": "antialiased",
@@ -22,8 +23,15 @@ createCSSClass("body-styles", {
 
 createCSSClass("app-wrapper", {
 	width: "100%",
-	"max-width": "700px",
+	"max-width": "600px",
 	margin: "0 auto",
+});
+
+createCSSClass("h1-reset", {
+	margin: "0",
+	padding: "0",
+	"font-size": "inherit",
+	"font-weight": "700",
 });
 
 createCSSClass("todo-item-hover", {
@@ -90,7 +98,7 @@ const app = div(
 	// Header with gradient
 	div(
 		globalStyles.header,
-		h1("✨ My Tasks"),
+		h1({ className: "h1-reset" }, "✨ My Tasks"),
 	),
 
 	// Input section
