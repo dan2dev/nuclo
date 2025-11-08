@@ -15,6 +15,8 @@
  * - Provides strong typing of the event object based on the DOM event name.
  */
 
+import { logError } from "./errorHandler";
+
 /**
  * Overload for standard HTMLElement events (strongly typed via lib.dom.d.ts)
  */
@@ -57,9 +59,7 @@ export function on(
       try {
         listener.call(el, ev);
       } catch (error) {
-        if (typeof console !== "undefined" && console.error) {
-          console.error(`[nuclo:on] Error in '${type}' listener:`, error);
-        }
+        logError(`Error in '${type}' listener`, error);
       }
     };
 

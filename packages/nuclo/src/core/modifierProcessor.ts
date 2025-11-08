@@ -1,8 +1,9 @@
 import { applyAttributes } from "./attributeManager";
 import { createReactiveTextNode } from "./reactive";
 import { logError } from "../utility/errorHandler";
-import { isFunction, isNode, isObject, isPrimitive } from "../utility/typeGuards";
+import { isFunction, isNode, isObject, isPrimitive, isZeroArityFunction } from "../utility/typeGuards";
 import { modifierProbeCache } from "../utility/modifierPredicates";
+import { createComment } from "../utility/dom";
 
 export { isConditionalModifier, findConditionalModifier } from "../utility/modifierPredicates";
 
@@ -19,7 +20,7 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 
   if (isFunction(modifier)) {
     // Handle zero-argument functions (reactive text)
-    if (modifier.length === 0) {
+    if (isZeroArityFunction(modifier)) {
       try {
         let record = modifierProbeCache.get(modifier);
         if (!record) {
@@ -74,18 +75,18 @@ function createReactiveTextFragment(
   preEvaluated?: unknown
 ): DocumentFragment {
   const fragment = document.createDocumentFragment();
-  const comment = document.createComment(` text-${index} `);
+  const comment = createComment(` text-${index} `);
+  if (comment) fragment.appendChild(comment);
   const textNode = createReactiveTextNode(resolver, preEvaluated);
-  fragment.appendChild(comment);
   fragment.appendChild(textNode);
   return fragment;
 }
 
 function createStaticTextFragment(index: number, value: Primitive): DocumentFragment {
   const fragment = document.createDocumentFragment();
-  const comment = document.createComment(` text-${index} `);
+  const comment = createComment(` text-${index} `);
+  if (comment) fragment.appendChild(comment);
   const textNode = document.createTextNode(String(value));
-  fragment.appendChild(comment);
   fragment.appendChild(textNode);
   return fragment;
 }

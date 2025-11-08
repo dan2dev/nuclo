@@ -1,9 +1,9 @@
 import { isBrowser } from "../utility/environment";
 import { applyNodeModifier } from "../core/modifierProcessor";
-import { createMarkerPair, clearBetweenMarkers, insertNodesBefore } from "../utility/dom";
+import { createMarkerPair, clearBetweenMarkers, insertNodesBefore, createComment } from "../utility/dom";
 import { resolveCondition } from "../utility/conditions";
 import { modifierProbeCache } from "../utility/modifierPredicates";
-import { isFunction } from "../utility/typeGuards";
+import { isFunction, isZeroArityFunction } from "../utility/typeGuards";
 
 type WhenCondition = boolean | (() => boolean);
 type WhenContent<TTagName extends ElementTagName = ElementTagName> = 
@@ -61,7 +61,7 @@ function renderWhenContent<TTagName extends ElementTagName>(
   const renderItems = (items: ReadonlyArray<WhenContent<TTagName>>): void => {
     for (const item of items) {
       if (isFunction(item)) {
-        if ((item as Function).length === 0) {
+        if (isZeroArityFunction(item)) {
           modifierProbeCache.delete(item as Function);
           const node = applyNodeModifier(host, item, index);
           if (node) nodes.push(node);
@@ -123,7 +123,10 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
   }
 
   render(host: ExpandedElement<TTagName>, index: number): Node | null {
-    if (!isBrowser) return document.createComment("when-ssr");
+    if (!isBrowser) {
+      const comment = createComment("when-ssr");
+      return comment || null;
+    }
 
     const { start: startMarker, end: endMarker } = createMarkerPair("when");
 
