@@ -104,6 +104,12 @@ describe('Style utilities - global availability', () => {
 			large: bg('#0000FF').fontSize('50px').flex().center().bold()
 		});
 
-		expect((result as any).className).toMatch(/^nuclo-bp-\d+$/);
+		const className = (result as any).className;
+		expect(className).toContain('bg-ff0000');
+		expect(className).toContain('text-20px');
+		expect(className).toContain('flex');
+		expect(className).toContain('justify-center');
+		expect(className).toContain('items-center');
+		expect(className).toContain('font-bold');
 	});
 });
