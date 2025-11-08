@@ -33,8 +33,8 @@ declare global {
     | (() => Primitive)
     | ExpandedElementAttributes<TTagName>
     | ExpandedElement<TTagName>
-    | SVGElement  // Allow SVG elements as children of HTML elements
-    | ((parent?: any, index?: number) => SVGElement);  // Allow SVG element builders
+    | Node  // Allow any DOM Node (including Comment, Text, SVGElement, etc.)
+    | ((parent: ExpandedElement<TTagName>, index: number) => Node);  // Allow Node builders
 
   export type NodeModFn<TTagName extends ElementTagName = ElementTagName> = (
     parent: ExpandedElement<TTagName>,

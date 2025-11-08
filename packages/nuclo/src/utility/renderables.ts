@@ -1,12 +1,19 @@
 import { isFunction, isTagLike } from "./typeGuards";
 
+type RenderableInput<TTagName extends ElementTagName = ElementTagName> =
+  | NodeModFn<TTagName>
+  | ExpandedElement<TTagName>
+  | Node
+  | null
+  | undefined;
+
 export function resolveRenderable<TTagName extends ElementTagName = ElementTagName>(
-  result: unknown,
+  result: RenderableInput<TTagName>,
   host: ExpandedElement<TTagName>,
   index: number
 ): ExpandedElement<TTagName> | null {
   if (isFunction(result)) {
-    const element = (result as NodeModFn<TTagName>)(host, index);
+    const element = result(host, index);
     if (element && isTagLike(element)) {
       return element as ExpandedElement<TTagName>;
     }

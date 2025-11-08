@@ -1,10 +1,11 @@
 import { isFunction, isNode, isObject } from "./typeGuards";
 
 type BooleanCondition = () => boolean;
+type ZeroArityFunction = () => unknown;
 
-const modifierProbeCache = new WeakMap<Function, { value: unknown; error: boolean }>();
+const modifierProbeCache = new WeakMap<ZeroArityFunction, { value: unknown; error: boolean }>();
 
-function probeOnce(fn: Function): { value: unknown; error: boolean } {
+function probeOnce(fn: ZeroArityFunction): { value: unknown; error: boolean } {
   const cached = modifierProbeCache.get(fn);
   if (cached) {
     return cached;
@@ -21,7 +22,7 @@ function probeOnce(fn: Function): { value: unknown; error: boolean } {
   }
 }
 
-function isBooleanFunction(fn: Function): fn is BooleanCondition {
+function isBooleanFunction(fn: ZeroArityFunction): fn is BooleanCondition {
   const { value, error } = probeOnce(fn);
   if (error) return false;
   return typeof value === "boolean";
@@ -32,21 +33,24 @@ export function isConditionalModifier(
   allModifiers: unknown[],
   currentIndex: number
 ): modifier is BooleanCondition {
-  if (
-    !isFunction(modifier) ||
-    (modifier as Function).length !== 0 ||
-    !isBooleanFunction(modifier as Function)
-  ) {
+  if (!isFunction(modifier) || modifier.length !== 0) {
+    return false;
+  }
+
+  // After checking length === 0, we know it's a ZeroArityFunction
+  const zeroArityFn = modifier as ZeroArityFunction;
+  if (!isBooleanFunction(zeroArityFn)) {
     return false;
   }
 
   const otherModifiers = allModifiers.filter((_, index) => index !== currentIndex);
   if (otherModifiers.length === 0) return false;
 
-  const hasAttributesOrElements = otherModifiers.some(
-    (mod) =>
-      isObject(mod) || isNode(mod) || (isFunction(mod) && (mod as Function).length > 0)
-  );
+  const hasAttributesOrElements = otherModifiers.some((mod) => {
+    if (isObject(mod) || isNode(mod)) return true;
+    if (isFunction(mod) && mod.length > 0) return true;
+    return false;
+  });
 
   return hasAttributesOrElements;
 }

@@ -43,8 +43,10 @@ function applySingleAttribute<TTagName extends ElementTagName>(
     }
   };
 
-  if (isFunction(raw) && (raw as Function).length === 0) {
-    registerAttributeResolver(el, String(key), raw as () => unknown, setValue);
+  if (isFunction(raw) && raw.length === 0) {
+    // Type narrowing: zero-arity function that returns an attribute value
+    const resolver = raw as () => AttributeCandidate<TTagName>;
+    registerAttributeResolver(el, String(key), resolver, setValue);
   } else {
     setValue(raw);
   }

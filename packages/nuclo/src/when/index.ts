@@ -65,7 +65,7 @@ function renderContentItem<TTagName extends ElementTagName>(
 
   // Zero-arity functions need cache cleared
   if (isZeroArityFunction(item)) {
-    modifierProbeCache.delete(item as Function);
+    modifierProbeCache.delete(item);
     return applyNodeModifier(host, item, index);
   }
 
