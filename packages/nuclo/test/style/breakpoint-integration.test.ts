@@ -75,8 +75,13 @@ describe('Breakpoint Integration', () => {
 		expect(styleSheet?.sheet?.cssRules.length).toBeGreaterThan(0);
 
 		// Check that media queries were created
+		// First breakpoint (small) is base styles without media query
+		// Subsequent breakpoints (large) get media queries for overrides
 		const rules = Array.from(styleSheet?.sheet?.cssRules || []);
 		const mediaRules = rules.filter(rule => rule.type === CSSRule.MEDIA_RULE);
-		expect(mediaRules.length).toBe(2); // One for small, one for large
+		const styleRules = rules.filter(rule => rule.type === CSSRule.STYLE_RULE);
+
+		expect(styleRules.length).toBe(1); // Base styles for small
+		expect(mediaRules.length).toBe(1); // Media query for large
 	});
 });
