@@ -54,9 +54,13 @@ class StyleBuilder {
 		return this;
 	}
 
-	// Display flex
-	flex(): this {
-		this.styles["display"] = "flex";
+	// Display flex or flex property
+	flex(value?: string): this {
+		if (value !== undefined) {
+			this.styles["flex"] = value;
+		} else {
+			this.styles["display"] = "flex";
+		}
 		return this;
 	}
 
@@ -306,8 +310,8 @@ export function fontSize(size: string): StyleBuilder {
 	return new StyleBuilder().fontSize(size);
 }
 
-export function flex(): StyleBuilder {
-	return new StyleBuilder().flex();
+export function flex(value?: string): StyleBuilder {
+	return new StyleBuilder().flex(value);
 }
 
 export function center(): StyleBuilder {

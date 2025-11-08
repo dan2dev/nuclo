@@ -63,9 +63,7 @@ export const globalStyles = {
 
 	// App wrapper
 	appWrapper: cn({
-		small: width("100%")
-			.maxWidth("600px")
-			.margin("0 auto"),
+		small: width("100%").maxWidth("600px").margin("0 auto"),
 	}),
 
 	// App container with modern card design
@@ -81,8 +79,8 @@ export const globalStyles = {
 
 	// Header with gradient
 	header: cn({
-		small: bg(theme.colors.primary)
-			.fontSize("2rem")
+		small: fontSize("2rem")
+			.bg(theme.colors.primary)
 			.fontWeight("700")
 			.padding(`${theme.spacing.xxl} ${theme.spacing.xl}`)
 			.borderRadius(theme.borderRadius.lg)
@@ -106,10 +104,7 @@ export const globalStyles = {
 
 	// Input section container
 	inputSection: cn({
-		small: flex()
-			.gap(theme.spacing.md)
-			.margin(`0 0 ${theme.spacing.xl} 0`)
-			.flexDirection("column"),
+		small: flex().gap(theme.spacing.md).margin(`0 0 ${theme.spacing.xl} 0`).flexDirection("column"),
 		medium: flexDirection("row"),
 	}),
 
@@ -167,9 +162,7 @@ export const globalStyles = {
 
 	// Stats text
 	statsText: cn({
-		small: fontSize("1rem")
-			.fontWeight("600")
-			.color(theme.colors.text),
+		small: fontSize("1rem").fontWeight("600").color(theme.colors.text),
 	}),
 
 	// Todo list container
@@ -193,11 +186,7 @@ export const globalStyles = {
 
 	// Todo text
 	todoText: cn({
-		small: fontSize("1rem")
-			.color(theme.colors.text)
-			.flex("1")
-			.lineHeight("1.5")
-			.fontWeight("500"),
+		small: fontSize("1rem").color(theme.colors.text).flex("1").lineHeight("1.5").fontWeight("500"),
 	}),
 
 	// Todo text done with strikethrough
@@ -262,18 +251,11 @@ export const globalStyles = {
 
 	// Empty state text
 	emptyText: cn({
-		small: fontSize("1rem")
-			.color(theme.colors.textLight)
-			.margin("0")
-			.fontWeight("500"),
+		small: fontSize("1rem").color(theme.colors.textLight).margin("0").fontWeight("500"),
 	}),
 
 	// Checkbox with modern styling
 	checkbox: cn({
-		small: width("20px")
-			.height("20px")
-			.cursor("pointer")
-			.accentColor(theme.colors.primary)
-			.minWidth("20px"),
+		small: width("20px").height("20px").cursor("pointer").accentColor(theme.colors.primary).minWidth("20px"),
 	}),
 };
