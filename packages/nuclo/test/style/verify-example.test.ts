@@ -43,7 +43,10 @@ describe('Verify example pattern works correctly', () => {
 
 		// Verify parent has its className (and the breakpoint class from styles.header)
 		expect(app.className).toContain('todo-app');
-		expect(app.className).toMatch(/nuclo-bp-\d+/);
+		const appClassName = app.className;
+		expect(appClassName).toContain('bg-ff0000');
+		expect(appClassName).toContain('text-20px');
+		expect(appClassName).toContain('flex');
 
 		// Verify h1 exists
 		const h1Element = app.querySelector('h1');
@@ -56,7 +59,7 @@ describe('Verify example pattern works correctly', () => {
 		// Verify input exists with breakpoint class
 		const inputElement = inputSection?.querySelector('input');
 		expect(inputElement).toBeTruthy();
-		expect(inputElement?.className).toMatch(/^nuclo-bp-\d+$/);
+		expect(inputElement?.className).toContain('bg-ff0000');
 
 		// Verify CSS rules were created
 		const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;

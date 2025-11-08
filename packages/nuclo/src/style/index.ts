@@ -1,4 +1,431 @@
-// CSSStyleSheet API
+// Cache for generated utility classes to avoid duplicates
+const classCache = new Map<string, string>();
+
+// Sanitize value for use in class name
+function sanitizeValue(value: string): string {
+	// Remove # from hex colors
+	value = value.replace(/^#/, '');
+	// Replace special characters with hyphens
+	value = value.replace(/[^a-zA-Z0-9]/g, '-');
+	// Remove leading/trailing hyphens and collapse multiple hyphens
+	value = value.replace(/^-+|-+$/g, '').replace(/-+/g, '-');
+	return value.toLowerCase();
+}
+
+// Generate utility class name from property and value
+function generateUtilityClassName(property: string, value: string): string {
+	const cacheKey = `${property}:${value}`;
+	
+	if (classCache.has(cacheKey)) {
+		return classCache.get(cacheKey)!;
+	}
+
+	let className: string;
+	
+	// Map CSS properties to Tailwind-like class prefixes
+	const propertyMap: Record<string, string> = {
+		'background-color': 'bg',
+		'color': 'text',
+		'font-size': 'text',
+		'display': 'display',
+		'flex': 'flex',
+		'justify-content': 'justify',
+		'align-items': 'items',
+		'font-weight': 'font',
+		'padding': 'p',
+		'margin': 'm',
+		'width': 'w',
+		'height': 'h',
+		'border': 'border',
+		'border-radius': 'rounded',
+		'text-align': 'text',
+		'gap': 'gap',
+		'flex-direction': 'flex',
+		'position': 'position',
+		'opacity': 'opacity',
+		'cursor': 'cursor',
+		'box-shadow': 'shadow',
+		'transition': 'transition',
+		'text-decoration': 'underline',
+		'letter-spacing': 'tracking',
+		'min-width': 'min-w',
+		'max-width': 'max-w',
+		'min-height': 'min-h',
+		'accent-color': 'accent',
+		'line-height': 'leading',
+		'font-family': 'font',
+		'outline': 'outline',
+	};
+
+	const prefix = propertyMap[property] || property.replace(/-/g, '-');
+	const sanitizedValue = sanitizeValue(value);
+
+	// Handle special cases
+	if (property === 'display' && value === 'flex') {
+		className = 'flex';
+	} else if (property === 'display' && value === 'grid') {
+		className = 'grid';
+	} else if (property === 'display' && value === 'block') {
+		className = 'display-block';
+	} else if (property === 'display' && value === 'none') {
+		className = 'display-none';
+	} else if (property === 'justify-content' && value === 'center' && prefix === 'justify') {
+		className = 'justify-center';
+	} else if (property === 'align-items' && value === 'center' && prefix === 'items') {
+		className = 'items-center';
+	} else if (property === 'font-weight' && value === 'bold') {
+		className = 'font-bold';
+	} else if (property === 'text-align' && value === 'center') {
+		className = 'text-center';
+	} else if (property === 'flex-direction' && value === 'column') {
+		className = 'flex-col';
+	} else if (property === 'flex-direction' && value === 'row') {
+		className = 'flex-row';
+	} else if (property === 'cursor' && value === 'pointer') {
+		className = 'cursor-pointer';
+	} else if (property === 'text-decoration' && value === 'line-through') {
+		className = 'line-through';
+	} else {
+		// Default: prefix-value format
+		className = `${prefix}-${sanitizedValue}`;
+	}
+
+	classCache.set(cacheKey, className);
+	return className;
+}
+
+// CSSStyleSheet API - creates a utility class
+function createUtilityClass(className: string, property: string, value: string): void {
+	let styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
+
+	if (!styleSheet) {
+		styleSheet = document.createElement("style");
+		styleSheet.id = "nuclo-styles";
+		document.head.appendChild(styleSheet);
+	}
+
+	// Check if class already exists
+	const existingRules = Array.from(styleSheet.sheet?.cssRules || []);
+	const classExists = existingRules.some(rule => {
+		if (rule instanceof CSSStyleRule) {
+			return rule.selectorText === `.${className}`;
+		}
+		return false;
+	});
+
+	if (!classExists) {
+		styleSheet.sheet?.insertRule(`.${className} { ${property}: ${value}; }`, styleSheet.sheet.cssRules.length);
+	}
+}
+
+// Create utility class with media query
+function createUtilityClassWithMedia(className: string, property: string, value: string, mediaQuery: string): void {
+	let styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
+
+	if (!styleSheet) {
+		styleSheet = document.createElement("style");
+		styleSheet.id = "nuclo-styles";
+		document.head.appendChild(styleSheet);
+	}
+
+	// Check if media query rule already exists
+	const existingRules = Array.from(styleSheet.sheet?.cssRules || []);
+	let mediaRule: CSSMediaRule | null = null;
+
+	for (const rule of existingRules) {
+		if (rule instanceof CSSMediaRule && rule.media.mediaText === mediaQuery) {
+			mediaRule = rule;
+			break;
+		}
+	}
+
+	if (!mediaRule) {
+		// Create new media query rule
+		const index = styleSheet.sheet?.cssRules.length || 0;
+		styleSheet.sheet?.insertRule(`@media ${mediaQuery} {}`, index);
+		mediaRule = styleSheet.sheet?.cssRules[index] as CSSMediaRule;
+	}
+
+	// Check if class already exists in this media query
+	const classExists = Array.from(mediaRule.cssRules).some(rule => {
+		if (rule instanceof CSSStyleRule) {
+			return rule.selectorText === `.${className}`;
+		}
+		return false;
+	});
+
+	if (!classExists) {
+		mediaRule.insertRule(`.${className} { ${property}: ${value}; }`, mediaRule.cssRules.length);
+	}
+}
+
+// Utility class builder for chaining CSS properties
+class StyleBuilder {
+	private classNames: string[] = [];
+	private classDefinitions: Array<{ className: string; property: string; value: string }> = [];
+
+	// Get the accumulated class names
+	getClassNames(): string[] {
+		return [...this.classNames];
+	}
+
+	// Get class definitions (for breakpoint support)
+	getClassDefinitions(): Array<{ className: string; property: string; value: string }> {
+		return [...this.classDefinitions];
+	}
+
+	// Get class names as space-separated string
+	toString(): string {
+		return this.classNames.join(' ');
+	}
+
+	// Add a utility class
+	private addClass(property: string, value: string): this {
+		const className = generateUtilityClassName(property, value);
+		// Track the property/value that created this class for breakpoint support
+		classToPropertyMap.set(className, { property, value });
+		
+		// Store the class definition
+		this.classDefinitions.push({ className, property, value });
+		
+		// Create the class immediately (will be overridden by media queries if needed)
+		createUtilityClass(className, property, value);
+		
+		if (!this.classNames.includes(className)) {
+			this.classNames.push(className);
+		}
+		return this;
+	}
+
+	// Add a custom style
+	add(property: string, value: string): this {
+		return this.addClass(property, value);
+	}
+
+	// Background color
+	bg(color: string): this {
+		return this.addClass("background-color", color);
+	}
+
+	// Text color
+	color(color: string): this {
+		return this.addClass("color", color);
+	}
+
+	// Font size
+	fontSize(size: string): this {
+		return this.addClass("font-size", size);
+	}
+
+	// Display
+	display(value: string): this {
+		return this.addClass("display", value);
+	}
+
+	// Display flex or flex property
+	flex(value?: string): this {
+		if (value !== undefined) {
+			return this.addClass("flex", value);
+		} else {
+			return this.addClass("display", "flex");
+		}
+	}
+
+	// Center content (flex)
+	center(): this {
+		this.addClass("justify-content", "center");
+		return this.addClass("align-items", "center");
+	}
+
+	// Bold font
+	bold(): this {
+		return this.addClass("font-weight", "bold");
+	}
+
+	// Padding
+	padding(value: string): this {
+		return this.addClass("padding", value);
+	}
+
+	// Margin
+	margin(value: string): this {
+		return this.addClass("margin", value);
+	}
+
+	// Width
+	width(value: string): this {
+		return this.addClass("width", value);
+	}
+
+	// Height
+	height(value: string): this {
+		return this.addClass("height", value);
+	}
+
+	// Border
+	border(value: string): this {
+		return this.addClass("border", value);
+	}
+
+	// Border radius
+	borderRadius(value: string): this {
+		return this.addClass("border-radius", value);
+	}
+
+	// Text align
+	textAlign(value: string): this {
+		return this.addClass("text-align", value);
+	}
+
+	// Gap (for flex/grid)
+	gap(value: string): this {
+		return this.addClass("gap", value);
+	}
+
+	// Flex direction
+	flexDirection(value: string): this {
+		return this.addClass("flex-direction", value);
+	}
+
+	// Display grid
+	grid(): this {
+		return this.addClass("display", "grid");
+	}
+
+	// Position
+	position(value: string): this {
+		return this.addClass("position", value);
+	}
+
+	// Opacity
+	opacity(value: string): this {
+		return this.addClass("opacity", value);
+	}
+
+	// Cursor
+	cursor(value: string): this {
+		return this.addClass("cursor", value);
+	}
+
+	// Box shadow
+	boxShadow(value: string): this {
+		return this.addClass("box-shadow", value);
+	}
+
+	// Transition
+	transition(value: string): this {
+		return this.addClass("transition", value);
+	}
+
+	// Text decoration
+	textDecoration(value: string): this {
+		return this.addClass("text-decoration", value);
+	}
+
+	// Letter spacing
+	letterSpacing(value: string): this {
+		return this.addClass("letter-spacing", value);
+	}
+
+	// Font weight
+	fontWeight(value: string): this {
+		return this.addClass("font-weight", value);
+	}
+
+	// Align items
+	alignItems(value: string): this {
+		return this.addClass("align-items", value);
+	}
+
+	// Justify content
+	justifyContent(value: string): this {
+		return this.addClass("justify-content", value);
+	}
+
+	// Min width
+	minWidth(value: string): this {
+		return this.addClass("min-width", value);
+	}
+
+	// Max width
+	maxWidth(value: string): this {
+		return this.addClass("max-width", value);
+	}
+
+	// Min height
+	minHeight(value: string): this {
+		return this.addClass("min-height", value);
+	}
+
+	// Accent color
+	accentColor(value: string): this {
+		return this.addClass("accent-color", value);
+	}
+
+	// Line height
+	lineHeight(value: string): this {
+		return this.addClass("line-height", value);
+	}
+
+	// Font family
+	fontFamily(value: string): this {
+		return this.addClass("font-family", value);
+	}
+
+	// Outline
+	outline(value: string): this {
+		return this.addClass("outline", value);
+	}
+}
+
+// Breakpoints type
+type BreakpointStyles<T extends string> = Partial<Record<T, StyleBuilder>>;
+
+// Helper to extract property and value from a class name
+// This is a reverse lookup - we need to track what property/value created each class
+const classToPropertyMap = new Map<string, { property: string; value: string }>();
+
+// Create breakpoints function
+export function createBreakpoints<T extends string>(breakpoints: Record<T, string>) {
+	return function cn(styles?: BreakpointStyles<T>): { className: string } | string {
+		if (!styles || Object.keys(styles).length === 0) {
+			return "";
+		}
+
+		const breakpointEntries = Object.entries(breakpoints) as [T, string][];
+		const allClassNames: string[] = [];
+
+		// Process each breakpoint
+		let isFirst = true;
+		for (const [breakpointName, mediaQuery] of breakpointEntries) {
+			const styleBuilder = styles[breakpointName];
+			if (styleBuilder) {
+				const classDefinitions = (styleBuilder as StyleBuilder).getClassDefinitions();
+				
+				// For each class definition
+				for (const { className, property, value } of classDefinitions) {
+					if (isFirst) {
+						// Base breakpoint: create classes without media query
+						createUtilityClass(className, property, value);
+						allClassNames.push(className);
+					} else {
+						// Subsequent breakpoints: create unique prefixed classes in media queries
+						// This prevents leaking between elements (like Tailwind's sm:, md:, lg:)
+						const prefixedClassName = `${breakpointName}-${className}`;
+						createUtilityClassWithMedia(prefixedClassName, property, value, mediaQuery);
+						allClassNames.push(prefixedClassName);
+					}
+				}
+				isFirst = false;
+			}
+		}
+
+		// Return all class names - each breakpoint has unique classes
+		return { className: allClassNames.join(' ') };
+	};
+}
+
+// Legacy function for backward compatibility
 export function createCSSClass(className: string, styles: Record<string, string>): void {
 	let styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
 
@@ -13,288 +440,6 @@ export function createCSSClass(className: string, styles: Record<string, string>
 		.join("; ");
 
 	styleSheet.sheet?.insertRule(`.${className} { ${rules} }`, styleSheet.sheet.cssRules.length);
-}
-
-// Utility class builder for chaining CSS properties
-class StyleBuilder {
-	private styles: Record<string, string> = {};
-
-	// Get the accumulated styles
-	getStyles(): Record<string, string> {
-		return { ...this.styles };
-	}
-
-	// Add a custom style
-	add(property: string, value: string): this {
-		this.styles[property] = value;
-		return this;
-	}
-
-	// Background color
-	bg(color: string): this {
-		this.styles["background-color"] = color;
-		return this;
-	}
-
-	// Text color
-	color(color: string): this {
-		this.styles["color"] = color;
-		return this;
-	}
-
-	// Font size
-	fontSize(size: string): this {
-		this.styles["font-size"] = size;
-		return this;
-	}
-
-	// Display
-	display(value: string): this {
-		this.styles["display"] = value;
-		return this;
-	}
-
-	// Display flex or flex property
-	flex(value?: string): this {
-		if (value !== undefined) {
-			this.styles["flex"] = value;
-		} else {
-			this.styles["display"] = "flex";
-		}
-		return this;
-	}
-
-	// Center content (flex)
-	center(): this {
-		this.styles["justify-content"] = "center";
-		this.styles["align-items"] = "center";
-		return this;
-	}
-
-	// Bold font
-	bold(): this {
-		this.styles["font-weight"] = "bold";
-		return this;
-	}
-
-	// Padding
-	padding(value: string): this {
-		this.styles["padding"] = value;
-		return this;
-	}
-
-	// Margin
-	margin(value: string): this {
-		this.styles["margin"] = value;
-		return this;
-	}
-
-	// Width
-	width(value: string): this {
-		this.styles["width"] = value;
-		return this;
-	}
-
-	// Height
-	height(value: string): this {
-		this.styles["height"] = value;
-		return this;
-	}
-
-	// Border
-	border(value: string): this {
-		this.styles["border"] = value;
-		return this;
-	}
-
-	// Border radius
-	borderRadius(value: string): this {
-		this.styles["border-radius"] = value;
-		return this;
-	}
-
-	// Text align
-	textAlign(value: string): this {
-		this.styles["text-align"] = value;
-		return this;
-	}
-
-	// Gap (for flex/grid)
-	gap(value: string): this {
-		this.styles["gap"] = value;
-		return this;
-	}
-
-	// Flex direction
-	flexDirection(value: string): this {
-		this.styles["flex-direction"] = value;
-		return this;
-	}
-
-	// Display grid
-	grid(): this {
-		this.styles["display"] = "grid";
-		return this;
-	}
-
-	// Position
-	position(value: string): this {
-		this.styles["position"] = value;
-		return this;
-	}
-
-	// Opacity
-	opacity(value: string): this {
-		this.styles["opacity"] = value;
-		return this;
-	}
-
-	// Cursor
-	cursor(value: string): this {
-		this.styles["cursor"] = value;
-		return this;
-	}
-
-	// Box shadow
-	boxShadow(value: string): this {
-		this.styles["box-shadow"] = value;
-		return this;
-	}
-
-	// Transition
-	transition(value: string): this {
-		this.styles["transition"] = value;
-		return this;
-	}
-
-	// Text decoration
-	textDecoration(value: string): this {
-		this.styles["text-decoration"] = value;
-		return this;
-	}
-
-	// Letter spacing
-	letterSpacing(value: string): this {
-		this.styles["letter-spacing"] = value;
-		return this;
-	}
-
-	// Font weight
-	fontWeight(value: string): this {
-		this.styles["font-weight"] = value;
-		return this;
-	}
-
-	// Align items
-	alignItems(value: string): this {
-		this.styles["align-items"] = value;
-		return this;
-	}
-
-	// Justify content
-	justifyContent(value: string): this {
-		this.styles["justify-content"] = value;
-		return this;
-	}
-
-	// Min width
-	minWidth(value: string): this {
-		this.styles["min-width"] = value;
-		return this;
-	}
-
-	// Max width
-	maxWidth(value: string): this {
-		this.styles["max-width"] = value;
-		return this;
-	}
-
-	// Min height
-	minHeight(value: string): this {
-		this.styles["min-height"] = value;
-		return this;
-	}
-
-	// Accent color
-	accentColor(value: string): this {
-		this.styles["accent-color"] = value;
-		return this;
-	}
-
-	// Line height
-	lineHeight(value: string): this {
-		this.styles["line-height"] = value;
-		return this;
-	}
-
-	// Font family
-	fontFamily(value: string): this {
-		this.styles["font-family"] = value;
-		return this;
-	}
-
-	// Outline
-	outline(value: string): this {
-		this.styles["outline"] = value;
-		return this;
-	}
-}
-
-// Counter for generating unique class names
-let classCounter = 0;
-
-// Breakpoints type
-type BreakpointConfig = Record<string, string>;
-type BreakpointStyles<T extends string> = Partial<Record<T, StyleBuilder>>;
-
-// Create breakpoints function
-export function createBreakpoints<T extends string>(breakpoints: Record<T, string>) {
-	return function cn(styles?: BreakpointStyles<T>): { className: string } | string {
-		if (!styles || Object.keys(styles).length === 0) {
-			return "";
-		}
-
-		const className = `nuclo-bp-${classCounter++}`;
-		const breakpointEntries = Object.entries(breakpoints) as [T, string][];
-
-		// First breakpoint is the base - apply without media query
-		let isFirst = true;
-		for (const [breakpointName, mediaQuery] of breakpointEntries) {
-			const styleBuilder = styles[breakpointName];
-			if (styleBuilder) {
-				const cssStyles = (styleBuilder as StyleBuilder).getStyles();
-				if (isFirst) {
-					// Base styles without media query
-					createCSSClass(className, cssStyles);
-					isFirst = false;
-				} else {
-					// Override styles with media query
-					createCSSClassWithMedia(className, cssStyles, mediaQuery);
-				}
-			}
-		}
-
-		// Return an object that will be recognized as an attribute modifier
-		return { className };
-	};
-}
-
-// Helper to create CSS class with media query
-function createCSSClassWithMedia(className: string, styles: Record<string, string>, mediaQuery: string): void {
-	let styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
-
-	if (!styleSheet) {
-		styleSheet = document.createElement("style");
-		styleSheet.id = "nuclo-styles";
-		document.head.appendChild(styleSheet);
-	}
-
-	const rules = Object.entries(styles)
-		.map(([property, value]) => `${property}: ${value}`)
-		.join("; ");
-
-	const cssRule = `@media ${mediaQuery} { .${className} { ${rules} } }`;
-	styleSheet.sheet?.insertRule(cssRule, styleSheet.sheet.cssRules.length);
 }
 
 // Utility functions that create new StyleBuilders

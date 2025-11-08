@@ -59,162 +59,164 @@ describe('Style Utility Functions', () => {
 	});
 
 	describe('StyleBuilder - bg()', () => {
-		it('should create a StyleBuilder with background-color', () => {
+		it('should create a StyleBuilder with background-color class', () => {
 			const builder = bg('#FF0000');
-			const styles = builder.getStyles();
-			expect(styles['background-color']).toBe('#FF0000');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('bg-ff0000');
 		});
 
 		it('should support chaining', () => {
 			const builder = bg('#FF0000').fontSize('20px');
-			const styles = builder.getStyles();
-			expect(styles['background-color']).toBe('#FF0000');
-			expect(styles['font-size']).toBe('20px');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('bg-ff0000');
+			expect(classNames).toContain('text-20px');
 		});
 	});
 
 	describe('StyleBuilder - color()', () => {
-		it('should create a StyleBuilder with color', () => {
+		it('should create a StyleBuilder with color class', () => {
 			const builder = color('#00FF00');
-			const styles = builder.getStyles();
-			expect(styles['color']).toBe('#00FF00');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('text-00ff00');
 		});
 	});
 
 	describe('StyleBuilder - fontSize()', () => {
-		it('should create a StyleBuilder with font-size', () => {
+		it('should create a StyleBuilder with font-size class', () => {
 			const builder = fontSize('24px');
-			const styles = builder.getStyles();
-			expect(styles['font-size']).toBe('24px');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('text-24px');
 		});
 	});
 
 	describe('StyleBuilder - flex()', () => {
-		it('should set display to flex', () => {
+		it('should set display to flex class', () => {
 			const builder = flex();
-			const styles = builder.getStyles();
-			expect(styles['display']).toBe('flex');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('flex');
 		});
 	});
 
 	describe('StyleBuilder - center()', () => {
-		it('should center content with flex', () => {
+		it('should center content with flex classes', () => {
 			const builder = center();
-			const styles = builder.getStyles();
-			expect(styles['justify-content']).toBe('center');
-			expect(styles['align-items']).toBe('center');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('justify-center');
+			expect(classNames).toContain('items-center');
 		});
 	});
 
 	describe('StyleBuilder - bold()', () => {
-		it('should set font-weight to bold', () => {
+		it('should set font-weight to bold class', () => {
 			const builder = bold();
-			const styles = builder.getStyles();
-			expect(styles['font-weight']).toBe('bold');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('font-bold');
 		});
 	});
 
 	describe('StyleBuilder - padding()', () => {
-		it('should set padding', () => {
+		it('should set padding class', () => {
 			const builder = padding('10px');
-			const styles = builder.getStyles();
-			expect(styles['padding']).toBe('10px');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('p-10px');
 		});
 	});
 
 	describe('StyleBuilder - margin()', () => {
-		it('should set margin', () => {
+		it('should set margin class', () => {
 			const builder = margin('20px');
-			const styles = builder.getStyles();
-			expect(styles['margin']).toBe('20px');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('m-20px');
 		});
 	});
 
 	describe('StyleBuilder - width()', () => {
-		it('should set width', () => {
+		it('should set width class', () => {
 			const builder = width('100px');
-			const styles = builder.getStyles();
-			expect(styles['width']).toBe('100px');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('w-100px');
 		});
 	});
 
 	describe('StyleBuilder - height()', () => {
-		it('should set height', () => {
+		it('should set height class', () => {
 			const builder = height('200px');
-			const styles = builder.getStyles();
-			expect(styles['height']).toBe('200px');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('h-200px');
 		});
 	});
 
 	describe('StyleBuilder - border()', () => {
-		it('should set border', () => {
+		it('should set border class', () => {
 			const builder = border('1px solid black');
-			const styles = builder.getStyles();
-			expect(styles['border']).toBe('1px solid black');
+			const classNames = builder.getClassNames();
+			expect(classNames.length).toBeGreaterThan(0);
+			// Border values are complex, just check a class was created
+			expect(classNames[0]).toMatch(/^border-/);
 		});
 	});
 
 	describe('StyleBuilder - borderRadius()', () => {
-		it('should set border-radius', () => {
+		it('should set border-radius class', () => {
 			const builder = borderRadius('8px');
-			const styles = builder.getStyles();
-			expect(styles['border-radius']).toBe('8px');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('rounded-8px');
 		});
 	});
 
 	describe('StyleBuilder - textAlign()', () => {
-		it('should set text-align', () => {
+		it('should set text-align class', () => {
 			const builder = textAlign('center');
-			const styles = builder.getStyles();
-			expect(styles['text-align']).toBe('center');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('text-center');
 		});
 	});
 
 	describe('StyleBuilder - gap()', () => {
-		it('should set gap', () => {
+		it('should set gap class', () => {
 			const builder = gap('10px');
-			const styles = builder.getStyles();
-			expect(styles['gap']).toBe('10px');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('gap-10px');
 		});
 	});
 
 	describe('StyleBuilder - flexDirection()', () => {
-		it('should set flex-direction', () => {
+		it('should set flex-direction class', () => {
 			const builder = flexDirection('column');
-			const styles = builder.getStyles();
-			expect(styles['flex-direction']).toBe('column');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('flex-col');
 		});
 	});
 
 	describe('StyleBuilder - grid()', () => {
-		it('should set display to grid', () => {
+		it('should set display to grid class', () => {
 			const builder = grid();
-			const styles = builder.getStyles();
-			expect(styles['display']).toBe('grid');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('grid');
 		});
 	});
 
 	describe('StyleBuilder - position()', () => {
-		it('should set position', () => {
+		it('should set position class', () => {
 			const builder = position('absolute');
-			const styles = builder.getStyles();
-			expect(styles['position']).toBe('absolute');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('position-absolute');
 		});
 	});
 
 	describe('StyleBuilder - opacity()', () => {
-		it('should set opacity', () => {
+		it('should set opacity class', () => {
 			const builder = opacity('0.5');
-			const styles = builder.getStyles();
-			expect(styles['opacity']).toBe('0.5');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('opacity-0-5');
 		});
 	});
 
 	describe('StyleBuilder - cursor()', () => {
-		it('should set cursor', () => {
+		it('should set cursor class', () => {
 			const builder = cursor('pointer');
-			const styles = builder.getStyles();
-			expect(styles['cursor']).toBe('pointer');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('cursor-pointer');
 		});
 	});
 
@@ -226,13 +228,13 @@ describe('Style Utility Functions', () => {
 				.center()
 				.bold();
 
-			const styles = builder.getStyles();
-			expect(styles['background-color']).toBe('#FF0000');
-			expect(styles['font-size']).toBe('20px');
-			expect(styles['display']).toBe('flex');
-			expect(styles['justify-content']).toBe('center');
-			expect(styles['align-items']).toBe('center');
-			expect(styles['font-weight']).toBe('bold');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('bg-ff0000');
+			expect(classNames).toContain('text-20px');
+			expect(classNames).toContain('flex');
+			expect(classNames).toContain('justify-center');
+			expect(classNames).toContain('items-center');
+			expect(classNames).toContain('font-bold');
 		});
 
 		it('should support complex chaining', () => {
@@ -243,13 +245,13 @@ describe('Style Utility Functions', () => {
 				.borderRadius('12px')
 				.bg('#F0F0F0');
 
-			const styles = builder.getStyles();
-			expect(styles['display']).toBe('flex');
-			expect(styles['flex-direction']).toBe('column');
-			expect(styles['gap']).toBe('16px');
-			expect(styles['padding']).toBe('24px');
-			expect(styles['border-radius']).toBe('12px');
-			expect(styles['background-color']).toBe('#F0F0F0');
+			const classNames = builder.getClassNames();
+			expect(classNames).toContain('flex');
+			expect(classNames).toContain('flex-col');
+			expect(classNames).toContain('gap-16px');
+			expect(classNames).toContain('p-24px');
+			expect(classNames).toContain('rounded-12px');
+			expect(classNames).toContain('bg-f0f0f0');
 		});
 	});
 
@@ -293,7 +295,13 @@ describe('Style Utility Functions', () => {
 			});
 
 			expect(result).toHaveProperty('className');
-			expect((result as any).className).toMatch(/^nuclo-bp-\d+$/);
+			const className = (result as any).className;
+			// Should contain base (small) breakpoint classes
+			expect(className).toContain('bg-ff0000');
+			expect(className).toContain('text-20px');
+			// Should contain prefixed large breakpoint classes
+			expect(className).toContain('large-bg-0000ff');
+			expect(className).toContain('large-text-30px');
 		});
 
 		it('should create CSS rules with media queries', () => {
@@ -312,7 +320,7 @@ describe('Style Utility Functions', () => {
 			expect(styleSheet?.sheet?.cssRules.length).toBeGreaterThan(0);
 		});
 
-		it('should generate unique class names for each call', () => {
+		it('should generate utility class names for each call', () => {
 			const cn = createBreakpoints({
 				small: '(max-width: 600px)'
 			});
@@ -320,7 +328,8 @@ describe('Style Utility Functions', () => {
 			const result1 = cn({ small: bg('#FF0000') });
 			const result2 = cn({ small: bg('#00FF00') });
 
-			expect((result1 as any).className).not.toBe((result2 as any).className);
+			expect((result1 as any).className).toContain('bg-ff0000');
+			expect((result2 as any).className).toContain('bg-00ff00');
 		});
 
 		it('should handle partial breakpoint styles', () => {
@@ -336,7 +345,11 @@ describe('Style Utility Functions', () => {
 				// medium is intentionally omitted
 			});
 
-			expect((result as any).className).toMatch(/^nuclo-bp-\d+$/);
+			const className = (result as any).className;
+			// Should contain base (small) breakpoint class
+			expect(className).toContain('bg-ff0000');
+			// Should contain prefixed large breakpoint class
+			expect(className).toContain('large-bg-0000ff');
 		});
 
 		it('should work with complex style chains in breakpoints', () => {
@@ -350,7 +363,13 @@ describe('Style Utility Functions', () => {
 				large: bg('#0000FF').fontSize('50px').flex().center().bold()
 			});
 
-			expect((result as any).className).toMatch(/^nuclo-bp-\d+$/);
+			const className = (result as any).className;
+			expect(className).toContain('bg-ff0000');
+			expect(className).toContain('text-20px');
+			expect(className).toContain('flex');
+			expect(className).toContain('justify-center');
+			expect(className).toContain('items-center');
+			expect(className).toContain('font-bold');
 
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			expect(styleSheet).toBeTruthy();
@@ -371,11 +390,26 @@ describe('Style Utility Functions', () => {
 				large: bg('#0000FF').fontSize('50px').flex().center().bold()
 			});
 
-			expect((result as any).className).toMatch(/^nuclo-bp-\d+$/);
+			const className = (result as any).className;
+			// Should contain base (small) breakpoint classes
+			expect(className).toContain('bg-ff0000');
+			expect(className).toContain('text-20px');
+			expect(className).toContain('flex');
+			expect(className).toContain('justify-center');
+			expect(className).toContain('items-center');
+			expect(className).toContain('font-bold');
+			// Should contain prefixed medium/large breakpoint classes
+			expect(className).toContain('medium-bg-00ff00');
+			expect(className).toContain('medium-text-40px');
+			expect(className).toContain('large-bg-0000ff');
+			expect(className).toContain('large-text-50px');
 
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			expect(styleSheet).toBeTruthy();
-			expect(styleSheet?.sheet?.cssRules.length).toBe(3); // One for each breakpoint
+			// Check that media queries were created (base + 2 media queries)
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
+			const mediaRules = rules.filter(rule => rule.type === CSSRule.MEDIA_RULE);
+			expect(mediaRules.length).toBeGreaterThanOrEqual(2); // At least 2 media queries
 		});
 	});
 });

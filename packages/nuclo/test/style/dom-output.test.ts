@@ -31,7 +31,10 @@ describe('Style utilities - DOM Output', () => {
 		)();
 
 		// Verify the breakpoint className was applied to the header div
-		expect(header.className).toMatch(/^nuclo-bp-\d+$/);
+		const headerClassName = header.className;
+		expect(headerClassName).toContain('bg-ff0000');
+		expect(headerClassName).toContain('text-20px');
+		expect(headerClassName).toContain('flex');
 		expect(header.textContent).toContain('Header Content');
 
 		// Verify CSS classes were created
@@ -57,10 +60,13 @@ describe('Style utilities - DOM Output', () => {
 		container.appendChild(element);
 
 		// The element should have the generated className applied
-		expect(element.className).toMatch(/^nuclo-bp-\d+$/);
+		const elementClassName = element.className;
+		expect(elementClassName).toContain('bg-ff0000');
+		expect(elementClassName).toContain('text-20px');
 		expect(element.textContent).toContain('Test Content');
 
 		// Verify in the actual DOM HTML
-		expect(container.innerHTML).toMatch(/class="nuclo-bp-\d+"/);
+		expect(container.innerHTML).toContain('bg-ff0000');
+		expect(container.innerHTML).toContain('text-20px');
 	});
 });

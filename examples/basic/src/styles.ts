@@ -1,3 +1,6 @@
+// Breakpoint fix verification
+console.log('🔧 Nuclo styles.ts loaded - breakpoint fix should be active');
+
 // Theme configuration - Modern, vibrant design
 export const theme = {
 	colors: {
@@ -42,10 +45,33 @@ export const theme = {
 
 // Breakpoints
 export const cn = createBreakpoints({
-	small: "(minx-width: 1px)",
+	small: "(min-width: 1px)",
 	medium: "(min-width: 601px)",
 	large: "(min-width: 1025px)",
 });
+
+// Verify the breakpoint function is working
+const testResult = cn({
+	small: bg("#6366f1"),
+	medium: bg("#FF0000"),
+});
+console.log('✅ Breakpoint className generated:', testResult.className);
+console.log('   Expected: Base classes (bg-6366f1) + prefixed medium classes (medium-bg-ff0000)');
+console.log('   Base class present?', testResult.className.includes('bg-6366f1') ? '✅' : '❌');
+console.log('   Medium class present?', testResult.className.includes('medium-bg-ff0000') ? '✅ FIXED' : '❌ BROKEN');
+
+// Check generated CSS
+setTimeout(() => {
+	const styleSheet = document.getElementById('nuclo-styles');
+	if (styleSheet && styleSheet.sheet) {
+		const mediaRules = Array.from(styleSheet.sheet.cssRules).filter(rule => rule.type === CSSRule.MEDIA_RULE);
+		console.log('📋 Media query rules created:', mediaRules.length);
+		mediaRules.forEach(rule => {
+			const mr = rule as CSSMediaRule;
+			console.log(`   @media ${mr.media.mediaText} - ${mr.cssRules.length} rules`);
+		});
+	}
+}, 100);
 
 // Global styles - cascading from small to large (only override what changes)
 export const globalStyles = {
@@ -93,7 +119,7 @@ export const globalStyles = {
 			.alignItems("center")
 			.justifyContent("center")
 			.gap(theme.spacing.md),
-		medium: fontSize("2.25rem").padding(`${theme.spacing.xxl} ${theme.spacing.xxl}`),
+		medium: bg("#FF0000").fontSize("2.25rem").padding(`${theme.spacing.xxl} ${theme.spacing.xxl}`),
 		large: fontSize("2.5rem"),
 	}),
 
