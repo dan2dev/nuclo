@@ -20,8 +20,24 @@ function applySingleAttribute<TTagName extends ElementTagName>(
 
   const setValue = (v: unknown): void => {
     if (v == null) return;
-    if (key in el) {
-      (el as Record<string, unknown>)[key as string] = v;
+
+    // SVG elements should always use setAttribute for most attributes
+    // because many SVG properties are read-only
+    const isSVGElement = el instanceof Element && el.namespaceURI === 'http://www.w3.org/2000/svg';
+
+    if (isSVGElement) {
+      // Always use setAttribute for SVG elements
+      el.setAttribute(String(key), String(v));
+    } else if (key in el) {
+      // For HTML elements, try to set as property first
+      try {
+        (el as Record<string, unknown>)[key as string] = v;
+      } catch {
+        // If property is read-only, fall back to setAttribute
+        if (el instanceof Element) {
+          el.setAttribute(String(key), String(v));
+        }
+      }
     } else if (el instanceof Element) {
       el.setAttribute(String(key), String(v));
     }
