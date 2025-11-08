@@ -1,39 +1,107 @@
-import "./style.css";
 import "nuclo";
 import { getTodos, getInputValue, setInputValue, addTodo, toggleTodo, deleteTodo, clearCompleted } from "./todoState";
 import { TrashIcon, PlusIcon, CircleIcon } from "./icons";
+import { globalStyles } from "./styles";
 
 const appRoot = document.querySelector<HTMLDivElement>("#app")!;
 
-const cn = createBreakpoints({
-	small: "(max-width: 600px)",
-	medium: "(min-width: 601px) and (max-width: 1024px)",
-	large: "(min-width: 1025px)",
+// Apply global body styles
+createCSSClass("body-styles", {
+	margin: "0",
+	padding: "1rem",
+	"min-height": "100vh",
+	display: "flex",
+	"place-items": "center",
+	"font-family": "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+	"line-height": "1.6",
+	color: "#2d3748",
+	background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+	"-webkit-font-smoothing": "antialiased",
+	"-moz-osx-font-smoothing": "grayscale",
 });
 
-const styles = {
-	header: cn({
-		small: bg("#FF0000").fontSize("20px").flex().center().bold(),
-		medium: bg("#00FF00").fontSize("40px").flex().center().bold(),
-		large: bg("#0000FF").fontSize("50px").flex().center().bold(),
-	}),
-};
+createCSSClass("app-wrapper", {
+	width: "100%",
+	"max-width": "700px",
+	margin: "0 auto",
+});
+
+createCSSClass("todo-item-hover", {
+	transition: "all 0.3s ease",
+	"box-shadow": "0 2px 4px rgba(0, 0, 0, 0.05)",
+});
+
+createCSSClass("todo-item-hover:hover", {
+	"box-shadow": "0 4px 12px rgba(0, 0, 0, 0.1)",
+	transform: "translateY(-2px)",
+});
+
+createCSSClass("input-focus", {
+	transition: "all 0.3s ease",
+	"box-shadow": "0 2px 4px rgba(0, 0, 0, 0.05)",
+});
+
+createCSSClass("input-focus:focus", {
+	outline: "none",
+	"border-color": "#667eea",
+	"box-shadow": "0 4px 12px rgba(102, 126, 234, 0.2)",
+	transform: "translateY(-1px)",
+});
+
+createCSSClass("button-hover", {
+	transition: "all 0.3s ease",
+	"box-shadow": "0 4px 12px rgba(102, 126, 234, 0.3)",
+	"font-weight": "600",
+});
+
+createCSSClass("button-hover:hover", {
+	transform: "translateY(-2px)",
+	"box-shadow": "0 6px 20px rgba(102, 126, 234, 0.4)",
+});
+
+createCSSClass("button-hover:active", {
+	transform: "translateY(0)",
+});
+
+createCSSClass("delete-button-hover", {
+	transition: "all 0.2s ease",
+});
+
+createCSSClass("delete-button-hover:hover", {
+	transform: "scale(1.05)",
+	"box-shadow": "0 2px 8px rgba(229, 62, 62, 0.3)",
+});
+
+createCSSClass("checkbox-style", {
+	"accent-color": "#667eea",
+});
+
+createCSSClass("todo-text-done", {
+	"text-decoration": "line-through",
+});
+
+// Apply body styles to document
+document.body.className = "body-styles";
 
 const app = div(
-	{ className: "todo-app" },
-	h1("Todo List"),
-	styles.header,
+	{ className: "app-wrapper" },
+	globalStyles.appContainer,
+
+	// Header with gradient
+	div(
+		globalStyles.header,
+		h1("✨ My Tasks"),
+	),
+
 	// Input section
 	div(
-		{ className: "input-section" },
-		cn(),
+		globalStyles.inputSection,
 		input(
-			cn({
-				small: bg("#FF0000"),
-			}),
+			globalStyles.input,
+			{ className: "input-focus" },
 			{
 				type: "text",
-				placeholder: "What needs to be done?",
+				placeholder: "Add a new task...",
 				value: () => getInputValue(),
 			},
 			on("input", (e) => {
@@ -45,16 +113,33 @@ const app = div(
 				}
 			}),
 		),
-		button({ className: "add-btn" }, PlusIcon(), " Add", on("click", addTodo)),
+		button(
+			globalStyles.addButton,
+			{ className: "button-hover" },
+			PlusIcon(),
+			" Add Task",
+			on("click", addTodo)
+		),
 	),
 
 	// Stats
 	when(
 		() => getTodos().length > 0,
 		div(
-			{ className: "stats" },
-			span(() => `${getTodos().filter((t) => !t.done).length} remaining`),
-			when(() => getTodos().some((t) => t.done), button("Clear completed", on("click", clearCompleted))),
+			globalStyles.stats,
+			span(
+				globalStyles.statsText,
+				() => `📝 ${getTodos().filter((t) => !t.done).length} task${getTodos().filter((t) => !t.done).length !== 1 ? 's' : ''} remaining`
+			),
+			when(
+				() => getTodos().some((t) => t.done),
+				button(
+					globalStyles.clearButton,
+					{ className: "delete-button-hover" },
+					"🗑️ Clear Completed",
+					on("click", clearCompleted)
+				)
+			),
 		),
 	),
 
@@ -62,29 +147,46 @@ const app = div(
 	when(
 		() => getTodos().length > 0,
 		div(
-			{ className: "todo-list" },
+			globalStyles.todoList,
 			list(
 				() => getTodos(),
 				(todo) =>
 					div(
-						{ className: () => (todo.done ? "todo-item done" : "todo-item") },
+						globalStyles.todoItem,
+						{ className: "todo-item-hover" },
 						input(
+							globalStyles.checkbox,
+							{ className: "checkbox-style" },
 							{
 								type: "checkbox",
 								checked: () => todo.done,
 							},
 							on("change", () => toggleTodo(todo.id)),
 						),
-						span({ className: "todo-text" }, () => todo.text),
+						span(
+							() => todo.done ? globalStyles.todoTextDone : globalStyles.todoText,
+							() => todo.done ? { className: "todo-text-done" } : {},
+							() => todo.text
+						),
 						button(
-							{ className: "delete-btn" },
+							globalStyles.deleteButton,
+							{ className: "delete-button-hover" },
 							TrashIcon(),
 							on("click", () => deleteTodo(todo.id)),
 						),
 					),
 			),
 		),
-	).else(div({ className: "empty-state" }, CircleIcon(), p("No todos yet. Add one above!"))),
+	).else(
+		div(
+			globalStyles.emptyState,
+			CircleIcon(),
+			p(
+				globalStyles.emptyText,
+				"✨ No tasks yet. Add your first one above!"
+			)
+		)
+	),
 );
 
 render(app, appRoot);
