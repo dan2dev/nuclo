@@ -48,6 +48,12 @@ class StyleBuilder {
 		return this;
 	}
 
+	// Display
+	display(value: string): this {
+		this.styles["display"] = value;
+		return this;
+	}
+
 	// Display flex
 	flex(): this {
 		this.styles["display"] = "flex";
@@ -144,6 +150,90 @@ class StyleBuilder {
 		this.styles["cursor"] = value;
 		return this;
 	}
+
+	// Box shadow
+	boxShadow(value: string): this {
+		this.styles["box-shadow"] = value;
+		return this;
+	}
+
+	// Transition
+	transition(value: string): this {
+		this.styles["transition"] = value;
+		return this;
+	}
+
+	// Text decoration
+	textDecoration(value: string): this {
+		this.styles["text-decoration"] = value;
+		return this;
+	}
+
+	// Letter spacing
+	letterSpacing(value: string): this {
+		this.styles["letter-spacing"] = value;
+		return this;
+	}
+
+	// Font weight
+	fontWeight(value: string): this {
+		this.styles["font-weight"] = value;
+		return this;
+	}
+
+	// Align items
+	alignItems(value: string): this {
+		this.styles["align-items"] = value;
+		return this;
+	}
+
+	// Justify content
+	justifyContent(value: string): this {
+		this.styles["justify-content"] = value;
+		return this;
+	}
+
+	// Min width
+	minWidth(value: string): this {
+		this.styles["min-width"] = value;
+		return this;
+	}
+
+	// Max width
+	maxWidth(value: string): this {
+		this.styles["max-width"] = value;
+		return this;
+	}
+
+	// Min height
+	minHeight(value: string): this {
+		this.styles["min-height"] = value;
+		return this;
+	}
+
+	// Accent color
+	accentColor(value: string): this {
+		this.styles["accent-color"] = value;
+		return this;
+	}
+
+	// Line height
+	lineHeight(value: string): this {
+		this.styles["line-height"] = value;
+		return this;
+	}
+
+	// Font family
+	fontFamily(value: string): this {
+		this.styles["font-family"] = value;
+		return this;
+	}
+
+	// Outline
+	outline(value: string): this {
+		this.styles["outline"] = value;
+		return this;
+	}
 }
 
 // Counter for generating unique class names
@@ -163,12 +253,20 @@ export function createBreakpoints<T extends string>(breakpoints: Record<T, strin
 		const className = `nuclo-bp-${classCounter++}`;
 		const breakpointEntries = Object.entries(breakpoints) as [T, string][];
 
-		// Generate CSS for each breakpoint
+		// First breakpoint is the base - apply without media query
+		let isFirst = true;
 		for (const [breakpointName, mediaQuery] of breakpointEntries) {
 			const styleBuilder = styles[breakpointName];
 			if (styleBuilder) {
 				const cssStyles = (styleBuilder as StyleBuilder).getStyles();
-				createCSSClassWithMedia(className, cssStyles, mediaQuery);
+				if (isFirst) {
+					// Base styles without media query
+					createCSSClass(className, cssStyles);
+					isFirst = false;
+				} else {
+					// Override styles with media query
+					createCSSClassWithMedia(className, cssStyles, mediaQuery);
+				}
 			}
 		}
 
@@ -270,4 +368,64 @@ export function opacity(value: string): StyleBuilder {
 
 export function cursor(value: string): StyleBuilder {
 	return new StyleBuilder().cursor(value);
+}
+
+export function boxShadow(value: string): StyleBuilder {
+	return new StyleBuilder().boxShadow(value);
+}
+
+export function transition(value: string): StyleBuilder {
+	return new StyleBuilder().transition(value);
+}
+
+export function textDecoration(value: string): StyleBuilder {
+	return new StyleBuilder().textDecoration(value);
+}
+
+export function letterSpacing(value: string): StyleBuilder {
+	return new StyleBuilder().letterSpacing(value);
+}
+
+export function fontWeight(value: string): StyleBuilder {
+	return new StyleBuilder().fontWeight(value);
+}
+
+export function alignItems(value: string): StyleBuilder {
+	return new StyleBuilder().alignItems(value);
+}
+
+export function justifyContent(value: string): StyleBuilder {
+	return new StyleBuilder().justifyContent(value);
+}
+
+export function minWidth(value: string): StyleBuilder {
+	return new StyleBuilder().minWidth(value);
+}
+
+export function maxWidth(value: string): StyleBuilder {
+	return new StyleBuilder().maxWidth(value);
+}
+
+export function minHeight(value: string): StyleBuilder {
+	return new StyleBuilder().minHeight(value);
+}
+
+export function accentColor(value: string): StyleBuilder {
+	return new StyleBuilder().accentColor(value);
+}
+
+export function lineHeight(value: string): StyleBuilder {
+	return new StyleBuilder().lineHeight(value);
+}
+
+export function fontFamily(value: string): StyleBuilder {
+	return new StyleBuilder().fontFamily(value);
+}
+
+export function outline(value: string): StyleBuilder {
+	return new StyleBuilder().outline(value);
+}
+
+export function display(value: string): StyleBuilder {
+	return new StyleBuilder().display(value);
 }
