@@ -18,18 +18,18 @@ export const theme = {
 		shadow: "rgba(0, 0, 0, 0.1)",
 	},
 	spacing: {
-		xs: "0.5rem",
-		sm: "0.75rem",
-		md: "1rem",
-		lg: "1.5rem",
-		xl: "2rem",
-		xxl: "3rem",
+		xs: "0.25rem",
+		sm: "0.5rem",
+		md: "0.75rem",
+		lg: "1rem",
+		xl: "1.5rem",
+		xxl: "2rem",
 	},
 	borderRadius: {
-		sm: "8px",
-		md: "12px",
-		lg: "16px",
-		xl: "20px",
+		sm: "6px",
+		md: "8px",
+		lg: "12px",
+		xl: "16px",
 	},
 };
 
@@ -40,116 +40,65 @@ export const cn = createBreakpoints({
 	large: "(min-width: 1025px)",
 });
 
-// Global styles
+// Global styles - cascading from small to large (only override what changes)
 export const globalStyles = {
 	// App container with glassmorphism
 	appContainer: cn({
 		small: bg("rgba(255, 255, 255, 0.95)")
-			.padding("1.5rem")
-			.borderRadius("20px")
+			.padding(theme.spacing.lg)
+			.borderRadius(theme.borderRadius.xl)
 			.width("100%"),
-		medium: bg("rgba(255, 255, 255, 0.95)")
-			.padding("2rem")
-			.borderRadius("24px")
-			.width("100%"),
-		large: bg("rgba(255, 255, 255, 0.98)")
-			.padding("2.5rem")
-			.borderRadius("28px")
-			.width("100%"),
+		medium: padding(theme.spacing.xl),
+		large: padding("2rem"),
 	}),
 
 	// Header with gradient
 	header: cn({
 		small: bg(theme.colors.bgGradient)
-			.fontSize("2.5rem")
-			.padding("2rem 1.5rem")
-			.borderRadius(theme.borderRadius.lg)
+			.fontSize("1.5rem")
+			.padding(theme.spacing.lg)
+			.borderRadius(theme.borderRadius.md)
 			.color(theme.colors.bg)
 			.textAlign("center")
-			.margin("0 0 2rem 0"),
-		medium: bg(theme.colors.bgGradient)
-			.fontSize("3rem")
-			.padding("2.5rem 2rem")
-			.borderRadius(theme.borderRadius.xl)
-			.color(theme.colors.bg)
-			.textAlign("center")
-			.margin("0 0 2.5rem 0"),
-		large: bg(theme.colors.bgGradient)
-			.fontSize("3.5rem")
-			.padding("3rem 2.5rem")
-			.borderRadius("24px")
-			.color(theme.colors.bg)
-			.textAlign("center")
-			.margin("0 0 3rem 0"),
+			.margin(`0 0 ${theme.spacing.lg} 0`),
+		medium: fontSize("1.75rem").padding(theme.spacing.xl),
+		large: fontSize("2rem").borderRadius(theme.borderRadius.lg),
 	}),
 
 	// Input section container
 	inputSection: cn({
 		small: flex()
 			.gap(theme.spacing.sm)
-			.margin("0 0 2rem 0")
+			.margin(`0 0 ${theme.spacing.lg} 0`)
 			.flexDirection("column"),
-		medium: flex()
-			.gap(theme.spacing.md)
-			.margin("0 0 2rem 0")
-			.flexDirection("row"),
-		large: flex()
-			.gap(theme.spacing.md)
-			.margin("0 0 2.5rem 0")
-			.flexDirection("row"),
+		medium: flexDirection("row").gap(theme.spacing.md),
 	}),
 
 	// Input field
 	input: cn({
-		small: padding("1rem")
-			.fontSize("1rem")
-			.borderRadius(theme.borderRadius.md)
+		small: padding(theme.spacing.md)
+			.fontSize("0.9375rem")
+			.borderRadius(theme.borderRadius.sm)
 			.border(`2px solid ${theme.colors.border}`)
 			.bg(theme.colors.bg)
 			.color(theme.colors.text)
 			.width("100%"),
-		medium: padding("1.125rem")
-			.fontSize("1.0625rem")
-			.borderRadius(theme.borderRadius.md)
-			.border(`2px solid ${theme.colors.border}`)
-			.bg(theme.colors.bg)
-			.color(theme.colors.text)
-			.width("100%"),
-		large: padding("1.25rem")
-			.fontSize("1.125rem")
-			.borderRadius(theme.borderRadius.lg)
-			.border(`2px solid ${theme.colors.border}`)
-			.bg(theme.colors.bg)
-			.color(theme.colors.text)
-			.width("100%"),
+		medium: padding(theme.spacing.lg),
+		large: borderRadius(theme.borderRadius.md),
 	}),
 
 	// Add button
 	addButton: cn({
 		small: bg(theme.colors.bgGradient)
 			.color(theme.colors.bg)
-			.padding("1rem 1.5rem")
-			.fontSize("1rem")
-			.borderRadius(theme.borderRadius.md)
+			.padding(`${theme.spacing.md} ${theme.spacing.lg}`)
+			.fontSize("0.9375rem")
+			.borderRadius(theme.borderRadius.sm)
 			.border("none")
 			.cursor("pointer")
 			.width("100%"),
-		medium: bg(theme.colors.bgGradient)
-			.color(theme.colors.bg)
-			.padding("1.125rem 2rem")
-			.fontSize("1.0625rem")
-			.borderRadius(theme.borderRadius.md)
-			.border("none")
-			.cursor("pointer")
-			.width("auto"),
-		large: bg(theme.colors.bgGradient)
-			.color(theme.colors.bg)
-			.padding("1.25rem 2.5rem")
-			.fontSize("1.125rem")
-			.borderRadius(theme.borderRadius.lg)
-			.border("none")
-			.cursor("pointer")
-			.width("auto"),
+		medium: width("auto"),
+		large: borderRadius(theme.borderRadius.md),
 	}),
 
 	// Stats section
@@ -157,76 +106,41 @@ export const globalStyles = {
 		small: bg(theme.colors.bgLight)
 			.padding(theme.spacing.md)
 			.borderRadius(theme.borderRadius.sm)
-			.margin("0 0 1.5rem 0")
+			.margin(`0 0 ${theme.spacing.lg} 0`)
 			.flex()
 			.gap(theme.spacing.sm)
 			.flexDirection("column")
 			.color(theme.colors.textLight),
-		medium: bg(theme.colors.bgLight)
+		medium: flexDirection("row")
 			.padding(theme.spacing.lg)
-			.borderRadius(theme.borderRadius.md)
-			.margin("0 0 2rem 0")
-			.flex()
-			.gap(theme.spacing.md)
-			.flexDirection("row")
-			.color(theme.colors.textLight),
-		large: bg(theme.colors.bgLight)
-			.padding(theme.spacing.lg)
-			.borderRadius(theme.borderRadius.md)
-			.margin("0 0 2rem 0")
-			.flex()
-			.gap(theme.spacing.md)
-			.flexDirection("row")
-			.color(theme.colors.textLight),
+			.gap(theme.spacing.md),
 	}),
 
 	// Stats text
 	statsText: cn({
-		small: fontSize("0.9rem").color(theme.colors.textLight),
-		medium: fontSize("0.95rem").color(theme.colors.textLight),
-		large: fontSize("1rem").color(theme.colors.textLight),
+		small: fontSize("0.875rem").color(theme.colors.textLight),
 	}),
 
 	// Todo list container
 	todoList: cn({
-		small: flex().flexDirection("column").gap("0.75rem"),
-		medium: flex().flexDirection("column").gap("0.875rem"),
-		large: flex().flexDirection("column").gap("1rem"),
+		small: flex().flexDirection("column").gap(theme.spacing.sm),
+		medium: gap(theme.spacing.md),
 	}),
 
 	// Todo item
 	todoItem: cn({
 		small: bg(theme.colors.bg)
-			.padding("1rem")
+			.padding(theme.spacing.md)
 			.borderRadius(theme.borderRadius.sm)
 			.border(`1px solid ${theme.colors.border}`)
 			.flex()
-			.gap("0.75rem"),
-		medium: bg(theme.colors.bg)
-			.padding("1.25rem")
-			.borderRadius(theme.borderRadius.md)
-			.border(`1px solid ${theme.colors.border}`)
-			.flex()
-			.gap("1rem"),
-		large: bg(theme.colors.bg)
-			.padding("1.5rem")
-			.borderRadius(theme.borderRadius.md)
-			.border(`1px solid ${theme.colors.border}`)
-			.flex()
-			.gap("1.25rem"),
+			.gap(theme.spacing.sm),
+		medium: padding(theme.spacing.lg).gap(theme.spacing.md),
 	}),
 
 	// Todo text
 	todoText: cn({
-		small: fontSize("0.95rem")
-			.color(theme.colors.text)
-			.flex()
-			.width("100%"),
-		medium: fontSize("1rem")
-			.color(theme.colors.text)
-			.flex()
-			.width("100%"),
-		large: fontSize("1.0625rem")
+		small: fontSize("0.9375rem")
 			.color(theme.colors.text)
 			.flex()
 			.width("100%"),
@@ -234,13 +148,7 @@ export const globalStyles = {
 
 	// Todo text done
 	todoTextDone: cn({
-		small: fontSize("0.95rem")
-			.color(theme.colors.textMuted)
-			.opacity("0.6"),
-		medium: fontSize("1rem")
-			.color(theme.colors.textMuted)
-			.opacity("0.6"),
-		large: fontSize("1.0625rem")
+		small: fontSize("0.9375rem")
 			.color(theme.colors.textMuted)
 			.opacity("0.6"),
 	}),
@@ -249,53 +157,24 @@ export const globalStyles = {
 	deleteButton: cn({
 		small: bg(theme.colors.dangerBg)
 			.color(theme.colors.danger)
-			.padding("0.5rem 0.75rem")
-			.borderRadius("6px")
-			.border(`1px solid ${theme.colors.dangerLight}`)
-			.cursor("pointer")
-			.fontSize("0.875rem"),
-		medium: bg(theme.colors.dangerBg)
-			.color(theme.colors.danger)
-			.padding("0.625rem 1rem")
+			.padding(`${theme.spacing.sm} ${theme.spacing.md}`)
 			.borderRadius(theme.borderRadius.sm)
 			.border(`1px solid ${theme.colors.dangerLight}`)
 			.cursor("pointer")
-			.fontSize("0.9rem"),
-		large: bg(theme.colors.dangerBg)
-			.color(theme.colors.danger)
-			.padding("0.75rem 1.25rem")
-			.borderRadius(theme.borderRadius.sm)
-			.border(`1px solid ${theme.colors.dangerLight}`)
-			.cursor("pointer")
-			.fontSize("0.95rem"),
+			.fontSize("0.8125rem"),
 	}),
 
 	// Clear completed button
 	clearButton: cn({
 		small: bg(theme.colors.dangerBg)
 			.color(theme.colors.danger)
-			.padding("0.625rem 1rem")
+			.padding(`${theme.spacing.sm} ${theme.spacing.md}`)
 			.borderRadius(theme.borderRadius.sm)
 			.border(`1px solid ${theme.colors.dangerLight}`)
 			.cursor("pointer")
-			.fontSize("0.875rem")
+			.fontSize("0.8125rem")
 			.width("100%"),
-		medium: bg(theme.colors.dangerBg)
-			.color(theme.colors.danger)
-			.padding("0.75rem 1.25rem")
-			.borderRadius(theme.borderRadius.sm)
-			.border(`1px solid ${theme.colors.dangerLight}`)
-			.cursor("pointer")
-			.fontSize("0.9rem")
-			.width("auto"),
-		large: bg(theme.colors.dangerBg)
-			.color(theme.colors.danger)
-			.padding("0.75rem 1.5rem")
-			.borderRadius(theme.borderRadius.sm)
-			.border(`1px solid ${theme.colors.dangerLight}`)
-			.cursor("pointer")
-			.fontSize("0.95rem")
-			.width("auto"),
+		medium: width("auto").padding(`${theme.spacing.md} ${theme.spacing.lg}`),
 	}),
 
 	// Empty state
@@ -303,46 +182,23 @@ export const globalStyles = {
 		small: flex()
 			.flexDirection("column")
 			.center()
-			.padding("3rem 1.5rem")
+			.padding(`${theme.spacing.xxl} ${theme.spacing.lg}`)
 			.opacity("0.5")
 			.textAlign("center")
 			.gap(theme.spacing.md)
 			.color(theme.colors.textMuted),
-		medium: flex()
-			.flexDirection("column")
-			.center()
-			.padding("4rem 2rem")
-			.opacity("0.5")
-			.textAlign("center")
-			.gap(theme.spacing.lg)
-			.color(theme.colors.textMuted),
-		large: flex()
-			.flexDirection("column")
-			.center()
-			.padding("5rem 3rem")
-			.opacity("0.6")
-			.textAlign("center")
-			.gap(theme.spacing.lg)
-			.color(theme.colors.textMuted),
+		medium: padding(`3rem ${theme.spacing.xl}`),
 	}),
 
 	// Empty state text
 	emptyText: cn({
-		small: fontSize("1rem")
-			.color(theme.colors.textMuted)
-			.margin("0"),
-		medium: fontSize("1.125rem")
-			.color(theme.colors.textMuted)
-			.margin("0"),
-		large: fontSize("1.25rem")
+		small: fontSize("0.9375rem")
 			.color(theme.colors.textMuted)
 			.margin("0"),
 	}),
 
 	// Checkbox
 	checkbox: cn({
-		small: width("20px").height("20px").cursor("pointer"),
-		medium: width("22px").height("22px").cursor("pointer"),
-		large: width("24px").height("24px").cursor("pointer"),
+		small: width("18px").height("18px").cursor("pointer"),
 	}),
 };
