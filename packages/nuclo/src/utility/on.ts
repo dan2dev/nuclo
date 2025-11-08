@@ -25,7 +25,7 @@ export function on<
   TTagName extends ElementTagName = ElementTagName
 >(
   type: K,
-  listener: (ev: HTMLElementEventMap[K]) => any,
+  listener: (ev: HTMLElementEventMap[K]) => unknown,
   options?: boolean | AddEventListenerOptions
 ): NodeModFn<TTagName>;
 
@@ -40,16 +40,16 @@ export function on<
   TTagName extends ElementTagName = ElementTagName
 >(
   type: K,
-  listener: (ev: E) => any,
+  listener: (ev: E) => unknown,
   options?: boolean | AddEventListenerOptions
 ): NodeModFn<TTagName>;
 
-export function on(
+export function on<TTagName extends ElementTagName = ElementTagName>(
   type: string,
-  listener: (ev: Event) => any,
+  listener: (ev: Event) => unknown,
   options?: boolean | AddEventListenerOptions
-): NodeModFn<any> {
-  return (parent: ExpandedElement<any>) => {
+): NodeModFn<TTagName> {
+  return (parent: ExpandedElement<TTagName>) => {
     const el = parent as unknown as HTMLElement | null | undefined;
     if (!el || typeof el.addEventListener !== "function") {
       return;
