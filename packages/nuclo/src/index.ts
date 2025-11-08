@@ -13,5 +13,30 @@ export { isBoolean, isFunction, isNode, isObject, isPrimitive, isTagLike, isZero
 export { isBrowser } from "./utility/environment";
 export { createElementWithModifiers } from "./internal/applyModifiers";
 
+// Style utilities
+export {
+	createCSSClass,
+	createBreakpoints,
+	bg,
+	color,
+	fontSize,
+	flex,
+	center,
+	bold,
+	padding,
+	margin,
+	width,
+	height,
+	border,
+	borderRadius,
+	textAlign,
+	gap,
+	flexDirection,
+	grid,
+	position,
+	opacity,
+	cursor
+} from "./style";
+
 // Auto-initialize when the module is loaded.
 import "./core/runtimeBootstrap";
