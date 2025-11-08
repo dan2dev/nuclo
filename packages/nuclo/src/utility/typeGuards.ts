@@ -21,3 +21,7 @@ export function isBoolean(value: unknown): value is boolean {
 export function isFunction<T extends Function>(value: unknown): value is T {
   return typeof value === "function";
 }
+
+export function isZeroArityFunction(value: unknown): value is () => unknown {
+  return isFunction(value) && (value as Function).length === 0;
+}

@@ -1,3 +1,5 @@
+import { logError } from "./errorHandler";
+
 export function dispatchGlobalUpdateEvent(): void {
   if (typeof document === "undefined") return;
 
@@ -7,7 +9,7 @@ export function dispatchGlobalUpdateEvent(): void {
     try {
       target.dispatchEvent(new Event("update", { bubbles: true }));
     } catch (error) {
-      console.error("Error dispatching global update event:", error);
+      logError("Error dispatching global update event", error);
     }
   }
 }

@@ -115,7 +115,7 @@ describe('utility/on (event listener helper)', () => {
 
     expect(errorSpy).toHaveBeenCalledTimes(1);
     const firstArgs = errorSpy.mock.calls[0];
-    expect(String(firstArgs[0])).toContain("[nuclo:on] Error in 'click' listener:");
+    expect(String(firstArgs[0])).toContain("nuclo: Error in 'click' listener");
   });
 
   it('can attach multiple distinct event types to same element', () => {

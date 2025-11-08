@@ -93,3 +93,16 @@ export function applyModifiersAndReturn<TTagName extends ElementTagName>(
   applyModifiers(element, modifiers, startIndex);
   return element;
 }
+
+/**
+ * Creates an element with the specified tag name and applies modifiers to it.
+ * Centralizes element creation logic used across conditionalRenderer and conditionalUpdater.
+ */
+export function createElementWithModifiers<TTagName extends ElementTagName>(
+  tagName: TTagName,
+  modifiers: ReadonlyArray<NodeModifier<TTagName>>
+): ExpandedElement<TTagName> {
+  const el = document.createElement(tagName) as ExpandedElement<TTagName>;
+  applyModifiers(el, modifiers, 0);
+  return el;
+}

@@ -6,11 +6,12 @@ export { list } from "./list";
 export { when } from "./when";
 export { update } from "./core/updateController";
 export { applyAttributes } from "./core/attributeManager";
-export { appendChildren } from "./utility/dom";
+export { appendChildren, createComment, createConditionalComment, replaceNodeSafely } from "./utility/dom";
 export { on } from "./utility/on";
 export { render } from "./utility/render";
-export { isBoolean, isFunction, isNode, isObject, isPrimitive, isTagLike } from "./utility/typeGuards";
+export { isBoolean, isFunction, isNode, isObject, isPrimitive, isTagLike, isZeroArityFunction } from "./utility/typeGuards";
 export { isBrowser } from "./utility/environment";
+export { createElementWithModifiers } from "./internal/applyModifiers";
 
 // Auto-initialize when the module is loaded.
 import "./core/runtimeBootstrap";

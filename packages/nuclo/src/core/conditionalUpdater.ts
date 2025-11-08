@@ -1,4 +1,4 @@
-import { applyModifiers } from "../internal/applyModifiers";
+import { createElementWithModifiers } from "../internal/applyModifiers";
 import { isBrowser } from "../utility/environment";
 import {
   ConditionalInfo,
@@ -8,33 +8,18 @@ import {
   unregisterConditionalNode,
 } from "../utility/conditionalInfo";
 import { runCondition } from "../utility/conditions";
+import { replaceNodeSafely, createConditionalComment } from "../utility/dom";
+import { logError } from "../utility/errorHandler";
 
 function createElementFromConditionalInfo<TTagName extends ElementTagName>(
   conditionalInfo: ConditionalInfo<TTagName>
 ): ExpandedElement<TTagName> {
-  const element = document.createElement(conditionalInfo.tagName) as ExpandedElement<TTagName>;
-
   try {
-    applyModifiers(element, conditionalInfo.modifiers, 0);
+    return createElementWithModifiers(conditionalInfo.tagName, conditionalInfo.modifiers);
   } catch (error) {
-    console.error(`Error applying modifiers in conditional element "${conditionalInfo.tagName}":`, error);
-  }
-  return element;
-}
-
-function createCommentPlaceholder<TTagName extends ElementTagName>(
-  conditionalInfo: ConditionalInfo<TTagName>
-): Comment {
-  return document.createComment(`conditional-${conditionalInfo.tagName}-hidden`);
-}
-
-function replaceNodeSafely(oldNode: Node, newNode: Node): void {
-  if (oldNode.parentNode) {
-    try {
-      oldNode.parentNode.replaceChild(newNode, oldNode);
-    } catch (error) {
-      console.error("Error replacing conditional node:", error);
-    }
+    logError(`Error applying modifiers in conditional element "${conditionalInfo.tagName}"`, error);
+    // Return a basic element without modifiers as fallback
+    return document.createElement(conditionalInfo.tagName) as ExpandedElement<TTagName>;
   }
 }
 
@@ -45,7 +30,7 @@ function updateConditionalNode(node: Element | Comment): void {
   }
 
   const shouldShow = runCondition(conditionalInfo.condition, (error) => {
-    console.error("Error evaluating conditional condition:", error);
+    logError("Error evaluating conditional condition", error);
   });
   const isElement = node.nodeType === Node.ELEMENT_NODE;
 
@@ -54,9 +39,11 @@ function updateConditionalNode(node: Element | Comment): void {
     storeConditionalInfo(element as Node, conditionalInfo);
     replaceNodeSafely(node, element as Node);
   } else if (!shouldShow && isElement) {
-    const comment = createCommentPlaceholder(conditionalInfo);
-    storeConditionalInfo(comment, conditionalInfo);
-    replaceNodeSafely(node, comment);
+    const comment = createConditionalComment(conditionalInfo.tagName);
+    if (comment) {
+      storeConditionalInfo(comment, conditionalInfo);
+      replaceNodeSafely(node, comment);
+    }
   }
 }
 
@@ -72,6 +59,6 @@ export function updateConditionalElements(): void {
       updateConditionalNode(node as Element | Comment);
     });
   } catch (error) {
-    console.error("Error during conditional elements update:", error);
+    logError("Error during conditional elements update", error);
   }
 }

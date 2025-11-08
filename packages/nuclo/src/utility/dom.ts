@@ -1,4 +1,5 @@
 import { isBrowser } from "./environment";
+import { logError } from "./errorHandler";
 
 function safeAppendChild(parent: Element | Node, child: Node): boolean {
   if (!parent || !child) return false;
@@ -43,6 +44,27 @@ function createCommentSafely(text: string): Comment | null {
   if (!isBrowser) return null;
   try {
     return document.createComment(text);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Creates a comment node safely with error handling.
+ * Exported for use across the codebase.
+ */
+export function createComment(text: string): Comment | null {
+  return createCommentSafely(text);
+}
+
+/**
+ * Creates a conditional comment placeholder node.
+ * In SSR environments, this will still work because we bypass the isBrowser check.
+ */
+export function createConditionalComment(tagName: string, suffix: string = "hidden"): Comment | null {
+  // For SSR, we need to create comments even when isBrowser is false
+  try {
+    return document.createComment(`conditional-${tagName}-${suffix}`);
   } catch {
     return null;
   }
@@ -117,4 +139,19 @@ export function appendChildren(
 export function isNodeConnected(node: Node | null | undefined): boolean {
   if (!node) return false;
   return typeof node.isConnected === "boolean" ? node.isConnected : document.contains(node);
+}
+
+/**
+ * Safely replaces an old node with a new node in the DOM.
+ * Returns true on success, false on failure (and logs the error).
+ */
+export function replaceNodeSafely(oldNode: Node, newNode: Node): boolean {
+  if (!oldNode?.parentNode) return false;
+  try {
+    oldNode.parentNode.replaceChild(newNode, oldNode);
+    return true;
+  } catch (error) {
+    logError("Error replacing conditional node", error);
+    return false;
+  }
 }
