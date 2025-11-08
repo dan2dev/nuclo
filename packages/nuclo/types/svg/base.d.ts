@@ -77,20 +77,22 @@ declare global {
     | SVGAttributes
     | SVGElementTagNameMap[TTagName]
     | SVGElement  // Allow any SVG element as a child
-    | ((parent?: any, index?: number) => SVGElement);  // Allow SVG element builders as children
+    | ((parent: SVGElementTagNameMap[TTagName], index: number) => SVGElement);  // Allow SVG element builders as children
 
   export type SVGElementModifierFn<TTagName extends keyof SVGElementTagNameMap = keyof SVGElementTagNameMap> = (
     parent: SVGElementTagNameMap[TTagName],
     index: number,
   ) => SVGElementModifier<TTagName> | void;
 
-  // SVG builder type
+  // SVG builder type - returns a NodeModFn-compatible function
+  // Parameters are optional to allow standalone usage (e.g., svg()() for creating detached SVG)
+  // but the function signature is compatible with NodeModFn when used as a child
   export type ExpandedSVGElementBuilder<
     TTagName extends keyof SVGElementTagNameMap = keyof SVGElementTagNameMap,
   > = (
     ...rawMods: Array<SVGElementModifier<TTagName> | SVGElementModifierFn<TTagName>>
   ) => (
-    parent?: SVGElementTagNameMap[TTagName],
+    parent?: SVGElementTagNameMap[TTagName] | ExpandedElement<ElementTagName>,
     index?: number,
   ) => SVGElementTagNameMap[TTagName];
 }
