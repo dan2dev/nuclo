@@ -9,6 +9,7 @@ import {
 	deleteTodo,
 	clearCompleted,
 } from "./todoState";
+import { TrashIcon, PlusIcon, CircleIcon } from "./icons";
 
 const appRoot = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -30,7 +31,12 @@ const app = div(
 				addTodo();
 			}
 		})),
-		button("Add", on("click", addTodo))
+		button(
+			{ className: "add-btn" },
+			PlusIcon(),
+			" Add",
+			on("click", addTodo)
+		)
 	),
 
 	// Stats
@@ -61,14 +67,18 @@ const app = div(
 					span({ className: "todo-text" }, () => todo.text),
 					button(
 						{ className: "delete-btn" },
-						"×",
+						TrashIcon(),
 						on("click", () => deleteTodo(todo.id))
 					)
 				)
 			)
 		)
 	).else(
-		p({ className: "empty-state" }, "No todos yet. Add one above!")
+		div(
+			{ className: "empty-state" },
+			CircleIcon(),
+			p("No todos yet. Add one above!")
+		)
 	)
 );
 

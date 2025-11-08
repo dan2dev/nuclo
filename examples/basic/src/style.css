@@ -132,24 +132,63 @@ h1 {
 		background-color: transparent;
 		border: none;
 		color: #ff4444;
-		font-size: 1.5em;
+		font-size: 1em;
 		line-height: 1;
-		padding: 0.25em 0.5em;
+		padding: 0.5em;
 		cursor: pointer;
-		transition: transform 0.2s;
-		
+		transition: all 0.2s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+
 		&:hover {
-			transform: scale(1.2);
+			transform: scale(1.15);
 			border-color: transparent;
+			color: #ff6666;
+		}
+
+		.icon {
+			width: 18px;
+			height: 18px;
 		}
 	}
 }
 
+/* SVG Icon Styles */
+.icon {
+	display: inline-block;
+	vertical-align: middle;
+	color: currentColor;
+}
+
+.add-btn {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+
+	.icon {
+		width: 16px;
+		height: 16px;
+	}
+}
+
 .empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1rem;
 	text-align: center;
 	color: rgba(255, 255, 255, 0.5);
-	padding: 2rem;
-	font-style: italic;
+	padding: 3rem 2rem;
+
+	.empty-icon {
+		opacity: 0.3;
+	}
+
+	p {
+		margin: 0;
+		font-style: italic;
+	}
 }
 
 button {

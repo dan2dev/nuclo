@@ -57,7 +57,7 @@ declare global {
   export const svg: ExpandedSVGElementBuilder<"svg">;
   export const switch_svg: ExpandedSVGElementBuilder<"switch">;
   export const symbol: ExpandedSVGElementBuilder<"symbol">;
-  export const text: ExpandedSVGElementBuilder<"text">;
+  export const text_svg: ExpandedSVGElementBuilder<"text">;
   export const textPath: ExpandedSVGElementBuilder<"textPath">;
   export const title_svg: ExpandedSVGElementBuilder<"title">;
   export const tspan: ExpandedSVGElementBuilder<"tspan">;
