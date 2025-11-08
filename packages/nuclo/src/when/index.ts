@@ -4,6 +4,7 @@ import { createMarkerPair, clearBetweenMarkers, insertNodesBefore, createComment
 import { resolveCondition } from "../utility/conditions";
 import { modifierProbeCache } from "../utility/modifierPredicates";
 import { isFunction, isZeroArityFunction } from "../utility/typeGuards";
+import { asParentNode, withScopedInsertion } from "../utility/domTypeHelpers";
 
 type WhenCondition = boolean | (() => boolean);
 type WhenContent<TTagName extends ElementTagName = ElementTagName> = 
@@ -33,73 +34,92 @@ interface WhenRuntime<TTagName extends ElementTagName = ElementTagName> {
 
 const activeWhenRuntimes = new Set<WhenRuntime<any>>();
 
+/**
+ * Evaluates which condition branch should be active.
+ * Returns the index of the first truthy condition, -1 for else branch, or null for no match.
+ */
+function evaluateActiveCondition<TTagName extends ElementTagName>(
+  groups: ReadonlyArray<WhenGroup<TTagName>>,
+  elseContent: ReadonlyArray<WhenContent<TTagName>>
+): number | -1 | null {
+  for (let i = 0; i < groups.length; i++) {
+    if (resolveCondition(groups[i].condition)) {
+      return i;
+    }
+  }
+  return elseContent.length > 0 ? -1 : null;
+}
+
+/**
+ * Renders a single content item and returns the resulting node if any.
+ */
+function renderContentItem<TTagName extends ElementTagName>(
+  item: WhenContent<TTagName>,
+  host: ExpandedElement<TTagName>,
+  index: number,
+  endMarker: Comment
+): Node | null {
+  if (!isFunction(item)) {
+    return applyNodeModifier(host, item, index);
+  }
+
+  // Zero-arity functions need cache cleared
+  if (isZeroArityFunction(item)) {
+    modifierProbeCache.delete(item as Function);
+    return applyNodeModifier(host, item, index);
+  }
+
+  // Non-zero-arity functions need scoped insertion to insert before endMarker
+  return withScopedInsertion(host, endMarker, () => {
+    const maybeNode = applyNodeModifier(host, item, index);
+    // Only include nodes that weren't already inserted
+    return maybeNode && !maybeNode.parentNode ? maybeNode : null;
+  });
+}
+
+/**
+ * Renders a list of content items and collects the resulting nodes.
+ */
+function renderContentItems<TTagName extends ElementTagName>(
+  items: ReadonlyArray<WhenContent<TTagName>>,
+  host: ExpandedElement<TTagName>,
+  index: number,
+  endMarker: Comment
+): Node[] {
+  const nodes: Node[] = [];
+  for (const item of items) {
+    const node = renderContentItem(item, host, index, endMarker);
+    if (node) {
+      nodes.push(node);
+    }
+  }
+  return nodes;
+}
+
+/**
+ * Main render function for when/else conditionals.
+ * Evaluates conditions, clears old content, and renders the active branch.
+ */
 function renderWhenContent<TTagName extends ElementTagName>(
   runtime: WhenRuntime<TTagName>
 ): void {
   const { groups, elseContent, host, index, endMarker } = runtime;
 
-  let newActive: number | -1 | null = null;
-  for (let i = 0; i < groups.length; i++) {
-    if (resolveCondition(groups[i].condition)) {
-      newActive = i;
-      break;
-    }
-  }
-  if (newActive === null && elseContent.length) {
-    newActive = -1;
-  }
+  const newActive = evaluateActiveCondition(groups, elseContent);
 
+  // No change needed
   if (newActive === runtime.activeIndex) return;
 
+  // Clear previous content and update active index
   clearBetweenMarkers(runtime.startMarker, runtime.endMarker);
   runtime.activeIndex = newActive;
 
+  // Nothing to render
   if (newActive === null) return;
 
-  const nodes: Node[] = [];
-
-  const renderItems = (items: ReadonlyArray<WhenContent<TTagName>>): void => {
-    for (const item of items) {
-      if (isFunction(item)) {
-        if (isZeroArityFunction(item)) {
-          modifierProbeCache.delete(item as Function);
-          const node = applyNodeModifier(host, item, index);
-          if (node) nodes.push(node);
-          continue;
-        }
-
-        const realHost = host as unknown as Element & {
-          appendChild: (n: Node) => Node;
-          insertBefore: (n: Node, ref: Node | null) => Node;
-        };
-        const originalAppend = realHost.appendChild;
-        (realHost as unknown as Record<string, Function>).appendChild = function (n: Node) {
-          return (realHost as unknown as Record<string, Function>).insertBefore(
-            n,
-            endMarker
-          ) as Node;
-        };
-        try {
-          const maybeNode = applyNodeModifier(host, item, index);
-          if (maybeNode && !maybeNode.parentNode) {
-            nodes.push(maybeNode);
-          }
-        } finally {
-          (realHost as unknown as Record<string, Function>).appendChild = originalAppend;
-        }
-        continue;
-      }
-
-      const node = applyNodeModifier(host, item, index);
-      if (node) nodes.push(node);
-    }
-  };
-
-  if (newActive >= 0) {
-    renderItems(groups[newActive].content);
-  } else if (newActive === -1) {
-    renderItems(elseContent);
-  }
+  // Render the active branch
+  const contentToRender = newActive >= 0 ? groups[newActive].content : elseContent;
+  const nodes = renderContentItems(contentToRender, host, index, endMarker);
 
   insertNodesBefore(nodes, endMarker);
 }
@@ -143,7 +163,7 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
 
     activeWhenRuntimes.add(runtime);
 
-    const parent = host as unknown as Node & ParentNode;
+    const parent = asParentNode(host);
     parent.appendChild(startMarker);
     parent.appendChild(endMarker);
 
@@ -172,6 +192,20 @@ function createWhenBuilderFunction<TTagName extends ElementTagName>(
   }) as unknown as WhenBuilder<TTagName>;
 }
 
+/**
+ * Updates all active when/else conditional runtimes.
+ *
+ * Re-evaluates all conditional branches and re-renders if the active branch has changed.
+ * Automatically cleans up runtimes that throw errors during update.
+ *
+ * This function should be called after state changes that affect conditional expressions.
+ *
+ * @example
+ * ```ts
+ * isLoggedIn.value = true;
+ * updateWhenRuntimes(); // All when() conditionals re-evaluate
+ * ```
+ */
 export function updateWhenRuntimes(): void {
   activeWhenRuntimes.forEach((runtime) => {
     try {
@@ -182,10 +216,56 @@ export function updateWhenRuntimes(): void {
   });
 }
 
+/**
+ * Clears all active when/else conditional runtimes.
+ *
+ * This is typically used for cleanup or testing purposes.
+ * After calling this, no when() conditionals will be tracked for updates.
+ */
 export function clearWhenRuntimes(): void {
   activeWhenRuntimes.clear();
 }
 
+/**
+ * Creates a conditional rendering block (when/else logic).
+ *
+ * Renders different content based on boolean conditions, similar to if/else statements.
+ * Conditions can be static booleans or reactive functions that are re-evaluated on updates.
+ *
+ * @param condition - Boolean value or function returning a boolean
+ * @param content - Content to render when condition is true
+ * @returns A builder that allows chaining additional .when() or .else() branches
+ *
+ * @example
+ * ```ts
+ * const isLoggedIn = signal(false);
+ *
+ * div(
+ *   when(() => isLoggedIn.value,
+ *     span('Welcome back!')
+ *   )
+ *   .else(
+ *     button('Login', on('click', () => login()))
+ *   )
+ * )
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Multiple conditions
+ * div(
+ *   when(() => status.value === 'loading',
+ *     spinner()
+ *   )
+ *   .when(() => status.value === 'error',
+ *     errorMessage()
+ *   )
+ *   .else(
+ *     contentView()
+ *   )
+ * )
+ * ```
+ */
 export function when<TTagName extends ElementTagName = ElementTagName>(
   condition: WhenCondition,
   ...content: WhenContent<TTagName>[]

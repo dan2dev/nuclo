@@ -6,7 +6,8 @@ function safeAppendChild(parent: Element | Node, child: Node): boolean {
   try {
     parent.appendChild(child);
     return true;
-  } catch {
+  } catch (error) {
+    logError('Failed to append child node', error);
     return false;
   }
 }
@@ -16,7 +17,8 @@ export function safeRemoveChild(child: Node): boolean {
   try {
     child.parentNode.removeChild(child);
     return true;
-  } catch {
+  } catch (error) {
+    logError('Failed to remove child node', error);
     return false;
   }
 }
@@ -26,7 +28,8 @@ function safeInsertBefore(parent: Node, newNode: Node, referenceNode: Node | nul
   try {
     parent.insertBefore(newNode, referenceNode);
     return true;
-  } catch {
+  } catch (error) {
+    logError('Failed to insert node before reference', error);
     return false;
   }
 }
@@ -35,7 +38,8 @@ function createTextNodeSafely(text: string | number | boolean): Text | null {
   if (!isBrowser) return null;
   try {
     return document.createTextNode(String(text));
-  } catch {
+  } catch (error) {
+    logError('Failed to create text node', error);
     return null;
   }
 }
@@ -44,7 +48,8 @@ function createCommentSafely(text: string): Comment | null {
   if (!isBrowser) return null;
   try {
     return document.createComment(text);
-  } catch {
+  } catch (error) {
+    logError('Failed to create comment node', error);
     return null;
   }
 }
@@ -63,9 +68,11 @@ export function createComment(text: string): Comment | null {
  */
 export function createConditionalComment(tagName: string, suffix: string = "hidden"): Comment | null {
   // For SSR, we need to create comments even when isBrowser is false
+  // This function intentionally skips the isBrowser check for SSR compatibility
   try {
     return document.createComment(`conditional-${tagName}-${suffix}`);
-  } catch {
+  } catch (error) {
+    logError('Failed to create conditional comment', error);
     return null;
   }
 }
@@ -138,7 +145,19 @@ export function appendChildren(
 
 export function isNodeConnected(node: Node | null | undefined): boolean {
   if (!node) return false;
-  return typeof node.isConnected === "boolean" ? node.isConnected : document.contains(node);
+
+  // Prefer the built-in isConnected property
+  if (typeof node.isConnected === "boolean") {
+    return node.isConnected;
+  }
+
+  // Fallback for older browsers (only if in browser environment)
+  if (isBrowser && typeof document !== 'undefined') {
+    return document.contains(node);
+  }
+
+  // In SSR or when document is not available, assume disconnected
+  return false;
 }
 
 /**

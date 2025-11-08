@@ -1,5 +1,7 @@
 import { isFunction } from "../utility/typeGuards";
 import { registerAttributeResolver } from "./reactive";
+import { setStyleProperty } from "../utility/domTypeHelpers";
+import { logError } from "../utility/errorHandler";
 
 type StyleAssignment = Partial<CSSStyleDeclaration>;
 type StyleResolver = () => StyleAssignment | null | undefined;
@@ -14,15 +16,15 @@ export function assignInlineStyles<TTagName extends ElementTagName>(
   if (!element?.style || !styles) return;
 
   for (const [property, value] of Object.entries(styles)) {
-    if (value == null || value === '') {
-      element.style.removeProperty(property);
-      (element.style as unknown as Record<string, string>)[property] = '';
-    } else {
-      try {
-        (element.style as unknown as Record<string, string>)[property] = String(value);
-      } catch {
-        // Ignore invalid style properties
-      }
+    const success = setStyleProperty(
+      element as HTMLElement,
+      property,
+      value as string | number | null
+    );
+
+    if (!success) {
+      // Don't try to stringify value in error message as it might throw
+      logError(`Failed to set style property '${property}'`);
     }
   }
 }
@@ -37,7 +39,8 @@ export function applyStyleAttribute<TTagName extends ElementTagName>(
     registerAttributeResolver(element, 'style', () => {
       try {
         return styleValue();
-      } catch {
+      } catch (error) {
+        logError('Error in style resolver function', error);
         return null;
       }
     }, (resolvedStyles) => {
