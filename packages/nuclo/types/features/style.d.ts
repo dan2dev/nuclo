@@ -8,10 +8,17 @@ declare global {
 
 	/**
 	 * Creates a breakpoint-aware class name generator
+	 * 
+	 * Supports two signatures:
+	 * 1. cn(breakpointStyles) - Only breakpoint-specific styles
+	 * 2. cn(defaultStyles, breakpointStyles) - Default styles + breakpoint overrides
 	 */
 	function createBreakpoints<T extends string>(
 		breakpoints: Record<T, string>
-	): (styles?: Partial<Record<T, StyleBuilder>>) => string;
+	): {
+		(styles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
+		(defaultStyles: StyleBuilder, breakpointStyles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
+	};
 
 	/**
 	 * Style builder class for chaining CSS properties

@@ -1,7 +1,7 @@
 import "nuclo";
 import { getTodos, getInputValue, setInputValue, addTodo, toggleTodo, deleteTodo, clearCompleted } from "./todoState";
 import { TrashIcon, PlusIcon, CircleIcon } from "./icons";
-import { globalStyles } from "./styles";
+import { cn, globalStyles } from "./styles";
 
 const appRoot = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -16,14 +16,13 @@ const app = div(
 			globalStyles.appContainer,
 
 			// Header with gradient
-			div(
-				globalStyles.header,
-				h1(globalStyles.h1Reset, "✨", span("My Tasks")),
-			),
+			div(globalStyles.header, h1(globalStyles.h1Reset, "✨", span("My Tasks"))),
 
 			// Input section
 			div(
-				globalStyles.inputSection,
+				cn(width("100%").bg("#FF0000").padding("1rem"), {
+					medium: width("50%")
+				}),
 				input(
 					globalStyles.input,
 					{
@@ -40,12 +39,7 @@ const app = div(
 						}
 					}),
 				),
-				button(
-					globalStyles.addButton,
-					PlusIcon(),
-					" Add Task",
-					on("click", addTodo)
-				),
+				button(globalStyles.addButton, PlusIcon(), " Add Task", on("click", addTodo)),
 			),
 
 			// Stats
@@ -55,15 +49,12 @@ const app = div(
 					globalStyles.stats,
 					span(
 						globalStyles.statsText,
-						() => `📝 ${getTodos().filter((t) => !t.done).length} task${getTodos().filter((t) => !t.done).length !== 1 ? 's' : ''} remaining`
+						() =>
+							`📝 ${getTodos().filter((t) => !t.done).length} task${getTodos().filter((t) => !t.done).length !== 1 ? "s" : ""} remaining`,
 					),
 					when(
 						() => getTodos().some((t) => t.done),
-						button(
-							globalStyles.clearButton,
-							"🗑️ Clear Completed",
-							on("click", clearCompleted)
-						)
+						button(globalStyles.clearButton, "🗑️ Clear Completed", on("click", clearCompleted)),
 					),
 				),
 			),
@@ -87,8 +78,8 @@ const app = div(
 									on("change", () => toggleTodo(todo.id)),
 								),
 								span(
-									() => todo.done ? globalStyles.todoTextDone : globalStyles.todoText,
-									() => todo.text
+									() => (todo.done ? globalStyles.todoTextDone : globalStyles.todoText),
+									() => todo.text,
 								),
 								button(
 									globalStyles.deleteButton,
@@ -98,16 +89,7 @@ const app = div(
 							),
 					),
 				),
-			).else(
-				div(
-					globalStyles.emptyState,
-					CircleIcon(),
-					p(
-						globalStyles.emptyText,
-						"No tasks yet. Add your first one above!"
-					)
-				)
-			),
+			).else(div(globalStyles.emptyState, CircleIcon(), p(globalStyles.emptyText, "No tasks yet. Add your first one above!"))),
 		),
 	),
 );
