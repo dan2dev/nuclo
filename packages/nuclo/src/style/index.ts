@@ -387,36 +387,64 @@ const classToPropertyMap = new Map<string, { property: string; value: string }>(
 
 // Create breakpoints function
 export function createBreakpoints<T extends string>(breakpoints: Record<T, string>) {
-	return function cn(styles?: BreakpointStyles<T>): { className: string } | string {
-		if (!styles || Object.keys(styles).length === 0) {
+	return function cn(
+		defaultStylesOrBreakpoints?: StyleBuilder | BreakpointStyles<T>,
+		breakpointStyles?: BreakpointStyles<T>
+	): { className: string } | string {
+		let defaultStyles: StyleBuilder | undefined;
+		let styles: BreakpointStyles<T> | undefined;
+
+		// Handle both signatures:
+		// 1. cn({ medium: width("50%") }) - single argument with breakpoints
+		// 2. cn(width("100%"), { medium: width("50%") }) - default styles + breakpoints
+		if (breakpointStyles !== undefined) {
+			// Two-argument form
+			defaultStyles = defaultStylesOrBreakpoints as StyleBuilder;
+			styles = breakpointStyles;
+		} else if (defaultStylesOrBreakpoints instanceof StyleBuilder) {
+			// Single argument, but it's a StyleBuilder (default styles only)
+			defaultStyles = defaultStylesOrBreakpoints;
+			styles = undefined;
+		} else {
+			// Single argument with breakpoints
+			defaultStyles = undefined;
+			styles = defaultStylesOrBreakpoints as BreakpointStyles<T>;
+		}
+
+		// If nothing provided, return empty
+		if (!defaultStyles && (!styles || Object.keys(styles).length === 0)) {
 			return "";
 		}
 
-		const breakpointEntries = Object.entries(breakpoints) as [T, string][];
 		const allClassNames: string[] = [];
 
-		// Process each breakpoint
-		let isFirst = true;
-		for (const [breakpointName, mediaQuery] of breakpointEntries) {
-			const styleBuilder = styles[breakpointName];
-			if (styleBuilder) {
-				const classDefinitions = (styleBuilder as StyleBuilder).getClassDefinitions();
-				
-				// For each class definition
-				for (const { className, property, value } of classDefinitions) {
-					if (isFirst) {
-						// Base breakpoint: create classes without media query
-						createUtilityClass(className, property, value);
-						allClassNames.push(className);
-					} else {
-						// Subsequent breakpoints: create unique prefixed classes in media queries
+		// Process default styles (no media query)
+		if (defaultStyles) {
+			const classDefinitions = defaultStyles.getClassDefinitions();
+			for (const { className, property, value } of classDefinitions) {
+				createUtilityClass(className, property, value);
+				allClassNames.push(className);
+			}
+		}
+
+		// Process breakpoint styles
+		if (styles && Object.keys(styles).length > 0) {
+			const breakpointEntries = Object.entries(breakpoints) as [T, string][];
+
+			for (const [breakpointName, mediaQuery] of breakpointEntries) {
+				const styleBuilder = styles[breakpointName];
+				if (styleBuilder) {
+					const classDefinitions = (styleBuilder as StyleBuilder).getClassDefinitions();
+					
+					// For each class definition
+					for (const { className, property, value } of classDefinitions) {
+						// Create unique prefixed classes in media queries
 						// This prevents leaking between elements (like Tailwind's sm:, md:, lg:)
 						const prefixedClassName = `${breakpointName}-${className}`;
 						createUtilityClassWithMedia(prefixedClassName, property, value, mediaQuery);
 						allClassNames.push(prefixedClassName);
 					}
 				}
-				isFirst = false;
 			}
 		}
 
