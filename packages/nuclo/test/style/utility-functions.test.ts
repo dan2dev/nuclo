@@ -507,10 +507,9 @@ describe('Style Utility Functions', () => {
 
 			expect(result).toHaveProperty('className');
 			const className = (result as any).className;
-			// Should contain a single class for small breakpoint
-			expect(className).toMatch(/nuclo-small-[a-f0-9]{8}/);
-			// Should contain a single class for large breakpoint
-			expect(className).toMatch(/nuclo-large-[a-f0-9]{8}/);
+			// Should contain a single class name for all breakpoints
+			expect(className).toMatch(/^nuclo-[a-f0-9]{8}$/);
+			expect(className.split(' ').length).toBe(1); // Only one class name
 			
 			// Verify CSS properties are correct
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
@@ -522,7 +521,9 @@ describe('Style Utility Functions', () => {
 			expect(smallMediaRule).toBeTruthy();
 			if (smallMediaRule) {
 				const smallStyleRules = Array.from(smallMediaRule.cssRules) as CSSStyleRule[];
-				const smallRule = smallStyleRules.find(r => r.selectorText.match(/^\.nuclo-small-[a-f0-9]{8}$/));
+				// The class name should be the same for all breakpoints
+				const className = (result as any).className;
+				const smallRule = smallStyleRules.find(r => r.selectorText === `.${className}`);
 				expect(smallRule).toBeTruthy();
 				if (smallRule) {
 					expect(smallRule.style.backgroundColor).toBe('rgb(255, 0, 0)');
@@ -558,9 +559,11 @@ describe('Style Utility Functions', () => {
 			const className1 = (result1 as any).className;
 			const className2 = (result2 as any).className;
 			
-			// Both should have class names matching the pattern
-			expect(className1).toMatch(/nuclo-small-[a-f0-9]{8}/);
-			expect(className2).toMatch(/nuclo-small-[a-f0-9]{8}/);
+			// Both should have single class names (without breakpoint prefix)
+			expect(className1).toMatch(/^nuclo-[a-f0-9]{8}$/);
+			expect(className2).toMatch(/^nuclo-[a-f0-9]{8}$/);
+			// They should be different since they have different styles
+			expect(className1).not.toBe(className2);
 			
 			// Verify CSS properties
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
@@ -584,10 +587,9 @@ describe('Style Utility Functions', () => {
 			});
 
 			const className = (result as any).className;
-			// Should contain a class for small breakpoint
-			expect(className).toMatch(/nuclo-small-[a-f0-9]{8}/);
-			// Should contain a class for large breakpoint
-			expect(className).toMatch(/nuclo-large-[a-f0-9]{8}/);
+			// Should contain a single class name for all breakpoints
+			expect(className).toMatch(/^nuclo-[a-f0-9]{8}$/);
+			expect(className.split(' ').length).toBe(1); // Only one class name
 		});
 
 		it('should work with complex style chains in breakpoints', () => {
@@ -602,9 +604,9 @@ describe('Style Utility Functions', () => {
 			});
 
 			const className = (result as any).className;
-			// Should have a single class for small and large breakpoints
-			expect(className).toMatch(/nuclo-small-[a-f0-9]{8}/);
-			expect(className).toMatch(/nuclo-large-[a-f0-9]{8}/);
+			// Should have a single class name for all breakpoints
+			expect(className).toMatch(/^nuclo-[a-f0-9]{8}$/);
+			expect(className.split(' ').length).toBe(1); // Only one class name
 
 			// Verify CSS properties in media queries
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
@@ -613,12 +615,13 @@ describe('Style Utility Functions', () => {
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
 			const mediaRules = rules.filter(rule => rule.type === CSSRule.MEDIA_RULE) as CSSMediaRule[];
 			
-			// Check small breakpoint
+			// Check small breakpoint (reuse className from above)
 			const smallMediaRule = mediaRules.find(rule => rule.media.mediaText === '(max-width: 600px)');
 			expect(smallMediaRule).toBeTruthy();
 			if (smallMediaRule) {
 				const smallStyleRules = Array.from(smallMediaRule.cssRules) as CSSStyleRule[];
-				const smallRule = smallStyleRules.find(r => r.selectorText.match(/^\.nuclo-small-[a-f0-9]{8}$/));
+				// The class name should be the same for all breakpoints
+				const smallRule = smallStyleRules.find(r => r.selectorText === `.${className}`);
 				expect(smallRule).toBeTruthy();
 				if (smallRule) {
 					expect(smallRule.style.backgroundColor).toBe('rgb(255, 0, 0)');
@@ -647,10 +650,9 @@ describe('Style Utility Functions', () => {
 			});
 
 			const className = (result as any).className;
-			// Should contain a single class for each breakpoint
-			expect(className).toMatch(/nuclo-small-[a-f0-9]{8}/);
-			expect(className).toMatch(/nuclo-medium-[a-f0-9]{8}/);
-			expect(className).toMatch(/nuclo-large-[a-f0-9]{8}/);
+			// Should contain a single class name for all breakpoints
+			expect(className).toMatch(/^nuclo-[a-f0-9]{8}$/);
+			expect(className.split(' ').length).toBe(1); // Only one class name
 
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			expect(styleSheet).toBeTruthy();
