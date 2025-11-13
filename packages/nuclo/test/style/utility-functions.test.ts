@@ -63,7 +63,7 @@ describe('Style Utility Functions', () => {
 			const builder = bg('#FF0000');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			// Verify the CSS class has the correct property
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
@@ -79,7 +79,7 @@ describe('Style Utility Functions', () => {
 			const builder = bg('#FF0000').fontSize('20px');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			// Verify the CSS class has both properties
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
@@ -98,7 +98,7 @@ describe('Style Utility Functions', () => {
 			const builder = color('#00FF00');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -115,7 +115,7 @@ describe('Style Utility Functions', () => {
 			const builder = fontSize('24px');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -132,7 +132,7 @@ describe('Style Utility Functions', () => {
 			const builder = flex();
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -149,7 +149,7 @@ describe('Style Utility Functions', () => {
 			const builder = center();
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -167,7 +167,7 @@ describe('Style Utility Functions', () => {
 			const builder = bold();
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -184,7 +184,7 @@ describe('Style Utility Functions', () => {
 			const builder = padding('10px');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -201,7 +201,7 @@ describe('Style Utility Functions', () => {
 			const builder = margin('20px');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -218,7 +218,7 @@ describe('Style Utility Functions', () => {
 			const builder = width('100px');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -235,7 +235,7 @@ describe('Style Utility Functions', () => {
 			const builder = height('200px');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -252,7 +252,7 @@ describe('Style Utility Functions', () => {
 			const builder = border('1px solid black');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -269,7 +269,7 @@ describe('Style Utility Functions', () => {
 			const builder = borderRadius('8px');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -286,7 +286,7 @@ describe('Style Utility Functions', () => {
 			const builder = textAlign('center');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -303,7 +303,7 @@ describe('Style Utility Functions', () => {
 			const builder = gap('10px');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -320,7 +320,7 @@ describe('Style Utility Functions', () => {
 			const builder = flexDirection('column');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -337,7 +337,7 @@ describe('Style Utility Functions', () => {
 			const builder = grid();
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -354,7 +354,7 @@ describe('Style Utility Functions', () => {
 			const builder = position('absolute');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -371,7 +371,7 @@ describe('Style Utility Functions', () => {
 			const builder = opacity('0.5');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -388,7 +388,7 @@ describe('Style Utility Functions', () => {
 			const builder = cursor('pointer');
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
@@ -410,7 +410,7 @@ describe('Style Utility Functions', () => {
 
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			// Verify all properties are in the single class
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
@@ -437,7 +437,7 @@ describe('Style Utility Functions', () => {
 
 			const classNames = builder.getClassNames();
 			expect(classNames.length).toBe(1);
-			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			expect(classNames[0]).toMatch(/^nuclo-[a-f0-9]{8}$/);
 			
 			// Verify all properties are in the single class
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
@@ -508,9 +508,9 @@ describe('Style Utility Functions', () => {
 			expect(result).toHaveProperty('className');
 			const className = (result as any).className;
 			// Should contain a single class for small breakpoint
-			expect(className).toMatch(/nuclo-small-\d+/);
+			expect(className).toMatch(/nuclo-small-[a-f0-9]{8}/);
 			// Should contain a single class for large breakpoint
-			expect(className).toMatch(/nuclo-large-\d+/);
+			expect(className).toMatch(/nuclo-large-[a-f0-9]{8}/);
 			
 			// Verify CSS properties are correct
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
@@ -522,7 +522,7 @@ describe('Style Utility Functions', () => {
 			expect(smallMediaRule).toBeTruthy();
 			if (smallMediaRule) {
 				const smallStyleRules = Array.from(smallMediaRule.cssRules) as CSSStyleRule[];
-				const smallRule = smallStyleRules.find(r => r.selectorText.match(/^\.nuclo-small-\d+$/));
+				const smallRule = smallStyleRules.find(r => r.selectorText.match(/^\.nuclo-small-[a-f0-9]{8}$/));
 				expect(smallRule).toBeTruthy();
 				if (smallRule) {
 					expect(smallRule.style.backgroundColor).toBe('rgb(255, 0, 0)');
@@ -559,8 +559,8 @@ describe('Style Utility Functions', () => {
 			const className2 = (result2 as any).className;
 			
 			// Both should have class names matching the pattern
-			expect(className1).toMatch(/nuclo-small-\d+/);
-			expect(className2).toMatch(/nuclo-small-\d+/);
+			expect(className1).toMatch(/nuclo-small-[a-f0-9]{8}/);
+			expect(className2).toMatch(/nuclo-small-[a-f0-9]{8}/);
 			
 			// Verify CSS properties
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
@@ -585,9 +585,9 @@ describe('Style Utility Functions', () => {
 
 			const className = (result as any).className;
 			// Should contain a class for small breakpoint
-			expect(className).toMatch(/nuclo-small-\d+/);
+			expect(className).toMatch(/nuclo-small-[a-f0-9]{8}/);
 			// Should contain a class for large breakpoint
-			expect(className).toMatch(/nuclo-large-\d+/);
+			expect(className).toMatch(/nuclo-large-[a-f0-9]{8}/);
 		});
 
 		it('should work with complex style chains in breakpoints', () => {
@@ -603,8 +603,8 @@ describe('Style Utility Functions', () => {
 
 			const className = (result as any).className;
 			// Should have a single class for small and large breakpoints
-			expect(className).toMatch(/nuclo-small-\d+/);
-			expect(className).toMatch(/nuclo-large-\d+/);
+			expect(className).toMatch(/nuclo-small-[a-f0-9]{8}/);
+			expect(className).toMatch(/nuclo-large-[a-f0-9]{8}/);
 
 			// Verify CSS properties in media queries
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
@@ -618,7 +618,7 @@ describe('Style Utility Functions', () => {
 			expect(smallMediaRule).toBeTruthy();
 			if (smallMediaRule) {
 				const smallStyleRules = Array.from(smallMediaRule.cssRules) as CSSStyleRule[];
-				const smallRule = smallStyleRules.find(r => r.selectorText.match(/^\.nuclo-small-\d+$/));
+				const smallRule = smallStyleRules.find(r => r.selectorText.match(/^\.nuclo-small-[a-f0-9]{8}$/));
 				expect(smallRule).toBeTruthy();
 				if (smallRule) {
 					expect(smallRule.style.backgroundColor).toBe('rgb(255, 0, 0)');
@@ -648,9 +648,9 @@ describe('Style Utility Functions', () => {
 
 			const className = (result as any).className;
 			// Should contain a single class for each breakpoint
-			expect(className).toMatch(/nuclo-small-\d+/);
-			expect(className).toMatch(/nuclo-medium-\d+/);
-			expect(className).toMatch(/nuclo-large-\d+/);
+			expect(className).toMatch(/nuclo-small-[a-f0-9]{8}/);
+			expect(className).toMatch(/nuclo-medium-[a-f0-9]{8}/);
+			expect(className).toMatch(/nuclo-large-[a-f0-9]{8}/);
 
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			expect(styleSheet).toBeTruthy();
