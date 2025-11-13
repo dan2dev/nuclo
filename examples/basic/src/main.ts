@@ -11,6 +11,10 @@ document.body.setAttribute("style", "margin: 0; display: flex; align-items: cent
 const app = div(
 	globalStyles.body,
 	div(
+		div(globalStyles.box1, "Box 1"),
+		div(globalStyles.box2, "Box 2"),
+	),
+	div(
 		globalStyles.appWrapper,
 		div(
 			globalStyles.appContainer,

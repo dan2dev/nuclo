@@ -32,8 +32,8 @@ describe('Style utilities - DOM Output', () => {
 
 		// Verify the breakpoint className was applied to the header div (single class name)
 		const headerClassName = header.className;
-		expect(headerClassName).toMatch(/nuclo-[a-f0-9]{8}/);
-		expect(headerClassName.split(' ').filter(c => c.startsWith('nuclo-')).length).toBe(1); // Only one nuclo class
+		expect(headerClassName).toMatch(/n[a-f0-9]{8}/);
+		expect(headerClassName.split(' ').filter(c => c.startsWith('n')).length).toBe(1); // Only one nuclo class
 		expect(header.textContent).toContain('Header Content');
 
 		// Verify CSS classes were created
@@ -60,11 +60,11 @@ describe('Style utilities - DOM Output', () => {
 
 		// The element should have the generated className applied (single class name)
 		const elementClassName = element.className;
-		expect(elementClassName).toMatch(/nuclo-[a-f0-9]{8}/);
-		expect(elementClassName.split(' ').filter(c => c.startsWith('nuclo-')).length).toBe(1); // Only one nuclo class
+		expect(elementClassName).toMatch(/n[a-f0-9]{8}/);
+		expect(elementClassName.split(' ').filter(c => c.startsWith('n')).length).toBe(1); // Only one nuclo class
 		expect(element.textContent).toContain('Test Content');
 
 		// Verify in the actual DOM HTML
-		expect(container.innerHTML).toMatch(/nuclo-[a-f0-9]{8}/);
+		expect(container.innerHTML).toMatch(/n[a-f0-9]{8}/);
 	});
 });

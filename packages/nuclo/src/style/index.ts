@@ -75,7 +75,7 @@ function getOrCreateClassName(styles: Record<string, string>, prefix = '', media
 
 	// Generate a hash-based class name from the style key
 	const hash = simpleHash(styleKey);
-	const className = prefix ? `nuclo-${prefix}-${hash}` : `nuclo-${hash}`;
+	const className = prefix ? `n${prefix}-${hash}` : `n${hash}`;
 	styleCache.set(cacheKey, className);
 	
 	// Create the CSS class with media query if provided
@@ -462,7 +462,7 @@ export function createBreakpoints<T extends string>(breakpoints: Record<T, strin
 
 			const combinedStyleKey = allStyleKeys.sort().join('||');
 			const combinedHash = simpleHash(combinedStyleKey);
-			const className = `nuclo-${combinedHash}`;
+			const className = `n${combinedHash}`;
 
 			// Apply default styles first (no media query)
 			if (defaultStyles) {

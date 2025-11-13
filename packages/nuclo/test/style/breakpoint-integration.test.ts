@@ -23,7 +23,7 @@ describe('Breakpoint Integration', () => {
 		expect(typeof result).toBe('object');
 		const className = (result as any).className;
 		// Should contain a single class name for all breakpoints
-		expect(className).toMatch(/^nuclo-[a-f0-9]{8}$/);
+		expect(className).toMatch(/^n[a-f0-9]{8}$/);
 		expect(className.split(' ').length).toBe(1); // Only one class name
 	});
 
@@ -37,7 +37,7 @@ describe('Breakpoint Integration', () => {
 		});
 
 		const className = (result as any).className;
-		expect(className).toMatch(/^nuclo-[a-f0-9]{8}$/);
+		expect(className).toMatch(/^n[a-f0-9]{8}$/);
 		expect(className.split(' ').length).toBe(1); // Only one class name
 	});
 
@@ -61,8 +61,8 @@ describe('Breakpoint Integration', () => {
 
 		// Check that the className was applied (should be a single class name)
 		const className = element.className;
-		expect(className).toMatch(/nuclo-[a-f0-9]{8}/);
-		expect(className.split(' ').filter(c => c.startsWith('nuclo-')).length).toBe(1); // Only one nuclo class
+		expect(className).toMatch(/n[a-f0-9]{8}/);
+		expect(className.split(' ').filter(c => c.startsWith('n')).length).toBe(1); // Only one nuclo class
 		expect(element.textContent).toContain('Test Content');
 	});
 
@@ -269,7 +269,7 @@ describe('Breakpoint Integration', () => {
 			const className = (result as any).className;
 			
 			// Should contain a single class name for all styles (default + breakpoints)
-			expect(className).toMatch(/^nuclo-[a-f0-9]{8}$/);
+			expect(className).toMatch(/^n[a-f0-9]{8}$/);
 			expect(className.split(' ').length).toBe(1); // Only one class name
 		});
 
@@ -292,7 +292,7 @@ describe('Breakpoint Integration', () => {
 			const styleRules = rules.filter(rule => rule.type === CSSRule.STYLE_RULE) as CSSStyleRule[];
 			
 			// Default styles should be created as regular style rules (not in media query)
-			const defaultRule = styleRules.find(rule => rule.selectorText.match(/^\.nuclo-[a-f0-9]{8}$/));
+			const defaultRule = styleRules.find(rule => rule.selectorText.match(/^\.n[a-f0-9]{8}$/));
 			
 			expect(defaultRule).toBeTruthy();
 			
@@ -346,7 +346,7 @@ describe('Breakpoint Integration', () => {
 			const className = (result as any).className;
 			
 			// Should contain a single class name
-			expect(className).toMatch(/^nuclo-[a-f0-9]{8}$/);
+			expect(className).toMatch(/^n[a-f0-9]{8}$/);
 			expect(className.split(' ').length).toBe(1); // Only one class name
 		});
 
@@ -369,7 +369,7 @@ describe('Breakpoint Integration', () => {
 			const className = (result as any).className;
 			
 			// Should be a single class name for all styles (default + breakpoints)
-			expect(className).toMatch(/^nuclo-[a-f0-9]{8}$/);
+			expect(className).toMatch(/^n[a-f0-9]{8}$/);
 			expect(className.split(' ').length).toBe(1); // Only one class name
 
 			// Verify CSS rules
@@ -417,7 +417,7 @@ describe('Breakpoint Integration', () => {
 			const className = (result as any).className;
 			
 			// Should be a single class name for all styles
-			expect(className).toMatch(/^nuclo-[a-f0-9]{8}$/);
+			expect(className).toMatch(/^n[a-f0-9]{8}$/);
 			expect(className.split(' ').length).toBe(1); // Only one class name
 		});
 
@@ -432,7 +432,7 @@ describe('Breakpoint Integration', () => {
 			const className = (result as any).className;
 			
 			// Should only have default styles (single class)
-			expect(className).toMatch(/^nuclo-[a-f0-9]{8}$/);
+			expect(className).toMatch(/^n[a-f0-9]{8}$/);
 			expect(className.split(' ').length).toBe(1); // Only one class name
 		});
 
@@ -447,7 +447,7 @@ describe('Breakpoint Integration', () => {
 			const className = (result as any).className;
 			
 			// Should only have default styles (single class)
-			expect(className).toMatch(/^nuclo-[a-f0-9]{8}$/);
+			expect(className).toMatch(/^n[a-f0-9]{8}$/);
 			expect(className.split(' ').length).toBe(1); // Only one class name
 		});
 	});
