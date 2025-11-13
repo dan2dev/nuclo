@@ -59,169 +59,349 @@ describe('Style Utility Functions', () => {
 	});
 
 	describe('StyleBuilder - bg()', () => {
-		it('should create a StyleBuilder with background-color class', () => {
+		it('should create a StyleBuilder with a single class name', () => {
 			const builder = bg('#FF0000');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('bg-ff0000');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			// Verify the CSS class has the correct property
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.backgroundColor).toBe('rgb(255, 0, 0)');
+			}
 		});
 
-		it('should support chaining', () => {
+		it('should support chaining and create a single class', () => {
 			const builder = bg('#FF0000').fontSize('20px');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('bg-ff0000');
-			expect(classNames).toContain('text-20px');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			// Verify the CSS class has both properties
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.backgroundColor).toBe('rgb(255, 0, 0)');
+				expect(rule.style.fontSize).toBe('20px');
+			}
 		});
 	});
 
 	describe('StyleBuilder - color()', () => {
-		it('should create a StyleBuilder with color class', () => {
+		it('should create a StyleBuilder with a single class name', () => {
 			const builder = color('#00FF00');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('text-00ff00');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.color).toBe('rgb(0, 255, 0)');
+			}
 		});
 	});
 
 	describe('StyleBuilder - fontSize()', () => {
-		it('should create a StyleBuilder with font-size class', () => {
+		it('should create a StyleBuilder with a single class name', () => {
 			const builder = fontSize('24px');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('text-24px');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.fontSize).toBe('24px');
+			}
 		});
 	});
 
 	describe('StyleBuilder - flex()', () => {
-		it('should set display to flex class', () => {
+		it('should set display to flex in a single class', () => {
 			const builder = flex();
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('flex');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.display).toBe('flex');
+			}
 		});
 	});
 
 	describe('StyleBuilder - center()', () => {
-		it('should center content with flex classes', () => {
+		it('should center content with a single class', () => {
 			const builder = center();
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('justify-center');
-			expect(classNames).toContain('items-center');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.justifyContent).toBe('center');
+				expect(rule.style.alignItems).toBe('center');
+			}
 		});
 	});
 
 	describe('StyleBuilder - bold()', () => {
-		it('should set font-weight to bold class', () => {
+		it('should set font-weight to bold in a single class', () => {
 			const builder = bold();
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('font-bold');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.fontWeight).toBe('bold');
+			}
 		});
 	});
 
 	describe('StyleBuilder - padding()', () => {
-		it('should set padding class', () => {
+		it('should set padding in a single class', () => {
 			const builder = padding('10px');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('p-10px');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.padding).toBe('10px');
+			}
 		});
 	});
 
 	describe('StyleBuilder - margin()', () => {
-		it('should set margin class', () => {
+		it('should set margin in a single class', () => {
 			const builder = margin('20px');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('m-20px');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.margin).toBe('20px');
+			}
 		});
 	});
 
 	describe('StyleBuilder - width()', () => {
-		it('should set width class', () => {
+		it('should set width in a single class', () => {
 			const builder = width('100px');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('w-100px');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.width).toBe('100px');
+			}
 		});
 	});
 
 	describe('StyleBuilder - height()', () => {
-		it('should set height class', () => {
+		it('should set height in a single class', () => {
 			const builder = height('200px');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('h-200px');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.height).toBe('200px');
+			}
 		});
 	});
 
 	describe('StyleBuilder - border()', () => {
-		it('should set border class', () => {
+		it('should set border in a single class', () => {
 			const builder = border('1px solid black');
 			const classNames = builder.getClassNames();
-			expect(classNames.length).toBeGreaterThan(0);
-			// Border values are complex, just check a class was created
-			expect(classNames[0]).toMatch(/^border-/);
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.border).toBe('1px solid black');
+			}
 		});
 	});
 
 	describe('StyleBuilder - borderRadius()', () => {
-		it('should set border-radius class', () => {
+		it('should set border-radius in a single class', () => {
 			const builder = borderRadius('8px');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('rounded-8px');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.borderRadius).toBe('8px');
+			}
 		});
 	});
 
 	describe('StyleBuilder - textAlign()', () => {
-		it('should set text-align class', () => {
+		it('should set text-align in a single class', () => {
 			const builder = textAlign('center');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('text-center');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.textAlign).toBe('center');
+			}
 		});
 	});
 
 	describe('StyleBuilder - gap()', () => {
-		it('should set gap class', () => {
+		it('should set gap in a single class', () => {
 			const builder = gap('10px');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('gap-10px');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.gap).toBe('10px');
+			}
 		});
 	});
 
 	describe('StyleBuilder - flexDirection()', () => {
-		it('should set flex-direction class', () => {
+		it('should set flex-direction in a single class', () => {
 			const builder = flexDirection('column');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('flex-col');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.flexDirection).toBe('column');
+			}
 		});
 	});
 
 	describe('StyleBuilder - grid()', () => {
-		it('should set display to grid class', () => {
+		it('should set display to grid in a single class', () => {
 			const builder = grid();
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('grid');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.display).toBe('grid');
+			}
 		});
 	});
 
 	describe('StyleBuilder - position()', () => {
-		it('should set position class', () => {
+		it('should set position in a single class', () => {
 			const builder = position('absolute');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('position-absolute');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.position).toBe('absolute');
+			}
 		});
 	});
 
 	describe('StyleBuilder - opacity()', () => {
-		it('should set opacity class', () => {
+		it('should set opacity in a single class', () => {
 			const builder = opacity('0.5');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('opacity-0-5');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.opacity).toBe('0.5');
+			}
 		});
 	});
 
 	describe('StyleBuilder - cursor()', () => {
-		it('should set cursor class', () => {
+		it('should set cursor in a single class', () => {
 			const builder = cursor('pointer');
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('cursor-pointer');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.cursor).toBe('pointer');
+			}
 		});
 	});
 
 	describe('StyleBuilder - chaining multiple properties', () => {
-		it('should allow chaining multiple properties', () => {
+		it('should allow chaining multiple properties into a single class', () => {
 			const builder = bg('#FF0000')
 				.fontSize('20px')
 				.flex()
@@ -229,15 +409,25 @@ describe('Style Utility Functions', () => {
 				.bold();
 
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('bg-ff0000');
-			expect(classNames).toContain('text-20px');
-			expect(classNames).toContain('flex');
-			expect(classNames).toContain('justify-center');
-			expect(classNames).toContain('items-center');
-			expect(classNames).toContain('font-bold');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			// Verify all properties are in the single class
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.backgroundColor).toBe('rgb(255, 0, 0)');
+				expect(rule.style.fontSize).toBe('20px');
+				expect(rule.style.display).toBe('flex');
+				expect(rule.style.justifyContent).toBe('center');
+				expect(rule.style.alignItems).toBe('center');
+				expect(rule.style.fontWeight).toBe('bold');
+			}
 		});
 
-		it('should support complex chaining', () => {
+		it('should support complex chaining in a single class', () => {
 			const builder = flex()
 				.flexDirection('column')
 				.gap('16px')
@@ -246,12 +436,33 @@ describe('Style Utility Functions', () => {
 				.bg('#F0F0F0');
 
 			const classNames = builder.getClassNames();
-			expect(classNames).toContain('flex');
-			expect(classNames).toContain('flex-col');
-			expect(classNames).toContain('gap-16px');
-			expect(classNames).toContain('p-24px');
-			expect(classNames).toContain('rounded-12px');
-			expect(classNames).toContain('bg-f0f0f0');
+			expect(classNames.length).toBe(1);
+			expect(classNames[0]).toMatch(/^nuclo-\d+$/);
+			
+			// Verify all properties are in the single class
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []) as CSSStyleRule[];
+			const rule = rules.find(r => r.selectorText === `.${classNames[0]}`);
+			expect(rule).toBeTruthy();
+			if (rule) {
+				expect(rule.style.display).toBe('flex');
+				expect(rule.style.flexDirection).toBe('column');
+				expect(rule.style.gap).toBe('16px');
+				expect(rule.style.padding).toBe('24px');
+				expect(rule.style.borderRadius).toBe('12px');
+				expect(rule.style.backgroundColor).toBe('rgb(240, 240, 240)');
+			}
+		});
+
+		it('should reuse the same class for identical style sets', () => {
+			const builder1 = bg('#FF0000').fontSize('20px');
+			const builder2 = bg('#FF0000').fontSize('20px');
+			
+			const className1 = builder1.getClassNames()[0];
+			const className2 = builder2.getClassNames()[0];
+			
+			// Should reuse the same class
+			expect(className1).toBe(className2);
 		});
 	});
 
@@ -296,12 +507,28 @@ describe('Style Utility Functions', () => {
 
 			expect(result).toHaveProperty('className');
 			const className = (result as any).className;
-			// Should contain base (small) breakpoint classes
-			expect(className).toContain('bg-ff0000');
-			expect(className).toContain('text-20px');
-			// Should contain prefixed large breakpoint classes
-			expect(className).toContain('large-bg-0000ff');
-			expect(className).toContain('large-text-30px');
+			// Should contain a single class for small breakpoint
+			expect(className).toMatch(/nuclo-small-\d+/);
+			// Should contain a single class for large breakpoint
+			expect(className).toMatch(/nuclo-large-\d+/);
+			
+			// Verify CSS properties are correct
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
+			const mediaRules = rules.filter(rule => rule.type === CSSRule.MEDIA_RULE) as CSSMediaRule[];
+			
+			// Find small breakpoint media rule
+			const smallMediaRule = mediaRules.find(rule => rule.media.mediaText === '(max-width: 600px)');
+			expect(smallMediaRule).toBeTruthy();
+			if (smallMediaRule) {
+				const smallStyleRules = Array.from(smallMediaRule.cssRules) as CSSStyleRule[];
+				const smallRule = smallStyleRules.find(r => r.selectorText.match(/^\.nuclo-small-\d+$/));
+				expect(smallRule).toBeTruthy();
+				if (smallRule) {
+					expect(smallRule.style.backgroundColor).toBe('rgb(255, 0, 0)');
+					expect(smallRule.style.fontSize).toBe('20px');
+				}
+			}
 		});
 
 		it('should create CSS rules with media queries', () => {
@@ -320,7 +547,7 @@ describe('Style Utility Functions', () => {
 			expect(styleSheet?.sheet?.cssRules.length).toBeGreaterThan(0);
 		});
 
-		it('should generate utility class names for each call', () => {
+		it('should generate class names for each call', () => {
 			const cn = createBreakpoints({
 				small: '(max-width: 600px)'
 			});
@@ -328,8 +555,19 @@ describe('Style Utility Functions', () => {
 			const result1 = cn({ small: bg('#FF0000') });
 			const result2 = cn({ small: bg('#00FF00') });
 
-			expect((result1 as any).className).toContain('bg-ff0000');
-			expect((result2 as any).className).toContain('bg-00ff00');
+			const className1 = (result1 as any).className;
+			const className2 = (result2 as any).className;
+			
+			// Both should have class names matching the pattern
+			expect(className1).toMatch(/nuclo-small-\d+/);
+			expect(className2).toMatch(/nuclo-small-\d+/);
+			
+			// Verify CSS properties
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
+			const mediaRules = rules.filter(rule => rule.type === CSSRule.MEDIA_RULE) as CSSMediaRule[];
+			const smallMediaRule = mediaRules.find(rule => rule.media.mediaText === '(max-width: 600px)');
+			expect(smallMediaRule).toBeTruthy();
 		});
 
 		it('should handle partial breakpoint styles', () => {
@@ -346,10 +584,10 @@ describe('Style Utility Functions', () => {
 			});
 
 			const className = (result as any).className;
-			// Should contain base (small) breakpoint class
-			expect(className).toContain('bg-ff0000');
-			// Should contain prefixed large breakpoint class
-			expect(className).toContain('large-bg-0000ff');
+			// Should contain a class for small breakpoint
+			expect(className).toMatch(/nuclo-small-\d+/);
+			// Should contain a class for large breakpoint
+			expect(className).toMatch(/nuclo-large-\d+/);
 		});
 
 		it('should work with complex style chains in breakpoints', () => {
@@ -364,15 +602,33 @@ describe('Style Utility Functions', () => {
 			});
 
 			const className = (result as any).className;
-			expect(className).toContain('bg-ff0000');
-			expect(className).toContain('text-20px');
-			expect(className).toContain('flex');
-			expect(className).toContain('justify-center');
-			expect(className).toContain('items-center');
-			expect(className).toContain('font-bold');
+			// Should have a single class for small and large breakpoints
+			expect(className).toMatch(/nuclo-small-\d+/);
+			expect(className).toMatch(/nuclo-large-\d+/);
 
+			// Verify CSS properties in media queries
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			expect(styleSheet).toBeTruthy();
+			
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
+			const mediaRules = rules.filter(rule => rule.type === CSSRule.MEDIA_RULE) as CSSMediaRule[];
+			
+			// Check small breakpoint
+			const smallMediaRule = mediaRules.find(rule => rule.media.mediaText === '(max-width: 600px)');
+			expect(smallMediaRule).toBeTruthy();
+			if (smallMediaRule) {
+				const smallStyleRules = Array.from(smallMediaRule.cssRules) as CSSStyleRule[];
+				const smallRule = smallStyleRules.find(r => r.selectorText.match(/^\.nuclo-small-\d+$/));
+				expect(smallRule).toBeTruthy();
+				if (smallRule) {
+					expect(smallRule.style.backgroundColor).toBe('rgb(255, 0, 0)');
+					expect(smallRule.style.fontSize).toBe('20px');
+					expect(smallRule.style.display).toBe('flex');
+					expect(smallRule.style.justifyContent).toBe('center');
+					expect(smallRule.style.alignItems).toBe('center');
+					expect(smallRule.style.fontWeight).toBe('bold');
+				}
+			}
 		});
 	});
 
@@ -391,25 +647,17 @@ describe('Style Utility Functions', () => {
 			});
 
 			const className = (result as any).className;
-			// Should contain base (small) breakpoint classes
-			expect(className).toContain('bg-ff0000');
-			expect(className).toContain('text-20px');
-			expect(className).toContain('flex');
-			expect(className).toContain('justify-center');
-			expect(className).toContain('items-center');
-			expect(className).toContain('font-bold');
-			// Should contain prefixed medium/large breakpoint classes
-			expect(className).toContain('medium-bg-00ff00');
-			expect(className).toContain('medium-text-40px');
-			expect(className).toContain('large-bg-0000ff');
-			expect(className).toContain('large-text-50px');
+			// Should contain a single class for each breakpoint
+			expect(className).toMatch(/nuclo-small-\d+/);
+			expect(className).toMatch(/nuclo-medium-\d+/);
+			expect(className).toMatch(/nuclo-large-\d+/);
 
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			expect(styleSheet).toBeTruthy();
-			// Check that media queries were created (base + 2 media queries)
+			// Check that media queries were created
 			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
 			const mediaRules = rules.filter(rule => rule.type === CSSRule.MEDIA_RULE);
-			expect(mediaRules.length).toBeGreaterThanOrEqual(2); // At least 2 media queries
+			expect(mediaRules.length).toBeGreaterThanOrEqual(3); // At least 3 media queries (small, medium, large)
 		});
 	});
 });

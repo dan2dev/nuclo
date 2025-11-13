@@ -105,11 +105,9 @@ describe('Style utilities - global availability', () => {
 		});
 
 		const className = (result as any).className;
-		expect(className).toContain('bg-ff0000');
-		expect(className).toContain('text-20px');
-		expect(className).toContain('flex');
-		expect(className).toContain('justify-center');
-		expect(className).toContain('items-center');
-		expect(className).toContain('font-bold');
+		// Should contain single classes for each breakpoint
+		expect(className).toMatch(/nuclo-small-\d+/);
+		expect(className).toMatch(/nuclo-medium-\d+/);
+		expect(className).toMatch(/nuclo-large-\d+/);
 	});
 });
