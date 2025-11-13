@@ -115,17 +115,23 @@ function createCSSClassWithStyles(
 		}
 
 		if (!mediaRule) {
-			// Find the correct insertion index: after all style rules, before other media queries
-			// This ensures default styles come first, then media queries in registration order
-			let insertIndex = 0;
-			for (let i = 0; i < existingRules.length; i++) {
-				if (existingRules[i] instanceof CSSStyleRule) {
+			// Find the correct insertion index: after all style rules, append media queries in order
+			// Since we process breakpoints in registration order, we can simply append
+			// This ensures: style rules first, then media queries in the order they're processed
+			let insertIndex = existingRules.length;
+			
+			// Find the last media query rule to insert after it (maintains order)
+			for (let i = existingRules.length - 1; i >= 0; i--) {
+				if (existingRules[i] instanceof CSSMediaRule) {
 					insertIndex = i + 1;
-				} else if (existingRules[i] instanceof CSSMediaRule) {
-					// Insert before existing media queries to maintain registration order
+					break;
+				} else if (existingRules[i] instanceof CSSStyleRule) {
+					// If we hit a style rule, insert after it
+					insertIndex = i + 1;
 					break;
 				}
 			}
+			
 			styleSheet.sheet?.insertRule(`@media ${mediaQuery} {}`, insertIndex);
 			mediaRule = styleSheet.sheet?.cssRules[insertIndex] as CSSMediaRule;
 		}
@@ -140,7 +146,12 @@ function createCSSClassWithStyles(
 		}
 
 		if (existingRule) {
-			// Update existing rule by merging styles
+			// Update existing rule by replacing all styles
+			// First, clear all existing properties
+			while (existingRule.style.length > 0) {
+				existingRule.style.removeProperty(existingRule.style[0]);
+			}
+			// Then set all new properties
 			Object.entries(styles).forEach(([property, value]) => {
 				existingRule!.style.setProperty(property, value);
 			});
@@ -168,7 +179,12 @@ function createCSSClassWithStyles(
 		}
 
 		if (existingRule) {
-			// Update existing rule by merging styles
+			// Update existing rule by replacing all styles
+			// First, clear all existing properties
+			while (existingRule.style.length > 0) {
+				existingRule.style.removeProperty(existingRule.style[0]);
+			}
+			// Then set all new properties
 			Object.entries(styles).forEach(([property, value]) => {
 				existingRule!.style.setProperty(property, value);
 			});
@@ -431,7 +447,15 @@ class StyleBuilder {
 type BreakpointStyles<T extends string> = Partial<Record<T, StyleBuilder>>;
 
 // Create breakpoints function
-export function createBreakpoints<T extends string>(breakpoints: Record<T, string>) {
+// Accepts either Record (for backward compatibility) or Array of [name, mediaQuery] tuples (for explicit order)
+export function createBreakpoints<T extends string>(
+	breakpoints: Record<T, string> | Array<[T, string]>
+) {
+	// Convert to array format to preserve order
+	const breakpointsArray: Array<[T, string]> = Array.isArray(breakpoints)
+		? breakpoints
+		: (Object.entries(breakpoints) as Array<[T, string]>);
+
 	return function cn(
 		defaultStylesOrBreakpoints?: StyleBuilder | BreakpointStyles<T>,
 		breakpointStyles?: BreakpointStyles<T>
@@ -463,11 +487,11 @@ export function createBreakpoints<T extends string>(breakpoints: Record<T, strin
 
 		// If we have breakpoints, create a single class name for all breakpoints
 		if (styles && Object.keys(styles).length > 0) {
-			// Collect all breakpoint styles to generate a combined hash
+			// Collect all breakpoint styles in registration order
 			const allBreakpointStyles: Array<{ breakpointName: T; mediaQuery: string; styles: Record<string, string> }> = [];
-			const breakpointEntries = Object.entries(breakpoints) as [T, string][];
 
-			for (const [breakpointName, mediaQuery] of breakpointEntries) {
+			// Process breakpoints in the order they were registered
+			for (const [breakpointName, mediaQuery] of breakpointsArray) {
 				const styleBuilder = styles[breakpointName];
 				if (styleBuilder) {
 					allBreakpointStyles.push({
@@ -496,19 +520,20 @@ export function createBreakpoints<T extends string>(breakpoints: Record<T, strin
 			const className = `n${combinedHash}`;
 
 			// Apply default styles first (no media query) - these are base styles
+			let accumulatedStyles: Record<string, string> = {};
 			if (defaultStyles) {
-				const defaultStylesObj = defaultStyles.getStyles();
-				createCSSClassWithStyles(className, defaultStylesObj);
+				accumulatedStyles = { ...defaultStyles.getStyles() };
+				createCSSClassWithStyles(className, accumulatedStyles);
 			}
 
 			// Apply all breakpoint styles to the same class name in their respective media queries
 			// Apply in registration order to ensure proper CSS cascade
+			// Each breakpoint inherits from all previous breakpoints (cascading)
 			for (const { breakpointName, mediaQuery, styles: bpStyles } of allBreakpointStyles) {
-				// Merge with default styles if they exist (breakpoint styles override defaults)
-				const mergedStyles = defaultStyles 
-					? { ...defaultStyles.getStyles(), ...bpStyles }
-					: bpStyles;
-				createCSSClassWithStyles(className, mergedStyles, mediaQuery);
+				// Merge accumulated styles (defaults + previous breakpoints) with current breakpoint
+				// This ensures each breakpoint inherits from previous ones
+				accumulatedStyles = { ...accumulatedStyles, ...bpStyles };
+				createCSSClassWithStyles(className, accumulatedStyles, mediaQuery);
 			}
 
 			return { className };
