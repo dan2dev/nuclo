@@ -1,6 +1,17 @@
 // Cache for generated classes: maps CSS property sets to class names
 const styleCache = new Map<string, string>();
-let classCounter = 0;
+
+// Simple hash function to generate a short hash from a string (similar to MD5 but simpler)
+function simpleHash(str: string): string {
+	let hash = 0;
+	for (let i = 0; i < str.length; i++) {
+		const char = str.charCodeAt(i);
+		hash = ((hash << 5) - hash) + char;
+		hash = hash & hash; // Convert to 32-bit integer
+	}
+	// Convert to positive hex string and take first 8 characters
+	return Math.abs(hash).toString(16).padStart(8, '0').substring(0, 8);
+}
 
 // Generate a cache key from a set of CSS properties
 function generateStyleKey(styles: Record<string, string>): string {
@@ -62,9 +73,9 @@ function getOrCreateClassName(styles: Record<string, string>, prefix = '', media
 		return cachedClassName;
 	}
 
-	// Generate a new class name
-	classCounter++;
-	const className = prefix ? `nuclo-${prefix}-${classCounter}` : `nuclo-${classCounter}`;
+	// Generate a hash-based class name from the style key
+	const hash = simpleHash(styleKey);
+	const className = prefix ? `nuclo-${prefix}-${hash}` : `nuclo-${hash}`;
 	styleCache.set(cacheKey, className);
 	
 	// Create the CSS class with media query if provided

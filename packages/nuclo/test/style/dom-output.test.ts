@@ -32,9 +32,9 @@ describe('Style utilities - DOM Output', () => {
 
 		// Verify the breakpoint className was applied to the header div
 		const headerClassName = header.className;
-		expect(headerClassName).toMatch(/nuclo-small-\d+/);
-		expect(headerClassName).toMatch(/nuclo-medium-\d+/);
-		expect(headerClassName).toMatch(/nuclo-large-\d+/);
+		expect(headerClassName).toMatch(/nuclo-small-[a-f0-9]{8}/);
+		expect(headerClassName).toMatch(/nuclo-medium-[a-f0-9]{8}/);
+		expect(headerClassName).toMatch(/nuclo-large-[a-f0-9]{8}/);
 		expect(header.textContent).toContain('Header Content');
 
 		// Verify CSS classes were created
@@ -61,10 +61,10 @@ describe('Style utilities - DOM Output', () => {
 
 		// The element should have the generated className applied
 		const elementClassName = element.className;
-		expect(elementClassName).toMatch(/nuclo-small-\d+/);
+		expect(elementClassName).toMatch(/nuclo-small-[a-f0-9]{8}/);
 		expect(element.textContent).toContain('Test Content');
 
 		// Verify in the actual DOM HTML
-		expect(container.innerHTML).toMatch(/nuclo-small-\d+/);
+		expect(container.innerHTML).toMatch(/nuclo-small-[a-f0-9]{8}/);
 	});
 });
