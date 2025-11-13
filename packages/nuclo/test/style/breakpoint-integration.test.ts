@@ -22,12 +22,10 @@ describe('Breakpoint Integration', () => {
 		expect(result).toHaveProperty('className');
 		expect(typeof result).toBe('object');
 		const className = (result as any).className;
-		// Should contain base (small) breakpoint classes
-		expect(className).toContain('bg-ff0000');
-		expect(className).toContain('text-20px');
-		// Should contain prefixed large breakpoint classes
-		expect(className).toContain('large-bg-0000ff');
-		expect(className).toContain('large-text-30px');
+		// Should contain a single class for small breakpoint
+		expect(className).toMatch(/nuclo-small-\d+/);
+		// Should contain a single class for large breakpoint
+		expect(className).toMatch(/nuclo-large-\d+/);
 	});
 
 	it('should return className property', () => {
@@ -39,7 +37,7 @@ describe('Breakpoint Integration', () => {
 			small: bg('#FF0000')
 		});
 
-		expect((result as any).className).toContain('bg-ff0000');
+		expect((result as any).className).toMatch(/nuclo-small-\d+/);
 	});
 
 	it('should work as a modifier when passed to an element', () => {
@@ -60,11 +58,10 @@ describe('Breakpoint Integration', () => {
 
 		const element = div(styles.header, 'Test Content')();
 
-		// Check that the className was applied
+		// Check that the className was applied (should contain breakpoint classes)
 		const className = element.className;
-		expect(className).toContain('bg-ff0000');
-		expect(className).toContain('text-20px');
-		expect(className).toContain('flex');
+		expect(className).toMatch(/nuclo-small-\d+/);
+		expect(className).toMatch(/nuclo-large-\d+/);
 		expect(element.textContent).toContain('Test Content');
 	});
 
@@ -74,10 +71,14 @@ describe('Breakpoint Integration', () => {
 			large: '(min-width: 601px)'
 		});
 
-		cn({
+		const result = cn({
 			small: bg('#FF0000').fontSize('20px'),
 			large: bg('#0000FF').fontSize('30px')
 		});
+
+		// Access className to ensure classes are created
+		const className = (result as any).className;
+		expect(className).toBeTruthy();
 
 		const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 		expect(styleSheet).toBeTruthy();
@@ -107,8 +108,8 @@ describe('Breakpoint Integration', () => {
 		const smallStyleRules = Array.from(smallMediaRule.cssRules).filter(rule => rule.type === CSSRule.STYLE_RULE);
 		const largeStyleRules = Array.from(largeMediaRule.cssRules).filter(rule => rule.type === CSSRule.STYLE_RULE);
 		
-		expect(smallStyleRules.length).toBeGreaterThanOrEqual(2); // Classes for small breakpoint
-		expect(largeStyleRules.length).toBeGreaterThanOrEqual(2); // Classes for large breakpoint
+		expect(smallStyleRules.length).toBeGreaterThanOrEqual(1); // Single class for small breakpoint
+		expect(largeStyleRules.length).toBeGreaterThanOrEqual(1); // Single class for large breakpoint
 	});
 
 	it('should create media queries with prefixed class names', () => {
@@ -117,10 +118,14 @@ describe('Breakpoint Integration', () => {
 			large: '(min-width: 601px)'
 		});
 
-		cn({
+		const result = cn({
 			small: bg('#FF0000').fontSize('20px'),
 			large: bg('#0000FF').fontSize('30px')
 		});
+
+		// Access className to ensure classes are created
+		const className = (result as any).className;
+		expect(className).toBeTruthy();
 
 		const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 		expect(styleSheet).toBeTruthy();
@@ -140,22 +145,18 @@ describe('Breakpoint Integration', () => {
 		expect(largeMediaRule).toBeTruthy();
 		expect(largeMediaRule.media.mediaText).toBe('(min-width: 601px)');
 		
-		// The media query should contain prefixed classes (large-bg-0000ff, large-text-30px)
+		// The media query should contain a single prefixed class
 		const mediaStyleRules = Array.from(largeMediaRule.cssRules) as CSSStyleRule[];
 		
-		// Check that the prefixed class names exist in the media query
-		const bgRule = mediaStyleRules.find(rule => rule.selectorText === '.large-bg-0000ff');
-		const fontSizeRule = mediaStyleRules.find(rule => rule.selectorText === '.large-text-30px');
+		// Check that a prefixed class name exists in the media query
+		const largeRule = mediaStyleRules.find(rule => rule.selectorText.match(/^\.nuclo-large-\d+$/));
 		
-		expect(bgRule).toBeTruthy();
-		expect(fontSizeRule).toBeTruthy();
+		expect(largeRule).toBeTruthy();
 		
-		// Verify the values
-		if (bgRule) {
-			expect(bgRule.style.backgroundColor).toBe('rgb(0, 0, 255)'); // #0000FF
-		}
-		if (fontSizeRule) {
-			expect(fontSizeRule.style.fontSize).toBe('30px');
+		// Verify the values are in the single class
+		if (largeRule) {
+			expect(largeRule.style.backgroundColor).toBe('rgb(0, 0, 255)'); // #0000FF
+			expect(largeRule.style.fontSize).toBe('30px');
 		}
 		
 		// Also check the small breakpoint media query
@@ -167,12 +168,14 @@ describe('Breakpoint Integration', () => {
 		expect(smallMediaRule).toBeTruthy();
 		const smallMediaStyleRules = Array.from(smallMediaRule.cssRules) as CSSStyleRule[];
 		
-		// Check that the prefixed class names exist in the small media query
-		const smallBgRule = smallMediaStyleRules.find(rule => rule.selectorText === '.small-bg-ff0000');
-		const smallFontSizeRule = smallMediaStyleRules.find(rule => rule.selectorText === '.small-text-20px');
+		// Check that a prefixed class name exists in the small media query
+		const smallRule = smallMediaStyleRules.find(rule => rule.selectorText.match(/^\.nuclo-small-\d+$/));
 		
-		expect(smallBgRule).toBeTruthy();
-		expect(smallFontSizeRule).toBeTruthy();
+		expect(smallRule).toBeTruthy();
+		if (smallRule) {
+			expect(smallRule.style.backgroundColor).toBe('rgb(255, 0, 0)');
+			expect(smallRule.style.fontSize).toBe('20px');
+		}
 	});
 
 	it('should handle the exact user scenario with theme colors', () => {
@@ -229,16 +232,16 @@ describe('Breakpoint Integration', () => {
 
 		expect(mediumMediaRule).toBeTruthy();
 		
-		// Check that background-color has prefixed class in medium breakpoint
+		// Check that a single class exists in medium breakpoint
 		const mediaStyleRules = Array.from(mediumMediaRule.cssRules) as CSSStyleRule[];
-		const bgRule = mediaStyleRules.find(rule => 
-			rule.selectorText.includes('medium-bg-') && rule.style.backgroundColor
+		const mediumRule = mediaStyleRules.find(rule => 
+			rule.selectorText.match(/^\.nuclo-medium-\d+$/)
 		);
 		
-		expect(bgRule).toBeTruthy();
-		if (bgRule) {
+		expect(mediumRule).toBeTruthy();
+		if (mediumRule) {
 			// Should be red (#FF0000)
-			expect(bgRule.style.backgroundColor).toBe('rgb(255, 0, 0)');
+			expect(mediumRule.style.backgroundColor).toBe('rgb(255, 0, 0)');
 		}
 	});
 
@@ -262,12 +265,11 @@ describe('Breakpoint Integration', () => {
 			const className = (result as any).className;
 			
 			// Should contain default styles (no prefix)
-			expect(className).toContain('bg-00ff00');
-			expect(className).toContain('text-16px');
+			expect(className).toMatch(/nuclo-\d+/);
 			
 			// Should contain prefixed breakpoint styles
-			expect(className).toContain('medium-text-20px');
-			expect(className).toContain('large-text-24px');
+			expect(className).toMatch(/nuclo-medium-\d+/);
+			expect(className).toMatch(/nuclo-large-\d+/);
 		});
 
 		it('should apply default styles without media query', () => {
@@ -289,17 +291,13 @@ describe('Breakpoint Integration', () => {
 			const styleRules = rules.filter(rule => rule.type === CSSRule.STYLE_RULE) as CSSStyleRule[];
 			
 			// Default styles should be created as regular style rules (not in media query)
-			const bgRule = styleRules.find(rule => rule.selectorText === '.bg-ff0000');
-			const fontRule = styleRules.find(rule => rule.selectorText === '.text-16px');
+			const defaultRule = styleRules.find(rule => rule.selectorText.match(/^\.nuclo-\d+$/));
 			
-			expect(bgRule).toBeTruthy();
-			expect(fontRule).toBeTruthy();
+			expect(defaultRule).toBeTruthy();
 			
-			if (bgRule) {
-				expect(bgRule.style.backgroundColor).toBe('rgb(255, 0, 0)');
-			}
-			if (fontRule) {
-				expect(fontRule.style.fontSize).toBe('16px');
+			if (defaultRule) {
+				expect(defaultRule.style.backgroundColor).toBe('rgb(255, 0, 0)');
+				expect(defaultRule.style.fontSize).toBe('16px');
 			}
 		});
 
@@ -324,18 +322,14 @@ describe('Breakpoint Integration', () => {
 			const mediaRule = mediaRules[0] as CSSMediaRule;
 			const mediaStyleRules = Array.from(mediaRule.cssRules) as CSSStyleRule[];
 			
-			// Check that the overridden values exist in media query
-			const bgRule = mediaStyleRules.find(rule => rule.selectorText === '.medium-bg-0000ff');
-			const fontRule = mediaStyleRules.find(rule => rule.selectorText === '.medium-text-20px');
+			// Check that the overridden values exist in media query (single class)
+			const mediumRule = mediaStyleRules.find(rule => rule.selectorText.match(/^\.nuclo-medium-\d+$/));
 			
-			expect(bgRule).toBeTruthy();
-			expect(fontRule).toBeTruthy();
+			expect(mediumRule).toBeTruthy();
 			
-			if (bgRule) {
-				expect(bgRule.style.backgroundColor).toBe('rgb(0, 0, 255)');
-			}
-			if (fontRule) {
-				expect(fontRule.style.fontSize).toBe('20px');
+			if (mediumRule) {
+				expect(mediumRule.style.backgroundColor).toBe('rgb(0, 0, 255)');
+				expect(mediumRule.style.fontSize).toBe('20px');
 			}
 		});
 
@@ -349,12 +343,11 @@ describe('Breakpoint Integration', () => {
 			expect(result).toHaveProperty('className');
 			const className = (result as any).className;
 			
-			// Should contain default styles
-			expect(className).toContain('bg-ff0000');
-			expect(className).toContain('text-16px');
+			// Should contain default styles (single class)
+			expect(className).toMatch(/nuclo-\d+/);
 			
 			// Should not have any prefixed classes
-			expect(className).not.toContain('medium-');
+			expect(className).not.toMatch(/nuclo-medium-/);
 		});
 
 		it('should match user example: default width(100%) + breakpoint width(50%)', () => {
@@ -375,12 +368,11 @@ describe('Breakpoint Integration', () => {
 			expect(result).toHaveProperty('className');
 			const className = (result as any).className;
 			
-			// Default styles (no media query)
-			expect(className).toContain('bg-ff0000');
-			expect(className).toContain('w-100');
+			// Default styles (no media query) - single class
+			expect(className).toMatch(/nuclo-\d+/);
 			
-			// Breakpoint override
-			expect(className).toContain('medium-w-50');
+			// Breakpoint override - single class
+			expect(className).toMatch(/nuclo-medium-\d+/);
 
 			// Verify CSS rules
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
@@ -388,10 +380,11 @@ describe('Breakpoint Integration', () => {
 			
 			// Default styles should be direct style rules
 			const styleRules = rules.filter(rule => rule.type === CSSRule.STYLE_RULE) as CSSStyleRule[];
-			const defaultWidthRule = styleRules.find(rule => rule.selectorText === '.w-100');
-			expect(defaultWidthRule).toBeTruthy();
-			if (defaultWidthRule) {
-				expect(defaultWidthRule.style.width).toBe('100%');
+			const defaultRule = styleRules.find(rule => rule.selectorText.match(/^\.nuclo-\d+$/));
+			expect(defaultRule).toBeTruthy();
+			if (defaultRule) {
+				expect(defaultRule.style.width).toBe('100%');
+				expect(defaultRule.style.backgroundColor).toBe('rgb(255, 0, 0)');
 			}
 
 			// Medium breakpoint should be in media query
@@ -404,10 +397,10 @@ describe('Breakpoint Integration', () => {
 			expect(mediumMediaRule).toBeTruthy();
 			
 			const mediaStyleRules = Array.from(mediumMediaRule.cssRules) as CSSStyleRule[];
-			const mediumWidthRule = mediaStyleRules.find(rule => rule.selectorText === '.medium-w-50');
-			expect(mediumWidthRule).toBeTruthy();
-			if (mediumWidthRule) {
-				expect(mediumWidthRule.style.width).toBe('50%');
+			const mediumRule = mediaStyleRules.find(rule => rule.selectorText.match(/^\.nuclo-medium-\d+$/));
+			expect(mediumRule).toBeTruthy();
+			if (mediumRule) {
+				expect(mediumRule.style.width).toBe('50%');
 			}
 		});
 
@@ -425,15 +418,11 @@ describe('Breakpoint Integration', () => {
 
 			const className = (result as any).className;
 			
-			// All default styles should be present
-			expect(className).toContain('bg-ff0000');
-			expect(className).toContain('w-100');
-			expect(className).toContain('p-10px');
-			expect(className).toContain('m-5px');
+			// All default styles should be present in a single class
+			expect(className).toMatch(/nuclo-\d+/);
 			
-			// Breakpoint overrides
-			expect(className).toContain('medium-w-50');
-			expect(className).toContain('medium-p-20px');
+			// Breakpoint overrides in a single class
+			expect(className).toMatch(/nuclo-medium-\d+/);
 		});
 
 		it('should handle empty breakpoints object with default styles', () => {
@@ -446,12 +435,11 @@ describe('Breakpoint Integration', () => {
 			expect(result).toHaveProperty('className');
 			const className = (result as any).className;
 			
-			// Should only have default styles
-			expect(className).toContain('bg-ff0000');
-			expect(className).toContain('text-16px');
+			// Should only have default styles (single class)
+			expect(className).toMatch(/nuclo-\d+/);
 			
 			// No media query classes
-			expect(className).not.toContain('medium-');
+			expect(className).not.toMatch(/nuclo-medium-/);
 		});
 
 		it('should handle undefined breakpoints with default styles', () => {
@@ -464,9 +452,8 @@ describe('Breakpoint Integration', () => {
 			expect(result).toHaveProperty('className');
 			const className = (result as any).className;
 			
-			// Should only have default styles
-			expect(className).toContain('bg-ff0000');
-			expect(className).toContain('text-16px');
+			// Should only have default styles (single class)
+			expect(className).toMatch(/nuclo-\d+/);
 		});
 	});
 });

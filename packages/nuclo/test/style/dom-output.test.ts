@@ -32,9 +32,9 @@ describe('Style utilities - DOM Output', () => {
 
 		// Verify the breakpoint className was applied to the header div
 		const headerClassName = header.className;
-		expect(headerClassName).toContain('bg-ff0000');
-		expect(headerClassName).toContain('text-20px');
-		expect(headerClassName).toContain('flex');
+		expect(headerClassName).toMatch(/nuclo-small-\d+/);
+		expect(headerClassName).toMatch(/nuclo-medium-\d+/);
+		expect(headerClassName).toMatch(/nuclo-large-\d+/);
 		expect(header.textContent).toContain('Header Content');
 
 		// Verify CSS classes were created
@@ -61,12 +61,10 @@ describe('Style utilities - DOM Output', () => {
 
 		// The element should have the generated className applied
 		const elementClassName = element.className;
-		expect(elementClassName).toContain('bg-ff0000');
-		expect(elementClassName).toContain('text-20px');
+		expect(elementClassName).toMatch(/nuclo-small-\d+/);
 		expect(element.textContent).toContain('Test Content');
 
 		// Verify in the actual DOM HTML
-		expect(container.innerHTML).toContain('bg-ff0000');
-		expect(container.innerHTML).toContain('text-20px');
+		expect(container.innerHTML).toMatch(/nuclo-small-\d+/);
 	});
 });
