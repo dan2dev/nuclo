@@ -30,11 +30,10 @@ describe('Style utilities - DOM Output', () => {
 			'Header Content'
 		)();
 
-		// Verify the breakpoint className was applied to the header div
+		// Verify the breakpoint className was applied to the header div (single class name)
 		const headerClassName = header.className;
-		expect(headerClassName).toMatch(/nuclo-small-[a-f0-9]{8}/);
-		expect(headerClassName).toMatch(/nuclo-medium-[a-f0-9]{8}/);
-		expect(headerClassName).toMatch(/nuclo-large-[a-f0-9]{8}/);
+		expect(headerClassName).toMatch(/nuclo-[a-f0-9]{8}/);
+		expect(headerClassName.split(' ').filter(c => c.startsWith('nuclo-')).length).toBe(1); // Only one nuclo class
 		expect(header.textContent).toContain('Header Content');
 
 		// Verify CSS classes were created
@@ -59,12 +58,13 @@ describe('Style utilities - DOM Output', () => {
 		const element = div(modifier, 'Test Content')();
 		container.appendChild(element);
 
-		// The element should have the generated className applied
+		// The element should have the generated className applied (single class name)
 		const elementClassName = element.className;
-		expect(elementClassName).toMatch(/nuclo-small-[a-f0-9]{8}/);
+		expect(elementClassName).toMatch(/nuclo-[a-f0-9]{8}/);
+		expect(elementClassName.split(' ').filter(c => c.startsWith('nuclo-')).length).toBe(1); // Only one nuclo class
 		expect(element.textContent).toContain('Test Content');
 
 		// Verify in the actual DOM HTML
-		expect(container.innerHTML).toMatch(/nuclo-small-[a-f0-9]{8}/);
+		expect(container.innerHTML).toMatch(/nuclo-[a-f0-9]{8}/);
 	});
 });

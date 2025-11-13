@@ -430,29 +430,61 @@ export function createBreakpoints<T extends string>(breakpoints: Record<T, strin
 			return "";
 		}
 
-		const allClassNames: string[] = [];
-
-		// Process default styles (no media query)
-		if (defaultStyles) {
-			const className = defaultStyles.getClassName();
-			allClassNames.push(className);
-		}
-
-		// Process breakpoint styles
+		// If we have breakpoints, create a single class name for all breakpoints
 		if (styles && Object.keys(styles).length > 0) {
+			// Collect all breakpoint styles to generate a combined hash
+			const allBreakpointStyles: Array<{ breakpointName: T; mediaQuery: string; styles: Record<string, string> }> = [];
 			const breakpointEntries = Object.entries(breakpoints) as [T, string][];
 
 			for (const [breakpointName, mediaQuery] of breakpointEntries) {
 				const styleBuilder = styles[breakpointName];
 				if (styleBuilder) {
-					const className = (styleBuilder as StyleBuilder).getClassName(breakpointName, mediaQuery);
-					allClassNames.push(className);
+					allBreakpointStyles.push({
+						breakpointName,
+						mediaQuery,
+						styles: (styleBuilder as StyleBuilder).getStyles()
+					});
 				}
 			}
+
+			// Generate a combined hash from all breakpoint styles (and default styles if present)
+			const allStyleKeys: string[] = [];
+			
+			if (defaultStyles) {
+				const defaultStylesObj = defaultStyles.getStyles();
+				allStyleKeys.push(`default:${generateStyleKey(defaultStylesObj)}`);
+			}
+			
+			allStyleKeys.push(...allBreakpointStyles.map(({ breakpointName, styles: bpStyles }) => {
+				const styleKey = generateStyleKey(bpStyles);
+				return `${breakpointName}:${styleKey}`;
+			}));
+
+			const combinedStyleKey = allStyleKeys.sort().join('||');
+			const combinedHash = simpleHash(combinedStyleKey);
+			const className = `nuclo-${combinedHash}`;
+
+			// Apply default styles first (no media query)
+			if (defaultStyles) {
+				const defaultStylesObj = defaultStyles.getStyles();
+				createCSSClassWithStyles(className, defaultStylesObj);
+			}
+
+			// Apply all breakpoint styles to the same class name in their respective media queries
+			for (const { breakpointName, mediaQuery, styles: bpStyles } of allBreakpointStyles) {
+				createCSSClassWithStyles(className, bpStyles, mediaQuery);
+			}
+
+			return { className };
 		}
 
-		// Return all class names
-		return { className: allClassNames.join(' ') };
+		// Only default styles (no breakpoints)
+		if (defaultStyles) {
+			const className = defaultStyles.getClassName();
+			return { className };
+		}
+
+		return "";
 	};
 }
 
