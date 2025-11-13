@@ -106,7 +106,7 @@ describe('Style utilities - global availability', () => {
 
 		const className = (result as any).className;
 		// Should contain a single class name for all breakpoints
-		expect(className).toMatch(/^nuclo-[a-f0-9]{8}$/);
+		expect(className).toMatch(/^n[a-f0-9]{8}$/);
 		expect(className.split(' ').length).toBe(1); // Only one class name
 	});
 });
