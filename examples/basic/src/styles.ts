@@ -61,17 +61,17 @@ export const globalStyles = {
 			.color(theme.colors.text)
 			.lineHeight("1.6"),
 	}),
-	box1: cn({
+	box1: cn(bg("blue")
+		.padding(theme.spacing.xl)
+		.borderRadius(theme.borderRadius.lg)
+		.boxShadow(theme.shadows.lg)
+		.width("100%")
+		.maxWidth("400px")
+		.margin("0 auto"), {
 		small: bg("red")
-			.padding(theme.spacing.xl)
-			.borderRadius(theme.borderRadius.lg)
-			.boxShadow(theme.shadows.lg)
-			.width("100%")
-			.maxWidth("400px")
-			.margin("0 auto"),
 	}),
 
-	box2:  cn({
+	box2: cn({
 		small: bg("red")
 			.padding(theme.spacing.xl)
 			.borderRadius(theme.borderRadius.lg)
