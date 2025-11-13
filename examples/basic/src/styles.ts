@@ -42,7 +42,7 @@ export const theme = {
 
 // Breakpoints
 export const cn = createBreakpoints({
-	small: "(min-width: 1px)",
+	small: "(min-width: 341px)",
 	medium: "(min-width: 601px)",
 	large: "(min-width: 1025px)",
 });
@@ -61,14 +61,16 @@ export const globalStyles = {
 			.color(theme.colors.text)
 			.lineHeight("1.6"),
 	}),
-	box1: cn(bg("blue")
+	box1: cn(bg("red")
 		.padding(theme.spacing.xl)
 		.borderRadius(theme.borderRadius.lg)
 		.boxShadow(theme.shadows.lg)
 		.width("100%")
 		.maxWidth("400px")
 		.margin("0 auto"), {
-		small: bg("red")
+		small: bg("green"),
+		medium: bg("blue"),
+		large: bg("purple"),
 	}),
 
 	box2: cn({

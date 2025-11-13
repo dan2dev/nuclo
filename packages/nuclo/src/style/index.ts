@@ -115,34 +115,65 @@ function createCSSClassWithStyles(
 		}
 
 		if (!mediaRule) {
-			const index = styleSheet.sheet?.cssRules.length || 0;
-			styleSheet.sheet?.insertRule(`@media ${mediaQuery} {}`, index);
-			mediaRule = styleSheet.sheet?.cssRules[index] as CSSMediaRule;
+			// Find the correct insertion index: after all style rules, before other media queries
+			// This ensures default styles come first, then media queries in registration order
+			let insertIndex = 0;
+			for (let i = 0; i < existingRules.length; i++) {
+				if (existingRules[i] instanceof CSSStyleRule) {
+					insertIndex = i + 1;
+				} else if (existingRules[i] instanceof CSSMediaRule) {
+					// Insert before existing media queries to maintain registration order
+					break;
+				}
+			}
+			styleSheet.sheet?.insertRule(`@media ${mediaQuery} {}`, insertIndex);
+			mediaRule = styleSheet.sheet?.cssRules[insertIndex] as CSSMediaRule;
 		}
 
 		// Check if class already exists in this media query
-		const classExists = Array.from(mediaRule.cssRules).some(rule => {
-			if (rule instanceof CSSStyleRule) {
-				return rule.selectorText === `.${className}`;
+		let existingRule: CSSStyleRule | null = null;
+		for (const rule of Array.from(mediaRule.cssRules)) {
+			if (rule instanceof CSSStyleRule && rule.selectorText === `.${className}`) {
+				existingRule = rule;
+				break;
 			}
-			return false;
-		});
+		}
 
-		if (!classExists) {
+		if (existingRule) {
+			// Update existing rule by merging styles
+			Object.entries(styles).forEach(([property, value]) => {
+				existingRule!.style.setProperty(property, value);
+			});
+		} else {
 			mediaRule.insertRule(`.${className} { ${rules} }`, mediaRule.cssRules.length);
 		}
 	} else {
 		// Regular style rule (no media query)
-		const existingRules = Array.from(styleSheet.sheet?.cssRules || []);
-		const classExists = existingRules.some(rule => {
-			if (rule instanceof CSSStyleRule) {
-				return rule.selectorText === `.${className}`;
+		// Find existing rule or insert at the beginning (before media queries)
+		let existingRule: CSSStyleRule | null = null;
+		let insertIndex = 0;
+		
+		const allRules = Array.from(styleSheet.sheet?.cssRules || []);
+		for (let i = 0; i < allRules.length; i++) {
+			const rule = allRules[i];
+			if (rule instanceof CSSStyleRule && rule.selectorText === `.${className}`) {
+				existingRule = rule;
+				insertIndex = i;
+				break;
 			}
-			return false;
-		});
+			// Track where media queries start to insert default styles before them
+			if (!(rule instanceof CSSMediaRule)) {
+				insertIndex = i + 1;
+			}
+		}
 
-		if (!classExists) {
-			styleSheet.sheet?.insertRule(`.${className} { ${rules} }`, styleSheet.sheet.cssRules.length);
+		if (existingRule) {
+			// Update existing rule by merging styles
+			Object.entries(styles).forEach(([property, value]) => {
+				existingRule!.style.setProperty(property, value);
+			});
+		} else {
+			styleSheet.sheet?.insertRule(`.${className} { ${rules} }`, insertIndex);
 		}
 	}
 }
@@ -464,15 +495,20 @@ export function createBreakpoints<T extends string>(breakpoints: Record<T, strin
 			const combinedHash = simpleHash(combinedStyleKey);
 			const className = `n${combinedHash}`;
 
-			// Apply default styles first (no media query)
+			// Apply default styles first (no media query) - these are base styles
 			if (defaultStyles) {
 				const defaultStylesObj = defaultStyles.getStyles();
 				createCSSClassWithStyles(className, defaultStylesObj);
 			}
 
 			// Apply all breakpoint styles to the same class name in their respective media queries
+			// Apply in registration order to ensure proper CSS cascade
 			for (const { breakpointName, mediaQuery, styles: bpStyles } of allBreakpointStyles) {
-				createCSSClassWithStyles(className, bpStyles, mediaQuery);
+				// Merge with default styles if they exist (breakpoint styles override defaults)
+				const mergedStyles = defaultStyles 
+					? { ...defaultStyles.getStyles(), ...bpStyles }
+					: bpStyles;
+				createCSSClassWithStyles(className, mergedStyles, mediaQuery);
 			}
 
 			return { className };
