@@ -6,7 +6,6 @@ import { cn, globalStyles as s } from "./styles";
 
 const appRoot = document.querySelector<HTMLDivElement>("#app")!;
 
-
 const app = div(
 	s.body,
 	div(div(s.box1, "Box 1"), div(s.box2, "Box 2")),
