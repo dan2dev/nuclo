@@ -1,4 +1,5 @@
 import "nuclo";
+import { width } from "nuclo";
 import { getTodos, getInputValue, setInputValue, addTodo, toggleTodo, deleteTodo, clearCompleted } from "./todoState";
 import { TrashIcon, PlusIcon, CircleIcon } from "./icons";
 import { cn, globalStyles } from "./styles";
