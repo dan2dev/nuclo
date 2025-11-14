@@ -1,7 +1,4 @@
-import {
-	bg, width, padding, margin, fontSize, flex, flexDirection,
-	createBreakpoints
-} from "nuclo";
+import "nuclo";
 
 // Theme configuration - Modern, vibrant design
 export const theme = {
