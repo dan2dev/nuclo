@@ -282,6 +282,262 @@ declare global {
 		// Interaction
 		cursor(value: string): this;
 	}
+
+	// Utility functions available globally (like HTML tags)
+	// Display
+	function display(value: string): StyleBuilder;
+	function flex(value?: string): StyleBuilder;
+	function grid(): StyleBuilder;
+
+	// Colors
+	function bg(color: string): StyleBuilder;
+	function color(colorValue: string): StyleBuilder;
+	function accentColor(value: string): StyleBuilder;
+
+	// Typography
+	function fontSize(size: string): StyleBuilder;
+	function fontWeight(value: string): StyleBuilder;
+	function fontFamily(value: string): StyleBuilder;
+	function lineHeight(value: string): StyleBuilder;
+	function letterSpacing(value: string): StyleBuilder;
+	function textAlign(value: string): StyleBuilder;
+	function textDecoration(value: string): StyleBuilder;
+	function bold(): StyleBuilder;
+	function fontStyle(value: string): StyleBuilder;
+	function fontVariant(value: string): StyleBuilder;
+	function fontStretch(value: string): StyleBuilder;
+	function textTransform(value: string): StyleBuilder;
+	function textIndent(value: string): StyleBuilder;
+	function textOverflow(value: string): StyleBuilder;
+	function textShadow(value: string): StyleBuilder;
+	function whiteSpace(value: string): StyleBuilder;
+	function wordSpacing(value: string): StyleBuilder;
+	function wordWrap(value: string): StyleBuilder;
+	function overflowWrap(value: string): StyleBuilder;
+	function textAlignLast(value: string): StyleBuilder;
+	function textJustify(value: string): StyleBuilder;
+	function textDecorationLine(value: string): StyleBuilder;
+	function textDecorationColor(value: string): StyleBuilder;
+	function textDecorationStyle(value: string): StyleBuilder;
+	function textDecorationThickness(value: string): StyleBuilder;
+	function textUnderlineOffset(value: string): StyleBuilder;
+	function verticalAlign(value: string): StyleBuilder;
+
+	// Layout
+	function position(value: string): StyleBuilder;
+	function padding(value: string): StyleBuilder;
+	function paddingTop(value: string): StyleBuilder;
+	function paddingRight(value: string): StyleBuilder;
+	function paddingBottom(value: string): StyleBuilder;
+	function paddingLeft(value: string): StyleBuilder;
+	function margin(value: string): StyleBuilder;
+	function marginTop(value: string): StyleBuilder;
+	function marginRight(value: string): StyleBuilder;
+	function marginBottom(value: string): StyleBuilder;
+	function marginLeft(value: string): StyleBuilder;
+	function width(value: string): StyleBuilder;
+	function height(value: string): StyleBuilder;
+	function minWidth(value: string): StyleBuilder;
+	function maxWidth(value: string): StyleBuilder;
+	function minHeight(value: string): StyleBuilder;
+	function maxHeight(value: string): StyleBuilder;
+	function boxSizing(value: string): StyleBuilder;
+
+	// Positioning (Note: top conflicts with window.top and is skipped at runtime)
+	// function top(value: string): StyleBuilder; // Use module import: import { top } from "nuclo"
+	function right(value: string): StyleBuilder;
+	function bottom(value: string): StyleBuilder;
+	function left(value: string): StyleBuilder;
+	function zIndex(value: string): StyleBuilder;
+
+	// Flexbox
+	function flexDirection(value: string): StyleBuilder;
+	function alignItems(value: string): StyleBuilder;
+	function justifyContent(value: string): StyleBuilder;
+	function center(): StyleBuilder;
+	function gap(value: string): StyleBuilder;
+	function flexWrap(value: string): StyleBuilder;
+	function flexGrow(value: string): StyleBuilder;
+	function flexShrink(value: string): StyleBuilder;
+	function flexBasis(value: string): StyleBuilder;
+	function alignSelf(value: string): StyleBuilder;
+	function alignContent(value: string): StyleBuilder;
+	function justifySelf(value: string): StyleBuilder;
+	function justifyItems(value: string): StyleBuilder;
+
+	// Grid
+	function gridTemplateColumns(value: string): StyleBuilder;
+	function gridTemplateRows(value: string): StyleBuilder;
+	function gridTemplateAreas(value: string): StyleBuilder;
+	function gridColumn(value: string): StyleBuilder;
+	function gridRow(value: string): StyleBuilder;
+	function gridColumnStart(value: string): StyleBuilder;
+	function gridColumnEnd(value: string): StyleBuilder;
+	function gridRowStart(value: string): StyleBuilder;
+	function gridRowEnd(value: string): StyleBuilder;
+	function gridArea(value: string): StyleBuilder;
+	function gridAutoColumns(value: string): StyleBuilder;
+	function gridAutoRows(value: string): StyleBuilder;
+	function gridAutoFlow(value: string): StyleBuilder;
+
+	// Borders
+	function border(value: string): StyleBuilder;
+	function borderTop(value: string): StyleBuilder;
+	function borderRight(value: string): StyleBuilder;
+	function borderBottom(value: string): StyleBuilder;
+	function borderLeft(value: string): StyleBuilder;
+	function borderWidth(value: string): StyleBuilder;
+	function borderStyle(value: string): StyleBuilder;
+	function borderColor(value: string): StyleBuilder;
+	function borderTopWidth(value: string): StyleBuilder;
+	function borderRightWidth(value: string): StyleBuilder;
+	function borderBottomWidth(value: string): StyleBuilder;
+	function borderLeftWidth(value: string): StyleBuilder;
+	function borderTopStyle(value: string): StyleBuilder;
+	function borderRightStyle(value: string): StyleBuilder;
+	function borderBottomStyle(value: string): StyleBuilder;
+	function borderLeftStyle(value: string): StyleBuilder;
+	function borderTopColor(value: string): StyleBuilder;
+	function borderRightColor(value: string): StyleBuilder;
+	function borderBottomColor(value: string): StyleBuilder;
+	function borderLeftColor(value: string): StyleBuilder;
+	function borderRadius(value: string): StyleBuilder;
+	function borderTopLeftRadius(value: string): StyleBuilder;
+	function borderTopRightRadius(value: string): StyleBuilder;
+	function borderBottomLeftRadius(value: string): StyleBuilder;
+	function borderBottomRightRadius(value: string): StyleBuilder;
+
+	// Outline
+	function outline(value: string): StyleBuilder;
+	function outlineWidth(value: string): StyleBuilder;
+	function outlineStyle(value: string): StyleBuilder;
+	function outlineColor(value: string): StyleBuilder;
+	function outlineOffset(value: string): StyleBuilder;
+
+	// Background
+	function backgroundColor(value: string): StyleBuilder;
+	function backgroundImage(value: string): StyleBuilder;
+	function backgroundRepeat(value: string): StyleBuilder;
+	function backgroundPosition(value: string): StyleBuilder;
+	function backgroundSize(value: string): StyleBuilder;
+	function backgroundAttachment(value: string): StyleBuilder;
+	function backgroundClip(value: string): StyleBuilder;
+	function backgroundOrigin(value: string): StyleBuilder;
+
+	// Effects
+	function boxShadow(value: string): StyleBuilder;
+	function opacity(value: string): StyleBuilder;
+	function transition(value: string): StyleBuilder;
+	function transitionProperty(value: string): StyleBuilder;
+	function transitionDuration(value: string): StyleBuilder;
+	function transitionTimingFunction(value: string): StyleBuilder;
+	function transitionDelay(value: string): StyleBuilder;
+
+	// Transform
+	function transform(value: string): StyleBuilder;
+	function transformOrigin(value: string): StyleBuilder;
+	function transformStyle(value: string): StyleBuilder;
+	function perspective(value: string): StyleBuilder;
+	function perspectiveOrigin(value: string): StyleBuilder;
+	function backfaceVisibility(value: string): StyleBuilder;
+
+	// Animation
+	function animation(value: string): StyleBuilder;
+	function animationName(value: string): StyleBuilder;
+	function animationDuration(value: string): StyleBuilder;
+	function animationTimingFunction(value: string): StyleBuilder;
+	function animationDelay(value: string): StyleBuilder;
+	function animationIterationCount(value: string): StyleBuilder;
+	function animationDirection(value: string): StyleBuilder;
+	function animationFillMode(value: string): StyleBuilder;
+	function animationPlayState(value: string): StyleBuilder;
+
+	// Filter (Note: conflicts with SVG filter element, use module import if needed)
+	// function filter(value: string): StyleBuilder; // Use: import { filter } from "nuclo"
+	function backdropFilter(value: string): StyleBuilder;
+
+	// Overflow
+	function overflow(value: string): StyleBuilder;
+	function overflowX(value: string): StyleBuilder;
+	function overflowY(value: string): StyleBuilder;
+
+	// Visibility
+	function visibility(value: string): StyleBuilder;
+
+	// Object fit/position
+	function objectFit(value: string): StyleBuilder;
+	function objectPosition(value: string): StyleBuilder;
+
+	// List
+	function listStyle(value: string): StyleBuilder;
+	function listStyleType(value: string): StyleBuilder;
+	function listStylePosition(value: string): StyleBuilder;
+	function listStyleImage(value: string): StyleBuilder;
+
+	// Table
+	function borderCollapse(value: string): StyleBuilder;
+	function borderSpacing(value: string): StyleBuilder;
+	function captionSide(value: string): StyleBuilder;
+	function emptyCells(value: string): StyleBuilder;
+	function tableLayout(value: string): StyleBuilder;
+
+	// Content
+	function content(value: string): StyleBuilder;
+	function quotes(value: string): StyleBuilder;
+	function counterReset(value: string): StyleBuilder;
+	function counterIncrement(value: string): StyleBuilder;
+
+	// User interface
+	function appearance(value: string): StyleBuilder;
+	function userSelect(value: string): StyleBuilder;
+	function pointerEvents(value: string): StyleBuilder;
+	function resize(value: string): StyleBuilder;
+	function scrollBehavior(value: string): StyleBuilder;
+
+	// Clip (Note: clipPath conflicts with SVG clipPath element, use module import if needed)
+	function clip(value: string): StyleBuilder;
+	// function clipPath(value: string): StyleBuilder; // Use: import { clipPath } from "nuclo"
+
+	// Isolation
+	function isolation(value: string): StyleBuilder;
+
+	// Mix blend mode
+	function mixBlendMode(value: string): StyleBuilder;
+
+	// Will change
+	function willChange(value: string): StyleBuilder;
+
+	// Contain
+	function contain(value: string): StyleBuilder;
+
+	// Page break
+	function pageBreakBefore(value: string): StyleBuilder;
+	function pageBreakAfter(value: string): StyleBuilder;
+	function pageBreakInside(value: string): StyleBuilder;
+
+	// Break
+	function breakBefore(value: string): StyleBuilder;
+	function breakAfter(value: string): StyleBuilder;
+	function breakInside(value: string): StyleBuilder;
+
+	// Orphans and widows
+	function orphans(value: string): StyleBuilder;
+	function widows(value: string): StyleBuilder;
+
+	// Column
+	function columnCount(value: string): StyleBuilder;
+	function columnFill(value: string): StyleBuilder;
+	function columnGap(value: string): StyleBuilder;
+	function columnRule(value: string): StyleBuilder;
+	function columnRuleColor(value: string): StyleBuilder;
+	function columnRuleStyle(value: string): StyleBuilder;
+	function columnRuleWidth(value: string): StyleBuilder;
+	function columnSpan(value: string): StyleBuilder;
+	function columnWidth(value: string): StyleBuilder;
+	function columns(value: string): StyleBuilder;
+
+	// Interaction
+	function cursor(value: string): StyleBuilder;
 }
 
 // Export StyleBuilder class with all its methods (for module imports)
