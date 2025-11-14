@@ -2,34 +2,25 @@ import "nuclo";
 import { width } from "nuclo";
 import { getTodos, getInputValue, setInputValue, addTodo, toggleTodo, deleteTodo, clearCompleted } from "./todoState";
 import { TrashIcon, PlusIcon, CircleIcon } from "./icons";
-import { cn, globalStyles } from "./styles";
+import { cn, globalStyles as s } from "./styles";
 
 const appRoot = document.querySelector<HTMLDivElement>("#app")!;
 
-// Apply body styles
-document.body.setAttribute("style", "margin: 0; display: flex; align-items: center; justify-content: center;");
 
 const app = div(
-	globalStyles.body,
+	s.body,
+	div(div(s.box1, "Box 1"), div(s.box2, "Box 2")),
 	div(
-		div(globalStyles.box1, "Box 1"),
-		div(globalStyles.box2, "Box 2"),
-	),
-	div(
-		globalStyles.appWrapper,
+		s.appWrapper,
 		div(
-			globalStyles.appContainer,
-
-			// Header with gradient
-			div(globalStyles.header, h1(globalStyles.h1Reset, "✨", span("My Tasks"))),
-
-			// Input section
+			s.appContainer,
+			div(s.header, h1(s.h1Reset, "✨", span("My Tasks"))),
 			div(
 				cn(width("100%").bg("#FF0000").padding("1rem"), {
-					medium: width("50%")
+					medium: width("50%"),
 				}),
 				input(
-					globalStyles.input,
+					s.input,
 					{
 						type: "text",
 						placeholder: "Add a new task...",
@@ -44,23 +35,20 @@ const app = div(
 						}
 					}),
 				),
-				button(globalStyles.addButton, PlusIcon(), " Add Task", on("click", addTodo)),
+				button(s.addButton, PlusIcon(), " Add Task", on("click", addTodo)),
 			),
 
 			// Stats
 			when(
 				() => getTodos().length > 0,
 				div(
-					globalStyles.stats,
+					s.stats,
 					span(
-						globalStyles.statsText,
+						s.statsText,
 						() =>
 							`📝 ${getTodos().filter((t) => !t.done).length} task${getTodos().filter((t) => !t.done).length !== 1 ? "s" : ""} remaining`,
 					),
-					when(
-						() => getTodos().some((t) => t.done),
-						button(globalStyles.clearButton, "🗑️ Clear Completed", on("click", clearCompleted)),
-					),
+					when(() => getTodos().some((t) => t.done), button(s.clearButton, "🗑️ Clear Completed", on("click", clearCompleted))),
 				),
 			),
 
@@ -68,14 +56,14 @@ const app = div(
 			when(
 				() => getTodos().length > 0,
 				div(
-					globalStyles.todoList,
+					s.todoList,
 					list(
 						() => getTodos(),
 						(todo) =>
 							div(
-								globalStyles.todoItem,
+								s.todoItem,
 								input(
-									globalStyles.checkbox,
+									s.checkbox,
 									{
 										type: "checkbox",
 										checked: () => todo.done,
@@ -83,18 +71,18 @@ const app = div(
 									on("change", () => toggleTodo(todo.id)),
 								),
 								span(
-									() => (todo.done ? globalStyles.todoTextDone : globalStyles.todoText),
+									() => (todo.done ? s.todoTextDone : s.todoText),
 									() => todo.text,
 								),
 								button(
-									globalStyles.deleteButton,
+									s.deleteButton,
 									TrashIcon(),
 									on("click", () => deleteTodo(todo.id)),
 								),
 							),
 					),
 				),
-			).else(div(globalStyles.emptyState, CircleIcon(), p(globalStyles.emptyText, "No tasks yet. Add your first one above!"))),
+			).else(div(s.emptyState, CircleIcon(), p(s.emptyText, "No tasks yet. Add your first one above!"))),
 		),
 	),
 );
