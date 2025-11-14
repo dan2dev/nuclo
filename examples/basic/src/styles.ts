@@ -1,3 +1,8 @@
+import {
+	bg, width, padding, margin, fontSize, flex, flexDirection,
+	createBreakpoints
+} from "nuclo";
+
 // Theme configuration - Modern, vibrant design
 export const theme = {
 	colors: {
@@ -51,16 +56,26 @@ export const cn = createBreakpoints({
 // Global styles - cascading from small to large (only override what changes)
 export const globalStyles = {
 	// Body styles
-	body: cn({
-		small: bg("linear-gradient(to bottom right, #f0f4ff, #e0e7ff)")
-			.margin("0")
-			.padding(theme.spacing.lg)
-			.minHeight("100vh")
-			.fontFamily("'Inter', system-ui, -apple-system, sans-serif")
-			.fontSize("16px")
-			.color(theme.colors.text)
-			.lineHeight("1.6"),
-	}),
+	// body: cn(bg("linear-gradient(to bottom right, #f0f4ff, #e0e7ff)")
+	// 	.margin("0")
+	// 	.padding(theme.spacing.lg)
+	// 	.minHeight("100vh")
+	// 	.fontFamily("'Inter', system-ui, -apple-system, sans-serif")
+	// 	.fontSize("16px")
+	// 	.color(theme.colors.text)
+	// 	.lineHeight("1.6"),
+	// ),
+	body: cn(bg("linear-gradient(to bottom right, #f0f4ff, #e0e7ff)")
+		.margin("0")
+		.padding(theme.spacing.lg)
+		.paddingLeft(`23px`)
+		.minHeight("100vh")
+		.fontFamily("'Inter', system-ui, -apple-system, sans-serif")
+		.fontSize("16px")
+		.color(theme.colors.text)
+		.boxSizing("border-box")
+		.lineHeight("1.6"),
+	),
 	box1: cn(bg("red")
 		.padding(theme.spacing.xl)
 		.borderRadius(theme.borderRadius.lg)
@@ -73,129 +88,119 @@ export const globalStyles = {
 		large: bg("purple"),
 	}),
 
-	box2: cn({
-		small: bg("red")
-			.padding(theme.spacing.xl)
-			.borderRadius(theme.borderRadius.lg)
-			.boxShadow(theme.shadows.lg)
-			.width("100%")
-			.maxWidth("400px")
-			.margin("0 auto"),
+	box2: cn(bg("red")
+		.padding(theme.spacing.xl)
+		.borderRadius(theme.borderRadius.lg)
+		.boxShadow(theme.shadows.lg)
+		.width("100%")
+		.maxWidth("400px")
+		.margin("0 auto"), {
+		small: bg("green"),
+		medium: bg("blue"),
+		large: bg("purple"),
 	}),
 
 	// App wrapper
-	appWrapper: cn({
-		small: width("100%").maxWidth("600px").margin("0 auto"),
-	}),
+	appWrapper: cn(width("100%").maxWidth("600px").margin("0 auto")),
 
 	// App container with modern card design
-	appContainer: cn({
-		small: bg(theme.colors.bg)
+	appContainer: cn(
+		bg(theme.colors.bg)
 			.padding(theme.spacing.xl)
 			.borderRadius(theme.borderRadius.xl)
 			.boxShadow(theme.shadows.lg)
 			.width("100%"),
-		medium: padding("2rem"),
-		large: padding("2.5rem"),
-	}),
+		{
+			medium: padding("2rem"),
+			large: padding("2.5rem"),
+		}),
 
 	// Header with gradient
-	header: cn({
+	header: cn(fontSize("2rem")
+		.bg(theme.colors.primary)
+		.fontWeight("700")
+		.padding(`${theme.spacing.xxl} ${theme.spacing.xl}`)
+		.borderRadius(theme.borderRadius.lg)
+		.color("#ffffff")
+		.textAlign("center")
+		.margin(`0 0 ${theme.spacing.xxl} 0`)
+		.boxShadow("0 8px 24px rgba(99, 102, 241, 0.35)")
+		.letterSpacing("-0.5px")
+		.display("flex")
+		.alignItems("center")
+		.justifyContent("center")
+		.gap(theme.spacing.md), {
 		medium: bg("#FF0000").fontSize("2.25rem").padding(`${theme.spacing.xxl} ${theme.spacing.xxl}`),
-		small: fontSize("2rem")
-			.bg(theme.colors.primary)
-			.fontWeight("700")
-			.padding(`${theme.spacing.xxl} ${theme.spacing.xl}`)
-			.borderRadius(theme.borderRadius.lg)
-			.color("#ffffff")
-			.textAlign("center")
-			.margin(`0 0 ${theme.spacing.xxl} 0`)
-			.boxShadow("0 8px 24px rgba(99, 102, 241, 0.35)")
-			.letterSpacing("-0.5px")
-			.display("flex")
-			.alignItems("center")
-			.justifyContent("center")
-			.gap(theme.spacing.md),
 
 		large: fontSize("2.5rem"),
 	}),
 
 	// H1 reset
-	h1Reset: cn({
-		small: margin("0").padding("0").fontSize("inherit").fontWeight("inherit"),
-	}),
+	h1Reset: cn(margin("0").padding("0").fontSize("inherit").fontWeight("inherit")),
 
 	// Input section container
-	inputSection: cn({
-		small: flex().gap(theme.spacing.md).margin(`0 0 ${theme.spacing.xl} 0`).flexDirection("column"),
+	inputSection: cn(flex().gap(theme.spacing.md).margin(`0 0 ${theme.spacing.xl} 0`).flexDirection("column"), {
 		medium: flexDirection("row"),
 	}),
 
 	// Input field with modern design
-	input: cn({
-		small: padding(`${theme.spacing.lg} ${theme.spacing.xl}`)
-			.fontSize("1rem")
-			.borderRadius(theme.borderRadius.md)
-			.border(`2px solid ${theme.colors.border}`)
-			.bg("#ffffff")
-			.color(theme.colors.text)
-			.width("100%")
-			.outline("none")
-			.transition("all 0.2s ease")
-			.boxShadow("0 1px 3px rgba(0, 0, 0, 0.05)")
-			.fontFamily("inherit"),
-	}),
+	input: cn(padding(`${theme.spacing.lg} ${theme.spacing.xl}`)
+		.fontSize("1rem")
+		.borderRadius(theme.borderRadius.md)
+		.border(`2px solid ${theme.colors.border}`)
+		.bg("#ffffff")
+		.color(theme.colors.text)
+		.width("100%")
+		.outline("none")
+		.transition("all 0.2s ease")
+		.boxShadow("0 1px 3px rgba(0, 0, 0, 0.05)")
+		.fontFamily("inherit"),
+	),
 
 	// Add button with gradient
-	addButton: cn({
-		small: bg(theme.colors.primary)
-			.color("#ffffff")
-			.padding(`${theme.spacing.lg} ${theme.spacing.xl}`)
-			.fontSize("1rem")
-			.fontWeight("600")
-			.borderRadius(theme.borderRadius.md)
-			.border("none")
-			.cursor("pointer")
-			.width("100%")
-			.boxShadow("0 4px 12px rgba(99, 102, 241, 0.4)")
-			.transition("all 0.2s ease")
-			.display("flex")
-			.alignItems("center")
-			.justifyContent("center")
-			.gap(theme.spacing.sm)
-			.outline("none"),
+	addButton: cn(bg(theme.colors.primary)
+		.color("#ffffff")
+		.padding(`${theme.spacing.lg} ${theme.spacing.xl}`)
+		.fontSize("1rem")
+		.fontWeight("600")
+		.borderRadius(theme.borderRadius.md)
+		.border("none")
+		.cursor("pointer")
+		.width("100%")
+		.boxShadow("0 4px 12px rgba(99, 102, 241, 0.4)")
+		.transition("all 0.2s ease")
+		.display("flex")
+		.alignItems("center")
+		.justifyContent("center")
+		.gap(theme.spacing.sm)
+		.outline("none"), {
 		medium: width("auto").minWidth("160px"),
 	}),
 
 	// Stats section
-	stats: cn({
-		small: bg("#ffffff")
-			.padding(`${theme.spacing.lg} ${theme.spacing.xl}`)
-			.borderRadius(theme.borderRadius.md)
-			.margin(`0 0 ${theme.spacing.xl} 0`)
-			.flex()
-			.alignItems("center")
-			.justifyContent("space-between")
-			.gap(theme.spacing.md)
-			.flexDirection("column")
-			.border(`2px solid ${theme.colors.border}`)
-			.boxShadow("0 2px 8px rgba(0, 0, 0, 0.08)"),
+	stats: cn(bg("#ffffff")
+		.padding(`${theme.spacing.lg} ${theme.spacing.xl}`)
+		.borderRadius(theme.borderRadius.md)
+		.margin(`0 0 ${theme.spacing.xl} 0`)
+		.flex()
+		.alignItems("center")
+		.justifyContent("space-between")
+		.gap(theme.spacing.md)
+		.flexDirection("column")
+		.border(`2px solid ${theme.colors.border}`)
+		.boxShadow("0 2px 8px rgba(0, 0, 0, 0.08)"), {
 		medium: flexDirection("row").padding(theme.spacing.xl),
 	}),
 
 	// Stats text
-	statsText: cn({
-		small: fontSize("1rem").fontWeight("600").color(theme.colors.text),
-	}),
+	statsText: cn(fontSize("1rem").fontWeight("600").color(theme.colors.text)),
 
 	// Todo list container
-	todoList: cn({
-		small: flex().flexDirection("column").gap(theme.spacing.md),
-	}),
+	todoList: cn(flex().flexDirection("column").gap(theme.spacing.md)),
 
 	// Todo item with modern card
-	todoItem: cn({
-		small: bg("#ffffff")
+	todoItem: cn(
+		bg("#ffffff")
 			.padding(`${theme.spacing.lg} ${theme.spacing.xl}`)
 			.borderRadius(theme.borderRadius.md)
 			.border(`2px solid ${theme.colors.border}`)
@@ -203,82 +208,73 @@ export const globalStyles = {
 			.alignItems("center")
 			.gap(theme.spacing.lg)
 			.transition("all 0.2s ease")
-			.boxShadow("0 2px 8px rgba(0, 0, 0, 0.08)"),
+			.boxShadow("0 2px 8px rgba(0, 0, 0, 0.08)"), {
 		medium: padding(`${theme.spacing.xl} ${theme.spacing.xl}`),
 	}),
 
 	// Todo text
-	todoText: cn({
-		small: fontSize("1rem").color(theme.colors.text).flex("1").lineHeight("1.5").fontWeight("500"),
-	}),
+	todoText: cn(fontSize("1rem").color(theme.colors.text).flex("1").lineHeight("1.5").fontWeight("500")),
 
 	// Todo text done with strikethrough
-	todoTextDone: cn({
-		small: fontSize("1rem")
-			.color(theme.colors.textMuted)
-			.flex("1")
-			.lineHeight("1.5")
-			.textDecoration("line-through")
-			.opacity("0.6")
-			.fontWeight("500"),
-	}),
+	todoTextDone: cn(fontSize("1rem")
+		.color(theme.colors.textMuted)
+		.flex("1")
+		.lineHeight("1.5")
+		.textDecoration("line-through")
+		.opacity("0.6")
+		.fontWeight("500"),
+	),
 
 	// Delete button with modern design
-	deleteButton: cn({
-		small: bg("#fef2f2")
-			.color(theme.colors.danger)
-			.padding(theme.spacing.md)
-			.borderRadius(theme.borderRadius.sm)
-			.border(`2px solid #fee2e2`)
-			.cursor("pointer")
-			.fontSize("1.125rem")
-			.transition("all 0.2s ease")
-			.display("flex")
-			.alignItems("center")
-			.justifyContent("center")
-			.width("40px")
-			.height("40px")
-			.minWidth("40px"),
-	}),
+	deleteButton: cn(bg("#fef2f2")
+		.color(theme.colors.danger)
+		.padding(theme.spacing.md)
+		.borderRadius(theme.borderRadius.sm)
+		.border(`2px solid #fee2e2`)
+		.cursor("pointer")
+		.fontSize("1.125rem")
+		.transition("all 0.2s ease")
+		.display("flex")
+		.alignItems("center")
+		.justifyContent("center")
+		.width("40px")
+		.height("40px")
+		.minWidth("40px"),
+	),
 
 	// Clear completed button
-	clearButton: cn({
-		small: bg("#fef2f2")
-			.color(theme.colors.danger)
-			.padding(`${theme.spacing.sm} ${theme.spacing.lg}`)
-			.borderRadius(theme.borderRadius.sm)
-			.border(`2px solid #fee2e2`)
-			.cursor("pointer")
-			.fontSize("0.875rem")
-			.fontWeight("600")
-			.transition("all 0.2s ease")
-			.width("100%"),
+	clearButton: cn(bg("#fef2f2")
+		.color(theme.colors.danger)
+		.padding(`${theme.spacing.sm} ${theme.spacing.lg}`)
+		.borderRadius(theme.borderRadius.sm)
+		.border(`2px solid #fee2e2`)
+		.cursor("pointer")
+		.fontSize("0.875rem")
+		.fontWeight("600")
+		.transition("all 0.2s ease")
+		.width("100%"), {
 		medium: width("auto"),
 	}),
 
 	// Empty state with modern design
-	emptyState: cn({
-		small: flex()
-			.flexDirection("column")
-			.alignItems("center")
-			.justifyContent("center")
-			.padding(`${theme.spacing.xxl} ${theme.spacing.lg}`)
-			.textAlign("center")
-			.gap(theme.spacing.lg)
-			.color(theme.colors.textMuted)
-			.bg(theme.colors.bgSoft)
-			.borderRadius(theme.borderRadius.lg)
-			.border(`2px dashed ${theme.colors.border}`),
-		medium: padding(`3rem ${theme.spacing.xxl}`),
-	}),
+	emptyState: cn(flex()
+		.flexDirection("column")
+		.alignItems("center")
+		.justifyContent("center")
+		.padding(`${theme.spacing.xxl} ${theme.spacing.lg}`)
+		.textAlign("center")
+		.gap(theme.spacing.lg)
+		.color(theme.colors.textMuted)
+		.bg(theme.colors.bgSoft)
+		.borderRadius(theme.borderRadius.lg)
+		.border(`2px dashed ${theme.colors.border}`),
+		{
+			medium: padding(`3rem ${theme.spacing.xxl}`),
+		}),
 
 	// Empty state text
-	emptyText: cn({
-		small: fontSize("1rem").color(theme.colors.textLight).margin("0").fontWeight("500"),
-	}),
+	emptyText: cn(fontSize("1rem").color(theme.colors.textLight).margin("0").fontWeight("500")),
 
 	// Checkbox with modern styling
-	checkbox: cn({
-		small: width("20px").height("20px").cursor("pointer").accentColor(theme.colors.primary).minWidth("20px"),
-	}),
+	checkbox: cn(width("20px").height("20px").cursor("pointer").accentColor(theme.colors.primary).minWidth("20px")),
 };
