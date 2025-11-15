@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"npm run server\"",
+    "dev:vite": "vite",
+    "dev:server": "tsx src/server.ts",
     "build": "tsc && vite build",
     "prepreview": "tsc && vite build",
     "preview": "vite preview",
@@ -17,6 +19,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
+    "concurrently": "^9.2.1",
     "nuclo": "file:../../packages/nuclo",
     "tsx": "^4.20.6",
     "typescript": "~5.9.3",
