@@ -8,7 +8,10 @@ const appRoot = document.querySelector<HTMLDivElement>("#app")!;
 
 const app = div(
 	s.body,
-	div(div(s.box1, "Box 1"), div(s.box2, "Box 2")),
+	div(div(
+		() => getTodos().length > 0 ?
+			s.box1 : s.box2, "Box 1")
+	),
 	div(
 		s.appWrapper,
 		div(
