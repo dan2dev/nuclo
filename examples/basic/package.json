@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",
-    "hono": "^4.10.6"
+    "hono": "^4.10.6",
+    "linkedom": "^0.18.12"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
