@@ -63,9 +63,16 @@ function applySingleAttribute<TTagName extends ElementTagName>(
 
   if (isFunction(raw) && raw.length === 0) {
     // Type narrowing: zero-arity function that returns an attribute value
-    // Reactive attributes should replace, not merge
+    // Reactive attributes should replace, not merge (including className)
     const resolver = raw as () => AttributeCandidate<TTagName>;
-    registerAttributeResolver(el, String(key), resolver, (v) => setValue(v, false));
+    registerAttributeResolver(el, String(key), resolver, (v) => {
+      // For reactive className, always replace
+      if (key === 'className' && el instanceof HTMLElement) {
+        el.className = String(v || '');
+      } else {
+        setValue(v, false);
+      }
+    });
   } else {
     // Static attributes should merge classNames
     setValue(raw, shouldMergeClassName);

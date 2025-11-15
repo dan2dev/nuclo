@@ -10,7 +10,7 @@ const app = div(
 	s.body,
 	div(div(
 		() => getTodos().length > 0 ?
-			s.box1 : s.box2, "Box 1")
+			s.blue : s.red, "Box 1")
 	),
 	div(
 		s.appWrapper,

@@ -73,22 +73,24 @@ export const globalStyles = {
 		.boxSizing("border-box")
 		.lineHeight("1.6"),
 	),
-	box1: cn(bg("red")
+	red: cn(bg("#FF0000")
 		.padding(theme.spacing.xl)
 		.borderRadius(theme.borderRadius.lg)
 		.boxShadow(theme.shadows.lg)
 		.width("100%")
 		.maxWidth("400px")
 		.margin("0 auto"), {
+		small: bg("#FF3333"),
 	}),
 
-	box2: cn(bg("green")
+	blue: cn(bg("#0000FF")
 		.padding(theme.spacing.xl)
 		.borderRadius(theme.borderRadius.lg)
 		.boxShadow(theme.shadows.lg)
 		.width("100%")
 		.maxWidth("400px")
 		.margin("0 auto"), {
+		small: bg("#3333FF"),
 	}),
 
 	// App wrapper
