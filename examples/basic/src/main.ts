@@ -6,8 +6,8 @@ import { cn, globalStyles as s } from "./styles";
 
 const appRoot = document.querySelector<HTMLDivElement>("#app")!;
 const pgRed = cn(backgroundColor("#FF0000"));
+const p20 = cn(padding("20px").backgroundColor("#888888").borderRadius("16px").maxWidth("400px"));
 const pgBlue = cn(backgroundColor("#0000FF"));
-
 
 const app = div(
 	s.body,
@@ -17,10 +17,13 @@ const app = div(
 	),
 	div(
 		"olá",
-		cn(width("100%").bg("#888888").padding("1rem"), {
-			medium: width("50%"),
-		}),
-		() => getTodos().length > 0 ? pgBlue : pgRed,
+		p20,
+		() => pgBlue,
+	),
+	div(
+		"Testando múltiplas classes",
+		{ className: "custom-a" },
+		{ className: "custom-b" }
 	),
 	div(
 		s.appWrapper,
