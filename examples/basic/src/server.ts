@@ -3,11 +3,16 @@ import { Hono } from 'hono'
 import { Worker } from 'worker_threads'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import { serveStatic } from '@hono/node-server/serve-static'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 const app = new Hono()
+
+// Serve static files (for production builds)
+app.use('/assets/*', serveStatic({ root: './dist' }))
+app.use('/vite.svg', serveStatic({ path: './vite.svg' }))
 
 app.get('/', async (c) => {
   return new Promise((resolve, reject) => {
@@ -34,9 +39,31 @@ app.get('/', async (c) => {
     })
   }).then(
     (result) => {
-      // Return HTML if result has html property, otherwise return JSON
+      // Return full HTML document with SSR content and client-side hydration script
       if (result.html) {
-        return c.html(result.html)
+        // In development, use Vite dev server (default port 5173)
+        // In production, use built assets from /assets
+        const isDev = process.env.NODE_ENV !== 'production'
+        const viteScript = isDev
+          ? `<script type="module" src="http://localhost:5173/@vite/client"></script>
+<script type="module" src="http://localhost:5173/src/main.ts"></script>`
+          : `<script type="module" src="/assets/main.js"></script>`
+
+        const fullHtml = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Tasks - Nuclo Example</title>
+    <meta name="description" content="A beautiful task manager built with Nuclo and styled with utility functions" />
+  </head>
+  <body>
+    <div id="app">${result.html}</div>
+    ${viteScript}
+  </body>
+</html>`
+        return c.html(fullHtml)
       }
       return c.json(result)
     },
