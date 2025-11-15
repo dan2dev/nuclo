@@ -1,6 +1,13 @@
 import { isFunction } from "../utility/typeGuards";
 import { registerAttributeResolver, createReactiveTextNode } from "./reactive";
 import { applyStyleAttribute } from "./styleManager";
+import {
+	initReactiveClassName,
+	hasReactiveClassName,
+	addStaticClasses,
+	mergeReactiveClassName,
+	mergeStaticClassName
+} from "./classNameMerger";
 
 type AttributeKey<TTagName extends ElementTagName> = keyof ExpandedElementAttributes<TTagName>;
 type AttributeCandidate<TTagName extends ElementTagName> =
@@ -24,18 +31,7 @@ function applySingleAttribute<TTagName extends ElementTagName>(
 
     // Special handling for className to merge instead of replace (only for non-reactive updates)
     if (key === 'className' && el instanceof HTMLElement && merge) {
-      const newClassName = String(v);
-      const currentClassName = el.className;
-
-      // If there's already a className, merge them (avoid duplicates)
-      if (currentClassName && currentClassName !== newClassName) {
-        const existing = new Set(currentClassName.split(' ').filter(c => c));
-        const newClasses = newClassName.split(' ').filter(c => c);
-        newClasses.forEach(c => existing.add(c));
-        el.className = Array.from(existing).join(' ');
-      } else if (newClassName) {
-        el.className = newClassName;
-      }
+      mergeStaticClassName(el, String(v));
       return;
     }
 
@@ -64,38 +60,14 @@ function applySingleAttribute<TTagName extends ElementTagName>(
   if (isFunction(raw) && raw.length === 0) {
     // Type narrowing: zero-arity function that returns an attribute value
     const resolver = raw as () => AttributeCandidate<TTagName>;
-    
+
     // For reactive className, we need to track which classes are reactive
     // so we can preserve static classes when the reactive className changes
     if (key === 'className' && el instanceof HTMLElement) {
-      // Mark this element as having a reactive className
-      const reactiveClassNameKey = '__nuclo_reactive_className__';
-      const staticClassNameKey = '__nuclo_static_className__';
-      
-      // Capture the current className as static (before this reactive className is applied)
-      if (!(el as any)[staticClassNameKey]) {
-        (el as any)[staticClassNameKey] = new Set(el.className.split(' ').filter(c => c));
-      }
-      
-      // Mark that we have a reactive className
-      (el as any)[reactiveClassNameKey] = true;
-      
+      initReactiveClassName(el);
+
       registerAttributeResolver(el, String(key), resolver, (v) => {
-        const reactiveClassName = String(v || '');
-        const staticClasses = (el as any)[staticClassNameKey] as Set<string>;
-        
-        // Combine static classes with reactive className
-        if (staticClasses && staticClasses.size > 0 && reactiveClassName) {
-          const allClasses = new Set(staticClasses);
-          reactiveClassName.split(' ').filter(c => c).forEach(c => allClasses.add(c));
-          el.className = Array.from(allClasses).join(' ');
-        } else if (reactiveClassName) {
-          el.className = reactiveClassName;
-        } else if (staticClasses && staticClasses.size > 0) {
-          el.className = Array.from(staticClasses).join(' ');
-        } else {
-          el.className = '';
-        }
+        mergeReactiveClassName(el, String(v || ''));
       });
     } else {
       registerAttributeResolver(el, String(key), resolver, (v) => {
@@ -106,19 +78,11 @@ function applySingleAttribute<TTagName extends ElementTagName>(
     // Static attributes should merge classNames
     // For className, if there's already a reactive className, add to static classes
     if (key === 'className' && el instanceof HTMLElement) {
-      const staticClassNameKey = '__nuclo_static_className__';
-      const reactiveClassNameKey = '__nuclo_reactive_className__';
-      
-      if ((el as any)[reactiveClassNameKey]) {
+      if (hasReactiveClassName(el)) {
         // There's already a reactive className, add this to static classes
         const newClassName = String(raw || '');
         if (newClassName) {
-          if (!(el as any)[staticClassNameKey]) {
-            (el as any)[staticClassNameKey] = new Set();
-          }
-          newClassName.split(' ').filter(c => c).forEach(c => {
-            ((el as any)[staticClassNameKey] as Set<string>).add(c);
-          });
+          addStaticClasses(el, newClassName);
           // Also update the current className immediately
           const currentClasses = new Set(el.className.split(' ').filter(c => c));
           newClassName.split(' ').filter(c => c).forEach(c => currentClasses.add(c));
