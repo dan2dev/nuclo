@@ -1,6 +1,6 @@
-import { getTodos, getInputValue, setInputValue, addTodo, toggleTodo, deleteTodo, clearCompleted } from "./todoState";
-import { TrashIcon, PlusIcon, CircleIcon } from "./icons";
-import { cn, globalStyles as s } from "./styles";
+import { getTodos, getInputValue, setInputValue, addTodo, toggleTodo, deleteTodo, clearCompleted } from "./todoState.ts";
+import { TrashIcon, PlusIcon, CircleIcon } from "./icons.ts";
+import { cn, globalStyles as s } from "./styles.ts";
 
 const pgRed = cn(backgroundColor("#FF0000"));
 const p20 = cn(padding("20px").backgroundColor("#888888").borderRadius("16px").maxWidth("400px"));
