@@ -19,7 +19,7 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
   if (modifier == null) return null;
 
   if (isFunction(modifier)) {
-    // Handle zero-argument functions (reactive text)
+    // Handle zero-argument functions (reactive text or reactive className)
     if (isZeroArityFunction(modifier)) {
       try {
         let record = modifierProbeCache.get(modifier);
@@ -32,6 +32,20 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
           return createReactiveTextFragment(index, () => "");
         }
         const v = record.value;
+
+        // Check if the returned value is a className object from cn()
+        // Must be a plain object with className property, not a Node or other object
+        if (isObject(v) && !isNode(v) && 'className' in v && typeof v.className === 'string' && Object.keys(v).length === 1) {
+          // Create a wrapper function that extracts className from the modifier result
+          const originalModifier = modifier as () => unknown;
+          const classNameFn = () => {
+            const result = originalModifier();
+            return (result as unknown as { className: string }).className;
+          };
+          applyAttributes(parent, { className: classNameFn } as ExpandedElementAttributes<TTagName>);
+          return null;
+        }
+
         if (isPrimitive(v) && v != null) {
           return createReactiveTextFragment(index, modifier as () => Primitive, v);
         }
