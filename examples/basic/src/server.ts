@@ -33,8 +33,14 @@ app.get('/', async (c) => {
       }
     })
   }).then(
-    (result) => c.json(result),
-    (error) => c.json({ error: error.message }, 500),
+    (result) => {
+      // Return HTML if result has html property, otherwise return JSON
+      if (result.html) {
+        return c.html(result.html)
+      }
+      return c.json(result)
+    },
+    (error) => c.html(`<h1>Error</h1><pre>${error.message}</pre>`, 500),
   )
 })
 
