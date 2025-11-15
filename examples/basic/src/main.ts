@@ -5,6 +5,9 @@ import { TrashIcon, PlusIcon, CircleIcon } from "./icons";
 import { cn, globalStyles as s } from "./styles";
 
 const appRoot = document.querySelector<HTMLDivElement>("#app")!;
+const pgRed = cn(backgroundColor("#FF0000"));
+const pgBlue = cn(backgroundColor("#0000FF"));
+
 
 const app = div(
 	s.body,
@@ -13,14 +16,19 @@ const app = div(
 			s.blue : s.red, "Box 1")
 	),
 	div(
+		"olá",
+		cn(width("100%").bg("#888888").padding("1rem"), {
+			medium: width("50%"),
+		}),
+		() => getTodos().length > 0 ? pgBlue : pgRed,
+	),
+	div(
 		s.appWrapper,
 		div(
 			s.appContainer,
 			div(s.header, h1(s.h1Reset, "✨", span("My Tasks"))),
 			div(
-				cn(width("100%").bg("#FF0000").padding("1rem"), {
-					medium: width("50%"),
-				}),
+
 				input(
 					s.input,
 					{
