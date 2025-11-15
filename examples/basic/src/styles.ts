@@ -80,21 +80,15 @@ export const globalStyles = {
 		.width("100%")
 		.maxWidth("400px")
 		.margin("0 auto"), {
-		small: bg("green"),
-		medium: bg("blue"),
-		large: bg("purple"),
 	}),
 
-	box2: cn(bg("red")
+	box2: cn(bg("green")
 		.padding(theme.spacing.xl)
 		.borderRadius(theme.borderRadius.lg)
 		.boxShadow(theme.shadows.lg)
 		.width("100%")
 		.maxWidth("400px")
 		.margin("0 auto"), {
-		small: bg("green"),
-		medium: bg("blue"),
-		large: bg("purple"),
 	}),
 
 	// App wrapper
