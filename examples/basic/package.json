@@ -4,13 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"npm run server\"",
+    "dev": "concurrently \"vite\" \"deno run server \"",
     "dev:vite": "vite",
-    "dev:server": "tsx src/server.ts",
+    "dev:server": "deno run --allow-net --allow-read --allow-env --allow-write src/server.ts",
     "build": "tsc && vite build",
     "prepreview": "tsc && vite build",
     "preview": "vite preview",
-    "server": "tsx src/server.ts"
+    "server": "deno run src/server.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",

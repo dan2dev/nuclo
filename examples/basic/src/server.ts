@@ -1,49 +1,55 @@
-import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
-import { Worker } from 'worker_threads'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
-import { serveStatic } from '@hono/node-server/serve-static'
+// Use Deno's built-in Worker for request isolation instead of Node's worker_threads.
+import { serveStatic } from 'hono/deno'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+// Use a URL for the worker module so it works with both Deno and Node (when using wasm/compat)
+const workerModuleUrl = new URL('./worker1.ts', import.meta.url).href
 
 const app = new Hono()
+
+// Type for data returned by the worker; extend as needed for your SSR payload
+type WorkerResult = { html?: string;[key: string]: unknown }
 
 // Serve static files (for production builds)
 app.use('/assets/*', serveStatic({ root: './dist' }))
 app.use('/vite.svg', serveStatic({ path: './vite.svg' }))
 
-app.get('/', async (c) => {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(join(__dirname, 'worker.ts'), {
-      workerData: {
-        requestPath: c.req.path,
-        timestamp: Date.now(),
-      },
-      execArgv: ['--import', 'tsx'],
-    })
+app.get('/', (c) => {
+  return new Promise<WorkerResult>((resolve, reject) => {
+    // Deno/Browser-style Worker
+    const worker = new Worker(workerModuleUrl, {
+      type: 'module',
+    } as WorkerOptions)
 
-    worker.on('message', (result) => {
+    // Listen for messages from the worker
+    worker.onmessage = (e: MessageEvent) => {
+      // Received result from worker
+      const result = e.data as WorkerResult
       resolve(result)
-    })
+      // Terminate worker to free resources once we've got a result
+      worker.terminate()
+    }
 
-    worker.on('error', (error) => {
-      reject(error)
-    })
+    // Listen for errors from the worker
+    worker.onerror = (err) => {
+      reject(err)
+      worker.terminate()
+    }
 
-    worker.on('exit', (code) => {
-      if (code !== 0) {
-        reject(new Error(`Worker stopped with exit code ${code}`))
-      }
+    // Send a simple serializable payload to the worker
+    worker.postMessage({
+      requestPath: c.req.path,
+      timestamp: Date.now(),
     })
   }).then(
     (result) => {
+      // console.log("-----------");
+      // console.log("-----------", result);
       // Return full HTML document with SSR content and client-side hydration script
-      if (result.html) {
+      if (result && result.html) {
         // In development, use Vite dev server (default port 5173)
         // In production, use built assets from /assets
-        const isDev = process.env.NODE_ENV !== 'production'
+        const isDev = Deno.env.get('NODE_ENV') !== 'production'
         const viteScript = isDev
           ? `<script type="module" src="http://localhost:5173/@vite/client"></script>
 <script type="module" src="http://localhost:5173/src/main.ts"></script>`
@@ -59,7 +65,7 @@ app.get('/', async (c) => {
     <meta name="description" content="A beautiful task manager built with Nuclo and styled with utility functions" />
   </head>
   <body>
-    <div id="app">${result.html}</div>
+    ${result.html}
     ${viteScript}
   </body>
 </html>`
@@ -73,11 +79,16 @@ app.get('/', async (c) => {
 
 app.get('/health', (c) => c.text('ok'))
 
-const port = Number(process.env.PORT ?? 8787)
+app.get('/health2', (c) => {
+  console.log('Health2 check at', new Date().toISOString())
+
+  return c.json({ status: 'ok', timestamp: Date.now() })
+});
+
+const port = Number(Deno.env.get('PORT') ?? 8787)
 
 console.log(`Hono server listening on http://localhost:${port}`)
 
-serve({
-  fetch: app.fetch,
+Deno.serve({
   port,
-})
+}, app.fetch)

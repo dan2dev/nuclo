@@ -198,6 +198,7 @@ export const globalStyles = {
 			.borderRadius(theme.borderRadius.md)
 			.border(`2px solid ${theme.colors.border}`)
 			.flex()
+			.flexDirection("column")
 			.alignItems("center")
 			.gap(theme.spacing.lg)
 			.transition("all 0.2s ease")
@@ -270,4 +271,23 @@ export const globalStyles = {
 
 	// Checkbox with modern styling
 	checkbox: cn(width("20px").height("20px").cursor("pointer").accentColor(theme.colors.primary).minWidth("20px")),
+
+		// Subtasks list (nested under todo)
+		subtaskList: cn(flex().flexDirection("column").gap(theme.spacing.sm).paddingLeft(theme.spacing.lg).margin("0")),
+
+		// Subtask item - smaller than todo item
+		subtaskItem: cn(
+			bg("#ffffff")
+				.padding(`${theme.spacing.sm} ${theme.spacing.lg}`)
+				.borderRadius(theme.borderRadius.sm)
+				.border(`1px solid ${theme.colors.border}`)
+				.flex()
+				.flexDirection("column")
+				.alignItems("center")
+				.gap(theme.spacing.md)
+				.boxShadow("0 1px 4px rgba(0, 0, 0, 0.03)"),
+		),
+
+		// Row for subtask input + add button
+		subtaskInputRow: cn(flex().gap(theme.spacing.md).margin(`0 0 ${theme.spacing.md} 0`).alignItems("center")),
 };

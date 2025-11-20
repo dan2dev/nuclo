@@ -1,10 +1,44 @@
-import { getTodos, getInputValue, setInputValue, addTodo, toggleTodo, deleteTodo, clearCompleted } from "./todoState.ts";
+import { getTodos, getInputValue, setInputValue, addTodo, clearCompleted, getSubtaskInput, setSubtaskInput, addSubtask, toggleTask, deleteTask } from "./todoState.ts";
 import { TrashIcon, PlusIcon, CircleIcon } from "./icons.ts";
 import { cn, globalStyles as s } from "./styles.ts";
-
-const pgRed = cn(backgroundColor("#FF0000"));
 const p20 = cn(padding("20px").backgroundColor("#888888").borderRadius("16px").maxWidth("400px"));
 const pgBlue = cn(backgroundColor("#0000FF"));
+
+function renderTaskNode(task: any): any {
+  return div(
+    task.subTasks ? s.todoItem : s.todoItem,
+    input(
+      s.checkbox,
+      { type: "checkbox", checked: () => task.done },
+      on("change", () => toggleTask(task.id)),
+    ),
+    span(() => (task.done ? s.todoTextDone : s.todoText), () => task.text),
+    button(s.deleteButton, TrashIcon(), on("click", () => deleteTask(task.id))),
+
+    // Nested subtasks
+    when(() => (task.subTasks?.length ?? 0) > 0,
+      div(
+        s.subtaskList,
+        list(
+          () => task.subTasks ?? [],
+          (st) => renderTaskNode(st),
+        ),
+      ),
+    ),
+
+    // Add subtask input per node
+    div(
+      s.subtaskInputRow,
+      input(
+        s.input,
+        { type: "text", placeholder: "Add a subtask...", value: () => getSubtaskInput(task.id) },
+        on("input", (e) => setSubtaskInput(task.id, (e.target as HTMLInputElement).value)),
+        on("keydown", (e) => { if (e.key === "Enter") { addSubtask(task.id); } }),
+      ),
+      button(s.addButton, PlusIcon(), on("click", () => addSubtask(task.id))),
+    ),
+  );
+}
 
 export const app = div(
   s.body,
@@ -67,29 +101,9 @@ export const app = div(
         () => getTodos().length > 0,
         div(
           s.todoList,
-          list(
+            list(
             () => getTodos(),
-            (todo) =>
-              div(
-                s.todoItem,
-                input(
-                  s.checkbox,
-                  {
-                    type: "checkbox",
-                    checked: () => todo.done,
-                  },
-                  on("change", () => toggleTodo(todo.id)),
-                ),
-                span(
-                  () => (todo.done ? s.todoTextDone : s.todoText),
-                  () => todo.text,
-                ),
-                button(
-                  s.deleteButton,
-                  TrashIcon(),
-                  on("click", () => deleteTodo(todo.id)),
-                ),
-              ),
+            (todo) => renderTaskNode(todo),
           ),
         ),
       ).else(div(s.emptyState, CircleIcon(), p(s.emptyText, "No tasks yet. Add your first one above!"))),
