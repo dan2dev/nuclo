@@ -1,0 +1,1 @@
+export const some = 'some worker 1A code ' + Math.round( Math.random() * 1000) ;
