@@ -188,9 +188,9 @@ div(
 
             <div class="concept">
                 <h3>5. CSS-in-JS Styling</h3>
-                <p>Chain style helpers and use <code>createBreakpoints</code> for CSS class generation:</p>
-                <pre><code class="language-typescript">const cn = createBreakpoints({
-  medium: '(min-width: 768px)'
+                <p>Chain style helpers and use <code>createStyleQueries</code> for CSS class generation:</p>
+                <pre><code class="language-typescript">const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)'
 });
 
 const cardStyle = cn(

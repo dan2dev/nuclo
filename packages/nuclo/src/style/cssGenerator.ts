@@ -1,24 +1,33 @@
+// Supported at-rule types
+type AtRuleType = 'media' | 'container' | 'supports' | 'style';
+
 // Check if a class exists in the DOM
-export function classExistsInDOM(className: string, mediaQuery?: string): boolean {
+export function classExistsInDOM(className: string, condition?: string, atRuleType: AtRuleType = 'media'): boolean {
 	const styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
 	if (!styleSheet || !styleSheet.sheet) {
 		return false;
 	}
 
-	if (mediaQuery) {
+	if (condition) {
 		const rules = Array.from(styleSheet.sheet.cssRules || []);
-		const mediaRule = rules.find(rule => {
-			if (rule instanceof CSSMediaRule) {
-				return rule.media.mediaText === mediaQuery;
+		const conditionRule = rules.find(rule => {
+			if (atRuleType === 'media' && rule instanceof CSSMediaRule) {
+				return rule.media.mediaText === condition;
+			}
+			if (atRuleType === 'container' && rule instanceof CSSContainerRule) {
+				return rule.conditionText === condition;
+			}
+			if (atRuleType === 'supports' && rule instanceof CSSSupportsRule) {
+				return rule.conditionText === condition;
 			}
 			return false;
-		}) as CSSMediaRule | undefined;
+		}) as CSSGroupingRule | undefined;
 
-		if (!mediaRule) {
+		if (!conditionRule) {
 			return false;
 		}
 
-		return Array.from(mediaRule.cssRules).some(rule => {
+		return Array.from(conditionRule.cssRules).some(rule => {
 			if (rule instanceof CSSStyleRule) {
 				return rule.selectorText === `.${className}`;
 			}
@@ -39,7 +48,8 @@ export function classExistsInDOM(className: string, mediaQuery?: string): boolea
 export function createCSSClassWithStyles(
 	className: string,
 	styles: Record<string, string>,
-	mediaQuery?: string
+	condition?: string,
+	atRuleType: AtRuleType = 'media'
 ): void {
 	let styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
 
@@ -53,27 +63,48 @@ export function createCSSClassWithStyles(
 		.map(([property, value]) => `${property}: ${value}`)
 		.join("; ");
 
-	if (mediaQuery) {
-		// Create or get media query rule
+	if (condition) {
+		// Create or get at-rule (media, container, supports, etc.)
 		const existingRules = Array.from(styleSheet.sheet?.cssRules || []);
-		let mediaRule: CSSMediaRule | null = null;
+		let groupingRule: CSSGroupingRule | null = null;
+
+		// Helper to check if a rule matches our at-rule type and condition
+		const isMatchingRule = (rule: CSSRule): boolean => {
+			if (atRuleType === 'media' && rule instanceof CSSMediaRule) {
+				return rule.media.mediaText === condition;
+			}
+			if (atRuleType === 'container' && rule instanceof CSSContainerRule) {
+				return rule.conditionText === condition;
+			}
+			if (atRuleType === 'supports' && rule instanceof CSSSupportsRule) {
+				return rule.conditionText === condition;
+			}
+			return false;
+		};
+
+		// Helper to check if a rule is any at-rule
+		const isAtRule = (rule: CSSRule): boolean => {
+			return rule instanceof CSSMediaRule ||
+				rule instanceof CSSContainerRule ||
+				rule instanceof CSSSupportsRule;
+		};
 
 		for (const rule of existingRules) {
-			if (rule instanceof CSSMediaRule && rule.media.mediaText === mediaQuery) {
-				mediaRule = rule;
+			if (isMatchingRule(rule)) {
+				groupingRule = rule as CSSGroupingRule;
 				break;
 			}
 		}
 
-		if (!mediaRule) {
-			// Find the correct insertion index: after all style rules, append media queries in order
-			// Since we process breakpoints in registration order, we can simply append
-			// This ensures: style rules first, then media queries in the order they're processed
+		if (!groupingRule) {
+			// Find the correct insertion index: after all style rules, append at-rules in order
+			// Since we process queries in registration order, we can simply append
+			// This ensures: style rules first, then at-rules in the order they're processed
 			let insertIndex = existingRules.length;
 
-			// Find the last media query rule to insert after it (maintains order)
+			// Find the last at-rule to insert after it (maintains order)
 			for (let i = existingRules.length - 1; i >= 0; i--) {
-				if (existingRules[i] instanceof CSSMediaRule) {
+				if (isAtRule(existingRules[i])) {
 					insertIndex = i + 1;
 					break;
 				} else if (existingRules[i] instanceof CSSStyleRule) {
@@ -83,13 +114,19 @@ export function createCSSClassWithStyles(
 				}
 			}
 
-			styleSheet.sheet?.insertRule(`@media ${mediaQuery} {}`, insertIndex);
-			mediaRule = styleSheet.sheet?.cssRules[insertIndex] as CSSMediaRule;
+			// Create the appropriate at-rule
+			const atRulePrefix = atRuleType === 'media' ? '@media' :
+				atRuleType === 'container' ? '@container' :
+				atRuleType === 'supports' ? '@supports' :
+				'@media'; // fallback
+
+			styleSheet.sheet?.insertRule(`${atRulePrefix} ${condition} {}`, insertIndex);
+			groupingRule = styleSheet.sheet?.cssRules[insertIndex] as CSSGroupingRule;
 		}
 
-		// Check if class already exists in this media query
+		// Check if class already exists in this at-rule
 		let existingRule: CSSStyleRule | null = null;
-		for (const rule of Array.from(mediaRule.cssRules)) {
+		for (const rule of Array.from(groupingRule.cssRules)) {
 			if (rule instanceof CSSStyleRule && rule.selectorText === `.${className}`) {
 				existingRule = rule;
 				break;
@@ -107,13 +144,20 @@ export function createCSSClassWithStyles(
 				existingRule!.style.setProperty(property, value);
 			});
 		} else {
-			mediaRule.insertRule(`.${className} { ${rules} }`, mediaRule.cssRules.length);
+			groupingRule.insertRule(`.${className} { ${rules} }`, groupingRule.cssRules.length);
 		}
 	} else {
-		// Regular style rule (no media query)
-		// Find existing rule or insert at the beginning (before media queries)
+		// Regular style rule (no at-rule)
+		// Find existing rule or insert at the beginning (before at-rules)
 		let existingRule: CSSStyleRule | null = null;
 		let insertIndex = 0;
+
+		// Helper to check if a rule is any at-rule
+		const isAtRule = (rule: CSSRule): boolean => {
+			return rule instanceof CSSMediaRule ||
+				rule instanceof CSSContainerRule ||
+				rule instanceof CSSSupportsRule;
+		};
 
 		const allRules = Array.from(styleSheet.sheet?.cssRules || []);
 		for (let i = 0; i < allRules.length; i++) {
@@ -123,8 +167,8 @@ export function createCSSClassWithStyles(
 				insertIndex = i;
 				break;
 			}
-			// Track where media queries start to insert default styles before them
-			if (!(rule instanceof CSSMediaRule)) {
+			// Track where at-rules start to insert default styles before them
+			if (!isAtRule(rule)) {
 				insertIndex = i + 1;
 			}
 		}

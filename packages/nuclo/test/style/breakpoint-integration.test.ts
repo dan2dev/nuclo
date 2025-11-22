@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createBreakpoints, bg, fontSize, flex, center, bold } from '../../src/style';
+import { createStyleQueries, createBreakpoints, bg, fontSize, flex, center, bold, width, display } from '../../src/style';
 import '../../src/core/runtimeBootstrap';
 
-describe('Breakpoint Integration', () => {
+describe('Style Queries Integration', () => {
 	beforeEach(() => {
 		document.head.innerHTML = '';
 		document.body.innerHTML = '';
@@ -445,10 +445,178 @@ describe('Breakpoint Integration', () => {
 
 			expect(result).toHaveProperty('className');
 			const className = (result as any).className;
-			
+
 			// Should only have default styles (single class)
 			expect(className).toMatch(/^n[a-f0-9]{8}$/);
 			expect(className.split(' ').length).toBe(1); // Only one class name
+		});
+	});
+
+	describe('createStyleQueries with @media prefix', () => {
+		it('should work with explicit @media prefix', () => {
+			const cn = createStyleQueries({
+				small: '@media (min-width: 341px)',
+				medium: '@media (min-width: 601px)',
+				large: '@media (min-width: 1025px)',
+			});
+
+			const result = cn({
+				small: bg('#FF0000').fontSize('20px'),
+				medium: bg('#00FF00').fontSize('25px'),
+			});
+
+			expect(result).toHaveProperty('className');
+			const className = (result as any).className;
+			expect(className).toMatch(/^n[a-f0-9]{8}$/);
+
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			expect(styleSheet).toBeTruthy();
+
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
+			const mediaRules = rules.filter(rule => rule.type === CSSRule.MEDIA_RULE);
+
+			expect(mediaRules.length).toBe(2);
+		});
+
+		it('should work without prefix (backward compatibility)', () => {
+			const cn = createStyleQueries({
+				medium: '(min-width: 601px)',
+			});
+
+			const result = cn({
+				medium: bg('#FF0000'),
+			});
+
+			expect(result).toHaveProperty('className');
+
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
+			const mediaRules = rules.filter(rule => rule.type === CSSRule.MEDIA_RULE);
+
+			expect(mediaRules.length).toBe(1);
+		});
+	});
+
+	describe('createStyleQueries with @container prefix', () => {
+		it('should create container queries with @container prefix', () => {
+			const cn = createStyleQueries({
+				containerSmall: '@container (min-width: 300px)',
+				containerLarge: '@container (min-width: 600px)',
+			});
+
+			const result = cn({
+				containerSmall: bg('#FF0000').fontSize('16px'),
+				containerLarge: bg('#00FF00').fontSize('20px'),
+			});
+
+			expect(result).toHaveProperty('className');
+			const className = (result as any).className;
+			expect(className).toMatch(/^n[a-f0-9]{8}$/);
+
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			expect(styleSheet).toBeTruthy();
+
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
+			const containerRules = rules.filter(rule => rule instanceof CSSContainerRule);
+
+			expect(containerRules.length).toBe(2);
+		});
+	});
+
+	describe('createStyleQueries with @supports prefix', () => {
+		it('should create feature queries with @supports prefix', () => {
+			const cn = createStyleQueries({
+				hasGrid: '@supports (display: grid)',
+				hasFlex: '@supports (display: flex)',
+			});
+
+			const result = cn({
+				hasGrid: bg('#FF0000'),
+				hasFlex: bg('#00FF00'),
+			});
+
+			expect(result).toHaveProperty('className');
+			const className = (result as any).className;
+			expect(className).toMatch(/^n[a-f0-9]{8}$/);
+
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			expect(styleSheet).toBeTruthy();
+
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
+			const supportsRules = rules.filter(rule => rule instanceof CSSSupportsRule);
+
+			expect(supportsRules.length).toBe(2);
+		});
+	});
+
+	describe('createStyleQueries with mixed query types', () => {
+		it('should support mixing @media, @container, and @supports queries', () => {
+			const cn = createStyleQueries({
+				small: '@media (min-width: 341px)',
+				medium: '@media (min-width: 601px)',
+				largeContainer: '@container (min-width: 400px)',
+				hasGrid: '@supports (display: grid)',
+			});
+
+			const result = cn(
+				bg('#000000').width('100%'),
+				{
+					small: bg('#FF0000'),
+					medium: bg('#00FF00'),
+					largeContainer: width('50%'),
+					hasGrid: display('grid'),
+				}
+			);
+
+			expect(result).toHaveProperty('className');
+			const className = (result as any).className;
+			expect(className).toMatch(/^n[a-f0-9]{8}$/);
+
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			expect(styleSheet).toBeTruthy();
+
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
+
+			// Should have: 1 base style + 2 media + 1 container + 1 supports = 5 rules
+			const styleRules = rules.filter(rule => rule.type === CSSRule.STYLE_RULE);
+			const mediaRules = rules.filter(rule => rule.type === CSSRule.MEDIA_RULE);
+			const containerRules = rules.filter(rule => rule instanceof CSSContainerRule);
+			const supportsRules = rules.filter(rule => rule instanceof CSSSupportsRule);
+
+			expect(styleRules.length).toBe(1); // Base styles
+			expect(mediaRules.length).toBe(2); // @media queries
+			expect(containerRules.length).toBe(1); // @container queries
+			expect(supportsRules.length).toBe(1); // @supports queries
+		});
+	});
+
+	describe('Backward compatibility with createBreakpoints', () => {
+		it('createBreakpoints should be an alias for createStyleQueries', () => {
+			expect(createBreakpoints).toBe(createStyleQueries);
+		});
+
+		it('should work with old-style breakpoint values (no prefix)', () => {
+			const cn = createBreakpoints({
+				small: '(min-width: 341px)',
+				medium: '(min-width: 601px)',
+				large: '(min-width: 1025px)',
+			});
+
+			const result = cn({
+				small: bg('#FF0000'),
+				medium: bg('#00FF00'),
+				large: bg('#0000FF'),
+			});
+
+			expect(result).toHaveProperty('className');
+			const className = (result as any).className;
+			expect(className).toMatch(/^n[a-f0-9]{8}$/);
+
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
+			const mediaRules = rules.filter(rule => rule.type === CSSRule.MEDIA_RULE);
+
+			expect(mediaRules.length).toBe(3);
 		});
 	});
 });

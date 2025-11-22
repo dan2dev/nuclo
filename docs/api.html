@@ -555,14 +555,14 @@ div({
                 </section>
 
                 <section id="style-helpers">
-                    <h2>Style Helpers & createBreakpoints</h2>
-                    <p>nuclo provides 95+ style helper functions that return chainable <code>StyleBuilder</code> instances. Use <code>createBreakpoints</code> to generate CSS class names.</p>
+                    <h2>Style Helpers & createStyleQueries</h2>
+                    <p>nuclo provides 95+ style helper functions that return chainable <code>StyleBuilder</code> instances. Use <code>createStyleQueries</code> to generate CSS class names with support for media queries, container queries, and feature queries.</p>
 
                     <h3>Basic Usage</h3>
-                    <pre><code class="language-typescript">// Create breakpoints helper (usually done once in styles.ts)
-const cn = createBreakpoints({
-  medium: '(min-width: 768px)',
-  large: '(min-width: 1024px)'
+                    <pre><code class="language-typescript">// Create style queries helper (usually done once in styles.ts)
+const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)'
 });
 
 // Chain style methods, wrap with cn() to get class name

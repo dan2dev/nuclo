@@ -1052,10 +1052,10 @@ render(app, document.body);</code></pre>
 
                     <pre><code class="language-typescript">import 'nuclo';
 
-// Setup breakpoints
-const cn = createBreakpoints({
-  medium: '(min-width: 768px)',
-  large: '(min-width: 1024px)'
+// Setup style queries
+const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)'
 });
 
 // Define reusable styles

@@ -7,11 +7,29 @@ declare global {
 	function createCSSClass(className: string, styles: Record<string, string>): void;
 
 	/**
-	 * Creates a breakpoint-aware class name generator
-	 * 
+	 * Creates a style query class name generator for responsive and conditional styles.
+	 * Supports @media, @container, @supports queries.
+	 *
+	 * Query values should include the at-rule prefix:
+	 * - "@media (min-width: 768px)" for media queries
+	 * - "@container (min-width: 400px)" for container queries
+	 * - "@supports (display: grid)" for feature queries
+	 *
+	 * For backward compatibility, values without a prefix are treated as media queries.
+	 *
 	 * Supports two signatures:
-	 * 1. cn(breakpointStyles) - Only breakpoint-specific styles
-	 * 2. cn(defaultStyles, breakpointStyles) - Default styles + breakpoint overrides
+	 * 1. cn(queryStyles) - Only query-specific styles
+	 * 2. cn(defaultStyles, queryStyles) - Default styles + query overrides
+	 */
+	function createStyleQueries<T extends string>(
+		queries: Record<T, string>
+	): {
+		(styles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
+		(defaultStyles: StyleBuilder, queryStyles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
+	};
+
+	/**
+	 * @deprecated Use createStyleQueries instead. Alias for backward compatibility.
 	 */
 	function createBreakpoints<T extends string>(
 		breakpoints: Record<T, string>
@@ -1056,3 +1074,23 @@ export function columns(value: string): StyleBuilder;
 
 // Interaction
 export function cursor(value: string): StyleBuilder;
+
+// Style queries / breakpoints
+export function createStyleQueries<T extends string>(
+	queries: Record<T, string>
+): {
+	(styles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
+	(defaultStyles: StyleBuilder, queryStyles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
+};
+
+/**
+ * @deprecated Use createStyleQueries instead. Alias for backward compatibility.
+ */
+export function createBreakpoints<T extends string>(
+	breakpoints: Record<T, string>
+): {
+	(styles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
+	(defaultStyles: StyleBuilder, breakpointStyles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
+};
+
+export function createCSSClass(className: string, styles: Record<string, string>): void;
