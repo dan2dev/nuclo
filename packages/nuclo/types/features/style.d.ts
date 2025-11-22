@@ -70,6 +70,34 @@ import type {
 	CSSBackgroundImageValue,
 	CSSAnimationNameValue,
 	CSSContentValue,
+	CSSAspectRatioValue,
+	FloatValue,
+	ClearValue,
+	WritingModeValue,
+	DirectionValue,
+	UnicodeBidiValue,
+	TextOrientationValue,
+	HyphensValue,
+	LineBreakValue,
+	WordBreakValue,
+	TouchActionValue,
+	OverscrollBehaviorValue,
+	ImageRenderingValue,
+	ColorSchemeValue,
+	CaretColorValue,
+	CaretShapeValue,
+	BackgroundBlendModeValue,
+	ContentVisibilityValue,
+	ContainerTypeValue,
+	FontKerningValue,
+	FontSynthesisValue,
+	FontOpticalSizingValue,
+	FontDisplayValue,
+	FontVariantCapsValue,
+	TextRenderingValue,
+	TextCombineUprightValue,
+	MaskCompositeValue,
+	ClipRuleValue,
 } from "../../src/style/cssPropertyTypes";
 
 /**
@@ -371,6 +399,172 @@ declare global {
 
 		// Interaction
 		cursor(value: CursorValue): this;
+
+		// Layout - Additional
+		aspectRatio(value: CSSAspectRatioValue): this;
+		clear(value: ClearValue): this;
+		float(value: FloatValue): this;
+		order(value: number | string): this;
+
+		// Flexbox - Place properties
+		placeContent(value: string): this;
+		placeItems(value: string): this;
+		placeSelf(value: string): this;
+
+		// Text - Additional
+		hyphens(value: HyphensValue): this;
+		lineBreak(value: LineBreakValue): this;
+		wordBreak(value: WordBreakValue): this;
+		textOrientation(value: TextOrientationValue): this;
+		writingMode(value: WritingModeValue): this;
+		direction(value: DirectionValue): this;
+		unicodeBidi(value: UnicodeBidiValue): this;
+
+		// Background - Additional
+		backgroundBlendMode(value: BackgroundBlendModeValue): this;
+		backgroundPositionX(value: string): this;
+		backgroundPositionY(value: string): this;
+
+		// Border Image
+		borderImage(value: string): this;
+		borderImageSource(value: CSSBackgroundImageValue | "none"): this;
+		borderImageSlice(value: string | number): this;
+		borderImageWidth(value: CSSLengthValue | number): this;
+		borderImageOutset(value: CSSLengthValue | number): this;
+		borderImageRepeat(value: BackgroundRepeatValue): this;
+
+		// Logical Properties - Inset
+		inset(value: CSSLengthValue | "auto"): this;
+		insetBlock(value: CSSLengthValue): this;
+		insetBlockStart(value: CSSLengthValue | "auto"): this;
+		insetBlockEnd(value: CSSLengthValue | "auto"): this;
+		insetInline(value: CSSLengthValue): this;
+		insetInlineStart(value: CSSLengthValue | "auto"): this;
+		insetInlineEnd(value: CSSLengthValue | "auto"): this;
+
+		// Logical Properties - Margin
+		marginBlock(value: CSSLengthValue | "auto"): this;
+		marginBlockStart(value: CSSLengthValue | "auto"): this;
+		marginBlockEnd(value: CSSLengthValue | "auto"): this;
+		marginInline(value: CSSLengthValue | "auto"): this;
+		marginInlineStart(value: CSSLengthValue | "auto"): this;
+		marginInlineEnd(value: CSSLengthValue | "auto"): this;
+
+		// Logical Properties - Padding
+		paddingBlock(value: CSSLengthValue): this;
+		paddingBlockStart(value: CSSLengthValue): this;
+		paddingBlockEnd(value: CSSLengthValue): this;
+		paddingInline(value: CSSLengthValue): this;
+		paddingInlineStart(value: CSSLengthValue): this;
+		paddingInlineEnd(value: CSSLengthValue): this;
+
+		// Logical Properties - Size
+		inlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+		blockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+		minInlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+		minBlockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+		maxInlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content" | "none"): this;
+		maxBlockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content" | "none"): this;
+
+		// Logical Properties - Border
+		borderBlock(value: string): this;
+		borderBlockStart(value: string): this;
+		borderBlockEnd(value: string): this;
+		borderInline(value: string): this;
+		borderInlineStart(value: string): this;
+		borderInlineEnd(value: string): this;
+		borderBlockWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+		borderBlockStartWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+		borderBlockEndWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+		borderInlineWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+		borderInlineStartWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+		borderInlineEndWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+		borderBlockStyle(value: BorderStyleValue): this;
+		borderBlockStartStyle(value: BorderStyleValue): this;
+		borderBlockEndStyle(value: BorderStyleValue): this;
+		borderInlineStyle(value: BorderStyleValue): this;
+		borderInlineStartStyle(value: BorderStyleValue): this;
+		borderInlineEndStyle(value: BorderStyleValue): this;
+		borderBlockColor(value: CSSColorValue): this;
+		borderBlockStartColor(value: CSSColorValue): this;
+		borderBlockEndColor(value: CSSColorValue): this;
+		borderInlineColor(value: CSSColorValue): this;
+		borderInlineStartColor(value: CSSColorValue): this;
+		borderInlineEndColor(value: CSSColorValue): this;
+
+		// Logical Properties - Border Radius
+		borderStartStartRadius(value: CSSLengthValue): this;
+		borderStartEndRadius(value: CSSLengthValue): this;
+		borderEndStartRadius(value: CSSLengthValue): this;
+		borderEndEndRadius(value: CSSLengthValue): this;
+
+		// Scroll
+		scrollMargin(value: CSSLengthValue): this;
+		scrollMarginTop(value: CSSLengthValue): this;
+		scrollMarginRight(value: CSSLengthValue): this;
+		scrollMarginBottom(value: CSSLengthValue): this;
+		scrollMarginLeft(value: CSSLengthValue): this;
+		scrollPadding(value: CSSLengthValue): this;
+		scrollPaddingTop(value: CSSLengthValue): this;
+		scrollPaddingRight(value: CSSLengthValue): this;
+		scrollPaddingBottom(value: CSSLengthValue): this;
+		scrollPaddingLeft(value: CSSLengthValue): this;
+		overscrollBehavior(value: OverscrollBehaviorValue): this;
+		overscrollBehaviorX(value: OverscrollBehaviorValue): this;
+		overscrollBehaviorY(value: OverscrollBehaviorValue): this;
+
+		// Caret
+		caretColor(value: CaretColorValue): this;
+		caretShape(value: CaretShapeValue): this;
+		caretAnimation(value: string): this;
+
+		// Other
+		imageRendering(value: ImageRenderingValue): this;
+		colorScheme(value: ColorSchemeValue): this;
+		contentVisibility(value: ContentVisibilityValue): this;
+		touchAction(value: TouchActionValue): this;
+
+		// Container Queries
+		containerType(value: ContainerTypeValue): this;
+		containerName(value: string): this;
+		container(value: string): this;
+
+		// Font - Additional
+		fontFeatureSettings(value: string): this;
+		fontKerning(value: FontKerningValue): this;
+		fontSynthesis(value: FontSynthesisValue): this;
+		fontOpticalSizing(value: FontOpticalSizingValue): this;
+		fontDisplay(value: FontDisplayValue): this;
+		fontVariantCaps(value: FontVariantCapsValue): this;
+		fontVariantNumeric(value: string): this;
+		fontVariantLigatures(value: string): this;
+		fontVariantEastAsian(value: string): this;
+		fontVariantAlternates(value: string): this;
+		fontVariantPosition(value: string): this;
+
+		// Text - Additional
+		textRendering(value: TextRenderingValue): this;
+		textCombineUpright(value: TextCombineUprightValue): this;
+		textSizeAdjust(value: string | "auto" | "none" | `${number}%`): this;
+
+		// Mask
+		mask(value: string): this;
+		maskImage(value: CSSBackgroundImageValue | "none"): this;
+		maskMode(value: string): this;
+		maskRepeat(value: BackgroundRepeatValue): this;
+		maskPosition(value: string): this;
+		maskSize(value: CSSLengthValue | "auto" | "cover" | "contain"): this;
+		maskOrigin(value: BackgroundOriginValue): this;
+		maskClip(value: BackgroundClipValue): this;
+		maskComposite(value: MaskCompositeValue): this;
+
+		// Clip
+		clipRule(value: ClipRuleValue): this;
+
+		// Grid - Additional
+		gridColumnGap(value: CSSLengthValue): this;
+		gridRowGap(value: CSSLengthValue): this;
+		gridGap(value: CSSLengthValue): this;
 	}
 
 	// Utility functions available globally (like HTML tags)
@@ -628,6 +822,172 @@ declare global {
 
 	// Interaction
 	function cursor(value: CursorValue): StyleBuilder;
+
+	// Layout - Additional
+	function aspectRatio(value: CSSAspectRatioValue): StyleBuilder;
+	function clear(value: ClearValue): StyleBuilder;
+	function float(value: FloatValue): StyleBuilder;
+	function order(value: number | string): StyleBuilder;
+
+	// Flexbox - Place properties
+	function placeContent(value: string): StyleBuilder;
+	function placeItems(value: string): StyleBuilder;
+	function placeSelf(value: string): StyleBuilder;
+
+	// Text - Additional
+	function hyphens(value: HyphensValue): StyleBuilder;
+	function lineBreak(value: LineBreakValue): StyleBuilder;
+	function wordBreak(value: WordBreakValue): StyleBuilder;
+	function textOrientation(value: TextOrientationValue): StyleBuilder;
+	function writingMode(value: WritingModeValue): StyleBuilder;
+	function direction(value: DirectionValue): StyleBuilder;
+	function unicodeBidi(value: UnicodeBidiValue): StyleBuilder;
+
+	// Background - Additional
+	function backgroundBlendMode(value: BackgroundBlendModeValue): StyleBuilder;
+	function backgroundPositionX(value: string): StyleBuilder;
+	function backgroundPositionY(value: string): StyleBuilder;
+
+	// Border Image
+	function borderImage(value: string): StyleBuilder;
+	function borderImageSource(value: CSSBackgroundImageValue | "none"): StyleBuilder;
+	function borderImageSlice(value: string | number): StyleBuilder;
+	function borderImageWidth(value: CSSLengthValue | number): StyleBuilder;
+	function borderImageOutset(value: CSSLengthValue | number): StyleBuilder;
+	function borderImageRepeat(value: BackgroundRepeatValue): StyleBuilder;
+
+	// Logical Properties - Inset
+	function inset(value: CSSLengthValue | "auto"): StyleBuilder;
+	function insetBlock(value: CSSLengthValue): StyleBuilder;
+	function insetBlockStart(value: CSSLengthValue | "auto"): StyleBuilder;
+	function insetBlockEnd(value: CSSLengthValue | "auto"): StyleBuilder;
+	function insetInline(value: CSSLengthValue): StyleBuilder;
+	function insetInlineStart(value: CSSLengthValue | "auto"): StyleBuilder;
+	function insetInlineEnd(value: CSSLengthValue | "auto"): StyleBuilder;
+
+	// Logical Properties - Margin
+	function marginBlock(value: CSSLengthValue | "auto"): StyleBuilder;
+	function marginBlockStart(value: CSSLengthValue | "auto"): StyleBuilder;
+	function marginBlockEnd(value: CSSLengthValue | "auto"): StyleBuilder;
+	function marginInline(value: CSSLengthValue | "auto"): StyleBuilder;
+	function marginInlineStart(value: CSSLengthValue | "auto"): StyleBuilder;
+	function marginInlineEnd(value: CSSLengthValue | "auto"): StyleBuilder;
+
+	// Logical Properties - Padding
+	function paddingBlock(value: CSSLengthValue): StyleBuilder;
+	function paddingBlockStart(value: CSSLengthValue): StyleBuilder;
+	function paddingBlockEnd(value: CSSLengthValue): StyleBuilder;
+	function paddingInline(value: CSSLengthValue): StyleBuilder;
+	function paddingInlineStart(value: CSSLengthValue): StyleBuilder;
+	function paddingInlineEnd(value: CSSLengthValue): StyleBuilder;
+
+	// Logical Properties - Size
+	function inlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): StyleBuilder;
+	function blockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): StyleBuilder;
+	function minInlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): StyleBuilder;
+	function minBlockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): StyleBuilder;
+	function maxInlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content" | "none"): StyleBuilder;
+	function maxBlockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content" | "none"): StyleBuilder;
+
+	// Logical Properties - Border
+	function borderBlock(value: string): StyleBuilder;
+	function borderBlockStart(value: string): StyleBuilder;
+	function borderBlockEnd(value: string): StyleBuilder;
+	function borderInline(value: string): StyleBuilder;
+	function borderInlineStart(value: string): StyleBuilder;
+	function borderInlineEnd(value: string): StyleBuilder;
+	function borderBlockWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): StyleBuilder;
+	function borderBlockStartWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): StyleBuilder;
+	function borderBlockEndWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): StyleBuilder;
+	function borderInlineWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): StyleBuilder;
+	function borderInlineStartWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): StyleBuilder;
+	function borderInlineEndWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): StyleBuilder;
+	function borderBlockStyle(value: BorderStyleValue): StyleBuilder;
+	function borderBlockStartStyle(value: BorderStyleValue): StyleBuilder;
+	function borderBlockEndStyle(value: BorderStyleValue): StyleBuilder;
+	function borderInlineStyle(value: BorderStyleValue): StyleBuilder;
+	function borderInlineStartStyle(value: BorderStyleValue): StyleBuilder;
+	function borderInlineEndStyle(value: BorderStyleValue): StyleBuilder;
+	function borderBlockColor(value: CSSColorValue): StyleBuilder;
+	function borderBlockStartColor(value: CSSColorValue): StyleBuilder;
+	function borderBlockEndColor(value: CSSColorValue): StyleBuilder;
+	function borderInlineColor(value: CSSColorValue): StyleBuilder;
+	function borderInlineStartColor(value: CSSColorValue): StyleBuilder;
+	function borderInlineEndColor(value: CSSColorValue): StyleBuilder;
+
+	// Logical Properties - Border Radius
+	function borderStartStartRadius(value: CSSLengthValue): StyleBuilder;
+	function borderStartEndRadius(value: CSSLengthValue): StyleBuilder;
+	function borderEndStartRadius(value: CSSLengthValue): StyleBuilder;
+	function borderEndEndRadius(value: CSSLengthValue): StyleBuilder;
+
+	// Scroll
+	function scrollMargin(value: CSSLengthValue): StyleBuilder;
+	function scrollMarginTop(value: CSSLengthValue): StyleBuilder;
+	function scrollMarginRight(value: CSSLengthValue): StyleBuilder;
+	function scrollMarginBottom(value: CSSLengthValue): StyleBuilder;
+	function scrollMarginLeft(value: CSSLengthValue): StyleBuilder;
+	function scrollPadding(value: CSSLengthValue): StyleBuilder;
+	function scrollPaddingTop(value: CSSLengthValue): StyleBuilder;
+	function scrollPaddingRight(value: CSSLengthValue): StyleBuilder;
+	function scrollPaddingBottom(value: CSSLengthValue): StyleBuilder;
+	function scrollPaddingLeft(value: CSSLengthValue): StyleBuilder;
+	function overscrollBehavior(value: OverscrollBehaviorValue): StyleBuilder;
+	function overscrollBehaviorX(value: OverscrollBehaviorValue): StyleBuilder;
+	function overscrollBehaviorY(value: OverscrollBehaviorValue): StyleBuilder;
+
+	// Caret
+	function caretColor(value: CaretColorValue): StyleBuilder;
+	function caretShape(value: CaretShapeValue): StyleBuilder;
+	function caretAnimation(value: string): StyleBuilder;
+
+	// Other
+	function imageRendering(value: ImageRenderingValue): StyleBuilder;
+	function colorScheme(value: ColorSchemeValue): StyleBuilder;
+	function contentVisibility(value: ContentVisibilityValue): StyleBuilder;
+	function touchAction(value: TouchActionValue): StyleBuilder;
+
+	// Container Queries
+	function containerType(value: ContainerTypeValue): StyleBuilder;
+	function containerName(value: string): StyleBuilder;
+	function container(value: string): StyleBuilder;
+
+	// Font - Additional
+	function fontFeatureSettings(value: string): StyleBuilder;
+	function fontKerning(value: FontKerningValue): StyleBuilder;
+	function fontSynthesis(value: FontSynthesisValue): StyleBuilder;
+	function fontOpticalSizing(value: FontOpticalSizingValue): StyleBuilder;
+	function fontDisplay(value: FontDisplayValue): StyleBuilder;
+	function fontVariantCaps(value: FontVariantCapsValue): StyleBuilder;
+	function fontVariantNumeric(value: string): StyleBuilder;
+	function fontVariantLigatures(value: string): StyleBuilder;
+	function fontVariantEastAsian(value: string): StyleBuilder;
+	function fontVariantAlternates(value: string): StyleBuilder;
+	function fontVariantPosition(value: string): StyleBuilder;
+
+	// Text - Additional
+	function textRendering(value: TextRenderingValue): StyleBuilder;
+	function textCombineUpright(value: TextCombineUprightValue): StyleBuilder;
+	function textSizeAdjust(value: string | "auto" | "none" | `${number}%`): StyleBuilder;
+
+	// Mask (Note: mask conflicts with SVG mask element, use module import if needed)
+	// function mask(value: string): StyleBuilder; // Use: import { mask } from "nuclo"
+	function maskImage(value: CSSBackgroundImageValue | "none"): StyleBuilder;
+	function maskMode(value: string): StyleBuilder;
+	function maskRepeat(value: BackgroundRepeatValue): StyleBuilder;
+	function maskPosition(value: string): StyleBuilder;
+	function maskSize(value: CSSLengthValue | "auto" | "cover" | "contain"): StyleBuilder;
+	function maskOrigin(value: BackgroundOriginValue): StyleBuilder;
+	function maskClip(value: BackgroundClipValue): StyleBuilder;
+	function maskComposite(value: MaskCompositeValue): StyleBuilder;
+
+	// Clip
+	function clipRule(value: ClipRuleValue): StyleBuilder;
+
+	// Grid - Additional
+	function gridColumnGap(value: CSSLengthValue): StyleBuilder;
+	function gridRowGap(value: CSSLengthValue): StyleBuilder;
+	function gridGap(value: CSSLengthValue): StyleBuilder;
 }
 
 // Export StyleBuilder class with all its methods (for module imports)
@@ -889,6 +1249,172 @@ export class StyleBuilder {
 
 	// Interaction
 	cursor(value: CursorValue): this;
+
+	// Layout - Additional
+	aspectRatio(value: CSSAspectRatioValue): this;
+	clear(value: ClearValue): this;
+	float(value: FloatValue): this;
+	order(value: number | string): this;
+
+	// Flexbox - Place properties
+	placeContent(value: string): this;
+	placeItems(value: string): this;
+	placeSelf(value: string): this;
+
+	// Text - Additional
+	hyphens(value: HyphensValue): this;
+	lineBreak(value: LineBreakValue): this;
+	wordBreak(value: WordBreakValue): this;
+	textOrientation(value: TextOrientationValue): this;
+	writingMode(value: WritingModeValue): this;
+	direction(value: DirectionValue): this;
+	unicodeBidi(value: UnicodeBidiValue): this;
+
+	// Background - Additional
+	backgroundBlendMode(value: BackgroundBlendModeValue): this;
+	backgroundPositionX(value: string): this;
+	backgroundPositionY(value: string): this;
+
+	// Border Image
+	borderImage(value: string): this;
+	borderImageSource(value: CSSBackgroundImageValue | "none"): this;
+	borderImageSlice(value: string | number): this;
+	borderImageWidth(value: CSSLengthValue | number): this;
+	borderImageOutset(value: CSSLengthValue | number): this;
+	borderImageRepeat(value: BackgroundRepeatValue): this;
+
+	// Logical Properties - Inset
+	inset(value: CSSLengthValue | "auto"): this;
+	insetBlock(value: CSSLengthValue): this;
+	insetBlockStart(value: CSSLengthValue | "auto"): this;
+	insetBlockEnd(value: CSSLengthValue | "auto"): this;
+	insetInline(value: CSSLengthValue): this;
+	insetInlineStart(value: CSSLengthValue | "auto"): this;
+	insetInlineEnd(value: CSSLengthValue | "auto"): this;
+
+	// Logical Properties - Margin
+	marginBlock(value: CSSLengthValue | "auto"): this;
+	marginBlockStart(value: CSSLengthValue | "auto"): this;
+	marginBlockEnd(value: CSSLengthValue | "auto"): this;
+	marginInline(value: CSSLengthValue | "auto"): this;
+	marginInlineStart(value: CSSLengthValue | "auto"): this;
+	marginInlineEnd(value: CSSLengthValue | "auto"): this;
+
+	// Logical Properties - Padding
+	paddingBlock(value: CSSLengthValue): this;
+	paddingBlockStart(value: CSSLengthValue): this;
+	paddingBlockEnd(value: CSSLengthValue): this;
+	paddingInline(value: CSSLengthValue): this;
+	paddingInlineStart(value: CSSLengthValue): this;
+	paddingInlineEnd(value: CSSLengthValue): this;
+
+	// Logical Properties - Size
+	inlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+	blockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+	minInlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+	minBlockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+	maxInlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content" | "none"): this;
+	maxBlockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content" | "none"): this;
+
+	// Logical Properties - Border
+	borderBlock(value: string): this;
+	borderBlockStart(value: string): this;
+	borderBlockEnd(value: string): this;
+	borderInline(value: string): this;
+	borderInlineStart(value: string): this;
+	borderInlineEnd(value: string): this;
+	borderBlockWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderBlockStartWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderBlockEndWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderInlineWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderInlineStartWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderInlineEndWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderBlockStyle(value: BorderStyleValue): this;
+	borderBlockStartStyle(value: BorderStyleValue): this;
+	borderBlockEndStyle(value: BorderStyleValue): this;
+	borderInlineStyle(value: BorderStyleValue): this;
+	borderInlineStartStyle(value: BorderStyleValue): this;
+	borderInlineEndStyle(value: BorderStyleValue): this;
+	borderBlockColor(value: CSSColorValue): this;
+	borderBlockStartColor(value: CSSColorValue): this;
+	borderBlockEndColor(value: CSSColorValue): this;
+	borderInlineColor(value: CSSColorValue): this;
+	borderInlineStartColor(value: CSSColorValue): this;
+	borderInlineEndColor(value: CSSColorValue): this;
+
+	// Logical Properties - Border Radius
+	borderStartStartRadius(value: CSSLengthValue): this;
+	borderStartEndRadius(value: CSSLengthValue): this;
+	borderEndStartRadius(value: CSSLengthValue): this;
+	borderEndEndRadius(value: CSSLengthValue): this;
+
+	// Scroll
+	scrollMargin(value: CSSLengthValue): this;
+	scrollMarginTop(value: CSSLengthValue): this;
+	scrollMarginRight(value: CSSLengthValue): this;
+	scrollMarginBottom(value: CSSLengthValue): this;
+	scrollMarginLeft(value: CSSLengthValue): this;
+	scrollPadding(value: CSSLengthValue): this;
+	scrollPaddingTop(value: CSSLengthValue): this;
+	scrollPaddingRight(value: CSSLengthValue): this;
+	scrollPaddingBottom(value: CSSLengthValue): this;
+	scrollPaddingLeft(value: CSSLengthValue): this;
+	overscrollBehavior(value: OverscrollBehaviorValue): this;
+	overscrollBehaviorX(value: OverscrollBehaviorValue): this;
+	overscrollBehaviorY(value: OverscrollBehaviorValue): this;
+
+	// Caret
+	caretColor(value: CaretColorValue): this;
+	caretShape(value: CaretShapeValue): this;
+	caretAnimation(value: string): this;
+
+	// Other
+	imageRendering(value: ImageRenderingValue): this;
+	colorScheme(value: ColorSchemeValue): this;
+	contentVisibility(value: ContentVisibilityValue): this;
+	touchAction(value: TouchActionValue): this;
+
+	// Container Queries
+	containerType(value: ContainerTypeValue): this;
+	containerName(value: string): this;
+	container(value: string): this;
+
+	// Font - Additional
+	fontFeatureSettings(value: string): this;
+	fontKerning(value: FontKerningValue): this;
+	fontSynthesis(value: FontSynthesisValue): this;
+	fontOpticalSizing(value: FontOpticalSizingValue): this;
+	fontDisplay(value: FontDisplayValue): this;
+	fontVariantCaps(value: FontVariantCapsValue): this;
+	fontVariantNumeric(value: string): this;
+	fontVariantLigatures(value: string): this;
+	fontVariantEastAsian(value: string): this;
+	fontVariantAlternates(value: string): this;
+	fontVariantPosition(value: string): this;
+
+	// Text - Additional
+	textRendering(value: TextRenderingValue): this;
+	textCombineUpright(value: TextCombineUprightValue): this;
+	textSizeAdjust(value: string | "auto" | "none" | `${number}%`): this;
+
+	// Mask (Note: mask conflicts with SVG mask element, use module import if needed)
+	// mask(value: string): this; // Use: import { mask } from "nuclo"
+	maskImage(value: CSSBackgroundImageValue | "none"): this;
+	maskMode(value: string): this;
+	maskRepeat(value: BackgroundRepeatValue): this;
+	maskPosition(value: string): this;
+	maskSize(value: CSSLengthValue | "auto" | "cover" | "contain"): this;
+	maskOrigin(value: BackgroundOriginValue): this;
+	maskClip(value: BackgroundClipValue): this;
+	maskComposite(value: MaskCompositeValue): this;
+
+	// Clip
+	clipRule(value: ClipRuleValue): this;
+
+	// Grid - Additional
+	gridColumnGap(value: CSSLengthValue): this;
+	gridRowGap(value: CSSLengthValue): this;
+	gridGap(value: CSSLengthValue): this;
 }
 
 // Utility functions that return StyleBuilders - exported at module level
@@ -1146,6 +1672,172 @@ export function columns(value: string): StyleBuilder;
 
 // Interaction
 export function cursor(value: CursorValue): StyleBuilder;
+
+// Layout - Additional
+export function aspectRatio(value: CSSAspectRatioValue): StyleBuilder;
+export function clear(value: ClearValue): StyleBuilder;
+export function float(value: FloatValue): StyleBuilder;
+export function order(value: number | string): StyleBuilder;
+
+// Flexbox - Place properties
+export function placeContent(value: string): StyleBuilder;
+export function placeItems(value: string): StyleBuilder;
+export function placeSelf(value: string): StyleBuilder;
+
+// Text - Additional
+export function hyphens(value: HyphensValue): StyleBuilder;
+export function lineBreak(value: LineBreakValue): StyleBuilder;
+export function wordBreak(value: WordBreakValue): StyleBuilder;
+export function textOrientation(value: TextOrientationValue): StyleBuilder;
+export function writingMode(value: WritingModeValue): StyleBuilder;
+export function direction(value: DirectionValue): StyleBuilder;
+export function unicodeBidi(value: UnicodeBidiValue): StyleBuilder;
+
+// Background - Additional
+export function backgroundBlendMode(value: BackgroundBlendModeValue): StyleBuilder;
+export function backgroundPositionX(value: string): StyleBuilder;
+export function backgroundPositionY(value: string): StyleBuilder;
+
+// Border Image
+export function borderImage(value: string): StyleBuilder;
+export function borderImageSource(value: CSSBackgroundImageValue | "none"): StyleBuilder;
+export function borderImageSlice(value: string | number): StyleBuilder;
+export function borderImageWidth(value: CSSLengthValue | number): StyleBuilder;
+export function borderImageOutset(value: CSSLengthValue | number): StyleBuilder;
+export function borderImageRepeat(value: BackgroundRepeatValue): StyleBuilder;
+
+// Logical Properties - Inset
+export function inset(value: CSSLengthValue | "auto"): StyleBuilder;
+export function insetBlock(value: CSSLengthValue): StyleBuilder;
+export function insetBlockStart(value: CSSLengthValue | "auto"): StyleBuilder;
+export function insetBlockEnd(value: CSSLengthValue | "auto"): StyleBuilder;
+export function insetInline(value: CSSLengthValue): StyleBuilder;
+export function insetInlineStart(value: CSSLengthValue | "auto"): StyleBuilder;
+export function insetInlineEnd(value: CSSLengthValue | "auto"): StyleBuilder;
+
+// Logical Properties - Margin
+export function marginBlock(value: CSSLengthValue | "auto"): StyleBuilder;
+export function marginBlockStart(value: CSSLengthValue | "auto"): StyleBuilder;
+export function marginBlockEnd(value: CSSLengthValue | "auto"): StyleBuilder;
+export function marginInline(value: CSSLengthValue | "auto"): StyleBuilder;
+export function marginInlineStart(value: CSSLengthValue | "auto"): StyleBuilder;
+export function marginInlineEnd(value: CSSLengthValue | "auto"): StyleBuilder;
+
+// Logical Properties - Padding
+export function paddingBlock(value: CSSLengthValue): StyleBuilder;
+export function paddingBlockStart(value: CSSLengthValue): StyleBuilder;
+export function paddingBlockEnd(value: CSSLengthValue): StyleBuilder;
+export function paddingInline(value: CSSLengthValue): StyleBuilder;
+export function paddingInlineStart(value: CSSLengthValue): StyleBuilder;
+export function paddingInlineEnd(value: CSSLengthValue): StyleBuilder;
+
+// Logical Properties - Size
+export function inlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): StyleBuilder;
+export function blockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): StyleBuilder;
+export function minInlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): StyleBuilder;
+export function minBlockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): StyleBuilder;
+export function maxInlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content" | "none"): StyleBuilder;
+export function maxBlockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content" | "none"): StyleBuilder;
+
+// Logical Properties - Border
+export function borderBlock(value: string): StyleBuilder;
+export function borderBlockStart(value: string): StyleBuilder;
+export function borderBlockEnd(value: string): StyleBuilder;
+export function borderInline(value: string): StyleBuilder;
+export function borderInlineStart(value: string): StyleBuilder;
+export function borderInlineEnd(value: string): StyleBuilder;
+export function borderBlockWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): StyleBuilder;
+export function borderBlockStartWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): StyleBuilder;
+export function borderBlockEndWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): StyleBuilder;
+export function borderInlineWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): StyleBuilder;
+export function borderInlineStartWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): StyleBuilder;
+export function borderInlineEndWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): StyleBuilder;
+export function borderBlockStyle(value: BorderStyleValue): StyleBuilder;
+export function borderBlockStartStyle(value: BorderStyleValue): StyleBuilder;
+export function borderBlockEndStyle(value: BorderStyleValue): StyleBuilder;
+export function borderInlineStyle(value: BorderStyleValue): StyleBuilder;
+export function borderInlineStartStyle(value: BorderStyleValue): StyleBuilder;
+export function borderInlineEndStyle(value: BorderStyleValue): StyleBuilder;
+export function borderBlockColor(value: CSSColorValue): StyleBuilder;
+export function borderBlockStartColor(value: CSSColorValue): StyleBuilder;
+export function borderBlockEndColor(value: CSSColorValue): StyleBuilder;
+export function borderInlineColor(value: CSSColorValue): StyleBuilder;
+export function borderInlineStartColor(value: CSSColorValue): StyleBuilder;
+export function borderInlineEndColor(value: CSSColorValue): StyleBuilder;
+
+// Logical Properties - Border Radius
+export function borderStartStartRadius(value: CSSLengthValue): StyleBuilder;
+export function borderStartEndRadius(value: CSSLengthValue): StyleBuilder;
+export function borderEndStartRadius(value: CSSLengthValue): StyleBuilder;
+export function borderEndEndRadius(value: CSSLengthValue): StyleBuilder;
+
+// Scroll
+export function scrollMargin(value: CSSLengthValue): StyleBuilder;
+export function scrollMarginTop(value: CSSLengthValue): StyleBuilder;
+export function scrollMarginRight(value: CSSLengthValue): StyleBuilder;
+export function scrollMarginBottom(value: CSSLengthValue): StyleBuilder;
+export function scrollMarginLeft(value: CSSLengthValue): StyleBuilder;
+export function scrollPadding(value: CSSLengthValue): StyleBuilder;
+export function scrollPaddingTop(value: CSSLengthValue): StyleBuilder;
+export function scrollPaddingRight(value: CSSLengthValue): StyleBuilder;
+export function scrollPaddingBottom(value: CSSLengthValue): StyleBuilder;
+export function scrollPaddingLeft(value: CSSLengthValue): StyleBuilder;
+export function overscrollBehavior(value: OverscrollBehaviorValue): StyleBuilder;
+export function overscrollBehaviorX(value: OverscrollBehaviorValue): StyleBuilder;
+export function overscrollBehaviorY(value: OverscrollBehaviorValue): StyleBuilder;
+
+// Caret
+export function caretColor(value: CaretColorValue): StyleBuilder;
+export function caretShape(value: CaretShapeValue): StyleBuilder;
+export function caretAnimation(value: string): StyleBuilder;
+
+// Other
+export function imageRendering(value: ImageRenderingValue): StyleBuilder;
+export function colorScheme(value: ColorSchemeValue): StyleBuilder;
+export function contentVisibility(value: ContentVisibilityValue): StyleBuilder;
+export function touchAction(value: TouchActionValue): StyleBuilder;
+
+// Container Queries
+export function containerType(value: ContainerTypeValue): StyleBuilder;
+export function containerName(value: string): StyleBuilder;
+export function container(value: string): StyleBuilder;
+
+// Font - Additional
+export function fontFeatureSettings(value: string): StyleBuilder;
+export function fontKerning(value: FontKerningValue): StyleBuilder;
+export function fontSynthesis(value: FontSynthesisValue): StyleBuilder;
+export function fontOpticalSizing(value: FontOpticalSizingValue): StyleBuilder;
+export function fontDisplay(value: FontDisplayValue): StyleBuilder;
+export function fontVariantCaps(value: FontVariantCapsValue): StyleBuilder;
+export function fontVariantNumeric(value: string): StyleBuilder;
+export function fontVariantLigatures(value: string): StyleBuilder;
+export function fontVariantEastAsian(value: string): StyleBuilder;
+export function fontVariantAlternates(value: string): StyleBuilder;
+export function fontVariantPosition(value: string): StyleBuilder;
+
+// Text - Additional
+export function textRendering(value: TextRenderingValue): StyleBuilder;
+export function textCombineUpright(value: TextCombineUprightValue): StyleBuilder;
+export function textSizeAdjust(value: string | "auto" | "none" | `${number}%`): StyleBuilder;
+
+// Mask
+export function mask(value: string): StyleBuilder;
+export function maskImage(value: CSSBackgroundImageValue | "none"): StyleBuilder;
+export function maskMode(value: string): StyleBuilder;
+export function maskRepeat(value: BackgroundRepeatValue): StyleBuilder;
+export function maskPosition(value: string): StyleBuilder;
+export function maskSize(value: CSSLengthValue | "auto" | "cover" | "contain"): StyleBuilder;
+export function maskOrigin(value: BackgroundOriginValue): StyleBuilder;
+export function maskClip(value: BackgroundClipValue): StyleBuilder;
+export function maskComposite(value: MaskCompositeValue): StyleBuilder;
+
+// Clip
+export function clipRule(value: ClipRuleValue): StyleBuilder;
+
+// Grid - Additional
+export function gridColumnGap(value: CSSLengthValue): StyleBuilder;
+export function gridRowGap(value: CSSLengthValue): StyleBuilder;
+export function gridGap(value: CSSLengthValue): StyleBuilder;
 
 // Style queries / breakpoints
 export function createStyleQueries<T extends string>(
