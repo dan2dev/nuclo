@@ -259,12 +259,12 @@ div(
                     <h2>Styling</h2>
                     <p>nuclo provides a CSS-in-JS system with chainable style helpers and automatic CSS class generation.</p>
 
-                    <h3>Using createBreakpoints</h3>
-                    <p>Create a breakpoints helper to generate CSS classes from your styles:</p>
+                    <h3>Using createStyleQueries</h3>
+                    <p>Create a style queries helper to generate CSS classes from your styles. Supports media queries, container queries, and feature queries:</p>
                     <pre><code class="language-typescript">// Create once (typically in styles.ts)
-const cn = createBreakpoints({
-  medium: '(min-width: 768px)',
-  large: '(min-width: 1024px)'
+const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)'
 });
 
 // Chain style helpers and wrap with cn()

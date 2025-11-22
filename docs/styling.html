@@ -35,7 +35,7 @@
                         <li><a href="#overview">Overview</a></li>
                         <li><a href="#style-builder">StyleBuilder</a></li>
                         <li><a href="#style-helpers">Style Helpers</a></li>
-                        <li><a href="#breakpoints">Breakpoints & Responsive</a></li>
+                        <li><a href="#breakpoints">Style Queries (Media, Container)</a></li>
                         <li><a href="#layout">Layout Properties</a></li>
                         <li><a href="#typography">Typography</a></li>
                         <li><a href="#colors">Colors & Backgrounds</a></li>
@@ -49,24 +49,24 @@
 
             <article class="docs-main">
                 <h1>Styling Guide</h1>
-                <p>nuclo provides a powerful CSS-in-JS system using a fluent StyleBuilder API. Chain style methods together, then use <code>createBreakpoints</code> to generate CSS class names automatically.</p>
+                <p>nuclo provides a powerful CSS-in-JS system using a fluent StyleBuilder API. Chain style methods together, then use <code>createStyleQueries</code> to generate CSS class names automatically. Supports media queries, container queries, and feature queries.</p>
 
                 <section id="overview">
                     <h2>Overview</h2>
                     <p>nuclo's styling system works by:</p>
                     <ol>
                         <li><strong>Chaining style methods:</strong> Start with any style helper like <code>bg()</code> and chain more properties</li>
-                        <li><strong>Using createBreakpoints:</strong> The <code>cn()</code> function generates CSS class names from your styles</li>
+                        <li><strong>Using createStyleQueries:</strong> The <code>cn()</code> function generates CSS class names from your styles</li>
                         <li><strong>Applying to elements:</strong> Pass the result directly to tag builders</li>
                     </ol>
 
                     <h3>Quick Example</h3>
                     <pre><code class="language-typescript">import 'nuclo';
 
-// Create breakpoints helper (usually done once)
-const cn = createBreakpoints({
-  medium: '(min-width: 768px)',
-  large: '(min-width: 1024px)'
+// Create style queries helper (usually done once)
+const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)'
 });
 
 // Define styles by chaining methods
@@ -208,16 +208,24 @@ grid()</code></pre>
                 </section>
 
                 <section id="breakpoints">
-                    <h2>Breakpoints & Responsive Design</h2>
-                    <p>The <code>createBreakpoints</code> function enables responsive styling with media queries.</p>
+                    <h2>Style Queries (Media, Container, Feature)</h2>
+                    <p>The <code>createStyleQueries</code> function enables responsive and conditional styling with CSS at-rules including media queries, container queries, and feature queries.</p>
 
                     <h3>Setup</h3>
                     <pre><code class="language-typescript">// Create once, typically in a styles.ts file
-export const cn = createBreakpoints({
+// New syntax with explicit @media prefix (recommended)
+export const cn = createStyleQueries({
+  small: '@media (min-width: 480px)',
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)',
+  xl: '@media (min-width: 1280px)'
+});
+
+// Backward compatible: without prefix (treated as @media)
+export const cn = createStyleQueries({
   small: '(min-width: 480px)',
   medium: '(min-width: 768px)',
   large: '(min-width: 1024px)',
-  xl: '(min-width: 1280px)'
 });</code></pre>
 
                     <h3>Basic Usage</h3>
@@ -257,12 +265,68 @@ const style = cn(
   }
 );</code></pre>
 
-                    <h3>Breakpoints Only</h3>
-                    <pre><code class="language-typescript">// You can also use just breakpoints without default styles
+                    <h3>Queries Only (No Default Styles)</h3>
+                    <pre><code class="language-typescript">// You can also use just queries without default styles
 const hideOnMobile = cn({
   small: display('block'),
   // Implicitly hidden on smaller screens
 });</code></pre>
+
+                    <h3>Container Queries</h3>
+                    <p>Container queries allow styles based on the size of a container element rather than the viewport.</p>
+                    <pre><code class="language-typescript">const cn = createStyleQueries({
+  containerSmall: '@container (min-width: 300px)',
+  containerMedium: '@container (min-width: 500px)',
+  containerLarge: '@container (min-width: 800px)',
+});
+
+const cardStyle = cn(
+  padding('1rem').fontSize('14px'),
+  {
+    containerSmall: fontSize('16px'),
+    containerMedium: padding('1.5rem').fontSize('18px'),
+    containerLarge: padding('2rem').fontSize('20px'),
+  }
+);</code></pre>
+
+                    <h3>Feature Queries (@supports)</h3>
+                    <p>Feature queries let you apply styles only when the browser supports specific CSS features.</p>
+                    <pre><code class="language-typescript">const cn = createStyleQueries({
+  hasGrid: '@supports (display: grid)',
+  hasSubgrid: '@supports (grid-template-columns: subgrid)',
+  hasContainerQuery: '@supports (container-type: inline-size)',
+});
+
+const layoutStyle = cn(
+  display('flex').flexWrap('wrap'),  // Fallback
+  {
+    hasGrid: display('grid').gridTemplateColumns('repeat(3, 1fr)'),
+  }
+);</code></pre>
+
+                    <h3>Mixed Query Types</h3>
+                    <p>You can combine different query types in a single configuration.</p>
+                    <pre><code class="language-typescript">const cn = createStyleQueries({
+  // Media queries for viewport-based responsive design
+  small: '@media (min-width: 480px)',
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)',
+
+  // Container queries for component-based responsive design
+  containerWide: '@container (min-width: 600px)',
+
+  // Feature queries for progressive enhancement
+  hasGrid: '@supports (display: grid)',
+});
+
+const componentStyle = cn(
+  width('100%').padding('1rem'),
+  {
+    medium: maxWidth('800px').margin('0 auto'),
+    containerWide: padding('2rem'),
+    hasGrid: display('grid').gap('1rem'),
+  }
+);</code></pre>
                 </section>
 
                 <section id="layout">
@@ -342,9 +406,9 @@ whiteSpace('nowrap')
 wordBreak('break-word')</code></pre>
 
                     <h3>Example: Typography System</h3>
-                    <pre><code class="language-typescript">const cn = createBreakpoints({
-  medium: '(min-width: 768px)',
-  large: '(min-width: 1024px)'
+                    <pre><code class="language-typescript">const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)'
 });
 
 const heading = cn(
@@ -487,9 +551,9 @@ gridRow('1 / 2')
 gridArea('header')</code></pre>
 
                     <h3>Example: Responsive Card Grid</h3>
-                    <pre><code class="language-typescript">const cn = createBreakpoints({
-  medium: '(min-width: 768px)',
-  large: '(min-width: 1024px)'
+                    <pre><code class="language-typescript">const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)'
 });
 
 const cardGrid = cn(
@@ -621,12 +685,12 @@ export const theme = {
   }
 };
 
-// Create breakpoints
-export const cn = createBreakpoints({
-  sm: '(min-width: 640px)',
-  md: '(min-width: 768px)',
-  lg: '(min-width: 1024px)',
-  xl: '(min-width: 1280px)',
+// Create style queries
+export const cn = createStyleQueries({
+  sm: '@media (min-width: 640px)',
+  md: '@media (min-width: 768px)',
+  lg: '@media (min-width: 1024px)',
+  xl: '@media (min-width: 1280px)',
 });</code></pre>
 
                     <h3>Define Reusable Styles</h3>

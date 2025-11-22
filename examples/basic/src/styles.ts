@@ -42,11 +42,11 @@ export const theme = {
 	},
 };
 
-// Breakpoints
-export const cn = createBreakpoints({
-	small: "(min-width: 341px)",
-	medium: "(min-width: 601px)",
-	large: "(min-width: 1025px)",
+// Style Queries (Media, Container, Feature)
+export const cn = createStyleQueries({
+	small: "@media (min-width: 341px)",
+	medium: "@media (min-width: 601px)",
+	large: "@media (min-width: 1025px)",
 });
 
 

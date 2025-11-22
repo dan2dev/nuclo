@@ -1,6 +1,6 @@
 // Re-export everything from the modularized files
 export { StyleBuilder } from "./styleBuilder";
-export { createBreakpoints } from "./breakpoints";
+export { createStyleQueries, createBreakpoints } from "./styleQueries";
 export { createCSSClass } from "./cssGenerator";
 
 // Re-export all style utility functions from styleBuilder
