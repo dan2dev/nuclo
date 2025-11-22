@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="nuclo Examples - Real-world code examples and patterns">
+    <meta name="description" content="nuclo Examples - Real-world code examples and patterns with live demos">
     <title>Examples - nuclo</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
@@ -12,8 +12,16 @@
     <nav class="navbar">
         <div class="container">
             <div class="nav-brand">
-                <h1>nuclo</h1>
-                <span class="tagline">Simple. Explicit. Reactive.</span>
+                <h1>
+                    <span class="logo-icon">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 4L4 12v16l16 8 16-8V12L20 4z" stroke="#a3e635" stroke-width="2" fill="none"/>
+                            <path d="M20 4v16m0 0L4 12m16 8l16-8m-16 8v16" stroke="#a3e635" stroke-width="2"/>
+                            <path d="M12 16l8 4 8-4" stroke="#a3e635" stroke-width="2"/>
+                        </svg>
+                    </span>
+                    <a href="index.html" style="color: inherit; text-decoration: none;">Nuclo</a>
+                </h1>
             </div>
             <ul class="nav-links">
                 <li><a href="index.html">Home</a></li>
@@ -48,11 +56,24 @@
 
             <article class="docs-main">
                 <h1>Examples</h1>
-                <p>Real-world examples demonstrating nuclo patterns and best practices.</p>
+                <p>Real-world examples demonstrating nuclo patterns and best practices. Each example includes a live interactive demo built with nuclo.</p>
 
                 <section id="counter" class="example-section">
                     <h2>Counter</h2>
                     <p>The classic counter example showing basic state management and event handling.</p>
+
+                    <!-- Live Demo -->
+                    <div class="live-demo">
+                        <div class="live-demo-header">
+                            <div class="demo-dots">
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                            </div>
+                            <span>Live Demo</span>
+                        </div>
+                        <div class="live-demo-content" id="demo-counter"></div>
+                    </div>
 
                     <pre><code class="language-typescript">import 'nuclo';
 
@@ -95,6 +116,19 @@ render(app, document.body);</code></pre>
                 <section id="todo" class="example-section">
                     <h2>Todo List</h2>
                     <p>A complete todo application with add, toggle, delete, and filter functionality.</p>
+
+                    <!-- Live Demo -->
+                    <div class="live-demo">
+                        <div class="live-demo-header">
+                            <div class="demo-dots">
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                            </div>
+                            <span>Live Demo</span>
+                        </div>
+                        <div class="live-demo-content" id="demo-todo"></div>
+                    </div>
 
                     <pre><code class="language-typescript">import 'nuclo';
 
@@ -672,7 +706,7 @@ type FormData = {
   confirmPassword: string;
 };
 
-type Errors = Partial<Record<keyof FormData, string>>;
+type Errors = Partial&lt;Record&lt;keyof FormData, string&gt;&gt;;
 
 let formData: FormData = {
   username: '',
@@ -978,7 +1012,7 @@ render(app, document.body);</code></pre>
 type Route = 'home' | 'about' | 'contact' | 'notfound';
 
 let currentRoute: Route = 'home';
-let params: Record<string, string> = {};
+let params: Record&lt;string, string&gt; = {};
 
 function navigate(route: Route) {
   currentRoute = route;
@@ -1304,8 +1338,8 @@ render(app, document.body);</code></pre>
             <p>Created by <strong>Danilo Celestino de Castro</strong> (<a href="https://github.com/dan2dev" target="_blank">@dan2dev</a>)</p>
             <p>MIT License - Free and Open Source</p>
             <p>
-                <a href="https://github.com/dan2dev/nuclo">GitHub</a> •
-                <a href="https://github.com/dan2dev/nuclo/issues">Issues</a> •
+                <a href="https://github.com/dan2dev/nuclo">GitHub</a> &bull;
+                <a href="https://github.com/dan2dev/nuclo/issues">Issues</a> &bull;
                 <a href="https://www.npmjs.com/package/nuclo">NPM</a>
             </p>
         </div>
@@ -1317,5 +1351,106 @@ render(app, document.body);</code></pre>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
     <script src="assets/js/main.js"></script>
+
+    <!-- Include nuclo UMD for live demos -->
+    <script src="https://unpkg.com/nuclo@latest/dist/nuclo.umd.js"></script>
+    <script>
+    // Live Counter Demo
+    (function() {
+      let counter = 0;
+
+      const counterDemo = div(
+        { className: 'demo-counter' },
+        h2(() => counter),
+        div(
+          { className: 'button-group' },
+          button({ className: 'btn-dec' }, '-', on('click', () => { counter--; update(); })),
+          button({ className: 'btn-reset' }, 'Reset', on('click', () => { counter = 0; update(); })),
+          button({ className: 'btn-inc' }, '+', on('click', () => { counter++; update(); }))
+        ),
+        p({ className: 'counter-info' }, () => `The counter is ${counter % 2 === 0 ? 'even' : 'odd'}`)
+      );
+
+      render(counterDemo, document.getElementById('demo-counter'));
+    })();
+
+    // Live Todo Demo
+    (function() {
+      let todos = [];
+      let nextId = 1;
+      let inputValue = '';
+
+      function addTodo() {
+        if (!inputValue.trim()) return;
+        todos.push({ id: nextId++, text: inputValue, done: false });
+        inputValue = '';
+        update();
+      }
+
+      function toggleTodo(todo) {
+        todo.done = !todo.done;
+        update();
+      }
+
+      function deleteTodo(id) {
+        todos = todos.filter(t => t.id !== id);
+        update();
+      }
+
+      function activeCount() {
+        return todos.filter(t => !t.done).length;
+      }
+
+      const todoDemo = div(
+        { className: 'demo-todo' },
+        div(
+          { className: 'input-row' },
+          input(
+            {
+              type: 'text',
+              placeholder: 'What needs to be done?',
+              value: () => inputValue
+            },
+            on('input', e => { inputValue = e.target.value; update(); }),
+            on('keydown', e => { if (e.key === 'Enter') addTodo(); })
+          ),
+          button({ className: 'add-btn' }, 'Add', on('click', addTodo))
+        ),
+        when(() => todos.length > 0,
+          div(
+            { className: 'todo-list' },
+            list(() => todos, todo =>
+              div(
+                { className: () => `todo-item ${todo.done ? 'done' : ''}` },
+                input(
+                  { type: 'checkbox', checked: () => todo.done },
+                  on('change', () => toggleTodo(todo))
+                ),
+                span({ className: 'todo-text' }, () => todo.text),
+                button(
+                  { className: 'delete-btn' },
+                  '\u00D7',
+                  on('click', () => deleteTodo(todo.id))
+                )
+              )
+            ),
+            div(
+              { className: 'todo-stats' },
+              span(() => `${activeCount()} item${activeCount() !== 1 ? 's' : ''} left`),
+              button(
+                { style: { background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' } },
+                'Clear completed',
+                on('click', () => { todos = todos.filter(t => !t.done); update(); })
+              )
+            )
+          )
+        ).else(
+          p({ className: 'empty-state' }, 'No todos yet! Add one above.')
+        )
+      );
+
+      render(todoDemo, document.getElementById('demo-todo'));
+    })();
+    </script>
 </body>
 </html>

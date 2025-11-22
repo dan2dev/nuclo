@@ -169,14 +169,15 @@ style.textContent = `
     top: 0.5rem;
     right: 0.5rem;
     padding: 0.25rem 0.75rem;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 0.25rem;
+    background-color: rgba(163, 230, 53, 0.1);
+    color: #a3e635;
+    border: 1px solid rgba(163, 230, 53, 0.3);
+    border-radius: 0.375rem;
     font-size: 0.75rem;
     cursor: pointer;
     transition: all 0.2s;
     opacity: 0;
+    font-weight: 500;
   }
 
   pre:hover .copy-button {
@@ -184,12 +185,14 @@ style.textContent = `
   }
 
   .copy-button:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(163, 230, 53, 0.2);
+    border-color: rgba(163, 230, 53, 0.5);
   }
 
   .copy-button.copied {
-    background-color: rgba(40, 167, 69, 0.3);
-    border-color: rgba(40, 167, 69, 0.5);
+    background-color: rgba(34, 197, 94, 0.3);
+    border-color: rgba(34, 197, 94, 0.5);
+    color: #22c55e;
   }
 
   .back-to-top {
@@ -198,17 +201,18 @@ style.textContent = `
     right: 2rem;
     width: 3rem;
     height: 3rem;
-    background-color: var(--primary-color);
-    color: white;
+    background-color: #a3e635;
+    color: #020617;
     border: none;
     border-radius: 50%;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     cursor: pointer;
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s;
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
     z-index: 999;
+    font-weight: bold;
   }
 
   .back-to-top.show {
@@ -217,15 +221,16 @@ style.textContent = `
   }
 
   .back-to-top:hover {
-    background-color: var(--primary-dark);
+    background-color: #84cc16;
     transform: translateY(-3px);
+    box-shadow: 0 0 20px rgba(163, 230, 53, 0.3);
   }
 
   .mobile-menu-button {
     display: none;
     background: none;
     border: none;
-    color: white;
+    color: #a3e635;
     font-size: 1.5rem;
     cursor: pointer;
     padding: 0.5rem;
