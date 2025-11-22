@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="nuclo - A DOM library for people who peaked in the jQuery era and never looked back">
-    <title>nuclo - Simple, Explicit DOM Manipulation</title>
+    <meta name="description" content="nuclo - A lightweight, flexible, component-based framework for the modern web">
+    <title>nuclo - Build Faster, Reactive Interfaces</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
 </head>
@@ -12,80 +12,71 @@
     <nav class="navbar">
         <div class="container">
             <div class="nav-brand">
-                <h1>nuclo</h1>
-                <span class="tagline">Simple. Explicit. Reactive.</span>
+                <h1>
+                    <span class="logo-icon">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 4L4 12v16l16 8 16-8V12L20 4z" stroke="#a3e635" stroke-width="2" fill="none"/>
+                            <path d="M20 4v16m0 0L4 12m16 8l16-8m-16 8v16" stroke="#a3e635" stroke-width="2"/>
+                            <path d="M12 16l8 4 8-4" stroke="#a3e635" stroke-width="2"/>
+                        </svg>
+                    </span>
+                    Nuclo
+                </h1>
             </div>
             <ul class="nav-links">
-                <li><a href="#home">Home</a></li>
-                <li><a href="getting-started.html">Getting Started</a></li>
-                <li><a href="api.html">API</a></li>
-                <li><a href="styling.html">Styling</a></li>
-                <li><a href="examples.html">Examples</a></li>
+                <li><a href="getting-started.html">Docs</a></li>
+                <li><a href="examples.html">Components</a></li>
+                <li><a href="api.html">Blog</a></li>
                 <li><a href="https://github.com/dan2dev/nuclo" target="_blank">GitHub</a></li>
+                <li><a href="https://github.com/sponsors/dan2dev" target="_blank">Sponsors</a></li>
             </ul>
         </div>
     </nav>
 
     <header class="hero">
         <div class="container">
-            <h1>nuclo</h1>
-            <p class="subtitle">A simple, explicit DOM library for building reactive user interfaces.</p>
-            <p class="description">Build reactive UIs without the magic. Just functions, plain JavaScript objects, and explicit <code>update()</code> calls. No virtual DOM, no complex state management required.</p>
-
-            <div class="code-example">
-                <pre><code class="language-typescript">import 'nuclo';
-
-let count = 0;
-
-const counter = div(
-  h1(() => `Count: ${count}`),
-  button('Increment', on('click', () => {
-    count++;
-    update();
-  }))
-);
-
-render(counter, document.body);</code></pre>
-            </div>
+            <p class="subtitle">Build Faster, Reactive Interfaces.</p>
+            <p class="description">A lightweight, flexible, component-based framework for the modern web.</p>
 
             <div class="cta-buttons">
                 <a href="getting-started.html" class="btn btn-primary">Get Started</a>
-                <a href="https://github.com/dan2dev/nuclo" class="btn btn-secondary">View on GitHub</a>
+                <a href="examples.html" class="btn btn-secondary">View Demo</a>
             </div>
         </div>
     </header>
 
     <section class="features">
         <div class="container">
-            <h2>Why nuclo?</h2>
             <div class="features-grid">
                 <div class="feature">
-                    <h3>🎯 Explicit & Predictable</h3>
-                    <p>You control when updates happen with a simple <code>update()</code> call. No surprises, no magic.</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                    </div>
+                    <h3>Lightweight & Fast</h3>
+                    <p>Lightweight & Fast is approachable, easy to learn, and cost-to-boot editable and extensible.</p>
                 </div>
                 <div class="feature">
-                    <h3>🚀 Direct DOM Manipulation</h3>
-                    <p>Work directly with the DOM. No virtual layer, maximum efficiency.</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
+                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                    </div>
+                    <h3>Component-Based</h3>
+                    <p>Component-based can obtain your documents and component-based component stacks.</p>
                 </div>
                 <div class="feature">
-                    <h3>📦 Tiny Footprint</h3>
-                    <p>Minimal bundle size means faster load times and better performance.</p>
-                </div>
-                <div class="feature">
-                    <h3>🌍 Global Tag Builders</h3>
-                    <p>Natural API with global functions for all HTML and SVG elements.</p>
-                </div>
-                <div class="feature">
-                    <h3>📘 TypeScript-First</h3>
-                    <p>Full type definitions for all 140+ HTML and SVG tags out of the box.</p>
-                </div>
-                <div class="feature">
-                    <h3>⚡ Fine-Grained Reactivity</h3>
-                    <p>Only updates what changed, nothing more. Maximum efficiency.</p>
-                </div>
-                <div class="feature">
-                    <h3>🎨 CSS-in-JS Styling</h3>
-                    <p>100+ style helpers for inline styling. Build beautiful UIs without CSS files.</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </div>
+                    <h3>Simple Reactivity</h3>
+                    <p>Simple reactivity with reactive functions, complete with shortening the entire components.</p>
                 </div>
             </div>
         </div>
@@ -101,17 +92,35 @@ render(counter, document.body);</code></pre>
             </div>
 
             <div class="usage-section">
-                <h3>Usage</h3>
-                <p>Simply import once to register all global functions:</p>
+                <h3>Basic Usage</h3>
                 <pre><code class="language-typescript">import 'nuclo';
 
-// Now use div(), update(), on(), list(), when(), render(), etc. globally
 let count = 0;
+
 const app = div(
   h1(() => `Count: ${count}`),
-  button('Click', on('click', () => { count++; update(); }))
+  button('Increment', on('click', () => {
+    count++;
+    update();
+  }))
 );
+
 render(app, document.body);</code></pre>
+            </div>
+
+            <!-- Live Demo -->
+            <div class="live-demo">
+                <div class="live-demo-header">
+                    <div class="demo-dots">
+                        <span class="demo-dot"></span>
+                        <span class="demo-dot"></span>
+                        <span class="demo-dot"></span>
+                    </div>
+                    <span>Live Demo</span>
+                </div>
+                <div class="live-demo-content" id="counter-demo">
+                    <!-- Demo will be rendered here by nuclo -->
+                </div>
             </div>
 
             <div class="typescript-section">
@@ -122,8 +131,6 @@ render(app, document.body);</code></pre>
     "types": ["nuclo/types"]
   }
 }</code></pre>
-                <p>Or in your <code>vite-env.d.ts</code>:</p>
-                <pre><code class="language-typescript">/// &lt;reference types="nuclo/types" /&gt;</code></pre>
             </div>
         </div>
     </section>
@@ -150,7 +157,6 @@ update();</code></pre>
                         <li><strong>Control:</strong> You decide exactly when the UI should refresh</li>
                         <li><strong>Predictability:</strong> Zero surprise re-renders, explicit update flow</li>
                         <li><strong>Simplicity:</strong> No proxies, no dependency graphs, just objects and functions</li>
-                        <li><strong>Debugging:</strong> Set a breakpoint at <code>update()</code> to trace all state changes</li>
                     </ul>
                 </div>
             </div>
@@ -202,7 +208,7 @@ const cardStyle = cn(
 );
 
 div(cardStyle, 'Styled content')</code></pre>
-                <p><a href="styling.html">Learn more about styling →</a></p>
+                <p><a href="styling.html">Learn more about styling</a></p>
             </div>
         </div>
     </section>
@@ -214,32 +220,32 @@ div(cardStyle, 'Styled content')</code></pre>
                 <div class="example-card">
                     <h3>Counter</h3>
                     <p>The classic example showing state management and event handling</p>
-                    <a href="examples.html#counter" class="btn btn-small">View Example</a>
+                    <a href="examples.html#counter" class="btn btn-small btn-secondary">View Example</a>
                 </div>
                 <div class="example-card">
                     <h3>Todo List</h3>
                     <p>Dynamic lists with add, toggle, and delete operations</p>
-                    <a href="examples.html#todo" class="btn btn-small">View Example</a>
+                    <a href="examples.html#todo" class="btn btn-small btn-secondary">View Example</a>
                 </div>
                 <div class="example-card">
                     <h3>Search Filter</h3>
                     <p>Real-time filtering with computed values</p>
-                    <a href="examples.html#search" class="btn btn-small">View Example</a>
+                    <a href="examples.html#search" class="btn btn-small btn-secondary">View Example</a>
                 </div>
                 <div class="example-card">
                     <h3>Async Loading</h3>
                     <p>Handling async operations and loading states</p>
-                    <a href="examples.html#async" class="btn btn-small">View Example</a>
+                    <a href="examples.html#async" class="btn btn-small btn-secondary">View Example</a>
                 </div>
                 <div class="example-card">
                     <h3>Styled Card</h3>
                     <p>CSS-in-JS styling with hover effects and transitions</p>
-                    <a href="examples.html#styled-card" class="btn btn-small">View Example</a>
+                    <a href="examples.html#styled-card" class="btn btn-small btn-secondary">View Example</a>
                 </div>
                 <div class="example-card">
                     <h3>Nested Subtasks</h3>
                     <p>Recursive lists with expandable subtask hierarchies</p>
-                    <a href="examples.html#subtasks" class="btn btn-small">View Example</a>
+                    <a href="examples.html#subtasks" class="btn btn-small btn-secondary">View Example</a>
                 </div>
             </div>
         </div>
@@ -250,8 +256,8 @@ div(cardStyle, 'Styled content')</code></pre>
             <p>Created by <strong>Danilo Celestino de Castro</strong> (<a href="https://github.com/dan2dev" target="_blank">@dan2dev</a>)</p>
             <p>MIT License - Free and Open Source</p>
             <p>
-                <a href="https://github.com/dan2dev/nuclo">GitHub</a> •
-                <a href="https://github.com/dan2dev/nuclo/issues">Issues</a> •
+                <a href="https://github.com/dan2dev/nuclo">GitHub</a> &bull;
+                <a href="https://github.com/dan2dev/nuclo/issues">Issues</a> &bull;
                 <a href="https://www.npmjs.com/package/nuclo">NPM</a>
             </p>
         </div>
@@ -263,5 +269,28 @@ div(cardStyle, 'Styled content')</code></pre>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
     <script src="assets/js/main.js"></script>
+
+    <!-- Include nuclo UMD for live demos -->
+    <script src="https://unpkg.com/nuclo@latest/dist/nuclo.umd.js"></script>
+    <script>
+    // Live Counter Demo using nuclo
+    (function() {
+      let count = 0;
+
+      const counterDemo = div(
+        { className: 'demo-counter' },
+        h2(() => count),
+        div(
+          { className: 'button-group' },
+          button({ className: 'btn-dec' }, '-', on('click', () => { count--; update(); })),
+          button({ className: 'btn-reset' }, 'Reset', on('click', () => { count = 0; update(); })),
+          button({ className: 'btn-inc' }, '+', on('click', () => { count++; update(); }))
+        ),
+        p({ className: 'counter-info' }, () => `The counter is ${count % 2 === 0 ? 'even' : 'odd'}`)
+      );
+
+      render(counterDemo, document.getElementById('counter-demo'));
+    })();
+    </script>
 </body>
 </html>
