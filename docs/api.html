@@ -19,6 +19,7 @@
                 <li><a href="index.html">Home</a></li>
                 <li><a href="getting-started.html">Getting Started</a></li>
                 <li><a href="api.html" class="active">API</a></li>
+                <li><a href="styling.html">Styling</a></li>
                 <li><a href="examples.html">Examples</a></li>
                 <li><a href="https://github.com/dan2dev/nuclo" target="_blank">GitHub</a></li>
             </ul>
@@ -41,6 +42,8 @@
                         <li><a href="#html-tags">HTML Tags</a></li>
                         <li><a href="#svg-tags">SVG Tags</a></li>
                         <li><a href="#attributes">Attributes</a></li>
+                        <li><a href="#classname-merging">className Merging</a></li>
+                        <li><a href="#style-helpers">Style Helpers</a></li>
                         <li><a href="#modifiers">Modifiers</a></li>
                     </ul>
                 </nav>
@@ -494,6 +497,140 @@ label({ htmlFor: 'input-id' }, 'Label');
 div({ 'data-id': '123', 'data-type': 'user' });</code></pre>
                 </section>
 
+                <section id="classname-merging">
+                    <h2>className Merging</h2>
+                    <p>nuclo automatically merges multiple <code>className</code> values instead of replacing them. This allows you to combine static classes with dynamic classes seamlessly.</p>
+
+                    <h3>How It Works</h3>
+                    <pre><code class="language-typescript">// Multiple className sources are merged
+div(
+  { className: 'base-class' },
+  { className: 'additional-class' },
+  { className: () => isActive ? 'active' : 'inactive' }
+);
+// Result: "base-class additional-class active" (or "inactive")</code></pre>
+
+                    <h3>Static and Reactive Classes</h3>
+                    <pre><code class="language-typescript">let isOpen = false;
+let isError = false;
+
+div({
+  className: 'dropdown'  // Static class
+}, {
+  className: () => isOpen ? 'open' : ''  // Reactive class
+}, {
+  className: () => isError ? 'error' : ''  // Another reactive class
+});
+
+// With isOpen=true, isError=false: "dropdown open"
+// With isOpen=true, isError=true: "dropdown open error"</code></pre>
+
+                    <h3>With Style Helpers</h3>
+                    <pre><code class="language-typescript">// Style helpers that generate classes are also merged
+const cardStyle = new StyleBuilder()
+  .bg('white')
+  .padding('1rem')
+  .build();
+
+div(
+  { className: 'my-card' },
+  cardStyle,  // Generated class is merged
+  'Content'
+);
+// Result: "my-card n-abc123" (merged classes)</code></pre>
+
+                    <h3>Conditional Classes Pattern</h3>
+                    <pre><code class="language-typescript">// Common pattern for conditional styling
+let status = 'active'; // 'active' | 'pending' | 'error'
+
+div({
+  className: () => {
+    const classes = ['status-badge'];
+    if (status === 'active') classes.push('badge-green');
+    if (status === 'pending') classes.push('badge-yellow');
+    if (status === 'error') classes.push('badge-red');
+    return classes.join(' ');
+  }
+}, () => status);</code></pre>
+                </section>
+
+                <section id="style-helpers">
+                    <h2>Style Helpers & createBreakpoints</h2>
+                    <p>nuclo provides 95+ style helper functions that return chainable <code>StyleBuilder</code> instances. Use <code>createBreakpoints</code> to generate CSS class names.</p>
+
+                    <h3>Basic Usage</h3>
+                    <pre><code class="language-typescript">// Create breakpoints helper (usually done once in styles.ts)
+const cn = createBreakpoints({
+  medium: '(min-width: 768px)',
+  large: '(min-width: 1024px)'
+});
+
+// Chain style methods, wrap with cn() to get class name
+const cardStyle = cn(
+  bg('white')
+    .padding('1.5rem')
+    .borderRadius('12px')
+    .boxShadow('0 4px 6px rgba(0,0,0,0.1)')
+);
+
+// Use in your component
+div(cardStyle, 'Card content');</code></pre>
+
+                    <h3>Responsive Styles</h3>
+                    <pre><code class="language-typescript">// Pass breakpoint overrides as second argument
+const responsiveStyle = cn(
+  padding('1rem').fontSize('14px'),
+  {
+    medium: padding('1.5rem').fontSize('16px'),
+    large: padding('2rem').fontSize('18px')
+  }
+);</code></pre>
+
+                    <h3>Common Style Helpers</h3>
+                    <pre><code class="language-typescript">// All helpers return StyleBuilder and can be chained
+bg('#f0f0f0').color('#333').padding('1rem')
+
+// Layout
+display('flex'), position('relative'), width('100%')
+
+// Spacing
+padding('1rem'), margin('0 auto')
+
+// Typography
+fontSize('16px'), fontWeight('bold'), textAlign('center')
+
+// Flexbox
+flex(), flexDirection('column'), gap('1rem')
+center()  // shorthand for centering both axes
+
+// Effects
+boxShadow('...'), opacity('0.5'), transition('all 0.3s')</code></pre>
+
+                    <h3>Reactive Styles (for hover, etc.)</h3>
+                    <pre><code class="language-typescript">// Use a function that returns the style object
+let isHovered = false;
+
+const baseStyle = cn(
+  bg('white').transition('all 0.3s ease')
+);
+
+div(
+  baseStyle,
+  {
+    // Reactive style: function returns the entire style object
+    style: () => ({
+      transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+      boxShadow: isHovered ? '0 4px 12px rgba(0,0,0,0.15)' : 'none'
+    })
+  },
+  on('mouseenter', () => { isHovered = true; update(); }),
+  on('mouseleave', () => { isHovered = false; update(); }),
+  'Hover me'
+);</code></pre>
+
+                    <p>For the complete styling documentation, see the <a href="styling.html">Styling Guide</a>.</p>
+                </section>
+
                 <section id="modifiers">
                     <h2>Modifiers</h2>
                     <p>Modifiers are special objects that can be passed to tag builders to perform additional operations on elements.</p>
@@ -503,6 +640,13 @@ div({ 'data-id': '123', 'data-type': 'user' });</code></pre>
                     <pre><code class="language-typescript">button('Click',
   on('click', handleClick),
   on('mouseenter', handleHover)
+);</code></pre>
+
+                    <h3>Style Modifiers</h3>
+                    <p>Style helpers return modifiers:</p>
+                    <pre><code class="language-typescript">div(
+  bg('blue'),     // Style modifier
+  padding('1rem') // Style modifier
 );</code></pre>
 
                     <h3>Custom Modifiers</h3>
@@ -518,7 +662,21 @@ function focus() {
 }
 
 // Usage
-input(focus());</code></pre>
+input(focus());
+
+// Example: Tooltip modifier
+function tooltip(text: string) {
+  return {
+    __modifier: true,
+    apply(element) {
+      element.setAttribute('title', text);
+      element.setAttribute('data-tooltip', text);
+    }
+  };
+}
+
+// Usage
+button('Hover me', tooltip('Click to submit'));</code></pre>
                 </section>
 
                 <section class="notes">

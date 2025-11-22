@@ -19,6 +19,7 @@
                 <li><a href="index.html">Home</a></li>
                 <li><a href="getting-started.html" class="active">Getting Started</a></li>
                 <li><a href="api.html">API</a></li>
+                <li><a href="styling.html">Styling</a></li>
                 <li><a href="examples.html">Examples</a></li>
                 <li><a href="https://github.com/dan2dev/nuclo" target="_blank">GitHub</a></li>
             </ul>
@@ -37,6 +38,7 @@
                         <li><a href="#understanding-update">Understanding update()</a></li>
                         <li><a href="#reactive-functions">Reactive Functions</a></li>
                         <li><a href="#event-handling">Event Handling</a></li>
+                        <li><a href="#styling">Styling</a></li>
                         <li><a href="#best-practices">Best Practices</a></li>
                     </ul>
                 </nav>
@@ -53,6 +55,18 @@
                     <pre><code class="language-bash">pnpm add nuclo</code></pre>
 
                     <p>That's it! No additional dependencies, no complicated setup.</p>
+
+                    <h3>Deno Support</h3>
+                    <p>nuclo also works with Deno. Import directly from npm:</p>
+                    <pre><code class="language-typescript">import 'npm:nuclo';</code></pre>
+                    <p>Or add to your <code>deno.json</code> imports:</p>
+                    <pre><code class="language-json">{
+  "imports": {
+    "nuclo": "npm:nuclo"
+  }
+}</code></pre>
+                    <p>Then import as usual:</p>
+                    <pre><code class="language-typescript">import 'nuclo';</code></pre>
                 </section>
 
                 <section id="typescript-setup">
@@ -239,6 +253,62 @@ div(
     }
   })
 );</code></pre>
+                </section>
+
+                <section id="styling">
+                    <h2>Styling</h2>
+                    <p>nuclo provides a CSS-in-JS system with chainable style helpers and automatic CSS class generation.</p>
+
+                    <h3>Using createBreakpoints</h3>
+                    <p>Create a breakpoints helper to generate CSS classes from your styles:</p>
+                    <pre><code class="language-typescript">// Create once (typically in styles.ts)
+const cn = createBreakpoints({
+  medium: '(min-width: 768px)',
+  large: '(min-width: 1024px)'
+});
+
+// Chain style helpers and wrap with cn()
+const buttonStyle = cn(
+  bg('#3b82f6')
+    .color('white')
+    .padding('0.75rem 1.5rem')
+    .borderRadius('8px')
+    .border('none')
+    .cursor('pointer')
+);
+
+// Use in your component
+button(buttonStyle, 'Click me');</code></pre>
+
+                    <h3>Responsive Styles</h3>
+                    <pre><code class="language-typescript">const responsiveCard = cn(
+  padding('1rem').bg('white'),
+  {
+    medium: padding('1.5rem'),
+    large: padding('2rem').maxWidth('800px')
+  }
+);</code></pre>
+
+                    <h3>Reactive Styles</h3>
+                    <pre><code class="language-typescript">// For dynamic styles, use a function that returns the style object
+let isActive = false;
+
+const baseStyle = cn(bg('white').transition('all 0.3s'));
+
+div(
+  baseStyle,
+  {
+    // Reactive style: function returns the style object
+    style: () => ({
+      backgroundColor: isActive ? 'green' : 'gray',
+      transform: isActive ? 'scale(1.05)' : 'scale(1)'
+    })
+  },
+  on('click', () => { isActive = !isActive; update(); }),
+  'Toggle me'
+);</code></pre>
+
+                    <p>For comprehensive styling documentation including flexbox, grid, and organizing styles, see the <a href="styling.html">Styling Guide</a>.</p>
                 </section>
 
                 <section id="best-practices">

@@ -19,6 +19,7 @@
                 <li><a href="#home">Home</a></li>
                 <li><a href="getting-started.html">Getting Started</a></li>
                 <li><a href="api.html">API</a></li>
+                <li><a href="styling.html">Styling</a></li>
                 <li><a href="examples.html">Examples</a></li>
                 <li><a href="https://github.com/dan2dev/nuclo" target="_blank">GitHub</a></li>
             </ul>
@@ -81,6 +82,10 @@ render(counter, document.body);</code></pre>
                 <div class="feature">
                     <h3>⚡ Fine-Grained Reactivity</h3>
                     <p>Only updates what changed, nothing more. Maximum efficiency.</p>
+                </div>
+                <div class="feature">
+                    <h3>🎨 CSS-in-JS Styling</h3>
+                    <p>100+ style helpers for inline styling. Build beautiful UIs without CSS files.</p>
                 </div>
             </div>
         </div>
@@ -180,6 +185,25 @@ div(
   div(() => `${index}: ${item.name}`)
 )</code></pre>
             </div>
+
+            <div class="concept">
+                <h3>5. CSS-in-JS Styling</h3>
+                <p>Chain style helpers and use <code>createBreakpoints</code> for CSS class generation:</p>
+                <pre><code class="language-typescript">const cn = createBreakpoints({
+  medium: '(min-width: 768px)'
+});
+
+const cardStyle = cn(
+  bg('white')
+    .padding('1rem')
+    .borderRadius('8px')
+    .boxShadow('0 2px 4px rgba(0,0,0,0.1)'),
+  { medium: padding('1.5rem') }
+);
+
+div(cardStyle, 'Styled content')</code></pre>
+                <p><a href="styling.html">Learn more about styling →</a></p>
+            </div>
         </div>
     </section>
 
@@ -206,6 +230,16 @@ div(
                     <h3>Async Loading</h3>
                     <p>Handling async operations and loading states</p>
                     <a href="examples.html#async" class="btn btn-small">View Example</a>
+                </div>
+                <div class="example-card">
+                    <h3>Styled Card</h3>
+                    <p>CSS-in-JS styling with hover effects and transitions</p>
+                    <a href="examples.html#styled-card" class="btn btn-small">View Example</a>
+                </div>
+                <div class="example-card">
+                    <h3>Nested Subtasks</h3>
+                    <p>Recursive lists with expandable subtask hierarchies</p>
+                    <a href="examples.html#subtasks" class="btn btn-small">View Example</a>
                 </div>
             </div>
         </div>
