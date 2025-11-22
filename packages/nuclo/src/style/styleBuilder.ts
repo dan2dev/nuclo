@@ -71,6 +71,34 @@ import type {
 	CSSBackgroundImageValue,
 	CSSAnimationNameValue,
 	CSSContentValue,
+	CSSAspectRatioValue,
+	FloatValue,
+	ClearValue,
+	WritingModeValue,
+	DirectionValue,
+	UnicodeBidiValue,
+	TextOrientationValue,
+	HyphensValue,
+	LineBreakValue,
+	WordBreakValue,
+	TouchActionValue,
+	OverscrollBehaviorValue,
+	ImageRenderingValue,
+	ColorSchemeValue,
+	CaretColorValue,
+	CaretShapeValue,
+	BackgroundBlendModeValue,
+	ContentVisibilityValue,
+	ContainerTypeValue,
+	FontKerningValue,
+	FontSynthesisValue,
+	FontOpticalSizingValue,
+	FontDisplayValue,
+	FontVariantCapsValue,
+	TextRenderingValue,
+	TextCombineUprightValue,
+	MaskCompositeValue,
+	ClipRuleValue,
 } from "./cssPropertyTypes";
 
 // Get or create a class name for a set of CSS properties
@@ -352,6 +380,172 @@ export interface StyleBuilder {
 	columnWidth(value: CSSLengthValue | "auto"): this;
 	columns(value: string): this;
 	cursor(value: CursorValue): this;
+
+	// Layout - Additional
+	aspectRatio(value: CSSAspectRatioValue): this;
+	clear(value: ClearValue): this;
+	float(value: FloatValue): this;
+	order(value: number | string): this;
+
+	// Flexbox - Place properties
+	placeContent(value: string): this;
+	placeItems(value: string): this;
+	placeSelf(value: string): this;
+
+	// Text - Additional
+	hyphens(value: HyphensValue): this;
+	lineBreak(value: LineBreakValue): this;
+	wordBreak(value: WordBreakValue): this;
+	textOrientation(value: TextOrientationValue): this;
+	writingMode(value: WritingModeValue): this;
+	direction(value: DirectionValue): this;
+	unicodeBidi(value: UnicodeBidiValue): this;
+
+	// Background - Additional
+	backgroundBlendMode(value: BackgroundBlendModeValue): this;
+	backgroundPositionX(value: string): this;
+	backgroundPositionY(value: string): this;
+
+	// Border Image
+	borderImage(value: string): this;
+	borderImageSource(value: CSSBackgroundImageValue | "none"): this;
+	borderImageSlice(value: string | number): this;
+	borderImageWidth(value: CSSLengthValue | number): this;
+	borderImageOutset(value: CSSLengthValue | number): this;
+	borderImageRepeat(value: BackgroundRepeatValue): this;
+
+	// Logical Properties - Inset
+	inset(value: CSSLengthValue | "auto"): this;
+	insetBlock(value: CSSLengthValue): this;
+	insetBlockStart(value: CSSLengthValue | "auto"): this;
+	insetBlockEnd(value: CSSLengthValue | "auto"): this;
+	insetInline(value: CSSLengthValue): this;
+	insetInlineStart(value: CSSLengthValue | "auto"): this;
+	insetInlineEnd(value: CSSLengthValue | "auto"): this;
+
+	// Logical Properties - Margin
+	marginBlock(value: CSSLengthValue | "auto"): this;
+	marginBlockStart(value: CSSLengthValue | "auto"): this;
+	marginBlockEnd(value: CSSLengthValue | "auto"): this;
+	marginInline(value: CSSLengthValue | "auto"): this;
+	marginInlineStart(value: CSSLengthValue | "auto"): this;
+	marginInlineEnd(value: CSSLengthValue | "auto"): this;
+
+	// Logical Properties - Padding
+	paddingBlock(value: CSSLengthValue): this;
+	paddingBlockStart(value: CSSLengthValue): this;
+	paddingBlockEnd(value: CSSLengthValue): this;
+	paddingInline(value: CSSLengthValue): this;
+	paddingInlineStart(value: CSSLengthValue): this;
+	paddingInlineEnd(value: CSSLengthValue): this;
+
+	// Logical Properties - Size
+	inlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+	blockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+	minInlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+	minBlockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+	maxInlineSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content" | "none"): this;
+	maxBlockSize(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content" | "none"): this;
+
+	// Logical Properties - Border
+	borderBlock(value: string): this;
+	borderBlockStart(value: string): this;
+	borderBlockEnd(value: string): this;
+	borderInline(value: string): this;
+	borderInlineStart(value: string): this;
+	borderInlineEnd(value: string): this;
+	borderBlockWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderBlockStartWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderBlockEndWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderInlineWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderInlineStartWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderInlineEndWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderBlockStyle(value: BorderStyleValue): this;
+	borderBlockStartStyle(value: BorderStyleValue): this;
+	borderBlockEndStyle(value: BorderStyleValue): this;
+	borderInlineStyle(value: BorderStyleValue): this;
+	borderInlineStartStyle(value: BorderStyleValue): this;
+	borderInlineEndStyle(value: BorderStyleValue): this;
+	borderBlockColor(value: CSSColorValue): this;
+	borderBlockStartColor(value: CSSColorValue): this;
+	borderBlockEndColor(value: CSSColorValue): this;
+	borderInlineColor(value: CSSColorValue): this;
+	borderInlineStartColor(value: CSSColorValue): this;
+	borderInlineEndColor(value: CSSColorValue): this;
+
+	// Logical Properties - Border Radius
+	borderStartStartRadius(value: CSSLengthValue): this;
+	borderStartEndRadius(value: CSSLengthValue): this;
+	borderEndStartRadius(value: CSSLengthValue): this;
+	borderEndEndRadius(value: CSSLengthValue): this;
+
+	// Scroll
+	scrollMargin(value: CSSLengthValue): this;
+	scrollMarginTop(value: CSSLengthValue): this;
+	scrollMarginRight(value: CSSLengthValue): this;
+	scrollMarginBottom(value: CSSLengthValue): this;
+	scrollMarginLeft(value: CSSLengthValue): this;
+	scrollPadding(value: CSSLengthValue): this;
+	scrollPaddingTop(value: CSSLengthValue): this;
+	scrollPaddingRight(value: CSSLengthValue): this;
+	scrollPaddingBottom(value: CSSLengthValue): this;
+	scrollPaddingLeft(value: CSSLengthValue): this;
+	overscrollBehavior(value: OverscrollBehaviorValue): this;
+	overscrollBehaviorX(value: OverscrollBehaviorValue): this;
+	overscrollBehaviorY(value: OverscrollBehaviorValue): this;
+
+	// Caret
+	caretColor(value: CaretColorValue): this;
+	caretShape(value: CaretShapeValue): this;
+	caretAnimation(value: string): this;
+
+	// Other
+	imageRendering(value: ImageRenderingValue): this;
+	colorScheme(value: ColorSchemeValue): this;
+	contentVisibility(value: ContentVisibilityValue): this;
+	touchAction(value: TouchActionValue): this;
+
+	// Container Queries
+	containerType(value: ContainerTypeValue): this;
+	containerName(value: string): this;
+	container(value: string): this;
+
+	// Font - Additional
+	fontFeatureSettings(value: string): this;
+	fontKerning(value: FontKerningValue): this;
+	fontSynthesis(value: FontSynthesisValue): this;
+	fontOpticalSizing(value: FontOpticalSizingValue): this;
+	fontDisplay(value: FontDisplayValue): this;
+	fontVariantCaps(value: FontVariantCapsValue): this;
+	fontVariantNumeric(value: string): this;
+	fontVariantLigatures(value: string): this;
+	fontVariantEastAsian(value: string): this;
+	fontVariantAlternates(value: string): this;
+	fontVariantPosition(value: string): this;
+
+	// Text - Additional
+	textRendering(value: TextRenderingValue): this;
+	textCombineUpright(value: TextCombineUprightValue): this;
+	textSizeAdjust(value: string | "auto" | "none" | `${number}%`): this;
+
+	// Mask
+	mask(value: string): this;
+	maskImage(value: CSSBackgroundImageValue | "none"): this;
+	maskMode(value: string): this;
+	maskRepeat(value: BackgroundRepeatValue): this;
+	maskPosition(value: string): this;
+	maskSize(value: CSSLengthValue | "auto" | "cover" | "contain"): this;
+	maskOrigin(value: BackgroundOriginValue): this;
+	maskClip(value: BackgroundClipValue): this;
+	maskComposite(value: MaskCompositeValue): this;
+
+	// Clip
+	clipRule(value: ClipRuleValue): this;
+
+	// Grid - Additional
+	gridColumnGap(value: CSSLengthValue): this;
+	gridRowGap(value: CSSLengthValue): this;
+	gridGap(value: CSSLengthValue): this;
 }
 
 // Dynamically add methods to StyleBuilder prototype
@@ -496,4 +690,51 @@ export const {
 	columnSpan, columnWidth, columns,
 	// Interaction
 	cursor,
+	// Layout - Additional
+	aspectRatio, clear, float, order,
+	// Flexbox - Place properties
+	placeContent, placeItems, placeSelf,
+	// Text - Additional
+	hyphens, lineBreak, wordBreak, textOrientation, writingMode, direction, unicodeBidi,
+	// Background - Additional
+	backgroundBlendMode, backgroundPositionX, backgroundPositionY,
+	// Border Image
+	borderImage, borderImageSource, borderImageSlice, borderImageWidth, borderImageOutset, borderImageRepeat,
+	// Logical Properties - Inset
+	inset, insetBlock, insetBlockStart, insetBlockEnd, insetInline, insetInlineStart, insetInlineEnd,
+	// Logical Properties - Margin
+	marginBlock, marginBlockStart, marginBlockEnd, marginInline, marginInlineStart, marginInlineEnd,
+	// Logical Properties - Padding
+	paddingBlock, paddingBlockStart, paddingBlockEnd, paddingInline, paddingInlineStart, paddingInlineEnd,
+	// Logical Properties - Size
+	inlineSize, blockSize, minInlineSize, minBlockSize, maxInlineSize, maxBlockSize,
+	// Logical Properties - Border
+	borderBlock, borderBlockStart, borderBlockEnd, borderInline, borderInlineStart, borderInlineEnd,
+	borderBlockWidth, borderBlockStartWidth, borderBlockEndWidth, borderInlineWidth, borderInlineStartWidth, borderInlineEndWidth,
+	borderBlockStyle, borderBlockStartStyle, borderBlockEndStyle, borderInlineStyle, borderInlineStartStyle, borderInlineEndStyle,
+	borderBlockColor, borderBlockStartColor, borderBlockEndColor, borderInlineColor, borderInlineStartColor, borderInlineEndColor,
+	// Logical Properties - Border Radius
+	borderStartStartRadius, borderStartEndRadius, borderEndStartRadius, borderEndEndRadius,
+	// Scroll
+	scrollMargin, scrollMarginTop, scrollMarginRight, scrollMarginBottom, scrollMarginLeft,
+	scrollPadding, scrollPaddingTop, scrollPaddingRight, scrollPaddingBottom, scrollPaddingLeft,
+	overscrollBehavior, overscrollBehaviorX, overscrollBehaviorY,
+	// Caret
+	caretColor, caretShape, caretAnimation,
+	// Other
+	imageRendering, colorScheme, contentVisibility, touchAction,
+	// Container Queries
+	containerType, containerName, container,
+	// Font - Additional
+	fontFeatureSettings, fontKerning, fontSynthesis, fontOpticalSizing, fontDisplay,
+	fontVariantCaps, fontVariantNumeric, fontVariantLigatures, fontVariantEastAsian,
+	fontVariantAlternates, fontVariantPosition,
+	// Text - Additional
+	textRendering, textCombineUpright, textSizeAdjust,
+	// Mask
+	mask, maskImage, maskMode, maskRepeat, maskPosition, maskSize, maskOrigin, maskClip, maskComposite,
+	// Clip
+	clipRule,
+	// Grid - Additional
+	gridColumnGap, gridRowGap, gridGap,
 } = styleExports as Record<string, (value?: string) => StyleBuilder>;

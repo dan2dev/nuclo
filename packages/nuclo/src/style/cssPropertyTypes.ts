@@ -668,6 +668,242 @@ export type CursorValue =
 	| "grabbing"
 	| string;
 
+// Float
+export type FloatValue =
+	| "none"
+	| "left"
+	| "right"
+	| "inline-start"
+	| "inline-end"
+	| string;
+
+// Clear
+export type ClearValue =
+	| "none"
+	| "left"
+	| "right"
+	| "both"
+	| "inline-start"
+	| "inline-end"
+	| string;
+
+// Writing mode
+export type WritingModeValue =
+	| "horizontal-tb"
+	| "vertical-rl"
+	| "vertical-lr"
+	| "sideways-rl"
+	| "sideways-lr"
+	| string;
+
+// Direction
+export type DirectionValue =
+	| "ltr"
+	| "rtl"
+	| string;
+
+// Unicode bidi
+export type UnicodeBidiValue =
+	| "normal"
+	| "embed"
+	| "bidi-override"
+	| "isolate"
+	| "isolate-override"
+	| "plaintext"
+	| string;
+
+// Text orientation
+export type TextOrientationValue =
+	| "mixed"
+	| "upright"
+	| "sideways"
+	| "sideways-right"
+	| "use-glyph-orientation"
+	| string;
+
+// Hyphens
+export type HyphensValue =
+	| "none"
+	| "manual"
+	| "auto"
+	| string;
+
+// Line break
+export type LineBreakValue =
+	| "auto"
+	| "loose"
+	| "normal"
+	| "strict"
+	| "anywhere"
+	| string;
+
+// Word break
+export type WordBreakValue =
+	| "normal"
+	| "break-all"
+	| "keep-all"
+	| "break-word"
+	| string;
+
+// Touch action
+export type TouchActionValue =
+	| "auto"
+	| "none"
+	| "pan-x"
+	| "pan-y"
+	| "pan-left"
+	| "pan-right"
+	| "pan-up"
+	| "pan-down"
+	| "pinch-zoom"
+	| "manipulation"
+	| string;
+
+// Overscroll behavior
+export type OverscrollBehaviorValue =
+	| "auto"
+	| "contain"
+	| "none"
+	| string;
+
+// Image rendering
+export type ImageRenderingValue =
+	| "auto"
+	| "smooth"
+	| "crisp-edges"
+	| "pixelated"
+	| string;
+
+// Color scheme
+export type ColorSchemeValue =
+	| "normal"
+	| "light"
+	| "dark"
+	| "light dark"
+	| "only light"
+	| "only dark"
+	| string;
+
+// Caret color
+export type CaretColorValue = CSSColorValue | "auto";
+
+// Caret shape
+export type CaretShapeValue =
+	| "auto"
+	| "bar"
+	| "block"
+	| "underscore"
+	| string;
+
+// Background blend mode
+export type BackgroundBlendModeValue =
+	| "normal"
+	| "multiply"
+	| "screen"
+	| "overlay"
+	| "darken"
+	| "lighten"
+	| "color-dodge"
+	| "color-burn"
+	| "hard-light"
+	| "soft-light"
+	| "difference"
+	| "exclusion"
+	| "hue"
+	| "saturation"
+	| "color"
+	| "luminosity"
+	| string;
+
+// Content visibility
+export type ContentVisibilityValue =
+	| "visible"
+	| "auto"
+	| "hidden"
+	| string;
+
+// Container type
+export type ContainerTypeValue =
+	| "normal"
+	| "size"
+	| "inline-size"
+	| "block-size"
+	| string;
+
+// Font kerning
+export type FontKerningValue =
+	| "auto"
+	| "normal"
+	| "none"
+	| string;
+
+// Font synthesis
+export type FontSynthesisValue =
+	| "none"
+	| "weight"
+	| "style"
+	| "small-caps"
+	| "weight style"
+	| "weight small-caps"
+	| "style small-caps"
+	| "weight style small-caps"
+	| string;
+
+// Font optical sizing
+export type FontOpticalSizingValue =
+	| "auto"
+	| "none"
+	| string;
+
+// Font display
+export type FontDisplayValue =
+	| "auto"
+	| "block"
+	| "swap"
+	| "fallback"
+	| "optional"
+	| string;
+
+// Font variant caps
+export type FontVariantCapsValue =
+	| "normal"
+	| "small-caps"
+	| "all-small-caps"
+	| "petite-caps"
+	| "all-petite-caps"
+	| "unicase"
+	| "titling-caps"
+	| string;
+
+// Text rendering
+export type TextRenderingValue =
+	| "auto"
+	| "optimizeSpeed"
+	| "optimizeLegibility"
+	| "geometricPrecision"
+	| string;
+
+// Text combine upright
+export type TextCombineUprightValue =
+	| "none"
+	| "all"
+	| "digits"
+	| string;
+
+// Mask composite
+export type MaskCompositeValue =
+	| "add"
+	| "subtract"
+	| "intersect"
+	| "exclude"
+	| string;
+
+// Clip rule
+export type ClipRuleValue =
+	| "nonzero"
+	| "evenodd"
+	| string;
+
 // Generic types for properties that accept various values
 export type CSSLengthValue = string | number | `${number}px` | `${number}em` | `${number}rem` | `${number}%` | `${number}vw` | `${number}vh` | `${number}vmin` | `${number}vmax` | `${number}ch` | `${number}ex` | `${number}cm` | `${number}mm` | `${number}in` | `${number}pt` | `${number}pc`;
 export type CSSColorValue = string; // Can be hex, rgb, rgba, hsl, hsla, named colors, etc.
@@ -678,4 +914,5 @@ export type CSSFilterValue = string; // Filter functions
 export type CSSBackgroundImageValue = string; // url(), gradient functions, etc.
 export type CSSAnimationNameValue = string; // Animation name or "none"
 export type CSSContentValue = string; // Content value (quoted strings, counters, etc.)
+export type CSSAspectRatioValue = string | number | "auto" | `${number} / ${number}`; // Aspect ratio
 

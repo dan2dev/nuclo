@@ -264,6 +264,172 @@ export const STYLE_PROPERTIES: readonly StylePropertyDefinition[] = [
 
 	// Interaction
 	{ name: "cursor", cssProperty: "cursor" },
+
+	// Layout - Additional
+	{ name: "aspectRatio", cssProperty: "aspect-ratio" },
+	{ name: "clear", cssProperty: "clear" },
+	{ name: "float", cssProperty: "float" },
+	{ name: "order", cssProperty: "order" },
+
+	// Flexbox - Place properties (shorthand)
+	{ name: "placeContent", cssProperty: "place-content" },
+	{ name: "placeItems", cssProperty: "place-items" },
+	{ name: "placeSelf", cssProperty: "place-self" },
+
+	// Text - Additional
+	{ name: "hyphens", cssProperty: "hyphens" },
+	{ name: "lineBreak", cssProperty: "line-break" },
+	{ name: "wordBreak", cssProperty: "word-break" },
+	{ name: "textOrientation", cssProperty: "text-orientation" },
+	{ name: "writingMode", cssProperty: "writing-mode" },
+	{ name: "direction", cssProperty: "direction" },
+	{ name: "unicodeBidi", cssProperty: "unicode-bidi" },
+
+	// Background - Additional
+	{ name: "backgroundBlendMode", cssProperty: "background-blend-mode" },
+	{ name: "backgroundPositionX", cssProperty: "background-position-x" },
+	{ name: "backgroundPositionY", cssProperty: "background-position-y" },
+
+	// Border Image
+	{ name: "borderImage", cssProperty: "border-image" },
+	{ name: "borderImageSource", cssProperty: "border-image-source" },
+	{ name: "borderImageSlice", cssProperty: "border-image-slice" },
+	{ name: "borderImageWidth", cssProperty: "border-image-width" },
+	{ name: "borderImageOutset", cssProperty: "border-image-outset" },
+	{ name: "borderImageRepeat", cssProperty: "border-image-repeat" },
+
+	// Logical Properties - Inset
+	{ name: "inset", cssProperty: "inset" },
+	{ name: "insetBlock", cssProperty: "inset-block" },
+	{ name: "insetBlockStart", cssProperty: "inset-block-start" },
+	{ name: "insetBlockEnd", cssProperty: "inset-block-end" },
+	{ name: "insetInline", cssProperty: "inset-inline" },
+	{ name: "insetInlineStart", cssProperty: "inset-inline-start" },
+	{ name: "insetInlineEnd", cssProperty: "inset-inline-end" },
+
+	// Logical Properties - Margin
+	{ name: "marginBlock", cssProperty: "margin-block" },
+	{ name: "marginBlockStart", cssProperty: "margin-block-start" },
+	{ name: "marginBlockEnd", cssProperty: "margin-block-end" },
+	{ name: "marginInline", cssProperty: "margin-inline" },
+	{ name: "marginInlineStart", cssProperty: "margin-inline-start" },
+	{ name: "marginInlineEnd", cssProperty: "margin-inline-end" },
+
+	// Logical Properties - Padding
+	{ name: "paddingBlock", cssProperty: "padding-block" },
+	{ name: "paddingBlockStart", cssProperty: "padding-block-start" },
+	{ name: "paddingBlockEnd", cssProperty: "padding-block-end" },
+	{ name: "paddingInline", cssProperty: "padding-inline" },
+	{ name: "paddingInlineStart", cssProperty: "padding-inline-start" },
+	{ name: "paddingInlineEnd", cssProperty: "padding-inline-end" },
+
+	// Logical Properties - Size
+	{ name: "inlineSize", cssProperty: "inline-size" },
+	{ name: "blockSize", cssProperty: "block-size" },
+	{ name: "minInlineSize", cssProperty: "min-inline-size" },
+	{ name: "minBlockSize", cssProperty: "min-block-size" },
+	{ name: "maxInlineSize", cssProperty: "max-inline-size" },
+	{ name: "maxBlockSize", cssProperty: "max-block-size" },
+
+	// Logical Properties - Border
+	{ name: "borderBlock", cssProperty: "border-block" },
+	{ name: "borderBlockStart", cssProperty: "border-block-start" },
+	{ name: "borderBlockEnd", cssProperty: "border-block-end" },
+	{ name: "borderInline", cssProperty: "border-inline" },
+	{ name: "borderInlineStart", cssProperty: "border-inline-start" },
+	{ name: "borderInlineEnd", cssProperty: "border-inline-end" },
+	{ name: "borderBlockWidth", cssProperty: "border-block-width" },
+	{ name: "borderBlockStartWidth", cssProperty: "border-block-start-width" },
+	{ name: "borderBlockEndWidth", cssProperty: "border-block-end-width" },
+	{ name: "borderInlineWidth", cssProperty: "border-inline-width" },
+	{ name: "borderInlineStartWidth", cssProperty: "border-inline-start-width" },
+	{ name: "borderInlineEndWidth", cssProperty: "border-inline-end-width" },
+	{ name: "borderBlockStyle", cssProperty: "border-block-style" },
+	{ name: "borderBlockStartStyle", cssProperty: "border-block-start-style" },
+	{ name: "borderBlockEndStyle", cssProperty: "border-block-end-style" },
+	{ name: "borderInlineStyle", cssProperty: "border-inline-style" },
+	{ name: "borderInlineStartStyle", cssProperty: "border-inline-start-style" },
+	{ name: "borderInlineEndStyle", cssProperty: "border-inline-end-style" },
+	{ name: "borderBlockColor", cssProperty: "border-block-color" },
+	{ name: "borderBlockStartColor", cssProperty: "border-block-start-color" },
+	{ name: "borderBlockEndColor", cssProperty: "border-block-end-color" },
+	{ name: "borderInlineColor", cssProperty: "border-inline-color" },
+	{ name: "borderInlineStartColor", cssProperty: "border-inline-start-color" },
+	{ name: "borderInlineEndColor", cssProperty: "border-inline-end-color" },
+
+	// Logical Properties - Border Radius
+	{ name: "borderStartStartRadius", cssProperty: "border-start-start-radius" },
+	{ name: "borderStartEndRadius", cssProperty: "border-start-end-radius" },
+	{ name: "borderEndStartRadius", cssProperty: "border-end-start-radius" },
+	{ name: "borderEndEndRadius", cssProperty: "border-end-end-radius" },
+
+	// Scroll
+	{ name: "scrollMargin", cssProperty: "scroll-margin" },
+	{ name: "scrollMarginTop", cssProperty: "scroll-margin-top" },
+	{ name: "scrollMarginRight", cssProperty: "scroll-margin-right" },
+	{ name: "scrollMarginBottom", cssProperty: "scroll-margin-bottom" },
+	{ name: "scrollMarginLeft", cssProperty: "scroll-margin-left" },
+	{ name: "scrollPadding", cssProperty: "scroll-padding" },
+	{ name: "scrollPaddingTop", cssProperty: "scroll-padding-top" },
+	{ name: "scrollPaddingRight", cssProperty: "scroll-padding-right" },
+	{ name: "scrollPaddingBottom", cssProperty: "scroll-padding-bottom" },
+	{ name: "scrollPaddingLeft", cssProperty: "scroll-padding-left" },
+	{ name: "overscrollBehavior", cssProperty: "overscroll-behavior" },
+	{ name: "overscrollBehaviorX", cssProperty: "overscroll-behavior-x" },
+	{ name: "overscrollBehaviorY", cssProperty: "overscroll-behavior-y" },
+
+	// Caret
+	{ name: "caretColor", cssProperty: "caret-color" },
+	{ name: "caretShape", cssProperty: "caret-shape" },
+	{ name: "caretAnimation", cssProperty: "caret-animation" },
+
+	// Other
+	{ name: "imageRendering", cssProperty: "image-rendering" },
+	{ name: "colorScheme", cssProperty: "color-scheme" },
+	{ name: "contentVisibility", cssProperty: "content-visibility" },
+	{ name: "touchAction", cssProperty: "touch-action" },
+
+	// Container Queries
+	{ name: "containerType", cssProperty: "container-type" },
+	{ name: "containerName", cssProperty: "container-name" },
+	{ name: "container", cssProperty: "container" },
+
+	// Font - Additional
+	{ name: "fontFeatureSettings", cssProperty: "font-feature-settings" },
+	{ name: "fontKerning", cssProperty: "font-kerning" },
+	{ name: "fontSynthesis", cssProperty: "font-synthesis" },
+	{ name: "fontOpticalSizing", cssProperty: "font-optical-sizing" },
+	{ name: "fontDisplay", cssProperty: "font-display" },
+	{ name: "fontVariantCaps", cssProperty: "font-variant-caps" },
+	{ name: "fontVariantNumeric", cssProperty: "font-variant-numeric" },
+	{ name: "fontVariantLigatures", cssProperty: "font-variant-ligatures" },
+	{ name: "fontVariantEastAsian", cssProperty: "font-variant-east-asian" },
+	{ name: "fontVariantAlternates", cssProperty: "font-variant-alternates" },
+	{ name: "fontVariantPosition", cssProperty: "font-variant-position" },
+
+	// Text - Additional
+	{ name: "textRendering", cssProperty: "text-rendering" },
+	{ name: "textCombineUpright", cssProperty: "text-combine-upright" },
+	{ name: "textSizeAdjust", cssProperty: "text-size-adjust" },
+
+	// Mask
+	{ name: "mask", cssProperty: "mask" },
+	{ name: "maskImage", cssProperty: "mask-image" },
+	{ name: "maskMode", cssProperty: "mask-mode" },
+	{ name: "maskRepeat", cssProperty: "mask-repeat" },
+	{ name: "maskPosition", cssProperty: "mask-position" },
+	{ name: "maskSize", cssProperty: "mask-size" },
+	{ name: "maskOrigin", cssProperty: "mask-origin" },
+	{ name: "maskClip", cssProperty: "mask-clip" },
+	{ name: "maskComposite", cssProperty: "mask-composite" },
+
+	// Clip
+	{ name: "clipRule", cssProperty: "clip-rule" },
+
+	// Grid - Additional
+	{ name: "gridColumnGap", cssProperty: "grid-column-gap" },
+	{ name: "gridRowGap", cssProperty: "grid-row-gap" },
+	{ name: "gridGap", cssProperty: "grid-gap" },
 ] as const;
 
 // Special methods that have custom logic beyond simple property setting
