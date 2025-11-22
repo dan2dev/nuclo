@@ -270,6 +270,19 @@ render(app, document.body);</code></pre>
                     <h2>Nested Subtasks</h2>
                     <p>A todo list with recursive subtasks, demonstrating nested <code>list()</code> and <code>when()</code> composition.</p>
 
+                    <!-- Live Demo -->
+                    <div class="live-demo">
+                        <div class="live-demo-header">
+                            <div class="demo-dots">
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                            </div>
+                            <span>Live Demo</span>
+                        </div>
+                        <div class="live-demo-content" id="demo-subtasks"></div>
+                    </div>
+
                     <pre><code class="language-typescript">import 'nuclo';
 
 type Task = {
@@ -482,6 +495,19 @@ render(app, document.body);</code></pre>
                     <h2>Search Filter</h2>
                     <p>Real-time search filtering with debouncing.</p>
 
+                    <!-- Live Demo -->
+                    <div class="live-demo">
+                        <div class="live-demo-header">
+                            <div class="demo-dots">
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                            </div>
+                            <span>Live Demo</span>
+                        </div>
+                        <div class="live-demo-content" id="demo-search"></div>
+                    </div>
+
                     <pre><code class="language-typescript">import 'nuclo';
 
 type User = {
@@ -586,6 +612,19 @@ render(app, document.body);</code></pre>
                 <section id="async" class="example-section">
                     <h2>Async Loading</h2>
                     <p>Handling asynchronous operations with loading states and error handling.</p>
+
+                    <!-- Live Demo -->
+                    <div class="live-demo">
+                        <div class="live-demo-header">
+                            <div class="demo-dots">
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                            </div>
+                            <span>Live Demo</span>
+                        </div>
+                        <div class="live-demo-content" id="demo-async"></div>
+                    </div>
 
                     <pre><code class="language-typescript">import 'nuclo';
 
@@ -696,6 +735,19 @@ render(app, document.body);</code></pre>
                 <section id="forms" class="example-section">
                     <h2>Form Handling</h2>
                     <p>Complete form with validation and submission.</p>
+
+                    <!-- Live Demo -->
+                    <div class="live-demo">
+                        <div class="live-demo-header">
+                            <div class="demo-dots">
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                            </div>
+                            <span>Live Demo</span>
+                        </div>
+                        <div class="live-demo-content" id="demo-forms"></div>
+                    </div>
 
                     <pre><code class="language-typescript">import 'nuclo';
 
@@ -882,6 +934,19 @@ render(app, document.body);</code></pre>
                     <h2>Nested Components</h2>
                     <p>Creating reusable component-like functions.</p>
 
+                    <!-- Live Demo -->
+                    <div class="live-demo">
+                        <div class="live-demo-header">
+                            <div class="demo-dots">
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                            </div>
+                            <span>Live Demo</span>
+                        </div>
+                        <div class="live-demo-content" id="demo-nested"></div>
+                    </div>
+
                     <pre><code class="language-typescript">import 'nuclo';
 
 type User = {
@@ -950,6 +1015,19 @@ render(app, document.body);</code></pre>
                     <h2>Animations</h2>
                     <p>Smooth transitions with CSS and reactive styles.</p>
 
+                    <!-- Live Demo -->
+                    <div class="live-demo">
+                        <div class="live-demo-header">
+                            <div class="demo-dots">
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                            </div>
+                            <span>Live Demo</span>
+                        </div>
+                        <div class="live-demo-content" id="demo-animations"></div>
+                    </div>
+
                     <pre><code class="language-typescript">import 'nuclo';
 
 let isVisible = true;
@@ -1006,6 +1084,19 @@ render(app, document.body);</code></pre>
                 <section id="routing" class="example-section">
                     <h2>Simple Routing</h2>
                     <p>Client-side routing without a framework.</p>
+
+                    <!-- Live Demo -->
+                    <div class="live-demo">
+                        <div class="live-demo-header">
+                            <div class="demo-dots">
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                            </div>
+                            <span>Live Demo</span>
+                        </div>
+                        <div class="live-demo-content" id="demo-routing"></div>
+                    </div>
 
                     <pre><code class="language-typescript">import 'nuclo';
 
@@ -1083,6 +1174,19 @@ render(app, document.body);</code></pre>
                 <section id="styled-card" class="example-section">
                     <h2>Styled Card</h2>
                     <p>Using nuclo's CSS-in-JS styling system to create a polished product card component with hover effects.</p>
+
+                    <!-- Live Demo -->
+                    <div class="live-demo">
+                        <div class="live-demo-header">
+                            <div class="demo-dots">
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                                <span class="demo-dot"></span>
+                            </div>
+                            <span>Live Demo</span>
+                        </div>
+                        <div class="live-demo-content" id="demo-styled-card"></div>
+                    </div>
 
                     <pre><code class="language-typescript">import 'nuclo';
 
@@ -1450,6 +1554,462 @@ render(app, document.body);</code></pre>
       );
 
       render(todoDemo, document.getElementById('demo-todo'));
+    })();
+
+    // Live Subtasks Demo
+    (function() {
+      let tasks = [];
+      let nextId = 1;
+      let mainInputText = '';
+
+      function createTask(text) {
+        return { id: nextId++, text, done: false, subtasks: [], expanded: true };
+      }
+
+      function addTask(text, parent) {
+        const task = createTask(text);
+        if (parent) {
+          parent.subtasks.push(task);
+        } else {
+          tasks.push(task);
+        }
+        update();
+      }
+
+      function toggleTask(task) {
+        task.done = !task.done;
+        function setDone(t, done) {
+          t.done = done;
+          t.subtasks.forEach(st => setDone(st, done));
+        }
+        setDone(task, task.done);
+        update();
+      }
+
+      function deleteTask(task, parent) {
+        if (parent) {
+          parent.subtasks = parent.subtasks.filter(t => t.id !== task.id);
+        } else {
+          tasks = tasks.filter(t => t.id !== task.id);
+        }
+        update();
+      }
+
+      function TaskItem(task, parent, depth) {
+        depth = depth || 0;
+        return div(
+          { style: { marginLeft: (depth * 16) + 'px', padding: '4px 0' } },
+          div(
+            { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+            input(
+              { type: 'checkbox', checked: () => task.done, style: { accentColor: '#a3e635' } },
+              on('change', () => toggleTask(task))
+            ),
+            span(
+              { style: { flex: '1', textDecoration: () => task.done ? 'line-through' : 'none', opacity: () => task.done ? '0.5' : '1', color: '#f8fafc' } },
+              () => task.text
+            ),
+            when(() => task.subtasks.length > 0,
+              span({ style: { color: '#64748b', fontSize: '0.8rem' } }, () => `(${task.subtasks.filter(t => t.done).length}/${task.subtasks.length})`)
+            ),
+            button(
+              { style: { background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '1rem' } },
+              '\u00D7',
+              on('click', () => deleteTask(task, parent))
+            )
+          ),
+          when(() => task.subtasks.length > 0,
+            div(list(() => task.subtasks, st => TaskItem(st, task, depth + 1)))
+          )
+        );
+      }
+
+      const subtasksDemo = div(
+        { style: { maxWidth: '400px', margin: '0 auto' } },
+        div(
+          { style: { display: 'flex', gap: '8px', marginBottom: '16px' } },
+          input(
+            { type: 'text', placeholder: 'Add a task...', value: () => mainInputText, style: { flex: '1', padding: '8px 12px', border: '1px solid #334155', borderRadius: '6px', background: '#020617', color: '#f8fafc' } },
+            on('input', e => { mainInputText = e.target.value; update(); }),
+            on('keydown', e => { if (e.key === 'Enter' && mainInputText.trim()) { addTask(mainInputText.trim()); mainInputText = ''; update(); } })
+          ),
+          button(
+            { style: { padding: '8px 16px', background: '#a3e635', color: '#020617', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' } },
+            'Add',
+            on('click', () => { if (mainInputText.trim()) { addTask(mainInputText.trim()); mainInputText = ''; update(); } })
+          )
+        ),
+        when(() => tasks.length > 0,
+          div(list(() => tasks, task => TaskItem(task)))
+        ).else(
+          p({ style: { textAlign: 'center', color: '#64748b' } }, 'No tasks yet. Add one above!')
+        )
+      );
+
+      render(subtasksDemo, document.getElementById('demo-subtasks'));
+    })();
+
+    // Live Search Demo
+    (function() {
+      const users = [
+        { id: 1, name: 'Alice Johnson', email: 'alice@example.com', role: 'Admin' },
+        { id: 2, name: 'Bob Smith', email: 'bob@example.com', role: 'User' },
+        { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', role: 'User' },
+        { id: 4, name: 'Diana Prince', email: 'diana@example.com', role: 'Admin' },
+        { id: 5, name: 'Eve Anderson', email: 'eve@example.com', role: 'User' }
+      ];
+
+      let searchQuery = '';
+      let selectedRole = 'all';
+
+      function filteredUsers() {
+        const query = searchQuery.toLowerCase();
+        return users.filter(user => {
+          const matchesSearch = user.name.toLowerCase().includes(query) || user.email.toLowerCase().includes(query);
+          const matchesRole = selectedRole === 'all' || user.role === selectedRole;
+          return matchesSearch && matchesRole;
+        });
+      }
+
+      const searchDemo = div(
+        { style: { maxWidth: '500px', margin: '0 auto' } },
+        div(
+          { style: { display: 'flex', gap: '8px', marginBottom: '16px' } },
+          input(
+            { type: 'search', placeholder: 'Search by name or email...', value: () => searchQuery, style: { flex: '1', padding: '8px 12px', border: '1px solid #334155', borderRadius: '6px', background: '#020617', color: '#f8fafc' } },
+            on('input', e => { searchQuery = e.target.value; update(); })
+          ),
+          select(
+            { value: () => selectedRole, style: { padding: '8px 12px', border: '1px solid #334155', borderRadius: '6px', background: '#020617', color: '#f8fafc' } },
+            on('change', e => { selectedRole = e.target.value; update(); }),
+            option({ value: 'all' }, 'All Roles'),
+            option({ value: 'Admin' }, 'Admins'),
+            option({ value: 'User' }, 'Users')
+          )
+        ),
+        p({ style: { color: '#94a3b8', marginBottom: '12px' } }, () => `Showing ${filteredUsers().length} user${filteredUsers().length !== 1 ? 's' : ''}`),
+        when(() => filteredUsers().length > 0,
+          div(
+            list(() => filteredUsers(), user =>
+              div(
+                { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#020617', borderRadius: '6px', marginBottom: '8px' } },
+                div(
+                  span({ style: { color: '#f8fafc', fontWeight: '600' } }, user.name),
+                  br(),
+                  span({ style: { color: '#64748b', fontSize: '0.875rem' } }, user.email)
+                ),
+                span({ style: { padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600', background: user.role === 'Admin' ? 'rgba(163,230,53,0.2)' : 'rgba(59,130,246,0.2)', color: user.role === 'Admin' ? '#a3e635' : '#3b82f6' } }, user.role)
+              )
+            )
+          )
+        ).else(
+          p({ style: { textAlign: 'center', color: '#64748b' } }, () => searchQuery ? `No users found matching "${searchQuery}"` : 'No users found')
+        )
+      );
+
+      render(searchDemo, document.getElementById('demo-search'));
+    })();
+
+    // Live Async Demo
+    (function() {
+      let state = { status: 'idle', products: [], error: null };
+      let searchQuery = 'phone';
+
+      async function fetchProducts() {
+        if (!searchQuery.trim()) return;
+        state.status = 'loading';
+        state.error = null;
+        update();
+
+        try {
+          const response = await fetch('https://dummyjson.com/products/search?q=' + encodeURIComponent(searchQuery) + '&limit=6');
+          if (!response.ok) throw new Error('Failed to fetch');
+          const data = await response.json();
+          state.products = data.products;
+          state.status = 'success';
+        } catch (err) {
+          state.status = 'error';
+          state.error = err.message;
+        }
+        update();
+      }
+
+      const asyncDemo = div(
+        { style: { maxWidth: '600px', margin: '0 auto' } },
+        div(
+          { style: { display: 'flex', gap: '8px', marginBottom: '16px' } },
+          input(
+            { type: 'search', placeholder: 'Search products...', value: () => searchQuery, disabled: () => state.status === 'loading', style: { flex: '1', padding: '8px 12px', border: '1px solid #334155', borderRadius: '6px', background: '#020617', color: '#f8fafc' } },
+            on('input', e => { searchQuery = e.target.value; update(); }),
+            on('keydown', e => { if (e.key === 'Enter') fetchProducts(); })
+          ),
+          button(
+            { disabled: () => state.status === 'loading' || !searchQuery.trim(), style: { padding: '8px 16px', background: '#a3e635', color: '#020617', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', opacity: () => state.status === 'loading' ? '0.5' : '1' } },
+            () => state.status === 'loading' ? 'Loading...' : 'Search',
+            on('click', fetchProducts)
+          )
+        ),
+        when(() => state.status === 'loading',
+          div({ style: { textAlign: 'center', padding: '20px', color: '#94a3b8' } }, 'Loading products...')
+        ).when(() => state.status === 'error',
+          div({ style: { textAlign: 'center', padding: '20px', color: '#ef4444' } }, () => 'Error: ' + state.error)
+        ).when(() => state.status === 'success' && state.products.length > 0,
+          div(
+            p({ style: { color: '#94a3b8', marginBottom: '12px' } }, () => `Found ${state.products.length} products`),
+            div(
+              { style: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' } },
+              list(() => state.products, product =>
+                div(
+                  { style: { padding: '12px', background: '#020617', borderRadius: '8px' } },
+                  div({ style: { color: '#f8fafc', fontWeight: '600', marginBottom: '4px', fontSize: '0.9rem' } }, product.title),
+                  div({ style: { color: '#64748b', fontSize: '0.75rem', marginBottom: '8px' } }, product.category),
+                  div({ style: { color: '#a3e635', fontWeight: 'bold' } }, '$' + product.price.toFixed(2))
+                )
+              )
+            )
+          )
+        ).when(() => state.status === 'success' && state.products.length === 0,
+          div({ style: { textAlign: 'center', padding: '20px', color: '#64748b' } }, () => `No products found for "${searchQuery}"`)
+        ).else(
+          div({ style: { textAlign: 'center', padding: '20px', color: '#64748b' } }, 'Enter a search term and click Search')
+        )
+      );
+
+      render(asyncDemo, document.getElementById('demo-async'));
+    })();
+
+    // Live Forms Demo
+    (function() {
+      let formData = { username: '', email: '', password: '' };
+      let errors = {};
+      let isSubmitting = false;
+      let submitStatus = 'idle';
+
+      function validateForm() {
+        errors = {};
+        if (formData.username.length < 3) errors.username = 'Username must be at least 3 characters';
+        if (!formData.email.includes('@')) errors.email = 'Please enter a valid email';
+        if (formData.password.length < 6) errors.password = 'Password must be at least 6 characters';
+        return Object.keys(errors).length === 0;
+      }
+
+      async function handleSubmit(e) {
+        e.preventDefault();
+        if (!validateForm()) { update(); return; }
+        isSubmitting = true;
+        submitStatus = 'idle';
+        update();
+        await new Promise(r => setTimeout(r, 1000));
+        submitStatus = 'success';
+        formData = { username: '', email: '', password: '' };
+        isSubmitting = false;
+        update();
+      }
+
+      const formsDemo = div(
+        { style: { maxWidth: '350px', margin: '0 auto' } },
+        when(() => submitStatus === 'success',
+          div({ style: { padding: '12px', background: 'rgba(34,197,94,0.2)', borderRadius: '6px', color: '#22c55e', marginBottom: '16px', textAlign: 'center' } }, 'Account created successfully!')
+        ),
+        form(
+          on('submit', handleSubmit),
+          div(
+            { style: { marginBottom: '12px' } },
+            label({ style: { display: 'block', color: '#94a3b8', marginBottom: '4px', fontSize: '0.875rem' } }, 'Username'),
+            input({ type: 'text', value: () => formData.username, disabled: () => isSubmitting, style: { width: '100%', padding: '8px 12px', border: '1px solid #334155', borderRadius: '6px', background: '#020617', color: '#f8fafc', boxSizing: 'border-box' } }, on('input', e => { formData.username = e.target.value; delete errors.username; update(); })),
+            when(() => errors.username, span({ style: { color: '#ef4444', fontSize: '0.75rem' } }, () => errors.username))
+          ),
+          div(
+            { style: { marginBottom: '12px' } },
+            label({ style: { display: 'block', color: '#94a3b8', marginBottom: '4px', fontSize: '0.875rem' } }, 'Email'),
+            input({ type: 'email', value: () => formData.email, disabled: () => isSubmitting, style: { width: '100%', padding: '8px 12px', border: '1px solid #334155', borderRadius: '6px', background: '#020617', color: '#f8fafc', boxSizing: 'border-box' } }, on('input', e => { formData.email = e.target.value; delete errors.email; update(); })),
+            when(() => errors.email, span({ style: { color: '#ef4444', fontSize: '0.75rem' } }, () => errors.email))
+          ),
+          div(
+            { style: { marginBottom: '16px' } },
+            label({ style: { display: 'block', color: '#94a3b8', marginBottom: '4px', fontSize: '0.875rem' } }, 'Password'),
+            input({ type: 'password', value: () => formData.password, disabled: () => isSubmitting, style: { width: '100%', padding: '8px 12px', border: '1px solid #334155', borderRadius: '6px', background: '#020617', color: '#f8fafc', boxSizing: 'border-box' } }, on('input', e => { formData.password = e.target.value; delete errors.password; update(); })),
+            when(() => errors.password, span({ style: { color: '#ef4444', fontSize: '0.75rem' } }, () => errors.password))
+          ),
+          button({ type: 'submit', disabled: () => isSubmitting, style: { width: '100%', padding: '10px', background: '#a3e635', color: '#020617', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', opacity: () => isSubmitting ? '0.5' : '1' } }, () => isSubmitting ? 'Creating account...' : 'Sign Up')
+        )
+      );
+
+      render(formsDemo, document.getElementById('demo-forms'));
+    })();
+
+    // Live Nested Components Demo
+    (function() {
+      let users = [
+        { id: 1, name: 'Alice', bio: 'Software developer', followers: 142 },
+        { id: 2, name: 'Bob', bio: 'Designer', followers: 89 },
+        { id: 3, name: 'Charlie', bio: 'DevOps engineer', followers: 56 }
+      ];
+
+      function handleFollow(id) {
+        const user = users.find(u => u.id === id);
+        if (user) { user.followers++; update(); }
+      }
+
+      function UserCard(user) {
+        return div(
+          { style: { padding: '16px', background: '#020617', borderRadius: '8px', textAlign: 'center' } },
+          div({ style: { width: '48px', height: '48px', borderRadius: '50%', background: '#334155', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a3e635', fontWeight: 'bold', fontSize: '1.25rem' } }, user.name[0]),
+          div({ style: { color: '#f8fafc', fontWeight: '600', marginBottom: '4px' } }, user.name),
+          div({ style: { color: '#64748b', fontSize: '0.875rem', marginBottom: '8px' } }, user.bio),
+          div({ style: { color: '#94a3b8', fontSize: '0.875rem', marginBottom: '12px' } }, () => user.followers + ' followers'),
+          button({ style: { padding: '6px 16px', background: '#a3e635', color: '#020617', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '0.875rem' } }, 'Follow', on('click', () => handleFollow(user.id)))
+        );
+      }
+
+      const nestedDemo = div(
+        { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' } },
+        list(() => users, user => UserCard(user))
+      );
+
+      render(nestedDemo, document.getElementById('demo-nested'));
+    })();
+
+    // Live Animations Demo
+    (function() {
+      let isVisible = true;
+      let scale = 1;
+      let rotation = 0;
+
+      function toggle() {
+        isVisible = !isVisible;
+        let start = Date.now();
+        function tick() {
+          const elapsed = Date.now() - start;
+          const progress = Math.min(elapsed / 500, 1);
+          scale = isVisible ? 0.5 + progress * 0.5 : 1 - progress * 0.5;
+          rotation = isVisible ? progress * 360 : (1 - progress) * 360;
+          update();
+          if (progress < 1) requestAnimationFrame(tick);
+        }
+        tick();
+      }
+
+      const animationsDemo = div(
+        { style: { textAlign: 'center' } },
+        button({ style: { padding: '10px 24px', background: '#a3e635', color: '#020617', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', marginBottom: '24px' } }, 'Toggle Animation', on('click', toggle)),
+        div(
+          { style: () => ({ width: '120px', height: '120px', margin: '0 auto', background: 'linear-gradient(135deg, #a3e635, #22c55e)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#020617', fontWeight: 'bold', transform: `scale(${scale}) rotate(${rotation}deg)`, transition: 'box-shadow 0.3s', boxShadow: isVisible ? '0 0 30px rgba(163,230,53,0.4)' : 'none' }) },
+          'nuclo'
+        )
+      );
+
+      render(animationsDemo, document.getElementById('demo-animations'));
+    })();
+
+    // Live Routing Demo
+    (function() {
+      let currentRoute = 'home';
+
+      function navigate(route) {
+        currentRoute = route;
+        update();
+      }
+
+      function HomePage() {
+        return div(
+          h3({ style: { color: '#f8fafc', margin: '0 0 8px' } }, 'Home'),
+          p({ style: { color: '#94a3b8', margin: '0' } }, 'Welcome to our website!')
+        );
+      }
+
+      function AboutPage() {
+        return div(
+          h3({ style: { color: '#f8fafc', margin: '0 0 8px' } }, 'About'),
+          p({ style: { color: '#94a3b8', margin: '0' } }, 'Learn more about us.')
+        );
+      }
+
+      function ContactPage() {
+        return div(
+          h3({ style: { color: '#f8fafc', margin: '0 0 8px' } }, 'Contact'),
+          p({ style: { color: '#94a3b8', margin: '0' } }, 'Get in touch with us!')
+        );
+      }
+
+      const routingDemo = div(
+        { style: { maxWidth: '400px', margin: '0 auto' } },
+        div(
+          { style: { display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '1px solid #334155', paddingBottom: '12px' } },
+          button({ style: () => ({ padding: '8px 16px', background: currentRoute === 'home' ? '#a3e635' : 'transparent', color: currentRoute === 'home' ? '#020617' : '#94a3b8', border: '1px solid #334155', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }) }, 'Home', on('click', () => navigate('home'))),
+          button({ style: () => ({ padding: '8px 16px', background: currentRoute === 'about' ? '#a3e635' : 'transparent', color: currentRoute === 'about' ? '#020617' : '#94a3b8', border: '1px solid #334155', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }) }, 'About', on('click', () => navigate('about'))),
+          button({ style: () => ({ padding: '8px 16px', background: currentRoute === 'contact' ? '#a3e635' : 'transparent', color: currentRoute === 'contact' ? '#020617' : '#94a3b8', border: '1px solid #334155', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }) }, 'Contact', on('click', () => navigate('contact')))
+        ),
+        div(
+          { style: { padding: '16px', background: '#020617', borderRadius: '8px' } },
+          when(() => currentRoute === 'home', HomePage())
+          .when(() => currentRoute === 'about', AboutPage())
+          .when(() => currentRoute === 'contact', ContactPage())
+        )
+      );
+
+      render(routingDemo, document.getElementById('demo-routing'));
+    })();
+
+    // Live Styled Card Demo
+    (function() {
+      let products = [
+        { id: 1, name: 'Headphones', description: 'Premium noise-canceling', price: 299.99, inStock: true },
+        { id: 2, name: 'Smart Watch', description: 'Track your fitness', price: 399.99, inStock: true },
+        { id: 3, name: 'Speaker', description: 'Waterproof bass', price: 149.99, inStock: false }
+      ];
+
+      let hoveredId = null;
+      let cart = [];
+
+      function addToCart(product) {
+        if (product.inStock) {
+          cart.push(product.id);
+          update();
+        }
+      }
+
+      function ProductCard(product) {
+        return div(
+          {
+            style: () => ({
+              padding: '16px',
+              background: '#020617',
+              borderRadius: '12px',
+              border: '1px solid ' + (hoveredId === product.id ? '#a3e635' : '#334155'),
+              transition: 'all 0.2s',
+              transform: hoveredId === product.id ? 'translateY(-4px)' : 'translateY(0)',
+              boxShadow: hoveredId === product.id ? '0 8px 24px rgba(0,0,0,0.3)' : 'none',
+              opacity: product.inStock ? '1' : '0.6'
+            })
+          },
+          on('mouseenter', () => { hoveredId = product.id; update(); }),
+          on('mouseleave', () => { hoveredId = null; update(); }),
+          div({ style: { color: '#f8fafc', fontWeight: '600', marginBottom: '4px' } }, product.name),
+          div({ style: { color: '#64748b', fontSize: '0.875rem', marginBottom: '12px' } }, product.description),
+          div(
+            { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+            span({ style: { color: '#a3e635', fontWeight: 'bold', fontSize: '1.25rem' } }, '$' + product.price.toFixed(2)),
+            button(
+              { style: { padding: '6px 12px', background: product.inStock ? '#a3e635' : '#64748b', color: '#020617', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: product.inStock ? 'pointer' : 'not-allowed', fontSize: '0.875rem' } },
+              product.inStock ? 'Add to Cart' : 'Out of Stock',
+              on('click', () => addToCart(product))
+            )
+          )
+        );
+      }
+
+      const styledCardDemo = div(
+        div({ style: { textAlign: 'center', marginBottom: '16px' } },
+          span({ style: { color: '#94a3b8' } }, () => `Cart: ${cart.length} item${cart.length !== 1 ? 's' : ''}`)
+        ),
+        div(
+          { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' } },
+          list(() => products, product => ProductCard(product))
+        )
+      );
+
+      render(styledCardDemo, document.getElementById('demo-styled-card'));
     })();
     </script>
 </body>
