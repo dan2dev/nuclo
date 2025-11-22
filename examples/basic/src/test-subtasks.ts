@@ -1,4 +1,4 @@
-import { getTodos, addTodo, setInputValue, addSubtask, getSubtaskInput, setSubtaskInput, toggleTask, deleteTask, clearCompleted } from './todoState.ts';
+import { getTodos, addTodo, setInputValue, addSubtask, setSubtaskInput, toggleTask, deleteTask, clearCompleted } from './todoState.ts';
 
 // Prepare
 setInputValue('Top level A');
