@@ -1,6 +1,27 @@
 import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 
+const terserOptions = {
+  compress: {
+    passes: 3,
+    pure_getters: true,
+    unsafe: true,
+    unsafe_comps: true,
+    unsafe_math: true,
+    unsafe_proto: true,
+    drop_console: true,
+    drop_debugger: true,
+    ecma: 2020,
+  },
+  mangle: {
+    properties: false,
+  },
+  format: {
+    comments: false,
+    ecma: 2020,
+  },
+};
+
 export default {
   input: 'src/index.ts',
   output: [
@@ -21,5 +42,5 @@ export default {
       sourcemap: true,
     },
   ],
-  plugins: [typescript(), terser()],
+  plugins: [typescript(), terser(terserOptions)],
 };

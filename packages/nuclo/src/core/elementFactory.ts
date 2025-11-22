@@ -1,12 +1,12 @@
 import { createConditionalElement, processConditionalModifiers } from "./conditionalRenderer";
 import { applyModifiers, type NodeModifier } from "../internal/applyModifiers";
-import { SVG_TAGS } from "./tagRegistry";
+import { SVG_TAG_SET } from "./tagConstants";
 
 /**
- * Checks if a tag name is an SVG tag.
+ * Checks if a tag name is an SVG tag. Uses Set for O(1) lookup.
  */
 function isSVGTag(tagName: string): tagName is keyof SVGElementTagNameMap {
-  return (SVG_TAGS as readonly string[]).includes(tagName);
+  return SVG_TAG_SET.has(tagName);
 }
 
 /**
