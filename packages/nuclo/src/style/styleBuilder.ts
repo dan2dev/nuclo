@@ -1,6 +1,77 @@
 import { STYLE_PROPERTIES, SPECIAL_METHODS, type StylePropertyDefinition } from "./styleProperties";
 import { generateStyleKey, simpleHash, getCachedClassName, setCachedClassName } from "./styleCache";
 import { createCSSClassWithStyles, classExistsInDOM } from "./cssGenerator";
+import type {
+	DisplayValue,
+	PositionValue,
+	TextAlignValue,
+	FontWeightValue,
+	FontStyleValue,
+	TextTransformValue,
+	TextDecorationValue,
+	TextDecorationStyleValue,
+	TextDecorationLineValue,
+	WhiteSpaceValue,
+	OverflowValue,
+	VisibilityValue,
+	FlexDirectionValue,
+	FlexWrapValue,
+	AlignItemsValue,
+	JustifyContentValue,
+	AlignSelfValue,
+	AlignContentValue,
+	JustifySelfValue,
+	JustifyItemsValue,
+	GridAutoFlowValue,
+	BorderStyleValue,
+	OutlineStyleValue,
+	BoxSizingValue,
+	ObjectFitValue,
+	VerticalAlignValue,
+	TextAlignLastValue,
+	TextJustifyValue,
+	TextOverflowValue,
+	WordWrapValue,
+	OverflowWrapValue,
+	BackgroundRepeatValue,
+	BackgroundAttachmentValue,
+	BackgroundClipValue,
+	BackgroundOriginValue,
+	TransformStyleValue,
+	BackfaceVisibilityValue,
+	AnimationDirectionValue,
+	AnimationFillModeValue,
+	AnimationPlayStateValue,
+	ListStyleTypeValue,
+	ListStylePositionValue,
+	BorderCollapseValue,
+	CaptionSideValue,
+	EmptyCellsValue,
+	TableLayoutValue,
+	AppearanceValue,
+	UserSelectValue,
+	PointerEventsValue,
+	ResizeValue,
+	ScrollBehaviorValue,
+	IsolationValue,
+	MixBlendModeValue,
+	ContainValue,
+	PageBreakValue,
+	BreakValue,
+	ColumnFillValue,
+	ColumnRuleStyleValue,
+	ColumnSpanValue,
+	CursorValue,
+	CSSLengthValue,
+	CSSColorValue,
+	CSSFontFamilyValue,
+	CSSTimingFunctionValue,
+	CSSTransformValue,
+	CSSFilterValue,
+	CSSBackgroundImageValue,
+	CSSAnimationNameValue,
+	CSSContentValue,
+} from "./cssPropertyTypes";
 
 // Get or create a class name for a set of CSS properties
 function getOrCreateClassName(styles: Record<string, string>, prefix = '', mediaQuery?: string): string {
@@ -91,196 +162,196 @@ export class StyleBuilder {
 
 // TypeScript interface declaration merging - adds types for dynamically generated methods
 export interface StyleBuilder {
-	display(value: string): this;
+	display(value: DisplayValue): this;
 	grid(): this;
-	bg(color: string): this;
-	color(colorValue: string): this;
-	accentColor(value: string): this;
-	fontSize(size: string): this;
-	fontWeight(value: string): this;
-	fontFamily(value: string): this;
-	lineHeight(value: string): this;
-	letterSpacing(value: string): this;
-	textAlign(value: string): this;
-	textDecoration(value: string): this;
-	fontStyle(value: string): this;
+	bg(color: CSSColorValue): this;
+	color(colorValue: CSSColorValue): this;
+	accentColor(value: CSSColorValue): this;
+	fontSize(size: CSSLengthValue): this;
+	fontWeight(value: FontWeightValue): this;
+	fontFamily(value: CSSFontFamilyValue): this;
+	lineHeight(value: CSSLengthValue | "normal" | number): this;
+	letterSpacing(value: CSSLengthValue | "normal"): this;
+	textAlign(value: TextAlignValue): this;
+	textDecoration(value: TextDecorationValue): this;
+	fontStyle(value: FontStyleValue): this;
 	fontVariant(value: string): this;
 	fontStretch(value: string): this;
-	textTransform(value: string): this;
-	textIndent(value: string): this;
-	textOverflow(value: string): this;
+	textTransform(value: TextTransformValue): this;
+	textIndent(value: CSSLengthValue): this;
+	textOverflow(value: TextOverflowValue): this;
 	textShadow(value: string): this;
-	whiteSpace(value: string): this;
-	wordSpacing(value: string): this;
-	wordWrap(value: string): this;
-	overflowWrap(value: string): this;
-	textAlignLast(value: string): this;
-	textJustify(value: string): this;
-	textDecorationLine(value: string): this;
-	textDecorationColor(value: string): this;
-	textDecorationStyle(value: string): this;
-	textDecorationThickness(value: string): this;
-	textUnderlineOffset(value: string): this;
-	verticalAlign(value: string): this;
-	position(value: string): this;
-	padding(value: string): this;
-	paddingTop(value: string): this;
-	paddingRight(value: string): this;
-	paddingBottom(value: string): this;
-	paddingLeft(value: string): this;
-	margin(value: string): this;
-	marginTop(value: string): this;
-	marginRight(value: string): this;
-	marginBottom(value: string): this;
-	marginLeft(value: string): this;
-	width(value: string): this;
-	height(value: string): this;
-	minWidth(value: string): this;
-	maxWidth(value: string): this;
-	minHeight(value: string): this;
-	maxHeight(value: string): this;
-	boxSizing(value: string): this;
-	top(value: string): this;
-	right(value: string): this;
-	bottom(value: string): this;
-	left(value: string): this;
-	zIndex(value: string): this;
-	flexDirection(value: string): this;
-	alignItems(value: string): this;
-	justifyContent(value: string): this;
-	gap(value: string): this;
-	flexWrap(value: string): this;
-	flexGrow(value: string): this;
-	flexShrink(value: string): this;
-	flexBasis(value: string): this;
-	alignSelf(value: string): this;
-	alignContent(value: string): this;
-	justifySelf(value: string): this;
-	justifyItems(value: string): this;
+	whiteSpace(value: WhiteSpaceValue): this;
+	wordSpacing(value: CSSLengthValue | "normal"): this;
+	wordWrap(value: WordWrapValue): this;
+	overflowWrap(value: OverflowWrapValue): this;
+	textAlignLast(value: TextAlignLastValue): this;
+	textJustify(value: TextJustifyValue): this;
+	textDecorationLine(value: TextDecorationLineValue): this;
+	textDecorationColor(value: CSSColorValue): this;
+	textDecorationStyle(value: TextDecorationStyleValue): this;
+	textDecorationThickness(value: CSSLengthValue | "auto" | "from-font"): this;
+	textUnderlineOffset(value: CSSLengthValue | "auto"): this;
+	verticalAlign(value: VerticalAlignValue): this;
+	position(value: PositionValue): this;
+	padding(value: CSSLengthValue): this;
+	paddingTop(value: CSSLengthValue): this;
+	paddingRight(value: CSSLengthValue): this;
+	paddingBottom(value: CSSLengthValue): this;
+	paddingLeft(value: CSSLengthValue): this;
+	margin(value: CSSLengthValue | "auto"): this;
+	marginTop(value: CSSLengthValue | "auto"): this;
+	marginRight(value: CSSLengthValue | "auto"): this;
+	marginBottom(value: CSSLengthValue | "auto"): this;
+	marginLeft(value: CSSLengthValue | "auto"): this;
+	width(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+	height(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+	minWidth(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+	maxWidth(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content" | "none"): this;
+	minHeight(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content"): this;
+	maxHeight(value: CSSLengthValue | "auto" | "fit-content" | "max-content" | "min-content" | "none"): this;
+	boxSizing(value: BoxSizingValue): this;
+	top(value: CSSLengthValue | "auto"): this;
+	right(value: CSSLengthValue | "auto"): this;
+	bottom(value: CSSLengthValue | "auto"): this;
+	left(value: CSSLengthValue | "auto"): this;
+	zIndex(value: number | "auto"): this;
+	flexDirection(value: FlexDirectionValue): this;
+	alignItems(value: AlignItemsValue): this;
+	justifyContent(value: JustifyContentValue): this;
+	gap(value: CSSLengthValue): this;
+	flexWrap(value: FlexWrapValue): this;
+	flexGrow(value: number | string): this;
+	flexShrink(value: number | string): this;
+	flexBasis(value: CSSLengthValue | "auto" | "content" | "fit-content"): this;
+	alignSelf(value: AlignSelfValue): this;
+	alignContent(value: AlignContentValue): this;
+	justifySelf(value: JustifySelfValue): this;
+	justifyItems(value: JustifyItemsValue): this;
 	gridTemplateColumns(value: string): this;
 	gridTemplateRows(value: string): this;
 	gridTemplateAreas(value: string): this;
 	gridColumn(value: string): this;
 	gridRow(value: string): this;
-	gridColumnStart(value: string): this;
-	gridColumnEnd(value: string): this;
-	gridRowStart(value: string): this;
-	gridRowEnd(value: string): this;
+	gridColumnStart(value: string | number | "auto"): this;
+	gridColumnEnd(value: string | number | "auto"): this;
+	gridRowStart(value: string | number | "auto"): this;
+	gridRowEnd(value: string | number | "auto"): this;
 	gridArea(value: string): this;
-	gridAutoColumns(value: string): this;
-	gridAutoRows(value: string): this;
-	gridAutoFlow(value: string): this;
+	gridAutoColumns(value: CSSLengthValue): this;
+	gridAutoRows(value: CSSLengthValue): this;
+	gridAutoFlow(value: GridAutoFlowValue): this;
 	border(value: string): this;
 	borderTop(value: string): this;
 	borderRight(value: string): this;
 	borderBottom(value: string): this;
 	borderLeft(value: string): this;
-	borderWidth(value: string): this;
-	borderStyle(value: string): this;
-	borderColor(value: string): this;
-	borderTopWidth(value: string): this;
-	borderRightWidth(value: string): this;
-	borderBottomWidth(value: string): this;
-	borderLeftWidth(value: string): this;
-	borderTopStyle(value: string): this;
-	borderRightStyle(value: string): this;
-	borderBottomStyle(value: string): this;
-	borderLeftStyle(value: string): this;
-	borderTopColor(value: string): this;
-	borderRightColor(value: string): this;
-	borderBottomColor(value: string): this;
-	borderLeftColor(value: string): this;
-	borderRadius(value: string): this;
-	borderTopLeftRadius(value: string): this;
-	borderTopRightRadius(value: string): this;
-	borderBottomLeftRadius(value: string): this;
-	borderBottomRightRadius(value: string): this;
+	borderWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderStyle(value: BorderStyleValue): this;
+	borderColor(value: CSSColorValue): this;
+	borderTopWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderRightWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderBottomWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderLeftWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	borderTopStyle(value: BorderStyleValue): this;
+	borderRightStyle(value: BorderStyleValue): this;
+	borderBottomStyle(value: BorderStyleValue): this;
+	borderLeftStyle(value: BorderStyleValue): this;
+	borderTopColor(value: CSSColorValue): this;
+	borderRightColor(value: CSSColorValue): this;
+	borderBottomColor(value: CSSColorValue): this;
+	borderLeftColor(value: CSSColorValue): this;
+	borderRadius(value: CSSLengthValue): this;
+	borderTopLeftRadius(value: CSSLengthValue): this;
+	borderTopRightRadius(value: CSSLengthValue): this;
+	borderBottomLeftRadius(value: CSSLengthValue): this;
+	borderBottomRightRadius(value: CSSLengthValue): this;
 	outline(value: string): this;
-	outlineWidth(value: string): this;
-	outlineStyle(value: string): this;
-	outlineColor(value: string): this;
-	outlineOffset(value: string): this;
-	backgroundColor(value: string): this;
-	backgroundImage(value: string): this;
-	backgroundRepeat(value: string): this;
+	outlineWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	outlineStyle(value: OutlineStyleValue): this;
+	outlineColor(value: CSSColorValue): this;
+	outlineOffset(value: CSSLengthValue): this;
+	backgroundColor(value: CSSColorValue): this;
+	backgroundImage(value: CSSBackgroundImageValue | "none"): this;
+	backgroundRepeat(value: BackgroundRepeatValue): this;
 	backgroundPosition(value: string): this;
-	backgroundSize(value: string): this;
-	backgroundAttachment(value: string): this;
-	backgroundClip(value: string): this;
-	backgroundOrigin(value: string): this;
-	boxShadow(value: string): this;
-	opacity(value: string): this;
+	backgroundSize(value: CSSLengthValue | "auto" | "cover" | "contain"): this;
+	backgroundAttachment(value: BackgroundAttachmentValue): this;
+	backgroundClip(value: BackgroundClipValue): this;
+	backgroundOrigin(value: BackgroundOriginValue): this;
+	boxShadow(value: string | "none"): this;
+	opacity(value: number | string): this;
 	transition(value: string): this;
-	transitionProperty(value: string): this;
-	transitionDuration(value: string): this;
-	transitionTimingFunction(value: string): this;
-	transitionDelay(value: string): this;
-	transform(value: string): this;
+	transitionProperty(value: string | "none" | "all"): this;
+	transitionDuration(value: string | number): this;
+	transitionTimingFunction(value: CSSTimingFunctionValue): this;
+	transitionDelay(value: string | number): this;
+	transform(value: CSSTransformValue | "none"): this;
 	transformOrigin(value: string): this;
-	transformStyle(value: string): this;
-	perspective(value: string): this;
+	transformStyle(value: TransformStyleValue): this;
+	perspective(value: CSSLengthValue | "none"): this;
 	perspectiveOrigin(value: string): this;
-	backfaceVisibility(value: string): this;
+	backfaceVisibility(value: BackfaceVisibilityValue): this;
 	animation(value: string): this;
-	animationName(value: string): this;
-	animationDuration(value: string): this;
-	animationTimingFunction(value: string): this;
-	animationDelay(value: string): this;
-	animationIterationCount(value: string): this;
-	animationDirection(value: string): this;
-	animationFillMode(value: string): this;
-	animationPlayState(value: string): this;
-	filter(value: string): this;
-	backdropFilter(value: string): this;
-	overflow(value: string): this;
-	overflowX(value: string): this;
-	overflowY(value: string): this;
-	visibility(value: string): this;
-	objectFit(value: string): this;
+	animationName(value: CSSAnimationNameValue): this;
+	animationDuration(value: string | number): this;
+	animationTimingFunction(value: CSSTimingFunctionValue): this;
+	animationDelay(value: string | number): this;
+	animationIterationCount(value: number | "infinite" | string): this;
+	animationDirection(value: AnimationDirectionValue): this;
+	animationFillMode(value: AnimationFillModeValue): this;
+	animationPlayState(value: AnimationPlayStateValue): this;
+	filter(value: CSSFilterValue | "none"): this;
+	backdropFilter(value: CSSFilterValue | "none"): this;
+	overflow(value: OverflowValue): this;
+	overflowX(value: OverflowValue): this;
+	overflowY(value: OverflowValue): this;
+	visibility(value: VisibilityValue): this;
+	objectFit(value: ObjectFitValue): this;
 	objectPosition(value: string): this;
 	listStyle(value: string): this;
-	listStyleType(value: string): this;
-	listStylePosition(value: string): this;
-	listStyleImage(value: string): this;
-	borderCollapse(value: string): this;
-	borderSpacing(value: string): this;
-	captionSide(value: string): this;
-	emptyCells(value: string): this;
-	tableLayout(value: string): this;
-	content(value: string): this;
-	quotes(value: string): this;
-	counterReset(value: string): this;
-	counterIncrement(value: string): this;
-	appearance(value: string): this;
-	userSelect(value: string): this;
-	pointerEvents(value: string): this;
-	resize(value: string): this;
-	scrollBehavior(value: string): this;
-	clip(value: string): this;
-	clipPath(value: string): this;
-	isolation(value: string): this;
-	mixBlendMode(value: string): this;
-	willChange(value: string): this;
-	contain(value: string): this;
-	pageBreakBefore(value: string): this;
-	pageBreakAfter(value: string): this;
-	pageBreakInside(value: string): this;
-	breakBefore(value: string): this;
-	breakAfter(value: string): this;
-	breakInside(value: string): this;
-	orphans(value: string): this;
-	widows(value: string): this;
-	columnCount(value: string): this;
-	columnFill(value: string): this;
-	columnGap(value: string): this;
+	listStyleType(value: ListStyleTypeValue): this;
+	listStylePosition(value: ListStylePositionValue): this;
+	listStyleImage(value: CSSBackgroundImageValue | "none"): this;
+	borderCollapse(value: BorderCollapseValue): this;
+	borderSpacing(value: CSSLengthValue): this;
+	captionSide(value: CaptionSideValue): this;
+	emptyCells(value: EmptyCellsValue): this;
+	tableLayout(value: TableLayoutValue): this;
+	content(value: CSSContentValue | "normal" | "none"): this;
+	quotes(value: string | "none"): this;
+	counterReset(value: string | "none"): this;
+	counterIncrement(value: string | "none"): this;
+	appearance(value: AppearanceValue): this;
+	userSelect(value: UserSelectValue): this;
+	pointerEvents(value: PointerEventsValue): this;
+	resize(value: ResizeValue): this;
+	scrollBehavior(value: ScrollBehaviorValue): this;
+	clip(value: string | "auto"): this;
+	clipPath(value: string | "none"): this;
+	isolation(value: IsolationValue): this;
+	mixBlendMode(value: MixBlendModeValue): this;
+	willChange(value: string | "auto"): this;
+	contain(value: ContainValue): this;
+	pageBreakBefore(value: PageBreakValue): this;
+	pageBreakAfter(value: PageBreakValue): this;
+	pageBreakInside(value: PageBreakValue): this;
+	breakBefore(value: BreakValue): this;
+	breakAfter(value: BreakValue): this;
+	breakInside(value: BreakValue): this;
+	orphans(value: number | string): this;
+	widows(value: number | string): this;
+	columnCount(value: number | "auto" | string): this;
+	columnFill(value: ColumnFillValue): this;
+	columnGap(value: CSSLengthValue | "normal"): this;
 	columnRule(value: string): this;
-	columnRuleColor(value: string): this;
-	columnRuleStyle(value: string): this;
-	columnRuleWidth(value: string): this;
-	columnSpan(value: string): this;
-	columnWidth(value: string): this;
+	columnRuleColor(value: CSSColorValue): this;
+	columnRuleStyle(value: ColumnRuleStyleValue): this;
+	columnRuleWidth(value: CSSLengthValue | "thin" | "medium" | "thick"): this;
+	columnSpan(value: ColumnSpanValue): this;
+	columnWidth(value: CSSLengthValue | "auto"): this;
 	columns(value: string): this;
-	cursor(value: string): this;
+	cursor(value: CursorValue): this;
 }
 
 // Dynamically add methods to StyleBuilder prototype
