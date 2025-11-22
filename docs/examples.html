@@ -19,6 +19,7 @@
                 <li><a href="index.html">Home</a></li>
                 <li><a href="getting-started.html">Getting Started</a></li>
                 <li><a href="api.html">API</a></li>
+                <li><a href="styling.html">Styling</a></li>
                 <li><a href="examples.html" class="active">Examples</a></li>
                 <li><a href="https://github.com/dan2dev/nuclo" target="_blank">GitHub</a></li>
             </ul>
@@ -33,12 +34,14 @@
                     <ul>
                         <li><a href="#counter">Counter</a></li>
                         <li><a href="#todo">Todo List</a></li>
+                        <li><a href="#subtasks">Nested Subtasks</a></li>
                         <li><a href="#search">Search Filter</a></li>
                         <li><a href="#async">Async Loading</a></li>
                         <li><a href="#forms">Form Handling</a></li>
                         <li><a href="#nested">Nested Components</a></li>
                         <li><a href="#animations">Animations</a></li>
                         <li><a href="#routing">Simple Routing</a></li>
+                        <li><a href="#styled-card">Styled Card</a></li>
                     </ul>
                 </nav>
             </aside>
@@ -223,6 +226,218 @@ const app = div(
     )
   ).else(
     p({ className: 'empty-state' }, 'No todos yet! Add one above.')
+  )
+);
+
+render(app, document.body);</code></pre>
+                </section>
+
+                <section id="subtasks" class="example-section">
+                    <h2>Nested Subtasks</h2>
+                    <p>A todo list with recursive subtasks, demonstrating nested <code>list()</code> and <code>when()</code> composition.</p>
+
+                    <pre><code class="language-typescript">import 'nuclo';
+
+type Task = {
+  id: number;
+  text: string;
+  done: boolean;
+  subtasks: Task[];
+  expanded: boolean;
+};
+
+let tasks: Task[] = [];
+let nextId = 1;
+
+function createTask(text: string): Task {
+  return {
+    id: nextId++,
+    text,
+    done: false,
+    subtasks: [],
+    expanded: true
+  };
+}
+
+function addTask(text: string, parent?: Task) {
+  const task = createTask(text);
+  if (parent) {
+    parent.subtasks.push(task);
+  } else {
+    tasks.push(task);
+  }
+  update();
+}
+
+function toggleTask(task: Task) {
+  task.done = !task.done;
+  // Optionally cascade to subtasks
+  function setDone(t: Task, done: boolean) {
+    t.done = done;
+    t.subtasks.forEach(st => setDone(st, done));
+  }
+  setDone(task, task.done);
+  update();
+}
+
+function toggleExpand(task: Task) {
+  task.expanded = !task.expanded;
+  update();
+}
+
+function deleteTask(task: Task, parent?: Task) {
+  if (parent) {
+    parent.subtasks = parent.subtasks.filter(t => t.id !== task.id);
+  } else {
+    tasks = tasks.filter(t => t.id !== task.id);
+  }
+  update();
+}
+
+// Recursive task renderer
+function TaskItem(task: Task, parent?: Task, depth = 0): Element {
+  let newSubtaskText = '';
+
+  return div(
+    { className: 'task-item' },
+    { style: { marginLeft: `${depth * 20}px` } },
+
+    // Task header
+    div(
+      { className: 'task-header' },
+
+      // Expand/collapse button (if has subtasks)
+      when(() => task.subtasks.length > 0,
+        button(
+          { className: 'expand-btn' },
+          () => task.expanded ? '▼' : '▶',
+          on('click', () => toggleExpand(task))
+        )
+      ).else(
+        span({ style: { width: '24px', display: 'inline-block' } })
+      ),
+
+      // Checkbox
+      input(
+        {
+          type: 'checkbox',
+          checked: () => task.done
+        },
+        on('change', () => toggleTask(task))
+      ),
+
+      // Task text
+      span(
+        {
+          className: () => task.done ? 'done' : '',
+          style: {
+            textDecoration: () => task.done ? 'line-through' : 'none',
+            opacity: () => task.done ? '0.6' : '1'
+          }
+        },
+        () => task.text
+      ),
+
+      // Subtask count badge
+      when(() => task.subtasks.length > 0,
+        span(
+          { className: 'subtask-count' },
+          () => `(${task.subtasks.filter(t => t.done).length}/${task.subtasks.length})`
+        )
+      ),
+
+      // Delete button
+      button(
+        { className: 'delete-btn' },
+        '×',
+        on('click', () => deleteTask(task, parent))
+      )
+    ),
+
+    // Subtasks (when expanded)
+    when(() => task.expanded && task.subtasks.length > 0,
+      div(
+        { className: 'subtasks' },
+        list(() => task.subtasks, subtask =>
+          TaskItem(subtask, task, depth + 1)
+        )
+      )
+    ),
+
+    // Add subtask form (when expanded)
+    when(() => task.expanded,
+      div(
+        { className: 'add-subtask' },
+        { style: { marginLeft: `${(depth + 1) * 20}px` } },
+        input(
+          {
+            type: 'text',
+            placeholder: 'Add subtask...',
+            value: () => newSubtaskText
+          },
+          on('input', e => {
+            newSubtaskText = e.target.value;
+            update();
+          }),
+          on('keydown', e => {
+            if (e.key === 'Enter' && newSubtaskText.trim()) {
+              addTask(newSubtaskText.trim(), task);
+              newSubtaskText = '';
+              update();
+            }
+          })
+        )
+      )
+    )
+  );
+}
+
+// Main app
+let mainInputText = '';
+
+const app = div(
+  { className: 'task-app' },
+
+  h1('Tasks with Subtasks'),
+
+  // Add main task
+  div(
+    { className: 'add-task' },
+    input(
+      {
+        type: 'text',
+        placeholder: 'Add a task...',
+        value: () => mainInputText
+      },
+      on('input', e => {
+        mainInputText = e.target.value;
+        update();
+      }),
+      on('keydown', e => {
+        if (e.key === 'Enter' && mainInputText.trim()) {
+          addTask(mainInputText.trim());
+          mainInputText = '';
+          update();
+        }
+      })
+    ),
+    button('Add', on('click', () => {
+      if (mainInputText.trim()) {
+        addTask(mainInputText.trim());
+        mainInputText = '';
+        update();
+      }
+    }))
+  ),
+
+  // Task list
+  when(() => tasks.length > 0,
+    div(
+      { className: 'task-list' },
+      list(() => tasks, task => TaskItem(task))
+    )
+  ).else(
+    p({ className: 'empty' }, 'No tasks yet. Add one above!')
   )
 );
 
@@ -825,6 +1040,251 @@ const app = div(
     .when(() => currentRoute === 'about', AboutPage())
     .when(() => currentRoute === 'contact', ContactPage())
     .else(NotFoundPage())
+  )
+);
+
+render(app, document.body);</code></pre>
+                </section>
+
+                <section id="styled-card" class="example-section">
+                    <h2>Styled Card</h2>
+                    <p>Using nuclo's CSS-in-JS styling system to create a polished product card component with hover effects.</p>
+
+                    <pre><code class="language-typescript">import 'nuclo';
+
+// Setup breakpoints
+const cn = createBreakpoints({
+  medium: '(min-width: 768px)',
+  large: '(min-width: 1024px)'
+});
+
+// Define reusable styles
+const styles = {
+  page: cn(
+    bg('#f5f5f5')
+      .minHeight('100vh')
+      .padding('1rem'),
+    { medium: padding('2rem') }
+  ),
+
+  header: cn(
+    textAlign('center')
+      .marginBottom('2rem')
+  ),
+
+  title: cn(
+    margin('0 0 0.5rem 0')
+      .fontSize('2rem')
+      .color('#1a1a2e'),
+    { large: fontSize('2.5rem') }
+  ),
+
+  subtitle: cn(
+    margin('0')
+      .color('#666')
+  ),
+
+  grid: cn(
+    grid()
+      .gridTemplateColumns('1fr')
+      .gap('1.5rem')
+      .maxWidth('1200px')
+      .margin('0 auto'),
+    {
+      medium: gridTemplateColumns('repeat(2, 1fr)'),
+      large: gridTemplateColumns('repeat(3, 1fr)').gap('2rem')
+    }
+  ),
+
+  card: cn(
+    bg('white')
+      .borderRadius('12px')
+      .overflow('hidden')
+      .transition('all 0.3s ease')
+      .cursor('pointer')
+  ),
+
+  cardImage: cn(
+    position('relative')
+      .overflow('hidden')
+      .height('200px')
+  ),
+
+  image: cn(
+    width('100%')
+      .height('100%')
+      .objectFit('cover')
+      .transition('transform 0.3s ease')
+  ),
+
+  overlay: cn(
+    position('absolute')
+      .top('0')
+      .left('0')
+      .right('0')
+      .bottom('0')
+      .bg('rgba(0,0,0,0.5)')
+      .flex()
+      .alignItems('center')
+      .justifyContent('center')
+  ),
+
+  overlayText: cn(
+    color('white')
+      .fontSize('1.25rem')
+      .fontWeight('bold')
+  ),
+
+  content: cn(
+    padding('1.5rem')
+  ),
+
+  cardTitle: cn(
+    margin('0 0 0.5rem 0')
+      .fontSize('1.25rem')
+      .fontWeight('600')
+      .color('#1a1a2e')
+  ),
+
+  cardDesc: cn(
+    margin('0 0 1rem 0')
+      .fontSize('0.9rem')
+      .color('#666')
+      .lineHeight('1.5')
+  ),
+
+  footer: cn(
+    flex()
+      .justifyContent('space-between')
+      .alignItems('center')
+  ),
+
+  price: cn(
+    fontSize('1.5rem')
+      .fontWeight('bold')
+      .color('#3b82f6')
+  ),
+
+  button: cn(
+    color('white')
+      .padding('0.75rem 1.5rem')
+      .borderRadius('8px')
+      .border('none')
+      .fontSize('0.9rem')
+      .fontWeight('600')
+      .transition('background-color 0.2s')
+  )
+};
+
+type Product = {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  inStock: boolean;
+};
+
+let products: Product[] = [
+  {
+    id: 1,
+    name: 'Wireless Headphones',
+    description: 'Premium noise-canceling headphones with 30-hour battery.',
+    price: 299.99,
+    image: '/images/headphones.jpg',
+    inStock: true
+  },
+  {
+    id: 2,
+    name: 'Smart Watch',
+    description: 'Track your fitness, receive notifications, and more.',
+    price: 399.99,
+    image: '/images/watch.jpg',
+    inStock: true
+  },
+  {
+    id: 3,
+    name: 'Portable Speaker',
+    description: 'Waterproof speaker with incredible bass and clarity.',
+    price: 149.99,
+    image: '/images/speaker.jpg',
+    inStock: false
+  }
+];
+
+function ProductCard(product: Product) {
+  let isHovered = false;
+
+  return div(
+    styles.card,
+    {
+      // Reactive style: a function that returns the style object
+      style: () => ({
+        boxShadow: isHovered
+          ? '0 10px 40px rgba(0,0,0,0.15)'
+          : '0 2px 8px rgba(0,0,0,0.1)',
+        transform: isHovered ? 'translateY(-4px)' : 'translateY(0)'
+      })
+    },
+    on('mouseenter', () => { isHovered = true; update(); }),
+    on('mouseleave', () => { isHovered = false; update(); }),
+
+    // Image container
+    div(styles.cardImage,
+      img({
+        src: product.image,
+        alt: product.name,
+        style: () => ({
+          transform: isHovered ? 'scale(1.05)' : 'scale(1)'
+        })
+      }, styles.image),
+
+      // Out of stock overlay
+      when(() => !product.inStock,
+        div(styles.overlay,
+          span(styles.overlayText, 'Out of Stock')
+        )
+      )
+    ),
+
+    // Content
+    div(styles.content,
+      h3(styles.cardTitle, product.name),
+      p(styles.cardDesc, product.description),
+
+      div(styles.footer,
+        span(styles.price, () => `$${product.price.toFixed(2)}`),
+
+        button(
+          styles.button,
+          {
+            style: () => ({
+              backgroundColor: product.inStock ? '#3b82f6' : '#ccc',
+              cursor: product.inStock ? 'pointer' : 'not-allowed'
+            })
+          },
+          on('click', () => {
+            if (product.inStock) {
+              console.log(`Added ${product.name} to cart`);
+            }
+          }),
+          product.inStock ? 'Add to Cart' : 'Unavailable'
+        )
+      )
+    )
+  );
+}
+
+const app = div(
+  styles.page,
+
+  div(styles.header,
+    h1(styles.title, 'Featured Products'),
+    p(styles.subtitle, 'Discover our latest collection')
+  ),
+
+  div(styles.grid,
+    list(() => products, product => ProductCard(product))
   )
 );
 

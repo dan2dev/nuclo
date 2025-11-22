@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="nuclo Styling Guide - CSS-in-JS utilities, StyleBuilder, and responsive design">
+    <title>Styling Guide - nuclo</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>nuclo</h1>
+                <span class="tagline">Simple. Explicit. Reactive.</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="getting-started.html">Getting Started</a></li>
+                <li><a href="api.html">API</a></li>
+                <li><a href="styling.html" class="active">Styling</a></li>
+                <li><a href="examples.html">Examples</a></li>
+                <li><a href="https://github.com/dan2dev/nuclo" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="docs-content">
+        <div class="container">
+            <aside class="sidebar">
+                <nav class="docs-nav">
+                    <h3>Styling Guide</h3>
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#style-builder">StyleBuilder</a></li>
+                        <li><a href="#style-helpers">Style Helpers</a></li>
+                        <li><a href="#breakpoints">Breakpoints & Responsive</a></li>
+                        <li><a href="#layout">Layout Properties</a></li>
+                        <li><a href="#typography">Typography</a></li>
+                        <li><a href="#colors">Colors & Backgrounds</a></li>
+                        <li><a href="#flexbox">Flexbox</a></li>
+                        <li><a href="#grid">CSS Grid</a></li>
+                        <li><a href="#effects">Effects & Transitions</a></li>
+                        <li><a href="#organizing">Organizing Styles</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <article class="docs-main">
+                <h1>Styling Guide</h1>
+                <p>nuclo provides a powerful CSS-in-JS system using a fluent StyleBuilder API. Chain style methods together, then use <code>createBreakpoints</code> to generate CSS class names automatically.</p>
+
+                <section id="overview">
+                    <h2>Overview</h2>
+                    <p>nuclo's styling system works by:</p>
+                    <ol>
+                        <li><strong>Chaining style methods:</strong> Start with any style helper like <code>bg()</code> and chain more properties</li>
+                        <li><strong>Using createBreakpoints:</strong> The <code>cn()</code> function generates CSS class names from your styles</li>
+                        <li><strong>Applying to elements:</strong> Pass the result directly to tag builders</li>
+                    </ol>
+
+                    <h3>Quick Example</h3>
+                    <pre><code class="language-typescript">import 'nuclo';
+
+// Create breakpoints helper (usually done once)
+const cn = createBreakpoints({
+  medium: '(min-width: 768px)',
+  large: '(min-width: 1024px)'
+});
+
+// Define styles by chaining methods
+const buttonStyle = cn(
+  bg('#3b82f6')
+    .color('white')
+    .padding('0.75rem 1.5rem')
+    .borderRadius('8px')
+    .border('none')
+    .cursor('pointer')
+    .fontWeight('600')
+    .transition('all 0.2s ease')
+);
+
+// Use in your component
+button(buttonStyle, 'Click me');</code></pre>
+                </section>
+
+                <section id="style-builder">
+                    <h2>StyleBuilder</h2>
+                    <p>The <code>StyleBuilder</code> is the core of nuclo's styling system. Each style helper function returns a StyleBuilder instance that can be chained.</p>
+
+                    <h3>How It Works</h3>
+                    <pre><code class="language-typescript">// Each helper returns a StyleBuilder
+const builder = bg('#FF0000');
+
+// Chain more properties
+const styles = bg('#FF0000')
+  .padding('1rem')
+  .fontSize('16px')
+  .borderRadius('4px');
+
+// Get the class name directly
+const className = styles.getClassName();  // Returns: "n3a7f2b1"
+
+// Or use with cn() for responsive support
+const responsive = cn(styles);</code></pre>
+
+                    <h3>StyleBuilder Methods</h3>
+                    <pre><code class="language-typescript">// Get accumulated styles as object
+builder.getStyles()  // { 'background-color': '#FF0000', ... }
+
+// Generate CSS class name
+builder.getClassName()  // "n3a7f2b1"
+builder.getClassName('btn')  // "btn-3a7f2b1" (with prefix)
+
+// Add custom CSS property
+builder.add('custom-property', 'value')
+
+// Convert to string (same as getClassName)
+builder.toString()  // "n3a7f2b1"</code></pre>
+
+                    <h3>Automatic CSS Injection</h3>
+                    <p>When you call <code>getClassName()</code> or use <code>cn()</code>, nuclo automatically:</p>
+                    <ul>
+                        <li>Generates a unique hash-based class name from your styles</li>
+                        <li>Creates the CSS rule and injects it into the DOM</li>
+                        <li>Caches the result - same styles = same class name (no duplication)</li>
+                    </ul>
+                    <pre><code class="language-typescript">// This creates a &lt;style&gt; tag in &lt;head&gt; with:
+// .n3a7f2b1 { background-color: #3b82f6; padding: 1rem; }
+
+const style = cn(bg('#3b82f6').padding('1rem'));
+div(style, 'Content');</code></pre>
+                </section>
+
+                <section id="style-helpers">
+                    <h2>Style Helpers</h2>
+                    <p>nuclo provides 95+ style helper functions. Each creates a new StyleBuilder that can be chained.</p>
+
+                    <h3>Basic Usage</h3>
+                    <pre><code class="language-typescript">// Start with any helper, chain the rest
+const cardStyle = cn(
+  bg('white')
+    .padding('1.5rem')
+    .borderRadius('12px')
+    .boxShadow('0 4px 6px rgba(0,0,0,0.1)')
+);
+
+div(cardStyle, 'Card content');</code></pre>
+
+                    <h3>Available Helpers</h3>
+                    <p>All CSS properties are available as chainable methods:</p>
+                    <pre><code class="language-typescript">// Layout
+display('flex')
+position('relative')
+width('100%')
+height('auto')
+minWidth('300px')
+maxWidth('800px')
+
+// Spacing
+padding('1rem')
+paddingTop('10px')
+margin('0 auto')
+marginBottom('20px')
+
+// Typography
+fontSize('16px')
+fontWeight('bold')
+fontFamily('Arial, sans-serif')
+lineHeight('1.5')
+textAlign('center')
+
+// Colors
+bg('#f0f0f0')
+color('#333')
+
+// Borders
+border('1px solid #ccc')
+borderRadius('8px')
+
+// Flexbox
+flex()  // shorthand for display: flex
+flexDirection('column')
+alignItems('center')
+justifyContent('space-between')
+gap('1rem')
+
+// Effects
+boxShadow('0 2px 4px rgba(0,0,0,0.1)')
+opacity('0.8')
+transition('all 0.3s ease')
+transform('translateY(-2px)')</code></pre>
+
+                    <h3>Special Methods</h3>
+                    <pre><code class="language-typescript">// bold() - shorthand for fontWeight('bold')
+bold()
+
+// center() - centers content on both axes
+center()  // alignItems('center') + justifyContent('center')
+
+// flex() - can be shorthand or take a value
+flex()  // display: flex
+flex('1')  // flex: 1
+
+// grid() - shorthand for display: grid
+grid()</code></pre>
+                </section>
+
+                <section id="breakpoints">
+                    <h2>Breakpoints & Responsive Design</h2>
+                    <p>The <code>createBreakpoints</code> function enables responsive styling with media queries.</p>
+
+                    <h3>Setup</h3>
+                    <pre><code class="language-typescript">// Create once, typically in a styles.ts file
+export const cn = createBreakpoints({
+  small: '(min-width: 480px)',
+  medium: '(min-width: 768px)',
+  large: '(min-width: 1024px)',
+  xl: '(min-width: 1280px)'
+});</code></pre>
+
+                    <h3>Basic Usage</h3>
+                    <pre><code class="language-typescript">// Default styles only
+const style = cn(
+  padding('1rem').bg('white')
+);
+
+// With responsive overrides
+const responsiveStyle = cn(
+  // Default (mobile-first)
+  padding('1rem')
+    .fontSize('14px')
+    .width('100%'),
+  // Breakpoint overrides
+  {
+    medium: padding('1.5rem').fontSize('16px'),
+    large: padding('2rem').fontSize('18px').maxWidth('800px')
+  }
+);</code></pre>
+
+                    <h3>How Breakpoints Work</h3>
+                    <pre><code class="language-typescript">// This generates CSS like:
+// .n3a7f2b1 { padding: 1rem; font-size: 14px; width: 100%; }
+// @media (min-width: 768px) {
+//   .n3a7f2b1 { padding: 1.5rem; font-size: 16px; }
+// }
+// @media (min-width: 1024px) {
+//   .n3a7f2b1 { padding: 2rem; font-size: 18px; max-width: 800px; }
+// }
+
+const style = cn(
+  padding('1rem').fontSize('14px').width('100%'),
+  {
+    medium: padding('1.5rem').fontSize('16px'),
+    large: padding('2rem').fontSize('18px').maxWidth('800px')
+  }
+);</code></pre>
+
+                    <h3>Breakpoints Only</h3>
+                    <pre><code class="language-typescript">// You can also use just breakpoints without default styles
+const hideOnMobile = cn({
+  small: display('block'),
+  // Implicitly hidden on smaller screens
+});</code></pre>
+                </section>
+
+                <section id="layout">
+                    <h2>Layout Properties</h2>
+
+                    <h3>Display & Position</h3>
+                    <pre><code class="language-typescript">display('flex')
+display('grid')
+display('block')
+display('inline-block')
+display('none')
+
+position('relative')
+position('absolute')
+position('fixed')
+position('sticky')
+
+top('0')
+right('10px')
+bottom('auto')
+left('50%')
+zIndex('100')</code></pre>
+
+                    <h3>Sizing</h3>
+                    <pre><code class="language-typescript">width('100%')
+height('200px')
+minWidth('300px')
+maxWidth('800px')
+minHeight('100vh')
+maxHeight('500px')
+boxSizing('border-box')</code></pre>
+
+                    <h3>Spacing</h3>
+                    <pre><code class="language-typescript">// Padding
+padding('1rem')
+padding('1rem 2rem')  // vertical | horizontal
+paddingTop('10px')
+paddingRight('15px')
+paddingBottom('10px')
+paddingLeft('15px')
+
+// Margin
+margin('auto')
+margin('0 auto')
+marginTop('20px')
+marginBottom('20px')</code></pre>
+
+                    <h3>Overflow</h3>
+                    <pre><code class="language-typescript">overflow('hidden')
+overflow('auto')
+overflow('scroll')
+overflowX('auto')
+overflowY('hidden')</code></pre>
+                </section>
+
+                <section id="typography">
+                    <h2>Typography</h2>
+
+                    <h3>Font Properties</h3>
+                    <pre><code class="language-typescript">fontSize('16px')
+fontSize('1.25rem')
+fontWeight('bold')
+fontWeight('600')
+fontFamily("'Inter', system-ui, sans-serif")
+fontStyle('italic')
+lineHeight('1.5')
+letterSpacing('0.05em')</code></pre>
+
+                    <h3>Text Styling</h3>
+                    <pre><code class="language-typescript">color('#333')
+textAlign('center')
+textAlign('left')
+textDecoration('underline')
+textDecoration('none')
+textTransform('uppercase')
+whiteSpace('nowrap')
+wordBreak('break-word')</code></pre>
+
+                    <h3>Example: Typography System</h3>
+                    <pre><code class="language-typescript">const cn = createBreakpoints({
+  medium: '(min-width: 768px)',
+  large: '(min-width: 1024px)'
+});
+
+const heading = cn(
+  fontSize('1.5rem')
+    .fontWeight('700')
+    .lineHeight('1.2')
+    .color('#1a1a2e')
+    .margin('0 0 1rem 0'),
+  {
+    medium: fontSize('2rem'),
+    large: fontSize('2.5rem')
+  }
+);
+
+const bodyText = cn(
+  fontSize('1rem')
+    .lineHeight('1.6')
+    .color('#4a4a4a')
+);
+
+h1(heading, 'Page Title');
+p(bodyText, 'Body content here...');</code></pre>
+                </section>
+
+                <section id="colors">
+                    <h2>Colors & Backgrounds</h2>
+
+                    <h3>Colors</h3>
+                    <pre><code class="language-typescript">color('red')
+color('#ff0000')
+color('rgb(255, 0, 0)')
+color('rgba(255, 0, 0, 0.5)')
+
+bg('blue')
+bg('#3b82f6')
+bg('transparent')
+backgroundColor('white')</code></pre>
+
+                    <h3>Gradients</h3>
+                    <pre><code class="language-typescript">// Linear gradient
+bg('linear-gradient(to right, #667eea, #764ba2)')
+bg('linear-gradient(135deg, #667eea 0%, #764ba2 100%)')
+
+// Radial gradient
+bg('radial-gradient(circle, #ff0000, #0000ff)')</code></pre>
+
+                    <h3>Background Properties</h3>
+                    <pre><code class="language-typescript">backgroundImage('url(/images/bg.jpg)')
+backgroundRepeat('no-repeat')
+backgroundPosition('center')
+backgroundSize('cover')</code></pre>
+                </section>
+
+                <section id="flexbox">
+                    <h2>Flexbox</h2>
+
+                    <h3>Container Properties</h3>
+                    <pre><code class="language-typescript">// Enable flexbox
+flex()  // display: flex
+
+// Direction
+flexDirection('row')
+flexDirection('column')
+flexDirection('row-reverse')
+
+// Wrapping
+flexWrap('wrap')
+flexWrap('nowrap')
+
+// Alignment
+justifyContent('flex-start')
+justifyContent('center')
+justifyContent('space-between')
+justifyContent('space-around')
+
+alignItems('stretch')
+alignItems('center')
+alignItems('flex-start')
+alignItems('flex-end')
+
+// Shorthand for centering
+center()  // alignItems + justifyContent center
+
+// Gap
+gap('1rem')
+gap('10px 20px')  // row | column</code></pre>
+
+                    <h3>Item Properties</h3>
+                    <pre><code class="language-typescript">flexGrow('1')
+flexShrink('0')
+flexBasis('200px')
+alignSelf('center')</code></pre>
+
+                    <h3>Example: Navbar</h3>
+                    <pre><code class="language-typescript">const navbar = cn(
+  flex()
+    .justifyContent('space-between')
+    .alignItems('center')
+    .padding('1rem 2rem')
+    .bg('#1a1a2e')
+);
+
+const navLinks = cn(
+  flex()
+    .gap('1rem')
+    .alignItems('center')
+);
+
+nav(navbar,
+  div('Logo'),
+  div(navLinks,
+    a('Home'),
+    a('About'),
+    a('Contact')
+  )
+);</code></pre>
+                </section>
+
+                <section id="grid">
+                    <h2>CSS Grid</h2>
+
+                    <h3>Container Properties</h3>
+                    <pre><code class="language-typescript">// Enable grid
+grid()  // display: grid
+
+// Template
+gridTemplateColumns('1fr 1fr 1fr')
+gridTemplateColumns('repeat(3, 1fr)')
+gridTemplateColumns('repeat(auto-fill, minmax(250px, 1fr))')
+gridTemplateRows('auto 1fr auto')
+
+// Gap
+gap('1rem')
+gap('1rem 2rem')  // row | column</code></pre>
+
+                    <h3>Item Properties</h3>
+                    <pre><code class="language-typescript">gridColumn('1 / 3')
+gridColumn('span 2')
+gridRow('1 / 2')
+gridArea('header')</code></pre>
+
+                    <h3>Example: Responsive Card Grid</h3>
+                    <pre><code class="language-typescript">const cn = createBreakpoints({
+  medium: '(min-width: 768px)',
+  large: '(min-width: 1024px)'
+});
+
+const cardGrid = cn(
+  grid()
+    .gridTemplateColumns('1fr')
+    .gap('1.5rem')
+    .padding('2rem'),
+  {
+    medium: gridTemplateColumns('repeat(2, 1fr)'),
+    large: gridTemplateColumns('repeat(3, 1fr)')
+  }
+);
+
+const card = cn(
+  bg('white')
+    .borderRadius('12px')
+    .padding('1.5rem')
+    .boxShadow('0 2px 8px rgba(0,0,0,0.1)')
+);
+
+div(cardGrid,
+  list(() => products, product =>
+    div(card, product.name)
+  )
+);</code></pre>
+                </section>
+
+                <section id="effects">
+                    <h2>Effects & Transitions</h2>
+
+                    <h3>Box Shadow</h3>
+                    <pre><code class="language-typescript">boxShadow('0 2px 4px rgba(0,0,0,0.1)')
+boxShadow('0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)')
+boxShadow('inset 0 2px 4px rgba(0,0,0,0.1)')
+boxShadow('none')</code></pre>
+
+                    <h3>Opacity & Visibility</h3>
+                    <pre><code class="language-typescript">opacity('1')
+opacity('0.5')
+opacity('0')
+visibility('hidden')
+visibility('visible')</code></pre>
+
+                    <h3>Transitions</h3>
+                    <pre><code class="language-typescript">transition('all 0.3s ease')
+transition('opacity 0.3s, transform 0.3s')
+transition('background-color 0.2s ease-in-out')</code></pre>
+
+                    <h3>Transform</h3>
+                    <pre><code class="language-typescript">transform('translateX(10px)')
+transform('translateY(-50%)')
+transform('rotate(45deg)')
+transform('scale(1.1)')
+transform('translate(-50%, -50%) rotate(45deg)')
+transformOrigin('center')</code></pre>
+
+                    <h3>Filters</h3>
+                    <pre><code class="language-typescript">filter('blur(4px)')
+filter('brightness(1.2)')
+filter('grayscale(100%)')
+backdropFilter('blur(10px)')</code></pre>
+
+                    <h3>Example: Hover Card Effect</h3>
+                    <pre><code class="language-typescript">// For hover effects, use a reactive style function
+let isHovered = false;
+
+const cardBase = cn(
+  bg('white')
+    .borderRadius('12px')
+    .padding('1.5rem')
+    .transition('all 0.3s ease')
+);
+
+div(
+  cardBase,
+  {
+    // Reactive style: a function that returns the style object
+    style: () => ({
+      boxShadow: isHovered
+        ? '0 10px 40px rgba(0,0,0,0.15)'
+        : '0 2px 8px rgba(0,0,0,0.1)',
+      transform: isHovered
+        ? 'translateY(-4px)'
+        : 'translateY(0)'
+    })
+  },
+  on('mouseenter', () => { isHovered = true; update(); }),
+  on('mouseleave', () => { isHovered = false; update(); }),
+  'Hover me'
+);</code></pre>
+                </section>
+
+                <section id="organizing">
+                    <h2>Organizing Styles</h2>
+                    <p>Best practices for organizing your styles in a nuclo project.</p>
+
+                    <h3>Create a Theme</h3>
+                    <pre><code class="language-typescript">// styles.ts
+import 'nuclo';
+
+// Theme constants
+export const theme = {
+  colors: {
+    primary: '#6366f1',
+    secondary: '#8b5cf6',
+    text: '#1f2937',
+    textLight: '#6b7280',
+    bg: '#ffffff',
+    bgAlt: '#f9fafb',
+    border: '#e5e7eb',
+  },
+  spacing: {
+    xs: '0.25rem',
+    sm: '0.5rem',
+    md: '1rem',
+    lg: '1.5rem',
+    xl: '2rem',
+  },
+  borderRadius: {
+    sm: '4px',
+    md: '8px',
+    lg: '12px',
+    full: '9999px',
+  },
+  shadows: {
+    sm: '0 1px 2px rgba(0,0,0,0.05)',
+    md: '0 4px 6px rgba(0,0,0,0.1)',
+    lg: '0 10px 15px rgba(0,0,0,0.1)',
+  }
+};
+
+// Create breakpoints
+export const cn = createBreakpoints({
+  sm: '(min-width: 640px)',
+  md: '(min-width: 768px)',
+  lg: '(min-width: 1024px)',
+  xl: '(min-width: 1280px)',
+});</code></pre>
+
+                    <h3>Define Reusable Styles</h3>
+                    <pre><code class="language-typescript">// styles.ts (continued)
+export const styles = {
+  // Layout
+  container: cn(
+    width('100%')
+      .maxWidth('1200px')
+      .margin('0 auto')
+      .padding(theme.spacing.md),
+    {
+      md: padding(theme.spacing.lg),
+      lg: padding(theme.spacing.xl),
+    }
+  ),
+
+  // Card
+  card: cn(
+    bg(theme.colors.bg)
+      .borderRadius(theme.borderRadius.lg)
+      .padding(theme.spacing.lg)
+      .boxShadow(theme.shadows.md)
+  ),
+
+  // Button variants
+  btnPrimary: cn(
+    bg(theme.colors.primary)
+      .color('white')
+      .padding(`${theme.spacing.sm} ${theme.spacing.lg}`)
+      .borderRadius(theme.borderRadius.md)
+      .border('none')
+      .fontWeight('600')
+      .cursor('pointer')
+      .transition('all 0.2s ease')
+  ),
+
+  btnSecondary: cn(
+    bg('transparent')
+      .color(theme.colors.primary)
+      .padding(`${theme.spacing.sm} ${theme.spacing.lg}`)
+      .borderRadius(theme.borderRadius.md)
+      .border(`2px solid ${theme.colors.primary}`)
+      .fontWeight('600')
+      .cursor('pointer')
+      .transition('all 0.2s ease')
+  ),
+
+  // Form elements
+  input: cn(
+    width('100%')
+      .padding(theme.spacing.md)
+      .border(`1px solid ${theme.colors.border}`)
+      .borderRadius(theme.borderRadius.md)
+      .fontSize('1rem')
+      .transition('border-color 0.2s')
+  ),
+
+  // Typography
+  h1: cn(
+    fontSize('1.875rem')
+      .fontWeight('700')
+      .color(theme.colors.text)
+      .lineHeight('1.2')
+      .margin('0'),
+    {
+      md: fontSize('2.25rem'),
+      lg: fontSize('3rem'),
+    }
+  ),
+
+  text: cn(
+    fontSize('1rem')
+      .color(theme.colors.textLight)
+      .lineHeight('1.6')
+  ),
+};</code></pre>
+
+                    <h3>Use in Components</h3>
+                    <pre><code class="language-typescript">// app.ts
+import { cn, theme, styles as s } from './styles';
+
+const app = div(
+  s.container,
+
+  div(s.card,
+    h1(s.h1, 'Welcome'),
+    p(s.text, 'This is styled with nuclo CSS-in-JS'),
+
+    div(
+      flex().gap(theme.spacing.md),
+      button(s.btnPrimary, 'Primary'),
+      button(s.btnSecondary, 'Secondary')
+    )
+  )
+);
+
+render(app, document.body);</code></pre>
+                </section>
+
+                <section class="next-steps">
+                    <h2>Next Steps</h2>
+                    <div class="card-grid">
+                        <a href="api.html" class="card">
+                            <h3>API Reference</h3>
+                            <p>Complete API documentation</p>
+                        </a>
+                        <a href="examples.html#styled-card" class="card">
+                            <h3>Styled Card Example</h3>
+                            <p>See styling in action</p>
+                        </a>
+                        <a href="https://github.com/dan2dev/nuclo/tree/main/examples/basic/src/styles.ts" class="card">
+                            <h3>Example Styles</h3>
+                            <p>Browse real-world styling code</p>
+                        </a>
+                    </div>
+                </section>
+            </article>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>Created by <strong>Danilo Celestino de Castro</strong> (<a href="https://github.com/dan2dev" target="_blank">@dan2dev</a>)</p>
+            <p>MIT License - Free and Open Source</p>
+            <p>
+                <a href="https://github.com/dan2dev/nuclo">GitHub</a> •
+                <a href="https://github.com/dan2dev/nuclo/issues">Issues</a> •
+                <a href="https://www.npmjs.com/package/nuclo">NPM</a>
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="assets/js/main.js"></script>
+</body>
+</html>
