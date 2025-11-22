@@ -44,9 +44,9 @@ export const theme = {
 
 // Style Queries (Media, Container, Feature)
 export const cn = createStyleQueries({
-	small: "@media (min-width: 341px)",
-	medium: "@media (min-width: 601px)",
-	large: "@media (min-width: 1025px)",
+	small: "@container (min-width: 341px)",
+	medium: "@container (min-width: 601px)",
+	large: "@container (min-width: 1025px)",
 });
 
 
@@ -64,10 +64,10 @@ export const globalStyles = {
 	// ),
 	body: cn(bg("linear-gradient(to bottom right, #f0f4ff, #e0e7ff)")
 		.margin("0")
-		// .containerType("size")
 		// .display("blo")
 		// .containerType("inline-size")
 		// .containerType("inline-size")
+		.containerType("inline-size")
 		.padding(theme.spacing.lg)
 		.paddingLeft(`23px`)
 		.minHeight("100vh")
