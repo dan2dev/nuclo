@@ -100,7 +100,11 @@ function getExamplesByIds(ids: string[]) {
 }
 
 export function ExamplesPage() {
-  const liveExamples = new Set(["counter", "todo"]);
+  // All examples now have live demos
+  const liveExamples = new Set([
+    "counter", "todo", "subtasks", "search", "async",
+    "forms", "nested", "animations", "routing", "styled-card"
+  ]);
 
   return div(
     s.pageContent,
