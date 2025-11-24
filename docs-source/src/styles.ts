@@ -76,7 +76,9 @@ export const cn = createStyleQueries({
 // Style definitions using cn()
 export const s = {
   // Layout
-  container: cn(padding("0 24px").maxWidth("1200px").margin("0 auto").width("100%")),
+  container: cn(padding("0 16px").maxWidth("1200px").margin("0 auto").width("100%").boxSizing("border-box"), {
+    medium: padding("0 24px")
+  }),
 
   // Header
   header: cn(display("flex")
@@ -228,11 +230,15 @@ export const s = {
   // Code blocks
   codeBlock: cn(backgroundColor(colors.bgCode)
     .borderRadius("12px")
-    .padding("24px")
+    .padding("16px")
     .overflow("auto")
+    .maxWidth("100%")
+    .boxSizing("border-box")
     .border(`1px solid ${colors.border}`)
     .fontSize("14px")
-    .lineHeight("1.7")),
+    .lineHeight("1.7"), {
+    medium: padding("24px")
+  }),
 
   codeInline: cn(backgroundColor(colors.bgLight)
     .padding("3px 8px")
@@ -264,13 +270,26 @@ export const s = {
     .lineHeight("1.7")),
 
   // Demo
-  demoContainer: cn(display("grid").gap("24px")),
-  demoContainerStyle: { gridTemplateColumns: "1fr 1fr" },
+  demoContainer: cn(
+    display("grid")
+      .gap("16px")
+      .gridTemplateColumns("1fr")
+      .width("100%")
+      .boxSizing("border-box"),
+    {
+      medium: gap("24px").gridTemplateColumns("1fr 1fr")
+    }
+  ),
+  demoContainerSingle: cn(display("flex").flexDirection("column").gap("16px").width("100%").boxSizing("border-box"), {
+    medium: gap("24px")
+  }),
 
   demoPanel: cn(backgroundColor(colors.bgCard)
     .borderRadius("16px")
     .border(`1px solid ${colors.border}`)
-    .overflow("hidden")),
+    .overflow("hidden")
+    .maxWidth("100%")
+    .boxSizing("border-box")),
 
   demoPanelHeader: cn(padding("14px 20px")
     .backgroundColor(colors.bgLight)
@@ -281,7 +300,9 @@ export const s = {
     .textTransform("uppercase")
     .letterSpacing("0.05em")),
 
-  demoPanelContent: cn(padding("24px")),
+  demoPanelContent: cn(padding("16px"), {
+    medium: padding("24px")
+  }),
 
   // Footer
   footer: cn(padding("48px")
@@ -295,9 +316,11 @@ export const s = {
   footerLink: cn(color(colors.textMuted).transition("color 0.2s")),
 
   // Page content
-  pageContent: cn(padding("32px 24px 80px")
+  pageContent: cn(padding("24px 16px 80px")
     .maxWidth("900px")
-    .margin("0 auto"), {
+    .margin("0 auto")
+    .width("100%")
+    .boxSizing("border-box"), {
     medium: padding("48px 48px 80px")
   }),
 

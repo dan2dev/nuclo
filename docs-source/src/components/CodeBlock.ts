@@ -38,10 +38,11 @@ export function CodeBlock(codeContent: string, _language = "typescript", showCop
   const highlighted = highlightCode(codeContent.trim());
 
   return div(
-    cn(position("relative")),
+    cn(position("relative").width("100%").maxWidth("100%").boxSizing("border-box")),
     pre(
       s.codeBlock,
       code(
+        cn(display("block").width("100%").maxWidth("100%").whiteSpace("pre").overflowX("auto")),
         { innerHTML: highlighted }
       )
     ),

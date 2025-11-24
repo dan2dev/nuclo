@@ -80,9 +80,6 @@ function FeatureCard(iconEl: unknown, title: string, description: string) {
       .transition("all 0.3s")
       .position("relative")
       .overflow("hidden"),
-    {
-      hover: border(`1px solid ${colors.primary}`).transform("translateY(-4px)").boxShadow(`0 20px 40px rgba(0,0,0,0.3), 0 0 30px ${colors.primaryGlow}`)
-    }
   );
   
   return div(
