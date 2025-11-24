@@ -68,7 +68,7 @@ function NavLink(label: string, route: Route) {
 
 function Brand() {
   return a(
-    { href: "/nuclo/" },
+    { href: import.meta.env.BASE_URL },
     cn(
       display("flex")
         .alignItems("center")
