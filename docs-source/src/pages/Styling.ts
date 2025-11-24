@@ -352,7 +352,7 @@ export function StylingPage() {
     ),
     p(s.p, "Quick example straight from the legacy site:"),
     div(
-      s.demoContainer,
+      s.demoContainerSingle,
       div(OverviewDemo()),
       div(CodeBlock(stylingCode.overviewQuickExample.code, stylingCode.overviewQuickExample.lang, true))
     ),
@@ -382,7 +382,7 @@ export function StylingPage() {
     ),
     h3(s.h3, "Basic usage"),
     div(
-      s.demoContainer,
+      s.demoContainerSingle,
       div(StyleHelpersBasicDemo()),
       div(CodeBlock(stylingCode.styleHelpersBasic.code, stylingCode.styleHelpersBasic.lang, true))
     ),
