@@ -182,6 +182,37 @@ const cardStyle = cn(
     containerLarge: padding('2rem').fontSize('20px'),
   }
 );` },
+  styleQueriesPseudoClasses: { lang: 'typescript', code: `// Pseudo-classes are automatically available - no need to define them!
+const cn = createStyleQueries({
+  small: '@media (min-width: 341px)',
+  medium: '@media (min-width: 601px)',
+  large: '@media (min-width: 1025px)',
+});
+
+// Use hover, focus, active, etc. directly
+const buttonStyle = cn(
+  padding('12px 24px')
+    .borderRadius('8px')
+    .backgroundColor('blue')
+    .color('white')
+    .transition('all 0.2s'),
+  {
+    hover: backgroundColor('darkblue'),
+    focus: outline('2px solid lightblue'),
+    active: transform('scale(0.98)')
+  }
+);
+
+button(buttonStyle, 'Click me');
+
+// Works with responsive queries too
+const navLink = cn(
+  color('gray').fontSize('14px').transition('all 0.2s'),
+  {
+    medium: fontSize('15px'),
+    hover: color('blue')
+  }
+);` },
   styleQueriesFeature: { lang: 'typescript', code: `const cn = createStyleQueries({
   hasGrid: '@supports (display: grid)',
   hasSubgrid: '@supports (grid-template-columns: subgrid)',
@@ -437,27 +468,30 @@ transformOrigin('center')` },
 filter('brightness(1.2)')
 filter('grayscale(100%)')
 backdropFilter('blur(10px)')` },
-  effectsHover: { lang: 'typescript', code: `// For hover effects, use a reactive style function
-let isHovered = false;
-
+  effectsHover: { lang: 'typescript', code: `// For hover effects, use pseudo-classes (recommended)
 const cardBase = cn(
   bg('white')
     .borderRadius('12px')
     .padding('1.5rem')
     .transition('all 0.3s ease')
+    .boxShadow('0 2px 8px rgba(0,0,0,0.1)'),
+  {
+    hover: boxShadow('0 10px 40px rgba(0,0,0,0.15)').transform('translateY(-4px)')
+  }
 );
 
+div(cardBase, 'Hover me');
+
+// Alternative: reactive style function (for complex logic)
+let isHovered = false;
 div(
   cardBase,
   {
-    // Reactive style: a function that returns the style object
     style: () => ({
       boxShadow: isHovered
         ? '0 10px 40px rgba(0,0,0,0.15)'
         : '0 2px 8px rgba(0,0,0,0.1)',
-      transform: isHovered
-        ? 'translateY(-4px)'
-        : 'translateY(0)'
+      transform: isHovered ? 'translateY(-4px)' : 'translateY(0)'
     })
   },
   on('mouseenter', () => { isHovered = true; update(); }),

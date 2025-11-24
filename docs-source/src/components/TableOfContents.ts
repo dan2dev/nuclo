@@ -64,6 +64,10 @@ export function TableOfContents() {
       .marginLeft(item.level === 3 ? "16px" : "0")
       .color(isActive ? colors.primary : colors.textMuted)
       .fontWeight(isActive ? "600" : "400")
+      .backgroundColor("transparent"),
+    {
+      hover: color(colors.primary).backgroundColor("rgba(132, 204, 22, 0.1)")
+    }
   );
 
   return nav(
@@ -90,18 +94,6 @@ export function TableOfContents() {
         on("click", (e) => {
           e.preventDefault();
           scrollToSection(item.id);
-        }),
-        on("mouseenter", (e) => {
-          if (!isActive) {
-            (e.target as HTMLElement).style.color = colors.primary;
-            (e.target as HTMLElement).style.backgroundColor = "rgba(132, 204, 22, 0.1)";
-          }
-        }),
-        on("mouseleave", (e) => {
-          if (!isActive) {
-            (e.target as HTMLElement).style.color = colors.textMuted;
-            (e.target as HTMLElement).style.backgroundColor = "transparent";
-          }
         })
       );
     })
