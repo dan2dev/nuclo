@@ -1,8 +1,6 @@
 // Auto-generated from /tmp/nuclo-getting-started.html to preserve original tutorial code snippets
 export const gettingStartedCode = {
   installNpm: { lang: 'bash', code: `npm install nuclo` },
-  installYarn: { lang: 'bash', code: `yarn add nuclo` },
-  installPnpm: { lang: 'bash', code: `pnpm add nuclo` },
   denoImport: { lang: 'typescript', code: `import 'npm:nuclo';` },
   denoJson: { lang: 'json', code: `{
   "imports": {
