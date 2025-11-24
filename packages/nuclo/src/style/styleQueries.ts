@@ -2,15 +2,153 @@ import { StyleBuilder } from "./styleBuilder";
 import { generateStyleKey, simpleHash } from "./styleCache";
 import { createCSSClassWithStyles } from "./cssGenerator";
 
-// Style queries type
-type QueryStyles<T extends string> = Partial<Record<T, StyleBuilder>>;
+// Comprehensive list of CSS pseudo-classes
+export type CSSPseudoClass =
+	| 'hover'
+	| 'active'
+	| 'focus'
+	| 'focus-visible'
+	| 'focus-within'
+	| 'visited'
+	| 'link'
+	| 'target'
+	| 'root'
+	| 'empty'
+	| 'enabled'
+	| 'disabled'
+	| 'checked'
+	| 'indeterminate'
+	| 'default'
+	| 'required'
+	| 'optional'
+	| 'valid'
+	| 'invalid'
+	| 'in-range'
+	| 'out-of-range'
+	| 'placeholder-shown'
+	| 'autofill'
+	| 'read-only'
+	| 'read-write'
+	| 'first-child'
+	| 'last-child'
+	| 'only-child'
+	| 'first-of-type'
+	| 'last-of-type'
+	| 'only-of-type'
+	| 'nth-child'
+	| 'nth-last-child'
+	| 'nth-of-type'
+	| 'nth-last-of-type'
+	| 'lang'
+	| 'dir'
+	| 'not'
+	| 'is'
+	| 'where'
+	| 'has'
+	| 'any-link'
+	| 'local-link'
+	| 'scope'
+	| 'current'
+	| 'past'
+	| 'future'
+	| 'playing'
+	| 'paused'
+	| 'seeking'
+	| 'muted'
+	| 'volume-locked'
+	| 'buffering'
+	| 'stalled'
+	| 'picture-in-picture'
+	| 'fullscreen'
+	| 'modal'
+	| 'popover-open'
+	| 'user-invalid'
+	| 'user-valid';
+
+// Map pseudo-class names to their CSS selector strings
+const PSEUDO_CLASS_MAP: Record<CSSPseudoClass, string> = {
+	'hover': ':hover',
+	'active': ':active',
+	'focus': ':focus',
+	'focus-visible': ':focus-visible',
+	'focus-within': ':focus-within',
+	'visited': ':visited',
+	'link': ':link',
+	'target': ':target',
+	'root': ':root',
+	'empty': ':empty',
+	'enabled': ':enabled',
+	'disabled': ':disabled',
+	'checked': ':checked',
+	'indeterminate': ':indeterminate',
+	'default': ':default',
+	'required': ':required',
+	'optional': ':optional',
+	'valid': ':valid',
+	'invalid': ':invalid',
+	'in-range': ':in-range',
+	'out-of-range': ':out-of-range',
+	'placeholder-shown': ':placeholder-shown',
+	'autofill': ':autofill',
+	'read-only': ':read-only',
+	'read-write': ':read-write',
+	'first-child': ':first-child',
+	'last-child': ':last-child',
+	'only-child': ':only-child',
+	'first-of-type': ':first-of-type',
+	'last-of-type': ':last-of-type',
+	'only-of-type': ':only-of-type',
+	'nth-child': ':nth-child',
+	'nth-last-child': ':nth-last-child',
+	'nth-of-type': ':nth-of-type',
+	'nth-last-of-type': ':nth-last-of-type',
+	'lang': ':lang',
+	'dir': ':dir',
+	'not': ':not',
+	'is': ':is',
+	'where': ':where',
+	'has': ':has',
+	'any-link': ':any-link',
+	'local-link': ':local-link',
+	'scope': ':scope',
+	'current': ':current',
+	'past': ':past',
+	'future': ':future',
+	'playing': ':playing',
+	'paused': ':paused',
+	'seeking': ':seeking',
+	'muted': ':muted',
+	'volume-locked': ':volume-locked',
+	'buffering': ':buffering',
+	'stalled': ':stalled',
+	'picture-in-picture': ':picture-in-picture',
+	'fullscreen': ':fullscreen',
+	'modal': ':modal',
+	'popover-open': ':popover-open',
+	'user-invalid': ':user-invalid',
+	'user-valid': ':user-valid',
+};
+
+// Style queries type - includes both user queries and built-in pseudo-classes
+type QueryStyles<T extends string> = Partial<Record<T | CSSPseudoClass, StyleBuilder>>;
 
 // Supported CSS at-rules
-type AtRuleType = 'media' | 'container' | 'supports' | 'style';
+type AtRuleType = 'media' | 'container' | 'supports' | 'style' | 'pseudo';
 
-// Parse the at-rule prefix from a query string
-function parseAtRule(query: string): { type: AtRuleType; condition: string } {
+// Query result type - can be an at-rule or a pseudo-class
+type QueryResult = 
+	| { type: AtRuleType; condition: string; pseudoClass?: never }
+	| { type: 'pseudo'; pseudoClass: string; condition?: never };
+
+// Parse the query string to determine if it's an at-rule or pseudo-class
+function parseQuery(query: string): QueryResult {
 	const trimmed = query.trim();
+
+	// Check for pseudo-class (starts with : or &:)
+	if (trimmed.startsWith('&:') || trimmed.startsWith(':')) {
+		const pseudoClass = trimmed.startsWith('&:') ? trimmed.slice(1) : trimmed;
+		return { type: 'pseudo', pseudoClass: pseudoClass.trim() };
+	}
 
 	// Check for @media prefix
 	if (trimmed.startsWith('@media ')) {
@@ -36,22 +174,35 @@ function parseAtRule(query: string): { type: AtRuleType; condition: string } {
 	return { type: 'media', condition: trimmed };
 }
 
+// Check if a key is a built-in pseudo-class
+function isPseudoClass(key: string): key is CSSPseudoClass {
+	return key in PSEUDO_CLASS_MAP;
+}
+
+// Get the CSS selector for a pseudo-class
+function getPseudoClassSelector(pseudoClass: CSSPseudoClass): string {
+	return PSEUDO_CLASS_MAP[pseudoClass];
+}
+
 // Create style queries function
 // Accepts either Record (for backward compatibility) or Array of [name, query] tuples (for explicit order)
 export function createStyleQueries<T extends string>(
 	queries: Record<T, string> | Array<[T, string]>
-) {
+): {
+	(defaultStyles: StyleBuilder, queryStyles?: QueryStyles<T | CSSPseudoClass>): { className: string } | string;
+	(queryStyles?: QueryStyles<T | CSSPseudoClass>): { className: string } | string;
+} {
 	// Convert to array format to preserve order
 	const queriesArray: Array<[T, string]> = Array.isArray(queries)
 		? queries
 		: (Object.entries(queries) as Array<[T, string]>);
 
 	return function cn(
-		defaultStylesOrQueries?: StyleBuilder | QueryStyles<T>,
-		queryStyles?: QueryStyles<T>
+		defaultStylesOrQueries?: StyleBuilder | QueryStyles<T | CSSPseudoClass>,
+		queryStyles?: QueryStyles<T | CSSPseudoClass>
 	): { className: string } | string {
 		let defaultStyles: StyleBuilder | undefined;
-		let styles: QueryStyles<T> | undefined;
+		let styles: QueryStyles<T | CSSPseudoClass> | undefined;
 
 		// Handle both signatures:
 		// 1. cn({ medium: width("50%") }) - single argument with queries
@@ -67,7 +218,7 @@ export function createStyleQueries<T extends string>(
 		} else {
 			// Single argument with queries
 			defaultStyles = undefined;
-			styles = defaultStylesOrQueries as QueryStyles<T>;
+			styles = defaultStylesOrQueries as QueryStyles<T | CSSPseudoClass>;
 		}
 
 		// If nothing provided, return empty
@@ -78,16 +229,27 @@ export function createStyleQueries<T extends string>(
 		// If we have queries, create a single class name for all queries
 		if (styles && Object.keys(styles).length > 0) {
 			// Collect all query styles in registration order
-			const allQueryStyles: Array<{ queryName: T; atRule: { type: AtRuleType; condition: string }; styles: Record<string, string> }> = [];
+			const allQueryStyles: Array<{ queryName: string; query: QueryResult; styles: Record<string, string> }> = [];
 
-			// Process queries in the order they were registered
+			// Process user-defined queries in the order they were registered
 			for (const [queryName, queryValue] of queriesArray) {
 				const styleBuilder = styles[queryName];
 				if (styleBuilder) {
 					allQueryStyles.push({
 						queryName,
-						atRule: parseAtRule(queryValue),
+						query: parseQuery(queryValue),
 						styles: (styleBuilder as StyleBuilder).getStyles()
+					});
+				}
+			}
+
+			// Process built-in pseudo-classes (hover, focus, etc.)
+			for (const [key, styleBuilder] of Object.entries(styles)) {
+				if (isPseudoClass(key) && styleBuilder instanceof StyleBuilder) {
+					allQueryStyles.push({
+						queryName: key,
+						query: { type: 'pseudo', pseudoClass: getPseudoClassSelector(key) },
+						styles: styleBuilder.getStyles()
 					});
 				}
 			}
@@ -116,14 +278,34 @@ export function createStyleQueries<T extends string>(
 				createCSSClassWithStyles(className, accumulatedStyles);
 			}
 
-			// Apply all query styles to the same class name in their respective at-rules
+			// Separate at-rules and pseudo-classes for proper handling
+			const atRuleQueries: Array<{ queryName: string; query: QueryResult; styles: Record<string, string> }> = [];
+			const pseudoClassQueries: Array<{ queryName: string; query: QueryResult; styles: Record<string, string> }> = [];
+
+			for (const queryStyle of allQueryStyles) {
+				if (queryStyle.query.type === 'pseudo') {
+					pseudoClassQueries.push(queryStyle);
+				} else {
+					atRuleQueries.push(queryStyle);
+				}
+			}
+
+			// Apply at-rule queries first (media, container, supports, etc.)
 			// Apply in registration order to ensure proper CSS cascade
 			// Each query inherits from all previous queries (cascading)
-			for (const { atRule, styles: qStyles } of allQueryStyles) {
+			for (const { query, styles: qStyles } of atRuleQueries) {
 				// Merge accumulated styles (defaults + previous queries) with current query
 				// This ensures each query inherits from previous ones
 				accumulatedStyles = { ...accumulatedStyles, ...qStyles };
-				createCSSClassWithStyles(className, accumulatedStyles, atRule.condition, atRule.type);
+				createCSSClassWithStyles(className, accumulatedStyles, query.condition, query.type);
+			}
+
+			// Apply pseudo-class queries (hover, focus, etc.)
+			// These don't cascade - each pseudo-class gets its own styles
+			for (const { query, styles: qStyles } of pseudoClassQueries) {
+				if (query.type === 'pseudo') {
+					createCSSClassWithStyles(className, qStyles, undefined, 'pseudo', query.pseudoClass);
+				}
 			}
 
 			return { className };

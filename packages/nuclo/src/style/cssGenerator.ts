@@ -1,11 +1,23 @@
 // Supported at-rule types
-type AtRuleType = 'media' | 'container' | 'supports' | 'style';
+type AtRuleType = 'media' | 'container' | 'supports' | 'style' | 'pseudo';
 
 // Check if a class exists in the DOM
-export function classExistsInDOM(className: string, condition?: string, atRuleType: AtRuleType = 'media'): boolean {
+export function classExistsInDOM(className: string, condition?: string, atRuleType: AtRuleType = 'media', pseudoClass?: string): boolean {
 	const styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
 	if (!styleSheet || !styleSheet.sheet) {
 		return false;
+	}
+
+	// For pseudo-classes, check for the selector directly
+	if (pseudoClass) {
+		const selector = `.${className}${pseudoClass}`;
+		const rules = Array.from(styleSheet.sheet.cssRules || []);
+		return rules.some(rule => {
+			if (rule instanceof CSSStyleRule) {
+				return rule.selectorText === selector;
+			}
+			return false;
+		});
 	}
 
 	if (condition) {
@@ -49,7 +61,8 @@ export function createCSSClassWithStyles(
 	className: string,
 	styles: Record<string, string>,
 	condition?: string,
-	atRuleType: AtRuleType = 'media'
+	atRuleType: AtRuleType = 'media',
+	pseudoClass?: string
 ): void {
 	let styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
 
@@ -62,6 +75,42 @@ export function createCSSClassWithStyles(
 	const rules = Object.entries(styles)
 		.map(([property, value]) => `${property}: ${value}`)
 		.join("; ");
+
+	// Handle pseudo-classes (hover, focus, etc.) - these modify the selector directly
+	if (pseudoClass) {
+		const selector = `.${className}${pseudoClass}`;
+		const allRules = Array.from(styleSheet.sheet?.cssRules || []);
+		
+		// Find existing rule with this pseudo-class selector
+		let existingRule: CSSStyleRule | null = null;
+		let insertIndex = allRules.length;
+
+		for (let i = 0; i < allRules.length; i++) {
+			const rule = allRules[i];
+			if (rule instanceof CSSStyleRule && rule.selectorText === selector) {
+				existingRule = rule;
+				insertIndex = i;
+				break;
+			}
+			// Insert pseudo-class rules after regular style rules but before at-rules
+			if (rule instanceof CSSStyleRule && !rule.selectorText.includes(':')) {
+				insertIndex = i + 1;
+			}
+		}
+
+		if (existingRule) {
+			// Update existing rule by replacing all styles
+			while (existingRule.style.length > 0) {
+				existingRule.style.removeProperty(existingRule.style[0]);
+			}
+			Object.entries(styles).forEach(([property, value]) => {
+				existingRule!.style.setProperty(property, value);
+			});
+		} else {
+			styleSheet.sheet?.insertRule(`${selector} { ${rules} }`, insertIndex);
+		}
+		return;
+	}
 
 	if (condition) {
 		// Create or get at-rule (media, container, supports, etc.)

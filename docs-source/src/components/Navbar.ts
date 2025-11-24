@@ -32,16 +32,17 @@ function NavLink(label: string, route: Route) {
     .backgroundColor(colors.primary)
     .borderRadius("0 2px 2px 0");
 
+    console.log("Rendering NavLink:", label, "Active:", isActive());
   return a(
     { href: route === "home" ? import.meta.env.BASE_URL : `#${route}` },
     s.navLink,
     cn(base),
     {
-      style: () => ({
-        color: isActive() ? colors.primary : colors.textMuted,
-        backgroundColor: isActive() ? "rgba(132, 204, 22, 0.1)" : "transparent",
-        fontWeight: isActive() ? "600" : "500",
-      }),
+      // style: () => ({
+      //   color: isActive() ? colors.primary : colors.textMuted,
+      //   backgroundColor: isActive() ? "rgba(132, 204, 22, 0.1)" : "transparent",
+      //   fontWeight: isActive() ? "600" : "500",
+      // }),
     },
     label,
     isActive() ? span(cn(indicator)) : null,
@@ -50,18 +51,18 @@ function NavLink(label: string, route: Route) {
       setRoute(route);
       closeMobileMenu();
     }),
-    on("mouseenter", (e) => {
-      if (!isActive()) {
-        (e.target as HTMLElement).style.color = colors.primary;
-        (e.target as HTMLElement).style.backgroundColor = "rgba(132, 204, 22, 0.05)";
-      }
-    }),
-    on("mouseleave", (e) => {
-      if (!isActive()) {
-        (e.target as HTMLElement).style.color = colors.textMuted;
-        (e.target as HTMLElement).style.backgroundColor = "transparent";
-      }
-    })
+    // on("mouseenter", (e) => {
+    //   if (!isActive()) {
+    //     (e.target as HTMLElement).style.color = colors.primary;
+    //     (e.target as HTMLElement).style.backgroundColor = "rgba(132, 204, 22, 0.05)";
+    //   }
+    // }),
+    // on("mouseleave", (e) => {
+    //   if (!isActive()) {
+    //     (e.target as HTMLElement).style.color = colors.textMuted;
+    //     (e.target as HTMLElement).style.backgroundColor = "transparent";
+    //   }
+    // })
   );
 }
 

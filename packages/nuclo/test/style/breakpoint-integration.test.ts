@@ -590,6 +590,106 @@ describe('Style Queries Integration', () => {
 		});
 	});
 
+	describe('Pseudo-class support', () => {
+		it('should automatically support pseudo-classes like :hover without defining them', () => {
+			const cn = createStyleQueries({
+				small: '@media (min-width: 341px)',
+			});
+
+			const result = cn(
+				bg('#000000').color('#FFFFFF'),
+				{
+					hover: bg('#FF0000').color('#00FF00'),
+				}
+			);
+
+			expect(result).toHaveProperty('className');
+			const className = (result as any).className;
+			expect(className).toMatch(/^n[a-f0-9]{8}$/);
+
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			expect(styleSheet).toBeTruthy();
+
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
+			const styleRules = rules.filter(rule => rule instanceof CSSStyleRule) as CSSStyleRule[];
+
+			// Should have base style and hover pseudo-class
+			expect(styleRules.length).toBeGreaterThanOrEqual(2);
+
+			// Find the hover rule
+			const hoverRule = styleRules.find(rule => rule.selectorText.includes(':hover'));
+			expect(hoverRule).toBeTruthy();
+			expect(hoverRule?.selectorText).toContain(className);
+			expect(hoverRule?.selectorText).toContain(':hover');
+		});
+
+		it('should support multiple pseudo-classes automatically', () => {
+			const cn = createStyleQueries({
+				small: '@media (min-width: 341px)',
+			});
+
+			const result = cn(
+				bg('#000000'),
+				{
+					hover: bg('#FF0000'),
+					focus: bg('#00FF00'),
+					active: bg('#0000FF'),
+				}
+			);
+
+			expect(result).toHaveProperty('className');
+			const className = (result as any).className;
+
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
+			const styleRules = rules.filter(rule => rule instanceof CSSStyleRule) as CSSStyleRule[];
+
+			const hoverRule = styleRules.find(rule => rule.selectorText.includes(':hover'));
+			const focusRule = styleRules.find(rule => rule.selectorText.includes(':focus'));
+			const activeRule = styleRules.find(rule => rule.selectorText.includes(':active'));
+
+			expect(hoverRule).toBeTruthy();
+			expect(focusRule).toBeTruthy();
+			expect(activeRule).toBeTruthy();
+			expect(hoverRule?.selectorText).toContain(className);
+			expect(focusRule?.selectorText).toContain(className);
+			expect(activeRule?.selectorText).toContain(className);
+		});
+
+		it('should support mixing pseudo-classes with media queries', () => {
+			const cn = createStyleQueries({
+				small: '@media (min-width: 341px)',
+				medium: '@media (min-width: 601px)',
+			});
+
+			const result = cn(
+				bg('#000000').fontSize('14px'),
+				{
+					small: fontSize('15px'),
+					medium: fontSize('16px'),
+					hover: bg('#FF0000'),
+				}
+			);
+
+			expect(result).toHaveProperty('className');
+			const className = (result as any).className;
+
+			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
+			const rules = Array.from(styleSheet?.sheet?.cssRules || []);
+			const styleRules = rules.filter(rule => rule instanceof CSSStyleRule) as CSSStyleRule[];
+			const mediaRules = rules.filter(rule => rule.type === CSSRule.MEDIA_RULE) as CSSMediaRule[];
+
+			// Should have base style, hover pseudo-class, and media queries
+			expect(styleRules.length).toBeGreaterThanOrEqual(1);
+			expect(mediaRules.length).toBe(2);
+
+			const hoverRule = styleRules.find(rule => rule.selectorText.includes(':hover'));
+			expect(hoverRule).toBeTruthy();
+			expect(hoverRule?.selectorText).toContain(className);
+		});
+
+	});
+
 	describe('Backward compatibility with createBreakpoints', () => {
 		it('createBreakpoints should be an alias for createStyleQueries', () => {
 			expect(createBreakpoints).toBe(createStyleQueries);

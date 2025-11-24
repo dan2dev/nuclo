@@ -101,6 +101,72 @@ import type {
 } from "../../src/style/cssPropertyTypes";
 
 /**
+ * Comprehensive list of CSS pseudo-classes that are automatically available
+ * in createStyleQueries without needing to define them.
+ */
+export type CSSPseudoClass =
+	| 'hover'
+	| 'active'
+	| 'focus'
+	| 'focus-visible'
+	| 'focus-within'
+	| 'visited'
+	| 'link'
+	| 'target'
+	| 'root'
+	| 'empty'
+	| 'enabled'
+	| 'disabled'
+	| 'checked'
+	| 'indeterminate'
+	| 'default'
+	| 'required'
+	| 'optional'
+	| 'valid'
+	| 'invalid'
+	| 'in-range'
+	| 'out-of-range'
+	| 'placeholder-shown'
+	| 'autofill'
+	| 'read-only'
+	| 'read-write'
+	| 'first-child'
+	| 'last-child'
+	| 'only-child'
+	| 'first-of-type'
+	| 'last-of-type'
+	| 'only-of-type'
+	| 'nth-child'
+	| 'nth-last-child'
+	| 'nth-of-type'
+	| 'nth-last-of-type'
+	| 'lang'
+	| 'dir'
+	| 'not'
+	| 'is'
+	| 'where'
+	| 'has'
+	| 'any-link'
+	| 'local-link'
+	| 'scope'
+	| 'current'
+	| 'past'
+	| 'future'
+	| 'playing'
+	| 'paused'
+	| 'seeking'
+	| 'muted'
+	| 'volume-locked'
+	| 'buffering'
+	| 'stalled'
+	| 'picture-in-picture'
+	| 'fullscreen'
+	| 'modal'
+	| 'popover-open'
+	| 'user-invalid'
+	| 'user-valid';
+
+/**
  * Creates a CSS class with the given styles and injects it into the document
  */
 declare global {
@@ -108,7 +174,7 @@ declare global {
 
 	/**
 	 * Creates a style query class name generator for responsive and conditional styles.
-	 * Supports @media, @container, @supports queries.
+	 * Supports @media, @container, @supports queries, and automatically includes all CSS pseudo-classes.
 	 *
 	 * Query values should include the at-rule prefix:
 	 * - "@media (min-width: 768px)" for media queries
@@ -117,25 +183,44 @@ declare global {
 	 *
 	 * For backward compatibility, values without a prefix are treated as media queries.
 	 *
+	 * Pseudo-classes (hover, focus, active, etc.) are automatically available and don't need to be defined:
+	 * ```ts
+	 * const cn = createStyleQueries({
+	 *   small: "@media (min-width: 341px)",
+	 *   medium: "@media (min-width: 601px)",
+	 *   large: "@media (min-width: 1025px)",
+	 * });
+	 * 
+	 * const s = {
+	 *   navLink: cn(
+	 *     color("gray").fontSize("14px").transition("all 0.2s"),
+	 *     {
+	 *       medium: fontSize("15px"),
+	 *       hover: color("blue")  // hover is automatically available!
+	 *     }
+	 *   )
+	 * };
+	 * ```
+	 *
 	 * Supports two signatures:
 	 * 1. cn(queryStyles) - Only query-specific styles
 	 * 2. cn(defaultStyles, queryStyles) - Default styles + query overrides
 	 */
 	function createStyleQueries<T extends string>(
-		queries: Record<T, string>
+		queries: Record<T, string> | Array<[T, string]>
 	): {
-		(styles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
-		(defaultStyles: StyleBuilder, queryStyles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
+		(defaultStyles: StyleBuilder, queryStyles?: Partial<Record<T | CSSPseudoClass, StyleBuilder>>): { className: string } | string;
+		(queryStyles?: Partial<Record<T | CSSPseudoClass, StyleBuilder>>): { className: string } | string;
 	};
 
 	/**
 	 * @deprecated Use createStyleQueries instead. Alias for backward compatibility.
 	 */
 	function createBreakpoints<T extends string>(
-		breakpoints: Record<T, string>
+		breakpoints: Record<T, string> | Array<[T, string]>
 	): {
-		(styles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
-		(defaultStyles: StyleBuilder, breakpointStyles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
+		(defaultStyles: StyleBuilder, breakpointStyles?: Partial<Record<T | CSSPseudoClass, StyleBuilder>>): { className: string } | string;
+		(breakpointStyles?: Partial<Record<T | CSSPseudoClass, StyleBuilder>>): { className: string } | string;
 	};
 
 	/**
@@ -1841,20 +1926,20 @@ export function gridGap(value: CSSLengthValue): StyleBuilder;
 
 // Style queries / breakpoints
 export function createStyleQueries<T extends string>(
-	queries: Record<T, string>
+	queries: Record<T, string> | Array<[T, string]>
 ): {
-	(styles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
-	(defaultStyles: StyleBuilder, queryStyles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
+	(defaultStyles: StyleBuilder, queryStyles?: Partial<Record<T | CSSPseudoClass, StyleBuilder>>): { className: string } | string;
+	(queryStyles?: Partial<Record<T | CSSPseudoClass, StyleBuilder>>): { className: string } | string;
 };
 
 /**
  * @deprecated Use createStyleQueries instead. Alias for backward compatibility.
  */
 export function createBreakpoints<T extends string>(
-	breakpoints: Record<T, string>
+	breakpoints: Record<T, string> | Array<[T, string]>
 ): {
-	(styles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
-	(defaultStyles: StyleBuilder, breakpointStyles?: Partial<Record<T, StyleBuilder>>): { className: string } | string;
+	(defaultStyles: StyleBuilder, breakpointStyles?: Partial<Record<T | CSSPseudoClass, StyleBuilder>>): { className: string } | string;
+	(breakpointStyles?: Partial<Record<T | CSSPseudoClass, StyleBuilder>>): { className: string } | string;
 };
 
 export function createCSSClass(className: string, styles: Record<string, string>): void;
