@@ -1,9 +1,355 @@
 import "nuclo";
-import { s } from "../styles.ts";
+import { cn, s, colors } from "../styles.ts";
 import { CodeBlock, InlineCode } from "../components/CodeBlock.ts";
 import { stylingCode } from "../content/styling.ts";
 
 export function StylingPage() {
+  // Live demo: Overview quick example
+  function OverviewDemo() {
+    const btn = cn(
+      backgroundColor(colors.primary)
+        .color(colors.bg)
+        .padding("12px 20px")
+        .border("none")
+        .borderRadius("10px")
+        .fontWeight("700")
+        .cursor("pointer")
+        .transition("all 0.2s")
+    );
+    return div(
+      s.demoPanel,
+      div(s.demoPanelHeader, "Live: Overview button"),
+      div(
+        s.demoPanelContent,
+        button(
+          btn,
+          { style: s.btnPrimaryStyle },
+          "Click me",
+          on("mouseenter", (e) => {
+            const el = e.currentTarget as HTMLElement;
+            el.style.backgroundColor = colors.primaryHover;
+            el.style.transform = "translateY(-2px)";
+            el.style.boxShadow = `0 0 24px ${colors.primaryGlow}`;
+          }),
+          on("mouseleave", (e) => {
+            const el = e.currentTarget as HTMLElement;
+            el.style.backgroundColor = colors.primary;
+            el.style.transform = "translateY(0)";
+            el.style.boxShadow = `0 0 20px ${colors.primaryGlow}`;
+          })
+        )
+      )
+    );
+  }
+
+  // Live demo: StyleBuilder chaining and class reuse
+  function StyleBuilderDemo() {
+    let rounded = true;
+    const base = backgroundColor(colors.bgCard)
+      .color(colors.text)
+      .padding("20px")
+      .transition("all 0.2s");
+
+    function cardStyle() {
+      return cn(
+        base,
+        rounded ? borderRadius("14px") : borderRadius("0px"),
+        rounded ? boxShadow("0 10px 30px rgba(0,0,0,0.25)") : boxShadow("none"),
+        border(`1px solid ${colors.border}`)
+      );
+    }
+
+    return div(
+      s.demoPanel,
+      div(s.demoPanelHeader, "Live: StyleBuilder chaining"),
+      div(
+        s.demoPanelContent,
+        div(
+          () => cardStyle(),
+          h3(cn(fontSize("16px").fontWeight("700")), "Chained styles"),
+          p(cn(color(colors.textMuted)), "Toggle props built via chained helpers."),
+          div(
+            cn(display("flex").gap("8px").marginTop("8px")),
+            button(
+              s.btnSecondary,
+              rounded ? "Make Square" : "Make Rounded",
+              on("click", () => {
+                rounded = !rounded;
+                update();
+              })
+            )
+          )
+        )
+      )
+    );
+  }
+
+  // Live demo: Style queries with simulated breakpoints
+  function QueriesDemo() {
+    type Bp = "mobile" | "medium" | "large";
+    let bp: Bp = "mobile";
+    const card = cn(
+      backgroundColor(colors.bgCard)
+        .border(`1px solid ${colors.border}`)
+        .borderRadius("12px")
+        .transition("all 0.2s"),
+      {
+        medium: padding("24px"),
+        large: padding("32px")
+      }
+    );
+    function widthFor(bp: Bp) {
+      return bp === "mobile" ? "260px" : bp === "medium" ? "420px" : "640px";
+    }
+    function sizeLabel(bp: Bp) {
+      return bp === "mobile" ? "<480px" : bp === "medium" ? "≥768px" : "≥1024px";
+    }
+    return div(
+      s.demoPanel,
+      div(s.demoPanelHeader, "Live: Style queries"),
+      div(
+        s.demoPanelContent,
+        div(
+          cn(display("flex").gap("8px").marginBottom("12px")),
+          button(
+            s.btnSecondary,
+            "Mobile",
+            on("click", () => {
+              bp = "mobile";
+              update();
+            })
+          ),
+          button(
+            s.btnSecondary,
+            "Medium",
+            on("click", () => {
+              bp = "medium";
+              update();
+            })
+          ),
+          button(
+            s.btnSecondary,
+            "Large",
+            on("click", () => {
+              bp = "large";
+              update();
+            })
+          )
+        ),
+        div(
+          cn(marginTop("4px")),
+          div(
+            () => card,
+            { style: () => ({ width: widthFor(bp), padding: bp === "mobile" ? "16px" : undefined }) },
+            h3(cn(fontSize("16px").fontWeight("700")), () => `Breakpoint: ${sizeLabel(bp)}`),
+            p(cn(color(colors.textMuted)), "Padding increases on medium and large breakpoints.")
+          )
+        )
+      )
+    );
+  }
+
+  // Live demo: Layout helpers
+  function LayoutDemo() {
+    let useGrid = false;
+    const card = cn(
+      backgroundColor(colors.bgLight)
+        .border(`1px solid ${colors.border}`)
+        .borderRadius("10px")
+        .padding("12px")
+    );
+    function container() {
+      return useGrid
+        ? cn(display("grid").gap("12px"), { medium: gridTemplateColumns("repeat(3, 1fr)") })
+        : cn(display("flex").gap("12px").flexWrap("wrap"));
+    }
+    return div(
+      s.demoPanel,
+      div(s.demoPanelHeader, "Live: Layout helpers"),
+      div(
+        s.demoPanelContent,
+        button(
+          s.btnSecondary,
+          () => (useGrid ? "Use Flex" : "Use Grid"),
+          on("click", () => {
+            useGrid = !useGrid;
+            update();
+          })
+        ),
+        div(
+          cn(marginTop("12px")),
+          div(
+            () => container(),
+            ...[1, 2, 3, 4, 5, 6].map((i) => div(card, `Item ${i}`))
+          )
+        )
+      )
+    );
+  }
+
+  // Live demo: Style helpers basic usage (simple card)
+  function StyleHelpersBasicDemo() {
+    const card = cn(
+      backgroundColor(colors.bgCard)
+        .padding("24px")
+        .borderRadius("12px")
+        .boxShadow("0 4px 12px rgba(0,0,0,0.15)")
+        .border(`1px solid ${colors.border}`)
+    );
+    return div(
+      s.demoPanel,
+      div(s.demoPanelHeader, "Live: Basic usage"),
+      div(
+        s.demoPanelContent,
+        div(card, "Card content")
+      )
+    );
+  }
+
+  // Live demo: Typography
+  function TypographyDemo() {
+    const heading = cn(fontSize("28px").fontWeight("800").letterSpacing("-0.02em"));
+    const sub = cn(color(colors.textMuted).fontSize("16px"));
+    return div(
+      s.demoPanel,
+      div(s.demoPanelHeader, "Live: Typography"),
+      div(
+        s.demoPanelContent,
+        h1(heading, "Elegant Heading"),
+        p(sub, "Subtle body copy with readable line-height and contrast.")
+      )
+    );
+  }
+
+  // Live demo: Colors & Backgrounds
+  function ColorsDemo() {
+    const swatch = (bgCss: string, label: string) =>
+      div(
+        cn(display("flex").alignItems("center").gap("12px")),
+        div(cn(width("36px").height("24px").borderRadius("6px").border(`1px solid ${colors.border}`)), { style: { background: bgCss } }),
+        span(cn(color(colors.textMuted)), label)
+      );
+    return div(
+      s.demoPanel,
+      div(s.demoPanelHeader, "Live: Colors"),
+      div(
+        s.demoPanelContent,
+        swatch(colors.primary, "Primary"),
+        swatch("linear-gradient(135deg, #667eea 0%, #764ba2 100%)", "Gradient"),
+        swatch(colors.bgLight, "Background")
+      )
+    );
+  }
+
+  // Live demo: Flexbox navbar
+  function FlexboxDemo() {
+    const bar = cn(
+      display("flex")
+        .justifyContent("space-between")
+        .alignItems("center")
+        .padding("12px 16px")
+        .backgroundColor(colors.bgLight)
+        .border(`1px solid ${colors.border}`)
+        .borderRadius("10px")
+    );
+    const links = cn(display("flex").gap("12px").alignItems("center"));
+    const link = cn(color(colors.textMuted).transition("color 0.2s"));
+    return div(
+      s.demoPanel,
+      div(s.demoPanelHeader, "Live: Flexbox"),
+      div(
+        s.demoPanelContent,
+        nav(
+          bar,
+          div(cn(fontWeight("700")), "Logo"),
+          div(
+            links,
+            a(link, "Home", on("mouseenter", (e) => ((e.currentTarget as HTMLElement).style.color = colors.text)), on("mouseleave", (e) => ((e.currentTarget as HTMLElement).style.color = colors.textMuted))),
+            a(link, "Docs", on("mouseenter", (e) => ((e.currentTarget as HTMLElement).style.color = colors.text)), on("mouseleave", (e) => ((e.currentTarget as HTMLElement).style.color = colors.textMuted))),
+            a(link, "Contact", on("mouseenter", (e) => ((e.currentTarget as HTMLElement).style.color = colors.text)), on("mouseleave", (e) => ((e.currentTarget as HTMLElement).style.color = colors.textMuted)))
+          )
+        )
+      )
+    );
+  }
+
+  // Live demo: Grid cards
+  function GridDemo() {
+    const gridBox = cn(
+      display("grid").gap("12px"),
+      { medium: gridTemplateColumns("repeat(3, 1fr)") }
+    );
+    const card = cn(backgroundColor(colors.bgLight).border(`1px solid ${colors.border}`).borderRadius("10px").padding("12px"));
+    return div(
+      s.demoPanel,
+      div(s.demoPanelHeader, "Live: Grid"),
+      div(
+        s.demoPanelContent,
+        div(gridBox, ...Array.from({ length: 6 }, (_, i) => div(card, `Card ${i + 1}`)))
+      )
+    );
+  }
+
+  // Live demo: Effects & transitions
+  function EffectsDemo() {
+    let hovered = false;
+    const box = cn(
+      backgroundColor(colors.bgLight)
+        .border(`1px solid ${colors.border}`)
+        .borderRadius("12px")
+        .padding("24px")
+        .transition("all 0.25s")
+    );
+    return div(
+      s.demoPanel,
+      div(s.demoPanelHeader, "Live: Effects"),
+      div(
+        s.demoPanelContent,
+        div(
+          box,
+          {
+            style: () => ({
+              boxShadow: hovered ? "0 20px 50px rgba(0,0,0,0.35)" : "none",
+              transform: hovered ? "translateY(-4px) scale(1.02)" : "translateY(0) scale(1)"
+            })
+          },
+          on("mouseenter", () => {
+            hovered = true; update();
+          }),
+          on("mouseleave", () => {
+            hovered = false; update();
+          }),
+          "Hover me"
+        )
+      )
+    );
+  }
+
+  // Live demo: Organizing styles (theme buttons)
+  function OrganizingDemo() {
+    const card = cn(
+      backgroundColor(colors.bgCard)
+        .border(`1px solid ${colors.border}`)
+        .borderRadius("14px")
+        .padding("20px")
+    );
+    return div(
+      s.demoPanel,
+      div(s.demoPanelHeader, "Live: Organized styles"),
+      div(
+        s.demoPanelContent,
+        div(card,
+          h3(cn(fontSize("16px").fontWeight("700")), "Theme buttons"),
+          div(
+            cn(display("flex").gap("10px").marginTop("8px")),
+            button(s.btnPrimary, { style: s.btnPrimaryStyle }, "Primary"),
+            button(s.btnSecondary, "Secondary")
+          )
+        )
+      )
+    );
+  }
+
   return div(
     s.pageContent,
     h1(s.pageTitle, "Styling"),
@@ -25,7 +371,12 @@ export function StylingPage() {
       " for responsive variants."
     ),
     p(s.p, "Quick example straight from the legacy site:"),
-    CodeBlock(stylingCode.overviewQuickExample.code, stylingCode.overviewQuickExample.lang),
+    div(
+      s.demoContainer,
+      { style: s.demoContainerStyle },
+      div(OverviewDemo()),
+      div(CodeBlock(stylingCode.overviewQuickExample.code, stylingCode.overviewQuickExample.lang, true))
+    ),
 
     // StyleBuilder
     h2(s.h2, "StyleBuilder"),
@@ -34,7 +385,12 @@ export function StylingPage() {
       "Each helper returns a StyleBuilder instance. You can chain helpers, pull out the generated class name, or read the computed styles."
     ),
     h3(s.h3, "How it works"),
-    CodeBlock(stylingCode.styleBuilderUsage.code, stylingCode.styleBuilderUsage.lang),
+    div(
+      s.demoContainer,
+      { style: s.demoContainerStyle },
+      div(StyleBuilderDemo()),
+      div(CodeBlock(stylingCode.styleBuilderUsage.code, stylingCode.styleBuilderUsage.lang, true))
+    ),
     h3(s.h3, "StyleBuilder methods"),
     CodeBlock(stylingCode.styleBuilderMethods.code, stylingCode.styleBuilderMethods.lang),
     h3(s.h3, "Generated CSS"),
@@ -47,7 +403,12 @@ export function StylingPage() {
       "95+ helpers mirror CSS properties: layout, spacing, typography, color, flexbox, grid, effects, and more. Chain them to build up reusable class names."
     ),
     h3(s.h3, "Basic usage"),
-    CodeBlock(stylingCode.styleHelpersBasic.code, stylingCode.styleHelpersBasic.lang),
+    div(
+      s.demoContainer,
+      { style: s.demoContainerStyle },
+      div(StyleHelpersBasicDemo()),
+      div(CodeBlock(stylingCode.styleHelpersBasic.code, stylingCode.styleHelpersBasic.lang, true))
+    ),
     h3(s.h3, "Available helpers (from the original reference)"),
     CodeBlock(stylingCode.styleHelpersList.code, stylingCode.styleHelpersList.lang),
     h3(s.h3, "Shorthand helpers"),
@@ -63,7 +424,12 @@ export function StylingPage() {
     ),
     CodeBlock(stylingCode.styleQueriesSetup.code, stylingCode.styleQueriesSetup.lang),
     h3(s.h3, "Defaults and overrides"),
-    CodeBlock(stylingCode.styleQueriesDefaults.code, stylingCode.styleQueriesDefaults.lang),
+    div(
+      s.demoContainer,
+      { style: s.demoContainerStyle },
+      div(QueriesDemo()),
+      div(CodeBlock(stylingCode.styleQueriesDefaults.code, stylingCode.styleQueriesDefaults.lang, true))
+    ),
     h3(s.h3, "Generated CSS output"),
     CodeBlock(stylingCode.styleQueriesGeneratedCss.code, stylingCode.styleQueriesGeneratedCss.lang, false),
     h3(s.h3, "Query-only styles"),
@@ -86,6 +452,11 @@ export function StylingPage() {
     CodeBlock(stylingCode.layoutSpacing.code, stylingCode.layoutSpacing.lang),
     h3(s.h3, "Overflow"),
     CodeBlock(stylingCode.layoutOverflow.code, stylingCode.layoutOverflow.lang),
+    div(
+      s.demoContainer,
+      { style: s.demoContainerStyle },
+      div(LayoutDemo())
+    ),
 
     // Typography
     h2(s.h2, "Typography"),
@@ -95,14 +466,24 @@ export function StylingPage() {
     h3(s.h3, "Text styling"),
     CodeBlock(stylingCode.typographyText.code, stylingCode.typographyText.lang),
     h3(s.h3, "Typography system example"),
-    CodeBlock(stylingCode.typographySystem.code, stylingCode.typographySystem.lang),
+    div(
+      s.demoContainer,
+      { style: s.demoContainerStyle },
+      div(TypographyDemo()),
+      div(CodeBlock(stylingCode.typographySystem.code, stylingCode.typographySystem.lang, true))
+    ),
 
     // Colors
     h2(s.h2, "Colors & Backgrounds"),
     h3(s.h3, "Colors"),
     CodeBlock(stylingCode.colorsBasic.code, stylingCode.colorsBasic.lang),
     h3(s.h3, "Gradients"),
-    CodeBlock(stylingCode.colorsGradients.code, stylingCode.colorsGradients.lang),
+    div(
+      s.demoContainer,
+      { style: s.demoContainerStyle },
+      div(ColorsDemo()),
+      div(CodeBlock(stylingCode.colorsGradients.code, stylingCode.colorsGradients.lang, true))
+    ),
     h3(s.h3, "Background properties"),
     CodeBlock(stylingCode.colorsBackground.code, stylingCode.colorsBackground.lang),
 
@@ -114,7 +495,12 @@ export function StylingPage() {
     h3(s.h3, "Item helpers"),
     CodeBlock(stylingCode.flexItem.code, stylingCode.flexItem.lang),
     h3(s.h3, "Navbar example"),
-    CodeBlock(stylingCode.flexNavbarExample.code, stylingCode.flexNavbarExample.lang),
+    div(
+      s.demoContainer,
+      { style: s.demoContainerStyle },
+      div(FlexboxDemo()),
+      div(CodeBlock(stylingCode.flexNavbarExample.code, stylingCode.flexNavbarExample.lang, true))
+    ),
 
     // Grid
     h2(s.h2, "CSS Grid"),
@@ -123,7 +509,12 @@ export function StylingPage() {
     h3(s.h3, "Item helpers"),
     CodeBlock(stylingCode.gridItem.code, stylingCode.gridItem.lang),
     h3(s.h3, "Responsive card grid"),
-    CodeBlock(stylingCode.gridResponsiveExample.code, stylingCode.gridResponsiveExample.lang),
+    div(
+      s.demoContainer,
+      { style: s.demoContainerStyle },
+      div(GridDemo()),
+      div(CodeBlock(stylingCode.gridResponsiveExample.code, stylingCode.gridResponsiveExample.lang, true))
+    ),
 
     // Effects
     h2(s.h2, "Effects & Transitions"),
@@ -139,7 +530,12 @@ export function StylingPage() {
     h3(s.h3, "Filters & backdrop"),
     CodeBlock(stylingCode.effectsFilters.code, stylingCode.effectsFilters.lang),
     h3(s.h3, "Hover effects with reactive styles"),
-    CodeBlock(stylingCode.effectsHover.code, stylingCode.effectsHover.lang),
+    div(
+      s.demoContainer,
+      { style: s.demoContainerStyle },
+      div(EffectsDemo()),
+      div(CodeBlock(stylingCode.effectsHover.code, stylingCode.effectsHover.lang, true))
+    ),
 
     // Organizing
     h2(s.h2, "Organizing Styles"),
@@ -152,7 +548,12 @@ export function StylingPage() {
     h3(s.h3, "Shared styles"),
     CodeBlock(stylingCode.organizingStyles.code, stylingCode.organizingStyles.lang),
     h3(s.h3, "Using the styles"),
-    CodeBlock(stylingCode.organizingUsage.code, stylingCode.organizingUsage.lang),
+    div(
+      s.demoContainer,
+      { style: s.demoContainerStyle },
+      div(OrganizingDemo()),
+      div(CodeBlock(stylingCode.organizingUsage.code, stylingCode.organizingUsage.lang, true))
+    ),
 
     // Next steps
     h2(s.h2, "Next Steps"),
