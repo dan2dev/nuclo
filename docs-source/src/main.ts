@@ -1,24 +1,36 @@
-import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+import "nuclo";
+import { injectGlobalStyles } from "./styles.ts";
+import { initRouter, getCurrentRoute } from "./router.ts";
+import { Header } from "./components/Header.ts";
+import { Footer } from "./components/Footer.ts";
+import { HomePage } from "./pages/Home.ts";
+import { GettingStartedPage } from "./pages/GettingStarted.ts";
+import { CoreApiPage } from "./pages/CoreApi.ts";
+import { TagBuildersPage } from "./pages/TagBuilders.ts";
+import { StylingPage } from "./pages/Styling.ts";
+import { PitfallsPage } from "./pages/Pitfalls.ts";
+import { ExamplesPage } from "./pages/Examples.ts";
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+// Initialize styles
+injectGlobalStyles();
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+// Initialize router
+initRouter();
+
+// Main app
+const app = div(
+  Header(),
+  main(
+    { style: "flex: 1; padding-top: 72px;" },
+    when(() => getCurrentRoute() === "home", HomePage())
+      .when(() => getCurrentRoute() === "getting-started", GettingStartedPage())
+      .when(() => getCurrentRoute() === "core-api", CoreApiPage())
+      .when(() => getCurrentRoute() === "tag-builders", TagBuildersPage())
+      .when(() => getCurrentRoute() === "styling", StylingPage())
+      .when(() => getCurrentRoute() === "pitfalls", PitfallsPage())
+      .when(() => getCurrentRoute() === "examples", ExamplesPage())
+  ),
+  Footer()
+);
+
+render(app, document.getElementById("app")!);

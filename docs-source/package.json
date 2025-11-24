@@ -1,5 +1,5 @@
 {
-  "name": "docs-src",
+  "name": "nuclo-docs",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,6 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
+  },
+  "dependencies": {
+    "nuclo": "file:../packages/nuclo"
   },
   "devDependencies": {
     "typescript": "~5.9.3",

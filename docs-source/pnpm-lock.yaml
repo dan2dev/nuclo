@@ -4,9 +4,16 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  nuclo: link:../../../../Library/pnpm/global/5/node_modules/nuclo
+
 importers:
 
   .:
+    dependencies:
+      nuclo:
+        specifier: link:../../../../Library/pnpm/global/5/node_modules/nuclo
+        version: link:../../../../Library/pnpm/global/5/node_modules/nuclo
     devDependencies:
       typescript:
         specifier: ~5.9.3
