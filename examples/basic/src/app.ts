@@ -40,17 +40,23 @@ function renderTaskNode(task: any): any {
   );
 }
 
+console.log("App initialized!!!");
+
 export const app = div(
-  s.body,
-  div(div(
-    () => getTodos().length > 0 ?
-      s.blue : s.red, "Box 1")
-  ),
   div(
-    "olá",
-    p20,
-    () => pgBlue,
+    "link:",
+    a(
+      "basic link",
+      (el) => {console.dir( el);},
+      {
+        target: "_blank",
+        href: "https://deno.land/x/aleph",
+      },
+    )
   ),
+  s.body,
+  div(div(() => (getTodos().length > 0 ? s.blue : s.red), "Box 1")),
+  div("olá", p20, () => pgBlue),
   div(
     "Testando múltiplas classes",
     { className: "custom-a" },
@@ -62,7 +68,6 @@ export const app = div(
       s.appContainer,
       div(s.header, h1(s.h1Reset, "✨", span("My Tasks"))),
       div(
-
         input(
           s.input,
           {
@@ -77,9 +82,9 @@ export const app = div(
             if (e.key === "Enter") {
               addTodo();
             }
-          }),
+          })
         ),
-        button(s.addButton, PlusIcon(), " Add Task", on("click", addTodo)),
+        button(s.addButton, PlusIcon(), " Add Task", on("click", addTodo))
       ),
 
       // Stats
@@ -90,10 +95,19 @@ export const app = div(
           span(
             s.statsText,
             () =>
-              `📝 ${getTodos().filter((t) => !t.done).length} task${getTodos().filter((t) => !t.done).length !== 1 ? "s" : ""} remaining`,
+              `📝 ${getTodos().filter((t) => !t.done).length} task${
+                getTodos().filter((t) => !t.done).length !== 1 ? "s" : ""
+              } remaining`
           ),
-          when(() => getTodos().some((t) => t.done), button(s.clearButton, "🗑️ Clear Completed", on("click", clearCompleted))),
-        ),
+          when(
+            () => getTodos().some((t) => t.done),
+            button(
+              s.clearButton,
+              "🗑️ Clear Completed",
+              on("click", clearCompleted)
+            )
+          )
+        )
       ),
 
       // Todo list
@@ -101,12 +115,18 @@ export const app = div(
         () => getTodos().length > 0,
         div(
           s.todoList,
-            list(
+          list(
             () => getTodos(),
-            (todo) => renderTaskNode(todo),
-          ),
-        ),
-      ).else(div(s.emptyState, CircleIcon(), p(s.emptyText, "No tasks yet. Add your first one above!"))),
-    ),
-  ),
+            (todo) => renderTaskNode(todo)
+          )
+        )
+      ).else(
+        div(
+          s.emptyState,
+          CircleIcon(),
+          p(s.emptyText, "No tasks yet. Add your first one above!")
+        )
+      )
+    )
+  )
 );
