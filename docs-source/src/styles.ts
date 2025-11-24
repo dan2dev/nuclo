@@ -59,6 +59,9 @@ export function injectGlobalStyles() {
       min-height: 100vh;
     }
 
+    a {
+      text-decoration: none;
+    }
   
   `;
   document.head.appendChild(style);
