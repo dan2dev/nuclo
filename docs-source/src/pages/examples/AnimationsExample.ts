@@ -109,7 +109,7 @@ function LiveAnimations() {
         boxStyle,
         {
           style: () => ({
-            opacity: opacity,
+            opacity: String(opacity),
             transform: `scale(${scale})`,
             background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
           })

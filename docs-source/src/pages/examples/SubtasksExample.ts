@@ -184,7 +184,7 @@ function deleteTask(task: Task, parent?: Task) {
   update();
 }
 
-function TaskItem(task: Task, parent?: Task): Element {
+function TaskItem(task: Task, parent?: Task): ReturnType<typeof div> {
   let newSubtaskText = "";
 
   return div(

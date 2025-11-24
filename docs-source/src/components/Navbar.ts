@@ -33,7 +33,7 @@ function NavLink(label: string, route: Route) {
     .borderRadius("0 2px 2px 0");
 
   return a(
-    { href: route === "home" ? "/" : `#${route}` },
+    { href: route === "home" ? import.meta.env.BASE_URL : `#${route}` },
     s.navLink,
     cn(base),
     {

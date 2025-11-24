@@ -28,7 +28,15 @@ export function getCurrentRoute(): Route {
 
 export function setRoute(route: Route) {
   currentRoute = route;
-  window.history.pushState({}, "", route === "home" ? "/" : `#${route}`);
+  const base = import.meta.env.BASE_URL || "/";
+  if (route === "home") {
+    // Ensure we land under the base path (e.g., /nuclo/ on GitHub Pages)
+    window.history.pushState({}, "", base);
+  } else {
+    // Keep hash routing anchored to the base path
+    const url = base.endsWith("/") ? `${base}#${route}` : `${base}/#${route}`;
+    window.history.pushState({}, "", url);
+  }
   window.scrollTo(0, 0);
   update();
 }
