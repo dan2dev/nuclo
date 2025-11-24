@@ -51,12 +51,11 @@ export function StylingPage() {
       .transition("all 0.2s");
 
     function cardStyle() {
-      return cn(
-        base,
-        rounded ? borderRadius("14px") : borderRadius("0px"),
-        rounded ? boxShadow("0 10px 30px rgba(0,0,0,0.25)") : boxShadow("none"),
-        border(`1px solid ${colors.border}`)
-      );
+      const styled = base
+        .borderRadius(rounded ? "14px" : "0px")
+        .boxShadow(rounded ? "0 10px 30px rgba(0,0,0,0.25)" : "none")
+        .border(`1px solid ${colors.border}`);
+      return cn(styled);
     }
 
     return div(

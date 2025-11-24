@@ -5,9 +5,6 @@ import { examplesContent } from "../../content/examples.ts";
 import { setRoute } from "../../router.ts";
 
 // Live demo state
-let isVisible = true;
-let opacity = 1;
-let scale = 1;
 let isAnimating = false;
 
 // Styles
@@ -45,44 +42,18 @@ const boxStyle = cn(
     .margin("0 auto")
 );
 
-function toggle() {
-  isVisible = !isVisible;
-  update();
-}
-
-function animate() {
-  if (isAnimating) return;
-  isAnimating = true;
-
-  const start = Date.now();
-  const duration = 500;
-
-  function tick() {
-    const elapsed = Date.now() - start;
-    const progress = Math.min(elapsed / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
-
-    if (isVisible) {
-      opacity = eased;
-      scale = 0.5 + eased * 0.5;
-    } else {
-      opacity = 1 - eased;
-      scale = 1 - eased * 0.5;
-    }
-
-    update();
-
-    if (progress < 1) {
-      requestAnimationFrame(tick);
-    } else {
-      isAnimating = false;
-    }
-  }
-
-  tick();
+// Ensure keyframes exist once in the document
+function ensureKeyframes() {
+  const id = "nuclo-demo-pulse-keyframes";
+  if (document.getElementById(id)) return;
+  const style = document.createElement("style");
+  style.id = id;
+  style.textContent = `@keyframes pulse { from { transform: scale(1); opacity: 0.85; } to { transform: scale(1.08); opacity: 1; } }`;
+  document.head.appendChild(style);
 }
 
 function LiveAnimations() {
+  ensureKeyframes();
   return div(
     demoStyle,
     h3(cn(fontSize("18px").fontWeight("600").color(colors.text).marginBottom("20px")), "Animation Demo"),
@@ -90,16 +61,13 @@ function LiveAnimations() {
       cn(textAlign("center")),
       button(
         btnStyle,
-        { disabled: () => isAnimating },
-        () => isAnimating ? "Animating..." : (isVisible ? "Hide" : "Show"),
+        () => (isAnimating ? "Stop Animation" : "Start Animation"),
         on("click", () => {
-          toggle();
-          animate();
+          isAnimating = !isAnimating;
+          update();
         }),
         on("mouseenter", (e) => {
-          if (!isAnimating) {
-            (e.target as HTMLElement).style.backgroundColor = colors.primaryHover;
-          }
+          (e.target as HTMLElement).style.backgroundColor = colors.primaryHover;
         }),
         on("mouseleave", (e) => {
           (e.target as HTMLElement).style.backgroundColor = colors.primary;
@@ -109,8 +77,8 @@ function LiveAnimations() {
         boxStyle,
         {
           style: () => ({
-            opacity: String(opacity),
-            transform: `scale(${scale})`,
+            animation: isAnimating ? "pulse 600ms ease-in-out infinite alternate" : "none",
+            willChange: isAnimating ? "transform, opacity" : "auto",
             background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
           })
         },

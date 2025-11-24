@@ -267,7 +267,6 @@ render(app, document.body);`, "typescript")
       p(s.sectionSubtitle, "Explicit updates, reactive functions, conditionals, list syncing, and styling."),
       div(
         s.demoContainer,
-        { style: s.demoContainerStyle },
         div(
           s.demoPanel,
           div(s.demoPanelHeader, "Batch updates"),
@@ -286,7 +285,7 @@ render(app, document.body);`, "typescript")
         )
       ),
       div(
-        cn(display("grid").gap("20px"), { medium: gridTemplateColumns("repeat(3, 1fr)") }),
+        cn(display("grid").gap("20px")),
         div(
           s.featureCard,
           h3(s.featureTitle, "Conditional rendering"),
