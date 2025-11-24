@@ -2,6 +2,7 @@ export interface ConditionalInfo<TTagName extends ElementTagName = ElementTagNam
   condition: () => boolean;
   tagName: TTagName;
   modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>;
+  isSvg: boolean;
 }
 
 interface NodeWithConditionalInfo extends Node {

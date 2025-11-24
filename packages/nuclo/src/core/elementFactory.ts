@@ -1,27 +1,12 @@
-import { createConditionalElement, processConditionalModifiers } from "./conditionalRenderer";
+import { createHtmlConditionalElement, createSvgConditionalElement, processConditionalModifiers } from "./conditionalRenderer";
 import { applyModifiers, type NodeModifier } from "../internal/applyModifiers";
-import { SVG_TAG_SET } from "./tagConstants";
+
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
 /**
- * Checks if a tag name is an SVG tag. Uses Set for O(1) lookup.
+ * Creates an HTML element factory with the given modifiers.
  */
-function isSVGTag(tagName: string): tagName is keyof SVGElementTagNameMap {
-  return SVG_TAG_SET.has(tagName);
-}
-
-/**
- * Creates an element with proper namespace handling for SVG elements.
- */
-function createElementWithNamespace<TTagName extends ElementTagName>(
-  tagName: TTagName
-): Element {
-  if (isSVGTag(tagName)) {
-    return document.createElementNS('http://www.w3.org/2000/svg', tagName);
-  }
-  return document.createElement(tagName);
-}
-
-export function createElementFactory<TTagName extends ElementTagName>(
+function createHtmlElementFactory<TTagName extends ElementTagName>(
   tagName: TTagName,
   ...modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>
 ): NodeModFn<TTagName> {
@@ -29,17 +14,54 @@ export function createElementFactory<TTagName extends ElementTagName>(
     const { condition, otherModifiers } = processConditionalModifiers(modifiers);
 
     if (condition) {
-      return createConditionalElement(tagName, condition, otherModifiers) as ExpandedElement<TTagName>;
+      return createHtmlConditionalElement(tagName, condition, otherModifiers) as ExpandedElement<TTagName>;
     }
 
-    const el = createElementWithNamespace(tagName) as ExpandedElement<TTagName>;
+    const el = document.createElement(tagName) as ExpandedElement<TTagName>;
     applyModifiers(el, otherModifiers as ReadonlyArray<NodeModifier<TTagName>>, index);
     return el;
   };
 }
 
-export function createTagBuilder<TTagName extends ElementTagName>(
+/**
+ * Creates an SVG element factory with the given modifiers.
+ */
+function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
+  tagName: TTagName,
+  ...modifiers: Array<unknown>
+): SVGElementModifierFn<TTagName> {
+  return (parent, index): SVGElementTagNameMap[TTagName] => {
+    // Check for conditional modifier
+    const conditionalIndex = modifiers.findIndex(
+      mod => typeof mod === 'function' && mod.length === 0
+    );
+
+    if (conditionalIndex !== -1) {
+      const condition = modifiers[conditionalIndex] as () => boolean;
+      const otherModifiers = modifiers.filter((_, i) => i !== conditionalIndex);
+      return createSvgConditionalElement(tagName, condition, otherModifiers) as SVGElementTagNameMap[TTagName];
+    }
+
+    const el = document.createElementNS(SVG_NAMESPACE, tagName);
+    applyModifiers(el as unknown as ExpandedElement<ElementTagName>, modifiers as ReadonlyArray<NodeModifier<ElementTagName>>, index);
+    return el;
+  };
+}
+
+/**
+ * Creates an HTML tag builder function.
+ */
+export function createHtmlTagBuilder<TTagName extends ElementTagName>(
   tagName: TTagName,
 ): (...modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>) => NodeModFn<TTagName> {
-  return (...mods) => createElementFactory(tagName, ...mods);
+  return (...mods) => createHtmlElementFactory(tagName, ...mods);
+}
+
+/**
+ * Creates an SVG tag builder function.
+ */
+export function createSvgTagBuilder<TTagName extends keyof SVGElementTagNameMap>(
+  tagName: TTagName,
+): (...modifiers: Array<SVGElementModifier<TTagName> | SVGElementModifierFn<TTagName>>) => SVGElementModifierFn<TTagName> {
+  return (...mods) => createSvgElementFactory(tagName, ...mods);
 }
