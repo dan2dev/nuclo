@@ -1,6 +1,6 @@
 export { initializeRuntime } from "./core/runtimeBootstrap";
 export { registerGlobalTagBuilders, HTML_TAGS, SVG_TAGS, SELF_CLOSING_TAGS } from "./core/tagRegistry";
-export { createElementFactory, createTagBuilder } from "./core/elementFactory";
+export { createHtmlTagBuilder, createSvgTagBuilder } from "./core/elementFactory";
 export { applyNodeModifier } from "./core/modifierProcessor";
 export { list } from "./list";
 export { when } from "./when";
@@ -11,7 +11,7 @@ export { on } from "./utility/on";
 export { render } from "./utility/render";
 export { isBoolean, isFunction, isNode, isObject, isPrimitive, isTagLike, isZeroArityFunction } from "./utility/typeGuards";
 export { isBrowser } from "./utility/environment";
-export { createElementWithModifiers } from "./internal/applyModifiers";
+export { createHtmlElementWithModifiers, createSvgElementWithModifiers } from "./internal/applyModifiers";
 
 // Style utilities - re-export all from style module
 export * from "./style";

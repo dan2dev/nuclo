@@ -33,6 +33,3 @@ export const SELF_CLOSING_TAGS = [
   "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
   "source", "track", "wbr",
 ] as const satisfies ReadonlyArray<ElementTagName>;
-
-// Pre-computed Set for O(1) SVG tag lookup
-export const SVG_TAG_SET: ReadonlySet<string> = new Set(SVG_TAGS);

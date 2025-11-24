@@ -9,7 +9,7 @@ import "../../src/index";
  * This simulates the real-world usage pattern in the example app
  */
 
-const PlusIcon = () => svg(
+const PlusIcon = () => svgSvg(
   {
     width: "16",
     height: "16",
@@ -17,7 +17,7 @@ const PlusIcon = () => svg(
     fill: "none",
     className: "icon"
   },
-  line({
+  lineSvg({
     x1: "12",
     y1: "5",
     x2: "12",
@@ -26,7 +26,7 @@ const PlusIcon = () => svg(
     "stroke-width": "2",
     "stroke-linecap": "round"
   }),
-  line({
+  lineSvg({
     x1: "5",
     y1: "12",
     x2: "19",
@@ -37,7 +37,7 @@ const PlusIcon = () => svg(
   })
 );
 
-const TrashIcon = () => svg(
+const TrashIcon = () => svgSvg(
   {
     width: "16",
     height: "16",
@@ -45,7 +45,7 @@ const TrashIcon = () => svg(
     fill: "none",
     className: "icon"
   },
-  path({
+  pathSvg({
     d: "M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2",
     stroke: "currentColor",
     "stroke-width": "2",

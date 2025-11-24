@@ -1,5 +1,5 @@
 import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
-import { createConditionalElement } from '../../src/core/conditionalRenderer';
+import { createHtmlConditionalElement } from '../../src/core/conditionalRenderer';
 import { updateConditionalElements } from '../../src/core/conditionalUpdater';
 
 /**
@@ -37,7 +37,7 @@ describe('conditionalUpdater error paths', () => {
   it('logs error when replacing comment with element (hidden -> show) fails', () => {
     // Start hidden
     let visible = false;
-    const node = createConditionalElement(
+    const node = createHtmlConditionalElement(
       'div',
       () => visible,
       ['Content']
@@ -69,7 +69,7 @@ describe('conditionalUpdater error paths', () => {
   it('logs error when replacing element with comment (show -> hide) fails', () => {
     // Start visible
     let visible = true;
-    const node = createConditionalElement(
+    const node = createHtmlConditionalElement(
       'div',
       () => visible,
       ['Visible']
@@ -102,7 +102,7 @@ describe('conditionalUpdater error paths', () => {
     const throwingModifier = (parent: any) => {
       throw new Error('applyModifiers boom');
     };
-    const node = createConditionalElement(
+    const node = createHtmlConditionalElement(
       'div',
       () => visible,
       [
@@ -130,7 +130,7 @@ describe('conditionalUpdater error paths', () => {
     const throwingModifier = (parent: any) => {
       throw new Error('modifier-failure');
     };
-    const node = createConditionalElement(
+    const node = createHtmlConditionalElement(
       'div',
       () => visible,
       [throwingModifier]
@@ -168,7 +168,7 @@ describe('conditionalUpdater error paths', () => {
     // Monkey patch document.body to simulate failure in tree walker usage by temporarily nulling parentNode on a node mid-process.
     // Simplest approach: throw in container.replaceChild again.
     let visible = true;
-    const el = createConditionalElement('div', () => visible, ['X']) as unknown as Node;
+    const el = createHtmlConditionalElement('div', () => visible, ['X']) as unknown as Node;
     container.appendChild(el);
 
     const originalReplace = container.replaceChild.bind(container);

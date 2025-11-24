@@ -94,15 +94,28 @@ export function applyModifiersAndReturn<TTagName extends ElementTagName>(
   return element;
 }
 
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+
 /**
- * Creates an element with the specified tag name and applies modifiers to it.
- * Centralizes element creation logic used across conditionalRenderer and conditionalUpdater.
+ * Creates an HTML element with the specified tag name and applies modifiers to it.
  */
-export function createElementWithModifiers<TTagName extends ElementTagName>(
+export function createHtmlElementWithModifiers<TTagName extends ElementTagName>(
   tagName: TTagName,
   modifiers: ReadonlyArray<NodeModifier<TTagName>>
 ): ExpandedElement<TTagName> {
   const el = document.createElement(tagName) as ExpandedElement<TTagName>;
   applyModifiers(el, modifiers, 0);
+  return el;
+}
+
+/**
+ * Creates an SVG element with the specified tag name and applies modifiers to it.
+ */
+export function createSvgElementWithModifiers<TTagName extends keyof SVGElementTagNameMap>(
+  tagName: TTagName,
+  modifiers: ReadonlyArray<unknown>
+): SVGElementTagNameMap[TTagName] {
+  const el = document.createElementNS(SVG_NAMESPACE, tagName);
+  applyModifiers(el as unknown as ExpandedElement<ElementTagName>, modifiers as ReadonlyArray<NodeModifier<ElementTagName>>, 0);
   return el;
 }

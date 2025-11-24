@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { applyModifiers } from '../../src/internal/applyModifiers';
-import { createConditionalElement } from '../../src/core/conditionalRenderer';
+import { createHtmlConditionalElement } from '../../src/core/conditionalRenderer';
 import { updateConditionalElements } from '../../src/core/conditionalUpdater';
 import { insertNodesBefore, appendChildren, createMarkerPair } from '../../src/utility/dom';
 
@@ -56,7 +56,7 @@ describe('synthetic DOM failure / defensive branch coverage', () => {
   describe('conditionalUpdater multiple consecutive replacement failures', () => {
     it('logs errors on repeated element <-> comment replacement attempts', () => {
       let visible = false; // start hidden => comment
-      const conditionalNode = createConditionalElement(
+      const conditionalNode = createHtmlConditionalElement(
         'div',
         () => visible,
         ['content']

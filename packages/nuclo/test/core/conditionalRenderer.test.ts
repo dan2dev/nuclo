@@ -126,10 +126,10 @@ describe('createConditionalElement SSR branch', () => {
     vi.doMock('../../src/utility/environment', () => ({
       isBrowser: false
     }));
-    const { createConditionalElement } = await import('../../src/core/conditionalRenderer');
+    const { createHtmlConditionalElement } = await import('../../src/core/conditionalRenderer');
 
     const condCalls: number[] = [];
-    const el = createConditionalElement(
+    const el = createHtmlConditionalElement(
       'div',
       () => {
         condCalls.push(1);
@@ -152,9 +152,9 @@ describe('createConditionalElement SSR branch', () => {
     vi.doMock('../../src/utility/environment', () => ({
       isBrowser: false
     }));
-    const { createConditionalElement } = await import('../../src/core/conditionalRenderer');
+    const { createHtmlConditionalElement } = await import('../../src/core/conditionalRenderer');
 
-    const el = createConditionalElement(
+    const el = createHtmlConditionalElement(
       'span',
       () => false,
       ['invisible text', { className: 'ssr-hidden' }]
@@ -171,9 +171,9 @@ describe('createConditionalElement SSR branch', () => {
     vi.doMock('../../src/utility/environment', () => ({
       isBrowser: false
     }));
-    const { createConditionalElement } = await import('../../src/core/conditionalRenderer');
+    const { createHtmlConditionalElement } = await import('../../src/core/conditionalRenderer');
 
-    const element = createConditionalElement(
+    const element = createHtmlConditionalElement(
       'p',
       () => true,
       ['text', { className: 'cls', title: 't' }]
@@ -189,14 +189,14 @@ describe('createConditionalElement SSR branch', () => {
     vi.doMock('../../src/utility/environment', () => ({
       isBrowser: false
     }));
-    const { createConditionalElement } = await import('../../src/core/conditionalRenderer');
+    const { createHtmlConditionalElement } = await import('../../src/core/conditionalRenderer');
 
     let sideEffect = 0;
     const reactive = () => {
       sideEffect += 1;
       return 'should not run because element not created';
     };
-    const element = createConditionalElement(
+    const element = createHtmlConditionalElement(
       'div',
       () => false,
       [reactive, { id: 'never' }]

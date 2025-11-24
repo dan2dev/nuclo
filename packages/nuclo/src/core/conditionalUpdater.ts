@@ -1,4 +1,4 @@
-import { createElementWithModifiers } from "../internal/applyModifiers";
+import { createHtmlElementWithModifiers, createSvgElementWithModifiers } from "../internal/applyModifiers";
 import { isBrowser } from "../utility/environment";
 import {
   ConditionalInfo,
@@ -11,14 +11,22 @@ import { runCondition } from "../utility/conditions";
 import { replaceNodeSafely, createConditionalComment } from "../utility/dom";
 import { logError } from "../utility/errorHandler";
 
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+
 function createElementFromConditionalInfo<TTagName extends ElementTagName>(
   conditionalInfo: ConditionalInfo<TTagName>
-): ExpandedElement<TTagName> {
+): ExpandedElement<TTagName> | SVGElement {
   try {
-    return createElementWithModifiers(conditionalInfo.tagName, conditionalInfo.modifiers);
+    if (conditionalInfo.isSvg) {
+      return createSvgElementWithModifiers(conditionalInfo.tagName as keyof SVGElementTagNameMap, conditionalInfo.modifiers);
+    }
+    return createHtmlElementWithModifiers(conditionalInfo.tagName, conditionalInfo.modifiers);
   } catch (error) {
     logError(`Error applying modifiers in conditional element "${conditionalInfo.tagName}"`, error);
     // Return a basic element without modifiers as fallback
+    if (conditionalInfo.isSvg) {
+      return document.createElementNS(SVG_NAMESPACE, conditionalInfo.tagName);
+    }
     return document.createElement(conditionalInfo.tagName) as ExpandedElement<TTagName>;
   }
 }
