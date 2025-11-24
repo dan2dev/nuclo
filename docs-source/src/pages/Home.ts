@@ -270,7 +270,7 @@ render(app, document.body);`, "typescript")
       h2(s.sectionTitle, "Core Concepts"),
       p(s.sectionSubtitle, "Explicit updates, reactive functions, conditionals, list syncing, and styling."),
       div(
-        s.demoContainer,
+        s.demoContainerSingle,
         div(
           s.demoPanel,
           div(s.demoPanelHeader, "Batch updates"),
@@ -289,7 +289,7 @@ render(app, document.body);`, "typescript")
         )
       ),
       div(
-        cn(display("grid").gap("20px")),
+        cn(display("grid").gap("20px").gridTemplateColumns("1fr"), { medium: gridTemplateColumns("repeat(2, 1fr)"), large: gridTemplateColumns("repeat(3, 1fr)") }),
         div(
           s.featureCard,
           h3(s.featureTitle, "Conditional rendering"),

@@ -16,8 +16,6 @@ export function GettingStartedPage() {
     h2(s.h2, "Installation"),
     p(s.p, "Install with your preferred package manager:"),
     CodeBlock(gettingStartedCode.installNpm.code, gettingStartedCode.installNpm.lang),
-    CodeBlock(gettingStartedCode.installYarn.code, gettingStartedCode.installYarn.lang),
-    CodeBlock(gettingStartedCode.installPnpm.code, gettingStartedCode.installPnpm.lang),
     p(s.p, "Deno works too—import directly from npm:"),
     CodeBlock(gettingStartedCode.denoImport.code, gettingStartedCode.denoImport.lang),
     p(s.p, "Or add it to ", InlineCode("deno.json"), ":"),
