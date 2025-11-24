@@ -184,6 +184,9 @@ function getPseudoClassSelector(pseudoClass: CSSPseudoClass): string {
 	return PSEUDO_CLASS_MAP[pseudoClass];
 }
 
+// Cache for parsed queries to avoid re-parsing
+const parsedQueryCache = new Map<string, QueryResult>();
+
 // Create style queries function
 // Accepts either Record (for backward compatibility) or Array of [name, query] tuples (for explicit order)
 export function createStyleQueries<T extends string>(
@@ -196,6 +199,17 @@ export function createStyleQueries<T extends string>(
 	const queriesArray: Array<[T, string]> = Array.isArray(queries)
 		? queries
 		: (Object.entries(queries) as Array<[T, string]>);
+	
+	// Pre-parse and cache all queries
+	const parsedQueries = new Map<T, QueryResult>();
+	for (const [queryName, queryValue] of queriesArray) {
+		let parsed = parsedQueryCache.get(queryValue);
+		if (!parsed) {
+			parsed = parseQuery(queryValue);
+			parsedQueryCache.set(queryValue, parsed);
+		}
+		parsedQueries.set(queryName, parsed);
+	}
 
 	return function cn(
 		defaultStylesOrQueries?: StyleBuilder | QueryStyles<T | CSSPseudoClass>,
@@ -230,22 +244,26 @@ export function createStyleQueries<T extends string>(
 		if (styles && Object.keys(styles).length > 0) {
 			// Collect all query styles in registration order
 			const allQueryStyles: Array<{ queryName: string; query: QueryResult; styles: Record<string, string> }> = [];
+			
+			// Track which keys we've processed to avoid duplicates
+			const processedKeys = new Set<string>();
 
 			// Process user-defined queries in the order they were registered
-			for (const [queryName, queryValue] of queriesArray) {
+			for (const [queryName] of queriesArray) {
 				const styleBuilder = styles[queryName];
 				if (styleBuilder) {
+					processedKeys.add(queryName);
 					allQueryStyles.push({
 						queryName,
-						query: parseQuery(queryValue),
+						query: parsedQueries.get(queryName)!,
 						styles: (styleBuilder as StyleBuilder).getStyles()
 					});
 				}
 			}
 
-			// Process built-in pseudo-classes (hover, focus, etc.)
+			// Process built-in pseudo-classes (hover, focus, etc.) - only if not already processed
 			for (const [key, styleBuilder] of Object.entries(styles)) {
-				if (isPseudoClass(key) && styleBuilder instanceof StyleBuilder) {
+				if (!processedKeys.has(key) && isPseudoClass(key) && styleBuilder instanceof StyleBuilder) {
 					allQueryStyles.push({
 						queryName: key,
 						query: { type: 'pseudo', pseudoClass: getPseudoClassSelector(key) },
@@ -255,17 +273,20 @@ export function createStyleQueries<T extends string>(
 			}
 
 			// Generate a combined hash from all query styles (and default styles if present)
+			// Pre-allocate array size for better performance
 			const allStyleKeys: string[] = [];
+			allStyleKeys.length = allQueryStyles.length + (defaultStyles ? 1 : 0);
 
+			let keyIndex = 0;
 			if (defaultStyles) {
 				const defaultStylesObj = defaultStyles.getStyles();
-				allStyleKeys.push(`default:${generateStyleKey(defaultStylesObj)}`);
+				allStyleKeys[keyIndex++] = `default:${generateStyleKey(defaultStylesObj)}`;
 			}
 
-			allStyleKeys.push(...allQueryStyles.map(({ queryName, styles: qStyles }) => {
+			for (const { queryName, styles: qStyles } of allQueryStyles) {
 				const styleKey = generateStyleKey(qStyles);
-				return `${queryName}:${styleKey}`;
-			}));
+				allStyleKeys[keyIndex++] = `${queryName}:${styleKey}`;
+			}
 
 			const combinedStyleKey = allStyleKeys.sort().join('||');
 			const combinedHash = simpleHash(combinedStyleKey);

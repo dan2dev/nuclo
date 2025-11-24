@@ -79,42 +79,52 @@ export function createCSSClassWithStyles(
 	// Handle pseudo-classes (hover, focus, etc.) - these modify the selector directly
 	if (pseudoClass) {
 		const selector = `.${className}${pseudoClass}`;
-		const allRules = Array.from(styleSheet.sheet?.cssRules || []);
+		const sheet = styleSheet.sheet;
+		if (!sheet) return;
+		
+		const allRules = sheet.cssRules;
+		const rulesLength = allRules.length;
 		
 		// Find existing rule with this pseudo-class selector
 		let existingRule: CSSStyleRule | null = null;
-		let insertIndex = allRules.length;
+		let insertIndex = rulesLength;
 
-		for (let i = 0; i < allRules.length; i++) {
+		for (let i = 0; i < rulesLength; i++) {
 			const rule = allRules[i];
-			if (rule instanceof CSSStyleRule && rule.selectorText === selector) {
-				existingRule = rule;
-				insertIndex = i;
-				break;
-			}
-			// Insert pseudo-class rules after regular style rules but before at-rules
-			if (rule instanceof CSSStyleRule && !rule.selectorText.includes(':')) {
-				insertIndex = i + 1;
+			if (rule instanceof CSSStyleRule) {
+				if (rule.selectorText === selector) {
+					existingRule = rule;
+					insertIndex = i;
+					break;
+				}
+				// Insert pseudo-class rules after regular style rules but before at-rules
+				if (!rule.selectorText.includes(':')) {
+					insertIndex = i + 1;
+				}
 			}
 		}
 
 		if (existingRule) {
 			// Update existing rule by replacing all styles
-			while (existingRule.style.length > 0) {
-				existingRule.style.removeProperty(existingRule.style[0]);
+			// More efficient: clear and set in one pass
+			const style = existingRule.style;
+			style.cssText = ''; // Faster than removing properties one by one
+			for (const [property, value] of Object.entries(styles)) {
+				style.setProperty(property, value);
 			}
-			Object.entries(styles).forEach(([property, value]) => {
-				existingRule!.style.setProperty(property, value);
-			});
 		} else {
-			styleSheet.sheet?.insertRule(`${selector} { ${rules} }`, insertIndex);
+			sheet.insertRule(`${selector} { ${rules} }`, insertIndex);
 		}
 		return;
 	}
 
 	if (condition) {
 		// Create or get at-rule (media, container, supports, etc.)
-		const existingRules = Array.from(styleSheet.sheet?.cssRules || []);
+		const sheet = styleSheet.sheet;
+		if (!sheet) return;
+		
+		const existingRules = sheet.cssRules;
+		const rulesLength = existingRules.length;
 		let groupingRule: CSSGroupingRule | null = null;
 
 		// Helper to check if a rule matches our at-rule type and condition
@@ -138,7 +148,8 @@ export function createCSSClassWithStyles(
 				rule instanceof CSSSupportsRule;
 		};
 
-		for (const rule of existingRules) {
+		for (let i = 0; i < rulesLength; i++) {
+			const rule = existingRules[i];
 			if (isMatchingRule(rule)) {
 				groupingRule = rule as CSSGroupingRule;
 				break;
@@ -149,14 +160,15 @@ export function createCSSClassWithStyles(
 			// Find the correct insertion index: after all style rules, append at-rules in order
 			// Since we process queries in registration order, we can simply append
 			// This ensures: style rules first, then at-rules in the order they're processed
-			let insertIndex = existingRules.length;
+			let insertIndex = rulesLength;
 
 			// Find the last at-rule to insert after it (maintains order)
-			for (let i = existingRules.length - 1; i >= 0; i--) {
-				if (isAtRule(existingRules[i])) {
+			for (let i = rulesLength - 1; i >= 0; i--) {
+				const rule = existingRules[i];
+				if (isAtRule(rule)) {
 					insertIndex = i + 1;
 					break;
-				} else if (existingRules[i] instanceof CSSStyleRule) {
+				} else if (rule instanceof CSSStyleRule) {
 					// If we hit a style rule, insert after it
 					insertIndex = i + 1;
 					break;
@@ -169,8 +181,8 @@ export function createCSSClassWithStyles(
 				atRuleType === 'supports' ? '@supports' :
 				'@media'; // fallback
 
-			styleSheet.sheet?.insertRule(`${atRulePrefix} ${condition} {}`, insertIndex);
-			groupingRule = styleSheet.sheet?.cssRules[insertIndex] as CSSGroupingRule;
+			sheet.insertRule(`${atRulePrefix} ${condition} {}`, insertIndex);
+			groupingRule = sheet.cssRules[insertIndex] as CSSGroupingRule;
 		}
 
 		// Check if class already exists in this at-rule
@@ -184,20 +196,21 @@ export function createCSSClassWithStyles(
 
 		if (existingRule) {
 			// Update existing rule by replacing all styles
-			// First, clear all existing properties
-			while (existingRule.style.length > 0) {
-				existingRule.style.removeProperty(existingRule.style[0]);
+			// More efficient: clear and set in one pass
+			const style = existingRule.style;
+			style.cssText = ''; // Faster than removing properties one by one
+			for (const [property, value] of Object.entries(styles)) {
+				style.setProperty(property, value);
 			}
-			// Then set all new properties
-			Object.entries(styles).forEach(([property, value]) => {
-				existingRule!.style.setProperty(property, value);
-			});
 		} else {
 			groupingRule.insertRule(`.${className} { ${rules} }`, groupingRule.cssRules.length);
 		}
 	} else {
 		// Regular style rule (no at-rule)
 		// Find existing rule or insert at the beginning (before at-rules)
+		const sheet = styleSheet.sheet;
+		if (!sheet) return;
+		
 		let existingRule: CSSStyleRule | null = null;
 		let insertIndex = 0;
 
@@ -208,8 +221,9 @@ export function createCSSClassWithStyles(
 				rule instanceof CSSSupportsRule;
 		};
 
-		const allRules = Array.from(styleSheet.sheet?.cssRules || []);
-		for (let i = 0; i < allRules.length; i++) {
+		const allRules = sheet.cssRules;
+		const rulesLength = allRules.length;
+		for (let i = 0; i < rulesLength; i++) {
 			const rule = allRules[i];
 			if (rule instanceof CSSStyleRule && rule.selectorText === `.${className}`) {
 				existingRule = rule;
@@ -224,16 +238,14 @@ export function createCSSClassWithStyles(
 
 		if (existingRule) {
 			// Update existing rule by replacing all styles
-			// First, clear all existing properties
-			while (existingRule.style.length > 0) {
-				existingRule.style.removeProperty(existingRule.style[0]);
+			// More efficient: clear and set in one pass
+			const style = existingRule.style;
+			style.cssText = ''; // Faster than removing properties one by one
+			for (const [property, value] of Object.entries(styles)) {
+				style.setProperty(property, value);
 			}
-			// Then set all new properties
-			Object.entries(styles).forEach(([property, value]) => {
-				existingRule!.style.setProperty(property, value);
-			});
 		} else {
-			styleSheet.sheet?.insertRule(`.${className} { ${rules} }`, insertIndex);
+			sheet.insertRule(`.${className} { ${rules} }`, insertIndex);
 		}
 	}
 }
