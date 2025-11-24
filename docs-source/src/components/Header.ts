@@ -68,7 +68,7 @@ function NavLink(label: string, route: Route) {
 
 function Brand() {
   return a(
-    { href: "/" },
+    { href: "/nuclo/" },
     cn(
       display("flex")
         .alignItems("center")

@@ -1,280 +1,138 @@
 import "nuclo";
 import { cn, s, colors } from "../styles.ts";
-import { CodeBlock } from "../components/CodeBlock.ts";
 import { examplesContent, type ExampleContent } from "../content/examples.ts";
+import { setRoute, type Route } from "../router.ts";
 
-// Live demo states
-let counterCount = 0;
-
-type Todo = { id: number; text: string; done: boolean };
-let todos: Todo[] = [
-  { id: 1, text: "Learn Nuclo", done: true },
-  { id: 2, text: "Build something awesome", done: false },
-  { id: 3, text: "Share with friends", done: false },
-];
-let todoInput = "";
-let todoNextId = 4;
-
-// Demo styles using cn()
-const demoStyle = cn(backgroundColor(colors.bgCard)
-  .padding("32px")
-  .borderRadius("16px")
-  .border(`1px solid ${colors.border}`)
-  .marginBottom("32px"));
-
-const demoBtnStyle = cn(padding("10px 20px")
-  .backgroundColor(colors.primary)
-  .color(colors.bg)
-  .border("none")
-  .borderRadius("8px")
-  .fontSize("14px")
-  .fontWeight("600")
-  .cursor("pointer")
-  .transition("all 0.2s"));
-
-const demoBtnSecondary = cn(padding("10px 20px")
-  .backgroundColor(colors.bgLight)
-  .color(colors.text)
-  .border(`1px solid ${colors.border}`)
-  .borderRadius("8px")
-  .fontSize("14px")
-  .fontWeight("500")
-  .cursor("pointer")
-  .transition("all 0.2s"));
-
-const demoInputStyle = cn(padding("10px 14px")
-  .backgroundColor(colors.bgLight)
-  .color(colors.text)
-  .border(`1px solid ${colors.border}`)
-  .borderRadius("8px")
-  .fontSize("14px")
-  .outline("none")
-  .width("220px")
-  .transition("border-color 0.2s"));
-
-function LiveCounter() {
-  return div(
-    demoStyle,
-    div(
-      s.flexBetween,
-      div(
-        h3(
-          cn(fontSize("48px").fontWeight("700").color(colors.text).marginBottom("8px")),
-          () => counterCount
-        ),
-        p(cn(fontSize("14px").color(colors.textMuted)), "Current count")
-      ),
-      div(
-        s.flex,
-        s.gap8,
-        button(
-          demoBtnStyle,
-          cn(width("44px").height("44px").fontSize("20px").padding("0").display("flex").alignItems("center").justifyContent("center")),
-          "−",
-          on("click", () => {
-            counterCount--;
-            update();
-          }),
-          on("mouseenter", (e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.primaryHover;
-            (e.target as HTMLElement).style.transform = "scale(1.05)";
-          }),
-          on("mouseleave", (e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.primary;
-            (e.target as HTMLElement).style.transform = "scale(1)";
-          })
-        ),
-        button(
-          demoBtnStyle,
-          cn(width("44px").height("44px").fontSize("20px").padding("0").display("flex").alignItems("center").justifyContent("center")),
-          "+",
-          on("click", () => {
-            counterCount++;
-            update();
-          }),
-          on("mouseenter", (e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.primaryHover;
-            (e.target as HTMLElement).style.transform = "scale(1.05)";
-          }),
-          on("mouseleave", (e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.primary;
-            (e.target as HTMLElement).style.transform = "scale(1)";
-          })
-        ),
-        button(
-          demoBtnSecondary,
-          "Reset",
-          on("click", () => {
-            counterCount = 0;
-            update();
-          }),
-          on("mouseenter", (e) => {
-            (e.target as HTMLElement).style.borderColor = colors.primary;
-          }),
-          on("mouseleave", (e) => {
-            (e.target as HTMLElement).style.borderColor = colors.border;
-          })
-        )
-      )
-    )
-  );
-}
-
-function LiveTodoList() {
-  const checkboxStyle = cn(width("20px").height("20px").cursor("pointer"));
-  const checkboxStyleObj = { accentColor: colors.primary };
-
-  const todoItemStyle = cn(display("flex")
-    .alignItems("center")
-    .gap("14px")
-    .padding("14px 16px")
-    .backgroundColor(colors.bgLight)
-    .borderRadius("10px")
-    .marginBottom("10px")
-    .transition("all 0.2s"));
-
-  const deleteBtnStyle = cn(marginLeft("auto")
-    .padding("6px 10px")
-    .backgroundColor("transparent")
-    .color(colors.textDim)
-    .border("none")
-    .borderRadius("6px")
-    .cursor("pointer")
-    .fontSize("18px")
-    .transition("all 0.2s"));
-
-  return div(
-    demoStyle,
-    div(
-      s.flex,
-      s.gap8,
-      s.mb24,
-      input(
-        demoInputStyle,
-        {
-          type: "text",
-          placeholder: "Add a new task...",
-          value: () => todoInput,
-        },
-        on("input", (e) => {
-          todoInput = (e.target as HTMLInputElement).value;
-          update();
-        }),
-        on("keydown", (e) => {
-          if (e.key === "Enter" && todoInput.trim()) {
-            todos.push({ id: todoNextId++, text: todoInput, done: false });
-            todoInput = "";
-            update();
-          }
-        }),
-        on("focus", (e) => {
-          (e.target as HTMLElement).style.borderColor = colors.primary;
-        }),
-        on("blur", (e) => {
-          (e.target as HTMLElement).style.borderColor = colors.border;
-        })
-      ),
-      button(
-        demoBtnStyle,
-        "Add Task",
-        on("click", () => {
-          if (todoInput.trim()) {
-            todos.push({ id: todoNextId++, text: todoInput, done: false });
-            todoInput = "";
-            update();
-          }
-        }),
-        on("mouseenter", (e) => {
-          (e.target as HTMLElement).style.backgroundColor = colors.primaryHover;
-        }),
-        on("mouseleave", (e) => {
-          (e.target as HTMLElement).style.backgroundColor = colors.primary;
-        })
-      )
-    ),
-    div(
-      () =>
-        `${todos.filter((t) => !t.done).length} remaining · ${todos.filter((t) => t.done).length} completed`,
-      cn(fontSize("13px").color(colors.textDim).marginBottom("20px").fontWeight("500"))
-    ),
-    when(
-      () => todos.length > 0,
-      list(
-        () => todos,
-        (todo) =>
-          div(
-            todoItemStyle,
-            input(
-              checkboxStyle,
-              { style: checkboxStyleObj },
-              {
-                type: "checkbox",
-                checked: () => todo.done,
-              },
-              on("change", () => {
-                todo.done = !todo.done;
-                update();
-              })
-            ),
-            span(
-              () => todo.done
-                ? cn(color(colors.textDim).textDecoration("line-through").fontSize("15px"))
-                : cn(color(colors.text).fontSize("15px")),
-              () => todo.text
-            ),
-            button(
-              deleteBtnStyle,
-              "×",
-              on("click", () => {
-                todos = todos.filter((t) => t.id !== todo.id);
-                update();
-              }),
-              on("mouseenter", (e) => {
-                (e.target as HTMLElement).style.backgroundColor = "rgba(239, 68, 68, 0.1)";
-                (e.target as HTMLElement).style.color = "#ef4444";
-              }),
-              on("mouseleave", (e) => {
-                (e.target as HTMLElement).style.backgroundColor = "transparent";
-                (e.target as HTMLElement).style.color = colors.textDim;
-              })
-            )
-          )
-      )
-    ).else(
-      p(
-        cn(color(colors.textDim).textAlign("center").padding("32px").fontSize("15px")),
-        "No tasks yet. Add one above!"
-      )
-    )
-  );
-}
-
-const liveSections: Record<string, () => any> = {
-  counter: LiveCounter,
-  todo: LiveTodoList,
+const exampleRoutes: Record<string, Route> = {
+  counter: "example-counter",
+  todo: "example-todo",
+  subtasks: "example-subtasks",
+  search: "example-search",
+  async: "example-async",
+  forms: "example-forms",
+  nested: "example-nested",
+  animations: "example-animations",
+  routing: "example-routing",
+  "styled-card": "example-styled-card",
 };
 
-function ExampleSection(example: ExampleContent) {
-  const live = liveSections[example.id];
-  return section(
-    { id: example.id },
-    h2(s.h2, example.title),
-    p(s.p, example.description),
-    live ? live() : null,
-    CodeBlock(example.code, "typescript")
+const cardStyle = cn(
+  backgroundColor(colors.bgCard)
+    .padding("24px")
+    .borderRadius("12px")
+    .border(`1px solid ${colors.border}`)
+    .cursor("pointer")
+    .transition("all 0.2s")
+);
+
+const cardTitleStyle = cn(
+  fontSize("18px")
+    .fontWeight("600")
+    .color(colors.text)
+    .marginBottom("8px")
+);
+
+const cardDescStyle = cn(
+  fontSize("14px")
+    .color(colors.textMuted)
+    .lineHeight("1.5")
+);
+
+const gridStyle = cn(
+  display("grid")
+    .gridTemplateColumns("repeat(auto-fill, minmax(300px, 1fr))")
+    .gap("20px")
+    .marginBottom("48px")
+);
+
+const categoryTitleStyle = cn(
+  fontSize("20px")
+    .fontWeight("600")
+    .color(colors.text)
+    .marginBottom("20px")
+    .marginTop("32px")
+);
+
+const liveBadgeStyle = cn(
+  display("inline-block")
+    .padding("4px 8px")
+    .backgroundColor("rgba(132, 204, 22, 0.15)")
+    .color(colors.primary)
+    .fontSize("11px")
+    .fontWeight("600")
+    .borderRadius("4px")
+    .marginLeft("8px")
+    .textTransform("uppercase")
+);
+
+function ExampleCard(example: ExampleContent, hasLiveDemo: boolean) {
+  const route = exampleRoutes[example.id];
+
+  return div(
+    cardStyle,
+    on("click", () => setRoute(route)),
+    on("mouseenter", (e) => {
+      (e.currentTarget as HTMLElement).style.borderColor = colors.primary;
+      (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+      (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+    }),
+    on("mouseleave", (e) => {
+      (e.currentTarget as HTMLElement).style.borderColor = colors.border;
+      (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+      (e.currentTarget as HTMLElement).style.boxShadow = "none";
+    }),
+    div(
+      cardTitleStyle,
+      example.title,
+      hasLiveDemo ? span(liveBadgeStyle, "Live Demo") : null
+    ),
+    p(cardDescStyle, example.description)
   );
+}
+
+// Categorize examples
+const basicExamples = ["counter", "todo", "subtasks"];
+const dataExamples = ["search", "async", "forms"];
+const advancedExamples = ["nested", "animations", "routing", "styled-card"];
+
+function getExamplesByIds(ids: string[]) {
+  return examplesContent.filter(e => ids.includes(e.id));
 }
 
 export function ExamplesPage() {
+  const liveExamples = new Set(["counter", "todo"]);
+
   return div(
     s.pageContent,
     h1(s.pageTitle, "Examples"),
     p(
       s.pageSubtitle,
-      "All examples from the original gallery are mirrored here. Counter and Todo include live demos; the rest keep the original source code intact."
+      "Explore practical examples demonstrating Nuclo's features. Examples with live demos are marked with a badge."
     ),
-    ...examplesContent.map(ExampleSection),
+
+    h2(categoryTitleStyle, "Getting Started"),
+    p(cn(color(colors.textMuted).marginBottom("16px")), "Simple examples to help you understand the basics."),
+    div(
+      gridStyle,
+      ...getExamplesByIds(basicExamples).map(e => ExampleCard(e, liveExamples.has(e.id)))
+    ),
+
+    h2(categoryTitleStyle, "Data & Forms"),
+    p(cn(color(colors.textMuted).marginBottom("16px")), "Working with data, APIs, and form handling."),
+    div(
+      gridStyle,
+      ...getExamplesByIds(dataExamples).map(e => ExampleCard(e, liveExamples.has(e.id)))
+    ),
+
+    h2(categoryTitleStyle, "Advanced Patterns"),
+    p(cn(color(colors.textMuted).marginBottom("16px")), "More complex patterns and techniques."),
+    div(
+      gridStyle,
+      ...getExamplesByIds(advancedExamples).map(e => ExampleCard(e, liveExamples.has(e.id)))
+    ),
+
     section(
+      cn(marginTop("48px").paddingTop("32px").borderTop(`1px solid ${colors.border}`)),
       h2(s.h2, "More Examples"),
       p(
         s.p,
@@ -285,6 +143,7 @@ export function ExamplesPage() {
             target: "_blank",
             rel: "noopener noreferrer"
           },
+          cn(color(colors.primary)),
           "GitHub examples directory"
         ),
         "."

@@ -8,6 +8,16 @@ export type Route =
   | "styling"
   | "pitfalls"
   | "examples"
+  | "example-counter"
+  | "example-todo"
+  | "example-subtasks"
+  | "example-search"
+  | "example-async"
+  | "example-forms"
+  | "example-nested"
+  | "example-animations"
+  | "example-routing"
+  | "example-styled-card"
   | string;
 
 let currentRoute: Route = "home";
@@ -30,7 +40,17 @@ const validRoutes: Route[] = [
   "tag-builders",
   "styling",
   "pitfalls",
-  "examples"
+  "examples",
+  "example-counter",
+  "example-todo",
+  "example-subtasks",
+  "example-search",
+  "example-async",
+  "example-forms",
+  "example-nested",
+  "example-animations",
+  "example-routing",
+  "example-styled-card"
 ];
 
 export function initRouter() {

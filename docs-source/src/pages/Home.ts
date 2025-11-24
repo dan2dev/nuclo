@@ -5,7 +5,7 @@ import { CodeBlock } from "../components/CodeBlock.ts";
 import { examplesContent } from "../content/examples.ts";
 import { gettingStartedCode } from "../content/gettingStarted.ts";
 import { stylingCode } from "../content/styling.ts";
-import { ArrowRightIcon, NucloLogo, RocketIcon, BoxIcon, ZapIcon, RefreshIcon, CodeIcon, LayersIcon } from "../components/icons.ts";
+import { ArrowRightIcon, RocketIcon, BoxIcon, ZapIcon, RefreshIcon, CodeIcon, LayersIcon } from "../components/icons.ts";
 
 const heroCode = `import 'nuclo';
 
