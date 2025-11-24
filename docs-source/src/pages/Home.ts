@@ -111,11 +111,11 @@ export function HomePage() {
     section(
       s.hero,
       // Background decoration
-      div(
-        // cn(position("absolute").left("50%").width("600px").height("600px").opacity("0.1").pointerEvents("none")),
-        // { style: { transform: "translateX(-50%)" } },
-        NucloLogo(600, true)
-      ),
+      // div(
+      //   // cn(position("absolute").left("50%").width("600px").height("600px").opacity("0.1").pointerEvents("none")),
+      //   // { style: { transform: "translateX(-50%)" } },
+      //   NucloLogo(600, true)
+      // ),
       h1(
         s.heroTitle,
         "Build ",
