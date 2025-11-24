@@ -868,48 +868,34 @@ render(app, document.body);`,
     description: `Smooth transitions with CSS and reactive styles.`,
     code: `import 'nuclo';
 
-let isVisible = true;
-let opacity = 1;
-let scale = 1;
+// Toggle a CSS keyframes animation
+let isAnimating = false;
 
-function toggle() {
-  isVisible = !isVisible;
-  update();
-}
-
-function animate() {
-  let start = Date.now();
-
-  function tick() {
-    const elapsed = Date.now() - start;
-    const progress = Math.min(elapsed / 1000, 1); // 1 second animation
-
-    opacity = isVisible ? progress : 1 - progress;
-    scale = isVisible ? 0.5 + progress * 0.5 : 1 - progress * 0.5;
-
-    update();
-
-    if (progress < 1) {
-      requestAnimationFrame(tick);
-    }
-  }
-
-  tick();
-}
+// Ensure keyframes exist
+const style = document.createElement('style');
+style.textContent = '@keyframes pulse { from { transform: scale(1); opacity: 0.85; } to { transform: scale(1.08); opacity: 1; } }';
+document.head.appendChild(style);
 
 const app = div(
-  button('Toggle', on('click', () => {
-    toggle();
-    animate();
-  })),
+  button(
+    () => isAnimating ? 'Stop Animation' : 'Start Animation',
+    on('click', () => { isAnimating = !isAnimating; update(); })
+  ),
 
   div(
     {
       className: 'animated-box',
       style: {
-        opacity: () => opacity,
-        transform: () => \`scale(\${scale})\`,
-        transition: 'opacity 0.3s, transform 0.3s'
+        width: '200px',
+        height: '200px',
+        borderRadius: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        background: 'linear-gradient(135deg, #84cc16 0%, #65a30d 100%)',
+        animation: () => isAnimating ? 'pulse 600ms ease-in-out infinite alternate' : 'none',
+        willChange: () => isAnimating ? 'transform, opacity' : 'auto'
       }
     },
     'Animated Content'
