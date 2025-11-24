@@ -117,7 +117,8 @@ export const s = {
     .fontSize("14px")
     .fontWeight("500")
     .transition("all 0.2s"), {
-    medium: fontSize("15px")
+    medium: fontSize("15px"),
+    hover: color("red")
   }),
 
   navLinkActive: cn(color(colors.text)),

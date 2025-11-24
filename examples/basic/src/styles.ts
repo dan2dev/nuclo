@@ -43,6 +43,7 @@ export const theme = {
 };
 
 // Style Queries (Media, Container, Feature)
+// Pseudo-classes (hover, focus, active, etc.) are automatically available
 export const cn = createStyleQueries({
 	small: "@container (min-width: 341px)",
 	medium: "@container (min-width: 601px)",
@@ -172,6 +173,8 @@ export const globalStyles = {
 		.gap(theme.spacing.sm)
 		.outline("none"), {
 		medium: width("auto").minWidth("160px"),
+		hover: bg(theme.colors.primaryDark).boxShadow("0 6px 16px rgba(99, 102, 241, 0.5)"),
+		active: bg(theme.colors.primaryDark).transform("scale(0.98)"),
 	}),
 
 	// Stats section

@@ -37,12 +37,15 @@ function NavLink(label: string, route: Route) {
         .fontSize("14px")
         .fontWeight("500")
         .transition("all 0.2s")
-        .cursor("pointer")
+        .color(colors.textMuted)
+        .cursor("pointer"),
+        {
+          hover: backgroundColor(colors.accent).color(colors.bg)
+        }
     ),
     {
       style: () => ({
-        color: isActive() ? colors.primary : colors.textMuted,
-        backgroundColor: isActive() ? "rgba(132, 204, 22, 0.1)" : "transparent",
+        color: isActive() ? colors.primary : null,
       }),
     },
     label,
@@ -51,18 +54,18 @@ function NavLink(label: string, route: Route) {
       setRoute(route);
       closeMobileMenu();
     }),
-    on("mouseenter", (e) => {
-      if (!isActive()) {
-        (e.target as HTMLElement).style.color = colors.primary;
-        (e.target as HTMLElement).style.backgroundColor = "rgba(132, 204, 22, 0.05)";
-      }
-    }),
-    on("mouseleave", (e) => {
-      if (!isActive()) {
-        (e.target as HTMLElement).style.color = colors.textMuted;
-        (e.target as HTMLElement).style.backgroundColor = "transparent";
-      }
-    })
+    // on("mouseenter", (e) => {
+    //   if (!isActive()) {
+    //     (e.target as HTMLElement).style.color = colors.primary;
+    //     (e.target as HTMLElement).style.backgroundColor = "rgba(132, 204, 22, 0.05)";
+    //   }
+    // }),
+    // on("mouseleave", (e) => {
+    //   if (!isActive()) {
+    //     (e.target as HTMLElement).style.color = colors.textMuted;
+    //     (e.target as HTMLElement).style.backgroundColor = "transparent";
+    //   }
+    // })
   );
 }
 
