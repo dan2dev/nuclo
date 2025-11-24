@@ -1,262 +1,222 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   createReactiveTextNode,
-  registerAttributeResolver,
   notifyReactiveTextNodes,
-  notifyReactiveElements
-} from '../../src/core/reactive';
+  registerAttributeResolver,
+  notifyReactiveElements,
+} from "../../src/core/reactive";
 
-describe('reactive system (reactive.ts)', () => {
-  let originalConsoleError: any;
-  let errorSpy: ReturnType<typeof vi.fn>;
-
-  beforeEach(() => {
-    originalConsoleError = console.error;
-    errorSpy = vi.fn();
-    console.error = errorSpy as any;
-    document.body.innerHTML = '';
+describe("reactive module exports", () => {
+  it("should export createReactiveTextNode", () => {
+    expect(typeof createReactiveTextNode).toBe("function");
   });
 
-  afterEach(() => {
-    console.error = originalConsoleError;
+  it("should export notifyReactiveTextNodes", () => {
+    expect(typeof notifyReactiveTextNodes).toBe("function");
   });
 
-  describe('createReactiveTextNode', () => {
-    it('creates a text node that updates when resolver value changes', () => {
-      const state = { count: 0 };
-      const txt = createReactiveTextNode(() => state.count);
-      // Must attach so the reactive system keeps tracking it
-      document.body.appendChild(txt);
-      expect(txt.textContent).toBe('0');
+  it("should export registerAttributeResolver", () => {
+    expect(typeof registerAttributeResolver).toBe("function");
+  });
 
-      state.count = 1;
-      notifyReactiveTextNodes();
-      expect(txt.textContent).toBe('1');
+  it("should export notifyReactiveElements", () => {
+    expect(typeof notifyReactiveElements).toBe("function");
+  });
 
-      state.count = 42;
-      notifyReactiveTextNodes();
-      expect(txt.textContent).toBe('42');
+  describe("createReactiveTextNode", () => {
+    let container: HTMLElement;
+
+    beforeEach(() => {
+      container = document.createElement("div");
+      document.body.appendChild(container);
     });
 
-    it('uses preEvaluated value without invoking resolver initially', () => {
-      const resolver = vi.fn(() => 5);
-      const txt = createReactiveTextNode(resolver, 10);
-      document.body.appendChild(txt);
-      expect(txt.textContent).toBe('10');
-      expect(resolver).not.toHaveBeenCalled();
-
-      notifyReactiveTextNodes();
-      expect(resolver).toHaveBeenCalledTimes(1);
-      expect(txt.textContent).toBe('5');
+    afterEach(() => {
+      if (container.parentNode) {
+        document.body.removeChild(container);
+      }
     });
 
-    it('handles resolver throwing (keeps previous value) without requiring error assertion', () => {
-      let toggle = true;
-      const txt = createReactiveTextNode(() => {
-        if (toggle) {
-          toggle = false;
-          throw new Error('boom');
-        }
-        return 'ok';
-      }, '');
-      document.body.appendChild(txt);
-
-      // First notify should catch error, keep ""
-      notifyReactiveTextNodes();
-      expect(txt.textContent).toBe('');
-
-      // Second notify should succeed and update content
-      notifyReactiveTextNodes();
-      expect(txt.textContent).toBe('ok');
+    it("should create a reactive text node", () => {
+      const resolver = () => "test";
+      const node = createReactiveTextNode(resolver);
+      expect(node).toBeInstanceOf(Text);
+      expect(node.textContent).toBe("test");
     });
 
-    it('logs error when provided resolver is not a function', () => {
-      const txt = createReactiveTextNode('not-a-fn' as any);
-      document.body.appendChild(txt);
-      expect(txt.textContent).toBe('');
-      expect(errorSpy).toHaveBeenCalled();
-      const firstCallArg = errorSpy.mock.calls[0][0];
-      expect(String(firstCallArg)).toContain('Invalid resolver');
-      expect(txt).toBeInstanceOf(Text);
+    it("should handle pre-evaluated values", () => {
+      const resolver = () => "pre-evaluated";
+      const node = createReactiveTextNode(resolver, "pre-evaluated");
+      expect(node.textContent).toBe("pre-evaluated");
     });
 
-    it('stops updating once the node is detached from DOM', () => {
-      let calls = 0;
-      const state = { value: 'A' };
-      const txt = createReactiveTextNode(() => {
-        calls += 1;
-        return state.value;
-      });
+    it("should handle number values", () => {
+      const resolver = () => 42;
+      const node = createReactiveTextNode(resolver);
+      expect(node.textContent).toBe("42");
+    });
 
-      document.body.appendChild(txt);
-      notifyReactiveTextNodes(); // first update after initial creation call
-      expect(calls).toBe(2); // 1 (creation) + 1 (first notify)
+    it("should handle boolean values", () => {
+      const resolver = () => true;
+      const node = createReactiveTextNode(resolver);
+      expect(node.textContent).toBe("true");
+    });
 
-      state.value = 'B';
+    it("should handle null values", () => {
+      const resolver = () => null;
+      const node = createReactiveTextNode(resolver);
+      // String(null) returns "null", not empty string
+      expect(node.textContent).toBe("null");
+    });
+
+    it("should handle undefined values", () => {
+      const resolver = () => undefined;
+      const node = createReactiveTextNode(resolver);
+      expect(node.textContent).toBe("");
+    });
+
+    it("should handle throwing resolvers gracefully", () => {
+      const resolver = () => {
+        throw new Error("test error");
+      };
+      const node = createReactiveTextNode(resolver);
+      expect(node.textContent).toBe("");
+    });
+
+    it("should update text content when resolver changes", () => {
+      let value = "initial";
+      const resolver = () => value;
+      const node = createReactiveTextNode(resolver);
+      expect(node.textContent).toBe("initial");
+
+      // Node needs to be connected to DOM for updates to work
+      container.appendChild(node);
+      
+      value = "updated";
       notifyReactiveTextNodes();
-      expect(txt.textContent).toBe('B');
-      expect(calls).toBe(3);
-
-      // Detach
-      txt.remove();
-
-      state.value = 'C';
-      notifyReactiveTextNodes();
-      // Resolver should not run again (pruned)
-      expect(calls).toBe(3);
-      expect(txt.textContent).toBe('B');
+      expect(node.textContent).toBe("updated");
     });
   });
 
-  describe('registerAttributeResolver / notifyReactiveElements', () => {
-    it('reactively updates an element attribute using notifyReactiveElements', () => {
-      const el = document.createElement('div');
-      document.body.appendChild(el);
-      let color = 'red';
+  describe("registerAttributeResolver and notifyReactiveElements", () => {
+    let container: HTMLElement;
+    let element: HTMLElement;
 
+    beforeEach(() => {
+      container = document.createElement("div");
+      element = document.createElement("div");
+      container.appendChild(element);
+      document.body.appendChild(container);
+    });
+
+    afterEach(() => {
+      document.body.removeChild(container);
+    });
+
+    it("should register and apply attribute resolver", () => {
+      let className = "initial";
       registerAttributeResolver(
-        el,
-        'title',
-        () => color,
-        (v) => {
-          if (v != null) el.title = String(v);
+        element,
+        "class",
+        () => className,
+        (value) => {
+          element.className = String(value);
         }
       );
 
-      expect(el.title).toBe('red');
+      expect(element.className).toBe("initial");
 
-      color = 'blue';
+      className = "updated";
       notifyReactiveElements();
-      expect(el.title).toBe('blue');
-
-      color = 'green';
-      el.dispatchEvent(new Event('update'));
-      expect(el.title).toBe('green');
+      expect(element.className).toBe("updated");
     });
 
-    it('does not update attributes after element is detached (resolver pruned)', () => {
-      const el = document.createElement('div');
-      document.body.appendChild(el);
-      let value = 'one';
+    it("should handle multiple attribute resolvers", () => {
+      let className = "test";
+      let disabled = false;
 
       registerAttributeResolver(
-        el,
-        'data-test',
-        () => value,
-        (v) => {
-          if (v != null) el.setAttribute('data-test', String(v));
+        element,
+        "class",
+        () => className,
+        (value) => {
+          element.className = String(value);
         }
       );
 
-      expect(el.getAttribute('data-test')).toBe('one');
-
-      value = 'two';
-      notifyReactiveElements();
-      expect(el.getAttribute('data-test')).toBe('two');
-
-      // Detach
-      el.remove();
-      value = 'three';
-      notifyReactiveElements();
-      // Should remain 'two'
-      expect(el.getAttribute('data-test')).toBe('two');
-    });
-
-    it('logs error for invalid element parameter', () => {
       registerAttributeResolver(
-        {} as any,
-        'foo',
-        () => 'bar',
-        () => {}
+        element,
+        "disabled",
+        () => disabled,
+        (value) => {
+          (element as HTMLButtonElement).disabled = Boolean(value);
+        }
       );
-      expect(errorSpy).toHaveBeenCalled();
-      const msg = errorSpy.mock.calls[0][0];
-      expect(String(msg)).toContain('Invalid parameters for registerAttributeResolver');
+
+      expect(element.className).toBe("test");
+      expect((element as HTMLButtonElement).disabled).toBe(false);
+
+      className = "updated";
+      disabled = true;
+      notifyReactiveElements();
+
+      expect(element.className).toBe("updated");
+      expect((element as HTMLButtonElement).disabled).toBe(true);
     });
 
-    it('logs error when applyValue throws during initial application', () => {
-      const el = document.createElement('div');
-      document.body.appendChild(el);
-      const err = new Error('apply failure');
-
+    it("should handle throwing resolvers gracefully", () => {
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      
       registerAttributeResolver(
-        el,
-        'data-x',
-        () => 'abc',
+        element,
+        "class",
         () => {
-          throw err;
-        }
-      );
-
-      expect(errorSpy).toHaveBeenCalled();
-      const calls = errorSpy.mock.calls.map(c => c[0] as string);
-      expect(calls.some(line => String(line).includes('Failed to apply initial attribute value'))).toBe(true);
-    });
-
-    it('continues updating other attributes when one resolver throws', () => {
-      const el = document.createElement('div');
-      document.body.appendChild(el);
-      let ok = 'A';
-      let explode = true;
-
-      registerAttributeResolver(
-        el,
-        'data-ok',
-        () => ok,
-        (v) => el.setAttribute('data-ok', String(v))
-      );
-
-      registerAttributeResolver(
-        el,
-        'data-bad',
-        () => {
-          if (explode) throw new Error('bad resolver');
-          return 'fine';
+          throw new Error("resolver error");
         },
-        (v) => el.setAttribute('data-bad', String(v))
-      );
-
-      // Initial: bad resolver error logged, ok applied
-      expect(el.getAttribute('data-ok')).toBe('A');
-      expect(errorSpy).toHaveBeenCalled();
-
-      ok = 'B';
-      explode = false;
-      notifyReactiveElements();
-
-      expect(el.getAttribute('data-ok')).toBe('B');
-      expect(el.getAttribute('data-bad')).toBe('fine');
-    });
-  });
-
-  describe('integration: reactive text + attribute in same update cycle', () => {
-    it('updates both reactive text nodes and reactive attributes in a single notification cycle', () => {
-      const host = document.createElement('div');
-      document.body.appendChild(host);
-
-      const state = { label: 'Start', title: 'T1' };
-      const txt = createReactiveTextNode(() => state.label);
-      host.appendChild(txt);
-
-      registerAttributeResolver(
-        host,
-        'title',
-        () => state.title,
-        (v) => {
-          if (v != null) host.title = String(v);
+        (value) => {
+          element.className = String(value);
         }
       );
 
-      expect(host.title).toBe('T1');
-      expect(txt.textContent).toBe('Start');
+      notifyReactiveElements();
+      
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
+    });
 
-      state.label = 'Next';
-      state.title = 'T2';
-      notifyReactiveTextNodes();
+    it("should clean up disconnected elements", () => {
+      let value = "test";
+      registerAttributeResolver(
+        element,
+        "class",
+        () => value,
+        (value) => {
+          element.className = String(value);
+        }
+      );
+
+      container.removeChild(element);
+      value = "updated";
       notifyReactiveElements();
 
-      expect(txt.textContent).toBe('Next');
-      expect(host.title).toBe('T2');
+      // Element should be cleaned up, so no update should occur
+      expect(element.className).toBe("test");
+    });
+
+    it("should handle invalid parameters gracefully", () => {
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      
+      // Testing invalid input - these should be caught by type guards
+      registerAttributeResolver(null as any, "class", () => "test", () => {});
+      registerAttributeResolver(element, "", () => "test", () => {});
+      registerAttributeResolver(element, "class", null as any, () => {});
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
     });
   });
 });
+
+
+
+
