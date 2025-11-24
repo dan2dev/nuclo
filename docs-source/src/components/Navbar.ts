@@ -117,15 +117,21 @@ export function Navbar() {
             backgroundColor: "transparent",
           },
         },
-        GitHubIcon(),
-        on("mouseenter", (e) => {
-          (e.target as HTMLElement).style.color = colors.primary;
-          (e.target as HTMLElement).style.backgroundColor = "rgba(132, 204, 22, 0.1)";
-        }),
-        on("mouseleave", (e) => {
-          (e.target as HTMLElement).style.color = colors.textMuted;
-          (e.target as HTMLElement).style.backgroundColor = "transparent";
-        })
+        cn(
+          display("flex")
+            .alignItems("center")
+            .justifyContent("center")
+            .width("40px")
+            .height("40px")
+            .borderRadius("8px")
+            .transition("all 0.2s")
+            .color(colors.textMuted)
+            .backgroundColor("transparent"),
+          {
+            hover: color(colors.primary).backgroundColor("rgba(132, 204, 22, 0.1)")
+          }
+        ),
+        GitHubIcon()
       )
     ),
     // Mobile menu button
@@ -133,15 +139,21 @@ export function Navbar() {
       // cn(mobileMenuButtonStyle),
       cn(display("flex")),
       () => mobileMenuOpen ? XIcon() : MenuIcon(),
-      on("click", toggleMobileMenu),
-      on("mouseenter", (e) => {
-        (e.target as HTMLElement).style.borderColor = colors.primary;
-        (e.target as HTMLElement).style.color = colors.primary;
-      }),
-      on("mouseleave", (e) => {
-        (e.target as HTMLElement).style.borderColor = colors.border;
-        (e.target as HTMLElement).style.color = colors.text;
-      })
+      cn(
+        display("flex")
+          .alignItems("center")
+          .justifyContent("center")
+          .width("40px")
+          .height("40px")
+          .borderRadius("8px")
+          .border(`1px solid ${colors.border}`)
+          .transition("all 0.2s")
+          .color(colors.text),
+        {
+          hover: border(`1px solid ${colors.primary}`).color(colors.primary)
+        }
+      ),
+      on("click", toggleMobileMenu)
     ),
     // Mobile navigation menu
     when(
@@ -165,17 +177,22 @@ export function Navbar() {
               color: colors.textMuted,
             },
           },
+          cn(
+            display("flex")
+              .alignItems("center")
+              .gap("8px")
+              .padding("8px 12px")
+              .borderRadius("8px")
+              .transition("all 0.2s")
+              .color(colors.textMuted)
+              .backgroundColor("transparent"),
+            {
+              hover: color(colors.primary).backgroundColor("rgba(132, 204, 22, 0.1)")
+            }
+          ),
           GitHubIcon(),
           "GitHub",
-          on("click", closeMobileMenu),
-          on("mouseenter", (e) => {
-            (e.target as HTMLElement).style.color = colors.primary;
-            (e.target as HTMLElement).style.backgroundColor = "rgba(132, 204, 22, 0.1)";
-          }),
-          on("mouseleave", (e) => {
-            (e.target as HTMLElement).style.color = colors.textMuted;
-            (e.target as HTMLElement).style.backgroundColor = "transparent";
-          })
+          on("click", closeMobileMenu)
         )
       )
     )

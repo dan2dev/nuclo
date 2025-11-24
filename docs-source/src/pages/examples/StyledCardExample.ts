@@ -77,7 +77,10 @@ const cardStyle = cn(
     .borderRadius("12px")
     .overflow("hidden")
     .transition("all 0.3s")
-    .cursor("pointer")
+    .cursor("pointer"),
+  {
+    hover: boxShadow("0 10px 40px rgba(0,0,0,0.2)").transform("translateY(-4px)")
+  }
 );
 
 const cardImageStyle = cn(
@@ -144,28 +147,15 @@ const btnStyle = cn(
     .fontSize("13px")
     .fontWeight("600")
     .cursor("pointer")
-    .transition("all 0.2s")
+    .transition("all 0.2s"),
+  {
+    hover: backgroundColor(colors.primaryHover)
+  }
 );
 
 function ProductCard(product: Product) {
-  let isHovered = false;
-
   return div(
     cardStyle,
-    {
-      style: () => ({
-        boxShadow: isHovered ? "0 10px 40px rgba(0,0,0,0.2)" : "0 2px 8px rgba(0,0,0,0.1)",
-        transform: isHovered ? "translateY(-4px)" : "translateY(0)",
-      }),
-    },
-    on("mouseenter", () => {
-      isHovered = true;
-      update();
-    }),
-    on("mouseleave", () => {
-      isHovered = false;
-      update();
-    }),
     div(
       cardImageStyle,
       {
@@ -174,12 +164,12 @@ function ProductCard(product: Product) {
         },
       },
       span(
-        {
-          style: () => ({
-            transform: isHovered ? "scale(1.1)" : "scale(1)",
-            transition: "transform 0.3s",
-          }),
-        },
+        cn(
+          transition("transform 0.3s"),
+          {
+            hover: transform("scale(1.1)")
+          }
+        ),
         product.image
       ),
       when(
@@ -206,16 +196,6 @@ function ProductCard(product: Product) {
           on("click", () => {
             if (product.inStock) {
               alert(`Added ${product.name} to cart!`);
-            }
-          }),
-          on("mouseenter", (e) => {
-            if (product.inStock) {
-              (e.target as HTMLElement).style.backgroundColor = colors.primaryHover;
-            }
-          }),
-          on("mouseleave", (e) => {
-            if (product.inStock) {
-              (e.target as HTMLElement).style.backgroundColor = colors.primary;
             }
           }),
           product.inStock ? "Add to Cart" : "Unavailable"

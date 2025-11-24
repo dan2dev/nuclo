@@ -22,7 +22,10 @@ const cardStyle = cn(
     .borderRadius("12px")
     .border(`1px solid ${colors.border}`)
     .cursor("pointer")
-    .transition("all 0.2s")
+    .transition("all 0.2s"),
+  {
+    hover: border(`1px solid ${colors.primary}`).transform("translateY(-2px)").boxShadow("0 4px 12px rgba(0, 0, 0, 0.15)")
+  }
 );
 
 const cardTitleStyle = cn(
@@ -71,16 +74,6 @@ function ExampleCard(example: ExampleContent, hasLiveDemo: boolean) {
   return div(
     cardStyle,
     on("click", () => setRoute(route)),
-    on("mouseenter", (e) => {
-      (e.currentTarget as HTMLElement).style.borderColor = colors.primary;
-      (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
-      (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
-    }),
-    on("mouseleave", (e) => {
-      (e.currentTarget as HTMLElement).style.borderColor = colors.border;
-      (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
-      (e.currentTarget as HTMLElement).style.boxShadow = "none";
-    }),
     div(
       cardTitleStyle,
       example.title,

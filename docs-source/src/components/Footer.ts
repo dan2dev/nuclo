@@ -1,5 +1,5 @@
 import "nuclo";
-import { s, colors } from "../styles.ts";
+import { cn, s, colors } from "../styles.ts";
 
 export function Footer() {
   return footer(
@@ -13,14 +13,13 @@ export function Footer() {
           target: "_blank",
           rel: "noopener noreferrer"
         },
-        s.footerLink,
-        "Danilo Celestino de Castro",
-        on("mouseenter", (e) => {
-          (e.target as HTMLElement).style.color = colors.primary;
-        }),
-        on("mouseleave", (e) => {
-          (e.target as HTMLElement).style.color = colors.textMuted;
-        })
+        cn(
+          color(colors.textMuted).transition("color 0.2s"),
+          {
+            hover: color(colors.primary)
+          }
+        ),
+        "Danilo Celestino de Castro"
       ),
       " · MIT License · ",
       a(
@@ -29,14 +28,13 @@ export function Footer() {
           target: "_blank",
           rel: "noopener noreferrer"
         },
-        s.footerLink,
-        "GitHub",
-        on("mouseenter", (e) => {
-          (e.target as HTMLElement).style.color = colors.primary;
-        }),
-        on("mouseleave", (e) => {
-          (e.target as HTMLElement).style.color = colors.textMuted;
-        })
+        cn(
+          color(colors.textMuted).transition("color 0.2s"),
+          {
+            hover: color(colors.primary)
+          }
+        ),
+        "GitHub"
       )
     )
   );

@@ -45,7 +45,7 @@ function NavLink(label: string, route: Route) {
     ),
     {
       style: () => ({
-        color: isActive() ? colors.primary : null,
+        color: isActive() ? colors.primary : undefined,
       }),
     },
     label,
@@ -80,7 +80,10 @@ function Brand() {
         .fontWeight("700")
         .color(colors.primary)
         .transition("opacity 0.2s")
-        .cursor("pointer")
+        .cursor("pointer"),
+      {
+        hover: opacity("0.8")
+      }
     ),
     NucloLogo(28),
     span("Nuclo"),
@@ -88,12 +91,6 @@ function Brand() {
       e.preventDefault();
       setRoute("home");
       closeMobileMenu();
-    }),
-    on("mouseenter", (e) => {
-      (e.currentTarget as HTMLElement).style.opacity = "0.8";
-    }),
-    on("mouseleave", (e) => {
-      (e.currentTarget as HTMLElement).style.opacity = "1";
     })
   );
 }
@@ -114,22 +111,13 @@ function GitHubLink() {
         .height("36px")
         .borderRadius("8px")
         .transition("all 0.2s")
+        .color(colors.textMuted)
+        .backgroundColor("transparent"),
+      {
+        hover: color(colors.primary).backgroundColor("rgba(132, 204, 22, 0.1)")
+      }
     ),
-    {
-      style: {
-        color: colors.textMuted,
-        backgroundColor: "transparent",
-      },
-    },
-    GitHubIcon(),
-    on("mouseenter", (e) => {
-      (e.currentTarget as HTMLElement).style.color = colors.primary;
-      (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(132, 204, 22, 0.1)";
-    }),
-    on("mouseleave", (e) => {
-      (e.currentTarget as HTMLElement).style.color = colors.textMuted;
-      (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
-    })
+    GitHubIcon()
   );
 }
 

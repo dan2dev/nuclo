@@ -14,7 +14,10 @@ export function StylingPage() {
         .borderRadius("10px")
         .fontWeight("700")
         .cursor("pointer")
-        .transition("all 0.2s")
+        .transition("all 0.2s"),
+      {
+        hover: backgroundColor(colors.primaryHover).transform("translateY(-2px)").boxShadow(`0 0 24px ${colors.primaryGlow}`)
+      }
     );
     return div(
       s.demoPanel,
@@ -24,19 +27,7 @@ export function StylingPage() {
         button(
           btn,
           { style: s.btnPrimaryStyle },
-          "Click me",
-          on("mouseenter", (e) => {
-            const el = e.currentTarget as HTMLElement;
-            el.style.backgroundColor = colors.primaryHover;
-            el.style.transform = "translateY(-2px)";
-            el.style.boxShadow = `0 0 24px ${colors.primaryGlow}`;
-          }),
-          on("mouseleave", (e) => {
-            const el = e.currentTarget as HTMLElement;
-            el.style.backgroundColor = colors.primary;
-            el.style.transform = "translateY(0)";
-            el.style.boxShadow = `0 0 20px ${colors.primaryGlow}`;
-          })
+          "Click me"
         )
       )
     );
@@ -291,13 +282,15 @@ export function StylingPage() {
 
   // Live demo: Effects & transitions
   function EffectsDemo() {
-    let hovered = false;
     const box = cn(
       backgroundColor(colors.bgLight)
         .border(`1px solid ${colors.border}`)
         .borderRadius("12px")
         .padding("24px")
-        .transition("all 0.25s")
+        .transition("all 0.25s"),
+      {
+        hover: boxShadow("0 20px 50px rgba(0,0,0,0.35)").transform("translateY(-4px) scale(1.02)")
+      }
     );
     return div(
       s.demoPanel,
@@ -306,18 +299,6 @@ export function StylingPage() {
         s.demoPanelContent,
         div(
           box,
-          {
-            style: () => ({
-              boxShadow: hovered ? "0 20px 50px rgba(0,0,0,0.35)" : "none",
-              transform: hovered ? "translateY(-4px) scale(1.02)" : "translateY(0) scale(1)"
-            })
-          },
-          on("mouseenter", () => {
-            hovered = true; update();
-          }),
-          on("mouseleave", () => {
-            hovered = false; update();
-          }),
           "Hover me"
         )
       )
@@ -528,7 +509,10 @@ export function StylingPage() {
     CodeBlock(stylingCode.effectsTransforms.code, stylingCode.effectsTransforms.lang),
     h3(s.h3, "Filters & backdrop"),
     CodeBlock(stylingCode.effectsFilters.code, stylingCode.effectsFilters.lang),
-    h3(s.h3, "Hover effects with reactive styles"),
+    h3(s.h3, "Hover effects with pseudo-classes"),
+    p(s.p, "Use the built-in pseudo-class support for hover, focus, active, and more:"),
+    CodeBlock(stylingCode.styleQueriesPseudoClasses.code, stylingCode.styleQueriesPseudoClasses.lang),
+    h3(s.h3, "Hover effects with reactive styles (alternative)"),
     div(
       s.demoContainer,
       { style: s.demoContainerStyle },

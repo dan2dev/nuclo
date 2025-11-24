@@ -72,23 +72,24 @@ function HeroDemo() {
 }
 
 function FeatureCard(iconEl: unknown, title: string, description: string) {
+  const featureCardStyle = cn(
+    padding("32px")
+      .backgroundColor(colors.bgCard)
+      .borderRadius("16px")
+      .border(`1px solid ${colors.border}`)
+      .transition("all 0.3s")
+      .position("relative")
+      .overflow("hidden"),
+    {
+      hover: border(`1px solid ${colors.primary}`).transform("translateY(-4px)").boxShadow(`0 20px 40px rgba(0,0,0,0.3), 0 0 30px ${colors.primaryGlow}`)
+    }
+  );
+  
   return div(
-    s.featureCard,
+    featureCardStyle,
     div(s.featureIcon, { style: s.featureIconStyle }, iconEl as HTMLElement),
     h3(s.featureTitle, title),
-    p(s.featureDesc, description),
-    on("mouseenter", (e) => {
-      const el = e.currentTarget as HTMLElement;
-      el.style.borderColor = colors.primary;
-      el.style.transform = "translateY(-4px)";
-      el.style.boxShadow = `0 20px 40px rgba(0,0,0,0.3), 0 0 30px ${colors.primaryGlow}`;
-    }),
-    on("mouseleave", (e) => {
-      const el = e.currentTarget as HTMLElement;
-      el.style.borderColor = colors.border;
-      el.style.transform = "translateY(0)";
-      el.style.boxShadow = "none";
-    })
+    p(s.featureDesc, description)
   );
 }
 
@@ -131,37 +132,43 @@ export function HomePage() {
       div(
         s.heroButtons,
         button(
-          s.btnPrimary,
+          cn(
+            padding("14px 32px")
+              .backgroundColor(colors.primary)
+              .color(colors.bg)
+              .borderRadius("8px")
+              .fontWeight("600")
+              .fontSize("15px")
+              .border("none")
+              .transition("all 0.2s")
+              .display("flex")
+              .alignItems("center")
+              .gap("8px"),
+            {
+              hover: backgroundColor(colors.primaryHover).transform("translateY(-2px)").boxShadow(`0 0 30px ${colors.primaryGlow}`)
+            }
+          ),
           { style: s.btnPrimaryStyle },
-          cn(display("flex").alignItems("center").gap("8px")),
           "Get Started",
           ArrowRightIcon(),
-          on("click", () => setRoute("getting-started")),
-          on("mouseenter", (e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.primaryHover;
-            (e.target as HTMLElement).style.transform = "translateY(-2px)";
-            (e.target as HTMLElement).style.boxShadow = `0 0 30px ${colors.primaryGlow}`;
-          }),
-          on("mouseleave", (e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.primary;
-            (e.target as HTMLElement).style.transform = "translateY(0)";
-            (e.target as HTMLElement).style.boxShadow = `0 0 20px ${colors.primaryGlow}`;
-          })
+          on("click", () => setRoute("getting-started"))
         ),
         button(
-          s.btnSecondary,
+          cn(
+            padding("14px 32px")
+              .backgroundColor("transparent")
+              .color(colors.text)
+              .borderRadius("8px")
+              .fontWeight("600")
+              .fontSize("15px")
+              .border(`1px solid ${colors.borderLight}`)
+              .transition("all 0.2s"),
+            {
+              hover: border(`1px solid ${colors.primary}`).color(colors.primary).transform("translateY(-2px)")
+            }
+          ),
           "View Demo",
-          on("click", () => setRoute("examples")),
-          on("mouseenter", (e) => {
-            (e.target as HTMLElement).style.borderColor = colors.primary;
-            (e.target as HTMLElement).style.color = colors.primary;
-            (e.target as HTMLElement).style.transform = "translateY(-2px)";
-          }),
-          on("mouseleave", (e) => {
-            (e.target as HTMLElement).style.borderColor = colors.borderLight;
-            (e.target as HTMLElement).style.color = colors.text;
-            (e.target as HTMLElement).style.transform = "translateY(0)";
-          })
+          on("click", () => setRoute("examples"))
         )
       )
     ),

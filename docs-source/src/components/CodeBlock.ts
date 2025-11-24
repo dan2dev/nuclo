@@ -37,11 +37,6 @@ export function CodeBlock(codeContent: string, _language = "typescript", showCop
   const id = `code-${Math.random().toString(36).slice(2, 9)}`;
   const highlighted = highlightCode(codeContent.trim());
 
-  const copyBtnStyle = {
-    backgroundColor: colors.bgLight,
-    border: `1px solid ${colors.border}`,
-  };
-
   return div(
     cn(position("relative")),
     pre(
@@ -51,33 +46,31 @@ export function CodeBlock(codeContent: string, _language = "typescript", showCop
       )
     ),
     showCopy ? button(
-      cn(position("absolute")
-        .top("12px")
-        .right("12px")
-        .padding("6px 10px")
-        .borderRadius("6px")
-        .color(colors.textMuted)
-        .fontSize("12px")
-        .cursor("pointer")
-        .display("flex")
-        .alignItems("center")
-        .gap("4px")
-        .transition("all 0.2s")),
-      { style: copyBtnStyle },
+      cn(
+        position("absolute")
+          .top("12px")
+          .right("12px")
+          .padding("6px 10px")
+          .borderRadius("6px")
+          .color(colors.textMuted)
+          .fontSize("12px")
+          .cursor("pointer")
+          .display("flex")
+          .alignItems("center")
+          .gap("4px")
+          .transition("all 0.2s")
+          .backgroundColor(colors.bgLight)
+          .border(`1px solid ${colors.border}`),
+        {
+          hover: border(`1px solid ${colors.borderLight}`).color(colors.text)
+        }
+      ),
       () => isCopied(id) ? CheckIcon() : CopyIcon(),
       () => isCopied(id) ? "Copied!" : "Copy",
       on("click", async () => {
         await navigator.clipboard.writeText(codeContent.trim());
         setCopied(id, true);
         setTimeout(() => setCopied(id, false), 2000);
-      }),
-      on("mouseenter", (e) => {
-        (e.target as HTMLElement).style.borderColor = colors.borderLight;
-        (e.target as HTMLElement).style.color = colors.text;
-      }),
-      on("mouseleave", (e) => {
-        (e.target as HTMLElement).style.borderColor = colors.border;
-        (e.target as HTMLElement).style.color = colors.textMuted;
       })
     ) : null
   );
