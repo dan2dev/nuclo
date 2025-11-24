@@ -88,8 +88,8 @@ export function StylingPage() {
         large: padding("32px")
       }
     );
-    function widthFor(bp: Bp) {
-      return bp === "mobile" ? "260px" : bp === "medium" ? "420px" : "640px";
+    function maxWidthFor(bp: Bp) {
+      return bp === "mobile" ? "100%" : bp === "medium" ? "420px" : "640px";
     }
     function sizeLabel(bp: Bp) {
       return bp === "mobile" ? "<480px" : bp === "medium" ? "≥768px" : "≥1024px";
@@ -100,7 +100,7 @@ export function StylingPage() {
       div(
         s.demoPanelContent,
         div(
-          cn(display("flex").gap("8px").marginBottom("12px")),
+          cn(display("flex").gap("8px").marginBottom("12px").flexWrap("wrap")),
           button(
             s.btnSecondary,
             "Mobile",
@@ -130,7 +130,7 @@ export function StylingPage() {
           cn(marginTop("4px")),
           div(
             () => card,
-            { style: () => ({ width: widthFor(bp), padding: bp === "mobile" ? "16px" : undefined }) },
+            { style: () => ({ maxWidth: maxWidthFor(bp), width: "100%", padding: bp === "mobile" ? "16px" : undefined, boxSizing: "border-box" as const }) },
             h3(cn(fontSize("16px").fontWeight("700")), () => `Breakpoint: ${sizeLabel(bp)}`),
             p(cn(color(colors.textMuted)), "Padding increases on medium and large breakpoints.")
           )
@@ -353,7 +353,6 @@ export function StylingPage() {
     p(s.p, "Quick example straight from the legacy site:"),
     div(
       s.demoContainer,
-      { style: s.demoContainerStyle },
       div(OverviewDemo()),
       div(CodeBlock(stylingCode.overviewQuickExample.code, stylingCode.overviewQuickExample.lang, true))
     ),
@@ -366,8 +365,7 @@ export function StylingPage() {
     ),
     h3(s.h3, "How it works"),
     div(
-      s.demoContainer,
-      { style: s.demoContainerStyle },
+      s.demoContainerSingle,
       div(StyleBuilderDemo()),
       div(CodeBlock(stylingCode.styleBuilderUsage.code, stylingCode.styleBuilderUsage.lang, true))
     ),
@@ -385,7 +383,6 @@ export function StylingPage() {
     h3(s.h3, "Basic usage"),
     div(
       s.demoContainer,
-      { style: s.demoContainerStyle },
       div(StyleHelpersBasicDemo()),
       div(CodeBlock(stylingCode.styleHelpersBasic.code, stylingCode.styleHelpersBasic.lang, true))
     ),
@@ -405,8 +402,7 @@ export function StylingPage() {
     CodeBlock(stylingCode.styleQueriesSetup.code, stylingCode.styleQueriesSetup.lang),
     h3(s.h3, "Defaults and overrides"),
     div(
-      s.demoContainer,
-      { style: s.demoContainerStyle },
+      s.demoContainerSingle,
       div(QueriesDemo()),
       div(CodeBlock(stylingCode.styleQueriesDefaults.code, stylingCode.styleQueriesDefaults.lang, true))
     ),
@@ -434,7 +430,6 @@ export function StylingPage() {
     CodeBlock(stylingCode.layoutOverflow.code, stylingCode.layoutOverflow.lang),
     div(
       s.demoContainer,
-      { style: s.demoContainerStyle },
       div(LayoutDemo())
     ),
 
@@ -448,7 +443,6 @@ export function StylingPage() {
     h3(s.h3, "Typography system example"),
     div(
       s.demoContainer,
-      { style: s.demoContainerStyle },
       div(TypographyDemo()),
       div(CodeBlock(stylingCode.typographySystem.code, stylingCode.typographySystem.lang, true))
     ),
@@ -459,8 +453,7 @@ export function StylingPage() {
     CodeBlock(stylingCode.colorsBasic.code, stylingCode.colorsBasic.lang),
     h3(s.h3, "Gradients"),
     div(
-      s.demoContainer,
-      { style: s.demoContainerStyle },
+      s.demoContainerSingle,
       div(ColorsDemo()),
       div(CodeBlock(stylingCode.colorsGradients.code, stylingCode.colorsGradients.lang, true))
     ),
@@ -477,7 +470,6 @@ export function StylingPage() {
     h3(s.h3, "Navbar example"),
     div(
       s.demoContainer,
-      { style: s.demoContainerStyle },
       div(FlexboxDemo()),
       div(CodeBlock(stylingCode.flexNavbarExample.code, stylingCode.flexNavbarExample.lang, true))
     ),
@@ -490,8 +482,7 @@ export function StylingPage() {
     CodeBlock(stylingCode.gridItem.code, stylingCode.gridItem.lang),
     h3(s.h3, "Responsive card grid"),
     div(
-      s.demoContainer,
-      { style: s.demoContainerStyle },
+      s.demoContainerSingle,
       div(GridDemo()),
       div(CodeBlock(stylingCode.gridResponsiveExample.code, stylingCode.gridResponsiveExample.lang, true))
     ),
@@ -514,8 +505,7 @@ export function StylingPage() {
     CodeBlock(stylingCode.styleQueriesPseudoClasses.code, stylingCode.styleQueriesPseudoClasses.lang),
     h3(s.h3, "Hover effects with reactive styles (alternative)"),
     div(
-      s.demoContainer,
-      { style: s.demoContainerStyle },
+      s.demoContainerSingle,
       div(EffectsDemo()),
       div(CodeBlock(stylingCode.effectsHover.code, stylingCode.effectsHover.lang, true))
     ),
@@ -532,8 +522,7 @@ export function StylingPage() {
     CodeBlock(stylingCode.organizingStyles.code, stylingCode.organizingStyles.lang),
     h3(s.h3, "Using the styles"),
     div(
-      s.demoContainer,
-      { style: s.demoContainerStyle },
+      s.demoContainerSingle,
       div(OrganizingDemo()),
       div(CodeBlock(stylingCode.organizingUsage.code, stylingCode.organizingUsage.lang, true))
     ),
