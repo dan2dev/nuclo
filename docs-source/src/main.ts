@@ -21,7 +21,12 @@ initRouter();
 const app = div(
   Header(),
   main(
-    { style: "flex: 1; padding-top: 72px;" },
+    {
+      style: {
+        minHeight: "calc(100vh - 160px)",
+        paddingTop: "40px",
+      },
+    },
     when(() => getCurrentRoute() === "home", HomePage())
       .when(() => getCurrentRoute() === "getting-started", GettingStartedPage())
       .when(() => getCurrentRoute() === "core-api", CoreApiPage())

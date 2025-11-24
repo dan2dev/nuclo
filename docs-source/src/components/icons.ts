@@ -1,13 +1,23 @@
 import "nuclo";
 import { colors } from "../styles.ts";
 
-export function NucloLogo(size = 32) {
+export function NucloLogo(size = 32, responsive = false) {
   return svgSvg(
     {
       width: String(size),
       height: String(size),
       viewBox: "0 0 32 32",
       fill: "none"
+    },
+    (el) => {
+      if (responsive) {
+        const svg = el as SVGSVGElement;
+        svg.removeAttribute("width");
+        svg.removeAttribute("height");
+        svg.style.maxWidth = "100%";
+        svg.style.width = "100%";
+        svg.style.height = "auto";
+      }
     },
     // Outer glow circle
     circleSvg({
