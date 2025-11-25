@@ -192,8 +192,8 @@ const parsedQueryCache = new Map<string, QueryResult>();
 export function createStyleQueries<T extends string>(
 	queries: Record<T, string> | Array<[T, string]>
 ): {
-	(defaultStyles: StyleBuilder, queryStyles?: QueryStyles<T | CSSPseudoClass>): { className: string } | string;
-	(queryStyles?: QueryStyles<T | CSSPseudoClass>): { className: string } | string;
+	(defaultStyles: StyleBuilder, queryStyles?: QueryStyles<T | CSSPseudoClass>): { className: string };
+	(queryStyles?: QueryStyles<T | CSSPseudoClass>): { className: string };
 } {
 	// Convert to array format to preserve order
 	const queriesArray: Array<[T, string]> = Array.isArray(queries)
@@ -214,7 +214,7 @@ export function createStyleQueries<T extends string>(
 	return function cn(
 		defaultStylesOrQueries?: StyleBuilder | QueryStyles<T | CSSPseudoClass>,
 		queryStyles?: QueryStyles<T | CSSPseudoClass>
-	): { className: string } | string {
+	): { className: string } {
 		let defaultStyles: StyleBuilder | undefined;
 		let styles: QueryStyles<T | CSSPseudoClass> | undefined;
 
@@ -237,7 +237,7 @@ export function createStyleQueries<T extends string>(
 
 		// If nothing provided, return empty
 		if (!defaultStyles && (!styles || Object.keys(styles).length === 0)) {
-			return "";
+			return { className: "" };
 		}
 
 		// If we have queries, create a single class name for all queries
@@ -338,7 +338,7 @@ export function createStyleQueries<T extends string>(
 			return { className };
 		}
 
-		return "";
+		return { className: "" };
 	};
 }
 

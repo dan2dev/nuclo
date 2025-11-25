@@ -481,8 +481,8 @@ describe('Style Utility Functions', () => {
 				small: '(max-width: 600px)'
 			});
 
-			const className = cn();
-			expect(className).toBe('');
+			const result = cn();
+			expect(result).toEqual({ className: "" });
 		});
 
 		it('should return empty string when empty styles object provided', () => {
@@ -490,8 +490,8 @@ describe('Style Utility Functions', () => {
 				small: '(max-width: 600px)'
 			});
 
-			const className = cn({});
-			expect(className).toBe('');
+			const result = cn({});
+			expect(result).toEqual({ className: "" });
 		});
 
 		it('should generate an object with className property when styles provided', () => {
