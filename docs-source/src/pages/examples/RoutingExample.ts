@@ -37,11 +37,12 @@ const navBtnStyle = cn(
     .transition("all 0.2s")
 );
 
-const navBtnActiveStyle = {
-  backgroundColor: colors.primary,
-  color: colors.bg,
-  borderColor: colors.primary,
-};
+const navBtnStyleActive = cn(
+  backgroundColor(colors.primary)
+    .color(colors.bg)
+    .borderColor(colors.primary)
+);
+
 
 const pageStyle = cn(
   padding("24px")
@@ -137,25 +138,19 @@ function DemoContactPage() {
   );
 }
 
-function NavButton(label: string, route: DemoRoute) {
+const noneClass = cn();
+
+const NavButton = (label: string, route: DemoRoute) => {
+  const isActive = () => {
+    return currentDemoRoute === route;
+  };
+
   return button(
     navBtnStyle,
-    {
-      style: () => currentDemoRoute === route ? navBtnActiveStyle : {},
-    },
+    () => (isActive() ? navBtnStyleActive : noneClass),
     label,
-    on("click", () => navigateDemo(route)),
-    on("mouseenter", (e) => {
-      if (currentDemoRoute !== route) {
-        (e.target as HTMLElement).style.borderColor = colors.primary;
-        (e.target as HTMLElement).style.color = colors.primary;
-      }
-    }),
-    on("mouseleave", (e) => {
-      if (currentDemoRoute !== route) {
-        (e.target as HTMLElement).style.borderColor = colors.border;
-        (e.target as HTMLElement).style.color = colors.textMuted;
-      }
+    on("click", () => {
+      navigateDemo(route);
     })
   );
 }
@@ -163,6 +158,7 @@ function NavButton(label: string, route: DemoRoute) {
 function LiveRouting() {
   return div(
     demoStyle,
+    
     h3(cn(fontSize("18px").fontWeight("600").color(colors.text).marginBottom("20px")), "Mini Router Demo"),
     nav(
       navStyle,
