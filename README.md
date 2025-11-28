@@ -586,11 +586,11 @@ These markers identify conditional and list boundaries in the DOM.
 
 ## Documentation
 
-Full documentation is available at [https://dan2dev.github.io/nuclo/](https://dan2dev.github.io/nuclo/)
+Full documentation is available at [https://nuclo.dan2.dev/](https://nuclo.dan2.dev/)
 
-- [Getting Started](https://dan2dev.github.io/nuclo/getting-started.html)
-- [API Reference](https://dan2dev.github.io/nuclo/api.html)
-- [Examples](https://dan2dev.github.io/nuclo/examples.html)
+- [Getting Started](https://nuclo.dan2.dev/getting-started)
+- [API Reference](https://nuclo.dan2.dev/core-api)
+- [Examples](https://nuclo.dan2.dev/examples)
 
 ---
 
