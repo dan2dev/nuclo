@@ -2,3 +2,4 @@
 .idea/
 *.env
 examples/todo-nuclo/node_modules/
+node_modules/
