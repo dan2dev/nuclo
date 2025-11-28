@@ -1,4 +1,5 @@
 import "nuclo";
+import { updatePageMeta } from "./seo.ts";
 
 export type Route =
   | "home"
@@ -30,14 +31,14 @@ export function setRoute(route: Route) {
   currentRoute = route;
   const base = import.meta.env.BASE_URL || "/";
   if (route === "home") {
-    // Ensure we land under the base path (e.g., /nuclo/ on GitHub Pages)
     window.history.pushState({}, "", base);
   } else {
-    // Keep hash routing anchored to the base path
-    const url = base.endsWith("/") ? `${base}#${route}` : `${base}/#${route}`;
+    // Use clean URLs without hash
+    const url = base.endsWith("/") ? `${base}${route}` : `${base}/${route}`;
     window.history.pushState({}, "", url);
   }
   window.scrollTo(0, 0);
+  updatePageMeta(route);
   update();
 }
 
@@ -62,16 +63,32 @@ const validRoutes: Route[] = [
 ];
 
 export function initRouter() {
-  // Parse initial route from hash
-  const hash = window.location.hash.slice(1) as Route;
-  if (validRoutes.includes(hash)) {
-    currentRoute = hash;
+  // Parse initial route from pathname
+  const base = import.meta.env.BASE_URL || "/";
+  const pathname = window.location.pathname;
+
+  // Remove base path from pathname to get the route
+  let routePath = pathname.replace(base, "");
+  // Remove leading and trailing slashes
+  routePath = routePath.replace(/^\/+|\/+$/g, "");
+
+  const route = routePath || "home";
+  if (validRoutes.includes(route)) {
+    currentRoute = route as Route;
   }
+
+  // Update meta tags for initial route
+  updatePageMeta(currentRoute);
 
   // Handle browser back/forward
   window.addEventListener("popstate", () => {
-    const newHash = window.location.hash.slice(1) as Route;
-    currentRoute = validRoutes.includes(newHash) ? newHash : "home";
+    const pathname = window.location.pathname;
+    let routePath = pathname.replace(base, "");
+    routePath = routePath.replace(/^\/+|\/+$/g, "");
+
+    const newRoute = routePath || "home";
+    currentRoute = validRoutes.includes(newRoute) ? newRoute as Route : "home";
+    updatePageMeta(currentRoute);
     update();
   });
 }
