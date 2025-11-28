@@ -1,0 +1,2332 @@
+(function(){const r=document.createElement("link").relList;if(r&&r.supports&&r.supports("modulepreload"))return;for(const l of document.querySelectorAll('link[rel="modulepreload"]'))s(l);new MutationObserver(l=>{for(const d of l)if(d.type==="childList")for(const m of d.addedNodes)m.tagName==="LINK"&&m.rel==="modulepreload"&&s(m)}).observe(document,{childList:!0,subtree:!0});function i(l){const d={};return l.integrity&&(d.integrity=l.integrity),l.referrerPolicy&&(d.referrerPolicy=l.referrerPolicy),l.crossOrigin==="use-credentials"?d.credentials="include":l.crossOrigin==="anonymous"?d.credentials="omit":d.credentials="same-origin",d}function s(l){if(l.ep)return;l.ep=!0;const d=i(l);fetch(l.href,d)}})();function he(e){return e===null||typeof e!="object"&&typeof e!="function"}function ae(e){return e instanceof Node}function Z(e){return typeof e=="object"&&e!==null}function Oe(e){return Z(e)&&"tagName"in e}function H(e){return typeof e=="function"}function ot(e){return H(e)&&e.length===0}function ue(e,r){try{return e()}catch{return r}}const G=typeof window<"u"&&typeof document<"u";function rt(e){if(!e?.parentNode)return!1;try{return e.parentNode.removeChild(e),!0}catch{return!1}}function Le(e){if(!G)return null;try{return document.createComment(e)}catch{return null}}function We(e){return Le(e)}function te(e,r="hidden"){try{return document.createComment(`conditional-${e}-${r}`)}catch{return null}}function xt(e){if(!G)throw Error("Cannot create comment in non-browser environment");const r=Le(`${e}-${Math.random().toString(36).slice(2)}`);if(!r)throw Error("Failed to create comment");return r}function nt(e){const r=Le(e+"-end");if(!r)throw Error("Failed to create end comment");return{start:xt(e+"-start"),end:r}}function Ue(e){return!!e&&(typeof e.isConnected=="boolean"?e.isConnected:!(!G||typeof document>"u")&&document.contains(e))}function Ge(e,r){if(!e?.parentNode)return!1;try{return e.parentNode.replaceChild(r,e),!0}catch{return!1}}const Te=new Map,de=new Map;function it(e,r){r.attributeResolvers.forEach(({resolver:i,applyValue:s},l)=>{try{s(ue(i))}catch{}})}function fe(e,r,i,s){if(!(e instanceof Element&&r&&typeof i=="function"))return;const l=(function(d){let m=de.get(d);return m||(m={attributeResolvers:new Map},de.set(d,m)),m})(e);l.attributeResolvers.set(r,{resolver:i,applyValue:s});try{s(ue(i))}catch{}if(!l.updateListener){const d=()=>it(0,l);e.addEventListener("update",d),l.updateListener=d}}function vt(e,r,i){try{return i==null||i===""?(e.style[r]="",!0):(e.style[r]=i+"",!0)}catch{return!1}}function Qe(e,r){if(e?.style&&r)for(const[i,s]of Object.entries(r))vt(e,i,s)||void 0}const qe="__nuclo_reactive_className__",Q="__nuclo_static_className__";function St(e,r,i,s=!1){if(i==null)return;if(r==="style")return d=i,void((l=e)&&(H(d)?fe(l,"style",()=>{try{return d()}catch{return null}},g=>{Qe(l,g)}):Qe(l,d)));var l,d;const m=(g,S=!1)=>{if(g!=null)if(r==="className"&&e instanceof HTMLElement&&S)(function(y,v){if(!v)return;const u=y.className;if(u&&u!==v){const x=new Set(u.split(" ").filter(f=>f));v.split(" ").filter(f=>f).forEach(f=>x.add(f)),y.className=Array.from(x).join(" ")}else y.className=v})(e,g+"");else if(e instanceof Element&&e.namespaceURI==="http://www.w3.org/2000/svg")e.setAttribute(r+"",g+"");else if(r in e)try{e[r]=g}catch{e instanceof Element&&e.setAttribute(r+"",g+"")}else e instanceof Element&&e.setAttribute(r+"",g+"")};if(H(i)&&i.length===0){const g=i;r==="className"&&e instanceof HTMLElement?((function(S){S[Q]||(S[Q]=new Set(S.className.split(" ").filter(y=>y))),S[qe]=!0})(e),fe(e,r+"",g,S=>{(function(y,v){const u=(function(x){return x[Q]})(y);if(u&&u.size>0&&v){const x=new Set(u);v.split(" ").filter(f=>f).forEach(f=>x.add(f)),y.className=Array.from(x).join(" ")}else y.className=v||(u&&u.size>0?Array.from(u).join(" "):"")})(e,(S||"")+"")})):fe(e,r+"",g,S=>{m(S,!1)})}else{if(r==="className"&&e instanceof HTMLElement&&(function(g){return!!g[qe]})(e)){const g=(i||"")+"";if(g){(function(y,v){v&&(y[Q]||(y[Q]=new Set),v.split(" ").filter(u=>u).forEach(u=>{y[Q].add(u)}))})(e,g);const S=new Set(e.className.split(" ").filter(y=>y));g.split(" ").filter(y=>y).forEach(y=>S.add(y)),e.className=Array.from(S).join(" ")}return}m(i,s)}}function ye(e,r,i=!0){if(r)for(const s of Object.keys(r))St(e,s,r[s],i&&s==="className")}const O=new WeakMap;function wt(e,r,i){if(!H(e)||e.length!==0||!(function(l){const{value:d,error:m}=(function(g){const S=O.get(g);if(S)return S;try{const y={value:g(),error:!1};return O.set(g,y),y}catch{const y={value:void 0,error:!0};return O.set(g,y),y}})(l);return!m&&typeof d=="boolean"})(e))return!1;const s=r.filter((l,d)=>d!==i);return s.length!==0&&s.some(l=>!!(Z(l)||ae(l)||H(l)&&l.length>0))}function se(e,r,i){if(r==null)return null;if(H(r)){if(ot(r))try{let d=O.get(r);if(d||(d={value:r(),error:!1},O.set(r,d)),d.error)return be(i,()=>"");const m=d.value;if(Z(m)&&!ae(m)&&"className"in m&&typeof m.className=="string"&&Object.keys(m).length===1){const g=r;return ye(e,{className:()=>g().className}),null}return he(m)&&m!=null?be(i,r,m):null}catch{return O.set(r,{value:void 0,error:!0}),be(i,()=>"")}const l=r(e,i);return l==null?null:he(l)?Ve(i,l):ae(l)?l:(Z(l)&&ye(e,l),null)}const s=r;return s==null?null:he(s)?Ve(i,s):ae(s)?s:(Z(s)&&ye(e,s),null)}function be(e,r,i){const s=document.createDocumentFragment(),l=We(` text-${e} `);l&&s.appendChild(l);const d=(function(m,g){if(typeof m!="function")return document.createTextNode("");const S=arguments.length>1?g:ue(m,""),y=S===void 0?"":S+"",v=document.createTextNode(y);return Te.set(v,{resolver:m,lastValue:y}),v})(r,i);return s.appendChild(d),s}function Ve(e,r){const i=document.createDocumentFragment(),s=We(` text-${e} `);s&&i.appendChild(s);const l=document.createTextNode(r+"");return i.appendChild(l),i}const Be=new Set;function Y(e,r){e._conditionalInfo=r,Be.add(e)}function me(e,r,i=0){if(!r||r.length===0)return{element:e,nextIndex:i,appended:0};let s=i,l=0;const d=e;for(let m=0;r.length>m;m+=1){const g=r[m];if(g==null)continue;const S=se(e,g,s);S&&(S.parentNode!==d&&d.appendChild(S),s+=1,l+=1)}return{element:e,nextIndex:s,appended:l}}function Re(e,r){const i=document.createElement(e);return me(i,r,0),i}function Ae(e,r){const i=document.createElementNS("http://www.w3.org/2000/svg",e);return me(i,r,0),i}function kt(e){return(...r)=>(function(i,...s){return(l,d)=>{const{condition:m,otherModifiers:g}=(function(y){const v=(function(u){for(let x=0;u.length>x;x+=1)if(wt(u[x],u,x))return x;return-1})(y);return v===-1?{condition:null,otherModifiers:y}:{condition:y[v],otherModifiers:y.filter((u,x)=>x!==v)}})(s);if(m)return(function(y,v,u){const x=v();if(!G)return x?Re(y,u):te(y,"ssr");const f={condition:v,tagName:y,modifiers:u,isSvg:!1};if(x){const w=Re(y,u);return Y(w,f),w}const h=te(y);if(!h)throw Error("Failed to create conditional comment for "+y);return Y(h,f),h})(i,m,g);const S=document.createElement(i);return me(S,g,d),S}})(e,...r)}function Ct(e){return(...r)=>(function(i,...s){return(l,d)=>{const m=s.findIndex(S=>typeof S=="function"&&S.length===0);if(m!==-1){const S=s[m],y=s.filter((v,u)=>u!==m);return(function(v,u,x){const f=u();if(!G)return f?Ae(v,x):te(v,"ssr");const h={condition:u,tagName:v,modifiers:x,isSvg:!0};if(f){const T=Ae(v,x);return Y(T,h),T}const w=te(v);if(!w)throw Error("Failed to create conditional comment for "+v);return Y(w,h),w})(i,S,y)}const g=document.createElementNS("http://www.w3.org/2000/svg",i);return me(g,s,d),g}})(e,...r)}const Pt=["a","abbr","address","area","article","aside","audio","b","base","bdi","bdo","blockquote","body","br","button","canvas","caption","cite","code","col","colgroup","data","datalist","dd","del","details","dfn","dialog","div","dl","dt","em","embed","fieldset","figcaption","figure","footer","form","h1","h2","h3","h4","h5","h6","head","header","hgroup","hr","html","i","iframe","img","input","ins","kbd","label","legend","li","link","main","map","mark","menu","meta","meter","nav","noscript","object","ol","optgroup","option","output","p","picture","pre","progress","q","rp","rt","ruby","s","samp","script","search","section","select","slot","small","source","span","strong","style","sub","summary","sup","table","tbody","td","template","textarea","tfoot","th","thead","time","title","tr","track","u","ul","var","video","wbr"],Tt=["a","animate","animateMotion","animateTransform","circle","clipPath","defs","desc","ellipse","feBlend","feColorMatrix","feComponentTransfer","feComposite","feConvolveMatrix","feDiffuseLighting","feDisplacementMap","feDistantLight","feDropShadow","feFlood","feFuncA","feFuncB","feFuncG","feFuncR","feGaussianBlur","feImage","feMerge","feMergeNode","feMorphology","feOffset","fePointLight","feSpecularLighting","feSpotLight","feTile","feTurbulence","filter","foreignObject","g","image","line","linearGradient","marker","mask","metadata","mpath","path","pattern","polygon","polyline","radialGradient","rect","script","set","stop","style","svg","switch","symbol","text","textPath","title","tspan","use","view"];function Bt(e=globalThis){const r="__nuclo_tags_registered";e[r]||(Tt.forEach(i=>(function(s,l){const d=l+"Svg";d in s||(s[d]=Ct(l))})(e,i)),Pt.forEach(i=>(function(s,l){l in s&&typeof s[l]!="function"||(s[l]=kt(l))})(e,i)),e[r]=!0)}const ze=new Set;function Rt(e,r,i){return(function(s,l,d){if(H(s)){const m=s(l,d);return m&&Oe(m)?m:null}return s&&Oe(s)?s:null})(e.renderItem(r,i),e.host,i)}function At(e){rt(e.element)}function at(e){const{host:r,startMarker:i,endMarker:s}=e,l=i.parentNode??r,d=e.itemsProvider();if((function(u,x){if(u===x)return!0;if(u.length!==x.length)return!1;for(let f=0;u.length>f;f++)if((f in u?u[f]:void 0)!==(f in x?x[f]:void 0))return!1;return!0})(e.lastSyncedItems,d))return;const m=new Map,g=new Map;e.records.forEach(u=>{const x=g.get(u.item);x?x.push(u):g.set(u.item,[u])}),d.forEach((u,x)=>{if(e.lastSyncedItems.length>x&&e.lastSyncedItems[x]===u){const f=e.records[x];if(f&&f.item===u){m.set(x,f);const h=g.get(u);if(h){const w=h.indexOf(f);0>w||(h.splice(w,1),h.length===0&&g.delete(u))}}}});const S=[],y=new Set(e.records);let v=s;for(let u=d.length-1;u>=0;u--){const x=d[u];let f=m.get(u);if(!f){const w=g.get(x);w&&w.length>0&&(f=w.shift(),w.length===0&&g.delete(x))}if(f)y.delete(f);else{const w=Rt(e,x,u);if(!w)continue;f={item:x,element:w}}S.unshift(f);const h=f.element;h.nextSibling!==v&&l.insertBefore(h,v),v=h}y.forEach(At),e.records=S,e.lastSyncedItems=[...d]}function zt(e,r){return(i,s)=>(function(d,m,g){const{start:S,end:y}=nt("list"),v={itemsProvider:d,renderItem:m,startMarker:S,endMarker:y,records:[],host:g,lastSyncedItems:[]},u=g;return u.appendChild(S),u.appendChild(y),ze.add(v),at(v),v})(e,r,i).startMarker}function st(e,r){try{return e()}catch(i){if(r)return r(i),!1;throw i}}function Nt(e,r){return typeof e=="function"?st(e,r):!!e}function It(e,r,i,s){return H(e)?ot(e)?(O.delete(e),se(r,e,i)):(function(l,d,m){const g=l,S=g.appendChild.bind(g),y=g.insertBefore.bind(g);g.appendChild=function(v){return y(v,d)};try{return m()}finally{g.appendChild=S}})(r,s,()=>{const l=se(r,e,i);return l&&!l.parentNode?l:null}):se(r,e,i)}const Ne=new Set;function _e(e){const{groups:r,elseContent:i,host:s,index:l,endMarker:d}=e,m=(function(S,y){for(let v=0;S.length>v;v++)if(Nt(S[v].condition))return v;return y.length>0?-1:null})(r,i);if(m===e.activeIndex||((function(S,y){let v=S.nextSibling;for(;v&&v!==y;){const u=v.nextSibling;rt(v),v=u}})(e.startMarker,e.endMarker),e.activeIndex=m,m===null))return;const g=(function(S,y,v,u){const x=[];for(const f of S){const h=It(f,y,v,u);h&&x.push(h)}return x})(0>m?i:r[m].content,s,l,d);(function(S,y){const v=y.parentNode;v&&S.forEach(u=>(function(x,f,h){if(!x||!f)return!1;try{return x.insertBefore(f,h),!0}catch{return!1}})(v,u,y))})(g,d)}class Et{groups=[];elseContent=[];constructor(r,...i){this.groups.push({condition:r,content:i})}when(r,...i){return this.groups.push({condition:r,content:i}),this}else(...r){return this.elseContent=r,this}render(r,i){if(!G)return We("when-ssr")||null;const{start:s,end:l}=nt("when"),d={startMarker:s,endMarker:l,host:r,index:i,groups:[...this.groups],elseContent:[...this.elseContent],activeIndex:null,update:()=>_e(d)};(function(g){Ne.add(g)})(d);const m=r;return m.appendChild(s),m.appendChild(l),_e(d),s}}function Ie(e){return Object.assign((r,i)=>e.render(r,i),{when:(r,...i)=>(e.when(r,...i),Ie(e)),else:(...r)=>(e.else(...r),Ie(e))})}function $t(e,...r){return Ie(new Et(e,...r))}const Dt=[function(){ze.forEach(e=>{e.startMarker.isConnected&&e.endMarker.isConnected?at(e):ze.delete(e)})},function(){Ne.forEach(e=>{try{e.update()}catch{Ne.delete(e)}})},function(){if(G)try{Be.forEach(e=>{e.isConnected?(function(r){const i=(function(d){return d._conditionalInfo??null})(r);if(!i)return;const s=st(i.condition,d=>{}),l=r.nodeType===Node.ELEMENT_NODE;if(s&&!l){const d=(function(m){try{return m.isSvg?Ae(m.tagName,m.modifiers):Re(m.tagName,m.modifiers)}catch{return m.isSvg?document.createElementNS("http://www.w3.org/2000/svg",m.tagName):document.createElement(m.tagName)}})(i);Y(d,i),Ge(r,d)}else if(!s&&l){const d=te(i.tagName);d&&(Y(d,i),Ge(r,d))}})(e):(function(r){Be.delete(r)})(e)})}catch{}},function(){de.forEach((e,r)=>{if(!Ue(r))return e.updateListener&&r.removeEventListener("update",e.updateListener),void de.delete(r);it(0,e)})},function(){Te.forEach((e,r)=>{if(Ue(r))try{const i=ue(e.resolver),s=i===void 0?"":i+"";s!==e.lastValue&&(r.textContent=s,e.lastValue=s)}catch{}else Te.delete(r)})},function(){if(typeof document>"u")return;const e=document.body?[document.body,document]:[document];for(const r of e)try{r.dispatchEvent(new Event("update",{bubbles:!0}))}catch{}}];function Lt(){for(const e of Dt)e()}function Wt(e,r,i){return s=>{if(!s||typeof s.addEventListener!="function")return;const l=s;l.addEventListener(e,d=>{try{r.call(l,d)}catch{}},i)}}function Mt(e,r,i=0){const s=e(r||document.body,i);return(r||document.body).appendChild(s),s}const lt=[{name:"display",cssProperty:"display"},{name:"grid",cssProperty:"display",defaultValue:"grid",isShorthand:!0},{name:"bg",cssProperty:"background-color"},{name:"color",cssProperty:"color"},{name:"accentColor",cssProperty:"accent-color"},{name:"fontSize",cssProperty:"font-size"},{name:"fontWeight",cssProperty:"font-weight"},{name:"fontFamily",cssProperty:"font-family"},{name:"lineHeight",cssProperty:"line-height"},{name:"letterSpacing",cssProperty:"letter-spacing"},{name:"textAlign",cssProperty:"text-align"},{name:"textDecoration",cssProperty:"text-decoration"},{name:"fontStyle",cssProperty:"font-style"},{name:"fontVariant",cssProperty:"font-variant"},{name:"fontStretch",cssProperty:"font-stretch"},{name:"textTransform",cssProperty:"text-transform"},{name:"textIndent",cssProperty:"text-indent"},{name:"textOverflow",cssProperty:"text-overflow"},{name:"textShadow",cssProperty:"text-shadow"},{name:"whiteSpace",cssProperty:"white-space"},{name:"wordSpacing",cssProperty:"word-spacing"},{name:"wordWrap",cssProperty:"word-wrap"},{name:"overflowWrap",cssProperty:"overflow-wrap"},{name:"textAlignLast",cssProperty:"text-align-last"},{name:"textJustify",cssProperty:"text-justify"},{name:"textDecorationLine",cssProperty:"text-decoration-line"},{name:"textDecorationColor",cssProperty:"text-decoration-color"},{name:"textDecorationStyle",cssProperty:"text-decoration-style"},{name:"textDecorationThickness",cssProperty:"text-decoration-thickness"},{name:"textUnderlineOffset",cssProperty:"text-underline-offset"},{name:"verticalAlign",cssProperty:"vertical-align"},{name:"position",cssProperty:"position"},{name:"padding",cssProperty:"padding"},{name:"paddingTop",cssProperty:"padding-top"},{name:"paddingRight",cssProperty:"padding-right"},{name:"paddingBottom",cssProperty:"padding-bottom"},{name:"paddingLeft",cssProperty:"padding-left"},{name:"margin",cssProperty:"margin"},{name:"marginTop",cssProperty:"margin-top"},{name:"marginRight",cssProperty:"margin-right"},{name:"marginBottom",cssProperty:"margin-bottom"},{name:"marginLeft",cssProperty:"margin-left"},{name:"width",cssProperty:"width"},{name:"height",cssProperty:"height"},{name:"minWidth",cssProperty:"min-width"},{name:"maxWidth",cssProperty:"max-width"},{name:"minHeight",cssProperty:"min-height"},{name:"maxHeight",cssProperty:"max-height"},{name:"boxSizing",cssProperty:"box-sizing"},{name:"top",cssProperty:"top"},{name:"right",cssProperty:"right"},{name:"bottom",cssProperty:"bottom"},{name:"left",cssProperty:"left"},{name:"zIndex",cssProperty:"z-index"},{name:"flexDirection",cssProperty:"flex-direction"},{name:"alignItems",cssProperty:"align-items"},{name:"justifyContent",cssProperty:"justify-content"},{name:"gap",cssProperty:"gap"},{name:"flexWrap",cssProperty:"flex-wrap"},{name:"flexGrow",cssProperty:"flex-grow"},{name:"flexShrink",cssProperty:"flex-shrink"},{name:"flexBasis",cssProperty:"flex-basis"},{name:"alignSelf",cssProperty:"align-self"},{name:"alignContent",cssProperty:"align-content"},{name:"justifySelf",cssProperty:"justify-self"},{name:"justifyItems",cssProperty:"justify-items"},{name:"gridTemplateColumns",cssProperty:"grid-template-columns"},{name:"gridTemplateRows",cssProperty:"grid-template-rows"},{name:"gridTemplateAreas",cssProperty:"grid-template-areas"},{name:"gridColumn",cssProperty:"grid-column"},{name:"gridRow",cssProperty:"grid-row"},{name:"gridColumnStart",cssProperty:"grid-column-start"},{name:"gridColumnEnd",cssProperty:"grid-column-end"},{name:"gridRowStart",cssProperty:"grid-row-start"},{name:"gridRowEnd",cssProperty:"grid-row-end"},{name:"gridArea",cssProperty:"grid-area"},{name:"gridAutoColumns",cssProperty:"grid-auto-columns"},{name:"gridAutoRows",cssProperty:"grid-auto-rows"},{name:"gridAutoFlow",cssProperty:"grid-auto-flow"},{name:"border",cssProperty:"border"},{name:"borderTop",cssProperty:"border-top"},{name:"borderRight",cssProperty:"border-right"},{name:"borderBottom",cssProperty:"border-bottom"},{name:"borderLeft",cssProperty:"border-left"},{name:"borderWidth",cssProperty:"border-width"},{name:"borderStyle",cssProperty:"border-style"},{name:"borderColor",cssProperty:"border-color"},{name:"borderTopWidth",cssProperty:"border-top-width"},{name:"borderRightWidth",cssProperty:"border-right-width"},{name:"borderBottomWidth",cssProperty:"border-bottom-width"},{name:"borderLeftWidth",cssProperty:"border-left-width"},{name:"borderTopStyle",cssProperty:"border-top-style"},{name:"borderRightStyle",cssProperty:"border-right-style"},{name:"borderBottomStyle",cssProperty:"border-bottom-style"},{name:"borderLeftStyle",cssProperty:"border-left-style"},{name:"borderTopColor",cssProperty:"border-top-color"},{name:"borderRightColor",cssProperty:"border-right-color"},{name:"borderBottomColor",cssProperty:"border-bottom-color"},{name:"borderLeftColor",cssProperty:"border-left-color"},{name:"borderRadius",cssProperty:"border-radius"},{name:"borderTopLeftRadius",cssProperty:"border-top-left-radius"},{name:"borderTopRightRadius",cssProperty:"border-top-right-radius"},{name:"borderBottomLeftRadius",cssProperty:"border-bottom-left-radius"},{name:"borderBottomRightRadius",cssProperty:"border-bottom-right-radius"},{name:"outline",cssProperty:"outline"},{name:"outlineWidth",cssProperty:"outline-width"},{name:"outlineStyle",cssProperty:"outline-style"},{name:"outlineColor",cssProperty:"outline-color"},{name:"outlineOffset",cssProperty:"outline-offset"},{name:"backgroundColor",cssProperty:"background-color"},{name:"backgroundImage",cssProperty:"background-image"},{name:"backgroundRepeat",cssProperty:"background-repeat"},{name:"backgroundPosition",cssProperty:"background-position"},{name:"backgroundSize",cssProperty:"background-size"},{name:"backgroundAttachment",cssProperty:"background-attachment"},{name:"backgroundClip",cssProperty:"background-clip"},{name:"backgroundOrigin",cssProperty:"background-origin"},{name:"boxShadow",cssProperty:"box-shadow"},{name:"opacity",cssProperty:"opacity"},{name:"transition",cssProperty:"transition"},{name:"transitionProperty",cssProperty:"transition-property"},{name:"transitionDuration",cssProperty:"transition-duration"},{name:"transitionTimingFunction",cssProperty:"transition-timing-function"},{name:"transitionDelay",cssProperty:"transition-delay"},{name:"transform",cssProperty:"transform"},{name:"transformOrigin",cssProperty:"transform-origin"},{name:"transformStyle",cssProperty:"transform-style"},{name:"perspective",cssProperty:"perspective"},{name:"perspectiveOrigin",cssProperty:"perspective-origin"},{name:"backfaceVisibility",cssProperty:"backface-visibility"},{name:"animation",cssProperty:"animation"},{name:"animationName",cssProperty:"animation-name"},{name:"animationDuration",cssProperty:"animation-duration"},{name:"animationTimingFunction",cssProperty:"animation-timing-function"},{name:"animationDelay",cssProperty:"animation-delay"},{name:"animationIterationCount",cssProperty:"animation-iteration-count"},{name:"animationDirection",cssProperty:"animation-direction"},{name:"animationFillMode",cssProperty:"animation-fill-mode"},{name:"animationPlayState",cssProperty:"animation-play-state"},{name:"filter",cssProperty:"filter"},{name:"backdropFilter",cssProperty:"backdrop-filter"},{name:"overflow",cssProperty:"overflow"},{name:"overflowX",cssProperty:"overflow-x"},{name:"overflowY",cssProperty:"overflow-y"},{name:"visibility",cssProperty:"visibility"},{name:"objectFit",cssProperty:"object-fit"},{name:"objectPosition",cssProperty:"object-position"},{name:"listStyle",cssProperty:"list-style"},{name:"listStyleType",cssProperty:"list-style-type"},{name:"listStylePosition",cssProperty:"list-style-position"},{name:"listStyleImage",cssProperty:"list-style-image"},{name:"borderCollapse",cssProperty:"border-collapse"},{name:"borderSpacing",cssProperty:"border-spacing"},{name:"captionSide",cssProperty:"caption-side"},{name:"emptyCells",cssProperty:"empty-cells"},{name:"tableLayout",cssProperty:"table-layout"},{name:"content",cssProperty:"content"},{name:"quotes",cssProperty:"quotes"},{name:"counterReset",cssProperty:"counter-reset"},{name:"counterIncrement",cssProperty:"counter-increment"},{name:"appearance",cssProperty:"appearance"},{name:"userSelect",cssProperty:"user-select"},{name:"pointerEvents",cssProperty:"pointer-events"},{name:"resize",cssProperty:"resize"},{name:"scrollBehavior",cssProperty:"scroll-behavior"},{name:"clip",cssProperty:"clip"},{name:"clipPath",cssProperty:"clip-path"},{name:"isolation",cssProperty:"isolation"},{name:"mixBlendMode",cssProperty:"mix-blend-mode"},{name:"willChange",cssProperty:"will-change"},{name:"contain",cssProperty:"contain"},{name:"pageBreakBefore",cssProperty:"page-break-before"},{name:"pageBreakAfter",cssProperty:"page-break-after"},{name:"pageBreakInside",cssProperty:"page-break-inside"},{name:"breakBefore",cssProperty:"break-before"},{name:"breakAfter",cssProperty:"break-after"},{name:"breakInside",cssProperty:"break-inside"},{name:"orphans",cssProperty:"orphans"},{name:"widows",cssProperty:"widows"},{name:"columnCount",cssProperty:"column-count"},{name:"columnFill",cssProperty:"column-fill"},{name:"columnGap",cssProperty:"column-gap"},{name:"columnRule",cssProperty:"column-rule"},{name:"columnRuleColor",cssProperty:"column-rule-color"},{name:"columnRuleStyle",cssProperty:"column-rule-style"},{name:"columnRuleWidth",cssProperty:"column-rule-width"},{name:"columnSpan",cssProperty:"column-span"},{name:"columnWidth",cssProperty:"column-width"},{name:"columns",cssProperty:"columns"},{name:"cursor",cssProperty:"cursor"},{name:"aspectRatio",cssProperty:"aspect-ratio"},{name:"clear",cssProperty:"clear"},{name:"float",cssProperty:"float"},{name:"order",cssProperty:"order"},{name:"placeContent",cssProperty:"place-content"},{name:"placeItems",cssProperty:"place-items"},{name:"placeSelf",cssProperty:"place-self"},{name:"hyphens",cssProperty:"hyphens"},{name:"lineBreak",cssProperty:"line-break"},{name:"wordBreak",cssProperty:"word-break"},{name:"textOrientation",cssProperty:"text-orientation"},{name:"writingMode",cssProperty:"writing-mode"},{name:"direction",cssProperty:"direction"},{name:"unicodeBidi",cssProperty:"unicode-bidi"},{name:"backgroundBlendMode",cssProperty:"background-blend-mode"},{name:"backgroundPositionX",cssProperty:"background-position-x"},{name:"backgroundPositionY",cssProperty:"background-position-y"},{name:"borderImage",cssProperty:"border-image"},{name:"borderImageSource",cssProperty:"border-image-source"},{name:"borderImageSlice",cssProperty:"border-image-slice"},{name:"borderImageWidth",cssProperty:"border-image-width"},{name:"borderImageOutset",cssProperty:"border-image-outset"},{name:"borderImageRepeat",cssProperty:"border-image-repeat"},{name:"inset",cssProperty:"inset"},{name:"insetBlock",cssProperty:"inset-block"},{name:"insetBlockStart",cssProperty:"inset-block-start"},{name:"insetBlockEnd",cssProperty:"inset-block-end"},{name:"insetInline",cssProperty:"inset-inline"},{name:"insetInlineStart",cssProperty:"inset-inline-start"},{name:"insetInlineEnd",cssProperty:"inset-inline-end"},{name:"marginBlock",cssProperty:"margin-block"},{name:"marginBlockStart",cssProperty:"margin-block-start"},{name:"marginBlockEnd",cssProperty:"margin-block-end"},{name:"marginInline",cssProperty:"margin-inline"},{name:"marginInlineStart",cssProperty:"margin-inline-start"},{name:"marginInlineEnd",cssProperty:"margin-inline-end"},{name:"paddingBlock",cssProperty:"padding-block"},{name:"paddingBlockStart",cssProperty:"padding-block-start"},{name:"paddingBlockEnd",cssProperty:"padding-block-end"},{name:"paddingInline",cssProperty:"padding-inline"},{name:"paddingInlineStart",cssProperty:"padding-inline-start"},{name:"paddingInlineEnd",cssProperty:"padding-inline-end"},{name:"inlineSize",cssProperty:"inline-size"},{name:"blockSize",cssProperty:"block-size"},{name:"minInlineSize",cssProperty:"min-inline-size"},{name:"minBlockSize",cssProperty:"min-block-size"},{name:"maxInlineSize",cssProperty:"max-inline-size"},{name:"maxBlockSize",cssProperty:"max-block-size"},{name:"borderBlock",cssProperty:"border-block"},{name:"borderBlockStart",cssProperty:"border-block-start"},{name:"borderBlockEnd",cssProperty:"border-block-end"},{name:"borderInline",cssProperty:"border-inline"},{name:"borderInlineStart",cssProperty:"border-inline-start"},{name:"borderInlineEnd",cssProperty:"border-inline-end"},{name:"borderBlockWidth",cssProperty:"border-block-width"},{name:"borderBlockStartWidth",cssProperty:"border-block-start-width"},{name:"borderBlockEndWidth",cssProperty:"border-block-end-width"},{name:"borderInlineWidth",cssProperty:"border-inline-width"},{name:"borderInlineStartWidth",cssProperty:"border-inline-start-width"},{name:"borderInlineEndWidth",cssProperty:"border-inline-end-width"},{name:"borderBlockStyle",cssProperty:"border-block-style"},{name:"borderBlockStartStyle",cssProperty:"border-block-start-style"},{name:"borderBlockEndStyle",cssProperty:"border-block-end-style"},{name:"borderInlineStyle",cssProperty:"border-inline-style"},{name:"borderInlineStartStyle",cssProperty:"border-inline-start-style"},{name:"borderInlineEndStyle",cssProperty:"border-inline-end-style"},{name:"borderBlockColor",cssProperty:"border-block-color"},{name:"borderBlockStartColor",cssProperty:"border-block-start-color"},{name:"borderBlockEndColor",cssProperty:"border-block-end-color"},{name:"borderInlineColor",cssProperty:"border-inline-color"},{name:"borderInlineStartColor",cssProperty:"border-inline-start-color"},{name:"borderInlineEndColor",cssProperty:"border-inline-end-color"},{name:"borderStartStartRadius",cssProperty:"border-start-start-radius"},{name:"borderStartEndRadius",cssProperty:"border-start-end-radius"},{name:"borderEndStartRadius",cssProperty:"border-end-start-radius"},{name:"borderEndEndRadius",cssProperty:"border-end-end-radius"},{name:"scrollMargin",cssProperty:"scroll-margin"},{name:"scrollMarginTop",cssProperty:"scroll-margin-top"},{name:"scrollMarginRight",cssProperty:"scroll-margin-right"},{name:"scrollMarginBottom",cssProperty:"scroll-margin-bottom"},{name:"scrollMarginLeft",cssProperty:"scroll-margin-left"},{name:"scrollPadding",cssProperty:"scroll-padding"},{name:"scrollPaddingTop",cssProperty:"scroll-padding-top"},{name:"scrollPaddingRight",cssProperty:"scroll-padding-right"},{name:"scrollPaddingBottom",cssProperty:"scroll-padding-bottom"},{name:"scrollPaddingLeft",cssProperty:"scroll-padding-left"},{name:"overscrollBehavior",cssProperty:"overscroll-behavior"},{name:"overscrollBehaviorX",cssProperty:"overscroll-behavior-x"},{name:"overscrollBehaviorY",cssProperty:"overscroll-behavior-y"},{name:"caretColor",cssProperty:"caret-color"},{name:"caretShape",cssProperty:"caret-shape"},{name:"caretAnimation",cssProperty:"caret-animation"},{name:"imageRendering",cssProperty:"image-rendering"},{name:"colorScheme",cssProperty:"color-scheme"},{name:"contentVisibility",cssProperty:"content-visibility"},{name:"touchAction",cssProperty:"touch-action"},{name:"containerType",cssProperty:"container-type"},{name:"containerName",cssProperty:"container-name"},{name:"container",cssProperty:"container"},{name:"fontFeatureSettings",cssProperty:"font-feature-settings"},{name:"fontKerning",cssProperty:"font-kerning"},{name:"fontSynthesis",cssProperty:"font-synthesis"},{name:"fontOpticalSizing",cssProperty:"font-optical-sizing"},{name:"fontDisplay",cssProperty:"font-display"},{name:"fontVariantCaps",cssProperty:"font-variant-caps"},{name:"fontVariantNumeric",cssProperty:"font-variant-numeric"},{name:"fontVariantLigatures",cssProperty:"font-variant-ligatures"},{name:"fontVariantEastAsian",cssProperty:"font-variant-east-asian"},{name:"fontVariantAlternates",cssProperty:"font-variant-alternates"},{name:"fontVariantPosition",cssProperty:"font-variant-position"},{name:"textRendering",cssProperty:"text-rendering"},{name:"textCombineUpright",cssProperty:"text-combine-upright"},{name:"textSizeAdjust",cssProperty:"text-size-adjust"},{name:"mask",cssProperty:"mask"},{name:"maskImage",cssProperty:"mask-image"},{name:"maskMode",cssProperty:"mask-mode"},{name:"maskRepeat",cssProperty:"mask-repeat"},{name:"maskPosition",cssProperty:"mask-position"},{name:"maskSize",cssProperty:"mask-size"},{name:"maskOrigin",cssProperty:"mask-origin"},{name:"maskClip",cssProperty:"mask-clip"},{name:"maskComposite",cssProperty:"mask-composite"},{name:"clipRule",cssProperty:"clip-rule"},{name:"gridColumnGap",cssProperty:"grid-column-gap"},{name:"gridRowGap",cssProperty:"grid-row-gap"},{name:"gridGap",cssProperty:"grid-gap"}],Ft=["bold","center","flex"],Ye=new Map;function dt(e){let r=0;for(let i=0;e.length>i;i++)r=(r<<5)-r+e.charCodeAt(i),r&=r;return Math.abs(r).toString(16).padStart(8,"0").substring(0,8)}function Ee(e){return Object.entries(e).sort(([r],[i])=>r.localeCompare(i)).map(([r,i])=>`${r}:${i}`).join("|")}function _(e,r,i,s="media",l){let d=document.querySelector("#nuclo-styles");d||(d=document.createElement("style"),d.id="nuclo-styles",document.head.appendChild(d));const m=Object.entries(r).map(([g,S])=>`${g}: ${S}`).join("; ");if(l){const g=`.${e}${l}`,S=d.sheet;if(!S)return;const y=S.cssRules,v=y.length;let u=null,x=v;for(let f=0;v>f;f++){const h=y[f];if(h instanceof CSSStyleRule){if(h.selectorText===g){u=h,x=f;break}h.selectorText.includes(":")||(x=f+1)}}if(u){const f=u.style;f.cssText="";for(const[h,w]of Object.entries(r))f.setProperty(h,w)}else S.insertRule(`${g} { ${m} }`,x);return}if(i){const g=d.sheet;if(!g)return;const S=g.cssRules,y=S.length;let v=null;const u=h=>s==="media"&&h instanceof CSSMediaRule?h.media.mediaText===i:(s==="container"&&h instanceof CSSContainerRule||s==="supports"&&h instanceof CSSSupportsRule)&&h.conditionText===i,x=h=>h instanceof CSSMediaRule||h instanceof CSSContainerRule||h instanceof CSSSupportsRule;for(let h=0;y>h;h++){const w=S[h];if(u(w)){v=w;break}}if(!v){let h=y;for(let w=y-1;w>=0;w--){const T=S[w];if(x(T)){h=w+1;break}if(T instanceof CSSStyleRule){h=w+1;break}}g.insertRule(`${s==="media"?"@media":s==="container"?"@container":s==="supports"?"@supports":"@media"} ${i} {}`,h),v=g.cssRules[h]}let f=null;for(const h of Array.from(v.cssRules))if(h instanceof CSSStyleRule&&h.selectorText==="."+e){f=h;break}if(f){const h=f.style;h.cssText="";for(const[w,T]of Object.entries(r))h.setProperty(w,T)}else v.insertRule(`.${e} { ${m} }`,v.cssRules.length)}else{const g=d.sheet;if(!g)return;let S=null,y=0;const v=f=>f instanceof CSSMediaRule||f instanceof CSSContainerRule||f instanceof CSSSupportsRule,u=g.cssRules,x=u.length;for(let f=0;x>f;f++){const h=u[f];if(h instanceof CSSStyleRule&&h.selectorText==="."+e){S=h,y=f;break}v(h)||(y=f+1)}if(S){const f=S.style;f.cssText="";for(const[h,w]of Object.entries(r))f.setProperty(h,w)}else g.insertRule(`.${e} { ${m} }`,y)}}function Ht(e,r){_(e,r)}class j{styles={};getStyles(){return{...this.styles}}getClassName(r="",i){return(function(s,l="",d){const m=Ee(s),g=l?`${l}:${m}`:m,S=(function(u){return Ye.get(u)})(g);if(S){const u=S;return(function(x,f,h="media"){const w=document.querySelector("#nuclo-styles");if(!w||!w.sheet)return!1;if(f){const T=Array.from(w.sheet.cssRules||[]).find(I=>h==="media"&&I instanceof CSSMediaRule?I.media.mediaText===f:(h==="container"&&I instanceof CSSContainerRule||h==="supports"&&I instanceof CSSSupportsRule)&&I.conditionText===f);return!!T&&Array.from(T.cssRules).some(I=>I instanceof CSSStyleRule&&I.selectorText==="."+x)}return Array.from(w.sheet.cssRules||[]).some(T=>T instanceof CSSStyleRule&&T.selectorText==="."+x)})(u,d)||_(u,s,d),u}const y=dt(m),v=l?`n${l}-${y}`:"n"+y;return(function(u,x){Ye.set(u,x)})(g,v),_(v,s,d),v})(this.styles,r,i)}getClassNames(){return[this.getClassName()]}getClassDefinitions(){return Object.entries(this.styles).map(([r,i])=>({className:this.getClassName(),property:r,value:i}))}toString(){return this.getClassName()}add(r,i){return this.styles[r]=i,this}bold(){return this.styles["font-weight"]="bold",this}center(){return this.styles["justify-content"]="center",this.styles["align-items"]="center",this}flex(r){return r!==void 0?this.styles.flex=r:this.styles.display="flex",this}}function jt(e){return e.isShorthand?()=>new j().add(e.cssProperty,e.defaultValue||""):r=>new j().add(e.cssProperty,r||"")}(function(){const e=j.prototype;for(const r of lt)r.name in e||(e[r.name]=r.isShorthand?function(){return this.add(r.cssProperty,r.defaultValue||""),this}:function(i){return this.add(r.cssProperty,i),this})})();const ce={};for(const e of lt)ce[e.name]=jt(e);for(const e of Ft)e==="bold"||e==="center"?ce[e]=()=>new j()[e]():e==="flex"&&(ce[e]=r=>new j().flex(r));const{display:Ot,flex:Ut,grid:Gt,bg:Qt,color:qt,accentColor:Vt,fontSize:_t,fontWeight:Yt,fontFamily:Jt,lineHeight:Kt,letterSpacing:Xt,textAlign:Zt,textDecoration:eo,bold:to,fontStyle:oo,fontVariant:ro,fontStretch:no,textTransform:io,textIndent:ao,textOverflow:so,textShadow:lo,whiteSpace:co,wordSpacing:po,wordWrap:uo,overflowWrap:mo,textAlignLast:go,textJustify:ho,textDecorationLine:fo,textDecorationColor:yo,textDecorationStyle:bo,textDecorationThickness:xo,textUnderlineOffset:vo,verticalAlign:So,position:wo,padding:ko,paddingTop:Co,paddingRight:Po,paddingBottom:To,paddingLeft:Bo,margin:Ro,marginTop:Ao,marginRight:zo,marginBottom:No,marginLeft:Io,width:Eo,height:$o,minWidth:Do,maxWidth:Lo,minHeight:Wo,maxHeight:Mo,boxSizing:Fo,top:Ho,right:jo,bottom:Oo,left:Uo,zIndex:Go,flexDirection:Qo,alignItems:qo,justifyContent:Vo,center:_o,gap:Yo,flexWrap:Jo,flexGrow:Ko,flexShrink:Xo,flexBasis:Zo,alignSelf:er,alignContent:tr,justifySelf:or,justifyItems:rr,gridTemplateColumns:nr,gridTemplateRows:ir,gridTemplateAreas:ar,gridColumn:sr,gridRow:lr,gridColumnStart:dr,gridColumnEnd:cr,gridRowStart:pr,gridRowEnd:ur,gridArea:mr,gridAutoColumns:gr,gridAutoRows:hr,gridAutoFlow:fr,border:yr,borderTop:br,borderRight:xr,borderBottom:vr,borderLeft:Sr,borderWidth:wr,borderStyle:kr,borderColor:Cr,borderTopWidth:Pr,borderRightWidth:Tr,borderBottomWidth:Br,borderLeftWidth:Rr,borderTopStyle:Ar,borderRightStyle:zr,borderBottomStyle:Nr,borderLeftStyle:Ir,borderTopColor:Er,borderRightColor:$r,borderBottomColor:Dr,borderLeftColor:Lr,borderRadius:Wr,borderTopLeftRadius:Mr,borderTopRightRadius:Fr,borderBottomLeftRadius:Hr,borderBottomRightRadius:jr,outline:Or,outlineWidth:Ur,outlineStyle:Gr,outlineColor:Qr,outlineOffset:qr,backgroundColor:Vr,backgroundImage:_r,backgroundRepeat:Yr,backgroundPosition:Jr,backgroundSize:Kr,backgroundAttachment:Xr,backgroundClip:Zr,backgroundOrigin:en,boxShadow:tn,opacity:rn,transition:nn,transitionProperty:an,transitionDuration:sn,transitionTimingFunction:ln,transitionDelay:dn,transform:cn,transformOrigin:pn,transformStyle:un,perspective:mn,perspectiveOrigin:gn,backfaceVisibility:hn,animation:fn,animationName:yn,animationDuration:bn,animationTimingFunction:xn,animationDelay:vn,animationIterationCount:Sn,animationDirection:wn,animationFillMode:kn,animationPlayState:Cn,filter:Pn,backdropFilter:Tn,overflow:Bn,overflowX:Rn,overflowY:An,visibility:zn,objectFit:Nn,objectPosition:In,listStyle:En,listStyleType:$n,listStylePosition:Dn,listStyleImage:Ln,borderCollapse:Wn,borderSpacing:Mn,captionSide:Fn,emptyCells:Hn,tableLayout:jn,content:On,quotes:Un,counterReset:Gn,counterIncrement:Qn,appearance:qn,userSelect:Vn,pointerEvents:_n,resize:Yn,scrollBehavior:Jn,clip:Kn,clipPath:Xn,isolation:Zn,mixBlendMode:ei,willChange:ti,contain:oi,pageBreakBefore:ri,pageBreakAfter:ni,pageBreakInside:ii,breakBefore:ai,breakAfter:si,breakInside:di,orphans:ci,widows:pi,columnCount:ui,columnFill:mi,columnGap:gi,columnRule:hi,columnRuleColor:fi,columnRuleStyle:yi,columnRuleWidth:bi,columnSpan:xi,columnWidth:vi,columns:Si,cursor:wi}=ce,ct={hover:":hover",active:":active",focus:":focus","focus-visible":":focus-visible","focus-within":":focus-within",visited:":visited",link:":link",target:":target",root:":root",empty:":empty",enabled:":enabled",disabled:":disabled",checked:":checked",indeterminate:":indeterminate",default:":default",required:":required",optional:":optional",valid:":valid",invalid:":invalid","in-range":":in-range","out-of-range":":out-of-range","placeholder-shown":":placeholder-shown",autofill:":autofill","read-only":":read-only","read-write":":read-write","first-child":":first-child","last-child":":last-child","only-child":":only-child","first-of-type":":first-of-type","last-of-type":":last-of-type","only-of-type":":only-of-type","nth-child":":nth-child","nth-last-child":":nth-last-child","nth-of-type":":nth-of-type","nth-last-of-type":":nth-last-of-type",lang:":lang",dir:":dir",not:":not",is:":is",where:":where",has:":has","any-link":":any-link","local-link":":local-link",scope:":scope",current:":current",past:":past",future:":future",playing:":playing",paused:":paused",seeking:":seeking",muted:":muted","volume-locked":":volume-locked",buffering:":buffering",stalled:":stalled","picture-in-picture":":picture-in-picture",fullscreen:":fullscreen",modal:":modal","popover-open":":popover-open","user-invalid":":user-invalid","user-valid":":user-valid"};function ki(e){const r=e.trim();return r.startsWith("&:")||r.startsWith(":")?{type:"pseudo",pseudoClass:(r.startsWith("&:")?r.slice(1):r).trim()}:r.startsWith("@media ")?{type:"media",condition:r.slice(7).trim()}:r.startsWith("@container ")?{type:"container",condition:r.slice(11).trim()}:r.startsWith("@supports ")?{type:"supports",condition:r.slice(10).trim()}:r.startsWith("@style ")?{type:"style",condition:r.slice(7).trim()}:{type:"media",condition:r}}function Ci(e){return e in ct}function Pi(e){return ct[e]}const Je=new Map;function pt(e){const r=Array.isArray(e)?e:Object.entries(e),i=new Map;for(const[s,l]of r){let d=Je.get(l);d||(d=ki(l),Je.set(l,d)),i.set(s,d)}return function(s,l){let d,m;if(l!==void 0?(d=s,m=l):s instanceof j?(d=s,m=void 0):(d=void 0,m=s),!(d||m&&Object.keys(m).length!==0))return{className:""};if(m&&Object.keys(m).length>0){const g=[],S=new Set;for(const[w]of r){const T=m[w];T&&(S.add(w),g.push({queryName:w,query:i.get(w),styles:T.getStyles()}))}for(const[w,T]of Object.entries(m))!S.has(w)&&Ci(w)&&T instanceof j&&g.push({queryName:w,query:{type:"pseudo",pseudoClass:Pi(w)},styles:T.getStyles()});const y=[];y.length=g.length+(d?1:0);let v=0;if(d){const w=d.getStyles();y[v++]="default:"+Ee(w)}for(const{queryName:w,styles:T}of g){const I=Ee(T);y[v++]=`${w}:${I}`}const u="n"+dt(y.sort().join("||"));let x={};d&&(x={...d.getStyles()},_(u,x));const f=[],h=[];for(const w of g)w.query.type==="pseudo"?h.push(w):f.push(w);for(const{query:w,styles:T}of f)x={...x,...T},_(u,x,w.condition,w.type);for(const{query:w,styles:T}of h)w.type==="pseudo"&&_(u,T,void 0,"pseudo",w.pseudoClass);return{className:u}}return d?{className:d.getClassName()}:{className:""}}}const Ti=pt;var Bi=Object.freeze({__proto__:null,StyleBuilder:j,accentColor:Vt,alignContent:tr,alignItems:qo,alignSelf:er,animation:fn,animationDelay:vn,animationDirection:wn,animationDuration:bn,animationFillMode:kn,animationIterationCount:Sn,animationName:yn,animationPlayState:Cn,animationTimingFunction:xn,appearance:qn,backdropFilter:Tn,backfaceVisibility:hn,backgroundAttachment:Xr,backgroundClip:Zr,backgroundColor:Vr,backgroundImage:_r,backgroundOrigin:en,backgroundPosition:Jr,backgroundRepeat:Yr,backgroundSize:Kr,bg:Qt,bold:to,border:yr,borderBottom:vr,borderBottomColor:Dr,borderBottomLeftRadius:Hr,borderBottomRightRadius:jr,borderBottomStyle:Nr,borderBottomWidth:Br,borderCollapse:Wn,borderColor:Cr,borderLeft:Sr,borderLeftColor:Lr,borderLeftStyle:Ir,borderLeftWidth:Rr,borderRadius:Wr,borderRight:xr,borderRightColor:$r,borderRightStyle:zr,borderRightWidth:Tr,borderSpacing:Mn,borderStyle:kr,borderTop:br,borderTopColor:Er,borderTopLeftRadius:Mr,borderTopRightRadius:Fr,borderTopStyle:Ar,borderTopWidth:Pr,borderWidth:wr,bottom:Oo,boxShadow:tn,boxSizing:Fo,breakAfter:si,breakBefore:ai,breakInside:di,captionSide:Fn,center:_o,clip:Kn,clipPath:Xn,color:qt,columnCount:ui,columnFill:mi,columnGap:gi,columnRule:hi,columnRuleColor:fi,columnRuleStyle:yi,columnRuleWidth:bi,columnSpan:xi,columnWidth:vi,columns:Si,contain:oi,content:On,counterIncrement:Qn,counterReset:Gn,createBreakpoints:Ti,createCSSClass:Ht,createStyleQueries:pt,cursor:wi,display:Ot,emptyCells:Hn,filter:Pn,flex:Ut,flexBasis:Zo,flexDirection:Qo,flexGrow:Ko,flexShrink:Xo,flexWrap:Jo,fontFamily:Jt,fontSize:_t,fontStretch:no,fontStyle:oo,fontVariant:ro,fontWeight:Yt,gap:Yo,grid:Gt,gridArea:mr,gridAutoColumns:gr,gridAutoFlow:fr,gridAutoRows:hr,gridColumn:sr,gridColumnEnd:cr,gridColumnStart:dr,gridRow:lr,gridRowEnd:ur,gridRowStart:pr,gridTemplateAreas:ar,gridTemplateColumns:nr,gridTemplateRows:ir,height:$o,isolation:Zn,justifyContent:Vo,justifyItems:rr,justifySelf:or,left:Uo,letterSpacing:Xt,lineHeight:Kt,listStyle:En,listStyleImage:Ln,listStylePosition:Dn,listStyleType:$n,margin:Ro,marginBottom:No,marginLeft:Io,marginRight:zo,marginTop:Ao,maxHeight:Mo,maxWidth:Lo,minHeight:Wo,minWidth:Do,mixBlendMode:ei,objectFit:Nn,objectPosition:In,opacity:rn,orphans:ci,outline:Or,outlineColor:Qr,outlineOffset:qr,outlineStyle:Gr,outlineWidth:Ur,overflow:Bn,overflowWrap:mo,overflowX:Rn,overflowY:An,padding:ko,paddingBottom:To,paddingLeft:Bo,paddingRight:Po,paddingTop:Co,pageBreakAfter:ni,pageBreakBefore:ri,pageBreakInside:ii,perspective:mn,perspectiveOrigin:gn,pointerEvents:_n,position:wo,quotes:Un,resize:Yn,right:jo,scrollBehavior:Jn,tableLayout:jn,textAlign:Zt,textAlignLast:go,textDecoration:eo,textDecorationColor:yo,textDecorationLine:fo,textDecorationStyle:bo,textDecorationThickness:xo,textIndent:ao,textJustify:ho,textOverflow:so,textShadow:lo,textTransform:io,textUnderlineOffset:vo,top:Ho,transform:cn,transformOrigin:pn,transformStyle:un,transition:nn,transitionDelay:dn,transitionDuration:sn,transitionProperty:an,transitionTimingFunction:ln,userSelect:Vn,verticalAlign:So,visibility:zn,whiteSpace:co,widows:pi,width:Eo,willChange:ti,wordSpacing:po,wordWrap:uo,zIndex:Go});function Ri(){if(Bt(),typeof globalThis<"u"){const e=globalThis;e.list=zt,e.update=Lt,e.when=$t,e.on=Wt,e.render=Mt;for(const[r,i]of Object.entries(Bi))try{e[r]=i}catch{}}}typeof globalThis<"u"&&Ri();const o={primary:"#84cc16",primaryHover:"#a3e635",primaryDark:"#65a30d",primaryGlow:"rgba(132, 204, 22, 0.3)",bg:"#0a0f1a",bgLight:"#111827",bgCard:"#1a2332",bgCode:"#0d1117",text:"#f8fafc",textMuted:"#94a3b8",textDim:"#64748b",accent:"#84cc16",border:"#1e293b",borderLight:"#334155",codeKeyword:"#c792ea",codeString:"#c3e88d",codeFunction:"#82aaff",codeComment:"#676e95",codeNumber:"#f78c6c"};function Ai(){const e=document.createElement("style");e.textContent=`
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: ${o.bg};
+      color: ${o.text};
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a {
+      text-decoration: none;
+    }
+  
+  `,document.head.appendChild(e)}const n=createStyleQueries({small:"@media (min-width: 341px)",medium:"@media (min-width: 601px)",large:"@media (min-width: 1025px)"}),t={container:n(padding("0 16px").maxWidth("1200px").margin("0 auto").width("100%").boxSizing("border-box"),{medium:padding("0 24px")}),header:n(display("flex").backgroundColor("#FF0000").alignItems("center").justifyContent("space-between").padding("20px 24px").backgroundColor("transparent").containerType("inline-size").position("fixed").top("0").left("0").right("0").zIndex(100).borderBottom(`1px solid ${o.border}`),{medium:padding("20px 48px")}),logo:n(display("flex").alignItems("center").gap("12px").fontSize("20px").fontWeight("700").color(o.primary).transition("opacity 0.2s"),{medium:fontSize("24px")}),nav:n(display("flex").alignItems("center").gap("8px").width("100%").height("200px")),navLink:n(color(o.textMuted).fontSize("14px").fontWeight("500").transition("all 0.2s"),{medium:fontSize("15px"),hover:color("red")}),navLinkActive:n(color(o.text)),hero:n(padding("60px 24px 80px").textAlign("center").maxWidth("1000px").margin("0 auto").position("relative"),{medium:padding("100px 48px 120px")}),heroTitle:n(fontSize("40px").fontWeight("700").lineHeight("1.1").marginBottom("24px").color(o.text).letterSpacing("-0.02em"),{medium:fontSize("56px"),large:fontSize("64px")}),heroTitleAccent:n(color(o.primary)),heroTitleAccentStyle:{fontStyle:"italic"},heroSubtitle:n(fontSize("16px").color(o.textMuted).maxWidth("600px").margin("0 auto 48px").lineHeight("1.7"),{medium:fontSize("18px"),large:fontSize("20px")}),heroButtons:n(display("flex").gap("16px").justifyContent("center").flexWrap("wrap")),btnPrimary:n(padding("14px 32px").backgroundColor(o.primary).color(o.bg).borderRadius("8px").fontWeight("600").fontSize("15px").border("none").transition("all 0.2s")),btnPrimaryStyle:{boxShadow:`0 0 20px ${o.primaryGlow}`},btnSecondary:n(padding("14px 32px").backgroundColor("transparent").color(o.text).borderRadius("8px").fontWeight("600").fontSize("15px").border(`1px solid ${o.borderLight}`).transition("all 0.2s")),features:n(display("grid").gap("24px").padding("60px 24px").maxWidth("1200px").margin("0 auto"),{medium:padding("80px 48px")}),featuresStyle:{gridTemplateColumns:"repeat(auto-fit, minmax(320px, 1fr))"},featureCard:n(padding("32px").backgroundColor(o.bgCard).borderRadius("16px").border(`1px solid ${o.border}`).transition("all 0.3s").position("relative").overflow("hidden")),featureIcon:n(width("56px").height("56px").borderRadius("12px").display("flex").alignItems("center").justifyContent("center").marginBottom("20px").fontSize("28px")),featureIconStyle:{background:`linear-gradient(135deg, ${o.bgLight} 0%, ${o.bgCard} 100%)`,border:`1px solid ${o.border}`},featureTitle:n(fontSize("20px").fontWeight("600").marginBottom("12px").color(o.text)),featureDesc:n(fontSize("15px").color(o.textMuted).lineHeight("1.7")),codeBlock:n(backgroundColor(o.bgCode).borderRadius("12px").padding("16px").overflow("auto").maxWidth("100%").boxSizing("border-box").border(`1px solid ${o.border}`).fontSize("14px").lineHeight("1.7"),{medium:padding("24px")}),codeInline:n(backgroundColor(o.bgLight).padding("3px 8px").borderRadius("6px").fontSize("14px").color(o.primary).border(`1px solid ${o.border}`)),section:n(padding("60px 24px").maxWidth("1200px").margin("0 auto"),{medium:padding("100px 48px")}),sectionTitle:n(fontSize("28px").fontWeight("700").marginBottom("16px").color(o.text).letterSpacing("-0.02em"),{medium:fontSize("36px"),large:fontSize("40px")}),sectionSubtitle:n(fontSize("18px").color(o.textMuted).marginBottom("56px").maxWidth("600px").lineHeight("1.7")),demoContainer:n(display("grid").gap("16px").gridTemplateColumns("1fr").width("100%").boxSizing("border-box"),{medium:gap("24px").gridTemplateColumns("1fr 1fr")}),demoContainerSingle:n(display("flex").flexDirection("column").gap("16px").width("100%").boxSizing("border-box"),{medium:gap("24px")}),demoPanel:n(backgroundColor(o.bgCard).borderRadius("16px").border(`1px solid ${o.border}`).overflow("hidden").maxWidth("100%").boxSizing("border-box")),demoPanelHeader:n(padding("14px 20px").backgroundColor(o.bgLight).borderBottom(`1px solid ${o.border}`).fontSize("13px").fontWeight("600").color(o.textMuted).textTransform("uppercase").letterSpacing("0.05em")),demoPanelContent:n(padding("16px"),{medium:padding("24px")}),footer:n(padding("48px").borderTop(`1px solid ${o.border}`).marginTop("auto").textAlign("center").backgroundColor(o.bgLight)),footerText:n(fontSize("14px").color(o.textDim)),footerLink:n(color(o.textMuted).transition("color 0.2s")),pageContent:n(padding("24px 16px 80px").maxWidth("900px").margin("0 auto").width("100%").boxSizing("border-box"),{medium:padding("48px 48px 80px")}),pageTitle:n(fontSize("32px").fontWeight("700").marginBottom("24px").color(o.text).letterSpacing("-0.02em"),{medium:fontSize("40px"),large:fontSize("48px")}),pageSubtitle:n(fontSize("20px").color(o.textMuted).marginBottom("56px").lineHeight("1.7")),h2:n(fontSize("32px").fontWeight("600").marginTop("64px").marginBottom("20px").color(o.text).letterSpacing("-0.01em")),h3:n(fontSize("22px").fontWeight("600").marginTop("40px").marginBottom("16px").color(o.text)),p:n(fontSize("16px").color(o.textMuted).marginBottom("20px").lineHeight("1.8")),ul:n(paddingLeft("24px").marginBottom("20px")),li:n(fontSize("16px").color(o.textMuted).marginBottom("12px").lineHeight("1.7")),flex:n(display("flex")),flexCenter:n(display("flex").alignItems("center").justifyContent("center")),flexBetween:n(display("flex").alignItems("center").justifyContent("space-between")),flexCol:n(display("flex").flexDirection("column")),gap8:n(gap("8px")),gap16:n(gap("16px")),gap24:n(gap("24px")),gap32:n(gap("32px")),mt16:n(marginTop("16px")),mt24:n(marginTop("24px")),mt32:n(marginTop("32px")),mb16:n(marginBottom("16px")),mb24:n(marginBottom("24px")),table:n(width("100%").borderCollapse("collapse").marginBottom("24px").fontSize("14px")),th:n(padding("14px 16px").textAlign("left").borderBottom(`2px solid ${o.border}`).fontWeight("600").color(o.text).backgroundColor(o.bgLight)),td:n(padding("14px 16px").borderBottom(`1px solid ${o.border}`).color(o.textMuted)),glowBoxStyle:{boxShadow:`0 0 60px ${o.primaryGlow}, inset 0 0 60px rgba(132, 204, 22, 0.05)`}},U={home:{title:"Nuclo - Simple Reactive DOM Library",description:"A simple, explicit DOM library for building reactive user interfaces. Lightweight, type-safe, and easy to learn - build modern web apps without the complexity.",keywords:"nuclo, reactive, DOM library, javascript, typescript, ui framework",type:"WebPage"},"getting-started":{title:"Getting Started - Nuclo",description:"Learn how to get started with Nuclo. Installation guide, basic concepts, and your first reactive application.",keywords:"nuclo tutorial, getting started, installation, setup, quick start",type:"TechArticle"},"core-api":{title:"Core API - Nuclo",description:"Explore Nuclo's core API including state management, reactive updates, and DOM manipulation utilities.",keywords:"nuclo api, core api, state management, reactive state",type:"TechArticle"},"tag-builders":{title:"Tag Builders - Nuclo",description:"Learn about Nuclo's tag builder functions for creating DOM elements with a clean, functional API.",keywords:"tag builders, dom creation, elements, nuclo tags",type:"TechArticle"},styling:{title:"Styling - Nuclo",description:"Discover how to style your Nuclo applications with inline styles, CSS-in-JS, and external stylesheets.",keywords:"nuclo styling, css, inline styles, css-in-js",type:"TechArticle"},pitfalls:{title:"Common Pitfalls - Nuclo",description:"Avoid common mistakes when working with Nuclo. Best practices and troubleshooting guide.",keywords:"nuclo pitfalls, common mistakes, best practices, troubleshooting",type:"TechArticle"},examples:{title:"Examples - Nuclo",description:"Browse interactive examples showcasing Nuclo's capabilities - from simple counters to complex applications.",keywords:"nuclo examples, demos, sample code, tutorials",type:"CollectionPage"},"example-counter":{title:"Counter Example - Nuclo",description:"A simple counter example demonstrating Nuclo's reactive state management.",keywords:"counter example, reactive state, nuclo tutorial",type:"TechArticle"},"example-todo":{title:"Todo App Example - Nuclo",description:"Build a todo application with Nuclo. Learn about state, events, and list rendering.",keywords:"todo app, nuclo example, list rendering",type:"TechArticle"},"example-subtasks":{title:"Subtasks Example - Nuclo",description:"Advanced todo example with nested subtasks demonstrating complex state management.",keywords:"subtasks, nested state, complex example",type:"TechArticle"},"example-search":{title:"Search Example - Nuclo",description:"Implement a search interface with filtering using Nuclo's reactive state.",keywords:"search, filtering, reactive search",type:"TechArticle"},"example-async":{title:"Async Data Example - Nuclo",description:"Handle asynchronous data fetching and loading states in Nuclo applications.",keywords:"async, data fetching, loading states, promises",type:"TechArticle"},"example-forms":{title:"Forms Example - Nuclo",description:"Create interactive forms with validation using Nuclo.",keywords:"forms, validation, input handling",type:"TechArticle"},"example-nested":{title:"Nested Components Example - Nuclo",description:"Learn how to compose and nest components in Nuclo applications.",keywords:"components, composition, nested components",type:"TechArticle"},"example-animations":{title:"Animations Example - Nuclo",description:"Add smooth animations and transitions to your Nuclo applications.",keywords:"animations, transitions, effects",type:"TechArticle"},"example-routing":{title:"Routing Example - Nuclo",description:"Implement client-side routing in Nuclo applications.",keywords:"routing, navigation, spa",type:"TechArticle"},"example-styled-card":{title:"Styled Card Example - Nuclo",description:"Create beautiful styled components with Nuclo's styling capabilities.",keywords:"styled components, css, card design",type:"TechArticle"}};function $e(e){const r=U[e]||U.home,i="https://nuclo.dan2.dev/",s=e==="home"?i:`${i}${e}`;document.title=r.title,E("name","title",r.title),E("name","description",r.description),r.keywords&&E("name","keywords",r.keywords),E("property","og:title",r.title),E("property","og:description",r.description),E("property","og:url",s),E("name","twitter:title",r.title),E("name","twitter:description",r.description),E("name","twitter:url",s),zi("canonical",s),Ei(e)}function E(e,r,i){let s=document.querySelector(`meta[${e}="${r}"]`);s||(s=document.createElement("meta"),s.setAttribute(e,r),document.head.appendChild(s)),s.setAttribute("content",i)}function zi(e,r){let i=document.querySelector(`link[rel="${e}"]`);i||(i=document.createElement("link"),i.setAttribute("rel",e),document.head.appendChild(i)),i.setAttribute("href",r)}function Ni(e){const r="https://nuclo.dan2.dev/",i=e==="home"?r:`${r}${e}`,s=U[e]||U.home,l=[];l.push({"@context":"https://schema.org","@type":"WebSite","@id":`${r}#website`,name:"Nuclo",description:"A simple, explicit DOM library for building reactive user interfaces",url:r,inLanguage:"en-US",publisher:{"@type":"Person","@id":`${r}#author`,name:"Danilo Castro",url:"https://dan2.dev",sameAs:["https://github.com/dan2dev","https://twitter.com/dan2dev"]},potentialAction:{"@type":"SearchAction",target:{"@type":"EntryPoint",urlTemplate:`${r}?q={search_term_string}`},"query-input":"required name=search_term_string"}}),l.push({"@context":"https://schema.org","@type":"Person","@id":`${r}#author`,name:"Danilo Castro",givenName:"Danilo",familyName:"Castro",url:"https://dan2.dev",sameAs:["https://github.com/dan2dev","https://twitter.com/dan2dev"]}),l.push({"@context":"https://schema.org","@type":"SoftwareApplication","@id":`${r}#software`,name:"Nuclo",description:"A simple, explicit DOM library for building reactive user interfaces",applicationCategory:"DeveloperApplication",operatingSystem:"Web",offers:{"@type":"Offer",price:"0",priceCurrency:"USD"},author:{"@id":`${r}#author`},url:r,softwareVersion:"Latest",programmingLanguage:{"@type":"ComputerLanguage",name:"TypeScript",url:"https://www.typescriptlang.org/"},codeRepository:"https://github.com/dan2dev/nuclo",license:"https://github.com/dan2dev/nuclo/blob/main/LICENSE"});const d=Ii(e);d.length>1&&l.push({"@context":"https://schema.org","@type":"BreadcrumbList",itemListElement:d.map((S,y)=>({"@type":"ListItem",position:y+1,name:S.name,item:S.url}))});const m=s.type||"WebPage",g={"@context":"https://schema.org","@type":m,"@id":i,url:i,name:s.title,description:s.description,inLanguage:"en-US",isPartOf:{"@id":`${r}#website`},about:{"@id":`${r}#software`},author:{"@id":`${r}#author`},publisher:{"@id":`${r}#author`}};if(m==="TechArticle"&&(g.articleSection=e.startsWith("example-")?"Examples":"Documentation",g.keywords=s.keywords?.split(", ")||[],g.mainEntityOfPage=i),l.push(g),e==="examples"){const S=["example-counter","example-todo","example-subtasks","example-search","example-async","example-forms","example-nested","example-animations","example-routing","example-styled-card"];l.push({"@context":"https://schema.org","@type":"ItemList",name:"Nuclo Examples",description:"Interactive examples showcasing Nuclo's capabilities",numberOfItems:S.length,itemListElement:S.map((y,v)=>{const u=U[y];return{"@type":"ListItem",position:v+1,url:`${r}${y}`,name:u.title,description:u.description}})})}return l}function Ii(e){const r="https://nuclo.dan2.dev/",i=[{name:"Home",url:r}];if(e==="home")return i;if(e.startsWith("example-")){i.push({name:"Examples",url:`${r}examples`});const s=U[e];i.push({name:s.title.replace(" - Nuclo",""),url:`${r}${e}`})}else if(e!=="home"){const s=U[e];i.push({name:s.title.replace(" - Nuclo",""),url:`${r}${e}`})}return i}function Ei(e){const r=Ni(e);document.querySelectorAll('script[type="application/ld+json"][data-dynamic="true"]').forEach(l=>l.remove());const s=document.createElement("script");s.setAttribute("type","application/ld+json"),s.setAttribute("data-dynamic","true"),s.textContent=JSON.stringify(r,null,2),document.head.appendChild(s)}let V="home";function R(){return V}function A(e){V=e;const r="/";if(e==="home")window.history.pushState({},"",r);else{const i=r.endsWith("/")?`${r}${e}`:`${r}/${e}`;window.history.pushState({},"",i)}window.scrollTo(0,0),$e(e),update()}const Ke=["home","getting-started","core-api","tag-builders","styling","pitfalls","examples","example-counter","example-todo","example-subtasks","example-search","example-async","example-forms","example-nested","example-animations","example-routing","example-styled-card"];function $i(){let i=window.location.pathname.replace("/","");i=i.replace(/^\/+|\/+$/g,"");const s=i||"home";Ke.includes(s)&&(V=s),$e(V),window.addEventListener("popstate",()=>{let d=window.location.pathname.replace("/","");d=d.replace(/^\/+|\/+$/g,"");const m=d||"home";V=Ke.includes(m)?m:"home",$e(V),update()})}function Di(e=32,r=!1){return svgSvg({width:String(e),height:String(e),viewBox:"0 0 32 32",fill:"none"},i=>{if(r){const s=i;s.removeAttribute("width"),s.removeAttribute("height"),s.style.maxWidth="100%",s.style.width="100%",s.style.height="auto"}},circleSvg({cx:"16",cy:"16",r:"14",stroke:o.primary,"stroke-width":"2",fill:"none",opacity:"0.3"}),circleSvg({cx:"16",cy:"16",r:"12",stroke:o.primary,"stroke-width":"2",fill:"none"}),circleSvg({cx:"16",cy:"16",r:"5",fill:o.primary}),circleSvg({cx:"16",cy:"5",r:"2",fill:o.primaryHover}),circleSvg({cx:"24",cy:"20",r:"2",fill:o.primaryHover}),circleSvg({cx:"8",cy:"20",r:"2",fill:o.primaryHover}))}function Li(){return svgSvg({width:"28",height:"28",viewBox:"0 0 24 24",fill:"none",stroke:o.primary,"stroke-width":"1.5","stroke-linecap":"round","stroke-linejoin":"round"},pathSvg({d:"M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"}),pathSvg({d:"m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"}),pathSvg({d:"M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"}),pathSvg({d:"M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"}))}function Wi(){return svgSvg({width:"28",height:"28",viewBox:"0 0 24 24",fill:"none",stroke:o.primary,"stroke-width":"1.5","stroke-linecap":"round","stroke-linejoin":"round"},pathSvg({d:"M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"}),pathSvg({d:"m3.3 7 8.7 5 8.7-5"}),pathSvg({d:"M12 22V12"}))}function Mi(){return svgSvg({width:"28",height:"28",viewBox:"0 0 24 24",fill:"none",stroke:o.primary,"stroke-width":"1.5","stroke-linecap":"round","stroke-linejoin":"round"},pathSvg({d:"M13 2 3 14h9l-1 8 10-12h-9l1-8z"}))}function Fi(){return svgSvg({width:"28",height:"28",viewBox:"0 0 24 24",fill:"none",stroke:o.primary,"stroke-width":"1.5","stroke-linecap":"round","stroke-linejoin":"round"},pathSvg({d:"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"}),pathSvg({d:"M21 3v5h-5"}),pathSvg({d:"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"}),pathSvg({d:"M8 16H3v5"}))}function Hi(){return svgSvg({width:"28",height:"28",viewBox:"0 0 24 24",fill:"none",stroke:o.primary,"stroke-width":"1.5","stroke-linecap":"round","stroke-linejoin":"round"},pathSvg({d:"m16 18 6-6-6-6"}),pathSvg({d:"m8 6-6 6 6 6"}))}function ji(){return svgSvg({width:"28",height:"28",viewBox:"0 0 24 24",fill:"none",stroke:o.primary,"stroke-width":"1.5","stroke-linecap":"round","stroke-linejoin":"round"},pathSvg({d:"m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"}),pathSvg({d:"m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"}),pathSvg({d:"m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"}))}function Oi(){return svgSvg({width:"16",height:"16",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2","stroke-linecap":"round","stroke-linejoin":"round"},pathSvg({d:"M5 12h14"}),pathSvg({d:"m12 5 7 7-7 7"}))}function Ui(){return svgSvg({width:"20",height:"20",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2","stroke-linecap":"round","stroke-linejoin":"round"},pathSvg({d:"M20 6 9 17l-5-5"}))}function Gi(){return svgSvg({width:"16",height:"16",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2","stroke-linecap":"round","stroke-linejoin":"round"},rectSvg({x:"9",y:"9",width:"13",height:"13",rx:"2",ry:"2"}),pathSvg({d:"M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"}))}function Qi(){return svgSvg({width:"20",height:"20",viewBox:"0 0 24 24",fill:"currentColor"},pathSvg({d:"M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"}))}function qi(){return svgSvg({width:"24",height:"24",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2","stroke-linecap":"round","stroke-linejoin":"round"},lineSvg({x1:"3",y1:"6",x2:"21",y2:"6"}),lineSvg({x1:"3",y1:"12",x2:"21",y2:"12"}),lineSvg({x1:"3",y1:"18",x2:"21",y2:"18"}))}function Vi(){return svgSvg({width:"24",height:"24",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2","stroke-linecap":"round","stroke-linejoin":"round"},lineSvg({x1:"18",y1:"6",x2:"6",y2:"18"}),lineSvg({x1:"6",y1:"6",x2:"18",y2:"18"}))}let oe=!1;function _i(){oe=!oe,update()}function ut(){oe=!1,update()}const mt=[{label:"Getting Started",route:"getting-started"},{label:"Core API",route:"core-api"},{label:"Tag Builders",route:"tag-builders"},{label:"Styling",route:"styling"},{label:"Pitfalls",route:"pitfalls"},{label:"Examples",route:"examples"}];function gt(e,r){const i=()=>R()===r||R().startsWith(r+"-");return a({href:`#${r}`},n(display("flex").alignItems("center").padding("8px 14px").borderRadius("8px").fontSize("14px").fontWeight("500").transition("all 0.2s").color(o.textMuted).cursor("pointer"),{hover:backgroundColor(o.accent).color(o.bg)}),{style:()=>({color:i()?o.primary:void 0})},e,on("click",s=>{s.preventDefault(),A(r),ut()}))}function Yi(){return a({href:"/"},n(display("flex").alignItems("center").gap("10px").fontSize("18px").fontWeight("700").color(o.primary).transition("opacity 0.2s").cursor("pointer"),{hover:opacity("0.8")}),Di(28),span("Nuclo"),on("click",e=>{e.preventDefault(),A("home"),ut()}))}function ht(){return a({href:"https://github.com/dan2dev/nuclo",target:"_blank",rel:"noopener noreferrer",ariaLabel:"GitHub"},n(display("flex").alignItems("center").justifyContent("center").width("36px").height("36px").borderRadius("8px").transition("all 0.2s").color(o.textMuted).backgroundColor("transparent"),{hover:color(o.primary).backgroundColor("rgba(132, 204, 22, 0.1)")}),Qi())}function Ji(){return button(n(display("flex").alignItems("center").justifyContent("center").width("40px").height("40px").borderRadius("8px").backgroundColor("transparent").border("none").color(o.text).cursor("pointer").transition("all 0.2s"),{medium:display("none")}),when(()=>oe,Vi()).else(qi()),on("click",_i))}function Ki(){return when(()=>oe,div(n(position("fixed").top("64px").left("0").right("0").backgroundColor(o.bg).borderBottom(`1px solid ${o.border}`).padding("16px 24px").zIndex(99).display("flex").flexDirection("column").gap("8px")),{style:{backdropFilter:"blur(12px)",background:"rgba(10, 15, 26, 0.95)"}},...mt.map(e=>gt(e.label,e.route)),div(n(display("flex").alignItems("center").gap("8px").padding("8px 14px")),ht(),span(n(color(o.textMuted).fontSize("14px")),"GitHub"))))}function Xi(){const e=n(position("fixed").top("0").left("0").right("0").zIndex(100).borderBottom(`1px solid ${o.border}`)),r=n(display("flex").alignItems("center").justifyContent("space-between").maxWidth("1400px").margin("0 auto").padding("12px 24px"),{medium:padding("16px 48px")}),i=n(display("none").alignItems("center").gap("4px"),{medium:display("flex")}),s=n(display("flex").alignItems("center").gap("8px"));return div(header(e,{style:{backdropFilter:"blur(12px)",background:"rgba(10, 15, 26, 0.85)"}},div(r,Yi(),nav(i,...mt.map(l=>gt(l.label,l.route))),div(s,div(n(display("none"),{medium:display("flex")}),ht()),Ji()))),Ki())}function Zi(){return footer(t.footer,div(t.footerText,"Created by ",a({href:"https://github.com/dan2dev",target:"_blank",rel:"noopener noreferrer"},n(color(o.textMuted).transition("color 0.2s"),{hover:color(o.primary)}),"Danilo Celestino de Castro")," · MIT License · ",a({href:"https://github.com/dan2dev/nuclo",target:"_blank",rel:"noopener noreferrer"},n(color(o.textMuted).transition("color 0.2s"),{hover:color(o.primary)}),"GitHub")))}let ft={};function Xe(e,r){ft[e]=r,update()}function Ze(e){return ft[e]||!1}function ea(e){return e.replace(/(["'`])(?:(?!\1)[^\\]|\\.)*\1/g,`<span style="color: ${o.codeString}">$&</span>`).replace(/(\/\/.*$)/gm,`<span style="color: ${o.codeComment}">$1</span>`).replace(/\b(import|export|from|const|let|var|function|return|if|else|for|while|type|interface|async|await|new|class|extends|implements|public|private|protected|static|readonly|typeof|keyof|in|of|true|false|null|undefined|this)\b/g,`<span style="color: ${o.codeKeyword}">$1</span>`).replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g,`<span style="color: ${o.codeFunction}">$1</span>(`).replace(/\b(\d+\.?\d*)\b/g,`<span style="color: ${o.codeNumber}">$1</span>`).replace(/:\s*([A-Z][a-zA-Z0-9_]*)/g,`: <span style="color: ${o.codeKeyword}">$1</span>`)}function c(e,r="typescript",i=!0){const s=`code-${Math.random().toString(36).slice(2,9)}`,l=ea(e.trim());return div(n(position("relative").width("100%").maxWidth("100%").boxSizing("border-box")),pre(t.codeBlock,code(n(display("block").width("100%").maxWidth("100%").whiteSpace("pre").overflowX("auto")),{innerHTML:l})),i?button(n(position("absolute").top("12px").right("12px").padding("6px 10px").borderRadius("6px").color(o.textMuted).fontSize("12px").cursor("pointer").display("flex").alignItems("center").gap("4px").transition("all 0.2s").backgroundColor(o.bgLight).border(`1px solid ${o.border}`),{hover:border(`1px solid ${o.borderLight}`).color(o.text)}),()=>Ze(s)?Ui():Gi(),()=>Ze(s)?"Copied!":"Copy",on("click",async()=>{await navigator.clipboard.writeText(e.trim()),Xe(s,!0),setTimeout(()=>Xe(s,!1),2e3)})):null)}function P(e){return code(t.codeInline,e)}const N=[{id:"counter",title:"Counter",description:"The classic counter example showing basic state management and event handling.",code:`import 'nuclo';
+
+let counter = 0;
+
+function increment() {
+  counter++;
+  update();
+}
+
+function decrement() {
+  counter--;
+  update();
+}
+
+function reset() {
+  counter = 0;
+  update();
+}
+
+const app = div(
+  { className: 'counter-app' },
+
+  h1('Counter: ', span(() => counter)),
+
+  div(
+    { className: 'button-group' },
+    button('-', on('click', decrement)),
+    button('Reset', on('click', reset)),
+    button('+', on('click', increment))
+  ),
+
+  // Show even/odd
+  p(() => \`The counter is \${counter % 2 === 0 ? 'even' : 'odd'}\`)
+);
+
+render(app, document.body);`},{id:"todo",title:"Todo List",description:"A complete todo application with add, toggle, delete, and filter functionality.",code:`import 'nuclo';
+
+type Todo = { id: number; text: string; done: boolean };
+type Filter = 'all' | 'active' | 'completed';
+
+let todos: Todo[] = [];
+let nextId = 1;
+let inputValue = '';
+let filter: Filter = 'all';
+
+function addTodo() {
+  if (!inputValue.trim()) return;
+  todos.push({ id: nextId++, text: inputValue, done: false });
+  inputValue = '';
+  update();
+}
+
+function toggleTodo(todo: Todo) {
+  todo.done = !todo.done;
+  update();
+}
+
+function deleteTodo(id: number) {
+  todos = todos.filter(t => t.id !== id);
+  update();
+}
+
+function clearCompleted() {
+  todos = todos.filter(t => !t.done);
+  update();
+}
+
+function filteredTodos() {
+  switch (filter) {
+    case 'active': return todos.filter(t => !t.done);
+    case 'completed': return todos.filter(t => t.done);
+    default: return todos;
+  }
+}
+
+function activeCount() {
+  return todos.filter(t => !t.done).length;
+}
+
+const app = div(
+  { className: 'todo-app' },
+
+  h1('todos'),
+
+  // Input section
+  div(
+    { className: 'input-section' },
+    input(
+      {
+        type: 'text',
+        placeholder: 'What needs to be done?',
+        value: () => inputValue
+      },
+      on('input', e => {
+        inputValue = e.target.value;
+        update();
+      }),
+      on('keydown', e => {
+        if (e.key === 'Enter') addTodo();
+      })
+    ),
+    button('Add', on('click', addTodo))
+  ),
+
+  // Todo list
+  when(() => todos.length > 0,
+    div(
+      // List
+      list(() => filteredTodos(), (todo) =>
+        div(
+          { className: () => \`todo-item \${todo.done ? 'done' : ''}\` },
+
+          input(
+            {
+              type: 'checkbox',
+              checked: () => todo.done
+            },
+            on('change', () => toggleTodo(todo))
+          ),
+
+          span(
+            { className: 'todo-text' },
+            () => todo.text
+          ),
+
+          button(
+            { className: 'delete-btn' },
+            '×',
+            on('click', () => deleteTodo(todo.id))
+          )
+        )
+      ),
+
+      // Footer
+      div(
+        { className: 'todo-footer' },
+
+        span(() => \`\${activeCount()} item\${activeCount() !== 1 ? 's' : ''} left\`),
+
+        div(
+          { className: 'filters' },
+          button(
+            { className: () => filter === 'all' ? 'active' : '' },
+            'All',
+            on('click', () => { filter = 'all'; update(); })
+          ),
+          button(
+            { className: () => filter === 'active' ? 'active' : '' },
+            'Active',
+            on('click', () => { filter = 'active'; update(); })
+          ),
+          button(
+            { className: () => filter === 'completed' ? 'active' : '' },
+            'Completed',
+            on('click', () => { filter = 'completed'; update(); })
+          )
+        ),
+
+        when(() => todos.some(t => t.done),
+          button('Clear completed', on('click', clearCompleted))
+        )
+      )
+    )
+  ).else(
+    p({ className: 'empty-state' }, 'No todos yet! Add one above.')
+  )
+);
+
+render(app, document.body);`},{id:"subtasks",title:"Nested Subtasks",description:"A todo list with recursive subtasks, demonstrating nested list() and when() composition.",code:`import 'nuclo';
+
+type Task = {
+  id: number;
+  text: string;
+  done: boolean;
+  subtasks: Task[];
+  expanded: boolean;
+};
+
+let tasks: Task[] = [];
+let nextId = 1;
+
+function createTask(text: string): Task {
+  return {
+    id: nextId++,
+    text,
+    done: false,
+    subtasks: [],
+    expanded: true
+  };
+}
+
+function addTask(text: string, parent?: Task) {
+  const task = createTask(text);
+  if (parent) {
+    parent.subtasks.push(task);
+  } else {
+    tasks.push(task);
+  }
+  update();
+}
+
+function toggleTask(task: Task) {
+  task.done = !task.done;
+  // Optionally cascade to subtasks
+  function setDone(t: Task, done: boolean) {
+    t.done = done;
+    t.subtasks.forEach(st => setDone(st, done));
+  }
+  setDone(task, task.done);
+  update();
+}
+
+function toggleExpand(task: Task) {
+  task.expanded = !task.expanded;
+  update();
+}
+
+function deleteTask(task: Task, parent?: Task) {
+  if (parent) {
+    parent.subtasks = parent.subtasks.filter(t => t.id !== task.id);
+  } else {
+    tasks = tasks.filter(t => t.id !== task.id);
+  }
+  update();
+}
+
+// Recursive task renderer
+function TaskItem(task: Task, parent?: Task, depth = 0): Element {
+  let newSubtaskText = '';
+
+  return div(
+    { className: 'task-item' },
+    { style: { marginLeft: \`\${depth * 20}px\` } },
+
+    // Task header
+    div(
+      { className: 'task-header' },
+
+      // Expand/collapse button (if has subtasks)
+      when(() => task.subtasks.length > 0,
+        button(
+          { className: 'expand-btn' },
+          () => task.expanded ? '▼' : '▶',
+          on('click', () => toggleExpand(task))
+        )
+      ).else(
+        span({ style: { width: '24px', display: 'inline-block' } })
+      ),
+
+      // Checkbox
+      input(
+        {
+          type: 'checkbox',
+          checked: () => task.done
+        },
+        on('change', () => toggleTask(task))
+      ),
+
+      // Task text
+      span(
+        {
+          className: () => task.done ? 'done' : '',
+          style: {
+            textDecoration: () => task.done ? 'line-through' : 'none',
+            opacity: () => task.done ? '0.6' : '1'
+          }
+        },
+        () => task.text
+      ),
+
+      // Subtask count badge
+      when(() => task.subtasks.length > 0,
+        span(
+          { className: 'subtask-count' },
+          () => \`(\${task.subtasks.filter(t => t.done).length}/\${task.subtasks.length})\`
+        )
+      ),
+
+      // Delete button
+      button(
+        { className: 'delete-btn' },
+        '×',
+        on('click', () => deleteTask(task, parent))
+      )
+    ),
+
+    // Subtasks (when expanded)
+    when(() => task.expanded && task.subtasks.length > 0,
+      div(
+        { className: 'subtasks' },
+        list(() => task.subtasks, subtask =>
+          TaskItem(subtask, task, depth + 1)
+        )
+      )
+    ),
+
+    // Add subtask form (when expanded)
+    when(() => task.expanded,
+      div(
+        { className: 'add-subtask' },
+        { style: { marginLeft: \`\${(depth + 1) * 20}px\` } },
+        input(
+          {
+            type: 'text',
+            placeholder: 'Add subtask...',
+            value: () => newSubtaskText
+          },
+          on('input', e => {
+            newSubtaskText = e.target.value;
+            update();
+          }),
+          on('keydown', e => {
+            if (e.key === 'Enter' && newSubtaskText.trim()) {
+              addTask(newSubtaskText.trim(), task);
+              newSubtaskText = '';
+              update();
+            }
+          })
+        )
+      )
+    )
+  );
+}
+
+// Main app
+let mainInputText = '';
+
+const app = div(
+  { className: 'task-app' },
+
+  h1('Tasks with Subtasks'),
+
+  // Add main task
+  div(
+    { className: 'add-task' },
+    input(
+      {
+        type: 'text',
+        placeholder: 'Add a task...',
+        value: () => mainInputText
+      },
+      on('input', e => {
+        mainInputText = e.target.value;
+        update();
+      }),
+      on('keydown', e => {
+        if (e.key === 'Enter' && mainInputText.trim()) {
+          addTask(mainInputText.trim());
+          mainInputText = '';
+          update();
+        }
+      })
+    ),
+    button('Add', on('click', () => {
+      if (mainInputText.trim()) {
+        addTask(mainInputText.trim());
+        mainInputText = '';
+        update();
+      }
+    }))
+  ),
+
+  // Task list
+  when(() => tasks.length > 0,
+    div(
+      { className: 'task-list' },
+      list(() => tasks, task => TaskItem(task))
+    )
+  ).else(
+    p({ className: 'empty' }, 'No tasks yet. Add one above!')
+  )
+);
+
+render(app, document.body);`},{id:"search",title:"Search Filter",description:"Real-time search filtering with debouncing.",code:`import 'nuclo';
+
+type User = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+};
+
+const users: User[] = [
+  { id: 1, name: 'Alice Johnson', email: 'alice@example.com', role: 'Admin' },
+  { id: 2, name: 'Bob Smith', email: 'bob@example.com', role: 'User' },
+  { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', role: 'User' },
+  { id: 4, name: 'Diana Prince', email: 'diana@example.com', role: 'Admin' },
+  { id: 5, name: 'Eve Anderson', email: 'eve@example.com', role: 'User' }
+];
+
+let searchQuery = '';
+let selectedRole = 'all';
+
+function filteredUsers() {
+  const query = searchQuery.toLowerCase();
+  return users.filter(user => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(query) ||
+      user.email.toLowerCase().includes(query);
+    const matchesRole =
+      selectedRole === 'all' || user.role === selectedRole;
+    return matchesSearch && matchesRole;
+  });
+}
+
+const app = div(
+  { className: 'user-directory' },
+
+  h1('User Directory'),
+
+  // Search and filters
+  div(
+    { className: 'search-section' },
+
+    input(
+      {
+        type: 'search',
+        placeholder: 'Search by name or email...',
+        value: () => searchQuery
+      },
+      on('input', e => {
+        searchQuery = e.target.value;
+        update();
+      })
+    ),
+
+    select(
+      { value: () => selectedRole },
+      on('change', e => {
+        selectedRole = e.target.value;
+        update();
+      }),
+      option({ value: 'all' }, 'All Roles'),
+      option({ value: 'Admin' }, 'Admins'),
+      option({ value: 'User' }, 'Users')
+    )
+  ),
+
+  // Results count
+  p(() => {
+    const count = filteredUsers().length;
+    return \`Showing \${count} user\${count !== 1 ? 's' : ''}\`;
+  }),
+
+  // User list
+  when(() => filteredUsers().length > 0,
+    div(
+      { className: 'user-list' },
+      list(() => filteredUsers(), user =>
+        div(
+          { className: 'user-card' },
+          h3(user.name),
+          p(user.email),
+          span(
+            { className: \`role-badge \${user.role.toLowerCase()}\` },
+            user.role
+          )
+        )
+      )
+    )
+  ).else(
+    div(
+      { className: 'empty-state' },
+      p(() => searchQuery
+        ? \`No users found matching "\${searchQuery}"\`
+        : 'No users found'
+      )
+    )
+  )
+);
+
+render(app, document.body);`},{id:"async",title:"Async Loading",description:"Handling asynchronous operations with loading states and error handling.",code:`import 'nuclo';
+
+type Product = { id: number; title: string; category: string; price: number };
+type State = {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  products: Product[];
+  error?: string;
+};
+
+let state: State = { status: 'idle', products: [] };
+let searchQuery = 'phone';
+
+async function fetchProducts() {
+  if (!searchQuery.trim()) return;
+
+  state.status = 'loading';
+  state.error = undefined;
+  update();
+
+  try {
+    const response = await fetch(
+      \`https://dummyjson.com/products/search?q=\${searchQuery}\`
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch products');
+    }
+
+    const data = await response.json();
+    state.products = data.products;
+    state.status = 'success';
+  } catch (err) {
+    state.status = 'error';
+    state.error = err.message;
+  }
+
+  update();
+}
+
+const app = div(
+  { className: 'product-search' },
+
+  h1('Product Search'),
+
+  // Search input
+  div(
+    { className: 'search-bar' },
+    input(
+      {
+        type: 'search',
+        placeholder: 'Search products...',
+        value: () => searchQuery,
+        disabled: () => state.status === 'loading'
+      },
+      on('input', e => {
+        searchQuery = e.target.value;
+        update();
+      }),
+      on('keydown', e => {
+        if (e.key === 'Enter') fetchProducts();
+      })
+    ),
+    button(
+      {
+        disabled: () => state.status === 'loading' || !searchQuery.trim()
+      },
+      () => state.status === 'loading' ? 'Searching...' : 'Search',
+      on('click', fetchProducts)
+    )
+  ),
+
+  // Status display
+  when(() => state.status === 'loading',
+    div({ className: 'loading' }, 'Loading products...')
+  ).when(() => state.status === 'error',
+    div(
+      { className: 'error' },
+      'Error: ',
+      () => state.error,
+      button('Retry', on('click', fetchProducts))
+    )
+  ).when(() => state.status === 'success' && state.products.length > 0,
+    div(
+      p(() => \`Found \${state.products.length} products\`),
+      div(
+        { className: 'product-grid' },
+        list(() => state.products, product =>
+          div(
+            { className: 'product-card' },
+            h3(product.title),
+            p({ className: 'category' }, product.category),
+            p({ className: 'price' }, () => \`$\${product.price.toFixed(2)}\`)
+          )
+        )
+      )
+    )
+  ).when(() => state.status === 'success' && state.products.length === 0,
+    div({ className: 'empty' }, () => \`No products found for "\${searchQuery}"\`)
+  ).else(
+    div({ className: 'empty' }, 'Enter a search term and click Search')
+  )
+);
+
+render(app, document.body);`},{id:"forms",title:"Form Handling",description:"Complete form with validation and submission.",code:`import 'nuclo';
+
+type FormData = {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
+
+type Errors = Partial<Record<keyof FormData, string>>;
+
+let formData: FormData = {
+  username: '',
+  email: '',
+  password: '',
+  confirmPassword: ''
+};
+
+let errors: Errors = {};
+let isSubmitting = false;
+let submitStatus: 'idle' | 'success' | 'error' = 'idle';
+
+function validateForm(): boolean {
+  errors = {};
+
+  if (formData.username.length < 3) {
+    errors.username = 'Username must be at least 3 characters';
+  }
+
+  if (!formData.email.includes('@')) {
+    errors.email = 'Please enter a valid email';
+  }
+
+  if (formData.password.length < 6) {
+    errors.password = 'Password must be at least 6 characters';
+  }
+
+  if (formData.password !== formData.confirmPassword) {
+    errors.confirmPassword = 'Passwords do not match';
+  }
+
+  return Object.keys(errors).length === 0;
+}
+
+async function handleSubmit(e: Event) {
+  e.preventDefault();
+
+  if (!validateForm()) {
+    update();
+    return;
+  }
+
+  isSubmitting = true;
+  submitStatus = 'idle';
+  update();
+
+  try {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Success
+    submitStatus = 'success';
+    formData = { username: '', email: '', password: '', confirmPassword: '' };
+  } catch (err) {
+    submitStatus = 'error';
+  }
+
+  isSubmitting = false;
+  update();
+}
+
+const app = div(
+  { className: 'form-container' },
+
+  h1('Sign Up'),
+
+  when(() => submitStatus === 'success',
+    div({ className: 'success-message' }, 'Account created successfully!')
+  ),
+
+  form(
+    on('submit', handleSubmit),
+
+    // Username field
+    div(
+      { className: 'form-field' },
+      label('Username'),
+      input(
+        {
+          type: 'text',
+          value: () => formData.username,
+          disabled: () => isSubmitting
+        },
+        on('input', e => {
+          formData.username = e.target.value;
+          delete errors.username;
+          update();
+        })
+      ),
+      when(() => !!errors.username,
+        span({ className: 'error' }, () => errors.username)
+      )
+    ),
+
+    // Email field
+    div(
+      { className: 'form-field' },
+      label('Email'),
+      input(
+        {
+          type: 'email',
+          value: () => formData.email,
+          disabled: () => isSubmitting
+        },
+        on('input', e => {
+          formData.email = e.target.value;
+          delete errors.email;
+          update();
+        })
+      ),
+      when(() => !!errors.email,
+        span({ className: 'error' }, () => errors.email)
+      )
+    ),
+
+    // Password field
+    div(
+      { className: 'form-field' },
+      label('Password'),
+      input(
+        {
+          type: 'password',
+          value: () => formData.password,
+          disabled: () => isSubmitting
+        },
+        on('input', e => {
+          formData.password = e.target.value;
+          delete errors.password;
+          update();
+        })
+      ),
+      when(() => !!errors.password,
+        span({ className: 'error' }, () => errors.password)
+      )
+    ),
+
+    // Confirm password field
+    div(
+      { className: 'form-field' },
+      label('Confirm Password'),
+      input(
+        {
+          type: 'password',
+          value: () => formData.confirmPassword,
+          disabled: () => isSubmitting
+        },
+        on('input', e => {
+          formData.confirmPassword = e.target.value;
+          delete errors.confirmPassword;
+          update();
+        })
+      ),
+      when(() => !!errors.confirmPassword,
+        span({ className: 'error' }, () => errors.confirmPassword)
+      )
+    ),
+
+    // Submit button
+    button(
+      {
+        type: 'submit',
+        disabled: () => isSubmitting
+      },
+      () => isSubmitting ? 'Creating account...' : 'Sign Up'
+    )
+  )
+);
+
+render(app, document.body);`},{id:"nested",title:"Nested Components",description:"Creating reusable component-like functions.",code:`import 'nuclo';
+
+type User = {
+  id: number;
+  name: string;
+  avatar: string;
+  bio: string;
+  followers: number;
+};
+
+// Component functions
+function UserCard(user: User, onFollow: (id: number) => void) {
+  return div(
+    { className: 'user-card' },
+    img({ src: user.avatar, alt: user.name, className: 'avatar' }),
+    h3(user.name),
+    p({ className: 'bio' }, user.bio),
+    p({ className: 'followers' }, () => \`\${user.followers} followers\`),
+    button('Follow', on('click', () => onFollow(user.id)))
+  );
+}
+
+function UserGrid(users: User[], onFollow: (id: number) => void) {
+  return div(
+    { className: 'user-grid' },
+    list(() => users, user => UserCard(user, onFollow))
+  );
+}
+
+// App state
+let users: User[] = [
+  {
+    id: 1,
+    name: 'Alice',
+    avatar: '/avatars/alice.jpg',
+    bio: 'Software developer',
+    followers: 142
+  },
+  {
+    id: 2,
+    name: 'Bob',
+    avatar: '/avatars/bob.jpg',
+    bio: 'Designer',
+    followers: 89
+  }
+];
+
+function handleFollow(id: number) {
+  const user = users.find(u => u.id === id);
+  if (user) {
+    user.followers++;
+    update();
+  }
+}
+
+const app = div(
+  { className: 'app' },
+  h1('User Directory'),
+  UserGrid(users, handleFollow)
+);
+
+render(app, document.body);`},{id:"animations",title:"Animations",description:"Smooth transitions with CSS and reactive styles.",code:`import 'nuclo';
+
+// Toggle a CSS keyframes animation
+let isAnimating = false;
+
+// Ensure keyframes exist
+const style = document.createElement('style');
+style.textContent = '@keyframes pulse { from { transform: scale(1); opacity: 0.85; } to { transform: scale(1.08); opacity: 1; } }';
+document.head.appendChild(style);
+
+const app = div(
+  button(
+    () => isAnimating ? 'Stop Animation' : 'Start Animation',
+    on('click', () => { isAnimating = !isAnimating; update(); })
+  ),
+
+  div(
+    {
+      className: 'animated-box',
+      style: {
+        width: '200px',
+        height: '200px',
+        borderRadius: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        background: 'linear-gradient(135deg, #84cc16 0%, #65a30d 100%)',
+        animation: () => isAnimating ? 'pulse 600ms ease-in-out infinite alternate' : 'none',
+        willChange: () => isAnimating ? 'transform, opacity' : 'auto'
+      }
+    },
+    'Animated Content'
+  )
+);
+
+render(app, document.body);`},{id:"routing",title:"Simple Routing",description:"Client-side routing without a framework.",code:`import 'nuclo';
+
+type Route = 'home' | 'about' | 'contact' | 'notfound';
+
+let currentRoute: Route = 'home';
+let params: Record<string, string> = {};
+
+function navigate(route: Route) {
+  currentRoute = route;
+  window.history.pushState({}, '', \`/\${route}\`);
+  update();
+}
+
+// Simple router
+window.addEventListener('popstate', () => {
+  const path = window.location.pathname.slice(1) || 'home';
+  currentRoute = path as Route;
+  update();
+});
+
+// Page components
+function HomePage() {
+  return div(
+    h1('Home Page'),
+    p('Welcome to our website!'),
+    button('Go to About', on('click', () => navigate('about')))
+  );
+}
+
+function AboutPage() {
+  return div(
+    h1('About Page'),
+    p('Learn more about us.'),
+    button('Go to Contact', on('click', () => navigate('contact')))
+  );
+}
+
+function ContactPage() {
+  return div(
+    h1('Contact Page'),
+    p('Get in touch!'),
+    button('Go Home', on('click', () => navigate('home')))
+  );
+}
+
+function NotFoundPage() {
+  return div(
+    h1('404 - Not Found'),
+    p('Page not found'),
+    button('Go Home', on('click', () => navigate('home')))
+  );
+}
+
+const app = div(
+  { className: 'app' },
+
+  nav(
+    button('Home', on('click', () => navigate('home'))),
+    button('About', on('click', () => navigate('about'))),
+    button('Contact', on('click', () => navigate('contact')))
+  ),
+
+  main(
+    when(() => currentRoute === 'home', HomePage())
+    .when(() => currentRoute === 'about', AboutPage())
+    .when(() => currentRoute === 'contact', ContactPage())
+    .else(NotFoundPage())
+  )
+);
+
+render(app, document.body);`},{id:"styled-card",title:"Styled Card",description:"Using nuclo's CSS-in-JS styling system to create a polished product card component with hover effects.",code:`import 'nuclo';
+
+// Setup style queries
+const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)'
+});
+
+// Define reusable styles
+const styles = {
+  page: cn(
+    bg('#f5f5f5')
+      .minHeight('100vh')
+      .padding('1rem'),
+    { medium: padding('2rem') }
+  ),
+
+  header: cn(
+    textAlign('center')
+      .marginBottom('2rem')
+  ),
+
+  title: cn(
+    margin('0 0 0.5rem 0')
+      .fontSize('2rem')
+      .color('#1a1a2e'),
+    { large: fontSize('2.5rem') }
+  ),
+
+  subtitle: cn(
+    margin('0')
+      .color('#666')
+  ),
+
+  grid: cn(
+    grid()
+      .gridTemplateColumns('1fr')
+      .gap('1.5rem')
+      .maxWidth('1200px')
+      .margin('0 auto'),
+    {
+      medium: gridTemplateColumns('repeat(2, 1fr)'),
+      large: gridTemplateColumns('repeat(3, 1fr)').gap('2rem')
+    }
+  ),
+
+  card: cn(
+    bg('white')
+      .borderRadius('12px')
+      .overflow('hidden')
+      .transition('all 0.3s ease')
+      .cursor('pointer')
+  ),
+
+  cardImage: cn(
+    position('relative')
+      .overflow('hidden')
+      .height('200px')
+  ),
+
+  image: cn(
+    width('100%')
+      .height('100%')
+      .objectFit('cover')
+      .transition('transform 0.3s ease')
+  ),
+
+  overlay: cn(
+    position('absolute')
+      .top('0')
+      .left('0')
+      .right('0')
+      .bottom('0')
+      .bg('rgba(0,0,0,0.5)')
+      .flex()
+      .alignItems('center')
+      .justifyContent('center')
+  ),
+
+  overlayText: cn(
+    color('white')
+      .fontSize('1.25rem')
+      .fontWeight('bold')
+  ),
+
+  content: cn(
+    padding('1.5rem')
+  ),
+
+  cardTitle: cn(
+    margin('0 0 0.5rem 0')
+      .fontSize('1.25rem')
+      .fontWeight('600')
+      .color('#1a1a2e')
+  ),
+
+  cardDesc: cn(
+    margin('0 0 1rem 0')
+      .fontSize('0.9rem')
+      .color('#666')
+      .lineHeight('1.5')
+  ),
+
+  footer: cn(
+    flex()
+      .justifyContent('space-between')
+      .alignItems('center')
+  ),
+
+  price: cn(
+    fontSize('1.5rem')
+      .fontWeight('bold')
+      .color('#3b82f6')
+  ),
+
+  button: cn(
+    color('white')
+      .padding('0.75rem 1.5rem')
+      .borderRadius('8px')
+      .border('none')
+      .fontSize('0.9rem')
+      .fontWeight('600')
+      .transition('background-color 0.2s')
+  )
+};
+
+type Product = {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  inStock: boolean;
+};
+
+let products: Product[] = [
+  {
+    id: 1,
+    name: 'Wireless Headphones',
+    description: 'Premium noise-canceling headphones with 30-hour battery.',
+    price: 299.99,
+    image: '/images/headphones.jpg',
+    inStock: true
+  },
+  {
+    id: 2,
+    name: 'Smart Watch',
+    description: 'Track your fitness, receive notifications, and more.',
+    price: 399.99,
+    image: '/images/watch.jpg',
+    inStock: true
+  },
+  {
+    id: 3,
+    name: 'Portable Speaker',
+    description: 'Waterproof speaker with incredible bass and clarity.',
+    price: 149.99,
+    image: '/images/speaker.jpg',
+    inStock: false
+  }
+];
+
+function ProductCard(product: Product) {
+  let isHovered = false;
+
+  return div(
+    styles.card,
+    {
+      // Reactive style: a function that returns the style object
+      style: () => ({
+        boxShadow: isHovered
+          ? '0 10px 40px rgba(0,0,0,0.15)'
+          : '0 2px 8px rgba(0,0,0,0.1)',
+        transform: isHovered ? 'translateY(-4px)' : 'translateY(0)'
+      })
+    },
+    on('mouseenter', () => { isHovered = true; update(); }),
+    on('mouseleave', () => { isHovered = false; update(); }),
+
+    // Image container
+    div(styles.cardImage,
+      img({
+        src: product.image,
+        alt: product.name,
+        style: () => ({
+          transform: isHovered ? 'scale(1.05)' : 'scale(1)'
+        })
+      }, styles.image),
+
+      // Out of stock overlay
+      when(() => !product.inStock,
+        div(styles.overlay,
+          span(styles.overlayText, 'Out of Stock')
+        )
+      )
+    ),
+
+    // Content
+    div(styles.content,
+      h3(styles.cardTitle, product.name),
+      p(styles.cardDesc, product.description),
+
+      div(styles.footer,
+        span(styles.price, () => \`$\${product.price.toFixed(2)}\`),
+
+        button(
+          styles.button,
+          {
+            style: () => ({
+              backgroundColor: product.inStock ? '#3b82f6' : '#ccc',
+              cursor: product.inStock ? 'pointer' : 'not-allowed'
+            })
+          },
+          on('click', () => {
+            if (product.inStock) {
+              console.log(\`Added \${product.name} to cart\`);
+            }
+          }),
+          product.inStock ? 'Add to Cart' : 'Unavailable'
+        )
+      )
+    )
+  );
+}
+
+const app = div(
+  styles.page,
+
+  div(styles.header,
+    h1(styles.title, 'Featured Products'),
+    p(styles.subtitle, 'Discover our latest collection')
+  ),
+
+  div(styles.grid,
+    list(() => products, product => ProductCard(product))
+  )
+);
+
+render(app, document.body);`}],C={installNpm:{lang:"bash",code:"npm install nuclo"},denoImport:{lang:"typescript",code:"import 'npm:nuclo';"},denoJson:{lang:"json",code:`{
+  "imports": {
+    "nuclo": "npm:nuclo"
+  }
+}`},denoUsage:{lang:"typescript",code:"import 'nuclo';"},tsconfigTypes:{lang:"json",code:`{
+  "compilerOptions": {
+    "types": ["nuclo/types"]
+  }
+}`},typesReference:{lang:"typescript",code:'/// <reference types="nuclo/types" />'},firstApp:{lang:"typescript",code:`import 'nuclo';
+
+// State - just plain JavaScript variables
+let count = 0;
+
+// Create the UI
+const app = div(
+  h1(() => \`Count: \${count}\`),
+  button('Increment', on('click', () => {
+    count++;
+    update();
+  })),
+  button('Decrement', on('click', () => {
+    count--;
+    update();
+  })),
+  button('Reset', on('click', () => {
+    count = 0;
+    update();
+  }))
+);
+
+// Render to the DOM
+render(app, document.body);`},batchUpdates:{lang:"typescript",code:`// Good: Multiple changes, single update
+function handleSubmit() {
+  user.name = 'Alice';
+  user.email = 'alice@example.com';
+  user.age = 30;
+  todos.push({ id: 1, text: 'New todo', done: false });
+  update(); // One update for all changes
+}
+
+// Works but inefficient: Update after each change
+function handleSubmit() {
+  user.name = 'Alice';
+  update();
+  user.email = 'alice@example.com';
+  update();
+  user.age = 30;
+  update();
+  // 3 updates instead of 1!
+}`},reactiveText:{lang:"typescript",code:`let name = 'World';
+
+div(
+  'Hello, ',
+  () => name,  // Reactive
+  '!'
+);
+
+// After name changes and update() is called,
+// the div will show "Hello, Alice!"`},reactiveAttributes:{lang:"typescript",code:`let isActive = false;
+
+div({
+  className: () => isActive ? 'active' : 'inactive',
+  'aria-pressed': () => isActive,
+  disabled: () => !isActive
+});`},reactiveStyles:{lang:"typescript",code:`let opacity = 1;
+
+div({
+  style: {
+    opacity: () => opacity,
+    display: () => opacity > 0 ? 'block' : 'none'
+  }
+});`},complexExpressions:{lang:"typescript",code:"let items = [1, 2, 3];\n\ndiv(\n  () => `You have ${items.length} item${items.length !== 1 ? 's' : ''}`\n);"},eventBasic:{lang:"typescript",code:`button('Click me',
+  on('click', () => {
+    console.log('Clicked!');
+  })
+);`},eventMultiple:{lang:"typescript",code:`input(
+  on('input', (e) => {
+    inputValue = e.target.value;
+    update();
+  }),
+  on('focus', () => {
+    isFocused = true;
+    update();
+  }),
+  on('blur', () => {
+    isFocused = false;
+    update();
+  })
+);`},eventOptions:{lang:"typescript",code:`div(
+  on('scroll', handleScroll, { passive: true }),
+  on('click', handleClick, { capture: true, once: true })
+);`},keyboardEvents:{lang:"typescript",code:`input(
+  on('keydown', (e) => {
+    if (e.key === 'Enter') {
+      handleSubmit();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  })
+);`},stylingSetup:{lang:"typescript",code:`// Create once (typically in styles.ts)
+const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)'
+});
+
+// Chain style helpers and wrap with cn()
+const buttonStyle = cn(
+  bg('#3b82f6')
+    .color('white')
+    .padding('0.75rem 1.5rem')
+    .borderRadius('8px')
+    .border('none')
+    .cursor('pointer')
+);
+
+// Use in your component
+button(buttonStyle, 'Click me');`},responsiveStyles:{lang:"typescript",code:`const responsiveCard = cn(
+  padding('1rem').bg('white'),
+  {
+    medium: padding('1.5rem'),
+    large: padding('2rem').maxWidth('800px')
+  }
+);`},dynamicStyles:{lang:"typescript",code:`// For dynamic styles, use a function that returns the style object
+let isActive = false;
+
+const baseStyle = cn(bg('white').transition('all 0.3s'));
+
+div(
+  baseStyle,
+  {
+    // Reactive style: function returns the style object
+    style: () => ({
+      backgroundColor: isActive ? 'green' : 'gray',
+      transform: isActive ? 'scale(1.05)' : 'scale(1)'
+    })
+  },
+  on('click', () => { isActive = !isActive; update(); }),
+  'Toggle me'
+);`},bestPracticeBatch:{lang:"typescript",code:`// Good
+function handleMultipleChanges() {
+  state.field1 = value1;
+  state.field2 = value2;
+  state.field3 = value3;
+  update();
+}
+
+// Avoid
+function handleMultipleChanges() {
+  state.field1 = value1;
+  update();
+  state.field2 = value2;
+  update();
+  state.field3 = value3;
+  update();
+}`},bestPracticeComputed:{lang:"typescript",code:`// Extract complex logic into functions
+function activeCount() {
+  return todos.filter(t => !t.done).length;
+}
+
+div(
+  () => \`\${activeCount()} tasks remaining\`
+);`},componentFunctions:{lang:"typescript",code:`function UserCard(user) {
+  return div(
+    { className: 'user-card' },
+    img({ src: user.avatar, alt: user.name }),
+    h3(user.name),
+    p(user.bio)
+  );
+}
+
+// Use it
+div(
+  UserCard(currentUser)
+);`},mutableState:{lang:"typescript",code:`// Just use plain objects and arrays
+let user = {
+  name: 'Alice',
+  email: 'alice@example.com',
+  preferences: {
+    theme: 'dark',
+    notifications: true
+  }
+};
+
+let todos = [
+  { id: 1, text: 'Learn nuclo', done: true },
+  { id: 2, text: 'Build awesome app', done: false }
+];`},asyncFlow:{lang:"typescript",code:`let status = 'idle'; // 'idle' | 'loading' | 'success' | 'error'
+let data = null;
+let error = null;
+
+async function fetchData() {
+  status = 'loading';
+  update();
+
+  try {
+    const response = await fetch('/api/data');
+    data = await response.json();
+    status = 'success';
+  } catch (err) {
+    error = err.message;
+    status = 'error';
+  }
+
+  update();
+}`}},b={overviewQuickExample:{lang:"typescript",code:`import 'nuclo';
+
+// Create style queries helper (usually done once)
+const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)'
+});
+
+// Define styles by chaining methods
+const buttonStyle = cn(
+  bg('#3b82f6')
+    .color('white')
+    .padding('0.75rem 1.5rem')
+    .borderRadius('8px')
+    .border('none')
+    .cursor('pointer')
+    .fontWeight('600')
+    .transition('all 0.2s ease')
+);
+
+// Use in your component
+button(buttonStyle, 'Click me');`},styleBuilderUsage:{lang:"typescript",code:`// Each helper returns a StyleBuilder
+const builder = bg('#FF0000');
+
+// Chain more properties
+const styles = bg('#FF0000')
+  .padding('1rem')
+  .fontSize('16px')
+  .borderRadius('4px');
+
+// Get the class name directly
+const className = styles.getClassName();  // Returns: "n3a7f2b1"
+
+// Or use with cn() for responsive support
+const responsive = cn(styles);`},styleBuilderMethods:{lang:"typescript",code:`// Get accumulated styles as object
+builder.getStyles()  // { 'background-color': '#FF0000', ... }
+
+// Generate CSS class name
+builder.getClassName()  // "n3a7f2b1"
+builder.getClassName('btn')  // "btn-3a7f2b1" (with prefix)
+
+// Add custom CSS property
+builder.add('custom-property', 'value')
+
+// Convert to string (same as getClassName)
+builder.toString()  // "n3a7f2b1"`},styleBuilderClass:{lang:"typescript",code:`// This creates a <style> tag in <head> with:
+// .n3a7f2b1 { background-color: #3b82f6; padding: 1rem; }
+
+const style = cn(bg('#3b82f6').padding('1rem'));
+div(style, 'Content');`},styleHelpersBasic:{lang:"typescript",code:`// Start with any helper, chain the rest
+const cardStyle = cn(
+  bg('white')
+    .padding('1.5rem')
+    .borderRadius('12px')
+    .boxShadow('0 4px 6px rgba(0,0,0,0.1)')
+);
+
+div(cardStyle, 'Card content');`},styleHelpersList:{lang:"typescript",code:`// Layout
+display('flex')
+position('relative')
+width('100%')
+height('auto')
+minWidth('300px')
+maxWidth('800px')
+
+// Spacing
+padding('1rem')
+paddingTop('10px')
+margin('0 auto')
+marginBottom('20px')
+
+// Typography
+fontSize('16px')
+fontWeight('bold')
+fontFamily('Arial, sans-serif')
+lineHeight('1.5')
+textAlign('center')
+
+// Colors
+bg('#f0f0f0')
+color('#333')
+
+// Borders
+border('1px solid #ccc')
+borderRadius('8px')
+
+// Flexbox
+flex()  // shorthand for display: flex
+flexDirection('column')
+alignItems('center')
+justifyContent('space-between')
+gap('1rem')
+
+// Effects
+boxShadow('0 2px 4px rgba(0,0,0,0.1)')
+opacity('0.8')
+transition('all 0.3s ease')
+transform('translateY(-2px)')`},styleHelpersShorthand:{lang:"typescript",code:`// bold() - shorthand for fontWeight('bold')
+bold()
+
+// center() - centers content on both axes
+center()  // alignItems('center') + justifyContent('center')
+
+// flex() - can be shorthand or take a value
+flex()  // display: flex
+flex('1')  // flex: 1
+
+// grid() - shorthand for display: grid
+grid()`},styleQueriesSetup:{lang:"typescript",code:`// Create once, typically in a styles.ts file
+// New syntax with explicit @media prefix (recommended)
+export const cn = createStyleQueries({
+  small: '@media (min-width: 480px)',
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)',
+  xl: '@media (min-width: 1280px)'
+});
+
+// Backward compatible: without prefix (treated as @media)
+export const cn = createStyleQueries({
+  small: '(min-width: 480px)',
+  medium: '(min-width: 768px)',
+  large: '(min-width: 1024px)',
+});`},styleQueriesDefaults:{lang:"typescript",code:`// Default styles only
+const style = cn(
+  padding('1rem').bg('white')
+);
+
+// With responsive overrides
+const responsiveStyle = cn(
+  // Default (mobile-first)
+  padding('1rem')
+    .fontSize('14px')
+    .width('100%'),
+  // Breakpoint overrides
+  {
+    medium: padding('1.5rem').fontSize('16px'),
+    large: padding('2rem').fontSize('18px').maxWidth('800px')
+  }
+);`},styleQueriesGeneratedCss:{lang:"typescript",code:`// This generates CSS like:
+// .n3a7f2b1 { padding: 1rem; font-size: 14px; width: 100%; }
+// @media (min-width: 768px) {
+//   .n3a7f2b1 { padding: 1.5rem; font-size: 16px; }
+// }
+// @media (min-width: 1024px) {
+//   .n3a7f2b1 { padding: 2rem; font-size: 18px; max-width: 800px; }
+// }
+
+const style = cn(
+  padding('1rem').fontSize('14px').width('100%'),
+  {
+    medium: padding('1.5rem').fontSize('16px'),
+    large: padding('2rem').fontSize('18px').maxWidth('800px')
+  }
+);`},styleQueriesQueriesOnly:{lang:"typescript",code:`// You can also use just queries without default styles
+const hideOnMobile = cn({
+  small: display('block'),
+  // Implicitly hidden on smaller screens
+});`},styleQueriesContainer:{lang:"typescript",code:`const cn = createStyleQueries({
+  containerSmall: '@container (min-width: 300px)',
+  containerMedium: '@container (min-width: 500px)',
+  containerLarge: '@container (min-width: 800px)',
+});
+
+const cardStyle = cn(
+  padding('1rem').fontSize('14px'),
+  {
+    containerSmall: fontSize('16px'),
+    containerMedium: padding('1.5rem').fontSize('18px'),
+    containerLarge: padding('2rem').fontSize('20px'),
+  }
+);`},styleQueriesPseudoClasses:{lang:"typescript",code:`// Pseudo-classes are automatically available - no need to define them!
+const cn = createStyleQueries({
+  small: '@media (min-width: 341px)',
+  medium: '@media (min-width: 601px)',
+  large: '@media (min-width: 1025px)',
+});
+
+// Use hover, focus, active, etc. directly
+const buttonStyle = cn(
+  padding('12px 24px')
+    .borderRadius('8px')
+    .backgroundColor('blue')
+    .color('white')
+    .transition('all 0.2s'),
+  {
+    hover: backgroundColor('darkblue'),
+    focus: outline('2px solid lightblue'),
+    active: transform('scale(0.98)')
+  }
+);
+
+button(buttonStyle, 'Click me');
+
+// Works with responsive queries too
+const navLink = cn(
+  color('gray').fontSize('14px').transition('all 0.2s'),
+  {
+    medium: fontSize('15px'),
+    hover: color('blue')
+  }
+);`},styleQueriesFeature:{lang:"typescript",code:`const cn = createStyleQueries({
+  hasGrid: '@supports (display: grid)',
+  hasSubgrid: '@supports (grid-template-columns: subgrid)',
+  hasContainerQuery: '@supports (container-type: inline-size)',
+});
+
+const layoutStyle = cn(
+  display('flex').flexWrap('wrap'),  // Fallback
+  {
+    hasGrid: display('grid').gridTemplateColumns('repeat(3, 1fr)'),
+  }
+);`},styleQueriesExamples:{lang:"typescript",code:`const cn = createStyleQueries({
+  // Media queries for viewport-based responsive design
+  small: '@media (min-width: 480px)',
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)',
+
+  // Container queries for component-based responsive design
+  containerWide: '@container (min-width: 600px)',
+
+  // Feature queries for progressive enhancement
+  hasGrid: '@supports (display: grid)',
+});
+
+const componentStyle = cn(
+  width('100%').padding('1rem'),
+  {
+    medium: maxWidth('800px').margin('0 auto'),
+    containerWide: padding('2rem'),
+    hasGrid: display('grid').gap('1rem'),
+  }
+);`},layoutDisplayPosition:{lang:"typescript",code:`display('flex')
+display('grid')
+display('block')
+display('inline-block')
+display('none')
+
+position('relative')
+position('absolute')
+position('fixed')
+position('sticky')
+
+top('0')
+right('10px')
+bottom('auto')
+left('50%')
+zIndex('100')`},layoutSizing:{lang:"typescript",code:`width('100%')
+height('200px')
+minWidth('300px')
+maxWidth('800px')
+minHeight('100vh')
+maxHeight('500px')
+boxSizing('border-box')`},layoutSpacing:{lang:"typescript",code:`// Padding
+padding('1rem')
+padding('1rem 2rem')  // vertical | horizontal
+paddingTop('10px')
+paddingRight('15px')
+paddingBottom('10px')
+paddingLeft('15px')
+
+// Margin
+margin('auto')
+margin('0 auto')
+marginTop('20px')
+marginBottom('20px')`},layoutOverflow:{lang:"typescript",code:`overflow('hidden')
+overflow('auto')
+overflow('scroll')
+overflowX('auto')
+overflowY('hidden')`},typographyFont:{lang:"typescript",code:`fontSize('16px')
+fontSize('1.25rem')
+fontWeight('bold')
+fontWeight('600')
+fontFamily("'Inter', system-ui, sans-serif")
+fontStyle('italic')
+lineHeight('1.5')
+letterSpacing('0.05em')`},typographyText:{lang:"typescript",code:`color('#333')
+textAlign('center')
+textAlign('left')
+textDecoration('underline')
+textDecoration('none')
+textTransform('uppercase')
+whiteSpace('nowrap')
+wordBreak('break-word')`},typographySystem:{lang:"typescript",code:`const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)'
+});
+
+const heading = cn(
+  fontSize('1.5rem')
+    .fontWeight('700')
+    .lineHeight('1.2')
+    .color('#1a1a2e')
+    .margin('0 0 1rem 0'),
+  {
+    medium: fontSize('2rem'),
+    large: fontSize('2.5rem')
+  }
+);
+
+const bodyText = cn(
+  fontSize('1rem')
+    .lineHeight('1.6')
+    .color('#4a4a4a')
+);
+
+h1(heading, 'Page Title');
+p(bodyText, 'Body content here...');`},colorsBasic:{lang:"typescript",code:`color('red')
+color('#ff0000')
+color('rgb(255, 0, 0)')
+color('rgba(255, 0, 0, 0.5)')
+
+bg('blue')
+bg('#3b82f6')
+bg('transparent')
+backgroundColor('white')`},colorsGradients:{lang:"typescript",code:`// Linear gradient
+bg('linear-gradient(to right, #667eea, #764ba2)')
+bg('linear-gradient(135deg, #667eea 0%, #764ba2 100%)')
+
+// Radial gradient
+bg('radial-gradient(circle, #ff0000, #0000ff)')`},colorsBackground:{lang:"typescript",code:`backgroundImage('url(/images/bg.jpg)')
+backgroundRepeat('no-repeat')
+backgroundPosition('center')
+backgroundSize('cover')`},flexContainer:{lang:"typescript",code:`// Enable flexbox
+flex()  // display: flex
+
+// Direction
+flexDirection('row')
+flexDirection('column')
+flexDirection('row-reverse')
+
+// Wrapping
+flexWrap('wrap')
+flexWrap('nowrap')
+
+// Alignment
+justifyContent('flex-start')
+justifyContent('center')
+justifyContent('space-between')
+justifyContent('space-around')
+
+alignItems('stretch')
+alignItems('center')
+alignItems('flex-start')
+alignItems('flex-end')
+
+// Shorthand for centering
+center()  // alignItems + justifyContent center
+
+// Gap
+gap('1rem')
+gap('10px 20px')  // row | column`},flexItem:{lang:"typescript",code:`flexGrow('1')
+flexShrink('0')
+flexBasis('200px')
+alignSelf('center')`},flexNavbarExample:{lang:"typescript",code:`const navbar = cn(
+  flex()
+    .justifyContent('space-between')
+    .alignItems('center')
+    .padding('1rem 2rem')
+    .bg('#1a1a2e')
+);
+
+const navLinks = cn(
+  flex()
+    .gap('1rem')
+    .alignItems('center')
+);
+
+nav(navbar,
+  div('Logo'),
+  div(navLinks,
+    a('Home'),
+    a('About'),
+    a('Contact')
+  )
+);`},gridContainer:{lang:"typescript",code:`// Enable grid
+grid()  // display: grid
+
+// Template
+gridTemplateColumns('1fr 1fr 1fr')
+gridTemplateColumns('repeat(3, 1fr)')
+gridTemplateColumns('repeat(auto-fill, minmax(250px, 1fr))')
+gridTemplateRows('auto 1fr auto')
+
+// Gap
+gap('1rem')
+gap('1rem 2rem')  // row | column`},gridItem:{lang:"typescript",code:`gridColumn('1 / 3')
+gridColumn('span 2')
+gridRow('1 / 2')
+gridArea('header')`},gridResponsiveExample:{lang:"typescript",code:`const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)'
+});
+
+const cardGrid = cn(
+  grid()
+    .gridTemplateColumns('1fr')
+    .gap('1.5rem')
+    .padding('2rem'),
+  {
+    medium: gridTemplateColumns('repeat(2, 1fr)'),
+    large: gridTemplateColumns('repeat(3, 1fr)')
+  }
+);
+
+const card = cn(
+  bg('white')
+    .borderRadius('12px')
+    .padding('1.5rem')
+    .boxShadow('0 2px 8px rgba(0,0,0,0.1)')
+);
+
+div(cardGrid,
+  list(() => products, product =>
+    div(card, product.name)
+  )
+);`},effectsShadows:{lang:"typescript",code:`boxShadow('0 2px 4px rgba(0,0,0,0.1)')
+boxShadow('0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)')
+boxShadow('inset 0 2px 4px rgba(0,0,0,0.1)')
+boxShadow('none')`},effectsVisibility:{lang:"typescript",code:`opacity('1')
+opacity('0.5')
+opacity('0')
+visibility('hidden')
+visibility('visible')`},effectsTransitions:{lang:"typescript",code:`transition('all 0.3s ease')
+transition('opacity 0.3s, transform 0.3s')
+transition('background-color 0.2s ease-in-out')`},effectsTransforms:{lang:"typescript",code:`transform('translateX(10px)')
+transform('translateY(-50%)')
+transform('rotate(45deg)')
+transform('scale(1.1)')
+transform('translate(-50%, -50%) rotate(45deg)')
+transformOrigin('center')`},effectsFilters:{lang:"typescript",code:`filter('blur(4px)')
+filter('brightness(1.2)')
+filter('grayscale(100%)')
+backdropFilter('blur(10px)')`},effectsHover:{lang:"typescript",code:`// For hover effects, use pseudo-classes (recommended)
+const cardBase = cn(
+  bg('white')
+    .borderRadius('12px')
+    .padding('1.5rem')
+    .transition('all 0.3s ease')
+    .boxShadow('0 2px 8px rgba(0,0,0,0.1)'),
+  {
+    hover: boxShadow('0 10px 40px rgba(0,0,0,0.15)').transform('translateY(-4px)')
+  }
+);
+
+div(cardBase, 'Hover me');
+
+// Alternative: reactive style function (for complex logic)
+let isHovered = false;
+div(
+  cardBase,
+  {
+    style: () => ({
+      boxShadow: isHovered
+        ? '0 10px 40px rgba(0,0,0,0.15)'
+        : '0 2px 8px rgba(0,0,0,0.1)',
+      transform: isHovered ? 'translateY(-4px)' : 'translateY(0)'
+    })
+  },
+  on('mouseenter', () => { isHovered = true; update(); }),
+  on('mouseleave', () => { isHovered = false; update(); }),
+  'Hover me'
+);`},organizingTheme:{lang:"typescript",code:`// styles.ts
+import 'nuclo';
+
+// Theme constants
+export const theme = {
+  colors: {
+    primary: '#6366f1',
+    secondary: '#8b5cf6',
+    text: '#1f2937',
+    textLight: '#6b7280',
+    bg: '#ffffff',
+    bgAlt: '#f9fafb',
+    border: '#e5e7eb',
+  },
+  spacing: {
+    xs: '0.25rem',
+    sm: '0.5rem',
+    md: '1rem',
+    lg: '1.5rem',
+    xl: '2rem',
+  },
+  borderRadius: {
+    sm: '4px',
+    md: '8px',
+    lg: '12px',
+    full: '9999px',
+  },
+  shadows: {
+    sm: '0 1px 2px rgba(0,0,0,0.05)',
+    md: '0 4px 6px rgba(0,0,0,0.1)',
+    lg: '0 10px 15px rgba(0,0,0,0.1)',
+  }
+};
+
+// Create style queries
+export const cn = createStyleQueries({
+  sm: '@media (min-width: 640px)',
+  md: '@media (min-width: 768px)',
+  lg: '@media (min-width: 1024px)',
+  xl: '@media (min-width: 1280px)',
+});`},organizingStyles:{lang:"typescript",code:`// styles.ts (continued)
+export const styles = {
+  // Layout
+  container: cn(
+    width('100%')
+      .maxWidth('1200px')
+      .margin('0 auto')
+      .padding(theme.spacing.md),
+    {
+      md: padding(theme.spacing.lg),
+      lg: padding(theme.spacing.xl),
+    }
+  ),
+
+  // Card
+  card: cn(
+    bg(theme.colors.bg)
+      .borderRadius(theme.borderRadius.lg)
+      .padding(theme.spacing.lg)
+      .boxShadow(theme.shadows.md)
+  ),
+
+  // Button variants
+  btnPrimary: cn(
+    bg(theme.colors.primary)
+      .color('white')
+      .padding(\`\${theme.spacing.sm} \${theme.spacing.lg}\`)
+      .borderRadius(theme.borderRadius.md)
+      .border('none')
+      .fontWeight('600')
+      .cursor('pointer')
+      .transition('all 0.2s ease')
+  ),
+
+  btnSecondary: cn(
+    bg('transparent')
+      .color(theme.colors.primary)
+      .padding(\`\${theme.spacing.sm} \${theme.spacing.lg}\`)
+      .borderRadius(theme.borderRadius.md)
+      .border(\`2px solid \${theme.colors.primary}\`)
+      .fontWeight('600')
+      .cursor('pointer')
+      .transition('all 0.2s ease')
+  ),
+
+  // Form elements
+  input: cn(
+    width('100%')
+      .padding(theme.spacing.md)
+      .border(\`1px solid \${theme.colors.border}\`)
+      .borderRadius(theme.borderRadius.md)
+      .fontSize('1rem')
+      .transition('border-color 0.2s')
+  ),
+
+  // Typography
+  h1: cn(
+    fontSize('1.875rem')
+      .fontWeight('700')
+      .color(theme.colors.text)
+      .lineHeight('1.2')
+      .margin('0'),
+    {
+      md: fontSize('2.25rem'),
+      lg: fontSize('3rem'),
+    }
+  ),
+
+  text: cn(
+    fontSize('1rem')
+      .color(theme.colors.textLight)
+      .lineHeight('1.6')
+  ),
+};`},organizingUsage:{lang:"typescript",code:`// app.ts
+import { cn, theme, styles as s } from './styles';
+
+const app = div(
+  s.container,
+
+  div(s.card,
+    h1(s.h1, 'Welcome'),
+    p(s.text, 'This is styled with nuclo CSS-in-JS'),
+
+    div(
+      flex().gap(theme.spacing.md),
+      button(s.btnPrimary, 'Primary'),
+      button(s.btnSecondary, 'Secondary')
+    )
+  )
+);
+
+render(app, document.body);`}},ta=`import 'nuclo';
+
+let count = 0;
+
+const counter = div(
+  h1(() => \`Count: \${count}\`),
+  button('Increment', on('click', () => {
+    count++;
+    update();
+  }))
+);
+
+render(counter, document.body);`;let J=0;function oa(){return div(n(display("flex").flexDirection("column").gap("12px").padding("24px").backgroundColor(o.bgCard).border(`1px solid ${o.border}`).borderRadius("12px")),h3(n(fontSize("16px").fontWeight("600").color(o.text)),"Live Counter Demo"),div(n(display("flex").alignItems("center").gap("12px")),span(n(fontSize("32px").fontWeight("700").color(o.text)),()=>J),span(n(color(o.textDim)),()=>J%2===0?"even":"odd")),div(n(display("flex").gap("8px")),button(t.btnSecondary,"-",on("click",()=>{J--,update()})),button(t.btnSecondary,"Reset",on("click",()=>{J=0,update()})),button(t.btnPrimary,{style:t.btnPrimaryStyle},"+",on("click",()=>{J++,update()}))))}function q(e,r,i){const s=n(padding("32px").backgroundColor(o.bgCard).borderRadius("16px").border(`1px solid ${o.border}`).transition("all 0.3s").position("relative").overflow("hidden"));return div(s,div(t.featureIcon,{style:t.featureIconStyle},e),h3(t.featureTitle,r),p(t.featureDesc,i))}const ra=["counter","todo","search","async","styled-card","subtasks"],na=N.filter(e=>ra.includes(e.id));function ia(e){A("examples"),setTimeout(()=>{const r=document.getElementById(e);r&&r.scrollIntoView({behavior:"smooth",block:"start"})},150)}function aa(){return div(section(t.hero,h1(t.heroTitle,"Build ",span(t.heroTitleAccent,{style:t.heroTitleAccentStyle},"Faster"),", ",span(t.heroTitleAccent,{style:t.heroTitleAccentStyle},"Reactive")," Interfaces."),p(t.heroSubtitle,"A lightweight, flexible, component-based framework for the modern web. Just functions, plain objects, and explicit updates."),div(t.heroButtons,button(n(padding("14px 32px").backgroundColor(o.primary).color(o.bg).borderRadius("8px").fontWeight("600").fontSize("15px").border("none").transition("all 0.2s").display("flex").alignItems("center").gap("8px"),{hover:backgroundColor(o.primaryHover).transform("translateY(-2px)").boxShadow(`0 0 30px ${o.primaryGlow}`)}),{style:t.btnPrimaryStyle},"Get Started",Oi(),on("click",()=>A("getting-started"))),button(n(padding("14px 32px").backgroundColor("transparent").color(o.text).borderRadius("8px").fontWeight("600").fontSize("15px").border(`1px solid ${o.borderLight}`).transition("all 0.2s"),{hover:border(`1px solid ${o.primary}`).color(o.primary).transform("translateY(-2px)")}),"View Demo",on("click",()=>A("examples"))))),section(n(padding("0 48px 100px").maxWidth("800px").margin("0 auto")),div(n(borderRadius("16px").border(`1px solid ${o.border}`).overflow("hidden")),{style:t.glowBoxStyle},div(n(padding("12px 20px").backgroundColor(o.bgLight).borderBottom(`1px solid ${o.border}`).display("flex").alignItems("center").gap("8px")),span(n(width("12px").height("12px").borderRadius("50%").backgroundColor("#ff5f57"))),span(n(width("12px").height("12px").borderRadius("50%").backgroundColor("#febc2e"))),span(n(width("12px").height("12px").borderRadius("50%").backgroundColor("#28c840"))),span(n(marginLeft("auto").fontSize("13px").color(o.textDim)),"main.ts")),c(ta,"typescript",!1))),section(t.features,{style:t.featuresStyle},q(Li(),"Lightweight & Fast","Zero dependencies, tiny bundle size. Built for performance from the ground up with direct DOM manipulation."),q(Wi(),"Component-Based","Build encapsulated components that manage their own state. Compose them to make complex UIs simple."),q(Fi(),"Simple Reactivity","Explicit update() calls give you full control. No magic, no proxies, no hidden re-renders."),q(Mi(),"Fine-Grained Updates","Only updates what changed. Elements are reused, branches are preserved, performance is maximized."),q(Hi(),"TypeScript-First","Full type definitions for 140+ HTML and SVG tags. Catch errors at compile time, not runtime."),q(ji(),"Intuitive API","Global tag builders feel natural. Just use div(), span(), button() - no imports needed.")),section(t.section,h2(t.sectionTitle,"Quick Start"),p(t.sectionSubtitle,"Get up and running in seconds."),div(t.flexCol,t.gap32,div(h3(n(fontSize("18px").fontWeight("600").color(o.primary).marginBottom("16px")),"1. Install"),c("npm install nuclo","bash")),div(h3(n(fontSize("18px").fontWeight("600").color(o.primary).marginBottom("16px")),"2. Import and use"),c(`import 'nuclo';
+
+// Now use div(), update(), on(), list(), when(), render() globally
+const app = div(
+  h1('Hello, Nuclo!'),
+  p('Building UIs made simple.')
+);
+
+render(app, document.body);`,"typescript")),div(h3(n(fontSize("18px").fontWeight("600").color(o.primary).marginBottom("16px")),"3. Add TypeScript support"),c(`// tsconfig.json
+{
+  "compilerOptions": {
+    "types": ["nuclo/types"]
+  }
+}`,"json"))),div(n(marginTop("32px")),h3(n(fontSize("18px").fontWeight("600").color(o.primary).marginBottom("16px")),"Try it live"),oa())),section(t.section,h2(t.sectionTitle,"Core Concepts"),p(t.sectionSubtitle,"Explicit updates, reactive functions, conditionals, list syncing, and styling."),div(t.demoContainerSingle,div(t.demoPanel,div(t.demoPanelHeader,"Batch updates"),div(t.demoPanelContent,c(C.batchUpdates.code,C.batchUpdates.lang,!1))),div(t.demoPanel,div(t.demoPanelHeader,"Reactive functions"),div(t.demoPanelContent,c(C.reactiveText.code,C.reactiveText.lang,!1)))),div(n(display("grid").gap("20px").gridTemplateColumns("1fr"),{medium:gridTemplateColumns("repeat(2, 1fr)"),large:gridTemplateColumns("repeat(3, 1fr)")}),div(t.featureCard,h3(t.featureTitle,"Conditional rendering"),c(`when(() => user.isAdmin,
+  div('Admin Panel')
+).when(() => user.isLoggedIn,
+  div('Dashboard')
+).else(
+  div('Please log in')
+);`,"typescript",!1)),div(t.featureCard,h3(t.featureTitle,"List synchronization"),c("list(() => items, (item, index) =>\n  div(() => `${index}: ${item.name}`)\n);","typescript",!1)),div(t.featureCard,h3(t.featureTitle,"CSS-in-JS styling"),c(b.overviewQuickExample.code,b.overviewQuickExample.lang,!1)))),section(t.section,h2(t.sectionTitle,"Examples"),p(t.sectionSubtitle,"Jump into any example from the original gallery."),div(n(display("grid").gap("20px"),{medium:gridTemplateColumns("repeat(3, 1fr)")}),...na.map(e=>div(t.featureCard,h3(t.featureTitle,e.title),p(t.featureDesc,e.description),button(t.btnSecondary,"View Example",on("click",()=>ia(e.id))))))))}function sa(){return div(t.pageContent,h1(t.pageTitle,"Getting Started"),p(t.pageSubtitle,"Everything from the original Nuclo docs: installs, Deno support, first app walkthrough, explicit updates, events, styling, and best practices."),h2(t.h2,"Installation"),p(t.p,"Install with your preferred package manager:"),c(C.installNpm.code,C.installNpm.lang),p(t.p,"Deno works too—import directly from npm:"),c(C.denoImport.code,C.denoImport.lang),p(t.p,"Or add it to ",P("deno.json"),":"),c(C.denoJson.code,C.denoJson.lang),p(t.p,"Then import once to register global builders:"),c(C.denoUsage.code,C.denoUsage.lang),h2(t.h2,"TypeScript Setup"),p(t.p,"Nuclo ships full typings for 140+ HTML/SVG builders. Enable them globally with ",P("types"),"."),c(C.tsconfigTypes.code,C.tsconfigTypes.lang),p(t.p,"…or add a reference to your env definition file:"),c(C.typesReference.code,C.typesReference.lang),h2(t.h2,"Your First App"),p(t.p,"Straight from the original landing page: a counter that shows state, events, and explicit ",P("update()"),"."),c(C.firstApp.code,C.firstApp.lang),h3(t.h3,"How it works"),ul(t.ul,li(t.li,strong("Import:")," ",P("import 'nuclo'")," registers global builders"),li(t.li,strong("State:")," plain variables/objects—no hooks or stores"),li(t.li,strong("Reactive content:")," zero-arg functions rerender on ",P("update()")),li(t.li,strong("Events:")," attach listeners with ",P("on()")),li(t.li,strong("Render:")," mount once with ",P("render()"))),h2(t.h2,"Understanding update()"),p(t.p,P("update()")," is explicit: mutate freely, then call it once to refresh reactive functions."),h3(t.h3,"Batching updates"),c(C.batchUpdates.code,C.batchUpdates.lang),h3(t.h3,"Why explicit?"),ul(t.ul,li(t.li,"Performance: batch multiple mutations into one DOM update"),li(t.li,"Control: you decide exactly when the UI refreshes"),li(t.li,"Predictability: no hidden re-renders or proxies"),li(t.li,"Debugging: set a breakpoint on ",P("update()")," to trace changes")),h2(t.h2,"Reactive Functions"),p(t.p,"Any zero-arg function is reactive. Use them for text, attributes, and styles."),h3(t.h3,"Text content"),c(C.reactiveText.code,C.reactiveText.lang),h3(t.h3,"Attributes"),c(C.reactiveAttributes.code,C.reactiveAttributes.lang),h3(t.h3,"Styles"),c(C.reactiveStyles.code,C.reactiveStyles.lang),h3(t.h3,"Complex expressions"),c(C.complexExpressions.code,C.complexExpressions.lang),h2(t.h2,"Event Handling with on()"),p(t.p,"The ",P("on()")," helper returns modifiers for any DOM event."),h3(t.h3,"Basic events"),c(C.eventBasic.code,C.eventBasic.lang),h3(t.h3,"Multiple events"),c(C.eventMultiple.code,C.eventMultiple.lang),h3(t.h3,"Event options"),c(C.eventOptions.code,C.eventOptions.lang),h3(t.h3,"Keyboard helpers"),c(C.keyboardEvents.code,C.keyboardEvents.lang),h2(t.h2,"Styling"),p(t.p,"Nuclo ships a CSS-in-JS system with chainable helpers and ",P("createStyleQueries"),"."),h3(t.h3,"Using createStyleQueries"),c(C.stylingSetup.code,C.stylingSetup.lang),h3(t.h3,"Responsive styles"),c(C.responsiveStyles.code,C.responsiveStyles.lang),h3(t.h3,"Dynamic styles"),c(C.dynamicStyles.code,C.dynamicStyles.lang),h2(t.h2,"Best Practices"),h3(t.h3,"Batch your updates"),c(C.bestPracticeBatch.code,C.bestPracticeBatch.lang),h3(t.h3,"Use computed helpers"),c(C.bestPracticeComputed.code,C.bestPracticeComputed.lang),h3(t.h3,"Component-like functions"),c(C.componentFunctions.code,C.componentFunctions.lang),h3(t.h3,"Use plain objects/arrays"),c(C.mutableState.code,C.mutableState.lang),h3(t.h3,"Handle async flows"),c(C.asyncFlow.code,C.asyncFlow.lang),h2(t.h2,"Next Steps"),ul(t.ul,li(t.li,strong("Core API:")," learn ",P("when()"),", ",P("list()"),", and more"),li(t.li,strong("Tag Builders:")," explore all HTML and SVG elements"),li(t.li,strong("Styling:")," CSS-in-JS helpers and responsive design"),li(t.li,strong("Examples:")," run through the full demo gallery")))}const k={updateUsage:{lang:"typescript",code:`let count = 0;
+
+button('Increment', on('click', () => {
+  count++;
+  update(); // Trigger UI update
+}));`},renderUsage:{lang:"typescript",code:`const app = div(
+  h1('My App'),
+  p('Hello, world!')
+);
+
+render(app, document.body);`},listBasic:{lang:"typescript",code:`let todos = [
+  { id: 1, text: 'Learn nuclo', done: false },
+  { id: 2, text: 'Build app', done: false }
+];
+
+list(() => todos, (todo, index) =>
+  div(
+    { className: () => todo.done ? 'done' : '' },
+    span(() => \`\${index + 1}. \${todo.text}\`),
+    button('Toggle', on('click', () => {
+      todo.done = !todo.done;
+      update();
+    }))
+  )
+);`},listIdentity:{lang:"typescript",code:`// ✓ Good: Mutate the object
+todos[0].done = true;
+update();
+
+// ✗ Bad: Creates a new object, element will be recreated
+todos[0] = { ...todos[0], done: true };
+update();
+
+// ✓ Good: Mutate the array
+todos.push(newTodo);
+todos.sort((a, b) => a.id - b.id);
+update();
+
+// ✓ Also good: Reassign with filtered array
+todos = todos.filter(t => !t.done);
+update();`},listNested:{lang:"typescript",code:`// Nested lists
+list(() => categories, category =>
+  div(
+    h3(category.name),
+    list(() => category.items, item =>
+      div(item.name)
+    )
+  )
+);
+
+// Filtered lists
+list(() => todos.filter(t => !t.done), todo =>
+  div(todo.text)
+);`},whenBasic:{lang:"typescript",code:`let isLoggedIn = false;
+
+when(() => isLoggedIn,
+  div('Welcome back!')
+).else(
+  div('Please log in')
+);`},whenRoles:{lang:"typescript",code:`let role = 'user'; // 'admin' | 'user' | 'guest'
+
+when(() => role === 'admin',
+  div('Admin Panel')
+).when(() => role === 'user',
+  div('User Dashboard')
+).else(
+  div('Guest View')
+);`},whenElseBranch:{lang:"typescript",code:`when(() => showDetails,
+  h2('Details'),
+  p('Here are the details...'),
+  button('Close', on('click', () => {
+    showDetails = false;
+    update();
+  }))
+);`},whenPreserve:{lang:"typescript",code:`// Elements persist across updates if the same branch is active
+let count = 0;
+
+when(() => count > 0,
+  div('Count is positive')  // This div stays alive while count > 0
+).else(
+  div('Count is zero or negative')
+);
+
+// Multiple updates with count > 0 won't recreate the div
+count = 5; update();
+count = 10; update();
+count = 15; update();  // Same div element throughout`},whenNestedConditions:{lang:"typescript",code:`when(() => user.isAuthenticated,
+  when(() => user.hasPermission,
+    div('Protected Content')
+  ).else(
+    div('Access Denied')
+  )
+).else(
+  div('Please log in')
+);`},onClick:{lang:"typescript",code:`button('Click me',
+  on('click', (e) => {
+    console.log('Button clicked!', e);
+  })
+);`},onMultipleEvents:{lang:"typescript",code:`input(
+  on('input', (e) => {
+    value = e.target.value;
+    update();
+  }),
+  on('focus', () => {
+    isFocused = true;
+    update();
+  }),
+  on('blur', () => {
+    isFocused = false;
+    update();
+  })
+);`},onPassive:{lang:"typescript",code:`// Passive event for better scroll performance
+div(
+  on('scroll', handleScroll, { passive: true })
+);
+
+// Capture phase
+div(
+  on('click', handleClick, { capture: true })
+);
+
+// One-time event
+button('Click once',
+  on('click', handleClick, { once: true })
+);`},onKeyboard:{lang:"typescript",code:`input(
+  on('keydown', (e) => {
+    if (e.key === 'Enter') {
+      handleSubmit();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  })
+);`},onFormSubmit:{lang:"typescript",code:`form(
+  on('submit', (e) => {
+    e.preventDefault();
+    handleFormSubmit();
+  }),
+
+  input({ type: 'text', name: 'username' },
+    on('input', (e) => {
+      username = e.target.value;
+      update();
+    })
+  ),
+
+  button({ type: 'submit' }, 'Submit')
+);`},tagBuilderBasic:{lang:"typescript",code:`// Just children
+div('Hello, world!');
+
+// Attributes + children
+div(
+  { className: 'container', id: 'main' },
+  'Hello, world!'
+);
+
+// Nested elements
+div(
+  h1('Title'),
+  p('Paragraph'),
+  ul(
+    li('Item 1'),
+    li('Item 2')
+  )
+);`},svgExample:{lang:"typescript",code:`const icon = svg(
+  { viewBox: '0 0 24 24', width: '24', height: '24' },
+  circle({ cx: '12', cy: '12', r: '10', fill: 'blue' }),
+  path({ d: 'M12 2 L12 22', stroke: 'white', 'stroke-width': '2' })
+);`},attributesStatic:{lang:"typescript",code:`div({
+  id: 'main',
+  className: 'container',
+  'data-test': 'value',
+  'aria-label': 'Main content'
+});`},attributesReactive:{lang:"typescript",code:`div({
+  className: () => isActive ? 'active' : 'inactive',
+  'aria-pressed': () => isActive,
+  disabled: () => !isValid,
+  hidden: () => !isVisible
+});`},attributesStyle:{lang:"typescript",code:`// Object style
+div({
+  style: {
+    color: 'red',
+    fontSize: '16px',
+    backgroundColor: () => isActive ? 'blue' : 'gray'
+  }
+});
+
+// String style
+div({
+  style: 'color: red; font-size: 16px;'
+});
+
+// Reactive string style
+div({
+  style: () => \`color: \${color}; font-size: \${size}px;\`
+});`},attributesBoolean:{lang:"typescript",code:`input({
+  type: 'checkbox',
+  checked: () => isChecked,
+  disabled: () => isDisabled,
+  required: true,
+  readonly: false
+});`},specialAttributes:{lang:"typescript",code:`// className (maps to 'class')
+div({ className: 'my-class' });
+
+// htmlFor (maps to 'for')
+label({ htmlFor: 'input-id' }, 'Label');
+
+// Data attributes
+div({ 'data-id': '123', 'data-type': 'user' });`},classNameMerging:{lang:"typescript",code:`// Multiple className sources are merged
+div(
+  { className: 'base-class' },
+  { className: 'additional-class' },
+  { className: () => isActive ? 'active' : 'inactive' }
+);
+// Result: "base-class additional-class active" (or "inactive")`},classNameConditional:{lang:"typescript",code:`let isOpen = false;
+let isError = false;
+
+div({
+  className: 'dropdown'  // Static class
+}, {
+  className: () => isOpen ? 'open' : ''  // Reactive class
+}, {
+  className: () => isError ? 'error' : ''  // Another reactive class
+});
+
+// With isOpen=true, isError=false: "dropdown open"
+// With isOpen=true, isError=true: "dropdown open error"`},styleHelperMerging:{lang:"typescript",code:`// Style helpers that generate classes are also merged
+const cardStyle = new StyleBuilder()
+  .bg('white')
+  .padding('1rem')
+  .build();
+
+div(
+  { className: 'my-card' },
+  cardStyle,  // Generated class is merged
+  'Content'
+);
+// Result: "my-card n-abc123" (merged classes)`},classNameStatusPattern:{lang:"typescript",code:`// Common pattern for conditional styling
+let status = 'active'; // 'active' | 'pending' | 'error'
+
+div({
+  className: () => {
+    const classes = ['status-badge'];
+    if (status === 'active') classes.push('badge-green');
+    if (status === 'pending') classes.push('badge-yellow');
+    if (status === 'error') classes.push('badge-red');
+    return classes.join(' ');
+  }
+}, () => status);`},modifiersEvents:{lang:"typescript",code:`button('Click',
+  on('click', handleClick),
+  on('mouseenter', handleHover)
+);`},modifiersStyles:{lang:"typescript",code:`div(
+  bg('blue'),     // Style modifier
+  padding('1rem') // Style modifier
+);`},modifiersCustomFocus:{lang:"typescript",code:`// Example: Focus modifier
+function focus() {
+  return {
+    __modifier: true,
+    apply(element) {
+      requestAnimationFrame(() => element.focus());
+    }
+  };
+}
+
+// Usage
+input(focus());
+
+// Example: Tooltip modifier
+function tooltip(text: string) {
+  return {
+    __modifier: true,
+    apply(element) {
+      element.setAttribute('title', text);
+      element.setAttribute('data-tooltip', text);
+    }
+  };
+}
+
+// Usage
+button('Hover me', tooltip('Click to submit'));`}};function la(){return div(t.pageContent,h1(t.pageTitle,"Core API"),p(t.pageSubtitle,"The essential functions that power every Nuclo application: update(), render(), on(), list(), and when()."),h2(t.h2,{id:"update"},"update()"),p(t.p,"Trigger a synchronous refresh of every reactive function in your application."),c(k.updateUsage.code,k.updateUsage.lang),h3(t.h3,"Key Points"),ul(t.ul,li(t.li,"Call after batching mutations for best performance"),li(t.li,"Only zero-argument functions re-evaluate"),li(t.li,"Safe to call multiple times; prefer grouping work first")),h2(t.h2,{id:"render"},"render(element, container)"),p(t.p,"Mount an element tree to a DOM container (append, not replace)."),c(k.renderUsage.code,k.renderUsage.lang),h3(t.h3,"Key Points"),ul(t.ul,li(t.li,"Typical pattern: render one root that owns the whole app"),li(t.li,"You can render multiple trees if needed"),li(t.li,"Works with any element created by the tag builders")),h2(t.h2,{id:"on"},"on(event, handler, options?)"),p(t.p,"Attach event listeners with full TypeScript support."),c(k.onClick.code,k.onClick.lang),h3(t.h3,"Multiple Events"),p(t.p,"Attach multiple event handlers to the same element:"),c(k.onMultipleEvents.code,k.onMultipleEvents.lang),h3(t.h3,"Event Options"),p(t.p,"Pass standard event listener options:"),c(k.onPassive.code,k.onPassive.lang),h3(t.h3,"Keyboard Events"),c(k.onKeyboard.code,k.onKeyboard.lang),h3(t.h3,"Form Handling"),c(k.onFormSubmit.code,k.onFormSubmit.lang),h2(t.h2,{id:"list"},"list(provider, renderer)"),p(t.p,"Synchronize arrays to DOM nodes. Items stay mounted while object identity is stable—mutate objects in place instead of replacing them."),c(k.listBasic.code,k.listBasic.lang),h3(t.h3,"Object Identity"),p(t.p,"Nuclo tracks items by reference. Mutate objects to preserve their DOM elements:"),c(k.listIdentity.code,k.listIdentity.lang),h3(t.h3,"Nested Lists"),p(t.p,"Nested lists remain stable too:"),c(k.listNested.code,k.listNested.lang),h2(t.h2,{id:"when"},"when(condition, ...content)"),p(t.p,"Chain conditional branches; the first truthy branch wins and DOM is preserved when the branch stays the same."),h3(t.h3,"Basic Usage"),c(k.whenBasic.code,k.whenBasic.lang),h3(t.h3,"Multiple Conditions"),c(k.whenRoles.code,k.whenRoles.lang),h3(t.h3,"Content in Branches"),c(k.whenElseBranch.code,k.whenElseBranch.lang),h3(t.h3,"DOM Preservation"),p(t.p,"Elements persist across updates if the same branch is active:"),c(k.whenPreserve.code,k.whenPreserve.lang),h3(t.h3,"Nested Conditions"),c(k.whenNestedConditions.code,k.whenNestedConditions.lang))}function da(){const e=[{title:"Document Structure",tags:"html, head, body, header, footer, main, section, article, aside, nav"},{title:"Content Sectioning",tags:"h1, h2, h3, h4, h5, h6, div, span, p, blockquote, pre, code"},{title:"Lists",tags:"ul, ol, li, dl, dt, dd"},{title:"Forms",tags:"form, input, textarea, button, select, option, label, fieldset, legend"},{title:"Tables",tags:"table, thead, tbody, tfoot, tr, th, td, caption, col, colgroup"},{title:"Media",tags:"img, video, audio, source, track, canvas, svg"},{title:"Interactive",tags:"a, button, details, summary, dialog"},{title:"Text Formatting",tags:"strong, em, mark, small, del, ins, sub, sup, abbr, cite, q, kbd, samp, var"}];return div(t.pageContent,h1(t.pageTitle,"Tag Builders"),p(t.pageSubtitle,"Every HTML and SVG element is available globally after importing Nuclo. Build your UI with simple function calls."),h2(t.h2,{id:"overview"},"Overview"),p(t.p,"Tag builders accept children, attributes, event modifiers, and arrays. After ",P("import 'nuclo'"),", all builders are available globally."),c(k.tagBuilderBasic.code,k.tagBuilderBasic.lang),h2(t.h2,{id:"html-tags"},"HTML Tags"),p(t.p,"Full HTML5 coverage with 140+ elements:"),...e.map(r=>div(h3(n(fontSize("18px").fontWeight("600").marginTop("24px").marginBottom("12px")),r.title),pre(t.codeBlock,code(r.tags)))),p(t.p,n(marginTop("24px")),"And 100+ more—see ",a({href:"https://github.com/dan2dev/nuclo/blob/main/packages/nuclo/src/core/tagRegistry.ts",target:"_blank",rel:"noopener noreferrer"},P("the full registry")),"."),h2(t.h2,{id:"svg-tags"},"SVG Tags"),p(t.p,"Full SVG support for graphics and icons:"),c(`svg, circle, ellipse, line, path, polygon, polyline, rect,
+g, defs, use, symbol, marker, clipPath, mask, pattern,
+linearGradient, radialGradient, stop, text, tspan, textPath`,"text"),h3(t.h3,"SVG Example"),c(k.svgExample.code,k.svgExample.lang),h2(t.h2,{id:"attributes"},"Attributes"),p(t.p,"Pass attributes as objects—values can be static or reactive functions."),h3(t.h3,"Static Attributes"),c(k.attributesStatic.code,k.attributesStatic.lang),h3(t.h3,"Reactive Attributes"),p(t.p,"Use functions for dynamic values that update on ",P("update()"),":"),c(k.attributesReactive.code,k.attributesReactive.lang),h3(t.h3,"Style Objects"),p(t.p,"Styles can be objects, strings, or reactive functions:"),c(k.attributesStyle.code,k.attributesStyle.lang),h3(t.h3,"Boolean Attributes"),c(k.attributesBoolean.code,k.attributesBoolean.lang),h3(t.h3,"Special Attributes"),p(t.p,"Some attributes are mapped for convenience:"),c(k.specialAttributes.code,k.specialAttributes.lang),h2(t.h2,{id:"className-merging"},"className Merging"),p(t.p,"Multiple ",P("className")," values are merged rather than overwritten—static strings, reactive functions, and style helper modifiers all compose."),c(k.classNameMerging.code,k.classNameMerging.lang),h3(t.h3,"Conditional Classes"),c(k.classNameConditional.code,k.classNameConditional.lang),h3(t.h3,"With Style Helpers"),c(k.styleHelperMerging.code,k.styleHelperMerging.lang),h3(t.h3,"Status Pattern"),p(t.p,"Common pattern for conditional styling:"),c(k.classNameStatusPattern.code,k.classNameStatusPattern.lang),h2(t.h2,{id:"modifiers"},"Modifiers"),p(t.p,"Objects with ",P("__modifier")," allow behaviors beyond attributes."),h3(t.h3,"Event Modifiers"),c(k.modifiersEvents.code,k.modifiersEvents.lang),h3(t.h3,"Style Modifiers"),c(k.modifiersStyles.code,k.modifiersStyles.lang),h3(t.h3,"Custom Modifiers"),p(t.p,"Create your own modifiers for reusable behaviors:"),c(k.modifiersCustomFocus.code,k.modifiersCustomFocus.lang))}function ca(){function e(){const u=n(backgroundColor(o.primary).color(o.bg).padding("12px 20px").border("none").borderRadius("10px").fontWeight("700").cursor("pointer").transition("all 0.2s"),{hover:backgroundColor(o.primaryHover).transform("translateY(-2px)").boxShadow(`0 0 24px ${o.primaryGlow}`)});return div(t.demoPanel,div(t.demoPanelHeader,"Live: Overview button"),div(t.demoPanelContent,button(u,{style:t.btnPrimaryStyle},"Click me")))}function r(){let u=!0;const x=backgroundColor(o.bgCard).color(o.text).padding("20px").transition("all 0.2s");function f(){const h=x.borderRadius(u?"14px":"0px").boxShadow(u?"0 10px 30px rgba(0,0,0,0.25)":"none").border(`1px solid ${o.border}`);return n(h)}return div(t.demoPanel,div(t.demoPanelHeader,"Live: StyleBuilder chaining"),div(t.demoPanelContent,div(()=>f(),h3(n(fontSize("16px").fontWeight("700")),"Chained styles"),p(n(color(o.textMuted)),"Toggle props built via chained helpers."),div(n(display("flex").gap("8px").marginTop("8px")),button(t.btnSecondary,u?"Make Square":"Make Rounded",on("click",()=>{u=!u,update()}))))))}function i(){let u="mobile";const x=n(backgroundColor(o.bgCard).border(`1px solid ${o.border}`).borderRadius("12px").transition("all 0.2s"),{medium:padding("24px"),large:padding("32px")});function f(w){return w==="mobile"?"100%":w==="medium"?"420px":"640px"}function h(w){return w==="mobile"?"<480px":w==="medium"?"≥768px":"≥1024px"}return div(t.demoPanel,div(t.demoPanelHeader,"Live: Style queries"),div(t.demoPanelContent,div(n(display("flex").gap("8px").marginBottom("12px").flexWrap("wrap")),button(t.btnSecondary,"Mobile",on("click",()=>{u="mobile",update()})),button(t.btnSecondary,"Medium",on("click",()=>{u="medium",update()})),button(t.btnSecondary,"Large",on("click",()=>{u="large",update()}))),div(n(marginTop("4px")),div(()=>x,{style:()=>({maxWidth:f(u),width:"100%",padding:u==="mobile"?"16px":void 0,boxSizing:"border-box"})},h3(n(fontSize("16px").fontWeight("700")),()=>`Breakpoint: ${h(u)}`),p(n(color(o.textMuted)),"Padding increases on medium and large breakpoints.")))))}function s(){let u=!1;const x=n(backgroundColor(o.bgLight).border(`1px solid ${o.border}`).borderRadius("10px").padding("12px"));function f(){return u?n(display("grid").gap("12px"),{medium:gridTemplateColumns("repeat(3, 1fr)")}):n(display("flex").gap("12px").flexWrap("wrap"))}return div(t.demoPanel,div(t.demoPanelHeader,"Live: Layout helpers"),div(t.demoPanelContent,button(t.btnSecondary,()=>u?"Use Flex":"Use Grid",on("click",()=>{u=!u,update()})),div(n(marginTop("12px")),div(()=>f(),...[1,2,3,4,5,6].map(h=>div(x,`Item ${h}`))))))}function l(){const u=n(backgroundColor(o.bgCard).padding("24px").borderRadius("12px").boxShadow("0 4px 12px rgba(0,0,0,0.15)").border(`1px solid ${o.border}`));return div(t.demoPanel,div(t.demoPanelHeader,"Live: Basic usage"),div(t.demoPanelContent,div(u,"Card content")))}function d(){const u=n(fontSize("28px").fontWeight("800").letterSpacing("-0.02em")),x=n(color(o.textMuted).fontSize("16px"));return div(t.demoPanel,div(t.demoPanelHeader,"Live: Typography"),div(t.demoPanelContent,h1(u,"Elegant Heading"),p(x,"Subtle body copy with readable line-height and contrast.")))}function m(){const u=(x,f)=>div(n(display("flex").alignItems("center").gap("12px")),div(n(width("36px").height("24px").borderRadius("6px").border(`1px solid ${o.border}`)),{style:{background:x}}),span(n(color(o.textMuted)),f));return div(t.demoPanel,div(t.demoPanelHeader,"Live: Colors"),div(t.demoPanelContent,u(o.primary,"Primary"),u("linear-gradient(135deg, #667eea 0%, #764ba2 100%)","Gradient"),u(o.bgLight,"Background")))}function g(){const u=n(display("flex").justifyContent("space-between").alignItems("center").padding("12px 16px").backgroundColor(o.bgLight).border(`1px solid ${o.border}`).borderRadius("10px")),x=n(display("flex").gap("12px").alignItems("center")),f=n(color(o.textMuted).transition("color 0.2s"));return div(t.demoPanel,div(t.demoPanelHeader,"Live: Flexbox"),div(t.demoPanelContent,nav(u,div(n(fontWeight("700")),"Logo"),div(x,a(f,"Home",on("mouseenter",h=>h.currentTarget.style.color=o.text),on("mouseleave",h=>h.currentTarget.style.color=o.textMuted)),a(f,"Docs",on("mouseenter",h=>h.currentTarget.style.color=o.text),on("mouseleave",h=>h.currentTarget.style.color=o.textMuted)),a(f,"Contact",on("mouseenter",h=>h.currentTarget.style.color=o.text),on("mouseleave",h=>h.currentTarget.style.color=o.textMuted))))))}function S(){const u=n(display("grid").gap("12px"),{medium:gridTemplateColumns("repeat(3, 1fr)")}),x=n(backgroundColor(o.bgLight).border(`1px solid ${o.border}`).borderRadius("10px").padding("12px"));return div(t.demoPanel,div(t.demoPanelHeader,"Live: Grid"),div(t.demoPanelContent,div(u,...Array.from({length:6},(f,h)=>div(x,`Card ${h+1}`)))))}function y(){const u=n(backgroundColor(o.bgLight).border(`1px solid ${o.border}`).borderRadius("12px").padding("24px").transition("all 0.25s"),{hover:boxShadow("0 20px 50px rgba(0,0,0,0.35)").transform("translateY(-4px) scale(1.02)")});return div(t.demoPanel,div(t.demoPanelHeader,"Live: Effects"),div(t.demoPanelContent,div(u,"Hover me")))}function v(){const u=n(backgroundColor(o.bgCard).border(`1px solid ${o.border}`).borderRadius("14px").padding("20px"));return div(t.demoPanel,div(t.demoPanelHeader,"Live: Organized styles"),div(t.demoPanelContent,div(u,h3(n(fontSize("16px").fontWeight("700")),"Theme buttons"),div(n(display("flex").gap("10px").marginTop("8px")),button(t.btnPrimary,{style:t.btnPrimaryStyle},"Primary"),button(t.btnSecondary,"Secondary")))))}return div(t.pageContent,h1(t.pageTitle,"Styling"),p(t.pageSubtitle,"All of the original styling docs are here: chainable helpers, StyleBuilder utilities, responsive queries, and layout recipes."),h2(t.h2,"Overview"),p(t.p,"Nuclo's styling system is powered by chainable helpers that generate CSS classes for you. Start with any helper (",P("bg()"),", ",P("padding()"),", etc.), chain more, and wrap with ",P("createStyleQueries")," for responsive variants."),p(t.p,"Quick example straight from the legacy site:"),div(t.demoContainerSingle,div(e()),div(c(b.overviewQuickExample.code,b.overviewQuickExample.lang,!0))),h2(t.h2,"StyleBuilder"),p(t.p,"Each helper returns a StyleBuilder instance. You can chain helpers, pull out the generated class name, or read the computed styles."),h3(t.h3,"How it works"),div(t.demoContainerSingle,div(r()),div(c(b.styleBuilderUsage.code,b.styleBuilderUsage.lang,!0))),h3(t.h3,"StyleBuilder methods"),c(b.styleBuilderMethods.code,b.styleBuilderMethods.lang),h3(t.h3,"Generated CSS"),c(b.styleBuilderClass.code,b.styleBuilderClass.lang),h2(t.h2,"Style Helpers"),p(t.p,"95+ helpers mirror CSS properties: layout, spacing, typography, color, flexbox, grid, effects, and more. Chain them to build up reusable class names."),h3(t.h3,"Basic usage"),div(t.demoContainerSingle,div(l()),div(c(b.styleHelpersBasic.code,b.styleHelpersBasic.lang,!0))),h3(t.h3,"Available helpers (from the original reference)"),c(b.styleHelpersList.code,b.styleHelpersList.lang),h3(t.h3,"Shorthand helpers"),c(b.styleHelpersShorthand.code,b.styleHelpersShorthand.lang),h2(t.h2,"Style Queries"),p(t.p,"Use ",P("createStyleQueries")," to add media, container, or feature queries. Defaults can be merged with breakpoint overrides."),c(b.styleQueriesSetup.code,b.styleQueriesSetup.lang),h3(t.h3,"Defaults and overrides"),div(t.demoContainerSingle,div(i()),div(c(b.styleQueriesDefaults.code,b.styleQueriesDefaults.lang,!0))),h3(t.h3,"Generated CSS output"),c(b.styleQueriesGeneratedCss.code,b.styleQueriesGeneratedCss.lang,!1),h3(t.h3,"Query-only styles"),c(b.styleQueriesQueriesOnly.code,b.styleQueriesQueriesOnly.lang),h3(t.h3,"Container queries"),c(b.styleQueriesContainer.code,b.styleQueriesContainer.lang),h3(t.h3,"Feature queries"),c(b.styleQueriesFeature.code,b.styleQueriesFeature.lang),h3(t.h3,"Viewport breakpoints example"),c(b.styleQueriesExamples.code,b.styleQueriesExamples.lang),h2(t.h2,"Layout"),p(t.p,"Display, positioning, sizing, spacing, and overflow helpers pulled from the original docs."),h3(t.h3,"Display & position"),c(b.layoutDisplayPosition.code,b.layoutDisplayPosition.lang),h3(t.h3,"Sizing"),c(b.layoutSizing.code,b.layoutSizing.lang),h3(t.h3,"Spacing"),c(b.layoutSpacing.code,b.layoutSpacing.lang),h3(t.h3,"Overflow"),c(b.layoutOverflow.code,b.layoutOverflow.lang),div(t.demoContainer,div(s())),h2(t.h2,"Typography"),p(t.p,"Font and text styling helpers."),h3(t.h3,"Font properties"),c(b.typographyFont.code,b.typographyFont.lang),h3(t.h3,"Text styling"),c(b.typographyText.code,b.typographyText.lang),h3(t.h3,"Typography system example"),div(t.demoContainer,div(d()),div(c(b.typographySystem.code,b.typographySystem.lang,!0))),h2(t.h2,"Colors & Backgrounds"),h3(t.h3,"Colors"),c(b.colorsBasic.code,b.colorsBasic.lang),h3(t.h3,"Gradients"),div(t.demoContainerSingle,div(m()),div(c(b.colorsGradients.code,b.colorsGradients.lang,!0))),h3(t.h3,"Background properties"),c(b.colorsBackground.code,b.colorsBackground.lang),h2(t.h2,"Flexbox"),p(t.p,"Container and item helpers, plus an example navbar layout."),h3(t.h3,"Container helpers"),c(b.flexContainer.code,b.flexContainer.lang),h3(t.h3,"Item helpers"),c(b.flexItem.code,b.flexItem.lang),h3(t.h3,"Navbar example"),div(t.demoContainer,div(g()),div(c(b.flexNavbarExample.code,b.flexNavbarExample.lang,!0))),h2(t.h2,"CSS Grid"),h3(t.h3,"Container helpers"),c(b.gridContainer.code,b.gridContainer.lang),h3(t.h3,"Item helpers"),c(b.gridItem.code,b.gridItem.lang),h3(t.h3,"Responsive card grid"),div(t.demoContainerSingle,div(S()),div(c(b.gridResponsiveExample.code,b.gridResponsiveExample.lang,!0))),h2(t.h2,"Effects & Transitions"),p(t.p,"Shadows, opacity, transitions, transforms, filters, and hover-friendly reactive styles."),h3(t.h3,"Box shadows"),c(b.effectsShadows.code,b.effectsShadows.lang),h3(t.h3,"Visibility"),c(b.effectsVisibility.code,b.effectsVisibility.lang),h3(t.h3,"Transitions"),c(b.effectsTransitions.code,b.effectsTransitions.lang),h3(t.h3,"Transforms"),c(b.effectsTransforms.code,b.effectsTransforms.lang),h3(t.h3,"Filters & backdrop"),c(b.effectsFilters.code,b.effectsFilters.lang),h3(t.h3,"Hover effects with pseudo-classes"),p(t.p,"Use the built-in pseudo-class support for hover, focus, active, and more:"),c(b.styleQueriesPseudoClasses.code,b.styleQueriesPseudoClasses.lang),h3(t.h3,"Hover effects with reactive styles (alternative)"),div(t.demoContainerSingle,div(y()),div(c(b.effectsHover.code,b.effectsHover.lang,!0))),h2(t.h2,"Organizing Styles"),p(t.p,"Reuse the theme + style modules from the legacy page: keep tokens, shared layout pieces, and component styles in one place."),h3(t.h3,"Theme constants"),c(b.organizingTheme.code,b.organizingTheme.lang),h3(t.h3,"Shared styles"),c(b.organizingStyles.code,b.organizingStyles.lang),h3(t.h3,"Using the styles"),div(t.demoContainerSingle,div(v()),div(c(b.organizingUsage.code,b.organizingUsage.lang,!0))),h2(t.h2,"Next Steps"),ul(t.ul,li(t.li,"Explore ",P("CodeBlock")," + ",P("InlineCode")," components to present snippets cleanly."),li(t.li,"Combine ",P("createStyleQueries")," with the helpers above for responsive variants."),li(t.li,"Jump to the ",a({href:"#examples"},"Examples page")," to see these styles in action.")))}function pa(){return div(t.pageContent,h1(t.pageTitle,"Common Pitfalls"),p(t.pageSubtitle,"Avoid these common mistakes when building with Nuclo. Learn the patterns that work and why."),h2(t.h2,{id:"conditional-elements"},"Conditional Element Rendering"),div(n(padding("20px").backgroundColor(o.bgCard).borderRadius("12px").border(`1px solid ${o.border}`).marginBottom("24px")),h3(n(fontSize("16px").fontWeight("600").color("#ef4444").marginBottom("12px")),"The Problem"),p(t.p,"Using a reactive function to conditionally return different elements won't work:"),c(`// ❌ Wrong - reactive function returning elements won't render
+button(
+  () => isOpen ? CloseIcon() : MenuIcon()  // This won't display anything!
+)`,"typescript"),h3(n(fontSize("16px").fontWeight("600").color(o.primary).marginTop("20px").marginBottom("12px")),"The Solution"),p(t.p,"Use ",P("when()")," for conditional element rendering:"),c(`// ✅ Correct - use when() for conditional elements
+button(
+  when(() => isOpen, CloseIcon()).else(MenuIcon())
+)`,"typescript"),h3(n(fontSize("16px").fontWeight("600").color(o.textMuted).marginTop("20px").marginBottom("12px")),"Why?"),p(t.p,"Reactive functions ",P("() => value")," work great for text content and attribute values because Nuclo can update them in place. But elements need to be mounted/unmounted from the DOM, which requires ",P("when()")," to manage properly.")),h2(t.h2,{id:"forgetting-update"},"Forgetting to Call update()"),div(n(padding("20px").backgroundColor(o.bgCard).borderRadius("12px").border(`1px solid ${o.border}`).marginBottom("24px")),h3(n(fontSize("16px").fontWeight("600").color("#ef4444").marginBottom("12px")),"The Problem"),p(t.p,"Changing state without calling ",P("update()")," won't refresh the UI:"),c(`// ❌ Wrong - UI won't update
+let count = 0;
+
+button('Increment', on('click', () => {
+  count++;  // State changed but UI stays the same
+}))`,"typescript"),h3(n(fontSize("16px").fontWeight("600").color(o.primary).marginTop("20px").marginBottom("12px")),"The Solution"),p(t.p,"Always call ",P("update()")," after changing state:"),c(`// ✅ Correct - call update() to refresh
+let count = 0;
+
+button('Increment', on('click', () => {
+  count++;
+  update();  // Now the UI will reflect the new count
+}))`,"typescript")),h2(t.h2,{id:"list-identity"},"Replacing Objects in Lists"),div(n(padding("20px").backgroundColor(o.bgCard).borderRadius("12px").border(`1px solid ${o.border}`).marginBottom("24px")),h3(n(fontSize("16px").fontWeight("600").color("#ef4444").marginBottom("12px")),"The Problem"),p(t.p,"Replacing objects instead of mutating them causes unnecessary DOM recreation:"),c(`// ❌ Wrong - creates a new object, element will be recreated
+todos[0] = { ...todos[0], done: true };
+update();`,"typescript"),h3(n(fontSize("16px").fontWeight("600").color(o.primary).marginTop("20px").marginBottom("12px")),"The Solution"),p(t.p,"Mutate the existing object to preserve its DOM element:"),c(`// ✅ Correct - mutate the object, element is preserved
+todos[0].done = true;
+update();`,"typescript"),h3(n(fontSize("16px").fontWeight("600").color(o.textMuted).marginTop("20px").marginBottom("12px")),"Why?"),p(t.p,"Nuclo's ",P("list()")," tracks items by object identity (reference). When you replace an object with a new one, Nuclo sees it as a different item and recreates the DOM element. Mutating preserves identity and enables efficient updates.")),h2(t.h2,{id:"multiple-updates"},"Multiple update() Calls"),div(n(padding("20px").backgroundColor(o.bgCard).borderRadius("12px").border(`1px solid ${o.border}`).marginBottom("24px")),h3(n(fontSize("16px").fontWeight("600").color("#ef4444").marginBottom("12px")),"The Problem"),p(t.p,"Calling ",P("update()")," multiple times is wasteful:"),c(`// ❌ Inefficient - 3 updates instead of 1
+function handleSubmit() {
+  user.name = 'Alice';
+  update();
+  user.email = 'alice@example.com';
+  update();
+  user.age = 30;
+  update();
+}`,"typescript"),h3(n(fontSize("16px").fontWeight("600").color(o.primary).marginTop("20px").marginBottom("12px")),"The Solution"),p(t.p,"Batch all state changes, then call ",P("update()")," once:"),c(`// ✅ Efficient - batch changes, single update
+function handleSubmit() {
+  user.name = 'Alice';
+  user.email = 'alice@example.com';
+  user.age = 30;
+  update();  // One update for all changes
+}`,"typescript")),h2(t.h2,{id:"static-vs-reactive"},"Static Values Instead of Reactive"),div(n(padding("20px").backgroundColor(o.bgCard).borderRadius("12px").border(`1px solid ${o.border}`).marginBottom("24px")),h3(n(fontSize("16px").fontWeight("600").color("#ef4444").marginBottom("12px")),"The Problem"),p(t.p,"Using a static value when you need it to update:"),c(`// ❌ Wrong - count is captured once, never updates
+let count = 0;
+
+div(
+  \`Count: \${count}\`  // Always shows "Count: 0"
+)`,"typescript"),h3(n(fontSize("16px").fontWeight("600").color(o.primary).marginTop("20px").marginBottom("12px")),"The Solution"),p(t.p,"Wrap in a function to make it reactive:"),c(`// ✅ Correct - function is called on each update()
+let count = 0;
+
+div(
+  () => \`Count: \${count}\`  // Updates when count changes
+)`,"typescript")),h2(t.h2,{id:"summary"},"Quick Reference"),div(n(padding("20px").backgroundColor(o.bgCard).borderRadius("12px").border(`1px solid ${o.border}`)),ul(t.ul,li(t.li,strong("Conditional elements:")," Use ",P("when()"),", not ",P("() => condition ? A : B")),li(t.li,strong("State changes:")," Always call ",P("update()")," after modifying state"),li(t.li,strong("Lists:")," Mutate objects, don't replace them"),li(t.li,strong("Batching:")," Group state changes before a single ",P("update()")),li(t.li,strong("Dynamic content:")," Wrap in ",P("() =>")," to make reactive"))))}const ua={counter:"example-counter",todo:"example-todo",subtasks:"example-subtasks",search:"example-search",async:"example-async",forms:"example-forms",nested:"example-nested",animations:"example-animations",routing:"example-routing","styled-card":"example-styled-card"},ma=n(backgroundColor(o.bgCard).padding("24px").borderRadius("12px").border(`1px solid ${o.border}`).cursor("pointer").transition("all 0.2s"),{hover:border(`1px solid ${o.primary}`).transform("translateY(-2px)").boxShadow("0 4px 12px rgba(0, 0, 0, 0.15)")}),ga=n(fontSize("18px").fontWeight("600").color(o.text).marginBottom("8px")),ha=n(fontSize("14px").color(o.textMuted).lineHeight("1.5")),xe=n(display("grid").gridTemplateColumns("repeat(auto-fill, minmax(300px, 1fr))").gap("20px").marginBottom("48px")),ve=n(fontSize("20px").fontWeight("600").color(o.text).marginBottom("20px").marginTop("32px")),fa=n(display("inline-block").padding("4px 8px").backgroundColor("rgba(132, 204, 22, 0.15)").color(o.primary).fontSize("11px").fontWeight("600").borderRadius("4px").marginLeft("8px").textTransform("uppercase"));function Se(e,r){const i=ua[e.id];return div(ma,on("click",()=>A(i)),div(ga,e.title,r?span(fa,"Live Demo"):null),p(ha,e.description))}const ya=["counter","todo","subtasks"],ba=["search","async","forms"],xa=["nested","animations","routing","styled-card"];function we(e){return N.filter(r=>e.includes(r.id))}function va(){const e=new Set(["counter","todo","subtasks","search","async","forms","nested","animations","routing","styled-card"]);return div(t.pageContent,h1(t.pageTitle,"Examples"),p(t.pageSubtitle,"Explore practical examples demonstrating Nuclo's features. Examples with live demos are marked with a badge."),h2(ve,"Getting Started"),p(n(color(o.textMuted).marginBottom("16px")),"Simple examples to help you understand the basics."),div(xe,...we(ya).map(r=>Se(r,e.has(r.id)))),h2(ve,"Data & Forms"),p(n(color(o.textMuted).marginBottom("16px")),"Working with data, APIs, and form handling."),div(xe,...we(ba).map(r=>Se(r,e.has(r.id)))),h2(ve,"Advanced Patterns"),p(n(color(o.textMuted).marginBottom("16px")),"More complex patterns and techniques."),div(xe,...we(xa).map(r=>Se(r,e.has(r.id)))),section(n(marginTop("48px").paddingTop("32px").borderTop(`1px solid ${o.border}`)),h2(t.h2,"More Examples"),p(t.p,"Find even more demos in the ",a({href:"https://github.com/dan2dev/nuclo/tree/main/examples",target:"_blank",rel:"noopener noreferrer"},n(color(o.primary)),"GitHub examples directory"),".")))}let ne=0;const Sa=n(backgroundColor(o.bgCard).padding("32px").borderRadius("16px").border(`1px solid ${o.border}`).marginBottom("32px")),et=n(padding("10px 20px").backgroundColor(o.primary).color(o.bg).border("none").borderRadius("8px").fontSize("14px").fontWeight("600").cursor("pointer").transition("all 0.2s")),wa=n(padding("10px 20px").backgroundColor(o.bgLight).color(o.text).border(`1px solid ${o.border}`).borderRadius("8px").fontSize("14px").fontWeight("500").cursor("pointer").transition("all 0.2s"));function ka(){return div(Sa,div(t.flexBetween,div(h3(n(fontSize("48px").fontWeight("700").color(o.text).marginBottom("8px")),()=>ne),p(n(fontSize("14px").color(o.textMuted)),"Current count")),div(t.flex,t.gap8,button(et,n(width("44px").height("44px").fontSize("20px").padding("0").display("flex").alignItems("center").justifyContent("center")),"−",on("click",()=>{ne--,update()}),on("mouseenter",e=>{e.target.style.backgroundColor=o.primaryHover,e.target.style.transform="scale(1.05)"}),on("mouseleave",e=>{e.target.style.backgroundColor=o.primary,e.target.style.transform="scale(1)"})),button(et,n(width("44px").height("44px").fontSize("20px").padding("0").display("flex").alignItems("center").justifyContent("center")),"+",on("click",()=>{ne++,update()}),on("mouseenter",e=>{e.target.style.backgroundColor=o.primaryHover,e.target.style.transform="scale(1.05)"}),on("mouseleave",e=>{e.target.style.backgroundColor=o.primary,e.target.style.transform="scale(1)"})),button(wa,"Reset",on("click",()=>{ne=0,update()}),on("mouseenter",e=>{e.target.style.borderColor=o.primary}),on("mouseleave",e=>{e.target.style.borderColor=o.border})))))}function Ca(){const e=N.find(r=>r.id==="counter");return div(t.pageContent,a(n(color(o.textMuted).fontSize("14px").marginBottom("16px").display("inline-block").cursor("pointer")),"← Back to Examples",on("click",r=>{r.preventDefault(),A("examples")})),h1(t.pageTitle,e.title),p(t.pageSubtitle,e.description),ka(),h2(t.h2,"Source Code"),c(e.code,"typescript"))}let D=[{id:1,text:"Learn Nuclo",done:!0},{id:2,text:"Build something awesome",done:!1},{id:3,text:"Share with friends",done:!1}],L="",tt=4;const Pa=n(backgroundColor(o.bgCard).padding("32px").borderRadius("16px").border(`1px solid ${o.border}`).marginBottom("32px")),Ta=n(padding("10px 20px").backgroundColor(o.primary).color(o.bg).border("none").borderRadius("8px").fontSize("14px").fontWeight("600").cursor("pointer").transition("all 0.2s")),Ba=n(padding("10px 14px").backgroundColor(o.bgLight).color(o.text).border(`1px solid ${o.border}`).borderRadius("8px").fontSize("14px").outline("none").width("220px").transition("border-color 0.2s"));function Ra(){const e=n(width("20px").height("20px").cursor("pointer")),r={accentColor:o.primary},i=n(display("flex").alignItems("center").gap("14px").padding("14px 16px").backgroundColor(o.bgLight).borderRadius("10px").marginBottom("10px").transition("all 0.2s")),s=n(marginLeft("auto").padding("6px 10px").backgroundColor("transparent").color(o.textDim).border("none").borderRadius("6px").cursor("pointer").fontSize("18px").transition("all 0.2s"));return div(Pa,div(t.flex,t.gap8,t.mb24,input(Ba,{type:"text",placeholder:"Add a new task...",value:()=>L},on("input",l=>{L=l.target.value,update()}),on("keydown",l=>{l.key==="Enter"&&L.trim()&&(D.push({id:tt++,text:L,done:!1}),L="",update())}),on("focus",l=>{l.target.style.borderColor=o.primary}),on("blur",l=>{l.target.style.borderColor=o.border})),button(Ta,"Add Task",on("click",()=>{L.trim()&&(D.push({id:tt++,text:L,done:!1}),L="",update())}),on("mouseenter",l=>{l.target.style.backgroundColor=o.primaryHover}),on("mouseleave",l=>{l.target.style.backgroundColor=o.primary}))),div(()=>`${D.filter(l=>!l.done).length} remaining · ${D.filter(l=>l.done).length} completed`,n(fontSize("13px").color(o.textDim).marginBottom("20px").fontWeight("500"))),when(()=>D.length>0,list(()=>D,l=>div(i,input(e,{style:r},{type:"checkbox",checked:()=>l.done},on("change",()=>{l.done=!l.done,update()})),span(()=>l.done?n(color(o.textDim).textDecoration("line-through").fontSize("15px")):n(color(o.text).fontSize("15px")),()=>l.text),button(s,"×",on("click",()=>{D=D.filter(d=>d.id!==l.id),update()}),on("mouseenter",d=>{d.target.style.backgroundColor="rgba(239, 68, 68, 0.1)",d.target.style.color="#ef4444"}),on("mouseleave",d=>{d.target.style.backgroundColor="transparent",d.target.style.color=o.textDim}))))).else(p(n(color(o.textDim).textAlign("center").padding("32px").fontSize("15px")),"No tasks yet. Add one above!")))}function Aa(){const e=N.find(r=>r.id==="todo");return div(t.pageContent,a(n(color(o.textMuted).fontSize("14px").marginBottom("16px").display("inline-block").cursor("pointer")),"← Back to Examples",on("click",r=>{r.preventDefault(),A("examples")})),h1(t.pageTitle,e.title),p(t.pageSubtitle,e.description),Ra(),h2(t.h2,"Source Code"),c(e.code,"typescript"))}let re=[{id:1,text:"Learn Nuclo basics",done:!0,expanded:!0,subtasks:[{id:2,text:"Read documentation",done:!0,expanded:!0,subtasks:[]},{id:3,text:"Try examples",done:!1,expanded:!0,subtasks:[]}]},{id:4,text:"Build a project",done:!1,expanded:!0,subtasks:[{id:5,text:"Setup environment",done:!0,expanded:!0,subtasks:[]},{id:6,text:"Write components",done:!1,expanded:!0,subtasks:[]}]}],za=7,W="";const Na=n(backgroundColor(o.bgCard).padding("32px").borderRadius("16px").border(`1px solid ${o.border}`).marginBottom("32px")),Ia=n(padding("10px 14px").backgroundColor(o.bgLight).color(o.text).border(`1px solid ${o.border}`).borderRadius("8px").fontSize("14px").outline("none").flex("1").transition("border-color 0.2s")),Ea=n(padding("10px 20px").backgroundColor(o.primary).color(o.bg).border("none").borderRadius("8px").fontSize("14px").fontWeight("600").cursor("pointer").transition("all 0.2s")),$a=n(marginBottom("8px")),Da=n(display("flex").alignItems("center").gap("10px").padding("10px 14px").backgroundColor(o.bgLight).borderRadius("8px").transition("all 0.2s")),La=n(width("24px").height("24px").backgroundColor("transparent").border("none").color(o.textMuted).cursor("pointer").fontSize("12px").display("flex").alignItems("center").justifyContent("center").borderRadius("4px").transition("all 0.2s")),Wa=n(width("18px").height("18px").cursor("pointer")),Ma=n(marginLeft("auto").padding("4px 8px").backgroundColor("transparent").color(o.textDim).border("none").borderRadius("4px").cursor("pointer").fontSize("16px").transition("all 0.2s")),Fa=n(fontSize("12px").color(o.textDim).marginLeft("8px")),Ha=n(marginLeft("34px").marginTop("8px")),ja=n(marginLeft("34px").marginTop("8px")),Oa=n(padding("6px 10px").backgroundColor(o.bg).color(o.text).border(`1px solid ${o.border}`).borderRadius("6px").fontSize("13px").outline("none").width("200px").transition("border-color 0.2s"));function Ua(e){return{id:za++,text:e,done:!1,subtasks:[],expanded:!0}}function De(e,r){const i=Ua(e);r?r.subtasks.push(i):re.push(i),update()}function Ga(e){e.done=!e.done;function r(i,s){i.done=s,i.subtasks.forEach(l=>r(l,s))}r(e,e.done),update()}function Qa(e){e.expanded=!e.expanded,update()}function qa(e,r){r?r.subtasks=r.subtasks.filter(i=>i.id!==e.id):re=re.filter(i=>i.id!==e.id),update()}function yt(e,r){let i="";return div($a,div(Da,when(()=>e.subtasks.length>0,button(La,()=>e.expanded?"▼":"▶",on("click",()=>Qa(e)),on("mouseenter",s=>{s.target.style.backgroundColor=o.bgCard}),on("mouseleave",s=>{s.target.style.backgroundColor="transparent"}))).else(span(n(width("24px").display("inline-block")))),input(Wa,{style:{accentColor:o.primary}},{type:"checkbox",checked:()=>e.done},on("change",()=>Ga(e))),span(n(fontSize("14px").transition("all 0.2s")),{style:()=>({color:e.done?o.textDim:o.text,textDecoration:e.done?"line-through":"none"})},()=>e.text),when(()=>e.subtasks.length>0,span(Fa,()=>`(${e.subtasks.filter(s=>s.done).length}/${e.subtasks.length})`)),button(Ma,"×",on("click",()=>qa(e,r)),on("mouseenter",s=>{s.target.style.backgroundColor="rgba(239, 68, 68, 0.1)",s.target.style.color="#ef4444"}),on("mouseleave",s=>{s.target.style.backgroundColor="transparent",s.target.style.color=o.textDim}))),when(()=>e.expanded&&e.subtasks.length>0,div(Ha,list(()=>e.subtasks,s=>yt(s,e)))),when(()=>e.expanded,div(ja,input(Oa,{type:"text",placeholder:"Add subtask...",value:()=>i},on("input",s=>{i=s.target.value,update()}),on("keydown",s=>{s.key==="Enter"&&i.trim()&&(De(i.trim(),e),i="",update())}),on("focus",s=>{s.target.style.borderColor=o.primary}),on("blur",s=>{s.target.style.borderColor=o.border})))))}function Va(){return div(Na,h3(n(fontSize("18px").fontWeight("600").color(o.text).marginBottom("20px")),"Tasks with Subtasks"),div(t.flex,t.gap8,t.mb24,input(Ia,{type:"text",placeholder:"Add a new task...",value:()=>W},on("input",e=>{W=e.target.value,update()}),on("keydown",e=>{e.key==="Enter"&&W.trim()&&(De(W.trim()),W="",update())}),on("focus",e=>{e.target.style.borderColor=o.primary}),on("blur",e=>{e.target.style.borderColor=o.border})),button(Ea,"Add Task",on("click",()=>{W.trim()&&(De(W.trim()),W="",update())}),on("mouseenter",e=>{e.target.style.backgroundColor=o.primaryHover}),on("mouseleave",e=>{e.target.style.backgroundColor=o.primary}))),when(()=>re.length>0,div(list(()=>re,e=>yt(e)))).else(p(n(color(o.textDim).textAlign("center").padding("32px")),"No tasks yet. Add one above!")))}function _a(){const e=N.find(r=>r.id==="subtasks");return div(t.pageContent,a(n(color(o.textMuted).fontSize("14px").marginBottom("16px").display("inline-block").cursor("pointer")),"← Back to Examples",on("click",r=>{r.preventDefault(),A("examples")})),h1(t.pageTitle,e.title),p(t.pageSubtitle,e.description),Va(),h2(t.h2,"Source Code"),c(e.code,"typescript"))}const Ya=[{id:1,name:"Alice Johnson",email:"alice@example.com",role:"Admin"},{id:2,name:"Bob Smith",email:"bob@example.com",role:"User"},{id:3,name:"Charlie Brown",email:"charlie@example.com",role:"User"},{id:4,name:"Diana Prince",email:"diana@example.com",role:"Admin"},{id:5,name:"Eve Anderson",email:"eve@example.com",role:"User"}];let X="",pe="all";const Ja=n(backgroundColor(o.bgCard).padding("32px").borderRadius("16px").border(`1px solid ${o.border}`).marginBottom("32px")),Ka=n(padding("10px 14px").backgroundColor(o.bgLight).color(o.text).border(`1px solid ${o.border}`).borderRadius("8px").fontSize("14px").outline("none").flex("1").minWidth("200px").transition("border-color 0.2s")),Xa=n(padding("10px 14px").backgroundColor(o.bgLight).color(o.text).border(`1px solid ${o.border}`).borderRadius("8px").fontSize("14px").outline("none").cursor("pointer").transition("border-color 0.2s")),Za=n(padding("16px").backgroundColor(o.bgLight).borderRadius("10px").marginBottom("12px").transition("all 0.2s")),es=n(display("inline-block").padding("4px 10px").borderRadius("20px").fontSize("12px").fontWeight("600"));function ke(){const e=X.toLowerCase();return Ya.filter(r=>{const i=r.name.toLowerCase().includes(e)||r.email.toLowerCase().includes(e),s=pe==="all"||r.role===pe;return i&&s})}function ts(){return div(Ja,h3(n(fontSize("18px").fontWeight("600").color(o.text).marginBottom("20px")),"User Directory"),div(t.flex,t.gap16,t.mb24,n(flexWrap("wrap")),input(Ka,{type:"search",placeholder:"Search by name or email...",value:()=>X},on("input",e=>{X=e.target.value,update()}),on("focus",e=>{e.target.style.borderColor=o.primary}),on("blur",e=>{e.target.style.borderColor=o.border})),select(Xa,{value:()=>pe},on("change",e=>{pe=e.target.value,update()}),on("focus",e=>{e.target.style.borderColor=o.primary}),on("blur",e=>{e.target.style.borderColor=o.border}),option({value:"all"},"All Roles"),option({value:"Admin"},"Admins"),option({value:"User"},"Users"))),p(n(fontSize("13px").color(o.textDim).marginBottom("16px")),()=>{const e=ke().length;return`Showing ${e} user${e!==1?"s":""}`}),when(()=>ke().length>0,div(list(()=>ke(),e=>div(Za,on("mouseenter",r=>{r.currentTarget.style.backgroundColor=o.bgCard}),on("mouseleave",r=>{r.currentTarget.style.backgroundColor=o.bgLight}),div(t.flexBetween,div(h4(n(fontSize("15px").fontWeight("600").color(o.text).marginBottom("4px")),e.name),p(n(fontSize("13px").color(o.textMuted).margin("0")),e.email)),span(es,{style:{backgroundColor:e.role==="Admin"?"rgba(132, 204, 22, 0.15)":"rgba(100, 116, 139, 0.15)",color:e.role==="Admin"?o.primary:o.textMuted}},e.role)))))).else(div(n(textAlign("center").padding("32px").color(o.textDim)),()=>X?`No users found matching "${X}"`:"No users found")))}function os(){const e=N.find(r=>r.id==="search");return div(t.pageContent,a(n(color(o.textMuted).fontSize("14px").marginBottom("16px").display("inline-block").cursor("pointer")),"← Back to Examples",on("click",r=>{r.preventDefault(),A("examples")})),h1(t.pageTitle,e.title),p(t.pageSubtitle,e.description),ts(),h2(t.h2,"Source Code"),c(e.code,"typescript"))}let B={status:"idle",products:[]},$="phone";const rs=n(backgroundColor(o.bgCard).padding("32px").borderRadius("16px").border(`1px solid ${o.border}`).marginBottom("32px")),ns=n(padding("10px 14px").backgroundColor(o.bgLight).color(o.text).border(`1px solid ${o.border}`).borderRadius("8px").fontSize("14px").outline("none").flex("1").transition("border-color 0.2s")),is=n(padding("10px 20px").backgroundColor(o.primary).color(o.bg).border("none").borderRadius("8px").fontSize("14px").fontWeight("600").cursor("pointer").transition("all 0.2s")),as={backgroundColor:o.bgLight,color:o.textDim,cursor:"not-allowed"},ss=n(display("grid").gap("12px").marginTop("20px")),ls=n(padding("16px").backgroundColor(o.bgLight).borderRadius("10px").transition("all 0.2s")),ds=n(textAlign("center").padding("32px").color(o.textMuted)),cs=n(padding("16px").backgroundColor("rgba(239, 68, 68, 0.1)").borderRadius("8px").color("#ef4444").marginTop("16px"));async function Ce(){if($.trim()){B.status="loading",B.error=void 0,update();try{const e=await fetch(`https://dummyjson.com/products/search?q=${$}`);if(!e.ok)throw new Error("Failed to fetch products");const r=await e.json();B.products=r.products.slice(0,6),B.status="success"}catch(e){B.status="error",B.error=e.message}update()}}function ps(){return div(rs,h3(n(fontSize("18px").fontWeight("600").color(o.text).marginBottom("20px")),"Product Search"),div(t.flex,t.gap8,input(ns,{type:"search",placeholder:"Search products...",value:()=>$,disabled:()=>B.status==="loading"},on("input",e=>{$=e.target.value,update()}),on("keydown",e=>{e.key==="Enter"&&Ce()}),on("focus",e=>{e.target.style.borderColor=o.primary}),on("blur",e=>{e.target.style.borderColor=o.border})),button(is,{disabled:()=>B.status==="loading"||!$.trim(),style:()=>B.status==="loading"||!$.trim()?as:{}},()=>B.status==="loading"?"Searching...":"Search",on("click",Ce),on("mouseenter",e=>{B.status!=="loading"&&$.trim()&&(e.target.style.backgroundColor=o.primaryHover)}),on("mouseleave",e=>{B.status!=="loading"&&$.trim()&&(e.target.style.backgroundColor=o.primary)}))),when(()=>B.status==="loading",div(ds,"Loading products...")).when(()=>B.status==="error",div(cs,t.flexBetween,span(()=>`Error: ${B.error}`),button(n(padding("6px 12px").backgroundColor("transparent").color("#ef4444").border("1px solid #ef4444").borderRadius("6px").fontSize("13px").cursor("pointer")),"Retry",on("click",Ce)))).when(()=>B.status==="success"&&B.products.length>0,div(p(n(fontSize("13px").color(o.textDim).marginTop("16px")),()=>`Found ${B.products.length} products`),div(ss,{style:{gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))"}},list(()=>B.products,e=>div(ls,on("mouseenter",r=>{r.currentTarget.style.backgroundColor=o.bgCard}),on("mouseleave",r=>{r.currentTarget.style.backgroundColor=o.bgLight}),h4(n(fontSize("14px").fontWeight("600").color(o.text).marginBottom("6px")),e.title),p(n(fontSize("12px").color(o.textDim).margin("0 0 8px 0")),e.category),p(n(fontSize("16px").fontWeight("700").color(o.primary).margin("0")),`$${e.price.toFixed(2)}`)))))).when(()=>B.status==="success"&&B.products.length===0,div(n(textAlign("center").padding("32px").color(o.textDim)),()=>`No products found for "${$}"`)).else(div(n(textAlign("center").padding("32px").color(o.textDim)),"Enter a search term and click Search")))}function us(){const e=N.find(r=>r.id==="async");return div(t.pageContent,a(n(color(o.textMuted).fontSize("14px").marginBottom("16px").display("inline-block").cursor("pointer")),"← Back to Examples",on("click",r=>{r.preventDefault(),A("examples")})),h1(t.pageTitle,e.title),p(t.pageSubtitle,e.description),ps(),h2(t.h2,"Source Code"),c(e.code,"typescript"))}let M={username:"",email:"",password:"",confirmPassword:""},z={},F=!1,le="idle";const ms=n(backgroundColor(o.bgCard).padding("32px").borderRadius("16px").border(`1px solid ${o.border}`).marginBottom("32px")),gs=n(marginBottom("20px")),hs=n(display("block").fontSize("14px").fontWeight("500").color(o.text).marginBottom("8px")),fs=n(width("100%").padding("12px 14px").backgroundColor(o.bgLight).color(o.text).border(`1px solid ${o.border}`).borderRadius("8px").fontSize("14px").outline("none").transition("border-color 0.2s")),ys={borderColor:"#ef4444"},bs=n(fontSize("12px").color("#ef4444").marginTop("6px")),xs=n(width("100%").padding("14px 20px").backgroundColor(o.primary).color(o.bg).border("none").borderRadius("8px").fontSize("14px").fontWeight("600").cursor("pointer").transition("all 0.2s").marginTop("8px")),vs={backgroundColor:o.bgLight,color:o.textDim,cursor:"not-allowed"},Ss=n(padding("16px").backgroundColor("rgba(132, 204, 22, 0.1)").borderRadius("8px").color(o.primary).marginBottom("20px").textAlign("center"));function ws(){return z={},M.username.length<3&&(z.username="Username must be at least 3 characters"),M.email.includes("@")||(z.email="Please enter a valid email"),M.password.length<6&&(z.password="Password must be at least 6 characters"),M.password!==M.confirmPassword&&(z.confirmPassword="Passwords do not match"),Object.keys(z).length===0}async function ks(e){if(e.preventDefault(),!ws()){update();return}F=!0,le="idle",update();try{await new Promise(r=>setTimeout(r,1e3)),le="success",M={username:"",email:"",password:"",confirmPassword:""}}catch{le="error"}F=!1,update()}function ie(e,r,i,s){return div(gs,label(hs,r),input(fs,{type:i,placeholder:s,value:()=>M[e],disabled:()=>F,style:()=>z[e]?ys:{}},on("input",l=>{M[e]=l.target.value,delete z[e],update()}),on("focus",l=>{z[e]||(l.target.style.borderColor=o.primary)}),on("blur",l=>{z[e]||(l.target.style.borderColor=o.border)})),when(()=>!!z[e],span(bs,()=>z[e])))}function Cs(){return div(ms,h3(n(fontSize("18px").fontWeight("600").color(o.text).marginBottom("20px")),"Sign Up"),when(()=>le==="success",div(Ss,"Account created successfully!")),form(on("submit",ks),ie("username","Username","text","Enter username"),ie("email","Email","email","Enter email"),ie("password","Password","password","Enter password"),ie("confirmPassword","Confirm Password","password","Confirm password"),button(xs,{type:"submit",disabled:()=>F,style:()=>F?vs:{}},()=>F?"Creating account...":"Sign Up",on("mouseenter",e=>{F||(e.target.style.backgroundColor=o.primaryHover)}),on("mouseleave",e=>{F||(e.target.style.backgroundColor=o.primary)}))))}function Ps(){const e=N.find(r=>r.id==="forms");return div(t.pageContent,a(n(color(o.textMuted).fontSize("14px").marginBottom("16px").display("inline-block").cursor("pointer")),"← Back to Examples",on("click",r=>{r.preventDefault(),A("examples")})),h1(t.pageTitle,e.title),p(t.pageSubtitle,e.description),Cs(),h2(t.h2,"Source Code"),c(e.code,"typescript"))}let bt=[{id:1,name:"Alice",avatar:"A",bio:"Software developer",followers:142},{id:2,name:"Bob",avatar:"B",bio:"Designer",followers:89},{id:3,name:"Charlie",avatar:"C",bio:"Product manager",followers:234}];const Ts=n(backgroundColor(o.bgCard).padding("32px").borderRadius("16px").border(`1px solid ${o.border}`).marginBottom("32px")),Bs=n(display("grid").gap("16px")),Rs=n(padding("20px").backgroundColor(o.bgLight).borderRadius("12px").transition("all 0.2s")),As=n(width("48px").height("48px").borderRadius("50%").backgroundColor(o.primary).color(o.bg).display("flex").alignItems("center").justifyContent("center").fontSize("20px").fontWeight("600").marginBottom("12px")),zs=n(fontSize("16px").fontWeight("600").color(o.text).marginBottom("4px")),Ns=n(fontSize("14px").color(o.textMuted).marginBottom("12px")),Is=n(fontSize("13px").color(o.textDim).marginBottom("12px")),Es=n(padding("8px 16px").backgroundColor(o.primary).color(o.bg).border("none").borderRadius("6px").fontSize("13px").fontWeight("600").cursor("pointer").transition("all 0.2s"));function $s(e){const r=bt.find(i=>i.id===e);r&&(r.followers++,update())}function Ds(e){return div(Rs,on("mouseenter",r=>{r.currentTarget.style.backgroundColor=o.bgCard,r.currentTarget.style.transform="translateY(-2px)"}),on("mouseleave",r=>{r.currentTarget.style.backgroundColor=o.bgLight,r.currentTarget.style.transform="translateY(0)"}),div(As,e.avatar),h4(zs,e.name),p(Ns,e.bio),p(Is,()=>`${e.followers} followers`),button(Es,"Follow",on("click",()=>$s(e.id)),on("mouseenter",r=>{r.target.style.backgroundColor=o.primaryHover}),on("mouseleave",r=>{r.target.style.backgroundColor=o.primary})))}function Ls(e){return div(Bs,{style:{gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))"}},list(()=>e,r=>Ds(r)))}function Ws(){return div(Ts,h3(n(fontSize("18px").fontWeight("600").color(o.text).marginBottom("20px")),"User Directory"),p(n(fontSize("14px").color(o.textMuted).marginBottom("20px")),"This example shows reusable component functions."),Ls(bt))}function Ms(){const e=N.find(r=>r.id==="nested");return div(t.pageContent,a(n(color(o.textMuted).fontSize("14px").marginBottom("16px").display("inline-block").cursor("pointer")),"← Back to Examples",on("click",r=>{r.preventDefault(),A("examples")})),h1(t.pageTitle,e.title),p(t.pageSubtitle,e.description),Ws(),h2(t.h2,"Source Code"),c(e.code,"typescript"))}let K=!1;const Fs=n(backgroundColor(o.bgCard).padding("32px").borderRadius("16px").border(`1px solid ${o.border}`).marginBottom("32px")),Hs=n(padding("12px 24px").backgroundColor(o.primary).color(o.bg).border("none").borderRadius("8px").fontSize("14px").fontWeight("600").cursor("pointer").transition("all 0.2s").marginBottom("24px")),js=n(width("200px").height("200px").borderRadius("16px").display("flex").alignItems("center").justifyContent("center").fontSize("16px").fontWeight("600").color(o.bg).margin("0 auto"));function Os(){const e="nuclo-demo-pulse-keyframes";if(document.getElementById(e))return;const r=document.createElement("style");r.id=e,r.textContent="@keyframes pulse { from { transform: scale(1); opacity: 0.85; } to { transform: scale(1.08); opacity: 1; } }",document.head.appendChild(r)}function Us(){return Os(),div(Fs,h3(n(fontSize("18px").fontWeight("600").color(o.text).marginBottom("20px")),"Animation Demo"),div(n(textAlign("center")),button(Hs,()=>K?"Stop Animation":"Start Animation",on("click",()=>{K=!K,update()}),on("mouseenter",e=>{e.target.style.backgroundColor=o.primaryHover}),on("mouseleave",e=>{e.target.style.backgroundColor=o.primary})),div(js,{style:()=>({animation:K?"pulse 600ms ease-in-out infinite alternate":"none",willChange:K?"transform, opacity":"auto",background:`linear-gradient(135deg, ${o.primary} 0%, ${o.primaryDark} 100%)`})},"Animated Box")))}function Gs(){const e=N.find(r=>r.id==="animations");return div(t.pageContent,a(n(color(o.textMuted).fontSize("14px").marginBottom("16px").display("inline-block").cursor("pointer")),"← Back to Examples",on("click",r=>{r.preventDefault(),A("examples")})),h1(t.pageTitle,e.title),p(t.pageSubtitle,e.description),Us(),h2(t.h2,"Source Code"),c(e.code,"typescript"))}let ee="home";const Qs=n(backgroundColor(o.bgCard).padding("32px").borderRadius("16px").border(`1px solid ${o.border}`).marginBottom("32px")),qs=n(display("flex").gap("8px").marginBottom("24px").paddingBottom("16px").borderBottom(`1px solid ${o.border}`)),Vs=n(padding("10px 20px").backgroundColor("transparent").color(o.textMuted).border(`1px solid ${o.border}`).borderRadius("8px").fontSize("14px").fontWeight("500").cursor("pointer").transition("all 0.2s")),_s=n(backgroundColor(o.primary).color(o.bg).borderColor(o.primary)),Me=n(padding("24px").backgroundColor(o.bgLight).borderRadius("12px").minHeight("150px")),Fe=n(fontSize("20px").fontWeight("600").color(o.text).marginBottom("12px")),He=n(fontSize("14px").color(o.textMuted).lineHeight("1.6")),je=n(padding("8px 16px").backgroundColor(o.bgCard).color(o.primary).border(`1px solid ${o.border}`).borderRadius("6px").fontSize("13px").cursor("pointer").transition("all 0.2s").marginTop("16px"));function ge(e){ee=e,update()}function Ys(){return div(Me,h3(Fe,"Home Page"),p(He,"Welcome to our website! This is a simple client-side routing example."),button(je,"Go to About →",on("click",()=>ge("about")),on("mouseenter",e=>{e.target.style.borderColor=o.primary}),on("mouseleave",e=>{e.target.style.borderColor=o.border})))}function Js(){return div(Me,h3(Fe,"About Page"),p(He,"Learn more about us. We're passionate about building great software."),button(je,"Go to Contact →",on("click",()=>ge("contact")),on("mouseenter",e=>{e.target.style.borderColor=o.primary}),on("mouseleave",e=>{e.target.style.borderColor=o.border})))}function Ks(){return div(Me,h3(Fe,"Contact Page"),p(He,"Get in touch! We'd love to hear from you."),button(je,"Go Home →",on("click",()=>ge("home")),on("mouseenter",e=>{e.target.style.borderColor=o.primary}),on("mouseleave",e=>{e.target.style.borderColor=o.border})))}const Xs=n(),Pe=(e,r)=>{const i=()=>ee===r;return button(Vs,()=>i()?_s:Xs,e,on("click",()=>{ge(r)}))};function Zs(){return div(Qs,h3(n(fontSize("18px").fontWeight("600").color(o.text).marginBottom("20px")),"Mini Router Demo"),nav(qs,Pe("Home","home"),Pe("About","about"),Pe("Contact","contact")),when(()=>ee==="home",Ys()).when(()=>ee==="about",Js()).when(()=>ee==="contact",Ks()))}function el(){const e=N.find(r=>r.id==="routing");return div(t.pageContent,a(n(color(o.textMuted).fontSize("14px").marginBottom("16px").display("inline-block").cursor("pointer")),"← Back to Examples",on("click",r=>{r.preventDefault(),A("examples")})),h1(t.pageTitle,e.title),p(t.pageSubtitle,e.description),Zs(),h2(t.h2,"Source Code"),c(e.code,"typescript"))}let tl=[{id:1,name:"Wireless Headphones",description:"Premium noise-canceling headphones with 30-hour battery.",price:299.99,image:"🎧",inStock:!0},{id:2,name:"Smart Watch",description:"Track your fitness, receive notifications, and more.",price:399.99,image:"⌚",inStock:!0},{id:3,name:"Portable Speaker",description:"Waterproof speaker with incredible bass and clarity.",price:149.99,image:"🔊",inStock:!1}];const ol=n(backgroundColor(o.bgCard).padding("32px").borderRadius("16px").border(`1px solid ${o.border}`).marginBottom("32px")),rl=n(textAlign("center").marginBottom("24px")),nl=n(fontSize("24px").fontWeight("700").color(o.text).marginBottom("8px")),il=n(fontSize("14px").color(o.textMuted)),al=n(display("grid").gap("20px")),sl=n(backgroundColor(o.bgLight).borderRadius("12px").overflow("hidden").transition("all 0.3s").cursor("pointer"),{hover:boxShadow("0 10px 40px rgba(0,0,0,0.2)").transform("translateY(-4px)")}),ll=n(position("relative").height("140px").display("flex").alignItems("center").justifyContent("center").fontSize("48px")),dl=n(position("absolute").top("0").left("0").right("0").bottom("0").backgroundColor("rgba(0,0,0,0.6)").display("flex").alignItems("center").justifyContent("center")),cl=n(color("white").fontSize("14px").fontWeight("600")),pl=n(padding("16px")),ml=n(fontSize("16px").fontWeight("600").color(o.text).marginBottom("8px")),gl=n(fontSize("13px").color(o.textMuted).lineHeight("1.5").marginBottom("16px")),hl=n(display("flex").justifyContent("space-between").alignItems("center")),fl=n(fontSize("18px").fontWeight("700").color(o.primary)),yl=n(padding("8px 16px").borderRadius("6px").border("none").fontSize("13px").fontWeight("600").cursor("pointer").transition("all 0.2s"),{hover:backgroundColor(o.primaryHover)});function bl(e){return div(sl,div(ll,{style:{background:`linear-gradient(135deg, ${o.bgCard} 0%, ${o.bgLight} 100%)`}},span(n(transition("transform 0.3s"),{hover:transform("scale(1.1)")}),e.image),when(()=>!e.inStock,div(dl,span(cl,"Out of Stock")))),div(pl,h4(ml,e.name),p(gl,e.description),div(hl,span(fl,`$${e.price.toFixed(2)}`),button(yl,{style:()=>({backgroundColor:e.inStock?o.primary:o.bgCard,color:e.inStock?o.bg:o.textDim,cursor:e.inStock?"pointer":"not-allowed"})},on("click",()=>{e.inStock&&alert(`Added ${e.name} to cart!`)}),e.inStock?"Add to Cart":"Unavailable"))))}function xl(){return div(ol,div(rl,h3(nl,"Featured Products"),p(il,"Discover our latest collection")),div(al,{style:{gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))"}},list(()=>tl,e=>bl(e))))}function vl(){const e=N.find(r=>r.id==="styled-card");return div(t.pageContent,a(n(color(o.textMuted).fontSize("14px").marginBottom("16px").display("inline-block").cursor("pointer")),"← Back to Examples",on("click",r=>{r.preventDefault(),A("examples")})),h1(t.pageTitle,e.title),p(t.pageSubtitle,e.description),xl(),h2(t.h2,"Source Code"),c(e.code,"typescript"))}Ai();$i();const Sl=div(Xi(),main({style:{minHeight:"calc(100vh - 160px)",paddingTop:"40px"}},when(()=>R()==="home",aa()).when(()=>R()==="getting-started",sa()).when(()=>R()==="core-api",la()).when(()=>R()==="tag-builders",da()).when(()=>R()==="styling",ca()).when(()=>R()==="pitfalls",pa()).when(()=>R()==="examples",va()).when(()=>R()==="example-counter",Ca()).when(()=>R()==="example-todo",Aa()).when(()=>R()==="example-subtasks",_a()).when(()=>R()==="example-search",os()).when(()=>R()==="example-async",us()).when(()=>R()==="example-forms",Ps()).when(()=>R()==="example-nested",Ms()).when(()=>R()==="example-animations",Gs()).when(()=>R()==="example-routing",el()).when(()=>R()==="example-styled-card",vl())),Zi());render(Sl,document.getElementById("app"));
