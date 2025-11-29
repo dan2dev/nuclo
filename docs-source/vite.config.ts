@@ -4,6 +4,14 @@ export default defineConfig({
   base: '/',
   build: {
     outDir: '../docs',
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separate nuclo into its own chunk
+          'nuclo': ['nuclo'],
+        }
+      }
+    }
   }
 })
