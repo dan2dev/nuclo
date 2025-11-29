@@ -1,5 +1,6 @@
 import "nuclo";
 import { updatePageMeta } from "./seo.ts";
+import { loadPage } from "./routes.ts";
 
 export type Route =
   | "home"
@@ -39,7 +40,9 @@ export function setRoute(route: Route) {
   }
   window.scrollTo(0, 0);
   updatePageMeta(route);
-  update();
+
+  // Load the page asynchronously
+  loadPage(route);
 }
 
 const validRoutes: Route[] = [
@@ -80,6 +83,9 @@ export function initRouter() {
   // Update meta tags for initial route
   updatePageMeta(currentRoute);
 
+  // Load initial page
+  loadPage(currentRoute);
+
   // Handle browser back/forward
   window.addEventListener("popstate", () => {
     const pathname = window.location.pathname;
@@ -89,6 +95,8 @@ export function initRouter() {
     const newRoute = routePath || "home";
     currentRoute = validRoutes.includes(newRoute) ? newRoute as Route : "home";
     updatePageMeta(currentRoute);
-    update();
+
+    // Load the page for the new route
+    loadPage(currentRoute);
   });
 }
