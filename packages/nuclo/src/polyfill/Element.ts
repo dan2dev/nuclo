@@ -1,11 +1,13 @@
-export class NucloElement implements Partial<ExpandedElement> {
+import { NucloNode } from './Node';
+
+export class NucloElement extends NucloNode implements Partial<ExpandedElement> {
   tagName: any;
   children?: any;
   attributes?: any;
   className: string = '';
   classList: DOMTokenList;
   textContent: string = '';
-  innerHTML: string = '';
+  private _innerHTML: string = '';
   parentNode: any = null;
   rawMods?: any;
   mods?: any;
@@ -15,8 +17,75 @@ export class NucloElement implements Partial<ExpandedElement> {
   sheet?: CSSStyleSheet | null;
   private _listeners: Map<string, Set<EventListener>>;
   
+  get innerHTML(): string {
+    // Serialize children to HTML
+    return this.serializeChildren();
+  }
+  
+  set innerHTML(value: string) {
+    this._innerHTML = value;
+  }
+  
+  private serializeChildren(): string {
+    let html = '';
+    for (const child of this.children) {
+      if ((child as any).tagName) {
+        // Element node
+        html += this.serializeElement(child);
+      } else if ((child as any).nodeType === 3) {
+        // Text node
+        html += (child as any).textContent || '';
+      } else if ((child as any).nodeType === 8) {
+        // Comment node
+        html += `<!--${(child as any).data || ''}-->`;
+      }
+    }
+    return html;
+  }
+  
+  private serializeElement(element: any): string {
+    const tag = element.tagName.toLowerCase();
+    let html = `<${tag}`;
+    
+    // Add attributes
+    if (element.id) {
+      html += ` id="${element.id}"`;
+    }
+    if (element.className) {
+      html += ` class="${element.className}"`;
+    }
+    if (element.attributes) {
+      for (const [name, value] of element.attributes) {
+        if (name !== 'id' && name !== 'class') {
+          html += ` ${name}="${value}"`;
+        }
+      }
+    }
+    
+    html += '>';
+    
+    // Add children
+    if (element.children && element.children.length > 0) {
+      for (const child of element.children) {
+        if ((child as any).tagName) {
+          html += this.serializeElement(child);
+        } else if ((child as any).nodeType === 3) {
+          html += (child as any).textContent || '';
+        } else if ((child as any).nodeType === 8) {
+          html += `<!--${(child as any).data || ''}-->`;
+        }
+      }
+    }
+    
+    html += `</${tag}>`;
+    return html;
+  }
+  
   constructor(tagName: string) {
+    super();
     this.tagName = tagName.toLowerCase();
+    this.nodeType = 1; // ELEMENT_NODE
+    this.nodeName = tagName.toUpperCase();
     this.children = [];
     this.attributes = new Map<string, string>();
     this._listeners = new Map();
@@ -248,11 +317,118 @@ export class NucloElement implements Partial<ExpandedElement> {
     return true;
   }
   
-  querySelector(_selector: string): Element | null {
+  querySelector(selector: string): Element | null {
+    // Simple implementation - supports basic selectors
+    // #id, .class, tagName
+    if (selector.startsWith('#')) {
+      const id = selector.slice(1);
+      return this.querySelectorById(id);
+    } else if (selector.startsWith('.')) {
+      const className = selector.slice(1);
+      return this.querySelectorByClass(className);
+    } else {
+      // Tag name selector
+      return this.querySelectorByTag(selector);
+    }
+  }
+  
+  private querySelectorById(id: string): Element | null {
+    // Check self
+    if (this.id === id) {
+      return this as unknown as Element;
+    }
+    // Check children recursively
+    for (const child of this.children) {
+      if ((child as any).id === id) {
+        return child as unknown as Element;
+      }
+      if ((child as any).querySelector) {
+        const found = (child as any).querySelector(`#${id}`);
+        if (found) return found;
+      }
+    }
     return null;
   }
   
-  querySelectorAll(_selector: string): NodeListOf<Element> {
-    return [] as unknown as NodeListOf<Element>;
+  private querySelectorByClass(className: string): Element | null {
+    // Check self
+    if (this.classList.contains(className)) {
+      return this as unknown as Element;
+    }
+    // Check children recursively
+    for (const child of this.children) {
+      if ((child as any).classList?.contains(className)) {
+        return child as unknown as Element;
+      }
+      if ((child as any).querySelector) {
+        const found = (child as any).querySelector(`.${className}`);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+  
+  private querySelectorByTag(tagName: string): Element | null {
+    const lowerTag = tagName.toLowerCase();
+    // Check self
+    if (this.tagName.toLowerCase() === lowerTag) {
+      return this as unknown as Element;
+    }
+    // Check children recursively
+    for (const child of this.children) {
+      if ((child as any).tagName?.toLowerCase() === lowerTag) {
+        return child as unknown as Element;
+      }
+      if ((child as any).querySelector) {
+        const found = (child as any).querySelector(tagName);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+  
+  querySelectorAll(selector: string): NodeListOf<Element> {
+    const results: Element[] = [];
+    
+    if (selector.startsWith('#')) {
+      const found = this.querySelector(selector);
+      if (found) results.push(found);
+    } else if (selector.startsWith('.')) {
+      const className = selector.slice(1);
+      this.querySelectorAllByClass(className, results);
+    } else {
+      const tagName = selector.toLowerCase();
+      this.querySelectorAllByTag(tagName, results);
+    }
+    
+    return results as unknown as NodeListOf<Element>;
+  }
+  
+  private querySelectorAllByClass(className: string, results: Element[]): void {
+    if (this.classList.contains(className)) {
+      results.push(this as unknown as Element);
+    }
+    for (const child of this.children) {
+      if ((child as any).classList?.contains(className)) {
+        results.push(child as unknown as Element);
+      }
+      if ((child as any).querySelectorAllByClass) {
+        (child as any).querySelectorAllByClass(className, results);
+      }
+    }
+  }
+  
+  private querySelectorAllByTag(tagName: string, results: Element[]): void {
+    if (this.tagName.toLowerCase() === tagName) {
+      results.push(this as unknown as Element);
+    }
+    for (const child of this.children) {
+      if ((child as any).tagName?.toLowerCase() === tagName) {
+        results.push(child as unknown as Element);
+      }
+      if ((child as any).querySelectorAllByTag) {
+        (child as any).querySelectorAllByTag(tagName, results);
+      }
+    }
   }
 }
