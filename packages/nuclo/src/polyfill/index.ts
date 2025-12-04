@@ -16,6 +16,15 @@ export { NucloDocument, document } from './Document';
 export { NucloElement } from './Element';
 export { NucloText } from './Text';
 export { NucloEvent, NucloCustomEvent, Event, CustomEvent } from './Event';
+export { NucloNode } from './Node';
+
+// Import for local use
+import { NucloElement } from './Element';
+import { NucloNode } from './Node';
+
+export const Node = NucloNode;
+export const Element = NucloElement;
+export const HTMLElement = NucloElement;
 
 // Auto-apply polyfills to globalThis if in Node environment
 if (typeof window === 'undefined' && typeof global !== 'undefined') {
@@ -30,5 +39,14 @@ if (typeof window === 'undefined' && typeof global !== 'undefined') {
   }
   if (!globalThis.CustomEvent) {
     (globalThis as any).CustomEvent = CustomEvent;
+  }
+  if (!globalThis.Node) {
+    (globalThis as any).Node = NucloNode;
+  }
+  if (!globalThis.Element) {
+    (globalThis as any).Element = NucloElement;
+  }
+  if (!globalThis.HTMLElement) {
+    (globalThis as any).HTMLElement = NucloElement;
   }
 }

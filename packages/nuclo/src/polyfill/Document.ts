@@ -40,6 +40,73 @@ export class NucloDocument {
     return comment as unknown as Comment;
   }
   
+  createDocumentFragment(): DocumentFragment {
+    const fragment = {
+      nodeType: 11,
+      nodeName: '#document-fragment',
+      childNodes: [] as Node[],
+      children: [] as Element[],
+      textContent: '',
+      appendChild: function<T extends Node>(child: T): T {
+        this.childNodes.push(child);
+        if ((child as any).nodeType === 1) {
+          this.children.push(child as unknown as Element);
+        }
+        (child as any).parentNode = this;
+        return child;
+      },
+      insertBefore: function<T extends Node>(newNode: T, refNode: Node | null): T {
+        if (!refNode) {
+          return this.appendChild(newNode);
+        }
+        const index = this.childNodes.indexOf(refNode);
+        if (index !== -1) {
+          this.childNodes.splice(index, 0, newNode);
+          if ((newNode as any).nodeType === 1) {
+            const elementIndex = this.children.indexOf(refNode as Element);
+            if (elementIndex !== -1) {
+              this.children.splice(elementIndex, 0, newNode as unknown as Element);
+            }
+          }
+        }
+        (newNode as any).parentNode = this;
+        return newNode;
+      },
+      removeChild: function<T extends Node>(child: T): T {
+        const index = this.childNodes.indexOf(child);
+        if (index !== -1) {
+          this.childNodes.splice(index, 1);
+        }
+        if ((child as any).nodeType === 1) {
+          const elementIndex = this.children.indexOf(child as unknown as Element);
+          if (elementIndex !== -1) {
+            this.children.splice(elementIndex, 1);
+          }
+        }
+        (child as any).parentNode = null;
+        return child;
+      },
+      replaceChild: function<T extends Node>(newChild: T, oldChild: Node): T {
+        const index = this.childNodes.indexOf(oldChild);
+        if (index !== -1) {
+          this.childNodes[index] = newChild;
+          if ((oldChild as any).nodeType === 1 && (newChild as any).nodeType === 1) {
+            const elementIndex = this.children.indexOf(oldChild as Element);
+            if (elementIndex !== -1) {
+              this.children[elementIndex] = newChild as unknown as Element;
+            }
+          }
+        }
+        (newChild as any).parentNode = this;
+        (oldChild as any).parentNode = null;
+        return newChild;
+      },
+      querySelector: () => null,
+      querySelectorAll: () => [] as unknown as NodeListOf<Element>
+    };
+    return fragment as unknown as DocumentFragment;
+  }
+  
   querySelector(selector: string): Element | null {
     // Simple implementation - only supports ID selector for #nuclo-styles
     if (selector.startsWith('#')) {
