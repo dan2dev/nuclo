@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { resolveRenderable } from '../../src/utility/renderables';
 import '../../src'; // Ensure runtime bootstrap registers global tag builders (div, span, etc.)
+import '../../types';
 
 // Tag builders (div, span, etc.) are globally registered by runtime bootstrap side effects
 

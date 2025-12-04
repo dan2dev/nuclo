@@ -1,6 +1,7 @@
 // @vitest-environment node
 import '../../src/polyfill';
 import "../../src/index";
+import "../../types";
 import { describe, it, expect } from "vitest";
 
 describe("div NodeBuilder (Node.js)", () => {
@@ -19,10 +20,10 @@ describe("div NodeBuilder (Node.js)", () => {
     const element = nodeBuilder(parent, 0);
     
     // In Node polyfill, children array contains elements, not all nodes
-    expect(element.children.length).toBeGreaterThan(0);
+    expect(element.children?.length).toBeGreaterThan(0);
     
     // Check that span was added
-    const spanChild = Array.from(element.children).find((child: any) => child.tagName === 'span');
+    const spanChild = Array.from(element.children ?? []).find((child: any) => child.tagName === 'span');
     expect(spanChild).toBeTruthy();
   });
 
@@ -52,8 +53,8 @@ describe("div NodeBuilder (Node.js)", () => {
     const parent = document.createElement("div");
     const nodeBuilder = div(div("Nested Content"));
     const element = nodeBuilder(parent, 0);
-    expect(element.children.length).toBe(1);
-    expect(element.children[0].tagName.toLowerCase()).toBe("div");
+    expect(element.children?.length).toBe(1);
+    expect(element.children?.[0].tagName.toLowerCase()).toBe("div");
   });
 });
 

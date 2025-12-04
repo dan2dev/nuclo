@@ -1,9 +1,9 @@
-/// <reference path="../types/index.d.ts" />
 /**
  * @vitest-environment jsdom
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../src';
+import '../types';
 
 describe('README.md examples', () => {
   beforeEach(() => {

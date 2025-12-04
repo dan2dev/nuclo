@@ -2,6 +2,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../src/index.js'; // This auto-initializes the globals
+import '../types';
 
 describe('Example Integration', () => {
   beforeEach(() => {

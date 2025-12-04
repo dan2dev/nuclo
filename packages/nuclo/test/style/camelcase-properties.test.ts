@@ -2,6 +2,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import "../../src/index";
+import "../../types";
 
 describe('CamelCase CSS Properties', () => {
   let parent: HTMLElement;

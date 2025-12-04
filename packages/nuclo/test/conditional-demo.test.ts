@@ -3,9 +3,7 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { update } from "../src";
-
-// Access global tag builders
-declare const div: any;
+import "../types";
 
 describe("Conditional Element Demo - Your Exact Use Case", () => {
   let container: HTMLDivElement;

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import "../../src/index";
+import "../../types";
 import { beforeEach, describe, expect, it } from "vitest";
 
 describe("SVG Element Creation", () => {

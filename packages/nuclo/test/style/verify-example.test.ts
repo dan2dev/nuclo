@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../../src/core/runtimeBootstrap';
+import '../../types';
 
 describe('Verify example pattern works correctly', () => {
 	beforeEach(() => {
