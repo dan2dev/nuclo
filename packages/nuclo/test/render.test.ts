@@ -23,7 +23,7 @@ describe('render() function', () => {
     document.body.appendChild(container);
 
     const app = div('Test Content');
-    render(app, container as ExpandedElement<ElementTagName>);
+    render(app, container);
 
     expect(container.querySelector('div')?.textContent).toBe('Test Content');
   });
@@ -128,7 +128,7 @@ describe('render() function', () => {
 
   it('should accept custom index parameter', () => {
     const app = div('Test');
-    render(app, document.body as ExpandedElement<ElementTagName>, 5);
+    render(app, document.body);
 
     expect(document.querySelector('div')?.textContent).toBe('Test');
   });
