@@ -3,7 +3,7 @@ export class NucloText {
   nodeName = '#text';
   data: string;
   textContent: string;
-  parentNode: any = null;
+  parentNode: unknown = null;
   
   constructor(data: string) {
     this.data = data;
