@@ -1,16 +1,38 @@
 import { NucloNode } from './Node';
 
-export class NucloElement extends NucloNode implements Partial<ExpandedElement> {
-  tagName: any;
-  children?: any;
-  attributes?: any;
+interface TextNode {
+  nodeType: 3;
+  textContent: string;
+}
+
+interface CommentNode {
+  nodeType: 8;
+  data: string;
+}
+
+function isElementNode(node: unknown): node is NucloElement {
+  return typeof node === 'object' && node !== null && 'tagName' in node;
+}
+
+function isTextNode(node: unknown): node is TextNode {
+  return typeof node === 'object' && node !== null && 'nodeType' in node && (node as { nodeType: number }).nodeType === 3;
+}
+
+function isCommentNode(node: unknown): node is CommentNode {
+  return typeof node === 'object' && node !== null && 'nodeType' in node && (node as { nodeType: number }).nodeType === 8;
+}
+
+export class NucloElement extends NucloNode {
+  tagName: string;
+  children: unknown[];
+  attributes: Map<string, string>;
   className: string = '';
   classList: DOMTokenList;
   textContent: string = '';
   private _innerHTML: string = '';
-  parentNode: any = null;
-  rawMods?: any;
-  mods?: any;
+  parentNode: unknown = null;
+  rawMods?: unknown[];
+  mods?: unknown[];
   style: CSSStyleDeclaration;
   id: string = '';
   namespaceURI?: string;
@@ -29,21 +51,18 @@ export class NucloElement extends NucloNode implements Partial<ExpandedElement> 
   private serializeChildren(): string {
     let html = '';
     for (const child of this.children) {
-      if ((child as any).tagName) {
-        // Element node
+      if (isElementNode(child)) {
         html += this.serializeElement(child);
-      } else if ((child as any).nodeType === 3) {
-        // Text node
-        html += (child as any).textContent || '';
-      } else if ((child as any).nodeType === 8) {
-        // Comment node
-        html += `<!--${(child as any).data || ''}-->`;
+      } else if (isTextNode(child)) {
+        html += child.textContent || '';
+      } else if (isCommentNode(child)) {
+        html += `<!--${child.data || ''}-->`;
       }
     }
     return html;
   }
   
-  private serializeElement(element: any): string {
+  private serializeElement(element: NucloElement): string {
     const tag = element.tagName.toLowerCase();
     let html = `<${tag}`;
     
@@ -67,12 +86,12 @@ export class NucloElement extends NucloNode implements Partial<ExpandedElement> 
     // Add children
     if (element.children && element.children.length > 0) {
       for (const child of element.children) {
-        if ((child as any).tagName) {
+        if (isElementNode(child)) {
           html += this.serializeElement(child);
-        } else if ((child as any).nodeType === 3) {
-          html += (child as any).textContent || '';
-        } else if ((child as any).nodeType === 8) {
-          html += `<!--${(child as any).data || ''}-->`;
+        } else if (isTextNode(child)) {
+          html += child.textContent || '';
+        } else if (isCommentNode(child)) {
+          html += `<!--${child.data || ''}-->`;
         }
       }
     }
@@ -226,7 +245,9 @@ export class NucloElement extends NucloNode implements Partial<ExpandedElement> 
   
   appendChild<T extends Node>(child: T): T {
     this.children.push(child);
-    (child as any).parentNode = this;
+    if (typeof child === 'object' && child !== null && 'parentNode' in child) {
+      (child as { parentNode: unknown }).parentNode = this;
+    }
     return child;
   }
   
@@ -261,7 +282,9 @@ export class NucloElement extends NucloNode implements Partial<ExpandedElement> 
     const index = this.children.indexOf(referenceNode);
     if (index !== -1) {
       this.children.splice(index, 0, newNode);
-      (newNode as any).parentNode = this;
+      if (typeof newNode === 'object' && newNode !== null && 'parentNode' in newNode) {
+        (newNode as { parentNode: unknown }).parentNode = this;
+      }
     }
     return newNode;
   }
@@ -270,7 +293,9 @@ export class NucloElement extends NucloNode implements Partial<ExpandedElement> 
     const index = this.children.indexOf(child);
     if (index !== -1) {
       this.children.splice(index, 1);
-      (child as any).parentNode = null;
+      if (typeof child === 'object' && child !== null && 'parentNode' in child) {
+        (child as { parentNode: unknown }).parentNode = null;
+      }
     }
     return child;
   }
@@ -279,8 +304,12 @@ export class NucloElement extends NucloNode implements Partial<ExpandedElement> 
     const index = this.children.indexOf(oldChild);
     if (index !== -1) {
       this.children[index] = newChild;
-      (newChild as any).parentNode = this;
-      (oldChild as any).parentNode = null;
+      if (typeof newChild === 'object' && newChild !== null && 'parentNode' in newChild) {
+        (newChild as { parentNode: unknown }).parentNode = this;
+      }
+      if (typeof oldChild === 'object' && oldChild !== null && 'parentNode' in oldChild) {
+        (oldChild as { parentNode: unknown }).parentNode = null;
+      }
     }
     return oldChild;
   }
@@ -311,7 +340,7 @@ export class NucloElement extends NucloNode implements Partial<ExpandedElement> 
       });
     }
     // Bubble to parent if event.bubbles is true
-    if ((event as any).bubbles && this.parentNode && typeof this.parentNode.dispatchEvent === 'function') {
+    if (event.bubbles && this.parentNode && typeof this.parentNode === 'object' && 'dispatchEvent' in this.parentNode && typeof this.parentNode.dispatchEvent === 'function') {
       this.parentNode.dispatchEvent(event);
     }
     return true;
@@ -339,11 +368,11 @@ export class NucloElement extends NucloNode implements Partial<ExpandedElement> 
     }
     // Check children recursively
     for (const child of this.children) {
-      if ((child as any).id === id) {
-        return child as unknown as Element;
-      }
-      if ((child as any).querySelector) {
-        const found = (child as any).querySelector(`#${id}`);
+      if (isElementNode(child)) {
+        if (child.id === id) {
+          return child as unknown as Element;
+        }
+        const found = child.querySelector(`#${id}`);
         if (found) return found;
       }
     }
@@ -357,11 +386,11 @@ export class NucloElement extends NucloNode implements Partial<ExpandedElement> 
     }
     // Check children recursively
     for (const child of this.children) {
-      if ((child as any).classList?.contains(className)) {
-        return child as unknown as Element;
-      }
-      if ((child as any).querySelector) {
-        const found = (child as any).querySelector(`.${className}`);
+      if (isElementNode(child)) {
+        if (child.classList?.contains(className)) {
+          return child as unknown as Element;
+        }
+        const found = child.querySelector(`.${className}`);
         if (found) return found;
       }
     }
@@ -376,11 +405,11 @@ export class NucloElement extends NucloNode implements Partial<ExpandedElement> 
     }
     // Check children recursively
     for (const child of this.children) {
-      if ((child as any).tagName?.toLowerCase() === lowerTag) {
-        return child as unknown as Element;
-      }
-      if ((child as any).querySelector) {
-        const found = (child as any).querySelector(tagName);
+      if (isElementNode(child)) {
+        if (child.tagName.toLowerCase() === lowerTag) {
+          return child as unknown as Element;
+        }
+        const found = child.querySelector(tagName);
         if (found) return found;
       }
     }
@@ -409,11 +438,11 @@ export class NucloElement extends NucloNode implements Partial<ExpandedElement> 
       results.push(this as unknown as Element);
     }
     for (const child of this.children) {
-      if ((child as any).classList?.contains(className)) {
-        results.push(child as unknown as Element);
-      }
-      if ((child as any).querySelectorAllByClass) {
-        (child as any).querySelectorAllByClass(className, results);
+      if (isElementNode(child)) {
+        if (child.classList?.contains(className)) {
+          results.push(child as unknown as Element);
+        }
+        child.querySelectorAllByClass(className, results);
       }
     }
   }
@@ -423,11 +452,11 @@ export class NucloElement extends NucloNode implements Partial<ExpandedElement> 
       results.push(this as unknown as Element);
     }
     for (const child of this.children) {
-      if ((child as any).tagName?.toLowerCase() === tagName) {
-        results.push(child as unknown as Element);
-      }
-      if ((child as any).querySelectorAllByTag) {
-        (child as any).querySelectorAllByTag(tagName, results);
+      if (isElementNode(child)) {
+        if (child.tagName.toLowerCase() === tagName) {
+          results.push(child as unknown as Element);
+        }
+        child.querySelectorAllByTag(tagName, results);
       }
     }
   }

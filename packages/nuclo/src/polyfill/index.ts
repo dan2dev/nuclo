@@ -27,26 +27,37 @@ export const Element = NucloElement;
 export const HTMLElement = NucloElement;
 
 // Auto-apply polyfills to globalThis if in Node environment
-if (typeof window === 'undefined' && typeof global !== 'undefined') {
+if (typeof window === 'undefined' && typeof globalThis !== 'undefined') {
   const { document } = await import('./Document');
   const { Event, CustomEvent } = await import('./Event');
   
-  if (!globalThis.document) {
-    (globalThis as any).document = document;
+  interface GlobalWithPolyfills {
+    document?: typeof document;
+    Event?: typeof Event;
+    CustomEvent?: typeof CustomEvent;
+    Node?: typeof NucloNode;
+    Element?: typeof NucloElement;
+    HTMLElement?: typeof NucloElement;
   }
-  if (!globalThis.Event) {
-    (globalThis as any).Event = Event;
+  
+  const g = globalThis as unknown as GlobalWithPolyfills;
+  
+  if (!g.document) {
+    g.document = document;
   }
-  if (!globalThis.CustomEvent) {
-    (globalThis as any).CustomEvent = CustomEvent;
+  if (!g.Event) {
+    g.Event = Event;
   }
-  if (!globalThis.Node) {
-    (globalThis as any).Node = NucloNode;
+  if (!g.CustomEvent) {
+    g.CustomEvent = CustomEvent;
   }
-  if (!globalThis.Element) {
-    (globalThis as any).Element = NucloElement;
+  if (!g.Node) {
+    g.Node = NucloNode;
   }
-  if (!globalThis.HTMLElement) {
-    (globalThis as any).HTMLElement = NucloElement;
+  if (!g.Element) {
+    g.Element = NucloElement;
+  }
+  if (!g.HTMLElement) {
+    g.HTMLElement = NucloElement;
   }
 }
