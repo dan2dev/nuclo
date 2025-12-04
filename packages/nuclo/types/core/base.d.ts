@@ -4,18 +4,22 @@ declare global {
   export type Primitive = string | number | bigint | boolean | symbol | null | undefined;
   export type ElementTagName = keyof HTMLElementTagNameMap;
 
+  // CSS Style object type that accepts any CSS property as string or number
+  export type CSSStyleObject = {
+    [K in keyof CSSStyleDeclaration]?: CSSStyleDeclaration[K] | string | number;
+  };
+
   // Core element attribute types
   export type ExpandedElementAttributes<
     TTagName extends ElementTagName = ElementTagName,
-  > = Omit<
-    {
-      [K in keyof HTMLElementTagNameMap[TTagName]]?:
-      | HTMLElementTagNameMap[TTagName][K]
-      | (() => HTMLElementTagNameMap[TTagName][K]);
-    },
-    "style"
-  > & {
-    style?: Partial<CSSStyleDeclaration> | (() => Partial<CSSStyleDeclaration>);
+  > = {
+    [K in keyof HTMLElementTagNameMap[TTagName]]?:
+      K extends "style"
+        ? CSSStyleObject | (() => CSSStyleObject)
+        : HTMLElementTagNameMap[TTagName][K] | (() => HTMLElementTagNameMap[TTagName][K]);
+  } & {
+    // Allow custom attributes (data-*, aria-*, etc.)
+    [key: string]: any;
   };
 
   // Core element type
