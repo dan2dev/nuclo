@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../src/index';
+import '../types';
 
 describe('Global availability', () => {
   beforeEach(() => {

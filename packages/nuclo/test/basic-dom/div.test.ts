@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import "../../src/index";
+import "../../types";
 import { describe, it, expect } from "vitest";
 
 describe("div NodeBuilder", () => {

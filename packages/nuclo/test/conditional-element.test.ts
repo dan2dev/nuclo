@@ -3,10 +3,7 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { update } from "../src";
-
-// Access global tag builders
-declare const div: any;
-declare const span: any;
+import "../types";
 
 describe("Conditional Element Rendering", () => {
   let container: HTMLDivElement;

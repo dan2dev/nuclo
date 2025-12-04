@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { update } from '../src/core/updateController';
 import { createBreakpoints, bg, padding } from '../src/style';
 import '../src/core/runtimeBootstrap';
+import '../types';
 
 const cn = createBreakpoints({
   small: "(min-width: 320px)",

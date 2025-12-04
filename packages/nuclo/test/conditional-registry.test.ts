@@ -17,9 +17,7 @@ import {
   unregisterConditionalNode,
   getConditionalInfo,
 } from "../src/utility/conditionalInfo";
-
-// Global tag builders (registered by runtime bootstrap)
-declare const div: any;
+import "../types";
 
 /**
  * Utility to fully reset registry between tests. Since the registry

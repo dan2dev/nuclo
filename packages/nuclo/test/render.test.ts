@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../src';
+import '../types';
 
 describe('render() function', () => {
   beforeEach(() => {
