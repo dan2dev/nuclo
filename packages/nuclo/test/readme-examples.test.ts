@@ -1,3 +1,7 @@
+/// <reference path="../types/index.d.ts" />
+/**
+ * @vitest-environment jsdom
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../src';
 
@@ -209,12 +213,11 @@ describe('README.md examples', () => {
   describe('API examples', () => {
     it('should support reactive attributes', () => {
       let isActive = false;
-      const isValid = true;
       let isVisible = true;
 
       const app = div({
         className: () => isActive ? 'active' : '',
-        disabled: () => !isValid,
+        'aria-hidden': () => !isVisible,
         style: () => ({ opacity: isVisible ? 1 : 0 })
       });
 
