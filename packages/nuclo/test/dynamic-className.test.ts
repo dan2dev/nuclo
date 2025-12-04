@@ -336,14 +336,19 @@ describe('Dynamic className with cn()', () => {
         { id: 3, active: true },
       ];
 
-      const { list } = globalThis as any;
+      // const { list } = globalThis as any;
 
-      const element = (globalThis as any).div(
+      interface Item {
+        id: number;
+        active: boolean;
+      }
+
+      const element = div(
         list(
           () => items,
           (item) => (globalThis as any).div(
-            () => item.active ? class1 : class2,
-            `Item ${item.id}`
+        () => item.active ? class1 : class2,
+        `Item ${item.id}`
           )
         )
       );
@@ -351,7 +356,7 @@ describe('Dynamic className with cn()', () => {
       const result = element(container, 0);
       container.appendChild(result as Node);
 
-      const divs = result.querySelectorAll('div');
+      const divs = result.querySelectorAll?.('div') || [];
       expect(divs[0].className).toBe(class1.className);
       expect(divs[1].className).toBe(class2.className);
       expect(divs[2].className).toBe(class1.className);

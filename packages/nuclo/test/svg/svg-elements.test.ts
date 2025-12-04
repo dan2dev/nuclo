@@ -84,7 +84,7 @@ describe("SVG Element Creation", () => {
       )
     )();
 
-    const svgEl = container.querySelector("svg");
+    const svgEl = container.querySelector?.("svg");
     expect(svgEl).toBeTruthy();
     expect(svgEl?.namespaceURI).toBe("http://www.w3.org/2000/svg");
     expect(svgEl?.getAttribute("viewBox")).toBe("0 0 24 24");
