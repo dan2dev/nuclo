@@ -1,3 +1,6 @@
 packages:
-  - 'packages/*'
-  - 'docs-source'
+  - packages/*
+  - docs-source
+
+onlyBuiltDependencies:
+  - esbuild
