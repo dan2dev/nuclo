@@ -1,3 +1,4 @@
+/// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { when } from "../../src/when";
 import { updateWhenRuntimes, clearWhenRuntimes } from "../../src/when/runtime";

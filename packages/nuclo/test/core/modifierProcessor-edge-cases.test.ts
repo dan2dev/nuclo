@@ -1,3 +1,4 @@
+/// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { applyNodeModifier } from "../../src/core/modifierProcessor";
 

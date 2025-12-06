@@ -10,6 +10,8 @@
  *  - Ensure no DOM-wide TreeWalker scan is performed (createTreeWalker not called).
  */
 
+/// <reference path="../types/index.d.ts" />
+
 import { describe, it, expect, beforeEach } from "vitest";
 import { update } from "../src";
 import {
@@ -17,7 +19,6 @@ import {
   unregisterConditionalNode,
   getConditionalInfo,
 } from "../src/utility/conditionalInfo";
-import "../types";
 
 /**
  * Utility to fully reset registry between tests. Since the registry

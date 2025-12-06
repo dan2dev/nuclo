@@ -10,6 +10,8 @@
  *  - Performance / no-op branch updates
  */
 
+/// <reference path="../../types/index.d.ts" />
+
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { when, updateWhenRuntimes, clearWhenRuntimes } from '../../src/when';
 import { list } from '../../src/list';

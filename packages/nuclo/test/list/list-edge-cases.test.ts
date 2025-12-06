@@ -1,3 +1,4 @@
+/// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { list } from "../../src/list";
 import { updateListRuntimes } from "../../src/list/runtime";

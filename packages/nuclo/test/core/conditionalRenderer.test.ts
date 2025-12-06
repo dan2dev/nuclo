@@ -9,6 +9,8 @@
  * conditional system tests that exercise runtime updating (handled in other files).
  */
 
+/// <reference path="../../types/index.d.ts" />
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // NOTE: We intentionally import only the helper under test for the

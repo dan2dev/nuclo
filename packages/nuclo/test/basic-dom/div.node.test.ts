@@ -1,7 +1,7 @@
+/// <reference path="../../types/index.d.ts" />
 // @vitest-environment node
 import '../../src/polyfill';
 import "../../src/index";
-import "../../types";
 import { describe, it, expect } from "vitest";
 
 describe("div NodeBuilder (Node.js)", () => {

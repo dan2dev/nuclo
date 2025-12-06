@@ -2,9 +2,10 @@
  * @vitest-environment jsdom
  */
 
+/// <reference path="../types/index.d.ts" />
+
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../src/index'; // Import to initialize runtime
-import '../types';
 
 // Mock data object for testing
 const mockData = {

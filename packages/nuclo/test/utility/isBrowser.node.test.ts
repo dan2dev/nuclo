@@ -1,6 +1,8 @@
 /**
  * @vitest-environment node
  */
+
+/// <reference path="../../types/index.d.ts" />
 import { describe, it, expect } from 'vitest';
 
 // Test browser detection logic directly

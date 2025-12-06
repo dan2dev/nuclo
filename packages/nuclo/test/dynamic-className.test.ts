@@ -2,10 +2,11 @@
  * @vitest-environment jsdom
  */
 
+/// <reference path="../types/index.d.ts" />
+
 import { describe, it, expect, beforeEach } from 'vitest';
 import { update } from '../src';
 import { createBreakpoints, bg, padding, width } from '../src/style';
-import '../types';
 
 // Create breakpoints for testing
 const cn = createBreakpoints({

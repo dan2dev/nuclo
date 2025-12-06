@@ -1,3 +1,4 @@
+/// <reference path="../../types/index.d.ts" />
 import { describe, it, expect } from "vitest";
 import * as styleExports from "../../src/style";
 
