@@ -22,7 +22,8 @@ const terserOptions = {
   },
 };
 
-export default {
+// Main bundle configuration
+const mainConfig = {
   input: 'src/index.ts',
   output: [
     {
@@ -44,3 +45,30 @@ export default {
   ],
   plugins: [typescript(), terser(terserOptions)],
 };
+
+// SSR bundle configuration
+const ssrConfig = {
+  input: 'src/ssr/index.ts',
+  output: [
+    {
+      file: 'dist/ssr/nuclo.ssr.js',
+      format: 'es',
+      sourcemap: true,
+    },
+    {
+      file: 'dist/ssr/nuclo.ssr.cjs',
+      format: 'cjs',
+      sourcemap: true,
+    },
+  ],
+  plugins: [
+    typescript({
+      declaration: false,
+      declarationDir: undefined,
+      declarationMap: false,
+    }),
+    terser(terserOptions)
+  ],
+};
+
+export default [mainConfig, ssrConfig];

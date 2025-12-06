@@ -13,6 +13,11 @@
 			"import": "./dist/nuclo.js",
 			"require": "./dist/nuclo.cjs"
 		},
+		"./ssr": {
+			"types": "./dist/ssr/index.d.ts",
+			"import": "./dist/ssr/nuclo.ssr.js",
+			"require": "./dist/ssr/nuclo.ssr.cjs"
+		},
 		"./types": {
 			"types": "./types/index.d.ts"
 		}
