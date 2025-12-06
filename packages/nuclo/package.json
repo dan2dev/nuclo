@@ -35,7 +35,7 @@
 		"build:types": "tsc --emitDeclarationOnly",
 		"clean": "rm -rf dist *.tsbuildinfo",
 		"test": "vitest run --coverage",
-		"test:watch": "vitest --watch",
+		"test:watch": "vitest --watch --coverage",
 		"lint": "eslint . --ext .ts,.js,.json,.jsonc,.json5,.md,.css"
 	},
 	"devDependencies": {
