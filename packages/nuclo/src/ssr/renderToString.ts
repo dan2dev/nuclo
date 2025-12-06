@@ -3,26 +3,14 @@
  * Renders Nuclo components to HTML strings in Node.js environment
  */
 
+import { escapeHtml, camelToKebab } from '../utility/stringUtils';
+
 type RenderableInput =
   | NodeModFn<ElementTagName>
   | Element
   | Node
   | null
   | undefined;
-
-/**
- * Escapes HTML special characters to prevent XSS
- */
-function escapeHtml(text: string): string {
-  const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  };
-  return text.replace(/[&<>"']/g, char => map[char] || char);
-}
 
 /**
  * Serializes a DOM attribute value
@@ -39,7 +27,7 @@ function serializeAttribute(name: string, value: unknown): string {
   if (name === 'style' && typeof value === 'object') {
     const styleStr = Object.entries(value)
       .map(([key, val]) => {
-        const cssKey = key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+        const cssKey = camelToKebab(key);
         return `${cssKey}:${val}`;
       })
       .join(';');
