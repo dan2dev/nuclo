@@ -2,9 +2,10 @@
  * Tests for examples shown in the documentation (./docs)
  * These tests verify that all code examples in the documentation work correctly.
  */
+
+/// <reference path="../types/index.d.ts" />
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../src';
-import '../types';
 
 describe('Documentation Examples', () => {
   beforeEach(() => {

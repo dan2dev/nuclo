@@ -1,6 +1,6 @@
+/// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../../src/core/runtimeBootstrap';
-import '../../types';
 
 describe('Style utilities - DOM Output', () => {
 	beforeEach(() => {

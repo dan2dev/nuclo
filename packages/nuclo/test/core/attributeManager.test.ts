@@ -1,3 +1,4 @@
+/// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach } from 'vitest';
 import { applyAttributes } from '../../src/core/attributeManager';
 import { update } from '../../src';

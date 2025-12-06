@@ -1,3 +1,4 @@
+/// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { applyModifiers } from '../../src/internal/applyModifiers';
 import { createHtmlConditionalElement } from '../../src/core/conditionalRenderer';

@@ -1,8 +1,8 @@
+/// <reference path="../types/index.d.ts" />
 // @vitest-environment node
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../src/polyfill';
 import '../src';
-import '../types';
 
 describe('Simple counter example in Node.js with polyfills', () => {
   beforeEach(() => {

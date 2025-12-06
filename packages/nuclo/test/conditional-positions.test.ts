@@ -1,9 +1,10 @@
 /**
  * @vitest-environment jsdom
  */
+
+/// <reference path="../types/index.d.ts" />
 import { describe, it, expect, beforeEach } from "vitest";
 import { update } from "../src";
-import "../types";
 
 describe("Conditional Rendering - Boolean in Any Position", () => {
   let container: HTMLDivElement;

@@ -1,3 +1,4 @@
+/// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createStyleQueries, createBreakpoints, bg, fontSize, flex, center, bold, width, display } from '../../src/style';
 import '../../src/core/runtimeBootstrap';

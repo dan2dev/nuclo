@@ -1,3 +1,4 @@
+/// <reference path="../../types/index.d.ts" />
 // @vitest-environment jsdom
 import { isNode, isObject, isTagLike, isBoolean, isFunction } from "../../src/utility/typeGuards.js";
 import { describe, it, expect } from "vitest";

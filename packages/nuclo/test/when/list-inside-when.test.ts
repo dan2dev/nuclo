@@ -1,6 +1,8 @@
 /**
  * @vitest-environment jsdom
  */
+
+/// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach } from 'vitest';
 import { when } from '../../src/when';
 import { list } from '../../src/list';
