@@ -245,6 +245,10 @@ export class NucloElement extends NucloNode {
   
   appendChild<T extends Node>(child: T): T {
     this.children.push(child);
+    // Also update _childNodes from parent class for childNodes getter
+    if (this['_childNodes']) {
+      (this as any)['_childNodes'].push(child);
+    }
     if (typeof child === 'object' && child !== null && 'parentNode' in child) {
       (child as { parentNode: unknown }).parentNode = this;
     }
@@ -282,6 +286,13 @@ export class NucloElement extends NucloNode {
     const index = this.children.indexOf(referenceNode);
     if (index !== -1) {
       this.children.splice(index, 0, newNode);
+      // Also update _childNodes from parent class
+      if (this['_childNodes']) {
+        const childNodesIndex = (this as any)['_childNodes'].indexOf(referenceNode);
+        if (childNodesIndex !== -1) {
+          (this as any)['_childNodes'].splice(childNodesIndex, 0, newNode);
+        }
+      }
       if (typeof newNode === 'object' && newNode !== null && 'parentNode' in newNode) {
         (newNode as { parentNode: unknown }).parentNode = this;
       }

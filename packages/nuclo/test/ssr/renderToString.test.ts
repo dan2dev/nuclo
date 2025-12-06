@@ -154,8 +154,8 @@ describe("SSR renderToString", () => {
   describe("SVG elements", () => {
     it("should render SVG elements", () => {
       const html = renderToString(
-        svg({ width: "100", height: "100" },
-          circle({ cx: "50", cy: "50", r: "40" })
+        svgSvg({ width: "100", height: "100" },
+          circleSvg({ cx: "50", cy: "50", r: "40" })
         )
       );
       expect(html).toContain('<svg');

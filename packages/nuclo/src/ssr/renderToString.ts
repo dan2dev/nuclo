@@ -55,12 +55,35 @@ function serializeAttribute(name: string, value: unknown): string {
 function serializeAttributes(element: Element): string {
   let result = '';
 
-  if (!element.attributes) return result;
+  // Handle polyfill elements with Map-based attributes
+  if ('attributes' in element && element.attributes instanceof Map) {
+    // First, handle special properties that might not be in the attributes Map
+    const el = element as any;
 
-  for (let i = 0; i < element.attributes.length; i++) {
-    const attr = element.attributes[i];
-    if (attr && attr.name) {
-      result += serializeAttribute(attr.name, attr.value);
+    // Add id if it exists and is not already in attributes
+    if (el.id && !element.attributes.has('id')) {
+      result += serializeAttribute('id', el.id);
+    }
+
+    // Add class if it exists and is not already in attributes
+    if (el.className && !element.attributes.has('class')) {
+      result += serializeAttribute('class', el.className);
+    }
+
+    // Then add all attributes from the Map
+    for (const [name, value] of element.attributes) {
+      result += serializeAttribute(name, value);
+    }
+    return result;
+  }
+
+  // Handle browser elements with NamedNodeMap attributes
+  if (element.attributes && element.attributes.length) {
+    for (let i = 0; i < element.attributes.length; i++) {
+      const attr = element.attributes[i];
+      if (attr && attr.name) {
+        result += serializeAttribute(attr.name, attr.value);
+      }
     }
   }
 
@@ -74,6 +97,27 @@ const VOID_ELEMENTS = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
   'link', 'meta', 'param', 'source', 'track', 'wbr'
 ]);
+
+/**
+ * Get child nodes from an element (handles both browser and polyfill elements)
+ */
+function getChildNodes(node: Node): ArrayLike<Node> {
+  // Check for childNodes first (document fragments and browser elements)
+  if ('childNodes' in node) {
+    const childNodes = (node as any).childNodes;
+    if (childNodes && (Array.isArray(childNodes) || childNodes.length !== undefined)) {
+      return childNodes;
+    }
+  }
+  // Polyfill elements have children array
+  if ('children' in node) {
+    const children = (node as any).children;
+    if (children && Array.isArray(children)) {
+      return children as ArrayLike<Node>;
+    }
+  }
+  return [] as ArrayLike<Node>;
+}
 
 /**
  * Serializes a DOM node to HTML string
@@ -102,9 +146,10 @@ function serializeNode(node: Node): string {
 
     // Regular elements with children
     let childrenHtml = '';
-    if (element.childNodes) {
-      for (let i = 0; i < element.childNodes.length; i++) {
-        const child = element.childNodes[i];
+    const childNodes = getChildNodes(element);
+    if (childNodes && childNodes.length > 0) {
+      for (let i = 0; i < childNodes.length; i++) {
+        const child = childNodes[i];
         if (child) {
           childrenHtml += serializeNode(child);
         }
@@ -117,9 +162,10 @@ function serializeNode(node: Node): string {
   // Document fragment
   if (node.nodeType === 11) { // Node.DOCUMENT_FRAGMENT_NODE
     let result = '';
-    if (node.childNodes) {
-      for (let i = 0; i < node.childNodes.length; i++) {
-        const child = node.childNodes[i];
+    const childNodes = getChildNodes(node);
+    if (childNodes && childNodes.length > 0) {
+      for (let i = 0; i < childNodes.length; i++) {
+        const child = childNodes[i];
         if (child) {
           result += serializeNode(child);
         }
