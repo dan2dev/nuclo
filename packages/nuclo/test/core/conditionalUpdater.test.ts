@@ -1,6 +1,6 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { createHtmlConditionalElement } from '../../src/core/conditionalRenderer';
+import { createHtmlConditionalElement } from '../helpers/conditionalTestHelpers';
 import { updateConditionalElements } from '../../src/core/conditionalUpdater';
 
 describe('conditionalUpdater.updateConditionalElements', () => {

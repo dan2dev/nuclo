@@ -1,4 +1,3 @@
-import { createHtmlConditionalElement, createSvgConditionalElement, processConditionalModifiers } from "./conditionalRenderer";
 import { applyModifiers, type NodeModifier } from "../internal/applyModifiers";
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
@@ -11,14 +10,8 @@ function createHtmlElementFactory<TTagName extends ElementTagName>(
   ...modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>
 ): NodeModFn<TTagName> {
   return (parent: ExpandedElement<TTagName>, index: number): ExpandedElement<TTagName> => {
-    const { condition, otherModifiers } = processConditionalModifiers(modifiers);
-
-    if (condition) {
-      return createHtmlConditionalElement(tagName, condition, otherModifiers) as ExpandedElement<TTagName>;
-    }
-
     const el = document.createElement(tagName) as ExpandedElement<TTagName>;
-    applyModifiers(el, otherModifiers as ReadonlyArray<NodeModifier<TTagName>>, index);
+    applyModifiers(el, modifiers as ReadonlyArray<NodeModifier<TTagName>>, index);
     return el;
   };
 }
@@ -31,17 +24,6 @@ function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
   ...modifiers: Array<unknown>
 ): SVGElementModifierFn<TTagName> {
   return (parent, index): SVGElementTagNameMap[TTagName] => {
-    // Check for conditional modifier
-    const conditionalIndex = modifiers.findIndex(
-      mod => typeof mod === 'function' && mod.length === 0
-    );
-
-    if (conditionalIndex !== -1) {
-      const condition = modifiers[conditionalIndex] as () => boolean;
-      const otherModifiers = modifiers.filter((_, i) => i !== conditionalIndex);
-      return createSvgConditionalElement(tagName, condition, otherModifiers) as SVGElementTagNameMap[TTagName];
-    }
-
     const el = document.createElementNS(SVG_NAMESPACE, tagName);
     applyModifiers(el as unknown as ExpandedElement<ElementTagName>, modifiers as ReadonlyArray<NodeModifier<ElementTagName>>, index);
     return el;

@@ -35,19 +35,13 @@ describe("elementFactory edge cases", () => {
       expect(element.className).toBe("my-class");
     });
 
-    it("should handle conditional modifier", () => {
+    it("should handle zero-arity function modifiers (non-conditional)", () => {
       const div = createHtmlTagBuilder("div");
-      const condition = () => true;
-      const element = div(condition, { id: "test" })(container, 0);
+      // Zero-arity functions are now treated as reactive text/className, not conditionals
+      const textFn = () => "dynamic text";
+      const element = div(textFn, { id: "test" })(container, 0);
       expect(element).toBeInstanceOf(HTMLDivElement);
       expect(element.id).toBe("test");
-    });
-
-    it("should handle conditional modifier that returns false", () => {
-      const div = createHtmlTagBuilder("div");
-      const condition = () => false;
-      const result = div(condition, { id: "test" })(container, 0);
-      expect(result).toBeInstanceOf(Comment);
     });
 
     it("should handle multiple modifiers", () => {
@@ -109,19 +103,13 @@ describe("elementFactory edge cases", () => {
       expect(element.getAttribute("r")).toBe("5");
     });
 
-    it("should handle conditional modifier", () => {
+    it("should handle zero-arity function modifiers in SVG (non-conditional)", () => {
       const circle = createSvgTagBuilder("circle");
-      const condition = () => true;
-      const element = circle(condition, { cx: 10 })(container, 0);
+      // Zero-arity functions are now treated as reactive text, not conditionals
+      const textFn = () => "5";
+      const element = circle(textFn, { cx: 10 })(container, 0);
       expect(element.tagName.toLowerCase()).toBe("circle");
       expect(element.getAttribute("cx")).toBe("10");
-    });
-
-    it("should handle conditional modifier that returns false", () => {
-      const circle = createSvgTagBuilder("circle");
-      const condition = () => false;
-      const result = circle(condition, { cx: 10 })(container, 0);
-      expect(result).toBeInstanceOf(Comment);
     });
 
     it("should handle multiple SVG elements", () => {

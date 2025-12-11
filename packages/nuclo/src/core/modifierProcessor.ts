@@ -5,8 +5,6 @@ import { isFunction, isNode, isObject, isPrimitive, isZeroArityFunction } from "
 import { modifierProbeCache } from "../utility/modifierPredicates";
 import { createComment } from "../utility/dom";
 
-export { isConditionalModifier, findConditionalModifier } from "../utility/modifierPredicates";
-
 export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
   | NodeMod<TTagName>
   | NodeModFn<TTagName>;
