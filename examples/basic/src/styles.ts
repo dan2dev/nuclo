@@ -61,7 +61,7 @@ export const globalStyles = {
       .outline("none")
       .transition("border-color 0.2s"),
     {
-      ":focus": border("2px solid " + colors.primary),
+      focus: border("2px solid " + colors.primary),
     }
   ),
 
@@ -76,7 +76,7 @@ export const globalStyles = {
       .cursor("pointer")
       .transition("background-color 0.2s"),
     {
-      ":hover": bg(colors.primaryHover),
+      hover: bg(colors.primaryHover),
     }
   ),
 
@@ -95,7 +95,7 @@ export const globalStyles = {
       .borderRadius("8px")
       .transition("background-color 0.2s"),
     {
-      ":hover": bg("#f3f4f6"),
+      hover: bg("#f3f4f6"),
     }
   ),
 
@@ -130,7 +130,7 @@ export const globalStyles = {
       .cursor("pointer")
       .transition("background-color 0.2s"),
     {
-      ":hover": bg(colors.dangerHover),
+      hover: bg(colors.dangerHover),
     }
   ),
 };
