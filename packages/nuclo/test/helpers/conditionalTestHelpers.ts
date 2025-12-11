@@ -1,9 +1,16 @@
-import { findConditionalModifier } from "./modifierProcessor";
-import { isBrowser } from "../utility/environment";
-import { storeConditionalInfo } from "../utility/conditionalInfo";
-import type { ConditionalInfo } from "../utility/conditionalInfo";
-import { createHtmlElementWithModifiers, createSvgElementWithModifiers, type NodeModifier } from "../internal/applyModifiers";
-import { createConditionalComment } from "../utility/dom";
+// @ts-nocheck
+/**
+ * Test helpers for creating conditional elements for testing conditionalUpdater
+ * These replicate the functionality that was in conditionalRenderer but is now only
+ * needed for tests since the factory no longer creates conditional elements.
+ */
+
+/// <reference path="../../types/index.d.ts" />
+
+import { createHtmlElementWithModifiers, createSvgElementWithModifiers } from '../../src/internal/applyModifiers';
+import { isBrowser } from '../../src/utility/environment';
+import { storeConditionalInfo, type ConditionalInfo } from '../../src/utility/conditionalInfo';
+import { createConditionalComment } from '../../src/utility/dom';
 
 export function createHtmlConditionalElement<TTagName extends ElementTagName>(
   tagName: TTagName,
@@ -14,14 +21,14 @@ export function createHtmlConditionalElement<TTagName extends ElementTagName>(
 
   if (!isBrowser) {
     return passed
-      ? createHtmlElementWithModifiers(tagName, modifiers as ReadonlyArray<NodeModifier<TTagName>>)
+      ? createHtmlElementWithModifiers(tagName, modifiers as ReadonlyArray<any>)
       : (createConditionalComment(tagName, "ssr") as unknown as ExpandedElement<TTagName>);
   }
 
   const conditionalInfo: ConditionalInfo<TTagName> = { condition, tagName, modifiers, isSvg: false };
 
   if (passed) {
-    const el = createHtmlElementWithModifiers(tagName, modifiers as ReadonlyArray<NodeModifier<TTagName>>);
+    const el = createHtmlElementWithModifiers(tagName, modifiers as ReadonlyArray<any>);
     storeConditionalInfo(el as Node, conditionalInfo);
     return el;
   }
@@ -66,22 +73,4 @@ export function createSvgConditionalElement<TTagName extends keyof SVGElementTag
   }
   storeConditionalInfo(comment as Node, conditionalInfo);
   return comment as unknown as SVGElementTagNameMap[TTagName];
-}
-
-export function processConditionalModifiers<TTagName extends ElementTagName>(
-  modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>
-): {
-  condition: (() => boolean) | null;
-  otherModifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>;
-} {
-  const conditionalIndex = findConditionalModifier(modifiers);
-
-  if (conditionalIndex === -1) {
-    return { condition: null, otherModifiers: modifiers };
-  }
-
-  return {
-    condition: modifiers[conditionalIndex] as () => boolean,
-    otherModifiers: modifiers.filter((_, index) => index !== conditionalIndex)
-  };
 }

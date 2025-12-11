@@ -1,7 +1,6 @@
 /**
  * Shared helper for applying an array of modifiers to an element.
  * Consolidates the previously duplicated logic in several modules:
- *  - conditionalRenderer
  *  - conditionalUpdater
  *  - elementFactory
  *
