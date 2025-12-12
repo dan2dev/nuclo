@@ -18,7 +18,7 @@
     "hono": "^4.10.8"
   },
   "devDependencies": {
-    "@types/node": "^24.10.3",
+    "@types/node": "^25.0.1",
     "concurrently": "^9.2.1",
     "nuclo": "link:../../../../../Library/pnpm/global/5/node_modules/nuclo",
     "tsx": "^4.21.0",
