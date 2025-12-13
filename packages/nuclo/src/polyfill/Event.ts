@@ -9,10 +9,10 @@ export class NucloEvent implements Event {
   isTrusted: boolean = false;
   target: EventTarget | null = null;
   timeStamp: number;
-  readonly AT_TARGET: 2 = 2;
-  readonly BUBBLING_PHASE: 3 = 3;
-  readonly CAPTURING_PHASE: 1 = 1;
-  readonly NONE: 0 = 0;
+  readonly AT_TARGET = 2;
+  readonly BUBBLING_PHASE = 3;
+  readonly CAPTURING_PHASE = 1;
+  readonly NONE = 0;
   returnValue: boolean = true;
   srcElement: EventTarget | null = null;
   cancelBubble: boolean = false;

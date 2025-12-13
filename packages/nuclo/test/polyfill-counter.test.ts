@@ -13,7 +13,7 @@ describe('Simple counter example in Node.js with polyfills', () => {
   });
 
   it('should render a simple counter structure', () => {
-    let count = 0;
+    const count = 0;
 
     // Create a simple counter component
     const counter = div(
