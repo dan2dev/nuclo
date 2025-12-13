@@ -33,16 +33,18 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 
         // Check if the returned value is a className object from cn()
         // Must be a plain object with className property, not a Node or other object
-        if (isObject(v) && !isNode(v) && 'className' in v && typeof v.className === 'string' && Object.keys(v).length === 1) {
-          // Create a wrapper function that extracts className from the modifier result
-          const originalModifier = modifier as () => unknown;
-          const classNameFn = () => {
-            const result = originalModifier();
-            return (result as unknown as { className: string }).className;
-          };
-          applyAttributes(parent, { className: classNameFn } as ExpandedElementAttributes<TTagName>);
-          return null;
-        }
+	        if (isObject(v) && !isNode(v) && 'className' in v && typeof v.className === 'string' && Object.keys(v).length === 1) {
+	          // Create a wrapper function that extracts className from the modifier result
+	          const originalModifier = modifier as () => unknown;
+	          const classNameFn = () => {
+	            const result = originalModifier();
+	            return isObject(result) && 'className' in result && typeof (result as { className?: unknown }).className === 'string'
+	              ? (result as { className: string }).className
+	              : "";
+	          };
+	          applyAttributes(parent, { className: classNameFn } as ExpandedElementAttributes<TTagName>);
+	          return null;
+	        }
 
         if (isPrimitive(v) && v != null) {
           return createReactiveTextFragment(index, modifier as () => Primitive, v);
@@ -68,18 +70,15 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
     return null;
   }
 
-  // Handle non-function modifiers
-  const candidate = modifier as NodeMod<TTagName>;
-  if (candidate == null) return null;
-  if (isPrimitive(candidate)) {
-    return createStaticTextFragment(index, candidate);
-  }
-  if (isNode(candidate)) return candidate;
-  if (isObject(candidate)) {
-    applyAttributes(parent, candidate as ExpandedElementAttributes<TTagName>);
-  }
-  return null;
-}
+	  // Handle non-function modifiers
+	  const candidate = modifier as NodeMod<TTagName>;
+	  if (isPrimitive(candidate)) {
+	    return createStaticTextFragment(index, candidate);
+	  }
+	  if (isNode(candidate)) return candidate;
+	  applyAttributes(parent, candidate as ExpandedElementAttributes<TTagName>);
+	  return null;
+	}
 
 function createReactiveTextFragment(
   index: number,

@@ -2,7 +2,6 @@ import { isBrowser } from "./environment";
 import { logError } from "./errorHandler";
 
 function safeAppendChild(parent: Element | Node, child: Node): boolean {
-  if (!parent || !child) return false;
   try {
     parent.appendChild(child);
     return true;
@@ -24,7 +23,6 @@ export function safeRemoveChild(child: Node): boolean {
 }
 
 function safeInsertBefore(parent: Node, newNode: Node, referenceNode: Node | null): boolean {
-  if (!parent || !newNode) return false;
   try {
     parent.insertBefore(newNode, referenceNode);
     return true;

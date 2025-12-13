@@ -50,16 +50,9 @@ export function sync<TItem, TTagName extends ElementTagName>(
       const existingRecord = runtime.records[newIndex];
       if (existingRecord && existingRecord.item === item) {
         recordsByPosition.set(newIndex, existingRecord);
-        const items = availableRecords.get(item);
-        if (items) {
-          const recordIndex = items.indexOf(existingRecord);
-          if (recordIndex >= 0) {
-            items.splice(recordIndex, 1);
-            if (items.length === 0) {
-              availableRecords.delete(item);
-            }
-          }
-        }
+        const items = availableRecords.get(item)!;
+        items.splice(items.indexOf(existingRecord), 1);
+        if (items.length === 0) availableRecords.delete(item);
       }
     }
   });
