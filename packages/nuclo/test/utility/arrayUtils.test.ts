@@ -8,6 +8,11 @@ import { arraysEqual } from '../../src/utility/arrayUtils';
 
 describe('arrayUtils', () => {
   describe('arraysEqual', () => {
+    it('returns true for the same array reference', () => {
+      const arr = [1, 2, 3];
+      expect(arraysEqual(arr, arr)).toBe(true);
+    });
+
     it('returns true for identical arrays', () => {
       expect(arraysEqual([1, 2, 3], [1, 2, 3])).toBe(true);
     });
@@ -33,6 +38,14 @@ describe('arrayUtils', () => {
       expect(arraysEqual(sparse, [1, undefined, 3])).toBe(true);
       expect(arraysEqual(sparse, [1, 2, 3])).toBe(false);
       expect(arraysEqual(sparse, [1, 2, 4])).toBe(false);
+    });
+
+    it('treats array holes as undefined', () => {
+      const withHole = new Array<number | undefined>(3);
+      withHole[0] = 1;
+      withHole[2] = 3;
+      expect(arraysEqual(withHole, [1, undefined, 3])).toBe(true);
+      expect(arraysEqual([1, undefined, 3], withHole)).toBe(true);
     });
 
     it('short-circuits when arrays differ early', () => {

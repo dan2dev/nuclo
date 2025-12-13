@@ -61,6 +61,17 @@ describe('tagRegistry.registerGlobalTagBuilders', () => {
     expect(typeof target['span']).toBe('function');
   });
 
+  it('does not overwrite an existing Svg-suffixed property', () => {
+    // Predefine a sentinel value for an SVG export name (e.g. circleSvg)
+    const sentinel = { keep: true };
+    target["circleSvg"] = sentinel;
+
+    registerGlobalTagBuilders(target);
+
+    expect(target["circleSvg"]).toBe(sentinel);
+    expect(typeof target["rectSvg"]).toBe("function");
+  });
+
   it('builder returns a NodeModFn that creates an element when executed', () => {
     registerGlobalTagBuilders(target);
 
