@@ -1,14 +1,14 @@
-import { getTodos, getInputValue, setInputValue, addTodo, toggleTodo, deleteTodo } from "./todoState.ts";
+import { getTodos, getInputValue, setInputValue, addTodo, toggleTodo, deleteTodo, reorderTodos } from "./todoState.ts";
 import { globalStyles as s } from "./styles.ts";
+import { sortable } from "./sortable.ts";
+
 
 export const app = div(
   s.body,
   div(
     s.container,
-    // Header
     h1(s.header, "📝 Todo List"),
 
-    // Input section
     div(
       s.inputContainer,
       input(
@@ -30,13 +30,13 @@ export const app = div(
       button(s.addButton, "Add", on("click", addTodo))
     ),
 
-    // Todo list
     div(
       s.todoList,
       list(
         () => getTodos(),
         (todo) =>
           div(
+            sortable(reorderTodos),
             s.todoItem,
             input(
               s.checkbox,
