@@ -6,6 +6,7 @@ import "./svg/tags";
 import "./features/list";
 import "./features/when";
 import "./features/update";
+import "./features/group";
 import "./features/on";
 import "./features/render";
 import "./features/style";

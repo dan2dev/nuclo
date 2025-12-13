@@ -1,5 +1,6 @@
 import { logError, safeExecute } from "../utility/errorHandler";
 import { isNodeConnected } from "../utility/dom";
+import type { UpdateScope } from "./updateScope";
 
 type AttributeResolver = () => unknown;
 
@@ -99,13 +100,15 @@ export function registerAttributeResolver<TTagName extends ElementTagName>(
  * notifyReactiveElements(); // All reactive attributes update
  * ```
  */
-export function notifyReactiveElements(): void {
+export function notifyReactiveElements(scope?: UpdateScope): void {
   reactiveElements.forEach((info, el) => {
     if (!isNodeConnected(el)) {
       if (info.updateListener) el.removeEventListener("update", info.updateListener);
       reactiveElements.delete(el);
       return;
     }
+
+    if (scope && !scope.contains(el)) return;
     applyAttributeResolvers(el, info);
   });
 }
