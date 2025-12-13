@@ -62,47 +62,74 @@ const cardStyle = cn(
 );
 
 div(cardStyle, 'Card content');` },
-  styleHelpersList: { lang: 'typescript', code: `// Layout
-display('flex')
-position('relative')
-width('100%')
-height('auto')
-minWidth('300px')
-maxWidth('800px')
+  styleHelpersList: { lang: 'typescript', code: `// Layout & Display (14 helpers)
+display(), position(), top(), right(), bottom(), left(), zIndex(),
+width(), height(), minWidth(), maxWidth(), minHeight(), maxHeight(), boxSizing()
 
-// Spacing
-padding('1rem')
-paddingTop('10px')
-margin('0 auto')
-marginBottom('20px')
+// Spacing (18 helpers)
+padding(), paddingTop(), paddingRight(), paddingBottom(), paddingLeft(),
+margin(), marginTop(), marginRight(), marginBottom(), marginLeft(),
+gap()
 
-// Typography
-fontSize('16px')
-fontWeight('bold')
-fontFamily('Arial, sans-serif')
-lineHeight('1.5')
-textAlign('center')
+// Typography (30+ helpers)
+fontSize(), fontWeight(), fontFamily(), fontStyle(), lineHeight(), letterSpacing(),
+textAlign(), textDecoration(), textTransform(), textIndent(), textOverflow(), textShadow(),
+whiteSpace(), wordSpacing(), wordWrap(), overflowWrap(), verticalAlign(),
+fontVariant(), fontStretch(), textAlignLast(), textJustify(),
+textDecorationLine(), textDecorationColor(), textDecorationStyle(),
+textDecorationThickness(), textUnderlineOffset(),
+bold() // shorthand for fontWeight('bold')
 
-// Colors
-bg('#f0f0f0')
-color('#333')
+// Colors & Backgrounds (10 helpers)
+color(), bg(), backgroundColor(), accentColor(),
+backgroundImage(), backgroundRepeat(), backgroundPosition(), backgroundSize(),
+backgroundAttachment(), backgroundClip(), backgroundOrigin()
 
-// Borders
-border('1px solid #ccc')
-borderRadius('8px')
+// Borders & Outlines (20+ helpers)
+border(), borderTop(), borderRight(), borderBottom(), borderLeft(),
+borderWidth(), borderStyle(), borderColor(),
+borderRadius(), borderTopLeftRadius(), borderTopRightRadius(),
+borderBottomLeftRadius(), borderBottomRightRadius(),
+outline(), outlineWidth(), outlineStyle(), outlineColor(), outlineOffset()
 
-// Flexbox
-flex()  // shorthand for display: flex
-flexDirection('column')
-alignItems('center')
-justifyContent('space-between')
-gap('1rem')
+// Flexbox (15 helpers)
+flex(), flexDirection(), flexWrap(), flexGrow(), flexShrink(), flexBasis(),
+alignItems(), justifyContent(), alignSelf(), alignContent(),
+justifySelf(), justifyItems(),
+center() // shorthand for alignItems('center') + justifyContent('center')
 
-// Effects
-boxShadow('0 2px 4px rgba(0,0,0,0.1)')
-opacity('0.8')
-transition('all 0.3s ease')
-transform('translateY(-2px)')` },
+// CSS Grid (17 helpers)
+grid(), gridTemplateColumns(), gridTemplateRows(), gridTemplateAreas(),
+gridColumn(), gridRow(), gridColumnStart(), gridColumnEnd(),
+gridRowStart(), gridRowEnd(), gridArea(),
+gridAutoColumns(), gridAutoRows(), gridAutoFlow()
+
+// Effects & Transforms (15 helpers)
+boxShadow(), opacity(), filter(), backdropFilter(),
+transform(), transformOrigin(), transformStyle(), perspective(), perspectiveOrigin(),
+backfaceVisibility()
+
+// Transitions & Animations (13 helpers)
+transition(), transitionProperty(), transitionDuration(),
+transitionTimingFunction(), transitionDelay(),
+animation(), animationName(), animationDuration(), animationTimingFunction(),
+animationDelay(), animationIterationCount(), animationDirection(),
+animationFillMode(), animationPlayState()
+
+// Other Properties (20+ helpers)
+overflow(), overflowX(), overflowY(), visibility(), objectFit(), objectPosition(),
+cursor(), userSelect(), pointerEvents(), resize(), scrollBehavior(),
+listStyle(), listStyleType(), listStylePosition(), listStyleImage(),
+borderCollapse(), borderSpacing(), captionSide(), emptyCells(), tableLayout(),
+content(), quotes(), counterReset(), counterIncrement(),
+appearance(), clip(), clipPath(), isolation(), mixBlendMode(), willChange(), contain(),
+pageBreakBefore(), pageBreakAfter(), pageBreakInside(),
+breakBefore(), breakAfter(), breakInside(), orphans(), widows(),
+columnCount(), columnFill(), columnGap(), columnRule(), columnRuleColor(),
+columnRuleStyle(), columnRuleWidth(), columnSpan(), columnWidth(), columns()
+
+// Example usage - chain any helpers together:
+bg('#f0f0f0').color('#333').padding('1rem').borderRadius('8px')` },
   styleHelpersShorthand: { lang: 'typescript', code: `// bold() - shorthand for fontWeight('bold')
 bold()
 
@@ -632,4 +659,181 @@ const app = div(
 );
 
 render(app, document.body);` },
+  advancedAnimation: { lang: 'typescript', code: `const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)'
+});
+
+// Animated card with keyframe animation
+const pulseCard = cn(
+  bg('linear-gradient(135deg, #667eea 0%, #764ba2 100%)')
+    .color('white')
+    .padding('2rem')
+    .borderRadius('16px')
+    .animation('pulse 2s ease-in-out infinite')
+    .animationDirection('alternate')
+    .willChange('transform, opacity')
+    .transform('scale(1)')
+    .transition('all 0.3s ease'),
+  {
+    hover: transform('scale(1.05)').animationPlayState('paused')
+  }
+);
+
+// Define the keyframe animation in your CSS or via a style tag
+const style = document.createElement('style');
+style.textContent = \`
+  @keyframes pulse {
+    from { transform: scale(1); opacity: 0.9; }
+    to { transform: scale(1.02); opacity: 1; }
+  }
+\`;
+document.head.appendChild(style);
+
+div(pulseCard, 'Animated Card');` },
+  advancedTransforms: { lang: 'typescript', code: `// 3D transforms and perspective
+const card3D = cn(
+  bg('white')
+    .padding('2rem')
+    .borderRadius('12px')
+    .transformStyle('preserve-3d')
+    .perspective('1000px')
+    .transition('transform 0.6s ease'),
+  {
+    hover: transform('rotateY(10deg) rotateX(5deg) translateZ(20px)')
+  }
+);
+
+// Multiple transforms combined
+const complexTransform = cn(
+  transform('translate(-50%, -50%) rotate(45deg) scale(1.2)')
+    .transformOrigin('center center')
+);
+
+// Backdrop blur (glassmorphism)
+const glassCard = cn(
+  bg('rgba(255, 255, 255, 0.1)')
+    .backdropFilter('blur(10px) saturate(180%)')
+    .border('1px solid rgba(255, 255, 255, 0.2)')
+    .borderRadius('16px')
+    .padding('2rem')
+    .boxShadow('0 8px 32px rgba(0, 0, 0, 0.1)')
+);` },
+  advancedGrid: { lang: 'typescript', code: `const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)'
+});
+
+// Advanced grid layout with areas
+const dashboardLayout = cn(
+  grid()
+    .gridTemplateColumns('1fr')
+    .gridTemplateRows('auto 1fr auto')
+    .gridTemplateAreas(\`
+      "header"
+      "main"
+      "footer"
+    \`)
+    .minHeight('100vh')
+    .gap('1rem'),
+  {
+    medium: gridTemplateColumns('200px 1fr')
+      .gridTemplateAreas(\`
+        "header header"
+        "sidebar main"
+        "footer footer"
+      \`),
+    large: gridTemplateColumns('250px 1fr 300px')
+      .gridTemplateAreas(\`
+        "header header header"
+        "sidebar main aside"
+        "footer footer footer"
+      \`)
+  }
+);
+
+const headerStyle = cn(gridArea('header'));
+const sidebarStyle = cn(gridArea('sidebar'));
+const mainStyle = cn(gridArea('main'));
+const asideStyle = cn(gridArea('aside'));
+const footerStyle = cn(gridArea('footer'));
+
+div(dashboardLayout,
+  div(headerStyle, 'Header'),
+  div(sidebarStyle, 'Sidebar'),
+  div(mainStyle, 'Main Content'),
+  div(asideStyle, 'Aside'),
+  div(footerStyle, 'Footer')
+);` },
+  advancedTypography: { lang: 'typescript', code: `// Elegant typography with advanced properties
+const heading = cn(
+  fontSize('3rem')
+    .fontWeight('800')
+    .lineHeight('1.1')
+    .letterSpacing('-0.03em')
+    .textShadow('0 2px 10px rgba(0,0,0,0.1)')
+    .fontVariant('small-caps')
+);
+
+const bodyText = cn(
+  fontSize('1.125rem')
+    .lineHeight('1.7')
+    .letterSpacing('0.01em')
+    .textAlign('justify')
+    .textJustify('inter-word')
+    .overflowWrap('break-word')
+    .whiteSpace('pre-wrap')
+);
+
+const decoratedText = cn(
+  textDecoration('underline')
+    .textDecorationColor('#3b82f6')
+    .textDecorationStyle('wavy')
+    .textDecorationThickness('2px')
+    .textUnderlineOffset('4px')
+);
+
+// Truncate text with ellipsis
+const truncated = cn(
+  overflow('hidden')
+    .textOverflow('ellipsis')
+    .whiteSpace('nowrap')
+    .maxWidth('300px')
+);` },
+  advancedColors: { lang: 'typescript', code: `// Modern color palette with CSS variables
+const theme = {
+  // Use CSS custom properties for dynamic theming
+  primary: 'var(--color-primary, #3b82f6)',
+  secondary: 'var(--color-secondary, #8b5cf6)',
+  accent: 'var(--color-accent, #f59e0b)',
+};
+
+// Gradient backgrounds
+const gradientCard = cn(
+  bg('linear-gradient(135deg, #667eea 0%, #764ba2 100%)')
+    .color('white')
+    .padding('2rem')
+);
+
+const radialGradient = cn(
+  bg('radial-gradient(circle at top right, #667eea, #764ba2)')
+);
+
+// Multiple backgrounds
+const multiBackground = cn(
+  backgroundImage(\`
+    linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)),
+    url('/images/hero.jpg')
+  \`)
+    .backgroundSize('cover')
+    .backgroundPosition('center')
+    .backgroundRepeat('no-repeat')
+    .backgroundAttachment('fixed')
+);
+
+// Accent color for form controls
+const styledInput = cn(
+  accentColor('#3b82f6')
+    .border('2px solid #e5e7eb')
+    .borderRadius('8px')
+);` },
 } as const;
