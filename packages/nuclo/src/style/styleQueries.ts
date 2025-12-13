@@ -248,7 +248,7 @@ export function createStyleQueries<T extends string>(
 
 			// Process user-defined queries in the order they were registered
 			for (const [queryName] of queriesArray) {
-				const styleBuilder = styles[queryName];
+				const styleBuilder = styles?.[queryName];
 				if (styleBuilder) {
 					processedKeys.add(queryName);
 					allQueryStyles.push({
@@ -260,7 +260,7 @@ export function createStyleQueries<T extends string>(
 			}
 
 			// Process built-in pseudo-classes (hover, focus, etc.) - only if not already processed
-			for (const [key, styleBuilder] of Object.entries(styles)) {
+			for (const [key, styleBuilder] of Object.entries(styles ?? {})) {
 				if (!processedKeys.has(key) && isPseudoClass(key) && styleBuilder instanceof StyleBuilder) {
 					allQueryStyles.push({
 						queryName: key,
