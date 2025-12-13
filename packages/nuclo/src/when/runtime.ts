@@ -1,6 +1,7 @@
 import { clearBetweenMarkers, insertNodesBefore } from "../utility/dom";
 import { resolveCondition } from "../utility/conditions";
 import { renderContentItems } from "./renderer";
+import type { UpdateScope } from "../core/updateScope";
 
 export type WhenCondition = boolean | (() => boolean);
 export type WhenContent<TTagName extends ElementTagName = ElementTagName> =
@@ -97,8 +98,10 @@ export function registerWhenRuntime<TTagName extends ElementTagName>(
  * updateWhenRuntimes(); // All when() conditionals re-evaluate
  * ```
  */
-export function updateWhenRuntimes(): void {
+export function updateWhenRuntimes(scope?: UpdateScope): void {
   activeWhenRuntimes.forEach((runtime) => {
+    if (scope && !scope.contains(runtime.startMarker)) return;
+
     try {
       runtime.update();
     } catch (error) {

@@ -10,6 +10,7 @@ import {
 import { runCondition } from "../utility/conditions";
 import { replaceNodeSafely, createConditionalComment } from "../utility/dom";
 import { logError } from "../utility/errorHandler";
+import type { UpdateScope } from "./updateScope";
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
@@ -55,7 +56,7 @@ function updateConditionalNode(node: Element | Comment): void {
   }
 }
 
-export function updateConditionalElements(): void {
+export function updateConditionalElements(scope?: UpdateScope): void {
   if (!isBrowser) return;
 
   try {
@@ -64,6 +65,8 @@ export function updateConditionalElements(): void {
         unregisterConditionalNode(node);
         return;
       }
+
+      if (scope && !scope.contains(node)) return;
       updateConditionalNode(node as Element | Comment);
     });
   } catch (error) {

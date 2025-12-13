@@ -1,5 +1,6 @@
 import { logError, safeExecute } from "../utility/errorHandler";
 import { isNodeConnected } from "../utility/dom";
+import type { UpdateScope } from "./updateScope";
 
 type TextResolver = () => Primitive;
 
@@ -57,12 +58,14 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
  * notifyReactiveTextNodes(); // All reactive text nodes update
  * ```
  */
-export function notifyReactiveTextNodes(): void {
+export function notifyReactiveTextNodes(scope?: UpdateScope): void {
   reactiveTextNodes.forEach((info, node) => {
     if (!isNodeConnected(node)) {
       reactiveTextNodes.delete(node);
       return;
     }
+
+    if (scope && !scope.contains(node)) return;
     try {
       const raw = safeExecute(info.resolver);
       const newVal = raw === undefined ? "" : String(raw);

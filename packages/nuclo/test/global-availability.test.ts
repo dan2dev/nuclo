@@ -15,6 +15,10 @@ describe('Global availability', () => {
     expect(typeof on).toBe('function');
   });
 
+  it('should make group() available globally', () => {
+    expect(typeof group).toBe('function');
+  });
+
   it('should make list() available globally', () => {
     expect(typeof list).toBe('function');
   });
