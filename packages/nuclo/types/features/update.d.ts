@@ -1,6 +1,6 @@
 declare global {
   // Update controller function
-  export function update(): void;
+  export function update(...scopeIds: string[]): void;
 }
 
 export {};
