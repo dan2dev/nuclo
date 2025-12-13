@@ -4,6 +4,7 @@ import { update } from "./updateController";
 import { when } from "../when";
 import { on } from "../utility/on";
 import { render } from "../utility/render";
+import { scope } from "../utility/scope";
 import * as styleExports from "../style";
 
 /**
@@ -19,6 +20,7 @@ export function initializeRuntime(): void {
     registry.update = update;
     registry.when = when;
     registry.on = on;
+    registry.scope = scope;
     registry.render = render;
 
     // Register all style utilities globally

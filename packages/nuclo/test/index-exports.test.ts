@@ -24,6 +24,7 @@ describe('main index.ts exports', () => {
     expect(index.createConditionalComment).toBeDefined();
     expect(index.replaceNodeSafely).toBeDefined();
     expect(index.on).toBeDefined();
+    expect(index.scope).toBeDefined();
     expect(index.render).toBeDefined();
   });
 
@@ -243,6 +244,7 @@ describe('main index.ts exports', () => {
       'createConditionalComment',
       'replaceNodeSafely',
       'on',
+      'scope',
       'render',
       'isBoolean',
       'isFunction',

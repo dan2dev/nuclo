@@ -1,19 +1,52 @@
-import { logError, safeExecute } from "../utility/errorHandler";
+import { logError } from "../utility/errorHandler";
 import { isNodeConnected } from "../utility/dom";
+import type { UpdateScope } from "./updateScope";
 
 type AttributeResolver = () => unknown;
 
 interface AttributeResolverRecord {
   resolver: AttributeResolver;
   applyValue: (value: unknown) => void;
+  lastValue: unknown;
 }
 
 interface ReactiveElementInfo {
   attributeResolvers: Map<string, AttributeResolverRecord>;
-  updateListener?: EventListener;
 }
 
 const reactiveElements = new Map<Element, ReactiveElementInfo>();
+const UNSET_LAST_VALUE = {};
+let updateEventListenerRegistered = false;
+
+function handleUpdateEvent(event: Event): void {
+  // Update all reactive elements on the event's target ancestor chain.
+  // This preserves the "dispatchEvent(new Event('update'))" workflow without
+  // per-element event listeners.
+  const target = event.target;
+  if (!target || typeof Node === "undefined" || !(target instanceof Node)) return;
+
+  let node: Node | null = target;
+  while (node) {
+    if (node instanceof Element) {
+      const info = reactiveElements.get(node);
+      if (info) {
+        if (!isNodeConnected(node)) {
+          reactiveElements.delete(node);
+        } else {
+          applyAttributeResolvers(info);
+        }
+      }
+    }
+    node = node.parentNode;
+  }
+}
+
+function ensureGlobalUpdateEventListener(): void {
+  if (updateEventListenerRegistered) return;
+  if (typeof document === "undefined" || typeof document.addEventListener !== "function") return;
+  document.addEventListener("update", handleUpdateEvent, true);
+  updateEventListenerRegistered = true;
+}
 
 function ensureElementInfo(el: Element): ReactiveElementInfo {
   let info = reactiveElements.get(el);
@@ -24,20 +57,42 @@ function ensureElementInfo(el: Element): ReactiveElementInfo {
   return info;
 }
 
-function applyAttributeResolvers(el: Element, info: ReactiveElementInfo): void {
-  info.attributeResolvers.forEach(({ resolver, applyValue }, key) => {
-    try {
-      applyValue(safeExecute(resolver));
-    } catch (e) {
-      logError(`Failed to update reactive attribute: ${key}`, e);
-    }
-  });
+function isCacheableValue(value: unknown): boolean {
+  // Avoid caching objects/arrays that may be mutated in place (e.g. style objects).
+  return value === null || typeof value !== "object";
+}
+
+function updateAttributeResolverRecord(key: string, record: AttributeResolverRecord): void {
+  let nextValue: unknown;
+  try {
+    nextValue = record.resolver();
+  } catch (e) {
+    logError(`Failed to resolve reactive attribute: ${key}`, e);
+    return;
+  }
+
+  const cacheable = isCacheableValue(nextValue);
+  if (cacheable && Object.is(nextValue, record.lastValue)) return;
+
+  try {
+    record.applyValue(nextValue);
+    record.lastValue = cacheable ? nextValue : UNSET_LAST_VALUE;
+  } catch (e) {
+    logError(`Failed to apply reactive attribute: ${key}`, e);
+  }
+}
+
+function applyAttributeResolvers(info: ReactiveElementInfo): void {
+  for (const [key, record] of info.attributeResolvers) {
+    updateAttributeResolverRecord(key, record);
+  }
 }
 
 /**
  * Registers a reactive attribute resolver for an element.
  *
- * The resolver will be called whenever the element receives an 'update' event,
+ * The resolver will be called whenever reactive updates run (e.g. via `update()`),
+ * or when an `"update"` event is dispatched on the element (or a descendant),
  * allowing attributes to reactively update based on application state.
  *
  * @param element - The DOM element to make reactive
@@ -67,20 +122,11 @@ export function registerAttributeResolver<TTagName extends ElementTagName>(
     logError("Invalid parameters for registerAttributeResolver");
     return;
   }
+  ensureGlobalUpdateEventListener();
   const info = ensureElementInfo(element as Element);
-  info.attributeResolvers.set(key, { resolver, applyValue });
-
-  try {
-    applyValue(safeExecute(resolver));
-  } catch (e) {
-    logError("Failed to apply initial attribute value", e);
-  }
-
-  if (!info.updateListener) {
-    const listener: EventListener = () => applyAttributeResolvers(element as Element, info);
-    (element as Element).addEventListener("update", listener);
-    info.updateListener = listener;
-  }
+  const record: AttributeResolverRecord = { resolver, applyValue, lastValue: UNSET_LAST_VALUE };
+  info.attributeResolvers.set(key, record);
+  updateAttributeResolverRecord(key, record);
 }
 
 /**
@@ -99,13 +145,14 @@ export function registerAttributeResolver<TTagName extends ElementTagName>(
  * notifyReactiveElements(); // All reactive attributes update
  * ```
  */
-export function notifyReactiveElements(): void {
-  reactiveElements.forEach((info, el) => {
+export function notifyReactiveElements(scope?: UpdateScope): void {
+  for (const [el, info] of reactiveElements) {
     if (!isNodeConnected(el)) {
-      if (info.updateListener) el.removeEventListener("update", info.updateListener);
       reactiveElements.delete(el);
-      return;
+      continue;
     }
-    applyAttributeResolvers(el, info);
-  });
+
+    if (scope && !scope.contains(el)) continue;
+    applyAttributeResolvers(info);
+  }
 }

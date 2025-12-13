@@ -2,6 +2,7 @@ import { createMarkerPair, safeRemoveChild } from "../utility/dom";
 import { arraysEqual } from "../utility/arrayUtils";
 import { resolveRenderable } from "../utility/renderables";
 import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsProvider } from "./types";
+import type { UpdateScope } from "../core/updateScope";
 
 const activeListRuntimes = new Set<ListRuntime<unknown, keyof HTMLElementTagNameMap>>();
 
@@ -131,13 +132,14 @@ export function createListRuntime<TItem, TTagName extends ElementTagName = Eleme
   return runtime;
 }
 
-export function updateListRuntimes(): void {
+export function updateListRuntimes(scope?: UpdateScope): void {
   activeListRuntimes.forEach((runtime) => {
     if (!runtime.startMarker.isConnected || !runtime.endMarker.isConnected) {
       activeListRuntimes.delete(runtime);
       return;
     }
 
+    if (scope && !scope.contains(runtime.startMarker)) return;
     sync(runtime);
   });
 }
