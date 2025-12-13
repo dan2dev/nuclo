@@ -1,4 +1,4 @@
-import { logError, safeExecute } from "../utility/errorHandler";
+import { logError } from "../utility/errorHandler";
 import { isNodeConnected } from "../utility/dom";
 import type { UpdateScope } from "./updateScope";
 
@@ -35,7 +35,17 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
     return document.createTextNode("");
   }
 
-  const initial = arguments.length > 1 ? preEvaluated : safeExecute(resolver, "");
+  let initial: unknown;
+  if (arguments.length > 1) {
+    initial = preEvaluated;
+  } else {
+    try {
+      initial = resolver();
+    } catch (e) {
+      logError("Failed to evaluate reactive text resolver", e);
+      initial = "";
+    }
+  }
   const str = initial === undefined ? "" : String(initial);
   const txt = document.createTextNode(str);
 
@@ -59,22 +69,26 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
  * ```
  */
 export function notifyReactiveTextNodes(scope?: UpdateScope): void {
-  reactiveTextNodes.forEach((info, node) => {
+  for (const [node, info] of reactiveTextNodes) {
     if (!isNodeConnected(node)) {
       reactiveTextNodes.delete(node);
-      return;
+      continue;
     }
 
-    if (scope && !scope.contains(node)) return;
+    if (scope && !scope.contains(node)) continue;
+
+    let raw: unknown;
     try {
-      const raw = safeExecute(info.resolver);
-      const newVal = raw === undefined ? "" : String(raw);
-      if (newVal !== info.lastValue) {
-        node.textContent = newVal;
-        info.lastValue = newVal;
-      }
+      raw = info.resolver();
     } catch (e) {
       logError("Failed to update reactive text node", e);
+      raw = undefined;
     }
-  });
+
+    const newVal = raw === undefined ? "" : String(raw);
+    if (newVal !== info.lastValue) {
+      node.textContent = newVal;
+      info.lastValue = newVal;
+    }
+  }
 }
