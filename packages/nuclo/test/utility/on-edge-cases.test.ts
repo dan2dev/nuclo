@@ -82,16 +82,15 @@ describe("on utility edge cases", () => {
     });
 
     it("should call listener with correct context", () => {
-      let calledContext: any;
-      const listener = function(this: HTMLElement) {
-        calledContext = this;
-      };
+      const listener = vi.fn(function (this: HTMLElement) {
+        expect(this).toBe(element);
+      });
       const modifier = on("click", listener);
       
       modifier(element, 0);
       element.click();
       
-      expect(calledContext).toBe(element);
+      expect(listener).toHaveBeenCalledTimes(1);
     });
 
     it("should handle custom event types", () => {
@@ -132,4 +131,3 @@ describe("on utility edge cases", () => {
     });
   });
 });
-

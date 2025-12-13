@@ -89,7 +89,7 @@ describe('Dynamic className - Edge Cases & Validation', () => {
     });
 
     it('should handle boolean primitives as text (not className)', () => {
-      let flag = true;
+      const flag = true;
 
       const element = (globalThis as any).div(
         () => flag
