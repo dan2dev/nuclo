@@ -3,7 +3,7 @@ import { notifyReactiveElements, notifyReactiveTextNodes } from "./reactive";
 import { updateWhenRuntimes } from "../when";
 import { updateConditionalElements } from "./conditionalUpdater";
 import { dispatchGlobalUpdateEvent } from "../utility/events";
-import { getGroupRoots } from "../utility/group";
+import { getScopeRoots } from "../utility/scope";
 import type { UpdateScope } from "./updateScope";
 
 const updaters: ReadonlyArray<(scope?: UpdateScope) => void> = [
@@ -15,10 +15,10 @@ const updaters: ReadonlyArray<(scope?: UpdateScope) => void> = [
   dispatchGlobalUpdateEvent,
 ] as const;
 
-export function update(...groupIds: string[]): void {
+export function update(...scopeIds: string[]): void {
   let scope: UpdateScope | undefined;
-  if (groupIds.length > 0) {
-    const roots = getGroupRoots(groupIds);
+  if (scopeIds.length > 0) {
+    const roots = getScopeRoots(scopeIds);
 
     if (roots.length === 1) {
       const root = roots[0]!;

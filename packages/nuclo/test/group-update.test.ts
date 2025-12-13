@@ -3,12 +3,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import "../src/index";
 
-describe("group() + update(groupId)", () => {
+describe("scope() + update(scopeId)", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
   });
 
-  it("updates only the targeted group subtree", () => {
+  it("updates only the targeted scope subtree", () => {
     let a = 0;
     let b = 0;
     const itemsA: number[] = [1];
@@ -17,7 +17,7 @@ describe("group() + update(groupId)", () => {
     render(
       div(
         div(
-          group("contact-form", "shared"),
+          scope("contact-form", "shared"),
           h1({ id: "a-title" }, () => `A:${a}`),
           button({ id: "a-btn", className: () => `a-${a}` }, "A"),
           when(
@@ -27,7 +27,7 @@ describe("group() + update(groupId)", () => {
           list(() => itemsA, (item) => div({ className: "a-item" }, () => `A item ${item} (${a})`)),
         ),
         div(
-          group("other"),
+          scope("other"),
           h1({ id: "b-title" }, () => `B:${b}`),
           button({ id: "b-btn", className: () => `b-${b}` }, "B"),
           when(
@@ -81,12 +81,12 @@ describe("group() + update(groupId)", () => {
     expect((document.querySelectorAll(".b-item")[1] as HTMLElement).textContent).toBe("B item 20 (1)");
   });
 
-  it("supports multiple group ids per element", () => {
+  it("supports multiple scope ids per element", () => {
     let value = 0;
 
     render(
       div(
-        group("contact-form", "categories"),
+        scope("contact-form", "categories"),
         span({ id: "val" }, () => `v:${value}`)
       )
     );
@@ -96,4 +96,3 @@ describe("group() + update(groupId)", () => {
     expect((document.querySelector("#val") as HTMLElement).textContent).toBe("v:1");
   });
 });
-

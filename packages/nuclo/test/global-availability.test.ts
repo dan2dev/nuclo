@@ -15,8 +15,8 @@ describe('Global availability', () => {
     expect(typeof on).toBe('function');
   });
 
-  it('should make group() available globally', () => {
-    expect(typeof group).toBe('function');
+  it('should make scope() available globally', () => {
+    expect(typeof scope).toBe('function');
   });
 
   it('should make list() available globally', () => {
