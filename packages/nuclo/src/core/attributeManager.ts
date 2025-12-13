@@ -1,5 +1,5 @@
 import { isFunction } from "../utility/typeGuards";
-import { registerAttributeResolver, createReactiveTextNode } from "./reactive";
+import { registerAttributeResolver } from "./reactive";
 import { applyStyleAttribute } from "./styleManager";
 import {
 	initReactiveClassName,

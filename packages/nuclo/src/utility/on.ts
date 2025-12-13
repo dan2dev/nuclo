@@ -67,10 +67,3 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
     el.addEventListener(type, wrapped as EventListener, options);
   };
 }
-
-/**
- * (Optional) Helper to detect an on()-produced modifier (placeholder for future use).
- */
-export function isOnModifier(fn: unknown): boolean {
-  return typeof fn === "function" && Object.prototype.hasOwnProperty.call(fn, "__nucloOn");
-}

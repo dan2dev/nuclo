@@ -108,7 +108,6 @@ export class NucloElement extends NucloNode {
     this.children = [];
     this.attributes = new Map<string, string>();
     this._listeners = new Map();
-    const self = this;
     
     // Simple style implementation
     const styleProps: Record<string, string> = {};
@@ -159,88 +158,7 @@ export class NucloElement extends NucloNode {
     }
     
     // Simple classList implementation
-    this.classList = {
-      add: (...tokens: string[]) => {
-        tokens.forEach(token => {
-          if (token && !self.className.split(' ').includes(token)) {
-            self.className = self.className ? `${self.className} ${token}` : token;
-          }
-        });
-      },
-      remove: (...tokens: string[]) => {
-        const classes = self.className.split(' ').filter((c: string) => c);
-        self.className = classes.filter((c: string) => !tokens.includes(c)).join(' ');
-      },
-      toggle: (token: string, force?: boolean) => {
-        const hasClass = self.className.split(' ').includes(token);
-        if (force === undefined) {
-          if (hasClass) {
-            self.classList.remove(token);
-            return false;
-          } else {
-            self.classList.add(token);
-            return true;
-          }
-        } else if (force) {
-          self.classList.add(token);
-          return true;
-        } else {
-          self.classList.remove(token);
-          return false;
-        }
-      },
-      contains: (token: string) => {
-        return self.className.split(' ').includes(token);
-      },
-      replace: (oldToken: string, newToken: string) => {
-        const classes = self.className.split(' ').filter((c: string) => c);
-        const index = classes.indexOf(oldToken);
-        if (index !== -1) {
-          classes[index] = newToken;
-          self.className = classes.join(' ');
-          return true;
-        }
-        return false;
-      },
-      item: (index: number) => {
-        const classes = self.className.split(' ').filter((c: string) => c);
-        return classes[index] || null;
-      },
-      get length() {
-        return self.className.split(' ').filter((c: string) => c).length;
-      },
-      toString: () => self.className,
-      [Symbol.iterator]: function* () {
-        const classes = self.className.split(' ').filter((c: string) => c);
-        for (const cls of classes) {
-          yield cls;
-        }
-      },
-      forEach: (callback: (value: string, key: number, parent: DOMTokenList) => void) => {
-        const classes = self.className.split(' ').filter((c: string) => c);
-        classes.forEach((cls, i) => callback(cls, i, self.classList));
-      },
-      entries: function* () {
-        const classes = self.className.split(' ').filter((c: string) => c);
-        for (let i = 0; i < classes.length; i++) {
-          yield [i, classes[i]] as [number, string];
-        }
-      },
-      keys: function* () {
-        const classes = self.className.split(' ').filter((c: string) => c);
-        for (let i = 0; i < classes.length; i++) {
-          yield i;
-        }
-      },
-      values: function* () {
-        const classes = self.className.split(' ').filter((c: string) => c);
-        for (const cls of classes) {
-          yield cls;
-        }
-      },
-      value: self.className,
-      supports: () => false
-    } as unknown as DOMTokenList;
+    this.classList = createClassList(this);
   }
   
   appendChild<T extends Node>(child: T): T {
@@ -471,4 +389,88 @@ export class NucloElement extends NucloNode {
       }
     }
   }
+}
+
+function createClassList(owner: NucloElement): DOMTokenList {
+  const getClasses = () => owner.className.split(' ').filter((c) => c);
+  const setClasses = (classes: string[]) => {
+    owner.className = classes.join(' ');
+  };
+
+  const classList = {
+    add: (...tokens: string[]) => {
+      const classes = getClasses();
+      for (const token of tokens) {
+        if (token && !classes.includes(token)) {
+          classes.push(token);
+        }
+      }
+      setClasses(classes);
+    },
+    remove: (...tokens: string[]) => {
+      if (tokens.length === 0) return;
+      setClasses(getClasses().filter((c) => !tokens.includes(c)));
+    },
+    toggle: (token: string, force?: boolean) => {
+      const hasClass = classList.contains(token);
+      if (force === undefined) {
+        if (hasClass) {
+          classList.remove(token);
+          return false;
+        }
+        classList.add(token);
+        return true;
+      }
+      if (force) {
+        classList.add(token);
+        return true;
+      }
+      classList.remove(token);
+      return false;
+    },
+    contains: (token: string) => getClasses().includes(token),
+    replace: (oldToken: string, newToken: string) => {
+      const classes = getClasses();
+      const index = classes.indexOf(oldToken);
+      if (index === -1) return false;
+      classes[index] = newToken;
+      setClasses(classes);
+      return true;
+    },
+    item: (index: number) => getClasses()[index] || null,
+    get length() {
+      return getClasses().length;
+    },
+    toString: () => owner.className,
+    [Symbol.iterator]: function* () {
+      yield* getClasses();
+    },
+    forEach: (callback: (value: string, key: number, parent: DOMTokenList) => void) => {
+      getClasses().forEach((cls, i) => callback(cls, i, classList as unknown as DOMTokenList));
+    },
+    entries: function* () {
+      const classes = getClasses();
+      for (let i = 0; i < classes.length; i++) {
+        yield [i, classes[i]] as [number, string];
+      }
+    },
+    keys: function* () {
+      const classes = getClasses();
+      for (let i = 0; i < classes.length; i++) {
+        yield i;
+      }
+    },
+    values: function* () {
+      yield* getClasses();
+    },
+    get value() {
+      return owner.className;
+    },
+    set value(value: string) {
+      owner.className = value;
+    },
+    supports: (_token: string) => false
+  };
+
+  return classList as unknown as DOMTokenList;
 }

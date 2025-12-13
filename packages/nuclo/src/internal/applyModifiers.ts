@@ -80,19 +80,6 @@ export function applyModifiers<TTagName extends ElementTagName>(
   };
 }
 
-/**
- * Convenience helper: apply modifiers and return the element (fluent style).
- * Discards meta information.
- */
-export function applyModifiersAndReturn<TTagName extends ElementTagName>(
-  element: ExpandedElement<TTagName>,
-  modifiers: ReadonlyArray<NodeModifier<TTagName>>,
-  startIndex = 0
-): ExpandedElement<TTagName> {
-  applyModifiers(element, modifiers, startIndex);
-  return element;
-}
-
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
 /**
