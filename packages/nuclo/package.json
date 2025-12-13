@@ -36,7 +36,8 @@
 		"clean": "rm -rf dist *.tsbuildinfo",
 		"test": "vitest run --coverage",
 		"test:watch": "vitest --watch --coverage",
-		"lint": "eslint . --ext .ts,.js,.json,.jsonc,.json5,.md,.css"
+		"lint": "eslint . --ext .ts,.js,.json,.jsonc,.json5,.md,.css",
+		"lint:fix": "eslint . --ext .ts,.js,.json,.jsonc,.json5,.md,.css --fix"
 	},
 	"devDependencies": {
 		"@eslint/css": "^0.14.1",

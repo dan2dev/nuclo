@@ -45,6 +45,17 @@ describe("reactive module exports", () => {
       expect(node.textContent).toBe("test");
     });
 
+    it("logs and returns empty text for invalid resolver", () => {
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const node = createReactiveTextNode(null as any);
+
+      expect(node).toBeInstanceOf(Text);
+      expect((node as Text).textContent).toBe("");
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
+    });
+
     it("should handle pre-evaluated values", () => {
       const resolver = () => "pre-evaluated";
       const node = createReactiveTextNode(resolver, "pre-evaluated");
@@ -96,6 +107,23 @@ describe("reactive module exports", () => {
       value = "updated";
       notifyReactiveTextNodes();
       expect(node.textContent).toBe("updated");
+    });
+
+    it("logs and clears text when resolver throws during updates", () => {
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const resolver = () => {
+        throw new Error("update error");
+      };
+
+      const node = createReactiveTextNode(resolver, "ok");
+      expect(node).toBeInstanceOf(Text);
+
+      container.appendChild(node as Text);
+      notifyReactiveTextNodes();
+
+      expect((node as Text).textContent).toBe("");
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -217,7 +245,6 @@ describe("reactive module exports", () => {
     });
   });
 });
-
 
 
 

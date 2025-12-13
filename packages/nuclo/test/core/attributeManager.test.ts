@@ -188,9 +188,68 @@ describe('attributeManager', () => {
       expect(el.id).toBe('fixed-id');
       expect(el.title).toBe('New Title');
     });
+
+    it('merges static className when a reactive className exists', () => {
+      applyAttributes(el, {
+        className: () => data.cls,
+      } as any);
+
+      expect(el.className).toBe('one');
+
+      applyAttributes(el, {
+        className: 'static',
+      } as any);
+
+      expect(el.className.split(' ')).toEqual(expect.arrayContaining(['one', 'static']));
+
+      data.cls = 'two';
+      update();
+      expect(el.className.split(' ')).toEqual(expect.arrayContaining(['two', 'static']));
+    });
+
+    it('ignores empty static className when a reactive className exists', () => {
+      applyAttributes(el, {
+        className: () => data.cls,
+      } as any);
+
+      applyAttributes(el, {
+        className: "",
+      } as any);
+
+      expect(el.className).toBe("one");
+    });
   });
 
   describe('edge cases', () => {
+    it('falls back to setAttribute when property assignment throws', () => {
+      Object.defineProperty(el, "foo", {
+        set() {
+          throw new Error("readonly");
+        },
+        configurable: true,
+      });
+
+      applyAttributes(el, { foo: "bar" } as any);
+      expect(el.getAttribute("foo")).toBe("bar");
+    });
+
+    it("does not throw when element is not a real Element", () => {
+      const fake: any = {};
+      Object.defineProperty(fake, "foo", {
+        set() {
+          throw new Error("readonly");
+        },
+        configurable: true,
+      });
+
+      expect(() => applyAttributes(fake, { foo: "bar" } as any)).not.toThrow();
+    });
+
+    it("ignores attributes for non-elements without throwing", () => {
+      const fake: any = {};
+      expect(() => applyAttributes(fake, { foo: "bar" } as any)).not.toThrow();
+    });
+
     it('ignores non-function reactive candidate (function length > 0)', () => {
       // A function with parameters is treated as NodeModFn elsewhere; here it should
       // simply be assigned directly (since attributeManager only treats zero-arg

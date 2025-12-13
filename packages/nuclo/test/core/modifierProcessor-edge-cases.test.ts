@@ -119,6 +119,12 @@ describe("modifierProcessor edge cases", () => {
       expect(parent.className).toBe("my-class");
     });
 
+    it("should ignore NodeModFn that returns a function", () => {
+      const modifier = (_parent: HTMLElement) => (() => "not-a-node") as any;
+      const result = applyNodeModifier(parent, modifier as any, 0);
+      expect(result).toBeNull();
+    });
+
     it("should handle NodeModFn that throws", () => {
       const modifier = (parent: HTMLElement) => {
         throw new Error("modifier error");
@@ -222,4 +228,3 @@ describe("modifierProcessor edge cases", () => {
     });
   });
 });
-

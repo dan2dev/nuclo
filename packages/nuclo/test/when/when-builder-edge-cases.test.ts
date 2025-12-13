@@ -99,7 +99,7 @@ describe("when builder edge cases", () => {
 
   describe("when builder update behavior", () => {
     it("should not re-render if condition hasn't changed", () => {
-      let condition = true;
+      const condition = true;
       const whenBuilder = when(() => condition, "content");
       
       whenBuilder(container, 0);
@@ -222,4 +222,3 @@ describe("when builder edge cases", () => {
     });
   });
 });
-
