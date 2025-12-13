@@ -16,14 +16,25 @@ const updaters: ReadonlyArray<(scope?: UpdateScope) => void> = [
 ] as const;
 
 export function update(...groupIds: string[]): void {
-  const roots = groupIds.length > 0 ? getGroupRoots(groupIds) : [];
-  const scope: UpdateScope | undefined =
-    groupIds.length > 0
-      ? {
-          roots,
-          contains: (node) => roots.some((root) => root.contains(node)),
-        }
-      : undefined;
+  let scope: UpdateScope | undefined;
+  if (groupIds.length > 0) {
+    const roots = getGroupRoots(groupIds);
+
+    if (roots.length === 1) {
+      const root = roots[0]!;
+      scope = { roots, contains: (node) => root.contains(node) };
+    } else {
+      scope = {
+        roots,
+        contains: (node) => {
+          for (const root of roots) {
+            if (root.contains(node)) return true;
+          }
+          return false;
+        },
+      };
+    }
+  }
 
   for (const fn of updaters) fn(scope);
 }
