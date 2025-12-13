@@ -527,6 +527,30 @@ export function StylingPage() {
       div(CodeBlock(stylingCode.organizingUsage.code, stylingCode.organizingUsage.lang, true))
     ),
 
+    // Advanced Examples
+    h2(s.h2, "Advanced Examples"),
+    p(s.p, "Explore advanced styling techniques including animations, 3D transforms, complex grids, and modern effects."),
+
+    h3(s.h3, "Animations & Keyframes"),
+    p(s.p, "Create smooth animations using the animation helpers combined with CSS keyframes:"),
+    CodeBlock(stylingCode.advancedAnimation.code, stylingCode.advancedAnimation.lang),
+
+    h3(s.h3, "3D Transforms & Glassmorphism"),
+    p(s.p, "Use transform and backdrop-filter helpers for modern visual effects:"),
+    CodeBlock(stylingCode.advancedTransforms.code, stylingCode.advancedTransforms.lang),
+
+    h3(s.h3, "Grid Template Areas"),
+    p(s.p, "Build complex responsive layouts with named grid areas:"),
+    CodeBlock(stylingCode.advancedGrid.code, stylingCode.advancedGrid.lang),
+
+    h3(s.h3, "Advanced Typography"),
+    p(s.p, "Fine-tune text rendering with advanced typography helpers:"),
+    CodeBlock(stylingCode.advancedTypography.code, stylingCode.advancedTypography.lang),
+
+    h3(s.h3, "Modern Color Techniques"),
+    p(s.p, "Gradients, CSS variables, and multiple backgrounds:"),
+    CodeBlock(stylingCode.advancedColors.code, stylingCode.advancedColors.lang),
+
     // Next steps
     h2(s.h2, "Next Steps"),
     ul(

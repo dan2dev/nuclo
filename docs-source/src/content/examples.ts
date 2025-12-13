@@ -1224,4 +1224,383 @@ const app = div(
 
 render(app, document.body);`,
   },
+  {
+    id: 'advanced-card-gallery',
+    title: 'Advanced Card Gallery',
+    description: 'A sophisticated card gallery showcasing advanced styling with gradients, shadows, hover effects, and pseudo-classes.',
+    code: `import 'nuclo';
+
+// Setup responsive breakpoints
+const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)',
+  large: '@media (min-width: 1024px)'
+});
+
+// Modern theme
+const theme = {
+  primary: '#6366f1',
+  primaryHover: '#4f46e5',
+  text: '#1f2937',
+  textMuted: '#6b7280',
+  bg: '#f9fafb',
+  border: '#e5e7eb'
+};
+
+// Styles
+const pageStyle = cn(
+  bg(theme.bg)
+    .minHeight('100vh')
+    .padding('2rem')
+);
+
+const gridStyle = cn(
+  grid()
+    .gridTemplateColumns('1fr')
+    .gap('2rem')
+    .maxWidth('1200px')
+    .margin('0 auto'),
+  {
+    medium: gridTemplateColumns('repeat(2, 1fr)'),
+    large: gridTemplateColumns('repeat(3, 1fr)')
+  }
+);
+
+const cardStyle = cn(
+  bg('white')
+    .borderRadius('16px')
+    .overflow('hidden')
+    .boxShadow('0 4px 6px rgba(0,0,0,0.05)')
+    .transition('all 0.3s ease')
+    .cursor('pointer')
+    .border(\`1px solid \${theme.border}\`),
+  {
+    hover: boxShadow('0 20px 40px rgba(0,0,0,0.15)')
+      .transform('translateY(-8px)')
+      .borderColor(theme.primary)
+  }
+);
+
+const imageContainerStyle = cn(
+  position('relative')
+    .height('200px')
+    .overflow('hidden')
+    .bg('linear-gradient(135deg, #667eea 0%, #764ba2 100%)')
+);
+
+const imageStyle = cn(
+  width('100%')
+    .height('100%')
+    .objectFit('cover')
+    .transition('transform 0.3s ease')
+);
+
+const cardContentStyle = cn(
+  padding('1.5rem')
+);
+
+const titleStyle = cn(
+  fontSize('1.25rem')
+    .fontWeight('700')
+    .color(theme.text)
+    .margin('0 0 0.5rem 0')
+);
+
+const descStyle = cn(
+  fontSize('0.9rem')
+    .color(theme.textMuted)
+    .lineHeight('1.6')
+    .margin('0 0 1rem 0')
+);
+
+const tagContainerStyle = cn(
+  display('flex')
+    .gap('0.5rem')
+    .flexWrap('wrap')
+);
+
+const tagStyle = cn(
+  fontSize('0.75rem')
+    .padding('0.25rem 0.75rem')
+    .borderRadius('9999px')
+    .bg(theme.bg)
+    .color(theme.primary)
+    .fontWeight('600')
+);
+
+// Data
+type Card = {
+  id: number;
+  title: string;
+  description: string;
+  tags: string[];
+  imageColor: string;
+};
+
+const cards: Card[] = [
+  {
+    id: 1,
+    title: 'Modern Design',
+    description: 'Beautiful gradient backgrounds with smooth transitions and hover effects.',
+    tags: ['Design', 'UI'],
+    imageColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+  },
+  {
+    id: 2,
+    title: 'Performance',
+    description: 'Optimized rendering with efficient DOM updates and minimal bundle size.',
+    tags: ['Speed', 'Optimization'],
+    imageColor: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+  },
+  {
+    id: 3,
+    title: 'TypeScript',
+    description: 'Full type safety with intelligent autocomplete for all helpers.',
+    tags: ['TypeScript', 'DX'],
+    imageColor: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
+  },
+  {
+    id: 4,
+    title: 'Responsive',
+    description: 'Mobile-first design with breakpoint-based responsive utilities.',
+    tags: ['Mobile', 'Responsive'],
+    imageColor: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
+  },
+  {
+    id: 5,
+    title: 'Animations',
+    description: 'Smooth animations and transitions with CSS-in-JS helpers.',
+    tags: ['Animation', 'Effects'],
+    imageColor: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+  },
+  {
+    id: 6,
+    title: 'Components',
+    description: 'Reusable component functions with encapsulated styles.',
+    tags: ['Components', 'Reusability'],
+    imageColor: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)'
+  }
+];
+
+const app = div(
+  pageStyle,
+
+  // Header
+  div(
+    cn(textAlign('center').marginBottom('3rem')),
+    h1(
+      cn(fontSize('3rem').fontWeight('800').color(theme.text).margin('0 0 0.5rem 0')),
+      'Card Gallery'
+    ),
+    p(
+      cn(fontSize('1.125rem').color(theme.textMuted)),
+      'Hover over cards to see the effects'
+    )
+  ),
+
+  // Grid
+  div(
+    gridStyle,
+    list(() => cards, card =>
+      div(
+        cardStyle,
+        on('click', () => console.log(\`Clicked: \${card.title}\`)),
+
+        // Image
+        div(
+          imageContainerStyle,
+          { style: { background: card.imageColor } },
+          div(
+            cn(position('absolute')
+              .bottom('1rem')
+              .left('1rem')
+              .color('white')
+              .fontSize('2rem')
+              .fontWeight('800')
+              .textShadow('0 2px 10px rgba(0,0,0,0.3)')
+            ),
+            card.id.toString()
+          )
+        ),
+
+        // Content
+        div(
+          cardContentStyle,
+          h3(titleStyle, card.title),
+          p(descStyle, card.description),
+          div(
+            tagContainerStyle,
+            ...card.tags.map(tag => span(tagStyle, tag))
+          )
+        )
+      )
+    )
+  )
+);
+
+render(app, document.body);`,
+  },
+  {
+    id: 'svg-icons',
+    title: 'SVG Icons',
+    description: 'Creating and styling SVG icons with nuclo, demonstrating SVG builders and reactive styling.',
+    code: `import 'nuclo';
+
+const cn = createStyleQueries({
+  medium: '@media (min-width: 768px)'
+});
+
+// Icon component functions
+function HeartIcon(size = '24', filled = false) {
+  return svg(
+    { viewBox: '0 0 24 24', width: size, height: size, fill: 'none', stroke: 'currentColor' },
+    pathSvg({
+      d: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
+      fill: filled ? 'currentColor' : 'none',
+      'stroke-width': '2',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    })
+  );
+}
+
+function StarIcon(size = '24', filled = false) {
+  return svg(
+    { viewBox: '0 0 24 24', width: size, height: size, fill: 'none', stroke: 'currentColor' },
+    pathSvg({
+      d: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
+      fill: filled ? 'currentColor' : 'none',
+      'stroke-width': '2',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    })
+  );
+}
+
+function CheckIcon(size = '24') {
+  return svg(
+    { viewBox: '0 0 24 24', width: size, height: size, fill: 'none', stroke: 'currentColor' },
+    pathSvg({
+      d: 'M20 6L9 17l-5-5',
+      'stroke-width': '2',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    })
+  );
+}
+
+// Interactive button with icon
+function IconButton(icon: Element, label: string, onClick: () => void) {
+  let isActive = false;
+
+  const buttonStyle = cn(
+    display('flex')
+      .alignItems('center')
+      .gap('0.5rem')
+      .padding('0.75rem 1.5rem')
+      .border('2px solid #e5e7eb')
+      .borderRadius('8px')
+      .bg('white')
+      .cursor('pointer')
+      .transition('all 0.2s ease')
+      .fontSize('1rem')
+      .fontWeight('600'),
+    {
+      hover: borderColor('#3b82f6').color('#3b82f6').transform('translateY(-2px)'),
+      active: transform('translateY(0)')
+    }
+  );
+
+  return button(
+    buttonStyle,
+    {
+      style: () => ({
+        borderColor: isActive ? '#3b82f6' : '#e5e7eb',
+        color: isActive ? '#3b82f6' : '#1f2937',
+        backgroundColor: isActive ? '#eff6ff' : 'white'
+      })
+    },
+    on('click', () => {
+      isActive = !isActive;
+      onClick();
+      update();
+    }),
+    icon,
+    label
+  );
+}
+
+// State
+let likes = 0;
+let rating = 0;
+let completed = false;
+
+// App
+const app = div(
+  cn(padding('2rem').minHeight('100vh').bg('#f9fafb')),
+
+  div(
+    cn(maxWidth('600px').margin('0 auto')),
+
+    h1(
+      cn(fontSize('2rem').fontWeight('800').marginBottom('2rem')),
+      'SVG Icons Demo'
+    ),
+
+    // Icon buttons
+    div(
+      cn(display('flex').flexDirection('column').gap('1rem')),
+
+      IconButton(
+        HeartIcon('20', likes > 0),
+        () => \`Like (\${likes})\`,
+        () => { likes++; }
+      ),
+
+      IconButton(
+        StarIcon('20', rating > 0),
+        () => \`Rate (\${rating})\`,
+        () => { rating++; }
+      ),
+
+      IconButton(
+        CheckIcon('20'),
+        () => completed ? 'Completed' : 'Mark Complete',
+        () => { completed = !completed; }
+      )
+    ),
+
+    // Icon showcase
+    div(
+      cn(marginTop('3rem').padding('2rem').bg('white').borderRadius('12px').boxShadow('0 4px 6px rgba(0,0,0,0.05)')),
+      h2(cn(fontSize('1.5rem').fontWeight('700').marginBottom('1.5rem')), 'Icon Sizes'),
+
+      div(
+        cn(display('flex').gap('1.5rem').alignItems('center').flexWrap('wrap')),
+        div(
+          cn(display('flex').flexDirection('column').alignItems('center').gap('0.5rem')),
+          HeartIcon('16'),
+          span(cn(fontSize('0.75rem').color('#6b7280')), '16px')
+        ),
+        div(
+          cn(display('flex').flexDirection('column').alignItems('center').gap('0.5rem')),
+          HeartIcon('24'),
+          span(cn(fontSize('0.75rem').color('#6b7280')), '24px')
+        ),
+        div(
+          cn(display('flex').flexDirection('column').alignItems('center').gap('0.5rem')),
+          HeartIcon('32'),
+          span(cn(fontSize('0.75rem').color('#6b7280')), '32px')
+        ),
+        div(
+          cn(display('flex').flexDirection('column').alignItems('center').gap('0.5rem')),
+          HeartIcon('48'),
+          span(cn(fontSize('0.75rem').color('#6b7280')), '48px')
+        )
+      )
+    )
+  )
+);
+
+render(app, document.body);`,
+  },
 ];

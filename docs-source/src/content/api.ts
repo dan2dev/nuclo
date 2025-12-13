@@ -368,4 +368,106 @@ function tooltip(text: string) {
 
 // Usage
 button('Hover me', tooltip('Click to submit'));` },
+  scopedUpdates: { lang: 'typescript', code: `// Mark elements with scope IDs
+const sidebar = div(
+  scope('sidebar'),
+  h2('Sidebar'),
+  p(() => sidebarContent)
+);
+
+const mainContent = div(
+  scope('main'),
+  h2('Main'),
+  p(() => mainText)
+);
+
+// Update only the sidebar
+function updateSidebar() {
+  sidebarContent = 'New sidebar content';
+  update('sidebar'); // Only updates elements in 'sidebar' scope
+}
+
+// Update only main content
+function updateMain() {
+  mainText = 'New main text';
+  update('main'); // Only updates elements in 'main' scope
+}
+
+// Update everything (default behavior)
+function updateAll() {
+  update(); // Updates all scopes
+}` },
+  scopeMultiple: { lang: 'typescript', code: `// Apply multiple scopes to an element
+div(
+  scope('header', 'nav'),
+  // This element belongs to both 'header' and 'nav' scopes
+  nav(...)
+);
+
+// Update multiple scopes at once
+update('header', 'nav');` },
+  ssrBasic: { lang: 'typescript', code: `import { renderToString } from 'nuclo/ssr';
+
+// Render a component to HTML string
+const html = renderToString(() =>
+  div(
+    h1('Welcome'),
+    p('Server-side rendered content')
+  )
+);
+
+// Returns: "<div><h1>Welcome</h1><p>Server-side rendered content</p></div>"` },
+  ssrMultiple: { lang: 'typescript', code: `import { renderManyToString } from 'nuclo/ssr';
+
+// Render multiple components
+const htmlFragments = renderManyToString([
+  () => header(h1('Header')),
+  () => main(p('Content')),
+  () => footer(p('Footer'))
+]);
+
+// Returns array of HTML strings` },
+  ssrWithContainer: { lang: 'typescript', code: `import { renderToStringWithContainer } from 'nuclo/ssr';
+
+// Render with a custom container element
+const html = renderToStringWithContainer(
+  () => p('Hello'),
+  'main',
+  { className: 'container' }
+);
+
+// Returns: "<main class="container"><p>Hello</p></main>"` },
+  svgAdvanced: { lang: 'typescript', code: `// All SVG elements have -Svg suffix for type safety
+const chart = svg(
+  { viewBox: '0 0 100 100', width: '200', height: '200' },
+
+  // Shapes
+  rectSvg({ x: '10', y: '10', width: '30', height: '30', fill: 'blue' }),
+  circleSvg({ cx: '50', cy: '50', r: '20', fill: 'red' }),
+
+  // Paths
+  pathSvg({
+    d: 'M 10,30 A 20,20 0,0,1 50,30 A 20,20 0,0,1 90,30',
+    stroke: 'green',
+    fill: 'none',
+    'stroke-width': '2'
+  }),
+
+  // Groups and gradients
+  defs(
+    linearGradient(
+      { id: 'grad1', x1: '0%', y1: '0%', x2: '100%', y2: '0%' },
+      stop({ offset: '0%', 'stop-color': 'rgb(255,255,0)' }),
+      stop({ offset: '100%', 'stop-color': 'rgb(255,0,0)' })
+    )
+  ),
+
+  rectSvg({
+    x: '10',
+    y: '70',
+    width: '80',
+    height: '20',
+    fill: 'url(#grad1)'
+  })
+);` },
 } as const;

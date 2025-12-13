@@ -11,6 +11,7 @@ const tocItems = [
   { id: "on", label: "on()", level: 3 },
   { id: "list", label: "list()", level: 3 },
   { id: "when", label: "when()", level: 3 },
+  { id: "scope", label: "scope()", level: 3 },
   { id: "tag-builders", label: "Tag Builders", level: 2 },
   { id: "html-tags", label: "HTML Tags", level: 3 },
   { id: "svg-tags", label: "SVG Tags", level: 3 },
@@ -18,6 +19,7 @@ const tocItems = [
   { id: "className-merging", label: "className Merging", level: 2 },
   { id: "style-helpers", label: "Style Helpers", level: 2 },
   { id: "modifiers", label: "Modifiers", level: 2 },
+  { id: "ssr", label: "Server-Side Rendering", level: 2 },
 ];
 
 function setupScrollDetection() {
@@ -143,6 +145,27 @@ export function ApiPage() {
       CodeBlock(apiCode.whenPreserve.code, apiCode.whenPreserve.lang),
       CodeBlock(apiCode.whenNestedConditions.code, apiCode.whenNestedConditions.lang),
 
+      // scope()
+      h3(s.h3, { id: "scope" }, "scope(...ids) & Scoped Updates"),
+      p(
+        s.p,
+        "For performance optimization, you can scope updates to specific parts of your UI. Mark elements with ",
+        InlineCode("scope()"),
+        " and pass scope IDs to ",
+        InlineCode("update()"),
+        " to update only those scoped regions."
+      ),
+      CodeBlock(apiCode.scopedUpdates.code, apiCode.scopedUpdates.lang),
+      p(s.p, "You can apply multiple scopes to an element and update multiple scopes at once:"),
+      CodeBlock(apiCode.scopeMultiple.code, apiCode.scopeMultiple.lang),
+      ul(
+        s.ul,
+        li(s.li, "Scoped updates only refresh reactive functions within marked scope roots"),
+        li(s.li, "Elements can belong to multiple scopes"),
+        li(s.li, "Calling ", InlineCode("update()"), " without arguments updates all scopes (default behavior)"),
+        li(s.li, "Great for large apps where only specific regions need updates")
+      ),
+
       // Tag builders
       h2(s.h2, { id: "tag-builders" }, "Tag Builders"),
       p(
@@ -178,14 +201,22 @@ export function ApiPage() {
 
       // SVG tags
       h3(s.h3, { id: "svg-tags" }, "SVG Tags"),
+      p(
+        s.p,
+        "All SVG elements are available with a ",
+        InlineCode("-Svg"),
+        " suffix for better TypeScript support and to avoid naming conflicts:"
+      ),
       CodeBlock(
-        `svg, circle, ellipse, line, path, polygon, polyline, rect,
+        `svg, circleSvg, ellipseSvg, lineSvg, pathSvg, polygonSvg, polylineSvg, rectSvg,
 g, defs, use, symbol, marker, clipPath, mask, pattern,
 linearGradient, radialGradient, stop, text, tspan, textPath`,
         "text"
       ),
-      p(s.p, "Usage example:"),
+      p(s.p, "Basic usage example:"),
       CodeBlock(apiCode.svgExample.code, apiCode.svgExample.lang),
+      p(s.p, "Advanced SVG with gradients and shapes:"),
+      CodeBlock(apiCode.svgAdvanced.code, apiCode.svgAdvanced.lang),
 
       // Attributes
       h2(s.h2, { id: "attributes" }, "Attributes"),
@@ -237,7 +268,32 @@ linearGradient, radialGradient, stop, text, tspan, textPath`,
       h3(s.h3, "Style modifiers"),
       CodeBlock(apiCode.modifiersStyles.code, apiCode.modifiersStyles.lang),
       h3(s.h3, "Custom modifier example"),
-      CodeBlock(apiCode.modifiersCustomFocus.code, apiCode.modifiersCustomFocus.lang)
+      CodeBlock(apiCode.modifiersCustomFocus.code, apiCode.modifiersCustomFocus.lang),
+
+      // SSR
+      h2(s.h2, { id: "ssr" }, "Server-Side Rendering (SSR)"),
+      p(
+        s.p,
+        "Nuclo supports server-side rendering through the ",
+        InlineCode("nuclo/ssr"),
+        " module. Render components to HTML strings for SSR frameworks or static site generation."
+      ),
+      h3(s.h3, "renderToString()"),
+      p(s.p, "Render a component to an HTML string:"),
+      CodeBlock(apiCode.ssrBasic.code, apiCode.ssrBasic.lang),
+      h3(s.h3, "renderManyToString()"),
+      p(s.p, "Render multiple components to an array of HTML strings:"),
+      CodeBlock(apiCode.ssrMultiple.code, apiCode.ssrMultiple.lang),
+      h3(s.h3, "renderToStringWithContainer()"),
+      p(s.p, "Render with a custom container element and attributes:"),
+      CodeBlock(apiCode.ssrWithContainer.code, apiCode.ssrWithContainer.lang),
+      ul(
+        s.ul,
+        li(s.li, "SSR functions work in Node.js environments with DOM polyfills"),
+        li(s.li, "Reactive functions are evaluated once during SSR"),
+        li(s.li, "Event handlers and client-side interactivity are omitted from SSR output"),
+        li(s.li, "Perfect for pre-rendering pages or generating static HTML")
+      )
     ),
     // Table of Contents Sidebar
     TableOfContents()
