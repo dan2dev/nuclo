@@ -1,5 +1,5 @@
 import { getTodos, getInputValue, setInputValue, addTodo, toggleTodo, deleteTodo, reorderTodos } from "./todoState.ts";
-import { globalStyles as s } from "./styles.ts";
+import { globalStyles as s, cn } from "./styles.ts";
 import { sortable } from "./sortable.ts";
 
 
@@ -39,6 +39,12 @@ export const app = div(
           div(
             sortable(reorderTodos),
             s.todoItem,
+            span(
+              {
+                "data-drag-handle": "true",
+              },
+              cn(height("20").cursor("grab").width("20").bg("#ccc").display("inline-block")),
+              "⇅"),
             input(
               s.checkbox,
               {
