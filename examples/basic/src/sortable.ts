@@ -69,7 +69,7 @@ export const sortable = (onReorder: (fromIndex: number, toIndex: number) => void
       
       isPointerDown = true;
       draggedElement = element;
-      handle.style.cursor = "grabbing";
+      document.body.style.setProperty("cursor", "grabbing", "important");
       element.style.opacity = "0.5";
       element.style.transition = "opacity 200ms ease";
       
@@ -128,10 +128,7 @@ export const sortable = (onReorder: (fromIndex: number, toIndex: number) => void
         isPointerDown = false;
         
         if (draggedElement) {
-          const handle = draggedElement.querySelector('[data-drag-handle]') as HTMLElement;
-          if (handle) {
-            handle.style.cursor = "grab";
-          }
+          document.body.style.cursor = "";
           draggedElement.style.opacity = "1";
           draggedElement = null;
         }
