@@ -31,6 +31,7 @@ export const app = div(
     ),
 
     div(
+      scope("todos"),
       s.todoList,
       list(
         () => getTodos(),

@@ -50,6 +50,6 @@ export function deleteTodo(id: number): void {
 export function reorderTodos(fromIndex: number, toIndex: number): void {
   const [movedTodo] = todos.splice(fromIndex, 1);
   todos.splice(toIndex, 0, movedTodo);
-  update();
+  update("todos");
 }
 
