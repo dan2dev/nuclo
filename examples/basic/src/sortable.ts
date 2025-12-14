@@ -15,7 +15,6 @@ const animateElement = (element: HTMLElement, fromRect: DOMRect, toRect: DOMRect
 
 export const sortable = (onReorder: (fromIndex: number, toIndex: number) => void) => {
   return (element: HTMLElement) => {
-    element.style.cursor = "grab";
     element.style.userSelect = "none";
     
     let draggedElement: HTMLElement | null = null;
@@ -63,9 +62,14 @@ export const sortable = (onReorder: (fromIndex: number, toIndex: number) => void
     const onPointerDown = (e: PointerEvent) => {
       if (e.button !== 0) return;
       
+      // Check if the click originated from a drag handle
+      const target = e.target as HTMLElement;
+      const handle = target.closest('[data-drag-handle]') as HTMLElement;
+      if (!handle || !element.contains(handle)) return;
+      
       isPointerDown = true;
       draggedElement = element;
-      element.style.cursor = "grabbing";
+      handle.style.cursor = "grabbing";
       element.style.opacity = "0.5";
       element.style.transition = "opacity 200ms ease";
       
@@ -124,7 +128,10 @@ export const sortable = (onReorder: (fromIndex: number, toIndex: number) => void
         isPointerDown = false;
         
         if (draggedElement) {
-          draggedElement.style.cursor = "grab";
+          const handle = draggedElement.querySelector('[data-drag-handle]') as HTMLElement;
+          if (handle) {
+            handle.style.cursor = "grab";
+          }
           draggedElement.style.opacity = "1";
           draggedElement = null;
         }
