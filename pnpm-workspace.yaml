@@ -4,3 +4,6 @@ packages:
 
 onlyBuiltDependencies:
   - esbuild
+
+overrides:
+  nuclo: link:../../../Library/pnpm/global/5/node_modules/nuclo
