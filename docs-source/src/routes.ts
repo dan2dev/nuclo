@@ -1,5 +1,7 @@
 import "nuclo";
 import type { Route } from "./router.ts";
+import { clearTocState } from "./components/TableOfContents.ts";
+import { clearCopiedStates } from "./components/CodeBlock.ts";
 
 export type PageFunction = () => ReturnType<typeof div>;
 export type PageLoader = () => Promise<{ default: PageFunction }>;
@@ -28,8 +30,19 @@ export const routes: Record<Route, PageLoader> = {
 // Cache for loaded page functions
 const pageCache = new Map<Route, PageFunction>();
 
+export function clearPageCache() {
+  pageCache.clear();
+}
+
 // Container element reference
 let pageContainerElement: HTMLElement | null = null;
+
+// Optional per-page cleanup callback (e.g. disconnect observers, clear timers)
+let currentPageCleanup: (() => void) | null = null;
+
+export function setPageCleanup(cleanup: (() => void) | null): void {
+  currentPageCleanup = cleanup;
+}
 
 export function setPageContainer(container: HTMLElement) {
   pageContainerElement = container;
@@ -41,9 +54,26 @@ export async function loadPage(route: Route): Promise<void> {
     return;
   }
 
+  // Let the current page dispose any observers/timers before we detach its DOM.
+  if (currentPageCleanup) {
+    try {
+      currentPageCleanup();
+    } catch (e) {
+      console.error("Error during page cleanup", e);
+    } finally {
+      currentPageCleanup = null;
+    }
+  }
+
   try {
     // Show loading state
     pageContainerElement.innerHTML = "";
+    // Important: clearing via innerHTML detaches nodes.
+    // Clean up all scope registrations, module-level state, and run update to drop references to disconnected nodes.
+    cleanupAllScopes();
+    clearTocState();
+    clearCopiedStates();
+    update();
     const loadingContainer = document.createElement("div");
     loadingContainer.style.cssText = "display: flex; justify-content: center; align-items: center; min-height: 400px; font-size: 1.2rem; color: #666;";
     loadingContainer.textContent = "Loading...";
@@ -69,12 +99,15 @@ export async function loadPage(route: Route): Promise<void> {
 
     // Render the page
     pageContainerElement.innerHTML = "";
+    // Cleanup the now-detached loading DOM too.
+    update();
     const pageElement = pageFunction();
     render(pageElement, pageContainerElement);
   } catch (error) {
     console.error(`Failed to load page for route: ${route}`, error);
     // Show error state
     pageContainerElement.innerHTML = "";
+    update();
     const errorContainer = document.createElement("div");
     errorContainer.style.cssText = "display: flex; justify-content: center; align-items: center; min-height: 400px; font-size: 1.2rem; color: #f44336;";
     errorContainer.textContent = "Failed to load page: " + (error as Error).message;

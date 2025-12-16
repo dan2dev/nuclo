@@ -20,6 +20,11 @@ export function setActiveSection(id: string) {
   update();
 }
 
+export function clearTocState() {
+  activeSection = "";
+  tocItems = [];
+}
+
 function scrollToSection(id: string) {
   const element = document.getElementById(id);
   if (element) {

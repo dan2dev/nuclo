@@ -15,7 +15,9 @@ describe('When Conditional Rendering', () => {
   });
 
   afterEach(() => {
-    container.remove();
+    if (container && container.parentNode) {
+      container.parentNode.removeChild(container);
+    }
     clearWhenRuntimes();
   });
 
@@ -177,6 +179,8 @@ describe('When Conditional Rendering', () => {
       // Create separate containers to avoid conflicts
       const container1 = document.createElement('div');
       const container2 = document.createElement('div');
+      document.body.appendChild(container1);
+      document.body.appendChild(container2);
       
       const when1 = when(() => condition1, 'First').else('No first');
       const when2 = when(() => condition2, 'Second').else('No second');
@@ -192,6 +196,10 @@ describe('When Conditional Rendering', () => {
       
       expect(container1.textContent).toBe('First');
       expect(container2.textContent).toBe('Second');
+      
+      // Cleanup
+      document.body.removeChild(container1);
+      document.body.removeChild(container2);
     });
 
     it('should clean up properly with frequent changes', () => {

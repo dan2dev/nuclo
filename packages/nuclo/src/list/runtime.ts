@@ -4,6 +4,11 @@ import { resolveRenderable } from "../utility/renderables";
 import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsProvider } from "./types";
 import type { UpdateScope } from "../core/updateScope";
 
+/**
+ * Tracks all active list runtimes for update notifications.
+ * Uses Set (not WeakSet) because we need iteration support.
+ * Cleanup happens automatically in updateListRuntimes() when markers are disconnected.
+ */
 const activeListRuntimes = new Set<ListRuntime<unknown, keyof HTMLElementTagNameMap>>();
 
 function renderItem<TItem, TTagName extends ElementTagName>(

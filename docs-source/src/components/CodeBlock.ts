@@ -13,6 +13,10 @@ function isCopied(id: string): boolean {
   return copiedStates[id] || false;
 }
 
+export function clearCopiedStates() {
+  copiedStates = {};
+}
+
 // Simple syntax highlighting for TypeScript/JavaScript
 function highlightCode(codeStr: string): string {
   let result = codeStr

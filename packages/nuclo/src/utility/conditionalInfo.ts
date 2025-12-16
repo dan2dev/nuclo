@@ -12,6 +12,8 @@ interface NodeWithConditionalInfo extends Node {
 /**
  * Registry of all nodes that have conditional info attached.
  * This enables O(nConditionals) updates instead of a full DOM tree walk.
+ * Note: Uses Set (not WeakSet) because we need iteration support.
+ * Cleanup happens automatically during update cycles when nodes are disconnected.
  */
 const activeConditionalNodes = new Set<Node>();
 

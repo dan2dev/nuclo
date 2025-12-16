@@ -14,7 +14,8 @@ interface ReactiveElementInfo {
   attributeResolvers: Map<string, AttributeResolverRecord>;
 }
 
-const reactiveElements = new Map<Element, ReactiveElementInfo>();
+const reactiveElements = new WeakMap<Element, ReactiveElementInfo>();
+const reactiveElementsSet = new Set<Element>();
 const UNSET_LAST_VALUE = {};
 let updateEventListenerRegistered = false;
 
@@ -31,7 +32,8 @@ function handleUpdateEvent(event: Event): void {
       const info = reactiveElements.get(node);
       if (info) {
         if (!isNodeConnected(node)) {
-          reactiveElements.delete(node);
+          reactiveElementsSet.delete(node);
+          // WeakMap entry will be garbage collected automatically
         } else {
           applyAttributeResolvers(info);
         }
@@ -53,6 +55,7 @@ function ensureElementInfo(el: Element): ReactiveElementInfo {
   if (!info) {
     info = { attributeResolvers: new Map() };
     reactiveElements.set(el, info);
+    reactiveElementsSet.add(el);
   }
   return info;
 }
@@ -146,9 +149,16 @@ export function registerAttributeResolver<TTagName extends ElementTagName>(
  * ```
  */
 export function notifyReactiveElements(scope?: UpdateScope): void {
-  for (const [el, info] of reactiveElements) {
+  for (const el of reactiveElementsSet) {
     if (!isNodeConnected(el)) {
-      reactiveElements.delete(el);
+      reactiveElementsSet.delete(el);
+      // WeakMap entry will be garbage collected automatically
+      continue;
+    }
+
+    const info = reactiveElements.get(el);
+    if (!info) {
+      reactiveElementsSet.delete(el);
       continue;
     }
 

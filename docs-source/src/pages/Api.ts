@@ -3,6 +3,7 @@ import { cn, s } from "../styles.ts";
 import { CodeBlock, InlineCode } from "../components/CodeBlock.ts";
 import { TableOfContents, setTocItems, setActiveSection } from "../components/TableOfContents.ts";
 import { apiCode } from "../content/api.ts";
+import { setPageCleanup } from "../routes.ts";
 
 const tocItems = [
   { id: "core-functions", label: "Core Functions", level: 2 },
@@ -22,7 +23,15 @@ const tocItems = [
   { id: "ssr", label: "Server-Side Rendering", level: 2 },
 ];
 
+let scrollObserver: IntersectionObserver | null = null;
+let scrollTimer: number | null = null;
+
 function setupScrollDetection() {
+  if (scrollObserver) {
+    scrollObserver.disconnect();
+    scrollObserver = null;
+  }
+
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
@@ -37,6 +46,8 @@ function setupScrollDetection() {
     }
   );
 
+  scrollObserver = observer;
+
   tocItems.forEach((item) => {
     const element = document.getElementById(item.id);
     if (element) observer.observe(element);
@@ -45,7 +56,24 @@ function setupScrollDetection() {
 
 export function ApiPage() {
   setTocItems(tocItems);
-  setTimeout(setupScrollDetection, 200);
+
+  if (scrollTimer !== null) {
+    window.clearTimeout(scrollTimer);
+    scrollTimer = null;
+  }
+
+  scrollTimer = window.setTimeout(setupScrollDetection, 200);
+
+  setPageCleanup(() => {
+    if (scrollTimer !== null) {
+      window.clearTimeout(scrollTimer);
+      scrollTimer = null;
+    }
+    if (scrollObserver) {
+      scrollObserver.disconnect();
+      scrollObserver = null;
+    }
+  });
 
   const pageLayoutStyle = cn(
     display("flex")

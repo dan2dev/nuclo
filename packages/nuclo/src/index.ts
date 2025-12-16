@@ -8,7 +8,7 @@ export { update } from "./core/updateController";
 export { applyAttributes } from "./core/attributeManager";
 export { appendChildren, createComment, createConditionalComment, replaceNodeSafely } from "./utility/dom";
 export { on } from "./utility/on";
-export { scope } from "./utility/scope";
+export { scope, cleanupAllScopes } from "./utility/scope";
 export { render } from "./utility/render";
 export { isBoolean, isFunction, isNode, isObject, isPrimitive, isTagLike, isZeroArityFunction } from "./utility/typeGuards";
 export { isBrowser } from "./utility/environment";

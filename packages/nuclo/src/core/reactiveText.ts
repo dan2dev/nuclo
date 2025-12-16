@@ -9,7 +9,8 @@ interface ReactiveTextNodeInfo {
   lastValue: string;
 }
 
-const reactiveTextNodes = new Map<Text, ReactiveTextNodeInfo>();
+const reactiveTextNodes = new WeakMap<Text, ReactiveTextNodeInfo>();
+const reactiveTextNodesSet = new Set<Text>();
 
 /**
  * Creates a reactive text node that automatically updates when its resolver function changes.
@@ -50,6 +51,7 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
   const txt = document.createTextNode(str);
 
   reactiveTextNodes.set(txt, { resolver, lastValue: str });
+  reactiveTextNodesSet.add(txt);
   return txt;
 }
 
@@ -69,9 +71,16 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
  * ```
  */
 export function notifyReactiveTextNodes(scope?: UpdateScope): void {
-  for (const [node, info] of reactiveTextNodes) {
+  for (const node of reactiveTextNodesSet) {
     if (!isNodeConnected(node)) {
-      reactiveTextNodes.delete(node);
+      reactiveTextNodesSet.delete(node);
+      // WeakMap entry will be garbage collected automatically
+      continue;
+    }
+
+    const info = reactiveTextNodes.get(node);
+    if (!info) {
+      reactiveTextNodesSet.delete(node);
       continue;
     }
 

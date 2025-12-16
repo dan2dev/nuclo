@@ -29,6 +29,11 @@ export interface WhenRuntime<TTagName extends ElementTagName = ElementTagName> {
   update(): void;
 }
 
+/**
+ * Tracks all active when/else runtimes for update notifications.
+ * Uses Set (not WeakSet) because we need iteration support.
+ * Cleanup happens automatically in updateWhenRuntimes() when markers are disconnected.
+ */
 const activeWhenRuntimes = new Set<WhenRuntime<any>>();
 
 /**
@@ -100,6 +105,11 @@ export function registerWhenRuntime<TTagName extends ElementTagName>(
  */
 export function updateWhenRuntimes(scope?: UpdateScope): void {
   activeWhenRuntimes.forEach((runtime) => {
+    if (!runtime.startMarker.isConnected || !runtime.endMarker.isConnected) {
+      activeWhenRuntimes.delete(runtime);
+      return;
+    }
+
     if (scope && !scope.contains(runtime.startMarker)) return;
 
     try {

@@ -53,6 +53,23 @@ export function getScopeRoots(ids: readonly string[]): Element[] {
   return Array.from(roots);
 }
 
+/**
+ * Cleans up all disconnected elements from all scopes.
+ * Call this during page transitions to prevent memory leaks.
+ */
+export function cleanupAllScopes(): void {
+  for (const [id, set] of scopeRootsById) {
+    for (const el of set) {
+      if (!isNodeConnected(el)) {
+        set.delete(el);
+      }
+    }
+    if (set.size === 0) {
+      scopeRootsById.delete(id);
+    }
+  }
+}
+
 export function scope<TTagName extends ElementTagName = ElementTagName>(
   ...ids: string[]
 ): NodeModFn<TTagName> {
