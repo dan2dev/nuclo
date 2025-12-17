@@ -1,5 +1,5 @@
 import { logError } from "../utility/errorHandler";
-import { isNodeConnected } from "../utility/dom";
+import { isNodeConnected, createTextNode } from "../utility/dom";
 import type { UpdateScope } from "./updateScope";
 
 type TextResolver = () => Primitive;
@@ -32,7 +32,11 @@ const reactiveTextNodes = new Map<Text, ReactiveTextNodeInfo>();
 export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: unknown): Text | DocumentFragment {
   if (typeof resolver !== "function") {
     logError("Invalid resolver provided to createReactiveTextNode");
-    return document.createTextNode("");
+    const fallbackNode = createTextNode("");
+    if (!fallbackNode) {
+      throw new Error("Failed to create text node: document not available");
+    }
+    return fallbackNode;
   }
 
   let initial: unknown;
@@ -47,7 +51,11 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
     }
   }
   const str = initial === undefined ? "" : String(initial);
-  const txt = document.createTextNode(str);
+  const txt = createTextNode(str);
+  
+  if (!txt) {
+    throw new Error("Failed to create text node: document not available");
+  }
 
   reactiveTextNodes.set(txt, { resolver, lastValue: str });
   return txt;

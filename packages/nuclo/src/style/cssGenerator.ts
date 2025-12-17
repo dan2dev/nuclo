@@ -1,3 +1,5 @@
+import { createElement } from "../utility/dom";
+
 // Supported at-rule types
 type AtRuleType = 'media' | 'container' | 'supports' | 'style' | 'pseudo';
 
@@ -67,7 +69,7 @@ export function createCSSClassWithStyles(
 	let styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
 
 	if (!styleSheet) {
-		styleSheet = document.createElement("style");
+		styleSheet = createElement("style") as HTMLStyleElement;
 		styleSheet.id = "nuclo-styles";
 		document.head.appendChild(styleSheet);
 	}

@@ -8,7 +8,7 @@ import {
   unregisterConditionalNode,
 } from "../utility/conditionalInfo";
 import { runCondition } from "../utility/conditions";
-import { replaceNodeSafely, createConditionalComment } from "../utility/dom";
+import { replaceNodeSafely, createConditionalComment, createElement, createElementNS } from "../utility/dom";
 import { logError } from "../utility/errorHandler";
 import type { UpdateScope } from "./updateScope";
 
@@ -26,9 +26,9 @@ function createElementFromConditionalInfo<TTagName extends ElementTagName>(
     logError(`Error applying modifiers in conditional element "${conditionalInfo.tagName}"`, error);
     // Return a basic element without modifiers as fallback
     if (conditionalInfo.isSvg) {
-      return document.createElementNS(SVG_NAMESPACE, conditionalInfo.tagName);
+      return createElementNS(SVG_NAMESPACE, conditionalInfo.tagName);
     }
-    return document.createElement(conditionalInfo.tagName) as ExpandedElement<TTagName>;
+    return createElement(conditionalInfo.tagName) as ExpandedElement<TTagName>;
   }
 }
 
