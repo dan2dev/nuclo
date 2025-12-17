@@ -26,8 +26,11 @@ function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
 ): SVGElementModifierFn<TTagName> {
   return (parent, index): SVGElementTagNameMap[TTagName] => {
     const el = createElementNS(SVG_NAMESPACE, tagName);
+    if (!el) {
+      throw new Error(`Failed to create SVG element: ${tagName}`);
+    }
     applyModifiers(el as unknown as ExpandedElement<ElementTagName>, modifiers as ReadonlyArray<NodeModifier<ElementTagName>>, index);
-    return el;
+    return el as unknown as SVGElementTagNameMap[TTagName];
   };
 }
 
