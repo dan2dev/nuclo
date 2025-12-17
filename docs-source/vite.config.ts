@@ -2,6 +2,14 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   base: '/',
+  server: {
+    watch: {
+      ignored: ['!**/node_modules/nuclo/**']
+    }
+  },
+  optimizeDeps: {
+    exclude: ['nuclo']
+  },
   build: {
     outDir: '../docs',
     emptyOutDir: true,

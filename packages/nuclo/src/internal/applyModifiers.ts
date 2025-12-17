@@ -18,6 +18,7 @@
  *  - Every successfully rendered child Node increments the local index.
  */
 import { applyNodeModifier } from "../core/modifierProcessor";
+import { createElement, createElementNS } from "../utility/dom";
 
 export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
   | NodeMod<TTagName>
@@ -89,7 +90,7 @@ export function createHtmlElementWithModifiers<TTagName extends ElementTagName>(
   tagName: TTagName,
   modifiers: ReadonlyArray<NodeModifier<TTagName>>
 ): ExpandedElement<TTagName> {
-  const el = document.createElement(tagName) as ExpandedElement<TTagName>;
+  const el = createElement(tagName) as ExpandedElement<TTagName>;
   applyModifiers(el, modifiers, 0);
   return el;
 }
@@ -101,7 +102,10 @@ export function createSvgElementWithModifiers<TTagName extends keyof SVGElementT
   tagName: TTagName,
   modifiers: ReadonlyArray<unknown>
 ): SVGElementTagNameMap[TTagName] {
-  const el = document.createElementNS(SVG_NAMESPACE, tagName);
+  const el = createElementNS(SVG_NAMESPACE, tagName);
+  if (!el) {
+    throw new Error(`Failed to create SVG element: ${tagName}`);
+  }
   applyModifiers(el as unknown as ExpandedElement<ElementTagName>, modifiers as ReadonlyArray<NodeModifier<ElementTagName>>, 0);
-  return el;
+  return el as unknown as SVGElementTagNameMap[TTagName];
 }

@@ -3,7 +3,7 @@ import { createReactiveTextNode } from "./reactive";
 import { logError } from "../utility/errorHandler";
 import { isFunction, isNode, isObject, isPrimitive, isZeroArityFunction } from "../utility/typeGuards";
 import { modifierProbeCache } from "../utility/modifierPredicates";
-import { createComment } from "../utility/dom";
+import { createComment, createDocumentFragment, createTextNode } from "../utility/dom";
 
 export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
   | NodeMod<TTagName>
@@ -85,7 +85,10 @@ function createReactiveTextFragment(
   resolver: () => Primitive,
   preEvaluated?: unknown
 ): DocumentFragment {
-  const fragment = document.createDocumentFragment();
+  const fragment = createDocumentFragment();
+  if (!fragment) {
+    throw new Error("Failed to create document fragment: document not available");
+  }
   const comment = createComment(` text-${index} `);
   if (comment) fragment.appendChild(comment);
   const textNode = createReactiveTextNode(resolver, preEvaluated);
@@ -94,10 +97,15 @@ function createReactiveTextFragment(
 }
 
 function createStaticTextFragment(index: number, value: Primitive): DocumentFragment {
-  const fragment = document.createDocumentFragment();
+  const fragment = createDocumentFragment();
+  if (!fragment) {
+    throw new Error("Failed to create document fragment: document not available");
+  }
   const comment = createComment(` text-${index} `);
   if (comment) fragment.appendChild(comment);
-  const textNode = document.createTextNode(String(value));
-  fragment.appendChild(textNode);
+  const textNode = createTextNode(String(value));
+  if (textNode) {
+    fragment.appendChild(textNode);
+  }
   return fragment;
 }
