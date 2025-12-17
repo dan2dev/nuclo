@@ -9,7 +9,7 @@ const terserOptions = {
     unsafe_comps: true,
     unsafe_math: true,
     unsafe_proto: true,
-    drop_console: true,
+    drop_console: false,
     drop_debugger: true,
     ecma: 2020,
   },

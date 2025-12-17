@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "nuclo": "workspace:*"
+    "nuclo": "link:../packages/nuclo"
   },
   "devDependencies": {
     "typescript": "~5.9.3",
