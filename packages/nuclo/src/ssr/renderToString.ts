@@ -4,6 +4,7 @@
  */
 
 import { escapeHtml, camelToKebab } from '../utility/stringUtils';
+import { createElement } from '../utility/dom';
 
 type RenderableInput =
   | NodeModFn<ElementTagName>
@@ -191,7 +192,7 @@ export function renderToString(input: RenderableInput): string {
   if (typeof input === 'function') {
     try {
       // Create a temporary container to render into
-      const container = globalThis.document?.createElement('div');
+      const container = createElement('div');
       if (!container) {
         throw new Error('Document is not available. Make sure polyfills are loaded.');
       }

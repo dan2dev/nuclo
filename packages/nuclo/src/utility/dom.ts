@@ -1,5 +1,45 @@
 import { isBrowser } from "./environment";
 import { logError } from "./errorHandler";
+import type { ExpandedElement } from "./domTypeHelpers";
+
+/**
+ * Creates an HTML element.
+ * Wrapper for document.createElement with type safety.
+ */
+export function createElement<K extends keyof HTMLElementTagNameMap>(
+  tagName: K
+): HTMLElementTagNameMap[K] | null;
+export function createElement(tagName: string): ExpandedElement | null;
+export function createElement(tagName: string): ExpandedElement | null {
+  return globalThis.document ? document.createElement(tagName) as ExpandedElement : null;
+}
+
+/**
+ * Creates an element in the given namespace (typically for SVG elements).
+ * Wrapper for document.createElementNS with type safety.
+ */
+export function createElementNS(
+  namespace: string,
+  tagName: string
+): ExpandedElement | null {
+  return globalThis.document ? document.createElementNS(namespace, tagName) as ExpandedElement : null;
+}
+
+/**
+ * Creates a text node with the given content.
+ * Wrapper for document.createTextNode.
+ */
+export function createTextNode(text: string): Text | null {
+  return globalThis.document ? document.createTextNode(text) : null;
+}
+
+/**
+ * Creates a document fragment.
+ * Wrapper for document.createDocumentFragment.
+ */
+export function createDocumentFragment(): DocumentFragment | null {
+  return globalThis.document ? document.createDocumentFragment() : null;
+}
 
 function safeAppendChild(parent: Element | Node, child: Node): boolean {
   try {
@@ -35,7 +75,7 @@ function safeInsertBefore(parent: Node, newNode: Node, referenceNode: Node | nul
 function createTextNodeSafely(text: string | number | boolean): Text | null {
   if (!isBrowser) return null;
   try {
-    return document.createTextNode(String(text));
+    return createTextNode(String(text));
   } catch (error) {
     logError('Failed to create text node', error);
     return null;
