@@ -4,7 +4,7 @@ import { NucloText } from './Text';
 export class NucloDocument {
   head: ExpandedElement;
   body: ExpandedElement;
-  private _listeners: Map<string, Set<EventListener>>;
+  private _listeners: Map<string, Map<EventListener, { listener: EventListener; options?: boolean | AddEventListenerOptions }>>;
   
   constructor() {
     this.head = new NucloElement('head') as unknown as ExpandedElement;
@@ -126,24 +126,31 @@ export class NucloDocument {
     return [] as unknown as NodeListOf<Element>;
   }
   
-  addEventListener(type: string, listener: EventListener): void {
+  addEventListener(type: string, listener: EventListener, options?: boolean | AddEventListenerOptions): void {
     if (!this._listeners.has(type)) {
-      this._listeners.set(type, new Set());
+      this._listeners.set(type, new Map());
     }
-    this._listeners.get(type)!.add(listener);
+    const listenersMap = this._listeners.get(type)!;
+    listenersMap.set(listener, { listener, options });
   }
   
-  removeEventListener(type: string, listener: EventListener): void {
+  removeEventListener(type: string, listener: EventListener, _options?: boolean | AddEventListenerOptions): void {
     const listeners = this._listeners.get(type);
     if (listeners) {
       listeners.delete(listener);
+      // Clean up empty maps to prevent memory leaks
+      if (listeners.size === 0) {
+        this._listeners.delete(type);
+      }
     }
   }
   
   dispatchEvent(event: Event): boolean {
     const listeners = this._listeners.get(event.type);
     if (listeners) {
-      listeners.forEach(listener => {
+      // Create a copy to avoid issues if listeners are modified during dispatch
+      const listenersCopy = Array.from(listeners.values());
+      listenersCopy.forEach(({ listener }) => {
         try {
           listener(event);
         } catch (error) {
