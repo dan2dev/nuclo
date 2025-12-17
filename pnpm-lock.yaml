@@ -4,12 +4,21 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  nuclo: link:./packages/nuclo
+
 importers:
+
+  .:
+    dependencies:
+      nuclo:
+        specifier: link:packages/nuclo
+        version: link:packages/nuclo
 
   docs-source:
     dependencies:
       nuclo:
-        specifier: workspace:*
+        specifier: link:../packages/nuclo
         version: link:../packages/nuclo
     devDependencies:
       typescript:

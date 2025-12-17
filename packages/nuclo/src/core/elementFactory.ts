@@ -1,4 +1,5 @@
 import { applyModifiers, type NodeModifier } from "../internal/applyModifiers";
+import { createElement, createElementNS } from "../utility/dom";
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
@@ -10,7 +11,7 @@ function createHtmlElementFactory<TTagName extends ElementTagName>(
   ...modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>
 ): NodeModFn<TTagName> {
   return (parent: ExpandedElement<TTagName>, index: number): ExpandedElement<TTagName> => {
-    const el = document.createElement(tagName) as ExpandedElement<TTagName>;
+    const el = createElement(tagName) as ExpandedElement<TTagName>;
     applyModifiers(el, modifiers as ReadonlyArray<NodeModifier<TTagName>>, index);
     return el;
   };
@@ -24,9 +25,12 @@ function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
   ...modifiers: Array<unknown>
 ): SVGElementModifierFn<TTagName> {
   return (parent, index): SVGElementTagNameMap[TTagName] => {
-    const el = document.createElementNS(SVG_NAMESPACE, tagName);
+    const el = createElementNS(SVG_NAMESPACE, tagName);
+    if (!el) {
+      throw new Error(`Failed to create SVG element: ${tagName}`);
+    }
     applyModifiers(el as unknown as ExpandedElement<ElementTagName>, modifiers as ReadonlyArray<NodeModifier<ElementTagName>>, index);
-    return el;
+    return el as unknown as SVGElementTagNameMap[TTagName];
   };
 }
 
