@@ -1,6 +1,5 @@
 import { isBrowser } from "./environment";
 import { logError } from "./errorHandler";
-import type { ExpandedElement } from "./domTypeHelpers";
 
 /**
  * Creates an HTML element.
