@@ -10,7 +10,7 @@ function createHtmlElementFactory<TTagName extends ElementTagName>(
   tagName: TTagName,
   ...modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>
 ): NodeModFn<TTagName> {
-  return (parent: ExpandedElement<TTagName>, index: number): ExpandedElement<TTagName> => {
+  return function(parent: ExpandedElement<TTagName>, index: number): ExpandedElement<TTagName> {
     const el = createElement(tagName) as ExpandedElement<TTagName>;
     applyModifiers(el, modifiers as ReadonlyArray<NodeModifier<TTagName>>, index);
     return el;
@@ -24,7 +24,7 @@ function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
   tagName: TTagName,
   ...modifiers: Array<unknown>
 ): SVGElementModifierFn<TTagName> {
-  return (parent, index): SVGElementTagNameMap[TTagName] => {
+  return function(parent, index): SVGElementTagNameMap[TTagName] {
     const el = createElementNS(SVG_NAMESPACE, tagName);
     if (!el) {
       throw new Error(`Failed to create SVG element: ${tagName}`);

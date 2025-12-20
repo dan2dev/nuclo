@@ -9,7 +9,11 @@ interface ReactiveTextNodeInfo {
   lastValue: string;
 }
 
-const reactiveTextNodes = new Map<Text, ReactiveTextNodeInfo>();
+/**
+ * Stores weak references to reactive text nodes to prevent memory leaks.
+ * Text nodes can be garbage collected when removed from DOM.
+ */
+const reactiveTextNodes = new Map<WeakRef<Text>, ReactiveTextNodeInfo>();
 
 /**
  * Creates a reactive text node that automatically updates when its resolver function changes.
@@ -57,7 +61,7 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
     throw new Error("Failed to create text node: document not available");
   }
 
-  reactiveTextNodes.set(txt, { resolver, lastValue: str });
+  reactiveTextNodes.set(new WeakRef(txt), { resolver, lastValue: str });
   return txt;
 }
 
@@ -77,9 +81,18 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
  * ```
  */
 export function notifyReactiveTextNodes(scope?: UpdateScope): void {
-  for (const [node, info] of reactiveTextNodes) {
+  const toDelete: WeakRef<Text>[] = [];
+
+  for (const [ref, info] of reactiveTextNodes) {
+    const node = ref.deref();
+    if (node === undefined) {
+      // Text node was garbage collected
+      toDelete.push(ref);
+      continue;
+    }
+
     if (!isNodeConnected(node)) {
-      reactiveTextNodes.delete(node);
+      toDelete.push(ref);
       continue;
     }
 
@@ -98,5 +111,10 @@ export function notifyReactiveTextNodes(scope?: UpdateScope): void {
       node.textContent = newVal;
       info.lastValue = newVal;
     }
+  }
+
+  // Clean up dead references
+  for (const ref of toDelete) {
+    reactiveTextNodes.delete(ref);
   }
 }

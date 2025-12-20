@@ -4,7 +4,7 @@ const STATIC_CLASSNAME_KEY = '__nuclo_static_className__';
 // Mark element as having a reactive className and capture static classes
 export function initReactiveClassName(el: HTMLElement): void {
 	if (!(el as any)[STATIC_CLASSNAME_KEY]) {
-		(el as any)[STATIC_CLASSNAME_KEY] = new Set(el.className.split(' ').filter(c => c));
+		(el as any)[STATIC_CLASSNAME_KEY] = new Set(el.className.split(' ').filter(function(c) { return c; }));
 	}
 	(el as any)[REACTIVE_CLASSNAME_KEY] = true;
 }
@@ -27,7 +27,7 @@ export function addStaticClasses(el: HTMLElement, className: string): void {
 		(el as any)[STATIC_CLASSNAME_KEY] = new Set();
 	}
 
-	className.split(' ').filter(c => c).forEach(c => {
+	className.split(' ').filter(function(c) { return c; }).forEach(function(c) {
 		((el as any)[STATIC_CLASSNAME_KEY] as Set<string>).add(c);
 	});
 }
@@ -39,7 +39,7 @@ export function mergeReactiveClassName(el: HTMLElement, reactiveClassName: strin
 	// Combine static classes with reactive className
 	if (staticClasses && staticClasses.size > 0 && reactiveClassName) {
 		const allClasses = new Set(staticClasses);
-		reactiveClassName.split(' ').filter(c => c).forEach(c => allClasses.add(c));
+		reactiveClassName.split(' ').filter(function(c) { return c; }).forEach(function(c) { allClasses.add(c); });
 		el.className = Array.from(allClasses).join(' ');
 	} else if (reactiveClassName) {
 		el.className = reactiveClassName;
@@ -58,9 +58,9 @@ export function mergeStaticClassName(el: HTMLElement, newClassName: string): voi
 
 	// If there's already a className, merge them (avoid duplicates)
 	if (currentClassName && currentClassName !== newClassName) {
-		const existing = new Set(currentClassName.split(' ').filter(c => c));
-		const newClasses = newClassName.split(' ').filter(c => c);
-		newClasses.forEach(c => existing.add(c));
+		const existing = new Set(currentClassName.split(' ').filter(function(c) { return c; }));
+		const newClasses = newClassName.split(' ').filter(function(c) { return c; });
+		newClasses.forEach(function(c) { existing.add(c); });
 		el.className = Array.from(existing).join(' ');
 	} else {
 		el.className = newClassName;

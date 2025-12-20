@@ -22,11 +22,16 @@ export function update(...scopeIds: string[]): void {
 
     if (roots.length === 1) {
       const root = roots[0]!;
-      scope = { roots, contains: (node) => root.contains(node) };
+      scope = { 
+        roots, 
+        contains: function(node) { 
+          return root.contains(node);
+        }
+      };
     } else {
       scope = {
         roots,
-        contains: (node) => {
+        contains: function(node) {
           for (const root of roots) {
             if (root.contains(node)) return true;
           }
