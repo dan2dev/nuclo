@@ -3,6 +3,17 @@ import { globalStyles as s, cn } from "./styles.ts";
 import { sortable } from "./sortable.ts";
 
 let visible = false
+let intervalId: number | null = null;
+const els: any = {};
+els.el = document.createElement("div");
+els.el.textContent = "Hello, Nuclo!";
+document.body.appendChild(els.el);
+els.el.addEventListener("click", () => {
+  alert("Hello from Nuclo!");
+});
+
+document.body.removeChild(els.el);
+// delete els.el;
 
 export const app = div(
   s.body,
@@ -32,7 +43,7 @@ export const app = div(
     ),
     div(
       input(
-        { type: "checkbox" },
+        { type: "checkbox", id: "visibilityToggle" },
         on("change", (e) => {
           visible = (e.target as HTMLInputElement).checked;
           update();
@@ -41,7 +52,31 @@ export const app = div(
       span("is this visible: "),
       when(() => visible, "yes").else("no"),
     ),
-    when(() => getTodos().length === 0,
+    div(
+      s.inputContainer,
+      button(
+        s.addButton,
+        "Play",
+        on("click", () => {
+          if (intervalId === null) {
+            intervalId = setInterval(() => {
+              document.getElementById("visibilityToggle")?.click();
+            }, 10) as unknown as number;
+          }
+        })
+      ),
+      button(
+        s.deleteButton,
+        "Stop",
+        on("click", () => {
+          if (intervalId !== null) {
+            clearInterval(intervalId);
+            intervalId = null;
+          }
+        })
+      )
+    ),
+    when(() => getTodos().length === 0 || !visible,
       when(() => !visible, div("No todos yet! Add one above. 1")).else("2")
     ).else(
       div(
