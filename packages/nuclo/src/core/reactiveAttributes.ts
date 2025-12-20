@@ -14,7 +14,11 @@ interface ReactiveElementInfo {
   attributeResolvers: Map<string, AttributeResolverRecord>;
 }
 
-const reactiveElements = new Map<Element, ReactiveElementInfo>();
+/**
+ * Stores weak references to reactive elements to prevent memory leaks.
+ * Elements can be garbage collected when removed from DOM.
+ */
+const reactiveElements = new Map<WeakRef<Element>, ReactiveElementInfo>();
 const UNSET_LAST_VALUE = {};
 let updateEventListenerRegistered = false;
 
@@ -28,12 +32,29 @@ function handleUpdateEvent(event: Event): void {
   let node: Node | null = target;
   while (node) {
     if (node instanceof Element) {
-      const info = reactiveElements.get(node);
-      if (info) {
+      // Find the WeakRef that points to this element
+      let foundRef: WeakRef<Element> | null = null;
+      let foundInfo: ReactiveElementInfo | null = null;
+      
+      for (const [ref, info] of reactiveElements) {
+        const el = ref.deref();
+        if (el === undefined) {
+          // Element was garbage collected, clean it up
+          reactiveElements.delete(ref);
+          continue;
+        }
+        if (el === node) {
+          foundRef = ref;
+          foundInfo = info;
+          break;
+        }
+      }
+
+      if (foundInfo && foundRef) {
         if (!isNodeConnected(node)) {
-          reactiveElements.delete(node);
+          reactiveElements.delete(foundRef);
         } else {
-          applyAttributeResolvers(info);
+          applyAttributeResolvers(foundInfo);
         }
       }
     }
@@ -49,11 +70,22 @@ function ensureGlobalUpdateEventListener(): void {
 }
 
 function ensureElementInfo(el: Element): ReactiveElementInfo {
-  let info = reactiveElements.get(el);
-  if (!info) {
-    info = { attributeResolvers: new Map() };
-    reactiveElements.set(el, info);
+  // Check if we already have a WeakRef for this element
+  for (const [ref, info] of reactiveElements) {
+    const refEl = ref.deref();
+    if (refEl === undefined) {
+      // Element was garbage collected, clean it up
+      reactiveElements.delete(ref);
+      continue;
+    }
+    if (refEl === el) {
+      return info;
+    }
   }
+  
+  // No existing info, create new
+  const info: ReactiveElementInfo = { attributeResolvers: new Map() };
+  reactiveElements.set(new WeakRef(el), info);
   return info;
 }
 
@@ -146,13 +178,27 @@ export function registerAttributeResolver<TTagName extends ElementTagName>(
  * ```
  */
 export function notifyReactiveElements(scope?: UpdateScope): void {
-  for (const [el, info] of reactiveElements) {
+  const toDelete: WeakRef<Element>[] = [];
+
+  for (const [ref, info] of reactiveElements) {
+    const el = ref.deref();
+    if (el === undefined) {
+      // Element was garbage collected
+      toDelete.push(ref);
+      continue;
+    }
+
     if (!isNodeConnected(el)) {
-      reactiveElements.delete(el);
+      toDelete.push(ref);
       continue;
     }
 
     if (scope && !scope.contains(el)) continue;
     applyAttributeResolvers(info);
+  }
+
+  // Clean up dead references
+  for (const ref of toDelete) {
+    reactiveElements.delete(ref);
   }
 }

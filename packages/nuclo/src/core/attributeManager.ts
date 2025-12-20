@@ -66,11 +66,11 @@ function applySingleAttribute<TTagName extends ElementTagName>(
     if (key === 'className' && el instanceof HTMLElement) {
       initReactiveClassName(el);
 
-      registerAttributeResolver(el, String(key), resolver, (v) => {
+      registerAttributeResolver(el, String(key), resolver, function(v) {
         mergeReactiveClassName(el, String(v || ''));
       });
     } else {
-      registerAttributeResolver(el, String(key), resolver, (v) => {
+      registerAttributeResolver(el, String(key), resolver, function(v) {
         setValue(v, false);
       });
     }
@@ -84,8 +84,8 @@ function applySingleAttribute<TTagName extends ElementTagName>(
         if (newClassName) {
           addStaticClasses(el, newClassName);
           // Also update the current className immediately
-          const currentClasses = new Set(el.className.split(' ').filter(c => c));
-          newClassName.split(' ').filter(c => c).forEach(c => currentClasses.add(c));
+          const currentClasses = new Set(el.className.split(' ').filter(function(c) { return c; }));
+          newClassName.split(' ').filter(function(c) { return c; }).forEach(function(c) { currentClasses.add(c); });
           el.className = Array.from(currentClasses).join(' ');
         }
         return;

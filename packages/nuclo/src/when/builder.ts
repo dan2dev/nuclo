@@ -38,7 +38,7 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
       groups: [...this.groups],
       elseContent: [...this.elseContent],
       activeIndex: null,
-      update: () => renderWhenContent(runtime),
+      update: function() { renderWhenContent(runtime); },
     };
 
     registerWhenRuntime(runtime);
@@ -56,16 +56,16 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
 export function createWhenBuilderFunction<TTagName extends ElementTagName>(
   builder: WhenBuilderImpl<TTagName>
 ): WhenBuilder<TTagName> {
-  const nodeModFn = (host: ExpandedElement<TTagName>, index: number): Node | null => {
+  const nodeModFn = function(host: ExpandedElement<TTagName>, index: number): Node | null {
     return builder.render(host, index);
   };
 
   return Object.assign(nodeModFn, {
-    when: (condition: WhenCondition, ...content: WhenContent<TTagName>[]): WhenBuilder<TTagName> => {
+    when: function(condition: WhenCondition, ...content: WhenContent<TTagName>[]): WhenBuilder<TTagName> {
       builder.when(condition, ...content);
       return createWhenBuilderFunction(builder);
     },
-    else: (...content: WhenContent<TTagName>[]): WhenBuilder<TTagName> => {
+    else: function(...content: WhenContent<TTagName>[]): WhenBuilder<TTagName> {
       builder.else(...content);
       return createWhenBuilderFunction(builder);
     },

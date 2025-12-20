@@ -148,7 +148,7 @@ export function clearBetweenMarkers(startMarker: Comment, endMarker: Comment): v
 export function insertNodesBefore(nodes: Node[], referenceNode: Node): void {
   const parent = referenceNode.parentNode;
   if (parent) {
-    nodes.forEach(node => safeInsertBefore(parent, node, referenceNode));
+    nodes.forEach(function(node) { safeInsertBefore(parent, node, referenceNode); });
   }
 }
 
@@ -158,7 +158,7 @@ export function appendChildren(
 ): Element | Node {
   if (!parent) return parent;
 
-  children.forEach((child) => {
+  children.forEach(function(child) {
     if (child != null) {
       let nodeToAppend: Node;
 

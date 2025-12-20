@@ -2,7 +2,11 @@ import { isNodeConnected } from "./dom";
 
 type ScopeId = string;
 
-const scopeRootsById = new Map<ScopeId, Set<Element>>();
+/**
+ * Stores weak references to scope root elements.
+ * Using WeakRef prevents memory leaks - elements can be garbage collected when removed from DOM.
+ */
+const scopeRootsById = new Map<ScopeId, Set<WeakRef<Element>>>();
 
 function normalizeScopeIds(ids: readonly string[]): ScopeId[] {
   const normalized: ScopeId[] = [];
@@ -23,10 +27,10 @@ function normalizeScopeIds(ids: readonly string[]): ScopeId[] {
 function addScopeRoot(id: ScopeId, el: Element): void {
   let set = scopeRootsById.get(id);
   if (!set) {
-    set = new Set<Element>();
+    set = new Set<WeakRef<Element>>();
     scopeRootsById.set(id, set);
   }
-  set.add(el);
+  set.add(new WeakRef(el));
 }
 
 export function getScopeRoots(ids: readonly string[]): Element[] {
@@ -39,12 +43,26 @@ export function getScopeRoots(ids: readonly string[]): Element[] {
     const set = scopeRootsById.get(id);
     if (!set) continue;
 
-    for (const el of set) {
+    const toDelete: WeakRef<Element>[] = [];
+
+    for (const ref of set) {
+      const el = ref.deref();
+      if (el === undefined) {
+        // Element was garbage collected
+        toDelete.push(ref);
+        continue;
+      }
       if (!isNodeConnected(el)) {
-        set.delete(el);
+        // Element is disconnected, clean it up
+        toDelete.push(ref);
         continue;
       }
       roots.add(el);
+    }
+
+    // Clean up dead and disconnected references
+    for (const ref of toDelete) {
+      set.delete(ref);
     }
 
     if (set.size === 0) scopeRootsById.delete(id);
@@ -58,7 +76,7 @@ export function scope<TTagName extends ElementTagName = ElementTagName>(
 ): NodeModFn<TTagName> {
   const scopeIds = normalizeScopeIds(ids);
 
-  return (parent: ExpandedElement<TTagName>): void => {
+  return function(parent: ExpandedElement<TTagName>): void {
     if (!(parent instanceof Element)) return;
     for (const id of scopeIds) addScopeRoot(id, parent);
   };
