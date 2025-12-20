@@ -68,15 +68,16 @@ export function updateConditionalElements(scope?: UpdateScope): void {
   if (!isBrowser) return;
 
   try {
-    getActiveConditionalNodes().forEach((node) => {
+    const nodes = getActiveConditionalNodes();
+    for (const node of nodes) {
       if (!node.isConnected) {
         unregisterConditionalNode(node);
-        return;
+        continue;
       }
 
-      if (scope && !scope.contains(node)) return;
+      if (scope && !scope.contains(node)) continue;
       updateConditionalNode(node as Element | Comment);
-    });
+    }
   } catch (error) {
     logError("Error during conditional elements update", error);
   }

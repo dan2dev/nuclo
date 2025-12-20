@@ -3,6 +3,7 @@ import { globalStyles as s, cn } from "./styles.ts";
 import { sortable } from "./sortable.ts";
 
 let visible = false
+let counter = 0;
 let intervalId: number | null = null;
 const els: any = {};
 els.el = document.createElement("div");
@@ -76,17 +77,22 @@ export const app = div(
         })
       )
     ),
+    when(() => !visible,
+      div(
+        button(on("click", () => { counter++; update(); }), "Increment Counter"),
+        div("No todos yet! Add one above. Counter: ", () => counter)))
+      .else("2"),
     when(() => getTodos().length === 0 || !visible,
-      when(() => !visible, div("No todos yet! Add one above. 1")).else("2")
+      div("No todos yet! Add one above.")
     ).else(
       div(
-        scope("todos"),
-        () => s.todoList,
+        // scope("todos"),
+        s.todoList,
         list(
           () => getTodos(),
           (todo) =>
             div(
-              sortable(reorderTodos),
+              // sortable(reorderTodos),
               s.todoItem,
               span(
                 {
