@@ -21,14 +21,20 @@ ensure-clean:
 
 # Main publish + tag workflow:
 # 1. Build
-# 2. Bump version (no auto tag/commit)
-# 3. Publish to registry
-# 4. Commit version bump
-# 5. Create annotated tag v<version> (skip if exists)
-# 6. Push commit + tag
-publish: 
+# 2. Login to npm registry
+# 3. Bump version (no auto tag/commit)
+# 4. Publish to registry
+# 5. Commit version bump
+# 6. Create annotated tag v<version> (skip if exists)
+# 7. Push commit + tag
+publish:
 	@echo "==> Building (pnpm build)"
 	@pnpm build
+	@echo "==> Logging in to npm registry"
+	@if ! npm login; then \
+	  echo "ERROR: npm login failed. Cannot proceed with publish."; \
+	  exit 1; \
+	fi
 	@echo "==> Bumping $(BUMP) version (no git tag/commit by pnpm)"
 	@pnpm version $(BUMP) --no-git-tag-version --no-git-checks
 	@new_version=$$(jq -r .version $(PKG_FILE)); \
