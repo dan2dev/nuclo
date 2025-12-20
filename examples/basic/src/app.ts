@@ -96,13 +96,13 @@ export const app = div(
       div("No todos yet! Add one above.")
     ).else(
       div(
-        // scope("todos"),
+        scope("todos"),
         s.todoList,
         list(
           function() { return getTodos(); },
           function(todo) {
             return div(
-              // sortable(reorderTodos),
+              sortable(reorderTodos),
               s.todoItem,
               span(
                 {
