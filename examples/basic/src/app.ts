@@ -5,24 +5,31 @@ import { sortable } from "./sortable.ts";
 let visible = false
 let counter = 0;
 let intervalId: number | null = null;
-const els: any = {};
-els.el = document.createElement("div");
-els.el.textContent = "Hello, Nuclo!";
-document.body.appendChild(els.el);
-els.el.addEventListener("click", () => {
-  alert("Hello from Nuclo!");
-});
+// const els: any = {};
+// els.el = document.createElement("div");
+// els.el.textContent = "Hello, Nuclo!";
+// document.body.appendChild(els.el);
+// els.el.addEventListener("click", () => {
+//   alert("Hello from Nuclo!");
+// });
 
-document.body.removeChild(els.el);
+// document.body.removeChild(els.el);
 
 function start() {
   console.log("Started");
   if (intervalId === null) {
     intervalId = setInterval(function () {
-      visible = !visible;
       counter += 1;
       update();
     }, 1000) as unknown as number;
+  }
+}
+
+function stop() {
+  console.log("Stopped");
+  if (intervalId !== null) {
+    clearInterval(intervalId);
+    intervalId = null;
   }
 }
 // delete els.el;
@@ -40,65 +47,61 @@ export const app = div(
         {
           type: "text",
           placeholder: "What needs to be done?",
-          value: () => getInputValue(),
+          value: function() { return getInputValue(); },
         },
-        on("input", (e) => {
+        on("input", function(e) {
           setInputValue((e.target as HTMLInputElement).value);
         }),
-        on("keydown", (e) => {
+        on("keydown", function(e) {
           if (e.key === "Enter") {
             addTodo();
           }
         })
       ),
-      button(s.addButton, "Add", on("click", addTodo))
+      button(s.addButton, "Add", on("click", function() { addTodo(); }))
     ),
     div(
       input(
         { type: "checkbox", id: "visibilityToggle" },
-        on("change", (e) => {
+        on("change", function(e) {
           visible = (e.target as HTMLInputElement).checked;
           update();
         })
       ),
       span("is this visible: "),
-      when(() => visible, "yes").else("no"),
+      when(function() { return visible; }, "yes").else("no"),
     ),
     div(
       s.inputContainer,
       button(
         s.addButton,
         "Play",
-        on("click", () => {
+        on("click", function() {
           start();
         })
       ),
       button(
         s.deleteButton,
         "Stop",
-        on("click", () => {
-          if (intervalId !== null) {
-            clearInterval(intervalId);
-            intervalId = null;
-          }
+        on("click", function() {
+          stop();
         })
       )
     ),
-    when(() => !visible,
-      div(
-        button(on("click", () => { counter++; update(); }), "Increment Counter"),
-        div("No todos yet! Add one above. Counter: ", () => counter)))
-      .else("2"),
-    when(() => getTodos().length === 0 || visible,
+    div(
+      button(on("click", function() { counter++; update(); }), "Increment Counter"),
+      div("Counter: ", function() { return counter; })
+    ),
+    when(function() { return getTodos().length === 0; },
       div("No todos yet! Add one above.")
     ).else(
       div(
         // scope("todos"),
         s.todoList,
         list(
-          () => getTodos(),
-          (todo) =>
-            div(
+          function() { return getTodos(); },
+          function(todo) {
+            return div(
               // sortable(reorderTodos),
               s.todoItem,
               span(
@@ -111,16 +114,17 @@ export const app = div(
                 s.checkbox,
                 {
                   type: "checkbox",
-                  checked: () => todo.completed,
+                  checked: function() { return todo.completed; },
                 },
-                on("change", () => toggleTodo(todo.id))
+                on("change", function() { toggleTodo(todo.id); })
               ),
               span(
-                () => (todo.completed ? s.todoTextCompleted : s.todoText),
-                () => todo.text
+                function() { return todo.completed ? s.todoTextCompleted : s.todoText; },
+                function() { return todo.text; }
               ),
-              button(s.deleteButton, "Delete", on("click", () => deleteTodo(todo.id)))
-            )
+              button(s.deleteButton, "Delete", on("click", function() { deleteTodo(todo.id); }))
+            );
+          }
         )
       ))
   )
