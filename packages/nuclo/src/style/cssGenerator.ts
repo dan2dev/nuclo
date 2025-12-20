@@ -14,7 +14,7 @@ export function classExistsInDOM(className: string, condition?: string, atRuleTy
 	if (pseudoClass) {
 		const selector = `.${className}${pseudoClass}`;
 		const rules = Array.from(styleSheet.sheet.cssRules || []);
-		return rules.some(rule => {
+		return rules.some(function(rule) {
 			if (rule instanceof CSSStyleRule) {
 				return rule.selectorText === selector;
 			}
@@ -24,7 +24,7 @@ export function classExistsInDOM(className: string, condition?: string, atRuleTy
 
 	if (condition) {
 		const rules = Array.from(styleSheet.sheet.cssRules || []);
-		const conditionRule = rules.find(rule => {
+		const conditionRule = rules.find(function(rule) {
 			if (atRuleType === 'media' && rule instanceof CSSMediaRule) {
 				return rule.media.mediaText === condition;
 			}
@@ -41,7 +41,7 @@ export function classExistsInDOM(className: string, condition?: string, atRuleTy
 			return false;
 		}
 
-		return Array.from(conditionRule.cssRules).some(rule => {
+		return Array.from(conditionRule.cssRules).some(function(rule) {
 			if (rule instanceof CSSStyleRule) {
 				return rule.selectorText === `.${className}`;
 			}
@@ -49,7 +49,7 @@ export function classExistsInDOM(className: string, condition?: string, atRuleTy
 		});
 	} else {
 		const rules = Array.from(styleSheet.sheet.cssRules || []);
-		return rules.some(rule => {
+		return rules.some(function(rule) {
 			if (rule instanceof CSSStyleRule) {
 				return rule.selectorText === `.${className}`;
 			}
@@ -75,7 +75,7 @@ export function createCSSClassWithStyles(
 	}
 
 	const rules = Object.entries(styles)
-		.map(([property, value]) => `${property}: ${value}`)
+		.map(function([property, value]) { return `${property}: ${value}`; })
 		.join("; ");
 
 	// Handle pseudo-classes (hover, focus, etc.) - these modify the selector directly

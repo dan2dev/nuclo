@@ -33,7 +33,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
   const recordsByPosition = new Map<number, ListItemRecord<TItem, TTagName>>();
   const availableRecords = new Map<TItem, ListItemRecord<TItem, TTagName>[]>();
 
-  runtime.records.forEach((record) => {
+  runtime.records.forEach(function(record) {
     const items = availableRecords.get(record.item);
     if (items) {
       items.push(record);
@@ -42,7 +42,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
     }
   });
 
-  currentItems.forEach((item, newIndex) => {
+  currentItems.forEach(function(item, newIndex) {
     if (
       newIndex < runtime.lastSyncedItems.length &&
       runtime.lastSyncedItems[newIndex] === item
@@ -126,7 +126,7 @@ export function createListRuntime<TItem, TTagName extends ElementTagName = Eleme
 }
 
 export function updateListRuntimes(scope?: UpdateScope): void {
-  activeListRuntimes.forEach((runtime) => {
+  activeListRuntimes.forEach(function(runtime) {
     if (!runtime.startMarker.isConnected || !runtime.endMarker.isConnected) {
       activeListRuntimes.delete(runtime);
       return;

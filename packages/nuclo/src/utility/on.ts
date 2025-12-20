@@ -147,14 +147,14 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
   listener: (ev: Event) => unknown,
   options?: boolean | AddEventListenerOptions
 ): NodeModFn<TTagName> {
-  return (parent: ExpandedElement<TTagName>): void => {
+  return function(parent: ExpandedElement<TTagName>): void {
     // Type guard: verify parent is an HTMLElement with addEventListener
     if (!parent || typeof (parent as HTMLElement).addEventListener !== "function") {
       return;
     }
 
     const el = parent as HTMLElement;
-    const wrapped = (ev: Event): void => {
+    const wrapped = function(ev: Event): void {
       try {
         listener.call(el, ev);
       } catch (error) {
