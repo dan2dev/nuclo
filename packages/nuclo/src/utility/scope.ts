@@ -76,7 +76,7 @@ export function scope<TTagName extends ElementTagName = ElementTagName>(
 ): NodeModFn<TTagName> {
   const scopeIds = normalizeScopeIds(ids);
 
-  return (parent: ExpandedElement<TTagName>): void => {
+  return function(parent: ExpandedElement<TTagName>): void {
     if (!(parent instanceof Element)) return;
     for (const id of scopeIds) addScopeRoot(id, parent);
   };

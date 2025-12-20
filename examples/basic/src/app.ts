@@ -14,6 +14,17 @@ els.el.addEventListener("click", () => {
 });
 
 document.body.removeChild(els.el);
+
+function start() {
+  console.log("Started");
+  if (intervalId === null) {
+    intervalId = setInterval(function () {
+      visible = !visible;
+      counter += 1;
+      update();
+    }, 1000) as unknown as number;
+  }
+}
 // delete els.el;
 
 export const app = div(
@@ -59,11 +70,7 @@ export const app = div(
         s.addButton,
         "Play",
         on("click", () => {
-          if (intervalId === null) {
-            intervalId = setInterval(() => {
-              document.getElementById("visibilityToggle")?.click();
-            }, 10) as unknown as number;
-          }
+          start();
         })
       ),
       button(
@@ -82,7 +89,7 @@ export const app = div(
         button(on("click", () => { counter++; update(); }), "Increment Counter"),
         div("No todos yet! Add one above. Counter: ", () => counter)))
       .else("2"),
-    when(() => getTodos().length === 0 || !visible,
+    when(() => getTodos().length === 0 || visible,
       div("No todos yet! Add one above.")
     ).else(
       div(

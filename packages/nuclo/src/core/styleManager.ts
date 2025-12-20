@@ -36,7 +36,7 @@ export function applyStyleAttribute<TTagName extends ElementTagName>(
   if (!element) return;
 
   if (isFunction(styleValue)) {
-    registerAttributeResolver(element, 'style', styleValue, (resolvedStyles) => {
+    registerAttributeResolver(element, 'style', styleValue, function(resolvedStyles) {
       assignInlineStyles(element, resolvedStyles as StyleAssignment);
     });
   } else {

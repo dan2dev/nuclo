@@ -27,7 +27,7 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
           modifierProbeCache.set(modifier, record);
         }
         if (record.error) {
-          return createReactiveTextFragment(index, () => "");
+          return createReactiveTextFragment(index, function() { return ""; });
         }
         const v = record.value;
 
@@ -36,7 +36,7 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 	        if (isObject(v) && !isNode(v) && 'className' in v && typeof v.className === 'string' && Object.keys(v).length === 1) {
 	          // Create a wrapper function that extracts className from the modifier result
 	          const originalModifier = modifier as () => unknown;
-	          const classNameFn = () => {
+	          const classNameFn = function() {
 	            const result = originalModifier();
 	            return isObject(result) && 'className' in result && typeof (result as { className?: unknown }).className === 'string'
 	              ? (result as { className: string }).className
@@ -53,7 +53,7 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
       } catch (error) {
         modifierProbeCache.set(modifier, { value: undefined, error: true });
         logError("Error evaluating reactive text function:", error);
-        return createReactiveTextFragment(index, () => "");
+        return createReactiveTextFragment(index, function() { return ""; });
       }
     }
 

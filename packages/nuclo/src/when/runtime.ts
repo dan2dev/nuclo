@@ -99,7 +99,7 @@ export function registerWhenRuntime<TTagName extends ElementTagName>(
  * ```
  */
 export function updateWhenRuntimes(scope?: UpdateScope): void {
-  activeWhenRuntimes.forEach((runtime) => {
+  activeWhenRuntimes.forEach(function(runtime) {
     if (scope && !scope.contains(runtime.startMarker)) return;
 
     try {
