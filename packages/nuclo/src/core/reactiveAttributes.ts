@@ -202,3 +202,18 @@ export function notifyReactiveElements(scope?: UpdateScope): void {
     reactiveElements.delete(ref);
   }
 }
+
+/**
+ * Manually removes reactive element info for a specific element.
+ * This should be called when an element is removed from the DOM to prevent memory leaks.
+ */
+export function cleanupReactiveElement(element: Element): void {
+  // Find and remove the WeakRef that points to this element
+  for (const [ref, info] of reactiveElements) {
+    const el = ref.deref();
+    if (el === element) {
+      reactiveElements.delete(ref);
+      break;
+    }
+  }
+}
