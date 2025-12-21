@@ -24,6 +24,7 @@ export const sortable = (onReorder: (fromIndex: number, toIndex: number) => void
     let isPointerDown = false;
     let moveHandler: ((e: PointerEvent) => void) | null = null;
     let upHandler: (() => void) | null = null;
+    let downHandler: ((e: PointerEvent) => void) | null = null;
     
     const performSwap = (parent: HTMLElement, fromIndex: number, toIndex: number) => {
       if (fromIndex === toIndex || isAnimating) return;
@@ -153,6 +154,63 @@ export const sortable = (onReorder: (fromIndex: number, toIndex: number) => void
       document.addEventListener("pointercancel", upHandler);
     };
     
-    element.addEventListener("pointerdown", onPointerDown);
+    downHandler = onPointerDown;
+    element.addEventListener("pointerdown", downHandler);
+    
+    // Cleanup function to remove event listeners when element is removed
+    // This uses MutationObserver to detect when element is disconnected
+    const cleanup = () => {
+      // Remove the main pointerdown listener
+      if (downHandler) {
+        element.removeEventListener("pointerdown", downHandler);
+        downHandler = null;
+      }
+      
+      // Clean up any active drag handlers
+      if (moveHandler) {
+        document.removeEventListener("pointermove", moveHandler);
+        moveHandler = null;
+      }
+      if (upHandler) {
+        document.removeEventListener("pointerup", upHandler);
+        document.removeEventListener("pointercancel", upHandler);
+        upHandler = null;
+      }
+      
+      // Reset state
+      if (draggedElement) {
+        document.body.style.cursor = "";
+        draggedElement.style.opacity = "1";
+        draggedElement = null;
+      }
+      isPointerDown = false;
+      draggedIndex = null;
+      currentIndex = null;
+      isAnimating = false;
+      
+      // Disconnect the observer
+      if (observer) {
+        observer.disconnect();
+      }
+    };
+    
+    // Create a MutationObserver to watch for element removal
+    let observer: MutationObserver | null = null;
+    if (element.parentNode) {
+      observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          for (const node of mutation.removedNodes) {
+            if (node === element || node.contains(element)) {
+              cleanup();
+              return;
+            }
+          }
+        }
+      });
+      
+      // Observe the parent (or document.body if no parent yet)
+      const observeTarget = element.parentNode || document.body;
+      observer.observe(observeTarget, { childList: true, subtree: true });
+    }
   };
 };

@@ -178,6 +178,10 @@ describe('When Conditional Rendering', () => {
       const container1 = document.createElement('div');
       const container2 = document.createElement('div');
       
+      // Append to document so isNodeConnected() returns true
+      document.body.appendChild(container1);
+      document.body.appendChild(container2);
+      
       const when1 = when(() => condition1, 'First').else('No first');
       const when2 = when(() => condition2, 'Second').else('No second');
       
@@ -192,6 +196,10 @@ describe('When Conditional Rendering', () => {
       
       expect(container1.textContent).toBe('First');
       expect(container2.textContent).toBe('Second');
+      
+      // Clean up
+      container1.remove();
+      container2.remove();
     });
 
     it('should clean up properly with frequent changes', () => {
