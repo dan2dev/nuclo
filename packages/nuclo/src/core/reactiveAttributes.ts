@@ -201,4 +201,42 @@ export function notifyReactiveElements(scope?: UpdateScope): void {
   for (const ref of toDelete) {
     reactiveElements.delete(ref);
   }
+  
+  // Force cleanup of any remaining dead WeakRefs (for memory optimization)
+  if (toDelete.length > 0) {
+    cleanupDeadWeakRefs();
+  }
+}
+
+/**
+ * Aggressively clean up any WeakRefs that point to garbage collected elements.
+ * This helps the GC by removing the WeakRef wrappers themselves.
+ */
+function cleanupDeadWeakRefs(): void {
+  const toDelete: WeakRef<Element>[] = [];
+  
+  for (const [ref] of reactiveElements) {
+    if (ref.deref() === undefined) {
+      toDelete.push(ref);
+    }
+  }
+  
+  for (const ref of toDelete) {
+    reactiveElements.delete(ref);
+  }
+}
+
+/**
+ * Manually removes reactive element info for a specific element.
+ * This should be called when an element is removed from the DOM to prevent memory leaks.
+ */
+export function cleanupReactiveElement(element: Element): void {
+  // Find and remove the WeakRef that points to this element
+  for (const [ref, info] of reactiveElements) {
+    const el = ref.deref();
+    if (el === element) {
+      reactiveElements.delete(ref);
+      break;
+    }
+  }
 }

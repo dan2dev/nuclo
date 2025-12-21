@@ -117,4 +117,41 @@ export function notifyReactiveTextNodes(scope?: UpdateScope): void {
   for (const ref of toDelete) {
     reactiveTextNodes.delete(ref);
   }
+  
+  // Force cleanup of any remaining dead WeakRefs (for memory optimization)
+  if (toDelete.length > 0) {
+    cleanupDeadWeakRefs();
+  }
+}
+
+/**
+ * Aggressively clean up any WeakRefs that point to garbage collected text nodes.
+ */
+function cleanupDeadWeakRefs(): void {
+  const toDelete: WeakRef<Text>[] = [];
+  
+  for (const [ref] of reactiveTextNodes) {
+    if (ref.deref() === undefined) {
+      toDelete.push(ref);
+    }
+  }
+  
+  for (const ref of toDelete) {
+    reactiveTextNodes.delete(ref);
+  }
+}
+
+/**
+ * Manually removes reactive text node info for a specific text node.
+ * This should be called when a text node is removed from the DOM to prevent memory leaks.
+ */
+export function cleanupReactiveTextNode(node: Text): void {
+  // Find and remove the WeakRef that points to this text node
+  for (const [ref] of reactiveTextNodes) {
+    const textNode = ref.deref();
+    if (textNode === node) {
+      reactiveTextNodes.delete(ref);
+      break;
+    }
+  }
 }

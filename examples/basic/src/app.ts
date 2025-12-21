@@ -102,7 +102,7 @@ export const app = div(
           function() { return getTodos(); },
           function(todo) {
             return div(
-              sortable(reorderTodos),
+              // sortable(reorderTodos),
               s.todoItem,
               span(
                 {
