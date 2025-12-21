@@ -26,6 +26,9 @@ function renderItem<TItem, TTagName extends ElementTagName>(
 
 function remove<TItem, TTagName extends ElementTagName>(record: ListItemRecord<TItem, TTagName>): void {
   safeRemoveChild(record.element as unknown as Node);
+  // Clear the reference to help GC
+  (record as any).element = null;
+  (record as any).item = null;
 }
 
 export function sync<TItem, TTagName extends ElementTagName>(

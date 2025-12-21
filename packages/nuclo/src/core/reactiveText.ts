@@ -118,3 +118,18 @@ export function notifyReactiveTextNodes(scope?: UpdateScope): void {
     reactiveTextNodes.delete(ref);
   }
 }
+
+/**
+ * Manually removes reactive text node info for a specific text node.
+ * This should be called when a text node is removed from the DOM to prevent memory leaks.
+ */
+export function cleanupReactiveTextNode(node: Text): void {
+  // Find and remove the WeakRef that points to this text node
+  for (const [ref] of reactiveTextNodes) {
+    const textNode = ref.deref();
+    if (textNode === node) {
+      reactiveTextNodes.delete(ref);
+      break;
+    }
+  }
+}

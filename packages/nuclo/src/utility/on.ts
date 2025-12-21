@@ -25,7 +25,7 @@ import { logError } from "./errorHandler";
  */
 const elementListeners = new WeakMap<
   HTMLElement,
-  Map<string, Set<{ original: Function; wrapped: EventListener; options?: boolean | AddEventListenerOptions }>>
+  Map<string, Set<{ original: Function; wrapped: EventListener; options?: boolean | AddEventListenerOptions; controller?: AbortController }>>
 >();
 
 /**
@@ -36,7 +36,8 @@ function trackListener(
   type: string,
   original: Function,
   wrapped: EventListener,
-  options?: boolean | AddEventListenerOptions
+  options?: boolean | AddEventListenerOptions,
+  controller?: AbortController
 ): void {
   let typeMap = elementListeners.get(element);
   if (!typeMap) {
@@ -50,7 +51,7 @@ function trackListener(
     typeMap.set(type, listeners);
   }
   
-  listeners.add({ original, wrapped, options });
+  listeners.add({ original, wrapped, options, controller });
 }
 
 /**
@@ -70,7 +71,13 @@ export function removeListener(
   
   for (const info of listeners) {
     if (info.original === listener) {
-      element.removeEventListener(type, info.wrapped, info.options);
+      // Abort the controller if it exists (preferred method)
+      if (info.controller) {
+        info.controller.abort();
+      } else {
+        // Fallback to removeEventListener
+        element.removeEventListener(type, info.wrapped, info.options);
+      }
       listeners.delete(info);
       break;
     }
@@ -100,7 +107,13 @@ export function removeAllListeners(
     const listeners = typeMap.get(type);
     if (listeners) {
       for (const info of listeners) {
-        element.removeEventListener(type, info.wrapped, info.options);
+        // Abort the controller if it exists (preferred method)
+        if (info.controller) {
+          info.controller.abort();
+        } else {
+          // Fallback to removeEventListener
+          element.removeEventListener(type, info.wrapped, info.options);
+        }
       }
       typeMap.delete(type);
     }
@@ -108,7 +121,13 @@ export function removeAllListeners(
     // Remove all listeners of all types
     for (const [eventType, listeners] of typeMap) {
       for (const info of listeners) {
-        element.removeEventListener(eventType, info.wrapped, info.options);
+        // Abort the controller if it exists (preferred method)
+        if (info.controller) {
+          info.controller.abort();
+        } else {
+          // Fallback to removeEventListener
+          element.removeEventListener(eventType, info.wrapped, info.options);
+        }
       }
     }
     elementListeners.delete(element);
@@ -154,6 +173,10 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
     }
 
     const el = parent as HTMLElement;
+    
+    // Create an AbortController for this listener
+    const controller = new AbortController();
+    
     const wrapped = function(ev: Event): void {
       try {
         listener.call(el, ev);
@@ -162,9 +185,14 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
       }
     };
 
-    el.addEventListener(type, wrapped as EventListener, options);
+    // Merge options with signal
+    const listenerOptions = typeof options === 'boolean' 
+      ? { capture: options, signal: controller.signal }
+      : { ...(options || {}), signal: controller.signal };
+    
+    el.addEventListener(type, wrapped as EventListener, listenerOptions);
     
     // Track the listener for potential cleanup
-    trackListener(el, type, listener, wrapped as EventListener, options);
+    trackListener(el, type, listener, wrapped as EventListener, options, controller);
   };
 }

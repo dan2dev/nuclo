@@ -1,5 +1,8 @@
 import { isBrowser } from "./environment";
 import { logError } from "./errorHandler";
+import { removeAllListeners } from "./on";
+import { cleanupReactiveElement, cleanupReactiveTextNode } from "../core/reactive";
+import { unregisterConditionalNode } from "./conditionalInfo";
 
 /**
  * Creates an HTML element.
@@ -50,9 +53,41 @@ function safeAppendChild(parent: Element | Node, child: Node): boolean {
   }
 }
 
+/**
+ * Recursively removes all event listeners and reactive subscriptions from a node and its descendants
+ * to prevent memory leaks when elements are removed from the DOM.
+ */
+function cleanupEventListeners(node: Node): void {
+  // Clean up the node itself based on its type
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    const element = node as HTMLElement;
+    // Remove all event listeners
+    removeAllListeners(element);
+    // Remove reactive attribute resolvers
+    cleanupReactiveElement(element);
+    // Remove conditional info
+    unregisterConditionalNode(element);
+  } else if (node.nodeType === Node.TEXT_NODE) {
+    // Remove reactive text node info
+    cleanupReactiveTextNode(node as Text);
+  } else if (node.nodeType === Node.COMMENT_NODE) {
+    // Remove conditional info from comment nodes (used by when/list)
+    unregisterConditionalNode(node);
+  }
+  
+  // Recursively clean up all child nodes
+  if (node.childNodes && node.childNodes.length > 0) {
+    for (let i = 0; i < node.childNodes.length; i++) {
+      cleanupEventListeners(node.childNodes[i]);
+    }
+  }
+}
+
 export function safeRemoveChild(child: Node): boolean {
   if (!child?.parentNode) return false;
   try {
+    // Clean up all event listeners before removing the element
+    cleanupEventListeners(child);
     child.parentNode.removeChild(child);
     return true;
   } catch (error) {
