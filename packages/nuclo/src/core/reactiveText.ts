@@ -117,6 +117,28 @@ export function notifyReactiveTextNodes(scope?: UpdateScope): void {
   for (const ref of toDelete) {
     reactiveTextNodes.delete(ref);
   }
+  
+  // Force cleanup of any remaining dead WeakRefs (for memory optimization)
+  if (toDelete.length > 0) {
+    cleanupDeadWeakRefs();
+  }
+}
+
+/**
+ * Aggressively clean up any WeakRefs that point to garbage collected text nodes.
+ */
+function cleanupDeadWeakRefs(): void {
+  const toDelete: WeakRef<Text>[] = [];
+  
+  for (const [ref] of reactiveTextNodes) {
+    if (ref.deref() === undefined) {
+      toDelete.push(ref);
+    }
+  }
+  
+  for (const ref of toDelete) {
+    reactiveTextNodes.delete(ref);
+  }
 }
 
 /**
