@@ -108,6 +108,12 @@ export function sync<TItem, TTagName extends ElementTagName>(
 
   runtime.records = newRecords;
   runtime.lastSyncedItems = [...currentItems];
+  
+  // If list is now empty, explicitly clear the records array to help GC
+  if (newRecords.length === 0) {
+    runtime.records = [];
+    runtime.lastSyncedItems = [];
+  }
 }
 
 export function createListRuntime<TItem, TTagName extends ElementTagName = ElementTagName>(
@@ -150,12 +156,28 @@ export function updateListRuntimes(scope?: UpdateScope): void {
     
     // Comment node was garbage collected
     if (startMarker === undefined) {
+      // Clean up records before deleting runtime
+      if (info.runtime.records) {
+        info.runtime.records.forEach(record => {
+          (record as any).element = null;
+          (record as any).item = null;
+        });
+        info.runtime.records = [];
+      }
       toDelete.push(ref);
       continue;
     }
 
     // Check if markers are still connected to DOM
     if (!isNodeConnected(startMarker) || !isNodeConnected(info.runtime.endMarker)) {
+      // Clean up records before deleting runtime
+      if (info.runtime.records) {
+        info.runtime.records.forEach(record => {
+          (record as any).element = null;
+          (record as any).item = null;
+        });
+        info.runtime.records = [];
+      }
       toDelete.push(ref);
       continue;
     }
