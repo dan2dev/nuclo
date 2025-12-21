@@ -1,10 +1,19 @@
-import { createMarkerPair, safeRemoveChild } from "../utility/dom";
+import { createMarkerPair, safeRemoveChild, isNodeConnected } from "../utility/dom";
 import { arraysEqual } from "../utility/arrayUtils";
 import { resolveRenderable } from "../utility/renderables";
 import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsProvider } from "./types";
 import type { UpdateScope } from "../core/updateScope";
 
-const activeListRuntimes = new Set<ListRuntime<unknown, keyof HTMLElementTagNameMap>>();
+/**
+ * Stores weak references to list runtime markers to prevent memory leaks.
+ * Comment nodes can be garbage collected when removed from DOM.
+ * The runtime object itself is mutable and will be updated in place.
+ */
+interface ListRuntimeInfo<TItem = unknown, TTagName extends ElementTagName = ElementTagName> {
+  runtime: ListRuntime<TItem, TTagName>;
+}
+
+const activeListRuntimes = new Map<WeakRef<Comment>, ListRuntimeInfo<unknown, ElementTagName>>();
 
 function renderItem<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>,
@@ -119,20 +128,44 @@ export function createListRuntime<TItem, TTagName extends ElementTagName = Eleme
   parentNode.appendChild(startMarker);
   parentNode.appendChild(endMarker);
 
-  activeListRuntimes.add(runtime as ListRuntime<unknown, keyof HTMLElementTagNameMap>);
+  // Store runtime with WeakRef to startMarker to prevent memory leaks
+  // The runtime object itself is mutable and will be updated by sync()
+  const runtimeInfo: ListRuntimeInfo<TItem, TTagName> = {
+    runtime,
+  };
+  activeListRuntimes.set(new WeakRef(startMarker), runtimeInfo as ListRuntimeInfo<unknown, ElementTagName>);
   sync(runtime);
 
   return runtime;
 }
 
 export function updateListRuntimes(scope?: UpdateScope): void {
-  activeListRuntimes.forEach(function(runtime) {
-    if (!runtime.startMarker.isConnected || !runtime.endMarker.isConnected) {
-      activeListRuntimes.delete(runtime);
-      return;
+  const toDelete: WeakRef<Comment>[] = [];
+
+  for (const [ref, info] of activeListRuntimes) {
+    const startMarker = ref.deref();
+    
+    // Comment node was garbage collected
+    if (startMarker === undefined) {
+      toDelete.push(ref);
+      continue;
     }
 
-    if (scope && !scope.contains(runtime.startMarker)) return;
-    sync(runtime);
-  });
+    // Check if markers are still connected to DOM
+    if (!isNodeConnected(startMarker) || !isNodeConnected(info.runtime.endMarker)) {
+      toDelete.push(ref);
+      continue;
+    }
+
+    // Skip if outside update scope
+    if (scope && !scope.contains(startMarker)) continue;
+
+    // Sync the runtime (runtime object is mutated in place)
+    sync(info.runtime);
+  }
+
+  // Clean up dead references
+  for (const ref of toDelete) {
+    activeListRuntimes.delete(ref);
+  }
 }
