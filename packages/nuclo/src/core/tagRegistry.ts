@@ -26,10 +26,14 @@ export function registerGlobalTagBuilders(target: Record<string, unknown> = glob
   if ((target as Record<string, boolean>)[marker]) return;
 
   // Register SVG tags with Svg suffix
-  SVG_TAGS.forEach((tagName) => registerSvgTag(target, tagName));
+  for (let i = 0; i < SVG_TAGS.length; i++) {
+    registerSvgTag(target, SVG_TAGS[i]);
+  }
 
   // Register HTML tags
-  HTML_TAGS.forEach((tagName) => registerHtmlTag(target, tagName));
+  for (let i = 0; i < HTML_TAGS.length; i++) {
+    registerHtmlTag(target, HTML_TAGS[i]);
+  }
 
   (target as Record<string, boolean>)[marker] = true;
 }

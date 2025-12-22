@@ -183,7 +183,9 @@ export function clearBetweenMarkers(startMarker: Comment, endMarker: Comment): v
 export function insertNodesBefore(nodes: Node[], referenceNode: Node): void {
   const parent = referenceNode.parentNode;
   if (parent) {
-    nodes.forEach(function(node) { safeInsertBefore(parent, node, referenceNode); });
+    for (let i = 0; i < nodes.length; i++) {
+      safeInsertBefore(parent, nodes[i], referenceNode);
+    }
   }
 }
 
@@ -193,7 +195,8 @@ export function appendChildren(
 ): Element | Node {
   if (!parent) return parent;
 
-  children.forEach(function(child) {
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
     if (child != null) {
       let nodeToAppend: Node;
 
@@ -202,7 +205,7 @@ export function appendChildren(
         if (textNode) {
           nodeToAppend = textNode;
         } else {
-          return;
+          continue;
         }
       } else {
         nodeToAppend = child as Node;
@@ -210,7 +213,7 @@ export function appendChildren(
 
       safeAppendChild(parent, nodeToAppend);
     }
-  });
+  }
 
   return parent;
 }

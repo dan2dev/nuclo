@@ -85,7 +85,10 @@ function applySingleAttribute<TTagName extends ElementTagName>(
           addStaticClasses(el, newClassName);
           // Also update the current className immediately
           const currentClasses = new Set(el.className.split(' ').filter(function(c) { return c; }));
-          newClassName.split(' ').filter(function(c) { return c; }).forEach(function(c) { currentClasses.add(c); });
+          const newClasses = newClassName.split(' ').filter(function(c) { return c; });
+          for (let i = 0; i < newClasses.length; i++) {
+            currentClasses.add(newClasses[i]);
+          }
           el.className = Array.from(currentClasses).join(' ');
         }
         return;

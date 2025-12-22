@@ -45,16 +45,18 @@ export function sync<TItem, TTagName extends ElementTagName>(
   const recordsByPosition = new Map<number, ListItemRecord<TItem, TTagName>>();
   const availableRecords = new Map<TItem, ListItemRecord<TItem, TTagName>[]>();
 
-  runtime.records.forEach(function(record) {
+  for (let i = 0; i < runtime.records.length; i++) {
+    const record = runtime.records[i];
     const items = availableRecords.get(record.item);
     if (items) {
       items.push(record);
     } else {
       availableRecords.set(record.item, [record]);
     }
-  });
+  }
 
-  currentItems.forEach(function(item, newIndex) {
+  for (let newIndex = 0; newIndex < currentItems.length; newIndex++) {
+    const item = currentItems[newIndex];
     if (
       newIndex < runtime.lastSyncedItems.length &&
       runtime.lastSyncedItems[newIndex] === item
@@ -67,7 +69,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
         if (items.length === 0) availableRecords.delete(item);
       }
     }
-  });
+  }
 
   const newRecords: Array<ListItemRecord<TItem, TTagName>> = [];
   const elementsToRemove = new Set<ListItemRecord<TItem, TTagName>>(runtime.records);
@@ -104,7 +106,9 @@ export function sync<TItem, TTagName extends ElementTagName>(
     nextSibling = recordNode;
   }
 
-  elementsToRemove.forEach(remove);
+  for (const record of elementsToRemove) {
+    remove(record);
+  }
 
   runtime.records = newRecords;
   runtime.lastSyncedItems = [...currentItems];
@@ -158,10 +162,11 @@ export function updateListRuntimes(scope?: UpdateScope): void {
     if (startMarker === undefined) {
       // Clean up records before deleting runtime
       if (info.runtime.records) {
-        info.runtime.records.forEach(record => {
-          (record as any).element = null;
-          (record as any).item = null;
-        });
+        for (let i = 0; i < info.runtime.records.length; i++) {
+          const record = info.runtime.records[i] as any;
+          record.element = null;
+          record.item = null;
+        }
         info.runtime.records = [];
       }
       toDelete.push(ref);
@@ -172,10 +177,11 @@ export function updateListRuntimes(scope?: UpdateScope): void {
     if (!isNodeConnected(startMarker) || !isNodeConnected(info.runtime.endMarker)) {
       // Clean up records before deleting runtime
       if (info.runtime.records) {
-        info.runtime.records.forEach(record => {
-          (record as any).element = null;
-          (record as any).item = null;
-        });
+        for (let i = 0; i < info.runtime.records.length; i++) {
+          const record = info.runtime.records[i] as any;
+          record.element = null;
+          record.item = null;
+        }
         info.runtime.records = [];
       }
       toDelete.push(ref);
