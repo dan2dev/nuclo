@@ -260,13 +260,13 @@ export class NucloElement extends NucloNode {
   dispatchEvent(event: Event): boolean {
     const listeners = this._listeners.get(event.type);
     if (listeners) {
-      listeners.forEach(listener => {
+      for (const listener of listeners) {
         try {
           listener(event);
         } catch (error) {
           console.error('Error in event listener:', error);
         }
-      });
+      }
     }
     // Bubble to parent if event.bubbles is true
     if (event.bubbles && this.parentNode && typeof this.parentNode === 'object' && 'dispatchEvent' in this.parentNode && typeof this.parentNode.dispatchEvent === 'function') {
@@ -446,7 +446,10 @@ function createClassList(owner: NucloElement): DOMTokenList {
       yield* getClasses();
     },
     forEach: (callback: (value: string, key: number, parent: DOMTokenList) => void) => {
-      getClasses().forEach((cls, i) => callback(cls, i, classList as unknown as DOMTokenList));
+      const classes = getClasses();
+      for (let i = 0; i < classes.length; i++) {
+        callback(classes[i], i, classList as unknown as DOMTokenList);
+      }
     },
     entries: function* () {
       const classes = getClasses();

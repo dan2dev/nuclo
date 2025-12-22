@@ -21,7 +21,9 @@ export class NucloNode {
         }
       },
       forEach: (callback: (value: ChildNode, key: number, parent: NodeListOf<ChildNode>) => void) => {
-        nodes.forEach((node, i) => callback(node as ChildNode, i, this.childNodes));
+        for (let i = 0; i < nodes.length; i++) {
+          callback(nodes[i] as ChildNode, i, this.childNodes);
+        }
       },
       entries: function* () {
         for (let i = 0; i < nodes.length; i++) {

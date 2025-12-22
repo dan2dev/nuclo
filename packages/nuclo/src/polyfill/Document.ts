@@ -150,13 +150,14 @@ export class NucloDocument {
     if (listeners) {
       // Create a copy to avoid issues if listeners are modified during dispatch
       const listenersCopy = Array.from(listeners.values());
-      listenersCopy.forEach(({ listener }) => {
+      for (let i = 0; i < listenersCopy.length; i++) {
+        const { listener } = listenersCopy[i];
         try {
           listener(event);
         } catch (error) {
           console.error('Error in event listener:', error);
         }
-      });
+      }
     }
     return true;
   }
