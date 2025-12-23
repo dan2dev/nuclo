@@ -4,6 +4,10 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'jsdom',
+    setupFiles: ['./test/setup.ts'],
+    env: {
+      NODE_ENV: 'test'
+    },
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
