@@ -1,5 +1,5 @@
 {
 	"dependencies": {
-		"nuclo": "link:./packages/nuclo"
+		"nuclo": "link:packages/nuclo"
 	}
 }
