@@ -1,0 +1,128 @@
+.body {
+  background: linear-gradient(135deg, #f0f4ff, #e0e7ff);
+  margin: 0;
+  padding: 20px;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  color: #1f2937;
+  box-sizing: border-box;
+}
+
+.container {
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.header {
+  font-size: 28px;
+  font-weight: 700;
+  color: #6366f1;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.input-container {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.input {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border: 2px solid #6366f1;
+}
+
+.add-button {
+  padding: 12px 24px;
+  background: #6366f1;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-button:hover {
+  background: #4f46e5;
+}
+
+.todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.todo-item:hover {
+  background: #f3f4f6;
+}
+
+.drag-handle {
+  height: 20px;
+  width: 20px;
+  background: #ccc;
+  display: inline-block;
+  cursor: grab;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #6366f1;
+}
+
+.todo-text {
+  flex: 1;
+  font-size: 16px;
+  color: #1f2937;
+}
+
+.todo-text-completed {
+  flex: 1;
+  font-size: 16px;
+  color: #6b7280;
+  text-decoration: line-through;
+}
+
+.delete-button {
+  padding: 8px 12px;
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.delete-button:hover {
+  background: #dc2626;
+}
