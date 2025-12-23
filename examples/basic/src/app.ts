@@ -99,7 +99,7 @@ export const app = div(
         scope("todos"),
         s.todoList,
         list(
-          function() { return getTodos(); },
+          getTodos,
           function(todo) {
             return div(
               // sortable(reorderTodos),
