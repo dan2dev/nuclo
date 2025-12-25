@@ -1,44 +1,30 @@
 type ModType = Node | string | number | null | Record<string, any> | void;
 type ModFnType = (parent: HTMLElement, index: number) => ModType;
-function text(
-  content: (() => string | number) | string | number,
-  initialValue?: string | number,
-) {
-  return function (parent: HTMLElement, index: number) {
-    const hasUpdate = content instanceof Function;
-    const textContent = hasUpdate
-      ? String(initialValue ?? (content as () => string | number)())
-      : String(content);
-    let commentNode = parent.childNodes[index];
-    let textNode = parent.childNodes[index + 1];
+type TextSource = string | number | (() => string | number | null | undefined);
+function text(source: TextSource, initialValue?: string | number) {
+  const isFn = typeof source === "function";
+  const read = () => String(((isFn ? (source as () => any)() : source) as any) ?? "");
 
-    // Garante que o comment node está na posição correta
-    if (!commentNode || commentNode.nodeType !== Node.COMMENT_NODE) {
-      console.log("this should not happen ever");
-      commentNode = document.createComment(`text-${index}`);
-      parent.insertBefore(commentNode, parent.childNodes[index] || null);
-      // Atualiza textNode pois os índices mudaram
-      textNode = parent.childNodes[index + 1];
+  return (parent: HTMLElement, index: number) => {
+    let marker = parent.childNodes[index];
+    if (marker?.nodeType !== Node.COMMENT_NODE) {
+      marker = document.createComment(`text-${index}`);
+      parent.insertBefore(marker, parent.childNodes[index] ?? null);
     }
 
-    // Garante que o text node está logo após o comment
-    if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
-      textNode = document.createTextNode(textContent);
-      parent.insertBefore(textNode, commentNode.nextSibling);
+    let node = marker.nextSibling;
+    if (node?.nodeType !== Node.TEXT_NODE) {
+      node = document.createTextNode("");
+      parent.insertBefore(node, marker.nextSibling);
     }
 
-    // Atualiza o conteúdo do text node
-    (textNode as Text).textContent = textContent;
-    if (hasUpdate) {
-      console.log("Setting update function for text node:", textContent);
-      (textNode as any).update = () => {
-        const nextText = String((content as () => string | number)());
-        (textNode as Text).textContent = nextText;
-        return nextText;
-      };
-    }
-    return [commentNode, textNode];
-  }
+    const textNode = node as Text;
+    textNode.textContent = initialValue === undefined ? read() : String(initialValue);
+    if (isFn) (textNode as any).update = () => (textNode.textContent = read());
+    else delete (textNode as any).update;
+
+    return [marker, textNode];
+  };
 }
 
 function div(...mods: (ModType | ModFnType)[]) {
@@ -101,34 +87,22 @@ function div(...mods: (ModType | ModFnType)[]) {
 }
 
 function mount(parent: HTMLElement, mod: ModFnType) {
-  // Se já existe um filho, tenta reconciliar, senão monta normalmente
   if (parent.children.length > 0) {
-    mod(parent, 0); // Atualiza/reutiliza nodes existentes
-  } else {
-    const element = mod(parent, 0);
-    parent.appendChild(element as Node);
+    mod(parent, 0);
+    return;
   }
+  parent.appendChild(mod(parent, 0) as Node);
 }
 
 function on(event: string, handler: (e: Event) => void) {
-  return function (parent: HTMLElement) {
-    parent.addEventListener(event, handler);
-  }
+  return (parent: HTMLElement) => parent.addEventListener(event, handler);
 }
 
 function update() {
-  // update all nodes with update function
-  const allNodes = document.querySelectorAll("*");
-  allNodes.forEach((node) => {
-    node.childNodes.forEach((child) => {
-      if ((child as any).update instanceof Function) {
-        console.log("Updating node:", child);
-        (child as any).update();
-      }
-    });
-  });
+  document.querySelectorAll("*").forEach((el) =>
+    el.childNodes.forEach((node) => (node as any).update?.()),
+  );
 }
-
 
 // root app
 let valor = 0;
@@ -138,45 +112,28 @@ const block1 = div(
   div("header 2"),
   (el) => el.style.setProperty("background-color", "red"),
   () => valor,
-  div(
-    div("div inside a div"),
-    () => valor,
-  ),
+  div(div("div inside a div"), () => valor),
 );
 const app = div(
   "label1",
   () => "this should be in the rendered output, it is dynamic",
   () => valor,
-  div(
-
-    div("div inside a div"),
-    () => valor,
-  ),
+  div(div("div inside a div"), () => valor),
   "hello there 2",
-  div(
-    text(() => valor)
-  ),
+  div(text(() => valor)),
   block1,
-  div(
-    "button",
-    on("click", () => {
-      valor = valor + 1;
-      console.log('Button clicked, updating text to:', valor);
-      update();
-    })
-  )
+  div("button", on("click", () => {
+    valor += 1;
+    update();
+  })),
 );
-
-
 
 // render - this part simulates SSR
 // hydrate - this part simulates hydration
 
 // render
 mount(rootDiv, app);
-rootDiv.innerHTML = rootDiv.innerHTML + "\n";
+rootDiv.innerHTML += "\n";
 rootDiv.getElementsByTagName("div")[0].style.backgroundColor = "darkgray";
 // hydrate
 mount(rootDiv, app);
-
-console.log("App mounted.");
