@@ -1,6 +1,8 @@
 type ModType = Node | string | number | null | Record<string, any> | void;
 type ModFnType = (parent: HTMLElement, index: number) => ModType;
 type TextSource = string | number | (() => string | number | null | undefined);
+
+let isHidrated = false;
 function text(source: TextSource, initialValue?: string | number) {
   const isFn = typeof source === "function";
   const read = () => String(((isFn ? (source as () => any)() : source) as any) ?? "");
@@ -27,8 +29,20 @@ function text(source: TextSource, initialValue?: string | number) {
   };
 }
 
-function div(...mods: (ModType | ModFnType)[]) {
+type ModsArray = (ModType | ModFnType)[];
+type ModsFunction = () => ModsArray;
+
+function div(...modsOrFn: ModsArray | [ModsFunction]) {
   return function (parent: HTMLElement, index: number) {
+    // Resolve os mods: se for função sem parâmetros (length === 0), é ModsFunction
+    const isModsFunction = typeof modsOrFn[0] === "function"
+      && modsOrFn.length === 1
+      && (modsOrFn[0] as Function).length === 0;
+
+    const mods: ModsArray = isModsFunction
+      ? (modsOrFn[0] as ModsFunction)()
+      : modsOrFn as ModsArray;
+
     // Reutiliza o elemento existente se possível
     let el = parent.childNodes[index] as HTMLDivElement | undefined;
     if (!(el instanceof HTMLDivElement) || el.tagName !== "DIV") {
@@ -93,28 +107,39 @@ function mount(parent: HTMLElement, mod: ModFnType) {
   }
   parent.appendChild(mod(parent, 0) as Node);
 }
+function hydrate(parent: HTMLElement, mod: ModFnType) {
+  mod(parent, 0);
+  isHidrated = true;
+}
 
 function on(event: string, handler: (e: Event) => void) {
-  return (parent: HTMLElement) => parent.addEventListener(event, handler);
+  return (parent: HTMLElement) => {
+    if (isHidrated) {
+      return;
+    }
+    parent.addEventListener(event, handler);
+  };
 }
 
 function update() {
   document.querySelectorAll("*").forEach((el) =>
     el.childNodes.forEach((node) => (node as any).update?.()),
   );
+  console.log("updated");
 }
 
 // root app
 let valor = 0;
+let labelStatico = "label statico inicial";
 const rootDiv = document.getElementById("app") as HTMLElement;
-const block1 = div(
-  div("header 2"),
+const block1 = div(() => [
+  div("header 1"),
   div("header 2"),
   (el) => el.style.setProperty("background-color", "red"),
   () => valor,
   div(div("div inside a div"), () => valor),
-);
-const app = div(
+]);
+const app = div(() => [
   "label1",
   () => "this should be in the rendered output, it is dynamic",
   () => valor,
@@ -122,11 +147,18 @@ const app = div(
   "hello there 2",
   div(text(() => valor)),
   block1,
-  div("button", on("click", () => {
+  div("update", on("click", () => {
     valor += 1;
     update();
   })),
-);
+  div("update Statico", on("click", () => {
+    // deve alterar o labelStatico no dom
+    valor += 1;
+    labelStatico = `label changed ${valor}`;
+    mount(rootDiv, app);
+  })),
+  labelStatico,  // ✅ agora será re-avaliado a cada render
+]);
 
 // render - this part simulates SSR
 // hydrate - this part simulates hydration
@@ -136,4 +168,4 @@ mount(rootDiv, app);
 rootDiv.innerHTML += "\n";
 rootDiv.getElementsByTagName("div")[0].style.backgroundColor = "darkgray";
 // hydrate
-mount(rootDiv, app);
+hydrate(rootDiv, app);
