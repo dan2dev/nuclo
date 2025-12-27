@@ -1,32 +1,39 @@
 type ModType = Node | string | number | null | Record<string, any> | void;
 type ModFnType = (parent: HTMLElement, index: number) => ModType;
-type TextSource = string | number | (() => string | number | null | undefined);
 
-let isHidrated = false;
+
+// let isHidrated = false;
+let renderData = {
+  // lastTextValues: new WeakMap<Text, string>(),
+  isHidrated: false as boolean,
+  current: [] as (HTMLElement | null)[],
+  indexes: [] as number[],
+  getCurrent() {
+    return this.current[this.current.length - 1];
+  },
+  getIndex() {
+    return this.indexes[this.indexes.length - 1];
+  },
+  push(el: HTMLElement) {
+    this.current.push(el);
+    this.indexes.push(0);
+  },
+  pop() {
+    this.current.pop();
+    this.indexes.pop();
+  },
+  incrementIndex() {
+    this.indexes[this.indexes.length - 1]++;
+  },
+};
+
+// Função para criar/modificar um nó de texto
+type TextSource = string | number | (() => string | number | null | undefined);
 function text(source: TextSource, initialValue?: string | number) {
   const isFn = typeof source === "function";
-  const read = () => String(((isFn ? (source as () => any)() : source) as any) ?? "");
+  
 
-  return (parent: HTMLElement, index: number) => {
-    let marker = parent.childNodes[index];
-    if (marker?.nodeType !== Node.COMMENT_NODE) {
-      marker = document.createComment(`text-${index}`);
-      parent.insertBefore(marker, parent.childNodes[index] ?? null);
-    }
 
-    let node = marker.nextSibling;
-    if (node?.nodeType !== Node.TEXT_NODE) {
-      node = document.createTextNode("");
-      parent.insertBefore(node, marker.nextSibling);
-    }
-
-    const textNode = node as Text;
-    textNode.textContent = initialValue === undefined ? read() : String(initialValue);
-    if (isFn) (textNode as any).update = () => (textNode.textContent = read());
-    else delete (textNode as any).update;
-
-    return [marker, textNode];
-  };
 }
 
 type ModsArray = (ModType | ModFnType)[];
