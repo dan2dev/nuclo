@@ -1,6 +1,7 @@
 import { logError } from "../utility/errorHandler";
 import { isNodeConnected } from "../utility/dom";
 import type { UpdateScope } from "./updateScope";
+import { reactiveElements } from "./reactiveCleanup";
 
 type AttributeResolver = () => unknown;
 
@@ -14,11 +15,6 @@ interface ReactiveElementInfo {
   attributeResolvers: Map<string, AttributeResolverRecord>;
 }
 
-/**
- * Stores weak references to reactive elements to prevent memory leaks.
- * Elements can be garbage collected when removed from DOM.
- */
-const reactiveElements = new Map<WeakRef<Element>, ReactiveElementInfo>();
 const UNSET_LAST_VALUE = {};
 let updateEventListenerRegistered = false;
 
@@ -214,29 +210,14 @@ export function notifyReactiveElements(scope?: UpdateScope): void {
  */
 function cleanupDeadWeakRefs(): void {
   const toDelete: WeakRef<Element>[] = [];
-  
+
   for (const [ref] of reactiveElements) {
     if (ref.deref() === undefined) {
       toDelete.push(ref);
     }
   }
-  
+
   for (const ref of toDelete) {
     reactiveElements.delete(ref);
-  }
-}
-
-/**
- * Manually removes reactive element info for a specific element.
- * This should be called when an element is removed from the DOM to prevent memory leaks.
- */
-export function cleanupReactiveElement(element: Element): void {
-  // Find and remove the WeakRef that points to this element
-  for (const [ref, info] of reactiveElements) {
-    const el = ref.deref();
-    if (el === element) {
-      reactiveElements.delete(ref);
-      break;
-    }
   }
 }
