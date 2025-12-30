@@ -1,7 +1,7 @@
 import { isBrowser } from "./environment";
 import { logError } from "./errorHandler";
 import { removeAllListeners } from "./on";
-import { cleanupReactiveElement, cleanupReactiveTextNode } from "../core/reactive";
+import { cleanupReactiveTextNode, cleanupReactiveElement } from "../core/reactiveCleanup";
 import { unregisterConditionalNode } from "./conditionalInfo";
 
 /**

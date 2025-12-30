@@ -1,6 +1,7 @@
 import { logError } from "../utility/errorHandler";
 import { isNodeConnected, createTextNode } from "../utility/dom";
 import type { UpdateScope } from "./updateScope";
+import { reactiveTextNodes } from "./reactiveCleanup";
 
 type TextResolver = () => Primitive;
 
@@ -8,12 +9,6 @@ interface ReactiveTextNodeInfo {
   resolver: TextResolver;
   lastValue: string;
 }
-
-/**
- * Stores weak references to reactive text nodes to prevent memory leaks.
- * Text nodes can be garbage collected when removed from DOM.
- */
-const reactiveTextNodes = new Map<WeakRef<Text>, ReactiveTextNodeInfo>();
 
 /**
  * Creates a reactive text node that automatically updates when its resolver function changes.
@@ -129,29 +124,14 @@ export function notifyReactiveTextNodes(scope?: UpdateScope): void {
  */
 function cleanupDeadWeakRefs(): void {
   const toDelete: WeakRef<Text>[] = [];
-  
+
   for (const [ref] of reactiveTextNodes) {
     if (ref.deref() === undefined) {
       toDelete.push(ref);
     }
   }
-  
+
   for (const ref of toDelete) {
     reactiveTextNodes.delete(ref);
-  }
-}
-
-/**
- * Manually removes reactive text node info for a specific text node.
- * This should be called when a text node is removed from the DOM to prevent memory leaks.
- */
-export function cleanupReactiveTextNode(node: Text): void {
-  // Find and remove the WeakRef that points to this text node
-  for (const [ref] of reactiveTextNodes) {
-    const textNode = ref.deref();
-    if (textNode === node) {
-      reactiveTextNodes.delete(ref);
-      break;
-    }
   }
 }
