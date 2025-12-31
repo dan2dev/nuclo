@@ -15,7 +15,7 @@ let firstRender = true;
 
 // }
 
-(Comment.prototype as any).bind1 = function(key: string, value: any) {
+(Comment.prototype as any).bind1 = function (key: string, value: any) {
   // if (!domData[this.nodeValue || ""]) {
   //   domData[this.nodeValue || ""] = {};
   // }
@@ -53,7 +53,7 @@ function div(...modsOrFn: ModsArray | [ModsFunction]) {
       el = document.createElement("div");
       parent.insertBefore(el, parent.childNodes[index] || null);
     }
-    let internalIndex = 0;
+    let nodeIndex = 0;
 
     for (let i = 0; i < modsArray.length; i++) {
       const mod = modsArray[i];
@@ -63,11 +63,10 @@ function div(...modsOrFn: ModsArray | [ModsFunction]) {
       // PART 1
       // compute modItem if it's a function
       if (typeof mod === "function") {
-        modItem = (mod as ModFnType)(el, internalIndex);
+        modItem = (mod as ModFnType)(el, nodeIndex);
 
         if (typeof modItem === "string" || typeof modItem === "number") {
           const modFn = mod as ModFnType;
-          const nodeIndex = internalIndex;
           modItem = text(
             () => {
               const nextValue = modFn(el, nodeIndex);
@@ -76,34 +75,35 @@ function div(...modsOrFn: ModsArray | [ModsFunction]) {
             modItem,
           )(el, nodeIndex);
         }
-      } else if (typeof mod === "string" || typeof mod === "number") {
-        modItem = text(mod)(el, internalIndex);
+      } else if (typeof mod === "string" || typeof mod === "number" || typeof mod === "boolean") {
+        modItem = text(mod)(el, nodeIndex);
       }
+      // ----------------------------------------------
       // PART 2
       // insert modItem into DOM - array of Nodes case
       if (Array.isArray(modItem)) {
         for (let j = 0; j < modItem.length; j++) {
           if (modItem[j] instanceof Node) {
             // Sempre faz insertBefore, mas só se não estiver já na posição correta
-            if (el.childNodes[internalIndex + j] !== modItem[j]) {
-              el.insertBefore(modItem[j], el.childNodes[internalIndex + j] || null);
+            if (el.childNodes[nodeIndex + j] !== modItem[j]) {
+              el.insertBefore(modItem[j], el.childNodes[nodeIndex + j] || null);
             }
           }
         }
-        internalIndex += modItem.length;
+        nodeIndex += modItem.length;
       }
       // PART 2
       // insert modItem into DOM - single Node case
       else if (modItem instanceof Node) {
         // Sempre faz insertBefore, mas só se não estiver já na posição correta
-        if (el.childNodes[internalIndex] !== modItem) {
-          el.insertBefore(modItem, el.childNodes[internalIndex] || null);
+        if (el.childNodes[nodeIndex] !== modItem) {
+          el.insertBefore(modItem, el.childNodes[nodeIndex] || null);
         }
-        internalIndex += 1;
+        nodeIndex += 1;
       }
     }
     // Remove nodes extras se existirem
-    while (el.childNodes.length > internalIndex) {
+    while (el.childNodes.length > nodeIndex) {
       console.log("removing extra node");
       el.removeChild(el.lastChild!);
     }
