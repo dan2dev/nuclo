@@ -1,56 +1,38 @@
+import text from "./lib/text";
+
+// - Se o "mod" é uma função, deve chamar passando "parent" e "index".
+// - Se o "mod" não é uma função, deve atribuir diretamente a "result".
+// - Retornar "result".
+// - comments has this pattern: `<!-- {type}:{size} -->` where {type} is either "text", "list" | "when" and {size} is how many nodes are managed by that comment block. For example: `<!-- text:1 -->` means that this comment manages 1 text node. On lists, the size is dynamic and can be 0 or more. For example: `<!-- list:0 -->` means that this comment manages 0 or more nodes. This is useful for hydration and diffing.
+
+
 type ModType = Node | string | number | null | Record<string, any> | void;
 type ModFnType = (parent: HTMLElement, index: number) => ModType;
-type TextSource = string | number | (() => string | number | null | undefined);
 
 let isHidrated = false;
-let domData: Record<string, any> = {
+let firstRender = true;
+// let domData: Record<string, any> = {
 
+// }
+
+(Comment.prototype as any).bind1 = function(key: string, value: any) {
+  // if (!domData[this.nodeValue || ""]) {
+  //   domData[this.nodeValue || ""] = {};
+  // }
+  // domData[this.nodeValue || ""][key] = value;
 }
+
 function when(condition: () => boolean, mod: ModType | ModFnType) {
   return function (parent: HTMLElement, index: number) {
-    let result: ModType;
-    if (condition()) {
-      if (typeof mod === "function") {
-        result = (mod as ModFnType)(parent, index);
-      } else {
-        result = mod;
-      }
-    } else {
-      result = null;
-    }
-    return result;
-  };
-}
-
-function text(source: TextSource, initialValue?: string | number) {
-  const isFn = typeof source === "function";
-
-  return function (parent: HTMLElement, index: number) {
     let marker = parent.childNodes[index];
+
     if (marker?.nodeType !== Node.COMMENT_NODE) {
-      marker = document.createComment(`text-${index}`);
+      marker = document.createComment(`when-${index}`);
       parent.insertBefore(marker, parent.childNodes[index] ?? null);
     }
-
-    let node = marker.nextSibling;
-    if (node?.nodeType !== Node.TEXT_NODE) {
-      node = document.createTextNode("");
-      parent.insertBefore(node, marker.nextSibling);
-    }
-
-    const textNode = node as Text;
-    if (isFn) {
-      const read = () => String(((source as () => any)() as any) ?? "");
-      textNode.textContent = initialValue === undefined ? read() : String(initialValue);
-      (textNode as any).update = () => (textNode.textContent = read());
-    } else {
-      textNode.textContent = initialValue === undefined ? String(source ?? "") : String(initialValue);
-      delete (textNode as any).update;
-    }
-
-    return [marker, textNode];
   };
 }
+
 type ModsArray = (ModType | ModFnType)[];
 type ModsFunction = () => ModsArray;
 
@@ -154,7 +136,7 @@ function update() {
   document.querySelectorAll("*").forEach((el) =>
     el.childNodes.forEach((node) => (node as any).update?.()),
   );
-  console.log("updated");
+  // console.log("updated");
 }
 
 // root app
@@ -164,7 +146,11 @@ const rootDiv = document.getElementById("app") as HTMLElement;
 const block1 = div(() => [
   div("header 1"),
   div("header 2"),
-  (el) => el.style.setProperty("background-color", "red"),
+  (el: HTMLElement) => {
+    if (isHidrated) {
+      el.style.setProperty("background-color", "red");
+    }
+  },
   () => valor,
   div(div("div inside a div"), () => valor),
 ]);
@@ -180,13 +166,17 @@ const app = div(() => [
   block1,
   div("update", on("click", () => {
     valor += 1;
+    console.time("update");
     update();
+    console.timeEnd("update");
   })),
   div("update Statico", on("click", () => {
     // deve alterar o labelStatico no dom
     valor += 1;
     labelStatico = `label changed ${valor}`;
-    mount(rootDiv, app);
+    console.time("hydrate");
+    hydrate(rootDiv, app);
+    console.timeEnd("hydrate");
   })),
   labelStatico,  // ✅ agora será re-avaliado a cada render
 ]);
@@ -199,9 +189,11 @@ mount(rootDiv, app);
 rootDiv.innerHTML += "\n";
 rootDiv.getElementsByTagName("div")[0].style.backgroundColor = "darkgray";
 // hydrate
-console.time("hydrate");
-for (let i = 0; i < 1000; i++) {
-  hydrate(rootDiv, app);
-}
-console.timeEnd("hydrate");
-
+setTimeout(() => {
+  console.time("hydrate");
+  for (let i = 0; i < 1000; i++) {
+    hydrate(rootDiv, app);
+  }
+  console.timeEnd("hydrate");
+  // update();
+}, 2000);
