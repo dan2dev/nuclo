@@ -6,6 +6,22 @@ let isHidrated = false;
 let domData: Record<string, any> = {
 
 }
+function when(condition: () => boolean, mod: ModType | ModFnType) {
+  return function (parent: HTMLElement, index: number) {
+    let result: ModType;
+    if (condition()) {
+      if (typeof mod === "function") {
+        result = (mod as ModFnType)(parent, index);
+      } else {
+        result = mod;
+      }
+    } else {
+      result = null;
+    }
+    return result;
+  };
+}
+
 function text(source: TextSource, initialValue?: string | number) {
   const isFn = typeof source === "function";
 
@@ -45,7 +61,7 @@ function div(...modsOrFn: ModsArray | [ModsFunction]) {
       && modsOrFn.length === 1
       && (modsOrFn[0] as Function).length === 0;
 
-    const mods: ModsArray = isModsFunction
+    const modsArray: ModsArray = isModsFunction
       ? (modsOrFn[0] as ModsFunction)()
       : modsOrFn as ModsArray;
 
@@ -57,11 +73,13 @@ function div(...modsOrFn: ModsArray | [ModsFunction]) {
     }
     let internalIndex = 0;
 
-    for (let i = 0; i < mods.length; i++) {
-      const mod = mods[i];
+    for (let i = 0; i < modsArray.length; i++) {
+      const mod = modsArray[i];
       if (mod == null) continue;
 
       let modItem: any = mod;
+      // PART 1
+      // compute modItem if it's a function
       if (typeof mod === "function") {
         modItem = (mod as ModFnType)(el, internalIndex);
 
@@ -79,7 +97,8 @@ function div(...modsOrFn: ModsArray | [ModsFunction]) {
       } else if (typeof mod === "string" || typeof mod === "number") {
         modItem = text(mod)(el, internalIndex);
       }
-
+      // PART 2
+      // insert modItem into DOM
       if (Array.isArray(modItem)) {
         for (let j = 0; j < modItem.length; j++) {
           if (modItem[j] instanceof Node) {
@@ -100,6 +119,7 @@ function div(...modsOrFn: ModsArray | [ModsFunction]) {
     }
     // Remove nodes extras se existirem
     while (el.childNodes.length > internalIndex) {
+      console.log("removing extra node");
       el.removeChild(el.lastChild!);
     }
     return el;
@@ -151,6 +171,8 @@ const app = div(() => [
   () => valor,
   div(div("div inside a div"), () => valor),
   "hello there 2",
+  null,
+  {},
   div(text(() => valor)),
   block1,
   div("update", on("click", () => {
@@ -175,7 +197,7 @@ rootDiv.innerHTML += "\n";
 rootDiv.getElementsByTagName("div")[0].style.backgroundColor = "darkgray";
 // hydrate
 console.time("hydrate");
-for (let i = 0; i < 100000; i++) {
+for (let i = 0; i < 1000; i++) {
   hydrate(rootDiv, app);
 }
 console.timeEnd("hydrate");
