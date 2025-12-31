@@ -1,41 +1,40 @@
 type ModType = Node | string | number | null | Record<string, any> | void;
 type ModFnType = (parent: HTMLElement, index: number) => ModType;
-
-
-// let isHidrated = false;
-let renderData = {
-  // lastTextValues: new WeakMap<Text, string>(),
-  isHidrated: false as boolean,
-  current: [] as (HTMLElement | null)[],
-  indexes: [] as number[],
-  getCurrent() {
-    return this.current[this.current.length - 1];
-  },
-  getIndex() {
-    return this.indexes[this.indexes.length - 1];
-  },
-  push(el: HTMLElement) {
-    this.current.push(el);
-    this.indexes.push(0);
-  },
-  pop() {
-    this.current.pop();
-    this.indexes.pop();
-  },
-  incrementIndex() {
-    this.indexes[this.indexes.length - 1]++;
-  },
-};
-
-// Função para criar/modificar um nó de texto
 type TextSource = string | number | (() => string | number | null | undefined);
-function text(source: TextSource, initialValue?: string | number) {
-  const isFn = typeof source === "function";
-  
 
+let isHidrated = false;
+let domData: Record<string, any> = {
 
 }
+function text(source: TextSource, initialValue?: string | number) {
+  const isFn = typeof source === "function";
 
+  return function (parent: HTMLElement, index: number) {
+    let marker = parent.childNodes[index];
+    if (marker?.nodeType !== Node.COMMENT_NODE) {
+      marker = document.createComment(`text-${index}`);
+      parent.insertBefore(marker, parent.childNodes[index] ?? null);
+    }
+
+    let node = marker.nextSibling;
+    if (node?.nodeType !== Node.TEXT_NODE) {
+      node = document.createTextNode("");
+      parent.insertBefore(node, marker.nextSibling);
+    }
+
+    const textNode = node as Text;
+    if (isFn) {
+      const read = () => String(((source as () => any)() as any) ?? "");
+      textNode.textContent = initialValue === undefined ? read() : String(initialValue);
+      (textNode as any).update = () => (textNode.textContent = read());
+    } else {
+      textNode.textContent = initialValue === undefined ? String(source ?? "") : String(initialValue);
+      delete (textNode as any).update;
+    }
+
+    return [marker, textNode];
+  };
+}
 type ModsArray = (ModType | ModFnType)[];
 type ModsFunction = () => ModsArray;
 
@@ -175,4 +174,9 @@ mount(rootDiv, app);
 rootDiv.innerHTML += "\n";
 rootDiv.getElementsByTagName("div")[0].style.backgroundColor = "darkgray";
 // hydrate
-hydrate(rootDiv, app);
+console.time("hydrate");
+for (let i = 0; i < 100000; i++) {
+  hydrate(rootDiv, app);
+}
+console.timeEnd("hydrate");
+
