@@ -98,7 +98,7 @@ function div(...modsOrFn: ModsArray | [ModsFunction]) {
         modItem = text(mod)(el, internalIndex);
       }
       // PART 2
-      // insert modItem into DOM
+      // insert modItem into DOM - array of Nodes case
       if (Array.isArray(modItem)) {
         for (let j = 0; j < modItem.length; j++) {
           if (modItem[j] instanceof Node) {
@@ -109,7 +109,10 @@ function div(...modsOrFn: ModsArray | [ModsFunction]) {
           }
         }
         internalIndex += modItem.length;
-      } else if (modItem instanceof Node) {
+      }
+      // PART 2
+      // insert modItem into DOM - single Node case
+      else if (modItem instanceof Node) {
         // Sempre faz insertBefore, mas só se não estiver já na posição correta
         if (el.childNodes[internalIndex] !== modItem) {
           el.insertBefore(modItem, el.childNodes[internalIndex] || null);
