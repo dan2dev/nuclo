@@ -34,7 +34,7 @@ function NavLink(label: string, route: Route) {
 
     console.log("Rendering NavLink:", label, "Active:", isActive());
   return a(
-    { href: route === "home" ? import.meta.env.BASE_URL : `#${route}` },
+    { href: route === "home" ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}${route}` },
     s.navLink,
     cn(base),
     {

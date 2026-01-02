@@ -2,6 +2,7 @@ import "nuclo";
 import { cn, s, colors } from "../styles.ts";
 import { CodeBlock, InlineCode } from "../components/CodeBlock.ts";
 import { stylingCode } from "../content/styling.ts";
+import { setRoute } from "../router.ts";
 
 export function StylingPage() {
   // Live demo: Overview quick example
@@ -572,7 +573,14 @@ export function StylingPage() {
       li(
         s.li,
         "Jump to the ",
-        a({ href: "#examples" }, "Examples page"),
+        a(
+          { href: `${import.meta.env.BASE_URL}examples` },
+          "Examples page",
+          on("click", (e) => {
+            e.preventDefault();
+            setRoute("examples");
+          })
+        ),
         " to see these styles in action."
       )
     )

@@ -28,7 +28,7 @@ function NavLink(label: string, route: Route) {
   const isActive = () => getCurrentRoute() === route || getCurrentRoute().startsWith(route + "-");
 
   return a(
-    { href: `#${route}` },
+    { href: route === "home" ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}${route}` },
     cn(
       display("flex")
         .alignItems("center")
