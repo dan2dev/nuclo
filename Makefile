@@ -4,7 +4,7 @@ export
 .PHONY: publish
 
 publish:
-	cd ../../docs-source && pnpm build
+	cd docs-source && pnpm build
 	rsync -avz --delete ./docs/ $(DEPLOY_USER)@$(DEPLOY_HOST):$(DEPLOY_PATH)
 
 .PHONY: help
