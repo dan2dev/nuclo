@@ -13,7 +13,7 @@ export type BlockMetaDataType = {
 };
 
 export type BlockMetaDataStrType = `${number}-${string}-END` | `${number}-${string}-START`;
-export type commentGroup = Node & { nData?: BlockMetaDataType };
+export type CommentAnchor = Comment & { nData?: BlockMetaDataType };
 
 // comments should be in the format of: {1|2|3|4}-id-END
 function getNData(node: (Comment | Node) & { nData?: BlockMetaDataType }): BlockMetaDataType | undefined {
@@ -55,7 +55,11 @@ function closeGroupComment(metaData: BlockMetaDataType) {
 
 // block extract will get a parent and a index and will return an array of nodes that are managed by that block
 // this will be used to extract the nodes managed by a block (like a list or a when) for hydration and diffing purposes
-export function extractBlock(parent: HTMLElement, index: number) {
+type ParentAnchorItemType = Comment & { nData: BlockMetaDataType; nItems: Array<WeakRef<Node>> };
+export function extractBlock(
+	parent: HTMLElement & { nAnchors: ParentAnchorItemType[] },
+	index: number,
+) {
 	const nData = getNData(parent.childNodes[index]);
 	if (!nData) {
 		return parent.childNodes[index] || null;
@@ -71,8 +75,47 @@ export function extractBlock(parent: HTMLElement, index: number) {
 	}
 
 	// list
-	if (nData.type === BlockTypeEnum.LIST) {
-		const anchor = parent.childNodes[index];
-		// TODO: Implement list extraction
-	}
+	// if (nData.type === BlockTypeEnum.LIST) {
+		parent.nAnchors = [parent.childNodes[index] as ParentAnchorItemType] as ParentAnchorItemType[];
+		let itemIndex = index + 1;
+		// get items
+		while (itemIndex < parent.childNodes.length) {
+			const child = parent.childNodes[itemIndex];
+			if (child.nodeType === Node.COMMENT_NODE) {
+				const nData = getNData(child);
+				if (nData?.isEnd) {
+					break;
+				}
+			}
+
+			if (child.nodeType === Node.ELEMENT_NODE) {
+				anchors[anchors.length - 1].nItems.push(new WeakRef(child));
+			} else if (child.nodeType === Node.COMMENT_NODE) {
+				const childData = getNData(child);
+				// if (childData && childData.type === BlockTypeEnum.LIST && childData.id === nData.id) {
+				// 	anchor.nItems.push(new WeakRef(child));
+				// } else {
+				// 	break;
+				// }
+			}
+			itemIndex += 1;
+		}
+	// }
+	// 	while (itemIndex < parent.childNodes.length) {
+	// 		const child = parent.childNodes[itemIndex];
+	// 		if (child.nodeType === Node.ELEMENT_NODE) {
+	// 			items.push(new WeakRef(child));
+	// 		} else if (child.nodeType === Node.COMMENT_NODE) {
+	// 			const childData = getNData(child);
+	// 			if (childData && childData.type === BlockTypeEnum.LIST_ITEM) {
+	// 				items.push(new WeakRef(child));
+	// 			} else {
+	// 				break;
+	// 			}
+	// 		}
+	// 		itemIndex++;
+	// 	}
+	// 	anchor.items = items;
+	// 	return anchor;
+	// }
 }
