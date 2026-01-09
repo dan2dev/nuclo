@@ -28,7 +28,7 @@ export function getAnchorData(node: (Comment | Node) & { nData?: BlockMetaDataRe
   const vArray: string[] = String(node.nodeValue).split("-");
   const type: BlockMetaDataType["type"] = parseInt(vArray[0], 10) as BlockMetaDataType["type"];
   const id: string = vArray[1];
-  const isEnd: true | undefined = Boolean(vArray[vArray.length - 1] === "END") || undefined;
+  const isEnd: true | undefined = vArray[vArray.length - 1] === "END" ? true : undefined;
   node.nData = {
     type,
     id,
