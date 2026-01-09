@@ -13,7 +13,7 @@ export type BlockMetaDataType = {
 
 export type NucloAnchor = Comment & { nData?: BlockMetaDataType, nItems?: Array<WeakRef<Node>> };
 export type BlockMetaDataStrType = `${number}-${string}-END` | `${number}-${string}-START`;
-// comments should be in the format of: {1|2|3|4}-id-END
+// comments should be in the format of: {1|2|3|4}-{id}-{START|END}
 export function getAnchorData(node: (Comment | Node) & { nData?: BlockMetaDataType }): BlockMetaDataType | undefined {
   if (node.nodeType !== Node.COMMENT_NODE) {
     return undefined;
