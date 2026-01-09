@@ -18,23 +18,23 @@ export type BlockMetaDataStrType = `${number}-${string}-END` | `${number}-${stri
 
 // comments should be in the format of: {1|2|3|4}-{id}-{START|END}
 // getAnchorData
-export function getAnchorData(node: (Comment | Node) & { nData?: BlockMetaDataResponseType }): BlockMetaDataResponseType | undefined {
-  if (node.nodeType !== Node.COMMENT_NODE) {
+export function getAnchorData(comment: (Comment | Node) & { nData?: BlockMetaDataResponseType }): BlockMetaDataResponseType | undefined {
+  if (comment.nodeType !== Node.COMMENT_NODE) {
     return undefined;
   }
-  if (node.nData) {
-    return node.nData;
+  if (comment.nData) {
+    return comment.nData;
   }
-  const vArray: string[] = String(node.nodeValue).split("-");
+  const vArray: string[] = String(comment.nodeValue).split("-");
   const type: BlockMetaDataType["type"] = parseInt(vArray[0], 10) as BlockMetaDataType["type"];
   const id: string = vArray[1];
   const isEnd: true | undefined = vArray[vArray.length - 1] === "END" ? true : undefined;
-  node.nData = {
+  comment.nData = {
     type,
     id,
     isEnd
   } satisfies BlockMetaDataResponseType;
-  return node.nData;
+  return comment.nData;
 }
 
 // createOpenAnchorComment
