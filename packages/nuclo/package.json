@@ -1,7 +1,7 @@
 {
 	"name": "nuclo",
 	"private": false,
-	"version": "0.1.97",
+	"version": "0.1.98",
 	"type": "module",
 	"main": "./dist/nuclo.cjs",
 	"module": "./dist/nuclo.js",
