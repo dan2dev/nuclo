@@ -13,6 +13,10 @@ type TplNode = {
   attrs: Record<string, string | true>;
   classes: Set<string>;
   children: Array<TplNode | string>;
+  id?: string;
+  _open?: string;
+  _close?: string;
+  _isVoid?: boolean;
 };
 
 const VOID_TAGS = new Set([
@@ -32,15 +36,38 @@ const VOID_TAGS = new Set([
   "wbr",
 ]);
 
+const TEXT_ESCAPE_RE = /[&<>]/g;
 function escapeText(text: string): string {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
+  return text.replace(TEXT_ESCAPE_RE, (ch) => {
+    switch (ch) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      default:
+        return ch;
+    }
+  });
 }
 
+const ATTR_ESCAPE_RE = /[&<>"]/g;
 function escapeAttrValue(text: string): string {
-  return escapeText(text).replaceAll('"', "&quot;");
+  return text.replace(ATTR_ESCAPE_RE, (ch) => {
+    switch (ch) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      default:
+        return ch;
+    }
+  });
 }
 
 function parseAttrs(attrBody: string): Record<string, string | true> {
@@ -55,26 +82,74 @@ function parseAttrs(attrBody: string): Record<string, string | true> {
   return attrs;
 }
 
+function isIdentStart(ch: string): boolean {
+  const code = ch.charCodeAt(0);
+  return (
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122) ||
+    ch === "_"
+  );
+}
+function isIdentChar(ch: string): boolean {
+  const code = ch.charCodeAt(0);
+  return (
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122) ||
+    (code >= 48 && code <= 57) ||
+    ch === "_" ||
+    ch === "-"
+  );
+}
+
 function parseTagAndInlineSelectors(segment: string): {
   tag: string;
   id?: string;
   classes: string[];
 } {
-  const tagMatch = /^[a-zA-Z][a-zA-Z0-9-]*/.exec(segment);
-  if (!tagMatch) {
+  if (segment.length === 0) throw new Error("Empty tag segment");
+
+  let i = 0;
+  const first = segment[i];
+  const isTagStart =
+    (first >= "A" && first <= "Z") || (first >= "a" && first <= "z");
+  if (!isTagStart) {
     throw new Error(`Invalid tag segment: ${segment}`);
   }
-  const tag = tagMatch[0];
-  const rest = segment.slice(tag.length);
+  i++;
+  while (i < segment.length) {
+    const ch = segment[i];
+    const isTagChar =
+      (ch >= "A" && ch <= "Z") ||
+      (ch >= "a" && ch <= "z") ||
+      (ch >= "0" && ch <= "9") ||
+      ch === "-";
+    if (!isTagChar) break;
+    i++;
+  }
+  const tag = segment.slice(0, i);
+
   const classes: string[] = [];
   let id: string | undefined;
 
-  const re = /([.#])([a-zA-Z_][a-zA-Z0-9_-]*)/g;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(rest))) {
-    if (match[1] === ".") classes.push(match[2]);
-    else id = match[2];
+  while (i < segment.length) {
+    const ch = segment[i];
+    if (ch !== "." && ch !== "#") {
+      i++;
+      continue;
+    }
+    const kind = ch;
+    i++;
+    if (i >= segment.length || !isIdentStart(segment[i])) {
+      continue;
+    }
+    const start = i;
+    i++;
+    while (i < segment.length && isIdentChar(segment[i])) i++;
+    const value = segment.slice(start, i);
+    if (kind === ".") classes.push(value);
+    else id = value;
   }
+
   return { tag, id, classes };
 }
 
@@ -93,32 +168,41 @@ function splitLineText(line: string): { head: string; text: string | undefined }
   return { head: line.trim(), text: undefined };
 }
 
-function renderNode(node: TplNode): string {
-  const attrs: Record<string, string | true> = { ...node.attrs };
-  if (node.classes.size > 0) {
-    const existing = typeof attrs.class === "string" ? attrs.class : "";
-    const merged = new Set<string>([
-      ...existing.split(/\s+/).map((s) => s.trim()).filter(Boolean),
-      ...node.classes,
-    ]);
-    attrs.class = Array.from(merged).join(" ");
-  }
-  const attrStr = Object.entries(attrs)
-    .filter(([, v]) => v !== undefined)
-    .map(([k, v]) => (v === true ? ` ${k}` : ` ${k}="${escapeAttrValue(String(v))}"`))
-    .join("");
+function finalizeNode(node: TplNode): void {
+  const isVoid = VOID_TAGS.has(node.tag.toLowerCase());
+  node._isVoid = isVoid;
 
-  const open = `<${node.tag}${attrStr}>`;
-  if (VOID_TAGS.has(node.tag.toLowerCase())) {
-    return open;
+  let attrStr = "";
+  if (node.id) {
+    attrStr += ` id="${escapeAttrValue(node.id)}"`;
   }
-  const inner = node.children
-    .map((c) => (typeof c === "string" ? escapeText(c) : renderNode(c)))
-    .join("");
-  return `${open}${inner}</${node.tag}>`;
+  if (node.classes.size > 0) {
+    attrStr += ` class="${escapeAttrValue(Array.from(node.classes).join(" "))}"`;
+  }
+  for (const [k, v] of Object.entries(node.attrs)) {
+    if (v === true) attrStr += ` ${k}`;
+    else attrStr += ` ${k}="${escapeAttrValue(String(v))}"`;
+  }
+
+  node._open = `<${node.tag}${attrStr}>`;
+  node._close = isVoid ? "" : `</${node.tag}>`;
+
+  for (const child of node.children) {
+    if (typeof child !== "string") finalizeNode(child);
+  }
 }
 
-export function renderTemplateToHtml(tpl: string): string {
+function renderNode(node: TplNode): string {
+  const open = node._open ?? `<${node.tag}>`;
+  if (node._isVoid) return open;
+  let inner = "";
+  for (const child of node.children) {
+    inner += typeof child === "string" ? escapeText(child) : renderNode(child);
+  }
+  return `${open}${inner}${node._close ?? `</${node.tag}>`}`;
+}
+
+function compileTemplate(tpl: string): TplNode[] {
   const lines = tpl
     .split(/\r?\n/)
     .map((l) => l.trim())
@@ -130,31 +214,39 @@ export function renderTemplateToHtml(tpl: string): string {
   for (const line of lines) {
     const { head, text } = splitLineText(line);
 
-    // Extract attrs: { ... }
+    // Extract attrs: { ... } (fast path, no regex)
     let attrs: Record<string, string | true> = {};
     let headNoAttrs = head;
-    const attrMatch = /\{([\s\S]*)\}/.exec(head);
-    if (attrMatch) {
-      attrs = parseAttrs(attrMatch[1].trim());
-      headNoAttrs = head.replace(attrMatch[0], " ").trim();
+    const openBrace = head.indexOf("{");
+    if (openBrace !== -1) {
+      const closeBrace = head.lastIndexOf("}");
+      if (closeBrace > openBrace) {
+        attrs = parseAttrs(head.slice(openBrace + 1, closeBrace).trim());
+        headNoAttrs = (head.slice(0, openBrace) + " " + head.slice(closeBrace + 1)).trim();
+      }
     }
 
-    // Split path + optional trailing selectors
     const parts = headNoAttrs.split(/\s+/).filter(Boolean);
-    const pathStr = parts[0] ?? "";
+    const pathStr = parts[0];
     if (!pathStr) continue;
-    const trailingSelectors = parts.slice(1);
+    const trailingSelectors = parts.length > 1 ? parts.slice(1) : [];
 
     const segs = pathStr.split("/").filter(Boolean);
-    const tagOnlyPath = segs.map((s) => parseTagAndInlineSelectors(s).tag);
+    const parsedSegs = new Array<{ tag: string; id?: string; classes: string[] }>(segs.length);
+    const prefixKeys = new Array<string>(segs.length);
+    let keyAcc = "";
+    for (let i = 0; i < segs.length; i++) {
+      const parsed = parseTagAndInlineSelectors(segs[i]);
+      parsedSegs[i] = parsed;
+      keyAcc = keyAcc ? `${keyAcc}/${parsed.tag}` : parsed.tag;
+      prefixKeys[i] = keyAcc;
+    }
 
     // Reuse the longest existing prefix, but NEVER reuse the full path.
-    // This makes repeated leaf paths (e.g. `div/ul/li: ...`) append siblings.
-    const maxReuseLen = Math.max(0, tagOnlyPath.length - 1);
+    const maxReuseLen = Math.max(0, prefixKeys.length - 1);
     let reusePrefixLen = 0;
     for (let i = maxReuseLen; i >= 1; i--) {
-      const key = tagOnlyPath.slice(0, i).join("/");
-      if (pathToNode.has(key)) {
+      if (pathToNode.has(prefixKeys[i - 1])) {
         reusePrefixLen = i;
         break;
       }
@@ -162,60 +254,96 @@ export function renderTemplateToHtml(tpl: string): string {
 
     let current: TplNode | undefined;
     let startIndex = 0;
-    if (reusePrefixLen >= 2) {
-      const key = tagOnlyPath.slice(0, reusePrefixLen).join("/");
-      current = pathToNode.get(key);
+    if (reusePrefixLen >= 1) {
+      current = pathToNode.get(prefixKeys[reusePrefixLen - 1]);
       startIndex = reusePrefixLen;
     }
 
-    for (let i = startIndex; i < segs.length; i++) {
-      const parsed = parseTagAndInlineSelectors(segs[i]);
+    for (let i = startIndex; i < parsedSegs.length; i++) {
+      const parsed = parsedSegs[i];
       const node: TplNode = {
         tag: parsed.tag,
+        id: parsed.id,
         attrs: {},
         classes: new Set(parsed.classes),
         children: [],
       };
-      if (parsed.id) node.attrs.id = parsed.id;
 
-      if (!current) {
-        topLevel.push(node);
-      } else {
-        current.children.push(node);
-      }
+      if (!current) topLevel.push(node);
+      else current.children.push(node);
+
       current = node;
-
-      const key = tagOnlyPath.slice(0, i + 1).join("/");
-      pathToNode.set(key, node);
+      pathToNode.set(prefixKeys[i], node);
     }
 
     if (!current) continue;
 
-    // Apply trailing selectors to the final node
     for (const sel of trailingSelectors) {
       if (sel.startsWith(".")) current.classes.add(sel.slice(1));
-      else if (sel.startsWith("#")) current.attrs.id = sel.slice(1);
+      else if (sel.startsWith("#")) current.id = sel.slice(1);
     }
 
-    // Apply attrs (merge class/id when present)
     for (const [k, v] of Object.entries(attrs)) {
       if (k === "class" && typeof v === "string") {
-        v.split(/\s+/).map((s) => s.trim()).filter(Boolean).forEach((c) => current!.classes.add(c));
+        const pieces = v.split(/\s+/);
+        for (let i = 0; i < pieces.length; i++) {
+          const c = pieces[i].trim();
+          if (c) current.classes.add(c);
+        }
         continue;
       }
       if (k === "id" && typeof v === "string") {
-        current.attrs.id = v;
+        current.id = v;
         continue;
       }
       current.attrs[k] = v;
     }
 
-    if (text && text.length > 0) {
-      current.children.push(text);
-    }
+    if (text && text.length > 0) current.children.push(text);
   }
 
-  return topLevel.map(renderNode).join("\n");
+  for (const node of topLevel) finalizeNode(node);
+  return topLevel;
+}
+
+const MAX_CACHE_ENTRIES = 100;
+const compiledCache = new Map<string, TplNode[]>();
+const htmlCache = new Map<string, string>();
+
+function lruGet<V>(cache: Map<string, V>, key: string): V | undefined {
+  const value = cache.get(key);
+  if (value === undefined) return undefined;
+  cache.delete(key);
+  cache.set(key, value);
+  return value;
+}
+
+function lruSet<V>(cache: Map<string, V>, key: string, value: V): void {
+  if (cache.has(key)) cache.delete(key);
+  cache.set(key, value);
+  if (cache.size > MAX_CACHE_ENTRIES) {
+    const oldestKey = cache.keys().next().value as string | undefined;
+    if (oldestKey !== undefined) cache.delete(oldestKey);
+  }
+}
+
+export function clearTemplateCache(): void {
+  compiledCache.clear();
+  htmlCache.clear();
+}
+
+export function renderTemplateToHtml(tpl: string): string {
+  const cachedHtml = lruGet(htmlCache, tpl);
+  if (cachedHtml !== undefined) return cachedHtml;
+
+  let compiled = lruGet(compiledCache, tpl);
+  if (!compiled) {
+    compiled = compileTemplate(tpl);
+    lruSet(compiledCache, tpl, compiled);
+  }
+  const html = compiled.map(renderNode).join("\n");
+  lruSet(htmlCache, tpl, html);
+  return html;
 }
 
 export const templateHtml = renderTemplateToHtml(template);

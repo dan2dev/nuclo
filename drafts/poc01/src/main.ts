@@ -20,7 +20,6 @@ const root = document.getElementById("app");
 if (root) {
   console.time("rendering");
   for (let i = 0; i < 100000; i++) {
-
     renderTemplateToHtml(template);
   }
   console.timeEnd("rendering");
