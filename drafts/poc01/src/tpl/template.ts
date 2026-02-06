@@ -153,19 +153,207 @@ function parseTagAndInlineSelectors(segment: string): {
   return { tag, id, classes };
 }
 
-function splitLineText(line: string): { head: string; text: string | undefined } {
+type QuoteState = "\"" | "'" | null;
+
+function normalizeHeadWhitespace(head: string): string {
+  return head.replace(/\s+/g, " ").trim();
+}
+
+function normalizeTextBlock(text: string): string | undefined {
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  if (lines.length === 0) return undefined;
+  return lines.join("\n");
+}
+
+function scanForColonOutsideBraces(source: string): number {
   let depth = 0;
+  let quote: QuoteState = null;
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i];
+    if (quote) {
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "\"" || ch === "'") {
+      quote = ch;
+      continue;
+    }
+    if (ch === "{") depth++;
+    else if (ch === "}") depth = Math.max(0, depth - 1);
+    else if (ch === ":" && depth === 0) return i;
+  }
+  return -1;
+}
+
+function splitStatementHeadText(statement: string): {
+  head: string;
+  text: string | undefined;
+} {
+  const idx = scanForColonOutsideBraces(statement);
+  if (idx === -1) return { head: normalizeHeadWhitespace(statement), text: undefined };
+  const head = normalizeHeadWhitespace(statement.slice(0, idx));
+  const text = normalizeTextBlock(statement.slice(idx + 1));
+  return { head, text };
+}
+
+function extractFirstAttrBlock(head: string): {
+  headNoAttrs: string;
+  attrs: Record<string, string | true>;
+} {
+  let depth = 0;
+  let quote: QuoteState = null;
+  let start = -1;
+  let end = -1;
+
+  for (let i = 0; i < head.length; i++) {
+    const ch = head[i];
+    if (quote) {
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "\"" || ch === "'") {
+      quote = ch;
+      continue;
+    }
+    if (ch === "{") {
+      if (depth === 0 && start === -1) start = i;
+      depth++;
+      continue;
+    }
+    if (ch === "}") {
+      depth = Math.max(0, depth - 1);
+      if (depth === 0 && start !== -1) {
+        end = i;
+        break;
+      }
+    }
+  }
+
+  if (start === -1 || end === -1 || end <= start) {
+    return { headNoAttrs: normalizeHeadWhitespace(head), attrs: {} };
+  }
+
+  const attrsBody = head.slice(start + 1, end).trim();
+  const attrs = attrsBody.length > 0 ? parseAttrs(attrsBody) : {};
+  const headNoAttrs = normalizeHeadWhitespace(head.slice(0, start) + " " + head.slice(end + 1));
+  return { headNoAttrs, attrs };
+}
+
+function scanLineStructure(
+  line: string,
+  braceDepth: number,
+  quote: QuoteState,
+): { braceDepth: number; quote: QuoteState; opensTextBlock: boolean } {
+  let depth = braceDepth;
+  let q = quote;
+  let colonIndex = -1;
+
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
+    if (q) {
+      if (ch === q) q = null;
+      continue;
+    }
+    if (ch === "\"" || ch === "'") {
+      q = ch;
+      continue;
+    }
     if (ch === "{") depth++;
     else if (ch === "}") depth = Math.max(0, depth - 1);
     else if (ch === ":" && depth === 0) {
-      const head = line.slice(0, i).trim();
-      const text = line.slice(i + 1).trim();
-      return { head, text };
+      colonIndex = i;
+      break;
     }
   }
-  return { head: line.trim(), text: undefined };
+
+  const opensTextBlock =
+    colonIndex !== -1 && line.slice(colonIndex + 1).trim().length === 0;
+  return { braceDepth: depth, quote: q, opensTextBlock };
+}
+
+function looksLikeNewHeadStrong(line: string): boolean {
+  const trimmed = line.trim();
+  if (trimmed.length === 0) return false;
+
+  // Tokenize by whitespace; template head allows extra tokens only for .class / #id selectors.
+  const tokens = trimmed.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return false;
+  const pathToken = tokens[0];
+  if (/[="'`]/.test(pathToken)) return false;
+
+  for (let i = 1; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (!(t.startsWith(".") || t.startsWith("#") || t.startsWith("{"))) return false;
+  }
+
+  try {
+    const segs = pathToken.split("/").filter(Boolean);
+    if (segs.length === 0) return false;
+    for (const seg of segs) parseTagAndInlineSelectors(seg);
+  } catch {
+    return false;
+  }
+
+  // Avoid ambiguous single-token lines (e.g. "Visit") while in text blocks.
+  const isStrong =
+    pathToken.includes("/") ||
+    pathToken.includes(".") ||
+    pathToken.includes("#") ||
+    trimmed.includes("{") ||
+    trimmed.includes(":") ||
+    tokens.length > 1;
+  return isStrong;
+}
+
+function toTemplateStatements(tpl: string): string[] {
+  const rawLines = tpl.split(/\r?\n/);
+  const statements: string[] = [];
+
+  let buf: string[] = [];
+  let braceDepth = 0;
+  let quote: QuoteState = null;
+  let inTextBlock = false;
+
+  for (const rawLine of rawLines) {
+    const line = rawLine;
+    const isBlank = line.trim().length === 0;
+
+    if (buf.length === 0) {
+      if (isBlank) continue;
+      buf.push(line);
+    } else {
+      if (inTextBlock && braceDepth === 0 && !isBlank && looksLikeNewHeadStrong(line)) {
+        statements.push(buf.join("\n").trim());
+        buf = [line];
+        braceDepth = 0;
+        quote = null;
+        inTextBlock = false;
+      } else {
+        buf.push(line);
+      }
+    }
+
+    if (!inTextBlock) {
+      const scan = scanLineStructure(line, braceDepth, quote);
+      braceDepth = scan.braceDepth;
+      quote = scan.quote;
+      if (scan.opensTextBlock) inTextBlock = true;
+    }
+
+    if (!inTextBlock && braceDepth === 0 && buf.length > 0) {
+      statements.push(buf.join("\n").trim());
+      buf = [];
+      braceDepth = 0;
+      quote = null;
+      inTextBlock = false;
+    }
+  }
+
+  if (buf.length > 0) statements.push(buf.join("\n").trim());
+  return statements.filter((s) => s.length > 0);
 }
 
 function finalizeNode(node: TplNode): void {
@@ -203,28 +391,17 @@ function renderNode(node: TplNode): string {
 }
 
 function compileTemplate(tpl: string): TplNode[] {
-  const lines = tpl
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
+  const statements = toTemplateStatements(tpl);
 
   const topLevel: TplNode[] = [];
   const pathToNode = new Map<string, TplNode>();
 
-  for (const line of lines) {
-    const { head, text } = splitLineText(line);
+  for (const statement of statements) {
+    const { head, text } = splitStatementHeadText(statement);
 
-    // Extract attrs: { ... } (fast path, no regex)
-    let attrs: Record<string, string | true> = {};
-    let headNoAttrs = head;
-    const openBrace = head.indexOf("{");
-    if (openBrace !== -1) {
-      const closeBrace = head.lastIndexOf("}");
-      if (closeBrace > openBrace) {
-        attrs = parseAttrs(head.slice(openBrace + 1, closeBrace).trim());
-        headNoAttrs = (head.slice(0, openBrace) + " " + head.slice(closeBrace + 1)).trim();
-      }
-    }
+    const extracted = extractFirstAttrBlock(head);
+    const attrs = extracted.attrs;
+    const headNoAttrs = extracted.headNoAttrs;
 
     const parts = headNoAttrs.split(/\s+/).filter(Boolean);
     const pathStr = parts[0];
