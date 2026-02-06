@@ -1,31 +1,44 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+	font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+	line-height: 1.5;
+	font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+	color-scheme: light dark;
+	color: rgba(255, 255, 255, 0.87);
+	background-color: #242424;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 * {
-  outline: 1px solid #FF0000;
-  position: relative;
+	outline: 1px solid #ff0000;
+	position: relative;
 }
 
 div {
-  padding: 8px;
-  &:after {
-    content: "(div)";
-    font-size: 10px;
-    opacity: 0.5;
-    position: absolute;
-    bottom: 1px;
-    right: 1px;
-    background-color: #242424;
-  }
+	padding: 8px;
+	&:after {
+		content: "(div)";
+		font-size: 10px;
+		opacity: 0.5;
+		position: absolute;
+		bottom: 1px;
+		right: 1px;
+		background-color: #242424;
+	}
+}
+
+#app1 {
+	background-color: #d8d1e2;
+}
+#app2 {
+	background-color: #cbc0e2;
+}
+#app3 {
+	background-color: #b0cedc;
+}
+#app4 {
+	background-color: #afc2e4;
 }
