@@ -12,7 +12,7 @@ importers:
         specifier: ^0.14.1
         version: 0.14.1
       '@eslint/js':
-        specifier: ^9.0.0
+        specifier: ^9.39.2
         version: 9.39.2
       '@eslint/json':
         specifier: ^1.0.0
@@ -33,7 +33,7 @@ importers:
         specifier: 4.0.18
         version: 4.0.18(vitest@4.0.18(@types/node@25.2.3)(jiti@2.6.0)(jsdom@28.0.0)(lightningcss@1.30.1)(terser@5.46.0))
       eslint:
-        specifier: ^9.0.0
+        specifier: ^9.39.2
         version: 9.39.2(jiti@2.6.0)
       globals:
         specifier: ^17.3.0
