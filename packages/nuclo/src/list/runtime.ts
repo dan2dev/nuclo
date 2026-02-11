@@ -71,7 +71,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
     }
   }
 
-  const newRecords: Array<ListItemRecord<TItem, TTagName>> = [];
+  const newRecords: Array<ListItemRecord<TItem, TTagName> | null> = new Array(currentItems.length);
   const elementsToRemove = new Set<ListItemRecord<TItem, TTagName>>(runtime.records);
   let nextSibling: Node = endMarker;
 
@@ -93,11 +93,14 @@ export function sync<TItem, TTagName extends ElementTagName>(
       elementsToRemove.delete(record);
     } else {
       const element = renderItem(runtime, item, i);
-      if (!element) continue;
+      if (!element) {
+        newRecords[i] = null;
+        continue;
+      }
       record = { item, element };
     }
 
-    newRecords.unshift(record);
+    newRecords[i] = record;
 
     const recordNode = record.element as unknown as Node;
     if (recordNode.nextSibling !== nextSibling) {
@@ -110,8 +113,8 @@ export function sync<TItem, TTagName extends ElementTagName>(
     remove(record);
   }
 
-  runtime.records = newRecords;
-  runtime.lastSyncedItems = [...currentItems];
+  runtime.records = newRecords.filter(Boolean) as Array<ListItemRecord<TItem, TTagName>>;
+  runtime.lastSyncedItems = currentItems.slice();
   
   // If list is now empty, explicitly clear the records array to help GC
   if (newRecords.length === 0) {

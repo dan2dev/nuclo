@@ -2,4 +2,4 @@ onlyBuiltDependencies:
   - esbuild
 
 overrides:
-  nuclo: link:../../../../../Library/pnpm/global/5/node_modules/nuclo
+  nuclo: link:../../../../../.local/share/pnpm/global/5/node_modules/nuclo
