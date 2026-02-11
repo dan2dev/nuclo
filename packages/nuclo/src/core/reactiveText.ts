@@ -1,7 +1,7 @@
 import { logError } from "../utility/errorHandler";
 import { isNodeConnected, createTextNode } from "../utility/dom";
 import type { UpdateScope } from "./updateScope";
-import { reactiveTextNodes } from "./reactiveCleanup";
+import { reactiveTextNodes, reactiveTextNodesByNode, registerReactiveTextNode, removeReactiveTextNodeRef } from "./reactiveCleanup";
 
 type TextResolver = () => Primitive;
 
@@ -56,7 +56,7 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
     throw new Error("Failed to create text node: document not available");
   }
 
-  reactiveTextNodes.set(new WeakRef(txt), { resolver, lastValue: str });
+  registerReactiveTextNode(txt, { resolver, lastValue: str });
   return txt;
 }
 
@@ -81,12 +81,12 @@ export function notifyReactiveTextNodes(scope?: UpdateScope): void {
   for (const [ref, info] of reactiveTextNodes) {
     const node = ref.deref();
     if (node === undefined) {
-      // Text node was garbage collected
       toDelete.push(ref);
       continue;
     }
 
     if (!isNodeConnected(node)) {
+      reactiveTextNodesByNode.delete(node);
       toDelete.push(ref);
       continue;
     }
@@ -108,30 +108,7 @@ export function notifyReactiveTextNodes(scope?: UpdateScope): void {
     }
   }
 
-  // Clean up dead references
   for (const ref of toDelete) {
-    reactiveTextNodes.delete(ref);
-  }
-  
-  // Force cleanup of any remaining dead WeakRefs (for memory optimization)
-  if (toDelete.length > 0) {
-    cleanupDeadWeakRefs();
-  }
-}
-
-/**
- * Aggressively clean up any WeakRefs that point to garbage collected text nodes.
- */
-function cleanupDeadWeakRefs(): void {
-  const toDelete: WeakRef<Text>[] = [];
-
-  for (const [ref] of reactiveTextNodes) {
-    if (ref.deref() === undefined) {
-      toDelete.push(ref);
-    }
-  }
-
-  for (const ref of toDelete) {
-    reactiveTextNodes.delete(ref);
+    removeReactiveTextNodeRef(ref);
   }
 }
