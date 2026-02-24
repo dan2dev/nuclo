@@ -27,9 +27,9 @@ install:
 	cd ../../docs-source && pnpm install
 
 up:
-	cd packages/nuclo && pnpm up && \
-	cd ../../examples/basic && pnpm up && \
-	cd ../../docs-source && pnpm up
+	cd packages/nuclo && pnpm up --latest && \
+	cd ../../examples/basic && pnpm up --latest && \
+	cd ../../docs-source && pnpm up --latest
 
 dev:
 	@echo "Starting all dev servers in parallel..."
