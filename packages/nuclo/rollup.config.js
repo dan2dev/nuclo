@@ -43,7 +43,7 @@ const mainConfig = {
       sourcemap: true,
     },
   ],
-  plugins: [typescript(), terser(terserOptions)],
+  plugins: [typescript({ filterRoot: '.' }), terser(terserOptions)],
 };
 
 // SSR bundle configuration
@@ -63,6 +63,7 @@ const ssrConfig = {
   ],
   plugins: [
     typescript({
+      filterRoot: '.',
       declaration: false,
       declarationDir: undefined,
       declarationMap: false,
