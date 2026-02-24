@@ -153,6 +153,58 @@ function parseTagAndInlineSelectors(segment: string): {
   return { tag, id, classes };
 }
 
+function splitPathToken(pathToken: string): string[] {
+  const segments: string[] = [];
+  let buf = "";
+  let inSelector = false;
+
+  for (let i = 0; i < pathToken.length; i++) {
+    const ch = pathToken[i];
+    if (ch === "/" || (ch === "_" && !inSelector)) {
+      if (buf.length > 0) segments.push(buf);
+      buf = "";
+      inSelector = false;
+      continue;
+    }
+    if (ch === "." || ch === "#") inSelector = true;
+    buf += ch;
+  }
+
+  if (buf.length > 0) segments.push(buf);
+  return segments;
+}
+
+function tokenizeHead(head: string): string[] {
+  const tokens: string[] = [];
+  let buf = "";
+  let quote: QuoteState = null;
+
+  for (let i = 0; i < head.length; i++) {
+    const ch = head[i];
+    if (quote) {
+      if (ch === quote) quote = null;
+      buf += ch;
+      continue;
+    }
+    if (ch === "\"" || ch === "'") {
+      quote = ch;
+      buf += ch;
+      continue;
+    }
+    if (ch.trim().length === 0) {
+      if (buf.length > 0) {
+        tokens.push(buf);
+        buf = "";
+      }
+      continue;
+    }
+    buf += ch;
+  }
+
+  if (buf.length > 0) tokens.push(buf);
+  return tokens;
+}
+
 type QuoteState = "\"" | "'" | null;
 
 function normalizeHeadWhitespace(head: string): string {
@@ -279,18 +331,34 @@ function looksLikeNewHeadStrong(line: string): boolean {
   if (trimmed.length === 0) return false;
 
   // Tokenize by whitespace; template head allows extra tokens only for .class / #id selectors.
-  const tokens = trimmed.split(/\s+/).filter(Boolean);
+  const tokens = tokenizeHead(trimmed);
   if (tokens.length === 0) return false;
   const pathToken = tokens[0];
   if (/[="'`]/.test(pathToken)) return false;
 
+  let hasSelector = false;
+  let hasAttr = false;
+  let hasBareAttr = false;
+
   for (let i = 1; i < tokens.length; i++) {
     const t = tokens[i];
-    if (!(t.startsWith(".") || t.startsWith("#") || t.startsWith("{"))) return false;
+    if (t.startsWith(".") || t.startsWith("#") || t.startsWith("{")) {
+      hasSelector = true;
+      continue;
+    }
+    if (t.includes("=")) {
+      hasAttr = true;
+      continue;
+    }
+    if (/^[A-Za-z][A-Za-z0-9:_-]*$/.test(t)) {
+      hasBareAttr = true;
+      continue;
+    }
+    return false;
   }
 
   try {
-    const segs = pathToken.split("/").filter(Boolean);
+    const segs = splitPathToken(pathToken).filter(Boolean);
     if (segs.length === 0) return false;
     for (const seg of segs) parseTagAndInlineSelectors(seg);
   } catch {
@@ -298,13 +366,17 @@ function looksLikeNewHeadStrong(line: string): boolean {
   }
 
   // Avoid ambiguous single-token lines (e.g. "Visit") while in text blocks.
+  if (hasBareAttr && !hasAttr && !hasSelector) return false;
+
   const isStrong =
     pathToken.includes("/") ||
+    pathToken.includes("_") ||
     pathToken.includes(".") ||
     pathToken.includes("#") ||
     trimmed.includes("{") ||
     trimmed.includes(":") ||
-    tokens.length > 1;
+    hasAttr ||
+    hasSelector;
   return isStrong;
 }
 
@@ -400,15 +472,23 @@ function compileTemplate(tpl: string): TplNode[] {
     const { head, text } = splitStatementHeadText(statement);
 
     const extracted = extractFirstAttrBlock(head);
-    const attrs = extracted.attrs;
+    const attrsFromBlock = extracted.attrs;
     const headNoAttrs = extracted.headNoAttrs;
 
-    const parts = headNoAttrs.split(/\s+/).filter(Boolean);
+    const parts = tokenizeHead(headNoAttrs);
     const pathStr = parts[0];
     if (!pathStr) continue;
-    const trailingSelectors = parts.length > 1 ? parts.slice(1) : [];
+    const trailingSelectors: string[] = [];
+    const inlineAttrParts: string[] = [];
+    for (let i = 1; i < parts.length; i++) {
+      const token = parts[i];
+      if (token.startsWith(".") || token.startsWith("#")) trailingSelectors.push(token);
+      else inlineAttrParts.push(token);
+    }
+    const inlineAttrs = inlineAttrParts.length > 0 ? parseAttrs(inlineAttrParts.join(" ")) : {};
+    const attrs = { ...attrsFromBlock, ...inlineAttrs };
 
-    const segs = pathStr.split("/").filter(Boolean);
+    const segs = splitPathToken(pathStr).filter(Boolean);
     const parsedSegs = new Array<{ tag: string; id?: string; classes: string[] }>(segs.length);
     const prefixKeys = new Array<string>(segs.length);
     let keyAcc = "";
