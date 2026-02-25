@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "bun run src/server.ts",
 		"build": "tsc && vite build",
-		"preview": "pnpm build && pnpm start",
+		"preview": "bun run build && bun run start",
 		"start": "NODE_ENV=production bun run src/server.ts"
 	},
 	"devDependencies": {
