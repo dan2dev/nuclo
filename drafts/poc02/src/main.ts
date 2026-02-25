@@ -1,24 +1,21 @@
 import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+import { renderPage } from './render.ts'
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+const url = window.location.href
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+const params = Object.fromEntries(
+  new URLSearchParams(window.location.search).entries()
+)
+
+const cookies = Object.fromEntries(
+  (document.cookie || '')
+    .split(';')
+    .map(c => c.trim())
+    .filter(Boolean)
+    .map(c => {
+      const [k, ...rest] = c.split('=')
+      return [k.trim(), decodeURIComponent(rest.join('='))]
+    })
+)
+
+document.querySelector<HTMLDivElement>('#app')!.innerHTML = renderPage(url, params, cookies)
