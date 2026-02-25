@@ -2,6 +2,7 @@ packages:
   - packages/*
   - docs-source
   - examples/*
+  - drafts/*
 
 onlyBuiltDependencies:
   - esbuild
