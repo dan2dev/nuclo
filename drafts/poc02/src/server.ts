@@ -39,6 +39,32 @@ function apiRoutes(pathname: string): Response | null {
 	return null;
 }
 
+// --- Unified app handler ---
+//
+// All business logic lives here, written with Web-standard Request/Response.
+// `transformHtml` injects environment-specific assets into the template:
+//   - dev:  server.transformIndexHtml() — Vite injects HMR client + transforms imports
+//   - prod: simple string replace with hashed asset paths from the manifest
+
+async function appFetch(
+	req: Request,
+	transformHtml: (template: string, url: string) => Promise<string>,
+): Promise<Response> {
+	const url = new URL(req.url);
+
+	const apiRes = apiRoutes(url.pathname);
+	if (apiRes) return apiRes;
+
+	const params = Object.fromEntries(url.searchParams);
+	const cookies = parseCookies(req.headers.get("cookie") ?? "");
+	const html = (await transformHtml(htmlTemplate, url.pathname)).replace(
+		"{{html}}",
+		renderPage(req.url, params, cookies),
+	);
+
+	return new Response(html, { headers: { "Content-Type": "text/html" } });
+}
+
 // --- Production ---
 
 if (isProd) {
@@ -54,26 +80,20 @@ if (isProd) {
 	const cssLinks = (entry.css ?? []).map((css) => `<link rel="stylesheet" href="/${css}" />`).join("\n    ");
 	const prodAssets = `${cssLinks}\n    <script type="module" src="/${entry.file}"></script>`;
 
+	const transformHtml = async (html: string) =>
+		html.replace('<script type="module" src="/src/main.ts"></script>', prodAssets);
+
 	Bun.serve({
 		port,
 		async fetch(req) {
-			const url = new URL(req.url);
+			const { pathname } = new URL(req.url);
 
-			const apiRes = apiRoutes(url.pathname);
-			if (apiRes) return apiRes;
-
-			if (url.pathname !== "/" && url.pathname !== "/index.html") {
-				const file = Bun.file(`dist${url.pathname}`);
+			if (pathname !== "/" && pathname !== "/index.html") {
+				const file = Bun.file(`dist${pathname}`);
 				if (await file.exists()) return new Response(file);
 			}
 
-			const params = Object.fromEntries(url.searchParams);
-			const cookies = parseCookies(req.headers.get("cookie") ?? "");
-			const html = htmlTemplate
-				.replace("{{html}}", renderPage(req.url, params, cookies))
-				.replace('<script type="module" src="/src/main.ts"></script>', prodAssets);
-
-			return new Response(html, { headers: { "Content-Type": "text/html" } });
+			return appFetch(req, transformHtml);
 		},
 	});
 
@@ -92,30 +112,29 @@ else {
 			{
 				name: "dev-server",
 				configureServer(server) {
-					return () => {
-						server.middlewares.use(async (req, res, next) => {
-							const url = new URL(req.url ?? "/", `http://localhost:${port}`);
-
-							const apiRes = apiRoutes(url.pathname);
-							if (apiRes) {
-								res.writeHead(apiRes.status, { "Content-Type": apiRes.headers.get("Content-Type") ?? "" });
-								res.end(await apiRes.text());
-								return;
-							}
-
+					// Returning a function makes this middleware run AFTER Vite's internal
+					// handlers (transform, HMR, static assets), so only unhandled requests
+					// (page navigations) reach our handler.
+					return () =>
+						server.middlewares.use(async (nodeReq, nodeRes, next) => {
 							try {
-								const params = Object.fromEntries(url.searchParams);
-								const cookies = parseCookies(req.headers["cookie"] ?? "");
-								let html = await server.transformIndexHtml(req.url ?? "/", htmlTemplate);
-								html = html.replace("{{html}}", renderPage(url.href, params, cookies));
-								res.writeHead(200, { "Content-Type": "text/html" });
-								res.end(html);
+								const origin = `http://${nodeReq.headers.host ?? `localhost:${port}`}`;
+								const req = new Request(`${origin}${nodeReq.url ?? "/"}`, {
+									method: nodeReq.method,
+									headers: nodeReq.headers as HeadersInit,
+								});
+
+								const res = await appFetch(req, (html, url) =>
+									server.transformIndexHtml(url, html),
+								);
+
+								nodeRes.writeHead(res.status, Object.fromEntries(res.headers.entries()));
+								nodeRes.end(await res.text());
 							} catch (e) {
 								if (e instanceof Error) server.ssrFixStacktrace(e);
 								next(e);
 							}
 						});
-					};
 				},
 			},
 		],
