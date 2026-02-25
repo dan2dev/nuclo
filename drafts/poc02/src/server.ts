@@ -1,3 +1,5 @@
+import { renderPage } from "./render.ts";
+
 const isProd = process.env.NODE_ENV === "production";
 const port = Number(process.env.PORT ?? 5173);
 
@@ -28,13 +30,9 @@ if (isProd) {
 		console.error("Error: dist/.vite/manifest.json not found. Run 'pnpm run build' first.");
 		process.exit(1);
 	}
-	const manifest: Record<string, { file: string; css?: string[] }> = JSON.parse(
-		await manifestFile.text(),
-	);
+	const manifest: Record<string, { file: string; css?: string[] }> = JSON.parse(await manifestFile.text());
 	const entry = manifest["src/main.ts"];
-	const cssLinks = (entry.css ?? [])
-		.map((css) => `<link rel="stylesheet" href="/${css}" />`)
-		.join("\n    ");
+	const cssLinks = (entry.css ?? []).map((css) => `<link rel="stylesheet" href="/${css}" />`).join("\n    ");
 
 	Bun.serve({
 		port,
@@ -51,8 +49,21 @@ if (isProd) {
 			}
 
 			// Render HTML from server.ts template with production assets injected
+			const { pathname: _pathname, searchParams } = new URL(req.url);
+			const params = Object.fromEntries(searchParams.entries());
+			const cookieHeader = req.headers.get("cookie") ?? "";
+			const cookies = Object.fromEntries(
+				cookieHeader
+					.split(";")
+					.map((c) => c.trim())
+					.filter(Boolean)
+					.map((c) => {
+						const [key, ...rest] = c.split("=");
+						return [key.trim(), decodeURIComponent(rest.join("="))];
+					}),
+			);
 			const html = htmlTemplate
-				.replace("{{html}}", "this is the content")
+				.replace("{{html}}", renderPage(req.url, params, cookies))
 				.replace(
 					'<script type="module" src="/src/main.ts"></script>',
 					`${cssLinks}\n    <script type="module" src="/${entry.file}"></script>`,
@@ -73,7 +84,58 @@ if (isProd) {
 		appType: "custom",
 	});
 
-	const server = createHttpServer((req, res) => {
+	const server = createHttpServer(async (req, res) => {
+		// --- Cookies ---
+		// Cookies are in the "cookie" header as a semicolon-separated string
+		// e.g. "name=value; other=val"
+		const cookieHeader = req.headers["cookie"] ?? "";
+		const cookies = Object.fromEntries(
+			cookieHeader
+				.split(";")
+				.map((c) => c.trim())
+				.filter(Boolean)
+				.map((c) => {
+					const [key, ...rest] = c.split("=");
+					return [key.trim(), decodeURIComponent(rest.join("="))];
+				}),
+		);
+		console.log("cookies:", cookies);
+
+		// --- Query params ---
+		// Parse from the URL (e.g. /path?foo=bar&baz=qux)
+		const parsedUrl = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+		const params = Object.fromEntries(parsedUrl.searchParams.entries());
+		console.log("query params:", params);
+
+		// --- Form data (POST body) ---
+		// For application/x-www-form-urlencoded or application/json bodies
+		const contentType = req.headers["content-type"] ?? "";
+		const getBody = (): Promise<Record<string, unknown>> =>
+			new Promise((resolve, reject) => {
+				let body = "";
+				req.on("data", (chunk) => {
+					body += chunk;
+				});
+				req.on("end", () => {
+					try {
+						if (contentType.includes("application/json")) {
+							resolve(JSON.parse(body));
+						} else if (contentType.includes("application/x-www-form-urlencoded")) {
+							resolve(Object.fromEntries(new URLSearchParams(body).entries()));
+						} else {
+							resolve({ raw: body });
+						}
+					} catch (e) {
+						reject(e);
+					}
+				});
+				req.on("error", reject);
+			});
+
+		if (req.method === "POST") {
+			const formData = await getBody();
+			console.log("form/body data:", formData);
+		}
 		const url = req.url ?? "/";
 
 		const apiRes = apiRoutes(url);
@@ -88,7 +150,7 @@ if (isProd) {
 		vite.middlewares(req, res, async () => {
 			try {
 				let html = await vite.transformIndexHtml(url, htmlTemplate);
-				html = html.replace("{{html}}", "this is the content");
+				html = html.replace("{{html}}", renderPage(parsedUrl.href, params, cookies));
 				res.writeHead(200, { "Content-Type": "text/html" });
 				res.end(html);
 			} catch (e) {
