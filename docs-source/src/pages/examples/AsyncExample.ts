@@ -10,9 +10,10 @@ type State = {
   status: "idle" | "loading" | "success" | "error";
   products: Product[];
   error?: string;
+  inputFocused: boolean;
 };
 
-let state: State = { status: "idle", products: [] };
+let state: State = { status: "idle", products: [], inputFocused: false };
 let searchQuery = "phone";
 
 // Styles
@@ -45,13 +46,19 @@ const btnStyle = cn(
     .fontSize("14px")
     .fontWeight("600")
     .cursor("pointer")
-    .transition("all 0.2s")
+    .transition("all 0.2s"),
+  { hover: backgroundColor(colors.primaryHover) }
 );
 
 const btnDisabledStyle = {
   backgroundColor: colors.bgLight,
   color: colors.textDim,
   cursor: "not-allowed",
+};
+const btnEnabledStyle = {
+  backgroundColor: colors.primary,
+  color: colors.bg,
+  cursor: "pointer",
 };
 
 const productGridStyle = cn(
@@ -64,7 +71,8 @@ const productCardStyle = cn(
   padding("16px")
     .backgroundColor(colors.bgLight)
     .borderRadius("10px")
-    .transition("all 0.2s")
+    .transition("all 0.2s"),
+  { hover: backgroundColor(colors.bgCard) }
 );
 
 const loadingStyle = cn(
@@ -122,6 +130,7 @@ function LiveAsync() {
           placeholder: "Search products...",
           value: () => searchQuery,
           disabled: () => state.status === "loading",
+          style: () => ({ borderColor: state.inputFocused ? colors.primary : colors.border }),
         },
         on("input", (e) => {
           searchQuery = (e.target as HTMLInputElement).value;
@@ -130,31 +139,23 @@ function LiveAsync() {
         on("keydown", (e) => {
           if (e.key === "Enter") fetchProducts();
         }),
-        on("focus", (e) => {
-          (e.target as HTMLElement).style.borderColor = colors.primary;
+        on("focus", () => {
+          state.inputFocused = true;
+          update();
         }),
-        on("blur", (e) => {
-          (e.target as HTMLElement).style.borderColor = colors.border;
+        on("blur", () => {
+          state.inputFocused = false;
+          update();
         })
       ),
       button(
         btnStyle,
         {
           disabled: () => state.status === "loading" || !searchQuery.trim(),
-          style: () => state.status === "loading" || !searchQuery.trim() ? btnDisabledStyle : {},
+          style: () => state.status === "loading" || !searchQuery.trim() ? btnDisabledStyle : btnEnabledStyle,
         },
         () => state.status === "loading" ? "Searching..." : "Search",
-        on("click", fetchProducts),
-        on("mouseenter", (e) => {
-          if (state.status !== "loading" && searchQuery.trim()) {
-            (e.target as HTMLElement).style.backgroundColor = colors.primaryHover;
-          }
-        }),
-        on("mouseleave", (e) => {
-          if (state.status !== "loading" && searchQuery.trim()) {
-            (e.target as HTMLElement).style.backgroundColor = colors.primary;
-          }
-        })
+        on("click", fetchProducts)
       )
     ),
     when(
@@ -190,12 +191,6 @@ function LiveAsync() {
           list(() => state.products, product =>
             div(
               productCardStyle,
-              on("mouseenter", (e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = colors.bgCard;
-              }),
-              on("mouseleave", (e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = colors.bgLight;
-              }),
               h4(cn(fontSize("14px").fontWeight("600").color(colors.text).marginBottom("6px")), product.title),
               p(cn(fontSize("12px").color(colors.textDim).margin("0 0 8px 0")), product.category),
               p(cn(fontSize("16px").fontWeight("700").color(colors.primary).margin("0")), `$${product.price.toFixed(2)}`)

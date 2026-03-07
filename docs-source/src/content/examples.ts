@@ -513,9 +513,10 @@ type State = {
   status: 'idle' | 'loading' | 'success' | 'error';
   products: Product[];
   error?: string;
+  inputFocused: boolean;
 };
 
-let state: State = { status: 'idle', products: [] };
+let state: State = { status: 'idle', products: [], inputFocused: false };
 let searchQuery = 'phone';
 
 async function fetchProducts() {
@@ -535,11 +536,11 @@ async function fetchProducts() {
     }
 
     const data = await response.json();
-    state.products = data.products;
+    state.products = data.products.slice(0, 6);
     state.status = 'success';
   } catch (err) {
     state.status = 'error';
-    state.error = err.message;
+    state.error = (err as Error).message;
   }
 
   update();
@@ -558,15 +559,18 @@ const app = div(
         type: 'search',
         placeholder: 'Search products...',
         value: () => searchQuery,
-        disabled: () => state.status === 'loading'
+        disabled: () => state.status === 'loading',
+        style: () => ({ borderColor: state.inputFocused ? '#6366f1' : undefined })
       },
       on('input', e => {
-        searchQuery = e.target.value;
+        searchQuery = (e.target as HTMLInputElement).value;
         update();
       }),
       on('keydown', e => {
         if (e.key === 'Enter') fetchProducts();
-      })
+      }),
+      on('focus', () => { state.inputFocused = true; update(); }),
+      on('blur', () => { state.inputFocused = false; update(); })
     ),
     button(
       {
@@ -583,8 +587,7 @@ const app = div(
   ).when(() => state.status === 'error',
     div(
       { className: 'error' },
-      'Error: ',
-      () => state.error,
+      span(() => \`Error: \${state.error}\`),
       button('Retry', on('click', fetchProducts))
     )
   ).when(() => state.status === 'success' && state.products.length > 0,
@@ -595,7 +598,7 @@ const app = div(
         list(() => state.products, product =>
           div(
             { className: 'product-card' },
-            h3(product.title),
+            h4(product.title),
             p({ className: 'category' }, product.category),
             p({ className: 'price' }, () => \`$\${product.price.toFixed(2)}\`)
           )
