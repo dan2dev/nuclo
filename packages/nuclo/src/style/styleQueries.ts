@@ -65,6 +65,25 @@ export type CSSPseudoClass =
 	| 'user-invalid'
 	| 'user-valid';
 
+export type StyleQueryDefinitions =
+	| Record<string, string>
+	| ReadonlyArray<readonly [string, string]>;
+
+export type InferStyleQueryKeys<TDefinitions extends StyleQueryDefinitions> =
+	TDefinitions extends ReadonlyArray<infer TEntry>
+		? TEntry extends readonly [infer TKey extends string, string]
+			? TKey
+			: never
+		: keyof TDefinitions & string;
+
+export type StyleQueryStyles<TDefinitions extends StyleQueryDefinitions> =
+	Partial<Record<InferStyleQueryKeys<TDefinitions> | CSSPseudoClass, StyleBuilder>>;
+
+export interface StyleQueryBuilder<TDefinitions extends StyleQueryDefinitions> {
+	(defaultStyles: StyleBuilder, queryStyles?: StyleQueryStyles<TDefinitions>): { className: string };
+	(queryStyles?: StyleQueryStyles<TDefinitions>): { className: string };
+}
+
 // Map pseudo-class names to their CSS selector strings
 const PSEUDO_CLASS_MAP: Record<CSSPseudoClass, string> = {
 	'hover': ':hover',
@@ -129,9 +148,6 @@ const PSEUDO_CLASS_MAP: Record<CSSPseudoClass, string> = {
 	'user-valid': ':user-valid',
 };
 
-// Style queries type - includes both user queries and built-in pseudo-classes
-type QueryStyles<T extends string> = Partial<Record<T | CSSPseudoClass, StyleBuilder>>;
-
 // Supported CSS at-rules
 type AtRuleType = 'media' | 'container' | 'supports' | 'style' | 'pseudo';
 
@@ -189,19 +205,19 @@ const parsedQueryCache = new Map<string, QueryResult>();
 
 // Create style queries function
 // Accepts either Record (for backward compatibility) or Array of [name, query] tuples (for explicit order)
-export function createStyleQueries<T extends string>(
-	queries: Record<T, string> | Array<[T, string]>
-): {
-	(defaultStyles: StyleBuilder, queryStyles?: QueryStyles<T | CSSPseudoClass>): { className: string };
-	(queryStyles?: QueryStyles<T | CSSPseudoClass>): { className: string };
-} {
+export function createStyleQueries<const TDefinitions extends StyleQueryDefinitions>(
+	queries: TDefinitions
+): StyleQueryBuilder<TDefinitions> {
+	type QueryKey = InferStyleQueryKeys<TDefinitions>;
+	type QueryStyles = StyleQueryStyles<TDefinitions>;
+
 	// Convert to array format to preserve order
-	const queriesArray: Array<[T, string]> = Array.isArray(queries)
-		? queries
-		: (Object.entries(queries) as Array<[T, string]>);
+	const queriesArray: Array<readonly [QueryKey, string]> = Array.isArray(queries)
+		? [...queries] as Array<readonly [QueryKey, string]>
+		: (Object.entries(queries) as unknown as Array<readonly [QueryKey, string]>);
 	
 	// Pre-parse and cache all queries
-	const parsedQueries = new Map<T, QueryResult>();
+	const parsedQueries = new Map<QueryKey, QueryResult>();
 	for (const [queryName, queryValue] of queriesArray) {
 		let parsed = parsedQueryCache.get(queryValue);
 		if (!parsed) {
@@ -212,11 +228,11 @@ export function createStyleQueries<T extends string>(
 	}
 
 	return function cn(
-		defaultStylesOrQueries?: StyleBuilder | QueryStyles<T | CSSPseudoClass>,
-		queryStyles?: QueryStyles<T | CSSPseudoClass>
+		defaultStylesOrQueries?: StyleBuilder | QueryStyles,
+		queryStyles?: QueryStyles
 	): { className: string } {
 		let defaultStyles: StyleBuilder | undefined;
-		let styles: QueryStyles<T | CSSPseudoClass> | undefined;
+		let styles: QueryStyles | undefined;
 
 		// Handle both signatures:
 		// 1. cn({ medium: width("50%") }) - single argument with queries
@@ -232,7 +248,7 @@ export function createStyleQueries<T extends string>(
 			} else {
 				// Single argument with queries
 				defaultStyles = undefined;
-				styles = defaultStylesOrQueries as QueryStyles<T | CSSPseudoClass>;
+				styles = defaultStylesOrQueries as QueryStyles;
 			}
 
 			const hasStyles = styles != null && Object.keys(styles).length > 0;
@@ -339,4 +355,4 @@ export function createStyleQueries<T extends string>(
 	}
 
 // Backward compatibility: alias for createStyleQueries
-export const createBreakpoints = createStyleQueries;
+export const createBreakpoints: typeof createStyleQueries = createStyleQueries;

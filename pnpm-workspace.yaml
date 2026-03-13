@@ -8,4 +8,4 @@ onlyBuiltDependencies:
   - esbuild
 
 overrides:
-  nuclo: link:./packages/nuclo
+  nuclo: link:packages/nuclo

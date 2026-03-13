@@ -138,4 +138,21 @@ describe("list with readonly arrays", () => {
     expect(circles[1].getAttribute("cx")).toBe("20");
     expect(circles[2].getAttribute("cx")).toBe("30");
   });
+
+  it("should accept iterable providers like Set", () => {
+    const values = new Set(["alpha", "beta", "gamma"]);
+
+    const container = div(
+      list(
+        () => values,
+        (item) => span(item)
+      )
+    );
+
+    const element = container();
+    const spans = Array.from(element.querySelectorAll("span"));
+
+    expect(spans).toHaveLength(3);
+    expect(spans.map((spanEl) => spanEl.textContent)).toEqual(["alpha", "beta", "gamma"]);
+  });
 });

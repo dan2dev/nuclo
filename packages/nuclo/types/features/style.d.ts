@@ -170,6 +170,27 @@ export type CSSPseudoClass =
  * Creates a CSS class with the given styles and injects it into the document
  */
 declare global {
+	export type StyleQueryDefinitions =
+		| Record<string, string>
+		| ReadonlyArray<readonly [string, string]>;
+
+	export type InferStyleQueryKeys<TDefinitions extends StyleQueryDefinitions> =
+		TDefinitions extends ReadonlyArray<infer TEntry>
+			? TEntry extends readonly [infer TKey extends string, string]
+				? TKey
+				: never
+			: keyof TDefinitions & string;
+
+	export type StyleQueryStyles<TDefinitions extends StyleQueryDefinitions> =
+		Partial<Record<InferStyleQueryKeys<TDefinitions> | CSSPseudoClass, StyleBuilder>>;
+
+	export type StyleQueryResult = { className: string };
+
+	export interface StyleQueryBuilder<TDefinitions extends StyleQueryDefinitions> {
+		(defaultStyles: StyleBuilder, queryStyles?: StyleQueryStyles<TDefinitions>): StyleQueryResult;
+		(queryStyles?: StyleQueryStyles<TDefinitions>): StyleQueryResult;
+	}
+
 	function createCSSClass(className: string, styles: Record<string, string>): void;
 
 	/**
@@ -206,22 +227,16 @@ declare global {
 	 * 1. cn(queryStyles) - Only query-specific styles
 	 * 2. cn(defaultStyles, queryStyles) - Default styles + query overrides
 	 */
-	function createStyleQueries<T extends string>(
-		queries: Record<T, string> | Array<[T, string]>
-	): {
-		(defaultStyles: StyleBuilder, queryStyles?: Partial<Record<T | CSSPseudoClass, StyleBuilder>>): { className: string } | string;
-		(queryStyles?: Partial<Record<T | CSSPseudoClass, StyleBuilder>>): { className: string } | string;
-	};
+	function createStyleQueries<const TDefinitions extends StyleQueryDefinitions>(
+		queries: TDefinitions
+	): StyleQueryBuilder<TDefinitions>;
 
 	/**
 	 * @deprecated Use createStyleQueries instead. Alias for backward compatibility.
 	 */
-	function createBreakpoints<T extends string>(
-		breakpoints: Record<T, string> | Array<[T, string]>
-	): {
-		(defaultStyles: StyleBuilder, breakpointStyles?: Partial<Record<T | CSSPseudoClass, StyleBuilder>>): { className: string } | string;
-		(breakpointStyles?: Partial<Record<T | CSSPseudoClass, StyleBuilder>>): { className: string } | string;
-	};
+	function createBreakpoints<const TDefinitions extends StyleQueryDefinitions>(
+		breakpoints: TDefinitions
+	): StyleQueryBuilder<TDefinitions>;
 
 	/**
 	 * Style builder class for chaining CSS properties

@@ -14,12 +14,12 @@ import "./features/style";
 // Re-export on() helper for module-style consumers (import { on } from "nuclo")
 export function on<K extends keyof HTMLElementEventMap, TTagName extends ElementTagName = ElementTagName>(
   type: K,
-  listener: (ev: HTMLElementEventMap[K]) => unknown,
+  listener: TypedEventListener<HTMLElementTagNameMap[TTagName], HTMLElementEventMap[K]>,
   options?: boolean | AddEventListenerOptions
 ): NodeModFn<TTagName>;
 export function on<K extends string, E extends Event = Event, TTagName extends ElementTagName = ElementTagName>(
   type: K,
-  listener: (ev: E) => unknown,
+  listener: TypedEventListener<HTMLElementTagNameMap[TTagName], E>,
   options?: boolean | AddEventListenerOptions
 ): NodeModFn<TTagName>;
 

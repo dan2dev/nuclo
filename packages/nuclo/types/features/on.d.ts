@@ -16,6 +16,11 @@
  */
 
 declare global {
+  export type TypedEventListener<
+    TElement extends EventTarget,
+    TEvent extends Event = Event,
+  > = (this: TElement, ev: TEvent & { currentTarget: TElement }) => unknown;
+
   /**
    * Add a strongly typed DOM event listener as a View Craft modifier.
    *
@@ -30,7 +35,7 @@ declare global {
     K extends keyof HTMLElementEventMap = keyof HTMLElementEventMap,
   >(
     type: K,
-    listener: (this: HTMLElementTagNameMap[TTagName], ev: HTMLElementEventMap[K] & { currentTarget: HTMLElementTagNameMap[TTagName] }) => any,
+    listener: TypedEventListener<HTMLElementTagNameMap[TTagName], HTMLElementEventMap[K]>,
     options?: boolean | AddEventListenerOptions
   ): NodeModFn<TTagName>;
 
@@ -46,7 +51,7 @@ declare global {
     TTagName extends ElementTagName = ElementTagName
   >(
     type: K,
-    listener: (this: HTMLElementTagNameMap[TTagName], ev: E & { currentTarget: HTMLElementTagNameMap[TTagName] }) => any,
+    listener: TypedEventListener<HTMLElementTagNameMap[TTagName], E>,
     options?: boolean | AddEventListenerOptions
   ): NodeModFn<TTagName>;
 }

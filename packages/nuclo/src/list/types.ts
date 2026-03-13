@@ -1,9 +1,21 @@
+export type ListItemsInput<TItem> = readonly TItem[] | Iterable<TItem>;
+
+export type ListRenderable<TTagName extends ElementTagName = ElementTagName> =
+  | ExpandedElement<TTagName>
+  | DetachedExpandedElementFactory<TTagName>
+  | NodeModFn<TTagName>
+  | DetachedSVGElementFactory
+  | SVGElementModifierFn
+  | Node
+  | null
+  | undefined;
+
 export type ListRenderer<TItem, TTagName extends ElementTagName = ElementTagName> = (
   item: TItem,
   index: number,
-) => ExpandedElement<TTagName> | NodeModFn<TTagName> | Node | null;
+) => ListRenderable<TTagName>;
 
-export type ListItemsProvider<TItem> = () => readonly TItem[];
+export type ListItemsProvider<TItem> = () => ListItemsInput<TItem>;
 
 export interface ListItemRecord<TItem, TTagName extends ElementTagName = ElementTagName> {
   item: TItem;

@@ -9,12 +9,12 @@ const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 function createHtmlElementFactory<TTagName extends ElementTagName>(
   tagName: TTagName,
   ...modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>
-): NodeModFn<TTagName> {
-  return function(parent: ExpandedElement<TTagName>, index: number): ExpandedElement<TTagName> {
+): DetachedExpandedElementFactory<TTagName> {
+  return function(_parent?: ExpandedElement<TTagName>, index = 0): ExpandedElement<TTagName> {
     const el = createElement(tagName) as ExpandedElement<TTagName>;
     applyModifiers(el, modifiers as ReadonlyArray<NodeModifier<TTagName>>, index);
     return el;
-  };
+  } as DetachedExpandedElementFactory<TTagName>;
 }
 
 /**
@@ -23,15 +23,15 @@ function createHtmlElementFactory<TTagName extends ElementTagName>(
 function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
   tagName: TTagName,
   ...modifiers: Array<unknown>
-): SVGElementModifierFn<TTagName> {
-  return function(parent, index): SVGElementTagNameMap[TTagName] {
+): DetachedSVGElementFactory<TTagName> {
+  return function(_parent?, index = 0): SVGElementTagNameMap[TTagName] {
     const el = createElementNS(SVG_NAMESPACE, tagName);
     if (!el) {
       throw new Error(`Failed to create SVG element: ${tagName}`);
     }
     applyModifiers(el as unknown as ExpandedElement<ElementTagName>, modifiers as ReadonlyArray<NodeModifier<ElementTagName>>, index);
     return el as unknown as SVGElementTagNameMap[TTagName];
-  };
+  } as DetachedSVGElementFactory<TTagName>;
 }
 
 /**
@@ -39,7 +39,7 @@ function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
  */
 export function createHtmlTagBuilder<TTagName extends ElementTagName>(
   tagName: TTagName,
-): (...modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>) => NodeModFn<TTagName> {
+): ExpandedElementBuilder<TTagName> {
   return (...mods) => createHtmlElementFactory(tagName, ...mods);
 }
 
@@ -48,6 +48,6 @@ export function createHtmlTagBuilder<TTagName extends ElementTagName>(
  */
 export function createSvgTagBuilder<TTagName extends keyof SVGElementTagNameMap>(
   tagName: TTagName,
-): (...modifiers: Array<SVGElementModifier<TTagName> | SVGElementModifierFn<TTagName>>) => SVGElementModifierFn<TTagName> {
+): ExpandedSVGElementBuilder<TTagName> {
   return (...mods) => createSvgElementFactory(tagName, ...mods);
 }

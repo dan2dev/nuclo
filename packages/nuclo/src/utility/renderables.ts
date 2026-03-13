@@ -2,7 +2,11 @@ import { isFunction, isTagLike } from "./typeGuards";
 
 type RenderableInput<TTagName extends ElementTagName = ElementTagName> =
   | NodeModFn<TTagName>
+  | DetachedExpandedElementFactory<TTagName>
+  | DetachedSVGElementFactory
+  | SVGElementModifierFn
   | ExpandedElement<TTagName>
+  | SVGElement
   | Node
   | null
   | undefined;
@@ -13,7 +17,7 @@ export function resolveRenderable<TTagName extends ElementTagName = ElementTagNa
   index: number
 ): ExpandedElement<TTagName> | null {
   if (isFunction(result)) {
-    const element = result(host, index);
+    const element = (result as (parent: ExpandedElement<TTagName>, index: number) => unknown)(host, index);
     if (element && isTagLike(element)) {
       return element as ExpandedElement<TTagName>;
     }
