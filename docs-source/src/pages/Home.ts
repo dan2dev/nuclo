@@ -443,6 +443,7 @@ render(app, document.body);`, "typescript", false)
         ),
         div(
           cn(backgroundColor(colors.bgCard).borderRadius("16px").border(`1px solid ${colors.border}`).padding("24px")),
+          { className: "bento-col-2" },
           h3(cn(fontSize("13px").fontWeight("700").color(colors.textMuted).marginBottom("16px")
             .textTransform("uppercase").letterSpacing("0.06em")), "Batch Updates"),
           CodeBlock(gettingStartedCode.batchUpdates.code, gettingStartedCode.batchUpdates.lang, false)
