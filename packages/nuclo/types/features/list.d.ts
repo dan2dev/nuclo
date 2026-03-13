@@ -1,22 +1,31 @@
 declare global {
-  // Dynamic list function types - supports both HTML and SVG elements
-  export type ListRenderFunction<T, TTagName extends ElementTagName = ElementTagName> = (
-    item: T, 
-    index: number
-  ) => ExpandedElement<TTagName> 
-    | NodeModFn<TTagName> 
-    | Node 
+  export type ListItemsInput<T> = readonly T[] | Iterable<T>;
+
+  // Dynamic list function types - supports both HTML and SVG builders/elements
+  export type ListRenderResult<TTagName extends ElementTagName = ElementTagName> =
+    | ExpandedElement<TTagName>
+    | DetachedExpandedElementFactory<TTagName>
+    | NodeModFn<TTagName>
+    | DetachedSVGElementFactory
+    | SVGElementModifierFn
+    | Node
     | null
-    | ((parent?: ExpandedElement<TTagName>, index?: number) => ExpandedElement<TTagName> | SVGElement | Node); // Support functions with optional params (like SVG builders)
-    
-  export type ListItemsProvider<T> = () => readonly T[];
-  
-  // List returns a function typed to be compatible with both HTML (NodeModFn) and SVG (SVGElementModifierFn) contexts
-  // Note: The implementation allows optional parameters, but the type signature matches the stricter requirement
+    | undefined;
+
+  export type ListRenderFunction<T, TTagName extends ElementTagName = ElementTagName> = (
+    item: T,
+    index: number
+  ) => ListRenderResult<TTagName>;
+
+  export type ListItemsProvider<T> = () => ListItemsInput<T>;
+
+  export type ListModifier<TTagName extends ElementTagName = ElementTagName> =
+    NodeModFn<TTagName> & ((parent: Node & ParentNode, index: number) => Comment);
+
   export function list<T, TTagName extends ElementTagName = ElementTagName>(
-    itemsProvider: ListItemsProvider<T>, 
+    itemsProvider: ListItemsProvider<T>,
     render: ListRenderFunction<T, TTagName>
-  ): (parent: ExpandedElement<TTagName>, index: number) => Comment;
+  ): ListModifier<TTagName>;
 }
 
 export {};

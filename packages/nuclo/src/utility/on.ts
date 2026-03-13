@@ -19,13 +19,24 @@
 
 import { logError } from "./errorHandler";
 
+type EventListenerOptions = boolean | AddEventListenerOptions;
+type ListenerTarget = HTMLElement;
+type AnyTrackedListener = TypedEventListener<ListenerTarget, Event>;
+
+interface TrackedListener {
+  original: AnyTrackedListener;
+  wrapped: EventListener;
+  options?: EventListenerOptions;
+  controller?: AbortController;
+}
+
 /**
  * WeakMap to track event listeners per element.
  * Key: HTMLElement, Value: Map of event type to Set of listener info
  */
 const elementListeners = new WeakMap<
   HTMLElement,
-  Map<string, Set<{ original: Function; wrapped: EventListener; options?: boolean | AddEventListenerOptions; controller?: AbortController }>>
+  Map<string, Set<TrackedListener>>
 >();
 
 /**
@@ -34,9 +45,9 @@ const elementListeners = new WeakMap<
 function trackListener(
   element: HTMLElement,
   type: string,
-  original: Function,
+  original: AnyTrackedListener,
   wrapped: EventListener,
-  options?: boolean | AddEventListenerOptions,
+  options?: EventListenerOptions,
   controller?: AbortController
 ): void {
   let typeMap = elementListeners.get(element);
@@ -61,7 +72,7 @@ function trackListener(
 export function removeListener(
   element: HTMLElement,
   type: string,
-  listener: Function
+  listener: AnyTrackedListener
 ): void {
   const typeMap = elementListeners.get(element);
   if (!typeMap) return;
@@ -142,8 +153,8 @@ export function on<
   TTagName extends ElementTagName = ElementTagName
 >(
   type: K,
-  listener: (ev: HTMLElementEventMap[K]) => unknown,
-  options?: boolean | AddEventListenerOptions
+  listener: TypedEventListener<HTMLElementTagNameMap[TTagName], HTMLElementEventMap[K]>,
+  options?: EventListenerOptions
 ): NodeModFn<TTagName>;
 
 /**
@@ -157,14 +168,14 @@ export function on<
   TTagName extends ElementTagName = ElementTagName
 >(
   type: K,
-  listener: (ev: E) => unknown,
-  options?: boolean | AddEventListenerOptions
+  listener: TypedEventListener<HTMLElementTagNameMap[TTagName], E>,
+  options?: EventListenerOptions
 ): NodeModFn<TTagName>;
 
 export function on<TTagName extends ElementTagName = ElementTagName>(
   type: string,
-  listener: (ev: Event) => unknown,
-  options?: boolean | AddEventListenerOptions
+  listener: TypedEventListener<HTMLElementTagNameMap[TTagName], Event>,
+  options?: EventListenerOptions
 ): NodeModFn<TTagName> {
   return function(parent: ExpandedElement<TTagName>): void {
     // Type guard: verify parent is an HTMLElement with addEventListener
@@ -172,27 +183,30 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
       return;
     }
 
-    const el = parent as HTMLElement;
+    const el = parent as HTMLElementTagNameMap[TTagName];
     
     // Create an AbortController for this listener
     const controller = new AbortController();
     
     const wrapped = function(ev: Event): void {
       try {
-        listener.call(el, ev);
+        listener.call(
+          el,
+          ev as Event & { currentTarget: HTMLElementTagNameMap[TTagName] }
+        );
       } catch (error) {
         logError(`Error in '${type}' listener`, error);
       }
     };
 
     // Merge options with signal
-    const listenerOptions = typeof options === 'boolean' 
+    const listenerOptions = typeof options === 'boolean'
       ? { capture: options, signal: controller.signal }
       : { ...(options || {}), signal: controller.signal };
     
     el.addEventListener(type, wrapped as EventListener, listenerOptions);
     
     // Track the listener for potential cleanup
-    trackListener(el, type, listener, wrapped as EventListener, options, controller);
+    trackListener(el, type, listener as AnyTrackedListener, wrapped as EventListener, options, controller);
   };
 }

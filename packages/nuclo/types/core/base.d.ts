@@ -3,6 +3,12 @@
 declare global {
   export type Primitive = string | number | bigint | boolean | symbol | null | undefined;
   export type ElementTagName = keyof HTMLElementTagNameMap;
+  export type SVGTagName = keyof SVGElementTagNameMap;
+  export type ValueFactory<TValue> = () => TValue;
+  export type ValueOrFactory<TValue> = TValue | ValueFactory<TValue>;
+  export type InferFactoryResult<TFactory> = TFactory extends (...args: unknown[]) => infer TResult
+    ? TResult
+    : never;
 
   // CSS Style object type that accepts any CSS property as string or number
   export type CSSStyleObject = {
@@ -15,35 +21,60 @@ declare global {
   > = {
     [K in keyof HTMLElementTagNameMap[TTagName]]?:
       K extends "style"
-        ? CSSStyleObject | (() => CSSStyleObject)
-        : HTMLElementTagNameMap[TTagName][K] | (() => HTMLElementTagNameMap[TTagName][K]);
+        ? ValueOrFactory<CSSStyleObject>
+        : ValueOrFactory<HTMLElementTagNameMap[TTagName][K]>;
   } & {
     // Allow custom attributes (data-*, aria-*, etc.)
-    [key: string]: any;
+    [key: string]: ValueOrFactory<unknown>;
   };
+
+  export type DetachedExpandedElementFactory<
+    TTagName extends ElementTagName = ElementTagName,
+  > = NodeModFn<TTagName> & ((
+    parent?: ExpandedElement<TTagName>,
+    index?: number,
+  ) => ExpandedElement<TTagName>);
 
   // Core element type
   export type ExpandedElement<
     TTagName extends ElementTagName = ElementTagName,
   > = Partial<Omit<HTMLElementTagNameMap[TTagName], "tagName">> &
     Pick<HTMLElementTagNameMap[TTagName], "tagName"> & {
-      rawMods?: NodeMod<TTagName> | NodeModFn<TTagName>[];
-      mods?: NodeMod<TTagName>[];
+      rawMods?: ReadonlyArray<NodeModLike<ElementTagName>>;
+      mods?: ReadonlyArray<NodeMod<ElementTagName>>;
     };
 
   // Core modifier types
-  export type NodeMod<TTagName extends ElementTagName = ElementTagName> =
+  export type NodeRenderable<TTagName extends ElementTagName = ElementTagName> =
     | Primitive
-    | (() => Primitive)
     | ExpandedElementAttributes<TTagName>
     | ExpandedElement<TTagName>
-    | Node  // Allow any DOM Node (including Comment, Text, SVGElement, etc.)
+    | Node;
+
+  export type NodeMod<TTagName extends ElementTagName = ElementTagName> =
+    | NodeRenderable<TTagName>
+    | ValueFactory<Primitive>
     | ((parent: ExpandedElement<TTagName>, index: number) => Node);  // Allow Node builders
 
   export type NodeModFn<TTagName extends ElementTagName = ElementTagName> = (
     parent: ExpandedElement<TTagName>,
     index: number,
   ) => NodeMod<TTagName> | void;
+
+  export type NodeModLike<TTagName extends ElementTagName = ElementTagName> =
+    | NodeMod<TTagName>
+    | NodeModFn<TTagName>;
+
+  export type InferExpandedElement<TValue> =
+    TValue extends ExpandedElement<infer TTagName>
+      ? ExpandedElement<TTagName>
+      : TValue extends DetachedExpandedElementFactory<infer TTagName>
+        ? ExpandedElement<TTagName>
+        : TValue extends ExpandedElementBuilder<infer TTagName>
+          ? ExpandedElement<TTagName>
+          : TValue extends NodeModFn<infer TTagName>
+            ? ExpandedElement<TTagName>
+            : Extract<TValue, Element>;
 
   // Core modifier types (selfClosing)
   // export type NodeSelfClosingMod<
@@ -57,11 +88,8 @@ declare global {
   export type ExpandedElementBuilder<
     TTagName extends ElementTagName = ElementTagName,
   > = (
-    ...rawMods: (NodeMod<TTagName> | NodeModFn<TTagName>)[]
-  ) => (
-    parent?: ExpandedElement<TTagName>,
-    index?: number,
-  ) => ExpandedElement<TTagName>;
+    ...rawMods: readonly NodeModLike<TTagName>[]
+  ) => DetachedExpandedElementFactory<TTagName>;
 
   // export type SelfClosingElementBuilder<
   //   TTagName extends ElementTagName = ElementTagName,

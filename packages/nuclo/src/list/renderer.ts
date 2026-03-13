@@ -8,11 +8,11 @@ import type { ListRenderer, ListItemsProvider } from "./types";
 export function list<TItem, TTagName extends ElementTagName = ElementTagName>(
   itemsProvider: ListItemsProvider<TItem>,
   render: ListRenderer<TItem, TTagName>,
-): (parent: ExpandedElement<TTagName>, index: number) => Comment {
-  return function(host: ExpandedElement<TTagName>): Comment {
+): ListModifier<TTagName> {
+  return function(host: ExpandedElement<TTagName>, _index: number): Comment {
     const runtime = createListRuntime(itemsProvider, render, host);
     // Return the start marker comment node
     // Comment is a Node, making this compatible with both HTML and SVG modifiers
     return runtime.startMarker;
-  };
+  } as ListModifier<TTagName>;
 }

@@ -3,7 +3,7 @@ import { registerAttributeResolver } from "./reactive";
 import { setStyleProperty } from "../utility/domTypeHelpers";
 import { logError } from "../utility/errorHandler";
 
-type StyleAssignment = Partial<CSSStyleDeclaration>;
+type StyleAssignment = CSSStyleObject;
 type StyleResolver = () => StyleAssignment | null | undefined;
 
 /**

@@ -1,7 +1,7 @@
 import { createMarkerPair, safeRemoveChild, isNodeConnected } from "../utility/dom";
 import { arraysEqual } from "../utility/arrayUtils";
 import { resolveRenderable } from "../utility/renderables";
-import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsProvider } from "./types";
+import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsInput, ListItemsProvider } from "./types";
 import type { UpdateScope } from "../core/updateScope";
 
 /**
@@ -15,6 +15,15 @@ interface ListRuntimeInfo<TItem = unknown, TTagName extends ElementTagName = Ele
 
 const activeListRuntimes = new Map<WeakRef<Comment>, ListRuntimeInfo<unknown, ElementTagName>>();
 
+interface ReleasedListItemRecord<TItem, TTagName extends ElementTagName> {
+  item: TItem | null;
+  element: ExpandedElement<TTagName> | null;
+}
+
+function normalizeItems<TItem>(items: ListItemsInput<TItem>): readonly TItem[] {
+  return Array.isArray(items) ? items : Array.from(items);
+}
+
 function renderItem<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>,
   item: TItem,
@@ -27,8 +36,9 @@ function renderItem<TItem, TTagName extends ElementTagName>(
 function remove<TItem, TTagName extends ElementTagName>(record: ListItemRecord<TItem, TTagName>): void {
   safeRemoveChild(record.element as unknown as Node);
   // Clear the reference to help GC
-  (record as any).element = null;
-  (record as any).item = null;
+  const releasedRecord = record as unknown as ReleasedListItemRecord<TItem, TTagName>;
+  releasedRecord.element = null;
+  releasedRecord.item = null;
 }
 
 export function sync<TItem, TTagName extends ElementTagName>(
@@ -38,7 +48,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
   const parent = (startMarker.parentNode ?? (host as unknown as Node & ParentNode)) as
     Node & ParentNode;
 
-  const currentItems = runtime.itemsProvider();
+  const currentItems = normalizeItems(runtime.itemsProvider());
 
   if (arraysEqual(runtime.lastSyncedItems, currentItems)) return;
 
@@ -166,7 +176,7 @@ export function updateListRuntimes(scope?: UpdateScope): void {
       // Clean up records before deleting runtime
       if (info.runtime.records) {
         for (let i = 0; i < info.runtime.records.length; i++) {
-          const record = info.runtime.records[i] as any;
+          const record = info.runtime.records[i] as unknown as ReleasedListItemRecord<unknown, ElementTagName>;
           record.element = null;
           record.item = null;
         }
@@ -181,7 +191,7 @@ export function updateListRuntimes(scope?: UpdateScope): void {
       // Clean up records before deleting runtime
       if (info.runtime.records) {
         for (let i = 0; i < info.runtime.records.length; i++) {
-          const record = info.runtime.records[i] as any;
+          const record = info.runtime.records[i] as unknown as ReleasedListItemRecord<unknown, ElementTagName>;
           record.element = null;
           record.item = null;
         }
