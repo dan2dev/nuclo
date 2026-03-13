@@ -62,7 +62,54 @@ export function injectGlobalStyles() {
     a {
       text-decoration: none;
     }
-  
+
+    /* Bento grid responsive spanning */
+    @media (min-width: 601px) {
+      .bento-col-2 { grid-column: span 2; }
+    }
+    @media (min-width: 1025px) {
+      .bento-row-2 { grid-row: span 2; }
+    }
+
+    /* Pitfall card responsive grid */
+    .pitfall-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+    .pitfall-problem {
+      padding: 20px 24px;
+      border-bottom: 1px solid ${colors.border};
+    }
+    @media (min-width: 601px) {
+      .pitfall-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .pitfall-problem {
+        border-bottom: none;
+        border-right: 1px solid ${colors.border};
+      }
+    }
+
+    /* Gradient heading text (Web3 accent) */
+    .gradient-text {
+      background: linear-gradient(135deg, #f8fafc 20%, ${colors.primary} 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: ${colors.bg}; }
+    ::-webkit-scrollbar-thumb { background: ${colors.border}; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: ${colors.borderLight}; }
+
+    /* Text selection */
+    ::selection { background: rgba(132, 204, 22, 0.2); color: ${colors.text}; }
+
+    /* Smooth page transitions */
+    #page-container { animation: pageFadeIn 0.15s ease; }
+    @keyframes pageFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
   `;
   document.head.appendChild(style);
 }
@@ -82,7 +129,6 @@ export const s = {
 
   // Header
   header: cn(display("flex")
-  .backgroundColor("#FF0000")
     .alignItems("center")
     .justifyContent("space-between")
     .padding("20px 24px")
@@ -115,15 +161,14 @@ export const s = {
 
   nav: cn(display("flex")
     .alignItems("center")
-    .gap("8px")
-    .width("100%").height("200px")),
+    .gap("8px")),
 
   navLink: cn(color(colors.textMuted)
     .fontSize("14px")
     .fontWeight("500")
     .transition("all 0.2s"), {
     medium: fontSize("15px"),
-    hover: color("red")
+    hover: color(colors.text)
   }),
 
   navLinkActive: cn(color(colors.text)),
@@ -316,43 +361,44 @@ export const s = {
   footerLink: cn(color(colors.textMuted).transition("color 0.2s")),
 
   // Page content
-  pageContent: cn(padding("24px 16px 80px")
+  pageContent: cn(padding("24px 16px 100px")
     .maxWidth("900px")
     .margin("0 auto")
     .width("100%")
     .boxSizing("border-box"), {
-    medium: padding("48px 48px 80px")
+    medium: padding("56px 48px 100px")
   }),
 
   pageTitle: cn(fontSize("32px")
     .fontWeight("700")
-    .marginBottom("24px")
+    .marginBottom("16px")
     .color(colors.text)
     .letterSpacing("-0.02em"), {
     medium: fontSize("40px"),
-    large: fontSize("48px")
+    large: fontSize("44px")
   }),
 
-  pageSubtitle: cn(fontSize("20px")
+  pageSubtitle: cn(fontSize("17px")
     .color(colors.textMuted)
-    .marginBottom("56px")
-    .lineHeight("1.7")),
+    .marginBottom("0")
+    .lineHeight("1.75")
+    .maxWidth("640px")),
 
   // Content typography
-  h2: cn(fontSize("32px")
-    .fontWeight("600")
-    .marginTop("64px")
+  h2: cn(fontSize("24px")
+    .fontWeight("700")
+    .marginTop("56px")
     .marginBottom("20px")
     .color(colors.text)
     .letterSpacing("-0.01em")),
 
-  h3: cn(fontSize("22px")
+  h3: cn(fontSize("18px")
     .fontWeight("600")
-    .marginTop("40px")
-    .marginBottom("16px")
+    .marginTop("32px")
+    .marginBottom("14px")
     .color(colors.text)),
 
-  p: cn(fontSize("16px")
+  p: cn(fontSize("15px")
     .color(colors.textMuted)
     .marginBottom("20px")
     .lineHeight("1.8")),

@@ -1,6 +1,7 @@
 import "nuclo";
 import { cn, s, colors } from "../styles.ts";
 import { CodeBlock, InlineCode } from "../components/CodeBlock.ts";
+import { PageHeader, NoteCard, NextSteps } from "../components/ui.ts";
 import { stylingCode } from "../content/styling.ts";
 import { setRoute } from "../router.ts";
 
@@ -333,10 +334,11 @@ export function StylingPage() {
 
   return div(
     s.pageContent,
-    h1(s.pageTitle, "Styling"),
-    p(
-      s.pageSubtitle,
-      "All of the original styling docs are here: chainable helpers, StyleBuilder utilities, responsive queries, and layout recipes."
+
+    PageHeader(
+      "Styling",
+      "A chainable CSS-in-JS system. No external stylesheets, no class name collisions — just helper functions that generate scoped styles at runtime.",
+      "CSS-in-JS"
     ),
 
     // Overview
@@ -583,6 +585,15 @@ export function StylingPage() {
         ),
         " to see these styles in action."
       )
-    )
+    ),
+
+    NoteCard("tip", "All style helpers generate unique scoped CSS class names. Styles are injected into a single ", code({ style: { fontFamily: "monospace" } }, "<style>"), " tag per session, deduplicated automatically."),
+
+    NextSteps([
+      { label: "Tag Builders", description: "Apply styles to every HTML and SVG element.",             route: "tag-builders"   },
+      { label: "Core API",     description: "update(), list(), when(), on() — the reactive core.",    route: "core-api"       },
+      { label: "Pitfalls",     description: "Avoid the five most common Nuclo mistakes.",             route: "pitfalls"       },
+      { label: "Examples",     description: "See the styling system in real interactive demos.",      route: "examples"       },
+    ])
   );
 }
