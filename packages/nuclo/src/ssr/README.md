@@ -113,12 +113,12 @@ const html = renderToStringWithContainer(
 
 ## Features
 
--  Renders all HTML and SVG elements
--  Handles attributes and properties
--  Supports nested components
--  Escapes HTML to prevent XSS
--  Handles void elements correctly (br, img, input, etc.)
--  Works with both ES modules and CommonJS
+- Renders all HTML and SVG elements
+- Handles attributes and properties
+- Supports nested components
+- Escapes HTML to prevent XSS
+- Handles void elements correctly (`br`, `img`, `input`, etc.)
+- Works with both ES modules and CommonJS
 
 ## Important Notes
 
@@ -132,7 +132,7 @@ const html = renderToStringWithContainer(
    import 'nuclo';  // Makes div, span, etc. available globally
    ```
 
-3. **Reactive Features**: SSR renders the initial state only. Reactive features will not work in server-rendered HTML.
+3. **Explicit Update Cycle**: SSR renders the current state only. Dynamic functions are evaluated once during string generation, and the HTML will not keep updating on the server.
 
 4. **Event Handlers**: Event handlers will not be included in the rendered HTML string.
 

@@ -492,7 +492,7 @@ export function StylingPage() {
 
     // Effects
     h2(s.h2, "Effects & Transitions"),
-    p(s.p, "Shadows, opacity, transitions, transforms, filters, and hover-friendly reactive styles."),
+    p(s.p, "Shadows, opacity, transitions, transforms, filters, and hover-friendly dynamic style functions."),
     h3(s.h3, "Box shadows"),
     CodeBlock(stylingCode.effectsShadows.code, stylingCode.effectsShadows.lang),
     h3(s.h3, "Visibility"),
@@ -506,7 +506,7 @@ export function StylingPage() {
     h3(s.h3, "Hover effects with pseudo-classes"),
     p(s.p, "Use the built-in pseudo-class support for hover, focus, active, and more:"),
     CodeBlock(stylingCode.styleQueriesPseudoClasses.code, stylingCode.styleQueriesPseudoClasses.lang),
-    h3(s.h3, "Hover effects with reactive styles (alternative)"),
+    h3(s.h3, "Hover effects with dynamic style functions (alternative)"),
     div(
       s.demoContainerSingle,
       div(EffectsDemo()),
@@ -591,7 +591,7 @@ export function StylingPage() {
 
     NextSteps([
       { label: "Tag Builders", description: "Apply styles to every HTML and SVG element.",             route: "tag-builders"   },
-      { label: "Core API",     description: "update(), list(), when(), on() — the reactive core.",    route: "core-api"       },
+      { label: "Core API",     description: "update(), list(), when(), on() — the imperative core.",  route: "core-api"       },
       { label: "Pitfalls",     description: "Avoid the five most common Nuclo mistakes.",             route: "pitfalls"       },
       { label: "Examples",     description: "See the styling system in real interactive demos.",      route: "examples"       },
     ])

@@ -58,7 +58,7 @@ export function Footer() {
         ),
         p(
           cn(fontSize("13px").color(colors.textDim).lineHeight("1.7").maxWidth("240px")),
-          "A lightweight DOM library. Just functions, plain objects, and explicit updates."
+          "A lightweight imperative DOM framework. Just functions, plain objects, and explicit updates."
         ),
         div(
           cn(display("flex").gap("12px").marginTop("4px")),

@@ -170,22 +170,22 @@ export function HomePage() {
         )),
         span(
           cn(fontSize("12px").fontWeight("600").color(colors.primary).letterSpacing("0.04em")),
-          "Lightweight · Explicit · Reactive"
+          "Lightweight · Explicit · Imperative"
         )
       ),
 
       h1(
         s.heroTitle,
         "Build ",
-        span(s.heroTitleAccent, { style: s.heroTitleAccentStyle }, "Faster"),
+        span(s.heroTitleAccent, { style: s.heroTitleAccentStyle }, "Imperative"),
         ", ",
-        span(s.heroTitleAccent, { style: s.heroTitleAccentStyle }, "Reactive"),
-        " Interfaces."
+        span(s.heroTitleAccent, { style: s.heroTitleAccentStyle }, "Explicit"),
+        " UIs."
       ),
 
       p(
         s.heroSubtitle,
-        "A lightweight DOM library for the modern web. Just functions, plain objects, and explicit updates — no magic, no hidden reactivity."
+        "A lightweight imperative DOM framework. Mutate plain state, call update() when you're ready, and let Nuclo sync the DOM without proxies, signals, or virtual DOM."
       ),
 
       div(
@@ -349,7 +349,7 @@ export function HomePage() {
               span(cn(fontSize("22px")), "🎯")
             ),
             h3(cn(fontSize("17px").fontWeight("600").color(colors.text).marginBottom("8px")), "Fine-Grained Updates"),
-            p(cn(fontSize("13px").color(colors.textMuted).lineHeight("1.7")), "Only updates what changed. Elements are reused, branches preserved, performance maximized.")
+            p(cn(fontSize("13px").color(colors.textMuted).lineHeight("1.7")), "Call update() and Nuclo only touches DOM nodes whose resolved values changed. Elements are reused and branches stay mounted.")
           )
         )
       )
@@ -445,7 +445,7 @@ render(app, document.body);`, "typescript", false)
     section(
       s.section,
       h2(s.sectionTitle, { className: "gradient-text" }, "Core Concepts"),
-      p(s.sectionSubtitle, "Explicit updates, reactive functions, conditionals, and list synchronization."),
+      p(s.sectionSubtitle, "Imperative updates, dynamic bindings, conditionals, and list synchronization."),
       div(
         cn(
           display("grid").gap("16px").gridTemplateColumns("1fr"),
@@ -464,8 +464,8 @@ render(app, document.body);`, "typescript", false)
         div(
           cn(backgroundColor(colors.bgCard).borderRadius("16px").border(`1px solid ${colors.border}`).padding("24px")),
           h3(cn(fontSize("13px").fontWeight("700").color(colors.textMuted).marginBottom("16px")
-            .textTransform("uppercase").letterSpacing("0.06em")), "Reactive Functions"),
-          CodeBlock(gettingStartedCode.reactiveText.code, gettingStartedCode.reactiveText.lang, false)
+            .textTransform("uppercase").letterSpacing("0.06em")), "Dynamic Bindings"),
+          CodeBlock(gettingStartedCode.dynamicText.code, gettingStartedCode.dynamicText.lang, false)
         ),
         div(
           cn(backgroundColor(colors.bgCard).borderRadius("16px").border(`1px solid ${colors.border}`).padding("24px")),

@@ -1,8 +1,8 @@
 # nuclo
 
-**A simple, explicit DOM library for building reactive user interfaces.**
+**A lightweight, imperative DOM framework with explicit updates.**
 
-Build reactive UIs without the magic. Just functions, plain JavaScript objects, and explicit `update()` calls. No virtual DOM, no complex state management, no build configuration required.
+Build interactive UIs with plain functions, mutable JavaScript objects, and explicit `update()` calls. Nuclo is imperative: nothing re-renders until you call `update()`. No virtual DOM, no proxies, and no hidden state tracking.
 
 ```ts
 import 'nuclo';
@@ -27,7 +27,7 @@ render(counter, document.body);
 - **Tiny Footprint** – Minimal bundle size, maximum performance
 - **Global Tag Builders** – Natural API with global functions for all HTML and SVG elements
 - **TypeScript-First** – Full type definitions for all 140+ HTML and SVG tags
-- **Fine-Grained Reactivity** – Only updates what changed, nothing more
+- **Targeted DOM Updates** – `update()` re-runs dynamic bindings and only touches DOM where values changed
 
 ---
 
@@ -305,9 +305,9 @@ user.name = 'Alice'; // triggers update
 // 4 updates instead of 1!
 ```
 
-### 2. **Reactive Functions**
+### 2. **Dynamic Functions**
 
-Zero-arg functions become reactive:
+Zero-arg functions become dynamic bindings that re-run when you call `update()`:
 
 ```ts
 let count = 0;
@@ -352,7 +352,7 @@ Mutate the array (push, splice, reverse), then call `update()`. Elements are reu
 
 #### `update()`
 
-Triggers all reactive updates. Call this after mutating state:
+Runs one synchronous update pass across every dynamic binding. Call this after mutating state:
 
 ```ts
 count++;
@@ -425,7 +425,7 @@ div('Hello', {
 })
 ```
 
-Reactive attributes use functions:
+Dynamic attributes use functions:
 
 ```ts
 div({
@@ -567,7 +567,7 @@ These markers identify conditional and list boundaries in the DOM.
 
 **Content not updating?**
 - Ensure you're calling `update()` after state changes
-- Verify your reactive functions are returning the expected values
+- Verify your dynamic functions are returning the expected values
 
 **List items not reusing elements?**
 - Keep object references stable (mutate instead of replacing)

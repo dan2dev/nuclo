@@ -10,7 +10,7 @@ export function GettingStartedPage() {
 
     PageHeader(
       "Getting Started",
-      "Install Nuclo, wire up TypeScript, and ship your first reactive UI in minutes.",
+      "Install Nuclo, wire up TypeScript, and build your first imperative UI with explicit update() calls.",
       "Quick Start"
     ),
 
@@ -49,7 +49,7 @@ export function GettingStartedPage() {
       s.ul,
       li(s.li, strong("Import:"), " ", InlineCode("import 'nuclo'"), " registers all global builders"),
       li(s.li, strong("State:"), " plain JS variables — no hooks, no stores, no proxies"),
-      li(s.li, strong("Reactive content:"), " zero-arg functions re-run on every ", InlineCode("update()")),
+      li(s.li, strong("Dynamic content:"), " zero-arg functions re-run on every ", InlineCode("update()")),
       li(s.li, strong("Events:"), " attach DOM listeners with ", InlineCode("on(event, handler)")),
       li(s.li, strong("Render:"), " mount once with ", InlineCode("render(element, container)"))
     ),
@@ -59,7 +59,7 @@ export function GettingStartedPage() {
     p(
       s.p,
       InlineCode("update()"),
-      " is the heartbeat of a Nuclo app. Mutate state freely, then call it once to re-evaluate every reactive function in the tree."
+      " is the heartbeat of a Nuclo app. Mutate state freely, then call it once to re-run every dynamic binding in the tree."
     ),
 
     h3(s.h3, "Batching multiple mutations"),
@@ -70,22 +70,22 @@ export function GettingStartedPage() {
       s.ul,
       li(s.li, strong("Performance:"), " batch many mutations into one DOM pass"),
       li(s.li, strong("Control:"), " you decide exactly when the UI updates"),
-      li(s.li, strong("Predictability:"), " no hidden re-renders or reactive watchers"),
+      li(s.li, strong("Predictability:"), " no hidden re-renders, dependency tracking, or watchers"),
       li(s.li, strong("Debuggability:"), " set a breakpoint on ", InlineCode("update()"), " to trace every change")
     ),
 
-    // ── Reactive Functions ────────────────────────────────────────────────────
-    h2(s.h2, { id: "reactive" }, "Reactive Functions"),
-    p(s.p, "Any zero-argument function passed as a child or attribute re-runs on ", InlineCode("update()"), "."),
+    // ── Dynamic Functions ─────────────────────────────────────────────────────
+    h2(s.h2, { id: "dynamic" }, "Dynamic Functions"),
+    p(s.p, "Any zero-argument function passed as a child or attribute becomes a dynamic binding that re-runs when you call ", InlineCode("update()"), "."),
 
     h3(s.h3, "Text content"),
-    CodeBlock(gettingStartedCode.reactiveText.code, gettingStartedCode.reactiveText.lang),
+    CodeBlock(gettingStartedCode.dynamicText.code, gettingStartedCode.dynamicText.lang),
 
     h3(s.h3, "Attributes"),
-    CodeBlock(gettingStartedCode.reactiveAttributes.code, gettingStartedCode.reactiveAttributes.lang),
+    CodeBlock(gettingStartedCode.dynamicAttributes.code, gettingStartedCode.dynamicAttributes.lang),
 
     h3(s.h3, "Styles"),
-    CodeBlock(gettingStartedCode.reactiveStyles.code, gettingStartedCode.reactiveStyles.lang),
+    CodeBlock(gettingStartedCode.dynamicStyleProperties.code, gettingStartedCode.dynamicStyleProperties.lang),
 
     h3(s.h3, "Complex expressions"),
     CodeBlock(gettingStartedCode.complexExpressions.code, gettingStartedCode.complexExpressions.lang),

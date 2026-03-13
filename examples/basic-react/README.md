@@ -31,8 +31,8 @@ pnpm --filter basic-react preview
 
 This React version demonstrates how the same application can be built with React. You can compare:
 
-- **State Management**: React uses `useState` hooks vs Nuclo's reactive state
-- **Effects**: React uses `useEffect` vs Nuclo's automatic updates
+- **State Management**: React uses `useState` hooks vs Nuclo's plain mutable variables plus explicit `update()`
+- **Effects**: React uses `useEffect` vs Nuclo's manual update cycle and direct DOM event handlers
 - **Styling**: React uses CSS classes vs Nuclo's CSS-in-JS utilities
 - **File Structure**: React separates HTML/CSS/JS vs Nuclo's component approach
 
