@@ -15,7 +15,7 @@ const app = div(
     id: "page-container",
     style: {
       minHeight: "calc(100vh - 160px)",
-      paddingTop: "40px",
+      paddingTop: "64px",
     },
   }),
   Footer()

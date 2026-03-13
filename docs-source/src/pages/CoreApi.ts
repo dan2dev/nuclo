@@ -1,94 +1,129 @@
 import "nuclo";
 import { s } from "../styles.ts";
 import { CodeBlock } from "../components/CodeBlock.ts";
+import { PageHeader, ApiEntry, NoteCard, NextSteps } from "../components/ui.ts";
 import { apiCode } from "../content/api.ts";
 
 export function CoreApiPage() {
   return div(
     s.pageContent,
-    h1(s.pageTitle, "Core API"),
-    p(
-      s.pageSubtitle,
-      "The essential functions that power every Nuclo application: update(), render(), on(), list(), and when()."
+
+    PageHeader(
+      "Core API",
+      "The five functions that power every Nuclo application: update(), render(), on(), list(), and when().",
+      "Reference"
     ),
 
-    // update()
-    h2(s.h2, { id: "update" }, "update()"),
-    p(s.p, "Trigger a synchronous refresh of every reactive function in your application."),
+    // ── update() ─────────────────────────────────────────────────────────────
+    ApiEntry({
+      id: "update",
+      signature: "update()",
+      description: "Synchronously re-evaluates every reactive function in the application. Call it once after all state mutations.",
+      points: [
+        "Batch all mutations before calling — one call covers everything",
+        "Only zero-argument functions re-evaluate",
+        "Safe to call multiple times; prefer grouping work first",
+      ],
+    }),
     CodeBlock(apiCode.updateUsage.code, apiCode.updateUsage.lang),
-    h3(s.h3, "Key Points"),
-    ul(
-      s.ul,
-      li(s.li, "Call after batching mutations for best performance"),
-      li(s.li, "Only zero-argument functions re-evaluate"),
-      li(s.li, "Safe to call multiple times; prefer grouping work first")
-    ),
 
-    // render()
-    h2(s.h2, { id: "render" }, "render(element, container)"),
-    p(s.p, "Mount an element tree to a DOM container (append, not replace)."),
+    // ── render() ─────────────────────────────────────────────────────────────
+    ApiEntry({
+      id: "render",
+      signature: "render(element, container)",
+      description: "Mounts an element tree into a DOM container. Appends rather than replaces — run it once at app startup.",
+      points: [
+        "Typical pattern: render one root element that owns the whole app",
+        "Multiple trees are supported but rarely needed",
+        "Works with any element returned by the tag builders",
+      ],
+    }),
     CodeBlock(apiCode.renderUsage.code, apiCode.renderUsage.lang),
-    h3(s.h3, "Key Points"),
-    ul(
-      s.ul,
-      li(s.li, "Typical pattern: render one root that owns the whole app"),
-      li(s.li, "You can render multiple trees if needed"),
-      li(s.li, "Works with any element created by the tag builders")
-    ),
 
-    // on()
-    h2(s.h2, { id: "on" }, "on(event, handler, options?)"),
-    p(s.p, "Attach event listeners with full TypeScript support."),
+    // ── on() ─────────────────────────────────────────────────────────────────
+    ApiEntry({
+      id: "on",
+      signature: "on(event, handler, options?)",
+      description: "Returns a modifier that attaches a typed event listener to any element. Full TypeScript inference for every DOM event.",
+      points: [
+        "Accepts any standard EventTarget event name",
+        "Optional third argument maps to addEventListener options (once, passive, capture)",
+        "Multiple on() calls on the same element are all registered",
+      ],
+    }),
+
+    h3(s.h3, "Basic usage"),
     CodeBlock(apiCode.onClick.code, apiCode.onClick.lang),
 
-    h3(s.h3, "Multiple Events"),
-    p(s.p, "Attach multiple event handlers to the same element:"),
+    h3(s.h3, "Multiple events"),
     CodeBlock(apiCode.onMultipleEvents.code, apiCode.onMultipleEvents.lang),
 
-    h3(s.h3, "Event Options"),
-    p(s.p, "Pass standard event listener options:"),
+    h3(s.h3, "Listener options"),
     CodeBlock(apiCode.onPassive.code, apiCode.onPassive.lang),
 
-    h3(s.h3, "Keyboard Events"),
+    h3(s.h3, "Keyboard events"),
     CodeBlock(apiCode.onKeyboard.code, apiCode.onKeyboard.lang),
 
-    h3(s.h3, "Form Handling"),
+    h3(s.h3, "Form submit"),
     CodeBlock(apiCode.onFormSubmit.code, apiCode.onFormSubmit.lang),
 
-    // list()
-    h2(s.h2, { id: "list" }, "list(provider, renderer)"),
-    p(
-      s.p,
-      "Synchronize arrays to DOM nodes. Items stay mounted while object identity is stable—mutate objects in place instead of replacing them."
-    ),
+    // ── list() ───────────────────────────────────────────────────────────────
+    ApiEntry({
+      id: "list",
+      signature: "list(provider, renderer)",
+      description: "Synchronizes an array of objects to a sequence of DOM nodes. Items stay mounted while their object reference remains stable — mutate in place for efficient updates.",
+      points: [
+        "provider is a zero-arg function returning the current array — re-evaluated on update()",
+        "renderer(item, index) builds the DOM for each item",
+        "Items are tracked by object identity; replace a reference and its element is recreated",
+        "Supports nested lists — each inner list tracks its own items independently",
+      ],
+    }),
+
+    h3(s.h3, "Basic list"),
     CodeBlock(apiCode.listBasic.code, apiCode.listBasic.lang),
 
-    h3(s.h3, "Object Identity"),
-    p(s.p, "Nuclo tracks items by reference. Mutate objects to preserve their DOM elements:"),
+    h3(s.h3, "Object identity"),
+    NoteCard("warning", "Mutate objects; don't replace them. A new object reference forces element recreation."),
     CodeBlock(apiCode.listIdentity.code, apiCode.listIdentity.lang),
 
-    h3(s.h3, "Nested Lists"),
-    p(s.p, "Nested lists remain stable too:"),
+    h3(s.h3, "Nested lists"),
     CodeBlock(apiCode.listNested.code, apiCode.listNested.lang),
 
-    // when()
-    h2(s.h2, { id: "when" }, "when(condition, ...content)"),
-    p(s.p, "Chain conditional branches; the first truthy branch wins and DOM is preserved when the branch stays the same."),
+    // ── when() ───────────────────────────────────────────────────────────────
+    ApiEntry({
+      id: "when",
+      signature: "when(condition, ...content)",
+      description: "Conditional rendering with DOM preservation. Chain .when() for else-if branches and .else() for the fallback. The first truthy branch wins; its DOM persists across updates as long as the same branch is active.",
+      points: [
+        "condition is a zero-arg function — re-evaluated on update()",
+        "Chain as many .when() branches as needed before a final .else()",
+        "DOM is preserved when the active branch doesn't change — no teardown",
+        "Accepts multiple children per branch",
+      ],
+    }),
 
-    h3(s.h3, "Basic Usage"),
+    h3(s.h3, "Basic usage"),
     CodeBlock(apiCode.whenBasic.code, apiCode.whenBasic.lang),
 
-    h3(s.h3, "Multiple Conditions"),
+    h3(s.h3, "Multiple conditions"),
     CodeBlock(apiCode.whenRoles.code, apiCode.whenRoles.lang),
 
-    h3(s.h3, "Content in Branches"),
+    h3(s.h3, "Branch content"),
     CodeBlock(apiCode.whenElseBranch.code, apiCode.whenElseBranch.lang),
 
-    h3(s.h3, "DOM Preservation"),
-    p(s.p, "Elements persist across updates if the same branch is active:"),
+    h3(s.h3, "DOM preservation"),
+    p(s.p, "Elements persist across updates when the same branch stays active:"),
     CodeBlock(apiCode.whenPreserve.code, apiCode.whenPreserve.lang),
 
-    h3(s.h3, "Nested Conditions"),
-    CodeBlock(apiCode.whenNestedConditions.code, apiCode.whenNestedConditions.lang)
+    h3(s.h3, "Nested conditions"),
+    CodeBlock(apiCode.whenNestedConditions.code, apiCode.whenNestedConditions.lang),
+
+    NextSteps([
+      { label: "Tag Builders", description: "Every HTML and SVG tag as a global function.",             route: "tag-builders"   },
+      { label: "Styling",      description: "CSS-in-JS helpers, breakpoints, and pseudo-classes.",     route: "styling"        },
+      { label: "Pitfalls",     description: "Five common mistakes and how to avoid them.",             route: "pitfalls"       },
+      { label: "Examples",     description: "See update(), list(), and when() in working demos.",      route: "examples"       },
+    ])
   );
 }

@@ -45,8 +45,30 @@ export async function loadPage(route: Route): Promise<void> {
     // Show loading state
     pageContainerElement.innerHTML = "";
     const loadingContainer = document.createElement("div");
-    loadingContainer.style.cssText = "display: flex; justify-content: center; align-items: center; min-height: 400px; font-size: 1.2rem; color: #666;";
-    loadingContainer.textContent = "Loading...";
+    loadingContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 400px;
+      gap: 16px;
+    `;
+    const spinner = document.createElement("div");
+    spinner.style.cssText = `
+      width: 32px; height: 32px;
+      border: 2px solid #1e293b;
+      border-top-color: #84cc16;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    `;
+    const spinStyle = document.createElement("style");
+    spinStyle.textContent = "@keyframes spin { to { transform: rotate(360deg); } }";
+    document.head.appendChild(spinStyle);
+    const label = document.createElement("span");
+    label.style.cssText = "font-size: 13px; color: #64748b; font-family: inherit;";
+    label.textContent = "Loading...";
+    loadingContainer.appendChild(spinner);
+    loadingContainer.appendChild(label);
     pageContainerElement.appendChild(loadingContainer);
 
     // Check cache first
@@ -76,8 +98,18 @@ export async function loadPage(route: Route): Promise<void> {
     // Show error state
     pageContainerElement.innerHTML = "";
     const errorContainer = document.createElement("div");
-    errorContainer.style.cssText = "display: flex; justify-content: center; align-items: center; min-height: 400px; font-size: 1.2rem; color: #f44336;";
-    errorContainer.textContent = "Failed to load page: " + (error as Error).message;
+    errorContainer.style.cssText = `
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 400px; gap: 12px; padding: 48px;
+    `;
+    const errorTitle = document.createElement("span");
+    errorTitle.style.cssText = "font-size: 15px; font-weight: 600; color: #ef4444;";
+    errorTitle.textContent = "Failed to load page";
+    const errorMsg = document.createElement("span");
+    errorMsg.style.cssText = "font-size: 13px; color: #64748b; font-family: monospace;";
+    errorMsg.textContent = (error as Error).message;
+    errorContainer.appendChild(errorTitle);
+    errorContainer.appendChild(errorMsg);
     pageContainerElement.appendChild(errorContainer);
   }
 }

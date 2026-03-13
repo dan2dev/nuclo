@@ -16,74 +16,105 @@ const exampleRoutes: Record<string, Route> = {
   "styled-card": "example-styled-card",
 };
 
+// Emoji icons for each example category
+const exampleIcons: Record<string, string> = {
+  counter: "🔢",
+  todo: "✅",
+  subtasks: "🗂️",
+  search: "🔍",
+  async: "⚡",
+  forms: "📝",
+  nested: "🧩",
+  animations: "✨",
+  routing: "🗺️",
+  "styled-card": "🎨",
+};
+
 const cardStyle = cn(
   backgroundColor(colors.bgCard)
     .padding("24px")
-    .borderRadius("12px")
+    .borderRadius("16px")
     .border(`1px solid ${colors.border}`)
     .cursor("pointer")
-    .transition("all 0.2s"),
+    .transition("all 0.2s")
+    .display("flex")
+    .flexDirection("column")
+    .gap("12px"),
   {
-    hover: border(`1px solid ${colors.primary}`).transform("translateY(-2px)").boxShadow("0 4px 12px rgba(0, 0, 0, 0.15)")
+    hover: border(`1px solid ${colors.primary}`)
+      .transform("translateY(-2px)")
+      .boxShadow("0 8px 24px rgba(0,0,0,0.15)")
   }
-);
-
-const cardTitleStyle = cn(
-  fontSize("18px")
-    .fontWeight("600")
-    .color(colors.text)
-    .marginBottom("8px")
-);
-
-const cardDescStyle = cn(
-  fontSize("14px")
-    .color(colors.textMuted)
-    .lineHeight("1.5")
 );
 
 const gridStyle = cn(
   display("grid")
-    .gridTemplateColumns("repeat(auto-fill, minmax(300px, 1fr))")
-    .gap("20px")
-    .marginBottom("48px")
+    .gridTemplateColumns("1fr")
+    .gap("16px")
+    .marginBottom("48px"),
+  {
+    medium: gridTemplateColumns("repeat(2, 1fr)").gap("20px"),
+    large: gridTemplateColumns("repeat(3, 1fr)")
+  }
 );
 
-const categoryTitleStyle = cn(
-  fontSize("20px")
-    .fontWeight("600")
-    .color(colors.text)
+const categoryLabelStyle = cn(
+  fontSize("11px")
+    .fontWeight("700")
+    .color(colors.primary)
+    .textTransform("uppercase")
+    .letterSpacing("0.08em")
     .marginBottom("20px")
-    .marginTop("32px")
+    .marginTop("40px")
+    .display("block")
+);
+
+const categoryDescStyle = cn(
+  color(colors.textMuted)
+    .fontSize("14px")
+    .marginBottom("20px")
 );
 
 const liveBadgeStyle = cn(
-  display("inline-block")
-    .padding("4px 8px")
-    .backgroundColor("rgba(132, 204, 22, 0.15)")
+  display("inline-flex")
+    .alignItems("center")
+    .gap("5px")
+    .padding("3px 8px")
+    .backgroundColor("rgba(132, 204, 22, 0.1)")
     .color(colors.primary)
     .fontSize("11px")
     .fontWeight("600")
-    .borderRadius("4px")
-    .marginLeft("8px")
-    .textTransform("uppercase")
+    .borderRadius("99px")
 );
 
-function ExampleCard(example: ExampleContent, hasLiveDemo: boolean) {
+function ExampleCard(example: ExampleContent) {
   const route = exampleRoutes[example.id];
+  const icon = exampleIcons[example.id] ?? "📄";
 
   return div(
     cardStyle,
     on("click", () => setRoute(route)),
+
     div(
-      cardTitleStyle,
-      example.title,
-      hasLiveDemo ? span(liveBadgeStyle, "Live Demo") : null
+      cn(display("flex").alignItems("center").justifyContent("space-between")),
+      span(cn(fontSize("28px")), icon),
+      span(liveBadgeStyle,
+        span(cn(width("5px").height("5px").borderRadius("50%").backgroundColor(colors.primary).display("block"))),
+        "Live"
+      )
     ),
-    p(cardDescStyle, example.description)
+    div(
+      h3(cn(fontSize("16px").fontWeight("600").color(colors.text).marginBottom("6px")), example.title),
+      p(cn(fontSize("13px").color(colors.textMuted).lineHeight("1.6")), example.description)
+    ),
+    span(
+      cn(fontSize("13px").fontWeight("600").color(colors.primary)
+        .display("inline-flex").alignItems("center").gap("4px").marginTop("auto")),
+      "View Example →"
+    )
   );
 }
 
-// Categorize examples
 const basicExamples = ["counter", "todo", "subtasks"];
 const dataExamples = ["search", "async", "forms"];
 const advancedExamples = ["nested", "animations", "routing", "styled-card"];
@@ -93,40 +124,22 @@ function getExamplesByIds(ids: string[]) {
 }
 
 export function ExamplesPage() {
-  // All examples now have live demos
-  const liveExamples = new Set([
-    "counter", "todo", "subtasks", "search", "async",
-    "forms", "nested", "animations", "routing", "styled-card"
-  ]);
-
   return div(
     s.pageContent,
     h1(s.pageTitle, "Examples"),
-    p(
-      s.pageSubtitle,
-      "Explore practical examples demonstrating Nuclo's features. Examples with live demos are marked with a badge."
-    ),
+    p(s.pageSubtitle, "Interactive examples demonstrating Nuclo's features. Every example includes a live demo and full source code."),
 
-    h2(categoryTitleStyle, "Getting Started"),
-    p(cn(color(colors.textMuted).marginBottom("16px")), "Simple examples to help you understand the basics."),
-    div(
-      gridStyle,
-      ...getExamplesByIds(basicExamples).map(e => ExampleCard(e, liveExamples.has(e.id)))
-    ),
+    span(categoryLabelStyle, "Getting Started"),
+    p(categoryDescStyle, "Simple examples to understand the basics."),
+    div(gridStyle, ...getExamplesByIds(basicExamples).map(e => ExampleCard(e))),
 
-    h2(categoryTitleStyle, "Data & Forms"),
-    p(cn(color(colors.textMuted).marginBottom("16px")), "Working with data, APIs, and form handling."),
-    div(
-      gridStyle,
-      ...getExamplesByIds(dataExamples).map(e => ExampleCard(e, liveExamples.has(e.id)))
-    ),
+    span(categoryLabelStyle, "Data & Forms"),
+    p(categoryDescStyle, "Working with data, async APIs, and form handling."),
+    div(gridStyle, ...getExamplesByIds(dataExamples).map(e => ExampleCard(e))),
 
-    h2(categoryTitleStyle, "Advanced Patterns"),
-    p(cn(color(colors.textMuted).marginBottom("16px")), "More complex patterns and techniques."),
-    div(
-      gridStyle,
-      ...getExamplesByIds(advancedExamples).map(e => ExampleCard(e, liveExamples.has(e.id)))
-    ),
+    span(categoryLabelStyle, "Advanced Patterns"),
+    p(categoryDescStyle, "More complex patterns and techniques."),
+    div(gridStyle, ...getExamplesByIds(advancedExamples).map(e => ExampleCard(e))),
 
     section(
       cn(marginTop("48px").paddingTop("32px").borderTop(`1px solid ${colors.border}`)),

@@ -1,208 +1,172 @@
 import "nuclo";
-import { cn, s, colors } from "../styles.ts";
-import { CodeBlock, InlineCode } from "../components/CodeBlock.ts";
+import { s, colors } from "../styles.ts";
+import { InlineCode } from "../components/CodeBlock.ts";
+import { PageHeader, PitfallCard, NoteCard, NextSteps } from "../components/ui.ts";
 
 export function PitfallsPage() {
   return div(
     s.pageContent,
-    h1(s.pageTitle, "Common Pitfalls"),
-    p(
-      s.pageSubtitle,
-      "Avoid these common mistakes when building with Nuclo. Learn the patterns that work and why."
+
+    PageHeader(
+      "Common Pitfalls",
+      "Patterns that catch beginners off guard. Each entry shows the wrong way, the right way, and why it matters.",
+      "5 Pitfalls"
     ),
 
-    // Pitfall 1: Reactive functions for conditional elements
-    h2(s.h2, { id: "conditional-elements" }, "Conditional Element Rendering"),
-    div(
-      cn(
-        padding("20px")
-          .backgroundColor(colors.bgCard)
-          .borderRadius("12px")
-          .border(`1px solid ${colors.border}`)
-          .marginBottom("24px")
-      ),
-      h3(cn(fontSize("16px").fontWeight("600").color("#ef4444").marginBottom("12px")), "The Problem"),
-      p(s.p, "Using a reactive function to conditionally return different elements won't work:"),
-      CodeBlock(
-`// ❌ Wrong - reactive function returning elements won't render
+    // ── 1. Conditional elements ─────────────────────────────────────────────
+    PitfallCard({
+      title: "Conditional Element Rendering",
+      problemContent: [
+        "Using a reactive function to conditionally return ",
+        InlineCode("different elements"),
+        " won't render anything visible:",
+      ],
+      problemCode: `// ❌ Wrong — reactive function returning elements won't render
 button(
-  () => isOpen ? CloseIcon() : MenuIcon()  // This won't display anything!
+  () => isOpen ? CloseIcon() : MenuIcon()  // shows nothing!
 )`,
-        "typescript"
-      ),
-      h3(cn(fontSize("16px").fontWeight("600").color(colors.primary).marginTop("20px").marginBottom("12px")), "The Solution"),
-      p(s.p, "Use ", InlineCode("when()"), " for conditional element rendering:"),
-      CodeBlock(
-`// ✅ Correct - use when() for conditional elements
+      solutionContent: [
+        "Use ",
+        InlineCode("when()"),
+        " to conditionally mount/unmount elements from the DOM:",
+      ],
+      solutionCode: `// ✅ Correct — when() manages element mounting
 button(
   when(() => isOpen, CloseIcon()).else(MenuIcon())
 )`,
-        "typescript"
-      ),
-      h3(cn(fontSize("16px").fontWeight("600").color(colors.textMuted).marginTop("20px").marginBottom("12px")), "Why?"),
-      p(
-        s.p,
-        "Reactive functions ", InlineCode("() => value"), " work great for text content and attribute values because Nuclo can update them in place. But elements need to be mounted/unmounted from the DOM, which requires ", InlineCode("when()"), " to manage properly."
-      )
-    ),
+      why: `Reactive functions () => value work great for text content and attributes because Nuclo updates them in-place. But elements need to be physically mounted and removed from the DOM — that's what when() is for.`,
+    }),
 
-    // Pitfall 2: Forgetting to call update()
-    h2(s.h2, { id: "forgetting-update" }, "Forgetting to Call update()"),
-    div(
-      cn(
-        padding("20px")
-          .backgroundColor(colors.bgCard)
-          .borderRadius("12px")
-          .border(`1px solid ${colors.border}`)
-          .marginBottom("24px")
-      ),
-      h3(cn(fontSize("16px").fontWeight("600").color("#ef4444").marginBottom("12px")), "The Problem"),
-      p(s.p, "Changing state without calling ", InlineCode("update()"), " won't refresh the UI:"),
-      CodeBlock(
-`// ❌ Wrong - UI won't update
+    // ── 2. Forgetting update() ──────────────────────────────────────────────
+    PitfallCard({
+      title: "Forgetting to Call update()",
+      problemContent: [
+        "Changing state without calling ",
+        InlineCode("update()"),
+        " leaves the UI frozen:",
+      ],
+      problemCode: `// ❌ Wrong — UI won't refresh
 let count = 0;
 
 button('Increment', on('click', () => {
-  count++;  // State changed but UI stays the same
+  count++;  // state changed but screen stays the same
 }))`,
-        "typescript"
-      ),
-      h3(cn(fontSize("16px").fontWeight("600").color(colors.primary).marginTop("20px").marginBottom("12px")), "The Solution"),
-      p(s.p, "Always call ", InlineCode("update()"), " after changing state:"),
-      CodeBlock(
-`// ✅ Correct - call update() to refresh
+      solutionContent: [
+        "Always call ",
+        InlineCode("update()"),
+        " after mutating state to trigger a reactive re-evaluation:",
+      ],
+      solutionCode: `// ✅ Correct — update() triggers the refresh
 let count = 0;
 
 button('Increment', on('click', () => {
   count++;
-  update();  // Now the UI will reflect the new count
+  update();  // now the UI reflects the new count
 }))`,
-        "typescript"
-      )
-    ),
+    }),
 
-    // Pitfall 3: Replacing objects in lists
-    h2(s.h2, { id: "list-identity" }, "Replacing Objects in Lists"),
-    div(
-      cn(
-        padding("20px")
-          .backgroundColor(colors.bgCard)
-          .borderRadius("12px")
-          .border(`1px solid ${colors.border}`)
-          .marginBottom("24px")
-      ),
-      h3(cn(fontSize("16px").fontWeight("600").color("#ef4444").marginBottom("12px")), "The Problem"),
-      p(s.p, "Replacing objects instead of mutating them causes unnecessary DOM recreation:"),
-      CodeBlock(
-`// ❌ Wrong - creates a new object, element will be recreated
+    // ── 3. Replacing objects in lists ────────────────────────────────────────
+    PitfallCard({
+      title: "Replacing Objects in Lists",
+      problemContent: [
+        "Creating a new object instead of mutating the existing one causes ",
+        InlineCode("list()"),
+        " to destroy and recreate the DOM element:",
+      ],
+      problemCode: `// ❌ Wrong — new object = new DOM node
 todos[0] = { ...todos[0], done: true };
 update();`,
-        "typescript"
-      ),
-      h3(cn(fontSize("16px").fontWeight("600").color(colors.primary).marginTop("20px").marginBottom("12px")), "The Solution"),
-      p(s.p, "Mutate the existing object to preserve its DOM element:"),
-      CodeBlock(
-`// ✅ Correct - mutate the object, element is preserved
+      solutionContent: [
+        "Mutate the existing object to preserve DOM identity and skip unnecessary re-creation:",
+      ],
+      solutionCode: `// ✅ Correct — same object = same DOM node, just updates
 todos[0].done = true;
 update();`,
-        "typescript"
-      ),
-      h3(cn(fontSize("16px").fontWeight("600").color(colors.textMuted).marginTop("20px").marginBottom("12px")), "Why?"),
-      p(
-        s.p,
-        "Nuclo's ", InlineCode("list()"), " tracks items by object identity (reference). When you replace an object with a new one, Nuclo sees it as a different item and recreates the DOM element. Mutating preserves identity and enables efficient updates."
-      )
-    ),
+      why: `list() tracks items by object reference. Replace the reference and Nuclo treats it as a brand-new item, discarding the old DOM node and building a fresh one. Mutate in place to let the element live on.`,
+    }),
 
-    // Pitfall 4: Multiple update() calls
-    h2(s.h2, { id: "multiple-updates" }, "Multiple update() Calls"),
-    div(
-      cn(
-        padding("20px")
-          .backgroundColor(colors.bgCard)
-          .borderRadius("12px")
-          .border(`1px solid ${colors.border}`)
-          .marginBottom("24px")
-      ),
-      h3(cn(fontSize("16px").fontWeight("600").color("#ef4444").marginBottom("12px")), "The Problem"),
-      p(s.p, "Calling ", InlineCode("update()"), " multiple times is wasteful:"),
-      CodeBlock(
-`// ❌ Inefficient - 3 updates instead of 1
+    // ── 4. Multiple update() calls ──────────────────────────────────────────
+    PitfallCard({
+      title: "Multiple update() Calls in One Handler",
+      problemContent: [
+        "Calling ",
+        InlineCode("update()"),
+        " after every mutation causes redundant DOM passes:",
+      ],
+      problemCode: `// ❌ Inefficient — 3 full passes instead of 1
 function handleSubmit() {
   user.name = 'Alice';
-  update();
-  user.email = 'alice@example.com';
-  update();
+  update();                      // pass 1
+  user.email = 'alice@ex.com';
+  update();                      // pass 2
   user.age = 30;
-  update();
+  update();                      // pass 3
 }`,
-        "typescript"
-      ),
-      h3(cn(fontSize("16px").fontWeight("600").color(colors.primary).marginTop("20px").marginBottom("12px")), "The Solution"),
-      p(s.p, "Batch all state changes, then call ", InlineCode("update()"), " once:"),
-      CodeBlock(
-`// ✅ Efficient - batch changes, single update
+      solutionContent: ["Batch all mutations, then call ", InlineCode("update()"), " exactly once:"],
+      solutionCode: `// ✅ Efficient — one pass covers all changes
 function handleSubmit() {
-  user.name = 'Alice';
-  user.email = 'alice@example.com';
-  user.age = 30;
-  update();  // One update for all changes
+  user.name  = 'Alice';
+  user.email = 'alice@ex.com';
+  user.age   = 30;
+  update();                      // single pass
 }`,
-        "typescript"
-      )
-    ),
+    }),
 
-    // Pitfall 5: Static values where reactive needed
-    h2(s.h2, { id: "static-vs-reactive" }, "Static Values Instead of Reactive"),
-    div(
-      cn(
-        padding("20px")
-          .backgroundColor(colors.bgCard)
-          .borderRadius("12px")
-          .border(`1px solid ${colors.border}`)
-          .marginBottom("24px")
-      ),
-      h3(cn(fontSize("16px").fontWeight("600").color("#ef4444").marginBottom("12px")), "The Problem"),
-      p(s.p, "Using a static value when you need it to update:"),
-      CodeBlock(
-`// ❌ Wrong - count is captured once, never updates
+    // ── 5. Static vs reactive ────────────────────────────────────────────────
+    PitfallCard({
+      title: "Static Value Where Reactive Is Needed",
+      problemContent: [
+        "Interpolating a variable directly captures the value ",
+        InlineCode("at construction time"),
+        " — it never updates:",
+      ],
+      problemCode: `// ❌ Wrong — count is captured once, always shows 0
 let count = 0;
 
-div(
-  \`Count: \${count}\`  // Always shows "Count: 0"
-)`,
-        "typescript"
-      ),
-      h3(cn(fontSize("16px").fontWeight("600").color(colors.primary).marginTop("20px").marginBottom("12px")), "The Solution"),
-      p(s.p, "Wrap in a function to make it reactive:"),
-      CodeBlock(
-`// ✅ Correct - function is called on each update()
+div(\`Count: \${count}\`)  // always renders "Count: 0"`,
+      solutionContent: [
+        "Wrap in an arrow function so it re-evaluates on every ",
+        InlineCode("update()"),
+        ":",
+      ],
+      solutionCode: `// ✅ Correct — function runs fresh on each update()
 let count = 0;
 
-div(
-  () => \`Count: \${count}\`  // Updates when count changes
-)`,
-        "typescript"
-      )
+div(() => \`Count: \${count}\`)  // reflects current value`,
+    }),
+
+    NoteCard(
+      "tip",
+      "If you're ever unsure whether something should be a function: ask yourself — ",
+      "should this value change after the initial render? If yes, wrap it in ",
+      InlineCode("() =>"),
+      "."
     ),
 
-    // Summary
+    // ── Summary ─────────────────────────────────────────────────────────────
     h2(s.h2, { id: "summary" }, "Quick Reference"),
     div(
-      cn(
-        padding("20px")
-          .backgroundColor(colors.bgCard)
-          .borderRadius("12px")
-          .border(`1px solid ${colors.border}`)
-      ),
-      ul(
-        s.ul,
-        li(s.li, strong("Conditional elements:"), " Use ", InlineCode("when()"), ", not ", InlineCode("() => condition ? A : B")),
-        li(s.li, strong("State changes:"), " Always call ", InlineCode("update()"), " after modifying state"),
-        li(s.li, strong("Lists:"), " Mutate objects, don't replace them"),
-        li(s.li, strong("Batching:"), " Group state changes before a single ", InlineCode("update()")),
-        li(s.li, strong("Dynamic content:"), " Wrap in ", InlineCode("() =>"), " to make reactive")
+      ...([
+        ["Conditional elements", "when()", "() => condition ? A : B"],
+        ["State changes", "update() after mutating", "mutate without update()"],
+        ["List items", "mutate objects in-place", "replace with new objects"],
+        ["Batching", "one update() per handler", "update() after each mutation"],
+        ["Dynamic content", "() => expression", "plain interpolation"],
+      ] as [string, string, string][]).map(([concept, correct, wrong]) =>
+        div(
+          { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", padding: "12px 20px", borderBottom: `1px solid ${colors.border}` } },
+          span({ style: { fontSize: "13px", fontWeight: "600", color: colors.text } }, concept),
+          span({ style: { fontSize: "13px", color: colors.primary, fontFamily: "monospace" } }, "✅ " + correct),
+          span({ style: { fontSize: "13px", color: "#ef4444", fontFamily: "monospace" } }, "❌ " + wrong)
+        )
       )
-    )
+    ),
+
+    NextSteps([
+      { label: "Core API", description: "Deep dive into update(), list(), when(), and on().", route: "core-api" },
+      { label: "Getting Started", description: "Build your first Nuclo application from scratch.", route: "getting-started" },
+      { label: "Examples", description: "See all pitfalls avoided in real working demos.", route: "examples" },
+      { label: "Styling", description: "Learn the CSS-in-JS system and style helpers.", route: "styling" },
+    ])
   );
 }

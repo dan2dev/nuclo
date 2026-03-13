@@ -1,6 +1,7 @@
 import "nuclo";
-import { cn, s } from "../styles.ts";
+import { cn, s, colors } from "../styles.ts";
 import { CodeBlock, InlineCode } from "../components/CodeBlock.ts";
+import { PageHeader, NoteCard, NextSteps } from "../components/ui.ts";
 import { apiCode } from "../content/api.ts";
 
 export function TagBuildersPage() {
@@ -17,10 +18,11 @@ export function TagBuildersPage() {
 
   return div(
     s.pageContent,
-    h1(s.pageTitle, "Tag Builders"),
-    p(
-      s.pageSubtitle,
-      "Every HTML and SVG element is available globally after importing Nuclo. Build your UI with simple function calls."
+
+    PageHeader(
+      "Tag Builders",
+      "Every HTML and SVG element is available globally after importing Nuclo. Build your UI with plain function calls — no JSX required.",
+      "140+ Elements"
     ),
 
     // Overview
@@ -36,10 +38,28 @@ export function TagBuildersPage() {
     // HTML Tags
     h2(s.h2, { id: "html-tags" }, "HTML Tags"),
     p(s.p, "Full HTML5 coverage with 140+ elements:"),
-    ...htmlTagLists.map((group) =>
-      div(
-        h3(cn(fontSize("18px").fontWeight("600").marginTop("24px").marginBottom("12px")), group.title),
-        pre(s.codeBlock, code(group.tags))
+    div(
+      cn(
+        display("grid").gap("12px").gridTemplateColumns("1fr"),
+        { medium: gridTemplateColumns("repeat(2, 1fr)").gap("16px") }
+      ),
+      ...htmlTagLists.map((group) =>
+        div(
+          cn(
+            backgroundColor(colors.bgCard).borderRadius("12px")
+              .border(`1px solid ${colors.border}`).padding("16px 20px")
+          ),
+          h3(
+            cn(fontSize("13px").fontWeight("700").color(colors.primary)
+              .textTransform("uppercase").letterSpacing("0.06em").marginBottom("10px")),
+            group.title
+          ),
+          code(
+            cn(fontSize("13px").color(colors.textMuted).lineHeight("1.8")),
+            { style: { fontFamily: "'Courier New', Courier, monospace" } },
+            group.tags
+          )
+        )
       )
     ),
     p(
@@ -123,6 +143,15 @@ linearGradient, radialGradient, stop, text, tspan, textPath`,
 
     h3(s.h3, "Custom Modifiers"),
     p(s.p, "Create your own modifiers for reusable behaviors:"),
-    CodeBlock(apiCode.modifiersCustomFocus.code, apiCode.modifiersCustomFocus.lang)
+    CodeBlock(apiCode.modifiersCustomFocus.code, apiCode.modifiersCustomFocus.lang),
+
+    NoteCard("info", "Custom modifiers are perfect for abstracting focus rings, tooltip bindings, drag-and-drop, and other reusable DOM behaviors."),
+
+    NextSteps([
+      { label: "Core API",     description: "update(), render(), on(), list(), and when() in depth.",  route: "core-api"       },
+      { label: "Styling",      description: "CSS-in-JS system, style queries, and responsive design.", route: "styling"        },
+      { label: "Pitfalls",     description: "Five patterns to avoid when building with Nuclo.",        route: "pitfalls"       },
+      { label: "Examples",     description: "See tag builders used in real interactive demos.",        route: "examples"       },
+    ])
   );
 }

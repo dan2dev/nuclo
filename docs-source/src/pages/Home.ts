@@ -5,7 +5,7 @@ import { CodeBlock } from "../components/CodeBlock.ts";
 import { examplesContent } from "../content/examples.ts";
 import { gettingStartedCode } from "../content/gettingStarted.ts";
 import { stylingCode } from "../content/styling.ts";
-import { ArrowRightIcon, RocketIcon, BoxIcon, ZapIcon, RefreshIcon, CodeIcon, LayersIcon } from "../components/icons.ts";
+import { ArrowRightIcon } from "../components/icons.ts";
 
 const heroCode = `import 'nuclo';
 
@@ -21,74 +21,107 @@ const counter = div(
 
 render(counter, document.body);`;
 
+// ─── Live Demo ──────────────────────────────────────────────────────────────
+
 let heroDemoCount = 0;
 
 function HeroDemo() {
   return div(
-    cn(
-      display("flex")
-        .flexDirection("column")
-        .gap("12px")
-        .padding("24px")
-        .backgroundColor(colors.bgCard)
-        .border(`1px solid ${colors.border}`)
-        .borderRadius("12px")
-    ),
-    h3(cn(fontSize("16px").fontWeight("600").color(colors.text)), "Live Counter Demo"),
+    cn(padding("20px 24px").display("flex").flexDirection("column").gap("16px")),
+
     div(
-      cn(display("flex").alignItems("center").gap("12px")),
-      span(cn(fontSize("32px").fontWeight("700").color(colors.text)), () => heroDemoCount),
-      span(cn(color(colors.textDim)), () => heroDemoCount % 2 === 0 ? "even" : "odd")
+      cn(display("flex").alignItems("baseline").gap("12px")),
+      span(
+        cn(fontSize("56px").fontWeight("800").lineHeight("1").color(colors.text)),
+        () => heroDemoCount
+      ),
+      span(
+        cn(
+          fontSize("11px").fontWeight("700").padding("4px 10px")
+            .borderRadius("99px").textTransform("uppercase").letterSpacing("0.07em")
+            .transition("all 0.3s")
+        ),
+        {
+          style: () => ({
+            backgroundColor: heroDemoCount % 2 === 0
+              ? "rgba(132, 204, 22, 0.15)"
+              : "rgba(34, 211, 238, 0.15)",
+            color: heroDemoCount % 2 === 0 ? colors.primary : colors.accentSecondary,
+          })
+        },
+        () => heroDemoCount % 2 === 0 ? "even" : "odd"
+      )
     ),
+
+    p(
+      cn(fontSize("11px").color(colors.textDim).letterSpacing("0.07em").textTransform("uppercase").fontWeight("600")),
+      "Live Counter"
+    ),
+
     div(
       cn(display("flex").gap("8px")),
       button(
-        s.btnSecondary,
-        "-",
-        on("click", () => {
-          heroDemoCount--;
-          update();
-        })
+        cn(
+          width("40px").height("40px")
+            .display("flex").alignItems("center").justifyContent("center")
+            .backgroundColor(colors.bgLight).color(colors.text)
+            .borderRadius("8px").border(`1px solid ${colors.borderLight}`)
+            .fontSize("18px").fontWeight("700").cursor("pointer").transition("all 0.15s"),
+          { hover: backgroundColor(colors.bgCardHover).borderColor(colors.primary) }
+        ),
+        "−",
+        on("click", () => { heroDemoCount--; update(); })
       ),
       button(
-        s.btnSecondary,
-        "Reset",
-        on("click", () => {
-          heroDemoCount = 0;
-          update();
-        })
-      ),
-      button(
-        s.btnPrimary,
-        { style: s.btnPrimaryStyle },
+        cn(
+          width("40px").height("40px")
+            .display("flex").alignItems("center").justifyContent("center")
+            .backgroundColor(colors.primary).color(colors.bg)
+            .borderRadius("8px").border("none")
+            .fontSize("18px").fontWeight("700").cursor("pointer").transition("all 0.15s"),
+          { hover: backgroundColor(colors.primaryHover).transform("scale(1.05)") }
+        ),
         "+",
-        on("click", () => {
-          heroDemoCount++;
-          update();
-        })
+        on("click", () => { heroDemoCount++; update(); })
+      ),
+      button(
+        cn(
+          padding("0 14px").height("40px")
+            .display("flex").alignItems("center").justifyContent("center")
+            .backgroundColor(colors.bgLight).color(colors.textMuted)
+            .borderRadius("8px").border(`1px solid ${colors.border}`)
+            .fontSize("13px").cursor("pointer").transition("all 0.15s"),
+          { hover: color(colors.text).borderColor(colors.borderLight) }
+        ),
+        "Reset",
+        on("click", () => { heroDemoCount = 0; update(); })
       )
     )
   );
 }
 
-function FeatureCard(iconEl: unknown, title: string, description: string) {
-  const featureCardStyle = cn(
-    padding("32px")
-      .backgroundColor(colors.bgCard)
-      .borderRadius("16px")
-      .border(`1px solid ${colors.border}`)
-      .transition("all 0.3s")
-      .position("relative")
-      .overflow("hidden"),
-  );
-  
-  return div(
-    featureCardStyle,
-    div(s.featureIcon, { style: s.featureIconStyle }, iconEl as HTMLElement),
-    h3(s.featureTitle, title),
-    p(s.featureDesc, description)
-  );
-}
+// ─── Bento Card Styles ───────────────────────────────────────────────────────
+
+const bentoCell = cn(
+  backgroundColor(colors.bgCard)
+    .borderRadius("20px")
+    .border(`1px solid ${colors.border}`)
+    .overflow("hidden")
+);
+
+const bentoCellGreen = cn(
+  borderRadius("20px")
+    .border(`1px solid ${colors.borderGlow}`)
+    .overflow("hidden")
+);
+
+const bentoCellCyan = cn(
+  borderRadius("20px")
+    .border("1px solid rgba(34, 211, 238, 0.25)")
+    .overflow("hidden")
+);
+
+// ─── Data ───────────────────────────────────────────────────────────────────
 
 const previewIds = ["counter", "todo", "search", "async", "styled-card", "subtasks"];
 const previewExamples = examplesContent.filter((ex) => previewIds.includes(ex.id));
@@ -97,23 +130,37 @@ function goToExample(id: string) {
   setRoute("examples");
   setTimeout(() => {
     const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, 150);
 }
 
+// ─── Page ────────────────────────────────────────────────────────────────────
+
 export function HomePage() {
   return div(
-    // Hero Section
+
+    // ── HERO ──────────────────────────────────────────────────────────────
     section(
       s.hero,
-      // Background decoration
-      // div(
-      //   // cn(position("absolute").left("50%").width("600px").height("600px").opacity("0.1").pointerEvents("none")),
-      //   // { style: { transform: "translateX(-50%)" } },
-      //   NucloLogo(600, true)
-      // ),
+
+      div(
+        cn(
+          display("inline-flex").alignItems("center").gap("8px")
+            .padding("6px 16px").borderRadius("99px")
+            .backgroundColor("rgba(132, 204, 22, 0.08)")
+            .border(`1px solid ${colors.borderGlow}`)
+            .marginBottom("28px")
+        ),
+        span(cn(
+          width("7px").height("7px").borderRadius("50%")
+            .backgroundColor(colors.primary).display("block")
+        )),
+        span(
+          cn(fontSize("12px").fontWeight("600").color(colors.primary).letterSpacing("0.04em")),
+          "Lightweight · Explicit · Reactive"
+        )
+      ),
+
       h1(
         s.heroTitle,
         "Build ",
@@ -122,177 +169,300 @@ export function HomePage() {
         span(s.heroTitleAccent, { style: s.heroTitleAccentStyle }, "Reactive"),
         " Interfaces."
       ),
+
       p(
         s.heroSubtitle,
-        "A lightweight, flexible, component-based framework for the modern web. Just functions, plain objects, and explicit updates."
+        "A lightweight DOM library for the modern web. Just functions, plain objects, and explicit updates — no magic, no hidden reactivity."
       ),
+
       div(
         s.heroButtons,
         button(
           cn(
             padding("14px 32px")
-              .backgroundColor(colors.primary)
-              .color(colors.bg)
-              .borderRadius("8px")
-              .fontWeight("600")
-              .fontSize("15px")
-              .border("none")
-              .transition("all 0.2s")
-              .display("flex")
-              .alignItems("center")
-              .gap("8px"),
-            {
-              hover: backgroundColor(colors.primaryHover).transform("translateY(-2px)").boxShadow(`0 0 30px ${colors.primaryGlow}`)
-            }
+              .backgroundColor(colors.primary).color(colors.bg)
+              .borderRadius("10px").fontWeight("600").fontSize("15px")
+              .border("none").transition("all 0.2s")
+              .display("flex").alignItems("center").gap("8px"),
+            { hover: backgroundColor(colors.primaryHover).transform("translateY(-2px)").boxShadow(`0 8px 24px ${colors.primaryGlow}`) }
           ),
           { style: s.btnPrimaryStyle },
-          "Get Started",
-          ArrowRightIcon(),
+          "Get Started", ArrowRightIcon(),
           on("click", () => setRoute("getting-started"))
         ),
         button(
           cn(
             padding("14px 32px")
-              .backgroundColor("transparent")
-              .color(colors.text)
-              .borderRadius("8px")
-              .fontWeight("600")
-              .fontSize("15px")
-              .border(`1px solid ${colors.borderLight}`)
-              .transition("all 0.2s"),
-            {
-              hover: border(`1px solid ${colors.primary}`).color(colors.primary).transform("translateY(-2px)")
-            }
+              .backgroundColor("transparent").color(colors.text)
+              .borderRadius("10px").fontWeight("600").fontSize("15px")
+              .border(`1px solid ${colors.borderLight}`).transition("all 0.2s"),
+            { hover: border(`1px solid ${colors.primary}`).color(colors.primary).transform("translateY(-2px)") }
           ),
-          "View Demo",
+          "View Examples",
           on("click", () => setRoute("examples"))
         )
       )
     ),
 
-    // Code Preview
+    // ── BENTO GRID ────────────────────────────────────────────────────────
     section(
-      cn(padding("0 48px 100px").maxWidth("800px").margin("0 auto")),
+      cn(
+        padding("0 24px 80px").maxWidth("1200px").margin("0 auto"),
+        { medium: padding("0 48px 100px") }
+      ),
+
       div(
-        cn(borderRadius("16px").border(`1px solid ${colors.border}`).overflow("hidden")),
+        cn(
+          display("grid").gap("16px").gridTemplateColumns("1fr"),
+          {
+            medium: gridTemplateColumns("repeat(2, 1fr)").gap("20px"),
+            large: gridTemplateColumns("repeat(3, 1fr)").gap("20px")
+          }
+        ),
+
+        // TILE 1: Code Preview — spans 2 cols (medium+), 2 rows (large+)
+        div(
+          bentoCell,
+          { className: "bento-col-2 bento-row-2" },
+          // macOS window chrome
+          div(
+            cn(
+              padding("12px 20px").backgroundColor(colors.bgLight)
+                .borderBottom(`1px solid ${colors.border}`)
+                .display("flex").alignItems("center").gap("8px")
+            ),
+            span(cn(width("11px").height("11px").borderRadius("50%").backgroundColor("#ff5f57").display("block"))),
+            span(cn(width("11px").height("11px").borderRadius("50%").backgroundColor("#febc2e").display("block"))),
+            span(cn(width("11px").height("11px").borderRadius("50%").backgroundColor("#28c840").display("block"))),
+            span(cn(marginLeft("auto").fontSize("12px").color(colors.textDim).fontWeight("500")), "app.ts")
+          ),
+          div(
+            cn(overflow("auto")),
+            CodeBlock(heroCode, "typescript", false)
+          )
+        ),
+
+        // TILE 2: Zero Dependencies stat
+        div(
+          bentoCellGreen,
+          { style: { background: `linear-gradient(145deg, rgba(132, 204, 22, 0.1) 0%, ${colors.bgCard} 65%)` } },
+          div(
+            cn(padding("28px").display("flex").flexDirection("column")),
+            div(
+              cn(display("flex").alignItems("baseline").gap("4px")),
+              span(cn(fontSize("56px").fontWeight("800").lineHeight("1").color(colors.primary)), "0"),
+              span(cn(fontSize("18px").fontWeight("600").color(colors.textDim)), "deps")
+            ),
+            div(
+              cn(marginTop("20px")),
+              h3(cn(fontSize("17px").fontWeight("600").color(colors.text).marginBottom("6px")), "Zero Dependencies"),
+              p(cn(fontSize("13px").color(colors.textMuted).lineHeight("1.7")), "No third-party packages. Pure DOM, pure performance.")
+            )
+          )
+        ),
+
+        // TILE 3: Live Counter Demo
+        div(
+          bentoCell,
+          div(
+            cn(
+              padding("12px 20px").borderBottom(`1px solid ${colors.border}`)
+                .display("flex").alignItems("center").justifyContent("space-between")
+            ),
+            span(
+              cn(fontSize("11px").fontWeight("700").color(colors.textDim)
+                .textTransform("uppercase").letterSpacing("0.08em")),
+              "Live Demo"
+            ),
+            span(
+              cn(
+                display("inline-flex").alignItems("center").gap("5px")
+                  .padding("3px 10px").borderRadius("99px")
+                  .backgroundColor("rgba(132, 204, 22, 0.1)")
+                  .fontSize("11px").fontWeight("600").color(colors.primary)
+              ),
+              span(cn(width("6px").height("6px").borderRadius("50%").backgroundColor(colors.primary).display("block"))),
+              "Interactive"
+            )
+          ),
+          HeroDemo()
+        ),
+
+        // TILE 4: TypeScript-First
+        div(
+          bentoCell,
+          div(
+            cn(padding("28px")),
+            div(
+              cn(
+                display("inline-flex").alignItems("center").justifyContent("center")
+                  .width("44px").height("44px").borderRadius("12px").marginBottom("16px")
+              ),
+              { style: { background: "linear-gradient(135deg, rgba(130, 170, 255, 0.2), rgba(130, 170, 255, 0.05))", border: "1px solid rgba(130, 170, 255, 0.25)" } },
+              span(cn(fontSize("22px")), "⚡")
+            ),
+            h3(cn(fontSize("17px").fontWeight("600").color(colors.text).marginBottom("8px")), "TypeScript-First"),
+            p(cn(fontSize("13px").color(colors.textMuted).lineHeight("1.7")), "Full type definitions for 140+ HTML and SVG tags. Catch errors at compile time, not runtime.")
+          )
+        ),
+
+        // TILE 5: 140+ Tags
+        div(
+          bentoCellCyan,
+          { style: { background: `linear-gradient(145deg, rgba(34, 211, 238, 0.1) 0%, ${colors.bgCard} 65%)` } },
+          div(
+            cn(padding("28px")),
+            div(
+              cn(display("flex").alignItems("baseline").gap("2px")),
+              span(cn(fontSize("52px").fontWeight("800").lineHeight("1").color(colors.accentSecondary)), "140"),
+              span(cn(fontSize("26px").fontWeight("800").color(colors.accentSecondary)), "+")
+            ),
+            h3(cn(fontSize("17px").fontWeight("600").color(colors.text).marginBottom("6px").marginTop("16px")), "HTML & SVG Tags"),
+            p(cn(fontSize("13px").color(colors.textMuted).lineHeight("1.6")), "Every standard element as a global builder function. No imports needed.")
+          )
+        ),
+
+        // TILE 6: Fine-Grained Updates
+        div(
+          bentoCell,
+          div(
+            cn(padding("28px")),
+            div(
+              cn(
+                display("inline-flex").alignItems("center").justifyContent("center")
+                  .width("44px").height("44px").borderRadius("12px").marginBottom("16px")
+              ),
+              { style: { background: "linear-gradient(135deg, rgba(132, 204, 22, 0.2), rgba(132, 204, 22, 0.05))", border: `1px solid ${colors.borderGlow}` } },
+              span(cn(fontSize("22px")), "🎯")
+            ),
+            h3(cn(fontSize("17px").fontWeight("600").color(colors.text).marginBottom("8px")), "Fine-Grained Updates"),
+            p(cn(fontSize("13px").color(colors.textMuted).lineHeight("1.7")), "Only updates what changed. Elements are reused, branches preserved, performance maximized.")
+          )
+        )
+      )
+    ),
+
+    // ── INSTALL BAR ───────────────────────────────────────────────────────
+    section(
+      cn(
+        padding("0 24px 80px").maxWidth("1200px").margin("0 auto"),
+        { medium: padding("0 48px 80px") }
+      ),
+      div(
+        cn(
+          backgroundColor(colors.bgCode).borderRadius("16px")
+            .border(`1px solid ${colors.border}`)
+            .padding("24px 32px")
+            .display("flex").alignItems("center")
+            .justifyContent("space-between").flexWrap("wrap").gap("16px")
+        ),
         { style: s.glowBoxStyle },
         div(
-          cn(padding("12px 20px").backgroundColor(colors.bgLight).borderBottom(`1px solid ${colors.border}`).display("flex").alignItems("center").gap("8px")),
-          span(cn(width("12px").height("12px").borderRadius("50%").backgroundColor("#ff5f57"))),
-          span(cn(width("12px").height("12px").borderRadius("50%").backgroundColor("#febc2e"))),
-          span(cn(width("12px").height("12px").borderRadius("50%").backgroundColor("#28c840"))),
-          span(cn(marginLeft("auto").fontSize("13px").color(colors.textDim)), "main.ts")
+          p(
+            cn(fontSize("11px").color(colors.textDim).marginBottom("8px").fontWeight("600")
+              .textTransform("uppercase").letterSpacing("0.08em")),
+            "Install via npm"
+          ),
+          span(
+            cn(fontSize("20px").fontWeight("600").color(colors.primary)),
+            { style: { fontFamily: "'Courier New', Courier, monospace" } },
+            "npm install nuclo"
+          )
         ),
-        CodeBlock(heroCode, "typescript", false)
+        button(
+          cn(
+            padding("10px 24px").backgroundColor(colors.primary).color(colors.bg)
+              .borderRadius("8px").fontWeight("600").fontSize("14px").border("none")
+              .cursor("pointer").transition("all 0.2s"),
+            { hover: backgroundColor(colors.primaryHover).transform("translateY(-1px)") }
+          ),
+          "Get Started →",
+          on("click", () => setRoute("getting-started"))
+        )
       )
     ),
 
-    // Features
-    section(
-      s.features,
-      { style: s.featuresStyle },
-      FeatureCard(
-        RocketIcon(),
-        "Lightweight & Fast",
-        "Zero dependencies, tiny bundle size. Built for performance from the ground up with direct DOM manipulation."
-      ),
-      FeatureCard(
-        BoxIcon(),
-        "Component-Based",
-        "Build encapsulated components that manage their own state. Compose them to make complex UIs simple."
-      ),
-      FeatureCard(
-        RefreshIcon(),
-        "Simple Reactivity",
-        "Explicit update() calls give you full control. No magic, no proxies, no hidden re-renders."
-      ),
-      FeatureCard(
-        ZapIcon(),
-        "Fine-Grained Updates",
-        "Only updates what changed. Elements are reused, branches are preserved, performance is maximized."
-      ),
-      FeatureCard(
-        CodeIcon(),
-        "TypeScript-First",
-        "Full type definitions for 140+ HTML and SVG tags. Catch errors at compile time, not runtime."
-      ),
-      FeatureCard(
-        LayersIcon(),
-        "Intuitive API",
-        "Global tag builders feel natural. Just use div(), span(), button() - no imports needed."
-      )
-    ),
-
-    // Quick Start Section
+    // ── QUICK START ───────────────────────────────────────────────────────
     section(
       s.section,
       h2(s.sectionTitle, "Quick Start"),
-      p(s.sectionSubtitle, "Get up and running in seconds."),
+      p(s.sectionSubtitle, "Up and running in 30 seconds."),
       div(
-        s.flexCol,
-        s.gap32,
-        div(
-          h3(cn(fontSize("18px").fontWeight("600").color(colors.primary).marginBottom("16px")), "1. Install"),
-          CodeBlock("npm install nuclo", "bash")
+        cn(
+          display("grid").gap("16px").gridTemplateColumns("1fr"),
+          { medium: gridTemplateColumns("repeat(3, 1fr)").gap("20px") }
         ),
         div(
-          h3(cn(fontSize("18px").fontWeight("600").color(colors.primary).marginBottom("16px")), "2. Import and use"),
+          cn(backgroundColor(colors.bgCard).borderRadius("16px").border(`1px solid ${colors.border}`).padding("24px")),
+          span(cn(fontSize("11px").fontWeight("700").color(colors.primary)
+            .textTransform("uppercase").letterSpacing("0.08em").display("block").marginBottom("16px")), "Step 1"),
+          h3(cn(fontSize("17px").fontWeight("600").color(colors.text).marginBottom("16px")), "Install"),
+          CodeBlock("npm install nuclo", "bash", false)
+        ),
+        div(
+          cn(backgroundColor(colors.bgCard).borderRadius("16px").border(`1px solid ${colors.border}`).padding("24px")),
+          span(cn(fontSize("11px").fontWeight("700").color(colors.primary)
+            .textTransform("uppercase").letterSpacing("0.08em").display("block").marginBottom("16px")), "Step 2"),
+          h3(cn(fontSize("17px").fontWeight("600").color(colors.text).marginBottom("16px")), "Import & Use"),
           CodeBlock(`import 'nuclo';
 
-// Now use div(), update(), on(), list(), when(), render() globally
 const app = div(
   h1('Hello, Nuclo!'),
   p('Building UIs made simple.')
 );
 
-render(app, document.body);`, "typescript")
+render(app, document.body);`, "typescript", false)
         ),
         div(
-          h3(cn(fontSize("18px").fontWeight("600").color(colors.primary).marginBottom("16px")), "3. Add TypeScript support"),
+          cn(backgroundColor(colors.bgCard).borderRadius("16px").border(`1px solid ${colors.border}`).padding("24px")),
+          span(cn(fontSize("11px").fontWeight("700").color(colors.primary)
+            .textTransform("uppercase").letterSpacing("0.08em").display("block").marginBottom("16px")), "Step 3"),
+          h3(cn(fontSize("17px").fontWeight("600").color(colors.text).marginBottom("16px")), "TypeScript"),
           CodeBlock(`// tsconfig.json
 {
   "compilerOptions": {
     "types": ["nuclo/types"]
   }
-}`, "json")
+}`, "json", false)
         )
-      ),
-      div(
-        cn(marginTop("32px")),
-        h3(cn(fontSize("18px").fontWeight("600").color(colors.primary).marginBottom("16px")), "Try it live"),
-        HeroDemo()
       )
     ),
 
-    // Core Concepts (from original landing page)
+    // ── CORE CONCEPTS ─────────────────────────────────────────────────────
     section(
       s.section,
       h2(s.sectionTitle, "Core Concepts"),
-      p(s.sectionSubtitle, "Explicit updates, reactive functions, conditionals, list syncing, and styling."),
+      p(s.sectionSubtitle, "Explicit updates, reactive functions, conditionals, and list synchronization."),
       div(
-        s.demoContainerSingle,
-        div(
-          s.demoPanel,
-          div(s.demoPanelHeader, "Batch updates"),
-          div(
-            s.demoPanelContent,
-            CodeBlock(gettingStartedCode.batchUpdates.code, gettingStartedCode.batchUpdates.lang, false)
-          )
+        cn(
+          display("grid").gap("16px").gridTemplateColumns("1fr"),
+          {
+            medium: gridTemplateColumns("repeat(2, 1fr)").gap("20px"),
+            large: gridTemplateColumns("repeat(3, 1fr)")
+          }
         ),
         div(
-          s.demoPanel,
-          div(s.demoPanelHeader, "Reactive functions"),
-          div(
-            s.demoPanelContent,
-            CodeBlock(gettingStartedCode.reactiveText.code, gettingStartedCode.reactiveText.lang, false)
-          )
-        )
-      ),
-      div(
-        cn(display("grid").gap("20px").gridTemplateColumns("1fr"), { medium: gridTemplateColumns("repeat(2, 1fr)"), large: gridTemplateColumns("repeat(3, 1fr)") }),
+          cn(backgroundColor(colors.bgCard).borderRadius("16px").border(`1px solid ${colors.border}`).padding("24px")),
+          h3(cn(fontSize("13px").fontWeight("700").color(colors.textMuted).marginBottom("16px")
+            .textTransform("uppercase").letterSpacing("0.06em")), "Batch Updates"),
+          CodeBlock(gettingStartedCode.batchUpdates.code, gettingStartedCode.batchUpdates.lang, false)
+        ),
         div(
-          s.featureCard,
-          h3(s.featureTitle, "Conditional rendering"),
+          cn(backgroundColor(colors.bgCard).borderRadius("16px").border(`1px solid ${colors.border}`).padding("24px")),
+          h3(cn(fontSize("13px").fontWeight("700").color(colors.textMuted).marginBottom("16px")
+            .textTransform("uppercase").letterSpacing("0.06em")), "Reactive Functions"),
+          CodeBlock(gettingStartedCode.reactiveText.code, gettingStartedCode.reactiveText.lang, false)
+        ),
+        div(
+          cn(backgroundColor(colors.bgCard).borderRadius("16px").border(`1px solid ${colors.border}`).padding("24px")),
+          h3(cn(fontSize("13px").fontWeight("700").color(colors.textMuted).marginBottom("16px")
+            .textTransform("uppercase").letterSpacing("0.06em")), "CSS-in-JS"),
+          CodeBlock(stylingCode.overviewQuickExample.code, stylingCode.overviewQuickExample.lang, false)
+        ),
+        div(
+          cn(backgroundColor(colors.bgCard).borderRadius("16px").border(`1px solid ${colors.border}`).padding("24px")),
+          h3(cn(fontSize("13px").fontWeight("700").color(colors.textMuted).marginBottom("16px")
+            .textTransform("uppercase").letterSpacing("0.06em")), "Conditionals"),
           CodeBlock(`when(() => user.isAdmin,
   div('Admin Panel')
 ).when(() => user.isLoggedIn,
@@ -302,38 +472,59 @@ render(app, document.body);`, "typescript")
 );`, "typescript", false)
         ),
         div(
-          s.featureCard,
-          h3(s.featureTitle, "List synchronization"),
+          cn(backgroundColor(colors.bgCard).borderRadius("16px").border(`1px solid ${colors.border}`).padding("24px")),
+          h3(cn(fontSize("13px").fontWeight("700").color(colors.textMuted).marginBottom("16px")
+            .textTransform("uppercase").letterSpacing("0.06em")), "List Sync"),
           CodeBlock(`list(() => items, (item, index) =>
   div(() => \`\${index}: \${item.name}\`)
 );`, "typescript", false)
-        ),
-        div(
-          s.featureCard,
-          h3(s.featureTitle, "CSS-in-JS styling"),
-          CodeBlock(stylingCode.overviewQuickExample.code, stylingCode.overviewQuickExample.lang, false)
         )
       )
     ),
 
-    // Examples preview
+    // ── EXAMPLES PREVIEW ──────────────────────────────────────────────────
     section(
       s.section,
       h2(s.sectionTitle, "Examples"),
-      p(s.sectionSubtitle, "Jump into any example from the original gallery."),
+      p(s.sectionSubtitle, "Practical examples with interactive live demos."),
       div(
-        cn(display("grid").gap("20px"), { medium: gridTemplateColumns("repeat(3, 1fr)") }),
+        cn(
+          display("grid").gap("16px").gridTemplateColumns("1fr"),
+          {
+            medium: gridTemplateColumns("repeat(2, 1fr)").gap("20px"),
+            large: gridTemplateColumns("repeat(3, 1fr)")
+          }
+        ),
         ...previewExamples.map((example) =>
           div(
-            s.featureCard,
-            h3(s.featureTitle, example.title),
-            p(s.featureDesc, example.description),
-            button(
-              s.btnSecondary,
-              "View Example",
-              on("click", () => goToExample(example.id))
-            )
+            cn(
+              backgroundColor(colors.bgCard).borderRadius("16px")
+                .border(`1px solid ${colors.border}`)
+                .padding("24px").cursor("pointer").transition("all 0.2s"),
+              { hover: border(`1px solid ${colors.primary}`).transform("translateY(-2px)").boxShadow("0 8px 24px rgba(0,0,0,0.15)") }
+            ),
+            h3(cn(fontSize("16px").fontWeight("600").color(colors.text).marginBottom("10px")), example.title),
+            p(cn(fontSize("13px").color(colors.textMuted).lineHeight("1.7").marginBottom("20px")), example.description),
+            span(
+              cn(fontSize("13px").fontWeight("600").color(colors.primary)
+                .display("inline-flex").alignItems("center").gap("4px")),
+              "View Example →"
+            ),
+            on("click", () => goToExample(example.id))
           )
+        )
+      ),
+      div(
+        cn(textAlign("center").marginTop("40px")),
+        button(
+          cn(
+            padding("12px 32px").backgroundColor("transparent").color(colors.text)
+              .borderRadius("10px").fontWeight("600").fontSize("15px")
+              .border(`1px solid ${colors.borderLight}`).transition("all 0.2s"),
+            { hover: border(`1px solid ${colors.primary}`).color(colors.primary) }
+          ),
+          "View All Examples →",
+          on("click", () => setRoute("examples"))
         )
       )
     )

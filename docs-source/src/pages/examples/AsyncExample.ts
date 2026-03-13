@@ -1,8 +1,7 @@
 import "nuclo";
 import { cn, s, colors } from "../../styles.ts";
-import { CodeBlock } from "../../components/CodeBlock.ts";
 import { examplesContent } from "../../content/examples.ts";
-import { setRoute } from "../../router.ts";
+import { ExampleLayout } from "../../components/ExampleLayout.ts";
 
 // Live demo state
 type Product = { id: number; title: string; category: string; price: number };
@@ -209,21 +208,10 @@ function LiveAsync() {
 
 export function AsyncExamplePage() {
   const example = examplesContent.find(e => e.id === "async")!;
-
-  return div(
-    s.pageContent,
-    a(
-      cn(color(colors.textMuted).fontSize("14px").marginBottom("16px").display("inline-block").cursor("pointer")),
-      "← Back to Examples",
-      on("click", (e) => {
-        e.preventDefault();
-        setRoute("examples");
-      })
-    ),
-    h1(s.pageTitle, example.title),
-    p(s.pageSubtitle, example.description),
-    LiveAsync(),
-    h2(s.h2, "Source Code"),
-    CodeBlock(example.code, "typescript")
-  );
+  return ExampleLayout({
+    title: example.title,
+    description: example.description,
+    demo: LiveAsync(),
+    code: example.code,
+  });
 }

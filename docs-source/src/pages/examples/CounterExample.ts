@@ -1,101 +1,71 @@
 import "nuclo";
-import { cn, s, colors } from "../../styles.ts";
-import { CodeBlock } from "../../components/CodeBlock.ts";
+import { cn, colors } from "../../styles.ts";
 import { examplesContent } from "../../content/examples.ts";
-import { setRoute } from "../../router.ts";
+import { ExampleLayout } from "../../components/ExampleLayout.ts";
 
-// Live demo state
 let counterCount = 0;
 
-const demoStyle = cn(backgroundColor(colors.bgCard)
-  .padding("32px")
-  .borderRadius("16px")
-  .border(`1px solid ${colors.border}`)
-  .marginBottom("32px"));
-
-const demoBtnStyle = cn(padding("10px 20px")
-  .backgroundColor(colors.primary)
-  .color(colors.bg)
-  .border("none")
-  .borderRadius("8px")
-  .fontSize("14px")
-  .fontWeight("600")
-  .cursor("pointer")
-  .transition("all 0.2s"));
-
-const demoBtnSecondary = cn(padding("10px 20px")
-  .backgroundColor(colors.bgLight)
-  .color(colors.text)
-  .border(`1px solid ${colors.border}`)
-  .borderRadius("8px")
-  .fontSize("14px")
-  .fontWeight("500")
-  .cursor("pointer")
-  .transition("all 0.2s"));
+const btnBase = cn(
+  display("flex").alignItems("center").justifyContent("center")
+    .borderRadius("10px").fontWeight("700").fontSize("18px")
+    .cursor("pointer").transition("all 0.15s").border("none")
+);
 
 function LiveCounter() {
   return div(
-    demoStyle,
+    cn(display("flex").alignItems("center").justifyContent("space-between").flexWrap("wrap").gap("20px")),
+
     div(
-      s.flexBetween,
       div(
-        h3(
-          cn(fontSize("48px").fontWeight("700").color(colors.text).marginBottom("8px")),
+        cn(display("flex").alignItems("baseline").gap("12px")),
+        h2(
+          cn(fontSize("56px").fontWeight("800").lineHeight("1").color(colors.text)),
           () => counterCount
         ),
-        p(cn(fontSize("14px").color(colors.textMuted)), "Current count")
-      ),
-      div(
-        s.flex,
-        s.gap8,
-        button(
-          demoBtnStyle,
-          cn(width("44px").height("44px").fontSize("20px").padding("0").display("flex").alignItems("center").justifyContent("center")),
-          "−",
-          on("click", () => {
-            counterCount--;
-            update();
-          }),
-          on("mouseenter", (e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.primaryHover;
-            (e.target as HTMLElement).style.transform = "scale(1.05)";
-          }),
-          on("mouseleave", (e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.primary;
-            (e.target as HTMLElement).style.transform = "scale(1)";
-          })
-        ),
-        button(
-          demoBtnStyle,
-          cn(width("44px").height("44px").fontSize("20px").padding("0").display("flex").alignItems("center").justifyContent("center")),
-          "+",
-          on("click", () => {
-            counterCount++;
-            update();
-          }),
-          on("mouseenter", (e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.primaryHover;
-            (e.target as HTMLElement).style.transform = "scale(1.05)";
-          }),
-          on("mouseleave", (e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.primary;
-            (e.target as HTMLElement).style.transform = "scale(1)";
-          })
-        ),
-        button(
-          demoBtnSecondary,
-          "Reset",
-          on("click", () => {
-            counterCount = 0;
-            update();
-          }),
-          on("mouseenter", (e) => {
-            (e.target as HTMLElement).style.borderColor = colors.primary;
-          }),
-          on("mouseleave", (e) => {
-            (e.target as HTMLElement).style.borderColor = colors.border;
-          })
+        span(
+          cn(
+            fontSize("12px").fontWeight("700").padding("4px 10px")
+              .borderRadius("99px").textTransform("uppercase").letterSpacing("0.07em")
+              .transition("all 0.3s")
+          ),
+          {
+            style: () => ({
+              backgroundColor: counterCount % 2 === 0
+                ? "rgba(132, 204, 22, 0.15)" : "rgba(34, 211, 238, 0.15)",
+              color: counterCount % 2 === 0 ? colors.primary : colors.accentSecondary,
+            })
+          },
+          () => counterCount % 2 === 0 ? "even" : "odd"
         )
+      ),
+      p(cn(fontSize("12px").color(colors.textDim).letterSpacing("0.06em")
+        .textTransform("uppercase").fontWeight("600").marginTop("8px")), "Current count")
+    ),
+
+    div(
+      cn(display("flex").gap("8px")),
+      button(
+        btnBase,
+        cn(width("44px").height("44px").backgroundColor(colors.bgLight).color(colors.text)
+          .border(`1px solid ${colors.borderLight}`)),
+        "−",
+        on("click", () => { counterCount--; update(); })
+      ),
+      button(
+        btnBase,
+        cn(width("44px").height("44px").backgroundColor(colors.primary).color(colors.bg)),
+        "+",
+        on("click", () => { counterCount++; update(); })
+      ),
+      button(
+        cn(
+          padding("0 16px").height("44px").display("flex").alignItems("center")
+            .backgroundColor(colors.bgLight).color(colors.textMuted)
+            .borderRadius("10px").border(`1px solid ${colors.border}`)
+            .fontSize("13px").cursor("pointer").transition("all 0.15s")
+        ),
+        "Reset",
+        on("click", () => { counterCount = 0; update(); })
       )
     )
   );
@@ -103,21 +73,10 @@ function LiveCounter() {
 
 export function CounterExamplePage() {
   const example = examplesContent.find(e => e.id === "counter")!;
-
-  return div(
-    s.pageContent,
-    a(
-      cn(color(colors.textMuted).fontSize("14px").marginBottom("16px").display("inline-block").cursor("pointer")),
-      "← Back to Examples",
-      on("click", (e) => {
-        e.preventDefault();
-        setRoute("examples");
-      })
-    ),
-    h1(s.pageTitle, example.title),
-    p(s.pageSubtitle, example.description),
-    LiveCounter(),
-    h2(s.h2, "Source Code"),
-    CodeBlock(example.code, "typescript")
-  );
+  return ExampleLayout({
+    title: example.title,
+    description: example.description,
+    demo: LiveCounter(),
+    code: example.code,
+  });
 }

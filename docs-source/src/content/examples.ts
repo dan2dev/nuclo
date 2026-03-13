@@ -15,35 +15,49 @@ export const examplesContent: ExampleContent[] = [
 
 let counter = 0;
 
-function increment() {
-  counter++;
-  update();
-}
-
-function decrement() {
-  counter--;
-  update();
-}
-
-function reset() {
-  counter = 0;
-  update();
-}
+const cn = createStyleQueries({});
 
 const app = div(
-  { className: 'counter-app' },
+  cn(display('flex').flexDirection('column').gap('16px').padding('32px')),
 
-  h1('Counter: ', span(() => counter)),
-
-  div(
-    { className: 'button-group' },
-    button('-', on('click', decrement)),
-    button('Reset', on('click', reset)),
-    button('+', on('click', increment))
+  // Reactive display: re-evaluates on every update()
+  h2(
+    cn(fontSize('56px').fontWeight('800').lineHeight('1')),
+    () => counter
   ),
 
-  // Show even/odd
-  p(() => \`The counter is \${counter % 2 === 0 ? 'even' : 'odd'}\`)
+  p(
+    cn(fontSize('13px').color('#64748b').textTransform('uppercase').letterSpacing('0.06em')),
+    'Current count'
+  ),
+
+  div(
+    cn(display('flex').gap('8px')),
+    button(
+      cn(padding('8px 16px').backgroundColor('#84cc16').color('#0a0f1a')
+        .borderRadius('8px').border('none').fontWeight('700').cursor('pointer')),
+      '+',
+      on('click', () => { counter++; update(); })
+    ),
+    button(
+      cn(padding('8px 16px').backgroundColor('#1a2332').color('#f8fafc')
+        .borderRadius('8px').border('1px solid #1e293b').fontWeight('700').cursor('pointer')),
+      '-',
+      on('click', () => { counter--; update(); })
+    ),
+    button(
+      cn(padding('8px 16px').backgroundColor('#1a2332').color('#94a3b8')
+        .borderRadius('8px').border('1px solid #1e293b').cursor('pointer')),
+      'Reset',
+      on('click', () => { counter = 0; update(); })
+    )
+  ),
+
+  // Reactive text: function re-runs on update()
+  p(
+    cn(fontSize('14px').color('#64748b')),
+    () => \`\${counter % 2 === 0 ? 'even' : 'odd'} number\`
+  )
 );
 
 render(app, document.body);`,
