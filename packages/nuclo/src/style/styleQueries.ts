@@ -203,6 +203,10 @@ function getPseudoClassSelector(pseudoClass: CSSPseudoClass): string {
 	return PSEUDO_CLASS_MAP[pseudoClass];
 }
 
+function getNamedClassName(className: string, styleKey: string): string {
+	return `${className}_${simpleHash(styleKey)}`;
+}
+
 // Cache for parsed queries to avoid re-parsing
 const parsedQueryCache = new Map<string, QueryResult>();
 
@@ -306,25 +310,25 @@ export function createStyleQueries<const TDefinitions extends StyleQueryDefiniti
 				return { className: namedClassName ?? "" };
 			}
 
-			const className = namedClassName ?? (() => {
-				// Generate a combined hash from all query styles (and default styles if present)
-				const allStyleKeys: string[] = [];
-				allStyleKeys.length = allQueryStyles.length + (defaultStyles ? 1 : 0);
+			// Generate a combined hash from all query styles (and default styles if present)
+			const allStyleKeys: string[] = [];
+			allStyleKeys.length = allQueryStyles.length + (defaultStyles ? 1 : 0);
 
-				let keyIndex = 0;
-				if (defaultStyles) {
-					const defaultStylesObj = defaultStyles.getStyles();
-					allStyleKeys[keyIndex++] = `default:${generateStyleKey(defaultStylesObj)}`;
-				}
+			let keyIndex = 0;
+			if (defaultStyles) {
+				const defaultStylesObj = defaultStyles.getStyles();
+				allStyleKeys[keyIndex++] = `default:${generateStyleKey(defaultStylesObj)}`;
+			}
 
-				for (const { queryName, styles: qStyles } of allQueryStyles) {
-					const styleKey = generateStyleKey(qStyles);
-					allStyleKeys[keyIndex++] = `${queryName}:${styleKey}`;
-				}
+			for (const { queryName, styles: qStyles } of allQueryStyles) {
+				const styleKey = generateStyleKey(qStyles);
+				allStyleKeys[keyIndex++] = `${queryName}:${styleKey}`;
+			}
 
-				const combinedStyleKey = allStyleKeys.sort().join('||');
-				return `n${simpleHash(combinedStyleKey)}`;
-			})();
+			const combinedStyleKey = allStyleKeys.sort().join('||');
+			const className = namedClassName
+				? getNamedClassName(namedClassName, combinedStyleKey)
+				: `n${simpleHash(combinedStyleKey)}`;
 
 			// Apply default styles first (no at-rule) - these are base styles
 			let accumulatedStyles: Record<string, string> = {};
@@ -369,8 +373,10 @@ export function createStyleQueries<const TDefinitions extends StyleQueryDefiniti
 
 		// Only default styles (no queries)
 		if (namedClassName) {
-			createCSSClassWithStyles(namedClassName, defaultStyles!.getStyles());
-			return { className: namedClassName };
+			const styleKey = generateStyleKey(defaultStyles!.getStyles());
+			const className = getNamedClassName(namedClassName, styleKey);
+			createCSSClassWithStyles(className, defaultStyles!.getStyles());
+			return { className };
 		}
 
 		return { className: defaultStyles!.getClassName() };
