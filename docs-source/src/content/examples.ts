@@ -20,7 +20,7 @@ const cn = createStyleQueries({});
 const app = div(
   cn(display('flex').flexDirection('column').gap('16px').padding('32px')),
 
-  // Reactive display: re-evaluates on every update()
+  // Dynamic binding: re-evaluates on every update()
   h2(
     cn(fontSize('56px').fontWeight('800').lineHeight('1')),
     () => counter
@@ -53,7 +53,7 @@ const app = div(
     )
   ),
 
-  // Reactive text: function re-runs on update()
+  // Dynamic text: function re-runs on update()
   p(
     cn(fontSize('14px').color('#64748b')),
     () => \`\${counter % 2 === 0 ? 'even' : 'odd'} number\`
@@ -882,7 +882,7 @@ render(app, document.body);`,
   {
     id: 'animations',
     title: 'Animations',
-    description: `Smooth transitions with CSS and reactive styles.`,
+    description: `Smooth transitions with CSS and dynamic style functions.`,
     code: `import 'nuclo';
 
 // Toggle a CSS keyframes animation
@@ -1169,7 +1169,7 @@ function ProductCard(product: Product) {
   return div(
     styles.card,
     {
-      // Reactive style: a function that returns the style object
+      // Dynamic style: a function that returns the style object
       style: () => ({
         boxShadow: isHovered
           ? '0 10px 40px rgba(0,0,0,0.15)'
@@ -1459,7 +1459,7 @@ render(app, document.body);`,
   {
     id: 'svg-icons',
     title: 'SVG Icons',
-    description: 'Creating and styling SVG icons with nuclo, demonstrating SVG builders and reactive styling.',
+    description: 'Creating and styling SVG icons with nuclo, demonstrating SVG builders and dynamic styling.',
     code: `import 'nuclo';
 
 const cn = createStyleQueries({

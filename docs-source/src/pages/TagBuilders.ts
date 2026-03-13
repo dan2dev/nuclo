@@ -91,17 +91,17 @@ linearGradient, radialGradient, stop, text, tspan, textPath`,
 
     // Attributes
     h2(s.h2, { id: "attributes" }, "Attributes"),
-    p(s.p, "Pass attributes as objects—values can be static or reactive functions."),
+    p(s.p, "Pass attributes as objects—values can be static or dynamic functions."),
 
     h3(s.h3, "Static Attributes"),
     CodeBlock(apiCode.attributesStatic.code, apiCode.attributesStatic.lang),
 
-    h3(s.h3, "Reactive Attributes"),
-    p(s.p, "Use functions for dynamic values that update on ", InlineCode("update()"), ":"),
-    CodeBlock(apiCode.attributesReactive.code, apiCode.attributesReactive.lang),
+    h3(s.h3, "Dynamic Attributes"),
+    p(s.p, "Use functions for values that should be re-evaluated on ", InlineCode("update()"), ":"),
+    CodeBlock(apiCode.attributesDynamic.code, apiCode.attributesDynamic.lang),
 
     h3(s.h3, "Style Objects"),
-    p(s.p, "Styles can be objects, strings, or reactive functions:"),
+    p(s.p, "Styles can be objects, strings, or dynamic functions:"),
     CodeBlock(apiCode.attributesStyle.code, apiCode.attributesStyle.lang),
 
     h3(s.h3, "Boolean Attributes"),
@@ -117,7 +117,7 @@ linearGradient, radialGradient, stop, text, tspan, textPath`,
       s.p,
       "Multiple ",
       InlineCode("className"),
-      " values are merged rather than overwritten—static strings, reactive functions, and style helper modifiers all compose."
+      " values are merged rather than overwritten—static strings, dynamic functions, and style helper modifiers all compose."
     ),
     CodeBlock(apiCode.classNameMerging.code, apiCode.classNameMerging.lang),
 

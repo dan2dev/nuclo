@@ -11,21 +11,21 @@ interface PageMeta {
 
 const routeMeta: Record<Route, PageMeta> = {
   "home": {
-    title: "Nuclo - Simple Reactive DOM Library",
-    description: "A simple, explicit DOM library for building reactive user interfaces. Lightweight, type-safe, and easy to learn - build modern web apps without the complexity.",
-    keywords: "nuclo, reactive, DOM library, javascript, typescript, ui framework",
+    title: "Nuclo - Imperative DOM Framework",
+    description: "A lightweight, imperative DOM framework with explicit update() calls. Build interactive web apps with plain functions, mutable state, and direct DOM rendering.",
+    keywords: "nuclo, imperative dom framework, explicit updates, javascript, typescript, ui framework",
     type: "WebPage"
   },
   "getting-started": {
     title: "Getting Started - Nuclo",
-    description: "Learn how to get started with Nuclo. Installation guide, basic concepts, and your first reactive application.",
+    description: "Learn how to get started with Nuclo. Installation, core concepts, and your first imperative app with explicit update() calls.",
     keywords: "nuclo tutorial, getting started, installation, setup, quick start",
     type: "TechArticle"
   },
   "core-api": {
     title: "Core API - Nuclo",
-    description: "Explore Nuclo's core API including state management, reactive updates, and DOM manipulation utilities.",
-    keywords: "nuclo api, core api, state management, reactive state",
+    description: "Explore Nuclo's core API, including its explicit update cycle, DOM rendering, list synchronization, and event utilities.",
+    keywords: "nuclo api, core api, explicit updates, dom rendering",
     type: "TechArticle"
   },
   "tag-builders": {
@@ -54,8 +54,8 @@ const routeMeta: Record<Route, PageMeta> = {
   },
   "example-counter": {
     title: "Counter Example - Nuclo",
-    description: "A simple counter example demonstrating Nuclo's reactive state management.",
-    keywords: "counter example, reactive state, nuclo tutorial",
+    description: "A simple counter example demonstrating Nuclo's explicit update cycle.",
+    keywords: "counter example, explicit updates, nuclo tutorial",
     type: "TechArticle"
   },
   "example-todo": {
@@ -66,19 +66,19 @@ const routeMeta: Record<Route, PageMeta> = {
   },
   "example-subtasks": {
     title: "Subtasks Example - Nuclo",
-    description: "Advanced todo example with nested subtasks demonstrating complex state management.",
+    description: "Advanced todo example with nested subtasks demonstrating explicit state mutation and list composition.",
     keywords: "subtasks, nested state, complex example",
     type: "TechArticle"
   },
   "example-search": {
     title: "Search Example - Nuclo",
-    description: "Implement a search interface with filtering using Nuclo's reactive state.",
-    keywords: "search, filtering, reactive search",
+    description: "Implement a search interface with filtering using explicit state mutations and update().",
+    keywords: "search, filtering, explicit updates",
     type: "TechArticle"
   },
   "example-async": {
     title: "Async Data Example - Nuclo",
-    description: "Handle asynchronous data fetching and loading states in Nuclo applications.",
+    description: "Handle asynchronous data fetching, explicit loading states, and manual update() calls in Nuclo applications.",
     keywords: "async, data fetching, loading states, promises",
     type: "TechArticle"
   },
@@ -195,7 +195,7 @@ function generateStructuredData(route: Route): object[] {
     "@type": "WebSite",
     "@id": `${baseUrl}#website`,
     "name": "Nuclo",
-    "description": "A simple, explicit DOM library for building reactive user interfaces",
+    "description": "A lightweight, imperative DOM framework with explicit update() calls",
     "url": baseUrl,
     "inLanguage": "en-US",
     "publisher": {
@@ -239,7 +239,7 @@ function generateStructuredData(route: Route): object[] {
     "@type": "SoftwareApplication",
     "@id": `${baseUrl}#software`,
     "name": "Nuclo",
-    "description": "A simple, explicit DOM library for building reactive user interfaces",
+    "description": "A lightweight, imperative DOM framework with explicit update() calls",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Web",
     "offers": {

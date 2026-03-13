@@ -509,7 +509,7 @@ const cardBase = cn(
 
 div(cardBase, 'Hover me');
 
-// Alternative: reactive style function (for complex logic)
+// Alternative: dynamic style function (for complex logic)
 let isHovered = false;
 div(
   cardBase,

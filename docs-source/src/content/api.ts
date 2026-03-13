@@ -189,7 +189,7 @@ div(
   'data-test': 'value',
   'aria-label': 'Main content'
 });` },
-  attributesReactive: { lang: 'typescript', code: `div({
+  attributesDynamic: { lang: 'typescript', code: `div({
   className: () => isActive ? 'active' : 'inactive',
   'aria-pressed': () => isActive,
   disabled: () => !isValid,
@@ -209,7 +209,7 @@ div({
   style: 'color: red; font-size: 16px;'
 });
 
-// Reactive string style
+// Dynamic string style
 div({
   style: () => \`color: \${color}; font-size: \${size}px;\`
 });` },
@@ -241,9 +241,9 @@ let isError = false;
 div({
   className: 'dropdown'  // Static class
 }, {
-  className: () => isOpen ? 'open' : ''  // Reactive class
+  className: () => isOpen ? 'open' : ''  // Dynamic class
 }, {
-  className: () => isError ? 'error' : ''  // Another reactive class
+  className: () => isError ? 'error' : ''  // Another dynamic class
 });
 
 // With isOpen=true, isError=false: "dropdown open"
@@ -314,7 +314,7 @@ center()  // shorthand for centering both axes
 
 // Effects
 boxShadow('...'), opacity('0.5'), transition('all 0.3s')` },
-  styleHelpersReactiveStyles: { lang: 'typescript', code: `// Use a function that returns the style object
+  styleHelpersDynamicStyles: { lang: 'typescript', code: `// Use a function that returns the style object
 let isHovered = false;
 
 const baseStyle = cn(
@@ -324,7 +324,7 @@ const baseStyle = cn(
 div(
   baseStyle,
   {
-    // Reactive style: function returns the entire style object
+    // Dynamic style: function returns the entire style object
     style: () => ({
       transform: isHovered ? 'scale(1.05)' : 'scale(1)',
       boxShadow: isHovered ? '0 4px 12px rgba(0,0,0,0.15)' : 'none'

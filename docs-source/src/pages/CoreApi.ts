@@ -18,10 +18,10 @@ export function CoreApiPage() {
     ApiEntry({
       id: "update",
       signature: "update()",
-      description: "Synchronously re-evaluates every reactive function in the application. Call it once after all state mutations.",
+      description: "Runs one synchronous update pass across the application. Call it once after all state mutations.",
       points: [
-        "Batch all mutations before calling — one call covers everything",
-        "Only zero-argument functions re-evaluate",
+        "Nuclo does not auto-detect mutations — you decide when the DOM syncs",
+        "Zero-argument bindings, list providers, and when() conditions re-evaluate",
         "Safe to call multiple times; prefer grouping work first",
       ],
     }),

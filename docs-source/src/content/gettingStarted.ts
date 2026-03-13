@@ -57,24 +57,24 @@ function handleSubmit() {
   update();
   // 3 updates instead of 1!
 }` },
-  reactiveText: { lang: 'typescript', code: `let name = 'World';
+  dynamicText: { lang: 'typescript', code: `let name = 'World';
 
 div(
   'Hello, ',
-  () => name,  // Reactive
+  () => name,  // Dynamic binding
   '!'
 );
 
 // After name changes and update() is called,
 // the div will show "Hello, Alice!"` },
-  reactiveAttributes: { lang: 'typescript', code: `let isActive = false;
+  dynamicAttributes: { lang: 'typescript', code: `let isActive = false;
 
 div({
   className: () => isActive ? 'active' : 'inactive',
   'aria-pressed': () => isActive,
   disabled: () => !isActive
 });` },
-  reactiveStyles: { lang: 'typescript', code: `let opacity = 1;
+  dynamicStyleProperties: { lang: 'typescript', code: `let opacity = 1;
 
 div({
   style: {
@@ -152,7 +152,7 @@ const baseStyle = cn(bg('white').transition('all 0.3s'));
 div(
   baseStyle,
   {
-    // Reactive style: function returns the style object
+    // Dynamic style: function returns the style object
     style: () => ({
       backgroundColor: isActive ? 'green' : 'gray',
       transform: isActive ? 'scale(1.05)' : 'scale(1)'

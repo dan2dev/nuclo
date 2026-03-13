@@ -17,11 +17,11 @@ export function PitfallsPage() {
     PitfallCard({
       title: "Conditional Element Rendering",
       problemContent: [
-        "Using a reactive function to conditionally return ",
+        "Using a dynamic function to conditionally return ",
         InlineCode("different elements"),
         " won't render anything visible:",
       ],
-      problemCode: `// ❌ Wrong — reactive function returning elements won't render
+      problemCode: `// ❌ Wrong — dynamic function returning elements won't render
 button(
   () => isOpen ? CloseIcon() : MenuIcon()  // shows nothing!
 )`,
@@ -34,7 +34,7 @@ button(
 button(
   when(() => isOpen, CloseIcon()).else(MenuIcon())
 )`,
-      why: `Reactive functions () => value work great for text content and attributes because Nuclo updates them in-place. But elements need to be physically mounted and removed from the DOM — that's what when() is for.`,
+      why: `Dynamic functions like () => value work great for text content and attributes because Nuclo re-evaluates them during update(). But elements need to be physically mounted and removed from the DOM — that's what when() is for.`,
     }),
 
     // ── 2. Forgetting update() ──────────────────────────────────────────────
@@ -54,7 +54,7 @@ button('Increment', on('click', () => {
       solutionContent: [
         "Always call ",
         InlineCode("update()"),
-        " after mutating state to trigger a reactive re-evaluation:",
+        " after mutating state to run a new update pass:",
       ],
       solutionCode: `// ✅ Correct — update() triggers the refresh
 let count = 0;
@@ -112,9 +112,9 @@ function handleSubmit() {
 }`,
     }),
 
-    // ── 5. Static vs reactive ────────────────────────────────────────────────
+    // ── 5. Static vs dynamic ─────────────────────────────────────────────────
     PitfallCard({
-      title: "Static Value Where Reactive Is Needed",
+      title: "Static Value Where a Dynamic Binding Is Needed",
       problemContent: [
         "Interpolating a variable directly captures the value ",
         InlineCode("at construction time"),

@@ -75,7 +75,7 @@ export function ApiPage() {
     div(
       contentStyle,
       h1(s.pageTitle, { id: "api-reference", className: "gradient-text" }, "API Reference"),
-      p(s.pageSubtitle, "Complete reference content from the original Nuclo site."),
+      p(s.pageSubtitle, "Complete reference for Nuclo's imperative DOM API."),
 
       // Core functions overview
       h2(s.h2, { id: "core-functions" }, "Core Functions"),
@@ -95,7 +95,7 @@ export function ApiPage() {
 
       // update
       h3(s.h3, { id: "update" }, "update()"),
-      p(s.p, "Trigger a synchronous refresh of every reactive function."),
+      p(s.p, "Trigger one synchronous update pass across every dynamic binding."),
       CodeBlock(apiCode.updateUsage.code, apiCode.updateUsage.lang),
       ul(
         s.ul,
@@ -160,7 +160,7 @@ export function ApiPage() {
       CodeBlock(apiCode.scopeMultiple.code, apiCode.scopeMultiple.lang),
       ul(
         s.ul,
-        li(s.li, "Scoped updates only refresh reactive functions within marked scope roots"),
+        li(s.li, "Scoped updates only refresh dynamic bindings within marked scope roots"),
         li(s.li, "Elements can belong to multiple scopes"),
         li(s.li, "Calling ", InlineCode("update()"), " without arguments updates all scopes (default behavior)"),
         li(s.li, "Great for large apps where only specific regions need updates")
@@ -220,11 +220,11 @@ linearGradient, radialGradient, stop, text, tspan, textPath`,
 
       // Attributes
       h2(s.h2, { id: "attributes" }, "Attributes"),
-      p(s.p, "Pass attributes as objects—values can be static or reactive functions."),
+      p(s.p, "Pass attributes as objects—values can be static or dynamic functions."),
       h3(s.h3, "Static attributes"),
       CodeBlock(apiCode.attributesStatic.code, apiCode.attributesStatic.lang),
-      h3(s.h3, "Reactive attributes"),
-      CodeBlock(apiCode.attributesReactive.code, apiCode.attributesReactive.lang),
+      h3(s.h3, "Dynamic attributes"),
+      CodeBlock(apiCode.attributesDynamic.code, apiCode.attributesDynamic.lang),
       h3(s.h3, "Style objects"),
       CodeBlock(apiCode.attributesStyle.code, apiCode.attributesStyle.lang),
       h3(s.h3, "Boolean helpers"),
@@ -238,7 +238,7 @@ linearGradient, radialGradient, stop, text, tspan, textPath`,
         s.p,
         "Multiple ",
         InlineCode("className"),
-        " values are merged rather than overwritten—static strings, reactive functions, and style helper modifiers all compose."
+        " values are merged rather than overwritten—static strings, dynamic functions, and style helper modifiers all compose."
       ),
       CodeBlock(apiCode.classNameMerging.code, apiCode.classNameMerging.lang),
       CodeBlock(apiCode.classNameConditional.code, apiCode.classNameConditional.lang),
@@ -258,7 +258,7 @@ linearGradient, radialGradient, stop, text, tspan, textPath`,
       CodeBlock(apiCode.styleHelpersCreateQueries.code, apiCode.styleHelpersCreateQueries.lang),
       CodeBlock(apiCode.styleHelpersResponsive.code, apiCode.styleHelpersResponsive.lang),
       CodeBlock(apiCode.styleHelpersFullList.code, apiCode.styleHelpersFullList.lang),
-      CodeBlock(apiCode.styleHelpersReactiveStyles.code, apiCode.styleHelpersReactiveStyles.lang),
+      CodeBlock(apiCode.styleHelpersDynamicStyles.code, apiCode.styleHelpersDynamicStyles.lang),
 
       // Modifiers
       h2(s.h2, { id: "modifiers" }, "Modifiers"),
@@ -290,7 +290,7 @@ linearGradient, radialGradient, stop, text, tspan, textPath`,
       ul(
         s.ul,
         li(s.li, "SSR functions work in Node.js environments with DOM polyfills"),
-        li(s.li, "Reactive functions are evaluated once during SSR"),
+        li(s.li, "Dynamic functions are evaluated once during SSR"),
         li(s.li, "Event handlers and client-side interactivity are omitted from SSR output"),
         li(s.li, "Perfect for pre-rendering pages or generating static HTML")
       )
