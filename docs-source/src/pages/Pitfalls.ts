@@ -1,5 +1,5 @@
 import "nuclo";
-import { s, colors } from "../styles.ts";
+import { cn, s, colors } from "../styles.ts";
 import { InlineCode } from "../components/CodeBlock.ts";
 import { PageHeader, PitfallCard, NoteCard, NextSteps } from "../components/ui.ts";
 
@@ -146,18 +146,29 @@ div(() => \`Count: \${count}\`)  // reflects current value`,
     // ── Summary ─────────────────────────────────────────────────────────────
     h2(s.h2, { id: "summary" }, "Quick Reference"),
     div(
+      cn(
+        backgroundColor(colors.bgCard).borderRadius("14px")
+          .border(`1px solid ${colors.border}`).overflow("hidden").marginBottom("24px")
+      ),
+      // Header row
+      div(
+        { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", padding: "10px 20px", backgroundColor: colors.bgLight, borderBottom: `1px solid ${colors.border}` } },
+        span({ style: { fontSize: "11px", fontWeight: "700", color: colors.textDim, textTransform: "uppercase", letterSpacing: "0.06em" } }, "Concept"),
+        span({ style: { fontSize: "11px", fontWeight: "700", color: colors.primary, textTransform: "uppercase", letterSpacing: "0.06em" } }, "✅ Do"),
+        span({ style: { fontSize: "11px", fontWeight: "700", color: "#ef4444", textTransform: "uppercase", letterSpacing: "0.06em" } }, "❌ Avoid"),
+      ),
       ...([
         ["Conditional elements", "when()", "() => condition ? A : B"],
         ["State changes", "update() after mutating", "mutate without update()"],
         ["List items", "mutate objects in-place", "replace with new objects"],
         ["Batching", "one update() per handler", "update() after each mutation"],
         ["Dynamic content", "() => expression", "plain interpolation"],
-      ] as [string, string, string][]).map(([concept, correct, wrong]) =>
+      ] as [string, string, string][]).map(([concept, correct, wrong], i, arr) =>
         div(
-          { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", padding: "12px 20px", borderBottom: `1px solid ${colors.border}` } },
+          { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", padding: "12px 20px", ...(i < arr.length - 1 ? { borderBottom: `1px solid ${colors.border}` } : {}) } },
           span({ style: { fontSize: "13px", fontWeight: "600", color: colors.text } }, concept),
-          span({ style: { fontSize: "13px", color: colors.primary, fontFamily: "monospace" } }, "✅ " + correct),
-          span({ style: { fontSize: "13px", color: "#ef4444", fontFamily: "monospace" } }, "❌ " + wrong)
+          span({ style: { fontSize: "13px", color: colors.primary, fontFamily: "monospace" } }, correct),
+          span({ style: { fontSize: "13px", color: "#ef4444", fontFamily: "monospace" } }, wrong)
         )
       )
     ),

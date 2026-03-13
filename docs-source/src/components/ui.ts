@@ -9,7 +9,7 @@ import type { Route } from "../router.ts";
 
 export function PageHeader(title: string, subtitle: string, badge?: string) {
   return div(
-    cn(marginBottom("48px")),
+    cn(marginBottom("40px")),
     badge
       ? span(
           cn(
