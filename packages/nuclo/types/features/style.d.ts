@@ -229,7 +229,7 @@ declare global {
 	 * Supports named-class signatures in addition to the existing ones:
 	 * 1. cn(queryStyles) - Only query-specific styles
 	 * 2. cn(defaultStyles, queryStyles) - Default styles + query overrides
-	 * 3. cn(className, defaultStyles?, queryStyles?) - Uses the provided className instead of a generated hash
+	 * 3. cn(className, defaultStyles?, queryStyles?) - Uses the provided className as a prefix and appends `_hash`
 	 */
 	function createStyleQueries<const TDefinitions extends StyleQueryDefinitions>(
 		queries: TDefinitions
