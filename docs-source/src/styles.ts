@@ -175,12 +175,12 @@ export const s = {
   navLinkActive: cn(color(colors.text)),
 
   // Hero
-  hero: cn(padding("60px 24px 80px")
+  hero: cn(padding("100px 24px 80px")
     .textAlign("center")
     .maxWidth("1000px")
     .margin("0 auto")
     .position("relative"), {
-    medium: padding("100px 48px 120px")
+    medium: padding("140px 48px 120px")
   }),
 
   heroTitle: cn(fontSize("40px")
@@ -294,24 +294,24 @@ export const s = {
     .border(`1px solid ${colors.border}`)),
 
   // Sections
-  section: cn(padding("60px 24px")
+  section: cn(padding("56px 24px")
     .maxWidth("1200px")
     .margin("0 auto"), {
-    medium: padding("100px 48px")
+    medium: padding("80px 48px")
   }),
 
   sectionTitle: cn(fontSize("28px")
     .fontWeight("700")
-    .marginBottom("16px")
+    .marginBottom("12px")
     .color(colors.text)
     .letterSpacing("-0.02em"), {
-    medium: fontSize("36px"),
-    large: fontSize("40px")
+    medium: fontSize("34px"),
+    large: fontSize("38px")
   }),
 
-  sectionSubtitle: cn(fontSize("18px")
+  sectionSubtitle: cn(fontSize("17px")
     .color(colors.textMuted)
-    .marginBottom("56px")
+    .marginBottom("48px")
     .maxWidth("600px")
     .lineHeight("1.7")),
 
@@ -362,12 +362,12 @@ export const s = {
   footerLink: cn(color(colors.textMuted).transition("color 0.2s")),
 
   // Page content
-  pageContent: cn(padding("24px 16px 100px")
+  pageContent: cn(padding("88px 20px 80px")
     .maxWidth("900px")
     .margin("0 auto")
     .width("100%")
     .boxSizing("border-box"), {
-    medium: padding("56px 48px 100px")
+    medium: padding("104px 48px 96px")
   }),
 
   pageTitle: cn(fontSize("32px")
@@ -395,7 +395,7 @@ export const s = {
 
   h3: cn(fontSize("18px")
     .fontWeight("600")
-    .marginTop("32px")
+    .marginTop("36px")
     .marginBottom("14px")
     .color(colors.text)),
 

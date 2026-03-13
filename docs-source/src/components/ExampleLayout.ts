@@ -64,24 +64,26 @@ export function ExampleLayout(opts: {
     ),
     // Demo content
     div(
-      cn(padding("28px")),
+      cn(padding("32px"), { medium: padding("40px") }),
       opts.demo as HTMLElement
     )
   );
 
   const sourceSection = div(
+    cn(marginTop("8px")),
     h2(
       cn(
-        fontSize("18px").fontWeight("700").color(colors.text)
+        fontSize("16px").fontWeight("700").color(colors.text)
           .marginBottom("16px").display("flex").alignItems("center").gap("10px")
+          .paddingTop("8px")
       ),
-      span("Source Code"),
+      span(cn(color(colors.textMuted)), "Source Code"),
       span(
         cn(
-          fontSize("11px").fontWeight("600").padding("3px 8px").borderRadius("6px")
-            .textTransform("uppercase").letterSpacing("0.06em").color(colors.textDim)
+          fontSize("10px").fontWeight("700").padding("3px 8px").borderRadius("6px")
+            .textTransform("uppercase").letterSpacing("0.08em").color(colors.primary)
         ),
-        { style: { backgroundColor: colors.bgLight } },
+        { style: { backgroundColor: "rgba(132, 204, 22, 0.1)", border: `1px solid rgba(132, 204, 22, 0.2)` } },
         "TypeScript"
       )
     ),
@@ -91,9 +93,8 @@ export function ExampleLayout(opts: {
   return div(
     s.pageContent,
     backLink,
-    h1(s.pageTitle, opts.title),
-    p(s.pageSubtitle, opts.description),
-    div(cn(marginBottom("32px"))),
+    h1(s.pageTitle, { className: "gradient-text" }, opts.title),
+    p(s.pageSubtitle, { style: { marginBottom: "40px" } }, opts.description),
     demoPanel,
     sourceSection
   );

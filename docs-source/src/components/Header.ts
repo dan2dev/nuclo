@@ -40,7 +40,7 @@ function NavLink(label: string, route: Route) {
         .color(colors.textMuted)
         .cursor("pointer"),
         {
-          hover: backgroundColor(colors.accent).color(colors.bg)
+          hover: backgroundColor("rgba(132, 204, 22, 0.08)").color(colors.primary)
         }
     ),
     {

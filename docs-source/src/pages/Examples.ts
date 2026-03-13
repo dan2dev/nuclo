@@ -51,7 +51,7 @@ const gridStyle = cn(
   display("grid")
     .gridTemplateColumns("1fr")
     .gap("16px")
-    .marginBottom("48px"),
+    .marginBottom("32px"),
   {
     medium: gridTemplateColumns("repeat(2, 1fr)").gap("20px"),
     large: gridTemplateColumns("repeat(3, 1fr)")
@@ -64,8 +64,8 @@ const categoryLabelStyle = cn(
     .color(colors.primary)
     .textTransform("uppercase")
     .letterSpacing("0.08em")
-    .marginBottom("20px")
-    .marginTop("40px")
+    .marginBottom("16px")
+    .marginTop("48px")
     .display("block")
 );
 
@@ -126,7 +126,7 @@ function getExamplesByIds(ids: string[]) {
 export function ExamplesPage() {
   return div(
     s.pageContent,
-    h1(s.pageTitle, "Examples"),
+    h1(s.pageTitle, { className: "gradient-text" }, "Examples"),
     p(s.pageSubtitle, "Interactive examples demonstrating Nuclo's features. Every example includes a live demo and full source code."),
 
     span(categoryLabelStyle, "Getting Started"),
@@ -142,8 +142,8 @@ export function ExamplesPage() {
     div(gridStyle, ...getExamplesByIds(advancedExamples).map(e => ExampleCard(e))),
 
     section(
-      cn(marginTop("48px").paddingTop("32px").borderTop(`1px solid ${colors.border}`)),
-      h2(s.h2, "More Examples"),
+      cn(marginTop("32px").paddingTop("28px").borderTop(`1px solid ${colors.border}`)),
+      h2(cn(fontSize("20px").fontWeight("700").marginBottom("16px").color(colors.text).letterSpacing("-0.01em")), "More Examples"),
       p(
         s.p,
         "Find even more demos in the ",

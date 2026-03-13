@@ -74,7 +74,7 @@ export function ApiPage() {
     // Main content
     div(
       contentStyle,
-      h1(s.pageTitle, { id: "api-reference" }, "API Reference"),
+      h1(s.pageTitle, { id: "api-reference", className: "gradient-text" }, "API Reference"),
       p(s.pageSubtitle, "Complete reference content from the original Nuclo site."),
 
       // Core functions overview

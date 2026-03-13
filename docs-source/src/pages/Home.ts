@@ -126,6 +126,19 @@ const bentoCellCyan = cn(
 const previewIds = ["counter", "todo", "search", "async", "styled-card", "subtasks"];
 const previewExamples = examplesContent.filter((ex) => previewIds.includes(ex.id));
 
+const homeExampleIcons: Record<string, string> = {
+  counter: "🔢",
+  todo: "✅",
+  subtasks: "🗂️",
+  search: "🔍",
+  async: "⚡",
+  forms: "📝",
+  nested: "🧩",
+  animations: "✨",
+  routing: "🗺️",
+  "styled-card": "🎨",
+};
+
 function goToExample(id: string) {
   setRoute("examples");
   setTimeout(() => {
@@ -385,7 +398,7 @@ export function HomePage() {
     // ── QUICK START ───────────────────────────────────────────────────────
     section(
       s.section,
-      h2(s.sectionTitle, "Quick Start"),
+      h2(s.sectionTitle, { className: "gradient-text" }, "Quick Start"),
       p(s.sectionSubtitle, "Up and running in 30 seconds."),
       div(
         cn(
@@ -431,7 +444,7 @@ render(app, document.body);`, "typescript", false)
     // ── CORE CONCEPTS ─────────────────────────────────────────────────────
     section(
       s.section,
-      h2(s.sectionTitle, "Core Concepts"),
+      h2(s.sectionTitle, { className: "gradient-text" }, "Core Concepts"),
       p(s.sectionSubtitle, "Explicit updates, reactive functions, conditionals, and list synchronization."),
       div(
         cn(
@@ -486,7 +499,7 @@ render(app, document.body);`, "typescript", false)
     // ── EXAMPLES PREVIEW ──────────────────────────────────────────────────
     section(
       s.section,
-      h2(s.sectionTitle, "Examples"),
+      h2(s.sectionTitle, { className: "gradient-text" }, "Examples"),
       p(s.sectionSubtitle, "Practical examples with interactive live demos."),
       div(
         cn(
@@ -501,14 +514,30 @@ render(app, document.body);`, "typescript", false)
             cn(
               backgroundColor(colors.bgCard).borderRadius("16px")
                 .border(`1px solid ${colors.border}`)
-                .padding("24px").cursor("pointer").transition("all 0.2s"),
+                .padding("24px").cursor("pointer").transition("all 0.2s")
+                .display("flex").flexDirection("column").gap("12px"),
               { hover: border(`1px solid ${colors.primary}`).transform("translateY(-2px)").boxShadow("0 8px 24px rgba(0,0,0,0.15)") }
             ),
-            h3(cn(fontSize("16px").fontWeight("600").color(colors.text).marginBottom("10px")), example.title),
-            p(cn(fontSize("13px").color(colors.textMuted).lineHeight("1.7").marginBottom("20px")), example.description),
+            div(
+              cn(display("flex").alignItems("center").justifyContent("space-between")),
+              span(cn(fontSize("28px")), homeExampleIcons[example.id] ?? "📄"),
+              span(
+                cn(
+                  display("inline-flex").alignItems("center").gap("5px")
+                    .padding("3px 8px").backgroundColor("rgba(132, 204, 22, 0.1)")
+                    .color(colors.primary).fontSize("11px").fontWeight("600").borderRadius("99px")
+                ),
+                span(cn(width("5px").height("5px").borderRadius("50%").backgroundColor(colors.primary).display("block"))),
+                "Live"
+              )
+            ),
+            div(
+              h3(cn(fontSize("16px").fontWeight("600").color(colors.text).marginBottom("6px")), example.title),
+              p(cn(fontSize("13px").color(colors.textMuted).lineHeight("1.6")), example.description)
+            ),
             span(
               cn(fontSize("13px").fontWeight("600").color(colors.primary)
-                .display("inline-flex").alignItems("center").gap("4px")),
+                .display("inline-flex").alignItems("center").gap("4px").marginTop("auto")),
               "View Example →"
             ),
             on("click", () => goToExample(example.id))
