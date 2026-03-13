@@ -189,6 +189,9 @@ declare global {
 	export interface StyleQueryBuilder<TDefinitions extends StyleQueryDefinitions> {
 		(defaultStyles: StyleBuilder, queryStyles?: StyleQueryStyles<TDefinitions>): StyleQueryResult;
 		(queryStyles?: StyleQueryStyles<TDefinitions>): StyleQueryResult;
+		(className: string): StyleQueryResult;
+		(className: string, defaultStyles: StyleBuilder, queryStyles?: StyleQueryStyles<TDefinitions>): StyleQueryResult;
+		(className: string, queryStyles: StyleQueryStyles<TDefinitions>): StyleQueryResult;
 	}
 
 	function createCSSClass(className: string, styles: Record<string, string>): void;
@@ -223,9 +226,10 @@ declare global {
 	 * };
 	 * ```
 	 *
-	 * Supports two signatures:
+	 * Supports named-class signatures in addition to the existing ones:
 	 * 1. cn(queryStyles) - Only query-specific styles
 	 * 2. cn(defaultStyles, queryStyles) - Default styles + query overrides
+	 * 3. cn(className, defaultStyles?, queryStyles?) - Uses the provided className instead of a generated hash
 	 */
 	function createStyleQueries<const TDefinitions extends StyleQueryDefinitions>(
 		queries: TDefinitions
