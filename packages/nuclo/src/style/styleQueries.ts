@@ -82,6 +82,9 @@ export type StyleQueryStyles<TDefinitions extends StyleQueryDefinitions> =
 export interface StyleQueryBuilder<TDefinitions extends StyleQueryDefinitions> {
 	(defaultStyles: StyleBuilder, queryStyles?: StyleQueryStyles<TDefinitions>): { className: string };
 	(queryStyles?: StyleQueryStyles<TDefinitions>): { className: string };
+	(className: string): { className: string };
+	(className: string, defaultStyles: StyleBuilder, queryStyles?: StyleQueryStyles<TDefinitions>): { className: string };
+	(className: string, queryStyles: StyleQueryStyles<TDefinitions>): { className: string };
 }
 
 // Map pseudo-class names to their CSS selector strings
@@ -228,39 +231,52 @@ export function createStyleQueries<const TDefinitions extends StyleQueryDefiniti
 	}
 
 	return function cn(
+		classNameOrDefaultStylesOrQueries?: string | StyleBuilder | QueryStyles,
 		defaultStylesOrQueries?: StyleBuilder | QueryStyles,
 		queryStyles?: QueryStyles
 	): { className: string } {
+		let namedClassName: string | undefined;
 		let defaultStyles: StyleBuilder | undefined;
 		let styles: QueryStyles | undefined;
 
-		// Handle both signatures:
-		// 1. cn({ medium: width("50%") }) - single argument with queries
-		// 2. cn(width("100%"), { medium: width("50%") }) - default styles + queries
-		if (queryStyles !== undefined) {
-			// Two-argument form
-			defaultStyles = defaultStylesOrQueries as StyleBuilder;
-			styles = queryStyles;
-		} else if (defaultStylesOrQueries instanceof StyleBuilder) {
-			// Single argument, but it's a StyleBuilder (default styles only)
-			defaultStyles = defaultStylesOrQueries;
-			styles = undefined;
+		// Supported signatures:
+		// 1. cn({ medium: width("50%") })
+		// 2. cn(width("100%"), { medium: width("50%") })
+		// 3. cn("card")
+		// 4. cn("card", width("100%"))
+		// 5. cn("card", { medium: width("50%") })
+		// 6. cn("card", width("100%"), { medium: width("50%") })
+		if (typeof classNameOrDefaultStylesOrQueries === "string") {
+			const trimmedClassName = classNameOrDefaultStylesOrQueries.trim();
+			namedClassName = trimmedClassName || undefined;
+
+			if (defaultStylesOrQueries instanceof StyleBuilder) {
+				defaultStyles = defaultStylesOrQueries;
+				styles = queryStyles;
 			} else {
-				// Single argument with queries
-				defaultStyles = undefined;
-				styles = defaultStylesOrQueries as QueryStyles;
+				styles = defaultStylesOrQueries as QueryStyles | undefined;
 			}
+		} else if (defaultStylesOrQueries !== undefined) {
+			defaultStyles = classNameOrDefaultStylesOrQueries as StyleBuilder;
+			styles = defaultStylesOrQueries as QueryStyles;
+		} else if (classNameOrDefaultStylesOrQueries instanceof StyleBuilder) {
+			defaultStyles = classNameOrDefaultStylesOrQueries;
+		} else {
+			styles = classNameOrDefaultStylesOrQueries as QueryStyles | undefined;
+		}
 
-			const hasStyles = styles != null && Object.keys(styles).length > 0;
-			if (!defaultStyles && !hasStyles) return { className: "" };
+		const hasStyles = styles != null && Object.keys(styles).length > 0;
+		if (!defaultStyles && !hasStyles) {
+			return { className: namedClassName ?? "" };
+		}
 
-			// If we have queries, create a single class name for all queries
-			if (hasStyles) {
-				// Collect all query styles in registration order
-				const allQueryStyles: Array<{ queryName: string; query: QueryResult; styles: Record<string, string> }> = [];
-				
-				// Track which keys we've processed to avoid duplicates
-				const processedKeys = new Set<string>();
+		// If we have queries, create a single class name for all queries
+		if (hasStyles) {
+			// Collect all query styles in registration order
+			const allQueryStyles: Array<{ queryName: string; query: QueryResult; styles: Record<string, string> }> = [];
+
+			// Track which keys we've processed to avoid duplicates
+			const processedKeys = new Set<string>();
 
 			// Process user-defined queries in the order they were registered
 			for (const [queryName] of queriesArray) {
@@ -282,31 +298,33 @@ export function createStyleQueries<const TDefinitions extends StyleQueryDefiniti
 						queryName: key,
 						query: { type: 'pseudo', pseudoClass: getPseudoClassSelector(key) },
 						styles: styleBuilder.getStyles()
-						});
-					}
+					});
 				}
+			}
 
-				if (allQueryStyles.length === 0 && !defaultStyles) return { className: "" };
+			if (allQueryStyles.length === 0 && !defaultStyles) {
+				return { className: namedClassName ?? "" };
+			}
 
+			const className = namedClassName ?? (() => {
 				// Generate a combined hash from all query styles (and default styles if present)
-				// Pre-allocate array size for better performance
 				const allStyleKeys: string[] = [];
 				allStyleKeys.length = allQueryStyles.length + (defaultStyles ? 1 : 0);
 
-			let keyIndex = 0;
-			if (defaultStyles) {
-				const defaultStylesObj = defaultStyles.getStyles();
-				allStyleKeys[keyIndex++] = `default:${generateStyleKey(defaultStylesObj)}`;
-			}
+				let keyIndex = 0;
+				if (defaultStyles) {
+					const defaultStylesObj = defaultStyles.getStyles();
+					allStyleKeys[keyIndex++] = `default:${generateStyleKey(defaultStylesObj)}`;
+				}
 
-			for (const { queryName, styles: qStyles } of allQueryStyles) {
-				const styleKey = generateStyleKey(qStyles);
-				allStyleKeys[keyIndex++] = `${queryName}:${styleKey}`;
-			}
+				for (const { queryName, styles: qStyles } of allQueryStyles) {
+					const styleKey = generateStyleKey(qStyles);
+					allStyleKeys[keyIndex++] = `${queryName}:${styleKey}`;
+				}
 
-			const combinedStyleKey = allStyleKeys.sort().join('||');
-			const combinedHash = simpleHash(combinedStyleKey);
-			const className = `n${combinedHash}`;
+				const combinedStyleKey = allStyleKeys.sort().join('||');
+				return `n${simpleHash(combinedStyleKey)}`;
+			})();
 
 			// Apply default styles first (no at-rule) - these are base styles
 			let accumulatedStyles: Record<string, string> = {};
@@ -315,20 +333,20 @@ export function createStyleQueries<const TDefinitions extends StyleQueryDefiniti
 				createCSSClassWithStyles(className, accumulatedStyles);
 			}
 
-				type PseudoQuery = Extract<QueryResult, { type: "pseudo" }>;
-				type AtRuleQuery = Exclude<QueryResult, { type: "pseudo" }>;
+			type PseudoQuery = Extract<QueryResult, { type: "pseudo" }>;
+			type AtRuleQuery = Exclude<QueryResult, { type: "pseudo" }>;
 
-				// Separate at-rules and pseudo-classes for proper handling
-				const atRuleQueries: Array<{ queryName: string; query: AtRuleQuery; styles: Record<string, string> }> = [];
-				const pseudoClassQueries: Array<{ queryName: string; query: PseudoQuery; styles: Record<string, string> }> = [];
+			// Separate at-rules and pseudo-classes for proper handling
+			const atRuleQueries: Array<{ queryName: string; query: AtRuleQuery; styles: Record<string, string> }> = [];
+			const pseudoClassQueries: Array<{ queryName: string; query: PseudoQuery; styles: Record<string, string> }> = [];
 
-				for (const queryStyle of allQueryStyles) {
-					if (queryStyle.query.type === 'pseudo') {
-						pseudoClassQueries.push(queryStyle as unknown as { queryName: string; query: PseudoQuery; styles: Record<string, string> });
-					} else {
-						atRuleQueries.push(queryStyle as unknown as { queryName: string; query: AtRuleQuery; styles: Record<string, string> });
-					}
+			for (const queryStyle of allQueryStyles) {
+				if (queryStyle.query.type === 'pseudo') {
+					pseudoClassQueries.push(queryStyle as unknown as { queryName: string; query: PseudoQuery; styles: Record<string, string> });
+				} else {
+					atRuleQueries.push(queryStyle as unknown as { queryName: string; query: AtRuleQuery; styles: Record<string, string> });
 				}
+			}
 
 			// Apply at-rule queries first (media, container, supports, etc.)
 			// Apply in registration order to ensure proper CSS cascade
@@ -340,18 +358,23 @@ export function createStyleQueries<const TDefinitions extends StyleQueryDefiniti
 				createCSSClassWithStyles(className, accumulatedStyles, query.condition, query.type);
 			}
 
-				// Apply pseudo-class queries (hover, focus, etc.)
-				// These don't cascade - each pseudo-class gets its own styles
-				for (const { query, styles: qStyles } of pseudoClassQueries) {
-					createCSSClassWithStyles(className, qStyles, undefined, 'pseudo', query.pseudoClass);
-				}
+			// Apply pseudo-class queries (hover, focus, etc.)
+			// These don't cascade - each pseudo-class gets its own styles
+			for (const { query, styles: qStyles } of pseudoClassQueries) {
+				createCSSClassWithStyles(className, qStyles, undefined, 'pseudo', query.pseudoClass);
+			}
 
-					return { className };
-				}
+			return { className };
+		}
 
-			// Only default styles (no queries)
-			return { className: defaultStyles!.getClassName() };
-		};
+		// Only default styles (no queries)
+		if (namedClassName) {
+			createCSSClassWithStyles(namedClassName, defaultStyles!.getStyles());
+			return { className: namedClassName };
+		}
+
+		return { className: defaultStyles!.getClassName() };
+	};
 	}
 
 // Backward compatibility: alias for createStyleQueries
