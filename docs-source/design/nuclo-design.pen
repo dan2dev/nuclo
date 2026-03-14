@@ -12513,7 +12513,7 @@
                   "name": "bentoCounter",
                   "width": 840,
                   "height": 340,
-                  "fill": "#0C0B18",
+                  "fill": "#0e0e0e",
                   "cornerRadius": 20,
                   "layout": "vertical",
                   "padding": [
@@ -12542,13 +12542,13 @@
                               "id": "uJEzW",
                               "width": 8,
                               "height": 8,
-                              "fill": "#6B9EF8",
+                              "fill": "#D5FF40",
                               "cornerRadius": 4
                             },
                             {
                               "type": "text",
                               "id": "MwMb1",
-                              "fill": "#7A9EE8",
+                              "fill": "#888888",
                               "content": "State · Beginner",
                               "fontFamily": "Inter",
                               "fontSize": 11,
@@ -12562,7 +12562,7 @@
                           "name": "cCIcon",
                           "width": 56,
                           "height": 56,
-                          "fill": "#18162C",
+                          "fill": "#1a1a1a",
                           "cornerRadius": 14,
                           "justifyContent": "center",
                           "alignItems": "center",
@@ -12570,7 +12570,7 @@
                             {
                               "type": "text",
                               "id": "b49Hs",
-                              "fill": "#6B9EF8",
+                              "fill": "#D5FF40",
                               "content": "+",
                               "fontFamily": "Inter",
                               "fontSize": 24,
@@ -12591,7 +12591,7 @@
                         {
                           "type": "text",
                           "id": "E6n2l",
-                          "fill": "#7A7A9E",
+                          "fill": "#C0C2B8",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Classic reactive counter with increment, decrement and reset. The hello world of state-driven UI.",
@@ -12605,7 +12605,7 @@
                     {
                       "type": "text",
                       "id": "O3Q2A",
-                      "fill": "#6B9EF8",
+                      "fill": "#D5FF40",
                       "content": "View Example →",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -12619,11 +12619,11 @@
                   "name": "bentoTodo",
                   "width": 420,
                   "height": 340,
-                  "fill": "#FFF8F4",
+                  "fill": "#FFFFFF",
                   "cornerRadius": 20,
                   "stroke": {
                     "thickness": 1,
-                    "fill": "#F0E8DF"
+                    "fill": "#D0D0CC"
                   },
                   "layout": "vertical",
                   "padding": 32,
@@ -12649,13 +12649,13 @@
                               "id": "LqY4L",
                               "width": 8,
                               "height": 8,
-                              "fill": "#F4845F",
+                              "fill": "#4A7A00",
                               "cornerRadius": 4
                             },
                             {
                               "type": "text",
                               "id": "CxrAe",
-                              "fill": "#D07050",
+                              "fill": "#888888",
                               "content": "Lists · Beginner",
                               "fontFamily": "Inter",
                               "fontSize": 11,
@@ -12669,7 +12669,7 @@
                           "name": "cTIcon",
                           "width": 56,
                           "height": 56,
-                          "fill": "#FFF0E8",
+                          "fill": "#E5E5E0",
                           "cornerRadius": 14,
                           "justifyContent": "center",
                           "alignItems": "center",
@@ -12677,7 +12677,7 @@
                             {
                               "type": "text",
                               "id": "uncRU",
-                              "fill": "#F4845F",
+                              "fill": "#4A7A00",
                               "content": "✓",
                               "fontFamily": "Inter",
                               "fontSize": 22,
@@ -12698,7 +12698,7 @@
                         {
                           "type": "text",
                           "id": "yUWJd",
-                          "fill": "#777777",
+                          "fill": "#666666",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Full todo app with add, toggle, delete and filter — powered by list() and when().",
@@ -12712,7 +12712,7 @@
                     {
                       "type": "text",
                       "id": "dDDkX",
-                      "fill": "#F4845F",
+                      "fill": "#4A7A00",
                       "content": "View Example →",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -12735,11 +12735,11 @@
                   "name": "bentoSubtasks",
                   "width": 413,
                   "height": 260,
-                  "fill": "#F2FBF4",
+                  "fill": "#FFFFFF",
                   "cornerRadius": 20,
                   "stroke": {
                     "thickness": 1,
-                    "fill": "#D8F0DE"
+                    "fill": "#D0D0CC"
                   },
                   "layout": "vertical",
                   "padding": 28,
@@ -12759,7 +12759,7 @@
                           "name": "cSubIcon",
                           "width": 48,
                           "height": 48,
-                          "fill": "#DCF5E4",
+                          "fill": "#E5E5E0",
                           "cornerRadius": 12,
                           "justifyContent": "center",
                           "alignItems": "center",
@@ -12767,7 +12767,7 @@
                             {
                               "type": "text",
                               "id": "fXgjl",
-                              "fill": "#4CAF76",
+                              "fill": "#4A7A00",
                               "content": "≡",
                               "fontFamily": "Inter",
                               "fontSize": 20,
@@ -12788,7 +12788,7 @@
                         {
                           "type": "text",
                           "id": "zmQV1",
-                          "fill": "#555555",
+                          "fill": "#666666",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Nested list with expandable sub-items. Shows how lists can be composed inside each other.",
@@ -12802,7 +12802,7 @@
                     {
                       "type": "text",
                       "id": "X77dP",
-                      "fill": "#4CAF76",
+                      "fill": "#4A7A00",
                       "content": "View Example →",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -12816,11 +12816,11 @@
                   "name": "bentoSearch",
                   "width": 413,
                   "height": 260,
-                  "fill": "#FEFBF0",
+                  "fill": "#FFFFFF",
                   "cornerRadius": 20,
                   "stroke": {
                     "thickness": 1,
-                    "fill": "#F0E5C8"
+                    "fill": "#D0D0CC"
                   },
                   "layout": "vertical",
                   "padding": 28,
@@ -12840,7 +12840,7 @@
                           "name": "cSrcIcon",
                           "width": 48,
                           "height": 48,
-                          "fill": "#F5EECC",
+                          "fill": "#E5E5E0",
                           "cornerRadius": 12,
                           "justifyContent": "center",
                           "alignItems": "center",
@@ -12848,7 +12848,7 @@
                             {
                               "type": "text",
                               "id": "ZaFBb",
-                              "fill": "#D4B24A",
+                              "fill": "#4A7A00",
                               "content": "◎",
                               "fontFamily": "Inter",
                               "fontSize": 20,
@@ -12869,7 +12869,7 @@
                         {
                           "type": "text",
                           "id": "eNdHY",
-                          "fill": "#555555",
+                          "fill": "#666666",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Filter a list in real-time as the user types. Combines on('input') with list() provider filtering.",
@@ -12883,7 +12883,7 @@
                     {
                       "type": "text",
                       "id": "tMcLi",
-                      "fill": "#D4B24A",
+                      "fill": "#4A7A00",
                       "content": "View Example →",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -12897,11 +12897,11 @@
                   "name": "bentoAsync",
                   "width": 414,
                   "height": 260,
-                  "fill": "#FAF5FF",
+                  "fill": "#FFFFFF",
                   "cornerRadius": 20,
                   "stroke": {
                     "thickness": 1,
-                    "fill": "#E8D8F5"
+                    "fill": "#D0D0CC"
                   },
                   "layout": "vertical",
                   "padding": 28,
@@ -12921,7 +12921,7 @@
                           "name": "cAsyIcon",
                           "width": 48,
                           "height": 48,
-                          "fill": "#ECD8F8",
+                          "fill": "#E5E5E0",
                           "cornerRadius": 12,
                           "justifyContent": "center",
                           "alignItems": "center",
@@ -12929,7 +12929,7 @@
                             {
                               "type": "text",
                               "id": "D3YVM",
-                              "fill": "#C080D0",
+                              "fill": "#4A7A00",
                               "content": "↻",
                               "fontFamily": "Inter",
                               "fontSize": 20,
@@ -12950,7 +12950,7 @@
                         {
                           "type": "text",
                           "id": "OL3sG",
-                          "fill": "#555555",
+                          "fill": "#666666",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Fetch from an API and render loading, error and success states using when() chains.",
@@ -12964,7 +12964,7 @@
                     {
                       "type": "text",
                       "id": "tnzic",
-                      "fill": "#C080D0",
+                      "fill": "#4A7A00",
                       "content": "View Example →",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -12987,11 +12987,11 @@
                   "name": "bentoForms",
                   "width": 420,
                   "height": 300,
-                  "fill": "#F2F8FF",
+                  "fill": "#FFFFFF",
                   "cornerRadius": 20,
                   "stroke": {
                     "thickness": 1,
-                    "fill": "#D8E8F5"
+                    "fill": "#D0D0CC"
                   },
                   "layout": "vertical",
                   "padding": 32,
@@ -13017,13 +13017,13 @@
                               "id": "SnQO0",
                               "width": 8,
                               "height": 8,
-                              "fill": "#5B9CD4",
+                              "fill": "#4A7A00",
                               "cornerRadius": 4
                             },
                             {
                               "type": "text",
                               "id": "zz38Z",
-                              "fill": "#5B8CC0",
+                              "fill": "#888888",
                               "content": "Input · Intermediate",
                               "fontFamily": "Inter",
                               "fontSize": 11,
@@ -13037,7 +13037,7 @@
                           "name": "cForIcon",
                           "width": 48,
                           "height": 48,
-                          "fill": "#DCEEFA",
+                          "fill": "#E5E5E0",
                           "cornerRadius": 12,
                           "justifyContent": "center",
                           "alignItems": "center",
@@ -13045,7 +13045,7 @@
                             {
                               "type": "text",
                               "id": "IFO6T",
-                              "fill": "#5B9CD4",
+                              "fill": "#4A7A00",
                               "content": "⊡",
                               "fontFamily": "Inter",
                               "fontSize": 20,
@@ -13066,7 +13066,7 @@
                         {
                           "type": "text",
                           "id": "JvKuV",
-                          "fill": "#555555",
+                          "fill": "#666666",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Controlled form with validation, error display and submit handling — no libraries required.",
@@ -13080,7 +13080,7 @@
                     {
                       "type": "text",
                       "id": "U20B6",
-                      "fill": "#5B9CD4",
+                      "fill": "#4A7A00",
                       "content": "View Example →",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -13094,7 +13094,7 @@
                   "name": "bentoNested",
                   "width": 840,
                   "height": 300,
-                  "fill": "#0C0B18",
+                  "fill": "#0e0e0e",
                   "cornerRadius": 20,
                   "layout": "vertical",
                   "padding": [
@@ -13123,13 +13123,13 @@
                               "id": "P5lnn",
                               "width": 8,
                               "height": 8,
-                              "fill": "#8B7ED8",
+                              "fill": "#D5FF40",
                               "cornerRadius": 4
                             },
                             {
                               "type": "text",
                               "id": "jUSPI",
-                              "fill": "#9A8EE8",
+                              "fill": "#888888",
                               "content": "Composition · Intermediate",
                               "fontFamily": "Inter",
                               "fontSize": 11,
@@ -13143,7 +13143,7 @@
                           "name": "cNestIcon",
                           "width": 56,
                           "height": 56,
-                          "fill": "#18162C",
+                          "fill": "#1a1a1a",
                           "cornerRadius": 14,
                           "justifyContent": "center",
                           "alignItems": "center",
@@ -13151,7 +13151,7 @@
                             {
                               "type": "text",
                               "id": "hZkce",
-                              "fill": "#8B7ED8",
+                              "fill": "#D5FF40",
                               "content": "⊕",
                               "fontFamily": "Inter",
                               "fontSize": 22,
@@ -13172,7 +13172,7 @@
                         {
                           "type": "text",
                           "id": "PEgD2",
-                          "fill": "#7A7A9E",
+                          "fill": "#C0C2B8",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Compose components with shared state passed through closures. Clean architecture, no prop-drilling.",
@@ -13186,7 +13186,7 @@
                     {
                       "type": "text",
                       "id": "jvWuh",
-                      "fill": "#8B7ED8",
+                      "fill": "#D5FF40",
                       "content": "View Example →",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -13209,11 +13209,11 @@
                   "name": "bentoAnimations",
                   "width": 413,
                   "height": 260,
-                  "fill": "#FFFDF0",
+                  "fill": "#FFFFFF",
                   "cornerRadius": 20,
                   "stroke": {
                     "thickness": 1,
-                    "fill": "#F0E8C0"
+                    "fill": "#D0D0CC"
                   },
                   "layout": "vertical",
                   "padding": 28,
@@ -13233,7 +13233,7 @@
                           "name": "cAniIcon",
                           "width": 48,
                           "height": 48,
-                          "fill": "#F5ECC8",
+                          "fill": "#E5E5E0",
                           "cornerRadius": 12,
                           "justifyContent": "center",
                           "alignItems": "center",
@@ -13241,7 +13241,7 @@
                             {
                               "type": "text",
                               "id": "Ri7Va",
-                              "fill": "#D4B84A",
+                              "fill": "#4A7A00",
                               "content": "✦",
                               "fontFamily": "Inter",
                               "fontSize": 20,
@@ -13262,7 +13262,7 @@
                         {
                           "type": "text",
                           "id": "Ul7ZK",
-                          "fill": "#555555",
+                          "fill": "#666666",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "CSS transitions triggered by state changes — fade in, slide and pulse effects without a library.",
@@ -13276,7 +13276,7 @@
                     {
                       "type": "text",
                       "id": "gG3DE",
-                      "fill": "#D4B84A",
+                      "fill": "#4A7A00",
                       "content": "View Example →",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -13290,11 +13290,11 @@
                   "name": "bentoRouting",
                   "width": 413,
                   "height": 260,
-                  "fill": "#F2FBF9",
+                  "fill": "#FFFFFF",
                   "cornerRadius": 20,
                   "stroke": {
                     "thickness": 1,
-                    "fill": "#C8EDE8"
+                    "fill": "#D0D0CC"
                   },
                   "layout": "vertical",
                   "padding": 28,
@@ -13314,7 +13314,7 @@
                           "name": "cRouIcon",
                           "width": 48,
                           "height": 48,
-                          "fill": "#CCE8E4",
+                          "fill": "#E5E5E0",
                           "cornerRadius": 12,
                           "justifyContent": "center",
                           "alignItems": "center",
@@ -13322,7 +13322,7 @@
                             {
                               "type": "text",
                               "id": "2XPek",
-                              "fill": "#45B8A0",
+                              "fill": "#4A7A00",
                               "content": "→",
                               "fontFamily": "Inter",
                               "fontSize": 20,
@@ -13343,7 +13343,7 @@
                         {
                           "type": "text",
                           "id": "7WYwA",
-                          "fill": "#555555",
+                          "fill": "#666666",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Client-side routing with history API. Render different views based on the current URL path.",
@@ -13357,7 +13357,7 @@
                     {
                       "type": "text",
                       "id": "4AT2m",
-                      "fill": "#45B8A0",
+                      "fill": "#4A7A00",
                       "content": "View Example →",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -13371,11 +13371,11 @@
                   "name": "bentoStyled",
                   "width": 414,
                   "height": 260,
-                  "fill": "#FFF5FA",
+                  "fill": "#FFFFFF",
                   "cornerRadius": 20,
                   "stroke": {
                     "thickness": 1,
-                    "fill": "#F5D8EA"
+                    "fill": "#D0D0CC"
                   },
                   "layout": "vertical",
                   "padding": 28,
@@ -13395,7 +13395,7 @@
                           "name": "cStyIcon",
                           "width": 48,
                           "height": 48,
-                          "fill": "#F8D8EC",
+                          "fill": "#E5E5E0",
                           "cornerRadius": 12,
                           "justifyContent": "center",
                           "alignItems": "center",
@@ -13403,7 +13403,7 @@
                             {
                               "type": "text",
                               "id": "dNZtC",
-                              "fill": "#E080B0",
+                              "fill": "#4A7A00",
                               "content": "◈",
                               "fontFamily": "Inter",
                               "fontSize": 20,
@@ -13424,7 +13424,7 @@
                         {
                           "type": "text",
                           "id": "nLiXS",
-                          "fill": "#555555",
+                          "fill": "#666666",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Full styling showcase — shadows, gradients, hover states and responsive breakpoints in one component.",
@@ -13438,7 +13438,7 @@
                     {
                       "type": "text",
                       "id": "1C6AC",
-                      "fill": "#E080B0",
+                      "fill": "#4A7A00",
                       "content": "View Example →",
                       "fontFamily": "Inter",
                       "fontSize": 13,
