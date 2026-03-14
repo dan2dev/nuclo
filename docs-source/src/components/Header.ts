@@ -139,7 +139,7 @@ function ThemeToggle() {
       }
     ),
     { ariaLabel: "Toggle theme" },
-    () => isDark() ? SunIcon() : MoonIcon(),
+    when(() => isDark(), SunIcon()).else(MoonIcon()),
     on("click", toggleTheme)
   );
 }
