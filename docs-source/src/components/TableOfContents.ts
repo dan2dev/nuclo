@@ -66,7 +66,7 @@ export function TableOfContents() {
       .fontWeight(isActive ? "600" : "400")
       .backgroundColor("transparent"),
     {
-      hover: color(colors.primary).backgroundColor("rgba(132, 204, 22, 0.1)")
+      hover: color(colors.primary).backgroundColor(colors.primaryAlpha08)
     }
   );
 
@@ -99,4 +99,3 @@ export function TableOfContents() {
     })
   );
 }
-

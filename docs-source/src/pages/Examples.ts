@@ -41,7 +41,7 @@ const cardStyle = cn(
     .flexDirection("column")
     .gap("12px"),
   {
-    hover: border(`1px solid ${colors.primary}`)
+    hover: border(`1px solid ${colors.borderPrimary}`)
       .transform("translateY(-2px)")
       .boxShadow("0 8px 24px rgba(0,0,0,0.15)")
   }
@@ -80,7 +80,7 @@ const liveBadgeStyle = cn(
     .alignItems("center")
     .gap("5px")
     .padding("3px 8px")
-    .backgroundColor("rgba(132, 204, 22, 0.1)")
+    .backgroundColor(colors.bgIcon)
     .color(colors.primary)
     .fontSize("11px")
     .fontWeight("600")

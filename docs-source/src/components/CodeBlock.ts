@@ -13,24 +13,122 @@ function isCopied(id: string): boolean {
   return copiedStates[id] || false;
 }
 
-// CSS-class-based syntax highlighting — safe against CSS variable name collisions
-// Class names (.tok-kw, .tok-str, etc.) never contain JS keywords so regexes
-// cannot corrupt previously highlighted spans.
-function highlightCode(code: string): string {
-  return code
-    // strings (single/double/template quotes)
-    .replace(/(["'`])(?:(?!\1)[^\\]|\\.)*\1/g, '<span class="tok-str">$&</span>')
-    // single-line comments
-    .replace(/(\/\/[^\n]*)/g, '<span class="tok-comment">$1</span>')
-    // keywords
-    .replace(/\b(import|export|from|const|let|var|function|return|if|else|for|while|type|interface|async|await|new|class|extends|implements|public|private|protected|static|readonly|typeof|keyof|in|of|true|false|null|undefined|this)\b/g,
-      '<span class="tok-kw">$1</span>')
-    // function / method calls
+type SegmentKind = "text" | "string" | "comment";
+
+type CodeSegment = {
+  kind: SegmentKind;
+  value: string;
+};
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function tokenizeCode(code: string): CodeSegment[] {
+  const segments: CodeSegment[] = [];
+  let cursor = 0;
+  let textStart = 0;
+
+  function pushText(end: number) {
+    if (end > textStart) {
+      segments.push({ kind: "text", value: code.slice(textStart, end) });
+    }
+  }
+
+  while (cursor < code.length) {
+    const char = code[cursor];
+    const next = code[cursor + 1];
+
+    if (char === "/" && next === "/") {
+      pushText(cursor);
+
+      let end = cursor + 2;
+      while (end < code.length && code[end] !== "\n") {
+        end++;
+      }
+
+      segments.push({ kind: "comment", value: code.slice(cursor, end) });
+      cursor = end;
+      textStart = end;
+      continue;
+    }
+
+    if (char === "/" && next === "*") {
+      pushText(cursor);
+
+      let end = cursor + 2;
+      while (end < code.length && !(code[end] === "*" && code[end + 1] === "/")) {
+        end++;
+      }
+      end = Math.min(end + 2, code.length);
+
+      segments.push({ kind: "comment", value: code.slice(cursor, end) });
+      cursor = end;
+      textStart = end;
+      continue;
+    }
+
+    if (char === "'" || char === "\"" || char === "`") {
+      pushText(cursor);
+
+      const quote = char;
+      let end = cursor + 1;
+
+      while (end < code.length) {
+        if (code[end] === "\\") {
+          end += 2;
+          continue;
+        }
+
+        if (code[end] === quote) {
+          end++;
+          break;
+        }
+
+        end++;
+      }
+
+      segments.push({ kind: "string", value: code.slice(cursor, end) });
+      cursor = end;
+      textStart = end;
+      continue;
+    }
+
+    cursor++;
+  }
+
+  pushText(code.length);
+  return segments;
+}
+
+function highlightPlainText(code: string): string {
+  return escapeHtml(code)
+    .replace(
+      /\b(import|export|from|const|let|var|function|return|if|else|for|while|type|interface|async|await|new|class|extends|implements|public|private|protected|static|readonly|typeof|keyof|in|of|true|false|null|undefined|this)\b/g,
+      '<span class="tok-kw">$1</span>'
+    )
     .replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, '<span class="tok-fn">$1</span>(')
-    // numbers
     .replace(/\b(\d+\.?\d*)\b/g, '<span class="tok-num">$1</span>')
-    // types after colon
     .replace(/:\s*([A-Z][a-zA-Z0-9_]*)/g, ': <span class="tok-type">$1</span>');
+}
+
+function highlightCode(code: string): string {
+  return tokenizeCode(code)
+    .map((segment) => {
+      if (segment.kind === "string") {
+        return `<span class="tok-str">${escapeHtml(segment.value)}</span>`;
+      }
+
+      if (segment.kind === "comment") {
+        return `<span class="tok-comment">${escapeHtml(segment.value)}</span>`;
+      }
+
+      return highlightPlainText(segment.value);
+    })
+    .join("");
 }
 
 export function CodeBlock(codeContent: string, _language = "typescript", showCopy = true) {

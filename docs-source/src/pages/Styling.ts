@@ -10,7 +10,7 @@ export function StylingPage() {
   function OverviewDemo() {
     const btn = cn(
       backgroundColor(colors.primary)
-        .color(colors.bg)
+        .color(colors.primaryText)
         .padding("12px 20px")
         .border("none")
         .borderRadius("10px")

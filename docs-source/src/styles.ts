@@ -4,28 +4,35 @@ import "nuclo";
 export const colors = {
   // Primary accent — text/links: bright in dark (#D5FF40), dark-olive in light (#4A7A00)
   primary: "var(--c-primary)",
-  // Button backgrounds always stay bright #D5FF40 regardless of theme
-  primaryBg: "#D5FF40",
-  // Text that sits on top of a primary-bg button
-  primaryText: "#0e0e0e",
+  primaryBg: "var(--c-primary-bg)",
+  primaryText: "var(--c-primary-text)",
+  primaryHover: "var(--c-primary-hover)",
+  primaryDark: "var(--c-primary-dark)",
+  primaryGlow: "var(--c-primary-glow)",
 
   // Backgrounds
   bg: "var(--c-bg)",
   bgCard: "var(--c-bg-card)",
   bgSecondary: "var(--c-bg-secondary)",   // code blocks, install bar fill
+  bgLight: "var(--c-bg-light)",           // panel headers, neutral controls
+  bgCode: "var(--c-bg-code)",
   bgIcon: "var(--c-bg-icon)",             // icon container backgrounds
   bgNav: "var(--c-bg-nav)",
   bgFooter: "var(--c-bg-footer)",
 
   // Text
   text: "var(--c-text)",
+  textDim: "var(--c-text-dim)",
   textMuted: "var(--c-text-muted)",
   textSubtitle: "var(--c-text-subtitle)", // hero subtitle color
 
   // Borders
   border: "var(--c-border)",
   borderLight: "var(--c-border-light)",   // slightly lighter border
+  borderGlow: "var(--c-border-glow)",
   borderPrimary: "var(--c-border-primary)",
+
+  accentSecondary: "var(--c-accent-secondary)",
 
   // Semi-transparent primary tints
   primaryAlpha08: "var(--c-primary-alpha-08)",
@@ -42,6 +49,11 @@ export function injectGlobalStyles() {
     /* ── CSS Custom Properties ───────────────────────────────────────────── */
     :root, [data-theme="dark"] {
       --c-primary:          #D5FF40;
+      --c-primary-bg:       #D5FF40;
+      --c-primary-text:     #0e0e0e;
+      --c-primary-hover:    #D5FF40;
+      --c-primary-dark:     #D5FF40;
+      --c-primary-glow:     rgba(213,255,64,0.19);
       --c-primary-alpha-08: rgba(213,255,64,0.08);
       --c-primary-alpha-13: rgba(213,255,64,0.13);
       --c-primary-alpha-19: rgba(213,255,64,0.19);
@@ -49,68 +61,97 @@ export function injectGlobalStyles() {
       --c-bg:           #0e0e0e;
       --c-bg-card:      #1a1a1a;
       --c-bg-secondary: #141414;
+      --c-bg-light:     #161616;
+      --c-bg-code:      #141414;
       --c-bg-icon:      #222222;
-      --c-bg-nav:       rgba(14,14,14,0.85);
+      --c-bg-nav:       rgba(14,14,14,0.80);
       --c-bg-footer:    #161616;
 
       --c-text:          #FFFFFF;
+      --c-text-dim:      #666666;
       --c-text-muted:    #808080;
       --c-text-subtitle: #C0C2B8;
 
       --c-border:         #2a2a2a;
       --c-border-light:   #333333;
+      --c-border-glow:    rgba(213,255,64,0.19);
       --c-border-primary: rgba(213,255,64,0.19);
 
-      /* Syntax highlighting */
-      --c-tok-accent:  #D5FF40;
-      --c-tok-default: #FFFFFF;
-      --c-tok-comment: #666666;
-      --c-tok-muted:   #808080;
-      --c-tok-number:  #D97706;
-      --c-tok-fn:      #82aaff;
-      --c-tok-type:    #c792ea;
+      --c-accent-secondary: #22d3ee;
+      --c-hero-badge-bg:    #1a1a1a;
+      --c-live-badge-bg:    #222222;
+      --c-ready-pill-bg:    #222222;
+      --c-ready-pill-border:#2a2a2a;
+      --c-selection-bg:     rgba(213,255,64,0.20);
 
-      --c-header-bg:      rgba(14,14,14,0.85);
-      --c-mobile-menu-bg: rgba(14,14,14,0.98);
+      /* Syntax highlighting */
+      --c-tok-accent-primary: #D5FF40;
+      --c-tok-accent-strong:  #D5FF40;
+      --c-tok-default:        #FFFFFF;
+      --c-tok-comment:        #666666;
+      --c-tok-muted:          #808080;
+      --c-tok-number:         #FF8C42;
+      --c-tok-fn:             #82aaff;
+      --c-tok-type:           #c792ea;
+
+      --c-header-bg:      rgba(14,14,14,0.80);
+      --c-mobile-menu-bg: rgba(14,14,14,0.96);
     }
 
     [data-theme="light"] {
       --c-primary:          #4A7A00;
+      --c-primary-bg:       #4A7A00;
+      --c-primary-text:     #FFFFFF;
+      --c-primary-hover:    #3D8800;
+      --c-primary-dark:     #3D8800;
+      --c-primary-glow:     rgba(74,122,0,0.15);
       --c-primary-alpha-08: rgba(74,122,0,0.08);
-      --c-primary-alpha-13: rgba(74,122,0,0.13);
-      --c-primary-alpha-19: rgba(74,122,0,0.25);
+      --c-primary-alpha-13: rgba(74,122,0,0.10);
+      --c-primary-alpha-19: rgba(74,122,0,0.14);
 
       --c-bg:           #F5F5F0;
       --c-bg-card:      #FFFFFF;
       --c-bg-secondary: #EEEEEA;
+      --c-bg-light:     #E5E5E0;
+      --c-bg-code:      #EEEEEA;
       --c-bg-icon:      #E5E5E0;
-      --c-bg-nav:       rgba(245,245,240,0.90);
+      --c-bg-nav:       rgba(245,245,240,0.80);
       --c-bg-footer:    #E5E5E0;
 
       --c-text:          #111111;
+      --c-text-dim:      #888888;
       --c-text-muted:    #888888;
       --c-text-subtitle: #666666;
 
       --c-border:         #D0D0CC;
-      --c-border-light:   #B8B8B4;
-      --c-border-primary: rgba(74,122,0,0.25);
+      --c-border-light:   #D0D0CC;
+      --c-border-glow:    rgba(74,122,0,0.14);
+      --c-border-primary: rgba(74,122,0,0.14);
+
+      --c-accent-secondary: #0f766e;
+      --c-hero-badge-bg:    #E5E5E0;
+      --c-live-badge-bg:    #E5E5E0;
+      --c-ready-pill-bg:    rgba(74,122,0,0.07);
+      --c-ready-pill-border:rgba(74,122,0,0.14);
+      --c-selection-bg:     rgba(74,122,0,0.16);
 
       /* Syntax highlighting */
-      --c-tok-accent:  #4A7A00;
-      --c-tok-default: #111111;
-      --c-tok-comment: #888888;
-      --c-tok-muted:   #888888;
-      --c-tok-number:  #D97706;
-      --c-tok-fn:      #1d4ed8;
-      --c-tok-type:    #7c3aed;
+      --c-tok-accent-primary: #4A7A00;
+      --c-tok-accent-strong:  #3D8800;
+      --c-tok-default:        #111111;
+      --c-tok-comment:        #888888;
+      --c-tok-muted:          #888888;
+      --c-tok-number:         #D97706;
+      --c-tok-fn:             #1d4ed8;
+      --c-tok-type:           #7c3aed;
 
-      --c-header-bg:      rgba(245,245,240,0.90);
-      --c-mobile-menu-bg: rgba(245,245,240,0.99);
+      --c-header-bg:      rgba(245,245,240,0.80);
+      --c-mobile-menu-bg: rgba(245,245,240,0.96);
     }
 
     /* ── Syntax token classes ────────────────────────────────────────────── */
-    .tok-kw      { color: var(--c-tok-accent); }
-    .tok-str     { color: var(--c-tok-accent); }
+    .tok-kw      { color: var(--c-tok-accent-primary); }
+    .tok-str     { color: var(--c-tok-accent-primary); }
     .tok-fn      { color: var(--c-tok-fn); }
     .tok-num     { color: var(--c-tok-number); }
     .tok-comment { color: var(--c-tok-comment); }
@@ -144,7 +185,7 @@ export function injectGlobalStyles() {
     ::-webkit-scrollbar-thumb:hover { background: var(--c-border-light); }
 
     /* ── Selection ───────────────────────────────────────────────────────── */
-    ::selection { background: rgba(213,255,64,0.2); color: var(--c-text); }
+    ::selection { background: var(--c-selection-bg); color: var(--c-text); }
 
     /* ── Page transition ─────────────────────────────────────────────────── */
     #page-container { animation: pageFadeIn 0.15s ease; }

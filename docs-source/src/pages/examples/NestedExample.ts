@@ -44,7 +44,7 @@ const avatarStyle = cn(
     .height("48px")
     .borderRadius("50%")
     .backgroundColor(colors.primary)
-    .color(colors.bg)
+    .color(colors.primaryText)
     .display("flex")
     .alignItems("center")
     .justifyContent("center")
@@ -75,7 +75,7 @@ const followersStyle = cn(
 const btnStyle = cn(
   padding("8px 16px")
     .backgroundColor(colors.primary)
-    .color(colors.bg)
+    .color(colors.primaryText)
     .border("none")
     .borderRadius("6px")
     .fontSize("13px")

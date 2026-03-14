@@ -3,11 +3,12 @@ import { cn, colors } from "../../styles.ts";
 
 export const HOME_CARD_PADDING = "28px";
 export const homeCodeToneColors = {
-  accent: "var(--c-primary)",
-  comment: "var(--c-text-muted)",
-  default: "var(--c-text)",
-  muted: "var(--c-text-muted)",
-  number: "#D97706",
+  accent: "var(--c-tok-accent-strong)",
+  comment: "var(--c-tok-comment)",
+  default: "var(--c-tok-default)",
+  muted: "var(--c-tok-muted)",
+  number: "var(--c-tok-number)",
+  primary: "var(--c-tok-accent-primary)",
 } as const;
 
 export const hs = {
@@ -27,7 +28,7 @@ export const hs = {
     display("inline-flex").alignItems("center").gap("8px")
       .padding("6px 16px").marginBottom("32px")
       .borderRadius("99px").border(`1px solid ${colors.border}`)
-      .backgroundColor(colors.primaryAlpha08),
+      .backgroundColor("var(--c-hero-badge-bg)"),
   ),
 
   heroBadgeText: cn(
@@ -77,7 +78,7 @@ export const hs = {
   ),
 
   buttonOutlineAccent: cn(
-    backgroundColor("transparent").border(`1px solid ${colors.border}`)
+    backgroundColor("transparent").border(`1px solid ${colors.borderLight}`)
       .color(colors.primary).fontWeight("600"),
     { hover: borderColor(colors.borderPrimary).transform("translateY(-2px)") },
   ),
@@ -196,14 +197,14 @@ export const hs = {
   panelHeader: cn(
     display("flex").alignItems("center").justifyContent("space-between")
       .padding("0 20px").height("46px")
-      .backgroundColor(colors.bgSecondary)
+      .backgroundColor(colors.bgLight)
       .borderBottom(`1px solid ${colors.border}`),
   ),
 
   terminalHeader: cn(
     display("flex").alignItems("center").gap("8px")
       .padding("0 20px").height("48px")
-      .backgroundColor(colors.bgSecondary)
+      .backgroundColor(colors.bgLight)
       .borderBottom(`1px solid ${colors.border}`),
   ),
 
@@ -231,11 +232,18 @@ export const hs = {
     fontSize("11px").fontWeight("700").color(colors.textMuted).letterSpacing("0.12em"),
   ),
 
-  statusBadge: cn(
+  interactiveBadge: cn(
     display("inline-flex").alignItems("center").gap("5px")
       .padding("4px 10px").borderRadius("99px")
       .fontSize("11px").fontWeight("600").color(colors.primary)
       .backgroundColor(colors.primaryAlpha08),
+  ),
+
+  liveBadge: cn(
+    display("inline-flex").alignItems("center").gap("5px")
+      .padding("4px 10px").borderRadius("99px")
+      .fontSize("11px").fontWeight("600").color(colors.primary)
+      .backgroundColor("var(--c-live-badge-bg)"),
   ),
 
   counterStatusBadge: cn(
@@ -246,12 +254,17 @@ export const hs = {
       .textTransform("uppercase").letterSpacing("0.07em"),
   ),
 
-  statusDotLarge: cn(
+  heroBadgeDot: cn(
+    width("7px").height("7px").borderRadius("50%")
+      .backgroundColor(colors.primary).flexShrink("0"),
+  ),
+
+  interactiveBadgeDot: cn(
     width("6px").height("6px").borderRadius("50%")
       .backgroundColor(colors.primary).flexShrink("0"),
   ),
 
-  statusDotSmall: cn(
+  liveBadgeDot: cn(
     width("5px").height("5px").borderRadius("50%")
       .backgroundColor(colors.primary).flexShrink("0"),
   ),
@@ -280,7 +293,7 @@ export const hs = {
   demoIconButton: cn(
     display("flex").alignItems("center").justifyContent("center")
       .width("40px").height("40px").borderRadius("8px")
-      .backgroundColor(colors.bgSecondary).color(colors.text)
+      .backgroundColor(colors.bgLight).color(colors.text)
       .border(`1px solid ${colors.border}`)
       .fontSize("18px").fontWeight("700").cursor("pointer")
       .transition("all 0.15s"),
@@ -299,7 +312,7 @@ export const hs = {
   demoResetButton: cn(
     display("flex").alignItems("center").justifyContent("center")
       .padding("0 14px").height("40px").borderRadius("8px")
-      .backgroundColor(colors.bgSecondary).color(colors.textMuted)
+      .backgroundColor(colors.bgLight).color(colors.textMuted)
       .border(`1px solid ${colors.border}`)
       .fontSize("13px").cursor("pointer").transition("all 0.15s"),
     { hover: color(colors.text).borderColor(colors.borderLight) },
@@ -459,7 +472,8 @@ export const hs = {
   readyPill: cn(
     display("inline-flex").alignItems("center").gap("8px")
       .padding("8px 20px").borderRadius("99px")
-      .backgroundColor(colors.bgIcon).border(`1px solid ${colors.border}`)
+      .backgroundColor("var(--c-ready-pill-bg)")
+      .border("1px solid var(--c-ready-pill-border)")
       .fontSize("12px").fontWeight("600").color(colors.primary),
   ),
 };

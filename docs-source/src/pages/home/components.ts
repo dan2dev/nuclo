@@ -43,10 +43,18 @@ function IconBadge(icon: string, size: IconSize = "regular") {
   );
 }
 
-function StatusBadge(label: string, compact = false) {
+function InteractiveBadge(label: string) {
   return span(
-    hs.statusBadge,
-    div(compact ? hs.statusDotSmall : hs.statusDotLarge),
+    hs.interactiveBadge,
+    div(hs.interactiveBadgeDot),
+    label,
+  );
+}
+
+function LiveBadge(label: string) {
+  return span(
+    hs.liveBadge,
+    div(hs.liveBadgeDot),
     label,
   );
 }
@@ -132,7 +140,7 @@ function LiveDemoCard() {
     div(
       hs.panelHeader,
       span(hs.panelEyebrow, "LIVE DEMO"),
-      StatusBadge("Interactive"),
+      InteractiveBadge("Interactive"),
     ),
     div(
       hs.demoBody,
@@ -292,7 +300,7 @@ function ExampleCard(example: ExampleContent) {
     div(
       hs.exampleTopRow,
       span(hs.exampleIcon, EXAMPLE_ICONS[example.id] ?? "📄"),
-      StatusBadge("Live", true),
+      LiveBadge("Live"),
     ),
     span(hs.title, example.title),
     span(hs.bodyTextWide, example.description),
@@ -306,7 +314,7 @@ export function HomeHeroSection() {
     hs.heroSection,
     div(
       hs.heroBadge,
-      div(hs.statusDotLarge),
+      div(hs.heroBadgeDot),
       span(hs.heroBadgeText, HOME_COPY.heroBadge),
     ),
     div(

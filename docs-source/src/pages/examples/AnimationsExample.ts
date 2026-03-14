@@ -18,7 +18,7 @@ const demoStyle = cn(
 const btnStyle = cn(
   padding("12px 24px")
     .backgroundColor(colors.primary)
-    .color(colors.bg)
+    .color(colors.primaryText)
     .border("none")
     .borderRadius("8px")
     .fontSize("14px")
@@ -37,7 +37,7 @@ const boxStyle = cn(
     .justifyContent("center")
     .fontSize("16px")
     .fontWeight("600")
-    .color(colors.bg)
+    .color(colors.primaryText)
     .margin("0 auto")
 );
 
