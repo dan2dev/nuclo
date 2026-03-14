@@ -4790,11 +4790,11 @@
     {
       "type": "frame",
       "id": "NFzGj",
-      "x": 5307,
+      "x": 5306,
       "y": 0,
       "name": "Getting Started - Docs Page",
       "width": 1440,
-      "height": 4500,
+      "height": 4828,
       "fill": "#F5F5F0",
       "layout": "vertical",
       "children": [
@@ -7556,6 +7556,17 @@
       "id": "2gmN1",
       "x": 5419.846012793802,
       "y": 1644.08135417407,
+      "fill": "#000000",
+      "content": "wlel",
+      "fontFamily": "Inter",
+      "fontSize": 12,
+      "fontWeight": "normal"
+    },
+    {
+      "type": "text",
+      "id": "peklW",
+      "x": 5860.741617107902,
+      "y": 4050.2596179904376,
       "fill": "#000000",
       "content": "wlel",
       "fontFamily": "Inter",

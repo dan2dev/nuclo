@@ -297,6 +297,58 @@ export const s = {
     fontSize("17px").color(colors.textMuted).marginBottom("0").lineHeight("1.75").maxWidth("640px")
   ),
 
+  // ── Shared interactive elements ──────────────────────────────────────────
+  navLink: cn(
+    display("flex")
+      .alignItems("center")
+      .padding("8px 12px")
+      .borderRadius("8px")
+      .fontSize("14px")
+      .fontWeight("500")
+      .color(colors.textMuted)
+      .cursor("pointer")
+      .transition("all 0.2s"),
+    { hover: color(colors.primary).backgroundColor(colors.primaryAlpha08) }
+  ),
+
+  btnPrimary: cn(
+    display("inline-flex")
+      .alignItems("center")
+      .justifyContent("center")
+      .padding("12px 20px")
+      .border("none")
+      .borderRadius("10px")
+      .backgroundColor(colors.primary)
+      .color(colors.primaryText)
+      .fontWeight("700")
+      .cursor("pointer")
+      .transition("all 0.2s"),
+    {
+      hover: backgroundColor(colors.primaryHover)
+        .transform("translateY(-1px)")
+        .boxShadow(`0 0 24px ${colors.primaryGlow}`)
+    }
+  ),
+
+  btnSecondary: cn(
+    display("inline-flex")
+      .alignItems("center")
+      .justifyContent("center")
+      .padding("12px 20px")
+      .border(`1px solid ${colors.border}`)
+      .borderRadius("10px")
+      .backgroundColor(colors.bgLight)
+      .color(colors.text)
+      .fontWeight("600")
+      .cursor("pointer")
+      .transition("all 0.2s"),
+    {
+      hover: color(colors.primary)
+        .borderColor(colors.borderPrimary)
+        .backgroundColor(colors.primaryAlpha08)
+    }
+  ),
+
   // ── Content typography ────────────────────────────────────────────────────
   h2: cn(fontSize("24px").fontWeight("700").marginTop("56px").marginBottom("20px").color(colors.text).letterSpacing("-0.01em")),
   h3: cn(fontSize("18px").fontWeight("600").marginTop("36px").marginBottom("14px").color(colors.text)),
