@@ -1,9 +1,13 @@
 import "nuclo";
 import { injectGlobalStyles } from "./styles.ts";
+import { initTheme } from "./theme.ts";
 import { initRouter } from "./router.ts";
 import { Header } from "./components/Header.ts";
 import { Footer } from "./components/Footer.ts";
 import { setPageContainer } from "./routes.ts";
+
+// Initialize theme first (before styles) so CSS vars are set
+initTheme();
 
 // Initialize styles
 injectGlobalStyles();

@@ -1,7 +1,8 @@
 import "nuclo";
 import { cn, colors } from "../styles.ts";
 import { setRoute, getCurrentRoute, type Route } from "../router.ts";
-import { NucloLogo, GitHubIcon, MenuIcon, XIcon } from "./icons.ts";
+import { MenuIcon, XIcon, SunIcon, MoonIcon } from "./icons.ts";
+import { toggleTheme, isDark } from "../theme.ts";
 
 let mobileMenuOpen = false;
 
@@ -17,55 +18,37 @@ function closeMobileMenu() {
 
 const navLinks: { label: string; route: Route }[] = [
   { label: "Getting Started", route: "getting-started" },
-  { label: "Core API", route: "core-api" },
-  { label: "Tag Builders", route: "tag-builders" },
-  { label: "Styling", route: "styling" },
-  { label: "Pitfalls", route: "pitfalls" },
-  { label: "Examples", route: "examples" },
+  { label: "API",             route: "core-api" },
+  { label: "Styling",         route: "styling" },
+  { label: "Examples",        route: "examples" },
 ];
 
 function NavLink(label: string, route: Route) {
-  const isActive = () => getCurrentRoute() === route || getCurrentRoute().startsWith(route + "-");
+  const isActive = () =>
+    getCurrentRoute() === route ||
+    getCurrentRoute().startsWith(route + "-");
 
   return a(
     { href: route === "home" ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}${route}` },
     cn(
       display("flex")
         .alignItems("center")
-        .padding("8px 14px")
+        .padding("8px 16px")
         .borderRadius("8px")
         .fontSize("14px")
         .fontWeight("500")
-        .transition("all 0.2s")
         .color(colors.textMuted)
-        .cursor("pointer"),
-        {
-          hover: backgroundColor("rgba(132, 204, 22, 0.08)").color(colors.primary)
-        }
+        .cursor("pointer")
+        .transition("all 0.15s"),
+      { hover: backgroundColor(colors.primaryAlpha08).color(colors.primary) }
     ),
-    {
-      style: () => ({
-        color: isActive() ? colors.primary : undefined,
-      }),
-    },
+    { style: () => ({ color: isActive() ? "var(--c-primary)" : undefined }) },
     label,
     on("click", (e) => {
       e.preventDefault();
       setRoute(route);
       closeMobileMenu();
     }),
-    // on("mouseenter", (e) => {
-    //   if (!isActive()) {
-    //     (e.target as HTMLElement).style.color = colors.primary;
-    //     (e.target as HTMLElement).style.backgroundColor = "rgba(132, 204, 22, 0.05)";
-    //   }
-    // }),
-    // on("mouseleave", (e) => {
-    //   if (!isActive()) {
-    //     (e.target as HTMLElement).style.color = colors.textMuted;
-    //     (e.target as HTMLElement).style.backgroundColor = "transparent";
-    //   }
-    // })
   );
 }
 
@@ -75,18 +58,29 @@ function Brand() {
     cn(
       display("flex")
         .alignItems("center")
-        .gap("10px")
-        .fontSize("18px")
-        .fontWeight("700")
-        .color(colors.primary)
-        .transition("opacity 0.2s")
-        .cursor("pointer"),
-      {
-        hover: opacity("0.8")
-      }
+        .gap("8px")
+        .cursor("pointer")
+        .transition("opacity 0.15s"),
+      { hover: opacity("0.8") }
     ),
-    NucloLogo(28),
-    span("Nuclo"),
+    // dot
+    div(
+      cn(
+        width("10px")
+          .height("10px")
+          .borderRadius("50%")
+          .backgroundColor(colors.primary)
+          .flexShrink("0"),
+      ),
+    ),
+    span(
+      cn(fontSize("20px").fontWeight("700").color(colors.text)),
+      "nuclo"
+    ),
+    span(
+      cn(fontSize("14px").color(colors.textMuted)),
+      "/ docs"
+    ),
     on("click", (e) => {
       e.preventDefault();
       setRoute("home");
@@ -95,14 +89,37 @@ function Brand() {
   );
 }
 
-function GitHubLink() {
+function GitHubButton() {
   return a(
     {
       href: "https://github.com/dan2dev/nuclo",
       target: "_blank",
       rel: "noopener noreferrer",
-      ariaLabel: "GitHub"
     },
+    cn(
+      display("flex")
+        .alignItems("center")
+        .padding("8px 16px")
+        .borderRadius("8px")
+        .backgroundColor(colors.bgIcon)
+        .border(`1px solid ${colors.border}`)
+        .fontSize("13px")
+        .fontWeight("600")
+        .color(colors.primary)
+        .cursor("pointer")
+        .transition("all 0.15s")
+        .gap("4px"),
+      {
+        hover: backgroundColor(colors.primaryAlpha08)
+          .borderColor(colors.borderPrimary)
+      }
+    ),
+    "GitHub ↗",
+  );
+}
+
+function ThemeToggle() {
+  return button(
     cn(
       display("flex")
         .alignItems("center")
@@ -110,14 +127,20 @@ function GitHubLink() {
         .width("36px")
         .height("36px")
         .borderRadius("8px")
-        .transition("all 0.2s")
+        .backgroundColor("transparent")
+        .border(`1px solid ${colors.border}`)
         .color(colors.textMuted)
-        .backgroundColor("transparent"),
+        .cursor("pointer")
+        .transition("all 0.15s"),
       {
-        hover: color(colors.primary).backgroundColor("rgba(132, 204, 22, 0.1)")
+        hover: color(colors.primary)
+          .borderColor(colors.borderPrimary)
+          .backgroundColor(colors.primaryAlpha08)
       }
     ),
-    GitHubIcon()
+    { ariaLabel: "Toggle theme" },
+    () => isDark() ? SunIcon() : MoonIcon(),
+    on("click", toggleTheme)
   );
 }
 
@@ -134,7 +157,7 @@ function MobileMenuButton() {
         .border("none")
         .color(colors.text)
         .cursor("pointer")
-        .transition("all 0.2s"),
+        .transition("all 0.15s"),
       { medium: display("none") }
     ),
     when(() => mobileMenuOpen, XIcon()).else(MenuIcon()),
@@ -151,27 +174,25 @@ function MobileMenu() {
           .top("64px")
           .left("0")
           .right("0")
-          .backgroundColor(colors.bg)
           .borderBottom(`1px solid ${colors.border}`)
-          .padding("16px 24px")
+          .padding("12px 24px 20px")
           .zIndex(99)
           .display("flex")
           .flexDirection("column")
-          .gap("8px")
+          .gap("4px")
       ),
-      { style: { backdropFilter: "blur(12px)", background: "rgba(10, 15, 26, 0.95)" } },
+      { style: { backdropFilter: "blur(16px)", background: "var(--c-mobile-menu-bg)" } },
       ...navLinks.map((link) => NavLink(link.label, link.route)),
       div(
-        cn(display("flex").alignItems("center").gap("8px").padding("8px 14px")),
-        GitHubLink(),
-        span(cn(color(colors.textMuted).fontSize("14px")), "GitHub")
+        cn(marginTop("12px").paddingTop("12px").borderTop(`1px solid ${colors.border}`)),
+        GitHubButton()
       )
     )
   );
 }
 
 export function Header() {
-  const headerStyle = cn(
+  const headerWrap = cn(
     position("fixed")
       .top("0")
       .left("0")
@@ -180,35 +201,32 @@ export function Header() {
       .borderBottom(`1px solid ${colors.border}`)
   );
 
-  const headerInner = cn(
+  const inner = cn(
     display("flex")
       .alignItems("center")
       .justifyContent("space-between")
-      .maxWidth("1400px")
+      .maxWidth("1440px")
       .margin("0 auto")
-      .padding("12px 24px"),
-    { medium: padding("16px 48px") }
+      .padding("0 24px")
+      .height("64px"),
+    { medium: padding("0 48px") }
   );
 
   const desktopNav = cn(
-    display("none")
-      .alignItems("center")
-      .gap("4px"),
+    display("none").alignItems("center").gap("4px"),
     { medium: display("flex") }
   );
 
   const rightSection = cn(
-    display("flex")
-      .alignItems("center")
-      .gap("8px")
+    display("flex").alignItems("center").gap("8px")
   );
 
   return div(
     header(
-      headerStyle,
-      { style: { backdropFilter: "blur(12px)", background: "rgba(10, 15, 26, 0.85)" } },
+      headerWrap,
+      { style: { backdropFilter: "blur(16px)", background: "var(--c-header-bg)" } },
       div(
-        headerInner,
+        inner,
         Brand(),
         nav(
           desktopNav,
@@ -216,7 +234,8 @@ export function Header() {
         ),
         div(
           rightSection,
-          div(cn(display("none"), { medium: display("flex") }), GitHubLink()),
+          div(cn(display("none"), { medium: display("flex") }), GitHubButton()),
+          ThemeToggle(),
           MobileMenuButton()
         )
       )

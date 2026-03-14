@@ -1,315 +1,629 @@
 import "nuclo";
-import { cn, s, colors } from "../styles.ts";
+import { cn, colors } from "../styles.ts";
 import { setRoute } from "../router.ts";
-import { CodeBlock } from "../components/CodeBlock.ts";
 import { examplesContent } from "../content/examples.ts";
-import { gettingStartedCode } from "../content/gettingStarted.ts";
-import { stylingCode } from "../content/styling.ts";
-import { ArrowRightIcon } from "../components/icons.ts";
 
-const heroCode = `import 'nuclo';
+// ─── Shared card style ─────────────────────────────────────────────────────
 
-let count = 0;
-
-const counter = div(
-  h1(() => \`Count: \${count}\`),
-  button('Increment', on('click', () => {
-    count++;
-    update();
-  }))
+const card = cn(
+  backgroundColor(colors.bgCard)
+    .borderRadius("20px")
+    .border(`1px solid ${colors.border}`)
+    .overflow("hidden")
+    .transition("border-color 0.2s, background 0.2s"),
 );
 
-render(counter, document.body);`;
+const cardPad = "28px";
 
-// ─── Live Demo ──────────────────────────────────────────────────────────────
+// ─── Live Counter Demo ─────────────────────────────────────────────────────
 
 let heroDemoCount = 0;
 
-function HeroDemo() {
-  return div(
+function LiveDemo() {
+  // Header bar
+  const demoHeader = div(
     cn(
-      padding("20px 24px").display("flex").flexDirection("column").gap("16px"),
+      display("flex")
+        .alignItems("center")
+        .justifyContent("space-between")
+        .padding("0 20px")
+        .height("46px")
+        .backgroundColor(colors.bgSecondary)
+        .borderBottom(`1px solid ${colors.border}`),
     ),
-
-    div(
-      cn(display("flex").alignItems("baseline").gap("12px")),
-      span(
+    span(
+      cn(fontSize("11px").fontWeight("700").color(colors.textMuted).letterSpacing("0.12em")),
+      "LIVE DEMO",
+    ),
+    span(
+      cn(
+        display("inline-flex")
+          .alignItems("center")
+          .gap("5px")
+          .padding("4px 10px")
+          .borderRadius("99px")
+          .fontSize("11px")
+          .fontWeight("600")
+          .color(colors.primary),
+      ),
+      { style: { backgroundColor: "var(--c-primary-alpha-08)" } },
+      div(
         cn(
-          fontSize("56px").fontWeight("800").lineHeight("1").color(colors.text),
+          width("6px").height("6px").borderRadius("50%")
+            .backgroundColor(colors.primary).flexShrink("0"),
         ),
+      ),
+      "Interactive",
+    ),
+  );
+
+  // Counter content
+  const demoContent = div(
+    cn(display("flex").flexDirection("column").gap("16px").padding("20px 24px")),
+
+    // Number row
+    div(
+      cn(display("flex").alignItems("center").gap("12px")),
+      span(
+        cn(fontSize("56px").fontWeight("800").lineHeight("1").color(colors.text)
+          .fontFamily("'JetBrains Mono', monospace")),
         () => heroDemoCount,
       ),
       span(
         cn(
-          fontSize("11px")
-            .fontWeight("700")
-            .padding("4px 10px")
-            .borderRadius("99px")
-            .textTransform("uppercase")
-            .letterSpacing("0.07em")
-            .transition("all 0.3s"),
+          fontSize("11px").fontWeight("700").padding("4px 10px").borderRadius("99px")
+            .textTransform("uppercase").letterSpacing("0.07em").transition("all 0.2s"),
         ),
         {
           style: () => ({
-            backgroundColor:
-              heroDemoCount % 2 === 0
-                ? "rgba(132, 204, 22, 0.15)"
-                : "rgba(34, 211, 238, 0.15)",
-            color:
-              heroDemoCount % 2 === 0 ? colors.primary : colors.accentSecondary,
+            backgroundColor: "var(--c-primary-alpha-13)",
+            color: "var(--c-primary)",
           }),
         },
-        () => (heroDemoCount % 2 === 0 ? "even" : "odd"),
+        () => heroDemoCount % 2 === 0 ? "even" : "odd",
       ),
     ),
 
-    p(
-      cn(
-        fontSize("11px")
-          .color(colors.textDim)
-          .letterSpacing("0.07em")
-          .textTransform("uppercase")
-          .fontWeight("600"),
-      ),
-      "Live Counter",
+    // Label
+    span(
+      cn(fontSize("10px").fontWeight("700").color(colors.textMuted).letterSpacing("0.15em")),
+      "LIVE COUNTER",
     ),
 
+    // Buttons
     div(
       cn(display("flex").gap("8px")),
       button(
         cn(
-          width("40px")
-            .height("40px")
-            .display("flex")
-            .alignItems("center")
-            .justifyContent("center")
-            .backgroundColor(colors.bgLight)
-            .color(colors.text)
-            .borderRadius("8px")
-            .border(`1px solid ${colors.borderLight}`)
-            .fontSize("18px")
-            .fontWeight("700")
-            .cursor("pointer")
-            .transition("all 0.15s"),
-          {
-            hover: backgroundColor(colors.bgCardHover).borderColor(
-              colors.primary,
-            ),
-          },
+          display("flex").alignItems("center").justifyContent("center")
+            .width("40px").height("40px").borderRadius("8px")
+            .backgroundColor(colors.bgSecondary).color(colors.text)
+            .border(`1px solid ${colors.border}`)
+            .fontSize("18px").fontWeight("700").cursor("pointer").transition("all 0.15s"),
+          { hover: borderColor(colors.borderPrimary) },
         ),
         "−",
-        on("click", () => {
-          heroDemoCount--;
-          update();
-        }),
+        on("click", () => { heroDemoCount--; update(); }),
       ),
       button(
         cn(
-          width("40px")
-            .height("40px")
-            .display("flex")
-            .alignItems("center")
-            .justifyContent("center")
-            .backgroundColor(colors.primary)
-            .color(colors.bg)
-            .borderRadius("8px")
-            .border("none")
-            .fontSize("18px")
-            .fontWeight("700")
-            .cursor("pointer")
-            .transition("all 0.15s"),
-          {
-            hover: backgroundColor(colors.primaryHover).transform(
-              "scale(1.05)",
-            ),
-          },
+          display("flex").alignItems("center").justifyContent("center")
+            .width("40px").height("40px").borderRadius("8px")
+            .border("none").fontSize("18px").fontWeight("700")
+            .cursor("pointer").transition("all 0.15s"),
+          { hover: opacity("0.85").transform("scale(1.05)") },
         ),
+        { style: { backgroundColor: "#D5FF40", color: "#0e0e0e" } },
         "+",
-        on("click", () => {
-          heroDemoCount++;
-          update();
-        }),
+        on("click", () => { heroDemoCount++; update(); }),
       ),
       button(
         cn(
-          padding("0 14px")
-            .height("40px")
-            .display("flex")
-            .alignItems("center")
-            .justifyContent("center")
-            .backgroundColor(colors.bgLight)
-            .color(colors.textMuted)
-            .borderRadius("8px")
+          display("flex").alignItems("center").justifyContent("center")
+            .padding("0 14px").height("40px").borderRadius("8px")
+            .backgroundColor(colors.bgSecondary).color(colors.textMuted)
             .border(`1px solid ${colors.border}`)
-            .fontSize("13px")
-            .cursor("pointer")
-            .transition("all 0.15s"),
+            .fontSize("13px").cursor("pointer").transition("all 0.15s"),
           { hover: color(colors.text).borderColor(colors.borderLight) },
         ),
         "Reset",
-        on("click", () => {
-          heroDemoCount = 0;
-          update();
-        }),
+        on("click", () => { heroDemoCount = 0; update(); }),
       ),
+    ),
+  );
+
+  return div(card, demoHeader, demoContent);
+}
+
+// ─── Hero code snippet (static, no syntax highlight component) ────────────
+
+const heroCodeLines = [
+  { text: "import 'nuclo';",           accent: true },
+  { text: "",                           muted: true },
+  { text: "let count = 0;",            },
+  { text: "",                           muted: true },
+  { text: "const counter = div(",      accent: true },
+  { text: "  h1(() => `Count: ${count}`),",  },
+  { text: "  button('Increment', on('click', () => {", },
+  { text: "    count++;",              number: true },
+  { text: "    update();",             accent: true },
+  { text: "  }))",                     },
+  { text: ");",                        },
+  { text: "",                           muted: true },
+  { text: "render(counter, document.body);", accent: true },
+];
+
+function CodeCard() {
+  const dots = div(
+    cn(
+      display("flex").alignItems("center").gap("8px")
+        .padding("0 20px").height("48px")
+        .backgroundColor(colors.bgSecondary)
+        .borderBottom(`1px solid ${colors.border}`),
+    ),
+    div(cn(width("11px").height("11px").borderRadius("50%").backgroundColor("#ff5f57").flexShrink("0"))),
+    div(cn(width("11px").height("11px").borderRadius("50%").backgroundColor("#febc2e").flexShrink("0"))),
+    div(cn(width("11px").height("11px").borderRadius("50%").backgroundColor("#28c840").flexShrink("0"))),
+    span(cn(marginLeft("auto").fontSize("12px").color(colors.textMuted).fontWeight("500")), "app.ts"),
+  );
+
+  const lines = div(
+    cn(display("flex").flexDirection("column").gap("8px").padding("24px 28px")),
+    ...heroCodeLines.map(({ text, accent, muted, number: isNum }) => {
+      const col = accent ? "var(--c-primary)"
+        : muted ? "var(--c-text-muted)"
+        : isNum ? "#D97706"
+        : "var(--c-text)";
+      return div(
+        cn(fontSize("14px").lineHeight("1.4").fontFamily("'JetBrains Mono', monospace")),
+        { style: { color: col, whiteSpace: "pre" } },
+        text || "\u00a0",
+      );
+    }),
+  );
+
+  return div(
+    card,
+    cn(height("fill_container")),
+    dots,
+    div(cn(overflow("auto"), { style: { flex: "1" } }), lines),
+  );
+}
+
+// ─── Zero Deps stat card ──────────────────────────────────────────────────
+
+function StatCard() {
+  return div(
+    card,
+    cn(padding("28px").display("flex").flexDirection("column").gap("12px")),
+
+    div(
+      cn(display("flex").alignItems("baseline").gap("6px")),
+      span(
+        cn(fontSize("64px").fontWeight("800").lineHeight("1").color(colors.primary)
+          .fontFamily("'JetBrains Mono', monospace")),
+        "0",
+      ),
+      span(
+        cn(fontSize("20px").fontWeight("600").color(colors.textMuted)
+          .fontFamily("'JetBrains Mono', monospace")),
+        "deps",
+      ),
+    ),
+    span(cn(fontSize("17px").fontWeight("600").color(colors.text)), "Zero Dependencies"),
+    span(
+      cn(fontSize("13px").color(colors.textMuted).lineHeight("1.6")),
+      "No third-party packages. Pure DOM, pure performance.",
     ),
   );
 }
 
-// ─── Bento Card Styles ───────────────────────────────────────────────────────
+// ─── Feature cards (Row 2) ────────────────────────────────────────────────
 
-const bentoCell = cn(
-  backgroundColor(colors.bgCard)
-    .borderRadius("20px")
-    .border(`1px solid ${colors.border}`)
-    .overflow("hidden"),
-);
+function FeatureCard(icon: string, title: string, desc: string) {
+  const iconBox = div(
+    cn(
+      display("flex").alignItems("center").justifyContent("center")
+        .width("44px").height("44px").borderRadius("12px")
+        .backgroundColor(colors.bgIcon).border(`1px solid ${colors.border}`)
+        .flexShrink("0"),
+    ),
+    span(cn(fontSize("22px")), icon),
+  );
 
-const bentoCellGreen = cn(
-  borderRadius("20px")
-    .border(`1px solid ${colors.borderGlow}`)
-    .overflow("hidden"),
-);
-
-const bentoCellCyan = cn(
-  borderRadius("20px")
-    .border("1px solid rgba(34, 211, 238, 0.25)")
-    .overflow("hidden"),
-);
-
-// ─── Data ───────────────────────────────────────────────────────────────────
-
-const previewIds = [
-  "counter",
-  "todo",
-  "search",
-  "async",
-  "styled-card",
-  "subtasks",
-];
-const previewExamples = examplesContent.filter((ex) =>
-  previewIds.includes(ex.id),
-);
-
-const homeExampleIcons: Record<string, string> = {
-  counter: "🔢",
-  todo: "✅",
-  subtasks: "🗂️",
-  search: "🔍",
-  async: "⚡",
-  forms: "📝",
-  nested: "🧩",
-  animations: "✨",
-  routing: "🗺️",
-  "styled-card": "🎨",
-};
-
-function goToExample(id: string) {
-  setRoute("examples");
-  setTimeout(() => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, 150);
+  return div(
+    card,
+    cn(padding(cardPad).display("flex").flexDirection("column").gap("12px")),
+    iconBox,
+    span(cn(fontSize("17px").fontWeight("600").color(colors.text)), title),
+    span(
+      cn(fontSize("13px").color(colors.textMuted).lineHeight("1.7").flex("1")),
+      { style: { textGrowth: "fixed-width" } },
+      desc,
+    ),
+  );
 }
 
-// ─── Page ────────────────────────────────────────────────────────────────────
+// ─── Install bar ──────────────────────────────────────────────────────────
+
+function InstallBar() {
+  return div(
+    cn(
+      display("flex").alignItems("center").justifyContent("space-between")
+        .flexWrap("wrap").gap("20px")
+        .borderRadius("20px").border(`1px solid ${colors.border}`)
+        .padding("32px 40px")
+        .backgroundColor(colors.bgSecondary),
+    ),
+    { style: { boxShadow: "0 8px 40px rgba(0,0,0,0.3)" } },
+
+    // Left
+    div(
+      cn(display("flex").flexDirection("column").gap("8px")),
+      span(
+        cn(fontSize("11px").fontWeight("700").color(colors.textMuted).letterSpacing("0.12em")),
+        "INSTALL VIA NPM",
+      ),
+      span(
+        cn(fontSize("24px").fontWeight("600").color(colors.primary)
+          .fontFamily("'JetBrains Mono', monospace")),
+        "npm install nuclo",
+      ),
+    ),
+
+    // Button
+    button(
+      cn(
+        display("flex").alignItems("center").justifyContent("center")
+          .padding("14px 28px").borderRadius("10px").border("none")
+          .fontSize("15px").fontWeight("700").cursor("pointer").transition("all 0.15s"),
+        { hover: opacity("0.85").transform("translateY(-1px)") },
+      ),
+      { style: { backgroundColor: "#D5FF40", color: "#0e0e0e" } },
+      "Get Started →",
+      on("click", () => setRoute("getting-started")),
+    ),
+  );
+}
+
+// ─── Quick Start step card ────────────────────────────────────────────────
+
+function stepIconBox(icon: string) {
+  return div(
+    cn(
+      display("flex").alignItems("center").justifyContent("center")
+        .width("40px").height("40px").borderRadius("10px")
+        .backgroundColor(colors.bgIcon).border(`1px solid ${colors.border}`)
+        .flexShrink("0"),
+    ),
+    span(cn(fontSize("18px")), icon),
+  );
+}
+
+function Step01() {
+  const top = div(
+    cn(display("flex").flexDirection("column").gap("14px")),
+    stepIconBox("⬛"),
+    span(cn(fontSize("11px").fontWeight("700").color(colors.primary).letterSpacing("0.15em")), "STEP 01"),
+    span(cn(fontSize("24px").fontWeight("700").color(colors.text)), "Install"),
+    span(
+      cn(fontSize("14px").color(colors.textMuted).lineHeight("1.6")),
+      { style: { maxWidth: "240px" } },
+      "One command. Zero config. Ready to build.",
+    ),
+  );
+
+  const codeSnip = div(
+    cn(
+      display("flex").alignItems("center").gap("8px").padding("16px 20px")
+        .borderRadius("12px").backgroundColor(colors.bgSecondary).border(`1px solid ${colors.border}`),
+    ),
+    span(
+      cn(fontSize("14px").color(colors.textMuted).fontFamily("'JetBrains Mono', monospace")),
+      "$",
+    ),
+    span(
+      cn(fontSize("14px").color(colors.primary).fontFamily("'JetBrains Mono', monospace").fontWeight("600")),
+      "npm install nuclo",
+    ),
+  );
+
+  return div(
+    card,
+    cn(
+      padding("32px").display("flex").flexDirection("column")
+        .justifyContent("space-between").gap("20px"),
+    ),
+    top,
+    codeSnip,
+  );
+}
+
+function Step02() {
+  const left = div(
+    cn(display("flex").flexDirection("column").gap("16px").padding("32px")),
+    stepIconBox("💻"),
+    span(cn(fontSize("11px").fontWeight("700").color(colors.primary).letterSpacing("0.15em")), "STEP 02"),
+    span(cn(fontSize("24px").fontWeight("700").color(colors.text)), "Import & Use"),
+    span(
+      cn(fontSize("14px").color(colors.textMuted).lineHeight("1.6")),
+      "Import once globally. Every HTML tag becomes a function. Build UI with pure JavaScript.",
+    ),
+  );
+
+  const codeLines = [
+    { text: "import 'nuclo';", accent: true },
+    { text: " " },
+    { text: "const app = div(", accent: true },
+    { text: "  h1('Hello, Nuclo!')," },
+    { text: "  p('Building UIs.')" },
+    { text: ");" },
+    { text: " " },
+    { text: "render(app, document.body);", accent: true },
+  ];
+
+  const right = div(
+    cn(
+      display("flex").flexDirection("column").gap("4px").padding("24px 28px")
+        .backgroundColor(colors.bgSecondary).overflow("auto"),
+    ),
+    { style: { flex: "1", minWidth: "200px" } },
+    ...codeLines.map(({ text, accent }) =>
+      div(
+        cn(fontSize("13px").fontFamily("'JetBrains Mono', monospace").lineHeight("1.5")),
+        { style: { color: accent ? "var(--c-primary)" : "var(--c-text)", whiteSpace: "pre" } },
+        text || "\u00a0",
+      )
+    ),
+  );
+
+  return div(
+    card,
+    cn(display("flex").overflow("hidden")),
+    left,
+    div(
+      cn(display("none"), { medium: display("flex").flex("1").overflow("hidden") }),
+      right,
+    ),
+  );
+}
+
+function Step03() {
+  const codeLines = [
+    { text: "// tsconfig.json",               comment: true },
+    { text: "{" },
+    { text: '  "compilerOptions": {' },
+    { text: '    "types": ["nuclo/types"]',   accent: true },
+    { text: "  }" },
+    { text: "}" },
+  ];
+
+  const left = div(
+    cn(
+      display("flex").flexDirection("column").gap("4px").padding("24px 28px")
+        .backgroundColor(colors.bgSecondary).overflow("auto"),
+    ),
+    { style: { flex: "1", minWidth: "200px" } },
+    ...codeLines.map(({ text, accent, comment }) =>
+      div(
+        cn(fontSize("13px").fontFamily("'JetBrains Mono', monospace").lineHeight("1.5")),
+        { style: { color: comment ? "var(--c-text-muted)" : accent ? "var(--c-primary)" : "var(--c-text)", whiteSpace: "pre" } },
+        text || "\u00a0",
+      )
+    ),
+  );
+
+  const right = div(
+    cn(display("flex").flexDirection("column").gap("16px").padding("32px")),
+    stepIconBox("📐"),
+    span(cn(fontSize("11px").fontWeight("700").color(colors.primary).letterSpacing("0.15em")), "STEP 03"),
+    span(cn(fontSize("24px").fontWeight("700").color(colors.text)), "TypeScript Ready"),
+    span(
+      cn(fontSize("14px").color(colors.textMuted).lineHeight("1.6")),
+      "Add one line to your tsconfig and get full autocomplete, type checking, and IntelliSense for every tag.",
+    ),
+  );
+
+  return div(
+    card,
+    cn(display("flex").overflow("hidden")),
+    { style: { borderColor: "var(--c-border-primary)" } },
+    div(
+      cn(display("none"), { medium: display("flex").flex("1").overflow("hidden") }),
+      left,
+    ),
+    right,
+  );
+}
+
+function ReadyCard() {
+  return div(
+    card,
+    cn(
+      display("flex").flexDirection("column").alignItems("center").justifyContent("center")
+        .gap("20px").padding("32px").textAlign("center"),
+    ),
+
+    // rocket icon
+    div(
+      cn(
+        display("flex").alignItems("center").justifyContent("center")
+          .width("64px").height("64px").borderRadius("16px")
+          .backgroundColor(colors.bgIcon).border(`1px solid ${colors.border}`).flexShrink("0"),
+      ),
+      span(cn(fontSize("28px")), "🚀"),
+    ),
+
+    span(cn(fontSize("22px").fontWeight("700").color(colors.text)), "You're Ready!"),
+
+    span(
+      cn(fontSize("14px").color(colors.textSubtitle).lineHeight("1.7")),
+      { style: { maxWidth: "260px" } },
+      "That's it. Three steps to build imperative, explicit UIs with zero abstractions.",
+    ),
+
+    span(
+      cn(
+        display("inline-flex").alignItems("center").gap("8px")
+          .padding("8px 20px").borderRadius("99px")
+          .backgroundColor(colors.bgIcon).border(`1px solid ${colors.border}`)
+          .fontSize("12px").fontWeight("600").color(colors.primary),
+      ),
+      "✓  < 1kb gzipped",
+    ),
+  );
+}
+
+// ─── Example card ────────────────────────────────────────────────────────
+
+const exampleIcons: Record<string, string> = {
+  counter: "🔢", todo: "✅", subtasks: "🗂️", search: "🔍",
+  async: "⚡", forms: "📝", nested: "🧩", animations: "✨",
+  routing: "🗺️", "styled-card": "🎨",
+};
+
+// show only 3 examples on the homepage — same as Pencil design
+const homepageExamples = ["counter", "todo", "search"];
+
+function ExampleCard(id: string, title: string, desc: string) {
+  return div(
+    cn(
+      backgroundColor(colors.bgCard)
+        .borderRadius("20px")
+        .border(`1px solid ${colors.border}`)
+        .padding(cardPad)
+        .display("flex").flexDirection("column").gap("12px")
+        .cursor("pointer")
+        .transition("all 0.2s"),
+      {
+        hover: border(`1px solid ${colors.borderPrimary}`)
+          .transform("translateY(-2px)")
+          .boxShadow("0 8px 32px rgba(0,0,0,0.15)"),
+      }
+    ),
+
+    // top row: icon + live badge
+    div(
+      cn(display("flex").alignItems("center").justifyContent("space-between")),
+      span(cn(fontSize("28px")), exampleIcons[id] ?? "📄"),
+      span(
+        cn(
+          display("inline-flex").alignItems("center").gap("5px")
+            .padding("4px 10px").borderRadius("99px")
+            .fontSize("11px").fontWeight("600").color(colors.primary),
+        ),
+        { style: { backgroundColor: "var(--c-primary-alpha-08)" } },
+        div(cn(width("5px").height("5px").borderRadius("50%").backgroundColor(colors.primary).flexShrink("0"))),
+        "Live",
+      ),
+    ),
+
+    span(cn(fontSize("16px").fontWeight("600").color(colors.text)), title),
+    span(cn(fontSize("13px").color(colors.textMuted).lineHeight("1.6").flex("1")), desc),
+    span(cn(fontSize("13px").fontWeight("600").color(colors.primary)), "View Example →"),
+
+    on("click", () => {
+      setRoute("examples");
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }),
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────
 
 export function HomePage() {
+  const examples = examplesContent.filter(e => homepageExamples.includes(e.id));
+
+  const sectionPad = cn(
+    padding("0 24px 80px").maxWidth("1440px").margin("0 auto"),
+    { medium: padding("0 48px 80px") }
+  );
+
   return div(
+
     // ── HERO ──────────────────────────────────────────────────────────────
     section(
-      s.hero,
+      cn(
+        display("flex").flexDirection("column").alignItems("center")
+          .textAlign("center").justifyContent("center")
+          .padding("120px 24px 100px"),
+        { medium: padding("120px 48px 100px") }
+      ),
 
+      // Badge
       div(
         cn(
-          display("inline-flex")
-            .alignItems("center")
-            .gap("8px")
-            .padding("6px 16px")
-            .borderRadius("99px")
-            .backgroundColor("rgba(132, 204, 22, 0.08)")
-            .border(`1px solid ${colors.borderGlow}`)
-            .marginBottom("28px"),
+          display("inline-flex").alignItems("center").gap("8px")
+            .padding("6px 16px").borderRadius("99px")
+            .border(`1px solid ${colors.border}`)
+            .marginBottom("32px"),
         ),
+        { style: { backgroundColor: "var(--c-primary-alpha-08)" } },
+        div(cn(width("7px").height("7px").borderRadius("50%").backgroundColor(colors.primary).flexShrink("0"))),
         span(
-          cn(
-            width("7px")
-              .height("7px")
-              .borderRadius("50%")
-              .backgroundColor(colors.primary)
-              .display("block"),
-          ),
-        ),
-        span(
-          cn(
-            fontSize("12px")
-              .fontWeight("600")
-              .color(colors.primary)
-              .letterSpacing("0.04em"),
-          ),
+          cn(fontSize("12px").fontWeight("600").color(colors.primary).letterSpacing("0.04em")),
           "Lightweight · Explicit · Imperative",
         ),
       ),
 
-      h1(
-        s.heroTitle,
-        "Build ",
+      // Headline — 2 lines matching Pencil exactly
+      div(
+        cn(display("flex").flexDirection("column").alignItems("center").marginBottom("24px")),
         span(
-          s.heroTitleAccent,
-          { style: s.heroTitleAccentStyle },
-          "Imperative",
+          cn(
+            fontSize("48px").fontWeight("800").color(colors.text).lineHeight("1.05")
+              .letterSpacing("-0.03em").display("block"),
+            { medium: fontSize("60px"), large: fontSize("72px") }
+          ),
+          "Build Imperative,",
         ),
-        ", ",
-        span(s.heroTitleAccent, { style: s.heroTitleAccentStyle }, "Explicit"),
-        " UIs.",
+        span(
+          cn(
+            fontSize("48px").fontWeight("800").lineHeight("1.05")
+              .letterSpacing("-0.03em").display("block"),
+            { medium: fontSize("60px"), large: fontSize("72px") }
+          ),
+          { style: { color: "var(--c-primary)", fontStyle: "italic" } },
+          "Explicit UIs.",
+        ),
       ),
 
+      // Subtitle
       p(
-        s.heroSubtitle,
+        cn(
+          fontSize("16px").color(colors.textSubtitle).lineHeight("1.7")
+            .marginBottom("40px"),
+          { medium: fontSize("18px"), style: { maxWidth: "640px" } }
+        ),
         "A lightweight imperative DOM framework. Mutate plain state, call update() when you're ready, and let Nuclo sync the DOM without proxies, signals, or virtual DOM.",
       ),
 
+      // CTAs
       div(
-        s.heroButtons,
+        cn(display("flex").gap("12px").flexWrap("wrap").justifyContent("center")),
         button(
           cn(
-            padding("14px 32px")
-              .backgroundColor(colors.primary)
-              .color(colors.bg)
-              .borderRadius("10px")
-              .fontWeight("600")
-              .fontSize("15px")
-              .border("none")
-              .transition("all 0.2s")
-              .display("flex")
-              .alignItems("center")
-              .gap("8px"),
-            {
-              hover: backgroundColor(colors.primaryHover)
-                .transform("translateY(-2px)")
-                .boxShadow(`0 8px 24px ${colors.primaryGlow}`),
-            },
+            display("flex").alignItems("center").gap("8px")
+              .padding("16px 32px").borderRadius("10px").border("none")
+              .fontSize("15px").fontWeight("700").cursor("pointer").transition("all 0.15s"),
+            { hover: opacity("0.9").transform("translateY(-2px)") },
           ),
-          { style: s.btnPrimaryStyle },
-          "Get Started",
-          ArrowRightIcon(),
+          { style: { backgroundColor: "#D5FF40", color: "#0e0e0e" } },
+          "Get Started →",
           on("click", () => setRoute("getting-started")),
         ),
         button(
           cn(
-            padding("14px 32px")
+            display("flex").alignItems("center").gap("8px")
+              .padding("16px 32px").borderRadius("10px")
               .backgroundColor("transparent")
-              .color(colors.text)
-              .borderRadius("10px")
-              .fontWeight("600")
-              .fontSize("15px")
-              .border(`1px solid ${colors.borderLight}`)
-              .transition("all 0.2s"),
-            {
-              hover: border(`1px solid ${colors.primary}`)
-                .color(colors.primary)
-                .transform("translateY(-2px)"),
-            },
+              .border(`1px solid ${colors.border}`)
+              .fontSize("15px").fontWeight("600").color(colors.primary)
+              .cursor("pointer").transition("all 0.15s"),
+            { hover: borderColor(colors.borderPrimary).transform("translateY(-2px)") },
           ),
           "View Examples",
           on("click", () => setRoute("examples")),
@@ -317,727 +631,151 @@ export function HomePage() {
       ),
     ),
 
-    // ── BENTO GRID ────────────────────────────────────────────────────────
+    // ── BENTO GRID ───────────────────────────────────────────────────────
     section(
-      cn(padding("0 24px 80px").maxWidth("1200px").margin("0 auto"), {
-        medium: padding("0 48px 100px"),
-      }),
+      sectionPad,
+
+      // Row 1: Code card (2/3 width) | Right col (1/3): Stats + Live Demo
+      div(
+        { className: "bento-code-row", style: { marginBottom: "20px", alignItems: "stretch" } },
+
+        // Code card
+        div(
+          card,
+          cn(display("flex").flexDirection("column").overflow("hidden")),
+          { style: { minHeight: "420px" } },
+          // Mac dots header
+          div(
+            cn(
+              display("flex").alignItems("center").gap("8px")
+                .padding("0 20px").height("48px")
+                .backgroundColor(colors.bgSecondary)
+                .borderBottom(`1px solid ${colors.border}`).flexShrink("0"),
+            ),
+            div(cn(width("11px").height("11px").borderRadius("50%").backgroundColor("#ff5f57").flexShrink("0"))),
+            div(cn(width("11px").height("11px").borderRadius("50%").backgroundColor("#febc2e").flexShrink("0"))),
+            div(cn(width("11px").height("11px").borderRadius("50%").backgroundColor("#28c840").flexShrink("0"))),
+            span(cn(marginLeft("auto").fontSize("12px").color(colors.textMuted).fontWeight("500")), "app.ts"),
+          ),
+          // Code lines
+          div(
+            cn(display("flex").flexDirection("column").gap("8px").padding("24px 28px").overflow("auto")),
+            ...heroCodeLines.map(({ text, accent, muted, number: isNum }) => {
+              const col = accent ? "var(--c-primary)"
+                : muted ? "var(--c-text-muted)"
+                : isNum ? "#D97706"
+                : "var(--c-text)";
+              return div(
+                cn(fontSize("14px").lineHeight("1.4").fontFamily("'JetBrains Mono', monospace")),
+                { style: { color: col, whiteSpace: "pre" } },
+                text || "\u00a0",
+              );
+            }),
+          ),
+        ),
+
+        // Right column: Stats + Live Demo
+        div(
+          cn(display("flex").flexDirection("column").gap("20px")),
+          StatCard(),
+          LiveDemo(),
+        ),
+      ),
+
+      // Row 2: 3 feature cards
+      div(
+        { className: "bento-feat-row" },
+        FeatureCard("⚡", "TypeScript-First",
+          "Full type definitions for 140+ HTML and SVG tags. Catch errors at compile time, not runtime."),
+        div(
+          card,
+          cn(padding(cardPad).display("flex").flexDirection("column").gap("12px")),
+          div(
+            cn(display("flex").alignItems("baseline").gap("4px")),
+            span(
+              cn(fontSize("56px").fontWeight("800").lineHeight("1").color(colors.primary)
+                .fontFamily("'JetBrains Mono', monospace")),
+              "140",
+            ),
+            span(cn(fontSize("28px").fontWeight("800").color(colors.primary)
+              .fontFamily("'JetBrains Mono', monospace")), "+"),
+          ),
+          span(cn(fontSize("17px").fontWeight("600").color(colors.text)), "HTML & SVG Tags"),
+          span(
+            cn(fontSize("13px").color(colors.textMuted).lineHeight("1.6").flex("1")),
+            "Every standard element as a global builder function. No imports needed.",
+          ),
+        ),
+        FeatureCard("🎯", "Fine-Grained Updates",
+          "Call update() and Nuclo only touches DOM nodes whose resolved values changed. Elements are reused, branches stay mounted."),
+      ),
+    ),
+
+    // ── INSTALL BAR ─────────────────────────────────────────────────────
+    section(sectionPad, InstallBar()),
+
+    // ── QUICK START ──────────────────────────────────────────────────────
+    section(
+      sectionPad,
 
       div(
-        cn(display("grid").gap("16px").gridTemplateColumns("1fr"), {
-          medium: gridTemplateColumns("repeat(2, 1fr)").gap("20px"),
-          large: gridTemplateColumns("repeat(3, 1fr)").gap("20px"),
-        }),
+        cn(display("flex").flexDirection("column").gap("12px").marginBottom("48px")),
+        span(
+          cn(fontSize("28px").fontWeight("800").color(colors.text).letterSpacing("-0.03em"),
+            { medium: fontSize("34px"), large: fontSize("38px") }),
+          "Quick Start",
+        ),
+        span(cn(fontSize("17px").color(colors.textMuted).lineHeight("1.7")), "Up and running in 30 seconds."),
+      ),
 
-        // TILE 1: Code Preview — spans 2 cols (medium+), 2 rows (large+)
+      div(
+        cn(display("flex").flexDirection("column").gap("20px")),
+
+        // Row 1: Step01 (420px) + Step02 (fill)
         div(
-          bentoCell,
-          { className: "bento-col-2 bento-row-2" },
-          // macOS window chrome
-          div(
-            cn(
-              padding("12px 20px")
-                .backgroundColor(colors.bgLight)
-                .borderBottom(`1px solid ${colors.border}`)
-                .display("flex")
-                .alignItems("center")
-                .gap("8px"),
-            ),
-            span(
-              cn(
-                width("11px")
-                  .height("11px")
-                  .borderRadius("50%")
-                  .backgroundColor("#ff5f57")
-                  .display("block"),
-              ),
-            ),
-            span(
-              cn(
-                width("11px")
-                  .height("11px")
-                  .borderRadius("50%")
-                  .backgroundColor("#febc2e")
-                  .display("block"),
-              ),
-            ),
-            span(
-              cn(
-                width("11px")
-                  .height("11px")
-                  .borderRadius("50%")
-                  .backgroundColor("#28c840")
-                  .display("block"),
-              ),
-            ),
-            span(
-              cn(
-                marginLeft("auto")
-                  .fontSize("12px")
-                  .color(colors.textDim)
-                  .fontWeight("500"),
-              ),
-              "app.ts",
-            ),
-          ),
-          div(cn(overflow("auto")), CodeBlock(heroCode, "typescript", false)),
+          { className: "qs-row1", style: { minHeight: "320px" } },
+          Step01(),
+          Step02(),
         ),
 
-        // TILE 2: Zero Dependencies stat
+        // Row 2: Step03 (fill) + ReadyCard (380px)
         div(
-          bentoCellGreen,
-          {
-            style: {
-              background: `linear-gradient(145deg, rgba(132, 204, 22, 0.1) 0%, ${colors.bgCard} 65%)`,
-            },
-          },
-          div(
-            cn(padding("28px").display("flex").flexDirection("column")),
-            div(
-              cn(display("flex").alignItems("baseline").gap("4px")),
-              span(
-                cn(
-                  fontSize("56px")
-                    .fontWeight("800")
-                    .lineHeight("1")
-                    .color(colors.primary),
-                ),
-                "0",
-              ),
-              span(
-                cn(fontSize("18px").fontWeight("600").color(colors.textDim)),
-                "deps",
-              ),
-            ),
-            div(
-              cn(marginTop("20px")),
-              h3(
-                cn(
-                  fontSize("17px")
-                    .fontWeight("600")
-                    .color(colors.text)
-                    .marginBottom("6px"),
-                ),
-                "Zero Dependencies",
-              ),
-              p(
-                cn(fontSize("13px").color(colors.textMuted).lineHeight("1.7")),
-                "No third-party packages. Pure DOM, pure performance.",
-              ),
-            ),
-          ),
-        ),
-
-        // TILE 3: Live Counter Demo
-        div(
-          bentoCell,
-          div(
-            cn(
-              padding("12px 20px")
-                .borderBottom(`1px solid ${colors.border}`)
-                .display("flex")
-                .alignItems("center")
-                .justifyContent("space-between"),
-            ),
-            span(
-              cn(
-                fontSize("11px")
-                  .fontWeight("700")
-                  .color(colors.textDim)
-                  .textTransform("uppercase")
-                  .letterSpacing("0.08em"),
-              ),
-              "Live Demo",
-            ),
-            span(
-              cn(
-                display("inline-flex")
-                  .alignItems("center")
-                  .gap("5px")
-                  .padding("3px 10px")
-                  .borderRadius("99px")
-                  .backgroundColor("rgba(132, 204, 22, 0.1)")
-                  .fontSize("11px")
-                  .fontWeight("600")
-                  .color(colors.primary),
-              ),
-              span(
-                cn(
-                  width("6px")
-                    .height("6px")
-                    .borderRadius("50%")
-                    .backgroundColor(colors.primary)
-                    .display("block"),
-                ),
-              ),
-              "Interactive",
-            ),
-          ),
-          HeroDemo(),
-        ),
-
-        // TILE 4: TypeScript-First
-        div(
-          bentoCell,
-          div(
-            cn(padding("28px")),
-            div(
-              cn(
-                display("inline-flex")
-                  .alignItems("center")
-                  .justifyContent("center")
-                  .width("44px")
-                  .height("44px")
-                  .borderRadius("12px")
-                  .marginBottom("16px"),
-              ),
-              {
-                style: {
-                  background:
-                    "linear-gradient(135deg, rgba(130, 170, 255, 0.2), rgba(130, 170, 255, 0.05))",
-                  border: "1px solid rgba(130, 170, 255, 0.25)",
-                },
-              },
-              span(cn(fontSize("22px")), "⚡"),
-            ),
-            h3(
-              cn(
-                fontSize("17px")
-                  .fontWeight("600")
-                  .color(colors.text)
-                  .marginBottom("8px"),
-              ),
-              "TypeScript-First",
-            ),
-            p(
-              cn(fontSize("13px").color(colors.textMuted).lineHeight("1.7")),
-              "Full type definitions for 140+ HTML and SVG tags. Catch errors at compile time, not runtime.",
-            ),
-          ),
-        ),
-
-        // TILE 5: 140+ Tags
-        div(
-          bentoCellCyan,
-          {
-            style: {
-              background: `linear-gradient(145deg, rgba(34, 211, 238, 0.1) 0%, ${colors.bgCard} 65%)`,
-            },
-          },
-          div(
-            cn(padding("28px")),
-            div(
-              cn(display("flex").alignItems("baseline").gap("2px")),
-              span(
-                cn(
-                  fontSize("52px")
-                    .fontWeight("800")
-                    .lineHeight("1")
-                    .color(colors.accentSecondary),
-                ),
-                "140",
-              ),
-              span(
-                cn(
-                  fontSize("26px")
-                    .fontWeight("800")
-                    .color(colors.accentSecondary),
-                ),
-                "+",
-              ),
-            ),
-            h3(
-              cn(
-                fontSize("17px")
-                  .fontWeight("600")
-                  .color(colors.text)
-                  .marginBottom("6px")
-                  .marginTop("16px"),
-              ),
-              "HTML & SVG Tags",
-            ),
-            p(
-              cn(fontSize("13px").color(colors.textMuted).lineHeight("1.6")),
-              "Every standard element as a global builder function. No imports needed.",
-            ),
-          ),
-        ),
-
-        // TILE 6: Fine-Grained Updates
-        div(
-          bentoCell,
-          div(
-            cn(padding("28px")),
-            div(
-              cn(
-                display("inline-flex")
-                  .alignItems("center")
-                  .justifyContent("center")
-                  .width("44px")
-                  .height("44px")
-                  .borderRadius("12px")
-                  .marginBottom("16px"),
-              ),
-              {
-                style: {
-                  background:
-                    "linear-gradient(135deg, rgba(132, 204, 22, 0.2), rgba(132, 204, 22, 0.05))",
-                  border: `1px solid ${colors.borderGlow}`,
-                },
-              },
-              span(cn(fontSize("22px")), "🎯"),
-            ),
-            h3(
-              cn(
-                fontSize("17px")
-                  .fontWeight("600")
-                  .color(colors.text)
-                  .marginBottom("8px"),
-              ),
-              "Fine-Grained Updates",
-            ),
-            p(
-              cn(fontSize("13px").color(colors.textMuted).lineHeight("1.7")),
-              "Call update() and Nuclo only touches DOM nodes whose resolved values changed. Elements are reused and branches stay mounted.",
-            ),
-          ),
+          { className: "qs-row2", style: { minHeight: "300px" } },
+          Step03(),
+          ReadyCard(),
         ),
       ),
     ),
 
-    // ── INSTALL BAR ───────────────────────────────────────────────────────
+    // ── EXAMPLES ────────────────────────────────────────────────────────
     section(
-      cn(padding("0 24px 80px").maxWidth("1200px").margin("0 auto"), {
-        medium: padding("0 48px 80px"),
-      }),
+      sectionPad,
+
       div(
-        cn(
-          backgroundColor(colors.bgCode)
-            .borderRadius("16px")
-            .border(`1px solid ${colors.border}`)
-            .padding("24px 32px")
-            .display("flex")
-            .alignItems("center")
-            .justifyContent("space-between")
-            .flexWrap("wrap")
-            .gap("16px"),
+        cn(display("flex").flexDirection("column").gap("12px").marginBottom("48px")),
+        span(
+          cn(fontSize("28px").fontWeight("800").color(colors.text).letterSpacing("-0.03em"),
+            { medium: fontSize("34px"), large: fontSize("38px") }),
+          "Examples",
         ),
-        { style: s.glowBoxStyle },
-        div(
-          p(
-            cn(
-              fontSize("11px")
-                .color(colors.textDim)
-                .marginBottom("8px")
-                .fontWeight("600")
-                .textTransform("uppercase")
-                .letterSpacing("0.08em"),
-            ),
-            "Install via npm",
-          ),
-          span(
-            cn(fontSize("20px").fontWeight("600").color(colors.primary)),
-            { style: { fontFamily: "'Courier New', Courier, monospace" } },
-            "npm install nuclo",
-          ),
-        ),
-        button(
-          cn(
-            padding("10px 24px")
-              .backgroundColor(colors.primary)
-              .color(colors.bg)
-              .borderRadius("8px")
-              .fontWeight("600")
-              .fontSize("14px")
-              .border("none")
-              .cursor("pointer")
-              .transition("all 0.2s"),
-            {
-              hover: backgroundColor(colors.primaryHover).transform(
-                "translateY(-1px)",
-              ),
-            },
-          ),
-          "Get Started →",
-          on("click", () => setRoute("getting-started")),
-        ),
+        span(cn(fontSize("17px").color(colors.textMuted).lineHeight("1.7")),
+          "Practical examples with interactive live demos."),
       ),
-    ),
 
-    // ── QUICK START ───────────────────────────────────────────────────────
-    section(
-      s.section,
-      h2(s.sectionTitle, { className: "gradient-text" }, "Quick Start"),
-      p(s.sectionSubtitle, "Up and running in 30 seconds."),
       div(
-        cn(display("grid").gap("16px").gridTemplateColumns("1fr"), {
-          medium: gridTemplateColumns("repeat(3, 1fr)").gap("20px"),
-        }),
-        div(
-          cn(
-            backgroundColor(colors.bgCard)
-              .borderRadius("16px")
-              .border(`1px solid ${colors.border}`)
-              .padding("24px"),
-          ),
-          span(
-            cn(
-              fontSize("11px")
-                .fontWeight("700")
-                .color(colors.primary)
-                .textTransform("uppercase")
-                .letterSpacing("0.08em")
-                .display("block")
-                .marginBottom("16px"),
-            ),
-            "Step 1",
-          ),
-          h3(
-            cn(
-              fontSize("17px")
-                .fontWeight("600")
-                .color(colors.text)
-                .marginBottom("16px"),
-            ),
-            "Install",
-          ),
-          CodeBlock("npm install nuclo", "bash", false),
-        ),
-        div(
-          cn(
-            backgroundColor(colors.bgCard)
-              .borderRadius("16px")
-              .border(`1px solid ${colors.border}`)
-              .padding("24px"),
-          ),
-          span(
-            cn(
-              fontSize("11px")
-                .fontWeight("700")
-                .color(colors.primary)
-                .textTransform("uppercase")
-                .letterSpacing("0.08em")
-                .display("block")
-                .marginBottom("16px"),
-            ),
-            "Step 2",
-          ),
-          h3(
-            cn(
-              fontSize("17px")
-                .fontWeight("600")
-                .color(colors.text)
-                .marginBottom("16px"),
-            ),
-            "Import & Use",
-          ),
-          CodeBlock(
-            `import 'nuclo';
-
-const app = div(
-  h1('Hello, Nuclo!'),
-  p('Building UIs made simple.')
-);
-
-render(app, document.body);`,
-            "typescript",
-            false,
-          ),
-        ),
-        div(
-          cn(
-            backgroundColor(colors.bgCard)
-              .borderRadius("16px")
-              .border(`1px solid ${colors.border}`)
-              .padding("24px"),
-          ),
-          span(
-            cn(
-              fontSize("11px")
-                .fontWeight("700")
-                .color(colors.primary)
-                .textTransform("uppercase")
-                .letterSpacing("0.08em")
-                .display("block")
-                .marginBottom("16px"),
-            ),
-            "Step 3",
-          ),
-          h3(
-            cn(
-              fontSize("17px")
-                .fontWeight("600")
-                .color(colors.text)
-                .marginBottom("16px"),
-            ),
-            "TypeScript",
-          ),
-          CodeBlock(
-            `// tsconfig.json
-{
-  "compilerOptions": {
-    "types": ["nuclo/types"]
-  }
-}`,
-            "json",
-            false,
-          ),
-        ),
+        { className: "ex-grid" },
+        ...examples.map(ex => ExampleCard(ex.id, ex.title, ex.description)),
       ),
-    ),
 
-    // ── CORE CONCEPTS ─────────────────────────────────────────────────────
-    section(
-      s.section,
-      h2(s.sectionTitle, { className: "gradient-text" }, "Core Concepts"),
-      p(
-        s.sectionSubtitle,
-        "Imperative updates, dynamic bindings, conditionals, and list synchronization.",
-      ),
-      div(
-        cn(display("grid").gap("16px").gridTemplateColumns("1fr"), {
-          medium: gridTemplateColumns("repeat(2, 1fr)").gap("20px"),
-          large: gridTemplateColumns("repeat(3, 1fr)"),
-        }),
-        div(
-          cn(
-            backgroundColor(colors.bgCard)
-              .borderRadius("16px")
-              .border(`1px solid ${colors.border}`)
-              .padding("24px"),
-          ),
-          { className: "bento-col-2" },
-          h3(
-            cn(
-              fontSize("13px")
-                .fontWeight("700")
-                .color(colors.textMuted)
-                .marginBottom("16px")
-                .textTransform("uppercase")
-                .letterSpacing("0.06em"),
-            ),
-            "Batch Updates",
-          ),
-          CodeBlock(
-            gettingStartedCode.batchUpdates.code,
-            gettingStartedCode.batchUpdates.lang,
-            false,
-          ),
-        ),
-        div(
-          cn(
-            backgroundColor(colors.bgCard)
-              .borderRadius("16px")
-              .border(`1px solid ${colors.border}`)
-              .padding("24px"),
-          ),
-          h3(
-            cn(
-              fontSize("13px")
-                .fontWeight("700")
-                .color(colors.textMuted)
-                .marginBottom("16px")
-                .textTransform("uppercase")
-                .letterSpacing("0.06em"),
-            ),
-            "Dynamic Bindings",
-          ),
-          CodeBlock(
-            gettingStartedCode.dynamicText.code,
-            gettingStartedCode.dynamicText.lang,
-            false,
-          ),
-        ),
-        div(
-          cn(
-            backgroundColor(colors.bgCard)
-              .borderRadius("16px")
-              .border(`1px solid ${colors.border}`)
-              .padding("24px"),
-          ),
-          h3(
-            cn(
-              fontSize("13px")
-                .fontWeight("700")
-                .color(colors.textMuted)
-                .marginBottom("16px")
-                .textTransform("uppercase")
-                .letterSpacing("0.06em"),
-            ),
-            "CSS-in-JS",
-          ),
-          CodeBlock(
-            stylingCode.overviewQuickExample.code,
-            stylingCode.overviewQuickExample.lang,
-            false,
-          ),
-        ),
-        div(
-          cn(
-            backgroundColor(colors.bgCard)
-              .borderRadius("16px")
-              .border(`1px solid ${colors.border}`)
-              .padding("24px"),
-          ),
-          h3(
-            cn(
-              fontSize("13px")
-                .fontWeight("700")
-                .color(colors.textMuted)
-                .marginBottom("16px")
-                .textTransform("uppercase")
-                .letterSpacing("0.06em"),
-            ),
-            "Conditionals",
-          ),
-          CodeBlock(
-            `when(() => user.isAdmin,
-  div('Admin Panel')
-).when(() => user.isLoggedIn,
-  div('Dashboard')
-).else(
-  div('Please log in')
-);`,
-            "typescript",
-            false,
-          ),
-        ),
-        div(
-          cn(
-            backgroundColor(colors.bgCard)
-              .borderRadius("16px")
-              .border(`1px solid ${colors.border}`)
-              .padding("24px"),
-          ),
-          h3(
-            cn(
-              fontSize("13px")
-                .fontWeight("700")
-                .color(colors.textMuted)
-                .marginBottom("16px")
-                .textTransform("uppercase")
-                .letterSpacing("0.06em"),
-            ),
-            "List Sync",
-          ),
-          CodeBlock(
-            `list(() => items, (item, index) =>
-  div(() => \`\${index}: \${item.name}\`)
-);`,
-            "typescript",
-            false,
-          ),
-        ),
-      ),
-    ),
-
-    // ── EXAMPLES PREVIEW ──────────────────────────────────────────────────
-    section(
-      s.section,
-      h2(s.sectionTitle, { className: "gradient-text" }, "Examples"),
-      p(s.sectionSubtitle, "Practical examples with interactive live demos."),
-      div(
-        cn(display("grid").gap("16px").gridTemplateColumns("1fr"), {
-          medium: gridTemplateColumns("repeat(2, 1fr)").gap("20px"),
-          large: gridTemplateColumns("repeat(3, 1fr)"),
-        }),
-        ...previewExamples.map((example) =>
-          div(
-            cn(
-              backgroundColor(colors.bgCard)
-                .borderRadius("16px")
-                .border(`1px solid ${colors.border}`)
-                .padding("24px")
-                .cursor("pointer")
-                .transition("all 0.2s")
-                .display("flex")
-                .flexDirection("column")
-                .gap("12px"),
-              {
-                hover: border(`1px solid ${colors.primary}`)
-                  .transform("translateY(-2px)")
-                  .boxShadow("0 8px 24px rgba(0,0,0,0.15)"),
-              },
-            ),
-            div(
-              cn(
-                display("flex")
-                  .alignItems("center")
-                  .justifyContent("space-between"),
-              ),
-              span(cn(fontSize("28px")), homeExampleIcons[example.id] ?? "📄"),
-              span(
-                cn(
-                  display("inline-flex")
-                    .alignItems("center")
-                    .gap("5px")
-                    .padding("3px 8px")
-                    .backgroundColor("rgba(132, 204, 22, 0.1)")
-                    .color(colors.primary)
-                    .fontSize("11px")
-                    .fontWeight("600")
-                    .borderRadius("99px"),
-                ),
-                span(
-                  cn(
-                    width("5px")
-                      .height("5px")
-                      .borderRadius("50%")
-                      .backgroundColor(colors.primary)
-                      .display("block"),
-                  ),
-                ),
-                "Live",
-              ),
-            ),
-            div(
-              h3(
-                cn(
-                  fontSize("16px")
-                    .fontWeight("600")
-                    .color(colors.text)
-                    .marginBottom("6px"),
-                ),
-                example.title,
-              ),
-              p(
-                cn(fontSize("13px").color(colors.textMuted).lineHeight("1.6")),
-                example.description,
-              ),
-            ),
-            span(
-              cn(
-                fontSize("13px")
-                  .fontWeight("600")
-                  .color(colors.primary)
-                  .display("inline-flex")
-                  .alignItems("center")
-                  .gap("4px")
-                  .marginTop("auto"),
-              ),
-              "View Example →",
-            ),
-            on("click", () => goToExample(example.id)),
-          ),
-        ),
-      ),
       div(
         cn(textAlign("center").marginTop("40px")),
         button(
           cn(
-            padding("12px 32px")
-              .backgroundColor("transparent")
-              .color(colors.text)
-              .borderRadius("10px")
-              .fontWeight("600")
-              .fontSize("15px")
-              .border(`1px solid ${colors.borderLight}`)
-              .transition("all 0.2s"),
-            {
-              hover: border(`1px solid ${colors.primary}`).color(
-                colors.primary,
-              ),
-            },
+            padding("12px 32px").borderRadius("10px")
+              .backgroundColor("transparent").color(colors.text)
+              .border(`1px solid ${colors.border}`)
+              .fontSize("15px").fontWeight("600").cursor("pointer").transition("all 0.2s"),
+            { hover: borderColor(colors.borderPrimary).color(colors.primary) },
           ),
           "View All Examples →",
           on("click", () => setRoute("examples")),
