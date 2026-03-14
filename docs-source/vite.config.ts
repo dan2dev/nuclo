@@ -23,6 +23,18 @@ export default defineConfig({
   },
   plugins: [
     {
+      name: 'spa-fallback',
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          const path = req.url?.split('?')[0] ?? ''
+          if (path !== '/' && !path.includes('.') && !path.startsWith('/@') && !path.startsWith('/node_modules')) {
+            req.url = '/index.html'
+          }
+          next()
+        })
+      },
+    },
+    {
       name: 'sync-script',
       transformIndexHtml(html) {
         // Extract script src from head

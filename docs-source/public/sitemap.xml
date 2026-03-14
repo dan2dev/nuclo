@@ -56,81 +56,71 @@
     <priority>0.8</priority>
   </url>
 
-  <!-- Example: Counter -->
   <url>
-    <loc>https://nuclo.dan2.dev/example-counter</loc>
+    <loc>https://nuclo.dan2.dev/examples/counter</loc>
     <lastmod>2025-11-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
-  <!-- Example: Todo -->
   <url>
-    <loc>https://nuclo.dan2.dev/example-todo</loc>
+    <loc>https://nuclo.dan2.dev/examples/todo</loc>
     <lastmod>2025-11-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
-  <!-- Example: Subtasks -->
   <url>
-    <loc>https://nuclo.dan2.dev/example-subtasks</loc>
+    <loc>https://nuclo.dan2.dev/examples/subtasks</loc>
     <lastmod>2025-11-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
-  <!-- Example: Search -->
   <url>
-    <loc>https://nuclo.dan2.dev/example-search</loc>
+    <loc>https://nuclo.dan2.dev/examples/search</loc>
     <lastmod>2025-11-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
-  <!-- Example: Async -->
   <url>
-    <loc>https://nuclo.dan2.dev/example-async</loc>
+    <loc>https://nuclo.dan2.dev/examples/async</loc>
     <lastmod>2025-11-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
-  <!-- Example: Forms -->
   <url>
-    <loc>https://nuclo.dan2.dev/example-forms</loc>
+    <loc>https://nuclo.dan2.dev/examples/forms</loc>
     <lastmod>2025-11-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
-  <!-- Example: Nested -->
   <url>
-    <loc>https://nuclo.dan2.dev/example-nested</loc>
+    <loc>https://nuclo.dan2.dev/examples/nested</loc>
     <lastmod>2025-11-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
-  <!-- Example: Animations -->
   <url>
-    <loc>https://nuclo.dan2.dev/example-animations</loc>
+    <loc>https://nuclo.dan2.dev/examples/animations</loc>
     <lastmod>2025-11-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
-  <!-- Example: Routing -->
   <url>
-    <loc>https://nuclo.dan2.dev/example-routing</loc>
+    <loc>https://nuclo.dan2.dev/examples/routing</loc>
     <lastmod>2025-11-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
-  <!-- Example: Styled Card -->
   <url>
-    <loc>https://nuclo.dan2.dev/example-styled-card</loc>
+    <loc>https://nuclo.dan2.dev/examples/styled-card</loc>
     <lastmod>2025-11-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>

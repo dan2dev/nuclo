@@ -123,12 +123,12 @@ export const hs = {
 
   quickStartWideGrid: cn(
     display("grid").gap("20px").gridTemplateColumns("1fr").minHeight("320px"),
-    { medium: gridTemplateColumns("420px minmax(0, 1fr)") },
+    { medium: gridTemplateColumns("minmax(240px, 420px) minmax(280px, 1fr)") },
   ),
 
   quickStartCompactGrid: cn(
     display("grid").gap("20px").gridTemplateColumns("1fr").minHeight("300px"),
-    { medium: gridTemplateColumns("minmax(0, 1fr) 380px") },
+    { medium: gridTemplateColumns("minmax(0, 1fr) minmax(240px, 380px)") },
   ),
 
   examplesGrid: cn(
@@ -180,8 +180,8 @@ export const hs = {
   ),
 
   splitCodePane: cn(
-    display("none"),
-    { medium: display("flex").flex("1").overflow("hidden").minWidth("200px") },
+    display("none").minWidth("0"),
+    { medium: display("flex").flex("1").overflow("auto").minWidth("0") },
   ),
 
   highlightedCard: cn(borderColor(colors.borderPrimary)),

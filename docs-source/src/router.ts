@@ -2,6 +2,22 @@ import "nuclo";
 import { updatePageMeta } from "./seo.ts";
 import { loadPage } from "./routes.ts";
 
+const EXAMPLE_SLUGS = [
+  "counter",
+  "todo",
+  "subtasks",
+  "search",
+  "async",
+  "forms",
+  "nested",
+  "animations",
+  "routing",
+  "styled-card",
+] as const;
+
+export type ExampleSlug = (typeof EXAMPLE_SLUGS)[number];
+
+/** Top-level + /examples/:slug */
 export type Route =
   | "home"
   | "getting-started"
@@ -10,16 +26,7 @@ export type Route =
   | "styling"
   | "pitfalls"
   | "examples"
-  | "example-counter"
-  | "example-todo"
-  | "example-subtasks"
-  | "example-search"
-  | "example-async"
-  | "example-forms"
-  | "example-nested"
-  | "example-animations"
-  | "example-routing"
-  | "example-styled-card"
+  | `examples/${ExampleSlug}`
   | string;
 
 let currentRoute: Route = "home";
@@ -34,69 +41,59 @@ export function setRoute(route: Route) {
   if (route === "home") {
     window.history.pushState({}, "", base);
   } else {
-    // Use clean URLs without hash
     const url = base.endsWith("/") ? `${base}${route}` : `${base}/${route}`;
     window.history.pushState({}, "", url);
   }
   window.scrollTo(0, 0);
   updatePageMeta(route);
 
-  // Load the page asynchronously
   loadPage(route);
 }
 
-const validRoutes: Route[] = [
-  "home",
-  "getting-started",
-  "core-api",
-  "tag-builders",
-  "styling",
-  "pitfalls",
-  "examples",
-  "example-counter",
-  "example-todo",
-  "example-subtasks",
-  "example-search",
-  "example-async",
-  "example-forms",
-  "example-nested",
-  "example-animations",
-  "example-routing",
-  "example-styled-card"
-];
+function isValidRoute(routePath: string): boolean {
+  if (
+    [
+      "home",
+      "getting-started",
+      "core-api",
+      "tag-builders",
+      "styling",
+      "pitfalls",
+      "examples",
+    ].includes(routePath)
+  ) {
+    return true;
+  }
+  if (routePath.startsWith("examples/")) {
+    const slug = routePath.slice("examples/".length);
+    return EXAMPLE_SLUGS.includes(slug as ExampleSlug);
+  }
+  return false;
+}
 
 export function initRouter() {
-  // Parse initial route from pathname
   const base = import.meta.env.BASE_URL || "/";
   const pathname = window.location.pathname;
 
-  // Remove base path from pathname to get the route
   let routePath = pathname.replace(base, "");
-  // Remove leading and trailing slashes
   routePath = routePath.replace(/^\/+|\/+$/g, "");
 
   const route = routePath || "home";
-  if (validRoutes.includes(route)) {
+  if (isValidRoute(route)) {
     currentRoute = route as Route;
   }
 
-  // Update meta tags for initial route
   updatePageMeta(currentRoute);
-
-  // Load initial page
   loadPage(currentRoute);
 
-  // Handle browser back/forward
   window.addEventListener("popstate", () => {
     const pathname = window.location.pathname;
     let routePath = pathname.replace(base, "");
     routePath = routePath.replace(/^\/+|\/+$/g, "");
 
     const newRoute = routePath || "home";
-    currentRoute = validRoutes.includes(newRoute) ? newRoute as Route : "home";
+    currentRoute = isValidRoute(newRoute) ? (newRoute as Route) : "home";
     updatePageMeta(currentRoute);
-
-    // Load the page for the new route
     loadPage(currentRoute);
   });
 }
