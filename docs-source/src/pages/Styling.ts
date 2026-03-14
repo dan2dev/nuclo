@@ -1,598 +1,365 @@
 import "nuclo";
-import { cn, s, colors } from "../styles.ts";
-import { CodeBlock, InlineCode } from "../components/CodeBlock.ts";
-import { PageHeader, NoteCard, NextSteps } from "../components/ui.ts";
+import { cn, colors } from "../styles.ts";
+import { DocsHero, DocsPageFrame, DocsSectionHeader, type DocsTocItem } from "../components/DocsPage.ts";
+import { CodeBlock } from "../components/CodeBlock.ts";
+import { ArrowRightIcon } from "../components/icons.ts";
 import { stylingCode } from "../content/styling.ts";
-import { setRoute } from "../router.ts";
+import { setRoute, type Route } from "../router.ts";
+
+const tocItems: DocsTocItem[] = [
+  { id: "overview", label: "Overview" },
+  { id: "create-style-queries", label: "createStyleQueries()" },
+  { id: "style-builder", label: "StyleBuilder" },
+  { id: "style-helpers", label: "Style Helpers" },
+  { id: "responsive", label: "Responsive" },
+  { id: "pseudo-classes", label: "Pseudo-classes" },
+];
+
+const st = {
+  sectionCard: cn(
+    display("flex")
+      .flexDirection("column")
+      .gap("20px")
+      .padding("28px 24px")
+      .backgroundColor(colors.bgCard)
+      .border(`1px solid ${colors.border}`)
+      .borderRadius("12px"),
+    { medium: padding("28px 32px") }
+  ),
+
+  split: cn(
+    display("grid")
+      .gap("0")
+      .border(`1px solid ${colors.border}`)
+      .borderRadius("12px")
+      .overflow("hidden"),
+    { large: gridTemplateColumns("minmax(0, 1fr) 320px") }
+  ),
+
+  previewPanel: cn(
+    display("flex")
+      .flexDirection("column")
+      .justifyContent("center")
+      .gap("16px")
+      .padding("28px 24px")
+      .backgroundColor(colors.bgSecondary)
+      .borderTop(`1px solid ${colors.border}`),
+    { large: borderTop("none").borderLeft(`1px solid ${colors.border}`) }
+  ),
+
+  previewLabel: cn(
+    fontSize("11px")
+      .fontWeight("600")
+      .letterSpacing("0.08em")
+      .textTransform("uppercase")
+      .color(colors.textDim)
+  ),
+
+  previewButton: cn(
+    display("inline-flex")
+      .alignItems("center")
+      .justifyContent("center")
+      .padding("12px 24px")
+      .borderRadius("8px")
+      .backgroundColor("#3B82F6")
+      .color("#FFFFFF")
+      .fontSize("14px")
+      .fontWeight("600")
+      .cursor("pointer")
+      .transition("transform 0.2s, opacity 0.2s"),
+    { hover: opacity("0.92").transform("translateY(-1px)") }
+  ),
+
+  generatedClass: cn(
+    fontSize("11px")
+      .fontFamily("'JetBrains Mono', 'Courier New', monospace")
+      .color(colors.textDim)
+  ),
+
+  signatureCard: cn(
+    padding("18px 24px")
+      .borderRadius("10px")
+      .backgroundColor("#161B27")
+      .border("1px solid #252A38")
+      .fontFamily("'JetBrains Mono', 'Courier New', monospace")
+      .fontSize("15px")
+      .lineHeight("1.5")
+      .color("#A8B4C8")
+  ),
+
+  chainDiagram: cn(
+    display("flex")
+      .alignItems("center")
+      .gap("8px")
+      .flexWrap("wrap")
+      .padding("24px")
+      .borderRadius("12px")
+      .backgroundColor(colors.bgSecondary)
+      .border(`1px solid ${colors.border}`)
+  ),
+
+  chainTokenPrimary: cn(
+    fontFamily("'JetBrains Mono', 'Courier New', monospace")
+      .fontSize("14px")
+      .color(colors.primary)
+  ),
+
+  chainToken: cn(
+    fontFamily("'JetBrains Mono', 'Courier New', monospace")
+      .fontSize("14px")
+      .color(colors.text)
+  ),
+
+  chainClass: cn(
+    display("inline-flex")
+      .alignItems("center")
+      .padding("8px 16px")
+      .borderRadius("6px")
+      .backgroundColor(colors.primaryAlpha08)
+      .fontFamily("'JetBrains Mono', 'Courier New', monospace")
+      .fontSize("14px")
+      .fontWeight("700")
+      .color(colors.primary)
+  ),
+
+  helpersGrid: cn(
+    display("grid").gap("16px"),
+    { medium: gridTemplateColumns("repeat(2, minmax(0, 1fr))") }
+  ),
+
+  helperCard: cn(
+    display("flex")
+      .flexDirection("column")
+      .gap("12px")
+      .padding("20px")
+      .backgroundColor(colors.bgCard)
+      .border(`1px solid ${colors.border}`)
+      .borderRadius("12px")
+  ),
+
+  helperTitle: cn(fontSize("13px").fontWeight("700").color(colors.text)),
+  helperBody: cn(
+    fontSize("12px")
+      .lineHeight("1.8")
+      .fontFamily("'JetBrains Mono', 'Courier New', monospace")
+      .color(colors.primary)
+  ),
+
+  nextWrap: cn(display("flex").flexDirection("column").gap("20px").paddingTop("8px")),
+  nextTitle: cn(fontSize("26px").fontWeight("700").letterSpacing("-0.02em").color(colors.text)),
+  nextGrid: cn(
+    display("grid").gap("16px"),
+    { medium: gridTemplateColumns("repeat(2, minmax(0, 1fr))"), large: gridTemplateColumns("repeat(3, minmax(0, 1fr))") }
+  ),
+  nextCard: cn(
+    display("flex")
+      .flexDirection("column")
+      .gap("12px")
+      .padding("20px 22px")
+      .backgroundColor(colors.bgCard)
+      .border(`1px solid ${colors.border}`)
+      .borderRadius("12px")
+      .cursor("pointer")
+      .transition("transform 0.2s, border-color 0.2s, box-shadow 0.2s"),
+    {
+      hover: borderColor(colors.borderPrimary)
+        .transform("translateY(-2px)")
+        .boxShadow(`0 18px 36px ${colors.primaryGlow}`)
+    }
+  ),
+};
+
+function SignatureCard(signature: string) {
+  const [name, rest] = signature.split("(");
+  return div(
+    st.signatureCard,
+    span(cn(color("#6DBF2F").fontWeight("700")), name),
+    span("("),
+    span(cn(color("#E8C77A")), rest ?? "")
+  );
+}
+
+function OverviewSection() {
+  return section(
+    { id: "overview" },
+    st.sectionCard,
+    DocsSectionHeader(
+      "01",
+      "Overview",
+      "Nuclo's styling system generates atomic CSS classes from TypeScript. Write styles as method chains, get a stable class name, and apply it like any other attribute."
+    ),
+    div(
+      st.split,
+      CodeBlock(stylingCode.overviewQuickExample.code, stylingCode.overviewQuickExample.lang, {
+        label: "button-style.ts",
+        variant: "docs",
+      }),
+      div(
+        st.previewPanel,
+        span(st.previewLabel, "Live preview"),
+        button(st.previewButton, "Click me"),
+        span(st.generatedClass, "→ Generated class: n3a7f2b1")
+      )
+    )
+  );
+}
+
+function CreateStyleQueriesSection() {
+  return section(
+    { id: "create-style-queries" },
+    st.sectionCard,
+    DocsSectionHeader(
+      "02",
+      "createStyleQueries()",
+      "Creates a style factory bound to a set of named breakpoints. Returns a cn() function you call with one or more StyleBuilder expressions.",
+      true
+    ),
+    SignatureCard("createStyleQueries(breakpoints): CnFn"),
+    CodeBlock(stylingCode.styleQueriesSetup.code, stylingCode.styleQueriesSetup.lang, {
+      label: "setup.ts",
+      variant: "docs",
+    })
+  );
+}
+
+function StyleBuilderSection() {
+  return section(
+    { id: "style-builder" },
+    st.sectionCard,
+    DocsSectionHeader(
+      "03",
+      "StyleBuilder",
+      "All style helpers return a StyleBuilder. Every method adds a CSS property and returns the same builder, so you can chain freely. Call cn() to get a stable class name."
+    ),
+    div(
+      st.chainDiagram,
+      span(st.chainTokenPrimary, "bg('white')"),
+      span(st.chainToken, ".padding('1rem')"),
+      span(st.chainToken, ".borderRadius('8px')"),
+      span(st.chainToken, ".fontWeight('600')"),
+      span(cn(color(colors.border).fontSize("18px").padding("0 8px")), "→"),
+      span(st.chainClass, "n3a7f2b1")
+    ),
+    CodeBlock(stylingCode.styleBuilderUsage.code, stylingCode.styleBuilderUsage.lang, {
+      label: "card.ts",
+      variant: "docs",
+    })
+  );
+}
+
+function StyleHelpersSection() {
+  return section(
+    { id: "style-helpers" },
+    st.sectionCard,
+    DocsSectionHeader(
+      "04",
+      "Style Helpers",
+      "Over 80 helper functions covering every common CSS property. Each one returns a StyleBuilder, so you can start a chain from any helper."
+    ),
+    div(
+      st.helpersGrid,
+      div(
+        st.helperCard,
+        h3(st.helperTitle, "Layout & Spacing"),
+        p(st.helperBody, "display · position · width · height · margin · padding · gap · zIndex · overflow · boxSizing")
+      ),
+      div(
+        st.helperCard,
+        h3(st.helperTitle, "Typography"),
+        p(st.helperBody, "fontSize · fontWeight · fontFamily · lineHeight · letterSpacing · textAlign · textTransform · textDecoration")
+      ),
+      div(
+        st.helperCard,
+        h3(st.helperTitle, "Visual"),
+        p(st.helperBody, "bg · color · border · borderRadius · boxShadow · opacity · outline · backgroundImage · gradient")
+      ),
+      div(
+        st.helperCard,
+        h3(st.helperTitle, "Interaction"),
+        p(st.helperBody, "cursor · pointerEvents · userSelect · transition · transform · animation · willChange")
+      )
+    )
+  );
+}
+
+function ResponsiveSection() {
+  return section(
+    { id: "responsive" },
+    st.sectionCard,
+    DocsSectionHeader(
+      "05",
+      "Responsive",
+      "Pass a second argument object to cn() with breakpoint keys matching those you declared in createStyleQueries(). Styles merge at each breakpoint."
+    ),
+    CodeBlock(stylingCode.styleQueriesDefaults.code, stylingCode.styleQueriesDefaults.lang, {
+      label: "grid.ts",
+      variant: "docs",
+    })
+  );
+}
+
+function PseudoClassesSection() {
+  return section(
+    { id: "pseudo-classes" },
+    st.sectionCard,
+    DocsSectionHeader(
+      "06",
+      "Pseudo-classes",
+      "Use the same breakpoint object to apply styles on hover, focus, active, and other pseudo-states. The keys can be any valid CSS pseudo-class or selector."
+    ),
+    CodeBlock(stylingCode.styleQueriesPseudoClasses.code, stylingCode.styleQueriesPseudoClasses.lang, {
+      label: "interactive-card.ts",
+      variant: "docs",
+    })
+  );
+}
+
+function NextCard(route: Route, title: string, description: string) {
+  return a(
+    { href: route === "home" ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}${route}` },
+    st.nextCard,
+    div(
+      cn(display("flex").alignItems("center").justifyContent("space-between").gap("12px")),
+      h3(cn(fontSize("16px").fontWeight("600").color(colors.text)), title),
+      span(cn(color(colors.border)), ArrowRightIcon())
+    ),
+    p(cn(fontSize("13px").lineHeight("1.55").color(colors.textDim)), description),
+    on("click", (e) => {
+      e.preventDefault();
+      setRoute(route);
+    })
+  );
+}
 
 export function StylingPage() {
-  // Live demo: Overview quick example
-  function OverviewDemo() {
-    const btn = cn(
-      backgroundColor(colors.primary)
-        .color(colors.primaryText)
-        .padding("12px 20px")
-        .border("none")
-        .borderRadius("10px")
-        .fontWeight("700")
-        .cursor("pointer")
-        .transition("all 0.2s"),
-      {
-        hover: backgroundColor(colors.primaryHover).transform("translateY(-2px)").boxShadow(`0 0 24px ${colors.primaryGlow}`)
-      }
-    );
-    return div(
-      s.demoPanel,
-      div(s.demoPanelHeader, "Live: Overview button"),
+  return DocsPageFrame({
+    hero: DocsHero({
+      badge: "Styling",
+      breadcrumb: "Styling",
+      title: "Styling System",
+      subtitle: "Build fully-typed CSS from TypeScript using composable helper functions, the StyleBuilder chain, responsive breakpoints, and pseudo-class support.",
+      meta: "~10 min read",
+      updated: "Last updated: March 2026",
+      sourceHref: "https://github.com/dan2dev/nuclo/blob/main/docs-source/src/pages/Styling.ts",
+    }),
+    tocItems,
+    children: [
+      OverviewSection(),
+      CreateStyleQueriesSection(),
+      StyleBuilderSection(),
+      StyleHelpersSection(),
+      ResponsiveSection(),
+      PseudoClassesSection(),
       div(
-        s.demoPanelContent,
-        button(
-          btn,
-          "Click me"
-        )
-      )
-    );
-  }
-
-  // Live demo: StyleBuilder chaining and class reuse
-  function StyleBuilderDemo() {
-    let rounded = true;
-    const base = backgroundColor(colors.bgCard)
-      .color(colors.text)
-      .padding("20px")
-      .transition("all 0.2s");
-
-    function cardStyle() {
-      const styled = base
-        .borderRadius(rounded ? "14px" : "0px")
-        .boxShadow(rounded ? "0 10px 30px rgba(0,0,0,0.25)" : "none")
-        .border(`1px solid ${colors.border}`);
-      return cn(styled);
-    }
-
-    return div(
-      s.demoPanel,
-      div(s.demoPanelHeader, "Live: StyleBuilder chaining"),
-      div(
-        s.demoPanelContent,
+        st.nextWrap,
+        h2(st.nextTitle, "What to explore next"),
         div(
-          () => cardStyle(),
-          h3(cn(fontSize("16px").fontWeight("700")), "Chained styles"),
-          p(cn(color(colors.textMuted)), "Toggle props built via chained helpers."),
-          div(
-            cn(display("flex").gap("8px").marginTop("8px")),
-            button(
-              s.btnSecondary,
-              rounded ? "Make Square" : "Make Rounded",
-              on("click", () => {
-                rounded = !rounded;
-                update();
-              })
-            )
-          )
+          st.nextGrid,
+          NextCard("getting-started", "Getting Started", "Return to the first-page walkthrough and install Nuclo from scratch."),
+          NextCard("core-api", "Core API", "Pair the styling helpers with update(), when(), and list()."),
+          NextCard("examples", "Examples", "See responsive and animated styles inside runnable demos.")
         )
-      )
-    );
-  }
-
-  // Live demo: Style queries with simulated breakpoints
-  function QueriesDemo() {
-    type Bp = "mobile" | "medium" | "large";
-    let bp: Bp = "mobile";
-    const card = cn(
-      backgroundColor(colors.bgCard)
-        .border(`1px solid ${colors.border}`)
-        .borderRadius("12px")
-        .transition("all 0.2s"),
-      {
-        medium: padding("24px"),
-        large: padding("32px")
-      }
-    );
-    function maxWidthFor(bp: Bp) {
-      return bp === "mobile" ? "100%" : bp === "medium" ? "420px" : "640px";
-    }
-    function sizeLabel(bp: Bp) {
-      return bp === "mobile" ? "<480px" : bp === "medium" ? "≥768px" : "≥1024px";
-    }
-    return div(
-      s.demoPanel,
-      div(s.demoPanelHeader, "Live: Style queries"),
-      div(
-        s.demoPanelContent,
-        div(
-          cn(display("flex").gap("8px").marginBottom("12px").flexWrap("wrap")),
-          button(
-            s.btnSecondary,
-            "Mobile",
-            on("click", () => {
-              bp = "mobile";
-              update();
-            })
-          ),
-          button(
-            s.btnSecondary,
-            "Medium",
-            on("click", () => {
-              bp = "medium";
-              update();
-            })
-          ),
-          button(
-            s.btnSecondary,
-            "Large",
-            on("click", () => {
-              bp = "large";
-              update();
-            })
-          )
-        ),
-        div(
-          cn(marginTop("4px")),
-          div(
-            () => card,
-            { style: () => ({ maxWidth: maxWidthFor(bp), width: "100%", padding: bp === "mobile" ? "16px" : undefined, boxSizing: "border-box" as const }) },
-            h3(cn(fontSize("16px").fontWeight("700")), () => `Breakpoint: ${sizeLabel(bp)}`),
-            p(cn(color(colors.textMuted)), "Padding increases on medium and large breakpoints.")
-          )
-        )
-      )
-    );
-  }
-
-  // Live demo: Layout helpers
-  function LayoutDemo() {
-    let useGrid = false;
-    const card = cn(
-      backgroundColor(colors.bgLight)
-        .border(`1px solid ${colors.border}`)
-        .borderRadius("10px")
-        .padding("12px")
-    );
-    function container() {
-      return useGrid
-        ? cn(display("grid").gap("12px"), { medium: gridTemplateColumns("repeat(3, 1fr)") })
-        : cn(display("flex").gap("12px").flexWrap("wrap"));
-    }
-    return div(
-      s.demoPanel,
-      div(s.demoPanelHeader, "Live: Layout helpers"),
-      div(
-        s.demoPanelContent,
-        button(
-          s.btnSecondary,
-          () => (useGrid ? "Use Flex" : "Use Grid"),
-          on("click", () => {
-            useGrid = !useGrid;
-            update();
-          })
-        ),
-        div(
-          cn(marginTop("12px")),
-          div(
-            () => container(),
-            ...[1, 2, 3, 4, 5, 6].map((i) => div(card, `Item ${i}`))
-          )
-        )
-      )
-    );
-  }
-
-  // Live demo: Style helpers basic usage (simple card)
-  function StyleHelpersBasicDemo() {
-    const card = cn(
-      backgroundColor(colors.bgCard)
-        .padding("24px")
-        .borderRadius("12px")
-        .boxShadow("0 4px 12px rgba(0,0,0,0.15)")
-        .border(`1px solid ${colors.border}`)
-    );
-    return div(
-      s.demoPanel,
-      div(s.demoPanelHeader, "Live: Basic usage"),
-      div(
-        s.demoPanelContent,
-        div(card, "Card content")
-      )
-    );
-  }
-
-  // Live demo: Typography
-  function TypographyDemo() {
-    const heading = cn(fontSize("28px").fontWeight("800").letterSpacing("-0.02em"));
-    const sub = cn(color(colors.textMuted).fontSize("16px"));
-    return div(
-      s.demoPanel,
-      div(s.demoPanelHeader, "Live: Typography"),
-      div(
-        s.demoPanelContent,
-        h1(heading, "Elegant Heading"),
-        p(sub, "Subtle body copy with readable line-height and contrast.")
-      )
-    );
-  }
-
-  // Live demo: Colors & Backgrounds
-  function ColorsDemo() {
-    const swatch = (bgCss: string, label: string) =>
-      div(
-        cn(display("flex").alignItems("center").gap("12px")),
-        div(cn(width("36px").height("24px").borderRadius("6px").border(`1px solid ${colors.border}`)), { style: { background: bgCss } }),
-        span(cn(color(colors.textMuted)), label)
-      );
-    return div(
-      s.demoPanel,
-      div(s.demoPanelHeader, "Live: Colors"),
-      div(
-        s.demoPanelContent,
-        swatch(colors.primary, "Primary"),
-        swatch("linear-gradient(135deg, #667eea 0%, #764ba2 100%)", "Gradient"),
-        swatch(colors.bgLight, "Background")
-      )
-    );
-  }
-
-  // Live demo: Flexbox navbar
-  function FlexboxDemo() {
-    const bar = cn(
-      display("flex")
-        .justifyContent("space-between")
-        .alignItems("center")
-        .padding("12px 16px")
-        .backgroundColor(colors.bgLight)
-        .border(`1px solid ${colors.border}`)
-        .borderRadius("10px")
-    );
-    const links = cn(display("flex").gap("12px").alignItems("center"));
-    const link = cn(color(colors.textMuted).transition("color 0.2s"));
-    return div(
-      s.demoPanel,
-      div(s.demoPanelHeader, "Live: Flexbox"),
-      div(
-        s.demoPanelContent,
-        nav(
-          bar,
-          div(cn(fontWeight("700")), "Logo"),
-          div(
-            links,
-            a(link, "Home", on("mouseenter", (e) => ((e.currentTarget as HTMLElement).style.color = colors.text)), on("mouseleave", (e) => ((e.currentTarget as HTMLElement).style.color = colors.textMuted))),
-            a(link, "Docs", on("mouseenter", (e) => ((e.currentTarget as HTMLElement).style.color = colors.text)), on("mouseleave", (e) => ((e.currentTarget as HTMLElement).style.color = colors.textMuted))),
-            a(link, "Contact", on("mouseenter", (e) => ((e.currentTarget as HTMLElement).style.color = colors.text)), on("mouseleave", (e) => ((e.currentTarget as HTMLElement).style.color = colors.textMuted)))
-          )
-        )
-      )
-    );
-  }
-
-  // Live demo: Grid cards
-  function GridDemo() {
-    const gridBox = cn(
-      display("grid").gap("12px"),
-      { medium: gridTemplateColumns("repeat(3, 1fr)") }
-    );
-    const card = cn(backgroundColor(colors.bgLight).border(`1px solid ${colors.border}`).borderRadius("10px").padding("12px"));
-    return div(
-      s.demoPanel,
-      div(s.demoPanelHeader, "Live: Grid"),
-      div(
-        s.demoPanelContent,
-        div(gridBox, ...Array.from({ length: 6 }, (_, i) => div(card, `Card ${i + 1}`)))
-      )
-    );
-  }
-
-  // Live demo: Effects & transitions
-  function EffectsDemo() {
-    const box = cn(
-      backgroundColor(colors.bgLight)
-        .border(`1px solid ${colors.border}`)
-        .borderRadius("12px")
-        .padding("24px")
-        .transition("all 0.25s"),
-      {
-        hover: boxShadow("0 20px 50px rgba(0,0,0,0.35)").transform("translateY(-4px) scale(1.02)")
-      }
-    );
-    return div(
-      s.demoPanel,
-      div(s.demoPanelHeader, "Live: Effects"),
-      div(
-        s.demoPanelContent,
-        div(
-          box,
-          "Hover me"
-        )
-      )
-    );
-  }
-
-  // Live demo: Organizing styles (theme buttons)
-  function OrganizingDemo() {
-    const card = cn(
-      backgroundColor(colors.bgCard)
-        .border(`1px solid ${colors.border}`)
-        .borderRadius("14px")
-        .padding("20px")
-    );
-    return div(
-      s.demoPanel,
-      div(s.demoPanelHeader, "Live: Organized styles"),
-      div(
-        s.demoPanelContent,
-        div(card,
-          h3(cn(fontSize("16px").fontWeight("700")), "Theme buttons"),
-          div(
-            cn(display("flex").gap("10px").marginTop("8px")),
-            button(s.btnPrimary, "Primary"),
-            button(s.btnSecondary, "Secondary")
-          )
-        )
-      )
-    );
-  }
-
-  return div(
-    s.pageContent,
-
-    PageHeader(
-      "Styling",
-      "A chainable CSS-in-JS system. No external stylesheets, no class name collisions — just helper functions that generate scoped styles at runtime.",
-      "CSS-in-JS"
-    ),
-
-    // Overview
-    h2(s.h2, "Overview"),
-    p(
-      s.p,
-      "Nuclo's styling system is powered by chainable helpers that generate CSS classes for you. Start with any helper (",
-      InlineCode("bg()"),
-      ", ",
-      InlineCode("padding()"),
-      ", etc.), chain more, and wrap with ",
-      InlineCode("createStyleQueries"),
-      " for responsive variants."
-    ),
-    p(s.p, "Quick example straight from the legacy site:"),
-    div(
-      s.demoContainerSingle,
-      div(OverviewDemo()),
-      div(CodeBlock(stylingCode.overviewQuickExample.code, stylingCode.overviewQuickExample.lang, true))
-    ),
-
-    // StyleBuilder
-    h2(s.h2, "StyleBuilder"),
-    p(
-      s.p,
-      "Each helper returns a StyleBuilder instance. You can chain helpers, pull out the generated class name, or read the computed styles."
-    ),
-    h3(s.h3, "How it works"),
-    div(
-      s.demoContainerSingle,
-      div(StyleBuilderDemo()),
-      div(CodeBlock(stylingCode.styleBuilderUsage.code, stylingCode.styleBuilderUsage.lang, true))
-    ),
-    h3(s.h3, "StyleBuilder methods"),
-    CodeBlock(stylingCode.styleBuilderMethods.code, stylingCode.styleBuilderMethods.lang),
-    h3(s.h3, "Generated CSS"),
-    CodeBlock(stylingCode.styleBuilderClass.code, stylingCode.styleBuilderClass.lang),
-
-    // Style helpers
-    h2(s.h2, "Style Helpers"),
-    p(
-      s.p,
-      "95+ helpers mirror CSS properties: layout, spacing, typography, color, flexbox, grid, effects, and more. Chain them to build up reusable class names."
-    ),
-    h3(s.h3, "Basic usage"),
-    div(
-      s.demoContainerSingle,
-      div(StyleHelpersBasicDemo()),
-      div(CodeBlock(stylingCode.styleHelpersBasic.code, stylingCode.styleHelpersBasic.lang, true))
-    ),
-    h3(s.h3, "Available helpers (from the original reference)"),
-    CodeBlock(stylingCode.styleHelpersList.code, stylingCode.styleHelpersList.lang),
-    h3(s.h3, "Shorthand helpers"),
-    CodeBlock(stylingCode.styleHelpersShorthand.code, stylingCode.styleHelpersShorthand.lang),
-
-    // Style queries
-    h2(s.h2, "Style Queries"),
-    p(
-      s.p,
-      "Use ",
-      InlineCode("createStyleQueries"),
-      " to add media, container, or feature queries. Defaults can be merged with breakpoint overrides."
-    ),
-    CodeBlock(stylingCode.styleQueriesSetup.code, stylingCode.styleQueriesSetup.lang),
-    h3(s.h3, "Defaults and overrides"),
-    div(
-      s.demoContainerSingle,
-      div(QueriesDemo()),
-      div(CodeBlock(stylingCode.styleQueriesDefaults.code, stylingCode.styleQueriesDefaults.lang, true))
-    ),
-    h3(s.h3, "Generated CSS output"),
-    CodeBlock(stylingCode.styleQueriesGeneratedCss.code, stylingCode.styleQueriesGeneratedCss.lang, false),
-    h3(s.h3, "Query-only styles"),
-    CodeBlock(stylingCode.styleQueriesQueriesOnly.code, stylingCode.styleQueriesQueriesOnly.lang),
-    h3(s.h3, "Container queries"),
-    CodeBlock(stylingCode.styleQueriesContainer.code, stylingCode.styleQueriesContainer.lang),
-    h3(s.h3, "Feature queries"),
-    CodeBlock(stylingCode.styleQueriesFeature.code, stylingCode.styleQueriesFeature.lang),
-    h3(s.h3, "Viewport breakpoints example"),
-    CodeBlock(stylingCode.styleQueriesExamples.code, stylingCode.styleQueriesExamples.lang),
-
-    // Layout
-    h2(s.h2, "Layout"),
-    p(s.p, "Display, positioning, sizing, spacing, and overflow helpers pulled from the original docs."),
-    h3(s.h3, "Display & position"),
-    CodeBlock(stylingCode.layoutDisplayPosition.code, stylingCode.layoutDisplayPosition.lang),
-    h3(s.h3, "Sizing"),
-    CodeBlock(stylingCode.layoutSizing.code, stylingCode.layoutSizing.lang),
-    h3(s.h3, "Spacing"),
-    CodeBlock(stylingCode.layoutSpacing.code, stylingCode.layoutSpacing.lang),
-    h3(s.h3, "Overflow"),
-    CodeBlock(stylingCode.layoutOverflow.code, stylingCode.layoutOverflow.lang),
-    div(
-      s.demoContainer,
-      div(LayoutDemo())
-    ),
-
-    // Typography
-    h2(s.h2, "Typography"),
-    p(s.p, "Font and text styling helpers."),
-    h3(s.h3, "Font properties"),
-    CodeBlock(stylingCode.typographyFont.code, stylingCode.typographyFont.lang),
-    h3(s.h3, "Text styling"),
-    CodeBlock(stylingCode.typographyText.code, stylingCode.typographyText.lang),
-    h3(s.h3, "Typography system example"),
-    div(
-      s.demoContainer,
-      div(TypographyDemo()),
-      div(CodeBlock(stylingCode.typographySystem.code, stylingCode.typographySystem.lang, true))
-    ),
-
-    // Colors
-    h2(s.h2, "Colors & Backgrounds"),
-    h3(s.h3, "Colors"),
-    CodeBlock(stylingCode.colorsBasic.code, stylingCode.colorsBasic.lang),
-    h3(s.h3, "Gradients"),
-    div(
-      s.demoContainerSingle,
-      div(ColorsDemo()),
-      div(CodeBlock(stylingCode.colorsGradients.code, stylingCode.colorsGradients.lang, true))
-    ),
-    h3(s.h3, "Background properties"),
-    CodeBlock(stylingCode.colorsBackground.code, stylingCode.colorsBackground.lang),
-
-    // Flexbox
-    h2(s.h2, "Flexbox"),
-    p(s.p, "Container and item helpers, plus an example navbar layout."),
-    h3(s.h3, "Container helpers"),
-    CodeBlock(stylingCode.flexContainer.code, stylingCode.flexContainer.lang),
-    h3(s.h3, "Item helpers"),
-    CodeBlock(stylingCode.flexItem.code, stylingCode.flexItem.lang),
-    h3(s.h3, "Navbar example"),
-    div(
-      s.demoContainer,
-      div(FlexboxDemo()),
-      div(CodeBlock(stylingCode.flexNavbarExample.code, stylingCode.flexNavbarExample.lang, true))
-    ),
-
-    // Grid
-    h2(s.h2, "CSS Grid"),
-    h3(s.h3, "Container helpers"),
-    CodeBlock(stylingCode.gridContainer.code, stylingCode.gridContainer.lang),
-    h3(s.h3, "Item helpers"),
-    CodeBlock(stylingCode.gridItem.code, stylingCode.gridItem.lang),
-    h3(s.h3, "Responsive card grid"),
-    div(
-      s.demoContainerSingle,
-      div(GridDemo()),
-      div(CodeBlock(stylingCode.gridResponsiveExample.code, stylingCode.gridResponsiveExample.lang, true))
-    ),
-
-    // Effects
-    h2(s.h2, "Effects & Transitions"),
-    p(s.p, "Shadows, opacity, transitions, transforms, filters, and hover-friendly dynamic style functions."),
-    h3(s.h3, "Box shadows"),
-    CodeBlock(stylingCode.effectsShadows.code, stylingCode.effectsShadows.lang),
-    h3(s.h3, "Visibility"),
-    CodeBlock(stylingCode.effectsVisibility.code, stylingCode.effectsVisibility.lang),
-    h3(s.h3, "Transitions"),
-    CodeBlock(stylingCode.effectsTransitions.code, stylingCode.effectsTransitions.lang),
-    h3(s.h3, "Transforms"),
-    CodeBlock(stylingCode.effectsTransforms.code, stylingCode.effectsTransforms.lang),
-    h3(s.h3, "Filters & backdrop"),
-    CodeBlock(stylingCode.effectsFilters.code, stylingCode.effectsFilters.lang),
-    h3(s.h3, "Hover effects with pseudo-classes"),
-    p(s.p, "Use the built-in pseudo-class support for hover, focus, active, and more:"),
-    CodeBlock(stylingCode.styleQueriesPseudoClasses.code, stylingCode.styleQueriesPseudoClasses.lang),
-    h3(s.h3, "Hover effects with dynamic style functions (alternative)"),
-    div(
-      s.demoContainerSingle,
-      div(EffectsDemo()),
-      div(CodeBlock(stylingCode.effectsHover.code, stylingCode.effectsHover.lang, true))
-    ),
-
-    // Organizing
-    h2(s.h2, "Organizing Styles"),
-    p(
-      s.p,
-      "Reuse the theme + style modules from the legacy page: keep tokens, shared layout pieces, and component styles in one place."
-    ),
-    h3(s.h3, "Theme constants"),
-    CodeBlock(stylingCode.organizingTheme.code, stylingCode.organizingTheme.lang),
-    h3(s.h3, "Shared styles"),
-    CodeBlock(stylingCode.organizingStyles.code, stylingCode.organizingStyles.lang),
-    h3(s.h3, "Using the styles"),
-    div(
-      s.demoContainerSingle,
-      div(OrganizingDemo()),
-      div(CodeBlock(stylingCode.organizingUsage.code, stylingCode.organizingUsage.lang, true))
-    ),
-
-    // Advanced Examples
-    h2(s.h2, "Advanced Examples"),
-    p(s.p, "Explore advanced styling techniques including animations, 3D transforms, complex grids, and modern effects."),
-
-    h3(s.h3, "Animations & Keyframes"),
-    p(s.p, "Create smooth animations using the animation helpers combined with CSS keyframes:"),
-    CodeBlock(stylingCode.advancedAnimation.code, stylingCode.advancedAnimation.lang),
-
-    h3(s.h3, "3D Transforms & Glassmorphism"),
-    p(s.p, "Use transform and backdrop-filter helpers for modern visual effects:"),
-    CodeBlock(stylingCode.advancedTransforms.code, stylingCode.advancedTransforms.lang),
-
-    h3(s.h3, "Grid Template Areas"),
-    p(s.p, "Build complex responsive layouts with named grid areas:"),
-    CodeBlock(stylingCode.advancedGrid.code, stylingCode.advancedGrid.lang),
-
-    h3(s.h3, "Advanced Typography"),
-    p(s.p, "Fine-tune text rendering with advanced typography helpers:"),
-    CodeBlock(stylingCode.advancedTypography.code, stylingCode.advancedTypography.lang),
-
-    h3(s.h3, "Modern Color Techniques"),
-    p(s.p, "Gradients, CSS variables, and multiple backgrounds:"),
-    CodeBlock(stylingCode.advancedColors.code, stylingCode.advancedColors.lang),
-
-    // Next steps
-    h2(s.h2, "Next Steps"),
-    ul(
-      s.ul,
-      li(
-        s.li,
-        "Explore ",
-        InlineCode("CodeBlock"),
-        " + ",
-        InlineCode("InlineCode"),
-        " components to present snippets cleanly."
       ),
-      li(
-        s.li,
-        "Combine ",
-        InlineCode("createStyleQueries"),
-        " with the helpers above for responsive variants."
-      ),
-      li(
-        s.li,
-        "Jump to the ",
-        a(
-          { href: `${import.meta.env.BASE_URL}examples` },
-          "Examples page",
-          on("click", (e) => {
-            e.preventDefault();
-            setRoute("examples");
-          })
-        ),
-        " to see these styles in action."
-      )
-    ),
-
-    NoteCard("tip", "All style helpers generate unique scoped CSS class names. Styles are injected into a single ", code({ style: { fontFamily: "monospace" } }, "<style>"), " tag per session, deduplicated automatically."),
-
-    NextSteps([
-      { label: "Tag Builders", description: "Apply styles to every HTML and SVG element.",             route: "tag-builders"   },
-      { label: "Core API",     description: "update(), list(), when(), on() — the imperative core.",  route: "core-api"       },
-      { label: "Pitfalls",     description: "Avoid the five most common Nuclo mistakes.",             route: "pitfalls"       },
-      { label: "Examples",     description: "See the styling system in real interactive demos.",      route: "examples"       },
-    ])
-  );
+    ],
+  });
 }
