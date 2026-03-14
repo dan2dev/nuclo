@@ -272,3 +272,43 @@ export function XIcon() {
     lineSvg({ x1: "6", y1: "6", x2: "18", y2: "18" })
   );
 }
+
+export function SunIcon() {
+  return svgSvg(
+    {
+      width: "18",
+      height: "18",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    },
+    circleSvg({ cx: "12", cy: "12", r: "4" }),
+    pathSvg({ d: "M12 2v2" }),
+    pathSvg({ d: "M12 20v2" }),
+    pathSvg({ d: "m4.93 4.93 1.41 1.41" }),
+    pathSvg({ d: "m17.66 17.66 1.41 1.41" }),
+    pathSvg({ d: "M2 12h2" }),
+    pathSvg({ d: "M20 12h2" }),
+    pathSvg({ d: "m6.34 17.66-1.41 1.41" }),
+    pathSvg({ d: "m19.07 4.93-1.41 1.41" })
+  );
+}
+
+export function MoonIcon() {
+  return svgSvg(
+    {
+      width: "18",
+      height: "18",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    },
+    pathSvg({ d: "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" })
+  );
+}

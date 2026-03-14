@@ -2415,7 +2415,7 @@
                   "type": "ellipse",
                   "id": "rluXu",
                   "name": "logoDot",
-                  "fill": "#D5FF40",
+                  "fill": "#4A7A00",
                   "width": 10,
                   "height": 10
                 },
@@ -2540,7 +2540,7 @@
                   "type": "frame",
                   "id": "D6IhG",
                   "name": "ghBtn",
-                  "fill": "#111111",
+                  "fill": "#4A7A00",
                   "cornerRadius": 8,
                   "stroke": {
                     "thickness": 1,
@@ -2555,7 +2555,7 @@
                       "type": "text",
                       "id": "QHlK7",
                       "name": "ghBtnT",
-                      "fill": "#D5FF40",
+                      "fill": "#FFFFFF",
                       "content": "GitHub ↗",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -2680,7 +2680,7 @@
                   "type": "frame",
                   "id": "tnhJV",
                   "name": "ctaPrimary",
-                  "fill": "#D5FF40",
+                  "fill": "#4A7A00",
                   "cornerRadius": 10,
                   "gap": 8,
                   "padding": [
@@ -2693,7 +2693,7 @@
                       "type": "text",
                       "id": "Pviz3",
                       "name": "ctaPrimaryText",
-                      "fill": "#111111",
+                      "fill": "#FFFFFF",
                       "content": "Get Started →",
                       "fontFamily": "Inter",
                       "fontSize": 15,
@@ -3109,7 +3109,7 @@
                               "type": "frame",
                               "id": "qNJ5K",
                               "name": "demoBadge",
-                              "fill": "#D5FF4014",
+                              "fill": "#4A7A0014",
                               "cornerRadius": 99,
                               "gap": 5,
                               "padding": [
@@ -3174,7 +3174,7 @@
                                   "type": "frame",
                                   "id": "VXquC",
                                   "name": "counterBadge",
-                                  "fill": "#D5FF401a",
+                                  "fill": "#4A7A001a",
                                   "cornerRadius": 99,
                                   "padding": [
                                     4,
@@ -3246,7 +3246,7 @@
                                   "name": "btnPlus",
                                   "width": 40,
                                   "height": 40,
-                                  "fill": "#D5FF40",
+                                  "fill": "#4A7A00",
                                   "cornerRadius": 8,
                                   "justifyContent": "center",
                                   "alignItems": "center",
@@ -3255,7 +3255,7 @@
                                       "type": "text",
                                       "id": "izoot",
                                       "name": "btnPlusT",
-                                      "fill": "#111111",
+                                      "fill": "#FFFFFF",
                                       "content": "+",
                                       "fontFamily": "Inter",
                                       "fontSize": 18,
@@ -3595,7 +3595,7 @@
                   "type": "frame",
                   "id": "0d5DJ",
                   "name": "installBtn",
-                  "fill": "#D5FF40",
+                  "fill": "#4A7A00",
                   "cornerRadius": 10,
                   "padding": [
                     14,
@@ -3608,7 +3608,7 @@
                       "type": "text",
                       "id": "MApDs",
                       "name": "installBtnT",
-                      "fill": "#111111",
+                      "fill": "#FFFFFF",
                       "content": "Get Started →",
                       "fontFamily": "Inter",
                       "fontSize": 15,
@@ -4029,7 +4029,7 @@
                       "cornerRadius": 20,
                       "stroke": {
                         "thickness": 1,
-                        "fill": "#D5FF4025"
+                        "fill": "#4A7A0025"
                       },
                       "children": [
                         {
@@ -4258,11 +4258,11 @@
                           "type": "frame",
                           "id": "JHJV4",
                           "name": "badge",
-                          "fill": "#D5FF4012",
+                          "fill": "#4A7A0012",
                           "cornerRadius": 100,
                           "stroke": {
                             "thickness": 1,
-                            "fill": "#D5FF4025"
+                            "fill": "#4A7A0025"
                           },
                           "gap": 8,
                           "padding": [
@@ -4728,7 +4728,7 @@
                   "type": "ellipse",
                   "id": "pjD63",
                   "name": "footerDot",
-                  "fill": "#D5FF40",
+                  "fill": "#4A7A00",
                   "width": 8,
                   "height": 8
                 },
