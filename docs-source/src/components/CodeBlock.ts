@@ -20,6 +20,13 @@ type CodeSegment = {
   value: string;
 };
 
+export type CodeBlockOptions = {
+  compact?: boolean;
+  label?: string;
+  showCopy?: boolean;
+  variant?: "default" | "docs";
+};
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -131,9 +138,110 @@ function highlightCode(code: string): string {
     .join("");
 }
 
-export function CodeBlock(codeContent: string, _language = "typescript", showCopy = true) {
+export function CodeBlock(
+  codeContent: string,
+  language = "typescript",
+  showCopy: boolean | CodeBlockOptions = true
+) {
   const id = `code-${Math.random().toString(36).slice(2, 9)}`;
   const highlighted = highlightCode(codeContent.trim());
+  const options: CodeBlockOptions =
+    typeof showCopy === "boolean"
+      ? { showCopy }
+      : showCopy;
+
+  const compact = options.compact ?? false;
+  const label = options.label;
+  const shouldShowCopy = options.showCopy ?? true;
+  const variant = options.variant ?? "default";
+  const docsHeaderLabel = label ?? language;
+  const docsThemeVars = {
+    "--c-tok-accent-primary": "#86EFAC",
+    "--c-tok-accent-strong": "#A5D6A7",
+    "--c-tok-default": "#A8B4C8",
+    "--c-tok-comment": "#6B7280",
+    "--c-tok-muted": "#94A3B8",
+    "--c-tok-number": "#F59E0B",
+    "--c-tok-fn": "#C4B5FD",
+    "--c-tok-type": "#7DD3FC",
+  } as Record<string, string>;
+
+  const copyAction = async () => {
+    await navigator.clipboard.writeText(codeContent.trim());
+    setCopied(id, true);
+    setTimeout(() => setCopied(id, false), 2000);
+  };
+
+  if (variant === "docs") {
+    return div(
+      cn(
+        width("100%")
+          .maxWidth("100%")
+          .boxSizing("border-box")
+          .overflow("hidden")
+          .backgroundColor("#0F1117")
+          .border(`1px solid #252530`)
+          .borderRadius(compact ? "8px" : "12px")
+      ),
+      { style: docsThemeVars },
+      label || shouldShowCopy
+        ? div(
+            cn(
+              display("flex")
+                .alignItems("center")
+                .justifyContent("space-between")
+                .gap("12px")
+                .padding(compact ? "8px 12px" : "10px 16px")
+                .borderBottom("1px solid #252530")
+            ),
+            span(
+              cn(
+                fontSize("12px")
+                  .fontFamily("'JetBrains Mono', 'Courier New', monospace")
+                  .color("#8A8FA3")
+              ),
+              docsHeaderLabel
+            ),
+            shouldShowCopy
+              ? button(
+                  cn(
+                    display("inline-flex")
+                      .alignItems("center")
+                      .gap("6px")
+                      .padding("0")
+                      .backgroundColor("transparent")
+                      .border("none")
+                      .fontSize("12px")
+                      .color("#A8B4C8")
+                      .cursor("pointer")
+                      .transition("opacity 0.2s"),
+                    { hover: opacity("0.72") }
+                  ),
+                  () => isCopied(id) ? CheckIcon() : CopyIcon(),
+                  () => isCopied(id) ? "Copied!" : "Copy",
+                  on("click", copyAction)
+                )
+              : null
+          )
+        : null,
+      pre(
+        cn(
+          backgroundColor("#0F1117")
+            .padding(compact ? "12px 14px" : "16px 20px")
+            .overflow("auto")
+            .maxWidth("100%")
+            .boxSizing("border-box")
+            .fontSize(compact ? "12px" : "13px")
+            .lineHeight(compact ? "1.65" : "1.75")
+            .fontFamily("'JetBrains Mono', 'Courier New', monospace")
+        ),
+        code(
+          cn(display("block").width("100%").maxWidth("100%").whiteSpace("pre").overflowX("auto")),
+          { innerHTML: highlighted }
+        )
+      )
+    );
+  }
 
   return div(
     cn(position("relative").width("100%").maxWidth("100%").boxSizing("border-box")),
@@ -144,7 +252,7 @@ export function CodeBlock(codeContent: string, _language = "typescript", showCop
         { innerHTML: highlighted }
       )
     ),
-    showCopy ? button(
+    shouldShowCopy ? button(
       cn(
         position("absolute")
           .top("12px")
@@ -166,11 +274,7 @@ export function CodeBlock(codeContent: string, _language = "typescript", showCop
       ),
       () => isCopied(id) ? CheckIcon() : CopyIcon(),
       () => isCopied(id) ? "Copied!" : "Copy",
-      on("click", async () => {
-        await navigator.clipboard.writeText(codeContent.trim());
-        setCopied(id, true);
-        setTimeout(() => setCopied(id, false), 2000);
-      })
+      on("click", copyAction)
     ) : null
   );
 }
