@@ -189,7 +189,6 @@ function ApiSectionCard(apiSection: ApiSection) {
     ),
     CodeBlock(apiSection.code.code, apiSection.code.lang, {
       label: apiSection.code.lang,
-      variant: "docs",
     })
   );
 }

@@ -536,7 +536,6 @@ function CompactSnippetCard(title: string, code: string, description: string) {
     CodeBlock(code, "typescript", {
       compact: true,
       showCopy: false,
-      variant: "docs",
     }),
     p(cn(fontSize("13px").lineHeight("1.55").color(colors.textDim)), description)
   );
@@ -633,7 +632,6 @@ export function GettingStartedPage() {
             "Install via npm",
             CodeBlock(gettingStartedCode.installNpm.code, gettingStartedCode.installNpm.lang, {
               label: "bash",
-              variant: "docs",
             })
           ),
           StepCard(
@@ -642,7 +640,6 @@ export function GettingStartedPage() {
             p(gs.bodyText, "Add Nuclo's built-in types for all 140+ tag builders:"),
             CodeBlock(gettingStartedCode.tsconfigTypes.code, gettingStartedCode.tsconfigTypes.lang, {
               label: "tsconfig.json",
-              variant: "docs",
             }),
             Callout(
               "success",
@@ -657,7 +654,6 @@ export function GettingStartedPage() {
             p(gs.bodyText, "One import registers all global builders — no destructuring needed:"),
             CodeBlock(gettingStartedCode.denoUsage.code, gettingStartedCode.denoUsage.lang, {
               label: "typescript",
-              variant: "docs",
             })
           ),
           Callout(
@@ -687,7 +683,6 @@ export function GettingStartedPage() {
           ),
           CodeBlock(gettingStartedCode.firstApp.code, gettingStartedCode.firstApp.lang, {
             label: "counter.ts",
-            variant: "docs",
           }),
           div(
             cn(display("flex").flexDirection("column").gap("8px")),
@@ -730,7 +725,6 @@ export function GettingStartedPage() {
           h3(cn(fontSize("18px").fontWeight("600").color(colors.text)), "Batching multiple mutations"),
           CodeBlock(gettingStartedCode.batchUpdates.code, gettingStartedCode.batchUpdates.lang, {
             label: "typescript",
-            variant: "docs",
           }),
           h3(cn(fontSize("18px").fontWeight("600").color(colors.text)), "Why explicit updates?"),
           div(
@@ -797,12 +791,10 @@ export function GettingStartedPage() {
           p(gs.bodyTextLarge, "Attach a single listener:"),
           CodeBlock(gettingStartedCode.eventBasic.code, gettingStartedCode.eventBasic.lang, {
             label: "typescript",
-            variant: "docs",
           }),
           p(gs.bodyTextLarge, "Stack multiple listeners on one element:"),
           CodeBlock(gettingStartedCode.eventMultiple.code, gettingStartedCode.eventMultiple.lang, {
             label: "typescript",
-            variant: "docs",
           }),
           Callout(
             "success",

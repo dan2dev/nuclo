@@ -62,7 +62,7 @@ export function injectGlobalStyles() {
       --c-bg-card:      #1a1a1a;
       --c-bg-secondary: #141414;
       --c-bg-light:     #161616;
-      --c-bg-code:      #141414;
+      --c-bg-code:      #12141a;
       --c-bg-icon:      #222222;
       --c-bg-nav:       rgba(14,14,14,0.80);
       --c-bg-footer:    #161616;
@@ -84,15 +84,17 @@ export function injectGlobalStyles() {
       --c-ready-pill-border:#2a2a2a;
       --c-selection-bg:     rgba(213,255,64,0.20);
 
-      /* Syntax highlighting */
+      /* Syntax highlighting (dark — alto contraste, estilo “One Dark”-like) */
       --c-tok-accent-primary: #D5FF40;
-      --c-tok-accent-strong:  #D5FF40;
-      --c-tok-default:        #FFFFFF;
-      --c-tok-comment:        #666666;
-      --c-tok-muted:          #808080;
-      --c-tok-number:         #FF8C42;
+      --c-tok-accent-strong:  #b4e84a;
+      --c-tok-keyword:        #c792ea;
+      --c-tok-string:         #c3e88d;
+      --c-tok-default:        #e2e8f0;
+      --c-tok-comment:        #637777;
+      --c-tok-muted:          #8892a0;
+      --c-tok-number:         #f78c6c;
       --c-tok-fn:             #82aaff;
-      --c-tok-type:           #c792ea;
+      --c-tok-type:           #ffcb6b;
 
       --c-header-bg:      rgba(14,14,14,0.80);
       --c-mobile-menu-bg: rgba(14,14,14,0.96);
@@ -113,7 +115,7 @@ export function injectGlobalStyles() {
       --c-bg-card:      #FFFFFF;
       --c-bg-secondary: #EEEEEA;
       --c-bg-light:     #E5E5E0;
-      --c-bg-code:      #EEEEEA;
+      --c-bg-code:      #e8edf4;
       --c-bg-icon:      #E5E5E0;
       --c-bg-nav:       rgba(245,245,240,0.80);
       --c-bg-footer:    #E5E5E0;
@@ -135,23 +137,25 @@ export function injectGlobalStyles() {
       --c-ready-pill-border:rgba(74,122,0,0.14);
       --c-selection-bg:     rgba(74,122,0,0.16);
 
-      /* Syntax highlighting */
+      /* Syntax highlighting (light — keywords ≠ strings, fundo legível) */
       --c-tok-accent-primary: #4A7A00;
       --c-tok-accent-strong:  #3D8800;
-      --c-tok-default:        #111111;
-      --c-tok-comment:        #888888;
-      --c-tok-muted:          #888888;
-      --c-tok-number:         #D97706;
+      --c-tok-keyword:        #4338ca;
+      --c-tok-string:         #b45309;
+      --c-tok-default:        #0f172a;
+      --c-tok-comment:        #64748b;
+      --c-tok-muted:          #64748b;
+      --c-tok-number:         #c2410c;
       --c-tok-fn:             #1d4ed8;
-      --c-tok-type:           #7c3aed;
+      --c-tok-type:           #6d28d9;
 
       --c-header-bg:      rgba(245,245,240,0.80);
       --c-mobile-menu-bg: rgba(245,245,240,0.96);
     }
 
     /* ── Syntax token classes ────────────────────────────────────────────── */
-    .tok-kw      { color: var(--c-tok-accent-primary); }
-    .tok-str     { color: var(--c-tok-accent-primary); }
+    .tok-kw      { color: var(--c-tok-keyword); }
+    .tok-str     { color: var(--c-tok-string); }
     .tok-fn      { color: var(--c-tok-fn); }
     .tok-num     { color: var(--c-tok-number); }
     .tok-comment { color: var(--c-tok-comment); }
@@ -205,8 +209,9 @@ export const cn = createStyleQueries({
 
 export const s = {
   // ── Code blocks ──────────────────────────────────────────────────────────
+  /** Bloco de código padrão do site (tema claro/escuro). */
   codeBlock: cn(
-    backgroundColor(colors.bgSecondary)
+    backgroundColor(colors.bgCode)
       .borderRadius("12px")
       .padding("20px 24px")
       .overflow("auto")
@@ -215,6 +220,81 @@ export const s = {
       .border(`1px solid ${colors.border}`)
       .fontSize("13px")
       .lineHeight("1.7")
+      .fontFamily("'JetBrains Mono', 'Courier New', monospace")
+  ),
+
+  /** Mesmo visual do codeBlock, padding menor (ex.: docs). */
+  codeBlockCompact: cn(
+    backgroundColor(colors.bgCode)
+      .borderRadius("8px")
+      .padding("12px 14px")
+      .overflow("auto")
+      .maxWidth("100%")
+      .boxSizing("border-box")
+      .border(`1px solid ${colors.border}`)
+      .fontSize("12px")
+      .lineHeight("1.65")
+      .fontFamily("'JetBrains Mono', 'Courier New', monospace")
+  ),
+
+  /** Container com header (label + copy) — mesma borda/fundo que codeBlock. */
+  codeBlockFrame: cn(
+    width("100%")
+      .maxWidth("100%")
+      .boxSizing("border-box")
+      .overflow("hidden")
+      .backgroundColor(colors.bgCode)
+      .border(`1px solid ${colors.border}`)
+      .borderRadius("12px")
+  ),
+
+  codeBlockFrameCompact: cn(
+    width("100%")
+      .maxWidth("100%")
+      .boxSizing("border-box")
+      .overflow("hidden")
+      .backgroundColor(colors.bgCode)
+      .border(`1px solid ${colors.border}`)
+      .borderRadius("8px")
+  ),
+
+  codeBlockHeader: cn(
+    display("flex")
+      .alignItems("center")
+      .justifyContent("space-between")
+      .gap("12px")
+      .padding("10px 16px")
+      .borderBottom(`1px solid ${colors.border}`)
+  ),
+
+  codeBlockHeaderCompact: cn(
+    display("flex")
+      .alignItems("center")
+      .justifyContent("space-between")
+      .gap("12px")
+      .padding("8px 12px")
+      .borderBottom(`1px solid ${colors.border}`)
+  ),
+
+  codeBlockBody: cn(
+    backgroundColor(colors.bgCode)
+      .padding("16px 20px")
+      .overflow("auto")
+      .maxWidth("100%")
+      .boxSizing("border-box")
+      .fontSize("13px")
+      .lineHeight("1.75")
+      .fontFamily("'JetBrains Mono', 'Courier New', monospace")
+  ),
+
+  codeBlockBodyCompact: cn(
+    backgroundColor(colors.bgCode)
+      .padding("12px 14px")
+      .overflow("auto")
+      .maxWidth("100%")
+      .boxSizing("border-box")
+      .fontSize("12px")
+      .lineHeight("1.65")
       .fontFamily("'JetBrains Mono', 'Courier New', monospace")
   ),
 

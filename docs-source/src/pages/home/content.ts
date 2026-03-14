@@ -1,4 +1,11 @@
-export type HomeCodeTone = "accent" | "comment" | "muted" | "number" | "primary";
+export type HomeCodeTone =
+  | "accent"
+  | "comment"
+  | "keyword"
+  | "muted"
+  | "number"
+  | "primary"
+  | "string";
 
 export type HomeCodeLine = {
   text: string;
@@ -27,37 +34,37 @@ export const EXAMPLE_ICONS: Record<string, string> = {
 };
 
 export const HERO_CODE_LINES: HomeCodeLine[] = [
-  { text: "import 'nuclo';", tone: "primary" },
+  { text: "import 'nuclo';", tone: "keyword" },
   { text: "", tone: "muted" },
-  { text: "let count = 0;" },
+  { text: "let count = 0;", tone: "keyword" },
   { text: "", tone: "muted" },
-  { text: "const counter = div(", tone: "accent" },
-  { text: "  h1(() => `Count: ${count}`)," },
-  { text: "  button('Increment', on('click', () => {" },
+  { text: "const counter = div(", tone: "keyword" },
+  { text: "  h1(() => `Count: ${count}`),", tone: "string" },
+  { text: "  button('Increment', on('click', () => {", tone: "accent" },
   { text: "    count++;", tone: "number" },
   { text: "    update();", tone: "accent" },
   { text: "  }))" },
   { text: ");" },
   { text: "", tone: "muted" },
-  { text: "render(counter, document.body);", tone: "primary" },
+  { text: "render(counter, document.body);", tone: "keyword" },
 ];
 
 export const QUICK_START_USAGE_LINES: HomeCodeLine[] = [
-  { text: "import 'nuclo';", tone: "primary" },
+  { text: "import 'nuclo';", tone: "keyword" },
   { text: " " },
-  { text: "const app = div(", tone: "accent" },
-  { text: "  h1('Hello, Nuclo!')," },
-  { text: "  p('Building UIs.')" },
+  { text: "const app = div(", tone: "keyword" },
+  { text: "  h1('Hello, Nuclo!'),", tone: "string" },
+  { text: "  p('Building UIs.')", tone: "string" },
   { text: ");" },
   { text: " " },
-  { text: "render(app, document.body);", tone: "primary" },
+  { text: "render(app, document.body);", tone: "keyword" },
 ];
 
 export const QUICK_START_TYPES_LINES: HomeCodeLine[] = [
   { text: "// tsconfig.json", tone: "comment" },
   { text: "{" },
   { text: '  "compilerOptions": {' },
-  { text: '    "types": ["nuclo/types"]', tone: "primary" },
+  { text: '    "types": ["nuclo/types"]', tone: "string" },
   { text: "  }" },
   { text: "}" },
 ];
