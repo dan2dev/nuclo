@@ -22,9 +22,9 @@ type CodeSegment = {
 
 export type CodeBlockOptions = {
   compact?: boolean;
+  /** Rótulo opcional acima do código (ex.: linguagem); mesmo container do site. */
   label?: string;
   showCopy?: boolean;
-  variant?: "default" | "docs";
 };
 
 function escapeHtml(value: string): string {
@@ -153,18 +153,7 @@ export function CodeBlock(
   const compact = options.compact ?? false;
   const label = options.label;
   const shouldShowCopy = options.showCopy ?? true;
-  const variant = options.variant ?? "default";
-  const docsHeaderLabel = label ?? language;
-  const docsThemeVars = {
-    "--c-tok-accent-primary": "#86EFAC",
-    "--c-tok-accent-strong": "#A5D6A7",
-    "--c-tok-default": "#A8B4C8",
-    "--c-tok-comment": "#6B7280",
-    "--c-tok-muted": "#94A3B8",
-    "--c-tok-number": "#F59E0B",
-    "--c-tok-fn": "#C4B5FD",
-    "--c-tok-type": "#7DD3FC",
-  } as Record<string, string>;
+  const headerText = label ?? language;
 
   const copyAction = async () => {
     await navigator.clipboard.writeText(codeContent.trim());
@@ -172,110 +161,53 @@ export function CodeBlock(
     setTimeout(() => setCopied(id, false), 2000);
   };
 
-  if (variant === "docs") {
-    return div(
-      cn(
-        width("100%")
-          .maxWidth("100%")
-          .boxSizing("border-box")
-          .overflow("hidden")
-          .backgroundColor("#0F1117")
-          .border(`1px solid #252530`)
-          .borderRadius(compact ? "8px" : "12px")
-      ),
-      { style: docsThemeVars },
-      label || shouldShowCopy
-        ? div(
-            cn(
-              display("flex")
-                .alignItems("center")
-                .justifyContent("space-between")
-                .gap("12px")
-                .padding(compact ? "8px 12px" : "10px 16px")
-                .borderBottom("1px solid #252530")
-            ),
-            span(
-              cn(
-                fontSize("12px")
-                  .fontFamily("'JetBrains Mono', 'Courier New', monospace")
-                  .color("#8A8FA3")
-              ),
-              docsHeaderLabel
-            ),
-            shouldShowCopy
-              ? button(
-                  cn(
-                    display("inline-flex")
-                      .alignItems("center")
-                      .gap("6px")
-                      .padding("0")
-                      .backgroundColor("transparent")
-                      .border("none")
-                      .fontSize("12px")
-                      .color("#A8B4C8")
-                      .cursor("pointer")
-                      .transition("opacity 0.2s"),
-                    { hover: opacity("0.72") }
-                  ),
-                  () => isCopied(id) ? CheckIcon() : CopyIcon(),
-                  () => isCopied(id) ? "Copied!" : "Copy",
-                  on("click", copyAction)
-                )
-              : null
-          )
-        : null,
-      pre(
-        cn(
-          backgroundColor("#0F1117")
-            .padding(compact ? "12px 14px" : "16px 20px")
-            .overflow("auto")
-            .maxWidth("100%")
-            .boxSizing("border-box")
-            .fontSize(compact ? "12px" : "13px")
-            .lineHeight(compact ? "1.65" : "1.75")
-            .fontFamily("'JetBrains Mono', 'Courier New', monospace")
-        ),
-        code(
-          cn(display("block").width("100%").maxWidth("100%").whiteSpace("pre").overflowX("auto")),
-          { innerHTML: highlighted }
-        )
-      )
-    );
-  }
+  const frameClass = compact ? s.codeBlockFrameCompact : s.codeBlockFrame;
+  const headerClass = compact ? s.codeBlockHeaderCompact : s.codeBlockHeader;
+  const bodyClass = compact ? s.codeBlockBodyCompact : s.codeBlockBody;
 
+  const copyBtn = shouldShowCopy
+    ? button(
+        cn(
+          display("inline-flex")
+            .alignItems("center")
+            .gap("6px")
+            .padding("0")
+            .backgroundColor("transparent")
+            .border("none")
+            .fontSize("12px")
+            .color(colors.textMuted)
+            .cursor("pointer")
+            .transition("opacity 0.2s"),
+          { hover: opacity("0.72") }
+        ),
+        () => (isCopied(id) ? CheckIcon() : CopyIcon()),
+        () => (isCopied(id) ? "Copied!" : "Copy"),
+        on("click", copyAction)
+      )
+    : null;
+
+  /** Um único estilo: moldura do site + barra opcional (rótulo | copiar) + `<pre>`. */
   return div(
-    cn(position("relative").width("100%").maxWidth("100%").boxSizing("border-box")),
+    frameClass,
+    div(
+      headerClass,
+      span(
+        cn(
+          fontSize("12px")
+            .fontFamily("'JetBrains Mono', 'Courier New', monospace")
+            .color(colors.textMuted)
+        ),
+        headerText
+      ),
+      shouldShowCopy ? copyBtn : null
+    ),
     pre(
-      s.codeBlock,
+      bodyClass,
       code(
         cn(display("block").width("100%").maxWidth("100%").whiteSpace("pre").overflowX("auto")),
         { innerHTML: highlighted }
       )
-    ),
-    shouldShowCopy ? button(
-      cn(
-        position("absolute")
-          .top("12px")
-          .right("12px")
-          .padding("6px 10px")
-          .borderRadius("6px")
-          .color(colors.textMuted)
-          .fontSize("12px")
-          .cursor("pointer")
-          .display("flex")
-          .alignItems("center")
-          .gap("4px")
-          .transition("all 0.2s")
-          .backgroundColor(colors.bgSecondary)
-          .border(`1px solid ${colors.border}`),
-        {
-          hover: border(`1px solid ${colors.borderLight}`).color(colors.text)
-        }
-      ),
-      () => isCopied(id) ? CheckIcon() : CopyIcon(),
-      () => isCopied(id) ? "Copied!" : "Copy",
-      on("click", copyAction)
-    ) : null
+    )
   );
 }
 

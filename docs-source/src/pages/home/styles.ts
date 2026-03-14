@@ -3,12 +3,14 @@ import { cn, colors } from "../../styles.ts";
 
 export const HOME_CARD_PADDING = "28px";
 export const homeCodeToneColors = {
-  accent: "var(--c-tok-accent-strong)",
+  accent: "var(--c-tok-fn)",
   comment: "var(--c-tok-comment)",
   default: "var(--c-tok-default)",
+  keyword: "var(--c-tok-keyword)",
   muted: "var(--c-tok-muted)",
   number: "var(--c-tok-number)",
   primary: "var(--c-tok-accent-primary)",
+  string: "var(--c-tok-string)",
 } as const;
 
 export const hs = {

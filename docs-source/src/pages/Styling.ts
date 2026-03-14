@@ -192,7 +192,6 @@ function OverviewSection() {
       st.split,
       CodeBlock(stylingCode.overviewQuickExample.code, stylingCode.overviewQuickExample.lang, {
         label: "button-style.ts",
-        variant: "docs",
       }),
       div(
         st.previewPanel,
@@ -217,7 +216,6 @@ function CreateStyleQueriesSection() {
     SignatureCard("createStyleQueries(breakpoints): CnFn"),
     CodeBlock(stylingCode.styleQueriesSetup.code, stylingCode.styleQueriesSetup.lang, {
       label: "setup.ts",
-      variant: "docs",
     })
   );
 }
@@ -242,7 +240,6 @@ function StyleBuilderSection() {
     ),
     CodeBlock(stylingCode.styleBuilderUsage.code, stylingCode.styleBuilderUsage.lang, {
       label: "card.ts",
-      variant: "docs",
     })
   );
 }
@@ -293,7 +290,6 @@ function ResponsiveSection() {
     ),
     CodeBlock(stylingCode.styleQueriesDefaults.code, stylingCode.styleQueriesDefaults.lang, {
       label: "grid.ts",
-      variant: "docs",
     })
   );
 }
@@ -309,7 +305,6 @@ function PseudoClassesSection() {
     ),
     CodeBlock(stylingCode.styleQueriesPseudoClasses.code, stylingCode.styleQueriesPseudoClasses.lang, {
       label: "interactive-card.ts",
-      variant: "docs",
     })
   );
 }
