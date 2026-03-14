@@ -13,11 +13,6 @@ let todos: Todo[] = [
 let todoInput = "";
 let todoNextId = 4;
 
-const demoStyle = cn(backgroundColor(colors.bgCard)
-  .padding("32px")
-  .borderRadius("16px")
-  .border(`1px solid ${colors.border}`)
-  .marginBottom("32px"));
 
 const demoBtnStyle = cn(padding("10px 20px")
   .backgroundColor(colors.primary)
@@ -63,7 +58,6 @@ function LiveTodoList() {
     .transition("all 0.2s"));
 
   return div(
-    demoStyle,
     div(
       s.flex,
       s.gap8,
