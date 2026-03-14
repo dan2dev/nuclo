@@ -111,7 +111,7 @@ function LiveAnimations() {
     ),
     div(
       orbsRowStyle,
-      [0, 1, 2].map((i) =>
+      ...[0, 1, 2].map((i) =>
         div(
           orbStyle,
           {
