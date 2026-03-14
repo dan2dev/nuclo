@@ -123,12 +123,12 @@ export const hs = {
 
   quickStartWideGrid: cn(
     display("grid").gap("20px").gridTemplateColumns("1fr").minHeight("320px"),
-    { medium: gridTemplateColumns("minmax(240px, 420px) minmax(280px, 1fr)") },
+    { large: gridTemplateColumns("minmax(240px, 420px) minmax(320px, 1fr)") },
   ),
 
   quickStartCompactGrid: cn(
     display("grid").gap("20px").gridTemplateColumns("1fr").minHeight("300px"),
-    { medium: gridTemplateColumns("minmax(0, 1fr) minmax(240px, 380px)") },
+    { large: gridTemplateColumns("minmax(0, 1fr) minmax(240px, 380px)") },
   ),
 
   examplesGrid: cn(
@@ -176,12 +176,13 @@ export const hs = {
   ),
 
   splitInfoPane: cn(
-    display("flex").flexDirection("column").gap("16px").padding("32px"),
+    display("flex").flexShrink(1).flexDirection("column").gap("16px").padding("32px"),
+    { medium: flex("1") },
   ),
 
   splitCodePane: cn(
-    display("none").minWidth("0"),
-    { medium: display("flex").flex("1").overflow("auto").minWidth("0") },
+    display("flex").flexDirection("column").minWidth("0").minHeight("0").overflow("hidden"),
+    { medium: flex("1") },
   ),
 
   highlightedCard: cn(borderColor(colors.borderPrimary)),
@@ -324,7 +325,7 @@ export const hs = {
 
   codeLinesCompact: cn(
     display("flex").flexDirection("column").gap("4px").padding("24px 28px")
-      .backgroundColor(colors.bgSecondary).overflow("auto"),
+      .backgroundColor(colors.bgSecondary).overflow("auto").minHeight("0").flex("1"),
   ),
 
   codeLine: cn(
