@@ -129,35 +129,6 @@ export function injectGlobalStyles() {
     }
     a { text-decoration: none; }
 
-    /* ── Bento responsive helpers ────────────────────────────────────────── */
-    .bento-code-row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 20px;
-    }
-    .bento-stat-row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 20px;
-    }
-    .bento-feat-row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 20px;
-    }
-    .qs-row1 { display: grid; grid-template-columns: 1fr; gap: 20px; }
-    .qs-row2 { display: grid; grid-template-columns: 1fr; gap: 20px; }
-    .ex-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-
-    @media (min-width: 900px) {
-      .bento-code-row { grid-template-columns: 2fr 1fr; }
-      .bento-stat-row { grid-template-columns: 1fr 1fr 1fr; }
-      .bento-feat-row { grid-template-columns: 1fr 1fr 1fr; }
-      .qs-row1 { grid-template-columns: 420px 1fr; }
-      .qs-row2 { grid-template-columns: 1fr 380px; }
-      .ex-grid { grid-template-columns: repeat(3, 1fr); }
-    }
-
     /* ── Pitfall card responsive grid ───────────────────────────────────── */
     .pitfall-grid { display: grid; grid-template-columns: 1fr; }
     .pitfall-problem { padding: 20px 24px; border-bottom: 1px solid var(--c-border); }
@@ -165,10 +136,6 @@ export function injectGlobalStyles() {
       .pitfall-grid { grid-template-columns: 1fr 1fr; }
       .pitfall-problem { border-bottom: none; border-right: 1px solid var(--c-border); }
     }
-
-    /* ── Bento grid responsive spanning (legacy pages) ───────────────────── */
-    @media (min-width: 601px) { .bento-col-2 { grid-column: span 2; } }
-    @media (min-width: 1025px) { .bento-row-2 { grid-row: span 2; } }
 
     /* ── Scrollbar ───────────────────────────────────────────────────────── */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
