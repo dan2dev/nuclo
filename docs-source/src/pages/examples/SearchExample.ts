@@ -22,14 +22,6 @@ const users: User[] = [
 let searchQuery = "";
 let selectedRole = "all";
 
-// Styles
-const demoStyle = cn(
-  backgroundColor(colors.bgCard)
-    .padding("32px")
-    .borderRadius("16px")
-    .border(`1px solid ${colors.border}`)
-    .marginBottom("32px")
-);
 
 const inputStyle = cn(
   padding("10px 14px")
@@ -86,8 +78,6 @@ function filteredUsers() {
 
 function LiveSearch() {
   return div(
-    demoStyle,
-    h3(cn(fontSize("18px").fontWeight("600").color(colors.text).marginBottom("20px")), "User Directory"),
     div(
       s.flex,
       s.gap16,

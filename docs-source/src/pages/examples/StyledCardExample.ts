@@ -40,14 +40,6 @@ let products: Product[] = [
   },
 ];
 
-// Styles
-const demoStyle = cn(
-  backgroundColor(colors.bgCard)
-    .padding("32px")
-    .borderRadius("16px")
-    .border(`1px solid ${colors.border}`)
-    .marginBottom("32px")
-);
 
 const headerStyle = cn(
   textAlign("center")
@@ -206,7 +198,6 @@ function ProductCard(product: Product) {
 
 function LiveStyledCard() {
   return div(
-    demoStyle,
     div(
       headerStyle,
       h3(titleStyle, "Featured Products"),

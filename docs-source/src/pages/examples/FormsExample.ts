@@ -24,14 +24,6 @@ let errors: Errors = {};
 let isSubmitting = false;
 let submitStatus: "idle" | "success" | "error" = "idle";
 
-// Styles
-const demoStyle = cn(
-  backgroundColor(colors.bgCard)
-    .padding("32px")
-    .borderRadius("16px")
-    .border(`1px solid ${colors.border}`)
-    .marginBottom("32px")
-);
 
 const formFieldStyle = cn(
   marginBottom("20px")
@@ -185,8 +177,6 @@ function FormField(
 
 function LiveForms() {
   return div(
-    demoStyle,
-    h3(cn(fontSize("18px").fontWeight("600").color(colors.text).marginBottom("20px")), "Sign Up"),
     when(
       () => submitStatus === "success",
       div(successStyle, "Account created successfully!")

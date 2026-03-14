@@ -18,14 +18,6 @@ let users: User[] = [
   { id: 3, name: "Charlie", avatar: "C", bio: "Product manager", followers: 234 },
 ];
 
-// Styles
-const demoStyle = cn(
-  backgroundColor(colors.bgCard)
-    .padding("32px")
-    .borderRadius("16px")
-    .border(`1px solid ${colors.border}`)
-    .marginBottom("32px")
-);
 
 const gridStyle = cn(
   display("grid")
@@ -130,12 +122,7 @@ function UserGrid(userList: User[]) {
 }
 
 function LiveNested() {
-  return div(
-    demoStyle,
-    h3(cn(fontSize("18px").fontWeight("600").color(colors.text).marginBottom("20px")), "User Directory"),
-    p(cn(fontSize("14px").color(colors.textMuted).marginBottom("20px")), "This example shows reusable component functions."),
-    UserGrid(users)
-  );
+  return UserGrid(users);
 }
 
 export function NestedExamplePage() {

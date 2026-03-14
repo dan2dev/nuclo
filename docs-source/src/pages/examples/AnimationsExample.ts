@@ -6,14 +6,6 @@ import { ExampleLayout } from "../../components/ExampleLayout.ts";
 // Live demo state
 let isAnimating = false;
 
-// Styles
-const demoStyle = cn(
-  backgroundColor(colors.bgCard)
-    .padding("32px")
-    .borderRadius("16px")
-    .border(`1px solid ${colors.border}`)
-    .marginBottom("32px")
-);
 
 const btnStyle = cn(
   padding("12px 24px")
@@ -54,10 +46,7 @@ function ensureKeyframes() {
 function LiveAnimations() {
   ensureKeyframes();
   return div(
-    demoStyle,
-    h3(cn(fontSize("18px").fontWeight("600").color(colors.text).marginBottom("20px")), "Animation Demo"),
-    div(
-      cn(textAlign("center")),
+    cn(textAlign("center")),
       button(
         btnStyle,
         () => (isAnimating ? "Stop Animation" : "Start Animation"),
@@ -83,7 +72,6 @@ function LiveAnimations() {
         },
         "Animated Box"
       )
-    )
   );
 }
 
