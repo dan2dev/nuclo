@@ -32,7 +32,6 @@ function NavLink(label: string, route: Route) {
     .backgroundColor(colors.primary)
     .borderRadius("0 2px 2px 0");
 
-    console.log("Rendering NavLink:", label, "Active:", isActive());
   return a(
     { href: route === "home" ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}${route}` },
     s.navLink,
@@ -99,7 +98,7 @@ export function Navbar() {
       // cn(display("none"), { medium: display("flex") }),
       // cn(alignItems("center").gap("8px")),
       NavLink("Getting Started", "getting-started"),
-      NavLink("API", "api"),
+      NavLink("API", "core-api"),
       NavLink("Styling", "styling"),
       NavLink("Examples", "examples"),
       a(
@@ -161,7 +160,7 @@ export function Navbar() {
       div(
         // cn(mobileNavStyle),
         NavLink("Getting Started", "getting-started"),
-        NavLink("API", "api"),
+        NavLink("API", "core-api"),
         NavLink("Styling", "styling"),
         NavLink("Examples", "examples"),
         a(

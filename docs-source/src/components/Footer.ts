@@ -1,6 +1,5 @@
 import "nuclo";
 import { cn, colors } from "../styles.ts";
-import { setRoute } from "../router.ts";
 
 export function Footer() {
   return footer(

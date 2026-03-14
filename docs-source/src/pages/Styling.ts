@@ -28,7 +28,6 @@ export function StylingPage() {
         s.demoPanelContent,
         button(
           btn,
-          { style: s.btnPrimaryStyle },
           "Click me"
         )
       )
@@ -324,7 +323,7 @@ export function StylingPage() {
           h3(cn(fontSize("16px").fontWeight("700")), "Theme buttons"),
           div(
             cn(display("flex").gap("10px").marginTop("8px")),
-            button(s.btnPrimary, { style: s.btnPrimaryStyle }, "Primary"),
+            button(s.btnPrimary, "Primary"),
             button(s.btnSecondary, "Secondary")
           )
         )

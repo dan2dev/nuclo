@@ -17,7 +17,6 @@ export default defineConfig({
     rollupOptions: {
       output: {
         format: 'iife',
-        inlineDynamicImports: true,
         entryFileNames: 'assets/main.js',
       }
     }
