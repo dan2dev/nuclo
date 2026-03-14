@@ -1,5 +1,5 @@
 import "nuclo";
-import { setRoute } from "../../router.ts";
+import { setRoute, type Route } from "../../router.ts";
 import type { ExampleContent } from "../../content/examples.ts";
 import {
   EXAMPLE_ICONS,
@@ -277,23 +277,26 @@ function ReadyCard() {
     IconBadge("🚀", "large"),
     span(hs.titleLarge, "You're Ready!"),
     span(hs.centeredBodyText, HOME_COPY.readyDescription),
-    span(hs.readyPill, "✓  < 1kb gzipped"),
   );
 }
 
-function openExample(exampleId: string) {
-  setRoute("examples");
+/** Subrota de /examples — ex.: /examples/todo */
+function exampleIdToRoute(exampleId: string): Route {
+  return `examples/${exampleId}` as Route;
+}
 
-  setTimeout(() => {
-    const element = document.getElementById(exampleId);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, 150);
+function exampleRouteHref(exampleId: string) {
+  const route = exampleIdToRoute(exampleId);
+  return `${import.meta.env.BASE_URL}${route}`;
+}
+
+function openExample(exampleId: string) {
+  setRoute(exampleIdToRoute(exampleId));
 }
 
 function ExampleCard(example: ExampleContent) {
-  return div(
+  return a(
+    { href: exampleRouteHref(example.id) },
     hs.card,
     hs.cardInteractive,
     hs.cardBody,
@@ -305,7 +308,10 @@ function ExampleCard(example: ExampleContent) {
     span(hs.title, example.title),
     span(hs.bodyTextWide, example.description),
     span(hs.exampleLink, "View Example →"),
-    on("click", () => openExample(example.id)),
+    on("click", (e) => {
+      e.preventDefault();
+      openExample(example.id);
+    }),
   );
 }
 

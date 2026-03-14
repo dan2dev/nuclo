@@ -222,7 +222,7 @@ export function ExamplesPage() {
       div(
         e.rowFeaturedLeft,
         ExampleCard({
-          route: "example-counter",
+          route: "examples/counter",
           meta: "State · Beginner",
           icon: "+",
           title: "Counter",
@@ -231,7 +231,7 @@ export function ExamplesPage() {
           height: 340,
         }),
         ExampleCard({
-          route: "example-todo",
+          route: "examples/todo",
           meta: "Lists · Beginner",
           icon: "✓",
           title: "Todo List",
@@ -242,7 +242,7 @@ export function ExamplesPage() {
       div(
         e.rowThree,
         ExampleCard({
-          route: "example-subtasks",
+          route: "examples/subtasks",
           meta: "Nested lists",
           icon: "≡",
           title: "Subtasks",
@@ -250,7 +250,7 @@ export function ExamplesPage() {
           height: 260,
         }),
         ExampleCard({
-          route: "example-search",
+          route: "examples/search",
           meta: "Filtering",
           icon: "◎",
           title: "Live Search",
@@ -258,7 +258,7 @@ export function ExamplesPage() {
           height: 260,
         }),
         ExampleCard({
-          route: "example-async",
+          route: "examples/async",
           meta: "Async loading",
           icon: "↻",
           title: "Async Data",
@@ -269,7 +269,7 @@ export function ExamplesPage() {
       div(
         e.rowFeaturedRight,
         ExampleCard({
-          route: "example-forms",
+          route: "examples/forms",
           meta: "Input · Intermediate",
           icon: "⊡",
           title: "Forms",
@@ -277,7 +277,7 @@ export function ExamplesPage() {
           height: 300,
         }),
         ExampleCard({
-          route: "example-nested",
+          route: "examples/nested",
           meta: "Composition · Intermediate",
           icon: "⊕",
           title: "Nested Components",
@@ -289,7 +289,7 @@ export function ExamplesPage() {
       div(
         e.rowThree,
         ExampleCard({
-          route: "example-animations",
+          route: "examples/animations",
           meta: "Motion",
           icon: "✦",
           title: "Animations",
@@ -297,7 +297,7 @@ export function ExamplesPage() {
           height: 260,
         }),
         ExampleCard({
-          route: "example-routing",
+          route: "examples/routing",
           meta: "Navigation",
           icon: "→",
           title: "Routing",
@@ -305,7 +305,7 @@ export function ExamplesPage() {
           height: 260,
         }),
         ExampleCard({
-          route: "example-styled-card",
+          route: "examples/styled-card",
           meta: "CSS-in-JS",
           icon: "◈",
           title: "Styled Card",

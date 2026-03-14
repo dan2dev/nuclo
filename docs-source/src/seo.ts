@@ -9,149 +9,159 @@ interface PageMeta {
   dateModified?: string;
 }
 
-const routeMeta: Record<Route, PageMeta> = {
-  "home": {
+const routeMeta: Record<string, PageMeta> = {
+  home: {
     title: "Nuclo - Imperative DOM Framework",
-    description: "A lightweight, imperative DOM framework with explicit update() calls. Build interactive web apps with plain functions, mutable state, and direct DOM rendering.",
+    description:
+      "A lightweight, imperative DOM framework with explicit update() calls. Build interactive web apps with plain functions, mutable state, and direct DOM rendering.",
     keywords: "nuclo, imperative dom framework, explicit updates, javascript, typescript, ui framework",
-    type: "WebPage"
+    type: "WebPage",
   },
   "getting-started": {
     title: "Getting Started - Nuclo",
-    description: "Learn how to get started with Nuclo. Installation, core concepts, and your first imperative app with explicit update() calls.",
+    description:
+      "Learn how to get started with Nuclo. Installation, core concepts, and your first imperative app with explicit update() calls.",
     keywords: "nuclo tutorial, getting started, installation, setup, quick start",
-    type: "TechArticle"
+    type: "TechArticle",
   },
   "core-api": {
     title: "Core API - Nuclo",
-    description: "Explore Nuclo's core API, including its explicit update cycle, DOM rendering, list synchronization, and event utilities.",
+    description:
+      "Explore Nuclo's core API, including its explicit update cycle, DOM rendering, list synchronization, and event utilities.",
     keywords: "nuclo api, core api, explicit updates, dom rendering",
-    type: "TechArticle"
+    type: "TechArticle",
   },
   "tag-builders": {
     title: "Tag Builders - Nuclo",
     description: "Learn about Nuclo's tag builder functions for creating DOM elements with a clean, functional API.",
     keywords: "tag builders, dom creation, elements, nuclo tags",
-    type: "TechArticle"
+    type: "TechArticle",
   },
-  "styling": {
+  styling: {
     title: "Styling - Nuclo",
     description: "Discover how to style your Nuclo applications with inline styles, CSS-in-JS, and external stylesheets.",
     keywords: "nuclo styling, css, inline styles, css-in-js",
-    type: "TechArticle"
+    type: "TechArticle",
   },
-  "pitfalls": {
+  pitfalls: {
     title: "Common Pitfalls - Nuclo",
     description: "Avoid common mistakes when working with Nuclo. Best practices and troubleshooting guide.",
     keywords: "nuclo pitfalls, common mistakes, best practices, troubleshooting",
-    type: "TechArticle"
+    type: "TechArticle",
   },
-  "examples": {
+  examples: {
     title: "Examples - Nuclo",
-    description: "Browse interactive examples showcasing Nuclo's capabilities - from simple counters to complex applications.",
+    description:
+      "Browse interactive examples showcasing Nuclo's capabilities - from simple counters to complex applications.",
     keywords: "nuclo examples, demos, sample code, tutorials",
-    type: "CollectionPage"
+    type: "CollectionPage",
   },
-  "example-counter": {
+  "examples/counter": {
     title: "Counter Example - Nuclo",
     description: "A simple counter example demonstrating Nuclo's explicit update cycle.",
     keywords: "counter example, explicit updates, nuclo tutorial",
-    type: "TechArticle"
+    type: "TechArticle",
   },
-  "example-todo": {
+  "examples/todo": {
     title: "Todo App Example - Nuclo",
     description: "Build a todo application with Nuclo. Learn about state, events, and list rendering.",
     keywords: "todo app, nuclo example, list rendering",
-    type: "TechArticle"
+    type: "TechArticle",
   },
-  "example-subtasks": {
+  "examples/subtasks": {
     title: "Subtasks Example - Nuclo",
-    description: "Advanced todo example with nested subtasks demonstrating explicit state mutation and list composition.",
+    description:
+      "Advanced todo example with nested subtasks demonstrating explicit state mutation and list composition.",
     keywords: "subtasks, nested state, complex example",
-    type: "TechArticle"
+    type: "TechArticle",
   },
-  "example-search": {
+  "examples/search": {
     title: "Search Example - Nuclo",
     description: "Implement a search interface with filtering using explicit state mutations and update().",
     keywords: "search, filtering, explicit updates",
-    type: "TechArticle"
+    type: "TechArticle",
   },
-  "example-async": {
+  "examples/async": {
     title: "Async Data Example - Nuclo",
-    description: "Handle asynchronous data fetching, explicit loading states, and manual update() calls in Nuclo applications.",
+    description:
+      "Handle asynchronous data fetching, explicit loading states, and manual update() calls in Nuclo applications.",
     keywords: "async, data fetching, loading states, promises",
-    type: "TechArticle"
+    type: "TechArticle",
   },
-  "example-forms": {
+  "examples/forms": {
     title: "Forms Example - Nuclo",
     description: "Create interactive forms with validation using Nuclo.",
     keywords: "forms, validation, input handling",
-    type: "TechArticle"
+    type: "TechArticle",
   },
-  "example-nested": {
+  "examples/nested": {
     title: "Nested Components Example - Nuclo",
     description: "Learn how to compose and nest components in Nuclo applications.",
     keywords: "components, composition, nested components",
-    type: "TechArticle"
+    type: "TechArticle",
   },
-  "example-animations": {
+  "examples/animations": {
     title: "Animations Example - Nuclo",
     description: "Add smooth animations and transitions to your Nuclo applications.",
     keywords: "animations, transitions, effects",
-    type: "TechArticle"
+    type: "TechArticle",
   },
-  "example-routing": {
+  "examples/routing": {
     title: "Routing Example - Nuclo",
     description: "Implement client-side routing in Nuclo applications.",
     keywords: "routing, navigation, spa",
-    type: "TechArticle"
+    type: "TechArticle",
   },
-  "example-styled-card": {
+  "examples/styled-card": {
     title: "Styled Card Example - Nuclo",
     description: "Create beautiful styled components with Nuclo's styling capabilities.",
     keywords: "styled components, css, card design",
-    type: "TechArticle"
-  }
+    type: "TechArticle",
+  },
 };
+
+const EXAMPLE_ROUTES_LIST = [
+  "examples/counter",
+  "examples/todo",
+  "examples/subtasks",
+  "examples/search",
+  "examples/async",
+  "examples/forms",
+  "examples/nested",
+  "examples/animations",
+  "examples/routing",
+  "examples/styled-card",
+] as const;
 
 /**
  * Updates the page title and meta tags based on the current route
  */
 export function updatePageMeta(route: Route) {
-  const meta = routeMeta[route] || routeMeta["home"];
+  const meta = routeMeta[route] || routeMeta.home;
   const baseUrl = "https://nuclo.dan2.dev/";
   const routeUrl = route === "home" ? baseUrl : `${baseUrl}${route}`;
 
-  // Update title
   document.title = meta.title;
 
-  // Update or create meta tags
   updateMetaTag("name", "title", meta.title);
   updateMetaTag("name", "description", meta.description);
   if (meta.keywords) {
     updateMetaTag("name", "keywords", meta.keywords);
   }
 
-  // Update Open Graph tags
   updateMetaTag("property", "og:title", meta.title);
   updateMetaTag("property", "og:description", meta.description);
   updateMetaTag("property", "og:url", routeUrl);
 
-  // Update Twitter Card tags
   updateMetaTag("name", "twitter:title", meta.title);
   updateMetaTag("name", "twitter:description", meta.description);
   updateMetaTag("name", "twitter:url", routeUrl);
 
-  // Update canonical URL
   updateLinkTag("canonical", routeUrl);
 
-  // Update structured data (JSON-LD)
   updateStructuredData(route);
 }
 
-/**
- * Helper function to update or create a meta tag
- */
 function updateMetaTag(attribute: string, name: string, content: string) {
   let element = document.querySelector(`meta[${attribute}="${name}"]`) as HTMLMetaElement;
 
@@ -164,9 +174,6 @@ function updateMetaTag(attribute: string, name: string, content: string) {
   element.setAttribute("content", content);
 }
 
-/**
- * Helper function to update or create a link tag
- */
 function updateLinkTag(rel: string, href: string) {
   let element = document.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement;
 
@@ -179,175 +186,144 @@ function updateLinkTag(rel: string, href: string) {
   element.setAttribute("href", href);
 }
 
-/**
- * Generates comprehensive JSON-LD structured data for the page
- */
 function generateStructuredData(route: Route): object[] {
   const baseUrl = "https://nuclo.dan2.dev/";
   const routeUrl = route === "home" ? baseUrl : `${baseUrl}${route}`;
-  const meta = routeMeta[route] || routeMeta["home"];
+  const meta = routeMeta[route] || routeMeta.home;
 
   const schemas: object[] = [];
 
-  // 1. WebSite Schema (for homepage and all pages)
   schemas.push({
     "@context": "https://schema.org",
     "@type": "WebSite",
     "@id": `${baseUrl}#website`,
-    "name": "Nuclo",
-    "description": "A lightweight, imperative DOM framework with explicit update() calls",
-    "url": baseUrl,
-    "inLanguage": "en-US",
-    "publisher": {
+    name: "Nuclo",
+    description: "A lightweight, imperative DOM framework with explicit update() calls",
+    url: baseUrl,
+    inLanguage: "en-US",
+    publisher: {
       "@type": "Person",
       "@id": `${baseUrl}#author`,
-      "name": "Danilo Castro",
-      "url": "https://dan2.dev",
-      "sameAs": [
-        "https://github.com/dan2dev",
-        "https://twitter.com/dan2dev"
-      ]
+      name: "Danilo Castro",
+      url: "https://dan2.dev",
+      sameAs: ["https://github.com/dan2dev", "https://twitter.com/dan2dev"],
     },
-    "potentialAction": {
+    potentialAction: {
       "@type": "SearchAction",
-      "target": {
+      target: {
         "@type": "EntryPoint",
-        "urlTemplate": `${baseUrl}?q={search_term_string}`
+        urlTemplate: `${baseUrl}?q={search_term_string}`,
       },
-      "query-input": "required name=search_term_string"
-    }
+      "query-input": "required name=search_term_string",
+    },
   });
 
-  // 2. Organization/Author Schema
   schemas.push({
     "@context": "https://schema.org",
     "@type": "Person",
     "@id": `${baseUrl}#author`,
-    "name": "Danilo Castro",
-    "givenName": "Danilo",
-    "familyName": "Castro",
-    "url": "https://dan2.dev",
-    "sameAs": [
-      "https://github.com/dan2dev",
-      "https://twitter.com/dan2dev"
-    ]
+    name: "Danilo Castro",
+    givenName: "Danilo",
+    familyName: "Castro",
+    url: "https://dan2.dev",
+    sameAs: ["https://github.com/dan2dev", "https://twitter.com/dan2dev"],
   });
 
-  // 3. SoftwareApplication Schema
   schemas.push({
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "@id": `${baseUrl}#software`,
-    "name": "Nuclo",
-    "description": "A lightweight, imperative DOM framework with explicit update() calls",
-    "applicationCategory": "DeveloperApplication",
-    "operatingSystem": "Web",
-    "offers": {
+    name: "Nuclo",
+    description: "A lightweight, imperative DOM framework with explicit update() calls",
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Web",
+    offers: {
       "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
+      price: "0",
+      priceCurrency: "USD",
     },
-    "author": {
-      "@id": `${baseUrl}#author`
+    author: {
+      "@id": `${baseUrl}#author`,
     },
-    "url": baseUrl,
-    "softwareVersion": "Latest",
-    "programmingLanguage": {
+    url: baseUrl,
+    softwareVersion: "Latest",
+    programmingLanguage: {
       "@type": "ComputerLanguage",
-      "name": "TypeScript",
-      "url": "https://www.typescriptlang.org/"
+      name: "TypeScript",
+      url: "https://www.typescriptlang.org/",
     },
-    "codeRepository": "https://github.com/dan2dev/nuclo",
-    "license": "https://github.com/dan2dev/nuclo/blob/main/LICENSE"
+    codeRepository: "https://github.com/dan2dev/nuclo",
+    license: "https://github.com/dan2dev/nuclo/blob/main/LICENSE",
   });
 
-  // 4. BreadcrumbList Schema
   const breadcrumbs = generateBreadcrumbs(route);
   if (breadcrumbs.length > 1) {
     schemas.push({
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
-      "itemListElement": breadcrumbs.map((crumb, index) => ({
+      itemListElement: breadcrumbs.map((crumb, index) => ({
         "@type": "ListItem",
-        "position": index + 1,
-        "name": crumb.name,
-        "item": crumb.url
-      }))
+        position: index + 1,
+        name: crumb.name,
+        item: crumb.url,
+      })),
     });
   }
 
-  // 5. WebPage/TechArticle Schema
   const pageType = meta.type || "WebPage";
   const pageSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": pageType,
     "@id": routeUrl,
-    "url": routeUrl,
-    "name": meta.title,
-    "description": meta.description,
-    "inLanguage": "en-US",
-    "isPartOf": {
-      "@id": `${baseUrl}#website`
+    url: routeUrl,
+    name: meta.title,
+    description: meta.description,
+    inLanguage: "en-US",
+    isPartOf: {
+      "@id": `${baseUrl}#website`,
     },
-    "about": {
-      "@id": `${baseUrl}#software`
+    about: {
+      "@id": `${baseUrl}#software`,
     },
-    "author": {
-      "@id": `${baseUrl}#author`
+    author: {
+      "@id": `${baseUrl}#author`,
     },
-    "publisher": {
-      "@id": `${baseUrl}#author`
-    }
+    publisher: {
+      "@id": `${baseUrl}#author`,
+    },
   };
 
   if (pageType === "TechArticle") {
-    pageSchema.articleSection = route.startsWith("example-") ? "Examples" : "Documentation";
+    pageSchema.articleSection = route.startsWith("examples/") ? "Examples" : "Documentation";
     pageSchema.keywords = meta.keywords?.split(", ") || [];
     pageSchema.mainEntityOfPage = routeUrl;
   }
 
   schemas.push(pageSchema);
 
-  // 6. ItemList Schema for Examples page
   if (route === "examples") {
-    const exampleRoutes = [
-      "example-counter",
-      "example-todo",
-      "example-subtasks",
-      "example-search",
-      "example-async",
-      "example-forms",
-      "example-nested",
-      "example-animations",
-      "example-routing",
-      "example-styled-card"
-    ];
-
     schemas.push({
       "@context": "https://schema.org",
       "@type": "ItemList",
-      "name": "Nuclo Examples",
-      "description": "Interactive examples showcasing Nuclo's capabilities",
-      "numberOfItems": exampleRoutes.length,
-      "itemListElement": exampleRoutes.map((exRoute, index) => {
-        const exMeta = routeMeta[exRoute as Route];
+      name: "Nuclo Examples",
+      description: "Interactive examples showcasing Nuclo's capabilities",
+      numberOfItems: EXAMPLE_ROUTES_LIST.length,
+      itemListElement: EXAMPLE_ROUTES_LIST.map((exRoute, index) => {
+        const exMeta = routeMeta[exRoute];
         return {
           "@type": "ListItem",
-          "position": index + 1,
-          "url": `${baseUrl}${exRoute}`,
-          "name": exMeta.title,
-          "description": exMeta.description
+          position: index + 1,
+          url: `${baseUrl}${exRoute}`,
+          name: exMeta.title,
+          description: exMeta.description,
         };
-      })
+      }),
     });
   }
 
   return schemas;
 }
 
-/**
- * Generates breadcrumb navigation based on the current route
- */
 function generateBreadcrumbs(route: Route): Array<{ name: string; url: string }> {
   const baseUrl = "https://nuclo.dan2.dev/";
   const breadcrumbs = [{ name: "Home", url: baseUrl }];
@@ -356,11 +332,11 @@ function generateBreadcrumbs(route: Route): Array<{ name: string; url: string }>
     return breadcrumbs;
   }
 
-  if (route.startsWith("example-")) {
+  if (route.startsWith("examples/")) {
     breadcrumbs.push({ name: "Examples", url: `${baseUrl}examples` });
     const meta = routeMeta[route];
     breadcrumbs.push({ name: meta.title.replace(" - Nuclo", ""), url: `${baseUrl}${route}` });
-  } else if (route !== "home") {
+  } else {
     const meta = routeMeta[route];
     breadcrumbs.push({ name: meta.title.replace(" - Nuclo", ""), url: `${baseUrl}${route}` });
   }
@@ -368,17 +344,12 @@ function generateBreadcrumbs(route: Route): Array<{ name: string; url: string }>
   return breadcrumbs;
 }
 
-/**
- * Updates or creates the JSON-LD structured data script tag
- */
 function updateStructuredData(route: Route) {
   const schemas = generateStructuredData(route);
 
-  // Remove existing structured data script tags added by this function
   const existingScripts = document.querySelectorAll('script[type="application/ld+json"][data-dynamic="true"]');
-  existingScripts.forEach(script => script.remove());
+  existingScripts.forEach((script) => script.remove());
 
-  // Add new structured data script tag
   const script = document.createElement("script");
   script.setAttribute("type", "application/ld+json");
   script.setAttribute("data-dynamic", "true");

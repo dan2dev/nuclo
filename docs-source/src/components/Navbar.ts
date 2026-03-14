@@ -16,7 +16,11 @@ export function closeMobileMenu() {
 }
 
 function NavLink(label: string, route: Route) {
-  const isActive = () => getCurrentRoute() === route;
+  const isActive = () => {
+    const r = getCurrentRoute();
+    if (route === "examples") return r === "examples" || r.startsWith("examples/");
+    return r === route;
+  };
   const base = display("flex")
     .alignItems("center")
     .padding("8px 12px")

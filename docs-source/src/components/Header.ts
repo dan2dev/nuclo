@@ -24,9 +24,11 @@ const navLinks: { label: string; route: Route }[] = [
 ];
 
 function NavLink(label: string, route: Route) {
-  const isActive = () =>
-    getCurrentRoute() === route ||
-    getCurrentRoute().startsWith(route + "-");
+  const isActive = () => {
+    const r = getCurrentRoute();
+    if (route === "examples") return r === "examples" || r.startsWith("examples/");
+    return r === route;
+  };
 
   return a(
     { href: route === "home" ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}${route}` },
