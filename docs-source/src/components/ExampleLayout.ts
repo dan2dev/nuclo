@@ -52,7 +52,7 @@ export function ExampleLayout(opts: {
         cn(
           display("inline-flex").alignItems("center").gap("5px")
             .padding("3px 10px").borderRadius("99px")
-            .backgroundColor("rgba(132, 204, 22, 0.1)")
+            .backgroundColor(colors.primaryAlpha08)
             .fontSize("11px").fontWeight("600").color(colors.primary)
         ),
         span(cn(
@@ -83,7 +83,7 @@ export function ExampleLayout(opts: {
           fontSize("10px").fontWeight("700").padding("3px 8px").borderRadius("6px")
             .textTransform("uppercase").letterSpacing("0.08em").color(colors.primary)
         ),
-        { style: { backgroundColor: "rgba(132, 204, 22, 0.1)", border: `1px solid rgba(132, 204, 22, 0.2)` } },
+        { style: { backgroundColor: colors.primaryAlpha08, border: `1px solid ${colors.borderGlow}` } },
         "TypeScript"
       )
     ),

@@ -31,7 +31,7 @@ function LiveCounter() {
           {
             style: () => ({
               backgroundColor: counterCount % 2 === 0
-                ? "rgba(132, 204, 22, 0.15)" : "rgba(34, 211, 238, 0.15)",
+                ? colors.primaryAlpha13 : "rgba(34, 211, 238, 0.15)",
               color: counterCount % 2 === 0 ? colors.primary : colors.accentSecondary,
             })
           },
@@ -53,7 +53,7 @@ function LiveCounter() {
       ),
       button(
         btnBase,
-        cn(width("44px").height("44px").backgroundColor(colors.primary).color(colors.bg)),
+        cn(width("44px").height("44px").backgroundColor(colors.primary).color(colors.primaryText)),
         "+",
         on("click", () => { counterCount++; update(); })
       ),

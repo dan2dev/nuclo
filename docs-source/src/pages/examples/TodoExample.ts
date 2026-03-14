@@ -21,7 +21,7 @@ const demoStyle = cn(backgroundColor(colors.bgCard)
 
 const demoBtnStyle = cn(padding("10px 20px")
   .backgroundColor(colors.primary)
-  .color(colors.bg)
+  .color(colors.primaryText)
   .border("none")
   .borderRadius("8px")
   .fontSize("14px")

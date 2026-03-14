@@ -1,4 +1,4 @@
-export type HomeCodeTone = "accent" | "comment" | "muted" | "number";
+export type HomeCodeTone = "accent" | "comment" | "muted" | "number" | "primary";
 
 export type HomeCodeLine = {
   text: string;
@@ -27,7 +27,7 @@ export const EXAMPLE_ICONS: Record<string, string> = {
 };
 
 export const HERO_CODE_LINES: HomeCodeLine[] = [
-  { text: "import 'nuclo';", tone: "accent" },
+  { text: "import 'nuclo';", tone: "primary" },
   { text: "", tone: "muted" },
   { text: "let count = 0;" },
   { text: "", tone: "muted" },
@@ -39,25 +39,25 @@ export const HERO_CODE_LINES: HomeCodeLine[] = [
   { text: "  }))" },
   { text: ");" },
   { text: "", tone: "muted" },
-  { text: "render(counter, document.body);", tone: "accent" },
+  { text: "render(counter, document.body);", tone: "primary" },
 ];
 
 export const QUICK_START_USAGE_LINES: HomeCodeLine[] = [
-  { text: "import 'nuclo';", tone: "accent" },
+  { text: "import 'nuclo';", tone: "primary" },
   { text: " " },
   { text: "const app = div(", tone: "accent" },
   { text: "  h1('Hello, Nuclo!')," },
   { text: "  p('Building UIs.')" },
   { text: ");" },
   { text: " " },
-  { text: "render(app, document.body);", tone: "accent" },
+  { text: "render(app, document.body);", tone: "primary" },
 ];
 
 export const QUICK_START_TYPES_LINES: HomeCodeLine[] = [
   { text: "// tsconfig.json", tone: "comment" },
   { text: "{" },
   { text: '  "compilerOptions": {' },
-  { text: '    "types": ["nuclo/types"]', tone: "accent" },
+  { text: '    "types": ["nuclo/types"]', tone: "primary" },
   { text: "  }" },
   { text: "}" },
 ];

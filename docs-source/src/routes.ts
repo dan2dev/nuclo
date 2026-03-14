@@ -56,8 +56,8 @@ export async function loadPage(route: Route): Promise<void> {
     const spinner = document.createElement("div");
     spinner.style.cssText = `
       width: 32px; height: 32px;
-      border: 2px solid #1e293b;
-      border-top-color: #84cc16;
+      border: 2px solid var(--c-border);
+      border-top-color: var(--c-primary);
       border-radius: 50%;
       animation: spin 0.6s linear infinite;
     `;
@@ -65,7 +65,7 @@ export async function loadPage(route: Route): Promise<void> {
     spinStyle.textContent = "@keyframes spin { to { transform: rotate(360deg); } }";
     document.head.appendChild(spinStyle);
     const label = document.createElement("span");
-    label.style.cssText = "font-size: 13px; color: #64748b; font-family: inherit;";
+    label.style.cssText = "font-size: 13px; color: var(--c-text-muted); font-family: inherit;";
     label.textContent = "Loading...";
     loadingContainer.appendChild(spinner);
     loadingContainer.appendChild(label);
@@ -106,7 +106,7 @@ export async function loadPage(route: Route): Promise<void> {
     errorTitle.style.cssText = "font-size: 15px; font-weight: 600; color: #ef4444;";
     errorTitle.textContent = "Failed to load page";
     const errorMsg = document.createElement("span");
-    errorMsg.style.cssText = "font-size: 13px; color: #64748b; font-family: monospace;";
+    errorMsg.style.cssText = "font-size: 13px; color: var(--c-text-muted); font-family: monospace;";
     errorMsg.textContent = (error as Error).message;
     errorContainer.appendChild(errorTitle);
     errorContainer.appendChild(errorMsg);

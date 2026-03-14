@@ -38,7 +38,7 @@ const navBtnStyle = cn(
 
 const navBtnStyleActive = cn(
   backgroundColor(colors.primary)
-    .color(colors.bg)
+    .color(colors.primaryText)
     .borderColor(colors.primary)
 );
 

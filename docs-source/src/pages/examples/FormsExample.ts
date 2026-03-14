@@ -71,7 +71,7 @@ const btnStyle = cn(
   width("100%")
     .padding("14px 20px")
     .backgroundColor(colors.primary)
-    .color(colors.bg)
+    .color(colors.primaryText)
     .border("none")
     .borderRadius("8px")
     .fontSize("14px")
@@ -89,7 +89,7 @@ const btnDisabledStyle = {
 
 const successStyle = cn(
   padding("16px")
-    .backgroundColor("rgba(132, 204, 22, 0.1)")
+    .backgroundColor(colors.primaryAlpha08)
     .borderRadius("8px")
     .color(colors.primary)
     .marginBottom("20px")

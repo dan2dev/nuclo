@@ -158,7 +158,7 @@ function LiveSearch() {
                 roleBadgeStyle,
                 {
                   style: {
-                    backgroundColor: user.role === "Admin" ? "rgba(132, 204, 22, 0.15)" : "rgba(100, 116, 139, 0.15)",
+                    backgroundColor: user.role === "Admin" ? colors.primaryAlpha13 : "rgba(100, 116, 139, 0.15)",
                     color: user.role === "Admin" ? colors.primary : colors.textMuted,
                   }
                 },

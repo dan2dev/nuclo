@@ -128,7 +128,7 @@ export function Navbar() {
             .color(colors.textMuted)
             .backgroundColor("transparent"),
           {
-            hover: color(colors.primary).backgroundColor("rgba(132, 204, 22, 0.1)")
+            hover: color(colors.primary).backgroundColor(colors.primaryAlpha08)
           }
         ),
         GitHubIcon()
@@ -187,7 +187,7 @@ export function Navbar() {
               .color(colors.textMuted)
               .backgroundColor("transparent"),
             {
-              hover: color(colors.primary).backgroundColor("rgba(132, 204, 22, 0.1)")
+              hover: color(colors.primary).backgroundColor(colors.primaryAlpha08)
             }
           ),
           GitHubIcon(),

@@ -15,7 +15,7 @@ export function PageHeader(title: string, subtitle: string, badge?: string) {
           cn(
             display("inline-flex").alignItems("center").gap("6px")
               .padding("4px 12px").borderRadius("99px").marginBottom("20px")
-              .backgroundColor("rgba(132, 204, 22, 0.08)")
+              .backgroundColor(colors.primaryAlpha08)
               .border(`1px solid ${colors.borderGlow}`)
               .fontSize("12px").fontWeight("600").color(colors.primary)
               .letterSpacing("0.04em").display("inline-flex")
@@ -59,7 +59,7 @@ type NoteType = "info" | "warning" | "tip";
 
 export function NoteCard(type: NoteType, ...content: unknown[]) {
   const cfg = {
-    info:    { bg: "rgba(132, 204, 22, 0.06)",  border: colors.borderGlow,                   color: colors.primary,        icon: "ℹ",  label: "Note"    },
+    info:    { bg: colors.primaryAlpha08,       border: colors.borderGlow,                   color: colors.primary,        icon: "ℹ",  label: "Note"    },
     warning: { bg: "rgba(251, 146, 60, 0.06)",  border: "rgba(251, 146, 60, 0.4)",           color: "#fb923c",             icon: "⚠",  label: "Warning" },
     tip:     { bg: "rgba(34, 211, 238, 0.06)",  border: "rgba(34, 211, 238, 0.3)",           color: colors.accentSecondary, icon: "💡", label: "Tip"     },
   }[type];
@@ -136,7 +136,7 @@ export function PitfallCard(opts: {
               fontSize("11px").fontWeight("700").padding("3px 10px")
                 .borderRadius("99px").textTransform("uppercase").letterSpacing("0.06em")
             ),
-            { style: { backgroundColor: "rgba(132, 204, 22, 0.15)", color: colors.primary } },
+            { style: { backgroundColor: colors.primaryAlpha13, color: colors.primary } },
             "✅ Solution"
           )
         ),
@@ -220,7 +220,7 @@ export function StepCard(step: number, title: string, ...content: unknown[]) {
     div(
       cn(
         display("flex").alignItems("center").justifyContent("center")
-          .fontSize("15px").fontWeight("800").color(colors.bg).borderRadius("10px")
+          .fontSize("15px").fontWeight("800").color(colors.primaryText).borderRadius("10px")
       ),
       { style: { flexShrink: "0", width: "36px", height: "36px", background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})` } },
       String(step)
