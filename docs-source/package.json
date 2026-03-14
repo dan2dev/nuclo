@@ -12,6 +12,7 @@
     "nuclo": "link:../packages/nuclo"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "typescript": "~5.9.3",
     "vite": "^8.0.0"
   }
