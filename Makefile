@@ -16,7 +16,7 @@ publish:
 help:
 	@echo "Available targets:"
 	@echo "  publish  - Build docs and sync ./docs folder to remote server via rsync"
-	@echo "  dev      - Start all dev servers in parallel (docs, examples/basic, packages/nuclo)"
+	@echo "  dev      - Start all dev servers in parallel (docs, examples/basic, packages/v0.1)"
 	@echo ""
 	@echo "Required environment variables:"
 	@echo "  DEPLOY_USER       - SSH username"
@@ -27,18 +27,18 @@ help:
 .PHONY: dev install up
 
 install:
-	cd packages/nuclo && pnpm install && \
+	cd packages/v0.1 && pnpm install && \
 	cd ../../examples/basic && pnpm install && \
 	cd ../../docs && pnpm install
 
 up:
-	cd packages/nuclo && pnpm up --latest && \
+	cd packages/v0.1 && pnpm up --latest && \
 	cd ../../examples/basic && pnpm up --latest && \
 	cd ../../docs && pnpm up --latest
 
 dev:
 	@echo "Starting all dev servers in parallel..."
-	@(cd packages/nuclo && pnpm dev) & \
+	@(cd packages/v0.1 && pnpm dev) & \
 	(cd examples/basic && pnpm dev) & \
 	(cd docs && pnpm dev) & \
 	wait

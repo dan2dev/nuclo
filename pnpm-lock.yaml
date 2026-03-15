@@ -5,21 +5,21 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  nuclo: link:packages/nuclo
+  nuclo: link:packages/v0.1
 
 importers:
 
   .:
     dependencies:
       nuclo:
-        specifier: link:packages/nuclo
-        version: link:packages/nuclo
+        specifier: link:packages/v0.1
+        version: link:packages/v0.1
 
   docs-source:
     dependencies:
       nuclo:
-        specifier: link:../packages/nuclo
-        version: link:../packages/nuclo
+        specifier: link:../packages/v0.1
+        version: link:../packages/v0.1
     devDependencies:
       '@playwright/test':
         specifier: ^1.58.2
@@ -71,8 +71,8 @@ importers:
         specifier: ^9.2.1
         version: 9.2.1
       nuclo:
-        specifier: link:../../packages/nuclo
-        version: link:../../packages/nuclo
+        specifier: link:../../packages/v0.1
+        version: link:../../packages/v0.1
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
@@ -153,7 +153,7 @@ importers:
         specifier: ^7.2.4
         version: 7.3.0(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)
 
-  packages/nuclo:
+  packages/v0.1:
     devDependencies:
       '@eslint/css':
         specifier: ^1.0.0
