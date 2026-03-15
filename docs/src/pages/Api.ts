@@ -190,7 +190,7 @@ export function ApiPage() {
         "And 100+ more—see ",
         a(
           {
-            href: "https://github.com/dan2dev/nuclo/blob/main/packages/nuclo/src/core/tagRegistry.ts",
+            href: "https://github.com/dan2dev/nuclo/blob/main/packages/v0.1/src/core/tagRegistry.ts",
             target: "_blank",
             rel: "noopener noreferrer"
           },
