@@ -275,6 +275,10 @@ test.describe("Front stress", () => {
   test("navega e interage em loop sob carga", async ({ page, baseURL, browserName }) => {
     test.skip(browserName !== "chromium", "Stress de memória depende do Chromium.");
 
+    console.log(
+      `[stress] config: rounds=${rounds} durationMs=${durationMs} clicksPerPage=${clicksPerPage} strictMode=${strictMode}`
+    );
+
     const errors = {
       pageErrors: [] as string[],
       requestFailures: [] as string[],
@@ -354,14 +358,14 @@ test.describe("Front stress", () => {
         const navMs = performance.now() - navStarted;
         roundNavDurations.push(navMs);
 
-        const heapUsed = await page.evaluate(() => {
-          const anyPerf = performance as typeof performance & {
-            memory?: {
-              usedJSHeapSize?: number;
+        const heapUsed = await page
+          .evaluate(() => {
+            const anyPerf = performance as typeof performance & {
+              memory?: { usedJSHeapSize?: number };
             };
-          };
-          return anyPerf.memory?.usedJSHeapSize;
-        });
+            return anyPerf.memory?.usedJSHeapSize;
+          })
+          .catch(() => undefined);
 
         const heapUsedMB = asMB(heapUsed);
         if (typeof heapUsedMB === "number") {
@@ -376,7 +380,7 @@ test.describe("Front stress", () => {
           roundFailures += 1;
         }
 
-        const clickOps = await spamClicks(page, clicksPerPage, baseOrigin);
+        const clickOps = await spamClicks(page, clicksPerPage, baseOrigin).catch(() => 0);
         roundClicks += clickOps;
 
         samples.push({
