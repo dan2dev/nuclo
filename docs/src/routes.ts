@@ -72,9 +72,12 @@ export async function loadPage(route: Route): Promise<void> {
       border-radius: 50%;
       animation: spin 0.6s linear infinite;
     `;
-    const spinStyle = document.createElement("style");
-    spinStyle.textContent = "@keyframes spin { to { transform: rotate(360deg); } }";
-    document.head.appendChild(spinStyle);
+    if (!document.getElementById("nuclo-spin-keyframes")) {
+      const spinStyle = document.createElement("style");
+      spinStyle.id = "nuclo-spin-keyframes";
+      spinStyle.textContent = "@keyframes spin { to { transform: rotate(360deg); } }";
+      document.head.appendChild(spinStyle);
+    }
     const label = document.createElement("span");
     label.style.cssText = "font-size: 13px; color: var(--c-text-muted); font-family: inherit;";
     label.textContent = "Loading...";
