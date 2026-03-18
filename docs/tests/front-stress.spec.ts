@@ -98,6 +98,27 @@ function p95(values: number[]): number {
   return sorted[idx] ?? 0;
 }
 
+async function navigateViaSPA(
+  page: import("@playwright/test").Page,
+  urlPath: string,
+): Promise<void> {
+  await page.evaluate((path: string) => {
+    history.pushState(null, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }, urlPath);
+
+  await page.waitForFunction(
+    (args: { path: string; loadingText: string }) => {
+      if (window.location.pathname !== args.path) return false;
+      const container = document.querySelector("#page-container");
+      if (!container || container.children.length === 0) return false;
+      return !(container.textContent ?? "").includes(args.loadingText);
+    },
+    { path: urlPath, loadingText: "Loading..." },
+    { timeout: 8000 },
+  );
+}
+
 async function getInternalRoutes(baseURL: string, page: import("@playwright/test").Page): Promise<string[]> {
   const routes = await page.evaluate(() => {
     const out = new Set<string>();
@@ -300,14 +321,12 @@ test.describe("Front stress", () => {
       let roundFailures = 0;
 
       for (const route of mergedRoutes) {
-        const targetUrl = new URL(route, base).toString();
-
         const navStarted = performance.now();
         try {
-          await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
+          await navigateViaSPA(page, route);
         } catch (error) {
           roundFailures += 1;
-          errors.navigationFailures.push(`${targetUrl} :: ${(error as Error).message}`);
+          errors.navigationFailures.push(`${route} :: ${(error as Error).message}`);
           continue;
         }
         const navMs = performance.now() - navStarted;
@@ -396,6 +415,8 @@ test.describe("Front stress", () => {
       aggregates: {
         totalNavigations: samples.length,
         totalClicks,
+        totalExampleInteractions,
+        totalTodoItemsAdded,
         failures,
         firstHalfNavAvgMs,
         secondHalfNavAvgMs,
