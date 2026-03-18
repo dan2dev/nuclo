@@ -10,6 +10,45 @@ Run these commands inside `nuclo/docs`:
 pnpm dev
 pnpm build
 pnpm preview
+pnpm stress:front
+```
+
+## Front stress test (Playwright)
+
+This project includes a browser stress scenario that rapidly navigates internal pages and clicks interactive elements repeatedly.
+
+```bash
+# one-time setup for browser binary
+pnpm exec playwright install chromium
+
+# regular stress run
+pnpm stress:front
+
+# visible browser window while stressing
+make stress-ui
+
+# strict assertions for degradation/leak thresholds
+pnpm stress:front:strict
+```
+
+Artifacts:
+
+- JSON report: `test-results/stress/front-stress-report.json`
+- HTML report: `playwright-report/stress/index.html`
+
+Supported environment variables:
+
+- `STRESS_ROUNDS` (default: `12`)
+- `STRESS_CLICKS_PER_PAGE` (default: `14`)
+- `STRESS_BASE_URL` (default: `http://127.0.0.1:4173`)
+- `STRESS_STRICT` (`true` or `false`, default: `false`)
+- `STRESS_DEGRADE_THRESHOLD_PCT` (default: `35`)
+- `STRESS_LEAK_THRESHOLD_MB` (default: `70`)
+
+Example heavier run:
+
+```bash
+STRESS_ROUNDS=40 STRESS_CLICKS_PER_PAGE=30 pnpm stress:front
 ```
 
 ## Notes
