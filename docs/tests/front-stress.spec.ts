@@ -60,6 +60,7 @@ type InteractionStats = {
 };
 
 const rounds = readInt("STRESS_ROUNDS", 12);
+const durationMs = readInt("STRESS_DURATION_MS", 0); // 0 = use rounds; >0 = run for this duration
 const clicksPerPage = readInt("STRESS_CLICKS_PER_PAGE", 14);
 const strictMode = (process.env.STRESS_STRICT ?? "false").toLowerCase() === "true";
 const degradeThresholdPct = readFloat("STRESS_DEGRADE_THRESHOLD_PCT", 35);
@@ -98,15 +99,10 @@ function p95(values: number[]): number {
   return sorted[idx] ?? 0;
 }
 
-async function navigateViaSPA(
+async function waitForSPAContent(
   page: import("@playwright/test").Page,
   urlPath: string,
 ): Promise<void> {
-  await page.evaluate((path: string) => {
-    history.pushState(null, "", path);
-    window.dispatchEvent(new PopStateEvent("popstate"));
-  }, urlPath);
-
   await page.waitForFunction(
     (args: { path: string; loadingText: string }) => {
       if (window.location.pathname !== args.path) return false;
@@ -117,6 +113,28 @@ async function navigateViaSPA(
     { path: urlPath, loadingText: "Loading..." },
     { timeout: 8000 },
   );
+}
+
+async function navigateViaClick(
+  page: import("@playwright/test").Page,
+  urlPath: string,
+): Promise<void> {
+  let link = page.locator(`a[href="${urlPath}"]`).first();
+
+  if ((await link.count()) === 0 && urlPath.startsWith("/examples/")) {
+    // Example sub-pages are only linked from /examples — navigate there first via click
+    await page.locator('a[href="/examples"]').first().click({ timeout: 3000 });
+    await waitForSPAContent(page, "/examples");
+    link = page.locator(`a[href="${urlPath}"]`).first();
+  }
+
+  if ((await link.count()) === 0) {
+    throw new Error(`No link found for path: ${urlPath}`);
+  }
+
+  await link.scrollIntoViewIfNeeded();
+  await link.click({ timeout: 3000 });
+  await waitForSPAContent(page, urlPath);
 }
 
 async function getInternalRoutes(baseURL: string, page: import("@playwright/test").Page): Promise<string[]> {
@@ -314,7 +332,11 @@ test.describe("Front stress", () => {
     let totalExampleInteractions = 0;
     let totalTodoItemsAdded = 0;
 
-    for (let round = 1; round <= rounds; round += 1) {
+    const deadline = durationMs > 0 ? Date.now() + durationMs : null;
+    const maxRounds = deadline !== null ? Number.MAX_SAFE_INTEGER : rounds;
+
+    for (let round = 1; round <= maxRounds; round += 1) {
+      if (deadline !== null && Date.now() >= deadline) break;
       const roundNavDurations: number[] = [];
       const roundHeap: number[] = [];
       let roundClicks = 0;
@@ -323,7 +345,7 @@ test.describe("Front stress", () => {
       for (const route of mergedRoutes) {
         const navStarted = performance.now();
         try {
-          await navigateViaSPA(page, route);
+          await navigateViaClick(page, route);
         } catch (error) {
           roundFailures += 1;
           errors.navigationFailures.push(`${route} :: ${(error as Error).message}`);

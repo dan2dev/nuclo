@@ -1,4 +1,4 @@
-.PHONY: help deps browser setup stress stress-ui stress-strict stress-heavy stress-soak report clean
+.PHONY: help deps browser setup stress stress-ui stress-strict stress-heavy stress-soak stress-30min report clean
 
 STRESS_ROUNDS ?= 12
 STRESS_CLICKS_PER_PAGE ?= 14
@@ -16,6 +16,7 @@ help:
 	@echo "  make stress-strict - Run stress with strict thresholds"
 	@echo "  make stress-heavy  - Run heavier stress (40 rounds, 30 clicks/page)"
 	@echo "  make stress-soak   - Long soak (80 rounds, 40 clicks/page)"
+	@echo "  make stress-30min  - Soak for exactly 30 minutes"
 	@echo "  make report        - Open Playwright HTML report"
 	@echo "  make clean         - Remove test artifacts"
 	@echo ""
@@ -56,6 +57,9 @@ stress-heavy:
 
 stress-soak:
 	STRESS_ROUNDS=80 STRESS_CLICKS_PER_PAGE=40 pnpm stress:front
+
+stress-30min:
+	STRESS_DURATION_MS=1800000 STRESS_CLICKS_PER_PAGE=$(STRESS_CLICKS_PER_PAGE) STRESS_BASE_URL=$(STRESS_BASE_URL) pnpm stress:front
 
 report:
 	pnpm exec playwright show-report playwright-report/stress
