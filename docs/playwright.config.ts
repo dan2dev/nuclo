@@ -5,6 +5,7 @@ const baseURL = process.env.STRESS_BASE_URL ?? "http://127.0.0.1:4173";
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: false,
+  globalTimeout: 0,
   timeout: 0,
   retries: 0,
   workers: 1,
