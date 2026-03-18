@@ -40,7 +40,7 @@ stress-ui:
 	STRESS_ROUNDS=$(STRESS_ROUNDS) \
 	STRESS_CLICKS_PER_PAGE=$(STRESS_CLICKS_PER_PAGE) \
 	STRESS_BASE_URL=$(STRESS_BASE_URL) \
-	pnpm --dir ../packages/v0.1 build && pnpm exec playwright test tests/front-stress.spec.ts --headed --project=stress-chromium
+	pnpm stress:front:ui
 
 stress-strict:
 	STRESS_STRICT=true \

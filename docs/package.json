@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "stress:front": "pnpm --dir ../packages/v0.1 build && pnpm exec playwright test tests/front-stress.spec.ts",
-    "stress:front:strict": "pnpm --dir ../packages/v0.1 build && STRESS_STRICT=true pnpm exec playwright test tests/front-stress.spec.ts"
+    "stress:front": "pnpm --dir ../packages/v0.1 build && pnpm build && pnpm exec playwright test tests/front-stress.spec.ts",
+    "stress:front:strict": "pnpm --dir ../packages/v0.1 build && pnpm build && STRESS_STRICT=true pnpm exec playwright test tests/front-stress.spec.ts",
+    "stress:front:ui": "pnpm --dir ../packages/v0.1 build && pnpm build && pnpm exec playwright test tests/front-stress.spec.ts --headed --project=stress-chromium"
   },
   "dependencies": {
     "nuclo": "link:../packages/v0.1"
