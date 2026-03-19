@@ -196,8 +196,8 @@ async function spamClicks(
   ].join(", ");
 
   for (let i = 0; i < totalClicks; i += 1) {
-    // Exclude "Copy" / "Copied!" buttons to avoid clipboard writes
-    const eligible = page.locator(clickSelector).filter({ hasNotText: /^Copy$|^Copied!$/ });
+    // Exclude "Copy"/"Copied!" (clipboard) and "×" (delete) buttons
+    const eligible = page.locator(clickSelector).filter({ hasNotText: /^Copy$|^Copied!$|^×$/ });
     const count = await eligible.count();
     if (count === 0) return clickOps;
     const targetIndex = i % count;
@@ -224,6 +224,7 @@ async function runExampleScenario(
   if (route.includes("/examples/todo")) {
     const todoInput = page.getByPlaceholder("Add a new task...").first();
     if (await todoInput.isVisible().catch(() => false)) {
+      // Add new tasks first (list always grows)
       for (let i = 0; i < 3; i++) {
         const taskText = `stress-task-r${round}-${i}-${Date.now()}`;
         await todoInput.fill(taskText);
@@ -231,10 +232,12 @@ async function runExampleScenario(
         await expect(page.getByText(taskText).first()).toBeVisible({ timeout: 3000 });
         stats.todoItemsAdded += 1;
       }
-      // Toggle first item, then filter All/Active/Completed tabs if present
-      const firstCheckbox = page.locator("input[type='checkbox']").first();
-      if (await firstCheckbox.isVisible().catch(() => false)) {
-        await firstCheckbox.click();
+      // Toggle checkboxes on existing items — never click delete (×)
+      const checkboxes = page.locator("input[type='checkbox']");
+      const checkboxCount = await checkboxes.count().catch(() => 0);
+      for (let i = 0; i < checkboxCount; i++) {
+        await checkboxes.nth(i).click().catch(() => {});
+        await page.waitForTimeout(30);
       }
       stats.exampleInteractions += 1;
     }
