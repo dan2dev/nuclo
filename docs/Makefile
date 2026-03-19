@@ -61,6 +61,12 @@ stress-soak:
 stress-30min:
 	STRESS_DURATION_MS=1800000 STRESS_CLICKS_PER_PAGE=$(STRESS_CLICKS_PER_PAGE) STRESS_BASE_URL=$(STRESS_BASE_URL) pnpm stress:front:ui
 
+stress-20min:
+	STRESS_DURATION_MS=1200000 STRESS_CLICKS_PER_PAGE=$(STRESS_CLICKS_PER_PAGE) STRESS_BASE_URL=$(STRESS_BASE_URL) pnpm stress:front:ui
+
+stress-10min:
+	STRESS_DURATION_MS=600000 STRESS_CLICKS_PER_PAGE=$(STRESS_CLICKS_PER_PAGE) STRESS_BASE_URL=$(STRESS_BASE_URL) pnpm stress:front:ui
+
 report:
 	pnpm exec playwright show-report playwright-report/stress
 
