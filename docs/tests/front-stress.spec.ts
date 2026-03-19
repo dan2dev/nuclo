@@ -196,10 +196,12 @@ async function spamClicks(
   ].join(", ");
 
   for (let i = 0; i < totalClicks; i += 1) {
-    const count = await page.locator(clickSelector).count();
+    // Exclude "Copy" / "Copied!" buttons to avoid clipboard writes
+    const eligible = page.locator(clickSelector).filter({ hasNotText: /^Copy$|^Copied!$/ });
+    const count = await eligible.count();
     if (count === 0) return clickOps;
     const targetIndex = i % count;
-    const target = page.locator(clickSelector).nth(targetIndex);
+    const target = eligible.nth(targetIndex);
     try {
       await target.click({ timeout: 1500, force: true });
       clickOps += 1;
@@ -218,30 +220,45 @@ async function runExampleScenario(
 ): Promise<InteractionStats> {
   const stats: InteractionStats = { exampleInteractions: 0, todoItemsAdded: 0 };
 
+  // ── Todo ──────────────────────────────────────────────────────────────────
   if (route.includes("/examples/todo")) {
     const todoInput = page.getByPlaceholder("Add a new task...").first();
     if (await todoInput.isVisible().catch(() => false)) {
-      const taskText = `stress-task-r${round}-${Date.now()}`;
-      await todoInput.fill(taskText);
-      await page.getByRole("button", { name: "Add Task" }).first().click();
-      await expect(page.getByText(taskText).first()).toBeVisible({ timeout: 3000 });
+      for (let i = 0; i < 3; i++) {
+        const taskText = `stress-task-r${round}-${i}-${Date.now()}`;
+        await todoInput.fill(taskText);
+        await page.getByRole("button", { name: "Add Task" }).first().click();
+        await expect(page.getByText(taskText).first()).toBeVisible({ timeout: 3000 });
+        stats.todoItemsAdded += 1;
+      }
+      // Toggle first item, then filter All/Active/Completed tabs if present
+      const firstCheckbox = page.locator("input[type='checkbox']").first();
+      if (await firstCheckbox.isVisible().catch(() => false)) {
+        await firstCheckbox.click();
+      }
       stats.exampleInteractions += 1;
-      stats.todoItemsAdded += 1;
     }
     return stats;
   }
 
+  // ── Counter ───────────────────────────────────────────────────────────────
   if (route.includes("/examples/counter")) {
     const plusButton = page.getByRole("button", { name: "+" }).first();
     if (await plusButton.isVisible().catch(() => false)) {
       await plusButton.click();
       await plusButton.click();
+      await plusButton.click();
+      const minusButton = page.getByRole("button", { name: "-" }).first();
+      if (await minusButton.isVisible().catch(() => false)) {
+        await minusButton.click();
+      }
       await page.getByRole("button", { name: "Reset" }).first().click();
       stats.exampleInteractions += 1;
     }
     return stats;
   }
 
+  // ── Forms ─────────────────────────────────────────────────────────────────
   if (route.includes("/examples/forms")) {
     const username = page.getByPlaceholder("Enter username").first();
     if (await username.isVisible().catch(() => false)) {
@@ -256,13 +273,136 @@ async function runExampleScenario(
     return stats;
   }
 
+  // ── Subtasks ──────────────────────────────────────────────────────────────
   if (route.includes("/examples/subtasks")) {
     const subtaskInput = page.getByPlaceholder("Add a new task...").first();
     if (await subtaskInput.isVisible().catch(() => false)) {
-      const text = `parent-task-r${round}-${Date.now()}`;
-      await subtaskInput.fill(text);
-      await page.getByRole("button", { name: "Add Task" }).first().click();
-      await expect(page.getByText(text).first()).toBeVisible({ timeout: 3000 });
+      for (let i = 0; i < 2; i++) {
+        const text = `parent-task-r${round}-${i}-${Date.now()}`;
+        await subtaskInput.fill(text);
+        await page.getByRole("button", { name: "Add Task" }).first().click();
+        await expect(page.getByText(text).first()).toBeVisible({ timeout: 3000 });
+        stats.todoItemsAdded += 1;
+      }
+      stats.exampleInteractions += 1;
+    }
+    return stats;
+  }
+
+  // ── Live Search ───────────────────────────────────────────────────────────
+  if (route.includes("/examples/search")) {
+    const searchInput = page.getByPlaceholder("Search by name or email...").first();
+    if (await searchInput.isVisible().catch(() => false)) {
+      await searchInput.fill("Alice");
+      await page.waitForTimeout(100);
+      await searchInput.fill("bob");
+      await page.waitForTimeout(100);
+      // Change role filter
+      const roleSelect = page.locator("select").first();
+      if (await roleSelect.isVisible().catch(() => false)) {
+        await roleSelect.selectOption("Admin");
+        await page.waitForTimeout(100);
+        await roleSelect.selectOption("User");
+        await page.waitForTimeout(100);
+        await roleSelect.selectOption("all");
+      }
+      await searchInput.fill("");
+      stats.exampleInteractions += 1;
+    }
+    return stats;
+  }
+
+  // ── Async Data ────────────────────────────────────────────────────────────
+  if (route.includes("/examples/async")) {
+    const searchInput = page.getByPlaceholder("Search products...").first();
+    if (await searchInput.isVisible().catch(() => false)) {
+      await searchInput.fill("laptop");
+      const searchBtn = page.getByRole("button", { name: "Search" }).first();
+      if (await searchBtn.isEnabled().catch(() => false)) {
+        await searchBtn.click();
+        // Wait for either results or error state (external API may fail)
+        await page.waitForTimeout(2000);
+        // If error, click Retry
+        const retryBtn = page.getByRole("button", { name: "Retry" }).first();
+        if (await retryBtn.isVisible().catch(() => false)) {
+          await retryBtn.click();
+          await page.waitForTimeout(1500);
+        }
+      }
+      stats.exampleInteractions += 1;
+    }
+    return stats;
+  }
+
+  // ── Nested Components ─────────────────────────────────────────────────────
+  if (route.includes("/examples/nested")) {
+    const followButtons = page.getByRole("button", { name: "Follow" });
+    const count = await followButtons.count().catch(() => 0);
+    if (count > 0) {
+      for (let i = 0; i < count; i++) {
+        await followButtons.nth(i).click().catch(() => {});
+        await page.waitForTimeout(50);
+      }
+      stats.exampleInteractions += 1;
+    }
+    return stats;
+  }
+
+  // ── Animations ────────────────────────────────────────────────────────────
+  if (route.includes("/examples/animations")) {
+    const startBtn = page.getByRole("button", { name: "Start Animation" }).first();
+    if (await startBtn.isVisible().catch(() => false)) {
+      await startBtn.click();
+      await page.waitForTimeout(400);
+      const stopBtn = page.getByRole("button", { name: "Stop Animation" }).first();
+      if (await stopBtn.isVisible().catch(() => false)) {
+        await stopBtn.click();
+      }
+      // Toggle once more
+      const startAgain = page.getByRole("button", { name: "Start Animation" }).first();
+      if (await startAgain.isVisible().catch(() => false)) {
+        await startAgain.click();
+        await page.waitForTimeout(200);
+        await page.getByRole("button", { name: "Stop Animation" }).first().click().catch(() => {});
+      }
+      stats.exampleInteractions += 1;
+    }
+    return stats;
+  }
+
+  // ── Routing (mini router inside example) ──────────────────────────────────
+  if (route.includes("/examples/routing")) {
+    const aboutBtn = page.getByRole("button", { name: "About" }).first();
+    if (await aboutBtn.isVisible().catch(() => false)) {
+      await aboutBtn.click();
+      await page.waitForTimeout(100);
+      const contactBtn = page.getByRole("button", { name: "Contact" }).first();
+      await contactBtn.click().catch(() => {});
+      await page.waitForTimeout(100);
+      await page.getByRole("button", { name: "Home" }).first().click().catch(() => {});
+      await page.waitForTimeout(100);
+      // Navigate via inline page buttons
+      const goAboutBtn = page.getByRole("button", { name: "Go to About →" }).first();
+      if (await goAboutBtn.isVisible().catch(() => false)) {
+        await goAboutBtn.click();
+        await page.waitForTimeout(100);
+        await page.getByRole("button", { name: "Go to Contact →" }).first().click().catch(() => {});
+        await page.waitForTimeout(100);
+        await page.getByRole("button", { name: "Go Home →" }).first().click().catch(() => {});
+      }
+      stats.exampleInteractions += 1;
+    }
+    return stats;
+  }
+
+  // ── Styled Card ───────────────────────────────────────────────────────────
+  if (route.includes("/examples/styled-card")) {
+    // Dismiss any alert dialogs from "Add to Cart"
+    page.once("dialog", (dialog) => dialog.dismiss().catch(() => {}));
+    const addToCartBtn = page.getByRole("button", { name: "Add to Cart" }).first();
+    if (await addToCartBtn.isVisible().catch(() => false)) {
+      await addToCartBtn.click();
+      await page.waitForTimeout(200);
       stats.exampleInteractions += 1;
     }
     return stats;
@@ -292,6 +432,11 @@ test.describe("Front stress", () => {
     page.on("requestfailed", (request) => {
       const failure = request.failure();
       errors.requestFailures.push(`${request.method()} ${request.url()} :: ${failure?.errorText ?? "unknown"}`);
+    });
+
+    // Dismiss any unexpected alert/confirm/prompt dialogs globally
+    page.on("dialog", async (dialog) => {
+      await dialog.dismiss().catch(() => {});
     });
 
     const initialPath = "/";
@@ -328,6 +473,12 @@ test.describe("Front stress", () => {
       "/examples/counter",
       "/examples/forms",
       "/examples/subtasks",
+      "/examples/search",
+      "/examples/async",
+      "/examples/nested",
+      "/examples/animations",
+      "/examples/routing",
+      "/examples/styled-card",
     ];
     const mergedRoutes = Array.from(new Set([...routes, ...scenarioRoutes]));
 
