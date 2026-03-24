@@ -46,20 +46,42 @@ function serializeAttributes(element: Element): string {
 
   // Handle polyfill elements with Map-based attributes
   if ('attributes' in element && element.attributes instanceof Map) {
-    // First, handle special properties that might not be in the attributes Map
     const el = element as any;
 
-    // Add id if it exists and is not already in attributes
+    // id — may live on the property rather than in the Map
     if (el.id && !element.attributes.has('id')) {
       result += serializeAttribute('id', el.id);
     }
 
-    // Add class if it exists and is not already in attributes
+    // class — kept on .className, mirrored to Map only when setAttribute is used
     if (el.className && !element.attributes.has('class')) {
       result += serializeAttribute('class', el.className);
     }
 
-    // Then add all attributes from the Map
+    // style — lives on the Proxy, not in the attributes Map.
+    // cssText returns camelCase keys ("backgroundColor: red"), so convert them.
+    if (!element.attributes.has('style') && el.style) {
+      const rawCssText: string = el.style.cssText || '';
+      if (rawCssText) {
+        const kebabStyle = rawCssText
+          .split(';')
+          .map((decl: string) => decl.trim())
+          .filter(Boolean)
+          .map((decl: string) => {
+            const colonIdx = decl.indexOf(':');
+            if (colonIdx === -1) return decl;
+            const key = decl.slice(0, colonIdx).trim();
+            const val = decl.slice(colonIdx + 1).trim();
+            return `${camelToKebab(key)}:${val}`;
+          })
+          .join(';');
+        if (kebabStyle) {
+          result += ` style="${escapeHtml(kebabStyle)}"`;
+        }
+      }
+    }
+
+    // All remaining attributes from the Map
     for (const [name, value] of element.attributes) {
       result += serializeAttribute(name, value);
     }
@@ -88,21 +110,27 @@ const VOID_ELEMENTS = new Set([
 ]);
 
 /**
- * Get child nodes from an element (handles both browser and polyfill elements)
+ * Get child nodes from a node (handles both browser and polyfill elements).
+ *
+ * NucloElement stores ALL children (elements, text, comments) in a plain Array
+ * called `children` — it is the authoritative list.  DocumentFragments in the
+ * polyfill also have a `children` array, but it only holds Element children;
+ * their full set of nodes lives in `childNodes`.  We therefore only prefer
+ * `children` when the node is an actual element (has `tagName`).
  */
 function getChildNodes(node: Node): ArrayLike<Node> {
-  // Check for childNodes first (document fragments and browser elements)
+  // NucloElement: tagName exists and children is a plain Array containing every node type
+  if ('tagName' in node && 'children' in node) {
+    const children = (node as any).children;
+    if (Array.isArray(children)) {
+      return children as ArrayLike<Node>;
+    }
+  }
+  // DocumentFragments and browser elements: use childNodes
   if ('childNodes' in node) {
     const childNodes = (node as any).childNodes;
     if (childNodes && (Array.isArray(childNodes) || childNodes.length !== undefined)) {
       return childNodes;
-    }
-  }
-  // Polyfill elements have children array
-  if ('children' in node) {
-    const children = (node as any).children;
-    if (children && Array.isArray(children)) {
-      return children as ArrayLike<Node>;
     }
   }
   return [] as ArrayLike<Node>;
@@ -155,7 +183,10 @@ function serializeNode(node: Node): string {
     if (childNodes && childNodes.length > 0) {
       for (let i = 0; i < childNodes.length; i++) {
         const child = childNodes[i];
-        if (child) {
+        // Skip internal framework comment markers (e.g. " text-0 ") that are
+        // reactive anchors for browser-side updates — they have no meaning in
+        // an SSR string and must not appear in the output.
+        if (child && child.nodeType !== 8) {
           result += serializeNode(child);
         }
       }
