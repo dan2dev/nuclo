@@ -6,40 +6,40 @@ import { dispatchGlobalUpdateEvent } from "../utility/events";
 import { getScopeRoots } from "../utility/scope";
 import type { UpdateScope } from "./updateScope";
 
-const updaters: ReadonlyArray<(scope?: UpdateScope) => void> = [
-  updateListRuntimes,
-  updateWhenRuntimes,
-  updateConditionalElements,
-  notifyReactiveElements,
-  notifyReactiveTextNodes,
-  dispatchGlobalUpdateEvent,
-] as const;
+// `satisfies` checks every entry matches the signature without widening the tuple type.
+const updaters = [
+	updateListRuntimes,
+	updateWhenRuntimes,
+	updateConditionalElements,
+	notifyReactiveElements,
+	notifyReactiveTextNodes,
+	dispatchGlobalUpdateEvent,
+] satisfies ReadonlyArray<(scope?: UpdateScope) => void>;
 
 export function update(...scopeIds: string[]): void {
-  let scope: UpdateScope | undefined;
-  if (scopeIds.length > 0) {
-    const roots = getScopeRoots(scopeIds);
+	let scope: UpdateScope | undefined;
 
-    if (roots.length === 1) {
-      const root = roots[0]!;
-      scope = { 
-        roots, 
-        contains: function(node) { 
-          return root.contains(node);
-        }
-      };
-    } else {
-      scope = {
-        roots,
-        contains: function(node) {
-          for (const root of roots) {
-            if (root.contains(node)) return true;
-          }
-          return false;
-        },
-      };
-    }
-  }
+	if (scopeIds.length > 0) {
+		const roots = getScopeRoots(scopeIds);
 
-  for (const fn of updaters) fn(scope);
+		if (roots.length === 1) {
+			const root = roots[0]!;
+			scope = {
+				roots,
+				contains: (node) => root.contains(node),
+			};
+		} else {
+			scope = {
+				roots,
+				contains: (node) => {
+					for (const root of roots) {
+						if (root.contains(node)) return true;
+					}
+					return false;
+				},
+			};
+		}
+	}
+
+	for (const fn of updaters) fn(scope);
 }

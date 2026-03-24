@@ -123,7 +123,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
     remove(record);
   }
 
-  runtime.records = newRecords.filter(Boolean) as Array<ListItemRecord<TItem, TTagName>>;
+  runtime.records = newRecords.filter((r): r is ListItemRecord<TItem, TTagName> => r !== null);
   runtime.lastSyncedItems = currentItems.slice();
   
   // If list is now empty, explicitly clear the records array to help GC

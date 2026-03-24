@@ -4,6 +4,7 @@ import {
   storeConditionalInfo,
   getConditionalInfo,
   hasConditionalInfo,
+  unregisterConditionalNode,
   type ConditionalInfo,
 } from "../../src/utility/conditionalInfo";
 
@@ -25,7 +26,7 @@ describe("conditionalInfo", () => {
     expect(hasConditionalInfo(node)).toBe(true);
     expect(getConditionalInfo(node)).toEqual(info);
 
-    delete (node as any)._conditionalInfo;
+    unregisterConditionalNode(node);
     expect(hasConditionalInfo(node)).toBe(false);
     expect(getConditionalInfo(node)).toBeNull();
   });

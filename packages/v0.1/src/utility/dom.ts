@@ -136,17 +136,16 @@ export function createComment(text: string): Comment | null {
 
 /**
  * Creates a conditional comment placeholder node.
- * In SSR environments, this will still work because we bypass the isBrowser check.
+ * Uses globalThis.document so it is safe in SSR environments where `document`
+ * may not exist as a global binding (avoids bare ReferenceError).
  */
-export function createConditionalComment(tagName: string, suffix: string = "hidden"): Comment | null {
-  // For SSR, we need to create comments even when isBrowser is false
-  // This function intentionally skips the isBrowser check for SSR compatibility
-  try {
-    return document.createComment(`conditional-${tagName}-${suffix}`);
-  } catch (error) {
-    logError('Failed to create conditional comment', error);
-    return null;
-  }
+export function createConditionalComment(tagName: string, suffix = "hidden"): Comment | null {
+	try {
+		return globalThis.document?.createComment(`conditional-${tagName}-${suffix}`) ?? null;
+	} catch (error) {
+		logError('Failed to create conditional comment', error);
+		return null;
+	}
 }
 
 export function createMarkerComment(prefix: string): Comment {
