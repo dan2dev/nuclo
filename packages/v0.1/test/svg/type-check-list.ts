@@ -37,7 +37,7 @@ const chart = (data: {
 
 // Test 2: Type inference with reactive attributes
 const reactiveChart = () => {
-  let color = "blue";
+  const color = "blue";
   
   return svgSvg(
     { width: "100", height: "100" },
@@ -153,8 +153,8 @@ const htmlListTest = () => {
 
 // Test 7: Complex reactive attributes
 const complexReactiveTest = () => {
-  let width = 100;
-  let height = 100;
+  const width = 100;
+  const height = 100;
   
   return svgSvg(
     {

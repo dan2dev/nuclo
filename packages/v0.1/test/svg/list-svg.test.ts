@@ -126,7 +126,7 @@ describe("list with SVG elements", () => {
   });
 
   it("should handle mixed static and reactive SVG attributes", () => {
-    let opacity = 0.5;
+    const opacity = 0.5;
     const data = () => [
       { x: 10, y: 10 },
       { x: 20, y: 20 },
