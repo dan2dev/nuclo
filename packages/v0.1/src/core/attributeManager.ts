@@ -79,17 +79,11 @@ function applySingleAttribute<TTagName extends ElementTagName>(
     // For className, if there's already a reactive className, add to static classes
     if (key === 'className' && el instanceof HTMLElement) {
       if (hasReactiveClassName(el)) {
-        // There's already a reactive className, add this to static classes
+        // There's already a reactive className; update the tracked set and DOM atomically.
         const newClassName = String(raw || '');
         if (newClassName) {
           addStaticClasses(el, newClassName);
-          // Also update the current className immediately
-          const currentClasses = new Set(el.className.split(' ').filter(function(c) { return c; }));
-          const newClasses = newClassName.split(' ').filter(function(c) { return c; });
-          for (let i = 0; i < newClasses.length; i++) {
-            currentClasses.add(newClasses[i]);
-          }
-          el.className = Array.from(currentClasses).join(' ');
+          mergeStaticClassName(el, newClassName);
         }
         return;
       }

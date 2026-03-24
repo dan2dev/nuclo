@@ -98,7 +98,7 @@ export function registerWhenRuntime<TTagName extends ElementTagName>(
   };
   activeWhenRuntimes.set(
     new WeakRef(runtime.startMarker),
-    runtimeInfo as unknown as WhenRuntimeInfo<ElementTagName>
+    runtimeInfo as WhenRuntimeInfo<ElementTagName>
   );
 }
 

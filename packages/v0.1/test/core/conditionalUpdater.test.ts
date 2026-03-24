@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { createHtmlConditionalElement } from '../helpers/conditionalTestHelpers';
 import { updateConditionalElements } from '../../src/core/conditionalUpdater';
+import { getConditionalInfo } from '../../src/utility/conditionalInfo';
 
 describe('conditionalUpdater.updateConditionalElements', () => {
   let container: HTMLDivElement;
@@ -138,9 +139,9 @@ describe('conditionalUpdater.updateConditionalElements', () => {
     expect(el.textContent).toBe('dynamic text');
 
     // Change modifiers by mutating stored conditional info and force another cycle
-    const info = (el as any)._conditionalInfo || (container.firstChild as any)._conditionalInfo;
+    const info = getConditionalInfo(el) ?? getConditionalInfo(container.firstChild as Node);
     // Replace modifiers array (simulate user-supplied reactive scenario)
-    info.modifiers = [
+    info!.modifiers = [
       'second text',
       { id: 'beta', title: 'second' }
     ];
@@ -216,20 +217,20 @@ describe('conditionalUpdater.updateConditionalElements', () => {
     visible = true;
     const node = createHtmlConditionalElement('div', makeCondition(), ['Persist']);
     container.appendChild(node as unknown as Node);
-    const info1 = (node as any)._conditionalInfo;
+    const info1 = getConditionalInfo(node as Node);
     expect(info1).toBeTruthy();
 
     visible = false;
     updateConditionalElements();
-    const comment = container.firstChild as any;
+    const comment = container.firstChild as Node;
     expect(comment.nodeType).toBe(Node.COMMENT_NODE);
-    const info2 = comment._conditionalInfo;
-    expect(info2).toEqual(info1); // reference equality preserved
+    const info2 = getConditionalInfo(comment);
+    expect(info2).toEqual(info1); // same info transferred to comment
 
     visible = true;
     updateConditionalElements();
-    const el2 = container.firstChild as any;
-    const info3 = el2._conditionalInfo;
+    const el2 = container.firstChild as Node;
+    const info3 = getConditionalInfo(el2);
     expect(info3).toEqual(info1);
   });
 

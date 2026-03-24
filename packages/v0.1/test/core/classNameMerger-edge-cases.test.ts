@@ -39,51 +39,65 @@ describe("classNameMerger edge cases", () => {
     it("should preserve static classes when called multiple times", () => {
       element.className = "static1 static2";
       initReactiveClassName(element);
-      const firstStatic = (element as any).__nuclo_static_className__;
-      
+
+      // Simulate external className change then re-init
       element.className = "static1 static2 static3";
-      initReactiveClassName(element);
-      const secondStatic = (element as any).__nuclo_static_className__;
-      
-      // Should preserve original static classes
-      expect(firstStatic).toEqual(secondStatic);
+      initReactiveClassName(element); // second call must NOT reset the tracked set
+
+      // After reactive merge, only original static classes should appear
+      mergeReactiveClassName(element, "");
+      const classes = element.className.split(" ").filter(Boolean);
+      expect(classes).toContain("static1");
+      expect(classes).toContain("static2");
+      // static3 was added after the first init — not in the tracked set
+      expect(classes).not.toContain("static3");
     });
   });
 
   describe("addStaticClasses", () => {
     it("should handle empty string", () => {
       addStaticClasses(element, "");
-      expect((element as any).__nuclo_static_className__).toBeUndefined();
+      // Behavior: element.className should remain empty
+      initReactiveClassName(element);
+      mergeReactiveClassName(element, "");
+      expect(element.className).toBe("");
     });
 
     it("should handle whitespace-only string", () => {
       addStaticClasses(element, "   ");
-      const staticClasses = (element as any).__nuclo_static_className__;
-      expect(staticClasses).toBeDefined();
-      expect(staticClasses.size).toBe(0);
+      // No real class tokens — className should stay empty
+      initReactiveClassName(element);
+      mergeReactiveClassName(element, "");
+      expect(element.className).toBe("");
     });
 
     it("should handle multiple spaces between classes", () => {
       addStaticClasses(element, "class1  class2   class3");
-      const staticClasses = (element as any).__nuclo_static_className__;
-      expect(staticClasses.has("class1")).toBe(true);
-      expect(staticClasses.has("class2")).toBe(true);
-      expect(staticClasses.has("class3")).toBe(true);
+      initReactiveClassName(element);
+      mergeReactiveClassName(element, "");
+      const classes = element.className.split(" ").filter(Boolean);
+      expect(classes).toContain("class1");
+      expect(classes).toContain("class2");
+      expect(classes).toContain("class3");
     });
 
     it("should add classes incrementally", () => {
       addStaticClasses(element, "class1");
       addStaticClasses(element, "class2");
-      const staticClasses = (element as any).__nuclo_static_className__;
-      expect(staticClasses.has("class1")).toBe(true);
-      expect(staticClasses.has("class2")).toBe(true);
+      initReactiveClassName(element);
+      mergeReactiveClassName(element, "");
+      const classes = element.className.split(" ").filter(Boolean);
+      expect(classes).toContain("class1");
+      expect(classes).toContain("class2");
     });
 
     it("should not add duplicate classes", () => {
       addStaticClasses(element, "class1");
       addStaticClasses(element, "class1");
-      const staticClasses = (element as any).__nuclo_static_className__;
-      expect(staticClasses.size).toBe(1);
+      initReactiveClassName(element);
+      mergeReactiveClassName(element, "");
+      const classes = element.className.split(" ").filter(Boolean);
+      expect(classes.filter((c) => c === "class1").length).toBe(1);
     });
   });
 
