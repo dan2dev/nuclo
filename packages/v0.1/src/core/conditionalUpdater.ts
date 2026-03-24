@@ -28,13 +28,13 @@ function createElementFromConditionalInfo<TTagName extends ElementTagName>(
     if (conditionalInfo.isSvg) {
       const el = createElementNS(SVG_NAMESPACE, conditionalInfo.tagName);
       if (!el) {
-        throw new Error(`Failed to create SVG element: ${conditionalInfo.tagName}`);
+        throw new Error(`Failed to create SVG element: ${conditionalInfo.tagName}`, { cause: error });
       }
       return el as unknown as SVGElement;
     }
     const el = createElement(conditionalInfo.tagName);
     if (!el) {
-      throw new Error(`Failed to create element: ${conditionalInfo.tagName}`);
+      throw new Error(`Failed to create element: ${conditionalInfo.tagName}`, { cause: error });
     }
     return el as ExpandedElement<TTagName>;
   }
