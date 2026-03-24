@@ -6,9 +6,11 @@ import { appendChildren, createMarkerComment, createMarkerPair, isNodeConnected 
 describe("dom utilities (node/SSR)", () => {
   it("throws when creating marker comments without browser APIs", () => {
     expect(() => createMarkerComment("test")).toThrow(
-      "Cannot create comment in non-browser environment"
+      "Failed to create comment: document not available"
     );
-    expect(() => createMarkerPair("pair")).toThrow("Failed to create end comment");
+    expect(() => createMarkerPair("pair")).toThrow(
+      "Failed to create comment: document not available"
+    );
   });
 
   it("treats unknown nodes as disconnected", () => {

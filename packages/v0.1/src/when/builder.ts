@@ -1,5 +1,4 @@
-import { isBrowser } from "../utility/environment";
-import { createMarkerPair, createComment } from "../utility/dom";
+import { createMarkerPair } from "../utility/dom";
 import { asParentNode } from "../utility/domTypeHelpers";
 import type { WhenCondition, WhenContent, WhenGroup, WhenRuntime } from "./runtime";
 import { renderWhenContent, registerWhenRuntime } from "./runtime";
@@ -23,9 +22,8 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
   }
 
   render(host: ExpandedElement<TTagName>, index: number): Node | null {
-    if (!isBrowser) {
-      const comment = createComment("when-ssr");
-      return comment || null;
+    if (!globalThis.document) {
+      return null;
     }
 
     const { start: startMarker, end: endMarker } = createMarkerPair("when");

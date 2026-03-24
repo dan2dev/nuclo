@@ -1,214 +1,118 @@
 /// <reference path="../../types/index.d.ts" />
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+// @vitest-environment node
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
-// This test file specifically tests the SSR branch in builder.ts
-// by mocking the isBrowser constant before the module is imported
+/**
+ * Tests the SSR behaviour of WhenBuilderImpl.render().
+ *
+ * The builder now gates on `globalThis.document` (not the old `isBrowser`
+ * flag).  When `globalThis.document` is absent (pure Node.js, no polyfill)
+ * `render()` must return `null`.  When it is present (polyfill loaded) the
+ * full marker-based render runs and returns the start-marker Comment node.
+ */
 
 describe("when builder SSR branches", () => {
-  describe("SSR mode (!isBrowser = true)", () => {
-    beforeEach(() => {
-      // Clear all module caches before each test
-      vi.resetModules();
-    });
-
-    afterEach(() => {
-      vi.restoreAllMocks();
-      vi.resetModules();
-    });
-
-    it("should return comment in SSR mode when createComment succeeds", async () => {
-      // Mock isBrowser to be false BEFORE importing the builder module
-      vi.doMock("../../src/utility/environment", () => ({
-        isBrowser: false
-      }));
-
-      // Mock createComment to return a comment node
-      const mockComment = {
-        nodeType: 8,
-        nodeName: "#comment",
-        textContent: "when-ssr",
-        data: "when-ssr"
-      };
-
-      vi.doMock("../../src/utility/dom", async (importOriginal) => {
-        const actual = await importOriginal<typeof import("../../src/utility/dom")>();
-        return {
-          ...actual,
-          createComment: vi.fn(() => mockComment),
-          createMarkerPair: actual.createMarkerPair
-        };
-      });
-
-      // Now import the builder module - it will use the mocked isBrowser
+  describe("SSR mode — globalThis.document is undefined (no polyfill)", () => {
+    // In @vitest-environment node the polyfill is NOT imported, so
+    // globalThis.document is undefined — builder must return null.
+    it("should return null when document is not available", async () => {
       const { WhenBuilderImpl } = await import("../../src/when/builder");
-
-      // Create a mock container
-      const container = { appendChild: vi.fn() } as any;
-
-      // Create builder and render
+      const container = {} as any;
       const builder = new WhenBuilderImpl(() => true, "content");
       const result = builder.render(container, 0);
-
-      // In SSR mode with successful comment creation, should return the comment
-      expect(result).toBe(mockComment);
-      expect(result?.nodeType).toBe(8);
+      expect(result).toBeNull();
     });
 
-    it("should return null in SSR mode when createComment returns null", async () => {
-      // Mock isBrowser to be false
-      vi.doMock("../../src/utility/environment", () => ({
-        isBrowser: false
-      }));
-
-      // Mock createComment to return null
-      vi.doMock("../../src/utility/dom", async (importOriginal) => {
-        const actual = await importOriginal<typeof import("../../src/utility/dom")>();
-        return {
-          ...actual,
-          createComment: vi.fn(() => null),
-          createMarkerPair: actual.createMarkerPair
-        };
-      });
-
-      // Import the builder module with mocked dependencies
+    it("should return null with no content when document is not available", async () => {
       const { WhenBuilderImpl } = await import("../../src/when/builder");
-
-      // Create a mock container
-      const container = { appendChild: vi.fn() } as any;
-
-      // Create builder and render
-      const builder = new WhenBuilderImpl(() => true, "content");
+      const container = {} as any;
+      const builder = new WhenBuilderImpl(() => true);
       const result = builder.render(container, 0);
-
-      // In SSR mode with createComment returning null, should return null
-      expect(result).toBe(null);
+      expect(result).toBeNull();
     });
 
-    it("should return null in SSR mode when createComment returns undefined", async () => {
-      // Mock isBrowser to be false
-      vi.doMock("../../src/utility/environment", () => ({
-        isBrowser: false
-      }));
-
-      // Mock createComment to return undefined
-      vi.doMock("../../src/utility/dom", async (importOriginal) => {
-        const actual = await importOriginal<typeof import("../../src/utility/dom")>();
-        return {
-          ...actual,
-          createComment: vi.fn(() => undefined),
-          createMarkerPair: actual.createMarkerPair
-        };
-      });
-
-      // Import the builder module with mocked dependencies
+    it("should return null with multiple content items when document is not available", async () => {
       const { WhenBuilderImpl } = await import("../../src/when/builder");
-
-      // Create a mock container
-      const container = { appendChild: vi.fn() } as any;
-
-      // Create builder and render
-      const builder = new WhenBuilderImpl(() => true, "content");
+      const container = {} as any;
+      const builder = new WhenBuilderImpl(() => true, "text1", "text2", "text3");
       const result = builder.render(container, 0);
-
-      // In SSR mode with createComment returning undefined, should return null (undefined || null)
-      expect(result).toBe(null);
+      expect(result).toBeNull();
     });
 
-    it("should return comment in SSR mode with falsy comment that's not null/undefined", async () => {
-      // Mock isBrowser to be false
-      vi.doMock("../../src/utility/environment", () => ({
-        isBrowser: false
-      }));
-
-      // Mock createComment to return empty string (falsy but not null)
-      vi.doMock("../../src/utility/dom", async (importOriginal) => {
-        const actual = await importOriginal<typeof import("../../src/utility/dom")>();
-        return {
-          ...actual,
-          createComment: vi.fn(() => "" as any),
-          createMarkerPair: actual.createMarkerPair
-        };
-      });
-
-      // Import the builder module with mocked dependencies
+    it("should return null even when condition is false and document is not available", async () => {
       const { WhenBuilderImpl } = await import("../../src/when/builder");
-
-      // Create a mock container
-      const container = { appendChild: vi.fn() } as any;
-
-      // Create builder and render
-      const builder = new WhenBuilderImpl(() => true, "content");
+      const container = {} as any;
+      const builder = new WhenBuilderImpl(() => false, "content");
       const result = builder.render(container, 0);
-
-      // Empty string is falsy, so "" || null should return null
-      expect(result).toBe(null);
+      expect(result).toBeNull();
     });
   });
 
-  // Note: Browser mode (isBrowser = true) is already tested extensively in
-  // when-builder-edge-cases.test.ts and when-builder-coverage.test.ts
-  // We don't need to duplicate those tests here since this file focuses on SSR branches
+  describe("SSR mode — globalThis.document is available (polyfill loaded)", () => {
+    let savedDocument: typeof globalThis.document | undefined;
 
-  describe("Edge cases with different content types", () => {
-    beforeEach(() => {
-      vi.resetModules();
+    beforeAll(async () => {
+      // Install the polyfill document so the builder takes the full render path.
+      savedDocument = (globalThis as any).document;
+      const { document } = await import("../../src/polyfill/Document");
+      (globalThis as any).document = document;
     });
 
-    afterEach(() => {
-      vi.restoreAllMocks();
-      vi.resetModules();
+    afterAll(() => {
+      (globalThis as any).document = savedDocument;
     });
 
-    it("should handle SSR with no content", async () => {
-      vi.doMock("../../src/utility/environment", () => ({
-        isBrowser: false
-      }));
-
-      const mockComment = { nodeType: 8, textContent: "when-ssr" };
-
-      vi.doMock("../../src/utility/dom", async (importOriginal) => {
-        const actual = await importOriginal<typeof import("../../src/utility/dom")>();
-        return {
-          ...actual,
-          createComment: vi.fn(() => mockComment),
-          createMarkerPair: actual.createMarkerPair
-        };
-      });
-
+    it("should return a Comment node (start marker) when document is available", async () => {
       const { WhenBuilderImpl } = await import("../../src/when/builder");
-      const container = { appendChild: vi.fn() } as any;
+      const { NucloElement } = await import("../../src/polyfill/Element");
+      const host = new NucloElement("div") as any;
+      const builder = new WhenBuilderImpl(() => true, "content");
+      const result = builder.render(host, 0);
+      // Full render path: returns the start-marker Comment
+      expect(result).not.toBeNull();
+      expect((result as any)?.nodeType).toBe(8);
+    });
 
-      // Create builder with no content
+    it("should return a Comment node even when condition is false (else branch / no render)", async () => {
+      const { WhenBuilderImpl } = await import("../../src/when/builder");
+      const { NucloElement } = await import("../../src/polyfill/Element");
+      const host = new NucloElement("div") as any;
+      const builder = new WhenBuilderImpl(() => false, "content");
+      const result = builder.render(host, 0);
+      // Markers are still created — start marker is returned
+      expect(result).not.toBeNull();
+      expect((result as any)?.nodeType).toBe(8);
+    });
+
+    it("should handle SSR with no content items", async () => {
+      const { WhenBuilderImpl } = await import("../../src/when/builder");
+      const { NucloElement } = await import("../../src/polyfill/Element");
+      const host = new NucloElement("div") as any;
       const builder = new WhenBuilderImpl(() => true);
-      const result = builder.render(container, 0);
-
-      expect(result).toBe(mockComment);
+      const result = builder.render(host, 0);
+      expect(result).not.toBeNull();
+      expect((result as any)?.nodeType).toBe(8);
     });
 
     it("should handle SSR with multiple content items", async () => {
-      vi.doMock("../../src/utility/environment", () => ({
-        isBrowser: false
-      }));
-
-      const mockComment = { nodeType: 8, textContent: "when-ssr" };
-
-      vi.doMock("../../src/utility/dom", async (importOriginal) => {
-        const actual = await importOriginal<typeof import("../../src/utility/dom")>();
-        return {
-          ...actual,
-          createComment: vi.fn(() => mockComment),
-          createMarkerPair: actual.createMarkerPair
-        };
-      });
-
       const { WhenBuilderImpl } = await import("../../src/when/builder");
-      const container = { appendChild: vi.fn() } as any;
-
-      // Create builder with multiple content items
+      const { NucloElement } = await import("../../src/polyfill/Element");
+      const host = new NucloElement("div") as any;
       const builder = new WhenBuilderImpl(() => true, "text1", "text2", "text3");
-      const result = builder.render(container, 0);
+      const result = builder.render(host, 0);
+      expect(result).not.toBeNull();
+      expect((result as any)?.nodeType).toBe(8);
+    });
 
-      expect(result).toBe(mockComment);
+    it("should handle when + else chain", async () => {
+      const { WhenBuilderImpl } = await import("../../src/when/builder");
+      const { NucloElement } = await import("../../src/polyfill/Element");
+      const host = new NucloElement("div") as any;
+      const builder = new WhenBuilderImpl(() => false, "if-content");
+      builder.else("else-content");
+      const result = builder.render(host, 0);
+      expect(result).not.toBeNull();
+      expect((result as any)?.nodeType).toBe(8);
     });
   });
 });

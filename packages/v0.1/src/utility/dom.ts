@@ -107,7 +107,7 @@ function safeInsertBefore(parent: Node, newNode: Node, referenceNode: Node | nul
 }
 
 function createTextNodeSafely(text: string | number | boolean): Text | null {
-  if (!isBrowser) return null;
+  if (!globalThis.document) return null;
   try {
     return createTextNode(String(text));
   } catch (error) {
@@ -117,9 +117,9 @@ function createTextNodeSafely(text: string | number | boolean): Text | null {
 }
 
 function createCommentSafely(text: string): Comment | null {
-  if (!isBrowser) return null;
+  if (!globalThis.document) return null;
   try {
-    return document.createComment(text);
+    return globalThis.document.createComment(text);
   } catch (error) {
     logError('Failed to create comment node', error);
     return null;
@@ -149,12 +149,9 @@ export function createConditionalComment(tagName: string, suffix = "hidden"): Co
 }
 
 export function createMarkerComment(prefix: string): Comment {
-  if (!isBrowser) {
-    throw new Error("Cannot create comment in non-browser environment");
-  }
   const comment = createCommentSafely(`${prefix}-${Math.random().toString(36).slice(2)}`);
   if (!comment) {
-    throw new Error("Failed to create comment");
+    throw new Error("Failed to create comment: document not available");
   }
   return comment;
 }
@@ -162,7 +159,7 @@ export function createMarkerComment(prefix: string): Comment {
 export function createMarkerPair(prefix: string): { start: Comment; end: Comment } {
   const endComment = createCommentSafely(`${prefix}-end`);
   if (!endComment) {
-    throw new Error("Failed to create end comment");
+    throw new Error("Failed to create comment: document not available");
   }
   return {
     start: createMarkerComment(`${prefix}-start`),

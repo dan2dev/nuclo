@@ -222,17 +222,31 @@ export class NucloElement extends NucloNode {
     const index = this.children.indexOf(child);
     if (index !== -1) {
       this.children.splice(index, 1);
+      // Keep _childNodes in sync so the childNodes getter stays accurate
+      if (this['_childNodes']) {
+        const cnIndex = (this as any)['_childNodes'].indexOf(child);
+        if (cnIndex !== -1) {
+          (this as any)['_childNodes'].splice(cnIndex, 1);
+        }
+      }
       if (typeof child === 'object' && child !== null && 'parentNode' in child) {
         (child as { parentNode: unknown }).parentNode = null;
       }
     }
     return child;
   }
-  
+
   replaceChild<T extends Node>(newChild: Node, oldChild: T): T {
     const index = this.children.indexOf(oldChild);
     if (index !== -1) {
       this.children[index] = newChild;
+      // Keep _childNodes in sync so the childNodes getter stays accurate
+      if (this['_childNodes']) {
+        const cnIndex = (this as any)['_childNodes'].indexOf(oldChild);
+        if (cnIndex !== -1) {
+          (this as any)['_childNodes'][cnIndex] = newChild;
+        }
+      }
       if (typeof newChild === 'object' && newChild !== null && 'parentNode' in newChild) {
         (newChild as { parentNode: unknown }).parentNode = this;
       }
