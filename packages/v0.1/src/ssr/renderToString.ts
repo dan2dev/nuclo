@@ -14,6 +14,18 @@ type RenderableInput =
   | undefined;
 
 /**
+ * HTML boolean attributes — presence means true, absence means false.
+ * When the stored value is the string "true" or "false" (from setAttribute),
+ * we must re-apply boolean semantics instead of outputting the raw string.
+ */
+const HTML_BOOLEAN_ATTRIBUTES = new Set([
+  'allowfullscreen', 'async', 'autofocus', 'autoplay', 'checked', 'controls',
+  'default', 'defer', 'disabled', 'formnovalidate', 'hidden', 'ismap', 'loop',
+  'multiple', 'muted', 'nomodule', 'novalidate', 'open', 'readonly', 'required',
+  'reversed', 'selected',
+]);
+
+/**
  * Serializes a DOM attribute value
  */
 function serializeAttribute(name: string, value: unknown): string {
@@ -23,6 +35,12 @@ function serializeAttribute(name: string, value: unknown): string {
 
   if (value === true) {
     return ` ${name}`;
+  }
+
+  // Boolean attributes stored as strings via setAttribute() need special handling
+  if (HTML_BOOLEAN_ATTRIBUTES.has(name)) {
+    if (value === 'false') return '';
+    if (value === 'true' || value === '' || value === name) return ` ${name}`;
   }
 
   if (name === 'style' && typeof value === 'object') {
@@ -170,6 +188,12 @@ function serializeNode(node: Node): string {
         if (child) {
           childrenHtml += serializeNode(child);
         }
+      }
+    } else {
+      // Fallback: textContent set directly on the element (e.g. el.textContent = "...")
+      const tc = (node as any).textContent;
+      if (typeof tc === 'string' && tc) {
+        childrenHtml = escapeHtml(tc);
       }
     }
 
