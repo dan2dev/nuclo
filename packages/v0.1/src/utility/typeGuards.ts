@@ -3,7 +3,10 @@ export function isPrimitive(value: unknown): value is Primitive {
 }
 
 export function isNode<T>(value: T): value is T & Node {
-	return value instanceof Node;
+	if (value instanceof Node) return true;
+	if (typeof value !== 'object' || value === null) return false;
+	// Recognize polyfill DOM objects (plain objects with a numeric nodeType)
+	return typeof (value as { nodeType?: unknown }).nodeType === 'number';
 }
 
 export function isObject(value: unknown): value is object {
