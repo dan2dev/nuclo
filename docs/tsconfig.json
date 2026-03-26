@@ -4,7 +4,7 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client", "nuclo/types"],
+    "types": ["vite/client", "nuclo/types", "bun"],
     "skipLibCheck": true,
 
     /* Bundler mode */
@@ -20,7 +20,13 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+
+    /* nuclo/polyfill has no export in the package — provide a stub for type-checking.
+       Bun runtime uses tsconfig.bun.json which overrides this to the actual source. */
+    "paths": {
+      "nuclo/polyfill": ["./polyfill-stub.d.ts"]
+    }
   },
   "include": ["src"]
 }

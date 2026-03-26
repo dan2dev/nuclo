@@ -208,6 +208,7 @@ export function initDocsToc(items: DocsTocItem[]) {
   activeSection = items[0].id;
 
   setTimeout(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
     resetObserver();
 
     sectionObserver = new IntersectionObserver(
