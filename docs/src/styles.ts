@@ -40,9 +40,7 @@ export const colors = {
   primaryAlpha19: "var(--c-primary-alpha-19)",
 };
 
-export function injectGlobalStyles() {
-  const style = document.createElement("style");
-  style.textContent = `
+export const globalCss = `
     /* ── Google Fonts ────────────────────────────────────────────────────── */
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap');
 
@@ -197,7 +195,13 @@ export function injectGlobalStyles() {
       from { opacity: 0; transform: translateY(4px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-  `;
+`;
+
+export function injectGlobalStyles() {
+  if (document.getElementById('nuclo-global')) return;
+  const style = document.createElement("style");
+  style.id = 'nuclo-global';
+  style.textContent = globalCss;
   document.head.appendChild(style);
 }
 

@@ -9,11 +9,14 @@ import { setPageContainer } from "./routes.ts";
 // Initialize theme first (before styles) so CSS vars are set
 initTheme();
 
-// Initialize styles
+// Initialize styles (idempotent — skips if server already injected #nuclo-global)
 injectGlobalStyles();
 
-// Create the main app structure
-const app = div(
+// Replace server-rendered HTML with a live Nuclo component tree
+const app = document.getElementById("app")!;
+app.innerHTML = "";
+
+const appEl = div(
   Header(),
   main({
     id: "page-container",
@@ -25,16 +28,9 @@ const app = div(
   Footer()
 );
 
-// Render the app
-render(app, document.getElementById("app")!);
+render(appEl, app);
 
-// Initialize routing after render - using setTimeout to ensure DOM is ready
-setTimeout(() => {
-  const el = document.getElementById("page-container") as HTMLElement;
-  if (el) {
-    setPageContainer(el);
-    initRouter();
-  } else {
-    console.error("Page container element not found in DOM");
-  }
-}, 10);
+// page-container is in the DOM synchronously after render()
+const container = document.getElementById("page-container") as HTMLElement;
+setPageContainer(container);
+initRouter();

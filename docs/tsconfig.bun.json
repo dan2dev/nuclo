@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "nuclo": ["../packages/v0.1/src/index.ts"],
+      "nuclo/ssr": ["../packages/v0.1/src/ssr/index.ts"],
+      "nuclo/polyfill": ["../packages/v0.1/src/polyfill/index.ts"]
+    }
+  }
+}

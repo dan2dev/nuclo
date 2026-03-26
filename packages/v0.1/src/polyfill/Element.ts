@@ -141,13 +141,37 @@ export class NucloElement extends NucloNode {
         cssRules: cssRules as unknown as CSSRuleList,
         insertRule: (rule: string, index?: number) => {
           const idx = index ?? cssRules.length;
-          // Parse basic CSS rules (simplified)
-          const mockRule = {
-            cssText: rule,
-            selectorText: rule.split('{')[0].trim(),
-            style: {} as CSSStyleDeclaration,
-            type: 1 // CSSRule.STYLE_RULE
-          } as unknown as CSSRule;
+          let mockRule: CSSRule;
+          // Create a grouping rule mock for at-rules (@media, @container, @supports)
+          if (rule.trim().startsWith('@')) {
+            const innerRules: CSSRule[] = [];
+            const conditionText = rule.replace(/^@\w+\s+/, '').replace(/\s*\{[\s\S]*\}$/, '').trim();
+            mockRule = {
+              cssText: rule,
+              conditionText,
+              media: { mediaText: conditionText } as MediaList,
+              cssRules: innerRules as unknown as CSSRuleList,
+              insertRule: (innerRule: string, innerIndex?: number) => {
+                const innerIdx = innerIndex ?? innerRules.length;
+                innerRules.splice(innerIdx, 0, {
+                  cssText: innerRule,
+                  selectorText: innerRule.split('{')[0].trim(),
+                  style: {} as CSSStyleDeclaration,
+                  type: 1,
+                } as unknown as CSSRule);
+                return innerIdx;
+              },
+              deleteRule: (i: number) => { innerRules.splice(i, 1); },
+              type: 4, // CSSRule.MEDIA_RULE
+            } as unknown as CSSRule;
+          } else {
+            mockRule = {
+              cssText: rule,
+              selectorText: rule.split('{')[0].trim(),
+              style: {} as CSSStyleDeclaration,
+              type: 1, // CSSRule.STYLE_RULE
+            } as unknown as CSSRule;
+          }
           cssRules.splice(idx, 0, mockRule);
           return idx;
         },

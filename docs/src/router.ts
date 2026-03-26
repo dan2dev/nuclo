@@ -35,6 +35,10 @@ export function getCurrentRoute(): Route {
   return currentRoute;
 }
 
+export function setCurrentRoute(route: Route) {
+  currentRoute = route;
+}
+
 export function setRoute(route: Route) {
   currentRoute = route;
   const base = import.meta.env.BASE_URL || "/";

@@ -306,6 +306,7 @@ function scrollToSection(id: string) {
 
 function setupScrollTracking() {
   setTimeout(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
     sectionObserver?.disconnect();
 
     sectionObserver = new IntersectionObserver(

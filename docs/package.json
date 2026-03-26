@@ -4,9 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "BASE_URL=/ bun --tsconfig-override tsconfig.bun.json src/server.ts",
     "build": "tsc && vite build",
-    "preview": "vite preview",
+    "start": "NODE_ENV=production bun --tsconfig-override tsconfig.bun.json src/server.ts",
+    "preview": "pnpm run build && pnpm run start",
     "stress:front": "pnpm --dir ../packages/v0.1 build && pnpm build && pnpm exec playwright test tests/front-stress.spec.ts",
     "stress:front:strict": "pnpm --dir ../packages/v0.1 build && pnpm build && STRESS_STRICT=true pnpm exec playwright test tests/front-stress.spec.ts",
     "stress:front:ui": "pnpm --dir ../packages/v0.1 build && pnpm build && pnpm exec playwright test tests/front-stress.spec.ts --headed --project=stress-chromium"
@@ -15,6 +16,7 @@
     "nuclo": "link:../packages/v0.1"
   },
   "devDependencies": {
+    "@types/bun": "^1.3.9",
     "@types/node": "^24.6.0",
     "@playwright/test": "^1.58.2",
     "typescript": "~5.9.3",
