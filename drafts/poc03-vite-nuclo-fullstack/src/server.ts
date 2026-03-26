@@ -35,6 +35,27 @@ async function appFetch(
   return new Response(html, { headers: { 'Content-Type': 'text/html' } });
 }
 
+// --- Gzip compression ---
+
+function shouldGzip(contentType: string): boolean {
+  return /text\/|application\/(javascript|json|xml)|image\/svg/.test(contentType);
+}
+
+async function gzipResponse(req: Request, res: Response): Promise<Response> {
+  const acceptEncoding = req.headers.get('accept-encoding') ?? '';
+  if (!acceptEncoding.includes('gzip')) return res;
+  const contentType = res.headers.get('Content-Type') ?? '';
+  if (!shouldGzip(contentType)) return res;
+
+  const compressed = Bun.gzipSync(new Uint8Array(await res.arrayBuffer()));
+  const headers = new Headers(res.headers);
+  headers.set('Content-Encoding', 'gzip');
+  headers.set('Vary', 'Accept-Encoding');
+  headers.delete('Content-Length');
+
+  return new Response(compressed, { status: res.status, headers });
+}
+
 // --- Production ---
 
 if (isProd) {
@@ -65,10 +86,10 @@ if (isProd) {
       // Serve static assets from dist/.
       if (pathname !== '/' && pathname !== '/index.html') {
         const file = Bun.file(`dist${pathname}`);
-        if (await file.exists()) return new Response(file);
+        if (await file.exists()) return gzipResponse(req, new Response(file));
       }
 
-      return appFetch(req, transformHtml);
+      return gzipResponse(req, await appFetch(req, transformHtml));
     },
   });
 
