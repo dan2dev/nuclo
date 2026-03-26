@@ -100,8 +100,10 @@ function serializeAttributes(element: Element): string {
     }
 
     // All remaining attributes from the Map
+    // Convert camelCase names (e.g. ariaLabel → aria-label) that the polyfill
+    // stores as-is because NucloElement lacks the browser property mappings.
     for (const [name, value] of element.attributes) {
-      result += serializeAttribute(name, value);
+      result += serializeAttribute(camelToKebab(name), value);
     }
     return result;
   }
