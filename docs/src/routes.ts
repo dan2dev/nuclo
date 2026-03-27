@@ -1,70 +1,118 @@
 /**
  * routes.ts — client-only.
- * Handles dynamic page loading into the DOM container.
+ *
+ * createPageArea() returns a reactive Nuclo element that manages the full
+ * page lifecycle: loading → page content (via list()) → error.
+ *
+ * No innerHTML, no manual DOM clearing.
+ * list() handles insert/remove by object identity when the slot changes.
+ * when() shows/hides loading and error states.
  */
 import "nuclo";
-import { loadPageFunction } from "./route-definitions.ts";
+import { loadPageFunction, preloadRoutes, type PageFunction } from "./route-definitions.ts";
 
-let pageContainerElement: HTMLElement | null = null;
+type PageSlot = { fn: PageFunction };
 
-export function setPageContainer(container: HTMLElement) {
-  pageContainerElement = container;
+let pageSlot: PageSlot[] = [];
+let isLoading = false;
+let loadError: string | null = null;
+let preloadScheduled = false;
+
+function Spinner() {
+  return div(
+    {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "400px",
+        gap: "16px",
+      },
+    },
+    div({
+      style: {
+        width: "32px",
+        height: "32px",
+        border: "2px solid var(--c-border)",
+        borderTopColor: "var(--c-primary)",
+        borderRadius: "50%",
+        animation: "spin 0.6s linear infinite",
+      },
+    }),
+    span(
+      { style: { fontSize: "13px", color: "var(--c-text-muted)" } },
+      "Loading..."
+    )
+  );
+}
+
+function ErrorDisplay() {
+  return div(
+    {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "400px",
+        gap: "12px",
+        padding: "48px",
+      },
+    },
+    span({ style: { fontSize: "15px", fontWeight: "600", color: "#ef4444" } }, "Failed to load page"),
+    span(
+      { style: { fontSize: "13px", color: "var(--c-text-muted)", fontFamily: "monospace" } },
+      () => loadError ?? ""
+    )
+  );
+}
+
+/**
+ * Creates the reactive page area. Call once at app startup.
+ * list() tracks the single page slot by object identity:
+ *   - slot replaced → old element removed, new one inserted
+ *   - same object → DOM reused, no re-render
+ */
+export function createPageArea() {
+  const spinStyle = document.createElement("style");
+  spinStyle.id = "nuclo-spin-keyframes";
+  spinStyle.textContent = "@keyframes spin { to { transform: rotate(360deg); } }";
+  document.head.appendChild(spinStyle);
+
+  return main(
+    {
+      id: "page-container",
+      style: { minHeight: "calc(100vh - 160px)", paddingTop: "64px" },
+    },
+    when(() => isLoading, Spinner()),
+    when(() => loadError !== null, ErrorDisplay()),
+    list(
+      () => pageSlot,
+      (slot) => slot.fn()
+    )
+  );
 }
 
 export async function loadPage(path: string): Promise<void> {
-  if (!pageContainerElement) {
-    console.error("Page container not set");
-    return;
-  }
+  isLoading = true;
+  loadError = null;
+  pageSlot = [];
+  update();
 
   try {
-    pageContainerElement.innerHTML = "";
+    const fn = await loadPageFunction(path);
+    isLoading = false;
+    pageSlot = [{ fn }];
+    update();
 
-    const loadingContainer = document.createElement("div");
-    loadingContainer.style.cssText = `
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; min-height: 400px; gap: 16px;
-    `;
-    const spinner = document.createElement("div");
-    spinner.style.cssText = `
-      width: 32px; height: 32px;
-      border: 2px solid var(--c-border);
-      border-top-color: var(--c-primary);
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-    `;
-    if (!document.getElementById("nuclo-spin-keyframes")) {
-      const spinStyle = document.createElement("style");
-      spinStyle.id = "nuclo-spin-keyframes";
-      spinStyle.textContent = "@keyframes spin { to { transform: rotate(360deg); } }";
-      document.head.appendChild(spinStyle);
+    if (!preloadScheduled) {
+      preloadScheduled = true;
+      preloadRoutes();
     }
-    const label = document.createElement("span");
-    label.style.cssText = "font-size: 13px; color: var(--c-text-muted); font-family: inherit;";
-    label.textContent = "Loading...";
-    loadingContainer.appendChild(spinner);
-    loadingContainer.appendChild(label);
-    pageContainerElement.appendChild(loadingContainer);
-
-    const pageFunction = await loadPageFunction(path);
-    pageContainerElement.innerHTML = "";
-    render(pageFunction(), pageContainerElement);
-  } catch (error) {
-    console.error(`Failed to load page for route: ${path}`, error);
-    pageContainerElement.innerHTML = "";
-    const errorContainer = document.createElement("div");
-    errorContainer.style.cssText = `
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      min-height: 400px; gap: 12px; padding: 48px;
-    `;
-    const errorTitle = document.createElement("span");
-    errorTitle.style.cssText = "font-size: 15px; font-weight: 600; color: #ef4444;";
-    errorTitle.textContent = "Failed to load page";
-    const errorMsg = document.createElement("span");
-    errorMsg.style.cssText = "font-size: 13px; color: var(--c-text-muted); font-family: monospace;";
-    errorMsg.textContent = (error as Error).message;
-    errorContainer.appendChild(errorTitle);
-    errorContainer.appendChild(errorMsg);
-    pageContainerElement.appendChild(errorContainer);
+  } catch (err) {
+    isLoading = false;
+    loadError = (err as Error).message;
+    update();
   }
 }
