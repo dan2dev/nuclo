@@ -1,33 +1,13 @@
+/**
+ * router.ts — client-only.
+ * Manages browser navigation state. Never imported by server code.
+ */
 import "nuclo";
 import { updatePageMeta } from "./seo.ts";
 import { loadPage } from "./routes.ts";
+import { routeMap } from "./route-definitions.ts";
 
-const EXAMPLE_SLUGS = [
-  "counter",
-  "todo",
-  "subtasks",
-  "search",
-  "async",
-  "forms",
-  "nested",
-  "animations",
-  "routing",
-  "styled-card",
-] as const;
-
-export type ExampleSlug = (typeof EXAMPLE_SLUGS)[number];
-
-/** Top-level + /examples/:slug */
-export type Route =
-  | "home"
-  | "getting-started"
-  | "core-api"
-  | "tag-builders"
-  | "styling"
-  | "pitfalls"
-  | "examples"
-  | `examples/${ExampleSlug}`
-  | string;
+export type Route = string;
 
 let currentRoute: Route = "home";
 
@@ -39,65 +19,41 @@ export function setCurrentRoute(route: Route) {
   currentRoute = route;
 }
 
+export function isValidRoute(path: string): boolean {
+  return routeMap.has(path);
+}
+
 export function setRoute(route: Route) {
   currentRoute = route;
   const base = import.meta.env.BASE_URL || "/";
-  if (route === "home") {
-    window.history.pushState({}, "", base);
-  } else {
-    const url = base.endsWith("/") ? `${base}${route}` : `${base}/${route}`;
-    window.history.pushState({}, "", url);
-  }
+  const url = route === "home"
+    ? base
+    : base.endsWith("/") ? `${base}${route}` : `${base}/${route}`;
+  window.history.pushState({}, "", url);
   window.scrollTo(0, 0);
   updatePageMeta(route);
   update();
   loadPage(route);
 }
 
-function isValidRoute(routePath: string): boolean {
-  if (
-    [
-      "home",
-      "getting-started",
-      "core-api",
-      "tag-builders",
-      "styling",
-      "pitfalls",
-      "examples",
-    ].includes(routePath)
-  ) {
-    return true;
-  }
-  if (routePath.startsWith("examples/")) {
-    const slug = routePath.slice("examples/".length);
-    return EXAMPLE_SLUGS.includes(slug as ExampleSlug);
-  }
-  return false;
-}
-
 export function initRouter() {
   const base = import.meta.env.BASE_URL || "/";
-  const pathname = window.location.pathname;
-
-  let routePath = pathname.replace(base, "");
-  routePath = routePath.replace(/^\/+|\/+$/g, "");
-
+  const routePath = window.location.pathname
+    .replace(base, "")
+    .replace(/^\/+|\/+$/g, "");
   const route = routePath || "home";
-  if (isValidRoute(route)) {
-    currentRoute = route as Route;
-  }
+  currentRoute = isValidRoute(route) ? route : "home";
 
   updatePageMeta(currentRoute);
   update();
   loadPage(currentRoute);
 
   window.addEventListener("popstate", () => {
-    const pathname = window.location.pathname;
-    let routePath = pathname.replace(base, "");
-    routePath = routePath.replace(/^\/+|\/+$/g, "");
-
-    const newRoute = routePath || "home";
-    currentRoute = isValidRoute(newRoute) ? (newRoute as Route) : "home";
+    const newPath = window.location.pathname
+      .replace(base, "")
+      .replace(/^\/+|\/+$/g, "");
+    const newRoute = newPath || "home";
+    currentRoute = isValidRoute(newRoute) ? newRoute : "home";
     updatePageMeta(currentRoute);
     loadPage(currentRoute);
   });

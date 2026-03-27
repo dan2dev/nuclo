@@ -22,9 +22,6 @@ export default defineConfig({
     manifest: true,
     rollupOptions: {
       input: 'src/main.ts',
-      output: {
-        inlineDynamicImports: true,
-      },
     },
   },
 })
