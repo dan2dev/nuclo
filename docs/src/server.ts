@@ -4,6 +4,7 @@ import 'nuclo/polyfill';
 import 'nuclo';
 import { renderToString } from 'nuclo/ssr';
 import { ssrMatchRoute } from './ssr-app.ts';
+import { routeMap } from './route-definitions.ts';
 import { globalCss } from './styles.ts';
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -69,14 +70,19 @@ async function appFetch(
   const { pathname } = new URL(req.url);
 
   const route = pathname === '/' ? 'home' : pathname.replace(/^\/|\/+$/g, '');
-  const element = await ssrMatchRoute(route);
+  const known = routeMap.has(route);
+  const renderRoute = known ? route : 'home';
+  const status = known ? 200 : 404;
+
+  const element = await ssrMatchRoute(renderRoute);
   const ssrHtml = renderToString(element);
 
-  const html = (await transformHtml(htmlTemplate, pathname))
+  const html = (await transformHtml(htmlTemplate, known ? pathname : '/'))
     .replace('{{html}}', ssrHtml)
     .replace('{{styles}}', globalCss);
 
   return new Response(html, {
+    status,
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
   });
 }
