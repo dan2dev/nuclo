@@ -14,6 +14,22 @@ type RenderableInput =
   | undefined;
 
 /**
+ * SVG attributes that are natively camelCase and must NOT be converted to kebab-case.
+ * Most SVG attributes are already kebab-case (stroke-width, fill-rule, etc.), but a
+ * handful are defined as camelCase in the SVG spec and must be preserved.
+ */
+const SVG_PRESERVE_CASE_ATTRS = new Set([
+  'viewBox', 'preserveAspectRatio', 'markerWidth', 'markerHeight',
+  'gradientTransform', 'patternTransform', 'clipPathUnits', 'gradientUnits',
+  'patternUnits', 'pathLength', 'refX', 'refY', 'stdDeviation',
+  'baseFrequency', 'numOctaves', 'kernelMatrix', 'tableValues',
+  'targetX', 'targetY', 'specularExponent', 'specularConstant',
+  'diffuseConstant', 'surfaceScale', 'xChannelSelector', 'yChannelSelector',
+  'edgeMode', 'stitchTiles', 'spreadMethod', 'patternContentUnits',
+  'markerUnits', 'startOffset', 'textLength', 'lengthAdjust',
+]);
+
+/**
  * HTML boolean attributes — presence means true, absence means false.
  * When the stored value is the string "true" or "false" (from setAttribute),
  * we must re-apply boolean semantics instead of outputting the raw string.
@@ -90,8 +106,11 @@ function serializeAttributes(element: Element): string {
             if (colonIdx === -1) return decl;
             const key = decl.slice(0, colonIdx).trim();
             const val = decl.slice(colonIdx + 1).trim();
+            // Skip declarations with empty values (e.g. reactive styles that resolved to undefined)
+            if (!val) return '';
             return `${camelToKebab(key)}:${val}`;
           })
+          .filter(Boolean)
           .join(';');
         if (kebabStyle) {
           result += ` style="${escapeHtml(kebabStyle)}"`;
@@ -100,10 +119,13 @@ function serializeAttributes(element: Element): string {
     }
 
     // All remaining attributes from the Map
-    // Convert camelCase names (e.g. ariaLabel → aria-label) that the polyfill
-    // stores as-is because NucloElement lacks the browser property mappings.
+    // Convert camelCase ARIA/HTML attribute names (e.g. ariaLabel → aria-label) that the
+    // polyfill stores as-is because NucloElement lacks the browser property mappings.
+    // SVG attributes that are natively camelCase (e.g. viewBox, preserveAspectRatio) must
+    // NOT be converted — they are stored via setAttribute() as-is.
     for (const [name, value] of element.attributes) {
-      result += serializeAttribute(camelToKebab(name), value);
+      const htmlName = SVG_PRESERVE_CASE_ATTRS.has(name) ? name : camelToKebab(name);
+      result += serializeAttribute(htmlName, value);
     }
     return result;
   }
