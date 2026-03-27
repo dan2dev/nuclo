@@ -136,9 +136,8 @@ const e = {
 };
 
 function routeHref(route: Route) {
-  return route === "home"
-    ? import.meta.env.BASE_URL
-    : `${import.meta.env.BASE_URL}${route}`;
+  const base = import.meta.env.BASE_URL || "/";
+  return route === "home" ? base : `${base}${route}`;
 }
 
 function Breadcrumb() {

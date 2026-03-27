@@ -28,9 +28,9 @@ describe("SSR renderToString - Edge Cases", () => {
 
       const html = renderToString(elem);
 
-      expect(html).toContain('background-color:red');
-      expect(html).toContain('font-size:16px');
-      expect(html).toContain('margin-top:10px');
+      expect(html).toContain('background-color: red;');
+      expect(html).toContain('font-size: 16px;');
+      expect(html).toContain('margin-top: 10px;');
     });
 
     it("should handle complex CSS properties", () => {
@@ -44,9 +44,9 @@ describe("SSR renderToString - Edge Cases", () => {
 
       const html = renderToString(elem);
 
-      expect(html).toContain('border-top-left-radius:5px');
-      expect(html).toContain('webkit-transform:rotate(45deg)');
-      expect(html).toContain('moz-box-shadow:0 0 10px rgba(0,0,0,0.5)');
+      expect(html).toContain('border-top-left-radius: 5px;');
+      expect(html).toContain('webkit-transform: rotate(45deg);');
+      expect(html).toContain('moz-box-shadow: 0 0 10px rgba(0,0,0,0.5);');
     });
 
     it("should escape dangerous content in style values", () => {
@@ -183,7 +183,8 @@ describe("SSR renderToString - Edge Cases", () => {
       const text = document.createTextNode('<script>alert("xss")</script>');
       const html = renderToString(text);
 
-      expect(html).toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+      // Quotes are safe in text nodes — only &, < and > need escaping
+      expect(html).toBe('&lt;script&gt;alert("xss")&lt;/script&gt;');
     });
 
     it("should handle empty text nodes", () => {

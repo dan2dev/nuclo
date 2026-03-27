@@ -30,8 +30,9 @@ function NavLink(label: string, route: Route) {
     return r === route;
   };
 
+  const base = import.meta.env.BASE_URL || "/";
   return a(
-    { href: route === "home" ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}${route}` },
+    { href: route === "home" ? base : `${base}${route}` },
     cn(
       display("flex")
         .alignItems("center")
@@ -56,7 +57,7 @@ function NavLink(label: string, route: Route) {
 
 function Brand() {
   return a(
-    { href: import.meta.env.BASE_URL },
+    { href: import.meta.env.BASE_URL || "/" },
     cn(
       display("flex")
         .alignItems("center")

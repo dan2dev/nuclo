@@ -3,7 +3,7 @@
  * Renders Nuclo components to HTML strings in Node.js environment
  */
 
-import { escapeHtml, camelToKebab } from '../utility/stringUtils';
+import { escapeHtml, escapeText, camelToKebab } from '../utility/stringUtils';
 import { createElement } from '../utility/dom';
 
 type RenderableInput =
@@ -61,11 +61,9 @@ function serializeAttribute(name: string, value: unknown): string {
 
   if (name === 'style' && typeof value === 'object') {
     const styleStr = Object.entries(value)
-      .map(([key, val]) => {
-        const cssKey = camelToKebab(key);
-        return `${cssKey}:${val}`;
-      })
-      .join(';');
+      .filter(([, val]) => val != null && val !== '')
+      .map(([key, val]) => `${camelToKebab(key)}: ${val};`)
+      .join(' ');
     return styleStr ? ` style="${escapeHtml(styleStr)}"` : '';
   }
 
@@ -108,10 +106,10 @@ function serializeAttributes(element: Element): string {
             const val = decl.slice(colonIdx + 1).trim();
             // Skip declarations with empty values (e.g. reactive styles that resolved to undefined)
             if (!val) return '';
-            return `${camelToKebab(key)}:${val}`;
+            return `${camelToKebab(key)}: ${val};`;
           })
           .filter(Boolean)
-          .join(';');
+          .join(' ');
         if (kebabStyle) {
           result += ` style="${escapeHtml(kebabStyle)}"`;
         }
@@ -182,9 +180,9 @@ function getChildNodes(node: Node): ArrayLike<Node> {
  * Serializes a DOM node to HTML string
  */
 function serializeNode(node: Node): string {
-  // Text node
+  // Text node — only & < > need escaping; quotes are safe in text content
   if (node.nodeType === 3) { // Node.TEXT_NODE
-    return escapeHtml(node.textContent || '');
+    return escapeText(node.textContent || '');
   }
 
   // Comment node
@@ -217,7 +215,7 @@ function serializeNode(node: Node): string {
       // Fallback: textContent set directly on the element (e.g. el.textContent = "...")
       const tc = (node as any).textContent;
       if (typeof tc === 'string' && tc) {
-        childrenHtml = escapeHtml(tc);
+        childrenHtml = escapeText(tc);
       }
     }
 

@@ -49,6 +49,14 @@ function getPage(route: string): ReturnType<typeof div> {
 export function ssrMatchRoute(route: string): ReturnType<typeof div> {
   setCurrentRoute(route as Route);
 
+  // In the browser, the page is rendered via render(pageEl, pageContainerElement) which
+  // always passes index=0. We replicate that by wrapping the factory so it ignores the
+  // parent's localIndex and always starts at 0, keeping text-N / when-N markers identical
+  // between SSR and browser.
+  const pageFn = getPage(route);
+  const pageAtZero = (parent: ExpandedElement<ElementTagName>) =>
+    (pageFn as NodeModFn<ElementTagName>)(parent, 0);
+
   return div(
     Header(),
     main({
@@ -57,7 +65,7 @@ export function ssrMatchRoute(route: string): ReturnType<typeof div> {
         minHeight: 'calc(100vh - 160px)',
         paddingTop: '64px',
       },
-    }, getPage(route)),
+    }, pageAtZero as NodeModFn<'main'>),
     Footer(),
   );
 }

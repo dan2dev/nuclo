@@ -300,7 +300,7 @@ describe("E-commerce product page", () => {
   });
 
   it("renders style attribute for original price", () => {
-    expect(html).toContain("text-decoration:line-through");
+    expect(html).toContain("text-decoration: line-through;");
   });
 });
 
@@ -636,7 +636,7 @@ describe("Multi-section landing page", () => {
 
   it("renders the hero section with h1 and subtitle", () => {
     expect(html).toContain("Build Fast. Ship Faster.");
-    expect(html).toContain("The lightweight framework that doesn&#039;t get in your way");
+    expect(html).toContain("The lightweight framework that doesn't get in your way");
   });
 
   it("renders two hero CTA buttons", () => {
@@ -1250,7 +1250,7 @@ describe("Social media feed", () => {
 
   it("renders comment text content", () => {
     expect(html).toContain("Congrats! Nuclo is amazing.");
-    expect(html).toContain("Can&#039;t wait to see it!");
+    expect(html).toContain("Can't wait to see it!");
     expect(html).toContain("This was a game changer for our SEO!");
   });
 

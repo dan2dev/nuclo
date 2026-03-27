@@ -23,7 +23,7 @@ export function camelToKebab(str: string): string {
 }
 
 /**
- * Escapes HTML special characters to prevent XSS
+ * Escapes HTML special characters in attribute values (includes " and ')
  */
 export function escapeHtml(text: string): string {
   const map: Record<string, string> = {
@@ -34,4 +34,12 @@ export function escapeHtml(text: string): string {
     "'": '&#039;'
   };
   return text.replace(/[&<>"']/g, (char) => map[char]);
+}
+
+/**
+ * Escapes HTML special characters in text node content.
+ * Only &, < and > need escaping — quotes are safe inside text nodes.
+ */
+export function escapeText(text: string): string {
+  return text.replace(/[&<>]/g, (char) => (char === '&' ? '&amp;' : char === '<' ? '&lt;' : '&gt;'));
 }
