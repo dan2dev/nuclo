@@ -1,4 +1,4 @@
-import type { Route } from "./router.ts";
+import { routeMap } from "./route-definitions.ts";
 
 interface PageMeta {
   title: string;
@@ -120,23 +120,12 @@ const routeMeta: Record<string, PageMeta> = {
   },
 };
 
-const EXAMPLE_ROUTES_LIST = [
-  "examples/counter",
-  "examples/todo",
-  "examples/subtasks",
-  "examples/search",
-  "examples/async",
-  "examples/forms",
-  "examples/nested",
-  "examples/animations",
-  "examples/routing",
-  "examples/styled-card",
-] as const;
+const exampleRoutes = [...routeMap.keys()].filter(p => p.startsWith("examples/"));
 
 /**
  * Updates the page title and meta tags based on the current route
  */
-export function updatePageMeta(route: Route) {
+export function updatePageMeta(route: string) {
   const meta = routeMeta[route] || routeMeta.home;
   const baseUrl = "https://nuclo.dan2.dev/";
   const routeUrl = route === "home" ? baseUrl : `${baseUrl}${route}`;
@@ -186,7 +175,7 @@ function updateLinkTag(rel: string, href: string) {
   element.setAttribute("href", href);
 }
 
-function generateStructuredData(route: Route): object[] {
+function generateStructuredData(route: string): object[] {
   const baseUrl = "https://nuclo.dan2.dev/";
   const routeUrl = route === "home" ? baseUrl : `${baseUrl}${route}`;
   const meta = routeMeta[route] || routeMeta.home;
@@ -307,8 +296,8 @@ function generateStructuredData(route: Route): object[] {
       "@type": "ItemList",
       name: "Nuclo Examples",
       description: "Interactive examples showcasing Nuclo's capabilities",
-      numberOfItems: EXAMPLE_ROUTES_LIST.length,
-      itemListElement: EXAMPLE_ROUTES_LIST.map((exRoute, index) => {
+      numberOfItems: exampleRoutes.length,
+      itemListElement: exampleRoutes.map((exRoute, index) => {
         const exMeta = routeMeta[exRoute];
         return {
           "@type": "ListItem",
@@ -324,7 +313,7 @@ function generateStructuredData(route: Route): object[] {
   return schemas;
 }
 
-function generateBreadcrumbs(route: Route): Array<{ name: string; url: string }> {
+function generateBreadcrumbs(route: string): Array<{ name: string; url: string }> {
   const baseUrl = "https://nuclo.dan2.dev/";
   const breadcrumbs = [{ name: "Home", url: baseUrl }];
 
@@ -344,7 +333,7 @@ function generateBreadcrumbs(route: Route): Array<{ name: string; url: string }>
   return breadcrumbs;
 }
 
-function updateStructuredData(route: Route) {
+function updateStructuredData(route: string) {
   const schemas = generateStructuredData(route);
 
   const existingScripts = document.querySelectorAll('script[type="application/ld+json"][data-dynamic="true"]');

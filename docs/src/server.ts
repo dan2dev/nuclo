@@ -69,7 +69,7 @@ async function appFetch(
   const { pathname } = new URL(req.url);
 
   const route = pathname === '/' ? 'home' : pathname.replace(/^\/|\/+$/g, '');
-  const element = ssrMatchRoute(route);
+  const element = await ssrMatchRoute(route);
   const ssrHtml = renderToString(element);
 
   const html = (await transformHtml(htmlTemplate, pathname))
