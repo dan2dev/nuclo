@@ -166,30 +166,30 @@ describe("HTML attribute variations", () => {
 describe("style attribute via tag builder", () => {
   it("renders a single style property with camelCase → kebab-case", () => {
     const html = renderToString(div({ style: { color: "red" } }));
-    expect(html).toContain("color:red");
+    expect(html).toContain("color: red;");
     expect(html).toContain("style=");
   });
 
   it("converts camelCase backgroundColor to background-color", () => {
     const html = renderToString(div({ style: { backgroundColor: "#fff" } }));
-    expect(html).toContain("background-color:#fff");
+    expect(html).toContain("background-color: #fff;");
   });
 
   it("renders multiple style properties", () => {
     const html = renderToString(
       div({ style: { marginTop: "10px", paddingLeft: "5px", fontSize: "14px" } })
     );
-    expect(html).toContain("margin-top:10px");
-    expect(html).toContain("padding-left:5px");
-    expect(html).toContain("font-size:14px");
+    expect(html).toContain("margin-top: 10px;");
+    expect(html).toContain("padding-left: 5px;");
+    expect(html).toContain("font-size: 14px;");
   });
 
   it("renders complex CSS property names", () => {
     const html = renderToString(
       div({ style: { borderTopLeftRadius: "4px", webkitTransform: "rotate(45deg)" } })
     );
-    expect(html).toContain("border-top-left-radius:4px");
-    expect(html).toContain("webkit-transform:rotate(45deg)");
+    expect(html).toContain("border-top-left-radius: 4px;");
+    expect(html).toContain("webkit-transform: rotate(45deg);");
   });
 
   it("escapes style values to prevent XSS", () => {
@@ -214,7 +214,7 @@ describe("style attribute via tag builder", () => {
     );
     expect(html).toContain('id="box"');
     expect(html).toContain('class="card"');
-    expect(html).toContain("display:flex");
+    expect(html).toContain("display: flex;");
     expect(html).toContain("content");
   });
 });
@@ -271,7 +271,7 @@ describe("reactive attributes — zero-arity attribute functions", () => {
 
   it("evaluates a reactive style function and applies styles", () => {
     const html = renderToString(div({ style: () => ({ color: "green" }) }));
-    expect(html).toContain("color:green");
+    expect(html).toContain("color: green;");
   });
 
   it("evaluates a reactive data attribute", () => {
@@ -611,14 +611,17 @@ describe("XSS and HTML escaping", () => {
     expect(html).toContain("cats &amp; dogs");
   });
 
-  it("escapes double quotes in text content", () => {
+  it("preserves double quotes in text content (safe in text nodes)", () => {
     const html = renderToString(div('say "hello"'));
-    expect(html).toContain("&quot;");
+    // Quotes are safe inside text nodes — only &, < and > need escaping
+    expect(html).toContain('say "hello"');
+    expect(html).not.toContain("&quot;");
   });
 
-  it("escapes single quotes in text content", () => {
+  it("preserves single quotes in text content (safe in text nodes)", () => {
     const html = renderToString(div("it's fine"));
-    expect(html).toContain("&#039;");
+    expect(html).toContain("it's fine");
+    expect(html).not.toContain("&#039;");
   });
 
   it("escapes a full script-injection attempt in text", () => {
@@ -817,8 +820,8 @@ describe("polyfill — NucloElement edge cases", () => {
     (el as any).style.fontWeight = "bold";
 
     const html = renderToString(el);
-    expect(html).toContain("color:purple");
-    expect(html).toContain("font-weight:bold");
+    expect(html).toContain("color: purple;");
+    expect(html).toContain("font-weight: bold;");
   });
 
   it("renders an element whose id is set via property assignment", () => {

@@ -287,7 +287,8 @@ function exampleIdToRoute(exampleId: string): Route {
 
 function exampleRouteHref(exampleId: string) {
   const route = exampleIdToRoute(exampleId);
-  return `${import.meta.env.BASE_URL}${route}`;
+  const base = import.meta.env.BASE_URL || "/";
+  return `${base}${route}`;
 }
 
 function openExample(exampleId: string) {

@@ -311,7 +311,7 @@ function PseudoClassesSection() {
 
 function NextCard(route: Route, title: string, description: string) {
   return a(
-    { href: route === "home" ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}${route}` },
+    { href: (() => { const base = import.meta.env.BASE_URL || "/"; return route === "home" ? base : `${base}${route}`; })() },
     st.nextCard,
     div(
       cn(display("flex").alignItems("center").justifyContent("space-between").gap("12px")),

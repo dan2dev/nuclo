@@ -16,9 +16,8 @@ export function ExampleLayout(opts: {
   code: string;
 }) {
   function routeHref(r: string) {
-    return r === "home"
-      ? import.meta.env.BASE_URL
-      : `${import.meta.env.BASE_URL}${r}`;
+    const base = import.meta.env.BASE_URL || "/";
+    return r === "home" ? base : `${base}${r}`;
   }
 
   const tocItems: DocsTocItem[] = [
