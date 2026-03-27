@@ -208,7 +208,7 @@ describe("SSR renderToString - Edge Cases", () => {
         )
       );
 
-      expect(html).toContain('<div><div><div><div><span>Deep content</span></div></div></div></div>');
+      expect(html).toContain('<div><div><div><div><span><!-- text-0 -->Deep content</span></div></div></div></div>');
     });
 
     it("should handle mixed content types", () => {
@@ -235,13 +235,13 @@ describe("SSR renderToString - Edge Cases", () => {
     it("should handle unicode characters", () => {
       const html = renderToString(div("Hello 世界 🎉"));
 
-      expect(html).toBe('<div>Hello 世界 🎉</div>');
+      expect(html).toBe('<div><!-- text-0 -->Hello 世界 🎉</div>');
     });
 
     it("should handle newlines and whitespace", () => {
       const html = renderToString(div("Line 1\nLine 2\tTabbed"));
 
-      expect(html).toBe('<div>Line 1\nLine 2\tTabbed</div>');
+      expect(html).toBe('<div><!-- text-0 -->Line 1\nLine 2\tTabbed</div>');
     });
   });
 });

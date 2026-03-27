@@ -4,9 +4,8 @@
 
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach } from 'vitest';
-import { 
-  createMarkerComment,
-  createMarkerPair, 
+import {
+  createMarkerPair,
   clearBetweenMarkers,
   insertNodesBefore,
   safeRemoveChild
@@ -20,83 +19,46 @@ describe('DOM Markers', () => {
     document.body.appendChild(container);
   });
 
-  describe('createMarkerComment', () => {
-    it('should create a comment node with prefix', () => {
-      const marker = createMarkerComment('test');
-      
-      expect(marker).toBeInstanceOf(Comment);
-      expect(marker.textContent).toMatch(/^test-[a-z0-9]+$/);
-    });
-
-    it('should create unique markers each time', () => {
-      const marker1 = createMarkerComment('test');
-      const marker2 = createMarkerComment('test');
-      
-      expect(marker1.textContent).not.toBe(marker2.textContent);
-    });
-
-    it('should handle different prefixes', () => {
-      const listMarker = createMarkerComment('list');
-      const componentMarker = createMarkerComment('component');
-      
-      expect(listMarker.textContent).toMatch(/^list-[a-z0-9]+$/);
-      expect(componentMarker.textContent).toMatch(/^component-[a-z0-9]+$/);
-    });
-
-    it('should handle empty prefix', () => {
-      const marker = createMarkerComment('');
-      
-      expect(marker).toBeInstanceOf(Comment);
-      expect(marker.textContent).toMatch(/^-[a-z0-9]+$/);
-    });
-
-    it('should handle special characters in prefix', () => {
-      const marker = createMarkerComment('test-123_abc');
-      
-      expect(marker.textContent).toMatch(/^test-123_abc-[a-z0-9]+$/);
-    });
-  });
-
   describe('createMarkerPair', () => {
     it('should create start and end comment markers', () => {
-      const { start, end } = createMarkerPair('test');
-      
+      const { start, end } = createMarkerPair('test', 0);
+
       expect(start).toBeInstanceOf(Comment);
       expect(end).toBeInstanceOf(Comment);
-      expect(start.textContent).toMatch(/^test-start-[a-z0-9]+$/);
+      expect(start.textContent).toBe('test-start-0');
       expect(end.textContent).toBe('test-end');
     });
 
-    it('should create unique marker pairs', () => {
-      const pair1 = createMarkerPair('test');
-      const pair2 = createMarkerPair('test');
-      
+    it('should create unique marker pairs when given different ids', () => {
+      const pair1 = createMarkerPair('test', 0);
+      const pair2 = createMarkerPair('test', 1);
+
       expect(pair1.start).not.toBe(pair2.start);
       expect(pair1.end).not.toBe(pair2.end);
       expect(pair1.start.textContent).not.toBe(pair2.start.textContent);
     });
 
     it('should handle different marker names', () => {
-      const { start: start1, end: end1 } = createMarkerPair('list');
-      const { start: start2, end: end2 } = createMarkerPair('component');
-      
-      expect(start1.textContent).toMatch(/^list-start-[a-z0-9]+$/);
+      const { start: start1, end: end1 } = createMarkerPair('list', 0);
+      const { start: start2, end: end2 } = createMarkerPair('component', 0);
+
+      expect(start1.textContent).toBe('list-start-0');
       expect(end1.textContent).toBe('list-end');
-      expect(start2.textContent).toMatch(/^component-start-[a-z0-9]+$/);
+      expect(start2.textContent).toBe('component-start-0');
       expect(end2.textContent).toBe('component-end');
     });
 
     it('should handle empty marker names', () => {
-      const { start, end } = createMarkerPair('');
-      
-      expect(start.textContent).toMatch(/^-start-[a-z0-9]+$/);
+      const { start, end } = createMarkerPair('', 0);
+
+      expect(start.textContent).toBe('-start-0');
       expect(end.textContent).toBe('-end');
     });
   });
 
   describe('clearBetweenMarkers', () => {
     it('should clear content between markers', () => {
-      const { start, end } = createMarkerPair('test');
+      const { start, end } = createMarkerPair('test', 0);
       const element1 = document.createElement('span');
       const element2 = document.createElement('div');
       
@@ -115,7 +77,7 @@ describe('DOM Markers', () => {
     });
 
     it('should handle no content between markers', () => {
-      const { start, end } = createMarkerPair('test');
+      const { start, end } = createMarkerPair('test', 0);
       
       container.appendChild(start);
       container.appendChild(end);
@@ -128,7 +90,7 @@ describe('DOM Markers', () => {
     });
 
     it('should handle text nodes between markers', () => {
-      const { start, end } = createMarkerPair('test');
+      const { start, end } = createMarkerPair('test', 0);
       const textNode = document.createTextNode('Hello');
       
       container.appendChild(start);
@@ -142,7 +104,7 @@ describe('DOM Markers', () => {
     });
 
     it('should handle mixed node types between markers', () => {
-      const { start, end } = createMarkerPair('test');
+      const { start, end } = createMarkerPair('test', 0);
       const element = document.createElement('span');
       const textNode = document.createTextNode('Text');
       const commentNode = document.createComment('Comment');
@@ -161,7 +123,7 @@ describe('DOM Markers', () => {
     });
 
     it('should handle nested elements between markers', () => {
-      const { start, end } = createMarkerPair('test');
+      const { start, end } = createMarkerPair('test', 0);
       const parent = document.createElement('div');
       const child = document.createElement('span');
       parent.appendChild(child);
@@ -176,7 +138,7 @@ describe('DOM Markers', () => {
     });
 
     it('should handle markers not in same parent', () => {
-      const { start, end } = createMarkerPair('test');
+      const { start, end } = createMarkerPair('test', 0);
       const otherContainer = document.createElement('div');
       
       container.appendChild(start);
@@ -188,7 +150,7 @@ describe('DOM Markers', () => {
     });
 
     it('should handle disconnected markers', () => {
-      const { start, end } = createMarkerPair('test');
+      const { start, end } = createMarkerPair('test', 0);
       
       expect(() => {
         clearBetweenMarkers(start, end);
@@ -403,7 +365,7 @@ describe('DOM Markers', () => {
 
   describe('integration scenarios', () => {
     it('should support marker-based content replacement', () => {
-      const { start, end } = createMarkerPair('content');
+      const { start, end } = createMarkerPair('content', 0);
       const oldContent = document.createTextNode('Old content');
       
       container.appendChild(start);
@@ -426,8 +388,8 @@ describe('DOM Markers', () => {
     });
 
     it('should support multiple marker pairs in same container', () => {
-      const { start: start1, end: end1 } = createMarkerPair('section1');
-      const { start: start2, end: end2 } = createMarkerPair('section2');
+      const { start: start1, end: end1 } = createMarkerPair('section1', 0);
+      const { start: start2, end: end2 } = createMarkerPair('section2', 0);
       
       container.appendChild(start1);
       container.appendChild(document.createElement('div'));
@@ -448,7 +410,7 @@ describe('DOM Markers', () => {
     });
 
     it('should handle complex marker operations', () => {
-      const { start, end } = createMarkerPair('dynamic');
+      const { start, end } = createMarkerPair('dynamic', 0);
       
       container.appendChild(start);
       container.appendChild(end);
@@ -475,7 +437,7 @@ describe('DOM Markers', () => {
     });
 
     it('should handle cleanup scenarios', () => {
-      const { start, end } = createMarkerPair('cleanup');
+      const { start, end } = createMarkerPair('cleanup', 0);
       const elements = [];
       
       container.appendChild(start);
@@ -500,7 +462,7 @@ describe('DOM Markers', () => {
     });
 
     it('should handle performance with many operations', () => {
-      const { start, end } = createMarkerPair('perf');
+      const { start, end } = createMarkerPair('perf', 0);
       
       container.appendChild(start);
       container.appendChild(end);

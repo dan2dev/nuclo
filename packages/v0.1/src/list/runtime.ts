@@ -137,8 +137,9 @@ export function createListRuntime<TItem, TTagName extends ElementTagName = Eleme
   itemsProvider: ListItemsProvider<TItem>,
   renderItem: ListRenderer<TItem, TTagName>,
   host: ExpandedElement<TTagName>,
+  index: number,
 ): ListRuntime<TItem, TTagName> {
-  const { start: startMarker, end: endMarker } = createMarkerPair("list");
+  const { start: startMarker, end: endMarker } = createMarkerPair("list", index);
 
   const runtime: ListRuntime<TItem, TTagName> = {
     itemsProvider,

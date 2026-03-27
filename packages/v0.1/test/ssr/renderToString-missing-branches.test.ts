@@ -50,8 +50,8 @@ describe("SSR renderToString missing branches", () => {
   it("catches errors when document.createElement returns nullish", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const createElementSpy = vi
-      .spyOn(document as any, "createElement")
-      .mockImplementation(() => undefined);
+      .spyOn(document, "createElement")
+      .mockImplementation(() => undefined as any);
 
     try {
       const html = renderToString((_parent: any) => null);

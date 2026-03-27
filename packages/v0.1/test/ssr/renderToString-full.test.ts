@@ -37,33 +37,33 @@ beforeAll(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("text content types", () => {
   it("renders a string child", () => {
-    expect(renderToString(div("hello"))).toBe("<div>hello</div>");
+    expect(renderToString(div("hello"))).toBe("<div><!-- text-0 -->hello</div>");
   });
 
   it("renders a numeric child", () => {
-    expect(renderToString(div(42))).toBe("<div>42</div>");
+    expect(renderToString(div(42))).toBe("<div><!-- text-0 -->42</div>");
   });
 
   it("renders zero (falsy number)", () => {
-    expect(renderToString(div(0))).toBe("<div>0</div>");
+    expect(renderToString(div(0))).toBe("<div><!-- text-0 -->0</div>");
   });
 
   it("renders boolean true as text", () => {
-    expect(renderToString(div(true))).toBe("<div>true</div>");
+    expect(renderToString(div(true))).toBe("<div><!-- text-0 -->true</div>");
   });
 
   it("renders boolean false as text", () => {
-    expect(renderToString(div(false))).toBe("<div>false</div>");
+    expect(renderToString(div(false))).toBe("<div><!-- text-0 -->false</div>");
   });
 
   it("renders multiple string children in order", () => {
-    expect(renderToString(div("a", "b", "c"))).toBe("<div>abc</div>");
+    expect(renderToString(div("a", "b", "c"))).toBe("<div><!-- text-0 -->a<!-- text-1 -->b<!-- text-2 -->c</div>");
   });
 
   it("renders interleaved text and element siblings", () => {
     const html = renderToString(p("Text ", span("bold"), " end"));
     expect(html).toContain("Text ");
-    expect(html).toContain("<span>bold</span>");
+    expect(html).toContain("<span><!-- text-1 -->bold</span>");
     expect(html).toContain(" end");
     expect(html).toMatch(/^<p>.*<\/p>$/);
   });
@@ -74,15 +74,15 @@ describe("text content types", () => {
 
   it("renders deeply nested text", () => {
     const html = renderToString(div(span(em("deep"))));
-    expect(html).toBe("<div><span><em>deep</em></span></div>");
+    expect(html).toBe("<div><span><em><!-- text-0 -->deep</em></span></div>");
   });
 
   it("renders unicode text without escaping", () => {
-    expect(renderToString(div("日本語 🌸"))).toBe("<div>日本語 🌸</div>");
+    expect(renderToString(div("日本語 🌸"))).toBe("<div><!-- text-0 -->日本語 🌸</div>");
   });
 
   it("renders text with newline and tab characters", () => {
-    expect(renderToString(div("line1\nline2\ttab"))).toBe("<div>line1\nline2\ttab</div>");
+    expect(renderToString(div("line1\nline2\ttab"))).toBe("<div><!-- text-0 -->line1\nline2\ttab</div>");
   });
 });
 
@@ -224,11 +224,11 @@ describe("style attribute via tag builder", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("reactive text — zero-arity resolver functions", () => {
   it("renders the initial value of a string resolver", () => {
-    expect(renderToString(div(() => "reactive"))).toBe("<div>reactive</div>");
+    expect(renderToString(div(() => "reactive"))).toBe("<div><!-- text-0 -->reactive</div>");
   });
 
   it("renders the initial value of a numeric resolver", () => {
-    expect(renderToString(span(() => 99))).toBe("<span>99</span>");
+    expect(renderToString(span(() => 99))).toBe("<span><!-- text-0 -->99</span>");
   });
 
   it("renders multiple reactive text resolvers in order", () => {
@@ -250,7 +250,7 @@ describe("reactive text — zero-arity resolver functions", () => {
   });
 
   it("renders an empty string from a resolver gracefully", () => {
-    expect(renderToString(div(() => ""))).toBe("<div></div>");
+    expect(renderToString(div(() => ""))).toBe("<div><!-- text-0 --></div>");
   });
 });
 
@@ -286,28 +286,28 @@ describe("reactive attributes — zero-arity attribute functions", () => {
 describe("when() conditional rendering in SSR", () => {
   it("renders the if-branch when condition is true", () => {
     const html = renderToString(div(when(() => true, span("yes"))));
-    expect(html).toContain("<span>yes</span>");
+    expect(html).toContain("<span><!-- text-0 -->yes</span>");
   });
 
   it("does not render if-branch content when condition is false", () => {
     const html = renderToString(div(when(() => false, span("no"))));
-    expect(html).not.toContain("<span>no</span>");
+    expect(html).not.toContain("<span><!-- text-0 -->no</span>");
   });
 
   it("renders the else-branch when condition is false", () => {
     const html = renderToString(
       div(when(() => false, span("no")).else(span("fallback")))
     );
-    expect(html).not.toContain("<span>no</span>");
-    expect(html).toContain("<span>fallback</span>");
+    expect(html).not.toContain("<span><!-- text-0 -->no</span>");
+    expect(html).toContain("<span><!-- text-0 -->fallback</span>");
   });
 
   it("renders if-branch and omits else when condition is true", () => {
     const html = renderToString(
       div(when(() => true, span("active")).else(span("inactive")))
     );
-    expect(html).toContain("<span>active</span>");
-    expect(html).not.toContain("<span>inactive</span>");
+    expect(html).toContain("<span><!-- text-0 -->active</span>");
+    expect(html).not.toContain("<span><!-- text-0 -->inactive</span>");
   });
 
   it("evaluates chained .when() and picks the first truthy condition", () => {
@@ -318,9 +318,9 @@ describe("when() conditional rendering in SSR", () => {
           .when(() => true, span("c"))
       )
     );
-    expect(html).toContain("<span>b</span>");
-    expect(html).not.toContain("<span>a</span>");
-    expect(html).not.toContain("<span>c</span>");
+    expect(html).toContain("<span><!-- text-0 -->b</span>");
+    expect(html).not.toContain("<span><!-- text-0 -->a</span>");
+    expect(html).not.toContain("<span><!-- text-0 -->c</span>");
   });
 
   it("evaluates chained .when() and uses else when all are false", () => {
@@ -331,9 +331,9 @@ describe("when() conditional rendering in SSR", () => {
           .else(span("default"))
       )
     );
-    expect(html).toContain("<span>default</span>");
-    expect(html).not.toContain("<span>a</span>");
-    expect(html).not.toContain("<span>b</span>");
+    expect(html).toContain("<span><!-- text-0 -->default</span>");
+    expect(html).not.toContain("<span><!-- text-0 -->a</span>");
+    expect(html).not.toContain("<span><!-- text-0 -->b</span>");
   });
 
   it("renders nothing between markers when no condition matches and no else", () => {
@@ -351,8 +351,8 @@ describe("when() conditional rendering in SSR", () => {
     const html = renderToString(
       div(when(() => true, span("first"), span("second")))
     );
-    expect(html).toContain("<span>first</span>");
-    expect(html).toContain("<span>second</span>");
+    expect(html).toContain("<span><!-- text-0 -->first</span>");
+    expect(html).toContain("<span><!-- text-0 -->second</span>");
   });
 
   it("renders nested when() inside another element", () => {
@@ -363,7 +363,7 @@ describe("when() conditional rendering in SSR", () => {
         )
       )
     );
-    expect(html).toContain("<p>nested content</p>");
+    expect(html).toContain("<p><!-- text-0 -->nested content</p>");
     expect(html).toContain("<section>");
   });
 
@@ -377,12 +377,12 @@ describe("when() conditional rendering in SSR", () => {
         )
       )
     );
-    expect(html).toContain("<em>deep</em>");
+    expect(html).toContain("<em><!-- text-0 -->deep</em>");
   });
 
   it("when() with a static boolean true condition", () => {
     const html = renderToString(div(when(true, span("static-true"))));
-    expect(html).toContain("<span>static-true</span>");
+    expect(html).toContain("<span><!-- text-0 -->static-true</span>");
   });
 
   it("when() with a static boolean false condition", () => {
@@ -406,18 +406,18 @@ describe("list() rendering in SSR", () => {
     const html = renderToString(
       div(list(() => ["a", "b", "c"], (item) => span(item)))
     );
-    expect(html).toContain("<span>a</span>");
-    expect(html).toContain("<span>b</span>");
-    expect(html).toContain("<span>c</span>");
+    expect(html).toContain("<span><!-- text-0 -->a</span>");
+    expect(html).toContain("<span><!-- text-1 -->b</span>");
+    expect(html).toContain("<span><!-- text-2 -->c</span>");
   });
 
   it("renders items in order", () => {
     const html = renderToString(
       div(list(() => [1, 2, 3], (item) => li(String(item))))
     );
-    const aIdx = html.indexOf("<li>1</li>");
-    const bIdx = html.indexOf("<li>2</li>");
-    const cIdx = html.indexOf("<li>3</li>");
+    const aIdx = html.indexOf("<li><!-- text-0 -->1</li>");
+    const bIdx = html.indexOf("<li><!-- text-1 -->2</li>");
+    const cIdx = html.indexOf("<li><!-- text-2 -->3</li>");
     expect(aIdx).toBeLessThan(bIdx);
     expect(bIdx).toBeLessThan(cIdx);
   });
@@ -426,7 +426,7 @@ describe("list() rendering in SSR", () => {
     const html = renderToString(
       ul(list(() => ["only"], (item) => li(item)))
     );
-    expect(html).toContain("<li>only</li>");
+    expect(html).toContain("<li><!-- text-0 -->only</li>");
   });
 
   it("renders list items with nested elements", () => {
@@ -438,17 +438,17 @@ describe("list() rendering in SSR", () => {
         )
       )
     );
-    expect(html).toContain("<span>Alice</span>");
-    expect(html).toContain("<span>Bob</span>");
+    expect(html).toContain("<span><!-- text-0 -->Alice</span>");
+    expect(html).toContain("<span><!-- text-1 -->Bob</span>");
   });
 
   it("renders a list inside an ordered list", () => {
     const html = renderToString(
       ol(list(() => ["one", "two", "three"], (item) => li(item)))
     );
-    expect(html).toContain("<li>one</li>");
-    expect(html).toContain("<li>two</li>");
-    expect(html).toContain("<li>three</li>");
+    expect(html).toContain("<li><!-- text-0 -->one</li>");
+    expect(html).toContain("<li><!-- text-1 -->two</li>");
+    expect(html).toContain("<li><!-- text-2 -->three</li>");
     expect(html).toMatch(/^<ol>/);
   });
 });
@@ -460,14 +460,14 @@ describe("mixed content — text and element siblings", () => {
   it("renders text before and after a child element", () => {
     const html = renderToString(p("Hello, ", strong("world"), "!"));
     expect(html).toContain("Hello, ");
-    expect(html).toContain("<strong>world</strong>");
+    expect(html).toContain("<strong><!-- text-1 -->world</strong>");
     expect(html).toContain("!");
   });
 
   it("preserves ordering of text and element siblings", () => {
     const html = renderToString(div("start", span("middle"), "end"));
     const start = html.indexOf("start");
-    const middle = html.indexOf("<span>middle</span>");
+    const middle = html.indexOf("<span><!-- text-1 -->middle</span>");
     const end = html.indexOf("end");
     expect(start).toBeLessThan(middle);
     expect(middle).toBeLessThan(end);
@@ -667,7 +667,7 @@ describe("deep nesting", () => {
         )
       )
     );
-    expect(html).toContain("<em>very deep</em>");
+    expect(html).toContain("<em><!-- text-0 -->very deep</em>");
     expect(html).toContain("<strong>");
     expect(html).toContain("<span>");
     expect(html).toContain("<p>");
@@ -695,9 +695,9 @@ describe("renderManyToString — additional cases", () => {
   it("renders an array of tag-builder factories", () => {
     const results = renderManyToString([div("one"), span("two"), p("three")]);
     expect(results).toEqual([
-      "<div>one</div>",
-      "<span>two</span>",
-      "<p>three</p>",
+      "<div><!-- text-0 -->one</div>",
+      "<span><!-- text-0 -->two</span>",
+      "<p><!-- text-0 -->three</p>",
     ]);
   });
 
@@ -709,9 +709,9 @@ describe("renderManyToString — additional cases", () => {
 
   it("handles a mix of valid and null inputs", () => {
     const results = renderManyToString([div("ok"), null, span("also ok")]);
-    expect(results[0]).toBe("<div>ok</div>");
+    expect(results[0]).toBe("<div><!-- text-0 -->ok</div>");
     expect(results[1]).toBe("");
-    expect(results[2]).toBe("<span>also ok</span>");
+    expect(results[2]).toBe("<span><!-- text-0 -->also ok</span>");
   });
 
   it("returns an empty array for an empty input", () => {
@@ -725,7 +725,7 @@ describe("renderManyToString — additional cases", () => {
 describe("renderToStringWithContainer — additional cases", () => {
   it("wraps content in an <article> tag", () => {
     const html = renderToStringWithContainer(p("text"), "article");
-    expect(html).toBe("<article><p>text</p></article>");
+    expect(html).toBe("<article><p><!-- text-0 -->text</p></article>");
   });
 
   it("wraps content in a <main> with id and class", () => {
@@ -736,7 +736,7 @@ describe("renderToStringWithContainer — additional cases", () => {
     expect(html).toContain('<main');
     expect(html).toContain('id="app"');
     expect(html).toContain('class="container"');
-    expect(html).toContain("<div>content</div>");
+    expect(html).toContain("<div><!-- text-0 -->content</div>");
     expect(html).toContain("</main>");
   });
 
@@ -865,9 +865,9 @@ describe("structural HTML elements", () => {
     );
     expect(html).toContain("<table>");
     expect(html).toContain("<thead>");
-    expect(html).toContain("<th>Name</th>");
+    expect(html).toContain("<th><!-- text-0 -->Name</th>");
     expect(html).toContain("<tbody>");
-    expect(html).toContain("<td>Alice</td>");
+    expect(html).toContain("<td><!-- text-1 -->Alice</td>");
     expect(html).toContain("</table>");
   });
 
@@ -914,8 +914,8 @@ describe("when() combined with list()", () => {
         )
       )
     );
-    expect(html).toContain("<li>x</li>");
-    expect(html).toContain("<li>y</li>");
+    expect(html).toContain("<li><!-- text-0 -->x</li>");
+    expect(html).toContain("<li><!-- text-1 -->y</li>");
   });
 
   it("omits list inside a false when() branch", () => {
@@ -945,6 +945,6 @@ describe("when() combined with list()", () => {
     );
     expect(html).toContain("Alice");
     expect(html).toContain("Bob");
-    expect(html).toContain("<span> (active)</span>");
+    expect(html).toContain("<span><!-- text-1 --> (active)</span>");
   });
 });

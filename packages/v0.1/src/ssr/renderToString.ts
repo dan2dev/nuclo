@@ -209,10 +209,7 @@ function serializeNode(node: Node): string {
     if (childNodes && childNodes.length > 0) {
       for (let i = 0; i < childNodes.length; i++) {
         const child = childNodes[i];
-        // Skip internal framework comment markers (e.g. " text-0 ") that are
-        // reactive anchors for browser-side updates — they have no meaning in
-        // an SSR string and must not appear in the output.
-        if (child && child.nodeType !== 8) {
+        if (child) {
           result += serializeNode(child);
         }
       }
@@ -241,19 +238,12 @@ function serializeNode(node: Node): string {
  * ```
  */
 export function renderToString(input: RenderableInput): string {
-  if (!input) {
-    return '';
-  }
+  if (!input) return '';
 
-  // If it's a function (NodeModFn), call it to create the element
   if (typeof input === 'function') {
     try {
-      // Create a temporary container to render into
       const container = createElement('div');
-      if (!container) {
-        throw new Error('Document is not available. Make sure polyfills are loaded.');
-      }
-
+      if (!container) throw new Error('Document is not available. Make sure polyfills are loaded.');
       const element = input(container as ExpandedElement<ElementTagName>, 0);
       return element && typeof element === 'object' && 'nodeType' in element ? serializeNode(element as Node) : '';
     } catch (error) {
@@ -262,7 +252,6 @@ export function renderToString(input: RenderableInput): string {
     }
   }
 
-  // If it's already a Node, serialize it directly
   if ('nodeType' in input) {
     return serializeNode(input as Node);
   }

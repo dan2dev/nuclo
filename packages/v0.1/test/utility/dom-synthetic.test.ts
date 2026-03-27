@@ -139,7 +139,7 @@ describe('synthetic DOM failure / defensive branch coverage', () => {
     });
 
     it('insertNodesBefore no-ops gracefully when nodes array empty', () => {
-      const { start, end } = createMarkerPair('empty');
+      const { start, end } = createMarkerPair('empty', 0);
       host.appendChild(start);
       host.appendChild(end);
       expect(() => insertNodesBefore([], end)).not.toThrow();

@@ -26,7 +26,7 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
       return null;
     }
 
-    const { start: startMarker, end: endMarker } = createMarkerPair("when");
+    const { start: startMarker, end: endMarker } = createMarkerPair("when", index);
 
     const runtime: WhenRuntime<TTagName> = {
       startMarker,

@@ -34,7 +34,7 @@ function createHost() {
 describe('createListRuntime', () => {
   it('creates a runtime with empty items initially', () => {
     const host = createHost();
-    const rt = createListRuntime(() => [], (_item, _i) => null, host);
+    const rt = createListRuntime(() => [], (_item, _i) => null, host, 0);
     expect(rt.records).toHaveLength(0);
     (host as unknown as HTMLElement).remove();
   });
@@ -50,6 +50,7 @@ describe('createListRuntime', () => {
         return el;
       },
       host,
+      0,
     );
     expect((host as unknown as HTMLElement).querySelectorAll('span').length).toBe(3);
     (host as unknown as HTMLElement).remove();
@@ -70,6 +71,7 @@ describe('updateListRuntimes – disconnected markers (lines 190-200)', () => {
         return el;
       },
       host,
+      0,
     );
 
     // Remove host from DOM – both markers are now disconnected
@@ -88,12 +90,12 @@ describe('updateListRuntimes – disconnected markers (lines 190-200)', () => {
       const el = document.createElement('span') as unknown as ExpandedElement<ElementTagName>;
       (el as unknown as HTMLElement).textContent = item;
       return el;
-    }, aliveHost);
+    }, aliveHost, 0);
 
     createListRuntime(() => ['dead'], (_item) => {
       const el = document.createElement('span') as unknown as ExpandedElement<ElementTagName>;
       return el;
-    }, deadHost);
+    }, deadHost, 0);
 
     // Kill the dead host
     (deadHost as unknown as HTMLElement).remove();
@@ -127,7 +129,7 @@ describe('updateListRuntimes – GC simulation (lines 177-186)', () => {
       const el = document.createElement('li') as unknown as ExpandedElement<ElementTagName>;
       (el as unknown as HTMLElement).textContent = item;
       return el;
-    }, host);
+    }, host, 0);
 
     vi.stubGlobal('WeakRef', OriginalWeakRef);
 
@@ -148,7 +150,7 @@ describe('updateListRuntimes – scope filtering', () => {
       const el = document.createElement('span') as unknown as ExpandedElement<ElementTagName>;
       (el as unknown as HTMLElement).textContent = item;
       return el;
-    }, host);
+    }, host, 0);
 
     items = ['a', 'b'];
     // Scope excludes everything
@@ -171,7 +173,7 @@ describe('list sync algorithm – combinatorial', () => {
       const el = document.createElement('span') as unknown as ExpandedElement<ElementTagName>;
       (el as unknown as HTMLElement).textContent = item;
       return el;
-    }, host);
+    }, host, 0);
 
     expect((host as unknown as HTMLElement).querySelectorAll('span').length).toBe(0);
 
@@ -190,7 +192,7 @@ describe('list sync algorithm – combinatorial', () => {
       const el = document.createElement('span') as unknown as ExpandedElement<ElementTagName>;
       (el as unknown as HTMLElement).textContent = item;
       return el;
-    }, host);
+    }, host, 0);
 
     items = [];
     updateListRuntimes();
@@ -207,7 +209,7 @@ describe('list sync algorithm – combinatorial', () => {
       const el = document.createElement('span') as unknown as ExpandedElement<ElementTagName>;
       (el as unknown as HTMLElement).textContent = item;
       return el;
-    }, host);
+    }, host, 0);
 
     expect((host as unknown as HTMLElement).querySelectorAll('span').length).toBe(3);
 
@@ -218,7 +220,7 @@ describe('list sync algorithm – combinatorial', () => {
     const host = createHost();
     const items = Array.from({ length: 10_000 }, (_, i) => i);
 
-    expect(() => createListRuntime(() => items, () => null, host)).not.toThrow();
+    expect(() => createListRuntime(() => items, () => null, host, 0)).not.toThrow();
 
     (host as unknown as HTMLElement).remove();
   });
@@ -227,7 +229,7 @@ describe('list sync algorithm – combinatorial', () => {
     const host = createHost();
     const items = [1, 2, 3];
 
-    createListRuntime(() => items, () => null, host);
+    createListRuntime(() => items, () => null, host, 0);
     expect((host as unknown as HTMLElement).children.length).toBe(0);
 
     (host as unknown as HTMLElement).remove();
