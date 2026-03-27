@@ -4,7 +4,6 @@ import {
   safeRemoveChild,
   createComment,
   createConditionalComment,
-  createMarkerComment,
   createMarkerPair,
   clearBetweenMarkers,
   insertNodesBefore,
@@ -111,59 +110,49 @@ describe("dom utility edge cases", () => {
     });
   });
 
-  describe("createMarkerComment", () => {
-    it("should create marker comment with random suffix", () => {
-      const comment = createMarkerComment("test");
-      expect(comment).toBeInstanceOf(Comment);
-      expect(comment?.textContent).toMatch(/^test-/);
-    });
-
-    it("should throw in non-browser environment", () => {
-      // This test checks the isBrowser guard
-      // In actual non-browser, isBrowser would be false
-      // But in test environment, we can't easily mock this
-      // So we test that it works in browser environment
-      const comment = createMarkerComment("test");
-      expect(comment).toBeInstanceOf(Comment);
-      expect(comment.textContent).toMatch(/^test-/);
-    });
-
-    it("should throw if comment creation fails", () => {
-      const originalCreateComment = document.createComment;
-      document.createComment = () => null as any;
-
-      expect(() => {
-        createMarkerComment("test");
-      }).toThrow("Failed to create comment");
-
-      document.createComment = originalCreateComment;
-    });
-  });
-
   describe("createMarkerPair", () => {
     it("should create start and end markers", () => {
-      const pair = createMarkerPair("test");
+      const pair = createMarkerPair("test", 0);
       expect(pair.start).toBeInstanceOf(Comment);
       expect(pair.end).toBeInstanceOf(Comment);
-      expect(pair.start.textContent).toMatch(/^test-start-/);
+      expect(pair.start.textContent).toBe("test-start-0");
       expect(pair.end.textContent).toBe("test-end");
     });
 
     it("should throw if end comment creation fails", () => {
       const originalCreateComment = document.createComment;
+      // end comment is created first; make first call return null
       let callCount = 0;
       document.createComment = (text: string) => {
         callCount++;
         if (callCount === 1) {
-          // First call for start marker succeeds
-          return originalCreateComment.call(document, text);
+          // First call is for end marker — fail it
+          return null as any;
         }
-        // Second call for end marker fails
-        return null as any;
+        return originalCreateComment.call(document, text);
       };
 
       expect(() => {
-        createMarkerPair("test");
+        createMarkerPair("test", 0);
+      }).toThrow("Failed to create");
+
+      document.createComment = originalCreateComment;
+    });
+
+    it("should throw if start comment creation fails", () => {
+      const originalCreateComment = document.createComment;
+      let callCount = 0;
+      document.createComment = (text: string) => {
+        callCount++;
+        if (callCount === 2) {
+          // Second call is for start marker — fail it
+          return null as any;
+        }
+        return originalCreateComment.call(document, text);
+      };
+
+      expect(() => {
+        createMarkerPair("test", 0);
       }).toThrow("Failed to create");
 
       document.createComment = originalCreateComment;

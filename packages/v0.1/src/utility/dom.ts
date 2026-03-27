@@ -148,23 +148,12 @@ export function createConditionalComment(tagName: string, suffix = "hidden"): Co
 	}
 }
 
-export function createMarkerComment(prefix: string): Comment {
-  const comment = createCommentSafely(`${prefix}-${Math.random().toString(36).slice(2)}`);
-  if (!comment) {
-    throw new Error("Failed to create comment: document not available");
-  }
-  return comment;
-}
-
-export function createMarkerPair(prefix: string): { start: Comment; end: Comment } {
+export function createMarkerPair(prefix: string, id: number | string): { start: Comment; end: Comment } {
   const endComment = createCommentSafely(`${prefix}-end`);
-  if (!endComment) {
-    throw new Error("Failed to create comment: document not available");
-  }
-  return {
-    start: createMarkerComment(`${prefix}-start`),
-    end: endComment
-  };
+  if (!endComment) throw new Error("Failed to create comment: document not available");
+  const startComment = createCommentSafely(`${prefix}-start-${id}`);
+  if (!startComment) throw new Error("Failed to create comment: document not available");
+  return { start: startComment, end: endComment };
 }
 
 export function clearBetweenMarkers(startMarker: Comment, endMarker: Comment): void {

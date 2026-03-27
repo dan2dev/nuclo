@@ -26,7 +26,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       const initialCount = container.querySelectorAll("div").length;
 
       // Sync again with same items
@@ -43,7 +43,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       
       // Remove markers from DOM
       container.removeChild(runtime.startMarker);
@@ -66,7 +66,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       expect(container.querySelectorAll("div").length).toBe(3);
 
       // Switch to different array with same values
@@ -87,7 +87,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       expect(container.querySelectorAll("div").length).toBe(3);
 
       items = [];
@@ -104,7 +104,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       expect(container.querySelectorAll("div").length).toBe(2);
 
       items = [1, 2, 3];
@@ -123,7 +123,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       expect(container.querySelectorAll("div").length).toBe(2);
 
       items = [1, 2, 3];
@@ -143,7 +143,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       const initial = Array.from(container.querySelectorAll("div"));
       expect(initial.map((d) => d.dataset.id)).toEqual(["1", "2", "3"]);
 
@@ -167,7 +167,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       const initial = Array.from(container.querySelectorAll("div"));
       const [d1, d2, d3] = initial;
 
@@ -190,7 +190,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       const initial = Array.from(container.querySelectorAll("div"));
       const [a, b] = initial;
 
@@ -213,7 +213,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       const initial = Array.from(container.querySelectorAll("div"));
 
       items = [2, 2, 1, 1];
@@ -235,7 +235,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       expect(container.querySelectorAll("div").length).toBe(2);
       expect(container.textContent).not.toContain("2");
 
@@ -259,7 +259,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       
       expect(runtime.startMarker).toBeInstanceOf(Comment);
       expect(runtime.endMarker).toBeInstanceOf(Comment);
@@ -276,7 +276,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       
       expect(container.childNodes.length).toBeGreaterThan(0);
       expect(container.contains(runtime.startMarker)).toBe(true);
@@ -294,7 +294,7 @@ describe("list runtime edge cases", () => {
         return div;
       };
 
-      const runtime = createListRuntime(itemsProvider, renderItem, container);
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
       expect(container.querySelectorAll("div").length).toBe(3);
 
       // Remove markers from DOM
@@ -323,8 +323,8 @@ describe("list runtime edge cases", () => {
       const container2 = document.createElement("div");
       document.body.appendChild(container2);
 
-      const runtime1 = createListRuntime(itemsProvider1, renderItem, container);
-      const runtime2 = createListRuntime(itemsProvider2, renderItem, container2);
+      const runtime1 = createListRuntime(itemsProvider1, renderItem, container, 0);
+      const runtime2 = createListRuntime(itemsProvider2, renderItem, container2, 0);
 
       expect(container.querySelectorAll("div").length).toBe(2);
       expect(container2.querySelectorAll("div").length).toBe(2);

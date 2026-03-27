@@ -22,7 +22,7 @@ describe("SSR — server render (Node.js)", () => {
   describe("static HTML output", () => {
     it("renders a simple element", () => {
       const html = renderToString(div("Hello, SSR!"));
-      expect(html).toBe('<div>Hello, SSR!</div>');
+      expect(html).toBe('<div><!-- text-0 -->Hello, SSR!</div>');
     });
 
     it("renders nested elements preserving hierarchy", () => {
@@ -32,7 +32,7 @@ describe("SSR — server render (Node.js)", () => {
           p("Body text")
         )
       );
-      expect(html).toBe('<section><h1>Title</h1><p>Body text</p></section>');
+      expect(html).toBe('<section><h1><!-- text-0 -->Title</h1><p><!-- text-1 -->Body text</p></section>');
     });
 
     it("renders attributes in the output", () => {
@@ -79,9 +79,9 @@ describe("SSR — server render (Node.js)", () => {
         )
       );
       expect(html).toContain('<ul>');
-      expect(html).toContain('<li>Item A</li>');
-      expect(html).toContain('<li>Item B</li>');
-      expect(html).toContain('<li>Item C</li>');
+      expect(html).toContain('<li><!-- text-0 -->Item A</li>');
+      expect(html).toContain('<li><!-- text-1 -->Item B</li>');
+      expect(html).toContain('<li><!-- text-2 -->Item C</li>');
       expect(html).toContain('</ul>');
     });
 
@@ -99,16 +99,16 @@ describe("SSR — server render (Node.js)", () => {
       let count = 42;
       const html = renderToString(div(() => `Count: ${count}`));
       // The resolver is called once on the server; the value is frozen in the HTML
-      expect(html).toBe('<div>Count: 42</div>');
+      expect(html).toBe('<div><!-- text-0 -->Count: 42</div>');
     });
 
     it("does not include dynamic update logic in the output", () => {
       let flag = true;
       const html = renderToString(p(() => flag ? "on" : "off"));
-      expect(html).toBe('<p>on</p>');
+      expect(html).toBe('<p><!-- text-0 -->on</p>');
       // Changing the variable after render has no effect on the already-produced string
       flag = false;
-      expect(html).toBe('<p>on</p>');
+      expect(html).toBe('<p><!-- text-0 -->on</p>');
     });
   });
 
@@ -117,7 +117,7 @@ describe("SSR — server render (Node.js)", () => {
       const html = renderToString(
         button("Click me", on("click", () => { /* handler */ }))
       );
-      expect(html).toBe('<button>Click me</button>');
+      expect(html).toBe('<button><!-- text-0 -->Click me</button>');
       expect(html).not.toContain('onclick');
     });
   });
@@ -125,12 +125,12 @@ describe("SSR — server render (Node.js)", () => {
   describe("renderToStringWithContainer", () => {
     it("wraps content in a default div container", () => {
       const html = renderToStringWithContainer(span("Hello"));
-      expect(html).toBe('<div><span>Hello</span></div>');
+      expect(html).toBe('<div><span><!-- text-0 -->Hello</span></div>');
     });
 
     it("wraps content in a custom container tag", () => {
       const html = renderToStringWithContainer(p("Content"), "main");
-      expect(html).toBe('<main><p>Content</p></main>');
+      expect(html).toBe('<main><p><!-- text-0 -->Content</p></main>');
     });
 
     it("applies attributes to the container", () => {
@@ -142,7 +142,7 @@ describe("SSR — server render (Node.js)", () => {
       expect(html).toContain('<section');
       expect(html).toContain('id="main-section"');
       expect(html).toContain('class="wrapper"');
-      expect(html).toContain('<span>Body</span>');
+      expect(html).toContain('<span><!-- text-0 -->Body</span>');
       expect(html).toContain('</section>');
     });
   });
@@ -165,9 +165,9 @@ describe("SSR — server render (Node.js)", () => {
   <body>${bodyContent}</body>
 </html>`;
 
-      expect(page).toContain('<h1>My App</h1>');
-      expect(page).toContain('<p>Server-rendered with Nuclo v0.1</p>');
-      expect(page).toContain('<small>© 2026</small>');
+      expect(page).toContain('<h1><!-- text-0 -->My App</h1>');
+      expect(page).toContain('<p><!-- text-1 -->Server-rendered with Nuclo v0.1</p>');
+      expect(page).toContain('<small><!-- text-2 -->© 2026</small>');
       expect(page).toContain('<main id="app">');
     });
   });

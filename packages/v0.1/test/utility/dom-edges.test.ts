@@ -1,7 +1,6 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  createMarkerComment,
   createMarkerPair,
   clearBetweenMarkers,
   insertNodesBefore,
@@ -56,26 +55,23 @@ describe('utility/dom edge & failure branches', () => {
   });
 
   describe('marker utilities', () => {
-    it('createMarkerComment produces unique comment nodes', () => {
-      const a = createMarkerComment('test');
-      const b = createMarkerComment('test');
-      expect(a).toBeInstanceOf(Comment);
-      expect(b).toBeInstanceOf(Comment);
-      expect(a).not.toBe(b);
-      expect(a.textContent).not.toBe(b.textContent);
-      expect(a.textContent).toMatch(/^test-/);
-    });
-
     it('createMarkerPair returns start & end comments with end marker suffix', () => {
-      const { start, end } = createMarkerPair('section');
+      const { start, end } = createMarkerPair('section', 0);
       expect(start).toBeInstanceOf(Comment);
       expect(end).toBeInstanceOf(Comment);
-      expect(start.textContent).toMatch(/^section-start-/);
+      expect(start.textContent).toBe('section-start-0');
       expect(end.textContent).toBe('section-end');
     });
 
+    it('createMarkerPair with different ids produces unique start markers', () => {
+      const { start: a } = createMarkerPair('test', 0);
+      const { start: b } = createMarkerPair('test', 1);
+      expect(a).not.toBe(b);
+      expect(a.textContent).not.toBe(b.textContent);
+    });
+
     it('clearBetweenMarkers removes only nodes between markers (including text)', () => {
-      const { start, end } = createMarkerPair('blk');
+      const { start, end } = createMarkerPair('blk', 0);
       container.appendChild(start);
       const mid1 = document.createElement('span');
       mid1.textContent = 'one';
@@ -96,7 +92,7 @@ describe('utility/dom edge & failure branches', () => {
     });
 
     it('clearBetweenMarkers no-ops when nothing between markers', () => {
-      const { start, end } = createMarkerPair('solo');
+      const { start, end } = createMarkerPair('solo', 0);
       container.appendChild(start);
       container.appendChild(end);
       clearBetweenMarkers(start, end);
@@ -163,7 +159,7 @@ describe('utility/dom edge & failure branches', () => {
 
   describe('mixed scenario: markers & insertion interplay', () => {
     it('can insert new nodes before marker end after clearing', () => {
-      const { start, end } = createMarkerPair('mix');
+      const { start, end } = createMarkerPair('mix', 0);
       container.appendChild(start);
       container.appendChild(end);
 

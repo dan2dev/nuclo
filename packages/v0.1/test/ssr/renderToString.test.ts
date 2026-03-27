@@ -18,7 +18,7 @@ describe("SSR renderToString", () => {
   describe("renderToString", () => {
     it("should render a simple div element", () => {
       const html = renderToString(div("Hello, World!"));
-      expect(html).toBe('<div>Hello, World!</div>');
+      expect(html).toBe('<div><!-- text-0 -->Hello, World!</div>');
     });
 
     it("should render nested elements", () => {
@@ -29,8 +29,8 @@ describe("SSR renderToString", () => {
         )
       );
       expect(html).toContain('<div>');
-      expect(html).toContain('<span>Nested</span>');
-      expect(html).toContain('<span>Content</span>');
+      expect(html).toContain('<span><!-- text-0 -->Nested</span>');
+      expect(html).toContain('<span><!-- text-1 -->Content</span>');
       expect(html).toContain('</div>');
     });
 
@@ -85,10 +85,10 @@ describe("SSR renderToString", () => {
       );
       expect(html).toContain('<div');
       expect(html).toContain('class="container"');
-      expect(html).toContain('<h1>Title</h1>');
-      expect(html).toContain('<p>Paragraph 1</p>');
+      expect(html).toContain('<h1><!-- text-0 -->Title</h1>');
+      expect(html).toContain('<p><!-- text-1 -->Paragraph 1</p>');
       expect(html).toContain('<ul>');
-      expect(html).toContain('<li>Item 1</li>');
+      expect(html).toContain('<li><!-- text-2 -->Item 1</li>');
       expect(html).toContain('</ul>');
     });
   });
@@ -102,9 +102,9 @@ describe("SSR renderToString", () => {
       ]);
 
       expect(htmlArray).toHaveLength(3);
-      expect(htmlArray[0]).toBe('<div>First</div>');
-      expect(htmlArray[1]).toBe('<div>Second</div>');
-      expect(htmlArray[2]).toBe('<div>Third</div>');
+      expect(htmlArray[0]).toBe('<div><!-- text-0 -->First</div>');
+      expect(htmlArray[1]).toBe('<div><!-- text-0 -->Second</div>');
+      expect(htmlArray[2]).toBe('<div><!-- text-0 -->Third</div>');
     });
 
     it("should handle empty array", () => {
@@ -120,21 +120,21 @@ describe("SSR renderToString", () => {
       ]);
 
       expect(htmlArray).toHaveLength(3);
-      expect(htmlArray[0]).toBe('<div>Valid</div>');
+      expect(htmlArray[0]).toBe('<div><!-- text-0 -->Valid</div>');
       expect(htmlArray[1]).toBe('');
-      expect(htmlArray[2]).toBe('<div>Also Valid</div>');
+      expect(htmlArray[2]).toBe('<div><!-- text-0 -->Also Valid</div>');
     });
   });
 
   describe("renderToStringWithContainer", () => {
     it("should wrap content in default div container", () => {
       const html = renderToStringWithContainer(span("Content"));
-      expect(html).toBe('<div><span>Content</span></div>');
+      expect(html).toBe('<div><span><!-- text-0 -->Content</span></div>');
     });
 
     it("should wrap content in custom container", () => {
       const html = renderToStringWithContainer(span("Content"), "section");
-      expect(html).toBe('<section><span>Content</span></section>');
+      expect(html).toBe('<section><span><!-- text-0 -->Content</span></section>');
     });
 
     it("should apply container attributes", () => {
@@ -146,7 +146,7 @@ describe("SSR renderToString", () => {
       expect(html).toContain('<div');
       expect(html).toContain('id="wrapper"');
       expect(html).toContain('class="container"');
-      expect(html).toContain('<span>Content</span>');
+      expect(html).toContain('<span><!-- text-0 -->Content</span>');
       expect(html).toContain('</div>');
     });
   });

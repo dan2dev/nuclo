@@ -1,14 +1,11 @@
 /// <reference path="../../types/index.d.ts" />
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { appendChildren, createMarkerComment, createMarkerPair, isNodeConnected } from "../../src/utility/dom";
+import { appendChildren, createMarkerPair, isNodeConnected } from "../../src/utility/dom";
 
 describe("dom utilities (node/SSR)", () => {
-  it("throws when creating marker comments without browser APIs", () => {
-    expect(() => createMarkerComment("test")).toThrow(
-      "Failed to create comment: document not available"
-    );
-    expect(() => createMarkerPair("pair")).toThrow(
+  it("throws when creating marker pair without browser APIs", () => {
+    expect(() => createMarkerPair("pair", 0)).toThrow(
       "Failed to create comment: document not available"
     );
   });
