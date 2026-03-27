@@ -50,7 +50,7 @@ export function setRoute(route: Route) {
   }
   window.scrollTo(0, 0);
   updatePageMeta(route);
-
+  update();
   loadPage(route);
 }
 
@@ -88,6 +88,7 @@ export function initRouter() {
   }
 
   updatePageMeta(currentRoute);
+  update();
   loadPage(currentRoute);
 
   window.addEventListener("popstate", () => {
