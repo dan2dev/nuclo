@@ -44,6 +44,14 @@ Supported environment variables:
 - `STRESS_STRICT` (`true` or `false`, default: `false`)
 - `STRESS_DEGRADE_THRESHOLD_PCT` (default: `35`)
 - `STRESS_LEAK_THRESHOLD_MB` (default: `70`)
+- `STRESS_LIVE_LOG_EVERY_ROUTES` (default: `5`, front stress live progress frequency)
+
+Server stress test env vars:
+
+- `TOTAL_REQUESTS` (default: `10000`)
+- `CONCURRENCY` (default: `100`)
+- `REPORT_INTERVAL` (default: `1000`, prints full snapshot every N completed requests)
+- `LIVE_INTERVAL_MS` (default: `1000`, updates live single-line terminal progress)
 
 Example heavier run:
 

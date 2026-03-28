@@ -65,6 +65,7 @@ const clicksPerPage = readInt("STRESS_CLICKS_PER_PAGE", 14);
 const strictMode = (process.env.STRESS_STRICT ?? "false").toLowerCase() === "true";
 const degradeThresholdPct = readFloat("STRESS_DEGRADE_THRESHOLD_PCT", 35);
 const leakThresholdMB = readFloat("STRESS_LEAK_THRESHOLD_MB", 70);
+const liveLogEveryRoutes = readInt("STRESS_LIVE_LOG_EVERY_ROUTES", 5);
 
 const artifactsDir = join(process.cwd(), "test-results", "stress");
 
@@ -97,6 +98,14 @@ function p95(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   const idx = Math.min(sorted.length - 1, Math.ceil(sorted.length * 0.95) - 1);
   return sorted[idx] ?? 0;
+}
+
+function formatDuration(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return "--";
+  const totalSec = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSec / 60);
+  const seconds = totalSec % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 async function waitForSPAContent(
@@ -484,6 +493,7 @@ test.describe("Front stress", () => {
       "/examples/styled-card",
     ];
     const mergedRoutes = Array.from(new Set([...routes, ...scenarioRoutes]));
+    const totalRoutesPerRound = mergedRoutes.length;
 
     const samples: Sample[] = [];
     const roundSummaries: RoundSummary[] = [];
@@ -492,6 +502,12 @@ test.describe("Front stress", () => {
 
     const deadline = durationMs > 0 ? Date.now() + durationMs : null;
     const maxRounds = deadline !== null ? Number.MAX_SAFE_INTEGER : rounds;
+    const runStartedAt = Date.now();
+
+    console.log(
+      `[stress] runtime: routesPerRound=${totalRoutesPerRound} mode=${deadline ? "duration" : "rounds"} ` +
+      `${deadline ? `durationMs=${durationMs}` : `rounds=${rounds}`} liveEvery=${liveLogEveryRoutes}`
+    );
 
     for (let round = 1; round <= maxRounds; round += 1) {
       if (deadline !== null && Date.now() >= deadline) break;
@@ -499,14 +515,32 @@ test.describe("Front stress", () => {
       const roundHeap: number[] = [];
       let roundClicks = 0;
       let roundFailures = 0;
+      const roundStartedAt = Date.now();
 
-      for (const route of mergedRoutes) {
+      if (deadline) {
+        const remainingMs = Math.max(0, deadline - Date.now());
+        console.log(
+          `[stress] round=${round} start elapsed=${formatDuration(Date.now() - runStartedAt)} ` +
+          `remaining=${formatDuration(remainingMs)}`
+        );
+      } else {
+        console.log(`[stress] round=${round}/${rounds} start elapsed=${formatDuration(Date.now() - runStartedAt)}`);
+      }
+
+      for (const [routeIndex, route] of mergedRoutes.entries()) {
         const navStarted = performance.now();
         try {
           await navigateViaClick(page, route);
         } catch (error) {
           roundFailures += 1;
           errors.navigationFailures.push(`${route} :: ${(error as Error).message}`);
+          if (routeIndex === 0 || (routeIndex + 1) % liveLogEveryRoutes === 0 || routeIndex + 1 === totalRoutesPerRound) {
+            const progressPct = (((routeIndex + 1) / totalRoutesPerRound) * 100).toFixed(0);
+            console.log(
+              `[stress] round=${round} progress=${progressPct}% routes=${routeIndex + 1}/${totalRoutesPerRound} ` +
+              `failures=${roundFailures} (navigation failed on ${route})`
+            );
+          }
           continue;
         }
         const navMs = performance.now() - navStarted;
@@ -537,6 +571,20 @@ test.describe("Front stress", () => {
         const clickOps = await spamClicks(page, clicksPerPage, baseOrigin).catch(() => 0);
         roundClicks += clickOps;
 
+        if (routeIndex === 0 || (routeIndex + 1) % liveLogEveryRoutes === 0 || routeIndex + 1 === totalRoutesPerRound) {
+          const progressPct = (((routeIndex + 1) / totalRoutesPerRound) * 100).toFixed(0);
+          const roundAvgNav = average(roundNavDurations);
+          const roundHeapLast = roundHeap.length ? roundHeap[roundHeap.length - 1] : null;
+          const modeMeta = deadline
+            ? `remaining=${formatDuration(Math.max(0, deadline - Date.now()))}`
+            : `round=${round}/${rounds}`;
+          console.log(
+            `[stress] ${modeMeta} progress=${progressPct}% routes=${routeIndex + 1}/${totalRoutesPerRound} ` +
+            `avgNav=${roundAvgNav.toFixed(1)}ms heap=${roundHeapLast ?? "n/a"}MB ` +
+            `clicks=${roundClicks} ex=${totalExampleInteractions} todo=${totalTodoItemsAdded} fail=${roundFailures}`
+          );
+        }
+
         samples.push({
           round,
           route,
@@ -556,6 +604,13 @@ test.describe("Front stress", () => {
         clicks: roundClicks,
         failures: roundFailures,
       });
+
+      const roundSummary = roundSummaries[roundSummaries.length - 1];
+      console.log(
+        `[stress] round=${round} done in ${formatDuration(Date.now() - roundStartedAt)} ` +
+        `navAvg=${roundSummary.navAvgMs}ms p95=${roundSummary.navP95Ms}ms ` +
+        `heapAvg=${roundSummary.heapAvgMB ?? "n/a"}MB clicks=${roundClicks} failures=${roundFailures}`
+      );
     }
 
     const navAll = samples.map((sample) => sample.navMs);
