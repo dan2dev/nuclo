@@ -1,4 +1,66 @@
 import { NucloNode } from './Node';
+import { isBrowser } from '../utility/environment';
+
+// Shared cssText getter for SSR style objects — defined once, reused across all instances
+function ssrCssTextGetter(this: Record<string, string>): string {
+  const entries = Object.entries(this);
+  if (entries.length === 0) return '';
+  return entries.map(([k, v]) => `${k}: ${v}`).join('; ');
+}
+
+// Lightweight classList for SSR — prototype methods instead of per-element closures
+class SSRClassList {
+  private _el: NucloElement;
+  constructor(el: NucloElement) { this._el = el; }
+
+  add(...tokens: string[]): void {
+    const classes = this._el.className ? this._el.className.split(' ').filter(Boolean) : [];
+    for (const t of tokens) if (t && !classes.includes(t)) classes.push(t);
+    this._el.className = classes.join(' ');
+  }
+  remove(...tokens: string[]): void {
+    if (!this._el.className) return;
+    this._el.className = this._el.className.split(' ').filter(c => c && !tokens.includes(c)).join(' ');
+  }
+  contains(token: string): boolean {
+    return !!this._el.className && this._el.className.split(' ').includes(token);
+  }
+  toggle(token: string, force?: boolean): boolean {
+    const has = this.contains(token);
+    if (force === undefined) { if (has) { this.remove(token); return false; } this.add(token); return true; }
+    if (force) { this.add(token); return true; }
+    this.remove(token); return false;
+  }
+  replace(oldToken: string, newToken: string): boolean {
+    if (!this.contains(oldToken)) return false;
+    this.remove(oldToken); this.add(newToken); return true;
+  }
+  item(index: number): string | null { return (this._el.className.split(' ').filter(Boolean)[index]) ?? null; }
+  get length(): number { return this._el.className ? this._el.className.split(' ').filter(Boolean).length : 0; }
+  get value(): string { return this._el.className; }
+  set value(v: string) { this._el.className = v; }
+  toString(): string { return this._el.className; }
+  supports(_token: string): boolean { return false; }
+  forEach(cb: (value: string, key: number, parent: DOMTokenList) => void): void {
+    const classes = this._el.className.split(' ').filter(Boolean);
+    for (let i = 0; i < classes.length; i++) cb(classes[i], i, this as unknown as DOMTokenList);
+  }
+  [Symbol.iterator](): Iterator<string> {
+    const classes = this._el.className.split(' ').filter(Boolean);
+    let i = 0;
+    return { next(): IteratorResult<string> { return i < classes.length ? { value: classes[i++], done: false } : { value: '', done: true }; } };
+  }
+  entries(): Iterator<[number, string]> {
+    const classes = this._el.className.split(' ').filter(Boolean);
+    let i = 0;
+    return { next(): IteratorResult<[number, string]> { return i < classes.length ? { value: [i, classes[i++]], done: false } : { value: [0, ''], done: true }; } };
+  }
+  keys(): Iterator<number> {
+    const len = this.length; let i = 0;
+    return { next(): IteratorResult<number> { return i < len ? { value: i++, done: false } : { value: 0, done: true }; } };
+  }
+  values(): Iterator<string> { return this[Symbol.iterator](); }
+}
 
 interface TextNode {
   nodeType: 3;
@@ -37,13 +99,12 @@ export class NucloElement extends NucloNode {
   id: string = '';
   namespaceURI?: string;
   sheet?: CSSStyleSheet | null;
-  private _listeners: Map<string, Set<EventListener>>;
-  
+  private _listeners: Map<string, Set<EventListener>> | null;
+
   get innerHTML(): string {
-    // Serialize children to HTML
     return this.serializeChildren();
   }
-  
+
   set innerHTML(value: string) {
     this._innerHTML = value;
   }
@@ -107,88 +168,82 @@ export class NucloElement extends NucloNode {
     this.nodeName = tagName.toUpperCase();
     this.children = [];
     this.attributes = new Map<string, string>();
-    this._listeners = new Map();
-    
-    // Simple style implementation
-    const styleProps: Record<string, string> = {};
-    this.style = new Proxy({} as CSSStyleDeclaration, {
-      get: (_target, prop: string) => {
-        if (prop === 'setProperty') {
-          return (name: string, value: string) => {
-            styleProps[name] = value;
-          };
-        }
-        if (prop === 'getPropertyValue') {
-          return (name: string) => styleProps[name] || '';
-        }
-        if (prop === 'cssText') {
-          return Object.entries(styleProps)
-            .map(([k, v]) => `${k}: ${v}`)
-            .join('; ');
-        }
-        return styleProps[prop];
-      },
-      set: (_target, prop: string, value: string) => {
-        styleProps[prop] = value;
-        return true;
-      }
-    });
-    
-    // Initialize sheet for style elements
-    if (tagName.toLowerCase() === 'style') {
-      const cssRules: CSSRule[] = [];
-      this.sheet = {
-        cssRules: cssRules as unknown as CSSRuleList,
-        insertRule: (rule: string, index?: number) => {
-          const idx = index ?? cssRules.length;
-          let mockRule: CSSRule;
-          // Create a grouping rule mock for at-rules (@media, @container, @supports)
-          if (rule.trim().startsWith('@')) {
-            const innerRules: CSSRule[] = [];
-            const conditionText = rule.replace(/^@\w+\s+/, '').replace(/\s*\{[\s\S]*\}$/, '').trim();
-            mockRule = {
-              cssText: rule,
-              conditionText,
-              media: { mediaText: conditionText } as MediaList,
-              cssRules: innerRules as unknown as CSSRuleList,
-              insertRule: (innerRule: string, innerIndex?: number) => {
-                const innerIdx = innerIndex ?? innerRules.length;
-                innerRules.splice(innerIdx, 0, {
-                  cssText: innerRule,
-                  selectorText: innerRule.split('{')[0].trim(),
-                  style: {} as CSSStyleDeclaration,
-                  type: 1,
-                } as unknown as CSSRule);
-                return innerIdx;
-              },
-              deleteRule: (i: number) => { innerRules.splice(i, 1); },
-              type: 4, // CSSRule.MEDIA_RULE
-            } as unknown as CSSRule;
-          } else {
-            mockRule = {
-              cssText: rule,
-              selectorText: rule.split('{')[0].trim(),
-              style: {} as CSSStyleDeclaration,
-              type: 1, // CSSRule.STYLE_RULE
-            } as unknown as CSSRule;
-          }
-          cssRules.splice(idx, 0, mockRule);
-          return idx;
+
+    if (!isBrowser) {
+      // ── SSR path: minimal allocations, no Proxy, no event listeners ──
+      this._listeners = null;
+
+      // Plain object with a cssText getter — no Proxy overhead
+      const style: Record<string, string> = {};
+      Object.defineProperty(style, 'cssText', { get: ssrCssTextGetter, enumerable: false });
+      Object.defineProperty(style, 'setProperty', {
+        value(name: string, value: string) { (style as Record<string, string>)[name] = value; },
+        enumerable: false,
+      });
+      Object.defineProperty(style, 'getPropertyValue', {
+        value(name: string) { return (style as Record<string, string>)[name] || ''; },
+        enumerable: false,
+      });
+      this.style = style as unknown as CSSStyleDeclaration;
+
+      // Prototype-based classList — zero closures per element
+      this.classList = new SSRClassList(this) as unknown as DOMTokenList;
+      // sheet stays undefined — not needed in SSR
+    } else {
+      // ── Browser path: full-featured Proxy style + DOMTokenList ──
+      this._listeners = new Map();
+
+      const styleProps: Record<string, string> = {};
+      this.style = new Proxy({} as CSSStyleDeclaration, {
+        get: (_target, prop: string) => {
+          if (prop === 'setProperty') return (name: string, value: string) => { styleProps[name] = value; };
+          if (prop === 'getPropertyValue') return (name: string) => styleProps[name] || '';
+          if (prop === 'cssText') return Object.entries(styleProps).map(([k, v]) => `${k}: ${v}`).join('; ');
+          return styleProps[prop];
         },
-        deleteRule: (index: number) => {
-          cssRules.splice(index, 1);
-        }
-      } as unknown as CSSStyleSheet;
+        set: (_target, prop: string, value: string) => { styleProps[prop] = value; return true; },
+      });
+
+      // CSSStyleSheet mock for style elements (browser only)
+      if (this.tagName === 'style') {
+        const cssRules: CSSRule[] = [];
+        this.sheet = {
+          cssRules: cssRules as unknown as CSSRuleList,
+          insertRule: (rule: string, index?: number) => {
+            const idx = index ?? cssRules.length;
+            let mockRule: CSSRule;
+            if (rule.trim().startsWith('@')) {
+              const innerRules: CSSRule[] = [];
+              const conditionText = rule.replace(/^@\w+\s+/, '').replace(/\s*\{[\s\S]*\}$/, '').trim();
+              mockRule = {
+                cssText: rule, conditionText,
+                media: { mediaText: conditionText } as MediaList,
+                cssRules: innerRules as unknown as CSSRuleList,
+                insertRule: (innerRule: string, innerIndex?: number) => {
+                  const innerIdx = innerIndex ?? innerRules.length;
+                  innerRules.splice(innerIdx, 0, { cssText: innerRule, selectorText: innerRule.split('{')[0].trim(), style: {} as CSSStyleDeclaration, type: 1 } as unknown as CSSRule);
+                  return innerIdx;
+                },
+                deleteRule: (i: number) => { innerRules.splice(i, 1); },
+                type: 4,
+              } as unknown as CSSRule;
+            } else {
+              mockRule = { cssText: rule, selectorText: rule.split('{')[0].trim(), style: {} as CSSStyleDeclaration, type: 1 } as unknown as CSSRule;
+            }
+            cssRules.splice(idx, 0, mockRule);
+            return idx;
+          },
+          deleteRule: (index: number) => { cssRules.splice(index, 1); },
+        } as unknown as CSSStyleSheet;
+      }
+
+      this.classList = createClassList(this);
     }
-    
-    // Simple classList implementation
-    this.classList = createClassList(this);
   }
   
   appendChild<T extends Node>(child: T): T {
     this.children.push(child);
-    // Also update _childNodes from parent class for childNodes getter
-    if (this['_childNodes']) {
+    if (isBrowser && (this as any)['_childNodes']) {
       (this as any)['_childNodes'].push(child);
     }
     if (typeof child === 'object' && child !== null && 'parentNode' in child) {
@@ -228,8 +283,7 @@ export class NucloElement extends NucloNode {
     const index = this.children.indexOf(referenceNode);
     if (index !== -1) {
       this.children.splice(index, 0, newNode);
-      // Also update _childNodes from parent class
-      if (this['_childNodes']) {
+      if (isBrowser && (this as any)['_childNodes']) {
         const childNodesIndex = (this as any)['_childNodes'].indexOf(referenceNode);
         if (childNodesIndex !== -1) {
           (this as any)['_childNodes'].splice(childNodesIndex, 0, newNode);
@@ -246,8 +300,7 @@ export class NucloElement extends NucloNode {
     const index = this.children.indexOf(child);
     if (index !== -1) {
       this.children.splice(index, 1);
-      // Keep _childNodes in sync so the childNodes getter stays accurate
-      if (this['_childNodes']) {
+      if (isBrowser && (this as any)['_childNodes']) {
         const cnIndex = (this as any)['_childNodes'].indexOf(child);
         if (cnIndex !== -1) {
           (this as any)['_childNodes'].splice(cnIndex, 1);
@@ -264,8 +317,7 @@ export class NucloElement extends NucloNode {
     const index = this.children.indexOf(oldChild);
     if (index !== -1) {
       this.children[index] = newChild;
-      // Keep _childNodes in sync so the childNodes getter stays accurate
-      if (this['_childNodes']) {
+      if (isBrowser && (this as any)['_childNodes']) {
         const cnIndex = (this as any)['_childNodes'].indexOf(oldChild);
         if (cnIndex !== -1) {
           (this as any)['_childNodes'][cnIndex] = newChild;
@@ -282,21 +334,22 @@ export class NucloElement extends NucloNode {
   }
   
   addEventListener(type: string, listener: EventListener): void {
+    if (!this._listeners) return;
     if (!this._listeners.has(type)) {
       this._listeners.set(type, new Set());
     }
     this._listeners.get(type)!.add(listener);
   }
-  
+
   removeEventListener(type: string, listener: EventListener): void {
-    const listeners = this._listeners.get(type);
+    const listeners = this._listeners?.get(type);
     if (listeners) {
       listeners.delete(listener);
     }
   }
-  
+
   dispatchEvent(event: Event): boolean {
-    const listeners = this._listeners.get(event.type);
+    const listeners = this._listeners?.get(event.type);
     if (listeners) {
       for (const listener of listeners) {
         try {
@@ -306,7 +359,6 @@ export class NucloElement extends NucloNode {
         }
       }
     }
-    // Bubble to parent if event.bubbles is true
     if (event.bubbles && this.parentNode && typeof this.parentNode === 'object' && 'dispatchEvent' in this.parentNode && typeof this.parentNode.dispatchEvent === 'function') {
       this.parentNode.dispatchEvent(event);
     }
