@@ -6,11 +6,11 @@ export class NucloNode {
   nodeName: string = '';
   nodeValue: string | null = null;
   parentNode: unknown = null;
-  private _childNodes: Node[] = [];
+  _childNodes: Node[] | null = null;
   textContent: string = '';
-  
+
   get childNodes(): NodeListOf<ChildNode> {
-    const nodes = this._childNodes;
+    const nodes = this._childNodes ?? [];
     return {
       ...nodes,
       length: nodes.length,

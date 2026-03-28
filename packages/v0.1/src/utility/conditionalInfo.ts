@@ -16,6 +16,11 @@ const conditionalInfoMap = new WeakMap<Node, ConditionalInfo<ElementTagName>>();
 const activeConditionalNodes = new Set<WeakRef<Node>>();
 
 /**
+ * Reverse lookup for O(1) unregister — maps node to its WeakRef in the active set.
+ */
+const refByNode = new WeakMap<Node, WeakRef<Node>>();
+
+/**
  * Attach conditional info to a node and register it.
  */
 export function storeConditionalInfo<TTagName extends ElementTagName>(
@@ -23,19 +28,21 @@ export function storeConditionalInfo<TTagName extends ElementTagName>(
 	info: ConditionalInfo<TTagName>
 ): void {
 	conditionalInfoMap.set(node, info as ConditionalInfo<ElementTagName>);
-	activeConditionalNodes.add(new WeakRef(node));
+	const ref = new WeakRef(node);
+	activeConditionalNodes.add(ref);
+	refByNode.set(node, ref);
 }
 
 /**
  * Explicit unregister helper (optional use on teardown if needed).
+ * O(1) via reverse lookup WeakMap.
  */
 export function unregisterConditionalNode(node: Node): void {
 	conditionalInfoMap.delete(node);
-	for (const ref of activeConditionalNodes) {
-		if (ref.deref() === node) {
-			activeConditionalNodes.delete(ref);
-			break;
-		}
+	const ref = refByNode.get(node);
+	if (ref) {
+		activeConditionalNodes.delete(ref);
+		refByNode.delete(node);
 	}
 }
 
