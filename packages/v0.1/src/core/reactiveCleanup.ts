@@ -97,3 +97,4 @@ export function cleanupReactiveElement(element: Element): void {
     reactiveElementsByNode.delete(element);
   }
 }
+
