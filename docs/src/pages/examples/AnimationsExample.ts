@@ -55,6 +55,15 @@ const orbsRowStyle = cn(
 
 // Ensure keyframes exist once in the document
 function ensureKeyframes() {
+  const canInjectStyle =
+    typeof document !== "undefined" &&
+    typeof document.getElementById === "function" &&
+    typeof document.createElement === "function" &&
+    !!document.head &&
+    typeof document.head.appendChild === "function";
+
+  if (!canInjectStyle) return;
+
   const id = "nuclo-demo-animations-keyframes";
   if (document.getElementById(id)) return;
   const style = document.createElement("style");

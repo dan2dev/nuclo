@@ -7,3 +7,4 @@ node_modules/
 **/.vscode/
 drafts/poc01/dist/
 drafts/poc02/target/
+*.bun-build
