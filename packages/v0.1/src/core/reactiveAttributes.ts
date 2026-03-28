@@ -2,6 +2,7 @@ import { logError } from "../utility/errorHandler";
 import { isNodeConnected } from "../utility/dom";
 import type { UpdateScope } from "./updateScope";
 import { reactiveElements, reactiveElementsByNode, registerReactiveElement, removeReactiveElementRef } from "./reactiveCleanup";
+import { isBrowser } from "../utility/environment";
 
 type AttributeResolver = () => unknown;
 
@@ -124,9 +125,17 @@ export function registerAttributeResolver<TTagName extends ElementTagName>(
     logError("Invalid parameters for registerAttributeResolver");
     return;
   }
+
+  const record: AttributeResolverRecord = { resolver, applyValue, lastValue: UNSET_LAST_VALUE };
+
+  if (!isBrowser) {
+    // SSR: just apply once, no registration needed (update() is never called server-side)
+    updateAttributeResolverRecord(key, record);
+    return;
+  }
+
   ensureGlobalUpdateEventListener();
   const info = ensureElementInfo(element as Element);
-  const record: AttributeResolverRecord = { resolver, applyValue, lastValue: UNSET_LAST_VALUE };
   info.attributeResolvers.set(key, record);
   updateAttributeResolverRecord(key, record);
 }

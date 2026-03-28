@@ -2,6 +2,7 @@ import { logError } from "../utility/errorHandler";
 import { isNodeConnected, createTextNode } from "../utility/dom";
 import type { UpdateScope } from "./updateScope";
 import { reactiveTextNodes, reactiveTextNodesByNode, registerReactiveTextNode, removeReactiveTextNodeRef } from "./reactiveCleanup";
+import { isBrowser } from "../utility/environment";
 
 type TextResolver = () => Primitive;
 
@@ -56,7 +57,9 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
     throw new Error("Failed to create text node: document not available");
   }
 
-  registerReactiveTextNode(txt, { resolver, lastValue: str });
+  if (isBrowser) {
+    registerReactiveTextNode(txt, { resolver, lastValue: str });
+  }
   return txt;
 }
 

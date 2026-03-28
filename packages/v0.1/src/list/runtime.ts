@@ -3,6 +3,7 @@ import { arraysEqual } from "../utility/arrayUtils";
 import { resolveRenderable } from "../utility/renderables";
 import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsInput, ListItemsProvider } from "./types";
 import type { UpdateScope } from "../core/updateScope";
+import { isBrowser } from "../utility/environment";
 
 /**
  * Stores weak references to list runtime markers to prevent memory leaks.
@@ -155,13 +156,13 @@ export function createListRuntime<TItem, TTagName extends ElementTagName = Eleme
   parentNode.appendChild(startMarker);
   parentNode.appendChild(endMarker);
 
-  // Store runtime with WeakRef to startMarker to prevent memory leaks
-  // The runtime object itself is mutable and will be updated by sync()
-  const runtimeInfo: ListRuntimeInfo<TItem, TTagName> = {
-    runtime,
-  };
-  activeListRuntimes.set(new WeakRef(startMarker), runtimeInfo as ListRuntimeInfo<unknown, ElementTagName>);
   sync(runtime);
+
+  if (isBrowser) {
+    // Register for future update() calls — not needed in SSR
+    const runtimeInfo: ListRuntimeInfo<TItem, TTagName> = { runtime };
+    activeListRuntimes.set(new WeakRef(startMarker), runtimeInfo as ListRuntimeInfo<unknown, ElementTagName>);
+  }
 
   return runtime;
 }
@@ -214,3 +215,4 @@ export function updateListRuntimes(scope?: UpdateScope): void {
     activeListRuntimes.delete(ref);
   }
 }
+

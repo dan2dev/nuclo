@@ -2,6 +2,7 @@ import { createMarkerPair } from "../utility/dom";
 import { asParentNode } from "../utility/domTypeHelpers";
 import type { WhenCondition, WhenContent, WhenGroup, WhenRuntime } from "./runtime";
 import { renderWhenContent, registerWhenRuntime } from "./runtime";
+import { isBrowser } from "../utility/environment";
 
 class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
   private groups: WhenGroup<TTagName>[] = [];
@@ -39,7 +40,9 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
       update: function() { renderWhenContent(runtime); },
     };
 
-    registerWhenRuntime(runtime);
+    if (isBrowser) {
+      registerWhenRuntime(runtime);
+    }
 
     const parent = asParentNode(host);
     parent.appendChild(startMarker);
