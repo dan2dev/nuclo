@@ -1,10 +1,12 @@
 import { createElement } from "../utility/dom";
+import { isBrowser } from "../utility/environment";
 
 // Supported at-rule types
 type AtRuleType = 'media' | 'container' | 'supports' | 'style' | 'pseudo';
 
 // Check if a class exists in the DOM
 export function classExistsInDOM(className: string, condition?: string, atRuleType: AtRuleType = 'media', pseudoClass?: string): boolean {
+	if (!isBrowser) return false;
 	const styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
 	if (!styleSheet || !styleSheet.sheet) {
 		return false;
@@ -66,6 +68,7 @@ export function createCSSClassWithStyles(
 	atRuleType: AtRuleType = 'media',
 	pseudoClass?: string
 ): void {
+	if (!isBrowser) return;
 	let styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
 
 	if (!styleSheet) {

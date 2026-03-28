@@ -12,7 +12,7 @@
 
 const HOST            = process.env.HOST             ?? "http://localhost:5173";
 const TOTAL_REQUESTS  = parseInt(process.env.TOTAL_REQUESTS  ?? "1000000", 10);
-const CONCURRENCY     = parseInt(process.env.CONCURRENCY     ?? "200",     10);
+const CONCURRENCY     = parseInt(process.env.CONCURRENCY     ?? "1000",     10);
 const REPORT_INTERVAL = parseInt(process.env.REPORT_INTERVAL ?? "1000",   10); // print stats every N requests
 const LIVE_INTERVAL_MS = parseInt(process.env.LIVE_INTERVAL_MS ?? "1000", 10);
 

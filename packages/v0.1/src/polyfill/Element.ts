@@ -1,11 +1,26 @@
 import { NucloNode } from './Node';
 import { isBrowser } from '../utility/environment';
 
-// Shared cssText getter for SSR style objects — defined once, reused across all instances
-function ssrCssTextGetter(this: Record<string, string>): string {
-  const entries = Object.entries(this);
-  if (entries.length === 0) return '';
-  return entries.map(([k, v]) => `${k}: ${v}`).join('; ');
+/**
+ * Lightweight style object for SSR — prototype methods instead of Object.defineProperty per element.
+ * Stores CSS properties as own properties and provides cssText/setProperty/getPropertyValue via prototype.
+ */
+class SSRStyle {
+  [key: string]: unknown;
+
+  get cssText(): string {
+    const entries = Object.entries(this);
+    if (entries.length === 0) return '';
+    return entries.map(([k, v]) => `${k}: ${v}`).join('; ');
+  }
+
+  setProperty(name: string, value: string): void {
+    (this as Record<string, unknown>)[name] = value;
+  }
+
+  getPropertyValue(name: string): string {
+    return ((this as Record<string, unknown>)[name] as string) || '';
+  }
 }
 
 // Lightweight classList for SSR — prototype methods instead of per-element closures
@@ -173,18 +188,8 @@ export class NucloElement extends NucloNode {
       // ── SSR path: minimal allocations, no Proxy, no event listeners ──
       this._listeners = null;
 
-      // Plain object with a cssText getter — no Proxy overhead
-      const style: Record<string, string> = {};
-      Object.defineProperty(style, 'cssText', { get: ssrCssTextGetter, enumerable: false });
-      Object.defineProperty(style, 'setProperty', {
-        value(name: string, value: string) { (style as Record<string, string>)[name] = value; },
-        enumerable: false,
-      });
-      Object.defineProperty(style, 'getPropertyValue', {
-        value(name: string) { return (style as Record<string, string>)[name] || ''; },
-        enumerable: false,
-      });
-      this.style = style as unknown as CSSStyleDeclaration;
+      // Prototype-based style — zero Object.defineProperty calls per element
+      this.style = new SSRStyle() as unknown as CSSStyleDeclaration;
 
       // Prototype-based classList — zero closures per element
       this.classList = new SSRClassList(this) as unknown as DOMTokenList;

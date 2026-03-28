@@ -1,6 +1,7 @@
 import { STYLE_PROPERTIES, SPECIAL_METHODS, type StylePropertyDefinition } from "./styleProperties";
 import { generateStyleKey, simpleHash, getCachedClassName, setCachedClassName } from "./styleCache";
 import { createCSSClassWithStyles, classExistsInDOM } from "./cssGenerator";
+import { isBrowser } from "../utility/environment";
 import type {
 	DisplayValue,
 	PositionValue,
@@ -108,12 +109,11 @@ function getOrCreateClassName(styles: Record<string, string>, prefix = '', media
 
 	const cached = getCachedClassName(cacheKey);
 	if (cached) {
-		const cachedClassName = cached;
-		// Verify the class exists in the DOM, recreate if not (handles test isolation)
-		if (!classExistsInDOM(cachedClassName, mediaQuery)) {
-			createCSSClassWithStyles(cachedClassName, styles, mediaQuery);
+		// In SSR, skip DOM verification — no stylesheet to check/create
+		if (isBrowser && !classExistsInDOM(cached, mediaQuery)) {
+			createCSSClassWithStyles(cached, styles, mediaQuery);
 		}
-		return cachedClassName;
+		return cached;
 	}
 
 	// Generate a hash-based class name from the style key
@@ -121,8 +121,10 @@ function getOrCreateClassName(styles: Record<string, string>, prefix = '', media
 	const className = prefix ? `n${prefix}-${hash}` : `n${hash}`;
 	setCachedClassName(cacheKey, className);
 
-	// Create the CSS class with media query if provided
-	createCSSClassWithStyles(className, styles, mediaQuery);
+	// Create the CSS class with media query if provided (browser only)
+	if (isBrowser) {
+		createCSSClassWithStyles(className, styles, mediaQuery);
+	}
 
 	return className;
 }
