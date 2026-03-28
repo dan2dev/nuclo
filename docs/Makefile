@@ -1,4 +1,8 @@
-.PHONY: help deps browser setup stress stress-ui stress-strict stress-heavy stress-soak stress-30min report clean
+SYSTEM_PATH := $(PATH)
+include ../.env
+export
+
+.PHONY: help deps browser setup publish docker stress stress-ui stress-strict stress-heavy stress-soak stress-30min report clean
 
 STRESS_ROUNDS ?= 12
 STRESS_CLICKS_PER_PAGE ?= 14
@@ -7,6 +11,17 @@ STRESS_LEAK_THRESHOLD_MB ?= 70
 STRESS_BASE_URL ?= http://127.0.0.1:4173
 
 help:
+	@echo "Available targets:"
+	@echo "  publish    - Build docs and sync ./dist folder to remote server via rsync"
+	@echo "  docker     - Build docs and start via Docker Compose"
+	@echo "  stress     - Run standard front stress"
+	@echo ""
+	@echo "Required environment variables (loaded from ../.env):"
+	@echo "  DEPLOY_USER       - SSH username"
+	@echo "  DEPLOY_HOST       - SSH host"
+	@echo "  DEPLOY_PATH       - Remote destination path"
+	@echo "  CLOUDFLARE_DUOCRAFT_CACHING_API_KEY - Cloudflare API token for cache purging"
+	@echo ""
 	@echo "Docs front stress (Playwright)"
 	@echo ""
 	@echo "Targets:"
@@ -22,6 +37,18 @@ help:
 	@echo ""
 	@echo "Override defaults (example):"
 	@echo "  make stress STRESS_ROUNDS=50 STRESS_CLICKS_PER_PAGE=30"
+
+publish:
+	pnpm build
+	rsync -avz --delete ./dist/ $(DEPLOY_USER)@$(DEPLOY_HOST):$(DEPLOY_PATH)
+	curl -X POST "https://api.cloudflare.com/client/v4/zones/144262096047d02acb7bbb8d6914ca8c/purge_cache" \
+		-H "Authorization: Bearer $(CLOUDFLARE_DUOCRAFT_CACHING_API_KEY)" \
+		-H "Content-Type: application/json" \
+		--data '{"purge_everything":true}'
+
+docker:
+	pnpm build
+	env PATH="$(SYSTEM_PATH)" podman compose up --build
 
 deps:
 	pnpm install --ignore-workspace
