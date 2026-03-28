@@ -18,6 +18,7 @@
  */
 
 import { logError } from "./errorHandler";
+import { isBrowser } from "./environment";
 
 type EventListenerOptions = boolean | AddEventListenerOptions;
 type ListenerTarget = HTMLElement;
@@ -66,6 +67,17 @@ function trackListener(
 }
 
 /**
+ * Detach a single tracked listener from the DOM.
+ */
+function detachListener(element: HTMLElement, type: string, info: TrackedListener): void {
+  if (info.controller) {
+    info.controller.abort();
+  } else {
+    element.removeEventListener(type, info.wrapped, info.options);
+  }
+}
+
+/**
  * Remove a specific listener from an element.
  * This is exported for manual cleanup if needed.
  */
@@ -76,31 +88,20 @@ export function removeListener(
 ): void {
   const typeMap = elementListeners.get(element);
   if (!typeMap) return;
-  
+
   const listeners = typeMap.get(type);
   if (!listeners) return;
-  
+
   for (const info of listeners) {
     if (info.original === listener) {
-      // Abort the controller if it exists (preferred method)
-      if (info.controller) {
-        info.controller.abort();
-      } else {
-        // Fallback to removeEventListener
-        element.removeEventListener(type, info.wrapped, info.options);
-      }
+      detachListener(element, type, info);
       listeners.delete(info);
       break;
     }
   }
-  
-  // Cleanup empty maps
-  if (listeners.size === 0) {
-    typeMap.delete(type);
-  }
-  if (typeMap.size === 0) {
-    elementListeners.delete(element);
-  }
+
+  if (listeners.size === 0) typeMap.delete(type);
+  if (typeMap.size === 0) elementListeners.delete(element);
 }
 
 /**
@@ -112,34 +113,16 @@ export function removeAllListeners(
 ): void {
   const typeMap = elementListeners.get(element);
   if (!typeMap) return;
-  
+
   if (type) {
-    // Remove all listeners of a specific type
     const listeners = typeMap.get(type);
     if (listeners) {
-      for (const info of listeners) {
-        // Abort the controller if it exists (preferred method)
-        if (info.controller) {
-          info.controller.abort();
-        } else {
-          // Fallback to removeEventListener
-          element.removeEventListener(type, info.wrapped, info.options);
-        }
-      }
+      for (const info of listeners) detachListener(element, type, info);
       typeMap.delete(type);
     }
   } else {
-    // Remove all listeners of all types
     for (const [eventType, listeners] of typeMap) {
-      for (const info of listeners) {
-        // Abort the controller if it exists (preferred method)
-        if (info.controller) {
-          info.controller.abort();
-        } else {
-          // Fallback to removeEventListener
-          element.removeEventListener(eventType, info.wrapped, info.options);
-        }
-      }
+      for (const info of listeners) detachListener(element, eventType, info);
     }
     elementListeners.delete(element);
   }
@@ -178,6 +161,8 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
   options?: EventListenerOptions
 ): NodeModFn<TTagName> {
   return function(parent: ExpandedElement<TTagName>): void {
+    if (!isBrowser) return;
+
     // Type guard: verify parent is an HTMLElement with addEventListener
     if (!parent || typeof (parent as HTMLElement).addEventListener !== "function") {
       return;

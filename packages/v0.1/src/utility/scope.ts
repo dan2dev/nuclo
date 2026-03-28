@@ -1,4 +1,5 @@
 import { isNodeConnected } from "./dom";
+import { isBrowser } from "./environment";
 
 type ScopeId = string;
 
@@ -77,6 +78,7 @@ export function scope<TTagName extends ElementTagName = ElementTagName>(
   const scopeIds = normalizeScopeIds(ids);
 
   return function(parent: ExpandedElement<TTagName>): void {
+    if (!isBrowser) return;
     if (!(parent instanceof Element)) return;
     for (const id of scopeIds) addScopeRoot(id, parent);
   };

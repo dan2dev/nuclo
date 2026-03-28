@@ -59,17 +59,31 @@ export function addStaticClasses(el: HTMLElement, className: string): void {
 export function mergeReactiveClassName(el: HTMLElement, reactiveClassName: string): void {
 	const staticClasses = staticClassNames.get(el);
 
-	if (staticClasses && staticClasses.size > 0 && reactiveClassName) {
-		const allClasses = new Set(staticClasses);
-		addClassTokens(allClasses, reactiveClassName);
-		el.className = joinClasses(allClasses);
-	} else if (reactiveClassName) {
-		el.className = reactiveClassName;
-	} else if (staticClasses && staticClasses.size > 0) {
-		el.className = joinClasses(staticClasses);
-	} else {
-		el.className = '';
+	if (!staticClasses || staticClasses.size === 0) {
+		el.className = reactiveClassName || '';
+		return;
 	}
+	if (!reactiveClassName) {
+		el.className = joinClasses(staticClasses);
+		return;
+	}
+	// Hot path: static + reactive. Avoid new Set() — build string directly
+	// and deduplicate by checking if reactive tokens already exist in static set
+	let result = joinClasses(staticClasses);
+	const len = reactiveClassName.length;
+	let start = 0;
+	for (let i = 0; i <= len; i++) {
+		if (i === len || reactiveClassName.charCodeAt(i) === 32) {
+			if (i > start) {
+				const token = reactiveClassName.substring(start, i);
+				if (!staticClasses.has(token)) {
+					result += ' ' + token;
+				}
+			}
+			start = i + 1;
+		}
+	}
+	el.className = result;
 }
 
 // Merge static className (for non-reactive className attributes)
