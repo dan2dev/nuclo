@@ -6,6 +6,10 @@ BUMP ?= patch
 # Location of versioned manifest
 PKG_FILE := package.json
 
+# Bump version locally without invoking npm workspace resolution.
+bump-version:
+	@node -e 'const fs = require("node:fs"); const pkgPath = process.argv[1]; const bump = process.argv[2]; const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8")); const parts = pkg.version.split(".").map(Number); if (parts.length !== 3 || parts.some(Number.isNaN)) { console.error("Unsupported version format: " + pkg.version); process.exit(1); } if (bump === "patch") { parts[2] += 1; } else if (bump === "minor") { parts[1] += 1; parts[2] = 0; } else if (bump === "major") { parts[0] += 1; parts[1] = 0; parts[2] = 0; } else { console.error("Unsupported bump type: " + bump); process.exit(1); } pkg.version = parts.join("."); fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, "\t") + "\n"); console.log(pkg.version);' "$(PKG_FILE)" "$(BUMP)"
+
 # Helper: extract current version from package.json
 version:
 	@jq -r '.version' $(PKG_FILE)
@@ -35,9 +39,8 @@ publish:
 	  echo "ERROR: npm login failed. Cannot proceed with publish."; \
 	  exit 1; \
 	fi
-	@echo "==> Bumping $(BUMP) version (no git tag/commit by pnpm)"
-	@pnpm version $(BUMP) --no-git-tag-version --no-git-checks
-	@new_version=$$(jq -r .version $(PKG_FILE)); \
+	@echo "==> Bumping $(BUMP) version (local package.json update)"
+	@new_version=$$($(MAKE) --no-print-directory bump-version BUMP=$(BUMP)); \
 	  echo "==> New version: $$new_version"; \
 	  echo "==> Publishing to registry"; \
 	  pnpm publish --no-git-checks; \
