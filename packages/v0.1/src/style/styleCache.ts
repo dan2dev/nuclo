@@ -32,7 +32,3 @@ export function setCachedClassName(cacheKey: string, className: string): void {
 	styleCache.set(cacheKey, className);
 }
 
-// Check if cache has a class name
-export function hasCachedClassName(cacheKey: string): boolean {
-	return styleCache.has(cacheKey);
-}

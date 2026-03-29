@@ -24,7 +24,7 @@ export type DisplayValue =
 	| "ruby-text"
 	| "ruby-base-container"
 	| "ruby-text-container"
-	| string; // Allow custom values for advanced use cases
+	| (string & {}); // Allow custom values while preserving autocomplete
 
 // Position
 export type PositionValue =
@@ -33,7 +33,7 @@ export type PositionValue =
 	| "absolute"
 	| "fixed"
 	| "sticky"
-	| string;
+	| (string & {});
 
 // Text align
 export type TextAlignValue =
@@ -44,7 +44,7 @@ export type TextAlignValue =
 	| "start"
 	| "end"
 	| "match-parent"
-	| string;
+	| (string & {});
 
 // Font weight
 export type FontWeightValue =
@@ -62,7 +62,7 @@ export type FontWeightValue =
 	| "800"
 	| "900"
 	| number
-	| string;
+	| (string & {});
 
 // Font style
 export type FontStyleValue =
@@ -70,7 +70,7 @@ export type FontStyleValue =
 	| "italic"
 	| "oblique"
 	| `oblique ${string}`
-	| string;
+	| (string & {});
 
 // Text transform
 export type TextTransformValue =
@@ -80,7 +80,7 @@ export type TextTransformValue =
 	| "lowercase"
 	| "full-width"
 	| "full-size-kana"
-	| string;
+	| (string & {});
 
 // Text decoration
 export type TextDecorationValue =
@@ -89,7 +89,7 @@ export type TextDecorationValue =
 	| "overline"
 	| "line-through"
 	| "blink"
-	| string;
+	| (string & {});
 
 // Text decoration style
 export type TextDecorationStyleValue =
@@ -98,7 +98,7 @@ export type TextDecorationStyleValue =
 	| "dotted"
 	| "dashed"
 	| "wavy"
-	| string;
+	| (string & {});
 
 // Text decoration line
 export type TextDecorationLineValue =
@@ -107,7 +107,7 @@ export type TextDecorationLineValue =
 	| "overline"
 	| "line-through"
 	| "blink"
-	| string;
+	| (string & {});
 
 // White space
 export type WhiteSpaceValue =
@@ -117,7 +117,7 @@ export type WhiteSpaceValue =
 	| "pre-wrap"
 	| "pre-line"
 	| "break-spaces"
-	| string;
+	| (string & {});
 
 // Overflow
 export type OverflowValue =
@@ -126,14 +126,14 @@ export type OverflowValue =
 	| "clip"
 	| "scroll"
 	| "auto"
-	| string;
+	| (string & {});
 
 // Visibility
 export type VisibilityValue =
 	| "visible"
 	| "hidden"
 	| "collapse"
-	| string;
+	| (string & {});
 
 // Flex direction
 export type FlexDirectionValue =
@@ -141,14 +141,14 @@ export type FlexDirectionValue =
 	| "row-reverse"
 	| "column"
 	| "column-reverse"
-	| string;
+	| (string & {});
 
 // Flex wrap
 export type FlexWrapValue =
 	| "nowrap"
 	| "wrap"
 	| "wrap-reverse"
-	| string;
+	| (string & {});
 
 // Align items
 export type AlignItemsValue =
@@ -164,7 +164,7 @@ export type AlignItemsValue =
 	| "end"
 	| "self-start"
 	| "self-end"
-	| string;
+	| (string & {});
 
 // Justify content
 export type JustifyContentValue =
@@ -180,7 +180,7 @@ export type JustifyContentValue =
 	| "end"
 	| "left"
 	| "right"
-	| string;
+	| (string & {});
 
 // Align self
 export type AlignSelfValue =
@@ -197,7 +197,7 @@ export type AlignSelfValue =
 	| "end"
 	| "self-start"
 	| "self-end"
-	| string;
+	| (string & {});
 
 // Align content
 export type AlignContentValue =
@@ -214,7 +214,7 @@ export type AlignContentValue =
 	| "baseline"
 	| "first baseline"
 	| "last baseline"
-	| string;
+	| (string & {});
 
 // Justify self
 export type JustifySelfValue =
@@ -233,7 +233,7 @@ export type JustifySelfValue =
 	| "self-end"
 	| "left"
 	| "right"
-	| string;
+	| (string & {});
 
 // Justify items
 export type JustifyItemsValue =
@@ -252,7 +252,7 @@ export type JustifyItemsValue =
 	| "left"
 	| "right"
 	| "legacy"
-	| string;
+	| (string & {});
 
 // Grid auto flow
 export type GridAutoFlowValue =
@@ -261,7 +261,7 @@ export type GridAutoFlowValue =
 	| "dense"
 	| "row dense"
 	| "column dense"
-	| string;
+	| (string & {});
 
 // Border style
 export type BorderStyleValue =
@@ -275,7 +275,7 @@ export type BorderStyleValue =
 	| "ridge"
 	| "inset"
 	| "outset"
-	| string;
+	| (string & {});
 
 // Outline style
 export type OutlineStyleValue =
@@ -289,13 +289,13 @@ export type OutlineStyleValue =
 	| "ridge"
 	| "inset"
 	| "outset"
-	| string;
+	| (string & {});
 
 // Box sizing
 export type BoxSizingValue =
 	| "content-box"
 	| "border-box"
-	| string;
+	| (string & {});
 
 // Object fit
 export type ObjectFitValue =
@@ -304,7 +304,7 @@ export type ObjectFitValue =
 	| "cover"
 	| "none"
 	| "scale-down"
-	| string;
+	| (string & {});
 
 // Vertical align
 export type VerticalAlignValue =
@@ -316,11 +316,11 @@ export type VerticalAlignValue =
 	| "middle"
 	| "top"
 	| "bottom"
-	| string
 	| `${number}%`
 	| `${number}px`
 	| `${number}em`
-	| `${number}rem`;
+	| `${number}rem`
+	| (string & {});
 
 // Text align last
 export type TextAlignLastValue =
@@ -331,7 +331,7 @@ export type TextAlignLastValue =
 	| "justify"
 	| "start"
 	| "end"
-	| string;
+	| (string & {});
 
 // Text justify
 export type TextJustifyValue =
@@ -339,27 +339,27 @@ export type TextJustifyValue =
 	| "inter-word"
 	| "inter-character"
 	| "none"
-	| string;
+	| (string & {});
 
 // Text overflow
 export type TextOverflowValue =
 	| "clip"
 	| "ellipsis"
-	| string;
+	| (string & {});
 
 // Word wrap
 export type WordWrapValue =
 	| "normal"
 	| "break-word"
 	| "anywhere"
-	| string;
+	| (string & {});
 
 // Overflow wrap
 export type OverflowWrapValue =
 	| "normal"
 	| "break-word"
 	| "anywhere"
-	| string;
+	| (string & {});
 
 // Background repeat
 export type BackgroundRepeatValue =
@@ -369,14 +369,14 @@ export type BackgroundRepeatValue =
 	| "no-repeat"
 	| "space"
 	| "round"
-	| string;
+	| (string & {});
 
 // Background attachment
 export type BackgroundAttachmentValue =
 	| "scroll"
 	| "fixed"
 	| "local"
-	| string;
+	| (string & {});
 
 // Background clip
 export type BackgroundClipValue =
@@ -384,26 +384,26 @@ export type BackgroundClipValue =
 	| "padding-box"
 	| "content-box"
 	| "text"
-	| string;
+	| (string & {});
 
 // Background origin
 export type BackgroundOriginValue =
 	| "border-box"
 	| "padding-box"
 	| "content-box"
-	| string;
+	| (string & {});
 
 // Transform style
 export type TransformStyleValue =
 	| "flat"
 	| "preserve-3d"
-	| string;
+	| (string & {});
 
 // Backface visibility
 export type BackfaceVisibilityValue =
 	| "visible"
 	| "hidden"
-	| string;
+	| (string & {});
 
 // Animation direction
 export type AnimationDirectionValue =
@@ -411,7 +411,7 @@ export type AnimationDirectionValue =
 	| "reverse"
 	| "alternate"
 	| "alternate-reverse"
-	| string;
+	| (string & {});
 
 // Animation fill mode
 export type AnimationFillModeValue =
@@ -419,13 +419,13 @@ export type AnimationFillModeValue =
 	| "forwards"
 	| "backwards"
 	| "both"
-	| string;
+	| (string & {});
 
 // Animation play state
 export type AnimationPlayStateValue =
 	| "running"
 	| "paused"
-	| string;
+	| (string & {});
 
 // List style type
 export type ListStyleTypeValue =
@@ -444,19 +444,19 @@ export type ListStyleTypeValue =
 	| "georgian"
 	| "lower-alpha"
 	| "upper-alpha"
-	| string;
+	| (string & {});
 
 // List style position
 export type ListStylePositionValue =
 	| "inside"
 	| "outside"
-	| string;
+	| (string & {});
 
 // Border collapse
 export type BorderCollapseValue =
 	| "separate"
 	| "collapse"
-	| string;
+	| (string & {});
 
 // Caption side
 export type CaptionSideValue =
@@ -464,19 +464,19 @@ export type CaptionSideValue =
 	| "bottom"
 	| "left"
 	| "right"
-	| string;
+	| (string & {});
 
 // Empty cells
 export type EmptyCellsValue =
 	| "show"
 	| "hide"
-	| string;
+	| (string & {});
 
 // Table layout
 export type TableLayoutValue =
 	| "auto"
 	| "fixed"
-	| string;
+	| (string & {});
 
 // Appearance
 export type AppearanceValue =
@@ -496,7 +496,7 @@ export type AppearanceValue =
 	| "listbox"
 	| "meter"
 	| "progress-bar"
-	| string;
+	| (string & {});
 
 // User select
 export type UserSelectValue =
@@ -505,7 +505,7 @@ export type UserSelectValue =
 	| "text"
 	| "contain"
 	| "all"
-	| string;
+	| (string & {});
 
 // Pointer events
 export type PointerEventsValue =
@@ -519,7 +519,7 @@ export type PointerEventsValue =
 	| "fill"
 	| "stroke"
 	| "all"
-	| string;
+	| (string & {});
 
 // Resize
 export type ResizeValue =
@@ -529,19 +529,19 @@ export type ResizeValue =
 	| "vertical"
 	| "block"
 	| "inline"
-	| string;
+	| (string & {});
 
 // Scroll behavior
 export type ScrollBehaviorValue =
 	| "auto"
 	| "smooth"
-	| string;
+	| (string & {});
 
 // Isolation
 export type IsolationValue =
 	| "auto"
 	| "isolate"
-	| string;
+	| (string & {});
 
 // Mix blend mode
 export type MixBlendModeValue =
@@ -561,7 +561,7 @@ export type MixBlendModeValue =
 	| "saturation"
 	| "color"
 	| "luminosity"
-	| string;
+	| (string & {});
 
 // Contain
 export type ContainValue =
@@ -572,7 +572,7 @@ export type ContainValue =
 	| "layout"
 	| "style"
 	| "paint"
-	| string;
+	| (string & {});
 
 // Page break
 export type PageBreakValue =
@@ -583,7 +583,7 @@ export type PageBreakValue =
 	| "right"
 	| "recto"
 	| "verso"
-	| string;
+	| (string & {});
 
 // Break
 export type BreakValue =
@@ -599,14 +599,14 @@ export type BreakValue =
 	| "column"
 	| "avoid-region"
 	| "region"
-	| string;
+	| (string & {});
 
 // Column fill
 export type ColumnFillValue =
 	| "auto"
 	| "balance"
 	| "balance-all"
-	| string;
+	| (string & {});
 
 // Column rule style
 export type ColumnRuleStyleValue =
@@ -620,13 +620,13 @@ export type ColumnRuleStyleValue =
 	| "ridge"
 	| "inset"
 	| "outset"
-	| string;
+	| (string & {});
 
 // Column span
 export type ColumnSpanValue =
 	| "none"
 	| "all"
-	| string;
+	| (string & {});
 
 // Cursor
 export type CursorValue =
@@ -666,7 +666,7 @@ export type CursorValue =
 	| "zoom-out"
 	| "grab"
 	| "grabbing"
-	| string;
+	| (string & {});
 
 // Float
 export type FloatValue =
@@ -675,7 +675,7 @@ export type FloatValue =
 	| "right"
 	| "inline-start"
 	| "inline-end"
-	| string;
+	| (string & {});
 
 // Clear
 export type ClearValue =
@@ -685,7 +685,7 @@ export type ClearValue =
 	| "both"
 	| "inline-start"
 	| "inline-end"
-	| string;
+	| (string & {});
 
 // Writing mode
 export type WritingModeValue =
@@ -694,13 +694,13 @@ export type WritingModeValue =
 	| "vertical-lr"
 	| "sideways-rl"
 	| "sideways-lr"
-	| string;
+	| (string & {});
 
 // Direction
 export type DirectionValue =
 	| "ltr"
 	| "rtl"
-	| string;
+	| (string & {});
 
 // Unicode bidi
 export type UnicodeBidiValue =
@@ -710,7 +710,7 @@ export type UnicodeBidiValue =
 	| "isolate"
 	| "isolate-override"
 	| "plaintext"
-	| string;
+	| (string & {});
 
 // Text orientation
 export type TextOrientationValue =
@@ -719,14 +719,14 @@ export type TextOrientationValue =
 	| "sideways"
 	| "sideways-right"
 	| "use-glyph-orientation"
-	| string;
+	| (string & {});
 
 // Hyphens
 export type HyphensValue =
 	| "none"
 	| "manual"
 	| "auto"
-	| string;
+	| (string & {});
 
 // Line break
 export type LineBreakValue =
@@ -735,7 +735,7 @@ export type LineBreakValue =
 	| "normal"
 	| "strict"
 	| "anywhere"
-	| string;
+	| (string & {});
 
 // Word break
 export type WordBreakValue =
@@ -743,7 +743,7 @@ export type WordBreakValue =
 	| "break-all"
 	| "keep-all"
 	| "break-word"
-	| string;
+	| (string & {});
 
 // Touch action
 export type TouchActionValue =
@@ -757,14 +757,14 @@ export type TouchActionValue =
 	| "pan-down"
 	| "pinch-zoom"
 	| "manipulation"
-	| string;
+	| (string & {});
 
 // Overscroll behavior
 export type OverscrollBehaviorValue =
 	| "auto"
 	| "contain"
 	| "none"
-	| string;
+	| (string & {});
 
 // Image rendering
 export type ImageRenderingValue =
@@ -772,7 +772,7 @@ export type ImageRenderingValue =
 	| "smooth"
 	| "crisp-edges"
 	| "pixelated"
-	| string;
+	| (string & {});
 
 // Color scheme
 export type ColorSchemeValue =
@@ -782,7 +782,7 @@ export type ColorSchemeValue =
 	| "light dark"
 	| "only light"
 	| "only dark"
-	| string;
+	| (string & {});
 
 // Caret color
 export type CaretColorValue = CSSColorValue | "auto";
@@ -793,7 +793,7 @@ export type CaretShapeValue =
 	| "bar"
 	| "block"
 	| "underscore"
-	| string;
+	| (string & {});
 
 // Background blend mode
 export type BackgroundBlendModeValue =
@@ -813,14 +813,14 @@ export type BackgroundBlendModeValue =
 	| "saturation"
 	| "color"
 	| "luminosity"
-	| string;
+	| (string & {});
 
 // Content visibility
 export type ContentVisibilityValue =
 	| "visible"
 	| "auto"
 	| "hidden"
-	| string;
+	| (string & {});
 
 // Container type
 export type ContainerTypeValue =
@@ -828,14 +828,14 @@ export type ContainerTypeValue =
 	| "size"
 	| "inline-size"
 	| "block-size"
-	| string;
+	| (string & {});
 
 // Font kerning
 export type FontKerningValue =
 	| "auto"
 	| "normal"
 	| "none"
-	| string;
+	| (string & {});
 
 // Font synthesis
 export type FontSynthesisValue =
@@ -847,13 +847,13 @@ export type FontSynthesisValue =
 	| "weight small-caps"
 	| "style small-caps"
 	| "weight style small-caps"
-	| string;
+	| (string & {});
 
 // Font optical sizing
 export type FontOpticalSizingValue =
 	| "auto"
 	| "none"
-	| string;
+	| (string & {});
 
 // Font display
 export type FontDisplayValue =
@@ -862,7 +862,7 @@ export type FontDisplayValue =
 	| "swap"
 	| "fallback"
 	| "optional"
-	| string;
+	| (string & {});
 
 // Font variant caps
 export type FontVariantCapsValue =
@@ -873,7 +873,7 @@ export type FontVariantCapsValue =
 	| "all-petite-caps"
 	| "unicase"
 	| "titling-caps"
-	| string;
+	| (string & {});
 
 // Text rendering
 export type TextRenderingValue =
@@ -881,14 +881,14 @@ export type TextRenderingValue =
 	| "optimizeSpeed"
 	| "optimizeLegibility"
 	| "geometricPrecision"
-	| string;
+	| (string & {});
 
 // Text combine upright
 export type TextCombineUprightValue =
 	| "none"
 	| "all"
 	| "digits"
-	| string;
+	| (string & {});
 
 // Mask composite
 export type MaskCompositeValue =
@@ -896,23 +896,23 @@ export type MaskCompositeValue =
 	| "subtract"
 	| "intersect"
 	| "exclude"
-	| string;
+	| (string & {});
 
 // Clip rule
 export type ClipRuleValue =
 	| "nonzero"
 	| "evenodd"
-	| string;
+	| (string & {});
 
 // Generic types for properties that accept various values
-export type CSSLengthValue = string | number | `${number}px` | `${number}em` | `${number}rem` | `${number}%` | `${number}vw` | `${number}vh` | `${number}vmin` | `${number}vmax` | `${number}ch` | `${number}ex` | `${number}cm` | `${number}mm` | `${number}in` | `${number}pt` | `${number}pc`;
-export type CSSColorValue = string; // Can be hex, rgb, rgba, hsl, hsla, named colors, etc.
-export type CSSFontFamilyValue = string; // Font family names
-export type CSSTimingFunctionValue = string; // e.g., "ease", "linear", "ease-in", "cubic-bezier(...)"
-export type CSSTransformValue = string; // Transform functions
-export type CSSFilterValue = string; // Filter functions
-export type CSSBackgroundImageValue = string; // url(), gradient functions, etc.
-export type CSSAnimationNameValue = string; // Animation name or "none"
-export type CSSContentValue = string; // Content value (quoted strings, counters, etc.)
-export type CSSAspectRatioValue = string | number | "auto" | `${number} / ${number}`; // Aspect ratio
+export type CSSLengthValue = number | `${number}px` | `${number}em` | `${number}rem` | `${number}%` | `${number}vw` | `${number}vh` | `${number}vmin` | `${number}vmax` | `${number}ch` | `${number}ex` | `${number}cm` | `${number}mm` | `${number}in` | `${number}pt` | `${number}pc` | (string & {});
+export type CSSColorValue = (string & {}); // Can be hex, rgb, rgba, hsl, hsla, named colors, etc.
+export type CSSFontFamilyValue = (string & {}); // Font family names
+export type CSSTimingFunctionValue = "ease" | "linear" | "ease-in" | "ease-out" | "ease-in-out" | "step-start" | "step-end" | (string & {});
+export type CSSTransformValue = (string & {}); // Transform functions
+export type CSSFilterValue = (string & {}); // Filter functions
+export type CSSBackgroundImageValue = (string & {}); // url(), gradient functions, etc.
+export type CSSAnimationNameValue = "none" | (string & {}); // Animation name or "none"
+export type CSSContentValue = "none" | "normal" | (string & {}); // Content value (quoted strings, counters, etc.)
+export type CSSAspectRatioValue = number | "auto" | `${number} / ${number}` | (string & {}); // Aspect ratio
 

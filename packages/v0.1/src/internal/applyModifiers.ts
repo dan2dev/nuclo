@@ -17,12 +17,10 @@
  *  - startIndex allows callers to continue an index sequence if needed.
  *  - Every successfully rendered child Node increments the local index.
  */
-import { applyNodeModifier } from "../core/modifierProcessor";
-import { createElement, createElementNS } from "../utility/dom";
+import { applyNodeModifier, type NodeModifier } from "../core/modifierProcessor";
+import { createElement, createElementNS, SVG_NAMESPACE } from "../utility/dom";
 
-export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
-  | NodeMod<TTagName>
-  | NodeModFn<TTagName>;
+export type { NodeModifier };
 
 export interface ApplyModifiersResult<TTagName extends ElementTagName> {
   /**
@@ -80,8 +78,6 @@ export function applyModifiers<TTagName extends ElementTagName>(
     appended
   };
 }
-
-const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
 /**
  * Creates an HTML element with the specified tag name and applies modifiers to it.

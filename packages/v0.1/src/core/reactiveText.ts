@@ -2,14 +2,8 @@ import { logError } from "../utility/errorHandler";
 import { isNodeConnected, createTextNode } from "../utility/dom";
 import type { UpdateScope } from "./updateScope";
 import { reactiveTextNodes, reactiveTextNodesByNode, registerReactiveTextNode, removeReactiveTextNodeRef } from "./reactiveCleanup";
+import type { TextResolver } from "./reactiveCleanup";
 import { isBrowser } from "../utility/environment";
-
-type TextResolver = () => Primitive;
-
-interface ReactiveTextNodeInfo {
-  resolver: TextResolver;
-  lastValue: string;
-}
 
 /**
  * Creates a reactive text node that automatically updates when its resolver function changes.

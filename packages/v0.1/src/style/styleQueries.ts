@@ -87,69 +87,25 @@ export interface StyleQueryBuilder<TDefinitions extends StyleQueryDefinitions> {
 	(className: string, queryStyles: StyleQueryStyles<TDefinitions>): { className: string };
 }
 
-// Map pseudo-class names to their CSS selector strings
-const PSEUDO_CLASS_MAP: Record<CSSPseudoClass, string> = {
-	'hover': ':hover',
-	'active': ':active',
-	'focus': ':focus',
-	'focus-visible': ':focus-visible',
-	'focus-within': ':focus-within',
-	'visited': ':visited',
-	'link': ':link',
-	'target': ':target',
-	'root': ':root',
-	'empty': ':empty',
-	'enabled': ':enabled',
-	'disabled': ':disabled',
-	'checked': ':checked',
-	'indeterminate': ':indeterminate',
-	'default': ':default',
-	'required': ':required',
-	'optional': ':optional',
-	'valid': ':valid',
-	'invalid': ':invalid',
-	'in-range': ':in-range',
-	'out-of-range': ':out-of-range',
-	'placeholder-shown': ':placeholder-shown',
-	'autofill': ':autofill',
-	'read-only': ':read-only',
-	'read-write': ':read-write',
-	'first-child': ':first-child',
-	'last-child': ':last-child',
-	'only-child': ':only-child',
-	'first-of-type': ':first-of-type',
-	'last-of-type': ':last-of-type',
-	'only-of-type': ':only-of-type',
-	'nth-child': ':nth-child',
-	'nth-last-child': ':nth-last-child',
-	'nth-of-type': ':nth-of-type',
-	'nth-last-of-type': ':nth-last-of-type',
-	'lang': ':lang',
-	'dir': ':dir',
-	'not': ':not',
-	'is': ':is',
-	'where': ':where',
-	'has': ':has',
-	'any-link': ':any-link',
-	'local-link': ':local-link',
-	'scope': ':scope',
-	'current': ':current',
-	'past': ':past',
-	'future': ':future',
-	'playing': ':playing',
-	'paused': ':paused',
-	'seeking': ':seeking',
-	'muted': ':muted',
-	'volume-locked': ':volume-locked',
-	'buffering': ':buffering',
-	'stalled': ':stalled',
-	'picture-in-picture': ':picture-in-picture',
-	'fullscreen': ':fullscreen',
-	'modal': ':modal',
-	'popover-open': ':popover-open',
-	'user-invalid': ':user-invalid',
-	'user-valid': ':user-valid',
-};
+// Set of known CSS pseudo-class names for validation
+const PSEUDO_CLASSES: ReadonlySet<string> = new Set<CSSPseudoClass>([
+	'hover', 'active', 'focus', 'focus-visible', 'focus-within',
+	'visited', 'link', 'target', 'root', 'empty',
+	'enabled', 'disabled', 'checked', 'indeterminate', 'default',
+	'required', 'optional', 'valid', 'invalid',
+	'in-range', 'out-of-range', 'placeholder-shown', 'autofill',
+	'read-only', 'read-write',
+	'first-child', 'last-child', 'only-child',
+	'first-of-type', 'last-of-type', 'only-of-type',
+	'nth-child', 'nth-last-child', 'nth-of-type', 'nth-last-of-type',
+	'lang', 'dir', 'not', 'is', 'where', 'has',
+	'any-link', 'local-link', 'scope',
+	'current', 'past', 'future',
+	'playing', 'paused', 'seeking', 'muted', 'volume-locked',
+	'buffering', 'stalled', 'picture-in-picture',
+	'fullscreen', 'modal', 'popover-open',
+	'user-invalid', 'user-valid',
+]);
 
 // Supported CSS at-rules
 type AtRuleType = 'media' | 'container' | 'supports' | 'style' | 'pseudo';
@@ -193,14 +149,8 @@ function parseQuery(query: string): QueryResult {
 	return { type: 'media', condition: trimmed };
 }
 
-// Check if a key is a built-in pseudo-class
 function isPseudoClass(key: string): key is CSSPseudoClass {
-	return key in PSEUDO_CLASS_MAP;
-}
-
-// Get the CSS selector for a pseudo-class
-function getPseudoClassSelector(pseudoClass: CSSPseudoClass): string {
-	return PSEUDO_CLASS_MAP[pseudoClass];
+	return PSEUDO_CLASSES.has(key);
 }
 
 function getNamedClassName(className: string, styleKey: string): string {
@@ -300,7 +250,7 @@ export function createStyleQueries<const TDefinitions extends StyleQueryDefiniti
 				if (!processedKeys.has(key) && isPseudoClass(key) && styleBuilder instanceof StyleBuilder) {
 					allQueryStyles.push({
 						queryName: key,
-						query: { type: 'pseudo', pseudoClass: getPseudoClassSelector(key) },
+						query: { type: 'pseudo', pseudoClass: `:${key}` },
 						styles: styleBuilder.getStyles()
 					});
 				}

@@ -1,6 +1,7 @@
 import { isFunction } from "../utility/typeGuards";
-import { registerAttributeResolver } from "./reactive";
+import { registerAttributeResolver } from "./reactiveAttributes";
 import { applyStyleAttribute } from "./styleManager";
+import { SVG_NAMESPACE } from "../utility/dom";
 import {
 	initReactiveClassName,
 	hasReactiveClassName,
@@ -37,7 +38,7 @@ function applySingleAttribute<TTagName extends ElementTagName>(
 
     // SVG elements should always use setAttribute for most attributes
     // because many SVG properties are read-only
-    const isSVGElement = el instanceof Element && el.namespaceURI === 'http://www.w3.org/2000/svg';
+    const isSVGElement = el instanceof Element && el.namespaceURI === SVG_NAMESPACE;
 
     if (isSVGElement) {
       // Always use setAttribute for SVG elements
@@ -107,4 +108,4 @@ export function applyAttributes<TTagName extends ElementTagName>(
   }
 }
 
-export { createReactiveTextNode } from "./reactive";
+export { createReactiveTextNode } from "./reactiveText";

@@ -1,7 +1,5 @@
 import { applyModifiers, type NodeModifier } from "../internal/applyModifiers";
-import { createElement, createElementNS } from "../utility/dom";
-
-const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+import { createElement, createElementNS, SVG_NAMESPACE } from "../utility/dom";
 
 /**
  * Creates an HTML element factory with the given modifiers.

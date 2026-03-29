@@ -54,14 +54,22 @@ describe('src/index.ts barrel', () => {
   });
 });
 
-// ── src/core/reactive.ts ─────────────────────────────────────────────────────
-describe('src/core/reactive.ts barrel', () => {
-  it('re-exports reactive utilities', async () => {
-    const mod = await import('../src/core/reactive');
+// ── src/core/reactiveText.ts & reactiveAttributes.ts ────────────────────────
+describe('reactive modules', () => {
+  it('exports reactive text utilities', async () => {
+    const mod = await import('../src/core/reactiveText');
     expect(typeof mod.createReactiveTextNode).toBe('function');
     expect(typeof mod.notifyReactiveTextNodes).toBe('function');
+  });
+
+  it('exports reactive attribute utilities', async () => {
+    const mod = await import('../src/core/reactiveAttributes');
     expect(typeof mod.registerAttributeResolver).toBe('function');
     expect(typeof mod.notifyReactiveElements).toBe('function');
+  });
+
+  it('exports reactive cleanup utilities', async () => {
+    const mod = await import('../src/core/reactiveCleanup');
     expect(typeof mod.cleanupReactiveTextNode).toBe('function');
     expect(typeof mod.cleanupReactiveElement).toBe('function');
   });

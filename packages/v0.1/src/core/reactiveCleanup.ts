@@ -1,24 +1,24 @@
 /**
- * Cleanup utilities for reactive nodes.
- * This module is separate to avoid circular dependencies between reactive modules and DOM utilities.
+ * Shared types and registries for reactive nodes.
+ * Single source of truth — imported by reactiveText.ts and reactiveAttributes.ts.
  */
 
-type TextResolver = () => Primitive;
+export type TextResolver = () => Primitive;
 
-interface ReactiveTextNodeInfo {
+export interface ReactiveTextNodeInfo {
   resolver: TextResolver;
   lastValue: string;
 }
 
-type AttributeResolver = () => unknown;
+export type AttributeResolver = () => unknown;
 
-interface AttributeResolverRecord {
+export interface AttributeResolverRecord {
   resolver: AttributeResolver;
   applyValue: (value: unknown) => void;
   lastValue: unknown;
 }
 
-interface ReactiveElementInfo {
+export interface ReactiveElementInfo {
   attributeResolvers: Map<string, AttributeResolverRecord>;
 }
 

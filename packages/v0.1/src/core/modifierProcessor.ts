@@ -1,5 +1,5 @@
 import { applyAttributes } from "./attributeManager";
-import { createReactiveTextNode } from "./reactive";
+import { createReactiveTextNode } from "./reactiveText";
 import { logError } from "../utility/errorHandler";
 import { isFunction, isNode, isObject, isPrimitive, isZeroArityFunction } from "../utility/typeGuards";
 import { modifierProbeCache } from "../utility/modifierPredicates";

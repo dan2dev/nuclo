@@ -2,19 +2,8 @@ import { logError } from "../utility/errorHandler";
 import { isNodeConnected } from "../utility/dom";
 import type { UpdateScope } from "./updateScope";
 import { reactiveElements, reactiveElementsByNode, registerReactiveElement, removeReactiveElementRef } from "./reactiveCleanup";
+import type { AttributeResolver, AttributeResolverRecord, ReactiveElementInfo } from "./reactiveCleanup";
 import { isBrowser } from "../utility/environment";
-
-type AttributeResolver = () => unknown;
-
-interface AttributeResolverRecord {
-  resolver: AttributeResolver;
-  applyValue: (value: unknown) => void;
-  lastValue: unknown;
-}
-
-interface ReactiveElementInfo {
-  attributeResolvers: Map<string, AttributeResolverRecord>;
-}
 
 const UNSET_LAST_VALUE = {};
 let updateEventListenerRegistered = false;

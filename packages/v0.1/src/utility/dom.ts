@@ -1,8 +1,9 @@
-import { isBrowser } from "./environment";
 import { logError } from "./errorHandler";
 import { removeAllListeners } from "./on";
 import { cleanupReactiveTextNode, cleanupReactiveElement } from "../core/reactiveCleanup";
 import { unregisterConditionalNode } from "./conditionalInfo";
+
+export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
 /**
  * Creates an HTML element.
@@ -106,52 +107,18 @@ function safeInsertBefore(parent: Node, newNode: Node, referenceNode: Node | nul
   }
 }
 
-function createTextNodeSafely(text: string | number | boolean): Text | null {
-  if (!globalThis.document) return null;
-  try {
-    return createTextNode(String(text));
-  } catch (error) {
-    logError('Failed to create text node', error);
-    return null;
-  }
-}
-
-function createCommentSafely(text: string): Comment | null {
-  if (!globalThis.document) return null;
-  try {
-    return globalThis.document.createComment(text);
-  } catch (error) {
-    logError('Failed to create comment node', error);
-    return null;
-  }
-}
-
-/**
- * Creates a comment node safely with error handling.
- * Exported for use across the codebase.
- */
 export function createComment(text: string): Comment | null {
-  return createCommentSafely(text);
+  return globalThis.document ? globalThis.document.createComment(text) : null;
 }
 
-/**
- * Creates a conditional comment placeholder node.
- * Uses globalThis.document so it is safe in SSR environments where `document`
- * may not exist as a global binding (avoids bare ReferenceError).
- */
 export function createConditionalComment(tagName: string, suffix = "hidden"): Comment | null {
-	try {
-		return globalThis.document?.createComment(`conditional-${tagName}-${suffix}`) ?? null;
-	} catch (error) {
-		logError('Failed to create conditional comment', error);
-		return null;
-	}
+  return globalThis.document ? globalThis.document.createComment(`conditional-${tagName}-${suffix}`) : null;
 }
 
 export function createMarkerPair(prefix: string, id: number | string): { start: Comment; end: Comment } {
-  const endComment = createCommentSafely(`${prefix}-end`);
+  const endComment = createComment(`${prefix}-end`);
   if (!endComment) throw new Error("Failed to create comment: document not available");
-  const startComment = createCommentSafely(`${prefix}-start-${id}`);
+  const startComment = createComment(`${prefix}-start-${id}`);
   if (!startComment) throw new Error("Failed to create comment: document not available");
   return { start: startComment, end: endComment };
 }
@@ -186,7 +153,7 @@ export function appendChildren(
       let nodeToAppend: Node;
 
       if (typeof child === "string") {
-        const textNode = createTextNodeSafely(child);
+        const textNode = createTextNode(child);
         if (textNode) {
           nodeToAppend = textNode;
         } else {
@@ -205,19 +172,7 @@ export function appendChildren(
 
 export function isNodeConnected(node: Node | null | undefined): boolean {
   if (!node) return false;
-
-  // Prefer the built-in isConnected property
-  if (typeof node.isConnected === "boolean") {
-    return node.isConnected;
-  }
-
-  // Fallback for older browsers (only if in browser environment)
-  if (isBrowser && typeof document !== 'undefined') {
-    return document.contains(node);
-  }
-
-  // In SSR or when document is not available, assume disconnected
-  return false;
+  return node.isConnected === true;
 }
 
 /**

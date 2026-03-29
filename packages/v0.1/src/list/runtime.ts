@@ -1,6 +1,14 @@
 import { createMarkerPair, safeRemoveChild, isNodeConnected } from "../utility/dom";
-import { arraysEqual } from "../utility/arrayUtils";
 import { resolveRenderable } from "../utility/renderables";
+
+function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
 import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsInput, ListItemsProvider } from "./types";
 import type { UpdateScope } from "../core/updateScope";
 import { isBrowser } from "../utility/environment";
@@ -167,38 +175,24 @@ export function createListRuntime<TItem, TTagName extends ElementTagName = Eleme
   return runtime;
 }
 
+function releaseRuntime(runtime: ListRuntime<unknown, ElementTagName>): void {
+  for (let i = 0; i < runtime.records.length; i++) {
+    const record = runtime.records[i] as unknown as ReleasedListItemRecord<unknown, ElementTagName>;
+    record.element = null;
+    record.item = null;
+  }
+  runtime.records = [];
+}
+
 export function updateListRuntimes(scope?: UpdateScope): void {
   const toDelete: WeakRef<Comment>[] = [];
 
   for (const [ref, info] of activeListRuntimes) {
     const startMarker = ref.deref();
-    
-    // Comment node was garbage collected
-    if (startMarker === undefined) {
-      // Clean up records before deleting runtime
-      if (info.runtime.records) {
-        for (let i = 0; i < info.runtime.records.length; i++) {
-          const record = info.runtime.records[i] as unknown as ReleasedListItemRecord<unknown, ElementTagName>;
-          record.element = null;
-          record.item = null;
-        }
-        info.runtime.records = [];
-      }
-      toDelete.push(ref);
-      continue;
-    }
 
-    // Check if markers are still connected to DOM
-    if (!isNodeConnected(startMarker) || !isNodeConnected(info.runtime.endMarker)) {
-      // Clean up records before deleting runtime
-      if (info.runtime.records) {
-        for (let i = 0; i < info.runtime.records.length; i++) {
-          const record = info.runtime.records[i] as unknown as ReleasedListItemRecord<unknown, ElementTagName>;
-          record.element = null;
-          record.item = null;
-        }
-        info.runtime.records = [];
-      }
+    // Clean up if marker was GC'd or disconnected from DOM
+    if (!startMarker || !isNodeConnected(startMarker) || !isNodeConnected(info.runtime.endMarker)) {
+      releaseRuntime(info.runtime);
       toDelete.push(ref);
       continue;
     }
@@ -206,7 +200,6 @@ export function updateListRuntimes(scope?: UpdateScope): void {
     // Skip if outside update scope
     if (scope && !scope.contains(startMarker)) continue;
 
-    // Sync the runtime (runtime object is mutated in place)
     sync(info.runtime);
   }
 
