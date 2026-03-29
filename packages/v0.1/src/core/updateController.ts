@@ -1,5 +1,6 @@
 import { updateListRuntimes } from "../list/runtime";
-import { notifyReactiveElements, notifyReactiveTextNodes } from "./reactive";
+import { notifyReactiveElements } from "./reactiveAttributes";
+import { notifyReactiveTextNodes } from "./reactiveText";
 import { updateWhenRuntimes } from "../when";
 import { updateConditionalElements } from "./conditionalUpdater";
 import { dispatchGlobalUpdateEvent } from "../utility/events";

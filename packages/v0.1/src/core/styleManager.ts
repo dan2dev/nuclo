@@ -1,5 +1,5 @@
 import { isFunction } from "../utility/typeGuards";
-import { registerAttributeResolver } from "./reactive";
+import { registerAttributeResolver } from "./reactiveAttributes";
 import { setStyleProperty } from "../utility/domTypeHelpers";
 import { logError } from "../utility/errorHandler";
 

@@ -1,66 +1,88 @@
 import { createElement } from "../utility/dom";
 import { isBrowser } from "../utility/environment";
 
-// Supported at-rule types
 type AtRuleType = 'media' | 'container' | 'supports' | 'style' | 'pseudo';
 
-// Check if a class exists in the DOM
-export function classExistsInDOM(className: string, condition?: string, atRuleType: AtRuleType = 'media', pseudoClass?: string): boolean {
-	if (!isBrowser) return false;
-	const styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
-	if (!styleSheet || !styleSheet.sheet) {
-		return false;
+function isAtRule(rule: CSSRule): boolean {
+	return rule instanceof CSSMediaRule ||
+		rule instanceof CSSContainerRule ||
+		rule instanceof CSSSupportsRule;
+}
+
+function matchesAtRule(rule: CSSRule, atRuleType: AtRuleType, condition: string): boolean {
+	if (atRuleType === 'media' && rule instanceof CSSMediaRule) {
+		return rule.media.mediaText === condition;
 	}
-
-	// For pseudo-classes, check for the selector directly
-	if (pseudoClass) {
-		const selector = `.${className}${pseudoClass}`;
-		const rules = Array.from(styleSheet.sheet.cssRules || []);
-		return rules.some(function(rule) {
-			if (rule instanceof CSSStyleRule) {
-				return rule.selectorText === selector;
-			}
-			return false;
-		});
+	if (atRuleType === 'container' && rule instanceof CSSContainerRule) {
+		return rule.conditionText === condition;
 	}
+	if (atRuleType === 'supports' && rule instanceof CSSSupportsRule) {
+		return rule.conditionText === condition;
+	}
+	return false;
+}
 
-	if (condition) {
-		const rules = Array.from(styleSheet.sheet.cssRules || []);
-		const conditionRule = rules.find(function(rule) {
-			if (atRuleType === 'media' && rule instanceof CSSMediaRule) {
-				return rule.media.mediaText === condition;
-			}
-			if (atRuleType === 'container' && rule instanceof CSSContainerRule) {
-				return rule.conditionText === condition;
-			}
-			if (atRuleType === 'supports' && rule instanceof CSSSupportsRule) {
-				return rule.conditionText === condition;
-			}
-			return false;
-		}) as CSSGroupingRule | undefined;
-
-		if (!conditionRule) {
-			return false;
+function findStyleRule(rules: CSSRuleList, selector: string): CSSStyleRule | null {
+	for (let i = 0; i < rules.length; i++) {
+		const rule = rules[i];
+		if (rule instanceof CSSStyleRule && rule.selectorText === selector) {
+			return rule;
 		}
+	}
+	return null;
+}
 
-		return Array.from(conditionRule.cssRules).some(function(rule) {
-			if (rule instanceof CSSStyleRule) {
-				return rule.selectorText === `.${className}`;
-			}
-			return false;
-		});
-	} else {
-		const rules = Array.from(styleSheet.sheet.cssRules || []);
-		return rules.some(function(rule) {
-			if (rule instanceof CSSStyleRule) {
-				return rule.selectorText === `.${className}`;
-			}
-			return false;
-		});
+function updateRuleStyles(rule: CSSStyleRule, styles: Record<string, string>): void {
+	rule.style.cssText = '';
+	for (const [property, value] of Object.entries(styles)) {
+		rule.style.setProperty(property, value);
 	}
 }
 
-// Create a CSS class with multiple styles
+function getStyleSheet(): HTMLStyleElement | null {
+	if (!isBrowser) return null;
+	let el = document.querySelector("#nuclo-styles") as HTMLStyleElement;
+	if (!el) {
+		el = createElement("style") as HTMLStyleElement;
+		el.id = "nuclo-styles";
+		document.head.appendChild(el);
+	}
+	return el;
+}
+
+function buildRulesString(styles: Record<string, string>): string {
+	const entries = Object.entries(styles);
+	let result = '';
+	for (let i = 0; i < entries.length; i++) {
+		if (i > 0) result += '; ';
+		result += `${entries[i][0]}: ${entries[i][1]}`;
+	}
+	return result;
+}
+
+export function classExistsInDOM(className: string, condition?: string, atRuleType: AtRuleType = 'media', pseudoClass?: string): boolean {
+	if (!isBrowser) return false;
+	const styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
+	if (!styleSheet?.sheet) return false;
+
+	const rules = styleSheet.sheet.cssRules;
+
+	if (pseudoClass) {
+		return findStyleRule(rules, `.${className}${pseudoClass}`) !== null;
+	}
+
+	if (condition) {
+		for (let i = 0; i < rules.length; i++) {
+			if (matchesAtRule(rules[i], atRuleType, condition)) {
+				return findStyleRule((rules[i] as CSSGroupingRule).cssRules, `.${className}`) !== null;
+			}
+		}
+		return false;
+	}
+
+	return findStyleRule(rules, `.${className}`) !== null;
+}
+
 export function createCSSClassWithStyles(
 	className: string,
 	styles: Record<string, string>,
@@ -68,29 +90,19 @@ export function createCSSClassWithStyles(
 	atRuleType: AtRuleType = 'media',
 	pseudoClass?: string
 ): void {
-	if (!isBrowser) return;
-	let styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
+	const styleSheet = getStyleSheet();
+	if (!styleSheet) return;
 
-	if (!styleSheet) {
-		styleSheet = createElement("style") as HTMLStyleElement;
-		styleSheet.id = "nuclo-styles";
-		document.head.appendChild(styleSheet);
-	}
+	const sheet = styleSheet.sheet;
+	if (!sheet) return;
 
-	const rules = Object.entries(styles)
-		.map(function([property, value]) { return `${property}: ${value}`; })
-		.join("; ");
+	const rulesStr = buildRulesString(styles);
 
-	// Handle pseudo-classes (hover, focus, etc.) - these modify the selector directly
 	if (pseudoClass) {
 		const selector = `.${className}${pseudoClass}`;
-		const sheet = styleSheet.sheet;
-		if (!sheet) return;
-		
 		const allRules = sheet.cssRules;
 		const rulesLength = allRules.length;
-		
-		// Find existing rule with this pseudo-class selector
+
 		let existingRule: CSSStyleRule | null = null;
 		let insertIndex = rulesLength;
 
@@ -99,10 +111,8 @@ export function createCSSClassWithStyles(
 			if (rule instanceof CSSStyleRule) {
 				if (rule.selectorText === selector) {
 					existingRule = rule;
-					insertIndex = i;
 					break;
 				}
-				// Insert pseudo-class rules after regular style rules but before at-rules
 				if (!rule.selectorText.includes(':')) {
 					insertIndex = i + 1;
 				}
@@ -110,121 +120,52 @@ export function createCSSClassWithStyles(
 		}
 
 		if (existingRule) {
-			// Update existing rule by replacing all styles
-			// More efficient: clear and set in one pass
-			const style = existingRule.style;
-			style.cssText = ''; // Faster than removing properties one by one
-			for (const [property, value] of Object.entries(styles)) {
-				style.setProperty(property, value);
-			}
+			updateRuleStyles(existingRule, styles);
 		} else {
-			sheet.insertRule(`${selector} { ${rules} }`, insertIndex);
+			sheet.insertRule(`${selector} { ${rulesStr} }`, insertIndex);
 		}
 		return;
 	}
 
 	if (condition) {
-		// Create or get at-rule (media, container, supports, etc.)
-		const sheet = styleSheet.sheet;
-		if (!sheet) return;
-		
 		const existingRules = sheet.cssRules;
 		const rulesLength = existingRules.length;
 		let groupingRule: CSSGroupingRule | null = null;
 
-		// Helper to check if a rule matches our at-rule type and condition
-		const isMatchingRule = (rule: CSSRule): boolean => {
-			if (atRuleType === 'media' && rule instanceof CSSMediaRule) {
-				return rule.media.mediaText === condition;
-			}
-			if (atRuleType === 'container' && rule instanceof CSSContainerRule) {
-				return rule.conditionText === condition;
-			}
-			if (atRuleType === 'supports' && rule instanceof CSSSupportsRule) {
-				return rule.conditionText === condition;
-			}
-			return false;
-		};
-
-		// Helper to check if a rule is any at-rule
-		const isAtRule = (rule: CSSRule): boolean => {
-			return rule instanceof CSSMediaRule ||
-				rule instanceof CSSContainerRule ||
-				rule instanceof CSSSupportsRule;
-		};
-
 		for (let i = 0; i < rulesLength; i++) {
-			const rule = existingRules[i];
-			if (isMatchingRule(rule)) {
-				groupingRule = rule as CSSGroupingRule;
+			if (matchesAtRule(existingRules[i], atRuleType, condition)) {
+				groupingRule = existingRules[i] as CSSGroupingRule;
 				break;
 			}
 		}
 
 		if (!groupingRule) {
-			// Find the correct insertion index: after all style rules, append at-rules in order
-			// Since we process queries in registration order, we can simply append
-			// This ensures: style rules first, then at-rules in the order they're processed
 			let insertIndex = rulesLength;
-
-			// Find the last at-rule to insert after it (maintains order)
 			for (let i = rulesLength - 1; i >= 0; i--) {
-				const rule = existingRules[i];
-				if (isAtRule(rule)) {
-					insertIndex = i + 1;
-					break;
-				} else if (rule instanceof CSSStyleRule) {
-					// If we hit a style rule, insert after it
+				if (isAtRule(existingRules[i]) || existingRules[i] instanceof CSSStyleRule) {
 					insertIndex = i + 1;
 					break;
 				}
 			}
 
-			// Create the appropriate at-rule
 			const atRulePrefix = atRuleType === 'media' ? '@media' :
 				atRuleType === 'container' ? '@container' :
 				atRuleType === 'supports' ? '@supports' :
-				'@media'; // fallback
+				'@media';
 
 			sheet.insertRule(`${atRulePrefix} ${condition} {}`, insertIndex);
 			groupingRule = sheet.cssRules[insertIndex] as CSSGroupingRule;
 		}
 
-		// Check if class already exists in this at-rule
-		let existingRule: CSSStyleRule | null = null;
-		for (const rule of Array.from(groupingRule.cssRules)) {
-			if (rule instanceof CSSStyleRule && rule.selectorText === `.${className}`) {
-				existingRule = rule;
-				break;
-			}
-		}
-
+		const existingRule = findStyleRule(groupingRule.cssRules, `.${className}`);
 		if (existingRule) {
-			// Update existing rule by replacing all styles
-			// More efficient: clear and set in one pass
-			const style = existingRule.style;
-			style.cssText = ''; // Faster than removing properties one by one
-			for (const [property, value] of Object.entries(styles)) {
-				style.setProperty(property, value);
-			}
+			updateRuleStyles(existingRule, styles);
 		} else {
-			groupingRule.insertRule(`.${className} { ${rules} }`, groupingRule.cssRules.length);
+			groupingRule.insertRule(`.${className} { ${rulesStr} }`, groupingRule.cssRules.length);
 		}
 	} else {
-		// Regular style rule (no at-rule)
-		// Find existing rule or insert at the beginning (before at-rules)
-		const sheet = styleSheet.sheet;
-		if (!sheet) return;
-		
 		let existingRule: CSSStyleRule | null = null;
 		let insertIndex = 0;
-
-		// Helper to check if a rule is any at-rule
-		const isAtRule = (rule: CSSRule): boolean => {
-			return rule instanceof CSSMediaRule ||
-				rule instanceof CSSContainerRule ||
-				rule instanceof CSSSupportsRule;
-		};
 
 		const allRules = sheet.cssRules;
 		const rulesLength = allRules.length;
@@ -235,27 +176,19 @@ export function createCSSClassWithStyles(
 				insertIndex = i;
 				break;
 			}
-			// Track where at-rules start to insert default styles before them
 			if (!isAtRule(rule)) {
 				insertIndex = i + 1;
 			}
 		}
 
 		if (existingRule) {
-			// Update existing rule by replacing all styles
-			// More efficient: clear and set in one pass
-			const style = existingRule.style;
-			style.cssText = ''; // Faster than removing properties one by one
-			for (const [property, value] of Object.entries(styles)) {
-				style.setProperty(property, value);
-			}
+			updateRuleStyles(existingRule, styles);
 		} else {
-			sheet.insertRule(`.${className} { ${rules} }`, insertIndex);
+			sheet.insertRule(`.${className} { ${rulesStr} }`, insertIndex);
 		}
 	}
 }
 
-// Legacy function for backward compatibility
 export function createCSSClass(className: string, styles: Record<string, string>): void {
 	createCSSClassWithStyles(className, styles);
 }

@@ -8,11 +8,9 @@ import {
   unregisterConditionalNode,
 } from "../utility/conditionalInfo";
 import { runCondition } from "../utility/conditions";
-import { replaceNodeSafely, createConditionalComment, createElement, createElementNS } from "../utility/dom";
+import { replaceNodeSafely, createConditionalComment, createElement, createElementNS, SVG_NAMESPACE } from "../utility/dom";
 import { logError } from "../utility/errorHandler";
 import type { UpdateScope } from "./updateScope";
-
-const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
 function createElementFromConditionalInfo<TTagName extends ElementTagName>(
   conditionalInfo: ConditionalInfo<TTagName>

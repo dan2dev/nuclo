@@ -1,48 +1,36 @@
 import { describe, it, expect } from 'vitest';
 
 describe('reactive module exports', () => {
-  it('should export createReactiveTextNode', async () => {
-    const { createReactiveTextNode } = await import('../../src/core/reactive');
+  it('should export createReactiveTextNode from reactiveText', async () => {
+    const { createReactiveTextNode } = await import('../../src/core/reactiveText');
 
     expect(createReactiveTextNode).toBeDefined();
     expect(typeof createReactiveTextNode).toBe('function');
   });
 
-  it('should export notifyReactiveTextNodes', async () => {
-    const { notifyReactiveTextNodes } = await import('../../src/core/reactive');
+  it('should export notifyReactiveTextNodes from reactiveText', async () => {
+    const { notifyReactiveTextNodes } = await import('../../src/core/reactiveText');
 
     expect(notifyReactiveTextNodes).toBeDefined();
     expect(typeof notifyReactiveTextNodes).toBe('function');
   });
 
-  it('should export registerAttributeResolver', async () => {
-    const { registerAttributeResolver } = await import('../../src/core/reactive');
+  it('should export registerAttributeResolver from reactiveAttributes', async () => {
+    const { registerAttributeResolver } = await import('../../src/core/reactiveAttributes');
 
     expect(registerAttributeResolver).toBeDefined();
     expect(typeof registerAttributeResolver).toBe('function');
   });
 
-  it('should export notifyReactiveElements', async () => {
-    const { notifyReactiveElements } = await import('../../src/core/reactive');
+  it('should export notifyReactiveElements from reactiveAttributes', async () => {
+    const { notifyReactiveElements } = await import('../../src/core/reactiveAttributes');
 
     expect(notifyReactiveElements).toBeDefined();
     expect(typeof notifyReactiveElements).toBe('function');
   });
 
-  it('should verify all exports work correctly', async () => {
-    const reactive = await import('../../src/core/reactive');
-
-    // Verify we have exactly the expected exports
-    const exports = Object.keys(reactive);
-    expect(exports).toContain('createReactiveTextNode');
-    expect(exports).toContain('notifyReactiveTextNodes');
-    expect(exports).toContain('registerAttributeResolver');
-    expect(exports).toContain('notifyReactiveElements');
-  });
-
-  it('should have working createReactiveTextNode from re-export', async () => {
-    // This test actually exercises the re-exported function
-    const { createReactiveTextNode } = await import('../../src/core/reactive');
+  it('should have working createReactiveTextNode', async () => {
+    const { createReactiveTextNode } = await import('../../src/core/reactiveText');
 
     const resolver = () => 'test text';
     const node = createReactiveTextNode(resolver);
@@ -51,16 +39,13 @@ describe('reactive module exports', () => {
     expect(node.textContent).toBe('test text');
   });
 
-  it('should have working registerAttributeResolver from re-export', async () => {
-    // This test actually exercises the re-exported function
-    const { registerAttributeResolver } = await import('../../src/core/reactive');
+  it('should have working registerAttributeResolver', async () => {
+    const { registerAttributeResolver } = await import('../../src/core/reactiveAttributes');
 
-    // Create a mock element in browser environment
     const element = document.createElement('div');
     const resolver = () => 'value';
     const attributeName = 'data-test';
 
-    // Should not throw
     expect(() => {
       registerAttributeResolver(element, attributeName, resolver);
     }).not.toThrow();

@@ -1,11 +1,7 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import {
-  createReactiveTextNode,
-  notifyReactiveTextNodes,
-  registerAttributeResolver,
-  notifyReactiveElements,
-} from "../../src/core/reactive";
+import { createReactiveTextNode, notifyReactiveTextNodes } from "../../src/core/reactiveText";
+import { registerAttributeResolver, notifyReactiveElements } from "../../src/core/reactiveAttributes";
 
 describe("reactive module exports", () => {
   it("should export createReactiveTextNode", () => {

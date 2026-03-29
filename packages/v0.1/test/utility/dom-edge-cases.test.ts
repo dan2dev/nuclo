@@ -94,19 +94,15 @@ describe("dom utility edge cases", () => {
       expect(comment?.textContent).toBe("conditional-div-ssr");
     });
 
-    it("should handle errors gracefully", () => {
-      const originalCreateComment = document.createComment;
-      document.createComment = () => {
-        throw new Error("create error");
-      };
+    it("should return null when document is unavailable", () => {
+      const originalDocument = global.document;
+      // @ts-expect-error - testing non-browser
+      global.document = undefined;
 
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       const comment = createConditionalComment("div");
       expect(comment).toBeNull();
-      expect(consoleErrorSpy).toHaveBeenCalled();
 
-      document.createComment = originalCreateComment;
-      consoleErrorSpy.mockRestore();
+      global.document = originalDocument;
     });
   });
 
@@ -272,18 +268,15 @@ describe("dom utility edge cases", () => {
       expect(result).toBeNull();
     });
 
-    it("should handle text node creation failure", () => {
-      const originalCreateTextNode = document.createTextNode;
-      document.createTextNode = () => {
-        throw new Error("create error");
-      };
+    it("should skip string children when document is unavailable", () => {
+      const originalCreateTextNode = document.createTextNode.bind(document);
+      document.createTextNode = (() => null) as any;
 
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       appendChildren(container, "test");
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      // No text appended since createTextNode returned null
+      expect(container.textContent).toBe("");
 
       document.createTextNode = originalCreateTextNode;
-      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -316,17 +309,17 @@ describe("dom utility edge cases", () => {
       expect(isNodeConnected(node)).toBe(false);
     });
 
-    it("should fallback to document.contains for older browsers", () => {
+    it("should return false when isConnected is not true", () => {
       const node = document.createElement("div");
       container.appendChild(node);
-      
-      // Mock isConnected to be undefined
+
+      // Mock isConnected to be undefined (simulates non-standard environments)
       Object.defineProperty(node, "isConnected", {
         value: undefined,
         configurable: true,
       });
-      
-      expect(isNodeConnected(node)).toBe(true);
+
+      expect(isNodeConnected(node)).toBe(false);
     });
   });
 
