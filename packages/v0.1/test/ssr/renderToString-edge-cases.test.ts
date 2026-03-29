@@ -3,6 +3,7 @@
 import '../../src/polyfill';
 import { describe, it, expect, beforeAll } from "vitest";
 import { renderToString } from "../../src/ssr/renderToString";
+import { NucloElement } from "../../src/polyfill/Element";
 
 // Import tag builders
 import "../../src/index";
@@ -243,6 +244,131 @@ describe("SSR renderToString - Edge Cases", () => {
       const html = renderToString(div("Line 1\nLine 2\tTabbed"));
 
       expect(html).toBe('<div><!-- text-0 -->Line 1\nLine 2\tTabbed</div>');
+    });
+  });
+
+  describe("cssText parsing with empty values", () => {
+    it("should filter out declarations with empty values from cssText", () => {
+      const el = new NucloElement('div');
+      // Set a property with empty value and one with real value
+      (el.style as any).color = '';
+      (el.style as any).background = 'red';
+      // cssText will produce "color: ; background: red"
+      // The serialization path reads cssText when style is not in the attributes Map
+      const html = renderToString(el as unknown as Element);
+      expect(html).toContain('background: red;');
+      // "color" with empty value should be excluded
+      expect(html).not.toContain('color:');
+    });
+  });
+
+  describe("cssText parsing with malformed declarations", () => {
+    it("should handle declarations with no colon", () => {
+      const el = new NucloElement('div');
+      // Override style with a custom object that returns malformed cssText
+      Object.defineProperty(el, 'style', {
+        value: {
+          cssText: 'invalidstyle; color: blue',
+        },
+        configurable: true,
+      });
+      const html = renderToString(el as unknown as Element);
+      // "invalidstyle" has no colon, so it passes through as-is
+      // "color: blue" should be serialized normally
+      expect(html).toContain('color: blue;');
+      expect(html).toContain('invalidstyle');
+    });
+  });
+
+  describe("browser element with NamedNodeMap-like attributes", () => {
+    it("should serialize attributes from a NamedNodeMap-like object", () => {
+      // Create a plain object that mimics a browser Element with NamedNodeMap attributes
+      const fakeElement = {
+        nodeType: 1,
+        tagName: 'DIV',
+        attributes: {
+          length: 2,
+          0: { name: 'id', value: 'test-id' },
+          1: { name: 'class', value: 'test-class' },
+        },
+        childNodes: [] as any[],
+      };
+      const html = renderToString(fakeElement as unknown as Element);
+      expect(html).toContain('id="test-id"');
+      expect(html).toContain('class="test-class"');
+      expect(html).toBe('<div id="test-id" class="test-class"></div>');
+    });
+
+    it("should handle a NamedNodeMap-like object with zero attributes", () => {
+      const fakeElement = {
+        nodeType: 1,
+        tagName: 'SPAN',
+        attributes: {
+          length: 0,
+        },
+        childNodes: [] as any[],
+      };
+      const html = renderToString(fakeElement as unknown as Element);
+      expect(html).toBe('<span></span>');
+    });
+
+    it("should skip null entries in NamedNodeMap-like attributes", () => {
+      const fakeElement = {
+        nodeType: 1,
+        tagName: 'DIV',
+        attributes: {
+          length: 2,
+          0: { name: 'data-foo', value: 'bar' },
+          1: null,
+        },
+        childNodes: [] as any[],
+      };
+      const html = renderToString(fakeElement as unknown as Element);
+      expect(html).toContain('data-foo="bar"');
+    });
+  });
+
+  describe("boolean attribute string values", () => {
+    it("should omit boolean attribute when value is string 'false'", () => {
+      const el = new NucloElement('input');
+      el.attributes.set('type', 'checkbox');
+      el.attributes.set('disabled', 'false');
+      const html = renderToString(el as unknown as Element);
+      expect(html).not.toContain('disabled');
+    });
+
+    it("should render boolean attribute when value is string 'true'", () => {
+      const el = new NucloElement('input');
+      el.attributes.set('type', 'checkbox');
+      el.attributes.set('checked', 'true');
+      const html = renderToString(el as unknown as Element);
+      expect(html).toContain(' checked');
+      expect(html).not.toContain('checked="true"');
+    });
+
+    it("should render boolean attribute when value equals the attribute name", () => {
+      const el = new NucloElement('input');
+      el.attributes.set('type', 'text');
+      el.attributes.set('readonly', 'readonly');
+      const html = renderToString(el as unknown as Element);
+      expect(html).toContain(' readonly');
+      expect(html).not.toContain('readonly="readonly"');
+    });
+  });
+
+  describe("element with textContent fallback", () => {
+    it("should use textContent when element has no child nodes", () => {
+      const fakeElement = {
+        nodeType: 1,
+        tagName: 'P',
+        attributes: {
+          length: 0,
+        },
+        textContent: 'Fallback text',
+        childNodes: [] as any[],
+      };
+      const html = renderToString(fakeElement as unknown as Element);
+      expect(html).toBe('<p>Fallback text</p>');
     });
   });
 });
