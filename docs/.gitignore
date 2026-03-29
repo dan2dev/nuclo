@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 dist-server
+build
 *.local
 playwright-report
 test-results

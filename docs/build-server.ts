@@ -29,7 +29,7 @@ for (const target of targets) {
     entrypoints: ["./src/server.ts"],
     compile: {
       target,
-      outfile: `./dist-server/server-${target}`,
+      outfile: `./build/server-${target}`,
     },
     define: {
       "process.env.NODE_ENV": JSON.stringify("production"),
