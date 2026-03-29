@@ -17,7 +17,7 @@ export default defineConfig({
     exclude: ['nuclo']
   },
   build: {
-    outDir: './dist-server/dist',
+    outDir: './build/dist',
     emptyOutDir: true,
     manifest: true,
     rollupOptions: {

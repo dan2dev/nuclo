@@ -3,6 +3,7 @@ import './css-polyfill.ts';
 import 'nuclo/polyfill';
 import 'nuclo';
 import { renderToString } from 'nuclo/ssr';
+import { dirname, resolve } from 'node:path';
 import { ssrMatchRoute } from './ssr-app.ts';
 import { routeMap } from './route-definitions.ts';
 import { globalCss } from './styles.ts';
@@ -93,6 +94,23 @@ function shouldGzip(contentType: string): boolean {
   return /text\/|application\/(javascript|json|xml)|image\/svg/.test(contentType);
 }
 
+async function resolveProdDistDir(): Promise<string | null> {
+  const candidates = [
+    resolve(dirname(process.execPath), 'dist'),
+    resolve(import.meta.dir, 'dist'),
+    resolve(import.meta.dir, '../build/dist'),
+    resolve(process.cwd(), 'dist'),
+  ];
+
+  for (const dir of candidates) {
+    if (await Bun.file(resolve(dir, '.vite/manifest.json')).exists()) {
+      return dir;
+    }
+  }
+
+  return null;
+}
+
 async function gzipResponse(req: Request, res: Response): Promise<Response> {
   const acceptEncoding = req.headers.get('accept-encoding') ?? '';
   if (!acceptEncoding.includes('gzip')) return res;
@@ -111,12 +129,14 @@ async function gzipResponse(req: Request, res: Response): Promise<Response> {
 // --- Production ---
 
 if (isProd) {
-  const manifestFile = Bun.file('dist/.vite/manifest.json');
+  const distDir = await resolveProdDistDir();
 
-  if (!(await manifestFile.exists())) {
-    console.error("dist/.vite/manifest.json not found. Run 'pnpm build' first.");
+  if (!distDir) {
+    console.error("Could not find a built Vite manifest. Run 'pnpm build' first.");
     process.exit(1);
   }
+
+  const manifestFile = Bun.file(resolve(distDir, '.vite/manifest.json'));
 
   const manifest: Record<string, { file: string; css?: string[] }> = JSON.parse(
     await manifestFile.text(),
@@ -137,7 +157,7 @@ if (isProd) {
 
       // Serve static assets from dist/.
       if (pathname !== '/' && pathname !== '/index.html') {
-        const file = Bun.file(`dist${pathname}`);
+        const file = Bun.file(resolve(distDir, `.${pathname}`));
         if (await file.exists()) return gzipResponse(req, new Response(file));
       }
 
