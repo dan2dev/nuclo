@@ -1,6 +1,6 @@
 import { routeMap } from "./route-definitions.ts";
 
-interface PageMeta {
+export interface PageMeta {
   title: string;
   description: string;
   keywords?: string;
@@ -9,7 +9,9 @@ interface PageMeta {
   dateModified?: string;
 }
 
-const routeMeta: Record<string, PageMeta> = {
+export const SEO_BASE_URL = "https://nuclo.dan2.dev/";
+
+export const routeMeta: Record<string, PageMeta> = {
   home: {
     title: "Nuclo - Imperative DOM Framework",
     description:
@@ -126,9 +128,8 @@ const exampleRoutes = [...routeMap.keys()].filter(p => p.startsWith("examples/")
  * Updates the page title and meta tags based on the current route
  */
 export function updatePageMeta(route: string) {
-  const meta = routeMeta[route] || routeMeta.home;
-  const baseUrl = "https://nuclo.dan2.dev/";
-  const routeUrl = route === "home" ? baseUrl : `${baseUrl}${route}`;
+  const meta = getMetaForRoute(route);
+  const routeUrl = getRouteUrl(route);
 
   document.title = meta.title;
 
@@ -149,6 +150,14 @@ export function updatePageMeta(route: string) {
   updateLinkTag("canonical", routeUrl);
 
   updateStructuredData(route);
+}
+
+export function getMetaForRoute(route: string): PageMeta {
+  return routeMeta[route] || routeMeta.home;
+}
+
+export function getRouteUrl(route: string): string {
+  return route === "home" ? SEO_BASE_URL : `${SEO_BASE_URL}${route}`;
 }
 
 function updateMetaTag(attribute: string, name: string, content: string) {
@@ -175,24 +184,23 @@ function updateLinkTag(rel: string, href: string) {
   element.setAttribute("href", href);
 }
 
-function generateStructuredData(route: string): object[] {
-  const baseUrl = "https://nuclo.dan2.dev/";
-  const routeUrl = route === "home" ? baseUrl : `${baseUrl}${route}`;
-  const meta = routeMeta[route] || routeMeta.home;
+export function generateStructuredData(route: string): object[] {
+  const routeUrl = getRouteUrl(route);
+  const meta = getMetaForRoute(route);
 
   const schemas: object[] = [];
 
   schemas.push({
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "@id": `${baseUrl}#website`,
+    "@id": `${SEO_BASE_URL}#website`,
     name: "Nuclo",
     description: "A lightweight, imperative DOM framework with explicit update() calls",
-    url: baseUrl,
+    url: SEO_BASE_URL,
     inLanguage: "en-US",
     publisher: {
       "@type": "Person",
-      "@id": `${baseUrl}#author`,
+      "@id": `${SEO_BASE_URL}#author`,
       name: "Danilo Castro",
       url: "https://dan2.dev",
       sameAs: ["https://github.com/dan2dev", "https://twitter.com/dan2dev"],
@@ -201,7 +209,7 @@ function generateStructuredData(route: string): object[] {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${baseUrl}?q={search_term_string}`,
+        urlTemplate: `${SEO_BASE_URL}?q={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },
@@ -210,7 +218,7 @@ function generateStructuredData(route: string): object[] {
   schemas.push({
     "@context": "https://schema.org",
     "@type": "Person",
-    "@id": `${baseUrl}#author`,
+    "@id": `${SEO_BASE_URL}#author`,
     name: "Danilo Castro",
     givenName: "Danilo",
     familyName: "Castro",
@@ -221,7 +229,7 @@ function generateStructuredData(route: string): object[] {
   schemas.push({
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "@id": `${baseUrl}#software`,
+    "@id": `${SEO_BASE_URL}#software`,
     name: "Nuclo",
     description: "A lightweight, imperative DOM framework with explicit update() calls",
     applicationCategory: "DeveloperApplication",
@@ -232,9 +240,9 @@ function generateStructuredData(route: string): object[] {
       priceCurrency: "USD",
     },
     author: {
-      "@id": `${baseUrl}#author`,
+      "@id": `${SEO_BASE_URL}#author`,
     },
-    url: baseUrl,
+    url: SEO_BASE_URL,
     softwareVersion: "Latest",
     programmingLanguage: {
       "@type": "ComputerLanguage",
@@ -269,16 +277,16 @@ function generateStructuredData(route: string): object[] {
     description: meta.description,
     inLanguage: "en-US",
     isPartOf: {
-      "@id": `${baseUrl}#website`,
+      "@id": `${SEO_BASE_URL}#website`,
     },
     about: {
-      "@id": `${baseUrl}#software`,
+      "@id": `${SEO_BASE_URL}#software`,
     },
     author: {
-      "@id": `${baseUrl}#author`,
+      "@id": `${SEO_BASE_URL}#author`,
     },
     publisher: {
-      "@id": `${baseUrl}#author`,
+      "@id": `${SEO_BASE_URL}#author`,
     },
   };
 
@@ -302,7 +310,7 @@ function generateStructuredData(route: string): object[] {
         return {
           "@type": "ListItem",
           position: index + 1,
-          url: `${baseUrl}${exRoute}`,
+          url: `${SEO_BASE_URL}${exRoute}`,
           name: exMeta.title,
           description: exMeta.description,
         };
@@ -314,20 +322,19 @@ function generateStructuredData(route: string): object[] {
 }
 
 function generateBreadcrumbs(route: string): Array<{ name: string; url: string }> {
-  const baseUrl = "https://nuclo.dan2.dev/";
-  const breadcrumbs = [{ name: "Home", url: baseUrl }];
+  const breadcrumbs = [{ name: "Home", url: SEO_BASE_URL }];
 
   if (route === "home") {
     return breadcrumbs;
   }
 
   if (route.startsWith("examples/")) {
-    breadcrumbs.push({ name: "Examples", url: `${baseUrl}examples` });
+    breadcrumbs.push({ name: "Examples", url: `${SEO_BASE_URL}examples` });
     const meta = routeMeta[route];
-    breadcrumbs.push({ name: meta.title.replace(" - Nuclo", ""), url: `${baseUrl}${route}` });
+    breadcrumbs.push({ name: meta.title.replace(" - Nuclo", ""), url: `${SEO_BASE_URL}${route}` });
   } else {
     const meta = routeMeta[route];
-    breadcrumbs.push({ name: meta.title.replace(" - Nuclo", ""), url: `${baseUrl}${route}` });
+    breadcrumbs.push({ name: meta.title.replace(" - Nuclo", ""), url: `${SEO_BASE_URL}${route}` });
   }
 
   return breadcrumbs;

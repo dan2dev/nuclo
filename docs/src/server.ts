@@ -6,6 +6,7 @@ import { renderToString } from 'nuclo/ssr';
 import { dirname, resolve } from 'node:path';
 import { ssrMatchRoute } from './ssr-app.ts';
 import { routeMap } from './route-definitions.ts';
+import { SEO_BASE_URL, generateStructuredData, getMetaForRoute } from './seo.ts';
 import { globalCss } from './styles.ts';
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -17,40 +18,13 @@ const htmlTemplate = `<!doctype html>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/nuclo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {{seoHead}}
 
-    <!-- Primary Meta Tags -->
-    <title>Nuclo - Imperative DOM Framework</title>
-    <meta name="title" content="Nuclo - Imperative DOM Framework" />
-    <meta name="description" content="Nuclo is a lightweight, imperative DOM framework with explicit update() calls. Build interactive web apps with plain functions, mutable state, and direct DOM rendering." />
-    <meta name="keywords" content="nuclo, imperative dom framework, explicit updates, javascript, typescript, ui framework, dom library, direct dom rendering" />
-    <meta name="author" content="Danilo Castro (@dan2dev)" />
-    <meta name="language" content="English" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://nuclo.dan2.dev/" />
-
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://nuclo.dan2.dev/" />
-    <meta property="og:title" content="Nuclo - Imperative DOM Framework" />
-    <meta property="og:description" content="A lightweight, imperative DOM framework with explicit update() calls and direct DOM rendering." />
-    <meta property="og:image" content="https://nuclo.dan2.dev/nuclo.svg" />
-    <meta property="og:site_name" content="Nuclo" />
-    <meta property="og:locale" content="en_US" />
-
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://nuclo.dan2.dev/" />
-    <meta name="twitter:title" content="Nuclo - Imperative DOM Framework" />
-    <meta name="twitter:description" content="A lightweight, imperative DOM framework with explicit update() calls and direct DOM rendering." />
-    <meta name="twitter:image" content="https://nuclo.dan2.dev/nuclo.svg" />
-    <meta name="twitter:creator" content="@dan2dev" />
-    <meta name="twitter:site" content="@dan2dev" />
-
-    <!-- Additional Meta Tags -->
     <meta name="theme-color" content="#646cff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Nuclo" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
 
     <!-- Global styles injected server-side -->
     <style id="nuclo-global">{{styles}}</style>
@@ -61,6 +35,75 @@ const htmlTemplate = `<!doctype html>
     <div id="app">{{html}}</div>
   </body>
 </html>`;
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function routeToAbsoluteUrl(pathname: string): string {
+  const normalizedPath = pathname === '/' ? '' : pathname.replace(/\/+$/, '');
+  return `${SEO_BASE_URL.replace(/\/$/, '')}${normalizedPath}`;
+}
+
+function buildSeoHead(route: string, pathname: string, known: boolean): string {
+  const meta = known
+    ? getMetaForRoute(route)
+    : {
+        title: 'Page Not Found - Nuclo',
+        description: 'The requested page could not be found on the Nuclo documentation site.',
+      };
+
+  const pageUrl = known ? (route === 'home' ? SEO_BASE_URL : `${SEO_BASE_URL}${route}`) : routeToAbsoluteUrl(pathname);
+  const robots = known ? 'index, follow' : 'noindex, nofollow';
+  const ogType = meta.type === 'TechArticle' ? 'article' : 'website';
+  const jsonLdSchemas = known
+    ? generateStructuredData(route)
+    : [
+        {
+          '@context': 'https://schema.org',
+          '@type': 'WebPage',
+          name: meta.title,
+          description: meta.description,
+          url: pageUrl,
+          isPartOf: { '@id': `${SEO_BASE_URL}#website` },
+        },
+      ];
+  const jsonLd = JSON.stringify(jsonLdSchemas).replace(/<\//g, '<\\/');
+
+  const tags = [
+    `<title>${escapeHtml(meta.title)}</title>`,
+    `<meta name="title" content="${escapeHtml(meta.title)}" />`,
+    `<meta name="description" content="${escapeHtml(meta.description)}" />`,
+    meta.keywords ? `<meta name="keywords" content="${escapeHtml(meta.keywords)}" />` : '',
+    `<meta name="author" content="Danilo Castro (@dan2dev)" />`,
+    `<meta name="language" content="English" />`,
+    `<meta name="robots" content="${robots}" />`,
+    `<link rel="canonical" href="${escapeHtml(pageUrl)}" />`,
+    `<meta property="og:type" content="${ogType}" />`,
+    `<meta property="og:url" content="${escapeHtml(pageUrl)}" />`,
+    `<meta property="og:title" content="${escapeHtml(meta.title)}" />`,
+    `<meta property="og:description" content="${escapeHtml(meta.description)}" />`,
+    `<meta property="og:image" content="${SEO_BASE_URL}nuclo.svg" />`,
+    '<meta property="og:image:alt" content="Nuclo framework logo" />',
+    '<meta property="og:site_name" content="Nuclo" />',
+    '<meta property="og:locale" content="en_US" />',
+    '<meta name="twitter:card" content="summary_large_image" />',
+    `<meta name="twitter:url" content="${escapeHtml(pageUrl)}" />`,
+    `<meta name="twitter:title" content="${escapeHtml(meta.title)}" />`,
+    `<meta name="twitter:description" content="${escapeHtml(meta.description)}" />`,
+    `<meta name="twitter:image" content="${SEO_BASE_URL}nuclo.svg" />`,
+    '<meta name="twitter:creator" content="@dan2dev" />',
+    '<meta name="twitter:site" content="@dan2dev" />',
+    `<script type="application/ld+json">${jsonLd}</script>`,
+  ].filter(Boolean);
+
+  return tags.join('\n    ');
+}
 
 // --- App handler (shared between dev and prod) ---
 
@@ -78,13 +121,22 @@ async function appFetch(
   const element = await ssrMatchRoute(renderRoute);
   const ssrHtml = renderToString(element);
 
+  const seoHead = buildSeoHead(renderRoute, pathname, known);
   const html = (await transformHtml(htmlTemplate, known ? pathname : '/'))
+    .replace('{{seoHead}}', seoHead)
     .replace('{{html}}', ssrHtml)
     .replace('{{styles}}', globalCss);
 
+  const responseHeaders: Record<string, string> = {
+    'Content-Type': 'text/html; charset=utf-8',
+  };
+  if (!known) {
+    responseHeaders['X-Robots-Tag'] = 'noindex, nofollow';
+  }
+
   return new Response(html, {
     status,
-    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    headers: responseHeaders,
   });
 }
 

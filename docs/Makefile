@@ -15,7 +15,7 @@ STRESS_SERVER_CONCURRENCY ?= 100
 
 help:
 	@echo "Available targets:"
-	@echo "  publish    - Build docs and sync ./dist folder to remote server via rsync"
+	@echo "  publish    - Build docs and sync full ./build folder (SSR server + dist assets) via rsync"
 	@echo "  docker     - Build docs and start via Docker Compose"
 	@echo "  stress     - Run standard front stress"
 	@echo ""
@@ -44,7 +44,7 @@ help:
 
 publish:
 	bun run build
-	rsync -avz --delete ./dist/ $(DEPLOY_USER)@$(DEPLOY_HOST):$(DEPLOY_PATH)
+	rsync -avz --delete ./build/ $(DEPLOY_USER)@$(DEPLOY_HOST):$(DEPLOY_PATH)
 	curl -X POST "https://api.cloudflare.com/client/v4/zones/144262096047d02acb7bbb8d6914ca8c/purge_cache" \
 		-H "Authorization: Bearer $(CLOUDFLARE_DUOCRAFT_CACHING_API_KEY)" \
 		-H "Content-Type: application/json" \
