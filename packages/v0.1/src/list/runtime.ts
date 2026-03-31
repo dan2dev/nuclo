@@ -153,6 +153,15 @@ export function createListRuntime<TItem, TTagName extends ElementTagName = Eleme
     return hydrateListRuntime(itemsProvider, renderItem, host, index);
   }
 
+  return createListRuntimeNormal(itemsProvider, renderItem, host, index);
+}
+
+function createListRuntimeNormal<TItem, TTagName extends ElementTagName>(
+  itemsProvider: ListItemsProvider<TItem>,
+  renderItem: ListRenderer<TItem, TTagName>,
+  host: ExpandedElement<TTagName>,
+  index: number,
+): ListRuntime<TItem, TTagName> {
   const { start: startMarker, end: endMarker } = createMarkerPair("list", index);
 
   const runtime: ListRuntime<TItem, TTagName> = {
@@ -187,6 +196,15 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   index: number,
 ): ListRuntime<TItem, TTagName> {
   const parentNode = host as unknown as Node & ParentNode;
+
+  // Check if next child is actually a list-start comment marker.
+  // If not, fall back to normal (non-hydration) list creation.
+  const cursor = getCursor(parentNode);
+  const candidate = parentNode.childNodes[cursor];
+  if (!candidate || candidate.nodeType !== 8 ||
+      !(candidate as Comment).textContent?.startsWith('list-start-')) {
+    return createListRuntimeNormal(itemsProvider, renderFn, host, index);
+  }
 
   // Claim existing start marker
   const startMarker = claimChild(parentNode) as Comment;

@@ -12,10 +12,9 @@ initTheme();
 // Initialize styles (idempotent — skips if server already injected #nuclo-global)
 injectGlobalStyles();
 
-// Replace server-rendered HTML with a live Nuclo component tree
+// Hydrate server-rendered HTML — reuses existing DOM nodes from SSR
 const app = document.getElementById("app")!;
-app.innerHTML = "";
 
-render(div(Header(), createPageArea(), Footer()), app);
+hydrate(div(Header(), createPageArea(), Footer()), app);
 
 initRouter();

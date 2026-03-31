@@ -62,6 +62,16 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
   private hydrateRender(host: ExpandedElement<TTagName>, index: number): Node | null {
     const parentNode = host as unknown as Node & ParentNode;
 
+    // Check if next child is actually a when-start comment marker.
+    // If the SSR HTML doesn't contain Nuclo comment markers, fall back
+    // to normal rendering (create new markers + render from scratch).
+    const cursor = getCursor(parentNode);
+    const candidate = parentNode.childNodes[cursor];
+    if (!candidate || candidate.nodeType !== 8 ||
+        !(candidate as Comment).textContent?.startsWith('when-start-')) {
+      return this.normalRender(host, index);
+    }
+
     // Claim existing start marker
     const startMarker = claimChild(parentNode) as Comment;
 
@@ -105,6 +115,33 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     if (isBrowser) {
       registerWhenRuntime(runtime);
     }
+
+    return startMarker;
+  }
+
+  private normalRender(host: ExpandedElement<TTagName>, index: number): Node | null {
+    const { start: startMarker, end: endMarker } = createMarkerPair("when", index);
+
+    const runtime: WhenRuntime<TTagName> = {
+      startMarker,
+      endMarker,
+      host,
+      index,
+      groups: [...this.groups],
+      elseContent: [...this.elseContent],
+      activeIndex: null,
+      update: function() { renderWhenContent(runtime); },
+    };
+
+    if (isBrowser) {
+      registerWhenRuntime(runtime);
+    }
+
+    const parent = asParentNode(host);
+    parent.appendChild(startMarker);
+    parent.appendChild(endMarker);
+
+    renderWhenContent(runtime);
 
     return startMarker;
   }
