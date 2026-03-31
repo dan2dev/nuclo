@@ -23,7 +23,6 @@ const roles = [["admin", "Admin"], ["user", "User"], ["all", "All Roles"]];
 
 let searchQuery = "";
 let selectedRole = "all";
-console.log("ok");
 
 
 const inputStyle = cn(
@@ -106,9 +105,7 @@ function LiveSearch() {
       ),
       select(
         selectStyle,
-        { value: () => {
-          console.log("selectedRole", selectedRole);
-          return selectedRole} },
+        { value: () => selectedRole },
         on("change", (e) => {
           selectedRole = (e.target as HTMLSelectElement).value;
           update();
