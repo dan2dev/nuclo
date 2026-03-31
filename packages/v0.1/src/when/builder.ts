@@ -33,22 +33,12 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
       return this.hydrateRender(host, index);
     }
 
+    return this.freshRender(host, index);
+  }
+
+  private freshRender(host: ExpandedElement<TTagName>, index: number): Node | null {
     const { start: startMarker, end: endMarker } = createMarkerPair("when", index);
-
-    const runtime: WhenRuntime<TTagName> = {
-      startMarker,
-      endMarker,
-      host,
-      index,
-      groups: [...this.groups],
-      elseContent: [...this.elseContent],
-      activeIndex: null,
-      update: function() { renderWhenContent(runtime); },
-    };
-
-    if (isBrowser) {
-      registerWhenRuntime(runtime);
-    }
+    const runtime = this.createRuntimeFromMarkers(host, index, startMarker, endMarker);
 
     const parent = asParentNode(host);
     parent.appendChild(startMarker);
@@ -69,7 +59,7 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     const candidate = parentNode.childNodes[cursor];
     if (!candidate || candidate.nodeType !== 8 ||
         !(candidate as Comment).textContent?.startsWith('when-start-')) {
-      return this.normalRender(host, index);
+      return this.freshRender(host, index);
     }
 
     // Claim existing start marker
@@ -84,15 +74,12 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     }
     const endMarker = parentNode.childNodes[endMarkerIdx] as Comment;
 
-    const groups = [...this.groups];
-    const elseContent = [...this.elseContent];
-
     // Determine which branch is currently active
-    const activeIndex = evaluateActiveCondition(groups, elseContent);
+    const activeIndex = evaluateActiveCondition([...this.groups], [...this.elseContent]);
 
     // Re-run active branch content to register reactivity on existing nodes
     if (activeIndex !== null) {
-      const contentToRender = activeIndex >= 0 ? groups[activeIndex].content : elseContent;
+      const contentToRender = activeIndex >= 0 ? this.groups[activeIndex].content : this.elseContent;
       for (const item of contentToRender) {
         applyNodeModifier(host, item as NodeMod<TTagName> | NodeModFn<TTagName>, index);
       }
@@ -101,13 +88,25 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     // Advance cursor past end marker
     setCursor(parentNode, endMarkerIdx + 1);
 
+    const runtime = this.createRuntimeFromMarkers(host, index, startMarker, endMarker, activeIndex);
+
+    return startMarker;
+  }
+
+  private createRuntimeFromMarkers(
+    host: ExpandedElement<TTagName>,
+    index: number,
+    startMarker: Comment,
+    endMarker: Comment,
+    activeIndex: number | -1 | null = null,
+  ): WhenRuntime<TTagName> {
     const runtime: WhenRuntime<TTagName> = {
       startMarker,
       endMarker,
       host,
       index,
-      groups,
-      elseContent,
+      groups: [...this.groups],
+      elseContent: [...this.elseContent],
       activeIndex,
       update: function() { renderWhenContent(runtime); },
     };
@@ -116,34 +115,7 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
       registerWhenRuntime(runtime);
     }
 
-    return startMarker;
-  }
-
-  private normalRender(host: ExpandedElement<TTagName>, index: number): Node | null {
-    const { start: startMarker, end: endMarker } = createMarkerPair("when", index);
-
-    const runtime: WhenRuntime<TTagName> = {
-      startMarker,
-      endMarker,
-      host,
-      index,
-      groups: [...this.groups],
-      elseContent: [...this.elseContent],
-      activeIndex: null,
-      update: function() { renderWhenContent(runtime); },
-    };
-
-    if (isBrowser) {
-      registerWhenRuntime(runtime);
-    }
-
-    const parent = asParentNode(host);
-    parent.appendChild(startMarker);
-    parent.appendChild(endMarker);
-
-    renderWhenContent(runtime);
-
-    return startMarker;
+    return runtime;
   }
 }
 
