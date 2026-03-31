@@ -22,7 +22,7 @@ export {
 } from "./utility/dom";
 export { on } from "./utility/on";
 export { scope } from "./utility/scope";
-export { render } from "./utility/render";
+export { render, hydrate } from "./utility/render";
 export {
   isBoolean,
   isFunction,

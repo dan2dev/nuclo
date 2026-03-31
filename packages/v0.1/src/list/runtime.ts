@@ -1,5 +1,6 @@
 import { createMarkerPair, safeRemoveChild, isNodeConnected } from "../utility/dom";
 import { resolveRenderable } from "../utility/renderables";
+import { isHydrating, claimChild, getCursor, setCursor } from "../hydration/context";
 
 function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
   if (a === b) return true;
@@ -148,6 +149,10 @@ export function createListRuntime<TItem, TTagName extends ElementTagName = Eleme
   host: ExpandedElement<TTagName>,
   index: number,
 ): ListRuntime<TItem, TTagName> {
+  if (isHydrating()) {
+    return hydrateListRuntime(itemsProvider, renderItem, host, index);
+  }
+
   const { start: startMarker, end: endMarker } = createMarkerPair("list", index);
 
   const runtime: ListRuntime<TItem, TTagName> = {
@@ -168,6 +173,59 @@ export function createListRuntime<TItem, TTagName extends ElementTagName = Eleme
 
   if (isBrowser) {
     // Register for future update() calls — not needed in SSR
+    const runtimeInfo: ListRuntimeInfo<TItem, TTagName> = { runtime };
+    activeListRuntimes.set(new WeakRef(startMarker), runtimeInfo as ListRuntimeInfo<unknown, ElementTagName>);
+  }
+
+  return runtime;
+}
+
+function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
+  itemsProvider: ListItemsProvider<TItem>,
+  renderFn: ListRenderer<TItem, TTagName>,
+  host: ExpandedElement<TTagName>,
+  index: number,
+): ListRuntime<TItem, TTagName> {
+  const parentNode = host as unknown as Node & ParentNode;
+
+  // Claim existing start marker
+  const startMarker = claimChild(parentNode) as Comment;
+
+  // Find end marker position (without claiming) so we know when to stop
+  let endMarkerIdx = getCursor(parentNode);
+  while (endMarkerIdx < parentNode.childNodes.length) {
+    const node = parentNode.childNodes[endMarkerIdx];
+    if (node.nodeType === 8 && (node as Comment).textContent === 'list-end') break;
+    endMarkerIdx++;
+  }
+  const endMarker = parentNode.childNodes[endMarkerIdx] as Comment;
+
+  // Get current items and claim existing elements by running render functions
+  const currentItems = normalizeItems(itemsProvider());
+  const records: ListItemRecord<TItem, TTagName>[] = [];
+
+  for (let i = 0; i < currentItems.length; i++) {
+    const result = renderFn(currentItems[i], i);
+    const element = resolveRenderable<TTagName>(result, host, i);
+    if (element) {
+      records.push({ item: currentItems[i], element });
+    }
+  }
+
+  // Advance cursor past end marker
+  setCursor(parentNode, endMarkerIdx + 1);
+
+  const runtime: ListRuntime<TItem, TTagName> = {
+    itemsProvider,
+    renderItem: renderFn,
+    startMarker,
+    endMarker,
+    records,
+    host,
+    lastSyncedItems: currentItems.slice(),
+  };
+
+  if (isBrowser) {
     const runtimeInfo: ListRuntimeInfo<TItem, TTagName> = { runtime };
     activeListRuntimes.set(new WeakRef(startMarker), runtimeInfo as ListRuntimeInfo<unknown, ElementTagName>);
   }
