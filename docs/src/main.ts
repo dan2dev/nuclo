@@ -15,6 +15,8 @@ injectGlobalStyles();
 // Hydrate server-rendered HTML — reuses existing DOM nodes from SSR
 const app = document.getElementById("app")!;
 
+
 hydrate(div(Header(), createPageArea(), Footer()), app);
 
 initRouter();
+

@@ -1,7 +1,7 @@
 /// <reference path="../../types/index.d.ts" />
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { hydrate } from "../../src/utility/render";
+import { hydrate, render } from "../../src/utility/render";
 import { update } from "../../src/core/updateController";
 import "../../src/index";
 
@@ -617,6 +617,508 @@ describe("hydrate() — true DOM reuse", () => {
       counterB = 9;
       update('panel-b');
       expect(spanB.textContent).toContain('B=9');
+    });
+  });
+
+  // =========================================================================
+  // Mismatch handling — graceful degradation
+  // =========================================================================
+  describe("mismatch handling — graceful degradation", () => {
+    it("creates new element when SSR tag doesn't match component tag", () => {
+      // SSR has <span>, component expects <div>
+      injectSsr('<span>Hello</span>');
+
+      const hydratedDiv = hydrate(div("Hello"), container);
+
+      // claimElement checks tagName — mismatch means it creates a new div
+      expect(hydratedDiv.tagName).toBe('DIV');
+      expect(hydratedDiv.textContent).toContain('Hello');
+    });
+
+    it("works when container is empty (no SSR HTML)", () => {
+      // No SSR HTML at all
+      injectSsr('');
+
+      const hydratedDiv = hydrate(div("Hello"), container);
+
+      expect(hydratedDiv.tagName).toBe('DIV');
+      expect(hydratedDiv.textContent).toContain('Hello');
+    });
+
+    it("handles extra SSR children that component doesn't expect", () => {
+      // SSR has 3 children, component only produces 2
+      injectSsr(
+        '<div>' +
+        '<p><!-- text-0 -->First</p>' +
+        '<p><!-- text-0 -->Second</p>' +
+        '<p><!-- text-0 -->Third</p>' +
+        '</div>'
+      );
+
+      const hydratedDiv = hydrate(
+        div(p("First"), p("Second")),
+        container
+      );
+
+      // Extra child should be cleaned up
+      expect(hydratedDiv.querySelectorAll('p').length).toBe(2);
+    });
+
+    it("handles fewer SSR children than component expects", () => {
+      // SSR has 2 children, component produces 3
+      injectSsr(
+        '<div>' +
+        '<p><!-- text-0 -->First</p>' +
+        '<p><!-- text-0 -->Second</p>' +
+        '</div>'
+      );
+      const existingP1 = container.querySelector('div')!.children[0];
+
+      const hydratedDiv = hydrate(
+        div(p("First"), p("Second"), p("Third")),
+        container
+      );
+
+      // The first two p's are reused from SSR, the third is created fresh
+      expect(hydratedDiv.querySelectorAll('p').length).toBe(3);
+      expect(hydratedDiv.querySelectorAll('p')[0]).toBe(existingP1);
+      expect(hydratedDiv.querySelectorAll('p')[0].textContent).toContain('First');
+      expect(hydratedDiv.querySelectorAll('p')[2].textContent).toContain('Third');
+    });
+  });
+
+  // =========================================================================
+  // SSR-to-client parity
+  // =========================================================================
+  describe("SSR-to-client parity", () => {
+    it("hydrated DOM matches what render() would produce — simple element", () => {
+      injectSsr('<div><!-- text-0 -->hello</div>');
+
+      const hydratedDiv = hydrate(div("hello"), container);
+
+      // Create a fresh render for comparison
+      const freshContainer = document.createElement('div');
+      document.body.appendChild(freshContainer);
+      const renderedDiv = render(div("hello"), freshContainer);
+
+      expect(hydratedDiv.tagName).toBe(renderedDiv.tagName);
+      expect(hydratedDiv.textContent).toBe(renderedDiv.textContent);
+    });
+
+    it("hydrated DOM matches what render() would produce — nested elements", () => {
+      injectSsr('<section><h1><!-- text-0 -->Title</h1><p><!-- text-0 -->Body</p></section>');
+
+      const hydratedEl = hydrate(
+        section(h1("Title"), p("Body")),
+        container
+      );
+
+      const freshContainer = document.createElement('div');
+      document.body.appendChild(freshContainer);
+      const renderedEl = render(
+        section(h1("Title"), p("Body")),
+        freshContainer
+      );
+
+      expect(hydratedEl.tagName).toBe(renderedEl.tagName);
+      expect(hydratedEl.querySelector('h1')!.textContent).toBe(renderedEl.querySelector('h1')!.textContent);
+      expect(hydratedEl.querySelector('p')!.textContent).toBe(renderedEl.querySelector('p')!.textContent);
+    });
+
+    it("hydrated DOM matches what render() would produce — when() conditional", () => {
+      let show = true;
+      injectSsr('<div><!--when-start-0--><span><!-- text-0 -->Yes</span><!--when-end--></div>');
+
+      const hydratedEl = hydrate(
+        div(when(() => show, span("Yes")).else(span("No"))),
+        container
+      );
+
+      show = true;
+      const freshContainer = document.createElement('div');
+      document.body.appendChild(freshContainer);
+      const renderedEl = render(
+        div(when(() => show, span("Yes")).else(span("No"))),
+        freshContainer
+      );
+
+      // Both should show "Yes"
+      expect(hydratedEl.textContent).toContain('Yes');
+      expect(renderedEl.textContent).toContain('Yes');
+    });
+
+    it("hydrated DOM matches what render() would produce — list()", () => {
+      const items = ["A", "B"];
+      injectSsr(
+        '<ul><!--list-start-0-->' +
+        '<li><!-- text-0 -->A</li>' +
+        '<li><!-- text-0 -->B</li>' +
+        '<!--list-end--></ul>'
+      );
+
+      const hydratedEl = hydrate(
+        ul(list(() => items, item => li(item))),
+        container
+      );
+
+      const freshContainer = document.createElement('div');
+      document.body.appendChild(freshContainer);
+      const renderedEl = render(
+        ul(list(() => items, item => li(item))),
+        freshContainer
+      );
+
+      expect(hydratedEl.querySelectorAll('li').length).toBe(renderedEl.querySelectorAll('li').length);
+      expect(hydratedEl.querySelectorAll('li')[0].textContent).toBe(renderedEl.querySelectorAll('li')[0].textContent);
+      expect(hydratedEl.querySelectorAll('li')[1].textContent).toBe(renderedEl.querySelectorAll('li')[1].textContent);
+    });
+
+    it("hydrated DOM matches what render() would produce — reactive text", () => {
+      let count = 0;
+      injectSsr('<div><span><!-- text-0 -->Count: 0</span></div>');
+
+      const hydratedEl = hydrate(
+        div(span(() => `Count: ${count}`)),
+        container
+      );
+
+      const freshContainer = document.createElement('div');
+      document.body.appendChild(freshContainer);
+      const renderedEl = render(
+        div(span(() => `Count: ${count}`)),
+        freshContainer
+      );
+
+      expect(hydratedEl.querySelector('span')!.textContent).toBe(renderedEl.querySelector('span')!.textContent);
+
+      // After update, both should show the same value
+      count = 5;
+      update();
+      expect(hydratedEl.querySelector('span')!.textContent).toContain('Count: 5');
+      expect(renderedEl.querySelector('span')!.textContent).toContain('Count: 5');
+    });
+
+    it("hydrated DOM matches what render() would produce — reactive attributes", () => {
+      let active = false;
+      injectSsr('<div class="box"><!-- text-0 -->Item</div>');
+
+      const hydratedEl = hydrate(
+        div({ class: () => active ? "box active" : "box" }, "Item"),
+        container
+      );
+
+      const freshContainer = document.createElement('div');
+      document.body.appendChild(freshContainer);
+      const renderedEl = render(
+        div({ class: () => active ? "box active" : "box" }, "Item"),
+        freshContainer
+      );
+
+      expect(hydratedEl.className).toBe(renderedEl.className);
+
+      active = true;
+      update();
+      expect(hydratedEl.className).toBe('box active');
+      expect(renderedEl.className).toBe('box active');
+    });
+  });
+
+  // =========================================================================
+  // when() edge cases
+  // =========================================================================
+  describe("when() edge cases", () => {
+    it("when() with all conditions false and no else — empty", () => {
+      let condA = false;
+      let condB = false;
+      injectSsr('<div><!--when-start-0--><!--when-end--></div>');
+
+      const hydratedDiv = hydrate(
+        div(when(() => condA, span("A")).when(() => condB, span("B"))),
+        container
+      );
+
+      // Nothing should be rendered
+      expect(hydratedDiv.querySelector('span')).toBeNull();
+    });
+
+    it("when() with initially false condition that becomes true", () => {
+      let show = false;
+      injectSsr('<div><!--when-start-0--><!--when-end--></div>');
+
+      const hydratedDiv = hydrate(
+        div(when(() => show, span("Visible"))),
+        container
+      );
+
+      expect(hydratedDiv.querySelector('span')).toBeNull();
+
+      show = true;
+      update();
+      expect(hydratedDiv.querySelector('span')).not.toBeNull();
+      expect(hydratedDiv.textContent).toContain('Visible');
+    });
+
+    it("when() with nested when() inside branches", () => {
+      let outer = true;
+      let inner = true;
+
+      injectSsr(
+        '<div><!--when-start-0-->' +
+        '<div><!--when-start-0--><span><!-- text-0 -->Inner</span><!--when-end--></div>' +
+        '<!--when-end--></div>'
+      );
+
+      const hydratedDiv = hydrate(
+        div(
+          when(() => outer,
+            div(when(() => inner, span("Inner")).else(span("InnerElse")))
+          ).else(span("Outer else"))
+        ),
+        container
+      );
+
+      expect(hydratedDiv.textContent).toContain('Inner');
+
+      inner = false;
+      update();
+      expect(hydratedDiv.textContent).toContain('InnerElse');
+
+      outer = false;
+      update();
+      expect(hydratedDiv.textContent).toContain('Outer else');
+      expect(hydratedDiv.textContent).not.toContain('Inner');
+    });
+
+    it("when() markers without content between them (empty branch)", () => {
+      let show = false;
+      // SSR rendered with show=false and no else, so no content between markers
+      injectSsr('<div><!--when-start-0--><!--when-end--></div>');
+
+      const hydratedDiv = hydrate(
+        div(when(() => show, p("Content"))),
+        container
+      );
+
+      expect(hydratedDiv.querySelector('p')).toBeNull();
+
+      show = true;
+      update();
+      expect(hydratedDiv.querySelector('p')).not.toBeNull();
+      expect(hydratedDiv.textContent).toContain('Content');
+    });
+  });
+
+  // =========================================================================
+  // list() edge cases
+  // =========================================================================
+  describe("list() edge cases", () => {
+    it("list with single item hydration", () => {
+      const items = ["Only"];
+      injectSsr(
+        '<ul><!--list-start-0-->' +
+        '<li><!-- text-0 -->Only</li>' +
+        '<!--list-end--></ul>'
+      );
+      const existingLi = container.querySelector('li')!;
+
+      const hydratedUl = hydrate(
+        ul(list(() => items, item => li(item))),
+        container
+      );
+
+      expect(hydratedUl.querySelectorAll('li').length).toBe(1);
+      expect(hydratedUl.querySelector('li')).toBe(existingLi);
+      expect(existingLi.textContent).toContain('Only');
+    });
+
+    it("list item reorder after hydration", () => {
+      let items = [{ id: 1, label: "A" }, { id: 2, label: "B" }, { id: 3, label: "C" }];
+      injectSsr(
+        '<ul><!--list-start-0-->' +
+        '<li><!-- text-0 -->A</li>' +
+        '<li><!-- text-0 -->B</li>' +
+        '<li><!-- text-0 -->C</li>' +
+        '<!--list-end--></ul>'
+      );
+
+      const hydratedUl = hydrate(
+        ul(list(() => items, item => li(() => item.label))),
+        container
+      );
+
+      expect(hydratedUl.querySelectorAll('li').length).toBe(3);
+
+      // Reverse order — same object references
+      items = [items[2], items[1], items[0]];
+      update();
+
+      const lis = hydratedUl.querySelectorAll('li');
+      expect(lis.length).toBe(3);
+      expect(lis[0].textContent).toContain('C');
+      expect(lis[1].textContent).toContain('B');
+      expect(lis[2].textContent).toContain('A');
+    });
+
+    it("list items with object identity — mutate in place updates", () => {
+      const items = [
+        { id: 1, name: "Foo" },
+        { id: 2, name: "Bar" },
+      ];
+      injectSsr(
+        '<ul><!--list-start-0-->' +
+        '<li><!-- text-0 -->Foo</li>' +
+        '<li><!-- text-0 -->Bar</li>' +
+        '<!--list-end--></ul>'
+      );
+
+      const hydratedUl = hydrate(
+        ul(list(() => items, item => li(() => item.name))),
+        container
+      );
+
+      const firstLi = hydratedUl.querySelector('li')!;
+
+      // Mutate in place — same reference, element should be reused
+      items[0].name = "Foo Updated";
+      update();
+      expect(hydratedUl.querySelector('li')).toBe(firstLi);
+      expect(firstLi.textContent).toContain('Foo Updated');
+    });
+
+    it("nested lists — list inside list items", () => {
+      const groups = [
+        { name: "G1", items: ["a", "b"] },
+        { name: "G2", items: ["c"] },
+      ];
+
+      injectSsr(
+        '<div><!--list-start-0-->' +
+        '<div><h3><!-- text-0 -->G1</h3>' +
+        '<ul><!--list-start-0-->' +
+        '<li><!-- text-0 -->a</li>' +
+        '<li><!-- text-0 -->b</li>' +
+        '<!--list-end--></ul></div>' +
+        '<div><h3><!-- text-0 -->G2</h3>' +
+        '<ul><!--list-start-0-->' +
+        '<li><!-- text-0 -->c</li>' +
+        '<!--list-end--></ul></div>' +
+        '<!--list-end--></div>'
+      );
+
+      const hydratedDiv = hydrate(
+        div(list(() => groups, group =>
+          div(
+            h3(group.name),
+            ul(list(() => group.items, item => li(item)))
+          )
+        )),
+        container
+      );
+
+      expect(hydratedDiv.querySelectorAll('h3').length).toBe(2);
+      expect(hydratedDiv.querySelectorAll('li').length).toBe(3);
+
+      // Add item to second group
+      groups[1].items = ["c", "d"];
+      update();
+      expect(hydratedDiv.querySelectorAll('li').length).toBe(4);
+    });
+  });
+
+  // =========================================================================
+  // Multiple hydrations
+  // =========================================================================
+  describe("multiple hydrations", () => {
+    it("second hydrate() call on already-hydrated container works", () => {
+      // First hydration
+      let count = 0;
+      injectSsr('<div><span><!-- text-0 -->0</span></div>');
+
+      const first = hydrate(
+        div(span(() => String(count))),
+        container
+      );
+
+      count = 1;
+      update();
+      expect(first.querySelector('span')!.textContent).toContain('1');
+
+      // Clear and re-hydrate with new static content
+      container.innerHTML = '<div><p><!-- text-0 -->fresh</p></div>';
+
+      const second = hydrate(
+        div(p("fresh")),
+        container
+      );
+
+      // Second hydration reuses the new SSR HTML
+      expect(second.tagName).toBe('DIV');
+      expect(second.querySelector('p')!.textContent).toContain('fresh');
+      expect(container.children.length).toBe(1);
+    });
+  });
+
+  // =========================================================================
+  // Memory and cleanup
+  // =========================================================================
+  describe("memory and cleanup", () => {
+    it("hydrated reactive text stops updating after element removed", () => {
+      let count = 0;
+      injectSsr('<div><span><!-- text-0 -->0</span></div>');
+
+      const hydratedDiv = hydrate(
+        div(span(() => String(count))),
+        container
+      );
+
+      const liveSpan = hydratedDiv.querySelector('span')!;
+
+      count = 1;
+      update();
+      expect(liveSpan.textContent).toContain('1');
+
+      // Remove the element from the DOM
+      container.removeChild(hydratedDiv);
+
+      count = 2;
+      update();
+      // The span should NOT have updated since it's disconnected
+      // (reactiveText checks isNodeConnected and cleans up)
+      expect(liveSpan.textContent).toContain('1');
+    });
+  });
+
+  // =========================================================================
+  // Static text preservation
+  // =========================================================================
+  describe("static text", () => {
+    it("preserves static text content without creating new text nodes", () => {
+      injectSsr('<div><!-- text-0 -->Hello World</div>');
+      const existingDiv = container.firstElementChild!;
+
+      const hydratedDiv = hydrate(div("Hello World"), container);
+
+      expect(hydratedDiv).toBe(existingDiv);
+      expect(hydratedDiv.textContent).toContain('Hello World');
+      expect(container.children.length).toBe(1);
+    });
+
+    it("mixed static and reactive text in same parent", () => {
+      let count = 0;
+      injectSsr('<div><!-- text-0 -->Static <!-- text-1 -->Count: 0</div>');
+
+      const hydratedDiv = hydrate(
+        div("Static ", () => `Count: ${count}`),
+        container
+      );
+
+      expect(hydratedDiv.textContent).toContain('Static');
+      expect(hydratedDiv.textContent).toContain('Count: 0');
+
+      count = 42;
+      update();
+      expect(hydratedDiv.textContent).toContain('Static');
+      expect(hydratedDiv.textContent).toContain('Count: 42');
     });
   });
 });
