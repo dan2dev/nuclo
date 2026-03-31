@@ -19,8 +19,14 @@ declare global {
 
   export type ListItemsProvider<T> = () => ListItemsInput<T>;
 
+  /**
+   * A list modifier uses a generic call signature so it can be attached to any
+   * parent element, regardless of the tag of the items it renders.
+   * (TTagName represents the child element tag, not the parent.)
+   */
   export type ListModifier<TTagName extends ElementTagName = ElementTagName> =
-    NodeModFn<TTagName> & ((parent: Node & ParentNode, index: number) => Comment);
+    (<TParent extends ElementTagName>(parent: ExpandedElement<TParent>, index: number) => Comment) &
+    ((parent: Node & ParentNode, index: number) => Comment);
 
   export function list<T, TTagName extends ElementTagName = ElementTagName>(
     itemsProvider: ListItemsProvider<T>,
