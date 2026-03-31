@@ -415,7 +415,7 @@ render(app, document.body);`,
   {
     id: 'search',
     title: 'Search Filter',
-    description: `Real-time search filtering with debouncing.`,
+    description: `Real-time search and filter with multiple criteria.`,
     code: `import 'nuclo';
 
 type User = {
@@ -426,12 +426,14 @@ type User = {
 };
 
 const users: User[] = [
-  { id: 1, name: 'Alice Johnson', email: 'alice@example.com', role: 'Admin' },
-  { id: 2, name: 'Bob Smith', email: 'bob@example.com', role: 'User' },
-  { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', role: 'User' },
-  { id: 4, name: 'Diana Prince', email: 'diana@example.com', role: 'Admin' },
-  { id: 5, name: 'Eve Anderson', email: 'eve@example.com', role: 'User' }
+  { id: 1, name: 'Alice Johnson', email: 'alice@example.com', role: 'admin' },
+  { id: 2, name: 'Bob Smith', email: 'bob@example.com', role: 'user' },
+  { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', role: 'user' },
+  { id: 4, name: 'Diana Prince', email: 'diana@example.com', role: 'admin' },
+  { id: 5, name: 'Eve Anderson', email: 'eve@example.com', role: 'user' }
 ];
+
+const roles = [['admin', 'Admin'], ['user', 'User'], ['all', 'All Roles']];
 
 let searchQuery = '';
 let selectedRole = 'all';
@@ -449,14 +451,10 @@ function filteredUsers() {
 }
 
 const app = div(
-  { className: 'user-directory' },
-
   h1('User Directory'),
 
-  // Search and filters
+  // Search and filter inputs
   div(
-    { className: 'search-section' },
-
     input(
       {
         type: 'search',
@@ -464,7 +462,7 @@ const app = div(
         value: () => searchQuery
       },
       on('input', e => {
-        searchQuery = e.target.value;
+        searchQuery = (e.target as HTMLInputElement).value;
         update();
       })
     ),
@@ -472,40 +470,34 @@ const app = div(
     select(
       { value: () => selectedRole },
       on('change', e => {
-        selectedRole = e.target.value;
+        selectedRole = (e.target as HTMLSelectElement).value;
         update();
       }),
-      option({ value: 'all' }, 'All Roles'),
-      option({ value: 'Admin' }, 'Admins'),
-      option({ value: 'User' }, 'Users')
+      list(() => roles, role =>
+        option({ value: role[0], selected: () => selectedRole === role[0] }, role[1])
+      )
     )
   ),
 
-  // Results count
+  // Results
   p(() => {
     const count = filteredUsers().length;
     return \`Showing \${count} user\${count !== 1 ? 's' : ''}\`;
   }),
 
-  // User list
   when(() => filteredUsers().length > 0,
     div(
-      { className: 'user-list' },
       list(() => filteredUsers(), user =>
         div(
           { className: 'user-card' },
-          h3(user.name),
+          h4(user.name),
           p(user.email),
-          span(
-            { className: \`role-badge \${user.role.toLowerCase()}\` },
-            user.role
-          )
+          span(user.role)
         )
       )
     )
   ).else(
     div(
-      { className: 'empty-state' },
       p(() => searchQuery
         ? \`No users found matching "\${searchQuery}"\`
         : 'No users found'
