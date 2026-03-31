@@ -12,15 +12,18 @@ type User = {
 };
 
 const users: User[] = [
-  { id: 1, name: "Alice Johnson", email: "alice@example.com", role: "Admin" },
-  { id: 2, name: "Bob Smith", email: "bob@example.com", role: "User" },
-  { id: 3, name: "Charlie Brown", email: "charlie@example.com", role: "User" },
-  { id: 4, name: "Diana Prince", email: "diana@example.com", role: "Admin" },
-  { id: 5, name: "Eve Anderson", email: "eve@example.com", role: "User" },
+  { id: 1, name: "Alice Johnson", email: "alice@example.com", role: "admin" },
+  { id: 2, name: "Bob Smith", email: "bob@example.com", role: "user" },
+  { id: 3, name: "Charlie Brown", email: "charlie@example.com", role: "user" },
+  { id: 4, name: "Diana Prince", email: "diana@example.com", role: "admin" },
+  { id: 5, name: "Eve Anderson", email: "eve@example.com", role: "user" },
 ];
+// Roles for the select dropdown (value and display name)
+const roles = [["admin", "Admin"], ["user", "User"], ["all", "All Roles"]];
 
 let searchQuery = "";
 let selectedRole = "all";
+console.log("ok");
 
 
 const inputStyle = cn(
@@ -103,7 +106,9 @@ function LiveSearch() {
       ),
       select(
         selectStyle,
-        { value: () => selectedRole },
+        { value: () => {
+          console.log("selectedRole", selectedRole);
+          return selectedRole} },
         on("change", (e) => {
           selectedRole = (e.target as HTMLSelectElement).value;
           update();
@@ -114,9 +119,10 @@ function LiveSearch() {
         on("blur", (e) => {
           (e.target as HTMLElement).style.borderColor = colors.border;
         }),
-        option({ value: "all" }, "All Roles"),
-        option({ value: "Admin" }, "Admins"),
-        option({ value: "User" }, "Users")
+        list(() => roles, (role) => option(
+          { value: role[0], selected: () => selectedRole === role[0] },
+          role[1]
+        ))
       )
     ),
     p(
