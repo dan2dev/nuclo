@@ -25,7 +25,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm preview --host 127.0.0.1 --port 4173",
+    command: "PORT=4173 bun run start",
     url: baseURL,
     timeout: 120000,
     reuseExistingServer: true,
