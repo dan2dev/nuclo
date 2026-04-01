@@ -1,4 +1,3 @@
-import "nuclo";
 import { cn, s, colors } from "../../styles.ts";
 import { examplesContent } from "../../content/examples.ts";
 import { ExampleLayout } from "../../components/ExampleLayout.ts";

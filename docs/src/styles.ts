@@ -1,4 +1,3 @@
-import "nuclo";
 
 // All colors use CSS custom properties — switch themes by toggling [data-theme] on <html>
 export const colors = {
