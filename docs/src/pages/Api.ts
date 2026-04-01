@@ -1,4 +1,3 @@
-import "nuclo";
 import { cn, s } from "../styles.ts";
 import { CodeBlock, InlineCode } from "../components/CodeBlock.ts";
 import { TableOfContents, setTocItems, setActiveSection } from "../components/TableOfContents.ts";

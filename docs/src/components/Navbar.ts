@@ -1,4 +1,3 @@
-import "nuclo";
 import { cn, s, colors } from "../styles.ts";
 import { getCurrentRoute, setRoute, type Route } from "../router.ts";
 import { GitHubIcon, MenuIcon, XIcon } from "./icons.ts";

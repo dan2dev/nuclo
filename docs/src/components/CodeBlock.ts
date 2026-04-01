@@ -1,4 +1,3 @@
-import "nuclo";
 import { cn, s, colors } from "../styles.ts";
 import { CopyIcon, CheckIcon } from "./icons.ts";
 

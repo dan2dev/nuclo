@@ -1,4 +1,3 @@
-import "nuclo";
 import { colors } from "../styles.ts";
 
 export function NucloLogo(size = 32, responsive = false) {

@@ -8,7 +8,6 @@
  * list() handles insert/remove by object identity when the slot changes.
  * when() shows/hides loading and error states.
  */
-import "nuclo";
 import { loadPageFunction, preloadRoutes, type PageFunction } from "./route-definitions.ts";
 
 type PageSlot = { fn: PageFunction };
