@@ -190,14 +190,21 @@ if (isProd) {
 
   const manifestFile = Bun.file(resolve(distDir, '.vite/manifest.json'));
 
-  const manifest: Record<string, { file: string; css?: string[] }> = JSON.parse(
+  const manifest: Record<string, { file: string; css?: string[]; imports?: string[] }> = JSON.parse(
     await manifestFile.text(),
   );
   const entry = manifest['src/main.ts'];
   const cssLinks = (entry.css ?? [])
     .map((f) => `<link rel="stylesheet" href="/${f}" />`)
     .join('\n    ');
-  const prodAssets = `${cssLinks}\n    <script type="module" src="/${entry.file}"></script>`;
+  const preloadLinks = (entry.imports ?? [])
+    .map((key) => manifest[key]?.file)
+    .filter(Boolean)
+    .map((f) => `<link rel="modulepreload" href="/${f}" />`)
+    .join('\n    ');
+  const prodAssets = [cssLinks, preloadLinks, `<script type="module" src="/${entry.file}"></script>`]
+    .filter(Boolean)
+    .join('\n    ');
 
   const transformHtml = async (html: string) =>
     html.replace('<script type="module" src="/src/main.ts"></script>', prodAssets);
