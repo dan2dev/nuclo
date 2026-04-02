@@ -40,8 +40,20 @@ export const colors = {
 };
 
 export const globalCss = `
-    /* ── Google Fonts ────────────────────────────────────────────────────── */
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap');
+    /* ── JetBrains Mono fallback — metric-matched Courier New ───────────── */
+    /* Eliminates CLS when the web font swaps in by keeping line metrics      */
+    /* identical between the local fallback and the downloaded font.          */
+    @font-face {
+      font-family: 'JetBrains Mono';
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: optional;
+      size-adjust: 107%;
+      ascent-override: 78%;
+      descent-override: 19%;
+      line-gap-override: 0%;
+      src: local('Courier New'), local('CourierNew'), local('monospace');
+    }
 
     /* ── CSS Custom Properties ───────────────────────────────────────────── */
     :root, [data-theme="dark"] {
@@ -66,7 +78,7 @@ export const globalCss = `
 
       --c-text:          #FFFFFF;
       --c-text-dim:      #666666;
-      --c-text-muted:    #808080;
+      --c-text-muted:    #888888;
       --c-text-subtitle: #C0C2B8;
 
       --c-border:         #2a2a2a;
