@@ -1,9 +1,11 @@
 import { applyAttributes } from "./attributeManager";
 import { createReactiveTextNode } from "./reactiveText";
+import { registerReactiveTextNode } from "./reactiveCleanup";
 import { logError } from "../utility/errorHandler";
 import { isFunction, isNode, isObject, isPrimitive, isZeroArityFunction } from "../utility/typeGuards";
 import { modifierProbeCache } from "../utility/modifierPredicates";
 import { createComment, createDocumentFragment, createTextNode } from "../utility/dom";
+import { isHydrating, claimChild, getCursor } from "../hydration/context";
 
 export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
 	| NodeMod<TTagName>
@@ -25,6 +27,13 @@ function isClassNameOnlyObject(v: unknown): v is ClassNameOnlyObject {
 		typeof (v as { className: unknown }).className === 'string' &&
 		Object.keys(v).length === 1
 	);
+}
+
+function nextChildIsTextComment(parent: Node): boolean {
+	const cursor = getCursor(parent);
+	const child = parent.childNodes[cursor];
+	return !!child && child.nodeType === 8 &&
+		(child as Comment).textContent?.trimStart().startsWith('text-') === true;
 }
 
 export function applyNodeModifier<TTagName extends ElementTagName>(
@@ -60,6 +69,18 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 				}
 
 				if (isPrimitive(v) && v != null) {
+					if (isHydrating() && nextChildIsTextComment(parent as unknown as Node)) {
+						const parentNode = parent as unknown as Node;
+						claimChild(parentNode); // skip <!-- text-N --> comment
+						const existingText = claimChild(parentNode) as Text;
+						if (existingText && existingText.nodeType === 3) {
+							registerReactiveTextNode(existingText, {
+								resolver: modifier as () => Primitive,
+								lastValue: existingText.textContent || '',
+							});
+						}
+						return null;
+					}
 					return createReactiveTextFragment(index, modifier as () => Primitive, v);
 				}
 				return null;
@@ -83,7 +104,15 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 
 	// Handle non-function modifiers
 	const candidate = modifier as NodeMod<TTagName>;
-	if (isPrimitive(candidate)) return createStaticTextFragment(index, candidate);
+	if (isPrimitive(candidate)) {
+		if (isHydrating() && nextChildIsTextComment(parent as unknown as Node)) {
+			const parentNode = parent as unknown as Node;
+			claimChild(parentNode); // skip <!-- text-N --> comment
+			claimChild(parentNode); // skip text node
+			return null;
+		}
+		return createStaticTextFragment(index, candidate);
+	}
 	if (isNode(candidate)) return candidate;
 	applyAttributes(parent, candidate as ExpandedElementAttributes<TTagName>);
 	return null;

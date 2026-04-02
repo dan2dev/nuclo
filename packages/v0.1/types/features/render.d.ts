@@ -23,6 +23,27 @@ declare global {
     parent?: Element,
     index?: number
   ): ExpandedElement<TTagName>;
+
+  /**
+   * Hydrates an existing server-rendered DOM tree by walking it in parallel with
+   * the component tree, reusing existing nodes and re-attaching reactivity.
+   *
+   * @param nodeModFn The NodeModFn to hydrate (same component used for SSR)
+   * @param parent The parent element containing the SSR HTML (defaults to document.body)
+   * @returns The hydrated root element
+   *
+   * @example
+   * ```ts
+   * // Server: const html = renderToString(div(h1("Hello")));
+   * // Client:
+   * const app = document.getElementById("app")!;
+   * hydrate(div(h1("Hello")), app);
+   * ```
+   */
+  function hydrate<TTagName extends ElementTagName = ElementTagName>(
+    nodeModFn: NodeModFn<TTagName>,
+    parent?: Element,
+  ): ExpandedElement<TTagName>;
 }
 
 export {};

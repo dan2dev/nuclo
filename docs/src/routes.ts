@@ -8,7 +8,6 @@
  * list() handles insert/remove by object identity when the slot changes.
  * when() shows/hides loading and error states.
  */
-import "nuclo";
 import { loadPageFunction, preloadRoutes, type PageFunction } from "./route-definitions.ts";
 
 type PageSlot = { fn: PageFunction };
@@ -17,6 +16,19 @@ let pageSlot: PageSlot[] = [];
 let isLoading = false;
 let loadError: string | null = null;
 let preloadScheduled = false;
+// True after the first loadPage() call completes — guards the loading spinner
+// so the initial SSR content stays in place (no CLS) until JS is ready.
+let hasLoadedOnce = false;
+
+/**
+ * Pre-populate the page slot before hydration so the list() runtime starts
+ * with the correct item, allowing hydrateListRuntime to claim existing SSR
+ * DOM nodes instead of clearing them (which would cause CLS).
+ * Call this synchronously before hydrate().
+ */
+export function setInitialPage(fn: PageFunction): void {
+  pageSlot = [{ fn }];
+}
 
 function Spinner() {
   return div(
@@ -95,15 +107,27 @@ export function createPageArea() {
 }
 
 export async function loadPage(path: string): Promise<void> {
-  isLoading = true;
-  loadError = null;
-  pageSlot = [];
-  update();
+  // On the very first call the SSR content is already in the DOM — skip the
+  // loading-spinner update so the footer never shifts during initial hydration.
+  const showSpinner = hasLoadedOnce;
+
+  if (showSpinner) {
+    isLoading = true;
+    loadError = null;
+    pageSlot = [];
+    update();
+  }
 
   try {
     const fn = await loadPageFunction(path);
     isLoading = false;
-    pageSlot = [{ fn }];
+    loadError = null;
+    // Reuse the existing slot object when fn is unchanged (object-identity
+    // check by list()) to prevent a needless remove+add of the page element.
+    if (pageSlot.length !== 1 || pageSlot[0].fn !== fn) {
+      pageSlot = [{ fn }];
+    }
+    hasLoadedOnce = true;
     update();
 
     if (!preloadScheduled) {
@@ -113,6 +137,7 @@ export async function loadPage(path: string): Promise<void> {
   } catch (err) {
     isLoading = false;
     loadError = (err as Error).message;
+    hasLoadedOnce = true;
     update();
   }
 }
