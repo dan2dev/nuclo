@@ -2,7 +2,6 @@
  * router.ts — client-only.
  * Manages browser navigation state. Never imported by server code.
  */
-import "nuclo";
 import { updatePageMeta } from "./seo.ts";
 import { loadPage } from "./routes.ts";
 import { routeMap } from "./route-definitions.ts";

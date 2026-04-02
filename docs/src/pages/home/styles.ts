@@ -1,4 +1,3 @@
-import "nuclo";
 import { cn, colors } from "../../styles.ts";
 
 export const HOME_CARD_PADDING = "28px";

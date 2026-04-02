@@ -1,4 +1,3 @@
-import "nuclo";
 import { cn, colors } from "../styles.ts";
 import { setRoute, type Route } from "../router.ts";
 

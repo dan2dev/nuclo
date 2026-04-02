@@ -11,13 +11,15 @@ import { Footer } from './components/Footer.ts';
 export async function ssrMatchRoute(route: string): Promise<ReturnType<typeof div>> {
   const pageFactory = await loadPageFunction(route);
 
-  // In the browser the page is rendered via render(pageEl, pageContainerElement)
-  // which always passes index=0. We replicate that by wrapping so it ignores
-  // the parent's localIndex, keeping text-N / when-N markers identical
-  // between SSR and browser.
+  // Pre-create the page element once so it renders at index 0 inside list(),
+  // matching the browser's behaviour where list renders the single slot at index 0.
   const pageEl = pageFactory();
-  const pageAtZero = (parent: ExpandedElement<ElementTagName>) =>
-    (pageEl as NodeModFn<ElementTagName>)(parent, 0);
+
+  // Mirror the exact when() + list() structure from routes.ts createPageArea().
+  // SSR must output the same comment markers (<!--when-start-N-->, <!--list-start-2-->)
+  // so the client's hydrateListRuntime finds them and claims existing DOM nodes
+  // instead of clearing and re-rendering, which would cause CLS.
+  const ssrSlot = { fn: pageFactory };
 
   return div(
     Header({ activeRoute: route }),
@@ -29,7 +31,14 @@ export async function ssrMatchRoute(route: string): Promise<ReturnType<typeof di
           paddingTop: '64px',
         },
       },
-      pageAtZero as NodeModFn<'main'>,
+      when(() => false),                         // mirrors: when(() => isLoading, Spinner())
+      when(() => false),                         // mirrors: when(() => loadError !== null, ErrorDisplay())
+      list(
+        () => [ssrSlot],
+        (_slot: typeof ssrSlot) =>
+          (parent: ExpandedElement<ElementTagName>) =>
+            (pageEl as NodeModFn<ElementTagName>)(parent, 0),
+      ),
     ),
     Footer(),
   );

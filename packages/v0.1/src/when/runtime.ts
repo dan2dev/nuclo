@@ -45,7 +45,7 @@ const activeWhenRuntimes = new Map<WeakRef<Comment>, WhenRuntimeInfo<ElementTagN
  * Evaluates which condition branch should be active.
  * Returns the index of the first truthy condition, -1 for else branch, or null for no match.
  */
-function evaluateActiveCondition<TTagName extends ElementTagName>(
+export function evaluateActiveCondition<TTagName extends ElementTagName>(
   groups: ReadonlyArray<WhenGroup<TTagName>>,
   elseContent: ReadonlyArray<WhenContent<TTagName>>
 ): number | -1 | null {

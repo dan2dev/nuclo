@@ -1,4 +1,3 @@
-import "nuclo";
 import { cn, s, colors } from "../styles.ts";
 import { CodeBlock, InlineCode } from "../components/CodeBlock.ts";
 import { PageHeader, NoteCard, NextSteps } from "../components/ui.ts";

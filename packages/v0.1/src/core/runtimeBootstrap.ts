@@ -3,7 +3,7 @@ import { list } from "../list";
 import { update } from "./updateController";
 import { when } from "../when";
 import { on } from "../utility/on";
-import { render } from "../utility/render";
+import { render, hydrate } from "../utility/render";
 import { scope } from "../utility/scope";
 import * as styleExports from "../style";
 
@@ -21,6 +21,7 @@ export function initializeRuntime(): void {
   registry.on = on;
   registry.scope = scope;
   registry.render = render;
+  registry.hydrate = hydrate;
 
   // Register all style utilities globally
   // Use individual assignments to avoid errors with readonly properties (like window.top)

@@ -1,4 +1,3 @@
-import "nuclo";
 import { setRoute, type Route } from "../../router.ts";
 import type { ExampleContent } from "../../content/examples.ts";
 import {

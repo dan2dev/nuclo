@@ -1,4 +1,3 @@
-import "nuclo";
 import { cn, colors } from "../styles.ts";
 
 type TocItem = {

@@ -14,7 +14,7 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    exclude: ['nuclo']
+    // exclude: ['nuclo']
   },
   build: {
     outDir: './build/dist',
@@ -22,6 +22,11 @@ export default defineConfig({
     manifest: true,
     rollupOptions: {
       input: 'src/main.ts',
+      output: {
+        manualChunks(id) {
+          if (id.includes('packages/v0.1/src')) return 'nuclo'
+        },
+      },
     },
   },
 })

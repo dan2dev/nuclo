@@ -1,4 +1,3 @@
-import "nuclo";
 
 export type Theme = "dark" | "light";
 

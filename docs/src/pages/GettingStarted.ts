@@ -1,4 +1,3 @@
-import "nuclo";
 import { cn, colors } from "../styles.ts";
 import { CodeBlock, InlineCode } from "../components/CodeBlock.ts";
 import { ArrowRightIcon } from "../components/icons.ts";
