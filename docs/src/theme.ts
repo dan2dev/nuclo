@@ -1,7 +1,7 @@
 
 export type Theme = "dark" | "light";
 
-let currentTheme: Theme = "dark";
+let currentTheme: Theme = "light";
 
 export function getTheme(): Theme {
   return currentTheme;
