@@ -111,15 +111,15 @@ export const globalCss = `
     }
 
     [data-theme="light"] {
-      --c-primary:          #4A7A00;
-      --c-primary-bg:       #4A7A00;
+      --c-primary:          #406800;
+      --c-primary-bg:       #406800;
       --c-primary-text:     #FFFFFF;
-      --c-primary-hover:    #3D8800;
-      --c-primary-dark:     #3D8800;
-      --c-primary-glow:     rgba(74,122,0,0.15);
-      --c-primary-alpha-08: rgba(74,122,0,0.08);
-      --c-primary-alpha-13: rgba(74,122,0,0.10);
-      --c-primary-alpha-19: rgba(74,122,0,0.14);
+      --c-primary-hover:    #356200;
+      --c-primary-dark:     #356200;
+      --c-primary-glow:     rgba(64,104,0,0.15);
+      --c-primary-alpha-08: rgba(64,104,0,0.08);
+      --c-primary-alpha-13: rgba(64,104,0,0.10);
+      --c-primary-alpha-19: rgba(64,104,0,0.14);
 
       --c-bg:           #F5F5F0;
       --c-bg-card:      #FFFFFF;
@@ -131,30 +131,30 @@ export const globalCss = `
       --c-bg-footer:    #E5E5E0;
 
       --c-text:          #111111;
-      --c-text-dim:      #888888;
-      --c-text-muted:    #888888;
+      --c-text-dim:      #616161;
+      --c-text-muted:    #616161;
       --c-text-subtitle: #666666;
 
       --c-border:         #D0D0CC;
       --c-border-light:   #D0D0CC;
-      --c-border-glow:    rgba(74,122,0,0.14);
-      --c-border-primary: rgba(74,122,0,0.14);
+      --c-border-glow:    rgba(64,104,0,0.14);
+      --c-border-primary: rgba(64,104,0,0.14);
 
       --c-accent-secondary: #0f766e;
       --c-hero-badge-bg:    #E5E5E0;
       --c-live-badge-bg:    #E5E5E0;
-      --c-ready-pill-bg:    rgba(74,122,0,0.07);
-      --c-ready-pill-border:rgba(74,122,0,0.14);
-      --c-selection-bg:     rgba(74,122,0,0.16);
+      --c-ready-pill-bg:    rgba(64,104,0,0.07);
+      --c-ready-pill-border:rgba(64,104,0,0.14);
+      --c-selection-bg:     rgba(64,104,0,0.16);
 
       /* Syntax highlighting (light — keywords ≠ strings, fundo legível) */
-      --c-tok-accent-primary: #4A7A00;
-      --c-tok-accent-strong:  #3D8800;
+      --c-tok-accent-primary: #406800;
+      --c-tok-accent-strong:  #356200;
       --c-tok-keyword:        #4338ca;
-      --c-tok-string:         #b45309;
+      --c-tok-string:         #92400E;
       --c-tok-default:        #0f172a;
-      --c-tok-comment:        #64748b;
-      --c-tok-muted:          #64748b;
+      --c-tok-comment:        #475569;
+      --c-tok-muted:          #475569;
       --c-tok-number:         #c2410c;
       --c-tok-fn:             #1d4ed8;
       --c-tok-type:           #6d28d9;
