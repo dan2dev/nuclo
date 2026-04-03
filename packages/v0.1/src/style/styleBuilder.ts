@@ -109,8 +109,9 @@ function getOrCreateClassName(styles: Record<string, string>, prefix = '', media
 
 	const cached = getCachedClassName(cacheKey);
 	if (cached) {
-		// In SSR, skip DOM verification — no stylesheet to check/create
-		if (isBrowser && !classExistsInDOM(cached, mediaQuery)) {
+		// In browser: re-inject if the rule was lost (e.g. stylesheet cleared).
+		// In SSR: always call so the collector captures the rule for this request.
+		if (!isBrowser || !classExistsInDOM(cached, mediaQuery)) {
 			createCSSClassWithStyles(cached, styles, mediaQuery);
 		}
 		return cached;
@@ -121,10 +122,9 @@ function getOrCreateClassName(styles: Record<string, string>, prefix = '', media
 	const className = prefix ? `n${prefix}-${hash}` : `n${hash}`;
 	setCachedClassName(cacheKey, className);
 
-	// Create the CSS class with media query if provided (browser only)
-	if (isBrowser) {
-		createCSSClassWithStyles(className, styles, mediaQuery);
-	}
+	// createCSSClassWithStyles handles both browser (CSSOM injection) and SSR
+	// (calls _ssrCollector so the rule is captured for the current request).
+	createCSSClassWithStyles(className, styles, mediaQuery);
 
 	return className;
 }
