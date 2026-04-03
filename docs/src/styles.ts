@@ -204,8 +204,8 @@ export const globalCss = `
     /* ── Page transition ─────────────────────────────────────────────────── */
     #page-container { animation: pageFadeIn 0.15s ease; }
     @keyframes pageFadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
 `;
 
