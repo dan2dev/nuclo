@@ -1,3 +1,4 @@
+import 'nuclo';
 // Auto-generated from /tmp/nuclo-examples.html to preserve original examples content
 export type ExampleContent = {
   id: string;

@@ -136,6 +136,7 @@ function LiveTodoList() {
             ),
             button(
               deleteBtnStyle,
+              { ariaLabel: () => `Delete "${todo.text}"` },
               "×",
               on("click", () => {
                 todos = todos.filter((t) => t.id !== todo.id);

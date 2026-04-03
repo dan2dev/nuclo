@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "BASE_URL=/ bun --tsconfig-override tsconfig.bun.json src/server.ts",
-    "build": "tsc && vite build && bun build-server.ts",
+    "clean": "rm -f .*.bun-build",
+    "build": "bun run clean && tsc && vite build && bun build-server.ts",
     "start": "bun start.ts",
     "preview": "bun run build && bun run start",
     "stress:front": "bun --cwd ../packages/v0.1 run build && bun run build && bunx playwright test tests/front-stress.spec.ts",
     "stress:front:strict": "bun --cwd ../packages/v0.1 run build && bun run build && STRESS_STRICT=true bunx playwright test tests/front-stress.spec.ts",
     "stress:front:ui": "bun --cwd ../packages/v0.1 run build && bun run build && bunx playwright test tests/front-stress.spec.ts --headed --project=stress-chromium",
-    "stress:server": "bun tests/server-stress.ts"
+    "stress:server": "bun tests/server-stress.ts",
+    "preview:macos": "bun run build && ./build/server-bun-darwin-arm64"
   },
   "dependencies": {
     "nuclo": "workspace:*"

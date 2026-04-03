@@ -141,6 +141,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
           .transition("all 0.15s"),
         { medium: display("none") }
       ),
+      { ariaLabel: () => mobileMenuOpen ? "Close navigation menu" : "Open navigation menu" },
       when(() => mobileMenuOpen, XIcon()).else(MenuIcon()),
       on("click", () => { mobileMenuOpen = !mobileMenuOpen; update(); })
     );

@@ -185,6 +185,7 @@ function TaskItem(task: Task, parent?: Task): ReturnType<typeof div> {
         () => task.subtasks.length > 0,
         button(
           expandBtnStyle,
+          { ariaLabel: () => task.expanded ? "Collapse subtasks" : "Expand subtasks" },
           () => task.expanded ? "▼" : "▶",
           on("click", () => toggleExpand(task)),
           on("mouseenter", (e) => {
@@ -222,6 +223,7 @@ function TaskItem(task: Task, parent?: Task): ReturnType<typeof div> {
       ),
       button(
         deleteBtnStyle,
+        { ariaLabel: () => `Delete "${task.text}"` },
         "×",
         on("click", () => deleteTask(task, parent)),
         on("mouseenter", (e) => {

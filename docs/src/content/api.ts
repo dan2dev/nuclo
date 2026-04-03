@@ -1,3 +1,4 @@
+import 'nuclo';
 // Auto-generated from /tmp/nuclo-api.html to preserve API reference code samples
 export const apiCode = {
   updateUsage: { lang: 'typescript', code: `let count = 0;
