@@ -47,12 +47,14 @@ function LiveCounter() {
         btnBase,
         cn(width("44px").height("44px").backgroundColor(colors.bgLight).color(colors.text)
           .border(`1px solid ${colors.borderLight}`)),
+        { ariaLabel: "Decrease count" },
         "−",
         on("click", () => { counterCount--; update(); })
       ),
       button(
         btnBase,
         cn(width("44px").height("44px").backgroundColor(colors.primary).color(colors.primaryText)),
+        { ariaLabel: "Increase count" },
         "+",
         on("click", () => { counterCount++; update(); })
       ),

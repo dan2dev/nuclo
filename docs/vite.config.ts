@@ -23,9 +23,7 @@ export default defineConfig({
     rollupOptions: {
       input: 'src/main.ts',
       output: {
-        manualChunks(id) {
-          if (id.includes('packages/v0.1/src')) return 'nuclo'
-        },
+        inlineDynamicImports: true,
       },
     },
   },

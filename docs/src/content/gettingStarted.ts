@@ -1,3 +1,4 @@
+import 'nuclo';
 // Auto-generated from /tmp/nuclo-getting-started.html to preserve original tutorial code snippets
 export const gettingStartedCode = {
   installNpm: { lang: 'bash', code: `npm install nuclo` },

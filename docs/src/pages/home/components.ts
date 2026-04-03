@@ -151,8 +151,8 @@ function LiveDemoCard() {
       span(hs.demoLabel, "LIVE COUNTER"),
       div(
         hs.demoActions,
-        button(hs.demoIconButton, "−", on("click", changeCount(-1))),
-        button(hs.demoPrimaryButton, "+", on("click", changeCount(1))),
+        button(hs.demoIconButton, { ariaLabel: "Decrease count" }, "−", on("click", changeCount(-1))),
+        button(hs.demoPrimaryButton, { ariaLabel: "Increase count" }, "+", on("click", changeCount(1))),
         button(hs.demoResetButton, "Reset", on("click", resetCount)),
       ),
     ),

@@ -140,6 +140,7 @@ export function Navbar() {
     button(
       // cn(mobileMenuButtonStyle),
       cn(display("flex")),
+      { ariaLabel: () => mobileMenuOpen ? "Close navigation menu" : "Open navigation menu" },
       () => mobileMenuOpen ? XIcon() : MenuIcon(),
       cn(
         display("flex")

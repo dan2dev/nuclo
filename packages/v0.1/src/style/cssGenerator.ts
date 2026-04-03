@@ -3,6 +3,23 @@ import { isBrowser } from "../utility/environment";
 
 type AtRuleType = 'media' | 'container' | 'supports' | 'style' | 'pseudo';
 
+// SSR collector — a single function reference installed once at server startup.
+// Keeping this as a plain function slot (no global Set, no ALS) means the nuclo
+// package stays browser-safe and free of Node-specific imports.  The server is
+// responsible for wiring in whatever collection strategy it wants (e.g. an
+// AsyncLocalStorage-backed dispatcher).  null = no-op (browser default).
+type SSRCollector = (rule: string) => void;
+let _ssrCollector: SSRCollector | null = null;
+
+/**
+ * Install a CSS rule collector for SSR.  Call once at server startup with a
+ * function that receives every rule string emitted by cn() / createStyleQueries.
+ * Pass null to remove the collector (not normally needed).
+ */
+export function setSSRCollector(fn: SSRCollector | null): void {
+	_ssrCollector = fn;
+}
+
 function isAtRule(rule: CSSRule): boolean {
 	return rule instanceof CSSMediaRule ||
 		rule instanceof CSSContainerRule ||
@@ -90,6 +107,23 @@ export function createCSSClassWithStyles(
 	atRuleType: AtRuleType = 'media',
 	pseudoClass?: string
 ): void {
+	if (!isBrowser) {
+		const rulesStr = buildRulesString(styles);
+		let rule: string;
+		if (pseudoClass) {
+			rule = `.${className}${pseudoClass} { ${rulesStr} }`;
+		} else if (condition) {
+			const prefix = atRuleType === 'container' ? '@container'
+				: atRuleType === 'supports' ? '@supports'
+				: '@media';
+			rule = `${prefix} ${condition} { .${className} { ${rulesStr} } }`;
+		} else {
+			rule = `.${className} { ${rulesStr} }`;
+		}
+		_ssrCollector?.(rule);
+		return;
+	}
+
 	const styleSheet = getStyleSheet();
 	if (!styleSheet) return;
 
