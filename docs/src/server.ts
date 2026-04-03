@@ -24,9 +24,12 @@ await ssrStylesALS.run(new Set<string>(), async () => {
 });
 
 const htmlTemplate = `<!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
+    <!-- Blocking theme script: runs synchronously before first paint so there
+         is no flash regardless of saved preference or system color scheme. -->
+    <script>!function(){var t=localStorage.getItem('nuclo-theme')||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.setAttribute('data-theme',t);}();</script>
     <link rel="icon" type="image/svg+xml" href="/nuclo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 

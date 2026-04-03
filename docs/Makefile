@@ -45,6 +45,7 @@ help:
 publish:
 	bun run build
 	rsync -avz --delete ./build/ $(DEPLOY_USER)@$(DEPLOY_HOST):$(DEPLOY_PATH)
+	ssh $(DEPLOY_USER)@$(DEPLOY_HOST) /home/sites/reboot.sh
 	curl -X POST "https://api.cloudflare.com/client/v4/zones/144262096047d02acb7bbb8d6914ca8c/purge_cache" \
 		-H "Authorization: Bearer $(CLOUDFLARE_DUOCRAFT_CACHING_API_KEY)" \
 		-H "Content-Type: application/json" \
