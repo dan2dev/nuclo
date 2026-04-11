@@ -10,8 +10,8 @@ Proof of concept for server-side HTML rendering using Bun + Vite, with no `index
 ## Commands
 
 ```bash
-pnpm dev      # dev server with HMR at http://localhost:5173
-pnpm build    # type-check + build assets into dist/
-pnpm preview  # build then serve production at http://localhost:5173
-pnpm start    # serve production (requires prior build)
+bun dev      # dev server with HMR at http://localhost:5173
+bun run build    # type-check + build assets into dist/
+bun run preview  # build then serve production at http://localhost:5173
+bun run start    # serve production (requires prior build)
 ```

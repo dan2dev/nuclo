@@ -7,10 +7,10 @@ Documentation site for Nuclo, built with Vite and Nuclo itself.
 Run these commands inside `nuclo/docs`:
 
 ```bash
-pnpm dev
-pnpm build
-pnpm preview
-pnpm stress:front
+bun dev
+bun run build
+bun run preview
+bun run stress:front
 ```
 
 ## Front stress test (Playwright)
@@ -19,16 +19,16 @@ This project includes a browser stress scenario that rapidly navigates internal 
 
 ```bash
 # one-time setup for browser binary
-pnpm exec playwright install chromium
+bunx playwright install chromium
 
 # regular stress run
-pnpm stress:front
+bun run stress:front
 
 # visible browser window while stressing
 make stress-ui
 
 # strict assertions for degradation/leak thresholds
-pnpm stress:front:strict
+bun run stress:front:strict
 ```
 
 Artifacts:
@@ -56,7 +56,7 @@ Server stress test env vars:
 Example heavier run:
 
 ```bash
-STRESS_ROUNDS=40 STRESS_CLICKS_PER_PAGE=30 pnpm stress:front
+STRESS_ROUNDS=40 STRESS_CLICKS_PER_PAGE=30 bun run stress:front
 ```
 
 ## Notes

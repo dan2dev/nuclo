@@ -15,16 +15,16 @@ This example implements the exact same features as the Nuclo basic example:
 
 ```bash
 # Install dependencies (from the root of the repository)
-pnpm install
+bun install
 
 # Run development server
-pnpm --filter basic-react dev
+bun --filter basic-react dev
 
 # Build for production
-pnpm --filter basic-react build
+bun --filter basic-react build
 
 # Preview production build
-pnpm --filter basic-react preview
+bun --filter basic-react preview
 ```
 
 ## Comparing with Nuclo

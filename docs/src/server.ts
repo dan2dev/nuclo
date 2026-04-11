@@ -216,7 +216,7 @@ if (isProd) {
   const distDir = await resolveProdDistDir();
 
   if (!distDir) {
-    console.error("Could not find a built Vite manifest. Run 'pnpm build' first.");
+    console.error("Could not find a built Vite manifest. Run 'bun run build' first.");
     process.exit(1);
   }
 
