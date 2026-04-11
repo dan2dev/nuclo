@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
-const nucloRoot = resolve(__dirname, '../../packages/v0.1');
+const nucloRoot = resolve(__dirname, '../../packages/nuclo-core');
 
 export default defineConfig({
 	resolve: {

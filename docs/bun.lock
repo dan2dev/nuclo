@@ -5,7 +5,7 @@
     "": {
       "name": "nuclo-docs",
       "dependencies": {
-        "nuclo": "link:../packages/v0.1",
+        "nuclo": "link:../packages/nuclo-core",
       },
       "devDependencies": {
         "@playwright/test": "^1.58.2",
@@ -101,7 +101,7 @@
 
     "nanoid": ["nanoid@3.3.11", "", { "bin": { "nanoid": "bin/nanoid.cjs" } }, "sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w=="],
 
-    "nuclo": ["nuclo@link:../packages/v0.1", {}],
+    "nuclo": ["nuclo@link:../packages/nuclo-core", {}],
 
     "picocolors": ["picocolors@1.1.1", "", {}, "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="],
 

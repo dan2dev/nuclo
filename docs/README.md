@@ -61,7 +61,7 @@ STRESS_ROUNDS=40 STRESS_CLICKS_PER_PAGE=30 pnpm stress:front
 
 ## Notes
 
-- This package depends on the local workspace package `../packages/v0.1`.
+- This package depends on the local workspace package `../packages/nuclo-core`.
 - Routing is handled in [`src/router.ts`](./src/router.ts) and [`src/routes.ts`](./src/routes.ts).
 - Pages live in [`src/pages`](./src/pages) and shared UI lives in [`src/components`](./src/components).
 - Static assets are served from [`public`](./public).
