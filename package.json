@@ -1,5 +1,8 @@
 {
 	"name": "nuclo-workspace",
 	"private": true,
-	"workspaces": ["packages/nuclo-core", "docs"]
+	"workspaces": ["packages/*", "docs", "examples/*", "drafts/*"],
+	"overrides": {
+		"nuclo": "workspace:*"
+	}
 }

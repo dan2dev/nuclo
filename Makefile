@@ -11,18 +11,18 @@ help:
 .PHONY: dev install up
 
 install:
-	cd packages/nuclo-core && pnpm install && \
-	cd ../../examples/basic && pnpm install && \
-	cd ../../docs && pnpm install
+	cd packages/nuclo-core && bun install && \
+	cd ../../examples/basic && bun install && \
+	cd ../../docs && bun install
 
 up:
-	cd packages/nuclo-core && pnpm up --latest && \
-	cd ../../examples/basic && pnpm up --latest && \
-	cd ../../docs && pnpm up --latest
+	cd packages/nuclo-core && bun update --latest && \
+	cd ../../examples/basic && bun update --latest && \
+	cd ../../docs && bun update --latest
 
 dev:
 	@echo "Starting all dev servers in parallel..."
-	@(cd packages/nuclo-core && pnpm dev) & \
-	(cd examples/basic && pnpm dev) & \
-	(cd docs && pnpm dev) & \
+	@(cd packages/nuclo-core && bun dev) & \
+	(cd examples/basic && bun dev) & \
+	(cd docs && bun dev) & \
 	wait

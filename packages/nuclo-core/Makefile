@@ -32,8 +32,8 @@ ensure-clean:
 # 6. Create annotated tag v<version> (skip if exists)
 # 7. Push commit + tag
 publish:
-	@echo "==> Building (pnpm build)"
-	@pnpm build
+	@echo "==> Building (bun run build)"
+	@bun run build
 	@echo "==> Logging in to npm registry"
 	@if ! npm login; then \
 	  echo "ERROR: npm login failed. Cannot proceed with publish."; \
@@ -43,9 +43,9 @@ publish:
 	@new_version=$$($(MAKE) --no-print-directory bump-version BUMP=$(BUMP)); \
 	  echo "==> New version: $$new_version"; \
 	  echo "==> Publishing to registry"; \
-	  pnpm publish --no-git-checks; \
+	  bun publish --no-git-checks; \
 	  echo "==> Staging version bump artifacts"; \
-	  git add $(PKG_FILE) pnpm-lock.yaml 2>/dev/null || true; \
+	  git add $(PKG_FILE) bun.lock 2>/dev/null || true; \
 	  if git diff --cached --quiet; then \
 	    echo "==> No staged changes to commit (possibly already committed)"; \
 	  else \
