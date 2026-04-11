@@ -5,7 +5,7 @@ export default defineConfig({
   base: '/',
   resolve: {
     alias: {
-      nuclo: fileURLToPath(new URL('../packages/v0.1/src/index.ts', import.meta.url)),
+      nuclo: fileURLToPath(new URL('../packages/nuclo-core/src/index.ts', import.meta.url)),
     },
   },
   server: {

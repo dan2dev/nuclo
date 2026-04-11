@@ -12,7 +12,7 @@ const targets = [
   "bun-windows-arm64",
 ] satisfies Bun.Build.Target[];
 
-const nucloSrc = resolve(import.meta.dir, "../packages/v0.1/src");
+const nucloSrc = resolve(import.meta.dir, "../packages/nuclo-core/src");
 
 const nucloPlugin: BunPlugin = {
   name: "nuclo-paths",

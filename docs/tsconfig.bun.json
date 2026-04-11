@@ -2,9 +2,9 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "nuclo": ["../packages/v0.1/src/index.ts"],
-      "nuclo/ssr": ["../packages/v0.1/src/ssr/index.ts"],
-      "nuclo/polyfill": ["../packages/v0.1/src/polyfill/index.ts"]
+      "nuclo": ["../packages/nuclo-core/src/index.ts"],
+      "nuclo/ssr": ["../packages/nuclo-core/src/ssr/index.ts"],
+      "nuclo/polyfill": ["../packages/nuclo-core/src/polyfill/index.ts"]
     }
   }
 }

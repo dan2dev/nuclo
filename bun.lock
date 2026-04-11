@@ -19,7 +19,7 @@
         "vite": "^8.0.3",
       },
     },
-    "packages/v0.1": {
+    "packages/nuclo-core": {
       "name": "nuclo",
       "version": "0.1.113",
       "devDependencies": {
@@ -516,7 +516,7 @@
 
     "natural-compare": ["natural-compare@1.4.0", "", {}, "sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw=="],
 
-    "nuclo": ["nuclo@workspace:packages/v0.1"],
+    "nuclo": ["nuclo@workspace:packages/nuclo-core"],
 
     "nuclo-docs": ["nuclo-docs@workspace:docs"],
 

@@ -1,7 +1,7 @@
 // SSR setup — polyfills before Nuclo runtime, Nuclo before page imports.
-import '../../../packages/v0.1/src/polyfill/index.ts';
-import '../../../packages/v0.1/src/core/runtimeBootstrap.ts';
-import { renderToString } from '../../../packages/v0.1/src/ssr/renderToString.ts';
+import '../../../packages/nuclo-core/src/polyfill/index.ts';
+import '../../../packages/nuclo-core/src/core/runtimeBootstrap.ts';
+import { renderToString } from '../../../packages/nuclo-core/src/ssr/renderToString.ts';
 import { matchRoute } from './router.ts';
 
 const isProd = process.env.NODE_ENV === 'production';
