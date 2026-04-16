@@ -1,7 +1,8 @@
 import { STYLE_PROPERTIES, SPECIAL_METHODS, type StylePropertyDefinition } from "./styleProperties";
 import { generateStyleKey, simpleHash, getCachedClassName, setCachedClassName } from "./styleCache";
 import { createCSSClassWithStyles, classExistsInDOM } from "./cssGenerator";
-import { isBrowser } from "../utility/environment";
+const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+
 import type {
 	DisplayValue,
 	PositionValue,
