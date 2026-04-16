@@ -24,8 +24,23 @@ export function createElement(tagName: string): ExpandedElement | null {
 
 /**
  * Creates an element in the given namespace (typically for SVG elements).
- * Wrapper for document.createElementNS with type safety.
+ * Wrapper for `document.createElementNS` with tag-literal inference for SVG.
+ *
+ * When the namespace is the SVG namespace and `tagName` is a known SVG tag
+ * (`keyof SVGElementTagNameMap`), the return type is narrowed to the
+ * corresponding element subtype. The string fallback remains for custom
+ * namespaces.
+ *
+ * @template TTagName SVG tag literal (SVG overload only).
  */
+export function createElementNS<TTagName extends keyof SVGElementTagNameMap>(
+  namespace: typeof SVG_NAMESPACE,
+  tagName: TTagName,
+): SVGElementTagNameMap[TTagName] | null;
+export function createElementNS(
+  namespace: string,
+  tagName: string,
+): ExpandedElement | null;
 export function createElementNS(
   namespace: string,
   tagName: string,

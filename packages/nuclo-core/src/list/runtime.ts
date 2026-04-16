@@ -46,6 +46,22 @@ const activeListRuntimes = new Map<
   ListRuntimeInfo<unknown, ElementTagName>
 >();
 
+/**
+ * Type-erasing accessor for the runtimes map. We store heterogeneous
+ * `ListRuntimeInfo<TItem, TTagName>` values but consumers only depend on
+ * structural properties — `TItem` / `TTagName` are contravariant in
+ * render callbacks, so the erasure must bridge via `unknown` once here.
+ */
+function storeListRuntimeInfo<TItem, TTagName extends ElementTagName>(
+  ref: WeakRef<Comment>,
+  info: ListRuntimeInfo<TItem, TTagName>,
+): void {
+  activeListRuntimes.set(
+    ref,
+    info as unknown as ListRuntimeInfo<unknown, ElementTagName>,
+  );
+}
+
 interface ReleasedListItemRecord<TItem, TTagName extends ElementTagName> {
   item: TItem | null;
   element: ExpandedElement<TTagName> | null;
@@ -220,11 +236,7 @@ function createListRuntimeNormal<TItem, TTagName extends ElementTagName>(
 
   if (isBrowser) {
     // Register for future update() calls — not needed in SSR
-    const runtimeInfo: ListRuntimeInfo<TItem, TTagName> = { runtime };
-    activeListRuntimes.set(
-      new WeakRef(startMarker),
-      runtimeInfo as ListRuntimeInfo<unknown, ElementTagName>,
-    );
+    storeListRuntimeInfo(new WeakRef(startMarker), { runtime });
   }
 
   return runtime;
@@ -289,11 +301,7 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   };
 
   if (isBrowser) {
-    const runtimeInfo: ListRuntimeInfo<TItem, TTagName> = { runtime };
-    activeListRuntimes.set(
-      new WeakRef(startMarker),
-      runtimeInfo as ListRuntimeInfo<unknown, ElementTagName>,
-    );
+    storeListRuntimeInfo(new WeakRef(startMarker), { runtime });
   }
 
   return runtime;

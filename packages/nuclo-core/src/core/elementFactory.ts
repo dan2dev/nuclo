@@ -4,65 +4,81 @@ import { claimElement, cleanupUnclaimedChildren } from "../hydration/context";
 
 /**
  * Factory shape shared by HTML and SVG branches.
- * Captures `tagName` + `modifiers` in closure; each call either claims a hydration
- * target or creates a fresh element, then applies the pre-bound modifier list.
+ * Captures `tagName` + `modifiers` in closure; each call either claims a
+ * hydration target or creates a fresh element, then applies the pre-bound
+ * modifier list.
  *
- * Split hot path (no parent) vs. claim path so the common case has zero branching
- * on hydration internals.
+ * Split hot path (no parent) vs. claim path so the common case has zero
+ * branching on hydration internals.
+ *
+ * @template TTagName Tag literal key of `HTMLElementTagNameMap`.
  */
 function createHtmlElementFactory<TTagName extends ElementTagName>(
   tagName: TTagName,
-  ...modifiers: Array<NodeModLike<TTagName>>
+  ...modifiers: ReadonlyArray<NodeModLike<TTagName>>
 ): DetachedExpandedElementFactory<TTagName> {
   const mods = modifiers as ReadonlyArray<NodeModifier<TTagName>>;
 
-  return function (
+  const factory = (
     _parent?: ExpandedElement<TTagName>,
     index = 0,
-  ): ExpandedElement<TTagName> {
+  ): ExpandedElement<TTagName> => {
     if (_parent) {
-      const parentNode = _parent as unknown as Node;
-      const claimed = claimElement(
-        parentNode,
-        tagName,
-      ) as ExpandedElement<TTagName> | null;
+      const claimed = claimElement(_parent, tagName);
       if (claimed) {
-        const elNode = claimed as unknown as Node;
-        const initialChildCount = elNode.childNodes.length;
+        const initialChildCount = claimed.childNodes.length;
         applyModifiers(claimed, mods, index);
-        cleanupUnclaimedChildren(elNode, initialChildCount);
+        cleanupUnclaimedChildren(claimed, initialChildCount);
         return claimed;
       }
     }
-    const el = createElement(tagName) as ExpandedElement<TTagName>;
+    const el = createElement(tagName);
+    if (!el) {
+      throw new Error(`Failed to create HTML element: ${tagName}`);
+    }
     applyModifiers(el, mods, index);
     return el;
-  } as DetachedExpandedElementFactory<TTagName>;
+  };
+
+  return factory satisfies DetachedExpandedElementFactory<TTagName>;
 }
 
+/**
+ * SVG counterpart of {@link createHtmlElementFactory}.
+ *
+ * Unlike the HTML factory, the SVG modifier list is typed as
+ * `SVGElementModifierLike<TTagName>` so the tag literal narrows what
+ * modifiers and attribute bags are accepted. Internally we funnel through
+ * the same `applyModifiers` pipeline, which is tag-agnostic at runtime.
+ *
+ * @template TTagName Tag literal key of `SVGElementTagNameMap`.
+ */
 function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
   tagName: TTagName,
-  ...modifiers: Array<unknown>
+  ...modifiers: ReadonlyArray<SVGElementModifierLike<TTagName>>
 ): DetachedSVGElementFactory<TTagName> {
-  const mods = modifiers as ReadonlyArray<NodeModifier<ElementTagName>>;
+  // SVG modifiers travel through the same pipeline as HTML modifiers; the
+  // pipeline treats them structurally and ignores the tag-specific event
+  // surface, so this single erasure is safe.
+  const mods = modifiers as unknown as ReadonlyArray<
+    NodeModifier<ElementTagName>
+  >;
 
-  return function (_parent?, index = 0): SVGElementTagNameMap[TTagName] {
+  const factory = (
+    _parent?: SVGElementTagNameMap[TTagName] | ExpandedElement<ElementTagName>,
+    index = 0,
+  ): SVGElementTagNameMap[TTagName] => {
     if (_parent) {
-      const parentNode = _parent as unknown as Node;
-      const claimed = claimElement(
-        parentNode,
-        tagName,
-      ) as ExpandedElement | null;
+      const claimed = claimElement(_parent, tagName);
       if (claimed) {
-        const elNode = claimed as unknown as Node;
-        const initialChildCount = elNode.childNodes.length;
+        const initialChildCount = claimed.childNodes.length;
         applyModifiers(
           claimed as unknown as ExpandedElement<ElementTagName>,
           mods,
           index,
         );
-        cleanupUnclaimedChildren(elNode, initialChildCount);
-        return claimed as unknown as SVGElementTagNameMap[TTagName];
+        cleanupUnclaimedChildren(claimed, initialChildCount);
+        return claimed;
       }
     }
     const created = createElementNS(SVG_NAMESPACE, tagName);
@@ -74,8 +90,10 @@ function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
       mods,
       index,
     );
-    return created as unknown as SVGElementTagNameMap[TTagName];
-  } as DetachedSVGElementFactory<TTagName>;
+    return created;
+  };
+
+  return factory as DetachedSVGElementFactory<TTagName>;
 }
 
 export function createHtmlTagBuilder<TTagName extends ElementTagName>(

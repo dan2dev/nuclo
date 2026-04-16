@@ -2,7 +2,11 @@ import { applyAttributes } from "./attributeManager";
 import { createReactiveTextNode } from "./reactiveText";
 import { registerReactiveTextNode } from "./reactiveCleanup";
 import { logError } from "../utility/errorHandler";
-import { isNode } from "../utility/typeGuards";
+import {
+  isNode,
+  isPrimitive,
+  isZeroArityFunction,
+} from "../utility/typeGuards";
 import { modifierProbeCache } from "../utility/modifierPredicates";
 import {
   createComment,
@@ -11,6 +15,14 @@ import {
 } from "../utility/dom";
 import { isHydrating, claimChild, getCursor } from "../hydration/context";
 
+/**
+ * A modifier is anything that can attach itself to a parent element:
+ * primitives become text, objects become attribute bags, functions produce
+ * children or reactive text, and full `NodeModFn` values get invoked with
+ * `(parent, index)`.
+ *
+ * @template TTagName Host element tag literal.
+ */
 export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
   | NodeMod<TTagName>
   | NodeModFn<TTagName>;
@@ -39,6 +51,16 @@ function nextChildIsTextComment(parent: Node): boolean {
   return text != null && text.trimStart().startsWith("text-");
 }
 
+/**
+ * Applies a single modifier to its parent element and returns either a DOM
+ * node to be appended by the caller, or `null` for attribute-only modifiers.
+ *
+ * Narrowing is driven by `typeof` discrimination on the modifier value —
+ * primitives, zero-arity reactive functions, non-zero-arity `NodeModFn`s,
+ * and attribute-bag / Node objects all take distinct branches.
+ *
+ * @template TTagName Host element tag literal.
+ */
 export function applyNodeModifier<TTagName extends ElementTagName>(
   parent: ExpandedElement<TTagName>,
   modifier: NodeModifier<TTagName>,
@@ -46,31 +68,26 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 ): Node | null {
   if (modifier == null) return null;
 
-  const t = typeof modifier;
-
   // Fast path #1: primitive text
-  if (t !== "object" && t !== "function") {
-    if (isHydrating() && nextChildIsTextComment(parent as unknown as Node)) {
-      const parentNode = parent as unknown as Node;
-      claimChild(parentNode); // skip <!-- text-N -->
-      claimChild(parentNode); // skip text
+  if (isPrimitive(modifier)) {
+    if (isHydrating() && nextChildIsTextComment(parent)) {
+      claimChild(parent); // skip <!-- text-N -->
+      claimChild(parent); // skip text
       return null;
     }
-    return createStaticTextFragment(index, modifier as Primitive);
+    return createStaticTextFragment(index, modifier);
   }
 
   // Fast path #2: function — either zero-arity (reactive) or NodeModFn
-  if (t === "function") {
-    const fn = modifier as (...args: unknown[]) => unknown;
-    if (fn.length === 0) {
-      return handleZeroArityModifier(parent, fn as () => unknown, index);
+  if (typeof modifier === "function") {
+    if (isZeroArityFunction(modifier)) {
+      return handleZeroArityModifier(parent, modifier, index);
     }
     // NodeModFn(parent, index) — classify produced value
     const produced = (modifier as NodeModFn<TTagName>)(parent, index);
     if (produced == null) return null;
-    const pt = typeof produced;
-    if (pt !== "object" && pt !== "function") {
-      return createStaticTextFragment(index, produced as Primitive);
+    if (isPrimitive(produced)) {
+      return createStaticTextFragment(index, produced);
     }
     if (isNode(produced)) return produced;
     applyAttributes(parent, produced as ExpandedElementAttributes<TTagName>);
@@ -85,12 +102,14 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 
 /**
  * Handles a zero-arg function modifier. Result can be:
- *  - A cn()-style { className } object → becomes a reactive className binding.
+ *  - A cn()-style `{ className }` object → becomes a reactive className binding.
  *  - A primitive → becomes a reactive text node.
- *  - null/undefined or other objects → no-op.
+ *  - `null` / `undefined` or other objects → no-op.
  *
- * Probes via modifierProbeCache so error + value classifications survive across
- * hydration + rebuild cycles without re-running user code unnecessarily.
+ * Probes via `modifierProbeCache` so error + value classifications survive
+ * across hydration + rebuild cycles without re-running user code unnecessarily.
+ *
+ * @template TTagName Host element tag literal.
  */
 function handleZeroArityModifier<TTagName extends ElementTagName>(
   parent: ExpandedElement<TTagName>,
@@ -124,23 +143,19 @@ function handleZeroArityModifier<TTagName extends ElementTagName>(
   }
 
   // primitive (non-null) → reactive text node
-  if (v !== null && v !== undefined) {
-    const vt = typeof v;
-    if (vt !== "object" && vt !== "function") {
-      if (isHydrating() && nextChildIsTextComment(parent as unknown as Node)) {
-        const parentNode = parent as unknown as Node;
-        claimChild(parentNode); // skip <!-- text-N -->
-        const existingText = claimChild(parentNode) as Text | null;
-        if (existingText && existingText.nodeType === 3) {
-          registerReactiveTextNode(existingText, {
-            resolver: modifier as () => Primitive,
-            lastValue: existingText.textContent || "",
-          });
-        }
-        return null;
+  if (v !== null && v !== undefined && isPrimitive(v)) {
+    if (isHydrating() && nextChildIsTextComment(parent)) {
+      claimChild(parent); // skip <!-- text-N -->
+      const existingText = claimChild(parent);
+      if (existingText && existingText.nodeType === 3) {
+        registerReactiveTextNode(existingText as Text, {
+          resolver: modifier as () => Primitive,
+          lastValue: existingText.textContent || "",
+        });
       }
-      return createReactiveTextFragment(index, modifier as () => Primitive, v);
+      return null;
     }
+    return createReactiveTextFragment(index, modifier as () => Primitive, v);
   }
   return null;
 }

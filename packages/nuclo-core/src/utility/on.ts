@@ -5,35 +5,45 @@
  *   button(
  *     "Click",
  *     on("click", (e) => {
- *       // e is correctly typed (e.g. MouseEvent for "click")
+ *       // `e` is typed as MouseEvent + { currentTarget: HTMLButtonElement, target: HTMLButtonElement | null }
  *     })
  *   )
  *
  * Design notes:
- * - Returns a NodeModFn so it can be used like any other modifier.
- * - Produces no child node (returns void in the modifier body).
- * - Provides strong typing of the event object based on the DOM event name.
- * - Stores listener references in a WeakMap to prevent memory leaks.
- * - Listeners are automatically cleaned up when elements are garbage collected.
+ * - Returns a `NodeModFn` so it plugs in like any other modifier.
+ * - No child node is produced (the modifier body returns void).
+ * - Event type is inferred from the event name via `HTMLElementEventMap`.
+ * - Listener references are stored in a `WeakMap` to avoid leaks;
+ *   they're automatically cleaned up when elements are GC'd.
  */
 
 import { logError } from "./errorHandler";
 import { isBrowser } from "./environment";
 
 type EventListenerOptions = boolean | AddEventListenerOptions;
-type ListenerTarget = HTMLElement;
-type AnyTrackedListener = TypedEventListener<ListenerTarget, Event>;
 
+/**
+ * Type-erased shape used inside the tracked-listener map. Every concrete
+ * `TypedEventListener<E, TEv>` is structurally compatible with this shape
+ * (contravariant-in-argument / returns `unknown`), so erasure is safe.
+ */
+type TrackedEventListener = TypedEventListener<HTMLElement, Event>;
+
+/**
+ * Internal record for one tracked listener. `original` is the user-supplied
+ * function (used for identity-based removal); `wrapped` is the error-trapping
+ * closure actually attached to the DOM.
+ */
 interface TrackedListener {
-  original: AnyTrackedListener;
-  wrapped: EventListener;
-  options?: EventListenerOptions;
-  controller?: AbortController;
+  readonly original: TrackedEventListener;
+  readonly wrapped: EventListener;
+  readonly options?: EventListenerOptions;
+  readonly controller?: AbortController;
 }
 
 /**
- * WeakMap to track event listeners per element.
- * Key: HTMLElement, Value: Map of event type to Set of listener info
+ * Per-element listener registry. Outer key is the element; inner key is the
+ * DOM event name; value is the set of tracked listener records for that pair.
  */
 const elementListeners = new WeakMap<
   HTMLElement,
@@ -41,15 +51,12 @@ const elementListeners = new WeakMap<
 >();
 
 /**
- * Store listener info for an element to enable cleanup.
+ * Stores a tracked-listener record on the element for later cleanup.
  */
 function trackListener(
   element: HTMLElement,
   type: string,
-  original: AnyTrackedListener,
-  wrapped: EventListener,
-  options?: EventListenerOptions,
-  controller?: AbortController,
+  record: TrackedListener,
 ): void {
   let typeMap = elementListeners.get(element);
   if (!typeMap) {
@@ -63,7 +70,7 @@ function trackListener(
     typeMap.set(type, listeners);
   }
 
-  listeners.add({ original, wrapped, options, controller });
+  listeners.add(record);
 }
 
 /**
@@ -82,13 +89,18 @@ function detachListener(
 }
 
 /**
- * Remove a specific listener from an element.
- * This is exported for manual cleanup if needed.
+ * Remove a specific listener from an element. Exported for manual cleanup.
+ *
+ * @template TElement Target element subtype (defaults to `HTMLElement`).
+ * @template TEvent Event subtype the listener expects (defaults to `Event`).
  */
-export function removeListener(
-  element: HTMLElement,
+export function removeListener<
+  TElement extends HTMLElement = HTMLElement,
+  TEvent extends Event = Event,
+>(
+  element: TElement,
   type: string,
-  listener: AnyTrackedListener,
+  listener: TypedEventListener<TElement, TEvent>,
 ): void {
   const typeMap = elementListeners.get(element);
   if (!typeMap) return;
@@ -96,8 +108,11 @@ export function removeListener(
   const listeners = typeMap.get(type);
   if (!listeners) return;
 
+  // Identity compare via shared erased shape — the generic parameters are
+  // purely for caller ergonomics; runtime identity is unaffected.
+  const erased = listener as unknown as TrackedEventListener;
   for (const info of listeners) {
-    if (info.original === listener) {
+    if (info.original === erased) {
       detachListener(element, type, info);
       listeners.delete(info);
       break;
@@ -130,7 +145,45 @@ export function removeAllListeners(element: HTMLElement, type?: string): void {
 }
 
 /**
- * Overload for standard HTMLElement events (strongly typed via lib.dom.d.ts)
+ * Creates the wrapped DOM listener once, centralizing the single required
+ * cast from `Event` to the enriched event type carried by `TypedEventListener`.
+ *
+ * Call-site invariants guarantee `ev.currentTarget === element`, so the
+ * narrowing of `currentTarget` / `target` to `TElement` is safe.
+ *
+ * @template TElement DOM element subtype bound to the listener.
+ * @template TEvent Event subtype the listener expects.
+ */
+function wrapListener<TElement extends HTMLElement, TEvent extends Event>(
+  element: TElement,
+  type: string,
+  listener: TypedEventListener<TElement, TEvent>,
+): EventListener {
+  return function (ev: Event): void {
+    try {
+      listener.call(
+        element,
+        ev as TEvent & {
+          currentTarget: TElement;
+          target: TElement | null;
+        },
+      );
+    } catch (error) {
+      logError(`Error in '${type}' listener`, error);
+    }
+  };
+}
+
+/**
+ * Add a strongly typed DOM event listener as a Nuclo modifier.
+ *
+ * The returned modifier attaches the listener when the element is created.
+ * Event type is inferred via template-literal lookup against
+ * `HTMLElementEventMap` — passing `"click"` yields `MouseEvent`, `"input"`
+ * yields `InputEvent`, etc.
+ *
+ * @template K DOM event name — restricted to `keyof HTMLElementEventMap`.
+ * @template TTagName Host element tag — defaults to `ElementTagName`.
  */
 export function on<
   K extends keyof HTMLElementEventMap,
@@ -145,9 +198,13 @@ export function on<
 ): NodeModFn<TTagName>;
 
 /**
- * Fallback / custom event overload (arbitrary event names or custom event types).
- * Specify a custom event type with the E generic if needed:
+ * Fallback overload for custom / arbitrary event names.
+ * Specify a custom event subtype via `E` when needed:
  *   on<"my-event", CustomEvent<MyDetail>>("my-event", e => { ... })
+ *
+ * @template K Custom event name — any string.
+ * @template E Event subtype.
+ * @template TTagName Host element tag.
  */
 export function on<
   K extends string,
@@ -167,46 +224,27 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
   return function (parent: ExpandedElement<TTagName>): void {
     if (!isBrowser) return;
 
-    // Type guard: verify parent is an HTMLElement with addEventListener
-    if (
-      !parent ||
-      typeof (parent as HTMLElement).addEventListener !== "function"
-    ) {
-      return;
-    }
+    // Runtime narrow: in polyfill / SSR environments `parent` may not be a
+    // real HTMLElement — bail out cleanly rather than crashing.
+    if (!(parent instanceof HTMLElement)) return;
 
     const el = parent as HTMLElementTagNameMap[TTagName];
 
-    // Create an AbortController for this listener
     const controller = new AbortController();
+    const wrapped = wrapListener(el, type, listener);
 
-    const wrapped = function (ev: Event): void {
-      try {
-        listener.call(
-          el,
-          ev as unknown as Event & { currentTarget: HTMLElementTagNameMap[TTagName]; target: HTMLElementTagNameMap[TTagName] | null },
-        );
-      } catch (error) {
-        logError(`Error in '${type}' listener`, error);
-      }
-    };
-
-    // Merge options with signal
-    const listenerOptions =
+    const listenerOptions: AddEventListenerOptions =
       typeof options === "boolean"
         ? { capture: options, signal: controller.signal }
-        : { ...(options || {}), signal: controller.signal };
+        : { ...(options ?? {}), signal: controller.signal };
 
-    el.addEventListener(type, wrapped as EventListener, listenerOptions);
+    el.addEventListener(type, wrapped, listenerOptions);
 
-    // Track the listener for potential cleanup
-    trackListener(
-      el,
-      type,
-      listener as AnyTrackedListener,
-      wrapped as EventListener,
+    trackListener(el, type, {
+      original: listener as unknown as TrackedEventListener,
+      wrapped,
       options,
       controller,
-    );
+    });
   };
 }

@@ -75,14 +75,26 @@ declare global {
       index?: number,
     ) => ExpandedElement<TTagName>);
 
-  // Core element type — rawMods/mods kept as ReadonlyArray so introspection can't mutate them.
+  /**
+   * Core element type. Intersection of the real DOM element for `TTagName`
+   * with optional, `readonly` introspection metadata (`rawMods` / `mods`).
+   *
+   * The intersection means an `ExpandedElement<"div">` *is-a* `HTMLDivElement`
+   * at the type level — Node / Element / HTMLElement members are always
+   * present, so callers don't need `as unknown as Node` bridges.
+   *
+   * The metadata is `readonly` so library internals can't be mutated by
+   * callers and optional because SSR / hydration may produce elements
+   * before modifiers have been applied.
+   *
+   * @template TTagName Key of `HTMLElementTagNameMap` (e.g. `"div"`, `"button"`).
+   */
   export type ExpandedElement<
     TTagName extends ElementTagName = ElementTagName,
-  > = Partial<Omit<HTMLElementTagNameMap[TTagName], "tagName">> &
-    Pick<HTMLElementTagNameMap[TTagName], "tagName"> & {
-      readonly rawMods?: ReadonlyArray<NodeModLike<ElementTagName>>;
-      readonly mods?: ReadonlyArray<NodeMod<ElementTagName>>;
-    };
+  > = HTMLElementTagNameMap[TTagName] & {
+    readonly rawMods?: ReadonlyArray<NodeModLike<ElementTagName>>;
+    readonly mods?: ReadonlyArray<NodeMod<ElementTagName>>;
+  };
 
   export type NodeRenderable<TTagName extends ElementTagName = ElementTagName> =
     | Primitive

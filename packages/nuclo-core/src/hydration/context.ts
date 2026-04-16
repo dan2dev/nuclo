@@ -51,7 +51,23 @@ export function claimChild(parent: Node): Node | null {
 /**
  * Attempts to claim an existing element from the parent during hydration.
  * Returns the claimed element if the next child matches the expected tag, or null.
+ *
+ * Generic overloads preserve the tag literal through the return type, so
+ * callers don't need to cast the result back to `HTMLElementTagNameMap[K]`
+ * or `SVGElementTagNameMap[K]`.
+ *
+ * @template TTagName Tag literal — `keyof HTMLElementTagNameMap` for the
+ *   HTML overload, or `keyof SVGElementTagNameMap` for the SVG overload.
  */
+export function claimElement<TTagName extends ElementTagName>(
+  parent: Node,
+  tagName: TTagName,
+): ExpandedElement<TTagName> | null;
+export function claimElement<TTagName extends keyof SVGElementTagNameMap>(
+  parent: Node,
+  tagName: TTagName,
+): SVGElementTagNameMap[TTagName] | null;
+export function claimElement(parent: Node, tagName: string): Element | null;
 export function claimElement(parent: Node, tagName: string): Element | null {
   if (!_hydrating) return null;
   const candidate = parent.childNodes[getCursor(parent)];
