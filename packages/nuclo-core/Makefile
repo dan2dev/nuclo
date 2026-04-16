@@ -23,14 +23,12 @@ ensure-clean:
 		exit 1; \
 	fi
 
-# Main publish + tag workflow:
+# Main publish workflow:
 # 1. Build
 # 2. Login to npm registry
 # 3. Bump version (no auto tag/commit)
-# 4. Publish to registry
-# 5. Commit version bump
-# 6. Create annotated tag v<version> (skip if exists)
-# 7. Push commit + tag
+# 4. Publish to registry (abort on failure, version bump stays local)
+# 5. git add package.json, commit, tag v<version>, push commit + tag
 publish:
 	@echo "==> Building (bun run build)"
 	@bun run build
@@ -40,12 +38,16 @@ publish:
 	  exit 1; \
 	fi
 	@echo "==> Bumping $(BUMP) version (local package.json update)"
-	@new_version=$$($(MAKE) --no-print-directory bump-version BUMP=$(BUMP)); \
+	@set -e; \
+	  new_version=$$($(MAKE) --no-print-directory bump-version BUMP=$(BUMP)); \
 	  echo "==> New version: $$new_version"; \
 	  echo "==> Publishing to registry"; \
-	  bun publish --no-git-checks; \
-	  echo "==> Staging version bump artifacts"; \
-	  git add $(PKG_FILE) bun.lock 2>/dev/null || true; \
+	  if ! bun publish --no-git-checks; then \
+	    echo "ERROR: bun publish failed. Skipping commit/tag/push."; \
+	    exit 1; \
+	  fi; \
+	  echo "==> Publish succeeded — committing version bump"; \
+	  git add $(PKG_FILE); \
 	  if git diff --cached --quiet; then \
 	    echo "==> No staged changes to commit (possibly already committed)"; \
 	  else \
