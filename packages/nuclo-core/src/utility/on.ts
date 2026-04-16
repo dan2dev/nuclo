@@ -184,7 +184,7 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
       try {
         listener.call(
           el,
-          ev as Event & { currentTarget: HTMLElementTagNameMap[TTagName] },
+          ev as unknown as Event & { currentTarget: HTMLElementTagNameMap[TTagName]; target: HTMLElementTagNameMap[TTagName] | null },
         );
       } catch (error) {
         logError(`Error in '${type}' listener`, error);

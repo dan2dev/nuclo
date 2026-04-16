@@ -12,7 +12,7 @@ import { claimElement, cleanupUnclaimedChildren } from "../hydration/context";
  */
 function createHtmlElementFactory<TTagName extends ElementTagName>(
   tagName: TTagName,
-  ...modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>
+  ...modifiers: Array<NodeModLike<TTagName>>
 ): DetachedExpandedElementFactory<TTagName> {
   const mods = modifiers as ReadonlyArray<NodeModifier<TTagName>>;
 
