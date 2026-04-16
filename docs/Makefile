@@ -1,8 +1,28 @@
 SYSTEM_PATH := $(PATH)
-include ../.env
+-include ../.env
 export
 
-.PHONY: help deps browser setup publish docker stress stress-ui stress-strict stress-heavy stress-soak stress-30min stress-server report clean
+# Detect OS and arch for running the correct compiled server binary
+_OS_RAW  := $(shell uname -s)
+_ARCH_RAW := $(shell uname -m)
+
+ifeq ($(_OS_RAW),Darwin)
+  _OS := darwin
+else
+  _OS := linux
+endif
+
+ifeq ($(_ARCH_RAW),arm64)
+  _ARCH := arm64
+else ifeq ($(_ARCH_RAW),aarch64)
+  _ARCH := arm64
+else
+  _ARCH := x64
+endif
+
+SERVER_BINARY := ./build/server-bun-$(_OS)-$(_ARCH)
+
+.PHONY: help dev build run preview deps browser setup publish docker stress stress-ui stress-strict stress-heavy stress-soak stress-30min stress-server report clean
 
 STRESS_ROUNDS ?= 12
 STRESS_CLICKS_PER_PAGE ?= 14
@@ -12,6 +32,22 @@ STRESS_BASE_URL ?= http://127.0.0.1:4173
 STRESS_SERVER_HOST ?= http://localhost:5173
 STRESS_SERVER_REQUESTS ?= 1000000
 STRESS_SERVER_CONCURRENCY ?= 100
+
+dev:
+	BASE_URL=/ bun --tsconfig-override tsconfig.bun.json src/server.ts
+
+build:
+	bun run build
+
+run:
+	@echo "Running $(SERVER_BINARY)"
+ifeq ($(_OS),darwin)
+	@codesign --remove-signature $(SERVER_BINARY) 2>/dev/null || true
+	@codesign --sign - --force $(SERVER_BINARY)
+endif
+	$(SERVER_BINARY)
+
+preview: build run
 
 help:
 	@echo "Available targets:"

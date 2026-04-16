@@ -316,8 +316,7 @@ export function DocsHero(opts: DocsHeroOptions) {
       d.breadcrumb,
       a(
         { href: routeHref("home") },
-        cn(color(colors.textDim).transition("color 0.2s")),
-        { hover: color(colors.textMuted) },
+        cn(color(colors.textDim).transition("color 0.2s"), { hover: color(colors.textMuted) }),
         "Docs",
         on("click", (e) => {
           e.preventDefault();
@@ -357,8 +356,7 @@ export function DocsHero(opts: DocsHeroOptions) {
                   target: "_blank",
                   rel: "noopener noreferrer",
                 },
-                cn(color(colors.primary).transition("opacity 0.2s")),
-                { hover: opacity("0.72") },
+                cn(color(colors.primary).transition("opacity 0.2s"), { hover: opacity("0.72") }),
                 opts.sourceLabel ?? "View source on GitHub ↗"
               )
             : null

@@ -110,7 +110,8 @@ function LiveSearch() {
           update();
         }),
         on("focus", (e) => {
-          (e.target as HTMLElement).style.borderColor = colors.primary;
+          let s = e.currentTarget as HTMLSelectElement;
+          s.style.borderColor = colors.primary;
         }),
         on("blur", (e) => {
           (e.target as HTMLElement).style.borderColor = colors.border;

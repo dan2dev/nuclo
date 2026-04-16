@@ -102,7 +102,8 @@ declare global {
 
   export type NodeModLike<TTagName extends ElementTagName = ElementTagName> =
     | NodeMod<TTagName>
-    | NodeModFn<TTagName>;
+    | NodeModFn<TTagName>
+    | NodeModFn<ElementTagName>;
 
   /**
    * Pulls the ExpandedElement out of any builder-shaped value — useful for writing

@@ -19,7 +19,7 @@ declare global {
   export type TypedEventListener<
     TElement extends EventTarget,
     TEvent extends Event = Event,
-  > = (this: TElement, ev: TEvent & { currentTarget: TElement }) => unknown;
+  > = (this: TElement, ev: TEvent & { currentTarget: TElement; target: TElement | null }) => unknown;
 
   /**
    * Add a strongly typed DOM event listener as a View Craft modifier.

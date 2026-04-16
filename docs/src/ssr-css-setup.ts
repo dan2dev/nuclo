@@ -20,7 +20,7 @@
  *    render-time rules.
  */
 
-import { setSSRCollector } from 'nuclo/ssr';
+import { setSSRCollector } from 'nuclo/styled';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 export const globalSSRRules = new Set<string>();

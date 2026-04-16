@@ -144,8 +144,7 @@ function Breadcrumb() {
     e.breadcrumb,
     a(
       { href: routeHref("home") },
-      cn(color(colors.textDim).transition("color 0.2s")),
-      { hover: color(colors.textMuted) },
+      cn(color(colors.textDim).transition("color 0.2s"), { hover: color(colors.textMuted) }),
       "Docs",
       on("click", (evt) => {
         evt.preventDefault();

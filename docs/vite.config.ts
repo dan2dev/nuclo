@@ -5,6 +5,7 @@ export default defineConfig({
   base: '/',
   resolve: {
     alias: {
+      'nuclo/styled': fileURLToPath(new URL('../packages/nuclo-core/src/styled/index.ts', import.meta.url)),
       nuclo: fileURLToPath(new URL('../packages/nuclo-core/src/index.ts', import.meta.url)),
     },
   },

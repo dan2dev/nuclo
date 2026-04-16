@@ -31,16 +31,14 @@ export function ExampleLayout(opts: {
       d.breadcrumb,
       a(
         { href: routeHref("home") },
-        cn(color(colors.textDim).transition("color 0.2s")),
-        { hover: color(colors.textMuted) },
+        cn(color(colors.textDim).transition("color 0.2s"), { hover: color(colors.textMuted) }),
         "Docs",
         on("click", (e) => { e.preventDefault(); setRoute("home"); })
       ),
       span(cn(color(colors.border)), "›"),
       a(
         { href: routeHref("examples") },
-        cn(color(colors.textDim).transition("color 0.2s")),
-        { hover: color(colors.textMuted) },
+        cn(color(colors.textDim).transition("color 0.2s"), { hover: color(colors.textMuted) }),
         "Examples",
         on("click", (e) => { e.preventDefault(); setRoute("examples"); })
       ),
