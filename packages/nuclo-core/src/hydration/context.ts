@@ -55,7 +55,11 @@ export function claimChild(parent: Node): Node | null {
 export function claimElement(parent: Node, tagName: string): Element | null {
   if (!_hydrating) return null;
   const candidate = parent.childNodes[getCursor(parent)];
-  if (candidate && candidate.nodeType === 1 && (candidate as Element).tagName.toLowerCase() === tagName) {
+  if (
+    candidate &&
+    candidate.nodeType === 1 &&
+    (candidate as Element).tagName.toLowerCase() === tagName
+  ) {
     return claimChild(parent) as Element;
   }
   return null;
@@ -66,7 +70,10 @@ export function claimElement(parent: Node, tagName: string): Element | null {
  * Must be called after modifiers have been applied to a claimed element.
  * Children from [cursor, initialChildCount) are removed.
  */
-export function cleanupUnclaimedChildren(node: Node, initialChildCount: number): void {
+export function cleanupUnclaimedChildren(
+  node: Node,
+  initialChildCount: number,
+): void {
   const cursorAfter = getCursor(node);
   for (let i = cursorAfter; i < initialChildCount; i++) {
     const child = node.childNodes[cursorAfter];

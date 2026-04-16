@@ -24,9 +24,12 @@ queries({
 });
 
 div(
-  on("nuclo:ready", function (this: HTMLElement, ev: CustomEvent<{ ok: boolean }>) {
-    this.toggleAttribute("data-ready", ev.detail.ok);
-  }),
+  on(
+    "nuclo:ready",
+    function (this: HTMLElement, ev: CustomEvent<{ ok: boolean }>) {
+      this.toggleAttribute("data-ready", ev.detail.ok);
+    },
+  ),
 );
 
 div(

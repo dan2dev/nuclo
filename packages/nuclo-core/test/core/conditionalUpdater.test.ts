@@ -1,10 +1,10 @@
 /// <reference path="../../types/index.d.ts" />
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { createHtmlConditionalElement } from '../helpers/conditionalTestHelpers';
-import { updateConditionalElements } from '../../src/core/conditionalUpdater';
-import { getConditionalInfo } from '../../src/utility/conditionalInfo';
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { createHtmlConditionalElement } from "../helpers/conditionalTestHelpers";
+import { updateConditionalElements } from "../../src/core/conditionalUpdater";
+import { getConditionalInfo } from "../../src/utility/conditionalInfo";
 
-describe('conditionalUpdater.updateConditionalElements', () => {
+describe("conditionalUpdater.updateConditionalElements", () => {
   let container: HTMLDivElement;
   let visible: boolean;
   let toggleCalls: number;
@@ -12,8 +12,8 @@ describe('conditionalUpdater.updateConditionalElements', () => {
   let originalConsoleError: any;
 
   beforeEach(() => {
-    document.body.innerHTML = '';
-    container = document.createElement('div');
+    document.body.innerHTML = "";
+    container = document.createElement("div");
     document.body.appendChild(container);
     visible = true;
     toggleCalls = 0;
@@ -33,9 +33,12 @@ describe('conditionalUpdater.updateConditionalElements', () => {
     };
   }
 
-  it('replaces a hidden comment with an element when condition becomes true', () => {
+  it("replaces a hidden comment with an element when condition becomes true", () => {
     visible = false;
-    const node = createHtmlConditionalElement('div', makeCondition(), ['Hello', { id: 'demo' }]);
+    const node = createHtmlConditionalElement("div", makeCondition(), [
+      "Hello",
+      { id: "demo" },
+    ]);
     // Initially false => comment
     expect(node.nodeType).toBe(Node.COMMENT_NODE);
     container.appendChild(node as unknown as Node);
@@ -48,14 +51,17 @@ describe('conditionalUpdater.updateConditionalElements', () => {
     expect(childNodes.length).toBe(1);
     const el = childNodes[0] as Element;
     expect(el.nodeType).toBe(Node.ELEMENT_NODE);
-    expect((el as HTMLElement).tagName.toLowerCase()).toBe('div');
-    expect(el.textContent).toBe('Hello');
-    expect((el as HTMLElement).id).toBe('demo');
+    expect((el as HTMLElement).tagName.toLowerCase()).toBe("div");
+    expect(el.textContent).toBe("Hello");
+    expect((el as HTMLElement).id).toBe("demo");
   });
 
-  it('replaces a visible element with a comment when condition becomes false', () => {
+  it("replaces a visible element with a comment when condition becomes false", () => {
     visible = true;
-    const node = createHtmlConditionalElement('div', makeCondition(), ['World', { className: 'x' }]);
+    const node = createHtmlConditionalElement("div", makeCondition(), [
+      "World",
+      { className: "x" },
+    ]);
     expect(node.nodeType).toBe(Node.ELEMENT_NODE);
     container.appendChild(node as unknown as Node);
     const originalEl = node as HTMLElement;
@@ -71,9 +77,9 @@ describe('conditionalUpdater.updateConditionalElements', () => {
     expect(originalEl.isConnected).toBe(false);
   });
 
-  it('does nothing when condition result is unchanged (element stays element)', () => {
+  it("does nothing when condition result is unchanged (element stays element)", () => {
     visible = true;
-    const node = createHtmlConditionalElement('div', makeCondition(), ['Stay']);
+    const node = createHtmlConditionalElement("div", makeCondition(), ["Stay"]);
     container.appendChild(node as unknown as Node);
     const firstRef = node;
 
@@ -84,9 +90,11 @@ describe('conditionalUpdater.updateConditionalElements', () => {
     expect(onlyChild?.nodeType).toBe(Node.ELEMENT_NODE);
   });
 
-  it('does nothing when condition result is unchanged (comment stays comment)', () => {
+  it("does nothing when condition result is unchanged (comment stays comment)", () => {
     visible = false;
-    const node = createHtmlConditionalElement('div', makeCondition(), ['Hidden']);
+    const node = createHtmlConditionalElement("div", makeCondition(), [
+      "Hidden",
+    ]);
     container.appendChild(node as unknown as Node);
     const firstRef = node;
 
@@ -97,9 +105,12 @@ describe('conditionalUpdater.updateConditionalElements', () => {
     expect(onlyChild?.nodeType).toBe(Node.COMMENT_NODE);
   });
 
-  it('re-creates a new element instance each time it transitions from hidden to visible', () => {
+  it("re-creates a new element instance each time it transitions from hidden to visible", () => {
     visible = false;
-    const conditional = createHtmlConditionalElement('div', makeCondition(), ['Cycle', { 'data-cyclic': '1' }]);
+    const conditional = createHtmlConditionalElement("div", makeCondition(), [
+      "Cycle",
+      { "data-cyclic": "1" },
+    ]);
     container.appendChild(conditional as unknown as Node);
 
     visible = true;
@@ -116,35 +127,30 @@ describe('conditionalUpdater.updateConditionalElements', () => {
     const el2 = container.firstChild;
     expect(el2?.nodeType).toBe(Node.ELEMENT_NODE);
     expect(el2).not.toBe(el1);
-    expect((el2 as Element).getAttribute('data-cyclic')).toBe('1');
+    expect((el2 as Element).getAttribute("data-cyclic")).toBe("1");
   });
 
-  it('applies modifiers (text + attributes) on every recreation', () => {
+  it("applies modifiers (text + attributes) on every recreation", () => {
     visible = false;
-    const conditional = createHtmlConditionalElement(
-      'div',
-      makeCondition(),
-      [
-        () => 'dynamic text',
-        { id: 'alpha', title: 'first' }
-      ]
-    );
+    const conditional = createHtmlConditionalElement("div", makeCondition(), [
+      () => "dynamic text",
+      { id: "alpha", title: "first" },
+    ]);
     container.appendChild(conditional as unknown as Node);
 
     visible = true;
     updateConditionalElements();
     const el = container.firstChild as HTMLElement;
-    expect(el.id).toBe('alpha');
-    expect(el.title).toBe('first');
-    expect(el.textContent).toBe('dynamic text');
+    expect(el.id).toBe("alpha");
+    expect(el.title).toBe("first");
+    expect(el.textContent).toBe("dynamic text");
 
     // Change modifiers by mutating stored conditional info and force another cycle
-    const info = getConditionalInfo(el) ?? getConditionalInfo(container.firstChild as Node);
+    const info =
+      getConditionalInfo(el) ??
+      getConditionalInfo(container.firstChild as Node);
     // Replace modifiers array (simulate user-supplied reactive scenario)
-    info!.modifiers = [
-      'second text',
-      { id: 'beta', title: 'second' }
-    ];
+    info!.modifiers = ["second text", { id: "beta", title: "second" }];
 
     visible = false;
     updateConditionalElements(); // element -> comment
@@ -152,17 +158,17 @@ describe('conditionalUpdater.updateConditionalElements', () => {
     updateConditionalElements(); // comment -> new element
     const newEl = container.firstChild as HTMLElement;
     expect(newEl).not.toBe(el);
-    expect(newEl.id).toBe('beta');
-    expect(newEl.title).toBe('second');
-    expect(newEl.textContent).toBe('second text');
+    expect(newEl.id).toBe("beta");
+    expect(newEl.title).toBe("second");
+    expect(newEl.textContent).toBe("second text");
   });
 
-  it('handles multiple conditional nodes independently', () => {
+  it("handles multiple conditional nodes independently", () => {
     let aVisible = true;
     let bVisible = false;
 
-    const a = createHtmlConditionalElement('span', () => aVisible, ['A']);
-    const b = createHtmlConditionalElement('span', () => bVisible, ['B']);
+    const a = createHtmlConditionalElement("span", () => aVisible, ["A"]);
+    const b = createHtmlConditionalElement("span", () => bVisible, ["B"]);
 
     container.appendChild(a as unknown as Node);
     container.appendChild(b as unknown as Node);
@@ -178,15 +184,15 @@ describe('conditionalUpdater.updateConditionalElements', () => {
 
     expect(container.childNodes[0].nodeType).toBe(Node.COMMENT_NODE);
     expect(container.childNodes[1].nodeType).toBe(Node.ELEMENT_NODE);
-    expect((container.childNodes[1] as HTMLElement).textContent).toBe('B');
+    expect((container.childNodes[1] as HTMLElement).textContent).toBe("B");
   });
 
-  it('logs errors when a condition throws during update and treats it as false', () => {
+  it("logs errors when a condition throws during update and treats it as false", () => {
     let shouldThrow = true;
     const condition = () => {
       if (shouldThrow) {
         shouldThrow = false; // throw only first evaluation
-        throw new Error('boom');
+        throw new Error("boom");
       }
       return true;
     };
@@ -197,7 +203,7 @@ describe('conditionalUpdater.updateConditionalElements', () => {
       if (initial) return condition();
       return false;
     };
-    const node = createHtmlConditionalElement('div', safeCondition, ['Err']);
+    const node = createHtmlConditionalElement("div", safeCondition, ["Err"]);
     container.appendChild(node as unknown as Node);
 
     // Activate path that throws inside update
@@ -213,9 +219,11 @@ describe('conditionalUpdater.updateConditionalElements', () => {
     expect(container.firstChild?.nodeType).toBe(Node.ELEMENT_NODE);
   });
 
-  it('preserves stored conditional info across replacements', () => {
+  it("preserves stored conditional info across replacements", () => {
     visible = true;
-    const node = createHtmlConditionalElement('div', makeCondition(), ['Persist']);
+    const node = createHtmlConditionalElement("div", makeCondition(), [
+      "Persist",
+    ]);
     container.appendChild(node as unknown as Node);
     const info1 = getConditionalInfo(node as Node);
     expect(info1).toBeTruthy();
@@ -234,9 +242,9 @@ describe('conditionalUpdater.updateConditionalElements', () => {
     expect(info3).toEqual(info1);
   });
 
-  it('does not duplicate nodes when no state change occurs', () => {
+  it("does not duplicate nodes when no state change occurs", () => {
     visible = true;
-    const node = createHtmlConditionalElement('div', makeCondition(), ['Once']);
+    const node = createHtmlConditionalElement("div", makeCondition(), ["Once"]);
     container.appendChild(node as unknown as Node);
 
     const firstChild = container.firstChild;

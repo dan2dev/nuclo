@@ -1,4 +1,3 @@
-import { isFunction } from "../utility/typeGuards";
 import { registerAttributeResolver } from "./reactiveAttributes";
 import { setStyleProperty } from "../utility/domTypeHelpers";
 import { logError } from "../utility/errorHandler";
@@ -7,7 +6,8 @@ type StyleAssignment = CSSStyleObject;
 type StyleResolver = () => StyleAssignment | null | undefined;
 
 /**
- * Simplified style management - basic functionality with minimal overhead
+ * Applies every own-key of `styles` to `element.style`.
+ * Uses a plain for-in loop to avoid Object.entries allocation (2 objects per key).
  */
 export function assignInlineStyles<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
@@ -15,15 +15,13 @@ export function assignInlineStyles<TTagName extends ElementTagName>(
 ): void {
   if (!element?.style || !styles) return;
 
-  for (const [property, value] of Object.entries(styles)) {
-    const success = setStyleProperty(
-      element as HTMLElement,
-      property,
-      value as string | number | null
-    );
-
-    if (!success) {
-      // Don't try to stringify value in error message as it might throw
+  for (const property in styles) {
+    if (!Object.prototype.hasOwnProperty.call(styles, property)) continue;
+    const value = (styles as Record<string, unknown>)[property] as
+      | string
+      | number
+      | null;
+    if (!setStyleProperty(element as HTMLElement, property, value)) {
       logError(`Failed to set style property '${property}'`);
     }
   }
@@ -31,15 +29,20 @@ export function assignInlineStyles<TTagName extends ElementTagName>(
 
 export function applyStyleAttribute<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
-  styleValue: StyleAssignment | StyleResolver | null | undefined
+  styleValue: StyleAssignment | StyleResolver | null | undefined,
 ): void {
   if (!element) return;
 
-  if (isFunction(styleValue)) {
-    registerAttributeResolver(element, 'style', styleValue, function(resolvedStyles) {
-      assignInlineStyles(element, resolvedStyles as StyleAssignment);
-    });
-  } else {
-    assignInlineStyles(element, styleValue);
+  if (typeof styleValue === "function") {
+    registerAttributeResolver(
+      element,
+      "style",
+      styleValue as StyleResolver,
+      (resolved) => {
+        assignInlineStyles(element, resolved as StyleAssignment);
+      },
+    );
+    return;
   }
+  assignInlineStyles(element, styleValue);
 }

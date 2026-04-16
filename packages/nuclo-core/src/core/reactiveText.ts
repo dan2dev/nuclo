@@ -1,7 +1,12 @@
 import { logError } from "../utility/errorHandler";
 import { isNodeConnected, createTextNode } from "../utility/dom";
 import type { UpdateScope } from "./updateScope";
-import { reactiveTextNodes, reactiveTextNodesByNode, registerReactiveTextNode, removeReactiveTextNodeRef } from "./reactiveCleanup";
+import {
+  reactiveTextNodes,
+  reactiveTextNodesByNode,
+  registerReactiveTextNode,
+  removeReactiveTextNodeRef,
+} from "./reactiveCleanup";
 import type { TextResolver } from "./reactiveCleanup";
 import { isBrowser } from "../utility/environment";
 
@@ -23,7 +28,10 @@ import { isBrowser } from "../utility/environment";
  * // the text content automatically updates
  * ```
  */
-export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: unknown): Text | DocumentFragment {
+export function createReactiveTextNode(
+  resolver: TextResolver,
+  preEvaluated?: unknown,
+): Text | DocumentFragment {
   if (typeof resolver !== "function") {
     logError("Invalid resolver provided to createReactiveTextNode");
     const fallbackNode = createTextNode("");
@@ -46,7 +54,7 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
   }
   const str = initial === undefined ? "" : String(initial);
   const txt = createTextNode(str);
-  
+
   if (!txt) {
     throw new Error("Failed to create text node: document not available");
   }

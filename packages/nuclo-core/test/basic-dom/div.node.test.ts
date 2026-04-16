@@ -1,6 +1,6 @@
 /// <reference path="../../types/index.d.ts" />
 // @vitest-environment node
-import '../../src/polyfill';
+import "../../src/polyfill";
 import "../../src/index";
 import { describe, it, expect } from "vitest";
 
@@ -16,20 +16,29 @@ describe("div NodeBuilder (Node.js)", () => {
 
   it("should append children and text nodes", () => {
     const parent = document.createElement("div");
-    const nodeBuilder = div("Hello, ", document.createElement("span"), () => "World!");
+    const nodeBuilder = div(
+      "Hello, ",
+      document.createElement("span"),
+      () => "World!",
+    );
     const element = nodeBuilder(parent, 0);
-    
+
     // In Node polyfill, children array contains elements, not all nodes
     expect(element.children?.length).toBeGreaterThan(0);
-    
+
     // Check that span was added
-    const spanChild = Array.from(element.children ?? []).find((child: any) => child.tagName === 'span');
+    const spanChild = Array.from(element.children ?? []).find(
+      (child: any) => child.tagName === "span",
+    );
     expect(spanChild).toBeTruthy();
   });
 
   it("should set attributes and properties", () => {
     const parent = document.createElement("div");
-    const nodeBuilder = div({ id: "test-div", className: "my-class" }, "Content");
+    const nodeBuilder = div(
+      { id: "test-div", className: "my-class" },
+      "Content",
+    );
     const element = nodeBuilder(parent, 0);
     expect(element.id).toBe("test-div");
     expect(element.className).toBe("my-class");
@@ -57,4 +66,3 @@ describe("div NodeBuilder (Node.js)", () => {
     expect(element.children?.[0].tagName.toLowerCase()).toBe("div");
   });
 });
-

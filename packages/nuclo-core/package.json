@@ -1,69 +1,71 @@
 {
-	"name": "nuclo",
-	"private": false,
-	"version": "0.1.117",
-	"type": "module",
-	"main": "./dist/nuclo.cjs",
-	"module": "./dist/nuclo.mjs",
-	"browser": "./dist/nuclo.umd.js",
-	"types": "./types/index.d.ts",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/nuclo.mjs",
-			"require": "./dist/nuclo.cjs"
-		},
-		"./ssr": {
-			"types": "./dist/ssr/index.d.ts",
-			"import": "./dist/ssr/nuclo.ssr.mjs",
-			"require": "./dist/ssr/nuclo.ssr.cjs"
-		},
-		"./styled": {
-			"types": "./dist/styled/index.d.ts",
-			"import": "./dist/styled/nuclo.styled.mjs",
-			"require": "./dist/styled/nuclo.styled.cjs"
-		},
-		"./types": {
-			"types": "./types/index.d.ts"
-		}
-	},
-	"files": [
-		"dist",
-		"types"
-	],
-	"scripts": {
-		"build": "tsdown && tsc --emitDeclarationOnly",
-		"dev": "tsdown --watch",
-		"dev:all": "bun dev & cd examples/basic && bun run dev",
-		"build:watch": "tsdown --watch",
-		"build:types": "tsc --emitDeclarationOnly",
-		"clean": "rm -rf dist *.tsbuildinfo",
-		"test": "vitest run --coverage",
-		"test:watch": "vitest --watch --coverage",
-		"lint": "eslint . --ext .ts,.js,.json,.jsonc,.json5,.md,.css",
-		"lint:fix": "eslint . --ext .ts,.js,.json,.jsonc,.json5,.md,.css --fix"
-	},
-	"devDependencies": {
-		"@eslint/css": "^1.1.0",
-		"@eslint/js": "^10.0.1",
-		"@eslint/json": "^1.2.0",
-		"@eslint/markdown": "^8.0.1",
-		"@types/node": "^25.6.0",
-		"@vitest/coverage-v8": "4.1.4",
-		"eslint": "^10.2.0",
-		"globals": "^17.4.0",
-		"jsdom": "^29.0.2",
-		"tsdown": "^0.21.7",
-		"typescript": "^6.0.2",
-		"typescript-eslint": "^8.58.1",
-		"vitest": "^4.1.4"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/dan2dev/nuclo.git"
-	},
-	"bugs": {
-		"url": "https://github.com/dan2dev/nuclo/issues"
-	},
-	"homepage": "https://nuclo.dan2.dev/"
+  "name": "nuclo",
+  "private": false,
+  "version": "0.1.117",
+  "type": "module",
+  "main": "./dist/nuclo.cjs",
+  "module": "./dist/nuclo.mjs",
+  "browser": "./dist/nuclo.umd.js",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/nuclo.mjs",
+      "require": "./dist/nuclo.cjs"
+    },
+    "./ssr": {
+      "types": "./dist/ssr/index.d.ts",
+      "import": "./dist/ssr/nuclo.ssr.mjs",
+      "require": "./dist/ssr/nuclo.ssr.cjs"
+    },
+    "./styled": {
+      "types": "./dist/styled/index.d.ts",
+      "import": "./dist/styled/nuclo.styled.mjs",
+      "require": "./dist/styled/nuclo.styled.cjs"
+    },
+    "./types": {
+      "types": "./types/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "build": "tsdown && tsc --emitDeclarationOnly",
+    "dev": "tsdown --watch",
+    "dev:all": "bun dev & cd examples/basic && bun run dev",
+    "build:watch": "tsdown --watch",
+    "build:types": "tsc --emitDeclarationOnly",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest --watch --coverage",
+    "lint": "eslint . --ext .ts,.js,.json,.jsonc,.json5,.md,.css",
+    "lint:fix": "eslint . --ext .ts,.js,.json,.jsonc,.json5,.md,.css --fix",
+    "prettier": "prettier . --write"
+  },
+  "devDependencies": {
+    "@eslint/css": "^1.1.0",
+    "@eslint/js": "^10.0.1",
+    "@eslint/json": "^1.2.0",
+    "@eslint/markdown": "^8.0.1",
+    "@types/node": "^25.6.0",
+    "@vitest/coverage-v8": "4.1.4",
+    "eslint": "^10.2.0",
+    "globals": "^17.4.0",
+    "jsdom": "^29.0.2",
+    "prettier": "3.8.3",
+    "tsdown": "^0.21.7",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.58.1",
+    "vitest": "^4.1.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dan2dev/nuclo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dan2dev/nuclo/issues"
+  },
+  "homepage": "https://nuclo.dan2.dev/"
 }

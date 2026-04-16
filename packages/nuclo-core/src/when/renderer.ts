@@ -11,7 +11,7 @@ function renderContentItem<TTagName extends ElementTagName>(
   item: WhenContent<TTagName>,
   host: ExpandedElement<TTagName>,
   index: number,
-  endMarker: Comment
+  endMarker: Comment,
 ): Node | null {
   if (!isFunction(item)) {
     return applyNodeModifier(host, item, index);
@@ -38,7 +38,7 @@ export function renderContentItems<TTagName extends ElementTagName>(
   items: ReadonlyArray<WhenContent<TTagName>>,
   host: ExpandedElement<TTagName>,
   index: number,
-  endMarker: Comment
+  endMarker: Comment,
 ): Node[] {
   const nodes: Node[] = [];
   for (const item of items) {

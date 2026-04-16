@@ -2,7 +2,7 @@ export type ConditionInput = boolean | (() => boolean);
 
 export function runCondition(
   condition: () => boolean,
-  onError?: (error: unknown) => void
+  onError?: (error: unknown) => void,
 ): boolean {
   try {
     return condition();
@@ -17,7 +17,9 @@ export function runCondition(
 
 export function resolveCondition(
   value: ConditionInput,
-  onError?: (error: unknown) => void
+  onError?: (error: unknown) => void,
 ): boolean {
-  return typeof value === "function" ? runCondition(value, onError) : Boolean(value);
+  return typeof value === "function"
+    ? runCondition(value, onError)
+    : Boolean(value);
 }

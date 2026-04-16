@@ -8,12 +8,12 @@
  * @example camelToKebab('backgroundColor') => 'background-color'
  */
 export function camelToKebab(str: string): string {
-  let result = '';
+  let result = "";
   for (let i = 0; i < str.length; i++) {
     const code = str.charCodeAt(i);
     // A-Z is 65-90, a-z is 97-122 (difference of 32)
     if (code >= 65 && code <= 90) {
-      if (i > 0) result += '-';
+      if (i > 0) result += "-";
       result += String.fromCharCode(code + 32);
     } else {
       result += str[i];
@@ -27,11 +27,11 @@ export function camelToKebab(str: string): string {
  */
 export function escapeHtml(text: string): string {
   const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
   };
   return text.replace(/[&<>"']/g, (char) => map[char]);
 }
@@ -41,5 +41,7 @@ export function escapeHtml(text: string): string {
  * Only &, < and > need escaping — quotes are safe inside text nodes.
  */
 export function escapeText(text: string): string {
-  return text.replace(/[&<>]/g, (char) => (char === '&' ? '&amp;' : char === '<' ? '&lt;' : '&gt;'));
+  return text.replace(/[&<>]/g, (char) =>
+    char === "&" ? "&amp;" : char === "<" ? "&lt;" : "&gt;",
+  );
 }

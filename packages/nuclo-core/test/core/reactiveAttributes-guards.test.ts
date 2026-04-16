@@ -12,7 +12,12 @@ describe("reactiveAttributes guards", () => {
 
     try {
       expect(() =>
-        registerAttributeResolver(el as any, "data-x", () => "1", () => {})
+        registerAttributeResolver(
+          el as any,
+          "data-x",
+          () => "1",
+          () => {},
+        ),
       ).not.toThrow();
     } finally {
       (document as any).addEventListener = original;
@@ -32,7 +37,7 @@ describe("reactiveAttributes guards", () => {
         calls += 1;
         return value;
       },
-      (v) => el.setAttribute("data-x", String(v))
+      (v) => el.setAttribute("data-x", String(v)),
     );
 
     value = "b";
@@ -47,4 +52,3 @@ describe("reactiveAttributes guards", () => {
     expect(el.getAttribute("data-x")).toBe("a");
   });
 });
-

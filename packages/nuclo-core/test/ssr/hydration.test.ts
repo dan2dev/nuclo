@@ -34,9 +34,9 @@ describe("SSR Hydration", () => {
   let container: HTMLDivElement;
 
   beforeEach(() => {
-    document.body.innerHTML = '';
-    container = document.createElement('div');
-    container.id = 'app';
+    document.body.innerHTML = "";
+    container = document.createElement("div");
+    container.id = "app";
     document.body.appendChild(container);
   });
 
@@ -54,36 +54,36 @@ describe("SSR Hydration", () => {
       const html = renderToString(div({ id: "hello" }, "Hello, SSR!"));
       // In jsdom, comment anchor markers may be present; the visible text must be correct
       expect(html).toContain('id="hello"');
-      expect(html).toContain('Hello, SSR!');
-      expect(html).toContain('<div');
-      expect(html).toContain('</div>');
+      expect(html).toContain("Hello, SSR!");
+      expect(html).toContain("<div");
+      expect(html).toContain("</div>");
     });
 
     it("contains correct text for nested elements", () => {
       const html = renderToString(
-        article(
-          h2("Article Title"),
-          p("First paragraph.")
-        )
+        article(h2("Article Title"), p("First paragraph.")),
       );
-      expect(html).toContain('Article Title');
-      expect(html).toContain('First paragraph.');
-      expect(html).toContain('<article');
-      expect(html).toContain('<h2');
-      expect(html).toContain('<p');
+      expect(html).toContain("Article Title");
+      expect(html).toContain("First paragraph.");
+      expect(html).toContain("<article");
+      expect(html).toContain("<h2");
+      expect(html).toContain("<p");
     });
 
     it("does not include event handler attributes", () => {
       const html = renderToString(
-        button("Click me", on("click", () => {}))
+        button(
+          "Click me",
+          on("click", () => {}),
+        ),
       );
-      expect(html).toContain('Click me');
-      expect(html).not.toContain('onclick');
+      expect(html).toContain("Click me");
+      expect(html).not.toContain("onclick");
     });
 
     it("serializes element attributes correctly", () => {
       const html = renderToString(
-        div({ id: "root", class: "container", "data-env": "server" }, "Body")
+        div({ id: "root", class: "container", "data-env": "server" }, "Body"),
       );
       expect(html).toContain('id="root"');
       expect(html).toContain('class="container"');
@@ -93,7 +93,7 @@ describe("SSR Hydration", () => {
     it("renders reactive text with its initial evaluated value", () => {
       let count = 99;
       const html = renderToString(span(() => `Value: ${count}`));
-      expect(html).toContain('Value: 99');
+      expect(html).toContain("Value: 99");
     });
   });
 
@@ -107,52 +107,55 @@ describe("SSR Hydration", () => {
       const component = div(h1(() => `Count: ${count}`));
 
       // Inject the clean server HTML (as a Node.js SSR server would have sent it)
-      injectSsrHtml('<div><h1>Count: 0</h1></div>');
+      injectSsrHtml("<div><h1>Count: 0</h1></div>");
 
       // Hydrate: mount the live component (appended after the static SSR HTML)
       const liveDiv = render(component, container);
 
       // Access the live reactive h1 via the returned root element
-      const heading = liveDiv.querySelector('h1');
-      expect(heading?.textContent).toBe('Count: 0');
+      const heading = liveDiv.querySelector("h1");
+      expect(heading?.textContent).toBe("Count: 0");
 
       count = 7;
       update();
 
-      expect(heading?.textContent).toBe('Count: 7');
+      expect(heading?.textContent).toBe("Count: 7");
     });
 
     it("multiple state updates keep the DOM in sync", () => {
       let label = "start";
       const component = p(() => label);
 
-      injectSsrHtml('<p>start</p>');
+      injectSsrHtml("<p>start</p>");
       const liveP = render(component, container);
 
-      expect(liveP.textContent).toBe('start');
+      expect(liveP.textContent).toBe("start");
 
       label = "middle";
       update();
-      expect(liveP.textContent).toBe('middle');
+      expect(liveP.textContent).toBe("middle");
 
       label = "end";
       update();
-      expect(liveP.textContent).toBe('end');
+      expect(liveP.textContent).toBe("end");
     });
 
     it("reactive attribute resolver runs after hydration", () => {
       let active = false;
-      const component = div({ class: () => active ? "box active" : "box" }, "Item");
+      const component = div(
+        { class: () => (active ? "box active" : "box") },
+        "Item",
+      );
 
       injectSsrHtml('<div class="box">Item</div>');
       const liveDiv = render(component, container);
 
-      expect(liveDiv.className).toBe('box');
+      expect(liveDiv.className).toBe("box");
 
       active = true;
       update();
 
-      expect(liveDiv.className).toBe('box active');
+      expect(liveDiv.className).toBe("box active");
     });
   });
 
@@ -162,10 +165,15 @@ describe("SSR Hydration", () => {
   describe("event handlers work after hydration", () => {
     it("click handler fires on the live element", () => {
       let fired = false;
-      const component = button("Press", on("click", () => { fired = true; }));
+      const component = button(
+        "Press",
+        on("click", () => {
+          fired = true;
+        }),
+      );
 
       // Static server HTML has no event binding
-      injectSsrHtml('<button>Press</button>');
+      injectSsrHtml("<button>Press</button>");
       const liveBtn = render(component, container) as HTMLButtonElement;
 
       expect(fired).toBe(false);
@@ -177,39 +185,45 @@ describe("SSR Hydration", () => {
       let count = 0;
       const component = div(
         span(() => String(count)),
-        button("Inc", on("click", () => { count++; update(); }))
+        button(
+          "Inc",
+          on("click", () => {
+            count++;
+            update();
+          }),
+        ),
       );
 
-      injectSsrHtml('<div><span>0</span><button>Inc</button></div>');
+      injectSsrHtml("<div><span>0</span><button>Inc</button></div>");
       const liveDiv = render(component, container);
 
-      const liveSpan = liveDiv.querySelector('span');
-      const liveBtn = liveDiv.querySelector('button') as HTMLButtonElement;
+      const liveSpan = liveDiv.querySelector("span");
+      const liveBtn = liveDiv.querySelector("button") as HTMLButtonElement;
 
-      expect(liveSpan?.textContent).toBe('0');
-
-      liveBtn.click();
-      expect(liveSpan?.textContent).toBe('1');
+      expect(liveSpan?.textContent).toBe("0");
 
       liveBtn.click();
-      expect(liveSpan?.textContent).toBe('2');
+      expect(liveSpan?.textContent).toBe("1");
+
+      liveBtn.click();
+      expect(liveSpan?.textContent).toBe("2");
     });
 
     it("multiple event types are each wired independently", () => {
       const log: string[] = [];
       const component = div(
         on("click", () => log.push("click")),
-        on("mouseenter", () => log.push("enter"))
+        on("mouseenter", () => log.push("enter")),
       );
 
-      injectSsrHtml('<div></div>');
+      injectSsrHtml("<div></div>");
       const liveDiv = render(component, container);
 
-      liveDiv.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      liveDiv.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-      liveDiv.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      liveDiv.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      liveDiv.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+      liveDiv.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-      expect(log).toEqual(['click', 'enter', 'click']);
+      expect(log).toEqual(["click", "enter", "click"]);
     });
   });
 
@@ -219,40 +233,36 @@ describe("SSR Hydration", () => {
   describe("conditional rendering after hydration", () => {
     it("when() branch switches on state change", () => {
       let show = true;
-      const component = div(
-        when(() => show, p("Shown")).else(p("Hidden"))
-      );
+      const component = div(when(() => show, p("Shown")).else(p("Hidden")));
 
-      injectSsrHtml('<div><p>Shown</p></div>');
+      injectSsrHtml("<div><p>Shown</p></div>");
       const liveDiv = render(component, container);
 
-      expect(liveDiv.textContent).toContain('Shown');
+      expect(liveDiv.textContent).toContain("Shown");
 
       show = false;
       update();
 
-      expect(liveDiv.textContent).toContain('Hidden');
-      expect(liveDiv.textContent).not.toContain('Shown');
+      expect(liveDiv.textContent).toContain("Hidden");
+      expect(liveDiv.textContent).not.toContain("Shown");
     });
 
     it("when() can switch back and forth", () => {
       let toggle = false;
-      const component = span(
-        when(() => toggle, "ON").else("OFF")
-      );
+      const component = span(when(() => toggle, "ON").else("OFF"));
 
-      injectSsrHtml('<span>OFF</span>');
+      injectSsrHtml("<span>OFF</span>");
       const liveSpan = render(component, container);
 
-      expect(liveSpan.textContent).toContain('OFF');
+      expect(liveSpan.textContent).toContain("OFF");
 
       toggle = true;
       update();
-      expect(liveSpan.textContent).toContain('ON');
+      expect(liveSpan.textContent).toContain("ON");
 
       toggle = false;
       update();
-      expect(liveSpan.textContent).toContain('OFF');
+      expect(liveSpan.textContent).toContain("OFF");
     });
   });
 
@@ -262,32 +272,42 @@ describe("SSR Hydration", () => {
   describe("list rendering after hydration", () => {
     it("list() is reactive after mounting on SSR container", () => {
       let items = ["Alpha", "Beta", "Gamma"];
-      const component = ul(list(() => items, (item) => li(item)));
+      const component = ul(
+        list(
+          () => items,
+          (item) => li(item),
+        ),
+      );
 
-      injectSsrHtml('<ul><li>Alpha</li><li>Beta</li><li>Gamma</li></ul>');
+      injectSsrHtml("<ul><li>Alpha</li><li>Beta</li><li>Gamma</li></ul>");
       const liveUl = render(component, container);
 
-      expect(liveUl.querySelectorAll('li').length).toBe(3);
+      expect(liveUl.querySelectorAll("li").length).toBe(3);
 
       items = ["Alpha", "Beta", "Gamma", "Delta"];
       update();
 
-      expect(liveUl.querySelectorAll('li').length).toBe(4);
+      expect(liveUl.querySelectorAll("li").length).toBe(4);
     });
 
     it("list() reflects item removal after state change", () => {
       let items = ["X", "Y", "Z"];
-      const component = ul(list(() => items, (item) => li(item)));
+      const component = ul(
+        list(
+          () => items,
+          (item) => li(item),
+        ),
+      );
 
-      injectSsrHtml('<ul><li>X</li><li>Y</li><li>Z</li></ul>');
+      injectSsrHtml("<ul><li>X</li><li>Y</li><li>Z</li></ul>");
       const liveUl = render(component, container);
 
-      expect(liveUl.querySelectorAll('li').length).toBe(3);
+      expect(liveUl.querySelectorAll("li").length).toBe(3);
 
       items = ["X"];
       update();
 
-      expect(liveUl.querySelectorAll('li').length).toBe(1);
+      expect(liveUl.querySelectorAll("li").length).toBe(1);
     });
   });
 
@@ -296,7 +316,7 @@ describe("SSR Hydration", () => {
   // ---------------------------------------------------------------------------
   describe("multiple components hydrated independently", () => {
     it("two live components with separate state do not interfere", () => {
-      const container2 = document.createElement('div');
+      const container2 = document.createElement("div");
       document.body.appendChild(container2);
 
       let stateA = "A";
@@ -308,14 +328,14 @@ describe("SSR Hydration", () => {
       const liveA = render(compA, container);
       const liveB = render(compB, container2);
 
-      expect(liveA.textContent).toBe('A');
-      expect(liveB.textContent).toBe('B');
+      expect(liveA.textContent).toBe("A");
+      expect(liveB.textContent).toBe("B");
 
       stateA = "A2";
       update();
 
-      expect(liveA.textContent).toBe('A2');
-      expect(liveB.textContent).toBe('B'); // unaffected
+      expect(liveA.textContent).toBe("A2");
+      expect(liveB.textContent).toBe("B"); // unaffected
     });
   });
 
@@ -324,20 +344,20 @@ describe("SSR Hydration", () => {
   // ---------------------------------------------------------------------------
   describe("SSR round-trip semantic equivalence", () => {
     it("visible text content from renderToString matches what render() produces", () => {
-      const component = div(
-        h1("Page Title"),
-        p("Static content")
-      );
+      const component = div(h1("Page Title"), p("Static content"));
 
       // Get what the server would produce (text content is always correct)
       const ssrHtml = renderToString(component);
       const parser = new DOMParser();
-      const ssrDoc = parser.parseFromString(`<body>${ssrHtml}</body>`, 'text/html');
-      const ssrText = ssrDoc.body.textContent ?? '';
+      const ssrDoc = parser.parseFromString(
+        `<body>${ssrHtml}</body>`,
+        "text/html",
+      );
+      const ssrText = ssrDoc.body.textContent ?? "";
 
       // Mount the live component
       const liveEl = render(component, container);
-      const liveText = liveEl.textContent ?? '';
+      const liveText = liveEl.textContent ?? "";
 
       // Both should produce the same visible text
       expect(liveText.trim()).toBe(ssrText.trim());
@@ -351,8 +371,8 @@ describe("SSR Hydration", () => {
       expect(ssrHtml).toContain('class="post featured"');
 
       const liveEl = render(component, container);
-      expect(liveEl.id).toBe('post-1');
-      expect(liveEl.className).toBe('post featured');
+      expect(liveEl.id).toBe("post-1");
+      expect(liveEl.className).toBe("post featured");
     });
   });
 });

@@ -15,7 +15,7 @@ describe("modifierProcessor edge cases", () => {
     it("should handle className object from cn() function", () => {
       const cnResult = { className: "test-class" };
       const modifier = () => cnResult;
-      
+
       const result = applyNodeModifier(parent, modifier, 0);
       expect(result).toBeNull(); // Should return null for className objects
       expect(parent.className).toBe("test-class");
@@ -24,7 +24,7 @@ describe("modifierProcessor edge cases", () => {
     it("should handle className object with multiple classes", () => {
       const cnResult = { className: "class1 class2 class3" };
       const modifier = () => cnResult;
-      
+
       applyNodeModifier(parent, modifier, 0);
       expect(parent.className).toBe("class1 class2 class3");
     });
@@ -33,7 +33,7 @@ describe("modifierProcessor edge cases", () => {
       const obj = { className: "test", id: "test-id" };
       // Use a non-zero-arity function so it's treated as NodeModFn, not reactive
       const modifier = (parent: HTMLElement) => obj;
-      
+
       // Should be treated as regular attribute object
       const result = applyNodeModifier(parent, modifier, 0);
       expect(result).toBeNull();
@@ -47,14 +47,14 @@ describe("modifierProcessor edge cases", () => {
       // The className is applied via registerAttributeResolver which applies it immediately
       // but we need to ensure the element is in the DOM for reactive attributes to work properly
       const modifier = () => ({ className: "initial" });
-      
+
       // First call - className should be applied
       applyNodeModifier(parent, modifier, 0);
       // className is applied immediately via registerAttributeResolver
       // If it's not applied, it might be because the element needs to be in DOM
       // or the resolver needs to be called
       expect(parent.className || parent.getAttribute("class")).toBeTruthy();
-      
+
       // Test that error handling works when resolver throws
       let shouldThrow = false;
       const modifier2 = () => {
@@ -63,12 +63,14 @@ describe("modifierProcessor edge cases", () => {
         }
         return { className: "updated" };
       };
-      
+
       applyNodeModifier(parent, modifier2, 1);
-      
+
       // Now trigger update when it should throw
       shouldThrow = true;
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
       parent.dispatchEvent(new Event("update"));
       // Error is caught and logged
       expect(consoleErrorSpy).toHaveBeenCalled();
@@ -78,7 +80,7 @@ describe("modifierProcessor edge cases", () => {
     it("should handle className object with empty string", () => {
       const cnResult = { className: "" };
       const modifier = () => cnResult;
-      
+
       applyNodeModifier(parent, modifier, 0);
       expect(parent.className).toBe("");
     });
@@ -112,7 +114,10 @@ describe("modifierProcessor edge cases", () => {
     });
 
     it("should handle NodeModFn that returns an object (attributes)", () => {
-      const modifier = (parent: HTMLElement) => ({ id: "test", className: "my-class" });
+      const modifier = (parent: HTMLElement) => ({
+        id: "test",
+        className: "my-class",
+      });
       const result = applyNodeModifier(parent, modifier, 0);
       expect(result).toBeNull();
       expect(parent.id).toBe("test");
@@ -129,7 +134,7 @@ describe("modifierProcessor edge cases", () => {
       const modifier = (parent: HTMLElement) => {
         throw new Error("modifier error");
       };
-      
+
       // NodeModFn that throws will propagate the error
       expect(() => {
         applyNodeModifier(parent, modifier, 0);
@@ -183,7 +188,7 @@ describe("modifierProcessor edge cases", () => {
     it("should create fragment with comment and text node", () => {
       const modifier = () => "reactive text";
       const result = applyNodeModifier(parent, modifier, 0);
-      
+
       expect(result).toBeInstanceOf(DocumentFragment);
       expect(result?.childNodes.length).toBe(2); // comment + text
       expect(result?.firstChild?.nodeType).toBe(Node.COMMENT_NODE);
@@ -193,7 +198,7 @@ describe("modifierProcessor edge cases", () => {
     it("should use correct index in comment", () => {
       const modifier = () => "text";
       const result = applyNodeModifier(parent, modifier, 5);
-      
+
       const comment = result?.firstChild as Comment;
       expect(comment?.textContent).toContain("text-5");
     });
@@ -201,7 +206,7 @@ describe("modifierProcessor edge cases", () => {
     it("should handle pre-evaluated value in reactive text", () => {
       const modifier = () => "value";
       const result = applyNodeModifier(parent, modifier, 0);
-      
+
       // The pre-evaluated value should be used
       expect(result?.textContent).toBe("value");
     });
@@ -211,7 +216,7 @@ describe("modifierProcessor edge cases", () => {
     it("should create fragment with comment and text node for static text", () => {
       const modifier = () => "static";
       const result = applyNodeModifier(parent, modifier, 0);
-      
+
       expect(result).toBeInstanceOf(DocumentFragment);
       expect(result?.childNodes.length).toBe(2);
     });
@@ -219,10 +224,10 @@ describe("modifierProcessor edge cases", () => {
     it("should handle different primitive types in static fragments", () => {
       const numberMod = () => 42;
       const boolMod = () => true;
-      
+
       const numResult = applyNodeModifier(parent, numberMod, 0);
       const boolResult = applyNodeModifier(parent, boolMod, 1);
-      
+
       expect(numResult?.textContent).toBe("42");
       expect(boolResult?.textContent).toBe("true");
     });

@@ -6,14 +6,14 @@ export { setSSRCollector } from "../style/cssGenerator";
 import * as styleExports from "../style";
 
 function registerStyleGlobals(): void {
-	const registry = globalThis as Record<string, unknown>;
-	for (const [key, value] of Object.entries(styleExports)) {
-		try {
-			registry[key] = value;
-		} catch {
-			// Skip readonly properties (e.g., window.top)
-		}
-	}
+  const registry = globalThis as Record<string, unknown>;
+  for (const [key, value] of Object.entries(styleExports)) {
+    try {
+      registry[key] = value;
+    } catch {
+      // Skip readonly properties (e.g., window.top)
+    }
+  }
 }
 
 registerStyleGlobals();

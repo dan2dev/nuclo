@@ -17,14 +17,14 @@
  * refs return `undefined` from `.deref()`, simulating the post-GC state.
  */
 
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from "vitest";
 import {
   registerWhenRuntime,
   updateWhenRuntimes,
   clearWhenRuntimes,
   renderWhenContent,
   type WhenRuntime,
-} from '../../src/when/runtime';
+} from "../../src/when/runtime";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -39,7 +39,9 @@ const OriginalWeakRef = globalThis.WeakRef;
 function installGCSimulator() {
   const invalidatedTargets = new Set<object>();
 
-  class SimulatedWeakRef<T extends WeakRef.Prototype> extends OriginalWeakRef<T> {
+  class SimulatedWeakRef<
+    T extends WeakRef.Prototype,
+  > extends OriginalWeakRef<T> {
     #target: T;
 
     constructor(target: T) {
@@ -69,14 +71,14 @@ function installGCSimulator() {
   };
 }
 
-function makeRuntime(
-  updateFn?: () => void,
-): WhenRuntime<ElementTagName> {
-  const host = document.createElement('div') as unknown as ExpandedElement<ElementTagName>;
+function makeRuntime(updateFn?: () => void): WhenRuntime<ElementTagName> {
+  const host = document.createElement(
+    "div",
+  ) as unknown as ExpandedElement<ElementTagName>;
   document.body.appendChild(host as unknown as HTMLElement);
 
-  const start = document.createComment('when-start');
-  const end = document.createComment('when-end');
+  const start = document.createComment("when-start");
+  const end = document.createComment("when-end");
   (host as unknown as HTMLElement).appendChild(start);
   (host as unknown as HTMLElement).appendChild(end);
 
@@ -101,20 +103,22 @@ function makeRuntime(
 
 // ── tests ─────────────────────────────────────────────────────────────────────
 
-describe('updateWhenRuntimes – garbage-collected WeakRef cleanup (lines 127-128)', () => {
+describe("updateWhenRuntimes – garbage-collected WeakRef cleanup (lines 127-128)", () => {
   let gcSim: ReturnType<typeof installGCSimulator>;
 
   afterEach(() => {
     gcSim?.restore();
     clearWhenRuntimes();
-    document.body.innerHTML = '';
+    document.body.innerHTML = "";
   });
 
-  it('removes a runtime whose startMarker WeakRef has been garbage collected', () => {
+  it("removes a runtime whose startMarker WeakRef has been garbage collected", () => {
     gcSim = installGCSimulator();
 
     let updateCount = 0;
-    const runtime = makeRuntime(() => { updateCount++; });
+    const runtime = makeRuntime(() => {
+      updateCount++;
+    });
     registerWhenRuntime(runtime);
 
     // First update: runtime is alive, update() is called
@@ -133,14 +137,18 @@ describe('updateWhenRuntimes – garbage-collected WeakRef cleanup (lines 127-12
     expect(updateCount).toBe(1);
   });
 
-  it('continues processing other runtimes when one is garbage collected', () => {
+  it("continues processing other runtimes when one is garbage collected", () => {
     gcSim = installGCSimulator();
 
     let collectedCount = 0;
     let aliveCount = 0;
 
-    const collected = makeRuntime(() => { collectedCount++; });
-    const alive = makeRuntime(() => { aliveCount++; });
+    const collected = makeRuntime(() => {
+      collectedCount++;
+    });
+    const alive = makeRuntime(() => {
+      aliveCount++;
+    });
 
     registerWhenRuntime(collected);
     registerWhenRuntime(alive);
@@ -155,20 +163,24 @@ describe('updateWhenRuntimes – garbage-collected WeakRef cleanup (lines 127-12
 
     updateWhenRuntimes();
     expect(collectedCount).toBe(1); // not called again (cleaned up)
-    expect(aliveCount).toBe(2);     // still active, updated again
+    expect(aliveCount).toBe(2); // still active, updated again
 
     (collected.host as unknown as HTMLElement).remove();
     (alive.host as unknown as HTMLElement).remove();
   });
 
-  it('handles all runtimes being garbage collected at once', () => {
+  it("handles all runtimes being garbage collected at once", () => {
     gcSim = installGCSimulator();
 
     let countA = 0;
     let countB = 0;
 
-    const runtimeA = makeRuntime(() => { countA++; });
-    const runtimeB = makeRuntime(() => { countB++; });
+    const runtimeA = makeRuntime(() => {
+      countA++;
+    });
+    const runtimeB = makeRuntime(() => {
+      countB++;
+    });
 
     registerWhenRuntime(runtimeA);
     registerWhenRuntime(runtimeB);

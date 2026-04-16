@@ -48,7 +48,7 @@ describe("SVG Element Creation", () => {
   it("should create nested SVG elements", () => {
     const svgEl = svgSvg(
       { width: "100", height: "100" },
-      circleSvg({ cx: "50", cy: "50", r: "40", fill: "red" })
+      circleSvg({ cx: "50", cy: "50", r: "40", fill: "red" }),
     )();
 
     expect(svgEl.namespaceURI).toBe("http://www.w3.org/2000/svg");
@@ -81,8 +81,8 @@ describe("SVG Element Creation", () => {
     const container = div(
       svgSvg(
         { width: "24", height: "24", viewBox: "0 0 24 24" },
-        pathSvg({ d: "M12 2L2 7v10l10 5 10-5V7z", fill: "currentColor" })
-      )
+        pathSvg({ d: "M12 2L2 7v10l10 5 10-5V7z", fill: "currentColor" }),
+      ),
     )();
 
     const svgEl = container.querySelector?.("svg");
@@ -108,10 +108,10 @@ describe("SVG Element Creation", () => {
         linearGradientSvg(
           { id: "grad1" },
           stopSvg({ offset: "0%", "stop-color": "rgb(255,255,0)" }),
-          stopSvg({ offset: "100%", "stop-color": "rgb(255,0,0)" })
-        )
+          stopSvg({ offset: "100%", "stop-color": "rgb(255,0,0)" }),
+        ),
       ),
-      rectSvg({ fill: "url(#grad1)", width: "100", height: "100" })
+      rectSvg({ fill: "url(#grad1)", width: "100", height: "100" }),
     )();
 
     const gradient = svgEl.querySelector("linearGradient");
@@ -124,10 +124,7 @@ describe("SVG Element Creation", () => {
   });
 
   it("should support text elements", () => {
-    const textEl = textSvg(
-      { x: "10", y: "20", fill: "black" },
-      "Hello SVG"
-    )();
+    const textEl = textSvg({ x: "10", y: "20", fill: "black" }, "Hello SVG")();
 
     expect(textEl.namespaceURI).toBe("http://www.w3.org/2000/svg");
     expect(textEl.textContent).toBe("Hello SVG");
@@ -166,15 +163,15 @@ describe("SVG Icon Examples", () => {
         stroke: "currentColor",
         "stroke-width": "2",
         "stroke-linecap": "round",
-        "stroke-linejoin": "round"
+        "stroke-linejoin": "round",
       }),
       polylineSvg({
         points: "9 22 9 12 15 12 15 22",
         stroke: "currentColor",
         "stroke-width": "2",
         "stroke-linecap": "round",
-        "stroke-linejoin": "round"
-      })
+        "stroke-linejoin": "round",
+      }),
     )();
 
     expect(homeIcon.namespaceURI).toBe("http://www.w3.org/2000/svg");
@@ -190,8 +187,8 @@ describe("SVG Icon Examples", () => {
         stroke: "currentColor",
         "stroke-width": "2",
         "stroke-linecap": "round",
-        "stroke-linejoin": "round"
-      })
+        "stroke-linejoin": "round",
+      }),
     )();
 
     expect(checkIcon.namespaceURI).toBe("http://www.w3.org/2000/svg");
@@ -203,11 +200,12 @@ describe("SVG Icon Examples", () => {
     const starIcon = svgSvg(
       { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none" },
       polygonSvg({
-        points: "12,2 15,8.5 22,9.3 17,14 18.5,21 12,17.3 5.5,21 7,14 2,9.3 9,8.5",
+        points:
+          "12,2 15,8.5 22,9.3 17,14 18.5,21 12,17.3 5.5,21 7,14 2,9.3 9,8.5",
         fill: "gold",
         stroke: "orange",
-        "stroke-width": "1"
-      })
+        "stroke-width": "1",
+      }),
     )();
 
     expect(starIcon.namespaceURI).toBe("http://www.w3.org/2000/svg");

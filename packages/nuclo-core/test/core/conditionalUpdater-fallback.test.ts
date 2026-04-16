@@ -1,17 +1,24 @@
 /// <reference path="../../types/index.d.ts" />
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { updateConditionalElements } from '../../src/core/conditionalUpdater';
-import { storeConditionalInfo, unregisterConditionalNode, getActiveConditionalNodes } from '../../src/utility/conditionalInfo';
-import { createHtmlConditionalElement, createSvgConditionalElement } from '../helpers/conditionalTestHelpers';
-import * as applyModifiers from '../../src/internal/applyModifiers';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { updateConditionalElements } from "../../src/core/conditionalUpdater";
+import {
+  storeConditionalInfo,
+  unregisterConditionalNode,
+  getActiveConditionalNodes,
+} from "../../src/utility/conditionalInfo";
+import {
+  createHtmlConditionalElement,
+  createSvgConditionalElement,
+} from "../helpers/conditionalTestHelpers";
+import * as applyModifiers from "../../src/internal/applyModifiers";
 
-describe('conditionalUpdater - fallback paths', () => {
+describe("conditionalUpdater - fallback paths", () => {
   let container: HTMLDivElement;
   let originalConsoleError: typeof console.error;
 
   beforeEach(() => {
-    document.body.innerHTML = '';
-    container = document.createElement('div');
+    document.body.innerHTML = "";
+    container = document.createElement("div");
     document.body.appendChild(container);
     originalConsoleError = console.error;
     console.error = vi.fn();
@@ -22,11 +29,13 @@ describe('conditionalUpdater - fallback paths', () => {
     vi.restoreAllMocks();
   });
 
-  describe('line 44 - updateConditionalNode returns early when getConditionalInfo is null', () => {
-    it('returns early when a registered node has its conditional info removed before update', () => {
+  describe("line 44 - updateConditionalNode returns early when getConditionalInfo is null", () => {
+    it("returns early when a registered node has its conditional info removed before update", () => {
       // Create a conditional element that starts hidden (comment node)
       let visible = false;
-      const node = createHtmlConditionalElement('span', () => visible, ['test']);
+      const node = createHtmlConditionalElement("span", () => visible, [
+        "test",
+      ]);
       container.appendChild(node as unknown as Node);
 
       // The node is now registered with conditional info.
@@ -56,13 +65,13 @@ describe('conditionalUpdater - fallback paths', () => {
       // in the active set with no conditional info. We can do this by directly calling
       // storeConditionalInfo to register the node, then clearing the info.
 
-      const comment = document.createComment('test-conditional');
+      const comment = document.createComment("test-conditional");
       container.appendChild(comment);
 
       // Register with conditional info
       storeConditionalInfo(comment, {
         condition: () => true,
-        tagName: 'div' as ElementTagName,
+        tagName: "div" as ElementTagName,
         modifiers: [],
         isSvg: false,
       });
@@ -76,7 +85,7 @@ describe('conditionalUpdater - fallback paths', () => {
       // by having the condition of a DIFFERENT node's evaluation trigger unregistration
       // of our target node.
 
-      const comment2 = document.createComment('test-conditional-2');
+      const comment2 = document.createComment("test-conditional-2");
       container.appendChild(comment2);
 
       // Register comment2 with a condition that unregisters comment when evaluated
@@ -86,7 +95,7 @@ describe('conditionalUpdater - fallback paths', () => {
           unregisterConditionalNode(comment);
           return true;
         },
-        tagName: 'p' as ElementTagName,
+        tagName: "p" as ElementTagName,
         modifiers: [],
         isSvg: false,
       });
@@ -99,19 +108,19 @@ describe('conditionalUpdater - fallback paths', () => {
     });
   });
 
-  describe('lines 29, 35 - SVG/HTML element creation fallback when modifiers throw', () => {
-    it('falls back to basic HTML element when createHtmlElementWithModifiers throws', () => {
+  describe("lines 29, 35 - SVG/HTML element creation fallback when modifiers throw", () => {
+    it("falls back to basic HTML element when createHtmlElementWithModifiers throws", () => {
       // Create a hidden conditional element (comment) with a modifier that will throw
       const throwingModifier = () => {
-        throw new Error('modifier error');
+        throw new Error("modifier error");
       };
 
-      const comment = document.createComment('conditional-div-hidden');
+      const comment = document.createComment("conditional-div-hidden");
       container.appendChild(comment);
 
       storeConditionalInfo(comment, {
         condition: () => true,
-        tagName: 'div' as ElementTagName,
+        tagName: "div" as ElementTagName,
         modifiers: [throwingModifier as unknown as NodeModFn<ElementTagName>],
         isSvg: false,
       });
@@ -124,22 +133,23 @@ describe('conditionalUpdater - fallback paths', () => {
       // The comment should have been replaced with a div element
       const children = Array.from(container.childNodes);
       const replacedNode = children.find(
-        (n) => n.nodeType === Node.ELEMENT_NODE && (n as Element).tagName === 'DIV'
+        (n) =>
+          n.nodeType === Node.ELEMENT_NODE && (n as Element).tagName === "DIV",
       );
       expect(replacedNode).toBeTruthy();
     });
 
-    it('falls back to basic SVG element when createSvgElementWithModifiers throws', () => {
+    it("falls back to basic SVG element when createSvgElementWithModifiers throws", () => {
       const throwingModifier = () => {
-        throw new Error('svg modifier error');
+        throw new Error("svg modifier error");
       };
 
-      const comment = document.createComment('conditional-rect-hidden');
+      const comment = document.createComment("conditional-rect-hidden");
       container.appendChild(comment);
 
       storeConditionalInfo(comment, {
         condition: () => true,
-        tagName: 'rect' as unknown as ElementTagName,
+        tagName: "rect" as unknown as ElementTagName,
         modifiers: [throwingModifier as unknown as NodeModFn<ElementTagName>],
         isSvg: true,
       });
@@ -150,29 +160,32 @@ describe('conditionalUpdater - fallback paths', () => {
 
       const children = Array.from(container.childNodes);
       const replacedNode = children.find(
-        (n) => n.nodeType === Node.ELEMENT_NODE && (n as Element).tagName === 'rect'
+        (n) =>
+          n.nodeType === Node.ELEMENT_NODE && (n as Element).tagName === "rect",
       );
       expect(replacedNode).toBeTruthy();
     });
 
-    it('throws when HTML fallback createElement returns null (line 35)', () => {
+    it("throws when HTML fallback createElement returns null (line 35)", () => {
       // Mock createElement to return null so the fallback fails
       const origCreateElement = document.createElement.bind(document);
-      const createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(null as any);
+      const createElementSpy = vi
+        .spyOn(document, "createElement")
+        .mockReturnValue(null as any);
 
       // Also need createHtmlElementWithModifiers to throw first
       const throwingModifier = () => {
-        throw new Error('modifier error');
+        throw new Error("modifier error");
       };
 
-      const comment = document.createComment('conditional-div-hidden');
+      const comment = document.createComment("conditional-div-hidden");
       // We need to manually add the comment since createElement is mocked
       // Use a container that was created before the mock
       container.appendChild(comment);
 
       storeConditionalInfo(comment, {
         condition: () => true,
-        tagName: 'div' as ElementTagName,
+        tagName: "div" as ElementTagName,
         modifiers: [throwingModifier as unknown as NodeModFn<ElementTagName>],
         isSvg: false,
       });
@@ -188,20 +201,22 @@ describe('conditionalUpdater - fallback paths', () => {
       createElementSpy.mockRestore();
     });
 
-    it('throws when SVG fallback createElementNS returns null (line 29)', () => {
+    it("throws when SVG fallback createElementNS returns null (line 29)", () => {
       // Mock createElementNS to return null so the SVG fallback fails
-      const createElementNSSpy = vi.spyOn(document, 'createElementNS').mockReturnValue(null as any);
+      const createElementNSSpy = vi
+        .spyOn(document, "createElementNS")
+        .mockReturnValue(null as any);
 
       const throwingModifier = () => {
-        throw new Error('svg modifier error');
+        throw new Error("svg modifier error");
       };
 
-      const comment = document.createComment('conditional-rect-hidden');
+      const comment = document.createComment("conditional-rect-hidden");
       container.appendChild(comment);
 
       storeConditionalInfo(comment, {
         condition: () => true,
-        tagName: 'rect' as unknown as ElementTagName,
+        tagName: "rect" as unknown as ElementTagName,
         modifiers: [throwingModifier as unknown as NodeModFn<ElementTagName>],
         isSvg: true,
       });

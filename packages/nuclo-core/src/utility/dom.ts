@@ -1,20 +1,25 @@
 import { logError } from "./errorHandler";
 import { removeAllListeners } from "./on";
-import { cleanupReactiveTextNode, cleanupReactiveElement } from "../core/reactiveCleanup";
+import {
+  cleanupReactiveTextNode,
+  cleanupReactiveElement,
+} from "../core/reactiveCleanup";
 import { unregisterConditionalNode } from "./conditionalInfo";
 
-export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+export const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
 /**
  * Creates an HTML element.
  * Wrapper for document.createElement with type safety.
  */
 export function createElement<K extends keyof HTMLElementTagNameMap>(
-  tagName: K
+  tagName: K,
 ): HTMLElementTagNameMap[K] | null;
 export function createElement(tagName: string): ExpandedElement | null;
 export function createElement(tagName: string): ExpandedElement | null {
-  return globalThis.document ? document.createElement(tagName) as ExpandedElement : null;
+  return globalThis.document
+    ? (document.createElement(tagName) as ExpandedElement)
+    : null;
 }
 
 /**
@@ -23,9 +28,11 @@ export function createElement(tagName: string): ExpandedElement | null {
  */
 export function createElementNS(
   namespace: string,
-  tagName: string
+  tagName: string,
 ): ExpandedElement | null {
-  return globalThis.document ? document.createElementNS(namespace, tagName) as ExpandedElement : null;
+  return globalThis.document
+    ? (document.createElementNS(namespace, tagName) as ExpandedElement)
+    : null;
 }
 
 /**
@@ -49,38 +56,34 @@ function safeAppendChild(parent: Element | Node, child: Node): boolean {
     parent.appendChild(child);
     return true;
   } catch (error) {
-    logError('Failed to append child node', error);
+    logError("Failed to append child node", error);
     return false;
   }
 }
 
 /**
- * Recursively removes all event listeners and reactive subscriptions from a node and its descendants
- * to prevent memory leaks when elements are removed from the DOM.
+ * Recursively removes event listeners, reactive resolvers, and conditional registrations
+ * from a node and its descendants. Called on removal to prevent leaks when elements
+ * exit the DOM. Caches childNodes and length locally — the live NodeList has a
+ * non-trivial access cost per iteration.
  */
 function cleanupEventListeners(node: Node): void {
-  // Clean up the node itself based on its type
-  if (node.nodeType === Node.ELEMENT_NODE) {
+  const nodeType = node.nodeType;
+  if (nodeType === 1 /* ELEMENT_NODE */) {
     const element = node as HTMLElement;
-    // Remove all event listeners
     removeAllListeners(element);
-    // Remove reactive attribute resolvers
     cleanupReactiveElement(element);
-    // Remove conditional info
     unregisterConditionalNode(element);
-  } else if (node.nodeType === Node.TEXT_NODE) {
-    // Remove reactive text node info
+  } else if (nodeType === 3 /* TEXT_NODE */) {
     cleanupReactiveTextNode(node as Text);
-  } else if (node.nodeType === Node.COMMENT_NODE) {
-    // Remove conditional info from comment nodes (used by when/list)
+  } else if (nodeType === 8 /* COMMENT_NODE */) {
     unregisterConditionalNode(node);
   }
-  
-  // Recursively clean up all child nodes
-  if (node.childNodes && node.childNodes.length > 0) {
-    for (let i = 0; i < node.childNodes.length; i++) {
-      cleanupEventListeners(node.childNodes[i]);
-    }
+
+  const children = node.childNodes;
+  if (!children) return;
+  for (let i = 0, n = children.length; i < n; i++) {
+    cleanupEventListeners(children[i]);
   }
 }
 
@@ -92,17 +95,21 @@ export function safeRemoveChild(child: Node): boolean {
     child.parentNode.removeChild(child);
     return true;
   } catch (error) {
-    logError('Failed to remove child node', error);
+    logError("Failed to remove child node", error);
     return false;
   }
 }
 
-function safeInsertBefore(parent: Node, newNode: Node, referenceNode: Node | null): boolean {
+function safeInsertBefore(
+  parent: Node,
+  newNode: Node,
+  referenceNode: Node | null,
+): boolean {
   try {
     parent.insertBefore(newNode, referenceNode);
     return true;
   } catch (error) {
-    logError('Failed to insert node before reference', error);
+    logError("Failed to insert node before reference", error);
     return false;
   }
 }
@@ -111,19 +118,32 @@ export function createComment(text: string): Comment | null {
   return globalThis.document ? globalThis.document.createComment(text) : null;
 }
 
-export function createConditionalComment(tagName: string, suffix = "hidden"): Comment | null {
-  return globalThis.document ? globalThis.document.createComment(`conditional-${tagName}-${suffix}`) : null;
+export function createConditionalComment(
+  tagName: string,
+  suffix = "hidden",
+): Comment | null {
+  return globalThis.document
+    ? globalThis.document.createComment(`conditional-${tagName}-${suffix}`)
+    : null;
 }
 
-export function createMarkerPair(prefix: string, id: number | string): { start: Comment; end: Comment } {
+export function createMarkerPair(
+  prefix: string,
+  id: number | string,
+): { start: Comment; end: Comment } {
   const endComment = createComment(`${prefix}-end`);
-  if (!endComment) throw new Error("Failed to create comment: document not available");
+  if (!endComment)
+    throw new Error("Failed to create comment: document not available");
   const startComment = createComment(`${prefix}-start-${id}`);
-  if (!startComment) throw new Error("Failed to create comment: document not available");
+  if (!startComment)
+    throw new Error("Failed to create comment: document not available");
   return { start: startComment, end: endComment };
 }
 
-export function clearBetweenMarkers(startMarker: Comment, endMarker: Comment): void {
+export function clearBetweenMarkers(
+  startMarker: Comment,
+  endMarker: Comment,
+): void {
   let current = startMarker.nextSibling;
   while (current && current !== endMarker) {
     const next = current.nextSibling;
@@ -134,10 +154,9 @@ export function clearBetweenMarkers(startMarker: Comment, endMarker: Comment): v
 
 export function insertNodesBefore(nodes: Node[], referenceNode: Node): void {
   const parent = referenceNode.parentNode;
-  if (parent) {
-    for (let i = 0; i < nodes.length; i++) {
-      safeInsertBefore(parent, nodes[i], referenceNode);
-    }
+  if (!parent) return;
+  for (let i = 0, n = nodes.length; i < n; i++) {
+    safeInsertBefore(parent, nodes[i], referenceNode);
   }
 }
 
@@ -147,24 +166,15 @@ export function appendChildren(
 ): Element | Node {
   if (!parent) return parent;
 
-  for (let i = 0; i < children.length; i++) {
+  for (let i = 0, n = children.length; i < n; i++) {
     const child = children[i];
-    if (child != null) {
-      let nodeToAppend: Node;
-
-      if (typeof child === "string") {
-        const textNode = createTextNode(child);
-        if (textNode) {
-          nodeToAppend = textNode;
-        } else {
-          continue;
-        }
-      } else {
-        nodeToAppend = child as Node;
-      }
-
-      safeAppendChild(parent, nodeToAppend);
+    if (child == null) continue;
+    if (typeof child === "string") {
+      const textNode = createTextNode(child);
+      if (textNode) safeAppendChild(parent, textNode);
+      continue;
     }
+    safeAppendChild(parent, child as Node);
   }
 
   return parent;

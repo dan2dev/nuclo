@@ -34,30 +34,64 @@ describe("cssGenerator edge cases", () => {
     });
 
     it("should find class in media query", () => {
-      createCSSClassWithStyles("media-class", { color: "blue" }, "(min-width: 768px)");
+      createCSSClassWithStyles(
+        "media-class",
+        { color: "blue" },
+        "(min-width: 768px)",
+      );
       expect(classExistsInDOM("media-class", "(min-width: 768px)")).toBe(true);
     });
 
     it("should find class with pseudo-class", () => {
-      createCSSClassWithStyles("pseudo-class", { color: "green" }, undefined, "media", ":hover");
-      expect(classExistsInDOM("pseudo-class", undefined, "media", ":hover")).toBe(true);
+      createCSSClassWithStyles(
+        "pseudo-class",
+        { color: "green" },
+        undefined,
+        "media",
+        ":hover",
+      );
+      expect(
+        classExistsInDOM("pseudo-class", undefined, "media", ":hover"),
+      ).toBe(true);
     });
 
     it("should handle container queries", () => {
-      createCSSClassWithStyles("container-class", { color: "purple" }, "(min-width: 500px)", "container");
-      expect(classExistsInDOM("container-class", "(min-width: 500px)", "container")).toBe(true);
+      createCSSClassWithStyles(
+        "container-class",
+        { color: "purple" },
+        "(min-width: 500px)",
+        "container",
+      );
+      expect(
+        classExistsInDOM("container-class", "(min-width: 500px)", "container"),
+      ).toBe(true);
     });
 
     it("should handle supports queries", () => {
-      createCSSClassWithStyles("supports-class", { color: "orange" }, "(display: grid)", "supports");
-      expect(classExistsInDOM("supports-class", "(display: grid)", "supports")).toBe(true);
+      createCSSClassWithStyles(
+        "supports-class",
+        { color: "orange" },
+        "(display: grid)",
+        "supports",
+      );
+      expect(
+        classExistsInDOM("supports-class", "(display: grid)", "supports"),
+      ).toBe(true);
     });
 
     it("should handle pseudo-class with &: prefix", () => {
       // When passing pseudoClass, it's used directly in the selector
       // So we should pass ":focus" directly, not "&:focus"
-      createCSSClassWithStyles("pseudo-class2", { color: "cyan" }, undefined, "media", ":focus");
-      expect(classExistsInDOM("pseudo-class2", undefined, "media", ":focus")).toBe(true);
+      createCSSClassWithStyles(
+        "pseudo-class2",
+        { color: "cyan" },
+        undefined,
+        "media",
+        ":focus",
+      );
+      expect(
+        classExistsInDOM("pseudo-class2", undefined, "media", ":focus"),
+      ).toBe(true);
     });
   });
 
@@ -71,12 +105,19 @@ describe("cssGenerator edge cases", () => {
     it("should update existing class styles", () => {
       createCSSClassWithStyles("update-class", { color: "red" });
       // Use kebab-case for CSS properties
-      createCSSClassWithStyles("update-class", { color: "blue", "font-size": "16px" });
-      
-      const styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
+      createCSSClassWithStyles("update-class", {
+        color: "blue",
+        "font-size": "16px",
+      });
+
+      const styleSheet = document.querySelector(
+        "#nuclo-styles",
+      ) as HTMLStyleElement;
       const rules = Array.from(styleSheet.sheet?.cssRules || []);
-      const rule = rules.find((r: any) => r.selectorText === ".update-class") as CSSStyleRule;
-      
+      const rule = rules.find(
+        (r: any) => r.selectorText === ".update-class",
+      ) as CSSStyleRule;
+
       expect(rule).toBeTruthy();
       expect(rule.style.color).toBe("blue");
       // fontSize is set via setProperty, so check getPropertyValue
@@ -88,9 +129,13 @@ describe("cssGenerator edge cases", () => {
 
     it("should handle empty styles object", () => {
       createCSSClassWithStyles("empty-class", {});
-      const styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
+      const styleSheet = document.querySelector(
+        "#nuclo-styles",
+      ) as HTMLStyleElement;
       const rules = Array.from(styleSheet.sheet?.cssRules || []);
-      const rule = rules.find((r: any) => r.selectorText === ".empty-class") as CSSStyleRule;
+      const rule = rules.find(
+        (r: any) => r.selectorText === ".empty-class",
+      ) as CSSStyleRule;
       expect(rule).toBeTruthy();
     });
 
@@ -100,16 +145,32 @@ describe("cssGenerator edge cases", () => {
         backgroundImage: "url('test.jpg')",
         transform: "translateX(10px)",
       });
-      
+
       expect(classExistsInDOM("special-class")).toBe(true);
     });
 
     it("should handle multiple pseudo-classes for same class", () => {
-      createCSSClassWithStyles("multi-pseudo", { color: "red" }, undefined, "media", ":hover");
-      createCSSClassWithStyles("multi-pseudo", { color: "blue" }, undefined, "media", ":focus");
-      
-      expect(classExistsInDOM("multi-pseudo", undefined, "media", ":hover")).toBe(true);
-      expect(classExistsInDOM("multi-pseudo", undefined, "media", ":focus")).toBe(true);
+      createCSSClassWithStyles(
+        "multi-pseudo",
+        { color: "red" },
+        undefined,
+        "media",
+        ":hover",
+      );
+      createCSSClassWithStyles(
+        "multi-pseudo",
+        { color: "blue" },
+        undefined,
+        "media",
+        ":focus",
+      );
+
+      expect(
+        classExistsInDOM("multi-pseudo", undefined, "media", ":hover"),
+      ).toBe(true);
+      expect(
+        classExistsInDOM("multi-pseudo", undefined, "media", ":focus"),
+      ).toBe(true);
     });
 
     it("should handle media query with complex condition", () => {
@@ -120,36 +181,58 @@ describe("cssGenerator edge cases", () => {
 
     it("should insert rules in correct order (styles before at-rules)", () => {
       createCSSClassWithStyles("order-class1", { color: "red" });
-      createCSSClassWithStyles("order-class2", { color: "blue" }, "(min-width: 768px)");
+      createCSSClassWithStyles(
+        "order-class2",
+        { color: "blue" },
+        "(min-width: 768px)",
+      );
       createCSSClassWithStyles("order-class3", { color: "green" });
-      
-      const styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
+
+      const styleSheet = document.querySelector(
+        "#nuclo-styles",
+      ) as HTMLStyleElement;
       const rules = Array.from(styleSheet.sheet?.cssRules || []);
-      
+
       // Regular styles should come before media queries
       const styleRuleIndices = rules
-        .map((r, i) => r instanceof CSSStyleRule && !r.selectorText.includes(":") ? i : -1)
-        .filter(i => i >= 0);
+        .map((r, i) =>
+          r instanceof CSSStyleRule && !r.selectorText.includes(":") ? i : -1,
+        )
+        .filter((i) => i >= 0);
       const mediaRuleIndices = rules
-        .map((r, i) => r instanceof CSSMediaRule ? i : -1)
-        .filter(i => i >= 0);
-      
+        .map((r, i) => (r instanceof CSSMediaRule ? i : -1))
+        .filter((i) => i >= 0);
+
       if (styleRuleIndices.length > 0 && mediaRuleIndices.length > 0) {
-        expect(Math.max(...styleRuleIndices)).toBeLessThan(Math.min(...mediaRuleIndices));
+        expect(Math.max(...styleRuleIndices)).toBeLessThan(
+          Math.min(...mediaRuleIndices),
+        );
       }
     });
 
     it("should handle pseudo-class rules insertion order", () => {
       createCSSClassWithStyles("pseudo-order", { color: "red" });
-      createCSSClassWithStyles("pseudo-order", { color: "blue" }, undefined, "media", ":hover");
+      createCSSClassWithStyles(
+        "pseudo-order",
+        { color: "blue" },
+        undefined,
+        "media",
+        ":hover",
+      );
       createCSSClassWithStyles("pseudo-order", { color: "green" });
-      
+
       // Pseudo-class rules should be inserted after regular rules
-      const styleSheet = document.querySelector("#nuclo-styles") as HTMLStyleElement;
+      const styleSheet = document.querySelector(
+        "#nuclo-styles",
+      ) as HTMLStyleElement;
       const rules = Array.from(styleSheet.sheet?.cssRules || []);
-      const regularRule = rules.find((r: any) => r.selectorText === ".pseudo-order") as CSSStyleRule;
-      const hoverRule = rules.find((r: any) => r.selectorText === ".pseudo-order:hover") as CSSStyleRule;
-      
+      const regularRule = rules.find(
+        (r: any) => r.selectorText === ".pseudo-order",
+      ) as CSSStyleRule;
+      const hoverRule = rules.find(
+        (r: any) => r.selectorText === ".pseudo-order:hover",
+      ) as CSSStyleRule;
+
       expect(regularRule).toBeTruthy();
       expect(hoverRule).toBeTruthy();
     });
@@ -168,11 +251,11 @@ describe("cssGenerator edge cases", () => {
       const styleSheet = document.createElement("style");
       styleSheet.id = "nuclo-styles";
       document.head.appendChild(styleSheet);
-      
+
       // Remove the sheet property (simulating edge case)
       // This is hard to test directly, but the code should handle it
       createCSSClassWithStyles("null-sheet-class", { color: "red" });
-      
+
       // Should still work with the actual implementation
       expect(classExistsInDOM("null-sheet-class")).toBe(true);
     });
@@ -184,10 +267,9 @@ describe("cssGenerator edge cases", () => {
         // Valid properties
         color: "red",
       });
-      
+
       // Should still create the class
       expect(classExistsInDOM("invalid-css")).toBe(true);
     });
   });
 });
-

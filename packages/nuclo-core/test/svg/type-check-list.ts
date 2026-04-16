@@ -7,9 +7,12 @@ const columns = 3;
 const rows = 20;
 
 // Test 1: Basic SVG list with proper typing
-const chart = (data: {
-  items: () => { label: string; value: number; }[];
-}, ...mods: SVGElementModifier<"svg">[]) => {
+const chart = (
+  data: {
+    items: () => { label: string; value: number }[];
+  },
+  ...mods: SVGElementModifier<"svg">[]
+) => {
   const width = columns * 20;
   const height = rows * 20;
   return svgSvg(
@@ -18,7 +21,7 @@ const chart = (data: {
       height: height.toString(),
       viewBox: `0 0 ${width} ${height}`,
       fill: "none",
-      className: "chart"
+      className: "chart",
     },
     // This should NOT cause a type error anymore
     list(data.items, (item, index) => {
@@ -28,17 +31,17 @@ const chart = (data: {
         y: (height - barHeight).toString(),
         width: "10",
         height: barHeight.toString(),
-        fill: "steelblue"
+        fill: "steelblue",
       });
     }),
-    ...mods
+    ...mods,
   );
 };
 
 // Test 2: Type inference with reactive attributes
 const reactiveChart = () => {
   const color = "blue";
-  
+
   return svgSvg(
     { width: "100", height: "100" },
     list(
@@ -50,15 +53,15 @@ const reactiveChart = () => {
           r: "10",
           fill: () => color, // Should accept function returning string
         });
-      }
-    )
+      },
+    ),
   );
 };
 
 // Test 3: Nested lists with proper typing
 const nestedChart = () => {
   type Group = { name: string; values: number[] };
-  
+
   return svgSvg(
     { viewBox: "0 0 200 200" },
     list(
@@ -79,18 +82,18 @@ const nestedChart = () => {
                 height: "15",
                 fill: "red",
               });
-            }
-          )
+            },
+          ),
         );
-      }
-    )
+      },
+    ),
   );
 };
 
 // Test 4: Type inference with different SVG elements
 const mixedElements = () => {
   type Shape = { type: "circle" | "rect"; x: number; y: number };
-  
+
   return svgSvg(
     { viewBox: "0 0 100 100" },
     list(
@@ -115,15 +118,15 @@ const mixedElements = () => {
             fill: "green",
           });
         }
-      }
-    )
+      },
+    ),
   );
 };
 
 // Test 5: Ensure readonly arrays work
 const readonlyArrayTest = () => {
   const data: readonly number[] = [1, 2, 3];
-  
+
   return svgSvg(
     { width: "100", height: "100" },
     list(
@@ -134,8 +137,8 @@ const readonlyArrayTest = () => {
           cy: "50",
           r: "5",
         });
-      }
-    )
+      },
+    ),
   );
 };
 
@@ -146,8 +149,8 @@ const htmlListTest = () => {
       () => [1, 2, 3],
       (item: number) => {
         return div(`Item ${item}`);
-      }
-    )
+      },
+    ),
   );
 };
 
@@ -155,7 +158,7 @@ const htmlListTest = () => {
 const complexReactiveTest = () => {
   const width = 100;
   const height = 100;
-  
+
   return svgSvg(
     {
       width: () => width.toString(),
@@ -173,17 +176,17 @@ const complexReactiveTest = () => {
           fill: "blue",
           opacity: () => (item / 3).toString(),
         });
-      }
-    )
+      },
+    ),
   );
 };
 
 // Export to verify it compiles
-export { 
-  chart, 
-  reactiveChart, 
-  nestedChart, 
-  mixedElements, 
+export {
+  chart,
+  reactiveChart,
+  nestedChart,
+  mixedElements,
   readonlyArrayTest,
   htmlListTest,
   complexReactiveTest,

@@ -8,24 +8,14 @@
     "esModuleInterop": true,
     "skipLibCheck": false,
     "forceConsistentCasingInFileNames": true,
-    "typeRoots": [
-      "./types"
-    ],
+    "typeRoots": ["./types"],
     "rootDir": "./src",
     "declaration": true,
     "declarationMap": true,
     "outDir": "./dist",
     "declarationDir": "./dist",
-    "types": [
-    ]
+    "types": []
   },
-  "include": [
-    "src",
-    "types"
-  ],
-  "exclude": [
-    "node_modules",
-    "**/*.spec.ts",
-    "examples"
-  ],
+  "include": ["src", "types"],
+  "exclude": ["node_modules", "**/*.spec.ts", "examples"]
 }

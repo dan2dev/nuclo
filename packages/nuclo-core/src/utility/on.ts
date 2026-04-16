@@ -49,27 +49,31 @@ function trackListener(
   original: AnyTrackedListener,
   wrapped: EventListener,
   options?: EventListenerOptions,
-  controller?: AbortController
+  controller?: AbortController,
 ): void {
   let typeMap = elementListeners.get(element);
   if (!typeMap) {
     typeMap = new Map();
     elementListeners.set(element, typeMap);
   }
-  
+
   let listeners = typeMap.get(type);
   if (!listeners) {
     listeners = new Set();
     typeMap.set(type, listeners);
   }
-  
+
   listeners.add({ original, wrapped, options, controller });
 }
 
 /**
  * Detach a single tracked listener from the DOM.
  */
-function detachListener(element: HTMLElement, type: string, info: TrackedListener): void {
+function detachListener(
+  element: HTMLElement,
+  type: string,
+  info: TrackedListener,
+): void {
   if (info.controller) {
     info.controller.abort();
   } else {
@@ -84,7 +88,7 @@ function detachListener(element: HTMLElement, type: string, info: TrackedListene
 export function removeListener(
   element: HTMLElement,
   type: string,
-  listener: AnyTrackedListener
+  listener: AnyTrackedListener,
 ): void {
   const typeMap = elementListeners.get(element);
   if (!typeMap) return;
@@ -107,10 +111,7 @@ export function removeListener(
 /**
  * Remove all listeners of a specific type from an element.
  */
-export function removeAllListeners(
-  element: HTMLElement,
-  type?: string
-): void {
+export function removeAllListeners(element: HTMLElement, type?: string): void {
   const typeMap = elementListeners.get(element);
   if (!typeMap) return;
 
@@ -133,11 +134,14 @@ export function removeAllListeners(
  */
 export function on<
   K extends keyof HTMLElementEventMap,
-  TTagName extends ElementTagName = ElementTagName
+  TTagName extends ElementTagName = ElementTagName,
 >(
   type: K,
-  listener: TypedEventListener<HTMLElementTagNameMap[TTagName], HTMLElementEventMap[K]>,
-  options?: EventListenerOptions
+  listener: TypedEventListener<
+    HTMLElementTagNameMap[TTagName],
+    HTMLElementEventMap[K]
+  >,
+  options?: EventListenerOptions,
 ): NodeModFn<TTagName>;
 
 /**
@@ -148,36 +152,39 @@ export function on<
 export function on<
   K extends string,
   E extends Event = Event,
-  TTagName extends ElementTagName = ElementTagName
+  TTagName extends ElementTagName = ElementTagName,
 >(
   type: K,
   listener: TypedEventListener<HTMLElementTagNameMap[TTagName], E>,
-  options?: EventListenerOptions
+  options?: EventListenerOptions,
 ): NodeModFn<TTagName>;
 
 export function on<TTagName extends ElementTagName = ElementTagName>(
   type: string,
   listener: TypedEventListener<HTMLElementTagNameMap[TTagName], Event>,
-  options?: EventListenerOptions
+  options?: EventListenerOptions,
 ): NodeModFn<TTagName> {
-  return function(parent: ExpandedElement<TTagName>): void {
+  return function (parent: ExpandedElement<TTagName>): void {
     if (!isBrowser) return;
 
     // Type guard: verify parent is an HTMLElement with addEventListener
-    if (!parent || typeof (parent as HTMLElement).addEventListener !== "function") {
+    if (
+      !parent ||
+      typeof (parent as HTMLElement).addEventListener !== "function"
+    ) {
       return;
     }
 
     const el = parent as HTMLElementTagNameMap[TTagName];
-    
+
     // Create an AbortController for this listener
     const controller = new AbortController();
-    
-    const wrapped = function(ev: Event): void {
+
+    const wrapped = function (ev: Event): void {
       try {
         listener.call(
           el,
-          ev as Event & { currentTarget: HTMLElementTagNameMap[TTagName] }
+          ev as Event & { currentTarget: HTMLElementTagNameMap[TTagName] },
         );
       } catch (error) {
         logError(`Error in '${type}' listener`, error);
@@ -185,13 +192,21 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
     };
 
     // Merge options with signal
-    const listenerOptions = typeof options === 'boolean'
-      ? { capture: options, signal: controller.signal }
-      : { ...(options || {}), signal: controller.signal };
-    
+    const listenerOptions =
+      typeof options === "boolean"
+        ? { capture: options, signal: controller.signal }
+        : { ...(options || {}), signal: controller.signal };
+
     el.addEventListener(type, wrapped as EventListener, listenerOptions);
-    
+
     // Track the listener for potential cleanup
-    trackListener(el, type, listener as AnyTrackedListener, wrapped as EventListener, options, controller);
+    trackListener(
+      el,
+      type,
+      listener as AnyTrackedListener,
+      wrapped as EventListener,
+      options,
+      controller,
+    );
   };
 }

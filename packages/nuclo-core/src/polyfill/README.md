@@ -5,6 +5,7 @@ Polyfills mínimos para permitir que Nuclo funcione em ambientes Node.js para Se
 ## APIs Implementadas
 
 ### Document
+
 - ✅ `document.createElement()`
 - ✅ `document.createElementNS()` (para SVG)
 - ✅ `document.createTextNode()`
@@ -19,6 +20,7 @@ Polyfills mínimos para permitir que Nuclo funcione em ambientes Node.js para Se
 - ✅ `document.contains()`
 
 ### Element
+
 - ✅ `element.tagName`
 - ✅ `element.children`
 - ✅ `element.className`
@@ -45,6 +47,7 @@ Polyfills mínimos para permitir que Nuclo funcione em ambientes Node.js para Se
 - ✅ `element.sheet` (para `<style>` elements - implementação básica de CSSStyleSheet)
 
 ### Text
+
 - ✅ `textNode.data`
 - ✅ `textNode.textContent`
 - ✅ `textNode.nodeValue`
@@ -53,6 +56,7 @@ Polyfills mínimos para permitir que Nuclo funcione em ambientes Node.js para Se
 - ✅ `textNode.parentNode`
 
 ### Event & CustomEvent
+
 - ✅ `new Event(type, options)`
 - ✅ `new CustomEvent(type, options)`
 - ✅ `event.type`
@@ -65,7 +69,9 @@ Polyfills mínimos para permitir que Nuclo funcione em ambientes Node.js para Se
 ## APIs do Browser que ainda NÃO funcionam
 
 ### CSSStyleSheet (parcial)
+
 O `element.sheet` tem uma implementação **muito básica** que:
+
 - ✅ Suporta `insertRule()` e `deleteRule()`
 - ✅ Mantém um array de `cssRules`
 - ❌ **NÃO** suporta `CSSMediaRule`, `CSSContainerRule`, `CSSSupportsRule`
@@ -73,10 +79,12 @@ O `element.sheet` tem uma implementação **muito básica** que:
 - ❌ **NÃO** suporta `media.mediaText` ou `conditionText`
 
 Isso significa que em Node.js:
+
 - ✅ O código que **cria** estilos vai funcionar sem erros
 - ❌ O código que **verifica** media queries/container queries vai falhar
 
 ### Outras limitações
+
 - `querySelector()` e `querySelectorAll()` são implementações stub (retornam null/array vazio)
 - `window`, `navigator`, `localStorage`, etc. não estão implementados
 - DOM event propagation é simplificado (sem capturing phase)
@@ -84,14 +92,16 @@ Isso significa que em Node.js:
 ## Uso
 
 ### Importação Automática
+
 ```typescript
-import 'nuclo/polyfill';
+import "nuclo/polyfill";
 // Polyfills são aplicados automaticamente ao globalThis
 ```
 
 ### Importação Manual
+
 ```typescript
-import { document, Event, CustomEvent } from 'nuclo/polyfill';
+import { document, Event, CustomEvent } from "nuclo/polyfill";
 ```
 
 ## Para uso com linkedom
@@ -99,7 +109,7 @@ import { document, Event, CustomEvent } from 'nuclo/polyfill';
 Para SSR real com DOM completo, recomenda-se usar [linkedom](https://github.com/WebReflection/linkedom):
 
 ```typescript
-import { parseHTML } from 'linkedom';
+import { parseHTML } from "linkedom";
 
 const { document, customElements, HTMLElement } = parseHTML(`
   <!DOCTYPE html>

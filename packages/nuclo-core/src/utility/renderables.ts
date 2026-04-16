@@ -11,13 +11,17 @@ type RenderableInput<TTagName extends ElementTagName = ElementTagName> =
   | null
   | undefined;
 
-export function resolveRenderable<TTagName extends ElementTagName = ElementTagName>(
+export function resolveRenderable<
+  TTagName extends ElementTagName = ElementTagName,
+>(
   result: RenderableInput<TTagName>,
   host: ExpandedElement<TTagName>,
-  index: number
+  index: number,
 ): ExpandedElement<TTagName> | null {
   if (isFunction(result)) {
-    const element = (result as (parent: ExpandedElement<TTagName>, index: number) => unknown)(host, index);
+    const element = (
+      result as (parent: ExpandedElement<TTagName>, index: number) => unknown
+    )(host, index);
     if (element && isTagLike(element)) {
       return element as ExpandedElement<TTagName>;
     }

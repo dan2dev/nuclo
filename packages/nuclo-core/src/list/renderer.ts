@@ -9,8 +9,16 @@ export function list<TItem, TTagName extends ElementTagName = ElementTagName>(
   itemsProvider: ListItemsProvider<TItem>,
   render: ListRenderer<TItem, TTagName>,
 ): ListModifier<TTagName> {
-  return function<TParent extends ElementTagName>(host: ExpandedElement<TParent>, index: number): Comment {
-    const runtime = createListRuntime(itemsProvider, render, host as unknown as ExpandedElement<TTagName>, index);
+  return function <TParent extends ElementTagName>(
+    host: ExpandedElement<TParent>,
+    index: number,
+  ): Comment {
+    const runtime = createListRuntime(
+      itemsProvider,
+      render,
+      host as unknown as ExpandedElement<TTagName>,
+      index,
+    );
     // Return the start marker comment node
     // Comment is a Node, making this compatible with both HTML and SVG modifiers
     return runtime.startMarker;

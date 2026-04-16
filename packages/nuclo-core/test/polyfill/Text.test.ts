@@ -15,4 +15,3 @@ describe("NucloText", () => {
     expect(t.textContent).toBe("world");
   });
 });
-

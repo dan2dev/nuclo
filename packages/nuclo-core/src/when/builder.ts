@@ -1,20 +1,40 @@
 import { createMarkerPair } from "../utility/dom";
 import { asParentNode } from "../utility/domTypeHelpers";
-import type { WhenCondition, WhenContent, WhenGroup, WhenRuntime } from "./runtime";
-import { renderWhenContent, registerWhenRuntime, evaluateActiveCondition } from "./runtime";
+import type {
+  WhenCondition,
+  WhenContent,
+  WhenGroup,
+  WhenRuntime,
+} from "./runtime";
+import {
+  renderWhenContent,
+  registerWhenRuntime,
+  evaluateActiveCondition,
+} from "./runtime";
 import { isBrowser } from "../utility/environment";
-import { isHydrating, claimChild, getCursor, setCursor } from "../hydration/context";
+import {
+  isHydrating,
+  claimChild,
+  getCursor,
+  setCursor,
+} from "../hydration/context";
 import { applyNodeModifier } from "../core/modifierProcessor";
 
 class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
   private groups: WhenGroup<TTagName>[] = [];
   private elseContent: WhenContent<TTagName>[] = [];
 
-  constructor(initialCondition: WhenCondition, ...content: WhenContent<TTagName>[]) {
+  constructor(
+    initialCondition: WhenCondition,
+    ...content: WhenContent<TTagName>[]
+  ) {
     this.groups.push({ condition: initialCondition, content });
   }
 
-  when(condition: WhenCondition, ...content: WhenContent<TTagName>[]): WhenBuilderImpl<TTagName> {
+  when(
+    condition: WhenCondition,
+    ...content: WhenContent<TTagName>[]
+  ): WhenBuilderImpl<TTagName> {
     this.groups.push({ condition, content });
     return this;
   }
@@ -36,9 +56,20 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     return this.freshRender(host, index);
   }
 
-  private freshRender(host: ExpandedElement<TTagName>, index: number): Node | null {
-    const { start: startMarker, end: endMarker } = createMarkerPair("when", index);
-    const runtime = this.createRuntimeFromMarkers(host, index, startMarker, endMarker);
+  private freshRender(
+    host: ExpandedElement<TTagName>,
+    index: number,
+  ): Node | null {
+    const { start: startMarker, end: endMarker } = createMarkerPair(
+      "when",
+      index,
+    );
+    const runtime = this.createRuntimeFromMarkers(
+      host,
+      index,
+      startMarker,
+      endMarker,
+    );
 
     const parent = asParentNode(host);
     parent.appendChild(startMarker);
@@ -49,7 +80,10 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     return startMarker;
   }
 
-  private hydrateRender(host: ExpandedElement<TTagName>, index: number): Node | null {
+  private hydrateRender(
+    host: ExpandedElement<TTagName>,
+    index: number,
+  ): Node | null {
     const parentNode = host as unknown as Node & ParentNode;
 
     // Check if next child is actually a when-start comment marker.
@@ -57,8 +91,11 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     // to normal rendering (create new markers + render from scratch).
     const cursor = getCursor(parentNode);
     const candidate = parentNode.childNodes[cursor];
-    if (!candidate || candidate.nodeType !== 8 ||
-        !(candidate as Comment).textContent?.startsWith('when-start-')) {
+    if (
+      !candidate ||
+      candidate.nodeType !== 8 ||
+      !(candidate as Comment).textContent?.startsWith("when-start-")
+    ) {
       return this.freshRender(host, index);
     }
 
@@ -69,26 +106,41 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     let endMarkerIdx = getCursor(parentNode);
     while (endMarkerIdx < parentNode.childNodes.length) {
       const node = parentNode.childNodes[endMarkerIdx];
-      if (node.nodeType === 8 && (node as Comment).textContent === 'when-end') break;
+      if (node.nodeType === 8 && (node as Comment).textContent === "when-end")
+        break;
       endMarkerIdx++;
     }
     const endMarker = parentNode.childNodes[endMarkerIdx] as Comment;
 
     // Determine which branch is currently active
-    const activeIndex = evaluateActiveCondition([...this.groups], [...this.elseContent]);
+    const activeIndex = evaluateActiveCondition(
+      [...this.groups],
+      [...this.elseContent],
+    );
 
     // Re-run active branch content to register reactivity on existing nodes
     if (activeIndex !== null) {
-      const contentToRender = activeIndex >= 0 ? this.groups[activeIndex].content : this.elseContent;
+      const contentToRender =
+        activeIndex >= 0 ? this.groups[activeIndex].content : this.elseContent;
       for (const item of contentToRender) {
-        applyNodeModifier(host, item as NodeMod<TTagName> | NodeModFn<TTagName>, index);
+        applyNodeModifier(
+          host,
+          item as NodeMod<TTagName> | NodeModFn<TTagName>,
+          index,
+        );
       }
     }
 
     // Advance cursor past end marker
     setCursor(parentNode, endMarkerIdx + 1);
 
-    const runtime = this.createRuntimeFromMarkers(host, index, startMarker, endMarker, activeIndex);
+    const runtime = this.createRuntimeFromMarkers(
+      host,
+      index,
+      startMarker,
+      endMarker,
+      activeIndex,
+    );
 
     return startMarker;
   }
@@ -108,7 +160,9 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
       groups: [...this.groups],
       elseContent: [...this.elseContent],
       activeIndex,
-      update: function() { renderWhenContent(runtime); },
+      update: function () {
+        renderWhenContent(runtime);
+      },
     };
 
     if (isBrowser) {
@@ -120,18 +174,26 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
 }
 
 export function createWhenBuilderFunction<TTagName extends ElementTagName>(
-  builder: WhenBuilderImpl<TTagName>
+  builder: WhenBuilderImpl<TTagName>,
 ): WhenBuilder<TTagName> {
-  const nodeModFn = function(host: ExpandedElement<TTagName>, index: number): Node | null {
+  const nodeModFn = function (
+    host: ExpandedElement<TTagName>,
+    index: number,
+  ): Node | null {
     return builder.render(host, index);
   };
 
   return Object.assign(nodeModFn, {
-    when: function(condition: WhenCondition, ...content: WhenContent<TTagName>[]): WhenBuilder<TTagName> {
+    when: function (
+      condition: WhenCondition,
+      ...content: WhenContent<TTagName>[]
+    ): WhenBuilder<TTagName> {
       builder.when(condition, ...content);
       return createWhenBuilderFunction(builder);
     },
-    else: function(...content: WhenContent<TTagName>[]): WhenBuilder<TTagName> {
+    else: function (
+      ...content: WhenContent<TTagName>[]
+    ): WhenBuilder<TTagName> {
       builder.else(...content);
       return createWhenBuilderFunction(builder);
     },

@@ -141,7 +141,7 @@ describe("classNameMerger edge cases", () => {
       expect(classes).toContain("static2");
       expect(classes).toContain("reactive1");
       // Should not have duplicates
-      expect(classes.filter(c => c === "static1").length).toBe(1);
+      expect(classes.filter((c) => c === "static1").length).toBe(1);
     });
 
     it("should handle whitespace in reactive className", () => {
@@ -190,7 +190,7 @@ describe("classNameMerger edge cases", () => {
       element.className = "existing1";
       mergeStaticClassName(element, "existing1 new1");
       const classes = element.className.split(" ").filter(Boolean);
-      expect(classes.filter(c => c === "existing1").length).toBe(1);
+      expect(classes.filter((c) => c === "existing1").length).toBe(1);
       expect(classes).toContain("new1");
     });
 
@@ -210,4 +210,3 @@ describe("classNameMerger edge cases", () => {
     });
   });
 });
-

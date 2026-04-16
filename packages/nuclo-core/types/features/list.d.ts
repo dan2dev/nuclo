@@ -2,7 +2,9 @@ declare global {
   export type ListItemsInput<T> = readonly T[] | Iterable<T>;
 
   // Dynamic list function types - supports both HTML and SVG builders/elements
-  export type ListRenderResult<TTagName extends ElementTagName = ElementTagName> =
+  export type ListRenderResult<
+    TTagName extends ElementTagName = ElementTagName,
+  > =
     | ExpandedElement<TTagName>
     | DetachedExpandedElementFactory<TTagName>
     | NodeModFn<TTagName>
@@ -12,10 +14,10 @@ declare global {
     | null
     | undefined;
 
-  export type ListRenderFunction<T, TTagName extends ElementTagName = ElementTagName> = (
-    item: T,
-    index: number
-  ) => ListRenderResult<TTagName>;
+  export type ListRenderFunction<
+    T,
+    TTagName extends ElementTagName = ElementTagName,
+  > = (item: T, index: number) => ListRenderResult<TTagName>;
 
   export type ListItemsProvider<T> = () => ListItemsInput<T>;
 
@@ -25,12 +27,15 @@ declare global {
    * (TTagName represents the child element tag, not the parent.)
    */
   export type ListModifier<TTagName extends ElementTagName = ElementTagName> =
-    (<TParent extends ElementTagName>(parent: ExpandedElement<TParent>, index: number) => Comment) &
-    ((parent: Node & ParentNode, index: number) => Comment);
+    (<TParent extends ElementTagName>(
+      parent: ExpandedElement<TParent>,
+      index: number,
+    ) => Comment) &
+      ((parent: Node & ParentNode, index: number) => Comment);
 
   export function list<T, TTagName extends ElementTagName = ElementTagName>(
     itemsProvider: ListItemsProvider<T>,
-    render: ListRenderFunction<T, TTagName>
+    render: ListRenderFunction<T, TTagName>,
   ): ListModifier<TTagName>;
 }
 

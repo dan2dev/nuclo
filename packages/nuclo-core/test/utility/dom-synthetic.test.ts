@@ -1,9 +1,13 @@
 /// <reference path="../../types/index.d.ts" />
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { applyModifiers } from '../../src/internal/applyModifiers';
-import { createHtmlConditionalElement } from '../helpers/conditionalTestHelpers';
-import { updateConditionalElements } from '../../src/core/conditionalUpdater';
-import { insertNodesBefore, appendChildren, createMarkerPair } from '../../src/utility/dom';
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { applyModifiers } from "../../src/internal/applyModifiers";
+import { createHtmlConditionalElement } from "../helpers/conditionalTestHelpers";
+import { updateConditionalElements } from "../../src/core/conditionalUpdater";
+import {
+  insertNodesBefore,
+  appendChildren,
+  createMarkerPair,
+} from "../../src/utility/dom";
 
 /**
  * Synthetic / contrived tests to exercise difficult defensive branches:
@@ -16,14 +20,14 @@ import { insertNodesBefore, appendChildren, createMarkerPair } from '../../src/u
  * guarded error branches that are unlikely in normal usage.
  */
 
-describe('synthetic DOM failure / defensive branch coverage', () => {
+describe("synthetic DOM failure / defensive branch coverage", () => {
   let host: HTMLDivElement;
   let originalConsoleError: any;
   let consoleSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    document.body.innerHTML = '';
-    host = document.createElement('div');
+    document.body.innerHTML = "";
+    host = document.createElement("div");
     document.body.appendChild(host);
     originalConsoleError = console.error;
     consoleSpy = vi.fn();
@@ -34,15 +38,15 @@ describe('synthetic DOM failure / defensive branch coverage', () => {
     console.error = originalConsoleError;
   });
 
-  describe('applyModifiers already-parented node scenario', () => {
-    it('does not re-append node when produced node is already a child of host', () => {
-      const existing = document.createElement('span');
-      existing.textContent = 'existing';
+  describe("applyModifiers already-parented node scenario", () => {
+    it("does not re-append node when produced node is already a child of host", () => {
+      const existing = document.createElement("span");
+      existing.textContent = "existing";
       host.appendChild(existing);
 
       const appendedCountBefore = host.childNodes.length;
-      const mods: Array<NodeModFn<'div'>> = [
-        (_parent: any) => existing // already has parent -> should skip append branch (length > 0 so treated as NodeModFn)
+      const mods: Array<NodeModFn<"div">> = [
+        (_parent: any) => existing, // already has parent -> should skip append branch (length > 0 so treated as NodeModFn)
       ];
 
       const result = applyModifiers(host, mods, 5);
@@ -54,13 +58,13 @@ describe('synthetic DOM failure / defensive branch coverage', () => {
     });
   });
 
-  describe('conditionalUpdater multiple consecutive replacement failures', () => {
-    it('logs errors on repeated element <-> comment replacement attempts', () => {
+  describe("conditionalUpdater multiple consecutive replacement failures", () => {
+    it("logs errors on repeated element <-> comment replacement attempts", () => {
       let visible = false; // start hidden => comment
       const conditionalNode = createHtmlConditionalElement(
-        'div',
+        "div",
         () => visible,
-        ['content']
+        ["content"],
       ) as unknown as Node;
 
       // Start with a comment node in DOM
@@ -70,7 +74,7 @@ describe('synthetic DOM failure / defensive branch coverage', () => {
       // Monkey-patch replaceChild to always throw
       const originalReplace = host.replaceChild.bind(host);
       const replaceSpy = vi.fn(() => {
-        throw new Error('synthetic-replace-error');
+        throw new Error("synthetic-replace-error");
       });
       (host as any).replaceChild = replaceSpy;
 
@@ -87,9 +91,11 @@ describe('synthetic DOM failure / defensive branch coverage', () => {
       updateConditionalElements();
 
       expect(consoleSpy).toHaveBeenCalled();
-      const messages = consoleSpy.mock.calls.map(c => String(c[0]));
+      const messages = consoleSpy.mock.calls.map((c) => String(c[0]));
       // We should have multiple replacement error logs
-      const replacementErrors = messages.filter(m => m.includes('Error replacing conditional node'));
+      const replacementErrors = messages.filter((m) =>
+        m.includes("Error replacing conditional node"),
+      );
       expect(replacementErrors.length).toBeGreaterThanOrEqual(2);
 
       // Node never successfully replaced (still original comment node)
@@ -99,35 +105,37 @@ describe('synthetic DOM failure / defensive branch coverage', () => {
     });
   });
 
-  describe('DOM utility failure simulations', () => {
-    it('appendChildren handles parent.appendChild throwing (safeAppendChild failure path)', () => {
+  describe("DOM utility failure simulations", () => {
+    it("appendChildren handles parent.appendChild throwing (safeAppendChild failure path)", () => {
       const throwingParent: any = {
         childNodes: [] as Node[],
         appendChild: vi.fn((_n: Node) => {
-          throw new Error('append-failure');
+          throw new Error("append-failure");
         }),
       };
 
       // Should not throw outward
-      expect(() => appendChildren(throwingParent, 'text1', 'text2')).not.toThrow();
+      expect(() =>
+        appendChildren(throwingParent, "text1", "text2"),
+      ).not.toThrow();
       expect(throwingParent.appendChild).toHaveBeenCalled();
       // No children recorded because every append failed
       expect(throwingParent.childNodes.length).toBe(0);
     });
 
-    it('insertNodesBefore handles parent.insertBefore throwing (safeInsertBefore failure path)', () => {
-      const ref = document.createComment('ref');
+    it("insertNodesBefore handles parent.insertBefore throwing (safeInsertBefore failure path)", () => {
+      const ref = document.createComment("ref");
       host.appendChild(ref);
       const originalInsert = host.insertBefore.bind(host);
       const failing = vi.fn(() => {
-        throw new Error('insert-before-failure');
+        throw new Error("insert-before-failure");
       });
       (host as any).insertBefore = failing;
 
-      const a = document.createElement('div');
-      a.textContent = 'A';
-      const b = document.createElement('div');
-      b.textContent = 'B';
+      const a = document.createElement("div");
+      a.textContent = "A";
+      const b = document.createElement("div");
+      b.textContent = "B";
 
       expect(() => insertNodesBefore([a, b], ref)).not.toThrow();
       expect(failing).toHaveBeenCalledTimes(2);
@@ -138,8 +146,8 @@ describe('synthetic DOM failure / defensive branch coverage', () => {
       (host as any).insertBefore = originalInsert;
     });
 
-    it('insertNodesBefore no-ops gracefully when nodes array empty', () => {
-      const { start, end } = createMarkerPair('empty', 0);
+    it("insertNodesBefore no-ops gracefully when nodes array empty", () => {
+      const { start, end } = createMarkerPair("empty", 0);
       host.appendChild(start);
       host.appendChild(end);
       expect(() => insertNodesBefore([], end)).not.toThrow();
@@ -147,20 +155,20 @@ describe('synthetic DOM failure / defensive branch coverage', () => {
     });
   });
 
-  describe('combined synthetic scenario', () => {
-    it('fails insert then succeeds after restoring insertBefore', () => {
-      const ref = document.createComment('combo-ref');
+  describe("combined synthetic scenario", () => {
+    it("fails insert then succeeds after restoring insertBefore", () => {
+      const ref = document.createComment("combo-ref");
       host.appendChild(ref);
 
       const originalInsert = host.insertBefore.bind(host);
       (host as any).insertBefore = vi.fn(() => {
-        throw new Error('first-wave-fail');
+        throw new Error("first-wave-fail");
       });
 
-      const n1 = document.createElement('i');
-      n1.textContent = 'N1';
-      const n2 = document.createElement('i');
-      n2.textContent = 'N2';
+      const n1 = document.createElement("i");
+      n1.textContent = "N1";
+      const n2 = document.createElement("i");
+      n2.textContent = "N2";
 
       // First attempt (failure)
       insertNodesBefore([n1, n2], ref);

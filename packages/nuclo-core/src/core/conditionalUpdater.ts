@@ -1,4 +1,7 @@
-import { createHtmlElementWithModifiers, createSvgElementWithModifiers } from "../internal/applyModifiers";
+import {
+  createHtmlElementWithModifiers,
+  createSvgElementWithModifiers,
+} from "../internal/applyModifiers";
 import { isBrowser } from "../utility/environment";
 import {
   ConditionalInfo,
@@ -8,31 +11,51 @@ import {
   unregisterConditionalNode,
 } from "../utility/conditionalInfo";
 import { runCondition } from "../utility/conditions";
-import { replaceNodeSafely, createConditionalComment, createElement, createElementNS, SVG_NAMESPACE } from "../utility/dom";
+import {
+  replaceNodeSafely,
+  createConditionalComment,
+  createElement,
+  createElementNS,
+  SVG_NAMESPACE,
+} from "../utility/dom";
 import { logError } from "../utility/errorHandler";
 import type { UpdateScope } from "./updateScope";
 
 function createElementFromConditionalInfo<TTagName extends ElementTagName>(
-  conditionalInfo: ConditionalInfo<TTagName>
+  conditionalInfo: ConditionalInfo<TTagName>,
 ): ExpandedElement<TTagName> | SVGElement {
   try {
     if (conditionalInfo.isSvg) {
-      return createSvgElementWithModifiers(conditionalInfo.tagName as keyof SVGElementTagNameMap, conditionalInfo.modifiers);
+      return createSvgElementWithModifiers(
+        conditionalInfo.tagName as keyof SVGElementTagNameMap,
+        conditionalInfo.modifiers,
+      );
     }
-    return createHtmlElementWithModifiers(conditionalInfo.tagName, conditionalInfo.modifiers);
+    return createHtmlElementWithModifiers(
+      conditionalInfo.tagName,
+      conditionalInfo.modifiers,
+    );
   } catch (error) {
-    logError(`Error applying modifiers in conditional element "${conditionalInfo.tagName}"`, error);
+    logError(
+      `Error applying modifiers in conditional element "${conditionalInfo.tagName}"`,
+      error,
+    );
     // Return a basic element without modifiers as fallback
     if (conditionalInfo.isSvg) {
       const el = createElementNS(SVG_NAMESPACE, conditionalInfo.tagName);
       if (!el) {
-        throw new Error(`Failed to create SVG element: ${conditionalInfo.tagName}`, { cause: error });
+        throw new Error(
+          `Failed to create SVG element: ${conditionalInfo.tagName}`,
+          { cause: error },
+        );
       }
       return el as unknown as SVGElement;
     }
     const el = createElement(conditionalInfo.tagName);
     if (!el) {
-      throw new Error(`Failed to create element: ${conditionalInfo.tagName}`, { cause: error });
+      throw new Error(`Failed to create element: ${conditionalInfo.tagName}`, {
+        cause: error,
+      });
     }
     return el as ExpandedElement<TTagName>;
   }

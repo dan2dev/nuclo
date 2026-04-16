@@ -1,6 +1,9 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { WhenBuilderImpl, createWhenBuilderFunction } from "../../src/when/builder";
+import {
+  WhenBuilderImpl,
+  createWhenBuilderFunction,
+} from "../../src/when/builder";
 import { updateWhenRuntimes, clearWhenRuntimes } from "../../src/when/runtime";
 
 describe("when builder coverage improvements", () => {
@@ -181,7 +184,7 @@ describe("when builder coverage improvements", () => {
 
     it("should pass correct parameters to render", () => {
       const builder = new WhenBuilderImpl(() => true, "test");
-      const renderSpy = vi.spyOn(builder, 'render');
+      const renderSpy = vi.spyOn(builder, "render");
       const builderFn = createWhenBuilderFunction(builder);
 
       const testIndex = 5;

@@ -35,8 +35,11 @@ declare global {
     K extends keyof HTMLElementEventMap = keyof HTMLElementEventMap,
   >(
     type: K,
-    listener: TypedEventListener<HTMLElementTagNameMap[TTagName], HTMLElementEventMap[K]>,
-    options?: boolean | AddEventListenerOptions
+    listener: TypedEventListener<
+      HTMLElementTagNameMap[TTagName],
+      HTMLElementEventMap[K]
+    >,
+    options?: boolean | AddEventListenerOptions,
   ): NodeModFn<TTagName>;
 
   /**
@@ -48,11 +51,11 @@ declare global {
   function on<
     K extends string,
     E extends Event = Event,
-    TTagName extends ElementTagName = ElementTagName
+    TTagName extends ElementTagName = ElementTagName,
   >(
     type: K,
     listener: TypedEventListener<HTMLElementTagNameMap[TTagName], E>,
-    options?: boolean | AddEventListenerOptions
+    options?: boolean | AddEventListenerOptions,
   ): NodeModFn<TTagName>;
 }
 

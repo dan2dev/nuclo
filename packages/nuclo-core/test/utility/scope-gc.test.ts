@@ -17,8 +17,8 @@
  * refs return `undefined` from `.deref()`, simulating the post-GC state.
  */
 
-import { describe, it, expect, afterEach, vi } from 'vitest';
-import { scope, getScopeRoots } from '../../src/utility/scope';
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { scope, getScopeRoots } from "../../src/utility/scope";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -33,7 +33,9 @@ const OriginalWeakRef = globalThis.WeakRef;
 function installGCSimulator() {
   const invalidatedTargets = new Set<object>();
 
-  class SimulatedWeakRef<T extends WeakRef.Prototype> extends OriginalWeakRef<T> {
+  class SimulatedWeakRef<
+    T extends WeakRef.Prototype,
+  > extends OriginalWeakRef<T> {
     #target: T;
 
     constructor(target: T) {
@@ -65,76 +67,76 @@ function installGCSimulator() {
 
 // ── tests ─────────────────────────────────────────────────────────────────────
 
-describe('getScopeRoots – garbage-collected WeakRef cleanup (lines 53-54)', () => {
+describe("getScopeRoots – garbage-collected WeakRef cleanup (lines 53-54)", () => {
   let gcSim: ReturnType<typeof installGCSimulator>;
 
   afterEach(() => {
     gcSim?.restore();
-    document.body.innerHTML = '';
+    document.body.innerHTML = "";
   });
 
-  it('removes a garbage-collected ref and returns an empty array', () => {
+  it("removes a garbage-collected ref and returns an empty array", () => {
     gcSim = installGCSimulator();
 
-    const el = document.createElement('div');
+    const el = document.createElement("div");
     document.body.appendChild(el);
 
-    scope('gc-test')(el as ExpandedElement<'div'>, 0);
+    scope("gc-test")(el as ExpandedElement<"div">, 0);
 
     // Sanity check: scope root is found while element is alive
-    expect(getScopeRoots(['gc-test'])).toContain(el);
+    expect(getScopeRoots(["gc-test"])).toContain(el);
 
     // Simulate GC: WeakRef.deref() will now return undefined for `el`
     gcSim.invalidate(el);
 
     // getScopeRoots should hit lines 53-54, clean up the ref, return []
-    const roots = getScopeRoots(['gc-test']);
+    const roots = getScopeRoots(["gc-test"]);
     expect(roots).toHaveLength(0);
 
     // A second call confirms the ref was permanently removed from the set
-    const rootsAgain = getScopeRoots(['gc-test']);
+    const rootsAgain = getScopeRoots(["gc-test"]);
     expect(rootsAgain).toHaveLength(0);
   });
 
-  it('removes only the garbage-collected ref and keeps live refs', () => {
+  it("removes only the garbage-collected ref and keeps live refs", () => {
     gcSim = installGCSimulator();
 
-    const alive = document.createElement('div');
-    const collected = document.createElement('span');
+    const alive = document.createElement("div");
+    const collected = document.createElement("span");
     document.body.appendChild(alive);
     document.body.appendChild(collected);
 
-    scope('mixed-gc')(alive as ExpandedElement<'div'>, 0);
-    scope('mixed-gc')(collected as ExpandedElement<'span'>, 0);
+    scope("mixed-gc")(alive as ExpandedElement<"div">, 0);
+    scope("mixed-gc")(collected as ExpandedElement<"span">, 0);
 
     // Both are initially reachable
-    expect(getScopeRoots(['mixed-gc'])).toContain(alive);
-    expect(getScopeRoots(['mixed-gc'])).toContain(collected);
+    expect(getScopeRoots(["mixed-gc"])).toContain(alive);
+    expect(getScopeRoots(["mixed-gc"])).toContain(collected);
 
     // Simulate GC of only one element
     gcSim.invalidate(collected);
 
-    const roots = getScopeRoots(['mixed-gc']);
+    const roots = getScopeRoots(["mixed-gc"]);
     expect(roots).toContain(alive);
     expect(roots).not.toContain(collected);
     expect(roots).toHaveLength(1);
   });
 
-  it('handles all refs being garbage-collected across multiple scope ids', () => {
+  it("handles all refs being garbage-collected across multiple scope ids", () => {
     gcSim = installGCSimulator();
 
-    const elA = document.createElement('div');
-    const elB = document.createElement('div');
+    const elA = document.createElement("div");
+    const elB = document.createElement("div");
     document.body.appendChild(elA);
     document.body.appendChild(elB);
 
-    scope('gc-multi-a')(elA as ExpandedElement<'div'>, 0);
-    scope('gc-multi-b')(elB as ExpandedElement<'div'>, 0);
+    scope("gc-multi-a")(elA as ExpandedElement<"div">, 0);
+    scope("gc-multi-b")(elB as ExpandedElement<"div">, 0);
 
     gcSim.invalidate(elA);
     gcSim.invalidate(elB);
 
-    const roots = getScopeRoots(['gc-multi-a', 'gc-multi-b']);
+    const roots = getScopeRoots(["gc-multi-a", "gc-multi-b"]);
     expect(roots).toHaveLength(0);
   });
 });

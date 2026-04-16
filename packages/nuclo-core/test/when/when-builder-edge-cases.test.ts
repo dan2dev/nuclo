@@ -57,7 +57,7 @@ describe("when builder edge cases", () => {
     it("should chain multiple when conditions", () => {
       let condition1 = false;
       let condition2 = false;
-      
+
       const whenBuilder = when(() => condition1, "content1")
         .when(() => condition2, "content2")
         .else("else content");
@@ -87,7 +87,12 @@ describe("when builder edge cases", () => {
     });
 
     it("should handle multiple content items", () => {
-      const whenBuilder = when(() => true, "text1", "text2", document.createElement("div"));
+      const whenBuilder = when(
+        () => true,
+        "text1",
+        "text2",
+        document.createElement("div"),
+      );
       whenBuilder(container, 0);
       updateWhenRuntimes();
 
@@ -101,14 +106,14 @@ describe("when builder edge cases", () => {
     it("should not re-render if condition hasn't changed", () => {
       const condition = true;
       const whenBuilder = when(() => condition, "content");
-      
+
       whenBuilder(container, 0);
       updateWhenRuntimes();
-      
+
       const initialContent = container.textContent;
-      
+
       updateWhenRuntimes(); // Same condition
-      
+
       expect(container.textContent).toBe(initialContent);
     });
 
@@ -116,9 +121,9 @@ describe("when builder edge cases", () => {
       const condition = () => {
         throw new Error("condition error");
       };
-      
+
       const whenBuilder = when(condition, "content");
-      
+
       // Initial render will throw because resolveCondition doesn't have error handler
       // in evaluateActiveCondition
       expect(() => {
@@ -134,16 +139,16 @@ describe("when builder edge cases", () => {
         }
         return true;
       };
-      
+
       const whenBuilder = when(condition, "content");
       whenBuilder(container, 0);
       updateWhenRuntimes();
-      
+
       expect(container.textContent).toContain("content");
-      
+
       shouldThrow = true;
       updateWhenRuntimes(); // Should clean up runtime
-      
+
       // Runtime should be removed, so further updates won't work
       shouldThrow = false;
       updateWhenRuntimes();
@@ -154,36 +159,33 @@ describe("when builder edge cases", () => {
 
   describe("when builder with else", () => {
     it("should render else content when no conditions match", () => {
-      const whenBuilder = when(() => false, "content")
-        .else("else content");
-      
+      const whenBuilder = when(() => false, "content").else("else content");
+
       whenBuilder(container, 0);
       updateWhenRuntimes();
-      
+
       expect(container.textContent).toContain("else content");
     });
 
     it("should not render else if a condition matches", () => {
-      const whenBuilder = when(() => true, "content")
-        .else("else content");
-      
+      const whenBuilder = when(() => true, "content").else("else content");
+
       whenBuilder(container, 0);
       updateWhenRuntimes();
-      
+
       expect(container.textContent).toContain("content");
       expect(container.textContent).not.toContain("else content");
     });
 
     it("should handle empty else content", () => {
-      const whenBuilder = when(() => false, "content")
-        .else();
-      
+      const whenBuilder = when(() => false, "content").else();
+
       whenBuilder(container, 0);
       updateWhenRuntimes();
-      
+
       // Should have markers but no content
       const comments = Array.from(container.childNodes).filter(
-        n => n.nodeType === Node.COMMENT_NODE
+        (n) => n.nodeType === Node.COMMENT_NODE,
       );
       expect(comments.length).toBeGreaterThan(0);
     });
@@ -193,11 +195,11 @@ describe("when builder edge cases", () => {
     it("should create start and end markers", () => {
       const whenBuilder = when(() => true, "content");
       const marker = whenBuilder(container, 0);
-      
+
       expect(marker).toBeInstanceOf(Comment);
       // Should have markers in the container
       const comments = Array.from(container.childNodes).filter(
-        n => n.nodeType === Node.COMMENT_NODE
+        (n) => n.nodeType === Node.COMMENT_NODE,
       );
       expect(comments.length).toBeGreaterThanOrEqual(1);
     });
@@ -205,18 +207,18 @@ describe("when builder edge cases", () => {
     it("should clear content between markers on update", () => {
       let condition = true;
       const whenBuilder = when(() => condition, "content1");
-      
+
       whenBuilder(container, 0);
       updateWhenRuntimes();
-      
+
       expect(container.textContent).toContain("content1");
-      
+
       condition = false;
       updateWhenRuntimes();
-      
+
       // Content should be cleared, markers should remain
       const comments = Array.from(container.childNodes).filter(
-        n => n.nodeType === Node.COMMENT_NODE
+        (n) => n.nodeType === Node.COMMENT_NODE,
       );
       expect(comments.length).toBeGreaterThan(0);
     });

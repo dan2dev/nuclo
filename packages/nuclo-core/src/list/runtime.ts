@@ -1,6 +1,15 @@
-import { createMarkerPair, safeRemoveChild, isNodeConnected } from "../utility/dom";
+import {
+  createMarkerPair,
+  safeRemoveChild,
+  isNodeConnected,
+} from "../utility/dom";
 import { resolveRenderable } from "../utility/renderables";
-import { isHydrating, claimChild, getCursor, setCursor } from "../hydration/context";
+import {
+  isHydrating,
+  claimChild,
+  getCursor,
+  setCursor,
+} from "../hydration/context";
 
 function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
   if (a === b) return true;
@@ -10,7 +19,13 @@ function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
   }
   return true;
 }
-import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsInput, ListItemsProvider } from "./types";
+import type {
+  ListRenderer,
+  ListRuntime,
+  ListItemRecord,
+  ListItemsInput,
+  ListItemsProvider,
+} from "./types";
 import type { UpdateScope } from "../core/updateScope";
 import { isBrowser } from "../utility/environment";
 
@@ -19,11 +34,17 @@ import { isBrowser } from "../utility/environment";
  * Comment nodes can be garbage collected when removed from DOM.
  * The runtime object itself is mutable and will be updated in place.
  */
-interface ListRuntimeInfo<TItem = unknown, TTagName extends ElementTagName = ElementTagName> {
+interface ListRuntimeInfo<
+  TItem = unknown,
+  TTagName extends ElementTagName = ElementTagName,
+> {
   runtime: ListRuntime<TItem, TTagName>;
 }
 
-const activeListRuntimes = new Map<WeakRef<Comment>, ListRuntimeInfo<unknown, ElementTagName>>();
+const activeListRuntimes = new Map<
+  WeakRef<Comment>,
+  ListRuntimeInfo<unknown, ElementTagName>
+>();
 
 interface ReleasedListItemRecord<TItem, TTagName extends ElementTagName> {
   item: TItem | null;
@@ -43,20 +64,25 @@ function renderItem<TItem, TTagName extends ElementTagName>(
   return resolveRenderable<TTagName>(result, runtime.host, index);
 }
 
-function remove<TItem, TTagName extends ElementTagName>(record: ListItemRecord<TItem, TTagName>): void {
+function remove<TItem, TTagName extends ElementTagName>(
+  record: ListItemRecord<TItem, TTagName>,
+): void {
   safeRemoveChild(record.element as unknown as Node);
   // Clear the reference to help GC
-  const releasedRecord = record as unknown as ReleasedListItemRecord<TItem, TTagName>;
+  const releasedRecord = record as unknown as ReleasedListItemRecord<
+    TItem,
+    TTagName
+  >;
   releasedRecord.element = null;
   releasedRecord.item = null;
 }
 
 export function sync<TItem, TTagName extends ElementTagName>(
-  runtime: ListRuntime<TItem, TTagName>
+  runtime: ListRuntime<TItem, TTagName>,
 ): void {
   const { host, startMarker, endMarker } = runtime;
-  const parent = (startMarker.parentNode ?? (host as unknown as Node & ParentNode)) as
-    Node & ParentNode;
+  const parent = (startMarker.parentNode ??
+    (host as unknown as Node & ParentNode)) as Node & ParentNode;
 
   const currentItems = normalizeItems(runtime.itemsProvider());
 
@@ -91,8 +117,12 @@ export function sync<TItem, TTagName extends ElementTagName>(
     }
   }
 
-  const newRecords: Array<ListItemRecord<TItem, TTagName> | null> = new Array(currentItems.length);
-  const elementsToRemove = new Set<ListItemRecord<TItem, TTagName>>(runtime.records);
+  const newRecords: Array<ListItemRecord<TItem, TTagName> | null> = new Array(
+    currentItems.length,
+  );
+  const elementsToRemove = new Set<ListItemRecord<TItem, TTagName>>(
+    runtime.records,
+  );
   let nextSibling: Node = endMarker;
 
   for (let i = currentItems.length - 1; i >= 0; i--) {
@@ -133,9 +163,11 @@ export function sync<TItem, TTagName extends ElementTagName>(
     remove(record);
   }
 
-  runtime.records = newRecords.filter((r): r is ListItemRecord<TItem, TTagName> => r !== null);
+  runtime.records = newRecords.filter(
+    (r): r is ListItemRecord<TItem, TTagName> => r !== null,
+  );
   runtime.lastSyncedItems = currentItems.slice();
-  
+
   // If list is now empty, explicitly clear the records array to help GC
   if (newRecords.length === 0) {
     runtime.records = [];
@@ -143,7 +175,10 @@ export function sync<TItem, TTagName extends ElementTagName>(
   }
 }
 
-export function createListRuntime<TItem, TTagName extends ElementTagName = ElementTagName>(
+export function createListRuntime<
+  TItem,
+  TTagName extends ElementTagName = ElementTagName,
+>(
   itemsProvider: ListItemsProvider<TItem>,
   renderItem: ListRenderer<TItem, TTagName>,
   host: ExpandedElement<TTagName>,
@@ -162,7 +197,10 @@ function createListRuntimeNormal<TItem, TTagName extends ElementTagName>(
   host: ExpandedElement<TTagName>,
   index: number,
 ): ListRuntime<TItem, TTagName> {
-  const { start: startMarker, end: endMarker } = createMarkerPair("list", index);
+  const { start: startMarker, end: endMarker } = createMarkerPair(
+    "list",
+    index,
+  );
 
   const runtime: ListRuntime<TItem, TTagName> = {
     itemsProvider,
@@ -183,7 +221,10 @@ function createListRuntimeNormal<TItem, TTagName extends ElementTagName>(
   if (isBrowser) {
     // Register for future update() calls — not needed in SSR
     const runtimeInfo: ListRuntimeInfo<TItem, TTagName> = { runtime };
-    activeListRuntimes.set(new WeakRef(startMarker), runtimeInfo as ListRuntimeInfo<unknown, ElementTagName>);
+    activeListRuntimes.set(
+      new WeakRef(startMarker),
+      runtimeInfo as ListRuntimeInfo<unknown, ElementTagName>,
+    );
   }
 
   return runtime;
@@ -201,8 +242,11 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   // If not, fall back to normal (non-hydration) list creation.
   const cursor = getCursor(parentNode);
   const candidate = parentNode.childNodes[cursor];
-  if (!candidate || candidate.nodeType !== 8 ||
-      !(candidate as Comment).textContent?.startsWith('list-start-')) {
+  if (
+    !candidate ||
+    candidate.nodeType !== 8 ||
+    !(candidate as Comment).textContent?.startsWith("list-start-")
+  ) {
     return createListRuntimeNormal(itemsProvider, renderFn, host, index);
   }
 
@@ -213,7 +257,8 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   let endMarkerIdx = getCursor(parentNode);
   while (endMarkerIdx < parentNode.childNodes.length) {
     const node = parentNode.childNodes[endMarkerIdx];
-    if (node.nodeType === 8 && (node as Comment).textContent === 'list-end') break;
+    if (node.nodeType === 8 && (node as Comment).textContent === "list-end")
+      break;
     endMarkerIdx++;
   }
   const endMarker = parentNode.childNodes[endMarkerIdx] as Comment;
@@ -245,7 +290,10 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
 
   if (isBrowser) {
     const runtimeInfo: ListRuntimeInfo<TItem, TTagName> = { runtime };
-    activeListRuntimes.set(new WeakRef(startMarker), runtimeInfo as ListRuntimeInfo<unknown, ElementTagName>);
+    activeListRuntimes.set(
+      new WeakRef(startMarker),
+      runtimeInfo as ListRuntimeInfo<unknown, ElementTagName>,
+    );
   }
 
   return runtime;
@@ -253,7 +301,10 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
 
 function releaseRuntime(runtime: ListRuntime<unknown, ElementTagName>): void {
   for (let i = 0; i < runtime.records.length; i++) {
-    const record = runtime.records[i] as unknown as ReleasedListItemRecord<unknown, ElementTagName>;
+    const record = runtime.records[i] as unknown as ReleasedListItemRecord<
+      unknown,
+      ElementTagName
+    >;
     record.element = null;
     record.item = null;
   }
@@ -267,7 +318,11 @@ export function updateListRuntimes(scope?: UpdateScope): void {
     const startMarker = ref.deref();
 
     // Clean up if marker was GC'd or disconnected from DOM
-    if (!startMarker || !isNodeConnected(startMarker) || !isNodeConnected(info.runtime.endMarker)) {
+    if (
+      !startMarker ||
+      !isNodeConnected(startMarker) ||
+      !isNodeConnected(info.runtime.endMarker)
+    ) {
       releaseRuntime(info.runtime);
       toDelete.push(ref);
       continue;
@@ -284,4 +339,3 @@ export function updateListRuntimes(scope?: UpdateScope): void {
     activeListRuntimes.delete(ref);
   }
 }
-

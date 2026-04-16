@@ -1,6 +1,7 @@
 declare global {
-  export type SVGAttributeValue<TValue = string | number | boolean | null | undefined> =
-    ValueOrFactory<TValue>;
+  export type SVGAttributeValue<
+    TValue = string | number | boolean | null | undefined,
+  > = ValueOrFactory<TValue>;
 
   // SVG attribute types that accept string values for all SVG properties
   // This is needed because SVG DOM properties like 'width' are SVGAnimatedLength,
@@ -84,12 +85,19 @@ declare global {
     | SVGElement
     | Node;
 
-  export type SVGElementModifier<TTagName extends keyof SVGElementTagNameMap = keyof SVGElementTagNameMap> =
+  export type SVGElementModifier<
+    TTagName extends keyof SVGElementTagNameMap = keyof SVGElementTagNameMap,
+  > =
     | SVGRenderable<TTagName>
     | ValueFactory<Primitive>
-    | ((parent: SVGElementTagNameMap[TTagName], index: number) => SVGElement | Node);  // Allow SVG element and Node builders as children
+    | ((
+        parent: SVGElementTagNameMap[TTagName],
+        index: number,
+      ) => SVGElement | Node); // Allow SVG element and Node builders as children
 
-  export type SVGElementModifierFn<TTagName extends keyof SVGElementTagNameMap = keyof SVGElementTagNameMap> = (
+  export type SVGElementModifierFn<
+    TTagName extends keyof SVGElementTagNameMap = keyof SVGElementTagNameMap,
+  > = (
     parent: SVGElementTagNameMap[TTagName],
     index: number,
   ) => SVGElementModifier<TTagName> | Node | void;
@@ -100,10 +108,11 @@ declare global {
 
   export type DetachedSVGElementFactory<
     TTagName extends SVGTagName = SVGTagName,
-  > = SVGElementModifierFn<TTagName> & ((
-    parent?: SVGElementTagNameMap[TTagName] | ExpandedElement<ElementTagName>,
-    index?: number,
-  ) => SVGElementTagNameMap[TTagName]);
+  > = SVGElementModifierFn<TTagName> &
+    ((
+      parent?: SVGElementTagNameMap[TTagName] | ExpandedElement<ElementTagName>,
+      index?: number,
+    ) => SVGElementTagNameMap[TTagName]);
 
   // SVG builder type - returns a NodeModFn-compatible function
   // Parameters are optional to allow standalone usage (e.g., svg()() for creating detached SVG)

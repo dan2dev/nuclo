@@ -20,27 +20,49 @@ describe("Counter application", () => {
   function buildCounter() {
     const app = div(
       div({ id: "count-display" }, () => String(count)),
-      when(
-        () => count > 0,
-        span({ id: "sign-label" }, "positive")
-      )
+      when(() => count > 0, span({ id: "sign-label" }, "positive"))
         .when(() => count < 0, span({ id: "sign-label" }, "negative"))
         .else(span({ id: "sign-label" }, "zero")),
-      button({ id: "btn-inc" }, "Increment", on("click", () => { count++; update(); })),
-      button({ id: "btn-dec" }, "Decrement", on("click", () => { count--; update(); })),
-      button({ id: "btn-reset" }, "Reset", on("click", () => { count = 0; update(); })),
+      button(
+        { id: "btn-inc" },
+        "Increment",
+        on("click", () => {
+          count++;
+          update();
+        }),
+      ),
+      button(
+        { id: "btn-dec" },
+        "Decrement",
+        on("click", () => {
+          count--;
+          update();
+        }),
+      ),
+      button(
+        { id: "btn-reset" },
+        "Reset",
+        on("click", () => {
+          count = 0;
+          update();
+        }),
+      ),
       ul(
         list(
           () => [1, 5, 10],
-          (step) => li(
-            button(
-              { className: `step-btn step-${step}` },
-              `+${step}`,
-              on("click", () => { count += step; update(); })
-            )
-          )
-        )
-      )
+          (step) =>
+            li(
+              button(
+                { className: `step-btn step-${step}` },
+                `+${step}`,
+                on("click", () => {
+                  count += step;
+                  update();
+                }),
+              ),
+            ),
+        ),
+      ),
     );
     render(app, document.body);
   }
@@ -128,7 +150,11 @@ describe("Counter application", () => {
 // ============================================================
 
 describe("Todo list application", () => {
-  interface Todo { id: number; text: string; done: boolean; }
+  interface Todo {
+    id: number;
+    text: string;
+    done: boolean;
+  }
   let todos: Todo[];
   let filter: string;
   let nextId: number;
@@ -145,8 +171,8 @@ describe("Todo list application", () => {
   });
 
   function filteredTodos() {
-    if (filter === "active") return todos.filter(t => !t.done);
-    if (filter === "completed") return todos.filter(t => t.done);
+    if (filter === "active") return todos.filter((t) => !t.done);
+    if (filter === "completed") return todos.filter((t) => t.done);
     return todos;
   }
 
@@ -154,68 +180,106 @@ describe("Todo list application", () => {
     let newTodoText = "";
 
     const app = div(
-      div({ id: "items-left" }, () => `${todos.filter(t => !t.done).length} items left`),
-      div({ id: "filters" },
-        button({ id: "filter-all" }, "All", on("click", () => { filter = "all"; update(); })),
-        button({ id: "filter-active" }, "Active", on("click", () => { filter = "active"; update(); })),
-        button({ id: "filter-completed" }, "Completed", on("click", () => { filter = "completed"; update(); }))
+      div(
+        { id: "items-left" },
+        () => `${todos.filter((t) => !t.done).length} items left`,
       ),
-      ul({ id: "todo-list" },
+      div(
+        { id: "filters" },
+        button(
+          { id: "filter-all" },
+          "All",
+          on("click", () => {
+            filter = "all";
+            update();
+          }),
+        ),
+        button(
+          { id: "filter-active" },
+          "Active",
+          on("click", () => {
+            filter = "active";
+            update();
+          }),
+        ),
+        button(
+          { id: "filter-completed" },
+          "Completed",
+          on("click", () => {
+            filter = "completed";
+            update();
+          }),
+        ),
+      ),
+      ul(
+        { id: "todo-list" },
         list(
           () => filteredTodos(),
-          (todo) => li(
-            { className: `todo-item`, "data-id": String(todo.id) },
-            input({
-              type: "checkbox",
-              className: "todo-checkbox",
-              checked: todo.done,
-              "data-id": String(todo.id),
-            },
-              on("change", () => {
-                todo.done = !todo.done;
-                update();
-              })
+          (todo) =>
+            li(
+              { className: `todo-item`, "data-id": String(todo.id) },
+              input(
+                {
+                  type: "checkbox",
+                  className: "todo-checkbox",
+                  checked: todo.done,
+                  "data-id": String(todo.id),
+                },
+                on("change", () => {
+                  todo.done = !todo.done;
+                  update();
+                }),
+              ),
+              span(
+                {
+                  className: () => (todo.done ? "todo-text done" : "todo-text"),
+                  "data-id": String(todo.id),
+                },
+                todo.text,
+              ),
+              button(
+                { className: "delete-btn", "data-id": String(todo.id) },
+                "Delete",
+                on("click", () => {
+                  todos = todos.filter((t) => t.id !== todo.id);
+                  update();
+                }),
+              ),
             ),
-            span(
-              {
-                className: () => todo.done ? "todo-text done" : "todo-text",
-                "data-id": String(todo.id),
-              },
-              todo.text
-            ),
-            button(
-              { className: "delete-btn", "data-id": String(todo.id) },
-              "Delete",
-              on("click", () => {
-                todos = todos.filter(t => t.id !== todo.id);
-                update();
-              })
-            )
-          )
-        )
+        ),
       ),
-      div({ id: "add-todo" },
-        input({
-          id: "new-todo-input",
-          type: "text",
-          placeholder: "New todo",
-        },
+      div(
+        { id: "add-todo" },
+        input(
+          {
+            id: "new-todo-input",
+            type: "text",
+            placeholder: "New todo",
+          },
           on("input", (e) => {
             newTodoText = (e.target as HTMLInputElement).value;
-          })
+          }),
         ),
-        button({ id: "add-todo-btn" }, "Add",
+        button(
+          { id: "add-todo-btn" },
+          "Add",
           on("click", () => {
             if (newTodoText.trim()) {
-              todos.push({ id: nextId++, text: newTodoText.trim(), done: false });
+              todos.push({
+                id: nextId++,
+                text: newTodoText.trim(),
+                done: false,
+              });
               newTodoText = "";
-              const input = document.getElementById("new-todo-input") as HTMLInputElement;
+              const input = document.getElementById(
+                "new-todo-input",
+              ) as HTMLInputElement;
               if (input) input.value = "";
               update();
             }
-          })
-        )
-      )
+          }),
+        ),
+      ),
     );
     render(app, document.body);
   }
@@ -227,7 +291,9 @@ describe("Todo list application", () => {
 
   it("renders todo texts correctly", () => {
     buildTodoApp();
-    const texts = Array.from(document.querySelectorAll(".todo-text")).map(el => el.textContent);
+    const texts = Array.from(document.querySelectorAll(".todo-text")).map(
+      (el) => el.textContent,
+    );
     expect(texts).toContain("Buy groceries");
     expect(texts).toContain("Read book");
     expect(texts).toContain("Write code");
@@ -242,7 +308,9 @@ describe("Todo list application", () => {
 
   it("clicking checkbox marks todo as done and updates class", () => {
     buildTodoApp();
-    const checkbox = document.querySelector('.todo-checkbox[data-id="1"]') as HTMLElement;
+    const checkbox = document.querySelector(
+      '.todo-checkbox[data-id="1"]',
+    ) as HTMLElement;
     checkbox.click();
     const span = document.querySelector('.todo-text[data-id="1"]');
     expect(span!.classList.contains("done")).toBe(true);
@@ -251,7 +319,9 @@ describe("Todo list application", () => {
   it("delete button removes todo from list", () => {
     buildTodoApp();
     expect(document.querySelectorAll(".todo-item")).toHaveLength(3);
-    const deleteBtn = document.querySelector('.delete-btn[data-id="1"]') as HTMLElement;
+    const deleteBtn = document.querySelector(
+      '.delete-btn[data-id="1"]',
+    ) as HTMLElement;
     deleteBtn.click();
     expect(document.querySelectorAll(".todo-item")).toHaveLength(2);
   });
@@ -263,7 +333,9 @@ describe("Todo list application", () => {
     input.dispatchEvent(new Event("input"));
     (document.getElementById("add-todo-btn") as HTMLElement).click();
     expect(document.querySelectorAll(".todo-item")).toHaveLength(4);
-    const texts = Array.from(document.querySelectorAll(".todo-text")).map(el => el.textContent);
+    const texts = Array.from(document.querySelectorAll(".todo-text")).map(
+      (el) => el.textContent,
+    );
     expect(texts).toContain("New task");
   });
 
@@ -273,7 +345,9 @@ describe("Todo list application", () => {
     const items = document.querySelectorAll(".todo-item");
     // "Read book" is done so should not appear
     expect(items).toHaveLength(2);
-    const texts = Array.from(document.querySelectorAll(".todo-text")).map(el => el.textContent);
+    const texts = Array.from(document.querySelectorAll(".todo-text")).map(
+      (el) => el.textContent,
+    );
     expect(texts).not.toContain("Read book");
   });
 
@@ -295,10 +369,16 @@ describe("Todo list application", () => {
   it("items-left counter shows correct count", () => {
     buildTodoApp();
     // 2 undone initially
-    expect(document.getElementById("items-left")!.textContent).toBe("2 items left");
-    const checkbox = document.querySelector('.todo-checkbox[data-id="1"]') as HTMLElement;
+    expect(document.getElementById("items-left")!.textContent).toBe(
+      "2 items left",
+    );
+    const checkbox = document.querySelector(
+      '.todo-checkbox[data-id="1"]',
+    ) as HTMLElement;
     checkbox.click();
-    expect(document.getElementById("items-left")!.textContent).toBe("1 items left");
+    expect(document.getElementById("items-left")!.textContent).toBe(
+      "1 items left",
+    );
   });
 });
 
@@ -307,7 +387,12 @@ describe("Todo list application", () => {
 // ============================================================
 
 describe("Shopping cart", () => {
-  interface CartItem { id: number; name: string; price: number; qty: number; }
+  interface CartItem {
+    id: number;
+    name: string;
+    price: number;
+    qty: number;
+  }
   let cartItems: CartItem[];
 
   beforeEach(() => {
@@ -326,64 +411,87 @@ describe("Shopping cart", () => {
     const app = div(
       when(
         () => cartItems.length === 0,
-        p({ id: "empty-cart" }, "Your cart is empty")
+        p({ id: "empty-cart" }, "Your cart is empty"),
       ),
-      table({ id: "cart-table" },
-        thead(tr(th("Name"), th("Price"), th("Qty"), th("Subtotal"), th("Actions"))),
+      table(
+        { id: "cart-table" },
+        thead(
+          tr(th("Name"), th("Price"), th("Qty"), th("Subtotal"), th("Actions")),
+        ),
         tbody(
           list(
             () => cartItems,
-            (item) => tr(
-              { "data-id": String(item.id) },
-              td({ className: "item-name" }, item.name),
-              td({ className: "item-price" }, () => `$${item.price.toFixed(2)}`),
-              td({ className: "item-qty" },
-                button(
-                  { className: "qty-dec", "data-id": String(item.id) },
-                  "-",
-                  on("click", () => {
-                    if (item.qty > 1) { item.qty--; update(); }
-                  })
+            (item) =>
+              tr(
+                { "data-id": String(item.id) },
+                td({ className: "item-name" }, item.name),
+                td(
+                  { className: "item-price" },
+                  () => `$${item.price.toFixed(2)}`,
                 ),
-                span({ className: "qty-value", "data-id": String(item.id) }, () => String(item.qty)),
-                button(
-                  { className: "qty-inc", "data-id": String(item.id) },
-                  "+",
-                  on("click", () => { item.qty++; update(); })
-                )
+                td(
+                  { className: "item-qty" },
+                  button(
+                    { className: "qty-dec", "data-id": String(item.id) },
+                    "-",
+                    on("click", () => {
+                      if (item.qty > 1) {
+                        item.qty--;
+                        update();
+                      }
+                    }),
+                  ),
+                  span(
+                    { className: "qty-value", "data-id": String(item.id) },
+                    () => String(item.qty),
+                  ),
+                  button(
+                    { className: "qty-inc", "data-id": String(item.id) },
+                    "+",
+                    on("click", () => {
+                      item.qty++;
+                      update();
+                    }),
+                  ),
+                ),
+                td(
+                  { className: "item-subtotal", "data-id": String(item.id) },
+                  () => `$${(item.price * item.qty).toFixed(2)}`,
+                ),
+                td(
+                  button(
+                    { className: "remove-btn", "data-id": String(item.id) },
+                    "Remove",
+                    on("click", () => {
+                      cartItems = cartItems.filter((i) => i.id !== item.id);
+                      update();
+                    }),
+                  ),
+                ),
               ),
-              td({ className: "item-subtotal", "data-id": String(item.id) }, () => `$${(item.price * item.qty).toFixed(2)}`),
-              td(
-                button(
-                  { className: "remove-btn", "data-id": String(item.id) },
-                  "Remove",
-                  on("click", () => {
-                    cartItems = cartItems.filter(i => i.id !== item.id);
-                    update();
-                  })
-                )
-              )
-            )
-          )
-        )
+          ),
+        ),
       ),
-      div({ id: "cart-totals" },
+      div(
+        { id: "cart-totals" },
         div({ id: "subtotal" }, () => `Subtotal: $${total().toFixed(2)}`),
         when(
           () => total() >= 50,
-          div({ id: "shipping" }, "Shipping: FREE")
-        ).else(
-          div({ id: "shipping" }, () => `Shipping: $5.99`)
+          div({ id: "shipping" }, "Shipping: FREE"),
+        ).else(div({ id: "shipping" }, () => `Shipping: $5.99`)),
+        div(
+          { id: "total" },
+          () =>
+            `Total: $${(total() >= 50 ? total() : total() + 5.99).toFixed(2)}`,
         ),
-        div({ id: "total" }, () => `Total: $${(total() >= 50 ? total() : total() + 5.99).toFixed(2)}`),
       ),
       button(
         {
           id: "checkout-btn",
           disabled: () => cartItems.length === 0,
         },
-        "Checkout"
-      )
+        "Checkout",
+      ),
     );
     render(app, document.body);
   }
@@ -395,7 +503,9 @@ describe("Shopping cart", () => {
 
   it("renders item names correctly", () => {
     buildCart();
-    const names = Array.from(document.querySelectorAll(".item-name")).map(el => el.textContent);
+    const names = Array.from(document.querySelectorAll(".item-name")).map(
+      (el) => el.textContent,
+    );
     expect(names).toContain("Widget A");
     expect(names).toContain("Widget B");
   });
@@ -403,29 +513,41 @@ describe("Shopping cart", () => {
   it("shows correct initial subtotal", () => {
     buildCart();
     // 9.99*1 + 24.99*2 = 59.97
-    expect(document.getElementById("subtotal")!.textContent).toBe("Subtotal: $59.97");
+    expect(document.getElementById("subtotal")!.textContent).toBe(
+      "Subtotal: $59.97",
+    );
   });
 
   it("increasing quantity updates qty display", () => {
     buildCart();
-    const incBtn = document.querySelector('.qty-inc[data-id="1"]') as HTMLElement;
+    const incBtn = document.querySelector(
+      '.qty-inc[data-id="1"]',
+    ) as HTMLElement;
     incBtn.click();
-    expect(document.querySelector('.qty-value[data-id="1"]')!.textContent).toBe("2");
+    expect(document.querySelector('.qty-value[data-id="1"]')!.textContent).toBe(
+      "2",
+    );
   });
 
   it("increasing quantity updates item subtotal", () => {
     buildCart();
-    const incBtn = document.querySelector('.qty-inc[data-id="1"]') as HTMLElement;
+    const incBtn = document.querySelector(
+      '.qty-inc[data-id="1"]',
+    ) as HTMLElement;
     incBtn.click();
     // 9.99 * 2 = 19.98
-    expect(document.querySelector('.item-subtotal[data-id="1"]')!.textContent).toBe("$19.98");
+    expect(
+      document.querySelector('.item-subtotal[data-id="1"]')!.textContent,
+    ).toBe("$19.98");
   });
 
   it("removing an item updates the list", () => {
     buildCart();
     (document.querySelector('.remove-btn[data-id="1"]') as HTMLElement).click();
     expect(document.querySelectorAll("tbody tr")).toHaveLength(1);
-    const names = Array.from(document.querySelectorAll(".item-name")).map(el => el.textContent);
+    const names = Array.from(document.querySelectorAll(".item-name")).map(
+      (el) => el.textContent,
+    );
     expect(names).not.toContain("Widget A");
   });
 
@@ -435,13 +557,17 @@ describe("Shopping cart", () => {
     (document.querySelector('.remove-btn[data-id="1"]') as HTMLElement).click();
     (document.querySelector('.remove-btn[data-id="2"]') as HTMLElement).click();
     expect(document.getElementById("empty-cart")).toBeTruthy();
-    expect(document.getElementById("empty-cart")!.textContent).toBe("Your cart is empty");
+    expect(document.getElementById("empty-cart")!.textContent).toBe(
+      "Your cart is empty",
+    );
   });
 
   it("shows free shipping when total >= 50", () => {
     buildCart();
     // initial total is 59.97 which is >= 50
-    expect(document.getElementById("shipping")!.textContent).toBe("Shipping: FREE");
+    expect(document.getElementById("shipping")!.textContent).toBe(
+      "Shipping: FREE",
+    );
   });
 
   it("shows shipping cost when total < 50", () => {
@@ -460,9 +586,13 @@ describe("Shopping cart", () => {
 
   it("decrement does not go below 1", () => {
     buildCart();
-    const decBtn = document.querySelector('.qty-dec[data-id="1"]') as HTMLElement;
+    const decBtn = document.querySelector(
+      '.qty-dec[data-id="1"]',
+    ) as HTMLElement;
     decBtn.click(); // qty is 1, should stay at 1
-    expect(document.querySelector('.qty-value[data-id="1"]')!.textContent).toBe("1");
+    expect(document.querySelector('.qty-value[data-id="1"]')!.textContent).toBe(
+      "1",
+    );
   });
 });
 
@@ -488,25 +618,41 @@ describe("Multi-tab component", () => {
 
   function buildTabs() {
     const app = div(
-      nav({ id: "tab-nav" },
+      nav(
+        { id: "tab-nav" },
         list(
           () => tabs,
-          (tab) => button(
-            {
-              className: () => tab === activeTab ? "tab-btn active" : "tab-btn",
-              "data-tab": tab,
-            },
-            tab,
-            on("click", () => { activeTab = tab; update(); })
-          )
-        )
+          (tab) =>
+            button(
+              {
+                className: () =>
+                  tab === activeTab ? "tab-btn active" : "tab-btn",
+                "data-tab": tab,
+              },
+              tab,
+              on("click", () => {
+                activeTab = tab;
+                update();
+              }),
+            ),
+        ),
       ),
-      div({ id: "tab-content" },
-        when(() => activeTab === "Overview", p({ id: "content-overview" }, tabContents["Overview"]))
-          .when(() => activeTab === "Features", p({ id: "content-features" }, tabContents["Features"]))
-          .when(() => activeTab === "Pricing", p({ id: "content-pricing" }, tabContents["Pricing"]))
-          .else(p({ id: "content-support" }, tabContents["Support"]))
-      )
+      div(
+        { id: "tab-content" },
+        when(
+          () => activeTab === "Overview",
+          p({ id: "content-overview" }, tabContents["Overview"]),
+        )
+          .when(
+            () => activeTab === "Features",
+            p({ id: "content-features" }, tabContents["Features"]),
+          )
+          .when(
+            () => activeTab === "Pricing",
+            p({ id: "content-pricing" }, tabContents["Pricing"]),
+          )
+          .else(p({ id: "content-support" }, tabContents["Support"])),
+      ),
     );
     render(app, document.body);
   }
@@ -525,14 +671,18 @@ describe("Multi-tab component", () => {
   it("Overview content is visible initially", () => {
     buildTabs();
     expect(document.getElementById("content-overview")).toBeTruthy();
-    expect(document.getElementById("content-overview")!.textContent).toBe(tabContents["Overview"]);
+    expect(document.getElementById("content-overview")!.textContent).toBe(
+      tabContents["Overview"],
+    );
   });
 
   it("clicking 'Features' tab shows Features content", () => {
     buildTabs();
     (document.querySelector('[data-tab="Features"]') as HTMLElement).click();
     expect(document.getElementById("content-features")).toBeTruthy();
-    expect(document.getElementById("content-features")!.textContent).toBe(tabContents["Features"]);
+    expect(document.getElementById("content-features")!.textContent).toBe(
+      tabContents["Features"],
+    );
   });
 
   it("clicking 'Features' tab hides Overview content", () => {
@@ -552,7 +702,9 @@ describe("Multi-tab component", () => {
     buildTabs();
     for (const tab of tabs) {
       (document.querySelector(`[data-tab="${tab}"]`) as HTMLElement).click();
-      expect(document.getElementById("tab-content")!.textContent).toContain(tabContents[tab]);
+      expect(document.getElementById("tab-content")!.textContent).toContain(
+        tabContents[tab],
+      );
     }
   });
 
@@ -561,7 +713,9 @@ describe("Multi-tab component", () => {
     (document.querySelector('[data-tab="Features"]') as HTMLElement).click();
     (document.querySelector('[data-tab="Pricing"]') as HTMLElement).click();
     (document.querySelector('[data-tab="Overview"]') as HTMLElement).click();
-    expect(document.querySelector(".tab-btn.active")!.textContent).toBe("Overview");
+    expect(document.querySelector(".tab-btn.active")!.textContent).toBe(
+      "Overview",
+    );
     expect(document.getElementById("content-overview")).toBeTruthy();
   });
 
@@ -569,7 +723,9 @@ describe("Multi-tab component", () => {
     buildTabs();
     (document.querySelector('[data-tab="Support"]') as HTMLElement).click();
     expect(document.getElementById("content-support")).toBeTruthy();
-    expect(document.getElementById("content-support")!.textContent).toBe(tabContents["Support"]);
+    expect(document.getElementById("content-support")!.textContent).toBe(
+      tabContents["Support"],
+    );
   });
 });
 
@@ -581,11 +737,26 @@ describe("Accordion / FAQ", () => {
   let openIndex: number | null;
 
   const faqItems = [
-    { question: "What is Nuclo?", answer: "Nuclo is a lightweight imperative DOM framework." },
-    { question: "How does reactivity work?", answer: "By calling update() to re-render reactive parts." },
-    { question: "Is it SSR-compatible?", answer: "Yes, via the SSR utilities." },
-    { question: "What browsers are supported?", answer: "All modern browsers with ES2015+." },
-    { question: "Is it production ready?", answer: "Yes, it is stable and tested thoroughly." },
+    {
+      question: "What is Nuclo?",
+      answer: "Nuclo is a lightweight imperative DOM framework.",
+    },
+    {
+      question: "How does reactivity work?",
+      answer: "By calling update() to re-render reactive parts.",
+    },
+    {
+      question: "Is it SSR-compatible?",
+      answer: "Yes, via the SSR utilities.",
+    },
+    {
+      question: "What browsers are supported?",
+      answer: "All modern browsers with ES2015+.",
+    },
+    {
+      question: "Is it production ready?",
+      answer: "Yes, it is stable and tested thoroughly.",
+    },
   ];
 
   beforeEach(() => {
@@ -594,28 +765,33 @@ describe("Accordion / FAQ", () => {
   });
 
   function buildAccordion() {
-    const app = div({ id: "accordion" },
+    const app = div(
+      { id: "accordion" },
       list(
         () => faqItems,
-        (item, index) => div(
-          { className: "faq-item", "data-index": String(index) },
-          button(
-            {
-              className: "faq-question",
-              "data-index": String(index),
-            },
-            item.question,
-            on("click", () => {
-              openIndex = openIndex === index ? null : index;
-              update();
-            })
+        (item, index) =>
+          div(
+            { className: "faq-item", "data-index": String(index) },
+            button(
+              {
+                className: "faq-question",
+                "data-index": String(index),
+              },
+              item.question,
+              on("click", () => {
+                openIndex = openIndex === index ? null : index;
+                update();
+              }),
+            ),
+            when(
+              () => openIndex === index,
+              div(
+                { className: "faq-answer", "data-index": String(index) },
+                item.answer,
+              ),
+            ),
           ),
-          when(
-            () => openIndex === index,
-            div({ className: "faq-answer", "data-index": String(index) }, item.answer)
-          )
-        )
-      )
+      ),
     );
     render(app, document.body);
   }
@@ -638,20 +814,26 @@ describe("Accordion / FAQ", () => {
 
   it("clicking second question opens it and closes first", () => {
     buildAccordion();
-    (document.querySelector('.faq-question[data-index="1"]') as HTMLElement).click();
+    (
+      document.querySelector('.faq-question[data-index="1"]') as HTMLElement
+    ).click();
     expect(document.querySelector('.faq-answer[data-index="1"]')).toBeTruthy();
     expect(document.querySelector('.faq-answer[data-index="0"]')).toBeNull();
   });
 
   it("clicking an open item closes it", () => {
     buildAccordion();
-    (document.querySelector('.faq-question[data-index="0"]') as HTMLElement).click();
+    (
+      document.querySelector('.faq-question[data-index="0"]') as HTMLElement
+    ).click();
     expect(document.querySelector('.faq-answer[data-index="0"]')).toBeNull();
   });
 
   it("only one item open at a time", () => {
     buildAccordion();
-    (document.querySelector('.faq-question[data-index="2"]') as HTMLElement).click();
+    (
+      document.querySelector('.faq-question[data-index="2"]') as HTMLElement
+    ).click();
     const openAnswers = document.querySelectorAll(".faq-answer");
     expect(openAnswers).toHaveLength(1);
   });
@@ -664,7 +846,9 @@ describe("Accordion / FAQ", () => {
 
   it("switching to different item shows that item's answer", () => {
     buildAccordion();
-    (document.querySelector('.faq-question[data-index="3"]') as HTMLElement).click();
+    (
+      document.querySelector('.faq-question[data-index="3"]') as HTMLElement
+    ).click();
     const answer = document.querySelector('.faq-answer[data-index="3"]');
     expect(answer!.textContent).toBe(faqItems[3].answer);
   });
@@ -676,7 +860,9 @@ describe("Accordion / FAQ", () => {
 
   it("closing all items shows no answers", () => {
     buildAccordion();
-    (document.querySelector('.faq-question[data-index="0"]') as HTMLElement).click();
+    (
+      document.querySelector('.faq-question[data-index="0"]') as HTMLElement
+    ).click();
     expect(document.querySelectorAll(".faq-answer")).toHaveLength(0);
   });
 });
@@ -687,7 +873,15 @@ describe("Accordion / FAQ", () => {
 
 describe("Search/filter list", () => {
   let query: string;
-  const allItems = ["Apple", "Banana", "Cherry", "Date", "Elderberry", "Fig", "Grape"];
+  const allItems = [
+    "Apple",
+    "Banana",
+    "Cherry",
+    "Date",
+    "Elderberry",
+    "Fig",
+    "Grape",
+  ];
 
   beforeEach(() => {
     document.body.innerHTML = "";
@@ -695,32 +889,36 @@ describe("Search/filter list", () => {
   });
 
   function filteredItems() {
-    return allItems.filter(i => i.toLowerCase().includes(query.toLowerCase()));
+    return allItems.filter((i) =>
+      i.toLowerCase().includes(query.toLowerCase()),
+    );
   }
 
   function buildSearchList() {
     const app = div(
-      input({
-        id: "search-input",
-        type: "text",
-        placeholder: "Search...",
-      },
+      input(
+        {
+          id: "search-input",
+          type: "text",
+          placeholder: "Search...",
+        },
         on("input", (e) => {
           query = (e.target as HTMLInputElement).value;
           update();
-        })
+        }),
       ),
       p({ id: "count-text" }, () => `${filteredItems().length} items`),
       when(
         () => filteredItems().length === 0,
-        p({ id: "no-results" }, "No results")
+        p({ id: "no-results" }, "No results"),
       ),
-      ul({ id: "item-list" },
+      ul(
+        { id: "item-list" },
         list(
           () => filteredItems(),
-          (item) => li({ className: "fruit-item" }, item)
-        )
-      )
+          (item) => li({ className: "fruit-item" }, item),
+        ),
+      ),
     );
     render(app, document.body);
   }
@@ -740,7 +938,9 @@ describe("Search/filter list", () => {
     const input = document.getElementById("search-input") as HTMLInputElement;
     input.value = "a";
     input.dispatchEvent(new Event("input"));
-    const items = Array.from(document.querySelectorAll(".fruit-item")).map(el => el.textContent);
+    const items = Array.from(document.querySelectorAll(".fruit-item")).map(
+      (el) => el.textContent,
+    );
     expect(items).toContain("Apple");
     expect(items).toContain("Banana");
     expect(items).toContain("Date");
@@ -754,7 +954,9 @@ describe("Search/filter list", () => {
     input.value = "xyz";
     input.dispatchEvent(new Event("input"));
     expect(document.getElementById("no-results")).toBeTruthy();
-    expect(document.getElementById("no-results")!.textContent).toBe("No results");
+    expect(document.getElementById("no-results")!.textContent).toBe(
+      "No results",
+    );
   });
 
   it("filtering by 'xyz' shows 0 items", () => {
@@ -792,7 +994,9 @@ describe("Search/filter list", () => {
     input.value = "an";
     input.dispatchEvent(new Event("input"));
     // "Banana" contains "an"
-    expect(document.getElementById("count-text")!.textContent).toContain("items");
+    expect(document.getElementById("count-text")!.textContent).toContain(
+      "items",
+    );
     const count = parseInt(document.getElementById("count-text")!.textContent!);
     expect(count).toBeGreaterThan(0);
     expect(count).toBeLessThan(7);
@@ -803,7 +1007,9 @@ describe("Search/filter list", () => {
     const input = document.getElementById("search-input") as HTMLInputElement;
     input.value = "e";
     input.dispatchEvent(new Event("input"));
-    const items = Array.from(document.querySelectorAll(".fruit-item")).map(el => el.textContent);
+    const items = Array.from(document.querySelectorAll(".fruit-item")).map(
+      (el) => el.textContent,
+    );
     expect(items).toContain("Cherry");
     expect(items).toContain("Elderberry");
   });
@@ -839,54 +1045,65 @@ describe("Registration form with validation", () => {
   }
 
   function buildForm() {
-    const app = form({ id: "reg-form" },
+    const app = form(
+      { id: "reg-form" },
       div(
         label("Name:"),
-        input({
-          id: "name-input",
-          type: "text",
-        },
+        input(
+          {
+            id: "name-input",
+            type: "text",
+          },
           on("input", (e) => {
             nameVal = (e.target as HTMLInputElement).value;
-            if (interacted) { validate(); update(); }
-          })
+            if (interacted) {
+              validate();
+              update();
+            }
+          }),
         ),
         when(
           () => interacted && errors.includes("name"),
-          p({ id: "name-error", className: "error" }, "Name is required")
-        )
+          p({ id: "name-error", className: "error" }, "Name is required"),
+        ),
       ),
       div(
         label("Email:"),
-        input({
-          id: "email-input",
-          type: "email",
-        },
+        input(
+          {
+            id: "email-input",
+            type: "email",
+          },
           on("input", (e) => {
             emailVal = (e.target as HTMLInputElement).value;
-            if (interacted) { validate(); update(); }
-          })
+            if (interacted) {
+              validate();
+              update();
+            }
+          }),
         ),
         when(
           () => interacted && errors.includes("email"),
-          p({ id: "email-error", className: "error" }, "Invalid email address")
-        )
+          p({ id: "email-error", className: "error" }, "Invalid email address"),
+        ),
       ),
       div(
         label("Password:"),
-        input({
-          id: "password-input",
-          type: "password",
-        },
+        input(
+          {
+            id: "password-input",
+            type: "password",
+          },
           on("input", (e) => {
             passwordVal = (e.target as HTMLInputElement).value;
-          })
-        )
+          }),
+        ),
       ),
-      button({
-        id: "submit-btn",
-        type: "button",
-      },
+      button(
+        {
+          id: "submit-btn",
+          type: "button",
+        },
         "Register",
         on("click", () => {
           interacted = true;
@@ -894,12 +1111,12 @@ describe("Registration form with validation", () => {
             submitted = true;
           }
           update();
-        })
+        }),
       ),
       when(
         () => submitted,
-        div({ id: "success-msg" }, "Registration successful!")
-      )
+        div({ id: "success-msg" }, "Registration successful!"),
+      ),
     );
     render(app, document.body);
   }
@@ -929,12 +1146,16 @@ describe("Registration form with validation", () => {
     const nameInput = document.getElementById("name-input") as HTMLInputElement;
     nameInput.value = "Alice";
     nameInput.dispatchEvent(new Event("input"));
-    const emailInput = document.getElementById("email-input") as HTMLInputElement;
+    const emailInput = document.getElementById(
+      "email-input",
+    ) as HTMLInputElement;
     emailInput.value = "alice@example.com";
     emailInput.dispatchEvent(new Event("input"));
     (document.getElementById("submit-btn") as HTMLElement).click();
     expect(document.getElementById("success-msg")).toBeTruthy();
-    expect(document.getElementById("success-msg")!.textContent).toBe("Registration successful!");
+    expect(document.getElementById("success-msg")!.textContent).toBe(
+      "Registration successful!",
+    );
   });
 
   it("error messages disappear when fields corrected after interaction", () => {
@@ -964,7 +1185,9 @@ describe("Registration form with validation", () => {
     buildForm();
     (document.getElementById("submit-btn") as HTMLElement).click();
     expect(document.getElementById("email-error")).toBeTruthy();
-    const emailInput = document.getElementById("email-input") as HTMLInputElement;
+    const emailInput = document.getElementById(
+      "email-input",
+    ) as HTMLInputElement;
     emailInput.value = "valid@test.com";
     emailInput.dispatchEvent(new Event("input"));
     expect(document.getElementById("email-error")).toBeNull();
@@ -975,7 +1198,9 @@ describe("Registration form with validation", () => {
     const nameInput = document.getElementById("name-input") as HTMLInputElement;
     nameInput.value = "Alice";
     nameInput.dispatchEvent(new Event("input"));
-    const emailInput = document.getElementById("email-input") as HTMLInputElement;
+    const emailInput = document.getElementById(
+      "email-input",
+    ) as HTMLInputElement;
     emailInput.value = "alice@example.com";
     emailInput.dispatchEvent(new Event("input"));
     (document.getElementById("submit-btn") as HTMLElement).click();
@@ -997,8 +1222,16 @@ describe("Registration form with validation", () => {
 // ============================================================
 
 describe("Nested dynamic components", () => {
-  interface GroupItem { id: number; text: string; }
-  interface Group { id: number; title: string; items: GroupItem[]; collapsed: boolean; }
+  interface GroupItem {
+    id: number;
+    text: string;
+  }
+  interface Group {
+    id: number;
+    title: string;
+    items: GroupItem[];
+    collapsed: boolean;
+  }
   let groups: Group[];
   let nextItemId: number;
 
@@ -1006,64 +1239,103 @@ describe("Nested dynamic components", () => {
     document.body.innerHTML = "";
     nextItemId = 10;
     groups = [
-      { id: 1, title: "Group Alpha", collapsed: false, items: [{ id: 1, text: "Alpha 1" }, { id: 2, text: "Alpha 2" }] },
-      { id: 2, title: "Group Beta", collapsed: false, items: [{ id: 3, text: "Beta 1" }, { id: 4, text: "Beta 2" }, { id: 5, text: "Beta 3" }] },
-      { id: 3, title: "Group Gamma", collapsed: false, items: [{ id: 6, text: "Gamma 1" }] },
+      {
+        id: 1,
+        title: "Group Alpha",
+        collapsed: false,
+        items: [
+          { id: 1, text: "Alpha 1" },
+          { id: 2, text: "Alpha 2" },
+        ],
+      },
+      {
+        id: 2,
+        title: "Group Beta",
+        collapsed: false,
+        items: [
+          { id: 3, text: "Beta 1" },
+          { id: 4, text: "Beta 2" },
+          { id: 5, text: "Beta 3" },
+        ],
+      },
+      {
+        id: 3,
+        title: "Group Gamma",
+        collapsed: false,
+        items: [{ id: 6, text: "Gamma 1" }],
+      },
     ];
   });
 
   function buildNested() {
-    const app = div({ id: "groups-container" },
+    const app = div(
+      { id: "groups-container" },
       list(
         () => groups,
-        (group) => div(
-          { className: "group", "data-group-id": String(group.id) },
-          div({ className: "group-header" },
-            button(
-              {
-                className: "group-toggle",
-                "data-group-id": String(group.id),
-              },
-              () => group.collapsed ? `▶ ${group.title}` : `▼ ${group.title}`,
-              on("click", () => { group.collapsed = !group.collapsed; update(); })
+        (group) =>
+          div(
+            { className: "group", "data-group-id": String(group.id) },
+            div(
+              { className: "group-header" },
+              button(
+                {
+                  className: "group-toggle",
+                  "data-group-id": String(group.id),
+                },
+                () =>
+                  group.collapsed ? `▶ ${group.title}` : `▼ ${group.title}`,
+                on("click", () => {
+                  group.collapsed = !group.collapsed;
+                  update();
+                }),
+              ),
+              button(
+                {
+                  className: "add-item-btn",
+                  "data-group-id": String(group.id),
+                },
+                "Add item",
+                on("click", () => {
+                  group.items.push({
+                    id: nextItemId++,
+                    text: `${group.title} item ${group.items.length + 1}`,
+                  });
+                  update();
+                }),
+              ),
             ),
-            button(
-              {
-                className: "add-item-btn",
-                "data-group-id": String(group.id),
-              },
-              "Add item",
-              on("click", () => {
-                group.items.push({ id: nextItemId++, text: `${group.title} item ${group.items.length + 1}` });
-                update();
-              })
-            )
+            when(
+              () => !group.collapsed,
+              ul(
+                { className: "group-items", "data-group-id": String(group.id) },
+                list(
+                  () => group.items,
+                  (item) =>
+                    li(
+                      {
+                        className: "group-item",
+                        "data-item-id": String(item.id),
+                      },
+                      item.text,
+                      button(
+                        {
+                          className: "delete-item-btn",
+                          "data-item-id": String(item.id),
+                        },
+                        "×",
+                        on("click", () => {
+                          group.items = group.items.filter(
+                            (i) => i.id !== item.id,
+                          );
+                          update();
+                        }),
+                      ),
+                    ),
+                ),
+              ),
+            ),
           ),
-          when(
-            () => !group.collapsed,
-            ul({ className: "group-items", "data-group-id": String(group.id) },
-              list(
-                () => group.items,
-                (item) => li(
-                  { className: "group-item", "data-item-id": String(item.id) },
-                  item.text,
-                  button(
-                    {
-                      className: "delete-item-btn",
-                      "data-item-id": String(item.id),
-                    },
-                    "×",
-                    on("click", () => {
-                      group.items = group.items.filter(i => i.id !== item.id);
-                      update();
-                    })
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
+      ),
     );
     render(app, document.body);
   }
@@ -1081,70 +1353,126 @@ describe("Nested dynamic components", () => {
 
   it("renders group titles correctly", () => {
     buildNested();
-    const titles = Array.from(document.querySelectorAll(".group-toggle")).map(el => el.textContent);
-    expect(titles.some(t => t!.includes("Group Alpha"))).toBe(true);
-    expect(titles.some(t => t!.includes("Group Beta"))).toBe(true);
-    expect(titles.some(t => t!.includes("Group Gamma"))).toBe(true);
+    const titles = Array.from(document.querySelectorAll(".group-toggle")).map(
+      (el) => el.textContent,
+    );
+    expect(titles.some((t) => t!.includes("Group Alpha"))).toBe(true);
+    expect(titles.some((t) => t!.includes("Group Beta"))).toBe(true);
+    expect(titles.some((t) => t!.includes("Group Gamma"))).toBe(true);
   });
 
   it("collapsing a group hides its items", () => {
     buildNested();
-    (document.querySelector('.group-toggle[data-group-id="1"]') as HTMLElement).click();
+    (
+      document.querySelector('.group-toggle[data-group-id="1"]') as HTMLElement
+    ).click();
     // Group 1 items should be hidden
-    expect(document.querySelector('.group-items[data-group-id="1"]')).toBeNull();
+    expect(
+      document.querySelector('.group-items[data-group-id="1"]'),
+    ).toBeNull();
   });
 
   it("collapsing one group does not hide other groups items", () => {
     buildNested();
-    (document.querySelector('.group-toggle[data-group-id="1"]') as HTMLElement).click();
+    (
+      document.querySelector('.group-toggle[data-group-id="1"]') as HTMLElement
+    ).click();
     // Group 2 items should still be visible
-    expect(document.querySelector('.group-items[data-group-id="2"]')).toBeTruthy();
-    expect(document.querySelectorAll('.group-items[data-group-id="2"] .group-item')).toHaveLength(3);
+    expect(
+      document.querySelector('.group-items[data-group-id="2"]'),
+    ).toBeTruthy();
+    expect(
+      document.querySelectorAll('.group-items[data-group-id="2"] .group-item'),
+    ).toHaveLength(3);
   });
 
   it("expanding a collapsed group shows items again", () => {
     buildNested();
-    (document.querySelector('.group-toggle[data-group-id="1"]') as HTMLElement).click();
-    expect(document.querySelector('.group-items[data-group-id="1"]')).toBeNull();
-    (document.querySelector('.group-toggle[data-group-id="1"]') as HTMLElement).click();
-    expect(document.querySelector('.group-items[data-group-id="1"]')).toBeTruthy();
-    expect(document.querySelectorAll('.group-items[data-group-id="1"] .group-item')).toHaveLength(2);
+    (
+      document.querySelector('.group-toggle[data-group-id="1"]') as HTMLElement
+    ).click();
+    expect(
+      document.querySelector('.group-items[data-group-id="1"]'),
+    ).toBeNull();
+    (
+      document.querySelector('.group-toggle[data-group-id="1"]') as HTMLElement
+    ).click();
+    expect(
+      document.querySelector('.group-items[data-group-id="1"]'),
+    ).toBeTruthy();
+    expect(
+      document.querySelectorAll('.group-items[data-group-id="1"] .group-item'),
+    ).toHaveLength(2);
   });
 
   it("adding item to a group updates that group's list", () => {
     buildNested();
-    expect(document.querySelectorAll('.group-items[data-group-id="1"] .group-item')).toHaveLength(2);
-    (document.querySelector('.add-item-btn[data-group-id="1"]') as HTMLElement).click();
-    expect(document.querySelectorAll('.group-items[data-group-id="1"] .group-item')).toHaveLength(3);
+    expect(
+      document.querySelectorAll('.group-items[data-group-id="1"] .group-item'),
+    ).toHaveLength(2);
+    (
+      document.querySelector('.add-item-btn[data-group-id="1"]') as HTMLElement
+    ).click();
+    expect(
+      document.querySelectorAll('.group-items[data-group-id="1"] .group-item'),
+    ).toHaveLength(3);
   });
 
   it("adding item to group does not affect other groups", () => {
     buildNested();
-    (document.querySelector('.add-item-btn[data-group-id="1"]') as HTMLElement).click();
-    expect(document.querySelectorAll('.group-items[data-group-id="2"] .group-item')).toHaveLength(3);
+    (
+      document.querySelector('.add-item-btn[data-group-id="1"]') as HTMLElement
+    ).click();
+    expect(
+      document.querySelectorAll('.group-items[data-group-id="2"] .group-item'),
+    ).toHaveLength(3);
   });
 
   it("deleting item from group updates that group's list", () => {
     buildNested();
-    expect(document.querySelectorAll('.group-items[data-group-id="2"] .group-item')).toHaveLength(3);
-    (document.querySelector('.delete-item-btn[data-item-id="3"]') as HTMLElement).click();
-    expect(document.querySelectorAll('.group-items[data-group-id="2"] .group-item')).toHaveLength(2);
+    expect(
+      document.querySelectorAll('.group-items[data-group-id="2"] .group-item'),
+    ).toHaveLength(3);
+    (
+      document.querySelector(
+        '.delete-item-btn[data-item-id="3"]',
+      ) as HTMLElement
+    ).click();
+    expect(
+      document.querySelectorAll('.group-items[data-group-id="2"] .group-item'),
+    ).toHaveLength(2);
   });
 
   it("multiple groups can be expanded simultaneously", () => {
     buildNested();
     // All groups start expanded
-    expect(document.querySelector('.group-items[data-group-id="1"]')).toBeTruthy();
-    expect(document.querySelector('.group-items[data-group-id="2"]')).toBeTruthy();
-    expect(document.querySelector('.group-items[data-group-id="3"]')).toBeTruthy();
+    expect(
+      document.querySelector('.group-items[data-group-id="1"]'),
+    ).toBeTruthy();
+    expect(
+      document.querySelector('.group-items[data-group-id="2"]'),
+    ).toBeTruthy();
+    expect(
+      document.querySelector('.group-items[data-group-id="3"]'),
+    ).toBeTruthy();
   });
 
   it("collapsing multiple groups hides their items", () => {
     buildNested();
-    (document.querySelector('.group-toggle[data-group-id="1"]') as HTMLElement).click();
-    (document.querySelector('.group-toggle[data-group-id="2"]') as HTMLElement).click();
-    expect(document.querySelector('.group-items[data-group-id="1"]')).toBeNull();
-    expect(document.querySelector('.group-items[data-group-id="2"]')).toBeNull();
-    expect(document.querySelector('.group-items[data-group-id="3"]')).toBeTruthy();
+    (
+      document.querySelector('.group-toggle[data-group-id="1"]') as HTMLElement
+    ).click();
+    (
+      document.querySelector('.group-toggle[data-group-id="2"]') as HTMLElement
+    ).click();
+    expect(
+      document.querySelector('.group-items[data-group-id="1"]'),
+    ).toBeNull();
+    expect(
+      document.querySelector('.group-items[data-group-id="2"]'),
+    ).toBeNull();
+    expect(
+      document.querySelector('.group-items[data-group-id="3"]'),
+    ).toBeTruthy();
   });
 });

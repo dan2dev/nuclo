@@ -18,5 +18,5 @@
 export {
   renderToString,
   renderManyToString,
-  renderToStringWithContainer
-} from './renderToString';
+  renderToStringWithContainer,
+} from "./renderToString";

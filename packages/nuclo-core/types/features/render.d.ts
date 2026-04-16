@@ -21,7 +21,7 @@ declare global {
   function render<TTagName extends ElementTagName = ElementTagName>(
     nodeModFn: NodeModFn<TTagName>,
     parent?: Element,
-    index?: number
+    index?: number,
   ): ExpandedElement<TTagName>;
 
   /**

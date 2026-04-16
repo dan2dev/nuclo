@@ -40,4 +40,3 @@ describe("style module exports", () => {
     expect(styleExports).toBeDefined();
   });
 });
-

@@ -21,9 +21,18 @@ describe("updateController scoped updates", () => {
     let b = 0;
     let c = 0;
 
-    const elA = (globalThis as any).div(() => `a:${a}`)(rootA as any, 0) as HTMLElement;
-    const elB = (globalThis as any).div(() => `b:${b}`)(rootB as any, 0) as HTMLElement;
-    const elC = (globalThis as any).div(() => `c:${c}`)(rootC as any, 0) as HTMLElement;
+    const elA = (globalThis as any).div(() => `a:${a}`)(
+      rootA as any,
+      0,
+    ) as HTMLElement;
+    const elB = (globalThis as any).div(() => `b:${b}`)(
+      rootB as any,
+      0,
+    ) as HTMLElement;
+    const elC = (globalThis as any).div(() => `c:${c}`)(
+      rootC as any,
+      0,
+    ) as HTMLElement;
 
     rootA.appendChild(elA);
     rootB.appendChild(elB);
@@ -45,4 +54,3 @@ describe("updateController scoped updates", () => {
     expect(elC.textContent).toBe("c:0");
   });
 });
-

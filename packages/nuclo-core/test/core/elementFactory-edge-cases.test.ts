@@ -1,6 +1,9 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createHtmlTagBuilder, createSvgTagBuilder } from "../../src/core/elementFactory";
+import {
+  createHtmlTagBuilder,
+  createSvgTagBuilder,
+} from "../../src/core/elementFactory";
 
 describe("elementFactory edge cases", () => {
   let container: HTMLElement;
@@ -49,7 +52,7 @@ describe("elementFactory edge cases", () => {
       const element = div(
         { id: "test" },
         { className: "class1" },
-        "text content"
+        "text content",
       )(container, 0);
       expect(element.id).toBe("test");
       expect(element.className).toBe("class1");
@@ -125,7 +128,10 @@ describe("elementFactory edge cases", () => {
     it("should handle function modifiers in SVG", () => {
       const circle = createSvgTagBuilder("circle");
       const fnModifier = (parent: HTMLElement) => {
-        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        const rect = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "rect",
+        );
         return rect;
       };
       const element = circle(fnModifier)(container, 0);
@@ -141,4 +147,3 @@ describe("elementFactory edge cases", () => {
     });
   });
 });
-

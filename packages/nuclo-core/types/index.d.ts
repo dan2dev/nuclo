@@ -10,15 +10,25 @@ import "./features/scope";
 import "./features/on";
 import "./features/render";
 // Re-export on() helper for module-style consumers (import { on } from "nuclo")
-export function on<K extends keyof HTMLElementEventMap, TTagName extends ElementTagName = ElementTagName>(
+export function on<
+  K extends keyof HTMLElementEventMap,
+  TTagName extends ElementTagName = ElementTagName,
+>(
   type: K,
-  listener: TypedEventListener<HTMLElementTagNameMap[TTagName], HTMLElementEventMap[K]>,
-  options?: boolean | AddEventListenerOptions
+  listener: TypedEventListener<
+    HTMLElementTagNameMap[TTagName],
+    HTMLElementEventMap[K]
+  >,
+  options?: boolean | AddEventListenerOptions,
 ): NodeModFn<TTagName>;
-export function on<K extends string, E extends Event = Event, TTagName extends ElementTagName = ElementTagName>(
+export function on<
+  K extends string,
+  E extends Event = Event,
+  TTagName extends ElementTagName = ElementTagName,
+>(
   type: K,
   listener: TypedEventListener<HTMLElementTagNameMap[TTagName], E>,
-  options?: boolean | AddEventListenerOptions
+  options?: boolean | AddEventListenerOptions,
 ): NodeModFn<TTagName>;
 
 export {};

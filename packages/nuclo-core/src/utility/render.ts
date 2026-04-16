@@ -11,7 +11,7 @@ import { startHydration, endHydration } from "../hydration/context";
 export function render<TTagName extends ElementTagName = ElementTagName>(
   nodeModFn: NodeModFn<TTagName>,
   parent?: Element,
-  index: number = 0
+  index: number = 0,
 ): ExpandedElement<TTagName> {
   const targetParent = (parent || document.body) as ExpandedElement<TTagName>;
   const element = nodeModFn(targetParent, index) as ExpandedElement<TTagName>;

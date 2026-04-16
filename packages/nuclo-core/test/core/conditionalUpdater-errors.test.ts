@@ -1,7 +1,7 @@
 /// <reference path="../../types/index.d.ts" />
-import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
-import { createHtmlConditionalElement } from '../helpers/conditionalTestHelpers';
-import { updateConditionalElements } from '../../src/core/conditionalUpdater';
+import { describe, it, beforeEach, afterEach, expect, vi } from "vitest";
+import { createHtmlConditionalElement } from "../helpers/conditionalTestHelpers";
+import { updateConditionalElements } from "../../src/core/conditionalUpdater";
 
 /**
  * Tests for error-handling branches inside conditionalUpdater.ts:
@@ -13,14 +13,14 @@ import { updateConditionalElements } from '../../src/core/conditionalUpdater';
  * these branches without modifying library source.
  */
 
-describe('conditionalUpdater error paths', () => {
+describe("conditionalUpdater error paths", () => {
   let container: HTMLDivElement;
   let originalConsoleError: any;
   let consoleSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    document.body.innerHTML = '';
-    container = document.createElement('div');
+    document.body.innerHTML = "";
+    container = document.createElement("div");
     document.body.appendChild(container);
     originalConsoleError = console.error;
     consoleSpy = vi.fn();
@@ -32,17 +32,15 @@ describe('conditionalUpdater error paths', () => {
   });
 
   function getConsoleMessages(): string[] {
-    return consoleSpy.mock.calls.map(call => String(call[0]));
+    return consoleSpy.mock.calls.map((call) => String(call[0]));
   }
 
-  it('logs error when replacing comment with element (hidden -> show) fails', () => {
+  it("logs error when replacing comment with element (hidden -> show) fails", () => {
     // Start hidden
     let visible = false;
-    const node = createHtmlConditionalElement(
-      'div',
-      () => visible,
-      ['Content']
-    ) as unknown as Node;
+    const node = createHtmlConditionalElement("div", () => visible, [
+      "Content",
+    ]) as unknown as Node;
     // Should be a comment node
     expect(node.nodeType).toBe(Node.COMMENT_NODE);
     container.appendChild(node);
@@ -50,7 +48,7 @@ describe('conditionalUpdater error paths', () => {
     // Monkey-patch replaceChild on the container to throw
     const originalReplace = container.replaceChild.bind(container);
     (container as any).replaceChild = vi.fn(() => {
-      throw new Error('replace-failure-1');
+      throw new Error("replace-failure-1");
     });
 
     // Flip condition to force comment -> element replacement
@@ -60,28 +58,28 @@ describe('conditionalUpdater error paths', () => {
     // Expect error logged, node remains a comment (no replacement)
     expect(consoleSpy).toHaveBeenCalled();
     const messages = getConsoleMessages();
-    expect(messages.some(m => m.includes('Error replacing conditional node'))).toBe(true);
+    expect(
+      messages.some((m) => m.includes("Error replacing conditional node")),
+    ).toBe(true);
     expect(container.firstChild?.nodeType).toBe(Node.COMMENT_NODE);
 
     // Restore
     (container as any).replaceChild = originalReplace;
   });
 
-  it('logs error when replacing element with comment (show -> hide) fails', () => {
+  it("logs error when replacing element with comment (show -> hide) fails", () => {
     // Start visible
     let visible = true;
-    const node = createHtmlConditionalElement(
-      'div',
-      () => visible,
-      ['Visible']
-    ) as unknown as HTMLElement;
+    const node = createHtmlConditionalElement("div", () => visible, [
+      "Visible",
+    ]) as unknown as HTMLElement;
     expect(node.nodeType).toBe(Node.ELEMENT_NODE);
     container.appendChild(node);
 
     // Monkey-patch replaceChild to throw
     const originalReplace = container.replaceChild.bind(container);
     (container as any).replaceChild = vi.fn(() => {
-      throw new Error('replace-failure-2');
+      throw new Error("replace-failure-2");
     });
 
     // Flip condition to force element -> comment replacement
@@ -91,27 +89,25 @@ describe('conditionalUpdater error paths', () => {
     // Error logged; element should remain (no comment inserted)
     expect(consoleSpy).toHaveBeenCalled();
     const msgs = getConsoleMessages();
-    expect(msgs.some(m => m.includes('Error replacing conditional node'))).toBe(true);
+    expect(
+      msgs.some((m) => m.includes("Error replacing conditional node")),
+    ).toBe(true);
     expect(container.firstChild?.nodeType).toBe(Node.ELEMENT_NODE);
 
     (container as any).replaceChild = originalReplace;
   });
 
-  it('catches and logs errors thrown during modifier application when element is recreated from a comment (safe path)', () => {
+  it("catches and logs errors thrown during modifier application when element is recreated from a comment (safe path)", () => {
     // Start hidden so initial creation yields a comment (no modifier execution yet)
     let visible = false;
     const throwingModifier = (parent: any) => {
-      throw new Error('applyModifiers boom');
+      throw new Error("applyModifiers boom");
     };
-    const node = createHtmlConditionalElement(
-      'div',
-      () => visible,
-      [
-        'prefix-text',
-        throwingModifier,
-        'suffix-text'
-      ]
-    ) as unknown as Node;
+    const node = createHtmlConditionalElement("div", () => visible, [
+      "prefix-text",
+      throwingModifier,
+      "suffix-text",
+    ]) as unknown as Node;
     expect(node.nodeType).toBe(Node.COMMENT_NODE);
     container.appendChild(node);
     // Flip visibility to trigger element creation via conditionalUpdater (wrapped in try/catch internally)
@@ -120,22 +116,24 @@ describe('conditionalUpdater error paths', () => {
     // Error from applyModifiers should have been logged
     expect(consoleSpy).toHaveBeenCalled();
     const msgs = getConsoleMessages();
-    expect(msgs.some(m => m.includes('Error applying modifiers in conditional element'))).toBe(true);
+    expect(
+      msgs.some((m) =>
+        m.includes("Error applying modifiers in conditional element"),
+      ),
+    ).toBe(true);
     // After update we should still have a node (comment if replacement failed, element if succeeded)
     expect(container.firstChild).toBeTruthy();
   });
 
-  it('handles combined error: modifier throws during recreation AND replaceChild also throws', () => {
+  it("handles combined error: modifier throws during recreation AND replaceChild also throws", () => {
     // Start hidden with a conditional node (comment)
     let visible = false;
     const throwingModifier = (parent: any) => {
-      throw new Error('modifier-failure');
+      throw new Error("modifier-failure");
     };
-    const node = createHtmlConditionalElement(
-      'div',
-      () => visible,
-      [throwingModifier]
-    ) as unknown as Node;
+    const node = createHtmlConditionalElement("div", () => visible, [
+      throwingModifier,
+    ]) as unknown as Node;
 
     // Ensure we begin with a comment
     expect(node.nodeType).toBe(Node.COMMENT_NODE);
@@ -144,7 +142,7 @@ describe('conditionalUpdater error paths', () => {
     // Patch replaceChild to throw (replacement stage)
     const originalReplace = container.replaceChild.bind(container);
     (container as any).replaceChild = vi.fn(() => {
-      throw new Error('replace-failure-combined');
+      throw new Error("replace-failure-combined");
     });
 
     // Trigger recreation path
@@ -154,8 +152,12 @@ describe('conditionalUpdater error paths', () => {
     // Expect at least two error logs: one for applying modifiers, one for replace failure
     expect(consoleSpy).toHaveBeenCalled();
     const msgs = getConsoleMessages();
-    const applyError = msgs.some(m => m.includes('Error applying modifiers in conditional element'));
-    const replaceError = msgs.some(m => m.includes('Error replacing conditional node'));
+    const applyError = msgs.some((m) =>
+      m.includes("Error applying modifiers in conditional element"),
+    );
+    const replaceError = msgs.some((m) =>
+      m.includes("Error replacing conditional node"),
+    );
     expect(applyError).toBe(true);
     expect(replaceError).toBe(true);
 
@@ -165,16 +167,18 @@ describe('conditionalUpdater error paths', () => {
     (container as any).replaceChild = originalReplace;
   });
 
-  it('does not throw even if updateConditionalElements outer try/catch wraps an internal failure', () => {
+  it("does not throw even if updateConditionalElements outer try/catch wraps an internal failure", () => {
     // Monkey patch document.body to simulate failure in tree walker usage by temporarily nulling parentNode on a node mid-process.
     // Simplest approach: throw in container.replaceChild again.
     let visible = true;
-    const el = createHtmlConditionalElement('div', () => visible, ['X']) as unknown as Node;
+    const el = createHtmlConditionalElement("div", () => visible, [
+      "X",
+    ]) as unknown as Node;
     container.appendChild(el);
 
     const originalReplace = container.replaceChild.bind(container);
     (container as any).replaceChild = vi.fn(() => {
-      throw new Error('outer-wrapper-test');
+      throw new Error("outer-wrapper-test");
     });
 
     // Flip condition to trigger replacement to comment

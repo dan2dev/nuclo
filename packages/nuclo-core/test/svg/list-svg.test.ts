@@ -36,29 +36,29 @@ describe("list with SVG elements", () => {
           height: barHeight.toString(),
           fill: "steelblue",
         });
-      })
+      }),
     );
 
     const svg = chart();
     expect(svg).toBeDefined();
     expect(svg.tagName).toBe("svg");
-    
+
     // Check that list markers are present
     const children = Array.from(svg.childNodes);
     expect(children.length).toBeGreaterThan(0);
-    
+
     // Find rect elements
     const rects = Array.from(svg.querySelectorAll("rect"));
     expect(rects).toHaveLength(3);
-    
+
     // Verify first rect
     expect(rects[0].getAttribute("x")).toBe("5");
     expect(rects[0].getAttribute("width")).toBe("10");
     expect(rects[0].getAttribute("fill")).toBe("steelblue");
-    
+
     // Verify second rect
     expect(rects[1].getAttribute("x")).toBe("25");
-    
+
     // Verify third rect
     expect(rects[2].getAttribute("x")).toBe("45");
   });
@@ -79,20 +79,20 @@ describe("list with SVG elements", () => {
           r: point.r.toString(),
           fill: "red",
         });
-      })
+      }),
     );
 
     const element = svg();
     expect(element).toBeDefined();
     expect(element.tagName).toBe("svg");
-    
+
     const circles = Array.from(element.querySelectorAll("circle"));
     expect(circles).toHaveLength(3);
-    
+
     expect(circles[0].getAttribute("cx")).toBe("10");
     expect(circles[0].getAttribute("cy")).toBe("10");
     expect(circles[0].getAttribute("r")).toBe("5");
-    
+
     expect(circles[1].getAttribute("cx")).toBe("30");
     expect(circles[1].getAttribute("r")).toBe("8");
   });
@@ -110,15 +110,15 @@ describe("list with SVG elements", () => {
           r: "10",
           fill: () => fillColor, // Reactive attribute
         });
-      })
+      }),
     );
 
     const element = svg();
     const circles = Array.from(element.querySelectorAll("circle"));
-    
+
     expect(circles).toHaveLength(3);
     expect(circles[0].getAttribute("fill")).toBe("blue");
-    
+
     // Change reactive value
     fillColor = "red";
     // In a real scenario, this would trigger reactivity update
@@ -143,22 +143,19 @@ describe("list with SVG elements", () => {
           fill: "green",
           opacity: () => opacity.toString(), // Reactive
         });
-      })
+      }),
     );
 
     const element = svg();
     const rects = Array.from(element.querySelectorAll("rect"));
-    
+
     expect(rects).toHaveLength(2);
     expect(rects[0].getAttribute("x")).toBe("10");
     expect(rects[0].getAttribute("fill")).toBe("green");
   });
 
   it("should handle SVG paths with dynamic d attribute", () => {
-    const paths = () => [
-      { d: "M 10 10 L 20 20" },
-      { d: "M 30 30 L 40 40" },
-    ];
+    const paths = () => [{ d: "M 10 10 L 20 20" }, { d: "M 30 30 L 40 40" }];
 
     const svg = svgSvg(
       { viewBox: "0 0 100 100" },
@@ -168,12 +165,12 @@ describe("list with SVG elements", () => {
           stroke: "black",
           "stroke-width": "2",
         });
-      })
+      }),
     );
 
     const element = svg();
     const pathElements = Array.from(element.querySelectorAll("path"));
-    
+
     expect(pathElements).toHaveLength(2);
     expect(pathElements[0].getAttribute("d")).toBe("M 10 10 L 20 20");
     expect(pathElements[1].getAttribute("d")).toBe("M 30 30 L 40 40");
@@ -199,16 +196,16 @@ describe("list with SVG elements", () => {
                 r: "10",
                 fill: "purple",
               });
-            }
-          )
+            },
+          ),
         );
-      })
+      }),
     );
 
     const element = svg();
     const groups_elements = Array.from(element.querySelectorAll("g"));
     expect(groups_elements).toHaveLength(2);
-    
+
     // Check circles in first group
     const circles = Array.from(element.querySelectorAll("circle"));
     expect(circles).toHaveLength(4); // 2 groups × 2 items
@@ -221,12 +218,12 @@ describe("list with SVG elements", () => {
       { width: "100", height: "100" },
       list(items, (item) => {
         return circleSvg({ cx: "50", cy: "50", r: "10" });
-      })
+      }),
     );
 
     const element = svg();
     const circles = Array.from(element.querySelectorAll("circle"));
-    
+
     expect(circles).toHaveLength(0);
   });
 
@@ -243,14 +240,14 @@ describe("list with SVG elements", () => {
             fill: "black",
             "font-size": "12",
           },
-          label
+          label,
         );
-      })
+      }),
     );
 
     const element = svg();
     const texts = Array.from(element.querySelectorAll("text"));
-    
+
     expect(texts).toHaveLength(3);
     expect(texts[0].textContent).toBe("Label 1");
     expect(texts[1].textContent).toBe("Label 2");
@@ -271,12 +268,12 @@ describe("list with SVG elements", () => {
           fill: "orange",
           stroke: "black",
         });
-      })
+      }),
     );
 
     const element = svg();
     const polygonElements = Array.from(element.querySelectorAll("polygon"));
-    
+
     expect(polygonElements).toHaveLength(2);
     expect(polygonElements[0].getAttribute("points")).toBe("0,0 50,0 25,50");
     expect(polygonElements[1].getAttribute("points")).toBe("60,0 110,0 85,50");

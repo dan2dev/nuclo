@@ -1,8 +1,17 @@
 import { logError } from "../utility/errorHandler";
 import { isNodeConnected } from "../utility/dom";
 import type { UpdateScope } from "./updateScope";
-import { reactiveElements, reactiveElementsByNode, registerReactiveElement, removeReactiveElementRef } from "./reactiveCleanup";
-import type { AttributeResolver, AttributeResolverRecord, ReactiveElementInfo } from "./reactiveCleanup";
+import {
+  reactiveElements,
+  reactiveElementsByNode,
+  registerReactiveElement,
+  removeReactiveElementRef,
+} from "./reactiveCleanup";
+import type {
+  AttributeResolver,
+  AttributeResolverRecord,
+  ReactiveElementInfo,
+} from "./reactiveCleanup";
 import { isBrowser } from "../utility/environment";
 
 const UNSET_LAST_VALUE = {};
@@ -13,7 +22,8 @@ function handleUpdateEvent(event: Event): void {
   // This preserves the "dispatchEvent(new Event('update'))" workflow without
   // per-element event listeners.
   const target = event.target;
-  if (!target || typeof Node === "undefined" || !(target instanceof Node)) return;
+  if (!target || typeof Node === "undefined" || !(target instanceof Node))
+    return;
 
   let node: Node | null = target;
   while (node) {
@@ -34,7 +44,11 @@ function handleUpdateEvent(event: Event): void {
 
 function ensureGlobalUpdateEventListener(): void {
   if (updateEventListenerRegistered) return;
-  if (typeof document === "undefined" || typeof document.addEventListener !== "function") return;
+  if (
+    typeof document === "undefined" ||
+    typeof document.addEventListener !== "function"
+  )
+    return;
   document.addEventListener("update", handleUpdateEvent, true);
   updateEventListenerRegistered = true;
 }
@@ -54,7 +68,10 @@ function isCacheableValue(value: unknown): boolean {
   return value === null || typeof value !== "object";
 }
 
-function updateAttributeResolverRecord(key: string, record: AttributeResolverRecord): void {
+function updateAttributeResolverRecord(
+  key: string,
+  record: AttributeResolverRecord,
+): void {
   let nextValue: unknown;
   try {
     nextValue = record.resolver();
@@ -108,14 +125,18 @@ export function registerAttributeResolver<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
   key: string,
   resolver: AttributeResolver,
-  applyValue: (value: unknown) => void
+  applyValue: (value: unknown) => void,
 ): void {
   if (!(element instanceof Element) || !key || typeof resolver !== "function") {
     logError("Invalid parameters for registerAttributeResolver");
     return;
   }
 
-  const record: AttributeResolverRecord = { resolver, applyValue, lastValue: UNSET_LAST_VALUE };
+  const record: AttributeResolverRecord = {
+    resolver,
+    applyValue,
+    lastValue: UNSET_LAST_VALUE,
+  };
 
   if (!isBrowser) {
     // SSR: just apply once, no registration needed (update() is never called server-side)

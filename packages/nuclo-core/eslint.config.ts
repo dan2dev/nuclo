@@ -7,7 +7,13 @@ import css from "@eslint/css";
 
 export default [
   {
-    ignores: ["dist/**", "coverage/**", "**/*.min.js", "README.md", ".claude/**"],
+    ignores: [
+      "dist/**",
+      "coverage/**",
+      "**/*.min.js",
+      "README.md",
+      ".claude/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

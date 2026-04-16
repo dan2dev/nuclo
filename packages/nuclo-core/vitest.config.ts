@@ -1,30 +1,27 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    environment: 'jsdom',
-    setupFiles: ['./test/setup.ts'],
-    exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-    ],
+    environment: "jsdom",
+    setupFiles: ["./test/setup.ts"],
+    exclude: ["**/node_modules/**", "**/dist/**"],
     env: {
-      NODE_ENV: 'test'
+      NODE_ENV: "test",
     },
     coverage: {
-      provider: 'v8',
-      include: ['src/**/*.ts'],
+      provider: "v8",
+      include: ["src/**/*.ts"],
       exclude: [
-        'examples/**/*',
-        'node_modules/**',
-        'dist/**',
-        'test/**',
-        '**/*.d.ts',
-        'src/**/*.types.ts' // Exclude type-only files
+        "examples/**/*",
+        "node_modules/**",
+        "dist/**",
+        "test/**",
+        "**/*.d.ts",
+        "src/**/*.types.ts", // Exclude type-only files
       ],
-      reporter: ['text', 'html'],
-      reportsDirectory: './coverage'
-    }
-  }
-})
+      reporter: ["text", "html"],
+      reportsDirectory: "./coverage",
+    },
+  },
+});

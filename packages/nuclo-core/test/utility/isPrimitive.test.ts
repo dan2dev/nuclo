@@ -34,7 +34,7 @@ describe("isPrimitive", () => {
   });
   it("returns false for function", () => {
     expect(isPrimitive(() => {})).toBe(false);
-    expect(isPrimitive(function() {})).toBe(false);
+    expect(isPrimitive(function () {})).toBe(false);
   });
   it("returns false for class instance", () => {
     class A {}

@@ -1,7 +1,13 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { createReactiveTextNode, notifyReactiveTextNodes } from "../../src/core/reactiveText";
-import { registerAttributeResolver, notifyReactiveElements } from "../../src/core/reactiveAttributes";
+import {
+  createReactiveTextNode,
+  notifyReactiveTextNodes,
+} from "../../src/core/reactiveText";
+import {
+  registerAttributeResolver,
+  notifyReactiveElements,
+} from "../../src/core/reactiveAttributes";
 
 describe("reactive module exports", () => {
   it("should export createReactiveTextNode", () => {
@@ -42,7 +48,9 @@ describe("reactive module exports", () => {
     });
 
     it("logs and returns empty text for invalid resolver", () => {
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
 
       const node = createReactiveTextNode(null as any);
 
@@ -99,14 +107,16 @@ describe("reactive module exports", () => {
 
       // Node needs to be connected to DOM for updates to work
       container.appendChild(node);
-      
+
       value = "updated";
       notifyReactiveTextNodes();
       expect(node.textContent).toBe("updated");
     });
 
     it("logs and clears text when resolver throws during updates", () => {
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
       const resolver = () => {
         throw new Error("update error");
       };
@@ -146,7 +156,7 @@ describe("reactive module exports", () => {
         () => className,
         (value) => {
           element.className = String(value);
-        }
+        },
       );
 
       expect(element.className).toBe("initial");
@@ -166,7 +176,7 @@ describe("reactive module exports", () => {
         () => className,
         (value) => {
           element.className = String(value);
-        }
+        },
       );
 
       registerAttributeResolver(
@@ -175,7 +185,7 @@ describe("reactive module exports", () => {
         () => disabled,
         (value) => {
           (element as HTMLButtonElement).disabled = Boolean(value);
-        }
+        },
       );
 
       expect(element.className).toBe("test");
@@ -190,8 +200,10 @@ describe("reactive module exports", () => {
     });
 
     it("should handle throwing resolvers gracefully", () => {
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-      
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
       registerAttributeResolver(
         element,
         "class",
@@ -200,11 +212,11 @@ describe("reactive module exports", () => {
         },
         (value) => {
           element.className = String(value);
-        }
+        },
       );
 
       notifyReactiveElements();
-      
+
       expect(consoleErrorSpy).toHaveBeenCalled();
       consoleErrorSpy.mockRestore();
     });
@@ -217,7 +229,7 @@ describe("reactive module exports", () => {
         () => value,
         (value) => {
           element.className = String(value);
-        }
+        },
       );
 
       container.removeChild(element);
@@ -229,11 +241,23 @@ describe("reactive module exports", () => {
     });
 
     it("should handle invalid parameters gracefully", () => {
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-      
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
       // Testing invalid input - these should be caught by type guards
-      registerAttributeResolver(null as any, "class", () => "test", () => {});
-      registerAttributeResolver(element, "", () => "test", () => {});
+      registerAttributeResolver(
+        null as any,
+        "class",
+        () => "test",
+        () => {},
+      );
+      registerAttributeResolver(
+        element,
+        "",
+        () => "test",
+        () => {},
+      );
       registerAttributeResolver(element, "class", null as any, () => {});
 
       expect(consoleErrorSpy).toHaveBeenCalled();
@@ -241,6 +265,3 @@ describe("reactive module exports", () => {
     });
   });
 });
-
-
-

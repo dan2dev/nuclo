@@ -3,11 +3,11 @@
  */
 export class NucloNode {
   nodeType: number = 1; // ELEMENT_NODE
-  nodeName: string = '';
+  nodeName: string = "";
   nodeValue: string | null = null;
   parentNode: unknown = null;
   _childNodes: Node[] | null = null;
-  textContent: string = '';
+  textContent: string = "";
 
   get childNodes(): NodeListOf<ChildNode> {
     const nodes = this._childNodes ?? [];
@@ -20,7 +20,13 @@ export class NucloNode {
           yield node as ChildNode;
         }
       },
-      forEach: (callback: (value: ChildNode, key: number, parent: NodeListOf<ChildNode>) => void) => {
+      forEach: (
+        callback: (
+          value: ChildNode,
+          key: number,
+          parent: NodeListOf<ChildNode>,
+        ) => void,
+      ) => {
         for (let i = 0; i < nodes.length; i++) {
           callback(nodes[i] as ChildNode, i, this.childNodes);
         }
@@ -39,7 +45,7 @@ export class NucloNode {
         for (const node of nodes) {
           yield node as ChildNode;
         }
-      }
+      },
     } as unknown as NodeListOf<ChildNode>;
   }
 }

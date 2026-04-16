@@ -29,9 +29,9 @@ describe("Advanced Hydration", () => {
   let container: HTMLDivElement;
 
   beforeEach(() => {
-    document.body.innerHTML = '';
-    container = document.createElement('div');
-    container.id = 'app';
+    document.body.innerHTML = "";
+    container = document.createElement("div");
+    container.id = "app";
     document.body.appendChild(container);
   });
 
@@ -49,49 +49,56 @@ describe("Advanced Hydration", () => {
 
       const compA = div(
         scope("panel-a"),
-        span(() => `A=${counterA}`)
+        span(() => `A=${counterA}`),
       );
       const compB = div(
         scope("panel-b"),
-        span(() => `B=${counterB}`)
+        span(() => `B=${counterB}`),
       );
 
       const liveA = render(compA, container);
       const liveB = render(compB, container);
 
-      expect(liveA.querySelector('span')!.textContent).toBe('A=0');
-      expect(liveB.querySelector('span')!.textContent).toBe('B=0');
+      expect(liveA.querySelector("span")!.textContent).toBe("A=0");
+      expect(liveB.querySelector("span")!.textContent).toBe("B=0");
 
       counterA = 1;
-      update('panel-a');
+      update("panel-a");
 
       // Only A updates
-      expect(liveA.querySelector('span')!.textContent).toBe('A=1');
-      expect(liveB.querySelector('span')!.textContent).toBe('B=0');
+      expect(liveA.querySelector("span")!.textContent).toBe("A=1");
+      expect(liveB.querySelector("span")!.textContent).toBe("B=0");
 
       counterB = 9;
-      update('panel-b');
+      update("panel-b");
 
       // Only B updates
-      expect(liveA.querySelector('span')!.textContent).toBe('A=1');
-      expect(liveB.querySelector('span')!.textContent).toBe('B=9');
+      expect(liveA.querySelector("span")!.textContent).toBe("A=1");
+      expect(liveB.querySelector("span")!.textContent).toBe("B=9");
     });
 
     it("update() with no scope refreshes everything", () => {
       let x = 0;
       let y = 0;
 
-      const compX = div(scope("sx"), span(() => `x=${x}`));
-      const compY = div(scope("sy"), span(() => `y=${y}`));
+      const compX = div(
+        scope("sx"),
+        span(() => `x=${x}`),
+      );
+      const compY = div(
+        scope("sy"),
+        span(() => `y=${y}`),
+      );
 
       const liveX = render(compX, container);
       const liveY = render(compY, container);
 
-      x = 3; y = 7;
+      x = 3;
+      y = 7;
       update(); // global update — both must refresh
 
-      expect(liveX.querySelector('span')!.textContent).toBe('x=3');
-      expect(liveY.querySelector('span')!.textContent).toBe('y=7');
+      expect(liveX.querySelector("span")!.textContent).toBe("x=3");
+      expect(liveY.querySelector("span")!.textContent).toBe("y=7");
     });
 
     it("scoped list update only re-syncs the targeted list", () => {
@@ -100,21 +107,33 @@ describe("Advanced Hydration", () => {
 
       const compA = div(
         scope("list-scope-a"),
-        ul({ class: "la" }, list(() => listA, item => li(item)))
+        ul(
+          { class: "la" },
+          list(
+            () => listA,
+            (item) => li(item),
+          ),
+        ),
       );
       const compB = div(
         scope("list-scope-b"),
-        ul({ class: "lb" }, list(() => listB, item => li(item)))
+        ul(
+          { class: "lb" },
+          list(
+            () => listB,
+            (item) => li(item),
+          ),
+        ),
       );
 
       const liveA = render(compA, container);
       const liveB = render(compB, container);
 
       listA = ["A1", "A2", "A3"];
-      update('list-scope-a');
+      update("list-scope-a");
 
-      expect(liveA.querySelectorAll('li').length).toBe(3);
-      expect(liveB.querySelectorAll('li').length).toBe(2); // unchanged
+      expect(liveA.querySelectorAll("li").length).toBe(3);
+      expect(liveB.querySelectorAll("li").length).toBe(2); // unchanged
     });
   });
 
@@ -123,46 +142,53 @@ describe("Advanced Hydration", () => {
   // =========================================================================
   describe("reactive inline styles", () => {
     it("style object resolver updates inline styles on update()", () => {
-      let color = 'red';
-      const component = div({
-        style: () => ({ color, fontWeight: 'bold' })
-      }, "Styled");
+      let color = "red";
+      const component = div(
+        {
+          style: () => ({ color, fontWeight: "bold" }),
+        },
+        "Styled",
+      );
 
       injectSsr('<div style="color:red;font-weight:bold">Styled</div>');
       const liveDiv = render(component, container);
 
-      expect(liveDiv.style.color).toBe('red');
+      expect(liveDiv.style.color).toBe("red");
 
-      color = 'blue';
+      color = "blue";
       update();
 
-      expect(liveDiv.style.color).toBe('blue');
+      expect(liveDiv.style.color).toBe("blue");
     });
 
     it("multiple style properties update independently", () => {
-      let bg = 'white';
-      let size = '14px';
+      let bg = "white";
+      let size = "14px";
       const component = div({
-        style: () => ({ backgroundColor: bg, fontSize: size })
+        style: () => ({ backgroundColor: bg, fontSize: size }),
       });
 
-      injectSsr('<div></div>');
+      injectSsr("<div></div>");
       const liveDiv = render(component, container);
 
-      bg = 'black'; size = '20px';
+      bg = "black";
+      size = "20px";
       update();
 
-      expect(liveDiv.style.backgroundColor).toBe('black');
-      expect(liveDiv.style.fontSize).toBe('20px');
+      expect(liveDiv.style.backgroundColor).toBe("black");
+      expect(liveDiv.style.fontSize).toBe("20px");
     });
 
     it("static style object is applied on mount", () => {
-      const component = span({ style: { color: 'green', padding: '8px' } }, "Static");
+      const component = span(
+        { style: { color: "green", padding: "8px" } },
+        "Static",
+      );
 
       const liveSpan = render(component, container);
 
-      expect(liveSpan.style.color).toBe('green');
-      expect(liveSpan.style.padding).toBe('8px');
+      expect(liveSpan.style.color).toBe("green");
+      expect(liveSpan.style.padding).toBe("8px");
     });
   });
 
@@ -172,12 +198,9 @@ describe("Advanced Hydration", () => {
   describe("reactive boolean and form attributes", () => {
     it("disabled toggles correctly after hydration", () => {
       let locked = false;
-      const component = button(
-        { disabled: () => locked },
-        "Submit"
-      );
+      const component = button({ disabled: () => locked }, "Submit");
 
-      injectSsr('<button>Submit</button>');
+      injectSsr("<button>Submit</button>");
       const liveBtn = render(component, container) as HTMLButtonElement;
 
       expect(liveBtn.disabled).toBe(false);
@@ -195,7 +218,7 @@ describe("Advanced Hydration", () => {
       let hide = false;
       const component = div({ hidden: () => hide }, "Content");
 
-      injectSsr('<div>Content</div>');
+      injectSsr("<div>Content</div>");
       const liveDiv = render(component, container) as HTMLDivElement;
 
       expect(liveDiv.hidden).toBe(false);
@@ -212,11 +235,11 @@ describe("Advanced Hydration", () => {
       injectSsr('<input type="text" value="initial" />');
       const liveInput = render(component, container) as HTMLInputElement;
 
-      expect(liveInput.value).toBe('initial');
+      expect(liveInput.value).toBe("initial");
 
       val = "updated";
       update();
-      expect(liveInput.value).toBe('updated');
+      expect(liveInput.value).toBe("updated");
     });
 
     it("checkbox checked state updates reactively", () => {
@@ -246,10 +269,12 @@ describe("Advanced Hydration", () => {
       const component = div(
         h1(() => title),
         h2(() => subtitle),
-        span(() => `Count: ${count}`)
+        span(() => `Count: ${count}`),
       );
 
-      injectSsr('<div><h1>Old Title</h1><h2>Old Subtitle</h2><span>Count: 0</span></div>');
+      injectSsr(
+        "<div><h1>Old Title</h1><h2>Old Subtitle</h2><span>Count: 0</span></div>",
+      );
       const liveDiv = render(component, container);
 
       // Mutate all state at once, then one update()
@@ -258,9 +283,9 @@ describe("Advanced Hydration", () => {
       count = 42;
       update();
 
-      expect(liveDiv.querySelector('h1')!.textContent).toBe('New Title');
-      expect(liveDiv.querySelector('h2')!.textContent).toBe('New Subtitle');
-      expect(liveDiv.querySelector('span')!.textContent).toBe('Count: 42');
+      expect(liveDiv.querySelector("h1")!.textContent).toBe("New Title");
+      expect(liveDiv.querySelector("h2")!.textContent).toBe("New Subtitle");
+      expect(liveDiv.querySelector("span")!.textContent).toBe("Count: 42");
     });
 
     it("list mutation and when() condition change batched in one update()", () => {
@@ -268,11 +293,16 @@ describe("Advanced Hydration", () => {
       let show = false;
 
       const component = div(
-        ul(list(() => items, item => li(item))),
-        when(() => show, p("visible")).else(p("hidden"))
+        ul(
+          list(
+            () => items,
+            (item) => li(item),
+          ),
+        ),
+        when(() => show, p("visible")).else(p("hidden")),
       );
 
-      injectSsr('<div><ul><li>one</li><li>two</li></ul><p>hidden</p></div>');
+      injectSsr("<div><ul><li>one</li><li>two</li></ul><p>hidden</p></div>");
       const liveDiv = render(component, container);
 
       // Apply both state mutations, then one update()
@@ -280,9 +310,9 @@ describe("Advanced Hydration", () => {
       show = true;
       update();
 
-      expect(liveDiv.querySelectorAll('li').length).toBe(3);
-      expect(liveDiv.textContent).toContain('visible');
-      expect(liveDiv.textContent).not.toContain('hidden');
+      expect(liveDiv.querySelectorAll("li").length).toBe(3);
+      expect(liveDiv.textContent).toContain("visible");
+      expect(liveDiv.textContent).not.toContain("hidden");
     });
   });
 
@@ -302,13 +332,18 @@ describe("Advanced Hydration", () => {
       }
       // After 20 toggles (even number) flag is back to true
       expect(flag).toBe(true);
-      expect(liveDiv.textContent).toContain('Y');
-      expect(liveDiv.textContent).not.toContain('N');
+      expect(liveDiv.textContent).toContain("Y");
+      expect(liveDiv.textContent).not.toContain("N");
     });
 
     it("list() is consistent after many add/remove cycles", () => {
       let items: number[] = [1, 2, 3];
-      const component = ul(list(() => items, n => li(String(n))));
+      const component = ul(
+        list(
+          () => items,
+          (n) => li(String(n)),
+        ),
+      );
       const liveUl = render(component, container);
 
       for (let i = 0; i < 10; i++) {
@@ -319,7 +354,7 @@ describe("Advanced Hydration", () => {
       }
 
       // Should always end with 3 items
-      expect(liveUl.querySelectorAll('li').length).toBe(3);
+      expect(liveUl.querySelectorAll("li").length).toBe(3);
     });
 
     it("update() on unchanged state makes no visible difference", () => {
@@ -329,7 +364,7 @@ describe("Advanced Hydration", () => {
 
       for (let i = 0; i < 5; i++) update();
 
-      expect(liveP.textContent).toBe('stable');
+      expect(liveP.textContent).toBe("stable");
     });
   });
 
@@ -340,39 +375,51 @@ describe("Advanced Hydration", () => {
     it("two components reading the same variable both update on update()", () => {
       let sharedCount = 0;
 
-      const compA = div({ id: "a" }, span(() => `A: ${sharedCount}`));
-      const compB = div({ id: "b" }, span(() => `B: ${sharedCount}`));
+      const compA = div(
+        { id: "a" },
+        span(() => `A: ${sharedCount}`),
+      );
+      const compB = div(
+        { id: "b" },
+        span(() => `B: ${sharedCount}`),
+      );
 
       const liveA = render(compA, container);
       const liveB = render(compB, container);
 
-      expect(liveA.querySelector('span')!.textContent).toBe('A: 0');
-      expect(liveB.querySelector('span')!.textContent).toBe('B: 0');
+      expect(liveA.querySelector("span")!.textContent).toBe("A: 0");
+      expect(liveB.querySelector("span")!.textContent).toBe("B: 0");
 
       sharedCount = 5;
       update();
 
-      expect(liveA.querySelector('span')!.textContent).toBe('A: 5');
-      expect(liveB.querySelector('span')!.textContent).toBe('B: 5');
+      expect(liveA.querySelector("span")!.textContent).toBe("A: 5");
+      expect(liveB.querySelector("span")!.textContent).toBe("B: 5");
     });
 
     it("one component's event handler mutates state that another component reads", () => {
       let shared = 0;
 
       const sender = div(
-        button("inc", on("click", () => { shared++; update(); }))
+        button(
+          "inc",
+          on("click", () => {
+            shared++;
+            update();
+          }),
+        ),
       );
       const receiver = div(span(() => `${shared}`));
 
       const liveSender = render(sender, container);
       const liveReceiver = render(receiver, container);
 
-      const btn = liveSender.querySelector('button') as HTMLButtonElement;
+      const btn = liveSender.querySelector("button") as HTMLButtonElement;
       btn.click();
       btn.click();
       btn.click();
 
-      expect(liveReceiver.querySelector('span')!.textContent).toBe('3');
+      expect(liveReceiver.querySelector("span")!.textContent).toBe("3");
     });
   });
 
@@ -384,21 +431,26 @@ describe("Advanced Hydration", () => {
       let items = ["a", "b"];
       const component = div(
         h1("Header"),
-        ul(list(() => items, item => li(item))),
-        footer("Footer")
+        ul(
+          list(
+            () => items,
+            (item) => li(item),
+          ),
+        ),
+        footer("Footer"),
       );
 
       injectSsr(
-        '<div><h1>Header</h1><ul><li>a</li><li>b</li></ul><footer>Footer</footer></div>'
+        "<div><h1>Header</h1><ul><li>a</li><li>b</li></ul><footer>Footer</footer></div>",
       );
       const liveDiv = render(component, container);
 
       items = ["a", "b", "c"];
       update();
 
-      expect(liveDiv.querySelector('h1')!.textContent).toBe('Header');
-      expect(liveDiv.querySelector('footer')!.textContent).toBe('Footer');
-      expect(liveDiv.querySelectorAll('li').length).toBe(3);
+      expect(liveDiv.querySelector("h1")!.textContent).toBe("Header");
+      expect(liveDiv.querySelector("footer")!.textContent).toBe("Footer");
+      expect(liveDiv.querySelectorAll("li").length).toBe(3);
     });
 
     it("sibling elements around a when() block remain intact after branch switch", () => {
@@ -406,18 +458,18 @@ describe("Advanced Hydration", () => {
       const component = div(
         p("before"),
         when(() => show, span("inside")).else(span("else")),
-        p("after")
+        p("after"),
       );
 
-      injectSsr('<div><p>before</p><span>inside</span><p>after</p></div>');
+      injectSsr("<div><p>before</p><span>inside</span><p>after</p></div>");
       const liveDiv = render(component, container);
 
       show = false;
       update();
 
-      expect(liveDiv.querySelector('p')!.textContent).toBe('before');
-      expect(liveDiv.querySelectorAll('p')[1].textContent).toBe('after');
-      expect(liveDiv.textContent).toContain('else');
+      expect(liveDiv.querySelector("p")!.textContent).toBe("before");
+      expect(liveDiv.querySelectorAll("p")[1].textContent).toBe("after");
+      expect(liveDiv.textContent).toContain("else");
     });
   });
 
@@ -431,24 +483,24 @@ describe("Advanced Hydration", () => {
 
       const component = div(
         when(() => showA, span("A-visible")).else(span("A-hidden")),
-        when(() => showB, span("B-visible")).else(span("B-hidden"))
+        when(() => showB, span("B-visible")).else(span("B-hidden")),
       );
 
-      injectSsr('<div><span>A-visible</span><span>B-hidden</span></div>');
+      injectSsr("<div><span>A-visible</span><span>B-hidden</span></div>");
       const liveDiv = render(component, container);
 
-      expect(liveDiv.textContent).toContain('A-visible');
-      expect(liveDiv.textContent).toContain('B-hidden');
+      expect(liveDiv.textContent).toContain("A-visible");
+      expect(liveDiv.textContent).toContain("B-hidden");
 
       showA = false;
       update();
-      expect(liveDiv.textContent).toContain('A-hidden');
-      expect(liveDiv.textContent).toContain('B-hidden');
+      expect(liveDiv.textContent).toContain("A-hidden");
+      expect(liveDiv.textContent).toContain("B-hidden");
 
       showB = true;
       update();
-      expect(liveDiv.textContent).toContain('A-hidden');
-      expect(liveDiv.textContent).toContain('B-visible');
+      expect(liveDiv.textContent).toContain("A-hidden");
+      expect(liveDiv.textContent).toContain("B-visible");
     });
 
     it("three sibling when() blocks update independently", () => {
@@ -456,7 +508,7 @@ describe("Advanced Hydration", () => {
       const component = div(
         when(() => flags[0], span("0-on")).else(span("0-off")),
         when(() => flags[1], span("1-on")).else(span("1-off")),
-        when(() => flags[2], span("2-on")).else(span("2-off"))
+        when(() => flags[2], span("2-on")).else(span("2-off")),
       );
 
       const liveDiv = render(component, container);
@@ -484,30 +536,50 @@ describe("Advanced Hydration", () => {
   describe("multiple sibling list() blocks in one parent", () => {
     it("each list updates independently", () => {
       let fruits = ["apple", "banana"];
-      let vegs   = ["carrot", "broccoli"];
+      let vegs = ["carrot", "broccoli"];
 
       const component = div(
-        ul({ class: "fruits" }, list(() => fruits, f => li(f))),
-        ul({ class: "vegs"   }, list(() => vegs,   v => li(v)))
+        ul(
+          { class: "fruits" },
+          list(
+            () => fruits,
+            (f) => li(f),
+          ),
+        ),
+        ul(
+          { class: "vegs" },
+          list(
+            () => vegs,
+            (v) => li(v),
+          ),
+        ),
       );
 
       injectSsr(
-        '<div>' +
-        '<ul class="fruits"><li>apple</li><li>banana</li></ul>' +
-        '<ul class="vegs"><li>carrot</li><li>broccoli</li></ul>' +
-        '</div>'
+        "<div>" +
+          '<ul class="fruits"><li>apple</li><li>banana</li></ul>' +
+          '<ul class="vegs"><li>carrot</li><li>broccoli</li></ul>' +
+          "</div>",
       );
       const liveDiv = render(component, container);
 
       fruits = ["apple", "banana", "cherry"];
       update();
-      expect(liveDiv.querySelector('.fruits')!.querySelectorAll('li').length).toBe(3);
-      expect(liveDiv.querySelector('.vegs')!.querySelectorAll('li').length).toBe(2);
+      expect(
+        liveDiv.querySelector(".fruits")!.querySelectorAll("li").length,
+      ).toBe(3);
+      expect(
+        liveDiv.querySelector(".vegs")!.querySelectorAll("li").length,
+      ).toBe(2);
 
       vegs = [];
       update();
-      expect(liveDiv.querySelector('.fruits')!.querySelectorAll('li').length).toBe(3);
-      expect(liveDiv.querySelector('.vegs')!.querySelectorAll('li').length).toBe(0);
+      expect(
+        liveDiv.querySelector(".fruits")!.querySelectorAll("li").length,
+      ).toBe(3);
+      expect(
+        liveDiv.querySelector(".vegs")!.querySelectorAll("li").length,
+      ).toBe(0);
     });
   });
 
@@ -516,14 +588,20 @@ describe("Advanced Hydration", () => {
   // =========================================================================
   describe("list() sort — reorder without add or remove", () => {
     it("reversing items reorders DOM and preserves element identity", () => {
-      interface Row { id: number; name: string; }
+      interface Row {
+        id: number;
+        name: string;
+      }
       let rows: Row[] = [
         { id: 1, name: "row-1" },
         { id: 2, name: "row-2" },
         { id: 3, name: "row-3" },
       ];
       const component = ul(
-        list(() => rows, r => li({ "data-id": String(r.id) }, r.name))
+        list(
+          () => rows,
+          (r) => li({ "data-id": String(r.id) }, r.name),
+        ),
       );
 
       const liveUl = render(component, container);
@@ -535,10 +613,10 @@ describe("Advanced Hydration", () => {
       rows = [rows[2], rows[1], rows[0]]; // reverse
       update();
 
-      const lis = liveUl.querySelectorAll('li');
-      expect(lis[0].textContent).toBe('row-3');
-      expect(lis[1].textContent).toBe('row-2');
-      expect(lis[2].textContent).toBe('row-1');
+      const lis = liveUl.querySelectorAll("li");
+      expect(lis[0].textContent).toBe("row-3");
+      expect(lis[1].textContent).toBe("row-2");
+      expect(lis[2].textContent).toBe("row-1");
 
       // Element identity preserved
       expect(liveUl.querySelector('[data-id="1"]')).toBe(el1);
@@ -548,12 +626,17 @@ describe("Advanced Hydration", () => {
 
     it("stable sort (no actual change) does not alter the DOM", () => {
       const items = [{ id: 1 }, { id: 2 }, { id: 3 }];
-      const component = ul(list(() => items, r => li({ "data-id": String(r.id) }, String(r.id))));
+      const component = ul(
+        list(
+          () => items,
+          (r) => li({ "data-id": String(r.id) }, String(r.id)),
+        ),
+      );
       const liveUl = render(component, container);
 
-      const before = Array.from(liveUl.querySelectorAll('li'));
+      const before = Array.from(liveUl.querySelectorAll("li"));
       update(); // same array reference — nothing changes
-      const after = Array.from(liveUl.querySelectorAll('li'));
+      const after = Array.from(liveUl.querySelectorAll("li"));
 
       expect(after).toEqual(before);
       for (let i = 0; i < 3; i++) expect(after[i]).toBe(before[i]);
@@ -565,35 +648,54 @@ describe("Advanced Hydration", () => {
   // =========================================================================
   describe("nested list() inside list() items", () => {
     it("inner list updates when outer item's sub-array changes", () => {
-      interface Category { id: number; name: string; tags: string[]; }
+      interface Category {
+        id: number;
+        name: string;
+        tags: string[];
+      }
       let categories: Category[] = [
         { id: 1, name: "Cat-A", tags: ["x", "y"] },
         { id: 2, name: "Cat-B", tags: ["p"] },
       ];
 
       const component = ul(
-        list(() => categories, cat =>
-          li({ "data-cat": String(cat.id) },
-            span(cat.name),
-            ul({ class: `tags-${cat.id}` },
-              list(() => cat.tags, tag => li({ class: "tag" }, tag))
-            )
-          )
-        )
+        list(
+          () => categories,
+          (cat) =>
+            li(
+              { "data-cat": String(cat.id) },
+              span(cat.name),
+              ul(
+                { class: `tags-${cat.id}` },
+                list(
+                  () => cat.tags,
+                  (tag) => li({ class: "tag" }, tag),
+                ),
+              ),
+            ),
+        ),
       );
 
       const liveUl = render(component, container);
 
       // Initial state
-      expect(liveUl.querySelector('.tags-1')!.querySelectorAll('.tag').length).toBe(2);
-      expect(liveUl.querySelector('.tags-2')!.querySelectorAll('.tag').length).toBe(1);
+      expect(
+        liveUl.querySelector(".tags-1")!.querySelectorAll(".tag").length,
+      ).toBe(2);
+      expect(
+        liveUl.querySelector(".tags-2")!.querySelectorAll(".tag").length,
+      ).toBe(1);
 
       // Add a tag to category 2
       categories[1].tags = ["p", "q", "r"];
       update();
 
-      expect(liveUl.querySelector('.tags-1')!.querySelectorAll('.tag').length).toBe(2); // unchanged
-      expect(liveUl.querySelector('.tags-2')!.querySelectorAll('.tag').length).toBe(3);
+      expect(
+        liveUl.querySelector(".tags-1")!.querySelectorAll(".tag").length,
+      ).toBe(2); // unchanged
+      expect(
+        liveUl.querySelector(".tags-2")!.querySelectorAll(".tag").length,
+      ).toBe(3);
     });
   });
 
@@ -606,13 +708,15 @@ describe("Advanced Hydration", () => {
       const items = ["alpha", "beta", "gamma"];
 
       const component = ul(
-        list(() => items, item =>
-          li(
-            { "data-name": item },
-            item,
-            on("click", () => clicks.push(item))
-          )
-        )
+        list(
+          () => items,
+          (item) =>
+            li(
+              { "data-name": item },
+              item,
+              on("click", () => clicks.push(item)),
+            ),
+        ),
       );
 
       const liveUl = render(component, container);
@@ -629,11 +733,14 @@ describe("Advanced Hydration", () => {
       let items = [{ id: "x" }, { id: "y" }];
 
       const component = ul(
-        list(() => items, item =>
-          li({ "data-id": item.id },
-            on("click", () => log.push(item.id))
-          )
-        )
+        list(
+          () => items,
+          (item) =>
+            li(
+              { "data-id": item.id },
+              on("click", () => log.push(item.id)),
+            ),
+        ),
       );
       const liveUl = render(component, container);
 
@@ -664,13 +771,17 @@ describe("Advanced Hydration", () => {
       const component = div(
         on("app-notify" as any, (e: Event) => {
           received.push((e as CustomEvent).detail);
-        })
+        }),
       );
 
       const liveDiv = render(component, container);
 
-      liveDiv.dispatchEvent(new CustomEvent("app-notify", { detail: "hello", bubbles: true }));
-      liveDiv.dispatchEvent(new CustomEvent("app-notify", { detail: "world", bubbles: true }));
+      liveDiv.dispatchEvent(
+        new CustomEvent("app-notify", { detail: "hello", bubbles: true }),
+      );
+      liveDiv.dispatchEvent(
+        new CustomEvent("app-notify", { detail: "world", bubbles: true }),
+      );
 
       expect(received).toEqual(["hello", "world"]);
     });
@@ -680,83 +791,111 @@ describe("Advanced Hydration", () => {
   // Complex app pattern — todo list
   // =========================================================================
   describe("complex app — todo list", () => {
-    interface Todo { id: number; text: string; done: boolean; }
+    interface Todo {
+      id: number;
+      text: string;
+      done: boolean;
+    }
 
     it("renders initial todos and supports toggle, add, and remove", () => {
       let todos: Todo[] = [
-        { id: 1, text: "Buy milk",  done: false },
-        { id: 2, text: "Walk dog",  done: true  },
+        { id: 1, text: "Buy milk", done: false },
+        { id: 2, text: "Walk dog", done: true },
         { id: 3, text: "Write tests", done: false },
       ];
       let nextId = 4;
 
       const component = div(
         // Summary
-        p(() => `${todos.filter(t => !t.done).length} remaining`),
+        p(() => `${todos.filter((t) => !t.done).length} remaining`),
 
         // Todo list
         ul(
-          list(() => todos, todo =>
-            li(
-              { "data-id": String(todo.id), class: () => todo.done ? "done" : "pending" },
-              span(() => todo.text),
-              button("toggle", on("click", () => {
-                todo.done = !todo.done;
-                update();
-              })),
-              button("remove", on("click", () => {
-                todos = todos.filter(t => t.id !== todo.id);
-                update();
-              }))
-            )
-          )
+          list(
+            () => todos,
+            (todo) =>
+              li(
+                {
+                  "data-id": String(todo.id),
+                  class: () => (todo.done ? "done" : "pending"),
+                },
+                span(() => todo.text),
+                button(
+                  "toggle",
+                  on("click", () => {
+                    todo.done = !todo.done;
+                    update();
+                  }),
+                ),
+                button(
+                  "remove",
+                  on("click", () => {
+                    todos = todos.filter((t) => t.id !== todo.id);
+                    update();
+                  }),
+                ),
+              ),
+          ),
         ),
 
         // Add button
-        button("add", on("click", () => {
-          todos = [...todos, { id: nextId++, text: `Todo ${nextId - 1}`, done: false }];
-          update();
-        }))
+        button(
+          "add",
+          on("click", () => {
+            todos = [
+              ...todos,
+              { id: nextId++, text: `Todo ${nextId - 1}`, done: false },
+            ];
+            update();
+          }),
+        ),
       );
 
       injectSsr(
-        '<div>' +
-        '<p>2 remaining</p>' +
-        '<ul>' +
-        '<li data-id="1" class="pending"><span>Buy milk</span><button>toggle</button><button>remove</button></li>' +
-        '<li data-id="2" class="done"><span>Walk dog</span><button>toggle</button><button>remove</button></li>' +
-        '<li data-id="3" class="pending"><span>Write tests</span><button>toggle</button><button>remove</button></li>' +
-        '</ul>' +
-        '<button>add</button>' +
-        '</div>'
+        "<div>" +
+          "<p>2 remaining</p>" +
+          "<ul>" +
+          '<li data-id="1" class="pending"><span>Buy milk</span><button>toggle</button><button>remove</button></li>' +
+          '<li data-id="2" class="done"><span>Walk dog</span><button>toggle</button><button>remove</button></li>' +
+          '<li data-id="3" class="pending"><span>Write tests</span><button>toggle</button><button>remove</button></li>' +
+          "</ul>" +
+          "<button>add</button>" +
+          "</div>",
       );
       const liveDiv = render(component, container);
 
       // Initial state
-      expect(liveDiv.querySelector('p')!.textContent).toBe('2 remaining');
-      expect(liveDiv.querySelectorAll('li').length).toBe(3);
+      expect(liveDiv.querySelector("p")!.textContent).toBe("2 remaining");
+      expect(liveDiv.querySelectorAll("li").length).toBe(3);
 
       // Toggle todo #1 — now done
-      const toggleBtn1 = liveDiv.querySelector('[data-id="1"] button') as HTMLButtonElement;
+      const toggleBtn1 = liveDiv.querySelector(
+        '[data-id="1"] button',
+      ) as HTMLButtonElement;
       toggleBtn1.click();
-      expect(liveDiv.querySelector('[data-id="1"]')!.className).toBe('done');
-      expect(liveDiv.querySelector('p')!.textContent).toBe('1 remaining');
+      expect(liveDiv.querySelector('[data-id="1"]')!.className).toBe("done");
+      expect(liveDiv.querySelector("p")!.textContent).toBe("1 remaining");
 
       // Remove todo #2
-      const removeBtn2 = liveDiv.querySelectorAll('[data-id="2"] button')[1] as HTMLButtonElement;
+      const removeBtn2 = liveDiv.querySelectorAll(
+        '[data-id="2"] button',
+      )[1] as HTMLButtonElement;
       removeBtn2.click();
       expect(liveDiv.querySelector('[data-id="2"]')).toBeNull();
-      expect(liveDiv.querySelectorAll('li').length).toBe(2);
+      expect(liveDiv.querySelectorAll("li").length).toBe(2);
 
       // Add a new todo
-      const addBtn = liveDiv.querySelector('button[class=""]') ??
-                     Array.from(liveDiv.querySelectorAll('button')).find(b => b.textContent === 'add');
+      const addBtn =
+        liveDiv.querySelector('button[class=""]') ??
+        Array.from(liveDiv.querySelectorAll("button")).find(
+          (b) => b.textContent === "add",
+        );
       (addBtn as HTMLButtonElement).click();
-      expect(liveDiv.querySelectorAll('li').length).toBe(3);
+      expect(liveDiv.querySelectorAll("li").length).toBe(3);
 
       // New todo is pending
-      const newLi = Array.from(liveDiv.querySelectorAll('li')).at(-1)!;
-      expect(newLi.className).toBe('pending');
+      const newLi = Array.from(liveDiv.querySelectorAll("li")).at(-1)!;
+      expect(newLi.className).toBe("pending");
     });
   });
 });

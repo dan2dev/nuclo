@@ -5,16 +5,19 @@
 Build interactive UIs with plain functions, mutable JavaScript objects, and explicit `update()` calls. Nuclo is imperative: nothing re-renders until you call `update()`. No virtual DOM, no proxies, and no hidden state tracking.
 
 ```ts
-import 'nuclo';
+import "nuclo";
 
 let count = 0;
 
 const counter = div(
   h1(() => `Count: ${count}`),
-  button('Increment', on('click', () => {
-    count++;
-    update();
-  }))
+  button(
+    "Increment",
+    on("click", () => {
+      count++;
+      update();
+    }),
+  ),
 );
 
 render(counter, document.body);
@@ -42,13 +45,19 @@ npm install nuclo
 Simply import once to register all global functions:
 
 ```ts
-import 'nuclo';
+import "nuclo";
 
 // Now use div(), update(), on(), list(), when(), render(), etc. globally
 let count = 0;
 const app = div(
   h1(() => `Count: ${count}`),
-  button('Click', on('click', () => { count++; update(); }))
+  button(
+    "Click",
+    on("click", () => {
+      count++;
+      update();
+    }),
+  ),
 );
 render(app, document.body);
 ```
@@ -78,14 +87,26 @@ Or in your `vite-env.d.ts`:
 ### Counter
 
 ```ts
-import 'nuclo';
+import "nuclo";
 
 let count = 0;
 
 const app = div(
   h1(() => `Count: ${count}`),
-  button('Increment', on('click', () => { count++; update(); })),
-  button('Reset', on('click', () => { count = 0; update(); }))
+  button(
+    "Increment",
+    on("click", () => {
+      count++;
+      update();
+    }),
+  ),
+  button(
+    "Reset",
+    on("click", () => {
+      count = 0;
+      update();
+    }),
+  ),
 );
 
 render(app, document.body);
@@ -94,51 +115,63 @@ render(app, document.body);
 ### Todo List
 
 ```ts
-import 'nuclo';
+import "nuclo";
 
 type Todo = { id: number; text: string; done: boolean };
 
 let todos: Todo[] = [];
 let nextId = 1;
-let inputValue = '';
+let inputValue = "";
 
 function addTodo() {
   if (!inputValue.trim()) return;
   todos.push({ id: nextId++, text: inputValue, done: false });
-  inputValue = '';
+  inputValue = "";
   update();
 }
 
 const app = div(
-  { className: 'todo-app' },
+  { className: "todo-app" },
 
   // Input
   div(
-    input({ value: () => inputValue },
-      on('input', e => { inputValue = e.target.value; update(); }),
-      on('keydown', e => e.key === 'Enter' && addTodo())
+    input(
+      { value: () => inputValue },
+      on("input", (e) => {
+        inputValue = e.target.value;
+        update();
+      }),
+      on("keydown", (e) => e.key === "Enter" && addTodo()),
     ),
-    button('Add', on('click', addTodo))
+    button("Add", on("click", addTodo)),
   ),
 
   // List
-  when(() => todos.length > 0,
-    list(() => todos, (todo) =>
-      div(
-        { className: () => todo.done ? 'done' : '' },
-        input({ type: 'checkbox', checked: () => todo.done },
-          on('change', () => { todo.done = !todo.done; update(); })
+  when(
+    () => todos.length > 0,
+    list(
+      () => todos,
+      (todo) =>
+        div(
+          { className: () => (todo.done ? "done" : "") },
+          input(
+            { type: "checkbox", checked: () => todo.done },
+            on("change", () => {
+              todo.done = !todo.done;
+              update();
+            }),
+          ),
+          span(() => todo.text),
+          button(
+            "×",
+            on("click", () => {
+              todos = todos.filter((t) => t.id !== todo.id);
+              update();
+            }),
+          ),
         ),
-        span(() => todo.text),
-        button('×', on('click', () => {
-          todos = todos.filter(t => t.id !== todo.id);
-          update();
-        }))
-      )
-    )
-  ).else(
-    p('No todos yet!')
-  )
+    ),
+  ).else(p("No todos yet!")),
 );
 
 render(app, document.body);
@@ -147,50 +180,46 @@ render(app, document.body);
 ### Real-time Search Filter
 
 ```ts
-import 'nuclo';
+import "nuclo";
 
 const users = [
-  { id: 1, name: 'Alice Johnson', email: 'alice@example.com' },
-  { id: 2, name: 'Bob Smith', email: 'bob@example.com' },
-  { id: 3, name: 'Charlie Brown', email: 'charlie@example.com' }
+  { id: 1, name: "Alice Johnson", email: "alice@example.com" },
+  { id: 2, name: "Bob Smith", email: "bob@example.com" },
+  { id: 3, name: "Charlie Brown", email: "charlie@example.com" },
 ];
 
-let searchQuery = '';
+let searchQuery = "";
 
 function filteredUsers() {
   const q = searchQuery.toLowerCase();
-  return users.filter(u =>
-    u.name.toLowerCase().includes(q) ||
-    u.email.toLowerCase().includes(q)
+  return users.filter(
+    (u) =>
+      u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
   );
 }
 
 const app = div(
-  h1('User Directory'),
+  h1("User Directory"),
 
   input(
     {
-      type: 'search',
-      placeholder: 'Search users...',
-      value: () => searchQuery
+      type: "search",
+      placeholder: "Search users...",
+      value: () => searchQuery,
     },
-    on('input', e => {
+    on("input", (e) => {
       searchQuery = e.target.value;
       update();
-    })
+    }),
   ),
 
-  when(() => filteredUsers().length > 0,
-    list(() => filteredUsers(), user =>
-      div(
-        { className: 'user-card' },
-        h3(user.name),
-        p(user.email)
-      )
-    )
-  ).else(
-    p(() => `No users found for "${searchQuery}"`)
-  )
+  when(
+    () => filteredUsers().length > 0,
+    list(
+      () => filteredUsers(),
+      (user) => div({ className: "user-card" }, h3(user.name), p(user.email)),
+    ),
+  ).else(p(() => `No users found for "${searchQuery}"`)),
 );
 
 render(app, document.body);
@@ -199,27 +228,33 @@ render(app, document.body);
 ### Loading States & Async
 
 ```ts
-import 'nuclo';
+import "nuclo";
 
 type Product = { id: number; title: string; category: string };
-type State = { status: 'idle' | 'loading' | 'error'; products: Product[]; error?: string };
+type State = {
+  status: "idle" | "loading" | "error";
+  products: Product[];
+  error?: string;
+};
 
-const state: State = { status: 'idle', products: [] };
-let searchQuery = 'phone';
+const state: State = { status: "idle", products: [] };
+let searchQuery = "phone";
 
 async function fetchProducts() {
   if (!searchQuery.trim()) return;
 
-  state.status = 'loading';
+  state.status = "loading";
   update();
 
   try {
-    const response = await fetch(`https://dummyjson.com/products/search?q=${searchQuery}`);
+    const response = await fetch(
+      `https://dummyjson.com/products/search?q=${searchQuery}`,
+    );
     const data = await response.json();
     state.products = data.products;
-    state.status = 'idle';
+    state.status = "idle";
   } catch (err) {
-    state.status = 'error';
+    state.status = "error";
     state.error = err.message;
   }
   update();
@@ -229,34 +264,37 @@ const app = div(
   div(
     input(
       {
-        type: 'search',
-        placeholder: 'Search products...',
-        value: () => searchQuery
+        type: "search",
+        placeholder: "Search products...",
+        value: () => searchQuery,
       },
-      on('input', e => {
+      on("input", (e) => {
         searchQuery = e.target.value;
         update();
       }),
-      on('keydown', e => e.key === 'Enter' && fetchProducts())
+      on("keydown", (e) => e.key === "Enter" && fetchProducts()),
     ),
-    button('Search', on('click', fetchProducts))
+    button("Search", on("click", fetchProducts)),
   ),
 
-  when(() => state.status === 'loading',
-    div('Loading...')
-  ).when(() => state.status === 'error',
-    div({ className: 'error' }, () => `Error: ${state.error}`)
-  ).when(() => state.products.length > 0,
-    list(() => state.products, product =>
-      div(
-        { className: 'product-card' },
-        h3(product.title),
-        p(() => `Category: ${product.category}`)
-      )
+  when(() => state.status === "loading", div("Loading..."))
+    .when(
+      () => state.status === "error",
+      div({ className: "error" }, () => `Error: ${state.error}`),
     )
-  ).else(
-    div('Click search to load products')
-  )
+    .when(
+      () => state.products.length > 0,
+      list(
+        () => state.products,
+        (product) =>
+          div(
+            { className: "product-card" },
+            h3(product.title),
+            p(() => `Category: ${product.category}`),
+          ),
+      ),
+    )
+    .else(div("Click search to load products")),
 );
 
 render(app, document.body);
@@ -271,10 +309,10 @@ render(app, document.body);
 nuclo doesn't auto-detect changes. You call `update()` when ready:
 
 ```ts
-let name = 'World';
+let name = "World";
 
 // Mutate freely
-name = 'Alice';
+name = "Alice";
 name = name.toUpperCase();
 
 // Update once when ready
@@ -294,14 +332,14 @@ update();
 items.push(item1);
 items.push(item2);
 items.sort();
-user.name = 'Alice';
-update();  // One update for all changes
+user.name = "Alice";
+update(); // One update for all changes
 
 // vs. automatic tracking (hypothetical)
-items.push(item1);  // triggers update
-items.push(item2);  // triggers update
-items.sort();       // triggers update
-user.name = 'Alice'; // triggers update
+items.push(item1); // triggers update
+items.push(item2); // triggers update
+items.sort(); // triggers update
+user.name = "Alice"; // triggers update
 // 4 updates instead of 1!
 ```
 
@@ -313,9 +351,9 @@ Zero-arg functions become dynamic bindings that re-run when you call `update()`:
 let count = 0;
 
 div(
-  () => `Count: ${count}`,  // Updates when update() is called
-  { title: () => `Current: ${count}` }  // Attributes too
-)
+  () => `Count: ${count}`, // Updates when update() is called
+  { title: () => `Current: ${count}` }, // Attributes too
+);
 ```
 
 ### 3. **Conditional Rendering with `when`**
@@ -323,13 +361,9 @@ div(
 First matching condition wins:
 
 ```ts
-when(() => user.isAdmin,
-  div('Admin Panel')
-).when(() => user.isLoggedIn,
-  div('User Dashboard')
-).else(
-  div('Please log in')
-)
+when(() => user.isAdmin, div("Admin Panel"))
+  .when(() => user.isLoggedIn, div("User Dashboard"))
+  .else(div("Please log in"));
 ```
 
 DOM is preserved if the active branch doesn't change.
@@ -339,9 +373,10 @@ DOM is preserved if the active branch doesn't change.
 Lists use object identity (not keys) to track items:
 
 ```ts
-list(() => items, (item, index) =>
-  div(() => `${index}: ${item.name}`)
-)
+list(
+  () => items,
+  (item, index) => div(() => `${index}: ${item.name}`),
+);
 ```
 
 Mutate the array (push, splice, reverse), then call `update()`. Elements are reused if the item reference is the same.
@@ -366,11 +401,13 @@ Synchronizes an array to DOM elements:
 
 ```ts
 list(
-  () => items,           // Provider function
-  (item, index) => div(  // Renderer
-    () => `${index}: ${item.name}`
-  )
-)
+  () => items, // Provider function
+  (item, index) =>
+    div(
+      // Renderer
+      () => `${index}: ${item.name}`,
+    ),
+);
 ```
 
 Items are tracked by object identity. Mutate the array and call `update()` to sync.
@@ -380,13 +417,9 @@ Items are tracked by object identity. Mutate the array and call `update()` to sy
 Conditional rendering with chaining:
 
 ```ts
-when(() => count > 10,
-  div('High')
-).when(() => count > 0,
-  div('Low')
-).else(
-  div('Zero')
-)
+when(() => count > 10, div("High"))
+  .when(() => count > 0, div("Low"))
+  .else(div("Zero"));
 ```
 
 First matching condition wins. DOM is preserved if the active branch doesn't change.
@@ -396,10 +429,11 @@ First matching condition wins. DOM is preserved if the active branch doesn't cha
 Attach event listeners:
 
 ```ts
-button('Click me',
-  on('click', () => console.log('clicked')),
-  on('mouseenter', handleHover, { passive: true })
-)
+button(
+  "Click me",
+  on("click", () => console.log("clicked")),
+  on("mouseenter", handleHover, { passive: true }),
+);
 ```
 
 ### Tag Builders
@@ -407,8 +441,8 @@ button('Click me',
 All HTML and SVG tags are available globally:
 
 ```ts
-div(), span(), button(), input(), h1(), p(), ul(), li()
-svg(), circle(), path(), rect(), g()
+(div(), span(), button(), input(), h1(), p(), ul(), li());
+(svg(), circle(), path(), rect(), g());
 // ... and 140+ more
 ```
 
@@ -417,22 +451,22 @@ svg(), circle(), path(), rect(), g()
 Pass attributes as objects:
 
 ```ts
-div('Hello', {
-  className: 'container',
-  id: 'main',
-  'data-test': 'value',
-  style: { color: 'red', fontSize: '16px' }
-})
+div("Hello", {
+  className: "container",
+  id: "main",
+  "data-test": "value",
+  style: { color: "red", fontSize: "16px" },
+});
 ```
 
 Dynamic attributes use functions:
 
 ```ts
 div({
-  className: () => isActive ? 'active' : '',
+  className: () => (isActive ? "active" : ""),
   disabled: () => !isValid,
-  style: () => ({ opacity: isVisible ? 1 : 0 })
-})
+  style: () => ({ opacity: isVisible ? 1 : 0 }),
+});
 ```
 
 ---
@@ -476,11 +510,9 @@ update();
 Even if not initially needed:
 
 ```ts
-when(() => isLoading,
-  div('Loading...')
-).else(
-  div('Ready')  // Clear intent
-)
+when(() => isLoading, div("Loading...")).else(
+  div("Ready"), // Clear intent
+);
 ```
 
 ---
@@ -492,16 +524,16 @@ when(() => isLoading,
 Combine `when` and `list`:
 
 ```ts
-when(() => user.isLoggedIn,
+when(
+  () => user.isLoggedIn,
   div(
     h1(() => `Welcome, ${user.name}`),
-    list(() => user.notifications, n =>
-      div(n.message, { className: () => n.read ? 'read' : 'unread' })
-    )
-  )
-).else(
-  div('Please log in')
-)
+    list(
+      () => user.notifications,
+      (n) => div(n.message, { className: () => (n.read ? "read" : "unread") }),
+    ),
+  ),
+).else(div("Please log in"));
 ```
 
 ### Component-like Functions
@@ -509,26 +541,27 @@ when(() => user.isLoggedIn,
 ```ts
 function UserCard(user: User) {
   return div(
-    { className: 'user-card' },
+    { className: "user-card" },
     img({ src: user.avatar }),
     h3(user.name),
-    p(user.bio)
+    p(user.bio),
   );
 }
 
-list(() => users, user => UserCard(user))
+list(
+  () => users,
+  (user) => UserCard(user),
+);
 ```
 
 ### Computed Values
 
 ```ts
 function activeCount() {
-  return todos.filter(t => !t.done).length;
+  return todos.filter((t) => !t.done).length;
 }
 
-div(
-  () => `${activeCount()} remaining`
-)
+div(() => `${activeCount()} remaining`);
 ```
 
 ---
@@ -566,10 +599,12 @@ These markers identify conditional and list boundaries in the DOM.
 ### Common Issues
 
 **Content not updating?**
+
 - Ensure you're calling `update()` after state changes
 - Verify your dynamic functions are returning the expected values
 
 **List items not reusing elements?**
+
 - Keep object references stable (mutate instead of replacing)
 - Avoid creating new objects when updating properties
 

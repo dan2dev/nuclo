@@ -10,7 +10,9 @@
  * @param element - The element to cast
  * @returns The element typed as Node & ParentNode
  */
-export function asParentNode<T extends Element | object>(element: T): Node & ParentNode {
+export function asParentNode<T extends Element | object>(
+  element: T,
+): Node & ParentNode {
   return element as unknown as Node & ParentNode;
 }
 
@@ -27,7 +29,7 @@ export function asParentNode<T extends Element | object>(element: T): Node & Par
 export function withScopedInsertion<T, THost extends Element | object>(
   host: THost,
   referenceNode: Node,
-  callback: () => T
+  callback: () => T,
 ): T {
   const parent = asParentNode(host);
   const originalAppend = parent.appendChild.bind(parent);
@@ -35,7 +37,9 @@ export function withScopedInsertion<T, THost extends Element | object>(
 
   // Temporarily override appendChild to insert before the reference node
   // TypeScript doesn't like this override but it's safe at runtime
-  (parent as unknown as Record<string, unknown>).appendChild = function(node: Node): Node {
+  (parent as unknown as Record<string, unknown>).appendChild = function (
+    node: Node,
+  ): Node {
     return originalInsert(node, referenceNode);
   };
 
@@ -60,19 +64,20 @@ export function withScopedInsertion<T, THost extends Element | object>(
 export function setStyleProperty(
   element: HTMLElement,
   property: string,
-  value: string | number | null
+  value: string | number | null,
 ): boolean {
   try {
-    if (value === null || value === undefined || value === '') {
+    if (value === null || value === undefined || value === "") {
       // Use bracket notation to remove property (works with camelCase)
-      (element.style as unknown as Record<string, string>)[property] = '';
+      (element.style as unknown as Record<string, string>)[property] = "";
       return true;
     }
 
     // Convert value to string first (might throw if toString() throws)
     const stringValue = String(value);
     // Use bracket notation to set property (works with camelCase)
-    (element.style as unknown as Record<string, string>)[property] = stringValue;
+    (element.style as unknown as Record<string, string>)[property] =
+      stringValue;
     return true;
   } catch {
     return false;
@@ -88,11 +93,11 @@ export function setStyleProperty(
  */
 export function getStyleProperty(
   element: HTMLElement,
-  property: string
+  property: string,
 ): string {
   try {
     return element.style.getPropertyValue(property);
   } catch {
-    return '';
+    return "";
   }
 }

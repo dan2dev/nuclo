@@ -31,4 +31,3 @@ describe("conditionalInfo", () => {
     expect(getConditionalInfo(node)).toBeNull();
   });
 });
-

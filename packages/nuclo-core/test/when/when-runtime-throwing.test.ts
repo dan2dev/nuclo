@@ -10,7 +10,7 @@
  * renderWhenContent, and updateWhenRuntimes edge cases.
  */
 
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   registerWhenRuntime,
   updateWhenRuntimes,
@@ -18,7 +18,7 @@ import {
   renderWhenContent,
   type WhenRuntime,
   type WhenGroup,
-} from '../../src/when/runtime';
+} from "../../src/when/runtime";
 
 afterEach(() => {
   clearWhenRuntimes();
@@ -29,14 +29,16 @@ afterEach(() => {
 
 function makeRuntime(
   groups: WhenGroup<ElementTagName>[],
-  elseContent: WhenRuntime<ElementTagName>['elseContent'] = [],
+  elseContent: WhenRuntime<ElementTagName>["elseContent"] = [],
   updateFn?: () => void,
 ): WhenRuntime<ElementTagName> {
-  const host = document.createElement('div') as unknown as ExpandedElement<ElementTagName>;
+  const host = document.createElement(
+    "div",
+  ) as unknown as ExpandedElement<ElementTagName>;
   document.body.appendChild(host as unknown as HTMLElement);
 
-  const start = document.createComment('when-start');
-  const end = document.createComment('when-end');
+  const start = document.createComment("when-start");
+  const end = document.createComment("when-end");
   (host as unknown as HTMLElement).appendChild(start);
   (host as unknown as HTMLElement).appendChild(end);
 
@@ -60,8 +62,8 @@ function makeRuntime(
 }
 
 // ── Unit: evaluateActiveCondition (via renderWhenContent) ─────────────────────
-describe('renderWhenContent – condition evaluation', () => {
-  it('renders first truthy group', () => {
+describe("renderWhenContent – condition evaluation", () => {
+  it("renders first truthy group", () => {
     const runtime = makeRuntime([
       { condition: false, content: [] },
       { condition: true, content: [] },
@@ -73,10 +75,10 @@ describe('renderWhenContent – condition evaluation', () => {
     (runtime.host as unknown as HTMLElement).remove();
   });
 
-  it('renders else branch when no condition is truthy and elseContent exists', () => {
+  it("renders else branch when no condition is truthy and elseContent exists", () => {
     const runtime = makeRuntime(
       [{ condition: false, content: [] }],
-      [] // elseContent is empty → null
+      [], // elseContent is empty → null
     );
     renderWhenContent(runtime);
     expect(runtime.activeIndex).toBeNull();
@@ -84,10 +86,14 @@ describe('renderWhenContent – condition evaluation', () => {
     (runtime.host as unknown as HTMLElement).remove();
   });
 
-  it('renders else branch (-1) when no condition matches and elseContent is non-empty', () => {
+  it("renders else branch (-1) when no condition matches and elseContent is non-empty", () => {
     const runtime = makeRuntime(
       [{ condition: false, content: [] }],
-      [{ className: 'else-item' } as unknown as WhenRuntime<ElementTagName>['elseContent'][0]],
+      [
+        {
+          className: "else-item",
+        } as unknown as WhenRuntime<ElementTagName>["elseContent"][0],
+      ],
     );
     renderWhenContent(runtime);
     expect(runtime.activeIndex).toBe(-1);
@@ -95,13 +101,15 @@ describe('renderWhenContent – condition evaluation', () => {
     (runtime.host as unknown as HTMLElement).remove();
   });
 
-  it('skips re-render when active branch has not changed', () => {
+  it("skips re-render when active branch has not changed", () => {
     const runtime = makeRuntime([{ condition: true, content: [] }]);
     renderWhenContent(runtime);
     const activeAfterFirst = runtime.activeIndex;
 
     // Spy to verify no DOM manipulation happens on second call (no change)
-    const clearSpy = vi.spyOn(runtime.startMarker, 'nextSibling', 'get').mockReturnValue(runtime.endMarker);
+    const clearSpy = vi
+      .spyOn(runtime.startMarker, "nextSibling", "get")
+      .mockReturnValue(runtime.endMarker);
     renderWhenContent(runtime);
     expect(runtime.activeIndex).toBe(activeAfterFirst);
 
@@ -109,7 +117,7 @@ describe('renderWhenContent – condition evaluation', () => {
     (runtime.host as unknown as HTMLElement).remove();
   });
 
-  it('handles function conditions', () => {
+  it("handles function conditions", () => {
     let flag = false;
     const runtime = makeRuntime([{ condition: () => flag, content: [] }]);
 
@@ -126,11 +134,11 @@ describe('renderWhenContent – condition evaluation', () => {
 });
 
 // ── Unit: updateWhenRuntimes – runtime.update() throws (lines 127-128) ────────
-describe('updateWhenRuntimes – throwing update (lines 127-128)', () => {
-  it('removes the runtime from tracking when update() throws', () => {
+describe("updateWhenRuntimes – throwing update (lines 127-128)", () => {
+  it("removes the runtime from tracking when update() throws", () => {
     let throwOnUpdate = true;
     const runtime = makeRuntime([], [], () => {
-      if (throwOnUpdate) throw new Error('simulated runtime error');
+      if (throwOnUpdate) throw new Error("simulated runtime error");
     });
 
     registerWhenRuntime(runtime);
@@ -145,13 +153,13 @@ describe('updateWhenRuntimes – throwing update (lines 127-128)', () => {
     (runtime.host as unknown as HTMLElement).remove();
   });
 
-  it('continues updating other runtimes after one throws', () => {
+  it("continues updating other runtimes after one throws", () => {
     let throwingUpdated = false;
     let goodUpdated = false;
 
     const throwing = makeRuntime([], [], () => {
       throwingUpdated = true;
-      throw new Error('boom');
+      throw new Error("boom");
     });
     const good = makeRuntime([], [], () => {
       goodUpdated = true;
@@ -171,8 +179,8 @@ describe('updateWhenRuntimes – throwing update (lines 127-128)', () => {
 });
 
 // ── Unit: updateWhenRuntimes – disconnected markers ────────────────────────────
-describe('updateWhenRuntimes – disconnected markers', () => {
-  it('removes a runtime whose startMarker is disconnected', () => {
+describe("updateWhenRuntimes – disconnected markers", () => {
+  it("removes a runtime whose startMarker is disconnected", () => {
     const runtime = makeRuntime([{ condition: true, content: [] }]);
     registerWhenRuntime(runtime);
 
@@ -182,7 +190,7 @@ describe('updateWhenRuntimes – disconnected markers', () => {
     expect(() => updateWhenRuntimes()).not.toThrow();
   });
 
-  it('removes a runtime whose endMarker is disconnected', () => {
+  it("removes a runtime whose endMarker is disconnected", () => {
     const runtime = makeRuntime([{ condition: true, content: [] }]);
     registerWhenRuntime(runtime);
 
@@ -194,10 +202,12 @@ describe('updateWhenRuntimes – disconnected markers', () => {
 });
 
 // ── Unit: updateWhenRuntimes – scope filtering ────────────────────────────────
-describe('updateWhenRuntimes – scope filtering', () => {
-  it('skips runtimes outside the given scope', () => {
+describe("updateWhenRuntimes – scope filtering", () => {
+  it("skips runtimes outside the given scope", () => {
     let updated = false;
-    const runtime = makeRuntime([], [], () => { updated = true; });
+    const runtime = makeRuntime([], [], () => {
+      updated = true;
+    });
     registerWhenRuntime(runtime);
 
     const excludeScope = { roots: [], contains: (_n: Node) => false };
@@ -208,9 +218,11 @@ describe('updateWhenRuntimes – scope filtering', () => {
     (runtime.host as unknown as HTMLElement).remove();
   });
 
-  it('processes runtimes inside the given scope', () => {
+  it("processes runtimes inside the given scope", () => {
     let updated = false;
-    const runtime = makeRuntime([], [], () => { updated = true; });
+    const runtime = makeRuntime([], [], () => {
+      updated = true;
+    });
     registerWhenRuntime(runtime);
 
     const includeScope = { roots: [], contains: (_n: Node) => true };
@@ -223,10 +235,12 @@ describe('updateWhenRuntimes – scope filtering', () => {
 });
 
 // ── Unit: registerWhenRuntime + clearWhenRuntimes ─────────────────────────────
-describe('registerWhenRuntime and clearWhenRuntimes', () => {
-  it('can register and then clear all runtimes', () => {
+describe("registerWhenRuntime and clearWhenRuntimes", () => {
+  it("can register and then clear all runtimes", () => {
     let called = false;
-    const runtime = makeRuntime([], [], () => { called = true; });
+    const runtime = makeRuntime([], [], () => {
+      called = true;
+    });
     registerWhenRuntime(runtime);
 
     clearWhenRuntimes();

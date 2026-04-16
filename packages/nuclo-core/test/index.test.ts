@@ -1,9 +1,9 @@
 /// <reference path="../types/index.d.ts" />
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 
-describe('start function', () => {
-  it('should return an object with id and value', () => {
+describe("start function", () => {
+  it("should return an object with id and value", () => {
     // const result = start();
     // expect(result).toHaveProperty('id', 'example-id');
     // expect(result).toHaveProperty('value', 42);

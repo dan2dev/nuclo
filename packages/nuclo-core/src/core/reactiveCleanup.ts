@@ -30,22 +30,34 @@ export const reactiveTextNodes = new Map<WeakRef<Text>, ReactiveTextNodeInfo>();
 /**
  * WeakMap for O(1) lookups of reactive text node info by node reference.
  */
-export const reactiveTextNodesByNode = new WeakMap<Text, { ref: WeakRef<Text>; info: ReactiveTextNodeInfo }>();
+export const reactiveTextNodesByNode = new WeakMap<
+  Text,
+  { ref: WeakRef<Text>; info: ReactiveTextNodeInfo }
+>();
 
 /**
  * Stores weak references to reactive elements for iteration during updates.
  */
-export const reactiveElements = new Map<WeakRef<Element>, ReactiveElementInfo>();
+export const reactiveElements = new Map<
+  WeakRef<Element>,
+  ReactiveElementInfo
+>();
 
 /**
  * WeakMap for O(1) lookups of reactive element info by element reference.
  */
-export const reactiveElementsByNode = new WeakMap<Element, { ref: WeakRef<Element>; info: ReactiveElementInfo }>();
+export const reactiveElementsByNode = new WeakMap<
+  Element,
+  { ref: WeakRef<Element>; info: ReactiveElementInfo }
+>();
 
 /**
  * Registers a reactive text node in both lookup structures.
  */
-export function registerReactiveTextNode(node: Text, info: ReactiveTextNodeInfo): void {
+export function registerReactiveTextNode(
+  node: Text,
+  info: ReactiveTextNodeInfo,
+): void {
   const ref = new WeakRef(node);
   reactiveTextNodes.set(ref, info);
   reactiveTextNodesByNode.set(node, { ref, info });
@@ -54,7 +66,10 @@ export function registerReactiveTextNode(node: Text, info: ReactiveTextNodeInfo)
 /**
  * Registers a reactive element in both lookup structures.
  */
-export function registerReactiveElement(element: Element, info: ReactiveElementInfo): void {
+export function registerReactiveElement(
+  element: Element,
+  info: ReactiveElementInfo,
+): void {
   const ref = new WeakRef(element);
   reactiveElements.set(ref, info);
   reactiveElementsByNode.set(element, { ref, info });
@@ -97,4 +112,3 @@ export function cleanupReactiveElement(element: Element): void {
     reactiveElementsByNode.delete(element);
   }
 }
-

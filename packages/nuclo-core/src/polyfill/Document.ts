@@ -1,15 +1,15 @@
-import { NucloElement } from './Element';
-import { NucloText } from './Text';
+import { NucloElement } from "./Element";
+import { NucloText } from "./Text";
 
 /**
  * Lightweight DocumentFragment for SSR — prototype methods instead of per-instance closures.
  */
 class SSRDocumentFragment {
   nodeType: number = 11;
-  nodeName: string = '#document-fragment';
+  nodeName: string = "#document-fragment";
   childNodes: Node[] = [];
   children: Element[] = [];
-  textContent: string = '';
+  textContent: string = "";
 
   appendChild<T extends Node>(child: T): T {
     this.childNodes.push(child);
@@ -51,7 +51,10 @@ class SSRDocumentFragment {
     const index = this.childNodes.indexOf(oldChild);
     if (index !== -1) {
       this.childNodes[index] = newChild;
-      if ((oldChild as any).nodeType === 1 && (newChild as any).nodeType === 1) {
+      if (
+        (oldChild as any).nodeType === 1 &&
+        (newChild as any).nodeType === 1
+      ) {
         const elementIndex = this.children.indexOf(oldChild as Element);
         if (elementIndex !== -1) {
           this.children[elementIndex] = newChild as unknown as Element;
@@ -63,58 +66,72 @@ class SSRDocumentFragment {
     return newChild;
   }
 
-  querySelector(): null { return null; }
-  querySelectorAll(): NodeListOf<Element> { return [] as unknown as NodeListOf<Element>; }
+  querySelector(): null {
+    return null;
+  }
+  querySelectorAll(): NodeListOf<Element> {
+    return [] as unknown as NodeListOf<Element>;
+  }
 }
 
 export class NucloDocument {
   head: ExpandedElement;
   body: ExpandedElement;
-  private _listeners: Map<string, Map<EventListener, { listener: EventListener; options?: boolean | AddEventListenerOptions }>>;
-  
+  private _listeners: Map<
+    string,
+    Map<
+      EventListener,
+      { listener: EventListener; options?: boolean | AddEventListenerOptions }
+    >
+  >;
+
   constructor() {
-    this.head = new NucloElement('head') as unknown as ExpandedElement;
-    this.body = new NucloElement('body') as unknown as ExpandedElement;
+    this.head = new NucloElement("head") as unknown as ExpandedElement;
+    this.body = new NucloElement("body") as unknown as ExpandedElement;
     this._listeners = new Map();
   }
-  
+
   createElement(tagName: string, _options?: unknown): ExpandedElement {
     return new NucloElement(tagName) as unknown as ExpandedElement;
   }
-  
-  createElementNS(namespace: string, tagName: string, _options?: unknown): ExpandedElement {
+
+  createElementNS(
+    namespace: string,
+    tagName: string,
+    _options?: unknown,
+  ): ExpandedElement {
     const element = new NucloElement(tagName) as unknown as ExpandedElement;
     (element as any).namespaceURI = namespace;
     return element;
   }
-  
+
   createTextNode(data: string): Text {
     return new NucloText(data) as unknown as Text;
   }
-  
+
   createComment(data: string): Comment {
     const comment = {
       nodeType: 8,
-      nodeName: '#comment',
+      nodeName: "#comment",
       data,
       textContent: data,
       nodeValue: data,
       parentNode: null,
       nextSibling: null,
-      previousSibling: null
+      previousSibling: null,
     };
     return comment as unknown as Comment;
   }
-  
+
   createDocumentFragment(): DocumentFragment {
     return new SSRDocumentFragment() as unknown as DocumentFragment;
   }
-  
+
   querySelector(selector: string): Element | null {
     // Simple implementation - only supports ID selector for #nuclo-styles
-    if (selector.startsWith('#')) {
+    if (selector.startsWith("#")) {
       const id = selector.slice(1);
-      if (id === 'nuclo-styles' && this.head.children) {
+      if (id === "nuclo-styles" && this.head.children) {
         for (const child of this.head.children) {
           if ((child as any).id === id) {
             return child as unknown as Element;
@@ -124,20 +141,28 @@ export class NucloDocument {
     }
     return null;
   }
-  
+
   querySelectorAll(_selector: string): NodeListOf<Element> {
     return [] as unknown as NodeListOf<Element>;
   }
-  
-  addEventListener(type: string, listener: EventListener, options?: boolean | AddEventListenerOptions): void {
+
+  addEventListener(
+    type: string,
+    listener: EventListener,
+    options?: boolean | AddEventListenerOptions,
+  ): void {
     if (!this._listeners.has(type)) {
       this._listeners.set(type, new Map());
     }
     const listenersMap = this._listeners.get(type)!;
     listenersMap.set(listener, { listener, options });
   }
-  
-  removeEventListener(type: string, listener: EventListener, _options?: boolean | AddEventListenerOptions): void {
+
+  removeEventListener(
+    type: string,
+    listener: EventListener,
+    _options?: boolean | AddEventListenerOptions,
+  ): void {
     const listeners = this._listeners.get(type);
     if (listeners) {
       listeners.delete(listener);
@@ -147,7 +172,7 @@ export class NucloDocument {
       }
     }
   }
-  
+
   dispatchEvent(event: Event): boolean {
     const listeners = this._listeners.get(event.type);
     if (listeners) {
@@ -158,13 +183,13 @@ export class NucloDocument {
         try {
           listener(event);
         } catch (error) {
-          console.error('Error in event listener:', error);
+          console.error("Error in event listener:", error);
         }
       }
     }
     return true;
   }
-  
+
   contains(_node: Node): boolean {
     return false;
   }

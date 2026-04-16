@@ -34,7 +34,12 @@ describe("when builder SSR branches", () => {
     it("should return null with multiple content items when document is not available", async () => {
       const { WhenBuilderImpl } = await import("../../src/when/builder");
       const container = {} as any;
-      const builder = new WhenBuilderImpl(() => true, "text1", "text2", "text3");
+      const builder = new WhenBuilderImpl(
+        () => true,
+        "text1",
+        "text2",
+        "text3",
+      );
       const result = builder.render(container, 0);
       expect(result).toBeNull();
     });
@@ -98,7 +103,12 @@ describe("when builder SSR branches", () => {
       const { WhenBuilderImpl } = await import("../../src/when/builder");
       const { NucloElement } = await import("../../src/polyfill/Element");
       const host = new NucloElement("div") as any;
-      const builder = new WhenBuilderImpl(() => true, "text1", "text2", "text3");
+      const builder = new WhenBuilderImpl(
+        () => true,
+        "text1",
+        "text2",
+        "text3",
+      );
       const result = builder.render(host, 0);
       expect(result).not.toBeNull();
       expect((result as any)?.nodeType).toBe(8);

@@ -16,20 +16,21 @@ npm install nuclo
 
 ```typescript
 // Load polyfills first for Node.js environment
-import 'nuclo/polyfill';
+import "nuclo/polyfill";
 
 // Import SSR function
-import { renderToString } from 'nuclo/ssr';
+import { renderToString } from "nuclo/ssr";
 
 // Import component builders
-import { div, h1, p } from 'nuclo';
+import { div, h1, p } from "nuclo";
 
 // Render a component to HTML string
 const html = renderToString(
-  div({ class: "container" },
+  div(
+    { class: "container" },
     h1("Hello, World!"),
-    p("This is server-side rendered content.")
-  )
+    p("This is server-side rendered content."),
+  ),
 );
 
 console.log(html);
@@ -40,17 +41,14 @@ console.log(html);
 
 ```javascript
 // Load polyfills
-require('nuclo/dist/nuclo.cjs');
+require("nuclo/dist/nuclo.cjs");
 
 // Load SSR module
-const { renderToString } = require('nuclo/dist/ssr/nuclo.ssr.cjs');
+const { renderToString } = require("nuclo/dist/ssr/nuclo.ssr.cjs");
 
 // Use global tag builders
 const html = renderToString(
-  div({ id: "app" },
-    h1("My App"),
-    p("Content here")
-  )
+  div({ id: "app" }, h1("My App"), p("Content here")),
 );
 ```
 
@@ -61,11 +59,13 @@ const html = renderToString(
 Renders a Nuclo component to an HTML string.
 
 **Parameters:**
+
 - `input` - A Nuclo component function, DOM element, or node
 
 **Returns:** `string` - HTML string representation
 
 **Example:**
+
 ```typescript
 const html = renderToString(div("Hello"));
 // Returns: '<div>Hello</div>'
@@ -76,16 +76,18 @@ const html = renderToString(div("Hello"));
 Renders multiple Nuclo components to HTML strings.
 
 **Parameters:**
+
 - `inputs` - Array of Nuclo components
 
 **Returns:** `string[]` - Array of HTML strings
 
 **Example:**
+
 ```typescript
 const htmlArray = renderManyToString([
   div("First"),
   div("Second"),
-  div("Third")
+  div("Third"),
 ]);
 // Returns: ['<div>First</div>', '<div>Second</div>', '<div>Third</div>']
 ```
@@ -95,6 +97,7 @@ const htmlArray = renderManyToString([
 Renders a component and wraps it in a container element.
 
 **Parameters:**
+
 - `input` - A Nuclo component
 - `containerTag` (optional) - Tag name for container (default: 'div')
 - `containerAttrs` (optional) - Attributes for the container
@@ -102,12 +105,12 @@ Renders a component and wraps it in a container element.
 **Returns:** `string` - HTML string with container wrapper
 
 **Example:**
+
 ```typescript
-const html = renderToStringWithContainer(
-  span("Content"),
-  "section",
-  { id: "main", class: "wrapper" }
-);
+const html = renderToStringWithContainer(span("Content"), "section", {
+  id: "main",
+  class: "wrapper",
+});
 // Returns: '<section id="main" class="wrapper"><span>Content</span></section>'
 ```
 
@@ -123,13 +126,15 @@ const html = renderToStringWithContainer(
 ## Important Notes
 
 1. **Polyfills Required**: Always import polyfills before using SSR in Node.js:
+
    ```typescript
-   import 'nuclo/polyfill';
+   import "nuclo/polyfill";
    ```
 
 2. **Global vs Module Imports**: Tag builders are available globally after importing the main module:
+
    ```typescript
-   import 'nuclo';  // Makes div, span, etc. available globally
+   import "nuclo"; // Makes div, span, etc. available globally
    ```
 
 3. **Explicit Update Cycle**: SSR renders the current state only. Dynamic functions are evaluated once during string generation, and the HTML will not keep updating on the server.
@@ -139,19 +144,20 @@ const html = renderToStringWithContainer(
 ## Example: Express.js Integration
 
 ```typescript
-import express from 'express';
-import 'nuclo/polyfill';
-import { renderToString } from 'nuclo/ssr';
-import { div, h1, p } from 'nuclo';
+import express from "express";
+import "nuclo/polyfill";
+import { renderToString } from "nuclo/ssr";
+import { div, h1, p } from "nuclo";
 
 const app = express();
 
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   const html = renderToString(
-    div({ class: "container" },
+    div(
+      { class: "container" },
       h1("Welcome"),
-      p("Server-rendered with Nuclo!")
-    )
+      p("Server-rendered with Nuclo!"),
+    ),
   );
 
   res.send(`
@@ -188,16 +194,16 @@ The SSR bundle is built separately in `rollup.config.js`:
 
 ```javascript
 const ssrConfig = {
-  input: 'src/ssr/index.ts',
+  input: "src/ssr/index.ts",
   output: [
     {
-      file: 'dist/ssr/nuclo.ssr.js',
-      format: 'es',
+      file: "dist/ssr/nuclo.ssr.js",
+      format: "es",
       sourcemap: true,
     },
     {
-      file: 'dist/ssr/nuclo.ssr.cjs',
-      format: 'cjs',
+      file: "dist/ssr/nuclo.ssr.cjs",
+      format: "cjs",
       sourcemap: true,
     },
   ],

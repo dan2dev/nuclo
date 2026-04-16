@@ -8,4 +8,3 @@ describe("conditionalUpdater (node/SSR)", () => {
     expect(() => updateConditionalElements()).not.toThrow();
   });
 });
-

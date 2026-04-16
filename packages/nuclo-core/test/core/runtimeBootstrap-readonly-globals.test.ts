@@ -28,4 +28,3 @@ describe("styled bootstrap readonly globals", () => {
     }
   });
 });
-

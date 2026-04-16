@@ -6,7 +6,8 @@ import type { UpdateScope } from "../core/updateScope";
 
 export type WhenCondition = boolean | (() => boolean);
 export type WhenContent<TTagName extends ElementTagName = ElementTagName> =
-  NodeMod<TTagName> | NodeModFn<TTagName>;
+  | NodeMod<TTagName>
+  | NodeModFn<TTagName>;
 
 export interface WhenGroup<TTagName extends ElementTagName = ElementTagName> {
   condition: WhenCondition;
@@ -39,7 +40,10 @@ interface WhenRuntimeInfo<TTagName extends ElementTagName = ElementTagName> {
   runtime: WhenRuntime<TTagName>;
 }
 
-const activeWhenRuntimes = new Map<WeakRef<Comment>, WhenRuntimeInfo<ElementTagName>>();
+const activeWhenRuntimes = new Map<
+  WeakRef<Comment>,
+  WhenRuntimeInfo<ElementTagName>
+>();
 
 /**
  * Evaluates which condition branch should be active.
@@ -47,7 +51,7 @@ const activeWhenRuntimes = new Map<WeakRef<Comment>, WhenRuntimeInfo<ElementTagN
  */
 export function evaluateActiveCondition<TTagName extends ElementTagName>(
   groups: ReadonlyArray<WhenGroup<TTagName>>,
-  elseContent: ReadonlyArray<WhenContent<TTagName>>
+  elseContent: ReadonlyArray<WhenContent<TTagName>>,
 ): number | -1 | null {
   for (let i = 0; i < groups.length; i++) {
     if (resolveCondition(groups[i].condition)) {
@@ -62,7 +66,7 @@ export function evaluateActiveCondition<TTagName extends ElementTagName>(
  * Evaluates conditions, clears old content, and renders the active branch.
  */
 export function renderWhenContent<TTagName extends ElementTagName>(
-  runtime: WhenRuntime<TTagName>
+  runtime: WhenRuntime<TTagName>,
 ): void {
   const { groups, elseContent, host, index, endMarker } = runtime;
 
@@ -79,7 +83,8 @@ export function renderWhenContent<TTagName extends ElementTagName>(
   if (newActive === null) return;
 
   // Render the active branch
-  const contentToRender = newActive >= 0 ? groups[newActive].content : elseContent;
+  const contentToRender =
+    newActive >= 0 ? groups[newActive].content : elseContent;
   const nodes = renderContentItems(contentToRender, host, index, endMarker);
 
   insertNodesBefore(nodes, endMarker);
@@ -91,14 +96,14 @@ export function renderWhenContent<TTagName extends ElementTagName>(
  * The runtime object itself is mutable and will be updated in place.
  */
 export function registerWhenRuntime<TTagName extends ElementTagName>(
-  runtime: WhenRuntime<TTagName>
+  runtime: WhenRuntime<TTagName>,
 ): void {
   const runtimeInfo: WhenRuntimeInfo<TTagName> = {
     runtime,
   };
   activeWhenRuntimes.set(
     new WeakRef(runtime.startMarker),
-    runtimeInfo as WhenRuntimeInfo<ElementTagName>
+    runtimeInfo as WhenRuntimeInfo<ElementTagName>,
   );
 }
 
@@ -121,7 +126,7 @@ export function updateWhenRuntimes(scope?: UpdateScope): void {
 
   for (const [ref, info] of activeWhenRuntimes) {
     const startMarker = ref.deref();
-    
+
     // Comment node was garbage collected
     if (startMarker === undefined) {
       toDelete.push(ref);
@@ -129,7 +134,10 @@ export function updateWhenRuntimes(scope?: UpdateScope): void {
     }
 
     // Check if markers are still connected to DOM
-    if (!isNodeConnected(startMarker) || !isNodeConnected(info.runtime.endMarker)) {
+    if (
+      !isNodeConnected(startMarker) ||
+      !isNodeConnected(info.runtime.endMarker)
+    ) {
       toDelete.push(ref);
       continue;
     }

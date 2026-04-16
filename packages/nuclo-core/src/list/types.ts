@@ -10,19 +10,25 @@ export type ListRenderable<TTagName extends ElementTagName = ElementTagName> =
   | null
   | undefined;
 
-export type ListRenderer<TItem, TTagName extends ElementTagName = ElementTagName> = (
-  item: TItem,
-  index: number,
-) => ListRenderable<TTagName>;
+export type ListRenderer<
+  TItem,
+  TTagName extends ElementTagName = ElementTagName,
+> = (item: TItem, index: number) => ListRenderable<TTagName>;
 
 export type ListItemsProvider<TItem> = () => ListItemsInput<TItem>;
 
-export interface ListItemRecord<TItem, TTagName extends ElementTagName = ElementTagName> {
+export interface ListItemRecord<
+  TItem,
+  TTagName extends ElementTagName = ElementTagName,
+> {
   item: TItem;
   element: ExpandedElement<TTagName>;
 }
 
-export interface ListRuntime<TItem, TTagName extends ElementTagName = ElementTagName> {
+export interface ListRuntime<
+  TItem,
+  TTagName extends ElementTagName = ElementTagName,
+> {
   itemsProvider: ListItemsProvider<TItem>;
   renderItem: ListRenderer<TItem, TTagName>;
   startMarker: Comment;

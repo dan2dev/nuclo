@@ -1,8 +1,10 @@
-export interface ConditionalInfo<TTagName extends ElementTagName = ElementTagName> {
-	condition: () => boolean;
-	tagName: TTagName;
-	modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>;
-	isSvg: boolean;
+export interface ConditionalInfo<
+  TTagName extends ElementTagName = ElementTagName,
+> {
+  condition: () => boolean;
+  tagName: TTagName;
+  modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>;
+  isSvg: boolean;
 }
 
 // WeakMap replaces the _conditionalInfo expando property — zero `any`, no DOM pollution, auto-GC.
@@ -24,13 +26,13 @@ const refByNode = new WeakMap<Node, WeakRef<Node>>();
  * Attach conditional info to a node and register it.
  */
 export function storeConditionalInfo<TTagName extends ElementTagName>(
-	node: Node,
-	info: ConditionalInfo<TTagName>
+  node: Node,
+  info: ConditionalInfo<TTagName>,
 ): void {
-	conditionalInfoMap.set(node, info as ConditionalInfo<ElementTagName>);
-	const ref = new WeakRef(node);
-	activeConditionalNodes.add(ref);
-	refByNode.set(node, ref);
+  conditionalInfoMap.set(node, info as ConditionalInfo<ElementTagName>);
+  const ref = new WeakRef(node);
+  activeConditionalNodes.add(ref);
+  refByNode.set(node, ref);
 }
 
 /**
@@ -38,12 +40,12 @@ export function storeConditionalInfo<TTagName extends ElementTagName>(
  * O(1) via reverse lookup WeakMap.
  */
 export function unregisterConditionalNode(node: Node): void {
-	conditionalInfoMap.delete(node);
-	const ref = refByNode.get(node);
-	if (ref) {
-		activeConditionalNodes.delete(ref);
-		refByNode.delete(node);
-	}
+  conditionalInfoMap.delete(node);
+  const ref = refByNode.get(node);
+  if (ref) {
+    activeConditionalNodes.delete(ref);
+    refByNode.delete(node);
+  }
 }
 
 /**
@@ -51,29 +53,31 @@ export function unregisterConditionalNode(node: Node): void {
  * Automatically cleans up garbage-collected nodes.
  */
 export function getActiveConditionalNodes(): Node[] {
-	const nodes: Node[] = [];
-	const toDelete: WeakRef<Node>[] = [];
+  const nodes: Node[] = [];
+  const toDelete: WeakRef<Node>[] = [];
 
-	for (const ref of activeConditionalNodes) {
-		const node = ref.deref();
-		if (node === undefined) {
-			toDelete.push(ref);
-		} else {
-			nodes.push(node);
-		}
-	}
+  for (const ref of activeConditionalNodes) {
+    const node = ref.deref();
+    if (node === undefined) {
+      toDelete.push(ref);
+    } else {
+      nodes.push(node);
+    }
+  }
 
-	for (const ref of toDelete) {
-		activeConditionalNodes.delete(ref);
-	}
+  for (const ref of toDelete) {
+    activeConditionalNodes.delete(ref);
+  }
 
-	return nodes;
+  return nodes;
 }
 
 export function hasConditionalInfo(node: Node): boolean {
-	return conditionalInfoMap.has(node);
+  return conditionalInfoMap.has(node);
 }
 
-export function getConditionalInfo(node: Node): ConditionalInfo<ElementTagName> | null {
-	return conditionalInfoMap.get(node) ?? null;
+export function getConditionalInfo(
+  node: Node,
+): ConditionalInfo<ElementTagName> | null {
+  return conditionalInfoMap.get(node) ?? null;
 }

@@ -1,7 +1,10 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { updateConditionalElements } from "../../src/core/conditionalUpdater";
-import { createHtmlConditionalElement, createSvgConditionalElement } from "../helpers/conditionalTestHelpers";
+import {
+  createHtmlConditionalElement,
+  createSvgConditionalElement,
+} from "../helpers/conditionalTestHelpers";
 import * as conditionalInfo from "../../src/utility/conditionalInfo";
 
 describe("conditionalUpdater missing branches", () => {
@@ -24,7 +27,11 @@ describe("conditionalUpdater missing branches", () => {
 
   it("recreates SVG elements from comments", () => {
     let visible = false;
-    const node = createSvgConditionalElement("svg", () => visible, []) as unknown as Node;
+    const node = createSvgConditionalElement(
+      "svg",
+      () => visible,
+      [],
+    ) as unknown as Node;
     expect(node.nodeType).toBe(Node.COMMENT_NODE);
     container.appendChild(node);
 
@@ -41,20 +48,28 @@ describe("conditionalUpdater missing branches", () => {
     const throwingModifier = (_parent: any) => {
       throw new Error("boom");
     };
-    const node = createSvgConditionalElement("svg", () => visible, [throwingModifier]) as unknown as Node;
+    const node = createSvgConditionalElement("svg", () => visible, [
+      throwingModifier,
+    ]) as unknown as Node;
     container.appendChild(node);
 
     visible = true;
     updateConditionalElements();
 
     const messages = consoleSpy.mock.calls.map((call) => String(call[0]));
-    expect(messages.some((m) => m.includes("Error applying modifiers in conditional element"))).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes("Error applying modifiers in conditional element"),
+      ),
+    ).toBe(true);
     expect(container.firstChild?.nodeType).toBe(Node.ELEMENT_NODE);
   });
 
   it("skips nodes missing conditional info", () => {
     const visible = true;
-    const node = createHtmlConditionalElement("div", () => visible, ["X"]) as unknown as Node;
+    const node = createHtmlConditionalElement("div", () => visible, [
+      "X",
+    ]) as unknown as Node;
     container.appendChild(node);
 
     delete (node as any)._conditionalInfo;
@@ -64,7 +79,9 @@ describe("conditionalUpdater missing branches", () => {
 
   it("respects provided update scope", () => {
     let visible = false;
-    const node = createHtmlConditionalElement("div", () => visible, ["X"]) as unknown as Node;
+    const node = createHtmlConditionalElement("div", () => visible, [
+      "X",
+    ]) as unknown as Node;
     container.appendChild(node);
 
     visible = true;
@@ -74,7 +91,9 @@ describe("conditionalUpdater missing branches", () => {
 
   it("does nothing if conditional comment cannot be created", () => {
     let visible = true;
-    const node = createHtmlConditionalElement("div", () => visible, ["X"]) as unknown as Node;
+    const node = createHtmlConditionalElement("div", () => visible, [
+      "X",
+    ]) as unknown as Node;
     container.appendChild(node);
     expect(node.nodeType).toBe(Node.ELEMENT_NODE);
 

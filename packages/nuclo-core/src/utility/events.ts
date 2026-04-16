@@ -3,7 +3,9 @@ import { logError } from "./errorHandler";
 export function dispatchGlobalUpdateEvent(): void {
   if (typeof document === "undefined") return;
 
-  const targets: EventTarget[] = document.body ? [document.body, document] : [document];
+  const targets: EventTarget[] = document.body
+    ? [document.body, document]
+    : [document];
 
   for (const target of targets) {
     try {

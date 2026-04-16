@@ -16,7 +16,11 @@ describe("div NodeBuilder", () => {
 
   it("should append children and text nodes", () => {
     const parent = document.createElement("div");
-    const nodeBuilder = div("Hello, ", document.createElement("span"), () => "World!");
+    const nodeBuilder = div(
+      "Hello, ",
+      document.createElement("span"),
+      () => "World!",
+    );
     const element = nodeBuilder(parent, 0);
     expect(element.childNodes!.length).toBe(5); // 2 text nodes with comments + 1 span = 2*2 + 1
     expect(element.childNodes![1].textContent).toBe("Hello, ");
@@ -26,7 +30,10 @@ describe("div NodeBuilder", () => {
 
   it("should set attributes and properties", () => {
     const parent = document.createElement("div");
-    const nodeBuilder = div({ id: "test-div", className: "my-class" }, "Content");
+    const nodeBuilder = div(
+      { id: "test-div", className: "my-class" },
+      "Content",
+    );
     const element = nodeBuilder(parent, 0);
     expect(element.id).toBe("test-div");
     expect(element.className).toBe("my-class");
@@ -55,5 +62,4 @@ describe("div NodeBuilder", () => {
     expect((element.childNodes![0] as any).tagName.toLowerCase()).toBe("div");
     expect(element.childNodes![0].textContent).toBe("Nested Content");
   });
-
 });

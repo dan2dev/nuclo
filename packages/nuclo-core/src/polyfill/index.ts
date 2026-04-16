@@ -1,9 +1,9 @@
 /**
  * Polyfills for Node.js environments
- * 
+ *
  * This module provides minimal browser API polyfills to allow Nuclo to run in Node.js
  * for server-side rendering (SSR) scenarios.
- * 
+ *
  * To use in Node.js:
  * ```typescript
  * import 'nuclo/polyfill';
@@ -12,24 +12,24 @@
  * ```
  */
 
-export { NucloDocument, document } from './Document';
-export { NucloElement } from './Element';
-export { NucloText } from './Text';
-export { NucloEvent, NucloCustomEvent, Event, CustomEvent } from './Event';
-export { NucloNode } from './Node';
+export { NucloDocument, document } from "./Document";
+export { NucloElement } from "./Element";
+export { NucloText } from "./Text";
+export { NucloEvent, NucloCustomEvent, Event, CustomEvent } from "./Event";
+export { NucloNode } from "./Node";
 
 // Import for local use
-import { NucloElement } from './Element';
-import { NucloNode } from './Node';
-import { document } from './Document';
-import { Event, CustomEvent } from './Event';
+import { NucloElement } from "./Element";
+import { NucloNode } from "./Node";
+import { document } from "./Document";
+import { Event, CustomEvent } from "./Event";
 
 export const Node = NucloNode;
 export const Element = NucloElement;
 export const HTMLElement = NucloElement;
 
 // Auto-apply polyfills to globalThis if in Node environment (synchronous — no top-level await)
-if (typeof window === 'undefined' && typeof globalThis !== 'undefined') {
+if (typeof window === "undefined" && typeof globalThis !== "undefined") {
   interface GlobalWithPolyfills {
     document?: typeof document;
     Event?: typeof Event;

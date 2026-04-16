@@ -16,39 +16,42 @@
  *    while keeping the node connected, then trigger an update.
  */
 
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   storeConditionalInfo,
   unregisterConditionalNode,
-} from '../../src/utility/conditionalInfo';
-import { updateConditionalElements } from '../../src/core/conditionalUpdater';
+} from "../../src/utility/conditionalInfo";
+import { updateConditionalElements } from "../../src/core/conditionalUpdater";
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 // ── Unit: SVG fallback when createSvgElementWithModifiers throws ───────────────
-describe('conditionalUpdater – SVG fallback (lines 31, 37)', () => {
-  it('falls back to a plain SVG element when modifiers throw during creation', async () => {
+describe("conditionalUpdater – SVG fallback (lines 31, 37)", () => {
+  it("falls back to a plain SVG element when modifiers throw during creation", async () => {
     // Mock createSvgElementWithModifiers to throw so the catch block runs
-    vi.mock('../../src/internal/applyModifiers', async (importOriginal) => {
-      const original = await importOriginal<typeof import('../../src/internal/applyModifiers')>();
+    vi.mock("../../src/internal/applyModifiers", async (importOriginal) => {
+      const original =
+        await importOriginal<
+          typeof import("../../src/internal/applyModifiers")
+        >();
       return {
         ...original,
         createSvgElementWithModifiers: () => {
-          throw new Error('forced SVG modifier error');
+          throw new Error("forced SVG modifier error");
         },
       };
     });
 
-    const comment = document.createComment('conditional-rect-hidden');
+    const comment = document.createComment("conditional-rect-hidden");
     document.body.appendChild(comment);
 
     // Store conditional info with isSvg = true so the fallback path is taken
     storeConditionalInfo(comment, {
       condition: () => true, // Condition is true → should replace comment with element
-      tagName: 'rect' as ElementTagName,
-      modifiers: [{ width: '10' } as unknown as NodeMod<'rect'>],
+      tagName: "rect" as ElementTagName,
+      modifiers: [{ width: "10" } as unknown as NodeMod<"rect">],
       isSvg: true,
     });
 
@@ -60,24 +63,27 @@ describe('conditionalUpdater – SVG fallback (lines 31, 37)', () => {
 });
 
 // ── Unit: HTML fallback when createHtmlElementWithModifiers throws ─────────────
-describe('conditionalUpdater – HTML fallback', () => {
-  it('falls back to a plain element when modifiers throw during creation', async () => {
-    vi.mock('../../src/internal/applyModifiers', async (importOriginal) => {
-      const original = await importOriginal<typeof import('../../src/internal/applyModifiers')>();
+describe("conditionalUpdater – HTML fallback", () => {
+  it("falls back to a plain element when modifiers throw during creation", async () => {
+    vi.mock("../../src/internal/applyModifiers", async (importOriginal) => {
+      const original =
+        await importOriginal<
+          typeof import("../../src/internal/applyModifiers")
+        >();
       return {
         ...original,
         createHtmlElementWithModifiers: () => {
-          throw new Error('forced HTML modifier error');
+          throw new Error("forced HTML modifier error");
         },
       };
     });
 
-    const comment = document.createComment('conditional-div-hidden');
+    const comment = document.createComment("conditional-div-hidden");
     document.body.appendChild(comment);
 
     storeConditionalInfo(comment, {
       condition: () => true,
-      tagName: 'div' as ElementTagName,
+      tagName: "div" as ElementTagName,
       modifiers: [],
       isSvg: false,
     });
@@ -90,16 +96,16 @@ describe('conditionalUpdater – HTML fallback', () => {
 });
 
 // ── Unit: updateConditionalNode guard when conditionalInfo is null (line 46) ───
-describe('conditionalUpdater – no conditionalInfo guard (line 46)', () => {
-  it('silently skips a connected node that has no conditional info', () => {
+describe("conditionalUpdater – no conditionalInfo guard (line 46)", () => {
+  it("silently skips a connected node that has no conditional info", () => {
     // Create and register a node, then explicitly unregister its WeakMap entry
     // so that conditionalInfo is null when updateConditionalNode is called.
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     document.body.appendChild(div);
 
     storeConditionalInfo(div, {
       condition: () => true,
-      tagName: 'div' as ElementTagName,
+      tagName: "div" as ElementTagName,
       modifiers: [],
       isSvg: false,
     });
@@ -111,7 +117,7 @@ describe('conditionalUpdater – no conditionalInfo guard (line 46)', () => {
     // Re-add to active nodes without WeakMap entry by storing again then removing info
     storeConditionalInfo(div, {
       condition: () => true,
-      tagName: 'div' as ElementTagName,
+      tagName: "div" as ElementTagName,
       modifiers: [],
       isSvg: false,
     });
@@ -125,13 +131,13 @@ describe('conditionalUpdater – no conditionalInfo guard (line 46)', () => {
     div.remove();
   });
 
-  it('processes normally after re-registering', () => {
-    const comment = document.createComment('conditional-p-hidden');
+  it("processes normally after re-registering", () => {
+    const comment = document.createComment("conditional-p-hidden");
     document.body.appendChild(comment);
 
     storeConditionalInfo(comment, {
       condition: () => true,
-      tagName: 'p' as ElementTagName,
+      tagName: "p" as ElementTagName,
       modifiers: [],
       isSvg: false,
     });
@@ -139,20 +145,20 @@ describe('conditionalUpdater – no conditionalInfo guard (line 46)', () => {
     // This time leave the info intact — should swap comment → element
     expect(() => updateConditionalElements()).not.toThrow();
     // The comment should have been replaced by a <p> element
-    expect(document.querySelector('p')).toBeTruthy();
+    expect(document.querySelector("p")).toBeTruthy();
 
-    document.querySelector('p')?.remove();
+    document.querySelector("p")?.remove();
   });
 });
 
 // ── Integration: updateConditionalElements guards ─────────────────────────────
-describe('updateConditionalElements – edge cases', () => {
-  it('unregisters disconnected nodes during iteration', () => {
-    const comment = document.createComment('conditional-span-hidden');
+describe("updateConditionalElements – edge cases", () => {
+  it("unregisters disconnected nodes during iteration", () => {
+    const comment = document.createComment("conditional-span-hidden");
     // Do NOT append to body (disconnected)
     storeConditionalInfo(comment, {
       condition: () => true,
-      tagName: 'span' as ElementTagName,
+      tagName: "span" as ElementTagName,
       modifiers: [],
       isSvg: false,
     });
@@ -161,12 +167,12 @@ describe('updateConditionalElements – edge cases', () => {
     expect(() => updateConditionalElements()).not.toThrow();
   });
 
-  it('handles scope filtering – skips nodes outside scope', () => {
-    const comment = document.createComment('conditional-em-hidden');
+  it("handles scope filtering – skips nodes outside scope", () => {
+    const comment = document.createComment("conditional-em-hidden");
     document.body.appendChild(comment);
     storeConditionalInfo(comment, {
       condition: () => true,
-      tagName: 'em' as ElementTagName,
+      tagName: "em" as ElementTagName,
       modifiers: [],
       isSvg: false,
     });

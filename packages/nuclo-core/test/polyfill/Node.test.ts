@@ -1,21 +1,21 @@
-import { describe, it, expect, vi } from 'vitest';
-import { NucloNode } from '../../src/polyfill/Node';
+import { describe, it, expect, vi } from "vitest";
+import { NucloNode } from "../../src/polyfill/Node";
 
-describe('NucloNode', () => {
-  describe('constructor', () => {
-    it('should create a node with default values', () => {
+describe("NucloNode", () => {
+  describe("constructor", () => {
+    it("should create a node with default values", () => {
       const node = new NucloNode();
 
       expect(node.nodeType).toBe(1); // ELEMENT_NODE
-      expect(node.nodeName).toBe('');
+      expect(node.nodeName).toBe("");
       expect(node.nodeValue).toBe(null);
       expect(node.parentNode).toBe(null);
-      expect(node.textContent).toBe('');
+      expect(node.textContent).toBe("");
     });
   });
 
-  describe('childNodes', () => {
-    it('should return empty NodeList initially', () => {
+  describe("childNodes", () => {
+    it("should return empty NodeList initially", () => {
       const node = new NucloNode();
       const childNodes = node.childNodes;
 
@@ -23,15 +23,15 @@ describe('NucloNode', () => {
       expect(childNodes).toBeDefined();
     });
 
-    it('should return NodeList with item method', () => {
+    it("should return NodeList with item method", () => {
       const node = new NucloNode();
       const childNodes = node.childNodes;
 
-      expect(typeof childNodes.item).toBe('function');
+      expect(typeof childNodes.item).toBe("function");
       expect(childNodes.item(0)).toBe(null);
     });
 
-    it('should support iteration', () => {
+    it("should support iteration", () => {
       const node = new NucloNode();
       const childNodes = node.childNodes;
 
@@ -41,7 +41,7 @@ describe('NucloNode', () => {
       expect(items.length).toBe(0);
     });
 
-    it('should support forEach', () => {
+    it("should support forEach", () => {
       const node = new NucloNode();
       const childNodes = node.childNodes;
 
@@ -51,7 +51,7 @@ describe('NucloNode', () => {
       expect(callback).not.toHaveBeenCalled(); // No children
     });
 
-    it('should support entries', () => {
+    it("should support entries", () => {
       const node = new NucloNode();
       const childNodes = node.childNodes;
 
@@ -59,7 +59,7 @@ describe('NucloNode', () => {
       expect(entries).toEqual([]);
     });
 
-    it('should support keys', () => {
+    it("should support keys", () => {
       const node = new NucloNode();
       const childNodes = node.childNodes;
 
@@ -67,7 +67,7 @@ describe('NucloNode', () => {
       expect(keys).toEqual([]);
     });
 
-    it('should support values', () => {
+    it("should support values", () => {
       const node = new NucloNode();
       const childNodes = node.childNodes;
 
@@ -76,8 +76,8 @@ describe('NucloNode', () => {
     });
   });
 
-  describe('childNodes with items', () => {
-    it('should return correct length when children are added', () => {
+  describe("childNodes with items", () => {
+    it("should return correct length when children are added", () => {
       const node = new NucloNode();
       const child1 = {} as Node;
       const child2 = {} as Node;
@@ -89,10 +89,10 @@ describe('NucloNode', () => {
       expect(childNodes.length).toBe(2);
     });
 
-    it('should support item method with children', () => {
+    it("should support item method with children", () => {
       const node = new NucloNode();
-      const child1 = { nodeName: 'child1' } as Node;
-      const child2 = { nodeName: 'child2' } as Node;
+      const child1 = { nodeName: "child1" } as Node;
+      const child2 = { nodeName: "child2" } as Node;
 
       (node as any)._childNodes = [child1, child2];
 
@@ -103,10 +103,10 @@ describe('NucloNode', () => {
       expect(childNodes.item(-1)).toBe(null);
     });
 
-    it('should support iteration with children', () => {
+    it("should support iteration with children", () => {
       const node = new NucloNode();
-      const child1 = { nodeName: 'child1' } as Node;
-      const child2 = { nodeName: 'child2' } as Node;
+      const child1 = { nodeName: "child1" } as Node;
+      const child2 = { nodeName: "child2" } as Node;
 
       (node as any)._childNodes = [child1, child2];
 
@@ -116,10 +116,10 @@ describe('NucloNode', () => {
       expect(items).toEqual([child1, child2]);
     });
 
-    it('should support forEach with children', () => {
+    it("should support forEach with children", () => {
       const node = new NucloNode();
-      const child1 = { nodeName: 'child1' } as Node;
-      const child2 = { nodeName: 'child2' } as Node;
+      const child1 = { nodeName: "child1" } as Node;
+      const child2 = { nodeName: "child2" } as Node;
 
       (node as any)._childNodes = [child1, child2];
 
@@ -137,10 +137,10 @@ describe('NucloNode', () => {
       expect(callback.mock.calls[1][1]).toBe(1);
     });
 
-    it('should support entries with children', () => {
+    it("should support entries with children", () => {
       const node = new NucloNode();
-      const child1 = { nodeName: 'child1' } as Node;
-      const child2 = { nodeName: 'child2' } as Node;
+      const child1 = { nodeName: "child1" } as Node;
+      const child2 = { nodeName: "child2" } as Node;
 
       (node as any)._childNodes = [child1, child2];
 
@@ -149,14 +149,14 @@ describe('NucloNode', () => {
 
       expect(entries).toEqual([
         [0, child1],
-        [1, child2]
+        [1, child2],
       ]);
     });
 
-    it('should support keys with children', () => {
+    it("should support keys with children", () => {
       const node = new NucloNode();
-      const child1 = { nodeName: 'child1' } as Node;
-      const child2 = { nodeName: 'child2' } as Node;
+      const child1 = { nodeName: "child1" } as Node;
+      const child2 = { nodeName: "child2" } as Node;
 
       (node as any)._childNodes = [child1, child2];
 
@@ -166,10 +166,10 @@ describe('NucloNode', () => {
       expect(keys).toEqual([0, 1]);
     });
 
-    it('should support values with children', () => {
+    it("should support values with children", () => {
       const node = new NucloNode();
-      const child1 = { nodeName: 'child1' } as Node;
-      const child2 = { nodeName: 'child2' } as Node;
+      const child1 = { nodeName: "child1" } as Node;
+      const child2 = { nodeName: "child2" } as Node;
 
       (node as any)._childNodes = [child1, child2];
 
@@ -179,10 +179,10 @@ describe('NucloNode', () => {
       expect(values).toEqual([child1, child2]);
     });
 
-    it('should support Symbol.iterator', () => {
+    it("should support Symbol.iterator", () => {
       const node = new NucloNode();
-      const child1 = { nodeName: 'child1' } as Node;
-      const child2 = { nodeName: 'child2' } as Node;
+      const child1 = { nodeName: "child1" } as Node;
+      const child2 = { nodeName: "child2" } as Node;
 
       (node as any)._childNodes = [child1, child2];
 
@@ -195,29 +195,29 @@ describe('NucloNode', () => {
     });
   });
 
-  describe('property mutations', () => {
-    it('should allow nodeType to be changed', () => {
+  describe("property mutations", () => {
+    it("should allow nodeType to be changed", () => {
       const node = new NucloNode();
 
       node.nodeType = 3; // TEXT_NODE
       expect(node.nodeType).toBe(3);
     });
 
-    it('should allow nodeName to be changed', () => {
+    it("should allow nodeName to be changed", () => {
       const node = new NucloNode();
 
-      node.nodeName = 'DIV';
-      expect(node.nodeName).toBe('DIV');
+      node.nodeName = "DIV";
+      expect(node.nodeName).toBe("DIV");
     });
 
-    it('should allow nodeValue to be changed', () => {
+    it("should allow nodeValue to be changed", () => {
       const node = new NucloNode();
 
-      node.nodeValue = 'test value';
-      expect(node.nodeValue).toBe('test value');
+      node.nodeValue = "test value";
+      expect(node.nodeValue).toBe("test value");
     });
 
-    it('should allow parentNode to be changed', () => {
+    it("should allow parentNode to be changed", () => {
       const node = new NucloNode();
       const parent = new NucloNode();
 
@@ -225,20 +225,20 @@ describe('NucloNode', () => {
       expect(node.parentNode).toBe(parent);
     });
 
-    it('should allow textContent to be changed', () => {
+    it("should allow textContent to be changed", () => {
       const node = new NucloNode();
 
-      node.textContent = 'Hello World';
-      expect(node.textContent).toBe('Hello World');
+      node.textContent = "Hello World";
+      expect(node.textContent).toBe("Hello World");
     });
   });
 
-  describe('childNodes array spread', () => {
-    it('should spread childNodes like an array', () => {
+  describe("childNodes array spread", () => {
+    it("should spread childNodes like an array", () => {
       const node = new NucloNode();
-      const child1 = { nodeName: 'child1' } as Node;
-      const child2 = { nodeName: 'child2' } as Node;
-      const child3 = { nodeName: 'child3' } as Node;
+      const child1 = { nodeName: "child1" } as Node;
+      const child2 = { nodeName: "child2" } as Node;
+      const child3 = { nodeName: "child3" } as Node;
 
       (node as any)._childNodes = [child1, child2, child3];
 
@@ -252,8 +252,8 @@ describe('NucloNode', () => {
     });
   });
 
-  describe('childNodes immutability', () => {
-    it('should return a fresh NodeList on each access', () => {
+  describe("childNodes immutability", () => {
+    it("should return a fresh NodeList on each access", () => {
       const node = new NucloNode();
       const child = {} as Node;
 

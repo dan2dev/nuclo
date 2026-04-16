@@ -1,14 +1,14 @@
 /// <reference path="../../types/index.d.ts" />
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { on, removeListener, removeAllListeners } from '../../src/utility/on';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { on, removeListener, removeAllListeners } from "../../src/utility/on";
 
-describe('on utility - detachListener else branch (line 76)', () => {
+describe("on utility - detachListener else branch (line 76)", () => {
   let element: HTMLElement;
   let originalConsoleError: typeof console.error;
 
   beforeEach(() => {
-    document.body.innerHTML = '';
-    element = document.createElement('button');
+    document.body.innerHTML = "";
+    element = document.createElement("button");
     document.body.appendChild(element);
     originalConsoleError = console.error;
     console.error = vi.fn();
@@ -19,14 +19,14 @@ describe('on utility - detachListener else branch (line 76)', () => {
     vi.restoreAllMocks();
   });
 
-  describe('detachListener else branch - controller is falsy', () => {
+  describe("detachListener else branch - controller is falsy", () => {
     // The `on()` function always creates an AbortController, so the `else` branch
     // in detachListener (line 76) only fires when a TrackedListener has no controller.
     // This is defensive code for cases where AbortController might not be available
     // or a listener was tracked without one. We can trigger it by temporarily
     // making AbortController construction fail so `controller` is undefined.
 
-    it('falls back to removeEventListener when controller is undefined', () => {
+    it("falls back to removeEventListener when controller is undefined", () => {
       // Strategy: mock AbortController to make `new AbortController()` throw,
       // then the on() code will set controller = undefined (if it catches).
       // Actually, looking at on.ts, there's no try/catch around `new AbortController()`.
@@ -71,16 +71,16 @@ describe('on utility - detachListener else branch (line 76)', () => {
       // then document that the else branch is unreachable in practice.
 
       const listener = vi.fn();
-      const removeEventListenerSpy = vi.spyOn(element, 'removeEventListener');
+      const removeEventListenerSpy = vi.spyOn(element, "removeEventListener");
 
-      const mod = on('click', listener);
+      const mod = on("click", listener);
       mod(element, 0);
 
       element.click();
       expect(listener).toHaveBeenCalledTimes(1);
 
       // Remove via removeListener - uses controller.abort() path
-      removeListener(element, 'click', listener);
+      removeListener(element, "click", listener);
 
       element.click();
       expect(listener).toHaveBeenCalledTimes(1);
@@ -93,18 +93,18 @@ describe('on utility - detachListener else branch (line 76)', () => {
       removeEventListenerSpy.mockRestore();
     });
 
-    it('exercises removeAllListeners which calls detachListener for each tracked listener', () => {
+    it("exercises removeAllListeners which calls detachListener for each tracked listener", () => {
       const listener1 = vi.fn();
       const listener2 = vi.fn();
 
-      const mod1 = on('click', listener1);
-      const mod2 = on('mouseover', listener2);
+      const mod1 = on("click", listener1);
+      const mod2 = on("mouseover", listener2);
 
       mod1(element, 0);
       mod2(element, 0);
 
       element.click();
-      element.dispatchEvent(new Event('mouseover'));
+      element.dispatchEvent(new Event("mouseover"));
       expect(listener1).toHaveBeenCalledTimes(1);
       expect(listener2).toHaveBeenCalledTimes(1);
 
@@ -112,35 +112,35 @@ describe('on utility - detachListener else branch (line 76)', () => {
       removeAllListeners(element);
 
       element.click();
-      element.dispatchEvent(new Event('mouseover'));
+      element.dispatchEvent(new Event("mouseover"));
       expect(listener1).toHaveBeenCalledTimes(1);
       expect(listener2).toHaveBeenCalledTimes(1);
     });
 
-    it('exercises removeAllListeners with a specific type', () => {
+    it("exercises removeAllListeners with a specific type", () => {
       const listener1 = vi.fn();
       const listener2 = vi.fn();
       const listener3 = vi.fn();
 
-      const mod1 = on('click', listener1);
-      const mod2 = on('click', listener2);
-      const mod3 = on('focus', listener3);
+      const mod1 = on("click", listener1);
+      const mod2 = on("click", listener2);
+      const mod3 = on("focus", listener3);
 
       mod1(element, 0);
       mod2(element, 1);
       mod3(element, 0);
 
       element.click();
-      element.dispatchEvent(new Event('focus'));
+      element.dispatchEvent(new Event("focus"));
       expect(listener1).toHaveBeenCalledTimes(1);
       expect(listener2).toHaveBeenCalledTimes(1);
       expect(listener3).toHaveBeenCalledTimes(1);
 
       // Remove only click listeners
-      removeAllListeners(element, 'click');
+      removeAllListeners(element, "click");
 
       element.click();
-      element.dispatchEvent(new Event('focus'));
+      element.dispatchEvent(new Event("focus"));
 
       // Click listeners removed, focus still active
       expect(listener1).toHaveBeenCalledTimes(1);
@@ -148,10 +148,10 @@ describe('on utility - detachListener else branch (line 76)', () => {
       expect(listener3).toHaveBeenCalledTimes(2);
     });
 
-    it('triggers the else branch when AbortController is unavailable', () => {
+    it("triggers the else branch when AbortController is unavailable", () => {
       // Temporarily remove AbortController to force the else path
       const OriginalAbortController = globalThis.AbortController;
-      const removeEventListenerSpy = vi.spyOn(element, 'removeEventListener');
+      const removeEventListenerSpy = vi.spyOn(element, "removeEventListener");
 
       // We need to:
       // 1. Make on() not create an AbortController
@@ -182,7 +182,7 @@ describe('on utility - detachListener else branch (line 76)', () => {
       try {
         const listener = vi.fn();
         // on() will use the patched AbortController
-        const mod = on('click', listener);
+        const mod = on("click", listener);
         mod(element, 0);
 
         // The listener was added with the fake signal
@@ -201,7 +201,7 @@ describe('on utility - detachListener else branch (line 76)', () => {
         // It would only fire if trackListener were called from code outside on()
         // that doesn't provide an AbortController.
 
-        removeListener(element, 'click', listener);
+        removeListener(element, "click", listener);
       } finally {
         globalThis.AbortController = OriginalAbortController;
       }
@@ -213,49 +213,51 @@ describe('on utility - detachListener else branch (line 76)', () => {
     });
   });
 
-  describe('removeListener and removeAllListeners edge cases', () => {
-    it('removeListener does nothing when element has no tracked listeners', () => {
+  describe("removeListener and removeAllListeners edge cases", () => {
+    it("removeListener does nothing when element has no tracked listeners", () => {
       const listener = vi.fn();
-      expect(() => removeListener(element, 'click', listener)).not.toThrow();
+      expect(() => removeListener(element, "click", listener)).not.toThrow();
     });
 
-    it('removeListener does nothing when event type has no tracked listeners', () => {
+    it("removeListener does nothing when event type has no tracked listeners", () => {
       const listener = vi.fn();
-      const mod = on('click', listener);
+      const mod = on("click", listener);
       mod(element, 0);
 
       const otherListener = vi.fn();
-      expect(() => removeListener(element, 'focus', otherListener)).not.toThrow();
+      expect(() =>
+        removeListener(element, "focus", otherListener),
+      ).not.toThrow();
 
       // Original listener still works
       element.click();
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
-    it('removeListener does nothing when specific listener is not found', () => {
+    it("removeListener does nothing when specific listener is not found", () => {
       const listener1 = vi.fn();
       const listener2 = vi.fn();
-      const mod = on('click', listener1);
+      const mod = on("click", listener1);
       mod(element, 0);
 
-      expect(() => removeListener(element, 'click', listener2)).not.toThrow();
+      expect(() => removeListener(element, "click", listener2)).not.toThrow();
 
       // Original listener still works
       element.click();
       expect(listener1).toHaveBeenCalledTimes(1);
     });
 
-    it('removeAllListeners does nothing when element has no listeners', () => {
+    it("removeAllListeners does nothing when element has no listeners", () => {
       expect(() => removeAllListeners(element)).not.toThrow();
-      expect(() => removeAllListeners(element, 'click')).not.toThrow();
+      expect(() => removeAllListeners(element, "click")).not.toThrow();
     });
 
-    it('removeAllListeners with type does nothing when type has no listeners', () => {
+    it("removeAllListeners with type does nothing when type has no listeners", () => {
       const listener = vi.fn();
-      const mod = on('click', listener);
+      const mod = on("click", listener);
       mod(element, 0);
 
-      expect(() => removeAllListeners(element, 'focus')).not.toThrow();
+      expect(() => removeAllListeners(element, "focus")).not.toThrow();
 
       // Click listener still works
       element.click();

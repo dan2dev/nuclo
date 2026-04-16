@@ -7,7 +7,7 @@ describe("events utility edge cases", () => {
     it("should dispatch update event on document.body and document", () => {
       const bodyListener = vi.fn();
       const documentListener = vi.fn();
-      
+
       document.body.addEventListener("update", bodyListener);
       document.addEventListener("update", documentListener);
 
@@ -45,8 +45,10 @@ describe("events utility edge cases", () => {
     });
 
     it("should handle dispatchEvent errors gracefully", () => {
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-      
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
       // Mock dispatchEvent to throw
       const originalDispatch = document.body.dispatchEvent;
       document.body.dispatchEvent = () => {
@@ -85,4 +87,3 @@ describe("events utility edge cases", () => {
     });
   });
 });
-

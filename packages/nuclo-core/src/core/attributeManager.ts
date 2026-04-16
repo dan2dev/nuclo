@@ -1,110 +1,118 @@
-import { isFunction } from "../utility/typeGuards";
 import { registerAttributeResolver } from "./reactiveAttributes";
 import { applyStyleAttribute } from "./styleManager";
 import { SVG_NAMESPACE } from "../utility/dom";
 import {
-	initReactiveClassName,
-	hasReactiveClassName,
-	addStaticClasses,
-	mergeReactiveClassName,
-	mergeStaticClassName
+  initReactiveClassName,
+  hasReactiveClassName,
+  addStaticClasses,
+  mergeReactiveClassName,
+  mergeStaticClassName,
 } from "./classNameMerger";
 
-type AttributeKey<TTagName extends ElementTagName> = keyof ExpandedElementAttributes<TTagName>;
+type AttributeKey<TTagName extends ElementTagName> =
+  keyof ExpandedElementAttributes<TTagName>;
 type AttributeCandidate<TTagName extends ElementTagName> =
   ExpandedElementAttributes<TTagName>[AttributeKey<TTagName>];
+
+function setValue(el: Element, key: string, v: unknown, merge: boolean): void {
+  if (v == null) return;
+
+  // Guard against non-Element fakes (plain objects in tests, detached proxies) —
+  // silently ignore rather than crashing on a missing setAttribute.
+  if (typeof (el as Element).setAttribute !== "function") return;
+
+  if (key === "className" && merge && el instanceof HTMLElement) {
+    mergeStaticClassName(el, String(v));
+    return;
+  }
+
+  // SVG uses setAttribute for most attributes (many properties are read-only).
+  if (el.namespaceURI === SVG_NAMESPACE) {
+    el.setAttribute(key, String(v));
+    return;
+  }
+
+  if (key in el) {
+    try {
+      (el as unknown as Record<string, unknown>)[key] = v;
+      return;
+    } catch {
+      // Fall through to setAttribute.
+    }
+  }
+  el.setAttribute(key, String(v));
+}
 
 function applySingleAttribute<TTagName extends ElementTagName>(
   el: ExpandedElement<TTagName>,
   key: AttributeKey<TTagName>,
-  raw: AttributeCandidate<TTagName> | undefined,
-  shouldMergeClassName = false,
+  raw: unknown,
+  shouldMergeClassName: boolean,
 ): void {
   if (raw == null) return;
 
   if (key === "style") {
-    applyStyleAttribute(el, raw as ExpandedElementAttributes<TTagName>["style"]);
+    applyStyleAttribute(
+      el,
+      raw as ExpandedElementAttributes<TTagName>["style"],
+    );
     return;
   }
 
-  const setValue = (v: unknown, merge = false): void => {
-    if (v == null) return;
+  // Reactive (zero-arity function) attribute
+  if (typeof raw === "function" && (raw as { length: number }).length === 0) {
+    const resolver = raw as () => unknown;
 
-    // Special handling for className to merge instead of replace (only for non-reactive updates)
-    if (key === 'className' && el instanceof HTMLElement && merge) {
-      mergeStaticClassName(el, String(v));
+    if (key === "className" && el instanceof HTMLElement) {
+      initReactiveClassName(el);
+      registerAttributeResolver(el, "className", resolver, (v) => {
+        mergeReactiveClassName(el, String(v ?? ""));
+      });
       return;
     }
 
-    // SVG elements should always use setAttribute for most attributes
-    // because many SVG properties are read-only
-    const isSVGElement = el instanceof Element && el.namespaceURI === SVG_NAMESPACE;
-
-    if (isSVGElement) {
-      // Always use setAttribute for SVG elements
-      el.setAttribute(String(key), String(v));
-    } else if (key in el) {
-      // For HTML elements, try to set as property first
-      try {
-        (el as Record<string, unknown>)[key as string] = v;
-      } catch {
-        // If property is read-only, fall back to setAttribute
-        if (el instanceof Element) {
-          el.setAttribute(String(key), String(v));
-        }
-      }
-    } else if (el instanceof Element) {
-      el.setAttribute(String(key), String(v));
-    }
-  };
-
-  if (isFunction(raw) && raw.length === 0) {
-    // Type narrowing: zero-arity function that returns an attribute value
-    const resolver = raw as () => AttributeCandidate<TTagName>;
-
-    // For reactive className, we need to track which classes are reactive
-    // so we can preserve static classes when the reactive className changes
-    if (key === 'className' && el instanceof HTMLElement) {
-      initReactiveClassName(el);
-
-      registerAttributeResolver(el, String(key), resolver, function(v) {
-        mergeReactiveClassName(el, String(v || ''));
-      });
-    } else {
-      registerAttributeResolver(el, String(key), resolver, function(v) {
-        setValue(v, false);
-      });
-    }
-  } else {
-    // Static attributes should merge classNames
-    // For className, if there's already a reactive className, add to static classes
-    if (key === 'className' && el instanceof HTMLElement) {
-      if (hasReactiveClassName(el)) {
-        // There's already a reactive className; update the tracked set and DOM atomically.
-        const newClassName = String(raw || '');
-        if (newClassName) {
-          addStaticClasses(el, newClassName);
-          mergeStaticClassName(el, newClassName);
-        }
-        return;
-      }
-    }
-    setValue(raw, shouldMergeClassName);
+    const element = el as unknown as Element;
+    const keyStr = String(key);
+    registerAttributeResolver(el, keyStr, resolver, (v) => {
+      setValue(element, keyStr, v, false);
+    });
+    return;
   }
+
+  // Static className + existing reactive → merge instead of overwrite.
+  if (
+    key === "className" &&
+    el instanceof HTMLElement &&
+    hasReactiveClassName(el)
+  ) {
+    const newClassName = String(raw);
+    if (newClassName) {
+      addStaticClasses(el, newClassName);
+      mergeStaticClassName(el, newClassName);
+    }
+    return;
+  }
+
+  setValue(el as unknown as Element, String(key), raw, shouldMergeClassName);
 }
 
 export function applyAttributes<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
   attributes: ExpandedElementAttributes<TTagName>,
-  mergeClassName = true,
+  mergeClassName: boolean = true,
 ): void {
   if (!attributes) return;
-  for (const k of Object.keys(attributes) as Array<AttributeKey<TTagName>>) {
-    const value = (attributes as Record<string, unknown>)[k as string] as
-      AttributeCandidate<TTagName> | undefined;
-    // Only merge className for non-className keys OR when explicitly enabled for className
-    const shouldMerge = mergeClassName && k === 'className';
-    applySingleAttribute(element, k, value, shouldMerge);
+  // for...in is cheaper than Object.keys() — no array allocation.
+  for (const k in attributes) {
+    if (!Object.prototype.hasOwnProperty.call(attributes, k)) continue;
+    const value = (attributes as Record<string, unknown>)[k];
+    if (value == null) continue;
+    applySingleAttribute(
+      element,
+      k as AttributeKey<TTagName>,
+      value,
+      mergeClassName && k === "className",
+    );
   }
 }
 

@@ -23,7 +23,11 @@
 
 import "../../src/polyfill";
 import { describe, it, expect, beforeAll } from "vitest";
-import { renderToString, renderManyToString, renderToStringWithContainer } from "../../src/ssr/renderToString";
+import {
+  renderToString,
+  renderManyToString,
+  renderToStringWithContainer,
+} from "../../src/ssr/renderToString";
 import "../../src/index";
 
 beforeAll(() => {
@@ -37,7 +41,9 @@ beforeAll(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("text content types", () => {
   it("renders a string child", () => {
-    expect(renderToString(div("hello"))).toBe("<div><!-- text-0 -->hello</div>");
+    expect(renderToString(div("hello"))).toBe(
+      "<div><!-- text-0 -->hello</div>",
+    );
   });
 
   it("renders a numeric child", () => {
@@ -57,7 +63,9 @@ describe("text content types", () => {
   });
 
   it("renders multiple string children in order", () => {
-    expect(renderToString(div("a", "b", "c"))).toBe("<div><!-- text-0 -->a<!-- text-1 -->b<!-- text-2 -->c</div>");
+    expect(renderToString(div("a", "b", "c"))).toBe(
+      "<div><!-- text-0 -->a<!-- text-1 -->b<!-- text-2 -->c</div>",
+    );
   });
 
   it("renders interleaved text and element siblings", () => {
@@ -78,11 +86,15 @@ describe("text content types", () => {
   });
 
   it("renders unicode text without escaping", () => {
-    expect(renderToString(div("日本語 🌸"))).toBe("<div><!-- text-0 -->日本語 🌸</div>");
+    expect(renderToString(div("日本語 🌸"))).toBe(
+      "<div><!-- text-0 -->日本語 🌸</div>",
+    );
   });
 
   it("renders text with newline and tab characters", () => {
-    expect(renderToString(div("line1\nline2\ttab"))).toBe("<div><!-- text-0 -->line1\nline2\ttab</div>");
+    expect(renderToString(div("line1\nline2\ttab"))).toBe(
+      "<div><!-- text-0 -->line1\nline2\ttab</div>",
+    );
   });
 });
 
@@ -102,13 +114,17 @@ describe("HTML attribute variations", () => {
   });
 
   it("renders data-* attributes", () => {
-    const html = renderToString(div({ "data-testid": "my-div", "data-count": "3" }));
+    const html = renderToString(
+      div({ "data-testid": "my-div", "data-count": "3" }),
+    );
     expect(html).toContain('data-testid="my-div"');
     expect(html).toContain('data-count="3"');
   });
 
   it("renders aria-* attributes", () => {
-    const html = renderToString(button({ "aria-label": "Close", "aria-expanded": "false" }));
+    const html = renderToString(
+      button({ "aria-label": "Close", "aria-expanded": "false" }),
+    );
     expect(html).toContain('aria-label="Close"');
     expect(html).toContain('aria-expanded="false"');
   });
@@ -120,7 +136,9 @@ describe("HTML attribute variations", () => {
   });
 
   it("renders true boolean attributes without a value", () => {
-    const html = renderToString(input({ type: "checkbox", checked: true, disabled: true }));
+    const html = renderToString(
+      input({ type: "checkbox", checked: true, disabled: true }),
+    );
     expect(html).toContain("checked");
     expect(html).toContain("disabled");
     // Boolean true should render as bare attribute, not checked="true"
@@ -133,13 +151,17 @@ describe("HTML attribute variations", () => {
   });
 
   it("omits null attribute values", () => {
-    const html = renderToString(div({ id: null as unknown as string, className: "ok" }));
+    const html = renderToString(
+      div({ id: null as unknown as string, className: "ok" }),
+    );
     expect(html).not.toContain("id=");
     expect(html).toContain('class="ok"');
   });
 
   it("omits undefined attribute values", () => {
-    const html = renderToString(div({ id: undefined as unknown as string, className: "ok" }));
+    const html = renderToString(
+      div({ id: undefined as unknown as string, className: "ok" }),
+    );
     expect(html).not.toContain("id=");
     expect(html).toContain('class="ok"');
   });
@@ -151,7 +173,7 @@ describe("HTML attribute variations", () => {
 
   it("renders multiple attributes in the same element", () => {
     const html = renderToString(
-      a({ href: "/page", target: "_blank", rel: "noopener" }, "link")
+      a({ href: "/page", target: "_blank", rel: "noopener" }, "link"),
     );
     expect(html).toContain('href="/page"');
     expect(html).toContain('target="_blank"');
@@ -177,7 +199,9 @@ describe("style attribute via tag builder", () => {
 
   it("renders multiple style properties", () => {
     const html = renderToString(
-      div({ style: { marginTop: "10px", paddingLeft: "5px", fontSize: "14px" } })
+      div({
+        style: { marginTop: "10px", paddingLeft: "5px", fontSize: "14px" },
+      }),
     );
     expect(html).toContain("margin-top: 10px;");
     expect(html).toContain("padding-left: 5px;");
@@ -186,7 +210,9 @@ describe("style attribute via tag builder", () => {
 
   it("renders complex CSS property names", () => {
     const html = renderToString(
-      div({ style: { borderTopLeftRadius: "4px", webkitTransform: "rotate(45deg)" } })
+      div({
+        style: { borderTopLeftRadius: "4px", webkitTransform: "rotate(45deg)" },
+      }),
     );
     expect(html).toContain("border-top-left-radius: 4px;");
     expect(html).toContain("webkit-transform: rotate(45deg);");
@@ -194,7 +220,7 @@ describe("style attribute via tag builder", () => {
 
   it("escapes style values to prevent XSS", () => {
     const html = renderToString(
-      div({ style: { fontFamily: '"Arial"; alert("xss")' } })
+      div({ style: { fontFamily: '"Arial"; alert("xss")' } }),
     );
     expect(html).not.toContain('alert("xss")');
     expect(html).toContain("&quot;");
@@ -210,7 +236,10 @@ describe("style attribute via tag builder", () => {
 
   it("renders element with both style and other attributes", () => {
     const html = renderToString(
-      div({ id: "box", className: "card", style: { display: "flex" } }, "content")
+      div(
+        { id: "box", className: "card", style: { display: "flex" } },
+        "content",
+      ),
     );
     expect(html).toContain('id="box"');
     expect(html).toContain('class="card"');
@@ -224,15 +253,25 @@ describe("style attribute via tag builder", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("reactive text — zero-arity resolver functions", () => {
   it("renders the initial value of a string resolver", () => {
-    expect(renderToString(div(() => "reactive"))).toBe("<div><!-- text-0 -->reactive</div>");
+    expect(renderToString(div(() => "reactive"))).toBe(
+      "<div><!-- text-0 -->reactive</div>",
+    );
   });
 
   it("renders the initial value of a numeric resolver", () => {
-    expect(renderToString(span(() => 99))).toBe("<span><!-- text-0 -->99</span>");
+    expect(renderToString(span(() => 99))).toBe(
+      "<span><!-- text-0 -->99</span>",
+    );
   });
 
   it("renders multiple reactive text resolvers in order", () => {
-    const html = renderToString(div(() => "hello", () => " ", () => "world"));
+    const html = renderToString(
+      div(
+        () => "hello",
+        () => " ",
+        () => "world",
+      ),
+    );
     expect(html).toContain("hello");
     expect(html).toContain("world");
   });
@@ -296,7 +335,7 @@ describe("when() conditional rendering in SSR", () => {
 
   it("renders the else-branch when condition is false", () => {
     const html = renderToString(
-      div(when(() => false, span("no")).else(span("fallback")))
+      div(when(() => false, span("no")).else(span("fallback"))),
     );
     expect(html).not.toContain("<span><!-- text-0 -->no</span>");
     expect(html).toContain("<span><!-- text-0 -->fallback</span>");
@@ -304,7 +343,7 @@ describe("when() conditional rendering in SSR", () => {
 
   it("renders if-branch and omits else when condition is true", () => {
     const html = renderToString(
-      div(when(() => true, span("active")).else(span("inactive")))
+      div(when(() => true, span("active")).else(span("inactive"))),
     );
     expect(html).toContain("<span><!-- text-0 -->active</span>");
     expect(html).not.toContain("<span><!-- text-0 -->inactive</span>");
@@ -315,8 +354,8 @@ describe("when() conditional rendering in SSR", () => {
       div(
         when(() => false, span("a"))
           .when(() => true, span("b"))
-          .when(() => true, span("c"))
-      )
+          .when(() => true, span("c")),
+      ),
     );
     expect(html).toContain("<span><!-- text-0 -->b</span>");
     expect(html).not.toContain("<span><!-- text-0 -->a</span>");
@@ -328,8 +367,8 @@ describe("when() conditional rendering in SSR", () => {
       div(
         when(() => false, span("a"))
           .when(() => false, span("b"))
-          .else(span("default"))
-      )
+          .else(span("default")),
+      ),
     );
     expect(html).toContain("<span><!-- text-0 -->default</span>");
     expect(html).not.toContain("<span><!-- text-0 -->a</span>");
@@ -349,7 +388,7 @@ describe("when() conditional rendering in SSR", () => {
 
   it("renders multiple content items in a when() branch", () => {
     const html = renderToString(
-      div(when(() => true, span("first"), span("second")))
+      div(when(() => true, span("first"), span("second"))),
     );
     expect(html).toContain("<span><!-- text-0 -->first</span>");
     expect(html).toContain("<span><!-- text-0 -->second</span>");
@@ -357,11 +396,7 @@ describe("when() conditional rendering in SSR", () => {
 
   it("renders nested when() inside another element", () => {
     const html = renderToString(
-      div(
-        section(
-          when(() => true, p("nested content"))
-        )
-      )
+      div(section(when(() => true, p("nested content")))),
     );
     expect(html).toContain("<p><!-- text-0 -->nested content</p>");
     expect(html).toContain("<section>");
@@ -369,13 +404,7 @@ describe("when() conditional rendering in SSR", () => {
 
   it("renders nested when() inside when()", () => {
     const html = renderToString(
-      div(
-        when(() => true,
-          span(
-            when(() => true, em("deep"))
-          )
-        )
-      )
+      div(when(() => true, span(when(() => true, em("deep"))))),
     );
     expect(html).toContain("<em><!-- text-0 -->deep</em>");
   });
@@ -396,7 +425,14 @@ describe("when() conditional rendering in SSR", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("list() rendering in SSR", () => {
   it("renders an empty list without crashing", () => {
-    const html = renderToString(div(list(() => [], (_item) => span("x"))));
+    const html = renderToString(
+      div(
+        list(
+          () => [],
+          (_item) => span("x"),
+        ),
+      ),
+    );
     // No span content, just the outer div and markers
     expect(html).not.toContain("<span>");
     expect(html).toMatch(/^<div>/);
@@ -404,7 +440,12 @@ describe("list() rendering in SSR", () => {
 
   it("renders each item returned by the provider", () => {
     const html = renderToString(
-      div(list(() => ["a", "b", "c"], (item) => span(item)))
+      div(
+        list(
+          () => ["a", "b", "c"],
+          (item) => span(item),
+        ),
+      ),
     );
     expect(html).toContain("<span><!-- text-0 -->a</span>");
     expect(html).toContain("<span><!-- text-1 -->b</span>");
@@ -413,7 +454,12 @@ describe("list() rendering in SSR", () => {
 
   it("renders items in order", () => {
     const html = renderToString(
-      div(list(() => [1, 2, 3], (item) => li(String(item))))
+      div(
+        list(
+          () => [1, 2, 3],
+          (item) => li(String(item)),
+        ),
+      ),
     );
     const aIdx = html.indexOf("<li><!-- text-0 -->1</li>");
     const bIdx = html.indexOf("<li><!-- text-1 -->2</li>");
@@ -424,7 +470,12 @@ describe("list() rendering in SSR", () => {
 
   it("renders a list with a single item", () => {
     const html = renderToString(
-      ul(list(() => ["only"], (item) => li(item)))
+      ul(
+        list(
+          () => ["only"],
+          (item) => li(item),
+        ),
+      ),
     );
     expect(html).toContain("<li><!-- text-0 -->only</li>");
   });
@@ -434,9 +485,9 @@ describe("list() rendering in SSR", () => {
       div(
         list(
           () => ["Alice", "Bob"],
-          (name) => div(span(name))
-        )
-      )
+          (name) => div(span(name)),
+        ),
+      ),
     );
     expect(html).toContain("<span><!-- text-0 -->Alice</span>");
     expect(html).toContain("<span><!-- text-1 -->Bob</span>");
@@ -444,7 +495,12 @@ describe("list() rendering in SSR", () => {
 
   it("renders a list inside an ordered list", () => {
     const html = renderToString(
-      ol(list(() => ["one", "two", "three"], (item) => li(item)))
+      ol(
+        list(
+          () => ["one", "two", "three"],
+          (item) => li(item),
+        ),
+      ),
     );
     expect(html).toContain("<li><!-- text-0 -->one</li>");
     expect(html).toContain("<li><!-- text-1 -->two</li>");
@@ -485,8 +541,20 @@ describe("mixed content — text and element siblings", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("void elements — all 14 must be self-closing", () => {
   const VOID_TAGS = [
-    "area", "base", "br", "col", "embed", "hr",
-    "img", "input", "link", "meta", "param", "source", "track", "wbr",
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
   ] as const;
 
   for (const tag of VOID_TAGS) {
@@ -526,9 +594,10 @@ describe("SVG elements in SSR", () => {
 
   it("renders a circle inside svg", () => {
     const html = renderToString(
-      svgSvg({ viewBox: "0 0 100 100" },
-        circleSvg({ cx: "50", cy: "50", r: "40", fill: "blue" })
-      )
+      svgSvg(
+        { viewBox: "0 0 100 100" },
+        circleSvg({ cx: "50", cy: "50", r: "40", fill: "blue" }),
+      ),
     );
     expect(html).toContain("<circle");
     expect(html).toContain('cx="50"');
@@ -537,7 +606,7 @@ describe("SVG elements in SSR", () => {
 
   it("renders rect inside svg", () => {
     const html = renderToString(
-      svgSvg(rectSvg({ x: "0", y: "0", width: "100", height: "100" }))
+      svgSvg(rectSvg({ x: "0", y: "0", width: "100", height: "100" })),
     );
     expect(html).toContain("<rect");
     expect(html).toContain('width="100"');
@@ -545,7 +614,7 @@ describe("SVG elements in SSR", () => {
 
   it("renders path inside svg", () => {
     const html = renderToString(
-      svgSvg(pathSvg({ d: "M10 10 L90 90", stroke: "black" }))
+      svgSvg(pathSvg({ d: "M10 10 L90 90", stroke: "black" })),
     );
     expect(html).toContain("<path");
     expect(html).toContain('d="M10 10 L90 90"');
@@ -556,23 +625,21 @@ describe("SVG elements in SSR", () => {
       svgSvg(
         gSvg(
           circleSvg({ cx: "10", cy: "10", r: "5" }),
-          circleSvg({ cx: "20", cy: "20", r: "5" })
-        )
-      )
+          circleSvg({ cx: "20", cy: "20", r: "5" }),
+        ),
+      ),
     );
     expect(html).toContain("<g>");
     expect(html).toContain("</g>");
     // Both circles inside g
-    const firstCircle = html.indexOf('<circle');
-    const closingG = html.indexOf('</g>');
+    const firstCircle = html.indexOf("<circle");
+    const closingG = html.indexOf("</g>");
     expect(firstCircle).toBeLessThan(closingG);
   });
 
   it("renders SVG with text element", () => {
     const html = renderToString(
-      svgSvg(
-        textSvg({ x: "10", y: "20", fill: "red" }, "SVG text")
-      )
+      svgSvg(textSvg({ x: "10", y: "20", fill: "red" }, "SVG text")),
     );
     expect(html).toContain("<text");
     expect(html).toContain("SVG text");
@@ -583,12 +650,13 @@ describe("SVG elements in SSR", () => {
     const html = renderToString(
       svgSvg(
         defsSvg(
-          linearGradientSvg({ id: "grad1" },
+          linearGradientSvg(
+            { id: "grad1" },
             stopSvg({ offset: "0%", "stop-color": "red" }),
-            stopSvg({ offset: "100%", "stop-color": "blue" })
-          )
-        )
-      )
+            stopSvg({ offset: "100%", "stop-color": "blue" }),
+          ),
+        ),
+      ),
     );
     expect(html).toContain("<defs>");
     expect(html).toContain("<linearGradient".toLowerCase());
@@ -625,7 +693,7 @@ describe("XSS and HTML escaping", () => {
   });
 
   it("escapes a full script-injection attempt in text", () => {
-    const html = renderToString(div('<script>alert(1)</script>'));
+    const html = renderToString(div("<script>alert(1)</script>"));
     expect(html).not.toContain("<script>");
     expect(html).toContain("&lt;script&gt;");
   });
@@ -649,7 +717,7 @@ describe("XSS and HTML escaping", () => {
 describe("deep nesting", () => {
   it("handles 10 levels of nested divs", () => {
     const html = renderToString(
-      div(div(div(div(div(div(div(div(div(div("leaf"))))))))))
+      div(div(div(div(div(div(div(div(div(div("leaf")))))))))),
     );
     expect(html).toContain("leaf");
     const openDivs = (html.match(/<div>/g) || []).length;
@@ -658,17 +726,7 @@ describe("deep nesting", () => {
 
   it("handles mixed tag nesting with text at the leaf", () => {
     const html = renderToString(
-      article(
-        section(
-          div(
-            p(
-              span(
-                strong(em("very deep"))
-              )
-            )
-          )
-        )
-      )
+      article(section(div(p(span(strong(em("very deep"))))))),
     );
     expect(html).toContain("<em><!-- text-0 -->very deep</em>");
     expect(html).toContain("<strong>");
@@ -736,7 +794,7 @@ describe("renderToStringWithContainer — additional cases", () => {
       id: "app",
       class: "container",
     });
-    expect(html).toContain('<main');
+    expect(html).toContain("<main");
     expect(html).toContain('id="app"');
     expect(html).toContain('class="container"');
     expect(html).toContain("<div><!-- text-0 -->content</div>");
@@ -745,13 +803,13 @@ describe("renderToStringWithContainer — additional cases", () => {
 
   it("renders empty container when content is null", () => {
     expect(renderToStringWithContainer(null, "section")).toBe(
-      "<section></section>"
+      "<section></section>",
     );
   });
 
   it("renders empty container when content is undefined", () => {
     expect(renderToStringWithContainer(undefined, "footer")).toBe(
-      "<footer></footer>"
+      "<footer></footer>",
     );
   });
 
@@ -860,11 +918,8 @@ describe("structural HTML elements", () => {
     const html = renderToString(
       table(
         thead(tr(th("Name"), th("Age"))),
-        tbody(
-          tr(td("Alice"), td("30")),
-          tr(td("Bob"), td("25"))
-        )
-      )
+        tbody(tr(td("Alice"), td("30")), tr(td("Bob"), td("25"))),
+      ),
     );
     expect(html).toContain("<table>");
     expect(html).toContain("<thead>");
@@ -876,11 +931,12 @@ describe("structural HTML elements", () => {
 
   it("renders a form with input, label, and button", () => {
     const html = renderToString(
-      form({ action: "/submit", method: "post" },
+      form(
+        { action: "/submit", method: "post" },
         label({ for: "name" }, "Name:"),
         input({ type: "text", id: "name", name: "name" }),
-        button({ type: "submit" }, "Submit")
-      )
+        button({ type: "submit" }, "Submit"),
+      ),
     );
     expect(html).toContain('action="/submit"');
     expect(html).toContain("<label");
@@ -894,9 +950,11 @@ describe("structural HTML elements", () => {
     const html = renderToString(
       nav(
         ul(
-          ...links.map((text) => li(a({ href: `/${text.toLowerCase()}` }, text)))
-        )
-      )
+          ...links.map((text) =>
+            li(a({ href: `/${text.toLowerCase()}` }, text)),
+          ),
+        ),
+      ),
     );
     expect(html).toContain("<nav>");
     expect(html).toContain("<ul>");
@@ -912,10 +970,16 @@ describe("when() combined with list()", () => {
   it("renders list inside a true when() branch", () => {
     const html = renderToString(
       div(
-        when(() => true,
-          ul(list(() => ["x", "y"], (item) => li(item)))
-        )
-      )
+        when(
+          () => true,
+          ul(
+            list(
+              () => ["x", "y"],
+              (item) => li(item),
+            ),
+          ),
+        ),
+      ),
     );
     expect(html).toContain("<li><!-- text-0 -->x</li>");
     expect(html).toContain("<li><!-- text-1 -->y</li>");
@@ -924,16 +988,25 @@ describe("when() combined with list()", () => {
   it("omits list inside a false when() branch", () => {
     const html = renderToString(
       div(
-        when(() => false,
-          ul(list(() => ["x", "y"], (item) => li(item)))
-        )
-      )
+        when(
+          () => false,
+          ul(
+            list(
+              () => ["x", "y"],
+              (item) => li(item),
+            ),
+          ),
+        ),
+      ),
     );
     expect(html).not.toContain("<li>");
   });
 
   it("renders when() inside each list item", () => {
-    const items = [{ name: "Alice", active: true }, { name: "Bob", active: false }];
+    const items = [
+      { name: "Alice", active: true },
+      { name: "Bob", active: false },
+    ];
     const html = renderToString(
       ul(
         list(
@@ -941,10 +1014,10 @@ describe("when() combined with list()", () => {
           (item) =>
             li(
               item.name,
-              when(() => item.active, span(" (active)"))
-            )
-        )
-      )
+              when(() => item.active, span(" (active)")),
+            ),
+        ),
+      ),
     );
     expect(html).toContain("Alice");
     expect(html).toContain("Bob");

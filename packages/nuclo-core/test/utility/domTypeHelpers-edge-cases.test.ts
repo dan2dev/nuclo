@@ -114,7 +114,8 @@ describe("domTypeHelpers edge cases", () => {
       // In jsdom, number values are converted to string
       // The function should return true if it succeeded
       // Check that the property was set (value might be "16" or empty in jsdom)
-      const fontSize = element.style.fontSize || element.style.getPropertyValue("font-size");
+      const fontSize =
+        element.style.fontSize || element.style.getPropertyValue("font-size");
       // Just verify the function returned true (success)
       expect(result).toBe(true);
     });
@@ -209,4 +210,3 @@ describe("domTypeHelpers edge cases", () => {
     });
   });
 });
-

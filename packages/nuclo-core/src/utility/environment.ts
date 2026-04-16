@@ -3,4 +3,5 @@
  */
 
 // Basic environment detection - no complex caching or edge cases
-export const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+export const isBrowser =
+  typeof window !== "undefined" && typeof document !== "undefined";

@@ -1,36 +1,43 @@
+// Hot-path type guards. Each is a single typeof check where possible — the JS
+// engine inlines typeof aggressively, so avoiding helper indirection is worth it.
+
 export function isPrimitive(value: unknown): value is Primitive {
-	return value === null || (typeof value !== "object" && typeof value !== "function");
+  if (value === null) return true;
+  const t = typeof value;
+  return t !== "object" && t !== "function";
 }
 
 export function isNode<T>(value: T): value is T & Node {
-	if (value instanceof Node) return true;
-	if (typeof value !== 'object' || value === null) return false;
-	// Recognize polyfill DOM objects (plain objects with a numeric nodeType)
-	return typeof (value as { nodeType?: unknown }).nodeType === 'number';
+  if (typeof Node !== "undefined" && value instanceof Node) return true;
+  if (typeof value !== "object" || value === null) return false;
+  // Polyfill DOM objects: plain objects carrying a numeric nodeType.
+  return typeof (value as { nodeType?: unknown }).nodeType === "number";
 }
 
 export function isObject(value: unknown): value is object {
-	return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null;
 }
 
 export function isTagLike<T>(value: T): value is T & { tagName?: string } {
-	return isObject(value) && "tagName" in (value as object);
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "tagName" in (value as object)
+  );
 }
 
 export function isBoolean(value: unknown): value is boolean {
-	return typeof value === "boolean";
+  return typeof value === "boolean";
 }
 
-/**
- * Narrows `value` to a callable. The generic `<T extends Function>` is intentionally
- * removed: it allowed callers to assert any specific function signature via the type
- * parameter without a runtime check, which is unsafe. Use explicit casts at call sites
- * when a more specific signature is needed.
- */
-export function isFunction(value: unknown): value is (...args: unknown[]) => unknown {
-	return typeof value === "function";
+export function isFunction(
+  value: unknown,
+): value is (...args: unknown[]) => unknown {
+  return typeof value === "function";
 }
 
 export function isZeroArityFunction(value: unknown): value is () => unknown {
-	return isFunction(value) && (value as { length: number }).length === 0;
+  return (
+    typeof value === "function" && (value as { length: number }).length === 0
+  );
 }

@@ -17,7 +17,10 @@
  *  - startIndex allows callers to continue an index sequence if needed.
  *  - Every successfully rendered child Node increments the local index.
  */
-import { applyNodeModifier, type NodeModifier } from "../core/modifierProcessor";
+import {
+  applyNodeModifier,
+  type NodeModifier,
+} from "../core/modifierProcessor";
 import { createElement, createElementNS, SVG_NAMESPACE } from "../utility/dom";
 
 export type { NodeModifier };
@@ -46,7 +49,7 @@ export interface ApplyModifiersResult<TTagName extends ElementTagName> {
 export function applyModifiers<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
   modifiers: ReadonlyArray<NodeModifier<TTagName>>,
-  startIndex = 0
+  startIndex = 0,
 ): ApplyModifiersResult<TTagName> {
   if (!modifiers || modifiers.length === 0) {
     return { element, nextIndex: startIndex, appended: 0 };
@@ -75,7 +78,7 @@ export function applyModifiers<TTagName extends ElementTagName>(
   return {
     element,
     nextIndex: localIndex,
-    appended
+    appended,
   };
 }
 
@@ -84,7 +87,7 @@ export function applyModifiers<TTagName extends ElementTagName>(
  */
 export function createHtmlElementWithModifiers<TTagName extends ElementTagName>(
   tagName: TTagName,
-  modifiers: ReadonlyArray<NodeModifier<TTagName>>
+  modifiers: ReadonlyArray<NodeModifier<TTagName>>,
 ): ExpandedElement<TTagName> {
   const el = createElement(tagName) as ExpandedElement<TTagName>;
   applyModifiers(el, modifiers, 0);
@@ -94,14 +97,20 @@ export function createHtmlElementWithModifiers<TTagName extends ElementTagName>(
 /**
  * Creates an SVG element with the specified tag name and applies modifiers to it.
  */
-export function createSvgElementWithModifiers<TTagName extends keyof SVGElementTagNameMap>(
+export function createSvgElementWithModifiers<
+  TTagName extends keyof SVGElementTagNameMap,
+>(
   tagName: TTagName,
-  modifiers: ReadonlyArray<unknown>
+  modifiers: ReadonlyArray<unknown>,
 ): SVGElementTagNameMap[TTagName] {
   const el = createElementNS(SVG_NAMESPACE, tagName);
   if (!el) {
     throw new Error(`Failed to create SVG element: ${tagName}`);
   }
-  applyModifiers(el as unknown as ExpandedElement<ElementTagName>, modifiers as ReadonlyArray<NodeModifier<ElementTagName>>, 0);
+  applyModifiers(
+    el as unknown as ExpandedElement<ElementTagName>,
+    modifiers as ReadonlyArray<NodeModifier<ElementTagName>>,
+    0,
+  );
   return el as unknown as SVGElementTagNameMap[TTagName];
 }
