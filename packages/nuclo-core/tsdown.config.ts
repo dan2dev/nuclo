@@ -19,4 +19,12 @@ export default defineConfig([
     minify: true,
     sourcemap: true,
   },
+  {
+    entry: { 'styled/nuclo.styled': 'src/styled/index.ts' },
+    format: ['esm', 'cjs'],
+    outDir: 'dist',
+    dts: false,
+    minify: true,
+    sourcemap: true,
+  },
 ])

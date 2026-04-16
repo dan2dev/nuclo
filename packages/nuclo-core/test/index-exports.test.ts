@@ -64,20 +64,6 @@ describe('main index.ts exports', () => {
     expect(Array.isArray(index.SELF_CLOSING_TAGS)).toBe(true);
   });
 
-  it('should export style utilities via wildcard', async () => {
-    const index = await import('../src/index');
-
-    // Style utilities should be available via re-export from style module
-    expect(index.StyleBuilder).toBeDefined();
-    expect(index.createCSSClass).toBeDefined();
-    expect(index.createStyleQueries).toBeDefined();
-    expect(index.createBreakpoints).toBeDefined();
-    // Check for some style functions
-    expect(index.display).toBeDefined();
-    expect(index.padding).toBeDefined();
-    expect(index.margin).toBeDefined();
-  });
-
   it('should have working list function', async () => {
     const { list } = await import('../src/index');
 
@@ -256,14 +242,6 @@ describe('main index.ts exports', () => {
       'isBrowser',
       'createHtmlElementWithModifiers',
       'createSvgElementWithModifiers',
-      // Style exports
-      'StyleBuilder',
-      'createCSSClass',
-      'createStyleQueries',
-      'createBreakpoints',
-      'display',
-      'padding',
-      'margin'
     ];
 
     for (const exportName of expectedExports) {
