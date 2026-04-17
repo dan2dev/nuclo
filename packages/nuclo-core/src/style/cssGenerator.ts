@@ -1,4 +1,5 @@
-const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+import { createElement } from "../utility/dom";
+import { isBrowser } from "../utility/environment";
 
 type AtRuleType = 'media' | 'container' | 'supports' | 'style' | 'pseudo';
 
@@ -59,7 +60,7 @@ function getStyleSheet(): HTMLStyleElement | null {
 	if (!isBrowser) return null;
 	let el = document.querySelector("#nuclo-styles") as HTMLStyleElement;
 	if (!el) {
-		el = document.createElement("style");
+		el = createElement("style") as HTMLStyleElement;
 		el.id = "nuclo-styles";
 		document.head.appendChild(el);
 	}

@@ -1,7 +1,7 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, vi } from "vitest";
 
-describe("styled bootstrap readonly globals", () => {
+describe("runtimeBootstrap readonly globals", () => {
   it("skips style exports that cannot be assigned", async () => {
     const key = "display";
     const g = globalThis as any;
@@ -17,7 +17,7 @@ describe("styled bootstrap readonly globals", () => {
 
     try {
       vi.resetModules();
-      await import("../../src/styled");
+      await import("../../src/core/runtimeBootstrap");
       expect(g[key]).toBe(sentinel);
     } finally {
       if (originalDesc) {

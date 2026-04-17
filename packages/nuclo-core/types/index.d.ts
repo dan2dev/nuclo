@@ -9,6 +9,8 @@ import "./features/update";
 import "./features/scope";
 import "./features/on";
 import "./features/render";
+import "./features/style";
+
 // Re-export on() helper for module-style consumers (import { on } from "nuclo")
 export function on<K extends keyof HTMLElementEventMap, TTagName extends ElementTagName = ElementTagName>(
   type: K,
