@@ -6,7 +6,6 @@
 /// <reference path="../types/index.d.ts" />
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../src';
-import '../src/styled';
 
 describe('Documentation Examples', () => {
   beforeEach(() => {

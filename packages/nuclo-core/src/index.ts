@@ -38,5 +38,8 @@ export {
   createSvgElementWithModifiers,
 } from "./internal/applyModifiers";
 
+// Style utilities - re-export all from style module
+export * from "./style";
+
 // Auto-initialize when the module is loaded.
 import "./core/runtimeBootstrap";

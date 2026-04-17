@@ -20,3 +20,5 @@ export {
   renderManyToString,
   renderToStringWithContainer
 } from './renderToString';
+
+export { setSSRCollector } from '../style/cssGenerator';

@@ -4,24 +4,19 @@
 	"version": "0.1.117",
 	"type": "module",
 	"main": "./dist/nuclo.cjs",
-	"module": "./dist/nuclo.mjs",
+	"module": "./dist/nuclo.js",
 	"browser": "./dist/nuclo.umd.js",
 	"types": "./types/index.d.ts",
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
-			"import": "./dist/nuclo.mjs",
+			"import": "./dist/nuclo.js",
 			"require": "./dist/nuclo.cjs"
 		},
 		"./ssr": {
 			"types": "./dist/ssr/index.d.ts",
-			"import": "./dist/ssr/nuclo.ssr.mjs",
+			"import": "./dist/ssr/nuclo.ssr.js",
 			"require": "./dist/ssr/nuclo.ssr.cjs"
-		},
-		"./styled": {
-			"types": "./dist/styled/index.d.ts",
-			"import": "./dist/styled/nuclo.styled.mjs",
-			"require": "./dist/styled/nuclo.styled.cjs"
 		},
 		"./types": {
 			"types": "./types/index.d.ts"
