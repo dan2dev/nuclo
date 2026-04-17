@@ -62,9 +62,24 @@ function storeListRuntimeInfo<TItem, TTagName extends ElementTagName>(
   );
 }
 
-interface ReleasedListItemRecord<TItem, TTagName extends ElementTagName> {
-  item: TItem | null;
-  element: ExpandedElement<TTagName> | null;
+/**
+ * Nulls out a record's `item` / `element` references after the record is
+ * removed from the runtime. The record object is *repurposed* for GC — it
+ * is never observed as "both populated and released" from the outside, so
+ * the single mutation cast below is isolated to this helper.
+ *
+ * @template TItem List item type.
+ * @template TTagName Host element tag literal.
+ */
+function releaseListItemRecord<TItem, TTagName extends ElementTagName>(
+  record: ListItemRecord<TItem, TTagName>,
+): void {
+  const released = record as {
+    item: TItem | null;
+    element: ExpandedElement<TTagName> | null;
+  };
+  released.item = null;
+  released.element = null;
 }
 
 function normalizeItems<TItem>(items: ListItemsInput<TItem>): readonly TItem[] {
@@ -83,22 +98,15 @@ function renderItem<TItem, TTagName extends ElementTagName>(
 function remove<TItem, TTagName extends ElementTagName>(
   record: ListItemRecord<TItem, TTagName>,
 ): void {
-  safeRemoveChild(record.element as unknown as Node);
-  // Clear the reference to help GC
-  const releasedRecord = record as unknown as ReleasedListItemRecord<
-    TItem,
-    TTagName
-  >;
-  releasedRecord.element = null;
-  releasedRecord.item = null;
+  safeRemoveChild(record.element);
+  releaseListItemRecord(record);
 }
 
 export function sync<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>,
 ): void {
   const { host, startMarker, endMarker } = runtime;
-  const parent = (startMarker.parentNode ??
-    (host as unknown as Node & ParentNode)) as Node & ParentNode;
+  const parent: Node & ParentNode = startMarker.parentNode ?? host;
 
   const currentItems = normalizeItems(runtime.itemsProvider());
 
@@ -168,7 +176,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
 
     newRecords[i] = record;
 
-    const recordNode = record.element as unknown as Node;
+    const recordNode = record.element;
     if (recordNode.nextSibling !== nextSibling) {
       parent.insertBefore(recordNode, nextSibling);
     }
@@ -228,9 +236,8 @@ function createListRuntimeNormal<TItem, TTagName extends ElementTagName>(
     lastSyncedItems: [],
   };
 
-  const parentNode = host as unknown as Node & ParentNode;
-  parentNode.appendChild(startMarker);
-  parentNode.appendChild(endMarker);
+  host.appendChild(startMarker);
+  host.appendChild(endMarker);
 
   sync(runtime);
 
@@ -248,12 +255,10 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   host: ExpandedElement<TTagName>,
   index: number,
 ): ListRuntime<TItem, TTagName> {
-  const parentNode = host as unknown as Node & ParentNode;
-
   // Check if next child is actually a list-start comment marker.
   // If not, fall back to normal (non-hydration) list creation.
-  const cursor = getCursor(parentNode);
-  const candidate = parentNode.childNodes[cursor];
+  const cursor = getCursor(host);
+  const candidate = host.childNodes[cursor];
   if (
     !candidate ||
     candidate.nodeType !== 8 ||
@@ -263,17 +268,17 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   }
 
   // Claim existing start marker
-  const startMarker = claimChild(parentNode) as Comment;
+  const startMarker = claimChild(host) as Comment;
 
   // Find end marker position (without claiming) so we know when to stop
-  let endMarkerIdx = getCursor(parentNode);
-  while (endMarkerIdx < parentNode.childNodes.length) {
-    const node = parentNode.childNodes[endMarkerIdx];
+  let endMarkerIdx = getCursor(host);
+  while (endMarkerIdx < host.childNodes.length) {
+    const node = host.childNodes[endMarkerIdx];
     if (node.nodeType === 8 && (node as Comment).textContent === "list-end")
       break;
     endMarkerIdx++;
   }
-  const endMarker = parentNode.childNodes[endMarkerIdx] as Comment;
+  const endMarker = host.childNodes[endMarkerIdx] as Comment;
 
   // Get current items and claim existing elements by running render functions
   const currentItems = normalizeItems(itemsProvider());
@@ -288,7 +293,7 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   }
 
   // Advance cursor past end marker
-  setCursor(parentNode, endMarkerIdx + 1);
+  setCursor(host, endMarkerIdx + 1);
 
   const runtime: ListRuntime<TItem, TTagName> = {
     itemsProvider,
@@ -309,12 +314,7 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
 
 function releaseRuntime(runtime: ListRuntime<unknown, ElementTagName>): void {
   for (let i = 0; i < runtime.records.length; i++) {
-    const record = runtime.records[i] as unknown as ReleasedListItemRecord<
-      unknown,
-      ElementTagName
-    >;
-    record.element = null;
-    record.item = null;
+    releaseListItemRecord(runtime.records[i]);
   }
   runtime.records = [];
 }

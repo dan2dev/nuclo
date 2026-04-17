@@ -1,6 +1,7 @@
 import { registerAttributeResolver } from "./reactiveAttributes";
 import { applyStyleAttribute } from "./styleManager";
 import { SVG_NAMESPACE } from "../utility/dom";
+import { isZeroArityFunction } from "../utility/typeGuards";
 import {
   initReactiveClassName,
   hasReactiveClassName,
@@ -9,17 +10,39 @@ import {
   mergeStaticClassName,
 } from "./classNameMerger";
 
+/**
+ * Known template-literal keys that the attribute pipeline handles
+ * specially. Other string keys fall through to the generic property /
+ * `setAttribute` branch.
+ */
+type DataAttributeKey = `data-${string}`;
+type AriaAttributeKey = `aria-${string}`;
+
+/**
+ * Any key of `ExpandedElementAttributes<TTagName>` — narrowed further in
+ * `applySingleAttribute` via literal discrimination on `"style"` /
+ * `"className"` and prefix tests for `data-*` / `aria-*`.
+ *
+ * @template TTagName Host element tag literal.
+ */
 type AttributeKey<TTagName extends ElementTagName> =
   keyof ExpandedElementAttributes<TTagName>;
-type AttributeCandidate<TTagName extends ElementTagName> =
-  ExpandedElementAttributes<TTagName>[AttributeKey<TTagName>];
+
+/**
+ * Element-plus-string-index shape used to assign native DOM properties by
+ * key name without resorting to `as unknown as Record<string, unknown>`.
+ * The cast happens once inside `setValue` and stays scoped to that helper.
+ */
+interface IndexableElement extends Element {
+  [prop: string]: unknown;
+}
 
 function setValue(el: Element, key: string, v: unknown, merge: boolean): void {
   if (v == null) return;
 
   // Guard against non-Element fakes (plain objects in tests, detached proxies) —
   // silently ignore rather than crashing on a missing setAttribute.
-  if (typeof (el as Element).setAttribute !== "function") return;
+  if (typeof el.setAttribute !== "function") return;
 
   if (key === "className" && merge && el instanceof HTMLElement) {
     mergeStaticClassName(el, String(v));
@@ -34,7 +57,7 @@ function setValue(el: Element, key: string, v: unknown, merge: boolean): void {
 
   if (key in el) {
     try {
-      (el as unknown as Record<string, unknown>)[key] = v;
+      (el as IndexableElement)[key] = v;
       return;
     } catch {
       // Fall through to setAttribute.
@@ -43,6 +66,13 @@ function setValue(el: Element, key: string, v: unknown, merge: boolean): void {
   el.setAttribute(key, String(v));
 }
 
+/**
+ * Applies a single attribute to an element. Branches are driven by
+ * literal-key equality (`"style"` / `"className"`) and function-arity
+ * probing — both of which narrow `raw` without requiring casts.
+ *
+ * @template TTagName Host element tag literal.
+ */
 function applySingleAttribute<TTagName extends ElementTagName>(
   el: ExpandedElement<TTagName>,
   key: AttributeKey<TTagName>,
@@ -60,21 +90,18 @@ function applySingleAttribute<TTagName extends ElementTagName>(
   }
 
   // Reactive (zero-arity function) attribute
-  if (typeof raw === "function" && (raw as { length: number }).length === 0) {
-    const resolver = raw as () => unknown;
-
+  if (isZeroArityFunction(raw)) {
     if (key === "className" && el instanceof HTMLElement) {
       initReactiveClassName(el);
-      registerAttributeResolver(el, "className", resolver, (v) => {
+      registerAttributeResolver(el, "className", raw, (v) => {
         mergeReactiveClassName(el, String(v ?? ""));
       });
       return;
     }
 
-    const element = el as unknown as Element;
     const keyStr = String(key);
-    registerAttributeResolver(el, keyStr, resolver, (v) => {
-      setValue(element, keyStr, v, false);
+    registerAttributeResolver(el, keyStr, raw, (v) => {
+      setValue(el, keyStr, v, false);
     });
     return;
   }
@@ -93,9 +120,17 @@ function applySingleAttribute<TTagName extends ElementTagName>(
     return;
   }
 
-  setValue(el as unknown as Element, String(key), raw, shouldMergeClassName);
+  setValue(el, String(key), raw, shouldMergeClassName);
 }
 
+/**
+ * Applies a bag of attributes to an element. `data-*` / `aria-*` keys are
+ * template-literal-typed via {@link DataAttributeKey} / {@link AriaAttributeKey},
+ * so callers get autocomplete for the prefix while the runtime still
+ * handles arbitrary strings.
+ *
+ * @template TTagName Host element tag literal.
+ */
 export function applyAttributes<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
   attributes: ExpandedElementAttributes<TTagName>,
@@ -114,6 +149,22 @@ export function applyAttributes<TTagName extends ElementTagName>(
       mergeClassName && k === "className",
     );
   }
+}
+
+/**
+ * Internal: is `key` a `data-*` template-literal attribute name?
+ * Exposed for tests / callers that need to mirror the library's
+ * classification without duplicating the prefix check.
+ */
+export function isDataAttributeKey(key: string): key is DataAttributeKey {
+  return key.startsWith("data-");
+}
+
+/**
+ * Internal: is `key` an `aria-*` template-literal attribute name?
+ */
+export function isAriaAttributeKey(key: string): key is AriaAttributeKey {
+  return key.startsWith("aria-");
 }
 
 export { createReactiveTextNode } from "./reactiveText";

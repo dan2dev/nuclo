@@ -89,7 +89,7 @@ function makeRuntime(updateFn?: () => void): WhenRuntime<ElementTagName> {
     index: 0,
     groups: [{ condition: true, content: [] }],
     elseContent: [],
-    activeIndex: null,
+    active: { kind: "none" } as const,
     update() {
       if (updateFn) {
         updateFn();

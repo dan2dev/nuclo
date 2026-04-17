@@ -228,7 +228,9 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
     // real HTMLElement — bail out cleanly rather than crashing.
     if (!(parent instanceof HTMLElement)) return;
 
-    const el = parent as HTMLElementTagNameMap[TTagName];
+    // `ExpandedElement<TTagName>` already intersects `HTMLElementTagNameMap[TTagName]`,
+    // so no cast is needed: the runtime narrow above only refines `parent` further.
+    const el: HTMLElementTagNameMap[TTagName] = parent;
 
     const controller = new AbortController();
     const wrapped = wrapListener(el, type, listener);

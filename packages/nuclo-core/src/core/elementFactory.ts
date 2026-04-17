@@ -44,12 +44,32 @@ function createHtmlElementFactory<TTagName extends ElementTagName>(
 }
 
 /**
+ * SVG elements share the `applyModifiers` pipeline with HTML elements — the
+ * pipeline only uses structural operations (`appendChild`, child reads) that
+ * every `Element` supports. Centralising the HTML-typed bridge here keeps
+ * the single `as unknown as` erasure out of the factory body.
+ *
+ * @template TTagName SVG tag literal.
+ */
+function applySvgModifiers<TTagName extends keyof SVGElementTagNameMap>(
+  element: SVGElementTagNameMap[TTagName],
+  modifiers: ReadonlyArray<NodeModifier<ElementTagName>>,
+  index: number,
+): void {
+  applyModifiers(
+    element as unknown as ExpandedElement<ElementTagName>,
+    modifiers,
+    index,
+  );
+}
+
+/**
  * SVG counterpart of {@link createHtmlElementFactory}.
  *
  * Unlike the HTML factory, the SVG modifier list is typed as
  * `SVGElementModifierLike<TTagName>` so the tag literal narrows what
  * modifiers and attribute bags are accepted. Internally we funnel through
- * the same `applyModifiers` pipeline, which is tag-agnostic at runtime.
+ * {@link applySvgModifiers}, which performs the single HTML/SVG type bridge.
  *
  * @template TTagName Tag literal key of `SVGElementTagNameMap`.
  */
@@ -72,11 +92,7 @@ function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
       const claimed = claimElement(_parent, tagName);
       if (claimed) {
         const initialChildCount = claimed.childNodes.length;
-        applyModifiers(
-          claimed as unknown as ExpandedElement<ElementTagName>,
-          mods,
-          index,
-        );
+        applySvgModifiers(claimed, mods, index);
         cleanupUnclaimedChildren(claimed, initialChildCount);
         return claimed;
       }
@@ -85,15 +101,11 @@ function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
     if (!created) {
       throw new Error(`Failed to create SVG element: ${tagName}`);
     }
-    applyModifiers(
-      created as unknown as ExpandedElement<ElementTagName>,
-      mods,
-      index,
-    );
+    applySvgModifiers(created, mods, index);
     return created;
   };
 
-  return factory as DetachedSVGElementFactory<TTagName>;
+  return factory satisfies DetachedSVGElementFactory<TTagName>;
 }
 
 export function createHtmlTagBuilder<TTagName extends ElementTagName>(

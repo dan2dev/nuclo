@@ -5,6 +5,7 @@
 
 import { escapeHtml, escapeText, camelToKebab } from "../utility/stringUtils";
 import { createElement } from "../utility/dom";
+import { isNode } from "../utility/typeGuards";
 
 type RenderableInput =
   | NodeModFn<ElementTagName>
@@ -114,6 +115,19 @@ function serializeAttribute(name: string, value: unknown): string {
 }
 
 /**
+ * Structural view of a Nuclo polyfill element. Browsers expose the same
+ * surface via `HTMLElement`, but the polyfill also keeps `id` / `className` on
+ * the object directly and stores declarations on a Proxy under `.style` —
+ * serialization reads from both locations without widening to `any`.
+ */
+interface PolyfillElementLike {
+  readonly attributes?: Map<string, unknown> | NamedNodeMap;
+  readonly id?: string;
+  readonly className?: string;
+  readonly style?: { readonly cssText?: string };
+}
+
+/**
  * Serializes DOM element attributes to HTML string
  */
 function serializeAttributes(element: Element): string {
@@ -121,7 +135,7 @@ function serializeAttributes(element: Element): string {
 
   // Handle polyfill elements with Map-based attributes
   if ("attributes" in element && element.attributes instanceof Map) {
-    const el = element as any;
+    const el = element satisfies Element as PolyfillElementLike;
 
     // id — may live on the property rather than in the Map
     if (el.id && !element.attributes.has("id")) {
@@ -215,25 +229,39 @@ const VOID_ELEMENTS = new Set([
  * their full set of nodes lives in `childNodes`.  We therefore only prefer
  * `children` when the node is an actual element (has `tagName`).
  */
+/**
+ * Structural view for reading child collections across browser and polyfill
+ * nodes. Browser elements expose `childNodes: NodeList`; polyfill NucloElement
+ * keeps every node type in a plain `children` array. The two fields can hold
+ * unrelated shapes, so the probe returns `unknown` and the caller narrows.
+ */
+interface ChildNodeContainer {
+  readonly tagName?: unknown;
+  readonly children?: unknown;
+  readonly childNodes?: unknown;
+}
+
+function isArrayLike(value: unknown): value is ArrayLike<Node> {
+  if (Array.isArray(value)) return true;
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { length?: unknown }).length === "number"
+  );
+}
+
 function getChildNodes(node: Node): ArrayLike<Node> {
+  const probe = node satisfies Node as ChildNodeContainer;
+
   // NucloElement: tagName exists and children is a plain Array containing every node type
-  if ("tagName" in node && "children" in node) {
-    const children = (node as any).children;
-    if (Array.isArray(children)) {
-      return children as ArrayLike<Node>;
-    }
+  if ("tagName" in probe && Array.isArray(probe.children)) {
+    return probe.children;
   }
   // DocumentFragments and browser elements: use childNodes
-  if ("childNodes" in node) {
-    const childNodes = (node as any).childNodes;
-    if (
-      childNodes &&
-      (Array.isArray(childNodes) || childNodes.length !== undefined)
-    ) {
-      return childNodes;
-    }
+  if (isArrayLike(probe.childNodes)) {
+    return probe.childNodes;
   }
-  return [] as ArrayLike<Node>;
+  return [];
 }
 
 /**
@@ -276,7 +304,7 @@ function serializeNode(node: Node): string {
       }
     } else {
       // Fallback: textContent set directly on the element (e.g. el.textContent = "...")
-      const tc = (node as any).textContent;
+      const tc = node.textContent;
       if (typeof tc === "string" && tc) {
         childrenHtml = escapeText(tc);
       }
@@ -331,21 +359,15 @@ export function renderToString(input: RenderableInput): string {
         throw new Error(
           "Document is not available. Make sure polyfills are loaded.",
         );
-      const element = input(container as ExpandedElement<ElementTagName>, 0);
-      return element && typeof element === "object" && "nodeType" in element
-        ? serializeNode(element as Node)
-        : "";
+      const element = input(container satisfies HTMLDivElement as ExpandedElement<"div">, 0);
+      return isNode(element) ? serializeNode(element) : "";
     } catch (error) {
       console.error("Error rendering component to string:", error);
       return "";
     }
   }
 
-  if ("nodeType" in input) {
-    return serializeNode(input as Node);
-  }
-
-  return "";
+  return isNode(input) ? serializeNode(input) : "";
 }
 
 /**

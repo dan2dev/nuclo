@@ -26,6 +26,9 @@ function createElementFromConditionalInfo<TTagName extends ElementTagName>(
 ): ExpandedElement<TTagName> | SVGElement {
   try {
     if (conditionalInfo.isSvg) {
+      // `tagName: TTagName` is an HTMLElement tag literal at the type level,
+      // but conditionalInfo.isSvg === true signals the caller already knows
+      // it is an SVG tag. The SVG factory validates at runtime.
       return createSvgElementWithModifiers(
         conditionalInfo.tagName as keyof SVGElementTagNameMap,
         conditionalInfo.modifiers,
@@ -42,14 +45,17 @@ function createElementFromConditionalInfo<TTagName extends ElementTagName>(
     );
     // Return a basic element without modifiers as fallback
     if (conditionalInfo.isSvg) {
-      const el = createElementNS(SVG_NAMESPACE, conditionalInfo.tagName);
+      const el = createElementNS(
+        SVG_NAMESPACE,
+        conditionalInfo.tagName as keyof SVGElementTagNameMap,
+      );
       if (!el) {
         throw new Error(
           `Failed to create SVG element: ${conditionalInfo.tagName}`,
           { cause: error },
         );
       }
-      return el as unknown as SVGElement;
+      return el;
     }
     const el = createElement(conditionalInfo.tagName);
     if (!el) {
@@ -57,11 +63,11 @@ function createElementFromConditionalInfo<TTagName extends ElementTagName>(
         cause: error,
       });
     }
-    return el as ExpandedElement<TTagName>;
+    return el;
   }
 }
 
-function updateConditionalNode(node: Element | Comment): void {
+function updateConditionalNode(node: Node): void {
   const conditionalInfo = getConditionalInfo(node);
   if (!conditionalInfo) {
     return;
@@ -74,8 +80,8 @@ function updateConditionalNode(node: Element | Comment): void {
 
   if (shouldShow && !isElement) {
     const element = createElementFromConditionalInfo(conditionalInfo);
-    storeConditionalInfo(element as Node, conditionalInfo);
-    replaceNodeSafely(node, element as Node);
+    storeConditionalInfo(element, conditionalInfo);
+    replaceNodeSafely(node, element);
   } else if (!shouldShow && isElement) {
     const comment = createConditionalComment(conditionalInfo.tagName);
     if (comment) {
@@ -97,7 +103,7 @@ export function updateConditionalElements(scope?: UpdateScope): void {
       }
 
       if (scope && !scope.contains(node)) continue;
-      updateConditionalNode(node as Element | Comment);
+      updateConditionalNode(node);
     }
   } catch (error) {
     logError("Error during conditional elements update", error);

@@ -14,6 +14,38 @@ export interface WhenGroup<TTagName extends ElementTagName = ElementTagName> {
   content: WhenContent<TTagName>[];
 }
 
+/**
+ * Discriminated union describing which branch of a `when()` chain is
+ * currently rendered.
+ *
+ *  - `{ kind: "none" }`  — nothing is rendered (no conditions matched and no
+ *    else branch exists, or the runtime hasn't rendered yet).
+ *  - `{ kind: "group", index }` — the `index`-th `when()` branch is active.
+ *  - `{ kind: "else" }`  — the `else` branch is active.
+ *
+ * Using a tagged shape lets `switch (active.kind)` narrow exhaustively in
+ * both the renderer and in tests, replacing the previous sentinel pattern
+ * (`number | -1 | null`) which had no discriminant for TS to narrow on.
+ */
+export type WhenActive =
+  | { readonly kind: "none" }
+  | { readonly kind: "group"; readonly index: number }
+  | { readonly kind: "else" };
+
+/** Shared singletons for the branchless `WhenActive` variants. */
+export const WHEN_NONE = { kind: "none" } as const satisfies WhenActive;
+export const WHEN_ELSE = { kind: "else" } as const satisfies WhenActive;
+
+/**
+ * True when two `WhenActive` values represent the same branch. Cheap
+ * structural equality — faster than `JSON.stringify`, and expressive
+ * enough for the renderer's "no change → skip re-render" guard.
+ */
+export function isSameWhenActive(a: WhenActive, b: WhenActive): boolean {
+  if (a.kind !== b.kind) return false;
+  return a.kind !== "group" || a.index === (b as { index: number }).index;
+}
+
 export interface WhenRuntime<TTagName extends ElementTagName = ElementTagName> {
   startMarker: Comment;
   endMarker: Comment;
@@ -21,13 +53,8 @@ export interface WhenRuntime<TTagName extends ElementTagName = ElementTagName> {
   index: number;
   groups: WhenGroup<TTagName>[];
   elseContent: WhenContent<TTagName>[];
-  /**
-   * Tracks which branch is currently rendered:
-   *  - null: nothing rendered yet
-   *  - -1: else branch
-   *  - >=0: index of groups[]
-   */
-  activeIndex: number | -1 | null;
+  /** Currently rendered branch — see {@link WhenActive}. */
+  active: WhenActive;
   update(): void;
 }
 
@@ -46,24 +73,29 @@ const activeWhenRuntimes = new Map<
 >();
 
 /**
- * Evaluates which condition branch should be active.
- * Returns the index of the first truthy condition, -1 for else branch, or null for no match.
+ * Evaluates which branch of the `when()` chain should be active by
+ * resolving each group's condition in order. First truthy group wins;
+ * otherwise falls back to the `else` branch if one was provided.
+ *
+ * @template TTagName Host element tag literal.
  */
 export function evaluateActiveCondition<TTagName extends ElementTagName>(
   groups: ReadonlyArray<WhenGroup<TTagName>>,
   elseContent: ReadonlyArray<WhenContent<TTagName>>,
-): number | -1 | null {
+): WhenActive {
   for (let i = 0; i < groups.length; i++) {
     if (resolveCondition(groups[i].condition)) {
-      return i;
+      return { kind: "group", index: i };
     }
   }
-  return elseContent.length > 0 ? -1 : null;
+  return elseContent.length > 0 ? WHEN_ELSE : WHEN_NONE;
 }
 
 /**
- * Main render function for when/else conditionals.
+ * Main render function for `when()` / `else` conditionals.
  * Evaluates conditions, clears old content, and renders the active branch.
+ *
+ * @template TTagName Host element tag literal.
  */
 export function renderWhenContent<TTagName extends ElementTagName>(
   runtime: WhenRuntime<TTagName>,
@@ -72,19 +104,17 @@ export function renderWhenContent<TTagName extends ElementTagName>(
 
   const newActive = evaluateActiveCondition(groups, elseContent);
 
-  // No change needed
-  if (newActive === runtime.activeIndex) return;
+  if (isSameWhenActive(newActive, runtime.active)) return;
 
-  // Clear previous content and update active index
   clearBetweenMarkers(runtime.startMarker, runtime.endMarker);
-  runtime.activeIndex = newActive;
+  runtime.active = newActive;
 
-  // Nothing to render
-  if (newActive === null) return;
+  if (newActive.kind === "none") return;
 
-  // Render the active branch
   const contentToRender =
-    newActive >= 0 ? groups[newActive].content : elseContent;
+    newActive.kind === "group"
+      ? groups[newActive.index].content
+      : elseContent;
   const nodes = renderContentItems(contentToRender, host, index, endMarker);
 
   insertNodesBefore(nodes, endMarker);

@@ -49,7 +49,7 @@ function makeRuntime(
     index: 0,
     groups,
     elseContent,
-    activeIndex: null,
+    active: { kind: "none" } as const,
     update() {
       if (updateFn) {
         updateFn();
@@ -70,23 +70,23 @@ describe("renderWhenContent – condition evaluation", () => {
     ]);
 
     renderWhenContent(runtime);
-    expect(runtime.activeIndex).toBe(1);
+    expect(runtime.active).toEqual({ kind: "group", index: 1 });
 
     (runtime.host as unknown as HTMLElement).remove();
   });
 
-  it("renders else branch when no condition is truthy and elseContent exists", () => {
+  it("renders nothing when no condition is truthy and elseContent is empty", () => {
     const runtime = makeRuntime(
       [{ condition: false, content: [] }],
-      [], // elseContent is empty → null
+      [], // elseContent is empty → { kind: "none" }
     );
     renderWhenContent(runtime);
-    expect(runtime.activeIndex).toBeNull();
+    expect(runtime.active).toEqual({ kind: "none" });
 
     (runtime.host as unknown as HTMLElement).remove();
   });
 
-  it("renders else branch (-1) when no condition matches and elseContent is non-empty", () => {
+  it("renders else branch when no condition matches and elseContent is non-empty", () => {
     const runtime = makeRuntime(
       [{ condition: false, content: [] }],
       [
@@ -96,7 +96,7 @@ describe("renderWhenContent – condition evaluation", () => {
       ],
     );
     renderWhenContent(runtime);
-    expect(runtime.activeIndex).toBe(-1);
+    expect(runtime.active).toEqual({ kind: "else" });
 
     (runtime.host as unknown as HTMLElement).remove();
   });
@@ -104,14 +104,14 @@ describe("renderWhenContent – condition evaluation", () => {
   it("skips re-render when active branch has not changed", () => {
     const runtime = makeRuntime([{ condition: true, content: [] }]);
     renderWhenContent(runtime);
-    const activeAfterFirst = runtime.activeIndex;
+    const activeAfterFirst = runtime.active;
 
     // Spy to verify no DOM manipulation happens on second call (no change)
     const clearSpy = vi
       .spyOn(runtime.startMarker, "nextSibling", "get")
       .mockReturnValue(runtime.endMarker);
     renderWhenContent(runtime);
-    expect(runtime.activeIndex).toBe(activeAfterFirst);
+    expect(runtime.active).toEqual(activeAfterFirst);
 
     clearSpy.mockRestore();
     (runtime.host as unknown as HTMLElement).remove();
@@ -122,12 +122,13 @@ describe("renderWhenContent – condition evaluation", () => {
     const runtime = makeRuntime([{ condition: () => flag, content: [] }]);
 
     renderWhenContent(runtime);
-    expect(runtime.activeIndex).toBeNull(); // false → no else content → null
+    // false → no else content → { kind: "none" }
+    expect(runtime.active).toEqual({ kind: "none" });
 
     flag = true;
-    runtime.activeIndex = null; // Reset so re-render happens
+    runtime.active = { kind: "none" }; // Reset so re-render happens
     renderWhenContent(runtime);
-    expect(runtime.activeIndex).toBe(0);
+    expect(runtime.active).toEqual({ kind: "group", index: 0 });
 
     (runtime.host as unknown as HTMLElement).remove();
   });

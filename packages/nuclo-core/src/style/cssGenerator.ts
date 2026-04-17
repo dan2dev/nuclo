@@ -20,7 +20,7 @@ export function setSSRCollector(fn: SSRCollector | null): void {
   _ssrCollector = fn;
 }
 
-function isAtRule(rule: CSSRule): boolean {
+function isAtRule(rule: CSSRule): rule is CSSGroupingRule {
   return (
     rule instanceof CSSMediaRule ||
     rule instanceof CSSContainerRule ||
@@ -28,11 +28,16 @@ function isAtRule(rule: CSSRule): boolean {
   );
 }
 
+/**
+ * True when `rule` is the at-rule wrapper matching `atRuleType` + `condition`.
+ * Type-guarded to `CSSGroupingRule` because every matching branch is a subclass
+ * (`CSSMediaRule`, `CSSContainerRule`, `CSSSupportsRule`).
+ */
 function matchesAtRule(
   rule: CSSRule,
   atRuleType: AtRuleType,
   condition: string,
-): boolean {
+): rule is CSSGroupingRule {
   if (atRuleType === "media" && rule instanceof CSSMediaRule) {
     return rule.media.mediaText === condition;
   }
@@ -70,12 +75,11 @@ function updateRuleStyles(
 
 function getStyleSheet(): HTMLStyleElement | null {
   if (!isBrowser) return null;
-  let el = document.querySelector("#nuclo-styles") as HTMLStyleElement;
-  if (!el) {
-    el = document.createElement("style");
-    el.id = "nuclo-styles";
-    document.head.appendChild(el);
-  }
+  const existing = document.querySelector<HTMLStyleElement>("#nuclo-styles");
+  if (existing) return existing;
+  const el = document.createElement("style");
+  el.id = "nuclo-styles";
+  document.head.appendChild(el);
   return el;
 }
 
@@ -96,9 +100,8 @@ export function classExistsInDOM(
   pseudoClass?: string,
 ): boolean {
   if (!isBrowser) return false;
-  const styleSheet = document.querySelector(
-    "#nuclo-styles",
-  ) as HTMLStyleElement;
+  const styleSheet =
+    document.querySelector<HTMLStyleElement>("#nuclo-styles");
   if (!styleSheet?.sheet) return false;
 
   const rules = styleSheet.sheet.cssRules;
@@ -109,13 +112,9 @@ export function classExistsInDOM(
 
   if (condition) {
     for (let i = 0; i < rules.length; i++) {
-      if (matchesAtRule(rules[i], atRuleType, condition)) {
-        return (
-          findStyleRule(
-            (rules[i] as CSSGroupingRule).cssRules,
-            `.${className}`,
-          ) !== null
-        );
+      const rule = rules[i];
+      if (matchesAtRule(rule, atRuleType, condition)) {
+        return findStyleRule(rule.cssRules, `.${className}`) !== null;
       }
     }
     return false;
@@ -194,8 +193,9 @@ export function createCSSClassWithStyles(
     let groupingRule: CSSGroupingRule | null = null;
 
     for (let i = 0; i < rulesLength; i++) {
-      if (matchesAtRule(existingRules[i], atRuleType, condition)) {
-        groupingRule = existingRules[i] as CSSGroupingRule;
+      const rule = existingRules[i];
+      if (matchesAtRule(rule, atRuleType, condition)) {
+        groupingRule = rule;
         break;
       }
     }
@@ -222,7 +222,13 @@ export function createCSSClassWithStyles(
               : "@media";
 
       sheet.insertRule(`${atRulePrefix} ${condition} {}`, insertIndex);
-      groupingRule = sheet.cssRules[insertIndex] as CSSGroupingRule;
+      const inserted = sheet.cssRules[insertIndex];
+      if (!isAtRule(inserted)) {
+        // `insertRule` just placed the at-rule we built; the guard keeps
+        // `groupingRule` a `CSSGroupingRule` without a type assertion.
+        return;
+      }
+      groupingRule = inserted;
     }
 
     const existingRule = findStyleRule(groupingRule.cssRules, `.${className}`);

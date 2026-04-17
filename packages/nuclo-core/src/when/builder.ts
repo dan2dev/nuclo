@@ -1,6 +1,6 @@
 import { createMarkerPair } from "../utility/dom";
-import { asParentNode } from "../utility/domTypeHelpers";
 import type {
+  WhenActive,
   WhenCondition,
   WhenContent,
   WhenGroup,
@@ -10,6 +10,7 @@ import {
   renderWhenContent,
   registerWhenRuntime,
   evaluateActiveCondition,
+  WHEN_NONE,
 } from "./runtime";
 import { isBrowser } from "../utility/environment";
 import {
@@ -71,9 +72,8 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
       endMarker,
     );
 
-    const parent = asParentNode(host);
-    parent.appendChild(startMarker);
-    parent.appendChild(endMarker);
+    host.appendChild(startMarker);
+    host.appendChild(endMarker);
 
     renderWhenContent(runtime);
 
@@ -84,62 +84,59 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     host: ExpandedElement<TTagName>,
     index: number,
   ): Node | null {
-    const parentNode = host as unknown as Node & ParentNode;
-
     // Check if next child is actually a when-start comment marker.
     // If the SSR HTML doesn't contain Nuclo comment markers, fall back
     // to normal rendering (create new markers + render from scratch).
-    const cursor = getCursor(parentNode);
-    const candidate = parentNode.childNodes[cursor];
+    const cursor = getCursor(host);
+    const candidate = host.childNodes[cursor];
     if (
       !candidate ||
       candidate.nodeType !== 8 ||
-      !(candidate as Comment).textContent?.startsWith("when-start-")
+      !candidate.textContent?.startsWith("when-start-")
     ) {
       return this.freshRender(host, index);
     }
 
-    // Claim existing start marker
-    const startMarker = claimChild(parentNode) as Comment;
+    // Claim existing start marker. `claimChild` returns the child at the
+    // current cursor; a comment's concrete DOM type is Comment, and we rely
+    // on that for the runtime struct.
+    const startMarker = claimChild(host) as Comment;
 
     // Find end marker position (without claiming)
-    let endMarkerIdx = getCursor(parentNode);
-    while (endMarkerIdx < parentNode.childNodes.length) {
-      const node = parentNode.childNodes[endMarkerIdx];
-      if (node.nodeType === 8 && (node as Comment).textContent === "when-end")
-        break;
+    let endMarkerIdx = getCursor(host);
+    while (endMarkerIdx < host.childNodes.length) {
+      const node = host.childNodes[endMarkerIdx];
+      if (node.nodeType === 8 && node.textContent === "when-end") break;
       endMarkerIdx++;
     }
-    const endMarker = parentNode.childNodes[endMarkerIdx] as Comment;
+    const endMarker = host.childNodes[endMarkerIdx] as Comment;
 
     // Determine which branch is currently active
-    const activeIndex = evaluateActiveCondition(
+    const active = evaluateActiveCondition(
       [...this.groups],
       [...this.elseContent],
     );
 
     // Re-run active branch content to register reactivity on existing nodes
-    if (activeIndex !== null) {
-      const contentToRender =
-        activeIndex >= 0 ? this.groups[activeIndex].content : this.elseContent;
+    if (active.kind !== "none") {
+      const contentToRender: ReadonlyArray<WhenContent<TTagName>> =
+        active.kind === "group"
+          ? this.groups[active.index].content
+          : this.elseContent;
       for (const item of contentToRender) {
-        applyNodeModifier(
-          host,
-          item as NodeMod<TTagName> | NodeModFn<TTagName>,
-          index,
-        );
+        applyNodeModifier(host, item, index);
       }
     }
 
     // Advance cursor past end marker
-    setCursor(parentNode, endMarkerIdx + 1);
+    setCursor(host, endMarkerIdx + 1);
 
     const runtime = this.createRuntimeFromMarkers(
       host,
       index,
       startMarker,
       endMarker,
-      activeIndex,
+      active,
     );
 
     return startMarker;
@@ -150,7 +147,7 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     index: number,
     startMarker: Comment,
     endMarker: Comment,
-    activeIndex: number | -1 | null = null,
+    active: WhenActive = WHEN_NONE,
   ): WhenRuntime<TTagName> {
     const runtime: WhenRuntime<TTagName> = {
       startMarker,
@@ -159,7 +156,7 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
       index,
       groups: [...this.groups],
       elseContent: [...this.elseContent],
-      activeIndex,
+      active,
       update: function () {
         renderWhenContent(runtime);
       },
@@ -176,28 +173,28 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
 export function createWhenBuilderFunction<TTagName extends ElementTagName>(
   builder: WhenBuilderImpl<TTagName>,
 ): WhenBuilder<TTagName> {
-  const nodeModFn = function (
-    host: ExpandedElement<TTagName>,
-    index: number,
-  ): Node | null {
-    return builder.render(host, index);
-  };
+  // The runtime shape is a function (the NodeModFn) with `.when` / `.else`
+  // methods attached — exactly the surface `WhenBuilder<TTagName>` declares
+  // via its extension of NodeModFn. TS can't re-derive that intersection
+  // through `Object.assign`, so we satisfy it once here.
+  const nodeModFn: NodeModFn<TTagName> = (host, index) =>
+    builder.render(host, index) ?? undefined;
 
-  return Object.assign(nodeModFn, {
-    when: function (
+  const methods = {
+    when(
       condition: WhenCondition,
       ...content: WhenContent<TTagName>[]
     ): WhenBuilder<TTagName> {
       builder.when(condition, ...content);
       return createWhenBuilderFunction(builder);
     },
-    else: function (
-      ...content: WhenContent<TTagName>[]
-    ): WhenBuilder<TTagName> {
+    else(...content: WhenContent<TTagName>[]): WhenBuilder<TTagName> {
       builder.else(...content);
       return createWhenBuilderFunction(builder);
     },
-  }) as unknown as WhenBuilder<TTagName>;
+  };
+
+  return Object.assign(nodeModFn, methods) satisfies WhenBuilder<TTagName>;
 }
 
 export { WhenBuilderImpl };

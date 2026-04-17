@@ -1,7 +1,6 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  asParentNode,
   withScopedInsertion,
   setStyleProperty,
   getStyleProperty,
@@ -13,20 +12,6 @@ describe("domTypeHelpers edge cases", () => {
   beforeEach(() => {
     element = document.createElement("div");
     document.body.appendChild(element);
-  });
-
-  describe("asParentNode", () => {
-    it("should cast element to ParentNode", () => {
-      const result = asParentNode(element);
-      expect(result).toBe(element);
-      expect(result.appendChild).toBeDefined();
-    });
-
-    it("should work with any Element-like object", () => {
-      const span = document.createElement("span");
-      const result = asParentNode(span);
-      expect(result).toBe(span);
-    });
   });
 
   describe("withScopedInsertion", () => {

@@ -268,15 +268,19 @@ export function createStyleQueries<
         defaultStyles = defaultStylesOrQueries;
         styles = queryStyles;
       } else {
-        styles = defaultStylesOrQueries as QueryStyles | undefined;
+        styles = defaultStylesOrQueries;
       }
     } else if (defaultStylesOrQueries !== undefined) {
+      // Signature #2 / #6: first arg is StyleBuilder when the second is
+      // defined. The overloads enforce that at callsites; at runtime the
+      // value could technically be QueryStyles, so the two casts below are
+      // load-bearing for the pipeline's expectations, not the type system.
       defaultStyles = classNameOrDefaultStylesOrQueries as StyleBuilder;
       styles = defaultStylesOrQueries as QueryStyles;
     } else if (classNameOrDefaultStylesOrQueries instanceof StyleBuilder) {
       defaultStyles = classNameOrDefaultStylesOrQueries;
     } else {
-      styles = classNameOrDefaultStylesOrQueries as QueryStyles | undefined;
+      styles = classNameOrDefaultStylesOrQueries;
     }
 
     const hasStyles = styles != null && Object.keys(styles).length > 0;
@@ -304,7 +308,7 @@ export function createStyleQueries<
           allQueryStyles.push({
             queryName,
             query: parsedQueries.get(queryName)!,
-            styles: (styleBuilder as StyleBuilder).getStyles(),
+            styles: styleBuilder.getStyles(),
           });
         }
       }
@@ -371,23 +375,15 @@ export function createStyleQueries<
         styles: Record<string, string>;
       }> = [];
 
+      const isPseudoQuery = (q: QueryResult): q is PseudoQuery =>
+        q.type === "pseudo";
+
       for (const queryStyle of allQueryStyles) {
-        if (queryStyle.query.type === "pseudo") {
-          pseudoClassQueries.push(
-            queryStyle as unknown as {
-              queryName: string;
-              query: PseudoQuery;
-              styles: Record<string, string>;
-            },
-          );
+        const { queryName, query, styles: qStyles } = queryStyle;
+        if (isPseudoQuery(query)) {
+          pseudoClassQueries.push({ queryName, query, styles: qStyles });
         } else {
-          atRuleQueries.push(
-            queryStyle as unknown as {
-              queryName: string;
-              query: AtRuleQuery;
-              styles: Record<string, string>;
-            },
-          );
+          atRuleQueries.push({ queryName, query, styles: qStyles });
         }
       }
 

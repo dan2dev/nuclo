@@ -32,6 +32,21 @@ interface ClassNameOnlyObject {
   readonly className: string;
 }
 
+/**
+ * Unified callable shape for non-zero-arity modifier functions. The
+ * `NodeModifier<T>` union admits both `NodeModFn<T>` (returns `NodeMod | void`)
+ * and the child-returning `NodeMod` function variant (returns `Node`). Both
+ * take `(parent, index)` and return something the classifier below handles,
+ * so we invoke via this common signature once and then discriminate on the
+ * produced value.
+ *
+ * @template TTagName Host element tag literal.
+ */
+type ModifierInvocation<TTagName extends ElementTagName> = (
+  parent: ExpandedElement<TTagName>,
+  index: number,
+) => NodeMod<TTagName> | Node | void;
+
 function isClassNameOnlyObject(v: unknown): v is ClassNameOnlyObject {
   if (v === null || typeof v !== "object") return false;
   if (isNode(v)) return false;
@@ -47,7 +62,7 @@ function nextChildIsTextComment(parent: Node): boolean {
   const cursor = getCursor(parent);
   const child = parent.childNodes[cursor];
   if (!child || child.nodeType !== 8) return false;
-  const text = (child as Comment).textContent;
+  const text = child.textContent;
   return text != null && text.trimStart().startsWith("text-");
 }
 
@@ -84,7 +99,7 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
       return handleZeroArityModifier(parent, modifier, index);
     }
     // NodeModFn(parent, index) — classify produced value
-    const produced = (modifier as NodeModFn<TTagName>)(parent, index);
+    const produced = (modifier as ModifierInvocation<TTagName>)(parent, index);
     if (produced == null) return null;
     if (isPrimitive(produced)) {
       return createStaticTextFragment(index, produced);

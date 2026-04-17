@@ -1,6 +1,30 @@
 import { startHydration, endHydration } from "../hydration/context";
 
 /**
+ * Invokes a `NodeModFn` in a host-rendering context where the return is
+ * known to be an `ExpandedElement`. Tag builders (`div()`, `h1()`, …) return
+ * a `DetachedExpandedElementFactory<TTagName>`, which guarantees that shape,
+ * but TS collapses `ExpandedElement<TTagName>` to `never` for unconstrained
+ * `TTagName` unions — so the two `as unknown as` bridges below are the
+ * single, scoped hop between the wider declared type and the narrower
+ * runtime contract.
+ */
+function resolveFactory<TTagName extends ElementTagName>(
+  factory: NodeModFn<TTagName>,
+  parent: ExpandedElement<TTagName>,
+  index: number,
+): ExpandedElement<TTagName> {
+  return factory(parent, index) as unknown as ExpandedElement<TTagName>;
+}
+
+/** Coerces `parent` (or `document.body` fallback) to the host-element shape. */
+function resolveTargetParent<TTagName extends ElementTagName>(
+  parent: Element | undefined,
+): ExpandedElement<TTagName> {
+  return (parent ?? document.body) as unknown as ExpandedElement<TTagName>;
+}
+
+/**
  * Renders a NodeModFn to a parent element by calling it and appending the result.
  *
  * @param nodeModFn The NodeModFn to render (created by tag builders like div(), h1(), etc.)
@@ -13,9 +37,9 @@ export function render<TTagName extends ElementTagName = ElementTagName>(
   parent?: Element,
   index: number = 0,
 ): ExpandedElement<TTagName> {
-  const targetParent = (parent || document.body) as ExpandedElement<TTagName>;
-  const element = nodeModFn(targetParent, index) as ExpandedElement<TTagName>;
-  (parent || document.body).appendChild(element as Node);
+  const targetParent = resolveTargetParent<TTagName>(parent);
+  const element = resolveFactory(nodeModFn, targetParent, index);
+  (parent ?? document.body).appendChild(element);
   return element;
 }
 
@@ -45,11 +69,10 @@ export function hydrate<TTagName extends ElementTagName = ElementTagName>(
   nodeModFn: NodeModFn<TTagName>,
   parent?: Element,
 ): ExpandedElement<TTagName> {
-  const targetParent = (parent || document.body) as ExpandedElement<TTagName>;
+  const targetParent = resolveTargetParent<TTagName>(parent);
   startHydration();
   try {
-    const element = nodeModFn(targetParent, 0) as ExpandedElement<TTagName>;
-    return element;
+    return resolveFactory(nodeModFn, targetParent, 0);
   } finally {
     endHydration();
   }

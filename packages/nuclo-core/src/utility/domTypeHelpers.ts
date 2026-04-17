@@ -4,16 +4,13 @@
  */
 
 /**
- * Safely casts an Element-like object to Node & ParentNode interface.
- * This is a common pattern needed when working with DOM manipulation.
- *
- * @param element - The element to cast
- * @returns The element typed as Node & ParentNode
+ * Structural bridge for monkey-patching `appendChild` on a host without
+ * widening to `any` or `Record<string, unknown>`. `ParentNode.appendChild` is
+ * declared `readonly` on some DOM lib definitions, so we isolate the reassignment
+ * to this local shape.
  */
-export function asParentNode<T extends Element | object>(
-  element: T,
-): Node & ParentNode {
-  return element as unknown as Node & ParentNode;
+interface MutableAppendChild {
+  appendChild: (node: Node) => Node;
 }
 
 /**
@@ -21,34 +18,38 @@ export function asParentNode<T extends Element | object>(
  * to insertBefore at a specific reference node. This is useful for inserting
  * content at specific positions in the DOM tree.
  *
- * @param host - The host element
- * @param referenceNode - The node before which new nodes should be inserted
- * @param callback - Function to execute with the scoped context
- * @returns The result of the callback
+ * @template T Callback return type.
+ * @param host - The parent-capable host element.
+ * @param referenceNode - The node before which new nodes should be inserted.
+ * @param callback - Function to execute with the scoped context.
+ * @returns The value returned by `callback`.
  */
-export function withScopedInsertion<T, THost extends Element | object>(
-  host: THost,
+export function withScopedInsertion<T>(
+  host: Node & ParentNode,
   referenceNode: Node,
   callback: () => T,
 ): T {
-  const parent = asParentNode(host);
-  const originalAppend = parent.appendChild.bind(parent);
-  const originalInsert = parent.insertBefore.bind(parent);
+  const originalAppend = host.appendChild.bind(host);
+  const originalInsert = host.insertBefore.bind(host);
+  const patchable = host satisfies Node & ParentNode as MutableAppendChild;
 
-  // Temporarily override appendChild to insert before the reference node
-  // TypeScript doesn't like this override but it's safe at runtime
-  (parent as unknown as Record<string, unknown>).appendChild = function (
-    node: Node,
-  ): Node {
-    return originalInsert(node, referenceNode);
-  };
+  patchable.appendChild = (node) => originalInsert(node, referenceNode);
 
   try {
     return callback();
   } finally {
-    // Restore original method
-    (parent as unknown as Record<string, unknown>).appendChild = originalAppend;
+    patchable.appendChild = originalAppend;
   }
+}
+
+/**
+ * `CSSStyleDeclaration` is declared with keyed camelCase getters/setters in
+ * the DOM lib, but at runtime it accepts arbitrary string keys (including
+ * kebab-case CSS property names like `background-color`). This shape lets us
+ * write that dynamic indexed assignment without widening to `any`.
+ */
+interface StyleIndex {
+  [property: string]: string;
 }
 
 /**
@@ -58,26 +59,23 @@ export function withScopedInsertion<T, THost extends Element | object>(
  *
  * @param element - The element to apply styles to
  * @param property - The CSS property name (camelCase or kebab-case)
- * @param value - The value to set (string, number, or null to remove)
+ * @param value - The value to set. `null`, `undefined`, and `""` all clear the property.
  * @returns true if the style was applied successfully, false otherwise
  */
 export function setStyleProperty(
   element: HTMLElement,
   property: string,
-  value: string | number | null,
+  value: string | number | null | undefined,
 ): boolean {
   try {
-    if (value === null || value === undefined || value === "") {
-      // Use bracket notation to remove property (works with camelCase)
-      (element.style as unknown as Record<string, string>)[property] = "";
-      return true;
-    }
-
-    // Convert value to string first (might throw if toString() throws)
-    const stringValue = String(value);
-    // Use bracket notation to set property (works with camelCase)
-    (element.style as unknown as Record<string, string>)[property] =
-      stringValue;
+    // CSSStyleDeclaration has camelCase named getters/setters but *also*
+    // accepts arbitrary string keys at runtime — the DOM lib just doesn't
+    // model the dynamic part. One-shot erasure to a string-indexed view.
+    const target = element.style as unknown as StyleIndex;
+    target[property] =
+      value === null || value === undefined || value === ""
+        ? ""
+        : String(value);
     return true;
   } catch {
     return false;

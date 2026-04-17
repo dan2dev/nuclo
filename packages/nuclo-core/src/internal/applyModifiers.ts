@@ -57,7 +57,6 @@ export function applyModifiers<TTagName extends ElementTagName>(
 
   let localIndex = startIndex;
   let appended = 0;
-  const parentNode = element as unknown as Node & ParentNode;
 
   for (let i = 0; i < modifiers.length; i += 1) {
     const mod = modifiers[i];
@@ -68,8 +67,8 @@ export function applyModifiers<TTagName extends ElementTagName>(
     if (!produced) continue;
 
     // Only append if the node isn't already where we expect
-    if (produced.parentNode !== parentNode) {
-      parentNode.appendChild(produced);
+    if (produced.parentNode !== element) {
+      element.appendChild(produced);
     }
     localIndex += 1;
     appended += 1;
@@ -89,13 +88,23 @@ export function createHtmlElementWithModifiers<TTagName extends ElementTagName>(
   tagName: TTagName,
   modifiers: ReadonlyArray<NodeModifier<TTagName>>,
 ): ExpandedElement<TTagName> {
-  const el = createElement(tagName) as ExpandedElement<TTagName>;
+  const el = createElement(tagName);
+  if (!el) {
+    throw new Error(`Failed to create HTML element: ${tagName}`);
+  }
   applyModifiers(el, modifiers, 0);
   return el;
 }
 
 /**
  * Creates an SVG element with the specified tag name and applies modifiers to it.
+ *
+ * `applyModifiers` is typed for `ExpandedElement<TTagName>` (HTML) but is
+ * structurally tag-agnostic at runtime — the only operations it performs on
+ * the host are `appendChild` and field access already present on every
+ * `Element`. A single `as unknown as` bridges the HTML/SVG type divide.
+ *
+ * @template TTagName SVG tag literal.
  */
 export function createSvgElementWithModifiers<
   TTagName extends keyof SVGElementTagNameMap,
@@ -112,5 +121,5 @@ export function createSvgElementWithModifiers<
     modifiers as ReadonlyArray<NodeModifier<ElementTagName>>,
     0,
   );
-  return el as unknown as SVGElementTagNameMap[TTagName];
+  return el;
 }
