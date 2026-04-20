@@ -43,8 +43,8 @@ publish:
 	@new_version=$$($(MAKE) --no-print-directory bump-version BUMP=$(BUMP)); \
 	  echo "==> New version: $$new_version"; \
 	  echo "==> Publishing to registry"; \
-	  bun publish --no-git-checks; \
-	  echo "==> Staging version bump artifacts"; \
+	  bun publish --no-git-checks && \
+	  echo "==> Staging version bump artifacts" && \
 	  git add $(PKG_FILE) bun.lock 2>/dev/null || true; \
 	  if git diff --cached --quiet; then \
 	    echo "==> No staged changes to commit (possibly already committed)"; \
