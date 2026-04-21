@@ -42,14 +42,16 @@ export const hs = {
 
   heroTitle: cn(
     fontSize("48px").fontWeight("800").lineHeight("1.05")
-      .letterSpacing("-0.03em").display("block").color(colors.text),
+      .letterSpacing("-0.03em").display("block").color(colors.text)
+      .fontFamily("var(--font-display)"),
     { medium: fontSize("60px"), large: fontSize("72px") },
   ),
 
   heroTitleAccent: cn(
     fontSize("48px").fontWeight("800").lineHeight("1.05")
       .letterSpacing("-0.03em").display("block")
-      .fontStyle("italic").color(colors.primary),
+      .fontStyle("italic").color(colors.primary)
+      .fontFamily("var(--font-display)"),
     { medium: fontSize("60px"), large: fontSize("72px") },
   ),
 
@@ -95,7 +97,7 @@ export const hs = {
   ),
 
   sectionTitle: cn(
-    fontSize("28px").fontWeight("800").color(colors.text).letterSpacing("-0.03em"),
+    fontSize("28px").fontWeight("800").color(colors.text).letterSpacing("-0.03em").fontFamily("var(--font-display)"),
     { medium: fontSize("34px"), large: fontSize("38px") },
   ),
 
@@ -368,7 +370,7 @@ export const hs = {
   ),
 
   titleLarge: cn(
-    fontSize("22px").fontWeight("700").color(colors.text),
+    fontSize("22px").fontWeight("700").color(colors.text).fontFamily("var(--font-display)"),
   ),
 
   bodyText: cn(
@@ -422,7 +424,7 @@ export const hs = {
   ),
 
   stepTitle: cn(
-    fontSize("24px").fontWeight("700").color(colors.text),
+    fontSize("24px").fontWeight("700").color(colors.text).fontFamily("var(--font-display)"),
   ),
 
   commandRow: cn(
