@@ -115,11 +115,9 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
         { hover: opacity("0.8") }
       ),
       img(
-        { src: "/nuclo-logo.svg", alt: "Nuclo" },
-        cn(height("32px").width("auto").flexShrink("0").display("block")),
-        { style: () => ({ filter: isDark() ? "brightness(0) invert(1)" : undefined }) }
+        { src: "/nuclo-logo.svg", alt: "Nuclo", class: "brand-logo" },
+        cn(height("80px").width("auto").flexShrink("0").display("block")),
       ),
-      span(cn(fontSize("14px").color(colors.textMuted)), "/ docs"),
       on("click", (e) => {
         e.preventDefault();
         setRoute("home");
@@ -156,7 +154,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
       div(
         cn(
           position("fixed")
-            .top("64px")
+            .top("96px")
             .left("0")
             .right("0")
             .borderBottom(`1px solid ${colors.border}`)
@@ -195,7 +193,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
             .maxWidth("1440px")
             .margin("0 auto")
             .padding("0 24px")
-            .height("64px"),
+            .height("96px"),
           { medium: padding("0 48px") }
         ),
         Brand(),

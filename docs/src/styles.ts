@@ -57,44 +57,44 @@ export const globalCss = `
     }
 
     /* ── CSS Custom Properties ───────────────────────────────────────────── */
-    :root, [data-theme="dark"] {
+    :root, [data-theme=”dark”] {
       --c-primary:          #6B9EFF;
       --c-primary-bg:       #6B9EFF;
-      --c-primary-text:     #ffffff;
-      --c-primary-hover:    #6B9EFF;
+      --c-primary-text:     #0a1020;
+      --c-primary-hover:    #7AABFF;
       --c-primary-dark:     #5A87F0;
-      --c-primary-glow:     rgba(107,158,255,0.19);
+      --c-primary-glow:     rgba(107,158,255,0.25);
       --c-primary-alpha-08: rgba(107,158,255,0.08);
       --c-primary-alpha-13: rgba(107,158,255,0.13);
-      --c-primary-alpha-19: rgba(107,158,255,0.19);
+      --c-primary-alpha-19: rgba(107,158,255,0.20);
 
-      --c-bg:           #0e0e0e;
-      --c-bg-card:      #1a1a1a;
-      --c-bg-secondary: #141414;
-      --c-bg-light:     #161616;
-      --c-bg-code:      #12141a;
-      --c-bg-icon:      #222222;
-      --c-bg-nav:       rgba(14,14,14,0.80);
-      --c-bg-footer:    #161616;
+      --c-bg:           #2840BD;
+      --c-bg-card:      #0F1A4E;
+      --c-bg-secondary: #0A1440;
+      --c-bg-light:     #111E55;
+      --c-bg-code:      #091038;
+      --c-bg-icon:      #152060;
+      --c-bg-nav:       rgba(40,64,189,0.85);
+      --c-bg-footer:    #2840BD;
 
       --c-text:          #FFFFFF;
-      --c-text-dim:      #666666;
-      --c-text-muted:    #888888;
-      --c-text-subtitle: #C0C2B8;
+      --c-text-dim:      #8899CC;
+      --c-text-muted:    #7080AA;
+      --c-text-subtitle: #B0BBDD;
 
-      --c-border:         #2a2a2a;
-      --c-border-light:   #333333;
-      --c-border-glow:    rgba(107,158,255,0.19);
-      --c-border-primary: rgba(107,158,255,0.19);
+      --c-border:         rgba(255,255,255,0.10);
+      --c-border-light:   rgba(255,255,255,0.14);
+      --c-border-glow:    rgba(107,158,255,0.30);
+      --c-border-primary: rgba(107,158,255,0.30);
 
       --c-accent-secondary: #22d3ee;
-      --c-hero-badge-bg:    #1a1a1a;
-      --c-live-badge-bg:    #222222;
-      --c-ready-pill-bg:    #222222;
-      --c-ready-pill-border:#2a2a2a;
-      --c-selection-bg:     rgba(107,158,255,0.20);
+      --c-hero-badge-bg:    rgba(255,255,255,0.08);
+      --c-live-badge-bg:    rgba(255,255,255,0.10);
+      --c-ready-pill-bg:    rgba(107,158,255,0.12);
+      --c-ready-pill-border:rgba(107,158,255,0.30);
+      --c-selection-bg:     rgba(107,158,255,0.25);
 
-      /* Syntax highlighting (dark — alto contraste, estilo “One Dark”-like) */
+      /* Syntax highlighting (blue-dark theme) */
       --c-tok-accent-primary: #6B9EFF;
       --c-tok-accent-strong:  #5A87F0;
       --c-tok-keyword:        #c792ea;
@@ -106,8 +106,8 @@ export const globalCss = `
       --c-tok-fn:             #82aaff;
       --c-tok-type:           #ffcb6b;
 
-      --c-header-bg:      rgba(14,14,14,0.80);
-      --c-mobile-menu-bg: rgba(14,14,14,0.96);
+      --c-header-bg:      rgba(40,64,189,0.90);
+      --c-mobile-menu-bg: rgba(40,64,189,0.98);
     }
 
     [data-theme="light"] {
@@ -171,11 +171,14 @@ export const globalCss = `
     .tok-comment { color: var(--c-tok-comment); }
     .tok-type    { color: var(--c-tok-type); }
 
+    /* ── Brand logo: white on dark/blue header ──────────────────────────── */
+    [data-theme="dark"] .brand-logo { filter: brightness(0) invert(1); }
+
     /* ── Reset ───────────────────────────────────────────────────────────── */
     * { margin: 0; padding: 0; box-sizing: border-box; min-width: 0; }
     html { scroll-behavior: smooth; }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Futura', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: var(--c-bg);
       color: var(--c-text);
       line-height: 1.6;
@@ -380,8 +383,8 @@ export const s = {
 
   // ── Page content ─────────────────────────────────────────────────────────
   pageContent: cn(
-    padding("88px 20px 80px").maxWidth("900px").margin("0 auto").width("100%").boxSizing("border-box"),
-    { medium: padding("104px 48px 96px") }
+    padding("112px 20px 80px").maxWidth("900px").margin("0 auto").width("100%").boxSizing("border-box"),
+    { medium: padding("128px 48px 96px") }
   ),
 
   pageTitle: cn(
