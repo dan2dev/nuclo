@@ -318,7 +318,7 @@ overflowY('hidden')` },
 fontSize('1.25rem')
 fontWeight('bold')
 fontWeight('600')
-fontFamily("'Inter', system-ui, sans-serif")
+fontFamily("'Futura', system-ui, sans-serif")
 fontStyle('italic')
 lineHeight('1.5')
 letterSpacing('0.05em')` },
