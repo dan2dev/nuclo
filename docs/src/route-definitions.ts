@@ -72,44 +72,16 @@ export async function loadPageFunction(path: string): Promise<PageFunction> {
 }
 
 /**
- * Schedules background preloading of all not-yet-cached routes.
+ * Schedules background preloading of all not-yet-cached routes using a
+ * sequential idle queue.
  *
- * Each route is queued in a separate requestIdleCallback so the browser
- * can interleave other work between imports. The callback only fires a load
- * when both conditions are true:
- *   1. pendingLoads === 0 — no other dynamic import is in-flight
- *   2. the route is not already cached
+ * Why sequential: scheduling all N callbacks at once causes them to fire in
+ * the same idle period — the first increments pendingLoads and the rest see
+ * pendingLoads > 0, skip, and are never retried.
  *
- * Falls back to setTimeout(0) where requestIdleCallback is unavailable.
+ * Strategy: process one route per idle tick; if pendingLoads > 0 (navigation
+ * in-flight), retry the same route next idle.  Falls back to setTimeout(0).
  * Client-only — do not call on the server.
- */
-/**
- * Schedules background preloading of all not-yet-cached routes using a
- * sequential idle queue.
- *
- * Why sequential instead of scheduling all at once:
- *   Scheduling N idle callbacks simultaneously causes them all to fire in the
- *   same idle period. The first increments pendingLoads; the rest see
- *   pendingLoads > 0, skip, and are never retried.
- *
- * Strategy:
- *   - Process one route per idle callback.
- *   - If pendingLoads > 0 (user navigated), retry the SAME route next idle.
- *   - Advance to the next route only after the current one is loaded or cached.
- */
-/**
- * Schedules background preloading of all not-yet-cached routes using a
- * sequential idle queue.
- *
- * Why sequential instead of scheduling all at once:
- *   Scheduling N idle callbacks simultaneously causes them all to fire in the
- *   same idle period. The first increments pendingLoads; the rest see
- *   pendingLoads > 0, skip, and are never retried.
- *
- * Strategy:
- *   - Process one route per idle callback.
- *   - If pendingLoads > 0 (user navigated), retry the SAME route next idle.
- *   - Advance to the next route only after the current one is loaded or cached.
  */
 export function preloadRoutes(): void {
   const schedule = typeof requestIdleCallback !== "undefined"

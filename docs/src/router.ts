@@ -2,13 +2,13 @@
  * router.ts — client-only.
  * Manages browser navigation state. Never imported by server code.
  */
-import { updatePageMeta } from "./seo.ts";
-import { loadPage } from "./routes.ts";
-import { routeMap } from "./route-definitions.ts";
+import { updatePageMeta } from './seo.ts';
+import { routeMap } from './route-definitions.ts';
 
 export type Route = string;
 
-let currentRoute: Route = "home";
+let currentRoute: Route = 'home';
+let _loadPage: (path: string) => Promise<void> = async () => {};
 
 export function getCurrentRoute(): Route {
   return currentRoute;
@@ -24,35 +24,36 @@ export function isValidRoute(path: string): boolean {
 
 export function setRoute(route: Route) {
   currentRoute = route;
-  const base = import.meta.env.BASE_URL || "/";
-  const url = route === "home"
-    ? base
-    : base.endsWith("/") ? `${base}${route}` : `${base}/${route}`;
-  window.history.pushState({}, "", url);
+  const base = import.meta.env.BASE_URL || '/';
+  const url =
+    route === 'home' ? base : base.endsWith('/') ? `${base}${route}` : `${base}/${route}`;
+  window.history.pushState({}, '', url);
   window.scrollTo(0, 0);
   updatePageMeta(route);
   update();
-  loadPage(route);
+  _loadPage(route);
 }
 
-export function initRouter() {
-  const base = import.meta.env.BASE_URL || "/";
+export function initRouter(loadPage: (path: string) => Promise<void>) {
+  _loadPage = loadPage;
+
+  const base = import.meta.env.BASE_URL || '/';
   const routePath = window.location.pathname
-    .replace(base, "")
-    .replace(/^\/+|\/+$/g, "");
-  const route = routePath || "home";
-  currentRoute = isValidRoute(route) ? route : "home";
+    .replace(base, '')
+    .replace(/^\/+|\/+$/g, '');
+  const route = routePath || 'home';
+  currentRoute = isValidRoute(route) ? route : 'home';
 
   updatePageMeta(currentRoute);
   update();
   loadPage(currentRoute);
 
-  window.addEventListener("popstate", () => {
+  window.addEventListener('popstate', () => {
     const newPath = window.location.pathname
-      .replace(base, "")
-      .replace(/^\/+|\/+$/g, "");
-    const newRoute = newPath || "home";
-    currentRoute = isValidRoute(newRoute) ? newRoute : "home";
+      .replace(base, '')
+      .replace(/^\/+|\/+$/g, '');
+    const newRoute = newPath || 'home';
+    currentRoute = isValidRoute(newRoute) ? newRoute : 'home';
     updatePageMeta(currentRoute);
     loadPage(currentRoute);
   });
