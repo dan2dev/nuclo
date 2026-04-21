@@ -78,8 +78,8 @@ function ensureKeyframes() {
       100% { transform: translateX(0) rotate(360deg); }
     }
     @keyframes glow {
-      0%, 100% { box-shadow: 0 0 20px rgba(213,255,64,0.3); }
-      50% { box-shadow: 0 0 40px rgba(213,255,64,0.6); }
+      0%, 100% { box-shadow: 0 0 20px rgba(107,158,255,0.3); }
+      50% { box-shadow: 0 0 40px rgba(107,158,255,0.6); }
     }
   `;
   document.head.appendChild(style);
@@ -112,7 +112,7 @@ function LiveAnimations() {
             : "none",
           willChange: isAnimating ? "transform, opacity, box-shadow" : "auto",
           background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
-          boxShadow: isAnimating ? "0 0 20px rgba(213,255,64,0.3)" : "none",
+          boxShadow: isAnimating ? "0 0 20px rgba(107,158,255,0.3)" : "none",
         }),
       },
       "Animated Box"

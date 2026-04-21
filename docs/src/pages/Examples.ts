@@ -93,7 +93,7 @@ const e = {
 
   metaRow: cn(display("flex").alignItems("center").gap("8px")),
   dotLight: cn(width("8px").height("8px").borderRadius("4px").backgroundColor(colors.primary)),
-  dotDark: cn(width("8px").height("8px").borderRadius("4px").backgroundColor("#D5FF40")),
+  dotDark: cn(width("8px").height("8px").borderRadius("4px").backgroundColor("#6B9EFF")),
 
   metaTextLight: cn(fontSize("11px").fontWeight("600").color(colors.textDim)),
   metaTextDark: cn(fontSize("11px").fontWeight("600").color("#888888")),
@@ -121,7 +121,7 @@ const e = {
       .backgroundColor("#1a1a1a")
       .fontSize("22px")
       .fontWeight("700")
-      .color("#D5FF40")
+      .color("#6B9EFF")
   ),
 
   titleLight: cn(fontSize("20px").fontWeight("700").letterSpacing("-0.02em").color(colors.text)),
@@ -131,7 +131,7 @@ const e = {
   bodyDark: cn(fontSize("14px").lineHeight("1.55").color("#C0C2B8")),
 
   ctaLight: cn(fontSize("13px").fontWeight("600").color(colors.primary)),
-  ctaDark: cn(fontSize("13px").fontWeight("600").color("#D5FF40")),
+  ctaDark: cn(fontSize("13px").fontWeight("600").color("#6B9EFF")),
 };
 
 function routeHref(route: Route) {

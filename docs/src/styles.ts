@@ -2,7 +2,7 @@
 import 'nuclo';
 // All colors use CSS custom properties — switch themes by toggling [data-theme] on <html>
 export const colors = {
-  // Primary accent — text/links: bright in dark (#D5FF40), dark-olive in light (#4A7A00)
+  // Primary accent — text/links: bright in dark (#6B9EFF), blue in light (#3869EC)
   primary: "var(--c-primary)",
   primaryBg: "var(--c-primary-bg)",
   primaryText: "var(--c-primary-text)",
@@ -58,15 +58,15 @@ export const globalCss = `
 
     /* ── CSS Custom Properties ───────────────────────────────────────────── */
     :root, [data-theme="dark"] {
-      --c-primary:          #D5FF40;
-      --c-primary-bg:       #D5FF40;
-      --c-primary-text:     #0e0e0e;
-      --c-primary-hover:    #D5FF40;
-      --c-primary-dark:     #D5FF40;
-      --c-primary-glow:     rgba(213,255,64,0.19);
-      --c-primary-alpha-08: rgba(213,255,64,0.08);
-      --c-primary-alpha-13: rgba(213,255,64,0.13);
-      --c-primary-alpha-19: rgba(213,255,64,0.19);
+      --c-primary:          #6B9EFF;
+      --c-primary-bg:       #6B9EFF;
+      --c-primary-text:     #ffffff;
+      --c-primary-hover:    #6B9EFF;
+      --c-primary-dark:     #5A87F0;
+      --c-primary-glow:     rgba(107,158,255,0.19);
+      --c-primary-alpha-08: rgba(107,158,255,0.08);
+      --c-primary-alpha-13: rgba(107,158,255,0.13);
+      --c-primary-alpha-19: rgba(107,158,255,0.19);
 
       --c-bg:           #0e0e0e;
       --c-bg-card:      #1a1a1a;
@@ -84,19 +84,19 @@ export const globalCss = `
 
       --c-border:         #2a2a2a;
       --c-border-light:   #333333;
-      --c-border-glow:    rgba(213,255,64,0.19);
-      --c-border-primary: rgba(213,255,64,0.19);
+      --c-border-glow:    rgba(107,158,255,0.19);
+      --c-border-primary: rgba(107,158,255,0.19);
 
       --c-accent-secondary: #22d3ee;
       --c-hero-badge-bg:    #1a1a1a;
       --c-live-badge-bg:    #222222;
       --c-ready-pill-bg:    #222222;
       --c-ready-pill-border:#2a2a2a;
-      --c-selection-bg:     rgba(213,255,64,0.20);
+      --c-selection-bg:     rgba(107,158,255,0.20);
 
       /* Syntax highlighting (dark — alto contraste, estilo “One Dark”-like) */
-      --c-tok-accent-primary: #D5FF40;
-      --c-tok-accent-strong:  #b4e84a;
+      --c-tok-accent-primary: #6B9EFF;
+      --c-tok-accent-strong:  #5A87F0;
       --c-tok-keyword:        #c792ea;
       --c-tok-string:         #c3e88d;
       --c-tok-default:        #e2e8f0;
@@ -111,15 +111,15 @@ export const globalCss = `
     }
 
     [data-theme="light"] {
-      --c-primary:          #406800;
-      --c-primary-bg:       #406800;
+      --c-primary:          #3869EC;
+      --c-primary-bg:       #3869EC;
       --c-primary-text:     #FFFFFF;
-      --c-primary-hover:    #356200;
-      --c-primary-dark:     #356200;
-      --c-primary-glow:     rgba(64,104,0,0.15);
-      --c-primary-alpha-08: rgba(64,104,0,0.08);
-      --c-primary-alpha-13: rgba(64,104,0,0.10);
-      --c-primary-alpha-19: rgba(64,104,0,0.14);
+      --c-primary-hover:    #2C58D4;
+      --c-primary-dark:     #2C58D4;
+      --c-primary-glow:     rgba(56,105,236,0.15);
+      --c-primary-alpha-08: rgba(56,105,236,0.08);
+      --c-primary-alpha-13: rgba(56,105,236,0.10);
+      --c-primary-alpha-19: rgba(56,105,236,0.14);
 
       --c-bg:           #F5F5F0;
       --c-bg-card:      #FFFFFF;
@@ -137,19 +137,19 @@ export const globalCss = `
 
       --c-border:         #D0D0CC;
       --c-border-light:   #D0D0CC;
-      --c-border-glow:    rgba(64,104,0,0.14);
-      --c-border-primary: rgba(64,104,0,0.14);
+      --c-border-glow:    rgba(56,105,236,0.14);
+      --c-border-primary: rgba(56,105,236,0.14);
 
       --c-accent-secondary: #0f766e;
       --c-hero-badge-bg:    #E5E5E0;
       --c-live-badge-bg:    #E5E5E0;
-      --c-ready-pill-bg:    rgba(64,104,0,0.07);
-      --c-ready-pill-border:rgba(64,104,0,0.14);
-      --c-selection-bg:     rgba(64,104,0,0.16);
+      --c-ready-pill-bg:    rgba(56,105,236,0.07);
+      --c-ready-pill-border:rgba(56,105,236,0.14);
+      --c-selection-bg:     rgba(56,105,236,0.16);
 
       /* Syntax highlighting (light — keywords ≠ strings, fundo legível) */
-      --c-tok-accent-primary: #406800;
-      --c-tok-accent-strong:  #356200;
+      --c-tok-accent-primary: #3869EC;
+      --c-tok-accent-strong:  #2C58D4;
       --c-tok-keyword:        #4338ca;
       --c-tok-string:         #92400E;
       --c-tok-default:        #0f172a;
