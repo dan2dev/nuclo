@@ -30,7 +30,7 @@ const htmlTemplate = `<!doctype html>
     <!-- Blocking theme script: runs synchronously before first paint so there
          is no flash regardless of saved preference or system color scheme. -->
     <script>!function(){var t=localStorage.getItem('nuclo-theme')||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.setAttribute('data-theme',t);}();</script>
-    <link rel="icon" type="image/svg+xml" href="/nuclo.svg" />
+    <link rel="icon" type="image/svg+xml" href="/nuclo-logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Font preconnects -->
@@ -42,7 +42,7 @@ const htmlTemplate = `<!doctype html>
 
     {{seoHead}}
 
-    <meta name="theme-color" content="#646cff" />
+    <meta name="theme-color" content="#3869EC" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Nuclo" />
@@ -112,7 +112,7 @@ function buildSeoHead(route: string, pathname: string, known: boolean): string {
     `<meta property="og:url" content="${escapeHtml(pageUrl)}" />`,
     `<meta property="og:title" content="${escapeHtml(meta.title)}" />`,
     `<meta property="og:description" content="${escapeHtml(meta.description)}" />`,
-    `<meta property="og:image" content="${SEO_BASE_URL}nuclo.svg" />`,
+    `<meta property="og:image" content="${SEO_BASE_URL}nuclo-logo.png" />`,
     '<meta property="og:image:alt" content="Nuclo framework logo" />',
     '<meta property="og:site_name" content="Nuclo" />',
     '<meta property="og:locale" content="en_US" />',
@@ -120,7 +120,7 @@ function buildSeoHead(route: string, pathname: string, known: boolean): string {
     `<meta name="twitter:url" content="${escapeHtml(pageUrl)}" />`,
     `<meta name="twitter:title" content="${escapeHtml(meta.title)}" />`,
     `<meta name="twitter:description" content="${escapeHtml(meta.description)}" />`,
-    `<meta name="twitter:image" content="${SEO_BASE_URL}nuclo.svg" />`,
+    `<meta name="twitter:image" content="${SEO_BASE_URL}nuclo-logo.png" />`,
     '<meta name="twitter:creator" content="@dan2dev" />',
     '<meta name="twitter:site" content="@dan2dev" />',
     `<script type="application/ld+json">${jsonLd}</script>`,

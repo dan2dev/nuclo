@@ -114,8 +114,11 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
           .transition("opacity 0.15s"),
         { hover: opacity("0.8") }
       ),
-      div(cn(width("10px").height("10px").borderRadius("50%").backgroundColor(colors.primary).flexShrink("0"))),
-      span(cn(fontSize("20px").fontWeight("700").color(colors.text)), "nuclo"),
+      img(
+        { src: "/nuclo-logo.svg", alt: "Nuclo" },
+        cn(height("32px").width("auto").flexShrink("0").display("block")),
+        { style: () => ({ filter: isDark() ? "brightness(0) invert(1)" : undefined }) }
+      ),
       span(cn(fontSize("14px").color(colors.textMuted)), "/ docs"),
       on("click", (e) => {
         e.preventDefault();
