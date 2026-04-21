@@ -171,6 +171,9 @@ export const globalCss = `
     .tok-comment { color: var(--c-tok-comment); }
     .tok-type    { color: var(--c-tok-type); }
 
+    /* ── Display font (headers / highlights) ────────────────────────────── */
+    :root { --font-display: 'Futura', system-ui, sans-serif; }
+
     /* ── Brand logo: white on dark/blue header ──────────────────────────── */
     [data-theme="dark"] .brand-logo { filter: brightness(0) invert(1); }
 
@@ -178,7 +181,7 @@ export const globalCss = `
     * { margin: 0; padding: 0; box-sizing: border-box; min-width: 0; }
     html { scroll-behavior: smooth; }
     body {
-      font-family: 'Futura', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: var(--c-bg);
       color: var(--c-text);
       line-height: 1.6;
@@ -340,7 +343,8 @@ export const s = {
       .fontWeight("800")
       .marginBottom("12px")
       .color(colors.text)
-      .letterSpacing("-0.03em"),
+      .letterSpacing("-0.03em")
+      .fontFamily("var(--font-display)"),
     { medium: fontSize("34px"), large: fontSize("38px") }
   ),
 
@@ -388,7 +392,7 @@ export const s = {
   ),
 
   pageTitle: cn(
-    fontSize("32px").fontWeight("700").marginBottom("16px").color(colors.text).letterSpacing("-0.02em"),
+    fontSize("32px").fontWeight("700").marginBottom("16px").color(colors.text).letterSpacing("-0.02em").fontFamily("var(--font-display)"),
     { medium: fontSize("40px"), large: fontSize("44px") }
   ),
 
@@ -449,8 +453,8 @@ export const s = {
   ),
 
   // ── Content typography ────────────────────────────────────────────────────
-  h2: cn(fontSize("24px").fontWeight("700").marginTop("56px").marginBottom("20px").color(colors.text).letterSpacing("-0.01em")),
-  h3: cn(fontSize("18px").fontWeight("600").marginTop("36px").marginBottom("14px").color(colors.text)),
+  h2: cn(fontSize("24px").fontWeight("700").marginTop("56px").marginBottom("20px").color(colors.text).letterSpacing("-0.01em").fontFamily("var(--font-display)")),
+  h3: cn(fontSize("18px").fontWeight("600").marginTop("36px").marginBottom("14px").color(colors.text).fontFamily("var(--font-display)")),
   p:  cn(fontSize("15px").color(colors.textMuted).marginBottom("20px").lineHeight("1.8")),
   ul: cn(paddingLeft("24px").marginBottom("20px")),
   li: cn(fontSize("16px").color(colors.textMuted).marginBottom("12px").lineHeight("1.7")),
