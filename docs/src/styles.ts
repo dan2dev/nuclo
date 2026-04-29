@@ -207,6 +207,9 @@ img, svg { display: block; }
 .docs-content {
   padding: 56px 60px;
   max-width: 780px;
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 .docs-content h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 16px; line-height: 1.2; }
 .docs-content h2 {
@@ -415,11 +418,19 @@ img, svg { display: block; }
 @media (max-width: 900px) {
   .docs-layout { grid-template-columns: 1fr; }
   .docs-sidebar { display: none; }
-  .docs-content { padding: 36px 24px; }
+  .docs-content { padding: 36px 24px; max-width: 100%; }
   .examples-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
   .ecode { font-size: 0.75rem; }
+  .docs-content h1 { font-size: 1.75rem; }
+  .docs-content h2 { font-size: 1.2rem; padding-top: 36px; margin-top: 36px; }
+  .docs-content { padding: 28px 18px; max-width: 100%; }
+  .docs-content pre, .docs-content .api-sig, .docs-content .code-block-frame { max-width: 100%; overflow-x: auto; }
+  .examples-grid { grid-template-columns: 1fr; }
+  .ecard-top { padding: 16px 16px 0; }
+  .epreview { padding: 20px 16px; }
+  .ecode { padding: 14px 16px; }
 }
 `;
 
@@ -592,8 +603,8 @@ export const s = {
 
   // ── Steps ─────────────────────────────────────────────────────────────────
   stepsGrid: cn(
-    display("grid").gridTemplateColumns("repeat(3,1fr)").gap("24px"),
-    { medium: gridTemplateColumns("repeat(3,1fr)") }
+    display("grid").gridTemplateColumns("1fr").gap("16px"),
+    { medium: gridTemplateColumns("repeat(3,1fr)").gap("24px") }
   ),
 
   stepNum: cn(

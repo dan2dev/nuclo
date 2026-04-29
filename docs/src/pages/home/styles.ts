@@ -2,13 +2,14 @@ import { cn, colors } from "../../styles.ts";
 
 export const hs = {
   heroSection: cn(
-    padding("34px 0 88px")
+    padding("40px 0 56px"),
+    { medium: padding("34px 0 88px") }
   ),
 
   heroInner: cn(
-    display("grid").gridTemplateColumns("1fr 1fr")
-      .gap("64px").alignItems("center"),
-    { medium: gridTemplateColumns("1fr 1fr") }
+    display("grid").gridTemplateColumns("1fr")
+      .gap("48px").alignItems("center"),
+    { medium: gridTemplateColumns("1fr 1fr").gap("64px") }
   ),
 
   heroRule: cn(
@@ -88,15 +89,17 @@ export const hs = {
 
   // Philosophy section
   philosophySection: cn(
-    padding("88px 0")
+    padding("56px 0")
       .borderTop(`1px solid ${colors.border}`)
       .borderBottom(`1px solid ${colors.border}`)
-      .backgroundColor(colors.bgCard)
+      .backgroundColor(colors.bgCard),
+    { medium: padding("88px 0") }
   ),
 
   philosophyInner: cn(
-    display("grid").gridTemplateColumns("1fr 1fr")
-      .gap("80px").alignItems("center")
+    display("grid").gridTemplateColumns("1fr")
+      .gap("48px").alignItems("center"),
+    { medium: gridTemplateColumns("1fr 1fr").gap("80px") }
   ),
 
   philosophyQuote: cn(
@@ -129,11 +132,15 @@ export const hs = {
 
   // Features section
   featuresSection: cn(
-    padding("88px 0")
+    padding("56px 0"),
+    { medium: padding("88px 0") }
   ),
 
   // Quick start section
-  quickStartSection: cn(padding("88px 0")),
+  quickStartSection: cn(
+    padding("56px 0"),
+    { medium: padding("88px 0") }
+  ),
 
   quickStartStep: cn(
     backgroundColor(colors.bgCard)
@@ -146,11 +153,15 @@ export const hs = {
   stepHeader: cn(padding("22px 24px 16px")),
 
   // Examples teaser section
-  examplesTeaserSection: cn(padding("88px 0")),
+  examplesTeaserSection: cn(
+    padding("56px 0"),
+    { medium: padding("88px 0") }
+  ),
 
   examplesTeaserGrid: cn(
-    display("grid").gridTemplateColumns("1fr 1fr")
-      .gap("20px").marginTop("48px")
+    display("grid").gridTemplateColumns("1fr")
+      .gap("20px").marginTop("32px"),
+    { medium: gridTemplateColumns("1fr 1fr").marginTop("48px") }
   ),
 
   teaserCard: cn(
@@ -173,7 +184,8 @@ export const hs = {
 
   // CTA section
   ctaSection: cn(
-    padding("96px 0").textAlign("center")
+    padding("60px 0").textAlign("center"),
+    { medium: padding("96px 0") }
   ),
 
   ctaActions: cn(
