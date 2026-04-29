@@ -16,8 +16,9 @@ export function Footer() {
   );
 
   const inner = cn(
-    display("flex").alignItems("center").justifyContent("space-between")
-      .flexWrap("wrap").gap("16px")
+    display("flex").alignItems("center").flexDirection("column")
+      .gap("16px").textAlign("center"),
+    { medium: flexDirection("row").justifyContent("space-between").textAlign("left") }
   );
 
   const linkStyle = cn(
@@ -48,7 +49,7 @@ export function Footer() {
           alt: "Nuclo",
           class: "brand-logo",
         },
-        cn(height("22px").width("auto").opacity("0.55"))
+        cn(height("40px").width("auto"))
         ),
         // Center: credit
         span(
