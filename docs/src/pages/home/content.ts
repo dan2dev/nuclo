@@ -10,7 +10,7 @@ export const INSTALL_CMD = "npm install nuclo";
 export const HERO_STATS = [
   { num: "0",   sup: "deps", label: "Zero dependencies" },
   { num: "140", sup: "+",    label: "HTML & SVG tags" },
-  { num: "~3",  sup: "kb",   label: "Gzipped bundle" },
+  { num: "~16",  sup: "kb",   label: "Gzipped bundle" },
 ];
 
 export const HERO_CODE = `<span class="kw">import</span> <span class="st">'nuclo'</span>
@@ -95,7 +95,7 @@ export const FEATURES = [
   {
     num: "02 — LIGHTWEIGHT",
     title: "Zero dependencies",
-    desc: "~3kb gzipped, zero runtime dependencies. Ships nothing you don't use.",
+    desc: "~16kb gzipped, zero runtime dependencies. Ships nothing you don't use.",
   },
   {
     num: "03 — TYPED",
