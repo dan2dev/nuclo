@@ -1,354 +1,87 @@
-import { routeMap } from "./route-definitions.ts";
-
 export interface PageMeta {
   title: string;
   description: string;
   keywords?: string;
   type?: "TechArticle" | "WebPage" | "ItemList" | "CollectionPage";
-  datePublished?: string;
-  dateModified?: string;
 }
 
 export const SEO_BASE_URL = "https://nuclo.dan2.dev/";
 
 export const routeMeta: Record<string, PageMeta> = {
   home: {
-    title: "Nuclo - Imperative DOM Framework",
+    title: "Nuclo — Lightweight Imperative DOM Framework",
     description:
-      "A lightweight, imperative DOM framework with explicit update() calls. Build interactive web apps with plain functions, mutable state, and direct DOM rendering.",
-    keywords: "nuclo, imperative dom framework, explicit updates, javascript, typescript, ui framework",
+      "A lightweight imperative DOM framework. Mutate plain state, call update()—Nuclo syncs the DOM. No proxies, no virtual DOM, no magic.",
+    keywords: "nuclo, imperative dom framework, explicit updates, javascript, typescript, ui framework, lightweight",
     type: "WebPage",
   },
-  "getting-started": {
-    title: "Getting Started - Nuclo",
+  docs: {
+    title: "Docs — Nuclo",
     description:
-      "Learn how to get started with Nuclo. Installation, core concepts, and your first imperative app with explicit update() calls.",
-    keywords: "nuclo tutorial, getting started, installation, setup, quick start",
-    type: "TechArticle",
-  },
-  "core-api": {
-    title: "Core API - Nuclo",
-    description:
-      "Explore Nuclo's core API, including its explicit update cycle, DOM rendering, list synchronization, and event utilities.",
-    keywords: "nuclo api, core api, explicit updates, dom rendering",
-    type: "TechArticle",
-  },
-  "tag-builders": {
-    title: "Tag Builders - Nuclo",
-    description: "Learn about Nuclo's tag builder functions for creating DOM elements with a clean, functional API.",
-    keywords: "tag builders, dom creation, elements, nuclo tags",
-    type: "TechArticle",
-  },
-  styling: {
-    title: "Styling - Nuclo",
-    description: "Discover how to style your Nuclo applications with inline styles, CSS-in-JS, and external stylesheets.",
-    keywords: "nuclo styling, css, inline styles, css-in-js",
-    type: "TechArticle",
-  },
-  pitfalls: {
-    title: "Common Pitfalls - Nuclo",
-    description: "Avoid common mistakes when working with Nuclo. Best practices and troubleshooting guide.",
-    keywords: "nuclo pitfalls, common mistakes, best practices, troubleshooting",
+      "Nuclo documentation — installation, core concepts, and full API reference.",
+    keywords: "nuclo documentation, api reference, getting started, update, list, when, on",
     type: "TechArticle",
   },
   examples: {
-    title: "Examples - Nuclo",
+    title: "Examples — Nuclo",
     description:
-      "Browse interactive examples showcasing Nuclo's capabilities - from simple counters to complex applications.",
-    keywords: "nuclo examples, demos, sample code, tutorials",
+      "Interactive examples for Nuclo — counter, todo list, search filter, and async loading states.",
+    keywords: "nuclo examples, counter, todo, search, async, live demos",
     type: "CollectionPage",
-  },
-  "examples/counter": {
-    title: "Counter Example - Nuclo",
-    description: "A simple counter example demonstrating Nuclo's explicit update cycle.",
-    keywords: "counter example, explicit updates, nuclo tutorial",
-    type: "TechArticle",
-  },
-  "examples/todo": {
-    title: "Todo App Example - Nuclo",
-    description: "Build a todo application with Nuclo. Learn about state, events, and list rendering.",
-    keywords: "todo app, nuclo example, list rendering",
-    type: "TechArticle",
-  },
-  "examples/subtasks": {
-    title: "Subtasks Example - Nuclo",
-    description:
-      "Advanced todo example with nested subtasks demonstrating explicit state mutation and list composition.",
-    keywords: "subtasks, nested state, complex example",
-    type: "TechArticle",
-  },
-  "examples/search": {
-    title: "Search Example - Nuclo",
-    description: "Implement a search interface with filtering using explicit state mutations and update().",
-    keywords: "search, filtering, explicit updates",
-    type: "TechArticle",
-  },
-  "examples/async": {
-    title: "Async Data Example - Nuclo",
-    description:
-      "Handle asynchronous data fetching, explicit loading states, and manual update() calls in Nuclo applications.",
-    keywords: "async, data fetching, loading states, promises",
-    type: "TechArticle",
-  },
-  "examples/forms": {
-    title: "Forms Example - Nuclo",
-    description: "Create interactive forms with validation using Nuclo.",
-    keywords: "forms, validation, input handling",
-    type: "TechArticle",
-  },
-  "examples/nested": {
-    title: "Nested Components Example - Nuclo",
-    description: "Learn how to compose and nest components in Nuclo applications.",
-    keywords: "components, composition, nested components",
-    type: "TechArticle",
-  },
-  "examples/animations": {
-    title: "Animations Example - Nuclo",
-    description: "Add smooth animations and transitions to your Nuclo applications.",
-    keywords: "animations, transitions, effects",
-    type: "TechArticle",
-  },
-  "examples/routing": {
-    title: "Routing Example - Nuclo",
-    description: "Implement client-side routing in Nuclo applications.",
-    keywords: "routing, navigation, spa",
-    type: "TechArticle",
-  },
-  "examples/styled-card": {
-    title: "Styled Card Example - Nuclo",
-    description: "Create beautiful styled components with Nuclo's styling capabilities.",
-    keywords: "styled components, css, card design",
-    type: "TechArticle",
   },
 };
 
-const exampleRoutes = [...routeMap.keys()].filter(p => p.startsWith("examples/"));
+export function getMetaForRoute(route: string): PageMeta {
+  return routeMeta[route] ?? routeMeta["home"];
+}
 
-/**
- * Updates the page title and meta tags based on the current route
- */
-export function updatePageMeta(route: string) {
+export function updatePageMeta(route: string): void {
   const meta = getMetaForRoute(route);
-  const routeUrl = getRouteUrl(route);
-
   document.title = meta.title;
 
-  updateMetaTag("name", "title", meta.title);
-  updateMetaTag("name", "description", meta.description);
-  if (meta.keywords) {
-    updateMetaTag("name", "keywords", meta.keywords);
+  function setMeta(name: string, content: string) {
+    let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
+    if (!el) { el = document.createElement('meta'); el.name = name; document.head.appendChild(el); }
+    el.content = content;
+  }
+  function setOg(property: string, content: string) {
+    let el = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement | null;
+    if (!el) { el = document.createElement('meta'); el.setAttribute('property', property); document.head.appendChild(el); }
+    el.content = content;
   }
 
-  updateMetaTag("property", "og:title", meta.title);
-  updateMetaTag("property", "og:description", meta.description);
-  updateMetaTag("property", "og:url", routeUrl);
+  setMeta('description', meta.description);
+  if (meta.keywords) setMeta('keywords', meta.keywords);
+  setOg('og:title', meta.title);
+  setOg('og:description', meta.description);
 
-  updateMetaTag("name", "twitter:title", meta.title);
-  updateMetaTag("name", "twitter:description", meta.description);
-  updateMetaTag("name", "twitter:url", routeUrl);
-
-  updateLinkTag("canonical", routeUrl);
-
-  updateStructuredData(route);
-}
-
-export function getMetaForRoute(route: string): PageMeta {
-  return routeMeta[route] || routeMeta.home;
-}
-
-export function getRouteUrl(route: string): string {
-  return route === "home" ? SEO_BASE_URL : `${SEO_BASE_URL}${route}`;
-}
-
-function updateMetaTag(attribute: string, name: string, content: string) {
-  let element = document.querySelector(`meta[${attribute}="${name}"]`) as HTMLMetaElement;
-
-  if (!element) {
-    element = document.createElement("meta");
-    element.setAttribute(attribute, name);
-    document.head.appendChild(element);
-  }
-
-  element.setAttribute("content", content);
-}
-
-function updateLinkTag(rel: string, href: string) {
-  let element = document.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement;
-
-  if (!element) {
-    element = document.createElement("link");
-    element.setAttribute("rel", rel);
-    document.head.appendChild(element);
-  }
-
-  element.setAttribute("href", href);
+  const pageUrl = route === 'home' ? SEO_BASE_URL : `${SEO_BASE_URL}${route}`;
+  let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+  if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+  canonical.href = pageUrl;
 }
 
 export function generateStructuredData(route: string): object[] {
-  const routeUrl = getRouteUrl(route);
   const meta = getMetaForRoute(route);
+  const pageUrl = route === 'home' ? SEO_BASE_URL : `${SEO_BASE_URL}${route}`;
 
-  const schemas: object[] = [];
-
-  schemas.push({
+  const website = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "@id": `${SEO_BASE_URL}#website`,
     name: "Nuclo",
-    description: "A lightweight, imperative DOM framework with explicit update() calls",
     url: SEO_BASE_URL,
-    inLanguage: "en-US",
-    publisher: {
-      "@type": "Person",
-      "@id": `${SEO_BASE_URL}#author`,
-      name: "Danilo Castro",
-      url: "https://dan2.dev",
-      sameAs: ["https://github.com/dan2dev", "https://twitter.com/dan2dev"],
-    },
-    potentialAction: {
-      "@type": "SearchAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: `${SEO_BASE_URL}?q={search_term_string}`,
-      },
-      "query-input": "required name=search_term_string",
-    },
-  });
-
-  schemas.push({
-    "@context": "https://schema.org",
-    "@type": "Person",
-    "@id": `${SEO_BASE_URL}#author`,
-    name: "Danilo Castro",
-    givenName: "Danilo",
-    familyName: "Castro",
-    url: "https://dan2.dev",
-    sameAs: ["https://github.com/dan2dev", "https://twitter.com/dan2dev"],
-  });
-
-  schemas.push({
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "@id": `${SEO_BASE_URL}#software`,
-    name: "Nuclo",
-    description: "A lightweight, imperative DOM framework with explicit update() calls",
-    applicationCategory: "DeveloperApplication",
-    operatingSystem: "Web",
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-    },
-    author: {
-      "@id": `${SEO_BASE_URL}#author`,
-    },
-    url: SEO_BASE_URL,
-    softwareVersion: "Latest",
-    programmingLanguage: {
-      "@type": "ComputerLanguage",
-      name: "TypeScript",
-      url: "https://www.typescriptlang.org/",
-    },
-    codeRepository: "https://github.com/dan2dev/nuclo",
-    license: "https://github.com/dan2dev/nuclo/blob/main/LICENSE",
-  });
-
-  const breadcrumbs = generateBreadcrumbs(route);
-  if (breadcrumbs.length > 1) {
-    schemas.push({
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: breadcrumbs.map((crumb, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        name: crumb.name,
-        item: crumb.url,
-      })),
-    });
-  }
-
-  const pageType = meta.type || "WebPage";
-  const pageSchema: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": pageType,
-    "@id": routeUrl,
-    url: routeUrl,
-    name: meta.title,
-    description: meta.description,
-    inLanguage: "en-US",
-    isPartOf: {
-      "@id": `${SEO_BASE_URL}#website`,
-    },
-    about: {
-      "@id": `${SEO_BASE_URL}#software`,
-    },
-    author: {
-      "@id": `${SEO_BASE_URL}#author`,
-    },
-    publisher: {
-      "@id": `${SEO_BASE_URL}#author`,
-    },
+    description: "A lightweight imperative DOM framework",
   };
 
-  if (pageType === "TechArticle") {
-    pageSchema.articleSection = route.startsWith("examples/") ? "Examples" : "Documentation";
-    pageSchema.keywords = meta.keywords?.split(", ") || [];
-    pageSchema.mainEntityOfPage = routeUrl;
-  }
+  const page: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": meta.type ?? "WebPage",
+    name: meta.title,
+    description: meta.description,
+    url: pageUrl,
+    isPartOf: { "@id": `${SEO_BASE_URL}#website` },
+  };
 
-  schemas.push(pageSchema);
-
-  if (route === "examples") {
-    schemas.push({
-      "@context": "https://schema.org",
-      "@type": "ItemList",
-      name: "Nuclo Examples",
-      description: "Interactive examples showcasing Nuclo's capabilities",
-      numberOfItems: exampleRoutes.length,
-      itemListElement: exampleRoutes.map((exRoute, index) => {
-        const exMeta = routeMeta[exRoute];
-        return {
-          "@type": "ListItem",
-          position: index + 1,
-          url: `${SEO_BASE_URL}${exRoute}`,
-          name: exMeta.title,
-          description: exMeta.description,
-        };
-      }),
-    });
-  }
-
-  return schemas;
-}
-
-function generateBreadcrumbs(route: string): Array<{ name: string; url: string }> {
-  const breadcrumbs = [{ name: "Home", url: SEO_BASE_URL }];
-
-  if (route === "home") {
-    return breadcrumbs;
-  }
-
-  if (route.startsWith("examples/")) {
-    breadcrumbs.push({ name: "Examples", url: `${SEO_BASE_URL}examples` });
-    const meta = routeMeta[route];
-    breadcrumbs.push({ name: meta.title.replace(" - Nuclo", ""), url: `${SEO_BASE_URL}${route}` });
-  } else {
-    const meta = routeMeta[route];
-    breadcrumbs.push({ name: meta.title.replace(" - Nuclo", ""), url: `${SEO_BASE_URL}${route}` });
-  }
-
-  return breadcrumbs;
-}
-
-function updateStructuredData(route: string) {
-  const schemas = generateStructuredData(route);
-
-  const existingScripts = document.querySelectorAll('script[type="application/ld+json"][data-dynamic="true"]');
-  existingScripts.forEach((script) => script.remove());
-
-  const script = document.createElement("script");
-  script.setAttribute("type", "application/ld+json");
-  script.setAttribute("data-dynamic", "true");
-  script.textContent = JSON.stringify(schemas, null, 2);
-  document.head.appendChild(script);
+  return [website, page];
 }

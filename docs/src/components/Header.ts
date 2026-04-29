@@ -1,98 +1,42 @@
-import { cn, colors } from "../styles.ts";
-import { setRoute, getCurrentRoute, type Route } from "../router.ts";
-import { MenuIcon, XIcon, SunIcon, MoonIcon } from "./icons.ts";
+import { cn, colors, s } from "../styles.ts";
+import { setRoute, getCurrentRoute } from "../router.ts";
 import { toggleTheme, isDark } from "../theme.ts";
 
-const navLinks: { label: string; route: Route }[] = [
-  { label: "Getting Started", route: "getting-started" },
-  { label: "API",             route: "core-api" },
-  { label: "Styling",         route: "styling" },
-  { label: "Examples",        route: "examples" },
+const NAV_LINKS: { label: string; route: string }[] = [
+  { label: "Home",     route: "home" },
+  { label: "Docs",     route: "docs" },
+  { label: "Examples", route: "examples" },
 ];
 
-function GitHubButton() {
-  return a(
-    {
-      href: "https://github.com/dan2dev/nuclo",
-      target: "_blank",
-      rel: "noopener noreferrer",
-    },
-    cn(
-      display("flex")
-        .alignItems("center")
-        .padding("8px 16px")
-        .borderRadius("8px")
-        .backgroundColor(colors.bgIcon)
-        .border(`1px solid ${colors.border}`)
-        .fontSize("13px")
-        .fontWeight("600")
-        .color(colors.primary)
-        .cursor("pointer")
-        .transition("all 0.15s")
-        .gap("4px"),
-      { hover: backgroundColor(colors.primaryAlpha08).borderColor(colors.borderPrimary) }
-    ),
-    "GitHub ↗",
+function GitHubIcon() {
+  return svgSvg(
+    { width: "15", height: "15", viewBox: "0 0 24 24", fill: "currentColor" },
+    pathSvg({ d: "M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" })
   );
 }
 
-function ThemeToggle() {
-  return button(
-    cn(
-      display("flex")
-        .alignItems("center")
-        .justifyContent("center")
-        .width("36px")
-        .height("36px")
-        .borderRadius("8px")
-        .backgroundColor("transparent")
-        .border(`1px solid ${colors.border}`)
-        .color(colors.textMuted)
-        .cursor("pointer")
-        .transition("all 0.15s"),
-      { hover: color(colors.primary).borderColor(colors.borderPrimary).backgroundColor(colors.primaryAlpha08) }
-    ),
-    { ariaLabel: "Toggle theme" },
-    when(() => isDark(), SunIcon()).else(MoonIcon()),
-    on("click", toggleTheme)
-  );
-}
-
-/**
- * activeRoute: explicit value used during SSR (avoids reading global state).
- * On the client it is undefined, so getCurrentRoute() is called reactively.
- */
 export function Header({ activeRoute }: { activeRoute?: string } = {}) {
-  let mobileMenuOpen = false;
-
   function closeMobileMenu() {
-    mobileMenuOpen = false;
     update();
   }
 
-  function NavLink(label: string, route: Route) {
-    const isActive = () => {
-      const r = activeRoute ?? getCurrentRoute();
-      if (route === "examples") return r === "examples" || r.startsWith("examples/");
-      return r === route;
-    };
+  function isActive(route: string): boolean {
+    const r = activeRoute ?? getCurrentRoute();
+    return r === route;
+  }
 
-    const base = import.meta.env.BASE_URL || "/";
+  const base = typeof import.meta !== 'undefined' ? (import.meta.env?.BASE_URL ?? "/") : "/";
+
+  function NavLink(label: string, route: string) {
     return a(
       { href: route === "home" ? base : `${base}${route}` },
       cn(
-        display("flex")
-          .alignItems("center")
-          .padding("8px 16px")
-          .borderRadius("8px")
-          .fontSize("14px")
-          .fontWeight("500")
-          .color(colors.textMuted)
-          .cursor("pointer")
-          .transition("all 0.15s"),
-        { hover: backgroundColor(colors.primaryAlpha08).color(colors.primary) }
+        display("inline-flex").alignItems("center").padding("6px 13px")
+          .borderRadius("6px").fontSize("0.875rem").fontWeight("500")
+          .color(colors.textDim).transition("color 0.18s ease, background 0.18s ease"),
+        { hover: color(colors.text).backgroundColor(colors.bgSecondary) }
       ),
-      { style: () => ({ color: isActive() ? "var(--c-primary)" : undefined }) },
+      { style: () => ({ color: isActive(route) ? "var(--c-text)" : undefined }) },
       label,
       on("click", (e) => {
         e.preventDefault();
@@ -102,113 +46,93 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
     );
   }
 
-  function Brand() {
-    const base = import.meta.env.BASE_URL || "/";
-    return a(
-      { href: base },
-      cn(
-        display("flex")
-          .alignItems("center")
-          .gap("8px")
-          .cursor("pointer")
-          .transition("opacity 0.15s"),
-        { hover: opacity("0.8") }
-      ),
-      img(
-        { src: "/nuclo-logo.svg", alt: "Nuclo", class: "brand-logo" },
-        cn(height("80px").width("auto").flexShrink("0").display("block")),
-      ),
-      on("click", (e) => {
-        e.preventDefault();
-        setRoute("home");
-        closeMobileMenu();
-      })
-    );
-  }
+  const navInnerStyle = cn(
+    display("grid")
+      .gridTemplateColumns("1fr auto 1fr")
+      .alignItems("center")
+  );
 
-  function MobileMenuButton() {
-    return button(
-      cn(
-        display("flex")
-          .alignItems("center")
-          .justifyContent("center")
-          .width("40px")
-          .height("40px")
-          .borderRadius("8px")
-          .backgroundColor("transparent")
-          .border("none")
-          .color(colors.text)
-          .cursor("pointer")
-          .transition("all 0.15s"),
-        { medium: display("none") }
-      ),
-      { ariaLabel: () => mobileMenuOpen ? "Close navigation menu" : "Open navigation menu" },
-      when(() => mobileMenuOpen, XIcon()).else(MenuIcon()),
-      on("click", () => { mobileMenuOpen = !mobileMenuOpen; update(); })
-    );
-  }
+  const logoStyle = cn(
+    display("flex").alignItems("center")
+      .justifySelf("center").cursor("pointer")
+      .transition("opacity 0.15s ease"),
+    { hover: opacity("0.8") }
+  );
 
-  function MobileMenu() {
-    return when(
-      () => mobileMenuOpen,
+  const rightGroup = cn(
+    display("flex").alignItems("center").gap("4px").justifySelf("end")
+  );
+
+  const navLinksGroup = cn(display("flex").alignItems("center").gap("2px"));
+
+  const githubBtn = cn(
+    display("flex").alignItems("center").gap("6px")
+      .fontSize("0.8125rem").fontWeight("500")
+      .padding("6px 14px").borderRadius("6px")
+      .border(`1px solid ${colors.border}`)
+      .color(colors.textDim).transition("all 0.18s ease"),
+    { hover: color(colors.text).borderColor(colors.borderLight) }
+  );
+
+  const themeBtn = cn(
+    display("flex").alignItems("center").justifyContent("center")
+      .width("34px").height("34px").borderRadius("6px")
+      .border(`1px solid ${colors.border}`)
+      .color(colors.textDim).transition("all 0.18s ease").fontSize("15px").flexShrink("0"),
+    { hover: color(colors.text).borderColor(colors.borderLight).backgroundColor(colors.bgSecondary) }
+  );
+
+  const navStyle = cn(
+    position("fixed").top("0").left("0").right("0")
+      .zIndex(200).height("80px")
+      .backgroundColor(colors.bgNav)
+      .borderBottom(`1px solid ${colors.border}`)
+      .display("flex").alignItems("center")
+  );
+
+  return nav(
+    navStyle,
+    div(
+      s.container,
+      cn(width("100%")),
       div(
-        cn(
-          position("fixed")
-            .top("96px")
-            .left("0")
-            .right("0")
-            .borderBottom(`1px solid ${colors.border}`)
-            .padding("12px 24px 20px")
-            .zIndex(99)
-            .display("flex")
-            .flexDirection("column")
-            .gap("4px")
+        navInnerStyle,
+        // Left: empty
+        div(),
+        // Center: logo
+        a(
+          { href: base },
+          logoStyle,
+          on("click", (e) => { e.preventDefault(); setRoute("home"); }),
+          img({
+            src: "/nuclo-logo.svg",
+            alt: "Nuclo",
+            class: "brand-logo",
+          },
+          cn(height("64px").width("auto").display("block"))
+          ),
         ),
-        { style: { backdropFilter: "blur(16px)", background: "var(--c-mobile-menu-bg)" } },
-        ...navLinks.map((link) => NavLink(link.label, link.route)),
+        // Right: nav links + github + theme toggle
         div(
-          cn(marginTop("12px").paddingTop("12px").borderTop(`1px solid ${colors.border}`)),
-          GitHubButton()
-        )
-      )
-    );
-  }
-
-  return div(
-    header(
-      cn(
-        position("fixed")
-          .top("0")
-          .left("0")
-          .right("0")
-          .zIndex(100)
-          .borderBottom(`1px solid ${colors.border}`)
+          rightGroup,
+          div(
+            navLinksGroup,
+            ...NAV_LINKS.map(({ label, route }) => NavLink(label, route)),
+          ),
+          a(
+            { href: "https://github.com/dan2dev/nuclo", target: "_blank", rel: "noopener noreferrer" },
+            githubBtn,
+            GitHubIcon(),
+            "GitHub",
+          ),
+          button(
+            themeBtn,
+            { title: "Toggle theme" },
+            when(() => isDark(), "🌙").else("☀️"),
+            on("click", toggleTheme),
+          ),
+        ),
       ),
-      { style: { backdropFilter: "blur(16px)", background: "var(--c-header-bg)" } },
-      div(
-        cn(
-          display("flex")
-            .alignItems("center")
-            .justifyContent("space-between")
-            .maxWidth("1440px")
-            .margin("0 auto")
-            .padding("0 24px")
-            .height("96px"),
-          { medium: padding("0 48px") }
-        ),
-        Brand(),
-        nav(
-          cn(display("none").alignItems("center").gap("4px"), { medium: display("flex") }),
-          ...navLinks.map((link) => NavLink(link.label, link.route))
-        ),
-        div(
-          cn(display("flex").alignItems("center").gap("8px")),
-          div(cn(display("none"), { medium: display("flex") }), GitHubButton()),
-          ThemeToggle(),
-          MobileMenuButton()
-        )
-      )
     ),
-    MobileMenu()
   );
 }

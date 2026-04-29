@@ -1,317 +1,119 @@
-import { setRoute, type Route } from "../../router.ts";
-import type { ExampleContent } from "../../content/examples.ts";
+import { cn, colors, s } from "../../styles.ts";
+import { hs } from "./styles.ts";
 import {
-  EXAMPLE_ICONS,
-  HERO_CODE_LINES,
-  HOME_COPY,
-  HOMEPAGE_EXAMPLE_IDS,
-  HOME_FEATURES,
-  QUICK_START_TYPES_LINES,
-  QUICK_START_USAGE_LINES,
-  type HomeCodeLine,
+  HERO_BADGE, HERO_TITLE_LINES, HERO_DESC, INSTALL_CMD, HERO_STATS,
+  HERO_CODE, COUNTER_TEASER_CODE, TODO_TEASER_CODE,
+  PHILOSOPHY_QUOTE, PHILOSOPHY_POINTS,
+  FEATURES, QUICK_START_STEPS,
 } from "./content.ts";
-import { homeCodeToneColors, hs } from "./styles.ts";
+import { CodeBlock } from "../../components/CodeBlock.ts";
+import { GitHubSvg } from "../../components/icons.ts";
+import { setRoute } from "../../router.ts";
 
-type ButtonSize = "compact" | "regular";
-type ButtonTone = "outline-accent" | "outline-neutral" | "primary";
-type IconSize = "large" | "regular";
-
-function ActionButton(
-  label: string,
-  onClick: () => void,
-  tone: ButtonTone,
-  size: ButtonSize = "regular",
-) {
-  const sizeStyle = size === "compact" ? hs.buttonCompact : hs.buttonRegular;
-
-  if (tone === "outline-accent") {
-    return button(hs.buttonBase, sizeStyle, hs.buttonOutlineAccent, label, on("click", onClick));
-  }
-
-  if (tone === "outline-neutral") {
-    return button(hs.buttonBase, sizeStyle, hs.buttonOutlineNeutral, label, on("click", onClick));
-  }
-
-  return button(hs.buttonBase, sizeStyle, hs.buttonPrimary, label, on("click", onClick));
+function DemoDot(color: string) {
+  return div(hs.heroDot, { style: `background:${color}` });
 }
 
-function IconBadge(icon: string, size: IconSize = "regular") {
-  return div(
-    size === "large" ? hs.iconBadgeLarge : hs.iconBadge,
-    span(size === "large" ? hs.iconTextLarge : hs.iconText, icon),
-  );
-}
+function HeroDemoCard() {
+  let activeTab: 'preview' | 'code' = 'preview';
 
-function InteractiveBadge(label: string) {
-  return span(
-    hs.interactiveBadge,
-    div(hs.interactiveBadgeDot),
-    label,
-  );
-}
-
-function LiveBadge(label: string) {
-  return span(
-    hs.liveBadge,
-    div(hs.liveBadgeDot),
-    label,
-  );
-}
-
-function WindowHeader(fileName: string) {
-  return div(
-    hs.terminalHeader,
-    div(hs.windowDot, hs.windowDotRed),
-    div(hs.windowDot, hs.windowDotAmber),
-    div(hs.windowDot, hs.windowDotGreen),
-    span(hs.terminalFileName, fileName),
-  );
-}
-
-function renderCodeLines(lines: HomeCodeLine[], compact = false) {
-  return lines.map(({ text, tone }) =>
-    div(
-      compact ? hs.codeLineCompact : hs.codeLine,
-      { style: { color: tone ? homeCodeToneColors[tone] : homeCodeToneColors.default } },
-      text || "\u00a0",
-    )
-  );
-}
-
-function CodeBlockLines(lines: HomeCodeLine[], compact = false) {
-  return div(
-    compact ? hs.codeLinesCompact : hs.codeLinesLarge,
-    ...renderCodeLines(lines, compact),
-  );
-}
-
-function SectionIntro(title: string, subtitle: string) {
-  return div(
-    hs.sectionIntro,
-    span(hs.sectionTitle, title),
-    span(hs.sectionSubtitle, subtitle),
-  );
-}
-
-function StepInfo(
-  icon: string,
-  label: string,
-  title: string,
-  description: string,
-  narrow = false,
-) {
-  return div(
-    narrow ? hs.stepInfoCompact : hs.stepInfo,
-    IconBadge(icon),
-    span(hs.stepLabel, label),
-    span(hs.stepTitle, title),
-    span(narrow ? hs.bodyTextNarrow : hs.bodyTextRelaxed, description),
-  );
-}
-
-function HeroCodeCard() {
-  return div(
-    hs.card,
-    hs.heroCodeCard,
-    WindowHeader("app.ts"),
-    div(
-      hs.heroCodeScroller,
-      CodeBlockLines(HERO_CODE_LINES),
-    ),
-  );
-}
-
-function LiveDemoCard() {
+  // Live counter state inside the demo
   let count = 0;
 
-  const changeCount = (delta: number) => () => {
-    count += delta;
-    update();
-  };
-
-  const resetCount = () => {
-    count = 0;
-    update();
-  };
-
-  return div(
-    hs.card,
-    div(
-      hs.panelHeader,
-      span(hs.panelEyebrow, "LIVE DEMO"),
-      InteractiveBadge("Interactive"),
-    ),
-    div(
-      hs.demoBody,
+  function CounterPreview() {
+    return div(
+      cn(textAlign("center").width("100%")),
       div(
-        hs.demoMetricRow,
-        span(hs.demoMetricValue, () => count),
-        span(hs.counterStatusBadge, () => count % 2 === 0 ? "even" : "odd"),
+        cn(
+          fontSize("5rem").fontWeight("700").lineHeight("1").color(colors.text)
+            .marginBottom("6px").fontVariantNumeric("tabular-nums")
+            .transition("transform 0.1s ease")
+        ),
+        () => String(count),
       ),
-      span(hs.demoLabel, "LIVE COUNTER"),
       div(
-        hs.demoActions,
-        button(hs.demoIconButton, { ariaLabel: "Decrease count" }, "−", on("click", changeCount(-1))),
-        button(hs.demoPrimaryButton, { ariaLabel: "Increase count" }, "+", on("click", changeCount(1))),
-        button(hs.demoResetButton, "Reset", on("click", resetCount)),
+        cn(fontSize("0.78rem").color(colors.textMuted).letterSpacing("0.05em").marginBottom("24px")),
+        "COUNT",
       ),
-    ),
-  );
-}
-
-function StatCard() {
-  return div(
-    hs.card,
-    hs.cardBody,
-    div(
-      hs.metricRow,
-      span(hs.metricValue, "0"),
-      span(hs.metricSuffix, "deps"),
-    ),
-    span(hs.title, HOME_COPY.statLabel),
-    span(hs.bodyText, HOME_COPY.statDescription),
-  );
-}
-
-function FeatureCard(icon: string, title: string, description: string) {
-  return div(
-    hs.card,
-    hs.cardBody,
-    div(
-      hs.iconBadge,
-      span(hs.iconTextFeature, icon),
-    ),
-    span(hs.title, title),
-    span(hs.bodyTextWide, description),
-  );
-}
-
-function TagCoverageCard() {
-  return div(
-    hs.card,
-    hs.cardBody,
-    div(
-      hs.metricRow,
-      span(hs.metricValueAlt, "140"),
-      span(hs.metricSuffixAlt, "+"),
-    ),
-    span(hs.title, HOME_COPY.tagCoverageTitle),
-    span(hs.bodyTextWide, HOME_COPY.tagCoverageDescription),
-  );
-}
-
-function InstallBar() {
-  return section(
-    hs.section,
-    div(
-      hs.installBar,
       div(
-        hs.installInfo,
-        span(hs.installEyebrow, "INSTALL VIA NPM"),
-        span(hs.installCommand, HOME_COPY.installCommand),
+        cn(display("flex").gap("10px").justifyContent("center")),
+        button(
+          cn(
+            padding("9px 22px").borderRadius("6px")
+              .fontSize("0.875rem").fontWeight("600").cursor("pointer")
+              .border(`1px solid ${colors.borderLight}`).color(colors.textDim)
+              .backgroundColor(colors.bgSecondary).transition("all 0.18s ease")
+              .fontFamily("'Space Grotesk', system-ui, sans-serif"),
+            { hover: color(colors.text).borderColor(colors.primary) }
+          ),
+          "−",
+          on("click", () => { count--; update(); }),
+        ),
+        button(
+          cn(
+            padding("9px 22px").borderRadius("6px")
+              .fontSize("0.875rem").fontWeight("600").cursor("pointer")
+              .border(`1px solid transparent`).color("#fff")
+              .backgroundColor(colors.primary).transition("all 0.18s ease")
+              .fontFamily("'Space Grotesk', system-ui, sans-serif"),
+            { hover: backgroundColor(colors.primaryHover) }
+          ),
+          "Reset",
+          on("click", () => { count = 0; update(); }),
+        ),
+        button(
+          cn(
+            padding("9px 22px").borderRadius("6px")
+              .fontSize("0.875rem").fontWeight("600").cursor("pointer")
+              .border(`1px solid ${colors.borderLight}`).color(colors.textDim)
+              .backgroundColor(colors.bgSecondary).transition("all 0.18s ease")
+              .fontFamily("'Space Grotesk', system-ui, sans-serif"),
+            { hover: color(colors.text).borderColor(colors.primary) }
+          ),
+          "+",
+          on("click", () => { count++; update(); }),
+        ),
       ),
-      ActionButton("Get Started →", () => setRoute("getting-started"), "primary", "compact"),
-    ),
-  );
-}
+    );
+  }
 
-function QuickStartInstallCard() {
+  function Tab(label: string, tab: 'preview' | 'code') {
+    return button(
+      hs.demoTabBtn,
+      { style: () => ({ color: activeTab === tab ? "var(--c-primary)" : "", borderBottom: activeTab === tab ? "2px solid var(--c-primary)" : "" }) },
+      label,
+      on("click", () => { activeTab = tab; update(); }),
+    );
+  }
+
   return div(
-    hs.card,
-    hs.cardBodyLarge,
-    StepInfo("⬛", "STEP 01", "Install", "One command. Zero config. Ready to build.", true),
+    s.demoCard,
+    hs.heroDemoArea,
+    // Chrome bar
     div(
-      hs.commandRow,
-      span(hs.commandPrompt, "$"),
-      span(hs.commandText, HOME_COPY.installCommand),
+      hs.demoChrome,
+      DemoDot("#ff5f57"),
+      DemoDot("#febc2e"),
+      DemoDot("#28c840"),
+      div(hs.heroDemoFilename, "counter.ts"),
     ),
-  );
-}
-
-function QuickStartUsageCard() {
-  return div(
-    hs.card,
-    hs.splitCard,
+    // Tabs
     div(
-      hs.splitInfoPane,
-      StepInfo(
-        "💻",
-        "STEP 02",
-        "Import & Use",
-        "Import once globally. Every HTML tag becomes a function. Build UI with pure JavaScript.",
-      ),
+      hs.demoTabBar,
+      Tab("Preview", "preview"),
+      Tab("Code", "code"),
+    ),
+    // Panes
+    div(
+      hs.demoPreviewPane,
+      { style: () => ({ display: activeTab === "preview" ? "" : "none" }) },
+      CounterPreview(),
     ),
     div(
-      hs.splitCodePane,
-      CodeBlockLines(QUICK_START_USAGE_LINES, true),
+      hs.demoCodePane,
+      { style: () => ({ display: activeTab === "code" ? "" : "none" }) },
+      { innerHTML: `<pre style="margin:0;white-space:pre-wrap">${HERO_CODE}</pre>` },
     ),
-  );
-}
-
-function QuickStartTypesCard() {
-  return div(
-    hs.card,
-    hs.splitCard,
-    hs.highlightedCard,
-    div(
-      hs.splitCodePane,
-      CodeBlockLines(QUICK_START_TYPES_LINES, true),
-    ),
-    div(
-      hs.splitInfoPane,
-      StepInfo(
-        "📐",
-        "STEP 03",
-        "TypeScript Ready",
-        "Add one line to your tsconfig and get full autocomplete, type checking, and IntelliSense for every tag.",
-      ),
-    ),
-  );
-}
-
-function ReadyCard() {
-  return div(
-    hs.card,
-    hs.centeredCard,
-    IconBadge("🚀", "large"),
-    span(hs.titleLarge, "You're Ready!"),
-    span(hs.centeredBodyText, HOME_COPY.readyDescription),
-  );
-}
-
-/** Subrota de /examples — ex.: /examples/todo */
-function exampleIdToRoute(exampleId: string): Route {
-  return `examples/${exampleId}` as Route;
-}
-
-function exampleRouteHref(exampleId: string) {
-  const route = exampleIdToRoute(exampleId);
-  const base = import.meta.env.BASE_URL || "/";
-  return `${base}${route}`;
-}
-
-function openExample(exampleId: string) {
-  setRoute(exampleIdToRoute(exampleId));
-}
-
-function ExampleCard(example: ExampleContent) {
-  return a(
-    { href: exampleRouteHref(example.id) },
-    hs.card,
-    hs.cardInteractive,
-    hs.cardBody,
-    div(
-      hs.exampleTopRow,
-      span(hs.exampleIcon, EXAMPLE_ICONS[example.id] ?? "📄"),
-      LiveBadge("Live"),
-    ),
-    span(hs.title, example.title),
-    span(hs.bodyTextWide, example.description),
-    span(hs.exampleLink, "View Example →"),
-    on("click", (e) => {
-      e.preventDefault();
-      openExample(example.id);
-    }),
   );
 }
 
@@ -319,90 +121,359 @@ export function HomeHeroSection() {
   return section(
     hs.heroSection,
     div(
-      hs.heroBadge,
-      div(hs.heroBadgeDot),
-      span(hs.heroBadgeText, HOME_COPY.heroBadge),
-    ),
-    div(
-      hs.heroTitleGroup,
-      span(hs.heroTitle, "Build Imperative,"),
-      span(hs.heroTitleAccent, "Explicit UIs."),
-    ),
-    p(hs.heroSubtitle, HOME_COPY.heroDescription),
-    div(
-      hs.actionRow,
-      ActionButton("Get Started →", () => setRoute("getting-started"), "primary"),
-      ActionButton("View Examples", () => setRoute("examples"), "outline-accent"),
+      s.container,
+      div(
+        hs.heroInner,
+        // Left: copy
+        div(
+          // Badge
+          div(
+            s.badge,
+            cn(marginBottom("22px")),
+            HERO_BADGE,
+          ),
+          // Rule
+          div(hs.heroRule),
+          // Title
+          h1(
+            hs.heroTitle,
+            ...HERO_TITLE_LINES.map((line, _i) => {
+              // "Call update()." gets styled update() code
+              if (line.includes("update()")) {
+                return div(
+                  line.replace("Call update().", "Call "),
+                  code(
+                    cn(
+                      fontFamily("'JetBrains Mono', monospace")
+                        .fontSize("0.85em").color(colors.primaryHover)
+                        .backgroundColor(colors.bgLight)
+                        .padding("1px 6px").borderRadius("4px")
+                    ),
+                    "update()",
+                  ),
+                  ".",
+                );
+              }
+              return div(line);
+            }),
+          ),
+          // Description
+          p(hs.heroDesc, HERO_DESC),
+          // Install command
+          div(
+            hs.heroInstall,
+            div(
+              s.installCmd,
+              span(cn(color(colors.textMuted).fontFamily("'JetBrains Mono', monospace")), "$"),
+              span(cn(marginLeft("8px")), INSTALL_CMD),
+            ),
+          ),
+          // Action buttons
+          div(
+            hs.heroActions,
+            button(
+              s.btn, s.btnPrimary,
+              "Get Started →",
+              on("click", () => setRoute("docs")),
+            ),
+            button(
+              s.btn, s.btnSecondary,
+              "View Examples",
+              on("click", () => setRoute("examples")),
+            ),
+          ),
+          // Stats
+          div(
+            s.statsRow,
+            ...HERO_STATS.map(({ num, sup, label }) =>
+              div(
+                div(
+                  s.statNum,
+                  num,
+                  sup ? span(cn(fontSize("1rem").color(colors.primary)), sup) : null,
+                ),
+                div(s.statLabel, label),
+              )
+            ),
+          ),
+        ),
+        // Right: demo card
+        HeroDemoCard(),
+      ),
     ),
   );
 }
 
-export function HomeShowcaseSection() {
+export function PhilosophySection() {
   return section(
-    hs.section,
+    hs.philosophySection,
     div(
-      hs.leadGrid,
-      HeroCodeCard(),
+      s.container,
       div(
-        hs.stackedCards,
-        StatCard(),
-        LiveDemoCard(),
+        hs.philosophyInner,
+        // Left: quote + label
+        div(
+          div(
+            s.sectionLabel,
+            cn(marginBottom("16px")),
+            "Philosophy",
+          ),
+          blockquote(
+            hs.philosophyQuote,
+            { style: "font-style:normal" },
+            `"${PHILOSOPHY_QUOTE}"`,
+          ),
+        ),
+        // Right: 3 points
+        div(
+          hs.philosophyPoints,
+          ...PHILOSOPHY_POINTS.map(({ num, title, desc }) =>
+            div(
+              hs.philosophyPoint,
+              div(hs.philosophyPointIcon, num),
+              div(
+                div(hs.philosophyPointTitle, title),
+                div(hs.philosophyPointDesc, desc),
+              ),
+            )
+          ),
+        ),
       ),
     ),
+  );
+}
+
+export function FeaturesSection() {
+  return section(
+    hs.featuresSection,
     div(
-      hs.threeColumnGrid,
-      FeatureCard(
-        HOME_FEATURES[0].icon,
-        HOME_FEATURES[0].title,
-        HOME_FEATURES[0].description,
-      ),
-      TagCoverageCard(),
-      FeatureCard(
-        HOME_FEATURES[1].icon,
-        HOME_FEATURES[1].title,
-        HOME_FEATURES[1].description,
+      s.container,
+      div(s.sectionLabel, "Features"),
+      h2(s.sectionTitle, "Built for clarity."),
+      p(s.sectionSub, cn(marginBottom("48px")), "No magic. No surprises. Every update is intentional."),
+      div(
+        s.featureGrid,
+        ...FEATURES.map(({ num, title, desc }) =>
+          div(
+            s.featureCard,
+            div(s.featureNum, num),
+            div(s.featureTitle, title),
+            div(s.featureDesc, desc),
+          )
+        ),
       ),
     ),
   );
 }
 
 export function HomeQuickStartSection() {
-  return section(
-    hs.section,
-    SectionIntro("Quick Start", HOME_COPY.quickStartDescription),
-    div(
-      hs.quickStartStack,
+  return div(
+    div(s.divider),
+    section(
+      hs.quickStartSection,
       div(
-        hs.quickStartWideGrid,
-        QuickStartInstallCard(),
-        QuickStartUsageCard(),
-      ),
-      div(
-        hs.quickStartCompactGrid,
-        QuickStartTypesCard(),
-        ReadyCard(),
+        s.container,
+        div(s.sectionLabel, "Quick Start"),
+        h2(s.sectionTitle, "Up and running in minutes."),
+        p(s.sectionSub, cn(marginBottom("40px")), "Three steps and you're building real UIs."),
+        div(
+          s.stepsGrid,
+          ...QUICK_START_STEPS.map(({ num, title, desc, code, lang }) =>
+            div(
+              hs.quickStartStep,
+              div(
+                hs.stepHeader,
+                div(s.stepNum, num),
+                div(s.stepTitle, title),
+                div(s.stepDesc, desc),
+              ),
+              CodeBlock({ filename: lang, code, showCopy: true, preTokenized: true }),
+            )
+          ),
+        ),
+        div(
+          cn(marginTop("40px").textAlign("center")),
+          button(
+            s.btn, s.btnSecondary,
+            "Read the full docs →",
+            on("click", () => setRoute("docs")),
+          ),
+        ),
       ),
     ),
   );
 }
 
-export function HomeExamplesSection(examples: ExampleContent[]) {
-  return section(
-    hs.section,
-    SectionIntro("Examples", HOME_COPY.examplesDescription),
-    div(
-      hs.examplesGrid,
-      ...examples.map((example) => ExampleCard(example)),
-    ),
-    div(
-      hs.sectionFooter,
-      ActionButton("View All Examples →", () => setRoute("examples"), "outline-neutral", "compact"),
+export function ExamplesTeaserSection() {
+  function TeaserCard(
+    filename: string,
+    code: string,
+    PreviewFn: () => ReturnType<typeof div>,
+  ) {
+    let activeTab: 'preview' | 'code' = 'preview';
+
+    function Tab(label: string, tab: 'preview' | 'code') {
+      return button(
+        hs.demoTabBtn,
+        { style: () => ({ color: activeTab === tab ? "var(--c-primary)" : "", borderBottom: activeTab === tab ? "2px solid var(--c-primary)" : "" }) },
+        label,
+        on("click", () => { activeTab = tab; update(); }),
+      );
+    }
+
+    return div(
+      hs.teaserCard,
+      div(
+        hs.demoChrome,
+        DemoDot("#ff5f57"), DemoDot("#febc2e"), DemoDot("#28c840"),
+        div(hs.heroDemoFilename, filename),
+      ),
+      div(
+        hs.demoTabBar,
+        Tab("Preview", "preview"),
+        Tab("Code", "code"),
+      ),
+      div(
+        hs.teaserDemoPane,
+        { style: () => ({ display: activeTab === "preview" ? "" : "none" }) },
+        PreviewFn(),
+      ),
+      div(
+        hs.teaserCodePane,
+        { style: () => ({ display: activeTab === "code" ? "" : "none" }) },
+        { innerHTML: `<pre style="margin:0;white-space:pre-wrap">${code}</pre>` },
+      ),
+    );
+  }
+
+  function CounterPreview() {
+    let n = 0;
+    return div(
+      cn(textAlign("center")),
+      div(cn(fontSize("3rem").fontWeight("700").lineHeight("1").marginBottom("12px")), () => String(n)),
+      div(
+        cn(display("flex").gap("8px").justifyContent("center")),
+        button(
+          cn(padding("7px 16px").borderRadius("5px").fontSize("0.85rem").cursor("pointer").border(`1px solid ${colors.borderLight}`).color(colors.textDim).backgroundColor(colors.bgLight).fontFamily("inherit")),
+          "−", on("click", () => { n--; update(); })
+        ),
+        button(
+          cn(padding("7px 16px").borderRadius("5px").fontSize("0.85rem").cursor("pointer").border("none").color("#fff").backgroundColor(colors.primary).fontFamily("inherit")),
+          "Reset", on("click", () => { n = 0; update(); })
+        ),
+        button(
+          cn(padding("7px 16px").borderRadius("5px").fontSize("0.85rem").cursor("pointer").border(`1px solid ${colors.borderLight}`).color(colors.textDim).backgroundColor(colors.bgLight).fontFamily("inherit")),
+          "+", on("click", () => { n++; update(); })
+        ),
+      ),
+    );
+  }
+
+  function TodoPreview() {
+    let todos: { text: string; done: boolean }[] = [];
+    const inputEl = inputDom({
+      type: "text", placeholder: "Add a task…",
+      class: "ex-input",
+      style: "margin-bottom:10px;width:100%",
+    } as any);
+    return div(
+      cn(width("100%").maxWidth("280px")),
+      div(
+        cn(display("flex").gap("8px").marginBottom("10px")),
+        inputEl,
+        button(
+          cn(padding("9px 14px").borderRadius("6px").fontSize("0.85rem").cursor("pointer").border("none").color("#fff").backgroundColor(colors.primary).fontFamily("inherit").whiteSpace("nowrap")),
+          "Add",
+          on("click", () => {
+            const v = (inputEl as any as HTMLInputElement).value.trim();
+            if (!v) return;
+            todos.push({ text: v, done: false });
+            (inputEl as any as HTMLInputElement).value = '';
+            update();
+          }),
+        ),
+      ),
+      list(
+        () => todos,
+        (t) => div(
+          cn(display("flex").alignItems("center").gap("8px").padding("7px 10px").borderRadius("5px").border(`1px solid ${colors.border}`).backgroundColor(colors.bgSecondary).marginBottom("5px").fontSize("0.85rem")),
+          input({ type: "checkbox" }, { checked: () => t.done }, on("change", () => { t.done = !t.done; update(); })),
+          span({ style: () => t.done ? "text-decoration:line-through;opacity:0.5" : "" }, t.text),
+        ),
+      ),
+    );
+  }
+
+  return div(
+    div(s.divider),
+    section(
+      hs.examplesTeaserSection,
+      div(
+        s.container,
+        div(s.sectionLabel, "Examples"),
+        h2(s.sectionTitle, "See it in action."),
+        p(s.sectionSub, "Interactive demos. Explore the code behind each one."),
+        div(
+          hs.examplesTeaserGrid,
+          TeaserCard("counter.ts", COUNTER_TEASER_CODE, CounterPreview),
+          TeaserCard("todo.ts", TODO_TEASER_CODE, TodoPreview),
+        ),
+        div(
+          cn(marginTop("36px").textAlign("center")),
+          button(
+            s.btn, s.btnSecondary,
+            "View all examples →",
+            on("click", () => setRoute("examples")),
+          ),
+        ),
+      ),
     ),
   );
 }
 
-export function getHomepageExampleIds() {
-  return new Set<string>(HOMEPAGE_EXAMPLE_IDS);
+export function CTASection() {
+  return section(
+    hs.ctaSection,
+    div(
+      s.container,
+      div(s.sectionLabel, cn(justifyContent("center").display("flex")), "Get Started"),
+      h2(
+        cn(
+          fontSize("clamp(2rem, 3.5vw, 2.8rem)").fontWeight("700")
+            .letterSpacing("-0.02em").lineHeight("1.2").marginBottom("18px")
+        ),
+        "Ready to build?",
+      ),
+      p(
+        cn(
+          fontSize("1.05rem").color(colors.textDim)
+            .maxWidth("480px").margin("0 auto 0").lineHeight("1.7")
+        ),
+        "Start with the docs, explore the examples, or install and dive straight in.",
+      ),
+      div(
+        hs.ctaActions,
+        button(
+          s.btn, s.btnPrimary,
+          "Read the Docs →",
+          on("click", () => setRoute("docs")),
+        ),
+        a(
+          {
+            href: "https://github.com/dan2dev/nuclo",
+            target: "_blank",
+            rel: "noopener noreferrer",
+          },
+          s.btn, s.btnSecondary,
+          GitHubSvg({ size: 15 }),
+          "GitHub",
+        ),
+      ),
+    ),
+  );
 }
 
-export { InstallBar as HomeInstallBar };
+// Helper to create input DOM element (needed for TodoPreview ref pattern)
+function inputDom(attrs: Record<string, string>) {
+  return input(attrs);
+}

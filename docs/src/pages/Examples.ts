@@ -1,316 +1,333 @@
-import { cn, colors } from "../styles.ts";
-import { d } from "../components/DocsPage.ts";
-import { setRoute, type Route } from "../router.ts";
+import { cn, colors, s } from "../styles.ts";
+import { EXAMPLES } from "../content/examples.ts";
 
-type ExampleCardConfig = {
-  route: Route;
-  meta: string;
-  icon: string;
-  title: string;
-  description: string;
-  dark?: boolean;
-  height: number;
-};
+function ExampleCard(ex: typeof EXAMPLES[number]) {
+  let activeTab: "preview" | "code" = "preview";
 
-const e = {
-  page: d.page,
+  function Tab(label: string, tab: "preview" | "code") {
+    return button(
+      {
+        class: () => `etab${activeTab === tab ? " on" : ""}`,
+      },
+      label,
+      on("click", () => { activeTab = tab; update(); }),
+    );
+  }
 
-  hero: cn(
-    backgroundColor(colors.bgCard)
-      .borderBottom(`1px solid ${colors.border}`)
-      .padding("48px 24px 44px"),
-    {
-      medium: padding("56px 48px 52px"),
-      large: padding("64px 80px 60px"),
-    }
-  ),
-
-  breadcrumb: d.breadcrumb,
-  heroMeta: d.heroMeta,
-  heroBadge: d.heroBadge,
-  heroTitle: d.heroTitle,
-  heroSubtitle: d.heroSubtitle,
-
-  content: cn(
-    display("flex")
-      .flexDirection("column")
-      .gap("20px")
-      .padding("40px 24px 80px"),
-    {
-      medium: padding("48px 48px 80px"),
-      large: padding("56px 80px 80px"),
-    }
-  ),
-
-  rowFeaturedLeft: cn(
-    display("grid").gap("20px"),
-    { large: gridTemplateColumns("minmax(0, 2fr) minmax(0, 1fr)") }
-  ),
-
-  rowThree: cn(
-    display("grid").gap("20px"),
-    {
-      medium: gridTemplateColumns("repeat(2, minmax(0, 1fr))"),
-      large: gridTemplateColumns("repeat(3, minmax(0, 1fr))"),
-    }
-  ),
-
-  rowFeaturedRight: cn(
-    display("grid").gap("20px"),
-    { large: gridTemplateColumns("minmax(0, 1fr) minmax(0, 2fr)") }
-  ),
-
-  cardLight: cn(
-    display("flex")
-      .flexDirection("column")
-      .justifyContent("space-between")
-      .gap("18px")
-      .padding("28px")
-      .borderRadius("20px")
-      .backgroundColor(colors.bgCard)
-      .border(`1px solid ${colors.border}`)
-      .cursor("pointer")
-      .transition("transform 0.2s, border-color 0.2s, box-shadow 0.2s"),
-    {
-      hover: borderColor(colors.borderPrimary)
-        .transform("translateY(-2px)")
-        .boxShadow(`0 18px 36px ${colors.primaryGlow}`)
-    }
-  ),
-
-  cardDark: cn(
-    display("flex")
-      .flexDirection("column")
-      .justifyContent("space-between")
-      .gap("18px")
-      .padding("32px")
-      .borderRadius("20px")
-      .backgroundColor("#0e0e0e")
-      .cursor("pointer")
-      .transition("transform 0.2s, box-shadow 0.2s"),
-    { hover: transform("translateY(-2px)").boxShadow("0 24px 48px rgba(0,0,0,0.28)") }
-  ),
-
-  metaRow: cn(display("flex").alignItems("center").gap("8px")),
-  dotLight: cn(width("8px").height("8px").borderRadius("4px").backgroundColor(colors.primary)),
-  dotDark: cn(width("8px").height("8px").borderRadius("4px").backgroundColor("#6B9EFF")),
-
-  metaTextLight: cn(fontSize("11px").fontWeight("600").color(colors.textDim)),
-  metaTextDark: cn(fontSize("11px").fontWeight("600").color("#888888")),
-
-  iconLight: cn(
-    display("inline-flex")
-      .alignItems("center")
-      .justifyContent("center")
-      .width("48px")
-      .height("48px")
-      .borderRadius("12px")
-      .backgroundColor(colors.bgSecondary)
-      .fontSize("20px")
-      .fontWeight("700")
-      .color(colors.primary)
-  ),
-
-  iconDark: cn(
-    display("inline-flex")
-      .alignItems("center")
-      .justifyContent("center")
-      .width("56px")
-      .height("56px")
-      .borderRadius("14px")
-      .backgroundColor("#1a1a1a")
-      .fontSize("22px")
-      .fontWeight("700")
-      .color("#6B9EFF")
-  ),
-
-  titleLight: cn(fontSize("20px").fontWeight("700").letterSpacing("-0.02em").color(colors.text)),
-  titleDark: cn(fontSize("28px").fontWeight("800").letterSpacing("-0.03em").color("#FFFFFF")),
-
-  bodyLight: cn(fontSize("13px").lineHeight("1.55").color(colors.textMuted)),
-  bodyDark: cn(fontSize("14px").lineHeight("1.55").color("#C0C2B8")),
-
-  ctaLight: cn(fontSize("13px").fontWeight("600").color(colors.primary)),
-  ctaDark: cn(fontSize("13px").fontWeight("600").color("#6B9EFF")),
-};
-
-function routeHref(route: Route) {
-  const base = import.meta.env.BASE_URL || "/";
-  return route === "home" ? base : `${base}${route}`;
-}
-
-function Breadcrumb() {
   return div(
-    e.breadcrumb,
-    a(
-      { href: routeHref("home") },
-      cn(color(colors.textDim).transition("color 0.2s")),
-      { hover: color(colors.textMuted) },
-      "Docs",
-      on("click", (evt) => {
-        evt.preventDefault();
-        setRoute("home");
-      })
+    { class: "ecard" },
+    div(
+      { class: "ecard-top" },
+      div({ class: "ecard-badge" }, "● Live"),
+      div({ class: "ecard-title" }, ex.title),
+      div({ class: "ecard-desc" }, ex.desc),
     ),
-    span(cn(color(colors.border)), "›"),
-    span(cn(color(colors.primary).fontWeight("600")), "Examples")
+    div(
+      { class: "etabs" },
+      Tab("Preview", "preview"),
+      Tab("Code", "code"),
+    ),
+    // Preview pane
+    div(
+      { class: () => `epane${activeTab === "preview" ? " on" : ""}` },
+      div(
+        { class: "epreview" },
+        buildPreview(ex.id),
+      ),
+    ),
+    // Code pane
+    div(
+      { class: () => `epane${activeTab === "code" ? " on" : ""}` },
+      div(
+        { class: "ecode" },
+        { innerHTML: `<pre style="margin:0;white-space:pre-wrap">${ex.code}</pre>` },
+      ),
+    ),
   );
 }
 
-function Hero() {
-  return section(
-    e.hero,
-    Breadcrumb(),
+function buildPreview(id: string) {
+  switch (id) {
+    case "counter": return CounterDemo();
+    case "todo":    return TodoDemo();
+    case "search":  return SearchDemo();
+    case "async":   return AsyncDemo();
+    default:        return div();
+  }
+}
+
+// ── Counter demo ──────────────────────────────────────────────────────────────
+function CounterDemo() {
+  let count = 0;
+  return div(
+    { class: "ex-counter" },
+    div({ class: "ex-count-val" }, () => String(count)),
+    div({ class: "ex-count-label" }, "COUNT"),
     div(
-      e.heroMeta,
-      span(
-        e.heroBadge,
-        span(
-          cn(
-            width("6px")
-              .height("6px")
-              .borderRadius("999px")
-              .backgroundColor(colors.primary)
-          )
+      { class: "ex-btns" },
+      button(
+        { class: "ex-btn" },
+        "−",
+        on("click", () => { count--; update(); }),
+      ),
+      button(
+        { class: "ex-btn primary" },
+        "Reset",
+        on("click", () => { count = 0; update(); }),
+      ),
+      button(
+        { class: "ex-btn" },
+        "+",
+        on("click", () => { count++; update(); }),
+      ),
+    ),
+  );
+}
+
+// ── Todo demo ─────────────────────────────────────────────────────────────────
+function TodoDemo() {
+  let todos: { id: number; text: string; done: boolean }[] = [];
+  let filter: "all" | "active" | "done" = "all";
+  let nextId = 1;
+
+  const inputEl = input({
+    type: "text",
+    placeholder: "Add a task…",
+    class: "ex-input",
+  });
+
+  function visible() {
+    if (filter === "active") return todos.filter(t => !t.done);
+    if (filter === "done")   return todos.filter(t => t.done);
+    return todos;
+  }
+
+  function addTodo() {
+    const v = (inputEl as unknown as HTMLInputElement).value.trim();
+    if (!v) return;
+    todos.push({ id: nextId++, text: v, done: false });
+    (inputEl as unknown as HTMLInputElement).value = "";
+    update();
+  }
+
+  function FilterBtn(label: string, f: "all" | "active" | "done") {
+    return button(
+      { class: () => `ex-filter${filter === f ? " active" : ""}` },
+      label,
+      on("click", () => { filter = f; update(); }),
+    );
+  }
+
+  return div(
+    { class: "ex-todo" },
+    div(
+      { class: "ex-row" },
+      inputEl,
+      button(
+        { class: "ex-btn primary" },
+        "Add",
+        on("click", addTodo),
+      ),
+    ),
+    div(
+      { class: "ex-filters" },
+      FilterBtn("All", "all"),
+      FilterBtn("Active", "active"),
+      FilterBtn("Done", "done"),
+    ),
+    div(
+      { class: "ex-list" },
+      list(
+        () => visible(),
+        (t) => div(
+          { class: () => `ex-item${t.done ? " done" : ""}` },
+          input(
+            { type: "checkbox" },
+            { checked: () => t.done },
+            on("change", () => { t.done = !t.done; update(); }),
+          ),
+          span({ class: "ex-item-text" }, t.text),
+          button(
+            { class: "ex-item-del" },
+            "×",
+            on("click", () => {
+              todos = todos.filter(x => x.id !== t.id);
+              update();
+            }),
+          ),
         ),
-        "10 examples"
       ),
-      span(cn(fontSize("13px").color(colors.textDim)), "Interactive & runnable")
+      when(
+        () => visible().length === 0,
+        div({ class: "ex-empty" }, "No tasks yet."),
+      ),
     ),
-    h1(e.heroTitle, "Examples"),
-    p(
-      e.heroSubtitle,
-      "Ten interactive examples — from a state counter to async data-fetching and client-side routing. All runnable in the browser."
-    )
-  );
-}
-
-function ExampleCard(card: ExampleCardConfig) {
-  const dark = card.dark ?? false;
-
-  return a(
-    { href: routeHref(card.route) },
-    dark ? e.cardDark : e.cardLight,
-    { style: { minHeight: `${card.height}px` } },
     div(
-      cn(display("flex").flexDirection("column").gap("14px")),
-      div(
-        e.metaRow,
-        span(dark ? e.dotDark : e.dotLight),
-        span(dark ? e.metaTextDark : e.metaTextLight, card.meta)
-      ),
-      span(dark ? e.iconDark : e.iconLight, card.icon),
-      h2(dark ? e.titleDark : e.titleLight, card.title),
-      p(dark ? e.bodyDark : e.bodyLight, card.description)
+      { class: "ex-count-summary" },
+      () => {
+        const remaining = todos.filter(t => !t.done).length;
+        return `${remaining} of ${todos.length} remaining`;
+      },
     ),
-    span(dark ? e.ctaDark : e.ctaLight, "View Example →"),
-    on("click", (evt) => {
-      evt.preventDefault();
-      setRoute(card.route);
-    })
   );
 }
 
-export function ExamplesPage() {
+// ── Search demo ───────────────────────────────────────────────────────────────
+const MOCK_USERS = [
+  { name: "Alice Chen",    email: "alice@example.com",   initials: "AC" },
+  { name: "Bob Smith",     email: "bob@example.com",     initials: "BS" },
+  { name: "Charlie Davis", email: "charlie@example.com", initials: "CD" },
+  { name: "Diana Park",    email: "diana@example.com",   initials: "DP" },
+  { name: "Ethan Moore",   email: "ethan@example.com",   initials: "EM" },
+];
+
+function SearchDemo() {
+  let query = "";
+
+  function results() {
+    const q = query.toLowerCase();
+    if (!q) return MOCK_USERS;
+    return MOCK_USERS.filter(u =>
+      u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+    );
+  }
+
   return div(
-    e.page,
-    Hero(),
-    main(
-      e.content,
-      div(
-        e.rowFeaturedLeft,
-        ExampleCard({
-          route: "examples/counter",
-          meta: "State · Beginner",
-          icon: "+",
-          title: "Counter",
-          description: "Classic reactive counter with increment, decrement and reset. The hello world of state-driven UI.",
-          dark: true,
-          height: 340,
-        }),
-        ExampleCard({
-          route: "examples/todo",
-          meta: "Lists · Beginner",
-          icon: "✓",
-          title: "Todo List",
-          description: "Full todo app with add, toggle, delete and filter — powered by list() and when().",
-          height: 340,
-        })
+    { class: "ex-search" },
+    input(
+      {
+        type: "text",
+        placeholder: "Search users…",
+        class: "ex-input ex-search-input",
+      },
+      on("input", (e) => {
+        query = (e.target as HTMLInputElement).value;
+        update();
+      }),
+    ),
+    div(
+      list(
+        () => results(),
+        (u) => div(
+          { class: "ex-user-card" },
+          div({ class: "ex-avatar" }, u.initials),
+          div(
+            div({ class: "ex-user-name" }, u.name),
+            div({ class: "ex-user-email" }, u.email),
+          ),
+        ),
       ),
-      div(
-        e.rowThree,
-        ExampleCard({
-          route: "examples/subtasks",
-          meta: "Nested lists",
-          icon: "≡",
-          title: "Subtasks",
-          description: "Nested list with expandable sub-items. Shows how lists can be composed inside each other.",
-          height: 260,
-        }),
-        ExampleCard({
-          route: "examples/search",
-          meta: "Filtering",
-          icon: "◎",
-          title: "Live Search",
-          description: "Filter a list in real-time as the user types. Combines on('input') with list() provider filtering.",
-          height: 260,
-        }),
-        ExampleCard({
-          route: "examples/async",
-          meta: "Async loading",
-          icon: "↻",
-          title: "Async Data",
-          description: "Fetch from an API and render loading, error and success states using when() chains.",
-          height: 260,
-        })
+      when(
+        () => results().length === 0,
+        div({ class: "ex-no-results" }, "No users found."),
       ),
+    ),
+  );
+}
+
+// ── Async demo ────────────────────────────────────────────────────────────────
+interface Product { id: number; title: string; category: string; }
+
+function AsyncDemo() {
+  type Status = "idle" | "loading" | "success" | "error";
+  let status: Status = "idle";
+  let products: Product[] = [];
+  let errMsg = "";
+
+  async function loadData() {
+    status = "loading"; update();
+    try {
+      const res = await fetch("https://dummyjson.com/products?limit=3&select=title,category");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json() as { products: Product[] };
+      products = data.products;
+      status = "success";
+    } catch (e) {
+      errMsg = e instanceof Error ? e.message : "Unknown error";
+      status = "error";
+    }
+    update();
+  }
+
+  return div(
+    { class: "ex-async" },
+    div(
+      { class: "ex-status-bar" },
+      div({ class: () => `ex-status-dot ${status}` }),
+      span(() => {
+        if (status === "idle")    return "Ready to fetch";
+        if (status === "loading") return "Fetching…";
+        if (status === "success") return `Loaded ${products.length} products`;
+        return "Error occurred";
+      }),
+    ),
+    button(
+      {
+        class: () => `ex-btn primary${status === "loading" ? " disabled" : ""}`,
+        disabled: () => status === "loading",
+      },
+      () => status === "loading" ? "Loading…" : "Fetch Data",
+      on("click", loadData),
+    ),
+    when(
+      () => status === "success",
       div(
-        e.rowFeaturedRight,
-        ExampleCard({
-          route: "examples/forms",
-          meta: "Input · Intermediate",
-          icon: "⊡",
-          title: "Forms",
-          description: "Controlled form with validation, error display and submit handling — no libraries required.",
-          height: 300,
-        }),
-        ExampleCard({
-          route: "examples/nested",
-          meta: "Composition · Intermediate",
-          icon: "⊕",
-          title: "Nested Components",
-          description: "Compose components with shared state passed through closures. Clean architecture, no prop-drilling.",
-          dark: true,
-          height: 300,
-        })
+        cn(marginTop("12px")),
+        list(
+          () => products,
+          (p) => div(
+            { class: "ex-product-card" },
+            div({ class: "ex-product-title" }, p.title),
+            div({ class: "ex-product-cat" }, p.category),
+          ),
+        ),
       ),
+    ),
+    when(
+      () => status === "error",
       div(
-        e.rowThree,
-        ExampleCard({
-          route: "examples/animations",
-          meta: "Motion",
-          icon: "✦",
-          title: "Animations",
-          description: "CSS transitions triggered by state changes — fade in, slide and pulse effects without a library.",
-          height: 260,
-        }),
-        ExampleCard({
-          route: "examples/routing",
-          meta: "Navigation",
-          icon: "→",
-          title: "Routing",
-          description: "Client-side routing with history API. Render different views based on the current URL path.",
-          height: 260,
-        }),
-        ExampleCard({
-          route: "examples/styled-card",
-          meta: "CSS-in-JS",
-          icon: "◈",
-          title: "Styled Card",
-          description: "Full styling showcase — shadows, gradients, hover states and responsive breakpoints in one component.",
-          height: 260,
-        })
-      )
-    )
+        { class: "ex-error-msg" },
+        cn(marginTop("12px")),
+        () => `Error: ${errMsg}`,
+      ),
+    ),
+  );
+}
+
+// ── Examples page ─────────────────────────────────────────────────────────────
+export function ExamplesPage() {
+  const pageHeader = div(
+    cn(
+      padding("56px 0 32px").borderBottom(`1px solid ${colors.border}`)
+    ),
+    div(
+      s.container,
+      div(s.sectionLabel, cn(marginBottom("12px")), "Examples"),
+      h1(
+        cn(
+          fontSize("clamp(2rem, 4vw, 3rem)").fontWeight("700")
+            .letterSpacing("-0.02em").lineHeight("1.15").marginBottom("16px")
+        ),
+        "Practical examples.",
+        br(),
+        "Live demos.",
+      ),
+      p(
+        cn(fontSize("1.05rem").color(colors.textDim).maxWidth("500px").lineHeight("1.7")),
+        "Click the tabs to switch between a live interactive demo and the source code.",
+      ),
+    ),
+  );
+
+  return div(
+    { id: "examples-page" },
+    pageHeader,
+    div(
+      s.container,
+      div(
+        { class: "examples-grid" },
+        ...EXAMPLES.map(ex => ExampleCard(ex)),
+      ),
+    ),
   );
 }
