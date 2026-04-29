@@ -1,215 +1,159 @@
-import { cn, s, colors } from "../styles.ts";
-import { CopyIcon, CheckIcon } from "./icons.ts";
+import { cn, colors, s } from "../styles.ts";
 
-let copiedStates: Record<string, boolean> = {};
-
-function setCopied(id: string, value: boolean) {
-  copiedStates[id] = value;
-  update();
+// ── Simple tokenizer for TypeScript/JS syntax highlighting ─────────────────
+function tokenize(code: string): string {
+  const lines = code.split('\n');
+  return lines.map(line => tokenizeLine(line)).join('\n');
 }
 
-function isCopied(id: string): boolean {
-  return copiedStates[id] || false;
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-type SegmentKind = "text" | "string" | "comment";
+function tokenizeLine(line: string): string {
+  if (!line.trim()) return '';
 
-type CodeSegment = {
-  kind: SegmentKind;
-  value: string;
-};
+  // Full-line comment
+  const trimmed = line.trimStart();
+  if (trimmed.startsWith('//')) {
+    return `<span class="cm">${esc(line)}</span>`;
+  }
 
-export type CodeBlockOptions = {
-  compact?: boolean;
-  /** Rótulo opcional acima do código (ex.: linguagem); mesmo container do site. */
-  label?: string;
+  let out = '';
+  let i = 0;
+
+  const keywords = new Set([
+    'import','export','from','const','let','var','function','return','if','else',
+    'for','while','async','await','new','typeof','instanceof','class','extends',
+    'default','type','interface','enum','void','null','undefined','true','false',
+    'in','of','break','continue','switch','case','try','catch','finally','throw',
+    'this','static','public','private','protected','readonly','as','keyof',
+  ]);
+
+  const types = new Set([
+    'string','number','boolean','any','never','unknown','object','symbol','bigint',
+    'Array','Promise','Record','Partial','Required','Readonly','Map','Set','Date',
+    'Error','EventTarget','HTMLElement','Element','Node','Event','MouseEvent',
+    'KeyboardEvent','HTMLInputElement','HTMLButtonElement','Document','Window',
+    'Node','DocumentFragment','Text','Comment','void',
+  ]);
+
+  while (i < line.length) {
+    const ch = line[i];
+
+    // Comment from here
+    if (ch === '/' && line[i+1] === '/') {
+      out += `<span class="cm">${esc(line.slice(i))}</span>`;
+      break;
+    }
+
+    // String (single or double or backtick)
+    if (ch === '"' || ch === "'" || ch === '`') {
+      let j = i + 1;
+      const quote = ch;
+      while (j < line.length) {
+        if (line[j] === '\\') { j += 2; continue; }
+        if (line[j] === quote) { j++; break; }
+        j++;
+      }
+      out += `<span class="st">${esc(line.slice(i, j))}</span>`;
+      i = j;
+      continue;
+    }
+
+    // Number
+    if (/[0-9]/.test(ch) && (i === 0 || !/[a-zA-Z_$]/.test(line[i-1]))) {
+      let j = i;
+      while (j < line.length && /[0-9._]/.test(line[j])) j++;
+      out += `<span class="nm">${esc(line.slice(i, j))}</span>`;
+      i = j;
+      continue;
+    }
+
+    // Identifier / keyword / type
+    if (/[a-zA-Z_$]/.test(ch)) {
+      let j = i;
+      while (j < line.length && /[a-zA-Z0-9_$]/.test(line[j])) j++;
+      const word = line.slice(i, j);
+      const next = j < line.length ? line[j] : '';
+
+      let cls = '';
+      if (keywords.has(word)) cls = 'kw';
+      else if (types.has(word)) cls = 'ty';
+      else if (next === '(' || next === '<') cls = 'fn';
+      else if (/[A-Z]/.test(word[0])) cls = 'ty';
+      else if (line[i-1] === '.') cls = 'pr';
+
+      if (cls) out += `<span class="${cls}">${esc(word)}</span>`;
+      else out += esc(word);
+      i = j;
+      continue;
+    }
+
+    // Punctuation/operators
+    if (/[{}()[\];,.:=><!+\-*/%&|^~?@]/.test(ch)) {
+      out += `<span class="pt">${esc(ch)}</span>`;
+      i++;
+      continue;
+    }
+
+    out += esc(ch);
+    i++;
+  }
+  return out;
+}
+
+export interface CodeBlockOptions {
+  filename?: string;
+  code: string;
   showCopy?: boolean;
-};
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  preTokenized?: boolean;
 }
 
-function tokenizeCode(code: string): CodeSegment[] {
-  const segments: CodeSegment[] = [];
-  let cursor = 0;
-  let textStart = 0;
+export function CodeBlock({ filename, code, showCopy = true, preTokenized = false }: CodeBlockOptions) {
+  let copied = false;
 
-  function pushText(end: number) {
-    if (end > textStart) {
-      segments.push({ kind: "text", value: code.slice(textStart, end) });
-    }
-  }
+  const tokenized = preTokenized ? code : tokenize(code);
 
-  while (cursor < code.length) {
-    const char = code[cursor];
-    const next = code[cursor + 1];
-
-    if (char === "/" && next === "/") {
-      pushText(cursor);
-
-      let end = cursor + 2;
-      while (end < code.length && code[end] !== "\n") {
-        end++;
-      }
-
-      segments.push({ kind: "comment", value: code.slice(cursor, end) });
-      cursor = end;
-      textStart = end;
-      continue;
-    }
-
-    if (char === "/" && next === "*") {
-      pushText(cursor);
-
-      let end = cursor + 2;
-      while (end < code.length && !(code[end] === "*" && code[end + 1] === "/")) {
-        end++;
-      }
-      end = Math.min(end + 2, code.length);
-
-      segments.push({ kind: "comment", value: code.slice(cursor, end) });
-      cursor = end;
-      textStart = end;
-      continue;
-    }
-
-    if (char === "'" || char === "\"" || char === "`") {
-      pushText(cursor);
-
-      const quote = char;
-      let end = cursor + 1;
-
-      while (end < code.length) {
-        if (code[end] === "\\") {
-          end += 2;
-          continue;
-        }
-
-        if (code[end] === quote) {
-          end++;
-          break;
-        }
-
-        end++;
-      }
-
-      segments.push({ kind: "string", value: code.slice(cursor, end) });
-      cursor = end;
-      textStart = end;
-      continue;
-    }
-
-    cursor++;
-  }
-
-  pushText(code.length);
-  return segments;
-}
-
-function highlightPlainText(code: string): string {
-  return escapeHtml(code)
-    .replace(
-      /\b(import|export|from|const|let|var|function|return|if|else|for|while|type|interface|async|await|new|class|extends|implements|public|private|protected|static|readonly|typeof|keyof|in|of|true|false|null|undefined|this)\b/g,
-      '<span class="tok-kw">$1</span>'
-    )
-    .replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, '<span class="tok-fn">$1</span>(')
-    .replace(/\b(\d+\.?\d*)\b/g, '<span class="tok-num">$1</span>')
-    .replace(/:\s*([A-Z][a-zA-Z0-9_]*)/g, ': <span class="tok-type">$1</span>');
-}
-
-function highlightCode(code: string): string {
-  return tokenizeCode(code)
-    .map((segment) => {
-      if (segment.kind === "string") {
-        return `<span class="tok-str">${escapeHtml(segment.value)}</span>`;
-      }
-
-      if (segment.kind === "comment") {
-        return `<span class="tok-comment">${escapeHtml(segment.value)}</span>`;
-      }
-
-      return highlightPlainText(segment.value);
-    })
-    .join("");
-}
-
-export function CodeBlock(
-  codeContent: string,
-  language = "typescript",
-  showCopy: boolean | CodeBlockOptions = true
-) {
-  const id = `code-${Math.random().toString(36).slice(2, 9)}`;
-  const highlighted = highlightCode(codeContent.trim());
-  const options: CodeBlockOptions =
-    typeof showCopy === "boolean"
-      ? { showCopy }
-      : showCopy;
-
-  const compact = options.compact ?? false;
-  const label = options.label;
-  const shouldShowCopy = options.showCopy ?? true;
-  const headerText = label ?? language;
-
-  const copyAction = async () => {
-    await navigator.clipboard.writeText(codeContent.trim());
-    setCopied(id, true);
-    setTimeout(() => setCopied(id, false), 2000);
-  };
-
-  const frameClass = compact ? s.codeBlockFrameCompact : s.codeBlockFrame;
-  const headerClass = compact ? s.codeBlockHeaderCompact : s.codeBlockHeader;
-  const bodyClass = compact ? s.codeBlockBodyCompact : s.codeBlockBody;
-
-  const copyBtn = shouldShowCopy
-    ? button(
-        cn(
-          display("inline-flex")
-            .alignItems("center")
-            .gap("6px")
-            .padding("0")
-            .backgroundColor("transparent")
-            .border("none")
-            .fontSize("12px")
-            .color(colors.textMuted)
-            .cursor("pointer")
-            .transition("opacity 0.2s"),
-          { hover: opacity("0.72") }
-        ),
-        () => (isCopied(id) ? CheckIcon() : CopyIcon()),
-        () => (isCopied(id) ? "Copied!" : "Copy"),
-        on("click", copyAction)
-      )
-    : null;
-
-  /** Um único estilo: moldura do site + barra opcional (rótulo | copiar) + `<pre>`. */
-  return div(
-    frameClass,
-    div(
-      headerClass,
-      span(
-        cn(
-          fontSize("12px")
-            .fontFamily("'JetBrains Mono', 'Courier New', monospace")
-            .color(colors.textMuted)
-        ),
-        headerText
-      ),
-      shouldShowCopy ? copyBtn : null
-    ),
-    pre(
-      bodyClass,
-      code(
-        cn(display("block").width("100%").maxWidth("100%").whiteSpace("pre").overflowX("auto")),
-        { innerHTML: highlighted }
-      )
-    )
+  const copyBtn = cn(
+    display("flex").alignItems("center").gap("5px")
+      .fontSize("0.75rem").fontWeight("500")
+      .color(colors.textMuted).padding("4px 10px")
+      .borderRadius("5px").transition("all 0.18s ease")
+      .border(`1px solid transparent`)
+      .backgroundColor("transparent").fontFamily("'Space Grotesk', system-ui, sans-serif"),
+    { hover: color(colors.primary).borderColor("rgba(56,105,236,0.25)").backgroundColor(colors.primaryAlpha08) }
   );
-}
 
-export function InlineCode(codeText: string) {
-  return code(s.codeInline, codeText);
+  function handleCopy() {
+    navigator.clipboard?.writeText(code).then(() => {
+      copied = true;
+      update();
+      setTimeout(() => { copied = false; update(); }, 1800);
+    });
+  }
+
+  return div(
+    s.codeBlockFrame,
+    ...(filename || showCopy ? [
+      div(
+        s.codeBlockHeader,
+        filename
+          ? span(s.codeBlockFilename, filename)
+          : span(),
+        showCopy
+          ? button(
+              copyBtn,
+              when(() => copied, "✓ Copied").else("Copy"),
+              on("click", handleCopy),
+            )
+          : span(),
+      ),
+    ] : []),
+    div(
+      s.codeBlockBody,
+      cn(color(colors.text)),
+      { innerHTML: () => `<pre style="margin:0;white-space:pre-wrap;word-break:break-word">${tokenized}</pre>` },
+    ),
+  );
 }

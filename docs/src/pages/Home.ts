@@ -1,22 +1,20 @@
-import { examplesContent } from "../content/examples.ts";
 import {
-  getHomepageExampleIds,
-  HomeExamplesSection,
   HomeHeroSection,
-  HomeInstallBar,
+  PhilosophySection,
+  FeaturesSection,
   HomeQuickStartSection,
-  HomeShowcaseSection,
+  ExamplesTeaserSection,
+  CTASection,
 } from "./home/components.ts";
 
 export function HomePage() {
-  const homepageExampleIds = getHomepageExampleIds();
-  const examples = examplesContent.filter(({ id }) => homepageExampleIds.has(id));
-
   return div(
+    { id: "home-page" },
     HomeHeroSection(),
-    HomeShowcaseSection(),
-    HomeInstallBar(),
+    PhilosophySection(),
+    FeaturesSection(),
     HomeQuickStartSection(),
-    HomeExamplesSection(examples),
+    ExamplesTeaserSection(),
+    CTASection(),
   );
 }
