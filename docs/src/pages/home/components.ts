@@ -371,26 +371,32 @@ export function ExamplesTeaserSection() {
 
   function TodoPreview() {
     let todos: { text: string; done: boolean }[] = [];
-    const inputEl = inputDom({
-      type: "text", placeholder: "Add a task…",
-      class: "ex-input",
-      style: "margin-bottom:10px;width:100%",
-    } as any);
+    let inputValue = "";
+    let domInput: HTMLInputElement | null = null;
+
+    function addTodo() {
+      const v = inputValue.trim();
+      if (!v) return;
+      todos.push({ text: v, done: false });
+      inputValue = "";
+      if (domInput) domInput.value = "";
+      update();
+    }
+
     return div(
       cn(width("100%").maxWidth("280px")),
       div(
         cn(display("flex").gap("8px").marginBottom("10px")),
-        inputEl,
+        input(
+          { type: "text", placeholder: "Add a task…", class: "ex-input", style: "margin-bottom:10px;width:100%" } as any,
+          on("input", (e) => { inputValue = (e.target as HTMLInputElement).value; }),
+          on("keydown", (e) => { if ((e as KeyboardEvent).key === "Enter") addTodo(); }),
+          ((el: any) => { domInput = el; }) as any,
+        ),
         button(
           cn(padding("9px 14px").borderRadius("6px").fontSize("0.85rem").cursor("pointer").border("none").color("#fff").backgroundColor(colors.primary).fontFamily("inherit").whiteSpace("nowrap")),
           "Add",
-          on("click", () => {
-            const v = (inputEl as any as HTMLInputElement).value.trim();
-            if (!v) return;
-            todos.push({ text: v, done: false });
-            (inputEl as any as HTMLInputElement).value = '';
-            update();
-          }),
+          on("click", addTodo),
         ),
       ),
       list(
@@ -473,7 +479,4 @@ export function CTASection() {
   );
 }
 
-// Helper to create input DOM element (needed for TodoPreview ref pattern)
-function inputDom(attrs: Record<string, string>) {
-  return input(attrs);
-}
+

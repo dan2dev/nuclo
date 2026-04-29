@@ -89,12 +89,15 @@ function TodoDemo() {
   let todos: { id: number; text: string; done: boolean }[] = [];
   let filter: "all" | "active" | "done" = "all";
   let nextId = 1;
+  let inputValue = "";
+  let domInput: HTMLInputElement | null = null;
 
-  const inputEl = input({
-    type: "text",
-    placeholder: "Add a task…",
-    class: "ex-input",
-  });
+  const inputEl = input(
+    { type: "text", placeholder: "Add a task…", class: "ex-input" } as any,
+    on("input", (e) => { inputValue = (e.target as HTMLInputElement).value; }),
+    on("keydown", (e) => { if ((e as KeyboardEvent).key === "Enter") addTodo(); }),
+    ((el: any) => { domInput = el; }) as any,
+  );
 
   function visible() {
     if (filter === "active") return todos.filter(t => !t.done);
@@ -103,10 +106,11 @@ function TodoDemo() {
   }
 
   function addTodo() {
-    const v = (inputEl as unknown as HTMLInputElement).value.trim();
+    const v = inputValue.trim();
     if (!v) return;
     todos.push({ id: nextId++, text: v, done: false });
-    (inputEl as unknown as HTMLInputElement).value = "";
+    inputValue = "";
+    if (domInput) domInput.value = "";
     update();
   }
 
