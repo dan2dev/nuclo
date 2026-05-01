@@ -27,8 +27,8 @@ ensure-clean:
 # 1. Build
 # 2. Login to npm registry
 # 3. Bump version (no auto tag/commit)
-# 4. Publish to registry
-# 5. Commit version bump
+# 4. Commit version bump
+# 5. Publish to registry
 # 6. Create annotated tag v<version> (skip if exists)
 # 7. Push commit + tag
 publish:
@@ -42,15 +42,15 @@ publish:
 	@echo "==> Bumping $(BUMP) version (local package.json update)"
 	@new_version=$$($(MAKE) --no-print-directory bump-version BUMP=$(BUMP)); \
 	  echo "==> New version: $$new_version"; \
-	  echo "==> Publishing to registry"; \
-	  bun publish --no-git-checks && \
-	  echo "==> Staging version bump artifacts" && \
+	  echo "==> Staging version bump artifacts"; \
 	  git add $(PKG_FILE) bun.lock 2>/dev/null || true; \
 	  if git diff --cached --quiet; then \
 	    echo "==> No staged changes to commit (possibly already committed)"; \
 	  else \
-	    git commit -m "chore: release v$$new_version"; \
+	    git commit -m "chore(core): bump nuclo-core to $$new_version"; \
 	  fi; \
+	  echo "==> Publishing to registry"; \
+	  bun publish --no-git-checks && \
 	  echo "==> Creating tag (if missing)"; \
 	  if git rev-parse -q --verify "refs/tags/v$$new_version" >/dev/null; then \
 	    echo "Tag v$$new_version already exists - skipping"; \
