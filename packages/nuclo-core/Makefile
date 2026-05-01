@@ -43,7 +43,7 @@ publish:
 	@new_version=$$($(MAKE) --no-print-directory bump-version BUMP=$(BUMP)); \
 	  echo "==> New version: $$new_version"; \
 	  echo "==> Staging version bump artifacts"; \
-	  git add $(PKG_FILE) bun.lock 2>/dev/null || true; \
+	  git add $(PKG_FILE); \
 	  if git diff --cached --quiet; then \
 	    echo "==> No staged changes to commit (possibly already committed)"; \
 	  else \
