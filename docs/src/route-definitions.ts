@@ -1,16 +1,14 @@
 export type PageFunction = () => ReturnType<typeof div>;
 export type PageLoader = () => Promise<{ default: PageFunction }>;
 
-export interface RouteDefinition {
-  path: string;
-  loader: PageLoader;
-}
-
-export const routeDefinitions: RouteDefinition[] = [
+export const routeDefinitions = [
   { path: "home",     loader: () => import("./pages/Home.ts").then(m => ({ default: m.HomePage })) },
   { path: "docs",     loader: () => import("./pages/Docs.ts").then(m => ({ default: m.DocsPage })) },
   { path: "examples", loader: () => import("./pages/Examples.ts").then(m => ({ default: m.ExamplesPage })) },
-];
+] as const satisfies readonly { path: string; loader: PageLoader }[];
+
+export type RouteDefinition = (typeof routeDefinitions)[number];
+export type RoutePath = RouteDefinition["path"];
 
 export const routeMap = new Map<string, RouteDefinition>(
   routeDefinitions.map(def => [def.path, def])
