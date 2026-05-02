@@ -11,7 +11,7 @@ import { GitHubSvg } from "../../components/icons.ts";
 import { setRoute } from "../../router.ts";
 
 function DemoDot(color: string) {
-  return div(hs.heroDot, { style: `background:${color}` });
+  return div(hs.heroDot, { style: { backgroundColor: color } });
 }
 
 function HeroDemoCard() {
@@ -220,7 +220,7 @@ export function PhilosophySection() {
           ),
           blockquote(
             hs.philosophyQuote,
-            { style: "font-style:normal" },
+            { style: { fontStyle: "normal" } },
             `"${PHILOSOPHY_QUOTE}"`,
           ),
         ),
@@ -388,7 +388,12 @@ export function ExamplesTeaserSection() {
       div(
         cn(display("flex").gap("8px").marginBottom("10px")),
         input(
-          { type: "text", placeholder: "Add a task…", class: "ex-input", style: "margin-bottom:10px;width:100%" } as any,
+          {
+            type: "text",
+            placeholder: "Add a task…",
+            class: "ex-input",
+            style: { marginBottom: "10px", width: "100%" },
+          },
           on("input", (e) => { inputValue = (e.target as HTMLInputElement).value; }),
           on("keydown", (e) => { if ((e as KeyboardEvent).key === "Enter") addTodo(); }),
           ((el: any) => { domInput = el; }) as any,
@@ -404,7 +409,15 @@ export function ExamplesTeaserSection() {
         (t) => div(
           cn(display("flex").alignItems("center").gap("8px").padding("7px 10px").borderRadius("5px").border(`1px solid ${colors.border}`).backgroundColor(colors.bgSecondary).marginBottom("5px").fontSize("0.85rem")),
           input({ type: "checkbox" }, { checked: () => t.done }, on("change", () => { t.done = !t.done; update(); })),
-          span({ style: () => t.done ? "text-decoration:line-through;opacity:0.5" : "" }, t.text),
+          span(
+            {
+              style: () => ({
+                textDecoration: t.done ? "line-through" : "",
+                opacity: t.done ? "0.5" : "",
+              }),
+            },
+            t.text,
+          ),
         ),
       ),
     );
@@ -478,5 +491,4 @@ export function CTASection() {
     ),
   );
 }
-
 
