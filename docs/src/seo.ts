@@ -1,3 +1,5 @@
+import type { RoutePath } from './route-definitions.ts';
+
 export interface PageMeta {
   title: string;
   description: string;
@@ -7,7 +9,7 @@ export interface PageMeta {
 
 export const SEO_BASE_URL = "https://nuclo.dan2.dev/";
 
-export const routeMeta: Record<string, PageMeta> = {
+export const routeMeta: Record<RoutePath, PageMeta> = {
   home: {
     title: "Nuclo — Lightweight Imperative DOM Framework",
     description:
@@ -32,7 +34,9 @@ export const routeMeta: Record<string, PageMeta> = {
 };
 
 export function getMetaForRoute(route: string): PageMeta {
-  return routeMeta[route] ?? routeMeta["home"];
+  return Object.prototype.hasOwnProperty.call(routeMeta, route)
+    ? routeMeta[route as RoutePath]
+    : routeMeta["home"];
 }
 
 export function updatePageMeta(route: string): void {
