@@ -76,8 +76,8 @@ export function DocsPage() {
   // IntersectionObserver for sidebar active state — only on client
   if (typeof window !== "undefined") {
     requestAnimationFrame(() => {
-      const headings = document.querySelectorAll(".docs-content h1[id], .docs-content h2[id]");
-      if (!headings.length) return;
+      const sections = document.querySelectorAll(".docs-content section[id]");
+      if (!sections.length) return;
 
       const observer = new IntersectionObserver(
         (entries) => {
@@ -91,7 +91,7 @@ export function DocsPage() {
         { rootMargin: "-20% 0px -70% 0px" }
       );
 
-      headings.forEach(h => observer.observe(h));
+      sections.forEach(section => observer.observe(section));
     });
   }
 

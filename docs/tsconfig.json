@@ -22,8 +22,8 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
-    /* nuclo/polyfill has no export in the package — provide a stub for type-checking.
-       Bun runtime uses tsconfig.bun.json which overrides this to the actual source. */
+    /* The regular Vite client build only needs the side-effect polyfill import typed;
+       Bun runtime uses tsconfig.bun.json which maps it to the actual source. */
     "paths": {
       "nuclo/polyfill": ["./polyfill-stub.d.ts"]
     }
