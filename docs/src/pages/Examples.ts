@@ -1,5 +1,6 @@
 import { cn, colors, s } from "../styles.ts";
 import { EXAMPLES } from "../content/examples.ts";
+import { CodeBlock } from "../components/CodeBlock.ts";
 
 function ExampleCard(ex: typeof EXAMPLES[number]) {
   let activeTab: "preview" | "code" = "preview";
@@ -38,10 +39,7 @@ function ExampleCard(ex: typeof EXAMPLES[number]) {
     // Code pane
     div(
       { class: () => `epane${activeTab === "code" ? " on" : ""}` },
-      div(
-        { class: "ecode" },
-        { innerHTML: `<pre style="margin:0;white-space:pre-wrap">${ex.code}</pre>` },
-      ),
+      CodeBlock({ filename: `${ex.title.replace(/\s+/g, "")}.ts`, code: ex.code }),
     ),
   );
 }

@@ -19,7 +19,7 @@ export const DOC_GROUPS = [
   },
   {
     title: "API Reference",
-    sections: ["api-update", "api-render", "api-on", "api-when", "api-list", "api-scope"],
+    sections: ["api-update", "api-render", "api-hydrate", "api-on", "api-when", "api-list", "api-scope", "api-styling", "api-ssr"],
   },
   {
     title: "Patterns",
@@ -56,7 +56,7 @@ export const DOC_SECTIONS: DocSection[] = [
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">terminal</span></div><div class="code-block-body"><pre><span class="pt">$</span> <span class="fn">npm</span> install nuclo</pre></div></div>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">terminal</span></div><div class="code-block-body"><pre><span class="pt">$</span> <span class="fn">pnpm</span> add nuclo</pre></div></div>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">terminal</span></div><div class="code-block-body"><pre><span class="pt">$</span> <span class="fn">bun</span> add nuclo</pre></div></div>
-      <p>Then import it once at your entry point. The import is a side-effect that globally registers 140+ tag builder functions:</p>
+      <p>Then import it once at your entry point. The import is a side-effect that globally registers 175 tag builder functions:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">main.ts</span></div><div class="code-block-body"><pre><span class="kw">import</span> <span class="st">'nuclo'</span>
 <span class="cm">// div(), span(), button() ... are now available globally</span></pre></div></div>
     `,
@@ -68,7 +68,9 @@ export const DOC_SECTIONS: DocSection[] = [
     title: "TypeScript Setup",
     content: `
       <p>Nuclo is written in TypeScript and ships full type definitions. The global tag builders are typed via a <code>declare global</code> block included in the package.</p>
-      <p>No special <code>tsconfig</code> changes are required. The globals are picked up automatically once you import <code>'nuclo'</code>.</p>
+      <p>No special <code>tsconfig</code> changes are required when your app imports <code>'nuclo'</code>. If you want the globals available in files before the runtime import is seen by TypeScript, add a small env declaration:</p>
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">vite-env.d.ts</span></div><div class="code-block-body"><pre><span class="cm">/// &lt;reference types="nuclo/types" /&gt;</span></pre></div></div>
+      <p>A standard strict configuration is enough for most projects:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">tsconfig.json</span></div><div class="code-block-body"><pre><span class="pt">{</span>
   <span class="pr">"compilerOptions"</span><span class="pt">:</span> <span class="pt">{</span>
     <span class="pr">"target"</span><span class="pt">:</span> <span class="st">"ES2020"</span><span class="pt">,</span>
@@ -77,7 +79,7 @@ export const DOC_SECTIONS: DocSection[] = [
     <span class="pr">"strict"</span><span class="pt">:</span> <span class="kw">true</span>
   <span class="pt">}</span>
 <span class="pt">}</span></pre></div></div>
-      <p>All 140+ tag builders accept typed attribute objects, dynamic functions, and class-name helpers. Your editor will autocomplete everything.</p>
+      <p>All 175 tag builders accept typed attribute objects, dynamic text functions, event descriptors, child builders, and class-name helpers. Your editor will autocomplete everything.</p>
     `,
   },
 
@@ -111,7 +113,7 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Core Concepts",
     title: "Dynamic Functions",
     content: `
-      <p>Anywhere Nuclo accepts a value, you can pass a function that returns that value. On every <code>update()</code> call, Nuclo re-runs these functions and patches only the changed parts.</p>
+      <p>For text children and attribute values, you can pass a zero-argument function. On every <code>update()</code> call, Nuclo re-runs these functions and patches only changed values.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">name</span> <span class="pt">=</span> <span class="st">'Alice'</span>
 
 <span class="kw">const</span> <span class="pr">el</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span>
@@ -120,7 +122,7 @@ export const DOC_SECTIONS: DocSection[] = [
   <span class="cm">// Dynamic function — re-evaluated on update()</span>
   <span class="fn">p</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pt">\`</span><span class="st">Hello, </span><span class="pt">\${</span><span class="pr">name</span><span class="pt">}\`),</span>
 <span class="pt">)</span></pre></div></div>
-      <p>Dynamic functions work for text content, attributes, styles, class names, and child elements. They are lightweight—just functions called on demand.</p>
+      <p>Dynamic functions work for text content, attributes, styles, and class names. For dynamic branches or children, use <code>when()</code> and <code>list()</code>.</p>
     `,
   },
   {
@@ -133,9 +135,10 @@ export const DOC_SECTIONS: DocSection[] = [
       <ul>
         <li><strong>Strings / numbers</strong> — text nodes</li>
         <li><strong>() =&gt; string</strong> — dynamic text nodes</li>
-        <li><strong>HTMLElement</strong> — child elements</li>
+        <li><strong>HTMLElement / Node</strong> — child nodes</li>
+        <li><strong>NodeModFn</strong> — child builders such as <code>div()</code>, <code>span()</code>, <code>when()</code>, and <code>list()</code></li>
         <li><strong>Attribute objects</strong> — <code>{ id, class, href, ... }</code></li>
-        <li><strong>Style helpers</strong> — from <code>createStyleQueries</code></li>
+        <li><strong>Style helpers</strong> — <code>cn(...)</code> results from <code>createStyleQueries</code></li>
       </ul>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">const</span> <span class="pr">card</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span>
   <span class="pt">{</span> <span class="pr">id</span><span class="pt">:</span> <span class="st">"card-1"</span><span class="pt">,</span> <span class="pr">class</span><span class="pt">:</span> <span class="st">"card"</span> <span class="pt">},</span>
@@ -195,9 +198,9 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "API Reference",
     title: "update()",
     apiTag: "fn",
-    apiSig: `<span class="kw">function</span> <span class="fn">update</span><span class="pt">():</span> <span class="ty">void</span>`,
+    apiSig: `<span class="kw">function</span> <span class="fn">update</span><span class="pt">(...</span><span class="pr">scopeIds</span><span class="pt">:</span> <span class="ty">string</span><span class="pt">[]):</span> <span class="ty">void</span>`,
     content: `
-      <p>Triggers a synchronous DOM sync. Every dynamic function registered in the current tree is re-evaluated, and any changed values are patched into the DOM.</p>
+      <p>Triggers a synchronous DOM sync. Dynamic text, reactive attributes, <code>when()</code> branches, and <code>list()</code> runtimes are re-evaluated, and only changed values are patched into the DOM.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">x</span> <span class="pt">=</span> <span class="nm">1</span>
 <span class="kw">let</span> <span class="pr">y</span> <span class="pt">=</span> <span class="nm">2</span>
 
@@ -206,7 +209,7 @@ export const DOC_SECTIONS: DocSection[] = [
   <span class="pr">y</span> <span class="pt">=</span> <span class="nm">20</span>
   <span class="fn">update</span><span class="pt">()</span> <span class="cm">// DOM reflects x=10, y=20 in one pass</span>
 <span class="pt">},</span> <span class="nm">1000</span><span class="pt">)</span></pre></div></div>
-      <p><code>update()</code> is synchronous and fast. Call it as often as you need—it only visits nodes with dynamic functions.</p>
+      <p><code>update()</code> is synchronous. With no arguments it updates every registered runtime; with scope IDs it updates only roots registered by <code>scope("id")</code>.</p>
     `,
   },
   {
@@ -215,14 +218,32 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "API Reference",
     title: "render()",
     apiTag: "fn",
-    apiSig: `<span class="kw">function</span> <span class="fn">render</span><span class="pt">(</span><span class="pr">element</span><span class="pt">:</span> <span class="ty">HTMLElement</span><span class="pt">,</span> <span class="pr">target</span><span class="pt">:</span> <span class="ty">HTMLElement</span> <span class="pt">|</span> <span class="ty">string</span><span class="pt">):</span> <span class="ty">void</span>`,
+    apiSig: `<span class="kw">function</span> <span class="fn">render</span><span class="pt">(</span><span class="pr">nodeModFn</span><span class="pt">:</span> <span class="ty">NodeModFn</span><span class="pt">,</span> <span class="pr">parent</span><span class="pt">?:</span> <span class="ty">Element</span><span class="pt">,</span> <span class="pr">index</span><span class="pt">?:</span> <span class="ty">number</span><span class="pt">):</span> <span class="ty">ExpandedElement</span>`,
     content: `
-      <p>Mounts a Nuclo element into a container. The target can be an <code>HTMLElement</code> reference or a CSS selector string.</p>
+      <p>Calls a Nuclo builder and appends the created element to a parent. The parent defaults to <code>document.body</code>; pass an <code>Element</code> reference when mounting into a specific container.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">main.ts</span></div><div class="code-block-body"><pre><span class="kw">import</span> <span class="st">'nuclo'</span>
 <span class="kw">import</span> <span class="pt">{</span> <span class="pr">App</span> <span class="pt">}</span> <span class="kw">from</span> <span class="st">'./app.ts'</span>
 
-<span class="fn">render</span><span class="pt">(</span><span class="fn">App</span><span class="pt">(),</span> <span class="st">'#root'</span><span class="pt">)</span></pre></div></div>
-      <p>The container's existing children are replaced. Call <code>update()</code> after <code>render()</code> if you need to reflect initial state.</p>
+<span class="kw">const</span> <span class="pr">root</span> <span class="pt">=</span> <span class="pr">document</span><span class="pt">.</span><span class="fn">getElementById</span><span class="pt">(</span><span class="st">'root'</span><span class="pt">)</span><span class="pt">!</span>
+<span class="fn">render</span><span class="pt">(</span><span class="fn">App</span><span class="pt">(),</span> <span class="pr">root</span><span class="pt">)</span></pre></div></div>
+      <p><code>render()</code> appends the element; it does not clear the parent first. Initial dynamic text and attributes are evaluated during creation.</p>
+    `,
+  },
+  {
+    id: "api-hydrate",
+    group: "API Reference",
+    groupTitle: "API Reference",
+    title: "hydrate()",
+    apiTag: "fn",
+    apiSig: `<span class="kw">function</span> <span class="fn">hydrate</span><span class="pt">(</span><span class="pr">nodeModFn</span><span class="pt">:</span> <span class="ty">NodeModFn</span><span class="pt">,</span> <span class="pr">parent</span><span class="pt">?:</span> <span class="ty">Element</span><span class="pt">):</span> <span class="ty">ExpandedElement</span>`,
+    content: `
+      <p>Hydrates existing SSR HTML by walking the DOM in parallel with the same Nuclo component tree. Existing elements are claimed and event listeners, reactive attributes, reactive text, <code>when()</code>, and <code>list()</code> runtimes are registered on them.</p>
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">main.ts</span></div><div class="code-block-body"><pre><span class="kw">import</span> <span class="st">'nuclo'</span>
+<span class="kw">import</span> <span class="pt">{</span> <span class="pr">App</span> <span class="pt">}</span> <span class="kw">from</span> <span class="st">'./app.ts'</span>
+
+<span class="kw">const</span> <span class="pr">root</span> <span class="pt">=</span> <span class="pr">document</span><span class="pt">.</span><span class="fn">getElementById</span><span class="pt">(</span><span class="st">'app'</span><span class="pt">)</span><span class="pt">!</span>
+<span class="fn">hydrate</span><span class="pt">(</span><span class="fn">App</span><span class="pt">(),</span> <span class="pr">root</span><span class="pt">)</span></pre></div></div>
+      <p>Use <code>hydrate()</code> for server-rendered markup. Use <code>render()</code> when the client should create and append fresh DOM.</p>
     `,
   },
   {
@@ -251,9 +272,9 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "API Reference",
     title: "when()",
     apiTag: "fn",
-    apiSig: `<span class="kw">function</span> <span class="fn">when</span><span class="pt">(</span><span class="pr">condition</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="ty">boolean</span><span class="pt">,</span> <span class="pr">content</span><span class="pt">:</span> <span class="ty">NucloChild</span><span class="pt">).</span><span class="fn">else</span><span class="pt">(</span><span class="pr">alt</span><span class="pt">:</span> <span class="ty">NucloChild</span><span class="pt">)</span>`,
+    apiSig: `<span class="kw">function</span> <span class="fn">when</span><span class="pt">(</span><span class="pr">condition</span><span class="pt">:</span> <span class="ty">boolean</span> <span class="pt">|</span> <span class="pt">(()</span> <span class="pt">=></span> <span class="ty">boolean</span><span class="pt">),</span> <span class="pt">...</span><span class="pr">content</span><span class="pt">:</span> <span class="ty">WhenContent</span><span class="pt">[]):</span> <span class="ty">WhenBuilder</span>`,
     content: `
-      <p>Conditionally renders content. The <code>condition</code> is a dynamic function re-evaluated on every <code>update()</code>. Chain <code>.else()</code> for the falsy branch.</p>
+      <p>Conditionally renders content. Conditions may be booleans or dynamic functions re-evaluated on every <code>update()</code>. Chain <code>.when()</code> for additional branches and <code>.else()</code> for the fallback branch.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">loggedIn</span> <span class="pt">=</span> <span class="kw">false</span>
 
 <span class="kw">const</span> <span class="pr">el</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span>
@@ -263,7 +284,7 @@ export const DOC_SECTIONS: DocSection[] = [
     <span class="fn">button</span><span class="pt">(</span><span class="st">"Log in"</span><span class="pt">,</span> <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pr">login</span><span class="pt">))</span>
   <span class="pt">),</span>
 <span class="pt">)</span></pre></div></div>
-      <p>The content argument can be a static node, a dynamic function, or a string—the same types accepted by tag builders.</p>
+      <p>Each branch accepts one or more tag-builder modifiers: strings, nodes, attribute objects, builders, <code>list()</code>, or nested <code>when()</code> calls.</p>
     `,
   },
   {
@@ -272,9 +293,9 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "API Reference",
     title: "list()",
     apiTag: "fn",
-    apiSig: `<span class="kw">function</span> <span class="fn">list</span><span class="pt">&lt;</span><span class="ty">T</span><span class="pt">&gt;(</span><span class="pr">items</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="ty">T</span><span class="pt">[],</span> <span class="pr">render</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">item</span><span class="pt">:</span> <span class="ty">T</span><span class="pt">,</span> <span class="pr">index</span><span class="pt">:</span> <span class="ty">number</span><span class="pt">)</span> <span class="pt">=></span> <span class="ty">HTMLElement</span><span class="pt">)</span>`,
+    apiSig: `<span class="kw">function</span> <span class="fn">list</span><span class="pt">&lt;</span><span class="ty">T</span><span class="pt">&gt;(</span><span class="pr">items</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="kw">readonly</span> <span class="ty">T</span><span class="pt">[]</span> <span class="pt">|</span> <span class="ty">Iterable</span><span class="pt">&lt;</span><span class="ty">T</span><span class="pt">&gt;,</span> <span class="pr">render</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">item</span><span class="pt">:</span> <span class="ty">T</span><span class="pt">,</span> <span class="pr">index</span><span class="pt">:</span> <span class="ty">number</span><span class="pt">)</span> <span class="pt">=></span> <span class="ty">ListRenderResult</span><span class="pt">)</span>`,
     content: `
-      <p>Renders a dynamic list. The <code>items</code> function is re-evaluated on every <code>update()</code>; Nuclo diffs the result and adds, removes, or reorders DOM nodes as needed.</p>
+      <p>Renders a dynamic list. The <code>items</code> function is re-evaluated on every <code>update()</code>; Nuclo compares item identity and adds, removes, or reorders DOM nodes as needed.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">items</span><span class="pt">:</span> <span class="ty">string</span><span class="pt">[] =</span> <span class="pt">[</span><span class="st">'Apple'</span><span class="pt">,</span> <span class="st">'Banana'</span><span class="pt">]</span>
 
 <span class="kw">const</span> <span class="pr">listEl</span> <span class="pt">=</span> <span class="fn">ul</span><span class="pt">(</span>
@@ -286,7 +307,7 @@ export const DOC_SECTIONS: DocSection[] = [
 <span class="cm">// Later:</span>
 <span class="pr">items</span><span class="pt">.</span><span class="fn">push</span><span class="pt">(</span><span class="st">'Cherry'</span><span class="pt">)</span>
 <span class="fn">update</span><span class="pt">()</span></pre></div></div>
-      <p><code>list()</code> can also be used with a single slot function to swap out a single child — for example, in a router.</p>
+      <p><code>list()</code> accepts arrays, readonly arrays, and any iterable. Elements are reused when the same item object or primitive value is still present.</p>
     `,
   },
   {
@@ -295,19 +316,63 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "API Reference",
     title: "scope()",
     apiTag: "fn",
-    apiSig: `<span class="kw">function</span> <span class="fn">scope</span><span class="pt">(</span><span class="pr">fn</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="ty">HTMLElement</span><span class="pt">):</span> <span class="ty">HTMLElement</span>`,
+    apiSig: `<span class="kw">function</span> <span class="fn">scope</span><span class="pt">(...</span><span class="pr">ids</span><span class="pt">:</span> <span class="ty">string</span><span class="pt">[]):</span> <span class="ty">NodeModFn</span>`,
     content: `
-      <p><code>scope()</code> creates an isolated update boundary. Dynamic functions inside a scope only re-run when <code>update()</code> is called within that scope, not during global updates.</p>
+      <p><code>scope()</code> registers an element as a named update root. Later, <code>update("id")</code> updates only runtimes contained by matching connected roots.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">const</span> <span class="pr">el</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span>
-  <span class="fn">scope</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pt">{</span>
-    <span class="kw">let</span> <span class="pr">localCount</span> <span class="pt">=</span> <span class="nm">0</span>
-    <span class="kw">return</span> <span class="fn">button</span><span class="pt">(</span>
-      <span class="pt">()</span> <span class="pt">=></span> <span class="pt">\`</span><span class="st">Local: </span><span class="pt">\${</span><span class="pr">localCount</span><span class="pt">}\`,</span>
-      <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pt">{</span> <span class="pr">localCount</span><span class="pt">++;</span> <span class="fn">update</span><span class="pt">()</span> <span class="pt">})</span>
-    <span class="pt">)</span>
-  <span class="pt">})</span>
+  <span class="fn">scope</span><span class="pt">(</span><span class="st">"cart"</span><span class="pt">),</span>
+  <span class="fn">span</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pt">\`</span><span class="st">Items: </span><span class="pt">\${</span><span class="pr">cartItems</span><span class="pt">.</span><span class="pr">length</span><span class="pt">}\`)</span>
+<span class="pt">)</span>
+
+<span class="pr">cartItems</span><span class="pt">.</span><span class="fn">push</span><span class="pt">(</span><span class="pr">nextItem</span><span class="pt">)</span>
+<span class="fn">update</span><span class="pt">(</span><span class="st">"cart"</span><span class="pt">)</span></pre></div></div>
+      <p>A plain <code>update()</code> is still global. Use scoped updates when you know exactly which named area changed.</p>
+    `,
+  },
+  {
+    id: "api-styling",
+    group: "API Reference",
+    groupTitle: "API Reference",
+    title: "Styling",
+    apiTag: "fn",
+    apiSig: `<span class="kw">function</span> <span class="fn">createStyleQueries</span><span class="pt">(</span><span class="pr">queries</span><span class="pt">:</span> <span class="ty">Record</span><span class="pt">&lt;</span><span class="ty">string</span><span class="pt">,</span> <span class="ty">string</span><span class="pt">&gt;</span><span class="pt">):</span> <span class="ty">StyleQueryBuilder</span>`,
+    content: `
+      <p>Nuclo exports chainable style helpers such as <code>padding()</code>, <code>fontSize()</code>, <code>color()</code>, <code>display()</code>, and <code>border()</code>. A <code>StyleBuilder</code> becomes a generated CSS class, and <code>createStyleQueries()</code> adds media, container, supports, and pseudo-class rules.</p>
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">styles.ts</span></div><div class="code-block-body"><pre><span class="kw">import</span> <span class="st">'nuclo'</span>
+
+<span class="kw">const</span> <span class="pr">cn</span> <span class="pt">=</span> <span class="fn">createStyleQueries</span><span class="pt">({</span>
+  <span class="pr">medium</span><span class="pt">:</span> <span class="st">"@media (min-width: 768px)"</span><span class="pt">,</span>
+<span class="pt">})</span>
+
+<span class="kw">const</span> <span class="pr">cardClass</span> <span class="pt">=</span> <span class="fn">cn</span><span class="pt">(</span>
+  <span class="fn">padding</span><span class="pt">(</span><span class="st">"16px"</span><span class="pt">).</span><span class="fn">border</span><span class="pt">(</span><span class="st">"1px solid #ddd"</span><span class="pt">),</span>
+  <span class="pt">{</span>
+    <span class="pr">medium</span><span class="pt">:</span> <span class="fn">padding</span><span class="pt">(</span><span class="st">"24px"</span><span class="pt">),</span>
+    <span class="pr">hover</span><span class="pt">:</span> <span class="fn">borderColor</span><span class="pt">(</span><span class="st">"#3869ec"</span><span class="pt">),</span>
+  <span class="pt">}</span>
+<span class="pt">)</span>
+
+<span class="kw">const</span> <span class="pr">card</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span><span class="pr">cardClass</span><span class="pt">,</span> <span class="st">"Responsive card"</span><span class="pt">)</span></pre></div></div>
+      <p>The returned object has a single <code>className</code> key, so it can be passed directly to tag builders and merges with other class attributes.</p>
+    `,
+  },
+  {
+    id: "api-ssr",
+    group: "API Reference",
+    groupTitle: "API Reference",
+    title: "SSR",
+    apiTag: "fn",
+    apiSig: `<span class="kw">function</span> <span class="fn">renderToString</span><span class="pt">(</span><span class="pr">input</span><span class="pt">:</span> <span class="ty">NodeModFn</span> <span class="pt">|</span> <span class="ty">Element</span> <span class="pt">|</span> <span class="ty">Node</span><span class="pt">):</span> <span class="ty">string</span>`,
+    content: `
+      <p>The <code>nuclo/ssr</code> entry exports <code>renderToString()</code>, <code>renderManyToString()</code>, <code>renderToStringWithContainer()</code>, and <code>setSSRCollector()</code>. In Node.js, load the Nuclo polyfill before creating DOM nodes.</p>
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">server.ts</span></div><div class="code-block-body"><pre><span class="kw">import</span> <span class="st">'nuclo/polyfill'</span>
+<span class="kw">import</span> <span class="st">'nuclo'</span>
+<span class="kw">import</span> <span class="pt">{</span> <span class="pr">renderToString</span> <span class="pt">}</span> <span class="kw">from</span> <span class="st">'nuclo/ssr'</span>
+
+<span class="kw">const</span> <span class="pr">html</span> <span class="pt">=</span> <span class="fn">renderToString</span><span class="pt">(</span>
+  <span class="fn">div</span><span class="pt">(</span><span class="pt">{</span> <span class="pr">id</span><span class="pt">:</span> <span class="st">"app"</span> <span class="pt">},</span> <span class="fn">h1</span><span class="pt">(</span><span class="st">"Hello from SSR"</span><span class="pt">))</span>
 <span class="pt">)</span></pre></div></div>
-      <p>Use scopes to prevent expensive subtrees from re-running during global updates.</p>
+      <p>SSR evaluates dynamic functions once for the current state. On the client, call <code>hydrate()</code> with the same component tree to attach Nuclo runtime behavior to the existing markup.</p>
     `,
   },
 

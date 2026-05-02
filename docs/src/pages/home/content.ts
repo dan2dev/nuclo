@@ -100,7 +100,7 @@ export const FEATURES = [
   {
     num: "03 — TYPED",
     title: "TypeScript-first",
-    desc: "Full TypeScript types for 140+ HTML & SVG tags. Autocomplete everything.",
+    desc: "Full TypeScript types for 175 HTML & SVG tags. Autocomplete everything.",
   },
   {
     num: "04 — SMART",
@@ -120,7 +120,7 @@ export const QUICK_START_STEPS = [
   {
     num: "02 — IMPORT",
     title: "Import",
-    desc: "A single side-effect import globally injects all 140+ tag builders.",
+    desc: "A single side-effect import globally injects all 175 tag builders.",
     code: `<span class="kw">import</span> <span class="st">'nuclo'</span>`,
     lang: "main.ts",
   },

@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.STRESS_BASE_URL ?? "http://127.0.0.1:4173";
+const chromeExecutablePath = process.env.PLAYWRIGHT_CHROME_EXECUTABLE_PATH;
 
 export default defineConfig({
   testDir: "./tests",
@@ -21,7 +22,10 @@ export default defineConfig({
   projects: [
     {
       name: "stress-chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        ...(chromeExecutablePath ? { launchOptions: { executablePath: chromeExecutablePath } } : {}),
+      },
     },
   ],
   webServer: {

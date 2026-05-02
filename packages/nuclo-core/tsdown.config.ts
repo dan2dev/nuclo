@@ -12,7 +12,10 @@ export default defineConfig([
     globalName: 'Nuclo',
   },
   {
-    entry: { 'ssr/nuclo.ssr': 'src/ssr/index.ts' },
+    entry: {
+      'ssr/nuclo.ssr': 'src/ssr/index.ts',
+      'polyfill/nuclo.polyfill': 'src/polyfill/index.ts',
+    },
     format: ['esm', 'cjs'],
     outDir: 'dist',
     dts: false,

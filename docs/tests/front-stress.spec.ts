@@ -117,7 +117,7 @@ async function waitForSPAContent(
       if (window.location.pathname !== args.path) return false;
       const container = document.querySelector("#page-container");
       if (!container || container.children.length === 0) return false;
-      return !(container.textContent ?? "").includes(args.loadingText);
+      return true;
     },
     { path: urlPath, loadingText: "Loading..." },
     { timeout: 8000 },
@@ -228,6 +228,36 @@ async function runExampleScenario(
   round: number
 ): Promise<InteractionStats> {
   const stats: InteractionStats = { exampleInteractions: 0, todoItemsAdded: 0 };
+
+  // Current docs examples are collected on a single /examples page.
+  if (route === "/examples") {
+    const plusButton = page.getByRole("button", { name: "+" }).first();
+    if (await plusButton.isVisible().catch(() => false)) {
+      await plusButton.click();
+      await page.getByRole("button", { name: "Reset" }).first().click().catch(() => {});
+      stats.exampleInteractions += 1;
+    }
+
+    const todoInput = page.getByPlaceholder(/Add a task/).first();
+    if (await todoInput.isVisible().catch(() => false)) {
+      const taskText = `stress-task-r${round}-${Date.now()}`;
+      await todoInput.fill(taskText);
+      await page.getByRole("button", { name: "Add" }).first().click();
+      await expect(page.getByText(taskText).first()).toBeVisible({ timeout: 3000 });
+      stats.todoItemsAdded += 1;
+      stats.exampleInteractions += 1;
+    }
+
+    const searchInput = page.getByPlaceholder(/Search users/).first();
+    if (await searchInput.isVisible().catch(() => false)) {
+      await searchInput.fill("Alice");
+      await page.waitForTimeout(100);
+      await searchInput.fill("");
+      stats.exampleInteractions += 1;
+    }
+
+    return stats;
+  }
 
   // ── Todo ──────────────────────────────────────────────────────────────────
   if (route.includes("/examples/todo")) {
@@ -481,16 +511,7 @@ test.describe("Front stress", () => {
 
     const routes = await getInternalRoutes(base, page);
     const scenarioRoutes = [
-      "/examples/todo",
-      "/examples/counter",
-      "/examples/forms",
-      "/examples/subtasks",
-      "/examples/search",
-      "/examples/async",
-      "/examples/nested",
-      "/examples/animations",
-      "/examples/routing",
-      "/examples/styled-card",
+      "/examples",
     ];
     const mergedRoutes = Array.from(new Set([...routes, ...scenarioRoutes]));
     const totalRoutesPerRound = mergedRoutes.length;

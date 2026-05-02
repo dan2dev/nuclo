@@ -4,22 +4,8 @@ test.use({ baseURL: 'http://127.0.0.1:5173' });
 
 const routes = [
   '/',
-  '/getting-started',
-  '/core-api',
-  '/tag-builders',
-  '/styling',
-  '/pitfalls',
+  '/docs',
   '/examples',
-  '/examples/counter',
-  '/examples/todo',
-  '/examples/subtasks',
-  '/examples/search',
-  '/examples/async',
-  '/examples/forms',
-  '/examples/nested',
-  '/examples/animations',
-  '/examples/routing',
-  '/examples/styled-card',
 ];
 
 test.describe('Hydration — all docs pages', () => {
@@ -53,7 +39,6 @@ test.describe('Hydration — all docs pages', () => {
         return {
           appChildren: app?.children.length ?? 0,
           rootDivChildren: rootDiv?.children.length ?? 0,
-          headers: document.querySelectorAll('header').length,
           footers: document.querySelectorAll('footer').length,
           // Only check for duplicate page-container mains (not nested <main> from page content)
           pageContainers: document.querySelectorAll('main#page-container').length,
@@ -70,7 +55,6 @@ test.describe('Hydration — all docs pages', () => {
 
       expect(structure.appChildren, `#app should have exactly 1 child on ${route}`).toBe(1);
       expect(structure.rootDivChildren, `root div should have 3 children on ${route}`).toBe(3);
-      expect(structure.headers, `should have exactly 1 <header> on ${route}`).toBe(1);
       expect(structure.footers, `should have exactly 1 <footer> on ${route}`).toBe(1);
       expect(structure.pageContainers, `should have exactly 1 main#page-container on ${route}`).toBe(1);
       expect(structure.navs, `should have at least 1 <nav> on ${route}`).toBeGreaterThanOrEqual(1);

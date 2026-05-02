@@ -9,119 +9,283 @@ export const EXAMPLES: ExampleEntry[] = [
   {
     id: "counter",
     title: "Counter",
-    desc: "Minimal counter demo — mutate state, call update(). The simplest possible Nuclo example.",
-    code: `<span class="kw">import</span> <span class="st">'nuclo'</span>
+    desc: "Minimal counter demo: mutate state, call update(), and let dynamic text refresh.",
+    code: `import 'nuclo'
 
-<span class="kw">let</span> <span class="pr">count</span> <span class="pt">=</span> <span class="nm">0</span>
+let count = 0
 
-<span class="kw">export function</span> <span class="fn">Counter</span><span class="pt">() {</span>
-  <span class="kw">return</span> <span class="fn">div</span><span class="pt">(</span>
-    <span class="fn">div</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pt">\`</span><span class="st">Count: </span><span class="pt">\${</span><span class="pr">count</span><span class="pt">}\`),</span>
-    <span class="fn">button</span><span class="pt">(</span><span class="st">"−"</span><span class="pt">,</span> <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pt">{</span> <span class="pr">count</span><span class="pt">--;</span> <span class="fn">update</span><span class="pt">()</span> <span class="pt">})),</span>
-    <span class="fn">button</span><span class="pt">(</span><span class="st">"Reset"</span><span class="pt">,</span> <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pt">{</span> <span class="pr">count</span> <span class="pt">=</span> <span class="nm">0</span><span class="pt">;</span> <span class="fn">update</span><span class="pt">()</span> <span class="pt">})),</span>
-    <span class="fn">button</span><span class="pt">(</span><span class="st">"+"</span><span class="pt">,</span> <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pt">{</span> <span class="pr">count</span><span class="pt">++;</span> <span class="fn">update</span><span class="pt">()</span> <span class="pt">})),</span>
-  <span class="pt">)</span>
-<span class="pt">}</span>`,
+export function Counter() {
+  return div(
+    { class: "ex-counter" },
+    div({ class: "ex-count-val" }, () => String(count)),
+    div({ class: "ex-count-label" }, "COUNT"),
+    div(
+      { class: "ex-btns" },
+      button(
+        { class: "ex-btn" },
+        "-",
+        on("click", () => { count--; update() }),
+      ),
+      button(
+        { class: "ex-btn primary" },
+        "Reset",
+        on("click", () => { count = 0; update() }),
+      ),
+      button(
+        { class: "ex-btn" },
+        "+",
+        on("click", () => { count++; update() }),
+      ),
+    ),
+  )
+}`,
   },
   {
     id: "todo",
     title: "Todo List",
     desc: "Add, complete, and delete tasks. Filter by all / active / done. Classic todo with Nuclo state.",
-    code: `<span class="kw">import</span> <span class="st">'nuclo'</span>
+    code: `import 'nuclo'
 
-<span class="kw">interface</span> <span class="ty">Todo</span> <span class="pt">{</span> <span class="pr">text</span><span class="pt">:</span> <span class="ty">string</span><span class="pt">;</span> <span class="pr">done</span><span class="pt">:</span> <span class="ty">boolean</span> <span class="pt">}</span>
-<span class="kw">let</span> <span class="pr">todos</span><span class="pt">:</span> <span class="ty">Todo</span><span class="pt">[] =</span> <span class="pt">[]</span>
-<span class="kw">let</span> <span class="pr">filter</span><span class="pt">:</span> <span class="st">'all'</span> <span class="pt">|</span> <span class="st">'active'</span> <span class="pt">|</span> <span class="st">'done'</span> <span class="pt">=</span> <span class="st">'all'</span>
+interface Todo {
+  id: number
+  text: string
+  done: boolean
+}
 
-<span class="kw">function</span> <span class="fn">visible</span><span class="pt">() {</span>
-  <span class="kw">if</span> <span class="pt">(</span><span class="pr">filter</span> <span class="pt">===</span> <span class="st">'active'</span><span class="pt">)</span> <span class="kw">return</span> <span class="pr">todos</span><span class="pt">.</span><span class="fn">filter</span><span class="pt">(</span><span class="pr">t</span> <span class="pt">=></span> <span class="pt">!</span><span class="pr">t</span><span class="pt">.</span><span class="pr">done</span><span class="pt">)</span>
-  <span class="kw">if</span> <span class="pt">(</span><span class="pr">filter</span> <span class="pt">===</span> <span class="st">'done'</span><span class="pt">)</span>   <span class="kw">return</span> <span class="pr">todos</span><span class="pt">.</span><span class="fn">filter</span><span class="pt">(</span><span class="pr">t</span> <span class="pt">=></span> <span class="pr">t</span><span class="pt">.</span><span class="pr">done</span><span class="pt">)</span>
-  <span class="kw">return</span> <span class="pr">todos</span>
-<span class="pt">}</span>
+let todos: Todo[] = []
+let filter: "all" | "active" | "done" = "all"
+let nextId = 1
+let inputValue = ""
+let domInput: HTMLInputElement | null = null
 
-<span class="kw">export function</span> <span class="fn">TodoList</span><span class="pt">() {</span>
-  <span class="kw">const</span> <span class="pr">inp</span> <span class="pt">=</span> <span class="fn">input</span><span class="pt">({</span> <span class="pr">type</span><span class="pt">:</span> <span class="st">'text'</span><span class="pt">,</span> <span class="pr">placeholder</span><span class="pt">:</span> <span class="st">'Add a task…'</span> <span class="pt">})</span>
-  <span class="kw">function</span> <span class="fn">add</span><span class="pt">() {</span>
-    <span class="kw">const</span> <span class="pr">v</span> <span class="pt">= (</span><span class="pr">inp</span> <span class="kw">as</span> <span class="ty">HTMLInputElement</span><span class="pt">).</span><span class="pr">value</span><span class="pt">.</span><span class="fn">trim</span><span class="pt">()</span>
-    <span class="kw">if</span> <span class="pt">(!</span><span class="pr">v</span><span class="pt">)</span> <span class="kw">return</span>
-    <span class="pr">todos</span><span class="pt">.</span><span class="fn">push</span><span class="pt">({</span> <span class="pr">text</span><span class="pt">:</span> <span class="pr">v</span><span class="pt">,</span> <span class="pr">done</span><span class="pt">:</span> <span class="kw">false</span> <span class="pt">})</span>
-    <span class="pt">(</span><span class="pr">inp</span> <span class="kw">as</span> <span class="ty">HTMLInputElement</span><span class="pt">).</span><span class="pr">value</span> <span class="pt">=</span> <span class="st">''</span>
-    <span class="fn">update</span><span class="pt">()</span>
-  <span class="pt">}</span>
-  <span class="kw">return</span> <span class="fn">div</span><span class="pt">(</span>
-    <span class="fn">div</span><span class="pt">(</span><span class="pr">inp</span><span class="pt">,</span> <span class="fn">button</span><span class="pt">(</span><span class="st">"Add"</span><span class="pt">,</span> <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pr">add</span><span class="pt">))),</span>
-    <span class="fn">list</span><span class="pt">(()</span> <span class="pt">=></span> <span class="fn">visible</span><span class="pt">(),</span>
-      <span class="pt">(</span><span class="pr">t</span><span class="pt">)</span> <span class="pt">=></span> <span class="fn">div</span><span class="pt">(</span><span class="pr">t</span><span class="pt">.</span><span class="pr">text</span><span class="pt">)</span>
-    <span class="pt">)</span>
-  <span class="pt">)</span>
-<span class="pt">}</span>`,
+export function TodoList() {
+  const inputEl = input(
+    { type: "text", placeholder: "Add a task...", class: "ex-input" },
+    on("input", (e) => {
+      inputValue = (e.target as HTMLInputElement).value
+    }),
+    on("keydown", (e) => {
+      if ((e as KeyboardEvent).key === "Enter") addTodo()
+    }),
+    ((el: HTMLInputElement) => { domInput = el }) as any,
+  )
+
+  function visible() {
+    if (filter === "active") return todos.filter(t => !t.done)
+    if (filter === "done") return todos.filter(t => t.done)
+    return todos
+  }
+
+  function addTodo() {
+    const value = inputValue.trim()
+    if (!value) return
+
+    todos.push({ id: nextId++, text: value, done: false })
+    inputValue = ""
+    if (domInput) domInput.value = ""
+    update()
+  }
+
+  function FilterButton(label: string, next: typeof filter) {
+    return button(
+      { class: () => \`ex-filter\${filter === next ? " active" : ""}\` },
+      label,
+      on("click", () => { filter = next; update() }),
+    )
+  }
+
+  return div(
+    { class: "ex-todo" },
+    div(
+      { class: "ex-row" },
+      inputEl,
+      button({ class: "ex-btn primary" }, "Add", on("click", addTodo)),
+    ),
+    div(
+      { class: "ex-filters" },
+      FilterButton("All", "all"),
+      FilterButton("Active", "active"),
+      FilterButton("Done", "done"),
+    ),
+    div(
+      { class: "ex-list" },
+      list(
+        () => visible(),
+        (todo) => div(
+          { class: () => \`ex-item\${todo.done ? " done" : ""}\` },
+          input(
+            { type: "checkbox" },
+            { checked: () => todo.done },
+            on("change", () => { todo.done = !todo.done; update() }),
+          ),
+          span({ class: "ex-item-text" }, todo.text),
+          button(
+            { class: "ex-item-del" },
+            "x",
+            on("click", () => {
+              todos = todos.filter(x => x.id !== todo.id)
+              update()
+            }),
+          ),
+        ),
+      ),
+      when(
+        () => visible().length === 0,
+        div({ class: "ex-empty" }, "No tasks yet."),
+      ),
+    ),
+    div(
+      { class: "ex-count-summary" },
+      () => {
+        const remaining = todos.filter(t => !t.done).length
+        return \`\${remaining} of \${todos.length} remaining\`
+      },
+    ),
+  )
+}`,
   },
   {
     id: "search",
     title: "Search Filter",
     desc: "Live search that filters a list of users as you type. Zero libraries, just state and update().",
-    code: `<span class="kw">import</span> <span class="st">'nuclo'</span>
+    code: `import 'nuclo'
 
-<span class="kw">const</span> <span class="pr">USERS</span> <span class="pt">= [</span>
-  <span class="pt">{</span> <span class="pr">name</span><span class="pt">:</span> <span class="st">'Alice Chen'</span><span class="pt">,</span> <span class="pr">email</span><span class="pt">:</span> <span class="st">'alice@example.com'</span> <span class="pt">},</span>
-  <span class="pt">{</span> <span class="pr">name</span><span class="pt">:</span> <span class="st">'Bob Smith'</span><span class="pt">,</span> <span class="pr">email</span><span class="pt">:</span> <span class="st">'bob@example.com'</span> <span class="pt">},</span>
-  <span class="pt">{</span> <span class="pr">name</span><span class="pt">:</span> <span class="st">'Charlie Davis'</span><span class="pt">,</span> <span class="pr">email</span><span class="pt">:</span> <span class="st">'charlie@example.com'</span> <span class="pt">},</span>
-<span class="pt">]</span>
-<span class="kw">let</span> <span class="pr">query</span> <span class="pt">=</span> <span class="st">''</span>
+const USERS = [
+  { name: "Alice Chen", email: "alice@example.com", initials: "AC" },
+  { name: "Bob Smith", email: "bob@example.com", initials: "BS" },
+  { name: "Charlie Davis", email: "charlie@example.com", initials: "CD" },
+  { name: "Diana Park", email: "diana@example.com", initials: "DP" },
+  { name: "Ethan Moore", email: "ethan@example.com", initials: "EM" },
+]
 
-<span class="kw">function</span> <span class="fn">results</span><span class="pt">() {</span>
-  <span class="kw">const</span> <span class="pr">q</span> <span class="pt">=</span> <span class="pr">query</span><span class="pt">.</span><span class="fn">toLowerCase</span><span class="pt">()</span>
-  <span class="kw">return</span> <span class="pr">USERS</span><span class="pt">.</span><span class="fn">filter</span><span class="pt">(</span><span class="pr">u</span> <span class="pt">=></span>
-    <span class="pr">u</span><span class="pt">.</span><span class="pr">name</span><span class="pt">.</span><span class="fn">toLowerCase</span><span class="pt">().</span><span class="fn">includes</span><span class="pt">(</span><span class="pr">q</span><span class="pt">)</span>
-  <span class="pt">)</span>
-<span class="pt">}</span>
+let query = ""
 
-<span class="kw">export function</span> <span class="fn">SearchFilter</span><span class="pt">() {</span>
-  <span class="kw">return</span> <span class="fn">div</span><span class="pt">(</span>
-    <span class="fn">input</span><span class="pt">({</span>
-      <span class="pr">placeholder</span><span class="pt">:</span> <span class="st">'Search users…'</span><span class="pt">,</span>
-      <span class="fn">on</span><span class="pt">(</span><span class="st">'input'</span><span class="pt">,</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">)</span> <span class="pt">=></span> <span class="pt">{</span>
-        <span class="pr">query</span> <span class="pt">=</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">.</span><span class="pr">target</span> <span class="kw">as</span> <span class="ty">HTMLInputElement</span><span class="pt">).</span><span class="pr">value</span>
-        <span class="fn">update</span><span class="pt">()</span>
-      <span class="pt">})</span>
-    <span class="pt">}),</span>
-    <span class="fn">list</span><span class="pt">(()</span> <span class="pt">=></span> <span class="fn">results</span><span class="pt">(),</span>
-      <span class="pt">(</span><span class="pr">u</span><span class="pt">)</span> <span class="pt">=></span> <span class="fn">div</span><span class="pt">(</span><span class="pr">u</span><span class="pt">.</span><span class="pr">name</span><span class="pt">)</span>
-    <span class="pt">)</span>
-  <span class="pt">)</span>
-<span class="pt">}</span>`,
+function results() {
+  const q = query.toLowerCase()
+  if (!q) return USERS
+
+  return USERS.filter(user =>
+    user.name.toLowerCase().includes(q) ||
+    user.email.toLowerCase().includes(q)
+  )
+}
+
+export function SearchFilter() {
+  return div(
+    { class: "ex-search" },
+    input(
+      {
+        type: "text",
+        placeholder: "Search users...",
+        class: "ex-input ex-search-input",
+      },
+      on("input", (e) => {
+        query = (e.target as HTMLInputElement).value
+        update()
+      }),
+    ),
+    div(
+      list(
+        () => results(),
+        (user) => div(
+          { class: "ex-user-card" },
+          div({ class: "ex-avatar" }, user.initials),
+          div(
+            div({ class: "ex-user-name" }, user.name),
+            div({ class: "ex-user-email" }, user.email),
+          ),
+        ),
+      ),
+      when(
+        () => results().length === 0,
+        div({ class: "ex-no-results" }, "No users found."),
+      ),
+    ),
+  )
+}`,
   },
   {
     id: "async",
     title: "Loading States",
     desc: "Async data fetching with idle / loading / success / error states. No special async API needed.",
-    code: `<span class="kw">import</span> <span class="st">'nuclo'</span>
+    code: `import 'nuclo'
 
-<span class="kw">type</span> <span class="ty">Status</span> <span class="pt">=</span> <span class="st">'idle'</span> <span class="pt">|</span> <span class="st">'loading'</span> <span class="pt">|</span> <span class="st">'success'</span> <span class="pt">|</span> <span class="st">'error'</span>
-<span class="kw">let</span> <span class="pr">status</span><span class="pt">:</span> <span class="ty">Status</span> <span class="pt">=</span> <span class="st">'idle'</span>
-<span class="kw">let</span> <span class="pr">products</span><span class="pt">:</span> <span class="pt">{</span><span class="pr">title</span><span class="pt">:</span><span class="ty">string</span><span class="pt">;</span><span class="pr">category</span><span class="pt">:</span><span class="ty">string</span><span class="pt">}[] =</span> <span class="pt">[]</span>
+interface Product {
+  id: number
+  title: string
+  category: string
+}
 
-<span class="kw">async function</span> <span class="fn">load</span><span class="pt">() {</span>
-  <span class="pr">status</span> <span class="pt">=</span> <span class="st">'loading'</span><span class="pt">;</span> <span class="fn">update</span><span class="pt">()</span>
-  <span class="kw">try</span> <span class="pt">{</span>
-    <span class="kw">const</span> <span class="pr">r</span> <span class="pt">=</span> <span class="kw">await</span> <span class="fn">fetch</span><span class="pt">(</span><span class="st">'https://dummyjson.com/products?limit=3'</span><span class="pt">)</span>
-    <span class="kw">const</span> <span class="pr">d</span> <span class="pt">=</span> <span class="kw">await</span> <span class="pr">r</span><span class="pt">.</span><span class="fn">json</span><span class="pt">()</span>
-    <span class="pr">products</span> <span class="pt">=</span> <span class="pr">d</span><span class="pt">.</span><span class="pr">products</span>
-    <span class="pr">status</span> <span class="pt">=</span> <span class="st">'success'</span>
-  <span class="pt">}</span> <span class="kw">catch</span> <span class="pt">{</span>
-    <span class="pr">status</span> <span class="pt">=</span> <span class="st">'error'</span>
-  <span class="pt">}</span>
-  <span class="fn">update</span><span class="pt">()</span>
-<span class="pt">}</span>
+type Status = "idle" | "loading" | "success" | "error"
 
-<span class="kw">export function</span> <span class="fn">AsyncExample</span><span class="pt">() {</span>
-  <span class="kw">return</span> <span class="fn">div</span><span class="pt">(</span>
-    <span class="fn">button</span><span class="pt">(</span><span class="st">"Fetch Data"</span><span class="pt">,</span> <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pr">load</span><span class="pt">)),</span>
-    <span class="fn">when</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pr">status</span> <span class="pt">===</span> <span class="st">'loading'</span><span class="pt">,</span> <span class="fn">span</span><span class="pt">(</span><span class="st">"Loading…"</span><span class="pt">)),</span>
-    <span class="fn">list</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pr">products</span><span class="pt">,</span>
-      <span class="pt">(</span><span class="pr">p</span><span class="pt">)</span> <span class="pt">=></span> <span class="fn">div</span><span class="pt">(</span><span class="pr">p</span><span class="pt">.</span><span class="pr">title</span><span class="pt">)</span>
-    <span class="pt">)</span>
-  <span class="pt">)</span>
-<span class="pt">}</span>`,
+let status: Status = "idle"
+let products: Product[] = []
+let errMsg = ""
+
+async function loadData() {
+  status = "loading"
+  update()
+
+  try {
+    const res = await fetch(
+      "https://dummyjson.com/products?limit=3&select=title,category"
+    )
+    if (!res.ok) throw new Error(\`HTTP \${res.status}\`)
+
+    const data = await res.json() as { products: Product[] }
+    products = data.products
+    status = "success"
+  } catch (error) {
+    errMsg = error instanceof Error ? error.message : "Unknown error"
+    status = "error"
+  }
+
+  update()
+}
+
+export function AsyncExample() {
+  return div(
+    { class: "ex-async" },
+    div(
+      { class: "ex-status-bar" },
+      div({ class: () => \`ex-status-dot \${status}\` }),
+      span(() => {
+        if (status === "idle") return "Ready to fetch"
+        if (status === "loading") return "Fetching..."
+        if (status === "success") return \`Loaded \${products.length} products\`
+        return "Error occurred"
+      }),
+    ),
+    button(
+      {
+        class: () => \`ex-btn primary\${status === "loading" ? " disabled" : ""}\`,
+        disabled: () => status === "loading",
+      },
+      () => status === "loading" ? "Loading..." : "Fetch Data",
+      on("click", loadData),
+    ),
+    when(
+      () => status === "success",
+      div(
+        { style: { marginTop: "12px" } },
+        list(
+          () => products,
+          (product) => div(
+            { class: "ex-product-card" },
+            div({ class: "ex-product-title" }, product.title),
+            div({ class: "ex-product-cat" }, product.category),
+          ),
+        ),
+      ),
+    ),
+    when(
+      () => status === "error",
+      div(
+        { class: "ex-error-msg", style: { marginTop: "12px" } },
+        () => \`Error: \${errMsg}\`,
+      ),
+    ),
+  )
+}`,
   },
 ];

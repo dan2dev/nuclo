@@ -10,7 +10,7 @@ const targets = [
   "bun-linux-arm64-musl",
   "bun-windows-x64",
   "bun-windows-arm64",
-] satisfies Bun.Build.Target[];
+] satisfies Bun.Build.CompileTarget[];
 
 const nucloSrc = resolve(import.meta.dir, "../packages/nuclo-core/src");
 
