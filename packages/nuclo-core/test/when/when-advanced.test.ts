@@ -13,7 +13,7 @@
 /// <reference path="../../types/index.d.ts" />
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { when, updateWhenRuntimes, clearWhenRuntimes } from '../../src/when';
+import { when, updateWhenRuntimes } from '../../src/when';
 import { list } from '../../src/list';
 import { update } from '../../src';
 
@@ -33,7 +33,6 @@ describe('when (advanced scenarios)', () => {
   });
 
   afterEach(() => {
-    clearWhenRuntimes();
     container.remove();
   });
 

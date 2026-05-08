@@ -70,10 +70,6 @@ export function getActiveConditionalNodes(): Node[] {
 	return nodes;
 }
 
-export function hasConditionalInfo(node: Node): boolean {
-	return conditionalInfoMap.has(node);
-}
-
 export function getConditionalInfo(node: Node): ConditionalInfo<ElementTagName> | null {
 	return conditionalInfoMap.get(node) ?? null;
 }

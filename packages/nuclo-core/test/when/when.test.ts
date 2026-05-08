@@ -4,7 +4,7 @@
 
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { when, updateWhenRuntimes, clearWhenRuntimes } from '../../src/when/index';
+import { when, updateWhenRuntimes } from '../../src/when/index';
 
 describe('When Conditional Rendering', () => {
   let container: HTMLElement;
@@ -16,7 +16,6 @@ describe('When Conditional Rendering', () => {
 
   afterEach(() => {
     container.remove();
-    clearWhenRuntimes();
   });
 
   describe('basic functionality', () => {

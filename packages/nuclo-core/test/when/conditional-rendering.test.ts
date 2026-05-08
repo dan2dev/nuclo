@@ -4,7 +4,7 @@
 
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { when, updateWhenRuntimes, clearWhenRuntimes } from '../../src/when/index';
+import { when, updateWhenRuntimes } from '../../src/when/index';
 import { update } from '../../src';
 
 describe('Conditional Rendering (when)', () => {

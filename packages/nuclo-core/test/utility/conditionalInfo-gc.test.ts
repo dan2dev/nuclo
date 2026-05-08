@@ -16,7 +16,6 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   storeConditionalInfo,
   getActiveConditionalNodes,
-  hasConditionalInfo,
   getConditionalInfo,
   unregisterConditionalNode,
 } from '../../src/utility/conditionalInfo';
@@ -32,7 +31,6 @@ describe('storeConditionalInfo', () => {
     const node = document.createElement('div');
     const info = { condition: () => true, tagName: 'div' as ElementTagName, modifiers: [], isSvg: false };
     storeConditionalInfo(node, info);
-    expect(hasConditionalInfo(node)).toBe(true);
     expect(getConditionalInfo(node)).toBe(info);
   });
 
@@ -54,30 +52,15 @@ describe('getConditionalInfo', () => {
   });
 });
 
-// ── Unit: hasConditionalInfo ──────────────────────────────────────────────────
-describe('hasConditionalInfo', () => {
-  it('returns false before storing', () => {
-    const node = document.createElement('p');
-    expect(hasConditionalInfo(node)).toBe(false);
-  });
-
-  it('returns false after unregistering', () => {
-    const node = document.createElement('p');
-    storeConditionalInfo(node, { condition: () => true, tagName: 'p' as ElementTagName, modifiers: [], isSvg: false });
-    unregisterConditionalNode(node);
-    expect(hasConditionalInfo(node)).toBe(false);
-  });
-});
-
 // ── Unit: unregisterConditionalNode ───────────────────────────────────────────
 describe('unregisterConditionalNode', () => {
   it('removes the node from both the map and the active set', () => {
     const node = document.createElement('section');
     storeConditionalInfo(node, { condition: () => true, tagName: 'section' as ElementTagName, modifiers: [], isSvg: false });
-    expect(hasConditionalInfo(node)).toBe(true);
+    expect(getConditionalInfo(node)).not.toBeNull();
 
     unregisterConditionalNode(node);
-    expect(hasConditionalInfo(node)).toBe(false);
+    expect(getConditionalInfo(node)).toBeNull();
 
     const activeNodes = getActiveConditionalNodes();
     expect(activeNodes).not.toContain(node);

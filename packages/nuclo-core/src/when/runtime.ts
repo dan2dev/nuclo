@@ -150,13 +150,3 @@ export function updateWhenRuntimes(scope?: UpdateScope): void {
     activeWhenRuntimes.delete(ref);
   }
 }
-
-/**
- * Clears all active when/else conditional runtimes.
- *
- * This is typically used for cleanup or testing purposes.
- * After calling this, no when() conditionals will be tracked for updates.
- */
-export function clearWhenRuntimes(): void {
-  activeWhenRuntimes.clear();
-}
