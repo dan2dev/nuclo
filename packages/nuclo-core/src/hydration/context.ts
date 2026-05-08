@@ -68,7 +68,8 @@ export function claimElement(parent: Node, tagName: string): Element | null {
  */
 export function cleanupUnclaimedChildren(node: Node, initialChildCount: number): void {
   const cursorAfter = getCursor(node);
-  for (let i = cursorAfter; i < initialChildCount; i++) {
+  let remaining = initialChildCount - cursorAfter;
+  while (remaining-- > 0) {
     const child = node.childNodes[cursorAfter];
     if (child) node.removeChild(child);
   }

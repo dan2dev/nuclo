@@ -22,11 +22,11 @@ export interface WhenRuntime<TTagName extends ElementTagName = ElementTagName> {
   elseContent: WhenContent<TTagName>[];
   /**
    * Tracks which branch is currently rendered:
-   *  - null: nothing rendered yet
-   *  - -1: else branch
-   *  - >=0: index of groups[]
+   *  - null:  nothing rendered yet (initial state)
+   *  - -1:    else branch is active
+   *  - >= 0:  groups[activeIndex] is active
    */
-  activeIndex: number | -1 | null;
+  activeIndex: number | null;
   update(): void;
 }
 
@@ -48,7 +48,7 @@ const activeWhenRuntimes = new Map<WeakRef<Comment>, WhenRuntimeInfo<ElementTagN
 export function evaluateActiveCondition<TTagName extends ElementTagName>(
   groups: ReadonlyArray<WhenGroup<TTagName>>,
   elseContent: ReadonlyArray<WhenContent<TTagName>>
-): number | -1 | null {
+): number | null {
   for (let i = 0; i < groups.length; i++) {
     if (resolveCondition(groups[i].condition)) {
       return i;
