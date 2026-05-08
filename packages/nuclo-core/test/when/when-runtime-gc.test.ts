@@ -21,7 +21,6 @@ import { describe, it, expect, afterEach } from 'vitest';
 import {
   registerWhenRuntime,
   updateWhenRuntimes,
-  clearWhenRuntimes,
   renderWhenContent,
   type WhenRuntime,
 } from '../../src/when/runtime';
@@ -106,7 +105,6 @@ describe('updateWhenRuntimes – garbage-collected WeakRef cleanup (lines 127-12
 
   afterEach(() => {
     gcSim?.restore();
-    clearWhenRuntimes();
     document.body.innerHTML = '';
   });
 

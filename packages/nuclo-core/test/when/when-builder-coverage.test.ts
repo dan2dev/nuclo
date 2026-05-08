@@ -1,7 +1,7 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { WhenBuilderImpl, createWhenBuilderFunction } from "../../src/when/builder";
-import { updateWhenRuntimes, clearWhenRuntimes } from "../../src/when/runtime";
+import { updateWhenRuntimes } from "../../src/when/runtime";
 
 describe("when builder coverage improvements", () => {
   let container: HTMLElement;
@@ -9,14 +9,12 @@ describe("when builder coverage improvements", () => {
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
-    clearWhenRuntimes();
   });
 
   afterEach(() => {
     if (container.parentNode) {
       document.body.removeChild(container);
     }
-    clearWhenRuntimes();
   });
 
   describe("WhenBuilderImpl direct usage", () => {

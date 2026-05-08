@@ -1,7 +1,7 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { when } from "../../src/when";
-import { clearWhenRuntimes } from "../../src/when/runtime";
+
 import { update } from "../../src/core/updateController";
 
 describe("when builder independent chains", () => {
@@ -13,13 +13,13 @@ describe("when builder independent chains", () => {
     container2 = document.createElement("div");
     document.body.appendChild(container1);
     document.body.appendChild(container2);
-    clearWhenRuntimes();
+
   });
 
   afterEach(() => {
     if (container1.parentNode) document.body.removeChild(container1);
     if (container2.parentNode) document.body.removeChild(container2);
-    clearWhenRuntimes();
+
   });
 
   it("intermediate when() result is independent of further chaining on it", () => {

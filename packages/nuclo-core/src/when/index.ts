@@ -1,7 +1,7 @@
 import { WhenBuilderImpl, createWhenBuilderFunction } from "./builder";
 import type { WhenCondition, WhenContent } from "./runtime";
 
-export { updateWhenRuntimes, clearWhenRuntimes } from "./runtime";
+export { updateWhenRuntimes } from "./runtime";
 
 /**
  * Creates a conditional rendering block (when/else logic).

@@ -1,7 +1,7 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { when } from "../../src/when";
-import { updateWhenRuntimes, clearWhenRuntimes } from "../../src/when/runtime";
+import { updateWhenRuntimes } from "../../src/when/runtime";
 
 describe("when builder edge cases", () => {
   let container: HTMLElement;
@@ -9,14 +9,12 @@ describe("when builder edge cases", () => {
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
-    clearWhenRuntimes();
   });
 
   afterEach(() => {
     if (container.parentNode) {
       document.body.removeChild(container);
     }
-    clearWhenRuntimes();
   });
 
   describe("when builder SSR", () => {

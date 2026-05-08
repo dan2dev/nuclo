@@ -14,14 +14,12 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   registerWhenRuntime,
   updateWhenRuntimes,
-  clearWhenRuntimes,
   renderWhenContent,
   type WhenRuntime,
   type WhenGroup,
 } from '../../src/when/runtime';
 
 afterEach(() => {
-  clearWhenRuntimes();
   vi.restoreAllMocks();
 });
 
@@ -222,18 +220,3 @@ describe('updateWhenRuntimes – scope filtering', () => {
   });
 });
 
-// ── Unit: registerWhenRuntime + clearWhenRuntimes ─────────────────────────────
-describe('registerWhenRuntime and clearWhenRuntimes', () => {
-  it('can register and then clear all runtimes', () => {
-    let called = false;
-    const runtime = makeRuntime([], [], () => { called = true; });
-    registerWhenRuntime(runtime);
-
-    clearWhenRuntimes();
-
-    updateWhenRuntimes();
-    expect(called).toBe(false); // Runtime cleared, no update called
-
-    (runtime.host as unknown as HTMLElement).remove();
-  });
-});
