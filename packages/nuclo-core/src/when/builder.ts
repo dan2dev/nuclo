@@ -14,6 +14,17 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     this.groups.push({ condition: initialCondition, content });
   }
 
+  cloneWith(
+    additionalGroup?: WhenGroup<TTagName>,
+    newElseContent?: WhenContent<TTagName>[],
+  ): WhenBuilderImpl<TTagName> {
+    const b = Object.create(WhenBuilderImpl.prototype) as WhenBuilderImpl<TTagName>;
+    b.groups = [...this.groups];
+    if (additionalGroup) b.groups.push(additionalGroup);
+    b.elseContent = newElseContent ?? [...this.elseContent];
+    return b;
+  }
+
   when(condition: WhenCondition, ...content: WhenContent<TTagName>[]): WhenBuilderImpl<TTagName> {
     this.groups.push({ condition, content });
     return this;
@@ -98,7 +109,7 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     index: number,
     startMarker: Comment,
     endMarker: Comment,
-    activeIndex: number | -1 | null = null,
+    activeIndex: number | null = null,
   ): WhenRuntime<TTagName> {
     const runtime: WhenRuntime<TTagName> = {
       startMarker,
@@ -128,12 +139,10 @@ export function createWhenBuilderFunction<TTagName extends ElementTagName>(
 
   return Object.assign(nodeModFn, {
     when: function(condition: WhenCondition, ...content: WhenContent<TTagName>[]): WhenBuilder<TTagName> {
-      builder.when(condition, ...content);
-      return createWhenBuilderFunction(builder);
+      return createWhenBuilderFunction(builder.cloneWith({ condition, content }));
     },
     else: function(...content: WhenContent<TTagName>[]): WhenBuilder<TTagName> {
-      builder.else(...content);
-      return createWhenBuilderFunction(builder);
+      return createWhenBuilderFunction(builder.cloneWith(undefined, content));
     },
   }) as unknown as WhenBuilder<TTagName>;
 }

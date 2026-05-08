@@ -9,7 +9,7 @@
 	"types": "./types/index.d.ts",
 	"exports": {
 		".": {
-			"types": "./dist/index.d.ts",
+			"types": "./types/index.d.ts",
 			"import": "./dist/nuclo.mjs",
 			"require": "./dist/nuclo.cjs"
 		},
