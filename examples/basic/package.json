@@ -13,16 +13,16 @@
     "server": "deno run src/server.ts"
   },
   "dependencies": {
-    "@hono/node-server": "^2.0.2",
+    "@hono/node-server": "^2.0.3",
     "happy-dom": "^20.9.0",
-    "hono": "^4.12.19"
+    "hono": "^4.12.22"
   },
   "devDependencies": {
-    "@types/node": "^25.8.0",
+    "@types/node": "^25.9.1",
     "concurrently": "^9.2.1",
     "nuclo": "workspace:*",
-    "tsx": "^4.22.1",
+    "tsx": "^4.22.3",
     "typescript": "~6.0.3",
-    "vite": "^8.0.13"
+    "vite": "^8.0.14"
   }
 }
