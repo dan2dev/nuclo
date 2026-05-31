@@ -136,7 +136,7 @@ describe("when builder coverage improvements", () => {
     it("should handle SSR mode by mocking isBrowser", async () => {
       // Dynamically import to get the module
       const envModule = await import("../../src/utility/environment");
-      const originalIsBrowser = envModule.isBrowser;
+      const _originalIsBrowser = envModule.isBrowser;
 
       // Create a new builder - the SSR check happens at render time
       // We can't easily mock the isBrowser check in this context without

@@ -60,7 +60,7 @@ describe("domTypeHelpers edge cases", () => {
     it("should restore even if callback throws", () => {
       const reference = document.createElement("div");
       element.appendChild(reference);
-      const originalAppend = element.appendChild.bind(element);
+      const _originalAppend = element.appendChild.bind(element);
 
       try {
         withScopedInsertion(element, reference, () => {
@@ -114,7 +114,7 @@ describe("domTypeHelpers edge cases", () => {
       // In jsdom, number values are converted to string
       // The function should return true if it succeeded
       // Check that the property was set (value might be "16" or empty in jsdom)
-      const fontSize = element.style.fontSize || element.style.getPropertyValue("font-size");
+      const _fontSize = element.style.fontSize || element.style.getPropertyValue("font-size");
       // Just verify the function returned true (success)
       expect(result).toBe(true);
     });

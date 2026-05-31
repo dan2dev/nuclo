@@ -9,7 +9,7 @@
  * are not cached (always re-applied even if structurally equal).
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { registerAttributeResolver, notifyReactiveElements } from '../../src/core/reactiveAttributes';
 import { reactiveElements } from '../../src/core/reactiveCleanup';
 
@@ -47,7 +47,7 @@ describe('notifyReactiveElements', () => {
       const el = document.createElement('div');
       document.body.appendChild(el);
       let applyCount = 0;
-      let value = 'same';
+      const value = 'same';
 
       registerAttributeResolver(el as unknown as ExpandedElement<'div'>, 'data-y', () => value, (_v) => {
         applyCount++;

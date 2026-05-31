@@ -24,6 +24,7 @@ declare global {
    * parent element, regardless of the tag of the items it renders.
    * (TTagName represents the child element tag, not the parent.)
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   export type ListModifier<TTagName extends ElementTagName = ElementTagName> =
     (<TParent extends ElementTagName>(parent: ExpandedElement<TParent>, index: number) => Comment) &
     ((parent: Node & ParentNode, index: number) => Comment);

@@ -91,7 +91,7 @@ describe("SSR Hydration", () => {
     });
 
     it("renders reactive text with its initial evaluated value", () => {
-      let count = 99;
+      const count = 99;
       const html = renderToString(span(() => `Value: ${count}`));
       expect(html).toContain('Value: 99');
     });
@@ -300,7 +300,7 @@ describe("SSR Hydration", () => {
       document.body.appendChild(container2);
 
       let stateA = "A";
-      let stateB = "B";
+      const stateB = "B";
 
       const compA = div({ id: "comp-a" }, () => stateA);
       const compB = div({ id: "comp-b" }, () => stateB);

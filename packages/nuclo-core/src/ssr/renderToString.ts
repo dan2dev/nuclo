@@ -2,6 +2,7 @@
  * Server-Side Rendering (SSR) utilities for Nuclo
  * Renders Nuclo components to HTML strings in Node.js environment
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { escapeHtml, escapeText, camelToKebab } from '../utility/stringUtils';
 import { createElement } from '../utility/dom';
@@ -267,6 +268,7 @@ export function renderToString(input: RenderableInput): string {
       const element = input(container as ExpandedElement<ElementTagName>, 0);
       return element && typeof element === 'object' && 'nodeType' in element ? serializeNode(element as Node) : '';
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error rendering component to string:', error);
       return '';
     }

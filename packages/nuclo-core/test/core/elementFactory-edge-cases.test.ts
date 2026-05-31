@@ -59,7 +59,7 @@ describe("elementFactory edge cases", () => {
 
     it("should handle function modifiers", () => {
       const div = createHtmlTagBuilder("div");
-      const fnModifier = (parent: HTMLElement) => {
+      const fnModifier = (_parent: HTMLElement) => {
         const span = document.createElement("span");
         span.textContent = "from function";
         return span;
@@ -124,7 +124,7 @@ describe("elementFactory edge cases", () => {
 
     it("should handle function modifiers in SVG", () => {
       const circle = createSvgTagBuilder("circle");
-      const fnModifier = (parent: HTMLElement) => {
+      const fnModifier = (_parent: HTMLElement) => {
         const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         return rect;
       };

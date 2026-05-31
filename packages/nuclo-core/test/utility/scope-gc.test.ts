@@ -17,7 +17,7 @@
  * refs return `undefined` from `.deref()`, simulating the post-GC state.
  */
 
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { scope, getScopeRoots } from '../../src/utility/scope';
 
 // ── helpers ───────────────────────────────────────────────────────────────────

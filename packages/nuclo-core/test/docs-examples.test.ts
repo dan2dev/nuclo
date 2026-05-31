@@ -268,12 +268,12 @@ describe('Documentation Examples', () => {
     });
 
     it('should handle multiple events on same element', () => {
-      let value = '';
+      let _value = '';
       let focused = false;
 
       const app = input(
         on('input', (e: Event) => {
-          value = (e.target as HTMLInputElement).value;
+          _value = (e.target as HTMLInputElement).value;
           update();
         }),
         on('focus', () => {
@@ -533,6 +533,7 @@ describe('Documentation Examples', () => {
 
       let nextId = 1;
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       function createTask(text: string): Task {
         return {
           id: nextId++,
@@ -670,7 +671,7 @@ describe('Documentation Examples', () => {
       };
 
       let errors: Errors = {};
-      let isSubmitting = false;
+      let isSubmitting = false; // eslint-disable-line @typescript-eslint/no-unused-vars
 
       function validateForm(): boolean {
         errors = {};

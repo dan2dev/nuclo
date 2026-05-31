@@ -96,7 +96,7 @@ describe("Advanced Hydration", () => {
 
     it("scoped list update only re-syncs the targeted list", () => {
       let listA = ["A1", "A2"];
-      let listB = ["B1", "B2"];
+      const listB = ["B1", "B2"];
 
       const compA = div(
         scope("list-scope-a"),
@@ -323,7 +323,7 @@ describe("Advanced Hydration", () => {
     });
 
     it("update() on unchanged state makes no visible difference", () => {
-      let val = "stable";
+      const val = "stable";
       const component = p(() => val);
       const liveP = render(component, container);
 
@@ -452,7 +452,7 @@ describe("Advanced Hydration", () => {
     });
 
     it("three sibling when() blocks update independently", () => {
-      let flags = [false, false, false];
+      const flags = [false, false, false];
       const component = div(
         when(() => flags[0], span("0-on")).else(span("0-off")),
         when(() => flags[1], span("1-on")).else(span("1-off")),
@@ -566,7 +566,7 @@ describe("Advanced Hydration", () => {
   describe("nested list() inside list() items", () => {
     it("inner list updates when outer item's sub-array changes", () => {
       interface Category { id: number; name: string; tags: string[]; }
-      let categories: Category[] = [
+      const categories: Category[] = [
         { id: 1, name: "Cat-A", tags: ["x", "y"] },
         { id: 2, name: "Cat-B", tags: ["p"] },
       ];

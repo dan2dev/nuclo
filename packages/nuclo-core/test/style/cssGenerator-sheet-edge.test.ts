@@ -10,7 +10,7 @@
  *  classExistsInDOM – returns false when no #nuclo-styles element exists
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
 	classExistsInDOM,
 	createCSSClassWithStyles,
@@ -143,7 +143,7 @@ describe('cssGenerator – sheet edge cases', () => {
 
 			const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
 			const rules = Array.from(styleSheet.sheet?.cssRules || []);
-			const containerRules = rules.filter(r => r instanceof CSSContainerRule);
+			const _containerRules = rules.filter(r => r instanceof CSSContainerRule);
 			// jsdom may or may not support CSSContainerRule, so just ensure no throw
 			expect(rules.length).toBeGreaterThan(0);
 		});

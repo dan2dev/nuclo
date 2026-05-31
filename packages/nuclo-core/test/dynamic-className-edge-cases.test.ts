@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { update } from '../src';
-import { createBreakpoints, bg, padding, color, fontSize } from '../src/style';
+import { createBreakpoints, bg } from '../src/style';
 
 const cn = createBreakpoints({
   small: "(min-width: 320px)",

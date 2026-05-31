@@ -21,7 +21,7 @@ describe('dom.ts - cleanupEventListeners for text nodes (lines 73-74)', () => {
   });
 
   it('cleans up a reactive text node when safeRemoveChild is called', () => {
-    let value = 'initial';
+    const value = 'initial';
     const resolver = () => value;
 
     // Create a reactive text node
@@ -82,7 +82,7 @@ describe('dom.ts - cleanupEventListeners for text nodes (lines 73-74)', () => {
   });
 
   it('cleans up reactive text nodes nested inside an element', () => {
-    let value = 'nested';
+    const value = 'nested';
     const resolver = () => value;
 
     const textNode = createReactiveTextNode(resolver) as Text;
@@ -101,8 +101,8 @@ describe('dom.ts - cleanupEventListeners for text nodes (lines 73-74)', () => {
   });
 
   it('cleans up multiple reactive text nodes in a subtree', () => {
-    let value1 = 'first';
-    let value2 = 'second';
+    const value1 = 'first';
+    const value2 = 'second';
     const resolver1 = () => value1;
     const resolver2 = () => value2;
 

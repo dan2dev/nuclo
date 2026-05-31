@@ -323,8 +323,8 @@ describe("list runtime edge cases", () => {
       const container2 = document.createElement("div");
       document.body.appendChild(container2);
 
-      const runtime1 = createListRuntime(itemsProvider1, renderItem, container, 0);
-      const runtime2 = createListRuntime(itemsProvider2, renderItem, container2, 0);
+      const _runtime1 = createListRuntime(itemsProvider1, renderItem, container, 0);
+      const _runtime2 = createListRuntime(itemsProvider2, renderItem, container2, 0);
 
       expect(container.querySelectorAll("div").length).toBe(2);
       expect(container2.querySelectorAll("div").length).toBe(2);

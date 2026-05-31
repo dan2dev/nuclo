@@ -43,6 +43,7 @@ describe('on utility - detachListener else branch (line 76)', () => {
       const OriginalAbortController = globalThis.AbortController;
 
       // Replace AbortController with one that produces controllers with no abort
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       class FakeAbortController {
         signal: AbortSignal;
         constructor() {
@@ -151,7 +152,7 @@ describe('on utility - detachListener else branch (line 76)', () => {
     it('triggers the else branch when AbortController is unavailable', () => {
       // Temporarily remove AbortController to force the else path
       const OriginalAbortController = globalThis.AbortController;
-      const removeEventListenerSpy = vi.spyOn(element, 'removeEventListener');
+      const _removeEventListenerSpy = vi.spyOn(element, 'removeEventListener');
 
       // We need to:
       // 1. Make on() not create an AbortController
@@ -166,13 +167,13 @@ describe('on utility - detachListener else branch (line 76)', () => {
       // but intercept trackListener to store undefined for controller.
 
       // Simplest working approach: patch AbortController to make controller field undefined
-      let capturedController: AbortController | undefined;
+      let _capturedController: AbortController | undefined;
       const patchedAbortController = class {
         signal: any;
         constructor() {
           // Return a dummy with a signal but mark controller as broken
           this.signal = { addEventListener: () => {}, aborted: false };
-          capturedController = undefined; // won't help since on() uses const
+          _capturedController = undefined; // won't help since on() uses const
         }
         abort() {}
       };

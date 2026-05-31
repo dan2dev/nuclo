@@ -7,7 +7,7 @@ import { getConditionalInfo } from '../../src/utility/conditionalInfo';
 describe('conditionalUpdater.updateConditionalElements', () => {
   let container: HTMLDivElement;
   let visible: boolean;
-  let toggleCalls: number;
+  let _toggleCalls: number;
   let errorSpy: ReturnType<typeof vi.fn>;
   let originalConsoleError: any;
 
@@ -16,7 +16,7 @@ describe('conditionalUpdater.updateConditionalElements', () => {
     container = document.createElement('div');
     document.body.appendChild(container);
     visible = true;
-    toggleCalls = 0;
+    _toggleCalls = 0;
     originalConsoleError = console.error;
     errorSpy = vi.fn();
     console.error = errorSpy as any;
@@ -28,7 +28,7 @@ describe('conditionalUpdater.updateConditionalElements', () => {
 
   function makeCondition() {
     return () => {
-      toggleCalls += 1;
+      _toggleCalls += 1;
       return visible;
     };
   }

@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { applyAttributes } from '../../src/core/attributeManager';
 import { update } from '../../src';
-import { assignInlineStyles } from '../../src/core/styleManager';
+
 
 describe('attributeManager', () => {
   let el: HTMLDivElement;

@@ -1,6 +1,6 @@
 /// <reference path="../../types/index.d.ts" />
 import { beforeEach, describe, expect, it } from 'vitest';
-import { bg, createBreakpoints, padding, width } from '../../src/style';
+import { bg, createBreakpoints, width } from '../../src/style';
 
 describe('named classNames with cn()', () => {
 	beforeEach(() => {

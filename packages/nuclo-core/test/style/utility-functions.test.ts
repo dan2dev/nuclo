@@ -1,5 +1,5 @@
 /// <reference path="../../types/index.d.ts" />
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
 	createCSSClass,
 	createBreakpoints,

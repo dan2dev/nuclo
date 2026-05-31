@@ -27,5 +27,5 @@
     "node_modules",
     "**/*.spec.ts",
     "examples"
-  ],
+  ]
 }

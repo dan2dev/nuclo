@@ -816,7 +816,7 @@ describe("Search/filter list", () => {
 describe("Registration form with validation", () => {
   let nameVal: string;
   let emailVal: string;
-  let passwordVal: string;
+  let _passwordVal: string;
   let submitted: boolean;
   let errors: string[];
   let interacted: boolean;
@@ -825,7 +825,7 @@ describe("Registration form with validation", () => {
     document.body.innerHTML = "";
     nameVal = "";
     emailVal = "";
-    passwordVal = "";
+    _passwordVal = "";
     submitted = false;
     errors = [];
     interacted = false;
@@ -879,7 +879,7 @@ describe("Registration form with validation", () => {
           type: "password",
         },
           on("input", (e) => {
-            passwordVal = (e.target as HTMLInputElement).value;
+            _passwordVal = (e.target as HTMLInputElement).value;
           })
         )
       ),

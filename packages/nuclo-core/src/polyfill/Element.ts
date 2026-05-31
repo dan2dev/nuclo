@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NucloNode } from './Node';
 import { isBrowser } from '../utility/environment';
 
@@ -360,6 +361,7 @@ export class NucloElement extends NucloNode {
         try {
           listener(event);
         } catch (error) {
+          // eslint-disable-next-line no-console
           console.error('Error in event listener:', error);
         }
       }

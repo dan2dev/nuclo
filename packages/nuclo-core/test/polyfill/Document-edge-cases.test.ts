@@ -1,7 +1,6 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect } from 'vitest';
 import { NucloDocument } from '../../src/polyfill/Document';
-import { NucloElement } from '../../src/polyfill/Element';
 
 describe('SSRDocumentFragment edge cases', () => {
   describe('insertBefore', () => {

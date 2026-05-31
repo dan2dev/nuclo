@@ -356,7 +356,7 @@ describe("hydrate() — true DOM reuse", () => {
 
     it("list with reactive text in items updates correctly", () => {
       const item = { id: 1, count: 0 };
-      let items = [item];
+      const items = [item];
       injectSsr(
         '<ul><!--list-start-0-->' +
         '<li data-id="1"><!-- text-0 -->Count: 0</li>' +
@@ -400,7 +400,7 @@ describe("hydrate() — true DOM reuse", () => {
   describe("combined scenarios", () => {
     it("when() inside list() items", () => {
       interface Product { id: number; name: string; inStock: boolean; }
-      let products: Product[] = [
+      const products: Product[] = [
         { id: 1, name: "Widget", inStock: true },
         { id: 2, name: "Gadget", inStock: false },
       ];
@@ -499,7 +499,7 @@ describe("hydrate() — true DOM reuse", () => {
 
     it("complex app — todo list with hydration", () => {
       interface Todo { id: number; text: string; done: boolean; }
-      let todos: Todo[] = [
+      const todos: Todo[] = [
         { id: 1, text: "Buy milk", done: false },
         { id: 2, text: "Walk dog", done: true },
       ];
@@ -828,8 +828,8 @@ describe("hydrate() — true DOM reuse", () => {
   // =========================================================================
   describe("when() edge cases", () => {
     it("when() with all conditions false and no else — empty", () => {
-      let condA = false;
-      let condB = false;
+      const condA = false;
+      const condB = false;
       injectSsr('<div><!--when-start-0--><!--when-end--></div>');
 
       const hydratedDiv = hydrate(

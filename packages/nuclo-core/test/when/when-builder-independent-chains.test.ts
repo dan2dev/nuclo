@@ -23,13 +23,13 @@ describe("when builder independent chains", () => {
   });
 
   it("intermediate when() result is independent of further chaining on it", () => {
-    let condA = true;
-    let condB = false;
+    const condA = true;
+    const condB = false;
 
     const base = when(() => condA, "branch-A");
     // Extend base in two different directions
     const withB = base.when(() => condB, "branch-B");
-    const withElse = base.else("fallback");
+    const _withElse = base.else("fallback");
 
     // base: only condA
     base(container1, 0);
@@ -45,7 +45,7 @@ describe("when builder independent chains", () => {
   });
 
   it("else() on an intermediate result does not affect sibling chains", () => {
-    let flag = false;
+    const flag = false;
 
     const w1 = when(() => flag, "yes");
     const w1WithElse = w1.else("no");
@@ -73,7 +73,7 @@ describe("when builder independent chains", () => {
   });
 
   it("chaining does not mutate the original builder function", () => {
-    let show = true;
+    const show = true;
 
     const original = when(() => show, "original");
     // Chain off it — must not mutate original

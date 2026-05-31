@@ -9,7 +9,7 @@ describe('Style utilities - DOM Output', () => {
 	});
 
 	it('should apply className to div element when using breakpoint modifier as child', () => {
-		const { div, h1 } = globalThis as any;
+		const { div } = globalThis as any;
 
 		const cn = createBreakpoints({
 			small: '(max-width: 600px)',

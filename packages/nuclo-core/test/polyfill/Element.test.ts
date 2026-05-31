@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { NucloElement } from '../../src/polyfill/Element';
 import { NucloEvent } from '../../src/polyfill/Event';
 
