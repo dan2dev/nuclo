@@ -99,7 +99,7 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     // Advance cursor past end marker
     setCursor(parentNode, endMarkerIdx + 1);
 
-    const runtime = this.createRuntimeFromMarkers(host, index, startMarker, endMarker, activeIndex);
+    this.createRuntimeFromMarkers(host, index, startMarker, endMarker, activeIndex);
 
     return startMarker;
   }

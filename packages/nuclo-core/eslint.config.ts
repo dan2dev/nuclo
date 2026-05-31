@@ -7,12 +7,11 @@ import css from "@eslint/css";
 
 export default [
   {
-    ignores: ["dist/**", "coverage/**", "**/*.min.js", "README.md", ".claude/**"],
+    ignores: ["dist/**", "coverage/**", "**/*.min.js", "README.md", ".claude/**", "src/**/*.md", "test/**/*.md"],
   },
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
   {
     files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
+    ...js.configs.recommended,
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -20,6 +19,9 @@ export default [
       },
     },
   },
+  ...tseslint.configs.recommended.map((config) =>
+    config.files ? config : { ...config, files: ["**/*.{js,mjs,cjs,ts,mts,cts}"] },
+  ),
   {
     files: ["**/*.ts", "**/*.d.ts"],
     rules: {
@@ -46,6 +48,7 @@ export default [
   },
   {
     files: ["**/*.json"],
+    language: "json/json",
     ...json.configs.recommended,
   },
   {
@@ -90,7 +93,11 @@ export default [
     files: ["**/*.{ts,mts,cts,tsx}", "**/*.d.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_",
+      }],
       "@typescript-eslint/no-unused-expressions": "warn",
       "@typescript-eslint/no-unsafe-function-type": "warn",
       "no-unused-vars": "off",
@@ -99,9 +106,20 @@ export default [
     },
   },
   {
+    files: ["test/**/*.{ts,tsx,js,jsx}"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "no-console": "off",
+    },
+  },
+  {
     files: ["**/*.{js,mjs,cjs,jsx}"],
     rules: {
-      "no-unused-vars": "warn",
+      "no-unused-vars": ["warn", {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_",
+      }],
       "no-unused-expressions": "warn",
       "no-undef": "warn",
       "no-console": "warn",

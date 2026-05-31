@@ -101,8 +101,8 @@ describe('internal/applyModifiers', () => {
 
   it('NodeModFn returning primitive is converted to text node', () => {
     const mods = [
-      (parent: ExpandedElement<'div'>) => 'alpha',
-      (parent: ExpandedElement<'div'>, i: number) => i * 10
+      (_parent: ExpandedElement<'div'>) => 'alpha',
+      (_parent: ExpandedElement<'div'>, i: number) => i * 10
     ] as Array<NodeModFn<'div'>>;
     const result = applyModifiers(host, mods);
     expect(result.appended).toBe(2);
@@ -113,7 +113,7 @@ describe('internal/applyModifiers', () => {
 
   it('NodeModFn returning attribute object applies attributes but does not append child', () => {
     const mods = [
-      (parent: ExpandedElement<'div'>) => ({ id: 'dynamic-id' }),
+      (_parent: ExpandedElement<'div'>) => ({ id: 'dynamic-id' }),
       'after'
     ] as Array<NodeMod<'div'>>;
     const result = applyModifiers(host, mods, 10);
@@ -129,7 +129,7 @@ describe('internal/applyModifiers', () => {
     host.appendChild(reused);
 
     const mods = [
-      (parent: ExpandedElement<'div'>) => reused
+      (_parent: ExpandedElement<'div'>) => reused
     ] as Array<NodeModFn<'div'>>;
     const result = applyModifiers(host, mods, 0);
     // It was "produced" so appended++ and index++ even though not re-inserted
@@ -148,7 +148,7 @@ describe('internal/applyModifiers', () => {
       { title: 't1' },            // attrs only
       null,                       // skip
       'A',                        // text
-      (p: ExpandedElement<'div'>, idx: number) => {
+      (_p: ExpandedElement<'div'>, idx: number) => {
         const em = document.createElement('em');
         em.textContent = `em-${idx}`;
         return em;
@@ -156,7 +156,7 @@ describe('internal/applyModifiers', () => {
       existing,                   // existing, counted
       { id: 'host-id' },          // attrs only
       undefined,                  // skip
-      (p: ExpandedElement<'div'>) => ({ 'data-x': '1' }), // attrs only
+      (_p: ExpandedElement<'div'>) => ({ 'data-x': '1' }), // attrs only
       'B'
     ];
 

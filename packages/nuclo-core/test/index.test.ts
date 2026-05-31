@@ -1,6 +1,6 @@
 /// <reference path="../types/index.d.ts" />
 
-import { describe, it, expect } from 'vitest';
+import { describe, it } from 'vitest';
 
 describe('start function', () => {
   it('should return an object with id and value', () => {

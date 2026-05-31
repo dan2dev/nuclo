@@ -1,9 +1,8 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { updateConditionalElements } from '../../src/core/conditionalUpdater';
-import { storeConditionalInfo, unregisterConditionalNode, getActiveConditionalNodes } from '../../src/utility/conditionalInfo';
-import { createHtmlConditionalElement, createSvgConditionalElement } from '../helpers/conditionalTestHelpers';
-import * as applyModifiers from '../../src/internal/applyModifiers';
+import { storeConditionalInfo, unregisterConditionalNode } from '../../src/utility/conditionalInfo';
+import { createHtmlConditionalElement } from '../helpers/conditionalTestHelpers';
 
 describe('conditionalUpdater - fallback paths', () => {
   let container: HTMLDivElement;
@@ -25,7 +24,7 @@ describe('conditionalUpdater - fallback paths', () => {
   describe('line 44 - updateConditionalNode returns early when getConditionalInfo is null', () => {
     it('returns early when a registered node has its conditional info removed before update', () => {
       // Create a conditional element that starts hidden (comment node)
-      let visible = false;
+      const visible = false;
       const node = createHtmlConditionalElement('span', () => visible, ['test']);
       container.appendChild(node as unknown as Node);
 
@@ -157,7 +156,7 @@ describe('conditionalUpdater - fallback paths', () => {
 
     it('throws when HTML fallback createElement returns null (line 35)', () => {
       // Mock createElement to return null so the fallback fails
-      const origCreateElement = document.createElement.bind(document);
+      const _origCreateElement = document.createElement.bind(document);
       const createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(null as any);
 
       // Also need createHtmlElementWithModifiers to throw first

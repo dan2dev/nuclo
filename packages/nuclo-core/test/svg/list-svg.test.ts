@@ -219,7 +219,7 @@ describe("list with SVG elements", () => {
 
     const svg = svgSvg(
       { width: "100", height: "100" },
-      list(items, (item) => {
+      list(items, (_item) => {
         return circleSvg({ cx: "50", cy: "50", r: "10" });
       })
     );

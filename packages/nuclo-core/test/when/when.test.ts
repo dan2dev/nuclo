@@ -115,7 +115,7 @@ describe('When Conditional Rendering', () => {
     });
 
     it('should handle function modifiers', () => {
-      const modifier = (parent: any, index: number) => {
+      const modifier = (parent: any, _index: number) => {
         parent.setAttribute('data-modified', 'true');
       };
       

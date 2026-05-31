@@ -96,7 +96,7 @@ describe("SSR — server render (Node.js)", () => {
 
   describe("reactive text is evaluated once at render time", () => {
     it("evaluates a reactive text resolver and serializes its current value", () => {
-      let count = 42;
+      const count = 42;
       const html = renderToString(div(() => `Count: ${count}`));
       // The resolver is called once on the server; the value is frozen in the HTML
       expect(html).toBe('<div><!-- text-0 -->Count: 42</div>');

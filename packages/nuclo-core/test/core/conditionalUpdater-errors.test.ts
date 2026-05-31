@@ -100,7 +100,7 @@ describe('conditionalUpdater error paths', () => {
   it('catches and logs errors thrown during modifier application when element is recreated from a comment (safe path)', () => {
     // Start hidden so initial creation yields a comment (no modifier execution yet)
     let visible = false;
-    const throwingModifier = (parent: any) => {
+    const throwingModifier = (_parent: any) => {
       throw new Error('applyModifiers boom');
     };
     const node = createHtmlConditionalElement(
@@ -128,7 +128,7 @@ describe('conditionalUpdater error paths', () => {
   it('handles combined error: modifier throws during recreation AND replaceChild also throws', () => {
     // Start hidden with a conditional node (comment)
     let visible = false;
-    const throwingModifier = (parent: any) => {
+    const throwingModifier = (_parent: any) => {
       throw new Error('modifier-failure');
     };
     const node = createHtmlConditionalElement(

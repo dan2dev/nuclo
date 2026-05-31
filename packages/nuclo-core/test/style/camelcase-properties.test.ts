@@ -103,7 +103,7 @@ describe('CamelCase CSS Properties', () => {
 
     // Note: Different browsers may normalize these differently
     // We're mainly testing that they don't throw errors and get applied
-    const computedStyle = window.getComputedStyle(element);
+    const _computedStyle = window.getComputedStyle(element);
     
     // The properties should be set without throwing errors
     expect(() => {

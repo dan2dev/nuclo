@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export class NucloEvent implements Event {
   type: string;
   bubbles: boolean;

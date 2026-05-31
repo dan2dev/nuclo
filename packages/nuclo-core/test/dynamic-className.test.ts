@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { update } from '../src';
-import { createBreakpoints, bg, padding, width } from '../src/style';
+import { createBreakpoints, bg, width } from '../src/style';
 
 // Create breakpoints for testing
 const cn = createBreakpoints({
@@ -339,11 +339,6 @@ describe('Dynamic className with cn()', () => {
       ];
 
       // const { list } = globalThis as any;
-
-      interface Item {
-        id: number;
-        active: boolean;
-      }
 
       const element = div(
         list(

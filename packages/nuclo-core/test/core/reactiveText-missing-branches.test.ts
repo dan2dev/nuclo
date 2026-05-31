@@ -157,7 +157,7 @@ describe('notifyReactiveTextNodes', () => {
 
     it('handles resolver that throws during update – falls back to empty string', () => {
       let shouldThrow = false;
-      const node = createReactiveTextNode(() => {
+      const _node = createReactiveTextNode(() => {
         if (shouldThrow) throw new Error('update error');
         return 'ok';
       }) as Text;

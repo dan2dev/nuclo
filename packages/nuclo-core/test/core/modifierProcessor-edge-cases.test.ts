@@ -32,7 +32,7 @@ describe("modifierProcessor edge cases", () => {
     it("should not treat objects with className and other properties as className objects", () => {
       const obj = { className: "test", id: "test-id" };
       // Use a non-zero-arity function so it's treated as NodeModFn, not reactive
-      const modifier = (parent: HTMLElement) => obj;
+      const modifier = (_parent: HTMLElement) => obj;
       
       // Should be treated as regular attribute object
       const result = applyNodeModifier(parent, modifier, 0);
@@ -106,13 +106,13 @@ describe("modifierProcessor edge cases", () => {
 
     it("should handle NodeModFn that returns a Node", () => {
       const span = document.createElement("span");
-      const modifier = (parent: HTMLElement) => span;
+      const modifier = (_parent: HTMLElement) => span;
       const result = applyNodeModifier(parent, modifier, 0);
       expect(result).toBe(span);
     });
 
     it("should handle NodeModFn that returns an object (attributes)", () => {
-      const modifier = (parent: HTMLElement) => ({ id: "test", className: "my-class" });
+      const modifier = (_parent: HTMLElement) => ({ id: "test", className: "my-class" });
       const result = applyNodeModifier(parent, modifier, 0);
       expect(result).toBeNull();
       expect(parent.id).toBe("test");
@@ -126,7 +126,7 @@ describe("modifierProcessor edge cases", () => {
     });
 
     it("should handle NodeModFn that throws", () => {
-      const modifier = (parent: HTMLElement) => {
+      const modifier = (_parent: HTMLElement) => {
         throw new Error("modifier error");
       };
       

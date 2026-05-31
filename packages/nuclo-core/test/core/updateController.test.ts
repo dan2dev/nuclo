@@ -74,14 +74,14 @@ describe('updateController sequencing & integration', () => {
     // True branch & else branch both contain NodeModFns that log "2".
     const whenBlock = when(
       () => whenToggle,
-      (p: ExpandedElement<any>) => {
+      (_p: ExpandedElement<any>) => {
         push('2');
         const a = document.createElement('i');
         a.textContent = 'T';
         return a;
       }
     ).else(
-      (p: ExpandedElement<any>) => {
+      (_p: ExpandedElement<any>) => {
         push('2');
         const b = document.createElement('b');
         b.textContent = 'F';
@@ -93,7 +93,7 @@ describe('updateController sequencing & integration', () => {
     // Tag builder with first modifier a boolean function.
     const conditionalElFactory = (globalThis as any).div(
       () => condVisible,
-      (p: ExpandedElement<any>) => {
+      (_p: ExpandedElement<any>) => {
         push('3');
         const u = document.createElement('u');
         u.textContent = 'C';

@@ -47,7 +47,7 @@ describe("Hydration — when() and list()", () => {
     // -----------------------------------------------------------------------
     describe("single condition — no else branch", () => {
       it("renders content when condition is initially true", () => {
-        let show = true;
+        const show = true;
         const component = div(when(() => show, span("present")));
 
         injectSsr('<div><span>present</span></div>');
@@ -57,7 +57,7 @@ describe("Hydration — when() and list()", () => {
       });
 
       it("renders nothing when condition starts false", () => {
-        let show = false;
+        const show = false;
         const component = div(when(() => show, span("ghost")));
 
         injectSsr('<div></div>');
@@ -308,21 +308,21 @@ describe("Hydration — when() and list()", () => {
     // -----------------------------------------------------------------------
     describe("when() SSR output consistency", () => {
       it("SSR correctly captures the true branch", () => {
-        let show = true;
+        const show = true;
         const html = renderToString(div(when(() => show, p("visible")).else(p("hidden"))));
         expect(html).toContain('visible');
         expect(html).not.toContain('hidden');
       });
 
       it("SSR correctly captures the else branch", () => {
-        let show = false;
+        const show = false;
         const html = renderToString(div(when(() => show, p("visible")).else(p("hidden"))));
         expect(html).toContain('hidden');
         expect(html).not.toContain('visible');
       });
 
       it("SSR captures correct branch for multi-condition chain", () => {
-        let status = 'error';
+        const status = 'error';
         const html = renderToString(
           div(
             when(() => status === 'loading', span("Loading…"))
@@ -344,7 +344,7 @@ describe("Hydration — when() and list()", () => {
     // -----------------------------------------------------------------------
     describe("basic item management after hydration", () => {
       it("initial items are rendered correctly", () => {
-        let items = ["Apple", "Banana", "Cherry"];
+        const items = ["Apple", "Banana", "Cherry"];
         const component = ul(list(() => items, item => li(item)));
 
         injectSsr('<ul><li>Apple</li><li>Banana</li><li>Cherry</li></ul>');
@@ -534,7 +534,7 @@ describe("Hydration — when() and list()", () => {
 
       it("reactive text inside list items updates when item data changes", () => {
         const item = { id: 1, count: 0 };
-        let items = [item];
+        const items = [item];
         const component = ul(
           list(() => items, it =>
             li({ "data-id": String(it.id) }, () => `Count: ${it.count}`)
@@ -612,7 +612,7 @@ describe("Hydration — when() and list()", () => {
   describe("when() inside list() items", () => {
     it("each list item can have its own conditional branch", () => {
       interface Product { id: number; name: string; inStock: boolean; }
-      let products: Product[] = [
+      const products: Product[] = [
         { id: 1, name: "Widget", inStock: true },
         { id: 2, name: "Gadget", inStock: false },
         { id: 3, name: "Doohickey", inStock: true },

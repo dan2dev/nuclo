@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NucloDocument } from '../../src/polyfill/Document';
-import { NucloElement } from '../../src/polyfill/Element';
 import { NucloEvent } from '../../src/polyfill/Event';
 
 describe('NucloDocument', () => {

@@ -115,7 +115,7 @@ describe("list edge cases", () => {
       };
 
       const listFn = list(itemsProvider, renderItem);
-      const marker = listFn(container, 0);
+      const _marker = listFn(container, 0);
 
       expect(container.querySelectorAll("div").length).toBe(3);
 

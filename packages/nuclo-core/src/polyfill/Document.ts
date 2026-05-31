@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NucloElement } from './Element';
 import { NucloText } from './Text';
 
@@ -158,6 +159,7 @@ export class NucloDocument {
         try {
           listener(event);
         } catch (error) {
+          // eslint-disable-next-line no-console
           console.error('Error in event listener:', error);
         }
       }
