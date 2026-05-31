@@ -1,4 +1,6 @@
-.PHONY: publish release-patch release-minor release-major version show-version ensure-clean
+.PHONY: publish release-patch release-minor release-major version show-version ensure-clean help
+
+.DEFAULT_GOAL := help
 
 # BUMP can be: patch | minor | major (default patch if not provided)
 BUMP ?= patch
@@ -78,7 +80,7 @@ help:
 	@echo "  make publish            -> bump PATCH (default), publish, commit, tag, push"
 	@echo "  make publish BUMP=minor -> bump MINOR"
 	@echo "  make publish BUMP=major -> bump MAJOR"
-	@echo "  make release-patch|minior|major"
+	@echo "  make release-patch|minor|major"
 	@echo ""
 	@echo "Other:"
 	@echo "  make version            -> show current version"
