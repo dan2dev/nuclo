@@ -1,4 +1,4 @@
-import { cn, colors, s } from "../../styles.ts";
+import { css, colors, s } from "../../styles.ts";
 import { hs } from "./styles.ts";
 import {
   HERO_BADGE, HERO_TITLE_LINES, HERO_DESC, INSTALL_CMD, HERO_STATS,
@@ -22,54 +22,29 @@ function HeroDemoCard() {
 
   function CounterPreview() {
     return div(
-      cn(textAlign("center").width("100%")),
+      css({ textAlign: "center", width: "100%" }),
       div(
-        cn(
-          fontSize("5rem").fontWeight("700").lineHeight("1").color(colors.text)
-            .marginBottom("6px").fontVariantNumeric("tabular-nums")
-            .transition("transform 0.1s ease")
-        ),
+        css({ fontSize: "5rem", fontWeight: "700", lineHeight: "1", color: colors.text, marginBottom: "6px", fontVariantNumeric: "tabular-nums", transition: "transform 0.1s ease" }),
         () => String(count),
       ),
       div(
-        cn(fontSize("0.78rem").color(colors.textMuted).letterSpacing("0.05em").marginBottom("24px")),
+        css({ fontSize: "0.78rem", color: colors.textMuted, letterSpacing: "0.05em", marginBottom: "24px" }),
         "COUNT",
       ),
       div(
-        cn(display("flex").gap("10px").justifyContent("center")),
+        css({ display: "flex", gap: "10px", justifyContent: "center" }),
         button(
-          cn(
-            padding("9px 22px").borderRadius("6px")
-              .fontSize("0.875rem").fontWeight("600").cursor("pointer")
-              .border(`1px solid ${colors.borderLight}`).color(colors.textDim)
-              .backgroundColor(colors.bgSecondary).transition("all 0.18s ease")
-              .fontFamily("'Space Grotesk', system-ui, sans-serif"),
-            { hover: color(colors.text).borderColor(colors.primary) }
-          ),
+          css({ padding: "9px 22px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
           "−",
           on("click", () => { count--; update(); }),
         ),
         button(
-          cn(
-            padding("9px 22px").borderRadius("6px")
-              .fontSize("0.875rem").fontWeight("600").cursor("pointer")
-              .border(`1px solid transparent`).color("#fff")
-              .backgroundColor(colors.primary).transition("all 0.18s ease")
-              .fontFamily("'Space Grotesk', system-ui, sans-serif"),
-            { hover: backgroundColor(colors.primaryHover) }
-          ),
+          css({ padding: "9px 22px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid transparent`, color: "#fff", backgroundColor: colors.primary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { backgroundColor: colors.primaryHover } }),
           "Reset",
           on("click", () => { count = 0; update(); }),
         ),
         button(
-          cn(
-            padding("9px 22px").borderRadius("6px")
-              .fontSize("0.875rem").fontWeight("600").cursor("pointer")
-              .border(`1px solid ${colors.borderLight}`).color(colors.textDim)
-              .backgroundColor(colors.bgSecondary).transition("all 0.18s ease")
-              .fontFamily("'Space Grotesk', system-ui, sans-serif"),
-            { hover: color(colors.text).borderColor(colors.primary) }
-          ),
+          css({ padding: "9px 22px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
           "+",
           on("click", () => { count++; update(); }),
         ),
@@ -129,7 +104,7 @@ export function HomeHeroSection() {
           // Badge
           div(
             s.badge,
-            cn(marginBottom("22px")),
+            css({ marginBottom: "22px" }),
             HERO_BADGE,
           ),
           // Rule
@@ -143,12 +118,7 @@ export function HomeHeroSection() {
                 return div(
                   line.replace("Call update().", "Call "),
                   code(
-                    cn(
-                      fontFamily("'JetBrains Mono', monospace")
-                        .fontSize("0.85em").color(colors.primaryHover)
-                        .backgroundColor(colors.bgLight)
-                        .padding("1px 6px").borderRadius("4px")
-                    ),
+                    css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85em", color: colors.primaryHover, backgroundColor: colors.bgLight, padding: "1px 6px", borderRadius: "4px" }),
                     "update()",
                   ),
                   ".",
@@ -164,8 +134,8 @@ export function HomeHeroSection() {
             hs.heroInstall,
             div(
               s.installCmd,
-              span(cn(color(colors.textMuted).fontFamily("'JetBrains Mono', monospace")), "$"),
-              span(cn(marginLeft("8px")), INSTALL_CMD),
+              span(css({ color: colors.textMuted, fontFamily: "'JetBrains Mono', monospace" }), "$"),
+              span(css({ marginLeft: "8px" }), INSTALL_CMD),
             ),
           ),
           // Action buttons
@@ -190,7 +160,7 @@ export function HomeHeroSection() {
                 div(
                   s.statNum,
                   num,
-                  sup ? span(cn(fontSize("1rem").color(colors.primary)), sup) : null,
+                  sup ? span(css({ fontSize: "1rem", color: colors.primary }), sup) : null,
                 ),
                 div(s.statLabel, label),
               )
@@ -215,7 +185,7 @@ export function PhilosophySection() {
         div(
           div(
             s.sectionLabel,
-            cn(marginBottom("16px")),
+            css({ marginBottom: "16px" }),
             "Philosophy",
           ),
           blockquote(
@@ -250,7 +220,7 @@ export function FeaturesSection() {
       s.container,
       div(s.sectionLabel, "Features"),
       h2(s.sectionTitle, "Built for clarity."),
-      p(s.sectionSub, cn(marginBottom("48px")), "No magic. No surprises. Every update is intentional."),
+      p(s.sectionSub, css({ marginBottom: "48px" }), "No magic. No surprises. Every update is intentional."),
       div(
         s.featureGrid,
         ...FEATURES.map(({ num, title, desc }) =>
@@ -275,7 +245,7 @@ export function HomeQuickStartSection() {
         s.container,
         div(s.sectionLabel, "Quick Start"),
         h2(s.sectionTitle, "Up and running in minutes."),
-        p(s.sectionSub, cn(marginBottom("40px")), "Three steps and you're building real UIs."),
+        p(s.sectionSub, css({ marginBottom: "40px" }), "Three steps and you're building real UIs."),
         div(
           s.stepsGrid,
           ...QUICK_START_STEPS.map(({ num, title, desc, code, lang }) =>
@@ -292,7 +262,7 @@ export function HomeQuickStartSection() {
           ),
         ),
         div(
-          cn(marginTop("40px").textAlign("center")),
+          css({ marginTop: "40px", textAlign: "center" }),
           button(
             s.btn, s.btnSecondary,
             "Read the full docs →",
@@ -349,20 +319,20 @@ export function ExamplesTeaserSection() {
   function CounterPreview() {
     let n = 0;
     return div(
-      cn(textAlign("center")),
-      div(cn(fontSize("3rem").fontWeight("700").lineHeight("1").marginBottom("12px")), () => String(n)),
+      css({ textAlign: "center" }),
+      div(css({ fontSize: "3rem", fontWeight: "700", lineHeight: "1", marginBottom: "12px" }), () => String(n)),
       div(
-        cn(display("flex").gap("8px").justifyContent("center")),
+        css({ display: "flex", gap: "8px", justifyContent: "center" }),
         button(
-          cn(padding("7px 16px").borderRadius("5px").fontSize("0.85rem").cursor("pointer").border(`1px solid ${colors.borderLight}`).color(colors.textDim).backgroundColor(colors.bgLight).fontFamily("inherit")),
+          css({ padding: "7px 16px", borderRadius: "5px", fontSize: "0.85rem", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgLight, fontFamily: "inherit" }),
           "−", on("click", () => { n--; update(); })
         ),
         button(
-          cn(padding("7px 16px").borderRadius("5px").fontSize("0.85rem").cursor("pointer").border("none").color("#fff").backgroundColor(colors.primary).fontFamily("inherit")),
+          css({ padding: "7px 16px", borderRadius: "5px", fontSize: "0.85rem", cursor: "pointer", border: "none", color: "#fff", backgroundColor: colors.primary, fontFamily: "inherit" }),
           "Reset", on("click", () => { n = 0; update(); })
         ),
         button(
-          cn(padding("7px 16px").borderRadius("5px").fontSize("0.85rem").cursor("pointer").border(`1px solid ${colors.borderLight}`).color(colors.textDim).backgroundColor(colors.bgLight).fontFamily("inherit")),
+          css({ padding: "7px 16px", borderRadius: "5px", fontSize: "0.85rem", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgLight, fontFamily: "inherit" }),
           "+", on("click", () => { n++; update(); })
         ),
       ),
@@ -384,9 +354,9 @@ export function ExamplesTeaserSection() {
     }
 
     return div(
-      cn(width("100%").maxWidth("280px")),
+      css({ width: "100%", maxWidth: "280px" }),
       div(
-        cn(display("flex").gap("8px").marginBottom("10px")),
+        css({ display: "flex", gap: "8px", marginBottom: "10px" }),
         input(
           {
             type: "text",
@@ -399,7 +369,7 @@ export function ExamplesTeaserSection() {
           ((el: any) => { domInput = el; }) as any,
         ),
         button(
-          cn(padding("9px 14px").borderRadius("6px").fontSize("0.85rem").cursor("pointer").border("none").color("#fff").backgroundColor(colors.primary).fontFamily("inherit").whiteSpace("nowrap")),
+          css({ padding: "9px 14px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: "none", color: "#fff", backgroundColor: colors.primary, fontFamily: "inherit", whiteSpace: "nowrap" }),
           "Add",
           on("click", addTodo),
         ),
@@ -407,7 +377,7 @@ export function ExamplesTeaserSection() {
       list(
         () => todos,
         (t) => div(
-          cn(display("flex").alignItems("center").gap("8px").padding("7px 10px").borderRadius("5px").border(`1px solid ${colors.border}`).backgroundColor(colors.bgSecondary).marginBottom("5px").fontSize("0.85rem")),
+          css({ display: "flex", alignItems: "center", gap: "8px", padding: "7px 10px", borderRadius: "5px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary, marginBottom: "5px", fontSize: "0.85rem" }),
           input({ type: "checkbox" }, { checked: () => t.done }, on("change", () => { t.done = !t.done; update(); })),
           span(
             {
@@ -438,7 +408,7 @@ export function ExamplesTeaserSection() {
           TeaserCard("todo.ts", TODO_TEASER_CODE, TodoPreview),
         ),
         div(
-          cn(marginTop("36px").textAlign("center")),
+          css({ marginTop: "36px", textAlign: "center" }),
           button(
             s.btn, s.btnSecondary,
             "View all examples →",
@@ -455,19 +425,13 @@ export function CTASection() {
     hs.ctaSection,
     div(
       s.container,
-      div(s.sectionLabel, cn(justifyContent("center").display("flex")), "Get Started"),
+      div(s.sectionLabel, css({ justifyContent: "center", display: "flex" }), "Get Started"),
       h2(
-        cn(
-          fontSize("clamp(2rem, 3.5vw, 2.8rem)").fontWeight("700")
-            .letterSpacing("-0.02em").lineHeight("1.2").marginBottom("18px")
-        ),
+        css({ fontSize: "clamp(2rem, 3.5vw, 2.8rem)", fontWeight: "700", letterSpacing: "-0.02em", lineHeight: "1.2", marginBottom: "18px" }),
         "Ready to build?",
       ),
       p(
-        cn(
-          fontSize("1.05rem").color(colors.textDim)
-            .maxWidth("480px").margin("0 auto 0").lineHeight("1.7")
-        ),
+        css({ fontSize: "1.05rem", color: colors.textDim, maxWidth: "480px", margin: "0 auto 0", lineHeight: "1.7" }),
         "Start with the docs, explore the examples, or install and dive straight in.",
       ),
       div(

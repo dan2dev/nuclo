@@ -1,4 +1,4 @@
-import { cn, colors, s } from "../styles.ts";
+import { css, colors, s } from "../styles.ts";
 import { EXAMPLES } from "../content/examples.ts";
 import { CodeBlock } from "../components/CodeBlock.ts";
 
@@ -50,6 +50,7 @@ function buildPreview(id: string) {
     case "todo":    return TodoDemo();
     case "search":  return SearchDemo();
     case "async":   return AsyncDemo();
+    case "styling": return StyleDemo();
     default:        return div();
   }
 }
@@ -274,7 +275,7 @@ function AsyncDemo() {
     when(
       () => status === "success",
       div(
-        cn(marginTop("12px")),
+        css({ marginTop: "12px" }),
         list(
           () => products,
           (p) => div(
@@ -289,9 +290,84 @@ function AsyncDemo() {
       () => status === "error",
       div(
         { class: "ex-error-msg" },
-        cn(marginTop("12px")),
+        css({ marginTop: "12px" }),
         () => `Error: ${errMsg}`,
       ),
+    ),
+  );
+}
+
+// ── Styling demo ──────────────────────────────────────────────────────────────
+const { css: demoCSS, cx: demoCX } = createCss({
+  colors: {
+    primary: "#6366f1",
+    primaryHover: "#4f46e5",
+    text: "#1f2937",
+    muted: "#6b7280",
+    surface: "#f8fafc",
+    border: "#e2e8f0",
+  },
+  screens: { sm: "(min-width: 480px)" },
+});
+
+const demoChip = demoCSS({
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "6px 14px",
+  borderRadius: "999px",
+  fontSize: "13px",
+  fontWeight: "600",
+  cursor: "pointer",
+  border: "2px solid transparent",
+  transition: "all 0.15s",
+  sm: { padding: "6px 18px" },
+});
+const demoChipDefault = demoCSS({
+  backgroundColor: "#f8fafc",
+  color: "#6b7280",
+  borderColor: "#e2e8f0",
+  hover: { color: "#1f2937", borderColor: "#6366f1" },
+});
+const demoChipActive = demoCSS({
+  backgroundColor: "#6366f1",
+  color: "white",
+  borderColor: "#4f46e5",
+  hover: { backgroundColor: "#4f46e5" },
+});
+
+function StyleDemo() {
+  const TAGS = ["TypeScript", "Atomic CSS", "Tokens", "cx()", "Screens", "SSR"];
+  let selected = new Set<string>();
+
+  function toggle(tag: string) {
+    if (selected.has(tag)) selected.delete(tag);
+    else selected.add(tag);
+    update();
+  }
+
+  return div(
+    { class: "ex-style-demo" },
+    p({ class: "ex-style-hint" },
+      "Click tags to toggle them. Active tags use the ",
+      code("primary"),
+      " color token — ",
+      code("cx()"),
+      " resolves conflicts per property.",
+    ),
+    div(
+      { class: "ex-style-chips" },
+      ...TAGS.map(tag =>
+        button(
+          () => demoCX(demoChip, selected.has(tag) ? demoChipActive : demoChipDefault),
+          tag,
+          on("click", () => toggle(tag)),
+        ),
+      ),
+    ),
+    p({ class: "ex-style-result" },
+      () => selected.size > 0
+        ? `Selected: ${[...selected].join(", ")}`
+        : "Nothing selected yet.",
     ),
   );
 }
@@ -299,23 +375,18 @@ function AsyncDemo() {
 // ── Examples page ─────────────────────────────────────────────────────────────
 export function ExamplesPage() {
   const pageHeader = div(
-    cn(
-      padding("56px 0 32px").borderBottom(`1px solid ${colors.border}`)
-    ),
+    css({ padding: "56px 0 32px", borderBottom: `1px solid ${colors.border}` }),
     div(
       s.container,
-      div(s.sectionLabel, cn(marginBottom("12px")), "Examples"),
+      div(s.sectionLabel, css({ marginBottom: "12px" }), "Examples"),
       h1(
-        cn(
-          fontSize("clamp(2rem, 4vw, 3rem)").fontWeight("700")
-            .letterSpacing("-0.02em").lineHeight("1.15").marginBottom("16px")
-        ),
+        css({ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: "700", letterSpacing: "-0.02em", lineHeight: "1.15", marginBottom: "16px" }),
         "Practical examples.",
         br(),
         "Live demos.",
       ),
       p(
-        cn(fontSize("1.05rem").color(colors.textDim).maxWidth("500px").lineHeight("1.7")),
+        css({ fontSize: "1.05rem", color: colors.textDim, maxWidth: "500px", lineHeight: "1.7" }),
         "Click the tabs to switch between a live interactive demo and the source code.",
       ),
     ),

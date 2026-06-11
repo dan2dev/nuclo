@@ -1,4 +1,4 @@
-import { cn } from "../styles.ts";
+import { css } from "../styles.ts";
 import { DOC_GROUPS, DOC_SECTIONS, SECTION_MAP } from "./docs/content.ts";
 
 export function DocsPage() {
@@ -53,7 +53,7 @@ export function DocsPage() {
           // API tag + signature
           ...(sec.apiTag ? [
             div(
-              cn(display("flex").alignItems("center").gap("8px").margin("12px 0 8px")),
+              css({ display: "flex", alignItems: "center", gap: "8px", margin: "12px 0 8px" }),
               span({ class: `api-tag ${sec.apiTag}-tag` }, sec.apiTag),
             ),
           ] : []),

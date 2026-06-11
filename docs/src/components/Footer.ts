@@ -1,4 +1,4 @@
-import { cn, colors, s } from "../styles.ts";
+import { css, colors, s } from "../styles.ts";
 import { setRoute } from "../router.ts";
 
 function GitHubIcon() {
@@ -9,25 +9,13 @@ function GitHubIcon() {
 }
 
 export function Footer() {
-  const footerStyle = cn(
-    borderTop(`1px solid ${colors.border}`)
-      .backgroundColor(colors.bgFooter)
-      .padding("36px 0")
-  );
+  const footerStyle = css({ borderTop: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, padding: "36px 0" });
 
-  const inner = cn(
-    display("flex").alignItems("center").flexDirection("column")
-      .gap("16px").textAlign("center"),
-    { medium: flexDirection("row").justifyContent("space-between").textAlign("left") }
-  );
+  const inner = css({ display: "flex", alignItems: "center", flexDirection: "column", gap: "16px", textAlign: "center", medium: { flexDirection: "row", justifyContent: "space-between", textAlign: "left" } });
 
-  const linkStyle = cn(
-    fontSize("0.82rem").color(colors.textMuted)
-      .transition("color 0.18s ease").cursor("pointer"),
-    { hover: color(colors.textDim) }
-  );
+  const linkStyle = css({ fontSize: "0.82rem", color: colors.textMuted, transition: "color 0.18s ease", cursor: "pointer", hover: { color: colors.textDim } });
 
-  const linksGroup = cn(display("flex").gap("20px").alignItems("center"));
+  const linksGroup = css({ display: "flex", gap: "20px", alignItems: "center" });
 
   function FooterLink(label: string, action: () => void) {
     return span(
@@ -49,11 +37,11 @@ export function Footer() {
           alt: "Nuclo",
           class: "brand-logo",
         },
-        cn(height("40px").width("auto"))
+        css({ height: "40px", width: "auto" })
         ),
         // Center: credit
         span(
-          cn(fontSize("0.82rem").color(colors.textMuted)),
+          css({ fontSize: "0.82rem", color: colors.textMuted }),
           "Created by @dan2dev · MIT License",
         ),
         // Right: links
@@ -67,12 +55,7 @@ export function Footer() {
               target: "_blank",
               rel: "noopener noreferrer",
             },
-            cn(
-              fontSize("0.82rem").color(colors.textMuted)
-                .transition("color 0.18s ease").display("flex")
-                .alignItems("center").gap("5px"),
-              { hover: color(colors.textDim) }
-            ),
+            css({ fontSize: "0.82rem", color: colors.textMuted, transition: "color 0.18s ease", display: "flex", alignItems: "center", gap: "5px", hover: { color: colors.textDim } }),
             GitHubIcon(),
             "GitHub",
           ),

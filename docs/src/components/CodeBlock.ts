@@ -1,4 +1,4 @@
-import { cn, colors, s } from "../styles.ts";
+import { css, colors, s } from "../styles.ts";
 
 // ── Simple tokenizer for TypeScript/JS syntax highlighting ─────────────────
 function tokenize(code: string): string {
@@ -115,15 +115,7 @@ export function CodeBlock({ filename, code, showCopy = true, preTokenized = fals
 
   const tokenized = preTokenized ? code : tokenize(code);
 
-  const copyBtn = cn(
-    display("flex").alignItems("center").gap("5px")
-      .fontSize("0.75rem").fontWeight("500")
-      .color(colors.textMuted).padding("4px 10px")
-      .borderRadius("5px").transition("all 0.18s ease")
-      .border(`1px solid transparent`)
-      .backgroundColor("transparent").fontFamily("'Space Grotesk', system-ui, sans-serif"),
-    { hover: color(colors.primary).borderColor("rgba(56,105,236,0.25)").backgroundColor(colors.primaryAlpha08) }
-  );
+  const copyBtn = css({ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: "500", color: colors.textMuted, padding: "4px 10px", borderRadius: "5px", transition: "all 0.18s ease", border: `1px solid transparent`, backgroundColor: "transparent", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.primary, borderColor: "rgba(56,105,236,0.25)", backgroundColor: colors.primaryAlpha08 } });
 
   function handleCopy() {
     navigator.clipboard?.writeText(code).then(() => {
@@ -152,7 +144,7 @@ export function CodeBlock({ filename, code, showCopy = true, preTokenized = fals
     ] : []),
     div(
       s.codeBlockBody,
-      cn(color(colors.text)),
+      css({ color: colors.text }),
       { innerHTML: () => `<pre style="margin:0;white-space:pre-wrap;word-break:break-word">${tokenized}</pre>` },
     ),
   );
