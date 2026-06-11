@@ -2,26 +2,38 @@
 import "../src/index";
 import { list } from "../src/list";
 import { on } from "../src/utility/on";
-import { bg, createStyleQueries } from "../src/style";
+import { createCss } from "../src/style";
 
-const queries = createStyleQueries([
-  ["compact", "@media (max-width: 480px)"],
-  ["wide", "@media (min-width: 1024px)"],
-] as const);
-
-queries({
-  compact: bg("red"),
-  hover: bg("blue"),
+const { css, cx } = createCss({
+  colors: { primary: "#3869ec" },
+  screens: {
+    compact: "(max-width: 480px)",
+    wide: "(min-width: 1024px)",
+  },
 });
 
-queries(bg("black"), {
-  wide: bg("white"),
+css({
+  bg: "primary", // theme token autocompletes and resolves
+  compact: { bg: "red" },
+  hover: { bg: "blue" },
 });
 
-queries({
-  // @ts-expect-error unknown query key should not be accepted
-  desktop: bg("green"),
+css({
+  color: "#000",
+  wide: { color: "#fff" },
 });
+
+css({
+  // @ts-expect-error unknown property names are rejected
+  paddng: 16,
+});
+
+css({
+  // @ts-expect-error unknown variant key should not be accepted
+  desktop: { bg: "green" },
+});
+
+cx(css({ p: 8 }), false, null, undefined, "external-class");
 
 div(
   on("nuclo:ready", function (this: HTMLElement, ev: CustomEvent<{ ok: boolean }>) {

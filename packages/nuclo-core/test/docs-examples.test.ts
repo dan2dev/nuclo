@@ -6,6 +6,7 @@
 /// <reference path="../types/index.d.ts" />
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../src';
+import { resetStyles, getCssText } from '../src';
 
 describe('Documentation Examples', () => {
   beforeEach(() => {
@@ -314,49 +315,51 @@ describe('Documentation Examples', () => {
     });
   });
 
-  describe('Styling - createBreakpoints', () => {
-    it('should create breakpoints helper', () => {
-      const cn = createBreakpoints({
-        medium: '(min-width: 768px)',
-        large: '(min-width: 1024px)'
-      });
-
-      expect(typeof cn).toBe('function');
-    });
-
-    it('should generate className from chained styles', () => {
-      const cn = createBreakpoints({
-        medium: '(min-width: 768px)'
-      });
-
-      const result = cn(
-        bg('#3b82f6')
-          .color('white')
-          .padding('0.75rem 1.5rem')
-          .borderRadius('8px')
-      );
-
-      expect(result).toHaveProperty('className');
-      expect((result as any).className).toMatch(/^n[a-f0-9]{8}$/);
-    });
-
-    it('should support responsive breakpoints', () => {
-      const cn = createBreakpoints({
-        medium: '(min-width: 768px)',
-        large: '(min-width: 1024px)'
-      });
-
-      const result = cn(
-        padding('1rem').fontSize('14px'),
-        {
-          medium: padding('1.5rem').fontSize('16px'),
-          large: padding('2rem').fontSize('18px')
+  describe('Styling - createCss', () => {
+    it('should create a themed styling instance', () => {
+      const instance = createCss({
+        screens: {
+          medium: '(min-width: 768px)',
+          large: '(min-width: 1024px)'
         }
-      );
+      });
+
+      expect(typeof instance.css).toBe('function');
+      expect(typeof instance.cx).toBe('function');
+    });
+
+    it('should generate atomic class names from a style object', () => {
+      const result = css({
+        bg: '#3b82f6',
+        color: 'white',
+        py: '0.75rem',
+        px: '1.5rem',
+        rounded: 8
+      });
 
       expect(result).toHaveProperty('className');
-      const className = (result as any).className;
-      expect(className).toMatch(/^n[a-f0-9]{8}$/);
+      for (const name of result.className.split(' ')) {
+        expect(name).toMatch(/^n[a-z0-9]+$/);
+      }
+    });
+
+    it('should support responsive screens', () => {
+      resetStyles();
+      const themed = createCss({
+        screens: {
+          medium: '(min-width: 768px)',
+          large: '(min-width: 1024px)'
+        }
+      });
+
+      const result = themed.css({
+        p: '1rem',
+        text: '14px',
+        medium: { p: '1.5rem', text: '16px' },
+        large: { p: '2rem', text: '18px' }
+      });
+
+      expect(result).toHaveProperty('className');
 
       // Verify CSS was created
       const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
@@ -368,63 +371,70 @@ describe('Documentation Examples', () => {
     });
 
     it('should apply styles to elements', () => {
-      const cn = createBreakpoints({
-        medium: '(min-width: 768px)'
+      const buttonStyle = css({
+        bg: '#3b82f6',
+        color: 'white',
+        py: '0.5rem',
+        px: '1rem'
       });
-
-      const buttonStyle = cn(
-        bg('#3b82f6')
-          .color('white')
-          .padding('0.5rem 1rem')
-      );
 
       const app = button(buttonStyle, 'Click me');
       render(app);
 
       const btn = document.querySelector('button') as HTMLButtonElement;
-      expect(btn.className).toMatch(/n[a-f0-9]{8}/);
+      expect(btn.className).toMatch(/n[a-z0-9]+/);
     });
   });
 
-  describe('Styling - Style Helpers', () => {
-    it('should chain multiple style helpers', () => {
-      const styles = bg('white')
-        .padding('1.5rem')
-        .borderRadius('12px')
-        .boxShadow('0 4px 6px rgba(0,0,0,0.1)');
-
-      expect(styles.getStyles()).toHaveProperty('background-color', 'white');
-      expect(styles.getStyles()).toHaveProperty('padding', '1.5rem');
-      expect(styles.getStyles()).toHaveProperty('border-radius', '12px');
+  describe('Styling - shorthand aliases and composites', () => {
+    it('should expand spacing and color aliases into declarations', () => {
+      resetStyles();
+      css({
+        bg: 'white',
+        p: '1.5rem',
+        rounded: '12px',
+        shadow: '0 4px 6px rgba(0,0,0,0.1)'
+      });
+      const text = getCssText();
+      expect(text).toContain('background:white');
+      expect(text).toContain('padding:1.5rem');
+      expect(text).toContain('border-radius:12px');
     });
 
-    it('should support flex() shorthand', () => {
-      const styles = flex().justifyContent('center').alignItems('center');
-      const cssStyles = styles.getStyles();
-      expect(cssStyles).toHaveProperty('display', 'flex');
-      expect(cssStyles).toHaveProperty('justify-content', 'center');
-      expect(cssStyles).toHaveProperty('align-items', 'center');
+    it('should support the center composite', () => {
+      resetStyles();
+      css({ display: 'flex', center: true });
+      const text = getCssText();
+      expect(text).toContain('display:flex');
+      expect(text).toContain('justify-content:center');
+      expect(text).toContain('align-items:center');
     });
 
-    it('should support center() shorthand', () => {
-      const styles = flex().center();
-      const cssStyles = styles.getStyles();
-      expect(cssStyles).toHaveProperty('justify-content', 'center');
-      expect(cssStyles).toHaveProperty('align-items', 'center');
+    it('should support row/col composites', () => {
+      resetStyles();
+      css({ col: true });
+      const text = getCssText();
+      expect(text).toContain('display:flex');
+      expect(text).toContain('flex-direction:column');
     });
 
-    it('should support bold() shorthand', () => {
-      const styles = fontSize('1rem').bold();
-      const cssStyles = styles.getStyles();
-      expect(cssStyles).toHaveProperty('font-weight', 'bold');
+    it('should convert numbers to px except unitless properties', () => {
+      resetStyles();
+      css({ p: 16, opacity: 0.5, z: 10, weight: 600 });
+      const text = getCssText();
+      expect(text).toContain('padding:16px');
+      expect(text).toContain('opacity:0.5');
+      expect(text).toContain('z-index:10');
+      expect(text).toContain('font-weight:600');
     });
 
-    it('should support grid() shorthand', () => {
-      const styles = grid().gridTemplateColumns('repeat(3, 1fr)').gap('1rem');
-      const cssStyles = styles.getStyles();
-      expect(cssStyles).toHaveProperty('display', 'grid');
-      expect(cssStyles).toHaveProperty('grid-template-columns', 'repeat(3, 1fr)');
-      expect(cssStyles).toHaveProperty('gap', '1rem');
+    it('should support grid styles', () => {
+      resetStyles();
+      css({ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' });
+      const text = getCssText();
+      expect(text).toContain('display:grid');
+      expect(text).toContain('grid-template-columns:repeat(3, 1fr)');
+      expect(text).toContain('gap:1rem');
     });
   });
 
@@ -848,36 +858,39 @@ describe('Documentation Examples', () => {
         }
       };
 
-      const cn = createBreakpoints({
-        sm: '(min-width: 640px)',
-        md: '(min-width: 768px)',
-        lg: '(min-width: 1024px)',
+      const { css: themedCss } = createCss({
+        screens: {
+          sm: '(min-width: 640px)',
+          md: '(min-width: 768px)',
+          lg: '(min-width: 1024px)',
+        },
       });
 
       const styles = {
-        container: cn(
-          width('100%')
-            .maxWidth('1200px')
-            .margin('0 auto')
-            .padding(theme.spacing.md)
-        ),
+        container: themedCss({
+          w: '100%',
+          maxW: '1200px',
+          mx: 'auto',
+          p: theme.spacing.md
+        }),
 
-        card: cn(
-          bg(theme.colors.bg)
-            .borderRadius(theme.borderRadius.lg)
-            .padding(theme.spacing.lg)
-            .boxShadow('0 4px 6px rgba(0,0,0,0.1)')
-        ),
+        card: themedCss({
+          bg: theme.colors.bg,
+          rounded: theme.borderRadius.lg,
+          p: theme.spacing.lg,
+          shadow: '0 4px 6px rgba(0,0,0,0.1)'
+        }),
 
-        btnPrimary: cn(
-          bg(theme.colors.primary)
-            .color('white')
-            .padding(`${theme.spacing.sm} ${theme.spacing.lg}`)
-            .borderRadius(theme.borderRadius.md)
-            .border('none')
-            .fontWeight('600')
-            .cursor('pointer')
-        )
+        btnPrimary: themedCss({
+          bg: theme.colors.primary,
+          color: 'white',
+          py: theme.spacing.sm,
+          px: theme.spacing.lg,
+          rounded: theme.borderRadius.md,
+          border: 'none',
+          weight: 600,
+          cursor: 'pointer'
+        })
       };
 
       const app = div(
@@ -898,24 +911,24 @@ describe('Documentation Examples', () => {
 
       // Verify CSS classes were applied
       const container = document.body.firstElementChild as HTMLElement;
-      expect(container.className).toMatch(/n[a-f0-9]{8}/);
+      expect(container.className).toMatch(/n[a-z0-9]+/);
     });
 
     it('should work with responsive styles', () => {
-      const cn = createBreakpoints({
-        medium: '(min-width: 768px)',
-        large: '(min-width: 1024px)'
+      const { css: themedCss } = createCss({
+        screens: {
+          medium: '(min-width: 768px)',
+          large: '(min-width: 1024px)'
+        }
       });
 
-      const cardGrid = cn(
-        grid()
-          .gridTemplateColumns('1fr')
-          .gap('1.5rem'),
-        {
-          medium: gridTemplateColumns('repeat(2, 1fr)'),
-          large: gridTemplateColumns('repeat(3, 1fr)')
-        }
-      );
+      const cardGrid = themedCss({
+        display: 'grid',
+        gridTemplateColumns: '1fr',
+        gap: '1.5rem',
+        medium: { gridTemplateColumns: 'repeat(2, 1fr)' },
+        large: { gridTemplateColumns: 'repeat(3, 1fr)' }
+      });
 
       const items = [{ name: 'Card 1' }, { name: 'Card 2' }, { name: 'Card 3' }];
 

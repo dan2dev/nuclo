@@ -6,13 +6,13 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { update } from '../src/core/updateController';
-import { createBreakpoints, bg, padding } from '../src/style';
+import { createCss } from '../src/style';
 import '../src/core/runtimeBootstrap';
 
-const cn = createBreakpoints({
+const { css } = createCss({ screens: {
   small: "(min-width: 320px)",
   medium: "(min-width: 768px)",
-});
+} });
 
 describe('Static and reactive className ordering', () => {
   let container: HTMLDivElement;
@@ -26,9 +26,9 @@ describe('Static and reactive className ordering', () => {
   });
 
   it('should apply both classes when static className comes before reactive className', () => {
-    const staticClass = cn(padding('20px'));
-    const reactiveClass1 = cn(bg('#0000FF'));
-    const reactiveClass2 = cn(bg('#FF0000'));
+    const staticClass = css({ p: '20px' });
+    const reactiveClass1 = css({ bg: '#0000FF' });
+    const reactiveClass2 = css({ bg: '#FF0000' });
 
     const element = (globalThis as any).div(
       "text",
@@ -60,9 +60,9 @@ describe('Static and reactive className ordering', () => {
   });
 
   it('should apply both classes when reactive className comes before static className', () => {
-    const staticClass = cn(padding('20px'));
-    const reactiveClass1 = cn(bg('#0000FF'));
-    const reactiveClass2 = cn(bg('#FF0000'));
+    const staticClass = css({ p: '20px' });
+    const reactiveClass1 = css({ bg: '#0000FF' });
+    const reactiveClass2 = css({ bg: '#FF0000' });
 
     const element = (globalThis as any).div(
       "text",
@@ -94,9 +94,9 @@ describe('Static and reactive className ordering', () => {
   });
 
   it('should handle multiple static classes with reactive className', () => {
-    const staticClass1 = cn(padding('20px'));
-    const staticClass2 = cn(bg('#FFFFFF'));
-    const reactiveClass = cn(bg('#0000FF'));
+    const staticClass1 = css({ p: '20px' });
+    const staticClass2 = css({ bg: '#FFFFFF' });
+    const reactiveClass = css({ bg: '#0000FF' });
 
     const element = (globalThis as any).div(
       staticClass1,
@@ -120,8 +120,8 @@ describe('Static and reactive className ordering', () => {
   });
 
   it('should work with the example from the issue - static then reactive', () => {
-    const p20 = cn(padding('20px'));
-    const pgBlue = cn(bg('#0000FF'));
+    const p20 = css({ p: '20px' });
+    const pgBlue = css({ bg: '#0000FF' });
 
     const element = (globalThis as any).div(
       "olá",
@@ -141,8 +141,8 @@ describe('Static and reactive className ordering', () => {
   });
 
   it('should work with the example from the issue - reactive then static', () => {
-    const p20 = cn(padding('20px'));
-    const pgBlue = cn(bg('#0000FF'));
+    const p20 = css({ p: '20px' });
+    const pgBlue = css({ bg: '#0000FF' });
 
     const element = (globalThis as any).div(
       "olá",

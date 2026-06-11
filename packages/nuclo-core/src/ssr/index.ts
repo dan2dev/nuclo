@@ -21,4 +21,4 @@ export {
   renderToStringWithContainer
 } from './renderToString';
 
-export { setSSRCollector } from '../style/cssGenerator';
+export { setSSRCollector, getCssText } from '../style/engine';

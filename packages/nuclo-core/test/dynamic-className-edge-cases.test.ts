@@ -6,12 +6,12 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { update } from '../src';
-import { createBreakpoints, bg } from '../src/style';
+import { createCss } from '../src/style';
 
-const cn = createBreakpoints({
+const { css } = createCss({ screens: {
   small: "(min-width: 320px)",
   medium: "(min-width: 768px)",
-});
+} });
 
 describe('Dynamic className - Edge Cases & Validation', () => {
   let container: HTMLDivElement;
@@ -23,8 +23,8 @@ describe('Dynamic className - Edge Cases & Validation', () => {
   });
 
   describe('Type discrimination', () => {
-    it('should distinguish between cn() object and plain object', () => {
-      const cnClass = cn(bg('red'));
+    it('should distinguish between css({  }) object and plain object', () => {
+      const cnClass = css({ bg: 'red' });
 
       // This should be treated as className
       const element1 = (globalThis as any).div(
@@ -105,7 +105,7 @@ describe('Dynamic className - Edge Cases & Validation', () => {
 
   describe('Object property validation', () => {
     it('should only accept objects with exactly one property (className)', () => {
-      const validClass = cn(bg('red')); // Returns { className: 'xxx' }
+      const validClass = css({ bg: 'red' }); // Returns { className: 'xxx' }
 
       const element = (globalThis as any).div(
         () => validClass,
@@ -232,7 +232,7 @@ describe('Dynamic className - Edge Cases & Validation', () => {
 
     it('should handle toggle between valid className and null', () => {
       let useClass = true;
-      const validClass = cn(bg('red'));
+      const validClass = css({ bg: 'red' });
 
       const element = (globalThis as any).div(
         () => useClass ? validClass : null,
@@ -310,7 +310,7 @@ describe('Dynamic className - Edge Cases & Validation', () => {
   describe('Error scenarios', () => {
     it('should handle function that throws on initial evaluation', () => {
       let shouldThrow = true;
-      const validClass = cn(bg('red'));
+      const validClass = css({ bg: 'red' });
 
       const element = (globalThis as any).div(
         () => {
@@ -332,7 +332,7 @@ describe('Dynamic className - Edge Cases & Validation', () => {
 
     it('should handle function that starts working then throws', () => {
       let shouldThrow = false;
-      const validClass = cn(bg('red'));
+      const validClass = css({ bg: 'red' });
 
       const element = (globalThis as any).div(
         () => {
@@ -421,7 +421,7 @@ describe('Dynamic className - Edge Cases & Validation', () => {
       const result = element(container, 0);
       container.appendChild(result as Node);
 
-      // Should not be treated as cn() className because it has multiple properties
+      // Should not be treated as css({  }) className because it has multiple properties
       expect(result.textContent).toBe('Class Instance');
     });
   });
@@ -430,11 +430,11 @@ describe('Dynamic className - Edge Cases & Validation', () => {
     it('should handle rapid successive updates', () => {
       let counter = 0;
       const classes = [
-        cn(bg('red')),
-        cn(bg('blue')),
-        cn(bg('green')),
-        cn(bg('yellow')),
-        cn(bg('purple')),
+        css({ bg: 'red' }),
+        css({ bg: 'blue' }),
+        css({ bg: 'green' }),
+        css({ bg: 'yellow' }),
+        css({ bg: 'purple' }),
       ];
 
       const element = (globalThis as any).div(
@@ -456,8 +456,8 @@ describe('Dynamic className - Edge Cases & Validation', () => {
     it('should maintain consistency with concurrent state changes', () => {
       let value1 = 0;
       let value2 = 0;
-      const class1 = cn(bg('red'));
-      const class2 = cn(bg('blue'));
+      const class1 = css({ bg: 'red' });
+      const class2 = css({ bg: 'blue' });
 
       const element = (globalThis as any).div(
         () => (value1 + value2) % 2 === 0 ? class1 : class2,
@@ -482,7 +482,7 @@ describe('Dynamic className - Edge Cases & Validation', () => {
     it('should not leak memory with many className changes', () => {
       let counter = 0;
       const classes = Array.from({ length: 20 }, (_, i) =>
-        cn(bg(`hsl(${i * 18}, 70%, 50%)`))
+        css({ bg: `hsl(${i * 18}, 70%, 50%)` })
       );
 
       const element = (globalThis as any).div(
@@ -504,7 +504,7 @@ describe('Dynamic className - Edge Cases & Validation', () => {
 
     it('should handle element removal and recreation', () => {
       let toggle = true;
-      const dynamicClass = cn(bg('red'));
+      const dynamicClass = css({ bg: 'red' });
 
       const { when } = globalThis as any;
 
