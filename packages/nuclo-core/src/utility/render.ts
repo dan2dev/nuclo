@@ -1,4 +1,5 @@
-import { startHydration, endHydration } from "../hydration/context";
+import { startHydration, endHydration, peekChild, setCursor } from "../hydration/context";
+import { safeRemoveChild } from "./dom";
 
 /**
  * Renders a NodeModFn to a parent element by calling it and appending the result.
@@ -46,9 +47,28 @@ export function hydrate<TTagName extends ElementTagName = ElementTagName>(
   parent?: Element,
 ): ExpandedElement<TTagName> {
   const targetParent = (parent || document.body) as ExpandedElement<TTagName>;
+  const parentNode = targetParent as unknown as Node & ParentNode;
   startHydration();
   try {
     const element = nodeModFn(targetParent, 0) as ExpandedElement<TTagName>;
+    const elementNode = element as unknown as Node | null | undefined;
+    // Claim failed (empty container or tag mismatch): the factory built a
+    // fresh, detached root. Replace the mismatched SSR node at the cursor —
+    // or append when there is nothing to replace — so the app is always live
+    // in the document. Only the single candidate node is touched; siblings
+    // (other roots, scripts) are preserved.
+    if (elementNode && elementNode.nodeType === 1 && elementNode.parentNode !== parentNode) {
+      const stale = peekChild(parentNode);
+      if (stale) {
+        const after = stale.nextSibling;
+        parentNode.insertBefore(elementNode, stale);
+        safeRemoveChild(stale);
+        setCursor(parentNode, after);
+      } else {
+        parentNode.appendChild(elementNode);
+        setCursor(parentNode, null);
+      }
+    }
     return element;
   } finally {
     endHydration();

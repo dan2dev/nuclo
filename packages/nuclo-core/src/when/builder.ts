@@ -1,10 +1,30 @@
-import { createMarkerPair } from "../utility/dom";
+import { createMarkerPair, createComment, clearBetweenMarkers, insertNodesBefore } from "../utility/dom";
 import { asParentNode } from "../utility/domTypeHelpers";
 import type { WhenCondition, WhenContent, WhenGroup, WhenRuntime } from "./runtime";
 import { renderWhenContent, registerWhenRuntime, evaluateActiveCondition } from "./runtime";
+import { renderContentItems } from "./renderer";
 import { isBrowser } from "../utility/environment";
-import { isHydrating, claimChild, getCursor, setCursor } from "../hydration/context";
+import { isHydrating, claimChild, peekChild, setCursor, skipWhitespaceText, runWithoutHydration } from "../hydration/context";
 import { applyNodeModifier } from "../core/modifierProcessor";
+
+/**
+ * Encodes the active branch into the start marker so hydration can detect
+ * server/client branch mismatches: `when-start-{index}-b{branch}` where
+ * branch is the group index, -1 for the else branch, or `n` for none.
+ */
+function encodeBranch(index: number, activeIndex: number | null): string {
+  return `when-start-${index}-b${activeIndex === null ? 'n' : activeIndex}`;
+}
+
+/**
+ * Reads the branch encoded in an SSR start marker.
+ * Returns `undefined` for legacy markers without branch info.
+ */
+function decodeBranch(markerText: string | null): number | null | undefined {
+  const match = /-b(n|-?\d+)$/.exec(markerText || '');
+  if (!match) return undefined;
+  return match[1] === 'n' ? null : parseInt(match[1], 10);
+}
 
 class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
   private groups: WhenGroup<TTagName>[] = [];
@@ -57,6 +77,9 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
 
     renderWhenContent(runtime);
 
+    // Record which branch was rendered so hydration can detect mismatches.
+    startMarker.textContent = encodeBranch(index, runtime.activeIndex);
+
     return startMarker;
   }
 
@@ -66,8 +89,8 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     // Check if next child is actually a when-start comment marker.
     // If the SSR HTML doesn't contain Nuclo comment markers, fall back
     // to normal rendering (create new markers + render from scratch).
-    const cursor = getCursor(parentNode);
-    const candidate = parentNode.childNodes[cursor];
+    skipWhitespaceText(parentNode);
+    const candidate = peekChild(parentNode);
     if (!candidate || candidate.nodeType !== 8 ||
         !(candidate as Comment).textContent?.startsWith('when-start-')) {
       return this.freshRender(host, index);
@@ -76,28 +99,64 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     // Claim existing start marker
     const startMarker = claimChild(parentNode) as Comment;
 
-    // Find end marker position (without claiming)
-    let endMarkerIdx = getCursor(parentNode);
-    while (endMarkerIdx < parentNode.childNodes.length) {
-      const node = parentNode.childNodes[endMarkerIdx];
-      if (node.nodeType === 8 && (node as Comment).textContent === 'when-end') break;
-      endMarkerIdx++;
+    // Find end marker (without claiming). Directly nested when() blocks
+    // share this host, so matching pairs must be depth-counted.
+    let depth = 0;
+    let scanNode: Node | null = peekChild(parentNode);
+    while (scanNode) {
+      if (scanNode.nodeType === 8) {
+        const text = (scanNode as Comment).textContent || '';
+        if (text.startsWith('when-start-')) {
+          depth++;
+        } else if (text === 'when-end') {
+          if (depth === 0) break;
+          depth--;
+        }
+      }
+      scanNode = scanNode.nextSibling;
     }
-    const endMarker = parentNode.childNodes[endMarkerIdx] as Comment;
+    let endMarker = scanNode as Comment | null;
+    let endMarkerMissing = false;
+    if (!endMarker) {
+      // Corrupt/truncated SSR output — recreate the end marker right after
+      // the start marker and render the branch fresh.
+      const created = createComment('when-end');
+      if (!created) return startMarker;
+      parentNode.insertBefore(created, startMarker.nextSibling);
+      endMarker = created;
+      endMarkerMissing = true;
+    }
 
-    // Determine which branch is currently active
-    const activeIndex = evaluateActiveCondition([...this.groups], [...this.elseContent]);
+    // Determine which branch the client wants and which the server rendered.
+    const activeIndex = evaluateActiveCondition(this.groups, this.elseContent);
+    const serverBranch = decodeBranch(startMarker.textContent);
+    const branchMatches = !endMarkerMissing &&
+      (serverBranch === undefined || serverBranch === activeIndex);
 
-    // Re-run active branch content to register reactivity on existing nodes
-    if (activeIndex !== null) {
-      const contentToRender = activeIndex >= 0 ? this.groups[activeIndex].content : this.elseContent;
-      for (const item of contentToRender) {
-        applyNodeModifier(host, item as NodeMod<TTagName> | NodeModFn<TTagName>, index);
+    if (branchMatches) {
+      // Re-run active branch content to register reactivity on existing nodes
+      if (activeIndex !== null) {
+        const contentToRender = activeIndex >= 0 ? this.groups[activeIndex].content : this.elseContent;
+        for (const item of contentToRender) {
+          applyNodeModifier(host, item as NodeMod<TTagName> | NodeModFn<TTagName>, index);
+        }
+      }
+    } else {
+      // Server rendered a different branch (or the markup is unusable):
+      // drop the server content and render the client branch fresh.
+      clearBetweenMarkers(startMarker, endMarker);
+      if (activeIndex !== null) {
+        const contentToRender = activeIndex >= 0 ? this.groups[activeIndex].content : this.elseContent;
+        const end = endMarker;
+        runWithoutHydration(() => {
+          const nodes = renderContentItems(contentToRender, host, index, end);
+          insertNodesBefore(nodes, end);
+        });
       }
     }
 
     // Advance cursor past end marker
-    setCursor(parentNode, endMarkerIdx + 1);
+    setCursor(parentNode, endMarker.nextSibling);
 
     this.createRuntimeFromMarkers(host, index, startMarker, endMarker, activeIndex);
 

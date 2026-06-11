@@ -61,10 +61,12 @@ function serializeAttribute(name: string, value: unknown): string {
   }
 
   if (name === 'style' && typeof value === 'object') {
-    const styleStr = Object.entries(value)
-      .filter(([, val]) => val != null && val !== '')
-      .map(([key, val]) => `${camelToKebab(key)}: ${val};`)
-      .join(' ');
+    let styleStr = '';
+    for (const key in value as Record<string, unknown>) {
+      const val = (value as Record<string, unknown>)[key];
+      if (val == null || val === '') continue;
+      styleStr += (styleStr ? ' ' : '') + camelToKebab(key) + ': ' + String(val) + ';';
+    }
     return styleStr ? ` style="${escapeHtml(styleStr)}"` : '';
   }
 
@@ -151,6 +153,20 @@ const VOID_ELEMENTS = new Set([
 ]);
 
 /**
+ * Raw-text elements — browsers never decode entities inside them, so their
+ * text content must be emitted verbatim (escaping would corrupt inline JS/CSS,
+ * e.g. `a < b` becoming `a &lt; b` inside a script).  A closing-tag sequence
+ * in the content would terminate the element early, so it is neutralized.
+ */
+const RAW_TEXT_ELEMENTS = new Set(['script', 'style']);
+
+function escapeRawText(tagName: string, text: string): string {
+  // "</script" (any case) inside a script would close it — break the sequence
+  // the same way JSON serializers do ("<\/script").
+  return text.replace(new RegExp('</(' + tagName + ')', 'gi'), '<\\/$1');
+}
+
+/**
  * Get child nodes from a node (handles both browser and polyfill elements).
  *
  * NucloElement stores ALL children (elements, text, comments) in a plain Array
@@ -200,6 +216,25 @@ function serializeNode(node: Node): string {
     // Self-closing tags
     if (VOID_ELEMENTS.has(tagName)) {
       return `<${tagName}${attributes} />`;
+    }
+
+    // Raw-text elements: emit text verbatim (no entity escaping, no Nuclo
+    // text markers — `<!--` would act as a line comment inside a script).
+    if (RAW_TEXT_ELEMENTS.has(tagName)) {
+      let rawContent = '';
+      const rawChildren = getChildNodes(element);
+      if (rawChildren && rawChildren.length > 0) {
+        for (let i = 0; i < rawChildren.length; i++) {
+          const child = rawChildren[i];
+          if (child && child.nodeType === 3) {
+            rawContent += child.textContent || '';
+          }
+        }
+      } else {
+        const tc = (node as { textContent?: unknown }).textContent;
+        if (typeof tc === 'string') rawContent = tc;
+      }
+      return `<${tagName}${attributes}>${escapeRawText(tagName, rawContent)}</${tagName}>`;
     }
 
     // Regular elements with children

@@ -5,6 +5,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./test/setup.ts'],
+    // Expose global.gc so memory tests can assert real collectability
+    // (simulated WeakRef tests cannot detect strong-reference retention).
+    execArgv: ['--expose-gc'],
     exclude: [
       '**/node_modules/**',
       '**/dist/**',

@@ -15,11 +15,11 @@ export function assignInlineStyles<TTagName extends ElementTagName>(
 ): void {
   if (!element?.style || !styles) return;
 
-  for (const [property, value] of Object.entries(styles)) {
+  for (const property in styles) {
     const success = setStyleProperty(
       element as HTMLElement,
       property,
-      value as string | number | null
+      (styles as Record<string, string | number | null>)[property]
     );
 
     if (!success) {

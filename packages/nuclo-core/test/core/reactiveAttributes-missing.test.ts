@@ -117,27 +117,25 @@ describe('notifyReactiveElements', () => {
 
   describe('GC path – dead WeakRef (lines 156-157)', () => {
     it('silently removes GC-collected element refs and does not throw', () => {
-      // Inject a fake dead WeakRef directly into the shared Map
+      // Inject a fake dead WeakRef directly into the shared iteration set
       const dead = deadElementRef();
-      const fakeInfo = { attributeResolvers: new Map() };
-      (reactiveElements as Map<WeakRef<Element>, typeof fakeInfo>).set(dead, fakeInfo);
+      reactiveElements.add(dead);
 
       expect(() => notifyReactiveElements()).not.toThrow();
 
       // Dead ref should be cleaned up
-      expect((reactiveElements as Map<WeakRef<Element>, unknown>).has(dead)).toBe(false);
+      expect(reactiveElements.has(dead)).toBe(false);
     });
 
     it('handles multiple dead refs in a single pass', () => {
       const dead1 = deadElementRef();
       const dead2 = deadElementRef();
-      const fakeInfo = { attributeResolvers: new Map() };
-      (reactiveElements as Map<WeakRef<Element>, typeof fakeInfo>).set(dead1, fakeInfo);
-      (reactiveElements as Map<WeakRef<Element>, typeof fakeInfo>).set(dead2, fakeInfo);
+      reactiveElements.add(dead1);
+      reactiveElements.add(dead2);
 
       expect(() => notifyReactiveElements()).not.toThrow();
-      expect((reactiveElements as Map<WeakRef<Element>, unknown>).has(dead1)).toBe(false);
-      expect((reactiveElements as Map<WeakRef<Element>, unknown>).has(dead2)).toBe(false);
+      expect(reactiveElements.has(dead1)).toBe(false);
+      expect(reactiveElements.has(dead2)).toBe(false);
     });
   });
 

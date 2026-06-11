@@ -75,12 +75,19 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
 export function notifyReactiveTextNodes(scope?: UpdateScope): void {
   const toDelete: WeakRef<Text>[] = [];
 
-  for (const [ref, info] of reactiveTextNodes) {
+  for (const ref of reactiveTextNodes) {
     const node = ref.deref();
     if (node === undefined) {
       toDelete.push(ref);
       continue;
     }
+
+    const entry = reactiveTextNodesByNode.get(node);
+    if (!entry) {
+      toDelete.push(ref);
+      continue;
+    }
+    const info = entry.info;
 
     if (!isNodeConnected(node)) {
       reactiveTextNodesByNode.delete(node);

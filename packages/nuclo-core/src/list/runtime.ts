@@ -1,6 +1,6 @@
-import { createMarkerPair, safeRemoveChild, isNodeConnected } from "../utility/dom";
+import { createMarkerPair, createComment, safeRemoveChild, isNodeConnected } from "../utility/dom";
 import { resolveRenderable } from "../utility/renderables";
-import { isHydrating, claimChild, getCursor, setCursor } from "../hydration/context";
+import { isHydrating, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration/context";
 
 function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
   if (a === b) return true;
@@ -15,15 +15,28 @@ import type { UpdateScope } from "../core/updateScope";
 import { isBrowser } from "../utility/environment";
 
 /**
- * Stores weak references to list runtime markers to prevent memory leaks.
- * Comment nodes can be garbage collected when removed from DOM.
- * The runtime object itself is mutable and will be updated in place.
+ * Registry of active list runtimes.
+ *
+ * The iteration set only holds WeakRefs; the runtime itself lives in a
+ * WeakMap keyed by its start marker. This keeps the global registry free of
+ * strong references to the runtime (which holds the host element, records,
+ * and markers), so removing a list's DOM subtree makes the whole runtime
+ * collectible — even if update() is never called again. The
+ * FinalizationRegistry prunes dead WeakRefs from the set once the marker is
+ * collected; updateListRuntimes() also prunes as it iterates.
  */
-interface ListRuntimeInfo<TItem = unknown, TTagName extends ElementTagName = ElementTagName> {
-  runtime: ListRuntime<TItem, TTagName>;
-}
+const activeListRuntimes = new Set<WeakRef<Comment>>();
+const listRuntimeByMarker = new WeakMap<Comment, ListRuntime<unknown, ElementTagName>>();
+const listMarkerFinalizer = typeof FinalizationRegistry !== "undefined"
+  ? new FinalizationRegistry<WeakRef<Comment>>((ref) => { activeListRuntimes.delete(ref); })
+  : null;
 
-const activeListRuntimes = new Map<WeakRef<Comment>, ListRuntimeInfo<unknown, ElementTagName>>();
+function registerListRuntime(startMarker: Comment, runtime: ListRuntime<unknown, ElementTagName>): void {
+  const ref = new WeakRef(startMarker);
+  activeListRuntimes.add(ref);
+  listRuntimeByMarker.set(startMarker, runtime);
+  listMarkerFinalizer?.register(startMarker, ref);
+}
 
 interface ReleasedListItemRecord<TItem, TTagName extends ElementTagName> {
   item: TItem | null;
@@ -91,9 +104,9 @@ export function sync<TItem, TTagName extends ElementTagName>(
     }
   }
 
+  // Phase 1: resolve which record backs each position (no DOM writes yet)
   const newRecords: Array<ListItemRecord<TItem, TTagName> | null> = new Array(currentItems.length);
   const elementsToRemove = new Set<ListItemRecord<TItem, TTagName>>(runtime.records);
-  let nextSibling: Node = endMarker;
 
   for (let i = currentItems.length - 1; i >= 0; i--) {
     const item = currentItems[i];
@@ -121,16 +134,26 @@ export function sync<TItem, TTagName extends ElementTagName>(
     }
 
     newRecords[i] = record;
+  }
 
+  // Phase 2: remove stale elements BEFORE placement. A removed element left
+  // in the DOM would make every surviving element before it fail the
+  // nextSibling check below, turning a single removal into O(n) moves.
+  for (const record of elementsToRemove) {
+    remove(record);
+  }
+
+  // Phase 3: place survivors/new elements, anchored backwards from the end
+  // marker — elements already in position are not touched.
+  let nextSibling: Node = endMarker;
+  for (let i = currentItems.length - 1; i >= 0; i--) {
+    const record = newRecords[i];
+    if (!record) continue;
     const recordNode = record.element as unknown as Node;
     if (recordNode.nextSibling !== nextSibling) {
       parent.insertBefore(recordNode, nextSibling);
     }
     nextSibling = recordNode;
-  }
-
-  for (const record of elementsToRemove) {
-    remove(record);
   }
 
   runtime.records = newRecords.filter((r): r is ListItemRecord<TItem, TTagName> => r !== null);
@@ -182,8 +205,7 @@ function createListRuntimeNormal<TItem, TTagName extends ElementTagName>(
 
   if (isBrowser) {
     // Register for future update() calls — not needed in SSR
-    const runtimeInfo: ListRuntimeInfo<TItem, TTagName> = { runtime };
-    activeListRuntimes.set(new WeakRef(startMarker), runtimeInfo as ListRuntimeInfo<unknown, ElementTagName>);
+    registerListRuntime(startMarker, runtime as ListRuntime<unknown, ElementTagName>);
   }
 
   return runtime;
@@ -199,8 +221,8 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
 
   // Check if next child is actually a list-start comment marker.
   // If not, fall back to normal (non-hydration) list creation.
-  const cursor = getCursor(parentNode);
-  const candidate = parentNode.childNodes[cursor];
+  skipWhitespaceText(parentNode);
+  const candidate = peekChild(parentNode);
   if (!candidate || candidate.nodeType !== 8 ||
       !(candidate as Comment).textContent?.startsWith('list-start-')) {
     return createListRuntimeNormal(itemsProvider, renderFn, host, index);
@@ -209,14 +231,35 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   // Claim existing start marker
   const startMarker = claimChild(parentNode) as Comment;
 
-  // Find end marker position (without claiming) so we know when to stop
-  let endMarkerIdx = getCursor(parentNode);
-  while (endMarkerIdx < parentNode.childNodes.length) {
-    const node = parentNode.childNodes[endMarkerIdx];
-    if (node.nodeType === 8 && (node as Comment).textContent === 'list-end') break;
-    endMarkerIdx++;
+  // Find end marker (without claiming) so we know when to stop.
+  // Pairs are depth-counted in case nested list markers share this host.
+  let depth = 0;
+  let scanNode: Node | null = peekChild(parentNode);
+  while (scanNode) {
+    if (scanNode.nodeType === 8) {
+      const text = (scanNode as Comment).textContent || '';
+      if (text.startsWith('list-start-')) {
+        depth++;
+      } else if (text === 'list-end') {
+        if (depth === 0) break;
+        depth--;
+      }
+    }
+    scanNode = scanNode.nextSibling;
   }
-  const endMarker = parentNode.childNodes[endMarkerIdx] as Comment;
+  let endMarker = scanNode as Comment | null;
+  if (!endMarker) {
+    // Corrupt/truncated SSR output — recreate the end marker; every item
+    // claim below will miss and render fresh.
+    const created = createComment('list-end');
+    if (created) {
+      parentNode.insertBefore(created, startMarker.nextSibling);
+      endMarker = created;
+    }
+  }
+  if (!endMarker) {
+    return createListRuntimeNormal(itemsProvider, renderFn, host, index);
+  }
 
   // Get current items and claim existing elements by running render functions
   const currentItems = normalizeItems(itemsProvider());
@@ -230,8 +273,29 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
     }
   }
 
+  // Reconcile server/client mismatches.
+  // 1) Server rendered more items than the client has: remove the leftover
+  //    nodes between the claim cursor and the end marker.
+  let leftover = peekChild(parentNode);
+  while (leftover && leftover !== endMarker) {
+    const next: Node | null = leftover.nextSibling;
+    safeRemoveChild(leftover);
+    leftover = next;
+  }
+
+  // 2) Client has items the claim pass could not match: place them in item
+  //    order, anchored backwards from the end marker (same strategy as sync()).
+  let anchor: Node = endMarker;
+  for (let i = records.length - 1; i >= 0; i--) {
+    const recordNode = records[i].element as unknown as Node;
+    if (recordNode.parentNode !== parentNode || recordNode.nextSibling !== anchor) {
+      parentNode.insertBefore(recordNode, anchor);
+    }
+    anchor = recordNode;
+  }
+
   // Advance cursor past end marker
-  setCursor(parentNode, endMarkerIdx + 1);
+  setCursor(parentNode, endMarker.nextSibling);
 
   const runtime: ListRuntime<TItem, TTagName> = {
     itemsProvider,
@@ -244,8 +308,7 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   };
 
   if (isBrowser) {
-    const runtimeInfo: ListRuntimeInfo<TItem, TTagName> = { runtime };
-    activeListRuntimes.set(new WeakRef(startMarker), runtimeInfo as ListRuntimeInfo<unknown, ElementTagName>);
+    registerListRuntime(startMarker, runtime as ListRuntime<unknown, ElementTagName>);
   }
 
   return runtime;
@@ -263,12 +326,25 @@ function releaseRuntime(runtime: ListRuntime<unknown, ElementTagName>): void {
 export function updateListRuntimes(scope?: UpdateScope): void {
   const toDelete: WeakRef<Comment>[] = [];
 
-  for (const [ref, info] of activeListRuntimes) {
+  for (const ref of activeListRuntimes) {
     const startMarker = ref.deref();
 
-    // Clean up if marker was GC'd or disconnected from DOM
-    if (!startMarker || !isNodeConnected(startMarker) || !isNodeConnected(info.runtime.endMarker)) {
-      releaseRuntime(info.runtime);
+    // Marker was garbage collected
+    if (!startMarker) {
+      toDelete.push(ref);
+      continue;
+    }
+
+    const runtime = listRuntimeByMarker.get(startMarker);
+    if (!runtime) {
+      toDelete.push(ref);
+      continue;
+    }
+
+    // Clean up if disconnected from DOM
+    if (!isNodeConnected(startMarker) || !isNodeConnected(runtime.endMarker)) {
+      releaseRuntime(runtime);
+      listRuntimeByMarker.delete(startMarker);
       toDelete.push(ref);
       continue;
     }
@@ -276,7 +352,7 @@ export function updateListRuntimes(scope?: UpdateScope): void {
     // Skip if outside update scope
     if (scope && !scope.contains(startMarker)) continue;
 
-    sync(info.runtime);
+    sync(runtime);
   }
 
   // Clean up dead references
