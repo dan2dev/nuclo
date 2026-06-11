@@ -1,4 +1,4 @@
-import { cn, colors, s } from "../styles.ts";
+import { css, colors, s } from "../styles.ts";
 import { setRoute, getCurrentRoute } from "../router.ts";
 import { toggleTheme, isDark } from "../theme.ts";
 
@@ -41,12 +41,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   function NavLink(label: string, route: string) {
     return a(
       { href: route === "home" ? base : `${base}${route}` },
-      cn(
-        display("inline-flex").alignItems("center").padding("6px 13px")
-          .borderRadius("6px").fontSize("0.875rem").fontWeight("500")
-          .color(colors.textDim).transition("color 0.18s ease, background 0.18s ease"),
-        { hover: color(colors.text).backgroundColor(colors.bgSecondary) }
-      ),
+      css({ display: "inline-flex", alignItems: "center", padding: "6px 13px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: "500", color: colors.textDim, transition: "color 0.18s ease, background 0.18s ease", hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
       { style: () => ({ color: isActive(route) ? "var(--c-text)" : undefined }) },
       label,
       on("click", (e) => {
@@ -61,15 +56,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   function MobileNavLink(label: string, route: string) {
     return a(
       { href: route === "home" ? base : `${base}${route}` },
-      cn(
-        display("flex").alignItems("center")
-          .padding("16px 24px")
-          .fontSize("1rem").fontWeight("500")
-          .color(colors.textDim)
-          .transition("all 0.18s ease")
-          .borderBottom(`1px solid ${colors.border}`),
-        { hover: color(colors.text).backgroundColor(colors.bgSecondary) }
-      ),
+      css({ display: "flex", alignItems: "center", padding: "16px 24px", fontSize: "1rem", fontWeight: "500", color: colors.textDim, transition: "all 0.18s ease", borderBottom: `1px solid ${colors.border}`, hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
       {
         style: () => ({
           color: isActive(route) ? "var(--c-text)" : undefined,
@@ -87,18 +74,9 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
 
   // ── Hamburger / X animated icon ───────────────────────────────────────────
   function MenuIcon() {
-    const lineBase = cn(
-      display("block").width("20px").height("2px")
-        .backgroundColor(colors.textDim)
-        .borderRadius("2px")
-        .transition("all 0.28s cubic-bezier(0.4,0,0.2,1)")
-    );
+    const lineBase = css({ display: "block", width: "20px", height: "2px", backgroundColor: colors.textDim, borderRadius: "2px", transition: "all 0.28s cubic-bezier(0.4,0,0.2,1)" });
     return div(
-      cn(
-        display("flex").flexDirection("column").gap("5px")
-          .alignItems("center").justifyContent("center")
-          .width("20px").height("20px")
-      ),
+      css({ display: "flex", flexDirection: "column", gap: "5px", alignItems: "center", justifyContent: "center", width: "20px", height: "20px" }),
       div(lineBase, { style: () => menuOpen ? { transform: "translateY(7px) rotate(45deg)" } : { transform: "" } }),
       div(lineBase, { style: () => menuOpen ? { opacity: "0", transform: "scaleX(0)" } : { opacity: "", transform: "" } }),
       div(lineBase, { style: () => menuOpen ? { transform: "translateY(-7px) rotate(-45deg)" } : { transform: "" } }),
@@ -106,88 +84,32 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   }
 
   // ── Styles ────────────────────────────────────────────────────────────────
-  const navStyle = cn(
-    position("fixed").top("0").left("0").right("0")
-      .zIndex(200).height("80px")
-      .backgroundColor(colors.bgNav)
-      .borderBottom(`1px solid ${colors.border}`)
-      .display("flex").alignItems("center")
-  );
+  const navStyle = css({ position: "fixed", top: "0", left: "0", right: "0", zIndex: 200, height: "80px", backgroundColor: colors.bgNav, borderBottom: `1px solid ${colors.border}`, display: "flex", alignItems: "center" });
 
-  const navInnerStyle = cn(
-    display("grid")
-      .gridTemplateColumns("1fr auto 1fr")
-      .alignItems("center")
-  );
+  const navInnerStyle = css({ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center" });
 
-  const logoStyle = cn(
-    display("flex").alignItems("center")
-      .justifySelf("center").cursor("pointer")
-      .transition("opacity 0.15s ease"),
-    { hover: opacity("0.8") }
-  );
+  const logoStyle = css({ display: "flex", alignItems: "center", justifySelf: "center", cursor: "pointer", transition: "opacity 0.15s ease", hover: { opacity: "0.8" } });
 
-  const rightGroup = cn(
-    display("flex").alignItems("center").gap("4px").justifySelf("end")
-  );
+  const rightGroup = css({ display: "flex", alignItems: "center", gap: "4px", justifySelf: "end" });
 
   // Desktop nav links — hidden on mobile, flex on medium+
-  const desktopNavLinks = cn(
-    display("none").alignItems("center").gap("2px"),
-    { medium: display("flex") }
-  );
+  const desktopNavLinks = css({ display: "none", alignItems: "center", gap: "2px", medium: { display: "flex" } });
 
   // Desktop GitHub button — hidden on mobile
-  const desktopGithub = cn(
-    display("none").alignItems("center").gap("6px")
-      .fontSize("0.8125rem").fontWeight("500")
-      .padding("6px 14px").borderRadius("6px")
-      .border(`1px solid ${colors.border}`)
-      .color(colors.textDim).transition("all 0.18s ease"),
-    {
-      medium: display("flex"),
-      hover: color(colors.text).borderColor(colors.borderLight),
-    }
-  );
+  const desktopGithub = css({ display: "none", alignItems: "center", gap: "6px", fontSize: "0.8125rem", fontWeight: "500", padding: "6px 14px", borderRadius: "6px", border: `1px solid ${colors.border}`, color: colors.textDim, transition: "all 0.18s ease", medium: { display: "flex" },
+      hover: { color: colors.text, borderColor: colors.borderLight } });
 
-  const themeBtn = cn(
-    display("flex").alignItems("center").justifyContent("center")
-      .width("34px").height("34px").borderRadius("6px")
-      .border(`1px solid ${colors.border}`)
-      .color(colors.textDim).transition("all 0.18s ease").fontSize("15px").flexShrink("0"),
-    { hover: color(colors.text).borderColor(colors.borderLight).backgroundColor(colors.bgSecondary) }
-  );
+  const themeBtn = css({ display: "flex", alignItems: "center", justifyContent: "center", width: "34px", height: "34px", borderRadius: "6px", border: `1px solid ${colors.border}`, color: colors.textDim, transition: "all 0.18s ease", fontSize: "15px", flexShrink: 0, hover: { color: colors.text, borderColor: colors.borderLight, backgroundColor: colors.bgSecondary } });
 
   // Mobile hamburger button — flex on mobile, hidden on medium+
-  const hamburgerBtn = cn(
-    display("flex").alignItems("center").justifyContent("center")
-      .width("34px").height("34px").borderRadius("6px")
-      .border(`1px solid ${colors.border}`)
-      .color(colors.textDim).transition("all 0.18s ease").cursor("pointer"),
-    {
-      medium: display("none"),
-      hover: color(colors.text).borderColor(colors.borderLight).backgroundColor(colors.bgSecondary),
-    }
-  );
+  const hamburgerBtn = css({ display: "flex", alignItems: "center", justifyContent: "center", width: "34px", height: "34px", borderRadius: "6px", border: `1px solid ${colors.border}`, color: colors.textDim, transition: "all 0.18s ease", cursor: "pointer", medium: { display: "none" },
+      hover: { color: colors.text, borderColor: colors.borderLight, backgroundColor: colors.bgSecondary } });
 
   // Mobile dropdown panel — hidden on medium+ via CSS
-  const mobileMenuPanel = cn(
-    position("fixed").left("0").right("0")
-      .zIndex(199)
-      .backgroundColor("var(--c-mobile-menu-bg)")
-      .borderBottom(`1px solid ${colors.border}`)
-      .overflow("hidden")
-      .transition("max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease"),
-    { medium: display("none") }
-  );
+  const mobileMenuPanel = css({ position: "fixed", left: "0", right: "0", zIndex: 199, backgroundColor: "var(--c-mobile-menu-bg)", borderBottom: `1px solid ${colors.border}`, overflow: "hidden", transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease", medium: { display: "none" } });
 
   // Transparent backdrop to close menu on outside click
-  const backdropStyle = cn(
-    position("fixed").top("0").left("0").right("0").bottom("0")
-      .zIndex(198)
-      .backgroundColor("rgba(0,0,0,0.35)")
-      .transition("opacity 0.25s ease")
-  );
+  const backdropStyle = css({ position: "fixed", top: "0", left: "0", right: "0", bottom: "0", zIndex: 198, backgroundColor: "rgba(0,0,0,0.35)", transition: "opacity 0.25s ease" });
 
   return div(
     // ── Navbar ──────────────────────────────────────────────────────────────
@@ -195,7 +117,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
       navStyle,
       div(
         s.container,
-        cn(width("100%")),
+        css({ width: "100%" }),
         div(
           navInnerStyle,
           // Left: empty spacer
@@ -210,7 +132,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
               alt: "Nuclo",
               class: "brand-logo",
             },
-            cn(height("64px").width("auto").display("block"))
+            css({ height: "64px", width: "auto", display: "block" })
             ),
           ),
           // Right: controls
@@ -266,14 +188,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
           target: "_blank",
           rel: "noopener noreferrer",
         },
-        cn(
-          display("flex").alignItems("center").gap("10px")
-            .padding("16px 24px")
-            .fontSize("1rem").fontWeight("500")
-            .color(colors.textDim)
-            .transition("all 0.18s ease"),
-          { hover: color(colors.text).backgroundColor(colors.bgSecondary) }
-        ),
+        css({ display: "flex", alignItems: "center", gap: "10px", padding: "16px 24px", fontSize: "1rem", fontWeight: "500", color: colors.textDim, transition: "all 0.18s ease", hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
         GitHubIcon(),
         "GitHub",
       ),

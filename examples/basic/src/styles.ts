@@ -1,136 +1,150 @@
 import "nuclo";
 
-// Simple color palette
-const colors = {
-  primary: "#6366f1",
-  primaryHover: "#4f46e5",
-  danger: "#ef4444",
-  dangerHover: "#dc2626",
-  text: "#1f2937",
-  textLight: "#6b7280",
-  bg: "#ffffff",
-  bgGradient: "linear-gradient(135deg, #f0f4ff, #e0e7ff)",
-  border: "#e2e8f0",
-};
+// Themed styling instance — tokens autocomplete inside css() calls.
+export const { css, cx } = createCss({
+  colors: {
+    primary: "#6366f1",
+    primaryHover: "#4f46e5",
+    danger: "#ef4444",
+    dangerHover: "#dc2626",
+    text: "#1f2937",
+    textLight: "#6b7280",
+    surface: "#ffffff",
+    surfaceMuted: "#f9fafb",
+    border: "#e2e8f0",
+  },
+  fonts: {
+    body: "system-ui, -apple-system, sans-serif",
+  },
+  shadows: {
+    card: "0 10px 25px rgba(0, 0, 0, 0.1)",
+  },
+  radii: {
+    sm: "6px",
+    md: "8px",
+    lg: "16px",
+  },
+  screens: {
+    sm: "(min-width: 640px)",
+    md: "(min-width: 768px)",
+  },
+});
 
-export const cn = createStyleQueries({});
+// Shared fragment: composed into both buttons below, compiled once.
+const buttonBase = {
+  border: "none",
+  rounded: "md",
+  weight: 600,
+  cursor: "pointer",
+  transition: "background-color 0.2s",
+  color: "surface",
+} satisfies Parameters<typeof css>[0];
+
+const todoText = css({
+  flex: 1,
+  text: 16,
+  color: "text",
+});
 
 // Global styles
 export const globalStyles = {
-  body: cn(
-    bg(colors.bgGradient)
-      .margin("0")
-      .padding("20px")
-      .minHeight("100vh")
-      .fontFamily("system-ui, -apple-system, sans-serif")
-      .fontSize("16px")
-      .color(colors.text)
-      .boxSizing("border-box")
+  body: css({
+    bg: "linear-gradient(135deg, #f0f4ff, #e0e7ff)",
+    m: 0,
+    p: 20,
+    minH: "100vh",
+    font: "body",
+    text: 16,
+    color: "text",
+    boxSizing: "border-box",
+  }),
+
+  container: css({
+    bg: "surface",
+    p: 30,
+    rounded: "lg",
+    shadow: "card",
+    w: "100%",
+    maxW: 500,
+    mx: "auto",
+  }),
+
+  header: css({
+    text: 28,
+    weight: 700,
+    color: "primary",
+    mb: 24,
+    align: "center",
+  }),
+
+  inputContainer: css({
+    row: true,
+    gap: 12,
+    mb: 24,
+  }),
+
+  input: css({
+    flex: 1,
+    py: 12,
+    px: 16,
+    text: 16,
+    border: "2px solid",
+    borderColor: "border",
+    rounded: "md",
+    outline: "none",
+    transition: "border-color 0.2s",
+    focus: { borderColor: "primary" },
+  }),
+
+  addButton: css({
+    ...buttonBase,
+    py: 12,
+    px: 24,
+    text: 16,
+    bg: "primary",
+    hover: { bg: "primaryHover" },
+  }),
+
+  todoList: css({
+    col: true,
+    gap: 12,
+  }),
+
+  todoItem: css({
+    row: true,
+    items: "center",
+    gap: 12,
+    p: 16,
+    bg: "surfaceMuted",
+    rounded: "md",
+    transition: "background-color 0.2s",
+    hover: { bg: "#f3f4f6" },
+  }),
+
+  checkbox: css({
+    size: 20,
+    cursor: "pointer",
+    accentColor: "#6366f1",
+  }),
+
+  todoText,
+
+  // Same base + the completed diff; cx drops the overridden color atom.
+  todoTextCompleted: cx(
+    todoText,
+    css({
+      color: "textLight",
+      textDecoration: "line-through",
+    })
   ),
 
-  container: cn(
-    bg(colors.bg)
-      .padding("30px")
-      .borderRadius("16px")
-      .boxShadow("0 10px 25px rgba(0, 0, 0, 0.1)")
-      .width("100%")
-      .maxWidth("500px")
-      .margin("0 auto")
-  ),
-
-  header: cn(
-    fontSize("28px")
-      .fontWeight("700")
-      .color(colors.primary)
-      .marginBottom("24px")
-      .textAlign("center")
-  ),
-
-  inputContainer: cn(
-    display("flex")
-      .gap("12px")
-      .marginBottom("24px")
-  ),
-
-  input: cn(
-    flex("1")
-      .padding("12px 16px")
-      .fontSize("16px")
-      .border("2px solid " + colors.border)
-      .borderRadius("8px")
-      .outline("none")
-      .transition("border-color 0.2s"),
-    {
-      focus: border("2px solid " + colors.primary),
-    }
-  ),
-
-  addButton: cn(
-    padding("12px 24px")
-      .bg(colors.primary)
-      .color(colors.bg)
-      .border("none")
-      .borderRadius("8px")
-      .fontSize("16px")
-      .fontWeight("600")
-      .cursor("pointer")
-      .transition("background-color 0.2s"),
-    {
-      hover: bg(colors.primaryHover),
-    }
-  ),
-
-  todoList: cn(
-    display("flex")
-      .flexDirection("column")
-      .gap("12px")
-  ),
-
-  todoItem: cn(
-    display("flex")
-      .alignItems("center")
-      .gap("12px")
-      .padding("16px")
-      .bg("#f9fafb")
-      .borderRadius("8px")
-      .transition("background-color 0.2s"),
-    {
-      hover: bg("#f3f4f6"),
-    }
-  ),
-
-  checkbox: cn(
-    width("20px")
-      .height("20px")
-      .cursor("pointer")
-      .accentColor(colors.primary)
-  ),
-
-  todoText: cn(
-    flex("1")
-      .fontSize("16px")
-      .color(colors.text)
-  ),
-
-  todoTextCompleted: cn(
-    flex("1")
-      .fontSize("16px")
-      .color(colors.textLight)
-      .textDecoration("line-through")
-  ),
-
-  deleteButton: cn(
-    padding("8px 12px")
-      .bg(colors.danger)
-      .color(colors.bg)
-      .border("none")
-      .borderRadius("6px")
-      .fontSize("14px")
-      .fontWeight("600")
-      .cursor("pointer")
-      .transition("background-color 0.2s"),
-    {
-      hover: bg(colors.dangerHover),
-    }
-  ),
+  deleteButton: css({
+    ...buttonBase,
+    py: 8,
+    px: 12,
+    text: 14,
+    rounded: "sm",
+    bg: "danger",
+    hover: { bg: "dangerHover" },
+  }),
 };

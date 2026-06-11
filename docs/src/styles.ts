@@ -414,6 +414,17 @@ img, svg { display: block; }
   font-size: 0.85rem; color: #ff8080;
 }
 
+.ex-style-demo { width: 100%; max-width: 400px; }
+.ex-style-hint {
+  font-size: 0.82rem; color: var(--c-text-muted); margin-bottom: 14px; line-height: 1.5;
+}
+.ex-style-hint code {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
+  background: var(--c-bg-secondary); padding: 1px 5px; border-radius: 3px;
+}
+.ex-style-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.ex-style-result { font-size: 0.82rem; color: var(--c-text-muted); min-height: 1.2em; }
+
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .docs-layout { grid-template-columns: 1fr; }
@@ -442,211 +453,90 @@ export function injectGlobalStyles() {
   document.head.appendChild(style);
 }
 
-export const cn = createStyleQueries({
-  small:  "@media (min-width: 341px)",
-  medium: "@media (min-width: 601px)",
-  large:  "@media (min-width: 1025px)",
+export const { css, cx } = createCss({
+  screens: {
+    small:  "(min-width: 341px)",
+    medium: "(min-width: 601px)",
+    large:  "(min-width: 1025px)",
+  },
 });
 
 // ── Shared style helpers ──────────────────────────────────────────────────────
 export const s = {
-  container: cn(
-    maxWidth("1140px").margin("0 auto").padding("0 28px")
-  ),
+  container: css({ maxWidth: "1140px", margin: "0 auto", padding: "0 28px" }),
 
-  section: cn(
-    padding("96px 0")
-  ),
+  section: css({ padding: "96px 0" }),
 
-  sectionLabel: cn(
-    fontFamily("'JetBrains Mono', monospace")
-      .fontSize("0.72rem").fontWeight("500")
-      .color(colors.primary).letterSpacing("0.08em")
-      .textTransform("uppercase").marginBottom("14px")
-  ),
+  sectionLabel: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", fontWeight: "500", color: colors.primary, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "14px" }),
 
-  sectionTitle: cn(
-    fontSize("clamp(1.8rem, 3vw, 2.5rem)")
-      .fontWeight("700").lineHeight("1.2")
-      .marginBottom("16px")
-  ),
+  sectionTitle: css({ fontSize: "clamp(1.8rem, 3vw, 2.5rem)", fontWeight: "700", lineHeight: "1.2", marginBottom: "16px" }),
 
-  sectionSub: cn(
-    fontSize("1.05rem").color(colors.textDim)
-      .maxWidth("540px").lineHeight("1.7")
-  ),
+  sectionSub: css({ fontSize: "1.05rem", color: colors.textDim, maxWidth: "540px", lineHeight: "1.7" }),
 
-  divider: cn(
-    height("1px").backgroundColor(colors.border).margin("0")
-  ),
+  divider: css({ height: "1px", backgroundColor: colors.border, margin: "0" }),
 
   // ── Buttons ──────────────────────────────────────────────────────────────
-  btn: cn(
-    display("inline-flex").alignItems("center").gap("7px")
-      .padding("10px 22px").borderRadius("6px")
-      .fontSize("0.875rem").fontWeight("600")
-      .transition("all 0.18s ease").whiteSpace("nowrap")
-  ),
+  btn: css({ display: "inline-flex", alignItems: "center", gap: "7px", padding: "10px 22px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: "600", transition: "all 0.18s ease", whiteSpace: "nowrap" }),
 
-  btnPrimary: cn(
-    backgroundColor(colors.primary).color("#fff")
-      .boxShadow(`0 0 0 0 ${colors.primaryGlow}`),
-    {
-      hover: backgroundColor(colors.primaryHover)
-        .boxShadow(`0 4px 20px ${colors.primaryGlow}`)
-        .transform("translateY(-1px)")
-    }
-  ),
+  btnPrimary: css({ backgroundColor: colors.primary, color: "#fff", boxShadow: `0 0 0 0 ${colors.primaryGlow}`, hover: { backgroundColor: colors.primaryHover, boxShadow: `0 4px 20px ${colors.primaryGlow}`, transform: "translateY(-1px)" } }),
 
-  btnSecondary: cn(
-    backgroundColor("transparent")
-      .border(`1px solid ${colors.borderLight}`)
-      .color(colors.textDim),
-    { hover: color(colors.text).borderColor(colors.textMuted) }
-  ),
+  btnSecondary: css({ backgroundColor: "transparent", border: `1px solid ${colors.borderLight}`, color: colors.textDim, hover: { color: colors.text, borderColor: colors.textMuted } }),
 
   // ── Install command ───────────────────────────────────────────────────────
-  installCmd: cn(
-    display("inline-flex").alignItems("center").gap("10px")
-      .backgroundColor(colors.bgSecondary)
-      .border(`1px solid ${colors.border}`)
-      .borderRadius("10px").padding("11px 18px")
-      .fontFamily("'JetBrains Mono', monospace")
-      .fontSize("0.875rem").color(colors.text)
-  ),
+  installCmd: css({ display: "inline-flex", alignItems: "center", gap: "10px", backgroundColor: colors.bgSecondary, border: `1px solid ${colors.border}`, borderRadius: "10px", padding: "11px 18px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.875rem", color: colors.text }),
 
   // ── Code block ───────────────────────────────────────────────────────────
-  codeBlockFrame: cn(
-    backgroundColor(colors.bgCode)
-      .border(`1px solid ${colors.border}`)
-      .borderRadius("10px").overflow("hidden")
-  ),
+  codeBlockFrame: css({ backgroundColor: colors.bgCode, border: `1px solid ${colors.border}`, borderRadius: "10px", overflow: "hidden" }),
 
-  codeBlockHeader: cn(
-    display("flex").alignItems("center").justifyContent("space-between")
-      .padding("10px 16px")
-      .borderBottom(`1px solid ${colors.border}`)
-      .backgroundColor(colors.bgSecondary)
-  ),
+  codeBlockHeader: css({ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary }),
 
-  codeBlockFilename: cn(
-    fontFamily("'JetBrains Mono', monospace")
-      .fontSize("0.75rem").color(colors.textMuted)
-  ),
+  codeBlockFilename: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.75rem", color: colors.textMuted }),
 
-  codeBlockBody: cn(
-    padding("20px 22px").overflow("auto")
-      .fontFamily("'JetBrains Mono', monospace")
-      .fontSize("0.8125rem").lineHeight("1.7")
-  ),
+  codeBlockBody: css({ padding: "20px 22px", overflow: "auto", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8125rem", lineHeight: "1.7" }),
 
   // ── Demo card (macOS chrome) ──────────────────────────────────────────────
-  demoCard: cn(
-    backgroundColor(colors.bgCard)
-      .border(`1px solid ${colors.border}`)
-      .borderRadius("16px").overflow("hidden")
-      .boxShadow(`0 32px 80px rgba(0,0,20,0.5), 0 0 0 1px ${colors.border}`)
-  ),
+  demoCard: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "16px", overflow: "hidden", boxShadow: `0 32px 80px rgba(0,0,20,0.5), 0 0 0 1px ${colors.border}` }),
 
-  demoCardBar: cn(
-    display("flex").alignItems("center").gap("10px")
-      .padding("11px 16px").backgroundColor(colors.bgSecondary)
-      .borderBottom(`1px solid ${colors.border}`)
-  ),
+  demoCardBar: css({ display: "flex", alignItems: "center", gap: "10px", padding: "11px 16px", backgroundColor: colors.bgSecondary, borderBottom: `1px solid ${colors.border}` }),
 
-  demoDots: cn(display("flex").gap("6px")),
+  demoDots: css({ display: "flex", gap: "6px" }),
 
-  demoTabs: cn(
-    display("flex").borderBottom(`1px solid ${colors.border}`)
-      .padding("0 16px").backgroundColor(colors.bgCard)
-  ),
+  demoTabs: css({ display: "flex", borderBottom: `1px solid ${colors.border}`, padding: "0 16px", backgroundColor: colors.bgCard }),
 
-  demoTab: cn(
-    fontSize("0.8rem").fontWeight("500").color(colors.textMuted)
-      .padding("10px 14px").borderBottom("2px solid transparent")
-      .transition("all 0.18s ease").cursor("pointer")
-  ),
+  demoTab: css({ fontSize: "0.8rem", fontWeight: "500", color: colors.textMuted, padding: "10px 14px", borderBottom: "2px solid transparent", transition: "all 0.18s ease", cursor: "pointer" }),
 
-  demoTabActive: cn(
-    color(colors.primary).borderBottomColor(colors.primary)
-  ),
+  demoTabActive: css({ color: colors.primary, borderBottomColor: colors.primary }),
 
   // ── Feature grid ─────────────────────────────────────────────────────────
-  featureGrid: cn(
-    display("grid")
-      .gridTemplateColumns("repeat(auto-fit, minmax(240px, 1fr))")
-      .gap("1px").backgroundColor(colors.border)
-      .border(`1px solid ${colors.border}`)
-      .borderRadius("16px").overflow("hidden")
-  ),
+  featureGrid: css({ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1px", backgroundColor: colors.border, border: `1px solid ${colors.border}`, borderRadius: "16px", overflow: "hidden" }),
 
-  featureCard: cn(
-    backgroundColor(colors.bgCard).padding("32px 28px")
-      .transition(`background 0.18s ease`),
-    { hover: backgroundColor(colors.bgSecondary) }
-  ),
+  featureCard: css({ backgroundColor: colors.bgCard, padding: "32px 28px", transition: `background 0.18s ease`, hover: { backgroundColor: colors.bgSecondary } }),
 
-  featureNum: cn(
-    fontFamily("'JetBrains Mono', monospace")
-      .fontSize("0.72rem").fontWeight("500")
-      .color(colors.primary).letterSpacing("0.05em")
-      .marginBottom("18px")
-  ),
+  featureNum: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", fontWeight: "500", color: colors.primary, letterSpacing: "0.05em", marginBottom: "18px" }),
 
-  featureTitle: cn(
-    fontSize("1.05rem").fontWeight("600").marginBottom("10px")
-  ),
+  featureTitle: css({ fontSize: "1.05rem", fontWeight: "600", marginBottom: "10px" }),
 
-  featureDesc: cn(
-    fontSize("0.9rem").color(colors.textDim).lineHeight("1.65")
-  ),
+  featureDesc: css({ fontSize: "0.9rem", color: colors.textDim, lineHeight: "1.65" }),
 
   // ── Steps ─────────────────────────────────────────────────────────────────
-  stepsGrid: cn(
-    display("grid").gridTemplateColumns("1fr").gap("16px"),
-    { medium: gridTemplateColumns("repeat(3,1fr)").gap("24px") }
-  ),
+  stepsGrid: css({ display: "grid", gridTemplateColumns: "1fr", gap: "16px", medium: { gridTemplateColumns: "repeat(3,1fr)", gap: "24px" } }),
 
-  stepNum: cn(
-    fontFamily("'JetBrains Mono', monospace")
-      .fontSize("0.72rem").fontWeight("500")
-      .color(colors.primary).letterSpacing("0.06em")
-      .marginBottom("12px")
-  ),
+  stepNum: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", fontWeight: "500", color: colors.primary, letterSpacing: "0.06em", marginBottom: "12px" }),
 
-  stepTitle: cn(fontSize("1rem").fontWeight("600").marginBottom("8px")),
+  stepTitle: css({ fontSize: "1rem", fontWeight: "600", marginBottom: "8px" }),
 
-  stepDesc: cn(fontSize("0.875rem").color(colors.textDim).marginBottom("16px")),
+  stepDesc: css({ fontSize: "0.875rem", color: colors.textDim, marginBottom: "16px" }),
 
   // ── Badge ─────────────────────────────────────────────────────────────────
-  badge: cn(
-    display("inline-flex").alignItems("center").gap("6px")
-      .fontSize("0.72rem").fontWeight("600")
-      .letterSpacing("0.07em").textTransform("uppercase")
-      .color(colors.primary).padding("4px 11px")
-      .borderRadius("999px")
-      .backgroundColor(colors.primaryAlpha08)
-      .border("1px solid rgba(56,105,236,0.2)")
-  ),
+  badge: css({ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.72rem", fontWeight: "600", letterSpacing: "0.07em", textTransform: "uppercase", color: colors.primary, padding: "4px 11px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08, border: "1px solid rgba(56,105,236,0.2)" }),
 
   // ── Stats row ─────────────────────────────────────────────────────────────
-  statsRow: cn(
-    display("flex").gap("40px").flexWrap("wrap")
-      .padding("40px 0").borderTop(`1px solid ${colors.border}`)
-      .marginTop("24px")
-  ),
+  statsRow: css({ display: "flex", gap: "40px", flexWrap: "wrap", padding: "40px 0", borderTop: `1px solid ${colors.border}`, marginTop: "24px" }),
 
-  statNum: cn(
-    fontSize("1.8rem").fontWeight("700").color(colors.text)
-      .lineHeight("1").marginBottom("4px")
-  ),
+  statNum: css({ fontSize: "1.8rem", fontWeight: "700", color: colors.text, lineHeight: "1", marginBottom: "4px" }),
 
-  statLabel: cn(fontSize("0.8rem").color(colors.textMuted)),
+  statLabel: css({ fontSize: "0.8rem", color: colors.textMuted }),
 
   // ── Code inline ───────────────────────────────────────────────────────────
-  codeInline: cn(
-    fontFamily("'JetBrains Mono', monospace").fontSize("0.82em")
-      .backgroundColor(colors.bgLight).padding("1px 5px")
-      .borderRadius("3px").color(colors.primaryHover)
-  ),
+  codeInline: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.82em", backgroundColor: colors.bgLight, padding: "1px 5px", borderRadius: "3px", color: colors.primaryHover }),
 };

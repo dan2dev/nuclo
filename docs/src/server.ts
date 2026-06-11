@@ -1,10 +1,6 @@
-// SSR import order matters: ssr-css-setup MUST be first so the CSS collector
-// is installed before any module with module-level cn() calls is evaluated.
-import { globalSSRRules, ssrStylesALS, withSSRStyles } from './ssr-css-setup.ts';
-import './css-polyfill.ts';
 import 'nuclo/polyfill';
 import 'nuclo';
-import { renderToString } from 'nuclo/ssr';
+import { renderToString, getCssText } from 'nuclo/ssr';
 import { dirname, resolve } from 'node:path';
 import { ssrMatchRoute } from './ssr-app.ts';
 import { routeMap, routeDefinitions } from './route-definitions.ts';
@@ -14,14 +10,12 @@ import { globalCss } from './styles.ts';
 const isProd = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT ?? 5173);
 
-// Warm up: eagerly import all page modules so their module-level cn() calls
-// fire inside an ALS context and populate globalSSRRules before the first
-// request is served.  After this completes the CSS set is stable.
-await ssrStylesALS.run(new Set<string>(), async () => {
-  for (const def of routeDefinitions) {
-    try { await def.loader(); } catch { /* skip broken routes */ }
-  }
-});
+// Warm up: eagerly import all page modules so their module-level css() calls
+// populate the style registry before the first request is served. After this
+// completes the CSS set is stable and getCssText() returns the full sheet.
+for (const def of routeDefinitions) {
+  try { await def.loader(); } catch { /* skip broken routes */ }
+}
 
 const htmlTemplate = `<!doctype html>
 <html lang="en" data-theme="light">
@@ -51,7 +45,7 @@ const htmlTemplate = `<!doctype html>
 
     <!-- Global styles injected server-side -->
     <style id="nuclo-global">{{styles}}</style>
-    <!-- cn() class styles — prevents layout shift before JS hydrates -->
+    <!-- css() atomic styles — prevents layout shift before JS hydrates -->
     <style id="nuclo-styles">{{nucloStyles}}</style>
 
     <script type="module" src="/src/main.ts"></script>
@@ -143,15 +137,13 @@ async function appFetch(
   const renderRoute = known ? route : 'home';
   const status = known ? 200 : 404;
 
-  const { result: element, rules: renderRules } = await withSSRStyles(() => ssrMatchRoute(renderRoute));
+  const element = await ssrMatchRoute(renderRoute);
   const ssrHtml = renderToString(element);
 
-  // Union of warm-up rules (module-level cn()) and this render's rules (component cn()).
-  // After warm-up renderRules is a strict subset of globalSSRRules, so the Set union
-  // is effectively free — just globalSSRRules serialised once.
-  const nucloStyles = renderRules.size > globalSSRRules.size
-    ? [...new Set([...globalSSRRules, ...renderRules])].join('\n')
-    : [...globalSSRRules].join('\n');
+  // Full atomic stylesheet — base rules first, then screens in theme order.
+  // Atomic classes are shared across pages, so shipping the full sheet costs
+  // little and guarantees no flash of unstyled content on navigation.
+  const nucloStyles = getCssText();
 
   const seoHead = buildSeoHead(renderRoute, pathname, known);
   const html = (await transformHtml(htmlTemplate, known ? pathname : '/'))

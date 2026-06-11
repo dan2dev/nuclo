@@ -72,6 +72,9 @@ function insertBase(s: CSSStyleSheet, rule: string): void {
  */
 function ensureSheet(): CSSStyleSheet | null {
 	if (typeof document === "undefined") return null;
+	// The nuclo SSR polyfill provides a document without getElementById — in
+	// that context rules accumulate in the registry for getCssText() only.
+	if (typeof document.getElementById !== "function") return null;
 	if (sheet && sheetDocument === document && sheet.ownerNode && (sheet.ownerNode as Element).isConnected) {
 		return sheet;
 	}

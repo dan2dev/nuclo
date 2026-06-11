@@ -1,5 +1,5 @@
 import { getTodos, getInputValue, setInputValue, addTodo, toggleTodo, deleteTodo, reorderTodos } from "./todoState.ts";
-import { globalStyles as s, cn } from "./styles.ts";
+import { globalStyles as s, css } from "./styles.ts";
 import { sortable } from "./sortable.ts";
 
 let visible = false
@@ -108,7 +108,7 @@ export const app = div(
                 {
                   "data-drag-handle": "true",
                 },
-                cn(height("20").cursor("grab").width("20").bg("#ccc").display("inline-block")),
+                css({ size: 20, cursor: "grab", bg: "#ccc", display: "inline-block" }),
                 "⇅"),
               input(
                 s.checkbox,

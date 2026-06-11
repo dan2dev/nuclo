@@ -288,4 +288,92 @@ export function AsyncExample() {
   )
 }`,
   },
+  {
+    id: "styling",
+    title: "Atomic Styling",
+    desc: "createCss() with theme tokens and screens. cx() composes styles with last-wins conflict resolution.",
+    code: `import 'nuclo'
+
+// Themed instance — tokens autocomplete, screens become variant keys
+const { css, cx } = createCss({
+  colors: {
+    primary: "#6366f1",
+    primaryHover: "#4f46e5",
+    text: "#1f2937",
+    muted: "#6b7280",
+    surface: "#f8fafc",
+    border: "#e2e8f0",
+  },
+  screens: {
+    sm: "(min-width: 480px)",
+  },
+})
+
+// Base chip style — shared across active and inactive states
+const chip = css({
+  display: "inline-flex",
+  items: "center",
+  px: 14,
+  py: 6,
+  rounded: 999,
+  text: 13,
+  weight: 600,
+  cursor: "pointer",
+  border: "2px solid transparent",
+  transition: "all 0.15s",
+  sm: { px: 18 },
+})
+
+// State variants — cx() picks the last one that defines each property
+const chipDefault = css({
+  bg: "surface",
+  color: "muted",
+  borderColor: "border",
+  hover: { color: "text", borderColor: "primary" },
+})
+
+const chipActive = css({
+  bg: "primary",
+  color: "white",
+  borderColor: "primaryHover",
+  hover: { bg: "primaryHover" },
+})
+
+const TAGS = ["TypeScript", "Atomic CSS", "Tokens", "cx()", "Screens", "SSR"]
+
+let selected = new Set<string>()
+
+export function StyleDemo() {
+  function toggle(tag: string) {
+    if (selected.has(tag)) selected.delete(tag)
+    else selected.add(tag)
+    update()
+  }
+
+  return div(
+    { class: "ex-style-demo" },
+    p({ class: "ex-style-hint" },
+      "Click tags to toggle them. Active tags use the ",
+      code("primary"),
+      " color token — cx() resolves conflicts per property."
+    ),
+    div(
+      { class: "ex-style-chips" },
+      ...TAGS.map(tag =>
+        button(
+          // cx merges chip + state variant; same property = last wins
+          () => cx(chip, selected.has(tag) ? chipActive : chipDefault),
+          tag,
+          on("click", () => toggle(tag)),
+        )
+      ),
+    ),
+    p({ class: "ex-style-result" },
+      () => selected.size > 0
+        ? \`Selected: \${[...selected].join(", ")}\`
+        : "Nothing selected yet."
+    ),
+  )
+}`,
+  },
 ];

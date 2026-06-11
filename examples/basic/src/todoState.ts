@@ -1,4 +1,4 @@
-import { update } from "nuclo";
+import "nuclo";
 
 export type Todo = {
   id: number;
