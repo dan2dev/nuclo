@@ -68,14 +68,14 @@ describe('main index.ts exports', () => {
     const index = await import('../src/index');
 
     // Style utilities should be available via re-export from style module
-    expect(index.StyleBuilder).toBeDefined();
-    expect(index.createCSSClass).toBeDefined();
-    expect(index.createStyleQueries).toBeDefined();
-    expect(index.createBreakpoints).toBeDefined();
-    // Check for some style functions
-    expect(index.display).toBeDefined();
-    expect(index.padding).toBeDefined();
-    expect(index.margin).toBeDefined();
+    expect(index.createCss).toBeDefined();
+    expect(index.css).toBeDefined();
+    expect(index.cx).toBeDefined();
+    expect(index.keyframes).toBeDefined();
+    expect(index.globalStyle).toBeDefined();
+    expect(index.getCssText).toBeDefined();
+    expect(index.resetStyles).toBeDefined();
+    expect(index.setSSRCollector).toBeDefined();
   });
 
   it('should have working list function', async () => {
@@ -257,13 +257,14 @@ describe('main index.ts exports', () => {
       'createHtmlElementWithModifiers',
       'createSvgElementWithModifiers',
       // Style exports
-      'StyleBuilder',
-      'createCSSClass',
-      'createStyleQueries',
-      'createBreakpoints',
-      'display',
-      'padding',
-      'margin'
+      'createCss',
+      'css',
+      'cx',
+      'keyframes',
+      'globalStyle',
+      'getCssText',
+      'resetStyles',
+      'setSSRCollector'
     ];
 
     for (const exportName of expectedExports) {

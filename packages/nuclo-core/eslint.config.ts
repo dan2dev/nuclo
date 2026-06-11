@@ -41,12 +41,6 @@ export default [
     },
   },
   {
-    files: ["src/style/styleBuilder.ts"],
-    rules: {
-      "@typescript-eslint/no-unsafe-declaration-merging": "off",
-    },
-  },
-  {
     files: ["**/*.json"],
     language: "json/json",
     ...json.configs.recommended,

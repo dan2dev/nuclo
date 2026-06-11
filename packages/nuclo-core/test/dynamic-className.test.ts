@@ -6,16 +6,16 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { update } from '../src';
-import { createBreakpoints, bg, width } from '../src/style';
+import { createCss } from '../src/style';
 
 // Create breakpoints for testing
-const cn = createBreakpoints({
+const { css } = createCss({ screens: {
   small: "(min-width: 320px)",
   medium: "(min-width: 768px)",
   large: "(min-width: 1024px)",
-});
+} });
 
-describe('Dynamic className with cn()', () => {
+describe('Dynamic className with css({  })', () => {
   let container: HTMLDivElement;
   let state = {
     toggle: true,
@@ -35,13 +35,9 @@ describe('Dynamic className with cn()', () => {
   });
 
   describe('Basic dynamic className', () => {
-    it('should apply dynamic className from cn() with breakpoints', () => {
-      const class1 = cn(bg('red').padding('10px'), {
-        medium: bg('blue').padding('20px'),
-      });
-      const class2 = cn(bg('green').padding('15px'), {
-        medium: bg('yellow').padding('25px'),
-      });
+    it('should apply dynamic className from css({  }) with breakpoints', () => {
+      const class1 = css({ bg: 'red', p: '10px', medium: { bg: 'blue', p: '20px' } });
+      const class2 = css({ bg: 'green', p: '15px', medium: { bg: 'yellow', p: '25px' } });
 
       const element = (globalThis as any).div(
         () => state.toggle ? class1 : class2,
@@ -64,9 +60,9 @@ describe('Dynamic className with cn()', () => {
       expect(result.textContent).toBe('Dynamic Style');
     });
 
-    it('should apply dynamic className from cn() without breakpoints', () => {
-      const class1 = cn(bg('red').padding('10px'));
-      const class2 = cn(bg('green').padding('15px'));
+    it('should apply dynamic className from css({  }) without breakpoints', () => {
+      const class1 = css({ bg: 'red', p: '10px' });
+      const class2 = css({ bg: 'green', p: '15px' });
 
       const element = (globalThis as any).div(
         () => state.toggle ? class1 : class2,
@@ -85,9 +81,9 @@ describe('Dynamic className with cn()', () => {
     });
 
     it('should update className when reactive dependency changes', () => {
-      const redClass = cn(bg('red'));
-      const greenClass = cn(bg('green'));
-      const blueClass = cn(bg('blue'));
+      const redClass = css({ bg: 'red' });
+      const greenClass = css({ bg: 'green' });
+      const blueClass = css({ bg: 'blue' });
 
       const element = (globalThis as any).div(
         () => {
@@ -119,9 +115,9 @@ describe('Dynamic className with cn()', () => {
 
   describe('Mixed static and dynamic className', () => {
     it('should work with static className followed by dynamic content', () => {
-      const staticClass = cn(bg('white').padding('5px'));
-      const dynamicClass1 = cn(bg('red'));
-      const dynamicClass2 = cn(bg('blue'));
+      const staticClass = css({ bg: 'white', p: '5px' });
+      const dynamicClass1 = css({ bg: 'red' });
+      const dynamicClass2 = css({ bg: 'blue' });
 
       const element = (globalThis as any).div(
         staticClass,
@@ -140,8 +136,8 @@ describe('Dynamic className with cn()', () => {
     });
 
     it('should combine with reactive text content', () => {
-      const class1 = cn(bg('red'));
-      const class2 = cn(bg('blue'));
+      const class1 = css({ bg: 'red' });
+      const class2 = css({ bg: 'blue' });
 
       const element = (globalThis as any).div(
         () => state.toggle ? class1 : class2,
@@ -213,7 +209,7 @@ describe('Dynamic className with cn()', () => {
     });
 
     it('should handle null/undefined returns gracefully', () => {
-      const class1 = cn(bg('red'));
+      const class1 = css({ bg: 'red' });
 
       const element = (globalThis as any).div(
         () => state.toggle ? class1 : null,
@@ -235,10 +231,10 @@ describe('Dynamic className with cn()', () => {
 
   describe('Complex scenarios', () => {
     it('should work with nested elements', () => {
-      const parentClass1 = cn(bg('red').padding('20px'));
-      const parentClass2 = cn(bg('blue').padding('20px'));
-      const childClass1 = cn(bg('yellow').padding('10px'));
-      const childClass2 = cn(bg('green').padding('10px'));
+      const parentClass1 = css({ bg: 'red', p: '20px' });
+      const parentClass2 = css({ bg: 'blue', p: '20px' });
+      const childClass1 = css({ bg: 'yellow', p: '10px' });
+      const childClass2 = css({ bg: 'green', p: '10px' });
 
       const element = (globalThis as any).div(
         () => state.toggle ? parentClass1 : parentClass2,
@@ -263,9 +259,9 @@ describe('Dynamic className with cn()', () => {
     });
 
     it('should work with multiple dynamic classNames in sequence', () => {
-      const class1 = cn(bg('red'));
-      const class2 = cn(bg('blue'));
-      const class3 = cn(bg('green'));
+      const class1 = css({ bg: 'red' });
+      const class2 = css({ bg: 'blue' });
+      const class3 = css({ bg: 'green' });
 
       const app = (globalThis as any).div(
         (globalThis as any).div(
@@ -293,8 +289,8 @@ describe('Dynamic className with cn()', () => {
     });
 
     it('should work with conditional rendering (when)', () => {
-      const class1 = cn(bg('red'));
-      const class2 = cn(bg('blue'));
+      const class1 = css({ bg: 'red' });
+      const class2 = css({ bg: 'blue' });
 
       const { when } = globalThis as any;
 
@@ -329,8 +325,8 @@ describe('Dynamic className with cn()', () => {
     });
 
     it('should work with list rendering', () => {
-      const class1 = cn(bg('red'));
-      const class2 = cn(bg('blue'));
+      const class1 = css({ bg: 'red' });
+      const class2 = css({ bg: 'blue' });
 
       const items = [
         { id: 1, active: true },
@@ -368,8 +364,8 @@ describe('Dynamic className with cn()', () => {
 
   describe('Performance and caching', () => {
     it('should reuse same className when condition returns same value', () => {
-      const class1 = cn(bg('red'));
-      const class2 = cn(bg('blue'));
+      const class1 = css({ bg: 'red' });
+      const class2 = css({ bg: 'blue' });
 
       const element = (globalThis as any).div(
         () => state.toggle ? class1 : class2
@@ -390,9 +386,9 @@ describe('Dynamic className with cn()', () => {
     });
 
     it('should handle rapid state changes', () => {
-      const class1 = cn(bg('red'));
-      const class2 = cn(bg('blue'));
-      const class3 = cn(bg('green'));
+      const class1 = css({ bg: 'red' });
+      const class2 = css({ bg: 'blue' });
+      const class3 = css({ bg: 'green' });
 
       const element = (globalThis as any).div(
         () => {
@@ -420,8 +416,8 @@ describe('Dynamic className with cn()', () => {
 
   describe('Integration with attributes', () => {
     it('should work alongside reactive attributes', () => {
-      const class1 = cn(bg('red'));
-      const class2 = cn(bg('blue'));
+      const class1 = css({ bg: 'red' });
+      const class2 = css({ bg: 'blue' });
 
       const element = (globalThis as any).div(
         {
@@ -449,8 +445,8 @@ describe('Dynamic className with cn()', () => {
     });
 
     it('should work with static and reactive attributes mixed', () => {
-      const dynamicClass = cn(bg('red'));
-      const staticClass = cn(bg('blue'));
+      const dynamicClass = css({ bg: 'red' });
+      const staticClass = css({ bg: 'blue' });
 
       const element = (globalThis as any).div(
         staticClass,
@@ -476,11 +472,9 @@ describe('Dynamic className with cn()', () => {
   });
 
   describe('Breakpoint-specific behavior', () => {
-    it('should handle cn() with only breakpoints (no default)', () => {
-      const responsiveClass = cn({
-        medium: width('50%'),
-        large: width('75%'),
-      });
+    it('should handle css({  }) with only breakpoints (no default)', () => {
+      const responsiveClass = css({ medium: { w: '50%' },
+        large: { w: '75%' } });
 
       const element = (globalThis as any).div(
         () => responsiveClass,
@@ -495,12 +489,8 @@ describe('Dynamic className with cn()', () => {
     });
 
     it('should dynamically switch between responsive classes', () => {
-      const mobileClass = cn(width('100%'), {
-        medium: width('50%'),
-      });
-      const desktopClass = cn(width('50%'), {
-        large: width('33%'),
-      });
+      const mobileClass = css({ w: '100%', medium: { w: '50%' } });
+      const desktopClass = css({ w: '50%', large: { w: '33%' } });
 
       const element = (globalThis as any).div(
         () => state.toggle ? mobileClass : desktopClass,

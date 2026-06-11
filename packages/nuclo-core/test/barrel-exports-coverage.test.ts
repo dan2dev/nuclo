@@ -39,11 +39,11 @@ describe('src/index.ts barrel', () => {
 
   it('exports style utilities', async () => {
     const mod = await import('../src/index');
-    expect(typeof mod.display).toBe('function');
-    expect(typeof mod.flex).toBe('function');
-    expect(typeof mod.backgroundColor).toBe('function');
-    expect(typeof mod.fontSize).toBe('function');
-    expect(typeof mod.StyleBuilder).toBe('function');
+    expect(typeof mod.createCss).toBe('function');
+    expect(typeof mod.css).toBe('function');
+    expect(typeof mod.cx).toBe('function');
+    expect(typeof mod.keyframes).toBe('function');
+    expect(typeof mod.globalStyle).toBe('function');
   });
 
   it('exports DOM helpers', async () => {
@@ -97,9 +97,11 @@ describe('src/ssr/index.ts barrel', () => {
 describe('src/style/index.ts barrel', () => {
   it('re-exports style utilities', async () => {
     const mod = await import('../src/style/index');
-    expect(typeof mod.StyleBuilder).toBe('function');
-    expect(typeof mod.createStyleQueries).toBe('function');
-    expect(typeof mod.createBreakpoints).toBe('function');
-    expect(typeof mod.createCSSClass).toBe('function');
+    expect(typeof mod.createCss).toBe('function');
+    expect(typeof mod.css).toBe('function');
+    expect(typeof mod.cx).toBe('function');
+    expect(typeof mod.getCssText).toBe('function');
+    expect(typeof mod.setSSRCollector).toBe('function');
+    expect(typeof mod.resetStyles).toBe('function');
   });
 });
