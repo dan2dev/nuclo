@@ -169,9 +169,9 @@ describe('notifyReactiveTextNodes', () => {
 
   describe('GC path – dead WeakRef in reactiveTextNodes (lines 84-85)', () => {
     it('silently removes GC-collected refs and does not throw', () => {
-      // Inject a fake dead WeakRef directly into the shared Map
+      // Inject a fake dead WeakRef directly into the shared iteration set
       const dead = deadRef<Text>();
-      reactiveTextNodes.set(dead, { resolver: () => 'x', lastValue: 'x' } as Parameters<typeof reactiveTextNodes.set>[1]);
+      reactiveTextNodes.add(dead);
 
       expect(() => notifyReactiveTextNodes()).not.toThrow();
 
@@ -182,8 +182,8 @@ describe('notifyReactiveTextNodes', () => {
     it('handles multiple dead refs in one pass', () => {
       const dead1 = deadRef<Text>();
       const dead2 = deadRef<Text>();
-      reactiveTextNodes.set(dead1, { resolver: () => 'a', lastValue: 'a' } as Parameters<typeof reactiveTextNodes.set>[1]);
-      reactiveTextNodes.set(dead2, { resolver: () => 'b', lastValue: 'b' } as Parameters<typeof reactiveTextNodes.set>[1]);
+      reactiveTextNodes.add(dead1);
+      reactiveTextNodes.add(dead2);
 
       expect(() => notifyReactiveTextNodes()).not.toThrow();
       expect(reactiveTextNodes.has(dead1)).toBe(false);

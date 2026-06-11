@@ -14,10 +14,10 @@ function createHtmlElementFactory<TTagName extends ElementTagName>(
     const claimed = parentNode ? claimElement(parentNode, tagName) as ExpandedElement<TTagName> | null : null;
     const el = claimed ?? createElement(tagName) as ExpandedElement<TTagName>;
     const elNode = el as unknown as Node;
-    const initialChildCount = claimed ? elNode.childNodes.length : 0;
+    const lastOriginalChild = claimed ? elNode.lastChild : null;
     applyModifiers(el, modifiers as ReadonlyArray<NodeModifier<TTagName>>, index);
     if (claimed) {
-      cleanupUnclaimedChildren(elNode, initialChildCount);
+      cleanupUnclaimedChildren(elNode, lastOriginalChild);
     }
     return el;
   } as DetachedExpandedElementFactory<TTagName>;
@@ -44,10 +44,10 @@ function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
       el = created;
     }
     const elNode = el as unknown as Node;
-    const initialChildCount = claimed ? elNode.childNodes.length : 0;
+    const lastOriginalChild = claimed ? elNode.lastChild : null;
     applyModifiers(el as unknown as ExpandedElement<ElementTagName>, modifiers as ReadonlyArray<NodeModifier<ElementTagName>>, index);
     if (claimed) {
-      cleanupUnclaimedChildren(elNode, initialChildCount);
+      cleanupUnclaimedChildren(elNode, lastOriginalChild);
     }
     return el as unknown as SVGElementTagNameMap[TTagName];
   } as DetachedSVGElementFactory<TTagName>;

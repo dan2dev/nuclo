@@ -31,15 +31,21 @@ export interface WhenRuntime<TTagName extends ElementTagName = ElementTagName> {
 }
 
 /**
- * Stores weak references to when runtime markers to prevent memory leaks.
- * Comment nodes can be garbage collected when removed from DOM.
- * The runtime object itself is mutable and will be updated in place.
+ * Registry of active when runtimes.
+ *
+ * The iteration set only holds WeakRefs; the runtime itself lives in a
+ * WeakMap keyed by its start marker. This keeps the global registry free of
+ * strong references to the runtime (which holds the host element, branch
+ * content, and markers), so removing the surrounding DOM subtree makes the
+ * runtime collectible — even if update() is never called again. The
+ * FinalizationRegistry prunes dead WeakRefs once the marker is collected;
+ * updateWhenRuntimes() also prunes as it iterates.
  */
-interface WhenRuntimeInfo<TTagName extends ElementTagName = ElementTagName> {
-  runtime: WhenRuntime<TTagName>;
-}
-
-const activeWhenRuntimes = new Map<WeakRef<Comment>, WhenRuntimeInfo<ElementTagName>>();
+const activeWhenRuntimes = new Set<WeakRef<Comment>>();
+const whenRuntimeByMarker = new WeakMap<Comment, WhenRuntime<ElementTagName>>();
+const whenMarkerFinalizer = typeof FinalizationRegistry !== "undefined"
+  ? new FinalizationRegistry<WeakRef<Comment>>((ref) => { activeWhenRuntimes.delete(ref); })
+  : null;
 
 /**
  * Evaluates which condition branch should be active.
@@ -93,13 +99,10 @@ export function renderWhenContent<TTagName extends ElementTagName>(
 export function registerWhenRuntime<TTagName extends ElementTagName>(
   runtime: WhenRuntime<TTagName>
 ): void {
-  const runtimeInfo: WhenRuntimeInfo<TTagName> = {
-    runtime,
-  };
-  activeWhenRuntimes.set(
-    new WeakRef(runtime.startMarker),
-    runtimeInfo as WhenRuntimeInfo<ElementTagName>
-  );
+  const ref = new WeakRef(runtime.startMarker);
+  activeWhenRuntimes.add(ref);
+  whenRuntimeByMarker.set(runtime.startMarker, runtime as WhenRuntime<ElementTagName>);
+  whenMarkerFinalizer?.register(runtime.startMarker, ref);
 }
 
 /**
@@ -119,17 +122,24 @@ export function registerWhenRuntime<TTagName extends ElementTagName>(
 export function updateWhenRuntimes(scope?: UpdateScope): void {
   const toDelete: WeakRef<Comment>[] = [];
 
-  for (const [ref, info] of activeWhenRuntimes) {
+  for (const ref of activeWhenRuntimes) {
     const startMarker = ref.deref();
-    
+
     // Comment node was garbage collected
     if (startMarker === undefined) {
       toDelete.push(ref);
       continue;
     }
 
+    const runtime = whenRuntimeByMarker.get(startMarker);
+    if (!runtime) {
+      toDelete.push(ref);
+      continue;
+    }
+
     // Check if markers are still connected to DOM
-    if (!isNodeConnected(startMarker) || !isNodeConnected(info.runtime.endMarker)) {
+    if (!isNodeConnected(startMarker) || !isNodeConnected(runtime.endMarker)) {
+      whenRuntimeByMarker.delete(startMarker);
       toDelete.push(ref);
       continue;
     }
@@ -138,9 +148,10 @@ export function updateWhenRuntimes(scope?: UpdateScope): void {
     if (scope && !scope.contains(startMarker)) continue;
 
     try {
-      info.runtime.update();
+      runtime.update();
     } catch {
       // Clean up runtimes that throw errors
+      whenRuntimeByMarker.delete(startMarker);
       toDelete.push(ref);
     }
   }

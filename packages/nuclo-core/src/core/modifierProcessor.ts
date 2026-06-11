@@ -5,7 +5,7 @@ import { logError } from "../utility/errorHandler";
 import { isFunction, isNode, isObject, isPrimitive, isZeroArityFunction } from "../utility/typeGuards";
 import { modifierProbeCache } from "../utility/modifierPredicates";
 import { createComment, createDocumentFragment, createTextNode } from "../utility/dom";
-import { isHydrating, claimChild, getCursor } from "../hydration/context";
+import { isHydrating, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration/context";
 
 export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
 	| NodeMod<TTagName>
@@ -30,10 +30,36 @@ function isClassNameOnlyObject(v: unknown): v is ClassNameOnlyObject {
 }
 
 function nextChildIsTextComment(parent: Node): boolean {
-	const cursor = getCursor(parent);
-	const child = parent.childNodes[cursor];
+	skipWhitespaceText(parent);
+	const child = peekChild(parent);
 	return !!child && child.nodeType === 8 &&
 		(child as Comment).textContent?.trimStart().startsWith('text-') === true;
+}
+
+/**
+ * Claims the text node that follows an already-claimed `<!-- text-N -->`
+ * marker and patches its content to the client value.
+ *
+ * The HTML parser drops empty text nodes, so SSR output for an empty string
+ * has a marker with no text node after it — in that case a fresh text node is
+ * inserted at the cursor to keep the DOM identical to a client render.
+ * Content mismatches (data changed between SSR and hydration) are patched so
+ * hydration always converges on the client value.
+ */
+function claimTextAfterMarker(parent: Node, expected: string): Text | null {
+	const next = peekChild(parent);
+	if (next && next.nodeType === 3) {
+		claimChild(parent);
+		if (next.textContent !== expected) {
+			next.textContent = expected;
+		}
+		return next as Text;
+	}
+	const created = createTextNode(expected);
+	if (!created) return null;
+	parent.insertBefore(created, next);
+	setCursor(parent, next);
+	return created;
 }
 
 export function applyNodeModifier<TTagName extends ElementTagName>(
@@ -72,11 +98,12 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 					if (isHydrating() && nextChildIsTextComment(parent as unknown as Node)) {
 						const parentNode = parent as unknown as Node;
 						claimChild(parentNode); // skip <!-- text-N --> comment
-						const existingText = claimChild(parentNode) as Text;
-						if (existingText && existingText.nodeType === 3) {
-							registerReactiveTextNode(existingText, {
+						const expected = String(v);
+						const textNode = claimTextAfterMarker(parentNode, expected);
+						if (textNode) {
+							registerReactiveTextNode(textNode, {
 								resolver: modifier as () => Primitive,
-								lastValue: existingText.textContent || '',
+								lastValue: expected,
 							});
 						}
 						return null;
@@ -108,7 +135,7 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 		if (isHydrating() && nextChildIsTextComment(parent as unknown as Node)) {
 			const parentNode = parent as unknown as Node;
 			claimChild(parentNode); // skip <!-- text-N --> comment
-			claimChild(parentNode); // skip text node
+			claimTextAfterMarker(parentNode, String(candidate));
 			return null;
 		}
 		return createStaticTextFragment(index, candidate);

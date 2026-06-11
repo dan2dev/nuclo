@@ -21,6 +21,14 @@ const activeConditionalNodes = new Set<WeakRef<Node>>();
 const refByNode = new WeakMap<Node, WeakRef<Node>>();
 
 /**
+ * Prunes dead WeakRefs from the active set as soon as their node is
+ * collected, instead of waiting for the next getActiveConditionalNodes() pass.
+ */
+const conditionalNodeFinalizer = typeof FinalizationRegistry !== "undefined"
+	? new FinalizationRegistry<WeakRef<Node>>((ref) => { activeConditionalNodes.delete(ref); })
+	: null;
+
+/**
  * Attach conditional info to a node and register it.
  */
 export function storeConditionalInfo<TTagName extends ElementTagName>(
@@ -31,6 +39,7 @@ export function storeConditionalInfo<TTagName extends ElementTagName>(
 	const ref = new WeakRef(node);
 	activeConditionalNodes.add(ref);
 	refByNode.set(node, ref);
+	conditionalNodeFinalizer?.register(node, ref);
 }
 
 /**
