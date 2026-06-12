@@ -5,13 +5,46 @@ import {
   HERO_CODE, COUNTER_TEASER_CODE, TODO_TEASER_CODE,
   PHILOSOPHY_QUOTE, PHILOSOPHY_POINTS,
   FEATURES, QUICK_START_STEPS,
+  PIPELINE_STEPS,
+  COMPARISON_TITLE, COMPARISON_SUB, COMPARISON_COLS,
+  CTA_TITLE, CTA_SUB,
 } from "./content.ts";
 import { CodeBlock } from "../../components/CodeBlock.ts";
-import { GitHubSvg } from "../../components/icons.ts";
+import {
+  GitHubSvg, CheckIcon, MinusIcon, CopyIcon,
+  ZapIcon, FeatherIcon, BracesIcon, TargetIcon,
+} from "../../components/icons.ts";
 import { setRoute } from "../../router.ts";
 
 function DemoDot(color: string) {
   return div(hs.heroDot, { style: { backgroundColor: color } });
+}
+
+/** Install command bar with shimmer sheen and a copy-to-clipboard button. */
+function InstallCommand() {
+  let copied = false;
+
+  function handleCopy() {
+    navigator.clipboard?.writeText(INSTALL_CMD).then(() => {
+      copied = true;
+      update();
+      setTimeout(() => { copied = false; update(); }, 1800);
+    });
+  }
+
+  return div(
+    s.installCmd,
+    { className: "shimmer" },
+    span(css({ color: colors.textMuted, fontFamily: "'JetBrains Mono', monospace" }), "$"),
+    span(INSTALL_CMD),
+    button(
+      hs.heroCopyBtn,
+      { title: "Copy to clipboard", "aria-label": "Copy install command" },
+      { style: () => ({ color: copied ? "var(--c-primary)" : "" }) },
+      when(() => copied, CheckIcon({ size: 14 })).else(CopyIcon({ size: 14 })),
+      on("click", handleCopy),
+    ),
+  );
 }
 
 function HeroDemoCard() {
@@ -19,35 +52,47 @@ function HeroDemoCard() {
 
   // Live counter state inside the demo
   let count = 0;
+  let updateCalls = 0;
+
+  function bump(fn: () => void) {
+    return () => { fn(); updateCalls++; update(); };
+  }
 
   function CounterPreview() {
     return div(
       css({ textAlign: "center", width: "100%" }),
       div(
-        css({ fontSize: "5rem", fontWeight: "700", lineHeight: "1", color: colors.text, marginBottom: "6px", fontVariantNumeric: "tabular-nums", transition: "transform 0.1s ease" }),
+        { className: "grad-text" },
+        css({ fontSize: "5.2rem", fontWeight: "700", lineHeight: "1", marginBottom: "6px", fontVariantNumeric: "tabular-nums" }),
         () => String(count),
       ),
       div(
-        css({ fontSize: "0.78rem", color: colors.textMuted, letterSpacing: "0.05em", marginBottom: "24px" }),
+        css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", color: colors.textMuted, letterSpacing: "0.14em", marginBottom: "26px" }),
         "COUNT",
       ),
       div(
         css({ display: "flex", gap: "10px", justifyContent: "center" }),
         button(
-          css({ padding: "9px 22px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
+          css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
           "−",
-          on("click", () => { count--; update(); }),
+          on("click", bump(() => { count--; })),
         ),
         button(
-          css({ padding: "9px 22px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid transparent`, color: "#fff", backgroundColor: colors.primary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { backgroundColor: colors.primaryHover } }),
+          css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid transparent`, color: "#fff", backgroundColor: colors.primary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { backgroundColor: colors.primaryHover } }),
           "Reset",
-          on("click", () => { count = 0; update(); }),
+          on("click", bump(() => { count = 0; })),
         ),
         button(
-          css({ padding: "9px 22px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
+          css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
           "+",
-          on("click", () => { count++; update(); }),
+          on("click", bump(() => { count++; })),
         ),
+      ),
+      div(
+        hs.demoMeta,
+        span(css({ color: colors.primary }), "update()"),
+        span(" calls: "),
+        span(() => String(updateCalls)),
       ),
     );
   }
@@ -62,8 +107,8 @@ function HeroDemoCard() {
   }
 
   return div(
-    s.demoCard,
     hs.heroDemoArea,
+    { className: "gborder demo-elevated he he-7" },
     // Chrome bar
     div(
       hs.demoChrome,
@@ -71,6 +116,7 @@ function HeroDemoCard() {
       DemoDot("#febc2e"),
       DemoDot("#28c840"),
       div(hs.heroDemoFilename, "counter.ts"),
+      span(hs.liveTag, span({ className: "badge-dot" }), "live"),
     ),
     // Tabs
     div(
@@ -95,6 +141,11 @@ function HeroDemoCard() {
 export function HomeHeroSection() {
   return section(
     hs.heroSection,
+    { className: "hero-wrap" },
+    // Ambient ornaments (decorative, behind content)
+    div({ className: "hero-bg", "aria-hidden": "true" }),
+    div({ className: "dot-grid", "aria-hidden": "true" }),
+    div({ className: "hero-orb-c", "aria-hidden": "true" }),
     div(
       s.container,
       div(
@@ -104,43 +155,43 @@ export function HomeHeroSection() {
           // Badge
           div(
             s.badge,
+            { className: "shimmer he he-1" },
             css({ marginBottom: "22px" }),
+            span({ className: "badge-dot" }),
             HERO_BADGE,
           ),
           // Rule
-          div(hs.heroRule),
+          div(hs.heroRule, { className: "he he-2" }),
           // Title
           h1(
             hs.heroTitle,
-            ...HERO_TITLE_LINES.map((line, _i) => {
+            { className: "he he-2" },
+            ...HERO_TITLE_LINES.map((line) => {
               // "Call update()." gets styled update() code
               if (line.includes("update()")) {
                 return div(
                   line.replace("Call update().", "Call "),
                   code(
-                    css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85em", color: colors.primaryHover, backgroundColor: colors.bgLight, padding: "1px 6px", borderRadius: "4px" }),
+                    css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85em", color: colors.primaryHover, backgroundColor: colors.bgLight, padding: "1px 8px", borderRadius: "6px" }),
                     "update()",
                   ),
                   ".",
                 );
               }
+              if (line === "Done.") {
+                return div(span({ className: "grad-text" }, line));
+              }
               return div(line);
             }),
           ),
           // Description
-          p(hs.heroDesc, HERO_DESC),
+          p(hs.heroDesc, { className: "he he-3" }, HERO_DESC),
           // Install command
-          div(
-            hs.heroInstall,
-            div(
-              s.installCmd,
-              span(css({ color: colors.textMuted, fontFamily: "'JetBrains Mono', monospace" }), "$"),
-              span(css({ marginLeft: "8px" }), INSTALL_CMD),
-            ),
-          ),
+          div(hs.heroInstall, { className: "he he-4" }, InstallCommand()),
           // Action buttons
           div(
             hs.heroActions,
+            { className: "he he-5" },
             button(
               s.btn, s.btnPrimary,
               "Get Started →",
@@ -154,21 +205,53 @@ export function HomeHeroSection() {
           ),
           // Stats
           div(
-            s.statsRow,
+            hs.statsRow,
+            { className: "he he-6" },
             ...HERO_STATS.map(({ num, sup, label }) =>
               div(
+                { className: "stat-item" },
                 div(
-                  s.statNum,
+                  hs.statNum,
                   num,
-                  sup ? span(css({ fontSize: "1rem", color: colors.primary }), sup) : null,
+                  sup ? span(css({ fontSize: "1rem", color: colors.primary, marginLeft: "2px" }), sup) : null,
                 ),
-                div(s.statLabel, label),
+                div(hs.statLabel, label),
               )
             ),
           ),
         ),
         // Right: demo card
         HeroDemoCard(),
+      ),
+    ),
+  );
+}
+
+export function PipelineSection() {
+  function PipeNode(step: typeof PIPELINE_STEPS[number], extraClass: string) {
+    return div(
+      { className: `pipe-node ${extraClass}` },
+      div({ className: "pipe-kicker" }, step.kicker),
+      div({ className: "pipe-title" }, step.title),
+      div({ className: "pipe-desc" }, step.desc),
+      div({ className: "pipe-code" }, { innerHTML: step.code }),
+    );
+  }
+
+  return section(
+    hs.pipelineSection,
+    div(
+      s.container,
+      div(s.sectionLabel, { className: "rv" }, "How it works"),
+      h2(s.sectionTitle, { className: "rv" }, "One explicit cycle."),
+      p(s.sectionSub, { className: "rv" }, "No reactivity graph, no scheduler, no surprises. A single predictable path from your data to the screen."),
+      div(
+        { className: "pipe" },
+        PipeNode(PIPELINE_STEPS[0], "rv rv-d1"),
+        div({ className: "pipe-link rv rv-d1", "aria-hidden": "true" }),
+        PipeNode(PIPELINE_STEPS[1], "rv rv-d2"),
+        div({ className: "pipe-link rv rv-d2", "aria-hidden": "true" }),
+        PipeNode(PIPELINE_STEPS[2], "rv rv-d3"),
       ),
     ),
   );
@@ -183,6 +266,7 @@ export function PhilosophySection() {
         hs.philosophyInner,
         // Left: quote + label
         div(
+          { className: "rv" },
           div(
             s.sectionLabel,
             css({ marginBottom: "16px" }),
@@ -191,15 +275,17 @@ export function PhilosophySection() {
           blockquote(
             hs.philosophyQuote,
             { style: { fontStyle: "normal" } },
-            `"${PHILOSOPHY_QUOTE}"`,
+            span(hs.philosophyMark, { "aria-hidden": "true" }, "“"),
+            PHILOSOPHY_QUOTE,
           ),
         ),
         // Right: 3 points
         div(
           hs.philosophyPoints,
-          ...PHILOSOPHY_POINTS.map(({ num, title, desc }) =>
+          ...PHILOSOPHY_POINTS.map(({ num, title, desc }, i) =>
             div(
               hs.philosophyPoint,
+              { className: `rv rv-d${i + 1}` },
               div(hs.philosophyPointIcon, num),
               div(
                 div(hs.philosophyPointTitle, title),
@@ -213,22 +299,64 @@ export function PhilosophySection() {
   );
 }
 
+const FEATURE_ICONS: Record<string, () => ReturnType<typeof svgSvg>> = {
+  zap: () => ZapIcon({ size: 18 }),
+  feather: () => FeatherIcon({ size: 18 }),
+  braces: () => BracesIcon({ size: 18 }),
+  target: () => TargetIcon({ size: 18 }),
+};
+
 export function FeaturesSection() {
   return section(
     hs.featuresSection,
     div(
       s.container,
-      div(s.sectionLabel, "Features"),
-      h2(s.sectionTitle, "Built for clarity."),
-      p(s.sectionSub, css({ marginBottom: "48px" }), "No magic. No surprises. Every update is intentional."),
+      div(s.sectionLabel, { className: "rv" }, "Features"),
+      h2(s.sectionTitle, { className: "rv" }, "Built for clarity."),
+      p(s.sectionSub, { className: "rv" }, css({ marginBottom: "48px" }), "No magic. No surprises. Every update is intentional."),
       div(
         s.featureGrid,
-        ...FEATURES.map(({ num, title, desc }) =>
+        { className: "rv" },
+        ...FEATURES.map(({ num, icon, title, desc }) =>
           div(
             s.featureCard,
+            div(hs.featureIcon, (FEATURE_ICONS[icon] ?? FEATURE_ICONS.zap)()),
             div(s.featureNum, num),
             div(s.featureTitle, title),
             div(s.featureDesc, desc),
+          )
+        ),
+      ),
+    ),
+  );
+}
+
+export function ComparisonSection() {
+  return section(
+    hs.comparisonSection,
+    div(
+      s.container,
+      div(s.sectionLabel, { className: "rv" }, "Comparison"),
+      h2(s.sectionTitle, { className: "rv" }, COMPARISON_TITLE),
+      p(s.sectionSub, { className: "rv" }, COMPARISON_SUB),
+      div(
+        { className: "cmp-grid" },
+        ...COMPARISON_COLS.map((col, i) =>
+          div(
+            { className: `cmp-col rv rv-d${i + 1}${col.featured ? " featured" : ""}` },
+            div(
+              { className: "cmp-head" },
+              div({ className: "cmp-name" }, col.name),
+              col.featured ? span(hs.cmpBadge, span({ className: "badge-dot" }), "the nuclo way") : null,
+            ),
+            div({ className: "cmp-sub" }, col.sub),
+            ...col.items.map((item) =>
+              div(
+                { className: `cmp-li ${item.good ? "good" : "dim"}` },
+                item.good ? CheckIcon({ size: 13 }) : MinusIcon({ size: 13 }),
+                span(item.text),
+              )
+            ),
           )
         ),
       ),
@@ -243,14 +371,15 @@ export function HomeQuickStartSection() {
       hs.quickStartSection,
       div(
         s.container,
-        div(s.sectionLabel, "Quick Start"),
-        h2(s.sectionTitle, "Up and running in minutes."),
-        p(s.sectionSub, css({ marginBottom: "40px" }), "Three steps and you're building real UIs."),
+        div(s.sectionLabel, { className: "rv" }, "Quick Start"),
+        h2(s.sectionTitle, { className: "rv" }, "Up and running in minutes."),
+        p(s.sectionSub, { className: "rv" }, css({ marginBottom: "40px" }), "Three steps and you're building real UIs."),
         div(
           s.stepsGrid,
-          ...QUICK_START_STEPS.map(({ num, title, desc, code, lang }) =>
+          ...QUICK_START_STEPS.map(({ num, title, desc, code, lang }, i) =>
             div(
               hs.quickStartStep,
+              { className: `rv rv-d${i + 1}` },
               div(
                 hs.stepHeader,
                 div(s.stepNum, num),
@@ -263,6 +392,7 @@ export function HomeQuickStartSection() {
         ),
         div(
           css({ marginTop: "40px", textAlign: "center" }),
+          { className: "rv" },
           button(
             s.btn, s.btnSecondary,
             "Read the full docs →",
@@ -279,6 +409,7 @@ export function ExamplesTeaserSection() {
     filename: string,
     code: string,
     PreviewFn: () => ReturnType<typeof div>,
+    extraClass: string,
   ) {
     let activeTab: 'preview' | 'code' = 'preview';
 
@@ -293,6 +424,7 @@ export function ExamplesTeaserSection() {
 
     return div(
       hs.teaserCard,
+      { className: extraClass },
       div(
         hs.demoChrome,
         DemoDot("#ff5f57"), DemoDot("#febc2e"), DemoDot("#28c840"),
@@ -320,19 +452,19 @@ export function ExamplesTeaserSection() {
     let n = 0;
     return div(
       css({ textAlign: "center" }),
-      div(css({ fontSize: "3rem", fontWeight: "700", lineHeight: "1", marginBottom: "12px" }), () => String(n)),
+      div({ className: "grad-text" }, css({ fontSize: "3rem", fontWeight: "700", lineHeight: "1", marginBottom: "12px", fontVariantNumeric: "tabular-nums" }), () => String(n)),
       div(
         css({ display: "flex", gap: "8px", justifyContent: "center" }),
         button(
-          css({ padding: "7px 16px", borderRadius: "5px", fontSize: "0.85rem", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgLight, fontFamily: "inherit" }),
+          css({ padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgLight, fontFamily: "inherit" }),
           "−", on("click", () => { n--; update(); })
         ),
         button(
-          css({ padding: "7px 16px", borderRadius: "5px", fontSize: "0.85rem", cursor: "pointer", border: "none", color: "#fff", backgroundColor: colors.primary, fontFamily: "inherit" }),
+          css({ padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: "none", color: "#fff", backgroundColor: colors.primary, fontFamily: "inherit" }),
           "Reset", on("click", () => { n = 0; update(); })
         ),
         button(
-          css({ padding: "7px 16px", borderRadius: "5px", fontSize: "0.85rem", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgLight, fontFamily: "inherit" }),
+          css({ padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgLight, fontFamily: "inherit" }),
           "+", on("click", () => { n++; update(); })
         ),
       ),
@@ -399,16 +531,17 @@ export function ExamplesTeaserSection() {
       hs.examplesTeaserSection,
       div(
         s.container,
-        div(s.sectionLabel, "Examples"),
-        h2(s.sectionTitle, "See it in action."),
-        p(s.sectionSub, "Interactive demos. Explore the code behind each one."),
+        div(s.sectionLabel, { className: "rv" }, "Examples"),
+        h2(s.sectionTitle, { className: "rv" }, "See it in action."),
+        p(s.sectionSub, { className: "rv" }, "Interactive demos. Explore the code behind each one."),
         div(
           hs.examplesTeaserGrid,
-          TeaserCard("counter.ts", COUNTER_TEASER_CODE, CounterPreview),
-          TeaserCard("todo.ts", TODO_TEASER_CODE, TodoPreview),
+          TeaserCard("counter.ts", COUNTER_TEASER_CODE, CounterPreview, "rv rv-d1"),
+          TeaserCard("todo.ts", TODO_TEASER_CODE, TodoPreview, "rv rv-d2"),
         ),
         div(
           css({ marginTop: "36px", textAlign: "center" }),
+          { className: "rv" },
           button(
             s.btn, s.btnSecondary,
             "View all examples →",
@@ -425,32 +558,36 @@ export function CTASection() {
     hs.ctaSection,
     div(
       s.container,
-      div(s.sectionLabel, css({ justifyContent: "center", display: "flex" }), "Get Started"),
-      h2(
-        css({ fontSize: "2rem", fontWeight: "700", letterSpacing: "0", lineHeight: "1.2", marginBottom: "18px", medium: { fontSize: "2.55rem" } }),
-        "Ready to build?",
-      ),
-      p(
-        css({ fontSize: "1.05rem", color: colors.textDim, maxWidth: "480px", margin: "0 auto 0", lineHeight: "1.7" }),
-        "Start with the docs, explore the examples, or install and dive straight in.",
-      ),
       div(
-        hs.ctaActions,
-        button(
-          s.btn, s.btnPrimary,
-          "Read the Docs →",
-          on("click", () => setRoute("docs")),
+        { className: "cta-panel rv" },
+        div(s.sectionLabel, css({ justifyContent: "center", display: "flex" }), "Get Started"),
+        h2(
+          css({ fontSize: "2.1rem", fontWeight: "700", letterSpacing: "-0.01em", lineHeight: "1.2", marginBottom: "18px", medium: { fontSize: "2.7rem" } }),
+          CTA_TITLE,
         ),
-        a(
-          {
-            href: "https://github.com/dan2dev/nuclo",
-            target: "_blank",
-            rel: "noopener noreferrer",
-          },
-          s.btn, s.btnSecondary,
-          GitHubSvg({ size: 15 }),
-          "GitHub",
+        p(
+          css({ fontSize: "1.05rem", color: colors.textDim, maxWidth: "520px", margin: "0 auto 0", lineHeight: "1.7" }),
+          CTA_SUB,
         ),
+        div(
+          hs.ctaActions,
+          button(
+            s.btn, s.btnPrimary,
+            "Read the Docs →",
+            on("click", () => setRoute("docs")),
+          ),
+          a(
+            {
+              href: "https://github.com/dan2dev/nuclo",
+              target: "_blank",
+              rel: "noopener noreferrer",
+            },
+            s.btn, s.btnSecondary,
+            GitHubSvg({ size: 15 }),
+            "GitHub",
+          ),
+        ),
+        div(hs.ctaInstall, InstallCommand()),
       ),
     ),
   );

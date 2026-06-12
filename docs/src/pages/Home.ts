@@ -1,7 +1,9 @@
 import {
   HomeHeroSection,
+  PipelineSection,
   PhilosophySection,
   FeaturesSection,
+  ComparisonSection,
   HomeQuickStartSection,
   ExamplesTeaserSection,
   CTASection,
@@ -11,8 +13,10 @@ export function HomePage() {
   return div(
     { id: "home-page" },
     HomeHeroSection(),
+    PipelineSection(),
     PhilosophySection(),
     FeaturesSection(),
+    ComparisonSection(),
     HomeQuickStartSection(),
     ExamplesTeaserSection(),
     CTASection(),
