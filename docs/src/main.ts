@@ -4,6 +4,7 @@ import { initTheme } from './theme.ts';
 import { initRouter } from './router.ts';
 import { createApp } from './app.ts';
 import { loadPageFunction, routeMap } from './route-definitions.ts';
+import { scanReveals } from './reveal.ts';
 
 // Theme before styles so CSS vars are set on first paint.
 initTheme();
@@ -32,4 +33,9 @@ const { element, loadPage } = createApp(initialFn);
 
 hydrate(element, document.getElementById('app')!);
 
-initRouter(loadPage);
+// Reveal-on-scroll: observe SSR'd nodes now, rescan after every navigation.
+scanReveals();
+initRouter(async (path) => {
+  await loadPage(path);
+  scanReveals();
+});

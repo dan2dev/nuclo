@@ -1,6 +1,7 @@
 import { css, colors, s } from "../styles.ts";
 import { setRoute, getCurrentRoute } from "../router.ts";
 import { toggleTheme, isDark } from "../theme.ts";
+import { MoonIcon, SunIcon } from "./icons.ts";
 
 const NAV_LINKS: { label: string; route: string }[] = [
   { label: "Home",     route: "home" },
@@ -118,6 +119,11 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
     // ── Navbar ──────────────────────────────────────────────────────────────
     nav(
       navStyle,
+      // Gradient hairline along the bottom edge
+      div(
+        { className: "hairline", "aria-hidden": "true" },
+        css({ position: "absolute", left: "0", right: "0", bottom: "-1px" }),
+      ),
       div(
         s.container,
         css({ width: "100%" }),
@@ -154,8 +160,8 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
             // Theme toggle (always visible)
             button(
               themeBtn,
-              { title: "Toggle theme" },
-              when(() => isDark(), "🌙").else("☀️"),
+              { title: "Toggle theme", "aria-label": "Toggle color theme" },
+              when(() => isDark(), MoonIcon()).else(SunIcon()),
               on("click", toggleTheme),
             ),
             // Mobile hamburger (hidden on desktop)
