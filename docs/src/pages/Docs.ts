@@ -13,6 +13,10 @@ function getInitialSectionId(): string {
   return SECTION_MAP.has(id) ? id : "overview";
 }
 
+function sectionNumber(index: number): string {
+  return String(index + 1).padStart(2, "0");
+}
+
 export function DocsPage() {
   let activeId = getInitialSectionId();
 
@@ -35,6 +39,7 @@ export function DocsPage() {
       {
         class: () => `${className}${activeId === id ? " active" : ""}`,
         href: `#${id}`,
+        "aria-current": () => activeId === id ? "location" : undefined,
       },
       sec.title,
       on("click", (e) => {
@@ -56,6 +61,24 @@ export function DocsPage() {
         "A practical reference for installing Nuclo, building with explicit updates, styling with atomic CSS, and rendering server-side HTML.",
       ),
       div(
+        { class: "docs-quickstart" },
+        div(
+          { class: "docs-quickstart-copy" },
+          span({ class: "docs-quickstart-label" }, "Quick start"),
+          code("bun add nuclo"),
+        ),
+        a(
+          { class: "docs-quickstart-link", href: "#installation" },
+          "Installation",
+          on("click", (e) => {
+            e.preventDefault();
+            window.history.replaceState(null, "", "#installation");
+            setActive("installation");
+            scrollToSection("installation");
+          }),
+        ),
+      ),
+      div(
         { class: "docs-meta-grid" },
         ...DOC_FACTS.map(({ label, value }) =>
           div(
@@ -65,6 +88,13 @@ export function DocsPage() {
           )
         ),
       ),
+    );
+  }
+
+  function DocsProgress() {
+    return div(
+      { class: "docs-progress", "aria-hidden": "true" },
+      div({ class: "docs-progress-fill" }),
     );
   }
 
@@ -93,16 +123,57 @@ export function DocsPage() {
     );
   }
 
+  function Rail() {
+    return aside(
+      { class: "docs-rail", "aria-label": "Docs shortcuts" },
+      div(
+        { class: "docs-rail-card docs-current" },
+        div({ class: "docs-rail-kicker" }, "Current section"),
+        div({ class: "docs-rail-title" }, () => SECTION_MAP.get(activeId)?.title ?? "Overview"),
+        div({ class: "docs-rail-group" }, () => SECTION_MAP.get(activeId)?.groupTitle ?? "Introduction"),
+      ),
+      nav(
+        { class: "docs-rail-card docs-rail-nav", "aria-label": "Common documentation sections" },
+        div({ class: "docs-rail-kicker" }, "Jump to"),
+        SectionLink("installation", "docs-rail-link"),
+        SectionLink("explicit-updates", "docs-rail-link"),
+        SectionLink("api-update", "docs-rail-link"),
+        SectionLink("api-styling", "docs-rail-link"),
+        SectionLink("best-practices", "docs-rail-link"),
+      ),
+    );
+  }
+
   function Content() {
     return article(
       { class: "docs-content" },
       DocsIntro(),
       MobileToc(),
-      ...DOC_SECTIONS.map(sec =>
+      ...DOC_SECTIONS.map((sec, index) =>
         section(
           { id: sec.id, class: `docs-section${sec.apiTag ? " docs-api-section" : ""}` },
-          div({ class: "docs-section-kicker" }, sec.groupTitle),
-          h2(sec.title),
+          div(
+            { class: "docs-section-head" },
+            div(
+              { class: "docs-section-meta" },
+              span({ class: "docs-section-number" }, sectionNumber(index)),
+              span({ class: "docs-section-kicker" }, sec.groupTitle),
+            ),
+            div(
+              { class: "docs-section-title-row" },
+              h2(sec.title),
+              a(
+                {
+                  class: "docs-section-anchor",
+                  href: `#${sec.id}`,
+                  title: `Link to ${sec.title}`,
+                  "aria-label": `Link to ${sec.title}`,
+                },
+                "#",
+                on("click", () => setActive(sec.id)),
+              ),
+            ),
+          ),
           ...(sec.apiTag ? [
             div(
               { class: "api-heading-row" },
@@ -121,8 +192,10 @@ export function DocsPage() {
 
   const page = div(
     { class: "docs-layout" },
+    DocsProgress(),
     Sidebar(),
     Content(),
+    Rail(),
   );
 
   // IntersectionObserver for sidebar active state — only on client
@@ -145,6 +218,16 @@ export function DocsPage() {
 
       sections.forEach(section => observer.observe(section));
       if (window.location.hash && activeId !== "overview") scrollToSection(activeId);
+
+      const setProgress = () => {
+        const doc = document.documentElement;
+        const max = doc.scrollHeight - window.innerHeight;
+        const pct = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+        doc.style.setProperty("--docs-progress", `${pct * 100}%`);
+      };
+
+      setProgress();
+      window.addEventListener("scroll", setProgress, { passive: true });
     });
   }
 

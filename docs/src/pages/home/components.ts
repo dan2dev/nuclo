@@ -427,7 +427,7 @@ export function CTASection() {
       s.container,
       div(s.sectionLabel, css({ justifyContent: "center", display: "flex" }), "Get Started"),
       h2(
-        css({ fontSize: "clamp(2rem, 3.5vw, 2.8rem)", fontWeight: "700", letterSpacing: "-0.02em", lineHeight: "1.2", marginBottom: "18px" }),
+        css({ fontSize: "2rem", fontWeight: "700", letterSpacing: "0", lineHeight: "1.2", marginBottom: "18px", medium: { fontSize: "2.55rem" } }),
         "Ready to build?",
       ),
       p(
@@ -455,4 +455,3 @@ export function CTASection() {
     ),
   );
 }
-
