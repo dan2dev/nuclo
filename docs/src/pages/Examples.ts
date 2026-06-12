@@ -1,8 +1,14 @@
-import { css, colors, s } from "../styles.ts";
+import { css, s } from "../styles.ts";
 import { EXAMPLES } from "../content/examples.ts";
 import { CodeBlock } from "../components/CodeBlock.ts";
 
-function ExampleCard(ex: typeof EXAMPLES[number]) {
+const EXAMPLE_FACTS = [
+  { value: "5", label: "Live demos" },
+  { value: "2", label: "View modes" },
+  { value: "0", label: "Build tooling required" },
+];
+
+function ExampleCard(ex: typeof EXAMPLES[number], index: number) {
   let activeTab: "preview" | "code" = "preview";
 
   function Tab(label: string, tab: "preview" | "code") {
@@ -19,7 +25,11 @@ function ExampleCard(ex: typeof EXAMPLES[number]) {
     { class: "ecard" },
     div(
       { class: "ecard-top" },
-      div({ class: "ecard-badge" }, "● Live"),
+      div(
+        { class: "ecard-meta-row" },
+        div({ class: "ecard-badge" }, "● Live"),
+        div({ class: "ecard-number" }, String(index + 1).padStart(2, "0")),
+      ),
       div({ class: "ecard-title" }, ex.title),
       div({ class: "ecard-desc" }, ex.desc),
     ),
@@ -375,19 +385,29 @@ function StyleDemo() {
 // ── Examples page ─────────────────────────────────────────────────────────────
 export function ExamplesPage() {
   const pageHeader = div(
-    css({ padding: "56px 0 32px", borderBottom: `1px solid ${colors.border}` }),
+    { class: "examples-hero" },
     div(
       s.container,
-      div(s.sectionLabel, css({ marginBottom: "12px" }), "Examples"),
-      h1(
-        css({ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: "700", letterSpacing: "-0.02em", lineHeight: "1.15", marginBottom: "16px" }),
-        "Practical examples.",
-        br(),
-        "Live demos.",
-      ),
-      p(
-        css({ fontSize: "1.05rem", color: colors.textDim, maxWidth: "500px", lineHeight: "1.7" }),
-        "Click the tabs to switch between a live interactive demo and the source code.",
+      div(
+        { class: "examples-hero-inner" },
+        div(
+          div({ class: "examples-kicker" }, "Examples"),
+          h1("Practical examples. Live demos."),
+          p(
+            { class: "examples-lead" },
+            "Explore Nuclo patterns with interactive previews and the source code beside each behavior.",
+          ),
+        ),
+        div(
+          { class: "examples-facts" },
+          ...EXAMPLE_FACTS.map(({ value, label }) =>
+            div(
+              { class: "examples-fact" },
+              div({ class: "examples-fact-value" }, value),
+              div({ class: "examples-fact-label" }, label),
+            )
+          ),
+        ),
       ),
     ),
   );
@@ -399,7 +419,7 @@ export function ExamplesPage() {
       s.container,
       div(
         { class: "examples-grid" },
-        ...EXAMPLES.map(ex => ExampleCard(ex)),
+        ...EXAMPLES.map((ex, index) => ExampleCard(ex, index)),
       ),
     ),
   );

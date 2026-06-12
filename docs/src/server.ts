@@ -36,7 +36,7 @@ const htmlTemplate = `<!doctype html>
 
     {{seoHead}}
 
-    <meta name="theme-color" content="#3869EC" />
+    <meta name="theme-color" content="#14B8A6" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />

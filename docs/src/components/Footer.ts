@@ -9,13 +9,15 @@ function GitHubIcon() {
 }
 
 export function Footer() {
-  const footerStyle = css({ borderTop: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, padding: "36px 0" });
+  const footerStyle = css({ borderTop: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, padding: "34px 0", animation: "riseIn 0.54s cubic-bezier(0.22, 1, 0.36, 1) both" });
 
-  const inner = css({ display: "flex", alignItems: "center", flexDirection: "column", gap: "16px", textAlign: "center", medium: { flexDirection: "row", justifyContent: "space-between", textAlign: "left" } });
+  const inner = css({ display: "grid", gridTemplateColumns: "1fr", alignItems: "center", gap: "22px", textAlign: "center", medium: { gridTemplateColumns: "1fr auto 1fr", textAlign: "left" } });
 
-  const linkStyle = css({ fontSize: "0.82rem", color: colors.textMuted, transition: "color 0.18s ease", cursor: "pointer", hover: { color: colors.textDim } });
+  const brandGroup = css({ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", medium: { alignItems: "flex-start" } });
 
-  const linksGroup = css({ display: "flex", gap: "20px", alignItems: "center" });
+  const linkStyle = css({ fontSize: "0.82rem", fontWeight: "600", color: colors.textMuted, transition: "color 0.18s ease, background 0.18s ease", cursor: "pointer", padding: "6px 8px", borderRadius: "6px", hover: { color: colors.textDim, backgroundColor: colors.bgSecondary } });
+
+  const linksGroup = css({ display: "flex", gap: "4px", alignItems: "center", justifyContent: "center", flexWrap: "wrap", medium: { justifyContent: "flex-end" } });
 
   function FooterLink(label: string, action: () => void) {
     return span(
@@ -32,16 +34,23 @@ export function Footer() {
       div(
         inner,
         // Left: logo
-        img({
-          src: "/nuclo-logo.svg",
-          alt: "Nuclo",
-          class: "brand-logo",
-        },
-        css({ height: "40px", width: "auto" })
+        div(
+          brandGroup,
+          img({
+            src: "/nuclo-logo.svg",
+            alt: "Nuclo",
+            class: "brand-logo",
+          },
+          css({ height: "38px", width: "auto" })
+          ),
+          span(
+            css({ fontSize: "0.78rem", color: colors.textMuted }),
+            "Small explicit UI runtime.",
+          ),
         ),
         // Center: credit
         span(
-          css({ fontSize: "0.82rem", color: colors.textMuted }),
+          css({ fontSize: "0.82rem", color: colors.textMuted, justifySelf: "center" }),
           "Created by @dan2dev · MIT License",
         ),
         // Right: links
@@ -55,7 +64,7 @@ export function Footer() {
               target: "_blank",
               rel: "noopener noreferrer",
             },
-            css({ fontSize: "0.82rem", color: colors.textMuted, transition: "color 0.18s ease", display: "flex", alignItems: "center", gap: "5px", hover: { color: colors.textDim } }),
+            css({ fontSize: "0.82rem", fontWeight: "600", color: colors.textMuted, transition: "color 0.18s ease, background 0.18s ease", display: "flex", alignItems: "center", gap: "5px", padding: "6px 8px", borderRadius: "6px", hover: { color: colors.textDim, backgroundColor: colors.bgSecondary } }),
             GitHubIcon(),
             "GitHub",
           ),

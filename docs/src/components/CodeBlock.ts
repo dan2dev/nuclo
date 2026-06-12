@@ -115,7 +115,7 @@ export function CodeBlock({ filename, code, showCopy = true, preTokenized = fals
 
   const tokenized = preTokenized ? code : tokenize(code);
 
-  const copyBtn = css({ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: "500", color: colors.textMuted, padding: "4px 10px", borderRadius: "5px", transition: "all 0.18s ease", border: `1px solid transparent`, backgroundColor: "transparent", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.primary, borderColor: "rgba(56,105,236,0.25)", backgroundColor: colors.primaryAlpha08 } });
+  const copyBtn = css({ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: "500", color: colors.textMuted, padding: "4px 10px", borderRadius: "5px", transition: "all 0.18s ease", border: `1px solid transparent`, backgroundColor: "transparent", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.primary, borderColor: colors.borderPrimary, backgroundColor: colors.primaryAlpha08 } });
 
   function handleCopy() {
     navigator.clipboard?.writeText(code).then(() => {

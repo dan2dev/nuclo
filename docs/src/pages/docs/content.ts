@@ -341,7 +341,7 @@ export const DOC_SECTIONS: DocSection[] = [
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">styles.ts</span></div><div class="code-block-body"><pre><span class="kw">import</span> <span class="st">'nuclo'</span>
 
 <span class="kw">const</span> <span class="pt">{</span> <span class="pr">css</span><span class="pt">,</span> <span class="pr">cx</span> <span class="pt">}</span> <span class="pt">=</span> <span class="fn">createCss</span><span class="pt">({</span>
-  <span class="pr">colors</span><span class="pt">:</span> <span class="pt">{</span> <span class="pr">primary</span><span class="pt">:</span> <span class="st">"#3869ec"</span> <span class="pt">},</span>
+  <span class="pr">colors</span><span class="pt">:</span> <span class="pt">{</span> <span class="pr">primary</span><span class="pt">:</span> <span class="st">"#14b8a6"</span> <span class="pt">},</span>
   <span class="pr">screens</span><span class="pt">:</span> <span class="pt">{</span> <span class="pr">medium</span><span class="pt">:</span> <span class="st">"(min-width: 768px)"</span> <span class="pt">},</span>
 <span class="pt">})</span>
 
