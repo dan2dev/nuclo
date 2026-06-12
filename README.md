@@ -26,7 +26,7 @@ render(counter, document.body);
 - **Direct DOM Manipulation** – Work directly with the DOM, no virtual layer in between
 - **Tiny Footprint** – Minimal bundle size, maximum performance
 - **Global Tag Builders** – Natural API with global functions for all HTML and SVG elements
-- **TypeScript-First** – Full type definitions for all 140+ HTML and SVG tags
+- **TypeScript-First** – Full type definitions for all 175 HTML and SVG builders
 - **Targeted DOM Updates** – `update()` re-runs dynamic bindings and only touches DOM where values changed
 
 ---
@@ -409,7 +409,7 @@ All HTML and SVG tags are available globally:
 ```ts
 div(), span(), button(), input(), h1(), p(), ul(), li()
 svg(), circle(), path(), rect(), g()
-// ... and 140+ more
+// ... 175 HTML and SVG builders total
 ```
 
 ### Attributes
