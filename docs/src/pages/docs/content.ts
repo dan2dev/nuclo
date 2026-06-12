@@ -41,7 +41,7 @@ export const DOC_SECTIONS: DocSection[] = [
       <p>Most frameworks try to hide state management from you. Nuclo does the opposite: it trusts you to know when something changed, and acts <em>only</em> when you say so.</p>
       <ul>
         <li><strong>Explicit updates</strong> — call <code>update()</code> after you mutate state.</li>
-        <li><strong>Dynamic functions</strong> — pass <code>() =&gt; value</code> anywhere; Nuclo re-evaluates on each update.</li>
+        <li><strong>Dynamic functions</strong> — pass <code>() =&gt; value</code> for text, attributes, styles, and class names; Nuclo re-evaluates them on each update.</li>
         <li><strong>Plain functions</strong> — components are just functions. No classes, no decorators, no lifecycle hooks.</li>
       </ul>
     `,
@@ -176,7 +176,7 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Core Concepts",
     title: "Events",
     content: `
-      <p>Use the <code>on()</code> helper to attach event listeners. It returns an internal marker object that Nuclo processes during element creation.</p>
+      <p>Use the <code>on()</code> helper to attach event listeners. It returns a modifier that Nuclo processes during element creation, and it accepts the same listener options as <code>addEventListener()</code>.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">const</span> <span class="pr">btn</span> <span class="pt">=</span> <span class="fn">button</span><span class="pt">(</span>
   <span class="st">"Submit"</span><span class="pt">,</span>
   <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">)</span> <span class="pt">=></span> <span class="pt">{</span>
@@ -252,9 +252,9 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "API Reference",
     title: "on()",
     apiTag: "fn",
-    apiSig: `<span class="kw">function</span> <span class="fn">on</span><span class="pt">&lt;</span><span class="ty">K</span> <span class="kw">extends</span> <span class="kw">keyof</span> <span class="ty">HTMLElementEventMap</span><span class="pt">&gt;(</span>\n  <span class="pr">event</span><span class="pt">:</span> <span class="ty">K</span><span class="pt">,</span>\n  <span class="pr">handler</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">:</span> <span class="ty">HTMLElementEventMap</span><span class="pt">[</span><span class="ty">K</span><span class="pt">])</span> <span class="pt">=></span> <span class="ty">void</span>\n<span class="pt">)</span>`,
+    apiSig: `<span class="kw">function</span> <span class="fn">on</span><span class="pt">&lt;</span><span class="ty">K</span> <span class="kw">extends</span> <span class="kw">keyof</span> <span class="ty">HTMLElementEventMap</span><span class="pt">&gt;(</span>\n  <span class="pr">event</span><span class="pt">:</span> <span class="ty">K</span><span class="pt">,</span>\n  <span class="pr">handler</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">:</span> <span class="ty">HTMLElementEventMap</span><span class="pt">[</span><span class="ty">K</span><span class="pt">])</span> <span class="pt">=></span> <span class="ty">void</span><span class="pt">,</span>\n  <span class="pr">options</span><span class="pt">?:</span> <span class="ty">boolean</span> <span class="pt">|</span> <span class="ty">AddEventListenerOptions</span>\n<span class="pt">):</span> <span class="ty">NodeModFn</span>`,
     content: `
-      <p>Creates an event listener descriptor. Pass the result as an argument to any tag builder. The listener is attached once during element creation.</p>
+      <p>Creates an event listener modifier. Pass the result as an argument to any tag builder. The listener is attached once during element creation and is tracked for cleanup.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">const</span> <span class="pr">el</span> <span class="pt">=</span> <span class="fn">input</span><span class="pt">(</span>
   <span class="fn">on</span><span class="pt">(</span><span class="st">"input"</span><span class="pt">,</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">)</span> <span class="pt">=></span> <span class="pt">{</span>
     <span class="pr">query</span> <span class="pt">=</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">.</span><span class="pr">target</span> <span class="kw">as</span> <span class="ty">HTMLInputElement</span><span class="pt">).</span><span class="pr">value</span>
@@ -293,7 +293,7 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "API Reference",
     title: "list()",
     apiTag: "fn",
-    apiSig: `<span class="kw">function</span> <span class="fn">list</span><span class="pt">&lt;</span><span class="ty">T</span><span class="pt">&gt;(</span><span class="pr">items</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="kw">readonly</span> <span class="ty">T</span><span class="pt">[]</span> <span class="pt">|</span> <span class="ty">Iterable</span><span class="pt">&lt;</span><span class="ty">T</span><span class="pt">&gt;,</span> <span class="pr">render</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">item</span><span class="pt">:</span> <span class="ty">T</span><span class="pt">,</span> <span class="pr">index</span><span class="pt">:</span> <span class="ty">number</span><span class="pt">)</span> <span class="pt">=></span> <span class="ty">ListRenderResult</span><span class="pt">)</span>`,
+    apiSig: `<span class="kw">function</span> <span class="fn">list</span><span class="pt">&lt;</span><span class="ty">T</span><span class="pt">&gt;(</span><span class="pr">items</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="kw">readonly</span> <span class="ty">T</span><span class="pt">[]</span> <span class="pt">|</span> <span class="ty">Iterable</span><span class="pt">&lt;</span><span class="ty">T</span><span class="pt">&gt;,</span> <span class="pr">render</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">item</span><span class="pt">:</span> <span class="ty">T</span><span class="pt">,</span> <span class="pr">index</span><span class="pt">:</span> <span class="ty">number</span><span class="pt">)</span> <span class="pt">=></span> <span class="ty">ListRenderResult</span><span class="pt">):</span> <span class="ty">ListModifier</span>`,
     content: `
       <p>Renders a dynamic list. The <code>items</code> function is re-evaluated on every <code>update()</code>; Nuclo compares item identity and adds, removes, or reorders DOM nodes as needed.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">items</span><span class="pt">:</span> <span class="ty">string</span><span class="pt">[] =</span> <span class="pt">[</span><span class="st">'Apple'</span><span class="pt">,</span> <span class="st">'Banana'</span><span class="pt">]</span>
@@ -392,7 +392,7 @@ export const DOC_SECTIONS: DocSection[] = [
 <span class="kw">import</span> <span class="st">'nuclo'</span>
 <span class="kw">import</span> <span class="pt">{</span> <span class="pr">renderToString</span><span class="pt">,</span> <span class="pr">getCssText</span> <span class="pt">}</span> <span class="kw">from</span> <span class="st">'nuclo/ssr'</span>
 
-<span class="cm">// Warm up: import page modules so module-level css() calls populate the registry</span>
+<span class="cm">// Import modules that declare css() rules before collecting CSS text</span>
 <span class="kw">await</span> <span class="fn">import</span><span class="pt">(</span><span class="st">'./pages/Home.ts'</span><span class="pt">)</span>
 
 <span class="cm">// Render the page and collect the atomic stylesheet</span>
@@ -404,7 +404,7 @@ export const DOC_SECTIONS: DocSection[] = [
 <span class="cm">// Inject into the HTML response to prevent unstyled flash on hydration</span>
 <span class="kw">const</span> <span class="pr">page</span> <span class="pt">=</span> <span class="pt">\`&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;style&gt;\${</span><span class="pr">styles</span><span class="pt">}&lt;/style&gt;&lt;/head&gt;</span>
 <span class="pt">&lt;body&gt;&lt;div id="app"&gt;\${</span><span class="pr">html</span><span class="pt">}&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;\`</span></pre></div></div>
-      <p>SSR evaluates dynamic functions once for the current state. On the client, call <code>hydrate()</code> with the same component tree to attach Nuclo runtime behavior to the existing markup.</p>
+      <p>SSR evaluates dynamic functions once for the current state. Render any component tree that creates atomic styles before reading <code>getCssText()</code>. On the client, call <code>hydrate()</code> with the same component tree to attach Nuclo runtime behavior to the existing markup.</p>
     `,
   },
 
@@ -483,8 +483,8 @@ export const DOC_SECTIONS: DocSection[] = [
         <li><strong>Keep state flat</strong> — nested objects still work, but flat state is simpler to reason about.</li>
         <li><strong>Use functions for components</strong> — each call creates a new instance with its own closure state.</li>
         <li><strong>Avoid effects</strong> — Nuclo has no effect system. Use event handlers, timers, and fetch callbacks directly.</li>
-        <li><strong>SSR warm-up</strong> — for SSR, call all pages once before serving to collect CSS class names.</li>
-        <li><strong>Dynamic functions are cheap</strong> — don't over-optimize; only functions that actually changed will patch the DOM.</li>
+        <li><strong>SSR CSS collection</strong> — render or import code paths that call <code>css()</code> before reading <code>getCssText()</code>.</li>
+        <li><strong>Dynamic functions are cheap</strong> — don't over-optimize; Nuclo only patches values that actually changed.</li>
       </ul>
       <div class="docs-callout">
         <strong>Tip:</strong> Treat <code>update()</code> like a commit. Batch all your mutations, then call it once to flush the DOM.

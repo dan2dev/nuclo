@@ -1,4 +1,4 @@
-export const HERO_BADGE = "v0.1 · Zero Dependencies";
+export const HERO_BADGE = "v0.2.1 · Zero Dependencies";
 
 export const HERO_TITLE_LINES = ["Mutate.", "Call update().", "Done."];
 
@@ -9,8 +9,8 @@ export const INSTALL_CMD = "npm install nuclo";
 
 export const HERO_STATS = [
   { num: "0",   sup: "deps", label: "Zero dependencies" },
-  { num: "140", sup: "+",    label: "HTML & SVG tags" },
-  { num: "~16",  sup: "kb",   label: "Gzipped bundle" },
+  { num: "175", sup: "",     label: "HTML & SVG builders" },
+  { num: "~10.0", sup: "KB", label: "Gzipped ESM bundle" },
 ];
 
 export const HERO_CODE = `<span class="kw">import</span> <span class="st">'nuclo'</span>
@@ -52,13 +52,13 @@ export const TODO_TEASER_CODE = `<span class="kw">import</span> <span class="st"
 
 <span class="kw">export function</span> <span class="fn">TodoList</span><span class="pt">() {</span>
   <span class="kw">return</span> <span class="fn">div</span><span class="pt">(</span>
-    <span class="fn">input</span><span class="pt">({</span>
-      <span class="pr">value</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pr">input</span><span class="pt">,</span>
-      <span class="pr">onInput</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">)</span> <span class="pt">=></span> <span class="pt">{</span>
-        <span class="pr">input</span> <span class="pt">=</span> <span class="pr">e</span><span class="pt">.</span><span class="pr">target</span><span class="pt">.</span><span class="pr">value</span>
+    <span class="fn">input</span><span class="pt">(</span>
+      <span class="pt">{</span> <span class="pr">value</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pr">input</span> <span class="pt">},</span>
+      <span class="fn">on</span><span class="pt">(</span><span class="st">"input"</span><span class="pt">,</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">)</span> <span class="pt">=></span> <span class="pt">{</span>
+        <span class="pr">input</span> <span class="pt">=</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">.</span><span class="pr">target</span> <span class="kw">as</span> <span class="ty">HTMLInputElement</span><span class="pt">).</span><span class="pr">value</span>
         <span class="fn">update</span><span class="pt">()</span>
-      <span class="pt">}</span>
-    <span class="pt">}),</span>
+      <span class="pt">})</span>
+    <span class="pt">),</span>
     <span class="fn">list</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pr">todos</span><span class="pt">,</span>
       <span class="pt">(</span><span class="pr">t</span><span class="pt">)</span> <span class="pt">=></span> <span class="fn">div</span><span class="pt">(</span><span class="pr">t</span><span class="pt">)</span>
     <span class="pt">)</span>
@@ -95,17 +95,17 @@ export const FEATURES = [
   {
     num: "02 — LIGHTWEIGHT",
     title: "Zero dependencies",
-    desc: "~16kb gzipped, zero runtime dependencies. Ships nothing you don't use.",
+    desc: "~10 KB gzipped, zero runtime dependencies. Ships nothing you don't use.",
   },
   {
     num: "03 — TYPED",
     title: "TypeScript-first",
-    desc: "Full TypeScript types for 175 HTML & SVG tags. Autocomplete everything.",
+    desc: "Full TypeScript types for 175 HTML & SVG builders. Autocomplete everything.",
   },
   {
     num: "04 — SMART",
     title: "Fine-grained sync",
-    desc: "Dynamic functions run only when needed. Pass () => value and Nuclo updates only that node.",
+    desc: "Dynamic functions re-evaluate on update(), and Nuclo patches only values that changed.",
   },
 ];
 
