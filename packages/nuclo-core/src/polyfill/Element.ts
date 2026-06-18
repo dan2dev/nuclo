@@ -248,6 +248,16 @@ export class NucloElement extends NucloNode {
   }
   
   appendChild<T extends Node>(child: T): T {
+    // Spec behaviour: appending a DocumentFragment moves its children into this
+    // node and leaves the fragment empty. The list runtime relies on this to
+    // batch row insertions.
+    if ((child as any)?.nodeType === 11) {
+      const kids = ((child as any).childNodes as Node[]).slice();
+      for (let i = 0; i < kids.length; i++) this.appendChild(kids[i]);
+      (child as any).childNodes = [];
+      if ((child as any).children) (child as any).children = [];
+      return child;
+    }
     this.children.push(child);
     if (isBrowser && (this as any)['_childNodes']) {
       (this as any)['_childNodes'].push(child);
@@ -285,6 +295,15 @@ export class NucloElement extends NucloNode {
   insertBefore<T extends Node>(newNode: T, referenceNode: Node | null): T {
     if (referenceNode === null) {
       return this.appendChild(newNode);
+    }
+    // Spec behaviour: inserting a DocumentFragment moves its children (in order)
+    // before the reference node and empties the fragment.
+    if ((newNode as any)?.nodeType === 11) {
+      const kids = ((newNode as any).childNodes as Node[]).slice();
+      for (let i = 0; i < kids.length; i++) this.insertBefore(kids[i], referenceNode);
+      (newNode as any).childNodes = [];
+      if ((newNode as any).children) (newNode as any).children = [];
+      return newNode;
     }
     const index = this.children.indexOf(referenceNode);
     if (index !== -1) {

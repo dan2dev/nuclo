@@ -12,6 +12,14 @@ class SSRDocumentFragment {
   children: Element[] = [];
   textContent: string = '';
 
+  get firstChild(): Node | null {
+    return this.childNodes.length > 0 ? this.childNodes[0] : null;
+  }
+
+  get lastChild(): Node | null {
+    return this.childNodes.length > 0 ? this.childNodes[this.childNodes.length - 1] : null;
+  }
+
   appendChild<T extends Node>(child: T): T {
     this.childNodes.push(child);
     if ((child as any).nodeType === 1) {
