@@ -76,12 +76,14 @@ export const DOC_SECTIONS: DocSection[] = [
     <span class="pr">"target"</span><span class="pt">:</span> <span class="st">"ES2020"</span><span class="pt">,</span>
     <span class="pr">"module"</span><span class="pt">:</span> <span class="st">"ESNext"</span><span class="pt">,</span>
     <span class="pr">"moduleResolution"</span><span class="pt">:</span> <span class="st">"bundler"</span><span class="pt">,</span>
-    <span class="pr">"strict"</span><span class="pt">:</span> <span class="kw">true</span>
+    <span class="pr">"strict"</span><span class="pt">:</span> <span class="kw">true</span><span class="pt">,</span>
+    <span class="pr">"types"</span><span class="pt">:</span> <span class="pt">[</span><span class="st">"nuclo/types"</span><span class="pt">]</span>
   <span class="pt">}</span>
 <span class="pt">}</span></pre></div></div>
       <p>All 175 tag builders accept typed attribute objects, dynamic text functions, event descriptors, child builders, and class-name helpers. Your editor will autocomplete everything.</p>
     `,
   },
+
 
   // ── Core Concepts ─────────────────────────────────────────────────────────
   {
