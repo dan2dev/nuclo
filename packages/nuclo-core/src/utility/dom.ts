@@ -58,7 +58,7 @@ function safeAppendChild(parent: Element | Node, child: Node): boolean {
  * Recursively removes all event listeners and reactive subscriptions from a node and its descendants
  * to prevent memory leaks when elements are removed from the DOM.
  */
-function cleanupEventListeners(node: Node): void {
+function cleanupNodeTree(node: Node): void {
   // Clean up the node itself based on its type
   if (node.nodeType === Node.ELEMENT_NODE) {
     const element = node as HTMLElement;
@@ -79,7 +79,7 @@ function cleanupEventListeners(node: Node): void {
   // Recursively clean up all child nodes
   if (node.childNodes && node.childNodes.length > 0) {
     for (let i = 0; i < node.childNodes.length; i++) {
-      cleanupEventListeners(node.childNodes[i]);
+      cleanupNodeTree(node.childNodes[i]);
     }
   }
 }
@@ -88,7 +88,7 @@ export function safeRemoveChild(child: Node): boolean {
   if (!child?.parentNode) return false;
   try {
     // Clean up all event listeners before removing the element
-    cleanupEventListeners(child);
+    cleanupNodeTree(child);
     child.parentNode.removeChild(child);
     return true;
   } catch (error) {
