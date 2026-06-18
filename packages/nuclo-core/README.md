@@ -24,10 +24,12 @@ render(counter, document.body);
 
 - **Explicit and Predictable** – You control when updates happen with a simple `update()` call
 - **Direct DOM Manipulation** – Work directly with the DOM, no virtual layer in between
-- **Tiny Footprint** – Minimal bundle size, maximum performance
+- **Tiny Footprint** – ~10 KB gzipped, zero dependencies
 - **Global Tag Builders** – Natural API with global functions for all HTML and SVG elements
-- **TypeScript-First** – Full type definitions for all 175 HTML and SVG tags
+- **TypeScript-First** – Full type definitions for all 175 HTML and SVG builders
 - **Targeted DOM Updates** – `update()` re-runs dynamic bindings and only touches DOM where values changed
+- **Atomic Styling** – Built-in `css()` / `createCss()` with TypeScript autocomplete, theming, and SSR CSS collection
+- **Server-Side Rendering** – `renderToString()` + `hydrate()` with a lightweight DOM polyfill
 
 ---
 
@@ -409,7 +411,7 @@ All HTML and SVG tags are available globally:
 ```ts
 div(), span(), button(), input(), h1(), p(), ul(), li()
 svgSvg(), circleSvg(), pathSvg(), rectSvg(), gSvg()
-// ... and 175 total builders
+// ... 175 HTML and SVG builders total
 ```
 
 ### Attributes
@@ -434,6 +436,49 @@ div({
   style: () => ({ opacity: isVisible ? 1 : 0 })
 })
 ```
+
+### Styling
+
+Nuclo includes an atomic CSS-in-TS engine. `css()` is available globally after `import 'nuclo'`. For theming and responsive breakpoints use `createCss()`:
+
+```ts
+import 'nuclo';
+
+const { css } = createCss({
+  colors: { primary: '#14b8a6' },
+  screens: { md: '(min-width: 768px)' },
+});
+
+const card = css({
+  p: 16,
+  rounded: 8,
+  md: { p: 24 },
+  hover: { borderColor: 'primary' },
+});
+
+const el = div(card, 'Hello');
+```
+
+`css()` returns an object with a `className` key that can be passed directly to any tag builder. Compose styles conditionally with `cx(base, condition && variant)`. Global styles and keyframe animations use `globalStyle()` and `keyframes()`.
+
+### Server-Side Rendering
+
+Import `nuclo/polyfill` before `nuclo` in your Node.js server entry, then use `renderToString()` and `getCssText()` from `nuclo/ssr`:
+
+```ts
+import 'nuclo/polyfill';
+import 'nuclo';
+import { renderToString, getCssText } from 'nuclo/ssr';
+import { App } from './app.ts';
+
+const html = renderToString(App());
+const styles = getCssText();
+
+const page = `<!doctype html><html><head><style>${styles}</style></head>
+<body><div id="app">${html}</div></body></html>`;
+```
+
+On the client, call `hydrate()` instead of `render()` to attach Nuclo runtimes to the existing markup without re-creating DOM nodes.
 
 ---
 
@@ -580,7 +625,6 @@ These markers identify conditional and list boundaries in the DOM.
 - Keyed list variant for explicit key-based tracking
 - Transition and animation helpers
 - Dev mode diagnostics and warnings
-- Server-side rendering (SSR) support
 
 ---
 
