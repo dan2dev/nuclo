@@ -7,7 +7,7 @@ export interface PageMeta {
   type?: "TechArticle" | "WebPage" | "ItemList" | "CollectionPage";
 }
 
-export const SEO_BASE_URL = "https://nuclo.dan2.dev/";
+export const SEO_BASE_URL = "https://nuclo.dev/";
 
 export const routeMeta: Record<RoutePath, PageMeta> = {
   home: {
