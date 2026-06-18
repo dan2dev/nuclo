@@ -2,12 +2,6 @@ import { css, s } from "../styles.ts";
 import { EXAMPLES } from "../content/examples.ts";
 import { CodeBlock } from "../components/CodeBlock.ts";
 
-const EXAMPLE_FACTS = [
-  { value: "5", label: "Live demos" },
-  { value: "2", label: "View modes" },
-  { value: "0", label: "Build tooling required" },
-];
-
 function ExampleCard(ex: typeof EXAMPLES[number], index: number) {
   let activeTab: "preview" | "code" = "preview";
 
@@ -40,7 +34,7 @@ function ExampleCard(ex: typeof EXAMPLES[number], index: number) {
     ),
     // Preview pane
     div(
-      { class: () => `epane${activeTab === "preview" ? " on" : ""}` },
+      { class: () => `epane epane-preview${activeTab === "preview" ? " on" : ""}` },
       div(
         { class: "epreview" },
         buildPreview(ex.id),
@@ -48,7 +42,7 @@ function ExampleCard(ex: typeof EXAMPLES[number], index: number) {
     ),
     // Code pane
     div(
-      { class: () => `epane${activeTab === "code" ? " on" : ""}` },
+      { class: () => `epane epane-code${activeTab === "code" ? " on" : ""}` },
       CodeBlock({ filename: `${ex.title.replace(/\s+/g, "")}.ts`, code: ex.code }),
     ),
   );
@@ -310,8 +304,8 @@ function AsyncDemo() {
 // ── Styling demo ──────────────────────────────────────────────────────────────
 const { css: demoCSS, cx: demoCX } = createCss({
   colors: {
-    primary: "#6366f1",
-    primaryHover: "#4f46e5",
+    primary: "#14b8a6",
+    primaryHover: "#0f766e",
     text: "#1f2937",
     muted: "#6b7280",
     surface: "#f8fafc",
@@ -336,13 +330,13 @@ const demoChipDefault = demoCSS({
   backgroundColor: "#f8fafc",
   color: "#6b7280",
   borderColor: "#e2e8f0",
-  hover: { color: "#1f2937", borderColor: "#6366f1" },
+  hover: { color: "#1f2937", borderColor: "#14b8a6" },
 });
 const demoChipActive = demoCSS({
-  backgroundColor: "#6366f1",
+  backgroundColor: "#14b8a6",
   color: "white",
-  borderColor: "#4f46e5",
-  hover: { backgroundColor: "#4f46e5" },
+  borderColor: "#0f766e",
+  hover: { backgroundColor: "#0f766e" },
 });
 
 function StyleDemo() {
@@ -368,7 +362,7 @@ function StyleDemo() {
       { class: "ex-style-chips" },
       ...TAGS.map(tag =>
         button(
-          () => demoCX(demoChip, selected.has(tag) ? demoChipActive : demoChipDefault),
+          { class: () => demoCX(demoChip, selected.has(tag) ? demoChipActive : demoChipDefault).className },
           tag,
           on("click", () => toggle(tag)),
         ),
@@ -400,13 +394,6 @@ export function ExamplesPage() {
         ),
         div(
           { class: "examples-facts" },
-          ...EXAMPLE_FACTS.map(({ value, label }) =>
-            div(
-              { class: "examples-fact" },
-              div({ class: "examples-fact-value" }, value),
-              div({ class: "examples-fact-label" }, label),
-            )
-          ),
         ),
       ),
     ),

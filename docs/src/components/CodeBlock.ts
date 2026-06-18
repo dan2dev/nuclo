@@ -145,7 +145,7 @@ export function CodeBlock({ filename, code, showCopy = true, preTokenized = fals
     div(
       s.codeBlockBody,
       css({ color: colors.text }),
-      { innerHTML: () => `<pre style="margin:0;white-space:pre-wrap;word-break:break-word">${tokenized}</pre>` },
+      { innerHTML: () => `<pre style="margin:0;white-space:pre;min-width:max-content">${tokenized}</pre>` },
     ),
   );
 }

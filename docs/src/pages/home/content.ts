@@ -11,7 +11,6 @@ export const HERO_STATS = [
   { num: "0",   sup: "",   label: "dependencies" },
   { num: "175", sup: "",   label: "typed HTML & SVG builders" },
   { num: "~10", sup: "KB", label: "gzipped, entire runtime" },
-  { num: "1",   sup: "",   label: "function to learn" },
 ];
 
 export const HERO_CODE = `<span class="kw">import</span> <span class="st">'nuclo'</span>
