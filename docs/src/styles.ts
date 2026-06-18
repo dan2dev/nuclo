@@ -997,9 +997,12 @@ html[data-anim] .rv-in.rv-d4 { animation-delay: 0.32s; }
 }
 .examples-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   padding: 38px 0 64px;
+}
+.ecard:last-child {
+  grid-column: 1 / -1;
 }
 .ecard {
   background: var(--c-bg-card);
@@ -1066,12 +1069,37 @@ html[data-anim] .rv-in.rv-d4 { animation-delay: 0.32s; }
 .epane.on { display: block; }
 .epreview {
   padding: 30px 24px;
-  min-height: 238px;
+  height: 320px;
+  overflow: auto;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   background: var(--c-bg-code);
   border-top: 1px solid rgba(255,255,255,0.02);
+}
+.epreview::before,
+.epreview::after {
+  content: '';
+  flex: 1;
+}
+/* Code pane: fixed height with scrollable body */
+.epane-code.on {
+  display: flex;
+  flex-direction: column;
+  height: 320px;
+  overflow: hidden;
+}
+.epane-code.on > * {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.epane-code.on > * > *:last-child {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 .ecode {
   padding: 20px 22px; background: var(--c-bg-code);
@@ -1267,7 +1295,8 @@ html[data-anim] .rv-in.rv-d4 { animation-delay: 0.32s; }
   .examples-grid { padding: 28px 0 52px; }
   .ecard-top { padding: 18px 16px 0; }
   .etabs { padding: 12px 16px 0; }
-  .epreview { min-height: 220px; padding: 24px 16px; }
+  .epreview { height: 260px; padding: 24px 16px; }
+  .epane-code.on { height: 260px; }
   .docs-layout { padding: 0 18px; }
   .docs-content h1 { font-size: 2rem; }
   .docs-content h2 { font-size: 1.28rem; }

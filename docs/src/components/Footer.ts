@@ -81,7 +81,6 @@ export function Footer() {
           div(
             colLinks,
             ExternalLink("GitHub", GITHUB_URL, GitHubSvg({ size: 14 })),
-            ExternalLink("Releases", `${GITHUB_URL}/releases`),
             ExternalLink("MIT License", `${GITHUB_URL}/blob/main/LICENSE.md`),
           ),
         ),
@@ -89,7 +88,7 @@ export function Footer() {
       div(
         bottomBar,
         span(fineprint, "© 2026 Danilo Castro (@dan2dev) · MIT License"),
-        span(versionBadge, "v0.2.1"),
+        span(versionBadge, "v0.2.3"),
       ),
     ),
   );
