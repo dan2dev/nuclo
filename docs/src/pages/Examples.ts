@@ -1,4 +1,4 @@
-import { css, s } from "../styles.ts";
+import { css, colors, s } from "../styles.ts";
 import { EXAMPLES } from "../content/examples.ts";
 import { CodeBlock } from "../components/CodeBlock.ts";
 
@@ -55,6 +55,7 @@ function buildPreview(id: string) {
     case "search":  return SearchDemo();
     case "async":   return AsyncDemo();
     case "styling": return StyleDemo();
+    case "chart":   return ChartDemo();
     default:        return div();
   }
 }
@@ -372,6 +373,250 @@ function StyleDemo() {
       () => selected.size > 0
         ? `Selected: ${[...selected].join(", ")}`
         : "Nothing selected yet.",
+    ),
+  );
+}
+
+// ── Chart demo ───────────────────────────────────────────────────────────────
+const chartStyles = {
+  root: css({ w: "100%", maxW: "380px" }),
+  controls: css({ display: "flex", items: "center", gap: "10px", mb: "14px" }),
+  label: css({ text: "0.82rem", weight: "600", color: colors.textDim }),
+  select: css({
+    flex: "1", p: "8px 12px", rounded: "6px",
+    border: `1px solid ${colors.borderLight}`,
+    bg: colors.bgSecondary, color: colors.text,
+    fontFamily: "'Space Grotesk', system-ui, sans-serif", text: "0.85rem",
+    outline: "none", cursor: "pointer", transition: "border-color 0.18s ease",
+    raw: { appearance: "none" },
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23607970'/%3E%3C/svg%3E")`,
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "right 12px center",
+    pr: "30px",
+    focus: { borderColor: colors.primary },
+  }),
+  area: css({
+    bg: colors.bgSecondary, border: `1px solid ${colors.border}`,
+    rounded: "8px", p: "20px 16px", minH: "200px",
+    display: "flex", items: "center", justify: "center",
+  }),
+  svg: css({ display: "block", maxW: "100%" }),
+};
+
+const CHART_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+let chartData = [42, 78, 55, 91, 64, 83, 37];
+
+const CHART_COLORS = [
+  "#14b8a6", "#38bdf8", "#f59e0b",
+  "#fb7185", "#a78bfa", "#34d399", "#f97316",
+];
+
+const ANIM_MS = 350;
+let animId = 0;
+
+function randomizeChartData() {
+  const from = [...chartData];
+  const to = CHART_LABELS.map(() => 10 + Math.floor(Math.random() * 90));
+  const start = performance.now();
+  cancelAnimationFrame(animId);
+
+  function tick() {
+    const t = Math.min((performance.now() - start) / ANIM_MS, 1);
+    const ease = 1 - (1 - t) * (1 - t);
+    for (let i = 0; i < from.length; i++) {
+      chartData[i] = Math.round(from[i] + (to[i] - from[i]) * ease);
+    }
+    update();
+    if (t < 1) animId = requestAnimationFrame(tick);
+  }
+  animId = requestAnimationFrame(tick);
+}
+
+function BarChart() {
+  const W = 320, H = 180, PAD = 32, BAR_GAP = 8;
+  const barW = (W - PAD * 2 - BAR_GAP * (CHART_LABELS.length - 1)) / CHART_LABELS.length;
+  const chartH = H - PAD - 24;
+
+  return svgSvg(
+    { viewBox: `0 0 ${W} ${H}`, width: "100%", height: "100%", class: chartStyles.svg.className },
+    list(
+      () => CHART_LABELS,
+      (label, i) => {
+        const x = PAD + i * (barW + BAR_GAP);
+        return gSvg(
+          rectSvg({
+            x: String(x),
+            y: () => { const max = Math.max(...chartData); return String(PAD + chartH - (chartData[i] / max) * chartH); },
+            width: String(barW),
+            height: () => { const max = Math.max(...chartData); return String((chartData[i] / max) * chartH); },
+            rx: "3", fill: CHART_COLORS[i], opacity: "0.85",
+          }),
+          textSvg(
+            {
+              x: String(x + barW / 2), y: String(H - 4),
+              "text-anchor": "middle",
+              fill: "var(--c-text-muted)", "font-size": "9",
+              "font-family": "'Space Grotesk', sans-serif",
+            },
+            label,
+          ),
+          textSvg(
+            {
+              x: String(x + barW / 2),
+              y: () => { const max = Math.max(...chartData); return String(PAD + chartH - (chartData[i] / max) * chartH - 5); },
+              "text-anchor": "middle",
+              fill: "var(--c-text-dim)", "font-size": "9",
+              "font-family": "'JetBrains Mono', monospace",
+            },
+            () => String(chartData[i]),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+function chartPoints() {
+  const W = 320, H = 180, PAD = 32;
+  const chartH = H - PAD - 24;
+  const stepX = (W - PAD * 2) / (CHART_LABELS.length - 1);
+  const max = Math.max(...chartData);
+  return CHART_LABELS.map((label, i) => ({
+    label,
+    value: chartData[i],
+    x: PAD + i * stepX,
+    y: PAD + chartH - (chartData[i] / max) * chartH,
+  }));
+}
+
+function LineChart() {
+  const W = 320, H = 180, PAD = 32;
+  const chartH = H - PAD - 24;
+
+  return svgSvg(
+    { viewBox: `0 0 ${W} ${H}`, width: "100%", height: "100%", class: chartStyles.svg.className },
+    pathSvg({
+      d: () => {
+        const pts = chartPoints();
+        return `M${pts[0].x},${PAD + chartH} ${pts.map(p => `L${p.x},${p.y}`).join(" ")} L${pts[pts.length - 1].x},${PAD + chartH} Z`;
+      },
+      fill: "var(--c-primary)", opacity: "0.1",
+    }),
+    polylineSvg({
+      points: () => chartPoints().map(p => `${p.x},${p.y}`).join(" "),
+      fill: "none",
+      stroke: "var(--c-primary)", "stroke-width": "2.5",
+      "stroke-linejoin": "round", "stroke-linecap": "round",
+    }),
+    list(
+      () => chartPoints(),
+      (p) => gSvg(
+        circleSvg({
+          cx: String(p.x), cy: String(p.y), r: "4",
+          fill: "var(--c-bg-card)", stroke: "var(--c-primary)", "stroke-width": "2",
+        }),
+        textSvg(
+          {
+            x: String(p.x), y: String(H - 4),
+            "text-anchor": "middle",
+            fill: "var(--c-text-muted)", "font-size": "9",
+            "font-family": "'Space Grotesk', sans-serif",
+          },
+          p.label,
+        ),
+        textSvg(
+          {
+            x: String(p.x), y: String(p.y - 9),
+            "text-anchor": "middle",
+            fill: "var(--c-text-dim)", "font-size": "9",
+            "font-family": "'JetBrains Mono', monospace",
+          },
+          String(p.value),
+        ),
+      ),
+    ),
+  );
+}
+
+function pieSlices() {
+  const CX = 160, CY = 90, R = 70;
+  const total = chartData.reduce((s, v) => s + v, 0);
+  let angle = -Math.PI / 2;
+  return chartData.map((v, i) => {
+    const sweep = (v / total) * Math.PI * 2;
+    const x1 = CX + R * Math.cos(angle);
+    const y1 = CY + R * Math.sin(angle);
+    const x2 = CX + R * Math.cos(angle + sweep);
+    const y2 = CY + R * Math.sin(angle + sweep);
+    const largeArc = sweep > Math.PI ? 1 : 0;
+    const midAngle = angle + sweep / 2;
+    const sl = {
+      d: `M${CX},${CY} L${x1},${y1} A${R},${R} 0 ${largeArc},1 ${x2},${y2} Z`,
+      color: CHART_COLORS[i],
+      value: v,
+      midX: CX + (R * 0.65) * Math.cos(midAngle),
+      midY: CY + (R * 0.65) * Math.sin(midAngle),
+    };
+    angle += sweep;
+    return sl;
+  });
+}
+
+function PieChart() {
+  return svgSvg(
+    { viewBox: "0 0 320 180", width: "100%", height: "100%", class: chartStyles.svg.className },
+    list(
+      () => pieSlices(),
+      (sl) => gSvg(
+        pathSvg({
+          d: sl.d,
+          fill: sl.color, opacity: "0.85",
+          stroke: "var(--c-bg-code)", "stroke-width": "1.5",
+        }),
+        textSvg(
+          {
+            x: String(sl.midX), y: String(sl.midY + 3),
+            "text-anchor": "middle",
+            fill: "#fff", "font-size": "8", "font-weight": "600",
+            "font-family": "'JetBrains Mono', monospace",
+          },
+          String(sl.value),
+        ),
+      ),
+    ),
+  );
+}
+
+function ChartDemo() {
+  type ChartType = "bar" | "line" | "pie";
+  let chartType: ChartType = "bar";
+
+  return div(
+    chartStyles.root,
+    div(
+      chartStyles.controls,
+      label(chartStyles.label, "Chart Type"),
+      select(
+        chartStyles.select,
+        option({ value: "bar" }, "Bar"),
+        option({ value: "line" }, "Line"),
+        option({ value: "pie" }, "Pie"),
+        on("change", (e) => {
+          chartType = (e.target as HTMLSelectElement).value as ChartType;
+          update();
+        }),
+      ),
+      button(
+        { class: "ex-btn" },
+        "Randomize",
+        on("click", randomizeChartData),
+      ),
+    ),
+    div(
+      chartStyles.area,
+      when(() => chartType === "bar", BarChart()),
+      when(() => chartType === "line", LineChart()),
+      when(() => chartType === "pie", PieChart()),
     ),
   );
 }

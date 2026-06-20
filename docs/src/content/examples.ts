@@ -277,6 +277,210 @@ export function StyleDemo() {
   },
 
   {
+    id: "chart",
+    title: "Interactive Chart",
+    desc: "SVG chart with bar, line, and pie types. Switch via dropdown — no charting library, just Nuclo + SVG.",
+    code: `import 'nuclo'
+
+type ChartType = "bar" | "line" | "pie"
+
+const LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+let data = [42, 78, 55, 91, 64, 83, 37]
+
+const COLORS = [
+  "#14b8a6", "#38bdf8", "#f59e0b",
+  "#fb7185", "#a78bfa", "#34d399", "#f97316",
+]
+
+let chartType: ChartType = "bar"
+
+const ANIM_MS = 350
+let animId = 0
+
+function randomize() {
+  const from = [...data]
+  const to = LABELS.map(() => 10 + Math.floor(Math.random() * 90))
+  const start = performance.now()
+  cancelAnimationFrame(animId)
+
+  function tick() {
+    const t = Math.min((performance.now() - start) / ANIM_MS, 1)
+    const ease = 1 - (1 - t) * (1 - t)
+    for (let i = 0; i < from.length; i++)
+      data[i] = Math.round(from[i] + (to[i] - from[i]) * ease)
+    update()
+    if (t < 1) animId = requestAnimationFrame(tick)
+  }
+  animId = requestAnimationFrame(tick)
+}
+
+function BarChart() {
+  const W = 320, H = 180, PAD = 32, GAP = 8
+  const barW = (W - PAD * 2 - GAP * (LABELS.length - 1)) / LABELS.length
+  const chartH = H - PAD - 24
+
+  return svgSvg(
+    { viewBox: \`0 0 \${W} \${H}\`, width: "100%", height: "100%" },
+    list(
+      () => LABELS,
+      (label, i) => {
+        const x = PAD + i * (barW + GAP)
+        return gSvg(
+          rectSvg({
+            x: String(x),
+            y: () => { const m = Math.max(...data); return String(PAD + chartH - (data[i] / m) * chartH) },
+            width: String(barW),
+            height: () => { const m = Math.max(...data); return String((data[i] / m) * chartH) },
+            rx: "3", fill: COLORS[i], opacity: "0.85",
+          }),
+          textSvg(
+            { x: String(x + barW / 2), y: String(H - 4),
+              "text-anchor": "middle", fill: "#607970", "font-size": "9" },
+            label,
+          ),
+          textSvg(
+            { x: String(x + barW / 2),
+              y: () => { const m = Math.max(...data); return String(PAD + chartH - (data[i] / m) * chartH - 5) },
+              "text-anchor": "middle", fill: "#9db6ad", "font-size": "9" },
+            () => String(data[i]),
+          ),
+        )
+      },
+    ),
+  )
+}
+
+function points() {
+  const W = 320, H = 180, PAD = 32
+  const chartH = H - PAD - 24
+  const stepX = (W - PAD * 2) / (LABELS.length - 1)
+  const max = Math.max(...data)
+  return LABELS.map((label, i) => ({
+    label, value: data[i],
+    x: PAD + i * stepX,
+    y: PAD + chartH - (data[i] / max) * chartH,
+  }))
+}
+
+function LineChart() {
+  const W = 320, H = 180, PAD = 32
+  const chartH = H - PAD - 24
+
+  return svgSvg(
+    { viewBox: \`0 0 \${W} \${H}\`, width: "100%", height: "100%" },
+    pathSvg({
+      d: () => {
+        const pts = points()
+        return \`M\${pts[0].x},\${PAD + chartH} \` +
+          pts.map(p => \`L\${p.x},\${p.y}\`).join(" ") +
+          \` L\${pts[pts.length - 1].x},\${PAD + chartH} Z\`
+      },
+      fill: "#14b8a6", opacity: "0.1",
+    }),
+    polylineSvg({
+      points: () => points().map(p => \`\${p.x},\${p.y}\`).join(" "),
+      fill: "none", stroke: "#14b8a6", "stroke-width": "2.5",
+      "stroke-linejoin": "round", "stroke-linecap": "round",
+    }),
+    list(
+      () => points(),
+      (p) => gSvg(
+        circleSvg({
+          cx: String(p.x), cy: String(p.y), r: "4",
+          fill: "#101817", stroke: "#14b8a6", "stroke-width": "2",
+        }),
+        textSvg(
+          { x: String(p.x), y: String(H - 4),
+            "text-anchor": "middle", fill: "#607970", "font-size": "9" },
+          p.label,
+        ),
+        textSvg(
+          { x: String(p.x), y: String(p.y - 9),
+            "text-anchor": "middle", fill: "#9db6ad", "font-size": "9" },
+          String(p.value),
+        ),
+      ),
+    ),
+  )
+}
+
+function slices() {
+  const CX = 160, CY = 90, R = 70
+  const total = data.reduce((s, v) => s + v, 0)
+  let angle = -Math.PI / 2
+  return data.map((v, i) => {
+    const sweep = (v / total) * Math.PI * 2
+    const x1 = CX + R * Math.cos(angle)
+    const y1 = CY + R * Math.sin(angle)
+    const x2 = CX + R * Math.cos(angle + sweep)
+    const y2 = CY + R * Math.sin(angle + sweep)
+    const lg = sweep > Math.PI ? 1 : 0
+    const mid = angle + sweep / 2
+    const sl = {
+      d: \`M\${CX},\${CY} L\${x1},\${y1} A\${R},\${R} 0 \${lg},1 \${x2},\${y2} Z\`,
+      color: COLORS[i], value: v,
+      mx: CX + R * 0.65 * Math.cos(mid),
+      my: CY + R * 0.65 * Math.sin(mid),
+    }
+    angle += sweep
+    return sl
+  })
+}
+
+function PieChart() {
+  return svgSvg(
+    { viewBox: "0 0 320 180", width: "100%", height: "100%" },
+    list(
+      () => slices(),
+      (sl) => gSvg(
+        pathSvg({
+          d: sl.d, fill: sl.color, opacity: "0.85",
+          stroke: "#0b1211", "stroke-width": "1.5",
+        }),
+        textSvg(
+          { x: String(sl.mx), y: String(sl.my + 3),
+            "text-anchor": "middle", fill: "#fff",
+            "font-size": "8", "font-weight": "600" },
+          String(sl.value),
+        ),
+      ),
+    ),
+  )
+}
+
+export function Chart() {
+  return div(
+    { class: "ex-chart" },
+    div(
+      { class: "ex-chart-controls" },
+      label({ class: "ex-chart-label" }, "Chart Type"),
+      select(
+        { class: "ex-chart-select" },
+        option({ value: "bar", selected: true }, "Bar"),
+        option({ value: "line" }, "Line"),
+        option({ value: "pie" }, "Pie"),
+        on("change", (e) => {
+          chartType = (e.target as HTMLSelectElement).value as ChartType
+          update()
+        }),
+      ),
+      button(
+        { class: "ex-btn" },
+        "Randomize",
+        on("click", randomize),
+      ),
+    ),
+    div(
+      { class: "ex-chart-area" },
+      when(() => chartType === "bar",  BarChart()),
+      when(() => chartType === "line", LineChart()),
+      when(() => chartType === "pie",  PieChart()),
+    ),
+  )
+}`,
+  },
+
+  {
     id: "todo",
     title: "Todo List",
     desc: "Add, complete, and delete tasks. Filter by all / active / done. Classic todo with Nuclo state.",
