@@ -1,4 +1,6 @@
-import { css, colors, s } from "../styles.ts";
+import { css, colors, cx, s } from "../styles.ts";
+import { fx } from "../styles/effects.ts";
+import { animations } from "../styles/animations.ts";
 import { setRoute, getCurrentRoute } from "../router.ts";
 import { toggleTheme, isDark } from "../theme.ts";
 import { MoonIcon, SunIcon } from "./icons.ts";
@@ -42,11 +44,8 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   function NavLink(label: string, route: string) {
     return a(
       { href: route === "home" ? base : `${base}${route}` },
-      css({ display: "inline-flex", alignItems: "center", height: "34px", padding: "0 13px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: "600", color: colors.textDim, transition: "color 0.18s ease, background 0.18s ease", hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
-      { style: () => ({
-        color: isActive(route) ? "var(--c-text)" : undefined,
-        backgroundColor: isActive(route) ? "var(--c-primary-alpha-08)" : undefined,
-      }) },
+      navLinkStyle,
+      { class: () => cx(navLinkStyle, isActive(route) ? navLinkActiveStyle : null).className },
       label,
       on("click", (e) => {
         e.preventDefault();
@@ -60,13 +59,8 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   function MobileNavLink(label: string, route: string) {
     return a(
       { href: route === "home" ? base : `${base}${route}` },
-      css({ display: "flex", alignItems: "center", padding: "16px 24px", fontSize: "1rem", fontWeight: "500", color: colors.textDim, transition: "all 0.18s ease", borderBottom: `1px solid ${colors.border}`, hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
-      {
-        style: () => ({
-          color: isActive(route) ? "var(--c-text)" : undefined,
-          fontWeight: isActive(route) ? "600" : undefined,
-        }),
-      },
+      mobileNavLinkStyle,
+      { class: () => cx(mobileNavLinkStyle, isActive(route) ? mobileNavLinkActiveStyle : null).className },
       label,
       on("click", (e) => {
         e.preventDefault();
@@ -78,17 +72,25 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
 
   // ── Hamburger / X animated icon ───────────────────────────────────────────
   function MenuIcon() {
-    const lineBase = css({ display: "block", width: "20px", height: "2px", backgroundColor: colors.textDim, borderRadius: "2px", transition: "all 0.28s cubic-bezier(0.4,0,0.2,1)" });
     return div(
-      css({ display: "flex", flexDirection: "column", gap: "5px", alignItems: "center", justifyContent: "center", width: "20px", height: "20px" }),
-      div(lineBase, { style: () => menuOpen ? { transform: "translateY(7px) rotate(45deg)" } : { transform: "" } }),
-      div(lineBase, { style: () => menuOpen ? { opacity: "0", transform: "scaleX(0)" } : { opacity: "", transform: "" } }),
-      div(lineBase, { style: () => menuOpen ? { transform: "translateY(-7px) rotate(-45deg)" } : { transform: "" } }),
+      menuIconStyle,
+      div(menuLineStyle, { class: () => cx(menuLineStyle, menuOpen ? menuLineTopOpenStyle : null).className }),
+      div(menuLineStyle, { class: () => cx(menuLineStyle, menuOpen ? menuLineMiddleOpenStyle : null).className }),
+      div(menuLineStyle, { class: () => cx(menuLineStyle, menuOpen ? menuLineBottomOpenStyle : null).className }),
     );
   }
 
   // ── Styles ────────────────────────────────────────────────────────────────
-  const navStyle = css({ position: "fixed", top: "0", left: "0", right: "0", zIndex: 200, height: "80px", backgroundColor: colors.bgNav, borderBottom: `1px solid ${colors.border}`, boxShadow: "0 1px 0 rgba(255,255,255,0.02)", backdropFilter: "saturate(140%) blur(14px)", animation: "pageFadeIn 0.34s ease both", display: "flex", alignItems: "center" });
+  const navLinkStyle = css({ display: "inline-flex", alignItems: "center", height: "34px", padding: "0 13px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: "600", color: colors.textDim, transition: "color 0.18s ease, background 0.18s ease", hover: { color: colors.text, backgroundColor: colors.bgSecondary } });
+  const navLinkActiveStyle = css({ color: colors.text, backgroundColor: colors.primaryAlpha08 });
+  const mobileNavLinkStyle = css({ display: "flex", alignItems: "center", padding: "16px 24px", fontSize: "1rem", fontWeight: "500", color: colors.textDim, transition: "all 0.18s ease", borderBottom: `1px solid ${colors.border}`, hover: { color: colors.text, backgroundColor: colors.bgSecondary } });
+  const mobileNavLinkActiveStyle = css({ color: colors.text, fontWeight: "600" });
+  const menuIconStyle = css({ display: "flex", flexDirection: "column", gap: "5px", alignItems: "center", justifyContent: "center", width: "20px", height: "20px" });
+  const menuLineStyle = css({ display: "block", width: "20px", height: "2px", backgroundColor: colors.textDim, borderRadius: "2px", transition: "all 0.28s cubic-bezier(0.4,0,0.2,1)" });
+  const menuLineTopOpenStyle = css({ transform: "translateY(7px) rotate(45deg)" });
+  const menuLineMiddleOpenStyle = css({ opacity: "0", transform: "scaleX(0)" });
+  const menuLineBottomOpenStyle = css({ transform: "translateY(-7px) rotate(-45deg)" });
+  const navStyle = css({ position: "fixed", top: "0", left: "0", right: "0", zIndex: 200, height: "80px", backgroundColor: colors.bgNav, borderBottom: `1px solid ${colors.border}`, boxShadow: "0 1px 0 rgba(255,255,255,0.02)", backdropFilter: "saturate(140%) blur(14px)", animation: `${animations.pageFadeIn} 0.34s ease both`, display: "flex", alignItems: "center" });
 
   const navInnerStyle = css({ display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: "22px" });
 
@@ -111,9 +113,13 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
 
   // Mobile dropdown panel — hidden on medium+ via CSS
   const mobileMenuPanel = css({ position: "fixed", left: "0", right: "0", zIndex: 199, backgroundColor: "var(--c-mobile-menu-bg)", borderBottom: `1px solid ${colors.border}`, overflow: "hidden", transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease", medium: { display: "none" } });
+  const mobileMenuPanelOpen = css({ maxHeight: "480px", opacity: "1", pointerEvents: "auto" });
+  const mobileMenuPanelClosed = css({ maxHeight: "0", opacity: "0", pointerEvents: "none" });
 
   // Transparent backdrop to close menu on outside click
   const backdropStyle = css({ position: "fixed", top: "0", left: "0", right: "0", bottom: "0", zIndex: 198, backgroundColor: "rgba(0,0,0,0.35)", transition: "opacity 0.25s ease" });
+  const backdropOpenStyle = css({ opacity: "1", pointerEvents: "auto" });
+  const backdropClosedStyle = css({ opacity: "0", pointerEvents: "none" });
 
   return div(
     // ── Navbar ──────────────────────────────────────────────────────────────
@@ -121,7 +127,8 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
       navStyle,
       // Gradient hairline along the bottom edge
       div(
-        { className: "hairline", "aria-hidden": "true" },
+        fx.hairline,
+        { "aria-hidden": "true" },
         css({ position: "absolute", left: "0", right: "0", bottom: "-1px" }),
       ),
       div(
@@ -137,7 +144,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
             img({
               src: "/nuclo-logo.svg",
               alt: "Nuclo",
-              class: "brand-logo",
+              class: fx.brandLogo.className,
             },
             css({ height: "54px", width: "auto", display: "block" })
             ),
@@ -179,14 +186,8 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
     // ── Mobile dropdown menu ─────────────────────────────────────────────────
     div(
       mobileMenuPanel,
-      {
-        style: () => ({
-          top: "80px",
-          maxHeight: menuOpen ? "480px" : "0",
-          opacity: menuOpen ? "1" : "0",
-          pointerEvents: menuOpen ? "auto" : "none",
-        }),
-      },
+      css({ top: "80px" }),
+      { class: () => cx(mobileMenuPanel, menuOpen ? mobileMenuPanelOpen : mobileMenuPanelClosed).className },
       ...NAV_LINKS.map(({ label, route }) => MobileNavLink(label, route)),
       // GitHub in mobile menu
       a(
@@ -204,12 +205,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
     // ── Backdrop (click outside to close) ────────────────────────────────────
     div(
       backdropStyle,
-      {
-        style: () => ({
-          opacity: menuOpen ? "1" : "0",
-          pointerEvents: menuOpen ? "auto" : "none",
-        }),
-      },
+      { class: () => cx(backdropStyle, menuOpen ? backdropOpenStyle : backdropClosedStyle).className },
       on("click", closeMenu),
     ),
   );

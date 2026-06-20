@@ -294,8 +294,12 @@ const COLORS = [
 
 let chartType: ChartType = "bar"
 
-const ANIM_MS = 350
+const ANIM_MS = 420
 let animId = 0
+
+function chartValue(i: number) {
+  return Math.round(data[i])
+}
 
 function randomize() {
   const from = [...data]
@@ -303,11 +307,11 @@ function randomize() {
   const start = performance.now()
   cancelAnimationFrame(animId)
 
-  function tick() {
-    const t = Math.min((performance.now() - start) / ANIM_MS, 1)
-    const ease = 1 - (1 - t) * (1 - t)
+  function tick(now: number) {
+    const t = Math.min((now - start) / ANIM_MS, 1)
+    const ease = 1 - Math.pow(1 - t, 3)
     for (let i = 0; i < from.length; i++)
-      data[i] = Math.round(from[i] + (to[i] - from[i]) * ease)
+      data[i] = t === 1 ? to[i] : from[i] + (to[i] - from[i]) * ease
     update()
     if (t < 1) animId = requestAnimationFrame(tick)
   }
@@ -342,7 +346,7 @@ function BarChart() {
             { x: String(x + barW / 2),
               y: () => { const m = Math.max(...data); return String(PAD + chartH - (data[i] / m) * chartH - 5) },
               "text-anchor": "middle", fill: "#9db6ad", "font-size": "9" },
-            () => String(data[i]),
+            () => String(chartValue(i)),
           ),
         )
       },
@@ -384,7 +388,7 @@ function LineChart() {
     }),
     list(
       () => points(),
-      (p) => gSvg(
+      (p, i) => gSvg(
         circleSvg({
           cx: String(p.x), cy: String(p.y), r: "4",
           fill: "#101817", stroke: "#14b8a6", "stroke-width": "2",
@@ -397,7 +401,7 @@ function LineChart() {
         textSvg(
           { x: String(p.x), y: String(p.y - 9),
             "text-anchor": "middle", fill: "#9db6ad", "font-size": "9" },
-          String(p.value),
+          () => String(chartValue(i)),
         ),
       ),
     ),
@@ -432,7 +436,7 @@ function PieChart() {
     { viewBox: "0 0 320 180", width: "100%", height: "100%" },
     list(
       () => slices(),
-      (sl) => gSvg(
+      (sl, i) => gSvg(
         pathSvg({
           d: sl.d, fill: sl.color, opacity: "0.85",
           stroke: "#0b1211", "stroke-width": "1.5",
@@ -441,7 +445,7 @@ function PieChart() {
           { x: String(sl.mx), y: String(sl.my + 3),
             "text-anchor": "middle", fill: "#fff",
             "font-size": "8", "font-weight": "600" },
-          String(sl.value),
+          () => String(chartValue(i)),
         ),
       ),
     ),

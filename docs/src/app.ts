@@ -10,32 +10,27 @@
 import { Header } from './components/Header.ts';
 import { Footer } from './components/Footer.ts';
 import { loadPageFunction, preloadRoutes, type PageFunction } from './route-definitions.ts';
+import { css, colors } from './styles.ts';
+import { animations } from './styles/animations.ts';
 
 type PageSlot = { fn: PageFunction };
 
+const appStyles = {
+  root: css({ minHeight: '100vh' }),
+  main: css({ minHeight: 'calc(100vh - 160px)', paddingTop: '96px', animation: `${animations.pageFadeIn} 0.28s ease both` }),
+  centerState: css({ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '16px' }),
+  spinner: css({ width: '32px', height: '32px', border: `2px solid ${colors.border}`, borderTopColor: colors.primary, borderRadius: '50%', animation: `${animations.spin} 0.6s linear infinite` }),
+  loadingText: css({ fontSize: '13px', color: colors.textMuted }),
+  errorState: css({ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '12px', padding: '48px' }),
+  errorTitle: css({ fontSize: '15px', fontWeight: '600', color: '#ef4444' }),
+  errorMessage: css({ fontSize: '13px', color: colors.textMuted, fontFamily: 'monospace' }),
+};
+
 function Spinner() {
   return div(
-    {
-      style: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '400px',
-        gap: '16px',
-      },
-    },
-    div({
-      style: {
-        width: '32px',
-        height: '32px',
-        border: '2px solid var(--c-border)',
-        borderTopColor: 'var(--c-primary)',
-        borderRadius: '50%',
-        animation: 'spin 0.6s linear infinite',
-      },
-    }),
-    span({ style: { fontSize: '13px', color: 'var(--c-text-muted)' } }, 'Loading...'),
+    appStyles.centerState,
+    div(appStyles.spinner),
+    span(appStyles.loadingText, 'Loading...'),
   );
 }
 
@@ -61,32 +56,18 @@ export function createApp(
 
   function ErrorDisplay() {
     return div(
-      {
-        style: {
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '400px',
-          gap: '12px',
-          padding: '48px',
-        },
-      },
-      span({ style: { fontSize: '15px', fontWeight: '600', color: '#ef4444' } }, 'Failed to load page'),
-      span(
-        { style: { fontSize: '13px', color: 'var(--c-text-muted)', fontFamily: 'monospace' } },
-        () => loadError ?? '',
-      ),
+      appStyles.errorState,
+      span(appStyles.errorTitle, 'Failed to load page'),
+      span(appStyles.errorMessage, () => loadError ?? ''),
     );
   }
 
   const element = div(
+    appStyles.root,
     Header({ activeRoute: initialRoute }),
     main(
-      {
-        id: 'page-container',
-        style: { minHeight: 'calc(100vh - 160px)', paddingTop: '96px' },
-      },
+      { id: 'page-container' },
+      appStyles.main,
       when(() => isLoading, Spinner()),
       when(() => loadError !== null, ErrorDisplay()),
       list(() => pageSlot, (slot) => slot.fn()),

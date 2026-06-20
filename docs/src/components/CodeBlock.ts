@@ -116,6 +116,7 @@ export function CodeBlock({ filename, code, showCopy = true, preTokenized = fals
   const tokenized = preTokenized ? code : tokenize(code);
 
   const copyBtn = css({ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: "500", color: colors.textMuted, padding: "4px 10px", borderRadius: "5px", transition: "all 0.18s ease", border: `1px solid transparent`, backgroundColor: "transparent", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.primary, borderColor: colors.borderPrimary, backgroundColor: colors.primaryAlpha08 } });
+  const preStyle = css({ margin: "0", whiteSpace: "pre", minWidth: "max-content" });
 
   function handleCopy() {
     navigator.clipboard?.writeText(code).then(() => {
@@ -144,8 +145,8 @@ export function CodeBlock({ filename, code, showCopy = true, preTokenized = fals
     ] : []),
     div(
       s.codeBlockBody,
-      css({ color: colors.text }),
-      { innerHTML: () => `<pre style="margin:0;white-space:pre;min-width:max-content">${tokenized}</pre>` },
+      css({ color: colors.text, "& .kw": { color: "var(--c-tok-keyword)" }, "& .st": { color: "var(--c-tok-string)" }, "& .fn": { color: "var(--c-tok-fn)" }, "& .cm": { color: "var(--c-tok-comment)", fontStyle: "italic" }, "& .nm": { color: "var(--c-tok-number)" }, "& .ty": { color: "var(--c-tok-type)" }, "& .pt": { color: "var(--c-tok-punct)" }, "& .pr": { color: "var(--c-tok-prop)" } }),
+      { innerHTML: () => `<pre class="${preStyle.className}">${tokenized}</pre>` },
     ),
   );
 }
