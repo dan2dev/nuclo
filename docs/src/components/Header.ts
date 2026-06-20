@@ -90,7 +90,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   const menuLineTopOpenStyle = css({ transform: "translateY(7px) rotate(45deg)" });
   const menuLineMiddleOpenStyle = css({ opacity: "0", transform: "scaleX(0)" });
   const menuLineBottomOpenStyle = css({ transform: "translateY(-7px) rotate(-45deg)" });
-  const navStyle = css({ position: "fixed", top: "0", left: "0", right: "0", zIndex: 200, height: "80px", backgroundColor: colors.bgNav, borderBottom: `1px solid ${colors.border}`, boxShadow: "0 1px 0 rgba(255,255,255,0.02)", backdropFilter: "saturate(140%) blur(14px)", animation: `${animations.pageFadeIn} 0.34s ease both`, display: "flex", alignItems: "center" });
+  const navStyle = css({ position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "80px", backgroundColor: colors.bgNav, borderBottom: `1px solid ${colors.border}`, boxShadow: "0 1px 0 rgba(255,255,255,0.02)", backdropFilter: "saturate(140%) blur(14px)", animation: `${animations.pageFadeIn} 0.34s ease both`, display: "flex", alignItems: "center" });
 
   const navInnerStyle = css({ display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: "22px" });
 
@@ -112,12 +112,12 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
       hover: { color: colors.text, borderColor: colors.borderLight, backgroundColor: colors.bgSecondary } });
 
   // Mobile dropdown panel — hidden on medium+ via CSS
-  const mobileMenuPanel = css({ position: "fixed", left: "0", right: "0", zIndex: 199, backgroundColor: "var(--c-mobile-menu-bg)", borderBottom: `1px solid ${colors.border}`, overflow: "hidden", transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease", medium: { display: "none" } });
+  const mobileMenuPanel = css({ position: "fixed", top: "80px", left: "0", right: "0", zIndex: 210, backgroundColor: "var(--c-mobile-menu-bg)", borderBottom: `1px solid ${colors.border}`, overflow: "hidden", maxHeight: "0", transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease", medium: { display: "none" } });
   const mobileMenuPanelOpen = css({ maxHeight: "480px", opacity: "1", pointerEvents: "auto" });
   const mobileMenuPanelClosed = css({ maxHeight: "0", opacity: "0", pointerEvents: "none" });
 
   // Transparent backdrop to close menu on outside click
-  const backdropStyle = css({ position: "fixed", top: "0", left: "0", right: "0", bottom: "0", zIndex: 198, backgroundColor: "rgba(0,0,0,0.35)", transition: "opacity 0.25s ease" });
+  const backdropStyle = css({ position: "fixed", top: "80px", left: "0", right: "0", bottom: "0", zIndex: 205, backgroundColor: "rgba(0,0,0,0.35)", transition: "opacity 0.25s ease" });
   const backdropOpenStyle = css({ opacity: "1", pointerEvents: "auto" });
   const backdropClosedStyle = css({ opacity: "0", pointerEvents: "none" });
 
@@ -174,7 +174,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
             // Mobile hamburger (hidden on desktop)
             button(
               hamburgerBtn,
-              { title: "Toggle menu", "aria-label": "Toggle navigation menu" },
+              { title: "Toggle menu", "aria-label": "Toggle navigation menu", "aria-expanded": () => String(menuOpen) },
               MenuIcon(),
               on("click", toggleMenu),
             ),
@@ -186,7 +186,6 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
     // ── Mobile dropdown menu ─────────────────────────────────────────────────
     div(
       mobileMenuPanel,
-      css({ top: "80px" }),
       { class: () => cx(mobileMenuPanel, menuOpen ? mobileMenuPanelOpen : mobileMenuPanelClosed).className },
       ...NAV_LINKS.map(({ label, route }) => MobileNavLink(label, route)),
       // GitHub in mobile menu
