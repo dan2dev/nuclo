@@ -1,6 +1,32 @@
 import { css, colors } from "../../styles.ts";
+import { animations } from "../../styles/animations.ts";
 
 export const hs = {
+  heroWrap: css({ position: "relative", overflow: "hidden" }),
+  heroBg: css({ position: "absolute", inset: "0", pointerEvents: "none", "&::before": { content: "''", position: "absolute", top: "-240px", left: "-180px", width: "720px", height: "720px", borderRadius: "50%", backgroundImage: "radial-gradient(circle, var(--glow-a), transparent 62%)", animation: `${animations.orbDrift} 9s ease-in-out infinite` }, "&::after": { content: "''", position: "absolute", bottom: "-300px", right: "-160px", width: "700px", height: "700px", borderRadius: "50%", backgroundImage: "radial-gradient(circle, var(--glow-b), transparent 64%)", animation: `${animations.orbDrift} 11s ease-in-out 1.2s infinite` } }),
+  dotGrid: css({ position: "absolute", inset: "0", pointerEvents: "none", backgroundImage: "radial-gradient(var(--grid-dot) 1px, transparent 1.4px)", backgroundSize: "26px 26px", raw: { "-webkit-mask-image": "radial-gradient(ellipse 88% 72% at 64% 4%, rgba(0,0,0,0.55), transparent 72%)", "mask-image": "radial-gradient(ellipse 88% 72% at 64% 4%, rgba(0,0,0,0.55), transparent 72%)" } }),
+  heroOrbC: css({ position: "absolute", pointerEvents: "none", top: "30%", right: "24%", width: "360px", height: "360px", borderRadius: "50%", backgroundImage: "radial-gradient(circle, var(--glow-c), transparent 60%)", animation: `${animations.orbDrift} 13s ease-in-out 0.6s infinite` }),
+  paneHidden: css({ display: "none" }),
+  preWrap: css({ margin: "0", whiteSpace: "pre-wrap" }),
+  demoTabBtnActive: css({ color: colors.primary, borderBottom: `2px solid ${colors.primary}` }),
+  statItem: css({ paddingRight: "26px", marginRight: "26px", borderRight: `1px solid ${colors.border}`, "&:last-child": { paddingRight: "0", marginRight: "0", borderRight: "none" } }),
+  pipe: css({ display: "grid", gridTemplateColumns: "1fr", gap: "0", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 54px 1fr 54px 1fr", alignItems: "stretch" } }),
+  pipeNode: css({ position: "relative", backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "26px 26px 24px", transition: "transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease", hover: { transform: "translateY(-3px)", borderColor: colors.borderGlow, boxShadow: "0 18px 44px -16px rgba(0,0,0,0.35), 0 0 40px -18px var(--c-primary-glow)" } }),
+  pipeLink: css({ position: "relative", minHeight: "44px", "&::before": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "repeating-linear-gradient(180deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "linear-gradient(180deg, transparent, var(--c-primary), transparent)", backgroundSize: "100% 55%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRunY} 2.3s ease-in-out infinite` }, "@media (min-width: 901px)": { minHeight: "0", "&::before": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "repeating-linear-gradient(90deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "linear-gradient(90deg, transparent, var(--c-primary), transparent)", backgroundSize: "55% 100%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRun} 2.3s ease-in-out infinite` } } }),
+  pipeKicker: css({ display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: colors.primary, marginBottom: "14px" }),
+  pipeTitle: css({ fontSize: "1.02rem", fontWeight: "700", marginBottom: "8px" }),
+  pipeDesc: css({ fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65", marginBottom: "16px" }),
+  pipeCode: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", lineHeight: "1.6", backgroundColor: colors.bgCode, border: `1px solid ${colors.border}`, borderRadius: "8px", padding: "12px 14px", overflowX: "auto", whiteSpace: "pre" }),
+  cmpGrid: css({ display: "grid", gridTemplateColumns: "1fr", gap: "16px", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 1fr 1fr", gap: "18px" } }),
+  cmpCol: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "28px 26px", transition: "transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease", hover: { transform: "translateY(-3px)", borderColor: colors.borderLight } }),
+  cmpColFeatured: css({ borderColor: "transparent", backgroundImage: "linear-gradient(var(--c-bg-card), var(--c-bg-card)), linear-gradient(160deg, rgba(45,212,191,0.55), rgba(56,189,248,0.36))", raw: { "background-origin": "border-box", "background-clip": "padding-box, border-box" }, boxShadow: "0 26px 64px -28px var(--c-primary-glow)", hover: { boxShadow: "0 30px 72px -26px var(--c-primary-glow)" } }),
+  cmpHead: css({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "6px" }),
+  cmpName: css({ fontSize: "1.02rem", fontWeight: "700" }),
+  cmpSub: css({ fontSize: "0.8rem", color: colors.textMuted, marginBottom: "20px", fontFamily: "'JetBrains Mono', monospace" }),
+  cmpLi: css({ display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.6", padding: "7px 0", "& svg": { flexShrink: 0, marginTop: "4px" } }),
+  cmpLiGood: css({ color: colors.text, "& svg": { color: colors.primary } }),
+  cmpLiDim: css({ "& svg": { color: colors.textMuted } }),
+  ctaPanel: css({ position: "relative", overflow: "hidden", border: "1px solid transparent", borderRadius: "18px", backgroundImage: "linear-gradient(var(--c-bg-card), var(--c-bg-card)), linear-gradient(165deg, rgba(45,212,191,0.45), var(--c-border) 35%, var(--c-border) 65%, rgba(56,189,248,0.4))", raw: { "background-origin": "border-box", "background-clip": "padding-box, border-box" }, padding: "68px 24px", textAlign: "center", "&::before": { content: "''", position: "absolute", top: "-55%", left: "50%", width: "560px", height: "560px", transform: "translateX(-50%)", borderRadius: "50%", backgroundImage: "radial-gradient(circle, var(--glow-a), transparent 62%)", pointerEvents: "none" }, "& > *": { position: "relative" }, medium: { padding: "84px 48px" } }),
   heroSection: css({ padding: "52px 0 64px", borderBottom: `1px solid ${colors.border}`, large: { padding: "68px 0 96px" } }),
 
   heroInner: css({ position: "relative", display: "grid", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.94fr) minmax(420px, 1.06fr)", gap: "64px" } }),
@@ -39,7 +65,6 @@ export const hs = {
 
   demoTabBtn: css({ fontSize: "0.8rem", fontWeight: "500", color: colors.textMuted, padding: "10px 14px", borderBottom: "2px solid transparent", transition: "all 0.18s ease", cursor: "pointer", backgroundColor: "transparent", border: "none", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.textDim } }),
 
-  demoTabBtnActive: css({ color: colors.primary, hover: { color: colors.primary } }),
 
   demoPreviewPane: css({ padding: "36px 24px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "270px" }),
 

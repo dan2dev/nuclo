@@ -1,4 +1,5 @@
-import { css, colors, s } from "../../styles.ts";
+import { css, colors, cx, s } from "../../styles.ts";
+import { fx } from "../../styles/effects.ts";
 import { hs } from "./styles.ts";
 import {
   HERO_BADGE, HERO_TITLE_LINES, HERO_DESC, INSTALL_CMD, HERO_STATS,
@@ -17,7 +18,7 @@ import {
 import { setRoute } from "../../router.ts";
 
 function DemoDot(color: string) {
-  return div(hs.heroDot, { style: { backgroundColor: color } });
+  return div(hs.heroDot, css({ backgroundColor: color }));
 }
 
 /** Install command bar with shimmer sheen and a copy-to-clipboard button. */
@@ -34,13 +35,13 @@ function InstallCommand() {
 
   return div(
     s.installCmd,
-    { className: "shimmer" },
+    fx.shimmer,
     span(css({ color: colors.textMuted, fontFamily: "'JetBrains Mono', monospace" }), "$"),
     span(INSTALL_CMD),
     button(
       hs.heroCopyBtn,
       { title: "Copy to clipboard", "aria-label": "Copy install command" },
-      { style: () => ({ color: copied ? "var(--c-primary)" : "" }) },
+      { class: () => cx(hs.heroCopyBtn, copied ? css({ color: colors.primary }) : null).className },
       when(() => copied, CheckIcon({ size: 14 })).else(CopyIcon({ size: 14 })),
       on("click", handleCopy),
     ),
@@ -62,7 +63,7 @@ function HeroDemoCard() {
     return div(
       css({ textAlign: "center", width: "100%" }),
       div(
-        { className: "grad-text" },
+        fx.gradientText,
         css({ fontSize: "5.2rem", fontWeight: "700", lineHeight: "1", marginBottom: "6px", fontVariantNumeric: "tabular-nums" }),
         () => String(count),
       ),
@@ -100,7 +101,7 @@ function HeroDemoCard() {
   function Tab(label: string, tab: 'preview' | 'code') {
     return button(
       hs.demoTabBtn,
-      { style: () => ({ color: activeTab === tab ? "var(--c-primary)" : "", borderBottom: activeTab === tab ? "2px solid var(--c-primary)" : "" }) },
+      { class: () => cx(hs.demoTabBtn, activeTab === tab ? hs.demoTabBtnActive : null).className },
       label,
       on("click", () => { activeTab = tab; update(); }),
     );
@@ -108,7 +109,7 @@ function HeroDemoCard() {
 
   return div(
     hs.heroDemoArea,
-    { className: "gborder demo-elevated he he-7" },
+    fx.gradientBorder, fx.demoElevated, { className: "he he-7" },
     // Chrome bar
     div(
       hs.demoChrome,
@@ -116,7 +117,7 @@ function HeroDemoCard() {
       DemoDot("#febc2e"),
       DemoDot("#28c840"),
       div(hs.heroDemoFilename, "counter.ts"),
-      span(hs.liveTag, span({ className: "badge-dot" }), "live"),
+      span(hs.liveTag, span(fx.badgeDot), "live"),
     ),
     // Tabs
     div(
@@ -127,13 +128,13 @@ function HeroDemoCard() {
     // Panes
     div(
       hs.demoPreviewPane,
-      { style: () => ({ display: activeTab === "preview" ? "" : "none" }) },
+      { class: () => cx(hs.demoPreviewPane, activeTab === "preview" ? null : hs.paneHidden).className },
       CounterPreview(),
     ),
     div(
       hs.demoCodePane,
-      { style: () => ({ display: activeTab === "code" ? "" : "none" }) },
-      { innerHTML: `<pre style="margin:0;white-space:pre-wrap">${HERO_CODE}</pre>` },
+      { class: () => cx(hs.demoCodePane, activeTab === "code" ? null : hs.paneHidden).className },
+      { innerHTML: `<pre class="${hs.preWrap.className}">${HERO_CODE}</pre>` },
     ),
   );
 }
@@ -141,11 +142,11 @@ function HeroDemoCard() {
 export function HomeHeroSection() {
   return section(
     hs.heroSection,
-    { className: "hero-wrap" },
+    hs.heroWrap,
     // Ambient ornaments (decorative, behind content)
-    div({ className: "hero-bg", "aria-hidden": "true" }),
-    div({ className: "dot-grid", "aria-hidden": "true" }),
-    div({ className: "hero-orb-c", "aria-hidden": "true" }),
+    div(hs.heroBg, { "aria-hidden": "true" }),
+    div(hs.dotGrid, { "aria-hidden": "true" }),
+    div(hs.heroOrbC, { "aria-hidden": "true" }),
     div(
       s.container,
       div(
@@ -155,9 +156,9 @@ export function HomeHeroSection() {
           // Badge
           div(
             s.badge,
-            { className: "shimmer he he-1" },
+            fx.shimmer, { className: "he he-1" },
             css({ marginBottom: "22px" }),
-            span({ className: "badge-dot" }),
+            span(fx.badgeDot),
             HERO_BADGE,
           ),
           // Rule
@@ -179,7 +180,7 @@ export function HomeHeroSection() {
                 );
               }
               if (line === "Done.") {
-                return div(span({ className: "grad-text" }, line));
+                return div(span(fx.gradientText, line));
               }
               return div(line);
             }),
@@ -209,7 +210,7 @@ export function HomeHeroSection() {
             { className: "he he-6" },
             ...HERO_STATS.map(({ num, sup, label }) =>
               div(
-                { className: "stat-item" },
+                hs.statItem,
                 div(
                   hs.statNum,
                   num,
@@ -228,13 +229,14 @@ export function HomeHeroSection() {
 }
 
 export function PipelineSection() {
-  function PipeNode(step: typeof PIPELINE_STEPS[number], extraClass: string) {
+  function PipeNode(step: typeof PIPELINE_STEPS[number], revealClass: string) {
     return div(
-      { className: `pipe-node ${extraClass}` },
-      div({ className: "pipe-kicker" }, step.kicker),
-      div({ className: "pipe-title" }, step.title),
-      div({ className: "pipe-desc" }, step.desc),
-      div({ className: "pipe-code" }, { innerHTML: step.code }),
+      hs.pipeNode,
+      { className: `${hs.pipeNode.className} ${revealClass}` },
+      div(hs.pipeKicker, step.kicker),
+      div(hs.pipeTitle, step.title),
+      div(hs.pipeDesc, step.desc),
+      div(hs.pipeCode, { innerHTML: step.code }),
     );
   }
 
@@ -246,11 +248,11 @@ export function PipelineSection() {
       h2(s.sectionTitle, { className: "rv" }, "One explicit cycle."),
       p(s.sectionSub, { className: "rv" }, "No reactivity graph, no scheduler, no surprises. A single predictable path from your data to the screen."),
       div(
-        { className: "pipe" },
+        hs.pipe,
         PipeNode(PIPELINE_STEPS[0], "rv rv-d1"),
-        div({ className: "pipe-link rv rv-d1", "aria-hidden": "true" }),
+        div(hs.pipeLink, { className: "rv rv-d1", "aria-hidden": "true" }),
         PipeNode(PIPELINE_STEPS[1], "rv rv-d2"),
-        div({ className: "pipe-link rv rv-d2", "aria-hidden": "true" }),
+        div(hs.pipeLink, { className: "rv rv-d2", "aria-hidden": "true" }),
         PipeNode(PIPELINE_STEPS[2], "rv rv-d3"),
       ),
     ),
@@ -274,7 +276,7 @@ export function PhilosophySection() {
           ),
           blockquote(
             hs.philosophyQuote,
-            { style: { fontStyle: "normal" } },
+            css({ fontStyle: "normal" }),
             span(hs.philosophyMark, { "aria-hidden": "true" }, "“"),
             PHILOSOPHY_QUOTE,
           ),
@@ -340,19 +342,21 @@ export function ComparisonSection() {
       h2(s.sectionTitle, { className: "rv" }, COMPARISON_TITLE),
       p(s.sectionSub, { className: "rv" }, COMPARISON_SUB),
       div(
-        { className: "cmp-grid" },
+        hs.cmpGrid,
         ...COMPARISON_COLS.map((col, i) =>
           div(
-            { className: `cmp-col rv rv-d${i + 1}${col.featured ? " featured" : ""}` },
+            hs.cmpCol,
+            { className: `${cx(hs.cmpCol, col.featured ? hs.cmpColFeatured : null).className} rv rv-d${i + 1}` },
             div(
-              { className: "cmp-head" },
-              div({ className: "cmp-name" }, col.name),
-              col.featured ? span(hs.cmpBadge, span({ className: "badge-dot" }), "the nuclo way") : null,
+              hs.cmpHead,
+              div(hs.cmpName, col.name),
+              col.featured ? span(hs.cmpBadge, span(fx.badgeDot), "the nuclo way") : null,
             ),
-            div({ className: "cmp-sub" }, col.sub),
+            div(hs.cmpSub, col.sub),
             ...col.items.map((item) =>
               div(
-                { className: `cmp-li ${item.good ? "good" : "dim"}` },
+                hs.cmpLi,
+                item.good ? hs.cmpLiGood : hs.cmpLiDim,
                 item.good ? CheckIcon({ size: 13 }) : MinusIcon({ size: 13 }),
                 span(item.text),
               )
@@ -416,7 +420,7 @@ export function ExamplesTeaserSection() {
     function Tab(label: string, tab: 'preview' | 'code') {
       return button(
         hs.demoTabBtn,
-        { style: () => ({ color: activeTab === tab ? "var(--c-primary)" : "", borderBottom: activeTab === tab ? "2px solid var(--c-primary)" : "" }) },
+        { class: () => cx(hs.demoTabBtn, activeTab === tab ? hs.demoTabBtnActive : null).className },
         label,
         on("click", () => { activeTab = tab; update(); }),
       );
@@ -437,13 +441,13 @@ export function ExamplesTeaserSection() {
       ),
       div(
         hs.teaserDemoPane,
-        { style: () => ({ display: activeTab === "preview" ? "" : "none" }) },
+        { class: () => cx(hs.teaserDemoPane, activeTab === "preview" ? null : hs.paneHidden).className },
         PreviewFn(),
       ),
       div(
         hs.teaserCodePane,
-        { style: () => ({ display: activeTab === "code" ? "" : "none" }) },
-        { innerHTML: `<pre style="margin:0;white-space:pre-wrap">${code}</pre>` },
+        { class: () => cx(hs.teaserCodePane, activeTab === "code" ? null : hs.paneHidden).className },
+        { innerHTML: `<pre class="${hs.preWrap.className}">${code}</pre>` },
       ),
     );
   }
@@ -452,7 +456,7 @@ export function ExamplesTeaserSection() {
     let n = 0;
     return div(
       css({ textAlign: "center" }),
-      div({ className: "grad-text" }, css({ fontSize: "3rem", fontWeight: "700", lineHeight: "1", marginBottom: "12px", fontVariantNumeric: "tabular-nums" }), () => String(n)),
+      div(fx.gradientText, css({ fontSize: "3rem", fontWeight: "700", lineHeight: "1", marginBottom: "12px", fontVariantNumeric: "tabular-nums" }), () => String(n)),
       div(
         css({ display: "flex", gap: "8px", justifyContent: "center" }),
         button(
@@ -490,11 +494,10 @@ export function ExamplesTeaserSection() {
       div(
         css({ display: "flex", gap: "8px", marginBottom: "10px" }),
         input(
+          css({ flex: "1", padding: "9px 13px", borderRadius: "6px", border: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgSecondary, color: colors.text, fontFamily: "'Space Grotesk', system-ui, sans-serif", fontSize: "0.875rem", outline: "none", marginBottom: "10px", width: "100%", focus: { borderColor: colors.primary } }),
           {
             type: "text",
             placeholder: "Add a task…",
-            class: "ex-input",
-            style: { marginBottom: "10px", width: "100%" },
           },
           on("input", (e) => { inputValue = (e.target as HTMLInputElement).value; }),
           on("keydown", (e) => { if ((e as KeyboardEvent).key === "Enter") addTodo(); }),
@@ -512,12 +515,8 @@ export function ExamplesTeaserSection() {
           css({ display: "flex", alignItems: "center", gap: "8px", padding: "7px 10px", borderRadius: "5px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary, marginBottom: "5px", fontSize: "0.85rem" }),
           input({ type: "checkbox" }, { checked: () => t.done }, on("change", () => { t.done = !t.done; update(); })),
           span(
-            {
-              style: () => ({
-                textDecoration: t.done ? "line-through" : "",
-                opacity: t.done ? "0.5" : "",
-              }),
-            },
+            css({ transition: "opacity 0.18s ease" }),
+            { class: () => t.done ? css({ textDecoration: "line-through", opacity: "0.5" }).className : "" },
             t.text,
           ),
         ),
@@ -559,7 +558,7 @@ export function CTASection() {
     div(
       s.container,
       div(
-        { className: "cta-panel rv" },
+        hs.ctaPanel, { className: "rv" },
         div(s.sectionLabel, css({ justifyContent: "center", display: "flex" }), "Get Started"),
         h2(
           css({ fontSize: "2.1rem", fontWeight: "700", letterSpacing: "-0.01em", lineHeight: "1.2", marginBottom: "18px", medium: { fontSize: "2.7rem" } }),

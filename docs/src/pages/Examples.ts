@@ -1,14 +1,16 @@
-import { css, colors, s } from "../styles.ts";
+import { css, cx, s } from "../styles.ts";
 import { EXAMPLES } from "../content/examples.ts";
 import { CodeBlock } from "../components/CodeBlock.ts";
+import { cardDelay, es, statusDotStyle } from "./examples/styles.ts";
 
 function ExampleCard(ex: typeof EXAMPLES[number], index: number) {
   let activeTab: "preview" | "code" = "preview";
 
   function Tab(label: string, tab: "preview" | "code") {
     return button(
+      es.tab,
       {
-        class: () => `etab${activeTab === tab ? " on" : ""}`,
+        class: () => cx(es.tab, activeTab === tab ? es.tabActive : null).className,
       },
       label,
       on("click", () => { activeTab = tab; update(); }),
@@ -16,33 +18,36 @@ function ExampleCard(ex: typeof EXAMPLES[number], index: number) {
   }
 
   return div(
-    { class: "ecard" },
+    es.card,
+    cardDelay(index),
     div(
-      { class: "ecard-top" },
+      es.cardTop,
       div(
-        { class: "ecard-meta-row" },
-        div({ class: "ecard-badge" }, "● Live"),
-        div({ class: "ecard-number" }, String(index + 1).padStart(2, "0")),
+        es.cardMetaRow,
+        div(es.cardBadge, "● Live"),
+        div(es.cardNumber, String(index + 1).padStart(2, "0")),
       ),
-      div({ class: "ecard-title" }, ex.title),
-      div({ class: "ecard-desc" }, ex.desc),
+      div(es.cardTitle, ex.title),
+      div(es.cardDesc, ex.desc),
     ),
     div(
-      { class: "etabs" },
+      es.tabs,
       Tab("Preview", "preview"),
       Tab("Code", "code"),
     ),
     // Preview pane
     div(
-      { class: () => `epane epane-preview${activeTab === "preview" ? " on" : ""}` },
+      es.pane,
+      { class: () => cx(es.pane, activeTab === "preview" ? es.paneActive : null).className },
       div(
-        { class: "epreview" },
+        es.previewPane,
         buildPreview(ex.id),
       ),
     ),
     // Code pane
     div(
-      { class: () => `epane epane-code${activeTab === "code" ? " on" : ""}` },
+      es.pane,
+      { class: () => cx(es.pane, activeTab === "code" ? es.codePaneActive : null).className },
       CodeBlock({ filename: `${ex.title.replace(/\s+/g, "")}.ts`, code: ex.code }),
     ),
   );
@@ -64,23 +69,24 @@ function buildPreview(id: string) {
 function CounterDemo() {
   let count = 0;
   return div(
-    { class: "ex-counter" },
-    div({ class: "ex-count-val" }, () => String(count)),
-    div({ class: "ex-count-label" }, "COUNT"),
+    es.counter,
+    div(es.countValue, () => String(count)),
+    div(es.countLabel, "COUNT"),
     div(
-      { class: "ex-btns" },
+      es.buttonRow,
       button(
-        { class: "ex-btn" },
+        es.button,
         "−",
         on("click", () => { count--; update(); }),
       ),
       button(
-        { class: "ex-btn primary" },
+        es.button,
+        es.buttonPrimary,
         "Reset",
         on("click", () => { count = 0; update(); }),
       ),
       button(
-        { class: "ex-btn" },
+        es.button,
         "+",
         on("click", () => { count++; update(); }),
       ),
@@ -97,7 +103,8 @@ function TodoDemo() {
   let domInput: HTMLInputElement | null = null;
 
   const inputEl = input(
-    { type: "text", placeholder: "Add a task…", class: "ex-input" } as any,
+    es.input,
+    { type: "text", placeholder: "Add a task…" } as any,
     on("input", (e) => { inputValue = (e.target as HTMLInputElement).value; }),
     on("keydown", (e) => { if ((e as KeyboardEvent).key === "Enter") addTodo(); }),
     ((el: any) => { domInput = el; }) as any,
@@ -120,43 +127,45 @@ function TodoDemo() {
 
   function FilterBtn(label: string, f: "all" | "active" | "done") {
     return button(
-      { class: () => `ex-filter${filter === f ? " active" : ""}` },
+      es.filter,
+      { class: () => cx(es.filter, filter === f ? es.filterActive : null).className },
       label,
       on("click", () => { filter = f; update(); }),
     );
   }
 
   return div(
-    { class: "ex-todo" },
+    es.todo,
     div(
-      { class: "ex-row" },
+      es.row,
       inputEl,
       button(
-        { class: "ex-btn primary" },
+        es.button,
+        es.buttonPrimary,
         "Add",
         on("click", addTodo),
       ),
     ),
     div(
-      { class: "ex-filters" },
+      es.filters,
       FilterBtn("All", "all"),
       FilterBtn("Active", "active"),
       FilterBtn("Done", "done"),
     ),
     div(
-      { class: "ex-list" },
+      es.list,
       list(
         () => visible(),
         (t) => div(
-          { class: () => `ex-item${t.done ? " done" : ""}` },
+          es.item,
           input(
             { type: "checkbox" },
             { checked: () => t.done },
             on("change", () => { t.done = !t.done; update(); }),
           ),
-          span({ class: "ex-item-text" }, t.text),
+          span(es.itemText, { class: () => cx(es.itemText, t.done ? es.itemDoneText : null).className }, t.text),
           button(
-            { class: "ex-item-del" },
+            es.itemDelete,
             "×",
             on("click", () => {
               todos = todos.filter(x => x.id !== t.id);
@@ -167,11 +176,11 @@ function TodoDemo() {
       ),
       when(
         () => visible().length === 0,
-        div({ class: "ex-empty" }, "No tasks yet."),
+        div(es.empty, "No tasks yet."),
       ),
     ),
     div(
-      { class: "ex-count-summary" },
+      es.countSummary,
       () => {
         const remaining = todos.filter(t => !t.done).length;
         return `${remaining} of ${todos.length} remaining`;
@@ -201,12 +210,13 @@ function SearchDemo() {
   }
 
   return div(
-    { class: "ex-search" },
+    es.search,
     input(
+      es.input,
+      es.searchInput,
       {
         type: "text",
         placeholder: "Search users…",
-        class: "ex-input ex-search-input",
       },
       on("input", (e) => {
         query = (e.target as HTMLInputElement).value;
@@ -217,17 +227,17 @@ function SearchDemo() {
       list(
         () => results(),
         (u) => div(
-          { class: "ex-user-card" },
-          div({ class: "ex-avatar" }, u.initials),
+          es.userCard,
+          div(es.avatar, u.initials),
           div(
-            div({ class: "ex-user-name" }, u.name),
-            div({ class: "ex-user-email" }, u.email),
+            div(es.userName, u.name),
+            div(es.userEmail, u.email),
           ),
         ),
       ),
       when(
         () => results().length === 0,
-        div({ class: "ex-no-results" }, "No users found."),
+        div(es.noResults, "No users found."),
       ),
     ),
   );
@@ -258,10 +268,10 @@ function AsyncDemo() {
   }
 
   return div(
-    { class: "ex-async" },
+    es.asyncRoot,
     div(
-      { class: "ex-status-bar" },
-      div({ class: () => `ex-status-dot ${status}` }),
+      es.statusBar,
+      div(es.statusDot, { class: () => cx(es.statusDot, statusDotStyle(status)).className }),
       span(() => {
         if (status === "idle")    return "Ready to fetch";
         if (status === "loading") return "Fetching…";
@@ -270,8 +280,10 @@ function AsyncDemo() {
       }),
     ),
     button(
+      es.button,
+      es.buttonPrimary,
       {
-        class: () => `ex-btn primary${status === "loading" ? " disabled" : ""}`,
+        class: () => cx(es.button, es.buttonPrimary, status === "loading" ? es.buttonDisabled : null).className,
         disabled: () => status === "loading",
       },
       () => status === "loading" ? "Loading…" : "Fetch Data",
@@ -284,9 +296,9 @@ function AsyncDemo() {
         list(
           () => products,
           (p) => div(
-            { class: "ex-product-card" },
-            div({ class: "ex-product-title" }, p.title),
-            div({ class: "ex-product-cat" }, p.category),
+            es.productCard,
+            div(es.productTitle, p.title),
+            div(es.productCat, p.category),
           ),
         ),
       ),
@@ -294,7 +306,7 @@ function AsyncDemo() {
     when(
       () => status === "error",
       div(
-        { class: "ex-error-msg" },
+        es.errorMsg,
         css({ marginTop: "12px" }),
         () => `Error: ${errMsg}`,
       ),
@@ -351,8 +363,8 @@ function StyleDemo() {
   }
 
   return div(
-    { class: "ex-style-demo" },
-    p({ class: "ex-style-hint" },
+    es.styleDemo,
+    p(es.styleHint,
       "Click tags to toggle them. Active tags use the ",
       code("primary"),
       " color token — ",
@@ -360,7 +372,7 @@ function StyleDemo() {
       " resolves conflicts per property.",
     ),
     div(
-      { class: "ex-style-chips" },
+      es.styleChips,
       ...TAGS.map(tag =>
         button(
           { class: () => demoCX(demoChip, selected.has(tag) ? demoChipActive : demoChipDefault).className },
@@ -369,7 +381,7 @@ function StyleDemo() {
         ),
       ),
     ),
-    p({ class: "ex-style-result" },
+    p(es.styleResult,
       () => selected.size > 0
         ? `Selected: ${[...selected].join(", ")}`
         : "Nothing selected yet.",
@@ -378,31 +390,6 @@ function StyleDemo() {
 }
 
 // ── Chart demo ───────────────────────────────────────────────────────────────
-const chartStyles = {
-  root: css({ w: "100%", maxW: "380px" }),
-  controls: css({ display: "flex", items: "center", gap: "10px", mb: "14px" }),
-  label: css({ text: "0.82rem", weight: "600", color: colors.textDim }),
-  select: css({
-    flex: "1", p: "8px 12px", rounded: "6px",
-    border: `1px solid ${colors.borderLight}`,
-    bg: colors.bgSecondary, color: colors.text,
-    fontFamily: "'Space Grotesk', system-ui, sans-serif", text: "0.85rem",
-    outline: "none", cursor: "pointer", transition: "border-color 0.18s ease",
-    raw: { appearance: "none" },
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23607970'/%3E%3C/svg%3E")`,
-    backgroundRepeat: "no-repeat",
-    backgroundPosition: "right 12px center",
-    pr: "30px",
-    focus: { borderColor: colors.primary },
-  }),
-  area: css({
-    bg: colors.bgSecondary, border: `1px solid ${colors.border}`,
-    rounded: "8px", p: "20px 16px", minH: "200px",
-    display: "flex", items: "center", justify: "center",
-  }),
-  svg: css({ display: "block", maxW: "100%" }),
-};
-
 const CHART_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 let chartData = [42, 78, 55, 91, 64, 83, 37];
 
@@ -411,8 +398,24 @@ const CHART_COLORS = [
   "#fb7185", "#a78bfa", "#34d399", "#f97316",
 ];
 
-const ANIM_MS = 350;
+const ANIM_MS = 420;
 let animId = 0;
+let chartFrame = 0;
+
+type PieSlice = {
+  d: string;
+  color: string;
+  value: number;
+  midX: number;
+  midY: number;
+};
+
+let cachedPieFrame = -1;
+let cachedPieSlices: PieSlice[] = [];
+
+function chartValue(i: number) {
+  return Math.round(chartData[i]);
+}
 
 function randomizeChartData() {
   const from = [...chartData];
@@ -420,12 +423,13 @@ function randomizeChartData() {
   const start = performance.now();
   cancelAnimationFrame(animId);
 
-  function tick() {
-    const t = Math.min((performance.now() - start) / ANIM_MS, 1);
-    const ease = 1 - (1 - t) * (1 - t);
+  function tick(now: number) {
+    const t = Math.min((now - start) / ANIM_MS, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
     for (let i = 0; i < from.length; i++) {
-      chartData[i] = Math.round(from[i] + (to[i] - from[i]) * ease);
+      chartData[i] = t === 1 ? to[i] : from[i] + (to[i] - from[i]) * ease;
     }
+    chartFrame++;
     update();
     if (t < 1) animId = requestAnimationFrame(tick);
   }
@@ -438,7 +442,7 @@ function BarChart() {
   const chartH = H - PAD - 24;
 
   return svgSvg(
-    { viewBox: `0 0 ${W} ${H}`, width: "100%", height: "100%", class: chartStyles.svg.className },
+    { viewBox: `0 0 ${W} ${H}`, width: "100%", height: "100%", class: es.chartSvg.className },
     list(
       () => CHART_LABELS,
       (label, i) => {
@@ -450,7 +454,7 @@ function BarChart() {
             width: String(barW),
             height: () => { const max = Math.max(...chartData); return String((chartData[i] / max) * chartH); },
             rx: "3", fill: CHART_COLORS[i], opacity: "0.85",
-          }),
+          }, es.chartAnimatedShape),
           textSvg(
             {
               x: String(x + barW / 2), y: String(H - 4),
@@ -468,7 +472,7 @@ function BarChart() {
               fill: "var(--c-text-dim)", "font-size": "9",
               "font-family": "'JetBrains Mono', monospace",
             },
-            () => String(chartData[i]),
+            () => String(chartValue(i)),
           ),
         );
       },
@@ -489,12 +493,23 @@ function chartPoints() {
   }));
 }
 
+function chartPoint(index: number) {
+  const W = 320, H = 180, PAD = 32;
+  const chartH = H - PAD - 24;
+  const stepX = (W - PAD * 2) / (CHART_LABELS.length - 1);
+  const max = Math.max(...chartData);
+  return {
+    x: PAD + index * stepX,
+    y: PAD + chartH - (chartData[index] / max) * chartH,
+  };
+}
+
 function LineChart() {
   const W = 320, H = 180, PAD = 32;
   const chartH = H - PAD - 24;
 
   return svgSvg(
-    { viewBox: `0 0 ${W} ${H}`, width: "100%", height: "100%", class: chartStyles.svg.className },
+    { viewBox: `0 0 ${W} ${H}`, width: "100%", height: "100%", class: es.chartSvg.className },
     pathSvg({
       d: () => {
         const pts = chartPoints();
@@ -507,31 +522,31 @@ function LineChart() {
       fill: "none",
       stroke: "var(--c-primary)", "stroke-width": "2.5",
       "stroke-linejoin": "round", "stroke-linecap": "round",
-    }),
+    }, es.chartAnimatedShape),
     list(
-      () => chartPoints(),
-      (p) => gSvg(
+      () => CHART_LABELS,
+      (label, i) => gSvg(
         circleSvg({
-          cx: String(p.x), cy: String(p.y), r: "4",
+          cx: () => String(chartPoint(i).x), cy: () => String(chartPoint(i).y), r: "4",
           fill: "var(--c-bg-card)", stroke: "var(--c-primary)", "stroke-width": "2",
-        }),
+        }, es.chartAnimatedShape),
         textSvg(
           {
-            x: String(p.x), y: String(H - 4),
+            x: () => String(chartPoint(i).x), y: String(H - 4),
             "text-anchor": "middle",
             fill: "var(--c-text-muted)", "font-size": "9",
             "font-family": "'Space Grotesk', sans-serif",
           },
-          p.label,
+          label,
         ),
         textSvg(
           {
-            x: String(p.x), y: String(p.y - 9),
+            x: () => String(chartPoint(i).x), y: () => String(chartPoint(i).y - 9),
             "text-anchor": "middle",
             fill: "var(--c-text-dim)", "font-size": "9",
             "font-family": "'JetBrains Mono', monospace",
           },
-          String(p.value),
+          () => String(chartValue(i)),
         ),
       ),
     ),
@@ -539,10 +554,12 @@ function LineChart() {
 }
 
 function pieSlices() {
+  if (cachedPieFrame === chartFrame) return cachedPieSlices;
+
   const CX = 160, CY = 90, R = 70;
   const total = chartData.reduce((s, v) => s + v, 0);
   let angle = -Math.PI / 2;
-  return chartData.map((v, i) => {
+  cachedPieSlices = chartData.map((v, i) => {
     const sweep = (v / total) * Math.PI * 2;
     const x1 = CX + R * Math.cos(angle);
     const y1 = CY + R * Math.sin(angle);
@@ -560,27 +577,29 @@ function pieSlices() {
     angle += sweep;
     return sl;
   });
+  cachedPieFrame = chartFrame;
+  return cachedPieSlices;
 }
 
 function PieChart() {
   return svgSvg(
-    { viewBox: "0 0 320 180", width: "100%", height: "100%", class: chartStyles.svg.className },
+    { viewBox: "0 0 320 180", width: "100%", height: "100%", class: es.chartSvg.className },
     list(
-      () => pieSlices(),
-      (sl) => gSvg(
+      () => CHART_LABELS,
+      (_label, i) => gSvg(
         pathSvg({
-          d: sl.d,
-          fill: sl.color, opacity: "0.85",
+          d: () => pieSlices()[i].d,
+          fill: CHART_COLORS[i], opacity: "0.85",
           stroke: "var(--c-bg-code)", "stroke-width": "1.5",
-        }),
+        }, es.chartAnimatedShape),
         textSvg(
           {
-            x: String(sl.midX), y: String(sl.midY + 3),
+            x: () => String(pieSlices()[i].midX), y: () => String(pieSlices()[i].midY + 3),
             "text-anchor": "middle",
             fill: "#fff", "font-size": "8", "font-weight": "600",
             "font-family": "'JetBrains Mono', monospace",
           },
-          String(sl.value),
+          () => String(chartValue(i)),
         ),
       ),
     ),
@@ -592,12 +611,12 @@ function ChartDemo() {
   let chartType: ChartType = "bar";
 
   return div(
-    chartStyles.root,
+    es.chartRoot,
     div(
-      chartStyles.controls,
-      label(chartStyles.label, "Chart Type"),
+      es.chartControls,
+      label(es.chartLabel, "Chart Type"),
       select(
-        chartStyles.select,
+        es.chartSelect,
         option({ value: "bar" }, "Bar"),
         option({ value: "line" }, "Line"),
         option({ value: "pie" }, "Pie"),
@@ -607,13 +626,13 @@ function ChartDemo() {
         }),
       ),
       button(
-        { class: "ex-btn" },
+        es.button,
         "Randomize",
         on("click", randomizeChartData),
       ),
     ),
     div(
-      chartStyles.area,
+      es.chartArea,
       when(() => chartType === "bar", BarChart()),
       when(() => chartType === "line", LineChart()),
       when(() => chartType === "pie", PieChart()),
@@ -624,21 +643,21 @@ function ChartDemo() {
 // ── Examples page ─────────────────────────────────────────────────────────────
 export function ExamplesPage() {
   const pageHeader = div(
-    { class: "examples-hero" },
+    es.hero,
     div(
       s.container,
       div(
-        { class: "examples-hero-inner" },
+        es.heroInner,
         div(
-          div({ class: "examples-kicker" }, "Examples"),
-          h1("Practical examples. Live demos."),
+          div(es.kicker, "Examples"),
+          h1(es.title, "Practical examples. Live demos."),
           p(
-            { class: "examples-lead" },
+            es.lead,
             "Explore Nuclo patterns with interactive previews and the source code beside each behavior.",
           ),
         ),
         div(
-          { class: "examples-facts" },
+          es.facts,
         ),
       ),
     ),
@@ -650,7 +669,7 @@ export function ExamplesPage() {
     div(
       s.container,
       div(
-        { class: "examples-grid" },
+        es.grid,
         ...EXAMPLES.map((ex, index) => ExampleCard(ex, index)),
       ),
     ),

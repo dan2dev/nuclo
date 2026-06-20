@@ -1,5 +1,5 @@
 import 'nuclo';
-import { injectGlobalStyles } from './styles.ts';
+import { registerGlobalStyles } from './styles.ts';
 import { initTheme } from './theme.ts';
 import { initRouter } from './router.ts';
 import { createApp } from './app.ts';
@@ -9,16 +9,8 @@ import { scanReveals } from './reveal.ts';
 // Theme before styles so CSS vars are set on first paint.
 initTheme();
 
-// Idempotent — skips if the server already injected #nuclo-global.
-injectGlobalStyles();
-
-// Spin keyframes for the loading spinner (client-only side effect).
-if (!document.getElementById('nuclo-spin-keyframes')) {
-  const style = document.createElement('style');
-  style.id = 'nuclo-spin-keyframes';
-  style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-  document.head.appendChild(style);
-}
+// Register Nuclo globalStyle() rules on the client for SPA-only fallback pages.
+registerGlobalStyles();
 
 const base = import.meta.env.BASE_URL || '/';
 const rawPath = window.location.pathname

@@ -5,10 +5,12 @@ import { dirname, resolve } from 'node:path';
 import { ssrMatchRoute } from './ssr-app.ts';
 import { routeMap, routeDefinitions } from './route-definitions.ts';
 import { SEO_BASE_URL, generateStructuredData, getMetaForRoute } from './seo.ts';
-import { globalCss } from './styles.ts';
+import { registerGlobalStyles } from './styles.ts';
 
 const isProd = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT ?? 5173);
+
+registerGlobalStyles();
 
 // Warm up: eagerly import all page modules so their module-level css() calls
 // populate the style registry before the first request is served. After this
@@ -30,9 +32,9 @@ const htmlTemplate = `<!doctype html>
     <!-- Font preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- JetBrains Mono — non-blocking; display=optional prevents CLS -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=optional" onload="this.rel='stylesheet'" />
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=optional" /></noscript>
+    <!-- Site fonts — non-blocking; display=optional prevents CLS -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=optional" onload="this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=optional" /></noscript>
 
     {{seoHead}}
 
@@ -43,9 +45,7 @@ const htmlTemplate = `<!doctype html>
     <meta name="apple-mobile-web-app-title" content="Nuclo" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
 
-    <!-- Global styles injected server-side -->
-    <style id="nuclo-global">{{styles}}</style>
-    <!-- css() atomic styles — prevents layout shift before JS hydrates -->
+    <!-- Nuclo style system output — prevents layout shift before JS hydrates -->
     <style id="nuclo-styles">{{nucloStyles}}</style>
 
     <script type="module" src="/src/main.ts"></script>
@@ -149,7 +149,6 @@ async function appFetch(
   const html = (await transformHtml(htmlTemplate, known ? pathname : '/'))
     .replace('{{seoHead}}', seoHead)
     .replace('{{html}}', ssrHtml)
-    .replace('{{styles}}', globalCss)
     .replace('{{nucloStyles}}', nucloStyles);
 
   const responseHeaders: Record<string, string> = {

@@ -1,4 +1,5 @@
 import { css, colors, s } from "../styles.ts";
+import { fx } from "../styles/effects.ts";
 import { setRoute } from "../router.ts";
 import { GitHubSvg } from "./icons.ts";
 
@@ -44,7 +45,8 @@ export function Footer() {
     footerStyle,
     // Gradient hairline along the top edge
     div(
-      { className: "hairline", "aria-hidden": "true" },
+      fx.hairline,
+      { "aria-hidden": "true" },
       css({ position: "absolute", left: "0", right: "0", top: "0" }),
     ),
     div(
@@ -55,13 +57,14 @@ export function Footer() {
         div(
           brandGroup,
           img(
-            { src: "/nuclo-logo.svg", alt: "Nuclo", class: "brand-logo" },
+            fx.brandLogo,
+            { src: "/nuclo-logo.svg", alt: "Nuclo" },
             css({ height: "40px", width: "auto" }),
           ),
           span(tagline, "The explicit UI runtime. Plain functions, mutable state, and one call — update() — between your data and the DOM."),
           span(
             builtWith,
-            span({ className: "badge-dot" }),
+            span(fx.badgeDot),
             "this site is built with nuclo",
           ),
         ),

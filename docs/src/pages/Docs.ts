@@ -1,4 +1,6 @@
+import { css, cx } from "../styles.ts";
 import { DOC_GROUPS, DOC_SECTIONS, SECTION_MAP } from "./docs/content.ts";
+import { ds, sectionDelay } from "./docs/styles.ts";
 
 const DOC_FACTS = [
   { label: "Current release", value: "v0.2.3" },
@@ -31,13 +33,14 @@ export function DocsPage() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function SectionLink(id: string, className: string) {
+  function SectionLink(id: string, baseStyle: ReturnType<typeof css>, activeStyle: ReturnType<typeof css>) {
     const sec = SECTION_MAP.get(id);
     if (!sec) return span();
 
     return a(
+      baseStyle,
       {
-        class: () => `${className}${activeId === id ? " active" : ""}`,
+        class: () => cx(baseStyle, activeId === id ? activeStyle : null).className,
         href: `#${id}`,
         "aria-current": () => activeId === id ? "location" : undefined,
       },
@@ -53,22 +56,23 @@ export function DocsPage() {
 
   function DocsIntro() {
     return header(
-      { class: "docs-hero" },
-      div({ class: "docs-eyebrow" }, "Documentation"),
+      ds.hero,
+      div(ds.eyebrow, "Documentation"),
       h1("Nuclo documentation"),
       p(
-        { class: "docs-lead" },
+        ds.lead,
         "A practical reference for installing Nuclo, building with explicit updates, styling with atomic CSS, and rendering server-side HTML.",
       ),
       div(
-        { class: "docs-quickstart" },
+        ds.quickstart,
         div(
-          { class: "docs-quickstart-copy" },
-          span({ class: "docs-quickstart-label" }, "Quick start"),
-          code("bun add nuclo"),
+          ds.quickstartCopy,
+          span(ds.quickstartLabel, "Quick start"),
+          code(ds.quickstartCode, "bun add nuclo"),
         ),
         a(
-          { class: "docs-quickstart-link", href: "#installation" },
+          ds.quickstartLink,
+          { href: "#installation" },
           "Installation",
           on("click", (e) => {
             e.preventDefault();
@@ -79,12 +83,12 @@ export function DocsPage() {
         ),
       ),
       div(
-        { class: "docs-meta-grid" },
+        ds.metaGrid,
         ...DOC_FACTS.map(({ label, value }) =>
           div(
-            { class: "docs-meta-card" },
-            div({ class: "docs-meta-value" }, value),
-            div({ class: "docs-meta-label" }, label),
+            ds.metaCard,
+            div(ds.metaValue, value),
+            div(ds.metaLabel, label),
           )
         ),
       ),
@@ -93,31 +97,34 @@ export function DocsPage() {
 
   function DocsProgress() {
     return div(
-      { class: "docs-progress", "aria-hidden": "true" },
-      div({ class: "docs-progress-fill" }),
+      ds.progress,
+      { "aria-hidden": "true" },
+      div(ds.progressFill),
     );
   }
 
   function MobileToc() {
     return nav(
-      { class: "docs-mobile-toc", "aria-label": "Docs sections" },
-      ...DOC_SECTIONS.map(sec => SectionLink(sec.id, "docs-mobile-link")),
+      ds.mobileToc,
+      { "aria-label": "Docs sections" },
+      ...DOC_SECTIONS.map(sec => SectionLink(sec.id, ds.mobileLink, ds.mobileLinkActive)),
     );
   }
 
   function Sidebar() {
     return nav(
-      { class: "docs-sidebar", "aria-label": "Docs navigation" },
+      ds.sidebar,
+      { "aria-label": "Docs navigation" },
       div(
-        { class: "docs-sidebar-head" },
-        div({ class: "docs-sidebar-kicker" }, "Nuclo"),
-        div({ class: "docs-sidebar-title" }, "Docs"),
+        ds.sidebarHead,
+        div(ds.sidebarKicker, "Nuclo"),
+        div(ds.sidebarTitle, "Docs"),
       ),
       ...DOC_GROUPS.map(group =>
         div(
-          { class: "sidebar-group" },
-          div({ class: "sidebar-group-title" }, group.title),
-          ...group.sections.map(id => SectionLink(id, "sidebar-link")),
+          ds.sidebarGroup,
+          div(ds.sidebarGroupTitle, group.title),
+          ...group.sections.map(id => SectionLink(id, ds.sidebarLink, ds.sidebarLinkActive)),
         )
       ),
     );
@@ -125,46 +132,52 @@ export function DocsPage() {
 
   function Rail() {
     return aside(
-      { class: "docs-rail", "aria-label": "Docs shortcuts" },
+      ds.rail,
+      { "aria-label": "Docs shortcuts" },
       div(
-        { class: "docs-rail-card docs-current" },
-        div({ class: "docs-rail-kicker" }, "Current section"),
-        div({ class: "docs-rail-title" }, () => SECTION_MAP.get(activeId)?.title ?? "Overview"),
-        div({ class: "docs-rail-group" }, () => SECTION_MAP.get(activeId)?.groupTitle ?? "Introduction"),
+        ds.railCard,
+        div(ds.railKicker, "Current section"),
+        div(ds.railTitle, () => SECTION_MAP.get(activeId)?.title ?? "Overview"),
+        div(ds.railGroup, () => SECTION_MAP.get(activeId)?.groupTitle ?? "Introduction"),
       ),
       nav(
-        { class: "docs-rail-card docs-rail-nav", "aria-label": "Common documentation sections" },
-        div({ class: "docs-rail-kicker" }, "Jump to"),
-        SectionLink("installation", "docs-rail-link"),
-        SectionLink("explicit-updates", "docs-rail-link"),
-        SectionLink("api-update", "docs-rail-link"),
-        SectionLink("api-styling", "docs-rail-link"),
-        SectionLink("best-practices", "docs-rail-link"),
+        ds.railCard,
+        ds.railNav,
+        { "aria-label": "Common documentation sections" },
+        div(ds.railKicker, "Jump to"),
+        SectionLink("installation", ds.railLink, ds.railLinkActive),
+        SectionLink("explicit-updates", ds.railLink, ds.railLinkActive),
+        SectionLink("api-update", ds.railLink, ds.railLinkActive),
+        SectionLink("api-styling", ds.railLink, ds.railLinkActive),
+        SectionLink("best-practices", ds.railLink, ds.railLinkActive),
       ),
     );
   }
 
   function Content() {
     return article(
-      { class: "docs-content" },
+      ds.content,
       DocsIntro(),
       MobileToc(),
       ...DOC_SECTIONS.map((sec, index) =>
         section(
-          { id: sec.id, class: `docs-section${sec.apiTag ? " docs-api-section" : ""}` },
+          ds.section,
+          sectionDelay(index),
+          { id: sec.id },
           div(
-            { class: "docs-section-head" },
+            ds.sectionHead,
             div(
-              { class: "docs-section-meta" },
-              span({ class: "docs-section-number" }, sectionNumber(index)),
-              span({ class: "docs-section-kicker" }, sec.groupTitle),
+              ds.sectionMeta,
+              span(ds.sectionNumber, sectionNumber(index)),
+              span(ds.sectionKicker, sec.groupTitle),
             ),
             div(
-              { class: "docs-section-title-row" },
+              ds.sectionTitleRow,
               h2(sec.title),
               a(
+                ds.sectionAnchor,
                 {
-                  class: "docs-section-anchor",
+                  class: `${ds.sectionAnchor.className} section-anchor`,
                   href: `#${sec.id}`,
                   title: `Link to ${sec.title}`,
                   "aria-label": `Link to ${sec.title}`,
@@ -176,13 +189,13 @@ export function DocsPage() {
           ),
           ...(sec.apiTag ? [
             div(
-              { class: "api-heading-row" },
-              span({ class: `api-tag ${sec.apiTag}-tag` }, sec.apiTag),
-              span({ class: "api-label" }, "Public API"),
+              ds.apiHeadingRow,
+              span(ds.apiTag, sec.apiTag === "fn" ? ds.apiTagFn : ds.apiTagType, sec.apiTag),
+              span(ds.apiLabel, "Public API"),
             ),
           ] : []),
           ...(sec.apiSig ? [
-            div({ class: "api-sig", innerHTML: sec.apiSig }),
+            div(ds.apiSig, { innerHTML: sec.apiSig }),
           ] : []),
           div({ innerHTML: sec.content }),
         )
@@ -191,7 +204,7 @@ export function DocsPage() {
   }
 
   const page = div(
-    { class: "docs-layout" },
+    ds.layout,
     DocsProgress(),
     Sidebar(),
     Content(),
