@@ -16,7 +16,7 @@ export function render<TTagName extends ElementTagName = ElementTagName>(
 ): ExpandedElement<TTagName> {
   const targetParent = (parent || document.body) as ExpandedElement<TTagName>;
   const element = nodeModFn(targetParent, index) as ExpandedElement<TTagName>;
-  (parent || document.body).appendChild(element as Node);
+  (targetParent as unknown as Node).appendChild(element as Node);
   return element;
 }
 

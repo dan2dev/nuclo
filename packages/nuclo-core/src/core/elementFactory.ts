@@ -33,15 +33,9 @@ function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
   return function(_parent?, index = 0): SVGElementTagNameMap[TTagName] {
     const parentNode = _parent as unknown as Node | undefined;
     const claimed = parentNode ? claimElement(parentNode, tagName) as ExpandedElement | null : null;
-    let el: ExpandedElement;
-    if (claimed) {
-      el = claimed;
-    } else {
-      const created = createElementNS(SVG_NAMESPACE, tagName);
-      if (!created) {
-        throw new Error(`Failed to create SVG element: ${tagName}`);
-      }
-      el = created;
+    const el = claimed ?? createElementNS(SVG_NAMESPACE, tagName);
+    if (!el) {
+      throw new Error(`Failed to create SVG element: ${tagName}`);
     }
     const elNode = el as unknown as Node;
     const lastOriginalChild = claimed ? elNode.lastChild : null;
