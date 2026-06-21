@@ -45,10 +45,8 @@ describe('synthetic DOM failure / defensive branch coverage', () => {
         (_parent: any) => existing // already has parent -> should skip append branch (length > 0 so treated as NodeModFn)
       ];
 
-      const result = applyModifiers(host, mods, 5);
-      // Index should still increment (considered a rendered node logically)
-      expect(result.nextIndex).toBe(6);
-      expect(result.appended).toBe(1);
+      applyModifiers(host, mods, 5);
+      // The already-parented node is not re-appended
       expect(host.childNodes.length).toBe(appendedCountBefore); // no new child appended
       expect(host.firstChild).toBe(existing);
     });

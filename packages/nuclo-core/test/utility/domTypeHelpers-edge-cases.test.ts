@@ -4,7 +4,6 @@ import {
   asParentNode,
   withScopedInsertion,
   setStyleProperty,
-  getStyleProperty,
 } from "../../src/utility/domTypeHelpers";
 
 describe("domTypeHelpers edge cases", () => {
@@ -173,39 +172,6 @@ describe("domTypeHelpers edge cases", () => {
       };
 
       expect(setStyleProperty(element, "color", badValue as any)).toBe(false);
-    });
-  });
-
-  describe("getStyleProperty", () => {
-    it("should get style property value", () => {
-      element.style.color = "red";
-      expect(getStyleProperty(element, "color")).toBe("red");
-    });
-
-    it("should return empty string for unset property", () => {
-      expect(getStyleProperty(element, "nonexistent")).toBe("");
-    });
-
-    it("should handle kebab-case properties", () => {
-      element.style.setProperty("font-size", "16px");
-      expect(getStyleProperty(element, "font-size")).toBe("16px");
-    });
-
-    it("should handle errors gracefully", () => {
-      // Mock getPropertyValue to throw
-      const originalGetPropertyValue = element.style.getPropertyValue;
-      element.style.getPropertyValue = () => {
-        throw new Error("getPropertyValue error");
-      };
-
-      expect(getStyleProperty(element, "color")).toBe("");
-
-      element.style.getPropertyValue = originalGetPropertyValue;
-    });
-
-    it("should handle element without style property", () => {
-      const textNode = document.createTextNode("test");
-      expect(getStyleProperty(textNode as any, "color")).toBe("");
     });
   });
 });

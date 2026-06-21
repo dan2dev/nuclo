@@ -1,6 +1,6 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { on, removeListener, removeAllListeners } from '../../src/utility/on';
+import { on, removeAllListeners } from '../../src/utility/on';
 
 describe('on utility - detachListener else branch (line 76)', () => {
   let element: HTMLElement;
@@ -80,8 +80,8 @@ describe('on utility - detachListener else branch (line 76)', () => {
       element.click();
       expect(listener).toHaveBeenCalledTimes(1);
 
-      // Remove via removeListener - uses controller.abort() path
-      removeListener(element, 'click', listener);
+      // Remove all of the type - uses controller.abort() path
+      removeAllListeners(element, 'click');
 
       element.click();
       expect(listener).toHaveBeenCalledTimes(1);
@@ -202,7 +202,7 @@ describe('on utility - detachListener else branch (line 76)', () => {
         // It would only fire if trackListener were called from code outside on()
         // that doesn't provide an AbortController.
 
-        removeListener(element, 'click', listener);
+        removeAllListeners(element, 'click');
       } finally {
         globalThis.AbortController = OriginalAbortController;
       }
@@ -214,38 +214,7 @@ describe('on utility - detachListener else branch (line 76)', () => {
     });
   });
 
-  describe('removeListener and removeAllListeners edge cases', () => {
-    it('removeListener does nothing when element has no tracked listeners', () => {
-      const listener = vi.fn();
-      expect(() => removeListener(element, 'click', listener)).not.toThrow();
-    });
-
-    it('removeListener does nothing when event type has no tracked listeners', () => {
-      const listener = vi.fn();
-      const mod = on('click', listener);
-      mod(element, 0);
-
-      const otherListener = vi.fn();
-      expect(() => removeListener(element, 'focus', otherListener)).not.toThrow();
-
-      // Original listener still works
-      element.click();
-      expect(listener).toHaveBeenCalledTimes(1);
-    });
-
-    it('removeListener does nothing when specific listener is not found', () => {
-      const listener1 = vi.fn();
-      const listener2 = vi.fn();
-      const mod = on('click', listener1);
-      mod(element, 0);
-
-      expect(() => removeListener(element, 'click', listener2)).not.toThrow();
-
-      // Original listener still works
-      element.click();
-      expect(listener1).toHaveBeenCalledTimes(1);
-    });
-
+  describe('removeAllListeners edge cases', () => {
     it('removeAllListeners does nothing when element has no listeners', () => {
       expect(() => removeAllListeners(element)).not.toThrow();
       expect(() => removeAllListeners(element, 'click')).not.toThrow();

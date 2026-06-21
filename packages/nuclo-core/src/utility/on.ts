@@ -78,33 +78,6 @@ function detachListener(element: HTMLElement, type: string, info: TrackedListene
 }
 
 /**
- * Remove a specific listener from an element.
- * This is exported for manual cleanup if needed.
- */
-export function removeListener(
-  element: HTMLElement,
-  type: string,
-  listener: AnyTrackedListener
-): void {
-  const typeMap = elementListeners.get(element);
-  if (!typeMap) return;
-
-  const listeners = typeMap.get(type);
-  if (!listeners) return;
-
-  for (const info of listeners) {
-    if (info.original === listener) {
-      detachListener(element, type, info);
-      listeners.delete(info);
-      break;
-    }
-  }
-
-  if (listeners.size === 0) typeMap.delete(type);
-  if (typeMap.size === 0) elementListeners.delete(element);
-}
-
-/**
  * Remove all listeners of a specific type from an element.
  */
 export function removeAllListeners(

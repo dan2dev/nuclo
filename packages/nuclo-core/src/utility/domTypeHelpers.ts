@@ -78,21 +78,3 @@ export function setStyleProperty(
     return false;
   }
 }
-
-/**
- * Type-safe wrapper for reading CSS style properties.
- *
- * @param element - The element to read styles from
- * @param property - The CSS property name
- * @returns The computed style value or empty string if not found
- */
-export function getStyleProperty(
-  element: HTMLElement,
-  property: string
-): string {
-  try {
-    return element.style.getPropertyValue(property);
-  } catch {
-    return '';
-  }
-}
