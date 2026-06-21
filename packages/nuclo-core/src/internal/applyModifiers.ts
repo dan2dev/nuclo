@@ -22,38 +22,22 @@ import { createElement, createElementNS, SVG_NAMESPACE } from "../utility/dom";
 
 export type { NodeModifier };
 
-export interface ApplyModifiersResult<TTagName extends ElementTagName> {
-  /**
-   * The element passed in (for fluent patterns if desired).
-   */
-  element: ExpandedElement<TTagName>;
-  /**
-   * The next index after processing (startIndex + rendered children count).
-   */
-  nextIndex: number;
-  /**
-   * Number of child nodes appended (not counting attributes-only modifiers).
-   */
-  appended: number;
-}
-
 /**
  * Applies modifiers to an element, appending newly produced Nodes while avoiding
  * duplicate DOM insertions (i.e. only appends if parentNode differs).
  *
- * Returns meta information that callers can use for continuation indexing.
+ * `localIndex` advances once per appended child so each reactive/static text
+ * modifier gets a unique `text-N` marker; it is internal bookkeeping only and
+ * is not returned (no production caller consumed the previous result object).
  */
 export function applyModifiers<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
   modifiers: ReadonlyArray<NodeModifier<TTagName>>,
   startIndex = 0
-): ApplyModifiersResult<TTagName> {
-  if (!modifiers || modifiers.length === 0) {
-    return { element, nextIndex: startIndex, appended: 0 };
-  }
+): void {
+  if (!modifiers || modifiers.length === 0) return;
 
   let localIndex = startIndex;
-  let appended = 0;
   const parentNode = element as unknown as Node & ParentNode;
 
   for (let i = 0; i < modifiers.length; i += 1) {
@@ -69,14 +53,7 @@ export function applyModifiers<TTagName extends ElementTagName>(
       parentNode.appendChild(produced);
     }
     localIndex += 1;
-    appended += 1;
   }
-
-  return {
-    element,
-    nextIndex: localIndex,
-    appended
-  };
 }
 
 /**

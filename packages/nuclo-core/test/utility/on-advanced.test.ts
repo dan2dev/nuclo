@@ -1,6 +1,6 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { on, removeListener, removeAllListeners } from '../../src/utility/on';
+import { on, removeAllListeners } from '../../src/utility/on';
 
 /**
  * Advanced edge case tests focusing on:
@@ -338,7 +338,7 @@ describe('on utility - advanced edge cases', () => {
       for (let i = 0; i < 10; i++) {
         mod(element, 0);
         element.click();
-        removeListener(element, 'click', listener);
+        removeAllListeners(element, 'click');
       }
       
       expect(listener).toHaveBeenCalledTimes(10);
@@ -393,7 +393,7 @@ describe('on utility - advanced edge cases', () => {
       expect(sharedListener).toHaveBeenCalledTimes(3);
       
       // Remove from one element
-      removeListener(element, 'click', sharedListener);
+      removeAllListeners(element, 'click');
       
       element.click();
       element2.click();
@@ -413,7 +413,7 @@ describe('on utility - advanced edge cases', () => {
       
       // Should still be able to remove listener without error
       expect(() => {
-        removeListener(element, 'click', listener);
+        removeAllListeners(element, 'click');
       }).not.toThrow();
       
       // Re-add to DOM and verify listener was removed
