@@ -171,8 +171,7 @@ export function appendChildren(
 }
 
 export function isNodeConnected(node: Node | null | undefined): boolean {
-  if (!node) return false;
-  return node.isConnected === true;
+  return node?.isConnected === true;
 }
 
 /**

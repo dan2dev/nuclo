@@ -145,30 +145,30 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 	return null;
 }
 
+/**
+ * Builds the `<!-- text-N -->` marker + text-node fragment shared by the
+ * reactive and static text paths. A null text node (document unavailable) is
+ * skipped, matching the previous per-path guards.
+ */
+function createTextFragment(index: number, textNode: Node | null): DocumentFragment {
+	const fragment = createDocumentFragment();
+	if (!fragment) {
+		throw new Error("Failed to create document fragment: document not available");
+	}
+	const comment = createComment(` text-${index} `);
+	if (comment) fragment.appendChild(comment);
+	if (textNode) fragment.appendChild(textNode);
+	return fragment;
+}
+
 function createReactiveTextFragment(
 	index: number,
 	resolver: () => Primitive,
 	preEvaluated?: unknown
 ): DocumentFragment {
-	const fragment = createDocumentFragment();
-	if (!fragment) {
-		throw new Error("Failed to create document fragment: document not available");
-	}
-	const comment = createComment(` text-${index} `);
-	if (comment) fragment.appendChild(comment);
-	const textNode = createReactiveTextNode(resolver, preEvaluated);
-	fragment.appendChild(textNode);
-	return fragment;
+	return createTextFragment(index, createReactiveTextNode(resolver, preEvaluated));
 }
 
 function createStaticTextFragment(index: number, value: Primitive): DocumentFragment {
-	const fragment = createDocumentFragment();
-	if (!fragment) {
-		throw new Error("Failed to create document fragment: document not available");
-	}
-	const comment = createComment(` text-${index} `);
-	if (comment) fragment.appendChild(comment);
-	const textNode = createTextNode(String(value));
-	if (textNode) fragment.appendChild(textNode);
-	return fragment;
+	return createTextFragment(index, createTextNode(String(value)));
 }
