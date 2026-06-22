@@ -1,4 +1,5 @@
 import { css, colors, s } from "../styles.ts";
+import { copyText } from "./clipboard.ts";
 
 // ── Simple tokenizer for TypeScript/JS syntax highlighting ─────────────────
 function tokenize(code: string): string {
@@ -119,7 +120,8 @@ export function CodeBlock({ filename, code, showCopy = true, preTokenized = fals
   const preStyle = css({ margin: "0", whiteSpace: "pre", minWidth: "max-content" });
 
   function handleCopy() {
-    navigator.clipboard?.writeText(code).then(() => {
+    copyText(code).then((ok) => {
+      if (!ok) return;
       copied = true;
       update();
       setTimeout(() => { copied = false; update(); }, 1800);

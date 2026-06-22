@@ -48,9 +48,16 @@ type StressReport = {
     heapGrowthMB: number | null;
   };
   errors: {
-    pageErrors: string[];
+    pageErrors: CapturedError[];
+    ignoredPageErrors: CapturedError[];
     requestFailures: string[];
-    navigationFailures: string[];
+    navigationFailures: CapturedError[];
+  };
+  errorSummary: {
+    pageErrors: ErrorBucket[];
+    ignoredPageErrors: ErrorBucket[];
+    requestFailures: ErrorBucket[];
+    navigationFailures: ErrorBucket[];
   };
 };
 
@@ -58,6 +65,69 @@ type InteractionStats = {
   exampleInteractions: number;
   todoItemsAdded: number;
 };
+
+/** A page/runtime error captured with the context where it happened. */
+type CapturedError = {
+  message: string;
+  round: number;
+  route: string;
+  stack?: string;
+};
+
+/** Deduplicated view of repeated errors so an 8-minute soak stays readable. */
+type ErrorBucket = {
+  message: string;
+  count: number;
+  firstRound: number;
+  firstRoute: string;
+};
+
+/**
+ * Page errors that are environmental noise rather than app regressions.
+ * Kept intentionally narrow — anything not listed here still fails the run.
+ */
+const IGNORED_PAGE_ERROR_PATTERNS: RegExp[] = [
+  // Benign Chromium layout notification, not an actual exception.
+  /ResizeObserver loop (limit exceeded|completed with undelivered notifications)/i,
+];
+
+/** Cap raw error arrays so a long soak can't grow unbounded in memory/report. */
+const MAX_RAW_ERRORS = 500;
+
+function isIgnoredPageError(message: string): boolean {
+  return IGNORED_PAGE_ERROR_PATTERNS.some((pattern) => pattern.test(message));
+}
+
+function pushCapped<T>(target: T[], value: T): void {
+  if (target.length < MAX_RAW_ERRORS) target.push(value);
+}
+
+/** Collapse repeated errors into `{ message, count, first seen }` buckets. */
+function summarizeErrors(items: CapturedError[]): ErrorBucket[] {
+  const buckets = new Map<string, ErrorBucket>();
+  for (const item of items) {
+    const existing = buckets.get(item.message);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      buckets.set(item.message, {
+        message: item.message,
+        count: 1,
+        firstRound: item.round,
+        firstRoute: item.route,
+      });
+    }
+  }
+  return Array.from(buckets.values()).sort((a, b) => b.count - a.count);
+}
+
+function summarizeStrings(items: string[]): ErrorBucket[] {
+  const buckets = new Map<string, number>();
+  for (const item of items) buckets.set(item, (buckets.get(item) ?? 0) + 1);
+  return Array.from(buckets.entries())
+    .map(([message, count]) => ({ message, count, firstRound: 0, firstRoute: "" }))
+    .sort((a, b) => b.count - a.count);
+}
 
 const rounds = readInt("STRESS_ROUNDS", 12);
 const durationMs = readInt("STRESS_DURATION_MS", 0); // 0 = use rounds; >0 = run for this duration
@@ -191,6 +261,12 @@ async function spamClicks(
   baseOrigin: string
 ): Promise<number> {
   let clickOps = 0;
+  // Skip clipboard + destructive controls via accessible name/title so even
+  // icon-only buttons (no text to match) are excluded — e.g. the home page's
+  // icon-only "Copy install command" button.
+  const exclude =
+    ":not([aria-label*='copy' i]):not([title*='copy' i])" +
+    ":not([aria-label*='delete' i]):not([aria-label*='remove' i])";
   const clickSelector = [
     "button",
     "[role='button']",
@@ -202,11 +278,15 @@ async function spamClicks(
     `a[href^='../']`,
     `a[href^='?']`,
     `a[href^='${baseOrigin}']`,
-  ].join(", ");
+  ]
+    .map((sel) => `${sel}${exclude}`)
+    .join(", ");
 
   for (let i = 0; i < totalClicks; i += 1) {
-    // Exclude "Copy"/"Copied!" (clipboard) and "×" (delete) buttons
-    const eligible = page.locator(clickSelector).filter({ hasNotText: /^Copy$|^Copied!$|^×$/ });
+    // Also exclude any text-labelled "Copy"/"Copied"/"×" (delete) controls.
+    const eligible = page
+      .locator(clickSelector)
+      .filter({ hasNotText: /^Copy$|^✓?\s*Copied!?$|^×$/ });
     const count = await eligible.count();
     if (count === 0) return clickOps;
     const targetIndex = i % count;
@@ -462,18 +542,48 @@ test.describe("Front stress", () => {
     );
 
     const errors = {
-      pageErrors: [] as string[],
+      pageErrors: [] as CapturedError[],
+      ignoredPageErrors: [] as CapturedError[],
       requestFailures: [] as string[],
-      navigationFailures: [] as string[],
+      navigationFailures: [] as CapturedError[],
     };
 
+    // Updated as the run progresses so every captured error knows where it
+    // happened. Listeners fire asynchronously, so they read these live.
+    let currentRound = 0;
+    let currentRoute = "/";
+
     page.on("pageerror", (error) => {
-      errors.pageErrors.push(error.message);
+      const captured: CapturedError = {
+        message: error.message,
+        round: currentRound,
+        route: currentRoute,
+        stack: error.stack,
+      };
+      if (isIgnoredPageError(error.message)) {
+        pushCapped(errors.ignoredPageErrors, captured);
+      } else {
+        pushCapped(errors.pageErrors, captured);
+      }
+    });
+
+    // Unhandled promise rejections don't always surface as `pageerror`; capture
+    // them explicitly so an async bug (a missing .catch) can't pass silently.
+    page.on("console", (msg) => {
+      if (msg.type() !== "error") return;
+      const text = msg.text();
+      if (!/unhandled (promise )?rejection/i.test(text)) return;
+      const captured: CapturedError = { message: text, round: currentRound, route: currentRoute };
+      if (isIgnoredPageError(text)) pushCapped(errors.ignoredPageErrors, captured);
+      else pushCapped(errors.pageErrors, captured);
     });
 
     page.on("requestfailed", (request) => {
       const failure = request.failure();
-      errors.requestFailures.push(`${request.method()} ${request.url()} :: ${failure?.errorText ?? "unknown"}`);
+      pushCapped(
+        errors.requestFailures,
+        `${request.method()} ${request.url()} :: ${failure?.errorText ?? "unknown"}`,
+      );
     });
 
     // Dismiss any unexpected alert/confirm/prompt dialogs globally
@@ -532,6 +642,7 @@ test.describe("Front stress", () => {
 
     for (let round = 1; round <= maxRounds; round += 1) {
       if (deadline !== null && Date.now() >= deadline) break;
+      currentRound = round;
       const roundNavDurations: number[] = [];
       const roundHeap: number[] = [];
       let roundClicks = 0;
@@ -549,12 +660,17 @@ test.describe("Front stress", () => {
       }
 
       for (const [routeIndex, route] of mergedRoutes.entries()) {
+        currentRoute = route;
         const navStarted = performance.now();
         try {
           await navigateViaClick(page, route);
         } catch (error) {
           roundFailures += 1;
-          errors.navigationFailures.push(`${route} :: ${(error as Error).message}`);
+          pushCapped(errors.navigationFailures, {
+            message: (error as Error).message,
+            round,
+            route,
+          });
           if (routeIndex === 0 || (routeIndex + 1) % liveLogEveryRoutes === 0 || routeIndex + 1 === totalRoutesPerRound) {
             const progressPct = (((routeIndex + 1) / totalRoutesPerRound) * 100).toFixed(0);
             console.log(
@@ -657,6 +773,13 @@ test.describe("Front stress", () => {
     const failures =
       errors.pageErrors.length + errors.requestFailures.length + errors.navigationFailures.length;
 
+    const errorSummary = {
+      pageErrors: summarizeErrors(errors.pageErrors),
+      ignoredPageErrors: summarizeErrors(errors.ignoredPageErrors),
+      requestFailures: summarizeStrings(errors.requestFailures),
+      navigationFailures: summarizeErrors(errors.navigationFailures),
+    };
+
     const report: StressReport = {
       config: {
         rounds,
@@ -682,6 +805,7 @@ test.describe("Front stress", () => {
         heapGrowthMB,
       },
       errors,
+      errorSummary,
     };
 
     mkdirSync(artifactsDir, { recursive: true });
@@ -697,21 +821,61 @@ test.describe("Front stress", () => {
     );
     console.log(`[stress] totalClicks=${totalClicks} failures=${failures}`);
     console.log(`[stress] exampleInteractions=${totalExampleInteractions} todoItemsAdded=${totalTodoItemsAdded}`);
+    if (errors.ignoredPageErrors.length > 0) {
+      console.log(`[stress] ignored ${errors.ignoredPageErrors.length} benign page error(s) (allowlisted)`);
+    }
+    if (errorSummary.pageErrors.length > 0) {
+      console.log(`[stress] page errors:`);
+      for (const bucket of errorSummary.pageErrors) {
+        console.log(`         [${bucket.count}x] ${bucket.message} (first @ round ${bucket.firstRound}, ${bucket.firstRoute})`);
+      }
+    }
+    if (errorSummary.navigationFailures.length > 0) {
+      console.log(`[stress] navigation failures:`);
+      for (const bucket of errorSummary.navigationFailures) {
+        console.log(`         [${bucket.count}x] ${bucket.message} (first @ round ${bucket.firstRound}, ${bucket.firstRoute})`);
+      }
+    }
     console.log(`[stress] report=${reportPath}`);
 
-    expect(samples.length).toBeGreaterThan(0);
-    expect(totalExampleInteractions).toBeGreaterThan(0);
-    expect(totalTodoItemsAdded).toBeGreaterThan(0);
-    expect(errors.pageErrors.length).toBe(0);
-    expect(errors.navigationFailures.length).toBe(0);
-    expect(externalNavigations.length).toBe(0);
+    // Render a compact diagnostic so a CI failure points at the cause and
+    // location, instead of a bare `expected 0, received N`.
+    const describe = (buckets: ErrorBucket[]): string =>
+      buckets
+        .map((b) => `  [${b.count}x] ${b.message}${b.firstRoute ? ` (first @ round ${b.firstRound}, ${b.firstRoute})` : ""}`)
+        .join("\n");
+
+    expect(samples.length, "no navigations were sampled").toBeGreaterThan(0);
+    expect(totalExampleInteractions, "no example interactions ran — selectors may have drifted").toBeGreaterThan(0);
+    expect(totalTodoItemsAdded, "no todo items were added — the todo example may be broken").toBeGreaterThan(0);
+    expect(
+      errors.pageErrors.length,
+      `uncaught page errors detected:\n${describe(errorSummary.pageErrors)}`,
+    ).toBe(0);
+    expect(
+      errors.navigationFailures.length,
+      `navigation failures detected:\n${describe(errorSummary.navigationFailures)}`,
+    ).toBe(0);
+    expect(
+      externalNavigations.length,
+      `unexpected navigations off-origin:\n  ${externalNavigations.slice(0, 10).join("\n  ")}`,
+    ).toBe(0);
 
     if (strictMode) {
-      expect(navDegradationPct).toBeLessThanOrEqual(degradeThresholdPct);
+      expect(
+        navDegradationPct,
+        `nav latency degraded ${navDegradationPct}% (first-half ${firstHalfNavAvgMs}ms → second-half ${secondHalfNavAvgMs}ms)`,
+      ).toBeLessThanOrEqual(degradeThresholdPct);
       if (heapGrowthMB != null) {
-        expect(heapGrowthMB).toBeLessThanOrEqual(leakThresholdMB);
+        expect(
+          heapGrowthMB,
+          `heap grew ${heapGrowthMB}MB (first ${firstHeapMB}MB → last ${lastHeapMB}MB) — possible leak`,
+        ).toBeLessThanOrEqual(leakThresholdMB);
       }
-      expect(errors.requestFailures.length).toBe(0);
+      expect(
+        errors.requestFailures.length,
+        `request failures detected:\n${describe(errorSummary.requestFailures)}`,
+      ).toBe(0);
     }
   });
 });
