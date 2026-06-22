@@ -48,10 +48,9 @@ Supported environment variables:
 
 Server stress test env vars:
 
-- `TOTAL_REQUESTS` (default: `10000`)
+- `TOTAL_REQUESTS` (default: `1000000`)
 - `CONCURRENCY` (default: `100`)
-- `REPORT_INTERVAL` (default: `1000`, prints full snapshot every N completed requests)
-- `LIVE_INTERVAL_MS` (default: `1000`, updates live single-line terminal progress)
+- `REPORT_INTERVAL` (default: `10000`, prints a progress snapshot every N completed requests)
 
 Example heavier run:
 
@@ -62,7 +61,7 @@ STRESS_ROUNDS=40 STRESS_CLICKS_PER_PAGE=30 bun run stress:front
 ## Notes
 
 - This package depends on the local workspace package `../packages/nuclo-core`.
-- Routing is handled in [`src/router.ts`](./src/router.ts) and [`src/routes.ts`](./src/routes.ts).
+- Routing is handled in [`src/router.ts`](./src/router.ts) and [`src/route-definitions.ts`](./src/route-definitions.ts).
 - Pages live in [`src/pages`](./src/pages) and shared UI lives in [`src/components`](./src/components).
 - Static assets are served from [`public`](./public).
 
@@ -77,7 +76,7 @@ docs/
 │   ├── pages/
 │   ├── main.ts
 │   ├── router.ts
-│   ├── routes.ts
+│   ├── route-definitions.ts
 │   └── styles.ts
 ├── index.html
 ├── package.json

@@ -3,6 +3,7 @@
 import { expect, test } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { routeDefinitions } from "../src/route-definitions.ts";
 
 type Sample = {
   round: number;
@@ -37,6 +38,7 @@ type StressReport = {
   aggregates: {
     totalNavigations: number;
     totalClicks: number;
+    totalDocsSectionJumps: number;
     totalExampleInteractions: number;
     totalTodoItemsAdded: number;
     failures: number;
@@ -62,6 +64,7 @@ type StressReport = {
 };
 
 type InteractionStats = {
+  docsSectionJumps: number;
   exampleInteractions: number;
   todoItemsAdded: number;
 };
@@ -138,6 +141,12 @@ const leakThresholdMB = readFloat("STRESS_LEAK_THRESHOLD_MB", 70);
 const liveLogEveryRoutes = readInt("STRESS_LIVE_LOG_EVERY_ROUTES", 5);
 
 const artifactsDir = join(process.cwd(), "test-results", "stress");
+const appRoutes = Array.from(new Set([
+  "/",
+  ...routeDefinitions
+    .filter(route => route.path !== "home")
+    .map(route => `/${route.path}`),
+]));
 
 function readInt(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -183,13 +192,13 @@ async function waitForSPAContent(
   urlPath: string,
 ): Promise<void> {
   await page.waitForFunction(
-    (args: { path: string; loadingText: string }) => {
-      if (window.location.pathname !== args.path) return false;
+    (path: string) => {
+      if (window.location.pathname !== path) return false;
       const container = document.querySelector("#page-container");
       if (!container || container.children.length === 0) return false;
       return true;
     },
-    { path: urlPath, loadingText: "Loading..." },
+    urlPath,
     { timeout: 8000 },
   );
 }
@@ -198,14 +207,7 @@ async function navigateViaClick(
   page: import("@playwright/test").Page,
   urlPath: string,
 ): Promise<void> {
-  let link = page.locator(`a[href="${urlPath}"]`).first();
-
-  if ((await link.count()) === 0 && urlPath.startsWith("/examples/")) {
-    // Example sub-pages are only linked from /examples — navigate there first via click
-    await page.locator('a[href="/examples"]').first().click({ timeout: 3000 });
-    await waitForSPAContent(page, "/examples");
-    link = page.locator(`a[href="${urlPath}"]`).first();
-  }
+  const link = page.locator(`a[href="${urlPath}"]`).first();
 
   if ((await link.count()) === 0) {
     throw new Error(`No link found for path: ${urlPath}`);
@@ -302,17 +304,55 @@ async function spamClicks(
   return clickOps;
 }
 
-async function runExampleScenario(
+async function clickFirstVisible(
+  page: import("@playwright/test").Page,
+  selector: string,
+): Promise<boolean> {
+  const matches = page.locator(selector);
+  const count = await matches.count().catch(() => 0);
+  for (let i = 0; i < count; i += 1) {
+    const candidate = matches.nth(i);
+    if (!(await candidate.isVisible().catch(() => false))) continue;
+    try {
+      await candidate.scrollIntoViewIfNeeded();
+      await candidate.click({ timeout: 1500 });
+      return true;
+    } catch {
+      // Try the next visible match.
+    }
+  }
+  return false;
+}
+
+async function runRouteScenario(
   page: import("@playwright/test").Page,
   route: string,
   round: number
 ): Promise<InteractionStats> {
-  const stats: InteractionStats = { exampleInteractions: 0, todoItemsAdded: 0 };
+  const stats: InteractionStats = { docsSectionJumps: 0, exampleInteractions: 0, todoItemsAdded: 0 };
 
-  // Current docs examples are collected on a single /examples page.
+  if (route === "/docs") {
+    for (const sectionId of ["installation", "api-update", "best-practices"]) {
+      if (await clickFirstVisible(page, `a[href="#${sectionId}"]`)) {
+        await page
+          .waitForFunction(
+            (id: string) => window.location.hash === `#${id}`,
+            sectionId,
+            { timeout: 2000 },
+          )
+          .catch(() => {});
+        stats.docsSectionJumps += 1;
+      }
+    }
+    return stats;
+  }
+
   if (route === "/examples") {
+    await expect(page.locator("#examples-page")).toBeVisible({ timeout: 3000 });
+
     const plusButton = page.getByRole("button", { name: "+" }).first();
     if (await plusButton.isVisible().catch(() => false)) {
+      await plusButton.click();
       await plusButton.click();
       await page.getByRole("button", { name: "Reset" }).first().click().catch(() => {});
       stats.exampleInteractions += 1;
@@ -324,6 +364,12 @@ async function runExampleScenario(
       await todoInput.fill(taskText);
       await page.getByRole("button", { name: "Add" }).first().click();
       await expect(page.getByText(taskText).first()).toBeVisible({ timeout: 3000 });
+      const checkbox = page.locator("#examples-page input[type='checkbox']").last();
+      if (await checkbox.isVisible().catch(() => false)) {
+        await checkbox.click().catch(() => {});
+      }
+      await page.getByRole("button", { name: "Done" }).first().click().catch(() => {});
+      await page.getByRole("button", { name: "All" }).first().click().catch(() => {});
       stats.todoItemsAdded += 1;
       stats.exampleInteractions += 1;
     }
@@ -332,201 +378,34 @@ async function runExampleScenario(
     if (await searchInput.isVisible().catch(() => false)) {
       await searchInput.fill("Alice");
       await page.waitForTimeout(100);
+      await searchInput.fill("zz-no-results");
+      await page.waitForTimeout(100);
       await searchInput.fill("");
       stats.exampleInteractions += 1;
     }
 
-    return stats;
-  }
-
-  // ── Todo ──────────────────────────────────────────────────────────────────
-  if (route.includes("/examples/todo")) {
-    const todoInput = page.getByPlaceholder("Add a new task...").first();
-    if (await todoInput.isVisible().catch(() => false)) {
-      // Add new tasks first (list always grows)
-      for (let i = 0; i < 3; i++) {
-        const taskText = `stress-task-r${round}-${i}-${Date.now()}`;
-        await todoInput.fill(taskText);
-        await page.getByRole("button", { name: "Add Task" }).first().click();
-        await expect(page.getByText(taskText).first()).toBeVisible({ timeout: 3000 });
-        stats.todoItemsAdded += 1;
-      }
-      // Toggle checkboxes on existing items — never click delete (×)
-      const checkboxes = page.locator("input[type='checkbox']");
-      const checkboxCount = await checkboxes.count().catch(() => 0);
-      for (let i = 0; i < checkboxCount; i++) {
-        await checkboxes.nth(i).click().catch(() => {});
-        await page.waitForTimeout(30);
-      }
+    const fetchButton = page.getByRole("button", { name: "Fetch Data" }).first();
+    if (await fetchButton.isVisible().catch(() => false)) {
+      await fetchButton.click();
+      await expect(page.getByText("Nuclo Stress Laptop").first()).toBeVisible({ timeout: 3000 });
       stats.exampleInteractions += 1;
     }
-    return stats;
-  }
 
-  // ── Counter ───────────────────────────────────────────────────────────────
-  if (route.includes("/examples/counter")) {
-    const plusButton = page.getByRole("button", { name: "+" }).first();
-    if (await plusButton.isVisible().catch(() => false)) {
-      await plusButton.click();
-      await plusButton.click();
-      await plusButton.click();
-      const minusButton = page.getByRole("button", { name: "-" }).first();
-      if (await minusButton.isVisible().catch(() => false)) {
-        await minusButton.click();
-      }
-      await page.getByRole("button", { name: "Reset" }).first().click();
+    const typeScriptChip = page.getByRole("button", { name: "TypeScript" }).first();
+    if (await typeScriptChip.isVisible().catch(() => false)) {
+      await typeScriptChip.click();
+      await page.getByRole("button", { name: "SSR" }).first().click().catch(() => {});
       stats.exampleInteractions += 1;
     }
-    return stats;
-  }
 
-  // ── Forms ─────────────────────────────────────────────────────────────────
-  if (route.includes("/examples/forms")) {
-    const username = page.getByPlaceholder("Enter username").first();
-    if (await username.isVisible().catch(() => false)) {
-      await username.fill(`stress_user_${round}`);
-      await page.getByPlaceholder("Enter email").first().fill(`stress_${round}@example.dev`);
-      await page.getByPlaceholder("Enter password").first().fill("abc12345");
-      await page.getByPlaceholder("Confirm password").first().fill("abc12345");
-      await page.getByRole("button", { name: "Sign Up" }).first().click();
-      await expect(page.getByText("Account created successfully!").first()).toBeVisible({ timeout: 4000 });
+    const chartSelect = page.locator("select").first();
+    if (await chartSelect.isVisible().catch(() => false)) {
+      await chartSelect.selectOption("line");
+      await page.getByRole("button", { name: "Randomize" }).first().click().catch(() => {});
+      await chartSelect.selectOption("pie");
       stats.exampleInteractions += 1;
     }
-    return stats;
-  }
 
-  // ── Subtasks ──────────────────────────────────────────────────────────────
-  if (route.includes("/examples/subtasks")) {
-    const subtaskInput = page.getByPlaceholder("Add a new task...").first();
-    if (await subtaskInput.isVisible().catch(() => false)) {
-      for (let i = 0; i < 2; i++) {
-        const text = `parent-task-r${round}-${i}-${Date.now()}`;
-        await subtaskInput.fill(text);
-        await page.getByRole("button", { name: "Add Task" }).first().click();
-        await expect(page.getByText(text).first()).toBeVisible({ timeout: 3000 });
-        stats.todoItemsAdded += 1;
-      }
-      stats.exampleInteractions += 1;
-    }
-    return stats;
-  }
-
-  // ── Live Search ───────────────────────────────────────────────────────────
-  if (route.includes("/examples/search")) {
-    const searchInput = page.getByPlaceholder("Search by name or email...").first();
-    if (await searchInput.isVisible().catch(() => false)) {
-      await searchInput.fill("Alice");
-      await page.waitForTimeout(100);
-      await searchInput.fill("bob");
-      await page.waitForTimeout(100);
-      // Change role filter
-      const roleSelect = page.locator("select").first();
-      if (await roleSelect.isVisible().catch(() => false)) {
-        await roleSelect.selectOption("Admin");
-        await page.waitForTimeout(100);
-        await roleSelect.selectOption("User");
-        await page.waitForTimeout(100);
-        await roleSelect.selectOption("all");
-      }
-      await searchInput.fill("");
-      stats.exampleInteractions += 1;
-    }
-    return stats;
-  }
-
-  // ── Async Data ────────────────────────────────────────────────────────────
-  if (route.includes("/examples/async")) {
-    const searchInput = page.getByPlaceholder("Search products...").first();
-    if (await searchInput.isVisible().catch(() => false)) {
-      await searchInput.fill("laptop");
-      const searchBtn = page.getByRole("button", { name: "Search" }).first();
-      if (await searchBtn.isEnabled().catch(() => false)) {
-        await searchBtn.click();
-        // Wait for either results or error state (external API may fail)
-        await page.waitForTimeout(2000);
-        // If error, click Retry
-        const retryBtn = page.getByRole("button", { name: "Retry" }).first();
-        if (await retryBtn.isVisible().catch(() => false)) {
-          await retryBtn.click();
-          await page.waitForTimeout(1500);
-        }
-      }
-      stats.exampleInteractions += 1;
-    }
-    return stats;
-  }
-
-  // ── Nested Components ─────────────────────────────────────────────────────
-  if (route.includes("/examples/nested")) {
-    const followButtons = page.getByRole("button", { name: "Follow" });
-    const count = await followButtons.count().catch(() => 0);
-    if (count > 0) {
-      for (let i = 0; i < count; i++) {
-        await followButtons.nth(i).click().catch(() => {});
-        await page.waitForTimeout(50);
-      }
-      stats.exampleInteractions += 1;
-    }
-    return stats;
-  }
-
-  // ── Animations ────────────────────────────────────────────────────────────
-  if (route.includes("/examples/animations")) {
-    const startBtn = page.getByRole("button", { name: "Start Animation" }).first();
-    if (await startBtn.isVisible().catch(() => false)) {
-      await startBtn.click();
-      await page.waitForTimeout(400);
-      const stopBtn = page.getByRole("button", { name: "Stop Animation" }).first();
-      if (await stopBtn.isVisible().catch(() => false)) {
-        await stopBtn.click();
-      }
-      // Toggle once more
-      const startAgain = page.getByRole("button", { name: "Start Animation" }).first();
-      if (await startAgain.isVisible().catch(() => false)) {
-        await startAgain.click();
-        await page.waitForTimeout(200);
-        await page.getByRole("button", { name: "Stop Animation" }).first().click().catch(() => {});
-      }
-      stats.exampleInteractions += 1;
-    }
-    return stats;
-  }
-
-  // ── Routing (mini router inside example) ──────────────────────────────────
-  if (route.includes("/examples/routing")) {
-    const aboutBtn = page.getByRole("button", { name: "About" }).first();
-    if (await aboutBtn.isVisible().catch(() => false)) {
-      await aboutBtn.click();
-      await page.waitForTimeout(100);
-      const contactBtn = page.getByRole("button", { name: "Contact" }).first();
-      await contactBtn.click().catch(() => {});
-      await page.waitForTimeout(100);
-      await page.getByRole("button", { name: "Home" }).first().click().catch(() => {});
-      await page.waitForTimeout(100);
-      // Navigate via inline page buttons
-      const goAboutBtn = page.getByRole("button", { name: "Go to About →" }).first();
-      if (await goAboutBtn.isVisible().catch(() => false)) {
-        await goAboutBtn.click();
-        await page.waitForTimeout(100);
-        await page.getByRole("button", { name: "Go to Contact →" }).first().click().catch(() => {});
-        await page.waitForTimeout(100);
-        await page.getByRole("button", { name: "Go Home →" }).first().click().catch(() => {});
-      }
-      stats.exampleInteractions += 1;
-    }
-    return stats;
-  }
-
-  // ── Styled Card ───────────────────────────────────────────────────────────
-  if (route.includes("/examples/styled-card")) {
-    // Dismiss any alert dialogs from "Add to Cart"
-    page.once("dialog", (dialog) => dialog.dismiss().catch(() => {}));
-    const addToCartBtn = page.getByRole("button", { name: "Add to Cart" }).first();
-    if (await addToCartBtn.isVisible().catch(() => false)) {
-      await addToCartBtn.click();
-      await page.waitForTimeout(200);
-      stats.exampleInteractions += 1;
-    }
     return stats;
   }
 
@@ -591,6 +470,20 @@ test.describe("Front stress", () => {
       await dialog.dismiss().catch(() => {});
     });
 
+    await page.route(/https:\/\/dummyjson\.com\/products\?limit=3&select=title,category/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          products: [
+            { id: 1, title: "Nuclo Stress Laptop", category: "computers" },
+            { id: 2, title: "Nuclo Stress Keyboard", category: "accessories" },
+            { id: 3, title: "Nuclo Stress Display", category: "monitors" },
+          ],
+        }),
+      });
+    });
+
     const initialPath = "/";
     await page.goto(initialPath, { waitUntil: "domcontentloaded" });
 
@@ -620,14 +513,12 @@ test.describe("Front stress", () => {
     });
 
     const routes = await getInternalRoutes(base, page);
-    const scenarioRoutes = [
-      "/examples",
-    ];
-    const mergedRoutes = Array.from(new Set([...routes, ...scenarioRoutes]));
+    const mergedRoutes = Array.from(new Set([...appRoutes, ...routes]));
     const totalRoutesPerRound = mergedRoutes.length;
 
     const samples: Sample[] = [];
     const roundSummaries: RoundSummary[] = [];
+    let totalDocsSectionJumps = 0;
     let totalExampleInteractions = 0;
     let totalTodoItemsAdded = 0;
 
@@ -698,7 +589,8 @@ test.describe("Front stress", () => {
         }
 
         try {
-          const interactionStats = await runExampleScenario(page, route, round);
+          const interactionStats = await runRouteScenario(page, route, round);
+          totalDocsSectionJumps += interactionStats.docsSectionJumps;
           totalExampleInteractions += interactionStats.exampleInteractions;
           totalTodoItemsAdded += interactionStats.todoItemsAdded;
         } catch {
@@ -718,7 +610,8 @@ test.describe("Front stress", () => {
           console.log(
             `[stress] ${modeMeta} progress=${progressPct}% routes=${routeIndex + 1}/${totalRoutesPerRound} ` +
             `avgNav=${roundAvgNav.toFixed(1)}ms heap=${roundHeapLast ?? "n/a"}MB ` +
-            `clicks=${roundClicks} ex=${totalExampleInteractions} todo=${totalTodoItemsAdded} fail=${roundFailures}`
+            `clicks=${roundClicks} docs=${totalDocsSectionJumps} ex=${totalExampleInteractions} ` +
+            `todo=${totalTodoItemsAdded} fail=${roundFailures}`
           );
         }
 
@@ -794,6 +687,7 @@ test.describe("Front stress", () => {
       aggregates: {
         totalNavigations: samples.length,
         totalClicks,
+        totalDocsSectionJumps,
         totalExampleInteractions,
         totalTodoItemsAdded,
         failures,
@@ -820,7 +714,10 @@ test.describe("Front stress", () => {
       `[stress] heap first=${firstHeapMB ?? "n/a"}MB last=${lastHeapMB ?? "n/a"}MB growth=${heapGrowthMB ?? "n/a"}MB`
     );
     console.log(`[stress] totalClicks=${totalClicks} failures=${failures}`);
-    console.log(`[stress] exampleInteractions=${totalExampleInteractions} todoItemsAdded=${totalTodoItemsAdded}`);
+    console.log(
+      `[stress] docsSectionJumps=${totalDocsSectionJumps} ` +
+      `exampleInteractions=${totalExampleInteractions} todoItemsAdded=${totalTodoItemsAdded}`
+    );
     if (errors.ignoredPageErrors.length > 0) {
       console.log(`[stress] ignored ${errors.ignoredPageErrors.length} benign page error(s) (allowlisted)`);
     }
@@ -846,6 +743,7 @@ test.describe("Front stress", () => {
         .join("\n");
 
     expect(samples.length, "no navigations were sampled").toBeGreaterThan(0);
+    expect(totalDocsSectionJumps, "no docs section jumps ran — docs navigation selectors may have drifted").toBeGreaterThan(0);
     expect(totalExampleInteractions, "no example interactions ran — selectors may have drifted").toBeGreaterThan(0);
     expect(totalTodoItemsAdded, "no todo items were added — the todo example may be broken").toBeGreaterThan(0);
     expect(

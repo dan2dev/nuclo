@@ -10,31 +10,19 @@
  *   TOTAL_REQUESTS=500000 CONCURRENCY=200 HOST=http://localhost:5173 bun tests/server-stress.ts
  */
 
+import { routeDefinitions } from "../src/route-definitions.ts";
+
 const HOST            = process.env.HOST             ?? "http://localhost:5173";
 const TOTAL_REQUESTS  = parseInt(process.env.TOTAL_REQUESTS  ?? "1000000", 10);
 const CONCURRENCY     = parseInt(process.env.CONCURRENCY     ?? "100",     10);
 const REPORT_INTERVAL = parseInt(process.env.REPORT_INTERVAL ?? "10000",   10); // print stats every N requests
 
-const ROUTES = [
+const ROUTES = Array.from(new Set([
   "/",
-  "/home",
-  "/getting-started",
-  "/core-api",
-  "/tag-builders",
-  "/styling",
-  "/pitfalls",
-  "/examples",
-  "/examples/counter",
-  "/examples/todo",
-  "/examples/subtasks",
-  "/examples/search",
-  "/examples/async",
-  "/examples/forms",
-  "/examples/nested",
-  "/examples/animations",
-  "/examples/routing",
-  "/examples/styled-card",
-];
+  ...routeDefinitions
+    .filter(route => route.path !== "home")
+    .map(route => `/${route.path}`),
+]));
 
 // ── stats ──────────────────────────────────────────────────────────────────
 let completed  = 0;

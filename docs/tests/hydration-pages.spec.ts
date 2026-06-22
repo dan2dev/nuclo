@@ -1,11 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { routeDefinitions } from '../src/route-definitions.ts';
 
 test.use({ baseURL: 'http://127.0.0.1:5173' });
 
 const routes = [
   '/',
-  '/docs',
-  '/examples',
+  ...routeDefinitions
+    .filter(route => route.path !== 'home')
+    .map(route => `/${route.path}`),
 ];
 
 test.describe('Hydration — all docs pages', () => {
