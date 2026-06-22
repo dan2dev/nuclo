@@ -11,6 +11,7 @@ import {
   CTA_TITLE, CTA_SUB,
 } from "./content.ts";
 import { CodeBlock } from "../../components/CodeBlock.ts";
+import { copyText } from "../../components/clipboard.ts";
 import {
   GitHubSvg, CheckIcon, MinusIcon, CopyIcon,
   ZapIcon, FeatherIcon, BracesIcon, TargetIcon,
@@ -26,7 +27,8 @@ function InstallCommand() {
   let copied = false;
 
   function handleCopy() {
-    navigator.clipboard?.writeText(INSTALL_CMD).then(() => {
+    copyText(INSTALL_CMD).then((ok) => {
+      if (!ok) return;
       copied = true;
       update();
       setTimeout(() => { copied = false; update(); }, 1800);

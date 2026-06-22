@@ -18,6 +18,9 @@ export default defineConfig({
     video: "off",
     screenshot: "only-on-failure",
     viewport: { width: 1280, height: 800 },
+    // Exercise the real copy path: without this, every clipboard write rejects
+    // in headless Chromium and surfaces as an uncaught page error.
+    permissions: ["clipboard-read", "clipboard-write"],
   },
   projects: [
     {
