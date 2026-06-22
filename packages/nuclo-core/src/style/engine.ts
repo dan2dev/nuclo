@@ -28,6 +28,11 @@ const rawKeys = new Set<string>();
 const baseRules: string[] = [];
 const queryRules = new Map<string, string[]>();
 
+// Memoized getCssText() output. SSR calls getCssText() once per request, but the
+// rule set is stable after warmup — so the serialized sheet is recomputed only
+// when a new rule is actually recorded. Invalidated in record() and resetStyles().
+let cssTextCache: string | null = null;
+
 // Browser CSSOM state. Base rules occupy [0, baseRuleCount); grouping rules
 // (one per query, created in registration order) live after them. CSSRule
 // references stay live when indices shift, so insertion never rescans.
@@ -114,6 +119,7 @@ function record(rule: string, query: string | undefined): void {
 		}
 		bucket.push(rule);
 	}
+	cssTextCache = null; // a new rule changes the serialized sheet
 	ssrCollector?.(query === undefined ? rule : query + "{" + rule + "}");
 
 	const s = ensureSheet();
@@ -180,10 +186,12 @@ export function addRawRule(dedupeKey: string, rule: string): void {
 
 /** All generated CSS — base rules first, then at-rule groups in registration order. */
 export function getCssText(): string {
+	if (cssTextCache !== null) return cssTextCache;
 	let out = baseRules.join("");
 	for (const [query, rules] of queryRules) {
 		if (rules.length > 0) out += query + "{" + rules.join("") + "}";
 	}
+	cssTextCache = out;
 	return out;
 }
 
@@ -195,6 +203,7 @@ export function resetStyles(): void {
 	baseRules.length = 0;
 	queryRules.clear();
 	groupRules.clear();
+	cssTextCache = null;
 	baseRuleCount = 0;
 	sheet = null;
 	sheetDocument = null;

@@ -265,13 +265,11 @@ describe("SSR renderToString - Edge Cases", () => {
   describe("cssText parsing with malformed declarations", () => {
     it("should handle declarations with no colon", () => {
       const el = new NucloElement('div');
-      // Override style with a custom object that returns malformed cssText
-      Object.defineProperty(el, 'style', {
-        value: {
-          cssText: 'invalidstyle; color: blue',
-        },
-        configurable: true,
-      });
+      // Assign a custom object that returns malformed cssText. Going through the
+      // style setter populates the backing _style field the serializer reads.
+      (el as unknown as { style: unknown }).style = {
+        cssText: 'invalidstyle; color: blue',
+      };
       const html = renderToString(el as unknown as Element);
       // "invalidstyle" has no colon, so it passes through as-is
       // "color: blue" should be serialized normally
