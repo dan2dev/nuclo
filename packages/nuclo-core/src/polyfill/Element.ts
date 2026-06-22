@@ -103,19 +103,52 @@ function isCommentNode(node: unknown): node is CommentNode {
 export class NucloElement extends NucloNode {
   tagName: string;
   children: unknown[];
-  attributes: Map<string, string>;
   className: string = '';
-  classList: DOMTokenList;
   textContent: string = '';
   private _innerHTML: string = '';
   parentNode: unknown = null;
   rawMods?: unknown[];
   mods?: unknown[];
-  style: CSSStyleDeclaration;
   id: string = '';
   namespaceURI?: string;
   sheet?: CSSStyleSheet | null;
   private _listeners: Map<string, Set<EventListener>> | null;
+
+  // style/classList are allocated lazily: the vast majority of SSR elements
+  // never touch either (className is stored on the .className string, and the
+  // serializer reads the backing field directly), so eagerly constructing an
+  // SSRStyle + SSRClassList per element was pure allocation churn. The browser
+  // path assigns these in the constructor, so its getter never lazy-allocates.
+  private _style?: CSSStyleDeclaration;
+  private _classList?: DOMTokenList;
+
+  // attributes is allocated lazily too — most elements carry their identity on
+  // .className/.id (separate string fields) and never call setAttribute. Reads
+  // short-circuit on the undefined backing map without allocating; the
+  // serializer reads _attributes directly. The public getter still lazily
+  // materializes a Map for any external `el.attributes` consumer.
+  private _attributes?: Map<string, string>;
+
+  get attributes(): Map<string, string> {
+    return (this._attributes ??= new Map<string, string>());
+  }
+  set attributes(value: Map<string, string>) {
+    this._attributes = value;
+  }
+
+  get style(): CSSStyleDeclaration {
+    return (this._style ??= new SSRStyle() as unknown as CSSStyleDeclaration);
+  }
+  set style(value: CSSStyleDeclaration) {
+    this._style = value;
+  }
+
+  get classList(): DOMTokenList {
+    return (this._classList ??= new SSRClassList(this) as unknown as DOMTokenList);
+  }
+  set classList(value: DOMTokenList) {
+    this._classList = value;
+  }
 
   get innerHTML(): string {
     return this.serializeChildren();
@@ -150,8 +183,8 @@ export class NucloElement extends NucloNode {
     if (element.className) {
       html += ` class="${element.className}"`;
     }
-    if (element.attributes) {
-      for (const [name, value] of element.attributes) {
+    if (element._attributes) {
+      for (const [name, value] of element._attributes) {
         if (name !== 'id' && name !== 'class') {
           html += ` ${name}="${value}"`;
         }
@@ -183,18 +216,11 @@ export class NucloElement extends NucloNode {
     this.nodeType = 1; // ELEMENT_NODE
     this.nodeName = tagName.toUpperCase();
     this.children = [];
-    this.attributes = new Map<string, string>();
 
     if (!isBrowser) {
       // ── SSR path: minimal allocations, no Proxy, no event listeners ──
+      // style and classList stay unallocated until first access (see getters).
       this._listeners = null;
-
-      // Prototype-based style — zero Object.defineProperty calls per element
-      this.style = new SSRStyle() as unknown as CSSStyleDeclaration;
-
-      // Prototype-based classList — zero closures per element
-      this.classList = new SSRClassList(this) as unknown as DOMTokenList;
-      // sheet stays undefined — not needed in SSR
     } else {
       // ── Browser path: full-featured Proxy style + DOMTokenList ──
       this._listeners = new Map();
@@ -269,27 +295,27 @@ export class NucloElement extends NucloNode {
   }
   
   setAttribute(name: string, value: string): void {
-    this.attributes.set(name, value);
+    (this._attributes ??= new Map<string, string>()).set(name, value);
     if (name === 'class') {
       this.className = value;
     } else if (name === 'id') {
       this.id = value;
     }
   }
-  
+
   getAttribute(name: string): string | null {
-    return this.attributes.get(name) || null;
+    return this._attributes?.get(name) ?? null;
   }
-  
+
   removeAttribute(name: string): void {
-    this.attributes.delete(name);
+    this._attributes?.delete(name);
     if (name === 'class') {
       this.className = '';
     }
   }
-  
+
   hasAttribute(name: string): boolean {
-    return this.attributes.has(name);
+    return this._attributes?.has(name) ?? false;
   }
   
   insertBefore<T extends Node>(newNode: T, referenceNode: Node | null): T {

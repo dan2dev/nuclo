@@ -79,24 +79,32 @@ function serializeAttribute(name: string, value: unknown): string {
 function serializeAttributes(element: Element): string {
   let result = '';
 
-  // Handle polyfill elements with Map-based attributes
-  if ('attributes' in element && element.attributes instanceof Map) {
+  // Handle polyfill elements. NucloElement keeps every child in a plain Array
+  // (`children`), which a real DOM element never does (HTMLCollection) — this is
+  // the same allocation-free discriminator getChildNodes() uses. Reading
+  // `el.attributes` directly would lazily allocate an empty Map for every
+  // element being serialized, so the backing `_attributes` field is read instead.
+  if (Array.isArray((element as any).children)) {
     const el = element as any;
+    const attrs = el._attributes as Map<string, string> | undefined;
 
     // id — may live on the property rather than in the Map
-    if (el.id && !element.attributes.has('id')) {
+    if (el.id && !attrs?.has('id')) {
       result += serializeAttribute('id', el.id);
     }
 
     // class — kept on .className, mirrored to Map only when setAttribute is used
-    if (el.className && !element.attributes.has('class')) {
+    if (el.className && !attrs?.has('class')) {
       result += serializeAttribute('class', el.className);
     }
 
-    // style — lives on the Proxy, not in the attributes Map.
+    // style — lives on the backing _style object, not in the attributes Map.
+    // Read the field directly (never `el.style`) so elements that never set a
+    // style are not forced to lazily allocate an empty SSRStyle just to serialize.
     // cssText returns camelCase keys ("backgroundColor: red"), so convert them.
-    if (!element.attributes.has('style') && el.style) {
-      const rawCssText: string = el.style.cssText || '';
+    const styleObj = el._style;
+    if (!attrs?.has('style') && styleObj) {
+      const rawCssText: string = styleObj.cssText || '';
       if (rawCssText) {
         const kebabStyle = rawCssText
           .split(';')
@@ -124,9 +132,11 @@ function serializeAttributes(element: Element): string {
     // polyfill stores as-is because NucloElement lacks the browser property mappings.
     // SVG attributes that are natively camelCase (e.g. viewBox, preserveAspectRatio) must
     // NOT be converted — they are stored via setAttribute() as-is.
-    for (const [name, value] of element.attributes) {
-      const htmlName = SVG_PRESERVE_CASE_ATTRS.has(name) ? name : camelToKebab(name);
-      result += serializeAttribute(htmlName, value);
+    if (attrs) {
+      for (const [name, value] of attrs) {
+        const htmlName = SVG_PRESERVE_CASE_ATTRS.has(name) ? name : camelToKebab(name);
+        result += serializeAttribute(htmlName, value);
+      }
     }
     return result;
   }
