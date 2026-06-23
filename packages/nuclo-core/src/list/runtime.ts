@@ -71,24 +71,33 @@ function remove<TItem, TTagName extends ElementTagName>(record: ListItemRecord<T
 }
 
 /**
- * Detaches every record's element from the DOM in a single operation by
- * collapsing the range between the two list markers, instead of calling
- * removeChild() once per row.
+ * Detaches every record's row element from the DOM with a plain removeChild
+ * loop — one call per top-level row, never descending into a row's subtree.
+ * Each record's element is a direct child of `parent` (the rows between the two
+ * list markers), so iterating records removes exactly the same nodes the
+ * markers span.
  *
- * Unlike per-node removal, this does NOT eagerly walk each subtree to abort
- * listeners and prune reactive registries. That walk is the dominant cost when
- * clearing/replacing a large list, and it is redundant here:
+ * This is O(rows): removeChild is O(1) given the node. We deliberately do NOT
+ * use Range.deleteContents() here. Its spec-faithful "is this node contained?"
+ * check (compareBoundaryPointsPosition → isFollowing) re-walks the tree from
+ * the range start for *every* spanned node, which is O(nodes²) in non-native
+ * DOM implementations (jsdom) and — because the walk visits descendants — scales
+ * with nodes-per-row, so a nested `tr>td>td` row template made replace/clear
+ * quadratic where a flat `div` row only looked linear.
+ *
+ * Like the previous Range-based clear, this does NOT eagerly walk each subtree
+ * to abort listeners and prune reactive registries. That walk is the dominant
+ * per-row cost when clearing/replacing a large list, and it is redundant here:
  *  - Reactive text/attribute registries hold their targets only through
  *    WeakRef/WeakMap, and every update() prunes entries whose node became
- *    disconnected (which Range.deleteContents() makes them). The real-GC tests
- *    in test/memory/gc-collectability.test.ts prove a detached subtree is
+ *    disconnected (which removeChild makes them). The real-GC tests in
+ *    test/memory/gc-collectability.test.ts prove a detached subtree is
  *    collectible with no eager cleanup and no extra update pass.
  *  - Event listeners are tracked in a WeakMap keyed by element and registered
  *    with an AbortSignal, so they are released when the element is collected.
  *
- * Returns false (and mutates nothing) when a Range clear isn't applicable —
- * e.g. the markers aren't both children of `parent`, or Range is unavailable —
- * so the caller can fall back to per-node removal.
+ * Returns false (and mutates nothing) when the markers aren't both children of
+ * `parent`, so the caller can fall back to per-node removal.
  */
 function bulkClearRecords<TItem, TTagName extends ElementTagName>(
   records: ReadonlyArray<ListItemRecord<TItem, TTagName>>,
@@ -97,20 +106,15 @@ function bulkClearRecords<TItem, TTagName extends ElementTagName>(
   endMarker: Comment,
 ): boolean {
   if (startMarker.parentNode !== parent || endMarker.parentNode !== parent) return false;
-  if (typeof document === "undefined" || typeof document.createRange !== "function") return false;
 
-  try {
-    const range = document.createRange();
-    range.setStartAfter(startMarker);
-    range.setEndBefore(endMarker);
-    range.deleteContents();
-  } catch {
-    return false;
-  }
-
-  // Nodes are out of the live tree in one shot; just drop record references.
   for (let i = 0; i < records.length; i++) {
-    releaseRecord(records[i]);
+    const record = records[i];
+    const node = record.element as unknown as Node | null;
+    // Detach the row (guard against an already-moved/detached element so a
+    // stale record can't throw). Children of the row go with it in one call.
+    if (node && node.parentNode === parent) parent.removeChild(node);
+    // Node is out of the live tree; drop the record's references.
+    releaseRecord(record);
   }
   return true;
 }
