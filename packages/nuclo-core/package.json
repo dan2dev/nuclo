@@ -42,6 +42,7 @@
 		"test": "npm run typecheck && vitest run --coverage",
 		"test:watch": "vitest --watch --coverage",
 		"bench": "bun bench/ssr.bench.ts && bun bench/hydrate.bench.ts",
+		"bench:jfb": "bun bench/js-framework.bench.ts",
 		"lint": "eslint . --ext .ts,.js,.json,.jsonc,.json5,.md,.css",
 		"lint:fix": "eslint . --ext .ts,.js,.json,.jsonc,.json5,.md,.css --fix"
 	},
