@@ -107,6 +107,12 @@ export default [
     },
   },
   {
+    files: ["bench/**/*.{ts,tsx,js,jsx,mts,cts}"],
+    rules: {
+      "no-console": "off",
+    },
+  },
+  {
     files: ["**/*.{js,mjs,cjs,jsx}"],
     rules: {
       "no-unused-vars": ["warn", {

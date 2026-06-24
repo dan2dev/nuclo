@@ -80,6 +80,7 @@ describe("SSR renders are not retained by global registries", () => {
   itGc("a reactive tree is collectible after render + drop (no strong refs)", async () => {
     let built: { root: object; html: string } | null = buildReactiveTree();
     const ref = new WeakRef(built.root);
+    // eslint-disable-next-line no-useless-assignment -- drop strong ref for GC
     built = null;
 
     await collectGarbage();
