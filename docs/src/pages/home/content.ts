@@ -1,4 +1,4 @@
-export const HERO_BADGE = "v0.2.5 · Zero dependencies";
+export const HERO_BADGE = "v0.2.6 · Zero dependencies";
 
 export const HERO_TITLE_LINES = ["Mutate.", "Call update().", "Done."];
 
