@@ -148,7 +148,8 @@ describe('Reactive Text', () => {
     
     // Only the non-null functions should create text nodes
     expect(element.textContent).toBe('helloworld');
-    expect(element.childNodes.length).toBe(4); // 2 reactive text nodes with comments = 2*2
+    // Pure client render: 2 bare reactive text nodes, no <!-- text-N --> markers.
+    expect(element.childNodes.length).toBe(2);
     
     testData.value1 = 'updated';
     testData.value4 = 'text';

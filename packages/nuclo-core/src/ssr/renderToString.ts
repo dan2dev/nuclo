@@ -6,6 +6,7 @@
 
 import { escapeHtml, escapeText, camelToKebab } from '../utility/stringUtils';
 import { createElement } from '../utility/dom';
+import { runSerializing } from '../hydration/context';
 
 type RenderableInput =
   | NodeModFn<ElementTagName>
@@ -308,9 +309,14 @@ export function renderToString(input: RenderableInput): string {
 
   if (typeof input === 'function') {
     try {
-      const container = createElement('div');
-      if (!container) throw new Error('Document is not available. Make sure polyfills are loaded.');
-      const element = input(container as ExpandedElement<ElementTagName>, 0);
+      // Build the tree in serialization mode so text children keep their
+      // <!-- text-N --> markers (needed for hydration) even when isBrowser is
+      // true, e.g. SSR running under jsdom.
+      const element = runSerializing(() => {
+        const container = createElement('div');
+        if (!container) throw new Error('Document is not available. Make sure polyfills are loaded.');
+        return input(container as ExpandedElement<ElementTagName>, 0);
+      });
       return element && typeof element === 'object' && 'nodeType' in element ? serializeNode(element as Node) : '';
     } catch (error) {
       // eslint-disable-next-line no-console

@@ -29,11 +29,15 @@ function joinClasses(classes: Set<string>): string {
 	return result;
 }
 
-// Mark element as having a reactive className and capture static classes
+// Mark element as having a reactive className and capture static classes.
+// Only allocate the tracking Set when the element actually has static classes —
+// reactive-only elements (the common case, e.g. a list row's `class={...}`)
+// skip the Set entirely. mergeReactiveClassName/addStaticClasses both handle a
+// missing Set, so an empty one carries no information.
 export function initReactiveClassName(el: HTMLElement): void {
-	if (!staticClassNames.has(el)) {
+	if (el.className && !staticClassNames.has(el)) {
 		const classSet = new Set<string>();
-		if (el.className) addClassTokens(classSet, el.className);
+		addClassTokens(classSet, el.className);
 		staticClassNames.set(el, classSet);
 	}
 	reactiveClassNameFlags.add(el);

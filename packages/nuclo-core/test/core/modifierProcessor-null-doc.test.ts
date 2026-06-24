@@ -17,6 +17,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest';
 import { applyNodeModifier } from '../../src/core/modifierProcessor';
+import { runSerializing } from '../../src/hydration/context';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -63,27 +64,27 @@ describe('applyNodeModifier – null/undefined inputs', () => {
 
 // ── Unit: non-zero-arity function modifiers ───────────────────────────────────
 describe('applyNodeModifier – NodeModFn (non-zero-arity functions)', () => {
-  it('returns a fragment when NodeModFn returns a primitive string (line 76)', () => {
+  it('returns a text node when NodeModFn returns a primitive string (line 76)', () => {
     const parent = makeParent();
     const modifier = (_el: ExpandedElement<'div'>, _i: number) => 'hello';
     const result = applyNodeModifier(parent, modifier as NodeModFn<'div'>, 0);
-    // createStaticTextFragment returns a DocumentFragment
+    // Pure client render: a bare text node (no <!-- text-N --> marker fragment).
     expect(result).toBeTruthy();
-    expect(result?.nodeType).toBe(Node.DOCUMENT_FRAGMENT_NODE);
+    expect(result?.nodeType).toBe(Node.TEXT_NODE);
   });
 
-  it('returns a fragment when NodeModFn returns a number (line 76)', () => {
+  it('returns a text node when NodeModFn returns a number (line 76)', () => {
     const parent = makeParent();
     const modifier = () => 42;
     const result = applyNodeModifier(parent, modifier as unknown as NodeModFn<'div'>, 0);
-    expect(result?.nodeType).toBe(Node.DOCUMENT_FRAGMENT_NODE);
+    expect(result?.nodeType).toBe(Node.TEXT_NODE);
   });
 
-  it('returns a fragment when NodeModFn returns boolean (line 76)', () => {
+  it('returns a text node when NodeModFn returns boolean (line 76)', () => {
     const parent = makeParent();
     const modifier = () => true;
     const result = applyNodeModifier(parent, modifier as unknown as NodeModFn<'div'>, 0);
-    expect(result?.nodeType).toBe(Node.DOCUMENT_FRAGMENT_NODE);
+    expect(result?.nodeType).toBe(Node.TEXT_NODE);
   });
 
   it('returns the node when NodeModFn returns a DOM Node (line 77)', () => {
@@ -120,13 +121,13 @@ describe('applyNodeModifier – NodeModFn (non-zero-arity functions)', () => {
 
 // ── Unit: zero-arity function modifiers ─────────────────────────────────────
 describe('applyNodeModifier – zero-arity reactive functions', () => {
-  it('creates a reactive text fragment for a zero-arity primitive resolver', () => {
+  it('creates a reactive text node for a zero-arity primitive resolver', () => {
     const parent = makeParent();
     const resolver = () => 'reactive text';
     const result = applyNodeModifier(parent, resolver as NodeModFn<'div'>, 0);
-    // Should return a DocumentFragment with a text node
+    // Pure client render: a bare reactive text node, no marker fragment.
     expect(result).toBeTruthy();
-    expect(result?.nodeType).toBe(Node.DOCUMENT_FRAGMENT_NODE);
+    expect(result?.nodeType).toBe(Node.TEXT_NODE);
   });
 
   it('returns null for zero-arity function that returns null primitive', () => {
@@ -156,16 +157,16 @@ describe('applyNodeModifier – zero-arity reactive functions', () => {
 
 // ── Unit: primitive modifier (non-function) ───────────────────────────────────
 describe('applyNodeModifier – primitive modifiers', () => {
-  it('creates a text fragment for string modifier', () => {
+  it('creates a text node for string modifier', () => {
     const parent = makeParent();
     const result = applyNodeModifier(parent, 'hello world' as unknown as NodeModFn<'div'>, 0);
-    expect(result?.nodeType).toBe(Node.DOCUMENT_FRAGMENT_NODE);
+    expect(result?.nodeType).toBe(Node.TEXT_NODE);
   });
 
-  it('creates a text fragment for number modifier', () => {
+  it('creates a text node for number modifier', () => {
     const parent = makeParent();
     const result = applyNodeModifier(parent, 100 as unknown as NodeModFn<'div'>, 1);
-    expect(result?.nodeType).toBe(Node.DOCUMENT_FRAGMENT_NODE);
+    expect(result?.nodeType).toBe(Node.TEXT_NODE);
   });
 
   it('applies attributes for plain object modifier', () => {
@@ -191,8 +192,11 @@ describe('applyNodeModifier – createDocumentFragment returns null (lines 99, 1
   it('throws when document is unavailable and a static text fragment is needed (line 111)', () => {
     removeDocument();
     const parent = {} as unknown as ExpandedElement<'div'>;
+    // Serialization mode forces the marker-fragment path, which is where the
+    // missing-document throw lives (a pure client render would skip the fragment
+    // and gracefully return null instead).
     expect(() => {
-      applyNodeModifier(parent, 'static text' as unknown as NodeModFn<'div'>, 0);
+      runSerializing(() => applyNodeModifier(parent, 'static text' as unknown as NodeModFn<'div'>, 0));
     }).toThrow(/document/i);
     restoreDocument();
     savedDocument = undefined;

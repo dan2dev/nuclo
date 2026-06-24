@@ -21,60 +21,45 @@ import { logError } from "./errorHandler";
 import { isBrowser } from "./environment";
 
 type EventListenerOptions = boolean | AddEventListenerOptions;
-type ListenerTarget = HTMLElement;
-type AnyTrackedListener = TypedEventListener<ListenerTarget, Event>;
 
 interface TrackedListener {
-  original: AnyTrackedListener;
+  type: string;
   wrapped: EventListener;
   options?: EventListenerOptions;
-  controller?: AbortController;
 }
 
 /**
- * WeakMap to track event listeners per element.
- * Key: HTMLElement, Value: Map of event type to Set of listener info
+ * Tracks attached listeners per element so removeAllListeners() can detach them.
+ *
+ * A flat array per element (rather than a Map<type, Set>) keeps the common
+ * case — one or two listeners on a node, as in a list row — down to a single
+ * allocation. The WeakMap keying means a collected element drops its listener
+ * array automatically, and the listeners themselves are released with the
+ * element by the DOM, so no per-listener AbortController is needed: detach is a
+ * plain removeEventListener with the tracked wrapper + options.
  */
-const elementListeners = new WeakMap<
-  HTMLElement,
-  Map<string, Set<TrackedListener>>
->();
+const elementListeners = new WeakMap<HTMLElement, TrackedListener[]>();
 
 /**
  * Store listener info for an element to enable cleanup.
  */
 function trackListener(
   element: HTMLElement,
-  type: string,
-  original: AnyTrackedListener,
-  wrapped: EventListener,
-  options?: EventListenerOptions,
-  controller?: AbortController
+  info: TrackedListener
 ): void {
-  let typeMap = elementListeners.get(element);
-  if (!typeMap) {
-    typeMap = new Map();
-    elementListeners.set(element, typeMap);
+  const list = elementListeners.get(element);
+  if (list) {
+    list.push(info);
+  } else {
+    elementListeners.set(element, [info]);
   }
-  
-  let listeners = typeMap.get(type);
-  if (!listeners) {
-    listeners = new Set();
-    typeMap.set(type, listeners);
-  }
-  
-  listeners.add({ original, wrapped, options, controller });
 }
 
 /**
  * Detach a single tracked listener from the DOM.
  */
-function detachListener(element: HTMLElement, type: string, info: TrackedListener): void {
-  if (info.controller) {
-    info.controller.abort();
-  } else {
-    element.removeEventListener(type, info.wrapped, info.options);
-  }
+function detachListener(element: HTMLElement, info: TrackedListener): void {
+  element.removeEventListener(info.type, info.wrapped, info.options);
 }
 
 /**
@@ -84,21 +69,27 @@ export function removeAllListeners(
   element: HTMLElement,
   type?: string
 ): void {
-  const typeMap = elementListeners.get(element);
-  if (!typeMap) return;
+  const list = elementListeners.get(element);
+  if (!list) return;
 
-  if (type) {
-    const listeners = typeMap.get(type);
-    if (listeners) {
-      for (const info of listeners) detachListener(element, type, info);
-      typeMap.delete(type);
-    }
-  } else {
-    for (const [eventType, listeners] of typeMap) {
-      for (const info of listeners) detachListener(element, eventType, info);
-    }
+  if (type === undefined) {
+    for (let i = 0; i < list.length; i++) detachListener(element, list[i]);
     elementListeners.delete(element);
+    return;
   }
+
+  // Detach matching listeners, compacting survivors back into the same array.
+  let write = 0;
+  for (let i = 0; i < list.length; i++) {
+    const info = list[i];
+    if (info.type === type) {
+      detachListener(element, info);
+    } else {
+      list[write++] = info;
+    }
+  }
+  list.length = write;
+  if (write === 0) elementListeners.delete(element);
 }
 
 /**
@@ -142,10 +133,7 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
     }
 
     const el = parent as HTMLElementTagNameMap[TTagName];
-    
-    // Create an AbortController for this listener
-    const controller = new AbortController();
-    
+
     const wrapped = function(ev: Event): void {
       try {
         listener.call(
@@ -157,14 +145,9 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
       }
     };
 
-    // Merge options with signal
-    const listenerOptions = typeof options === 'boolean'
-      ? { capture: options, signal: controller.signal }
-      : { ...(options || {}), signal: controller.signal };
-    
-    el.addEventListener(type, wrapped as EventListener, listenerOptions);
-    
-    // Track the listener for potential cleanup
-    trackListener(el, type, listener as AnyTrackedListener, wrapped as EventListener, options, controller);
+    el.addEventListener(type, wrapped as EventListener, options);
+
+    // Track the listener so removeAllListeners() can detach it later.
+    trackListener(el, { type, wrapped: wrapped as EventListener, options });
   };
 }

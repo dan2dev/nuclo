@@ -1,6 +1,7 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { applyNodeModifier } from "../../src/core/modifierProcessor";
+import { runSerializing } from "../../src/hydration/context";
 
 describe("modifierProcessor edge cases", () => {
   let parent: HTMLDivElement;
@@ -100,7 +101,8 @@ describe("modifierProcessor edge cases", () => {
     it("should handle NodeModFn that returns a primitive", () => {
       const modifier = () => "text content";
       const result = applyNodeModifier(parent, modifier, 0);
-      expect(result).toBeInstanceOf(DocumentFragment);
+      // Pure client render: bare text node, no <!-- text-N --> marker fragment.
+      expect(result).toBeInstanceOf(Text);
       expect(result?.textContent).toBe("text content");
     });
 
@@ -150,19 +152,19 @@ describe("modifierProcessor edge cases", () => {
 
     it("should handle primitive modifier (string)", () => {
       const result = applyNodeModifier(parent, "text", 0);
-      expect(result).toBeInstanceOf(DocumentFragment);
+      expect(result).toBeInstanceOf(Text);
       expect(result?.textContent).toBe("text");
     });
 
     it("should handle primitive modifier (number)", () => {
       const result = applyNodeModifier(parent, 42, 0);
-      expect(result).toBeInstanceOf(DocumentFragment);
+      expect(result).toBeInstanceOf(Text);
       expect(result?.textContent).toBe("42");
     });
 
     it("should handle primitive modifier (boolean)", () => {
       const result = applyNodeModifier(parent, true, 0);
-      expect(result).toBeInstanceOf(DocumentFragment);
+      expect(result).toBeInstanceOf(Text);
       expect(result?.textContent).toBe("true");
     });
 
@@ -179,39 +181,46 @@ describe("modifierProcessor edge cases", () => {
     });
   });
 
-  describe("reactive text fragment creation", () => {
-    it("should create fragment with comment and text node", () => {
+  describe("reactive text creation", () => {
+    it("returns a bare text node in a pure client render", () => {
       const modifier = () => "reactive text";
       const result = applyNodeModifier(parent, modifier, 0);
-      
+
+      expect(result).toBeInstanceOf(Text);
+      expect(result?.textContent).toBe("reactive text");
+    });
+
+    it("emits the <!-- text-N --> marker fragment in serialization mode", () => {
+      const modifier = () => "text";
+      const result = runSerializing(() => applyNodeModifier(parent, modifier, 5));
+
       expect(result).toBeInstanceOf(DocumentFragment);
       expect(result?.childNodes.length).toBe(2); // comment + text
       expect(result?.firstChild?.nodeType).toBe(Node.COMMENT_NODE);
       expect(result?.lastChild?.nodeType).toBe(Node.TEXT_NODE);
-    });
-
-    it("should use correct index in comment", () => {
-      const modifier = () => "text";
-      const result = applyNodeModifier(parent, modifier, 5);
-      
-      const comment = result?.firstChild as Comment;
-      expect(comment?.textContent).toContain("text-5");
+      expect((result?.firstChild as Comment)?.textContent).toContain("text-5");
     });
 
     it("should handle pre-evaluated value in reactive text", () => {
       const modifier = () => "value";
       const result = applyNodeModifier(parent, modifier, 0);
-      
+
       // The pre-evaluated value should be used
       expect(result?.textContent).toBe("value");
     });
   });
 
-  describe("static text fragment creation", () => {
-    it("should create fragment with comment and text node for static text", () => {
-      const modifier = () => "static";
-      const result = applyNodeModifier(parent, modifier, 0);
-      
+  describe("static text creation", () => {
+    it("returns a bare text node in a pure client render", () => {
+      const result = applyNodeModifier(parent, "static", 0);
+
+      expect(result).toBeInstanceOf(Text);
+      expect(result?.textContent).toBe("static");
+    });
+
+    it("emits a comment + text fragment in serialization mode", () => {
+      const result = runSerializing(() => applyNodeModifier(parent, "static", 0));
+
       expect(result).toBeInstanceOf(DocumentFragment);
       expect(result?.childNodes.length).toBe(2);
     });
