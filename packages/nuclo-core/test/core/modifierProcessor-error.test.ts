@@ -28,8 +28,8 @@ describe('modifierProcessor zero-arg reactive error branch', () => {
     };
 
     const node = applyNodeModifier(parent, badFn, 0);
-    expect(node).toBeInstanceOf(DocumentFragment);
-    expect(node?.textContent).toBe(''); // fallback empty reactive text node
+    expect(node).toBeInstanceOf(Text); // fallback empty reactive text node (client render: no marker fragment)
+    expect(node?.textContent).toBe('');
     expect(calls).toBe(1);
     expect(consoleSpy).toHaveBeenCalledTimes(1);
     const firstArgs = consoleSpy.mock.calls[0];
@@ -48,13 +48,13 @@ describe('modifierProcessor zero-arg reactive error branch', () => {
 
     // First attempt (records failure)
     const firstNode = applyNodeModifier(parent, badFn, 0);
-    expect(firstNode).toBeInstanceOf(DocumentFragment);
+    expect(firstNode).toBeInstanceOf(Text);
     expect(calls).toBe(1);
     expect(consoleSpy).toHaveBeenCalledTimes(1);
 
     // Second attempt should NOT invoke badFn again (cached error path)
     const secondNode = applyNodeModifier(parent, badFn, 1);
-    expect(secondNode).toBeInstanceOf(DocumentFragment);
+    expect(secondNode).toBeInstanceOf(Text);
     expect(secondNode).not.toBe(firstNode); // new fallback reactive text node each time
     expect(calls).toBe(1); // no additional executions
     expect(consoleSpy).toHaveBeenCalledTimes(1); // no extra logging

@@ -214,7 +214,9 @@ describe('When Conditional Rendering', () => {
       }
       
       expect(container.textContent).toBe('Content'); // Should end with content (odd number of toggles)
-      expect(container.childNodes.length).toBe(4); // Markers + comment + content
+      // when-start + when-end markers + the content text node. Pure client
+      // renders no longer emit a <!-- text-N --> marker before the text.
+      expect(container.childNodes.length).toBe(3);
     });
   });
 });

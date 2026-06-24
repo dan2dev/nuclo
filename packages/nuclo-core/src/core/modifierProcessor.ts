@@ -5,7 +5,8 @@ import { logError } from "../utility/errorHandler";
 import { isFunction, isNode, isObject, isPrimitive, isZeroArityFunction } from "../utility/typeGuards";
 import { modifierProbeCache } from "../utility/modifierPredicates";
 import { createComment, createDocumentFragment, createTextNode } from "../utility/dom";
-import { isHydrating, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration/context";
+import { isHydrating, isSerializing, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration/context";
+import { isBrowser } from "../utility/environment";
 
 export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
 	| NodeMod<TTagName>
@@ -80,7 +81,7 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 					modifierProbeCache.set(modifier, record);
 				}
 				if (record.error) {
-					return createReactiveTextFragment(index, () => "");
+					return createReactiveTextChild(index, () => "");
 				}
 				const v = record.value;
 
@@ -108,20 +109,20 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 						}
 						return null;
 					}
-					return createReactiveTextFragment(index, modifier as () => Primitive, v);
+					return createReactiveTextChild(index, modifier as () => Primitive, v);
 				}
 				return null;
 			} catch (error) {
 				modifierProbeCache.set(modifier, { value: undefined, error: true });
 				logError("Error evaluating reactive text function:", error);
-				return createReactiveTextFragment(index, () => "");
+				return createReactiveTextChild(index, () => "");
 			}
 		}
 
 		// Handle NodeModFn functions
 		const produced = (modifier as NodeModFn<TTagName>)(parent, index);
 		if (produced == null) return null;
-		if (isPrimitive(produced)) return createStaticTextFragment(index, produced);
+		if (isPrimitive(produced)) return createStaticTextChild(index, produced);
 		if (isNode(produced)) return produced;
 		if (isObject(produced)) {
 			applyAttributes(parent, produced as ExpandedElementAttributes<TTagName>);
@@ -138,7 +139,7 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 			claimTextAfterMarker(parentNode, String(candidate));
 			return null;
 		}
-		return createStaticTextFragment(index, candidate);
+		return createStaticTextChild(index, candidate);
 	}
 	if (isNode(candidate)) return candidate;
 	applyAttributes(parent, candidate as ExpandedElementAttributes<TTagName>);
@@ -146,11 +147,24 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 }
 
 /**
- * Builds the `<!-- text-N -->` marker + text-node fragment shared by the
- * reactive and static text paths. A null text node (document unavailable) is
- * skipped, matching the previous per-path guards.
+ * Wraps a freshly created text node for insertion.
+ *
+ * The `<!-- text-N -->` marker only exists so hydration can pair an SSR text
+ * node with its client resolver. A pure client render never hydrates, so the
+ * marker (and the DocumentFragment that carries it) is dead weight: two extra
+ * DOM nodes and a fragment allocation per text child that nothing ever reads.
+ * In that case we return the bare text node — halving the per-row DOM node
+ * count and the DOM inserts in list-heavy renders.
+ *
+ * SSR (isBrowser === false, or renderToString's serialization mode) and the
+ * hydration-mismatch fresh-render path keep the marker so the emitted/repaired
+ * DOM stays hydratable. A null text node (document unavailable) is skipped,
+ * matching the previous per-path guards.
  */
-function createTextFragment(index: number, textNode: Node | null): DocumentFragment {
+function wrapTextNode(index: number, textNode: Node | null): Node | null {
+	if (isBrowser && !isHydrating() && !isSerializing()) {
+		return textNode;
+	}
 	const fragment = createDocumentFragment();
 	if (!fragment) {
 		throw new Error("Failed to create document fragment: document not available");
@@ -161,14 +175,14 @@ function createTextFragment(index: number, textNode: Node | null): DocumentFragm
 	return fragment;
 }
 
-function createReactiveTextFragment(
+function createReactiveTextChild(
 	index: number,
 	resolver: () => Primitive,
 	preEvaluated?: unknown
-): DocumentFragment {
-	return createTextFragment(index, createReactiveTextNode(resolver, preEvaluated));
+): Node | null {
+	return wrapTextNode(index, createReactiveTextNode(resolver, preEvaluated));
 }
 
-function createStaticTextFragment(index: number, value: Primitive): DocumentFragment {
-	return createTextFragment(index, createTextNode(String(value)));
+function createStaticTextChild(index: number, value: Primitive): Node | null {
+	return wrapTextNode(index, createTextNode(String(value)));
 }

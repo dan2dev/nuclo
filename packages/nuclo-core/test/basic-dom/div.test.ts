@@ -18,10 +18,11 @@ describe("div NodeBuilder", () => {
     const parent = document.createElement("div");
     const nodeBuilder = div("Hello, ", document.createElement("span"), () => "World!");
     const element = nodeBuilder(parent, 0);
-    expect(element.childNodes!.length).toBe(5); // 2 text nodes with comments + 1 span = 2*2 + 1
-    expect(element.childNodes![1].textContent).toBe("Hello, ");
-    expect(element.childNodes![2]).toBeInstanceOf(HTMLSpanElement);
-    expect(element.childNodes![4].textContent).toBe("World!");
+    // Pure client render: bare text nodes, no <!-- text-N --> markers.
+    expect(element.childNodes!.length).toBe(3); // text + span + text
+    expect(element.childNodes![0].textContent).toBe("Hello, ");
+    expect(element.childNodes![1]).toBeInstanceOf(HTMLSpanElement);
+    expect(element.childNodes![2].textContent).toBe("World!");
   });
 
   it("should set attributes and properties", () => {
@@ -43,8 +44,9 @@ describe("div NodeBuilder", () => {
       () => undefined,
     );
     const element = nodeBuilder(parent, 0);
-    expect(element.childNodes!.length).toBe(2); // 1 comment + 1 text node
-    expect(element.childNodes![1].textContent).toBe("Valid Text");
+    // Pure client render: a single bare text node, no <!-- text-N --> marker.
+    expect(element.childNodes!.length).toBe(1);
+    expect(element.childNodes![0].textContent).toBe("Valid Text");
   });
 
   it("should handle nested divs", () => {

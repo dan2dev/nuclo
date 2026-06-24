@@ -1,6 +1,7 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach } from 'vitest';
 import { applyModifiers } from '../../src/internal/applyModifiers';
+import { runSerializing } from '../../src/hydration/context';
 
 /**
  * These tests assert the observable DOM behavior of applyModifiers:
@@ -11,8 +12,10 @@ import { applyModifiers } from '../../src/internal/applyModifiers';
  *   * Null / undefined modifiers are skipped
  *   * NodeModFn variants returning different kinds of values
  *
- * The index is internal bookkeeping (it drives the unique `text-N` markers), so
- * it is verified through those markers rather than through a return value.
+ * The index is internal bookkeeping that drives the unique `text-N` markers.
+ * Those markers are only emitted when building for SSR serialization (a pure
+ * client render skips them — see basic-dom/div.test.ts), so the indexing tests
+ * run their applyModifiers call inside runSerializing() to observe the markers.
  */
 const textMarkers = (host: HTMLElement): Array<string | undefined> =>
   Array.from(host.childNodes)
@@ -40,7 +43,7 @@ describe('internal/applyModifiers', () => {
       true
     ] as Array<NodeMod<'div'>>;
 
-    applyModifiers(host, mods, 0);
+    runSerializing(() => applyModifiers(host, mods, 0));
     expect(host.childNodes.length).toBe(6); // 3 comments + 3 text nodes
     expect(textMarkers(host)).toEqual(['text-0', 'text-1', 'text-2']);
     const texts = Array.from(host.childNodes).filter(n => n.nodeType === Node.TEXT_NODE).map(n => n.textContent);
@@ -52,7 +55,7 @@ describe('internal/applyModifiers', () => {
       { id: 'alpha', title: 'First' },
       'text-node'
     ] as Array<NodeMod<'div'>>;
-    applyModifiers(host, mods, 5);
+    runSerializing(() => applyModifiers(host, mods, 5));
     // attribute-only modifier does not advance the index; the text keeps marker 5
     expect(textMarkers(host)).toEqual(['text-5']);
     expect(host.id).toBe('alpha');
@@ -70,7 +73,7 @@ describe('internal/applyModifiers', () => {
       null,
       'y'
     ] as Array<NodeMod<'div'>>;
-    applyModifiers(host, mods);
+    runSerializing(() => applyModifiers(host, mods));
     expect(host.childNodes.length).toBe(4); // 2 comments + 2 text nodes
     expect(textMarkers(host)).toEqual(['text-0', 'text-1']);
     expect(Array.from(host.childNodes).filter(n => n.nodeType === Node.TEXT_NODE).map(n => n.textContent)).toEqual(['x', 'y']);
@@ -101,7 +104,7 @@ describe('internal/applyModifiers', () => {
       (_parent: ExpandedElement<'div'>) => 'alpha',
       (_parent: ExpandedElement<'div'>, i: number) => i * 10
     ] as Array<NodeModFn<'div'>>;
-    applyModifiers(host, mods);
+    runSerializing(() => applyModifiers(host, mods));
     expect(host.childNodes.length).toBe(4); // 2 comments + 2 text nodes
     expect(host.childNodes[1].textContent).toBe('alpha');
     expect(host.childNodes[3].textContent).toBe('10');
@@ -112,7 +115,7 @@ describe('internal/applyModifiers', () => {
       (_parent: ExpandedElement<'div'>) => ({ id: 'dynamic-id' }),
       'after'
     ] as Array<NodeMod<'div'>>;
-    applyModifiers(host, mods, 10);
+    runSerializing(() => applyModifiers(host, mods, 10));
     expect(host.id).toBe('dynamic-id');
     // attribute-only function does not advance the index; the text keeps marker 10
     expect(textMarkers(host)).toEqual(['text-10']);
@@ -168,7 +171,7 @@ describe('internal/applyModifiers', () => {
 
   it('startIndex offsets the marker index of appended nodes', () => {
     const mods: Array<NodeMod<'div'>> = ['x', 'y', 'z'];
-    applyModifiers(host, mods, 7);
+    runSerializing(() => applyModifiers(host, mods, 7));
     expect(textMarkers(host)).toEqual(['text-7', 'text-8', 'text-9']);
   });
 
@@ -180,7 +183,7 @@ describe('internal/applyModifiers', () => {
     };
 
     const mods: Array<NodeMod<'div'>> = [valueFn];
-    applyModifiers(host, mods);
+    runSerializing(() => applyModifiers(host, mods));
     expect(host.childNodes.length).toBe(2); // 1 comment + 1 reactive text node
     expect(host.childNodes[1]?.textContent).toBe('val-1');
   });

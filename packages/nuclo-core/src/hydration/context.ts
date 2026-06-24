@@ -12,11 +12,38 @@
  */
 
 let _hydrating = false;
+// True while renderToString() is building a tree destined for serialization.
+let _serializing = false;
 // Missing entry = cursor at parent.firstChild; null = past the last child.
 let _cursors = new WeakMap<Node, Node | null>();
 
 export function isHydrating(): boolean {
   return _hydrating;
+}
+
+/**
+ * True while a tree is being built for SSR serialization (inside
+ * renderToString). Text children must keep their `<!-- text-N -->` markers in
+ * this mode so the emitted HTML stays hydratable — even when `isBrowser` is
+ * true (SSR running under jsdom, or an isomorphic worker that provides a DOM).
+ * A pure client render leaves this false and skips the markers.
+ */
+export function isSerializing(): boolean {
+  return _serializing;
+}
+
+/**
+ * Runs `fn` with serialization mode enabled, restoring the previous state
+ * afterwards (so nested/re-entrant renderToString calls behave correctly).
+ */
+export function runSerializing<T>(fn: () => T): T {
+  const previous = _serializing;
+  _serializing = true;
+  try {
+    return fn();
+  } finally {
+    _serializing = previous;
+  }
 }
 
 export function startHydration(): void {
