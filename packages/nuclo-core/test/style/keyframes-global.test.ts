@@ -39,6 +39,16 @@ describe('keyframes()', () => {
 		const text = getCssText();
 		expect(text).toContain(`@keyframes ${name}{0%{background:#111;padding:4px}100%{background:#fff;padding:8px}}`);
 	});
+
+	it('passes raw declarations through inside frames', () => {
+		const { keyframes } = createCss({});
+		const name = keyframes({
+			from: { raw: { 'offset-distance': '0%' } },
+			to: { raw: { 'offset-distance': '100%' } },
+		});
+		const text = getCssText();
+		expect(text).toContain(`@keyframes ${name}{from{offset-distance:0%}to{offset-distance:100%}}`);
+	});
 });
 
 describe('globalStyle()', () => {
@@ -61,5 +71,11 @@ describe('globalStyle()', () => {
 		const el = document.getElementById('nuclo-styles') as HTMLStyleElement;
 		const all = Array.from(el.sheet!.cssRules).map((r) => r.cssText).join('');
 		expect(all).toContain('box-sizing: border-box');
+	});
+
+	it('expands composite utilities and raw blocks in global rules', () => {
+		const { globalStyle } = createCss({});
+		globalStyle('.flex-row', { row: true, raw: { '--gap': '8px' } });
+		expect(getCssText()).toContain('.flex-row{display:flex;flex-direction:row;--gap:8px}');
 	});
 });

@@ -325,6 +325,17 @@ export type FlatStyle<T extends ThemeConfig = ThemeConfig> =
 	};
 
 /**
+ * Keyframe selectors: `from`, `to`, and percentage stops autocomplete; any other
+ * string (e.g. a comma-separated list like "0%, 100%") is still accepted.
+ */
+export type KeyframeStop = "from" | "to" | `${number}%`;
+
+/** Frames passed to keyframes(): selector → flat declarations. */
+export type KeyframeFrames<T extends ThemeConfig = ThemeConfig> =
+	& { [Stop in KeyframeStop]?: FlatStyle<T> }
+	& { [stop: string]: FlatStyle<T> | undefined };
+
+/**
  * Full style object: properties + pseudo variants + theme screens +
  * arbitrary selectors ("&:nth-child(2)", "& > svg") + inline at-rules
  * ("@media (min-width: 768px)", "@container (…)", "@supports (…)").
@@ -342,6 +353,46 @@ export type StyleResult = {
 	className: string;
 	toString(): string;
 };
+
+// ---------------------------------------------------------------------------
+// Variants — typed, atomic style recipes (base + named variant groups +
+// defaults + compound variants). One recipe in, a call-with-props function out.
+// ---------------------------------------------------------------------------
+
+/** A map of variant groups: group name → variant value name → style object. */
+export type VariantDefinitions<T extends ThemeConfig = ThemeConfig> =
+	Record<string, Record<string, Style<T>>>;
+
+/**
+ * A group whose only values are "true"/"false" is selected with a real boolean;
+ * every other group is selected by its declared value names.
+ */
+type VariantValue<Keys extends PropertyKey> =
+	[Extract<Keys, string>] extends ["true" | "false"] ? boolean : Extract<Keys, string>;
+
+/** Strongly-typed selection of variant values for a given variant definition. */
+export type VariantProps<V extends VariantDefinitions> = {
+	[Group in keyof V]?: VariantValue<keyof V[Group]>;
+};
+
+/** Configuration object accepted by variants(). */
+export interface VariantsConfig<T extends ThemeConfig, V extends VariantDefinitions<T>> {
+	/** Styles always applied, before any variant. */
+	base?: Style<T>;
+	/**
+	 * Named variant groups: each value maps to a style object. `V` is inferred
+	 * with its literal group/value names (so selection, defaults and compounds
+	 * are strictly typed), and each style object is checked against `Style<T>`.
+	 */
+	variants?: V;
+	/** Variant values applied when a prop is omitted at the call site. */
+	defaultVariants?: VariantProps<NoInfer<V>>;
+	/** Extra styles applied when a specific combination of variants is active. */
+	compoundVariants?: Array<VariantProps<NoInfer<V>> & { css: Style<T> }>;
+}
+
+/** A compiled recipe: call with a selection to get a composed StyleResult. */
+export type VariantsFn<V extends VariantDefinitions> = (props?: VariantProps<V>) => StyleResult;
 
 // ---------------------------------------------------------------------------
 // Runtime tables
@@ -438,23 +489,35 @@ function makeResult(className: string): StyleResult {
 	return result;
 }
 
-/** Inputs accepted by cx(): results, raw class strings, and falsy values. */
-export type ClassInput = StyleResult | string | false | null | undefined;
+/** Inputs accepted by cx(): results, raw class strings, falsy values, and nested arrays. */
+export type ClassInput = StyleResult | string | false | null | undefined | readonly ClassInput[];
+
+function collectClasses(inputs: readonly ClassInput[], picked: Map<string, string>): void {
+	for (const input of inputs) {
+		if (!input) continue;
+		if (typeof input === "string") {
+			for (const name of input.split(" ")) {
+				if (name) picked.set(conflictKeyOf(name) ?? name, name);
+			}
+		} else if (Array.isArray(input)) {
+			collectClasses(input, picked);
+		} else {
+			for (const name of (input as StyleResult).className.split(" ")) {
+				if (name) picked.set(conflictKeyOf(name) ?? name, name);
+			}
+		}
+	}
+}
 
 /**
  * Compose class lists with exact conflict resolution: when two inputs style
  * the same (query, selector, property), the last one wins. Works because the
- * engine knows what every class it generated means.
+ * engine knows what every class it generated means. Nested arrays are flattened,
+ * so `cx([a, cond && b], c)` composes the same as `cx(a, cond && b, c)`.
  */
 export function cx(...inputs: ClassInput[]): StyleResult {
 	const picked = new Map<string, string>();
-	for (const input of inputs) {
-		if (!input) continue;
-		const names = (typeof input === "string" ? input : input.className).split(" ");
-		for (const name of names) {
-			if (name) picked.set(conflictKeyOf(name) ?? name, name);
-		}
-	}
+	collectClasses(inputs, picked);
 	let className = "";
 	for (const name of picked.values()) className += (className ? " " : "") + name;
 	return makeResult(className);
@@ -572,7 +635,7 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T) {
 	}
 
 	/** Register a @keyframes block; returns its generated name for use in `animation`. */
-	function keyframes(frames: Record<string, FlatStyle<T>>): string {
+	function keyframes(frames: KeyframeFrames<T>): string {
 		let body = "";
 		for (const stop in frames) {
 			body += stop + "{" + flatDecls(frames[stop] as Record<string, unknown>) + "}";
@@ -588,7 +651,100 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T) {
 		addRawRule("g|" + rule, rule);
 	}
 
-	return { css, cx, keyframes, globalStyle, theme };
+	/**
+	 * Compile a typed variants recipe into a call-with-props function.
+	 *
+	 *   const button = variants({
+	 *     base: { rounded: 8, weight: 600 },
+	 *     variants: {
+	 *       intent: { primary: { bg: "primary" }, danger: { bg: "danger" } },
+	 *       size:   { sm: { px: 8, py: 4 }, lg: { px: 16, py: 10 } },
+	 *       block:  { true: { display: "block", w: "100%" } },
+	 *     },
+	 *     defaultVariants: { intent: "primary", size: "sm" },
+	 *     compoundVariants: [{ intent: "danger", size: "lg", css: { weight: 700 } }],
+	 *   });
+	 *   div(button({ intent: "danger", size: "lg" }), "Delete");
+	 *
+	 * Every variant style compiles to atomic classes once, at definition time.
+	 * A call resolves defaults + props into a selection, composes the matching
+	 * precompiled results with cx() (last-wins conflict resolution), and caches
+	 * the composed result per selection — so repeated calls are a Map lookup.
+	 */
+	function variants<const V extends VariantDefinitions<T>>(
+		config: VariantsConfig<T, V>,
+	): VariantsFn<V> {
+		const normalize = (value: unknown): string =>
+			value === true ? "true" : value === false ? "false" : String(value);
+
+		const groups = (config.variants ?? {}) as Record<string, Record<string, Style<T>>>;
+		const groupNames = Object.keys(groups);
+		const defaults = (config.defaultVariants ?? {}) as Record<string, unknown>;
+
+		const baseResult = config.base ? css(config.base) : null;
+
+		// Precompile every variant value's atomic classes once.
+		const compiled: Record<string, Record<string, StyleResult>> = {};
+		for (const group of groupNames) {
+			const values = groups[group];
+			const inner: Record<string, StyleResult> = {};
+			for (const value in values) inner[value] = css(values[value]);
+			compiled[group] = inner;
+		}
+
+		// Precompile compound-variant styles with their match conditions.
+		const compounds = (config.compoundVariants ?? []).map((entry) => {
+			const { css: compoundStyle, ...match } = entry as VariantProps<V> & { css: Style<T> };
+			const conditions: Record<string, string> = {};
+			for (const group in match) conditions[group] = normalize((match as Record<string, unknown>)[group]);
+			return { conditions, result: css(compoundStyle) };
+		});
+
+		const cache = new Map<string, StyleResult>();
+
+		return function recipe(props?: VariantProps<V>): StyleResult {
+			// Resolve final selection: defaults, overridden by explicit props.
+			const selection: Record<string, string> = {};
+			for (const group of groupNames) {
+				const provided = props ? (props as Record<string, unknown>)[group] : undefined;
+				const chosen = provided !== undefined && provided !== null ? provided : defaults[group];
+				if (chosen === undefined || chosen === null) continue;
+				selection[group] = normalize(chosen);
+			}
+
+			// Cache the composed result per selection (stable group order).
+			let key = "";
+			for (const group of groupNames) key += group + "=" + (selection[group] ?? "") + ";";
+			const cached = cache.get(key);
+			if (cached) return cached;
+
+			const parts: ClassInput[] = [];
+			if (baseResult) parts.push(baseResult);
+			for (const group of groupNames) {
+				const value = selection[group];
+				if (value !== undefined) {
+					const result = compiled[group][value];
+					if (result) parts.push(result);
+				}
+			}
+			for (const compound of compounds) {
+				let matches = true;
+				for (const group in compound.conditions) {
+					if (selection[group] !== compound.conditions[group]) {
+						matches = false;
+						break;
+					}
+				}
+				if (matches) parts.push(compound.result);
+			}
+
+			const result = cx(...parts);
+			cache.set(key, result);
+			return result;
+		};
+	}
+
+	return { css, cx, variants, keyframes, globalStyle, theme };
 }
 
 // ---------------------------------------------------------------------------
@@ -599,7 +755,11 @@ const defaultInstance = createCss({});
 
 /** Themeless css() — full property/variant typing, no tokens or screens. */
 export const css: (style: Style<object>) => StyleResult = defaultInstance.css;
+/** Themeless variants() recipe helper. */
+export const variants: <const V extends VariantDefinitions<object>>(
+	config: VariantsConfig<object, V>,
+) => VariantsFn<V> = defaultInstance.variants;
 /** Themeless keyframes() helper. */
-export const keyframes: (frames: Record<string, FlatStyle<object>>) => string = defaultInstance.keyframes;
+export const keyframes: (frames: KeyframeFrames<object>) => string = defaultInstance.keyframes;
 /** Themeless globalStyle() helper. */
 export const globalStyle: (selector: string, style: FlatStyle<object>) => void = defaultInstance.globalStyle;
