@@ -404,6 +404,20 @@ button('Click me',
 )
 ```
 
+#### `scope(...ids)`
+
+Registers an element as a named update root, so `update("id")` re-runs only the dynamic bindings contained within it instead of the whole page:
+
+```ts
+div(
+  scope('cart'),
+  span(() => `Items: ${cartItems.length}`)
+)
+
+cartItems.push(nextItem);
+update('cart'); // only updates runtimes inside the "cart" scope
+```
+
 ### Tag Builders
 
 All HTML and SVG tags are available globally:
@@ -526,6 +540,8 @@ const page = `<!doctype html><html><head><style>${styles}</style></head>
 ```
 
 On the client, call `hydrate()` instead of `render()` to attach Nuclo runtimes to the existing markup without re-creating DOM nodes.
+
+`nuclo/ssr` also exports `renderManyToString(inputs)` for rendering a batch of trees at once, and `renderToStringWithContainer(input, containerTag?, containerAttrs?)` to wrap the output in a container element without a second serialization pass.
 
 ---
 
