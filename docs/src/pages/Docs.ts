@@ -3,9 +3,9 @@ import { DOC_GROUPS, DOC_SECTIONS, SECTION_MAP } from "./docs/content.ts";
 import { ds, sectionDelay } from "./docs/styles.ts";
 
 const DOC_FACTS = [
-  { label: "Current release", value: "v0.2.6" },
+  { label: "Current release", value: "v0.2.7" },
   { label: "Tag builders", value: "175" },
-  { label: "Gzipped ESM", value: "~10.0 KB" },
+  { label: "Gzipped ESM", value: "~10.7 KB" },
   { label: "Runtime model", value: "Explicit" },
 ];
 

@@ -404,6 +404,20 @@ button('Click me',
 )
 ```
 
+#### `scope(...ids)`
+
+Registers an element as a named update root, so `update("id")` re-runs only the dynamic bindings contained within it instead of the whole page:
+
+```ts
+div(
+  scope('cart'),
+  span(() => `Items: ${cartItems.length}`)
+)
+
+cartItems.push(nextItem);
+update('cart'); // only updates runtimes inside the "cart" scope
+```
+
 ### Tag Builders
 
 All HTML and SVG tags are available globally:
@@ -459,7 +473,54 @@ const card = css({
 const el = div(card, 'Hello');
 ```
 
-`css()` returns an object with a `className` key that can be passed directly to any tag builder. Compose styles conditionally with `cx(base, condition && variant)`. Global styles and keyframe animations use `globalStyle()` and `keyframes()`.
+`css()` returns an object with a `className` key that can be passed directly to any tag builder. Global styles and keyframe animations use `globalStyle()` and `keyframes()`.
+
+#### Composing with `cx()`
+
+`cx()` composes styles with exact, last-wins conflict resolution — because the engine knows which declaration every class it minted represents, a later `color` atom drops the earlier one (no tailwind-merge guessing). It accepts results, raw class strings, falsy values, and nested arrays:
+
+```ts
+cx(base, isActive && activeStyle);          // conditional
+cx([base, isActive && activeStyle], extra); // arrays are flattened
+```
+
+#### Typed variants with `variants()`
+
+`variants()` turns a base style plus named variant groups into a strongly-typed recipe. Variant names and values are inferred, so selecting an unknown one is a compile error, and `true`/`false` value groups are selected with real booleans. Every variant compiles to atomic classes once at definition time; a call is a cached lookup plus a `cx()` merge.
+
+```ts
+import 'nuclo';
+
+const { variants } = createCss({
+  colors: { primary: '#6366f1', danger: '#ef4444' },
+});
+
+const button = variants({
+  base: { rounded: 8, weight: 600, cursor: 'pointer' },
+  variants: {
+    intent: {
+      primary: { bg: 'primary', color: '#fff' },
+      danger:  { bg: 'danger',  color: '#fff' },
+    },
+    size: {
+      sm: { px: 10, py: 6,  text: 14 },
+      lg: { px: 18, py: 12, text: 16 },
+    },
+    block: { true: { display: 'block', w: '100%' } },
+  },
+  defaultVariants: { intent: 'primary', size: 'sm' },
+  compoundVariants: [
+    { intent: 'danger', size: 'lg', css: { weight: 700 } },
+  ],
+});
+
+div(button({ intent: 'danger', size: 'lg' }), 'Delete'); // StyleResult — drop-in attributes
+div(button(), 'Save');                                    // uses defaultVariants
+
+button({ intent: 'ghost' }); // ✗ compile error: "ghost" is not a defined intent
+```
+
+The result is a `StyleResult`, so it drops straight into any tag builder or composes further with `cx(button({ size: 'lg' }), extraClass)`.
 
 ### Server-Side Rendering
 
@@ -479,6 +540,8 @@ const page = `<!doctype html><html><head><style>${styles}</style></head>
 ```
 
 On the client, call `hydrate()` instead of `render()` to attach Nuclo runtimes to the existing markup without re-creating DOM nodes.
+
+`nuclo/ssr` also exports `renderManyToString(inputs)` for rendering a batch of trees at once, and `renderToStringWithContainer(input, containerTag?, containerAttrs?)` to wrap the output in a container element without a second serialization pass.
 
 ---
 
