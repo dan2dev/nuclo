@@ -2,6 +2,8 @@ import { css, cx, s } from "../styles.ts";
 import { EXAMPLES } from "../content/examples.ts";
 import { CodeBlock } from "../components/CodeBlock.ts";
 import { cardDelay, es, statusDotStyle } from "./examples/styles.ts";
+import { StylingGallery } from "./examples/styling-gallery.ts";
+
 
 function ExampleCard(ex: typeof EXAMPLES[number], index: number) {
   let activeTab: "preview" | "code" = "preview";
@@ -673,5 +675,6 @@ export function ExamplesPage() {
         ...EXAMPLES.map((ex, index) => ExampleCard(ex, index)),
       ),
     ),
+    StylingGallery(),
   );
 }

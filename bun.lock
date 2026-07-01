@@ -97,6 +97,16 @@
         "vite": "^7.2.4",
       },
     },
+    "examples/styling": {
+      "name": "nuclo-example-styling",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/node": "^25.9.1",
+        "nuclo": "workspace:*",
+        "typescript": "~6.0.3",
+        "vite": "^8.0.14",
+      },
+    },
     "packages/nuclo-core": {
       "name": "nuclo",
       "version": "0.2.6",
@@ -873,6 +883,8 @@
     "nuclo": ["nuclo@workspace:packages/nuclo-core"],
 
     "nuclo-docs": ["nuclo-docs@workspace:docs"],
+
+    "nuclo-example-styling": ["nuclo-example-styling@workspace:examples/styling"],
 
     "obug": ["obug@2.1.1", "", {}, "sha512-uTqF9MuPraAQ+IsnPf366RG4cP9RtUi7MLO1N3KEc+wb0a6yKpeL0lmk2IB1jY5KHPAlTc6T/JRdC/YqxHNwkQ=="],
 

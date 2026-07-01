@@ -5,7 +5,7 @@ import { when } from "../when";
 import { on } from "../utility/on";
 import { render, hydrate } from "../utility/render";
 import { scope } from "../utility/scope";
-import { createCss, css, cx, keyframes, globalStyle } from "../style";
+import { createCss, css, cx, variants, keyframes, globalStyle } from "../style";
 
 /**
  * Initializes the nuclo runtime by exposing tag builders and utilities.
@@ -28,6 +28,7 @@ export function initializeRuntime(): void {
   registry.createCss = createCss;
   registry.css = css;
   registry.cx = cx;
+  registry.variants = variants;
   registry.keyframes = keyframes;
   registry.globalStyle = globalStyle;
 }

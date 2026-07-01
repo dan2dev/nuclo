@@ -65,4 +65,32 @@ describe('cx()', () => {
 		const merged = cx('one two', 'three').className.split(' ');
 		expect(merged).toEqual(['one', 'two', 'three']);
 	});
+
+	it('flattens nested arrays of inputs', () => {
+		const { css } = createCss({});
+		const a = css({ p: 16 });
+		const b = css({ color: 'red' });
+		const merged = cx([a, 'x'], [[b, 'y']]).className.split(' ');
+		expect(merged).toContain(a.className);
+		expect(merged).toContain(b.className);
+		expect(merged).toContain('x');
+		expect(merged).toContain('y');
+	});
+
+	it('ignores falsy entries inside arrays for conditional lists', () => {
+		const { css } = createCss({});
+		const a = css({ p: 16 });
+		const b = css({ color: 'red' });
+		const active = false;
+		const merged = cx([a, active && b, null, undefined]).className;
+		expect(merged).toBe(a.className);
+	});
+
+	it('resolves conflicts across array boundaries (last wins)', () => {
+		const { css } = createCss({});
+		const red = css({ color: 'red' });
+		const blue = css({ color: 'blue' });
+		expect(cx([red], blue).className).toBe(blue.className);
+		expect(cx(red, [blue]).className).toBe(blue.className);
+	});
 });

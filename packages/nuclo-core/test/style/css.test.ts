@@ -65,6 +65,15 @@ describe('css() — properties and values', () => {
 		expect(result.className.split(' ').length).toBe(1);
 	});
 
+	it('ignores unknown nested object keys instead of emitting them', () => {
+		const { css } = createCss({});
+		const result = css({ color: 'red', mystery: { color: 'blue' } } as Parameters<typeof css>[0]);
+		expect(result.className.split(' ').length).toBe(1);
+		const text = getCssText();
+		expect(text).toContain('color:red');
+		expect(text).not.toContain('color:blue');
+	});
+
 	it('memoizes results per style object reference', () => {
 		const { css } = createCss({});
 		const style = { p: 16 };
