@@ -1,8 +1,8 @@
-import { clearBetweenMarkers, insertNodesBefore } from "../utility/dom";
-import { isNodeConnected } from "../utility/dom";
-import { resolveCondition } from "../utility/conditions";
-import { renderContentItems } from "./renderer";
-import type { UpdateScope } from "../core/updateScope";
+import { clearBetweenMarkers, insertNodesBefore, isNodeConnected, withScopedInsertion } from "../shared/dom";
+import { resolveCondition } from "../shared/conditions";
+import type { UpdateScope } from "../update/scope";
+import { applyNodeModifier, modifierProbeCache } from "../element/modifiers";
+import { isFunction, isZeroArityFunction } from "../shared/type-guards";
 
 export type WhenCondition = boolean | (() => boolean);
 export type WhenContent<TTagName extends ElementTagName = ElementTagName> =
@@ -160,4 +160,51 @@ export function updateWhenRuntimes(scope?: UpdateScope): void {
   for (const ref of toDelete) {
     activeWhenRuntimes.delete(ref);
   }
+}
+
+// ─── Content rendering ───────────────────────────────────────────────────────
+/**
+ * Renders a single content item and returns the resulting node if any.
+ */
+function renderContentItem<TTagName extends ElementTagName>(
+  item: WhenContent<TTagName>,
+  host: ExpandedElement<TTagName>,
+  index: number,
+  endMarker: Comment
+): Node | null {
+  if (!isFunction(item)) {
+    return applyNodeModifier(host, item, index);
+  }
+
+  // Zero-arity functions need cache cleared
+  if (isZeroArityFunction(item)) {
+    modifierProbeCache.delete(item);
+    return applyNodeModifier(host, item, index);
+  }
+
+  // Non-zero-arity functions need scoped insertion to insert before endMarker
+  return withScopedInsertion(host, endMarker, () => {
+    const maybeNode = applyNodeModifier(host, item, index);
+    // Only include nodes that weren't already inserted
+    return maybeNode && !maybeNode.parentNode ? maybeNode : null;
+  });
+}
+
+/**
+ * Renders a list of content items and collects the resulting nodes.
+ */
+export function renderContentItems<TTagName extends ElementTagName>(
+  items: ReadonlyArray<WhenContent<TTagName>>,
+  host: ExpandedElement<TTagName>,
+  index: number,
+  endMarker: Comment
+): Node[] {
+  const nodes: Node[] = [];
+  for (const item of items) {
+    const node = renderContentItem(item, host, index, endMarker);
+    if (node) {
+      nodes.push(node);
+    }
+  }
+  return nodes;
 }

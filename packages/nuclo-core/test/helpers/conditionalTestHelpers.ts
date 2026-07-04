@@ -7,10 +7,10 @@
 
 /// <reference path="../../types/index.d.ts" />
 
-import { createHtmlElementWithModifiers, createSvgElementWithModifiers } from '../../src/internal/applyModifiers';
-import { isBrowser } from '../../src/utility/environment';
-import { storeConditionalInfo, type ConditionalInfo } from '../../src/utility/conditionalInfo';
-import { createConditionalComment } from '../../src/utility/dom';
+import { createHtmlElementWithModifiers, createSvgElementWithModifiers } from '../../src/element/factory';
+import { isBrowser } from '../../src/shared/environment';
+import { storeConditionalInfo, type ConditionalInfo } from '../../src/update/registry';
+import { createConditionalComment } from '../../src/shared/dom';
 
 export function createHtmlConditionalElement<TTagName extends ElementTagName>(
   tagName: TTagName,

@@ -6,14 +6,14 @@
  * it has no runtime assertions. A wrong inference either fails to compile
  * directly or trips an `Expect<Equal<...>>` / `@ts-expect-error` probe.
  */
-import "../src/index";
-import { render, hydrate } from "../src/utility/render";
-import { renderToString, renderManyToString } from "../src/ssr/renderToString";
-import { on } from "../src/utility/on";
+import "../src";
+import { render, hydrate } from "../src/render";
+import { renderToString, renderManyToString } from "../src/ssr/render-to-string";
+import { on } from "../src/element/events";
 import { when } from "../src/when";
 import { list } from "../src/list";
-import { update } from "../src/core/updateController";
-import { scope } from "../src/utility/scope";
+import { update } from "../src/update/update";
+import { scope } from "../src/update/scope";
 
 type Equal<X, Y> =
   (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;

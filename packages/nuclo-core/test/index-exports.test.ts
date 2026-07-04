@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 describe('main index.ts exports', () => {
   it('should export core functions', async () => {
-    const index = await import('../src/index');
+    const index = await import('../src');
 
     // Core functions
     expect(index.initializeRuntime).toBeDefined();
@@ -17,7 +17,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should export utility functions', async () => {
-    const index = await import('../src/index');
+    const index = await import('../src');
 
     expect(index.appendChildren).toBeDefined();
     expect(index.createComment).toBeDefined();
@@ -29,7 +29,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should export type guards', async () => {
-    const index = await import('../src/index');
+    const index = await import('../src');
 
     expect(index.isBoolean).toBeDefined();
     expect(index.isFunction).toBeDefined();
@@ -41,20 +41,20 @@ describe('main index.ts exports', () => {
   });
 
   it('should export environment utilities', async () => {
-    const index = await import('../src/index');
+    const index = await import('../src');
 
     expect(index.isBrowser).toBeDefined();
   });
 
   it('should export internal functions', async () => {
-    const index = await import('../src/index');
+    const index = await import('../src');
 
     expect(index.createHtmlElementWithModifiers).toBeDefined();
     expect(index.createSvgElementWithModifiers).toBeDefined();
   });
 
   it('should export tag constants', async () => {
-    const index = await import('../src/index');
+    const index = await import('../src');
 
     expect(index.HTML_TAGS).toBeDefined();
     expect(index.SVG_TAGS).toBeDefined();
@@ -65,7 +65,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should export style utilities via wildcard', async () => {
-    const index = await import('../src/index');
+    const index = await import('../src');
 
     // Style utilities should be available via re-export from style module
     expect(index.createCss).toBeDefined();
@@ -79,7 +79,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should have working list function', async () => {
-    const { list } = await import('../src/index');
+    const { list } = await import('../src');
 
     expect(typeof list).toBe('function');
 
@@ -91,7 +91,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should have working when function', async () => {
-    const { when } = await import('../src/index');
+    const { when } = await import('../src');
 
     expect(typeof when).toBe('function');
 
@@ -105,7 +105,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should have working update function', async () => {
-    const { update } = await import('../src/index');
+    const { update } = await import('../src');
 
     expect(typeof update).toBe('function');
 
@@ -114,13 +114,13 @@ describe('main index.ts exports', () => {
   });
 
   it('should have working render function', async () => {
-    const { render } = await import('../src/index');
+    const { render } = await import('../src');
 
     expect(typeof render).toBe('function');
   });
 
   it('should have working on function', async () => {
-    const { on } = await import('../src/index');
+    const { on } = await import('../src');
 
     expect(typeof on).toBe('function');
 
@@ -132,7 +132,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should have working type guards', async () => {
-    const { isBoolean, isFunction, isObject, isPrimitive } = await import('../src/index');
+    const { isBoolean, isFunction, isObject, isPrimitive } = await import('../src');
 
     expect(isBoolean(true)).toBe(true);
     expect(isBoolean(1)).toBe(false);
@@ -149,7 +149,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should have working isBrowser check', async () => {
-    const { isBrowser } = await import('../src/index');
+    const { isBrowser } = await import('../src');
 
     expect(typeof isBrowser).toBe('boolean');
     // In test environment with jsdom, this should be true
@@ -157,7 +157,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should have working createComment function', async () => {
-    const { createComment } = await import('../src/index');
+    const { createComment } = await import('../src');
 
     const comment = createComment('test comment');
 
@@ -167,7 +167,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should verify HTML_TAGS contains expected tags', async () => {
-    const { HTML_TAGS } = await import('../src/index');
+    const { HTML_TAGS } = await import('../src');
 
     expect(HTML_TAGS).toContain('div');
     expect(HTML_TAGS).toContain('span');
@@ -176,7 +176,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should verify SVG_TAGS contains expected tags', async () => {
-    const { SVG_TAGS } = await import('../src/index');
+    const { SVG_TAGS } = await import('../src');
 
     expect(SVG_TAGS).toContain('svg');
     expect(SVG_TAGS).toContain('circle');
@@ -184,7 +184,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should verify SELF_CLOSING_TAGS contains expected tags', async () => {
-    const { SELF_CLOSING_TAGS } = await import('../src/index');
+    const { SELF_CLOSING_TAGS } = await import('../src');
 
     expect(SELF_CLOSING_TAGS).toContain('br');
     expect(SELF_CLOSING_TAGS).toContain('img');
@@ -193,7 +193,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should have working createHtmlTagBuilder', async () => {
-    const { createHtmlTagBuilder } = await import('../src/index');
+    const { createHtmlTagBuilder } = await import('../src');
 
     const div = createHtmlTagBuilder('div');
 
@@ -212,7 +212,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should have working createSvgTagBuilder', async () => {
-    const { createSvgTagBuilder } = await import('../src/index');
+    const { createSvgTagBuilder } = await import('../src');
 
     const circle = createSvgTagBuilder('circle');
 
@@ -224,7 +224,7 @@ describe('main index.ts exports', () => {
   });
 
   it('should verify all expected exports are present', async () => {
-    const index = await import('../src/index');
+    const index = await import('../src');
 
     const expectedExports = [
       'initializeRuntime',

@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 // Simulate the pattern used in examples/basic/src/icons.ts
-import "../../src/index";
+import "../../src";
 
 /**
  * Test that icon factory functions work when defined in a separate module

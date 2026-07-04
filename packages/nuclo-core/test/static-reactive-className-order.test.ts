@@ -5,9 +5,9 @@
 /// <reference path="../types/index.d.ts" />
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { update } from '../src/core/updateController';
+import { update } from '../src/update/update';
 import { createCss } from '../src/style';
-import '../src/core/runtimeBootstrap';
+import '../src/bootstrap';
 
 const { css } = createCss({ screens: {
   small: "(min-width: 320px)",

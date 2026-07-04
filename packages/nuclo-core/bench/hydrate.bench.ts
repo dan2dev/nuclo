@@ -19,12 +19,12 @@ g.Comment = dom.window.Comment;
 g.Event = dom.window.Event;
 g.CustomEvent = dom.window.CustomEvent;
 
-const { renderToString } = await import('../src/ssr/renderToString');
-const { hydrate } = await import('../src/utility/render');
-const { update } = await import('../src/core/updateController');
+const { renderToString } = await import('../src/ssr/render-to-string');
+const { hydrate } = await import('../src/render');
+const { update } = await import('../src/update/update');
 const { list } = await import('../src/list');
 const { when } = await import('../src/when');
-await import('../src/index');
+await import('../src');
 
 declare const div: ExpandedElementBuilder<'div'>;
 declare const span: ExpandedElementBuilder<'span'>;

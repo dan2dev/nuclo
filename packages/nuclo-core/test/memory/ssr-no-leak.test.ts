@@ -21,11 +21,11 @@
  */
 import { describe, it, expect } from "vitest";
 import "../../src/polyfill";
-import "../../src/index";
+import "../../src";
 import { when } from "../../src/when";
 import { list } from "../../src/list";
-import { renderToString } from "../../src/ssr/renderToString";
-import { createElement } from "../../src/utility/dom";
+import { renderToString } from "../../src/ssr/render-to-string";
+import { createElement } from "../../src/shared/dom";
 
 // Tag builders are installed on globalThis by importing ../../src/index.
 declare const div: ExpandedElementBuilder<"div">;

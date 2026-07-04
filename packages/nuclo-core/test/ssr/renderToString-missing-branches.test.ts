@@ -2,7 +2,7 @@
 // @vitest-environment node
 import "../../src/polyfill";
 import { describe, it, expect, vi } from "vitest";
-import { renderToString } from "../../src/ssr/renderToString";
+import { renderToString } from "../../src/ssr/render-to-string";
 
 describe("SSR renderToString missing branches", () => {
   it("serializes NamedNodeMap-like attributes (including boolean true/false)", () => {

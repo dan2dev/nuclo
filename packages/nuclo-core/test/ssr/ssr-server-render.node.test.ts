@@ -2,8 +2,8 @@
 // @vitest-environment node
 import '../../src/polyfill';
 import { describe, it, expect, beforeAll } from "vitest";
-import { renderToString, renderToStringWithContainer } from "../../src/ssr/renderToString";
-import "../../src/index";
+import { renderToString, renderToStringWithContainer } from "../../src/ssr/render-to-string";
+import "../../src";
 
 /**
  * SSR Server Render Tests

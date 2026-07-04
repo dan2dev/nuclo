@@ -5,7 +5,7 @@
 /// <reference path="../types/index.d.ts" />
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import '../src/index'; // Import to initialize runtime
+import '../src'; // Import to initialize runtime
 
 // Mock data object for testing
 const mockData = {

@@ -1,6 +1,6 @@
 /// <reference path="../../types/index.d.ts" />
 // @vitest-environment jsdom
-import "../../src/index";
+import "../../src";
 import { describe, it, expect } from "vitest";
 import { list } from "../../src/list";
 

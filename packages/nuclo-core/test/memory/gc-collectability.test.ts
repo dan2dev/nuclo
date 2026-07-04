@@ -1,12 +1,12 @@
 /// <reference path="../../types/index.d.ts" />
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { render, hydrate } from "../../src/utility/render";
-import { renderToString } from "../../src/ssr/renderToString";
-import { update } from "../../src/core/updateController";
+import { render, hydrate } from "../../src/render";
+import { renderToString } from "../../src/ssr/render-to-string";
+import { update } from "../../src/update/update";
 import { when } from "../../src/when";
 import { list } from "../../src/list";
-import "../../src/index";
+import "../../src";
 
 /**
  * Real garbage-collection leak tests.

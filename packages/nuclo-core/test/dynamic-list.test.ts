@@ -2,8 +2,8 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { list } from '../src/list/index.js';
-import { update } from '../src/core/updateController.js';
+import { list } from '../src/list';
+import { update } from '../src/update/update';
 
 describe('Dynamic List - Comment Markers', () => {
   let testItems: Array<{ id: number; name: string; }>;

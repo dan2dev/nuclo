@@ -19,6 +19,6 @@ export {
   renderToString,
   renderManyToString,
   renderToStringWithContainer
-} from './renderToString';
+} from './render-to-string';
 
 export { setSSRCollector, getCssText } from '../style/engine';

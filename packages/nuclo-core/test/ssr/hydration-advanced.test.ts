@@ -1,10 +1,10 @@
 /// <reference path="../../types/index.d.ts" />
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { render } from "../../src/utility/render";
-import { update } from "../../src/core/updateController";
-import { scope } from "../../src/utility/scope";
-import "../../src/index";
+import { render } from "../../src/render";
+import { update } from "../../src/update/update";
+import { scope } from "../../src/update/scope";
+import "../../src";
 
 /**
  * Advanced hydration tests.

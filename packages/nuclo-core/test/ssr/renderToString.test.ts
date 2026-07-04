@@ -2,10 +2,10 @@
 // @vitest-environment node
 import '../../src/polyfill';
 import { describe, it, expect, beforeAll } from "vitest";
-import { renderToString, renderManyToString, renderToStringWithContainer } from "../../src/ssr/renderToString";
+import { renderToString, renderManyToString, renderToStringWithContainer } from "../../src/ssr/render-to-string";
 
 // Import tag builders from main entry point
-import "../../src/index";
+import "../../src";
 
 describe("SSR renderToString", () => {
   beforeAll(() => {

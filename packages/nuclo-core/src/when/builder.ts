@@ -1,11 +1,9 @@
-import { createMarkerPair, createComment, clearBetweenMarkers, insertNodesBefore } from "../utility/dom";
-import { asParentNode } from "../utility/domTypeHelpers";
+import { createMarkerPair, createComment, clearBetweenMarkers, insertNodesBefore, asParentNode } from "../shared/dom";
 import type { WhenCondition, WhenContent, WhenGroup, WhenRuntime } from "./runtime";
-import { renderWhenContent, registerWhenRuntime, evaluateActiveCondition } from "./runtime";
-import { renderContentItems } from "./renderer";
-import { isBrowser } from "../utility/environment";
-import { isHydrating, claimChild, peekChild, setCursor, skipWhitespaceText, runWithoutHydration } from "../hydration/context";
-import { applyNodeModifier } from "../core/modifierProcessor";
+import { renderWhenContent, registerWhenRuntime, evaluateActiveCondition, renderContentItems } from "./runtime";
+import { isBrowser } from "../shared/environment";
+import { isHydrating, claimChild, peekChild, setCursor, skipWhitespaceText, runWithoutHydration } from "../hydration";
+import { applyNodeModifier } from "../element/modifiers";
 
 /**
  * Encodes the active branch into the start marker so hydration can detect

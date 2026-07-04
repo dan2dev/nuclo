@@ -1,7 +1,7 @@
 /// <reference path="../types/index.d.ts" />
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createCss, resetStyles } from '../src/style';
-import '../src/core/runtimeBootstrap';
+import '../src/bootstrap';
 
 describe('Pseudo-class example from user', () => {
 	beforeEach(() => {

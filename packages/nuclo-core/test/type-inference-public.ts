@@ -1,7 +1,7 @@
 /// <reference path="../types/index.d.ts" />
-import "../src/index";
+import "../src";
 import { list } from "../src/list";
-import { on } from "../src/utility/on";
+import { on } from "../src/element/events";
 import { createCss } from "../src/style";
 
 const { css, cx, variants, keyframes } = createCss({

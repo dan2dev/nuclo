@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { when } from '../../src/when';
 import { list } from '../../src/list';
-import { update } from '../../src/core/updateController';
+import { update } from '../../src/update/update';
 
 interface Item {
   id: number;

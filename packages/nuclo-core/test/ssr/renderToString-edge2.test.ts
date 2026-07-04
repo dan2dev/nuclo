@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  *
- * Targets uncovered lines in src/ssr/renderToString.ts:
+ * Targets uncovered lines in src/ssr/render-to-string.ts:
  *
  *  Line 104  – getChildNodes: 'children' Array branch (node has children but
  *              no compatible childNodes)
@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { renderToString, renderManyToString, renderToStringWithContainer } from '../../src/ssr/renderToString';
+import { renderToString, renderManyToString, renderToStringWithContainer } from '../../src/ssr/render-to-string';
 import { NucloElement } from '../../src/polyfill/Element';
 import { NucloDocument } from '../../src/polyfill/Document';
 
