@@ -222,8 +222,9 @@ describe('updateController sequencing & integration', () => {
     textCounter++;
     update();
 
-    // Adjusted expected sequence for second integration cycle (includes extra global update dispatches)
-    expect(seq.join('')).toBe('12456666');
+    // Two '6' markers: the document-level listeners added by this test and
+    // the previous one each observe the single bubbled update event once.
+    expect(seq.join('')).toBe('124566');
 
     // Validate DOM effects (spot checks)
     expect(host.querySelectorAll('span').length).toBe(1); // list item

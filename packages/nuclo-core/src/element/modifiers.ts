@@ -105,21 +105,31 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 					return null;
 				}
 
-				if (isPrimitive(v) && v != null) {
+				if (isPrimitive(v)) {
+					// Nullish probes register as empty reactive text instead of being
+					// dropped: a resolver with no value yet (data still loading) must
+					// stay reactive so a later update() can fill it in. The wrapper
+					// also renders values that become nullish again as "" — the raw
+					// resolver would produce the string "null".
+					const safeResolver = (): Primitive => {
+						const next = modifier();
+						return isPrimitive(next) && next != null ? (next as Primitive) : "";
+					};
+					const initial: Primitive = v != null ? (v as Primitive) : "";
 					if (isHydrating() && nextChildIsTextComment(parent as unknown as Node)) {
 						const parentNode = parent as unknown as Node;
 						claimChild(parentNode); // skip <!-- text-N --> comment
-						const expected = String(v);
+						const expected = String(initial);
 						const textNode = claimTextAfterMarker(parentNode, expected);
 						if (textNode) {
 							registerReactiveTextNode(textNode, {
-								resolver: modifier as () => Primitive,
+								resolver: safeResolver,
 								lastValue: expected,
 							});
 						}
 						return null;
 					}
-					return createReactiveTextChild(index, modifier as () => Primitive, v);
+					return createReactiveTextChild(index, safeResolver, initial);
 				}
 				return null;
 			} catch (error) {

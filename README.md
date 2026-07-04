@@ -675,19 +675,27 @@ These markers identify conditional and list boundaries in the DOM.
 
 **Content not updating?**
 - Ensure you're calling `update()` after state changes
-- Verify your dynamic functions are returning the expected values
+- Verify your dynamic functions are returning the expected values — functions that return `null`/`undefined` render as empty text and fill in on the next `update()`
 
 **List items not reusing elements?**
 - Keep object references stable (mutate instead of replacing)
 - Avoid creating new objects when updating properties
 
----
+### Gotchas
 
-## Roadmap
+**Parameter count decides what a function modifier means.**
+A modifier with **zero declared parameters** is treated as reactive text (or a reactive `cn()` className) and is called with no arguments. A modifier with **one or more declared parameters** is a node-modifier function receiving `(element, index)`. Default and rest parameters don't count as declared parameters (`fn.length` is 0), so these are all treated as *reactive text*, not node modifiers:
 
-- Keyed list variant for explicit key-based tracking
-- Transition and animation helpers
-- Dev mode diagnostics and warnings
+```ts
+div((el = fallback) => el.id);   // reactive text — el is undefined!
+div((...args) => args[0]);       // reactive text — args is empty!
+div((el) => el.id = "x");        // node modifier — el is the element ✓
+```
+
+If a modifier needs the element, declare it as a plain required parameter.
+
+**Detached nodes lose reactivity.**
+Reactive registrations (text, attributes, `list()`, `when()`) are pruned for any node that is disconnected from the DOM when `update()` runs. Re-attaching the node later does **not** restore them. Keep-alive and portal-style patterns should re-render content after re-attaching instead of moving live subtrees between updates.
 
 ---
 

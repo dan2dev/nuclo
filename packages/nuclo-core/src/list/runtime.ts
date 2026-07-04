@@ -1,6 +1,9 @@
 import { createMarkerPair, createComment, safeRemoveChild, isNodeConnected, createDocumentFragment } from "../shared/dom";
 import { resolveRenderable } from "../shared/renderables";
 import { isHydrating, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration";
+import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsInput, ListItemsProvider } from "./types";
+import type { UpdateScope } from "../update/scope";
+import { isBrowser } from "../shared/environment";
 
 function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
   if (a === b) return true;
@@ -10,9 +13,6 @@ function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
   }
   return true;
 }
-import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsInput, ListItemsProvider } from "./types";
-import type { UpdateScope } from "../update/scope";
-import { isBrowser } from "../shared/environment";
 
 /**
  * Registry of active list runtimes.

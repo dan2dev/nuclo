@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  nuclo-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+        working-directory: packages/nuclo-core
+      - run: bun run lint
+        working-directory: packages/nuclo-core
+      - run: npx vitest run --coverage
+        working-directory: packages/nuclo-core
+      - run: bun run build
+        working-directory: packages/nuclo-core

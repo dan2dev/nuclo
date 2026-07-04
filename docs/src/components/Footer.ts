@@ -91,7 +91,7 @@ export function Footer() {
       div(
         bottomBar,
         span(fineprint, "© 2026 Danilo Castro (@dan2dev) · MIT License"),
-        span(versionBadge, "v0.2.7"),
+        span(versionBadge, "v0.2.8"),
       ),
     ),
   );

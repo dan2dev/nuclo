@@ -106,14 +106,15 @@ describe('applyNodeModifier – NodeModFn (non-zero-arity functions)', () => {
 
   it('returns null when NodeModFn returns null', () => {
     const parent = makeParent();
-    const modifier = () => null;
+    // One declared parameter → NodeModFn branch (zero-arity would be reactive text).
+    const modifier = (_parent: unknown) => null;
     const result = applyNodeModifier(parent, modifier as NodeModFn<'div'>, 0);
     expect(result).toBeNull();
   });
 
   it('returns null when NodeModFn returns undefined', () => {
     const parent = makeParent();
-    const modifier = () => undefined;
+    const modifier = (_parent: unknown) => undefined;
     const result = applyNodeModifier(parent, modifier as unknown as NodeModFn<'div'>, 0);
     expect(result).toBeNull();
   });
@@ -130,12 +131,13 @@ describe('applyNodeModifier – zero-arity reactive functions', () => {
     expect(result?.nodeType).toBe(Node.TEXT_NODE);
   });
 
-  it('returns null for zero-arity function that returns null primitive', () => {
+  it('registers a zero-arity function returning null as empty reactive text', () => {
     const parent = makeParent();
     const resolver = () => null;
     const result = applyNodeModifier(parent, resolver as unknown as NodeModFn<'div'>, 0);
-    // null is primitive but null != null check → returns null
-    expect(result).toBeNull();
+    // Nullish probes register as empty reactive text so a later update() can fill them in.
+    expect(result?.nodeType).toBe(Node.TEXT_NODE);
+    expect(result?.textContent).toBe('');
   });
 
   it('handles zero-arity function that throws on first probe', () => {
