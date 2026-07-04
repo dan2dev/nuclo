@@ -79,6 +79,20 @@ div({
 div({ style: { backgroundColor: "red", paddingTop: 4, zIndex: 10 } });
 div({ style: () => ({ color: "blue" }) });
 
+// CSSStyleObject rejects members of CSSStyleDeclaration that are not settable
+// string properties (methods, readonly length/parentRule, numeric index)
+// @ts-expect-error methods are not style properties
+const _styleBadMethod: CSSStyleObject = { setProperty: "nope" };
+// @ts-expect-error readonly non-string members (length) are not settable
+const _styleBadLength: CSSStyleObject = { length: 5 };
+void _styleBadMethod; void _styleBadLength;
+
+// ─── Factory helper types ────────────────────────────────────────────────────
+
+type _Factory0 = Expect<Equal<InferFactoryResult<() => string>, string>>;
+type _Factory1 = Expect<Equal<InferFactoryResult<(x: number) => boolean>, boolean>>;
+type _FactoryNot = Expect<Equal<InferFactoryResult<number>, never>>;
+
 // ─── Text content: primitives and reactive primitives ───────────────────────
 
 div("text", 42, true, null, undefined);
@@ -90,7 +104,18 @@ span(() => `count: ${1 + 1}`);
 button(
   on("click", (e) => {
     type _Click = Expect<Equal<typeof e.clientX, number>>;
+    // The element type flows in from the surrounding builder via the
+    // contextual return type (NodeModLike<"button">), not just the default.
+    const _target: HTMLButtonElement = e.currentTarget;
+    void _target;
     e.preventDefault();
+  }),
+);
+
+input(
+  on("focus", function (this: HTMLElement, e) {
+    const _value: string = e.currentTarget.value;
+    void _value;
   }),
 );
 

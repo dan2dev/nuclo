@@ -27,6 +27,12 @@ describe('Global availability', () => {
     expect(typeof when).toBe('function');
   });
 
+  it('should register the var_ builder for the reserved-word <var> tag', () => {
+    expect(typeof var_).toBe('function');
+    const el = var_('x')(undefined, 0);
+    expect(el.tagName?.toLowerCase()).toBe('var');
+  });
+
   it('should work without explicit imports - counter example', () => {
     let count = 0;
 

@@ -9,7 +9,13 @@ function registerHtmlTag(target: Record<string, unknown>, tagName: ElementTagNam
   if (tagName in target && typeof target[tagName] !== 'function') {
     return;
   }
-  target[tagName] = createHtmlTagBuilder(tagName);
+  const builder = createHtmlTagBuilder(tagName);
+  target[tagName] = builder;
+  // `var` is a reserved word, so the declared global is `var_` — register it
+  // under that name too (the bare `var` key stays for globalThis["var"] access).
+  if (tagName === "var") {
+    target["var_"] = builder;
+  }
 }
 
 function registerSvgTag(target: Record<string, unknown>, tagName: keyof SVGElementTagNameMap): void {

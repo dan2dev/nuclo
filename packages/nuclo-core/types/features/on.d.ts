@@ -31,8 +31,8 @@ declare global {
    * @param options Native addEventListener options.
    */
   function on<
+    K extends keyof HTMLElementEventMap,
     TTagName extends ElementTagName = ElementTagName,
-    K extends keyof HTMLElementEventMap = keyof HTMLElementEventMap,
   >(
     type: K,
     listener: TypedEventListener<HTMLElementTagNameMap[TTagName], HTMLElementEventMap[K]>,
