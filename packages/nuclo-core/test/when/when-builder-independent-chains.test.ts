@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { when } from "../../src/when";
 
-import { update } from "../../src/core/updateController";
+import { update } from "../../src/update/update";
 
 describe("when builder independent chains", () => {
   let container1: HTMLElement;

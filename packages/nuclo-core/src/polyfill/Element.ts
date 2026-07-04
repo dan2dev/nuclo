@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NucloNode } from './Node';
-import { isBrowser } from '../utility/environment';
+import { isBrowser } from '../shared/environment';
 
 /**
  * Lightweight style object for SSR — prototype methods instead of Object.defineProperty per element.

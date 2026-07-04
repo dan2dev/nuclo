@@ -1,0 +1,144 @@
+/// <reference path="../../types/index.d.ts" />
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { createHtmlTagBuilder, createSvgTagBuilder } from "../../src/element/factory";
+
+describe("elementFactory edge cases", () => {
+  let container: HTMLElement;
+
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+  });
+
+  afterEach(() => {
+    if (container.parentNode) {
+      document.body.removeChild(container);
+    }
+  });
+
+  afterEach(() => {
+    document.body.removeChild(container);
+  });
+
+  describe("createHtmlTagBuilder", () => {
+    it("should create element with no modifiers", () => {
+      const div = createHtmlTagBuilder("div");
+      const element = div()(container, 0);
+      expect(element).toBeInstanceOf(HTMLDivElement);
+      expect(element.tagName).toBe("DIV");
+    });
+
+    it("should create element with attributes modifier", () => {
+      const div = createHtmlTagBuilder("div");
+      const element = div({ id: "test", className: "my-class" })(container, 0);
+      expect(element.id).toBe("test");
+      expect(element.className).toBe("my-class");
+    });
+
+    it("should handle zero-arity function modifiers (non-conditional)", () => {
+      const div = createHtmlTagBuilder("div");
+      // Zero-arity functions are now treated as reactive text/className, not conditionals
+      const textFn = () => "dynamic text";
+      const element = div(textFn, { id: "test" })(container, 0);
+      expect(element).toBeInstanceOf(HTMLDivElement);
+      expect(element.id).toBe("test");
+    });
+
+    it("should handle multiple modifiers", () => {
+      const div = createHtmlTagBuilder("div");
+      const element = div(
+        { id: "test" },
+        { className: "class1" },
+        "text content"
+      )(container, 0);
+      expect(element.id).toBe("test");
+      expect(element.className).toBe("class1");
+      // Text content is appended to the element, not container
+      expect(element.textContent).toContain("text content");
+    });
+
+    it("should handle function modifiers", () => {
+      const div = createHtmlTagBuilder("div");
+      const fnModifier = (_parent: HTMLElement) => {
+        const span = document.createElement("span");
+        span.textContent = "from function";
+        return span;
+      };
+      const element = div(fnModifier)(container, 0);
+      expect(element).toBeInstanceOf(HTMLDivElement);
+      // The span is appended to the element, not container
+      expect(element.querySelector("span")).toBeTruthy();
+    });
+
+    it("should handle null/undefined modifiers", () => {
+      const div = createHtmlTagBuilder("div");
+      const element = div(null, undefined, { id: "test" })(container, 0);
+      expect(element.id).toBe("test");
+    });
+
+    it("should work with different HTML tag names", () => {
+      const button = createHtmlTagBuilder("button");
+      const input = createHtmlTagBuilder("input");
+      const span = createHtmlTagBuilder("span");
+
+      expect(button()(container, 0).tagName).toBe("BUTTON");
+      expect(input()(container, 0).tagName).toBe("INPUT");
+      expect(span()(container, 0).tagName).toBe("SPAN");
+    });
+  });
+
+  describe("createSvgTagBuilder", () => {
+    it("should create SVG element with no modifiers", () => {
+      const circle = createSvgTagBuilder("circle");
+      const element = circle()(container, 0);
+      expect(element.tagName.toLowerCase()).toBe("circle");
+      expect(element.namespaceURI).toBe("http://www.w3.org/2000/svg");
+    });
+
+    it("should create SVG element with attributes", () => {
+      const circle = createSvgTagBuilder("circle");
+      const element = circle({ cx: 10, cy: 20, r: 5 })(container, 0);
+      expect(element.getAttribute("cx")).toBe("10");
+      expect(element.getAttribute("cy")).toBe("20");
+      expect(element.getAttribute("r")).toBe("5");
+    });
+
+    it("should handle zero-arity function modifiers in SVG (non-conditional)", () => {
+      const circle = createSvgTagBuilder("circle");
+      // Zero-arity functions are now treated as reactive text, not conditionals
+      const textFn = () => "5";
+      const element = circle(textFn, { cx: 10 })(container, 0);
+      expect(element.tagName.toLowerCase()).toBe("circle");
+      expect(element.getAttribute("cx")).toBe("10");
+    });
+
+    it("should handle multiple SVG elements", () => {
+      const circle = createSvgTagBuilder("circle");
+      const rect = createSvgTagBuilder("rect");
+      const path = createSvgTagBuilder("path");
+
+      expect(circle()(container, 0).tagName).toBe("circle");
+      expect(rect()(container, 0).tagName).toBe("rect");
+      expect(path()(container, 0).tagName).toBe("path");
+    });
+
+    it("should handle function modifiers in SVG", () => {
+      const circle = createSvgTagBuilder("circle");
+      const fnModifier = (_parent: HTMLElement) => {
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        return rect;
+      };
+      const element = circle(fnModifier)(container, 0);
+      expect(element.tagName.toLowerCase()).toBe("circle");
+    });
+
+    it("should handle non-zero-arity function as non-conditional", () => {
+      const circle = createSvgTagBuilder("circle");
+      const fnWithParams = (x: number) => x > 0;
+      // This should not be treated as a conditional
+      const element = circle(fnWithParams, { cx: 10 })(container, 0);
+      expect(element.tagName.toLowerCase()).toBe("circle");
+    });
+  });
+});
+

@@ -2,7 +2,7 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import '../src/index.js'; // This auto-initializes the globals
+import '../src'; // This auto-initializes the globals
 
 describe('Example Integration', () => {
   beforeEach(() => {

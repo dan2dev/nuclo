@@ -32,8 +32,8 @@ import {
 } from "../types/polyfill";
 
 // Drift alarm: every declared name must also exist on the runtime modules.
-import * as ssrRuntime from "../src/ssr/index";
-import * as polyfillRuntime from "../src/polyfill/index";
+import * as ssrRuntime from "../src/ssr";
+import * as polyfillRuntime from "../src/polyfill";
 
 // ─── nuclo/ssr ───────────────────────────────────────────────────────────────
 

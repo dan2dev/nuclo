@@ -23,8 +23,8 @@
 
 import "../../src/polyfill";
 import { describe, it, expect, beforeAll } from "vitest";
-import { renderToString, renderManyToString, renderToStringWithContainer } from "../../src/ssr/renderToString";
-import "../../src/index";
+import { renderToString, renderManyToString, renderToStringWithContainer } from "../../src/ssr/render-to-string";
+import "../../src";
 
 beforeAll(() => {
   if (typeof document === "undefined") {

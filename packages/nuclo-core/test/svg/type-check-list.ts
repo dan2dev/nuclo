@@ -1,5 +1,5 @@
 /// <reference path="../../types/index.d.ts" />
-import "../../src/index";
+import "../../src";
 import { list } from "../../src/list";
 
 // Type test - should compile without errors

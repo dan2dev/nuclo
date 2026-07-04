@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createCss, resetStyles } from '../../src/style';
-import '../../src/core/runtimeBootstrap';
+import '../../src/bootstrap';
 
 beforeEach(() => {
 	resetStyles();

@@ -8,7 +8,7 @@
  *
  * Files covered:
  *  - src/index.ts                 (0 % stmts)
- *  - src/core/reactive.ts         (0 % stmts – re-exports)
+ *  - src/update/reactive-text.ts         (0 % stmts – re-exports)
  *  - src/list/index.ts            (0 % stmts – re-exports)
  *  - src/when/index.ts            (re-exports)
  *  - src/ssr/index.ts             (re-exports)
@@ -20,7 +20,7 @@ import { describe, it, expect } from 'vitest';
 // ── src/index.ts ────────────────────────────────────────────────────────────
 describe('src/index.ts barrel', () => {
   it('exports key runtime symbols', async () => {
-    const mod = await import('../src/index');
+    const mod = await import('../src');
 
     expect(typeof mod.initializeRuntime).toBe('function');
     expect(typeof mod.createHtmlTagBuilder).toBe('function');
@@ -38,7 +38,7 @@ describe('src/index.ts barrel', () => {
   });
 
   it('exports style utilities', async () => {
-    const mod = await import('../src/index');
+    const mod = await import('../src');
     expect(typeof mod.createCss).toBe('function');
     expect(typeof mod.css).toBe('function');
     expect(typeof mod.cx).toBe('function');
@@ -47,29 +47,29 @@ describe('src/index.ts barrel', () => {
   });
 
   it('exports DOM helpers', async () => {
-    const mod = await import('../src/index');
+    const mod = await import('../src');
     expect(typeof mod.appendChildren).toBe('function');
     expect(typeof mod.createComment).toBe('function');
     expect(typeof mod.replaceNodeSafely).toBe('function');
   });
 });
 
-// ── src/core/reactiveText.ts & reactiveAttributes.ts ────────────────────────
+// ── src/update/reactive-text.ts & reactive-attributes.ts ────────────────────────
 describe('reactive modules', () => {
   it('exports reactive text utilities', async () => {
-    const mod = await import('../src/core/reactiveText');
+    const mod = await import('../src/update/reactive-text');
     expect(typeof mod.createReactiveTextNode).toBe('function');
     expect(typeof mod.notifyReactiveTextNodes).toBe('function');
   });
 
   it('exports reactive attribute utilities', async () => {
-    const mod = await import('../src/core/reactiveAttributes');
+    const mod = await import('../src/update/reactive-attributes');
     expect(typeof mod.registerAttributeResolver).toBe('function');
     expect(typeof mod.notifyReactiveElements).toBe('function');
   });
 
   it('exports reactive cleanup utilities', async () => {
-    const mod = await import('../src/core/reactiveCleanup');
+    const mod = await import('../src/update/registry');
     expect(typeof mod.cleanupReactiveTextNode).toBe('function');
     expect(typeof mod.cleanupReactiveElement).toBe('function');
   });
@@ -78,7 +78,7 @@ describe('reactive modules', () => {
 // ── src/list/index.ts ────────────────────────────────────────────────────────
 describe('src/list/index.ts barrel', () => {
   it('re-exports list()', async () => {
-    const mod = await import('../src/list/index');
+    const mod = await import('../src/list');
     expect(typeof mod.list).toBe('function');
   });
 });
@@ -86,7 +86,7 @@ describe('src/list/index.ts barrel', () => {
 // ── src/ssr/index.ts ─────────────────────────────────────────────────────────
 describe('src/ssr/index.ts barrel', () => {
   it('re-exports SSR utilities', async () => {
-    const mod = await import('../src/ssr/index');
+    const mod = await import('../src/ssr');
     expect(typeof mod.renderToString).toBe('function');
     expect(typeof mod.renderManyToString).toBe('function');
     expect(typeof mod.renderToStringWithContainer).toBe('function');
@@ -96,7 +96,7 @@ describe('src/ssr/index.ts barrel', () => {
 // ── src/style/index.ts ───────────────────────────────────────────────────────
 describe('src/style/index.ts barrel', () => {
   it('re-exports style utilities', async () => {
-    const mod = await import('../src/style/index');
+    const mod = await import('../src/style');
     expect(typeof mod.createCss).toBe('function');
     expect(typeof mod.css).toBe('function');
     expect(typeof mod.cx).toBe('function');

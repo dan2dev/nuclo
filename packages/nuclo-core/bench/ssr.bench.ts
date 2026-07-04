@@ -6,8 +6,8 @@
  * depth safety on a pathologically deep tree.
  */
 import '../src/polyfill';
-import { renderToString } from '../src/ssr/renderToString';
-import '../src/index';
+import { renderToString } from '../src/ssr/render-to-string';
+import '../src';
 import { when } from '../src/when';
 import { list } from '../src/list';
 
@@ -114,8 +114,8 @@ for (const depth of [500, 2000, 5000]) {
 }
 
 // Phase split: building the polyfill DOM vs serializing it
-import { createElement } from '../src/utility/dom';
-import { renderToString as rts } from '../src/ssr/renderToString';
+import { createElement } from '../src/shared/dom';
+import { renderToString as rts } from '../src/ssr/render-to-string';
 
 function buildOnly() {
   const container = createElement('div')!;

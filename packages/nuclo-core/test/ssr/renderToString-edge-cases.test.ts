@@ -2,11 +2,11 @@
 // @vitest-environment node
 import '../../src/polyfill';
 import { describe, it, expect, beforeAll } from "vitest";
-import { renderToString } from "../../src/ssr/renderToString";
+import { renderToString } from "../../src/ssr/render-to-string";
 import { NucloElement } from "../../src/polyfill/Element";
 
 // Import tag builders
-import "../../src/index";
+import "../../src";
 
 describe("SSR renderToString - Edge Cases", () => {
   beforeAll(() => {

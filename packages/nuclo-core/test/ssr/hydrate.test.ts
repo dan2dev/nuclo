@@ -1,9 +1,9 @@
 /// <reference path="../../types/index.d.ts" />
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { hydrate, render } from "../../src/utility/render";
-import { update } from "../../src/core/updateController";
-import "../../src/index";
+import { hydrate, render } from "../../src/render";
+import { update } from "../../src/update/update";
+import "../../src";
 
 /**
  * True hydration tests — verify that hydrate() reuses existing SSR DOM nodes

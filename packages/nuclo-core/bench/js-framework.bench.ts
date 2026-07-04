@@ -40,11 +40,11 @@ g.AbortController = dom.window.AbortController;
 g.AbortSignal = dom.window.AbortSignal;
 
 // Registers global tag builders (div, table, tr, …) + list/on/render/update.
-await import('../src/index');
-const { update } = await import('../src/core/updateController');
+await import('../src');
+const { update } = await import('../src/update/update');
 const { list } = await import('../src/list');
-const { render } = await import('../src/utility/render');
-const { on } = await import('../src/utility/on');
+const { render } = await import('../src/render');
+const { on } = await import('../src/element/events');
 
 declare const div: ExpandedElementBuilder<'div'>;
 declare const h1: ExpandedElementBuilder<'h1'>;

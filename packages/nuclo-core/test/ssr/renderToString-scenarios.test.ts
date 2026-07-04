@@ -2,8 +2,8 @@
 // @vitest-environment node
 import "../../src/polyfill";
 import { describe, it, expect } from "vitest";
-import { renderToString, renderManyToString, renderToStringWithContainer } from "../../src/ssr/renderToString";
-import "../../src/index";
+import { renderToString, renderManyToString, renderToStringWithContainer } from "../../src/ssr/render-to-string";
+import "../../src";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. Blog post page

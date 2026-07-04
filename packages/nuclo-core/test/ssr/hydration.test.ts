@@ -1,10 +1,10 @@
 /// <reference path="../../types/index.d.ts" />
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { renderToString } from "../../src/ssr/renderToString";
-import { render } from "../../src/utility/render";
-import { update } from "../../src/core/updateController";
-import "../../src/index";
+import { renderToString } from "../../src/ssr/render-to-string";
+import { render } from "../../src/render";
+import { update } from "../../src/update/update";
+import "../../src";
 
 /**
  * SSR Hydration Tests

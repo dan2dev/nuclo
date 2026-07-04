@@ -1,7 +1,7 @@
 /// <reference path="../types/index.d.ts" />
 
 import { describe, it, expect, beforeEach } from "vitest";
-import "../src/index";
+import "../src";
 
 describe("scope() + update(scopeId)", () => {
   beforeEach(() => {

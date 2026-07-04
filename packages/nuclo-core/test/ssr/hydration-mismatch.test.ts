@@ -1,12 +1,12 @@
 /// <reference path="../../types/index.d.ts" />
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { hydrate } from "../../src/utility/render";
-import { update } from "../../src/core/updateController";
-import { renderToString } from "../../src/ssr/renderToString";
+import { hydrate } from "../../src/render";
+import { update } from "../../src/update/update";
+import { renderToString } from "../../src/ssr/render-to-string";
 import { when } from "../../src/when";
 import { list } from "../../src/list";
-import "../../src/index";
+import "../../src";
 
 /**
  * Hydration edge cases — server/client mismatches and SSR output quirks.

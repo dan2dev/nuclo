@@ -1,7 +1,7 @@
 /**
  * Micro-benchmarks for SSR hot-path helpers — run with: bun bench/micro.bench.ts
  */
-import { escapeHtml, escapeText, camelToKebab } from '../src/utility/stringUtils';
+import { escapeHtml, escapeText, camelToKebab } from '../src/shared/strings';
 
 function bench(name: string, fn: () => void, iterations: number): void {
   for (let i = 0; i < 1000; i++) fn();
