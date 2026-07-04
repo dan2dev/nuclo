@@ -11,9 +11,13 @@
 //
 // The themeless defaults (css, cx, keyframes, globalStyle) are registered as
 // globals by the runtime bootstrap; themed instances come from createCss().
+//
+// The type definitions live in types/style.d.ts (NOT src/) so they resolve in
+// the published package, which ships only dist/ and types/.
 
 import type {
 	ClassInput as NucloClassInput,
+	CssInstance as NucloCssInstance,
 	CSSProperties as NucloCSSProperties,
 	FlatStyle as NucloFlatStyle,
 	KeyframeFrames as NucloKeyframeFrames,
@@ -26,7 +30,7 @@ import type {
 	VariantProps as NucloVariantProps,
 	VariantsConfig as NucloVariantsConfig,
 	VariantsFn as NucloVariantsFn,
-} from "../../src/style/css";
+} from "../style";
 
 declare global {
 	export type Size = NucloSize;
@@ -43,31 +47,11 @@ declare global {
 	export type VariantsConfig<T extends ThemeConfig, V extends VariantDefinitions<T>> = NucloVariantsConfig<T, V>;
 	export type VariantsFn<V extends VariantDefinitions> = NucloVariantsFn<V>;
 
-	export interface CssInstance<T extends ThemeConfig = ThemeConfig> {
-		/**
-		 * Compile a style object into atomic CSS classes.
-		 * Returns `{ className }` — usable directly as a nuclo attributes object.
-		 */
-		css(style: Style<T>): StyleResult;
-		/**
-		 * Compose class lists with exact conflict resolution: when two inputs
-		 * style the same (query, selector, property), the last one wins.
-		 * Accepts results, raw class strings, nested arrays, and falsy values.
-		 */
-		cx(...inputs: ClassInput[]): StyleResult;
-		/**
-		 * Compile a typed variants recipe (base + named variant groups + defaults
-		 * + compound variants) into a call-with-props function returning a
-		 * composed StyleResult. Variant names and values are inferred and checked.
-		 */
-		variants<const V extends VariantDefinitions<T>>(config: VariantsConfig<T, V>): VariantsFn<V>;
-		/** Register a @keyframes block; returns its generated animation name. */
-		keyframes(frames: KeyframeFrames<T>): string;
-		/** Global selector styles (body, resets). Flat properties only. */
-		globalStyle(selector: string, style: FlatStyle<T>): void;
-		/** The theme this instance was created with. */
-		theme: T;
-	}
+	/**
+	 * A themed styling instance: css/cx/variants/keyframes/globalStyle bound to
+	 * a theme. Returned by createCss().
+	 */
+	export type CssInstance<T extends ThemeConfig = ThemeConfig> = NucloCssInstance<T>;
 
 	/**
 	 * Create a themed styling instance. Theme tokens (colors, fonts, shadows,

@@ -6,13 +6,22 @@ declare global {
   export type SVGTagName = keyof SVGElementTagNameMap;
   export type ValueFactory<TValue> = () => TValue;
   export type ValueOrFactory<TValue> = TValue | ValueFactory<TValue>;
-  export type InferFactoryResult<TFactory> = TFactory extends (...args: unknown[]) => infer TResult
+  // `never[]` (not `unknown[]`) so factories with typed parameters still match:
+  // `(...args: unknown[])` rejects e.g. `(x: number) => string` under strict
+  // contravariance and would resolve to never.
+  export type InferFactoryResult<TFactory> = TFactory extends (...args: never[]) => infer TResult
     ? TResult
     : never;
 
-  // CSS Style object type that accepts any CSS property as string or number
+  // CSS style object: only the string-valued (settable) CSSStyleDeclaration
+  // properties, as string | number. Filters out methods (setProperty, item…),
+  // readonly non-string members (length, parentRule) and the numeric index.
   export type CSSStyleObject = {
-    [K in keyof CSSStyleDeclaration]?: CSSStyleDeclaration[K] | string | number;
+    [K in keyof CSSStyleDeclaration as K extends string
+      ? CSSStyleDeclaration[K] extends string
+        ? K
+        : never
+      : never]?: string | number;
   };
 
   // Core element attribute types

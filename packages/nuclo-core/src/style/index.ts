@@ -7,6 +7,7 @@ export {
 	keyframes,
 	globalStyle,
 	type ClassInput,
+	type CssInstance,
 	type CSSProperties,
 	type FlatStyle,
 	type KeyframeFrames,

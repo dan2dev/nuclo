@@ -13,6 +13,8 @@
     "types",
     "test/type-inference-public.ts",
     "test/type-inference-core.ts",
+    "test/type-inference-module.ts",
+    "test/type-inference-subpaths.ts",
     "test/svg/type-check-list.ts"
   ]
 }
