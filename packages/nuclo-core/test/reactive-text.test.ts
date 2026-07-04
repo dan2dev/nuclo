@@ -130,32 +130,34 @@ describe('Reactive Text', () => {
     expect(element.textContent).toBe('Hello World');
   });
 
-  it('should ignore functions that return null or undefined', () => {
-    const testData = { 
+  it('should render empty reactive text for functions that return null or undefined', () => {
+    const testData = {
       value1: 'hello',
       value2: null as string | null,
       value3: undefined as string | undefined,
       value4: 'world'
     };
-    
+
     const element = (globalThis as any).div(
-      () => testData.value1,        // Creates reactive text: "hello"
-      () => testData.value2,        // Ignored (null)
-      () => testData.value3,        // Ignored (undefined) 
-      () => testData.value4         // Creates reactive text: "world"
+      () => testData.value1,        // Reactive text: "hello"
+      () => testData.value2,        // Reactive text, empty for now (null)
+      () => testData.value3,        // Reactive text, empty for now (undefined)
+      () => testData.value4         // Reactive text: "world"
     )(document.body);
     document.body.appendChild(element as Node);
-    
-    // Only the non-null functions should create text nodes
+
+    // Nullish resolvers render as empty text but still occupy a child slot.
     expect(element.textContent).toBe('helloworld');
-    // Pure client render: 2 bare reactive text nodes, no <!-- text-N --> markers.
-    expect(element.childNodes.length).toBe(2);
-    
+    // Pure client render: 4 bare reactive text nodes, no <!-- text-N --> markers.
+    expect(element.childNodes.length).toBe(4);
+
+    // Every resolver stays reactive — including the initially-nullish ones.
     testData.value1 = 'updated';
+    testData.value2 = ' & ';
     testData.value4 = 'text';
     (globalThis as any).update();
-    
-    expect(element.textContent).toBe('updatedtext');
+
+    expect(element.textContent).toBe('updated & text');
   });
 
   it('should handle boolean values in reactive text', () => {
@@ -200,11 +202,17 @@ describe('Reactive Text', () => {
     
     expect(element.textContent).toBe('Start: updated :End');
     
-    // Update to null - the reactive text node will show 'null'
+    // Update to null — renders as empty text, not the string 'null'
     testData.value = null;
     (globalThis as any).update();
-    
-    expect(element.textContent).toBe('Start: null :End');
+
+    expect(element.textContent).toBe('Start:  :End');
+
+    // And back to a valid value — the node is still reactive
+    testData.value = 'again';
+    (globalThis as any).update();
+
+    expect(element.textContent).toBe('Start: again :End');
   });
 
   it('should work with nested elements containing reactive text', () => {

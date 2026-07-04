@@ -3,6 +3,7 @@ import { resolveCondition } from "../shared/conditions";
 import type { UpdateScope } from "../update/scope";
 import { applyNodeModifier, modifierProbeCache } from "../element/modifiers";
 import { isFunction, isZeroArityFunction } from "../shared/type-guards";
+import { logError } from "../shared/errors";
 
 export type WhenCondition = boolean | (() => boolean);
 export type WhenContent<TTagName extends ElementTagName = ElementTagName> =
@@ -149,8 +150,9 @@ export function updateWhenRuntimes(scope?: UpdateScope): void {
 
     try {
       runtime.update();
-    } catch {
+    } catch (error) {
       // Clean up runtimes that throw errors
+      logError("when() branch threw during update; unregistering this conditional", error);
       whenRuntimeByMarker.delete(startMarker);
       toDelete.push(ref);
     }

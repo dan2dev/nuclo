@@ -44,9 +44,10 @@ describe("div NodeBuilder", () => {
       () => undefined,
     );
     const element = nodeBuilder(parent, 0);
-    // Pure client render: a single bare text node, no <!-- text-N --> marker.
-    expect(element.childNodes!.length).toBe(1);
-    expect(element.childNodes![0].textContent).toBe("Valid Text");
+    // Static null/undefined are skipped; nullish *functions* register as
+    // empty reactive text nodes so a later update() can fill them in.
+    expect(element.childNodes!.length).toBe(3);
+    expect(element.textContent).toBe("Valid Text");
   });
 
   it("should handle nested divs", () => {

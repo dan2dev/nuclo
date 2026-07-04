@@ -86,16 +86,19 @@ describe("modifierProcessor edge cases", () => {
   });
 
   describe("NodeModFn edge cases", () => {
-    it("should handle NodeModFn that returns null", () => {
+    it("registers a zero-arity function returning null as empty reactive text", () => {
       const modifier = () => null;
       const result = applyNodeModifier(parent, modifier, 0);
-      expect(result).toBeNull();
+      // Nullish probes stay reactive (empty text) instead of being dropped.
+      expect(result).toBeInstanceOf(Text);
+      expect(result?.textContent).toBe("");
     });
 
-    it("should handle NodeModFn that returns undefined", () => {
+    it("registers a zero-arity function returning undefined as empty reactive text", () => {
       const modifier = () => undefined;
       const result = applyNodeModifier(parent, modifier, 0);
-      expect(result).toBeNull();
+      expect(result).toBeInstanceOf(Text);
+      expect(result?.textContent).toBe("");
     });
 
     it("should handle NodeModFn that returns a primitive", () => {

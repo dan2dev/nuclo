@@ -126,6 +126,7 @@ describe('renderWhenContent – condition evaluation', () => {
 // ── Unit: updateWhenRuntimes – runtime.update() throws (lines 127-128) ────────
 describe('updateWhenRuntimes – throwing update (lines 127-128)', () => {
   it('removes the runtime from tracking when update() throws', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     let throwOnUpdate = true;
     const runtime = makeRuntime([], [], () => {
       if (throwOnUpdate) throw new Error('simulated runtime error');
@@ -140,10 +141,31 @@ describe('updateWhenRuntimes – throwing update (lines 127-128)', () => {
     throwOnUpdate = false;
     expect(() => updateWhenRuntimes()).not.toThrow();
 
+    consoleSpy.mockRestore();
+    (runtime.host as unknown as HTMLElement).remove();
+  });
+
+  it('logs the error before unregistering the runtime', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const failure = new Error('boom');
+    const runtime = makeRuntime([], [], () => {
+      throw failure;
+    });
+
+    registerWhenRuntime(runtime);
+    updateWhenRuntimes();
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('when() branch threw during update'),
+      failure,
+    );
+
+    consoleSpy.mockRestore();
     (runtime.host as unknown as HTMLElement).remove();
   });
 
   it('continues updating other runtimes after one throws', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     let throwingUpdated = false;
     let goodUpdated = false;
 
@@ -163,6 +185,7 @@ describe('updateWhenRuntimes – throwing update (lines 127-128)', () => {
     expect(throwingUpdated).toBe(true);
     expect(goodUpdated).toBe(true);
 
+    consoleSpy.mockRestore();
     (throwing.host as unknown as HTMLElement).remove();
     (good.host as unknown as HTMLElement).remove();
   });
