@@ -508,25 +508,21 @@ export class NucloElement extends NucloNode {
     if (this.classList.contains(className)) {
       results.push(this as unknown as Element);
     }
+    // Recursion alone collects matching descendants — checking the child here
+    // as well would push direct children twice.
     for (const child of this.children) {
       if (isElementNode(child)) {
-        if (child.classList?.contains(className)) {
-          results.push(child as unknown as Element);
-        }
         child.querySelectorAllByClass(className, results);
       }
     }
   }
-  
+
   private querySelectorAllByTag(tagName: string, results: Element[]): void {
     if (this.tagName.toLowerCase() === tagName) {
       results.push(this as unknown as Element);
     }
     for (const child of this.children) {
       if (isElementNode(child)) {
-        if (child.tagName.toLowerCase() === tagName) {
-          results.push(child as unknown as Element);
-        }
         child.querySelectorAllByTag(tagName, results);
       }
     }
