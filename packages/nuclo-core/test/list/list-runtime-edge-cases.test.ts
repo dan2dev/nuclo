@@ -225,6 +225,32 @@ describe("list runtime edge cases", () => {
       expect(updated).toEqual(expect.arrayContaining(initial));
     });
 
+    it("matches three or more displaced duplicates FIFO (first old copy → first new position)", () => {
+      // The three "1"s all change position, so none is pinned and the bucket
+      // for "1" must hold all three old indices at once.
+      let items = [1, 1, 1, "x", "y", "z"] as Array<number | string>;
+      const itemsProvider = () => items;
+      const renderItem = (item: number | string) => {
+        const div = document.createElement("div");
+        div.dataset.id = String(item);
+        return div;
+      };
+
+      const runtime = createListRuntime(itemsProvider, renderItem, container, 0);
+      const [a1, a2, a3] = Array.from(container.querySelectorAll('[data-id="1"]'));
+
+      items = ["x", "y", "z", 1, 1, 1];
+      sync(runtime);
+
+      const updated = Array.from(container.querySelectorAll("[data-id]"));
+      expect(updated.map((d) => (d as HTMLElement).dataset.id)).toEqual(["x", "y", "z", "1", "1", "1"]);
+      // FIFO: the duplicates keep their relative order (first old copy backs
+      // the first new "1" position, and so on).
+      expect(updated[3]).toBe(a1);
+      expect(updated[4]).toBe(a2);
+      expect(updated[5]).toBe(a3);
+    });
+
     it("should handle renderItem returning null for specific items", () => {
       let items = [1, 2, 3];
       const itemsProvider = () => items;
