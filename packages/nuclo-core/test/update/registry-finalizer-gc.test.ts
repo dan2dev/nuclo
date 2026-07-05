@@ -26,7 +26,7 @@ describe.runIf(hasGc)("conditional node finalizer", () => {
 
     // Isolate the strong reference in a block scope we can drop.
     {
-      let node: Node | null = document.createComment("conditional-div-hidden");
+      const node: Node = document.createComment("conditional-div-hidden");
       storeConditionalInfo(node, {
         condition: () => false,
         tagName: "div" as ElementTagName,
@@ -34,7 +34,6 @@ describe.runIf(hasGc)("conditional node finalizer", () => {
         isSvg: false,
       });
       ref = new WeakRef(node);
-      node = null;
     }
 
     await collectGarbage();
