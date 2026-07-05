@@ -1,4 +1,6 @@
-export const HERO_BADGE = "v0.2.8 · Zero dependencies";
+import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
+
+export const HERO_BADGE = `v${NUCLO_VERSION} · Zero dependencies`;
 
 export const HERO_TITLE_LINES = ["Mutate.", "Call update().", "Done."];
 
@@ -10,7 +12,7 @@ export const INSTALL_CMD = "npm install nuclo";
 export const HERO_STATS = [
   { num: "0",   sup: "",   label: "dependencies" },
   { num: "175", sup: "",   label: "typed HTML & SVG builders" },
-  { num: "~10", sup: "KB", label: "gzipped, entire runtime" },
+  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "gzipped, entire runtime" },
 ];
 
 export const HERO_CODE = `<span class="kw">import</span> <span class="st">'nuclo'</span>
@@ -97,7 +99,7 @@ export const FEATURES = [
     num: "02 — LIGHTWEIGHT",
     icon: "feather",
     title: "Zero dependencies",
-    desc: "About 10 KB gzipped for the entire runtime. No compiler, no build plugins — add one import and start building.",
+    desc: `About ${NUCLO_GZIP_KB} KB gzipped for the entire runtime. No compiler, no build plugins — add one import and start building.`,
   },
   {
     num: "03 — TYPED",
@@ -176,7 +178,7 @@ export const COMPARISON_COLS: {
       { good: true, text: "Plain mutable state — no wrappers, no proxies" },
       { good: true, text: "One call, update(), is the whole mental model" },
       { good: true, text: "Patches only the values that changed" },
-      { good: true, text: "~10 KB, zero dependencies, TypeScript-first" },
+      { good: true, text: `~${NUCLO_GZIP_KB} KB, zero dependencies, TypeScript-first` },
     ],
   },
 ];

@@ -2,6 +2,7 @@ import { css, colors, s } from "../styles.ts";
 import { fx } from "../styles/effects.ts";
 import { setRoute } from "../router.ts";
 import { GitHubSvg } from "./icons.ts";
+import { NUCLO_VERSION } from "../generated/nuclo-stats.ts";
 
 const GITHUB_URL = "https://github.com/dan2dev/nuclo";
 
@@ -91,7 +92,7 @@ export function Footer() {
       div(
         bottomBar,
         span(fineprint, "© 2026 Danilo Castro (@dan2dev) · MIT License"),
-        span(versionBadge, "v0.2.8"),
+        span(versionBadge, `v${NUCLO_VERSION}`),
       ),
     ),
   );

@@ -1,11 +1,12 @@
 import { css, cx } from "../styles.ts";
 import { DOC_GROUPS, DOC_SECTIONS, SECTION_MAP } from "./docs/content.ts";
 import { ds, sectionDelay } from "./docs/styles.ts";
+import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../generated/nuclo-stats.ts";
 
 const DOC_FACTS = [
-  { label: "Current release", value: "v0.2.8" },
+  { label: "Current release", value: `v${NUCLO_VERSION}` },
   { label: "Tag builders", value: "175" },
-  { label: "Gzipped ESM", value: "~10.7 KB" },
+  { label: "Gzipped ESM", value: `~${NUCLO_GZIP_KB} KB` },
   { label: "Runtime model", value: "Explicit" },
 ];
 
