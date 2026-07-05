@@ -7,6 +7,7 @@
     "dev": "BASE_URL=/ bun --tsconfig-override tsconfig.bun.json src/server.ts",
     "clean": "rm -f .*.bun-build",
     "build": "bun run clean && tsc && vite build && bun build-server.ts",
+    "update:stats": "bun scripts/update-doc-stats.ts",
     "start": "bun start.ts",
     "preview": "bun run build && bun run start",
     "stress:front": "bun --cwd ../packages/nuclo-core run build && bun run build && bunx playwright test tests/front-stress.spec.ts",
@@ -23,6 +24,6 @@
     "@types/bun": "^1.3.14",
     "@types/node": "^25.9.4",
     "typescript": "~6.0.3",
-    "vite": "^8.1.2"
+    "vite": "^8.1.3"
   }
 }

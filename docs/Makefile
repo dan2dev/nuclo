@@ -15,7 +15,7 @@ STRESS_SERVER_CONCURRENCY ?= 100
 
 help:
 	@echo "Available targets:"
-	@echo "  publish    - Build docs and sync full ./build folder (SSR server + dist assets) via rsync"
+	@echo "  publish    - Refresh version/bundle-size stats, build docs, sync ./build folder (SSR server + dist assets) via rsync"
 	@echo "  docker     - Build docs and start via Docker Compose"
 	@echo "  stress     - Run standard front stress"
 	@echo ""
@@ -43,6 +43,8 @@ help:
 	@echo "  make stress STRESS_ROUNDS=50 STRESS_CLICKS_PER_PAGE=30"
 
 publish:
+	cd ../packages/nuclo-core && bun run build
+	bun run update:stats
 	bun run build
 	rsync -avz --delete ./build/ $(DEPLOY_USER)@$(DEPLOY_HOST):$(DEPLOY_PATH)
 	ssh $(DEPLOY_USER)@$(DEPLOY_HOST) /home/sites/reboot.sh
