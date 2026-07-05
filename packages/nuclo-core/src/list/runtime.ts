@@ -1,3 +1,18 @@
+/**
+ * Keyed list runtime: renders `list(provider, render)` blocks and keeps their
+ * DOM rows in sync with the provider's items on every update().
+ *
+ * sync() is a keyed diff over item identity (===):
+ *  1. skip when the items are unchanged (arraysEqual),
+ *  2. trim rows that already back the same item at the same position from both
+ *     ends — pure appends, prepends, insertions and deletions then need no
+ *     keying structures at all,
+ *  3. key the remaining window by item identity (same-position rows pinned
+ *     first, duplicate items matched FIFO), remove the rows whose item is gone,
+ *  4. place the window anchored backwards from the row after it: survivors on
+ *     the longest increasing subsequence of old positions never move, and runs
+ *     of freshly built rows are batched into DocumentFragments.
+ */
 import { createMarkerPair, createComment, safeRemoveChild, isNodeConnected, createDocumentFragment } from "../shared/dom";
 import { resolveRenderable } from "../shared/renderables";
 import { isHydrating, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration";
@@ -38,11 +53,6 @@ function registerListRuntime(startMarker: Comment, runtime: ListRuntime<unknown,
   listMarkerFinalizer?.register(startMarker, ref);
 }
 
-interface ReleasedListItemRecord<TItem, TTagName extends ElementTagName> {
-  item: TItem | null;
-  element: ExpandedElement<TTagName> | null;
-}
-
 function normalizeItems<TItem>(items: ListItemsInput<TItem>): readonly TItem[] {
   return Array.isArray(items) ? items : Array.from(items);
 }
@@ -56,18 +66,14 @@ function renderItem<TItem, TTagName extends ElementTagName>(
   return resolveRenderable<TTagName>(result, runtime.host, index);
 }
 
-function releaseRecord<TItem, TTagName extends ElementTagName>(
-  record: ListItemRecord<TItem, TTagName>
-): void {
-  // Clear the references to help GC.
-  const releasedRecord = record as unknown as ReleasedListItemRecord<TItem, TTagName>;
-  releasedRecord.element = null;
-  releasedRecord.item = null;
-}
-
-function remove<TItem, TTagName extends ElementTagName>(record: ListItemRecord<TItem, TTagName>): void {
+/**
+ * Detaches one row eagerly: safeRemoveChild walks the subtree to abort
+ * listeners and prune reactive registries before removing the node. Used for
+ * partial removals, where the walk is cheap; full clears/replaces use
+ * bulkClearRecords instead.
+ */
+function removeRecord<TItem, TTagName extends ElementTagName>(record: ListItemRecord<TItem, TTagName>): void {
   safeRemoveChild(record.element as unknown as Node);
-  releaseRecord(record);
 }
 
 /**
@@ -85,9 +91,9 @@ function remove<TItem, TTagName extends ElementTagName>(record: ListItemRecord<T
  * with nodes-per-row, so a nested `tr>td>td` row template made replace/clear
  * quadratic where a flat `div` row only looked linear.
  *
- * Like the previous Range-based clear, this does NOT eagerly walk each subtree
- * to abort listeners and prune reactive registries. That walk is the dominant
- * per-row cost when clearing/replacing a large list, and it is redundant here:
+ * Unlike removeRecord, this does NOT eagerly walk each subtree to abort
+ * listeners and prune reactive registries. That walk is the dominant per-row
+ * cost when clearing/replacing a large list, and it is redundant here:
  *  - Reactive text/attribute registries hold their targets only through
  *    WeakRef/WeakMap, and every update() prunes entries whose node became
  *    disconnected (which removeChild makes them). The real-GC tests in
@@ -108,13 +114,10 @@ function bulkClearRecords<TItem, TTagName extends ElementTagName>(
   if (startMarker.parentNode !== parent || endMarker.parentNode !== parent) return false;
 
   for (let i = 0; i < records.length; i++) {
-    const record = records[i];
-    const node = record.element as unknown as Node | null;
+    const node = records[i].element as unknown as Node | null;
     // Detach the row (guard against an already-moved/detached element so a
     // stale record can't throw). Children of the row go with it in one call.
     if (node && node.parentNode === parent) parent.removeChild(node);
-    // Node is out of the live tree; drop the record's references.
-    releaseRecord(record);
   }
   return true;
 }
@@ -190,197 +193,229 @@ function buildAndInsert<TItem, TTagName extends ElementTagName>(
   if (fragment && buffered > 0) parent.insertBefore(fragment, anchor);
 }
 
-function isIdentityPrefix<TItem>(prefix: readonly TItem[], full: readonly TItem[]): boolean {
-  for (let i = 0; i < prefix.length; i++) {
-    if (prefix[i] !== full[i]) return false;
-  }
-  return true;
-}
-
 export function sync<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>
 ): void {
-  const { host, startMarker, endMarker } = runtime;
-  const parent = (startMarker.parentNode ?? (host as unknown as Node & ParentNode)) as
+  const { startMarker, endMarker } = runtime;
+  const parent = (startMarker.parentNode ?? (runtime.host as unknown as Node & ParentNode)) as
     Node & ParentNode;
 
-  const currentItems = normalizeItems(runtime.itemsProvider());
+  const items = normalizeItems(runtime.itemsProvider());
 
-  if (arraysEqual(runtime.lastSyncedItems, currentItems)) return;
+  if (arraysEqual(runtime.lastSyncedItems, items)) return;
 
   const oldRecords = runtime.records;
-  const newLen = currentItems.length;
+  const oldLen = oldRecords.length;
+  const newLen = items.length;
 
-  // Fast path — clear: drop every row in one DOM operation.
+  // Fast path — clear: one removeChild per row, skipping the eager per-subtree
+  // cleanup walk (see bulkClearRecords).
   if (newLen === 0) {
-    if (!bulkClearRecords(oldRecords, parent, startMarker, endMarker)) {
-      for (let i = 0; i < oldRecords.length; i++) remove(oldRecords[i]);
+    if (oldLen > 0 && !bulkClearRecords(oldRecords, parent, startMarker, endMarker)) {
+      for (let i = 0; i < oldLen; i++) removeRecord(oldRecords[i]);
     }
     runtime.records = [];
     runtime.lastSyncedItems = [];
     return;
   }
 
-  // Fast path — first render / re-populate after clear: build everything at
-  // once and insert a single fragment.
-  if (oldRecords.length === 0) {
-    const fresh: ListItemRecord<TItem, TTagName>[] = [];
-    buildAndInsert(runtime, parent, currentItems, 0, newLen, endMarker, fresh);
-    runtime.records = fresh;
-    runtime.lastSyncedItems = currentItems.slice();
-    return;
+  // Trim rows that already back the same item at the same position from both
+  // ends. They never move, and most updates (append, prepend, single insert or
+  // delete) reduce to an empty window on one side.
+  let prefix = 0;
+  const maxTrim = Math.min(oldLen, newLen);
+  while (prefix < maxTrim && oldRecords[prefix].item === items[prefix]) prefix++;
+  let suffix = 0;
+  const maxSuffix = maxTrim - prefix;
+  while (suffix < maxSuffix && oldRecords[oldLen - 1 - suffix].item === items[newLen - 1 - suffix]) {
+    suffix++;
   }
 
-  // Fast path — pure append: the previous items are an identity-prefix of the
-  // new items, so existing rows are untouched and only the tail is built.
-  const lastItems = runtime.lastSyncedItems;
-  if (newLen > lastItems.length && isIdentityPrefix(lastItems, currentItems)) {
-    buildAndInsert(runtime, parent, currentItems, lastItems.length, newLen, endMarker, oldRecords);
-    runtime.records = oldRecords;
-    runtime.lastSyncedItems = currentItems.slice();
-    return;
-  }
+  const oldStart = prefix;
+  const oldEnd = oldLen - suffix;
+  const newStart = prefix;
+  const newEnd = newLen - suffix;
 
-  // General keyed diff -----------------------------------------------------
-  const recordsByPosition = new Map<number, ListItemRecord<TItem, TTagName>>();
-  const availableRecords = new Map<TItem, ListItemRecord<TItem, TTagName>[]>();
-  // Old DOM order == index in oldRecords; used to compute minimal moves below.
-  const oldIndexByRecord = new Map<ListItemRecord<TItem, TTagName>, number>();
-
-  for (let i = 0; i < oldRecords.length; i++) {
-    const record = oldRecords[i];
-    oldIndexByRecord.set(record, i);
-    const items = availableRecords.get(record.item);
-    if (items) {
-      items.push(record);
+  // Every old row was trimmed → pure insertion (first render, append, prepend,
+  // middle insert). Build the new rows into one fragment before the row that
+  // follows the gap. (An empty new window is a no-op here.)
+  if (oldStart === oldEnd) {
+    const anchor: Node = oldEnd < oldLen ? (oldRecords[oldEnd].element as unknown as Node) : endMarker;
+    if (oldEnd === oldLen) {
+      buildAndInsert(runtime, parent, items, newStart, newEnd, anchor, oldRecords);
     } else {
-      availableRecords.set(record.item, [record]);
+      const fresh: ListItemRecord<TItem, TTagName>[] = [];
+      buildAndInsert(runtime, parent, items, newStart, newEnd, anchor, fresh);
+      runtime.records = oldRecords.slice(0, oldStart).concat(fresh, oldRecords.slice(oldStart));
     }
+    runtime.lastSyncedItems = items.slice();
+    return;
   }
 
-  // Pin records whose item is unchanged at the same position. This keeps
-  // duplicate object references attached to their original node.
-  for (let newIndex = 0; newIndex < newLen; newIndex++) {
-    const item = currentItems[newIndex];
-    if (newIndex < lastItems.length && lastItems[newIndex] === item) {
-      const existingRecord = oldRecords[newIndex];
-      if (existingRecord && existingRecord.item === item) {
-        recordsByPosition.set(newIndex, existingRecord);
-        const items = availableRecords.get(item)!;
-        items.splice(items.indexOf(existingRecord), 1);
-        if (items.length === 0) availableRecords.delete(item);
-      }
-    }
+  // Every new row was trimmed → pure removal. This is always partial (a full
+  // clear was handled above), so remove each row eagerly.
+  if (newStart === newEnd) {
+    for (let i = oldStart; i < oldEnd; i++) removeRecord(oldRecords[i]);
+    oldRecords.splice(oldStart, oldEnd - oldStart);
+    runtime.lastSyncedItems = items.slice();
+    return;
   }
 
-  // Phase 1: resolve which record backs each position (no DOM writes yet).
-  const newRecords: Array<ListItemRecord<TItem, TTagName> | null> = new Array(newLen);
-  const elementsToRemove = new Set<ListItemRecord<TItem, TTagName>>(oldRecords);
+  // General keyed diff over the window ---------------------------------------
+  const oldWinLen = oldEnd - oldStart;
+  const newWinLen = newEnd - newStart;
+
+  // sources[j] = index into oldRecords of the record backing new position
+  // newStart + j, or -1 when the row must be freshly rendered.
+  const sources = new Array<number>(newWinLen).fill(-1);
+  // claimed[i - oldStart] = the old record was matched to a new position.
+  const claimed = new Uint8Array(oldWinLen);
   let reusedCount = 0;
 
-  for (let i = newLen - 1; i >= 0; i--) {
-    const item = currentItems[i];
-    let record = recordsByPosition.get(i);
-
-    if (!record) {
-      const availableItems = availableRecords.get(item);
-      if (availableItems && availableItems.length > 0) {
-        record = availableItems.shift()!;
-        if (availableItems.length === 0) {
-          availableRecords.delete(item);
-        }
-      }
-    }
-
-    if (record) {
-      elementsToRemove.delete(record);
+  // Pin records whose item is unchanged at the same position. This keeps
+  // duplicate item references attached to their original rows.
+  const pinEnd = Math.min(oldEnd, newEnd);
+  for (let i = prefix; i < pinEnd; i++) {
+    if (oldRecords[i].item === items[i]) {
+      sources[i - newStart] = i;
+      claimed[i - oldStart] = 1;
       reusedCount++;
-    } else {
-      const element = renderItem(runtime, item, i);
-      if (!element) {
-        newRecords[i] = null;
-        continue;
-      }
-      record = { item, element };
     }
-
-    newRecords[i] = record;
   }
 
-  // Phase 2: remove stale elements BEFORE placement. A removed element left in
-  // the DOM would make surviving elements before it fail the move check below.
-  // When nothing survives, collapse the whole range in one operation.
-  if (reusedCount === 0) {
-    if (!bulkClearRecords(oldRecords, parent, startMarker, endMarker)) {
-      for (const record of elementsToRemove) remove(record);
+  // Bucket the remaining old records by item identity, in DOM order. The value
+  // is a single old index, promoted to an index array only when the same item
+  // occurs more than once (duplicates are matched FIFO).
+  const buckets = new Map<TItem, number | number[]>();
+  for (let i = oldStart; i < oldEnd; i++) {
+    if (claimed[i - oldStart]) continue;
+    const item = oldRecords[i].item;
+    const entry = buckets.get(item);
+    if (entry === undefined) buckets.set(item, i);
+    else if (typeof entry === "number") buckets.set(item, [entry, i]);
+    else entry.push(i);
+  }
+
+  for (let j = 0; j < newWinLen; j++) {
+    if (sources[j] !== -1) continue;
+    const entry = buckets.get(items[newStart + j]);
+    if (entry === undefined) continue;
+    let oldIndex: number;
+    if (typeof entry === "number") {
+      oldIndex = entry;
+      buckets.delete(items[newStart + j]);
+    } else {
+      oldIndex = entry.shift()!;
+      if (entry.length === 0) buckets.delete(items[newStart + j]);
     }
-  } else {
-    for (const record of elementsToRemove) remove(record);
+    sources[j] = oldIndex;
+    claimed[oldIndex - oldStart] = 1;
+    reusedCount++;
+  }
+
+  // Nothing survives anywhere → full replace: bulk-detach all old rows and
+  // build every new row into a single fragment.
+  if (reusedCount === 0 && oldStart === 0 && oldEnd === oldLen) {
+    if (!bulkClearRecords(oldRecords, parent, startMarker, endMarker)) {
+      for (let i = 0; i < oldLen; i++) removeRecord(oldRecords[i]);
+    }
+    const fresh: ListItemRecord<TItem, TTagName>[] = [];
+    buildAndInsert(runtime, parent, items, 0, newLen, endMarker, fresh);
+    runtime.records = fresh;
+    runtime.lastSyncedItems = items.slice();
+    return;
+  }
+
+  // Remove stale rows BEFORE placement. A removed element left in the DOM
+  // would end up interleaved with the survivors the placement phase leaves
+  // untouched.
+  for (let i = oldStart; i < oldEnd; i++) {
+    if (!claimed[i - oldStart]) removeRecord(oldRecords[i]);
   }
 
   // Determine the minimal set of survivors that must move. Survivors whose old
   // positions form an increasing subsequence are already correctly ordered.
-  const reusedNewPositions: number[] = [];
-  const reusedOldIndices: number[] = [];
-  for (let i = 0; i < newLen; i++) {
-    const record = newRecords[i];
-    if (!record) continue;
-    const oldIndex = oldIndexByRecord.get(record);
-    if (oldIndex !== undefined) {
-      reusedNewPositions.push(i);
-      reusedOldIndices.push(oldIndex);
+  let stable: Uint8Array | null = null;
+  if (reusedCount > 0) {
+    const survivorOldIndices: number[] = [];
+    const survivorPositions: number[] = [];
+    for (let j = 0; j < newWinLen; j++) {
+      if (sources[j] !== -1) {
+        survivorOldIndices.push(sources[j]);
+        survivorPositions.push(j);
+      }
     }
-  }
-  const stablePositions = new Set<number>();
-  if (reusedOldIndices.length > 0) {
-    const lis = longestIncreasingSubsequence(reusedOldIndices);
-    for (let i = 0; i < lis.length; i++) {
-      stablePositions.add(reusedNewPositions[lis[i]]);
-    }
+    stable = new Uint8Array(newWinLen);
+    const lis = longestIncreasingSubsequence(survivorOldIndices);
+    for (let k = 0; k < lis.length; k++) stable[survivorPositions[lis[k]]] = 1;
   }
 
-  // Phase 3: place elements anchored backwards from the end marker. Runs of
-  // freshly created nodes are batched into a fragment; reused nodes already on
-  // the LIS are left untouched.
-  let anchor: Node = endMarker;
+  // Place the window anchored backwards from the first row after it. Runs of
+  // freshly created rows are batched into a fragment; survivors on the LIS are
+  // left untouched.
+  const windowRecords = new Array<ListItemRecord<TItem, TTagName> | null>(newWinLen);
+  let nullCount = 0;
+  let anchor: Node = oldEnd < oldLen ? (oldRecords[oldEnd].element as unknown as Node) : endMarker;
   let fragment: DocumentFragment | null = null;
-  for (let i = newLen - 1; i >= 0; i--) {
-    const record = newRecords[i];
-    if (!record) continue;
-    const node = record.element as unknown as Node;
 
-    if (!oldIndexByRecord.has(record)) {
-      // Freshly created node. Prefer batching consecutive new nodes into a
-      // fragment (one DOM insert); prepending keeps ascending order.
+  for (let j = newWinLen - 1; j >= 0; j--) {
+    const src = sources[j];
+
+    if (src === -1) {
+      // Fresh row. Prefer batching consecutive new rows into a fragment (one
+      // DOM insert); prepending keeps ascending order.
+      const item = items[newStart + j];
+      const element = renderItem(runtime, item, newStart + j);
+      if (!element) {
+        windowRecords[j] = null;
+        nullCount++;
+        continue;
+      }
+      windowRecords[j] = { item, element };
+      const node = element as unknown as Node;
       if (!fragment) fragment = createDocumentFragment();
       if (fragment) {
         fragment.insertBefore(node, fragment.firstChild);
       } else {
         // No DocumentFragment available — insert directly and advance the
-        // anchor so the next (earlier) node lands before this one.
+        // anchor so the next (earlier) row lands before this one.
         parent.insertBefore(node, anchor);
         anchor = node;
       }
       continue;
     }
 
-    // Reused node: flush any pending new nodes (they belong after it), moving
-    // the anchor to the first flushed node so this node lands before them.
+    // Survivor: flush any pending fresh rows (they belong after it), moving
+    // the anchor to the first flushed node so this row lands before them.
+    const record = oldRecords[src];
+    windowRecords[j] = record;
+    const node = record.element as unknown as Node;
     if (fragment && fragment.firstChild) {
       const firstFlushed = fragment.firstChild;
       parent.insertBefore(fragment, anchor);
       anchor = firstFlushed;
       fragment = null;
     }
-    if (!stablePositions.has(i)) {
+    if (!stable || !stable[j]) {
       parent.insertBefore(node, anchor);
     }
     anchor = node;
   }
   if (fragment && fragment.firstChild) parent.insertBefore(fragment, anchor);
 
-  runtime.records = newRecords.filter((r): r is ListItemRecord<TItem, TTagName> => r !== null);
-  runtime.lastSyncedItems = currentItems.slice();
+  // Stitch the untouched prefix and suffix around the window's records.
+  const merged = new Array<ListItemRecord<TItem, TTagName>>(
+    oldStart + (newWinLen - nullCount) + (oldLen - oldEnd),
+  );
+  let w = 0;
+  for (let i = 0; i < oldStart; i++) merged[w++] = oldRecords[i];
+  for (let j = 0; j < newWinLen; j++) {
+    const record = windowRecords[j];
+    if (record) merged[w++] = record;
+  }
+  for (let i = oldEnd; i < oldLen; i++) merged[w++] = oldRecords[i];
+  runtime.records = merged;
+  runtime.lastSyncedItems = items.slice();
 }
 
 export function createListRuntime<TItem, TTagName extends ElementTagName = ElementTagName>(
@@ -531,13 +566,20 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   return runtime;
 }
 
+/**
+ * Drops a disconnected runtime's item/element references. The runtime object
+ * can outlive its list (it stays reachable through the WeakMap entry while
+ * someone still references the detached subtree), so clearing the records
+ * keeps it from pinning the items.
+ */
 function releaseRuntime(runtime: ListRuntime<unknown, ElementTagName>): void {
   for (let i = 0; i < runtime.records.length; i++) {
-    const record = runtime.records[i] as unknown as ReleasedListItemRecord<unknown, ElementTagName>;
+    const record = runtime.records[i] as { item: unknown; element: unknown };
     record.element = null;
     record.item = null;
   }
   runtime.records = [];
+  runtime.lastSyncedItems = [];
 }
 
 export function updateListRuntimes(scope?: UpdateScope): void {
@@ -577,4 +619,3 @@ export function updateListRuntimes(scope?: UpdateScope): void {
     activeListRuntimes.delete(ref);
   }
 }
-
