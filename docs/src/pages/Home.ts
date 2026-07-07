@@ -3,10 +3,7 @@ import {
   PipelineSection,
   PhilosophySection,
   FeaturesSection,
-  ComparisonSection,
   BenchmarkSection,
-  HomeQuickStartSection,
-  ExamplesTeaserSection,
   CTASection,
 } from "./home/components.ts";
 
@@ -17,10 +14,7 @@ export function HomePage() {
     PipelineSection(),
     PhilosophySection(),
     FeaturesSection(),
-    ComparisonSection(),
     BenchmarkSection(),
-    HomeQuickStartSection(),
-    ExamplesTeaserSection(),
     CTASection(),
   );
 }
