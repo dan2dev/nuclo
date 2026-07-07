@@ -42,7 +42,7 @@ export const hs = {
 
   heroActions: css({ display: "flex", gap: "12px", flexWrap: "wrap" }),
 
-  // Stats — divider-separated row (divider rule lives in global CSS: .stat-item + .stat-item)
+  // Stats - divider-separated row (divider rule lives in global CSS: .stat-item + .stat-item)
   statsRow: css({ display: "flex", flexWrap: "wrap", rowGap: "20px", padding: "32px 0 0", borderTop: `1px solid ${colors.border}`, marginTop: "36px" }),
 
   statNum: css({ fontSize: "1.75rem", fontWeight: "700", color: colors.text, lineHeight: "1", marginBottom: "6px", fontVariantNumeric: "tabular-nums" }),
@@ -170,5 +170,5 @@ export const hs = {
 
 // Benchmark bars start collapsed and grow when the panel scrolls into view:
 // the head script sets html[data-anim] when animation is possible, and
-// reveal.ts adds .rv-in to the panel — releasing each bar to its css() width.
+// reveal.ts adds .rv-in to the panel - releasing each bar to its css() width.
 globalStyle("html[data-anim] .rv:not(.rv-in) .nb-fill", { width: "0%" });

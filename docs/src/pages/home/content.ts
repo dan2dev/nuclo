@@ -68,7 +68,7 @@ export const TODO_TEASER_CODE = `<span class="kw">import</span> <span class="st"
 <span class="pt">}</span>`;
 
 export const PHILOSOPHY_QUOTE =
-  "When you mutate state, nothing happens. Call update() and Nuclo does exactly what you asked—no more, no less.";
+  "When you mutate state, nothing happens. Call update() and Nuclo does exactly what you asked-no more, no less.";
 
 export const PHILOSOPHY_POINTS = [
   {
@@ -79,36 +79,36 @@ export const PHILOSOPHY_POINTS = [
   {
     num: "02",
     title: "Batch freely, update once",
-    desc: "Make 10 mutations before calling update() once. The DOM sees only the final state—no wasted renders.",
+    desc: "Make 10 mutations before calling update() once. The DOM sees only the final state-no wasted renders.",
   },
   {
     num: "03",
     title: "Functions, not components",
-    desc: "Build with plain JavaScript functions. No lifecycle hooks, no class magic, no special syntax—just functions that return DOM nodes.",
+    desc: "Build with plain JavaScript functions. No lifecycle hooks, no class magic, no special syntax-just functions that return DOM nodes.",
   },
 ];
 
 export const FEATURES = [
   {
-    num: "01 — EXPLICIT",
+    num: "01 - EXPLICIT",
     icon: "zap",
     title: "You own the update cycle",
-    desc: "Mutate freely, then call update() once. No subscriptions, no schedulers, no diffing surprises — the DOM syncs when you decide.",
+    desc: "Mutate freely, then call update() once. No subscriptions, no schedulers, no diffing surprises - the DOM syncs when you decide.",
   },
   {
-    num: "02 — LIGHTWEIGHT",
+    num: "02 - LIGHTWEIGHT",
     icon: "feather",
     title: "Zero dependencies",
-    desc: `About ${NUCLO_GZIP_KB} KB gzipped for the entire runtime. No compiler, no build plugins — add one import and start building.`,
+    desc: `About ${NUCLO_GZIP_KB} KB gzipped for the entire runtime. No compiler, no build plugins - add one import and start building.`,
   },
   {
-    num: "03 — TYPED",
+    num: "03 - TYPED",
     icon: "braces",
     title: "TypeScript-first",
     desc: "175 fully-typed HTML & SVG builders, with autocomplete for every attribute, style property, and event.",
   },
   {
-    num: "04 — PRECISE",
+    num: "04 - PRECISE",
     icon: "target",
     title: "Fine-grained patching",
     desc: "Dynamic expressions re-evaluate on update(), and only the values that actually changed touch the DOM.",
@@ -120,14 +120,14 @@ export const PIPELINE_STEPS = [
   {
     kicker: "01 · Mutate",
     title: "Change your data",
-    desc: "State is plain JavaScript — variables, arrays, objects. Mutate it however you like, as many times as you like.",
+    desc: "State is plain JavaScript - variables, arrays, objects. Mutate it however you like, as many times as you like.",
     code: `<span class="pr">todos</span><span class="pt">.</span><span class="fn">push</span><span class="pt">(</span><span class="pr">newTodo</span><span class="pt">)</span>
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
     kicker: "02 · Commit",
     title: "Call update()",
-    desc: "One global function commits your changes. Batch a dozen mutations and commit once — nothing renders until you say so.",
+    desc: "One global function commits your changes. Batch a dozen mutations and commit once - nothing renders until you say so.",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
@@ -175,7 +175,7 @@ export const COMPARISON_COLS: {
     sub: "mutate → update()",
     featured: true,
     items: [
-      { good: true, text: "Plain mutable state — no wrappers, no proxies" },
+      { good: true, text: "Plain mutable state - no wrappers, no proxies" },
       { good: true, text: "One call, update(), is the whole mental model" },
       { good: true, text: "Patches only the values that changed" },
       { good: true, text: `~${NUCLO_GZIP_KB} KB, zero dependencies, TypeScript-first` },
@@ -186,10 +186,10 @@ export const COMPARISON_COLS: {
 // ── Benchmarks ──────────────────────────────────────────────────────────────
 export const BENCHMARK_TITLE = "Fast where it counts.";
 export const BENCHMARK_SUB =
-  "Independent numbers from js-framework-benchmark — creating, updating, swapping, and clearing thousands of rows.";
+  "Independent numbers from js-framework-benchmark - creating, updating, swapping, and clearing thousands of rows.";
 
 export const BENCHMARK_NOTE =
-  "Duration slowdown vs. the fastest measured implementation — weighted geometric mean of all keyed benchmarks.";
+  "Duration slowdown vs. the fastest measured implementation - weighted geometric mean of all keyed benchmarks.";
 
 export const BENCHMARK_SOURCE_URL =
   "https://krausest.github.io/js-framework-benchmark/";
@@ -223,21 +223,21 @@ export const CTA_SUB =
 
 export const QUICK_START_STEPS = [
   {
-    num: "01 — INSTALL",
+    num: "01 - INSTALL",
     title: "Install",
     desc: "Add Nuclo to your project with your favourite package manager.",
     code: `<span class="pt">$</span> <span class="fn">npm</span> install nuclo<span class="tcaret"></span>`,
     lang: "terminal",
   },
   {
-    num: "02 — IMPORT",
+    num: "02 - IMPORT",
     title: "Import",
     desc: "A single side-effect import globally injects all 175 tag builders.",
     code: `<span class="kw">import</span> <span class="st">'nuclo'</span>`,
     lang: "main.ts",
   },
   {
-    num: "03 — BUILD",
+    num: "03 - BUILD",
     title: "Build",
     desc: "Write plain functions that return DOM nodes. Call update() when state changes.",
     code: `<span class="kw">let</span> <span class="pr">name</span> <span class="pt">=</span> <span class="st">'World'</span>

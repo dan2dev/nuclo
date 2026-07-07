@@ -1,5 +1,5 @@
 /**
- * ssr-app.ts — server-only.
+ * ssr-app.ts - server-only.
  *
  * Thin wrapper: loads the page function for a route and delegates to the
  * isomorphic createApp().  The same tree structure is then rendered on the

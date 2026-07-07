@@ -222,7 +222,7 @@ export function DocsPage() {
     Rail(),
   );
 
-  // IntersectionObserver for sidebar active state — only on client
+  // IntersectionObserver for sidebar active state - only on client
   if (typeof window !== "undefined") {
     requestAnimationFrame(() => {
       const sections = document.querySelectorAll(".docs-content section[id]");

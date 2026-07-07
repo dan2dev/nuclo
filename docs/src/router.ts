@@ -1,5 +1,5 @@
 /**
- * router.ts — client-only.
+ * router.ts - client-only.
  * Manages browser navigation state. Never imported by server code.
  */
 import { updatePageMeta } from './seo.ts';

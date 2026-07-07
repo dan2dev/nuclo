@@ -1,7 +1,7 @@
 import 'nuclo';
 import { registerGlobalStyles } from './styles/global.ts';
 
-// Color tokens — CSS custom properties toggled by [data-theme] on <html>.
+// Color tokens - CSS custom properties toggled by [data-theme] on <html>.
 export const colors = {
   primary:         'var(--c-primary)',
   primaryHover:    'var(--c-primary-hover)',

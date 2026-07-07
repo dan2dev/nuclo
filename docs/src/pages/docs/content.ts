@@ -35,14 +35,14 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Introduction",
     title: "Overview",
     content: `
-      <p>Nuclo is a lightweight imperative DOM framework. You write plain functions that build and return DOM nodes. When your state changes, you call <code>update()</code>—and Nuclo syncs only what needs to change.</p>
+      <p>Nuclo is a lightweight imperative DOM framework. You write plain functions that build and return DOM nodes. When your state changes, you call <code>update()</code>-and Nuclo syncs only what needs to change.</p>
       <p>There are no proxies, no virtual DOM, no hidden subscriptions. You are always in control.</p>
       <h3>Core philosophy</h3>
       <p>Nuclo keeps state management explicit: it trusts you to know when something changed, and acts <em>only</em> when you say so.</p>
       <ul>
-        <li><strong>Explicit updates</strong> — call <code>update()</code> after you mutate state.</li>
-        <li><strong>Dynamic functions</strong> — pass <code>() =&gt; value</code> for text, attributes, styles, and class names; Nuclo re-evaluates them on each update.</li>
-        <li><strong>Plain functions</strong> — components are just functions. No classes, no decorators, no lifecycle hooks.</li>
+        <li><strong>Explicit updates</strong> - call <code>update()</code> after you mutate state.</li>
+        <li><strong>Dynamic functions</strong> - pass <code>() =&gt; value</code> for text, attributes, styles, and class names; Nuclo re-evaluates them on each update.</li>
+        <li><strong>Plain functions</strong> - components are just functions. No classes, no decorators, no lifecycle hooks.</li>
       </ul>
     `,
   },
@@ -106,7 +106,7 @@ export const DOC_SECTIONS: DocSection[] = [
     <span class="fn">update</span><span class="pt">()</span>
   <span class="pt">})</span>
 <span class="pt">)</span></pre></div></div>
-      <div class="docs-callout"><strong>Tip:</strong> You can call <code>update()</code> from anywhere—event handlers, timers, fetch callbacks, anywhere.</div>
+      <div class="docs-callout"><strong>Tip:</strong> You can call <code>update()</code> from anywhere-event handlers, timers, fetch callbacks, anywhere.</div>
     `,
   },
   {
@@ -119,9 +119,9 @@ export const DOC_SECTIONS: DocSection[] = [
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">name</span> <span class="pt">=</span> <span class="st">'Alice'</span>
 
 <span class="kw">const</span> <span class="pr">el</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span>
-  <span class="cm">// Static string — never changes</span>
+  <span class="cm">// Static string - never changes</span>
   <span class="fn">h1</span><span class="pt">(</span><span class="st">"Welcome"</span><span class="pt">),</span>
-  <span class="cm">// Dynamic function — re-evaluated on update()</span>
+  <span class="cm">// Dynamic function - re-evaluated on update()</span>
   <span class="fn">p</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pt">\`</span><span class="st">Hello, </span><span class="pt">\${</span><span class="pr">name</span><span class="pt">}\`),</span>
 <span class="pt">)</span></pre></div></div>
       <p>Dynamic functions work for text content, attributes, styles, and class names. For dynamic branches or children, use <code>when()</code> and <code>list()</code>.</p>
@@ -135,12 +135,12 @@ export const DOC_SECTIONS: DocSection[] = [
     content: `
       <p>After <code>import 'nuclo'</code>, every HTML and SVG tag is available as a global function. Tag builders accept any combination of:</p>
       <ul>
-        <li><strong>Strings / numbers</strong> — text nodes</li>
-        <li><strong>() =&gt; string</strong> — dynamic text nodes</li>
-        <li><strong>HTMLElement / Node</strong> — child nodes</li>
-        <li><strong>NodeModFn</strong> — child builders such as <code>div()</code>, <code>span()</code>, <code>when()</code>, and <code>list()</code></li>
-        <li><strong>Attribute objects</strong> — <code>{ id, class, href, ... }</code></li>
-        <li><strong>Style helpers</strong> — <code>css(...)</code> results (atomic class objects)</li>
+        <li><strong>Strings / numbers</strong> - text nodes</li>
+        <li><strong>() =&gt; string</strong> - dynamic text nodes</li>
+        <li><strong>HTMLElement / Node</strong> - child nodes</li>
+        <li><strong>NodeModFn</strong> - child builders such as <code>div()</code>, <code>span()</code>, <code>when()</code>, and <code>list()</code></li>
+        <li><strong>Attribute objects</strong> - <code>{ id, class, href, ... }</code></li>
+        <li><strong>Style helpers</strong> - <code>css(...)</code> results (atomic class objects)</li>
       </ul>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">const</span> <span class="pr">card</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span>
   <span class="pt">{</span> <span class="pr">id</span><span class="pt">:</span> <span class="st">"card-1"</span><span class="pt">,</span> <span class="pr">class</span><span class="pt">:</span> <span class="st">"card"</span> <span class="pt">},</span>
@@ -438,7 +438,7 @@ button(
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">items</span> <span class="pt">=</span> <span class="pt">[</span><span class="st">'a'</span><span class="pt">,</span> <span class="st">'b'</span><span class="pt">,</span> <span class="st">'c'</span><span class="pt">]</span>
 <span class="kw">let</span> <span class="pr">filter</span> <span class="pt">=</span> <span class="st">'all'</span>
 
-<span class="cm">// Derived — recomputed inline in the dynamic function</span>
+<span class="cm">// Derived - recomputed inline in the dynamic function</span>
 <span class="kw">const</span> <span class="pr">el</span> <span class="pt">=</span> <span class="fn">span</span><span class="pt">(()</span> <span class="pt">=></span>
   <span class="pt">\`</span><span class="st">Showing </span><span class="pt">\${</span><span class="pr">items</span><span class="pt">.</span><span class="pr">length</span><span class="pt">}</span><span class="st"> items</span><span class="pt">\`</span>
 <span class="pt">)</span>
@@ -480,12 +480,12 @@ button(
     title: "Best Practices",
     content: `
       <ul>
-        <li><strong>Batch mutations</strong> — change multiple variables, call <code>update()</code> once at the end.</li>
-        <li><strong>Keep state flat</strong> — nested objects still work, but flat state is simpler to reason about.</li>
-        <li><strong>Use functions for components</strong> — each call creates a new instance with its own closure state.</li>
-        <li><strong>Avoid effects</strong> — Nuclo has no effect system. Use event handlers, timers, and fetch callbacks directly.</li>
-        <li><strong>SSR CSS collection</strong> — render or import code paths that call <code>css()</code> before reading <code>getCssText()</code>.</li>
-        <li><strong>Dynamic functions are cheap</strong> — don't over-optimize; Nuclo only patches values that actually changed.</li>
+        <li><strong>Batch mutations</strong> - change multiple variables, call <code>update()</code> once at the end.</li>
+        <li><strong>Keep state flat</strong> - nested objects still work, but flat state is simpler to reason about.</li>
+        <li><strong>Use functions for components</strong> - each call creates a new instance with its own closure state.</li>
+        <li><strong>Avoid effects</strong> - Nuclo has no effect system. Use event handlers, timers, and fetch callbacks directly.</li>
+        <li><strong>SSR CSS collection</strong> - render or import code paths that call <code>css()</code> before reading <code>getCssText()</code>.</li>
+        <li><strong>Dynamic functions are cheap</strong> - don't over-optimize; Nuclo only patches values that actually changed.</li>
       </ul>
       <div class="docs-callout">
         <strong>Tip:</strong> Treat <code>update()</code> like a commit. Batch all your mutations, then call it once to flush the DOM.

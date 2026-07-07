@@ -11,23 +11,23 @@ export const SEO_BASE_URL = "https://nuclo.dev/";
 
 export const routeMeta: Record<RoutePath, PageMeta> = {
   home: {
-    title: "Nuclo — Lightweight Imperative DOM Framework",
+    title: "Nuclo - Lightweight Imperative DOM Framework",
     description:
-      "A lightweight imperative DOM framework. Mutate plain state, call update()—Nuclo syncs the DOM. No proxies, no virtual DOM, no magic.",
+      "A lightweight imperative DOM framework. Mutate plain state, call update()-Nuclo syncs the DOM. No proxies, no virtual DOM, no magic.",
     keywords: "nuclo, imperative dom framework, explicit updates, javascript, typescript, ui framework, lightweight",
     type: "WebPage",
   },
   docs: {
-    title: "Docs — Nuclo",
+    title: "Docs - Nuclo",
     description:
-      "Nuclo documentation — installation, core concepts, and full API reference.",
+      "Nuclo documentation - installation, core concepts, and full API reference.",
     keywords: "nuclo documentation, api reference, getting started, update, list, when, on",
     type: "TechArticle",
   },
   examples: {
-    title: "Examples — Nuclo",
+    title: "Examples - Nuclo",
     description:
-      "Interactive examples for Nuclo — counter, todo list, search filter, and async loading states.",
+      "Interactive examples for Nuclo - counter, todo list, search filter, and async loading states.",
     keywords: "nuclo examples, counter, todo, search, async, live demos",
     type: "CollectionPage",
   },
