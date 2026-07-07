@@ -38,7 +38,7 @@ export const DOC_SECTIONS: DocSection[] = [
       <p>Nuclo is a lightweight imperative DOM framework. You write plain functions that build and return DOM nodes. When your state changes, you call <code>update()</code>—and Nuclo syncs only what needs to change.</p>
       <p>There are no proxies, no virtual DOM, no hidden subscriptions. You are always in control.</p>
       <h3>Core philosophy</h3>
-      <p>Most frameworks try to hide state management from you. Nuclo does the opposite: it trusts you to know when something changed, and acts <em>only</em> when you say so.</p>
+      <p>Nuclo keeps state management explicit: it trusts you to know when something changed, and acts <em>only</em> when you say so.</p>
       <ul>
         <li><strong>Explicit updates</strong> — call <code>update()</code> after you mutate state.</li>
         <li><strong>Dynamic functions</strong> — pass <code>() =&gt; value</code> for text, attributes, styles, and class names; Nuclo re-evaluates them on each update.</li>
@@ -339,11 +339,11 @@ export const DOC_SECTIONS: DocSection[] = [
     apiTag: "fn",
     apiSig: `<span class="kw">function</span> <span class="fn">createCss</span><span class="pt">(</span><span class="pr">theme</span><span class="pt">?:</span> <span class="ty">ThemeConfig</span><span class="pt">):</span> <span class="ty">CssInstance</span>`,
     content: `
-      <p>Nuclo styling is atomic CSS-in-TS: <code>css()</code> takes one typed style object and returns reusable atomic classes. <code>createCss()</code> adds theme tokens (<code>colors</code>, <code>fonts</code>, <code>shadows</code>, <code>radii</code>) and responsive <code>screens</code>; tokens autocomplete and type-check at the call site. Numbers become <code>px</code> (except unitless properties), Tailwind-style aliases (<code>p</code>, <code>px</code>, <code>mx</code>, <code>w</code>, <code>text</code>, <code>rounded</code>, …) sit beside plain camelCase CSS properties, and variants nest: pseudo-classes, screens, arbitrary selectors (<code>"& > svg"</code>), and inline at-rules.</p>
+      <p>Nuclo styling is atomic CSS-in-TS: <code>css()</code> takes one typed style object and returns reusable atomic classes. <code>createCss()</code> adds theme tokens (<code>colors</code>, <code>fonts</code>, <code>shadows</code>, <code>radii</code>) and responsive <code>screens</code>; tokens autocomplete and type-check at the call site. Numbers become <code>px</code> (except unitless properties), concise style aliases (<code>p</code>, <code>px</code>, <code>mx</code>, <code>w</code>, <code>text</code>, <code>rounded</code>, …) sit beside plain camelCase CSS properties, and variants nest: pseudo-classes, screens, arbitrary selectors (<code>"& > svg"</code>), and inline at-rules.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">styles.ts</span></div><div class="code-block-body"><pre><span class="kw">import</span> <span class="st">'nuclo'</span>
 
 <span class="kw">const</span> <span class="pt">{</span> <span class="pr">css</span><span class="pt">,</span> <span class="pr">cx</span> <span class="pt">}</span> <span class="pt">=</span> <span class="fn">createCss</span><span class="pt">({</span>
-  <span class="pr">colors</span><span class="pt">:</span> <span class="pt">{</span> <span class="pr">primary</span><span class="pt">:</span> <span class="st">"#14b8a6"</span> <span class="pt">},</span>
+  <span class="pr">colors</span><span class="pt">:</span> <span class="pt">{</span> <span class="pr">primary</span><span class="pt">:</span> <span class="st">"#ff3f00"</span> <span class="pt">},</span>
   <span class="pr">screens</span><span class="pt">:</span> <span class="pt">{</span> <span class="pr">medium</span><span class="pt">:</span> <span class="st">"(min-width: 768px)"</span> <span class="pt">},</span>
 <span class="pt">})</span>
 
@@ -381,7 +381,7 @@ export const DOC_SECTIONS: DocSection[] = [
 
 <span class="kw">const</span> <span class="pr">spinner</span> <span class="pt">=</span> <span class="fn">css</span><span class="pt">({</span>
   <span class="pr">w</span><span class="pt">:</span> <span class="nm">24</span><span class="pt">,</span> <span class="pr">h</span><span class="pt">:</span> <span class="nm">24</span><span class="pt">,</span> <span class="pr">rounded</span><span class="pt">:</span> <span class="st">"50%"</span><span class="pt">,</span>
-  <span class="pr">border</span><span class="pt">:</span> <span class="st">"3px solid #e5e7eb"</span><span class="pt">,</span> <span class="pr">borderTopColor</span><span class="pt">:</span> <span class="st">"#6366f1"</span><span class="pt">,</span>
+  <span class="pr">border</span><span class="pt">:</span> <span class="st">"3px solid #e5e7eb"</span><span class="pt">,</span> <span class="pr">borderTopColor</span><span class="pt">:</span> <span class="st">"#ff3f00"</span><span class="pt">,</span>
   <span class="pr">animation</span><span class="pt">:</span> <span class="pr">spin</span> <span class="pt">+</span> <span class="st">" 0.8s linear infinite"</span><span class="pt">,</span>
 <span class="pt">})</span></pre></div></div>
       <p>Keyframe selectors autocomplete <code>from</code>, <code>to</code>, and percentage stops — comma-separated lists like <code>"0%, 100%"</code> are still accepted.</p>

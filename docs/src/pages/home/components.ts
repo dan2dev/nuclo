@@ -70,7 +70,7 @@ function HeroDemoCard() {
         () => String(count),
       ),
       div(
-        css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", color: colors.textMuted, letterSpacing: "0.14em", marginBottom: "26px" }),
+        css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", color: colors.textMuted, letterSpacing: "0", marginBottom: "26px" }),
         "COUNT",
       ),
       div(
@@ -111,7 +111,7 @@ function HeroDemoCard() {
 
   return div(
     hs.heroDemoArea,
-    fx.gradientBorder, fx.demoElevated, { className: "he he-7" },
+    fx.gradientBorder, fx.demoElevated,
     // Chrome bar
     div(
       hs.demoChrome,
@@ -148,7 +148,6 @@ export function HomeHeroSection() {
     // Ambient ornaments (decorative, behind content)
     div(hs.heroBg, { "aria-hidden": "true" }),
     div(hs.dotGrid, { "aria-hidden": "true" }),
-    div(hs.heroOrbC, { "aria-hidden": "true" }),
     div(
       s.container,
       div(
@@ -170,18 +169,7 @@ export function HomeHeroSection() {
             hs.heroTitle,
             { className: "he he-2" },
             ...HERO_TITLE_LINES.map((line) => {
-              // "Call update()." gets styled update() code
-              if (line.includes("update()")) {
-                return div(
-                  line.replace("Call update().", "Call "),
-                  code(
-                    css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85em", color: colors.primaryHover, backgroundColor: colors.bgLight, padding: "1px 8px", borderRadius: "6px" }),
-                    "update()",
-                  ),
-                  ".",
-                );
-              }
-              if (line === "Done.") {
+              if (line === "nuclo.") {
                 return div(span(fx.gradientText, line));
               }
               return div(line);
@@ -224,7 +212,15 @@ export function HomeHeroSection() {
           ),
         ),
         // Right: demo card
-        HeroDemoCard(),
+        div(
+          hs.heroVisual,
+          { className: "he he-7" },
+          img(
+            hs.heroBrandMark,
+            { src: "/nuclo-icon@3x.png", alt: "", "aria-hidden": "true" },
+          ),
+          HeroDemoCard(),
+        ),
       ),
     ),
   );
@@ -563,7 +559,7 @@ export function CTASection() {
         hs.ctaPanel, { className: "rv" },
         div(s.sectionLabel, css({ justifyContent: "center", display: "flex" }), "Get Started"),
         h2(
-          css({ fontSize: "2.1rem", fontWeight: "700", letterSpacing: "-0.01em", lineHeight: "1.2", marginBottom: "18px", medium: { fontSize: "2.7rem" } }),
+          css({ fontSize: "2.1rem", fontWeight: "800", letterSpacing: "0", lineHeight: "1.2", marginBottom: "18px", medium: { fontSize: "2.7rem" } }),
           CTA_TITLE,
         ),
         p(

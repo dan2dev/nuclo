@@ -32,6 +32,9 @@ export const colors = {
   borderPrimary:  'var(--c-border-primary)',
 
   accentSecondary: 'var(--c-accent-secondary)',
+  accentWarm:      'var(--c-accent-warm)',
+  accentCool:      'var(--c-accent-cool)',
+  shadow:          'var(--c-shadow)',
 };
 
 export { registerGlobalStyles };
@@ -46,27 +49,27 @@ export const { css, cx } = createCss({
 
 // Shared style helpers.
 export const s = {
-  container: css({ maxWidth: '1180px', margin: '0 auto', padding: '0 24px', medium: { padding: '0 28px' } }),
+  container: css({ maxWidth: '1240px', margin: '0 auto', padding: '0 22px', medium: { padding: '0 30px' } }),
 
   section: css({ padding: '96px 0' }),
 
-  sectionLabel: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: '500', color: colors.primary, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '14px' }),
+  sectionLabel: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: '700', color: colors.primary, letterSpacing: '0', textTransform: 'uppercase', marginBottom: '12px' }),
 
-  sectionTitle: css({ fontSize: '1.9rem', fontWeight: '700', lineHeight: '1.2', marginBottom: '16px', medium: { fontSize: '2.35rem' } }),
+  sectionTitle: css({ fontSize: '2rem', fontWeight: '800', lineHeight: '1.12', letterSpacing: '0', marginBottom: '16px', medium: { fontSize: '2.55rem' } }),
 
-  sectionSub: css({ fontSize: '1.05rem', color: colors.textDim, maxWidth: '540px', lineHeight: '1.7' }),
+  sectionSub: css({ fontSize: '1.03rem', color: colors.textDim, maxWidth: '600px', lineHeight: '1.72' }),
 
   divider: css({ height: '1px', backgroundColor: colors.border, margin: '0' }),
 
-  btn: css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px', minHeight: '40px', padding: '0 20px', borderRadius: '6px', fontSize: '0.875rem', fontWeight: '700', transition: 'all 0.18s ease', whiteSpace: 'nowrap' }),
+  btn: css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minHeight: '44px', padding: '0 22px', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '800', transition: 'transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease', whiteSpace: 'nowrap' }),
 
-  btnPrimary: css({ backgroundColor: colors.primary, backgroundImage: 'linear-gradient(115deg, var(--c-primary-hover) -20%, var(--c-primary) 46%, var(--c-accent-cool) 175%)', color: '#fff', boxShadow: `0 0 0 0 ${colors.primaryGlow}`, hover: { boxShadow: `0 6px 26px ${colors.primaryGlow}`, transform: 'translateY(-1px)', filter: 'brightness(1.08)' } }),
+  btnPrimary: css({ backgroundColor: colors.primary, backgroundImage: 'linear-gradient(135deg, var(--c-accent-warm) 0%, var(--c-primary) 48%, var(--c-accent-secondary) 122%)', color: '#fff', boxShadow: '0 14px 28px -18px var(--c-primary-glow)', hover: { boxShadow: '0 18px 34px -18px var(--c-primary-glow)', transform: 'translateY(-1px)', filter: 'brightness(1.04)' } }),
 
-  btnSecondary: css({ backgroundColor: 'transparent', border: `1px solid ${colors.borderLight}`, color: colors.textDim, hover: { color: colors.text, borderColor: colors.textMuted } }),
+  btnSecondary: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, color: colors.text, boxShadow: '0 10px 26px -24px rgba(0,0,0,0.28)', hover: { color: colors.primary, borderColor: colors.borderPrimary, boxShadow: '0 16px 34px -26px var(--c-primary-glow)' } }),
 
-  installCmd: css({ display: 'inline-flex', alignItems: 'center', gap: '10px', backgroundColor: colors.bgSecondary, border: `1px solid ${colors.border}`, borderRadius: '8px', padding: '11px 18px', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.875rem', color: colors.text }),
+  installCmd: css({ display: 'inline-flex', alignItems: 'center', gap: '10px', backgroundColor: colors.bgCard, border: `1px solid ${colors.borderLight}`, borderRadius: '10px', padding: '11px 14px 11px 16px', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.875rem', color: colors.text, boxShadow: 'var(--c-shadow)' }),
 
-  codeBlockFrame: css({ backgroundColor: colors.bgCode, border: `1px solid ${colors.border}`, borderRadius: '8px', overflow: 'hidden' }),
+  codeBlockFrame: css({ backgroundColor: colors.bgCode, border: `1px solid ${colors.border}`, borderRadius: '8px', overflow: 'hidden', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }),
 
   codeBlockHeader: css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary }),
 
@@ -74,7 +77,7 @@ export const s = {
 
   codeBlockBody: css({ padding: '20px 22px', overflow: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8125rem', lineHeight: '1.7' }),
 
-  demoCard: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: '8px', overflow: 'hidden', boxShadow: `0 28px 60px rgba(0,0,20,0.35), 0 0 0 1px ${colors.border}` }),
+  demoCard: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: '8px', overflow: 'hidden', boxShadow: 'var(--c-shadow)' }),
 
   demoCardBar: css({ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', backgroundColor: colors.bgSecondary, borderBottom: `1px solid ${colors.border}` }),
 
@@ -86,11 +89,11 @@ export const s = {
 
   demoTabActive: css({ color: colors.primary, borderBottomColor: colors.primary }),
 
-  featureGrid: css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1px', backgroundColor: colors.border, border: `1px solid ${colors.border}`, borderRadius: '8px', overflow: 'hidden' }),
+  featureGrid: css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }),
 
-  featureCard: css({ backgroundColor: colors.bgCard, padding: '32px 28px', transition: 'background 0.18s ease', hover: { backgroundColor: colors.bgSecondary } }),
+  featureCard: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: '8px', padding: '30px 26px', transition: 'transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease', hover: { transform: 'translateY(-2px)', borderColor: colors.borderPrimary, boxShadow: '0 18px 46px -34px var(--c-primary-glow)' } }),
 
-  featureNum: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: '500', color: colors.primary, letterSpacing: '0.05em', marginBottom: '18px' }),
+  featureNum: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: '700', color: colors.primary, letterSpacing: '0', marginBottom: '16px' }),
 
   featureTitle: css({ fontSize: '1.05rem', fontWeight: '600', marginBottom: '10px' }),
 
@@ -98,13 +101,13 @@ export const s = {
 
   stepsGrid: css({ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', medium: { gridTemplateColumns: 'repeat(3,1fr)', gap: '24px' } }),
 
-  stepNum: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: '500', color: colors.primary, letterSpacing: '0.06em', marginBottom: '12px' }),
+  stepNum: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: '700', color: colors.primary, letterSpacing: '0', marginBottom: '12px' }),
 
   stepTitle: css({ fontSize: '1rem', fontWeight: '600', marginBottom: '8px' }),
 
   stepDesc: css({ fontSize: '0.875rem', color: colors.textDim, marginBottom: '16px' }),
 
-  badge: css({ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', fontWeight: '600', letterSpacing: '0.07em', textTransform: 'uppercase', color: colors.primary, padding: '4px 11px', borderRadius: '999px', backgroundColor: colors.primaryAlpha08, border: `1px solid ${colors.borderPrimary}` }),
+  badge: css({ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0', textTransform: 'uppercase', color: colors.primary, padding: '5px 12px', borderRadius: '999px', backgroundColor: colors.primaryAlpha08, border: `1px solid ${colors.borderPrimary}` }),
 
   statsRow: css({ display: 'flex', gap: '40px', flexWrap: 'wrap', padding: '40px 0', borderTop: `1px solid ${colors.border}`, marginTop: '24px' }),
 

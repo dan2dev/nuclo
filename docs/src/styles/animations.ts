@@ -10,7 +10,7 @@ export const animations = {
     "to": { raw: {"opacity": "1", "transform": "translateY(0)"} },
   }),
   softPulse: keyframes({
-    "0%, 100%": { raw: {"box-shadow": "0 0 0 rgba(20,184,166,0)"} },
+    "0%, 100%": { raw: {"box-shadow": "0 0 0 rgba(255,63,0,0)"} },
     "50%": { raw: {"box-shadow": "0 0 28px var(--c-primary-glow)"} },
   }),
   progressSweep: keyframes({
@@ -23,16 +23,12 @@ export const animations = {
   }),
   dotPing: keyframes({
     "0%": { raw: {"box-shadow": "0 0 0 0 var(--c-primary-glow)"} },
-    "70%": { raw: {"box-shadow": "0 0 0 7px rgba(20,184,166,0)"} },
-    "100%": { raw: {"box-shadow": "0 0 0 0 rgba(20,184,166,0)"} },
+    "70%": { raw: {"box-shadow": "0 0 0 7px rgba(255,63,0,0)"} },
+    "100%": { raw: {"box-shadow": "0 0 0 0 rgba(255,63,0,0)"} },
   }),
   caretBlink: keyframes({
     "0%, 49%": { raw: {"opacity": "1"} },
     "50%, 100%": { raw: {"opacity": "0"} },
-  }),
-  orbDrift: keyframes({
-    "0%, 100%": { raw: {"transform": "translate3d(0, 0, 0) scale(1)"} },
-    "50%": { raw: {"transform": "translate3d(0, -16px, 0) scale(1.05)"} },
   }),
   connectorRun: keyframes({
     "0%": { raw: {"background-position": "-80% 0"} },

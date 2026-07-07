@@ -26,7 +26,7 @@ const htmlTemplate = `<!doctype html>
     <!-- Blocking theme script: runs synchronously before first paint so there
          is no flash regardless of saved preference or system color scheme. -->
     <script>!function(){var t=localStorage.getItem('nuclo-theme')||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.setAttribute('data-theme',t);if('IntersectionObserver' in window&&!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches))document.documentElement.setAttribute('data-anim','');}();</script>
-    <link rel="icon" type="image/svg+xml" href="/nuclo-logo.svg" />
+    <link rel="icon" type="image/png" href="/nuclo-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Font preconnects -->
@@ -38,7 +38,7 @@ const htmlTemplate = `<!doctype html>
 
     {{seoHead}}
 
-    <meta name="theme-color" content="#14B8A6" />
+    <meta name="theme-color" content="#FF3F00" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />

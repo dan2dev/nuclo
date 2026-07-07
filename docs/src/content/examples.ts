@@ -44,7 +44,7 @@ export function Counter() {
   {
     id: "search",
     title: "Search Filter",
-    desc: "Live search that filters a list of users as you type. Zero libraries, just state and update().",
+    desc: "Live search that filters a list of users as you type with state and update().",
     code: `import 'nuclo'
 
 const USERS = [
@@ -196,8 +196,8 @@ export function AsyncExample() {
 // Themed instance — tokens autocomplete, screens become variant keys
 const { css, cx } = createCss({
   colors: {
-    primary: "#6366f1",
-    primaryHover: "#4f46e5",
+    primary: "#ff3f00",
+    primaryHover: "#d92d00",
     text: "#1f2937",
     muted: "#6b7280",
     surface: "#f8fafc",
@@ -279,7 +279,7 @@ export function StyleDemo() {
   {
     id: "chart",
     title: "Interactive Chart",
-    desc: "SVG chart with bar, line, and pie types. Switch via dropdown — no charting library, just Nuclo + SVG.",
+    desc: "SVG chart with bar, line, and pie types. Switch views with a dropdown powered by Nuclo + SVG.",
     code: `import 'nuclo'
 
 type ChartType = "bar" | "line" | "pie"
@@ -288,7 +288,7 @@ const LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 let data = [42, 78, 55, 91, 64, 83, 37]
 
 const COLORS = [
-  "#14b8a6", "#38bdf8", "#f59e0b",
+  "#ff3f00", "#38bdf8", "#f59e0b",
   "#fb7185", "#a78bfa", "#34d399", "#f97316",
 ]
 
@@ -379,11 +379,11 @@ function LineChart() {
           pts.map(p => \`L\${p.x},\${p.y}\`).join(" ") +
           \` L\${pts[pts.length - 1].x},\${PAD + chartH} Z\`
       },
-      fill: "#14b8a6", opacity: "0.1",
+      fill: "#ff3f00", opacity: "0.1",
     }),
     polylineSvg({
       points: () => points().map(p => \`\${p.x},\${p.y}\`).join(" "),
-      fill: "none", stroke: "#14b8a6", "stroke-width": "2.5",
+      fill: "none", stroke: "#ff3f00", "stroke-width": "2.5",
       "stroke-linejoin": "round", "stroke-linecap": "round",
     }),
     list(
@@ -391,7 +391,7 @@ function LineChart() {
       (p, i) => gSvg(
         circleSvg({
           cx: String(p.x), cy: String(p.y), r: "4",
-          fill: "#101817", stroke: "#14b8a6", "stroke-width": "2",
+          fill: "#101817", stroke: "#ff3f00", "stroke-width": "2",
         }),
         textSvg(
           { x: String(p.x), y: String(H - 4),

@@ -3,7 +3,8 @@ import { fx } from "../styles/effects.ts";
 import { animations } from "../styles/animations.ts";
 import { setRoute, getCurrentRoute } from "../router.ts";
 import { toggleTheme, isDark } from "../theme.ts";
-import { MoonIcon, SunIcon } from "./icons.ts";
+import { BrandLogo } from "./BrandLogo.ts";
+import { ArrowIcon, MoonIcon, SunIcon } from "./icons.ts";
 
 const NAV_LINKS: { label: string; route: string }[] = [
   { label: "Home",     route: "home" },
@@ -81,43 +82,45 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   }
 
   // ── Styles ────────────────────────────────────────────────────────────────
-  const navLinkStyle = css({ display: "inline-flex", alignItems: "center", height: "34px", padding: "0 13px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: "600", color: colors.textDim, transition: "color 0.18s ease, background 0.18s ease", hover: { color: colors.text, backgroundColor: colors.bgSecondary } });
+  const navLinkStyle = css({ display: "inline-flex", alignItems: "center", height: "36px", padding: "0 12px", borderRadius: "8px", fontSize: "0.9rem", fontWeight: "700", color: colors.textDim, transition: "color 0.18s ease, background 0.18s ease", hover: { color: colors.text, backgroundColor: colors.bgSecondary } });
   const navLinkActiveStyle = css({ color: colors.text, backgroundColor: colors.primaryAlpha08 });
-  const mobileNavLinkStyle = css({ display: "flex", alignItems: "center", padding: "16px 24px", fontSize: "1rem", fontWeight: "500", color: colors.textDim, transition: "all 0.18s ease", borderBottom: `1px solid ${colors.border}`, hover: { color: colors.text, backgroundColor: colors.bgSecondary } });
-  const mobileNavLinkActiveStyle = css({ color: colors.text, fontWeight: "600" });
+  const mobileNavLinkStyle = css({ display: "flex", alignItems: "center", padding: "16px 24px", fontSize: "1rem", fontWeight: "700", color: colors.textDim, transition: "all 0.18s ease", borderBottom: `1px solid ${colors.border}`, hover: { color: colors.text, backgroundColor: colors.bgSecondary } });
+  const mobileNavLinkActiveStyle = css({ color: colors.primary, fontWeight: "800" });
   const menuIconStyle = css({ display: "flex", flexDirection: "column", gap: "5px", alignItems: "center", justifyContent: "center", width: "20px", height: "20px" });
   const menuLineStyle = css({ display: "block", width: "20px", height: "2px", backgroundColor: colors.textDim, borderRadius: "2px", transition: "all 0.28s cubic-bezier(0.4,0,0.2,1)" });
   const menuLineTopOpenStyle = css({ transform: "translateY(7px) rotate(45deg)" });
   const menuLineMiddleOpenStyle = css({ opacity: "0", transform: "scaleX(0)" });
   const menuLineBottomOpenStyle = css({ transform: "translateY(-7px) rotate(-45deg)" });
-  const navStyle = css({ position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "80px", backgroundColor: colors.bgNav, borderBottom: `1px solid ${colors.border}`, boxShadow: "0 1px 0 rgba(255,255,255,0.02)", backdropFilter: "saturate(140%) blur(14px)", animation: `${animations.pageFadeIn} 0.34s ease both`, display: "flex", alignItems: "center" });
+  const navStyle = css({ position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "76px", backgroundColor: "var(--c-header-bg)", borderBottom: `1px solid ${colors.border}`, boxShadow: "0 1px 0 rgba(255,255,255,0.02)", backdropFilter: "saturate(160%) blur(18px)", animation: `${animations.pageFadeIn} 0.34s ease both`, display: "flex", alignItems: "center" });
 
   const navInnerStyle = css({ display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: "22px" });
 
-  const logoStyle = css({ display: "flex", alignItems: "center", justifySelf: "start", cursor: "pointer", transition: "opacity 0.15s ease", hover: { opacity: "0.8" } });
+  const logoStyle = css({ display: "flex", alignItems: "center", justifySelf: "start", cursor: "pointer", transition: "opacity 0.15s ease, transform 0.15s ease", hover: { opacity: "0.9", transform: "translateY(-1px)" } });
 
   const rightGroup = css({ display: "flex", alignItems: "center", gap: "8px", justifySelf: "end" });
 
   // Desktop nav links — hidden on mobile, flex on medium+
-  const desktopNavLinks = css({ display: "none", alignItems: "center", justifySelf: "center", gap: "3px", padding: "4px", border: `1px solid ${colors.border}`, borderRadius: "8px", backgroundColor: colors.bgCard, medium: { display: "flex" } });
+  const desktopNavLinks = css({ display: "none", alignItems: "center", justifySelf: "center", gap: "8px", medium: { display: "flex" } });
 
   // Desktop GitHub button — hidden on mobile
-  const desktopGithub = css({ display: "none", alignItems: "center", gap: "6px", height: "34px", fontSize: "0.8125rem", fontWeight: "600", padding: "0 13px", borderRadius: "6px", border: `1px solid ${colors.border}`, color: colors.textDim, backgroundColor: colors.bgCard, transition: "all 0.18s ease", medium: { display: "flex" },
-      hover: { color: colors.text, borderColor: colors.borderLight, backgroundColor: colors.bgSecondary } });
+  const desktopGithub = css({ display: "none", alignItems: "center", justifyContent: "center", width: "38px", height: "38px", borderRadius: "10px", border: `1px solid ${colors.border}`, color: colors.textDim, backgroundColor: colors.bgCard, transition: "all 0.18s ease", medium: { display: "flex" },
+      hover: { color: colors.text, borderColor: colors.borderLight, backgroundColor: colors.bgSecondary, transform: "translateY(-1px)" } });
 
-  const themeBtn = css({ display: "flex", alignItems: "center", justifyContent: "center", width: "34px", height: "34px", borderRadius: "6px", border: `1px solid ${colors.border}`, color: colors.textDim, backgroundColor: colors.bgCard, transition: "all 0.18s ease", fontSize: "15px", flexShrink: 0, hover: { color: colors.text, borderColor: colors.borderLight, backgroundColor: colors.bgSecondary } });
+  const themeBtn = css({ display: "flex", alignItems: "center", justifyContent: "center", width: "38px", height: "38px", borderRadius: "10px", border: `1px solid ${colors.border}`, color: colors.textDim, backgroundColor: colors.bgCard, transition: "all 0.18s ease", fontSize: "15px", flexShrink: 0, hover: { color: colors.text, borderColor: colors.borderLight, backgroundColor: colors.bgSecondary, transform: "translateY(-1px)" } });
+
+  const getStartedBtn = css({ display: "none", alignItems: "center", gap: "7px", height: "40px", padding: "0 18px", borderRadius: "10px", color: "#fff", backgroundImage: "linear-gradient(135deg, var(--c-accent-warm), var(--c-primary) 56%, var(--c-accent-secondary) 130%)", fontSize: "0.86rem", fontWeight: "800", boxShadow: "0 14px 30px -20px var(--c-primary-glow)", transition: "transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease", large: { display: "inline-flex" }, hover: { transform: "translateY(-1px)", boxShadow: "0 18px 36px -20px var(--c-primary-glow)", filter: "brightness(1.04)" } });
 
   // Mobile hamburger button — flex on mobile, hidden on medium+
-  const hamburgerBtn = css({ display: "flex", alignItems: "center", justifyContent: "center", width: "34px", height: "34px", borderRadius: "6px", border: `1px solid ${colors.border}`, color: colors.textDim, backgroundColor: colors.bgCard, transition: "all 0.18s ease", cursor: "pointer", medium: { display: "none" },
+  const hamburgerBtn = css({ display: "flex", alignItems: "center", justifyContent: "center", width: "38px", height: "38px", borderRadius: "10px", border: `1px solid ${colors.border}`, color: colors.textDim, backgroundColor: colors.bgCard, transition: "all 0.18s ease", cursor: "pointer", medium: { display: "none" },
       hover: { color: colors.text, borderColor: colors.borderLight, backgroundColor: colors.bgSecondary } });
 
   // Mobile dropdown panel — hidden on medium+ via CSS
-  const mobileMenuPanel = css({ position: "fixed", top: "80px", left: "0", right: "0", zIndex: 210, backgroundColor: "var(--c-mobile-menu-bg)", borderBottom: `1px solid ${colors.border}`, overflow: "hidden", maxHeight: "0", transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease", medium: { display: "none" } });
+  const mobileMenuPanel = css({ position: "fixed", top: "76px", left: "0", right: "0", zIndex: 210, backgroundColor: "var(--c-mobile-menu-bg)", borderBottom: `1px solid ${colors.border}`, overflow: "hidden", maxHeight: "0", transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease", medium: { display: "none" } });
   const mobileMenuPanelOpen = css({ maxHeight: "480px", opacity: "1", pointerEvents: "auto" });
   const mobileMenuPanelClosed = css({ maxHeight: "0", opacity: "0", pointerEvents: "none" });
 
   // Transparent backdrop to close menu on outside click
-  const backdropStyle = css({ position: "fixed", top: "80px", left: "0", right: "0", bottom: "0", zIndex: 205, backgroundColor: "rgba(0,0,0,0.35)", transition: "opacity 0.25s ease" });
+  const backdropStyle = css({ position: "fixed", top: "76px", left: "0", right: "0", bottom: "0", zIndex: 205, backgroundColor: "rgba(0,0,0,0.35)", transition: "opacity 0.25s ease" });
   const backdropOpenStyle = css({ opacity: "1", pointerEvents: "auto" });
   const backdropClosedStyle = css({ opacity: "0", pointerEvents: "none" });
 
@@ -138,16 +141,10 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
           navInnerStyle,
           // Left: logo
           a(
-            { href: base },
+            { href: base, "aria-label": "Nuclo home" },
             logoStyle,
             on("click", (e) => { e.preventDefault(); setRoute("home"); closeMenu(); }),
-            img({
-              src: "/nuclo-logo.svg",
-              alt: "Nuclo",
-              class: fx.brandLogo.className,
-            },
-            css({ height: "54px", width: "auto", display: "block" })
-            ),
+            BrandLogo(),
           ),
           // Center: route navigation
           div(
@@ -159,10 +156,15 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
             rightGroup,
             // Desktop GitHub (hidden on mobile)
             a(
-              { href: "https://github.com/dan2dev/nuclo", target: "_blank", rel: "noopener noreferrer" },
+              { href: "https://github.com/dan2dev/nuclo", target: "_blank", rel: "noopener noreferrer", title: "GitHub", "aria-label": "Open Nuclo on GitHub" },
               desktopGithub,
               GitHubIcon(),
-              "GitHub",
+            ),
+            button(
+              getStartedBtn,
+              "Get Started",
+              ArrowIcon({ size: 14 }),
+              on("click", () => setRoute("docs")),
             ),
             // Theme toggle (always visible)
             button(
@@ -188,6 +190,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
       mobileMenuPanel,
       { class: () => cx(mobileMenuPanel, menuOpen ? mobileMenuPanelOpen : mobileMenuPanelClosed).className },
       ...NAV_LINKS.map(({ label, route }) => MobileNavLink(label, route)),
+      MobileNavLink("Get Started", "docs"),
       // GitHub in mobile menu
       a(
         {
