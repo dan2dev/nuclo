@@ -8,6 +8,8 @@ import {
   FEATURES, QUICK_START_STEPS,
   PIPELINE_STEPS,
   COMPARISON_TITLE, COMPARISON_SUB, COMPARISON_COLS,
+  BENCHMARK_TITLE, BENCHMARK_SUB, BENCHMARK_NOTE,
+  BENCHMARK_SOURCE_URL, BENCHMARK_SOURCE_LABEL, BENCHMARK_ENTRIES,
   CTA_TITLE, CTA_SUB,
 } from "./content.ts";
 import { CodeBlock, highlightCode, terminalCodeTokenStyle } from "../../components/CodeBlock.ts";
@@ -362,6 +364,68 @@ export function ComparisonSection() {
               )
             ),
           )
+        ),
+      ),
+    ),
+  );
+}
+
+export function BenchmarkSection() {
+  const max = Math.max(...BENCHMARK_ENTRIES.map((e) => e.score));
+
+  function BenchRow(entry: typeof BENCHMARK_ENTRIES[number], i: number) {
+    const widthCls = css({ width: `${((entry.score / max) * 100).toFixed(1)}%` });
+    const delayCls = css({ transitionDelay: `${(0.1 + i * 0.07).toFixed(2)}s` });
+    return div(
+      hs.benchRow,
+      div(
+        hs.benchName,
+        entry.featured ? hs.benchNameFeatured : null,
+        entry.name,
+        span(hs.benchVersion, entry.version),
+      ),
+      div(
+        hs.benchTrack,
+        div(
+          { className: `${cx(hs.benchFill, entry.featured ? hs.benchFillFeatured : null, widthCls, delayCls).className} nb-fill` },
+          span(
+            hs.benchValue,
+            entry.featured ? hs.benchValueFeatured : null,
+            entry.score.toFixed(2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  return section(
+    hs.benchSection,
+    div(
+      s.container,
+      div(s.sectionLabel, { className: "rv" }, "Benchmarks"),
+      h2(s.sectionTitle, { className: "rv" }, BENCHMARK_TITLE),
+      p(s.sectionSub, { className: "rv" }, BENCHMARK_SUB),
+      div(
+        hs.benchPanel,
+        { className: `${hs.benchPanel.className} rv rv-d1` },
+        div(
+          hs.benchHead,
+          span(hs.benchKicker, BENCHMARK_SOURCE_LABEL),
+          span(hs.benchHint, "lower is better"),
+        ),
+        div(hs.benchRows, ...BENCHMARK_ENTRIES.map(BenchRow)),
+        div(
+          hs.benchFoot,
+          span(css({ maxWidth: "560px" }), BENCHMARK_NOTE),
+          a(
+            hs.benchSourceLink,
+            {
+              href: BENCHMARK_SOURCE_URL,
+              target: "_blank",
+              rel: "noopener noreferrer",
+            },
+            "Source: js-framework-benchmark ↗",
+          ),
         ),
       ),
     ),

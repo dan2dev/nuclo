@@ -107,6 +107,41 @@ export const hs = {
 
   cmpBadge: css({ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.64rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary, padding: "3px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08, border: `1px solid ${colors.borderPrimary}` }),
 
+  // Benchmark section
+  benchSection: css({ padding: "64px 0", medium: { padding: "96px 0" } }),
+
+  benchPanel: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "8px", padding: "26px 20px", marginTop: "46px", medium: { padding: "38px 42px" } }),
+
+  benchHead: css({ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "26px" }),
+
+  benchKicker: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary }),
+
+  benchHint: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: colors.textMuted }),
+
+  benchRows: css({ display: "flex", flexDirection: "column", gap: "14px" }),
+
+  benchRow: css({ display: "grid", gridTemplateColumns: "1fr", gap: "6px", alignItems: "center", medium: { gridTemplateColumns: "168px 1fr", gap: "18px" } }),
+
+  benchName: css({ fontSize: "0.875rem", fontWeight: "600", color: colors.textDim, whiteSpace: "nowrap" }),
+
+  benchNameFeatured: css({ color: colors.text, fontWeight: "700" }),
+
+  benchVersion: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", fontWeight: "400", color: colors.textMuted, marginLeft: "7px" }),
+
+  benchTrack: css({ position: "relative", height: "32px" }),
+
+  benchFill: css({ position: "relative", height: "32px", minWidth: "54px", borderRadius: "999px", overflow: "hidden", backgroundColor: colors.bgLight, transition: "width 1.1s cubic-bezier(0.22, 1, 0.36, 1)" }),
+
+  benchFillFeatured: css({ backgroundColor: colors.primary, backgroundImage: "linear-gradient(90deg, var(--c-accent-warm) 0%, var(--c-primary) 55%, var(--c-accent-secondary) 130%)", boxShadow: "0 14px 30px -16px var(--c-primary-glow)" }),
+
+  benchValue: css({ position: "absolute", right: "13px", top: "50%", transform: "translateY(-50%)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", fontWeight: "700", color: colors.textDim, fontVariantNumeric: "tabular-nums" }),
+
+  benchValueFeatured: css({ color: "#fff" }),
+
+  benchFoot: css({ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "10px 24px", flexWrap: "wrap", marginTop: "28px", paddingTop: "18px", borderTop: `1px solid ${colors.border}`, fontSize: "0.78rem", color: colors.textMuted, lineHeight: "1.6" }),
+
+  benchSourceLink: css({ whiteSpace: "nowrap", color: colors.textDim, fontWeight: "600", borderBottom: `1px solid ${colors.borderLight}`, transition: "color 0.18s ease, border-color 0.18s ease", hover: { color: colors.primary, borderColor: colors.borderPrimary } }),
+
   // Quick start section
   quickStartSection: css({ padding: "64px 0", medium: { padding: "96px 0" } }),
 
@@ -132,3 +167,8 @@ export const hs = {
 
   ctaInstall: css({ display: "flex", justifyContent: "center", marginTop: "26px" }),
 };
+
+// Benchmark bars start collapsed and grow when the panel scrolls into view:
+// the head script sets html[data-anim] when animation is possible, and
+// reveal.ts adds .rv-in to the panel — releasing each bar to its css() width.
+globalStyle("html[data-anim] .rv:not(.rv-in) .nb-fill", { width: "0%" });
