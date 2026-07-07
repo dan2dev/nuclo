@@ -10,7 +10,7 @@ import {
   COMPARISON_TITLE, COMPARISON_SUB, COMPARISON_COLS,
   CTA_TITLE, CTA_SUB,
 } from "./content.ts";
-import { CodeBlock, codeTokenStyle, highlightCode } from "../../components/CodeBlock.ts";
+import { CodeBlock, highlightCode, terminalCodeTokenStyle } from "../../components/CodeBlock.ts";
 import { copyText } from "../../components/clipboard.ts";
 import {
   GitHubSvg, CheckIcon, MinusIcon, CopyIcon,
@@ -136,8 +136,8 @@ function HeroDemoCard() {
     ),
     div(
       hs.demoCodePane,
-      codeTokenStyle,
-      { class: () => cx(hs.demoCodePane, codeTokenStyle, activeTab === "code" ? null : hs.paneHidden).className },
+      terminalCodeTokenStyle,
+      { class: () => cx(hs.demoCodePane, terminalCodeTokenStyle, activeTab === "code" ? null : hs.paneHidden).className },
       { innerHTML: `<pre class="${hs.preWrap.className}">${heroCodeHtml}</pre>` },
     ),
   );
