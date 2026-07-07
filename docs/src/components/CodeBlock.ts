@@ -2,7 +2,7 @@ import { css, colors, s } from "../styles.ts";
 import { copyText } from "./clipboard.ts";
 
 // ── Simple tokenizer for TypeScript/JS syntax highlighting ─────────────────
-function tokenize(code: string): string {
+export function highlightCode(code: string): string {
   const lines = code.split('\n');
   return lines.map(line => tokenizeLine(line)).join('\n');
 }
@@ -111,10 +111,22 @@ export interface CodeBlockOptions {
   preTokenized?: boolean;
 }
 
+export const codeTokenStyle = css({
+  color: colors.text,
+  "& .kw": { color: "var(--c-tok-keyword)" },
+  "& .st": { color: "var(--c-tok-string)" },
+  "& .fn": { color: "var(--c-tok-fn)" },
+  "& .cm": { color: "var(--c-tok-comment)", fontStyle: "italic" },
+  "& .nm": { color: "var(--c-tok-number)" },
+  "& .ty": { color: "var(--c-tok-type)" },
+  "& .pt": { color: "var(--c-tok-punct)" },
+  "& .pr": { color: "var(--c-tok-prop)" },
+});
+
 export function CodeBlock({ filename, code, showCopy = true, preTokenized = false }: CodeBlockOptions) {
   let copied = false;
 
-  const tokenized = preTokenized ? code : tokenize(code);
+  const tokenized = preTokenized ? code : highlightCode(code);
 
   const copyBtn = css({ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: "500", color: colors.textMuted, padding: "4px 10px", borderRadius: "5px", transition: "all 0.18s ease", border: `1px solid transparent`, backgroundColor: "transparent", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.primary, borderColor: colors.borderPrimary, backgroundColor: colors.primaryAlpha08 } });
   const preStyle = css({ margin: "0", whiteSpace: "pre", minWidth: "max-content" });
@@ -147,7 +159,7 @@ export function CodeBlock({ filename, code, showCopy = true, preTokenized = fals
     ] : []),
     div(
       s.codeBlockBody,
-      css({ color: colors.text, "& .kw": { color: "var(--c-tok-keyword)" }, "& .st": { color: "var(--c-tok-string)" }, "& .fn": { color: "var(--c-tok-fn)" }, "& .cm": { color: "var(--c-tok-comment)", fontStyle: "italic" }, "& .nm": { color: "var(--c-tok-number)" }, "& .ty": { color: "var(--c-tok-type)" }, "& .pt": { color: "var(--c-tok-punct)" }, "& .pr": { color: "var(--c-tok-prop)" } }),
+      codeTokenStyle,
       { innerHTML: () => `<pre class="${preStyle.className}">${tokenized}</pre>` },
     ),
   );

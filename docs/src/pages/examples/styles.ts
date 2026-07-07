@@ -40,7 +40,6 @@ export const es = {
   buttonRow: css({ display: "flex", gap: "10px", justifyContent: "center" }),
   button: css({ padding: "9px 22px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: sans, hover: { color: colors.text, borderColor: colors.primary } }),
   buttonPrimary: css({ backgroundImage: "linear-gradient(135deg, var(--c-accent-warm), var(--c-primary) 60%, var(--c-accent-secondary) 130%)", color: "#fff", borderColor: "transparent", hover: { backgroundColor: colors.primaryHover, filter: "brightness(1.04)" } }),
-  buttonDisabled: css({ opacity: "0.7", cursor: "not-allowed" }),
 
   todo: css({ width: "100%", maxWidth: "340px" }),
   row: css({ display: "flex", gap: "8px", marginBottom: "14px" }),
@@ -64,30 +63,8 @@ export const es = {
   userEmail: css({ fontSize: "0.78rem", color: colors.textMuted }),
   noResults: css({ fontSize: "0.85rem", color: colors.textMuted, textAlign: "center", padding: "20px 0" }),
 
-  asyncRoot: css({ width: "100%", maxWidth: "380px" }),
-  statusBar: css({ display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", borderRadius: "6px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary, fontSize: "0.82rem", color: colors.textDim, marginBottom: "12px" }),
-  statusDot: css({ width: "7px", height: "7px", borderRadius: "50%", flexShrink: 0 }),
-  statusIdle: css({ backgroundColor: colors.textMuted }),
-  statusLoading: css({ backgroundColor: "#febc2e", animation: `${animations.pulse} 1s infinite` }),
-  statusSuccess: css({ backgroundColor: "#28c840" }),
-  statusError: css({ backgroundColor: "#ff5f57" }),
-  productCard: css({ padding: "10px 12px", borderRadius: "6px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary, marginBottom: "6px" }),
-  productTitle: css({ fontSize: "0.875rem", fontWeight: "600", marginBottom: "2px" }),
-  productCat: css({ fontSize: "0.78rem", color: colors.textMuted }),
-  errorMsg: css({ padding: "10px 12px", borderRadius: "6px", border: "1px solid rgba(255,95,87,0.3)", backgroundColor: "rgba(255,95,87,0.08)", fontSize: "0.85rem", color: "#ff8080" }),
-
   styleDemo: css({ width: "100%", maxWidth: "400px" }),
   styleHint: css({ fontSize: "0.82rem", color: colors.textMuted, marginBottom: "14px", lineHeight: "1.5", "& code": { fontFamily: mono, fontSize: "0.78rem", backgroundColor: colors.bgSecondary, padding: "1px 5px", borderRadius: "3px" } }),
-  styleChips: css({ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "14px" }),
-  styleResult: css({ fontSize: "0.82rem", color: colors.textMuted, minHeight: "1.2em" }),
-
-  chartRoot: css({ width: "100%", maxWidth: "380px" }),
-  chartControls: css({ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }),
-  chartLabel: css({ fontSize: "0.82rem", fontWeight: "600", color: colors.textDim }),
-  chartSelect: css({ flex: "1", padding: "8px 12px", borderRadius: "6px", border: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgSecondary, color: colors.text, fontFamily: sans, fontSize: "0.85rem", outline: "none", cursor: "pointer", transition: "border-color 0.18s ease", raw: { appearance: "none" }, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23607970'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: "30px", focus: { borderColor: colors.primary } }),
-  chartArea: css({ backgroundColor: colors.bgSecondary, border: `1px solid ${colors.border}`, borderRadius: "8px", padding: "20px 16px", minHeight: "200px", display: "flex", alignItems: "center", justifyContent: "center" }),
-  chartSvg: css({ display: "block", maxWidth: "100%", overflow: "visible" }),
-  chartAnimatedShape: css({ raw: { "vector-effect": "non-scaling-stroke", "shape-rendering": "geometricPrecision" } }),
 };
 
 export function cardDelay(index: number) {
@@ -96,11 +73,4 @@ export function cardDelay(index: number) {
   if (index === 3) return es.cardDelay3;
   if (index >= 4) return es.cardDelay4;
   return null;
-}
-
-export function statusDotStyle(status: "idle" | "loading" | "success" | "error") {
-  if (status === "loading") return es.statusLoading;
-  if (status === "success") return es.statusSuccess;
-  if (status === "error") return es.statusError;
-  return es.statusIdle;
 }

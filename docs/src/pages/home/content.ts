@@ -15,20 +15,20 @@ export const HERO_STATS = [
   { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "gzipped, entire runtime" },
 ];
 
-export const HERO_CODE = `<span class="kw">import</span> <span class="st">'nuclo'</span>
+export const HERO_CODE = `import 'nuclo'
 
-<span class="kw">let</span> <span class="pr">count</span> <span class="pt">=</span> <span class="nm">0</span>
+let count = 0
 
-<span class="kw">const</span> <span class="pr">counter</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span>
-  <span class="fn">span</span><span class="pt">(()</span> <span class="pt">=&gt;</span> \`<span class="st">Count: </span>\${<span class="pr">count</span>}\`<span class="pt">),</span>
-  <span class="fn">button</span><span class="pt">(</span>
-    <span class="st">"Increment"</span><span class="pt">,</span>
-    <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pt">()</span> <span class="pt">=&gt;</span> <span class="pt">{</span>
-      <span class="pr">count</span><span class="pt">++</span>
-      <span class="fn">update</span><span class="pt">()</span>
-    <span class="pt">})</span>
-  <span class="pt">)</span>
-<span class="pt">)</span>`;
+const counter = div(
+  span(() => \`Count: \${count}\`),
+  button(
+    "Increment",
+    on("click", () => {
+      count++
+      update()
+    })
+  )
+)`;
 
 export const COUNTER_TEASER_CODE = `<span class="kw">import</span> <span class="st">'nuclo'</span>
 

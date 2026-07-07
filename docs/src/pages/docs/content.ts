@@ -339,60 +339,45 @@ export const DOC_SECTIONS: DocSection[] = [
     apiTag: "fn",
     apiSig: `<span class="kw">function</span> <span class="fn">createCss</span><span class="pt">(</span><span class="pr">theme</span><span class="pt">?:</span> <span class="ty">ThemeConfig</span><span class="pt">):</span> <span class="ty">CssInstance</span>`,
     content: `
-      <p>Nuclo styling is atomic CSS-in-TS: <code>css()</code> takes one typed style object and returns reusable atomic classes. <code>createCss()</code> adds theme tokens (<code>colors</code>, <code>fonts</code>, <code>shadows</code>, <code>radii</code>) and responsive <code>screens</code>; tokens autocomplete and type-check at the call site. Numbers become <code>px</code> (except unitless properties), concise style aliases (<code>p</code>, <code>px</code>, <code>mx</code>, <code>w</code>, <code>text</code>, <code>rounded</code>, …) sit beside plain camelCase CSS properties, and variants nest: pseudo-classes, screens, arbitrary selectors (<code>"& > svg"</code>), and inline at-rules.</p>
-      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">styles.ts</span></div><div class="code-block-body"><pre><span class="kw">import</span> <span class="st">'nuclo'</span>
+      <p>Nuclo styling is atomic CSS-in-TS. <code>css()</code> takes one typed style object and returns an attributes object you can pass directly to a tag builder.</p>
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">styles.ts</span></div><div class="code-block-body"><pre>const card = css({
+  p: 16,
+  rounded: 8,
+  bg: "#fff7ed",
+  color: "#1f2937",
+})
 
-<span class="kw">const</span> <span class="pt">{</span> <span class="pr">css</span><span class="pt">,</span> <span class="pr">cx</span> <span class="pt">}</span> <span class="pt">=</span> <span class="fn">createCss</span><span class="pt">({</span>
-  <span class="pr">colors</span><span class="pt">:</span> <span class="pt">{</span> <span class="pr">primary</span><span class="pt">:</span> <span class="st">"#ff3f00"</span> <span class="pt">},</span>
-  <span class="pr">screens</span><span class="pt">:</span> <span class="pt">{</span> <span class="pr">medium</span><span class="pt">:</span> <span class="st">"(min-width: 768px)"</span> <span class="pt">},</span>
-<span class="pt">})</span>
+div(card, "Simple card")</pre></div></div>
+      <p>Use <code>createCss()</code> when you want a small theme. Tokens work in matching properties such as <code>bg</code>, <code>color</code>, and <code>borderColor</code>.</p>
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">theme.ts</span></div><div class="code-block-body"><pre>const { css, cx } = createCss({
+  colors: {
+    primary: "#ff3f00",
+    border: "#e5e7eb",
+  },
+})
 
-<span class="kw">const</span> <span class="pr">cardClass</span> <span class="pt">=</span> <span class="fn">css</span><span class="pt">({</span>
-  <span class="pr">p</span><span class="pt">:</span> <span class="nm">16</span><span class="pt">,</span>
-  <span class="pr">border</span><span class="pt">:</span> <span class="st">"1px solid #ddd"</span><span class="pt">,</span>
-  <span class="pr">medium</span><span class="pt">:</span> <span class="pt">{</span> <span class="pr">p</span><span class="pt">:</span> <span class="nm">24</span> <span class="pt">},</span>
-  <span class="pr">hover</span><span class="pt">:</span> <span class="pt">{</span> <span class="pr">borderColor</span><span class="pt">:</span> <span class="st">"primary"</span> <span class="pt">},</span>
-<span class="pt">})</span>
+const baseButton = css({
+  px: 12,
+  py: 8,
+  rounded: 6,
+  border: "1px solid",
+  borderColor: "border",
+})
 
-<span class="kw">const</span> <span class="pr">card</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span><span class="pr">cardClass</span><span class="pt">,</span> <span class="st">"Responsive card"</span><span class="pt">)</span></pre></div></div>
-      <p>The returned object has a single <code>className</code> key, so it can be passed directly to tag builders and merges with other class attributes. Compose conditionally with <code>cx(base, isActive &amp;&amp; active)</code> — when two inputs style the same property, the last one wins, and nested arrays are flattened (<code>cx([base, isActive &amp;&amp; active], extra)</code>). A themeless <code>css()</code> is available globally without a <code>createCss()</code> call.</p>
-      <h3>Typed variants</h3>
-      <p><code>variants()</code> turns a base style plus named variant groups into a strongly-typed recipe. Variant names and values are inferred, so an unknown selection is a compile error; <code>true</code>/<code>false</code> groups are selected with real booleans, and <code>defaultVariants</code> / <code>compoundVariants</code> are checked too. Each variant compiles to atomic classes once — a call is a cached lookup plus a <code>cx()</code> merge, then usable directly as attributes.</p>
-      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">button.ts</span></div><div class="code-block-body"><pre><span class="kw">const</span> <span class="pr">button</span> <span class="pt">=</span> <span class="fn">variants</span><span class="pt">({</span>
-  <span class="pr">base</span><span class="pt">: {</span> <span class="pr">rounded</span><span class="pt">:</span> <span class="nm">8</span><span class="pt">,</span> <span class="pr">weight</span><span class="pt">:</span> <span class="nm">600</span> <span class="pt">},</span>
-  <span class="pr">variants</span><span class="pt">: {</span>
-    <span class="pr">intent</span><span class="pt">: {</span> <span class="pr">primary</span><span class="pt">: {</span> <span class="pr">bg</span><span class="pt">:</span> <span class="st">"primary"</span> <span class="pt">},</span> <span class="pr">danger</span><span class="pt">: {</span> <span class="pr">bg</span><span class="pt">:</span> <span class="st">"#ef4444"</span> <span class="pt">} },</span>
-    <span class="pr">size</span><span class="pt">: {</span> <span class="pr">sm</span><span class="pt">: {</span> <span class="pr">px</span><span class="pt">:</span> <span class="nm">10</span><span class="pt">,</span> <span class="pr">py</span><span class="pt">:</span> <span class="nm">6</span> <span class="pt">},</span> <span class="pr">lg</span><span class="pt">: {</span> <span class="pr">px</span><span class="pt">:</span> <span class="nm">18</span><span class="pt">,</span> <span class="pr">py</span><span class="pt">:</span> <span class="nm">12</span> <span class="pt">} },</span>
-  <span class="pt">},</span>
-  <span class="pr">defaultVariants</span><span class="pt">: {</span> <span class="pr">intent</span><span class="pt">:</span> <span class="st">"primary"</span><span class="pt">,</span> <span class="pr">size</span><span class="pt">:</span> <span class="st">"sm"</span> <span class="pt">},</span>
-<span class="pt">})</span>
+const activeButton = css({
+  bg: "primary",
+  color: "white",
+  borderColor: "primary",
+})</pre></div></div>
+      <p>Use <code>cx()</code> for simple composition. Later classes win when they set the same property.</p>
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">button.ts</span></div><div class="code-block-body"><pre>let active = false
 
-<span class="cm">// names &amp; values are inferred and checked; result drops into any tag</span>
-<span class="fn">div</span><span class="pt">(</span><span class="fn">button</span><span class="pt">({</span> <span class="pr">intent</span><span class="pt">:</span> <span class="st">"danger"</span><span class="pt">,</span> <span class="pr">size</span><span class="pt">:</span> <span class="st">"lg"</span> <span class="pt">}),</span> <span class="st">"Delete"</span><span class="pt">)</span></pre></div></div>
-      <h3>Animations &amp; global styles</h3>
-      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">styles.ts</span></div><div class="code-block-body"><pre><span class="cm">// Global selector — applied once; deduped across calls</span>
-<span class="fn">globalStyle</span><span class="pt">(</span><span class="st">"body"</span><span class="pt">,</span> <span class="pt">{</span> <span class="pr">m</span><span class="pt">:</span> <span class="nm">0</span><span class="pt">,</span> <span class="pr">p</span><span class="pt">:</span> <span class="nm">0</span><span class="pt">,</span> <span class="pr">boxSizing</span><span class="pt">:</span> <span class="st">"border-box"</span> <span class="pt">})</span>
-
-<span class="cm">// keyframes() returns the generated animation name</span>
-<span class="kw">const</span> <span class="pr">spin</span> <span class="pt">=</span> <span class="fn">keyframes</span><span class="pt">({</span>
-  <span class="st">"from"</span><span class="pt">: {</span> <span class="pr">transform</span><span class="pt">:</span> <span class="st">"rotate(0deg)"</span> <span class="pt">},</span>
-  <span class="st">"to"</span><span class="pt">: {</span> <span class="pr">transform</span><span class="pt">:</span> <span class="st">"rotate(360deg)"</span> <span class="pt">},</span>
-<span class="pt">})</span>
-
-<span class="kw">const</span> <span class="pr">spinner</span> <span class="pt">=</span> <span class="fn">css</span><span class="pt">({</span>
-  <span class="pr">w</span><span class="pt">:</span> <span class="nm">24</span><span class="pt">,</span> <span class="pr">h</span><span class="pt">:</span> <span class="nm">24</span><span class="pt">,</span> <span class="pr">rounded</span><span class="pt">:</span> <span class="st">"50%"</span><span class="pt">,</span>
-  <span class="pr">border</span><span class="pt">:</span> <span class="st">"3px solid #e5e7eb"</span><span class="pt">,</span> <span class="pr">borderTopColor</span><span class="pt">:</span> <span class="st">"#ff3f00"</span><span class="pt">,</span>
-  <span class="pr">animation</span><span class="pt">:</span> <span class="pr">spin</span> <span class="pt">+</span> <span class="st">" 0.8s linear infinite"</span><span class="pt">,</span>
-<span class="pt">})</span></pre></div></div>
-      <p>Keyframe selectors autocomplete <code>from</code>, <code>to</code>, and percentage stops — comma-separated lists like <code>"0%, 100%"</code> are still accepted.</p>
-      <h3>Composite utilities &amp; raw</h3>
-      <p>Setting a boolean property to <code>true</code> expands a composite: <code>row: true</code> → <code>display:flex; flex-direction:row</code>; <code>col: true</code> → column flex; <code>center: true</code> → align-items + justify-content center; <code>truncate: true</code> → ellipsis overflow. The <code>raw</code> key passes CSS variables and vendor-prefixed properties through unchanged.</p>
-      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">const</span> <span class="pr">toolbar</span> <span class="pt">=</span> <span class="fn">css</span><span class="pt">({</span> <span class="pr">row</span><span class="pt">:</span> <span class="kw">true</span><span class="pt">,</span> <span class="pr">center</span><span class="pt">:</span> <span class="kw">true</span><span class="pt">,</span> <span class="pr">gap</span><span class="pt">:</span> <span class="nm">8</span> <span class="pt">})</span>
-
-<span class="kw">const</span> <span class="pr">glassCard</span> <span class="pt">=</span> <span class="fn">css</span><span class="pt">({</span>
-  <span class="pr">p</span><span class="pt">:</span> <span class="nm">24</span><span class="pt">,</span> <span class="pr">rounded</span><span class="pt">:</span> <span class="nm">16</span><span class="pt">,</span>
-  <span class="pr">raw</span><span class="pt">: {</span> <span class="st">"--card-blur"</span><span class="pt">:</span> <span class="st">"12px"</span><span class="pt">,</span> <span class="st">"-webkit-backdrop-filter"</span><span class="pt">:</span> <span class="st">"blur(12px)"</span> <span class="pt">},</span>
-<span class="pt">})</span></pre></div></div>
+button(
+  () =&gt; cx(baseButton, active &amp;&amp; activeButton),
+  () =&gt; active ? "Active" : "Inactive",
+  on("click", () =&gt; { active = !active; update() }),
+)</pre></div></div>
+      <p>Advanced helpers such as <code>variants()</code>, <code>globalStyle()</code>, and <code>keyframes()</code> are available when you need them, but most components only need <code>css()</code>, <code>createCss()</code>, and <code>cx()</code>.</p>
     `,
   },
   {
