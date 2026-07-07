@@ -58,11 +58,21 @@ export function DocsPage() {
   function DocsIntro() {
     return header(
       ds.hero,
-      div(ds.eyebrow, "Documentation"),
-      h1("Nuclo documentation"),
-      p(
-        ds.lead,
-        "A practical reference for installing Nuclo, building with explicit updates, styling with atomic CSS, and rendering server-side HTML.",
+      div(
+        ds.heroShell,
+        div(
+          ds.heroCopy,
+          div(ds.eyebrow, "Documentation"),
+          h1("Nuclo documentation"),
+          p(
+            ds.lead,
+            "A practical reference for installing Nuclo, building with explicit updates, styling with atomic CSS, and rendering server-side HTML.",
+          ),
+        ),
+        div(
+          ds.heroMarkWrap,
+          img(ds.heroMark, { src: "/nuclo-icon@3x.png", alt: "", "aria-hidden": "true" }),
+        ),
       ),
       div(
         ds.quickstart,

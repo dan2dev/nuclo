@@ -11,17 +11,17 @@ import { CodeBlock } from "../../components/CodeBlock.ts";
 // ── Demo styling instance (matches the createCss() shown on the cards) ────────
 const demo = createCss({
   colors: {
-    primary: "#6366f1", primaryHover: "#4f46e5",
-    accent: "#2dd4bf", danger: "#f87171", dangerHover: "#ef4444",
-    ink: "#e7ebf8", dim: "#aeb6d6", muted: "#7c85ab",
-    panel: "#141a2e", panelAlt: "#1b2340", line: "#2b3560",
+    primary: "#ff3f00", primaryHover: "#d92d00",
+    accent: "#ff8a00", danger: "#f87171", dangerHover: "#ef4444",
+    ink: "#fff8f2", dim: "#c9c1b8", muted: "#837a72",
+    panel: "#14110f", panelAlt: "#1f1a17", line: "#3a3029",
   },
   fonts: {
     body: "'Space Grotesk', system-ui, sans-serif",
     mono: "'JetBrains Mono', ui-monospace, monospace",
   },
-  shadows: { card: "0 10px 30px rgba(0,0,0,.35)", glow: "0 0 0 1px rgba(99,102,241,.5), 0 10px 30px rgba(99,102,241,.28)" },
-  radii: { sm: "6px", md: "10px", lg: "16px", pill: "999px" },
+  shadows: { card: "0 10px 30px rgba(0,0,0,.35)", glow: "0 0 0 1px rgba(255,63,0,.5), 0 10px 30px rgba(255,63,0,.28)" },
+  radii: { sm: "6px", md: "8px", lg: "8px", pill: "999px" },
   screens: { sm: "(min-width: 420px)", md: "(min-width: 640px)", dark: "(prefers-color-scheme: dark)" },
 });
 
@@ -31,8 +31,8 @@ const { css, cx, variants, keyframes } = demo;
 const gs = {
   wrap: uiCss({ padding: "8px 0 72px" }),
   headWrap: uiCss({ borderTop: `1px solid ${colors.border}`, paddingTop: "44px", marginTop: "8px" }),
-  kicker: uiCss({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", fontWeight: "600", letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accentSecondary, marginBottom: "12px" }),
-  title: uiCss({ fontSize: "2.2rem", fontWeight: "700", lineHeight: "1.1", marginBottom: "14px", "@media (max-width: 600px)": { fontSize: "1.7rem" } }),
+  kicker: uiCss({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary, marginBottom: "12px" }),
+  title: uiCss({ fontSize: "2.2rem", fontWeight: "800", letterSpacing: "0", lineHeight: "1.1", marginBottom: "14px", "@media (max-width: 600px)": { fontSize: "1.7rem" } }),
   lead: uiCss({ maxWidth: "680px", fontSize: "1.02rem", color: colors.textDim, lineHeight: "1.7", marginBottom: "6px" }),
   grid: uiCss({ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "18px", padding: "32px 0 0", "@media (max-width: 900px)": { gridTemplateColumns: "1fr" } }),
 };
@@ -102,7 +102,7 @@ const pulse = keyframes({ "0%, 100%": { opacity: 1, transform: "scale(1)" }, "50
 
 // ── Live components (self-contained; the code panels mirror these) ────────────
 function propertiesDemo() {
-  const box = css({ backgroundColor: "#6366f1", color: "#fff", padding: 16, borderRadius: 10, textAlign: "center", fontSize: 14, fontWeight: 600 });
+  const box = css({ backgroundColor: "#ff3f00", color: "#fff", padding: 16, borderRadius: 10, textAlign: "center", fontSize: 14, fontWeight: 600 });
   return div(box, "padding: 16 → 16px");
 }
 
@@ -180,7 +180,7 @@ function selectorsDemo() {
 
 function atRulesRawDemo() {
   const supports = css({ p: 14, rounded: "md", bg: "panelAlt", text: 13, color: "dim", align: "center", "@supports (backdrop-filter: blur(2px))": { color: "accent" } });
-  const outlined = css({ p: 14, rounded: "md", text: 22, weight: 800, align: "center", raw: { "--stroke": "#2dd4bf", "-webkit-text-stroke": "0.7px var(--stroke)", color: "transparent" } });
+  const outlined = css({ p: 14, rounded: "md", text: 22, weight: 800, align: "center", raw: { "--stroke": "#ff8a00", "-webkit-text-stroke": "0.7px var(--stroke)", color: "transparent" } });
   return div(css({ col: true, gap: 10, w: "100%", maxW: 280 }), div(supports, "@supports backdrop-filter"), div(outlined, "raw escape hatch"));
 }
 
@@ -229,7 +229,7 @@ const FEATURES: Feature[] = [
     code: `import 'nuclo'
 
 const box = css({
-  backgroundColor: "#6366f1",
+  backgroundColor: "#ff3f00",
   color: "#fff",
   padding: 16,          // number → 16px
   borderRadius: 10,
@@ -245,7 +245,7 @@ function Box() {
   },
   {
     level: "Basic",
-    title: "Tailwind-style aliases",
+    title: "Style aliases",
     desc: "Short aliases (p, px, py, w, size, text, weight, rounded…) sit beside full CSS property names. cx() composes them.",
     code: `const tile = css({
   bg: "primary", color: "#fff", rounded: "md",
@@ -286,7 +286,7 @@ function Composites() {
     title: "Theme color tokens",
     desc: "createCss() colors become autocompleted, type-checked values on bg / color / borderColor. Raw values still work.",
     code: `const { css, cx } = createCss({
-  colors: { primary: "#6366f1", accent: "#2dd4bf", danger: "#f87171" },
+  colors: { primary: "#ff3f00", accent: "#ff8a00", danger: "#f87171" },
 })
 
 const chip = css({ py: 10, px: 16, rounded: "pill", weight: 700, color: "#fff" })
@@ -307,7 +307,7 @@ function Chips() {
     desc: "font (fonts), shadow (shadows) and rounded (radii) resolve against their own theme tables.",
     code: `const { css } = createCss({
   fonts:   { mono: "'JetBrains Mono', monospace" },
-  shadows: { glow: "0 0 0 1px #6366f180, 0 10px 30px #6366f147" },
+  shadows: { glow: "0 0 0 1px #ff3f0080, 0 10px 30px #ff3f0047" },
   radii:   { sm: "6px", md: "10px", lg: "16px" },
 })
 
@@ -446,7 +446,7 @@ function Rows() {
 const outlined = css({
   p: 14, rounded: "md", text: 22, weight: 800, align: "center",
   raw: {
-    "--stroke": "#2dd4bf",
+    "--stroke": "#ff8a00",
     "-webkit-text-stroke": "0.7px var(--stroke)",
     color: "transparent",
   },

@@ -1,11 +1,11 @@
 import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 
-export const HERO_BADGE = `v${NUCLO_VERSION} · Zero dependencies`;
+export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · zero dependencies`;
 
-export const HERO_TITLE_LINES = ["Mutate.", "Call update().", "Done."];
+export const HERO_TITLE_LINES = ["Build explicit", "interfaces with", "nuclo."];
 
 export const HERO_DESC =
-  "Nuclo is a tiny imperative DOM framework. Build UIs from plain functions and mutable state — no proxies, no virtual DOM, no hidden re-renders. The DOM changes exactly when you tell it to.";
+  "Nuclo is a tiny imperative DOM framework. Build interfaces from plain functions and mutable state. No proxies, no virtual DOM, no hidden re-renders.";
 
 export const INSTALL_CMD = "npm install nuclo";
 
@@ -142,7 +142,7 @@ export const PIPELINE_STEPS = [
 // ── Comparison ──────────────────────────────────────────────────────────────
 export const COMPARISON_TITLE = "No diffing. No proxies. No surprises.";
 export const COMPARISON_SUB =
-  "Most frameworks decide when your UI updates. Nuclo asks you.";
+  "Nuclo updates the interface only when you call update().";
 
 export const COMPARISON_COLS: {
   name: string;

@@ -1,23 +1,24 @@
 import { css, colors, s } from "../styles.ts";
 import { fx } from "../styles/effects.ts";
 import { setRoute } from "../router.ts";
+import { BrandLogo } from "./BrandLogo.ts";
 import { GitHubSvg } from "./icons.ts";
 import { NUCLO_VERSION } from "../generated/nuclo-stats.ts";
 
 const GITHUB_URL = "https://github.com/dan2dev/nuclo";
 
 export function Footer() {
-  const footerStyle = css({ position: "relative", backgroundColor: colors.bgFooter, padding: "56px 0 28px", medium: { padding: "64px 0 32px" } });
+  const footerStyle = css({ position: "relative", backgroundColor: colors.bgFooter, padding: "56px 0 28px", borderTop: `1px solid ${colors.border}`, medium: { padding: "66px 0 32px" } });
 
-  const topGrid = css({ display: "grid", gridTemplateColumns: "1fr", gap: "36px", paddingBottom: "40px", medium: { gridTemplateColumns: "minmax(0, 1.6fr) 1fr 1fr", gap: "28px" } });
+  const topGrid = css({ display: "grid", gridTemplateColumns: "1fr", gap: "36px", paddingBottom: "40px", medium: { gridTemplateColumns: "minmax(0, 1.65fr) 1fr 1fr", gap: "30px" } });
 
-  const brandGroup = css({ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "14px", maxWidth: "320px" });
+  const brandGroup = css({ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "14px", maxWidth: "360px" });
 
   const tagline = css({ fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65" });
 
-  const builtWith = css({ display: "inline-flex", alignItems: "center", gap: "7px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: colors.textMuted, padding: "5px 11px", borderRadius: "999px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgCard });
+  const builtWith = css({ display: "inline-flex", alignItems: "center", gap: "7px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: colors.textMuted, padding: "6px 12px", borderRadius: "999px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgCard });
 
-  const colTitle = css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: colors.textMuted, marginBottom: "14px" });
+  const colTitle = css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "14px" });
 
   const colLinks = css({ display: "flex", flexDirection: "column", gap: "4px", alignItems: "flex-start" });
 
@@ -27,7 +28,7 @@ export function Footer() {
 
   const fineprint = css({ fontSize: "0.78rem", color: colors.textMuted });
 
-  const versionBadge = css({ display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", fontWeight: "700", color: colors.primary, padding: "3px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08, border: `1px solid ${colors.borderPrimary}` });
+  const versionBadge = css({ display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", fontWeight: "800", color: colors.primary, padding: "4px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08, border: `1px solid ${colors.borderPrimary}` });
 
   function RouteLink(label: string, route: string) {
     return span(linkStyle, label, on("click", () => setRoute(route)));
@@ -44,12 +45,6 @@ export function Footer() {
 
   return footer(
     footerStyle,
-    // Gradient hairline along the top edge
-    div(
-      fx.hairline,
-      { "aria-hidden": "true" },
-      css({ position: "absolute", left: "0", right: "0", top: "0" }),
-    ),
     div(
       s.container,
       div(
@@ -57,12 +52,8 @@ export function Footer() {
         // Brand column
         div(
           brandGroup,
-          img(
-            fx.brandLogo,
-            { src: "/nuclo-logo.svg", alt: "Nuclo" },
-            css({ height: "40px", width: "auto" }),
-          ),
-          span(tagline, "The explicit UI runtime. Plain functions, mutable state, and one call — update() — between your data and the DOM."),
+          BrandLogo({ size: "footer" }),
+          span(tagline, "The explicit UI runtime. Plain functions, mutable state, and one call between your data and the DOM."),
           span(
             builtWith,
             span(fx.badgeDot),

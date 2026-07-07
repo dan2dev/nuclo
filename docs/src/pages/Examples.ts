@@ -319,8 +319,8 @@ function AsyncDemo() {
 // ── Styling demo ──────────────────────────────────────────────────────────────
 const { css: demoCSS, cx: demoCX } = createCss({
   colors: {
-    primary: "#14b8a6",
-    primaryHover: "#0f766e",
+    primary: "#ff3f00",
+    primaryHover: "#d92d00",
     text: "#1f2937",
     muted: "#6b7280",
     surface: "#f8fafc",
@@ -345,13 +345,13 @@ const demoChipDefault = demoCSS({
   backgroundColor: "#f8fafc",
   color: "#6b7280",
   borderColor: "#e2e8f0",
-  hover: { color: "#1f2937", borderColor: "#14b8a6" },
+  hover: { color: "#1f2937", borderColor: "#ff3f00" },
 });
 const demoChipActive = demoCSS({
-  backgroundColor: "#14b8a6",
+  backgroundColor: "#ff3f00",
   color: "white",
-  borderColor: "#0f766e",
-  hover: { backgroundColor: "#0f766e" },
+  borderColor: "#d92d00",
+  hover: { backgroundColor: "#d92d00" },
 });
 
 function StyleDemo() {
@@ -396,8 +396,8 @@ const CHART_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 let chartData = [42, 78, 55, 91, 64, 83, 37];
 
 const CHART_COLORS = [
-  "#14b8a6", "#38bdf8", "#f59e0b",
-  "#fb7185", "#a78bfa", "#34d399", "#f97316",
+  "#ff3f00", "#ff8a00", "#ff2300",
+  "#2563eb", "#a855f7", "#16a34a", "#f59e0b",
 ];
 
 const ANIM_MS = 420;
@@ -659,7 +659,8 @@ export function ExamplesPage() {
           ),
         ),
         div(
-          es.facts,
+          es.heroMarkWrap,
+          img(es.heroMark, { src: "/nuclo-icon@3x.png", alt: "", "aria-hidden": "true" }),
         ),
       ),
     ),
