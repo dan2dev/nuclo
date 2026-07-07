@@ -10,7 +10,7 @@ const routes = [
     .map(route => `/${route.path}`),
 ];
 
-test.describe('Hydration — all docs pages', () => {
+test.describe('Hydration - all docs pages', () => {
   for (const route of routes) {
     test(`page ${route} hydrates correctly`, async ({ page }) => {
       test.setTimeout(10_000);

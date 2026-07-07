@@ -37,7 +37,7 @@ const htmlTemplate = `<!doctype html>
     <!-- Font preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Site fonts — non-blocking; display=optional prevents CLS -->
+    <!-- Site fonts - non-blocking; display=optional prevents CLS -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=optional" onload="this.rel='stylesheet'" />
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=optional" /></noscript>
 
@@ -50,7 +50,7 @@ const htmlTemplate = `<!doctype html>
     <meta name="apple-mobile-web-app-title" content="Nuclo" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
 
-    <!-- Nuclo style system output — prevents layout shift before JS hydrates -->
+    <!-- Nuclo style system output - prevents layout shift before JS hydrates -->
     <style id="nuclo-styles">{{nucloStyles}}</style>
 
     <script type="module" src="/src/main.ts"></script>
@@ -117,7 +117,7 @@ function buildSeoHead(route: string, pathname: string, known: boolean): string {
     '<meta property="og:image:type" content="image/png" />',
     '<meta property="og:image:width" content="1200" />',
     '<meta property="og:image:height" content="630" />',
-    '<meta property="og:image:alt" content="Nuclo — a lightweight imperative DOM framework" />',
+    '<meta property="og:image:alt" content="Nuclo - a lightweight imperative DOM framework" />',
     '<meta property="og:site_name" content="Nuclo" />',
     '<meta property="og:locale" content="en_US" />',
     '<meta name="twitter:card" content="summary_large_image" />',
@@ -125,7 +125,7 @@ function buildSeoHead(route: string, pathname: string, known: boolean): string {
     `<meta name="twitter:title" content="${escapeHtml(meta.title)}" />`,
     `<meta name="twitter:description" content="${escapeHtml(meta.description)}" />`,
     `<meta name="twitter:image" content="${SEO_BASE_URL}og-image.png" />`,
-    '<meta name="twitter:image:alt" content="Nuclo — a lightweight imperative DOM framework" />',
+    '<meta name="twitter:image:alt" content="Nuclo - a lightweight imperative DOM framework" />',
     '<meta name="twitter:creator" content="@dan2dev" />',
     '<meta name="twitter:site" content="@dan2dev" />',
     `<script type="application/ld+json">${jsonLd}</script>`,
@@ -150,7 +150,7 @@ async function appFetch(
   const element = await ssrMatchRoute(renderRoute);
   const ssrHtml = renderToString(element);
 
-  // Full atomic stylesheet — base rules first, then screens in theme order.
+  // Full atomic stylesheet - base rules first, then screens in theme order.
   // Atomic classes are shared across pages, so shipping the full sheet costs
   // little and guarantees no flash of unstyled content on navigation.
   const nucloStyles = getCssText();

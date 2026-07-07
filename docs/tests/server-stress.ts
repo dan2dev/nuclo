@@ -67,11 +67,11 @@ async function sendRequest(): Promise<void> {
 }
 
 function printReport(final = false): void {
-  const avg   = completed > 0 ? (totalMs / completed).toFixed(2) : "—";
-  const minR  = minMs === Infinity ? "—" : minMs.toFixed(2);
+  const avg   = completed > 0 ? (totalMs / completed).toFixed(2) : "-";
+  const minR  = minMs === Infinity ? "-" : minMs.toFixed(2);
   const rps   = completed > 0
     ? (completed / ((performance.now() - startTime) / 1000)).toFixed(0)
-    : "—";
+    : "-";
 
   const label = final ? "FINAL" : "progress";
   console.log(

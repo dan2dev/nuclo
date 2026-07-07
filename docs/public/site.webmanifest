@@ -1,7 +1,7 @@
 {
   "name": "Nuclo",
   "short_name": "Nuclo",
-  "description": "A lightweight imperative DOM framework. Mutate plain state, call update()—Nuclo syncs the DOM.",
+  "description": "A lightweight imperative DOM framework. Mutate plain state, call update()-Nuclo syncs the DOM.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

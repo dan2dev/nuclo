@@ -99,10 +99,10 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
 
   const rightGroup = css({ display: "flex", alignItems: "center", gap: "8px", justifySelf: "end" });
 
-  // Desktop nav links — hidden on mobile, flex on medium+
+  // Desktop nav links - hidden on mobile, flex on medium+
   const desktopNavLinks = css({ display: "none", alignItems: "center", justifySelf: "center", gap: "8px", medium: { display: "flex" } });
 
-  // Desktop GitHub button — hidden on mobile
+  // Desktop GitHub button - hidden on mobile
   const desktopGithub = css({ display: "none", alignItems: "center", justifyContent: "center", width: "38px", height: "38px", borderRadius: "10px", border: `1px solid ${colors.border}`, color: colors.textDim, backgroundColor: colors.bgCard, transition: "all 0.18s ease", medium: { display: "flex" },
       hover: { color: colors.text, borderColor: colors.borderLight, backgroundColor: colors.bgSecondary, transform: "translateY(-1px)" } });
 
@@ -110,11 +110,11 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
 
   const getStartedBtn = css({ display: "none", alignItems: "center", gap: "7px", height: "40px", padding: "0 18px", borderRadius: "10px", color: "#fff", backgroundImage: "linear-gradient(135deg, var(--c-accent-warm), var(--c-primary) 56%, var(--c-accent-secondary) 130%)", fontSize: "0.86rem", fontWeight: "800", boxShadow: "0 14px 30px -20px var(--c-primary-glow)", transition: "transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease", large: { display: "inline-flex" }, hover: { transform: "translateY(-1px)", boxShadow: "0 18px 36px -20px var(--c-primary-glow)", filter: "brightness(1.04)" } });
 
-  // Mobile hamburger button — flex on mobile, hidden on medium+
+  // Mobile hamburger button - flex on mobile, hidden on medium+
   const hamburgerBtn = css({ display: "flex", alignItems: "center", justifyContent: "center", width: "38px", height: "38px", borderRadius: "10px", border: `1px solid ${colors.border}`, color: colors.textDim, backgroundColor: colors.bgCard, transition: "all 0.18s ease", cursor: "pointer", medium: { display: "none" },
       hover: { color: colors.text, borderColor: colors.borderLight, backgroundColor: colors.bgSecondary } });
 
-  // Mobile dropdown panel — hidden on medium+ via CSS
+  // Mobile dropdown panel - hidden on medium+ via CSS
   const mobileMenuPanel = css({ position: "fixed", top: "76px", left: "0", right: "0", zIndex: 210, backgroundColor: "var(--c-mobile-menu-bg)", borderBottom: `1px solid ${colors.border}`, overflow: "hidden", maxHeight: "0", transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease", medium: { display: "none" } });
   const mobileMenuPanelOpen = css({ maxHeight: "480px", opacity: "1", pointerEvents: "auto" });
   const mobileMenuPanelClosed = css({ maxHeight: "0", opacity: "0", pointerEvents: "none" });

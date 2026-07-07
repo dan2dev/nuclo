@@ -1,5 +1,5 @@
 /**
- * app.ts — isomorphic.
+ * app.ts - isomorphic.
  *
  * createApp() builds the full app tree (Header + page area + Footer) using
  * closure-based state so each call is fully isolated.  The same function is

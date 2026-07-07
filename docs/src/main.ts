@@ -19,7 +19,7 @@ const rawPath = window.location.pathname
 const initialRoute = routeMap.has(rawPath) ? rawPath : 'home';
 
 // Eagerly load the initial page so the list() slot starts populated.
-// hydrate() then claims existing SSR nodes — no remove+add, no CLS.
+// hydrate() then claims existing SSR nodes - no remove+add, no CLS.
 const initialFn = await loadPageFunction(initialRoute);
 const { element, loadPage } = createApp(initialFn);
 

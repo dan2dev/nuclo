@@ -1,5 +1,5 @@
 /**
- * reveal.ts — client-only scroll-reveal.
+ * reveal.ts - client-only scroll-reveal.
  *
  * Elements marked with `.rv` start hidden (only when `html[data-anim]` was set
  * by the blocking head script, i.e. JS + IntersectionObserver available and no

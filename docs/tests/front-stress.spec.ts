@@ -87,7 +87,7 @@ type ErrorBucket = {
 
 /**
  * Page errors that are environmental noise rather than app regressions.
- * Kept intentionally narrow — anything not listed here still fails the run.
+ * Kept intentionally narrow - anything not listed here still fails the run.
  */
 const IGNORED_PAGE_ERROR_PATTERNS: RegExp[] = [
   // Benign Chromium layout notification, not an actual exception.
@@ -264,7 +264,7 @@ async function spamClicks(
 ): Promise<number> {
   let clickOps = 0;
   // Skip clipboard + destructive controls via accessible name/title so even
-  // icon-only buttons (no text to match) are excluded — e.g. the home page's
+  // icon-only buttons (no text to match) are excluded - e.g. the home page's
   // icon-only "Copy install command" button.
   const exclude =
     ":not([aria-label*='copy' i]):not([title*='copy' i])" +
@@ -743,9 +743,9 @@ test.describe("Front stress", () => {
         .join("\n");
 
     expect(samples.length, "no navigations were sampled").toBeGreaterThan(0);
-    expect(totalDocsSectionJumps, "no docs section jumps ran — docs navigation selectors may have drifted").toBeGreaterThan(0);
-    expect(totalExampleInteractions, "no example interactions ran — selectors may have drifted").toBeGreaterThan(0);
-    expect(totalTodoItemsAdded, "no todo items were added — the todo example may be broken").toBeGreaterThan(0);
+    expect(totalDocsSectionJumps, "no docs section jumps ran - docs navigation selectors may have drifted").toBeGreaterThan(0);
+    expect(totalExampleInteractions, "no example interactions ran - selectors may have drifted").toBeGreaterThan(0);
+    expect(totalTodoItemsAdded, "no todo items were added - the todo example may be broken").toBeGreaterThan(0);
     expect(
       errors.pageErrors.length,
       `uncaught page errors detected:\n${describe(errorSummary.pageErrors)}`,
@@ -767,7 +767,7 @@ test.describe("Front stress", () => {
       if (heapGrowthMB != null) {
         expect(
           heapGrowthMB,
-          `heap grew ${heapGrowthMB}MB (first ${firstHeapMB}MB → last ${lastHeapMB}MB) — possible leak`,
+          `heap grew ${heapGrowthMB}MB (first ${firstHeapMB}MB → last ${lastHeapMB}MB) - possible leak`,
         ).toBeLessThanOrEqual(leakThresholdMB);
       }
       expect(
