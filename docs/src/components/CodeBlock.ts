@@ -123,6 +123,18 @@ export const codeTokenStyle = css({
   "& .pr": { color: "var(--c-tok-prop)" },
 });
 
+export const terminalCodeTokenStyle = css({
+  color: "var(--terminal-text)",
+  "& .kw": { color: "var(--terminal-tok-keyword)" },
+  "& .st": { color: "var(--terminal-tok-string)" },
+  "& .fn": { color: "var(--terminal-tok-fn)" },
+  "& .cm": { color: "var(--terminal-tok-comment)", fontStyle: "italic" },
+  "& .nm": { color: "var(--terminal-tok-number)" },
+  "& .ty": { color: "var(--terminal-tok-type)" },
+  "& .pt": { color: "var(--terminal-tok-punct)" },
+  "& .pr": { color: "var(--terminal-tok-prop)" },
+});
+
 export function CodeBlock({ filename, code, showCopy = true, preTokenized = false }: CodeBlockOptions) {
   let copied = false;
 

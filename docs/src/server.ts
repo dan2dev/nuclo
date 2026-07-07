@@ -26,7 +26,12 @@ const htmlTemplate = `<!doctype html>
     <!-- Blocking theme script: runs synchronously before first paint so there
          is no flash regardless of saved preference or system color scheme. -->
     <script>!function(){var t=localStorage.getItem('nuclo-theme')||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.setAttribute('data-theme',t);if('IntersectionObserver' in window&&!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches))document.documentElement.setAttribute('data-anim','');}();</script>
-    <link rel="icon" type="image/png" href="/nuclo-icon.png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Font preconnects -->
@@ -107,15 +112,20 @@ function buildSeoHead(route: string, pathname: string, known: boolean): string {
     `<meta property="og:url" content="${escapeHtml(pageUrl)}" />`,
     `<meta property="og:title" content="${escapeHtml(meta.title)}" />`,
     `<meta property="og:description" content="${escapeHtml(meta.description)}" />`,
-    `<meta property="og:image" content="${SEO_BASE_URL}nuclo-logo.png" />`,
-    '<meta property="og:image:alt" content="Nuclo framework logo" />',
+    `<meta property="og:image" content="${SEO_BASE_URL}og-image.png" />`,
+    `<meta property="og:image:secure_url" content="${SEO_BASE_URL}og-image.png" />`,
+    '<meta property="og:image:type" content="image/png" />',
+    '<meta property="og:image:width" content="1200" />',
+    '<meta property="og:image:height" content="630" />',
+    '<meta property="og:image:alt" content="Nuclo — a lightweight imperative DOM framework" />',
     '<meta property="og:site_name" content="Nuclo" />',
     '<meta property="og:locale" content="en_US" />',
     '<meta name="twitter:card" content="summary_large_image" />',
     `<meta name="twitter:url" content="${escapeHtml(pageUrl)}" />`,
     `<meta name="twitter:title" content="${escapeHtml(meta.title)}" />`,
     `<meta name="twitter:description" content="${escapeHtml(meta.description)}" />`,
-    `<meta name="twitter:image" content="${SEO_BASE_URL}nuclo-logo.png" />`,
+    `<meta name="twitter:image" content="${SEO_BASE_URL}og-image.png" />`,
+    '<meta name="twitter:image:alt" content="Nuclo — a lightweight imperative DOM framework" />',
     '<meta name="twitter:creator" content="@dan2dev" />',
     '<meta name="twitter:site" content="@dan2dev" />',
     `<script type="application/ld+json">${jsonLd}</script>`,

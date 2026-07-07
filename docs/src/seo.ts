@@ -54,12 +54,17 @@ export function updatePageMeta(route: string): void {
     el.content = content;
   }
 
+  const pageUrl = route === 'home' ? SEO_BASE_URL : `${SEO_BASE_URL}${route}`;
+
   setMeta('description', meta.description);
   if (meta.keywords) setMeta('keywords', meta.keywords);
   setOg('og:title', meta.title);
   setOg('og:description', meta.description);
+  setOg('og:url', pageUrl);
+  setMeta('twitter:title', meta.title);
+  setMeta('twitter:description', meta.description);
+  setMeta('twitter:url', pageUrl);
 
-  const pageUrl = route === 'home' ? SEO_BASE_URL : `${SEO_BASE_URL}${route}`;
   let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
   if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
   canonical.href = pageUrl;
