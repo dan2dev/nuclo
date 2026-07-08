@@ -79,17 +79,17 @@ export function DocsPage() {
         div(
           ds.quickstartCopy,
           span(ds.quickstartLabel, "Quick start"),
-          code(ds.quickstartCode, "bun add nuclo"),
+          code(ds.quickstartCode, "npm create nuclo@latest"),
         ),
         a(
           ds.quickstartLink,
-          { href: "#installation" },
-          "Installation",
+          { href: "#quick-start" },
+          "Quick Start",
           on("click", (e) => {
             e.preventDefault();
-            window.history.replaceState(null, "", "#installation");
-            setActive("installation");
-            scrollToSection("installation");
+            window.history.replaceState(null, "", "#quick-start");
+            setActive("quick-start");
+            scrollToSection("quick-start");
           }),
         ),
       ),
@@ -156,6 +156,7 @@ export function DocsPage() {
         ds.railNav,
         { "aria-label": "Common documentation sections" },
         div(ds.railKicker, "Jump to"),
+        SectionLink("quick-start", ds.railLink, ds.railLinkActive),
         SectionLink("installation", ds.railLink, ds.railLinkActive),
         SectionLink("explicit-updates", ds.railLink, ds.railLinkActive),
         SectionLink("api-update", ds.railLink, ds.railLinkActive),
@@ -209,6 +210,8 @@ export function DocsPage() {
             div(ds.apiSig, { innerHTML: sec.apiSig }),
           ] : []),
           div({ innerHTML: sec.content }),
+          ...(sec.render ? [sec.render()] : []),
+          ...(sec.afterContent ? [div({ innerHTML: sec.afterContent })] : []),
         )
       ),
     );
