@@ -8,3 +8,4 @@ node_modules/
 drafts/poc01/dist/
 drafts/poc02/target/
 *.bun-build
+packages/create-nuclo/templates/basic/package-lock.json
