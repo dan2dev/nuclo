@@ -1,3 +1,49 @@
+import { css, colors, s } from "../../styles.ts";
+import { TabBlock } from "../../components/TabBlock.ts";
+import { CopyIcon, CheckIcon } from "../../components/icons.ts";
+import { copyText } from "../../components/clipboard.ts";
+
+function TerminalCommand(command: string) {
+  let copied = false;
+
+  function handleCopy() {
+    copyText(command).then((ok) => {
+      if (!ok) return;
+      copied = true;
+      update();
+      setTimeout(() => { copied = false; update(); }, 1800);
+    });
+  }
+
+  return div(
+    s.installCmd,
+    span(css({ color: colors.textMuted, fontFamily: "'JetBrains Mono', monospace" }), "$"),
+    span(command),
+    button(
+      css({ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "6px", color: colors.textMuted, backgroundColor: "transparent", border: "none", cursor: "pointer", transition: "all 0.18s ease", hover: { color: colors.primary, backgroundColor: colors.primaryAlpha08 } }),
+      { title: "Copy to clipboard", "aria-label": "Copy command" },
+      when(() => copied, CheckIcon({ size: 14 })).else(CopyIcon({ size: 14 })),
+      on("click", handleCopy),
+    ),
+  );
+}
+
+const quickStartTabsWrap = css({ margin: "22px 0" });
+
+function QuickStartTabs() {
+  return div(
+    quickStartTabsWrap,
+    TabBlock({
+      tabs: [
+        { id: "npm", label: "npm", content: TerminalCommand("npm create nuclo@latest") },
+        { id: "bun", label: "bun", content: TerminalCommand("bun create nuclo") },
+        { id: "pnpm", label: "pnpm", content: TerminalCommand("pnpm create nuclo") },
+        { id: "deno", label: "deno", content: TerminalCommand("deno run -A npm:create-nuclo") },
+      ],
+    }),
+  );
+}
+
 export interface DocSection {
   id: string;
   group: string;
@@ -5,13 +51,15 @@ export interface DocSection {
   title: string;
   apiTag?: 'fn' | 'type';
   apiSig?: string;
-  content: string; // raw HTML inner content
+  content: string; // raw HTML inner content, rendered first
+  render?: () => NodeModLike<any>; // optional live component, rendered after `content`
+  afterContent?: string; // raw HTML, rendered after `render`
 }
 
 export const DOC_GROUPS = [
   {
     title: "Introduction",
-    sections: ["overview", "installation", "typescript-setup"],
+    sections: ["overview", "quick-start", "installation", "typescript-setup"],
   },
   {
     title: "Core Concepts",
@@ -47,12 +95,30 @@ export const DOC_SECTIONS: DocSection[] = [
     `,
   },
   {
+    id: "quick-start",
+    group: "Introduction",
+    groupTitle: "Introduction",
+    title: "Quick Start",
+    content: `
+      <p>The fastest way to start a new Nuclo project is to scaffold one with <code>create-nuclo</code>. It sets up a Vite + TypeScript project pre-wired for Nuclo:</p>
+    `,
+    render: QuickStartTabs,
+    afterContent: `
+      <p>You'll be prompted for a project name and a template. To skip the prompts, pass a name and flags directly:</p>
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">terminal</span></div><div class="code-block-body"><pre><span class="pt">$</span> <span class="fn">npm</span> create nuclo@latest my-app -- --template basic --yes</pre></div></div>
+      <p>Then install dependencies and start the dev server:</p>
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">terminal</span></div><div class="code-block-body"><pre><span class="pt">$</span> <span class="fn">cd</span> my-app
+<span class="pt">$</span> <span class="fn">npm</span> install
+<span class="pt">$</span> <span class="fn">npm</span> run dev</pre></div></div>
+    `,
+  },
+  {
     id: "installation",
     group: "Introduction",
     groupTitle: "Introduction",
     title: "Installation",
     content: `
-      <p>Install Nuclo via npm, pnpm, yarn, or bun:</p>
+      <p>Already have a project? Install Nuclo via npm, pnpm, yarn, or bun:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">terminal</span></div><div class="code-block-body"><pre><span class="pt">$</span> <span class="fn">npm</span> install nuclo</pre></div></div>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">terminal</span></div><div class="code-block-body"><pre><span class="pt">$</span> <span class="fn">pnpm</span> add nuclo</pre></div></div>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">terminal</span></div><div class="code-block-body"><pre><span class="pt">$</span> <span class="fn">bun</span> add nuclo</pre></div></div>

@@ -33,7 +33,42 @@ render(counter, document.body);
 
 ---
 
+## Quick Start
+
+Scaffold a new Nuclo + Vite project with a single command:
+
+```bash
+# npm
+npm create nuclo@latest
+
+# pnpm
+pnpm create nuclo
+
+# yarn
+yarn create nuclo
+
+# bun
+bun create nuclo
+
+# deno
+deno run -A npm:create-nuclo
+```
+
+Then follow the prompts for a project name and template, or skip them:
+
+```bash
+npm create nuclo@latest my-app -- --template basic --yes
+```
+
+```bash
+cd my-app
+npm install
+npm run dev
+```
+
 ## Installation
+
+Already have a project and just want to add Nuclo to it?
 
 ```bash
 npm install nuclo
