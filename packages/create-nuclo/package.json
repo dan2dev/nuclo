@@ -1,35 +1,35 @@
 {
-  "name": "create-nuclo",
-  "private": false,
-  "version": "0.1.0",
-  "description": "Scaffold a new Nuclo project — npm create nuclo",
-  "license": "MIT",
-  "author": "Danilo Celestino de Castro (https://github.com/dan2dev)",
-  "type": "module",
-  "bin": {
-    "create-nuclo": "./src/create-nuclo.mjs"
-  },
-  "files": [
-    "src",
-    "templates"
-  ],
-  "engines": {
-    "node": ">=18"
-  },
-  "keywords": [
-    "nuclo",
-    "create-nuclo",
-    "scaffold",
-    "vite",
-    "template"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dan2dev/nuclo.git",
-    "directory": "packages/create-nuclo"
-  },
-  "bugs": {
-    "url": "https://github.com/dan2dev/nuclo/issues"
-  },
-  "homepage": "https://nuclo.dev/"
+	"name": "create-nuclo",
+	"private": false,
+	"version": "0.1.1",
+	"description": "Scaffold a new Nuclo project — npm create nuclo",
+	"license": "MIT",
+	"author": "Danilo Celestino de Castro (https://github.com/dan2dev)",
+	"type": "module",
+	"bin": {
+		"create-nuclo": "./src/create-nuclo.mjs"
+	},
+	"files": [
+		"src",
+		"templates"
+	],
+	"engines": {
+		"node": ">=18"
+	},
+	"keywords": [
+		"nuclo",
+		"create-nuclo",
+		"scaffold",
+		"vite",
+		"template"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/dan2dev/nuclo.git",
+		"directory": "packages/create-nuclo"
+	},
+	"bugs": {
+		"url": "https://github.com/dan2dev/nuclo/issues"
+	},
+	"homepage": "https://nuclo.dev/"
 }

@@ -1,0 +1,84 @@
+.PHONY: publish release-patch release-minor release-major version show-version ensure-clean help
+
+.DEFAULT_GOAL := help
+
+# BUMP can be: patch | minor | major (default patch if not provided)
+BUMP ?= patch
+
+# Location of versioned manifest
+PKG_FILE := package.json
+
+# Bump version locally without invoking npm workspace resolution.
+bump-version:
+	@node -e 'const fs = require("node:fs"); const pkgPath = process.argv[1]; const bump = process.argv[2]; const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8")); const parts = pkg.version.split(".").map(Number); if (parts.length !== 3 || parts.some(Number.isNaN)) { console.error("Unsupported version format: " + pkg.version); process.exit(1); } if (bump === "patch") { parts[2] += 1; } else if (bump === "minor") { parts[1] += 1; parts[2] = 0; } else if (bump === "major") { parts[0] += 1; parts[1] = 0; parts[2] = 0; } else { console.error("Unsupported bump type: " + bump); process.exit(1); } pkg.version = parts.join("."); fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, "\t") + "\n"); console.log(pkg.version);' "$(PKG_FILE)" "$(BUMP)"
+
+# Helper: extract current version from package.json
+version:
+	@jq -r '.version' $(PKG_FILE)
+
+show-version: version
+
+# Optional safety: refuse to publish if there are unstaged tracked changes (excluding lock + package.json changes that will change anyway)
+ensure-clean:
+	@if ! git diff --quiet || ! git diff --cached --quiet; then \
+		echo "Working tree not clean. Commit or stash changes before publishing."; \
+		exit 1; \
+	fi
+
+# Main publish + tag workflow:
+# 1. Login to npm registry
+# 2. Bump version (no auto tag/commit)
+# 3. Commit version bump
+# 4. Publish to registry
+# 5. Create annotated tag create-nuclo-v<version> (skip if exists)
+# 6. Push commit + tag
+publish:
+	@echo "==> Logging in to npm registry"
+	@if ! npm login; then \
+	  echo "ERROR: npm login failed. Cannot proceed with publish."; \
+	  exit 1; \
+	fi
+	@echo "==> Bumping $(BUMP) version (local package.json update)"
+	@new_version=$$($(MAKE) --no-print-directory bump-version BUMP=$(BUMP)); \
+	  echo "==> New version: $$new_version"; \
+	  echo "==> Staging version bump artifacts"; \
+	  git add $(PKG_FILE); \
+	  if git diff --cached --quiet; then \
+	    echo "==> No staged changes to commit (possibly already committed)"; \
+	  else \
+	    git commit -m "chore(create-nuclo): bump create-nuclo to $$new_version"; \
+	  fi; \
+	  echo "==> Publishing to registry"; \
+	  bun publish --no-git-checks && \
+	  echo "==> Creating tag (if missing)"; \
+	  if git rev-parse -q --verify "refs/tags/create-nuclo-v$$new_version" >/dev/null; then \
+	    echo "Tag create-nuclo-v$$new_version already exists - skipping"; \
+	  else \
+	    git tag -a "create-nuclo-v$$new_version" -m "Release create-nuclo v$$new_version"; \
+	    echo "Created tag create-nuclo-v$$new_version"; \
+	  fi; \
+	  echo "==> Pushing commit + tag"; \
+	  git push --follow-tags
+	@echo "==> Done."
+
+# Convenience targets
+release-patch:
+	@$(MAKE) publish BUMP=patch
+
+release-minor:
+	@$(MAKE) publish BUMP=minor
+
+release-major:
+	@$(MAKE) publish BUMP=major
+
+# Usage help
+help:
+	@echo "Release / Publish targets:"
+	@echo "  make publish            -> bump PATCH (default), publish, commit, tag, push"
+	@echo "  make publish BUMP=minor -> bump MINOR"
+	@echo "  make publish BUMP=major -> bump MAJOR"
+	@echo "  make release-patch|minor|major"
+	@echo ""
+	@echo "Other:"
+	@echo "  make version            -> show current version"
+	@echo "  make help               -> this help"
