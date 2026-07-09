@@ -28,7 +28,7 @@ When using this library, please include attribution in one of the following ways
 
 ### In Your Documentation or README:
 ```
-Built with nuclo by Danilo Celestino de Castro
+Built with nuclo
 https://github.com/dan2dev/nuclo
 ```
 
