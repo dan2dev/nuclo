@@ -1,7 +1,7 @@
 {
 	"name": "nuclo",
 	"private": false,
-	"version": "0.2.13",
+	"version": "0.2.14",
 	"description": "Lightweight reactive DOM library with global tag builders, SSR, hydration, and atomic CSS — no virtual DOM, no compiler.",
 	"license": "MIT",
 	"author": "Danilo Celestino de Castro (https://github.com/dan2dev)",
