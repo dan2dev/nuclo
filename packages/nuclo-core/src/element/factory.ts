@@ -5,6 +5,7 @@
 import { applyNodeModifier, type NodeModifier } from "./modifiers";
 import { createElement, createElementNS, SVG_NAMESPACE } from "../shared/dom";
 import { claimElement, cleanupUnclaimedChildren } from "../hydration";
+import { setFactoryMeta } from "./factory-meta";
 
 export type { NodeModifier };
 
@@ -77,7 +78,7 @@ function createHtmlElementFactory<TTagName extends ElementTagName>(
   tagName: TTagName,
   ...modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>
 ): DetachedExpandedElementFactory<TTagName> {
-  return function(_parent?: ExpandedElement<TTagName>, index = 0): ExpandedElement<TTagName> {
+  const factory = function(_parent?: ExpandedElement<TTagName>, index = 0): ExpandedElement<TTagName> {
     const parentNode = _parent as unknown as Node | undefined;
     const claimed = parentNode ? claimElement(parentNode, tagName) as ExpandedElement<TTagName> | null : null;
     const el = claimed ?? createElement(tagName) as ExpandedElement<TTagName>;
@@ -89,6 +90,10 @@ function createHtmlElementFactory<TTagName extends ElementTagName>(
     }
     return el;
   } as DetachedExpandedElementFactory<TTagName>;
+  // Lets the list() template engine see the factory's structure (internal
+  // symbols — invisible to the public API).
+  setFactoryMeta(factory, tagName, modifiers);
+  return factory;
 }
 
 /**

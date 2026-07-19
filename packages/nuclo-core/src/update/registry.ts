@@ -7,9 +7,14 @@
  * reference the node (e.g. attribute applyValue closures capture the
  * element), so storing them in a strongly-held map would pin the node in
  * memory forever. With WeakMap storage the whole record is collectible as
- * soon as the node is unreachable, and the FinalizationRegistry prunes the
- * leftover WeakRef from the iteration set. The notify passes also prune
- * dead/disconnected entries as they iterate.
+ * soon as the node is unreachable.
+ *
+ * Dead WeakRefs left in the iteration sets are pruned by the notify passes as
+ * they iterate (deref() === undefined, or node disconnected). Registration is
+ * the hottest path in list-heavy renders (one text node + often one element
+ * per row), so no per-node FinalizationRegistry is used here: its register()
+ * cost per row outweighs keeping the sets tidy between updates, and a stale
+ * husk is just an empty WeakRef until the next update() sweeps it.
  */
 
 export type TextResolver = () => Primitive;
@@ -17,18 +22,32 @@ export type TextResolver = () => Primitive;
 export interface ReactiveTextNodeInfo {
   resolver: TextResolver;
   lastValue: string;
+  /**
+   * DSL semantics: nullish and non-primitive resolver results render as ""
+   * (instead of String(value)). Set by the tag-builder text path so it can
+   * register the user's resolver directly rather than allocating a
+   * sanitizing wrapper closure per text node.
+   */
+  sanitize?: boolean;
 }
 
 export type AttributeResolver = () => unknown;
 
 export interface AttributeResolverRecord {
+  key: string;
   resolver: AttributeResolver;
   applyValue: (value: unknown) => void;
   lastValue: unknown;
 }
 
 export interface ReactiveElementInfo {
-  attributeResolvers: Map<string, AttributeResolverRecord>;
+  /**
+   * Flat keyed array rather than a Map: elements almost always carry one or
+   * two reactive attributes, so linear key lookup on registration beats a Map
+   * allocation per element, and the per-update flush iterates with a plain
+   * index loop (no iterator/destructuring allocations).
+   */
+  attributeResolvers: AttributeResolverRecord[];
 }
 
 /**
@@ -51,14 +70,6 @@ export const reactiveElements = new Set<WeakRef<Element>>();
  */
 export const reactiveElementsByNode = new WeakMap<Element, { ref: WeakRef<Element>; info: ReactiveElementInfo }>();
 
-const textNodeFinalizer = typeof FinalizationRegistry !== "undefined"
-  ? new FinalizationRegistry<WeakRef<Text>>((ref) => { reactiveTextNodes.delete(ref); })
-  : null;
-
-const elementFinalizer = typeof FinalizationRegistry !== "undefined"
-  ? new FinalizationRegistry<WeakRef<Element>>((ref) => { reactiveElements.delete(ref); })
-  : null;
-
 /**
  * Registers a reactive text node in both lookup structures.
  */
@@ -68,12 +79,12 @@ export function registerReactiveTextNode(node: Text, info: ReactiveTextNodeInfo)
     // Re-registration (e.g. repeated hydration): replace the info in place.
     existing.info.resolver = info.resolver;
     existing.info.lastValue = info.lastValue;
+    existing.info.sanitize = info.sanitize;
     return;
   }
   const ref = new WeakRef(node);
   reactiveTextNodes.add(ref);
   reactiveTextNodesByNode.set(node, { ref, info });
-  textNodeFinalizer?.register(node, ref);
 }
 
 /**
@@ -83,7 +94,6 @@ export function registerReactiveElement(element: Element, info: ReactiveElementI
   const ref = new WeakRef(element);
   reactiveElements.add(ref);
   reactiveElementsByNode.set(element, { ref, info });
-  elementFinalizer?.register(element, ref);
 }
 
 /**

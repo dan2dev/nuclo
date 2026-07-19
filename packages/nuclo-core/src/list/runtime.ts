@@ -15,10 +15,12 @@
  */
 import { createMarkerPair, createComment, safeRemoveChild, isNodeConnected, createDocumentFragment } from "../shared/dom";
 import { resolveRenderable } from "../shared/renderables";
-import { isHydrating, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration";
+import { isHydrating, isSerializing, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration";
 import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsInput, ListItemsProvider } from "./types";
 import type { UpdateScope } from "../update/scope";
 import { isBrowser } from "../shared/environment";
+import { getFactoryMods, getFactoryTag } from "../element/factory-meta";
+import { analyzeFactory, prepareSkeleton, instantiateTemplate, flushRowLeaves, type RowLeaf } from "./template";
 
 function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
   if (a === b) return true;
@@ -63,6 +65,43 @@ function renderItem<TItem, TTagName extends ElementTagName>(
   index: number,
 ): ExpandedElement<TTagName> | null {
   const result = runtime.renderItem(item, index);
+  runtime.lastRenderLeaves = null;
+
+  // Row-template fast path: rows from the same render function share their
+  // structure, so after analyzing the first row every following row is a
+  // skeleton clone + leaf patch instead of a full per-element build.
+  const template = runtime.template;
+  if (template !== null && isBrowser && !isHydrating() && !isSerializing()) {
+    const mods = getFactoryMods(result);
+    if (mods !== undefined) {
+      if (template === undefined) {
+        const tag = getFactoryTag(result);
+        const tmpl = tag ? analyzeFactory(tag, mods) : null;
+        const el = resolveRenderable<TTagName>(result, runtime.host, index);
+        if (tmpl && el) {
+          const skeleton = (el as unknown as Node).cloneNode(true) as Element;
+          prepareSkeleton(tmpl, skeleton);
+          runtime.template = { tmpl, skeleton };
+        } else {
+          runtime.template = null;
+        }
+        return el;
+      }
+      const clone = template.skeleton.cloneNode(true) as Element;
+      const leaves: RowLeaf[] = [];
+      if (instantiateTemplate(template.tmpl, mods, clone, leaves)) {
+        if (leaves.length > 0) runtime.lastRenderLeaves = leaves;
+        return clone as unknown as ExpandedElement<TTagName>;
+      }
+      // Heterogeneous rows: deactivate and rebuild this row normally. The
+      // abandoned clone is disconnected and unregistered — plain garbage.
+      runtime.template = null;
+      runtime.lastRenderLeaves = null;
+    } else if (template === undefined) {
+      runtime.template = null;
+    }
+  }
+
   return resolveRenderable<TTagName>(result, runtime.host, index);
 }
 
@@ -112,6 +151,17 @@ function bulkClearRecords<TItem, TTagName extends ElementTagName>(
   endMarker: Comment,
 ): boolean {
   if (startMarker.parentNode !== parent || endMarker.parentNode !== parent) return false;
+
+  // Fastest clear: when the list spans the whole parent (the common case — a
+  // tbody or ul dedicated to the list), one textContent write drops every row
+  // in a single native call, then the marker pair is re-attached (same nodes,
+  // so registry identity is preserved).
+  if (isBrowser && parent.firstChild === startMarker && parent.lastChild === endMarker) {
+    (parent as Node).textContent = "";
+    parent.appendChild(startMarker);
+    parent.appendChild(endMarker);
+    return true;
+  }
 
   for (let i = 0; i < records.length; i++) {
     const node = records[i].element as unknown as Node | null;
@@ -181,7 +231,7 @@ function buildAndInsert<TItem, TTagName extends ElementTagName>(
     const item = items[i];
     const element = renderItem(runtime, item, i);
     if (!element) continue;
-    targetRecords.push({ item, element });
+    targetRecords.push({ item, element, dyn: runtime.lastRenderLeaves });
     const node = element as unknown as Node;
     if (fragment) {
       fragment.appendChild(node);
@@ -371,7 +421,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
         nullCount++;
         continue;
       }
-      windowRecords[j] = { item, element };
+      windowRecords[j] = { item, element, dyn: runtime.lastRenderLeaves };
       const node = element as unknown as Node;
       if (!fragment) fragment = createDocumentFragment();
       if (fragment) {
@@ -574,9 +624,10 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
  */
 function releaseRuntime(runtime: ListRuntime<unknown, ElementTagName>): void {
   for (let i = 0; i < runtime.records.length; i++) {
-    const record = runtime.records[i] as { item: unknown; element: unknown };
+    const record = runtime.records[i] as { item: unknown; element: unknown; dyn?: unknown };
     record.element = null;
     record.item = null;
+    record.dyn = null;
   }
   runtime.records = [];
   runtime.lastSyncedItems = [];
@@ -612,6 +663,15 @@ export function updateListRuntimes(scope?: UpdateScope): void {
     if (scope && !scope.contains(startMarker)) continue;
 
     sync(runtime);
+
+    // Flush template rows' record-owned dynamic leaves. Rows built through
+    // the normal path registered globally and are flushed by the notify
+    // passes instead.
+    const records = runtime.records;
+    for (let i = 0; i < records.length; i++) {
+      const dyn = records[i].dyn;
+      if (dyn) flushRowLeaves(dyn);
+    }
   }
 
   // Clean up dead references

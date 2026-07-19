@@ -65,7 +65,7 @@ describe("notify passes with orphaned WeakMap entries", () => {
   it("prunes a connected element whose info entry was removed", () => {
     const el = document.createElement("div");
     document.body.appendChild(el);
-    registerReactiveElement(el, { attributeResolvers: new Map() });
+    registerReactiveElement(el, { attributeResolvers: [] });
 
     reactiveElementsByNode.delete(el);
 

@@ -64,7 +64,10 @@ export function mergeReactiveClassName(el: HTMLElement, reactiveClassName: strin
 	const staticClasses = staticClassNames.get(el);
 
 	if (!staticClasses || staticClasses.size === 0) {
-		el.className = reactiveClassName || '';
+		// Skip the DOM write when nothing changes — the common case is the very
+		// first apply of a reactive className resolving to '' on a fresh element.
+		const next = reactiveClassName || '';
+		if (el.className !== next) el.className = next;
 		return;
 	}
 	if (!reactiveClassName) {
