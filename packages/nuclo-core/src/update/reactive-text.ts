@@ -23,7 +23,7 @@ import { isBrowser } from "../shared/environment";
  * // the text content automatically updates
  * ```
  */
-export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: unknown): Text | DocumentFragment {
+export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: unknown, sanitize?: boolean): Text | DocumentFragment {
   if (typeof resolver !== "function") {
     logError("Invalid resolver provided to createReactiveTextNode");
     const fallbackNode = createTextNode("");
@@ -52,7 +52,7 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
   }
 
   if (isBrowser) {
-    registerReactiveTextNode(txt, { resolver, lastValue: str });
+    registerReactiveTextNode(txt, { resolver, lastValue: str, sanitize });
   }
   return txt;
 }
@@ -105,7 +105,11 @@ export function notifyReactiveTextNodes(scope?: UpdateScope): void {
       raw = undefined;
     }
 
-    const newVal = raw === undefined ? "" : String(raw);
+    // sanitize: DSL text resolvers render nullish/non-primitive results as ""
+    // (the resolver is registered raw; see ReactiveTextNodeInfo.sanitize).
+    const newVal = info.sanitize
+      ? (raw == null || typeof raw === "object" || typeof raw === "function" ? "" : String(raw))
+      : (raw === undefined ? "" : String(raw));
     if (newVal !== info.lastValue) {
       node.textContent = newVal;
       info.lastValue = newVal;

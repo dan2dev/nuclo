@@ -7,9 +7,11 @@ import { createListRuntime, sync } from "../../src/list/runtime";
 /**
  * These tests pin the performance characteristics of the keyed list diff:
  *  - swap / reorder move the minimum number of nodes (LIS-based placement),
- *  - clearing and replacing the whole list detach old rows with one removeChild
- *    per row (O(rows), never the quadratic Range walk) and batch the new rows
- *    into a single fragment insert — for flat AND nested row templates,
+ *  - clearing and replacing a list that spans its whole parent uses ONE
+ *    textContent write (no per-row removeChild, never the quadratic Range
+ *    walk) and batches the new rows into a single fragment insert — for flat
+ *    AND nested row templates; lists that share their parent with other
+ *    nodes fall back to one removeChild per row (O(rows)),
  *  - pure appends touch existing rows zero times and batch the tail insert.
  *
  * They assert observable DOM-operation counts, not just final markup, so a
@@ -105,7 +107,7 @@ describe("list runtime performance paths", () => {
     expect(new Set(container.querySelectorAll("[data-id]"))).toEqual(new Set(before));
   });
 
-  it("clears all rows with one removeChild per row and no range walk", () => {
+  it("clears a whole-parent list with one textContent write and no per-row removals", () => {
     let items = makeItems(100);
     const runtime = createListRuntime(() => items, renderRow, container as any, 0);
 
@@ -117,11 +119,38 @@ describe("list runtime performance paths", () => {
     sync(runtime);
 
     expect(container.querySelectorAll("[data-id]").length).toBe(0);
-    // Markers remain; rows are gone.
+    // Markers remain (same node identities — the registry is keyed on them).
     expect(container.contains(runtime.startMarker)).toBe(true);
     expect(container.contains(runtime.endMarker)).toBe(true);
-    // Bulk clear: exactly one removeChild per row (O(rows), top-level only) and
-    // never Range.deleteContents() — that path is O(nodes²) in jsdom.
+    // The list spans the whole container, so the clear is a single
+    // textContent write — zero removeChild calls, never the quadratic
+    // Range.deleteContents() walk.
+    expect(removeSpy).not.toHaveBeenCalled();
+    expect(rangeSpy).not.toHaveBeenCalled();
+    expect(runtime.records.length).toBe(0);
+  });
+
+  it("falls back to one removeChild per row when the list shares its parent", () => {
+    // A sibling before the start marker means textContent="" would destroy
+    // non-list content — the clear must degrade to O(rows) removeChild.
+    const sibling = document.createElement("p");
+    sibling.textContent = "keep me";
+    container.appendChild(sibling);
+
+    let items = makeItems(100);
+    const runtime = createListRuntime(() => items, renderRow, container as any, 0);
+
+    const rangeSpy = vi.spyOn(document, "createRange");
+    const removeSpy = vi.spyOn(container, "removeChild");
+
+    items = [];
+    (runtime as any).itemsProvider = () => items;
+    sync(runtime);
+
+    expect(container.querySelectorAll("[data-id]").length).toBe(0);
+    expect(container.contains(sibling)).toBe(true);
+    expect(container.contains(runtime.startMarker)).toBe(true);
+    expect(container.contains(runtime.endMarker)).toBe(true);
     expect(removeSpy).toHaveBeenCalledTimes(100);
     expect(rangeSpy).not.toHaveBeenCalled();
     expect(runtime.records.length).toBe(0);
@@ -145,9 +174,9 @@ describe("list runtime performance paths", () => {
     // None of the original nodes survive.
     const replaced = Array.from(container.querySelectorAll("[data-id]"));
     for (const node of replaced) expect(original.has(node)).toBe(false);
-    // O(rows) clear (one removeChild per old row, never the quadratic Range
-    // path) + a single batched fragment insertion of the new rows.
-    expect(removeSpy).toHaveBeenCalledTimes(100);
+    // Whole-parent list → one textContent clear (no per-row removeChild,
+    // never the quadratic Range path) + a single batched fragment insertion.
+    expect(removeSpy).not.toHaveBeenCalled();
     expect(rangeSpy).not.toHaveBeenCalled();
     expect(insertSpy).toHaveBeenCalledTimes(1);
   });
@@ -178,9 +207,10 @@ describe("list runtime performance paths", () => {
     for (const node of container.querySelectorAll("tr[data-id]")) {
       expect(original.has(node)).toBe(false);
     }
-    // One removeChild per OLD row (100) — not per descendant — no Range walk,
-    // and the 100 new nested rows go in as a single fragment.
-    expect(removeSpy).toHaveBeenCalledTimes(100);
+    // Whole-parent list → single textContent clear regardless of how deep
+    // each row's subtree is (no per-descendant work, no Range walk), and the
+    // 100 new nested rows go in as a single fragment.
+    expect(removeSpy).not.toHaveBeenCalled();
     expect(rangeSpy).not.toHaveBeenCalled();
     expect(insertSpy).toHaveBeenCalledTimes(1);
 
@@ -193,7 +223,7 @@ describe("list runtime performance paths", () => {
     expect(container.querySelectorAll("tr[data-id]").length).toBe(0);
     expect(container.contains(runtime.startMarker)).toBe(true);
     expect(container.contains(runtime.endMarker)).toBe(true);
-    expect(removeSpy).toHaveBeenCalledTimes(100);
+    expect(removeSpy).not.toHaveBeenCalled();
     expect(rangeSpy).not.toHaveBeenCalled();
   });
 

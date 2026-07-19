@@ -44,7 +44,7 @@ function ensureElementInfo(el: Element): ReactiveElementInfo {
   if (entry) return entry.info;
 
   // No existing info, create new
-  const info: ReactiveElementInfo = { attributeResolvers: new Map() };
+  const info: ReactiveElementInfo = { attributeResolvers: [] };
   registerReactiveElement(el, info);
   return info;
 }
@@ -54,12 +54,12 @@ function isCacheableValue(value: unknown): boolean {
   return value === null || typeof value !== "object";
 }
 
-function updateAttributeResolverRecord(key: string, record: AttributeResolverRecord): void {
+function updateAttributeResolverRecord(record: AttributeResolverRecord): void {
   let nextValue: unknown;
   try {
     nextValue = record.resolver();
   } catch (e) {
-    logError(`Failed to resolve reactive attribute: ${key}`, e);
+    logError(`Failed to resolve reactive attribute: ${record.key}`, e);
     return;
   }
 
@@ -70,13 +70,14 @@ function updateAttributeResolverRecord(key: string, record: AttributeResolverRec
     record.applyValue(nextValue);
     record.lastValue = cacheable ? nextValue : UNSET_LAST_VALUE;
   } catch (e) {
-    logError(`Failed to apply reactive attribute: ${key}`, e);
+    logError(`Failed to apply reactive attribute: ${record.key}`, e);
   }
 }
 
 function applyAttributeResolvers(info: ReactiveElementInfo): void {
-  for (const [key, record] of info.attributeResolvers) {
-    updateAttributeResolverRecord(key, record);
+  const resolvers = info.attributeResolvers;
+  for (let i = 0; i < resolvers.length; i++) {
+    updateAttributeResolverRecord(resolvers[i]);
   }
 }
 
@@ -115,18 +116,28 @@ export function registerAttributeResolver<TTagName extends ElementTagName>(
     return;
   }
 
-  const record: AttributeResolverRecord = { resolver, applyValue, lastValue: UNSET_LAST_VALUE };
+  const record: AttributeResolverRecord = { key, resolver, applyValue, lastValue: UNSET_LAST_VALUE };
 
   if (!isBrowser) {
     // SSR: just apply once, no registration needed (update() is never called server-side)
-    updateAttributeResolverRecord(key, record);
+    updateAttributeResolverRecord(record);
     return;
   }
 
   ensureGlobalUpdateEventListener();
   const info = ensureElementInfo(element as Element);
-  info.attributeResolvers.set(key, record);
-  updateAttributeResolverRecord(key, record);
+  // Re-registration for a key replaces its record (previous Map.set semantics).
+  const resolvers = info.attributeResolvers;
+  let replaced = false;
+  for (let i = 0; i < resolvers.length; i++) {
+    if (resolvers[i].key === key) {
+      resolvers[i] = record;
+      replaced = true;
+      break;
+    }
+  }
+  if (!replaced) resolvers.push(record);
+  updateAttributeResolverRecord(record);
 }
 
 /**

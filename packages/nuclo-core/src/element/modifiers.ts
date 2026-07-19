@@ -108,13 +108,11 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 				if (isPrimitive(v)) {
 					// Nullish probes register as empty reactive text instead of being
 					// dropped: a resolver with no value yet (data still loading) must
-					// stay reactive so a later update() can fill it in. The wrapper
-					// also renders values that become nullish again as "" — the raw
-					// resolver would produce the string "null".
-					const safeResolver = (): Primitive => {
-						const next = modifier();
-						return isPrimitive(next) && next != null ? (next as Primitive) : "";
-					};
+					// stay reactive so a later update() can fill it in. The resolver
+					// is registered raw with `sanitize` set — the notify pass renders
+					// nullish/non-primitive results as "" — instead of allocating a
+					// sanitizing wrapper closure per text node.
+					const resolver = modifier as () => Primitive;
 					const initial: Primitive = v != null ? (v as Primitive) : "";
 					if (isHydrating() && nextChildIsTextComment(parent as unknown as Node)) {
 						const parentNode = parent as unknown as Node;
@@ -123,13 +121,14 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 						const textNode = claimTextAfterMarker(parentNode, expected);
 						if (textNode) {
 							registerReactiveTextNode(textNode, {
-								resolver: safeResolver,
+								resolver,
 								lastValue: expected,
+								sanitize: true,
 							});
 						}
 						return null;
 					}
-					return createReactiveTextChild(index, safeResolver, initial);
+					return createReactiveTextChild(index, resolver, initial, true);
 				}
 				return null;
 			} catch (error) {
@@ -198,9 +197,10 @@ function wrapTextNode(index: number, textNode: Node | null): Node | null {
 function createReactiveTextChild(
 	index: number,
 	resolver: () => Primitive,
-	preEvaluated?: unknown
+	preEvaluated?: unknown,
+	sanitize?: boolean
 ): Node | null {
-	return wrapTextNode(index, createReactiveTextNode(resolver, preEvaluated));
+	return wrapTextNode(index, createReactiveTextNode(resolver, preEvaluated, sanitize));
 }
 
 function createStaticTextChild(index: number, value: Primitive): Node | null {

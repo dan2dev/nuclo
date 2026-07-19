@@ -44,7 +44,6 @@ await import('../src');
 const { update } = await import('../src/update/update');
 const { list } = await import('../src/list');
 const { render } = await import('../src/render');
-const { on } = await import('../src/element/events');
 
 declare const div: ExpandedElementBuilder<'div'>;
 declare const h1: ExpandedElementBuilder<'h1'>;
@@ -125,12 +124,12 @@ function createApp() {
           { className: 'col-md-6' },
           div(
             { className: 'row' },
-            div({ className: 'col-sm-6 smallpad' }, button({ type: 'button', className: 'btn btn-primary btn-block', id: 'run' }, on('click', doRun), 'Create 1,000 rows')),
-            div({ className: 'col-sm-6 smallpad' }, button({ type: 'button', className: 'btn btn-primary btn-block', id: 'runlots' }, on('click', doRunLots), 'Create 10,000 rows')),
-            div({ className: 'col-sm-6 smallpad' }, button({ type: 'button', className: 'btn btn-primary btn-block', id: 'add' }, on('click', doAdd), 'Append 1,000 rows')),
-            div({ className: 'col-sm-6 smallpad' }, button({ type: 'button', className: 'btn btn-primary btn-block', id: 'update' }, on('click', doUpdate), 'Update every 10th row')),
-            div({ className: 'col-sm-6 smallpad' }, button({ type: 'button', className: 'btn btn-primary btn-block', id: 'clear' }, on('click', doClear), 'Clear')),
-            div({ className: 'col-sm-6 smallpad' }, button({ type: 'button', className: 'btn btn-primary btn-block', id: 'swaprows' }, on('click', doSwapRows), 'Swap Rows')),
+            div({ className: 'col-sm-6 smallpad' }, button({ type: 'button', className: 'btn btn-primary btn-block', id: 'run', onclick: doRun }, 'Create 1,000 rows')),
+            div({ className: 'col-sm-6 smallpad' }, button({ type: 'button', className: 'btn btn-primary btn-block', id: 'runlots', onclick: doRunLots }, 'Create 10,000 rows')),
+            div({ className: 'col-sm-6 smallpad' }, button({ type: 'button', className: 'btn btn-primary btn-block', id: 'add', onclick: doAdd }, 'Append 1,000 rows')),
+            div({ className: 'col-sm-6 smallpad' }, button({ type: 'button', className: 'btn btn-primary btn-block', id: 'update', onclick: doUpdate }, 'Update every 10th row')),
+            div({ className: 'col-sm-6 smallpad' }, button({ type: 'button', className: 'btn btn-primary btn-block', id: 'clear', onclick: doClear }, 'Clear')),
+            div({ className: 'col-sm-6 smallpad' }, button({ type: 'button', className: 'btn btn-primary btn-block', id: 'swaprows', onclick: doSwapRows }, 'Swap Rows')),
           ),
         ),
       ),
@@ -144,8 +143,8 @@ function createApp() {
             tr(
               { className: () => (selectedId === row.id ? 'danger' : '') },
               td({ className: 'col-md-1' }, String(row.id)),
-              td({ className: 'col-md-4' }, a(on('click', () => doSelect(row.id)), () => row.label)),
-              td({ className: 'col-md-1' }, a(on('click', () => doDelete(row.id)), span({ className: 'glyphicon glyphicon-remove', 'aria-hidden': 'true' }))),
+              td({ className: 'col-md-4' }, a({ onclick: () => doSelect(row.id) }, () => row.label)),
+              td({ className: 'col-md-1' }, a({ onclick: () => doDelete(row.id) }, span({ className: 'glyphicon glyphicon-remove', 'aria-hidden': 'true' }))),
               td({ className: 'col-md-6' }),
             ),
         ),

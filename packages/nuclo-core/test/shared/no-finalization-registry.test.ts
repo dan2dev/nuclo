@@ -28,7 +28,7 @@ describe("modules without FinalizationRegistry", () => {
     expect(registry.reactiveTextNodesByNode.get(text)).toBeDefined();
 
     const el = document.createElement("div");
-    registry.registerReactiveElement(el, { attributeResolvers: new Map() });
+    registry.registerReactiveElement(el, { attributeResolvers: [] });
     expect(registry.reactiveElementsByNode.get(el)).toBeDefined();
 
     registry.storeConditionalInfo(el, {
