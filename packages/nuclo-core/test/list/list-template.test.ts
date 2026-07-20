@@ -233,7 +233,7 @@ describe("list row-template cloning", () => {
   });
 
   it("supports direct rendered rows with record-owned refresh hooks", () => {
-    let rows: Row[] = [
+    const rows: Row[] = [
       { id: 1, label: "one" },
       { id: 2, label: "two" },
     ];
