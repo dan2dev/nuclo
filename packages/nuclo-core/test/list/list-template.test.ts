@@ -4,6 +4,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createListRuntime, sync } from "../../src/list/runtime";
 import { update } from "../../src/update/update";
+import { reactiveElementsByNode, reactiveTextNodesByNode } from "../../src/update/registry";
 import "../../src/index";
 
 /**
@@ -88,6 +89,52 @@ describe("list row-template cloning", () => {
     update();
     expect(trs()[4].children[1].textContent).toBe("CHANGED");
     expect(trs()[3].children[1].textContent).toBe("L3");
+  });
+
+  it("moves the first template row's reactive leaves out of global registries", () => {
+    const rows: Row[] = [
+      { id: 0, label: "a" },
+      { id: 1, label: "b" },
+    ];
+    let selectedId: number | null = 0;
+    const runtime = createListRuntime(() => rows, benchRow(() => selectedId, []), container as never, 0);
+    const firstRow = container.querySelector("tr") as HTMLElement;
+    const firstLabel = firstRow.children[1].firstChild!.firstChild as Text;
+
+    expect(runtime.records[0].dyn?.length).toBe(2);
+    expect(reactiveElementsByNode.has(firstRow)).toBe(false);
+    expect(reactiveTextNodesByNode.has(firstLabel)).toBe(false);
+
+    selectedId = null;
+    rows[0]!.label = "changed";
+    update();
+
+    expect(firstRow.className).toBe("");
+    expect(firstRow.children[1].textContent).toBe("changed");
+  });
+
+  it("does not re-run freshly initialized template leaves in the same update pass", () => {
+    let rows: Row[] = [];
+    let classCalls = 0;
+    let labelCalls = 0;
+    createListRuntime(
+      () => rows,
+      (row: Row) =>
+        tr(
+          { className: () => { classCalls++; return row.id === -1 ? "danger" : ""; } },
+          td({ className: "col-md-1" }, String(row.id)),
+          td({ className: "col-md-4" }, a({ onclick: () => undefined }, () => { labelCalls++; return row.label; })),
+        ),
+      container as never,
+      0,
+    );
+
+    rows = Array.from({ length: 4 }, (_, i) => ({ id: i, label: `L${i}` }));
+    update();
+
+    expect(container.querySelectorAll("tr").length).toBe(4);
+    expect(classCalls).toBe(4);
+    expect(labelCalls).toBe(4);
   });
 
   it("scrubs row-1 reactive state out of the skeleton", () => {
@@ -183,5 +230,40 @@ describe("list row-template cloning", () => {
     expect(container.querySelectorAll("tr").length).toBe(0);
     expect(container.contains(runtime.startMarker)).toBe(true);
     expect(container.contains(runtime.endMarker)).toBe(true);
+  });
+
+  it("supports direct rendered rows with record-owned refresh hooks", () => {
+    let rows: Row[] = [
+      { id: 1, label: "one" },
+      { id: 2, label: "two" },
+    ];
+    let selectedId: number | null = null;
+    createListRuntime(
+      () => rows,
+      (row: Row) => {
+        const el = document.createElement("tr") as ExpandedElement<"tr">;
+        const id = document.createElement("td");
+        const label = document.createElement("td");
+        el.append(id, label);
+        const refresh = () => {
+          el.className = selectedId === row.id ? "danger" : "";
+          id.textContent = String(row.id);
+          label.textContent = row.label;
+        };
+        refresh();
+        return { element: el, update: refresh };
+      },
+      container as never,
+      0,
+    );
+
+    rows[1]!.label = "changed";
+    selectedId = 2;
+    update();
+
+    const trs = container.querySelectorAll("tr");
+    expect(trs[0].className).toBe("");
+    expect(trs[1].className).toBe("danger");
+    expect(trs[1].children[1].textContent).toBe("changed");
   });
 });

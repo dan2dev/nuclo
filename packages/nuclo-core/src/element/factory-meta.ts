@@ -10,6 +10,7 @@
 
 export const FACTORY_TAG = Symbol("nuclo.factory.tag");
 export const FACTORY_MODS = Symbol("nuclo.factory.mods");
+let metadataOnlyFactoryDepth = 0;
 
 interface TaggedFactory {
   [FACTORY_TAG]?: string;
@@ -33,4 +34,17 @@ export function getFactoryMods(fn: unknown): readonly unknown[] | undefined {
 /** Returns the tag name of a tag-builder factory, or undefined. */
 export function getFactoryTag(fn: unknown): string | undefined {
   return typeof fn === "function" ? (fn as TaggedFactory)[FACTORY_TAG] : undefined;
+}
+
+export function isMetadataOnlyFactoryMode(): boolean {
+  return metadataOnlyFactoryDepth > 0;
+}
+
+export function withMetadataOnlyFactories<T>(fn: () => T): T {
+  metadataOnlyFactoryDepth++;
+  try {
+    return fn();
+  } finally {
+    metadataOnlyFactoryDepth--;
+  }
 }
