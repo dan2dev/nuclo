@@ -116,7 +116,7 @@
     },
     "packages/nuclo-core": {
       "name": "nuclo",
-      "version": "0.2.14",
+      "version": "0.2.16",
       "devDependencies": {
         "@eslint/css": "^1.4.0",
         "@eslint/js": "^10.0.1",

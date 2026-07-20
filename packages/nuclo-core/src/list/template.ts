@@ -239,7 +239,9 @@ export function instantiateTemplate(
         if (mod == null || typeof mod !== "object") return false;
         const attrs = mod as Record<string, unknown>;
         const specs = slot.keys;
-        if (Object.keys(attrs).length !== specs.length) return false;
+        let attrCount = 0;
+        for (const _k in attrs) attrCount++;
+        if (attrCount !== specs.length) return false;
         for (let k = 0; k < specs.length; k++) {
           const spec = specs[k];
           const v = attrs[spec.key];
