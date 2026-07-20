@@ -12,6 +12,27 @@ export const FACTORY_TAG = Symbol("nuclo.factory.tag");
 export const FACTORY_MODS = Symbol("nuclo.factory.mods");
 let metadataOnlyFactoryDepth = 0;
 
+/**
+ * Metadata-only factories (list() template rows past the first) are read
+ * once, via getFactoryTag/getFactoryMods, during the same synchronous render
+ * pass that created them, and are never invoked or retained afterward — so a
+ * small pool of stub functions can be reused across rows instead of
+ * allocating a fresh closure per tag-builder call. The pool rewinds to index
+ * 0 at the outermost withMetadataOnlyFactories entry: one row's tree needs at
+ * most one live slot per factory call within it, and the next row's pass
+ * only starts once the previous row's tree has been fully consumed by the
+ * caller (list runtime template instantiation is fully synchronous per row).
+ */
+const metadataOnlyStubPool: Array<() => null> = [];
+let metadataOnlyPoolIndex = 0;
+
+export function acquireMetadataOnlyFactory(): () => null {
+  if (metadataOnlyPoolIndex >= metadataOnlyStubPool.length) {
+    metadataOnlyStubPool.push(() => null);
+  }
+  return metadataOnlyStubPool[metadataOnlyPoolIndex++]!;
+}
+
 interface TaggedFactory {
   [FACTORY_TAG]?: string;
   [FACTORY_MODS]?: readonly unknown[];
@@ -41,7 +62,9 @@ export function isMetadataOnlyFactoryMode(): boolean {
 }
 
 export function withMetadataOnlyFactories<T>(fn: () => T): T {
+  const isOutermost = metadataOnlyFactoryDepth === 0;
   metadataOnlyFactoryDepth++;
+  if (isOutermost) metadataOnlyPoolIndex = 0;
   try {
     return fn();
   } finally {
