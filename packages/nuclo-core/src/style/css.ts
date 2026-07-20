@@ -434,16 +434,25 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 // ---------------------------------------------------------------------------
 // Default themeless instance — registered as globals by the runtime bootstrap.
 // Apps with design tokens create their own instance via createCss(theme).
+//
+// Built lazily on first use rather than at module load: most apps that
+// import nuclo never call css()/variants()/keyframes()/globalStyle(), and
+// createCss() eagerly allocates a memo WeakMap and walks the (empty) theme's
+// screens — work worth skipping entirely for those apps.
 // ---------------------------------------------------------------------------
-const defaultInstance = createCss({});
+let defaultInstance: CssInstance<object> | undefined;
+function getDefaultInstance(): CssInstance<object> {
+	return (defaultInstance ??= createCss({}));
+}
 
 /** Themeless css() — full property/variant typing, no tokens or screens. */
-export const css: (style: Style<object>) => StyleResult = defaultInstance.css;
+export const css: (style: Style<object>) => StyleResult = (style) => getDefaultInstance().css(style);
 /** Themeless variants() recipe helper. */
 export const variants: <const V extends VariantDefinitions<object>>(
 	config: VariantsConfig<object, V>,
-) => VariantsFn<V> = defaultInstance.variants;
+) => VariantsFn<V> = (config) => getDefaultInstance().variants(config);
 /** Themeless keyframes() helper. */
-export const keyframes: (frames: KeyframeFrames<object>) => string = defaultInstance.keyframes;
+export const keyframes: (frames: KeyframeFrames<object>) => string = (frames) => getDefaultInstance().keyframes(frames);
 /** Themeless globalStyle() helper. */
-export const globalStyle: (selector: string, style: FlatStyle<object>) => void = defaultInstance.globalStyle;
+export const globalStyle: (selector: string, style: FlatStyle<object>) => void = (selector, style) =>
+	getDefaultInstance().globalStyle(selector, style);
