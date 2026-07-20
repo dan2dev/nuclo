@@ -39,17 +39,41 @@ export const SELF_CLOSING_TAGS = [
 ] as const satisfies ReadonlyArray<ElementTagName>;
 
 
+// Tag builders are installed as self-overwriting lazy getters instead of
+// being created eagerly: registerGlobalTagBuilders() touches ~180 HTML+SVG
+// tags, but a typical app only ever calls a handful of them. Deferring the
+// createHtmlTagBuilder()/createSvgTagBuilder() closure allocation to first
+// access keeps boot-time work and idle memory proportional to what the app
+// actually uses instead of the whole tag catalogue.
+function defineLazyGlobal(target: Record<string, unknown>, key: string, create: () => unknown): void {
+  Object.defineProperty(target, key, {
+    configurable: true,
+    enumerable: true,
+    get(): unknown {
+      const value = create();
+      Object.defineProperty(target, key, { value, configurable: true, enumerable: true, writable: true });
+      return value;
+    },
+    // A plain accessor-only property would throw on direct assignment
+    // (`globalThis.div = ...`), unlike the eager `target[tagName] = builder`
+    // it replaces. Route writes through the same "become a normal data
+    // property" path so overwriting behaves exactly as before.
+    set(value: unknown): void {
+      Object.defineProperty(target, key, { value, configurable: true, enumerable: true, writable: true });
+    },
+  });
+}
+
 function registerHtmlTag(target: Record<string, unknown>, tagName: ElementTagName): void {
   // Don't overwrite non-function properties (safety check)
   if (tagName in target && typeof target[tagName] !== 'function') {
     return;
   }
-  const builder = createHtmlTagBuilder(tagName);
-  target[tagName] = builder;
+  defineLazyGlobal(target, tagName, () => createHtmlTagBuilder(tagName));
   // `var` is a reserved word, so the declared global is `var_` — register it
   // under that name too (the bare `var` key stays for globalThis["var"] access).
   if (tagName === "var") {
-    target["var_"] = builder;
+    defineLazyGlobal(target, "var_", () => createHtmlTagBuilder(tagName));
   }
 }
 
@@ -58,7 +82,7 @@ function registerSvgTag(target: Record<string, unknown>, tagName: keyof SVGEleme
   const exportName = `${tagName}Svg`;
 
   if (!(exportName in target)) {
-    target[exportName] = createSvgTagBuilder(tagName);
+    defineLazyGlobal(target, exportName, () => createSvgTagBuilder(tagName));
   }
 }
 
