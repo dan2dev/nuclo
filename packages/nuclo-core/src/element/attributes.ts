@@ -122,12 +122,15 @@ export function applyAttributes<TTagName extends ElementTagName>(
   mergeClassName = true,
 ): void {
   if (!attributes) return;
-  for (const k of Object.keys(attributes) as Array<AttributeKey<TTagName>>) {
-    const value = (attributes as Record<string, unknown>)[k as string] as
+  // for-in over Object.keys() avoids allocating a key array per element —
+  // attribute objects are always plain literals, so no prototype keys leak in.
+  for (const k in attributes) {
+    const key = k as AttributeKey<TTagName>;
+    const value = (attributes as Record<string, unknown>)[k] as
       AttributeCandidate<TTagName> | undefined;
     // Only merge className for non-className keys OR when explicitly enabled for className
-    const shouldMerge = mergeClassName && k === 'className';
-    applySingleAttribute(element, k, value, shouldMerge);
+    const shouldMerge = mergeClassName && key === 'className';
+    applySingleAttribute(element, key, value, shouldMerge);
   }
 }
 

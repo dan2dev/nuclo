@@ -51,6 +51,9 @@ export function createHtmlElementWithModifiers<TTagName extends ElementTagName>(
   modifiers: ReadonlyArray<NodeModifier<TTagName>>
 ): ExpandedElement<TTagName> {
   const el = createElement(tagName) as ExpandedElement<TTagName>;
+  if (!el) {
+    throw new Error(`Failed to create element: ${tagName}`);
+  }
   applyModifiers(el, modifiers, 0);
   return el;
 }
@@ -88,6 +91,9 @@ function createHtmlElementFactory<TTagName extends ElementTagName>(
     const parentNode = _parent as unknown as Node | undefined;
     const claimed = parentNode ? claimElement(parentNode, tagName) as ExpandedElement<TTagName> | null : null;
     const el = claimed ?? createElement(tagName) as ExpandedElement<TTagName>;
+    if (!el) {
+      throw new Error(`Failed to create element: ${tagName}`);
+    }
     const elNode = el as unknown as Node;
     const lastOriginalChild = claimed ? elNode.lastChild : null;
     applyModifiers(el, modifiers as ReadonlyArray<NodeModifier<TTagName>>, index);
