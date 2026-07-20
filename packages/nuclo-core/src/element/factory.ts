@@ -5,7 +5,7 @@
 import { applyNodeModifier, type NodeModifier } from "./modifiers";
 import { createElement, createElementNS, SVG_NAMESPACE } from "../shared/dom";
 import { claimElement, cleanupUnclaimedChildren } from "../hydration";
-import { isMetadataOnlyFactoryMode, setFactoryMeta } from "./factory-meta";
+import { acquireMetadataOnlyFactory, isMetadataOnlyFactoryMode, setFactoryMeta } from "./factory-meta";
 
 export type { NodeModifier };
 
@@ -76,12 +76,10 @@ export function createSvgElementWithModifiers<TTagName extends keyof SVGElementT
  */
 function createHtmlElementFactory<TTagName extends ElementTagName>(
   tagName: TTagName,
-  ...modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>
+  modifiers: ReadonlyArray<NodeMod<TTagName> | NodeModFn<TTagName>>
 ): DetachedExpandedElementFactory<TTagName> {
   if (isMetadataOnlyFactoryMode()) {
-    const factory = function(): ExpandedElement<TTagName> {
-      return null as unknown as ExpandedElement<TTagName>;
-    } as DetachedExpandedElementFactory<TTagName>;
+    const factory = acquireMetadataOnlyFactory() as unknown as DetachedExpandedElementFactory<TTagName>;
     setFactoryMeta(factory, tagName, modifiers);
     return factory;
   }
@@ -109,12 +107,10 @@ function createHtmlElementFactory<TTagName extends ElementTagName>(
  */
 function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
   tagName: TTagName,
-  ...modifiers: Array<unknown>
+  modifiers: ReadonlyArray<unknown>
 ): DetachedSVGElementFactory<TTagName> {
   if (isMetadataOnlyFactoryMode()) {
-    const factory = function(): SVGElementTagNameMap[TTagName] {
-      return null as unknown as SVGElementTagNameMap[TTagName];
-    } as DetachedSVGElementFactory<TTagName>;
+    const factory = acquireMetadataOnlyFactory() as unknown as DetachedSVGElementFactory<TTagName>;
     setFactoryMeta(factory, tagName, modifiers);
     return factory;
   }
@@ -142,7 +138,7 @@ function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
 export function createHtmlTagBuilder<TTagName extends ElementTagName>(
   tagName: TTagName,
 ): ExpandedElementBuilder<TTagName> {
-  return (...mods) => createHtmlElementFactory(tagName, ...mods);
+  return (...mods) => createHtmlElementFactory(tagName, mods);
 }
 
 /**
@@ -151,5 +147,5 @@ export function createHtmlTagBuilder<TTagName extends ElementTagName>(
 export function createSvgTagBuilder<TTagName extends keyof SVGElementTagNameMap>(
   tagName: TTagName,
 ): ExpandedSVGElementBuilder<TTagName> {
-  return (...mods) => createSvgElementFactory(tagName, ...mods);
+  return (...mods) => createSvgElementFactory(tagName, mods);
 }
