@@ -26,7 +26,9 @@
  */
 
 import { getFactoryMods, getFactoryTag } from "../element/factory-meta";
+import { modifierProbeCache } from "../element/modifiers";
 import { isNode } from "../shared/type-guards";
+import { cleanupReactiveElement, cleanupReactiveTextNode } from "../update/registry";
 
 export const LEAF_TEXT = 0;
 export const LEAF_CLASSNAME = 1;
@@ -60,6 +62,8 @@ export interface AttrSpec {
   kind: number;
   /** Static attrs: element exposes the key as a property (filled from the skeleton). */
   prop: boolean;
+  /** Static attrs: first-row value baked into the skeleton. */
+  value?: unknown;
 }
 
 export type TemplateSlot =
@@ -97,6 +101,7 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
       slots.push({ kind: SLOT_NULL });
       continue;
     }
+
     const t = typeof mod;
 
     if (t === "function") {
@@ -115,6 +120,7 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
         let v: unknown;
         try {
           v = (mod as () => unknown)();
+          modifierProbeCache.set(mod as () => unknown, { value: v, error: false });
         } catch {
           return null;
         }
@@ -158,7 +164,7 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
         }
         if (vt === "object") return null;
         if (key === "className" && classNameSources++) return null;
-        specs.push({ key, kind: ATTR_STATIC, prop: false });
+        specs.push({ key, kind: ATTR_STATIC, prop: false, value: v });
       }
       slots.push({ kind: SLOT_ATTRS, keys: specs });
       continue;
@@ -233,18 +239,14 @@ export function instantiateTemplate(
         if (mod == null || typeof mod !== "object") return false;
         const attrs = mod as Record<string, unknown>;
         const specs = slot.keys;
-        // Allocation-free exact-shape walk: same-literal objects enumerate in
-        // insertion order, so keys must match the specs pairwise.
-        let k = 0;
-        for (const key in attrs) {
-          if (k >= specs.length) return false;
+        if (Object.keys(attrs).length !== specs.length) return false;
+        for (let k = 0; k < specs.length; k++) {
           const spec = specs[k];
-          if (spec.key !== key) return false;
-          k++;
-          const v = attrs[key];
+          const v = attrs[spec.key];
           switch (spec.kind) {
             case ATTR_STATIC: {
               if (v == null || typeof v === "object" || typeof v === "function") return false;
+              if (v === spec.value) break;
               if (spec.prop) {
                 const target = el as unknown as Record<string, unknown>;
                 if (target[spec.key] !== v) target[spec.key] = v;
@@ -282,7 +284,6 @@ export function instantiateTemplate(
             }
           }
         }
-        if (k !== specs.length) return false;
         break;
       }
 
@@ -327,6 +328,94 @@ export function instantiateTemplate(
         if (mod != null) return false;
         break;
       }
+    }
+  }
+  return true;
+}
+
+/**
+ * Converts the normally-built first row of a compatible template into the same
+ * record-owned dynamic leaf representation used by skeleton clones.
+ *
+ * The normal builder has already registered reactive text/className leaves in
+ * the global registries. Template rows have a tighter lifetime through their
+ * list record, so unregister those first-row leaves and let updateListRuntimes()
+ * flush them with the rest of the templated rows.
+ */
+export function adoptTemplateLeaves(
+  tmpl: TemplateNode,
+  mods: readonly unknown[],
+  el: Element,
+  leaves: RowLeaf[],
+): boolean {
+  const slots = tmpl.slots;
+  if (mods.length !== slots.length) return false;
+  let child: Node | null = el.firstChild;
+
+  for (let i = 0; i < slots.length; i++) {
+    const slot = slots[i];
+    const mod = mods[i];
+
+    switch (slot.kind) {
+      case SLOT_ATTRS: {
+        if (mod == null || typeof mod !== "object") return false;
+        const attrs = mod as Record<string, unknown>;
+        const specs = slot.keys;
+        let k = 0;
+        for (const key in attrs) {
+          if (k >= specs.length) return false;
+          const spec = specs[k];
+          if (spec.key !== key) return false;
+          k++;
+          const v = attrs[key];
+          if (spec.kind === ATTR_REACTIVE_CLASSNAME) {
+            if (typeof v !== "function" || (v as () => unknown).length !== 0) return false;
+            cleanupReactiveElement(el);
+            leaves.push({
+              kind: LEAF_CLASSNAME,
+              node: el as HTMLElement,
+              fn: v as () => unknown,
+              last: (el as HTMLElement).className,
+            });
+          }
+        }
+        if (k !== specs.length) return false;
+        break;
+      }
+
+      case SLOT_TEXT:
+        if (!child) return false;
+        child = child.nextSibling;
+        break;
+
+      case SLOT_REACTIVE_TEXT: {
+        if (typeof mod !== "function" || (mod as () => unknown).length !== 0) return false;
+        if (!child || child.nodeType !== 3) return false;
+        const textNode = child as Text;
+        cleanupReactiveTextNode(textNode);
+        leaves.push({
+          kind: LEAF_TEXT,
+          node: textNode,
+          fn: mod as () => unknown,
+          last: textNode.nodeValue ?? "",
+        });
+        child = textNode.nextSibling;
+        break;
+      }
+
+      case SLOT_CHILD: {
+        const childMods = getFactoryMods(mod);
+        if (childMods === undefined) return false;
+        if (getFactoryTag(mod) !== slot.child.tag) return false;
+        if (!child) return false;
+        if (!adoptTemplateLeaves(slot.child, childMods, child as Element, leaves)) return false;
+        child = child.nextSibling;
+        break;
+      }
+
+      case SLOT_NULL:
+        if (mod != null) return false;
+        break;
     }
   }
   return true;

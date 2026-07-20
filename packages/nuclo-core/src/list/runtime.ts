@@ -16,11 +16,11 @@
 import { createMarkerPair, createComment, safeRemoveChild, isNodeConnected, createDocumentFragment } from "../shared/dom";
 import { resolveRenderable } from "../shared/renderables";
 import { isHydrating, isSerializing, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration";
-import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsInput, ListItemsProvider } from "./types";
+import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsInput, ListItemsProvider, ListRenderedRow } from "./types";
 import type { UpdateScope } from "../update/scope";
 import { isBrowser } from "../shared/environment";
-import { getFactoryMods, getFactoryTag } from "../element/factory-meta";
-import { analyzeFactory, prepareSkeleton, instantiateTemplate, flushRowLeaves, type RowLeaf } from "./template";
+import { getFactoryMods, getFactoryTag, withMetadataOnlyFactories } from "../element/factory-meta";
+import { analyzeFactory, prepareSkeleton, instantiateTemplate, adoptTemplateLeaves, flushRowLeaves, type RowLeaf } from "./template";
 
 function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
   if (a === b) return true;
@@ -47,6 +47,7 @@ const listRuntimeByMarker = new WeakMap<Comment, ListRuntime<unknown, ElementTag
 const listMarkerFinalizer = typeof FinalizationRegistry !== "undefined"
   ? new FinalizationRegistry<WeakRef<Comment>>((ref) => { activeListRuntimes.delete(ref); })
   : null;
+let updateListFlushEpoch = 0;
 
 function registerListRuntime(startMarker: Comment, runtime: ListRuntime<unknown, ElementTagName>): void {
   const ref = new WeakRef(startMarker);
@@ -59,19 +60,35 @@ function normalizeItems<TItem>(items: ListItemsInput<TItem>): readonly TItem[] {
   return Array.isArray(items) ? items : Array.from(items);
 }
 
+function isRenderedRow<TTagName extends ElementTagName>(value: unknown): value is ListRenderedRow<TTagName> {
+  if (value == null || typeof value !== "object") return false;
+  const element = (value as { element?: unknown }).element;
+  return !!element && typeof Node !== "undefined" && element instanceof Node;
+}
+
 function renderItem<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>,
   item: TItem,
   index: number,
 ): ExpandedElement<TTagName> | null {
-  const result = runtime.renderItem(item, index);
   runtime.lastRenderLeaves = null;
+  runtime.lastRenderRefresh = null;
+  const template = runtime.template;
+  const canUseTemplate = isBrowser && !isHydrating() && !isSerializing();
 
   // Row-template fast path: rows from the same render function share their
   // structure, so after analyzing the first row every following row is a
   // skeleton clone + leaf patch instead of a full per-element build.
-  const template = runtime.template;
-  if (template !== null && isBrowser && !isHydrating() && !isSerializing()) {
+  const result = template && canUseTemplate
+    ? withMetadataOnlyFactories(() => runtime.renderItem(item, index))
+    : runtime.renderItem(item, index);
+
+  if (isRenderedRow<TTagName>(result)) {
+    runtime.lastRenderRefresh = typeof result.update === "function" ? result.update : null;
+    return result.element;
+  }
+
+  if (template !== null && canUseTemplate) {
     const mods = getFactoryMods(result);
     if (mods !== undefined) {
       if (template === undefined) {
@@ -81,6 +98,14 @@ function renderItem<TItem, TTagName extends ElementTagName>(
         if (tmpl && el) {
           const skeleton = (el as unknown as Node).cloneNode(true) as Element;
           prepareSkeleton(tmpl, skeleton);
+          const leaves: RowLeaf[] = [];
+          if (adoptTemplateLeaves(tmpl, mods, el as unknown as Element, leaves)) {
+            if (leaves.length > 0) runtime.lastRenderLeaves = leaves;
+          } else {
+            runtime.template = null;
+            runtime.lastRenderLeaves = null;
+            return el;
+          }
           runtime.template = { tmpl, skeleton };
         } else {
           runtime.template = null;
@@ -97,12 +122,26 @@ function renderItem<TItem, TTagName extends ElementTagName>(
       // abandoned clone is disconnected and unregistered — plain garbage.
       runtime.template = null;
       runtime.lastRenderLeaves = null;
+      const fallback = runtime.renderItem(item, index);
+      if (isRenderedRow<TTagName>(fallback)) {
+        runtime.lastRenderRefresh = typeof fallback.update === "function" ? fallback.update : null;
+        return fallback.element;
+      }
+      return resolveRenderable<TTagName>(fallback as never, runtime.host, index);
     } else if (template === undefined) {
       runtime.template = null;
+    } else {
+      runtime.template = null;
+      const fallback = runtime.renderItem(item, index);
+      if (isRenderedRow<TTagName>(fallback)) {
+        runtime.lastRenderRefresh = typeof fallback.update === "function" ? fallback.update : null;
+        return fallback.element;
+      }
+      return resolveRenderable<TTagName>(fallback as never, runtime.host, index);
     }
   }
 
-  return resolveRenderable<TTagName>(result, runtime.host, index);
+  return resolveRenderable<TTagName>(result as never, runtime.host, index);
 }
 
 /**
@@ -231,7 +270,14 @@ function buildAndInsert<TItem, TTagName extends ElementTagName>(
     const item = items[i];
     const element = renderItem(runtime, item, i);
     if (!element) continue;
-    targetRecords.push({ item, element, dyn: runtime.lastRenderLeaves });
+    const dyn = runtime.lastRenderLeaves;
+    targetRecords.push({
+      item,
+      element,
+      dyn,
+      refresh: runtime.lastRenderRefresh,
+      dynCreatedAt: dyn ? runtime.currentFlushEpoch : undefined,
+    });
     const node = element as unknown as Node;
     if (fragment) {
       fragment.appendChild(node);
@@ -266,6 +312,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
     }
     runtime.records = [];
     runtime.lastSyncedItems = [];
+    runtime.allRecordsCreatedAt = undefined;
     return;
   }
 
@@ -293,10 +340,12 @@ export function sync<TItem, TTagName extends ElementTagName>(
     const anchor: Node = oldEnd < oldLen ? (oldRecords[oldEnd].element as unknown as Node) : endMarker;
     if (oldEnd === oldLen) {
       buildAndInsert(runtime, parent, items, newStart, newEnd, anchor, oldRecords);
+      runtime.allRecordsCreatedAt = oldLen === 0 ? runtime.currentFlushEpoch : undefined;
     } else {
       const fresh: ListItemRecord<TItem, TTagName>[] = [];
       buildAndInsert(runtime, parent, items, newStart, newEnd, anchor, fresh);
       runtime.records = oldRecords.slice(0, oldStart).concat(fresh, oldRecords.slice(oldStart));
+      runtime.allRecordsCreatedAt = undefined;
     }
     runtime.lastSyncedItems = items.slice();
     return;
@@ -307,6 +356,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
   if (newStart === newEnd) {
     for (let i = oldStart; i < oldEnd; i++) removeRecord(oldRecords[i]);
     oldRecords.splice(oldStart, oldEnd - oldStart);
+    runtime.allRecordsCreatedAt = undefined;
     runtime.lastSyncedItems = items.slice();
     return;
   }
@@ -372,6 +422,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
     const fresh: ListItemRecord<TItem, TTagName>[] = [];
     buildAndInsert(runtime, parent, items, 0, newLen, endMarker, fresh);
     runtime.records = fresh;
+    runtime.allRecordsCreatedAt = runtime.currentFlushEpoch;
     runtime.lastSyncedItems = items.slice();
     return;
   }
@@ -421,7 +472,14 @@ export function sync<TItem, TTagName extends ElementTagName>(
         nullCount++;
         continue;
       }
-      windowRecords[j] = { item, element, dyn: runtime.lastRenderLeaves };
+      const dyn = runtime.lastRenderLeaves;
+      windowRecords[j] = {
+        item,
+        element,
+        dyn,
+        refresh: runtime.lastRenderRefresh,
+        dynCreatedAt: dyn ? runtime.currentFlushEpoch : undefined,
+      };
       const node = element as unknown as Node;
       if (!fragment) fragment = createDocumentFragment();
       if (fragment) {
@@ -465,6 +523,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
   }
   for (let i = oldEnd; i < oldLen; i++) merged[w++] = oldRecords[i];
   runtime.records = merged;
+  runtime.allRecordsCreatedAt = undefined;
   runtime.lastSyncedItems = items.slice();
 }
 
@@ -569,9 +628,16 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
 
   for (let i = 0; i < currentItems.length; i++) {
     const result = renderFn(currentItems[i], i);
-    const element = resolveRenderable<TTagName>(result, host, i);
+    const rendered = isRenderedRow<TTagName>(result) ? result : null;
+    const element = rendered
+      ? rendered.element
+      : resolveRenderable<TTagName>(result as never, host, i);
     if (element) {
-      records.push({ item: currentItems[i], element });
+      records.push({
+        item: currentItems[i],
+        element,
+        refresh: rendered && typeof rendered.update === "function" ? rendered.update : undefined,
+      });
     }
   }
 
@@ -624,17 +690,21 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
  */
 function releaseRuntime(runtime: ListRuntime<unknown, ElementTagName>): void {
   for (let i = 0; i < runtime.records.length; i++) {
-    const record = runtime.records[i] as { item: unknown; element: unknown; dyn?: unknown };
+    const record = runtime.records[i] as { item: unknown; element: unknown; dyn?: unknown; refresh?: unknown };
     record.element = null;
     record.item = null;
     record.dyn = null;
+    record.refresh = null;
+    delete (record as { dynCreatedAt?: number }).dynCreatedAt;
   }
   runtime.records = [];
   runtime.lastSyncedItems = [];
+  runtime.allRecordsCreatedAt = undefined;
 }
 
 export function updateListRuntimes(scope?: UpdateScope): void {
   const toDelete: WeakRef<Comment>[] = [];
+  updateListFlushEpoch++;
 
   for (const ref of activeListRuntimes) {
     const startMarker = ref.deref();
@@ -662,13 +732,22 @@ export function updateListRuntimes(scope?: UpdateScope): void {
     // Skip if outside update scope
     if (scope && !scope.contains(startMarker)) continue;
 
-    sync(runtime);
+    runtime.currentFlushEpoch = updateListFlushEpoch;
+    try {
+      sync(runtime);
+    } finally {
+      runtime.currentFlushEpoch = undefined;
+    }
 
     // Flush template rows' record-owned dynamic leaves. Rows built through
     // the normal path registered globally and are flushed by the notify
     // passes instead.
+    if (runtime.allRecordsCreatedAt === updateListFlushEpoch) continue;
     const records = runtime.records;
     for (let i = 0; i < records.length; i++) {
+      if (records[i].dynCreatedAt === updateListFlushEpoch) continue;
+      const refresh = records[i].refresh;
+      if (refresh) refresh();
       const dyn = records[i].dyn;
       if (dyn) flushRowLeaves(dyn);
     }

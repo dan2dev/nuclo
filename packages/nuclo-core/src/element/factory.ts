@@ -5,7 +5,7 @@
 import { applyNodeModifier, type NodeModifier } from "./modifiers";
 import { createElement, createElementNS, SVG_NAMESPACE } from "../shared/dom";
 import { claimElement, cleanupUnclaimedChildren } from "../hydration";
-import { setFactoryMeta } from "./factory-meta";
+import { isMetadataOnlyFactoryMode, setFactoryMeta } from "./factory-meta";
 
 export type { NodeModifier };
 
@@ -78,6 +78,14 @@ function createHtmlElementFactory<TTagName extends ElementTagName>(
   tagName: TTagName,
   ...modifiers: Array<NodeMod<TTagName> | NodeModFn<TTagName>>
 ): DetachedExpandedElementFactory<TTagName> {
+  if (isMetadataOnlyFactoryMode()) {
+    const factory = function(): ExpandedElement<TTagName> {
+      return null as unknown as ExpandedElement<TTagName>;
+    } as DetachedExpandedElementFactory<TTagName>;
+    setFactoryMeta(factory, tagName, modifiers);
+    return factory;
+  }
+
   const factory = function(_parent?: ExpandedElement<TTagName>, index = 0): ExpandedElement<TTagName> {
     const parentNode = _parent as unknown as Node | undefined;
     const claimed = parentNode ? claimElement(parentNode, tagName) as ExpandedElement<TTagName> | null : null;
@@ -103,6 +111,14 @@ function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
   tagName: TTagName,
   ...modifiers: Array<unknown>
 ): DetachedSVGElementFactory<TTagName> {
+  if (isMetadataOnlyFactoryMode()) {
+    const factory = function(): SVGElementTagNameMap[TTagName] {
+      return null as unknown as SVGElementTagNameMap[TTagName];
+    } as DetachedSVGElementFactory<TTagName>;
+    setFactoryMeta(factory, tagName, modifiers);
+    return factory;
+  }
+
   return function(_parent?, index = 0): SVGElementTagNameMap[TTagName] {
     const parentNode = _parent as unknown as Node | undefined;
     const claimed = parentNode ? claimElement(parentNode, tagName) as ExpandedElement | null : null;
