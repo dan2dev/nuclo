@@ -66,6 +66,24 @@ function isRenderedRow<TTagName extends ElementTagName>(value: unknown): value i
   return !!element && typeof Node !== "undefined" && element instanceof Node;
 }
 
+/**
+ * Renders a row through the un-templated path and normalizes the result. Used
+ * whenever a row's shape doesn't match (or no longer matches) the list's
+ * active template — the caller has already reset `runtime.template`.
+ */
+function rebuildRowNormally<TItem, TTagName extends ElementTagName>(
+  runtime: ListRuntime<TItem, TTagName>,
+  item: TItem,
+  index: number,
+): ExpandedElement<TTagName> | null {
+  const fallback = runtime.renderItem(item, index);
+  if (isRenderedRow<TTagName>(fallback)) {
+    runtime.lastRenderRefresh = typeof fallback.update === "function" ? fallback.update : null;
+    return fallback.element;
+  }
+  return resolveRenderable<TTagName>(fallback as never, runtime.host, index);
+}
+
 function renderItem<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>,
   item: TItem,
@@ -120,24 +138,14 @@ function renderItem<TItem, TTagName extends ElementTagName>(
       }
       // Heterogeneous rows: deactivate and rebuild this row normally. The
       // abandoned clone is disconnected and unregistered — plain garbage.
+      // (lastRenderLeaves is already null from the top of this call.)
       runtime.template = null;
-      runtime.lastRenderLeaves = null;
-      const fallback = runtime.renderItem(item, index);
-      if (isRenderedRow<TTagName>(fallback)) {
-        runtime.lastRenderRefresh = typeof fallback.update === "function" ? fallback.update : null;
-        return fallback.element;
-      }
-      return resolveRenderable<TTagName>(fallback as never, runtime.host, index);
+      return rebuildRowNormally(runtime, item, index);
     } else if (template === undefined) {
       runtime.template = null;
     } else {
       runtime.template = null;
-      const fallback = runtime.renderItem(item, index);
-      if (isRenderedRow<TTagName>(fallback)) {
-        runtime.lastRenderRefresh = typeof fallback.update === "function" ? fallback.update : null;
-        return fallback.element;
-      }
-      return resolveRenderable<TTagName>(fallback as never, runtime.host, index);
+      return rebuildRowNormally(runtime, item, index);
     }
   }
 
