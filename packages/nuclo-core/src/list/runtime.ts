@@ -98,7 +98,7 @@ function renderItem<TItem, TTagName extends ElementTagName>(
   // structure, so after analyzing the first row every following row is a
   // skeleton clone + leaf patch instead of a full per-element build.
   const result = template && canUseTemplate
-    ? withMetadataOnlyFactories(() => runtime.renderItem(item, index))
+    ? withMetadataOnlyFactories(runtime.renderItem, item, index)
     : runtime.renderItem(item, index);
 
   if (isRenderedRow<TTagName>(result)) {

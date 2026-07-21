@@ -61,12 +61,17 @@ export function isMetadataOnlyFactoryMode(): boolean {
   return metadataOnlyFactoryDepth > 0;
 }
 
-export function withMetadataOnlyFactories<T>(fn: () => T): T {
+/**
+ * Takes the render function and its two args directly (rather than a `() =>`
+ * thunk) so the hot per-row call in list/runtime.ts doesn't allocate a
+ * closure just to defer a single call.
+ */
+export function withMetadataOnlyFactories<TItem, T>(fn: (item: TItem, index: number) => T, item: TItem, index: number): T {
   const isOutermost = metadataOnlyFactoryDepth === 0;
   metadataOnlyFactoryDepth++;
   if (isOutermost) metadataOnlyPoolIndex = 0;
   try {
-    return fn();
+    return fn(item, index);
   } finally {
     metadataOnlyFactoryDepth--;
   }
