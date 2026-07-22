@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "BASE_URL=/ bun --tsconfig-override tsconfig.bun.json src/server.ts",
     "clean": "rm -f .*.bun-build",
-    "build": "bun run clean && tsc && vite build && bun build-server.ts",
+    "build": "bun run clean && bun run update:stats && tsc && vite build && bun build-server.ts",
     "update:stats": "bun scripts/update-doc-stats.ts",
     "start": "bun start.ts",
     "preview": "bun run build && bun run start",
