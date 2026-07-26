@@ -5,7 +5,7 @@ declare global {
   // SVG attribute types that accept string values for all SVG properties
   // This is needed because SVG DOM properties like 'width' are SVGAnimatedLength,
   // but we set them as strings using setAttribute()
-  // Supports reactive values (functions) for dynamic attributes
+  // Supports state-dependent values (functions) for dynamic attributes
   export type SVGAttributes = {
     // Common SVG attributes
     width?: SVGAttributeValue<string | number>;
@@ -70,7 +70,7 @@ declare global {
     "clip-path"?: SVGAttributeValue<string>;
     mask?: SVGAttributeValue<string>;
 
-    // Allow any other string attributes (including reactive functions)
+    // Allow any other string attributes (including state-dependent functions)
     // Using a more restrictive type to maintain type safety
   } & {
     [K in string]?: SVGAttributeValue;

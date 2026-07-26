@@ -26,7 +26,8 @@ declare global {
 
   /**
    * Hydrates an existing server-rendered DOM tree by walking it in parallel with
-   * the component tree, reusing existing nodes and re-attaching reactivity.
+   * the component tree, reusing existing nodes and re-registering their
+   * state-dependent values for future `update()` calls.
    *
    * @param nodeModFn The NodeModFn to hydrate (same component used for SSR)
    * @param parent The parent element containing the SSR HTML (defaults to document.body)

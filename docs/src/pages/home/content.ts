@@ -5,7 +5,7 @@ export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · zero dependencies`;
 export const HERO_TITLE_LINES = ["Build explicit", "interfaces with", "nuclo."];
 
 export const HERO_DESC =
-  "Nuclo is a tiny DOM framework with reactive UI bindings, mutable state, and explicit updates. Create interfaces with builder functions, mutate regular state, and call update() to reevaluate them. No proxies, no virtual DOM, no hidden re-renders.";
+  "Nuclo is a tiny, type-safe DOM framework with plain mutable state and explicit updates. Create interfaces with builder functions, change regular state, and call update() to reevaluate them. No proxies, signals, or virtual DOM.";
 
 export const INSTALL_CMD = "npm install nuclo";
 
@@ -74,7 +74,7 @@ export const PHILOSOPHY_POINTS = [
   {
     num: "01",
     title: "Explicit is better than implicit",
-    desc: "No reactive proxies tracking your every move. You mutate, you call update(). Clear causality, predictable behaviour.",
+    desc: "No proxies tracking your every move. You mutate, you call update(). Clear causality, predictable behaviour.",
   },
   {
     num: "02",
@@ -161,7 +161,7 @@ export const COMPARISON_COLS: {
     ],
   },
   {
-    name: "Reactive proxies",
+    name: "Signals & proxies",
     sub: "signals · stores · effects",
     items: [
       { good: false, text: "Wraps your state in proxies and subscriptions" },
