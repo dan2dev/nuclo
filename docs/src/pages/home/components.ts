@@ -248,7 +248,7 @@ export function PipelineSection() {
       s.container,
       div(s.sectionLabel, { className: "rv" }, "How it works"),
       h2(s.sectionTitle, { className: "rv" }, "One explicit cycle."),
-      p(s.sectionSub, { className: "rv" }, "No reactivity graph, no scheduler, no surprises. A single predictable path from your data to the screen."),
+      p(s.sectionSub, { className: "rv" }, "Reactive bindings, no dependency graph, no scheduler. You decide when they run - a single predictable path from your data to the screen."),
       div(
         hs.pipe,
         PipeNode(PIPELINE_STEPS[0], "rv rv-d1"),

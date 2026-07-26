@@ -518,11 +518,11 @@ describe("Multi-section landing page", () => {
   ];
 
   const faqs = [
-    { q: "What is Nuclo?", a: "Nuclo is a lightweight imperative DOM framework for building reactive user interfaces." },
+    { q: "What is Nuclo?", a: "Nuclo is a lightweight DOM framework with mutable state and explicit updates." },
     { q: "Does Nuclo support TypeScript?", a: "Yes, Nuclo is written in TypeScript and provides full type definitions." },
     { q: "Can I use Nuclo with SSR?", a: "Absolutely! Nuclo has built-in SSR support via renderToString." },
     { q: "Is Nuclo production-ready?", a: "Yes, Nuclo is used in production by many companies worldwide." },
-    { q: "How does Nuclo compare to React?", a: "Nuclo is significantly smaller and uses an imperative model that avoids virtual DOM overhead." },
+    { q: "How does Nuclo compare to React?", a: "Nuclo is significantly smaller and has no virtual DOM to diff." },
   ];
 
   const footerColumns = [
@@ -705,7 +705,7 @@ describe("Multi-section landing page", () => {
     expect(html).toContain("Can I use Nuclo with SSR?");
     expect(html).toContain("Is Nuclo production-ready?");
     expect(html).toContain("How does Nuclo compare to React?");
-    expect(html).toContain("Nuclo is a lightweight imperative DOM framework");
+    expect(html).toContain("Nuclo is a lightweight DOM framework");
     expect(html).toContain("Absolutely! Nuclo has built-in SSR support");
     expect(html).toContain("Nuclo is significantly smaller");
   });
