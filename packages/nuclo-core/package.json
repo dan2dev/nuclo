@@ -2,12 +2,11 @@
 	"name": "nuclo",
 	"private": false,
 	"version": "0.2.18",
-	"description": "Lightweight DOM library with reactive UI bindings, mutable state, and explicit updates — global tag builders, SSR, hydration, and atomic CSS, no virtual DOM, no compiler.",
+	"description": "Lightweight, type-safe DOM library with plain mutable state and explicit updates — global tag builders, SSR, hydration, and atomic CSS, no virtual DOM, no compiler.",
 	"license": "MIT",
 	"author": "Danilo Celestino de Castro (https://github.com/dan2dev)",
 	"keywords": [
 		"dom",
-		"reactive",
 		"ui",
 		"ssr",
 		"hydration",

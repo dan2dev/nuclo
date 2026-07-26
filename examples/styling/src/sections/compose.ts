@@ -8,7 +8,7 @@ const chip = css({ py: 10, px: 16, rounded: "md", text: 13, weight: 600, align: 
 const base = css({ py: 10, px: 16, rounded: "md", text: 13, weight: 600, bg: "surfaceMuted", color: "text", border: "1px solid", borderColor: "border", cursor: "pointer" });
 const active = css({ bg: "primary", color: "#fff", borderColor: "primary" });
 
-// Interactive: the button's className is a reactive function returning a cx() result.
+// Interactive: the button's className is a function returning a cx() result, reevaluated on update().
 let isActive = false;
 
 export const composeSection = feature(

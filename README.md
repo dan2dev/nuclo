@@ -1,14 +1,14 @@
 # nuclo
 
-**A lightweight DOM framework with reactive UI bindings, mutable state, and explicit updates.**
+**A lightweight, type-safe JS/TS DOM framework with plain mutable state and explicit updates.**
 
-Create elements with plain functions, and pass a function anywhere a value depends on state — that registers a reactive binding Nuclo can reevaluate later. Mutate regular JavaScript values directly, then call `update()` when you want Nuclo to synchronize the DOM. No virtual DOM, no proxies, and no automatic state tracking.
+Create elements with plain functions, and pass a function anywhere a value depends on state — that function is registered so Nuclo can evaluate it again later. Change regular JavaScript values directly, then call `update()` when you want Nuclo to synchronize the DOM. No virtual DOM, no proxies, no signals, and no automatic state tracking.
 
 Nuclo's workflow has three parts:
 
-1. **Create the UI with builder functions** — text, attributes, conditions, and lists can be passed a function whenever they depend on state; this registers a reactive binding.
+1. **Create the UI with builder functions** — text, attributes, conditions, and lists can be passed a function whenever they depend on state; this registers the function as a state-dependent value.
 2. **Mutate regular JavaScript state** — no signals, no proxies, no wrapped values. `count++` is just `count++`. Mutating state does not, by itself, touch the DOM.
-3. **Call `update()`** — this explicitly triggers synchronization: Nuclo reevaluates the bindings registered in step 1 and patches the real DOM wherever a result changed.
+3. **Call `update()`** — this explicitly starts synchronization: Nuclo reevaluates the state-dependent values registered in step 1 and applies changed results to the real DOM.
 
 ```ts
 import 'nuclo';
@@ -28,13 +28,13 @@ render(counter, document.body);
 
 ## Why nuclo?
 
-- **Reactive UI Bindings** – Pass a function for any text, attribute, condition, or list that depends on state; Nuclo can reevaluate it later
+- **State-Dependent Values** – Pass a function for any text, attribute, condition, or list that depends on state; Nuclo can evaluate it again later
 - **Explicit and Predictable** – Reevaluation doesn't happen on mutation — you trigger it yourself with a simple `update()` call
 - **Real DOM, No Virtual Layer** – Nuclo creates and updates real DOM nodes directly; there's no virtual DOM to diff
 - **Tiny Footprint** – ~13 KB gzipped, zero dependencies
 - **Global Tag Builders** – Natural API with global functions for all HTML and SVG elements
 - **TypeScript-First** – Full type definitions for all 175 HTML and SVG builders
-- **Targeted DOM Updates** – `update()` re-runs registered bindings and only touches DOM where values changed
+- **Targeted DOM Updates** – `update()` re-runs registered state-dependent values and only touches DOM where values changed
 - **Atomic Styling** – Built-in `css()` / `createCss()` with TypeScript autocomplete, theming, and SSR CSS collection
 - **Server-Side Rendering** – `renderToString()` + `hydrate()` with a lightweight DOM polyfill
 
@@ -313,12 +313,12 @@ render(app, document.body);
 **The mental model:**
 
 1. Create the UI with builder functions — `h1(...)`, `when()`, `list()`.
-2. Use functions for values that depend on state — `h1(() => \`Count: ${count}\`)`. This registers a reactive binding.
+2. Use functions for values that depend on state — `h1(() => \`Count: ${count}\`)`. This registers a state-dependent value.
 3. Mutate regular JavaScript state — `count++`.
 4. Call `update()`.
-5. Nuclo reevaluates registered bindings and applies the changes to the existing DOM.
+5. Nuclo reevaluates the registered state-dependent values and applies the changes to the existing DOM.
 
-State mutation and the `update()` call are plain JavaScript: you write `count++` and call `update()` yourself. Nuclo does not watch your variables — nothing reevaluates until `update()` runs. This is explicitly triggered reactivity, not automatic reactivity: the binding from step 2 stays reactive (it can be reevaluated), but only `update()` starts that reevaluation.
+State mutation and the `update()` call are plain JavaScript: you write `count++` and call `update()` yourself. Nuclo does not watch your variables — nothing reevaluates until `update()` runs. The function from step 2 stays registered so it can be evaluated again, but only `update()` starts that evaluation.
 
 ### 1. **Explicit Updates**
 
@@ -361,7 +361,7 @@ user.name = 'Alice'; // triggers update
 
 ### 2. **Dynamic Functions**
 
-Zero-arg functions become reactive bindings: Nuclo keeps them registered and can reevaluate them, but only when you call `update()` — mutating the state they read does nothing on its own:
+Zero-arg functions become state-dependent values: Nuclo keeps them registered and can evaluate them again, but only when you call `update()` — mutating the state they read does nothing on its own:
 
 ```ts
 let count = 0;
@@ -736,18 +736,18 @@ These markers identify conditional and list boundaries in the DOM.
 ### Gotchas
 
 **Parameter count decides what a function modifier means.**
-A modifier with **zero declared parameters** is treated as reactive text (or a reactive `cn()` className) and is called with no arguments. A modifier with **one or more declared parameters** is a node-modifier function receiving `(element, index)`. Default and rest parameters don't count as declared parameters (`fn.length` is 0), so these are all treated as *reactive text*, not node modifiers:
+A modifier with **zero declared parameters** is treated as dynamic text (or a dynamic `cn()` className) and is called with no arguments. A modifier with **one or more declared parameters** is a node-modifier function receiving `(element, index)`. Default and rest parameters don't count as declared parameters (`fn.length` is 0), so these are all treated as *dynamic text*, not node modifiers:
 
 ```ts
-div((el = fallback) => el.id);   // reactive text — el is undefined!
-div((...args) => args[0]);       // reactive text — args is empty!
+div((el = fallback) => el.id);   // dynamic text — el is undefined!
+div((...args) => args[0]);       // dynamic text — args is empty!
 div((el) => el.id = "x");        // node modifier — el is the element ✓
 ```
 
 If a modifier needs the element, declare it as a plain required parameter.
 
-**Detached nodes lose reactivity.**
-Reactive registrations (text, attributes, `list()`, `when()`) are pruned for any node that is disconnected from the DOM when `update()` runs. Re-attaching the node later does **not** restore them. Keep-alive and portal-style patterns should re-render content after re-attaching instead of moving live subtrees between updates.
+**Detached nodes stop updating.**
+Registered state-dependent values (text, attributes, `list()`, `when()`) are pruned for any node that is disconnected from the DOM when `update()` runs. Re-attaching the node later does **not** restore them. Keep-alive and portal-style patterns should rebuild content after re-attaching instead of moving live subtrees between updates.
 
 ---
 
