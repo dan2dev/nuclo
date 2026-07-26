@@ -73,6 +73,10 @@ export const DOC_GROUPS = [
     title: "Patterns",
     sections: ["components", "computed", "async", "best-practices"],
   },
+  {
+    title: "FAQ",
+    sections: ["faq"],
+  },
 ];
 
 export const DOC_SECTIONS: DocSection[] = [
@@ -83,13 +87,22 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Introduction",
     title: "Overview",
     content: `
-      <p>Nuclo is a lightweight imperative DOM framework. You write plain functions that build and return DOM nodes. When your state changes, you call <code>update()</code>-and Nuclo syncs only what needs to change.</p>
-      <p>There are no proxies, no virtual DOM, no hidden subscriptions. You are always in control.</p>
+      <p>Nuclo is a lightweight DOM framework with reactive UI bindings, mutable state, and explicit updates. You write plain functions that build DOM elements, and pass functions for text, attributes, conditions, and lists whenever they depend on state-that registers a reactive binding. When state changes, you call <code>update()</code>, and Nuclo reevaluates the registered bindings and syncs only what needs to change.</p>
+      <p>There are no proxies, no virtual DOM, no hidden subscriptions. You are always in control of when reevaluation happens.</p>
+      <h3>The mental model</h3>
+      <ol>
+        <li>Create the UI with builder functions.</li>
+        <li>Use functions for values that depend on state.</li>
+        <li>Mutate regular JavaScript state.</li>
+        <li>Call <code>update()</code>.</li>
+        <li>Nuclo reevaluates the registered bindings and applies the changes to the existing DOM.</li>
+      </ol>
+      <p>State mutation and the <code>update()</code> call (steps 3-4) are plain JavaScript: you write <code>count++</code> and call <code>update()</code> yourself. Nuclo never watches your variables; nothing reevaluates until <code>update()</code> runs. This is explicitly triggered reactivity rather than automatically triggered reactivity-the binding from step 2 stays reactive, but only <code>update()</code> starts its reevaluation.</p>
       <h3>Core philosophy</h3>
       <p>Nuclo keeps state management explicit: it trusts you to know when something changed, and acts <em>only</em> when you say so.</p>
       <ul>
         <li><strong>Explicit updates</strong> - call <code>update()</code> after you mutate state.</li>
-        <li><strong>Dynamic functions</strong> - pass <code>() =&gt; value</code> for text, attributes, styles, and class names; Nuclo re-evaluates them on each update.</li>
+        <li><strong>Reactive bindings</strong> - pass <code>() =&gt; value</code> for text, attributes, styles, and class names; Nuclo re-evaluates them on each update.</li>
         <li><strong>Plain functions</strong> - components are just functions. No classes, no decorators, no lifecycle hooks.</li>
       </ul>
     `,
@@ -556,6 +569,36 @@ button(
       <div class="docs-callout">
         <strong>Tip:</strong> Treat <code>update()</code> like a commit. Batch all your mutations, then call it once to flush the DOM.
       </div>
+    `,
+  },
+
+  // ── FAQ ───────────────────────────────────────────────────────────────────
+  {
+    id: "faq",
+    group: "FAQ",
+    groupTitle: "FAQ",
+    title: "Frequently Asked Questions",
+    content: `
+      <h3>Is Nuclo reactive?</h3>
+      <p>Yes, at the UI-binding layer. Text, attributes, conditions, lists, and other state-dependent values can stay registered for future reevaluation-that's a reactive binding. The difference from frameworks like Vue or Solid is how reevaluation begins: changing state does not automatically trigger it. Call <code>update()</code> when Nuclo should reevaluate those bindings and sync the DOM. It's reactivity you trigger explicitly, not reactivity that runs automatically.</p>
+
+      <h3>How does Nuclo update the UI?</h3>
+      <p>Values that depend on state are provided as functions-<code>() =&gt; \`Count: \${count}\`</code> for text, or a function for an attribute, a <code>when()</code> condition, or a <code>list()</code> provider. Change your JavaScript state normally, then call <code>update()</code>. Nuclo reevaluates the registered bindings and applies the results to the existing DOM nodes.</p>
+
+      <h3>Does changing state update the UI automatically?</h3>
+      <p>No. Setting a variable or mutating an object does nothing on its own. The DOM stays exactly as it was until you call <code>update()</code>. This means several mutations can happen first, and the DOM is only touched once, when you're ready.</p>
+
+      <h3>Does Nuclo use signals or proxies?</h3>
+      <p>No. State is regular JavaScript data-variables, objects, arrays, maps, sets. Nuclo doesn't wrap it in signals, proxies, or special setter functions. Reactive bindings are registered separately (when you pass a function to a builder), and <code>update()</code> is what reevaluates them.</p>
+
+      <h3>Does Nuclo track dependencies between state and bindings?</h3>
+      <p>No. Nuclo does not build a dependency graph connecting individual state properties to individual bindings, the way signal-based systems do. Instead, <code>update()</code> reevaluates every binding that's currently registered (or, with <code>scope()</code>, every binding within a given root) and only writes to the DOM where the result changed.</p>
+
+      <h3>Does <code>update()</code> re-render the whole app?</h3>
+      <p>No. <code>update()</code> re-evaluates the reactive bindings, <code>when()</code> conditions, and <code>list()</code> providers that are currently registered, and only writes to the DOM where a value actually changed. There is no virtual tree to rebuild and no full-app re-render. See <a href="#api-update">update()</a> for the exact set of steps it runs.</p>
+
+      <h3>Does Nuclo use a virtual DOM?</h3>
+      <p>No. Builders create real <code>Element</code>/<code>Text</code> nodes up front, and <code>update()</code> patches those same real nodes in place-there is no virtual tree to diff. You still express state-dependent values as plain functions; Nuclo performs the underlying DOM property, attribute, text, and child-node updates.</p>
     `,
   },
 ];

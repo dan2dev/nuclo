@@ -5,7 +5,7 @@ export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · zero dependencies`;
 export const HERO_TITLE_LINES = ["Build explicit", "interfaces with", "nuclo."];
 
 export const HERO_DESC =
-  "Nuclo is a tiny imperative DOM framework. Build interfaces from plain functions and mutable state. No proxies, no virtual DOM, no hidden re-renders.";
+  "Nuclo is a tiny DOM framework with reactive UI bindings, mutable state, and explicit updates. Create interfaces with builder functions, mutate regular state, and call update() to reevaluate them. No proxies, no virtual DOM, no hidden re-renders.";
 
 export const INSTALL_CMD = "npm install nuclo";
 

@@ -11,10 +11,10 @@ export const SEO_BASE_URL = "https://nuclo.dev/";
 
 export const routeMeta: Record<RoutePath, PageMeta> = {
   home: {
-    title: "Nuclo - Lightweight Imperative DOM Framework",
+    title: "Nuclo - Reactive DOM Framework with Explicit Updates",
     description:
-      "A lightweight imperative DOM framework. Mutate plain state, call update()-Nuclo syncs the DOM. No proxies, no virtual DOM, no magic.",
-    keywords: "nuclo, imperative dom framework, explicit updates, javascript, typescript, ui framework, lightweight",
+      "A lightweight DOM framework with reactive UI bindings, mutable state, and explicit updates. Build the UI with functions, mutate plain state, call update()-Nuclo syncs the DOM. No proxies, no virtual DOM, no magic.",
+    keywords: "nuclo, dom framework, reactive bindings, explicit updates, mutable state, javascript, typescript, ui framework, lightweight",
     type: "WebPage",
   },
   docs: {
@@ -80,7 +80,7 @@ export function generateStructuredData(route: string): object[] {
     "@id": `${SEO_BASE_URL}#website`,
     name: "Nuclo",
     url: SEO_BASE_URL,
-    description: "A lightweight imperative DOM framework",
+    description: "A lightweight DOM framework with reactive UI bindings, mutable state, and explicit updates",
   };
 
   const page: Record<string, unknown> = {

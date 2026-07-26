@@ -1,8 +1,14 @@
 # nuclo
 
-**A lightweight, imperative DOM framework with explicit updates.**
+**A lightweight DOM framework with reactive UI bindings, mutable state, and explicit updates.**
 
-Build interactive UIs with plain functions, mutable JavaScript objects, and explicit `update()` calls. Nuclo is imperative: nothing re-renders until you call `update()`. No virtual DOM, no proxies, and no hidden state tracking.
+Create elements with plain functions, and pass a function anywhere a value depends on state — that registers a reactive binding Nuclo can reevaluate later. Mutate regular JavaScript values directly, then call `update()` when you want Nuclo to synchronize the DOM. No virtual DOM, no proxies, and no automatic state tracking.
+
+Nuclo's workflow has three parts:
+
+1. **Create the UI with builder functions** — text, attributes, conditions, and lists can be passed a function whenever they depend on state; this registers a reactive binding.
+2. **Mutate regular JavaScript state** — no signals, no proxies, no wrapped values. `count++` is just `count++`. Mutating state does not, by itself, touch the DOM.
+3. **Call `update()`** — this explicitly triggers synchronization: Nuclo reevaluates the bindings registered in step 1 and patches the real DOM wherever a result changed.
 
 ```ts
 import 'nuclo';
@@ -22,12 +28,13 @@ render(counter, document.body);
 
 ## Why nuclo?
 
-- **Explicit and Predictable** – You control when updates happen with a simple `update()` call
-- **Direct DOM Manipulation** – Work directly with the DOM, no virtual layer in between
-- **Tiny Footprint** – ~10 KB gzipped, zero dependencies
+- **Reactive UI Bindings** – Pass a function for any text, attribute, condition, or list that depends on state; Nuclo can reevaluate it later
+- **Explicit and Predictable** – Reevaluation doesn't happen on mutation — you trigger it yourself with a simple `update()` call
+- **Real DOM, No Virtual Layer** – Nuclo creates and updates real DOM nodes directly; there's no virtual DOM to diff
+- **Tiny Footprint** – ~13 KB gzipped, zero dependencies
 - **Global Tag Builders** – Natural API with global functions for all HTML and SVG elements
 - **TypeScript-First** – Full type definitions for all 175 HTML and SVG builders
-- **Targeted DOM Updates** – `update()` re-runs dynamic bindings and only touches DOM where values changed
+- **Targeted DOM Updates** – `update()` re-runs registered bindings and only touches DOM where values changed
 - **Atomic Styling** – Built-in `css()` / `createCss()` with TypeScript autocomplete, theming, and SSR CSS collection
 - **Server-Side Rendering** – `renderToString()` + `hydrate()` with a lightweight DOM polyfill
 
@@ -303,6 +310,16 @@ render(app, document.body);
 
 ## Core Concepts
 
+**The mental model:**
+
+1. Create the UI with builder functions — `h1(...)`, `when()`, `list()`.
+2. Use functions for values that depend on state — `h1(() => \`Count: ${count}\`)`. This registers a reactive binding.
+3. Mutate regular JavaScript state — `count++`.
+4. Call `update()`.
+5. Nuclo reevaluates registered bindings and applies the changes to the existing DOM.
+
+State mutation and the `update()` call are plain JavaScript: you write `count++` and call `update()` yourself. Nuclo does not watch your variables — nothing reevaluates until `update()` runs. This is explicitly triggered reactivity, not automatic reactivity: the binding from step 2 stays reactive (it can be reevaluated), but only `update()` starts that reevaluation.
+
 ### 1. **Explicit Updates**
 
 nuclo doesn't auto-detect changes. You call `update()` when ready:
@@ -344,7 +361,7 @@ user.name = 'Alice'; // triggers update
 
 ### 2. **Dynamic Functions**
 
-Zero-arg functions become dynamic bindings that re-run when you call `update()`:
+Zero-arg functions become reactive bindings: Nuclo keeps them registered and can reevaluate them, but only when you call `update()` — mutating the state they read does nothing on its own:
 
 ```ts
 let count = 0;

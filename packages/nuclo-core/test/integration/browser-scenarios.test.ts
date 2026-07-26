@@ -581,8 +581,8 @@ describe("Accordion / FAQ", () => {
   let openIndex: number | null;
 
   const faqItems = [
-    { question: "What is Nuclo?", answer: "Nuclo is a lightweight imperative DOM framework." },
-    { question: "How does reactivity work?", answer: "By calling update() to re-render reactive parts." },
+    { question: "What is Nuclo?", answer: "Nuclo is a lightweight DOM framework with mutable state and explicit updates." },
+    { question: "How do updates work?", answer: "Change state, then call update() to sync the affected DOM." },
     { question: "Is it SSR-compatible?", answer: "Yes, via the SSR utilities." },
     { question: "What browsers are supported?", answer: "All modern browsers with ES2015+." },
     { question: "Is it production ready?", answer: "Yes, it is stable and tested thoroughly." },
