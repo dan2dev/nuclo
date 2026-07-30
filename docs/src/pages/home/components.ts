@@ -12,7 +12,7 @@ import {
   BENCHMARK_SOURCE_URL, BENCHMARK_SOURCE_LABEL, BENCHMARK_ENTRIES,
   CTA_TITLE, CTA_SUB,
 } from "./content.ts";
-import { CodeBlock, highlightCode, terminalCodeTokenStyle } from "../../components/CodeBlock.ts";
+import { CodeBlock, highlightCode, codeTokenStyle, terminalCodeTokenStyle } from "../../components/CodeBlock.ts";
 import { copyText } from "../../components/clipboard.ts";
 import {
   GitHubSvg, CheckIcon, MinusIcon, CopyIcon,
@@ -58,47 +58,27 @@ function HeroDemoCard() {
 
   // Live counter state inside the demo
   let count = 0;
-  let updateCalls = 0;
-
-  function bump(fn: () => void) {
-    return () => { fn(); updateCalls++; update(); };
-  }
 
   function CounterPreview() {
     return div(
       css({ textAlign: "center", width: "100%" }),
       div(
         fx.gradientText,
-        css({ fontSize: "5.2rem", fontWeight: "700", lineHeight: "1", marginBottom: "6px", fontVariantNumeric: "tabular-nums" }),
+        css({ fontSize: "5.2rem", fontWeight: "700", lineHeight: "1", marginBottom: "26px", fontVariantNumeric: "tabular-nums" }),
         () => String(count),
-      ),
-      div(
-        css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", color: colors.textMuted, letterSpacing: "0", marginBottom: "26px" }),
-        "COUNT",
       ),
       div(
         css({ display: "flex", gap: "10px", justifyContent: "center" }),
         button(
           css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
           "−",
-          on("click", bump(() => { count--; })),
+          on("click", () => { count--; update(); }),
         ),
         button(
           css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid transparent`, color: "#fff", backgroundColor: colors.primary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { backgroundColor: colors.primaryHover } }),
-          "Reset",
-          on("click", bump(() => { count = 0; })),
-        ),
-        button(
-          css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
           "+",
-          on("click", bump(() => { count++; })),
+          on("click", () => { count++; update(); }),
         ),
-      ),
-      div(
-        hs.demoMeta,
-        span(css({ color: colors.primary }), "update()"),
-        span(" calls: "),
-        span(() => String(updateCalls)),
       ),
     );
   }
@@ -510,8 +490,9 @@ export function ExamplesTeaserSection() {
       ),
       div(
         hs.teaserCodePane,
-        { class: () => cx(hs.teaserCodePane, activeTab === "code" ? null : hs.paneHidden).className },
-        { innerHTML: `<pre class="${hs.preWrap.className}">${code}</pre>` },
+        codeTokenStyle,
+        { class: () => cx(hs.teaserCodePane, codeTokenStyle, activeTab === "code" ? null : hs.paneHidden).className },
+        { innerHTML: `<pre class="${hs.preWrap.className}">${highlightCode(code)}</pre>` },
       ),
     );
   }

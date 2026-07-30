@@ -73,8 +73,6 @@ export const hs = {
 
   demoCodePane: css({ padding: "20px 22px", backgroundColor: "var(--terminal-bg)", color: "var(--terminal-text)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8rem", lineHeight: "1.7", overflowX: "auto", minHeight: "270px" }),
 
-  demoMeta: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", color: colors.textMuted, marginTop: "22px" }),
-
   // Philosophy section
   philosophySection: css({ position: "relative", overflow: "hidden", padding: "64px 0", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, medium: { padding: "96px 0" } }),
 
