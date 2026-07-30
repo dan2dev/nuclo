@@ -19,53 +19,65 @@ export const HERO_CODE = `import 'nuclo'
 
 let count = 0
 
-const counter = div(
-  span(() => \`Count: \${count}\`),
-  button(
-    "Increment",
-    on("click", () => {
-      count++
-      update()
-    })
+export function Counter() {
+  return div(
+    p(() => String(count)),
+    button("-", on("click", () => { count--; update() })),
+    button("+", on("click", () => { count++; update() })),
   )
-)`;
+}`;
 
-export const COUNTER_TEASER_CODE = `<span class="kw">import</span> <span class="st">'nuclo'</span>
+export const COUNTER_TEASER_CODE = `import 'nuclo'
 
-<span class="kw">let</span> <span class="pr">count</span> <span class="pt">=</span> <span class="nm">0</span>
+let count = 0
 
-<span class="kw">export function</span> <span class="fn">Counter</span><span class="pt">() {</span>
-  <span class="kw">return</span> <span class="fn">div</span><span class="pt">(</span>
-    <span class="fn">span</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pr">count</span><span class="pt">),</span>
-    <span class="fn">button</span><span class="pt">(</span>
-      <span class="st">"+"</span><span class="pt">,</span>
-      <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pt">{</span>
-        <span class="pr">count</span><span class="pt">++</span>
-        <span class="fn">update</span><span class="pt">()</span>
-      <span class="pt">})</span>
-    <span class="pt">)</span>
-  <span class="pt">)</span>
-<span class="pt">}</span>`;
+export function Counter() {
+  return div(
+    span(() => count),
+    button("-", on("click", () => { count--; update() })),
+    button("Reset", on("click", () => { count = 0; update() })),
+    button("+", on("click", () => { count++; update() })),
+  )
+}`;
 
-export const TODO_TEASER_CODE = `<span class="kw">import</span> <span class="st">'nuclo'</span>
+export const TODO_TEASER_CODE = `import 'nuclo'
 
-<span class="kw">let</span> <span class="pr">todos</span><span class="pt">:</span> <span class="ty">string</span><span class="pt">[] =</span> <span class="pt">[]</span>
-<span class="kw">let</span> <span class="pr">input</span> <span class="pt">=</span> <span class="st">''</span>
+interface Todo {
+  text: string
+  done: boolean
+}
 
-<span class="kw">export function</span> <span class="fn">TodoList</span><span class="pt">() {</span>
-  <span class="kw">return</span> <span class="fn">div</span><span class="pt">(</span>
-    <span class="fn">input</span><span class="pt">(</span>
-      <span class="pt">{</span> <span class="pr">value</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pr">input</span> <span class="pt">},</span>
-      <span class="fn">on</span><span class="pt">(</span><span class="st">"input"</span><span class="pt">,</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">)</span> <span class="pt">=></span> <span class="pt">{</span>
-        <span class="pr">input</span> <span class="pt">=</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">.</span><span class="pr">target</span> <span class="kw">as</span> <span class="ty">HTMLInputElement</span><span class="pt">).</span><span class="pr">value</span>
-        <span class="fn">update</span><span class="pt">()</span>
-      <span class="pt">})</span>
-    <span class="pt">),</span>
-    <span class="fn">list</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pr">todos</span><span class="pt">,</span>
-      <span class="pt">(</span><span class="pr">t</span><span class="pt">)</span> <span class="pt">=></span> <span class="fn">div</span><span class="pt">(</span><span class="pr">t</span><span class="pt">)</span>
-    <span class="pt">)</span>
-  <span class="pt">)</span>
-<span class="pt">}</span>`;
+let todos: Todo[] = []
+let text = ''
+
+function addTodo() {
+  if (!text.trim()) return
+  todos.push({ text, done: false })
+  text = ''
+  update()
+}
+
+export function TodoList() {
+  return div(
+    input(
+      { placeholder: 'Add a task…' },
+      on('input', (e) => { text = (e.target as HTMLInputElement).value }),
+      on('keydown', (e) => { if (e.key === 'Enter') addTodo() }),
+    ),
+    button('Add', on('click', addTodo)),
+    list(
+      () => todos,
+      (todo) => div(
+        input(
+          { type: 'checkbox' },
+          { checked: () => todo.done },
+          on('change', () => { todo.done = !todo.done; update() }),
+        ),
+        span(todo.text),
+      ),
+    ),
+  )
+}`;
 
 export const PHILOSOPHY_QUOTE =
   "When you mutate state, nothing happens. Call update() and Nuclo does exactly what you asked-no more, no less.";

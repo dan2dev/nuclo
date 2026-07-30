@@ -456,6 +456,14 @@ button('Click me',
 )
 ```
 
+You can also attach handlers directly as `on*` attribute props — any `onclick`, `oninput`, `onchange`, etc. key whose value is a function is registered as an event listener instead of a reactive attribute:
+
+```ts
+button('Remove', { className: 'remove', onclick: () => doDelete(row.id) })
+```
+
+This reads naturally inside object literals (e.g. row templates in a `list()`), while `on()` composes better when chaining multiple listeners or passing `options` like `{ passive: true }`.
+
 #### `scope(...ids)`
 
 Registers an element as a named update root, so `update("id")` re-runs only the dynamic bindings contained within it instead of the whole page:

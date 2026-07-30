@@ -17,7 +17,9 @@ let count = 0
 export function Counter() {
   return div(
     p(() => String(count)),
+    p("COUNT"),
     button("-", on("click", () => { count--; update() })),
+    button("Reset", on("click", () => { count = 0; update() })),
     button("+", on("click", () => { count++; update() })),
   )
 }`,
@@ -35,8 +37,15 @@ interface Todo {
 }
 
 let todos: Todo[] = []
+let filter: "all" | "active" | "done" = "all"
 let text = ""
 let nextId = 1
+
+function visible() {
+  if (filter === "active") return todos.filter((t) => !t.done)
+  if (filter === "done") return todos.filter((t) => t.done)
+  return todos
+}
 
 function addTodo() {
   if (!text.trim()) return
@@ -49,24 +58,35 @@ function addTodo() {
 export function TodoList() {
   return div(
     input(
-      { placeholder: "Add a task" },
+      { placeholder: "Add a task..." },
       on("input", (event) => {
         text = (event.target as HTMLInputElement).value
       }),
     ),
     button("Add", on("click", addTodo)),
+    div(
+      button("All", on("click", () => { filter = "all"; update() })),
+      button("Active", on("click", () => { filter = "active"; update() })),
+      button("Done", on("click", () => { filter = "done"; update() })),
+    ),
     ul(
       list(
-        () => todos,
+        () => visible(),
         (todo) => li(
           input(
             { type: "checkbox", checked: () => todo.done },
             on("change", () => { todo.done = !todo.done; update() }),
           ),
           span(() => todo.done ? todo.text + " done" : todo.text),
+          button("x", on("click", () => {
+            todos = todos.filter((item) => item.id !== todo.id)
+            update()
+          })),
         ),
       ),
+      when(() => visible().length === 0, div("No tasks yet.")),
     ),
+    p(() => \`\${todos.filter((t) => !t.done).length} of \${todos.length} remaining\`),
   )
 }`,
   },
@@ -76,12 +96,20 @@ export function TodoList() {
     desc: "Filter an array with plain JavaScript and render it with list().",
     code: `import 'nuclo'
 
-const users = ["Alice", "Bob", "Charlie", "Diana"]
+const users = [
+  { name: "Alice Chen", email: "alice@example.com", initials: "AC" },
+  { name: "Bob Smith", email: "bob@example.com", initials: "BS" },
+  { name: "Charlie Davis", email: "charlie@example.com", initials: "CD" },
+  { name: "Diana Park", email: "diana@example.com", initials: "DP" },
+]
 let query = ""
 
-function visibleUsers() {
-  return users.filter((name) =>
-    name.toLowerCase().includes(query.toLowerCase())
+function results() {
+  const q = query.toLowerCase()
+  if (!q) return users
+  return users.filter((user) =>
+    user.name.toLowerCase().includes(q) ||
+    user.email.toLowerCase().includes(q)
   )
 }
 
@@ -94,11 +122,16 @@ export function SearchFilter() {
         update()
       }),
     ),
-    ul(
+    div(
       list(
-        () => visibleUsers(),
-        (name) => li(name),
+        () => results(),
+        (user) => div(
+          div(user.initials),
+          div(user.name),
+          div(user.email),
+        ),
       ),
+      when(() => results().length === 0, div("No users found.")),
     ),
   )
 }`,
@@ -113,15 +146,18 @@ const { css, cx } = createCss({
   colors: {
     primary: "#ff3f00",
     border: "#e5e7eb",
+    text: "#1f2937",
   },
 })
 
 const baseButton = css({
-  px: 12,
-  py: 8,
+  px: 14,
+  py: 9,
   rounded: 6,
   border: "1px solid",
   borderColor: "border",
+  color: "text",
+  cursor: "pointer",
 })
 
 const selectedButton = css({
