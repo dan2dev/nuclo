@@ -269,6 +269,12 @@ export const DOC_SECTIONS: DocSection[] = [
   <span class="pt">}),</span>
 <span class="pt">)</span></pre></div></div>
       <p>You can attach multiple <code>on()</code> calls to the same element. Event listeners are registered once and never re-attached.</p>
+      <p>You can also attach a handler directly as an <code>on*</code> attribute prop. Any key starting with <code>on</code> (<code>onclick</code>, <code>oninput</code>, <code>onchange</code>, ...) whose value is a function is registered as an event listener instead of a reactive attribute:</p>
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="fn">button</span><span class="pt">(</span>
+  <span class="st">"Remove"</span><span class="pt">,</span>
+  <span class="pt">{</span> <span class="pr">className</span><span class="pt">:</span> <span class="st">"remove"</span><span class="pt">,</span> <span class="pr">onclick</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="fn">doDelete</span><span class="pt">(</span><span class="pr">row</span><span class="pt">.</span><span class="pr">id</span><span class="pt">)</span> <span class="pt">},</span>
+<span class="pt">)</span></pre></div></div>
+      <p>This reads naturally inside a plain attribute object - handy for row templates in a <code>list()</code>. Use <code>on()</code> instead when you need to attach multiple listeners for the same event type or pass listener <code>options</code> such as <code>{ passive: true }</code>.</p>
     `,
   },
 
