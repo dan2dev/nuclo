@@ -5,7 +5,8 @@ const mono = "'JetBrains Mono', monospace";
 const sans = "'Space Grotesk', system-ui, sans-serif";
 
 export const es = {
-  hero: css({ animation: `${animations.riseIn} 0.58s cubic-bezier(0.22, 1, 0.36, 1) both`, padding: "60px 0 38px", borderBottom: `1px solid ${colors.border}`, "@media (max-width: 600px)": { padding: "42px 0 30px" } }),
+  heroSection: css({ padding: "40px 0 8px", "@media (max-width: 600px)": { padding: "26px 0 8px" } }),
+  hero: css({ animation: `${animations.riseIn} 0.58s cubic-bezier(0.22, 1, 0.36, 1) both`, position: "relative", borderRadius: "28px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgCard, padding: "44px 40px", "@media (max-width: 600px)": { padding: "30px 22px", borderRadius: "22px" } }),
   heroInner: css({ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 360px", gap: "42px", alignItems: "end", "@media (max-width: 900px)": { gridTemplateColumns: "1fr", alignItems: "start", gap: "28px" } }),
   kicker: css({ fontFamily: mono, fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary, marginBottom: "12px" }),
   title: css({ maxWidth: "660px", fontSize: "3rem", fontWeight: "800", letterSpacing: "0", lineHeight: "1.08", marginBottom: "16px", "@media (max-width: 600px)": { fontSize: "2.15rem" } }),
@@ -15,7 +16,7 @@ export const es = {
   heroMark: css({ width: "142px", height: "142px", transform: "rotate(6deg)", filter: "drop-shadow(0 24px 30px rgba(255,63,0,0.20))" }),
   grid: css({ animation: `${animations.riseIn} 0.58s cubic-bezier(0.22, 1, 0.36, 1) both`, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "18px", padding: "38px 0 64px", "@media (max-width: 900px)": { gridTemplateColumns: "1fr" }, "@media (max-width: 600px)": { padding: "28px 0 52px" } }),
 
-  card: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "8px", overflow: "hidden", display: "flex", flexDirection: "column", minWidth: "0", animation: `${animations.riseIn} 0.56s cubic-bezier(0.22, 1, 0.36, 1) both`, transition: "transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease", hover: { transform: "translateY(-3px)", borderColor: colors.borderPrimary, backgroundColor: "color-mix(in srgb, var(--c-bg-card) 86%, var(--c-bg-secondary))", boxShadow: "0 18px 42px -28px var(--c-primary-glow)" } }),
+  card: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "20px", overflow: "hidden", display: "flex", flexDirection: "column", minWidth: "0", animation: `${animations.riseIn} 0.56s cubic-bezier(0.22, 1, 0.36, 1) both`, transition: "transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease", hover: { transform: "translateY(-3px)", borderColor: colors.borderPrimary, backgroundColor: "color-mix(in srgb, var(--c-bg-card) 86%, var(--c-bg-secondary))", boxShadow: "0 18px 42px -28px var(--c-primary-glow)" } }),
   cardDelay1: css({ raw: { "animation-delay": "0.04s" } }),
   cardDelay2: css({ raw: { "animation-delay": "0.08s" } }),
   cardDelay3: css({ raw: { "animation-delay": "0.12s" } }),
@@ -38,7 +39,7 @@ export const es = {
   countValue: css({ fontSize: "5rem", fontWeight: "700", lineHeight: "1", color: colors.text, marginBottom: "6px", fontVariantNumeric: "tabular-nums", transition: "transform 0.1s ease" }),
   countLabel: css({ fontSize: "0.78rem", color: colors.textMuted, letterSpacing: "0", marginBottom: "24px" }),
   buttonRow: css({ display: "flex", gap: "10px", justifyContent: "center" }),
-  button: css({ padding: "9px 22px", borderRadius: "6px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: sans, hover: { color: colors.text, borderColor: colors.primary } }),
+  button: css({ padding: "9px 22px", borderRadius: "9999px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: sans, hover: { color: colors.text, borderColor: colors.primary } }),
   buttonPrimary: css({ backgroundImage: "linear-gradient(135deg, var(--c-accent-warm), var(--c-primary) 60%, var(--c-accent-secondary) 130%)", color: "#fff", borderColor: "transparent", hover: { backgroundColor: colors.primaryHover, filter: "brightness(1.04)" } }),
 
   todo: css({ width: "100%", maxWidth: "340px" }),

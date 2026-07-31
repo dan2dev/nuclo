@@ -208,11 +208,13 @@ function SearchDemo() {
   );
 }
 
+// Bound to the site's own theme custom properties (not fixed hex) so this button
+// actually switches with light/dark mode instead of always rendering light-on-transparent.
 const { css: demoCss, cx: demoCx } = createCss({
   colors: {
-    primary: "#ff3f00",
-    border: "#e5e7eb",
-    text: "#1f2937",
+    primary: "var(--c-primary)",
+    border: "var(--c-border-light)",
+    text: "var(--c-text)",
   },
 });
 
@@ -254,22 +256,25 @@ function StyleDemo() {
 
 export function ExamplesPage() {
   const pageHeader = div(
-    es.hero,
+    es.heroSection,
     div(
       s.container,
       div(
-        es.heroInner,
+        es.hero,
         div(
-          div(es.kicker, "Examples"),
-          h1(es.title, "Practical examples. Live demos."),
-          p(
-            es.lead,
-            "Explore small Nuclo patterns with interactive previews and source code beside each behavior.",
+          es.heroInner,
+          div(
+            div(es.kicker, "Examples"),
+            h1(es.title, "Practical examples. Live demos."),
+            p(
+              es.lead,
+              "Explore small Nuclo patterns with interactive previews and source code beside each behavior.",
+            ),
           ),
-        ),
-        div(
-          es.heroMarkWrap,
-          img(es.heroMark, { src: "/nuclo-icon@3x.png", alt: "", "aria-hidden": "true" }),
+          div(
+            es.heroMarkWrap,
+            img(es.heroMark, { src: "/nuclo-icon@3x.png", alt: "", "aria-hidden": "true" }),
+          ),
         ),
       ),
     ),
