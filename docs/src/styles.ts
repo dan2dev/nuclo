@@ -53,7 +53,7 @@ export const s = {
 
   section: css({ padding: '96px 0' }),
 
-  sectionLabel: css({ display: 'inline-flex', alignItems: 'center', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: '700', color: colors.primary, letterSpacing: '0', textTransform: 'uppercase', padding: '5px 13px', borderRadius: '9999px', backgroundColor: colors.primaryAlpha08, border: `1px solid ${colors.borderPrimary}`, marginBottom: '14px' }),
+  sectionLabel: css({ display: 'inline-flex', alignItems: 'center', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: '700', color: colors.primary, letterSpacing: '0', textTransform: 'uppercase', padding: '5px 13px', borderRadius: '9999px', backgroundColor: colors.primaryAlpha08, marginBottom: '14px' }),
 
   sectionTitle: css({ fontSize: '2rem', fontWeight: '800', lineHeight: '1.12', letterSpacing: '0', marginBottom: '16px', medium: { fontSize: '2.55rem' } }),
 
@@ -65,21 +65,21 @@ export const s = {
 
   btnPrimary: css({ backgroundColor: colors.primary, color: '#fff', boxShadow: '0 14px 28px -18px var(--c-primary-glow)', hover: { backgroundColor: colors.primaryHover, boxShadow: '0 18px 34px -18px var(--c-primary-glow)', transform: 'translateY(-1px)' } }),
 
-  btnSecondary: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, color: colors.text, boxShadow: '0 10px 26px -24px rgba(0,0,0,0.28)', hover: { color: colors.primary, borderColor: colors.borderPrimary, boxShadow: '0 16px 34px -26px var(--c-primary-glow)' } }),
+  btnSecondary: css({ backgroundColor: colors.bgSecondary, color: colors.text, boxShadow: '0 10px 26px -24px rgba(0,0,0,0.28)', hover: { color: colors.primary, boxShadow: '0 16px 34px -26px var(--c-primary-glow)' } }),
 
-  installCmd: css({ display: 'inline-flex', alignItems: 'center', gap: '10px', backgroundColor: colors.bgCard, border: `1px solid ${colors.borderLight}`, borderRadius: '14px', padding: '11px 14px 11px 16px', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.875rem', color: colors.text, boxShadow: 'var(--c-shadow)' }),
+  installCmd: css({ display: 'inline-flex', alignItems: 'center', gap: '10px', backgroundColor: colors.bgSecondary, borderRadius: '14px', padding: '11px 14px 11px 16px', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.875rem', color: colors.text, boxShadow: 'var(--c-shadow)' }),
 
-  codeBlockFrame: css({ backgroundColor: colors.bgCode, border: `1px solid ${colors.border}`, borderRadius: '14px', overflow: 'hidden', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }),
+  codeBlockFrame: css({ backgroundColor: colors.bgCode, borderRadius: '14px', overflow: 'hidden', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }),
 
-  codeBlockHeader: css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary }),
+  codeBlockHeader: css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', backgroundColor: colors.bgSecondary }),
 
   codeBlockFilename: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: colors.textMuted }),
 
   codeBlockBody: css({ padding: '20px 22px', overflow: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8125rem', lineHeight: '1.7' }),
 
-  demoCard: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: '14px', overflow: 'hidden', boxShadow: 'var(--c-shadow)' }),
+  demoCard: css({ backgroundColor: colors.bgCard, borderRadius: '14px', overflow: 'hidden', boxShadow: 'var(--c-shadow)' }),
 
-  demoCardBar: css({ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', backgroundColor: colors.bgSecondary, borderBottom: `1px solid ${colors.border}` }),
+  demoCardBar: css({ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', backgroundColor: colors.bgSecondary }),
 
   demoDots: css({ display: 'flex', gap: '6px' }),
 
@@ -91,11 +91,11 @@ export const s = {
 
   featureGrid: css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }),
 
-  featureCard: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: '20px', padding: '28px 26px', transition: 'transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease', hover: { transform: 'translateY(-2px)', borderColor: colors.borderPrimary, boxShadow: '0 18px 46px -34px var(--c-primary-glow)' } }),
+  featureCard: css({ backgroundColor: colors.bgCard, borderRadius: '20px', padding: '28px 26px', transition: 'transform 0.18s ease, box-shadow 0.18s ease', hover: { transform: 'translateY(-2px)', boxShadow: '0 18px 46px -34px var(--c-primary-glow)' } }),
 
   cardHeadRow: css({ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '16px' }),
 
-  cardCornerBadge: css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: '30px', height: '26px', padding: '0 9px', borderRadius: '9999px', backgroundColor: colors.primaryAlpha08, border: `1px solid ${colors.borderPrimary}`, color: colors.primary, fontFamily: "'JetBrains Mono', monospace", fontSize: '0.68rem', fontWeight: '800', letterSpacing: '0' }),
+  cardCornerBadge: css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: '30px', height: '26px', padding: '0 9px', borderRadius: '9999px', backgroundColor: colors.primaryAlpha08, color: colors.primary, fontFamily: "'JetBrains Mono', monospace", fontSize: '0.68rem', fontWeight: '800', letterSpacing: '0' }),
 
   featureTitle: css({ fontSize: '1.05rem', fontWeight: '600', marginBottom: '10px' }),
 
@@ -107,7 +107,7 @@ export const s = {
 
   stepDesc: css({ fontSize: '0.875rem', color: colors.textDim, marginBottom: '16px' }),
 
-  badge: css({ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0', textTransform: 'uppercase', color: colors.primary, padding: '5px 12px', borderRadius: '999px', backgroundColor: colors.primaryAlpha08, border: `1px solid ${colors.borderPrimary}` }),
+  badge: css({ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0', textTransform: 'uppercase', color: colors.primary, padding: '5px 12px', borderRadius: '999px', backgroundColor: colors.primaryAlpha08 }),
 
   statsRow: css({ display: 'flex', gap: '40px', flexWrap: 'wrap', padding: '40px 0', borderTop: `1px solid ${colors.border}`, marginTop: '24px' }),
 
