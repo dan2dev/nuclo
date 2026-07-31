@@ -24,6 +24,12 @@ function DemoDot(color: string) {
   return div(hs.heroDot, css({ backgroundColor: color }));
 }
 
+/** Splits a "01 - EXPLICIT" / "01 · Mutate" step label into a short corner-badge number and its kicker text. */
+function splitStepLabel(raw: string): { badge: string; kicker: string } {
+  const m = raw.match(/^(\d+)\s*[-·]\s*(.+)$/);
+  return m ? { badge: m[1], kicker: m[2] } : { badge: raw, kicker: "" };
+}
+
 /** Install command bar with shimmer sheen and a copy-to-clipboard button. */
 function InstallCommand() {
   let copied = false;
@@ -95,15 +101,6 @@ function HeroDemoCard() {
   return div(
     hs.heroDemoArea,
     fx.gradientBorder, fx.demoElevated,
-    // Chrome bar
-    div(
-      hs.demoChrome,
-      DemoDot("#ff5f57"),
-      DemoDot("#febc2e"),
-      DemoDot("#28c840"),
-      div(hs.heroDemoFilename, "counter.ts"),
-      span(hs.liveTag, span(fx.badgeDot), "live"),
-    ),
     // Tabs
     div(
       hs.demoTabBar,
@@ -128,82 +125,83 @@ function HeroDemoCard() {
 export function HomeHeroSection() {
   return section(
     hs.heroSection,
-    hs.heroWrap,
-    // Ambient ornaments (decorative, behind content)
-    div(hs.heroBg, { "aria-hidden": "true" }),
-    div(hs.dotGrid, { "aria-hidden": "true" }),
     div(
       s.container,
       div(
-        hs.heroInner,
-        // Left: copy
+        hs.heroFrame,
+        // Ambient ornaments (decorative, behind content, clipped to the frame)
+        div(hs.heroBg, { "aria-hidden": "true" }),
+        div(hs.dotGrid, { "aria-hidden": "true" }),
         div(
-          // Badge
+          hs.heroInner,
+          // Left: copy
           div(
-            s.badge,
-            fx.shimmer, { className: "he he-1" },
-            css({ marginBottom: "22px" }),
-            span(fx.badgeDot),
-            HERO_BADGE,
-          ),
-          // Rule
-          div(hs.heroRule, { className: "he he-2" }),
-          // Title
-          h1(
-            hs.heroTitle,
-            { className: "he he-2" },
-            ...HERO_TITLE_LINES.map((line) => {
-              if (line === "nuclo.") {
-                return div(span(fx.gradientText, line));
-              }
-              return div(line);
-            }),
-          ),
-          // Description
-          p(hs.heroDesc, { className: "he he-3" }, HERO_DESC),
-          // Install command
-          div(hs.heroInstall, { className: "he he-4" }, InstallCommand()),
-          // Action buttons
-          div(
-            hs.heroActions,
-            { className: "he he-5" },
-            button(
-              s.btn, s.btnPrimary,
-              "Get Started →",
-              on("click", () => setRoute("docs")),
+            // Badge
+            div(
+              s.badge,
+              fx.shimmer, { className: "he he-1" },
+              css({ marginBottom: "22px" }),
+              span(fx.badgeDot),
+              HERO_BADGE,
             ),
-            button(
-              s.btn, s.btnSecondary,
-              "View Examples",
-              on("click", () => setRoute("examples")),
+            // Rule
+            div(hs.heroRule, { className: "he he-2" }),
+            // Title
+            h1(
+              hs.heroTitle,
+              { className: "he he-2" },
+              ...HERO_TITLE_LINES.map((line) => {
+                if (line === "nuclo.") {
+                  return div(span(fx.gradientText, line));
+                }
+                return div(line);
+              }),
             ),
-          ),
-          // Stats
-          div(
-            hs.statsRow,
-            { className: "he he-6" },
-            ...HERO_STATS.map(({ num, sup, label }) =>
-              div(
-                hs.statItem,
+            // Description
+            p(hs.heroDesc, { className: "he he-3" }, HERO_DESC),
+            // Install command
+            div(hs.heroInstall, { className: "he he-4" }, InstallCommand()),
+            // Action buttons
+            div(
+              hs.heroActions,
+              { className: "he he-5" },
+              button(
+                s.btn, s.btnPrimary,
+                "Get Started →",
+                on("click", () => setRoute("docs")),
+              ),
+              button(
+                s.btn, s.btnSecondary,
+                "View Examples",
+                on("click", () => setRoute("examples")),
+              ),
+            ),
+            // Stats
+            div(
+              hs.statsRow,
+              { className: "he he-6" },
+              ...HERO_STATS.map(({ num, sup, label }) =>
                 div(
-                  hs.statNum,
-                  num,
-                  sup ? span(css({ fontSize: "1rem", color: colors.primary, marginLeft: "2px" }), sup) : null,
-                ),
-                div(hs.statLabel, label),
-              )
+                  div(
+                    hs.statNum,
+                    num,
+                    sup ? span(css({ fontSize: "1rem", color: colors.primary, marginLeft: "2px" }), sup) : null,
+                  ),
+                  div(hs.statLabel, label),
+                )
+              ),
             ),
           ),
-        ),
-        // Right: demo card
-        div(
-          hs.heroVisual,
-          { className: "he he-7" },
-          img(
-            hs.heroBrandMark,
-            { src: "/nuclo-icon@3x.png", alt: "", "aria-hidden": "true" },
+          // Right: demo card
+          div(
+            hs.heroVisual,
+            { className: "he he-7" },
+            img(
+              hs.heroBrandMark,
+              { src: "/nuclo-icon@3x.png", alt: "", "aria-hidden": "true" },
+            ),
+            HeroDemoCard(),
           ),
-          HeroDemoCard(),
         ),
       ),
     ),
@@ -212,10 +210,15 @@ export function HomeHeroSection() {
 
 export function PipelineSection() {
   function PipeNode(step: typeof PIPELINE_STEPS[number], revealClass: string) {
+    const { badge, kicker } = splitStepLabel(step.kicker);
     return div(
       hs.pipeNode,
       { className: `${hs.pipeNode.className} ${revealClass}` },
-      div(hs.pipeKicker, step.kicker),
+      div(
+        s.cardHeadRow,
+        div(hs.pipeKicker, kicker || step.kicker),
+        span(s.cardCornerBadge, badge),
+      ),
       div(hs.pipeTitle, step.title),
       div(hs.pipeDesc, step.desc),
       div(hs.pipeCode, { innerHTML: step.code }),
@@ -301,15 +304,20 @@ export function FeaturesSection() {
       div(
         s.featureGrid,
         { className: "rv" },
-        ...FEATURES.map(({ num, icon, title, desc }) =>
-          div(
+        ...FEATURES.map(({ num, icon, title, desc }) => {
+          const { badge, kicker } = splitStepLabel(num);
+          return div(
             s.featureCard,
-            div(hs.featureIcon, (FEATURE_ICONS[icon] ?? FEATURE_ICONS.zap)()),
-            div(s.featureNum, num),
+            div(
+              s.cardHeadRow,
+              div(hs.featureIcon, (FEATURE_ICONS[icon] ?? FEATURE_ICONS.zap)()),
+              span(s.cardCornerBadge, badge),
+            ),
+            kicker ? div(hs.featureKicker, kicker) : null,
             div(s.featureTitle, title),
             div(s.featureDesc, desc),
-          )
-        ),
+          );
+        }),
       ),
     ),
   );
@@ -424,19 +432,24 @@ export function HomeQuickStartSection() {
         p(s.sectionSub, { className: "rv" }, css({ marginBottom: "40px" }), "Three steps and you're building real UIs."),
         div(
           s.stepsGrid,
-          ...QUICK_START_STEPS.map(({ num, title, desc, code, lang }, i) =>
-            div(
+          ...QUICK_START_STEPS.map(({ num, title, desc, code, lang }, i) => {
+            const { badge, kicker } = splitStepLabel(num);
+            return div(
               hs.quickStartStep,
               { className: `rv rv-d${i + 1}` },
               div(
                 hs.stepHeader,
-                div(s.stepNum, num),
+                div(
+                  s.cardHeadRow,
+                  div(hs.featureKicker, kicker || num),
+                  span(s.cardCornerBadge, badge),
+                ),
                 div(s.stepTitle, title),
                 div(s.stepDesc, desc),
               ),
               CodeBlock({ filename: lang, code, showCopy: true, preTokenized: true }),
-            )
-          ),
+            );
+          }),
         ),
         div(
           css({ marginTop: "40px", textAlign: "center" }),
@@ -604,7 +617,7 @@ export function CTASection() {
       s.container,
       div(
         hs.ctaPanel, { className: "rv" },
-        div(s.sectionLabel, css({ justifyContent: "center", display: "flex" }), "Get Started"),
+        div(s.sectionLabel, "Get Started"),
         h2(
           css({ fontSize: "2.1rem", fontWeight: "800", letterSpacing: "0", lineHeight: "1.2", marginBottom: "18px", medium: { fontSize: "2.7rem" } }),
           CTA_TITLE,

@@ -2,13 +2,15 @@ import { css as uiCss, cx as uiCx, colors, s } from "../../styles.ts";
 import { CodeBlock } from "../../components/CodeBlock.ts";
 import { es } from "./styles.ts";
 
+// Bound to the site's own theme custom properties (not fixed hex) so these previews
+// actually switch with light/dark mode instead of always rendering a light card.
 const demo = createCss({
   colors: {
-    primary: "#ff3f00",
-    surface: "#fff7ed",
-    border: "#ffd7c2",
-    text: "#1f2937",
-    muted: "#6b7280",
+    primary: "var(--c-primary)",
+    surface: "var(--c-bg-secondary)",
+    border: "var(--c-border-light)",
+    text: "var(--c-text)",
+    muted: "var(--c-text-muted)",
   },
   screens: {
     sm: "(min-width: 520px)",

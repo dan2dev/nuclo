@@ -169,6 +169,7 @@ export function DocsPage() {
   function Content() {
     return article(
       ds.content,
+      { "data-docs-content": "" },
       DocsIntro(),
       MobileToc(),
       ...DOC_SECTIONS.map((sec, index) =>
@@ -228,7 +229,7 @@ export function DocsPage() {
   // IntersectionObserver for sidebar active state - only on client
   if (typeof window !== "undefined") {
     requestAnimationFrame(() => {
-      const sections = document.querySelectorAll(".docs-content section[id]");
+      const sections = document.querySelectorAll("[data-docs-content] section[id]");
       if (!sections.length) return;
 
       const observer = new IntersectionObserver(

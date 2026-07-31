@@ -7,7 +7,7 @@ export const HERO_TITLE_LINES = ["Build explicit", "interfaces with", "nuclo."];
 export const HERO_DESC =
   "Nuclo is a tiny, type-safe DOM framework with plain mutable state and explicit updates. Create interfaces with builder functions, change regular state, and call update() to reevaluate them. No proxies, signals, or virtual DOM.";
 
-export const INSTALL_CMD = "npm install nuclo";
+export const INSTALL_CMD = "npm create nuclo@latest";
 
 export const HERO_STATS = [
   { num: "0",   sup: "",   label: "dependencies" },
@@ -238,7 +238,7 @@ export const QUICK_START_STEPS = [
     num: "01 - INSTALL",
     title: "Install",
     desc: "Add Nuclo to your project with your favourite package manager.",
-    code: `<span class="pt">$</span> <span class="fn">npm</span> install nuclo<span class="tcaret"></span>`,
+    code: `<span class="pt">$</span> <span class="fn">npm</span> create nuclo@latest<span class="tcaret"></span>`,
     lang: "terminal",
   },
   {
