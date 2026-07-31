@@ -136,10 +136,10 @@ export function HomeHeroSection() {
           div(
             // Badge
             div(
-              s.badge,
+              hs.heroBadge,
               { className: "he he-1" },
               css({ marginBottom: "22px" }),
-              span(fx.badgeDot),
+              span(hs.heroBadgeDot),
               HERO_BADGE,
             ),
             // Rule
@@ -148,12 +148,7 @@ export function HomeHeroSection() {
             h1(
               hs.heroTitle,
               { className: "he he-2" },
-              ...HERO_TITLE_LINES.map((line) => {
-                if (line === "nuclo.") {
-                  return div(span(fx.accentText, line));
-                }
-                return div(line);
-              }),
+              ...HERO_TITLE_LINES.map((line) => div(line)),
             ),
             // Description
             p(hs.heroDesc, { className: "he he-3" }, HERO_DESC),
@@ -164,7 +159,7 @@ export function HomeHeroSection() {
               hs.heroActions,
               { className: "he he-5" },
               button(
-                s.btn, s.btnPrimary,
+                s.btn, hs.heroPrimaryBtn,
                 "Get Started →",
                 on("click", () => setRoute("docs")),
               ),
@@ -183,7 +178,7 @@ export function HomeHeroSection() {
                   div(
                     hs.statNum,
                     num,
-                    sup ? span(css({ fontSize: "1rem", color: colors.primary, marginLeft: "2px" }), sup) : null,
+                    sup ? span(css({ fontSize: "1rem", color: "rgba(255,255,255,0.72)", marginLeft: "2px" }), sup) : null,
                   ),
                   div(hs.statLabel, label),
                 )
