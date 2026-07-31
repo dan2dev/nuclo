@@ -26,7 +26,7 @@ export const hs = {
   ctaPanel: css({ position: "relative", overflow: "hidden", borderRadius: "24px", backgroundColor: colors.bgSecondary, boxShadow: "var(--c-shadow)", padding: "68px 24px", textAlign: "center", "&::before": { content: "''", position: "absolute", top: "-80px", right: "-68px", width: "220px", height: "220px", borderRadius: "42px", backgroundColor: colors.primary, opacity: "0.14", transform: "rotate(14deg)", pointerEvents: "none" }, "& > *": { position: "relative" }, medium: { padding: "84px 48px" } }),
   heroSection: css({ padding: "28px 0 48px", large: { padding: "40px 0 64px" } }),
 
-  heroFrame: css({ position: "relative", overflow: "hidden", borderRadius: "28px", backgroundColor: colors.primary, boxShadow: "var(--c-shadow)", padding: "36px 22px", medium: { padding: "48px 36px", borderRadius: "32px" }, large: { padding: "64px 56px" } }),
+  heroFrame: css({ position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "28px", backgroundColor: colors.primary, boxShadow: "var(--c-shadow)", padding: "36px 22px", medium: { padding: "48px 36px", borderRadius: "32px" }, large: { padding: "64px 56px" } }),
 
   heroInner: css({ position: "relative", zIndex: 2, display: "grid", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.92fr) minmax(420px, 1.08fr)", gap: "70px" } }),
 

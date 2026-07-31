@@ -12,6 +12,19 @@ type BlobBody = {
   colorB: string;
 };
 
+type WakePoint = {
+  x: number;
+  y: number;
+  life: number;
+};
+
+type PressureWave = {
+  x: number;
+  y: number;
+  radius: number;
+  life: number;
+};
+
 const activeCanvases = new WeakSet<HTMLCanvasElement>();
 
 const BLOB_COLORS = [
@@ -56,13 +69,16 @@ function drawOrganicBlob(
 ) {
   const points = 12;
   const contour: Array<[number, number]> = [];
+  const velocityAngle = Math.atan2(body.vy, body.vx);
+  const stretch = Math.min(0.13, Math.hypot(body.vx, body.vy) * 0.018);
 
   for (let index = 0; index < points; index++) {
     const angle = (index / points) * Math.PI * 2;
     const ripple =
       Math.sin(angle * 3 + time * body.speed * 3.1 + body.phase) * 0.065 +
       Math.sin(angle * 5 - time * body.speed * 2.2 + body.phase * 0.7) * 0.035;
-    const radius = body.radius * (1 + ripple);
+    const directionalStretch = Math.cos((angle - velocityAngle) * 2) * stretch;
+    const radius = body.radius * (1 + ripple + directionalStretch);
     contour.push([
       body.x + Math.cos(angle) * radius,
       body.y + Math.sin(angle) * radius,
@@ -94,6 +110,86 @@ function drawOrganicBlob(
   context.fill();
 }
 
+function drawConnections(
+  context: CanvasRenderingContext2D,
+  bodies: BlobBody[],
+  width: number,
+  time: number,
+) {
+  context.save();
+  context.globalCompositeOperation = "soft-light";
+
+  for (let leftIndex = 0; leftIndex < bodies.length; leftIndex++) {
+    const left = bodies[leftIndex]!;
+    for (let rightIndex = leftIndex + 1; rightIndex < bodies.length; rightIndex++) {
+      const right = bodies[rightIndex]!;
+      const dx = right.x - left.x;
+      const dy = right.y - left.y;
+      const distance = Math.hypot(dx, dy);
+      const reach = Math.min(width * 0.68, (left.radius + right.radius) * 1.12);
+      if (distance >= reach) continue;
+
+      const strength = 1 - distance / reach;
+      const midpointX = (left.x + right.x) / 2;
+      const midpointY = (left.y + right.y) / 2;
+      const bend = Math.sin(time * 0.7 + left.phase - right.phase) * 34 * strength;
+      const normalX = distance > 0 ? -dy / distance : 0;
+      const normalY = distance > 0 ? dx / distance : 0;
+      const gradient = context.createLinearGradient(left.x, left.y, right.x, right.y);
+      gradient.addColorStop(0, `rgba(255, 230, 148, ${0.04 + strength * 0.13})`);
+      gradient.addColorStop(0.5, `rgba(255, 136, 55, ${0.08 + strength * 0.18})`);
+      gradient.addColorStop(1, `rgba(174, 22, 11, ${0.04 + strength * 0.12})`);
+
+      context.beginPath();
+      context.moveTo(left.x, left.y);
+      context.quadraticCurveTo(
+        midpointX + normalX * bend,
+        midpointY + normalY * bend,
+        right.x,
+        right.y,
+      );
+      context.lineWidth = 2 + strength * 12;
+      context.lineCap = "round";
+      context.strokeStyle = gradient;
+      context.stroke();
+    }
+  }
+
+  context.restore();
+}
+
+function drawPointerWake(
+  context: CanvasRenderingContext2D,
+  wake: WakePoint[],
+  waves: PressureWave[],
+) {
+  context.save();
+  context.globalCompositeOperation = "screen";
+
+  for (let index = 1; index < wake.length; index++) {
+    const previous = wake[index - 1]!;
+    const point = wake[index]!;
+    const alpha = Math.min(previous.life, point.life) * 0.13;
+    context.beginPath();
+    context.moveTo(previous.x, previous.y);
+    context.lineTo(point.x, point.y);
+    context.lineWidth = 5 + point.life * 18;
+    context.lineCap = "round";
+    context.strokeStyle = `rgba(255, 224, 164, ${alpha})`;
+    context.stroke();
+  }
+
+  for (const wave of waves) {
+    context.beginPath();
+    context.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
+    context.lineWidth = 2 + wave.life * 4;
+    context.strokeStyle = `rgba(255, 235, 184, ${wave.life * 0.2})`;
+    context.stroke();
+  }
+
+  context.restore();
+}
+
 export function initHeroBackground(canvas: HTMLCanvasElement) {
   if (activeCanvases.has(canvas)) return;
   activeCanvases.add(canvas);
@@ -111,7 +207,13 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
   let lastTime = performance.now();
   let pointerX = 0;
   let pointerY = 0;
+  let pointerVelocityX = 0;
+  let pointerVelocityY = 0;
   let pointerActive = false;
+  let pointerPressed = false;
+  let lastPointerTime = performance.now();
+  const pointerWake: WakePoint[] = [];
+  const pressureWaves: PressureWave[] = [];
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const eventController = new AbortController();
 
@@ -148,10 +250,14 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
     drawingContext.fillStyle = base;
     drawingContext.fillRect(0, 0, width, height);
 
+    drawConnections(drawingContext, bodies, width, time);
+
     drawingContext.save();
     drawingContext.globalCompositeOperation = "soft-light";
     for (const body of bodies) drawOrganicBlob(drawingContext, body, time);
     drawingContext.restore();
+
+    drawPointerWake(drawingContext, pointerWake, pressureWaves);
 
     const shade = drawingContext.createLinearGradient(0, 0, width, 0);
     shade.addColorStop(0, "rgba(121, 19, 3, 0.18)");
@@ -171,6 +277,20 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
     const delta = Math.min(2, (now - lastTime) / 16.667);
     lastTime = now;
     const time = now / 1000;
+
+    for (let index = pointerWake.length - 1; index >= 0; index--) {
+      const point = pointerWake[index]!;
+      point.life -= 0.028 * delta;
+      if (point.life <= 0) pointerWake.splice(index, 1);
+    }
+    for (let index = pressureWaves.length - 1; index >= 0; index--) {
+      const wave = pressureWaves[index]!;
+      wave.radius += (3.8 + wave.radius * 0.012) * delta;
+      wave.life -= 0.022 * delta;
+      if (wave.life <= 0) pressureWaves.splice(index, 1);
+    }
+    pointerVelocityX *= Math.pow(0.88, delta);
+    pointerVelocityY *= Math.pow(0.88, delta);
 
     for (let leftIndex = 0; leftIndex < bodies.length; leftIndex++) {
       const left = bodies[leftIndex]!;
@@ -208,9 +328,10 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
         const distance = Math.max(40, Math.hypot(dx, dy));
         const reach = body.radius * 1.35 + 180;
         if (distance < reach) {
-          const force = (1 - distance / reach) * 0.34 * delta;
-          body.vx += (dx / distance) * force;
-          body.vy += (dy / distance) * force;
+          const influence = 1 - distance / reach;
+          const force = influence * (pointerPressed ? -0.24 : 0.34) * delta;
+          body.vx += (dx / distance) * force + pointerVelocityX * influence * 0.018;
+          body.vy += (dy / distance) * force + pointerVelocityY * influence * 0.018;
         }
       }
 
@@ -232,10 +353,42 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
 
   function handlePointerMove(event: PointerEvent) {
     const rect = heroFrame.getBoundingClientRect();
-    pointerX = event.clientX - rect.left;
-    pointerY = event.clientY - rect.top;
+    const nextX = event.clientX - rect.left;
+    const nextY = event.clientY - rect.top;
+    const now = performance.now();
+    const elapsed = Math.max(8, now - lastPointerTime);
+    pointerVelocityX = Math.max(-42, Math.min(42, (nextX - pointerX) * (16.667 / elapsed)));
+    pointerVelocityY = Math.max(-42, Math.min(42, (nextY - pointerY) * (16.667 / elapsed)));
+    pointerX = nextX;
+    pointerY = nextY;
+    lastPointerTime = now;
     pointerActive = true;
+    const lastWakePoint = pointerWake[pointerWake.length - 1];
+    if (!lastWakePoint || Math.hypot(pointerX - lastWakePoint.x, pointerY - lastWakePoint.y) > 8) {
+      pointerWake.push({ x: pointerX, y: pointerY, life: 1 });
+      if (pointerWake.length > 24) pointerWake.shift();
+    }
     if (reduceMotion) draw(performance.now() / 1000);
+  }
+
+  function handlePointerDown(event: PointerEvent) {
+    handlePointerMove(event);
+    pointerPressed = true;
+    pressureWaves.push({ x: pointerX, y: pointerY, radius: 12, life: 1 });
+  }
+
+  function handlePointerUp() {
+    if (!pointerPressed) return;
+    pointerPressed = false;
+    pressureWaves.push({ x: pointerX, y: pointerY, radius: 28, life: 0.75 });
+    for (const body of bodies) {
+      const dx = body.x - pointerX;
+      const dy = body.y - pointerY;
+      const distance = Math.max(60, Math.hypot(dx, dy));
+      const impulse = Math.max(0, 1 - distance / (body.radius + 260)) * 1.8;
+      body.vx += (dx / distance) * impulse;
+      body.vy += (dy / distance) * impulse;
+    }
   }
 
   const resizeObserver = new ResizeObserver(() => {
@@ -252,6 +405,22 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
     signal: eventController.signal,
   });
   heroFrame.addEventListener("pointerleave", () => { pointerActive = false; }, {
+    signal: eventController.signal,
+  });
+  heroFrame.addEventListener("pointerdown", handlePointerDown, {
+    passive: true,
+    signal: eventController.signal,
+  });
+  heroFrame.addEventListener("pointerup", handlePointerUp, {
+    passive: true,
+    signal: eventController.signal,
+  });
+  heroFrame.addEventListener("pointercancel", handlePointerUp, {
+    passive: true,
+    signal: eventController.signal,
+  });
+  window.addEventListener("pointerup", handlePointerUp, {
+    passive: true,
     signal: eventController.signal,
   });
 
