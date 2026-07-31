@@ -16,7 +16,7 @@ export function Footer() {
 
   const tagline = css({ fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65" });
 
-  const builtWith = css({ display: "inline-flex", alignItems: "center", gap: "7px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: colors.textMuted, padding: "6px 12px", borderRadius: "999px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgCard });
+  const builtWith = css({ display: "inline-flex", alignItems: "center", gap: "7px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: colors.textMuted, padding: "6px 12px", borderRadius: "999px", backgroundColor: colors.bgCard });
 
   const colTitle = css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "14px" });
 
@@ -28,7 +28,7 @@ export function Footer() {
 
   const fineprint = css({ fontSize: "0.78rem", color: colors.textMuted });
 
-  const versionBadge = css({ display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", fontWeight: "800", color: colors.primary, padding: "4px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08, border: `1px solid ${colors.borderPrimary}` });
+  const versionBadge = css({ display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", fontWeight: "800", color: colors.primary, padding: "4px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08 });
 
   function RouteLink(label: string, route: string) {
     return span(linkStyle, label, on("click", () => setRoute(route)));

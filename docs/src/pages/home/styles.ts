@@ -7,25 +7,25 @@ export const hs = {
   preWrap: css({ margin: "0", whiteSpace: "pre-wrap" }),
   demoTabBtnActive: css({ color: colors.primary, borderBottom: `2px solid ${colors.primary}` }),
   pipe: css({ display: "grid", gridTemplateColumns: "1fr", gap: "0", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 54px 1fr 54px 1fr", alignItems: "stretch" } }),
-  pipeNode: css({ position: "relative", backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "16px", padding: "26px 26px 24px", transition: "transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease", hover: { transform: "translateY(-3px)", borderColor: colors.borderGlow, boxShadow: "0 18px 44px -24px var(--c-primary-glow)" } }),
+  pipeNode: css({ position: "relative", backgroundColor: colors.bgCard, borderRadius: "16px", padding: "26px 26px 24px", transition: "transform 0.22s ease, box-shadow 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 18px 44px -24px var(--c-primary-glow)" } }),
   pipeLink: css({ position: "relative", minHeight: "44px", "&::before": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "repeating-linear-gradient(180deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "linear-gradient(180deg, transparent, var(--c-primary), transparent)", backgroundSize: "100% 55%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRunY} 2.3s ease-in-out infinite` }, "@media (min-width: 901px)": { minHeight: "0", "&::before": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "repeating-linear-gradient(90deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "linear-gradient(90deg, transparent, var(--c-primary), transparent)", backgroundSize: "55% 100%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRun} 2.3s ease-in-out infinite` } } }),
   pipeKicker: css({ display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary }),
   pipeTitle: css({ fontSize: "1.02rem", fontWeight: "700", marginBottom: "8px" }),
   pipeDesc: css({ fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65", marginBottom: "16px" }),
-  pipeCode: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", lineHeight: "1.6", backgroundColor: colors.bgCode, border: `1px solid ${colors.border}`, borderRadius: "10px", padding: "12px 14px", overflowX: "auto", whiteSpace: "pre" }),
+  pipeCode: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", lineHeight: "1.6", backgroundColor: colors.bgCode, borderRadius: "10px", padding: "12px 14px", overflowX: "auto", whiteSpace: "pre" }),
   cmpGrid: css({ display: "grid", gridTemplateColumns: "1fr", gap: "16px", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 1fr 1fr", gap: "18px" } }),
-  cmpCol: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "16px", padding: "28px 26px", transition: "transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease", hover: { transform: "translateY(-3px)", borderColor: colors.borderLight } }),
-  cmpColFeatured: css({ borderColor: colors.borderPrimary, boxShadow: "0 26px 64px -32px var(--c-primary-glow)", hover: { boxShadow: "0 30px 72px -30px var(--c-primary-glow)" } }),
+  cmpCol: css({ backgroundColor: colors.bgCard, borderRadius: "16px", padding: "28px 26px", transition: "transform 0.22s ease, box-shadow 0.22s ease", hover: { transform: "translateY(-3px)" } }),
+  cmpColFeatured: css({ backgroundColor: colors.bgSecondary, boxShadow: "0 26px 64px -32px var(--c-primary-glow)", hover: { boxShadow: "0 30px 72px -30px var(--c-primary-glow)" } }),
   cmpHead: css({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "6px" }),
   cmpName: css({ fontSize: "1.02rem", fontWeight: "700" }),
   cmpSub: css({ fontSize: "0.8rem", color: colors.textMuted, marginBottom: "20px", fontFamily: "'JetBrains Mono', monospace" }),
   cmpLi: css({ display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.6", padding: "7px 0", "& svg": { flexShrink: 0, marginTop: "4px" } }),
   cmpLiGood: css({ color: colors.text, "& svg": { color: colors.primary } }),
   cmpLiDim: css({ "& svg": { color: colors.textMuted } }),
-  ctaPanel: css({ position: "relative", overflow: "hidden", border: `1px solid ${colors.borderPrimary}`, borderRadius: "24px", backgroundColor: colors.bgCard, padding: "68px 24px", textAlign: "center", "&::before": { content: "''", position: "absolute", top: "-80px", right: "-68px", width: "220px", height: "220px", borderRadius: "42px", backgroundColor: colors.primary, opacity: "0.14", transform: "rotate(14deg)", pointerEvents: "none" }, "& > *": { position: "relative" }, medium: { padding: "84px 48px" } }),
+  ctaPanel: css({ position: "relative", overflow: "hidden", borderRadius: "24px", backgroundColor: colors.bgSecondary, boxShadow: "var(--c-shadow)", padding: "68px 24px", textAlign: "center", "&::before": { content: "''", position: "absolute", top: "-80px", right: "-68px", width: "220px", height: "220px", borderRadius: "42px", backgroundColor: colors.primary, opacity: "0.14", transform: "rotate(14deg)", pointerEvents: "none" }, "& > *": { position: "relative" }, medium: { padding: "84px 48px" } }),
   heroSection: css({ padding: "28px 0 48px", large: { padding: "40px 0 64px" } }),
 
-  heroFrame: css({ position: "relative", overflow: "hidden", borderRadius: "28px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgCard, padding: "36px 22px", medium: { padding: "48px 36px", borderRadius: "32px" }, large: { padding: "64px 56px" } }),
+  heroFrame: css({ position: "relative", overflow: "hidden", borderRadius: "28px", backgroundColor: colors.bgCard, boxShadow: "var(--c-shadow)", padding: "36px 22px", medium: { padding: "48px 36px", borderRadius: "32px" }, large: { padding: "64px 56px" } }),
 
   heroInner: css({ position: "relative", display: "grid", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.92fr) minmax(420px, 1.08fr)", gap: "70px" } }),
 
@@ -81,9 +81,9 @@ export const hs = {
 
   philosophyPoints: css({ display: "flex", flexDirection: "column", gap: "10px" }),
 
-  philosophyPoint: css({ display: "flex", gap: "16px", alignItems: "flex-start", padding: "16px 18px", borderRadius: "8px", border: "1px solid transparent", transition: "all 0.2s ease", hover: { borderColor: colors.border, backgroundColor: colors.bgCard, transform: "translateX(4px)" } }),
+  philosophyPoint: css({ display: "flex", gap: "16px", alignItems: "flex-start", padding: "16px 18px", borderRadius: "8px", transition: "all 0.2s ease", hover: { backgroundColor: colors.bgCard, transform: "translateX(4px)" } }),
 
-  philosophyPointIcon: css({ width: "38px", height: "38px", borderRadius: "8px", backgroundColor: colors.primaryAlpha08, border: `1px solid ${colors.borderPrimary}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", fontWeight: "800", color: colors.primary, flexShrink: 0 }),
+  philosophyPointIcon: css({ width: "38px", height: "38px", borderRadius: "8px", backgroundColor: colors.primaryAlpha08, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", fontWeight: "800", color: colors.primary, flexShrink: 0 }),
 
   philosophyPointTitle: css({ fontSize: "0.97rem", fontWeight: "600", marginBottom: "4px" }),
 
@@ -102,12 +102,12 @@ export const hs = {
   // Comparison section
   comparisonSection: css({ position: "relative", overflow: "hidden", padding: "64px 0", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, medium: { padding: "96px 0" } }),
 
-  cmpBadge: css({ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.64rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary, padding: "3px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08, border: `1px solid ${colors.borderPrimary}` }),
+  cmpBadge: css({ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.64rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary, padding: "3px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08 }),
 
   // Benchmark section
   benchSection: css({ padding: "64px 0", medium: { padding: "96px 0" } }),
 
-  benchPanel: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "20px", padding: "26px 20px", marginTop: "46px", medium: { padding: "38px 42px" } }),
+  benchPanel: css({ backgroundColor: colors.bgCard, boxShadow: "var(--c-shadow)", borderRadius: "20px", padding: "26px 20px", marginTop: "46px", medium: { padding: "38px 42px" } }),
 
   benchHead: css({ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "26px" }),
 
@@ -142,7 +142,7 @@ export const hs = {
   // Quick start section
   quickStartSection: css({ padding: "64px 0", medium: { padding: "96px 0" } }),
 
-  quickStartStep: css({ display: "flex", flexDirection: "column", backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "16px", overflow: "hidden", transition: "all 0.22s ease", hover: { borderColor: colors.borderLight, transform: "translateY(-3px)", boxShadow: "0 18px 44px -24px rgba(0,0,0,0.3)" } }),
+  quickStartStep: css({ display: "flex", flexDirection: "column", backgroundColor: colors.bgCard, borderRadius: "16px", overflow: "hidden", transition: "all 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 18px 44px -24px rgba(0,0,0,0.3)" } }),
 
   stepHeader: css({ padding: "24px 24px 16px", flex: "1" }),
 
@@ -151,7 +151,7 @@ export const hs = {
 
   examplesTeaserGrid: css({ display: "grid", gridTemplateColumns: "1fr", gap: "20px", marginTop: "32px", medium: { gridTemplateColumns: "1fr 1fr", marginTop: "48px" } }),
 
-  teaserCard: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "16px", overflow: "hidden", transition: "all 0.22s ease", hover: { borderColor: colors.borderGlow, transform: "translateY(-3px)", boxShadow: "0 22px 52px -28px var(--c-primary-glow)" } }),
+  teaserCard: css({ backgroundColor: colors.bgCard, borderRadius: "16px", overflow: "hidden", transition: "all 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 22px 52px -28px var(--c-primary-glow)" } }),
 
   teaserDemoPane: css({ padding: "32px 24px", minHeight: "200px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.bgCode }),
 
