@@ -69,7 +69,7 @@ function CounterDemo() {
     div(
       es.buttonRow,
       button(es.button, "-", on("click", () => { count--; update(); })),
-      button(es.button, es.buttonPrimary, "Reset", on("click", () => { count = 0; update(); })),
+      button({ class: cx(es.button, es.buttonPrimary).className }, "Reset", on("click", () => { count = 0; update(); })),
       button(es.button, "+", on("click", () => { count++; update(); })),
     ),
   );
