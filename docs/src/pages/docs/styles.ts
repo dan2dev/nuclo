@@ -27,14 +27,14 @@ const contentTypography = {
   "& .code-block-filename": { raw: { "font-family": mono, "font-size": "0.75rem", color: "var(--c-text-muted)" } },
   "& .code-block-body": { raw: { padding: "18px 20px 20px", "overflow-x": "auto", color: "var(--c-text)", "font-family": mono, "font-size": "0.8rem", "line-height": "1.7", "scrollbar-width": "thin" } },
   "& .code-block-body pre": { raw: { margin: "0", "white-space": "pre", "min-width": "max-content" } },
-  "& .docs-callout": { raw: { "background-color": "var(--c-primary-alpha-08)", "border-left": "3px solid var(--c-primary)", "border-radius": "14px", padding: "16px 18px", margin: "20px 0", "font-size": "0.9rem", color: "var(--c-text-dim)", animation: `${animations.softPulse} 4.2s ease-in-out infinite` } },
+  "& .docs-callout": { raw: { "background-color": "var(--c-primary-alpha-08)", "border-left": "3px solid var(--c-primary)", "border-radius": "14px", padding: "16px 18px", margin: "20px 0", "font-size": "0.9rem", color: "var(--c-text-dim)" } },
   "& .docs-callout strong": { raw: { color: "var(--c-primary)" } },
 } as const;
 
 export const ds = {
   layout: css({ display: "grid", gridTemplateColumns: "228px minmax(0, 840px) 184px", gap: "34px", maxWidth: "1336px", margin: "0 auto", padding: "0 28px", minHeight: "100vh", alignItems: "start", raw: { "scrollbar-width": "thin" }, "@media (max-width: 1180px)": { gridTemplateColumns: "224px minmax(0, 1fr)", maxWidth: "1080px", gap: "42px" }, "@media (max-width: 900px)": { display: "block", padding: "0 24px" }, "@media (max-width: 600px)": { padding: "0 18px" } }),
   progress: css({ position: "fixed", top: "76px", left: "0", right: "0", zIndex: 190, height: "2px", pointerEvents: "none", backgroundColor: "transparent" }),
-  progressFill: css({ width: "var(--docs-progress)", height: "100%", backgroundColor: colors.primary, transition: "width 0.08s linear" }),
+  progressFill: css({ width: "var(--docs-progress)", height: "100%", backgroundColor: colors.primary }),
 
   sidebar: css({ padding: "8px 0 44px", position: "sticky", top: "96px", height: "calc(100vh - 112px)", overflowY: "auto", alignSelf: "start", "&::-webkit-scrollbar": { width: "4px" }, "&::-webkit-scrollbar-track": { backgroundColor: "transparent" }, "&::-webkit-scrollbar-thumb": { backgroundColor: colors.borderLight, borderRadius: "2px" }, "@media (max-width: 900px)": { display: "none" } }),
   sidebarHead: css({ margin: "0 0 22px", padding: "0 0 18px", borderBottom: `1px solid ${colors.border}` }),
@@ -42,7 +42,7 @@ export const ds = {
   sidebarTitle: css({ fontSize: "1.05rem", fontWeight: "800", color: colors.text }),
   sidebarGroup: css({ marginBottom: "26px" }),
   sidebarGroupTitle: css({ fontSize: "0.7rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "8px" }),
-  sidebarLink: css({ display: "block", fontSize: "0.86rem", color: colors.textDim, padding: "8px 10px 8px 12px", borderLeft: "2px solid transparent", borderRadius: "0 8px 8px 0", transition: "all 0.18s ease", cursor: "pointer", hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
+  sidebarLink: css({ display: "block", fontSize: "0.86rem", color: colors.textDim, padding: "8px 10px 8px 12px", borderLeft: "2px solid transparent", borderRadius: "0 8px 8px 0", cursor: "pointer", hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
   sidebarLinkActive: css({ color: colors.primary, backgroundColor: colors.primaryAlpha08, borderLeftColor: colors.primary, fontWeight: "800", hover: { color: colors.primary, backgroundColor: colors.primaryAlpha08 } }),
 
   content: css({ padding: "0 0 76px", maxWidth: "820px", width: "100%", minWidth: "0", overflowX: "hidden", ...contentTypography, "@media (max-width: 1180px)": { maxWidth: "100%" }, "@media (max-width: 900px)": { padding: "0 0 60px", maxWidth: "100%" }, "@media (max-width: 600px)": { "& h1": { raw: { "font-size": "2rem" } }, "& h2": { raw: { "font-size": "1.28rem" } } } }),
@@ -53,13 +53,13 @@ export const ds = {
   heroMark: css({ width: "138px", height: "138px", transform: "rotate(7deg)", filter: "drop-shadow(0 24px 30px rgba(255,63,0,0.22))" }),
   eyebrow: css({ fontFamily: mono, fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary, marginBottom: "12px" }),
   lead: css({ fontSize: "1.05rem", color: colors.textDim, lineHeight: "1.75", maxWidth: "720px", marginBottom: "0" }),
-  quickstart: css({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "18px", marginTop: "24px", padding: "13px 14px 13px 16px", backgroundColor: colors.bgSecondary, borderRadius: "16px", transition: "transform 0.2s ease, box-shadow 0.2s ease", boxShadow: "0 18px 42px -34px rgba(0,0,0,0.34)", hover: { transform: "translateY(-2px)", boxShadow: "0 18px 44px -32px var(--c-primary-glow)" }, "@media (max-width: 600px)": { alignItems: "stretch", flexDirection: "column", gap: "10px" } }),
+  quickstart: css({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "18px", marginTop: "24px", padding: "13px 14px 13px 16px", backgroundColor: colors.bgSecondary, borderRadius: "16px", transition: "transform 0.2s ease", boxShadow: "0 18px 42px -34px rgba(0,0,0,0.34)", hover: { transform: "translateY(-2px)", boxShadow: "0 18px 44px -32px var(--c-primary-glow)" }, "@media (max-width: 600px)": { alignItems: "stretch", flexDirection: "column", gap: "10px" } }),
   quickstartCopy: css({ display: "flex", alignItems: "center", gap: "12px", minWidth: "0", "@media (max-width: 600px)": { alignItems: "flex-start", flexDirection: "column", gap: "8px" } }),
   quickstartLabel: css({ fontFamily: mono, fontSize: "0.7rem", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, flexShrink: 0, fontWeight: "800" }),
   quickstartCode: css({ fontSize: "0.82rem", backgroundColor: colors.bgCode, color: colors.text }),
-  quickstartLink: css({ flexShrink: 0, fontSize: "0.82rem", fontWeight: "600", color: colors.primary, padding: "7px 10px", borderRadius: "6px", transition: "background 0.18s ease, color 0.18s ease", hover: { color: colors.primaryHover, backgroundColor: colors.primaryAlpha08 }, "@media (max-width: 600px)": { textAlign: "center", backgroundColor: colors.primaryAlpha08 } }),
+  quickstartLink: css({ flexShrink: 0, fontSize: "0.82rem", fontWeight: "600", color: colors.primary, padding: "7px 10px", borderRadius: "6px", hover: { color: colors.primaryHover, backgroundColor: colors.primaryAlpha08 }, "@media (max-width: 600px)": { textAlign: "center", backgroundColor: colors.primaryAlpha08 } }),
   metaGrid: css({ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "10px", marginTop: "26px", "@media (max-width: 600px)": { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" } }),
-  metaCard: css({ backgroundColor: colors.bgSecondary, borderRadius: "14px", padding: "14px 16px", minWidth: "0", transition: "transform 0.2s ease, box-shadow 0.2s ease", hover: { transform: "translateY(-2px)", boxShadow: "0 14px 32px -24px rgba(0,0,0,0.28)" } }),
+  metaCard: css({ backgroundColor: colors.bgSecondary, borderRadius: "14px", padding: "14px 16px", minWidth: "0", transition: "transform 0.2s ease", hover: { transform: "translateY(-2px)", boxShadow: "0 14px 32px -24px rgba(0,0,0,0.28)" } }),
   metaValue: css({ fontSize: "1rem", fontWeight: "800", color: colors.text, lineHeight: "1.2", marginBottom: "4px" }),
   metaLabel: css({ fontSize: "0.76rem", color: colors.textMuted }),
 
@@ -77,7 +77,7 @@ export const ds = {
   sectionNumber: css({ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "28px", height: "24px", padding: "0 8px", borderRadius: "9999px", backgroundColor: colors.primaryAlpha08, color: colors.primary, fontFamily: mono, fontSize: "0.68rem", fontWeight: "800" }),
   sectionKicker: css({ fontFamily: mono, fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.accentSecondary, display: "inline-flex" }),
   sectionTitleRow: css({ display: "flex", alignItems: "center", gap: "10px", "@media (max-width: 600px)": { alignItems: "flex-start" } }),
-  sectionAnchor: css({ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "6px", color: colors.textMuted, opacity: "0", transition: "all 0.18s ease", fontFamily: mono, fontSize: "0.86rem", focusVisible: { opacity: "1" }, hover: { color: colors.primary, backgroundColor: colors.primaryAlpha08 }, "@media (max-width: 600px)": { opacity: "1", width: "26px", height: "26px", flexShrink: 0 } }),
+  sectionAnchor: css({ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "6px", color: colors.textMuted, opacity: "0", transition: "opacity 0.18s ease", fontFamily: mono, fontSize: "0.86rem", focusVisible: { opacity: "1" }, hover: { color: colors.primary, backgroundColor: colors.primaryAlpha08 }, "@media (max-width: 600px)": { opacity: "1", width: "26px", height: "26px", flexShrink: 0 } }),
 
   apiHeadingRow: css({ display: "flex", alignItems: "center", gap: "8px", margin: "12px 0 10px" }),
   apiLabel: css({ fontSize: "0.75rem", color: colors.textMuted }),
@@ -87,12 +87,12 @@ export const ds = {
   apiTagType: css({ backgroundColor: "rgba(125,214,232,0.12)", color: "var(--c-tok-type)" }),
 
   rail: css({ position: "sticky", top: "96px", alignSelf: "start", display: "flex", flexDirection: "column", gap: "12px", "@media (max-width: 1180px)": { display: "none" } }),
-  railCard: css({ backgroundColor: colors.bgCard, borderRadius: "14px", padding: "14px", transition: "transform 0.2s ease, box-shadow 0.2s ease", hover: { transform: "translateY(-2px)", boxShadow: "0 14px 30px -24px rgba(0,0,0,0.25)" } }),
+  railCard: css({ backgroundColor: colors.bgCard, borderRadius: "14px", padding: "14px", transition: "transform 0.2s ease", hover: { transform: "translateY(-2px)", boxShadow: "0 14px 30px -24px rgba(0,0,0,0.25)" } }),
   railKicker: css({ fontFamily: mono, fontSize: "0.66rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "8px" }),
   railTitle: css({ fontSize: "0.92rem", fontWeight: "800", lineHeight: "1.3", color: colors.text }),
   railGroup: css({ marginTop: "4px", fontSize: "0.76rem", color: colors.accentSecondary }),
   railNav: css({ display: "flex", flexDirection: "column", gap: "4px" }),
-  railLink: css({ display: "block", borderRadius: "6px", padding: "7px 8px", color: colors.textDim, fontSize: "0.8rem", lineHeight: "1.35", transition: "color 0.18s ease, background 0.18s ease", hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
+  railLink: css({ display: "block", borderRadius: "6px", padding: "7px 8px", color: colors.textDim, fontSize: "0.8rem", lineHeight: "1.35", hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
   railLinkActive: css({ color: colors.primary, backgroundColor: colors.primaryAlpha08 }),
 };
 

@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test.use({ baseURL: "http://localhost:5173" });
-
-test("hero example keeps its local state and tabs interactive", async ({ page }) => {
+test("hero example keeps its local state with preview and code visible", async ({ page }) => {
   await page.goto("/", { waitUntil: "networkidle" });
 
   const demo = page.locator("[data-hero-demo]");
@@ -14,11 +12,8 @@ test("hero example keeps its local state and tabs interactive", async ({ page })
   await demo.getByRole("button", { name: "−", exact: true }).click();
   await expect(count).toHaveText("0");
 
-  await demo.getByRole("button", { name: "Code", exact: true }).click();
-  await expect(demo.getByRole("button", { name: "Preview", exact: true })).toBeVisible();
-  await expect(demo.locator("[data-demo-pane='code']")).toBeVisible();
-
-  await demo.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(demo.locator("[data-demo-pane='preview']")).toBeVisible();
-  await expect(demo.getByRole("button", { name: "+", exact: true })).toBeVisible();
+  await expect(demo.locator("[data-demo-pane='code']")).toBeVisible();
+  await expect(demo.locator("[data-demo-label]")).toHaveCount(0);
+  await expect(demo.locator("[data-demo-tab]")).toHaveCount(0);
 });
