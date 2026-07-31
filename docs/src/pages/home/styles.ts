@@ -2,7 +2,8 @@ import { css, colors } from "../../styles.ts";
 import { animations } from "../../styles/animations.ts";
 
 export const hs = {
-  dotGrid: css({ position: "absolute", inset: "0", pointerEvents: "none", backgroundImage: "radial-gradient(var(--grid-dot) 1px, transparent 1.4px)", backgroundSize: "28px 28px", raw: { "-webkit-mask-image": "linear-gradient(180deg, rgba(0,0,0,0.45), transparent 68%)", "mask-image": "linear-gradient(180deg, rgba(0,0,0,0.45), transparent 68%)" } }),
+  heroCanvas: css({ position: "absolute", inset: "0", width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }),
+  dotGrid: css({ position: "absolute", inset: "0", pointerEvents: "none", zIndex: 1, opacity: "0.46", backgroundImage: "radial-gradient(rgba(255,255,255,0.34) 1px, transparent 1.4px)", backgroundSize: "28px 28px", raw: { "-webkit-mask-image": "linear-gradient(180deg, rgba(0,0,0,0.45), transparent 68%)", "mask-image": "linear-gradient(180deg, rgba(0,0,0,0.45), transparent 68%)" } }),
   paneHidden: css({ display: "none" }),
   preWrap: css({ margin: "0", whiteSpace: "pre-wrap" }),
   demoTabBtnActive: css({ color: colors.primary, borderBottom: `2px solid ${colors.primary}` }),
@@ -27,7 +28,7 @@ export const hs = {
 
   heroFrame: css({ position: "relative", overflow: "hidden", borderRadius: "28px", backgroundColor: colors.primary, boxShadow: "var(--c-shadow)", padding: "36px 22px", medium: { padding: "48px 36px", borderRadius: "32px" }, large: { padding: "64px 56px" } }),
 
-  heroInner: css({ position: "relative", display: "grid", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.92fr) minmax(420px, 1.08fr)", gap: "70px" } }),
+  heroInner: css({ position: "relative", zIndex: 2, display: "grid", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.92fr) minmax(420px, 1.08fr)", gap: "70px" } }),
 
   heroBadge: css({ display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primaryText, padding: "5px 12px", borderRadius: "999px", backgroundColor: "rgba(255,255,255,0.16)" }),
 
