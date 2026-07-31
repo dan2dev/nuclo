@@ -45,7 +45,6 @@ function InstallCommand() {
 
   return div(
     s.installCmd,
-    fx.shimmer,
     span(css({ color: colors.textMuted, fontFamily: "'JetBrains Mono', monospace" }), "$"),
     span(INSTALL_CMD),
     button(
@@ -69,7 +68,7 @@ function HeroDemoCard() {
     return div(
       css({ textAlign: "center", width: "100%" }),
       div(
-        fx.gradientText,
+        fx.accentText,
         css({ fontSize: "5.2rem", fontWeight: "700", lineHeight: "1", marginBottom: "26px", fontVariantNumeric: "tabular-nums" }),
         () => String(count),
       ),
@@ -129,8 +128,7 @@ export function HomeHeroSection() {
       s.container,
       div(
         hs.heroFrame,
-        // Ambient ornaments (decorative, behind content, clipped to the frame)
-        div(hs.heroBg, { "aria-hidden": "true" }),
+        // Ambient ornament (decorative, behind content, clipped to the frame)
         div(hs.dotGrid, { "aria-hidden": "true" }),
         div(
           hs.heroInner,
@@ -139,7 +137,7 @@ export function HomeHeroSection() {
             // Badge
             div(
               s.badge,
-              fx.shimmer, { className: "he he-1" },
+              { className: "he he-1" },
               css({ marginBottom: "22px" }),
               span(fx.badgeDot),
               HERO_BADGE,
@@ -152,7 +150,7 @@ export function HomeHeroSection() {
               { className: "he he-2" },
               ...HERO_TITLE_LINES.map((line) => {
                 if (line === "nuclo.") {
-                  return div(span(fx.gradientText, line));
+                  return div(span(fx.accentText, line));
                 }
                 return div(line);
               }),
@@ -514,7 +512,7 @@ export function ExamplesTeaserSection() {
     let n = 0;
     return div(
       css({ textAlign: "center" }),
-      div(fx.gradientText, css({ fontSize: "3rem", fontWeight: "700", lineHeight: "1", marginBottom: "12px", fontVariantNumeric: "tabular-nums" }), () => String(n)),
+      div(fx.accentText, css({ fontSize: "3rem", fontWeight: "700", lineHeight: "1", marginBottom: "12px", fontVariantNumeric: "tabular-nums" }), () => String(n)),
       div(
         css({ display: "flex", gap: "8px", justifyContent: "center" }),
         button(

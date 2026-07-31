@@ -91,7 +91,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   const menuLineTopOpenStyle = css({ transform: "translateY(7px) rotate(45deg)" });
   const menuLineMiddleOpenStyle = css({ opacity: "0", transform: "scaleX(0)" });
   const menuLineBottomOpenStyle = css({ transform: "translateY(-7px) rotate(-45deg)" });
-  const navStyle = css({ position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "76px", backgroundColor: "var(--c-header-bg)", borderBottom: `1px solid ${colors.border}`, boxShadow: "0 1px 0 rgba(255,255,255,0.02)", backdropFilter: "saturate(160%) blur(18px)", animation: `${animations.pageFadeIn} 0.34s ease both`, display: "flex", alignItems: "center" });
+  const navStyle = css({ position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "76px", backgroundColor: "var(--c-header-bg)", borderBottom: `1px solid ${colors.border}`, boxShadow: "0 1px 0 rgba(255,255,255,0.02)", animation: `${animations.pageFadeIn} 0.34s ease both`, display: "flex", alignItems: "center" });
 
   const navInnerStyle = css({ display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: "22px" });
 
@@ -108,7 +108,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
 
   const themeBtn = css({ display: "flex", alignItems: "center", justifyContent: "center", width: "38px", height: "38px", borderRadius: "9999px", border: `1px solid ${colors.border}`, color: colors.textDim, backgroundColor: colors.bgCard, transition: "all 0.18s ease", fontSize: "15px", flexShrink: 0, hover: { color: colors.text, borderColor: colors.borderLight, backgroundColor: colors.bgSecondary, transform: "translateY(-1px)" } });
 
-  const getStartedBtn = css({ display: "none", alignItems: "center", gap: "7px", height: "40px", padding: "0 20px", borderRadius: "9999px", color: "#fff", backgroundImage: "linear-gradient(135deg, var(--c-accent-warm), var(--c-primary) 56%, var(--c-accent-secondary) 130%)", fontSize: "0.86rem", fontWeight: "800", boxShadow: "0 14px 30px -20px var(--c-primary-glow)", transition: "transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease", large: { display: "inline-flex" }, hover: { transform: "translateY(-1px)", boxShadow: "0 18px 36px -20px var(--c-primary-glow)", filter: "brightness(1.04)" } });
+  const getStartedBtn = css({ display: "none", alignItems: "center", gap: "7px", height: "40px", padding: "0 20px", borderRadius: "9999px", color: "#fff", backgroundColor: colors.primary, fontSize: "0.86rem", fontWeight: "800", boxShadow: "0 14px 30px -20px var(--c-primary-glow)", transition: "transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease", large: { display: "inline-flex" }, hover: { transform: "translateY(-1px)", boxShadow: "0 18px 36px -20px var(--c-primary-glow)", backgroundColor: colors.primaryHover } });
 
   // Mobile hamburger button - flex on mobile, hidden on medium+
   const hamburgerBtn = css({ display: "flex", alignItems: "center", justifyContent: "center", width: "38px", height: "38px", borderRadius: "9999px", border: `1px solid ${colors.border}`, color: colors.textDim, backgroundColor: colors.bgCard, transition: "all 0.18s ease", cursor: "pointer", medium: { display: "none" },

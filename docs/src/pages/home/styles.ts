@@ -2,7 +2,6 @@ import { css, colors } from "../../styles.ts";
 import { animations } from "../../styles/animations.ts";
 
 export const hs = {
-  heroBg: css({ position: "absolute", inset: "0", pointerEvents: "none", backgroundImage: "linear-gradient(180deg, transparent 0%, var(--c-bg-secondary) 100%)", opacity: "0.28" }),
   dotGrid: css({ position: "absolute", inset: "0", pointerEvents: "none", backgroundImage: "radial-gradient(var(--grid-dot) 1px, transparent 1.4px)", backgroundSize: "28px 28px", raw: { "-webkit-mask-image": "linear-gradient(180deg, rgba(0,0,0,0.45), transparent 68%)", "mask-image": "linear-gradient(180deg, rgba(0,0,0,0.45), transparent 68%)" } }),
   paneHidden: css({ display: "none" }),
   preWrap: css({ margin: "0", whiteSpace: "pre-wrap" }),
@@ -16,21 +15,21 @@ export const hs = {
   pipeCode: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", lineHeight: "1.6", backgroundColor: colors.bgCode, border: `1px solid ${colors.border}`, borderRadius: "10px", padding: "12px 14px", overflowX: "auto", whiteSpace: "pre" }),
   cmpGrid: css({ display: "grid", gridTemplateColumns: "1fr", gap: "16px", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 1fr 1fr", gap: "18px" } }),
   cmpCol: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "16px", padding: "28px 26px", transition: "transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease", hover: { transform: "translateY(-3px)", borderColor: colors.borderLight } }),
-  cmpColFeatured: css({ borderColor: "transparent", backgroundImage: "linear-gradient(var(--c-bg-card), var(--c-bg-card)), linear-gradient(160deg, rgba(255,35,0,0.55), rgba(255,154,0,0.36))", raw: { "background-origin": "border-box", "background-clip": "padding-box, border-box" }, boxShadow: "0 26px 64px -32px var(--c-primary-glow)", hover: { boxShadow: "0 30px 72px -30px var(--c-primary-glow)" } }),
+  cmpColFeatured: css({ borderColor: colors.borderPrimary, boxShadow: "0 26px 64px -32px var(--c-primary-glow)", hover: { boxShadow: "0 30px 72px -30px var(--c-primary-glow)" } }),
   cmpHead: css({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "6px" }),
   cmpName: css({ fontSize: "1.02rem", fontWeight: "700" }),
   cmpSub: css({ fontSize: "0.8rem", color: colors.textMuted, marginBottom: "20px", fontFamily: "'JetBrains Mono', monospace" }),
   cmpLi: css({ display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.6", padding: "7px 0", "& svg": { flexShrink: 0, marginTop: "4px" } }),
   cmpLiGood: css({ color: colors.text, "& svg": { color: colors.primary } }),
   cmpLiDim: css({ "& svg": { color: colors.textMuted } }),
-  ctaPanel: css({ position: "relative", overflow: "hidden", border: "1px solid transparent", borderRadius: "24px", backgroundImage: "linear-gradient(var(--c-bg-card), var(--c-bg-card)), linear-gradient(165deg, rgba(255,35,0,0.46), var(--c-border) 38%, var(--c-border) 64%, rgba(255,154,0,0.42))", raw: { "background-origin": "border-box", "background-clip": "padding-box, border-box" }, padding: "68px 24px", textAlign: "center", "&::before": { content: "''", position: "absolute", top: "-80px", right: "-68px", width: "220px", height: "220px", borderRadius: "42px", backgroundImage: "linear-gradient(135deg, var(--c-accent-warm), var(--c-primary), var(--c-accent-secondary))", opacity: "0.14", transform: "rotate(14deg)", pointerEvents: "none" }, "& > *": { position: "relative" }, medium: { padding: "84px 48px" } }),
+  ctaPanel: css({ position: "relative", overflow: "hidden", border: `1px solid ${colors.borderPrimary}`, borderRadius: "24px", backgroundColor: colors.bgCard, padding: "68px 24px", textAlign: "center", "&::before": { content: "''", position: "absolute", top: "-80px", right: "-68px", width: "220px", height: "220px", borderRadius: "42px", backgroundColor: colors.primary, opacity: "0.14", transform: "rotate(14deg)", pointerEvents: "none" }, "& > *": { position: "relative" }, medium: { padding: "84px 48px" } }),
   heroSection: css({ padding: "28px 0 48px", large: { padding: "40px 0 64px" } }),
 
   heroFrame: css({ position: "relative", overflow: "hidden", borderRadius: "28px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgCard, padding: "36px 22px", medium: { padding: "48px 36px", borderRadius: "32px" }, large: { padding: "64px 56px" } }),
 
   heroInner: css({ position: "relative", display: "grid", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.92fr) minmax(420px, 1.08fr)", gap: "70px" } }),
 
-  heroRule: css({ width: "64px", height: "4px", backgroundImage: "linear-gradient(90deg, var(--c-accent-warm), var(--c-primary), var(--c-accent-secondary))", borderRadius: "2px", marginBottom: "28px" }),
+  heroRule: css({ width: "64px", height: "4px", backgroundColor: colors.primary, borderRadius: "2px", marginBottom: "28px" }),
 
   heroTitle: css({ fontSize: "2.7rem", fontWeight: "800", letterSpacing: "0", lineHeight: "1.04", marginBottom: "24px", medium: { fontSize: "3.55rem" }, large: { fontSize: "4.05rem" } }),
 
@@ -96,7 +95,7 @@ export const hs = {
   // Features section
   featuresSection: css({ padding: "64px 0", medium: { padding: "96px 0" } }),
 
-  featureIcon: css({ width: "42px", height: "42px", borderRadius: "12px", backgroundImage: "linear-gradient(135deg, var(--c-accent-warm), var(--c-primary))", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 14px 28px -20px var(--c-primary-glow)" }),
+  featureIcon: css({ width: "42px", height: "42px", borderRadius: "12px", backgroundColor: colors.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 14px 28px -20px var(--c-primary-glow)" }),
 
   featureKicker: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "6px" }),
 
@@ -130,7 +129,7 @@ export const hs = {
 
   benchFill: css({ position: "relative", height: "32px", minWidth: "54px", borderRadius: "999px", overflow: "hidden", backgroundColor: colors.bgLight, transition: "width 1.1s cubic-bezier(0.22, 1, 0.36, 1)" }),
 
-  benchFillFeatured: css({ backgroundColor: colors.primary, backgroundImage: "linear-gradient(90deg, var(--c-accent-warm) 0%, var(--c-primary) 55%, var(--c-accent-secondary) 130%)", boxShadow: "0 14px 30px -16px var(--c-primary-glow)" }),
+  benchFillFeatured: css({ backgroundColor: colors.primary, boxShadow: "0 14px 30px -16px var(--c-primary-glow)" }),
 
   benchValue: css({ position: "absolute", right: "13px", top: "50%", transform: "translateY(-50%)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", fontWeight: "700", color: colors.textDim, fontVariantNumeric: "tabular-nums" }),
 

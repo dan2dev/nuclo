@@ -13,14 +13,6 @@ export const animations = {
     "0%, 100%": { raw: {"box-shadow": "0 0 0 rgba(255,63,0,0)"} },
     "50%": { raw: {"box-shadow": "0 0 28px var(--c-primary-glow)"} },
   }),
-  progressSweep: keyframes({
-    "0%": { raw: {"background-position": "0% 50%"} },
-    "100%": { raw: {"background-position": "220% 50%"} },
-  }),
-  shimmerSweep: keyframes({
-    "0%": { raw: {"transform": "translateX(-160%) skewX(-18deg)"} },
-    "100%": { raw: {"transform": "translateX(420%) skewX(-18deg)"} },
-  }),
   dotPing: keyframes({
     "0%": { raw: {"box-shadow": "0 0 0 0 var(--c-primary-glow)"} },
     "70%": { raw: {"box-shadow": "0 0 0 7px rgba(255,63,0,0)"} },
