@@ -25,15 +25,19 @@ export const hs = {
   ctaPanel: css({ position: "relative", overflow: "hidden", borderRadius: "24px", backgroundColor: colors.bgSecondary, boxShadow: "var(--c-shadow)", padding: "68px 24px", textAlign: "center", "&::before": { content: "''", position: "absolute", top: "-80px", right: "-68px", width: "220px", height: "220px", borderRadius: "42px", backgroundColor: colors.primary, opacity: "0.14", transform: "rotate(14deg)", pointerEvents: "none" }, "& > *": { position: "relative" }, medium: { padding: "84px 48px" } }),
   heroSection: css({ padding: "28px 0 48px", large: { padding: "40px 0 64px" } }),
 
-  heroFrame: css({ position: "relative", overflow: "hidden", borderRadius: "28px", backgroundColor: colors.bgCard, boxShadow: "var(--c-shadow)", padding: "36px 22px", medium: { padding: "48px 36px", borderRadius: "32px" }, large: { padding: "64px 56px" } }),
+  heroFrame: css({ position: "relative", overflow: "hidden", borderRadius: "28px", backgroundColor: colors.primary, boxShadow: "var(--c-shadow)", padding: "36px 22px", medium: { padding: "48px 36px", borderRadius: "32px" }, large: { padding: "64px 56px" } }),
 
   heroInner: css({ position: "relative", display: "grid", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.92fr) minmax(420px, 1.08fr)", gap: "70px" } }),
 
-  heroRule: css({ width: "64px", height: "4px", backgroundColor: colors.primary, borderRadius: "2px", marginBottom: "28px" }),
+  heroBadge: css({ display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primaryText, padding: "5px 12px", borderRadius: "999px", backgroundColor: "rgba(255,255,255,0.16)" }),
 
-  heroTitle: css({ fontSize: "2.7rem", fontWeight: "800", letterSpacing: "0", lineHeight: "1.04", marginBottom: "24px", medium: { fontSize: "3.55rem" }, large: { fontSize: "4.05rem" } }),
+  heroBadgeDot: css({ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: colors.primaryText, flexShrink: 0 }),
 
-  heroDesc: css({ fontSize: "1.05rem", color: colors.textDim, lineHeight: "1.75", marginBottom: "28px", maxWidth: "500px" }),
+  heroRule: css({ width: "64px", height: "4px", backgroundColor: colors.primaryText, borderRadius: "2px", marginBottom: "28px" }),
+
+  heroTitle: css({ fontSize: "2.7rem", fontWeight: "800", letterSpacing: "0", lineHeight: "1.04", marginBottom: "24px", color: colors.primaryText, medium: { fontSize: "3.55rem" }, large: { fontSize: "4.05rem" } }),
+
+  heroDesc: css({ fontSize: "1.05rem", color: colors.primaryText, lineHeight: "1.75", marginBottom: "28px", maxWidth: "500px" }),
 
   heroInstall: css({ marginBottom: "28px" }),
 
@@ -41,16 +45,18 @@ export const hs = {
 
   heroActions: css({ display: "flex", gap: "12px", flexWrap: "wrap" }),
 
+  heroPrimaryBtn: css({ backgroundColor: colors.primaryText, color: colors.primary, boxShadow: "0 14px 28px -18px rgba(0,0,0,0.35)", hover: { backgroundColor: "rgba(255,255,255,0.9)", boxShadow: "0 18px 34px -18px rgba(0,0,0,0.4)", transform: "translateY(-1px)" } }),
+
   // Stats - fixed 3-column grid so items never drop to a new row; labels wrap within their own column instead.
-  statsRow: css({ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", columnGap: "20px", rowGap: "12px", padding: "32px 0 0", borderTop: `1px solid ${colors.border}`, marginTop: "36px" }),
+  statsRow: css({ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", columnGap: "20px", rowGap: "12px", padding: "32px 0 0", borderTop: "1px solid rgba(255,255,255,0.25)", marginTop: "36px" }),
 
-  statNum: css({ fontSize: "1.75rem", fontWeight: "700", color: colors.text, lineHeight: "1", marginBottom: "6px", fontVariantNumeric: "tabular-nums" }),
+  statNum: css({ fontSize: "1.75rem", fontWeight: "700", color: colors.primaryText, lineHeight: "1", marginBottom: "6px", fontVariantNumeric: "tabular-nums" }),
 
-  statLabel: css({ fontSize: "0.78rem", color: colors.textMuted, lineHeight: "1.4" }),
+  statLabel: css({ fontSize: "0.78rem", color: "rgba(255,255,255,0.72)", lineHeight: "1.4" }),
 
   heroVisual: css({ position: "relative", minHeight: "360px", display: "flex", alignItems: "center", justifyContent: "center" }),
 
-  heroBrandMark: css({ position: "absolute", width: "260px", height: "260px", right: "-18px", top: "10px", opacity: "0.96", filter: "drop-shadow(0 36px 46px rgba(255,63,0,0.26))", transform: "rotate(8deg)", large: { width: "330px", height: "330px", right: "-48px", top: "-22px" } }),
+  heroBrandMark: css({ position: "absolute", width: "260px", height: "260px", right: "-18px", top: "10px", opacity: "0.96", filter: "drop-shadow(0 36px 46px rgba(0,0,0,0.25))", transform: "rotate(8deg)", large: { width: "330px", height: "330px", right: "-48px", top: "-22px" } }),
 
   heroDemoArea: css({ position: "relative", width: "100%", borderRadius: "14px", overflow: "hidden", zIndex: 1 }),
 
