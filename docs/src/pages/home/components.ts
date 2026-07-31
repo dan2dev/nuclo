@@ -19,6 +19,7 @@ import {
   ZapIcon, FeatherIcon, BracesIcon, TargetIcon,
 } from "../../components/icons.ts";
 import { setRoute } from "../../router.ts";
+import { initHeroBackground } from "./hero-background.ts";
 
 function DemoDot(color: string) {
   return div(hs.heroDot, css({ backgroundColor: color }));
@@ -58,11 +59,33 @@ function InstallCommand() {
 }
 
 function HeroDemoCard() {
-  let activeTab: 'preview' | 'code' = 'preview';
   const heroCodeHtml = highlightCode(HERO_CODE);
-
-  // Live counter state inside the demo
   let count = 0;
+
+  function setActiveTab(event: Event, tab: "preview" | "code") {
+    const buttonElement = event.currentTarget as HTMLButtonElement;
+    const demo = buttonElement.closest<HTMLElement>("[data-hero-demo]");
+    if (!demo) return;
+
+    for (const tabButton of demo.querySelectorAll<HTMLElement>("[data-demo-tab]")) {
+      for (const className of hs.demoTabBtnActive.className.split(/\s+/)) {
+        tabButton.classList.toggle(className, tabButton.dataset.demoTab === tab);
+      }
+    }
+    for (const pane of demo.querySelectorAll<HTMLElement>("[data-demo-pane]")) {
+      for (const className of hs.paneHidden.className.split(/\s+/)) {
+        pane.classList.toggle(className, pane.dataset.demoPane !== tab);
+      }
+    }
+  }
+
+  function changeCount(event: Event, amount: number) {
+    count += amount;
+    const buttonElement = event.currentTarget as HTMLButtonElement;
+    const demo = buttonElement.closest<HTMLElement>("[data-hero-demo]");
+    const value = demo?.querySelector<HTMLElement>("[data-demo-count]");
+    if (value) value.textContent = String(count);
+  }
 
   function CounterPreview() {
     return div(
@@ -70,36 +93,38 @@ function HeroDemoCard() {
       div(
         fx.accentText,
         css({ fontSize: "5.2rem", fontWeight: "700", lineHeight: "1", marginBottom: "26px", fontVariantNumeric: "tabular-nums" }),
-        () => String(count),
+        { "data-demo-count": "" },
+        "0",
       ),
       div(
         css({ display: "flex", gap: "10px", justifyContent: "center" }),
         button(
           css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
           "−",
-          on("click", () => { count--; update(); }),
+          on("click", (event) => changeCount(event, -1)),
         ),
         button(
           css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid transparent`, color: "#fff", backgroundColor: colors.primary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { backgroundColor: colors.primaryHover } }),
           "+",
-          on("click", () => { count++; update(); }),
+          on("click", (event) => changeCount(event, 1)),
         ),
       ),
     );
   }
 
-  function Tab(label: string, tab: 'preview' | 'code') {
+  function Tab(label: string, tab: "preview" | "code") {
     return button(
-      hs.demoTabBtn,
-      { class: () => cx(hs.demoTabBtn, activeTab === tab ? hs.demoTabBtnActive : null).className },
+      hs.demoTabBtn, tab === "preview" ? hs.demoTabBtnActive : null,
+      { "data-demo-tab": tab },
       label,
-      on("click", () => { activeTab = tab; update(); }),
+      on("click", (event) => setActiveTab(event, tab)),
     );
   }
 
   return div(
     hs.heroDemoArea,
     fx.gradientBorder, fx.demoElevated,
+    { "data-hero-demo": "" },
     // Tabs
     div(
       hs.demoTabBar,
@@ -109,26 +134,36 @@ function HeroDemoCard() {
     // Panes
     div(
       hs.demoPreviewPane,
-      { class: () => cx(hs.demoPreviewPane, activeTab === "preview" ? null : hs.paneHidden).className },
+      { "data-demo-pane": "preview" },
       CounterPreview(),
     ),
     div(
-      hs.demoCodePane,
+      hs.demoCodePane, hs.paneHidden,
       terminalCodeTokenStyle,
-      { class: () => cx(hs.demoCodePane, terminalCodeTokenStyle, activeTab === "code" ? null : hs.paneHidden).className },
+      { "data-demo-pane": "code" },
       { innerHTML: `<pre class="${hs.preWrap.className}">${heroCodeHtml}</pre>` },
     ),
   );
 }
 
 export function HomeHeroSection() {
+  if (typeof window !== "undefined") {
+    requestAnimationFrame(() => {
+      const canvasElement = document.querySelector<HTMLCanvasElement>("[data-hero-background]");
+      if (canvasElement) initHeroBackground(canvasElement);
+    });
+  }
+
   return section(
     hs.heroSection,
     div(
       s.container,
       div(
         hs.heroFrame,
-        // Ambient ornament (decorative, behind content, clipped to the frame)
+        canvas(
+          hs.heroCanvas,
+          { "data-hero-background": "", "aria-hidden": "true" },
+        ),
         div(hs.dotGrid, { "aria-hidden": "true" }),
         div(
           hs.heroInner,
@@ -189,10 +224,6 @@ export function HomeHeroSection() {
           div(
             hs.heroVisual,
             { className: "he he-7" },
-            img(
-              hs.heroBrandMark,
-              { src: "/nuclo-icon@3x.png", alt: "", "aria-hidden": "true" },
-            ),
             HeroDemoCard(),
           ),
         ),
