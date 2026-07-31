@@ -34,7 +34,7 @@ const contentTypography = {
 export const ds = {
   layout: css({ display: "grid", gridTemplateColumns: "228px minmax(0, 840px) 184px", gap: "34px", maxWidth: "1336px", margin: "0 auto", padding: "0 28px", minHeight: "100vh", alignItems: "start", raw: { "scrollbar-width": "thin" }, "@media (max-width: 1180px)": { gridTemplateColumns: "224px minmax(0, 1fr)", maxWidth: "1080px", gap: "42px" }, "@media (max-width: 900px)": { display: "block", padding: "0 24px" }, "@media (max-width: 600px)": { padding: "0 18px" } }),
   progress: css({ position: "fixed", top: "76px", left: "0", right: "0", zIndex: 190, height: "2px", pointerEvents: "none", backgroundColor: "transparent" }),
-  progressFill: css({ width: "var(--docs-progress)", height: "100%", backgroundImage: "linear-gradient(90deg, var(--c-accent-warm), var(--c-primary), var(--c-accent-secondary), var(--c-primary))", backgroundSize: "220% 100%", animation: `${animations.progressSweep} 3s linear infinite`, transition: "width 0.08s linear" }),
+  progressFill: css({ width: "var(--docs-progress)", height: "100%", backgroundColor: colors.primary, transition: "width 0.08s linear" }),
 
   sidebar: css({ padding: "8px 0 44px", position: "sticky", top: "96px", height: "calc(100vh - 112px)", overflowY: "auto", alignSelf: "start", "&::-webkit-scrollbar": { width: "4px" }, "&::-webkit-scrollbar-track": { backgroundColor: "transparent" }, "&::-webkit-scrollbar-thumb": { backgroundColor: colors.borderLight, borderRadius: "2px" }, "@media (max-width: 900px)": { display: "none" } }),
   sidebarHead: css({ margin: "0 0 22px", padding: "0 0 18px", borderBottom: `1px solid ${colors.border}` }),

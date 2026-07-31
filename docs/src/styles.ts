@@ -63,7 +63,7 @@ export const s = {
 
   btn: css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minHeight: '44px', padding: '0 24px', borderRadius: '9999px', fontSize: '0.9rem', fontWeight: '800', transition: 'transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease', whiteSpace: 'nowrap' }),
 
-  btnPrimary: css({ backgroundColor: colors.primary, backgroundImage: 'linear-gradient(135deg, var(--c-accent-warm) 0%, var(--c-primary) 48%, var(--c-accent-secondary) 122%)', color: '#fff', boxShadow: '0 14px 28px -18px var(--c-primary-glow)', hover: { boxShadow: '0 18px 34px -18px var(--c-primary-glow)', transform: 'translateY(-1px)', filter: 'brightness(1.04)' } }),
+  btnPrimary: css({ backgroundColor: colors.primary, color: '#fff', boxShadow: '0 14px 28px -18px var(--c-primary-glow)', hover: { backgroundColor: colors.primaryHover, boxShadow: '0 18px 34px -18px var(--c-primary-glow)', transform: 'translateY(-1px)' } }),
 
   btnSecondary: css({ backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, color: colors.text, boxShadow: '0 10px 26px -24px rgba(0,0,0,0.28)', hover: { color: colors.primary, borderColor: colors.borderPrimary, boxShadow: '0 16px 34px -26px var(--c-primary-glow)' } }),
 

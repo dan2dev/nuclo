@@ -40,7 +40,7 @@ export const es = {
   countLabel: css({ fontSize: "0.78rem", color: colors.textMuted, letterSpacing: "0", marginBottom: "24px" }),
   buttonRow: css({ display: "flex", gap: "10px", justifyContent: "center" }),
   button: css({ padding: "9px 22px", borderRadius: "9999px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: sans, hover: { color: colors.text, borderColor: colors.primary } }),
-  buttonPrimary: css({ backgroundImage: "linear-gradient(135deg, var(--c-accent-warm), var(--c-primary) 60%, var(--c-accent-secondary) 130%)", color: "#fff", borderColor: "transparent", hover: { backgroundColor: colors.primaryHover, filter: "brightness(1.04)" } }),
+  buttonPrimary: css({ backgroundColor: colors.primary, color: "#fff", borderColor: "transparent", hover: { backgroundColor: colors.primaryHover } }),
 
   todo: css({ width: "100%", maxWidth: "340px" }),
   row: css({ display: "flex", gap: "8px", marginBottom: "14px" }),
@@ -59,7 +59,7 @@ export const es = {
   search: css({ width: "100%", maxWidth: "360px" }),
   searchInput: css({ width: "100%", marginBottom: "14px" }),
   userCard: css({ display: "flex", alignItems: "center", gap: "12px", padding: "10px 12px", borderRadius: "6px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary, marginBottom: "6px" }),
-  avatar: css({ width: "34px", height: "34px", borderRadius: "8px", backgroundImage: "linear-gradient(135deg, var(--c-accent-warm), var(--c-primary))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "800", color: "#fff", flexShrink: 0 }),
+  avatar: css({ width: "34px", height: "34px", borderRadius: "8px", backgroundColor: colors.primary, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "800", color: "#fff", flexShrink: 0 }),
   userName: css({ fontSize: "0.875rem", fontWeight: "500" }),
   userEmail: css({ fontSize: "0.78rem", color: colors.textMuted }),
   noResults: css({ fontSize: "0.85rem", color: colors.textMuted, textAlign: "center", padding: "20px 0" }),
