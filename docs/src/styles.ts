@@ -53,7 +53,7 @@ export const s = {
 
   section: css({ padding: '96px 0' }),
 
-  sectionLabel: css({ display: 'inline-flex', alignItems: 'center', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: '700', color: colors.primary, letterSpacing: '0', textTransform: 'uppercase', padding: '5px 13px', borderRadius: '9999px', backgroundColor: colors.primaryAlpha08, marginBottom: '14px' }),
+  sectionLabel: css({ display: 'inline-flex', alignItems: 'center', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: '700', color: colors.primary, letterSpacing: '0', textTransform: 'uppercase', marginBottom: '14px' }),
 
   sectionTitle: css({ fontSize: '2rem', fontWeight: '800', lineHeight: '1.12', letterSpacing: '0', marginBottom: '16px', medium: { fontSize: '2.55rem' } }),
 
@@ -61,7 +61,7 @@ export const s = {
 
   divider: css({ height: '1px', backgroundColor: colors.border, margin: '0' }),
 
-  btn: css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minHeight: '44px', padding: '0 24px', borderRadius: '9999px', fontSize: '0.9rem', fontWeight: '800', transition: 'transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease', whiteSpace: 'nowrap' }),
+  btn: css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minHeight: '44px', padding: '0 24px', borderRadius: '9999px', fontSize: '0.9rem', fontWeight: '800', transition: 'transform 0.18s ease', whiteSpace: 'nowrap' }),
 
   btnPrimary: css({ backgroundColor: colors.primary, color: '#fff', boxShadow: '0 14px 28px -18px var(--c-primary-glow)', hover: { backgroundColor: colors.primaryHover, boxShadow: '0 18px 34px -18px var(--c-primary-glow)', transform: 'translateY(-1px)' } }),
 
@@ -85,13 +85,13 @@ export const s = {
 
   demoTabs: css({ display: 'flex', borderBottom: `1px solid ${colors.border}`, padding: '0 16px', backgroundColor: colors.bgCard }),
 
-  demoTab: css({ fontSize: '0.8rem', fontWeight: '500', color: colors.textMuted, padding: '10px 14px', borderBottom: '2px solid transparent', transition: 'all 0.18s ease', cursor: 'pointer' }),
+  demoTab: css({ fontSize: '0.8rem', fontWeight: '500', color: colors.textMuted, padding: '10px 14px', borderBottom: '2px solid transparent', cursor: 'pointer' }),
 
   demoTabActive: css({ color: colors.primary, borderBottomColor: colors.primary }),
 
   featureGrid: css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }),
 
-  featureCard: css({ backgroundColor: colors.bgCard, borderRadius: '20px', padding: '28px 26px', transition: 'transform 0.18s ease, box-shadow 0.18s ease', hover: { transform: 'translateY(-2px)', boxShadow: '0 18px 46px -34px var(--c-primary-glow)' } }),
+  featureCard: css({ backgroundColor: colors.bgCard, borderRadius: '20px', padding: '28px 26px', transition: 'transform 0.18s ease', hover: { transform: 'translateY(-2px)', boxShadow: '0 18px 46px -34px var(--c-primary-glow)' } }),
 
   cardHeadRow: css({ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '16px' }),
 

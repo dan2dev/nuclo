@@ -8,14 +8,14 @@ export const hs = {
   preWrap: css({ margin: "0", whiteSpace: "pre-wrap" }),
   demoTabBtnActive: css({ color: colors.primary, borderBottom: `2px solid ${colors.primary}` }),
   pipe: css({ display: "grid", gridTemplateColumns: "1fr", gap: "0", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 54px 1fr 54px 1fr", alignItems: "stretch" } }),
-  pipeNode: css({ position: "relative", backgroundColor: colors.bgCard, borderRadius: "16px", padding: "26px 26px 24px", transition: "transform 0.22s ease, box-shadow 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 18px 44px -24px var(--c-primary-glow)" } }),
+  pipeNode: css({ position: "relative", backgroundColor: colors.bgCard, borderRadius: "16px", padding: "26px 26px 24px", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 18px 44px -24px var(--c-primary-glow)" } }),
   pipeLink: css({ position: "relative", minHeight: "44px", "&::before": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "repeating-linear-gradient(180deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "linear-gradient(180deg, transparent, var(--c-primary), transparent)", backgroundSize: "100% 55%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRunY} 2.3s ease-in-out infinite` }, "@media (min-width: 901px)": { minHeight: "0", "&::before": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "repeating-linear-gradient(90deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "linear-gradient(90deg, transparent, var(--c-primary), transparent)", backgroundSize: "55% 100%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRun} 2.3s ease-in-out infinite` } } }),
   pipeKicker: css({ display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary }),
   pipeTitle: css({ fontSize: "1.02rem", fontWeight: "700", marginBottom: "8px" }),
   pipeDesc: css({ fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65", marginBottom: "16px" }),
   pipeCode: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", lineHeight: "1.6", backgroundColor: colors.bgCode, borderRadius: "10px", padding: "12px 14px", overflowX: "auto", whiteSpace: "pre" }),
   cmpGrid: css({ display: "grid", gridTemplateColumns: "1fr", gap: "16px", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 1fr 1fr", gap: "18px" } }),
-  cmpCol: css({ backgroundColor: colors.bgCard, borderRadius: "16px", padding: "28px 26px", transition: "transform 0.22s ease, box-shadow 0.22s ease", hover: { transform: "translateY(-3px)" } }),
+  cmpCol: css({ backgroundColor: colors.bgCard, borderRadius: "16px", padding: "28px 26px", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)" } }),
   cmpColFeatured: css({ backgroundColor: colors.bgSecondary, boxShadow: "0 26px 64px -32px var(--c-primary-glow)", hover: { boxShadow: "0 30px 72px -30px var(--c-primary-glow)" } }),
   cmpHead: css({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "6px" }),
   cmpName: css({ fontSize: "1.02rem", fontWeight: "700" }),
@@ -26,11 +26,13 @@ export const hs = {
   ctaPanel: css({ position: "relative", overflow: "hidden", borderRadius: "24px", backgroundColor: colors.bgSecondary, boxShadow: "var(--c-shadow)", padding: "68px 24px", textAlign: "center", "&::before": { content: "''", position: "absolute", top: "-80px", right: "-68px", width: "220px", height: "220px", borderRadius: "42px", backgroundColor: colors.primary, opacity: "0.14", transform: "rotate(14deg)", pointerEvents: "none" }, "& > *": { position: "relative" }, medium: { padding: "84px 48px" } }),
   heroSection: css({ padding: "28px 0 48px", large: { padding: "40px 0 64px" } }),
 
+  heroShell: css({ width: "calc(100% - 24px)", maxWidth: "1600px", margin: "0 auto", medium: { width: "calc(100% - 40px)" }, large: { width: "calc(100% - 64px)" } }),
+
   heroFrame: css({ position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "28px", backgroundColor: colors.primary, boxShadow: "var(--c-shadow)", padding: "36px 22px", medium: { padding: "48px 36px", borderRadius: "32px" }, large: { padding: "64px 56px" } }),
 
-  heroInner: css({ position: "relative", zIndex: 2, display: "grid", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.92fr) minmax(420px, 1.08fr)", gap: "70px" } }),
+  heroInner: css({ position: "relative", zIndex: 2, display: "grid", width: "100%", maxWidth: "1240px", margin: "0 auto", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.92fr) minmax(420px, 1.08fr)", gap: "70px" } }),
 
-  heroBadge: css({ display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primaryText, padding: "5px 12px", borderRadius: "999px", backgroundColor: "rgba(255,255,255,0.16)" }),
+  heroBadge: css({ display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primaryText }),
 
   heroBadgeDot: css({ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: colors.primaryText, flexShrink: 0 }),
 
@@ -42,7 +44,7 @@ export const hs = {
 
   heroInstall: css({ marginBottom: "28px" }),
 
-  heroCopyBtn: css({ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "30px", height: "30px", borderRadius: "6px", color: colors.textMuted, border: "1px solid transparent", transition: "all 0.18s ease", flexShrink: 0, hover: { color: colors.primary, borderColor: colors.borderPrimary, backgroundColor: colors.primaryAlpha08 } }),
+  heroCopyBtn: css({ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "30px", height: "30px", borderRadius: "6px", color: colors.textMuted, border: "1px solid transparent", flexShrink: 0, hover: { color: colors.primary, borderColor: colors.borderPrimary, backgroundColor: colors.primaryAlpha08 } }),
 
   heroActions: css({ display: "flex", gap: "12px", flexWrap: "wrap" }),
 
@@ -70,12 +72,12 @@ export const hs = {
 
   demoTabBar: css({ display: "flex", borderBottom: `1px solid ${colors.border}`, padding: "0 16px", backgroundColor: colors.bgCard }),
 
-  demoTabBtn: css({ fontSize: "0.8rem", fontWeight: "700", color: colors.textMuted, padding: "10px 14px", borderBottom: "2px solid transparent", transition: "all 0.18s ease", cursor: "pointer", backgroundColor: "transparent", border: "none", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.textDim } }),
+  demoTabBtn: css({ fontSize: "0.8rem", fontWeight: "700", color: colors.textMuted, padding: "10px 14px", borderBottom: "2px solid transparent", cursor: "pointer", backgroundColor: "transparent", border: "none", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.textDim } }),
 
 
-  demoPreviewPane: css({ padding: "36px 24px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "270px" }),
+  demoPreviewPane: css({ padding: "36px 24px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "250px", backgroundColor: colors.bgCard }),
 
-  demoCodePane: css({ padding: "20px 22px", backgroundColor: "var(--terminal-bg)", color: "var(--terminal-text)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8rem", lineHeight: "1.7", overflowX: "auto", minHeight: "270px" }),
+  demoCodePane: css({ padding: "20px 22px", backgroundColor: "var(--terminal-bg)", color: "var(--terminal-text)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8rem", lineHeight: "1.7", overflowX: "auto", minHeight: "250px" }),
 
   // Philosophy section
   philosophySection: css({ position: "relative", overflow: "hidden", padding: "64px 0", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, medium: { padding: "96px 0" } }),
@@ -88,7 +90,7 @@ export const hs = {
 
   philosophyPoints: css({ display: "flex", flexDirection: "column", gap: "10px" }),
 
-  philosophyPoint: css({ display: "flex", gap: "16px", alignItems: "flex-start", padding: "16px 18px", borderRadius: "8px", transition: "all 0.2s ease", hover: { backgroundColor: colors.bgCard, transform: "translateX(4px)" } }),
+  philosophyPoint: css({ display: "flex", gap: "16px", alignItems: "flex-start", padding: "16px 18px", borderRadius: "8px", transition: "transform 0.2s ease", hover: { backgroundColor: colors.bgCard, transform: "translateX(4px)" } }),
 
   philosophyPointIcon: css({ width: "38px", height: "38px", borderRadius: "8px", backgroundColor: colors.primaryAlpha08, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", fontWeight: "800", color: colors.primary, flexShrink: 0 }),
 
@@ -134,7 +136,7 @@ export const hs = {
 
   benchTrack: css({ position: "relative", height: "32px" }),
 
-  benchFill: css({ position: "relative", height: "32px", minWidth: "54px", borderRadius: "999px", overflow: "hidden", backgroundColor: colors.bgLight, transition: "width 1.1s cubic-bezier(0.22, 1, 0.36, 1)" }),
+  benchFill: css({ position: "relative", height: "32px", minWidth: "54px", borderRadius: "999px", overflow: "hidden", backgroundColor: colors.bgLight }),
 
   benchFillFeatured: css({ backgroundColor: colors.primary, boxShadow: "0 14px 30px -16px var(--c-primary-glow)" }),
 
@@ -144,12 +146,12 @@ export const hs = {
 
   benchFoot: css({ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "10px 24px", flexWrap: "wrap", marginTop: "28px", paddingTop: "18px", borderTop: `1px solid ${colors.border}`, fontSize: "0.78rem", color: colors.textMuted, lineHeight: "1.6" }),
 
-  benchSourceLink: css({ whiteSpace: "nowrap", color: colors.textDim, fontWeight: "600", borderBottom: `1px solid ${colors.borderLight}`, transition: "color 0.18s ease, border-color 0.18s ease", hover: { color: colors.primary, borderColor: colors.borderPrimary } }),
+  benchSourceLink: css({ whiteSpace: "nowrap", color: colors.textDim, fontWeight: "600", borderBottom: `1px solid ${colors.borderLight}`, hover: { color: colors.primary, borderColor: colors.borderPrimary } }),
 
   // Quick start section
   quickStartSection: css({ padding: "64px 0", medium: { padding: "96px 0" } }),
 
-  quickStartStep: css({ display: "flex", flexDirection: "column", backgroundColor: colors.bgCard, borderRadius: "16px", overflow: "hidden", transition: "all 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 18px 44px -24px rgba(0,0,0,0.3)" } }),
+  quickStartStep: css({ display: "flex", flexDirection: "column", backgroundColor: colors.bgCard, borderRadius: "16px", overflow: "hidden", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 18px 44px -24px rgba(0,0,0,0.3)" } }),
 
   stepHeader: css({ padding: "24px 24px 16px", flex: "1" }),
 
@@ -158,7 +160,7 @@ export const hs = {
 
   examplesTeaserGrid: css({ display: "grid", gridTemplateColumns: "1fr", gap: "20px", marginTop: "32px", medium: { gridTemplateColumns: "1fr 1fr", marginTop: "48px" } }),
 
-  teaserCard: css({ backgroundColor: colors.bgCard, borderRadius: "16px", overflow: "hidden", transition: "all 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 22px 52px -28px var(--c-primary-glow)" } }),
+  teaserCard: css({ backgroundColor: colors.bgCard, borderRadius: "16px", overflow: "hidden", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 22px 52px -28px var(--c-primary-glow)" } }),
 
   teaserDemoPane: css({ padding: "32px 24px", minHeight: "200px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.bgCode }),
 
@@ -171,8 +173,3 @@ export const hs = {
 
   ctaInstall: css({ display: "flex", justifyContent: "center", marginTop: "26px" }),
 };
-
-// Benchmark bars start collapsed and grow when the panel scrolls into view:
-// the head script sets html[data-anim] when animation is possible, and
-// reveal.ts adds .rv-in to the panel - releasing each bar to its css() width.
-globalStyle("html[data-anim] .rv:not(.rv-in) .nb-fill", { width: "0%" });

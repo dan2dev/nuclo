@@ -62,23 +62,6 @@ function HeroDemoCard() {
   const heroCodeHtml = highlightCode(HERO_CODE);
   let count = 0;
 
-  function setActiveTab(event: Event, tab: "preview" | "code") {
-    const buttonElement = event.currentTarget as HTMLButtonElement;
-    const demo = buttonElement.closest<HTMLElement>("[data-hero-demo]");
-    if (!demo) return;
-
-    for (const tabButton of demo.querySelectorAll<HTMLElement>("[data-demo-tab]")) {
-      for (const className of hs.demoTabBtnActive.className.split(/\s+/)) {
-        tabButton.classList.toggle(className, tabButton.dataset.demoTab === tab);
-      }
-    }
-    for (const pane of demo.querySelectorAll<HTMLElement>("[data-demo-pane]")) {
-      for (const className of hs.paneHidden.className.split(/\s+/)) {
-        pane.classList.toggle(className, pane.dataset.demoPane !== tab);
-      }
-    }
-  }
-
   function changeCount(event: Event, amount: number) {
     count += amount;
     const buttonElement = event.currentTarget as HTMLButtonElement;
@@ -99,12 +82,12 @@ function HeroDemoCard() {
       div(
         css({ display: "flex", gap: "10px", justifyContent: "center" }),
         button(
-          css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
+          css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
           "−",
           on("click", (event) => changeCount(event, -1)),
         ),
         button(
-          css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid transparent`, color: "#fff", backgroundColor: colors.primary, transition: "all 0.18s ease", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { backgroundColor: colors.primaryHover } }),
+          css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid transparent`, color: "#fff", backgroundColor: colors.primary, fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { backgroundColor: colors.primaryHover } }),
           "+",
           on("click", (event) => changeCount(event, 1)),
         ),
@@ -112,33 +95,17 @@ function HeroDemoCard() {
     );
   }
 
-  function Tab(label: string, tab: "preview" | "code") {
-    return button(
-      hs.demoTabBtn, tab === "preview" ? hs.demoTabBtnActive : null,
-      { "data-demo-tab": tab },
-      label,
-      on("click", (event) => setActiveTab(event, tab)),
-    );
-  }
-
   return div(
     hs.heroDemoArea,
     fx.gradientBorder, fx.demoElevated,
     { "data-hero-demo": "" },
-    // Tabs
-    div(
-      hs.demoTabBar,
-      Tab("Preview", "preview"),
-      Tab("Code", "code"),
-    ),
-    // Panes
     div(
       hs.demoPreviewPane,
       { "data-demo-pane": "preview" },
       CounterPreview(),
     ),
     div(
-      hs.demoCodePane, hs.paneHidden,
+      hs.demoCodePane,
       terminalCodeTokenStyle,
       { "data-demo-pane": "code" },
       { innerHTML: `<pre class="${hs.preWrap.className}">${heroCodeHtml}</pre>` },
@@ -157,7 +124,7 @@ export function HomeHeroSection() {
   return section(
     hs.heroSection,
     div(
-      s.container,
+      hs.heroShell,
       div(
         hs.heroFrame,
         canvas(
@@ -385,9 +352,8 @@ export function ComparisonSection() {
 export function BenchmarkSection() {
   const max = Math.max(...BENCHMARK_ENTRIES.map((e) => e.score));
 
-  function BenchRow(entry: typeof BENCHMARK_ENTRIES[number], i: number) {
+  function BenchRow(entry: typeof BENCHMARK_ENTRIES[number]) {
     const widthCls = css({ width: `${((entry.score / max) * 100).toFixed(1)}%` });
-    const delayCls = css({ transitionDelay: `${(0.1 + i * 0.07).toFixed(2)}s` });
     return div(
       hs.benchRow,
       div(
@@ -399,7 +365,7 @@ export function BenchmarkSection() {
       div(
         hs.benchTrack,
         div(
-          { className: `${cx(hs.benchFill, entry.featured ? hs.benchFillFeatured : null, widthCls, delayCls).className} nb-fill` },
+          cx(hs.benchFill, entry.featured ? hs.benchFillFeatured : null, widthCls),
           span(
             hs.benchValue,
             entry.featured ? hs.benchValueFeatured : null,

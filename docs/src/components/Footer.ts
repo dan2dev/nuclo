@@ -22,7 +22,7 @@ export function Footer() {
 
   const colLinks = css({ display: "flex", flexDirection: "column", gap: "4px", alignItems: "flex-start" });
 
-  const linkStyle = css({ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.875rem", fontWeight: "500", color: colors.textDim, transition: "color 0.18s ease", cursor: "pointer", padding: "5px 0", hover: { color: colors.primary } });
+  const linkStyle = css({ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.875rem", fontWeight: "500", color: colors.textDim, cursor: "pointer", padding: "5px 0", hover: { color: colors.primary } });
 
   const bottomBar = css({ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifyContent: "space-between", paddingTop: "24px", borderTop: `1px solid ${colors.border}`, medium: { flexDirection: "row" } });
 

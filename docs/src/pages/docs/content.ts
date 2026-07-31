@@ -20,7 +20,7 @@ function TerminalCommand(command: string) {
     span(css({ color: colors.textMuted, fontFamily: "'JetBrains Mono', monospace" }), "$"),
     span(command),
     button(
-      css({ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "6px", color: colors.textMuted, backgroundColor: "transparent", border: "none", cursor: "pointer", transition: "all 0.18s ease", hover: { color: colors.primary, backgroundColor: colors.primaryAlpha08 } }),
+      css({ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "6px", color: colors.textMuted, backgroundColor: "transparent", border: "none", cursor: "pointer", hover: { color: colors.primary, backgroundColor: colors.primaryAlpha08 } }),
       { title: "Copy to clipboard", "aria-label": "Copy command" },
       when(() => copied, CheckIcon({ size: 14 })).else(CopyIcon({ size: 14 })),
       on("click", handleCopy),
