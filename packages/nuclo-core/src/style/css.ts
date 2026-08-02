@@ -12,7 +12,7 @@
  *   const button = css({ px: 24, py: 12, bg: "primary", rounded: 8, hover: { bg: "#4f46e5" } });
  *   div(button, "Save"); // button is { className } — a regular nuclo attributes object
  */
-import { atomBlock, addRawRule, conflictKeyOf, getStyleEpoch, hash, mergeBlocks, registerQueries } from "./engine";
+import { atomBlock, addRawRule, conflictKeyOf, expandAmpersands, getStyleEpoch, hash, mergeBlocks, registerQueries } from "./engine";
 
 // ---------------------------------------------------------------------------
 // Types live in types/style.d.ts (shipped with the package) so the published
@@ -217,19 +217,26 @@ function pickClass(picked: Map<string, string>, name: string): void {
 	else picked.set(key, mergeBlocks(prev, name));
 }
 
+function collectClassString(className: string, picked: Map<string, string>): void {
+	let start = 0;
+	for (let i = 0; i <= className.length; i++) {
+		const code = i === className.length ? 32 : className.charCodeAt(i);
+		const whitespace = code === 32 || code === 9 || code === 10 || code === 12 || code === 13;
+		if (!whitespace) continue;
+		if (i > start) pickClass(picked, className.slice(start, i));
+		start = i + 1;
+	}
+}
+
 function collectClasses(inputs: readonly ClassInput[], picked: Map<string, string>): void {
 	for (const input of inputs) {
 		if (!input) continue;
 		if (typeof input === "string") {
-			for (const name of input.split(" ")) {
-				if (name) pickClass(picked, name);
-			}
+			collectClassString(input, picked);
 		} else if (Array.isArray(input)) {
 			collectClasses(input, picked);
 		} else {
-			for (const name of (input as StyleResult).className.split(" ")) {
-				if (name) pickClass(picked, name);
-			}
+			collectClassString((input as StyleResult).className, picked);
 		}
 	}
 }
@@ -314,7 +321,8 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 				}
 				const first = key.charCodeAt(0);
 				if (first === 38 /* & */) {
-					walk(value as Record<string, unknown>, query, suffix + key.slice(1), buckets);
+					const nested = expandAmpersands(key, "&" + suffix);
+					walk(value as Record<string, unknown>, query, nested.slice(1), buckets);
 					continue;
 				}
 				if (first === 64 /* @ */) {
@@ -489,7 +497,11 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 
 			// Cache the compiled result per selection (stable group order).
 			let key = "";
-			for (const group of groupNames) key += group + "=" + (selection[group] ?? "") + ";";
+			for (const group of groupNames) {
+				const value = selection[group];
+				key += group.length + ":" + group;
+				key += value === undefined ? "-" : "+" + value.length + ":" + value;
+			}
 			const cached = cache.get(key);
 			if (cached) return cached;
 

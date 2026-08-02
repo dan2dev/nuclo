@@ -141,6 +141,26 @@ describe('variants() — caching and theming', () => {
 		expect(button({ size: 'sm' })).not.toBe(button({ size: 'lg' }));
 	});
 
+	it('does not collide when variant values contain cache-key delimiters', () => {
+		const { variants } = createCss({});
+		const recipe = variants({
+			variants: {
+				a: {
+					'x;b=y': { color: 'red' },
+					x: { color: 'blue' },
+				},
+				b: {
+					z: { p: 1 },
+					'y;b=z': { p: 2 },
+				},
+			},
+		});
+
+		const first = recipe({ a: 'x;b=y', b: 'z' });
+		const second = recipe({ a: 'x', b: 'y;b=z' });
+		expect(second.className).not.toBe(first.className);
+	});
+
 	it('resolves theme tokens inside variant styles', () => {
 		const { variants, css } = createCss({ colors: { brand: '#6366f1' } });
 		const button = variants({ variants: { intent: { brand: { bg: 'brand' } } } });
