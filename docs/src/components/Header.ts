@@ -82,7 +82,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   }
 
   // ── Styles ────────────────────────────────────────────────────────────────
-  const navLinkStyle = css({ display: "inline-flex", alignItems: "center", height: "36px", padding: "0 14px", borderRadius: "9999px", fontSize: "0.9rem", fontWeight: "700", color: colors.textDim, hover: { color: colors.text, backgroundColor: colors.bgSecondary } });
+  const navLinkStyle = css({ display: "inline-flex", alignItems: "center", height: "34px", padding: "0 12px", borderRadius: "9999px", fontSize: "0.8rem", fontWeight: "600", color: colors.textDim, hover: { color: colors.text, backgroundColor: colors.bgSecondary } });
   const navLinkActiveStyle = css({ color: colors.text, backgroundColor: colors.primaryAlpha08 });
   const mobileNavLinkStyle = css({ display: "flex", alignItems: "center", padding: "16px 24px", fontSize: "1rem", fontWeight: "700", color: colors.textDim, borderBottom: `1px solid ${colors.border}`, hover: { color: colors.text, backgroundColor: colors.bgSecondary } });
   const mobileNavLinkActiveStyle = css({ color: colors.primary, fontWeight: "800" });
@@ -103,15 +103,15 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   const desktopNavLinks = css({ display: "none", alignItems: "center", justifySelf: "center", gap: "8px", medium: { display: "flex" } });
 
   // Desktop GitHub button - hidden on mobile
-  const desktopGithub = css({ display: "none", alignItems: "center", justifyContent: "center", width: "38px", height: "38px", borderRadius: "9999px", color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "transform 0.18s ease", medium: { display: "flex" },
+  const desktopGithub = css({ display: "none", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "9999px", color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "transform 0.18s ease", medium: { display: "flex" },
       hover: { color: colors.text, backgroundColor: colors.bgLight, transform: "translateY(-1px)" } });
 
-  const themeBtn = css({ display: "flex", alignItems: "center", justifyContent: "center", width: "38px", height: "38px", borderRadius: "9999px", color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "transform 0.18s ease", fontSize: "15px", flexShrink: 0, hover: { color: colors.text, backgroundColor: colors.bgLight, transform: "translateY(-1px)" } });
+  const themeBtn = css({ display: "flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "9999px", color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "transform 0.18s ease", fontSize: "15px", flexShrink: 0, hover: { color: colors.text, backgroundColor: colors.bgLight, transform: "translateY(-1px)" } });
 
-  const getStartedBtn = css({ display: "none", alignItems: "center", gap: "7px", height: "40px", padding: "0 20px", borderRadius: "9999px", color: "#fff", backgroundColor: colors.primary, fontSize: "0.86rem", fontWeight: "800", boxShadow: "0 14px 30px -20px var(--c-primary-glow)", transition: "transform 0.18s ease", large: { display: "inline-flex" }, hover: { transform: "translateY(-1px)", boxShadow: "0 18px 36px -20px var(--c-primary-glow)", backgroundColor: colors.primaryHover } });
+  const getStartedBtn = css({ display: "none", alignItems: "center", gap: "7px", height: "36px", padding: "0 17px", borderRadius: "9999px", color: "#fff", backgroundColor: colors.primary, fontSize: "0.78rem", fontWeight: "700", boxShadow: "0 14px 30px -20px var(--c-primary-glow)", transition: "transform 0.18s ease", large: { display: "inline-flex" }, hover: { transform: "translateY(-1px)", boxShadow: "0 18px 36px -20px var(--c-primary-glow)", backgroundColor: colors.primaryHover } });
 
   // Mobile hamburger button - flex on mobile, hidden on medium+
-  const hamburgerBtn = css({ display: "flex", alignItems: "center", justifyContent: "center", width: "38px", height: "38px", borderRadius: "9999px", color: colors.textDim, backgroundColor: colors.bgSecondary, cursor: "pointer", medium: { display: "none" },
+  const hamburgerBtn = css({ display: "flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "9999px", color: colors.textDim, backgroundColor: colors.bgSecondary, cursor: "pointer", medium: { display: "none" },
       hover: { color: colors.text, backgroundColor: colors.bgLight } });
 
   // Mobile dropdown panel - hidden on medium+ via CSS

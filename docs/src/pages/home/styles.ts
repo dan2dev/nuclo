@@ -24,25 +24,25 @@ export const hs = {
   cmpLiGood: css({ color: colors.text, "& svg": { color: colors.primary } }),
   cmpLiDim: css({ "& svg": { color: colors.textMuted } }),
   ctaPanel: css({ position: "relative", overflow: "hidden", borderRadius: "24px", backgroundColor: colors.bgSecondary, boxShadow: "var(--c-shadow)", padding: "68px 24px", textAlign: "center", "&::before": { content: "''", position: "absolute", top: "-80px", right: "-68px", width: "220px", height: "220px", borderRadius: "42px", backgroundColor: colors.primary, opacity: "0.14", transform: "rotate(14deg)", pointerEvents: "none" }, "& > *": { position: "relative" }, medium: { padding: "84px 48px" } }),
-  heroSection: css({ padding: "28px 0 48px", large: { padding: "40px 0 64px" } }),
+  heroSection: css({ padding: "12px 0 0", medium: { paddingBottom: "24px" }, large: { padding: "20px 0 32px" } }),
 
-  heroShell: css({ width: "calc(100% - 24px)", maxWidth: "1600px", margin: "0 auto", medium: { width: "calc(100% - 40px)" }, large: { width: "calc(100% - 64px)" } }),
+  heroShell: css({ width: "calc(100% - 16px)", maxWidth: "1560px", margin: "0 auto", medium: { width: "calc(100% - 28px)" }, large: { width: "calc(100% - 40px)" } }),
 
-  heroFrame: css({ position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "28px", backgroundColor: colors.primary, boxShadow: "var(--c-shadow)", padding: "36px 22px", medium: { padding: "48px 36px", borderRadius: "32px" }, large: { padding: "64px 56px" } }),
+  heroFrame: css({ position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "28px", backgroundColor: colors.primary, boxShadow: "var(--c-shadow)", minHeight: "540px", padding: "28px 22px", medium: { padding: "52px 42px", borderRadius: "32px" }, large: { padding: "50px 64px" } }),
 
-  heroInner: css({ position: "relative", zIndex: 2, display: "grid", width: "100%", maxWidth: "1240px", margin: "0 auto", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.92fr) minmax(420px, 1.08fr)", gap: "70px" } }),
+  heroInner: css({ position: "relative", zIndex: 2, display: "grid", width: "100%", maxWidth: "1180px", margin: "0 auto", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.96fr) minmax(420px, 1.04fr)", gap: "76px" } }),
 
   heroBadge: css({ display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primaryText }),
 
   heroBadgeDot: css({ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: colors.primaryText, flexShrink: 0 }),
 
-  heroRule: css({ width: "64px", height: "4px", backgroundColor: colors.primaryText, borderRadius: "2px", marginBottom: "28px" }),
+  heroRule: css({ width: "42px", height: "2px", backgroundColor: colors.primaryText, marginBottom: "20px", medium: { marginBottom: "26px" } }),
 
-  heroTitle: css({ fontSize: "2.7rem", fontWeight: "800", letterSpacing: "0", lineHeight: "1.04", marginBottom: "24px", color: colors.primaryText, medium: { fontSize: "3.55rem" }, large: { fontSize: "4.05rem" } }),
+  heroTitle: css({ fontSize: "2.65rem", fontWeight: "700", letterSpacing: "0", lineHeight: "1.02", marginBottom: "18px", color: colors.primaryText, medium: { fontSize: "3.55rem", marginBottom: "24px" }, large: { fontSize: "4.15rem" } }),
 
-  heroDesc: css({ fontSize: "1.05rem", color: colors.primaryText, lineHeight: "1.75", marginBottom: "28px", maxWidth: "500px" }),
+  heroDesc: css({ fontSize: "1rem", color: colors.primaryText, lineHeight: "1.68", marginBottom: "20px", maxWidth: "520px", medium: { marginBottom: "28px" } }),
 
-  heroInstall: css({ marginBottom: "28px" }),
+  heroInstall: css({ marginBottom: "20px", medium: { marginBottom: "28px" } }),
 
   heroCopyBtn: css({ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "30px", height: "30px", borderRadius: "6px", color: colors.textMuted, border: "1px solid transparent", flexShrink: 0, hover: { color: colors.primary, borderColor: colors.borderPrimary, backgroundColor: colors.primaryAlpha08 } }),
 
@@ -51,13 +51,13 @@ export const hs = {
   heroPrimaryBtn: css({ backgroundColor: colors.primaryText, color: colors.primary, boxShadow: "0 14px 28px -18px rgba(0,0,0,0.35)", hover: { backgroundColor: "rgba(255,255,255,0.9)", boxShadow: "0 18px 34px -18px rgba(0,0,0,0.4)", transform: "translateY(-1px)" } }),
 
   // Stats - fixed 3-column grid so items never drop to a new row; labels wrap within their own column instead.
-  statsRow: css({ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", columnGap: "20px", rowGap: "12px", padding: "32px 0 0", borderTop: "1px solid rgba(255,255,255,0.25)", marginTop: "36px" }),
+  statsRow: css({ display: "none", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", columnGap: "20px", rowGap: "12px", padding: "28px 0 0", borderTop: "1px solid rgba(255,255,255,0.25)", marginTop: "32px", medium: { display: "grid" } }),
 
   statNum: css({ fontSize: "1.75rem", fontWeight: "700", color: colors.primaryText, lineHeight: "1", marginBottom: "6px", fontVariantNumeric: "tabular-nums" }),
 
   statLabel: css({ fontSize: "0.78rem", color: "rgba(255,255,255,0.72)", lineHeight: "1.4" }),
 
-  heroVisual: css({ position: "relative", minHeight: "360px", display: "flex", alignItems: "center", justifyContent: "center" }),
+  heroVisual: css({ position: "relative", minHeight: "360px", display: "none", alignItems: "center", justifyContent: "center", large: { display: "flex" } }),
 
   heroBrandMark: css({ position: "absolute", width: "260px", height: "260px", right: "-18px", top: "10px", opacity: "0.96", filter: "drop-shadow(0 36px 46px rgba(0,0,0,0.25))", transform: "rotate(8deg)", large: { width: "330px", height: "330px", right: "-48px", top: "-22px" } }),
 
@@ -99,7 +99,7 @@ export const hs = {
   philosophyPointDesc: css({ fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65" }),
 
   // Pipeline section
-  pipelineSection: css({ padding: "64px 0", borderBottom: `1px solid ${colors.border}`, medium: { padding: "96px 0" } }),
+  pipelineSection: css({ padding: "8px 0 64px", borderBottom: `1px solid ${colors.border}`, medium: { padding: "96px 0" } }),
 
   // Features section
   featuresSection: css({ padding: "64px 0", medium: { padding: "96px 0" } }),
