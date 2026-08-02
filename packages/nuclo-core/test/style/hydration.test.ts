@@ -52,6 +52,33 @@ describe('hydration dedup', () => {
 		expect(countOccurrences(text, 'margin-bottom: 22px')).toBe(1);
 	});
 
+	it('dedupes an identical named rule but keeps a changed client rule', () => {
+		hydrateFrom((i) => {
+			i.css('stable', { color: 'red' });
+			i.css('changed', { color: 'red' });
+		});
+		const client = createCss(theme);
+		client.css('stable', { color: 'red' });
+		client.css('changed', { color: 'blue' });
+
+		const text = sheetText();
+		expect(countOccurrences(text, '.stable {')).toBe(1);
+		expect(text).toContain('.changed { color: red; }');
+		expect(text).toContain('.changed { color: blue; }');
+		expect(text.lastIndexOf('color: blue')).toBeGreaterThan(text.lastIndexOf('color: red'));
+	});
+
+	it('keeps a changed client global rule with the same selector', () => {
+		hydrateFrom((i) => {
+			i.globalStyle('body', { m: 0 });
+		});
+		createCss(theme).globalStyle('body', { m: 8 });
+
+		const text = sheetText();
+		expect(text).toContain('body { margin: 0px; }');
+		expect(text).toContain('body { margin: 8px; }');
+	});
+
 	it('does not re-insert @keyframes or globalStyle rules the server rendered', () => {
 		const render = (i: ReturnType<typeof createCss<typeof theme>>): void => {
 			const anim = i.keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
@@ -82,5 +109,25 @@ describe('hydration dedup', () => {
 		const inner = Array.from(mediaRules[0].cssRules).map((r) => r.cssText).join('');
 		expect(countOccurrences(inner, 'margin-bottom: 22px')).toBe(1);
 		expect(inner).toContain('padding-bottom: 40px');
+	});
+
+	it('reuses an adopted media group after CSSOM normalizes its prelude', () => {
+		const spacedTheme = { screens: { medium: '@media   (min-width: 601px)' } } as const;
+		const render = (instance: ReturnType<typeof createCss<typeof spacedTheme>>): void => {
+			instance.css({ medium: { color: 'red' } });
+		};
+		render(createCss(spacedTheme));
+		const ssrText = getCssText();
+		resetStyles();
+		const el = document.createElement('style');
+		el.id = 'nuclo-styles';
+		el.textContent = ssrText;
+		document.head.appendChild(el);
+
+		render(createCss(spacedTheme));
+		const mediaRules = Array.from(el.sheet!.cssRules).filter(
+			(r): r is CSSMediaRule => r.type === CSSRule.MEDIA_RULE,
+		);
+		expect(mediaRules).toHaveLength(1);
 	});
 });

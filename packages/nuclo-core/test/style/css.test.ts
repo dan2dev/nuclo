@@ -80,6 +80,19 @@ describe('css() — properties and values', () => {
 		expect(css(style)).toBe(css(style));
 	});
 
+	it('recompiles a memoized style after the engine is reset', () => {
+		const { css } = createCss({});
+		const style = { p: 16 };
+		const first = css(style);
+
+		resetStyles();
+		expect(getCssText()).toBe('');
+
+		const second = css(style);
+		expect(second.className).toBe(first.className);
+		expect(getCssText()).toContain(`.${second.className}{padding:16px}`);
+	});
+
 	it('reuses the same class across css() calls with identical declarations in the same order', () => {
 		const { css } = createCss({});
 		const a = css({ p: 16, color: 'red' });
@@ -179,6 +192,25 @@ describe('css() — variants', () => {
 		expect(text).toContain('.' + svgClass + ' > svg{');
 		expect(text).toContain('width:16px');
 		expect(text).toContain('height:16px');
+	});
+
+	it('replaces every ampersand in comma-separated and sibling selectors', () => {
+		const { css } = createCss({});
+		const result = css({
+			'& .first, & .second': { color: 'red' },
+			'& + &': { mt: 4 },
+		});
+		const [descendants, sibling] = result.className.split(' ');
+		const text = getCssText();
+
+		expect(text).toContain(`.${descendants} .first, .${descendants} .second{color:red}`);
+		expect(text).toContain(`.${sibling} + .${sibling}{margin-top:4px}`);
+	});
+
+	it('does not replace ampersands inside quoted selector values', () => {
+		const { css } = createCss({});
+		const result = css({ '&[href*="&"] &': { color: 'red' } });
+		expect(getCssText()).toContain(`.${result.className}[href*="&"] .${result.className}{color:red}`);
 	});
 
 	it('supports inline @-rule keys without theme screens', () => {

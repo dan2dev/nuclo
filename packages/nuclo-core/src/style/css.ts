@@ -12,7 +12,7 @@
  *   const button = css({ px: 24, py: 12, bg: "primary", rounded: 8, hover: { bg: "#4f46e5" } });
  *   div(button, "Save"); // button is { className } — a regular nuclo attributes object
  */
-import { atomBlock, addRawRule, conflictKeyOf, hash, mergeBlocks, registerQueries } from "./engine";
+import { atomBlock, addRawRule, conflictKeyOf, getStyleEpoch, hash, mergeBlocks, registerQueries } from "./engine";
 
 // ---------------------------------------------------------------------------
 // Types live in types/style.d.ts (shipped with the package) so the published
@@ -262,7 +262,7 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 	// Fast path for repeated css() calls on the same style object. Holds the
 	// name it was compiled under so a re-compile under a different name can't
 	// hand back the wrong classes. WeakMap: entries die with the style object.
-	const memo = new WeakMap<object, { name: string | undefined; result: StyleResult }>();
+	const memo = new WeakMap<object, { epoch: number; name: string | undefined; result: StyleResult }>();
 
 	function toCssValue(prop: string, value: string | number): string {
 		if (typeof value === "number") {
@@ -280,7 +280,8 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 	type Bucket = { query: string | undefined; suffix: string; decls: Array<[string, string]> };
 
 	function bucketFor(buckets: Map<string, Bucket>, query: string | undefined, suffix: string): Bucket {
-		const key = (query ?? "") + "|" + suffix;
+		const queryPart = query === undefined ? "-" : "+" + query.length + ":" + query;
+		const key = queryPart + suffix.length + ":" + suffix;
 		let bucket = buckets.get(key);
 		if (!bucket) {
 			bucket = { query, suffix, decls: [] };
@@ -370,8 +371,9 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 
 		// The memo is keyed by style-object identity; the same object compiled
 		// under two different names must not reuse the first result.
+		const epoch = getStyleEpoch();
 		const hit = memo.get(style);
-		if (hit !== undefined && hit.name === name) return hit.result;
+		if (hit !== undefined && hit.epoch === epoch && hit.name === name) return hit.result;
 
 		const buckets = new Map<string, Bucket>();
 		walk(style as Record<string, unknown>, undefined, "", buckets);
@@ -382,7 +384,7 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 			classes.push(atomBlock(bucket.query, bucket.suffix, bucket.decls, name, isBase));
 		}
 		const result = makeResult(classes.join(" "));
-		memo.set(style, { name, result });
+		memo.set(style, { epoch, name, result });
 		return result;
 	}
 

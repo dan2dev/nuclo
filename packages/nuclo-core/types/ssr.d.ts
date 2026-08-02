@@ -41,5 +41,5 @@ export function renderToStringWithContainer(
  */
 export function setSSRCollector(fn: ((rule: string) => void) | null): void;
 
-/** Serialize every registered atomic CSS rule (for a <style> tag in SSR output). */
+/** Serialize every registered generated CSS rule (for a <style> tag in SSR output). */
 export function getCssText(): string;
