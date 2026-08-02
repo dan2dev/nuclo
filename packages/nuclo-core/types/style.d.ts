@@ -1,5 +1,5 @@
 /**
- * nuclo styling type definitions — atomic, theme-aware, typed CSS-in-TS.
+ * nuclo styling type definitions — block-based, theme-aware, typed CSS-in-TS.
  *
  * This module is the single source of truth for the styling types. It lives in
  * `types/` (shipped in the npm package alongside `dist/`) so that both the
@@ -334,7 +334,7 @@ export type StyleResult = {
 };
 
 // ---------------------------------------------------------------------------
-// Variants — typed, atomic style recipes (base + named variant groups +
+// Variants — typed style recipes (base + named variant groups +
 // defaults + compound variants). One recipe in, a call-with-props function out.
 // ---------------------------------------------------------------------------
 

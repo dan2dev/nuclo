@@ -123,4 +123,12 @@ describe('css(name, style) — developer feedback', () => {
 		css('2cool', { p: 16 });
 		expect(warn).toHaveBeenCalledOnce();
 	});
+
+	it('warns and falls back for a lone hyphen', () => {
+		const { css } = createCss({});
+		const result = css('-', { p: 16 });
+		expect(warn).toHaveBeenCalledOnce();
+		expect(result.className).not.toBe('-');
+		expect(getCssText()).toContain(`.${result.className}{padding:16px}`);
+	});
 });

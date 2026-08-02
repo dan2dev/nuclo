@@ -30,6 +30,12 @@ describe('atomBlock', () => {
 		expect(occurrences).toBe(1);
 	});
 
+	it('does not collide when query and suffix contain key delimiters', () => {
+		const a = atomBlock('a', '|b', [['color', 'red']]);
+		const b = atomBlock('a|', 'b', [['color', 'red']]);
+		expect(a).not.toBe(b);
+	});
+
 	it('mints distinct classes per variant and per declaration set', () => {
 		const base = atomBlock(undefined, '', [['color', 'red']]);
 		const hovered = atomBlock(undefined, ':hover', [['color', 'red']]);

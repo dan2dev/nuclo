@@ -35,7 +35,7 @@ render(counter, document.body);
 - **Global Tag Builders** – Natural API with global functions for all HTML and SVG elements
 - **TypeScript-First** – Full type definitions for all 175 HTML and SVG builders
 - **Targeted DOM Updates** – `update()` re-runs registered state-dependent values and only touches DOM where values changed
-- **Atomic Styling** – Built-in `css()` / `createCss()` with TypeScript autocomplete, theming, and SSR CSS collection
+- **Typed Styling** – Built-in `css()` / `createCss()` with TypeScript autocomplete, theming, and SSR CSS collection
 - **Server-Side Rendering** – `renderToString()` + `hydrate()` with a lightweight DOM polyfill
 
 ---
@@ -513,7 +513,7 @@ div({
 
 ### Styling
 
-Nuclo includes an atomic CSS-in-TS engine. `css()` is available globally after `import 'nuclo'`. For theming and responsive breakpoints use `createCss()`:
+Nuclo includes a block-based CSS-in-TS engine. `css()` is available globally after `import 'nuclo'`. For theming and responsive breakpoints use `createCss()`:
 
 ```ts
 import 'nuclo';
@@ -537,7 +537,7 @@ const el = div(card, 'Hello');
 
 #### Composing with `cx()`
 
-`cx()` composes styles with exact, last-wins conflict resolution — because the engine knows which declaration every class it minted represents, a later `color` atom drops the earlier one (no tailwind-merge guessing). It accepts results, raw class strings, falsy values, and nested arrays:
+`cx()` composes styles with exact, last-wins conflict resolution. When two generated classes target the same selector context, their declaration blocks are merged and the later value wins per property. It accepts results, raw class strings, falsy values, and nested arrays:
 
 ```ts
 cx(base, isActive && activeStyle);          // conditional
@@ -546,7 +546,7 @@ cx([base, isActive && activeStyle], extra); // arrays are flattened
 
 #### Typed variants with `variants()`
 
-`variants()` turns a base style plus named variant groups into a strongly-typed recipe. Variant names and values are inferred, so selecting an unknown one is a compile error, and `true`/`false` value groups are selected with real booleans. Every variant compiles to atomic classes once at definition time; a call is a cached lookup plus a `cx()` merge.
+`variants()` turns a base style plus named variant groups into a strongly-typed recipe. Variant names and values are inferred, so selecting an unknown one is a compile error, and `true`/`false` value groups are selected with real booleans. Each selected combination is merged, compiled once, and cached for subsequent calls.
 
 ```ts
 import 'nuclo';
