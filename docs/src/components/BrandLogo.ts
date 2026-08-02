@@ -2,7 +2,7 @@ import { css, cx } from "../styles.ts";
 
 const wrap = css({ display: "inline-flex", alignItems: "center", flexShrink: 0 });
 const image = css({ width: "auto", objectFit: "contain", flexShrink: 0 });
-const headerImage = css({ height: "38px" });
+const headerImage = css({ height: "32px" });
 const footerImage = css({ height: "38px" });
 
 export function BrandLogo({ size = "header" }: { size?: "header" | "footer" } = {}) {

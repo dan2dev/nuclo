@@ -140,7 +140,7 @@ export function HomeHeroSection() {
             div(
               hs.heroBadge,
               { className: "he he-1" },
-              css({ marginBottom: "22px" }),
+              css({ marginBottom: "14px", medium: { marginBottom: "22px" } }),
               span(hs.heroBadgeDot),
               HERO_BADGE,
             ),
