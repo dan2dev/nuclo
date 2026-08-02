@@ -29,6 +29,8 @@ export interface BlockMeta {
 	readonly query: string | undefined;
 	readonly suffix: string;
 	readonly decls: ReadonlyArray<readonly [string, string]>;
+	/** Author-supplied identity from `css(name, …)`; inherited by cx() merges. */
+	readonly name: string | undefined;
 }
 const atomCache = new Map<string, string>();
 const atomMeta = new Map<string, BlockMeta>();
@@ -234,26 +236,86 @@ export function hash(input: string): string {
 }
 
 /**
+ * True for strings usable verbatim as an unescaped CSS class selector:
+ * letters/digits/`-`/`_`, not starting with a digit or `-`+digit.
+ * Char-code loop rather than a RegExp — this runs on the cold mint path but
+ * stays allocation-free either way.
+ */
+function isValidClassName(name: string): boolean {
+	if (name.length === 0) return false;
+	for (let i = 0; i < name.length; i++) {
+		const c = name.charCodeAt(i);
+		const ok =
+			(c >= 97 && c <= 122) || // a-z
+			(c >= 65 && c <= 90) || // A-Z
+			c === 45 || c === 95 || // - _
+			(i > 0 && c >= 48 && c <= 57); // 0-9, never leading
+		if (!ok) return false;
+	}
+	// "-9foo" is not a valid identifier start either.
+	if (name.charCodeAt(0) === 45 && name.length > 1) {
+		const second = name.charCodeAt(1);
+		if (second >= 48 && second <= 57) return false;
+	}
+	return true;
+}
+
+/**
  * Mint (or reuse) the class for a declaration block in a selector context.
+ *
  * Declarations keep their authored order — CSS resolves shorthand/longhand
  * and repeated-property conflicts by declaration order, so reordering (e.g.
  * alphabetical sorting) would silently change what `{ pt: 20, p: 16 }` means.
  * The cost is that the same declarations authored in a different order mint a
  * second, content-identical class — harmless, and rare in practice.
+ *
+ * `name` is the author's identity for the style (`css("app-root", …)`). It
+ * becomes part of the cache key, so two different names never share a class
+ * even with identical declarations. With `exactName`, this block *is* the
+ * named one and takes the name verbatim; otherwise the name is only a
+ * readable prefix on a content-addressed prefix (`app-root-1a2b3c`), which is
+ * how a named style's non-base contexts and its cx() merges stay identifiable
+ * in devtools without ever colliding with the base class.
  */
-function mintBlock(query: string | undefined, suffix: string, decls: ReadonlyArray<readonly [string, string]>): string {
+function mintBlock(
+	query: string | undefined,
+	suffix: string,
+	decls: ReadonlyArray<readonly [string, string]>,
+	name?: string,
+	exactName = false,
+): string {
 	let body = "";
 	for (const [prop, value] of decls) body += (body ? ";" : "") + prop + ":" + value;
-	const declKey = (query ?? "") + "|" + suffix + "|" + body;
+	const contextKey = (query ?? "") + "|" + suffix + "|" + body;
+	const declKey = name === undefined ? contextKey : name + " " + contextKey;
 	let className = atomCache.get(declKey);
 	if (className !== undefined) {
 		// Touch the sheet so a swapped document (tests) gets the replayed rules.
 		ensureSheet();
 		return className;
 	}
-	className = "n" + hash(declKey);
+
+	if (name === undefined) {
+		className = "n" + hash(declKey);
+	} else if (!isValidClassName(name)) {
+		console.warn(
+			`[nuclo] css() name ${JSON.stringify(name)} is not a valid CSS class name ` +
+				"(letters, digits, - and _ only, not starting with a digit); falling back to a generated name.",
+		);
+		name = undefined;
+		className = "n" + hash(contextKey);
+	} else {
+		className = exactName ? name : name + "-" + hash(declKey);
+		if (atomMeta.has(className)) {
+			console.warn(
+				`[nuclo] css() name ${JSON.stringify(className)} is already used by a different style. ` +
+					"Both rules are emitted under the same class, so they will override each other — rename one.",
+			);
+		}
+	}
+
 	atomCache.set(declKey, className);
-	atomMeta.set(className, { query, suffix, decls });
+	atomMeta.set(className, { query, suffix, decls, name });
 	record("." + className + suffix + "{" + body + "}", query);
 	return className;
 }
@@ -261,10 +323,17 @@ function mintBlock(query: string | undefined, suffix: string, decls: ReadonlyArr
 /**
  * One class per (query, selector-suffix) — every declaration that shares that
  * context compiles into a single rule under a single generated class name,
- * rather than one class per individual property.
+ * rather than one class per individual property. Pass `name` to give the
+ * style a stable, readable identity (see mintBlock).
  */
-export function atomBlock(query: string | undefined, suffix: string, decls: ReadonlyArray<readonly [string, string]>): string {
-	return mintBlock(query, suffix, decls);
+export function atomBlock(
+	query: string | undefined,
+	suffix: string,
+	decls: ReadonlyArray<readonly [string, string]>,
+	name?: string,
+	exactName = false,
+): string {
+	return mintBlock(query, suffix, decls, name, exactName);
 }
 
 /**
@@ -273,7 +342,8 @@ export function atomBlock(query: string | undefined, suffix: string, decls: Read
  * to CSS order), and the combined block mints its own content-addressed class
  * — so cx(base, override) keeps base's untouched properties instead of
  * dropping the whole base class. Deterministic: the same pair always yields
- * the same class name, on server and client alike.
+ * the same class name, on server and client alike. A named base passes its
+ * name down as a prefix, so `cx(appRoot, active)` reads as `app-root-1a2b3c`.
  */
 export function mergeBlocks(first: string, second: string): string {
 	const a = atomMeta.get(first);
@@ -285,7 +355,7 @@ export function mergeBlocks(first: string, second: string): string {
 	const lastIndex = new Map<string, number>();
 	for (let i = 0; i < concat.length; i++) lastIndex.set(concat[i][0], i);
 	const merged = concat.filter((decl, i) => lastIndex.get(decl[0]) === i);
-	return mintBlock(a.query, a.suffix, merged);
+	return mintBlock(a.query, a.suffix, merged, a.name ?? b.name);
 }
 
 /** Conflict key (query|suffix) for a generated class — lets cx() group classes by selector context. */

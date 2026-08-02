@@ -259,7 +259,10 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 	const screens: Record<string, string> = theme.screens ?? {};
 	registerQueries(Object.values(screens).map(toQuery));
 
-	const memo = new WeakMap<object, StyleResult>();
+	// Fast path for repeated css() calls on the same style object. Holds the
+	// name it was compiled under so a re-compile under a different name can't
+	// hand back the wrong classes. WeakMap: entries die with the style object.
+	const memo = new WeakMap<object, { name: string | undefined; result: StyleResult }>();
 
 	function toCssValue(prop: string, value: string | number): string {
 		if (typeof value === "number") {
@@ -343,18 +346,43 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 	/**
 	 * Compile a style object into classes — one per (query, selector-suffix)
 	 * context it touches, not one per property. Idempotent and cached.
+	 *
+	 * An optional leading name gives the style a stable, readable identity:
+	 *
+	 *   css("app-root", { minHeight: "100vh", hover: { color: "red" } })
+	 *   // → "app-root app-root-1a2b3c"
+	 *
+	 * The base context takes the name verbatim; the style's other contexts
+	 * (pseudo-selectors, media queries) take it as a prefix on a
+	 * content-addressed suffix so they stay greppable without ever colliding.
+	 * Named styles are keyed by name as well as content, so they never share a
+	 * class with an unrelated style — which also means they don't dedupe
+	 * against identical anonymous blocks. Name the styles you want to find in
+	 * devtools; leave the rest anonymous to keep the sheet small.
 	 */
-	function css(style: Style<T>): StyleResult {
+	function css(style: Style<T>): StyleResult;
+	function css(name: string, style: Style<T>): StyleResult;
+	function css(nameOrStyle: string | Style<T>, maybeStyle?: Style<T>): StyleResult {
+		const named = typeof nameOrStyle === "string";
+		const style = (named ? maybeStyle : nameOrStyle) as Style<T>;
+		const name = named ? nameOrStyle : undefined;
+		if (style == null) return makeResult("");
+
+		// The memo is keyed by style-object identity; the same object compiled
+		// under two different names must not reuse the first result.
 		const hit = memo.get(style);
-		if (hit) return hit;
+		if (hit !== undefined && hit.name === name) return hit.result;
+
 		const buckets = new Map<string, Bucket>();
 		walk(style as Record<string, unknown>, undefined, "", buckets);
 		const classes: string[] = [];
 		for (const bucket of buckets.values()) {
-			if (bucket.decls.length > 0) classes.push(atomBlock(bucket.query, bucket.suffix, bucket.decls));
+			if (bucket.decls.length === 0) continue;
+			const isBase = bucket.query === undefined && bucket.suffix === "";
+			classes.push(atomBlock(bucket.query, bucket.suffix, bucket.decls, name, isBase));
 		}
 		const result = makeResult(classes.join(" "));
-		memo.set(style, result);
+		memo.set(style, { name, result });
 		return result;
 	}
 
@@ -507,7 +535,13 @@ function getDefaultInstance(): CssInstance<object> {
 }
 
 /** Themeless css() — full property/variant typing, no tokens or screens. */
-export const css: (style: Style<object>) => StyleResult = (style) => getDefaultInstance().css(style);
+export const css: {
+	(style: Style<object>): StyleResult;
+	(name: string, style: Style<object>): StyleResult;
+} = (nameOrStyle: string | Style<object>, style?: Style<object>): StyleResult =>
+	typeof nameOrStyle === "string"
+		? getDefaultInstance().css(nameOrStyle, style as Style<object>)
+		: getDefaultInstance().css(nameOrStyle);
 /** Themeless variants() recipe helper. */
 export const variants: <const V extends VariantDefinitions<object>>(
 	config: VariantsConfig<object, V>,

@@ -379,10 +379,19 @@ export type ClassInput = StyleResult | string | false | null | undefined | reado
 /** A themed styling instance returned by createCss(). */
 export interface CssInstance<T extends ThemeConfig = ThemeConfig> {
 	/**
-	 * Compile a style object into atomic CSS classes.
+	 * Compile a style object into CSS classes — one per selector context
+	 * (base, each pseudo-selector, each media query) it touches.
 	 * Returns `{ className }` — usable directly as a nuclo attributes object.
 	 */
 	css(style: Style<T>): StyleResult;
+	/**
+	 * Compile a style object under a readable, stable class name:
+	 * `css("app-root", { minHeight: "100vh" })` → `.app-root`.
+	 * The base context takes the name verbatim; the style's other contexts
+	 * take it as a prefix (`app-root-1a2b3c`). Named styles are keyed by name
+	 * as well as content, so they never share a class with an unrelated style.
+	 */
+	css(name: string, style: Style<T>): StyleResult;
 	/**
 	 * Compose class lists with exact conflict resolution: when two inputs
 	 * style the same (query, selector, property), the last one wins.
