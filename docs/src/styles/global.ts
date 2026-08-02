@@ -15,6 +15,7 @@ export function registerGlobalStyles() {
   globalStyle("body", { raw: {"font-family": "'Space Grotesk', system-ui, sans-serif", "background-color": "var(--c-bg)", "color": "var(--c-text)", "line-height": "1.65", "-webkit-font-smoothing": "antialiased"} });
   globalStyle("a", { raw: {"color": "inherit", "text-decoration": "none"} });
   globalStyle("button", { raw: {"font-family": "inherit", "cursor": "pointer", "border": "none", "background": "none"} });
+  globalStyle('a, button, input, select, textarea, summary, [role="button"], [role="tab"]', { raw: {"-webkit-tap-highlight-color": "transparent"} });
   globalStyle("img", { raw: {"display": "block"} });
   globalStyle("svg", { raw: {"display": "block"} });
   globalStyle(".nuclo-logo-dark", { raw: {"display": "none"} });
