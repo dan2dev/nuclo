@@ -25,13 +25,13 @@ describe('variants() — composition', () => {
 				size: { sm: { p: 8 }, lg: { p: 16 } },
 			},
 		});
-		const classes = button({ size: 'lg' }).className.split(' ');
-		expect(classes).toContain(css({ rounded: 8 }).className);
-		expect(classes).toContain(css({ p: 16 }).className);
-		expect(classes).not.toContain(css({ p: 8 }).className);
+		// base + the selected variant merge into one style object before
+		// compiling, so the result is a single class matching that merge.
+		expect(button({ size: 'lg' }).className).toBe(css({ rounded: 8, p: 16 }).className);
+		expect(button({ size: 'lg' }).className).not.toBe(css({ rounded: 8, p: 8 }).className);
 	});
 
-	it('composes multiple variant groups in declaration order', () => {
+	it('composes multiple variant groups into one merged style', () => {
 		const { css, variants } = createCss({});
 		const button = variants({
 			variants: {
@@ -39,9 +39,7 @@ describe('variants() — composition', () => {
 				size: { lg: { p: 16 } },
 			},
 		});
-		const classes = button({ intent: 'primary', size: 'lg' }).className.split(' ');
-		expect(classes).toContain(css({ color: 'white' }).className);
-		expect(classes).toContain(css({ p: 16 }).className);
+		expect(button({ intent: 'primary', size: 'lg' }).className).toBe(css({ color: 'white', p: 16 }).className);
 	});
 
 	it('returns an empty className for an empty recipe', () => {
@@ -101,11 +99,10 @@ describe('variants() — compound variants', () => {
 			},
 			compoundVariants: [{ intent: 'danger', size: 'lg', css: { weight: 700 } }],
 		});
-		const bold = css({ weight: 700 }).className;
 
-		expect(button({ intent: 'danger', size: 'lg' }).className.split(' ')).toContain(bold);
-		expect(button({ intent: 'danger', size: 'sm' }).className.split(' ')).not.toContain(bold);
-		expect(button({ intent: 'primary', size: 'lg' }).className.split(' ')).not.toContain(bold);
+		expect(button({ intent: 'danger', size: 'lg' }).className).toBe(css({ color: 'black', px: 16, weight: 700 }).className);
+		expect(button({ intent: 'danger', size: 'sm' }).className).toBe(css({ color: 'black', px: 8 }).className);
+		expect(button({ intent: 'primary', size: 'lg' }).className).toBe(css({ color: 'white', px: 16 }).className);
 	});
 });
 

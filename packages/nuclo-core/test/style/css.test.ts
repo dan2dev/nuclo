@@ -80,14 +80,18 @@ describe('css() — properties and values', () => {
 		expect(css(style)).toBe(css(style));
 	});
 
-	it('reuses atoms across different css() calls', () => {
+	it('reuses the same class across css() calls with identical declarations in the same order', () => {
+		const { css } = createCss({});
+		const a = css({ p: 16, color: 'red' });
+		const b = css({ p: 16, color: 'red' });
+		expect(a.className).toBe(b.className);
+	});
+
+	it('mints a different class when a declaration in the block differs', () => {
 		const { css } = createCss({});
 		const a = css({ p: 16, color: 'red' });
 		const b = css({ p: 16, color: 'blue' });
-		const aClasses = a.className.split(' ');
-		const bClasses = b.className.split(' ');
-		expect(bClasses).toContain(aClasses[0]); // shared padding atom
-		expect(bClasses[1]).not.toBe(aClasses[1]);
+		expect(a.className).not.toBe(b.className);
 	});
 });
 
@@ -131,11 +135,12 @@ describe('css() — theme tokens', () => {
 describe('css() — variants', () => {
 	it('generates pseudo-class and pseudo-element rules', () => {
 		const { css } = createCss({});
-		css({ hover: { bg: '#eee' }, before: { content: '""' }, placeholder: { color: 'gray' } });
+		const result = css({ hover: { bg: '#eee' }, before: { content: '""' }, placeholder: { color: 'gray' } });
+		const [hoverClass, beforeClass, placeholderClass] = result.className.split(' ');
 		const text = getCssText();
-		expect(text).toMatch(/\.n[a-z0-9]+:hover\{background:#eee\}/);
-		expect(text).toMatch(/\.n[a-z0-9]+::before\{content:""\}/);
-		expect(text).toMatch(/\.n[a-z0-9]+::placeholder\{color:gray\}/);
+		expect(text).toContain('.' + hoverClass + ':hover{background:#eee}');
+		expect(text).toContain('.' + beforeClass + '::before{content:""}');
+		expect(text).toContain('.' + placeholderClass + '::placeholder{color:gray}');
 	});
 
 	it('scopes screen variants to their media query', () => {
@@ -152,9 +157,9 @@ describe('css() — variants', () => {
 
 	it('combines nested screen + pseudo variants', () => {
 		const { css } = createCss({ screens: { md: '(min-width: 768px)' } });
-		css({ md: { hover: { color: 'red' } } });
+		const result = css({ md: { hover: { color: 'red' } } });
 		const text = getCssText();
-		expect(text).toMatch(/@media \(min-width: 768px\)\{\.n[a-z0-9]+:hover\{color:red\}/);
+		expect(text).toContain('@media (min-width: 768px){.' + result.className + ':hover{color:red}');
 	});
 
 	it('combines nested media conditions with "and"', () => {
@@ -167,10 +172,13 @@ describe('css() — variants', () => {
 
 	it('supports arbitrary & selectors', () => {
 		const { css } = createCss({});
-		css({ '&:nth-child(2)': { bg: '#eee' }, '& > svg': { size: 16 } });
+		const result = css({ '&:nth-child(2)': { bg: '#eee' }, '& > svg': { size: 16 } });
+		const [nthChildClass, svgClass] = result.className.split(' ');
 		const text = getCssText();
-		expect(text).toMatch(/\.n[a-z0-9]+:nth-child\(2\)\{background:#eee\}/);
-		expect(text).toMatch(/\.n[a-z0-9]+ > svg\{width:16px\}/);
+		expect(text).toContain('.' + nthChildClass + ':nth-child(2){background:#eee}');
+		expect(text).toContain('.' + svgClass + ' > svg{');
+		expect(text).toContain('width:16px');
+		expect(text).toContain('height:16px');
 	});
 
 	it('supports inline @-rule keys without theme screens', () => {
@@ -183,8 +191,10 @@ describe('css() — variants', () => {
 describe('default themeless instance', () => {
 	it('works without a theme', () => {
 		const result = defaultCss({ p: 16, hover: { color: 'red' } });
-		expect(result.className).toMatch(/^n[a-z0-9]+ n[a-z0-9]+$/);
-		expect(getCssText()).toContain('padding:16px');
+		const [baseClass, hoverClass] = result.className.split(' ');
+		const text = getCssText();
+		expect(text).toContain('.' + baseClass + '{padding:16px}');
+		expect(text).toContain('.' + hoverClass + ':hover{color:red}');
 	});
 });
 

@@ -20,10 +20,18 @@ export function setSSRCollector(fn: SSRCollector | null): void {
 }
 
 // Registry — the source of truth for all generated CSS.
-// atomCache: declaration key -> class name (dedup)
-// atomOwner: class name -> conflict key (query|suffix|property), used by cx()
+// atomCache: declaration-block key -> class name (dedup)
+// atomMeta: class name -> what the class means (its selector context and its
+// declarations). This is what lets cx() merge two same-context classes at the
+// declaration level instead of guessing: the engine can always recover the
+// exact content of any class it minted.
+export interface BlockMeta {
+	readonly query: string | undefined;
+	readonly suffix: string;
+	readonly decls: ReadonlyArray<readonly [string, string]>;
+}
 const atomCache = new Map<string, string>();
-const atomOwner = new Map<string, string>();
+const atomMeta = new Map<string, BlockMeta>();
 const rawKeys = new Set<string>();
 const baseRules: string[] = [];
 const queryRules = new Map<string, string[]>();
@@ -40,6 +48,14 @@ let sheet: CSSStyleSheet | null = null;
 let sheetDocument: Document | null = null;
 let baseRuleCount = 0;
 const groupRules = new Map<string, CSSGroupingRule>();
+
+// Selectors already sitting in a freshly-adopted stylesheet that this module
+// didn't insert itself — e.g. a server-rendered <style id="nuclo-styles">
+// being hydrated. Class names are content-addressed, so a matching selector
+// found here is guaranteed to hold the identical declaration: re-inserting
+// it would only duplicate the rule in the live CSSOM. Rebuilt on every fresh
+// bind in ensureSheet(); null when there's nothing external to guard against.
+let externalSelectors: Set<string> | null = null;
 
 /** Pre-register at-rule queries so their cascade order follows theme order. */
 export function registerQueries(queries: Iterable<string>): void {
@@ -60,10 +76,65 @@ function createGroup(s: CSSStyleSheet, query: string): CSSGroupingRule | null {
 	}
 }
 
+/** The selector/prelude a generated rule string starts with — everything before its first "{". */
+function selectorOf(rule: string): string {
+	const brace = rule.indexOf("{");
+	return brace === -1 ? rule : rule.slice(0, brace);
+}
+
+/** The at-rule prelude of a live grouping rule ("@media (min-width: 601px)"), reconstructed from its cssText. */
+function groupQueryOf(rule: CSSRule): string {
+	const text = rule.cssText;
+	const brace = text.indexOf("{");
+	return (brace === -1 ? text : text.slice(0, brace)).trim();
+}
+
+/**
+ * Index an already-populated stylesheet found on adopt (SSR output, most
+ * commonly): every top-level conditional grouping rule (@media/@container/…)
+ * is registered into groupRules (by its reconstructed at-rule text) so later
+ * record() calls append into it instead of creating a sibling duplicate, and
+ * every other rule is recorded into `selectors` by its selector/prelude so
+ * insertBase()/insertGrouped() can skip re-inserting it — style rules by
+ * selectorText, @keyframes (and any other raw at-rule) by prelude, since
+ * their names are content-addressed and identical between server and client.
+ */
+function indexExternalRules(rules: CSSRuleList, selectors: Set<string>): void {
+	for (let i = 0; i < rules.length; i++) {
+		const rule = rules[i];
+		if (rule instanceof CSSStyleRule) {
+			selectors.add(rule.selectorText);
+			continue;
+		}
+		const prelude = groupQueryOf(rule);
+		if ("cssRules" in rule && !prelude.startsWith("@keyframes")) {
+			const group = rule as CSSGroupingRule;
+			groupRules.set(prelude, group);
+			for (let j = 0; j < group.cssRules.length; j++) {
+				const nested = group.cssRules[j];
+				if (nested instanceof CSSStyleRule) selectors.add(nested.selectorText);
+			}
+		} else {
+			// @keyframes, @font-face, … — one-shot rules matched by prelude.
+			selectors.add(prelude);
+		}
+	}
+}
+
 function insertBase(s: CSSStyleSheet, rule: string): void {
+	if (externalSelectors?.has(selectorOf(rule))) return; // already present — e.g. SSR-rendered
 	try {
 		s.insertRule(rule, baseRuleCount);
 		baseRuleCount++;
+	} catch {
+		// Invalid value/selector: drop the declaration, like browsers do for bad CSS.
+	}
+}
+
+function insertGrouped(group: CSSGroupingRule, rule: string): void {
+	if (externalSelectors?.has(selectorOf(rule))) return; // already present — e.g. SSR-rendered
+	try {
+		group.insertRule(rule, group.cssRules.length);
 	} catch {
 		// Invalid value/selector: drop the declaration, like browsers do for bad CSS.
 	}
@@ -93,22 +164,36 @@ function ensureSheet(): CSSStyleSheet | null {
 	sheetDocument = document;
 	groupRules.clear();
 	baseRuleCount = 0;
+	externalSelectors = null;
 	if (!sheet) return null;
+	if (sheet.cssRules.length > 0) {
+		// Leading top-level non-group rules (style rules, @keyframes — before
+		// the first @media/@container group) are this element's existing
+		// "base" region — count them so insertBase() keeps inserting new base
+		// rules right after them, still ahead of every group.
+		let i = 0;
+		while (i < sheet.cssRules.length) {
+			const r = sheet.cssRules[i];
+			if (!(r instanceof CSSStyleRule) && "cssRules" in r && !groupQueryOf(r).startsWith("@keyframes")) break;
+			i++;
+		}
+		baseRuleCount = i;
+		externalSelectors = new Set();
+		indexExternalRules(sheet.cssRules, externalSelectors);
+	}
 	for (const rule of baseRules) insertBase(sheet, rule);
 	for (const [query, rules] of queryRules) {
-		const group = createGroup(sheet, query);
-		if (group) {
-			for (const rule of rules) {
-				try {
-					group.insertRule(rule, group.cssRules.length);
-				} catch { /* drop invalid rule */ }
-			}
-		}
+		const group = groupRules.get(query) ?? createGroup(sheet, query);
+		if (group) for (const rule of rules) insertGrouped(group, rule);
 	}
 	return sheet;
 }
 
 function record(rule: string, query: string | undefined): void {
+	// Bind/replay *before* this rule joins the registry, so a fresh bind's
+	// replay only ever covers previously-known rules — never this one twice.
+	const s = ensureSheet();
+
 	if (query === undefined) {
 		baseRules.push(rule);
 	} else {
@@ -122,25 +207,20 @@ function record(rule: string, query: string | undefined): void {
 	cssTextCache = null; // a new rule changes the serialized sheet
 	ssrCollector?.(query === undefined ? rule : query + "{" + rule + "}");
 
-	const s = ensureSheet();
 	if (!s) return;
 	if (query === undefined) {
 		insertBase(s, rule);
 	} else {
 		const group = groupRules.get(query) ?? createGroup(s, query);
-		if (group) {
-			try {
-				group.insertRule(rule, group.cssRules.length);
-			} catch { /* drop invalid rule */ }
-		}
+		if (group) insertGrouped(group, rule);
 	}
 }
 
 /**
- * Order-independent 53-bit content hash (two interleaved FNV-1a style passes).
- * Class names must match between server and client for SSR hydration, so a
- * counter is not an option; 53 bits keeps collision odds negligible (~1e-5 at
- * 10k unique declarations).
+ * Content-addressed 53-bit hash (two interleaved FNV-1a style passes). Class
+ * names must match between server and client for SSR hydration, so a counter
+ * is not an option; 53 bits keeps collision odds negligible (~1e-5 at 10k
+ * unique declaration blocks).
  */
 export function hash(input: string): string {
 	let a = 0x811c9dc5;
@@ -153,9 +233,18 @@ export function hash(input: string): string {
 	return (a >>> 0).toString(36) + ((b >>> 9) % 1296).toString(36);
 }
 
-/** One class per (query, selector-suffix, declaration) — the atomic core. */
-export function atom(query: string | undefined, suffix: string, property: string, value: string): string {
-	const declKey = (query ?? "") + "|" + suffix + "|" + property + ":" + value;
+/**
+ * Mint (or reuse) the class for a declaration block in a selector context.
+ * Declarations keep their authored order — CSS resolves shorthand/longhand
+ * and repeated-property conflicts by declaration order, so reordering (e.g.
+ * alphabetical sorting) would silently change what `{ pt: 20, p: 16 }` means.
+ * The cost is that the same declarations authored in a different order mint a
+ * second, content-identical class — harmless, and rare in practice.
+ */
+function mintBlock(query: string | undefined, suffix: string, decls: ReadonlyArray<readonly [string, string]>): string {
+	let body = "";
+	for (const [prop, value] of decls) body += (body ? ";" : "") + prop + ":" + value;
+	const declKey = (query ?? "") + "|" + suffix + "|" + body;
 	let className = atomCache.get(declKey);
 	if (className !== undefined) {
 		// Touch the sheet so a swapped document (tests) gets the replayed rules.
@@ -164,14 +253,45 @@ export function atom(query: string | undefined, suffix: string, property: string
 	}
 	className = "n" + hash(declKey);
 	atomCache.set(declKey, className);
-	atomOwner.set(className, (query ?? "") + "|" + suffix + "|" + property);
-	record("." + className + suffix + "{" + property + ":" + value + "}", query);
+	atomMeta.set(className, { query, suffix, decls });
+	record("." + className + suffix + "{" + body + "}", query);
 	return className;
 }
 
-/** Conflict key for a generated class — lets cx() resolve overrides exactly. */
+/**
+ * One class per (query, selector-suffix) — every declaration that shares that
+ * context compiles into a single rule under a single generated class name,
+ * rather than one class per individual property.
+ */
+export function atomBlock(query: string | undefined, suffix: string, decls: ReadonlyArray<readonly [string, string]>): string {
+	return mintBlock(query, suffix, decls);
+}
+
+/**
+ * Merge two same-context generated classes into one: `second`'s declarations
+ * override `first`'s per exact property (shorthand/longhand interplay is left
+ * to CSS order), and the combined block mints its own content-addressed class
+ * — so cx(base, override) keeps base's untouched properties instead of
+ * dropping the whole base class. Deterministic: the same pair always yields
+ * the same class name, on server and client alike.
+ */
+export function mergeBlocks(first: string, second: string): string {
+	const a = atomMeta.get(first);
+	const b = atomMeta.get(second);
+	if (!a || !b) return second; // unknown input — nothing to merge with
+	const concat = [...a.decls, ...b.decls];
+	// Keep only the last occurrence of each exact property, at its position —
+	// so a later `padding` still fully resets an earlier `padding-top`.
+	const lastIndex = new Map<string, number>();
+	for (let i = 0; i < concat.length; i++) lastIndex.set(concat[i][0], i);
+	const merged = concat.filter((decl, i) => lastIndex.get(decl[0]) === i);
+	return mintBlock(a.query, a.suffix, merged);
+}
+
+/** Conflict key (query|suffix) for a generated class — lets cx() group classes by selector context. */
 export function conflictKeyOf(className: string): string | undefined {
-	return atomOwner.get(className);
+	const meta = atomMeta.get(className);
+	return meta === undefined ? undefined : (meta.query ?? "") + "|" + meta.suffix;
 }
 
 /** Register a non-atomic rule (keyframes, global styles) once per dedupe key. */
@@ -198,7 +318,7 @@ export function getCssText(): string {
 /** Clear all engine state (test helper). Removes the injected style element. */
 export function resetStyles(): void {
 	atomCache.clear();
-	atomOwner.clear();
+	atomMeta.clear();
 	rawKeys.clear();
 	baseRules.length = 0;
 	queryRules.clear();
@@ -207,6 +327,7 @@ export function resetStyles(): void {
 	baseRuleCount = 0;
 	sheet = null;
 	sheetDocument = null;
+	externalSelectors = null;
 	if (typeof document !== "undefined") {
 		document.getElementById("nuclo-styles")?.remove();
 	}

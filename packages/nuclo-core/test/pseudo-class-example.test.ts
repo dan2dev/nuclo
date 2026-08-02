@@ -37,7 +37,7 @@ describe('Pseudo-class example from user', () => {
 		const classNames = result.className.split(' ');
 		expect(classNames.length).toBeGreaterThan(1);
 		for (const name of classNames) {
-			expect(name).toMatch(/^n[a-z0-9]+$/);
+			expect(name.startsWith('n')).toBe(true);
 		}
 
 		const styleSheet = document.querySelector('#nuclo-styles') as HTMLStyleElement;
