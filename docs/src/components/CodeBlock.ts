@@ -111,7 +111,7 @@ export interface CodeBlockOptions {
   preTokenized?: boolean;
 }
 
-export const codeTokenStyle = css({
+export const codeTokenStyle = css("components-codeblock-codeTokenStyle", {
   color: colors.text,
   "& .kw": { color: "var(--c-tok-keyword)" },
   "& .st": { color: "var(--c-tok-string)" },
@@ -123,7 +123,7 @@ export const codeTokenStyle = css({
   "& .pr": { color: "var(--c-tok-prop)" },
 });
 
-export const terminalCodeTokenStyle = css({
+export const terminalCodeTokenStyle = css("components-codeblock-terminalCodeTokenStyle", {
   color: "var(--terminal-text)",
   "& .kw": { color: "var(--terminal-tok-keyword)" },
   "& .st": { color: "var(--terminal-tok-string)" },
@@ -140,8 +140,8 @@ export function CodeBlock({ filename, code, showCopy = true, preTokenized = fals
 
   const tokenized = preTokenized ? code : highlightCode(code);
 
-  const copyBtn = css({ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: "500", color: colors.textMuted, padding: "4px 10px", borderRadius: "5px", border: `1px solid transparent`, backgroundColor: "transparent", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.primary, borderColor: colors.borderPrimary, backgroundColor: colors.primaryAlpha08 } });
-  const preStyle = css({ margin: "0", whiteSpace: "pre", minWidth: "max-content" });
+  const copyBtn = css("components-codeblock-copyBtn", { display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: "500", color: colors.textMuted, padding: "4px 10px", borderRadius: "5px", border: `1px solid transparent`, backgroundColor: "transparent", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.primary, borderColor: colors.borderPrimary, backgroundColor: colors.primaryAlpha08 } });
+  const preStyle = css("components-codeblock-preStyle", { margin: "0", whiteSpace: "pre", minWidth: "max-content" });
 
   function handleCopy() {
     copyText(code).then((ok) => {

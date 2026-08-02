@@ -17,10 +17,10 @@ function TerminalCommand(command: string) {
 
   return div(
     s.installCmd,
-    span(css({ color: colors.textMuted, fontFamily: "'JetBrains Mono', monospace" }), "$"),
+    span(css("docs-terminal-prompt", { color: colors.textMuted, fontFamily: "'JetBrains Mono', monospace" }), "$"),
     span(command),
     button(
-      css({ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "6px", color: colors.textMuted, backgroundColor: "transparent", border: "none", cursor: "pointer", hover: { color: colors.primary, backgroundColor: colors.primaryAlpha08 } }),
+      css("docs-terminal-copy-button", { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "6px", color: colors.textMuted, backgroundColor: "transparent", border: "none", cursor: "pointer", hover: { color: colors.primary, backgroundColor: colors.primaryAlpha08 } }),
       { title: "Copy to clipboard", "aria-label": "Copy command" },
       when(() => copied, CheckIcon({ size: 14 })).else(CopyIcon({ size: 14 })),
       on("click", handleCopy),
@@ -28,7 +28,7 @@ function TerminalCommand(command: string) {
   );
 }
 
-const quickStartTabsWrap = css({ margin: "22px 0" });
+const quickStartTabsWrap = css("quickStartTabsWrap", { margin: "22px 0" });
 
 function QuickStartTabs() {
   return div(
@@ -425,7 +425,7 @@ export const DOC_SECTIONS: DocSection[] = [
     apiSig: `<span class="kw">function</span> <span class="fn">createCss</span><span class="pt">(</span><span class="pr">theme</span><span class="pt">?:</span> <span class="ty">ThemeConfig</span><span class="pt">):</span> <span class="ty">CssInstance</span>`,
     content: `
       <p>Nuclo styling is atomic CSS-in-TS. <code>css()</code> takes one typed style object and returns an attributes object you can pass directly to a tag builder.</p>
-      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">styles.ts</span></div><div class="code-block-body"><pre>const card = css({
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">styles.ts</span></div><div class="code-block-body"><pre>const card = css("card", {
   p: 16,
   rounded: 8,
   bg: "#fff7ed",
@@ -441,7 +441,7 @@ div(card, "Simple card")</pre></div></div>
   },
 })
 
-const baseButton = css({
+const baseButton = css("baseButton", {
   px: 12,
   py: 8,
   rounded: 6,
@@ -449,7 +449,7 @@ const baseButton = css({
   borderColor: "border",
 })
 
-const activeButton = css({
+const activeButton = css("activeButton", {
   bg: "primary",
   color: "white",
   borderColor: "primary",

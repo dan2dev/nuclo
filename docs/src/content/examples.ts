@@ -150,7 +150,7 @@ const { css, cx } = createCss({
   },
 })
 
-const baseButton = css({
+const baseButton = css("content-examples-baseButton", {
   px: 14,
   py: 9,
   rounded: 6,
@@ -160,7 +160,7 @@ const baseButton = css({
   cursor: "pointer",
 })
 
-const selectedButton = css({
+const selectedButton = css("content-examples-selectedButton", {
   bg: "primary",
   color: "white",
   borderColor: "primary",

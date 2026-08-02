@@ -22,7 +22,10 @@ import { setRoute } from "../../router.ts";
 import { initHeroBackground } from "./hero-background.ts";
 
 function DemoDot(color: string) {
-  return div(hs.heroDot, css({ backgroundColor: color }));
+  return div(
+    hs.heroDot,
+    css(`pages-home-components-demo-dot-${color.slice(1)}`, { backgroundColor: color }),
+  );
 }
 
 /** Splits a "01 - EXPLICIT" / "01 · Mutate" step label into a short corner-badge number and its kicker text. */
@@ -46,12 +49,12 @@ function InstallCommand() {
 
   return div(
     s.installCmd,
-    span(css({ color: colors.textMuted, fontFamily: "'JetBrains Mono', monospace" }), "$"),
+    span(css("pages-home-components-components-inline-2", { color: colors.textMuted, fontFamily: "'JetBrains Mono', monospace" }), "$"),
     span(INSTALL_CMD),
     button(
       hs.heroCopyBtn,
       { title: "Copy to clipboard", "aria-label": "Copy install command" },
-      { class: () => cx(hs.heroCopyBtn, copied ? css({ color: colors.primary }) : null).className },
+      { class: () => cx(hs.heroCopyBtn, copied ? css("pages-home-components-components-inline-3", { color: colors.primary }) : null).className },
       when(() => copied, CheckIcon({ size: 14 })).else(CopyIcon({ size: 14 })),
       on("click", handleCopy),
     ),
@@ -72,22 +75,22 @@ function HeroDemoCard() {
 
   function CounterPreview() {
     return div(
-      css({ textAlign: "center", width: "100%" }),
+      css("pages-home-components-components-inline-4", { textAlign: "center", width: "100%" }),
       div(
         fx.accentText,
-        css({ fontSize: "5.2rem", fontWeight: "700", lineHeight: "1", marginBottom: "26px", fontVariantNumeric: "tabular-nums" }),
+        css("pages-home-components-components-inline-5", { fontSize: "5.2rem", fontWeight: "700", lineHeight: "1", marginBottom: "26px", fontVariantNumeric: "tabular-nums" }),
         { "data-demo-count": "" },
         "0",
       ),
       div(
-        css({ display: "flex", gap: "10px", justifyContent: "center" }),
+        css("pages-home-components-components-inline-6", { display: "flex", gap: "10px", justifyContent: "center" }),
         button(
-          css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
+          css("pages-home-components-components-inline-7", { padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
           "−",
           on("click", (event) => changeCount(event, -1)),
         ),
         button(
-          css({ padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid transparent`, color: "#fff", backgroundColor: colors.primary, fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { backgroundColor: colors.primaryHover } }),
+          css("pages-home-components-components-inline-8", { padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid transparent`, color: "#fff", backgroundColor: colors.primary, fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { backgroundColor: colors.primaryHover } }),
           "+",
           on("click", (event) => changeCount(event, 1)),
         ),
@@ -140,7 +143,7 @@ export function HomeHeroSection() {
             div(
               hs.heroBadge,
               { className: "he he-1" },
-              css({ marginBottom: "14px", medium: { marginBottom: "22px" } }),
+              css("pages-home-components-components-inline-9", { marginBottom: "14px", medium: { marginBottom: "22px" } }),
               span(hs.heroBadgeDot),
               HERO_BADGE,
             ),
@@ -180,7 +183,7 @@ export function HomeHeroSection() {
                   div(
                     hs.statNum,
                     num,
-                    sup ? span(css({ fontSize: "1rem", color: "rgba(255,255,255,0.72)", marginLeft: "2px" }), sup) : null,
+                    sup ? span(css("pages-home-components-components-inline-10", { fontSize: "1rem", color: "rgba(255,255,255,0.72)", marginLeft: "2px" }), sup) : null,
                   ),
                   div(hs.statLabel, label),
                 )
@@ -247,12 +250,12 @@ export function PhilosophySection() {
           { className: "rv" },
           div(
             s.sectionLabel,
-            css({ marginBottom: "16px" }),
+            css("pages-home-components-components-inline-11", { marginBottom: "16px" }),
             "Philosophy",
           ),
           blockquote(
             hs.philosophyQuote,
-            css({ fontStyle: "normal" }),
+            css("pages-home-components-components-inline-12", { fontStyle: "normal" }),
             span(hs.philosophyMark, { "aria-hidden": "true" }, "“"),
             PHILOSOPHY_QUOTE,
           ),
@@ -291,7 +294,7 @@ export function FeaturesSection() {
       s.container,
       div(s.sectionLabel, { className: "rv" }, "Features"),
       h2(s.sectionTitle, { className: "rv" }, "Built for clarity."),
-      p(s.sectionSub, { className: "rv" }, css({ marginBottom: "48px" }), "No magic. No surprises. Every update is intentional."),
+      p(s.sectionSub, { className: "rv" }, css("pages-home-components-components-inline-13", { marginBottom: "48px" }), "No magic. No surprises. Every update is intentional."),
       div(
         s.featureGrid,
         { className: "rv" },
@@ -353,7 +356,10 @@ export function BenchmarkSection() {
   const max = Math.max(...BENCHMARK_ENTRIES.map((e) => e.score));
 
   function BenchRow(entry: typeof BENCHMARK_ENTRIES[number]) {
-    const widthCls = css({ width: `${((entry.score / max) * 100).toFixed(1)}%` });
+    const widthCls = css(
+      `pages-home-components-benchmark-fill-${entry.name.toLowerCase()}`,
+      { width: `${((entry.score / max) * 100).toFixed(1)}%` },
+    );
     return div(
       hs.benchRow,
       div(
@@ -394,7 +400,7 @@ export function BenchmarkSection() {
         div(hs.benchRows, ...BENCHMARK_ENTRIES.map(BenchRow)),
         div(
           hs.benchFoot,
-          span(css({ maxWidth: "560px" }), BENCHMARK_NOTE),
+          span(css("pages-home-components-components-inline-14", { maxWidth: "560px" }), BENCHMARK_NOTE),
           a(
             hs.benchSourceLink,
             {
@@ -419,7 +425,7 @@ export function HomeQuickStartSection() {
         s.container,
         div(s.sectionLabel, { className: "rv" }, "Quick Start"),
         h2(s.sectionTitle, { className: "rv" }, "Up and running in minutes."),
-        p(s.sectionSub, { className: "rv" }, css({ marginBottom: "40px" }), "Three steps and you're building real UIs."),
+        p(s.sectionSub, { className: "rv" }, css("pages-home-components-components-inline-15", { marginBottom: "40px" }), "Three steps and you're building real UIs."),
         div(
           s.stepsGrid,
           ...QUICK_START_STEPS.map(({ num, title, desc, code, lang }, i) => {
@@ -442,7 +448,7 @@ export function HomeQuickStartSection() {
           }),
         ),
         div(
-          css({ marginTop: "40px", textAlign: "center" }),
+          css("pages-home-components-components-inline-16", { marginTop: "40px", textAlign: "center" }),
           { className: "rv" },
           button(
             s.btn, s.btnSecondary,
@@ -503,20 +509,20 @@ export function ExamplesTeaserSection() {
   function CounterPreview() {
     let n = 0;
     return div(
-      css({ textAlign: "center" }),
-      div(fx.accentText, css({ fontSize: "3rem", fontWeight: "700", lineHeight: "1", marginBottom: "12px", fontVariantNumeric: "tabular-nums" }), () => String(n)),
+      css("pages-home-components-components-inline-17", { textAlign: "center" }),
+      div(fx.accentText, css("pages-home-components-components-inline-18", { fontSize: "3rem", fontWeight: "700", lineHeight: "1", marginBottom: "12px", fontVariantNumeric: "tabular-nums" }), () => String(n)),
       div(
-        css({ display: "flex", gap: "8px", justifyContent: "center" }),
+        css("pages-home-components-components-inline-19", { display: "flex", gap: "8px", justifyContent: "center" }),
         button(
-          css({ padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgLight, fontFamily: "inherit" }),
+          css("pages-home-components-components-inline-20", { padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgLight, fontFamily: "inherit" }),
           "−", on("click", () => { n--; update(); })
         ),
         button(
-          css({ padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: "none", color: "#fff", backgroundColor: colors.primary, fontFamily: "inherit" }),
+          css("pages-home-components-components-inline-21", { padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: "none", color: "#fff", backgroundColor: colors.primary, fontFamily: "inherit" }),
           "Reset", on("click", () => { n = 0; update(); })
         ),
         button(
-          css({ padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgLight, fontFamily: "inherit" }),
+          css("pages-home-components-components-inline-22", { padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgLight, fontFamily: "inherit" }),
           "+", on("click", () => { n++; update(); })
         ),
       ),
@@ -538,11 +544,11 @@ export function ExamplesTeaserSection() {
     }
 
     return div(
-      css({ width: "100%", maxWidth: "280px" }),
+      css("pages-home-components-components-inline-23", { width: "100%", maxWidth: "280px" }),
       div(
-        css({ display: "flex", gap: "8px", marginBottom: "10px" }),
+        css("pages-home-components-components-inline-24", { display: "flex", gap: "8px", marginBottom: "10px" }),
         input(
-          css({ flex: "1", padding: "9px 13px", borderRadius: "6px", border: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgSecondary, color: colors.text, fontFamily: "'Space Grotesk', system-ui, sans-serif", fontSize: "0.875rem", outline: "none", marginBottom: "10px", width: "100%", focus: { borderColor: colors.primary } }),
+          css("pages-home-components-components-inline-25", { flex: "1", padding: "9px 13px", borderRadius: "6px", border: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgSecondary, color: colors.text, fontFamily: "'Space Grotesk', system-ui, sans-serif", fontSize: "0.875rem", outline: "none", marginBottom: "10px", width: "100%", focus: { borderColor: colors.primary } }),
           {
             type: "text",
             placeholder: "Add a task…",
@@ -552,7 +558,7 @@ export function ExamplesTeaserSection() {
           ((el: any) => { domInput = el; }) as any,
         ),
         button(
-          css({ padding: "9px 14px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: "none", color: "#fff", backgroundColor: colors.primary, fontFamily: "inherit", whiteSpace: "nowrap" }),
+          css("pages-home-components-components-inline-26", { padding: "9px 14px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: "none", color: "#fff", backgroundColor: colors.primary, fontFamily: "inherit", whiteSpace: "nowrap" }),
           "Add",
           on("click", addTodo),
         ),
@@ -560,11 +566,11 @@ export function ExamplesTeaserSection() {
       list(
         () => todos,
         (t) => div(
-          css({ display: "flex", alignItems: "center", gap: "8px", padding: "7px 10px", borderRadius: "5px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary, marginBottom: "5px", fontSize: "0.85rem" }),
+          css("pages-home-components-components-inline-27", { display: "flex", alignItems: "center", gap: "8px", padding: "7px 10px", borderRadius: "5px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary, marginBottom: "5px", fontSize: "0.85rem" }),
           input({ type: "checkbox" }, { checked: () => t.done }, on("change", () => { t.done = !t.done; update(); })),
           span(
-            css({ transition: "opacity 0.18s ease" }),
-            { class: () => t.done ? css({ textDecoration: "line-through", opacity: "0.5" }).className : "" },
+            css("pages-home-components-components-inline-28", { transition: "opacity 0.18s ease" }),
+            { class: () => t.done ? css("pages-home-components-components-inline-29", { textDecoration: "line-through", opacity: "0.5" }).className : "" },
             t.text,
           ),
         ),
@@ -587,7 +593,7 @@ export function ExamplesTeaserSection() {
           TeaserCard("todo.ts", TODO_TEASER_CODE, TodoPreview, "rv rv-d2"),
         ),
         div(
-          css({ marginTop: "36px", textAlign: "center" }),
+          css("pages-home-components-components-inline-30", { marginTop: "36px", textAlign: "center" }),
           { className: "rv" },
           button(
             s.btn, s.btnSecondary,
@@ -609,11 +615,11 @@ export function CTASection() {
         hs.ctaPanel, { className: "rv" },
         div(s.sectionLabel, "Get Started"),
         h2(
-          css({ fontSize: "2.1rem", fontWeight: "800", letterSpacing: "0", lineHeight: "1.2", marginBottom: "18px", medium: { fontSize: "2.7rem" } }),
+          css("pages-home-components-components-inline-31", { fontSize: "2.1rem", fontWeight: "800", letterSpacing: "0", lineHeight: "1.2", marginBottom: "18px", medium: { fontSize: "2.7rem" } }),
           CTA_TITLE,
         ),
         p(
-          css({ fontSize: "1.05rem", color: colors.textDim, maxWidth: "520px", margin: "0 auto 0", lineHeight: "1.7" }),
+          css("pages-home-components-components-inline-32", { fontSize: "1.05rem", color: colors.textDim, maxWidth: "520px", margin: "0 auto 0", lineHeight: "1.7" }),
           CTA_SUB,
         ),
         div(
