@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createCss, getCssText, resetStyles, setSSRCollector } from '../../src/style';
-import { atom, hash } from '../../src/style/engine';
+import { atomBlock, hash } from '../../src/style/engine';
 
 beforeEach(() => {
 	resetStyles();
@@ -21,24 +21,37 @@ describe('hash', () => {
 	});
 });
 
-describe('atom', () => {
-	it('dedupes identical declarations to one class and one rule', () => {
-		const a = atom(undefined, '', 'padding', '16px');
-		const b = atom(undefined, '', 'padding', '16px');
+describe('atomBlock', () => {
+	it('dedupes identical declaration blocks to one class and one rule', () => {
+		const a = atomBlock(undefined, '', [['padding', '16px']]);
+		const b = atomBlock(undefined, '', [['padding', '16px']]);
 		expect(a).toBe(b);
 		const occurrences = getCssText().split('padding:16px').length - 1;
 		expect(occurrences).toBe(1);
 	});
 
-	it('mints distinct classes per variant and property', () => {
-		const base = atom(undefined, '', 'color', 'red');
-		const hovered = atom(undefined, ':hover', 'color', 'red');
-		const scoped = atom('@media (min-width: 768px)', '', 'color', 'red');
+	it('mints distinct classes per variant and per declaration set', () => {
+		const base = atomBlock(undefined, '', [['color', 'red']]);
+		const hovered = atomBlock(undefined, ':hover', [['color', 'red']]);
+		const scoped = atomBlock('@media (min-width: 768px)', '', [['color', 'red']]);
 		expect(new Set([base, hovered, scoped]).size).toBe(3);
 	});
 
+	it('preserves authored declaration order, so shorthands still reset earlier longhands', () => {
+		const cls = atomBlock(undefined, '', [['padding-top', '20px'], ['padding', '16px']]);
+		// Emitting in authored order is load-bearing: sorted alphabetically the
+		// shorthand would come first and padding-top:20px would survive.
+		expect(getCssText()).toContain(`.${cls}{padding-top:20px;padding:16px}`);
+	});
+
+	it('mints distinct classes for the same declarations in a different order', () => {
+		const a = atomBlock(undefined, '', [['color', 'red'], ['background', 'blue']]);
+		const b = atomBlock(undefined, '', [['background', 'blue'], ['color', 'red']]);
+		expect(a).not.toBe(b);
+	});
+
 	it('injects rules into the document stylesheet', () => {
-		const cls = atom(undefined, '', 'margin', '8px');
+		const cls = atomBlock(undefined, '', [['margin', '8px']]);
 		const el = document.getElementById('nuclo-styles') as HTMLStyleElement;
 		expect(el).toBeTruthy();
 		const rules = Array.from(el.sheet!.cssRules);

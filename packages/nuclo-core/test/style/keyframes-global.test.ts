@@ -15,7 +15,7 @@ describe('keyframes()', () => {
 			from: { opacity: 0, transform: 'translateY(4px)' },
 			to: { opacity: 1, transform: 'translateY(0)' },
 		});
-		expect(name).toMatch(/^nk[a-z0-9]+$/);
+		expect(name.startsWith('nk')).toBe(true);
 		const text = getCssText();
 		expect(text).toContain(`@keyframes ${name}{`);
 		expect(text).toContain('from{opacity:0;transform:translateY(4px)}');

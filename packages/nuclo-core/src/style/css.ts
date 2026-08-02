@@ -1,7 +1,9 @@
 /**
- * nuclo styling — atomic, theme-aware, typed CSS-in-TS.
+ * nuclo styling — theme-aware, typed CSS-in-TS.
  *
- * One typed object in, a set of reusable atomic classes out:
+ * One typed object in, one generated class per selector context out (a class
+ * groups every declaration that shares its query + pseudo-selector, so a
+ * base style and a :hover override always compile to at least two classes):
  *
  *   const { css, cx } = createCss({
  *     colors: { primary: "#6366f1" },
@@ -10,7 +12,7 @@
  *   const button = css({ px: 24, py: 12, bg: "primary", rounded: 8, hover: { bg: "#4f46e5" } });
  *   div(button, "Save"); // button is { className } — a regular nuclo attributes object
  */
-import { atom, addRawRule, conflictKeyOf, hash, registerQueries } from "./engine";
+import { atomBlock, addRawRule, conflictKeyOf, hash, mergeBlocks, registerQueries } from "./engine";
 
 // ---------------------------------------------------------------------------
 // Types live in types/style.d.ts (shipped with the package) so the published
@@ -165,6 +167,30 @@ function combineQuery(outer: string | undefined, inner: string): string {
 	return inner;
 }
 
+/**
+ * Deep-merge style objects, later sources winning per property — recurses
+ * into nested pseudo/screen/&/@ blocks and `raw` so a style set two levels
+ * deep still overrides precisely. Used by variants() to combine base with
+ * selected variants/compounds *before* compiling: css() mints one class per
+ * selector context, so merging after compilation (via cx()) would only be
+ * able to replace a whole context's class, not override one property in it.
+ */
+function mergeStyle(target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> {
+	for (const key in source) {
+		const value = source[key];
+		const existing = target[key];
+		if (
+			value !== null && typeof value === "object" && !Array.isArray(value) &&
+			existing !== null && typeof existing === "object" && !Array.isArray(existing)
+		) {
+			target[key] = mergeStyle({ ...(existing as Record<string, unknown>) }, value as Record<string, unknown>);
+		} else {
+			target[key] = value;
+		}
+	}
+	return target;
+}
+
 function makeResult(className: string): StyleResult {
 	const result = { className } as StyleResult;
 	// Non-enumerable: attribute application iterates Object.keys() and must
@@ -176,18 +202,33 @@ function makeResult(className: string): StyleResult {
 	return result;
 }
 
+function pickClass(picked: Map<string, string>, name: string): void {
+	const key = conflictKeyOf(name);
+	if (key === undefined) {
+		// External class the engine didn't mint — pass through, dedupe by name.
+		picked.set(name, name);
+		return;
+	}
+	const prev = picked.get(key);
+	if (prev === undefined || prev === name) picked.set(key, name);
+	// Same selector context seen twice: merge declaration-wise, later wins per
+	// property. Minting is content-addressed, so a redundant merge (override
+	// restates every property) collapses back to the override's own class.
+	else picked.set(key, mergeBlocks(prev, name));
+}
+
 function collectClasses(inputs: readonly ClassInput[], picked: Map<string, string>): void {
 	for (const input of inputs) {
 		if (!input) continue;
 		if (typeof input === "string") {
 			for (const name of input.split(" ")) {
-				if (name) picked.set(conflictKeyOf(name) ?? name, name);
+				if (name) pickClass(picked, name);
 			}
 		} else if (Array.isArray(input)) {
 			collectClasses(input, picked);
 		} else {
 			for (const name of (input as StyleResult).className.split(" ")) {
-				if (name) picked.set(conflictKeyOf(name) ?? name, name);
+				if (name) pickClass(picked, name);
 			}
 		}
 	}
@@ -195,9 +236,13 @@ function collectClasses(inputs: readonly ClassInput[], picked: Map<string, strin
 
 /**
  * Compose class lists with exact conflict resolution: when two inputs style
- * the same (query, selector, property), the last one wins. Works because the
- * engine knows what every class it generated means. Nested arrays are flattened,
- * so `cx([a, cond && b], c)` composes the same as `cx(a, cond && b, c)`.
+ * the same (query, selector-suffix) context, their declaration blocks merge
+ * with the later input winning per property — the merged block gets its own
+ * content-addressed class, so `cx(base, active)` keeps every base property
+ * the active style doesn't override. Works because the engine remembers what
+ * every class it minted means. Unknown external classes pass through as-is.
+ * Nested arrays are flattened, so `cx([a, cond && b], c)` composes the same
+ * as `cx(a, cond && b, c)`.
  */
 export function cx(...inputs: ClassInput[]): StyleResult {
 	const picked = new Map<string, string>();
@@ -228,7 +273,20 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 		return value;
 	}
 
-	function walk(style: Record<string, unknown>, query: string | undefined, suffix: string, out: string[]): void {
+	/** Every (query, selector-suffix) context touched by one css() call collects its declarations here, then compiles to a single class. */
+	type Bucket = { query: string | undefined; suffix: string; decls: Array<[string, string]> };
+
+	function bucketFor(buckets: Map<string, Bucket>, query: string | undefined, suffix: string): Bucket {
+		const key = (query ?? "") + "|" + suffix;
+		let bucket = buckets.get(key);
+		if (!bucket) {
+			bucket = { query, suffix, decls: [] };
+			buckets.set(key, bucket);
+		}
+		return bucket;
+	}
+
+	function walk(style: Record<string, unknown>, query: string | undefined, suffix: string, buckets: Map<string, Bucket>): void {
 		for (const key in style) {
 			const value = style[key];
 			if (value == null || value === false) continue;
@@ -236,26 +294,27 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 			if (typeof value === "object") {
 				if (key === "raw") {
 					const raws = value as Record<string, string | number>;
-					for (const prop in raws) out.push(atom(query, suffix, prop, toCssValue(prop, raws[prop])));
+					const decls = bucketFor(buckets, query, suffix).decls;
+					for (const prop in raws) decls.push([prop, toCssValue(prop, raws[prop])]);
 					continue;
 				}
 				const pseudo = (PSEUDO as Record<string, string | undefined>)[key];
 				if (pseudo !== undefined) {
-					walk(value as Record<string, unknown>, query, suffix + pseudo, out);
+					walk(value as Record<string, unknown>, query, suffix + pseudo, buckets);
 					continue;
 				}
 				const screen = screens[key];
 				if (screen !== undefined) {
-					walk(value as Record<string, unknown>, combineQuery(query, toQuery(screen)), suffix, out);
+					walk(value as Record<string, unknown>, combineQuery(query, toQuery(screen)), suffix, buckets);
 					continue;
 				}
 				const first = key.charCodeAt(0);
 				if (first === 38 /* & */) {
-					walk(value as Record<string, unknown>, query, suffix + key.slice(1), out);
+					walk(value as Record<string, unknown>, query, suffix + key.slice(1), buckets);
 					continue;
 				}
 				if (first === 64 /* @ */) {
-					walk(value as Record<string, unknown>, combineQuery(query, key), suffix, out);
+					walk(value as Record<string, unknown>, combineQuery(query, key), suffix, buckets);
 					continue;
 				}
 				continue; // unknown nested key — unreachable through the typed API
@@ -263,26 +322,37 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 
 			if (value === true) {
 				const composite = COMPOSITE[key];
-				if (composite) for (const prop in composite) out.push(atom(query, suffix, prop, composite[prop]));
+				if (composite) {
+					const decls = bucketFor(buckets, query, suffix).decls;
+					for (const prop in composite) decls.push([prop, composite[prop]]);
+				}
 				continue;
 			}
 
 			const targets = ALIAS[key];
 			if (targets !== undefined) {
-				for (const prop of targets) out.push(atom(query, suffix, prop, toCssValue(prop, value as string | number)));
+				const decls = bucketFor(buckets, query, suffix).decls;
+				for (const prop of targets) decls.push([prop, toCssValue(prop, value as string | number)]);
 			} else {
 				const prop = kebab(key);
-				out.push(atom(query, suffix, prop, toCssValue(prop, value as string | number)));
+				bucketFor(buckets, query, suffix).decls.push([prop, toCssValue(prop, value as string | number)]);
 			}
 		}
 	}
 
-	/** Compile a style object into atomic classes. Idempotent and cached. */
+	/**
+	 * Compile a style object into classes — one per (query, selector-suffix)
+	 * context it touches, not one per property. Idempotent and cached.
+	 */
 	function css(style: Style<T>): StyleResult {
 		const hit = memo.get(style);
 		if (hit) return hit;
+		const buckets = new Map<string, Bucket>();
+		walk(style as Record<string, unknown>, undefined, "", buckets);
 		const classes: string[] = [];
-		walk(style as Record<string, unknown>, undefined, "", classes);
+		for (const bucket of buckets.values()) {
+			if (bucket.decls.length > 0) classes.push(atomBlock(bucket.query, bucket.suffix, bucket.decls));
+		}
 		const result = makeResult(classes.join(" "));
 		memo.set(style, result);
 		return result;
@@ -350,10 +420,12 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 	 *   });
 	 *   div(button({ intent: "danger", size: "lg" }), "Delete");
 	 *
-	 * Every variant style compiles to atomic classes once, at definition time.
-	 * A call resolves defaults + props into a selection, composes the matching
-	 * precompiled results with cx() (last-wins conflict resolution), and caches
-	 * the composed result per selection — so repeated calls are a Map lookup.
+	 * A call resolves defaults + props into a selection, deep-merges base with
+	 * every matching variant/compound's raw style object (later sources win
+	 * per property — not per class, since css() now mints one class per
+	 * selector context rather than one per property), compiles the merge with
+	 * css(), and caches the result per selection — repeated calls are a Map
+	 * lookup.
 	 */
 	function variants<const V extends VariantDefinitions<T>>(
 		config: VariantsConfig<T, V>,
@@ -364,24 +436,13 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 		const groups = (config.variants ?? {}) as Record<string, Record<string, Style<T>>>;
 		const groupNames = Object.keys(groups);
 		const defaults = (config.defaultVariants ?? {}) as Record<string, unknown>;
+		const baseStyle = (config.base ?? null) as Record<string, unknown> | null;
 
-		const baseResult = config.base ? css(config.base) : null;
-
-		// Precompile every variant value's atomic classes once.
-		const compiled: Record<string, Record<string, StyleResult>> = {};
-		for (const group of groupNames) {
-			const values = groups[group];
-			const inner: Record<string, StyleResult> = {};
-			for (const value in values) inner[value] = css(values[value]);
-			compiled[group] = inner;
-		}
-
-		// Precompile compound-variant styles with their match conditions.
 		const compounds = (config.compoundVariants ?? []).map((entry) => {
 			const { css: compoundStyle, ...match } = entry as VariantProps<V> & { css: Style<T> };
 			const conditions: Record<string, string> = {};
 			for (const group in match) conditions[group] = normalize((match as Record<string, unknown>)[group]);
-			return { conditions, result: css(compoundStyle) };
+			return { conditions, style: compoundStyle as Record<string, unknown> };
 		});
 
 		const cache = new Map<string, StyleResult>();
@@ -396,19 +457,19 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 				selection[group] = normalize(chosen);
 			}
 
-			// Cache the composed result per selection (stable group order).
+			// Cache the compiled result per selection (stable group order).
 			let key = "";
 			for (const group of groupNames) key += group + "=" + (selection[group] ?? "") + ";";
 			const cached = cache.get(key);
 			if (cached) return cached;
 
-			const parts: ClassInput[] = [];
-			if (baseResult) parts.push(baseResult);
+			let merged: Record<string, unknown> = {};
+			if (baseStyle) merged = mergeStyle(merged, baseStyle);
 			for (const group of groupNames) {
 				const value = selection[group];
 				if (value !== undefined) {
-					const result = compiled[group][value];
-					if (result) parts.push(result);
+					const style = groups[group][value];
+					if (style) merged = mergeStyle(merged, style as Record<string, unknown>);
 				}
 			}
 			for (const compound of compounds) {
@@ -419,10 +480,10 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 						break;
 					}
 				}
-				if (matches) parts.push(compound.result);
+				if (matches) merged = mergeStyle(merged, compound.style);
 			}
 
-			const result = cx(...parts);
+			const result = css(merged as Style<T>);
 			cache.set(key, result);
 			return result;
 		};
