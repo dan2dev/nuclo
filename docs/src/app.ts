@@ -16,7 +16,7 @@ import { animations } from './styles/animations.ts';
 type PageSlot = { fn: PageFunction };
 
 const appStyles = {
-  root: css({ minHeight: '100vh' }),
+  root: css("app-root", { minHeight: '100vh' }),
   main: css({ minHeight: 'calc(100vh - 160px)', paddingTop: '96px', animation: `${animations.pageFadeIn} 0.28s ease both` }),
   centerState: css({ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '16px' }),
   spinner: css({ width: '32px', height: '32px', border: `2px solid ${colors.border}`, borderTopColor: colors.primary, borderRadius: '50%', animation: `${animations.spin} 0.6s linear infinite` }),

@@ -107,6 +107,7 @@ export const isBrowser: boolean;
 // Styling (themeless default instance + themed factory)
 export function createCss<const T extends ThemeConfig>(theme?: T): CssInstance<T>;
 export function css(style: Style<object>): StyleResult;
+export function css(name: string, style: Style<object>): StyleResult;
 export function cx(...inputs: ClassInput[]): StyleResult;
 export function variants<const V extends VariantDefinitions<object>>(
   config: VariantsConfig<object, V>,
