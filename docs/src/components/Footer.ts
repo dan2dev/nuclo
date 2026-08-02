@@ -8,27 +8,27 @@ import { NUCLO_VERSION } from "../generated/nuclo-stats.ts";
 const GITHUB_URL = "https://github.com/dan2dev/nuclo";
 
 export function Footer() {
-  const footerStyle = css({ position: "relative", backgroundColor: colors.bgFooter, padding: "56px 0 28px", borderTop: `1px solid ${colors.border}`, medium: { padding: "66px 0 32px" } });
+  const footerStyle = css("components-footer-footerStyle", { position: "relative", backgroundColor: colors.bgFooter, padding: "56px 0 28px", borderTop: `1px solid ${colors.border}`, medium: { padding: "66px 0 32px" } });
 
-  const topGrid = css({ display: "grid", gridTemplateColumns: "1fr", gap: "36px", paddingBottom: "40px", medium: { gridTemplateColumns: "minmax(0, 1.65fr) 1fr 1fr", gap: "30px" } });
+  const topGrid = css("components-footer-topGrid", { display: "grid", gridTemplateColumns: "1fr", gap: "36px", paddingBottom: "40px", medium: { gridTemplateColumns: "minmax(0, 1.65fr) 1fr 1fr", gap: "30px" } });
 
-  const brandGroup = css({ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "14px", maxWidth: "360px" });
+  const brandGroup = css("components-footer-brandGroup", { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "14px", maxWidth: "360px" });
 
-  const tagline = css({ fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65" });
+  const tagline = css("components-footer-tagline", { fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65" });
 
-  const builtWith = css({ display: "inline-flex", alignItems: "center", gap: "7px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: colors.textMuted, padding: "6px 12px", borderRadius: "999px", backgroundColor: colors.bgCard });
+  const builtWith = css("components-footer-builtWith", { display: "inline-flex", alignItems: "center", gap: "7px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: colors.textMuted, padding: "6px 12px", borderRadius: "999px", backgroundColor: colors.bgCard });
 
-  const colTitle = css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "14px" });
+  const colTitle = css("components-footer-colTitle", { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "14px" });
 
-  const colLinks = css({ display: "flex", flexDirection: "column", gap: "4px", alignItems: "flex-start" });
+  const colLinks = css("components-footer-colLinks", { display: "flex", flexDirection: "column", gap: "4px", alignItems: "flex-start" });
 
-  const linkStyle = css({ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.875rem", fontWeight: "500", color: colors.textDim, cursor: "pointer", padding: "5px 0", hover: { color: colors.primary } });
+  const linkStyle = css("components-footer-linkStyle", { display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.875rem", fontWeight: "500", color: colors.textDim, cursor: "pointer", padding: "5px 0", hover: { color: colors.primary } });
 
-  const bottomBar = css({ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifyContent: "space-between", paddingTop: "24px", borderTop: `1px solid ${colors.border}`, medium: { flexDirection: "row" } });
+  const bottomBar = css("components-footer-bottomBar", { display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifyContent: "space-between", paddingTop: "24px", borderTop: `1px solid ${colors.border}`, medium: { flexDirection: "row" } });
 
-  const fineprint = css({ fontSize: "0.78rem", color: colors.textMuted });
+  const fineprint = css("components-footer-fineprint", { fontSize: "0.78rem", color: colors.textMuted });
 
-  const versionBadge = css({ display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", fontWeight: "800", color: colors.primary, padding: "4px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08 });
+  const versionBadge = css("components-footer-versionBadge", { display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", fontWeight: "800", color: colors.primary, padding: "4px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08 });
 
   function RouteLink(label: string, route: string) {
     return span(linkStyle, label, on("click", () => setRoute(route)));

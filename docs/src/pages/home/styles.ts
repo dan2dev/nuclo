@@ -2,174 +2,174 @@ import { css, colors } from "../../styles.ts";
 import { animations } from "../../styles/animations.ts";
 
 export const hs = {
-  heroCanvas: css({ position: "absolute", inset: "0", width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }),
-  dotGrid: css({ position: "absolute", inset: "0", pointerEvents: "none", zIndex: 1, opacity: "0.46", backgroundImage: "radial-gradient(rgba(255,255,255,0.34) 1px, transparent 1.4px)", backgroundSize: "28px 28px", raw: { "-webkit-mask-image": "linear-gradient(180deg, rgba(0,0,0,0.45), transparent 68%)", "mask-image": "linear-gradient(180deg, rgba(0,0,0,0.45), transparent 68%)" } }),
-  paneHidden: css({ display: "none" }),
-  preWrap: css({ margin: "0", whiteSpace: "pre-wrap" }),
-  demoTabBtnActive: css({ color: colors.primary, borderBottom: `2px solid ${colors.primary}` }),
-  pipe: css({ display: "grid", gridTemplateColumns: "1fr", gap: "0", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 54px 1fr 54px 1fr", alignItems: "stretch" } }),
-  pipeNode: css({ position: "relative", backgroundColor: colors.bgCard, borderRadius: "16px", padding: "26px 26px 24px", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 18px 44px -24px var(--c-primary-glow)" } }),
-  pipeLink: css({ position: "relative", minHeight: "44px", "&::before": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "repeating-linear-gradient(180deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "linear-gradient(180deg, transparent, var(--c-primary), transparent)", backgroundSize: "100% 55%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRunY} 2.3s ease-in-out infinite` }, "@media (min-width: 901px)": { minHeight: "0", "&::before": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "repeating-linear-gradient(90deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "linear-gradient(90deg, transparent, var(--c-primary), transparent)", backgroundSize: "55% 100%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRun} 2.3s ease-in-out infinite` } } }),
-  pipeKicker: css({ display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary }),
-  pipeTitle: css({ fontSize: "1.02rem", fontWeight: "700", marginBottom: "8px" }),
-  pipeDesc: css({ fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65", marginBottom: "16px" }),
-  pipeCode: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", lineHeight: "1.6", backgroundColor: colors.bgCode, borderRadius: "10px", padding: "12px 14px", overflowX: "auto", whiteSpace: "pre" }),
-  cmpGrid: css({ display: "grid", gridTemplateColumns: "1fr", gap: "16px", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 1fr 1fr", gap: "18px" } }),
-  cmpCol: css({ backgroundColor: colors.bgCard, borderRadius: "16px", padding: "28px 26px", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)" } }),
-  cmpColFeatured: css({ backgroundColor: colors.bgSecondary, boxShadow: "0 26px 64px -32px var(--c-primary-glow)", hover: { boxShadow: "0 30px 72px -30px var(--c-primary-glow)" } }),
-  cmpHead: css({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "6px" }),
-  cmpName: css({ fontSize: "1.02rem", fontWeight: "700" }),
-  cmpSub: css({ fontSize: "0.8rem", color: colors.textMuted, marginBottom: "20px", fontFamily: "'JetBrains Mono', monospace" }),
-  cmpLi: css({ display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.6", padding: "7px 0", "& svg": { flexShrink: 0, marginTop: "4px" } }),
-  cmpLiGood: css({ color: colors.text, "& svg": { color: colors.primary } }),
-  cmpLiDim: css({ "& svg": { color: colors.textMuted } }),
-  ctaPanel: css({ position: "relative", overflow: "hidden", borderRadius: "24px", backgroundColor: colors.bgSecondary, boxShadow: "var(--c-shadow)", padding: "68px 24px", textAlign: "center", "&::before": { content: "''", position: "absolute", top: "-80px", right: "-68px", width: "220px", height: "220px", borderRadius: "42px", backgroundColor: colors.primary, opacity: "0.14", transform: "rotate(14deg)", pointerEvents: "none" }, "& > *": { position: "relative" }, medium: { padding: "84px 48px" } }),
-  heroSection: css({ padding: "12px 0 0", medium: { paddingBottom: "24px" }, large: { padding: "20px 0 32px" } }),
+  heroCanvas: css("pages-home-styles-heroCanvas", { position: "absolute", inset: "0", width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }),
+  dotGrid: css("pages-home-styles-dotGrid", { position: "absolute", inset: "0", pointerEvents: "none", zIndex: 1, opacity: "0.46", backgroundImage: "radial-gradient(rgba(255,255,255,0.34) 1px, transparent 1.4px)", backgroundSize: "28px 28px", raw: { "-webkit-mask-image": "linear-gradient(180deg, rgba(0,0,0,0.45), transparent 68%)", "mask-image": "linear-gradient(180deg, rgba(0,0,0,0.45), transparent 68%)" } }),
+  paneHidden: css("pages-home-styles-paneHidden", { display: "none" }),
+  preWrap: css("pages-home-styles-preWrap", { margin: "0", whiteSpace: "pre-wrap" }),
+  demoTabBtnActive: css("pages-home-styles-demoTabBtnActive", { color: colors.primary, borderBottom: `2px solid ${colors.primary}` }),
+  pipe: css("pages-home-styles-pipe", { display: "grid", gridTemplateColumns: "1fr", gap: "0", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 54px 1fr 54px 1fr", alignItems: "stretch" } }),
+  pipeNode: css("pages-home-styles-pipeNode", { position: "relative", backgroundColor: colors.bgCard, borderRadius: "16px", padding: "26px 26px 24px", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 18px 44px -24px var(--c-primary-glow)" } }),
+  pipeLink: css("pages-home-styles-pipeLink", { position: "relative", minHeight: "44px", "&::before": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "repeating-linear-gradient(180deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "linear-gradient(180deg, transparent, var(--c-primary), transparent)", backgroundSize: "100% 55%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRunY} 2.3s ease-in-out infinite` }, "@media (min-width: 901px)": { minHeight: "0", "&::before": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "repeating-linear-gradient(90deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "linear-gradient(90deg, transparent, var(--c-primary), transparent)", backgroundSize: "55% 100%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRun} 2.3s ease-in-out infinite` } } }),
+  pipeKicker: css("pages-home-styles-pipeKicker", { display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary }),
+  pipeTitle: css("pages-home-styles-pipeTitle", { fontSize: "1.02rem", fontWeight: "700", marginBottom: "8px" }),
+  pipeDesc: css("pages-home-styles-pipeDesc", { fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65", marginBottom: "16px" }),
+  pipeCode: css("pages-home-styles-pipeCode", { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", lineHeight: "1.6", backgroundColor: colors.bgCode, borderRadius: "10px", padding: "12px 14px", overflowX: "auto", whiteSpace: "pre" }),
+  cmpGrid: css("pages-home-styles-cmpGrid", { display: "grid", gridTemplateColumns: "1fr", gap: "16px", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 1fr 1fr", gap: "18px" } }),
+  cmpCol: css("pages-home-styles-cmpCol", { backgroundColor: colors.bgCard, borderRadius: "16px", padding: "28px 26px", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)" } }),
+  cmpColFeatured: css("pages-home-styles-cmpColFeatured", { backgroundColor: colors.bgSecondary, boxShadow: "0 26px 64px -32px var(--c-primary-glow)", hover: { boxShadow: "0 30px 72px -30px var(--c-primary-glow)" } }),
+  cmpHead: css("pages-home-styles-cmpHead", { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "6px" }),
+  cmpName: css("pages-home-styles-cmpName", { fontSize: "1.02rem", fontWeight: "700" }),
+  cmpSub: css("pages-home-styles-cmpSub", { fontSize: "0.8rem", color: colors.textMuted, marginBottom: "20px", fontFamily: "'JetBrains Mono', monospace" }),
+  cmpLi: css("pages-home-styles-cmpLi", { display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.6", padding: "7px 0", "& svg": { flexShrink: 0, marginTop: "4px" } }),
+  cmpLiGood: css("pages-home-styles-cmpLiGood", { color: colors.text, "& svg": { color: colors.primary } }),
+  cmpLiDim: css("pages-home-styles-cmpLiDim", { "& svg": { color: colors.textMuted } }),
+  ctaPanel: css("pages-home-styles-ctaPanel", { position: "relative", overflow: "hidden", borderRadius: "24px", backgroundColor: colors.bgSecondary, boxShadow: "var(--c-shadow)", padding: "68px 24px", textAlign: "center", "&::before": { content: "''", position: "absolute", top: "-80px", right: "-68px", width: "220px", height: "220px", borderRadius: "42px", backgroundColor: colors.primary, opacity: "0.14", transform: "rotate(14deg)", pointerEvents: "none" }, "& > *": { position: "relative" }, medium: { padding: "84px 48px" } }),
+  heroSection: css("pages-home-styles-heroSection", { padding: "12px 0 0", medium: { paddingBottom: "24px" }, large: { padding: "20px 0 32px" } }),
 
-  heroShell: css({ width: "calc(100% - 16px)", maxWidth: "1560px", margin: "0 auto", medium: { width: "calc(100% - 28px)" }, large: { width: "calc(100% - 40px)" } }),
+  heroShell: css("pages-home-styles-heroShell", { width: "calc(100% - 16px)", maxWidth: "1560px", margin: "0 auto", medium: { width: "calc(100% - 28px)" }, large: { width: "calc(100% - 40px)" } }),
 
-  heroFrame: css({ position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "28px", backgroundColor: colors.primary, boxShadow: "var(--c-shadow)", minHeight: "540px", padding: "28px 22px", medium: { padding: "52px 42px", borderRadius: "32px" }, large: { padding: "50px 64px" } }),
+  heroFrame: css("pages-home-styles-heroFrame", { position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "28px", backgroundColor: colors.primary, boxShadow: "var(--c-shadow)", minHeight: "540px", padding: "28px 22px", medium: { padding: "52px 42px", borderRadius: "32px" }, large: { padding: "50px 64px" } }),
 
-  heroInner: css({ position: "relative", zIndex: 2, display: "grid", width: "100%", maxWidth: "1180px", margin: "0 auto", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.96fr) minmax(420px, 1.04fr)", gap: "76px" } }),
+  heroInner: css("pages-home-styles-heroInner", { position: "relative", zIndex: 2, display: "grid", width: "100%", maxWidth: "1180px", margin: "0 auto", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.96fr) minmax(420px, 1.04fr)", gap: "76px" } }),
 
-  heroBadge: css({ display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primaryText }),
+  heroBadge: css("pages-home-styles-heroBadge", { display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primaryText }),
 
-  heroBadgeDot: css({ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: colors.primaryText, flexShrink: 0 }),
+  heroBadgeDot: css("pages-home-styles-heroBadgeDot", { width: "6px", height: "6px", borderRadius: "50%", backgroundColor: colors.primaryText, flexShrink: 0 }),
 
-  heroRule: css({ width: "42px", height: "2px", backgroundColor: colors.primaryText, marginBottom: "20px", medium: { marginBottom: "26px" } }),
+  heroRule: css("pages-home-styles-heroRule", { width: "42px", height: "2px", backgroundColor: colors.primaryText, marginBottom: "20px", medium: { marginBottom: "26px" } }),
 
-  heroTitle: css({ fontSize: "2.65rem", fontWeight: "700", letterSpacing: "0", lineHeight: "1.02", marginBottom: "18px", color: colors.primaryText, medium: { fontSize: "3.55rem", marginBottom: "24px" }, large: { fontSize: "4.15rem" } }),
+  heroTitle: css("pages-home-styles-heroTitle", { fontSize: "2.65rem", fontWeight: "700", letterSpacing: "0", lineHeight: "1.02", marginBottom: "18px", color: colors.primaryText, medium: { fontSize: "3.55rem", marginBottom: "24px" }, large: { fontSize: "4.15rem" } }),
 
-  heroDesc: css({ fontSize: "1rem", color: colors.primaryText, lineHeight: "1.68", marginBottom: "20px", maxWidth: "520px", medium: { marginBottom: "28px" } }),
+  heroDesc: css("pages-home-styles-heroDesc", { fontSize: "1rem", color: colors.primaryText, lineHeight: "1.68", marginBottom: "20px", maxWidth: "520px", medium: { marginBottom: "28px" } }),
 
-  heroInstall: css({ marginBottom: "20px", medium: { marginBottom: "28px" } }),
+  heroInstall: css("pages-home-styles-heroInstall", { marginBottom: "20px", medium: { marginBottom: "28px" } }),
 
-  heroCopyBtn: css({ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "30px", height: "30px", borderRadius: "6px", color: colors.textMuted, border: "1px solid transparent", flexShrink: 0, hover: { color: colors.primary, borderColor: colors.borderPrimary, backgroundColor: colors.primaryAlpha08 } }),
+  heroCopyBtn: css("pages-home-styles-heroCopyBtn", { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "30px", height: "30px", borderRadius: "6px", color: colors.textMuted, border: "1px solid transparent", flexShrink: 0, hover: { color: colors.primary, borderColor: colors.borderPrimary, backgroundColor: colors.primaryAlpha08 } }),
 
-  heroActions: css({ display: "flex", gap: "12px", flexWrap: "wrap" }),
+  heroActions: css("pages-home-styles-heroActions", { display: "flex", gap: "12px", flexWrap: "wrap" }),
 
-  heroPrimaryBtn: css({ backgroundColor: colors.primaryText, color: colors.primary, boxShadow: "0 14px 28px -18px rgba(0,0,0,0.35)", hover: { backgroundColor: "rgba(255,255,255,0.9)", boxShadow: "0 18px 34px -18px rgba(0,0,0,0.4)", transform: "translateY(-1px)" } }),
+  heroPrimaryBtn: css("pages-home-styles-heroPrimaryBtn", { backgroundColor: colors.primaryText, color: colors.primary, boxShadow: "0 14px 28px -18px rgba(0,0,0,0.35)", hover: { backgroundColor: "rgba(255,255,255,0.9)", boxShadow: "0 18px 34px -18px rgba(0,0,0,0.4)", transform: "translateY(-1px)" } }),
 
   // Stats - fixed 3-column grid so items never drop to a new row; labels wrap within their own column instead.
-  statsRow: css({ display: "none", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", columnGap: "20px", rowGap: "12px", padding: "28px 0 0", borderTop: "1px solid rgba(255,255,255,0.25)", marginTop: "32px", medium: { display: "grid" } }),
+  statsRow: css("pages-home-styles-statsRow", { display: "none", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", columnGap: "20px", rowGap: "12px", padding: "28px 0 0", borderTop: "1px solid rgba(255,255,255,0.25)", marginTop: "32px", medium: { display: "grid" } }),
 
-  statNum: css({ fontSize: "1.75rem", fontWeight: "700", color: colors.primaryText, lineHeight: "1", marginBottom: "6px", fontVariantNumeric: "tabular-nums" }),
+  statNum: css("pages-home-styles-statNum", { fontSize: "1.75rem", fontWeight: "700", color: colors.primaryText, lineHeight: "1", marginBottom: "6px", fontVariantNumeric: "tabular-nums" }),
 
-  statLabel: css({ fontSize: "0.78rem", color: "rgba(255,255,255,0.72)", lineHeight: "1.4" }),
+  statLabel: css("pages-home-styles-statLabel", { fontSize: "0.78rem", color: "rgba(255,255,255,0.72)", lineHeight: "1.4" }),
 
-  heroVisual: css({ position: "relative", minHeight: "360px", display: "none", alignItems: "center", justifyContent: "center", large: { display: "flex" } }),
+  heroVisual: css("pages-home-styles-heroVisual", { position: "relative", minHeight: "360px", display: "none", alignItems: "center", justifyContent: "center", large: { display: "flex" } }),
 
-  heroBrandMark: css({ position: "absolute", width: "260px", height: "260px", right: "-18px", top: "10px", opacity: "0.96", filter: "drop-shadow(0 36px 46px rgba(0,0,0,0.25))", transform: "rotate(8deg)", large: { width: "330px", height: "330px", right: "-48px", top: "-22px" } }),
+  heroBrandMark: css("pages-home-styles-heroBrandMark", { position: "absolute", width: "260px", height: "260px", right: "-18px", top: "10px", opacity: "0.96", filter: "drop-shadow(0 36px 46px rgba(0,0,0,0.25))", transform: "rotate(8deg)", large: { width: "330px", height: "330px", right: "-48px", top: "-22px" } }),
 
-  heroDemoArea: css({ position: "relative", width: "100%", borderRadius: "14px", overflow: "hidden", zIndex: 1 }),
+  heroDemoArea: css("pages-home-styles-heroDemoArea", { position: "relative", width: "100%", borderRadius: "14px", overflow: "hidden", zIndex: 1 }),
 
   // Demo card (macOS chrome overlay)
-  demoChrome: css({ display: "flex", alignItems: "center", gap: "6px", padding: "13px 16px", backgroundColor: "var(--terminal-bar)", borderBottom: `1px solid ${colors.border}` }),
+  demoChrome: css("pages-home-styles-demoChrome", { display: "flex", alignItems: "center", gap: "6px", padding: "13px 16px", backgroundColor: "var(--terminal-bar)", borderBottom: `1px solid ${colors.border}` }),
 
-  heroDot: css({ width: "10px", height: "10px", borderRadius: "50%", flexShrink: 0 }),
+  heroDot: css("pages-home-styles-heroDot", { width: "10px", height: "10px", borderRadius: "50%", flexShrink: 0 }),
 
-  heroDemoFilename: css({ flex: "1", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.75rem", color: colors.textMuted }),
+  heroDemoFilename: css("pages-home-styles-heroDemoFilename", { flex: "1", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.75rem", color: colors.textMuted }),
 
-  demoTabBar: css({ display: "flex", borderBottom: `1px solid ${colors.border}`, padding: "0 16px", backgroundColor: colors.bgCard }),
+  demoTabBar: css("pages-home-styles-demoTabBar", { display: "flex", borderBottom: `1px solid ${colors.border}`, padding: "0 16px", backgroundColor: colors.bgCard }),
 
-  demoTabBtn: css({ fontSize: "0.8rem", fontWeight: "700", color: colors.textMuted, padding: "10px 14px", borderBottom: "2px solid transparent", cursor: "pointer", backgroundColor: "transparent", border: "none", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.textDim } }),
+  demoTabBtn: css("pages-home-styles-demoTabBtn", { fontSize: "0.8rem", fontWeight: "700", color: colors.textMuted, padding: "10px 14px", borderBottom: "2px solid transparent", cursor: "pointer", backgroundColor: "transparent", border: "none", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.textDim } }),
 
 
-  demoPreviewPane: css({ padding: "36px 24px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "250px", backgroundColor: colors.bgCard }),
+  demoPreviewPane: css("pages-home-styles-demoPreviewPane", { padding: "36px 24px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "250px", backgroundColor: colors.bgCard }),
 
-  demoCodePane: css({ padding: "20px 22px", backgroundColor: "var(--terminal-bg)", color: "var(--terminal-text)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8rem", lineHeight: "1.7", overflowX: "auto", minHeight: "250px" }),
+  demoCodePane: css("pages-home-styles-demoCodePane", { padding: "20px 22px", backgroundColor: "var(--terminal-bg)", color: "var(--terminal-text)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8rem", lineHeight: "1.7", overflowX: "auto", minHeight: "250px" }),
 
   // Philosophy section
-  philosophySection: css({ position: "relative", overflow: "hidden", padding: "64px 0", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, medium: { padding: "96px 0" } }),
+  philosophySection: css("pages-home-styles-philosophySection", { position: "relative", overflow: "hidden", padding: "64px 0", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, medium: { padding: "96px 0" } }),
 
-  philosophyInner: css({ display: "grid", gridTemplateColumns: "1fr", gap: "42px", alignItems: "center", large: { gridTemplateColumns: "0.9fr 1.1fr", gap: "80px" } }),
+  philosophyInner: css("pages-home-styles-philosophyInner", { display: "grid", gridTemplateColumns: "1fr", gap: "42px", alignItems: "center", large: { gridTemplateColumns: "0.9fr 1.1fr", gap: "80px" } }),
 
-  philosophyQuote: css({ position: "relative", fontSize: "1.55rem", fontWeight: "800", lineHeight: "1.32", letterSpacing: "0", marginBottom: "32px", medium: { fontSize: "2rem" } }),
+  philosophyQuote: css("pages-home-styles-philosophyQuote", { position: "relative", fontSize: "1.55rem", fontWeight: "800", lineHeight: "1.32", letterSpacing: "0", marginBottom: "32px", medium: { fontSize: "2rem" } }),
 
-  philosophyMark: css({ display: "block", fontFamily: "Georgia, serif", fontSize: "4.6rem", lineHeight: "0.6", color: colors.primary, opacity: "0.35", marginBottom: "18px" }),
+  philosophyMark: css("pages-home-styles-philosophyMark", { display: "block", fontFamily: "Georgia, serif", fontSize: "4.6rem", lineHeight: "0.6", color: colors.primary, opacity: "0.35", marginBottom: "18px" }),
 
-  philosophyPoints: css({ display: "flex", flexDirection: "column", gap: "10px" }),
+  philosophyPoints: css("pages-home-styles-philosophyPoints", { display: "flex", flexDirection: "column", gap: "10px" }),
 
-  philosophyPoint: css({ display: "flex", gap: "16px", alignItems: "flex-start", padding: "16px 18px", borderRadius: "8px", transition: "transform 0.2s ease", hover: { backgroundColor: colors.bgCard, transform: "translateX(4px)" } }),
+  philosophyPoint: css("pages-home-styles-philosophyPoint", { display: "flex", gap: "16px", alignItems: "flex-start", padding: "16px 18px", borderRadius: "8px", transition: "transform 0.2s ease", hover: { backgroundColor: colors.bgCard, transform: "translateX(4px)" } }),
 
-  philosophyPointIcon: css({ width: "38px", height: "38px", borderRadius: "8px", backgroundColor: colors.primaryAlpha08, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", fontWeight: "800", color: colors.primary, flexShrink: 0 }),
+  philosophyPointIcon: css("pages-home-styles-philosophyPointIcon", { width: "38px", height: "38px", borderRadius: "8px", backgroundColor: colors.primaryAlpha08, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", fontWeight: "800", color: colors.primary, flexShrink: 0 }),
 
-  philosophyPointTitle: css({ fontSize: "0.97rem", fontWeight: "600", marginBottom: "4px" }),
+  philosophyPointTitle: css("pages-home-styles-philosophyPointTitle", { fontSize: "0.97rem", fontWeight: "600", marginBottom: "4px" }),
 
-  philosophyPointDesc: css({ fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65" }),
+  philosophyPointDesc: css("pages-home-styles-philosophyPointDesc", { fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65" }),
 
   // Pipeline section
-  pipelineSection: css({ padding: "8px 0 64px", borderBottom: `1px solid ${colors.border}`, medium: { padding: "96px 0" } }),
+  pipelineSection: css("pages-home-styles-pipelineSection", { padding: "8px 0 64px", borderBottom: `1px solid ${colors.border}`, medium: { padding: "96px 0" } }),
 
   // Features section
-  featuresSection: css({ padding: "64px 0", medium: { padding: "96px 0" } }),
+  featuresSection: css("pages-home-styles-featuresSection", { padding: "64px 0", medium: { padding: "96px 0" } }),
 
-  featureIcon: css({ width: "42px", height: "42px", borderRadius: "12px", backgroundColor: colors.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 14px 28px -20px var(--c-primary-glow)" }),
+  featureIcon: css("pages-home-styles-featureIcon", { width: "42px", height: "42px", borderRadius: "12px", backgroundColor: colors.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 14px 28px -20px var(--c-primary-glow)" }),
 
-  featureKicker: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "6px" }),
+  featureKicker: css("pages-home-styles-featureKicker", { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "6px" }),
 
   // Comparison section
-  comparisonSection: css({ position: "relative", overflow: "hidden", padding: "64px 0", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, medium: { padding: "96px 0" } }),
+  comparisonSection: css("pages-home-styles-comparisonSection", { position: "relative", overflow: "hidden", padding: "64px 0", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, medium: { padding: "96px 0" } }),
 
-  cmpBadge: css({ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.64rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary, padding: "3px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08 }),
+  cmpBadge: css("pages-home-styles-cmpBadge", { display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.64rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary, padding: "3px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08 }),
 
   // Benchmark section
-  benchSection: css({ padding: "64px 0", medium: { padding: "96px 0" } }),
+  benchSection: css("pages-home-styles-benchSection", { padding: "64px 0", medium: { padding: "96px 0" } }),
 
-  benchPanel: css({ backgroundColor: colors.bgCard, boxShadow: "var(--c-shadow)", borderRadius: "20px", padding: "26px 20px", marginTop: "46px", medium: { padding: "38px 42px" } }),
+  benchPanel: css("pages-home-styles-benchPanel", { backgroundColor: colors.bgCard, boxShadow: "var(--c-shadow)", borderRadius: "20px", padding: "26px 20px", marginTop: "46px", medium: { padding: "38px 42px" } }),
 
-  benchHead: css({ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "26px" }),
+  benchHead: css("pages-home-styles-benchHead", { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "26px" }),
 
-  benchKicker: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary }),
+  benchKicker: css("pages-home-styles-benchKicker", { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary }),
 
-  benchHint: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: colors.textMuted }),
+  benchHint: css("pages-home-styles-benchHint", { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: colors.textMuted }),
 
-  benchRows: css({ display: "flex", flexDirection: "column", gap: "14px" }),
+  benchRows: css("pages-home-styles-benchRows", { display: "flex", flexDirection: "column", gap: "14px" }),
 
-  benchRow: css({ display: "grid", gridTemplateColumns: "1fr", gap: "6px", alignItems: "center", medium: { gridTemplateColumns: "168px 1fr", gap: "18px" } }),
+  benchRow: css("pages-home-styles-benchRow", { display: "grid", gridTemplateColumns: "1fr", gap: "6px", alignItems: "center", medium: { gridTemplateColumns: "168px 1fr", gap: "18px" } }),
 
-  benchName: css({ fontSize: "0.875rem", fontWeight: "600", color: colors.textDim, whiteSpace: "nowrap" }),
+  benchName: css("pages-home-styles-benchName", { fontSize: "0.875rem", fontWeight: "600", color: colors.textDim, whiteSpace: "nowrap" }),
 
-  benchNameFeatured: css({ color: colors.text, fontWeight: "700" }),
+  benchNameFeatured: css("pages-home-styles-benchNameFeatured", { color: colors.text, fontWeight: "700" }),
 
-  benchVersion: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", fontWeight: "400", color: colors.textMuted, marginLeft: "7px" }),
+  benchVersion: css("pages-home-styles-benchVersion", { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", fontWeight: "400", color: colors.textMuted, marginLeft: "7px" }),
 
-  benchTrack: css({ position: "relative", height: "32px" }),
+  benchTrack: css("pages-home-styles-benchTrack", { position: "relative", height: "32px" }),
 
-  benchFill: css({ position: "relative", height: "32px", minWidth: "54px", borderRadius: "999px", overflow: "hidden", backgroundColor: colors.bgLight }),
+  benchFill: css("pages-home-styles-benchFill", { position: "relative", height: "32px", minWidth: "54px", borderRadius: "999px", overflow: "hidden", backgroundColor: colors.bgLight }),
 
-  benchFillFeatured: css({ backgroundColor: colors.primary, boxShadow: "0 14px 30px -16px var(--c-primary-glow)" }),
+  benchFillFeatured: css("pages-home-styles-benchFillFeatured", { backgroundColor: colors.primary, boxShadow: "0 14px 30px -16px var(--c-primary-glow)" }),
 
-  benchValue: css({ position: "absolute", right: "13px", top: "50%", transform: "translateY(-50%)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", fontWeight: "700", color: colors.textDim, fontVariantNumeric: "tabular-nums" }),
+  benchValue: css("pages-home-styles-benchValue", { position: "absolute", right: "13px", top: "50%", transform: "translateY(-50%)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", fontWeight: "700", color: colors.textDim, fontVariantNumeric: "tabular-nums" }),
 
-  benchValueFeatured: css({ color: "#fff" }),
+  benchValueFeatured: css("pages-home-styles-benchValueFeatured", { color: "#fff" }),
 
-  benchFoot: css({ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "10px 24px", flexWrap: "wrap", marginTop: "28px", paddingTop: "18px", borderTop: `1px solid ${colors.border}`, fontSize: "0.78rem", color: colors.textMuted, lineHeight: "1.6" }),
+  benchFoot: css("pages-home-styles-benchFoot", { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "10px 24px", flexWrap: "wrap", marginTop: "28px", paddingTop: "18px", borderTop: `1px solid ${colors.border}`, fontSize: "0.78rem", color: colors.textMuted, lineHeight: "1.6" }),
 
-  benchSourceLink: css({ whiteSpace: "nowrap", color: colors.textDim, fontWeight: "600", borderBottom: `1px solid ${colors.borderLight}`, hover: { color: colors.primary, borderColor: colors.borderPrimary } }),
+  benchSourceLink: css("pages-home-styles-benchSourceLink", { whiteSpace: "nowrap", color: colors.textDim, fontWeight: "600", borderBottom: `1px solid ${colors.borderLight}`, hover: { color: colors.primary, borderColor: colors.borderPrimary } }),
 
   // Quick start section
-  quickStartSection: css({ padding: "64px 0", medium: { padding: "96px 0" } }),
+  quickStartSection: css("pages-home-styles-quickStartSection", { padding: "64px 0", medium: { padding: "96px 0" } }),
 
-  quickStartStep: css({ display: "flex", flexDirection: "column", backgroundColor: colors.bgCard, borderRadius: "16px", overflow: "hidden", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 18px 44px -24px rgba(0,0,0,0.3)" } }),
+  quickStartStep: css("pages-home-styles-quickStartStep", { display: "flex", flexDirection: "column", backgroundColor: colors.bgCard, borderRadius: "16px", overflow: "hidden", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 18px 44px -24px rgba(0,0,0,0.3)" } }),
 
-  stepHeader: css({ padding: "24px 24px 16px", flex: "1" }),
+  stepHeader: css("pages-home-styles-stepHeader", { padding: "24px 24px 16px", flex: "1" }),
 
   // Examples teaser section
-  examplesTeaserSection: css({ padding: "64px 0", medium: { padding: "96px 0" } }),
+  examplesTeaserSection: css("pages-home-styles-examplesTeaserSection", { padding: "64px 0", medium: { padding: "96px 0" } }),
 
-  examplesTeaserGrid: css({ display: "grid", gridTemplateColumns: "1fr", gap: "20px", marginTop: "32px", medium: { gridTemplateColumns: "1fr 1fr", marginTop: "48px" } }),
+  examplesTeaserGrid: css("pages-home-styles-examplesTeaserGrid", { display: "grid", gridTemplateColumns: "1fr", gap: "20px", marginTop: "32px", medium: { gridTemplateColumns: "1fr 1fr", marginTop: "48px" } }),
 
-  teaserCard: css({ backgroundColor: colors.bgCard, borderRadius: "16px", overflow: "hidden", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 22px 52px -28px var(--c-primary-glow)" } }),
+  teaserCard: css("pages-home-styles-teaserCard", { backgroundColor: colors.bgCard, borderRadius: "16px", overflow: "hidden", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 22px 52px -28px var(--c-primary-glow)" } }),
 
-  teaserDemoPane: css({ padding: "32px 24px", minHeight: "200px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.bgCode }),
+  teaserDemoPane: css("pages-home-styles-teaserDemoPane", { padding: "32px 24px", minHeight: "200px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.bgCode }),
 
-  teaserCodePane: css({ padding: "16px 20px", backgroundColor: colors.bgCode, fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", lineHeight: "1.7", overflowX: "auto" }),
+  teaserCodePane: css("pages-home-styles-teaserCodePane", { padding: "16px 20px", backgroundColor: colors.bgCode, fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", lineHeight: "1.7", overflowX: "auto" }),
 
   // CTA section
-  ctaSection: css({ padding: "72px 0 88px", textAlign: "center", medium: { padding: "104px 0 120px" } }),
+  ctaSection: css("pages-home-styles-ctaSection", { padding: "72px 0 88px", textAlign: "center", medium: { padding: "104px 0 120px" } }),
 
-  ctaActions: css({ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", marginTop: "34px" }),
+  ctaActions: css("pages-home-styles-ctaActions", { display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", marginTop: "34px" }),
 
-  ctaInstall: css({ display: "flex", justifyContent: "center", marginTop: "26px" }),
+  ctaInstall: css("pages-home-styles-ctaInstall", { display: "flex", justifyContent: "center", marginTop: "26px" }),
 };

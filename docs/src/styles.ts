@@ -49,71 +49,71 @@ export const { css, cx } = createCss({
 
 // Shared style helpers.
 export const s = {
-  container: css({ maxWidth: '1240px', margin: '0 auto', padding: '0 22px', medium: { padding: '0 30px' } }),
+  container: css("styles-container", { maxWidth: '1240px', margin: '0 auto', padding: '0 22px', medium: { padding: '0 30px' } }),
 
-  section: css({ padding: '96px 0' }),
+  section: css("styles-section", { padding: '96px 0' }),
 
-  sectionLabel: css({ display: 'inline-flex', alignItems: 'center', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: '700', color: colors.primary, letterSpacing: '0', textTransform: 'uppercase', marginBottom: '14px' }),
+  sectionLabel: css("styles-sectionLabel", { display: 'inline-flex', alignItems: 'center', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: '700', color: colors.primary, letterSpacing: '0', textTransform: 'uppercase', marginBottom: '14px' }),
 
-  sectionTitle: css({ fontSize: '2rem', fontWeight: '800', lineHeight: '1.12', letterSpacing: '0', marginBottom: '16px', medium: { fontSize: '2.55rem' } }),
+  sectionTitle: css("styles-sectionTitle", { fontSize: '2rem', fontWeight: '800', lineHeight: '1.12', letterSpacing: '0', marginBottom: '16px', medium: { fontSize: '2.55rem' } }),
 
-  sectionSub: css({ fontSize: '1.03rem', color: colors.textDim, maxWidth: '600px', lineHeight: '1.72' }),
+  sectionSub: css("styles-sectionSub", { fontSize: '1.03rem', color: colors.textDim, maxWidth: '600px', lineHeight: '1.72' }),
 
-  divider: css({ height: '1px', backgroundColor: colors.border, margin: '0' }),
+  divider: css("styles-divider", { height: '1px', backgroundColor: colors.border, margin: '0' }),
 
-  btn: css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minHeight: '44px', padding: '0 24px', borderRadius: '9999px', fontSize: '0.9rem', fontWeight: '800', transition: 'transform 0.18s ease', whiteSpace: 'nowrap' }),
+  btn: css("styles-btn", { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minHeight: '44px', padding: '0 24px', borderRadius: '9999px', fontSize: '0.9rem', fontWeight: '800', transition: 'transform 0.18s ease', whiteSpace: 'nowrap' }),
 
-  btnPrimary: css({ backgroundColor: colors.primary, color: '#fff', boxShadow: '0 14px 28px -18px var(--c-primary-glow)', hover: { backgroundColor: colors.primaryHover, boxShadow: '0 18px 34px -18px var(--c-primary-glow)', transform: 'translateY(-1px)' } }),
+  btnPrimary: css("styles-btnPrimary", { backgroundColor: colors.primary, color: '#fff', boxShadow: '0 14px 28px -18px var(--c-primary-glow)', hover: { backgroundColor: colors.primaryHover, boxShadow: '0 18px 34px -18px var(--c-primary-glow)', transform: 'translateY(-1px)' } }),
 
-  btnSecondary: css({ backgroundColor: colors.bgSecondary, color: colors.text, boxShadow: '0 10px 26px -24px rgba(0,0,0,0.28)', hover: { color: colors.primary, boxShadow: '0 16px 34px -26px var(--c-primary-glow)' } }),
+  btnSecondary: css("styles-btnSecondary", { backgroundColor: colors.bgSecondary, color: colors.text, boxShadow: '0 10px 26px -24px rgba(0,0,0,0.28)', hover: { color: colors.primary, boxShadow: '0 16px 34px -26px var(--c-primary-glow)' } }),
 
-  installCmd: css({ display: 'inline-flex', alignItems: 'center', gap: '10px', backgroundColor: colors.bgSecondary, borderRadius: '14px', padding: '11px 14px 11px 16px', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.875rem', color: colors.text, boxShadow: 'var(--c-shadow)' }),
+  installCmd: css("styles-installCmd", { display: 'inline-flex', alignItems: 'center', gap: '10px', backgroundColor: colors.bgSecondary, borderRadius: '14px', padding: '11px 14px 11px 16px', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.875rem', color: colors.text, boxShadow: 'var(--c-shadow)' }),
 
-  codeBlockFrame: css({ backgroundColor: colors.bgCode, borderRadius: '14px', overflow: 'hidden', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }),
+  codeBlockFrame: css("styles-codeBlockFrame", { backgroundColor: colors.bgCode, borderRadius: '14px', overflow: 'hidden', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }),
 
-  codeBlockHeader: css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', backgroundColor: colors.bgSecondary }),
+  codeBlockHeader: css("styles-codeBlockHeader", { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', backgroundColor: colors.bgSecondary }),
 
-  codeBlockFilename: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: colors.textMuted }),
+  codeBlockFilename: css("styles-codeBlockFilename", { fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: colors.textMuted }),
 
-  codeBlockBody: css({ padding: '20px 22px', overflow: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8125rem', lineHeight: '1.7' }),
+  codeBlockBody: css("styles-codeBlockBody", { padding: '20px 22px', overflow: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8125rem', lineHeight: '1.7' }),
 
-  demoCard: css({ backgroundColor: colors.bgCard, borderRadius: '14px', overflow: 'hidden', boxShadow: 'var(--c-shadow)' }),
+  demoCard: css("styles-demoCard", { backgroundColor: colors.bgCard, borderRadius: '14px', overflow: 'hidden', boxShadow: 'var(--c-shadow)' }),
 
-  demoCardBar: css({ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', backgroundColor: colors.bgSecondary }),
+  demoCardBar: css("styles-demoCardBar", { display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', backgroundColor: colors.bgSecondary }),
 
-  demoDots: css({ display: 'flex', gap: '6px' }),
+  demoDots: css("styles-demoDots", { display: 'flex', gap: '6px' }),
 
-  demoTabs: css({ display: 'flex', borderBottom: `1px solid ${colors.border}`, padding: '0 16px', backgroundColor: colors.bgCard }),
+  demoTabs: css("styles-demoTabs", { display: 'flex', borderBottom: `1px solid ${colors.border}`, padding: '0 16px', backgroundColor: colors.bgCard }),
 
-  demoTab: css({ fontSize: '0.8rem', fontWeight: '500', color: colors.textMuted, padding: '10px 14px', borderBottom: '2px solid transparent', cursor: 'pointer' }),
+  demoTab: css("styles-demoTab", { fontSize: '0.8rem', fontWeight: '500', color: colors.textMuted, padding: '10px 14px', borderBottom: '2px solid transparent', cursor: 'pointer' }),
 
-  demoTabActive: css({ color: colors.primary, borderBottomColor: colors.primary }),
+  demoTabActive: css("styles-demoTabActive", { color: colors.primary, borderBottomColor: colors.primary }),
 
-  featureGrid: css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }),
+  featureGrid: css("styles-featureGrid", { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }),
 
-  featureCard: css({ backgroundColor: colors.bgCard, borderRadius: '20px', padding: '28px 26px', transition: 'transform 0.18s ease', hover: { transform: 'translateY(-2px)', boxShadow: '0 18px 46px -34px var(--c-primary-glow)' } }),
+  featureCard: css("styles-featureCard", { backgroundColor: colors.bgCard, borderRadius: '20px', padding: '28px 26px', transition: 'transform 0.18s ease', hover: { transform: 'translateY(-2px)', boxShadow: '0 18px 46px -34px var(--c-primary-glow)' } }),
 
-  cardHeadRow: css({ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '16px' }),
+  cardHeadRow: css("styles-cardHeadRow", { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '16px' }),
 
-  cardCornerBadge: css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: '30px', height: '26px', padding: '0 9px', borderRadius: '9999px', backgroundColor: colors.primaryAlpha08, color: colors.primary, fontFamily: "'JetBrains Mono', monospace", fontSize: '0.68rem', fontWeight: '800', letterSpacing: '0' }),
+  cardCornerBadge: css("styles-cardCornerBadge", { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: '30px', height: '26px', padding: '0 9px', borderRadius: '9999px', backgroundColor: colors.primaryAlpha08, color: colors.primary, fontFamily: "'JetBrains Mono', monospace", fontSize: '0.68rem', fontWeight: '800', letterSpacing: '0' }),
 
-  featureTitle: css({ fontSize: '1.05rem', fontWeight: '600', marginBottom: '10px' }),
+  featureTitle: css("styles-featureTitle", { fontSize: '1.05rem', fontWeight: '600', marginBottom: '10px' }),
 
-  featureDesc: css({ fontSize: '0.9rem', color: colors.textDim, lineHeight: '1.65' }),
+  featureDesc: css("styles-featureDesc", { fontSize: '0.9rem', color: colors.textDim, lineHeight: '1.65' }),
 
-  stepsGrid: css({ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', medium: { gridTemplateColumns: 'repeat(3,1fr)', gap: '24px' } }),
+  stepsGrid: css("styles-stepsGrid", { display: 'grid', gridTemplateColumns: '1fr', gap: '16px', medium: { gridTemplateColumns: 'repeat(3,1fr)', gap: '24px' } }),
 
-  stepTitle: css({ fontSize: '1rem', fontWeight: '600', marginBottom: '8px' }),
+  stepTitle: css("styles-stepTitle", { fontSize: '1rem', fontWeight: '600', marginBottom: '8px' }),
 
-  stepDesc: css({ fontSize: '0.875rem', color: colors.textDim, marginBottom: '16px' }),
+  stepDesc: css("styles-stepDesc", { fontSize: '0.875rem', color: colors.textDim, marginBottom: '16px' }),
 
-  badge: css({ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0', textTransform: 'uppercase', color: colors.primary, padding: '5px 12px', borderRadius: '999px', backgroundColor: colors.primaryAlpha08 }),
+  badge: css("styles-badge", { display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0', textTransform: 'uppercase', color: colors.primary, padding: '5px 12px', borderRadius: '999px', backgroundColor: colors.primaryAlpha08 }),
 
-  statsRow: css({ display: 'flex', gap: '40px', flexWrap: 'wrap', padding: '40px 0', borderTop: `1px solid ${colors.border}`, marginTop: '24px' }),
+  statsRow: css("styles-statsRow", { display: 'flex', gap: '40px', flexWrap: 'wrap', padding: '40px 0', borderTop: `1px solid ${colors.border}`, marginTop: '24px' }),
 
-  statNum: css({ fontSize: '1.8rem', fontWeight: '700', color: colors.text, lineHeight: '1', marginBottom: '4px' }),
+  statNum: css("styles-statNum", { fontSize: '1.8rem', fontWeight: '700', color: colors.text, lineHeight: '1', marginBottom: '4px' }),
 
-  statLabel: css({ fontSize: '0.8rem', color: colors.textMuted }),
+  statLabel: css("styles-statLabel", { fontSize: '0.8rem', color: colors.textMuted }),
 
-  codeInline: css({ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.82em', backgroundColor: colors.bgLight, padding: '1px 5px', borderRadius: '3px', color: colors.primaryHover }),
+  codeInline: css("styles-codeInline", { fontFamily: "'JetBrains Mono', monospace", fontSize: '0.82em', backgroundColor: colors.bgLight, padding: '1px 5px', borderRadius: '3px', color: colors.primaryHover }),
 };

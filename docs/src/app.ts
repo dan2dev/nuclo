@@ -16,14 +16,14 @@ import { animations } from './styles/animations.ts';
 type PageSlot = { fn: PageFunction };
 
 const appStyles = {
-  root: css("app-root", { minHeight: '100vh' }),
-  main: css({ minHeight: 'calc(100vh - 160px)', paddingTop: '96px', animation: `${animations.pageFadeIn} 0.28s ease both` }),
-  centerState: css({ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '16px' }),
-  spinner: css({ width: '32px', height: '32px', border: `2px solid ${colors.border}`, borderTopColor: colors.primary, borderRadius: '50%', animation: `${animations.spin} 0.6s linear infinite` }),
-  loadingText: css({ fontSize: '13px', color: colors.textMuted }),
-  errorState: css({ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '12px', padding: '48px' }),
-  errorTitle: css({ fontSize: '15px', fontWeight: '600', color: '#ef4444' }),
-  errorMessage: css({ fontSize: '13px', color: colors.textMuted, fontFamily: 'monospace' }),
+	root: css("app-app-root", { minHeight: '100vh' }),
+  main: css("app-main", { minHeight: 'calc(100vh - 160px)', paddingTop: '96px', animation: `${animations.pageFadeIn} 0.28s ease both` }),
+  centerState: css("app-centerState", { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '16px' }),
+  spinner: css("app-spinner", { width: '32px', height: '32px', border: `2px solid ${colors.border}`, borderTopColor: colors.primary, borderRadius: '50%', animation: `${animations.spin} 0.6s linear infinite` }),
+  loadingText: css("app-loadingText", { fontSize: '13px', color: colors.textMuted }),
+  errorState: css("app-errorState", { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '12px', padding: '48px' }),
+  errorTitle: css("app-errorTitle", { fontSize: '15px', fontWeight: '600', color: '#ef4444' }),
+  errorMessage: css("app-errorMessage", { fontSize: '13px', color: colors.textMuted, fontFamily: 'monospace' }),
 };
 
 function Spinner() {

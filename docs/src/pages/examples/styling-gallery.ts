@@ -73,7 +73,7 @@ function StylingCard(feature: StylingFeature, index: number) {
   );
 }
 
-const cardStyle = css({
+const cardStyle = css("pages-examples-styling-gallery-cardStyle", {
   p: 16,
   rounded: 8,
   border: "1px solid",
@@ -84,7 +84,7 @@ const cardStyle = css({
   maxW: 260,
 });
 
-const quietText = css({ color: "muted", text: 13, lineHeight: "1.5", marginTop: 6 });
+const quietText = css("pages-examples-styling-gallery-quietText", { color: "muted", text: 13, lineHeight: "1.5", marginTop: 6 });
 
 function CssPreview() {
   return div(
@@ -94,7 +94,7 @@ function CssPreview() {
   );
 }
 
-const baseButton = css({
+const baseButton = css("pages-examples-styling-gallery-baseButton", {
   px: 14,
   py: 9,
   rounded: 6,
@@ -104,7 +104,7 @@ const baseButton = css({
   cursor: "pointer",
 });
 
-const selectedButton = css({
+const selectedButton = css("pages-examples-styling-gallery-selectedButton", {
   bg: "primary",
   color: "white",
   borderColor: "primary",
@@ -114,17 +114,17 @@ function CxPreview() {
   let selected = false;
 
   return div(
-    css({ col: true, gap: 10, items: "center" }),
+    css("pages-examples-styling-gallery-styling-gallery-inline-1", { col: true, gap: 10, items: "center" }),
     button(
       () => cx(baseButton, selected ? selectedButton : null),
       () => selected ? "Selected" : "Select",
       on("click", () => { selected = !selected; update(); }),
     ),
-    span(css({ color: "muted", text: 12 }), "cx() adds the selected class."),
+    span(css("pages-examples-styling-gallery-styling-gallery-inline-2", { color: "muted", text: 12 }), "cx() adds the selected class."),
   );
 }
 
-const responsiveCard = css({
+const responsiveCard = css("pages-examples-styling-gallery-responsiveCard", {
   p: 12,
   rounded: 8,
   border: "1px solid",
@@ -151,7 +151,7 @@ const FEATURES: StylingFeature[] = [
   {
     title: "css()",
     desc: "Create a class from one typed style object.",
-    code: `const card = css({
+    code: `const card = css("pages-examples-styling-gallery-card", {
   p: 16,
   rounded: 8,
   border: "1px solid",
@@ -168,7 +168,7 @@ function Card() {
   {
     title: "cx()",
     desc: "Compose classes conditionally. Later styles win.",
-    code: `const baseButton = css({
+    code: `const baseButton = css("pages-examples-styling-gallery-baseButton", {
   px: 14,
   py: 9,
   rounded: 6,
@@ -176,7 +176,7 @@ function Card() {
   borderColor: "border",
 })
 
-const selectedButton = css({
+const selectedButton = css("pages-examples-styling-gallery-selectedButton", {
   bg: "primary",
   color: "white",
   borderColor: "primary",
@@ -207,7 +207,7 @@ function Button() {
   },
 })
 
-const box = css({
+const box = css("pages-examples-styling-gallery-box", {
   p: 12,
   bg: "surface",
   borderColor: "border",
