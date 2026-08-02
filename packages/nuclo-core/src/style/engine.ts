@@ -210,11 +210,15 @@ function ensureSheet(): CSSStyleSheet | null {
 	if (sheet && sheetDocument === document && sheet.ownerNode && (sheet.ownerNode as Element).isConnected) {
 		return sheet;
 	}
-	let el = document.getElementById("nuclo-styles") as HTMLStyleElement | null;
-	if (!el) {
+	const existing = document.getElementById("nuclo-styles");
+	let el: HTMLStyleElement;
+	if (existing?.tagName === "STYLE") {
+		el = existing as HTMLStyleElement;
+	} else {
 		el = document.createElement("style");
 		el.id = "nuclo-styles";
-		document.head.appendChild(el);
+		if (existing) existing.replaceWith(el);
+		else document.head.appendChild(el);
 	}
 	sheet = el.sheet;
 	sheetDocument = document;
@@ -262,15 +266,16 @@ function record(rule: string, query: string | undefined): void {
 		bucket.push(rule);
 	}
 	cssTextCache = null; // a new rule changes the serialized sheet
-	ssrCollector?.(query === undefined ? rule : query + "{" + rule + "}");
 
-	if (!s) return;
-	if (query === undefined) {
-		insertBase(s, rule);
-	} else {
-		const group = getOrCreateGroup(s, query);
-		if (group) insertGrouped(group, rule);
+	if (s) {
+		if (query === undefined) {
+			insertBase(s, rule);
+		} else {
+			const group = getOrCreateGroup(s, query);
+			if (group) insertGrouped(group, rule);
+		}
 	}
+	ssrCollector?.(query === undefined ? rule : query + "{" + rule + "}");
 }
 
 /**
@@ -299,29 +304,33 @@ function appendKeyPart(key: string, value: string): string {
 	return key + value.length + ":" + value;
 }
 
-function selectorFor(className: string, suffix: string): string {
-	const selector = "." + className;
-	let expanded = selector;
+export function expandAmpersands(input: string, replacement: string): string {
+	let expanded = "";
 	let quote = 0;
-	for (let i = 0; i < suffix.length; i++) {
-		const code = suffix.charCodeAt(i);
-		if (code === 92 /* \\ */ && i + 1 < suffix.length) {
-			expanded += suffix[i] + suffix[++i];
+	for (let i = 0; i < input.length; i++) {
+		const code = input.charCodeAt(i);
+		if (code === 92 /* \\ */ && i + 1 < input.length) {
+			expanded += input[i] + input[++i];
 			continue;
 		}
 		if (quote !== 0) {
-			expanded += suffix[i];
+			expanded += input[i];
 			if (code === quote) quote = 0;
 			continue;
 		}
 		if (code === 34 /* " */ || code === 39 /* ' */) {
 			quote = code;
-			expanded += suffix[i];
+			expanded += input[i];
 		} else {
-			expanded += code === 38 /* & */ ? selector : suffix[i];
+			expanded += code === 38 /* & */ ? replacement : input[i];
 		}
 	}
 	return expanded;
+}
+
+function selectorFor(className: string, suffix: string): string {
+	const selector = "." + className;
+	return selector + expandAmpersands(suffix, selector);
 }
 
 /**

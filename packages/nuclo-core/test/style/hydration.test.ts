@@ -130,4 +130,46 @@ describe('hydration dedup', () => {
 		);
 		expect(mediaRules).toHaveLength(1);
 	});
+
+	it('dedupes a lazily claimed SSR rule after earlier matches consume the index', () => {
+		hydrateFrom((i) => {
+			i.css('eager', { color: 'red' });
+			i.css('lazy', { p: 12 });
+		});
+		const client = createCss(theme);
+		client.css('eager', { color: 'red' });
+		client.css('client-only', { m: 4 });
+		client.css('lazy', { p: 12 });
+
+		const text = sheetText();
+		expect(countOccurrences(text, '.eager {')).toBe(1);
+		expect(countOccurrences(text, '.lazy {')).toBe(1);
+		expect(countOccurrences(text, '.client-only {')).toBe(1);
+	});
+
+	it('preserves unrelated external CSS while adopting the stylesheet', () => {
+		const el = document.createElement('style');
+		el.id = 'nuclo-styles';
+		el.textContent = '.external { color: hotpink; }';
+		document.head.appendChild(el);
+
+		createCss(theme).css({ p: 8 });
+		const text = sheetText();
+		expect(text).toContain('.external { color: hotpink; }');
+		expect(text).toContain('padding: 8px');
+	});
+
+	it('inserts new base rules before adopted media groups', () => {
+		hydrateFrom((i) => {
+			i.css({ medium: { color: 'red' } });
+		});
+		createCss(theme).css({ p: 8 });
+
+		const el = document.getElementById('nuclo-styles') as HTMLStyleElement;
+		const rules = Array.from(el.sheet!.cssRules);
+		const baseIndex = rules.findIndex((rule) => rule instanceof CSSStyleRule && rule.cssText.includes('padding'));
+		const mediaIndex = rules.findIndex((rule) => rule.type === CSSRule.MEDIA_RULE);
+		expect(baseIndex).toBeGreaterThanOrEqual(0);
+		expect(baseIndex).toBeLessThan(mediaIndex);
+	});
 });

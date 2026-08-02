@@ -138,6 +138,18 @@ describe('setSSRCollector', () => {
 		css({ p: 16 });
 		expect(collected.length).toBe(1);
 	});
+
+	it('leaves the registry and browser stylesheet consistent when the collector throws', () => {
+		setSSRCollector(() => {
+			throw new Error('collector failed');
+		});
+		const { css } = createCss({});
+
+		expect(() => css({ color: 'red' })).toThrow('collector failed');
+		expect(getCssText()).toContain('color:red');
+		const el = document.getElementById('nuclo-styles') as HTMLStyleElement;
+		expect(Array.from(el.sheet!.cssRules).some((rule) => rule.cssText.includes('color: red'))).toBe(true);
+	});
 });
 
 describe('document swap (test isolation)', () => {
@@ -157,6 +169,19 @@ describe('document swap (test isolation)', () => {
 		expect(all).toContain('padding: 16px');
 		expect(all).toContain('margin: 4px');
 		expect(all).toContain('padding: 32px');
+	});
+
+	it('replaces a non-style element occupying the reserved stylesheet id', () => {
+		const blocker = document.createElement('div');
+		blocker.id = 'nuclo-styles';
+		document.head.appendChild(blocker);
+
+		const { css } = createCss({});
+		const result = css({ color: 'red' });
+		const el = document.getElementById('nuclo-styles');
+
+		expect(el).toBeInstanceOf(HTMLStyleElement);
+		expect((el as HTMLStyleElement).sheet!.cssRules[0].cssText).toContain(result.className);
 	});
 });
 

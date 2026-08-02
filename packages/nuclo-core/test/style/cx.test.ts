@@ -82,6 +82,10 @@ describe('cx()', () => {
 		expect(merged).toEqual(['one', 'two', 'three']);
 	});
 
+	it('normalizes tabs, newlines, and repeated whitespace in class strings', () => {
+		expect(cx('one\ttwo\nthree', ' two  four ').className).toBe('one two three four');
+	});
+
 	it('flattens nested arrays of inputs', () => {
 		const { css } = createCss({});
 		// Different selector contexts (base vs :hover) so both classes survive
