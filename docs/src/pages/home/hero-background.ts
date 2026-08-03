@@ -153,35 +153,6 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
     drawingContext.fillStyle = base;
     drawingContext.fillRect(0, 0, width, height);
 
-    const glow = drawingContext.createRadialGradient(
-      focusX,
-      focusY,
-      0,
-      focusX,
-      focusY,
-      Math.max(220, width * 0.34),
-    );
-    glow.addColorStop(0, "rgba(255, 243, 203, 0.46)");
-    glow.addColorStop(0.32, "rgba(255, 184, 73, 0.2)");
-    glow.addColorStop(1, "rgba(255, 90, 20, 0)");
-    drawingContext.fillStyle = glow;
-    drawingContext.fillRect(0, 0, width, height);
-
-    const horizon = drawingContext.createRadialGradient(
-      width * 0.5,
-      height * 1.1,
-      0,
-      width * 0.5,
-      height * 1.1,
-      Math.max(width * 0.5, 340),
-    );
-    horizon.addColorStop(0, "rgba(255, 255, 226, 0.82)");
-    horizon.addColorStop(0.16, "rgba(255, 223, 132, 0.38)");
-    horizon.addColorStop(0.52, "rgba(255, 106, 24, 0.08)");
-    horizon.addColorStop(1, "rgba(255, 66, 12, 0)");
-    drawingContext.fillStyle = horizon;
-    drawingContext.fillRect(0, 0, width, height);
-
     drawingContext.save();
     drawingContext.globalCompositeOperation = "screen";
     for (const particle of particles) {
