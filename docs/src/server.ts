@@ -8,6 +8,7 @@ import { SEO_BASE_URL, generateStructuredData, getMetaForRoute } from './seo.ts'
 import { registerGlobalStyles } from './styles.ts';
 
 const isProd = process.env.NODE_ENV === 'production';
+const host = process.env.HOST ?? '127.0.0.1';
 const port = Number(process.env.PORT ?? 5173);
 
 registerGlobalStyles();
@@ -244,6 +245,7 @@ if (isProd) {
     html.replace('<script type="module" src="/src/main.ts"></script>', prodAssets);
 
   Bun.serve({
+    hostname: host,
     port,
     async fetch(req) {
       const { pathname } = new URL(req.url);
@@ -267,7 +269,7 @@ else {
   const { createServer } = await import('vite');
 
   const vite = await createServer({
-    server: { port },
+    server: { host, port },
     appType: 'custom',
     plugins: [
       {
