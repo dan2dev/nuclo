@@ -54,13 +54,39 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
   let particles: Particle[] = [];
   let animationFrame = 0;
   let lastTime = performance.now();
-  let pointerX = 0;
-  let pointerY = 0;
-  let targetX = 0;
-  let targetY = 0;
-  let pointerActive = false;
+  let focusX = 0;
+  let focusY = 0;
+  let targetFocusX = 0;
+  let targetFocusY = 0;
+  let effectActive = false;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const mobileInteraction = window.matchMedia(
+    "(max-width: 700px), (hover: none) and (pointer: coarse)",
+  );
   const eventController = new AbortController();
+
+  function resetFocus() {
+    effectActive = false;
+    targetFocusX = width * 0.5;
+    targetFocusY = height * 0.72;
+  }
+
+  function updateScrollFocus() {
+    if (!mobileInteraction.matches) return;
+
+    const rect = heroFrame.getBoundingClientRect();
+    const progress = Math.min(1, Math.max(0, -rect.top / Math.max(1, rect.height)));
+    targetFocusX = width * (0.18 + progress * 0.64);
+    targetFocusY = height * (0.82 - progress * 0.54);
+    effectActive = rect.top < window.innerHeight && rect.bottom > 0;
+
+    if (reduceMotion) {
+      focusX = targetFocusX;
+      focusY = targetFocusY;
+      updateParticles(1, performance.now() / 1000);
+      draw(performance.now() / 1000);
+    }
+  }
 
   function cleanup() {
     cancelAnimationFrame(animationFrame);
@@ -77,8 +103,8 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
 
     width = nextWidth;
     height = nextHeight;
-    targetX = pointerX = width * 0.5;
-    targetY = pointerY = height * 0.72;
+    targetFocusX = focusX = width * 0.5;
+    targetFocusY = focusY = height * 0.72;
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(width * pixelRatio);
     canvas.height = Math.round(height * pixelRatio);
@@ -86,6 +112,7 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
     canvas.style.height = `${height}px`;
     drawingContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     particles = createParticles(width, height);
+    if (mobileInteraction.matches) updateScrollFocus();
   }
 
   function updateParticles(delta: number, time: number) {
@@ -95,9 +122,9 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
       let desiredX = particle.baseX + idleX;
       let desiredY = particle.baseY + idleY;
 
-      if (pointerActive) {
-        const dx = particle.baseX - pointerX;
-        const dy = particle.baseY - pointerY;
+      if (effectActive) {
+        const dx = particle.baseX - focusX;
+        const dy = particle.baseY - focusY;
         const distance = Math.max(24, Math.hypot(dx, dy));
         const reach = Math.min(260, width * 0.3);
         if (distance < reach) {
@@ -127,11 +154,11 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
     drawingContext.fillRect(0, 0, width, height);
 
     const glow = drawingContext.createRadialGradient(
-      pointerX,
-      pointerY,
+      focusX,
+      focusY,
       0,
-      pointerX,
-      pointerY,
+      focusX,
+      focusY,
       Math.max(220, width * 0.34),
     );
     glow.addColorStop(0, "rgba(255, 243, 203, 0.46)");
@@ -158,10 +185,10 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
     drawingContext.save();
     drawingContext.globalCompositeOperation = "screen";
     for (const particle of particles) {
-      const dx = particle.x - pointerX;
-      const dy = particle.y - pointerY;
+      const dx = particle.x - focusX;
+      const dy = particle.y - focusY;
       const distance = Math.hypot(dx, dy);
-      const proximity = pointerActive ? Math.max(0, 1 - distance / 210) : 0;
+      const proximity = effectActive ? Math.max(0, 1 - distance / 210) : 0;
       const shimmer = (Math.sin(time * 0.8 + particle.phase) + 1) * 0.5;
       const alpha = 0.13 + shimmer * 0.11 + proximity * 0.48;
       drawingContext.beginPath();
@@ -172,7 +199,7 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
       if (proximity > 0.34) {
         drawingContext.beginPath();
         drawingContext.moveTo(particle.x, particle.y);
-        drawingContext.lineTo(pointerX, pointerY);
+        drawingContext.lineTo(focusX, focusY);
         drawingContext.lineWidth = 0.55;
         drawingContext.strokeStyle = `rgba(255,246,215,${proximity * 0.16})`;
         drawingContext.stroke();
@@ -193,24 +220,32 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
     resize();
     const delta = Math.min(2, (now - lastTime) / 16.667);
     lastTime = now;
-    pointerX += (targetX - pointerX) * 0.12 * delta;
-    pointerY += (targetY - pointerY) * 0.12 * delta;
+    focusX += (targetFocusX - focusX) * 0.12 * delta;
+    focusY += (targetFocusY - focusY) * 0.12 * delta;
     updateParticles(delta, now / 1000);
     draw(now / 1000);
     animationFrame = requestAnimationFrame(simulate);
   }
 
   function handlePointerMove(event: PointerEvent) {
+    if (mobileInteraction.matches) return;
+
     const rect = heroFrame.getBoundingClientRect();
-    targetX = event.clientX - rect.left;
-    targetY = event.clientY - rect.top;
-    pointerActive = true;
+    targetFocusX = event.clientX - rect.left;
+    targetFocusY = event.clientY - rect.top;
+    effectActive = true;
     if (reduceMotion) {
-      pointerX = targetX;
-      pointerY = targetY;
+      focusX = targetFocusX;
+      focusY = targetFocusY;
       updateParticles(1, performance.now() / 1000);
       draw(performance.now() / 1000);
     }
+  }
+
+  function handleInteractionModeChange() {
+    resetFocus();
+    if (mobileInteraction.matches) updateScrollFocus();
+    else if (reduceMotion) draw(0);
   }
 
   const resizeObserver = new ResizeObserver(() => {
@@ -222,17 +257,23 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
   });
   resizeObserver.observe(heroFrame);
   connectionObserver.observe(document.body, { childList: true, subtree: true });
-  heroFrame.addEventListener("pointermove", handlePointerMove, {
+  document.body.addEventListener("pointermove", handlePointerMove, {
     passive: true,
     signal: eventController.signal,
   });
-  heroFrame.addEventListener("pointerleave", () => {
-    pointerActive = false;
-    targetX = width * 0.5;
-    targetY = height * 0.72;
+  document.body.addEventListener("pointerleave", () => {
+    if (!mobileInteraction.matches) resetFocus();
   }, { signal: eventController.signal });
+  window.addEventListener("scroll", updateScrollFocus, {
+    passive: true,
+    signal: eventController.signal,
+  });
+  mobileInteraction.addEventListener("change", handleInteractionModeChange, {
+    signal: eventController.signal,
+  });
 
   resize();
+  updateScrollFocus();
   if (reduceMotion) draw(0);
   else animationFrame = requestAnimationFrame(simulate);
 
