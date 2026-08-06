@@ -7,6 +7,7 @@
 import { escapeHtml, escapeText, camelToKebab } from '../shared/strings';
 import { createElement } from '../shared/dom';
 import { runSerializing } from '../hydration';
+import { NucloElement } from '../polyfill/Element';
 
 type RenderableInput =
   | NodeModFn<ElementTagName>
@@ -76,8 +77,12 @@ function serializeAttribute(name: string, value: unknown): string {
 
 /**
  * Serializes DOM element attributes to HTML string
+ *
+ * `isPolyfill` is passed in by the caller (serializeNode already computed it
+ * to decide whether tagName needs lowercasing) so this doesn't repeat the
+ * same `Array.isArray` discriminator check per element.
  */
-function serializeAttributes(element: Element): string {
+function serializeAttributes(element: Element, isPolyfill: boolean): string {
   let result = '';
 
   // Handle polyfill elements. NucloElement keeps every child in a plain Array
@@ -85,7 +90,7 @@ function serializeAttributes(element: Element): string {
   // the same allocation-free discriminator getChildNodes() uses. Reading
   // `el.attributes` directly would lazily allocate an empty Map for every
   // element being serialized, so the backing `_attributes` field is read instead.
-  if (Array.isArray((element as any).children)) {
+  if (isPolyfill) {
     const el = element as any;
     const attrs = el._attributes as Map<string, string> | undefined;
 
@@ -156,20 +161,25 @@ function serializeAttributes(element: Element): string {
 }
 
 /**
- * Self-closing HTML tags that don't have closing tags
+ * Tag-category lookup, keyed by lowercase tag name. Every element in a tree
+ * hits this once, so void + raw-text elements are folded into a single
+ * dictionary lookup instead of two separate `Set.has()` probes (one of which
+ * would always miss for the other category).
  */
-const VOID_ELEMENTS = new Set([
-  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-  'link', 'meta', 'param', 'source', 'track', 'wbr'
-]);
-
-/**
- * Raw-text elements — browsers never decode entities inside them, so their
- * text content must be emitted verbatim (escaping would corrupt inline JS/CSS,
- * e.g. `a < b` becoming `a &lt; b` inside a script).  A closing-tag sequence
- * in the content would terminate the element early, so it is neutralized.
- */
-const RAW_TEXT_ELEMENTS = new Set(['script', 'style']);
+const TAG_VOID = 1;
+const TAG_RAW_TEXT = 2;
+const TAG_CATEGORY: Record<string, 1 | 2> = Object.assign(Object.create(null), {
+  // Self-closing HTML tags that don't have closing tags
+  area: TAG_VOID, base: TAG_VOID, br: TAG_VOID, col: TAG_VOID, embed: TAG_VOID,
+  hr: TAG_VOID, img: TAG_VOID, input: TAG_VOID, link: TAG_VOID, meta: TAG_VOID,
+  param: TAG_VOID, source: TAG_VOID, track: TAG_VOID, wbr: TAG_VOID,
+  // Raw-text elements — browsers never decode entities inside them, so their
+  // text content must be emitted verbatim (escaping would corrupt inline
+  // JS/CSS, e.g. `a < b` becoming `a &lt; b` inside a script). A closing-tag
+  // sequence in the content would terminate the element early, so it is
+  // neutralized (see escapeRawText).
+  script: TAG_RAW_TEXT, style: TAG_RAW_TEXT,
+});
 
 function escapeRawText(tagName: string, text: string): string {
   // "</script" (any case) inside a script would close it — break the sequence
@@ -221,19 +231,34 @@ function serializeNode(node: Node): string {
   // Element node
   if (node.nodeType === 1) { // Node.ELEMENT_NODE
     const element = node as Element;
-    const tagName = element.tagName.toLowerCase();
-    const attributes = serializeAttributes(element);
+    const rawTagName = element.tagName;
+    // Duck-typed polyfill discriminator (also used by serializeAttributes /
+    // getChildNodes): a plain Array `children` field never occurs on a real
+    // DOM element (HTMLCollection), only on NucloElement — and on hand-rolled
+    // polyfill-shaped test doubles, which is why this alone isn't enough to
+    // skip re-lowercasing tagName below.
+    const isPolyfillShape = Array.isArray((element as any).children);
+    // Only a *real* NucloElement is guaranteed to have pre-lowercased tagName
+    // (done once in its constructor) — re-lowercasing it here on every
+    // element would be pure waste, since this is the hottest function in
+    // renderToString. Anything else (browser Element, or a polyfill-shaped
+    // object that didn't go through `new NucloElement()`) still needs it.
+    const tagName = element instanceof NucloElement ? rawTagName : rawTagName.toLowerCase();
+    const attributes = serializeAttributes(element, isPolyfillShape);
+    const category = TAG_CATEGORY[tagName];
 
     // Self-closing tags
-    if (VOID_ELEMENTS.has(tagName)) {
+    if (category === TAG_VOID) {
       return `<${tagName}${attributes} />`;
     }
 
+    const childNodes = isPolyfillShape ? ((element as any).children as ArrayLike<Node>) : getChildNodes(element);
+
     // Raw-text elements: emit text verbatim (no entity escaping, no Nuclo
     // text markers — `<!--` would act as a line comment inside a script).
-    if (RAW_TEXT_ELEMENTS.has(tagName)) {
+    if (category === TAG_RAW_TEXT) {
       let rawContent = '';
-      const rawChildren = getChildNodes(element);
+      const rawChildren = childNodes;
       if (rawChildren && rawChildren.length > 0) {
         for (let i = 0; i < rawChildren.length; i++) {
           const child = rawChildren[i];
@@ -250,7 +275,6 @@ function serializeNode(node: Node): string {
 
     // Regular elements with children
     let childrenHtml = '';
-    const childNodes = getChildNodes(element);
     if (childNodes && childNodes.length > 0) {
       for (let i = 0; i < childNodes.length; i++) {
         const child = childNodes[i];

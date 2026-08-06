@@ -68,13 +68,13 @@
 		"@eslint/markdown": "^8.0.3",
 		"@types/node": "^25.9.5",
 		"@vitest/coverage-v8": "4.1.7",
-		"eslint": "^10.7.0",
-		"globals": "^17.7.0",
+		"eslint": "^10.8.0",
+		"globals": "^17.9.0",
 		"jiti": "^2.7.0",
 		"jsdom": "^29.1.1",
-		"tsdown": "^0.22.12",
+		"tsdown": "^0.22.14",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.64.0",
+		"typescript-eslint": "^8.66.0",
 		"vitest": "^4.1.10"
 	},
 	"repository": {
