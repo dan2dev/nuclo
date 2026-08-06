@@ -3,6 +3,11 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createListRuntime, sync } from "../../src/list/runtime";
+import {
+  ATTR_EVENT,
+  SLOT_ATTRS,
+  analyzeFactory,
+} from "../../src/list/template";
 import { update } from "../../src/update/update";
 import { reactiveElementsByNode, reactiveTextNodesByNode } from "../../src/update/registry";
 import "../../src/index";
@@ -46,10 +51,23 @@ describe("list row-template cloning", () => {
       tr(
         { className: () => (selected() === row.id ? "danger" : "") },
         td({ className: "col-md-1" }, String(row.id)),
-        td({ className: "col-md-4" }, a({ onclick: () => { clicks.push(row.id); } }, () => row.label)),
+        td({ className: "col-md-4" }, a({ onClick: () => { clicks.push(row.id); } }, () => row.label)),
         td({ className: "col-md-6" }),
       );
   }
+
+  it("stores the normalized event property in the template program", () => {
+    const template = analyzeFactory("button", [{ onClick: () => undefined }]);
+    const slot = template?.slots[0];
+
+    expect(slot?.kind).toBe(SLOT_ATTRS);
+    if (slot?.kind !== SLOT_ATTRS) throw new Error("Expected an attribute slot");
+    expect(slot.keys[0]).toMatchObject({
+      key: "onClick",
+      kind: ATTR_EVENT,
+      value: "onclick",
+    });
+  });
 
   it("builds only the first row with createElement; the rest are clones", () => {
     const rows: Row[] = Array.from({ length: 10 }, (_, i) => ({ id: i, label: `L${i}` }));
@@ -123,7 +141,7 @@ describe("list row-template cloning", () => {
         tr(
           { className: () => { classCalls++; return row.id === -1 ? "danger" : ""; } },
           td({ className: "col-md-1" }, String(row.id)),
-          td({ className: "col-md-4" }, a({ onclick: () => undefined }, () => { labelCalls++; return row.label; })),
+          td({ className: "col-md-4" }, a({ onClick: () => undefined }, () => { labelCalls++; return row.label; })),
         ),
       container as never,
       0,

@@ -5,22 +5,17 @@
  *   button(
  *     "Click me",
  *     on("click", (e) => {
- *       // e is a MouseEvent (e.g., e.clientX is available)
+ *       // e and currentTarget come from the native event map
  *       // example: console.log(e.clientX);
  *     })
  *   );
  *
  * Overloads:
- * 1. DOM standard events (strongly typed via HTMLElementEventMap)
+ * 1. DOM standard events (strongly typed via the tag's native event map)
  * 2. Custom / arbitrary event names with user-specified event type
  */
 
 declare global {
-  export type TypedEventListener<
-    TElement extends EventTarget,
-    TEvent extends Event = Event,
-  > = (this: TElement, ev: TEvent & { currentTarget: TElement }) => unknown;
-
   /**
    * Add a strongly typed DOM event listener as a View Craft modifier.
    *
@@ -31,11 +26,14 @@ declare global {
    * @param options Native addEventListener options.
    */
   function on<
-    K extends keyof HTMLElementEventMap,
-    TTagName extends ElementTagName = ElementTagName,
+    K extends NucloHTMLElementEventName,
+    TTagName extends NucloHTMLElementTagNameForEvent<K> = NucloHTMLElementTagNameForEvent<K>,
   >(
     type: K,
-    listener: TypedEventListener<HTMLElementTagNameMap[TTagName], HTMLElementEventMap[K]>,
+    listener: TypedEventListener<
+      HTMLElementTagNameMap[TTagName],
+      NucloHTMLElementEventForName<K>
+    >,
     options?: boolean | AddEventListenerOptions
   ): NodeModFn<TTagName>;
 

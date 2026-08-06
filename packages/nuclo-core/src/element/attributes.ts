@@ -2,6 +2,7 @@ import { isFunction } from "../shared/type-guards";
 import { registerAttributeResolver } from "../update/reactive-attributes";
 import { applyStyleAttribute } from "./inline-style";
 import { SVG_NAMESPACE } from "../shared/dom";
+import { eventAttributeToProperty, setEventAttribute } from "./event-attributes";
 import {
 	initReactiveClassName,
 	hasReactiveClassName,
@@ -61,22 +62,37 @@ export function applySingleAttribute<TTagName extends ElementTagName>(
   shouldMergeClassName = false,
 ): void {
   if (raw == null) return;
+  const k = key as string;
 
-  if (key === "style") {
-    applyStyleAttribute(el, raw as ExpandedElementAttributes<TTagName>["style"]);
+  if (k === "style") {
+    applyStyleAttribute(el, raw as unknown as ValueOrFactory<CSSStyleObject>);
     return;
   }
 
   if (isFunction(raw)) {
-    const k = String(key);
-
-    // `on*` props (onclick, oninput, …) whose value is a function are event
-    // handlers: assign the IDL property directly. This must be decided before
-    // the zero-arity reactive branch — a handler like `onclick: doRun` takes
-    // no parameters but is not a value resolver.
-    if (k.charCodeAt(0) === 111 /* o */ && k.charCodeAt(1) === 110 /* n */) {
-      (el as Record<string, unknown>)[k] = raw;
+    // Keep the dominant event path to one comparison and one assignment.
+    if (k === "onClick") {
+      (el as Record<string, unknown>).onclick = raw;
       return;
+    }
+
+    if (
+      k.charCodeAt(0) === 111 /* o */
+      && k.charCodeAt(1) === 110 /* n */
+    ) {
+      // Camel-cased `on*` props are handlers, not reactive value resolvers.
+      const eventProperty = eventAttributeToProperty(k);
+      if (eventProperty) {
+        setEventAttribute(el as HTMLElement, eventProperty, raw as EventListener);
+        return;
+      }
+
+      // Preserve runtime compatibility for native lowercase IDL properties
+      // passed from untyped JavaScript. Public types reject these names.
+      if (k in el) {
+        (el as Record<string, unknown>)[k] = raw;
+        return;
+      }
     }
 
     if (raw.length === 0) {
@@ -104,7 +120,7 @@ export function applySingleAttribute<TTagName extends ElementTagName>(
 
   // Static attributes should merge classNames
   // For className, if there's already a reactive className, add to static classes
-  if (key === 'className' && el instanceof HTMLElement && hasReactiveClassName(el)) {
+  if (k === 'className' && el instanceof HTMLElement && hasReactiveClassName(el)) {
     // There's already a reactive className; update the tracked set and DOM atomically.
     const newClassName = String(raw || '');
     if (newClassName) {
@@ -113,7 +129,7 @@ export function applySingleAttribute<TTagName extends ElementTagName>(
     }
     return;
   }
-  setAttributeValue(el, String(key), raw, shouldMergeClassName);
+  setAttributeValue(el, k, raw, shouldMergeClassName);
 }
 
 export function applyAttributes<TTagName extends ElementTagName>(

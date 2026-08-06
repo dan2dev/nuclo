@@ -26,6 +26,7 @@
  */
 
 import { getFactoryMods, getFactoryTag } from "../element/factory-meta";
+import { eventAttributeToProperty, setEventAttribute } from "../element/event-attributes";
 import { modifierProbeCache } from "../element/modifiers";
 import { isNode } from "../shared/type-guards";
 import { cleanupReactiveElement, cleanupReactiveTextNode } from "../update/registry";
@@ -62,7 +63,7 @@ export interface AttrSpec {
   kind: number;
   /** Static attrs: element exposes the key as a property (filled from the skeleton). */
   prop: boolean;
-  /** Static attrs: first-row value baked into the skeleton. */
+  /** Static attrs: first-row value. Events: normalized native property name. */
   value?: unknown;
 }
 
@@ -81,10 +82,6 @@ export interface TemplateNode {
 export interface ListTemplate {
   tmpl: TemplateNode;
   skeleton: Element;
-}
-
-function isOnKey(key: string): boolean {
-  return key.charCodeAt(0) === 111 /* o */ && key.charCodeAt(1) === 110 /* n */;
 }
 
 /**
@@ -149,8 +146,9 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
         if (key === "style") return null;
         const vt = typeof v;
         if (vt === "function") {
-          if (isOnKey(key)) {
-            specs.push({ key, kind: ATTR_EVENT, prop: false });
+          const eventProperty = eventAttributeToProperty(key);
+          if (eventProperty) {
+            specs.push({ key, kind: ATTR_EVENT, prop: false, value: eventProperty });
             continue;
           }
           if (key === "className" && (v as () => unknown).length === 0) {
@@ -260,7 +258,12 @@ export function instantiateTemplate(
             }
             case ATTR_EVENT: {
               if (typeof v !== "function") return false;
-              (el as unknown as Record<string, unknown>)[spec.key] = v;
+              const eventProperty = spec.value as string;
+              if (eventProperty === "onclick") {
+                (el as unknown as Record<string, unknown>).onclick = v;
+              } else {
+                setEventAttribute(el as HTMLElement, eventProperty, v as EventListener);
+              }
               break;
             }
             case ATTR_REACTIVE_CLASSNAME: {

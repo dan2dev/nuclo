@@ -5,7 +5,7 @@
  *   button(
  *     "Click",
  *     on("click", (e) => {
- *       // e is correctly typed (e.g. MouseEvent for "click")
+ *       // e and currentTarget are inferred from the native event map
  *     })
  *   )
  *
@@ -25,41 +25,48 @@ type EventListenerOptions = boolean | AddEventListenerOptions;
 interface TrackedListener {
   type: string;
   wrapped: EventListener;
-  options?: EventListenerOptions;
+  capture: boolean;
 }
+
+type TrackedListeners = TrackedListener | TrackedListener[];
 
 /**
  * Tracks attached listeners per element so removeAllListeners() can detach them.
  *
- * A flat array per element (rather than a Map<type, Set>) keeps the common
- * case — one or two listeners on a node, as in a list row — down to a single
- * allocation. The WeakMap keying means a collected element drops its listener
- * array automatically, and the listeners themselves are released with the
- * element by the DOM, so no per-listener AbortController is needed: detach is a
- * plain removeEventListener with the tracked wrapper + options.
+ * The common single-listener case stores its registration directly. An array
+ * is allocated only when an element has multiple distinct listeners. A
+ * registration belongs to the reusable modifier rather than an attachment, so
+ * applying one modifier to many elements adds no per-element metadata objects.
+ * Only the capture flag is retained because it is the sole option compared by
+ * removeEventListener.
  */
-const elementListeners = new WeakMap<HTMLElement, TrackedListener[]>();
+const elementListeners = new WeakMap<HTMLElement, TrackedListeners>();
 
 /**
  * Store listener info for an element to enable cleanup.
  */
 function trackListener(
   element: HTMLElement,
-  info: TrackedListener
+  info: TrackedListener,
 ): void {
-  const list = elementListeners.get(element);
-  if (list) {
-    list.push(info);
-  } else {
-    elementListeners.set(element, [info]);
+  const tracked = elementListeners.get(element);
+  if (!tracked) {
+    elementListeners.set(element, info);
+  } else if (Array.isArray(tracked)) {
+    if (!tracked.includes(info)) tracked.push(info);
+  } else if (tracked !== info) {
+    elementListeners.set(element, [tracked, info]);
   }
 }
 
 /**
  * Detach a single tracked listener from the DOM.
  */
-function detachListener(element: HTMLElement, info: TrackedListener): void {
-  element.removeEventListener(info.type, info.wrapped, info.options);
+function detachListener(
+  element: HTMLElement,
+  info: TrackedListener,
+): void {
+  element.removeEventListener(info.type, info.wrapped, info.capture);
 }
 
 /**
@@ -69,38 +76,82 @@ export function removeAllListeners(
   element: HTMLElement,
   type?: string
 ): void {
-  const list = elementListeners.get(element);
-  if (!list) return;
+  const tracked = elementListeners.get(element);
+  if (!tracked) return;
 
   if (type === undefined) {
-    for (let i = 0; i < list.length; i++) detachListener(element, list[i]);
+    if (Array.isArray(tracked)) {
+      for (let i = 0; i < tracked.length; i++) {
+        detachListener(element, tracked[i]);
+      }
+    } else {
+      detachListener(element, tracked);
+    }
     elementListeners.delete(element);
+    return;
+  }
+
+  if (!Array.isArray(tracked)) {
+    if (tracked.type === type) {
+      detachListener(element, tracked);
+      elementListeners.delete(element);
+    }
     return;
   }
 
   // Detach matching listeners, compacting survivors back into the same array.
   let write = 0;
-  for (let i = 0; i < list.length; i++) {
-    const info = list[i];
+  for (let read = 0; read < tracked.length; read++) {
+    const info = tracked[read];
     if (info.type === type) {
       detachListener(element, info);
     } else {
-      list[write++] = info;
+      tracked[write++] = info;
     }
   }
-  list.length = write;
-  if (write === 0) elementListeners.delete(element);
+  if (write === 0) {
+    elementListeners.delete(element);
+  } else if (write === 1) {
+    elementListeners.set(element, tracked[0]);
+  } else {
+    tracked.length = write;
+  }
+}
+
+function noopEventModifier(_parent: ExpandedElement<ElementTagName>): void {}
+
+function createTrackedListener<TTagName extends ElementTagName>(
+  type: string,
+  listener: TypedEventListener<HTMLElementTagNameMap[TTagName], Event>,
+  capture: boolean,
+): TrackedListener {
+  const wrapped = function(this: EventTarget, event: Event): void {
+    const currentTarget = this as HTMLElementTagNameMap[TTagName];
+    try {
+      listener.call(
+        currentTarget,
+        event as Event & { currentTarget: HTMLElementTagNameMap[TTagName] },
+      );
+    } catch (error) {
+      logError(`Error in '${type}' listener`, error);
+    }
+  };
+
+  return { type, wrapped, capture };
 }
 
 /**
  * Overload for standard HTMLElement events (strongly typed via lib.dom.d.ts)
  */
 export function on<
-  K extends keyof HTMLElementEventMap,
-  TTagName extends ElementTagName = ElementTagName
+  K extends NucloHTMLElementEventName,
+  TTagName extends NucloHTMLElementTagNameForEvent<K> = NucloHTMLElementTagNameForEvent<K>,
 >(
   type: K,
-  listener: TypedEventListener<HTMLElementTagNameMap[TTagName], HTMLElementEventMap[K]>,
+  listener: TypedEventListener<
+    HTMLElementTagNameMap[TTagName],
+    NucloHTMLElementEventForName<K>
+  >,
   options?: EventListenerOptions
 ): NodeModFn<TTagName>;
 
@@ -124,9 +175,13 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
   listener: TypedEventListener<HTMLElementTagNameMap[TTagName], Event>,
   options?: EventListenerOptions
 ): NodeModFn<TTagName> {
-  return function(parent: ExpandedElement<TTagName>): void {
-    if (!isBrowser) return;
+  if (!isBrowser) return noopEventModifier as NodeModFn<TTagName>;
 
+  const capture = options === true
+    || (options !== null && typeof options === "object" && options.capture === true);
+  const info = createTrackedListener(type, listener, capture);
+
+  return function(parent: ExpandedElement<TTagName>): void {
     // Type guard: verify parent is an HTMLElement with addEventListener
     if (!parent || typeof (parent as HTMLElement).addEventListener !== "function") {
       return;
@@ -134,20 +189,9 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
 
     const el = parent as HTMLElementTagNameMap[TTagName];
 
-    const wrapped = function(ev: Event): void {
-      try {
-        listener.call(
-          el,
-          ev as Event & { currentTarget: HTMLElementTagNameMap[TTagName] }
-        );
-      } catch (error) {
-        logError(`Error in '${type}' listener`, error);
-      }
-    };
-
-    el.addEventListener(type, wrapped as EventListener, options);
+    el.addEventListener(type, info.wrapped, options);
 
     // Track the listener so removeAllListeners() can detach it later.
-    trackListener(el, { type, wrapped: wrapped as EventListener, options });
+    trackListener(el, info);
   };
 }

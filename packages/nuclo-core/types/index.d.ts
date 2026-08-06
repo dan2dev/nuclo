@@ -74,9 +74,15 @@ export function hydrate<TTagName extends ElementTagName = ElementTagName>(
 ): ExpandedElement<TTagName>;
 
 // on() helper (same overloads as the global)
-export function on<K extends keyof HTMLElementEventMap, TTagName extends ElementTagName = ElementTagName>(
+export function on<
+  K extends NucloHTMLElementEventName,
+  TTagName extends NucloHTMLElementTagNameForEvent<K> = NucloHTMLElementTagNameForEvent<K>,
+>(
   type: K,
-  listener: TypedEventListener<HTMLElementTagNameMap[TTagName], HTMLElementEventMap[K]>,
+  listener: TypedEventListener<
+    HTMLElementTagNameMap[TTagName],
+    NucloHTMLElementEventForName<K>
+  >,
   options?: boolean | AddEventListenerOptions
 ): NodeModFn<TTagName>;
 export function on<K extends string, E extends Event = Event, TTagName extends ElementTagName = ElementTagName>(

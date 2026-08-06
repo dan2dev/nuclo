@@ -7,7 +7,7 @@ import { logError } from "../shared/errors";
 
 export type WhenCondition = boolean | (() => boolean);
 export type WhenContent<TTagName extends ElementTagName = ElementTagName> =
-  NodeMod<TTagName> | NodeModFn<TTagName>;
+  NodeModLike<TTagName>;
 
 export interface WhenGroup<TTagName extends ElementTagName = ElementTagName> {
   condition: WhenCondition;

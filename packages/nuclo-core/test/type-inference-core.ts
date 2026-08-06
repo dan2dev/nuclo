@@ -19,6 +19,32 @@ type Equal<X, Y> =
   (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;
 type Expect<T extends true> = T;
 
+declare global {
+  interface HTMLElementEventMap {
+    "nuclo:ready": CustomEvent<{ ready: boolean }>;
+  }
+
+  interface HTMLElementEventAttributeNameMap {
+    onNucloReady: "nuclo:ready";
+  }
+}
+
+// Keep the explicit camel-case map exhaustive as lib.dom adds event names.
+type _AllNativeEventsHaveAttributes = Expect<Equal<
+  Exclude<
+    NucloHTMLElementEventName,
+    HTMLElementEventAttributeNameMap[keyof HTMLElementEventAttributeNameMap]
+  >,
+  never
+>>;
+type _AllMappedAttributesAreNativeEvents = Expect<Equal<
+  Exclude<
+    HTMLElementEventAttributeNameMap[keyof HTMLElementEventAttributeNameMap],
+    NucloHTMLElementEventName
+  >,
+  never
+>>;
+
 // ─── Tag builders infer their tag ────────────────────────────────────────────
 
 const _divFactory = div("hello");
@@ -26,6 +52,21 @@ type _DivFactory = Expect<Equal<typeof _divFactory, DetachedExpandedElementFacto
 
 const _inputFactory = input({ value: "x" });
 type _InputFactory = Expect<Equal<typeof _inputFactory, DetachedExpandedElementFactory<"input">>>;
+
+// Child factories are valid modifiers regardless of the parent element tag.
+li(
+  input({
+    type: "checkbox",
+    onChange(event) {
+      type _NestedInputEvent = Expect<Equal<
+        typeof event,
+        Event & { currentTarget: HTMLInputElement }
+      >>;
+      void event.currentTarget.checked;
+    },
+  }),
+  span("Nested child"),
+);
 
 // ─── render() / hydrate() return the concrete element type ──────────────────
 
@@ -126,6 +167,124 @@ input(
   }),
 );
 
+const _mediaEventModifier = on("encrypted", (e) => {
+  type _Encrypted = Expect<Equal<
+    typeof e,
+    MediaEncryptedEvent & {
+      currentTarget: HTMLAudioElement | HTMLVideoElement;
+    }
+  >>;
+  void e.initData;
+});
+type _MediaEventModifier = Expect<Equal<
+  typeof _mediaEventModifier,
+  NodeModFn<"audio" | "video">
+>>;
+
+const _videoEventModifier = on("enterpictureinpicture", (e) => {
+  type _PictureInPicture = Expect<Equal<
+    typeof e,
+    PictureInPictureEvent & { currentTarget: HTMLVideoElement }
+  >>;
+  void e.pictureInPictureWindow;
+});
+type _VideoEventModifier = Expect<Equal<typeof _videoEventModifier, NodeModFn<"video">>>;
+
+const _bodyEventModifier = on("online", (e) => {
+  type _Online = Expect<Equal<typeof e, Event & { currentTarget: HTMLBodyElement }>>;
+  void e.currentTarget;
+});
+type _BodyEventModifier = Expect<Equal<typeof _bodyEventModifier, NodeModFn<"body">>>;
+
+// @ts-expect-error encrypted is only available on audio and video elements
+on<"encrypted", "div">("encrypted", () => undefined);
+
+// @ts-expect-error picture-in-picture events are only available on video
+on<"enterpictureinpicture", "audio">("enterpictureinpicture", () => undefined);
+
+// Event attributes use camelCase and infer both the event and concrete element.
+button({
+  onClick(event) {
+    type _ClickEvent = Expect<Equal<typeof event, PointerEvent & { currentTarget: HTMLButtonElement }>>;
+    type _ThisElement = Expect<Equal<typeof this, HTMLButtonElement>>;
+    const _target: HTMLButtonElement = event.currentTarget;
+    void _target; void this.disabled;
+  },
+});
+
+input({
+  onInput(event) {
+    type _InputEvent = Expect<Equal<typeof event, InputEvent & { currentTarget: HTMLInputElement }>>;
+    const _value: string = event.currentTarget.value;
+    void _value;
+  },
+  onChange(event) {
+    type _ChangeEvent = Expect<Equal<typeof event, Event & { currentTarget: HTMLInputElement }>>;
+    void event;
+  },
+});
+
+div({
+  onNucloReady(event) {
+    type _CustomAttributeEvent = Expect<Equal<
+      typeof event,
+      CustomEvent<{ ready: boolean }> & { currentTarget: HTMLDivElement }
+    >>;
+    void event.detail.ready;
+  },
+});
+
+div({
+  onKeyDown(event) {
+    type _KeyboardEvent = Expect<Equal<typeof event, KeyboardEvent & { currentTarget: HTMLDivElement }>>;
+    void event.key;
+  },
+  onDoubleClick(event) {
+    type _DoubleClickEvent = Expect<Equal<typeof event, MouseEvent & { currentTarget: HTMLDivElement }>>;
+    void event.clientX;
+  },
+});
+
+video({
+  onEncrypted(event) {
+    type _EncryptedEvent = Expect<Equal<typeof event, MediaEncryptedEvent & { currentTarget: HTMLVideoElement }>>;
+    void event.initData;
+  },
+  onEnterPictureInPicture(event) {
+    type _PictureInPictureEvent = Expect<Equal<typeof event, PictureInPictureEvent & { currentTarget: HTMLVideoElement }>>;
+    void event.pictureInPictureWindow;
+  },
+});
+
+body({
+  onOnline(event) {
+    type _OnlineEvent = Expect<Equal<typeof event, Event & { currentTarget: HTMLBodyElement }>>;
+    void event.currentTarget;
+  },
+});
+
+div({
+  // @ts-expect-error encrypted is only available on media elements
+  onEncrypted: () => undefined,
+});
+
+button({ onClick: () => undefined });
+
+// @ts-expect-error lowercase DOM event attributes are replaced by onClick
+button({
+  onclick: () => undefined,
+});
+
+button({
+  // @ts-expect-error event attributes only accept event handlers
+  onClick: "not a handler",
+});
+
+button({
+  // @ts-expect-error onClick receives a pointer event, not a keyboard event
+  onClick: (_event: KeyboardEvent) => undefined,
+});
+
 // Custom events with an explicit event type
 div(
   on<"app:ready", CustomEvent<{ ok: boolean }>>("app:ready", (e) => {
@@ -145,6 +304,9 @@ div(
 
 const _whenBuilder = when(true, "x");
 type _WhenChain = Expect<Equal<ReturnType<typeof _whenBuilder.else>, WhenBuilder>>;
+
+// Conditional content tags do not constrain the parent that hosts the block.
+ul(when(true, div("Empty state")));
 
 // ─── list(): item type flows into the renderer ───────────────────────────────
 

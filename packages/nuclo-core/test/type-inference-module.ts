@@ -63,6 +63,14 @@ type Expect<T extends true> = T;
 // Tag builders created through the module factory keep their tag
 const divBuilder = createHtmlTagBuilder("div");
 type _DivBuilder = Expect<Equal<typeof divBuilder, ExpandedElementBuilder<"div">>>;
+const inputBuilder = createHtmlTagBuilder("input");
+const liBuilder = createHtmlTagBuilder("li");
+liBuilder(inputBuilder({
+  onInput(event) {
+    const _value: string = event.currentTarget.value;
+    void _value;
+  },
+}));
 const _rectBuilder = createSvgTagBuilder("rect");
 type _RectBuilder = Expect<Equal<typeof _rectBuilder, ExpandedSVGElementBuilder<"rect">>>;
 
@@ -79,6 +87,12 @@ divBuilder(
   on("click", (e) => { void e.clientX; }),
   scope("area"),
 );
+
+const _mediaEventModifier = on("encrypted", (e) => { void e.initData; });
+type _MediaEventModifier = Expect<Equal<
+  typeof _mediaEventModifier,
+  NodeModFn<"audio" | "video">
+>>;
 update("area");
 
 // element creation helpers

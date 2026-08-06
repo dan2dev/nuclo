@@ -81,6 +81,20 @@ describe("on utility edge cases", () => {
       expect(listener).toHaveBeenCalled();
     });
 
+    it("should tolerate null options from untyped JavaScript", () => {
+      const listener = vi.fn();
+      const modifier = on(
+        "click",
+        listener,
+        null as unknown as AddEventListenerOptions,
+      );
+
+      modifier(element, 0);
+      element.click();
+
+      expect(listener).toHaveBeenCalledOnce();
+    });
+
     it("should call listener with correct context", () => {
       const listener = vi.fn(function (this: HTMLElement) {
         expect(this).toBe(element);
@@ -116,6 +130,32 @@ describe("on utility edge cases", () => {
       
       expect(listener1).toHaveBeenCalled();
       expect(listener2).toHaveBeenCalled();
+    });
+
+    it("uses native deduplication when the same modifier is attached twice", () => {
+      const listener = vi.fn();
+      const modifier = on("click", listener);
+
+      modifier(element, 0);
+      modifier(element, 1);
+      element.click();
+
+      expect(listener).toHaveBeenCalledOnce();
+    });
+
+    it("deduplicates a reused modifier when other listeners are tracked", () => {
+      const click = vi.fn();
+      const focus = vi.fn();
+      const clickModifier = on("click", click);
+
+      clickModifier(element, 0);
+      on("focus", focus)(element, 1);
+      clickModifier(element, 2);
+      element.click();
+      element.dispatchEvent(new Event("focus"));
+
+      expect(click).toHaveBeenCalledOnce();
+      expect(focus).toHaveBeenCalledOnce();
     });
 
     it("should handle typed events correctly", () => {

@@ -1,4 +1,17 @@
+import "./events";
 
+declare const anyParentNodeModifierTag: unique symbol;
+
+type NativeElementAttributes<TTagName extends ElementTagName> = {
+  [K in keyof HTMLElementTagNameMap[TTagName] as K extends `on${string}` ? never : K]?:
+    K extends "style"
+      ? ValueOrFactory<CSSStyleObject>
+      : ValueOrFactory<HTMLElementTagNameMap[TTagName][K]>;
+};
+
+type LowercaseEventAttributes<TTagName extends ElementTagName> = {
+  [K in Extract<keyof HTMLElementTagNameMap[TTagName], `on${string}`>]?: never;
+};
 
 declare global {
   export type Primitive = string | number | bigint | boolean | symbol | null | undefined;
@@ -27,22 +40,27 @@ declare global {
   // Core element attribute types
   export type ExpandedElementAttributes<
     TTagName extends ElementTagName = ElementTagName,
-  > = {
-    [K in keyof HTMLElementTagNameMap[TTagName]]?:
-      K extends "style"
-        ? ValueOrFactory<CSSStyleObject>
-        : ValueOrFactory<HTMLElementTagNameMap[TTagName][K]>;
-  } & {
-    // Allow custom attributes (data-*, aria-*, etc.)
-    [key: string]: ValueOrFactory<unknown>;
-  };
+  > = NativeElementAttributes<TTagName>
+    & CamelCaseEventAttributes<TTagName>
+    & LowercaseEventAttributes<TTagName>
+    & {
+      // Allow custom attributes (data-*, aria-*, etc.)
+      [key: string]: ValueOrFactory<unknown>;
+    };
 
   export type DetachedExpandedElementFactory<
     TTagName extends ElementTagName = ElementTagName,
   > = NodeModFn<TTagName> & ((
     parent?: ExpandedElement<TTagName>,
     index?: number,
-  ) => ExpandedElement<TTagName>);
+  ) => ExpandedElement<TTagName>) & {
+    readonly [anyParentNodeModifierTag]: true;
+  };
+
+  /** Type-only marker for modifiers whose runtime accepts any parent tag. */
+  export type AnyParentNodeModifier = {
+    readonly [anyParentNodeModifierTag]: true;
+  };
 
   // Core element type
   export type ExpandedElement<
@@ -72,7 +90,8 @@ declare global {
 
   export type NodeModLike<TTagName extends ElementTagName = ElementTagName> =
     | NodeMod<TTagName>
-    | NodeModFn<TTagName>;
+    | NodeModFn<TTagName>
+    | AnyParentNodeModifier;
 
   export type InferExpandedElement<TValue> =
     TValue extends ExpandedElement<infer TTagName>

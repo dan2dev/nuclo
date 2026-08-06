@@ -79,7 +79,7 @@ export function createSvgElementWithModifiers<TTagName extends keyof SVGElementT
  */
 function createHtmlElementFactory<TTagName extends ElementTagName>(
   tagName: TTagName,
-  modifiers: ReadonlyArray<NodeMod<TTagName> | NodeModFn<TTagName>>
+  modifiers: ReadonlyArray<NodeModifier<TTagName>>
 ): DetachedExpandedElementFactory<TTagName> {
   if (isMetadataOnlyFactoryMode()) {
     const factory = acquireMetadataOnlyFactory() as unknown as DetachedExpandedElementFactory<TTagName>;

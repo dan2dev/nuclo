@@ -20,7 +20,8 @@ export const modifierProbeCache = new WeakMap<() => unknown, { value: unknown; e
 
 export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
 	| NodeMod<TTagName>
-	| NodeModFn<TTagName>;
+	| NodeModFn<TTagName>
+	| AnyParentNodeModifier;
 
 /**
  * Shape returned by cn() helper: a plain object with exactly one key `className`.

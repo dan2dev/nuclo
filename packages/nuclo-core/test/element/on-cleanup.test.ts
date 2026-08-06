@@ -225,8 +225,8 @@ describe('on utility - cleanup and memory management', () => {
     });
   });
 
-  describe('AbortController integration', () => {
-    it('should use AbortController to cleanup listeners', () => {
+  describe('Tracked listener cleanup', () => {
+    it('should detach listeners of a selected type', () => {
       const listener = vi.fn();
       const mod = on('click', listener);
 
@@ -236,7 +236,7 @@ describe('on utility - cleanup and memory management', () => {
       element.click();
       expect(listener).toHaveBeenCalledTimes(1);
 
-      // Remove (should abort the controller)
+      // Remove the selected listener type.
       removeAllListeners(element, 'click');
 
       // Listener should not work after abort
@@ -244,7 +244,7 @@ describe('on utility - cleanup and memory management', () => {
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
-    it('should abort all controllers when removing all listeners', () => {
+    it('should detach every tracked listener', () => {
       const listener1 = vi.fn();
       const listener2 = vi.fn();
 
@@ -358,6 +358,21 @@ describe('on utility - cleanup and memory management', () => {
 
       expect(bubbleListener).toHaveBeenCalledTimes(1);
       expect(captureListener).toHaveBeenCalledTimes(1);
+    });
+
+    it('uses the capture value from attachment time when options are mutated', () => {
+      const listener = vi.fn();
+      const options: AddEventListenerOptions = { capture: true, passive: true };
+      const mod = on('click', listener, options);
+
+      mod(element, 0);
+      options.capture = false;
+      options.passive = false;
+
+      removeAllListeners(element, 'click');
+      element.click();
+
+      expect(listener).not.toHaveBeenCalled();
     });
   });
 });
