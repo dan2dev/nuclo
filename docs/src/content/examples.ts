@@ -18,9 +18,9 @@ export function Counter() {
   return div(
     p(() => String(count)),
     p("COUNT"),
-    button("-", on("click", () => { count--; update() })),
-    button("Reset", on("click", () => { count = 0; update() })),
-    button("+", on("click", () => { count++; update() })),
+    button("-", { onClick: () => { count--; update() } }),
+    button("Reset", { onClick: () => { count = 0; update() } }),
+    button("+", { onClick: () => { count++; update() } }),
   )
 }`,
   },
@@ -59,15 +59,17 @@ export function TodoList() {
   return div(
     input(
       { placeholder: "Add a task..." },
-      on("input", (event) => {
-        text = (event.target as HTMLInputElement).value
-      }),
+      {
+        onInput: (event) => {
+          text = (event.target as HTMLInputElement).value
+        },
+      },
     ),
-    button("Add", on("click", addTodo)),
+    button("Add", { onClick: addTodo }),
     div(
-      button("All", on("click", () => { filter = "all"; update() })),
-      button("Active", on("click", () => { filter = "active"; update() })),
-      button("Done", on("click", () => { filter = "done"; update() })),
+      button("All", { onClick: () => { filter = "all"; update() } }),
+      button("Active", { onClick: () => { filter = "active"; update() } }),
+      button("Done", { onClick: () => { filter = "done"; update() } }),
     ),
     ul(
       list(
@@ -75,13 +77,13 @@ export function TodoList() {
         (todo) => li(
           input(
             { type: "checkbox", checked: () => todo.done },
-            on("change", () => { todo.done = !todo.done; update() }),
+            { onChange: () => { todo.done = !todo.done; update() } },
           ),
           span(() => todo.done ? todo.text + " done" : todo.text),
-          button("x", on("click", () => {
+          button("x", { onClick: () => {
             todos = todos.filter((item) => item.id !== todo.id)
             update()
-          })),
+          } }),
         ),
       ),
       when(() => visible().length === 0, div("No tasks yet.")),
@@ -117,10 +119,12 @@ export function SearchFilter() {
   return div(
     input(
       { placeholder: "Search users..." },
-      on("input", (event) => {
-        query = (event.target as HTMLInputElement).value
-        update()
-      }),
+      {
+        onInput: (event) => {
+          query = (event.target as HTMLInputElement).value
+          update()
+        },
+      },
     ),
     div(
       list(
@@ -172,7 +176,7 @@ export function StyledButton() {
   return button(
     () => cx(baseButton, selected && selectedButton),
     () => selected ? "Selected" : "Select",
-    on("click", () => { selected = !selected; update() }),
+    { onClick: () => { selected = !selected; update() } },
   )
 }`,
   },

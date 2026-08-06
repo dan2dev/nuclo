@@ -37,7 +37,7 @@ export function TabBlock({ tabs, defaultTab }: TabBlockOptions) {
         class: () => cx(tabBtn, activeTab === tab.id ? tabBtnActive : null).className,
       },
       tab.label,
-      on("click", () => { activeTab = tab.id; update(); }),
+      { onClick: () => { activeTab = tab.id; update(); } },
     );
   }
 

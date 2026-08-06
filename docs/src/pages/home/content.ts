@@ -22,8 +22,8 @@ let count = 0
 export function Counter() {
   return div(
     p(() => String(count)),
-    button("-", on("click", () => { count--; update() })),
-    button("+", on("click", () => { count++; update() })),
+    button("-", { onClick: () => { count--; update() } }),
+    button("+", { onClick: () => { count++; update() } }),
   )
 }`;
 
@@ -34,9 +34,9 @@ let count = 0
 export function Counter() {
   return div(
     span(() => count),
-    button("-", on("click", () => { count--; update() })),
-    button("Reset", on("click", () => { count = 0; update() })),
-    button("+", on("click", () => { count++; update() })),
+    button("-", { onClick: () => { count--; update() } }),
+    button("Reset", { onClick: () => { count = 0; update() } }),
+    button("+", { onClick: () => { count++; update() } }),
   )
 }`;
 
@@ -61,17 +61,17 @@ export function TodoList() {
   return div(
     input(
       { placeholder: 'Add a task…' },
-      on('input', (e) => { text = (e.target as HTMLInputElement).value }),
-      on('keydown', (e) => { if (e.key === 'Enter') addTodo() }),
+      { onInput: (e) => { text = (e.target as HTMLInputElement).value } },
+      { onKeyDown: (e) => { if (e.key === 'Enter') addTodo() } },
     ),
-    button('Add', on('click', addTodo)),
+    button('Add', { onClick: addTodo }),
     list(
       () => todos,
       (todo) => div(
         input(
           { type: 'checkbox' },
           { checked: () => todo.done },
-          on('change', () => { todo.done = !todo.done; update() }),
+          { onChange: () => { todo.done = !todo.done; update() } },
         ),
         span(todo.text),
       ),
@@ -258,10 +258,10 @@ export const QUICK_START_STEPS = [
   <span class="fn">h1</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pt">\`</span><span class="st">Hello, </span><span class="pt">\${</span><span class="pr">name</span><span class="pt">}\`),</span>
   <span class="fn">button</span><span class="pt">(</span>
     <span class="st">"Change"</span><span class="pt">,</span>
-    <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pt">{</span>
+    <span class="pt">{</span> <span class="pr">onClick</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pt">{</span>
       <span class="pr">name</span> <span class="pt">=</span> <span class="st">'Nuclo'</span>
       <span class="fn">update</span><span class="pt">()</span>
-    <span class="pt">})</span>
+    <span class="pt">} }</span>
   <span class="pt">)</span>
 <span class="pt">)</span>`,
     lang: "app.ts",

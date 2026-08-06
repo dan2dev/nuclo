@@ -164,7 +164,7 @@ export function CodeBlock({ filename, code, showCopy = true, preTokenized = fals
           ? button(
               copyBtn,
               when(() => copied, "✓ Copied").else("Copy"),
-              on("click", handleCopy),
+              { onClick: handleCopy },
             )
           : span(),
       ),

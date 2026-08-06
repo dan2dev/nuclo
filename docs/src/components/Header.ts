@@ -48,11 +48,13 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
       navLinkStyle,
       { class: () => cx(navLinkStyle, isActive(route) ? navLinkActiveStyle : null).className },
       label,
-      on("click", (e) => {
-        e.preventDefault();
-        setRoute(route);
-        closeMenu();
-      }),
+      {
+        onClick: (e) => {
+          e.preventDefault();
+          setRoute(route);
+          closeMenu();
+        },
+      },
     );
   }
 
@@ -63,11 +65,13 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
       mobileNavLinkStyle,
       { class: () => cx(mobileNavLinkStyle, isActive(route) ? mobileNavLinkActiveStyle : null).className },
       label,
-      on("click", (e) => {
-        e.preventDefault();
-        setRoute(route);
-        closeMenu();
-      }),
+      {
+        onClick: (e) => {
+          e.preventDefault();
+          setRoute(route);
+          closeMenu();
+        },
+      },
     );
   }
 
@@ -143,7 +147,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
           a(
             { href: base, "aria-label": "Nuclo home" },
             logoStyle,
-            on("click", (e) => { e.preventDefault(); setRoute("home"); closeMenu(); }),
+            { onClick: (e) => { e.preventDefault(); setRoute("home"); closeMenu(); } },
             BrandLogo(),
           ),
           // Center: route navigation
@@ -164,21 +168,21 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
               getStartedBtn,
               "Get Started",
               ArrowIcon({ size: 14 }),
-              on("click", () => setRoute("docs")),
+              { onClick: () => setRoute("docs") },
             ),
             // Theme toggle (always visible)
             button(
               themeBtn,
               { title: "Toggle theme", "aria-label": "Toggle color theme" },
               when(() => isDark(), MoonIcon()).else(SunIcon()),
-              on("click", toggleTheme),
+              { onClick: toggleTheme },
             ),
             // Mobile hamburger (hidden on desktop)
             button(
               hamburgerBtn,
               { title: "Toggle menu", "aria-label": "Toggle navigation menu", "aria-expanded": () => String(menuOpen) },
               MenuIcon(),
-              on("click", toggleMenu),
+              { onClick: toggleMenu },
             ),
           ),
         ),
@@ -208,7 +212,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
     div(
       backdropStyle,
       { class: () => cx(backdropStyle, menuOpen ? backdropOpenStyle : backdropClosedStyle).className },
-      on("click", closeMenu),
+      { onClick: closeMenu },
     ),
   );
 }
