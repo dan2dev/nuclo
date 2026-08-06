@@ -227,6 +227,18 @@ describe('on utility - advanced edge cases', () => {
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
+    it('can reattach a reused modifier after a once listener fires', () => {
+      const listener = vi.fn();
+      const mod = on('click', listener, { once: true });
+
+      mod(element, 0);
+      element.click();
+      mod(element, 0);
+      element.click();
+
+      expect(listener).toHaveBeenCalledTimes(2);
+    });
+
     it('should respect "passive" option', () => {
       const listener = vi.fn((e: Event) => {
         // In passive mode, preventDefault should have no effect
@@ -259,7 +271,7 @@ describe('on utility - advanced edge cases', () => {
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
-    it('should merge signal option with custom options', () => {
+    it('should honor an external abort signal', () => {
       const listener = vi.fn();
       const controller = new AbortController();
       
@@ -272,9 +284,12 @@ describe('on utility - advanced edge cases', () => {
       
       element.click();
       expect(listener).toHaveBeenCalledTimes(1);
-      
-      // Note: The on() function creates its own AbortController
-      // This tests that it can handle options objects with signals
+
+      controller.abort();
+      element.click();
+      expect(listener).toHaveBeenCalledTimes(1);
+
+      expect(() => removeAllListeners(element, 'click')).not.toThrow();
     });
   });
 
@@ -402,6 +417,25 @@ describe('on utility - advanced edge cases', () => {
       expect(sharedListener).toHaveBeenCalledTimes(5); // 3 + 2 (element2 and element3)
     });
 
+    it('keeps this and currentTarget correct when one modifier is reused', () => {
+      const element2 = document.createElement('div');
+      document.body.appendChild(element2);
+      const targets: EventTarget[] = [];
+      const contexts: EventTarget[] = [];
+      const mod = on('click', function(e) {
+        targets.push(e.currentTarget);
+        contexts.push(this);
+      });
+
+      mod(element, 0);
+      mod(element2, 0);
+      element.click();
+      element2.click();
+
+      expect(targets).toEqual([element, element2]);
+      expect(contexts).toEqual([element, element2]);
+    });
+
     it('should handle listener removal after element is removed from DOM', () => {
       const listener = vi.fn();
       const mod = on('click', listener);
@@ -448,6 +482,27 @@ describe('on utility - advanced edge cases', () => {
   });
 
   describe('Special event types', () => {
+    it('should handle media, video, and body event-map events', () => {
+      const media = document.createElement('audio');
+      const video = document.createElement('video');
+      const body = document.body;
+      const encrypted = vi.fn();
+      const pictureInPicture = vi.fn();
+      const online = vi.fn();
+
+      on('encrypted', encrypted)(media, 0);
+      on('enterpictureinpicture', pictureInPicture)(video, 0);
+      on('online', online)(body, 0);
+
+      media.dispatchEvent(new Event('encrypted'));
+      video.dispatchEvent(new Event('enterpictureinpicture'));
+      body.dispatchEvent(new Event('online'));
+
+      expect(encrypted).toHaveBeenCalledOnce();
+      expect(pictureInPicture).toHaveBeenCalledOnce();
+      expect(online).toHaveBeenCalledOnce();
+    });
+
     it('should handle keyboard events with correct typing', () => {
       const listener = vi.fn((e: KeyboardEvent) => {
         expect(e.key).toBeDefined();

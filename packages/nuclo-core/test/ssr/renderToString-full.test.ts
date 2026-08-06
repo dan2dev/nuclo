@@ -683,9 +683,8 @@ describe("deep nesting", () => {
 // 13. Event handlers must not appear in SSR output
 // ─────────────────────────────────────────────────────────────────────────────
 describe("event handlers omitted from SSR output", () => {
-  it("does not include a zero-arity onclick resolver value in the output", () => {
-    // Zero-arity fn as attribute: resolver returns undefined → attribute not set
-    const html = renderToString(div({ onclick: () => {} } as any));
+  it("does not include a zero-arity onClick handler in the output", () => {
+    const html = renderToString(div({ onClick: () => {} }));
     expect(html).not.toContain("onclick");
     expect(html).toBe("<div></div>");
   });

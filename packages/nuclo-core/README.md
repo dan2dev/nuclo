@@ -456,10 +456,12 @@ button('Click me',
 )
 ```
 
-You can also attach handlers directly as `on*` attribute props — any `onclick`, `oninput`, `onchange`, etc. key whose value is a function is registered as an event listener instead of a reactive attribute:
+Standard names are inferred from the common HTML, media, video, and body event maps. Custom events can provide their event type explicitly with `on<"app:ready", CustomEvent<Detail>>(...)`.
+
+You can also attach strongly typed handlers directly as camel-cased `on*` attribute props such as `onClick`, `onInput`, and `onChange`. The event and `currentTarget` types are inferred from the attribute and element:
 
 ```ts
-button('Remove', { className: 'remove', onclick: () => doDelete(row.id) })
+button('Remove', { className: 'remove', onClick: () => doDelete(row.id) })
 ```
 
 This reads naturally inside object literals (e.g. row templates in a `list()`), while `on()` composes better when chaining multiple listeners or passing `options` like `{ passive: true }`.
