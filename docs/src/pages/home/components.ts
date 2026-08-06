@@ -18,8 +18,8 @@ import {
   GitHubSvg, CheckIcon, MinusIcon, CopyIcon,
   ZapIcon, FeatherIcon, BracesIcon, TargetIcon,
 } from "../../components/icons.ts";
-import { setRoute } from "../../router.ts";
-import { initHeroBackground } from "./hero-background.ts";
+import { setRoute, type Route } from "../../router.ts";
+import { initHeroBackground, HERO_CLICK_NAV_DELAY_MS } from "./hero-background.ts";
 
 function DemoDot(color: string) {
   return div(
@@ -116,6 +116,11 @@ function HeroDemoCard() {
   );
 }
 
+/** Lets the hero's click/touch explosion play for a beat before the route swap unmounts it. */
+function navigateAfterHeroClick(route: Route) {
+  setTimeout(() => setRoute(route), HERO_CLICK_NAV_DELAY_MS);
+}
+
 export function HomeHeroSection() {
   if (typeof window !== "undefined") {
     requestAnimationFrame(() => {
@@ -166,12 +171,12 @@ export function HomeHeroSection() {
               button(
                 s.btn, hs.heroPrimaryBtn,
                 "Get Started →",
-                { onClick: () => setRoute("docs") },
+                { onClick: () => navigateAfterHeroClick("docs") },
               ),
               button(
                 s.btn, s.btnSecondary,
                 "View Examples",
-                { onClick: () => setRoute("examples") },
+                { onClick: () => navigateAfterHeroClick("examples") },
               ),
             ),
             // Stats

@@ -98,8 +98,14 @@ export const hs = {
 
   philosophyPointDesc: css("pages-home-styles-philosophyPointDesc", { fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65" }),
 
-  // Pipeline section
-  pipelineSection: css("pages-home-styles-pipelineSection", { padding: "8px 0 64px", borderBottom: `1px solid ${colors.border}`, medium: { padding: "96px 0" } }),
+  // Pipeline section. content-visibility skips layout/paint/style work for this
+  // section while it's off-screen — notably including the connector-line
+  // shimmer animation below (`connectorRun`/`connectorRunY`), which animates
+  // `background-position` (a paint-triggering property, unlike transform/opacity)
+  // and runs on an `infinite` CSS loop with no JS-side visibility gating.
+  // contain-intrinsic-size is a placeholder height used only before this section
+  // has ever been rendered once; the browser remembers the real size after that.
+  pipelineSection: css("pages-home-styles-pipelineSection", { padding: "8px 0 64px", borderBottom: `1px solid ${colors.border}`, medium: { padding: "96px 0" }, raw: { "content-visibility": "auto", "contain-intrinsic-size": "auto 560px" } }),
 
   // Features section
   featuresSection: css("pages-home-styles-featuresSection", { padding: "64px 0", medium: { padding: "96px 0" } }),
