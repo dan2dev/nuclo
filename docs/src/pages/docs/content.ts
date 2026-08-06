@@ -23,7 +23,7 @@ function TerminalCommand(command: string) {
       css("docs-terminal-copy-button", { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "6px", color: colors.textMuted, backgroundColor: "transparent", border: "none", cursor: "pointer", hover: { color: colors.primary, backgroundColor: colors.primaryAlpha08 } }),
       { title: "Copy to clipboard", "aria-label": "Copy command" },
       when(() => copied, CheckIcon({ size: 14 })).else(CopyIcon({ size: 14 })),
-      on("click", handleCopy),
+      { onClick: handleCopy },
     ),
   );
 }
@@ -178,12 +178,12 @@ export const DOC_SECTIONS: DocSection[] = [
 
 <span class="kw">const</span> <span class="pr">el</span> <span class="pt">=</span> <span class="fn">button</span><span class="pt">(</span>
   <span class="st">"Click me"</span><span class="pt">,</span>
-  <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pt">{</span>
+  <span class="pt">{</span> <span class="pr">onClick</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pt">{</span>
     <span class="cm">// Multiple mutations, single update</span>
     <span class="pr">count</span><span class="pt">++</span>
     <span class="pr">label</span> <span class="pt">=</span> <span class="st">'clicked'</span>
     <span class="fn">update</span><span class="pt">()</span>
-  <span class="pt">})</span>
+  <span class="pt">} }</span>
 <span class="pt">)</span></pre></div></div>
       <div class="docs-callout"><strong>Tip:</strong> You can call <code>update()</code> from anywhere-event handlers, timers, fetch callbacks, anywhere.</div>
     `,
@@ -225,7 +225,7 @@ export const DOC_SECTIONS: DocSection[] = [
   <span class="pt">{</span> <span class="pr">id</span><span class="pt">:</span> <span class="st">"card-1"</span><span class="pt">,</span> <span class="pr">class</span><span class="pt">:</span> <span class="st">"card"</span> <span class="pt">},</span>
   <span class="fn">h2</span><span class="pt">(</span><span class="st">"Title"</span><span class="pt">),</span>
   <span class="fn">p</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pr">dynamicContent</span><span class="pt">),</span>
-  <span class="fn">button</span><span class="pt">(</span><span class="st">"Click"</span><span class="pt">,</span> <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pr">handler</span><span class="pt">)),</span>
+  <span class="fn">button</span><span class="pt">(</span><span class="st">"Click"</span><span class="pt">,</span> <span class="pt">{</span> <span class="pr">onClick</span><span class="pt">:</span> <span class="pr">handler</span> <span class="pt">}),</span>
 <span class="pt">)</span></pre></div></div>
       <p>SVG tags are available as <code>svgSvg()</code>, <code>pathSvg()</code>, <code>circleSvg()</code>, etc. All accept the same argument patterns.</p>
     `,
@@ -257,24 +257,25 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Core Concepts",
     title: "Events",
     content: `
-      <p>Use the <code>on()</code> helper to attach event listeners. It returns a modifier that Nuclo processes during element creation, and it accepts the same listener options as <code>addEventListener()</code>.</p>
+      <p>Attach event listeners with camelCase <code>on*</code> props - <code>onClick</code>, <code>onInput</code>, <code>onChange</code>, <code>onKeyDown</code>, and so on. Any key in an attribute object whose name matches a known event and whose value is a function is registered as a listener instead of a reactive attribute:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">const</span> <span class="pr">btn</span> <span class="pt">=</span> <span class="fn">button</span><span class="pt">(</span>
   <span class="st">"Submit"</span><span class="pt">,</span>
-  <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">)</span> <span class="pt">=></span> <span class="pt">{</span>
-    <span class="pr">e</span><span class="pt">.</span><span class="fn">preventDefault</span><span class="pt">()</span>
-    <span class="fn">submitForm</span><span class="pt">()</span>
-  <span class="pt">}),</span>
-  <span class="fn">on</span><span class="pt">(</span><span class="st">"keydown"</span><span class="pt">,</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">)</span> <span class="pt">=></span> <span class="pt">{</span>
-    <span class="kw">if</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">.</span><span class="pr">key</span> <span class="pt">===</span> <span class="st">'Enter'</span><span class="pt">)</span> <span class="fn">submitForm</span><span class="pt">()</span>
-  <span class="pt">}),</span>
+  <span class="pt">{</span>
+    <span class="pr">onClick</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">)</span> <span class="pt">=></span> <span class="pt">{</span>
+      <span class="pr">e</span><span class="pt">.</span><span class="fn">preventDefault</span><span class="pt">()</span>
+      <span class="fn">submitForm</span><span class="pt">()</span>
+    <span class="pt">},</span>
+    <span class="pr">onKeyDown</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">)</span> <span class="pt">=></span> <span class="pt">{</span>
+      <span class="kw">if</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">.</span><span class="pr">key</span> <span class="pt">===</span> <span class="st">'Enter'</span><span class="pt">)</span> <span class="fn">submitForm</span><span class="pt">()</span>
+    <span class="pt">},</span>
+  <span class="pt">},</span>
 <span class="pt">)</span></pre></div></div>
-      <p>You can attach multiple <code>on()</code> calls to the same element. Event listeners are registered once and never re-attached.</p>
-      <p>You can also attach a handler directly as an <code>on*</code> attribute prop. Any key starting with <code>on</code> (<code>onclick</code>, <code>oninput</code>, <code>onchange</code>, ...) whose value is a function is registered as an event listener instead of a reactive attribute:</p>
+      <p>This is the preferred way to wire up events - it reads naturally inside a plain attribute object, which is handy for row templates in a <code>list()</code>:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="fn">button</span><span class="pt">(</span>
   <span class="st">"Remove"</span><span class="pt">,</span>
-  <span class="pt">{</span> <span class="pr">className</span><span class="pt">:</span> <span class="st">"remove"</span><span class="pt">,</span> <span class="pr">onclick</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="fn">doDelete</span><span class="pt">(</span><span class="pr">row</span><span class="pt">.</span><span class="pr">id</span><span class="pt">)</span> <span class="pt">},</span>
+  <span class="pt">{</span> <span class="pr">className</span><span class="pt">:</span> <span class="st">"remove"</span><span class="pt">,</span> <span class="pr">onClick</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="fn">doDelete</span><span class="pt">(</span><span class="pr">row</span><span class="pt">.</span><span class="pr">id</span><span class="pt">)</span> <span class="pt">},</span>
 <span class="pt">)</span></pre></div></div>
-      <p>This reads naturally inside a plain attribute object - handy for row templates in a <code>list()</code>. Use <code>on()</code> instead when you need to attach multiple listeners for the same event type or pass listener <code>options</code> such as <code>{ passive: true }</code>.</p>
+      <p>Use the <code>on()</code> helper instead when you need to attach multiple listeners for the same event type on one element, or pass listener <code>options</code> such as <code>{ passive: true }</code>.</p>
     `,
   },
 
@@ -368,7 +369,7 @@ export const DOC_SECTIONS: DocSection[] = [
   <span class="fn">when</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pr">loggedIn</span><span class="pt">,</span>
     <span class="fn">span</span><span class="pt">(</span><span class="st">"Welcome back!"</span><span class="pt">)</span>
   <span class="pt">).</span><span class="fn">else</span><span class="pt">(</span>
-    <span class="fn">button</span><span class="pt">(</span><span class="st">"Log in"</span><span class="pt">,</span> <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pr">login</span><span class="pt">))</span>
+    <span class="fn">button</span><span class="pt">(</span><span class="st">"Log in"</span><span class="pt">,</span> <span class="pt">{</span> <span class="pr">onClick</span><span class="pt">:</span> <span class="pr">login</span> <span class="pt">})</span>
   <span class="pt">),</span>
 <span class="pt">)</span></pre></div></div>
       <p>Each branch accepts one or more tag-builder modifiers: strings, nodes, attribute objects, builders, <code>list()</code>, or nested <code>when()</code> calls.</p>
@@ -460,7 +461,7 @@ const activeButton = css("activeButton", {
 button(
   () =&gt; cx(baseButton, active &amp;&amp; activeButton),
   () =&gt; active ? "Active" : "Inactive",
-  on("click", () =&gt; { active = !active; update() }),
+  { onClick: () =&gt; { active = !active; update() } },
 )</pre></div></div>
       <p>Advanced helpers such as <code>variants()</code>, <code>globalStyle()</code>, and <code>keyframes()</code> are available when you need them, but most components only need <code>css()</code>, <code>createCss()</code>, and <code>cx()</code>.</p>
     `,
@@ -508,7 +509,7 @@ button(
 <span class="pt">}</span>
 
 <span class="kw">export function</span> <span class="fn">Button</span><span class="pt">({</span> <span class="pr">label</span><span class="pt">,</span> <span class="pr">onClick</span> <span class="pt">}:</span> <span class="ty">ButtonProps</span><span class="pt">) {</span>
-  <span class="kw">return</span> <span class="fn">button</span><span class="pt">(</span><span class="pr">label</span><span class="pt">,</span> <span class="fn">on</span><span class="pt">(</span><span class="st">"click"</span><span class="pt">,</span> <span class="pr">onClick</span><span class="pt">))</span>
+  <span class="kw">return</span> <span class="fn">button</span><span class="pt">(</span><span class="pr">label</span><span class="pt">,</span> <span class="pt">{</span> <span class="pr">onClick</span> <span class="pt">})</span>
 <span class="pt">}</span></pre></div></div>
       <p>State lives in the enclosing scope. Multiple calls to the same function create independent instances with independent state.</p>
     `,

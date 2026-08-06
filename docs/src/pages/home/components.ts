@@ -56,7 +56,7 @@ function InstallCommand() {
       { title: "Copy to clipboard", "aria-label": "Copy install command" },
       { class: () => cx(hs.heroCopyBtn, copied ? css("pages-home-components-components-inline-3", { color: colors.primary }) : null).className },
       when(() => copied, CheckIcon({ size: 14 })).else(CopyIcon({ size: 14 })),
-      on("click", handleCopy),
+      { onClick: handleCopy },
     ),
   );
 }
@@ -87,12 +87,12 @@ function HeroDemoCard() {
         button(
           css("pages-home-components-components-inline-7", { padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
           "−",
-          on("click", (event) => changeCount(event, -1)),
+          { onClick: (event) => changeCount(event, -1) },
         ),
         button(
           css("pages-home-components-components-inline-8", { padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid transparent`, color: "#fff", backgroundColor: colors.primary, fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { backgroundColor: colors.primaryHover } }),
           "+",
-          on("click", (event) => changeCount(event, 1)),
+          { onClick: (event) => changeCount(event, 1) },
         ),
       ),
     );
@@ -166,12 +166,12 @@ export function HomeHeroSection() {
               button(
                 s.btn, hs.heroPrimaryBtn,
                 "Get Started →",
-                on("click", () => setRoute("docs")),
+                { onClick: () => setRoute("docs") },
               ),
               button(
                 s.btn, s.btnSecondary,
                 "View Examples",
-                on("click", () => setRoute("examples")),
+                { onClick: () => setRoute("examples") },
               ),
             ),
             // Stats
@@ -453,7 +453,7 @@ export function HomeQuickStartSection() {
           button(
             s.btn, s.btnSecondary,
             "Read the full docs →",
-            on("click", () => setRoute("docs")),
+            { onClick: () => setRoute("docs") },
           ),
         ),
       ),
@@ -475,7 +475,7 @@ export function ExamplesTeaserSection() {
         hs.demoTabBtn,
         { class: () => cx(hs.demoTabBtn, activeTab === tab ? hs.demoTabBtnActive : null).className },
         label,
-        on("click", () => { activeTab = tab; update(); }),
+        { onClick: () => { activeTab = tab; update(); } },
       );
     }
 
@@ -515,15 +515,15 @@ export function ExamplesTeaserSection() {
         css("pages-home-components-components-inline-19", { display: "flex", gap: "8px", justifyContent: "center" }),
         button(
           css("pages-home-components-components-inline-20", { padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgLight, fontFamily: "inherit" }),
-          "−", on("click", () => { n--; update(); })
+          "−", { onClick: () => { n--; update(); } }
         ),
         button(
           css("pages-home-components-components-inline-21", { padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: "none", color: "#fff", backgroundColor: colors.primary, fontFamily: "inherit" }),
-          "Reset", on("click", () => { n = 0; update(); })
+          "Reset", { onClick: () => { n = 0; update(); } }
         ),
         button(
           css("pages-home-components-components-inline-22", { padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgLight, fontFamily: "inherit" }),
-          "+", on("click", () => { n++; update(); })
+          "+", { onClick: () => { n++; update(); } }
         ),
       ),
     );
@@ -553,21 +553,21 @@ export function ExamplesTeaserSection() {
             type: "text",
             placeholder: "Add a task…",
           },
-          on("input", (e) => { inputValue = (e.target as HTMLInputElement).value; }),
-          on("keydown", (e) => { if ((e as KeyboardEvent).key === "Enter") addTodo(); }),
+          { onInput: (e) => { inputValue = (e.target as HTMLInputElement).value; } },
+          { onKeyDown: (e) => { if ((e as KeyboardEvent).key === "Enter") addTodo(); } },
           ((el: any) => { domInput = el; }) as any,
         ),
         button(
           css("pages-home-components-components-inline-26", { padding: "9px 14px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: "none", color: "#fff", backgroundColor: colors.primary, fontFamily: "inherit", whiteSpace: "nowrap" }),
           "Add",
-          on("click", addTodo),
+          { onClick: addTodo },
         ),
       ),
       list(
         () => todos,
         (t) => div(
           css("pages-home-components-components-inline-27", { display: "flex", alignItems: "center", gap: "8px", padding: "7px 10px", borderRadius: "5px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary, marginBottom: "5px", fontSize: "0.85rem" }),
-          input({ type: "checkbox" }, { checked: () => t.done }, on("change", () => { t.done = !t.done; update(); })),
+          input({ type: "checkbox" }, { checked: () => t.done }, { onChange: () => { t.done = !t.done; update(); } }),
           span(
             css("pages-home-components-components-inline-28", { transition: "opacity 0.18s ease" }),
             { class: () => t.done ? css("pages-home-components-components-inline-29", { textDecoration: "line-through", opacity: "0.5" }).className : "" },
@@ -598,7 +598,7 @@ export function ExamplesTeaserSection() {
           button(
             s.btn, s.btnSecondary,
             "View all examples →",
-            on("click", () => setRoute("examples")),
+            { onClick: () => setRoute("examples") },
           ),
         ),
       ),
@@ -627,7 +627,7 @@ export function CTASection() {
           button(
             s.btn, s.btnPrimary,
             "Read the Docs →",
-            on("click", () => setRoute("docs")),
+            { onClick: () => setRoute("docs") },
           ),
           a(
             {

@@ -14,7 +14,7 @@ function ExampleCard(ex: typeof EXAMPLES[number], index: number) {
         class: () => cx(es.tab, activeTab === tab ? es.tabActive : null).className,
       },
       label,
-      on("click", () => { activeTab = tab; update(); }),
+      { onClick: () => { activeTab = tab; update(); } },
     );
   }
 
@@ -68,9 +68,9 @@ function CounterDemo() {
     div(es.countLabel, "COUNT"),
     div(
       es.buttonRow,
-      button(es.button, "-", on("click", () => { count--; update(); })),
-      button({ class: cx(es.button, es.buttonPrimary).className }, "Reset", on("click", () => { count = 0; update(); })),
-      button(es.button, "+", on("click", () => { count++; update(); })),
+      button(es.button, "-", { onClick: () => { count--; update(); } }),
+      button({ class: cx(es.button, es.buttonPrimary).className }, "Reset", { onClick: () => { count = 0; update(); } }),
+      button(es.button, "+", { onClick: () => { count++; update(); } }),
     ),
   );
 }
@@ -85,8 +85,8 @@ function TodoDemo() {
   const inputEl = input(
     es.input,
     { type: "text", placeholder: "Add a task..." } as any,
-    on("input", (e) => { inputValue = (e.target as HTMLInputElement).value; }),
-    on("keydown", (e) => { if ((e as KeyboardEvent).key === "Enter") addTodo(); }),
+    { onInput: (e) => { inputValue = (e.target as HTMLInputElement).value; } },
+    { onKeyDown: (e) => { if ((e as KeyboardEvent).key === "Enter") addTodo(); } },
     ((el: HTMLInputElement) => { domInput = el; }) as any,
   );
 
@@ -110,7 +110,7 @@ function TodoDemo() {
       es.filter,
       { class: () => cx(es.filter, filter === nextFilter ? es.filterActive : null).className },
       label,
-      on("click", () => { filter = nextFilter; update(); }),
+      { onClick: () => { filter = nextFilter; update(); } },
     );
   }
 
@@ -119,7 +119,7 @@ function TodoDemo() {
     div(
       es.row,
       inputEl,
-      button(es.button, es.buttonPrimary, "Add", on("click", addTodo)),
+      button(es.button, es.buttonPrimary, "Add", { onClick: addTodo }),
     ),
     div(
       es.filters,
@@ -136,16 +136,18 @@ function TodoDemo() {
           input(
             { type: "checkbox" },
             { checked: () => todo.done },
-            on("change", () => { todo.done = !todo.done; update(); }),
+            { onChange: () => { todo.done = !todo.done; update(); } },
           ),
           span(es.itemText, { class: () => cx(es.itemText, todo.done ? es.itemDoneText : null).className }, todo.text),
           button(
             es.itemDelete,
             "x",
-            on("click", () => {
-              todos = todos.filter(x => x.id !== todo.id);
-              update();
-            }),
+            {
+              onClick: () => {
+                todos = todos.filter(x => x.id !== todo.id);
+                update();
+              },
+            },
           ),
         ),
       ),
@@ -186,10 +188,12 @@ function SearchDemo() {
       es.input,
       es.searchInput,
       { type: "text", placeholder: "Search users..." },
-      on("input", (e) => {
-        query = (e.target as HTMLInputElement).value;
-        update();
-      }),
+      {
+        onInput: (e) => {
+          query = (e.target as HTMLInputElement).value;
+          update();
+        },
+      },
     ),
     div(
       list(
@@ -249,7 +253,7 @@ function StyleDemo() {
     button(
       { class: () => demoCx(demoButton, selected ? demoButtonSelected : null).className },
       () => selected ? "Selected" : "Select",
-      on("click", () => { selected = !selected; update(); }),
+      { onClick: () => { selected = !selected; update(); } },
     ),
   );
 }

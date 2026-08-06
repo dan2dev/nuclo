@@ -43,7 +43,7 @@ function StylingCard(feature: StylingFeature, index: number) {
       es.tab,
       { class: () => uiCx(es.tab, activeTab === tab ? es.tabActive : null).className },
       label,
-      on("click", () => { activeTab = tab; update(); }),
+      { onClick: () => { activeTab = tab; update(); } },
     );
   }
 
@@ -118,7 +118,7 @@ function CxPreview() {
     button(
       () => cx(baseButton, selected ? selectedButton : null),
       () => selected ? "Selected" : "Select",
-      on("click", () => { selected = !selected; update(); }),
+      { onClick: () => { selected = !selected; update(); } },
     ),
     span(css("pages-examples-styling-gallery-styling-gallery-inline-2", { color: "muted", text: 12 }), "cx() adds the selected class."),
   );
@@ -188,7 +188,7 @@ function Button() {
   return button(
     () => cx(baseButton, selected && selectedButton),
     () => selected ? "Selected" : "Select",
-    on("click", () => { selected = !selected; update() }),
+    { onClick: () => { selected = !selected; update() } },
   )
 }`,
     preview: CxPreview,

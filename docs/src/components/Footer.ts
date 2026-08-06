@@ -31,7 +31,7 @@ export function Footer() {
   const versionBadge = css("components-footer-versionBadge", { display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", fontWeight: "800", color: colors.primary, padding: "4px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08 });
 
   function RouteLink(label: string, route: string) {
-    return span(linkStyle, label, on("click", () => setRoute(route)));
+    return span(linkStyle, label, { onClick: () => setRoute(route) });
   }
 
   function ExternalLink(label: string, href: string, icon?: ReturnType<typeof svgSvg>) {

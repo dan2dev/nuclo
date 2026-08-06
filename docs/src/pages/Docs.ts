@@ -46,12 +46,14 @@ export function DocsPage() {
         "aria-current": () => activeId === id ? "location" : undefined,
       },
       sec.title,
-      on("click", (e) => {
-        e.preventDefault();
-        window.history.replaceState(null, "", `#${id}`);
-        setActive(id);
-        scrollToSection(id);
-      }),
+      {
+        onClick: (e) => {
+          e.preventDefault();
+          window.history.replaceState(null, "", `#${id}`);
+          setActive(id);
+          scrollToSection(id);
+        },
+      },
     );
   }
 
@@ -85,12 +87,14 @@ export function DocsPage() {
           ds.quickstartLink,
           { href: "#quick-start" },
           "Quick Start",
-          on("click", (e) => {
-            e.preventDefault();
-            window.history.replaceState(null, "", "#quick-start");
-            setActive("quick-start");
-            scrollToSection("quick-start");
-          }),
+          {
+            onClick: (e) => {
+              e.preventDefault();
+              window.history.replaceState(null, "", "#quick-start");
+              setActive("quick-start");
+              scrollToSection("quick-start");
+            },
+          },
         ),
       ),
       div(
@@ -196,7 +200,7 @@ export function DocsPage() {
                   "aria-label": `Link to ${sec.title}`,
                 },
                 "#",
-                on("click", () => setActive(sec.id)),
+                { onClick: () => setActive(sec.id) },
               ),
             ),
           ),
