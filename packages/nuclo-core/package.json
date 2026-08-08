@@ -1,7 +1,7 @@
 {
 	"name": "nuclo",
 	"private": false,
-	"version": "0.2.24",
+	"version": "0.2.25",
 	"description": "Lightweight, type-safe DOM library with plain mutable state and explicit updates — global tag builders, SSR, hydration, and typed CSS, no virtual DOM, no compiler.",
 	"license": "MIT",
 	"author": "Danilo Celestino de Castro (https://github.com/dan2dev)",
