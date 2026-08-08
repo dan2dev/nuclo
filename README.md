@@ -17,10 +17,10 @@ let count = 0;
 
 const counter = div(
   h1(() => `Count: ${count}`),
-  button('Increment', on('click', () => {
+  button('Increment', { onClick: () => {
     count++;
     update();
-  }))
+  } })
 );
 
 render(counter, document.body);
@@ -92,7 +92,7 @@ import 'nuclo';
 let count = 0;
 const app = div(
   h1(() => `Count: ${count}`),
-  button('Click', on('click', () => { count++; update(); }))
+  button('Click', { onClick: () => { count++; update(); } })
 );
 render(app, document.body);
 ```
@@ -128,8 +128,8 @@ let count = 0;
 
 const app = div(
   h1(() => `Count: ${count}`),
-  button('Increment', on('click', () => { count++; update(); })),
-  button('Reset', on('click', () => { count = 0; update(); }))
+  button('Increment', { onClick: () => { count++; update(); } }),
+  button('Reset', { onClick: () => { count = 0; update(); } })
 );
 
 render(app, document.body);
@@ -162,7 +162,7 @@ const app = div(
       on('input', e => { inputValue = e.target.value; update(); }),
       on('keydown', e => e.key === 'Enter' && addTodo())
     ),
-    button('Add', on('click', addTodo))
+    button('Add', { onClick: addTodo })
   ),
 
   // List
@@ -174,10 +174,10 @@ const app = div(
           on('change', () => { todo.done = !todo.done; update(); })
         ),
         span(() => todo.text),
-        button('×', on('click', () => {
+        button('×', { onClick: () => {
           todos = todos.filter(t => t.id !== todo.id);
           update();
-        }))
+        } })
       )
     )
   ).else(
@@ -283,7 +283,7 @@ const app = div(
       }),
       on('keydown', e => e.key === 'Enter' && fetchProducts())
     ),
-    button('Search', on('click', fetchProducts))
+    button('Search', { onClick: fetchProducts })
   ),
 
   when(() => state.status === 'loading',
@@ -445,24 +445,24 @@ when(() => count > 10,
 
 First matching condition wins. DOM is preserved if the active branch doesn't change.
 
-#### `on(event, handler, options?)`
+#### Events
 
-Attach event listeners:
+Attach event listeners with camelCase `on*` attribute props — `onClick`, `onInput`, `onChange`, `onKeyDown`, and so on. Any key in an attribute object whose name matches a known event and whose value is a function is registered as a listener instead of a reactive attribute:
+
+```ts
+button('Remove', { className: 'remove', onClick: () => doDelete(row.id) })
+```
+
+This is the preferred way to wire up events — it reads naturally inside object literals (e.g. row templates in a `list()`).
+
+Use the `on(event, handler, options?)` helper instead when you need multiple listeners for the same event type on one element, or want to pass listener `options` such as `{ passive: true }`:
 
 ```ts
 button('Click me',
-  on('click', () => console.log('clicked')),
-  on('mouseenter', handleHover, { passive: true })
+  on('click', trackClick),
+  on('click', logClick, { passive: true })
 )
 ```
-
-You can also attach handlers directly as `on*` attribute props — any `onclick`, `oninput`, `onchange`, etc. key whose value is a function is registered as an event listener instead of a reactive attribute:
-
-```ts
-button('Remove', { className: 'remove', onclick: () => doDelete(row.id) })
-```
-
-This reads naturally inside object literals (e.g. row templates in a `list()`), while `on()` composes better when chaining multiple listeners or passing `options` like `{ passive: true }`.
 
 #### `scope(...ids)`
 
