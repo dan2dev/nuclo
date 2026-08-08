@@ -9,7 +9,7 @@ export function counterPage(pathname: string): NodeModFn<'div'> {
     main(
       { class: 'content' },
       h1('Counter'),
-      p({ class: 'count-display' }, () => String(count)),
+      p({ class: 'count-display' }, () => count),
       div(
         { class: 'counter-buttons' },
         button(

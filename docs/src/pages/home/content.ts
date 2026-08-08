@@ -21,7 +21,7 @@ let count = 0
 
 export function Counter() {
   return div(
-    p(() => String(count)),
+    p(() => count),
     button("-", { onClick: () => { count--; update() } }),
     button("+", { onClick: () => { count++; update() } }),
   )
