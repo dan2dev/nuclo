@@ -8,23 +8,27 @@
  *
  * Browser: rules are injected through CSSOM with O(1) appends — no rescans.
  * SSR: rules accumulate in the registry; `getCssText()` serializes them.
+ *
+ * The state below lives on `globalThis`, keyed by a `Symbol.for(...)` (the
+ * global symbol registry, shared by every realm-local copy of this module).
+ * `nuclo` publishes `.`, `./ssr`, and `./polyfill` as independently built
+ * bundle files (see tsdown.config.ts) — a consumer that resolves them
+ * through normal package resolution (any bundler/runtime that doesn't
+ * alias every subpath to this same source file) loads two or three
+ * separate copies of this module, each with its own module-scope
+ * variables. Without a realm-wide singleton, `css()` (from `nuclo`) would
+ * mint rules into one copy's registry while `getCssText()`/
+ * `setSSRCollector()` (from `nuclo/ssr`) read an entirely different,
+ * always-empty one — SSR output would render the right classes with no
+ * matching CSS at all. Storing the registry on `globalThis` instead makes
+ * every copy of this module share the same state regardless of how many
+ * times it ends up bundled.
  */
 
 // SSR collector — optional hook that receives every newly minted rule string
 // (wrapped in its at-rule, if any). Installed once at server startup.
 type SSRCollector = (rule: string) => void;
-let ssrCollector: SSRCollector | null = null;
 
-export function setSSRCollector(fn: SSRCollector | null): void {
-	ssrCollector = fn;
-}
-
-// Registry — the source of truth for all generated CSS.
-// atomCache: declaration-block key -> class name (dedup)
-// atomMeta: class name -> what the class means (its selector context and its
-// declarations). This is what lets cx() merge two same-context classes at the
-// declaration level instead of guessing: the engine can always recover the
-// exact content of any class it minted.
 export interface BlockMeta {
 	readonly query: string | undefined;
 	readonly suffix: string;
@@ -32,37 +36,75 @@ export interface BlockMeta {
 	/** Author-supplied identity from `css(name, …)`; inherited by cx() merges. */
 	readonly name: string | undefined;
 }
-const atomCache = new Map<string, string>();
-const atomMeta = new Map<string, BlockMeta>();
-const rawKeys = new Set<string>();
-const baseRules: string[] = [];
-const queryRules = new Map<string, string[]>();
-let styleEpoch = 0;
 
-// Memoized getCssText() output. SSR calls getCssText() once per request, but the
-// rule set is stable after warmup — so the serialized sheet is recomputed only
-// when a new rule is actually recorded. Invalidated in record() and resetStyles().
-let cssTextCache: string | null = null;
+interface EngineState {
+	ssrCollector: SSRCollector | null;
 
-// Browser CSSOM state. Base rules occupy [0, baseRuleCount); grouping rules
-// (one per query, created in registration order) live after them. CSSRule
-// references stay live when indices shift, so insertion never rescans.
-let sheet: CSSStyleSheet | null = null;
-let sheetDocument: Document | null = null;
-let baseRuleCount = 0;
-const groupRules = new Map<string, CSSGroupingRule>();
+	// Registry — the source of truth for all generated CSS.
+	// atomCache: declaration-block key -> class name (dedup)
+	// atomMeta: class name -> what the class means (its selector context and its
+	// declarations). This is what lets cx() merge two same-context classes at the
+	// declaration level instead of guessing: the engine can always recover the
+	// exact content of any class it minted.
+	atomCache: Map<string, string>;
+	atomMeta: Map<string, BlockMeta>;
+	rawKeys: Set<string>;
+	baseRules: string[];
+	queryRules: Map<string, string[]>;
+	styleEpoch: number;
 
-// Normalized rules already sitting in a freshly-adopted stylesheet that this
-// module didn't insert itself — e.g. server-rendered CSS being hydrated.
-// Rebuilt on every fresh bind in ensureSheet(); null when there is nothing
-// external to guard against.
-let externalRules: Map<string, Set<string>> | null = null;
-let hasExternalGroups = false;
+	// Memoized getCssText() output. SSR calls getCssText() once per request, but the
+	// rule set is stable after warmup — so the serialized sheet is recomputed only
+	// when a new rule is actually recorded. Invalidated in record() and resetStyles().
+	cssTextCache: string | null;
+
+	// Browser CSSOM state. Base rules occupy [0, baseRuleCount); grouping rules
+	// (one per query, created in registration order) live after them. CSSRule
+	// references stay live when indices shift, so insertion never rescans.
+	sheet: CSSStyleSheet | null;
+	sheetDocument: Document | null;
+	baseRuleCount: number;
+	groupRules: Map<string, CSSGroupingRule>;
+
+	// Normalized rules already sitting in a freshly-adopted stylesheet that this
+	// module didn't insert itself — e.g. server-rendered CSS being hydrated.
+	// Rebuilt on every fresh bind in ensureSheet(); null when there is nothing
+	// external to guard against.
+	externalRules: Map<string, Set<string>> | null;
+	hasExternalGroups: boolean;
+}
+
+function createState(): EngineState {
+	return {
+		ssrCollector: null,
+		atomCache: new Map(),
+		atomMeta: new Map(),
+		rawKeys: new Set(),
+		baseRules: [],
+		queryRules: new Map(),
+		styleEpoch: 0,
+		cssTextCache: null,
+		sheet: null,
+		sheetDocument: null,
+		baseRuleCount: 0,
+		groupRules: new Map(),
+		externalRules: null,
+		hasExternalGroups: false,
+	};
+}
+
+const ENGINE_STATE_KEY = Symbol.for("nuclo.style.engine.v1");
+const globalScope = globalThis as unknown as Record<symbol, EngineState>;
+const state = globalScope[ENGINE_STATE_KEY] ?? (globalScope[ENGINE_STATE_KEY] = createState());
+
+export function setSSRCollector(fn: SSRCollector | null): void {
+	state.ssrCollector = fn;
+}
 
 /** Pre-register at-rule queries so their cascade order follows theme order. */
 export function registerQueries(queries: Iterable<string>): void {
 	for (const query of queries) {
-		if (!queryRules.has(query)) queryRules.set(query, []);
+		if (!state.queryRules.has(query)) state.queryRules.set(query, []);
 	}
 }
 
@@ -71,8 +113,8 @@ function createGroup(s: CSSStyleSheet, query: string): CSSGroupingRule | null {
 		const idx = s.cssRules.length;
 		s.insertRule(query + "{}", idx);
 		const group = s.cssRules[idx] as CSSGroupingRule;
-		groupRules.set(query, group);
-		groupRules.set(groupQueryOf(group), group);
+		state.groupRules.set(query, group);
+		state.groupRules.set(groupQueryOf(group), group);
 		return group;
 	} catch {
 		return null; // unsupported at-rule in this environment
@@ -96,23 +138,23 @@ function scopedRuleKey(query: string | undefined, identity: string): string {
 }
 
 function rememberExternalRule(rule: CSSRule, query: string | undefined): void {
-	if (!externalRules) return;
+	if (!state.externalRules) return;
 	const key = scopedRuleKey(query, ruleIdentity(rule));
-	let texts = externalRules.get(key);
+	let texts = state.externalRules.get(key);
 	if (!texts) {
 		texts = new Set();
-		externalRules.set(key, texts);
+		state.externalRules.set(key, texts);
 	}
 	texts.add(rule.cssText);
 }
 
 function consumeExternalRule(rule: CSSRule, query: string | undefined): boolean {
-	if (!externalRules) return false;
+	if (!state.externalRules) return false;
 	const key = scopedRuleKey(query, ruleIdentity(rule));
-	const texts = externalRules.get(key);
+	const texts = state.externalRules.get(key);
 	if (!texts?.delete(rule.cssText)) return false;
-	if (texts.size === 0) externalRules.delete(key);
-	if (externalRules.size === 0) externalRules = null;
+	if (texts.size === 0) state.externalRules.delete(key);
+	if (state.externalRules.size === 0) state.externalRules = null;
 	return true;
 }
 
@@ -135,8 +177,8 @@ function indexExternalRules(rules: CSSRuleList): void {
 		const prelude = groupQueryOf(rule);
 		if ("cssRules" in rule && !prelude.startsWith("@keyframes")) {
 			const group = rule as CSSGroupingRule;
-			hasExternalGroups = true;
-			groupRules.set(prelude, group);
+			state.hasExternalGroups = true;
+			state.groupRules.set(prelude, group);
 			for (let j = 0; j < group.cssRules.length; j++) {
 				rememberExternalRule(group.cssRules[j], prelude);
 			}
@@ -149,13 +191,13 @@ function indexExternalRules(rules: CSSRuleList): void {
 
 function insertBase(s: CSSStyleSheet, rule: string): void {
 	try {
-		s.insertRule(rule, baseRuleCount);
-		const inserted = s.cssRules[baseRuleCount];
+		s.insertRule(rule, state.baseRuleCount);
+		const inserted = s.cssRules[state.baseRuleCount];
 		if (consumeExternalRule(inserted, undefined)) {
-			s.deleteRule(baseRuleCount);
+			s.deleteRule(state.baseRuleCount);
 			return;
 		}
-		baseRuleCount++;
+		state.baseRuleCount++;
 	} catch {
 		// Invalid value/selector: drop the declaration, like browsers do for bad CSS.
 	}
@@ -173,9 +215,9 @@ function insertGrouped(group: CSSGroupingRule, rule: string): void {
 }
 
 function getOrCreateGroup(s: CSSStyleSheet, query: string): CSSGroupingRule | null {
-	const direct = groupRules.get(query);
+	const direct = state.groupRules.get(query);
 	if (direct) return direct;
-	if (!hasExternalGroups) return createGroup(s, query);
+	if (!state.hasExternalGroups) return createGroup(s, query);
 
 	// CSSOM may normalize whitespace in an at-rule prelude. Normalize the
 	// authored query through a temporary empty group before deciding that an
@@ -185,9 +227,9 @@ function getOrCreateGroup(s: CSSStyleSheet, query: string): CSSGroupingRule | nu
 		s.insertRule(query + "{}", index);
 		const normalized = groupQueryOf(s.cssRules[index]);
 		s.deleteRule(index);
-		const existing = groupRules.get(normalized);
+		const existing = state.groupRules.get(normalized);
 		if (existing) {
-			groupRules.set(query, existing);
+			state.groupRules.set(query, existing);
 			return existing;
 		}
 	} catch {
@@ -207,8 +249,13 @@ function ensureSheet(): CSSStyleSheet | null {
 	// The nuclo SSR polyfill provides a document without getElementById — in
 	// that context rules accumulate in the registry for getCssText() only.
 	if (typeof document.getElementById !== "function") return null;
-	if (sheet && sheetDocument === document && sheet.ownerNode && (sheet.ownerNode as Element).isConnected) {
-		return sheet;
+	if (
+		state.sheet &&
+		state.sheetDocument === document &&
+		state.sheet.ownerNode &&
+		(state.sheet.ownerNode as Element).isConnected
+	) {
+		return state.sheet;
 	}
 	const existing = document.getElementById("nuclo-styles");
 	let el: HTMLStyleElement;
@@ -220,34 +267,34 @@ function ensureSheet(): CSSStyleSheet | null {
 		if (existing) existing.replaceWith(el);
 		else document.head.appendChild(el);
 	}
-	sheet = el.sheet;
-	sheetDocument = document;
-	groupRules.clear();
-	baseRuleCount = 0;
-	externalRules = null;
-	hasExternalGroups = false;
-	if (!sheet) return null;
-	if (sheet.cssRules.length > 0) {
+	state.sheet = el.sheet;
+	state.sheetDocument = document;
+	state.groupRules.clear();
+	state.baseRuleCount = 0;
+	state.externalRules = null;
+	state.hasExternalGroups = false;
+	if (!state.sheet) return null;
+	if (state.sheet.cssRules.length > 0) {
 		// Leading top-level non-group rules (style rules, @keyframes — before
 		// the first @media/@container group) are this element's existing
 		// "base" region — count them so insertBase() keeps inserting new base
 		// rules right after them, still ahead of every group.
 		let i = 0;
-		while (i < sheet.cssRules.length) {
-			const r = sheet.cssRules[i];
+		while (i < state.sheet.cssRules.length) {
+			const r = state.sheet.cssRules[i];
 			if (!(r instanceof CSSStyleRule) && "cssRules" in r && !groupQueryOf(r).startsWith("@keyframes")) break;
 			i++;
 		}
-		baseRuleCount = i;
-		externalRules = new Map();
-		indexExternalRules(sheet.cssRules);
+		state.baseRuleCount = i;
+		state.externalRules = new Map();
+		indexExternalRules(state.sheet.cssRules);
 	}
-	for (const rule of baseRules) insertBase(sheet, rule);
-	for (const [query, rules] of queryRules) {
-		const group = getOrCreateGroup(sheet, query);
+	for (const rule of state.baseRules) insertBase(state.sheet, rule);
+	for (const [query, rules] of state.queryRules) {
+		const group = getOrCreateGroup(state.sheet, query);
 		if (group) for (const rule of rules) insertGrouped(group, rule);
 	}
-	return sheet;
+	return state.sheet;
 }
 
 function record(rule: string, query: string | undefined): void {
@@ -256,16 +303,16 @@ function record(rule: string, query: string | undefined): void {
 	const s = ensureSheet();
 
 	if (query === undefined) {
-		baseRules.push(rule);
+		state.baseRules.push(rule);
 	} else {
-		let bucket = queryRules.get(query);
+		let bucket = state.queryRules.get(query);
 		if (!bucket) {
 			bucket = [];
-			queryRules.set(query, bucket);
+			state.queryRules.set(query, bucket);
 		}
 		bucket.push(rule);
 	}
-	cssTextCache = null; // a new rule changes the serialized sheet
+	state.cssTextCache = null; // a new rule changes the serialized sheet
 
 	if (s) {
 		if (query === undefined) {
@@ -275,7 +322,7 @@ function record(rule: string, query: string | undefined): void {
 			if (group) insertGrouped(group, rule);
 		}
 	}
-	ssrCollector?.(query === undefined ? rule : query + "{" + rule + "}");
+	state.ssrCollector?.(query === undefined ? rule : query + "{" + rule + "}");
 }
 
 /**
@@ -396,7 +443,7 @@ function mintBlock(
 		name = undefined;
 	}
 	const declKey = name === undefined ? "a" + contextKey : "n" + appendKeyPart("", name) + contextKey;
-	let className = atomCache.get(declKey);
+	let className = state.atomCache.get(declKey);
 	if (className !== undefined) {
 		// Touch the sheet so a swapped document (tests) gets the replayed rules.
 		ensureSheet();
@@ -407,7 +454,7 @@ function mintBlock(
 		className = "n" + hash(declKey);
 	} else {
 		className = exactName ? name : name + "-" + hash(declKey);
-		if (atomMeta.has(className)) {
+		if (state.atomMeta.has(className)) {
 			console.warn(
 				`[nuclo] css() name ${JSON.stringify(className)} is already used by a different style. ` +
 					"Both rules are emitted under the same class, so they will override each other — rename one.",
@@ -415,8 +462,8 @@ function mintBlock(
 		}
 	}
 
-	atomCache.set(declKey, className);
-	atomMeta.set(className, { query, suffix, decls, name });
+	state.atomCache.set(declKey, className);
+	state.atomMeta.set(className, { query, suffix, decls, name });
 	record(selectorFor(className, suffix) + "{" + body + "}", query);
 	return className;
 }
@@ -447,8 +494,8 @@ export function atomBlock(
  * name down as a prefix, so `cx(appRoot, active)` reads as `app-root-1a2b3c`.
  */
 export function mergeBlocks(first: string, second: string): string {
-	const a = atomMeta.get(first);
-	const b = atomMeta.get(second);
+	const a = state.atomMeta.get(first);
+	const b = state.atomMeta.get(second);
 	if (!a || !b) return second; // unknown input — nothing to merge with
 	const concat = [...a.decls, ...b.decls];
 	// Keep only the last occurrence of each exact property, at its position —
@@ -461,51 +508,51 @@ export function mergeBlocks(first: string, second: string): string {
 
 /** Conflict key (query|suffix) for a generated class — lets cx() group classes by selector context. */
 export function conflictKeyOf(className: string): string | undefined {
-	const meta = atomMeta.get(className);
+	const meta = state.atomMeta.get(className);
 	return meta === undefined ? undefined : contextKeyOf(meta.query, meta.suffix);
 }
 
 /** Current registry generation, used to invalidate per-instance WeakMap hits after resetStyles(). */
 export function getStyleEpoch(): number {
-	return styleEpoch;
+	return state.styleEpoch;
 }
 
 /** Register a non-atomic rule (keyframes, global styles) once per dedupe key. */
 export function addRawRule(dedupeKey: string, rule: string): void {
-	if (rawKeys.has(dedupeKey)) {
+	if (state.rawKeys.has(dedupeKey)) {
 		ensureSheet();
 		return;
 	}
-	rawKeys.add(dedupeKey);
+	state.rawKeys.add(dedupeKey);
 	record(rule, undefined);
 }
 
 /** All generated CSS — base rules first, then at-rule groups in registration order. */
 export function getCssText(): string {
-	if (cssTextCache !== null) return cssTextCache;
-	let out = baseRules.join("");
-	for (const [query, rules] of queryRules) {
+	if (state.cssTextCache !== null) return state.cssTextCache;
+	let out = state.baseRules.join("");
+	for (const [query, rules] of state.queryRules) {
 		if (rules.length > 0) out += query + "{" + rules.join("") + "}";
 	}
-	cssTextCache = out;
+	state.cssTextCache = out;
 	return out;
 }
 
 /** Clear all engine state (test helper). Removes the injected style element. */
 export function resetStyles(): void {
-	atomCache.clear();
-	atomMeta.clear();
-	rawKeys.clear();
-	baseRules.length = 0;
-	queryRules.clear();
-	groupRules.clear();
-	cssTextCache = null;
-	baseRuleCount = 0;
-	sheet = null;
-	sheetDocument = null;
-	externalRules = null;
-	hasExternalGroups = false;
-	styleEpoch++;
+	state.atomCache.clear();
+	state.atomMeta.clear();
+	state.rawKeys.clear();
+	state.baseRules.length = 0;
+	state.queryRules.clear();
+	state.groupRules.clear();
+	state.cssTextCache = null;
+	state.baseRuleCount = 0;
+	state.sheet = null;
+	state.sheetDocument = null;
+	state.externalRules = null;
+	state.hasExternalGroups = false;
+	state.styleEpoch++;
 	if (typeof document !== "undefined") {
 		document.getElementById("nuclo-styles")?.remove();
 	}

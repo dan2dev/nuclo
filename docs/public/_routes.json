@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "include": ["/*"],
+  "exclude": [
+    "/assets/*",
+    "/.vite/*",
+    "/*.png",
+    "/*.svg",
+    "/*.ico",
+    "/*.txt",
+    "/*.xml",
+    "/*.json",
+    "/*.webmanifest",
+    "/*.html",
+    "/.htaccess"
+  ]
+}

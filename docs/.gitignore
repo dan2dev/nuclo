@@ -16,6 +16,10 @@ build
 playwright-report
 test-results
 
+# Cloudflare Wrangler local dev state
+.wrangler
+.dev.vars
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
