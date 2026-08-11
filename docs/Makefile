@@ -15,15 +15,13 @@ STRESS_SERVER_CONCURRENCY ?= 100
 
 help:
 	@echo "Available targets:"
-	@echo "  publish    - Refresh version/bundle-size stats, build docs, sync ./build folder (SSR server + dist assets) via rsync"
+	@echo "  publish    - Refresh version/bundle-size stats and deploy docs to Cloudflare Pages via wrangler"
 	@echo "  docker     - Build docs and start via Docker Compose"
 	@echo "  stress     - Run standard front stress"
 	@echo ""
-	@echo "Required environment variables (loaded from ../.env):"
-	@echo "  DEPLOY_USER       - SSH username"
-	@echo "  DEPLOY_HOST       - SSH host"
-	@echo "  DEPLOY_PATH       - Remote destination path"
-	@echo "  CLOUDFLARE_DUOCRAFT_CACHING_API_KEY - Cloudflare API token for cache purging"
+	@echo "Cloudflare Pages deploy auth (choose one):"
+	@echo "  wrangler login                                  - interactive OAuth (local use)"
+	@echo "  CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID     - non-interactive (CI), loaded from ../.env if set"
 	@echo ""
 	@echo "Docs front stress (Playwright)"
 	@echo ""
@@ -43,15 +41,7 @@ help:
 	@echo "  make stress STRESS_ROUNDS=50 STRESS_CLICKS_PER_PAGE=30"
 
 publish:
-	cd ../packages/nuclo-core && bun run build
-	bun run update:stats
-	bun run build
-	rsync -avz --delete ./build/ $(DEPLOY_USER)@$(DEPLOY_HOST):$(DEPLOY_PATH)
-	ssh $(DEPLOY_USER)@$(DEPLOY_HOST) /home/sites/reboot.sh
-	curl -X POST "https://api.cloudflare.com/client/v4/zones/144262096047d02acb7bbb8d6914ca8c/purge_cache" \
-		-H "Authorization: Bearer $(CLOUDFLARE_DUOCRAFT_CACHING_API_KEY)" \
-		-H "Content-Type: application/json" \
-		--data '{"purge_everything":true}'
+	bun run deploy:cloudflare
 
 docker:
 	bun run build
