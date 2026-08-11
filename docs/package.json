@@ -14,7 +14,9 @@
     "stress:front:strict": "bun --cwd ../packages/nuclo-core run build && bun run build && STRESS_STRICT=true bunx playwright test tests/front-stress.spec.ts",
     "stress:front:ui": "bun --cwd ../packages/nuclo-core run build && bun run build && bunx playwright test tests/front-stress.spec.ts --headed --project=stress-chromium",
     "stress:server": "bun tests/server-stress.ts",
-    "preview:macos": "bun run build && ./build/server-bun-darwin-arm64"
+    "preview:macos": "bun run build && ./build/server-bun-darwin-arm64",
+    "deploy:cloudflare": "bun --cwd ../packages/nuclo-core run build && bun run clean && bun run update:stats && tsc && vite build && wrangler pages deploy build/dist",
+    "cf:dev": "bun run build && wrangler pages dev build/dist"
   },
   "dependencies": {
     "nuclo": "workspace:*"
@@ -24,6 +26,7 @@
     "@types/bun": "^1.3.14",
     "@types/node": "^25.9.5",
     "typescript": "~6.0.3",
-    "vite": "^8.2.1"
+    "vite": "^8.2.1",
+    "wrangler": "^4.0.0"
   }
 }

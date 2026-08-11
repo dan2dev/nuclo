@@ -1,10 +1,8 @@
 import 'nuclo/polyfill';
 import 'nuclo';
-import { renderToString, getCssText } from 'nuclo/ssr';
 import { dirname, resolve } from 'node:path';
-import { ssrMatchRoute } from './ssr-app.ts';
-import { routeMap, routeDefinitions } from './route-definitions.ts';
-import { SEO_BASE_URL, generateStructuredData, getMetaForRoute } from './seo.ts';
+import { appFetch, buildProdTransform, type ViteManifest } from './app-handler.ts';
+import { routeDefinitions } from './route-definitions.ts';
 import { registerGlobalStyles } from './styles.ts';
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -18,161 +16,6 @@ registerGlobalStyles();
 // completes the CSS set is stable and getCssText() returns the full sheet.
 for (const def of routeDefinitions) {
   try { await def.loader(); } catch { /* skip broken routes */ }
-}
-
-const htmlTemplate = `<!doctype html>
-<html lang="en" data-theme="light">
-  <head>
-    <meta charset="UTF-8" />
-    <!-- Blocking theme script: runs synchronously before first paint so there
-         is no flash regardless of saved preference or system color scheme. -->
-    <script>!function(){var t=localStorage.getItem('nuclo-theme')||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.setAttribute('data-theme',t);if('IntersectionObserver' in window&&!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches))document.documentElement.setAttribute('data-anim','');}();</script>
-    <link rel="icon" href="/favicon.ico" sizes="48x48" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <!-- Font preconnects -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Site fonts - non-blocking; display=optional prevents CLS -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=optional" onload="this.rel='stylesheet'" />
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=optional" /></noscript>
-
-    {{seoHead}}
-
-    <meta name="theme-color" content="#FF3F00" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Nuclo" />
-    <meta name="referrer" content="strict-origin-when-cross-origin" />
-
-    <!-- Nuclo style system output - prevents layout shift before JS hydrates -->
-    <style id="nuclo-styles">{{nucloStyles}}</style>
-
-    <script type="module" src="/src/main.ts"></script>
-  </head>
-  <body>
-    <div id="app">{{html}}</div>
-  </body>
-</html>`;
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function routeToAbsoluteUrl(pathname: string): string {
-  const normalizedPath = pathname === '/' ? '' : pathname.replace(/\/+$/, '');
-  return `${SEO_BASE_URL.replace(/\/$/, '')}${normalizedPath}`;
-}
-
-function buildSeoHead(route: string, pathname: string, known: boolean): string {
-  const meta = known
-    ? getMetaForRoute(route)
-    : {
-        title: 'Page Not Found - Nuclo',
-        description: 'The requested page could not be found on the Nuclo documentation site.',
-      };
-
-  const pageUrl = known ? (route === 'home' ? SEO_BASE_URL : `${SEO_BASE_URL}${route}`) : routeToAbsoluteUrl(pathname);
-  const robots = known ? 'index, follow' : 'noindex, nofollow';
-  const ogType = meta.type === 'TechArticle' ? 'article' : 'website';
-  const jsonLdSchemas = known
-    ? generateStructuredData(route)
-    : [
-        {
-          '@context': 'https://schema.org',
-          '@type': 'WebPage',
-          name: meta.title,
-          description: meta.description,
-          url: pageUrl,
-          isPartOf: { '@id': `${SEO_BASE_URL}#website` },
-        },
-      ];
-  const jsonLd = JSON.stringify(jsonLdSchemas).replace(/<\//g, '<\\/');
-
-  const tags = [
-    `<title>${escapeHtml(meta.title)}</title>`,
-    `<meta name="title" content="${escapeHtml(meta.title)}" />`,
-    `<meta name="description" content="${escapeHtml(meta.description)}" />`,
-    meta.keywords ? `<meta name="keywords" content="${escapeHtml(meta.keywords)}" />` : '',
-    `<meta name="author" content="Danilo Castro (@dan2dev)" />`,
-    `<meta name="language" content="English" />`,
-    `<meta name="robots" content="${robots}" />`,
-    `<link rel="canonical" href="${escapeHtml(pageUrl)}" />`,
-    `<meta property="og:type" content="${ogType}" />`,
-    `<meta property="og:url" content="${escapeHtml(pageUrl)}" />`,
-    `<meta property="og:title" content="${escapeHtml(meta.title)}" />`,
-    `<meta property="og:description" content="${escapeHtml(meta.description)}" />`,
-    `<meta property="og:image" content="${SEO_BASE_URL}og-image.png" />`,
-    `<meta property="og:image:secure_url" content="${SEO_BASE_URL}og-image.png" />`,
-    '<meta property="og:image:type" content="image/png" />',
-    '<meta property="og:image:width" content="1200" />',
-    '<meta property="og:image:height" content="630" />',
-    '<meta property="og:image:alt" content="Nuclo - a lightweight DOM framework" />',
-    '<meta property="og:site_name" content="Nuclo" />',
-    '<meta property="og:locale" content="en_US" />',
-    '<meta name="twitter:card" content="summary_large_image" />',
-    `<meta name="twitter:url" content="${escapeHtml(pageUrl)}" />`,
-    `<meta name="twitter:title" content="${escapeHtml(meta.title)}" />`,
-    `<meta name="twitter:description" content="${escapeHtml(meta.description)}" />`,
-    `<meta name="twitter:image" content="${SEO_BASE_URL}og-image.png" />`,
-    '<meta name="twitter:image:alt" content="Nuclo - a lightweight DOM framework" />',
-    '<meta name="twitter:creator" content="@dan2dev" />',
-    '<meta name="twitter:site" content="@dan2dev" />',
-    `<script type="application/ld+json">${jsonLd}</script>`,
-  ].filter(Boolean);
-
-  return tags.join('\n    ');
-}
-
-// --- App handler (shared between dev and prod) ---
-
-async function appFetch(
-  req: Request,
-  transformHtml: (template: string, url: string) => Promise<string>,
-): Promise<Response> {
-  const { pathname } = new URL(req.url);
-
-  const route = pathname === '/' ? 'home' : pathname.replace(/^\/|\/+$/g, '');
-  const known = routeMap.has(route);
-  const renderRoute = known ? route : 'home';
-  const status = known ? 200 : 404;
-
-  const element = await ssrMatchRoute(renderRoute);
-  const ssrHtml = renderToString(element);
-
-  // Full atomic stylesheet - base rules first, then screens in theme order.
-  // Atomic classes are shared across pages, so shipping the full sheet costs
-  // little and guarantees no flash of unstyled content on navigation.
-  const nucloStyles = getCssText();
-
-  const seoHead = buildSeoHead(renderRoute, pathname, known);
-  const html = (await transformHtml(htmlTemplate, known ? pathname : '/'))
-    .replace('{{seoHead}}', seoHead)
-    .replace('{{html}}', ssrHtml)
-    .replace('{{nucloStyles}}', nucloStyles);
-
-  const responseHeaders: Record<string, string> = {
-    'Content-Type': 'text/html; charset=utf-8',
-  };
-  if (!known) {
-    responseHeaders['X-Robots-Tag'] = 'noindex, nofollow';
-  }
-
-  return new Response(html, {
-    status,
-    headers: responseHeaders,
-  });
 }
 
 // --- Gzip compression ---
@@ -224,25 +67,8 @@ if (isProd) {
   }
 
   const manifestFile = Bun.file(resolve(distDir, '.vite/manifest.json'));
-
-  const manifest: Record<string, { file: string; css?: string[]; imports?: string[] }> = JSON.parse(
-    await manifestFile.text(),
-  );
-  const entry = manifest['src/main.ts'];
-  const cssLinks = (entry.css ?? [])
-    .map((f) => `<link rel="stylesheet" href="/${f}" />`)
-    .join('\n    ');
-  const preloadLinks = (entry.imports ?? [])
-    .map((key) => manifest[key]?.file)
-    .filter(Boolean)
-    .map((f) => `<link rel="modulepreload" href="/${f}" />`)
-    .join('\n    ');
-  const prodAssets = [cssLinks, preloadLinks, `<script type="module" src="/${entry.file}"></script>`]
-    .filter(Boolean)
-    .join('\n    ');
-
-  const transformHtml = async (html: string) =>
-    html.replace('<script type="module" src="/src/main.ts"></script>', prodAssets);
+  const manifest: ViteManifest = JSON.parse(await manifestFile.text());
+  const transformHtml = buildProdTransform(manifest);
 
   Bun.serve({
     hostname: host,
