@@ -13,15 +13,20 @@ STRESS_SERVER_HOST ?= http://localhost:5173
 STRESS_SERVER_REQUESTS ?= 10000
 STRESS_SERVER_CONCURRENCY ?= 100
 
+PUBLISH_BRANCH ?= main
+
 help:
 	@echo "Available targets:"
-	@echo "  publish    - Refresh version/bundle-size stats and deploy docs to Cloudflare Pages via wrangler"
+	@echo "  publish    - Refresh version/bundle-size stats and deploy docs to Cloudflare Pages Production (branch=$(PUBLISH_BRANCH)) via wrangler"
 	@echo "  docker     - Build docs and start via Docker Compose"
 	@echo "  stress     - Run standard front stress"
 	@echo ""
 	@echo "Cloudflare Pages deploy auth (choose one):"
 	@echo "  wrangler login                                  - interactive OAuth (local use)"
 	@echo "  CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID     - non-interactive (CI), loaded from ../.env if set"
+	@echo ""
+	@echo "Note: deploys land in Production only if PUBLISH_BRANCH matches the"
+	@echo "Cloudflare Pages project's configured Production branch (Settings > Builds & deployments)."
 	@echo ""
 	@echo "Docs front stress (Playwright)"
 	@echo ""
@@ -41,7 +46,7 @@ help:
 	@echo "  make stress STRESS_ROUNDS=50 STRESS_CLICKS_PER_PAGE=30"
 
 publish:
-	bun run deploy:cloudflare
+	bun run deploy:cloudflare -- --branch=$(PUBLISH_BRANCH)
 
 docker:
 	bun run build

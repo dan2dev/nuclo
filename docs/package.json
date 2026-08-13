@@ -15,7 +15,7 @@
     "stress:front:ui": "bun --cwd ../packages/nuclo-core run build && bun run build && bunx playwright test tests/front-stress.spec.ts --headed --project=stress-chromium",
     "stress:server": "bun tests/server-stress.ts",
     "preview:macos": "bun run build && ./build/server-bun-darwin-arm64",
-    "deploy:cloudflare": "bun --cwd ../packages/nuclo-core run build && bun run clean && bun run update:stats && tsc && vite build && wrangler pages deploy build/dist",
+    "deploy:cloudflare": "bun --cwd ../packages/nuclo-core run build && bun run clean && bun run update:stats && tsc && vite build && wrangler pages deploy build/dist --commit-dirty=true",
     "cf:dev": "bun run build && wrangler pages dev build/dist"
   },
   "dependencies": {
