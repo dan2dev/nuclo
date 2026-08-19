@@ -66,16 +66,16 @@
 		"@eslint/js": "^10.0.1",
 		"@eslint/json": "^2.0.1",
 		"@eslint/markdown": "^8.0.3",
-		"@types/node": "^25.9.5",
-		"@vitest/coverage-v8": "4.1.7",
+		"@types/node": "^26.2.0",
+		"@vitest/coverage-v8": "4.1.11",
 		"eslint": "^10.8.1",
-		"globals": "^17.9.0",
+		"globals": "^17.11.0",
 		"jiti": "^2.7.0",
-		"jsdom": "^29.1.1",
+		"jsdom": "^30.0.1",
 		"tsdown": "^0.22.14",
-		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.66.0",
-		"vitest": "^4.1.10"
+		"typescript": "^7.0.2",
+		"typescript-eslint": "^8.67.0",
+		"vitest": "^4.1.11"
 	},
 	"repository": {
 		"type": "git",
