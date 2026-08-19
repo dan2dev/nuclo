@@ -436,6 +436,7 @@ function mintBlock(
 		contextKey = appendKeyPart(appendKeyPart(contextKey, prop), value);
 	}
 	if (name !== undefined && !isValidClassName(name)) {
+		// eslint-disable-next-line no-console
 		console.warn(
 			`[nuclo] css() name ${JSON.stringify(name)} is not a valid CSS class name ` +
 				"(letters, digits, - and _ only, not starting with a digit); falling back to a generated name.",
@@ -455,6 +456,7 @@ function mintBlock(
 	} else {
 		className = exactName ? name : name + "-" + hash(declKey);
 		if (state.atomMeta.has(className)) {
+			// eslint-disable-next-line no-console
 			console.warn(
 				`[nuclo] css() name ${JSON.stringify(className)} is already used by a different style. ` +
 					"Both rules are emitted under the same class, so they will override each other — rename one.",

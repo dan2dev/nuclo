@@ -2,6 +2,9 @@
 	"name": "nuclo-workspace",
 	"private": true,
 	"workspaces": ["packages/*", "docs", "examples/*", "drafts/*"],
+	"scripts": {
+		"lint": "bun run --filter='*' lint"
+	},
 	"overrides": {
 		"nuclo": "workspace:*"
 	}
