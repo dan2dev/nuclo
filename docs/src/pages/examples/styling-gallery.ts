@@ -22,7 +22,7 @@ const { css, cx } = demo;
 const gs = {
   wrap: uiCss({ padding: "8px 0 72px" }),
   headWrap: uiCss({ borderTop: `1px solid ${colors.border}`, paddingTop: "44px", marginTop: "8px" }),
-  kicker: uiCss({ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary, marginBottom: "12px" }),
+  kicker: uiCss({ fontFamily: "ui-monospace, monospace", fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary, marginBottom: "12px" }),
   title: uiCss({ fontSize: "2.2rem", fontWeight: "800", letterSpacing: "0", lineHeight: "1.1", marginBottom: "14px", "@media (max-width: 600px)": { fontSize: "1.7rem" } }),
   lead: uiCss({ maxWidth: "620px", fontSize: "1.02rem", color: colors.textDim, lineHeight: "1.7", marginBottom: "6px" }),
   grid: uiCss({ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "18px", padding: "32px 0 0", "@media (max-width: 980px)": { gridTemplateColumns: "1fr" } }),

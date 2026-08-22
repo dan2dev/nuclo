@@ -1,7 +1,7 @@
 import { css, colors } from "../../styles.ts";
 import { animations } from "../../styles/animations.ts";
 
-const mono = "'JetBrains Mono', monospace";
+const mono = "ui-monospace, monospace";
 
 const contentTypography = {
   "& h1": { raw: { "font-size": "2.85rem", "font-weight": "800", "margin-bottom": "14px", "line-height": "1.06", "letter-spacing": "0" } },

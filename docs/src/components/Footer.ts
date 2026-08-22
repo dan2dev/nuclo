@@ -16,9 +16,9 @@ export function Footer() {
 
   const tagline = css("components-footer-tagline", { fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65" });
 
-  const builtWith = css("components-footer-builtWith", { display: "inline-flex", alignItems: "center", gap: "7px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", color: colors.textMuted, padding: "6px 12px", borderRadius: "999px", backgroundColor: colors.bgCard });
+  const builtWith = css("components-footer-builtWith", { display: "inline-flex", alignItems: "center", gap: "7px", fontFamily: "ui-monospace, monospace", fontSize: "0.7rem", color: colors.textMuted, padding: "6px 12px", borderRadius: "999px", backgroundColor: colors.bgCard });
 
-  const colTitle = css("components-footer-colTitle", { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "14px" });
+  const colTitle = css("components-footer-colTitle", { fontFamily: "ui-monospace, monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "14px" });
 
   const colLinks = css("components-footer-colLinks", { display: "flex", flexDirection: "column", gap: "4px", alignItems: "flex-start" });
 
@@ -28,7 +28,7 @@ export function Footer() {
 
   const fineprint = css("components-footer-fineprint", { fontSize: "0.78rem", color: colors.textMuted });
 
-  const versionBadge = css("components-footer-versionBadge", { display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", fontWeight: "800", color: colors.primary, padding: "4px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08 });
+  const versionBadge = css("components-footer-versionBadge", { display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "ui-monospace, monospace", fontSize: "0.7rem", fontWeight: "800", color: colors.primary, padding: "4px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08 });
 
   function RouteLink(label: string, route: string) {
     return span(linkStyle, label, { onClick: () => setRoute(route) });
