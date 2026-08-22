@@ -12,7 +12,7 @@ export function registerGlobalStyles() {
   globalStyle("*::before", { raw: {"box-sizing": "border-box", "margin": "0", "padding": "0"} });
   globalStyle("*::after", { raw: {"box-sizing": "border-box", "margin": "0", "padding": "0"} });
   globalStyle("html", { raw: {"font-size": "16px", "scroll-behavior": "smooth"} });
-  globalStyle("body", { raw: {"font-family": "'Space Grotesk', system-ui, sans-serif", "background-color": "var(--c-bg)", "color": "var(--c-text)", "line-height": "1.65", "-webkit-font-smoothing": "antialiased"} });
+  globalStyle("body", { raw: {"font-family": "system-ui, sans-serif", "background-color": "var(--c-bg)", "color": "var(--c-text)", "line-height": "1.65", "-webkit-font-smoothing": "antialiased"} });
   globalStyle("a", { raw: {"color": "inherit", "text-decoration": "none"} });
   globalStyle("button", { raw: {"font-family": "inherit", "cursor": "pointer", "border": "none", "background": "none"} });
   globalStyle('a, button, input, select, textarea, summary, [role="button"], [role="tab"]', { raw: {"-webkit-tap-highlight-color": "transparent"} });

@@ -1,8 +1,8 @@
 import { css, colors } from "../../styles.ts";
 import { animations } from "../../styles/animations.ts";
 
-const mono = "'JetBrains Mono', monospace";
-const sans = "'Space Grotesk', system-ui, sans-serif";
+const mono = "ui-monospace, monospace";
+const sans = "system-ui, sans-serif";
 
 export const es = {
   heroSection: css("pages-examples-styles-heroSection", { padding: "40px 0 8px", "@media (max-width: 600px)": { padding: "26px 0 8px" } }),

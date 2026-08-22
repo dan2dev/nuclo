@@ -15,7 +15,7 @@ const wrap = css("components-tabblock-wrap", { display: "flex", flexDirection: "
 
 const tabsBar = css("components-tabblock-tabsBar", { display: "flex", gap: "4px", borderBottom: `1px solid ${colors.border}` });
 
-const tabBtn = css("components-tabblock-tabBtn", { fontSize: "0.8rem", fontWeight: "700", color: colors.textMuted, padding: "8px 12px", borderBottom: "2px solid transparent", borderRadius: "6px 6px 0 0", cursor: "pointer", backgroundColor: "transparent", border: "none", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.textDim, backgroundColor: colors.bgSecondary } });
+const tabBtn = css("components-tabblock-tabBtn", { fontSize: "0.8rem", fontWeight: "700", color: colors.textMuted, padding: "8px 12px", borderBottom: "2px solid transparent", borderRadius: "6px 6px 0 0", cursor: "pointer", backgroundColor: "transparent", border: "none", fontFamily: "system-ui, sans-serif", hover: { color: colors.textDim, backgroundColor: colors.bgSecondary } });
 
 const tabBtnActive = css("components-tabblock-tabBtnActive", { color: colors.primary, borderBottomColor: colors.primary, backgroundColor: colors.primaryAlpha08, hover: { color: colors.primary } });
 

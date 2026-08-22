@@ -17,7 +17,7 @@ function TerminalCommand(command: string) {
 
   return div(
     s.installCmd,
-    span(css("docs-terminal-prompt", { color: colors.textMuted, fontFamily: "'JetBrains Mono', monospace" }), "$"),
+    span(css("docs-terminal-prompt", { color: colors.textMuted, fontFamily: "ui-monospace, monospace" }), "$"),
     span(command),
     button(
       css("docs-terminal-copy-button", { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "6px", color: colors.textMuted, backgroundColor: "transparent", border: "none", cursor: "pointer", hover: { color: colors.primary, backgroundColor: colors.primaryAlpha08 } }),

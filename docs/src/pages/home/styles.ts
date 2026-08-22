@@ -10,16 +10,16 @@ export const hs = {
   pipe: css("pages-home-styles-pipe", { display: "grid", gridTemplateColumns: "1fr", gap: "0", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 54px 1fr 54px 1fr", alignItems: "stretch" } }),
   pipeNode: css("pages-home-styles-pipeNode", { position: "relative", backgroundColor: colors.bgCard, borderRadius: "16px", padding: "26px 26px 24px", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 18px 44px -24px var(--c-primary-glow)" } }),
   pipeLink: css("pages-home-styles-pipeLink", { position: "relative", minHeight: "44px", "&::before": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "repeating-linear-gradient(180deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "linear-gradient(180deg, transparent, var(--c-primary), transparent)", backgroundSize: "100% 55%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRunY} 2.3s ease-in-out infinite` }, "@media (min-width: 901px)": { minHeight: "0", "&::before": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "repeating-linear-gradient(90deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "linear-gradient(90deg, transparent, var(--c-primary), transparent)", backgroundSize: "55% 100%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRun} 2.3s ease-in-out infinite` } } }),
-  pipeKicker: css("pages-home-styles-pipeKicker", { display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary }),
+  pipeKicker: css("pages-home-styles-pipeKicker", { display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: "ui-monospace, monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary }),
   pipeTitle: css("pages-home-styles-pipeTitle", { fontSize: "1.02rem", fontWeight: "700", marginBottom: "8px" }),
   pipeDesc: css("pages-home-styles-pipeDesc", { fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65", marginBottom: "16px" }),
-  pipeCode: css("pages-home-styles-pipeCode", { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", lineHeight: "1.6", backgroundColor: colors.bgCode, borderRadius: "10px", padding: "12px 14px", overflowX: "auto", whiteSpace: "pre" }),
+  pipeCode: css("pages-home-styles-pipeCode", { fontFamily: "ui-monospace, monospace", fontSize: "0.78rem", lineHeight: "1.6", backgroundColor: colors.bgCode, borderRadius: "10px", padding: "12px 14px", overflowX: "auto", whiteSpace: "pre" }),
   cmpGrid: css("pages-home-styles-cmpGrid", { display: "grid", gridTemplateColumns: "1fr", gap: "16px", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 1fr 1fr", gap: "18px" } }),
   cmpCol: css("pages-home-styles-cmpCol", { backgroundColor: colors.bgCard, borderRadius: "16px", padding: "28px 26px", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)" } }),
   cmpColFeatured: css("pages-home-styles-cmpColFeatured", { backgroundColor: colors.bgSecondary, boxShadow: "0 26px 64px -32px var(--c-primary-glow)", hover: { boxShadow: "0 30px 72px -30px var(--c-primary-glow)" } }),
   cmpHead: css("pages-home-styles-cmpHead", { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "6px" }),
   cmpName: css("pages-home-styles-cmpName", { fontSize: "1.02rem", fontWeight: "700" }),
-  cmpSub: css("pages-home-styles-cmpSub", { fontSize: "0.8rem", color: colors.textMuted, marginBottom: "20px", fontFamily: "'JetBrains Mono', monospace" }),
+  cmpSub: css("pages-home-styles-cmpSub", { fontSize: "0.8rem", color: colors.textMuted, marginBottom: "20px", fontFamily: "ui-monospace, monospace" }),
   cmpLi: css("pages-home-styles-cmpLi", { display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.6", padding: "7px 0", "& svg": { flexShrink: 0, marginTop: "4px" } }),
   cmpLiGood: css("pages-home-styles-cmpLiGood", { color: colors.text, "& svg": { color: colors.primary } }),
   cmpLiDim: css("pages-home-styles-cmpLiDim", { "& svg": { color: colors.textMuted } }),
@@ -68,16 +68,16 @@ export const hs = {
 
   heroDot: css("pages-home-styles-heroDot", { width: "10px", height: "10px", borderRadius: "50%", flexShrink: 0 }),
 
-  heroDemoFilename: css("pages-home-styles-heroDemoFilename", { flex: "1", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.75rem", color: colors.textMuted }),
+  heroDemoFilename: css("pages-home-styles-heroDemoFilename", { flex: "1", textAlign: "center", fontFamily: "ui-monospace, monospace", fontSize: "0.75rem", color: colors.textMuted }),
 
   demoTabBar: css("pages-home-styles-demoTabBar", { display: "flex", borderBottom: `1px solid ${colors.border}`, padding: "0 16px", backgroundColor: colors.bgCard }),
 
-  demoTabBtn: css("pages-home-styles-demoTabBtn", { fontSize: "0.8rem", fontWeight: "700", color: colors.textMuted, padding: "10px 14px", borderBottom: "2px solid transparent", cursor: "pointer", backgroundColor: "transparent", border: "none", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.textDim } }),
+  demoTabBtn: css("pages-home-styles-demoTabBtn", { fontSize: "0.8rem", fontWeight: "700", color: colors.textMuted, padding: "10px 14px", borderBottom: "2px solid transparent", cursor: "pointer", backgroundColor: "transparent", border: "none", fontFamily: "system-ui, sans-serif", hover: { color: colors.textDim } }),
 
 
   demoPreviewPane: css("pages-home-styles-demoPreviewPane", { padding: "36px 24px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "250px", backgroundColor: colors.bgCard }),
 
-  demoCodePane: css("pages-home-styles-demoCodePane", { padding: "20px 22px", backgroundColor: "var(--terminal-bg)", color: "var(--terminal-text)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8rem", lineHeight: "1.7", overflowX: "auto", minHeight: "250px" }),
+  demoCodePane: css("pages-home-styles-demoCodePane", { padding: "20px 22px", backgroundColor: "var(--terminal-bg)", color: "var(--terminal-text)", fontFamily: "ui-monospace, monospace", fontSize: "0.8rem", lineHeight: "1.7", overflowX: "auto", minHeight: "250px" }),
 
   // Philosophy section
   philosophySection: css("pages-home-styles-philosophySection", { position: "relative", overflow: "hidden", padding: "64px 0", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, medium: { padding: "96px 0" } }),
@@ -92,7 +92,7 @@ export const hs = {
 
   philosophyPoint: css("pages-home-styles-philosophyPoint", { display: "flex", gap: "16px", alignItems: "flex-start", padding: "16px 18px", borderRadius: "8px", transition: "transform 0.2s ease", hover: { backgroundColor: colors.bgCard, transform: "translateX(4px)" } }),
 
-  philosophyPointIcon: css("pages-home-styles-philosophyPointIcon", { width: "38px", height: "38px", borderRadius: "8px", backgroundColor: colors.primaryAlpha08, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", fontWeight: "800", color: colors.primary, flexShrink: 0 }),
+  philosophyPointIcon: css("pages-home-styles-philosophyPointIcon", { width: "38px", height: "38px", borderRadius: "8px", backgroundColor: colors.primaryAlpha08, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "ui-monospace, monospace", fontSize: "0.78rem", fontWeight: "800", color: colors.primary, flexShrink: 0 }),
 
   philosophyPointTitle: css("pages-home-styles-philosophyPointTitle", { fontSize: "0.97rem", fontWeight: "600", marginBottom: "4px" }),
 
@@ -112,7 +112,7 @@ export const hs = {
 
   featureIcon: css("pages-home-styles-featureIcon", { width: "42px", height: "42px", borderRadius: "12px", backgroundColor: colors.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 14px 28px -20px var(--c-primary-glow)" }),
 
-  featureKicker: css("pages-home-styles-featureKicker", { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "6px" }),
+  featureKicker: css("pages-home-styles-featureKicker", { fontFamily: "ui-monospace, monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "6px" }),
 
   // Comparison section
   comparisonSection: css("pages-home-styles-comparisonSection", { position: "relative", overflow: "hidden", padding: "64px 0", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, medium: { padding: "96px 0" } }),
@@ -126,9 +126,9 @@ export const hs = {
 
   benchHead: css("pages-home-styles-benchHead", { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "26px" }),
 
-  benchKicker: css("pages-home-styles-benchKicker", { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary }),
+  benchKicker: css("pages-home-styles-benchKicker", { fontFamily: "ui-monospace, monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary }),
 
-  benchHint: css("pages-home-styles-benchHint", { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.68rem", color: colors.textMuted }),
+  benchHint: css("pages-home-styles-benchHint", { fontFamily: "ui-monospace, monospace", fontSize: "0.68rem", color: colors.textMuted }),
 
   benchRows: css("pages-home-styles-benchRows", { display: "flex", flexDirection: "column", gap: "14px" }),
 
@@ -138,7 +138,7 @@ export const hs = {
 
   benchNameFeatured: css("pages-home-styles-benchNameFeatured", { color: colors.text, fontWeight: "700" }),
 
-  benchVersion: css("pages-home-styles-benchVersion", { fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", fontWeight: "400", color: colors.textMuted, marginLeft: "7px" }),
+  benchVersion: css("pages-home-styles-benchVersion", { fontFamily: "ui-monospace, monospace", fontSize: "0.7rem", fontWeight: "400", color: colors.textMuted, marginLeft: "7px" }),
 
   benchTrack: css("pages-home-styles-benchTrack", { position: "relative", height: "32px" }),
 
@@ -146,7 +146,7 @@ export const hs = {
 
   benchFillFeatured: css("pages-home-styles-benchFillFeatured", { backgroundColor: colors.primary, boxShadow: "0 14px 30px -16px var(--c-primary-glow)" }),
 
-  benchValue: css("pages-home-styles-benchValue", { position: "absolute", right: "13px", top: "50%", transform: "translateY(-50%)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.72rem", fontWeight: "700", color: colors.textDim, fontVariantNumeric: "tabular-nums" }),
+  benchValue: css("pages-home-styles-benchValue", { position: "absolute", right: "13px", top: "50%", transform: "translateY(-50%)", fontFamily: "ui-monospace, monospace", fontSize: "0.72rem", fontWeight: "700", color: colors.textDim, fontVariantNumeric: "tabular-nums" }),
 
   benchValueFeatured: css("pages-home-styles-benchValueFeatured", { color: "#fff" }),
 
@@ -170,7 +170,7 @@ export const hs = {
 
   teaserDemoPane: css("pages-home-styles-teaserDemoPane", { padding: "32px 24px", minHeight: "200px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.bgCode }),
 
-  teaserCodePane: css("pages-home-styles-teaserCodePane", { padding: "16px 20px", backgroundColor: colors.bgCode, fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem", lineHeight: "1.7", overflowX: "auto" }),
+  teaserCodePane: css("pages-home-styles-teaserCodePane", { padding: "16px 20px", backgroundColor: colors.bgCode, fontFamily: "ui-monospace, monospace", fontSize: "0.78rem", lineHeight: "1.7", overflowX: "auto" }),
 
   // CTA section
   ctaSection: css("pages-home-styles-ctaSection", { padding: "72px 0 88px", textAlign: "center", medium: { padding: "104px 0 120px" } }),

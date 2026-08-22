@@ -53,7 +53,7 @@ export const s = {
 
   section: css("styles-section", { padding: '96px 0' }),
 
-  sectionLabel: css("styles-sectionLabel", { display: 'inline-flex', alignItems: 'center', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: '700', color: colors.primary, letterSpacing: '0', textTransform: 'uppercase', marginBottom: '14px' }),
+  sectionLabel: css("styles-sectionLabel", { display: 'inline-flex', alignItems: 'center', fontFamily: "ui-monospace, monospace", fontSize: '0.72rem', fontWeight: '700', color: colors.primary, letterSpacing: '0', textTransform: 'uppercase', marginBottom: '14px' }),
 
   sectionTitle: css("styles-sectionTitle", { fontSize: '2rem', fontWeight: '800', lineHeight: '1.12', letterSpacing: '0', marginBottom: '16px', medium: { fontSize: '2.55rem' } }),
 
@@ -67,15 +67,15 @@ export const s = {
 
   btnSecondary: css("styles-btnSecondary", { backgroundColor: colors.bgSecondary, color: colors.text, boxShadow: '0 10px 26px -24px rgba(0,0,0,0.28)', hover: { color: colors.primary, boxShadow: '0 16px 34px -26px var(--c-primary-glow)' } }),
 
-  installCmd: css("styles-installCmd", { display: 'inline-flex', alignItems: 'center', gap: '10px', backgroundColor: colors.bgSecondary, borderRadius: '14px', padding: '11px 14px 11px 16px', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.875rem', color: colors.text, boxShadow: 'var(--c-shadow)' }),
+  installCmd: css("styles-installCmd", { display: 'inline-flex', alignItems: 'center', gap: '10px', backgroundColor: colors.bgSecondary, borderRadius: '14px', padding: '11px 14px 11px 16px', fontFamily: "ui-monospace, monospace", fontSize: '0.875rem', color: colors.text, boxShadow: 'var(--c-shadow)' }),
 
   codeBlockFrame: css("styles-codeBlockFrame", { backgroundColor: colors.bgCode, borderRadius: '14px', overflow: 'hidden', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }),
 
   codeBlockHeader: css("styles-codeBlockHeader", { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', backgroundColor: colors.bgSecondary }),
 
-  codeBlockFilename: css("styles-codeBlockFilename", { fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: colors.textMuted }),
+  codeBlockFilename: css("styles-codeBlockFilename", { fontFamily: "ui-monospace, monospace", fontSize: '0.75rem', color: colors.textMuted }),
 
-  codeBlockBody: css("styles-codeBlockBody", { padding: '20px 22px', overflow: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8125rem', lineHeight: '1.7' }),
+  codeBlockBody: css("styles-codeBlockBody", { padding: '20px 22px', overflow: 'auto', fontFamily: "ui-monospace, monospace", fontSize: '0.8125rem', lineHeight: '1.7' }),
 
   demoCard: css("styles-demoCard", { backgroundColor: colors.bgCard, borderRadius: '14px', overflow: 'hidden', boxShadow: 'var(--c-shadow)' }),
 
@@ -95,7 +95,7 @@ export const s = {
 
   cardHeadRow: css("styles-cardHeadRow", { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '16px' }),
 
-  cardCornerBadge: css("styles-cardCornerBadge", { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: '30px', height: '26px', padding: '0 9px', borderRadius: '9999px', backgroundColor: colors.primaryAlpha08, color: colors.primary, fontFamily: "'JetBrains Mono', monospace", fontSize: '0.68rem', fontWeight: '800', letterSpacing: '0' }),
+  cardCornerBadge: css("styles-cardCornerBadge", { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: '30px', height: '26px', padding: '0 9px', borderRadius: '9999px', backgroundColor: colors.primaryAlpha08, color: colors.primary, fontFamily: "ui-monospace, monospace", fontSize: '0.68rem', fontWeight: '800', letterSpacing: '0' }),
 
   featureTitle: css("styles-featureTitle", { fontSize: '1.05rem', fontWeight: '600', marginBottom: '10px' }),
 
@@ -115,5 +115,5 @@ export const s = {
 
   statLabel: css("styles-statLabel", { fontSize: '0.8rem', color: colors.textMuted }),
 
-  codeInline: css("styles-codeInline", { fontFamily: "'JetBrains Mono', monospace", fontSize: '0.82em', backgroundColor: colors.bgLight, padding: '1px 5px', borderRadius: '3px', color: colors.primaryHover }),
+  codeInline: css("styles-codeInline", { fontFamily: "ui-monospace, monospace", fontSize: '0.82em', backgroundColor: colors.bgLight, padding: '1px 5px', borderRadius: '3px', color: colors.primaryHover }),
 };

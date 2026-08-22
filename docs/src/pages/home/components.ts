@@ -49,7 +49,7 @@ function InstallCommand() {
 
   return div(
     s.installCmd,
-    span(css("pages-home-components-components-inline-2", { color: colors.textMuted, fontFamily: "'JetBrains Mono', monospace" }), "$"),
+    span(css("pages-home-components-components-inline-2", { color: colors.textMuted, fontFamily: "ui-monospace, monospace" }), "$"),
     span(INSTALL_CMD),
     button(
       hs.heroCopyBtn,
@@ -85,12 +85,12 @@ function HeroDemoCard() {
       div(
         css("pages-home-components-components-inline-6", { display: "flex", gap: "10px", justifyContent: "center" }),
         button(
-          css("pages-home-components-components-inline-7", { padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
+          css("pages-home-components-components-inline-7", { padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, fontFamily: "system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
           "−",
           { onClick: (event) => changeCount(event, -1) },
         ),
         button(
-          css("pages-home-components-components-inline-8", { padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid transparent`, color: "#fff", backgroundColor: colors.primary, fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { backgroundColor: colors.primaryHover } }),
+          css("pages-home-components-components-inline-8", { padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid transparent`, color: "#fff", backgroundColor: colors.primary, fontFamily: "system-ui, sans-serif", hover: { backgroundColor: colors.primaryHover } }),
           "+",
           { onClick: (event) => changeCount(event, 1) },
         ),
@@ -548,7 +548,7 @@ export function ExamplesTeaserSection() {
       div(
         css("pages-home-components-components-inline-24", { display: "flex", gap: "8px", marginBottom: "10px" }),
         input(
-          css("pages-home-components-components-inline-25", { flex: "1", padding: "9px 13px", borderRadius: "6px", border: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgSecondary, color: colors.text, fontFamily: "'Space Grotesk', system-ui, sans-serif", fontSize: "0.875rem", outline: "none", marginBottom: "10px", width: "100%", focus: { borderColor: colors.primary } }),
+          css("pages-home-components-components-inline-25", { flex: "1", padding: "9px 13px", borderRadius: "6px", border: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgSecondary, color: colors.text, fontFamily: "system-ui, sans-serif", fontSize: "0.875rem", outline: "none", marginBottom: "10px", width: "100%", focus: { borderColor: colors.primary } }),
           {
             type: "text",
             placeholder: "Add a task…",

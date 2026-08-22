@@ -140,7 +140,7 @@ export function CodeBlock({ filename, code, showCopy = true, preTokenized = fals
 
   const tokenized = preTokenized ? code : highlightCode(code);
 
-  const copyBtn = css("components-codeblock-copyBtn", { display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: "500", color: colors.textMuted, padding: "4px 10px", borderRadius: "5px", border: `1px solid transparent`, backgroundColor: "transparent", fontFamily: "'Space Grotesk', system-ui, sans-serif", hover: { color: colors.primary, borderColor: colors.borderPrimary, backgroundColor: colors.primaryAlpha08 } });
+  const copyBtn = css("components-codeblock-copyBtn", { display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: "500", color: colors.textMuted, padding: "4px 10px", borderRadius: "5px", border: `1px solid transparent`, backgroundColor: "transparent", fontFamily: "system-ui, sans-serif", hover: { color: colors.primary, borderColor: colors.borderPrimary, backgroundColor: colors.primaryAlpha08 } });
   const preStyle = css("components-codeblock-preStyle", { margin: "0", whiteSpace: "pre", minWidth: "max-content" });
 
   function handleCopy() {
