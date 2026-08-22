@@ -1,43 +1,39 @@
 import js from "@eslint/js";
 import globals from "globals";
-import tseslint from "typescript-eslint";
 import json from "@eslint/json";
 import markdown from "@eslint/markdown";
 import css from "@eslint/css";
 
+// NOTE: TypeScript files are intentionally excluded from linting below.
+// typescript-eslint does not yet support TypeScript 7.0 (native/Go compiler);
+// see https://github.com/typescript-eslint/typescript-eslint/issues/10940.
+// Re-enable TS linting once that lands (or reintroduce typescript-eslint
+// with a pinned TS 6.x devDependency in the meantime).
 export default [
   {
-    ignores: ["dist/**", "coverage/**", "**/*.min.js", "README.md", ".claude/**", "src/**/*.md", "test/**/*.md"],
+    ignores: [
+      "dist/**",
+      "coverage/**",
+      "**/*.min.js",
+      "README.md",
+      ".claude/**",
+      "src/**/*.md",
+      "test/**/*.md",
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.mts",
+      "**/*.cts",
+      "**/*.d.ts",
+    ],
   },
   {
-    files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
+    files: ["**/*.{js,mjs,cjs,jsx}"],
     ...js.configs.recommended,
     languageOptions: {
       globals: {
         ...globals.browser,
         ...globals.node,
       },
-    },
-  },
-  ...tseslint.configs.recommended.map((config) =>
-    config.files ? config : { ...config, files: ["**/*.{js,mjs,cjs,ts,mts,cts}"] },
-  ),
-  {
-    files: ["**/*.ts", "**/*.d.ts"],
-    rules: {
-      "no-undef": "off",
-    },
-  },
-  {
-    files: ["test/**/*.{ts,tsx,js,jsx}", "types/**/*.{ts,d.ts}"],
-    rules: {
-      "@typescript-eslint/triple-slash-reference": "off",
-    },
-  },
-  {
-    files: ["test/helpers/**/*.{ts,tsx,js,jsx}"],
-    rules: {
-      "@typescript-eslint/ban-ts-comment": "off",
     },
   },
   {
@@ -61,11 +57,8 @@ export default [
   },
   ...markdown.configs.recommended,
   {
-    files: ["**/*.md", "**/*.md/*.js", "**/*.md/*.ts"],
+    files: ["**/*.md", "**/*.md/*.js"],
     rules: {
-      "@typescript-eslint/no-require-imports": "off",
-      "@typescript-eslint/no-unused-expressions": "off",
-      "@typescript-eslint/no-unused-vars": "off",
       "no-unused-expressions": "off",
       "no-unused-vars": "off",
     },
@@ -73,8 +66,6 @@ export default [
   {
     files: ["**/*.json", "**/*.jsonc", "**/*.json5"],
     rules: {
-      "@typescript-eslint/no-unused-expressions": "off",
-      "@typescript-eslint/no-unused-vars": "off",
       "no-unused-expressions": "off",
       "no-unused-vars": "off",
     },
@@ -84,30 +75,13 @@ export default [
     ...css.configs.recommended,
   },
   {
-    files: ["**/*.{ts,mts,cts,tsx}", "**/*.d.ts"],
+    files: ["test/**/*.{js,jsx}"],
     rules: {
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": ["warn", {
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_",
-        "caughtErrorsIgnorePattern": "^_",
-      }],
-      "@typescript-eslint/no-unused-expressions": "warn",
-      "@typescript-eslint/no-unsafe-function-type": "warn",
-      "no-unused-vars": "off",
-      "no-undef": "off",
-      "no-console": "warn",
-    },
-  },
-  {
-    files: ["test/**/*.{ts,tsx,js,jsx}"],
-    rules: {
-      "@typescript-eslint/no-explicit-any": "off",
       "no-console": "off",
     },
   },
   {
-    files: ["bench/**/*.{ts,tsx,js,jsx,mts,cts}"],
+    files: ["bench/**/*.{js,jsx,mjs,cjs}"],
     rules: {
       "no-console": "off",
     },
