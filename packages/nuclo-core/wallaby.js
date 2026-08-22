@@ -1,4 +1,4 @@
-module.exports = function (_wallaby) { // eslint-disable-line @typescript-eslint/no-unused-vars
+module.exports = function (_wallaby) {
   return {
     files: [
       'src/**/*.ts',
@@ -21,7 +21,7 @@ module.exports = function (_wallaby) { // eslint-disable-line @typescript-eslint
       path: './node_modules/vitest'
     },
     setup: function () {
-      const { JSDOM } = require('jsdom'); // eslint-disable-line @typescript-eslint/no-require-imports
+      const { JSDOM } = require('jsdom');
       const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
         url: 'http://localhost',
         pretendToBeVisual: true,
