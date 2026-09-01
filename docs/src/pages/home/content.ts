@@ -204,7 +204,7 @@ export const BENCHMARK_NOTE =
   "Duration slowdown vs. the fastest measured implementation - weighted geometric mean of all keyed benchmarks.";
 
 export const BENCHMARK_SOURCE_URL =
-  "https://krausest.github.io/js-framework-benchmark/";
+  "https://krausest.github.io/js-framework-benchmark/2026/chrome152.html";
 
 export const BENCHMARK_SOURCE_LABEL = "js-framework-benchmark · keyed";
 
@@ -215,17 +215,17 @@ export const BENCHMARK_ENTRIES: {
   score: number;
   featured?: boolean;
 }[] = [
-  { name: "Solid",    version: "1.9.3",  score: 1.12 },
-  { name: "Svelte",   version: "5.42.1", score: 1.15 },
-  { name: "Vue",      version: "3.6.0",  score: 1.28 },
-  { name: "Nuclo",    version: "0.2.6",  score: 1.36, featured: true },
+  { name: "Nuclo",    version: "0.2.24", score: 1.12, featured: true },
+  { name: "Solid",    version: "1.9.3",  score: 1.13 },
+  { name: "Svelte",   version: "5.42.1", score: 1.17 },
+  { name: "Vue",      version: "3.5.39", score: 1.31 },
   { name: "Riot",     version: "10.1.2", score: 1.54 },
-  { name: "React",    version: "19.2.0", score: 1.57 },
-  { name: "Angular",  version: "22.0.0", score: 1.64 },
-  { name: "Stencil",  version: "4.23.0", score: 1.79 },
-  { name: "Ember",    version: "6.12.0", score: 2.28 },
-  { name: "Knockout", version: "3.5.1",  score: 2.34 },
-  { name: "Qwik",     version: "1.11.0", score: 3.44 },
+  { name: "React",    version: "19.2.0", score: 1.58 },
+  { name: "Angular",  version: "22.0.0", score: 1.58 },
+  { name: "Stencil",  version: "4.23.0", score: 1.81 },
+  { name: "Ember",    version: "7.3.0-alpha.5", score: 2.06 },
+  { name: "Knockout", version: "3.5.1",  score: 2.26 },
+  { name: "Qwik",     version: "1.11.0", score: 3.29 },
 ];
 
 // ── CTA ─────────────────────────────────────────────────────────────────────
