@@ -22,6 +22,20 @@ import {
   unregisterConditionalNode,
 } from '../../src/update/registry';
 import { updateConditionalElements } from '../../src/update/conditional';
+import * as factory from '../../src/element/factory';
+
+// vi.mock is hoisted above these imports by Vitest regardless of where it's
+// written, so it must live at the module's top level — nesting it inside an
+// it()/describe() throws in newer Vitest versions. Wrap the two functions as
+// spies here and set per-test throwing behavior with mockImplementationOnce.
+vi.mock('../../src/element/factory', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../../src/element/factory')>();
+  return {
+    ...original,
+    createSvgElementWithModifiers: vi.fn(original.createSvgElementWithModifiers),
+    createHtmlElementWithModifiers: vi.fn(original.createHtmlElementWithModifiers),
+  };
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -29,16 +43,10 @@ afterEach(() => {
 
 // ── Unit: SVG fallback when createSvgElementWithModifiers throws ───────────────
 describe('conditionalUpdater – SVG fallback (lines 31, 37)', () => {
-  it('falls back to a plain SVG element when modifiers throw during creation', async () => {
-    // Mock createSvgElementWithModifiers to throw so the catch block runs
-    vi.mock('../../src/element/factory', async (importOriginal) => {
-      const original = await importOriginal<typeof import('../../src/element/factory')>();
-      return {
-        ...original,
-        createSvgElementWithModifiers: () => {
-          throw new Error('forced SVG modifier error');
-        },
-      };
+  it('falls back to a plain SVG element when modifiers throw during creation', () => {
+    // Force createSvgElementWithModifiers to throw so the catch block runs
+    vi.mocked(factory.createSvgElementWithModifiers).mockImplementationOnce(() => {
+      throw new Error('forced SVG modifier error');
     });
 
     const comment = document.createComment('conditional-rect-hidden');
@@ -55,21 +63,14 @@ describe('conditionalUpdater – SVG fallback (lines 31, 37)', () => {
     expect(() => updateConditionalElements()).not.toThrow();
 
     comment.parentNode?.removeChild(comment);
-    vi.resetModules();
   });
 });
 
 // ── Unit: HTML fallback when createHtmlElementWithModifiers throws ─────────────
 describe('conditionalUpdater – HTML fallback', () => {
-  it('falls back to a plain element when modifiers throw during creation', async () => {
-    vi.mock('../../src/element/factory', async (importOriginal) => {
-      const original = await importOriginal<typeof import('../../src/element/factory')>();
-      return {
-        ...original,
-        createHtmlElementWithModifiers: () => {
-          throw new Error('forced HTML modifier error');
-        },
-      };
+  it('falls back to a plain element when modifiers throw during creation', () => {
+    vi.mocked(factory.createHtmlElementWithModifiers).mockImplementationOnce(() => {
+      throw new Error('forced HTML modifier error');
     });
 
     const comment = document.createComment('conditional-div-hidden');
@@ -85,7 +86,6 @@ describe('conditionalUpdater – HTML fallback', () => {
     expect(() => updateConditionalElements()).not.toThrow();
 
     comment.parentNode?.removeChild(comment);
-    vi.resetModules();
   });
 });
 

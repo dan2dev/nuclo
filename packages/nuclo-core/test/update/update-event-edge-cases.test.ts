@@ -62,14 +62,12 @@ describe("events utility edge cases", () => {
     });
 
     it("should work in non-browser environment (no document)", () => {
-      const originalDocument = global.document;
-      // @ts-expect-error - testing non-browser
-      global.document = undefined;
+      vi.stubGlobal("document", undefined);
 
       // Should not throw
       dispatchGlobalUpdateEvent();
 
-      global.document = originalDocument;
+      vi.unstubAllGlobals();
     });
 
     it("should create bubbling events", () => {

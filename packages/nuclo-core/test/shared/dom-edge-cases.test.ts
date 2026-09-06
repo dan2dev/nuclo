@@ -70,14 +70,12 @@ describe("dom utility edge cases", () => {
     });
 
     it("should return null in non-browser environment", () => {
-      const originalDocument = global.document;
-      // @ts-expect-error - testing non-browser
-      global.document = undefined;
-      
+      vi.stubGlobal("document", undefined);
+
       const comment = createComment("test");
       expect(comment).toBeNull();
-      
-      global.document = originalDocument;
+
+      vi.unstubAllGlobals();
     });
   });
 
@@ -95,14 +93,12 @@ describe("dom utility edge cases", () => {
     });
 
     it("should return null when document is unavailable", () => {
-      const originalDocument = global.document;
-      // @ts-expect-error - testing non-browser
-      global.document = undefined;
+      vi.stubGlobal("document", undefined);
 
       const comment = createConditionalComment("div");
       expect(comment).toBeNull();
 
-      global.document = originalDocument;
+      vi.unstubAllGlobals();
     });
   });
 
