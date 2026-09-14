@@ -19,6 +19,7 @@
 
 import { logError } from "../shared/errors";
 import { isBrowser } from "../shared/environment";
+import { registerMount, registerUnmount } from "./lifecycle";
 
 type EventListenerOptions = boolean | AddEventListenerOptions;
 
@@ -120,6 +121,29 @@ export function removeAllListeners(
 
 function noopEventModifier(_parent: ExpandedElement<ElementTagName>): void {}
 
+/**
+ * "mount"/"unmount" are pseudo-events: there is no native DOM event to
+ * addEventListener for, so on()'s runtime dispatches them here instead of
+ * through createTrackedListener(). See element/lifecycle.ts for what
+ * registerMount()/registerUnmount() actually do and when the callback fires.
+ */
+function createLifecycleModifier<TTagName extends ElementTagName>(
+  kind: "mount" | "unmount",
+  callback: (element: HTMLElementTagNameMap[TTagName]) => unknown,
+): NodeModFn<TTagName> {
+  if (!isBrowser) return noopEventModifier as NodeModFn<TTagName>;
+
+  return function(parent: ExpandedElement<TTagName>): void {
+    if (!parent) return;
+    const el = parent as unknown as HTMLElementTagNameMap[TTagName];
+    if (kind === "mount") {
+      registerMount(el, callback as MountCallback<HTMLElementTagNameMap[TTagName]>);
+    } else {
+      registerUnmount(el, callback as UnmountCallback<HTMLElementTagNameMap[TTagName]>);
+    }
+  };
+}
+
 function createTrackedListener<TTagName extends ElementTagName>(
   type: string,
   listener: TypedEventListener<HTMLElementTagNameMap[TTagName], Event>,
@@ -156,6 +180,25 @@ export function on<
 ): NodeModFn<TTagName>;
 
 /**
+ * Fires once, after the element has been created and connected to the live
+ * document. Equivalent to `{ onMount: ... }`. May return a cleanup function —
+ * equivalent to also registering it with on("unmount", ...).
+ *
+ * Listed before the generic string overload below on purpose: "mount" is a
+ * string too, so a less specific overload earlier would shadow this one.
+ */
+export function on<TTagName extends ElementTagName = ElementTagName>(
+  type: "mount",
+  listener: MountCallback<HTMLElementTagNameMap[TTagName]>,
+): NodeModFn<TTagName>;
+
+/** Fires once the element has been removed. Equivalent to `{ onUnmount: ... }`. */
+export function on<TTagName extends ElementTagName = ElementTagName>(
+  type: "unmount",
+  listener: UnmountCallback<HTMLElementTagNameMap[TTagName]>,
+): NodeModFn<TTagName>;
+
+/**
  * Fallback / custom event overload (arbitrary event names or custom event types).
  * Specify a custom event type with the E generic if needed:
  *   on<"my-event", CustomEvent<MyDetail>>("my-event", e => { ... })
@@ -172,14 +215,31 @@ export function on<
 
 export function on<TTagName extends ElementTagName = ElementTagName>(
   type: string,
-  listener: TypedEventListener<HTMLElementTagNameMap[TTagName], Event>,
+  listener:
+    | TypedEventListener<HTMLElementTagNameMap[TTagName], Event>
+    | MountCallback<HTMLElementTagNameMap[TTagName]>
+    | UnmountCallback<HTMLElementTagNameMap[TTagName]>,
   options?: EventListenerOptions
 ): NodeModFn<TTagName> {
+  if (type === "mount" || type === "unmount") {
+    return createLifecycleModifier<TTagName>(
+      type,
+      listener as (element: HTMLElementTagNameMap[TTagName]) => unknown,
+    );
+  }
+
   if (!isBrowser) return noopEventModifier as NodeModFn<TTagName>;
 
   const capture = options === true
     || (options !== null && typeof options === "object" && options.capture === true);
-  const info = createTrackedListener(type, listener, capture);
+  // type is neither "mount" nor "unmount" past the check above, so listener
+  // is really the TypedEventListener member of the union — TS can't narrow a
+  // union on a check of a different parameter, hence the cast.
+  const info = createTrackedListener(
+    type,
+    listener as TypedEventListener<HTMLElementTagNameMap[TTagName], Event>,
+    capture,
+  );
 
   return function(parent: ExpandedElement<TTagName>): void {
     // Type guard: verify parent is an HTMLElement with addEventListener

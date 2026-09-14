@@ -1,6 +1,7 @@
 import { logError } from "./errors";
 import { removeAllListeners } from "../element/events";
 import { cleanupReactiveTextNode, cleanupReactiveElement, unregisterConditionalNode } from "../update/registry";
+import { disposeElementLifecycle, hasActiveLifecycleRegistrations } from "../element/lifecycle";
 
 export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
@@ -67,6 +68,8 @@ function cleanupNodeTree(node: Node): void {
     cleanupReactiveElement(element);
     // Remove conditional info
     unregisterConditionalNode(element);
+    // Fire onUnmount (no-op unless this exact element registered one)
+    disposeElementLifecycle(element);
   } else if (node.nodeType === Node.TEXT_NODE) {
     // Remove reactive text node info
     cleanupReactiveTextNode(node as Text);
@@ -80,6 +83,24 @@ function cleanupNodeTree(node: Node): void {
     for (let i = 0; i < node.childNodes.length; i++) {
       cleanupNodeTree(node.childNodes[i]);
     }
+  }
+}
+
+/**
+ * Fires onUnmount for a subtree that a fast removal path (list()'s bulk
+ * clear/replace, the single-element when()/else() swap) is about to drop
+ * without walking through cleanupNodeTree()/safeRemoveChild(). Short-circuits
+ * to a single comparison when nothing on the page has ever registered a
+ * lifecycle callback — the common case — so those fast paths stay fast.
+ */
+export function disposeLifecyclesInSubtree(node: Node): void {
+  if (!hasActiveLifecycleRegistrations()) return;
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    disposeElementLifecycle(node as Element);
+  }
+  const children = node.childNodes;
+  for (let i = 0; i < children.length; i++) {
+    disposeLifecyclesInSubtree(children[i]);
   }
 }
 

@@ -85,6 +85,14 @@ export function on<
   >,
   options?: boolean | AddEventListenerOptions
 ): NodeModFn<TTagName>;
+export function on<TTagName extends ElementTagName = ElementTagName>(
+  type: "mount",
+  listener: MountCallback<HTMLElementTagNameMap[TTagName]>,
+): NodeModFn<TTagName>;
+export function on<TTagName extends ElementTagName = ElementTagName>(
+  type: "unmount",
+  listener: UnmountCallback<HTMLElementTagNameMap[TTagName]>,
+): NodeModFn<TTagName>;
 export function on<K extends string, E extends Event = Event, TTagName extends ElementTagName = ElementTagName>(
   type: K,
   listener: TypedEventListener<HTMLElementTagNameMap[TTagName], E>,

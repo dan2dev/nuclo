@@ -253,6 +253,33 @@ describe('README.md examples', () => {
       expect(divEl.style.color).toBe('red');
       expect(divEl.style.fontSize).toBe('16px');
     });
+
+    it('should support onMount / onUnmount lifecycle attributes', () => {
+      const events: string[] = [];
+      let items = ['a'];
+
+      const app = div(
+        list(() => items, (item) => span({
+          onMount(el) {
+            events.push(`mount:${item}`);
+            return () => events.push(`cleanup:${item}:${el.tagName}`);
+          },
+          onUnmount() {
+            events.push(`unmount:${item}`);
+          },
+        }, item)),
+      );
+
+      render(app);
+      expect(events).toEqual(['mount:a']);
+
+      items = [];
+      update();
+      // Both the explicit onUnmount and the mount-returned cleanup ran, in
+      // the order they were registered: onUnmount at construction time,
+      // the mount-returned cleanup only once onMount actually ran.
+      expect(events).toEqual(['mount:a', 'unmount:a', 'cleanup:a:SPAN']);
+    });
   });
 
   describe('Advanced patterns', () => {

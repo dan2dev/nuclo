@@ -10,9 +10,12 @@
  *     })
  *   );
  *
- * Overloads:
+ * Overloads (order matters — TS resolves the first structural match, and the
+ * "mount"/"unmount" and custom-event overloads all accept `string`, so the
+ * more specific ones must come first):
  * 1. DOM standard events (strongly typed via the tag's native event map)
- * 2. Custom / arbitrary event names with user-specified event type
+ * 2. "mount" / "unmount" lifecycle pseudo-events (not real DOM events)
+ * 3. Custom / arbitrary event names with user-specified event type
  */
 
 declare global {
@@ -35,6 +38,28 @@ declare global {
       NucloHTMLElementEventForName<K>
     >,
     options?: boolean | AddEventListenerOptions
+  ): NodeModFn<TTagName>;
+
+  /**
+   * Fires once, after the element has been created and connected to the live
+   * document. Equivalent to `{ onMount: ... }`. May return a cleanup function
+   * — equivalent to also registering it with `on("unmount", ...)`.
+   *
+   * See src/element/lifecycle.ts for exactly when "connected" is guaranteed.
+   */
+  function on<TTagName extends ElementTagName = ElementTagName>(
+    type: "mount",
+    listener: MountCallback<HTMLElementTagNameMap[TTagName]>,
+  ): NodeModFn<TTagName>;
+
+  /**
+   * Fires once the element has been removed. Equivalent to `{ onUnmount: ... }`.
+   *
+   * See src/element/lifecycle.ts for exactly when this is guaranteed to run.
+   */
+  function on<TTagName extends ElementTagName = ElementTagName>(
+    type: "unmount",
+    listener: UnmountCallback<HTMLElementTagNameMap[TTagName]>,
   ): NodeModFn<TTagName>;
 
   /**

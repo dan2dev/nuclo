@@ -466,6 +466,26 @@ button('Click me',
 
 Standard names are inferred from the common HTML, media, video, and body event maps. Custom events can provide their event type explicitly with `on<"app:ready", CustomEvent<Detail>>(...)`.
 
+#### Lifecycle (`onMount` / `onUnmount`)
+
+Run code once an element is created and connected to the document, and once it's removed — as an `onMount`/`onUnmount` attribute pair (same object-literal style as events) or via `on("mount", ...)`/`on("unmount", ...)`:
+
+```ts
+div({
+  onMount(el) {
+    const id = setInterval(() => tick(el), 1000);
+    return () => clearInterval(id); // ran on unmount, like onUnmount
+  },
+  onUnmount(el) {
+    analytics.track('closed', el.id);
+  },
+})
+```
+
+`onMount` may return a cleanup function (no arguments) — it's called on unmount exactly like a separate `onUnmount` would be, so a subscription started in `onMount` can be released right next to where it's opened.
+
+Because nuclo builds a tree off-document before attaching it in one shot, `onMount` can't fire the instant the element is built — it's queued and fires once `render()`/`hydrate()`/`update()` finishes inserting that element, with it already connected. `onUnmount` fires eagerly wherever nuclo removes the element itself (`list()`/`when()` diffing); an element removed by code outside nuclo (e.g. a raw `node.remove()`) is only noticed the next time `render()`/`hydrate()`/`update()` runs afterward — same "noticed lazily" contract `list()`/`when()` already have for disconnected DOM. Either way, nothing is retained once the element itself becomes unreachable — no manual cleanup registry to manage.
+
 #### `scope(...ids)`
 
 Registers an element as a named update root, so `update("id")` re-runs only the dynamic bindings contained within it instead of the whole page:

@@ -1,5 +1,17 @@
 const ON_DOUBLE_CLICK = "onDoubleClick";
 
+/**
+ * `onMount`/`onUnmount` look like `on*` event attributes but aren't real DOM
+ * events — there is no native `onmount`/`onunmount` IDL property for
+ * `"onmount" in element` to find, so without this exclusion they'd fall into
+ * the generic addEventListener fallback below and silently never fire (the
+ * browser never dispatches a "mount"/"unmount" event). attributes.ts special-
+ * cases these two keys before ever calling this function; the exclusion here
+ * is what makes list/template.ts's row-template analysis correctly bail its
+ * skeleton-clone fast path for rows using them too (see element/lifecycle.ts).
+ */
+const RESERVED_LIFECYCLE_ATTRIBUTES = new Set(["onMount", "onUnmount"]);
+
 type FallbackEventListenerList = Array<string | EventListener>;
 
 const fallbackEventListeners = new WeakMap<EventTarget, FallbackEventListenerList>();
@@ -19,6 +31,7 @@ export function eventAttributeToProperty(attribute: string): string | null {
     return null;
   }
 
+  if (RESERVED_LIFECYCLE_ATTRIBUTES.has(attribute)) return null;
   if (attribute === ON_DOUBLE_CLICK) return "ondblclick";
   return attribute.toLowerCase();
 }

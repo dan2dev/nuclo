@@ -1,4 +1,5 @@
 import "./events";
+import "./lifecycle";
 
 declare const anyParentNodeModifierTag: unique symbol;
 
@@ -11,6 +12,16 @@ type NativeElementAttributes<TTagName extends ElementTagName> = {
 
 type LowercaseEventAttributes<TTagName extends ElementTagName> = {
   [K in Extract<keyof HTMLElementTagNameMap[TTagName], `on${string}`>]?: never;
+};
+
+/**
+ * `onMount` / `onUnmount` attributes — not real DOM events (no native
+ * `on${string}` IDL property exists for them), so they're typed here rather
+ * than derived from HTMLElementEventAttributeNameMap. See src/element/lifecycle.ts.
+ */
+type LifecycleElementAttributes<TTagName extends ElementTagName> = {
+  onMount?: MountCallback<HTMLElementTagNameMap[TTagName]>;
+  onUnmount?: UnmountCallback<HTMLElementTagNameMap[TTagName]>;
 };
 
 declare global {
@@ -43,6 +54,7 @@ declare global {
   > = NativeElementAttributes<TTagName>
     & CamelCaseEventAttributes<TTagName>
     & LowercaseEventAttributes<TTagName>
+    & LifecycleElementAttributes<TTagName>
     & {
       // Allow custom attributes (data-*, aria-*, etc.)
       [key: string]: ValueOrFactory<unknown>;

@@ -8,7 +8,7 @@ import {
   unregisterConditionalNode,
 } from "./registry";
 import { runCondition } from "../shared/conditions";
-import { replaceNodeSafely, createConditionalComment, createElement, createElementNS, SVG_NAMESPACE } from "../shared/dom";
+import { replaceNodeSafely, createConditionalComment, createElement, createElementNS, SVG_NAMESPACE, disposeLifecyclesInSubtree } from "../shared/dom";
 import { logError } from "../shared/errors";
 import type { UpdateScope } from "./scope";
 
@@ -56,6 +56,9 @@ function updateConditionalNode(node: Element | Comment): void {
   } else if (!shouldShow && isElement) {
     const comment = createConditionalComment(conditionalInfo.tagName);
     if (comment) {
+      // replaceNodeSafely() below doesn't walk the outgoing element the way
+      // safeRemoveChild() does, so fire its onUnmount (if any) here first.
+      disposeLifecyclesInSubtree(node);
       storeConditionalInfo(comment, conditionalInfo);
       replaceNodeSafely(node, comment);
     }

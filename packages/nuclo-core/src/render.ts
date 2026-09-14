@@ -1,5 +1,6 @@
 import { startHydration, endHydration, peekChild, setCursor } from "./hydration";
 import { safeRemoveChild } from "./shared/dom";
+import { flushMountQueue } from "./element/lifecycle";
 
 /**
  * Renders a NodeModFn to a parent element by calling it and appending the result.
@@ -17,6 +18,9 @@ export function render<TTagName extends ElementTagName = ElementTagName>(
   const targetParent = (parent || document.body) as ExpandedElement<TTagName>;
   const element = nodeModFn(targetParent, index) as ExpandedElement<TTagName>;
   (targetParent as unknown as Node).appendChild(element as Node);
+  // The whole tree was built off-document and just got attached in this one
+  // call — every onMount queued while building it can fire now.
+  flushMountQueue();
   return element;
 }
 
@@ -49,8 +53,9 @@ export function hydrate<TTagName extends ElementTagName = ElementTagName>(
   const targetParent = (parent || document.body) as ExpandedElement<TTagName>;
   const parentNode = targetParent as unknown as Node & ParentNode;
   startHydration();
+  let element: ExpandedElement<TTagName>;
   try {
-    const element = nodeModFn(targetParent, 0) as ExpandedElement<TTagName>;
+    element = nodeModFn(targetParent, 0) as ExpandedElement<TTagName>;
     const elementNode = element as unknown as Node | null | undefined;
     // Claim failed (empty container or tag mismatch): the factory built a
     // fresh, detached root. Replace the mismatched SSR node at the cursor —
@@ -69,8 +74,16 @@ export function hydrate<TTagName extends ElementTagName = ElementTagName>(
         setCursor(parentNode, null);
       }
     }
-    return element;
   } finally {
     endHydration();
   }
+  // Claimed nodes were already connected (they're existing SSR output inside
+  // the live `parent`); freshly-built replacement nodes just got attached
+  // above. Either way, by this point everything nodeModFn() touched is
+  // settled in the document, so queued onMount callbacks can fire — but only
+  // on this success path. Placed outside the try/finally on purpose: if
+  // nodeModFn() throws, the tree it was building is incomplete/inconsistent,
+  // so any mounts it had already queued are left Pending rather than fired.
+  flushMountQueue();
+  return element;
 }

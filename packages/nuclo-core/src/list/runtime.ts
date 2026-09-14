@@ -13,7 +13,7 @@
  *     the longest increasing subsequence of old positions never move, and runs
  *     of freshly built rows are batched into DocumentFragments.
  */
-import { createMarkerPair, createComment, safeRemoveChild, isNodeConnected, createDocumentFragment } from "../shared/dom";
+import { createMarkerPair, createComment, safeRemoveChild, isNodeConnected, createDocumentFragment, disposeLifecyclesInSubtree } from "../shared/dom";
 import { resolveRenderable } from "../shared/renderables";
 import { isHydrating, isSerializing, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration";
 import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsInput, ListItemsProvider, ListRenderedRow } from "./types";
@@ -21,6 +21,7 @@ import type { UpdateScope } from "../update/scope";
 import { isBrowser } from "../shared/environment";
 import { getFactoryMods, getFactoryTag, withMetadataOnlyFactories } from "../element/factory-meta";
 import { analyzeFactory, prepareSkeleton, instantiateTemplate, adoptTemplateLeaves, flushRowLeaves, type RowLeaf } from "./template";
+import { hasActiveLifecycleRegistrations } from "../element/lifecycle";
 
 function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
   if (a === b) return true;
@@ -198,6 +199,19 @@ function bulkClearRecords<TItem, TTagName extends ElementTagName>(
   endMarker: Comment,
 ): boolean {
   if (startMarker.parentNode !== parent || endMarker.parentNode !== parent) return false;
+
+  // Neither fast path below walks each row's subtree (that's the whole point
+  // — see the class doc comment), so it can't rely on cleanupNodeTree() to
+  // fire onUnmount for rows using it. Firing it here first keeps that
+  // guarantee without costing anything when lifecycle hooks aren't in use
+  // anywhere on the page (the single comparison inside
+  // hasActiveLifecycleRegistrations() short-circuits the whole loop).
+  if (hasActiveLifecycleRegistrations()) {
+    for (let i = 0; i < records.length; i++) {
+      const node = records[i].element as unknown as Node | null;
+      if (node) disposeLifecyclesInSubtree(node);
+    }
+  }
 
   // Fastest clear: when the list spans the whole parent (the common case — a
   // tbody or ul dedicated to the list), one textContent write drops every row

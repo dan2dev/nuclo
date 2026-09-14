@@ -3,6 +3,7 @@ import { registerAttributeResolver } from "../update/reactive-attributes";
 import { applyStyleAttribute } from "./inline-style";
 import { SVG_NAMESPACE } from "../shared/dom";
 import { eventAttributeToProperty, setEventAttribute } from "./event-attributes";
+import { registerMount, registerUnmount } from "./lifecycle";
 import {
 	initReactiveClassName,
 	hasReactiveClassName,
@@ -70,6 +71,19 @@ export function applySingleAttribute<TTagName extends ElementTagName>(
   }
 
   if (isFunction(raw)) {
+    // onMount/onUnmount aren't real DOM events (no native onmount/onunmount
+    // IDL property exists) — checked first so they never fall into the
+    // generic on* handling below, which would silently register a dead
+    // addEventListener("mount"/"unmount", ...) that the browser never fires.
+    if (k === "onMount") {
+      registerMount(el as unknown as Element, raw as MountCallback<Element>);
+      return;
+    }
+    if (k === "onUnmount") {
+      registerUnmount(el as unknown as Element, raw as UnmountCallback<Element>);
+      return;
+    }
+
     // Keep the dominant event path to one comparison and one assignment.
     if (k === "onClick") {
       (el as Record<string, unknown>).onclick = raw;

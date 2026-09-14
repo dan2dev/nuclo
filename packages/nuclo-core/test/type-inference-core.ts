@@ -293,6 +293,61 @@ div(
   }),
 );
 
+// ─── on("mount"/"unmount") / { onMount / onUnmount }: lifecycle hooks ────────
+
+const _mountModifier = button(
+  on("mount", (el) => {
+    type _MountElement = Expect<Equal<typeof el, HTMLButtonElement>>;
+    el.disabled = true;
+    // A mount callback may return a no-arg cleanup — equivalent to also
+    // registering on("unmount", ...).
+    return () => { void el; };
+  }),
+);
+type _MountModifier = Expect<Equal<typeof _mountModifier, DetachedExpandedElementFactory<"button">>>;
+
+button(
+  on("unmount", (el) => {
+    type _UnmountElement = Expect<Equal<typeof el, HTMLButtonElement>>;
+    type _UnmountReturnsVoid = Expect<Equal<ReturnType<typeof el.remove>, void>>;
+    void el;
+  }),
+);
+
+// A mount callback with fewer declared parameters than MountCallback is fine
+// (same "may ignore trailing parameters" rule as any other callback type) —
+// only the element type itself, when explicit, is checked.
+on("mount", () => undefined);
+
+// @ts-expect-error the element type doesn't match the tag's own element
+on<"button">("mount", (_el: HTMLInputElement) => undefined);
+
+// @ts-expect-error a mount callback returning a non-void, non-cleanup value is rejected
+on("mount", (_el): number => 1);
+
+div({
+  onMount(el) {
+    type _AttrMountElement = Expect<Equal<typeof el, HTMLDivElement>>;
+    void el;
+  },
+  onUnmount(el) {
+    type _AttrUnmountElement = Expect<Equal<typeof el, HTMLDivElement>>;
+    void el;
+  },
+});
+
+div({
+  // @ts-expect-error onMount only accepts a mount-shaped callback
+  onMount: "not a handler",
+});
+
+video({
+  onMount(el) {
+    type _VideoMountElement = Expect<Equal<typeof el, HTMLVideoElement>>;
+    void el;
+  },
+});
+
 // ─── when(): chainable builder usable as content ─────────────────────────────
 
 const flag = true;

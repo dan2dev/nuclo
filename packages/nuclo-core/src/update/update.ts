@@ -10,6 +10,7 @@ import { updateWhenRuntimes } from "../when";
 import { updateConditionalElements } from "./conditional";
 import { getScopeRoots } from "./scope";
 import { logError } from "../shared/errors";
+import { flushMountQueue } from "../element/lifecycle";
 import type { UpdateScope } from "./scope";
 
 // `satisfies` checks every entry matches the signature without widening the tuple type.
@@ -48,6 +49,13 @@ export function update(...scopeIds: string[]): void {
 	}
 
 	for (const fn of updaters) fn(scope);
+
+	// Every updater above may have inserted new nodes (a new list() row, a
+	// newly-true when() branch, a conditional element flipping on) into an
+	// already-connected host. Flush once, after all of them ran, so onMount
+	// fires exactly once per pass with the DOM already settled — not once per
+	// updater.
+	flushMountQueue();
 }
 
 export function dispatchGlobalUpdateEvent(scope?: UpdateScope): void {
