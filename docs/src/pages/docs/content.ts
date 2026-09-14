@@ -63,11 +63,11 @@ export const DOC_GROUPS = [
   },
   {
     title: "Core Concepts",
-    sections: ["explicit-updates", "dynamic-functions", "tag-builders", "attributes", "events"],
+    sections: ["explicit-updates", "dynamic-functions", "tag-builders", "attributes", "events", "lifecycle"],
   },
   {
     title: "API Reference",
-    sections: ["api-update", "api-render", "api-hydrate", "api-on", "api-when", "api-list", "api-scope", "api-styling", "api-ssr"],
+    sections: ["api-update", "api-render", "api-hydrate", "api-on", "api-lifecycle", "api-when", "api-list", "api-scope", "api-styling", "api-ssr"],
   },
   {
     title: "Patterns",
@@ -103,7 +103,7 @@ export const DOC_SECTIONS: DocSection[] = [
       <ul>
         <li><strong>Explicit updates</strong> - call <code>update()</code> after you mutate state.</li>
         <li><strong>State-dependent values</strong> - pass <code>() =&gt; value</code> for text, attributes, styles, and class names; Nuclo re-evaluates them on each update.</li>
-        <li><strong>Plain functions</strong> - components are just functions. No classes, no decorators, no lifecycle hooks.</li>
+        <li><strong>Plain functions</strong> - components are just functions. No classes, no decorators, no special syntax. <code>onMount</code>/<code>onDestroy</code> are ordinary modifiers, not a different mental model.</li>
       </ul>
     `,
   },
@@ -278,6 +278,35 @@ export const DOC_SECTIONS: DocSection[] = [
       <p>Use the <code>on()</code> helper instead when you need to attach multiple listeners for the same event type on one element, or pass listener <code>options</code> such as <code>{ passive: true }</code>.</p>
     `,
   },
+  {
+    id: "lifecycle",
+    group: "Core Concepts",
+    groupTitle: "Core Concepts",
+    title: "Lifecycle",
+    content: `
+      <p>Two hooks tie setup and teardown to an element's presence in the DOM: <code>onMount</code> runs once the element is created and connected, and <code>onDestroy</code> runs once Nuclo removes it. Register them the same way as event handlers - as camelCase attribute props, or with the <code>on()</code> helper:</p>
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">seconds</span> <span class="pt">=</span> <span class="nm">0</span>
+
+<span class="kw">const</span> <span class="pr">timer</span> <span class="pt">=</span> <span class="fn">span</span><span class="pt">(</span>
+  <span class="pt">{</span>
+    <span class="pr">onMount</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pt">{</span>
+      <span class="kw">const</span> <span class="pr">id</span> <span class="pt">=</span> <span class="fn">setInterval</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pt">{</span> <span class="pr">seconds</span><span class="pt">++;</span> <span class="fn">update</span><span class="pt">()</span> <span class="pt">},</span> <span class="nm">1000</span><span class="pt">)</span>
+      <span class="kw">return</span> <span class="pt">()</span> <span class="pt">=></span> <span class="fn">clearInterval</span><span class="pt">(</span><span class="pr">id</span><span class="pt">)</span> <span class="cm">// runs on destroy</span>
+    <span class="pt">},</span>
+  <span class="pt">},</span>
+  <span class="pt">()</span> <span class="pt">=></span> <span class="pt">\`</span><span class="pt">\${</span><span class="pr">seconds</span><span class="pt">}s\`,</span>
+<span class="pt">)</span></pre></div></div>
+      <p><code>onMount</code> may return a cleanup function that takes no arguments. It runs on destroy exactly like a separate <code>onDestroy</code> would, so a subscription opened in <code>onMount</code> can be released right next to where it's opened, as shown above. Register an explicit <code>onDestroy</code> instead when the cleanup logic has nothing to do with what <code>onMount</code> set up, or use <code>on("mount", ...)</code> / <code>on("destroy", ...)</code> when you need more than one registration on the same element:</p>
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="fn">li</span><span class="pt">(</span>
+  <span class="pt">{</span> <span class="pr">onDestroy</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pr">analytics</span><span class="pt">.</span><span class="fn">track</span><span class="pt">(</span><span class="st">'row-closed'</span><span class="pt">,</span> <span class="pr">row</span><span class="pt">.</span><span class="pr">id</span><span class="pt">)</span> <span class="pt">},</span>
+  <span class="fn">on</span><span class="pt">(</span><span class="st">"mount"</span><span class="pt">,</span> <span class="pt">(</span><span class="pr">el</span><span class="pt">)</span> <span class="pt">=></span> <span class="pr">el</span><span class="pt">.</span><span class="fn">focus</span><span class="pt">()),</span>
+  <span class="pr">row</span><span class="pt">.</span><span class="pr">label</span><span class="pt">,</span>
+<span class="pt">)</span></pre></div></div>
+      <p>Both hooks respect nesting: <code>onMount</code> fires parent-before-child, and <code>onDestroy</code> fires child-before-parent - the same order nested <code>try</code>/<code>finally</code> scopes unwind in, so a parent can safely release something its children were still using. This holds no matter how many <code>list()</code>s, <code>when()</code>s, or component functions wrap the element.</p>
+      <p>A freshly built element is still off-document while its own subtree (and, on the very first render, every ancestor up to the root) is being assembled, so <code>onMount</code> can't fire the instant a modifier runs - it fires once the surrounding <code>render()</code>, <code>hydrate()</code>, or <code>update()</code> call finishes, with the element already connected. <code>onDestroy</code> fires as soon as Nuclo removes the element through its own machinery (<code>list()</code>/<code>when()</code> diffing); an element removed by code outside Nuclo (a raw <code>node.remove()</code>) is only noticed the next time <code>render()</code>/<code>hydrate()</code>/<code>update()</code> runs afterward - the same "noticed lazily" contract <code>list()</code>/<code>when()</code> already have for disconnected DOM.</p>
+      <div class="docs-callout"><strong>Tip:</strong> <code>onMount</code>/<code>onDestroy</code> are not a dependency-tracking effect system - they never re-run. Each fires exactly once, tied only to the element being connected or removed, and nothing is retained once the element itself becomes unreachable.</div>
+    `,
+  },
 
   // ── API Reference ─────────────────────────────────────────────────────────
   {
@@ -352,6 +381,31 @@ export const DOC_SECTIONS: DocSection[] = [
     <span class="kw">if</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">.</span><span class="pr">key</span> <span class="pt">===</span> <span class="st">'Escape'</span><span class="pt">)</span> <span class="pt">{</span> <span class="pr">query</span> <span class="pt">=</span> <span class="st">''</span><span class="pt">;</span> <span class="fn">update</span><span class="pt">()</span> <span class="pt">}</span>
   <span class="pt">}),</span>
 <span class="pt">)</span></pre></div></div>
+    `,
+  },
+  {
+    id: "api-lifecycle",
+    group: "API Reference",
+    groupTitle: "API Reference",
+    title: "onMount / onDestroy",
+    apiTag: "fn",
+    apiSig: `<span class="kw">function</span> <span class="fn">on</span><span class="pt">(</span><span class="pr">type</span><span class="pt">:</span> <span class="st">"mount"</span><span class="pt">,</span> <span class="pr">listener</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">el</span><span class="pt">:</span> <span class="ty">Element</span><span class="pt">)</span> <span class="pt">=></span> <span class="ty">void</span> <span class="pt">|</span> <span class="pt">(()</span> <span class="pt">=></span> <span class="ty">void</span><span class="pt">)):</span> <span class="ty">NodeModFn</span>\n<span class="kw">function</span> <span class="fn">on</span><span class="pt">(</span><span class="pr">type</span><span class="pt">:</span> <span class="st">"destroy"</span><span class="pt">,</span> <span class="pr">listener</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">el</span><span class="pt">:</span> <span class="ty">Element</span><span class="pt">)</span> <span class="pt">=></span> <span class="ty">void</span><span class="pt">):</span> <span class="ty">NodeModFn</span>`,
+    content: `
+      <p>Two pseudo-events registered the same way as <code>on()</code>'s DOM-event overloads - or as the <code>onMount</code> / <code>onDestroy</code> attribute pair, which reads more naturally inside an attribute object (the same trade-off as <code>onClick</code> versus <code>on("click", ...)</code>). Element types are inferred from the surrounding tag builder, same as every other <code>on*</code> handler.</p>
+      <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="fn">div</span><span class="pt">(</span>
+  <span class="pt">{</span>
+    <span class="pr">onMount</span><span class="pt">(</span><span class="pr">el</span><span class="pt">)</span> <span class="pt">{</span>
+      <span class="kw">const</span> <span class="pr">id</span> <span class="pt">=</span> <span class="fn">setInterval</span><span class="pt">(()</span> <span class="pt">=></span> <span class="fn">tick</span><span class="pt">(</span><span class="pr">el</span><span class="pt">),</span> <span class="nm">1000</span><span class="pt">)</span>
+      <span class="kw">return</span> <span class="pt">()</span> <span class="pt">=></span> <span class="fn">clearInterval</span><span class="pt">(</span><span class="pr">id</span><span class="pt">)</span>
+    <span class="pt">},</span>
+    <span class="pr">onDestroy</span><span class="pt">(</span><span class="pr">el</span><span class="pt">)</span> <span class="pt">{</span>
+      <span class="pr">analytics</span><span class="pt">.</span><span class="fn">track</span><span class="pt">(</span><span class="st">'closed'</span><span class="pt">,</span> <span class="pr">el</span><span class="pt">.</span><span class="pr">id</span><span class="pt">)</span>
+    <span class="pt">},</span>
+  <span class="pt">},</span>
+<span class="pt">)</span></pre></div></div>
+      <p><strong>Timing.</strong> <code>onMount</code> is queued while its element is still being built off-document and fires once the enclosing <code>render()</code>, <code>hydrate()</code>, or <code>update()</code> call finishes inserting it - never the instant the modifier runs. <code>onDestroy</code> fires as soon as Nuclo removes the element through <code>list()</code>/<code>when()</code> diffing; removal by code outside Nuclo (a raw <code>node.remove()</code>) is only noticed on the next <code>render()</code>/<code>hydrate()</code>/<code>update()</code> call.</p>
+      <p><strong>Ordering.</strong> Across a parent/child pair, <code>onMount</code> fires parent-before-child and <code>onDestroy</code> fires child-before-parent, regardless of how many <code>list()</code>s, <code>when()</code>s, or component functions separate them - the same order nested <code>try</code>/<code>finally</code> scopes unwind in.</p>
+      <p><strong>Memory.</strong> Bookkeeping lives in a <code>WeakMap</code> keyed by the element itself, exactly like every other Nuclo registry - nothing is retained once the element becomes unreachable, whether or not <code>onDestroy</code> ever got the chance to run.</p>
     `,
   },
   {
@@ -569,7 +623,7 @@ button(
         <li><strong>Batch mutations</strong> - change multiple variables, call <code>update()</code> once at the end.</li>
         <li><strong>Keep state flat</strong> - nested objects still work, but flat state is simpler to reason about.</li>
         <li><strong>Use functions for components</strong> - each call creates a new instance with its own closure state.</li>
-        <li><strong>Avoid effects</strong> - Nuclo has no effect system. Use event handlers, timers, and fetch callbacks directly.</li>
+        <li><strong>No dependency-tracking effects</strong> - Nuclo doesn't re-run anything automatically based on what a function reads. Use event handlers, timers, and fetch callbacks directly, and reach for <code>onMount</code>/<code>onDestroy</code> only to tie setup/cleanup to an element's presence in the DOM.</li>
         <li><strong>SSR CSS collection</strong> - render or import code paths that call <code>css()</code> before reading <code>getCssText()</code>.</li>
         <li><strong>Dynamic functions are cheap</strong> - don't over-optimize; Nuclo only patches values that actually changed.</li>
       </ul>
@@ -606,6 +660,9 @@ button(
 
       <h3>Does Nuclo use a virtual DOM?</h3>
       <p>No. Builders create real <code>Element</code>/<code>Text</code> nodes up front, and <code>update()</code> patches those same real nodes in place-there is no virtual tree to diff. You still express state-dependent values as plain functions; Nuclo performs the underlying DOM property, attribute, text, and child-node updates.</p>
+
+      <h3>Does Nuclo have lifecycle hooks?</h3>
+      <p>Yes-<code>onMount</code> and <code>onDestroy</code> (or <code>on("mount", ...)</code> / <code>on("destroy", ...)</code>), covered in <a href="#lifecycle">Lifecycle</a>. What Nuclo doesn't have is a dependency-tracking <em>effect</em> system: neither hook re-runs on its own the way a signal-based <code>effect()</code> or React's <code>useEffect</code> with a dependency array does. Each fires exactly once, tied only to the element being connected or removed.</p>
     `,
   },
 ];

@@ -96,7 +96,7 @@ export const PHILOSOPHY_POINTS = [
   {
     num: "03",
     title: "Functions, not components",
-    desc: "Build with plain JavaScript functions. No lifecycle hooks, no class magic, no special syntax-just functions that return DOM nodes.",
+    desc: "Build with plain JavaScript functions. No classes, no decorators, no special syntax-just functions that return DOM nodes, with onMount/onDestroy as ordinary modifiers when you need them.",
   },
 ];
 
