@@ -19,7 +19,31 @@ import "../../src";
  * runtimes, reactive text/attribute maps, scope roots) pins removed DOM.
  *
  * Crucially, update() is NOT called between removal and the GC assertion:
- * cleanup must not depend on another update pass running.
+ * cleanup must not depend on another update pass running. (It doesn't have
+ * to: "active (still-mounted) runtimes keep working..." below and the
+ * update()-then-remove tests further down cover update() being called both
+ * before and after a row/branch is dropped, and neither retains anything.)
+ *
+ * GOTCHA — do not capture the node-under-test via querySelector():
+ * `element.querySelector()`/`document.querySelector()` in jsdom (backed by
+ * @asamuzakjp/dom-selector) caches its matched node(s) in a per-Document
+ * `Finder` instance (`Document#domSelector`, never cleared automatically).
+ * That cache is a normal strong reference reachable from `window.document`
+ * — a real GC root for the lifetime of the test file — so a node ever
+ * returned by querySelector() stays alive until a *later* querySelector()
+ * call overwrites that cache entry, regardless of anything nuclo-core does.
+ * This produces a completely convincing false-positive "leak" that looks
+ * exactly like a retained list()/when() row: multiple hours were once lost
+ * bisecting src/list/runtime.ts and src/when/runtime.ts over exactly this,
+ * because every failing repro happened to use `el.querySelector(...)` to
+ * grab "the last row" while every passing one (this file) walks
+ * `childNodes`/`children` instead. Verified with a real V8 heap snapshot
+ * (`node --expose-gc`, `v8.writeHeapSnapshot()`): the retaining path is
+ * `(GC roots) → Window → Document → #domSelector → #finder → #nodes[i] →
+ * <the element>` — nothing in nuclo-core's registries appears in it at
+ * all. Grab node references from `render()`'s return value, `childNodes`,
+ * `children`, or the row/element you already have a variable for — never
+ * from querySelector() — anywhere GC-collectability is being asserted.
  */
 
 const hasGc = typeof globalThis.gc === "function";
@@ -156,5 +180,49 @@ describe("real GC — removed subtrees are collectible", () => {
     keepItems.push("k2");
     update();
     expect((kept as unknown as HTMLElement).textContent).toBe("k1k2");
+  });
+
+  // These two cover a gap the tests above don't: update() removing a
+  // row/branch while the list/when is still CONNECTED (a real diff through
+  // sync()/renderWhenContent()), with the container only disconnected
+  // afterwards. See the GOTCHA note in the file header — an earlier
+  // investigation into what looked like exactly this leak turned out to be
+  // the querySelector() cache, not either runtime; these are the real
+  // regression tests for the scenario, using childNodes/children (not
+  // querySelector()) to capture the removed node.
+  itGc("list() row removed by update() while still connected is collectible after later disconnect", async () => {
+    const rowRef: WeakRef<Node> = (() => {
+      let items = ["a", "b", "c"];
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const el = render(div(list(() => items, (item) => span(item))), container) as unknown as HTMLElement;
+      const lastRow = el.children[el.children.length - 1];
+      const ref = new WeakRef(lastRow);
+      items = ["a", "b"];
+      update(); // removes the "c" row through list()'s normal diff, container still connected
+      container.remove();
+      return ref;
+    })();
+
+    await collectGarbage();
+    expect(rowRef.deref()).toBeUndefined();
+  });
+
+  itGc("when() branch swapped by update() while still connected is collectible after later disconnect", async () => {
+    const branchRef: WeakRef<Node> = (() => {
+      let show = true;
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const el = render(div(when(() => show, span("visible")).else(p("hidden"))), container) as unknown as HTMLElement;
+      const active = el.children[0];
+      const ref = new WeakRef(active);
+      show = false;
+      update(); // swaps to the else-branch through when()'s normal diff, container still connected
+      container.remove();
+      return ref;
+    })();
+
+    await collectGarbage();
+    expect(branchRef.deref()).toBeUndefined();
   });
 });
