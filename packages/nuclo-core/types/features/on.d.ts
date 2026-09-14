@@ -11,10 +11,10 @@
  *   );
  *
  * Overloads (order matters — TS resolves the first structural match, and the
- * "mount"/"unmount" and custom-event overloads all accept `string`, so the
+ * "mount"/"destroy" and custom-event overloads all accept `string`, so the
  * more specific ones must come first):
  * 1. DOM standard events (strongly typed via the tag's native event map)
- * 2. "mount" / "unmount" lifecycle pseudo-events (not real DOM events)
+ * 2. "mount" / "destroy" lifecycle pseudo-events (not real DOM events)
  * 3. Custom / arbitrary event names with user-specified event type
  */
 
@@ -43,7 +43,7 @@ declare global {
   /**
    * Fires once, after the element has been created and connected to the live
    * document. Equivalent to `{ onMount: ... }`. May return a cleanup function
-   * — equivalent to also registering it with `on("unmount", ...)`.
+   * — equivalent to also registering it with `on("destroy", ...)`.
    *
    * See src/element/lifecycle.ts for exactly when "connected" is guaranteed.
    */
@@ -53,13 +53,13 @@ declare global {
   ): NodeModFn<TTagName>;
 
   /**
-   * Fires once the element has been removed. Equivalent to `{ onUnmount: ... }`.
+   * Fires once the element has been removed. Equivalent to `{ onDestroy: ... }`.
    *
    * See src/element/lifecycle.ts for exactly when this is guaranteed to run.
    */
   function on<TTagName extends ElementTagName = ElementTagName>(
-    type: "unmount",
-    listener: UnmountCallback<HTMLElementTagNameMap[TTagName]>,
+    type: "destroy",
+    listener: DestroyCallback<HTMLElementTagNameMap[TTagName]>,
   ): NodeModFn<TTagName>;
 
   /**

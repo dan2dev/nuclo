@@ -11,7 +11,7 @@ import { when } from "../../src/when";
 import { on } from "../../src/element/events";
 import {
   registerMount,
-  registerUnmount,
+  registerDestroy,
   flushMountQueue,
   disposeElementLifecycle,
 } from "../../src/element/lifecycle";
@@ -19,7 +19,7 @@ import { updateConditionalElements } from "../../src/update/conditional";
 import { analyzeFactory } from "../../src/list/template";
 import { createHtmlConditionalElement } from "../helpers/conditionalTestHelpers";
 
-describe("lifecycle: on(\"mount\"/\"unmount\") and { onMount / onUnmount }", () => {
+describe("lifecycle: on(\"mount\"/\"destroy\") and { onMount / onDestroy }", () => {
   let container: HTMLElement;
 
   beforeEach(() => {
@@ -120,30 +120,30 @@ describe("lifecycle: on(\"mount\"/\"unmount\") and { onMount / onUnmount }", () 
     expect((mount.mock.calls[0][0] as HTMLElement).isConnected).toBe(true);
   });
 
-  // ── Unmount timing ──────────────────────────────────────────────────────
+  // ── Destroy timing ──────────────────────────────────────────────────────
 
-  it("fires onUnmount when list() removes a row (eager safeRemoveChild path)", () => {
-    const unmount = vi.fn();
+  it("fires onDestroy when list() removes a row (eager safeRemoveChild path)", () => {
+    const destroy = vi.fn();
     let items = [1, 2, 3];
-    render(div(list(() => items, (n) => span({ onUnmount: unmount }, String(n)))), container);
+    render(div(list(() => items, (n) => span({ onDestroy: destroy }, String(n)))), container);
 
     items = [1, 3];
     update();
-    expect(unmount).toHaveBeenCalledTimes(1);
-    expect((unmount.mock.calls[0][0] as HTMLElement).textContent).toBe("2");
+    expect(destroy).toHaveBeenCalledTimes(1);
+    expect((destroy.mock.calls[0][0] as HTMLElement).textContent).toBe("2");
   });
 
-  it("fires onUnmount when when() swaps its branch away", () => {
-    const unmount = vi.fn();
+  it("fires onDestroy when when() swaps its branch away", () => {
+    const destroy = vi.fn();
     let show = true;
-    render(div(when(() => show, span({ onUnmount: unmount }, "shown")).else(span("hidden"))), container);
+    render(div(when(() => show, span({ onDestroy: destroy }, "shown")).else(span("hidden"))), container);
 
     show = false;
     update();
-    expect(unmount).toHaveBeenCalledTimes(1);
+    expect(destroy).toHaveBeenCalledTimes(1);
   });
 
-  it("a mount-returned cleanup fires exactly like an explicit onUnmount", () => {
+  it("a mount-returned cleanup fires exactly like an explicit onDestroy", () => {
     const cleanup = vi.fn();
     let items = [1];
     render(div(list(() => items, (n) => span(on("mount", () => cleanup), String(n)))), container);
@@ -153,13 +153,13 @@ describe("lifecycle: on(\"mount\"/\"unmount\") and { onMount / onUnmount }", () 
     expect(cleanup).toHaveBeenCalledTimes(1);
   });
 
-  it("fires both an onMount-returned cleanup and an explicit onUnmount", () => {
+  it("fires both an onMount-returned cleanup and an explicit onDestroy", () => {
     const returnedCleanup = vi.fn();
-    const explicitUnmount = vi.fn();
+    const explicitDestroy = vi.fn();
     let items = [1];
     render(
       div(list(() => items, () => span(
-        { onMount: () => returnedCleanup, onUnmount: explicitUnmount },
+        { onMount: () => returnedCleanup, onDestroy: explicitDestroy },
         "x",
       ))),
       container,
@@ -168,14 +168,14 @@ describe("lifecycle: on(\"mount\"/\"unmount\") and { onMount / onUnmount }", () 
     items = [];
     update();
     expect(returnedCleanup).toHaveBeenCalledTimes(1);
-    expect(explicitUnmount).toHaveBeenCalledTimes(1);
+    expect(explicitDestroy).toHaveBeenCalledTimes(1);
   });
 
-  it("does not fire onUnmount for rows that are merely reordered (same element reused)", () => {
-    const unmount = vi.fn();
+  it("does not fire onDestroy for rows that are merely reordered (same element reused)", () => {
+    const destroy = vi.fn();
     let items = [1, 2, 3];
     const el = render(
-      div(list(() => items, (n) => span({ onUnmount: unmount }, String(n)))),
+      div(list(() => items, (n) => span({ onDestroy: destroy }, String(n)))),
       container,
     );
     const rowsBefore = Array.from((el as unknown as HTMLElement).querySelectorAll("span"));
@@ -183,7 +183,7 @@ describe("lifecycle: on(\"mount\"/\"unmount\") and { onMount / onUnmount }", () 
     items = [3, 1, 2];
     update();
 
-    expect(unmount).not.toHaveBeenCalled();
+    expect(destroy).not.toHaveBeenCalled();
     const rowsAfter = Array.from((el as unknown as HTMLElement).querySelectorAll("span"));
     // Same 3 DOM nodes, just reordered — list() reuses rows by item identity.
     expect(new Set(rowsAfter)).toEqual(new Set(rowsBefore));
@@ -191,54 +191,54 @@ describe("lifecycle: on(\"mount\"/\"unmount\") and { onMount / onUnmount }", () 
 
   // ── Fast-path removal gaps (list() bulk clear, legacy conditional swap) ──
 
-  it("fires onUnmount for every row when a full list clear takes the whole-parent bulk-clear fast path", () => {
-    const unmounted: string[] = [];
+  it("fires onDestroy for every row when a full list clear takes the whole-parent bulk-clear fast path", () => {
+    const destroyed: string[] = [];
     let items = ["a", "b", "c"];
     // The list is the *only* content of `host` — this is exactly the shape
     // bulkClearRecords() fast-paths with a single `textContent = ""`.
     render(
-      div(list(() => items, (item) => span({ onUnmount: () => unmounted.push(item) }, item))),
+      div(list(() => items, (item) => span({ onDestroy: () => destroyed.push(item) }, item))),
       container,
     );
 
     items = [];
     update();
-    expect(unmounted.sort()).toEqual(["a", "b", "c"]);
+    expect(destroyed.sort()).toEqual(["a", "b", "c"]);
   });
 
-  it("fires onUnmount for every row when a list full-replaces to entirely different items", () => {
-    const unmounted: string[] = [];
+  it("fires onDestroy for every row when a list full-replaces to entirely different items", () => {
+    const destroyed: string[] = [];
     let items = ["a", "b"];
     render(
-      div(list(() => items, (item) => span({ onUnmount: () => unmounted.push(item) }, item))),
+      div(list(() => items, (item) => span({ onDestroy: () => destroyed.push(item) }, item))),
       container,
     );
 
     items = ["x", "y", "z"];
     update();
-    expect(unmounted.sort()).toEqual(["a", "b"]);
+    expect(destroyed.sort()).toEqual(["a", "b"]);
   });
 
-  it("fires onUnmount for every row via the non-whole-parent bulk-clear branch", () => {
-    const unmounted: string[] = [];
+  it("fires onDestroy for every row via the non-whole-parent bulk-clear branch", () => {
+    const destroyed: string[] = [];
     let items = ["a", "b"];
     render(
       div(
         span("header"),
-        list(() => items, (item) => span({ onUnmount: () => unmounted.push(item) }, item)),
+        list(() => items, (item) => span({ onDestroy: () => destroyed.push(item) }, item)),
       ),
       container,
     );
 
     items = [];
     update();
-    expect(unmounted.sort()).toEqual(["a", "b"]);
+    expect(destroyed.sort()).toEqual(["a", "b"]);
   });
 
-  it("fires onUnmount when the legacy single-element conditional hides its element", () => {
-    const unmount = vi.fn();
+  it("fires onDestroy when the legacy single-element conditional hides its element", () => {
+    const destroy = vi.fn();
     let show = true;
-    const node = createHtmlConditionalElement("div", () => show, [{ onUnmount: unmount }]);
+    const node = createHtmlConditionalElement("div", () => show, [{ onDestroy: destroy }]);
     container.appendChild(node as unknown as Node);
     // This low-level helper builds the element directly (bypassing
     // render()/hydrate()), so nothing has flushed its queued registration
@@ -248,7 +248,7 @@ describe("lifecycle: on(\"mount\"/\"unmount\") and { onMount / onUnmount }", () 
 
     show = false;
     updateConditionalElements();
-    expect(unmount).toHaveBeenCalledTimes(1);
+    expect(destroy).toHaveBeenCalledTimes(1);
   });
 
   // ── Error isolation ─────────────────────────────────────────────────────
@@ -270,14 +270,14 @@ describe("lifecycle: on(\"mount\"/\"unmount\") and { onMount / onUnmount }", () 
     spy.mockRestore();
   });
 
-  it("a throwing unmount callback does not stop other unmount callbacks from running", () => {
+  it("a throwing destroy callback does not stop other destroy callbacks from running", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const good = vi.fn();
     let items = [1];
     render(
       div(list(() => items, () => span(
-        on("unmount", () => { throw new Error("boom"); }),
-        on("unmount", good),
+        on("destroy", () => { throw new Error("boom"); }),
+        on("destroy", good),
       ))),
       container,
     );
@@ -305,23 +305,23 @@ describe("lifecycle: on(\"mount\"/\"unmount\") and { onMount / onUnmount }", () 
 
   // ── list() row-template fast path bails when lifecycle hooks are used ────
 
-  it("analyzeFactory bails the row-template fast path for { onMount } / { onUnmount }", () => {
+  it("analyzeFactory bails the row-template fast path for { onMount } / { onDestroy }", () => {
     expect(analyzeFactory("span", [{ onMount: () => undefined }])).toBeNull();
-    expect(analyzeFactory("span", [{ onUnmount: () => undefined }])).toBeNull();
+    expect(analyzeFactory("span", [{ onDestroy: () => undefined }])).toBeNull();
   });
 
-  it("analyzeFactory bails the row-template fast path for on(\"mount\"/\"unmount\")", () => {
+  it("analyzeFactory bails the row-template fast path for on(\"mount\"/\"destroy\")", () => {
     expect(analyzeFactory("span", [on("mount", () => undefined)])).toBeNull();
-    expect(analyzeFactory("span", [on("unmount", () => undefined)])).toBeNull();
+    expect(analyzeFactory("span", [on("destroy", () => undefined)])).toBeNull();
   });
 
-  it("a list using per-row onMount/onUnmount still renders and reacts correctly (normal, non-template path)", () => {
+  it("a list using per-row onMount/onDestroy still renders and reacts correctly (normal, non-template path)", () => {
     const mounted: string[] = [];
-    const unmounted: string[] = [];
+    const destroyed: string[] = [];
     let items = ["a", "b"];
     const el = render(
       div(list(() => items, (item) => span(
-        { onMount: () => mounted.push(item), onUnmount: () => unmounted.push(item) },
+        { onMount: () => mounted.push(item), onDestroy: () => destroyed.push(item) },
         item,
       ))),
       container,
@@ -337,7 +337,7 @@ describe("lifecycle: on(\"mount\"/\"unmount\") and { onMount / onUnmount }", () 
     items = ["a"];
     update();
     expect((el as unknown as HTMLElement).textContent).toBe("a");
-    expect(unmounted.sort()).toEqual(["b", "c"]);
+    expect(destroyed.sort()).toEqual(["b", "c"]);
   });
 
   // ── Internal state machine (direct unit tests) ────────────────────────────
@@ -345,33 +345,33 @@ describe("lifecycle: on(\"mount\"/\"unmount\") and { onMount / onUnmount }", () 
   describe("internal state machine", () => {
     it("cancels a still-pending mount silently when disposed before it flushes", () => {
       const mount = vi.fn();
-      const unmount = vi.fn();
+      const destroy = vi.fn();
       const el = document.createElement("div");
 
       registerMount(el, mount);
-      registerUnmount(el, unmount);
+      registerDestroy(el, destroy);
       // Disposed before any flushMountQueue() call — as if the element was
       // built and discarded within the same render/update pass.
       disposeElementLifecycle(el);
       flushMountQueue();
 
       expect(mount).not.toHaveBeenCalled();
-      expect(unmount).not.toHaveBeenCalled();
+      expect(destroy).not.toHaveBeenCalled();
     });
 
     it("is idempotent — disposing an already-disposed element is a no-op", () => {
-      const unmount = vi.fn();
+      const destroy = vi.fn();
       const el = document.createElement("div");
 
       registerMount(el, () => {});
       flushMountQueue();
-      registerUnmount(el, unmount);
+      registerDestroy(el, destroy);
 
       disposeElementLifecycle(el);
       disposeElementLifecycle(el);
       disposeElementLifecycle(el);
 
-      expect(unmount).toHaveBeenCalledTimes(1);
+      expect(destroy).toHaveBeenCalledTimes(1);
     });
 
     it("registering on() after disposal is dropped, not retained", () => {
@@ -381,14 +381,14 @@ describe("lifecycle: on(\"mount\"/\"unmount\") and { onMount / onUnmount }", () 
       disposeElementLifecycle(el);
 
       const lateMount = vi.fn();
-      const lateUnmount = vi.fn();
+      const lateDestroy = vi.fn();
       registerMount(el, lateMount);
-      registerUnmount(el, lateUnmount);
+      registerDestroy(el, lateDestroy);
       flushMountQueue();
-      disposeElementLifecycle(el); // idempotent no-op; would fire lateUnmount if it had been stored
+      disposeElementLifecycle(el); // idempotent no-op; would fire lateDestroy if it had been stored
 
       expect(lateMount).not.toHaveBeenCalled();
-      expect(lateUnmount).not.toHaveBeenCalled();
+      expect(lateDestroy).not.toHaveBeenCalled();
     });
 
     it("disposing an element with no lifecycle registration is a safe no-op", () => {

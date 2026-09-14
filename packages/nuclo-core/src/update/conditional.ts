@@ -57,7 +57,7 @@ function updateConditionalNode(node: Element | Comment): void {
     const comment = createConditionalComment(conditionalInfo.tagName);
     if (comment) {
       // replaceNodeSafely() below doesn't walk the outgoing element the way
-      // safeRemoveChild() does, so fire its onUnmount (if any) here first.
+      // safeRemoveChild() does, so fire its onDestroy (if any) here first.
       disposeLifecyclesInSubtree(node);
       storeConditionalInfo(comment, conditionalInfo);
       replaceNodeSafely(node, comment);

@@ -7,7 +7,7 @@ import { list } from "../../src/list";
 import "../../src";
 
 /**
- * Real garbage-collection leak tests for onMount/onUnmount — the lifecycle
+ * Real garbage-collection leak tests for onMount/onDestroy — the lifecycle
  * counterpart to test/memory/gc-collectability.test.ts. Same method: build,
  * detach, drop strong references, force real GC (--expose-gc), assert the
  * nodes are collected. See that file for why simulated WeakRefs can't stand
@@ -24,8 +24,8 @@ import "../../src";
  * asserting GC afterwards) does not collect either, with no lifecycle hooks
  * involved and no code from this feature anywhere on the call path — an
  * existing, orthogonal characteristic of list()/when()'s own update() path,
- * not something onMount/onUnmount introduces or is responsible for fixing
- * here. onUnmount actually *firing* on every removal path (including that
+ * not something onMount/onDestroy introduces or is responsible for fixing
+ * here. onDestroy actually *firing* on every removal path (including that
  * same update()-while-connected case) is verified separately, by call count
  * rather than GC, in test/element/lifecycle.test.ts.
  */
@@ -40,8 +40,8 @@ async function collectGarbage(): Promise<void> {
   }
 }
 
-describe("real GC — elements with onMount/onUnmount are collectible", () => {
-  itGc("a subtree using on(\"mount\"/\"unmount\") and { onMount / onUnmount } is collectible once detached", async () => {
+describe("real GC — elements with onMount/onDestroy are collectible", () => {
+  itGc("a subtree using on(\"mount\"/\"destroy\") and { onMount / onDestroy } is collectible once detached", async () => {
     const refs: WeakRef<Node>[] = (() => {
       const container = document.createElement("div");
       document.body.appendChild(container);
@@ -55,7 +55,7 @@ describe("real GC — elements with onMount/onUnmount are collectible", () => {
           list(() => items, (item) => span(
             {
               onMount: () => { void heavy; },
-              onUnmount: () => { void heavy; },
+              onDestroy: () => { void heavy; },
             },
             item,
           )),
@@ -79,20 +79,20 @@ describe("real GC — elements with onMount/onUnmount are collectible", () => {
 
   itGc(
     "an element removed via a raw DOM call (bypassing nuclo entirely, no update() afterwards) " +
-      "is still collectible even though onUnmount never got the chance to fire",
+      "is still collectible even though onDestroy never got the chance to fire",
     async () => {
       const ref: WeakRef<Node> = (() => {
         const container = document.createElement("div");
         document.body.appendChild(container);
         const el = render(
-          div({ onMount: () => {}, onUnmount: () => {} }),
+          div({ onMount: () => {}, onDestroy: () => {} }),
           container,
         ) as unknown as Node;
 
         const weak = new WeakRef(el);
         // Raw removal — not through list()/when()/safeRemoveChild() — exactly
         // the scenario documented in element/lifecycle.ts as one where
-        // onUnmount will not run. It must still not leak: the lifecycle
+        // onDestroy will not run. It must still not leak: the lifecycle
         // registry is WeakMap-keyed by the element, same as every other
         // nuclo registry.
         container.remove();

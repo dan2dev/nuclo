@@ -293,23 +293,23 @@ div(
   }),
 );
 
-// ─── on("mount"/"unmount") / { onMount / onUnmount }: lifecycle hooks ────────
+// ─── on("mount"/"destroy") / { onMount / onDestroy }: lifecycle hooks ────────
 
 const _mountModifier = button(
   on("mount", (el) => {
     type _MountElement = Expect<Equal<typeof el, HTMLButtonElement>>;
     el.disabled = true;
     // A mount callback may return a no-arg cleanup — equivalent to also
-    // registering on("unmount", ...).
+    // registering on("destroy", ...).
     return () => { void el; };
   }),
 );
 type _MountModifier = Expect<Equal<typeof _mountModifier, DetachedExpandedElementFactory<"button">>>;
 
 button(
-  on("unmount", (el) => {
-    type _UnmountElement = Expect<Equal<typeof el, HTMLButtonElement>>;
-    type _UnmountReturnsVoid = Expect<Equal<ReturnType<typeof el.remove>, void>>;
+  on("destroy", (el) => {
+    type _DestroyElement = Expect<Equal<typeof el, HTMLButtonElement>>;
+    type _DestroyReturnsVoid = Expect<Equal<ReturnType<typeof el.remove>, void>>;
     void el;
   }),
 );
@@ -330,8 +330,8 @@ div({
     type _AttrMountElement = Expect<Equal<typeof el, HTMLDivElement>>;
     void el;
   },
-  onUnmount(el) {
-    type _AttrUnmountElement = Expect<Equal<typeof el, HTMLDivElement>>;
+  onDestroy(el) {
+    type _AttrDestroyElement = Expect<Equal<typeof el, HTMLDivElement>>;
     void el;
   },
 });

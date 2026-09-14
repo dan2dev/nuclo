@@ -202,7 +202,7 @@ function bulkClearRecords<TItem, TTagName extends ElementTagName>(
 
   // Neither fast path below walks each row's subtree (that's the whole point
   // — see the class doc comment), so it can't rely on cleanupNodeTree() to
-  // fire onUnmount for rows using it. Firing it here first keeps that
+  // fire onDestroy for rows using it. Firing it here first keeps that
   // guarantee without costing anything when lifecycle hooks aren't in use
   // anywhere on the page (the single comparison inside
   // hasActiveLifecycleRegistrations() short-circuits the whole loop).

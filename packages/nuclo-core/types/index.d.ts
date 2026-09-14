@@ -90,8 +90,8 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
   listener: MountCallback<HTMLElementTagNameMap[TTagName]>,
 ): NodeModFn<TTagName>;
 export function on<TTagName extends ElementTagName = ElementTagName>(
-  type: "unmount",
-  listener: UnmountCallback<HTMLElementTagNameMap[TTagName]>,
+  type: "destroy",
+  listener: DestroyCallback<HTMLElementTagNameMap[TTagName]>,
 ): NodeModFn<TTagName>;
 export function on<K extends string, E extends Event = Event, TTagName extends ElementTagName = ElementTagName>(
   type: K,

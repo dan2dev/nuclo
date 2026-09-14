@@ -254,7 +254,7 @@ describe('README.md examples', () => {
       expect(divEl.style.fontSize).toBe('16px');
     });
 
-    it('should support onMount / onUnmount lifecycle attributes', () => {
+    it('should support onMount / onDestroy lifecycle attributes', () => {
       const events: string[] = [];
       let items = ['a'];
 
@@ -264,8 +264,8 @@ describe('README.md examples', () => {
             events.push(`mount:${item}`);
             return () => events.push(`cleanup:${item}:${el.tagName}`);
           },
-          onUnmount() {
-            events.push(`unmount:${item}`);
+          onDestroy() {
+            events.push(`destroy:${item}`);
           },
         }, item)),
       );
@@ -275,10 +275,10 @@ describe('README.md examples', () => {
 
       items = [];
       update();
-      // Both the explicit onUnmount and the mount-returned cleanup ran, in
-      // the order they were registered: onUnmount at construction time,
+      // Both the explicit onDestroy and the mount-returned cleanup ran, in
+      // the order they were registered: onDestroy at construction time,
       // the mount-returned cleanup only once onMount actually ran.
-      expect(events).toEqual(['mount:a', 'unmount:a', 'cleanup:a:SPAN']);
+      expect(events).toEqual(['mount:a', 'destroy:a', 'cleanup:a:SPAN']);
     });
   });
 

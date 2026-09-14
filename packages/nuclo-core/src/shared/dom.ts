@@ -68,7 +68,7 @@ function cleanupNodeTree(node: Node): void {
     cleanupReactiveElement(element);
     // Remove conditional info
     unregisterConditionalNode(element);
-    // Fire onUnmount (no-op unless this exact element registered one)
+    // Fire onDestroy (no-op unless this exact element registered one)
     disposeElementLifecycle(element);
   } else if (node.nodeType === Node.TEXT_NODE) {
     // Remove reactive text node info
@@ -87,7 +87,7 @@ function cleanupNodeTree(node: Node): void {
 }
 
 /**
- * Fires onUnmount for a subtree that a fast removal path (list()'s bulk
+ * Fires onDestroy for a subtree that a fast removal path (list()'s bulk
  * clear/replace, the single-element when()/else() swap) is about to drop
  * without walking through cleanupNodeTree()/safeRemoveChild(). Short-circuits
  * to a single comparison when nothing on the page has ever registered a

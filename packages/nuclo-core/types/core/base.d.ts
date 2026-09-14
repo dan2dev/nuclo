@@ -15,13 +15,13 @@ type LowercaseEventAttributes<TTagName extends ElementTagName> = {
 };
 
 /**
- * `onMount` / `onUnmount` attributes — not real DOM events (no native
+ * `onMount` / `onDestroy` attributes — not real DOM events (no native
  * `on${string}` IDL property exists for them), so they're typed here rather
  * than derived from HTMLElementEventAttributeNameMap. See src/element/lifecycle.ts.
  */
 type LifecycleElementAttributes<TTagName extends ElementTagName> = {
   onMount?: MountCallback<HTMLElementTagNameMap[TTagName]>;
-  onUnmount?: UnmountCallback<HTMLElementTagNameMap[TTagName]>;
+  onDestroy?: DestroyCallback<HTMLElementTagNameMap[TTagName]>;
 };
 
 declare global {

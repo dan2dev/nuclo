@@ -1,9 +1,9 @@
 /**
- * Mount/unmount lifecycle hooks.
+ * Mount/destroy lifecycle hooks.
  *
  * Two equivalent ways to register them, both funneling into this module:
- *   - `on("mount", cb)` / `on("unmount", cb)`            (./events.ts)
- *   - `{ onMount: cb }` / `{ onUnmount: cb }` attributes  (./attributes.ts)
+ *   - `on("mount", cb)` / `on("destroy", cb)`            (./events.ts)
+ *   - `{ onMount: cb }` / `{ onDestroy: cb }` attributes  (./attributes.ts)
  *
  * ── Mount timing ─────────────────────────────────────────────────────────
  * A freshly created element is still detached while its own subtree (and,
@@ -16,14 +16,14 @@
  * finishes inserting its nodes — at that point the element is guaranteed
  * connected. See flushMountQueue() and its call sites in render.ts/update.ts.
  *
- * ── Unmount timing ───────────────────────────────────────────────────────
- * onUnmount fires eagerly and synchronously the moment nuclo removes the
+ * ── Destroy timing ───────────────────────────────────────────────────────
+ * onDestroy fires eagerly and synchronously the moment nuclo removes the
  * element through its own machinery — see the disposeElementLifecycle() call
  * in shared/dom.ts's cleanupNodeTree(), which every ordinary removal
  * (list()/when() diffing, any safeRemoveChild() call) already goes through.
  * The handful of fast paths that intentionally skip that per-node walk for
  * performance (list()'s bulk clear/replace, the single-element when()/else()
- * swap) call disposeLifecyclesInSubtree() directly instead, so unmount still
+ * swap) call disposeLifecyclesInSubtree() directly instead, so destroy still
  * fires exactly at removal time there too — without paying for a bookkeeping
  * walk when nothing in the affected subtree ever registered a lifecycle
  * callback (hasActiveLifecycleRegistrations() short-circuits that to a
@@ -37,7 +37,7 @@
  * bookkeeping below is WeakMap-based, exactly like every other nuclo
  * registry — see test/memory/gc-collectability.test.ts), but if an app
  * removes a node that way and never calls update() again afterwards,
- * onUnmount for it will not run either. This matches list()/when()'s own
+ * onDestroy for it will not run either. This matches list()/when()'s own
  * documented "disconnection is noticed lazily, on the next update()"
  * contract; it is not a lifecycle-specific limitation.
  *
@@ -67,7 +67,7 @@ const STATE_DISPOSED: LifecycleStateValue = 2;
 
 interface LifecycleRecord {
   mount: CallbackSlot<MountCallback<Element>> | null;
-  unmount: CallbackSlot<UnmountCallback<Element>> | null;
+  destroy: CallbackSlot<DestroyCallback<Element>> | null;
   state: LifecycleStateValue;
   /** True while this element sits in mountQueue awaiting a flush — guards
    *  against queuing the same element twice across multiple on()/attribute
@@ -82,7 +82,7 @@ const records = new WeakMap<Element, LifecycleRecord>();
  * the hot, lifecycle-free removal paths (list() bulk clear, the conditional-
  * element swap) skip disposeLifecyclesInSubtree()'s walk entirely with a
  * single comparison — true for the overwhelming majority of apps, which
- * never use onMount/onUnmount at all.
+ * never use onMount/onDestroy at all.
  *
  * Only ever incremented by ensureRecord() and decremented by
  * disposeElementLifecycle(), so an element GC'd via the raw-removal path
@@ -110,7 +110,7 @@ function shouldSkip(): boolean {
 function ensureRecord(element: Element): LifecycleRecord {
   let record = records.get(element);
   if (!record) {
-    record = { mount: null, unmount: null, state: STATE_PENDING, queued: false };
+    record = { mount: null, destroy: null, state: STATE_PENDING, queued: false };
     records.set(element, record);
     activeCount++;
   }
@@ -149,15 +149,15 @@ export function registerMount<TElement extends Element>(
   enqueue(element, record);
 }
 
-/** Registers an unmount callback for `element`. See the module doc for timing. */
-export function registerUnmount<TElement extends Element>(
+/** Registers a destroy callback for `element`. See the module doc for timing. */
+export function registerDestroy<TElement extends Element>(
   element: TElement,
-  callback: UnmountCallback<TElement>,
+  callback: DestroyCallback<TElement>,
 ): void {
   if (shouldSkip()) return;
   const record = ensureRecord(element);
   if (record.state === STATE_DISPOSED) return; // see registerMount()
-  record.unmount = pushSlot(record.unmount, callback as UnmountCallback<Element>);
+  record.destroy = pushSlot(record.destroy, callback as DestroyCallback<Element>);
   enqueue(element, record);
 }
 
@@ -167,20 +167,20 @@ function runMount(element: Element, callback: MountCallback<Element>, record: Li
     if (typeof cleanup === "function") {
       // A mount-returned cleanup takes no arguments (matches the
       // useEffect()/onMount() convention); wrap it to the element-taking
-      // unmount shape so it can share storage/dispatch with explicit
-      // onUnmount registrations.
-      record.unmount = pushSlot(record.unmount, (() => cleanup()) as UnmountCallback<Element>);
+      // destroy shape so it can share storage/dispatch with explicit
+      // onDestroy registrations.
+      record.destroy = pushSlot(record.destroy, (() => cleanup()) as DestroyCallback<Element>);
     }
   } catch (error) {
     logError("Error in mount callback", error);
   }
 }
 
-function runUnmount(element: Element, callback: UnmountCallback<Element>): void {
+function runDestroy(element: Element, callback: DestroyCallback<Element>): void {
   try {
     callback(element);
   } catch (error) {
-    logError("Error in unmount callback", error);
+    logError("Error in destroy callback", error);
   }
 }
 
@@ -224,7 +224,7 @@ export function flushMountQueue(): void {
 /**
  * Finalizes one element's lifecycle: silently cancels a mount that never got
  * to run (state was still Pending — built and discarded within one pass), or
- * fires its unmount callback(s) (state was Mounted). Idempotent — safe to
+ * fires its destroy callback(s) (state was Mounted). Idempotent — safe to
  * call more than once for the same element, e.g. once eagerly from
  * cleanupNodeTree() and, redundantly, once more from a fast-path caller that
  * doesn't know whether the eager walk already reached this node.
@@ -239,12 +239,12 @@ export function disposeElementLifecycle(element: Element): void {
   activeCount--;
 
   if (wasMounted) {
-    const unmount = record.unmount;
-    if (unmount !== null) {
-      if (Array.isArray(unmount)) {
-        for (let i = 0; i < unmount.length; i++) runUnmount(element, unmount[i]);
+    const destroy = record.destroy;
+    if (destroy !== null) {
+      if (Array.isArray(destroy)) {
+        for (let i = 0; i < destroy.length; i++) runDestroy(element, destroy[i]);
       } else {
-        runUnmount(element, unmount);
+        runDestroy(element, destroy);
       }
     }
   }
@@ -253,7 +253,7 @@ export function disposeElementLifecycle(element: Element): void {
   // collected along with the element — the callbacks (and anything they
   // closed over) become unreachable from here immediately.
   record.mount = null;
-  record.unmount = null;
+  record.destroy = null;
 }
 
 /**
