@@ -41,6 +41,28 @@
  * documented "disconnection is noticed lazily, on the next update()"
  * contract; it is not a lifecycle-specific limitation.
  *
+ * ── Ordering (parent/child, any depth) ──────────────────────────────────
+ * Neither mechanism below cares how many list()s, when()s, or plain
+ * component functions wrap an element — every element gets its own
+ * independent WeakMap record, keyed by the element itself, so correctness
+ * never depends on nesting depth. What nesting *does* affect is the relative
+ * order two related elements' callbacks fire in, which follows normal
+ * resource-scoping discipline in both directions:
+ *  - onMount fires parent-before-child. This falls out of queue order for
+ *    free — a parent's own {onMount}/on("mount", ...) modifier is applied
+ *    (queuing it) before the child factories in its own modifier list are
+ *    even invoked, since applying modifiers is a synchronous, in-order walk.
+ *    A child's onMount can safely assume any context the parent's onMount
+ *    set up is already in place.
+ *  - onDestroy fires child-before-parent (see cleanupNodeTree() and
+ *    disposeLifecyclesInSubtree() in shared/dom.ts, both post-order: they
+ *    recurse into every descendant *before* disposing the node itself). A
+ *    parent's onDestroy can safely release something its children were
+ *    still using — they have already run by the time it does.
+ * Together: mount is top-down, destroy is bottom-up — the same order a
+ * `try { ... } finally { ... }` stack of nested resource scopes unwinds in,
+ * applied to the DOM tree instead of the call stack.
+ *
  * ── Memory ───────────────────────────────────────────────────────────────
  * Per-element bookkeeping lives in a WeakMap keyed by the element, so it is
  * collectible the instant nothing else references the element — exactly the
@@ -166,10 +188,13 @@ function runMount(element: Element, callback: MountCallback<Element>, record: Li
     const cleanup = callback(element);
     if (typeof cleanup === "function") {
       // A mount-returned cleanup takes no arguments (matches the
-      // useEffect()/onMount() convention); wrap it to the element-taking
-      // destroy shape so it can share storage/dispatch with explicit
-      // onDestroy registrations.
-      record.destroy = pushSlot(record.destroy, (() => cleanup()) as DestroyCallback<Element>);
+      // useEffect()/onMount() convention) while DestroyCallback is called
+      // with the element — but storing it as-is, uncast wrapper, is safe and
+      // avoids allocating a closure for every mount that returns one: JS
+      // silently ignores call arguments a function doesn't declare, so
+      // runDestroy()'s `callback(element)` just calls `cleanup()` with an
+      // extra, unused argument.
+      record.destroy = pushSlot(record.destroy, cleanup as unknown as DestroyCallback<Element>);
     }
   } catch (error) {
     logError("Error in mount callback", error);
@@ -258,8 +283,10 @@ export function disposeElementLifecycle(element: Element): void {
 
 /**
  * True while at least one element anywhere on the page has a live (Pending
- * or Mounted) lifecycle record. See disposeLifecyclesInSubtree() in
- * shared/dom.ts, the only caller.
+ * or Mounted) lifecycle record. Called by disposeLifecyclesInSubtree() in
+ * shared/dom.ts (its own short-circuit) and, hoisted out of its per-row
+ * loop, by list/runtime.ts's bulkClearRecords() — so clearing a large
+ * lifecycle-free list costs one comparison, not one skipped call per row.
  */
 export function hasActiveLifecycleRegistrations(): boolean {
   return activeCount > 0;

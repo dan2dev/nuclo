@@ -104,6 +104,52 @@ describe("real GC — elements with onMount/onDestroy are collectible", () => {
     },
   );
 
+  itGc("a deeply/widely nested list()-of-list()-of-components tree is fully collectible", async () => {
+    const refs: WeakRef<Node>[] = (() => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+
+      function Item(label: string): ReturnType<typeof span> {
+        return span({ onMount: () => {}, onDestroy: () => {} }, label);
+      }
+      const groups = Array.from({ length: 20 }, (_, g) => ({
+        id: `g${g}`,
+        items: Array.from({ length: 10 }, (_, i) => `g${g}-i${i}`),
+      }));
+
+      const el = render(
+        div(list(() => groups, (group) =>
+          div(
+            { onMount: () => {}, onDestroy: () => {} },
+            list(() => group.items, (item) => Item(item)),
+          )
+        )),
+        container,
+      ) as unknown as HTMLElement;
+
+      // Collect refs via a plain recursive childNodes walk, *not*
+      // querySelectorAll()/querySelector() — a probe run while writing this
+      // test found that jsdom (nwsapi, its querySelector engine) keeps every
+      // matched node reachable through its own internal cache regardless of
+      // what nuclo does, reproducing with zero nuclo code in the picture at
+      // all. childNodes is a live view with no such cache.
+      const collected: WeakRef<Node>[] = [new WeakRef(el as Node)];
+      (function walk(node: Node): void {
+        for (let i = 0; i < node.childNodes.length; i++) {
+          collected.push(new WeakRef(node.childNodes[i]));
+          walk(node.childNodes[i]);
+        }
+      })(el as unknown as Node);
+      container.remove();
+      return collected;
+    })();
+
+    await collectGarbage();
+    for (const ref of refs) {
+      expect(ref.deref()).toBeUndefined();
+    }
+  });
+
   itGc("a mount-returned cleanup closure does not outlive its element", async () => {
     const ref: WeakRef<Node> = (() => {
       const container = document.createElement("div");

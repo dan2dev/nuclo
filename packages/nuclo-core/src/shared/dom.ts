@@ -59,7 +59,9 @@ function safeAppendChild(parent: Element | Node, child: Node): boolean {
  * to prevent memory leaks when elements are removed from the DOM.
  */
 function cleanupNodeTree(node: Node): void {
-  // Clean up the node itself based on its type
+  // Clean up the node itself based on its type. Order-independent bookkeeping
+  // (listeners, reactive registrations) runs up front; onDestroy is fired
+  // below, after descendants — see the comment there.
   if (node.nodeType === Node.ELEMENT_NODE) {
     const element = node as HTMLElement;
     // Remove all event listeners
@@ -68,8 +70,6 @@ function cleanupNodeTree(node: Node): void {
     cleanupReactiveElement(element);
     // Remove conditional info
     unregisterConditionalNode(element);
-    // Fire onDestroy (no-op unless this exact element registered one)
-    disposeElementLifecycle(element);
   } else if (node.nodeType === Node.TEXT_NODE) {
     // Remove reactive text node info
     cleanupReactiveTextNode(node as Text);
@@ -77,12 +77,25 @@ function cleanupNodeTree(node: Node): void {
     // Remove conditional info from comment nodes (used by when/list)
     unregisterConditionalNode(node);
   }
-  
+
   // Recursively clean up all child nodes
   if (node.childNodes && node.childNodes.length > 0) {
     for (let i = 0; i < node.childNodes.length; i++) {
       cleanupNodeTree(node.childNodes[i]);
     }
+  }
+
+  // Fire onDestroy last — after every descendant's onDestroy has already run
+  // (post-order) — so a parent's teardown can rely on its children having
+  // already released whatever they were using (e.g. a subscription or timer
+  // the parent owns and children only read from). This mirrors onMount's own
+  // order, which is naturally parent-before-child (registration order is
+  // construction order: a parent's own onMount/{onMount} modifier is applied
+  // before its child factories are even invoked) — so mount is top-down,
+  // destroy is bottom-up, the same LIFO discipline nested resource scopes
+  // always use. No-op unless this exact element registered a callback.
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    disposeElementLifecycle(node as HTMLElement);
   }
 }
 
@@ -92,15 +105,18 @@ function cleanupNodeTree(node: Node): void {
  * without walking through cleanupNodeTree()/safeRemoveChild(). Short-circuits
  * to a single comparison when nothing on the page has ever registered a
  * lifecycle callback — the common case — so those fast paths stay fast.
+ *
+ * Same post-order (children, then self) as cleanupNodeTree() above, for the
+ * same reason — see the comment there.
  */
 export function disposeLifecyclesInSubtree(node: Node): void {
   if (!hasActiveLifecycleRegistrations()) return;
-  if (node.nodeType === Node.ELEMENT_NODE) {
-    disposeElementLifecycle(node as Element);
-  }
   const children = node.childNodes;
   for (let i = 0; i < children.length; i++) {
     disposeLifecyclesInSubtree(children[i]);
+  }
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    disposeElementLifecycle(node as Element);
   }
 }
 
