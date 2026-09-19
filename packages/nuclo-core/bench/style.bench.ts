@@ -25,6 +25,7 @@ const recipe = instance.variants({
 bench('css (same object)', () => { instance.css(stableInput); }, 500_000);
 bench('css (equal temporary object)', () => { instance.css({ p: 8, color: 'red' }); }, 200_000);
 bench('cx (two generated blocks)', () => { cx(base, active); }, 500_000);
+bench('cx (single input)', () => { cx(base); }, 500_000);
 bench('variants (cached selection)', () => { recipe({ tone: 'danger', size: 'lg' }); }, 500_000);
 
 resetStyles();

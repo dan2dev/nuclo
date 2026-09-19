@@ -115,4 +115,33 @@ describe('cx()', () => {
 		expect(cx([red], blue).className).toBe(blue.className);
 		expect(cx(red, [blue]).className).toBe(blue.className);
 	});
+
+	it('memoizes cx(a, b) by argument identity, independent of call order', () => {
+		const { css } = createCss({});
+		const base = css({ p: 8, color: 'red', display: 'flex' });
+		const active = css({ color: 'blue', opacity: 0.8 });
+
+		const first = cx(base, active);
+		expect(cx(base, active)).toBe(first);
+
+		const reversed = cx(active, base);
+		expect(reversed).not.toBe(first);
+		expect(cx(active, base)).toBe(reversed);
+	});
+
+	it('does not serve a stale cx(a, b) result across resetStyles()', () => {
+		const { css } = createCss({});
+		const base = css({ p: 8, color: 'red' });
+		const active = css({ color: 'blue' });
+		const first = cx(base, active);
+		expect(getCssText()).toContain(`.${first.className}`);
+
+		resetStyles();
+
+		// Same object references as before reset — without an epoch check,
+		// the pair memo would hand back `first` verbatim even though its
+		// merged class no longer exists in the (now-empty) registry.
+		const second = cx(base, active);
+		expect(second.className).not.toBe(first.className);
+	});
 });

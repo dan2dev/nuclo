@@ -557,6 +557,8 @@ const el = div(card, 'Hello');
 
 `css()` returns an object with a `className` key that can be passed directly to any tag builder. Global styles and keyframe animations use `globalStyle()` and `keyframes()`.
 
+Every distinct declaration block `css()` ever compiles mints a class that lives for the life of the process (only a manual test reset clears it) — this is what lets identical styles dedupe globally, but it means `css()` is for a bounded design-token vocabulary, not per-instance dynamic values. For data that varies per element instance (a user's chosen color, a computed position), use the `style` prop instead of routing it through `css({ raw: {...} })`.
+
 #### Composing with `cx()`
 
 `cx()` composes styles with exact, last-wins conflict resolution. When two generated classes target the same selector context, their declaration blocks are merged and the later value wins per property. It accepts results, raw class strings, falsy values, and nested arrays:

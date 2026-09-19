@@ -23,6 +23,19 @@
  * matching CSS at all. Storing the registry on `globalThis` instead makes
  * every copy of this module share the same state regardless of how many
  * times it ends up bundled.
+ *
+ * The registry never shrinks on its own: atomCache/atomMeta/rawKeys/
+ * baseRules/queryRules retain every rule for the life of the process —
+ * content-addressed dedup needs a durable record of what each class means,
+ * and the engine has no way to know whether a minted class still backs a
+ * live DOM node (it's deliberately decoupled from element/list lifecycle),
+ * so it can't safely evict. Only resetStyles() (a manual test helper)
+ * clears it. This is fine for the intended use — a bounded design-token
+ * vocabulary — but a caller piping truly per-instance dynamic values
+ * through css({ raw: {...} }) (e.g. per-row data in a list) mints one
+ * permanent class per unique value; prefer the `style` prop
+ * (element/inline-style.ts) for values that vary per instance rather than
+ * per design token. See test/style/registry-growth.test.ts.
  */
 
 // SSR collector — optional hook that receives every newly minted rule string
@@ -95,20 +108,27 @@ function createState(): EngineState {
 
 const ENGINE_STATE_KEY = Symbol.for("nuclo.style.engine.v1");
 const globalScope = globalThis as unknown as Record<symbol, EngineState>;
-const state = globalScope[ENGINE_STATE_KEY] ?? (globalScope[ENGINE_STATE_KEY] = createState());
+// Importing the runtime does not allocate the registry until styling is used.
+let cachedState: EngineState | undefined;
+function getState(): EngineState {
+	return cachedState ??= globalScope[ENGINE_STATE_KEY] ?? (globalScope[ENGINE_STATE_KEY] = createState());
+}
 
 export function setSSRCollector(fn: SSRCollector | null): void {
+	const state = getState();
 	state.ssrCollector = fn;
 }
 
 /** Pre-register at-rule queries so their cascade order follows theme order. */
 export function registerQueries(queries: Iterable<string>): void {
 	for (const query of queries) {
+		const state = getState();
 		if (!state.queryRules.has(query)) state.queryRules.set(query, []);
 	}
 }
 
 function createGroup(s: CSSStyleSheet, query: string): CSSGroupingRule | null {
+	const state = getState();
 	try {
 		const idx = s.cssRules.length;
 		s.insertRule(query + "{}", idx);
@@ -121,11 +141,18 @@ function createGroup(s: CSSStyleSheet, query: string): CSSGroupingRule | null {
 	}
 }
 
-/** The at-rule prelude of a live grouping rule ("@media (min-width: 601px)"), reconstructed from its cssText. */
+// A group prelude is stable while its children grow. Reading cssText on each
+// insertion would serialize all previous children and make loading quadratic.
+// Weak keys allow detached stylesheets to be collected after reset/rebinding.
+const groupQueries = new WeakMap<CSSRule, string>();
 function groupQueryOf(rule: CSSRule): string {
+	const cached = groupQueries.get(rule);
+	if (cached !== undefined) return cached;
 	const text = rule.cssText;
 	const brace = text.indexOf("{");
-	return (brace === -1 ? text : text.slice(0, brace)).trim();
+	const query = (brace === -1 ? text : text.slice(0, brace)).trim();
+	groupQueries.set(rule, query);
+	return query;
 }
 
 function ruleIdentity(rule: CSSRule): string {
@@ -138,6 +165,7 @@ function scopedRuleKey(query: string | undefined, identity: string): string {
 }
 
 function rememberExternalRule(rule: CSSRule, query: string | undefined): void {
+	const state = getState();
 	if (!state.externalRules) return;
 	const key = scopedRuleKey(query, ruleIdentity(rule));
 	let texts = state.externalRules.get(key);
@@ -149,6 +177,7 @@ function rememberExternalRule(rule: CSSRule, query: string | undefined): void {
 }
 
 function consumeExternalRule(rule: CSSRule, query: string | undefined): boolean {
+	const state = getState();
 	if (!state.externalRules) return false;
 	const key = scopedRuleKey(query, ruleIdentity(rule));
 	const texts = state.externalRules.get(key);
@@ -168,6 +197,7 @@ function consumeExternalRule(rule: CSSRule, query: string | undefined): boolean 
  * named or global rule that happens to reuse the same selector.
  */
 function indexExternalRules(rules: CSSRuleList): void {
+	const state = getState();
 	for (let i = 0; i < rules.length; i++) {
 		const rule = rules[i];
 		if (rule instanceof CSSStyleRule) {
@@ -190,6 +220,7 @@ function indexExternalRules(rules: CSSRuleList): void {
 }
 
 function insertBase(s: CSSStyleSheet, rule: string): void {
+	const state = getState();
 	try {
 		s.insertRule(rule, state.baseRuleCount);
 		const inserted = s.cssRules[state.baseRuleCount];
@@ -204,17 +235,19 @@ function insertBase(s: CSSStyleSheet, rule: string): void {
 }
 
 function insertGrouped(group: CSSGroupingRule, rule: string): void {
+	const state = getState();
 	try {
 		const index = group.cssRules.length;
 		group.insertRule(rule, index);
 		const inserted = group.cssRules[index];
-		if (consumeExternalRule(inserted, groupQueryOf(group))) group.deleteRule(index);
+		if (state.externalRules && consumeExternalRule(inserted, groupQueryOf(group))) group.deleteRule(index);
 	} catch {
 		// Invalid value/selector: drop the declaration, like browsers do for bad CSS.
 	}
 }
 
 function getOrCreateGroup(s: CSSStyleSheet, query: string): CSSGroupingRule | null {
+	const state = getState();
 	const direct = state.groupRules.get(query);
 	if (direct) return direct;
 	if (!state.hasExternalGroups) return createGroup(s, query);
@@ -244,7 +277,8 @@ function getOrCreateGroup(s: CSSStyleSheet, query: string): CSSGroupingRule | nu
  * which replaces v1's per-call classExistsInDOM() DOM scans with a single
  * replay per document.
  */
-function ensureSheet(): CSSStyleSheet | null {
+export function ensureSheet(): CSSStyleSheet | null {
+	const state = getState();
 	if (typeof document === "undefined") return null;
 	// The nuclo SSR polyfill provides a document without getElementById — in
 	// that context rules accumulate in the registry for getCssText() only.
@@ -298,6 +332,7 @@ function ensureSheet(): CSSStyleSheet | null {
 }
 
 function record(rule: string, query: string | undefined): void {
+	const state = getState();
 	// Bind/replay *before* this rule joins the registry, so a fresh bind's
 	// replay only ever covers previously-known rules — never this one twice.
 	const s = ensureSheet();
@@ -429,10 +464,9 @@ function mintBlock(
 	name?: string,
 	exactName = false,
 ): string {
-	let body = "";
+	const state = getState();
 	let contextKey = contextKeyOf(query, suffix);
 	for (const [prop, value] of decls) {
-		body += (body ? ";" : "") + prop + ":" + value;
 		contextKey = appendKeyPart(appendKeyPart(contextKey, prop), value);
 	}
 	if (name !== undefined && !isValidClassName(name)) {
@@ -464,6 +498,8 @@ function mintBlock(
 		}
 	}
 
+	let body = "";
+	for (const [prop, value] of decls) body += (body ? ";" : "") + prop + ":" + value;
 	state.atomCache.set(declKey, className);
 	state.atomMeta.set(className, { query, suffix, decls, name });
 	record(selectorFor(className, suffix) + "{" + body + "}", query);
@@ -496,6 +532,7 @@ export function atomBlock(
  * name down as a prefix, so `cx(appRoot, active)` reads as `app-root-1a2b3c`.
  */
 export function mergeBlocks(first: string, second: string): string {
+	const state = getState();
 	const a = state.atomMeta.get(first);
 	const b = state.atomMeta.get(second);
 	if (!a || !b) return second; // unknown input — nothing to merge with
@@ -510,17 +547,19 @@ export function mergeBlocks(first: string, second: string): string {
 
 /** Conflict key (query|suffix) for a generated class — lets cx() group classes by selector context. */
 export function conflictKeyOf(className: string): string | undefined {
+	const state = getState();
 	const meta = state.atomMeta.get(className);
 	return meta === undefined ? undefined : contextKeyOf(meta.query, meta.suffix);
 }
 
 /** Current registry generation, used to invalidate per-instance WeakMap hits after resetStyles(). */
 export function getStyleEpoch(): number {
-	return state.styleEpoch;
+	return (cachedState ?? globalScope[ENGINE_STATE_KEY])?.styleEpoch ?? 0;
 }
 
 /** Register a non-atomic rule (keyframes, global styles) once per dedupe key. */
 export function addRawRule(dedupeKey: string, rule: string): void {
+	const state = getState();
 	if (state.rawKeys.has(dedupeKey)) {
 		ensureSheet();
 		return;
@@ -531,6 +570,7 @@ export function addRawRule(dedupeKey: string, rule: string): void {
 
 /** All generated CSS — base rules first, then at-rule groups in registration order. */
 export function getCssText(): string {
+	const state = getState();
 	if (state.cssTextCache !== null) return state.cssTextCache;
 	let out = state.baseRules.join("");
 	for (const [query, rules] of state.queryRules) {
@@ -542,6 +582,7 @@ export function getCssText(): string {
 
 /** Clear all engine state (test helper). Removes the injected style element. */
 export function resetStyles(): void {
+	const state = getState();
 	state.atomCache.clear();
 	state.atomMeta.clear();
 	state.rawKeys.clear();

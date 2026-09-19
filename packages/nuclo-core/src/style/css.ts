@@ -12,7 +12,7 @@
  *   const button = css({ px: 24, py: 12, bg: "primary", rounded: 8, hover: { bg: "#4f46e5" } });
  *   div(button, "Save"); // button is { className } — a regular nuclo attributes object
  */
-import { atomBlock, addRawRule, conflictKeyOf, expandAmpersands, getStyleEpoch, hash, mergeBlocks, registerQueries } from "./engine";
+import { atomBlock, addRawRule, conflictKeyOf, ensureSheet, expandAmpersands, getStyleEpoch, hash, mergeBlocks, registerQueries } from "./engine";
 
 // ---------------------------------------------------------------------------
 // Types live in types/style.d.ts (shipped with the package) so the published
@@ -145,11 +145,14 @@ const UNITLESS = new Set([
 	"orphans", "widows", "tab-size", "animation-iteration-count", "grid-column", "grid-row",
 ]);
 
+// Cache only conversions, with a ceiling for arbitrary custom property names.
 const kebabCache = new Map<string, string>();
 function kebab(prop: string): string {
+	if (!/[A-Z]/.test(prop)) return prop;
 	let out = kebabCache.get(prop);
 	if (out === undefined) {
 		out = prop.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase());
+		if (kebabCache.size >= 512) kebabCache.clear();
 		kebabCache.set(prop, out);
 	}
 	return out;
@@ -191,15 +194,24 @@ function mergeStyle(target: Record<string, unknown>, source: Record<string, unkn
 	return target;
 }
 
+// A class rather than an object literal + Object.defineProperty: toString()
+// lives on the prototype, which is non-enumerable by spec at no per-call
+// cost — attribute application iterates Object.keys()/for-in and must only
+// see className, same contract the old defineProperty call paid for on
+// every mint. This runs on every cx() call (no cache) and every css() cache
+// miss, so the allocation shape matters.
+class StyleResultImpl {
+	readonly className: string;
+	constructor(className: string) {
+		this.className = className;
+	}
+	toString(): string {
+		return this.className;
+	}
+}
+
 function makeResult(className: string): StyleResult {
-	const result = { className } as StyleResult;
-	// Non-enumerable: attribute application iterates Object.keys() and must
-	// only see className.
-	Object.defineProperty(result, "toString", {
-		value: () => className,
-		enumerable: false,
-	});
-	return result;
+	return new StyleResultImpl(className);
 }
 
 function pickClass(picked: Map<string, string>, name: string): void {
@@ -241,6 +253,25 @@ function collectClasses(inputs: readonly ClassInput[], picked: Map<string, strin
 	}
 }
 
+function composeClassName(inputs: readonly ClassInput[]): string {
+	const picked = new Map<string, string>();
+	collectClasses(inputs, picked);
+	let className = "";
+	for (const name of picked.values()) className += (className ? " " : "") + name;
+	return className;
+}
+
+// Memoizes cx(a, b) by the identity of its two arguments — the shape of a
+// per-render `cx(base, active)` conditional-class helper, called with the
+// same two object references every time. Mirrors css()'s own memo (below):
+// nested WeakMaps so entries die with either argument, epoch-gated so a
+// resetStyles() call can't hand back a className with no backing rule.
+const cxPairMemo = new WeakMap<object, WeakMap<object, { epoch: number; first: string; second: string; result: StyleResult }>>();
+
+function isPlainCxObject(value: ClassInput): value is StyleResult {
+	return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
 /**
  * Compose class lists with exact conflict resolution: when two inputs style
  * the same (query, selector-suffix) context, their declaration blocks merge
@@ -252,11 +283,36 @@ function collectClasses(inputs: readonly ClassInput[], picked: Map<string, strin
  * as `cx(a, cond && b, c)`.
  */
 export function cx(...inputs: ClassInput[]): StyleResult {
-	const picked = new Map<string, string>();
-	collectClasses(inputs, picked);
-	let className = "";
-	for (const name of picked.values()) className += (className ? " " : "") + name;
-	return makeResult(className);
+	if (inputs.length === 0) return makeResult("");
+	if (inputs.length === 1) {
+		const only = inputs[0];
+		if (!only) return makeResult("");
+		if (!Array.isArray(only)) {
+			const name = typeof only === "string" ? only : (only as StyleResult).className;
+			// Multiple tokens may include conflicting generated classes even in one input.
+			if (!/[\t\n\f\r ]/.test(name)) return makeResult(name);
+		}
+	}
+
+	if (inputs.length === 2 && isPlainCxObject(inputs[0]) && isPlainCxObject(inputs[1])) {
+		const a = inputs[0] as object;
+		const b = inputs[1] as object;
+		const epoch = getStyleEpoch();
+		const inner = cxPairMemo.get(a);
+		const hit = inner?.get(b);
+		if (hit !== undefined && hit.epoch === epoch && hit.first === inputs[0].className && hit.second === inputs[1].className) {
+			ensureSheet();
+			return hit.result;
+		}
+
+		const result = makeResult(composeClassName(inputs));
+		const bucket = inner ?? new WeakMap<object, { epoch: number; first: string; second: string; result: StyleResult }>();
+		bucket.set(b, { epoch, first: inputs[0].className, second: inputs[1].className, result });
+		if (!inner) cxPairMemo.set(a, bucket);
+		return result;
+	}
+
+	return makeResult(composeClassName(inputs));
 }
 
 // ---------------------------------------------------------------------------
@@ -381,7 +437,10 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 		// under two different names must not reuse the first result.
 		const epoch = getStyleEpoch();
 		const hit = memo.get(style);
-		if (hit !== undefined && hit.epoch === epoch && hit.name === name) return hit.result;
+		if (hit !== undefined && hit.epoch === epoch && hit.name === name) {
+			ensureSheet();
+			return hit.result;
+		}
 
 		const buckets = new Map<string, Bucket>();
 		walk(style as Record<string, unknown>, undefined, "", buckets);
@@ -484,8 +543,14 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 		});
 
 		const cache = new Map<string, StyleResult>();
+		let cacheEpoch = getStyleEpoch();
 
 		return function recipe(props?: VariantProps<V>): StyleResult {
+			const epoch = getStyleEpoch();
+			if (cacheEpoch !== epoch) {
+				cache.clear();
+				cacheEpoch = epoch;
+			}
 			// Resolve final selection: defaults, overridden by explicit props.
 			const selection: Record<string, string> = {};
 			for (const group of groupNames) {
@@ -503,7 +568,10 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 				key += value === undefined ? "-" : "+" + value.length + ":" + value;
 			}
 			const cached = cache.get(key);
-			if (cached) return cached;
+			if (cached) {
+				ensureSheet();
+				return cached;
+			}
 
 			let merged: Record<string, unknown> = {};
 			if (baseStyle) merged = mergeStyle(merged, baseStyle);
