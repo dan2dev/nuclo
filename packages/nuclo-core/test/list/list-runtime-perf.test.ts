@@ -92,6 +92,23 @@ describe("list runtime performance paths", () => {
     expect(new Set(after)).toEqual(new Set(before));
   });
 
+  it("matches large duplicate buckets FIFO without rebuilding rows", () => {
+    const a = { id: 1 };
+    const b = { id: 2 };
+    const count = 1000;
+    let items = [...Array.from({ length: count }, () => a), ...Array.from({ length: count }, () => b)];
+    const render = vi.fn(renderRow);
+    const runtime = createListRuntime(() => items, render, container, 0);
+    const before = Array.from(container.children);
+    render.mockClear();
+
+    items = [...items.slice(count), ...items.slice(0, count)];
+    sync(runtime);
+
+    expect(Array.from(container.children)).toEqual([...before.slice(count), ...before.slice(0, count)]);
+    expect(render).not.toHaveBeenCalled();
+  });
+
   it("reverse reorders with at most n-1 moves and preserves identity", () => {
     const items = makeItems(20);
     const runtime = createListRuntime(() => items, renderRow, container as any, 0);

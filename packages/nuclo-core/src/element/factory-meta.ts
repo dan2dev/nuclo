@@ -17,11 +17,10 @@ let metadataOnlyFactoryDepth = 0;
  * once, via getFactoryTag/getFactoryMods, during the same synchronous render
  * pass that created them, and are never invoked or retained afterward — so a
  * small pool of stub functions can be reused across rows instead of
- * allocating a fresh closure per tag-builder call. The pool rewinds to index
- * 0 at the outermost withMetadataOnlyFactories entry: one row's tree needs at
- * most one live slot per factory call within it, and the next row's pass
- * only starts once the previous row's tree has been fully consumed by the
- * caller (list runtime template instantiation is fully synchronous per row).
+ * allocating a fresh closure per tag-builder call. Each row checkpoints the
+ * pool before rendering and releases its metadata after consumption, including
+ * on failure. Nested renders use later slots so they cannot overwrite an
+ * outer row's still-live factory tree.
  */
 const metadataOnlyStubPool: Array<() => null> = [];
 let metadataOnlyPoolIndex = 0;
@@ -67,12 +66,22 @@ export function isMetadataOnlyFactoryMode(): boolean {
  * closure just to defer a single call.
  */
 export function withMetadataOnlyFactories<TItem, T>(fn: (item: TItem, index: number) => T, item: TItem, index: number): T {
-  const isOutermost = metadataOnlyFactoryDepth === 0;
   metadataOnlyFactoryDepth++;
-  if (isOutermost) metadataOnlyPoolIndex = 0;
   try {
     return fn(item, index);
   } finally {
     metadataOnlyFactoryDepth--;
+  }
+}
+
+export function getMetadataOnlyFactoryCheckpoint() {
+  return metadataOnlyPoolIndex;
+}
+
+export function releaseMetadataOnlyFactories(checkpoint: number) {
+  while (metadataOnlyPoolIndex > checkpoint) {
+    const factory = metadataOnlyStubPool[--metadataOnlyPoolIndex] as TaggedFactory;
+    factory[FACTORY_TAG] = undefined;
+    factory[FACTORY_MODS] = undefined;
   }
 }

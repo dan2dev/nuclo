@@ -19,7 +19,7 @@ import { isHydrating, isSerializing, claimChild, peekChild, setCursor, skipWhite
 import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsInput, ListItemsProvider, ListRenderedRow } from "./types";
 import type { UpdateScope } from "../update/scope";
 import { isBrowser } from "../shared/environment";
-import { getFactoryMods, getFactoryTag, withMetadataOnlyFactories } from "../element/factory-meta";
+import { getFactoryMods, getFactoryTag, withMetadataOnlyFactories, getMetadataOnlyFactoryCheckpoint, releaseMetadataOnlyFactories } from "../element/factory-meta";
 import { analyzeFactory, prepareSkeleton, instantiateTemplate, adoptTemplateLeaves, flushRowLeaves, type RowLeaf } from "./template";
 import { hasActiveLifecycleRegistrations } from "../element/lifecycle";
 
@@ -89,6 +89,19 @@ function renderItem<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>,
   item: TItem,
   index: number,
+) {
+  const checkpoint = getMetadataOnlyFactoryCheckpoint();
+  try {
+    return renderItemWithTemplate(runtime, item, index);
+  } finally {
+    releaseMetadataOnlyFactories(checkpoint);
+  }
+}
+
+function renderItemWithTemplate<TItem, TTagName extends ElementTagName>(
+  runtime: ListRuntime<TItem, TTagName>,
+  item: TItem,
+  index: number,
 ): ExpandedElement<TTagName> | null {
   runtime.lastRenderLeaves = null;
   runtime.lastRenderRefresh = null;
@@ -133,7 +146,7 @@ function renderItem<TItem, TTagName extends ElementTagName>(
       }
       const clone = template.skeleton.cloneNode(true) as Element;
       const leaves: RowLeaf[] = [];
-      if (instantiateTemplate(template.tmpl, mods, clone, leaves)) {
+      if (getFactoryTag(result) === template.tmpl.tag && instantiateTemplate(template.tmpl, mods, clone, leaves)) {
         if (leaves.length > 0) runtime.lastRenderLeaves = leaves;
         return clone as unknown as ExpandedElement<TTagName>;
       }
@@ -300,6 +313,8 @@ function buildAndInsert<TItem, TTagName extends ElementTagName>(
       refresh: runtime.lastRenderRefresh,
       dynCreatedAt: dyn ? runtime.currentFlushEpoch : undefined,
     });
+    runtime.lastRenderLeaves = null;
+    runtime.lastRenderRefresh = null;
     const node = element as unknown as Node;
     if (fragment) {
       fragment.appendChild(node);
@@ -405,11 +420,11 @@ export function sync<TItem, TTagName extends ElementTagName>(
     }
   }
 
-  // Bucket the remaining old records by item identity, in DOM order. The value
+  // Bucket in reverse DOM order so pop() matches duplicates FIFO in O(1). The value
   // is a single old index, promoted to an index array only when the same item
   // occurs more than once (duplicates are matched FIFO).
   const buckets = new Map<TItem, number | number[]>();
-  for (let i = oldStart; i < oldEnd; i++) {
+  for (let i = oldEnd - 1; i >= oldStart; i--) {
     if (claimed[i - oldStart]) continue;
     const item = oldRecords[i].item;
     const entry = buckets.get(item);
@@ -427,7 +442,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
       oldIndex = entry;
       buckets.delete(items[newStart + j]);
     } else {
-      oldIndex = entry.shift()!;
+      oldIndex = entry.pop()!;
       if (entry.length === 0) buckets.delete(items[newStart + j]);
     }
     sources[j] = oldIndex;
@@ -502,6 +517,8 @@ export function sync<TItem, TTagName extends ElementTagName>(
         refresh: runtime.lastRenderRefresh,
         dynCreatedAt: dyn ? runtime.currentFlushEpoch : undefined,
       };
+      runtime.lastRenderLeaves = null;
+      runtime.lastRenderRefresh = null;
       const node = element as unknown as Node;
       if (!fragment) fragment = createDocumentFragment();
       if (fragment) {
@@ -711,6 +728,9 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
  * keeps it from pinning the items.
  */
 function releaseRuntime(runtime: ListRuntime<unknown, ElementTagName>): void {
+  runtime.template = null;
+  runtime.lastRenderLeaves = null;
+  runtime.lastRenderRefresh = null;
   for (let i = 0; i < runtime.records.length; i++) {
     const record = runtime.records[i] as { item: unknown; element: unknown; dyn?: unknown; refresh?: unknown };
     record.element = null;

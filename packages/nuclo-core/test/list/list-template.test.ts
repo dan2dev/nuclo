@@ -226,6 +226,16 @@ describe("list row-template cloning", () => {
     expect(divs[3].textContent).toBe("L3");
   });
 
+  it("rebuilds rows when only the root tag changes", () => {
+    createListRuntime(
+      () => [false, true],
+      (alternate) => alternate ? span("value") : div("value"),
+      container as never,
+      0,
+    );
+    expect(Array.from(container.children, (row) => row.tagName)).toEqual(["DIV", "SPAN"]);
+  });
+
   it("keeps cloned rows fully diffable (swap, remove, clear)", () => {
     let rows: Row[] = Array.from({ length: 6 }, (_, i) => ({ id: i, label: `L${i}` }));
     const runtime = createListRuntime(() => rows, benchRow(() => null, []), container as never, 0);

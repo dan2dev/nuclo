@@ -87,6 +87,38 @@ describe("real GC — removed subtrees are collectible", () => {
     }
   });
 
+  for (const templated of [true, false]) {
+    for (const removal of ["partial", "clear", "detach"]) {
+      itGc(`releases ${templated ? "templated" : "refreshable"} row data after ${removal}`, async () => {
+        const refs = (() => {
+          let items = [{ label: "first" }, { label: "last" }];
+          const itemRef = new WeakRef(items[1]);
+          const container = document.createElement("div");
+          document.body.appendChild(container);
+          const el = render(div(list(() => items, (item) => {
+            if (templated) return span(() => item.label);
+            const element = document.createElement("span");
+            const refresh = () => { element.textContent = item.label; };
+            refresh();
+            return { element, update: refresh };
+          })), container) as HTMLElement;
+          const rowRef = new WeakRef(el.lastElementChild!);
+          if (removal === "detach") {
+            container.remove();
+          } else {
+            items = removal === "clear" ? [] : items.slice(0, 1);
+            update();
+          }
+          return { itemRef, rowRef };
+        })();
+
+        await collectGarbage();
+        expect(refs.itemRef.deref()).toBeUndefined();
+        expect(refs.rowRef.deref()).toBeUndefined();
+      });
+    }
+  }
+
   itGc("when() runtime does not retain its removed subtree", async () => {
     const refs: WeakRef<Node>[] = mountAndRemove(() => {
       const show = true;
