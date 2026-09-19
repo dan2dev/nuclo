@@ -79,10 +79,11 @@ function cleanupNodeTree(node: Node): void {
   }
 
   // Recursively clean up all child nodes
-  if (node.childNodes && node.childNodes.length > 0) {
-    for (let i = 0; i < node.childNodes.length; i++) {
-      cleanupNodeTree(node.childNodes[i]);
-    }
+  // Destroy callbacks can mutate the live childNodes collection. Snapshot
+  // only when hooks exist; ordinary cleanup needs no additional allocation.
+  const children = hasActiveLifecycleRegistrations() ? Array.from(node.childNodes) : node.childNodes;
+  for (let i = 0; i < children.length; i++) {
+    cleanupNodeTree(children[i]);
   }
 
   // Fire onDestroy last — after every descendant's onDestroy has already run
@@ -111,7 +112,7 @@ function cleanupNodeTree(node: Node): void {
  */
 export function disposeLifecyclesInSubtree(node: Node): void {
   if (!hasActiveLifecycleRegistrations()) return;
-  const children = node.childNodes;
+  const children = Array.from(node.childNodes);
   for (let i = 0; i < children.length; i++) {
     disposeLifecyclesInSubtree(children[i]);
   }
@@ -125,7 +126,8 @@ export function safeRemoveChild(child: Node): boolean {
   try {
     // Clean up all event listeners before removing the element
     cleanupNodeTree(child);
-    child.parentNode.removeChild(child);
+    // A destroy callback may already have removed the node.
+    child.parentNode?.removeChild(child);
     return true;
   } catch (error) {
     logError('Failed to remove child node', error);
@@ -254,20 +256,21 @@ export function withScopedInsertion<T, THost extends Element | object>(
   callback: () => T
 ): T {
   const parent = asParentNode(host);
-  const originalAppend = parent.appendChild.bind(parent);
-  const originalInsert = parent.insertBefore.bind(parent);
+  const originalAppend = Object.getOwnPropertyDescriptor(parent, "appendChild");
+  const originalInsert = parent.insertBefore;
 
   // Temporarily override appendChild to insert before the reference node
   // TypeScript doesn't like this override but it's safe at runtime
   (parent as unknown as Record<string, unknown>).appendChild = function(node: Node): Node {
-    return originalInsert(node, referenceNode);
+    return originalInsert.call(parent, node, referenceNode);
   };
 
   try {
     return callback();
   } finally {
     // Restore original method
-    (parent as unknown as Record<string, unknown>).appendChild = originalAppend;
+    if (originalAppend) Object.defineProperty(parent, "appendChild", originalAppend);
+    else Reflect.deleteProperty(parent, "appendChild");
   }
 }
 

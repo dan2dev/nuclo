@@ -73,25 +73,23 @@ export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: un
  * ```
  */
 export function notifyReactiveTextNodes(scope?: UpdateScope): void {
-  const toDelete: WeakRef<Text>[] = [];
-
   for (const ref of reactiveTextNodes) {
     const node = ref.deref();
     if (node === undefined) {
-      toDelete.push(ref);
+      removeReactiveTextNodeRef(ref);
       continue;
     }
 
     const entry = reactiveTextNodesByNode.get(node);
     if (!entry) {
-      toDelete.push(ref);
+      removeReactiveTextNodeRef(ref);
       continue;
     }
     const info = entry.info;
 
     if (!isNodeConnected(node)) {
       reactiveTextNodesByNode.delete(node);
-      toDelete.push(ref);
+      removeReactiveTextNodeRef(ref);
       continue;
     }
 
@@ -116,7 +114,4 @@ export function notifyReactiveTextNodes(scope?: UpdateScope): void {
     }
   }
 
-  for (const ref of toDelete) {
-    removeReactiveTextNodeRef(ref);
-  }
 }

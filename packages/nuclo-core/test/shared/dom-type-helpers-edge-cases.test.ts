@@ -176,3 +176,19 @@ describe("domTypeHelpers edge cases", () => {
   });
 });
 
+
+it("restores appendChild identity across repeated and nested insertion scopes", () => {
+  const host = document.createElement("div");
+  const marker = document.createComment("end");
+  host.appendChild(marker);
+  const original = host.appendChild;
+  for (let i = 0; i < 100; i++) {
+    withScopedInsertion(host, marker, () => {
+      const outer = host.appendChild;
+      withScopedInsertion(host, marker, () => host.appendChild(document.createTextNode("x")));
+      expect(host.appendChild).toBe(outer);
+    });
+    expect(host.appendChild).toBe(original);
+    expect(Object.hasOwn(host, "appendChild")).toBe(false);
+  }
+});

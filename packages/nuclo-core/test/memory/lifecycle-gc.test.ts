@@ -169,3 +169,36 @@ describe("real GC — elements with onMount/onDestroy are collectible", () => {
     expect(ref.deref()).toBeUndefined();
   });
 });
+
+itGc("an abandoned pending mount does not retain its element", async () => {
+  const { registerMount, flushMountQueue } = await import("../../src/element/lifecycle");
+  const ref = (() => {
+    const element = document.createElement("div");
+    registerMount(element, () => {});
+    return new WeakRef(element);
+  })();
+  try {
+    await collectGarbage();
+    expect(ref.deref()).toBeUndefined();
+  } finally {
+    flushMountQueue();
+  }
+});
+
+itGc("a completed mount releases captured data while its element stays alive", async () => {
+  const { registerMount, flushMountQueue, disposeElementLifecycle } = await import("../../src/element/lifecycle");
+  const element = document.createElement("div");
+  const ref = (() => {
+    const payload = { data: new Array(1000).fill("mount-only") };
+    registerMount(element, () => { element.textContent = payload.data[0]; });
+    return new WeakRef(payload);
+  })();
+  flushMountQueue();
+  try {
+    await collectGarbage();
+    expect(ref.deref()).toBeUndefined();
+    expect(element.textContent).toBe("mount-only");
+  } finally {
+    disposeElementLifecycle(element);
+  }
+});

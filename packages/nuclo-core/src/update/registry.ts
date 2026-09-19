@@ -91,6 +91,11 @@ export function registerReactiveTextNode(node: Text, info: ReactiveTextNodeInfo)
  * Registers a reactive element in both lookup structures.
  */
 export function registerReactiveElement(element: Element, info: ReactiveElementInfo): void {
+  const existing = reactiveElementsByNode.get(element);
+  if (existing) {
+    existing.info = info;
+    return;
+  }
   const ref = new WeakRef(element);
   reactiveElements.add(ref);
   reactiveElementsByNode.set(element, { ref, info });
@@ -177,10 +182,11 @@ export function storeConditionalInfo<TTagName extends ElementTagName>(
 	info: ConditionalInfo<TTagName>
 ): void {
 	conditionalInfoMap.set(node, info as ConditionalInfo<ElementTagName>);
+	if (refByNode.has(node)) return;
 	const ref = new WeakRef(node);
 	activeConditionalNodes.add(ref);
 	refByNode.set(node, ref);
-	conditionalNodeFinalizer?.register(node, ref);
+	conditionalNodeFinalizer?.register(node, ref, ref);
 }
 
 /**
@@ -192,6 +198,7 @@ export function unregisterConditionalNode(node: Node): void {
 	const ref = refByNode.get(node);
 	if (ref) {
 		activeConditionalNodes.delete(ref);
+		conditionalNodeFinalizer?.unregister(ref);
 		refByNode.delete(node);
 	}
 }
@@ -202,19 +209,14 @@ export function unregisterConditionalNode(node: Node): void {
  */
 export function getActiveConditionalNodes(): Node[] {
 	const nodes: Node[] = [];
-	const toDelete: WeakRef<Node>[] = [];
 
 	for (const ref of activeConditionalNodes) {
 		const node = ref.deref();
 		if (node === undefined) {
-			toDelete.push(ref);
+			activeConditionalNodes.delete(ref);
 		} else {
 			nodes.push(node);
 		}
-	}
-
-	for (const ref of toDelete) {
-		activeConditionalNodes.delete(ref);
 	}
 
 	return nodes;

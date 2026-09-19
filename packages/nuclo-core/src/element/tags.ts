@@ -45,12 +45,12 @@ export const SELF_CLOSING_TAGS = [
 // createHtmlTagBuilder()/createSvgTagBuilder() closure allocation to first
 // access keeps boot-time work and idle memory proportional to what the app
 // actually uses instead of the whole tag catalogue.
-function defineLazyGlobal(target: Record<string, unknown>, key: string, create: () => unknown): void {
+function defineLazyGlobal<T>(target: Record<string, unknown>, key: string, tagName: T, create: (tagName: T) => unknown): void {
   Object.defineProperty(target, key, {
     configurable: true,
     enumerable: true,
     get(): unknown {
-      const value = create();
+      const value = create(tagName);
       Object.defineProperty(target, key, { value, configurable: true, enumerable: true, writable: true });
       return value;
     },
@@ -69,11 +69,11 @@ function registerHtmlTag(target: Record<string, unknown>, tagName: ElementTagNam
   if (tagName in target && typeof target[tagName] !== 'function') {
     return;
   }
-  defineLazyGlobal(target, tagName, () => createHtmlTagBuilder(tagName));
+  defineLazyGlobal(target, tagName, tagName, createHtmlTagBuilder);
   // `var` is a reserved word, so the declared global is `var_` — register it
   // under that name too (the bare `var` key stays for globalThis["var"] access).
   if (tagName === "var") {
-    defineLazyGlobal(target, "var_", () => createHtmlTagBuilder(tagName));
+    defineLazyGlobal(target, "var_", tagName, createHtmlTagBuilder);
   }
 }
 
@@ -82,7 +82,7 @@ function registerSvgTag(target: Record<string, unknown>, tagName: keyof SVGEleme
   const exportName = `${tagName}Svg`;
 
   if (!(exportName in target)) {
-    defineLazyGlobal(target, exportName, () => createSvgTagBuilder(tagName));
+    defineLazyGlobal(target, exportName, tagName, createSvgTagBuilder);
   }
 }
 

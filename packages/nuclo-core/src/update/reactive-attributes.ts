@@ -157,24 +157,22 @@ export function registerAttributeResolver<TTagName extends ElementTagName>(
  * ```
  */
 export function notifyReactiveElements(scope?: UpdateScope): void {
-  const toDelete: WeakRef<Element>[] = [];
-
   for (const ref of reactiveElements) {
     const el = ref.deref();
     if (el === undefined) {
-      toDelete.push(ref);
+      removeReactiveElementRef(ref);
       continue;
     }
 
     const entry = reactiveElementsByNode.get(el);
     if (!entry) {
-      toDelete.push(ref);
+      removeReactiveElementRef(ref);
       continue;
     }
 
     if (!isNodeConnected(el)) {
       reactiveElementsByNode.delete(el);
-      toDelete.push(ref);
+      removeReactiveElementRef(ref);
       continue;
     }
 
@@ -182,7 +180,4 @@ export function notifyReactiveElements(scope?: UpdateScope): void {
     applyAttributeResolvers(entry.info);
   }
 
-  for (const ref of toDelete) {
-    removeReactiveElementRef(ref);
-  }
 }

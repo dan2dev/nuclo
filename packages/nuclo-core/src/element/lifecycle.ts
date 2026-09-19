@@ -67,7 +67,9 @@
  * Per-element bookkeeping lives in a WeakMap keyed by the element, so it is
  * collectible the instant nothing else references the element — exactly the
  * same shape as list/runtime.ts's and update/registry.ts's registries. The
- * only iteration structure (mountQueue) never outlives a single flush.
+ * mountQueue holds only WeakRefs, so abandoned builds are collectible even
+ * if no later operation flushes the queue. Completed mount callbacks are
+ * released immediately; only their returned cleanup survives until destroy.
  */
 
 import { logError } from "../shared/errors";
@@ -116,7 +118,7 @@ const records = new WeakMap<Element, LifecycleRecord>();
  */
 let activeCount = 0;
 
-let mountQueue: Element[] = [];
+let mountQueue: WeakRef<Element>[] = [];
 
 function shouldSkip(): boolean {
   // isSerializing() is checked in addition to isBrowser (unlike on()'s plain
@@ -151,7 +153,7 @@ function pushSlot<T>(slot: CallbackSlot<T> | null, cb: T): CallbackSlot<T> {
 function enqueue(element: Element, record: LifecycleRecord): void {
   if (record.queued || record.state !== STATE_PENDING) return;
   record.queued = true;
-  mountQueue.push(element);
+  mountQueue.push(new WeakRef(element));
 }
 
 /** Registers a mount callback for `element`. See the module doc for timing. */
@@ -184,6 +186,7 @@ export function registerDestroy<TElement extends Element>(
 }
 
 function runMount(element: Element, callback: MountCallback<Element>, record: LifecycleRecord): void {
+  if (record.state !== STATE_MOUNTED) return;
   try {
     const cleanup = callback(element);
     if (typeof cleanup === "function") {
@@ -194,7 +197,9 @@ function runMount(element: Element, callback: MountCallback<Element>, record: Li
       // silently ignores call arguments a function doesn't declare, so
       // runDestroy()'s `callback(element)` just calls `cleanup()` with an
       // extra, unused argument.
-      record.destroy = pushSlot(record.destroy, cleanup as unknown as DestroyCallback<Element>);
+      // The callback may synchronously remove itself through a nested update.
+      if (records.get(element)?.state === STATE_DISPOSED) runDestroy(element, cleanup);
+      else record.destroy = pushSlot(record.destroy, cleanup);
     }
   } catch (error) {
     logError("Error in mount callback", error);
@@ -219,6 +224,7 @@ function fireMount(element: Element): void {
   record.state = STATE_MOUNTED;
 
   const mount = record.mount;
+  record.mount = null;
   if (mount === null) return;
   if (Array.isArray(mount)) {
     for (let i = 0; i < mount.length; i++) runMount(element, mount[i], record);
@@ -242,7 +248,8 @@ export function flushMountQueue(): void {
   const batch = mountQueue;
   mountQueue = [];
   for (let i = 0; i < batch.length; i++) {
-    fireMount(batch[i]);
+    const element = batch[i].deref();
+    if (element) fireMount(element);
   }
 }
 
