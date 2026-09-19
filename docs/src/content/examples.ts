@@ -9,7 +9,7 @@ export const EXAMPLES: ExampleEntry[] = [
   {
     id: "counter",
     title: "Counter",
-    desc: "Mutate state, call update(), and dynamic text refreshes.",
+    desc: "Mutate state, then call update(). The dynamic text refreshes.",
     code: `import 'nuclo'
 
 let count = 0
@@ -27,7 +27,7 @@ export function Counter() {
   {
     id: "todo",
     title: "Todo List",
-    desc: "Use list() for repeated items and update() after each mutation.",
+    desc: "Use list() for repeated items. Call update() after each mutation.",
     code: `import 'nuclo'
 
 interface Todo {
@@ -95,7 +95,7 @@ export function TodoList() {
   {
     id: "search",
     title: "Search Filter",
-    desc: "Filter an array with plain JavaScript and render it with list().",
+    desc: "Filter an array with plain JavaScript. Render the result with list().",
     code: `import 'nuclo'
 
 const users = [
@@ -143,7 +143,7 @@ export function SearchFilter() {
   {
     id: "styling",
     title: "Styling",
-    desc: "Use css() for classes and cx() for small conditional changes.",
+    desc: "Use css() for classes. Use cx() for small conditional changes.",
     code: `import 'nuclo'
 
 const { css, cx } = createCss({

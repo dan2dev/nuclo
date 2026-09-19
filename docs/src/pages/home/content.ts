@@ -5,7 +5,7 @@ export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · zero dependencies`;
 export const HERO_TITLE_LINES = ["Build explicit", "interfaces with", "nuclo."];
 
 export const HERO_DESC =
-  "A tiny, type-safe DOM framework with plain mutable state and explicit updates. No proxies, signals, or virtual DOM.";
+  "A small, type-safe DOM framework. State stays plain and mutable. You control every update. No proxies, no signals, no virtual DOM.";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
@@ -80,23 +80,23 @@ export function TodoList() {
 }`;
 
 export const PHILOSOPHY_QUOTE =
-  "When you mutate state, nothing happens. Call update() and Nuclo does exactly what you asked-no more, no less.";
+  "When you mutate state, nothing happens. Call update(), and Nuclo does exactly what you asked. No more, no less.";
 
 export const PHILOSOPHY_POINTS = [
   {
     num: "01",
     title: "Explicit is better than implicit",
-    desc: "No proxies tracking your every move. You mutate, you call update(). Clear causality, predictable behaviour.",
+    desc: "No proxies track your every move. You mutate state, then you call update(). Cause and effect stay clear and predictable.",
   },
   {
     num: "02",
     title: "Batch freely, update once",
-    desc: "Make 10 mutations before calling update() once. The DOM sees only the final state-no wasted renders.",
+    desc: "Make ten mutations, then call update() once. The DOM sees only the final state. No renders are wasted.",
   },
   {
     num: "03",
     title: "Functions, not components",
-    desc: "Build with plain JavaScript functions. No classes, no decorators, no special syntax-just functions that return DOM nodes, with onMount/onDestroy as ordinary modifiers when you need them.",
+    desc: "Build with plain JavaScript functions. Nuclo needs no classes, no decorators, and no special syntax. Each function returns DOM nodes. Add onMount and onDestroy as ordinary modifiers, only when you need them.",
   },
 ];
 
@@ -105,25 +105,25 @@ export const FEATURES = [
     num: "01 - EXPLICIT",
     icon: "zap",
     title: "You own the update cycle",
-    desc: "Mutate freely, then call update() once. No subscriptions, no schedulers, no diffing surprises - the DOM syncs when you decide.",
+    desc: "Mutate freely, then call update() once. Nuclo needs no subscriptions and no schedulers, and it never surprises you with a diff. The DOM syncs when you decide.",
   },
   {
     num: "02 - LIGHTWEIGHT",
     icon: "feather",
     title: "Zero dependencies",
-    desc: `About ${NUCLO_GZIP_KB} KB gzipped for the entire runtime. No compiler, no build plugins - add one import and start building.`,
+    desc: `About ${NUCLO_GZIP_KB} KB gzipped for the entire runtime. Nuclo needs no compiler and no build plugins. Add one import and start building.`,
   },
   {
     num: "03 - TYPED",
     icon: "braces",
     title: "TypeScript-first",
-    desc: "175 fully-typed HTML & SVG builders, with autocomplete for every attribute, style property, and event.",
+    desc: "175 fully-typed HTML and SVG builders give you autocomplete for every attribute, style property, and event.",
   },
   {
     num: "04 - PRECISE",
     icon: "target",
     title: "Fine-grained patching",
-    desc: "Dynamic expressions re-evaluate on update(), and only the values that actually changed touch the DOM.",
+    desc: "Dynamic expressions re-evaluate on update(). Only the values that actually changed touch the DOM.",
   },
 ];
 
@@ -132,20 +132,20 @@ export const PIPELINE_STEPS = [
   {
     kicker: "01 · Mutate",
     title: "Change your data",
-    desc: "State is plain JavaScript - variables, arrays, objects. Mutate it however you like, as many times as you like.",
+    desc: "State is plain JavaScript: variables, arrays, objects. Mutate it however you like, as many times as you like.",
     code: `<span class="pr">todos</span><span class="pt">.</span><span class="fn">push</span><span class="pt">(</span><span class="pr">newTodo</span><span class="pt">)</span>
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
     kicker: "02 · Commit",
     title: "Call update()",
-    desc: "One global function commits your changes. Batch a dozen mutations and commit once - nothing renders until you say so.",
+    desc: "One global function commits your changes. Batch a dozen mutations, then commit once. Nothing renders until you say so.",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
     kicker: "03 · Patch",
     title: "Nuclo syncs the DOM",
-    desc: "Every dynamic expression re-evaluates, and only values that actually changed are written to the DOM. No diffing, no re-renders.",
+    desc: "Every dynamic expression re-evaluates. Nuclo writes only the values that actually changed to the DOM. No diffing, no re-renders.",
     code: `<span class="cm">// 2 nodes patched,</span>
 <span class="cm">// everything else untouched</span>`,
   },
@@ -168,8 +168,8 @@ export const COMPARISON_COLS: {
     items: [
       { good: false, text: "Re-renders component trees on every state change" },
       { good: false, text: "Diffs old and new trees to find what changed" },
-      { good: false, text: "Needs memoization to claw performance back" },
-      { good: false, text: "Stale closures and dependency arrays" },
+      { good: false, text: "Needs memoization to win performance back" },
+      { good: false, text: "Leaves stale closures and dependency arrays" },
     ],
   },
   {
@@ -177,9 +177,9 @@ export const COMPARISON_COLS: {
     sub: "signals · stores · effects",
     items: [
       { good: false, text: "Wraps your state in proxies and subscriptions" },
-      { good: false, text: "Tracks dependencies invisibly at runtime" },
-      { good: false, text: "Updates cascade on schedules you don't control" },
-      { good: false, text: "Magic that's hard to step through in a debugger" },
+      { good: false, text: "Tracks dependencies invisibly, at runtime" },
+      { good: false, text: "Cascades updates on schedules you do not control" },
+      { good: false, text: "Is hard to step through in a debugger" },
     ],
   },
   {
@@ -187,10 +187,10 @@ export const COMPARISON_COLS: {
     sub: "mutate → update()",
     featured: true,
     items: [
-      { good: true, text: "Plain mutable state - no wrappers, no proxies" },
+      { good: true, text: "Plain mutable state, with no wrappers and no proxies" },
       { good: true, text: "One call, update(), is the whole mental model" },
       { good: true, text: "Patches only the values that changed" },
-      { good: true, text: `~${NUCLO_GZIP_KB} KB, zero dependencies, TypeScript-first` },
+      { good: true, text: `About ${NUCLO_GZIP_KB} KB, zero dependencies, TypeScript-first` },
     ],
   },
 ];
@@ -198,10 +198,10 @@ export const COMPARISON_COLS: {
 // ── Benchmarks ──────────────────────────────────────────────────────────────
 export const BENCHMARK_TITLE = "Fast where it counts.";
 export const BENCHMARK_SUB =
-  "Independent numbers from js-framework-benchmark - creating, updating, swapping, and clearing thousands of rows.";
+  "These are independent numbers from js-framework-benchmark, for creating, updating, swapping, and clearing thousands of rows.";
 
 export const BENCHMARK_NOTE =
-  "Duration slowdown vs. the fastest measured implementation - weighted geometric mean of all keyed benchmarks.";
+  "This score is the duration slowdown against the fastest measured implementation. It is a weighted geometric mean of all keyed benchmarks.";
 
 export const BENCHMARK_SOURCE_URL =
   "https://krausest.github.io/js-framework-benchmark/2026/chrome152.html";
@@ -231,20 +231,20 @@ export const BENCHMARK_ENTRIES: {
 // ── CTA ─────────────────────────────────────────────────────────────────────
 export const CTA_TITLE = "Ready when you are.";
 export const CTA_SUB =
-  "Install Nuclo, import it once, and ship UIs that update exactly when you say. The whole API fits in an afternoon.";
+  "Install Nuclo, import it once, and ship UIs that update exactly when you say. You can learn the whole API in an afternoon.";
 
 export const QUICK_START_STEPS = [
   {
     num: "01 - INSTALL",
     title: "Install",
-    desc: "Add Nuclo to your project with your favourite package manager.",
+    desc: "Add Nuclo to your project with npm, pnpm, yarn, bun, or deno.",
     code: `<span class="pt">$</span> <span class="fn">npm</span> create nuclo@latest<span class="tcaret"></span>`,
     lang: "terminal",
   },
   {
     num: "02 - IMPORT",
     title: "Import",
-    desc: "A single side-effect import globally injects all 175 tag builders.",
+    desc: "One side-effect import registers all 175 tag builders globally.",
     code: `<span class="kw">import</span> <span class="st">'nuclo'</span>`,
     lang: "main.ts",
   },

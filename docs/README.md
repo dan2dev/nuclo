@@ -1,6 +1,6 @@
 # nuclo docs
 
-Documentation site for Nuclo, built with Vite and Nuclo itself.
+This is the documentation site for Nuclo. It is built with Vite and with Nuclo itself.
 
 ## Scripts
 
@@ -15,7 +15,7 @@ bun run stress:front
 
 ## Front stress test (Playwright)
 
-This project includes a browser stress scenario that rapidly navigates internal pages and clicks interactive elements repeatedly.
+This project includes a browser stress test. The test opens internal pages and clicks interactive elements, many times in a row.
 
 ```bash
 # one-time setup for browser binary
@@ -44,13 +44,13 @@ Supported environment variables:
 - `STRESS_STRICT` (`true` or `false`, default: `false`)
 - `STRESS_DEGRADE_THRESHOLD_PCT` (default: `35`)
 - `STRESS_LEAK_THRESHOLD_MB` (default: `70`)
-- `STRESS_LIVE_LOG_EVERY_ROUTES` (default: `5`, front stress live progress frequency)
+- `STRESS_LIVE_LOG_EVERY_ROUTES` (default: `5`; sets how often the front stress test logs live progress)
 
-Server stress test env vars:
+Server stress test environment variables:
 
 - `TOTAL_REQUESTS` (default: `1000000`)
 - `CONCURRENCY` (default: `100`)
-- `REPORT_INTERVAL` (default: `10000`, prints a progress snapshot every N completed requests)
+- `REPORT_INTERVAL` (default: `10000`; the test prints a progress snapshot every N completed requests)
 
 Example heavier run:
 

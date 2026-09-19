@@ -87,8 +87,8 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Introduction",
     title: "Overview",
     content: `
-      <p>Nuclo is a lightweight, type-safe DOM framework built around plain mutable state and explicit updates. You write plain functions that build DOM elements, and pass functions for text, attributes, conditions, and lists whenever they depend on state-that registers a state-dependent value. When state changes, you call <code>update()</code>, and Nuclo reevaluates the registered values and syncs only what needs to change.</p>
-      <p>There are no proxies, no signals, no virtual DOM, no hidden subscriptions. You are always in control of when reevaluation happens.</p>
+      <p>Nuclo is a lightweight, type-safe DOM framework built around plain mutable state and explicit updates. You write plain functions that build DOM elements. You pass functions for text, attributes, conditions, and lists whenever they depend on state. This registers a state-dependent value. When state changes, you call <code>update()</code>. Nuclo then reevaluates the registered values and syncs only what needs to change.</p>
+      <p>Nuclo has no proxies, no signals, no virtual DOM, and no hidden subscriptions. You stay in control of when reevaluation happens.</p>
       <h3>The mental model</h3>
       <ol>
         <li>Create the UI with builder functions.</li>
@@ -97,13 +97,13 @@ export const DOC_SECTIONS: DocSection[] = [
         <li>Call <code>update()</code>.</li>
         <li>Nuclo reevaluates the registered state-dependent values and applies the changes to the existing DOM.</li>
       </ol>
-      <p>State mutation and the <code>update()</code> call (steps 3-4) are plain JavaScript: you write <code>count++</code> and call <code>update()</code> yourself. Changing state does not automatically trigger any UI work; nothing reevaluates until <code>update()</code> runs. The function from step 2 stays registered, ready to be evaluated again on a future update-but only <code>update()</code> starts that evaluation.</p>
+      <p>State mutation and the <code>update()</code> call, steps 3 and 4, are plain JavaScript. You write <code>count++</code> and call <code>update()</code> yourself. Changing state does not trigger any UI work on its own. Nothing reevaluates until <code>update()</code> runs. The function from step 2 stays registered, ready for Nuclo to evaluate again on a future update. Only <code>update()</code> starts that evaluation.</p>
       <h3>Core philosophy</h3>
-      <p>Nuclo keeps state management explicit: it trusts you to know when something changed, and acts <em>only</em> when you say so.</p>
+      <p>Nuclo keeps state management explicit. It trusts you to know when something changed, and it acts <em>only</em> when you say so.</p>
       <ul>
         <li><strong>Explicit updates</strong> - call <code>update()</code> after you mutate state.</li>
-        <li><strong>State-dependent values</strong> - pass <code>() =&gt; value</code> for text, attributes, styles, and class names; Nuclo re-evaluates them on each update.</li>
-        <li><strong>Plain functions</strong> - components are just functions. No classes, no decorators, no special syntax. <code>onMount</code>/<code>onDestroy</code> are ordinary modifiers, not a different mental model.</li>
+        <li><strong>State-dependent values</strong> - pass <code>() =&gt; value</code> for text, attributes, styles, and class names. Nuclo re-evaluates them on each update.</li>
+        <li><strong>Plain functions</strong> - components are plain functions. Nuclo needs no classes, no decorators, and no special syntax. <code>onMount</code> and <code>onDestroy</code> are ordinary modifiers, not a different mental model.</li>
       </ul>
     `,
   },
@@ -113,13 +113,13 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Introduction",
     title: "Quick Start",
     content: `
-      <p>The fastest way to start a new Nuclo project is to scaffold one with <code>create-nuclo</code>. It sets up a Vite + TypeScript project pre-wired for Nuclo:</p>
+      <p>The fastest way to start a new Nuclo project is to scaffold one with <code>create-nuclo</code>. It sets up a Vite and TypeScript project, pre-wired for Nuclo:</p>
     `,
     render: QuickStartTabs,
     afterContent: `
-      <p>You'll be prompted for a project name and a template. To skip the prompts, pass a name and flags directly:</p>
+      <p>Nuclo prompts you for a project name and a template. To skip the prompts, pass a name and flags directly:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">terminal</span></div><div class="code-block-body"><pre><span class="pt">$</span> <span class="fn">npm</span> create nuclo@latest my-app -- --template basic --yes</pre></div></div>
-      <p>Then install dependencies and start the dev server:</p>
+      <p>Install dependencies, then start the dev server:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">terminal</span></div><div class="code-block-body"><pre><span class="pt">$</span> <span class="fn">cd</span> my-app
 <span class="pt">$</span> <span class="fn">npm</span> install
 <span class="pt">$</span> <span class="fn">npm</span> run dev</pre></div></div>
@@ -131,11 +131,11 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Introduction",
     title: "Installation",
     content: `
-      <p>Already have a project? Install Nuclo via npm, pnpm, yarn, or bun:</p>
+      <p>To add Nuclo to an existing project, install it with npm, pnpm, yarn, or bun:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">terminal</span></div><div class="code-block-body"><pre><span class="pt">$</span> <span class="fn">npm</span> install nuclo</pre></div></div>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">terminal</span></div><div class="code-block-body"><pre><span class="pt">$</span> <span class="fn">pnpm</span> add nuclo</pre></div></div>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">terminal</span></div><div class="code-block-body"><pre><span class="pt">$</span> <span class="fn">bun</span> add nuclo</pre></div></div>
-      <p>Then import it once at your entry point. The import is a side-effect that globally registers 175 tag builder functions:</p>
+      <p>Import Nuclo once, at your entry point. This import is a side effect. It globally registers 175 tag builder functions:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">main.ts</span></div><div class="code-block-body"><pre><span class="kw">import</span> <span class="st">'nuclo'</span>
 <span class="cm">// div(), span(), button() ... are now available globally</span></pre></div></div>
     `,
@@ -146,10 +146,10 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Introduction",
     title: "TypeScript Setup",
     content: `
-      <p>Nuclo is written in TypeScript and ships full type definitions. The global tag builders are typed via a <code>declare global</code> block included in the package.</p>
-      <p>No special <code>tsconfig</code> changes are required when your app imports <code>'nuclo'</code>. If you want the globals available in files before the runtime import is seen by TypeScript, add a small env declaration:</p>
+      <p>Nuclo is written in TypeScript and ships full type definitions. A <code>declare global</code> block, included in the package, types the global tag builders.</p>
+      <p>Your app needs no special <code>tsconfig</code> changes to import <code>'nuclo'</code>. In some files, TypeScript may not yet see the runtime import when you need the globals. In that case, add a small environment declaration:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">vite-env.d.ts</span></div><div class="code-block-body"><pre><span class="cm">/// &lt;reference types="nuclo/types" /&gt;</span></pre></div></div>
-      <p>A standard strict configuration is enough for most projects:</p>
+      <p>A standard strict configuration works for most projects:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">tsconfig.json</span></div><div class="code-block-body"><pre><span class="pt">{</span>
   <span class="pr">"compilerOptions"</span><span class="pt">:</span> <span class="pt">{</span>
     <span class="pr">"target"</span><span class="pt">:</span> <span class="st">"ES2020"</span><span class="pt">,</span>
@@ -159,7 +159,7 @@ export const DOC_SECTIONS: DocSection[] = [
     <span class="pr">"types"</span><span class="pt">:</span> <span class="pt">[</span><span class="st">"nuclo/types"</span><span class="pt">]</span>
   <span class="pt">}</span>
 <span class="pt">}</span></pre></div></div>
-      <p>All 175 tag builders accept typed attribute objects, dynamic text functions, event descriptors, child builders, and class-name helpers. Your editor will autocomplete everything.</p>
+      <p>All 175 tag builders accept typed attribute objects, dynamic text functions, event descriptors, child builders, and class-name helpers. Your editor autocompletes all of these.</p>
     `,
   },
 
@@ -172,7 +172,7 @@ export const DOC_SECTIONS: DocSection[] = [
     title: "Explicit Updates",
     content: `
       <p>In Nuclo, <strong>nothing happens automatically</strong>. When you change a variable, the DOM stays unchanged until you call <code>update()</code>.</p>
-      <p>This is intentional. It gives you complete control over render timing and lets you batch any number of mutations before syncing the DOM.</p>
+      <p>This design is intentional. It gives you complete control over render timing. It also lets you batch any number of mutations before you sync the DOM.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">count</span> <span class="pt">=</span> <span class="nm">0</span>
 <span class="kw">let</span> <span class="pr">label</span> <span class="pt">=</span> <span class="st">'hello'</span>
 
@@ -185,7 +185,7 @@ export const DOC_SECTIONS: DocSection[] = [
     <span class="fn">update</span><span class="pt">()</span>
   <span class="pt">} }</span>
 <span class="pt">)</span></pre></div></div>
-      <div class="docs-callout"><strong>Tip:</strong> You can call <code>update()</code> from anywhere-event handlers, timers, fetch callbacks, anywhere.</div>
+      <div class="docs-callout"><strong>Tip:</strong> You can call <code>update()</code> from anywhere: event handlers, timers, fetch callbacks, and more.</div>
     `,
   },
   {
@@ -194,7 +194,7 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Core Concepts",
     title: "Dynamic Functions",
     content: `
-      <p>For text children and attribute values, you can pass a zero-argument function. On every <code>update()</code> call, Nuclo re-runs these functions and patches only changed values.</p>
+      <p>For text children and attribute values, you can pass a zero-argument function. On every <code>update()</code> call, Nuclo re-runs these functions. It patches only the values that changed.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">name</span> <span class="pt">=</span> <span class="st">'Alice'</span>
 
 <span class="kw">const</span> <span class="pr">el</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span>
@@ -212,7 +212,7 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Core Concepts",
     title: "Tag Builders",
     content: `
-      <p>After <code>import 'nuclo'</code>, every HTML and SVG tag is available as a global function. Tag builders accept any combination of:</p>
+      <p>After <code>import 'nuclo'</code>, every HTML and SVG tag is available as a global function. Tag builders accept any combination of the following:</p>
       <ul>
         <li><strong>Strings / numbers</strong> - text nodes</li>
         <li><strong>() =&gt; string</strong> - dynamic text nodes</li>
@@ -227,7 +227,7 @@ export const DOC_SECTIONS: DocSection[] = [
   <span class="fn">p</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pr">dynamicContent</span><span class="pt">),</span>
   <span class="fn">button</span><span class="pt">(</span><span class="st">"Click"</span><span class="pt">,</span> <span class="pt">{</span> <span class="pr">onClick</span><span class="pt">:</span> <span class="pr">handler</span> <span class="pt">}),</span>
 <span class="pt">)</span></pre></div></div>
-      <p>SVG tags are available as <code>svgSvg()</code>, <code>pathSvg()</code>, <code>circleSvg()</code>, etc. All accept the same argument patterns.</p>
+      <p>SVG tags are available too, such as <code>svgSvg()</code>, <code>pathSvg()</code>, and <code>circleSvg()</code>. All of them accept the same argument patterns.</p>
     `,
   },
   {
@@ -236,7 +236,7 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Core Concepts",
     title: "Attributes",
     content: `
-      <p>Pass an object as the first argument (or any argument) to set attributes. Values can be static or dynamic functions:</p>
+      <p>Pass an object as any argument to set attributes. Attribute values can be static, or they can be dynamic functions:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">disabled</span> <span class="pt">=</span> <span class="kw">false</span>
 <span class="kw">let</span> <span class="pr">href</span> <span class="pt">=</span> <span class="st">'/page'</span>
 
@@ -248,7 +248,7 @@ export const DOC_SECTIONS: DocSection[] = [
   <span class="pt">},</span>
   <span class="st">"Click me"</span><span class="pt">,</span>
 <span class="pt">)</span></pre></div></div>
-      <p>Nuclo handles boolean attributes correctly: <code>disabled: true</code> sets the attribute, <code>disabled: false</code> removes it.</p>
+      <p>Nuclo handles boolean attributes correctly. <code>disabled: true</code> sets the attribute. <code>disabled: false</code> removes it.</p>
     `,
   },
   {
@@ -257,7 +257,7 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Core Concepts",
     title: "Events",
     content: `
-      <p>Attach event listeners with camelCase <code>on*</code> props - <code>onClick</code>, <code>onInput</code>, <code>onChange</code>, <code>onKeyDown</code>, and so on. Any key in an attribute object whose name matches a known event and whose value is a function is registered as a listener instead of a reactive attribute:</p>
+      <p>Attach event listeners with camelCase <code>on*</code> props, such as <code>onClick</code>, <code>onInput</code>, <code>onChange</code>, and <code>onKeyDown</code>. In an attribute object, a key that matches a known event and holds a function value is registered as a listener, not as a reactive attribute:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">const</span> <span class="pr">btn</span> <span class="pt">=</span> <span class="fn">button</span><span class="pt">(</span>
   <span class="st">"Submit"</span><span class="pt">,</span>
   <span class="pt">{</span>
@@ -270,12 +270,12 @@ export const DOC_SECTIONS: DocSection[] = [
     <span class="pt">},</span>
   <span class="pt">},</span>
 <span class="pt">)</span></pre></div></div>
-      <p>This is the preferred way to wire up events - it reads naturally inside a plain attribute object, which is handy for row templates in a <code>list()</code>:</p>
+      <p>This is the preferred way to wire up events. It reads well inside a plain attribute object, which is handy for row templates in a <code>list()</code>:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="fn">button</span><span class="pt">(</span>
   <span class="st">"Remove"</span><span class="pt">,</span>
   <span class="pt">{</span> <span class="pr">className</span><span class="pt">:</span> <span class="st">"remove"</span><span class="pt">,</span> <span class="pr">onClick</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="fn">doDelete</span><span class="pt">(</span><span class="pr">row</span><span class="pt">.</span><span class="pr">id</span><span class="pt">)</span> <span class="pt">},</span>
 <span class="pt">)</span></pre></div></div>
-      <p>Use the <code>on()</code> helper instead when you need to attach multiple listeners for the same event type on one element, or pass listener <code>options</code> such as <code>{ passive: true }</code>.</p>
+      <p>Use the <code>on()</code> helper instead in two cases: when an element needs multiple listeners for the same event type, or when you need to pass listener <code>options</code> such as <code>{ passive: true }</code>.</p>
     `,
   },
   {
@@ -284,7 +284,7 @@ export const DOC_SECTIONS: DocSection[] = [
     groupTitle: "Core Concepts",
     title: "Lifecycle",
     content: `
-      <p>Two hooks tie setup and teardown to an element's presence in the DOM: <code>onMount</code> runs once the element is created and connected, and <code>onDestroy</code> runs once Nuclo removes it. Register them the same way as event handlers - as camelCase attribute props, or with the <code>on()</code> helper:</p>
+      <p>Two hooks tie setup and teardown to an element's presence in the DOM. <code>onMount</code> runs once, after the element is created and connected. <code>onDestroy</code> runs once, after Nuclo removes it. Register both hooks the same way as event handlers: as camelCase attribute props, or with the <code>on()</code> helper:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">seconds</span> <span class="pt">=</span> <span class="nm">0</span>
 
 <span class="kw">const</span> <span class="pr">timer</span> <span class="pt">=</span> <span class="fn">span</span><span class="pt">(</span>
@@ -296,15 +296,15 @@ export const DOC_SECTIONS: DocSection[] = [
   <span class="pt">},</span>
   <span class="pt">()</span> <span class="pt">=></span> <span class="pt">\`</span><span class="pt">\${</span><span class="pr">seconds</span><span class="pt">}s\`,</span>
 <span class="pt">)</span></pre></div></div>
-      <p><code>onMount</code> may return a cleanup function that takes no arguments. It runs on destroy exactly like a separate <code>onDestroy</code> would, so a subscription opened in <code>onMount</code> can be released right next to where it's opened, as shown above. Register an explicit <code>onDestroy</code> instead when the cleanup logic has nothing to do with what <code>onMount</code> set up, or use <code>on("mount", ...)</code> / <code>on("destroy", ...)</code> when you need more than one registration on the same element:</p>
+      <p><code>onMount</code> may return a cleanup function that takes no arguments. This cleanup function runs on destroy, exactly like a separate <code>onDestroy</code> would. So you can open a subscription in <code>onMount</code> and release it right next to where you opened it, as shown above. Register an explicit <code>onDestroy</code> instead when the cleanup logic has nothing to do with what <code>onMount</code> set up. Use <code>on("mount", ...)</code> and <code>on("destroy", ...)</code> when an element needs more than one registration:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="fn">li</span><span class="pt">(</span>
   <span class="pt">{</span> <span class="pr">onDestroy</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="pr">analytics</span><span class="pt">.</span><span class="fn">track</span><span class="pt">(</span><span class="st">'row-closed'</span><span class="pt">,</span> <span class="pr">row</span><span class="pt">.</span><span class="pr">id</span><span class="pt">)</span> <span class="pt">},</span>
   <span class="fn">on</span><span class="pt">(</span><span class="st">"mount"</span><span class="pt">,</span> <span class="pt">(</span><span class="pr">el</span><span class="pt">)</span> <span class="pt">=></span> <span class="pr">el</span><span class="pt">.</span><span class="fn">focus</span><span class="pt">()),</span>
   <span class="pr">row</span><span class="pt">.</span><span class="pr">label</span><span class="pt">,</span>
 <span class="pt">)</span></pre></div></div>
-      <p>Both hooks respect nesting: <code>onMount</code> fires parent-before-child, and <code>onDestroy</code> fires child-before-parent - the same order nested <code>try</code>/<code>finally</code> scopes unwind in, so a parent can safely release something its children were still using. This holds no matter how many <code>list()</code>s, <code>when()</code>s, or component functions wrap the element.</p>
-      <p>A freshly built element is still off-document while its own subtree (and, on the very first render, every ancestor up to the root) is being assembled, so <code>onMount</code> can't fire the instant a modifier runs - it fires once the surrounding <code>render()</code>, <code>hydrate()</code>, or <code>update()</code> call finishes, with the element already connected. <code>onDestroy</code> fires as soon as Nuclo removes the element through its own machinery (<code>list()</code>/<code>when()</code> diffing); an element removed by code outside Nuclo (a raw <code>node.remove()</code>) is only noticed the next time <code>render()</code>/<code>hydrate()</code>/<code>update()</code> runs afterward - the same "noticed lazily" contract <code>list()</code>/<code>when()</code> already have for disconnected DOM.</p>
-      <div class="docs-callout"><strong>Tip:</strong> <code>onMount</code>/<code>onDestroy</code> are not a dependency-tracking effect system - they never re-run. Each fires exactly once, tied only to the element being connected or removed, and nothing is retained once the element itself becomes unreachable.</div>
+      <p>Both hooks respect nesting. <code>onMount</code> fires parent-before-child. <code>onDestroy</code> fires child-before-parent. This is the same order in which nested <code>try</code>/<code>finally</code> scopes unwind, so a parent can safely release something its children were still using. This order holds no matter how many <code>list()</code>s, <code>when()</code>s, or component functions wrap the element.</p>
+      <p>A freshly built element stays off-document while Nuclo assembles its own subtree. On the very first render, this is true for every ancestor up to the root too. So <code>onMount</code> cannot fire the instant a modifier runs. Instead, it fires once the surrounding <code>render()</code>, <code>hydrate()</code>, or <code>update()</code> call finishes, with the element already connected. <code>onDestroy</code> fires as soon as Nuclo removes the element through its own machinery, through <code>list()</code> or <code>when()</code> diffing. When code outside Nuclo removes an element directly, with a raw <code>node.remove()</code>, Nuclo notices only the next time <code>render()</code>, <code>hydrate()</code>, or <code>update()</code> runs afterward. This is the same "noticed lazily" contract that <code>list()</code> and <code>when()</code> already have for disconnected DOM.</p>
+      <div class="docs-callout"><strong>Tip:</strong> <code>onMount</code> and <code>onDestroy</code> are not a dependency-tracking effect system. They never re-run. Each one fires exactly once, tied only to the element being connected or removed. Nothing is retained once the element itself becomes unreachable.</div>
     `,
   },
 
@@ -317,7 +317,7 @@ export const DOC_SECTIONS: DocSection[] = [
     apiTag: "fn",
     apiSig: `<span class="kw">function</span> <span class="fn">update</span><span class="pt">(...</span><span class="pr">scopeIds</span><span class="pt">:</span> <span class="ty">string</span><span class="pt">[]):</span> <span class="ty">void</span>`,
     content: `
-      <p>Triggers a synchronous DOM sync. Dynamic text, dynamic attributes, <code>when()</code> branches, and <code>list()</code> runtimes are re-evaluated, and only changed values are patched into the DOM.</p>
+      <p>Triggers a synchronous DOM sync. Nuclo re-evaluates dynamic text, dynamic attributes, <code>when()</code> branches, and <code>list()</code> runtimes, and patches only the changed values into the DOM.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">x</span> <span class="pt">=</span> <span class="nm">1</span>
 <span class="kw">let</span> <span class="pr">y</span> <span class="pt">=</span> <span class="nm">2</span>
 
@@ -326,7 +326,7 @@ export const DOC_SECTIONS: DocSection[] = [
   <span class="pr">y</span> <span class="pt">=</span> <span class="nm">20</span>
   <span class="fn">update</span><span class="pt">()</span> <span class="cm">// DOM reflects x=10, y=20 in one pass</span>
 <span class="pt">},</span> <span class="nm">1000</span><span class="pt">)</span></pre></div></div>
-      <p><code>update()</code> is synchronous. With no arguments it updates every registered runtime; with scope IDs it updates only roots registered by <code>scope("id")</code>.</p>
+      <p><code>update()</code> is synchronous. With no arguments, it updates every registered runtime. With scope IDs, it updates only the roots registered by <code>scope("id")</code>.</p>
     `,
   },
   {
@@ -337,13 +337,13 @@ export const DOC_SECTIONS: DocSection[] = [
     apiTag: "fn",
     apiSig: `<span class="kw">function</span> <span class="fn">render</span><span class="pt">(</span><span class="pr">nodeModFn</span><span class="pt">:</span> <span class="ty">NodeModFn</span><span class="pt">,</span> <span class="pr">parent</span><span class="pt">?:</span> <span class="ty">Element</span><span class="pt">,</span> <span class="pr">index</span><span class="pt">?:</span> <span class="ty">number</span><span class="pt">):</span> <span class="ty">ExpandedElement</span>`,
     content: `
-      <p>Calls a Nuclo builder and appends the created element to a parent. The parent defaults to <code>document.body</code>; pass an <code>Element</code> reference when mounting into a specific container.</p>
+      <p>Calls a Nuclo builder and appends the created element to a parent. The parent defaults to <code>document.body</code>. Pass an <code>Element</code> reference to mount into a specific container instead.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">main.ts</span></div><div class="code-block-body"><pre><span class="kw">import</span> <span class="st">'nuclo'</span>
 <span class="kw">import</span> <span class="pt">{</span> <span class="pr">App</span> <span class="pt">}</span> <span class="kw">from</span> <span class="st">'./app.ts'</span>
 
 <span class="kw">const</span> <span class="pr">root</span> <span class="pt">=</span> <span class="pr">document</span><span class="pt">.</span><span class="fn">getElementById</span><span class="pt">(</span><span class="st">'root'</span><span class="pt">)</span><span class="pt">!</span>
 <span class="fn">render</span><span class="pt">(</span><span class="fn">App</span><span class="pt">(),</span> <span class="pr">root</span><span class="pt">)</span></pre></div></div>
-      <p><code>render()</code> appends the element; it does not clear the parent first. Initial dynamic text and attributes are evaluated during creation.</p>
+      <p><code>render()</code> appends the element. It does not clear the parent first. It evaluates initial dynamic text and attributes during creation.</p>
     `,
   },
   {
@@ -354,13 +354,13 @@ export const DOC_SECTIONS: DocSection[] = [
     apiTag: "fn",
     apiSig: `<span class="kw">function</span> <span class="fn">hydrate</span><span class="pt">(</span><span class="pr">nodeModFn</span><span class="pt">:</span> <span class="ty">NodeModFn</span><span class="pt">,</span> <span class="pr">parent</span><span class="pt">?:</span> <span class="ty">Element</span><span class="pt">):</span> <span class="ty">ExpandedElement</span>`,
     content: `
-      <p>Hydrates existing SSR HTML by walking the DOM in parallel with the same Nuclo component tree. Existing elements are claimed and event listeners, dynamic attributes, dynamic text, <code>when()</code>, and <code>list()</code> runtimes are registered on them.</p>
+      <p>Hydrates existing SSR HTML. Nuclo walks the DOM in parallel with the same Nuclo component tree. It claims the existing elements, and it registers event listeners, dynamic attributes, dynamic text, <code>when()</code>, and <code>list()</code> runtimes on them.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">main.ts</span></div><div class="code-block-body"><pre><span class="kw">import</span> <span class="st">'nuclo'</span>
 <span class="kw">import</span> <span class="pt">{</span> <span class="pr">App</span> <span class="pt">}</span> <span class="kw">from</span> <span class="st">'./app.ts'</span>
 
 <span class="kw">const</span> <span class="pr">root</span> <span class="pt">=</span> <span class="pr">document</span><span class="pt">.</span><span class="fn">getElementById</span><span class="pt">(</span><span class="st">'app'</span><span class="pt">)</span><span class="pt">!</span>
 <span class="fn">hydrate</span><span class="pt">(</span><span class="fn">App</span><span class="pt">(),</span> <span class="pr">root</span><span class="pt">)</span></pre></div></div>
-      <p>Use <code>hydrate()</code> for server-rendered markup. Use <code>render()</code> when the client should create and append fresh DOM.</p>
+      <p>Use <code>hydrate()</code> for server-rendered markup. Use <code>render()</code> when the client should create and append fresh DOM instead.</p>
     `,
   },
   {
@@ -371,7 +371,7 @@ export const DOC_SECTIONS: DocSection[] = [
     apiTag: "fn",
     apiSig: `<span class="kw">function</span> <span class="fn">on</span><span class="pt">&lt;</span><span class="ty">K</span> <span class="kw">extends</span> <span class="kw">keyof</span> <span class="ty">HTMLElementEventMap</span><span class="pt">&gt;(</span>\n  <span class="pr">event</span><span class="pt">:</span> <span class="ty">K</span><span class="pt">,</span>\n  <span class="pr">handler</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">:</span> <span class="ty">HTMLElementEventMap</span><span class="pt">[</span><span class="ty">K</span><span class="pt">])</span> <span class="pt">=></span> <span class="ty">void</span><span class="pt">,</span>\n  <span class="pr">options</span><span class="pt">?:</span> <span class="ty">boolean</span> <span class="pt">|</span> <span class="ty">AddEventListenerOptions</span>\n<span class="pt">):</span> <span class="ty">NodeModFn</span>`,
     content: `
-      <p>Creates an event listener modifier. Pass the result as an argument to any tag builder. The listener is attached once during element creation and is tracked for cleanup.</p>
+      <p>Creates an event listener modifier. Pass the result as an argument to any tag builder. Nuclo attaches the listener once, during element creation, and tracks it for cleanup.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">const</span> <span class="pr">el</span> <span class="pt">=</span> <span class="fn">input</span><span class="pt">(</span>
   <span class="fn">on</span><span class="pt">(</span><span class="st">"input"</span><span class="pt">,</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">)</span> <span class="pt">=></span> <span class="pt">{</span>
     <span class="pr">query</span> <span class="pt">=</span> <span class="pt">(</span><span class="pr">e</span><span class="pt">.</span><span class="pr">target</span> <span class="kw">as</span> <span class="ty">HTMLInputElement</span><span class="pt">).</span><span class="pr">value</span>
@@ -391,7 +391,7 @@ export const DOC_SECTIONS: DocSection[] = [
     apiTag: "fn",
     apiSig: `<span class="kw">function</span> <span class="fn">on</span><span class="pt">(</span><span class="pr">type</span><span class="pt">:</span> <span class="st">"mount"</span><span class="pt">,</span> <span class="pr">listener</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">el</span><span class="pt">:</span> <span class="ty">Element</span><span class="pt">)</span> <span class="pt">=></span> <span class="ty">void</span> <span class="pt">|</span> <span class="pt">(()</span> <span class="pt">=></span> <span class="ty">void</span><span class="pt">)):</span> <span class="ty">NodeModFn</span>\n<span class="kw">function</span> <span class="fn">on</span><span class="pt">(</span><span class="pr">type</span><span class="pt">:</span> <span class="st">"destroy"</span><span class="pt">,</span> <span class="pr">listener</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">el</span><span class="pt">:</span> <span class="ty">Element</span><span class="pt">)</span> <span class="pt">=></span> <span class="ty">void</span><span class="pt">):</span> <span class="ty">NodeModFn</span>`,
     content: `
-      <p>Two pseudo-events registered the same way as <code>on()</code>'s DOM-event overloads - or as the <code>onMount</code> / <code>onDestroy</code> attribute pair, which reads more naturally inside an attribute object (the same trade-off as <code>onClick</code> versus <code>on("click", ...)</code>). Element types are inferred from the surrounding tag builder, same as every other <code>on*</code> handler.</p>
+      <p>These are two pseudo-events. Register them the same way as <code>on()</code>'s DOM-event overloads, or as the <code>onMount</code> and <code>onDestroy</code> attribute pair, which reads better inside an attribute object. This is the same trade-off as <code>onClick</code> versus <code>on("click", ...)</code>. Nuclo infers element types from the surrounding tag builder, the same as for every other <code>on*</code> handler.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="fn">div</span><span class="pt">(</span>
   <span class="pt">{</span>
     <span class="pr">onMount</span><span class="pt">(</span><span class="pr">el</span><span class="pt">)</span> <span class="pt">{</span>
@@ -403,9 +403,9 @@ export const DOC_SECTIONS: DocSection[] = [
     <span class="pt">},</span>
   <span class="pt">},</span>
 <span class="pt">)</span></pre></div></div>
-      <p><strong>Timing.</strong> <code>onMount</code> is queued while its element is still being built off-document and fires once the enclosing <code>render()</code>, <code>hydrate()</code>, or <code>update()</code> call finishes inserting it - never the instant the modifier runs. <code>onDestroy</code> fires as soon as Nuclo removes the element through <code>list()</code>/<code>when()</code> diffing; removal by code outside Nuclo (a raw <code>node.remove()</code>) is only noticed on the next <code>render()</code>/<code>hydrate()</code>/<code>update()</code> call.</p>
-      <p><strong>Ordering.</strong> Across a parent/child pair, <code>onMount</code> fires parent-before-child and <code>onDestroy</code> fires child-before-parent, regardless of how many <code>list()</code>s, <code>when()</code>s, or component functions separate them - the same order nested <code>try</code>/<code>finally</code> scopes unwind in.</p>
-      <p><strong>Memory.</strong> Bookkeeping lives in a <code>WeakMap</code> keyed by the element itself, exactly like every other Nuclo registry - nothing is retained once the element becomes unreachable, whether or not <code>onDestroy</code> ever got the chance to run.</p>
+      <p><strong>Timing.</strong> Nuclo queues <code>onMount</code> while its element is still being built off-document. It fires once the enclosing <code>render()</code>, <code>hydrate()</code>, or <code>update()</code> call finishes inserting the element, never the instant the modifier runs. <code>onDestroy</code> fires as soon as Nuclo removes the element through <code>list()</code> or <code>when()</code> diffing. When code outside Nuclo removes an element directly, with a raw <code>node.remove()</code>, Nuclo notices only on the next <code>render()</code>, <code>hydrate()</code>, or <code>update()</code> call.</p>
+      <p><strong>Ordering.</strong> Across a parent/child pair, <code>onMount</code> fires parent-before-child, and <code>onDestroy</code> fires child-before-parent. This order holds no matter how many <code>list()</code>s, <code>when()</code>s, or component functions separate them. It is the same order in which nested <code>try</code>/<code>finally</code> scopes unwind.</p>
+      <p><strong>Memory.</strong> Bookkeeping lives in a <code>WeakMap</code>, keyed by the element itself, exactly like every other Nuclo registry. Nothing is retained once the element becomes unreachable, whether or not <code>onDestroy</code> ever got the chance to run.</p>
     `,
   },
   {
@@ -416,7 +416,7 @@ export const DOC_SECTIONS: DocSection[] = [
     apiTag: "fn",
     apiSig: `<span class="kw">function</span> <span class="fn">when</span><span class="pt">(</span><span class="pr">condition</span><span class="pt">:</span> <span class="ty">boolean</span> <span class="pt">|</span> <span class="pt">(()</span> <span class="pt">=></span> <span class="ty">boolean</span><span class="pt">),</span> <span class="pt">...</span><span class="pr">content</span><span class="pt">:</span> <span class="ty">WhenContent</span><span class="pt">[]):</span> <span class="ty">WhenBuilder</span>`,
     content: `
-      <p>Conditionally renders content. Conditions may be booleans or dynamic functions re-evaluated on every <code>update()</code>. Chain <code>.when()</code> for additional branches and <code>.else()</code> for the fallback branch.</p>
+      <p>Renders content conditionally. A condition may be a boolean or a dynamic function; Nuclo re-evaluates dynamic functions on every <code>update()</code>. Chain <code>.when()</code> for more branches, and <code>.else()</code> for the fallback branch.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">loggedIn</span> <span class="pt">=</span> <span class="kw">false</span>
 
 <span class="kw">const</span> <span class="pr">el</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span>
@@ -437,7 +437,7 @@ export const DOC_SECTIONS: DocSection[] = [
     apiTag: "fn",
     apiSig: `<span class="kw">function</span> <span class="fn">list</span><span class="pt">&lt;</span><span class="ty">T</span><span class="pt">&gt;(</span><span class="pr">items</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="kw">readonly</span> <span class="ty">T</span><span class="pt">[]</span> <span class="pt">|</span> <span class="ty">Iterable</span><span class="pt">&lt;</span><span class="ty">T</span><span class="pt">&gt;,</span> <span class="pr">render</span><span class="pt">:</span> <span class="pt">(</span><span class="pr">item</span><span class="pt">:</span> <span class="ty">T</span><span class="pt">,</span> <span class="pr">index</span><span class="pt">:</span> <span class="ty">number</span><span class="pt">)</span> <span class="pt">=></span> <span class="ty">ListRenderResult</span><span class="pt">):</span> <span class="ty">ListModifier</span>`,
     content: `
-      <p>Renders a dynamic list. The <code>items</code> function is re-evaluated on every <code>update()</code>; Nuclo compares item identity and adds, removes, or reorders DOM nodes as needed.</p>
+      <p>Renders a dynamic list. Nuclo re-evaluates the <code>items</code> function on every <code>update()</code>. It compares item identity, then adds, removes, or reorders DOM nodes as needed.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">items</span><span class="pt">:</span> <span class="ty">string</span><span class="pt">[] =</span> <span class="pt">[</span><span class="st">'Apple'</span><span class="pt">,</span> <span class="st">'Banana'</span><span class="pt">]</span>
 
 <span class="kw">const</span> <span class="pr">listEl</span> <span class="pt">=</span> <span class="fn">ul</span><span class="pt">(</span>
@@ -449,7 +449,7 @@ export const DOC_SECTIONS: DocSection[] = [
 <span class="cm">// Later:</span>
 <span class="pr">items</span><span class="pt">.</span><span class="fn">push</span><span class="pt">(</span><span class="st">'Cherry'</span><span class="pt">)</span>
 <span class="fn">update</span><span class="pt">()</span></pre></div></div>
-      <p><code>list()</code> accepts arrays, readonly arrays, and any iterable. Elements are reused when the same item object or primitive value is still present.</p>
+      <p><code>list()</code> accepts arrays, readonly arrays, and any iterable. Nuclo reuses an element when the same item object or primitive value is still present.</p>
     `,
   },
   {
@@ -460,7 +460,7 @@ export const DOC_SECTIONS: DocSection[] = [
     apiTag: "fn",
     apiSig: `<span class="kw">function</span> <span class="fn">scope</span><span class="pt">(...</span><span class="pr">ids</span><span class="pt">:</span> <span class="ty">string</span><span class="pt">[]):</span> <span class="ty">NodeModFn</span>`,
     content: `
-      <p><code>scope()</code> registers an element as a named update root. Later, <code>update("id")</code> updates only runtimes contained by matching connected roots.</p>
+      <p><code>scope()</code> registers an element as a named update root. Later, <code>update("id")</code> updates only the runtimes contained by matching connected roots.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">const</span> <span class="pr">el</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span>
   <span class="fn">scope</span><span class="pt">(</span><span class="st">"cart"</span><span class="pt">),</span>
   <span class="fn">span</span><span class="pt">(()</span> <span class="pt">=></span> <span class="pt">\`</span><span class="st">Items: </span><span class="pt">\${</span><span class="pr">cartItems</span><span class="pt">.</span><span class="pr">length</span><span class="pt">}\`)</span>
@@ -479,7 +479,7 @@ export const DOC_SECTIONS: DocSection[] = [
     apiTag: "fn",
     apiSig: `<span class="kw">function</span> <span class="fn">createCss</span><span class="pt">(</span><span class="pr">theme</span><span class="pt">?:</span> <span class="ty">ThemeConfig</span><span class="pt">):</span> <span class="ty">CssInstance</span>`,
     content: `
-      <p>Nuclo styling is atomic CSS-in-TS. <code>css()</code> takes one typed style object and returns an attributes object you can pass directly to a tag builder.</p>
+      <p>Nuclo styling is atomic CSS-in-TS. <code>css()</code> takes one typed style object. It returns an attributes object, which you can pass directly to a tag builder.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">styles.ts</span></div><div class="code-block-body"><pre>const card = css("card", {
   p: 16,
   rounded: 8,
@@ -488,7 +488,7 @@ export const DOC_SECTIONS: DocSection[] = [
 })
 
 div(card, "Simple card")</pre></div></div>
-      <p>Use <code>createCss()</code> when you want a small theme. Tokens work in matching properties such as <code>bg</code>, <code>color</code>, and <code>borderColor</code>.</p>
+      <p>Use <code>createCss()</code> to define a small theme. Tokens work in matching properties, such as <code>bg</code>, <code>color</code>, and <code>borderColor</code>.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">theme.ts</span></div><div class="code-block-body"><pre>const { css, cx } = createCss({
   colors: {
     primary: "#ff3f00",
@@ -509,7 +509,7 @@ const activeButton = css("activeButton", {
   color: "white",
   borderColor: "primary",
 })</pre></div></div>
-      <p>Use <code>cx()</code> for simple composition. Later classes win when they set the same property.</p>
+      <p>Use <code>cx()</code> for simple composition. When two classes set the same property, the later class wins.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">button.ts</span></div><div class="code-block-body"><pre>let active = false
 
 button(
@@ -517,7 +517,7 @@ button(
   () =&gt; active ? "Active" : "Inactive",
   { onClick: () =&gt; { active = !active; update() } },
 )</pre></div></div>
-      <p>Advanced helpers such as <code>variants()</code>, <code>globalStyle()</code>, and <code>keyframes()</code> are available when you need them, but most components only need <code>css()</code>, <code>createCss()</code>, and <code>cx()</code>.</p>
+      <p>Advanced helpers, such as <code>variants()</code>, <code>globalStyle()</code>, and <code>keyframes()</code>, are available when you need them. Most components need only <code>css()</code>, <code>createCss()</code>, and <code>cx()</code>.</p>
     `,
   },
   {
@@ -528,7 +528,7 @@ button(
     apiTag: "fn",
     apiSig: `<span class="kw">function</span> <span class="fn">renderToString</span><span class="pt">(</span><span class="pr">input</span><span class="pt">:</span> <span class="ty">NodeModFn</span> <span class="pt">|</span> <span class="ty">Element</span> <span class="pt">|</span> <span class="ty">Node</span><span class="pt">):</span> <span class="ty">string</span>`,
     content: `
-      <p>The <code>nuclo/ssr</code> entry exports <code>renderToString()</code>, <code>renderManyToString()</code>, <code>renderToStringWithContainer()</code>, and <code>getCssText()</code>. In Node.js, load the Nuclo polyfill before creating DOM nodes.</p>
+      <p>The <code>nuclo/ssr</code> entry exports <code>renderToString()</code>, <code>renderManyToString()</code>, <code>renderToStringWithContainer()</code>, and <code>getCssText()</code>. In Node.js, load the Nuclo polyfill before you create DOM nodes.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">server.ts</span></div><div class="code-block-body"><pre><span class="kw">import</span> <span class="st">'nuclo/polyfill'</span>
 <span class="kw">import</span> <span class="st">'nuclo'</span>
 <span class="kw">import</span> <span class="pt">{</span> <span class="pr">renderToString</span><span class="pt">,</span> <span class="pr">getCssText</span> <span class="pt">}</span> <span class="kw">from</span> <span class="st">'nuclo/ssr'</span>
@@ -545,7 +545,7 @@ button(
 <span class="cm">// Inject into the HTML response to prevent unstyled flash on hydration</span>
 <span class="kw">const</span> <span class="pr">page</span> <span class="pt">=</span> <span class="pt">\`&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;style&gt;\${</span><span class="pr">styles</span><span class="pt">}&lt;/style&gt;&lt;/head&gt;</span>
 <span class="pt">&lt;body&gt;&lt;div id="app"&gt;\${</span><span class="pr">html</span><span class="pt">}&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;\`</span></pre></div></div>
-      <p>SSR evaluates dynamic functions once for the current state. Render any component tree that creates atomic styles before reading <code>getCssText()</code>. On the client, call <code>hydrate()</code> with the same component tree to attach Nuclo runtime behavior to the existing markup.</p>
+      <p>SSR evaluates dynamic functions once, for the current state. Render any component tree that creates atomic styles before you read <code>getCssText()</code>. On the client, call <code>hydrate()</code> with the same component tree. This attaches Nuclo runtime behavior to the existing markup.</p>
     `,
   },
 
@@ -556,7 +556,7 @@ button(
     groupTitle: "Patterns",
     title: "Component Functions",
     content: `
-      <p>In Nuclo, "components" are just plain functions that return a DOM element. There is no special component API.</p>
+      <p>In Nuclo, a "component" is a plain function that returns a DOM element. Nuclo has no special component API.</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">Button.ts</span></div><div class="code-block-body"><pre><span class="kw">interface</span> <span class="ty">ButtonProps</span> <span class="pt">{</span>
   <span class="pr">label</span><span class="pt">:</span> <span class="ty">string</span>
   <span class="pr">onClick</span><span class="pt">:</span> <span class="pt">()</span> <span class="pt">=></span> <span class="ty">void</span>
@@ -565,7 +565,7 @@ button(
 <span class="kw">export function</span> <span class="fn">Button</span><span class="pt">({</span> <span class="pr">label</span><span class="pt">,</span> <span class="pr">onClick</span> <span class="pt">}:</span> <span class="ty">ButtonProps</span><span class="pt">) {</span>
   <span class="kw">return</span> <span class="fn">button</span><span class="pt">(</span><span class="pr">label</span><span class="pt">,</span> <span class="pt">{</span> <span class="pr">onClick</span> <span class="pt">})</span>
 <span class="pt">}</span></pre></div></div>
-      <p>State lives in the enclosing scope. Multiple calls to the same function create independent instances with independent state.</p>
+      <p>State lives in the enclosing scope. Each call to the same function creates an independent instance, with its own state.</p>
     `,
   },
   {
@@ -574,7 +574,7 @@ button(
     groupTitle: "Patterns",
     title: "Computed Values",
     content: `
-      <p>There is no special computed/derived-state API. Use plain JavaScript expressions or functions:</p>
+      <p>Nuclo has no special computed or derived-state API. Use plain JavaScript expressions or functions instead:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">items</span> <span class="pt">=</span> <span class="pt">[</span><span class="st">'a'</span><span class="pt">,</span> <span class="st">'b'</span><span class="pt">,</span> <span class="st">'c'</span><span class="pt">]</span>
 <span class="kw">let</span> <span class="pr">filter</span> <span class="pt">=</span> <span class="st">'all'</span>
 
@@ -595,7 +595,7 @@ button(
     groupTitle: "Patterns",
     title: "Async & Loading",
     content: `
-      <p>Handle async operations with plain <code>async/await</code> and call <code>update()</code> when state changes:</p>
+      <p>Handle async operations with plain <code>async</code>/<code>await</code>. Call <code>update()</code> each time state changes:</p>
       <div class="code-block-frame"><div class="code-block-header"><span class="code-block-filename">example.ts</span></div><div class="code-block-body"><pre><span class="kw">let</span> <span class="pr">status</span><span class="pt">:</span> <span class="st">'idle'</span> <span class="pt">|</span> <span class="st">'loading'</span> <span class="pt">|</span> <span class="st">'done'</span> <span class="pt">|</span> <span class="st">'error'</span> <span class="pt">=</span> <span class="st">'idle'</span>
 <span class="kw">let</span> <span class="pr">data</span><span class="pt">:</span> <span class="ty">unknown</span> <span class="pt">=</span> <span class="kw">null</span>
 
@@ -610,7 +610,7 @@ button(
   <span class="pt">}</span>
   <span class="fn">update</span><span class="pt">()</span>
 <span class="pt">}</span></pre></div></div>
-      <p>Call <code>update()</code> once before the await (to show loading state) and once after (to show results).</p>
+      <p>Call <code>update()</code> twice: once before the await, to show the loading state, and once after, to show the results.</p>
     `,
   },
   {
@@ -620,15 +620,15 @@ button(
     title: "Best Practices",
     content: `
       <ul>
-        <li><strong>Batch mutations</strong> - change multiple variables, call <code>update()</code> once at the end.</li>
+        <li><strong>Batch mutations</strong> - change multiple variables, then call <code>update()</code> once at the end.</li>
         <li><strong>Keep state flat</strong> - nested objects still work, but flat state is simpler to reason about.</li>
-        <li><strong>Use functions for components</strong> - each call creates a new instance with its own closure state.</li>
-        <li><strong>No dependency-tracking effects</strong> - Nuclo doesn't re-run anything automatically based on what a function reads. Use event handlers, timers, and fetch callbacks directly, and reach for <code>onMount</code>/<code>onDestroy</code> only to tie setup/cleanup to an element's presence in the DOM.</li>
-        <li><strong>SSR CSS collection</strong> - render or import code paths that call <code>css()</code> before reading <code>getCssText()</code>.</li>
-        <li><strong>Dynamic functions are cheap</strong> - don't over-optimize; Nuclo only patches values that actually changed.</li>
+        <li><strong>Use functions for components</strong> - each call creates a new instance, with its own closure state.</li>
+        <li><strong>No dependency-tracking effects</strong> - Nuclo does not re-run anything automatically based on what a function reads. Use event handlers, timers, and fetch callbacks directly. Reach for <code>onMount</code> and <code>onDestroy</code> only to tie setup and cleanup to an element's presence in the DOM.</li>
+        <li><strong>SSR CSS collection</strong> - render or import the code paths that call <code>css()</code> before you read <code>getCssText()</code>.</li>
+        <li><strong>Dynamic functions are cheap</strong> - do not over-optimize. Nuclo patches only the values that actually changed.</li>
       </ul>
       <div class="docs-callout">
-        <strong>Tip:</strong> Treat <code>update()</code> like a commit. Batch all your mutations, then call it once to flush the DOM.
+        <strong>Tip:</strong> Treat <code>update()</code> like a commit. Batch all your mutations, then call <code>update()</code> once to flush the DOM.
       </div>
     `,
   },
@@ -641,28 +641,28 @@ button(
     title: "Frequently Asked Questions",
     content: `
       <h3>How does Nuclo update the UI?</h3>
-      <p>Values that depend on state are provided as functions-<code>() =&gt; \`Count: \${count}\`</code> for text, or a function for an attribute, a <code>when()</code> condition, or a <code>list()</code> provider. Change your JavaScript state normally, then call <code>update()</code>. Nuclo reevaluates the registered state-dependent values and applies the results to the existing DOM nodes.</p>
+      <p>Values that depend on state are provided as functions: <code>() =&gt; \`Count: \${count}\`</code> for text, or a function for an attribute, a <code>when()</code> condition, or a <code>list()</code> provider. Change your JavaScript state normally, then call <code>update()</code>. Nuclo reevaluates the registered state-dependent values and applies the results to the existing DOM nodes.</p>
 
       <h3>Does changing state update the UI automatically?</h3>
-      <p>No. Setting a variable or mutating an object does nothing on its own. The DOM stays exactly as it was until you call <code>update()</code>. This means several mutations can happen first, and the DOM is only touched once, when you're ready.</p>
+      <p>No. Setting a variable or mutating an object does nothing on its own. The DOM stays exactly as it was until you call <code>update()</code>. So several mutations can happen first, and the DOM is touched only once, when you are ready.</p>
 
       <h3>What does <code>update()</code> do?</h3>
-      <p><code>update()</code> processes the state-dependent values registered by builders such as text functions, attribute functions, <code>when()</code> conditions, and <code>list()</code> providers, evaluates their latest results, and applies the necessary changes to the DOM.</p>
+      <p><code>update()</code> processes the state-dependent values registered by builders, such as text functions, attribute functions, <code>when()</code> conditions, and <code>list()</code> providers. It evaluates their latest results and applies the necessary changes to the DOM.</p>
 
       <h3>Does Nuclo require signals or proxies?</h3>
-      <p>No. State can remain regular JavaScript data-variables, objects, arrays, maps, sets, or application-specific data structures. Nuclo doesn't wrap it in signals, proxies, or special setter functions. State-dependent values are registered separately, when you pass a function to a builder, and <code>update()</code> is what reevaluates them.</p>
+      <p>No. State can stay regular JavaScript data: variables, objects, arrays, maps, sets, or application-specific data structures. Nuclo does not wrap it in signals, proxies, or special setter functions. You register state-dependent values separately, by passing a function to a builder, and <code>update()</code> is what reevaluates them.</p>
 
       <h3>Does Nuclo track state dependencies?</h3>
-      <p>Nuclo does not build a dependency graph that observes individual state reads and mutations and automatically schedules dependent UI work, the way signal-based systems do. Instead, <code>update()</code> reevaluates every state-dependent value that's currently registered (or, with <code>scope()</code>, every value registered within a given root) and only writes to the DOM where the result changed.</p>
+      <p>No. Signal-based systems build a dependency graph: they observe individual state reads and mutations, then automatically schedule dependent UI work. Nuclo does not build this graph. Instead, <code>update()</code> reevaluates every state-dependent value currently registered, or, with <code>scope()</code>, every value registered within a given root, and writes to the DOM only where the result changed.</p>
 
       <h3>Does Nuclo replace the whole DOM?</h3>
-      <p>No. <code>update()</code> reevaluates the state-dependent values, <code>when()</code> conditions, and <code>list()</code> providers that are currently registered, and only writes to the DOM where a value actually changed. See <a href="#api-update">update()</a> for the exact set of steps it runs.</p>
+      <p>No. <code>update()</code> reevaluates the state-dependent values, <code>when()</code> conditions, and <code>list()</code> providers that are currently registered. It writes to the DOM only where a value actually changed. See <a href="#api-update">update()</a> for the exact steps it runs.</p>
 
       <h3>Does Nuclo use a virtual DOM?</h3>
-      <p>No. Builders create real <code>Element</code>/<code>Text</code> nodes up front, and <code>update()</code> patches those same real nodes in place-there is no virtual tree to diff. You still express state-dependent values as plain functions; Nuclo performs the underlying DOM property, attribute, text, and child-node updates.</p>
+      <p>No. Builders create real <code>Element</code> and <code>Text</code> nodes up front. <code>update()</code> patches those same real nodes in place. There is no virtual tree to diff. You still express state-dependent values as plain functions; Nuclo performs the underlying DOM property, attribute, text, and child-node updates.</p>
 
       <h3>Does Nuclo have lifecycle hooks?</h3>
-      <p>Yes-<code>onMount</code> and <code>onDestroy</code> (or <code>on("mount", ...)</code> / <code>on("destroy", ...)</code>), covered in <a href="#lifecycle">Lifecycle</a>. What Nuclo doesn't have is a dependency-tracking <em>effect</em> system: neither hook re-runs on its own the way a signal-based <code>effect()</code> or React's <code>useEffect</code> with a dependency array does. Each fires exactly once, tied only to the element being connected or removed.</p>
+      <p>Yes: <code>onMount</code> and <code>onDestroy</code>, or <code>on("mount", ...)</code> and <code>on("destroy", ...)</code>. See <a href="#lifecycle">Lifecycle</a> for details. Nuclo does not have a dependency-tracking <em>effect</em> system. Neither hook re-runs on its own, the way a signal-based <code>effect()</code> or React's <code>useEffect</code> with a dependency array does. Each hook fires exactly once, tied only to the element being connected or removed.</p>
     `,
   },
 ];
