@@ -87,16 +87,17 @@ describe("real GC — removed subtrees are collectible", () => {
     }
   });
 
-  for (const templated of [true, false]) {
+  for (const kind of ["templated", "templated with on()", "refreshable"] as const) {
     for (const removal of ["partial", "clear", "detach"]) {
-      itGc(`releases ${templated ? "templated" : "refreshable"} row data after ${removal}`, async () => {
+      itGc(`releases ${kind} row data after ${removal}`, async () => {
         const refs = (() => {
           let items = [{ label: "first" }, { label: "last" }];
           const itemRef = new WeakRef(items[1]);
           const container = document.createElement("div");
           document.body.appendChild(container);
           const el = render(div(list(() => items, (item) => {
-            if (templated) return span(() => item.label);
+            if (kind === "templated") return span(() => item.label);
+            if (kind === "templated with on()") return span(on("click", () => { void item.label; }), () => item.label);
             const element = document.createElement("span");
             const refresh = () => { element.textContent = item.label; };
             refresh();

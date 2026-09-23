@@ -1,4 +1,4 @@
-import type { ListTemplate, RowLeaf } from "./template";
+import type { ListTemplate, RowLeaves } from "./template";
 
 export type ListItemsInput<TItem> = readonly TItem[] | Iterable<TItem>;
 
@@ -33,7 +33,7 @@ export interface ListItemRecord<TItem, TTagName extends ElementTagName = Element
    * instead of registering them globally; update() flushes them via the
    * list runtime. Null/absent for rows built through the normal path.
    */
-  dyn?: RowLeaf[] | null;
+  dyn?: RowLeaves | null;
   refresh?: (() => void) | null;
   /**
    * Internal updateListRuntimes() epoch in which this record's dynamic leaves
@@ -61,7 +61,7 @@ export interface ListRuntime<TItem, TTagName extends ElementTagName = ElementTag
    * creation sites to attach to the new record. Null when the row was built
    * through the normal path.
    */
-  lastRenderLeaves?: RowLeaf[] | null;
+  lastRenderLeaves?: RowLeaves | null;
   lastRenderRefresh?: (() => void) | null;
   /**
    * Set only while updateListRuntimes() is syncing this runtime.

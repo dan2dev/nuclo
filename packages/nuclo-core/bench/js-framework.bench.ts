@@ -144,7 +144,7 @@ function createApp() {
               { className: () => (selectedId === row.id ? 'danger' : '') },
               td({ className: 'col-md-1' }, String(row.id)),
               td({ className: 'col-md-4' }, a({ onClick: () => doSelect(row.id) }, () => row.label)),
-              td({ className: 'col-md-1' }, a({ onClick: () => doDelete(row.id) }, span({ className: 'glyphicon glyphicon-remove', 'aria-hidden': 'true' }))),
+              td({ className: 'col-md-1' }, a({ className: 'remove', onClick: () => doDelete(row.id) }, span({ className: 'glyphicon glyphicon-remove', 'aria-hidden': 'true' }))),
               td({ className: 'col-md-6' }),
             ),
         ),

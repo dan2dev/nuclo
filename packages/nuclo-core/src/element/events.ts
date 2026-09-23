@@ -20,6 +20,7 @@
 import { logError } from "../shared/errors";
 import { isBrowser } from "../shared/environment";
 import { registerMount, registerDestroy } from "./lifecycle";
+import { markEventModifier } from "./factory-meta";
 
 type EventListenerOptions = boolean | AddEventListenerOptions;
 
@@ -241,7 +242,9 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
     capture,
   );
 
-  return function(parent: ExpandedElement<TTagName>): void {
+  // Marked so list() row templates can replay it on cloned rows instead of
+  // falling back to a full per-row build (see list/template.ts SLOT_EVENT).
+  return markEventModifier(function(parent: ExpandedElement<TTagName>): void {
     // Type guard: verify parent is an HTMLElement with addEventListener
     if (!parent || typeof (parent as HTMLElement).addEventListener !== "function") {
       return;
@@ -253,5 +256,5 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
 
     // Track the listener so removeAllListeners() can detach it later.
     trackListener(el, info);
-  };
+  });
 }

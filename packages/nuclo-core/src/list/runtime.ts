@@ -20,7 +20,7 @@ import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsInput, ListIte
 import type { UpdateScope } from "../update/scope";
 import { isBrowser } from "../shared/environment";
 import { getFactoryMods, getFactoryTag, withMetadataOnlyFactories, getMetadataOnlyFactoryCheckpoint, releaseMetadataOnlyFactories } from "../element/factory-meta";
-import { analyzeFactory, prepareSkeleton, instantiateTemplate, adoptTemplateLeaves, flushRowLeaves, type RowLeaf } from "./template";
+import { analyzeFactory, prepareSkeleton, instantiateTemplate, adoptTemplateLeaves, flushRowLeaves, type RowLeaves } from "./template";
 import { hasActiveLifecycleRegistrations } from "../element/lifecycle";
 
 function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
@@ -85,6 +85,21 @@ function rebuildRowNormally<TItem, TTagName extends ElementTagName>(
   return resolveRenderable<TTagName>(fallback as never, runtime.host, index);
 }
 
+/**
+ * Shared collection buffer for a template row's dynamic leaves. A per-row `[]`
+ * grown by push() gets a ~16-slot backing store which the record then retains
+ * for the row's whole lifetime; collecting here and keeping an exact-size
+ * slice() drops that slack. Each use starts at the current length and
+ * truncates back to it afterwards, so a nested render (a resolver that renders
+ * another list) can't clobber an outer row's leaves, and the buffer never
+ * retains nodes or resolvers between rows.
+ */
+const leafScratch: RowLeaves = [];
+
+function takeLeaves(start: number): RowLeaves | null {
+  return leafScratch.length > start ? leafScratch.slice(start) : null;
+}
+
 function renderItem<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>,
   item: TItem,
@@ -130,10 +145,15 @@ function renderItemWithTemplate<TItem, TTagName extends ElementTagName>(
         if (tmpl && el) {
           const skeleton = (el as unknown as Node).cloneNode(true) as Element;
           prepareSkeleton(tmpl, skeleton);
-          const leaves: RowLeaf[] = [];
-          if (adoptTemplateLeaves(tmpl, mods, el as unknown as Element, leaves)) {
-            if (leaves.length > 0) runtime.lastRenderLeaves = leaves;
-          } else {
+          const start = leafScratch.length;
+          let adopted = false;
+          try {
+            adopted = adoptTemplateLeaves(tmpl, mods, el as unknown as Element, leafScratch);
+            if (adopted) runtime.lastRenderLeaves = takeLeaves(start);
+          } finally {
+            leafScratch.length = start;
+          }
+          if (!adopted) {
             runtime.template = null;
             runtime.lastRenderLeaves = null;
             return el;
@@ -145,10 +165,14 @@ function renderItemWithTemplate<TItem, TTagName extends ElementTagName>(
         return el;
       }
       const clone = template.skeleton.cloneNode(true) as Element;
-      const leaves: RowLeaf[] = [];
-      if (getFactoryTag(result) === template.tmpl.tag && instantiateTemplate(template.tmpl, mods, clone, leaves)) {
-        if (leaves.length > 0) runtime.lastRenderLeaves = leaves;
-        return clone as unknown as ExpandedElement<TTagName>;
+      const start = leafScratch.length;
+      try {
+        if (getFactoryTag(result) === template.tmpl.tag && instantiateTemplate(template.tmpl, mods, clone, leafScratch)) {
+          runtime.lastRenderLeaves = takeLeaves(start);
+          return clone as unknown as ExpandedElement<TTagName>;
+        }
+      } finally {
+        leafScratch.length = start;
       }
       // Heterogeneous rows: deactivate and rebuild this row normally. The
       // abandoned clone is disconnected and unregistered — plain garbage.
@@ -245,6 +269,11 @@ function bulkClearRecords<TItem, TTagName extends ElementTagName>(
   }
   return true;
 }
+
+/** sync(): anchor on pinned rows alone when at most this many survivors move. */
+const PINNED_ONLY_MAX_MOVES = 8;
+/** ...and only in windows this large, where skipping the LIS actually pays. */
+const PINNED_ONLY_MIN_PINNED = 32;
 
 /**
  * Computes a longest strictly-increasing subsequence of `arr` and returns the
@@ -419,6 +448,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
       reusedCount++;
     }
   }
+  const pinnedCount = reusedCount;
 
   // Bucket in reverse DOM order so pop() matches duplicates FIFO in O(1). The value
   // is a single old index, promoted to an index array only when the same item
@@ -473,8 +503,16 @@ export function sync<TItem, TTagName extends ElementTagName>(
 
   // Determine the minimal set of survivors that must move. Survivors whose old
   // positions form an increasing subsequence are already correctly ordered.
+  //
+  // Pinned rows (same index before and after) are such a subsequence on their
+  // own. When nearly every survivor is pinned — swapping two rows of a large
+  // list — anchoring on them alone moves only the few unpinned survivors and
+  // skips the O(n log n) LIS pass and its arrays. The true LIS can save at
+  // most `unpinned` moves over that, so the shortcut is bounded to a handful.
   let stable: Uint8Array | null = null;
-  if (reusedCount > 0) {
+  const unpinned = reusedCount - pinnedCount;
+  const pinnedOnly = unpinned <= PINNED_ONLY_MAX_MOVES && pinnedCount >= PINNED_ONLY_MIN_PINNED;
+  if (reusedCount > 0 && !pinnedOnly) {
     const survivorOldIndices: number[] = [];
     const survivorPositions: number[] = [];
     for (let j = 0; j < newWinLen; j++) {
@@ -543,7 +581,9 @@ export function sync<TItem, TTagName extends ElementTagName>(
       anchor = firstFlushed;
       fragment = null;
     }
-    if (!stable || !stable[j]) {
+    // Pinned-only mode: a survivor is pinned iff it kept its index (a bucket
+    // match can never land on its own old index — the pin pass took those).
+    if (stable ? !stable[j] : !(pinnedOnly && src === newStart + j)) {
       parent.insertBefore(node, anchor);
     }
     anchor = node;

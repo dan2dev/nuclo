@@ -17,15 +17,21 @@
  *  3. builds every other row as skeleton.cloneNode(true) + a patch pass that
  *     walks the new factory tree in lockstep with the slot program.
  *
- * Any construct outside the supported shape (style objects, on() modifiers,
- * nested list()/when(), node children, resolvers returning non-primitives,
- * multiple className sources per element, SVG) bails to the normal build
- * path — the template is per-list state, so unsupported lists simply never
- * activate it. A per-row shape mismatch (heterogeneous render output)
- * deactivates the template for that list and rebuilds the row normally.
+ * on() modifiers for native DOM events are supported: they only attach a
+ * listener to their parent, so each clone replays them exactly as the normal
+ * build would (cloneNode never copies addEventListener listeners, so the
+ * skeleton itself stays listener-free).
+ *
+ * Any construct outside the supported shape (style objects, on("mount") /
+ * on("destroy") and other arbitrary NodeModFns, nested list()/when(), node
+ * children, resolvers returning non-primitives, multiple className sources
+ * per element, SVG) bails to the normal build path — the template is per-list
+ * state, so unsupported lists simply never activate it. A per-row shape
+ * mismatch (heterogeneous render output) deactivates the template for that
+ * list and rebuilds the row normally.
  */
 
-import { getFactoryMods, getFactoryTag } from "../element/factory-meta";
+import { getFactoryMods, getFactoryTag, isEventModifier } from "../element/factory-meta";
 import { eventAttributeToProperty, setEventAttribute } from "../element/event-attributes";
 import { modifierProbeCache } from "../element/modifiers";
 import { isNode } from "../shared/type-guards";
@@ -34,24 +40,28 @@ import { cleanupReactiveElement, cleanupReactiveTextNode } from "../update/regis
 export const LEAF_TEXT = 0;
 export const LEAF_CLASSNAME = 1;
 
+/** Array slots per leaf in RowLeaves: kind, node, resolver, last value. */
+export const LEAF_STRIDE = 4;
+
 /**
- * A clone's dynamic leaf, owned by its list record instead of the global
+ * A clone's dynamic leaves, owned by its list record instead of the global
  * reactive registries: template rows have a known lifetime (they live and die
  * with their record), so update() can flush them with a tight array walk —
  * no WeakRef/WeakMap bookkeeping per row, nothing for the GC sweeps to prune.
+ *
+ * Stored flat — [kind, node, fn, last, kind, node, fn, last, ...] — rather
+ * than as one object per leaf: a row costs a single small array instead of an
+ * array plus an object per leaf, which is the bulk of a template row's
+ * retained bookkeeping and allocation.
  */
-export interface RowLeaf {
-  kind: number;
-  node: Text | HTMLElement;
-  fn: () => unknown;
-  last: string;
-}
+export type RowLeaves = unknown[];
 
 export const SLOT_ATTRS = 0;
 export const SLOT_TEXT = 1;
 export const SLOT_REACTIVE_TEXT = 2;
 export const SLOT_CHILD = 3;
 export const SLOT_NULL = 4;
+export const SLOT_EVENT = 5;
 
 export const ATTR_STATIC = 0;
 export const ATTR_EVENT = 1;
@@ -72,7 +82,8 @@ export type TemplateSlot =
   | { kind: typeof SLOT_TEXT }
   | { kind: typeof SLOT_REACTIVE_TEXT }
   | { kind: typeof SLOT_CHILD; child: TemplateNode }
-  | { kind: typeof SLOT_NULL };
+  | { kind: typeof SLOT_NULL }
+  | { kind: typeof SLOT_EVENT };
 
 export interface TemplateNode {
   tag: string;
@@ -127,7 +138,11 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
         }
         return null;
       }
-      // on() modifiers, when()/list() blocks, arbitrary NodeModFns.
+      if (isEventModifier(mod)) {
+        slots.push({ kind: SLOT_EVENT });
+        continue;
+      }
+      // on("mount"/"destroy"), when()/list() blocks, arbitrary NodeModFns.
       return null;
     }
 
@@ -193,7 +208,12 @@ export function prepareSkeleton(tmpl: TemplateNode, skeleton: Element): void {
           if (spec.kind === ATTR_STATIC) {
             spec.prop = spec.key in skeleton;
           } else if (spec.kind === ATTR_REACTIVE_CLASSNAME) {
-            (skeleton as HTMLElement).className = "";
+            // Drop the attribute rather than assigning "": className = ""
+            // leaves an empty class="" that every clone would copy — per-row
+            // attribute storage and style work the normal build never has.
+            // The reactive resolver is this element's only class source, and
+            // clones only write className when it resolves non-empty.
+            skeleton.removeAttribute("class");
           }
         }
         break;
@@ -207,7 +227,7 @@ export function prepareSkeleton(tmpl: TemplateNode, skeleton: Element): void {
         prepareSkeleton(slot.child, child as Element);
         child = child.nextSibling;
         break;
-      // SLOT_NULL: no node produced
+      // SLOT_NULL / SLOT_EVENT: no node produced
     }
   }
 }
@@ -222,7 +242,7 @@ export function instantiateTemplate(
   tmpl: TemplateNode,
   mods: readonly unknown[],
   el: Element,
-  leaves: RowLeaf[],
+  leaves: RowLeaves,
 ): boolean {
   const slots = tmpl.slots;
   if (mods.length !== slots.length) return false;
@@ -280,7 +300,7 @@ export function instantiateTemplate(
               }
               const s = resolved ? String(resolved) : "";
               if (s) (el as HTMLElement).className = s;
-              leaves.push({ kind: LEAF_CLASSNAME, node: el as HTMLElement, fn, last: s });
+              leaves.push(LEAF_CLASSNAME, el, fn, s);
               break;
             }
             case ATTR_NULL: {
@@ -314,7 +334,7 @@ export function instantiateTemplate(
         const s = v == null ? "" : String(v);
         const textNode = child as Text;
         textNode.nodeValue = s;
-        leaves.push({ kind: LEAF_TEXT, node: textNode, fn: mod as () => unknown, last: s });
+        leaves.push(LEAF_TEXT, textNode, mod, s);
         child = textNode.nextSibling;
         break;
       }
@@ -331,6 +351,14 @@ export function instantiateTemplate(
 
       case SLOT_NULL: {
         if (mod != null) return false;
+        break;
+      }
+
+      case SLOT_EVENT: {
+        if (!isEventModifier(mod)) return false;
+        // Same call the normal build makes (applyNodeModifier): attaches and
+        // tracks this row's listener on the clone. Produces no node.
+        (mod as (parent: Element, index: number) => void)(el, 0);
         break;
       }
     }
@@ -351,7 +379,7 @@ export function adoptTemplateLeaves(
   tmpl: TemplateNode,
   mods: readonly unknown[],
   el: Element,
-  leaves: RowLeaf[],
+  leaves: RowLeaves,
 ): boolean {
   const slots = tmpl.slots;
   if (mods.length !== slots.length) return false;
@@ -376,12 +404,7 @@ export function adoptTemplateLeaves(
           if (spec.kind === ATTR_REACTIVE_CLASSNAME) {
             if (typeof v !== "function" || (v as () => unknown).length !== 0) return false;
             cleanupReactiveElement(el);
-            leaves.push({
-              kind: LEAF_CLASSNAME,
-              node: el as HTMLElement,
-              fn: v as () => unknown,
-              last: (el as HTMLElement).className,
-            });
+            leaves.push(LEAF_CLASSNAME, el, v, (el as HTMLElement).className);
           }
         }
         if (k !== specs.length) return false;
@@ -398,12 +421,7 @@ export function adoptTemplateLeaves(
         if (!child || child.nodeType !== 3) return false;
         const textNode = child as Text;
         cleanupReactiveTextNode(textNode);
-        leaves.push({
-          kind: LEAF_TEXT,
-          node: textNode,
-          fn: mod as () => unknown,
-          last: textNode.nodeValue ?? "",
-        });
+        leaves.push(LEAF_TEXT, textNode, mod, textNode.nodeValue ?? "");
         child = textNode.nextSibling;
         break;
       }
@@ -421,6 +439,11 @@ export function adoptTemplateLeaves(
       case SLOT_NULL:
         if (mod != null) return false;
         break;
+
+      case SLOT_EVENT:
+        // The normal build already attached this listener; nothing to adopt.
+        if (!isEventModifier(mod)) return false;
+        break;
     }
   }
   return true;
@@ -431,26 +454,25 @@ export function adoptTemplateLeaves(
  * writes the DOM only on change. Resolver errors leave the previous value in
  * place (matching the notify passes' error tolerance).
  */
-export function flushRowLeaves(leaves: RowLeaf[]): void {
-  for (let i = 0; i < leaves.length; i++) {
-    const leaf = leaves[i];
+export function flushRowLeaves(leaves: RowLeaves): void {
+  for (let i = 0; i < leaves.length; i += LEAF_STRIDE) {
     let v: unknown;
     try {
-      v = leaf.fn();
+      v = (leaves[i + 2] as () => unknown)();
     } catch {
       continue;
     }
-    if (leaf.kind === LEAF_TEXT) {
+    if (leaves[i] === LEAF_TEXT) {
       const s = v == null || typeof v === "object" || typeof v === "function" ? "" : String(v);
-      if (s !== leaf.last) {
-        (leaf.node as Text).nodeValue = s;
-        leaf.last = s;
+      if (s !== leaves[i + 3]) {
+        (leaves[i + 1] as Text).nodeValue = s;
+        leaves[i + 3] = s;
       }
     } else {
       const s = v ? String(v) : "";
-      if (s !== leaf.last) {
-        (leaf.node as HTMLElement).className = s;
-        leaf.last = s;
+      if (s !== leaves[i + 3]) {
+        (leaves[i + 1] as HTMLElement).className = s;
+        leaves[i + 3] = s;
       }
     }
   }

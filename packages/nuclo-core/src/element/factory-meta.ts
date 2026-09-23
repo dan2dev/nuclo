@@ -10,6 +10,13 @@
 
 export const FACTORY_TAG = Symbol("nuclo.factory.tag");
 export const FACTORY_MODS = Symbol("nuclo.factory.mods");
+/**
+ * Marks the modifier returned by on() for a native DOM event. Applying it only
+ * attaches a listener to its parent (it produces no node and reads no row
+ * state), so the list() template engine can replay it on a skeleton clone
+ * exactly as the normal build path would.
+ */
+export const EVENT_MODIFIER = Symbol("nuclo.event.modifier");
 let metadataOnlyFactoryDepth = 0;
 
 /**
@@ -54,6 +61,16 @@ export function getFactoryMods(fn: unknown): readonly unknown[] | undefined {
 /** Returns the tag name of a tag-builder factory, or undefined. */
 export function getFactoryTag(fn: unknown): string | undefined {
   return typeof fn === "function" ? (fn as TaggedFactory)[FACTORY_TAG] : undefined;
+}
+
+export function markEventModifier<T extends object>(fn: T): T {
+  (fn as { [EVENT_MODIFIER]?: boolean })[EVENT_MODIFIER] = true;
+  return fn;
+}
+
+/** True for a modifier returned by on() for a native DOM event. */
+export function isEventModifier(fn: unknown): boolean {
+  return typeof fn === "function" && (fn as { [EVENT_MODIFIER]?: boolean })[EVENT_MODIFIER] === true;
 }
 
 export function isMetadataOnlyFactoryMode(): boolean {
