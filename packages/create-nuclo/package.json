@@ -1,7 +1,7 @@
 {
 	"name": "create-nuclo",
 	"private": false,
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Scaffold a new Nuclo project — npm create nuclo",
 	"license": "MIT",
 	"author": "Danilo Celestino de Castro (https://github.com/dan2dev)",
