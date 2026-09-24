@@ -30,7 +30,7 @@ describe('notifyReactiveElements', () => {
       document.body.appendChild(el);
 
       let value = 'initial';
-      registerAttributeResolver(el as unknown as ExpandedElement<'div'>, 'data-x', () => value, (v) => {
+      registerAttributeResolver(el as unknown as ExpandedElement<'div'>, 'data-x', () => value, (_el, _key, v) => {
         el.setAttribute('data-x', String(v));
       });
 
@@ -144,7 +144,7 @@ describe('notifyReactiveElements', () => {
       const el = document.createElement('div');
       document.body.appendChild(el);
 
-      registerAttributeResolver(el as unknown as ExpandedElement<'div'>, 'data-z', () => 'v', (v) => {
+      registerAttributeResolver(el as unknown as ExpandedElement<'div'>, 'data-z', () => 'v', (_el, _key, v) => {
         el.setAttribute('data-z', String(v));
       });
 

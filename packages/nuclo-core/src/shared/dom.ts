@@ -1,58 +1,9 @@
 import { logError } from "./errors";
 import { removeAllListeners } from "../element/events";
-import { cleanupReactiveTextNode, cleanupReactiveElement, unregisterConditionalNode } from "../update/registry";
+import { cleanupReactiveTextNode, cleanupReactiveElement } from "../update/registry";
 import { disposeElementLifecycle, hasActiveLifecycleRegistrations } from "../element/lifecycle";
 
 export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
-
-/**
- * Creates an HTML element.
- * Wrapper for document.createElement with type safety.
- */
-export function createElement<K extends keyof HTMLElementTagNameMap>(
-  tagName: K
-): HTMLElementTagNameMap[K] | null;
-export function createElement(tagName: string): ExpandedElement | null;
-export function createElement(tagName: string): ExpandedElement | null {
-  return globalThis.document ? document.createElement(tagName) as ExpandedElement : null;
-}
-
-/**
- * Creates an element in the given namespace (typically for SVG elements).
- * Wrapper for document.createElementNS with type safety.
- */
-export function createElementNS(
-  namespace: string,
-  tagName: string
-): ExpandedElement | null {
-  return globalThis.document ? document.createElementNS(namespace, tagName) as ExpandedElement : null;
-}
-
-/**
- * Creates a text node with the given content.
- * Wrapper for document.createTextNode.
- */
-export function createTextNode(text: string): Text | null {
-  return globalThis.document ? document.createTextNode(text) : null;
-}
-
-/**
- * Creates a document fragment.
- * Wrapper for document.createDocumentFragment.
- */
-export function createDocumentFragment(): DocumentFragment | null {
-  return globalThis.document ? document.createDocumentFragment() : null;
-}
-
-function safeAppendChild(parent: Element | Node, child: Node): boolean {
-  try {
-    parent.appendChild(child);
-    return true;
-  } catch (error) {
-    logError('Failed to append child node', error);
-    return false;
-  }
-}
 
 /**
  * Recursively removes all event listeners and reactive subscriptions from a node and its descendants
@@ -64,18 +15,10 @@ function cleanupNodeTree(node: Node): void {
   // below, after descendants — see the comment there.
   if (node.nodeType === Node.ELEMENT_NODE) {
     const element = node as HTMLElement;
-    // Remove all event listeners
     removeAllListeners(element);
-    // Remove reactive attribute resolvers
     cleanupReactiveElement(element);
-    // Remove conditional info
-    unregisterConditionalNode(element);
   } else if (node.nodeType === Node.TEXT_NODE) {
-    // Remove reactive text node info
     cleanupReactiveTextNode(node as Text);
-  } else if (node.nodeType === Node.COMMENT_NODE) {
-    // Remove conditional info from comment nodes (used by when/list)
-    unregisterConditionalNode(node);
   }
 
   // Recursively clean up all child nodes
@@ -101,17 +44,15 @@ function cleanupNodeTree(node: Node): void {
 }
 
 /**
- * Fires onDestroy for a subtree that a fast removal path (list()'s bulk
- * clear/replace, the single-element when()/else() swap) is about to drop
- * without walking through cleanupNodeTree()/safeRemoveChild(). Short-circuits
- * to a single comparison when nothing on the page has ever registered a
- * lifecycle callback — the common case — so those fast paths stay fast.
+ * Fires onDestroy for a subtree that list()'s bulk clear/replace is about to
+ * drop without walking through cleanupNodeTree()/safeRemoveChild(). Callers
+ * skip it entirely unless hasActiveLifecycleRegistrations(), so the fast path
+ * stays fast when lifecycle hooks aren't in use.
  *
  * Same post-order (children, then self) as cleanupNodeTree() above, for the
  * same reason — see the comment there.
  */
 export function disposeLifecyclesInSubtree(node: Node): void {
-  if (!hasActiveLifecycleRegistrations()) return;
   const children = Array.from(node.childNodes);
   for (let i = 0; i < children.length; i++) {
     disposeLifecyclesInSubtree(children[i]);
@@ -145,20 +86,8 @@ function safeInsertBefore(parent: Node, newNode: Node, referenceNode: Node | nul
   }
 }
 
-export function createComment(text: string): Comment | null {
-  return globalThis.document ? globalThis.document.createComment(text) : null;
-}
-
-export function createConditionalComment(tagName: string, suffix = "hidden"): Comment | null {
-  return globalThis.document ? globalThis.document.createComment(`conditional-${tagName}-${suffix}`) : null;
-}
-
-export function createMarkerPair(prefix: string, id: number | string): { start: Comment; end: Comment } {
-  const endComment = createComment(`${prefix}-end`);
-  if (!endComment) throw new Error("Failed to create comment: document not available");
-  const startComment = createComment(`${prefix}-start-${id}`);
-  if (!startComment) throw new Error("Failed to create comment: document not available");
-  return { start: startComment, end: endComment };
+export function createMarkerPair(prefix: string, id: number): { start: Comment; end: Comment } {
+  return { start: document.createComment(`${prefix}-start-${id}`), end: document.createComment(`${prefix}-end`) };
 }
 
 export function clearBetweenMarkers(startMarker: Comment, endMarker: Comment): void {
@@ -179,67 +108,6 @@ export function insertNodesBefore(nodes: Node[], referenceNode: Node): void {
   }
 }
 
-export function appendChildren(
-  parent: Element | Node,
-  ...children: Array<Element | Node | string | null | undefined>
-): Element | Node {
-  if (!parent) return parent;
-
-  for (let i = 0; i < children.length; i++) {
-    const child = children[i];
-    if (child != null) {
-      let nodeToAppend: Node;
-
-      if (typeof child === "string") {
-        const textNode = createTextNode(child);
-        if (textNode) {
-          nodeToAppend = textNode;
-        } else {
-          continue;
-        }
-      } else {
-        nodeToAppend = child as Node;
-      }
-
-      safeAppendChild(parent, nodeToAppend);
-    }
-  }
-
-  return parent;
-}
-
-export function isNodeConnected(node: Node | null | undefined): boolean {
-  return node?.isConnected === true;
-}
-
-/**
- * Safely replaces an old node with a new node in the DOM.
- * Returns true on success, false on failure (and logs the error).
- */
-export function replaceNodeSafely(oldNode: Node, newNode: Node): boolean {
-  if (!oldNode?.parentNode) return false;
-  try {
-    oldNode.parentNode.replaceChild(newNode, oldNode);
-    return true;
-  } catch (error) {
-    logError("Error replacing conditional node", error);
-    return false;
-  }
-}
-
-// ─── Type-safe DOM helpers ───────────────────────────────────────────────────
-
-/**
- * Safely casts an Element-like object to Node & ParentNode interface.
- * This is a common pattern needed when working with DOM manipulation.
- *
- * @param element - The element to cast
- * @returns The element typed as Node & ParentNode
- */
-export function asParentNode<T extends Element | object>(element: T): Node & ParentNode {
-  return element as unknown as Node & ParentNode;
-}
-
 /**
  * Creates a scoped DOM insertion context that temporarily redirects appendChild
  * to insertBefore at a specific reference node. This is useful for inserting
@@ -255,7 +123,7 @@ export function withScopedInsertion<T, THost extends Element | object>(
   referenceNode: Node,
   callback: () => T
 ): T {
-  const parent = asParentNode(host);
+  const parent = host as unknown as Node & ParentNode;
   const originalAppend = Object.getOwnPropertyDescriptor(parent, "appendChild");
   const originalInsert = parent.insertBefore;
 
@@ -271,37 +139,5 @@ export function withScopedInsertion<T, THost extends Element | object>(
     // Restore original method
     if (originalAppend) Object.defineProperty(parent, "appendChild", originalAppend);
     else Reflect.deleteProperty(parent, "appendChild");
-  }
-}
-
-/**
- * Type-safe wrapper for setting CSS style properties.
- * Provides better error handling than direct CSSStyleDeclaration access.
- * Supports both camelCase and kebab-case property names.
- *
- * @param element - The element to apply styles to
- * @param property - The CSS property name (camelCase or kebab-case)
- * @param value - The value to set (string, number, or null to remove)
- * @returns true if the style was applied successfully, false otherwise
- */
-export function setStyleProperty(
-  element: HTMLElement,
-  property: string,
-  value: string | number | null
-): boolean {
-  try {
-    if (value === null || value === undefined || value === '') {
-      // Use bracket notation to remove property (works with camelCase)
-      (element.style as unknown as Record<string, string>)[property] = '';
-      return true;
-    }
-
-    // Convert value to string first (might throw if toString() throws)
-    const stringValue = String(value);
-    // Use bracket notation to set property (works with camelCase)
-    (element.style as unknown as Record<string, string>)[property] = stringValue;
-    return true;
-  } catch {
-    return false;
   }
 }

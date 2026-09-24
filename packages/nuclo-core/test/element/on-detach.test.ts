@@ -22,21 +22,6 @@ describe("on utility listener detachment", () => {
     expect(removeSpy).toHaveBeenCalledWith("focus", expect.any(Function), true);
   });
 
-  it("selectively detaches matching event types", () => {
-    const click = vi.fn();
-    const focus = vi.fn();
-
-    on("click", click)(element, 0);
-    on("focus", focus)(element, 0);
-    removeAllListeners(element, "click");
-
-    element.click();
-    element.dispatchEvent(new Event("focus"));
-
-    expect(click).not.toHaveBeenCalled();
-    expect(focus).toHaveBeenCalledOnce();
-  });
-
   it("can detach listeners after the element leaves the document", () => {
     const listener = vi.fn();
 
@@ -51,7 +36,6 @@ describe("on utility listener detachment", () => {
   it("is idempotent for elements without tracked listeners", () => {
     expect(() => {
       removeAllListeners(element);
-      removeAllListeners(element, "click");
       removeAllListeners(element);
     }).not.toThrow();
   });

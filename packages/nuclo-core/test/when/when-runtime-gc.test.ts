@@ -21,7 +21,6 @@ import { describe, it, expect, afterEach } from 'vitest';
 import {
   registerWhenRuntime,
   updateWhenRuntimes,
-  renderWhenContent,
   type WhenRuntime,
 } from '../../src/when/runtime';
 
@@ -79,21 +78,15 @@ function makeRuntime(
   (host as unknown as HTMLElement).appendChild(start);
   (host as unknown as HTMLElement).appendChild(end);
 
+  // updateFn runs whenever update re-evaluates the branches.
   const runtime: WhenRuntime<ElementTagName> = {
     startMarker: start,
     endMarker: end,
     host,
     index: 0,
-    groups: [{ condition: true, content: [] }],
+    groups: [{ condition: () => { updateFn?.(); return true; }, content: [] }],
     elseContent: [],
     activeIndex: null,
-    update() {
-      if (updateFn) {
-        updateFn();
-      } else {
-        renderWhenContent(this);
-      }
-    },
   };
   return runtime;
 }

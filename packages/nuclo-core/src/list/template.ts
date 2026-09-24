@@ -33,9 +33,9 @@
 
 import { getFactoryMods, getFactoryTag, isEventModifier } from "../element/factory-meta";
 import { eventAttributeToProperty, setEventAttribute } from "../element/event-attributes";
-import { modifierProbeCache } from "../element/modifiers";
 import { isNode } from "../shared/type-guards";
 import { cleanupReactiveElement, cleanupReactiveTextNode } from "../update/registry";
+import { toText } from "../update/reactive-text";
 
 export const LEAF_TEXT = 0;
 export const LEAF_CLASSNAME = 1;
@@ -123,12 +123,12 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
         continue;
       }
       if ((mod as () => unknown).length === 0) {
-        // Probe once to confirm this is a text resolver. cn()-style objects,
-        // nodes and nested builders are handled by the normal path only.
+        // Probe once to confirm this is a text resolver. className-object
+        // results (css()/cx()), nodes and nested builders are handled by the
+        // normal path only.
         let v: unknown;
         try {
           v = (mod as () => unknown)();
-          modifierProbeCache.set(mod as () => unknown, { value: v, error: false });
         } catch {
           return null;
         }
@@ -331,7 +331,7 @@ export function instantiateTemplate(
           return false;
         }
         if (v != null && (typeof v === "object" || typeof v === "function")) return false;
-        const s = v == null ? "" : String(v);
+        const s = toText(v);
         const textNode = child as Text;
         textNode.nodeValue = s;
         leaves.push(LEAF_TEXT, textNode, mod, s);
@@ -463,7 +463,7 @@ export function flushRowLeaves(leaves: RowLeaves): void {
       continue;
     }
     if (leaves[i] === LEAF_TEXT) {
-      const s = v == null || typeof v === "object" || typeof v === "function" ? "" : String(v);
+      const s = toText(v);
       if (s !== leaves[i + 3]) {
         (leaves[i + 1] as Text).nodeValue = s;
         leaves[i + 3] = s;

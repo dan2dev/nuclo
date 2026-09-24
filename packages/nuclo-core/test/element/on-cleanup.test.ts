@@ -46,63 +46,14 @@ describe('on utility - cleanup and memory management', () => {
       expect(mouseoverListener).toHaveBeenCalledTimes(1);
     });
 
-    it('should remove all listeners of a specific type', () => {
-      const clickListener1 = vi.fn();
-      const clickListener2 = vi.fn();
-      const focusListener = vi.fn();
-
-      const clickMod1 = on('click', clickListener1);
-      const clickMod2 = on('click', clickListener2);
-      const focusMod = on('focus', focusListener);
-
-      clickMod1(element, 0);
-      clickMod2(element, 1);
-      focusMod(element, 0);
-
-      // All should work initially
-      element.click();
-      element.dispatchEvent(new Event('focus'));
-
-      expect(clickListener1).toHaveBeenCalledTimes(1);
-      expect(clickListener2).toHaveBeenCalledTimes(1);
-      expect(focusListener).toHaveBeenCalledTimes(1);
-
-      // Remove only click listeners
-      removeAllListeners(element, 'click');
-
-      // Click listeners should not work, but focus should
-      element.click();
-      element.dispatchEvent(new Event('focus'));
-
-      expect(clickListener1).toHaveBeenCalledTimes(1);
-      expect(clickListener2).toHaveBeenCalledTimes(1);
-      expect(focusListener).toHaveBeenCalledTimes(2);
-    });
-
     it('should do nothing if element has no listeners', () => {
       expect(() => {
         removeAllListeners(element);
       }).not.toThrow();
 
       expect(() => {
-        removeAllListeners(element, 'click');
+        removeAllListeners(element);
       }).not.toThrow();
-    });
-
-    it('should do nothing if element has no listeners of specified type', () => {
-      const clickListener = vi.fn();
-      const clickMod = on('click', clickListener);
-
-      clickMod(element, 0);
-
-      // Try to remove 'focus' listeners when only 'click' exists
-      expect(() => {
-        removeAllListeners(element, 'focus');
-      }).not.toThrow();
-
-      // Click listener should still work
-      element.click();
-      expect(clickListener).toHaveBeenCalledTimes(1);
     });
 
     it('should cleanup type map when removing last event type', () => {
@@ -112,7 +63,7 @@ describe('on utility - cleanup and memory management', () => {
       clickMod(element, 0);
 
       // Remove all click listeners (the only type)
-      removeAllListeners(element, 'click');
+      removeAllListeners(element);
 
       // Should be able to add new listeners without issues
       const newListener = vi.fn();
@@ -143,7 +94,7 @@ describe('on utility - cleanup and memory management', () => {
       expect(listener3).toHaveBeenCalledTimes(1);
 
       // Remove all at once
-      removeAllListeners(element, 'click');
+      removeAllListeners(element);
 
       // None should work
       element.click();
@@ -185,7 +136,7 @@ describe('on utility - cleanup and memory management', () => {
       expect(listener).toHaveBeenCalledTimes(1);
 
       // Remove listener
-      removeAllListeners(element, 'click');
+      removeAllListeners(element);
       element.click();
       expect(listener).toHaveBeenCalledTimes(1);
 
@@ -215,7 +166,7 @@ describe('on utility - cleanup and memory management', () => {
       expect(listener2).toHaveBeenCalledTimes(1);
 
       // Remove listeners from element1 only
-      removeAllListeners(element, 'click');
+      removeAllListeners(element);
 
       element.click();
       element2.click();
@@ -237,7 +188,7 @@ describe('on utility - cleanup and memory management', () => {
       expect(listener).toHaveBeenCalledTimes(1);
 
       // Remove the selected listener type.
-      removeAllListeners(element, 'click');
+      removeAllListeners(element);
 
       // Listener should not work after abort
       element.click();
@@ -270,30 +221,6 @@ describe('on utility - cleanup and memory management', () => {
   });
 
   describe('Edge cases', () => {
-    it('should handle removing listeners from element with different event types', () => {
-      const clickListener = vi.fn();
-      const focusListener = vi.fn();
-      const blurListener = vi.fn();
-
-      const clickMod = on('click', clickListener);
-      const focusMod = on('focus', focusListener);
-      const blurMod = on('blur', blurListener);
-
-      clickMod(element, 0);
-      focusMod(element, 0);
-      blurMod(element, 0);
-
-      // Remove specific event type
-      removeAllListeners(element, 'focus');
-
-      element.click();
-      element.dispatchEvent(new Event('focus'));
-      element.dispatchEvent(new Event('blur'));
-
-      expect(clickListener).toHaveBeenCalledTimes(1);
-      expect(focusListener).not.toHaveBeenCalled();
-      expect(blurListener).toHaveBeenCalledTimes(1);
-    });
 
     it('should handle listener options correctly during removal', () => {
       const listener = vi.fn();
@@ -311,7 +238,7 @@ describe('on utility - cleanup and memory management', () => {
 
       // Manual removal should not throw even if already removed
       expect(() => {
-        removeAllListeners(element, 'click');
+        removeAllListeners(element);
       }).not.toThrow();
     });
 
@@ -329,7 +256,7 @@ describe('on utility - cleanup and memory management', () => {
       expect(listener).toHaveBeenCalledTimes(1);
 
       // Remove listener
-      removeAllListeners(element, 'custom');
+      removeAllListeners(element);
 
       // Should not fire after removal
       element.dispatchEvent(new CustomEvent('custom', { detail: { value: 99 } }));
@@ -352,7 +279,7 @@ describe('on utility - cleanup and memory management', () => {
       expect(captureListener).toHaveBeenCalledTimes(1);
 
       // Removing the type tears down both capture and bubble registrations
-      removeAllListeners(element, 'click');
+      removeAllListeners(element);
 
       element.click();
 
@@ -369,7 +296,7 @@ describe('on utility - cleanup and memory management', () => {
       options.capture = false;
       options.passive = false;
 
-      removeAllListeners(element, 'click');
+      removeAllListeners(element);
       element.click();
 
       expect(listener).not.toHaveBeenCalled();

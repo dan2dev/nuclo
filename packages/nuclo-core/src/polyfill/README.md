@@ -9,40 +9,27 @@ Polyfills mínimos para permitir que Nuclo funcione em ambientes Node.js para Se
 - ✅ `document.createElementNS()` (para SVG)
 - ✅ `document.createTextNode()`
 - ✅ `document.createComment()`
-- ✅ `document.querySelector()` (implementação básica para `#nuclo-styles`)
-- ✅ `document.querySelectorAll()`
+- ✅ `document.createDocumentFragment()`
 - ✅ `document.head`
 - ✅ `document.body`
-- ✅ `document.addEventListener()`
-- ✅ `document.removeEventListener()`
-- ✅ `document.dispatchEvent()`
-- ✅ `document.contains()`
+- ✅ `document.contains()` (sempre `false`)
+- ⚪ `document.querySelector()` / `querySelectorAll()` — stubs (`null` / lista vazia)
+- ⚪ `document.addEventListener()` / `removeEventListener()` / `dispatchEvent()` — no-ops (SSR não despacha eventos)
 
 ### Element
 - ✅ `element.tagName`
-- ✅ `element.children`
+- ✅ `element.children` / `element.childNodes` (o mesmo array: elementos, textos e comentários)
 - ✅ `element.className`
-- ✅ `element.classList` (add, remove, toggle, contains, etc.)
+- ✅ `element.classList` (add, remove, toggle, contains, replace, item, iteração…)
 - ✅ `element.id`
-- ✅ `element.style` (implementação básica com Proxy)
+- ✅ `element.style` (objeto leve com `setProperty`, `getPropertyValue` e `cssText`)
 - ✅ `element.textContent`
-- ✅ `element.innerHTML`
 - ✅ `element.parentNode`
-- ✅ `element.setAttribute()`
-- ✅ `element.getAttribute()`
-- ✅ `element.removeAttribute()`
-- ✅ `element.hasAttribute()`
-- ✅ `element.appendChild()`
-- ✅ `element.insertBefore()`
-- ✅ `element.removeChild()`
-- ✅ `element.replaceChild()`
-- ✅ `element.addEventListener()`
-- ✅ `element.removeEventListener()`
-- ✅ `element.dispatchEvent()`
-- ✅ `element.querySelector()` (retorna null)
-- ✅ `element.querySelectorAll()` (retorna array vazio)
 - ✅ `element.namespaceURI` (para elementos SVG)
-- ✅ `element.sheet` (para `<style>` elements - implementação básica de CSSStyleSheet)
+- ✅ `element.setAttribute()` / `getAttribute()` / `removeAttribute()` / `hasAttribute()`
+- ✅ `element.appendChild()` / `insertBefore()` / `removeChild()` / `replaceChild()`
+- ⚪ `element.querySelector()` / `querySelectorAll()` — stubs (`null` / lista vazia)
+- ⚪ `element.addEventListener()` / `removeEventListener()` / `dispatchEvent()` — no-ops
 
 ### Text
 - ✅ `textNode.data`
@@ -53,33 +40,11 @@ Polyfills mínimos para permitir que Nuclo funcione em ambientes Node.js para Se
 - ✅ `textNode.parentNode`
 
 ### Event & CustomEvent
-- ✅ `new Event(type, options)`
-- ✅ `new CustomEvent(type, options)`
-- ✅ `event.type`
-- ✅ `event.bubbles`
-- ✅ `event.cancelable`
-- ✅ `event.detail` (CustomEvent)
-- ✅ `event.preventDefault()`
-- ✅ `event.stopPropagation()`
+Reexportados como os construtores nativos do runtime (Node >= 19, Bun, Deno).
 
-## APIs do Browser que ainda NÃO funcionam
-
-### CSSStyleSheet (parcial)
-O `element.sheet` tem uma implementação **muito básica** que:
-- ✅ Suporta `insertRule()` e `deleteRule()`
-- ✅ Mantém um array de `cssRules`
-- ❌ **NÃO** suporta `CSSMediaRule`, `CSSContainerRule`, `CSSSupportsRule`
-- ❌ **NÃO** suporta parsing real de CSS
-- ❌ **NÃO** suporta `media.mediaText` ou `conditionText`
-
-Isso significa que em Node.js:
-- ✅ O código que **cria** estilos vai funcionar sem erros
-- ❌ O código que **verifica** media queries/container queries vai falhar
-
-### Outras limitações
-- `querySelector()` e `querySelectorAll()` são implementações stub (retornam null/array vazio)
-- `window`, `navigator`, `localStorage`, etc. não estão implementados
-- DOM event propagation é simplificado (sem capturing phase)
+## Limitações
+- Para gerar HTML use `renderToString()` (de `nuclo/ssr`); o polyfill não tem `innerHTML` nem consultas por seletor.
+- `window`, `navigator`, `localStorage`, `CSSStyleSheet` etc. não estão implementados — o CSS gerado no servidor sai por `getCssText()`.
 
 ## Uso
 

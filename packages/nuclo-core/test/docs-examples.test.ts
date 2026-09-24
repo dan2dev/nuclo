@@ -543,7 +543,6 @@ describe('Documentation Examples', () => {
 
       let nextId = 1;
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       function createTask(text: string): Task {
         return {
           id: nextId++,
@@ -681,7 +680,7 @@ describe('Documentation Examples', () => {
       };
 
       let errors: Errors = {};
-      let isSubmitting = false; // eslint-disable-line @typescript-eslint/no-unused-vars
+      let isSubmitting = false;
 
       function validateForm(): boolean {
         errors = {};

@@ -20,11 +20,10 @@ src/
 │   └── events.ts         on("click", …) modifier + listener cleanup
 │
 ├── update/         update() — the reactivity engine
-│   ├── update.ts             update(): re-runs everything below, fires "update" event
+│   ├── update.ts             update(): re-runs everything below
 │   ├── scope.ts              scope("id") + UpdateScope so update("id") is targeted
 │   ├── reactive-attributes.ts  Re-evaluates function-valued attributes
 │   ├── reactive-text.ts        Re-evaluates function-valued text nodes
-│   ├── conditional.ts          Swaps condition-driven elements in place
 │   └── registry.ts             Bookkeeping: which nodes update() must visit
 │
 ├── list/           list(items, render) — keyed list rendering
@@ -34,10 +33,8 @@ src/
 ├── polyfill/       Minimal DOM implementation for running nuclo without a browser
 │
 └── shared/         Small generic helpers used by several features (no feature logic)
-    ├── dom.ts            Low-level DOM ops: create/remove nodes, markers, cleanup
+    ├── dom.ts            Low-level DOM ops: remove nodes, markers, cleanup
     ├── type-guards.ts    isFunction, isNode, isPrimitive…
-    ├── conditions.ts     Safely evaluate boolean | () => boolean
-    ├── renderables.ts    Resolve a renderable (tag builder or Node) to a Node
     ├── strings.ts        escapeHtml, camelToKebab…
     ├── environment.ts    isBrowser
     └── errors.ts         logError

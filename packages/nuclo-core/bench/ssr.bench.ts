@@ -114,12 +114,11 @@ for (const depth of [500, 2000, 5000]) {
 }
 
 // Phase split: building the polyfill DOM vs serializing it
-import { createElement } from '../src/shared/dom';
 import { renderToString as rts } from '../src/ssr/render-to-string';
 
 function buildOnly() {
-  const container = createElement('div')!;
-  return page()(container as ExpandedElement<'div'>, 0);
+  const container = document.createElement('div');
+  return page()(container as unknown as ExpandedElement<'div'>, 0);
 }
 
 {

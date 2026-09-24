@@ -1,14 +1,10 @@
 /**
- * String utility functions
- */
-
-/**
- * Converts camelCase to kebab-case (optimized for performance)
- * Uses direct character code manipulation for maximum speed
- * @example camelToKebab('backgroundColor') => 'background-color'
+ * camelCase → kebab-case for CSS property (and attribute) names. A leading
+ * capital becomes a leading dash, as vendor prefixes need
+ * (WebkitTransition → -webkit-transition). Char-code loop with a
+ * no-uppercase fast path: SSR runs this per style declaration.
  */
 export function camelToKebab(str: string): string {
-  // Fast path: attribute/property names are usually already lowercase.
   let firstUpper = 0;
   for (; firstUpper < str.length; firstUpper++) {
     const code = str.charCodeAt(firstUpper);
@@ -20,12 +16,7 @@ export function camelToKebab(str: string): string {
   for (let i = firstUpper; i < str.length; i++) {
     const code = str.charCodeAt(i);
     // A-Z is 65-90, a-z is 97-122 (difference of 32)
-    if (code >= 65 && code <= 90) {
-      if (i > 0) result += '-';
-      result += String.fromCharCode(code + 32);
-    } else {
-      result += str[i];
-    }
+    result += code >= 65 && code <= 90 ? '-' + String.fromCharCode(code + 32) : str[i];
   }
   return result;
 }

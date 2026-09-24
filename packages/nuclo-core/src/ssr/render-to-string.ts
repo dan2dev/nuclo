@@ -2,10 +2,8 @@
  * Server-Side Rendering (SSR) utilities for Nuclo
  * Renders Nuclo components to HTML strings in Node.js environment
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { escapeHtml, escapeText, camelToKebab } from '../shared/strings';
-import { createElement } from '../shared/dom';
 import { runSerializing } from '../hydration';
 import { NucloElement } from '../polyfill/Element';
 
@@ -62,6 +60,8 @@ function serializeAttribute(name: string, value: unknown): string {
     if (value === 'true' || value === '' || value === name) return ` ${name}`;
   }
 
+  // A style object (e.g. renderToStringWithContainer's containerAttrs from
+  // untyped JS): serialize its declarations, skipping nullish/empty values.
   if (name === 'style' && typeof value === 'object') {
     let styleStr = '';
     for (const key in value as Record<string, unknown>) {
@@ -87,7 +87,7 @@ function serializeAttributes(element: Element, isPolyfill: boolean): string {
 
   // Handle polyfill elements. NucloElement keeps every child in a plain Array
   // (`children`), which a real DOM element never does (HTMLCollection) — this is
-  // the same allocation-free discriminator getChildNodes() uses. Reading
+  // the same allocation-free discriminator serializeNode() uses. Reading
   // `el.attributes` directly would lazily allocate an empty Map for every
   // element being serialized, so the backing `_attributes` field is read instead.
   if (isPolyfill) {
@@ -104,33 +104,20 @@ function serializeAttributes(element: Element, isPolyfill: boolean): string {
       result += serializeAttribute('class', el.className);
     }
 
-    // style — lives on the backing _style object, not in the attributes Map.
-    // Read the field directly (never `el.style`) so elements that never set a
-    // style are not forced to lazily allocate an empty SSRStyle just to serialize.
-    // cssText returns camelCase keys ("backgroundColor: red"), so convert them.
-    const styleObj = el._style;
-    if (!attrs?.has('style') && styleObj) {
-      const rawCssText: string = styleObj.cssText || '';
-      if (rawCssText) {
-        const kebabStyle = rawCssText
-          .split(';')
-          .map((decl: string) => decl.trim())
-          .filter(Boolean)
-          .map((decl: string) => {
-            const colonIdx = decl.indexOf(':');
-            if (colonIdx === -1) return decl;
-            const key = decl.slice(0, colonIdx).trim();
-            const val = decl.slice(colonIdx + 1).trim();
-            // Skip declarations with empty values (e.g. reactive styles that resolved to undefined)
-            if (!val) return '';
-            return `${camelToKebab(key)}: ${val};`;
-          })
-          .filter(Boolean)
-          .join(' ');
-        if (kebabStyle) {
-          result += ` style="${escapeHtml(kebabStyle)}"`;
-        }
+    // style — lives on the backing _style object (its own properties are the
+    // declarations), not in the attributes Map. Read the field directly (never
+    // `el.style`) so elements that never set a style are not forced to lazily
+    // allocate an empty SSRStyle just to serialize. Empty values (e.g. reactive
+    // styles that resolved to undefined) are skipped.
+    const styleObj = el._style as Record<string, unknown> | undefined;
+    if (styleObj && !attrs?.has('style')) {
+      let css = '';
+      for (const key in styleObj) {
+        const val = styleObj[key];
+        if (val == null || val === '') continue;
+        css += (css ? ' ' : '') + camelToKebab(key) + ': ' + String(val) + ';';
       }
+      if (css) result += ` style="${escapeHtml(css)}"`;
     }
 
     // All remaining attributes from the Map
@@ -188,33 +175,6 @@ function escapeRawText(tagName: string, text: string): string {
 }
 
 /**
- * Get child nodes from a node (handles both browser and polyfill elements).
- *
- * NucloElement stores ALL children (elements, text, comments) in a plain Array
- * called `children` — it is the authoritative list.  DocumentFragments in the
- * polyfill also have a `children` array, but it only holds Element children;
- * their full set of nodes lives in `childNodes`.  We therefore only prefer
- * `children` when the node is an actual element (has `tagName`).
- */
-function getChildNodes(node: Node): ArrayLike<Node> {
-  // NucloElement: tagName exists and children is a plain Array containing every node type
-  if ('tagName' in node && 'children' in node) {
-    const children = (node as any).children;
-    if (Array.isArray(children)) {
-      return children as ArrayLike<Node>;
-    }
-  }
-  // DocumentFragments and browser elements: use childNodes
-  if ('childNodes' in node) {
-    const childNodes = (node as any).childNodes;
-    if (childNodes && (Array.isArray(childNodes) || childNodes.length !== undefined)) {
-      return childNodes;
-    }
-  }
-  return [] as ArrayLike<Node>;
-}
-
-/**
  * Serializes a DOM node to HTML string
  */
 function serializeNode(node: Node): string {
@@ -232,8 +192,8 @@ function serializeNode(node: Node): string {
   if (node.nodeType === 1) { // Node.ELEMENT_NODE
     const element = node as Element;
     const rawTagName = element.tagName;
-    // Duck-typed polyfill discriminator (also used by serializeAttributes /
-    // getChildNodes): a plain Array `children` field never occurs on a real
+    // Duck-typed polyfill discriminator (also used by serializeAttributes): a
+    // plain Array `children` field never occurs on a real
     // DOM element (HTMLCollection), only on NucloElement — and on hand-rolled
     // polyfill-shaped test doubles, which is why this alone isn't enough to
     // skip re-lowercasing tagName below.
@@ -252,7 +212,7 @@ function serializeNode(node: Node): string {
       return `<${tagName}${attributes} />`;
     }
 
-    const childNodes = isPolyfillShape ? ((element as any).children as ArrayLike<Node>) : getChildNodes(element);
+    const childNodes: ArrayLike<Node> = isPolyfillShape ? (element as any).children : element.childNodes;
 
     // Raw-text elements: emit text verbatim (no entity escaping, no Nuclo
     // text markers — `<!--` would act as a line comment inside a script).
@@ -296,8 +256,8 @@ function serializeNode(node: Node): string {
   // Document fragment
   if (node.nodeType === 11) { // Node.DOCUMENT_FRAGMENT_NODE
     let result = '';
-    const childNodes = getChildNodes(node);
-    if (childNodes && childNodes.length > 0) {
+    const childNodes: ArrayLike<Node> = (node as any).childNodes ?? [];
+    if (childNodes.length > 0) {
       for (let i = 0; i < childNodes.length; i++) {
         const child = childNodes[i];
         if (child) {
@@ -337,13 +297,11 @@ export function renderToString(input: RenderableInput): string {
       // <!-- text-N --> markers (needed for hydration) even when isBrowser is
       // true, e.g. SSR running under jsdom.
       const element = runSerializing(() => {
-        const container = createElement('div');
-        if (!container) throw new Error('Document is not available. Make sure polyfills are loaded.');
-        return input(container as ExpandedElement<ElementTagName>, 0);
+        if (typeof document === 'undefined') throw new Error('Document is not available. Make sure polyfills are loaded.');
+        return input(document.createElement('div') as unknown as ExpandedElement<ElementTagName>, 0);
       });
       return element && typeof element === 'object' && 'nodeType' in element ? serializeNode(element as Node) : '';
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('Error rendering component to string:', error);
       return '';
     }

@@ -4,19 +4,12 @@
  * nested builders, Nodes are appended as-is.
  */
 import { applyAttributes } from "./attributes";
-import { createReactiveTextNode } from "../update/reactive-text";
+import { createReactiveTextNode, toText } from "../update/reactive-text";
 import { registerReactiveTextNode } from "../update/registry";
 import { logError } from "../shared/errors";
 import { isFunction, isNode, isObject, isPrimitive, isZeroArityFunction } from "../shared/type-guards";
-import { createComment, createDocumentFragment, createTextNode } from "../shared/dom";
 import { isHydrating, isSerializing, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration";
 import { isBrowser } from "../shared/environment";
-
-/**
- * Caches the probe result of zero-arity function modifiers so the same
- * function is not re-invoked when it reappears during re-renders.
- */
-export const modifierProbeCache = new WeakMap<() => unknown, { value: unknown; error: boolean }>();
 
 export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
 	| NodeMod<TTagName>
@@ -24,8 +17,8 @@ export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
 	| AnyParentNodeModifier;
 
 /**
- * Shape returned by cn() helper: a plain object with exactly one key `className`.
- * Typed as readonly to signal it should not be mutated after creation.
+ * Shape of a css()/cx() StyleResult: an object whose only own key is
+ * `className`. Typed as readonly to signal it should not be mutated.
  */
 interface ClassNameOnlyObject {
 	readonly className: string;
@@ -58,7 +51,7 @@ function nextChildIsTextComment(parent: Node): boolean {
  * Content mismatches (data changed between SSR and hydration) are patched so
  * hydration always converges on the client value.
  */
-function claimTextAfterMarker(parent: Node, expected: string): Text | null {
+function claimTextAfterMarker(parent: Node, expected: string): Text {
 	const next = peekChild(parent);
 	if (next && next.nodeType === 3) {
 		claimChild(parent);
@@ -67,8 +60,7 @@ function claimTextAfterMarker(parent: Node, expected: string): Text | null {
 		}
 		return next as Text;
 	}
-	const created = createTextNode(expected);
-	if (!created) return null;
+	const created = document.createTextNode(expected);
 	parent.insertBefore(created, next);
 	setCursor(parent, next);
 	return created;
@@ -85,18 +77,10 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 		// Handle zero-argument functions (reactive text or reactive className)
 		if (isZeroArityFunction(modifier)) {
 			try {
-				let record = modifierProbeCache.get(modifier);
-				if (!record) {
-					const value = modifier();
-					record = { value, error: false };
-					modifierProbeCache.set(modifier, record);
-				}
-				if (record.error) {
-					return createReactiveTextChild(index, () => "");
-				}
-				const v = record.value;
+				const v = modifier();
 
-				// Detect cn() result: plain object with only a `className` string key
+				// A css()/cx() result (only own key: a `className` string) makes this a
+				// reactive className instead of reactive text.
 				if (isClassNameOnlyObject(v)) {
 					const classNameFn = (): string => {
 						const result = modifier();
@@ -109,40 +93,29 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 				if (isPrimitive(v)) {
 					// Nullish probes register as empty reactive text instead of being
 					// dropped: a resolver with no value yet (data still loading) must
-					// stay reactive so a later update() can fill it in. The resolver
-					// is registered raw with `sanitize` set — the notify pass renders
-					// nullish/non-primitive results as "" — instead of allocating a
-					// sanitizing wrapper closure per text node.
-					const resolver = modifier as () => Primitive;
-					const initial: Primitive = v != null ? (v as Primitive) : "";
+					// stay reactive so a later update() can fill it in. The resolver is
+					// registered raw — the notify pass renders nullish/non-primitive
+					// results as "" — so no wrapper closure is allocated per text node.
 					if (isHydrating() && nextChildIsTextComment(parent as unknown as Node)) {
 						const parentNode = parent as unknown as Node;
 						claimChild(parentNode); // skip <!-- text-N --> comment
-						const expected = String(initial);
-						const textNode = claimTextAfterMarker(parentNode, expected);
-						if (textNode) {
-							registerReactiveTextNode(textNode, {
-								resolver,
-								lastValue: expected,
-								sanitize: true,
-							});
-						}
+						const expected = toText(v);
+						registerReactiveTextNode(claimTextAfterMarker(parentNode, expected), modifier, expected);
 						return null;
 					}
-					return createReactiveTextChild(index, resolver, initial, true);
+					return wrapTextNode(index, createReactiveTextNode(modifier, v));
 				}
 				return null;
 			} catch (error) {
-				modifierProbeCache.set(modifier, { value: undefined, error: true });
 				logError("Error evaluating reactive text function:", error);
-				return createReactiveTextChild(index, () => "");
+				return wrapTextNode(index, createReactiveTextNode(emptyText, ""));
 			}
 		}
 
 		// Handle NodeModFn functions
 		const produced = (modifier as NodeModFn<TTagName>)(parent, index);
 		if (produced == null) return null;
-		if (isPrimitive(produced)) return createStaticTextChild(index, produced);
+		if (isPrimitive(produced)) return wrapTextNode(index, document.createTextNode(String(produced)));
 		if (isNode(produced)) return produced;
 		if (isObject(produced)) {
 			applyAttributes(parent, produced as ExpandedElementAttributes<TTagName>);
@@ -159,7 +132,7 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 			claimTextAfterMarker(parentNode, String(candidate));
 			return null;
 		}
-		return createStaticTextChild(index, candidate);
+		return wrapTextNode(index, document.createTextNode(String(candidate)));
 	}
 	if (isNode(candidate)) return candidate;
 	applyAttributes(parent, candidate as ExpandedElementAttributes<TTagName>);
@@ -178,32 +151,19 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
  *
  * SSR (isBrowser === false, or renderToString's serialization mode) and the
  * hydration-mismatch fresh-render path keep the marker so the emitted/repaired
- * DOM stays hydratable. A null text node (document unavailable) is skipped,
- * matching the previous per-path guards.
+ * DOM stays hydratable.
  */
-function wrapTextNode(index: number, textNode: Node | null): Node | null {
+function wrapTextNode(index: number, textNode: Text): Node {
 	if (isBrowser && !isHydrating() && !isSerializing()) {
 		return textNode;
 	}
-	const fragment = createDocumentFragment();
-	if (!fragment) {
-		throw new Error("Failed to create document fragment: document not available");
-	}
-	const comment = createComment(` text-${index} `);
-	if (comment) fragment.appendChild(comment);
-	if (textNode) fragment.appendChild(textNode);
+	const fragment = document.createDocumentFragment();
+	fragment.appendChild(document.createComment(` text-${index} `));
+	fragment.appendChild(textNode);
 	return fragment;
 }
 
-function createReactiveTextChild(
-	index: number,
-	resolver: () => Primitive,
-	preEvaluated?: unknown,
-	sanitize?: boolean
-): Node | null {
-	return wrapTextNode(index, createReactiveTextNode(resolver, preEvaluated, sanitize));
-}
-
-function createStaticTextChild(index: number, value: Primitive): Node | null {
-	return wrapTextNode(index, createTextNode(String(value)));
+/** Resolver for text whose first evaluation threw: stays empty. */
+function emptyText(): string {
+	return "";
 }

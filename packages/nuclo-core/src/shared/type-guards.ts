@@ -13,14 +13,6 @@ export function isObject(value: unknown): value is object {
 	return typeof value === "object" && value !== null;
 }
 
-export function isTagLike<T>(value: T): value is T & { tagName?: string } {
-	return isObject(value) && "tagName" in (value as object);
-}
-
-export function isBoolean(value: unknown): value is boolean {
-	return typeof value === "boolean";
-}
-
 /**
  * Narrows `value` to a callable. The generic `<T extends Function>` is intentionally
  * removed: it allowed callers to assert any specific function signature via the type

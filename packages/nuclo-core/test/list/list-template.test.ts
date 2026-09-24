@@ -31,6 +31,7 @@ declare const td: ExpandedElementBuilder<"td">;
 declare const a: ExpandedElementBuilder<"a">;
 declare const div: ExpandedElementBuilder<"div">;
 declare const span: ExpandedElementBuilder<"span">;
+declare const circleSvg: ExpandedSVGElementBuilder<"circle">;
 
 interface Row {
   id: number;
@@ -155,7 +156,13 @@ describe("list row-template cloning", () => {
 
     expect(container.querySelectorAll("tr").length).toBe(4);
     expect(classCalls).toBe(4);
-    expect(labelCalls).toBe(4);
+    // One call per row, plus the first row's template-analysis probe.
+    expect(labelCalls).toBe(5);
+
+    // Each later update() evaluates every leaf exactly once.
+    update();
+    expect(classCalls).toBe(8);
+    expect(labelCalls).toBe(9);
   });
 
   it("scrubs row-1 reactive state out of the skeleton", () => {
@@ -285,40 +292,6 @@ describe("list row-template cloning", () => {
     expect(container.contains(runtime.endMarker)).toBe(true);
   });
 
-  it("supports direct rendered rows with record-owned refresh hooks", () => {
-    const rows: Row[] = [
-      { id: 1, label: "one" },
-      { id: 2, label: "two" },
-    ];
-    let selectedId: number | null = null;
-    createListRuntime(
-      () => rows,
-      (row: Row) => {
-        const el = document.createElement("tr") as ExpandedElement<"tr">;
-        const id = document.createElement("td");
-        const label = document.createElement("td");
-        el.append(id, label);
-        const refresh = () => {
-          el.className = selectedId === row.id ? "danger" : "";
-          id.textContent = String(row.id);
-          label.textContent = row.label;
-        };
-        refresh();
-        return { element: el, update: refresh };
-      },
-      container as never,
-      0,
-    );
-
-    rows[1]!.label = "changed";
-    selectedId = 2;
-    update();
-
-    const trs = container.querySelectorAll("tr");
-    expect(trs[0].className).toBe("");
-    expect(trs[1].className).toBe("danger");
-    expect(trs[1].children[1].textContent).toBe("changed");
-  });
 });
 
 /**
@@ -584,5 +557,73 @@ describe("list row-template cloning with on() event modifiers", () => {
     );
     expect(runtime.template).toBeNull();
     expect(container.querySelectorAll("div").length).toBe(3);
+  });
+});
+
+describe("list row-template fallbacks", () => {
+  let container: HTMLElement;
+
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+  });
+
+  afterEach(() => {
+    container.remove();
+  });
+
+  it("drops the template when a resolver's result kind changes between analysis and build", () => {
+    // The first row's resolver runs twice: once to analyze the template (a
+    // primitive → text slot) and once to build the row (a className object).
+    // The built row no longer matches the analyzed shape, so the list stays on
+    // the normal build path — and every row still renders correctly.
+    let calls = 0;
+    const flaky = () => (++calls === 1 ? "text" : { className: "cls" });
+    let items = [1, 2, 3];
+    const runtime = createListRuntime(() => items, () => span(flaky), container as never, 0);
+
+    expect(runtime.template).toBeNull();
+    const spans = Array.from(container.querySelectorAll("span"));
+    expect(spans.map((s) => s.className)).toEqual(["cls", "cls", "cls"]);
+    expect(spans.map((s) => s.textContent)).toEqual(["", "", ""]);
+
+    items = [1, 2, 3, 4];
+    sync(runtime);
+    expect(container.querySelectorAll("span").length).toBe(4);
+  });
+
+  it("keeps SVG rows on the normal build path (SVG factories carry no template metadata)", () => {
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(SVG_NS, "svg");
+    container.appendChild(svg);
+    const runtime = createListRuntime(() => [1, 2, 3], (n: number) => circleSvg({ r: n }), svg as never, 0);
+    expect(runtime.template).toBeNull();
+    const circles = Array.from(svg.querySelectorAll("circle"));
+    expect(circles.map((c) => c.getAttribute("r"))).toEqual(["1", "2", "3"]);
+    expect(circles.every((c) => c.namespaceURI === SVG_NS)).toBe(true);
+  });
+
+  it("drops an active template and builds a plain-element row normally", () => {
+    let items: Array<number | string> = [1, 2];
+    const runtime = createListRuntime(
+      () => items,
+      (item) => {
+        if (typeof item === "string") {
+          const el = document.createElement("span");
+          el.textContent = item;
+          return el as unknown as ExpandedElement<"span">;
+        }
+        return span(String(item));
+      },
+      container as never,
+      0,
+    );
+    expect(runtime.template).toBeTruthy();
+
+    items = [1, 2, "plain"];
+    sync(runtime);
+
+    expect(runtime.template).toBeNull();
+    expect(Array.from(container.querySelectorAll("span")).map((s) => s.textContent)).toEqual(["1", "2", "plain"]);
   });
 });

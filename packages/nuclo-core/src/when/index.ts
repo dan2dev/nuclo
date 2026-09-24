@@ -1,5 +1,4 @@
 import { WhenBuilderImpl, createWhenBuilderFunction } from "./builder";
-import type { WhenCondition, WhenContent } from "./runtime";
 
 export { updateWhenRuntimes } from "./runtime";
 
@@ -47,6 +46,6 @@ export function when<TTagName extends ElementTagName = ElementTagName>(
   condition: WhenCondition,
   ...content: WhenContent<TTagName>[]
 ): WhenBuilder<TTagName> {
-  const builder = new WhenBuilderImpl<TTagName>(condition, ...content);
+  const builder = new WhenBuilderImpl<TTagName>([{ condition, content }], []);
   return createWhenBuilderFunction(builder);
 }

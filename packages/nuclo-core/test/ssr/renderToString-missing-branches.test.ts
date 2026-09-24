@@ -1,7 +1,7 @@
 /// <reference path="../../types/index.d.ts" />
 // @vitest-environment node
 import "../../src/polyfill";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { renderToString } from "../../src/ssr/render-to-string";
 
 describe("SSR renderToString missing branches", () => {
@@ -47,20 +47,5 @@ describe("SSR renderToString missing branches", () => {
     expect(renderToString({} as any)).toBe("");
   });
 
-  it("catches errors when document.createElement returns nullish", () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const createElementSpy = vi
-      .spyOn(document, "createElement")
-      .mockImplementation(() => undefined as any);
-
-    try {
-      const html = renderToString((_parent: any) => null);
-      expect(html).toBe("");
-      expect(errorSpy).toHaveBeenCalled();
-    } finally {
-      createElementSpy.mockRestore();
-      errorSpy.mockRestore();
-    }
-  });
 });
 

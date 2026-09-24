@@ -13,10 +13,9 @@
  *     the longest increasing subsequence of old positions never move, and runs
  *     of freshly built rows are batched into DocumentFragments.
  */
-import { createMarkerPair, createComment, safeRemoveChild, isNodeConnected, createDocumentFragment, disposeLifecyclesInSubtree } from "../shared/dom";
-import { resolveRenderable } from "../shared/renderables";
-import { isHydrating, isSerializing, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration";
-import type { ListRenderer, ListRuntime, ListItemRecord, ListItemsInput, ListItemsProvider, ListRenderedRow } from "./types";
+import { createMarkerPair, safeRemoveChild, disposeLifecyclesInSubtree } from "../shared/dom";
+import { isHydrating, isSerializing, claimMarkerPair, peekChild, setCursor } from "../hydration";
+import type { ListRuntime, ListItemRecord } from "./types";
 import type { UpdateScope } from "../update/scope";
 import { isBrowser } from "../shared/environment";
 import { getFactoryMods, getFactoryTag, withMetadataOnlyFactories, getMetadataOnlyFactoryCheckpoint, releaseMetadataOnlyFactories } from "../element/factory-meta";
@@ -61,28 +60,33 @@ function normalizeItems<TItem>(items: ListItemsInput<TItem>): readonly TItem[] {
   return Array.isArray(items) ? items : Array.from(items);
 }
 
-function isRenderedRow<TTagName extends ElementTagName>(value: unknown): value is ListRenderedRow<TTagName> {
-  if (value == null || typeof value !== "object") return false;
-  const element = (value as { element?: unknown }).element;
-  return !!element && typeof Node !== "undefined" && element instanceof Node;
+/**
+ * Resolves a render() result — a tag-builder factory / NodeModFn (called with
+ * the host) or an already-built element — to the row element. Anything else
+ * (null, primitives, attribute objects, non-element nodes) renders no row.
+ */
+function toRowElement<TTagName extends ElementTagName>(
+  result: unknown,
+  host: ExpandedElement<TTagName>,
+  index: number,
+): ExpandedElement<TTagName> | null {
+  const value = typeof result === "function" ? (result as NodeModFn<TTagName>)(host, index) : result;
+  return value !== null && typeof value === "object" && "tagName" in value
+    ? value as ExpandedElement<TTagName>
+    : null;
 }
 
 /**
- * Renders a row through the un-templated path and normalizes the result. Used
- * whenever a row's shape doesn't match (or no longer matches) the list's
- * active template — the caller has already reset `runtime.template`.
+ * Renders a row through the un-templated path. Used whenever a row's shape
+ * doesn't match (or no longer matches) the list's active template — the
+ * caller has already reset `runtime.template`.
  */
 function rebuildRowNormally<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>,
   item: TItem,
   index: number,
 ): ExpandedElement<TTagName> | null {
-  const fallback = runtime.renderItem(item, index);
-  if (isRenderedRow<TTagName>(fallback)) {
-    runtime.lastRenderRefresh = typeof fallback.update === "function" ? fallback.update : null;
-    return fallback.element;
-  }
-  return resolveRenderable<TTagName>(fallback as never, runtime.host, index);
+  return toRowElement(runtime.renderItem(item, index), runtime.host, index);
 }
 
 /**
@@ -119,7 +123,6 @@ function renderItemWithTemplate<TItem, TTagName extends ElementTagName>(
   index: number,
 ): ExpandedElement<TTagName> | null {
   runtime.lastRenderLeaves = null;
-  runtime.lastRenderRefresh = null;
   const template = runtime.template;
   const canUseTemplate = isBrowser && !isHydrating() && !isSerializing();
 
@@ -130,18 +133,13 @@ function renderItemWithTemplate<TItem, TTagName extends ElementTagName>(
     ? withMetadataOnlyFactories(runtime.renderItem, item, index)
     : runtime.renderItem(item, index);
 
-  if (isRenderedRow<TTagName>(result)) {
-    runtime.lastRenderRefresh = typeof result.update === "function" ? result.update : null;
-    return result.element;
-  }
-
   if (template !== null && canUseTemplate) {
     const mods = getFactoryMods(result);
     if (mods !== undefined) {
       if (template === undefined) {
         const tag = getFactoryTag(result);
         const tmpl = tag ? analyzeFactory(tag, mods) : null;
-        const el = resolveRenderable<TTagName>(result, runtime.host, index);
+        const el = toRowElement(result, runtime.host, index);
         if (tmpl && el) {
           const skeleton = (el as unknown as Node).cloneNode(true) as Element;
           prepareSkeleton(tmpl, skeleton);
@@ -187,17 +185,7 @@ function renderItemWithTemplate<TItem, TTagName extends ElementTagName>(
     }
   }
 
-  return resolveRenderable<TTagName>(result as never, runtime.host, index);
-}
-
-/**
- * Detaches one row eagerly: safeRemoveChild walks the subtree to abort
- * listeners and prune reactive registries before removing the node. Used for
- * partial removals, where the walk is cheap; full clears/replaces use
- * bulkClearRecords instead.
- */
-function removeRecord<TItem, TTagName extends ElementTagName>(record: ListItemRecord<TItem, TTagName>): void {
-  safeRemoveChild(record.element as unknown as Node);
+  return toRowElement(result, runtime.host, index);
 }
 
 /**
@@ -215,7 +203,7 @@ function removeRecord<TItem, TTagName extends ElementTagName>(record: ListItemRe
  * with nodes-per-row, so a nested `tr>td>td` row template made replace/clear
  * quadratic where a flat `div` row only looked linear.
  *
- * Unlike removeRecord, this does NOT eagerly walk each subtree to abort
+ * Unlike safeRemoveChild, this does NOT eagerly walk each subtree to detach
  * listeners and prune reactive registries. That walk is the dominant per-row
  * cost when clearing/replacing a large list, and it is redundant here:
  *  - Reactive text/attribute registries hold their targets only through
@@ -223,8 +211,8 @@ function removeRecord<TItem, TTagName extends ElementTagName>(record: ListItemRe
  *    disconnected (which removeChild makes them). The real-GC tests in
  *    test/memory/gc-collectability.test.ts prove a detached subtree is
  *    collectible with no eager cleanup and no extra update pass.
- *  - Event listeners are tracked in a WeakMap keyed by element and registered
- *    with an AbortSignal, so they are released when the element is collected.
+ *  - Event listeners are tracked in a WeakMap keyed by element, so they are
+ *    released when the element is collected.
  *
  * Returns false (and mutates nothing) when the markers aren't both children of
  * `parent`, so the caller can fall back to per-node removal.
@@ -315,8 +303,7 @@ function longestIncreasingSubsequence(arr: number[]): number[] {
 
 /**
  * Renders items in [startIndex, endIndexExclusive) and inserts their elements
- * before `anchor` as a single DocumentFragment (falling back to per-node
- * insertion when fragments are unavailable). Appends the created records to
+ * before `anchor` as a single DocumentFragment. Appends the created records to
  * `targetRecords` in order.
  */
 function buildAndInsert<TItem, TTagName extends ElementTagName>(
@@ -328,8 +315,7 @@ function buildAndInsert<TItem, TTagName extends ElementTagName>(
   anchor: Node,
   targetRecords: ListItemRecord<TItem, TTagName>[],
 ): void {
-  const fragment = createDocumentFragment();
-  let buffered = 0;
+  const fragment = document.createDocumentFragment();
   for (let i = startIndex; i < endIndexExclusive; i++) {
     const item = items[i];
     const element = renderItem(runtime, item, i);
@@ -339,20 +325,12 @@ function buildAndInsert<TItem, TTagName extends ElementTagName>(
       item,
       element,
       dyn,
-      refresh: runtime.lastRenderRefresh,
       dynCreatedAt: dyn ? runtime.currentFlushEpoch : undefined,
     });
     runtime.lastRenderLeaves = null;
-    runtime.lastRenderRefresh = null;
-    const node = element as unknown as Node;
-    if (fragment) {
-      fragment.appendChild(node);
-      buffered++;
-    } else {
-      parent.insertBefore(node, anchor);
-    }
+    fragment.appendChild(element as unknown as Node);
   }
-  if (fragment && buffered > 0) parent.insertBefore(fragment, anchor);
+  if (fragment.firstChild) parent.insertBefore(fragment, anchor);
 }
 
 export function sync<TItem, TTagName extends ElementTagName>(
@@ -374,7 +352,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
   // cleanup walk (see bulkClearRecords).
   if (newLen === 0) {
     if (oldLen > 0 && !bulkClearRecords(oldRecords, parent, startMarker, endMarker)) {
-      for (let i = 0; i < oldLen; i++) removeRecord(oldRecords[i]);
+      for (let i = 0; i < oldLen; i++) safeRemoveChild(oldRecords[i].element as unknown as Node);
     }
     runtime.records = [];
     runtime.lastSyncedItems = [];
@@ -420,7 +398,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
   // Every new row was trimmed → pure removal. This is always partial (a full
   // clear was handled above), so remove each row eagerly.
   if (newStart === newEnd) {
-    for (let i = oldStart; i < oldEnd; i++) removeRecord(oldRecords[i]);
+    for (let i = oldStart; i < oldEnd; i++) safeRemoveChild(oldRecords[i].element as unknown as Node);
     oldRecords.splice(oldStart, oldEnd - oldStart);
     runtime.allRecordsCreatedAt = undefined;
     runtime.lastSyncedItems = items.slice();
@@ -484,7 +462,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
   // build every new row into a single fragment.
   if (reusedCount === 0 && oldStart === 0 && oldEnd === oldLen) {
     if (!bulkClearRecords(oldRecords, parent, startMarker, endMarker)) {
-      for (let i = 0; i < oldLen; i++) removeRecord(oldRecords[i]);
+      for (let i = 0; i < oldLen; i++) safeRemoveChild(oldRecords[i].element as unknown as Node);
     }
     const fresh: ListItemRecord<TItem, TTagName>[] = [];
     buildAndInsert(runtime, parent, items, 0, newLen, endMarker, fresh);
@@ -498,7 +476,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
   // would end up interleaved with the survivors the placement phase leaves
   // untouched.
   for (let i = oldStart; i < oldEnd; i++) {
-    if (!claimed[i - oldStart]) removeRecord(oldRecords[i]);
+    if (!claimed[i - oldStart]) safeRemoveChild(oldRecords[i].element as unknown as Node);
   }
 
   // Determine the minimal set of survivors that must move. Survivors whose old
@@ -552,21 +530,11 @@ export function sync<TItem, TTagName extends ElementTagName>(
         item,
         element,
         dyn,
-        refresh: runtime.lastRenderRefresh,
         dynCreatedAt: dyn ? runtime.currentFlushEpoch : undefined,
       };
       runtime.lastRenderLeaves = null;
-      runtime.lastRenderRefresh = null;
-      const node = element as unknown as Node;
-      if (!fragment) fragment = createDocumentFragment();
-      if (fragment) {
-        fragment.insertBefore(node, fragment.firstChild);
-      } else {
-        // No DocumentFragment available — insert directly and advance the
-        // anchor so the next (earlier) row lands before this one.
-        parent.insertBefore(node, anchor);
-        anchor = node;
-      }
+      fragment ??= document.createDocumentFragment();
+      fragment.insertBefore(element as unknown as Node, fragment.firstChild);
       continue;
     }
 
@@ -606,9 +574,34 @@ export function sync<TItem, TTagName extends ElementTagName>(
   runtime.lastSyncedItems = items.slice();
 }
 
+/** Every field initialized up front so all runtimes share one object shape. */
+function newRuntime<TItem, TTagName extends ElementTagName>(
+  itemsProvider: ListItemsProvider<TItem>,
+  renderItem: ListRenderFunction<TItem, TTagName>,
+  startMarker: Comment,
+  endMarker: Comment,
+  records: ListItemRecord<TItem, TTagName>[],
+  host: ExpandedElement<TTagName>,
+  lastSyncedItems: readonly TItem[],
+): ListRuntime<TItem, TTagName> {
+  return {
+    itemsProvider,
+    renderItem,
+    startMarker,
+    endMarker,
+    records,
+    host,
+    lastSyncedItems,
+    template: undefined,
+    lastRenderLeaves: null,
+    currentFlushEpoch: undefined,
+    allRecordsCreatedAt: undefined,
+  };
+}
+
 export function createListRuntime<TItem, TTagName extends ElementTagName = ElementTagName>(
   itemsProvider: ListItemsProvider<TItem>,
-  renderItem: ListRenderer<TItem, TTagName>,
+  renderItem: ListRenderFunction<TItem, TTagName>,
   host: ExpandedElement<TTagName>,
   index: number,
 ): ListRuntime<TItem, TTagName> {
@@ -621,21 +614,13 @@ export function createListRuntime<TItem, TTagName extends ElementTagName = Eleme
 
 function createListRuntimeNormal<TItem, TTagName extends ElementTagName>(
   itemsProvider: ListItemsProvider<TItem>,
-  renderItem: ListRenderer<TItem, TTagName>,
+  renderItem: ListRenderFunction<TItem, TTagName>,
   host: ExpandedElement<TTagName>,
   index: number,
 ): ListRuntime<TItem, TTagName> {
   const { start: startMarker, end: endMarker } = createMarkerPair("list", index);
 
-  const runtime: ListRuntime<TItem, TTagName> = {
-    itemsProvider,
-    renderItem,
-    startMarker,
-    endMarker,
-    records: [],
-    host,
-    lastSyncedItems: [],
-  };
+  const runtime = newRuntime(itemsProvider, renderItem, startMarker, endMarker, [], host, []);
 
   const parentNode = host as unknown as Node & ParentNode;
   parentNode.appendChild(startMarker);
@@ -653,71 +638,27 @@ function createListRuntimeNormal<TItem, TTagName extends ElementTagName>(
 
 function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   itemsProvider: ListItemsProvider<TItem>,
-  renderFn: ListRenderer<TItem, TTagName>,
+  renderFn: ListRenderFunction<TItem, TTagName>,
   host: ExpandedElement<TTagName>,
   index: number,
 ): ListRuntime<TItem, TTagName> {
   const parentNode = host as unknown as Node & ParentNode;
 
-  // Check if next child is actually a list-start comment marker.
-  // If not, fall back to normal (non-hydration) list creation.
-  skipWhitespaceText(parentNode);
-  const candidate = peekChild(parentNode);
-  if (!candidate || candidate.nodeType !== 8 ||
-      !(candidate as Comment).textContent?.startsWith('list-start-')) {
-    return createListRuntimeNormal(itemsProvider, renderFn, host, index);
-  }
-
-  // Claim existing start marker
-  const startMarker = claimChild(parentNode) as Comment;
-
-  // Find end marker (without claiming) so we know when to stop.
-  // Pairs are depth-counted in case nested list markers share this host.
-  let depth = 0;
-  let scanNode: Node | null = peekChild(parentNode);
-  while (scanNode) {
-    if (scanNode.nodeType === 8) {
-      const text = (scanNode as Comment).textContent || '';
-      if (text.startsWith('list-start-')) {
-        depth++;
-      } else if (text === 'list-end') {
-        if (depth === 0) break;
-        depth--;
-      }
-    }
-    scanNode = scanNode.nextSibling;
-  }
-  let endMarker = scanNode as Comment | null;
-  if (!endMarker) {
-    // Corrupt/truncated SSR output — recreate the end marker; every item
-    // claim below will miss and render fresh.
-    const created = createComment('list-end');
-    if (created) {
-      parentNode.insertBefore(created, startMarker.nextSibling);
-      endMarker = created;
-    }
-  }
-  if (!endMarker) {
-    return createListRuntimeNormal(itemsProvider, renderFn, host, index);
-  }
+  // No list markers at the cursor: build the list fresh. A recreated end
+  // marker (corrupt/truncated SSR output) makes every item claim below miss,
+  // so those rows render fresh too.
+  const pair = claimMarkerPair(parentNode, "list");
+  if (!pair) return createListRuntimeNormal(itemsProvider, renderFn, host, index);
+  const { start: startMarker, end: endMarker } = pair;
 
   // Get current items and claim existing elements by running render functions
   const currentItems = normalizeItems(itemsProvider());
   const records: ListItemRecord<TItem, TTagName>[] = [];
 
   for (let i = 0; i < currentItems.length; i++) {
-    const result = renderFn(currentItems[i], i);
-    const rendered = isRenderedRow<TTagName>(result) ? result : null;
-    const element = rendered
-      ? rendered.element
-      : resolveRenderable<TTagName>(result as never, host, i);
-    if (element) {
-      records.push({
-        item: currentItems[i],
-        element,
-        refresh: rendered && typeof rendered.update === "function" ? rendered.update : undefined,
-      });
-    }
+    const element = toRowElement(renderFn(currentItems[i], i), host, i);
+    // Same record shape as sync() creates, so record access stays monomorphic.
+    if (element) records.push({ item: currentItems[i], element, dyn: null, dynCreatedAt: undefined });
   }
 
   // Reconcile server/client mismatches.
@@ -744,44 +685,13 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   // Advance cursor past end marker
   setCursor(parentNode, endMarker.nextSibling);
 
-  const runtime: ListRuntime<TItem, TTagName> = {
-    itemsProvider,
-    renderItem: renderFn,
-    startMarker,
-    endMarker,
-    records,
-    host,
-    lastSyncedItems: currentItems.slice(),
-  };
+  const runtime = newRuntime(itemsProvider, renderFn, startMarker, endMarker, records, host, currentItems.slice());
 
   if (isBrowser) {
     registerListRuntime(startMarker, runtime as ListRuntime<unknown, ElementTagName>);
   }
 
   return runtime;
-}
-
-/**
- * Drops a disconnected runtime's item/element references. The runtime object
- * can outlive its list (it stays reachable through the WeakMap entry while
- * someone still references the detached subtree), so clearing the records
- * keeps it from pinning the items.
- */
-function releaseRuntime(runtime: ListRuntime<unknown, ElementTagName>): void {
-  runtime.template = null;
-  runtime.lastRenderLeaves = null;
-  runtime.lastRenderRefresh = null;
-  for (let i = 0; i < runtime.records.length; i++) {
-    const record = runtime.records[i] as { item: unknown; element: unknown; dyn?: unknown; refresh?: unknown };
-    record.element = null;
-    record.item = null;
-    record.dyn = null;
-    record.refresh = null;
-    delete (record as { dynCreatedAt?: number }).dynCreatedAt;
-  }
-  runtime.records = [];
-  runtime.lastSyncedItems = [];
-  runtime.allRecordsCreatedAt = undefined;
 }
 
 export function updateListRuntimes(scope?: UpdateScope): void {
@@ -804,8 +714,7 @@ export function updateListRuntimes(scope?: UpdateScope): void {
     }
 
     // Clean up if disconnected from DOM
-    if (!isNodeConnected(startMarker) || !isNodeConnected(runtime.endMarker)) {
-      releaseRuntime(runtime);
+    if (!startMarker.isConnected || !runtime.endMarker.isConnected) {
       listRuntimeByMarker.delete(startMarker);
       toDelete.push(ref);
       continue;
@@ -828,8 +737,6 @@ export function updateListRuntimes(scope?: UpdateScope): void {
     const records = runtime.records;
     for (let i = 0; i < records.length; i++) {
       if (records[i].dynCreatedAt === updateListFlushEpoch) continue;
-      const refresh = records[i].refresh;
-      if (refresh) refresh();
       const dyn = records[i].dyn;
       if (dyn) flushRowLeaves(dyn);
     }

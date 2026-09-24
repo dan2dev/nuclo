@@ -87,7 +87,7 @@ describe("real GC — removed subtrees are collectible", () => {
     }
   });
 
-  for (const kind of ["templated", "templated with on()", "refreshable"] as const) {
+  for (const kind of ["templated", "templated with on()", "plain element"] as const) {
     for (const removal of ["partial", "clear", "detach"]) {
       itGc(`releases ${kind} row data after ${removal}`, async () => {
         const refs = (() => {
@@ -99,9 +99,8 @@ describe("real GC — removed subtrees are collectible", () => {
             if (kind === "templated") return span(() => item.label);
             if (kind === "templated with on()") return span(on("click", () => { void item.label; }), () => item.label);
             const element = document.createElement("span");
-            const refresh = () => { element.textContent = item.label; };
-            refresh();
-            return { element, update: refresh };
+            element.textContent = item.label;
+            return element;
           })), container) as HTMLElement;
           const rowRef = new WeakRef(el.lastElementChild!);
           if (removal === "detach") {
@@ -118,6 +117,31 @@ describe("real GC — removed subtrees are collectible", () => {
         expect(refs.rowRef.deref()).toBeUndefined();
       });
     }
+  }
+
+  // The list runtime of a detached list is dropped by the next update(); its
+  // rows' items must then be collectible even though the app still holds the
+  // detached DOM (the runtime owns items via its records, not the DOM).
+  for (const kind of ["templated", "plain element"] as const) {
+    itGc(`releases ${kind} row items of a detached list the app still references`, async () => {
+      let items = [{ label: "first" }, { label: "second" }];
+      const itemRef = new WeakRef(items[1]);
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      render(div(list(() => items, (item) => {
+        if (kind === "templated") return span(() => item.label);
+        const element = document.createElement("span");
+        element.textContent = item.label;
+        return element;
+      })), container);
+      container.remove();
+      items = [];
+      update(); // prunes the disconnected runtime
+
+      await collectGarbage();
+      expect(itemRef.deref()).toBeUndefined();
+      expect(container.textContent).toBe("firstsecond"); // DOM still held by the app
+    });
   }
 
   itGc("when() runtime does not retain its removed subtree", async () => {

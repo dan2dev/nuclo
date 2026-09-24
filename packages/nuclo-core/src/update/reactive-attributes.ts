@@ -1,60 +1,12 @@
 import { logError } from "../shared/errors";
-import { isNodeConnected } from "../shared/dom";
 import type { UpdateScope } from "./scope";
-import { reactiveElements, reactiveElementsByNode, registerReactiveElement, removeReactiveElementRef } from "./registry";
-import type { AttributeResolver, AttributeResolverRecord, ReactiveElementInfo } from "./registry";
+import { reactiveElements, reactiveElementsByNode, registerReactiveElement } from "./registry";
+import type { AttributeApplier, AttributeResolver, AttributeResolverRecord } from "./registry";
 import { isBrowser } from "../shared/environment";
 
 const UNSET_LAST_VALUE = {};
-let updateEventListenerRegistered = false;
 
-function handleUpdateEvent(event: Event): void {
-  // Update all reactive elements on the event's target ancestor chain.
-  // This preserves the "dispatchEvent(new Event('update'))" workflow without
-  // per-element event listeners.
-  const target = event.target;
-  if (!target || typeof Node === "undefined" || !(target instanceof Node)) return;
-
-  let node: Node | null = target;
-  while (node) {
-    if (node instanceof Element) {
-      const entry = reactiveElementsByNode.get(node);
-      if (entry) {
-        if (!isNodeConnected(node)) {
-          removeReactiveElementRef(entry.ref);
-          reactiveElementsByNode.delete(node);
-        } else {
-          applyAttributeResolvers(entry.info);
-        }
-      }
-    }
-    node = node.parentNode;
-  }
-}
-
-function ensureGlobalUpdateEventListener(): void {
-  if (updateEventListenerRegistered) return;
-  if (typeof document === "undefined" || typeof document.addEventListener !== "function") return;
-  document.addEventListener("update", handleUpdateEvent, true);
-  updateEventListenerRegistered = true;
-}
-
-function ensureElementInfo(el: Element): ReactiveElementInfo {
-  const entry = reactiveElementsByNode.get(el);
-  if (entry) return entry.info;
-
-  // No existing info, create new
-  const info: ReactiveElementInfo = { attributeResolvers: [] };
-  registerReactiveElement(el, info);
-  return info;
-}
-
-function isCacheableValue(value: unknown): boolean {
-  // Avoid caching objects/arrays that may be mutated in place (e.g. style objects).
-  return value === null || typeof value !== "object";
-}
-
-function updateAttributeResolverRecord(record: AttributeResolverRecord): void {
+function updateRecord(element: Element, record: AttributeResolverRecord): void {
   let nextValue: unknown;
   try {
     nextValue = record.resolver();
@@ -63,121 +15,60 @@ function updateAttributeResolverRecord(record: AttributeResolverRecord): void {
     return;
   }
 
-  const cacheable = isCacheableValue(nextValue);
+  // Objects/arrays may be mutated in place (e.g. style objects), so only
+  // primitives are compared against the last applied value.
+  const cacheable = nextValue === null || typeof nextValue !== "object";
   if (cacheable && Object.is(nextValue, record.lastValue)) return;
 
   try {
-    record.applyValue(nextValue);
+    record.apply(element, record.key, nextValue);
     record.lastValue = cacheable ? nextValue : UNSET_LAST_VALUE;
   } catch (e) {
     logError(`Failed to apply reactive attribute: ${record.key}`, e);
   }
 }
 
-function applyAttributeResolvers(info: ReactiveElementInfo): void {
-  const resolvers = info.attributeResolvers;
-  for (let i = 0; i < resolvers.length; i++) {
-    updateAttributeResolverRecord(resolvers[i]);
-  }
-}
-
 /**
- * Registers a reactive attribute resolver for an element.
- *
- * The resolver will be called whenever reactive updates run (e.g. via `update()`),
- * or when an `"update"` event is dispatched on the element (or a descendant),
- * allowing attributes to reactively update based on application state.
- *
- * @param element - The DOM element to make reactive
- * @param key - The attribute name being made reactive (e.g., 'class', 'style', 'disabled')
- * @param resolver - Function that returns the new attribute value
- * @param applyValue - Callback that applies the resolved value to the element
- *
- * @example
- * ```ts
- * const isActive = signal(false);
- * const button = document.createElement('button');
- * registerAttributeResolver(
- *   button,
- *   'class',
- *   () => isActive.value ? 'active' : 'inactive',
- *   (value) => button.className = String(value)
- * );
- * ```
+ * Makes `resolver` the reactive source of `element`'s `key`: applied now and
+ * re-evaluated on every update(). Registering a key again replaces its
+ * previous resolver. During SSR the value is applied once and nothing is
+ * registered (update() never runs server-side).
  */
 export function registerAttributeResolver<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
   key: string,
   resolver: AttributeResolver,
-  applyValue: (value: unknown) => void
+  apply: AttributeApplier,
 ): void {
-  if (!(element instanceof Element) || !key || typeof resolver !== "function") {
-    logError("Invalid parameters for registerAttributeResolver");
-    return;
+  const el = element as unknown as Element;
+  const record: AttributeResolverRecord = { key, resolver, apply, lastValue: UNSET_LAST_VALUE };
+  if (isBrowser) {
+    const resolvers = registerReactiveElement(el).attributeResolvers;
+    let i = 0;
+    while (i < resolvers.length && resolvers[i].key !== key) i++;
+    resolvers[i] = record;
   }
-
-  const record: AttributeResolverRecord = { key, resolver, applyValue, lastValue: UNSET_LAST_VALUE };
-
-  if (!isBrowser) {
-    // SSR: just apply once, no registration needed (update() is never called server-side)
-    updateAttributeResolverRecord(record);
-    return;
-  }
-
-  ensureGlobalUpdateEventListener();
-  const info = ensureElementInfo(element as Element);
-  // Re-registration for a key replaces its record (previous Map.set semantics).
-  const resolvers = info.attributeResolvers;
-  let replaced = false;
-  for (let i = 0; i < resolvers.length; i++) {
-    if (resolvers[i].key === key) {
-      resolvers[i] = record;
-      replaced = true;
-      break;
-    }
-  }
-  if (!replaced) resolvers.push(record);
-  updateAttributeResolverRecord(record);
+  updateRecord(el, record);
 }
 
 /**
- * Updates all registered reactive elements by re-evaluating their attribute resolvers.
- *
- * Iterates through all reactive elements and triggers their registered attribute resolvers
- * to update. Automatically cleans up disconnected elements and their event listeners.
- *
- * This function should be called after state changes to synchronize element attributes
- * with application state.
- *
- * @example
- * ```ts
- * // After updating application state
- * isActive.value = true;
- * notifyReactiveElements(); // All reactive attributes update
- * ```
+ * Re-evaluates the attribute resolvers of every registered reactive element
+ * (in `scope`, if given). Disconnected and collected elements are pruned as
+ * the pass goes.
  */
 export function notifyReactiveElements(scope?: UpdateScope): void {
   for (const ref of reactiveElements) {
     const el = ref.deref();
-    if (el === undefined) {
-      removeReactiveElementRef(ref);
-      continue;
-    }
-
-    const entry = reactiveElementsByNode.get(el);
-    if (!entry) {
-      removeReactiveElementRef(ref);
-      continue;
-    }
-
-    if (!isNodeConnected(el)) {
-      reactiveElementsByNode.delete(el);
-      removeReactiveElementRef(ref);
+    const entry = el && reactiveElementsByNode.get(el);
+    if (!entry || !el.isConnected) {
+      if (el) reactiveElementsByNode.delete(el);
+      reactiveElements.delete(ref);
       continue;
     }
 
     if (scope && !scope.contains(el)) continue;
-    applyAttributeResolvers(entry.info);
-  }
 
+    const resolvers = entry.attributeResolvers;
+    for (let i = 0; i < resolvers.length; i++) updateRecord(el, resolvers[i]);
+  }
 }

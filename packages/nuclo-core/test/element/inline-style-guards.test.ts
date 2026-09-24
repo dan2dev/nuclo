@@ -1,6 +1,7 @@
 /// <reference path="../../types/index.d.ts" />
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { assignInlineStyles, applyStyleAttribute } from '../../src/element/inline-style';
+import { notifyReactiveElements } from '../../src/update/reactive-attributes';
 
 describe('styleManager defensive guards & edge cases', () => {
   let el: HTMLDivElement;
@@ -12,10 +13,6 @@ describe('styleManager defensive guards & edge cases', () => {
   });
 
   describe('assignInlineStyles guards', () => {
-    it('returns early when element is null', () => {
-      // Should not throw
-      expect(() => assignInlineStyles(null as any, { color: 'red' })).not.toThrow();
-    });
 
     it('returns early when element has no style property', () => {
       const fake = {} as any;
@@ -45,11 +42,38 @@ describe('styleManager defensive guards & edge cases', () => {
     });
   });
 
-  describe('applyStyleAttribute guards', () => {
-    it('returns early when element is null', () => {
-      expect(() => applyStyleAttribute(null as any, { color: 'red' })).not.toThrow();
+  describe('assignInlineStyles values', () => {
+    it('sets string and number values', () => {
+      assignInlineStyles(el, { color: 'red', opacity: 0.5 } as any);
+      expect(el.style.color).toBe('red');
+      expect(el.style.opacity).toBe('0.5');
     });
 
+    it('accepts camelCase and kebab-case property names', () => {
+      assignInlineStyles(el, { fontSize: '16px', 'margin-top': '4px' } as any);
+      expect(el.style.fontSize).toBe('16px');
+      expect(el.style.getPropertyValue('margin-top')).toBe('4px');
+    });
+
+    it('removes a property for null, undefined and ""', () => {
+      el.style.color = 'red';
+      el.style.fontSize = '20px';
+      el.style.margin = '1px';
+      assignInlineStyles(el, { color: null, fontSize: undefined, margin: '' } as any);
+      expect(el.getAttribute('style')).toBe('');
+    });
+
+    it('logs a value whose toString throws and still applies the other properties', () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const bad = { toString: () => { throw new Error('toString error'); } };
+      assignInlineStyles(el, { color: bad, fontSize: '12px' } as any);
+      expect(el.style.fontSize).toBe('12px');
+      expect(spy).toHaveBeenCalledWith(expect.stringContaining("Failed to set style property 'color'"), undefined);
+      spy.mockRestore();
+    });
+  });
+
+  describe('applyStyleAttribute guards', () => {
     it('passes static object through to assignInlineStyles (smoke)', () => {
       applyStyleAttribute(el, { color: 'green', fontSize: '18px' });
       expect(el.style.color).toBe('green');
@@ -74,15 +98,15 @@ describe('styleManager defensive guards & edge cases', () => {
       // After initial application (which threw), color not set
       expect(el.style.color).toBe('');
 
-      // Dispatch "update" to trigger reactive attribute re-evaluation
-      el.dispatchEvent(new Event('update'));
+      // The next update pass re-evaluates the resolver
+      notifyReactiveElements();
       expect(el.style.color).toBe('purple');
     });
 
     it('style resolver returning null results in no style changes', () => {
       el.style.color = 'orange';
       applyStyleAttribute(el, () => null);
-      el.dispatchEvent(new Event('update'));
+      notifyReactiveElements();
       // Color remains previous value (resolver produced null which remove path ignores)
       expect(el.style.color).toBe('orange');
     });
@@ -107,7 +131,7 @@ describe('styleManager defensive guards & edge cases', () => {
       expect(el.style.color).toBe('red');
       expect(el.style.fontSize).toBe('22px');
 
-      el.dispatchEvent(new Event('update'));
+      notifyReactiveElements();
       expect(el.style.color).toBe('');
       expect(el.style.fontSize).toBe('');
     });

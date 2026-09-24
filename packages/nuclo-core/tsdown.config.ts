@@ -3,13 +3,12 @@ import { defineConfig } from 'tsdown'
 export default defineConfig([
   {
     entry: { nuclo: 'src/index.ts' },
-    format: ['esm', 'cjs', 'umd'],
+    format: ['esm', 'cjs'],
     outDir: 'dist',
     clean: true,
     dts: false,
     minify: true,
     sourcemap: true,
-    globalName: 'Nuclo',
   },
   {
     entry: {

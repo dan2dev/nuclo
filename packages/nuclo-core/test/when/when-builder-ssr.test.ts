@@ -1,118 +1,73 @@
 /// <reference path="../../types/index.d.ts" />
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { when } from "../../src/when";
 
 /**
- * Tests the SSR behaviour of WhenBuilderImpl.render().
- *
- * The builder now gates on `globalThis.document` (not the old `isBrowser`
- * flag).  When `globalThis.document` is absent (pure Node.js, no polyfill)
- * `render()` must return `null`.  When it is present (polyfill loaded) the
- * full marker-based render runs and returns the start-marker Comment node.
+ * SSR behaviour of when(): without a document (no polyfill) rendering throws
+ * rather than silently rendering nothing; with the polyfill document it runs
+ * the full marker-based render and returns the start-marker comment.
  */
 
 describe("when builder SSR branches", () => {
-  describe("SSR mode — globalThis.document is undefined (no polyfill)", () => {
-    // In @vitest-environment node the polyfill is NOT imported, so
-    // globalThis.document is undefined — builder must return null.
-    it("should return null when document is not available", async () => {
-      const { WhenBuilderImpl } = await import("../../src/when/builder");
-      const container = {} as any;
-      const builder = new WhenBuilderImpl(() => true, "content");
-      const result = builder.render(container, 0);
-      expect(result).toBeNull();
-    });
-
-    it("should return null with no content when document is not available", async () => {
-      const { WhenBuilderImpl } = await import("../../src/when/builder");
-      const container = {} as any;
-      const builder = new WhenBuilderImpl(() => true);
-      const result = builder.render(container, 0);
-      expect(result).toBeNull();
-    });
-
-    it("should return null with multiple content items when document is not available", async () => {
-      const { WhenBuilderImpl } = await import("../../src/when/builder");
-      const container = {} as any;
-      const builder = new WhenBuilderImpl(() => true, "text1", "text2", "text3");
-      const result = builder.render(container, 0);
-      expect(result).toBeNull();
-    });
-
-    it("should return null even when condition is false and document is not available", async () => {
-      const { WhenBuilderImpl } = await import("../../src/when/builder");
-      const container = {} as any;
-      const builder = new WhenBuilderImpl(() => false, "content");
-      const result = builder.render(container, 0);
-      expect(result).toBeNull();
-    });
+  it("throws when no document is available (the polyfill is required)", () => {
+    expect(() => when(() => true, "content")({} as ExpandedElement<"div">, 0)).toThrow();
   });
 
-  describe("SSR mode — globalThis.document is available (polyfill loaded)", () => {
+  describe("with the polyfill document", () => {
     let savedDocument: typeof globalThis.document | undefined;
 
     beforeAll(async () => {
-      // Install the polyfill document so the builder takes the full render path.
-      savedDocument = (globalThis as any).document;
+      savedDocument = (globalThis as { document?: Document }).document;
       const { document } = await import("../../src/polyfill/Document");
-      (globalThis as any).document = document;
+      (globalThis as { document?: unknown }).document = document;
     });
 
     afterAll(() => {
-      (globalThis as any).document = savedDocument;
+      (globalThis as { document?: unknown }).document = savedDocument;
     });
 
-    it("should return a Comment node (start marker) when document is available", async () => {
-      const { WhenBuilderImpl } = await import("../../src/when/builder");
+    async function host(): Promise<ExpandedElement<"div">> {
       const { NucloElement } = await import("../../src/polyfill/Element");
-      const host = new NucloElement("div") as any;
-      const builder = new WhenBuilderImpl(() => true, "content");
-      const result = builder.render(host, 0);
-      // Full render path: returns the start-marker Comment
-      expect(result).not.toBeNull();
-      expect((result as any)?.nodeType).toBe(8);
+      return new NucloElement("div") as unknown as ExpandedElement<"div">;
+    }
+
+    function texts(el: ExpandedElement<"div">): string[] {
+      return ((el as unknown as { children: Array<{ textContent?: string }> }).children).map((c) => c.textContent ?? "");
+    }
+
+    it("returns the start marker and renders the active branch", async () => {
+      const el = await host();
+      const result = when(() => true, "content")(el, 0) as Comment;
+      expect(result.nodeType).toBe(8);
+      expect(texts(el)).toEqual(["when-start-0-b0", " text-0 ", "content", "when-end"]);
     });
 
-    it("should return a Comment node even when condition is false (else branch / no render)", async () => {
-      const { WhenBuilderImpl } = await import("../../src/when/builder");
-      const { NucloElement } = await import("../../src/polyfill/Element");
-      const host = new NucloElement("div") as any;
-      const builder = new WhenBuilderImpl(() => false, "content");
-      const result = builder.render(host, 0);
-      // Markers are still created — start marker is returned
-      expect(result).not.toBeNull();
-      expect((result as any)?.nodeType).toBe(8);
+    it("still creates markers when no branch matches", async () => {
+      const el = await host();
+      const result = when(() => false, "content")(el, 0) as Comment;
+      expect(result.nodeType).toBe(8);
+      expect(texts(el)).toEqual(["when-start-0-bn", "when-end"]);
     });
 
-    it("should handle SSR with no content items", async () => {
-      const { WhenBuilderImpl } = await import("../../src/when/builder");
-      const { NucloElement } = await import("../../src/polyfill/Element");
-      const host = new NucloElement("div") as any;
-      const builder = new WhenBuilderImpl(() => true);
-      const result = builder.render(host, 0);
-      expect(result).not.toBeNull();
-      expect((result as any)?.nodeType).toBe(8);
+    it("renders an empty branch as just the markers", async () => {
+      const el = await host();
+      when(() => true)(el, 0);
+      expect(texts(el)).toEqual(["when-start-0-b0", "when-end"]);
     });
 
-    it("should handle SSR with multiple content items", async () => {
-      const { WhenBuilderImpl } = await import("../../src/when/builder");
-      const { NucloElement } = await import("../../src/polyfill/Element");
-      const host = new NucloElement("div") as any;
-      const builder = new WhenBuilderImpl(() => true, "text1", "text2", "text3");
-      const result = builder.render(host, 0);
-      expect(result).not.toBeNull();
-      expect((result as any)?.nodeType).toBe(8);
+    it("renders every content item of the active branch", async () => {
+      const el = await host();
+      when(() => true, "text1", "text2", "text3")(el, 0);
+      expect(texts(el).filter((t) => t.startsWith("text"))).toEqual(["text1", "text2", "text3"]);
     });
 
-    it("should handle when + else chain", async () => {
-      const { WhenBuilderImpl } = await import("../../src/when/builder");
-      const { NucloElement } = await import("../../src/polyfill/Element");
-      const host = new NucloElement("div") as any;
-      const builder = new WhenBuilderImpl(() => false, "if-content");
-      builder.else("else-content");
-      const result = builder.render(host, 0);
-      expect(result).not.toBeNull();
-      expect((result as any)?.nodeType).toBe(8);
+    it("renders the else branch of a when/else chain", async () => {
+      const el = await host();
+      when(() => false, "if-content").else("else-content")(el, 0);
+      expect(texts(el)).toContain("else-content");
+      expect(texts(el)).not.toContain("if-content");
+      expect(texts(el)[0]).toBe("when-start-0-b-1");
     });
   });
 });

@@ -3,23 +3,22 @@
 import { describe, it, expect, vi } from "vitest";
 
 describe("polyfill index global application", () => {
-  it("sets Event and CustomEvent when missing", async () => {
+  it("installs document, Node, Element and HTMLElement when missing", async () => {
     vi.resetModules();
     vi.stubGlobal("document", undefined as any);
-    vi.stubGlobal("Event", undefined as any);
-    vi.stubGlobal("CustomEvent", undefined as any);
     vi.stubGlobal("Node", undefined as any);
     vi.stubGlobal("Element", undefined as any);
     vi.stubGlobal("HTMLElement", undefined as any);
 
     try {
-      await import("../../src/polyfill");
-      expect(globalThis.document).toBeDefined();
-      expect(globalThis.Event).toBeDefined();
-      expect(globalThis.CustomEvent).toBeDefined();
-      expect(globalThis.Node).toBeDefined();
-      expect(globalThis.Element).toBeDefined();
-      expect(globalThis.HTMLElement).toBeDefined();
+      const polyfill = await import("../../src/polyfill");
+      expect(globalThis.document).toBe(polyfill.document);
+      expect(globalThis.Node).toBe(polyfill.NucloNode);
+      expect(globalThis.Element).toBe(polyfill.NucloElement);
+      expect(globalThis.HTMLElement).toBe(polyfill.NucloElement);
+      // Event/CustomEvent are the runtime's own globals, re-exported as-is.
+      expect(polyfill.Event).toBe(globalThis.Event);
+      expect(polyfill.CustomEvent).toBe(globalThis.CustomEvent);
     } finally {
       vi.unstubAllGlobals();
     }

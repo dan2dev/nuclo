@@ -3,38 +3,6 @@ import { NucloElement } from '../../src/polyfill/Element';
 import { describe, it, expect } from 'vitest';
 
 describe('NucloElement edge cases', () => {
-  describe('removeChild with _childNodes (browser path)', () => {
-    it('should remove from _childNodes when present', () => {
-      const el = new NucloElement('div');
-      const child = new NucloElement('span');
-      el.children.push(child);
-
-      // Simulate browser path _childNodes array
-      (el as any)['_childNodes'] = [child];
-
-      el.removeChild(child as unknown as Node);
-
-      expect(el.children).toEqual([]);
-      expect((el as any)['_childNodes']).toEqual([]);
-    });
-  });
-
-  describe('replaceChild with _childNodes (browser path)', () => {
-    it('should update _childNodes when present', () => {
-      const el = new NucloElement('div');
-      const oldChild = new NucloElement('span');
-      const newChild = new NucloElement('p');
-      el.children.push(oldChild);
-
-      // Simulate browser path _childNodes array
-      (el as any)['_childNodes'] = [oldChild];
-
-      el.replaceChild(newChild as unknown as Node, oldChild as unknown as Node);
-
-      expect(el.children[0]).toBe(newChild);
-      expect((el as any)['_childNodes'][0]).toBe(newChild);
-    });
-  });
 
   describe('SSRClassList iterator methods', () => {
     it('Symbol.iterator yields class tokens', () => {

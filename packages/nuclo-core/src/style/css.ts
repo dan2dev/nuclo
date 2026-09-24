@@ -12,7 +12,8 @@
  *   const button = css({ px: 24, py: 12, bg: "primary", rounded: 8, hover: { bg: "#4f46e5" } });
  *   div(button, "Save"); // button is { className } — a regular nuclo attributes object
  */
-import { atomBlock, addRawRule, conflictKeyOf, ensureSheet, expandAmpersands, getStyleEpoch, hash, mergeBlocks, registerQueries } from "./engine";
+import { atomBlock, addRawRule, conflictKeyOf, contextKeyOf, ensureSheet, expandAmpersands, getStyleEpoch, hash, mergeBlocks, registerQueries } from "./engine";
+import { camelToKebab } from "../shared/strings";
 
 // ---------------------------------------------------------------------------
 // Types live in types/style.d.ts (shipped with the package) so the published
@@ -145,13 +146,15 @@ const UNITLESS = new Set([
 	"orphans", "widows", "tab-size", "animation-iteration-count", "grid-column", "grid-row",
 ]);
 
-// Cache only conversions, with a ceiling for arbitrary custom property names.
+// Property names repeat across css() calls, so conversions are memoized, with
+// a ceiling for arbitrary custom property names. Already-lowercase names skip
+// the cache entirely.
 const kebabCache = new Map<string, string>();
 function kebab(prop: string): string {
 	if (!/[A-Z]/.test(prop)) return prop;
 	let out = kebabCache.get(prop);
 	if (out === undefined) {
-		out = prop.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase());
+		out = camelToKebab(prop);
 		if (kebabCache.size >= 512) kebabCache.clear();
 		kebabCache.set(prop, out);
 	}
@@ -315,6 +318,9 @@ export function cx(...inputs: ClassInput[]): StyleResult {
 	return makeResult(composeClassName(inputs));
 }
 
+/** Context key of a style's base (no query, no selector suffix) declarations. */
+const BASE_CONTEXT = contextKeyOf(undefined, "");
+
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
@@ -343,8 +349,7 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 	type Bucket = { query: string | undefined; suffix: string; decls: Array<[string, string]> };
 
 	function bucketFor(buckets: Map<string, Bucket>, query: string | undefined, suffix: string): Bucket {
-		const queryPart = query === undefined ? "-" : "+" + query.length + ":" + query;
-		const key = queryPart + suffix.length + ":" + suffix;
+		const key = contextKeyOf(query, suffix);
 		let bucket = buckets.get(key);
 		if (!bucket) {
 			bucket = { query, suffix, decls: [] };
@@ -455,33 +460,12 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 		return result;
 	}
 
+	/** Top-level declarations only (nested blocks are ignored), serialized. */
 	function flatDecls(style: Record<string, unknown>): string {
+		const buckets = new Map<string, Bucket>();
+		walk(style, undefined, "", buckets);
 		let decls = "";
-		const push = (prop: string, v: string): void => {
-			decls += (decls ? ";" : "") + prop + ":" + v;
-		};
-		for (const key in style) {
-			const value = style[key];
-			if (value == null || value === false) continue;
-			if (key === "raw" && typeof value === "object") {
-				const raws = value as Record<string, string | number>;
-				for (const prop in raws) push(prop, toCssValue(prop, raws[prop]));
-				continue;
-			}
-			if (typeof value === "object") continue;
-			if (value === true) {
-				const composite = COMPOSITE[key];
-				if (composite) for (const prop in composite) push(prop, composite[prop]);
-				continue;
-			}
-			const targets = ALIAS[key];
-			if (targets !== undefined) {
-				for (const prop of targets) push(prop, toCssValue(prop, value as string | number));
-			} else {
-				const prop = kebab(key);
-				push(prop, toCssValue(prop, value as string | number));
-			}
-		}
+		for (const [prop, value] of buckets.get(BASE_CONTEXT)?.decls ?? []) decls += (decls ? ";" : "") + prop + ":" + value;
 		return decls;
 	}
 

@@ -35,11 +35,5 @@ export function renderToStringWithContainer(
   containerAttrs?: Record<string, string>,
 ): string;
 
-/**
- * Install a hook receiving every newly minted CSS rule (wrapped in its
- * at-rule, if any). Installed once at server startup; pass null to remove.
- */
-export function setSSRCollector(fn: ((rule: string) => void) | null): void;
-
 /** Serialize every registered generated CSS rule (for a <style> tag in SSR output). */
 export function getCssText(): string;

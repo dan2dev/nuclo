@@ -2,11 +2,9 @@
  * scope() – tags an element as the root of a named update scope so
  * `update("name")` can refresh just that part of the page.
  */
-import { isNodeConnected } from "../shared/dom";
 import { isBrowser } from "../shared/environment";
 
 export interface UpdateScope {
-  roots: ReadonlyArray<Element>;
   contains(node: Node): boolean;
 }
 
@@ -63,7 +61,7 @@ export function getScopeRoots(ids: readonly string[]): Element[] {
         toDelete.push(ref);
         continue;
       }
-      if (!isNodeConnected(el)) {
+      if (!el.isConnected) {
         // Element is disconnected, clean it up
         toDelete.push(ref);
         continue;

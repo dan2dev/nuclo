@@ -1,5 +1,4 @@
 import { createListRuntime } from "./runtime";
-import type { ListRenderer, ListItemsProvider } from "./types";
 
 /**
  * Maps items to DOM elements, keeping them in sync with changes.
@@ -7,7 +6,7 @@ import type { ListRenderer, ListItemsProvider } from "./types";
  */
 export function list<TItem, TTagName extends ElementTagName = ElementTagName>(
   itemsProvider: ListItemsProvider<TItem>,
-  render: ListRenderer<TItem, TTagName>,
+  render: ListRenderFunction<TItem, TTagName>,
 ): ListModifier<TTagName> {
   return function<TParent extends ElementTagName>(host: ExpandedElement<TParent>, index: number): Comment {
     const runtime = createListRuntime(itemsProvider, render, host as unknown as ExpandedElement<TTagName>, index);

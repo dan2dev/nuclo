@@ -2,7 +2,8 @@
 // @vitest-environment jsdom
 /**
  * Targets the `typeof FinalizationRegistry === "undefined"` fallback branches
- * in src/update/registry.ts, src/list/runtime.ts and src/when/runtime.ts:
+ * in src/list/runtime.ts and src/when/runtime.ts (and checks the update
+ * registry, which never needs one):
  * every module must keep working (registration, sync, updates) with a null
  * finalizer, relying on the notify-pass pruning alone.
  */
@@ -19,26 +20,18 @@ function stubFinalizationRegistry(): void {
 }
 
 describe("modules without FinalizationRegistry", () => {
-  it("update registry registers text nodes, elements and conditionals", async () => {
+  it("update registry registers text nodes and elements", async () => {
     stubFinalizationRegistry();
     const registry = await import("../../src/update/registry");
 
     const text = document.createTextNode("x");
-    registry.registerReactiveTextNode(text, { resolver: () => "x", lastValue: "x" });
+    registry.registerReactiveTextNode(text, () => "x", "x");
     expect(registry.reactiveTextNodesByNode.get(text)).toBeDefined();
 
     const el = document.createElement("div");
-    registry.registerReactiveElement(el, { attributeResolvers: [] });
+    registry.registerReactiveElement(el);
     expect(registry.reactiveElementsByNode.get(el)).toBeDefined();
 
-    registry.storeConditionalInfo(el, {
-      condition: () => true,
-      tagName: "div",
-      modifiers: [],
-      isSvg: false,
-    });
-    expect(registry.getConditionalInfo(el)).not.toBeNull();
-    registry.unregisterConditionalNode(el);
     registry.cleanupReactiveTextNode(text);
     registry.cleanupReactiveElement(el);
   });
@@ -83,9 +76,6 @@ describe("modules without FinalizationRegistry", () => {
       groups: [{ condition: () => true, content: ["yes"] }],
       elseContent: [],
       activeIndex: null as number | null,
-      update() {
-        runtimeModule.renderWhenContent(runtime);
-      },
     };
 
     expect(() => runtimeModule.registerWhenRuntime(runtime)).not.toThrow();

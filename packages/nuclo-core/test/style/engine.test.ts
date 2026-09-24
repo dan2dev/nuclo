@@ -2,12 +2,11 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createCss, getCssText, resetStyles, setSSRCollector } from '../../src/style';
+import { createCss, getCssText, resetStyles } from '../../src/style';
 import { atomBlock, hash } from '../../src/style/engine';
 
 beforeEach(() => {
 	resetStyles();
-	setSSRCollector(null);
 });
 
 describe('hash', () => {
@@ -114,41 +113,6 @@ describe('rule ordering', () => {
 		expect(smIdx).toBeLessThan(mdIdx);
 		expect(text).toContain('@media (min-width: 640px){');
 		expect(text).toContain('@media (min-width: 768px){');
-	});
-});
-
-describe('setSSRCollector', () => {
-	it('receives every newly minted rule, wrapped in its at-rule', () => {
-		const collected: string[] = [];
-		setSSRCollector((rule) => collected.push(rule));
-
-		const { css } = createCss({ screens: { md: '(min-width: 768px)' } });
-		css({ p: 16, md: { p: 32 } });
-
-		expect(collected.some((r) => r.includes('{padding:16px}'))).toBe(true);
-		expect(collected.some((r) => r.startsWith('@media (min-width: 768px){') && r.includes('padding:32px'))).toBe(true);
-	});
-
-	it('fires once per unique declaration', () => {
-		const collected: string[] = [];
-		setSSRCollector((rule) => collected.push(rule));
-
-		const { css } = createCss({});
-		css({ p: 16 });
-		css({ p: 16 });
-		expect(collected.length).toBe(1);
-	});
-
-	it('leaves the registry and browser stylesheet consistent when the collector throws', () => {
-		setSSRCollector(() => {
-			throw new Error('collector failed');
-		});
-		const { css } = createCss({});
-
-		expect(() => css({ color: 'red' })).toThrow('collector failed');
-		expect(getCssText()).toContain('color:red');
-		const el = document.getElementById('nuclo-styles') as HTMLStyleElement;
-		expect(Array.from(el.sheet!.cssRules).some((rule) => rule.cssText.includes('color: red'))).toBe(true);
 	});
 });
 

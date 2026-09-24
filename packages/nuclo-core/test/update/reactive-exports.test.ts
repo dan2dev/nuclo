@@ -33,7 +33,7 @@ describe('reactive module exports', () => {
     const { createReactiveTextNode } = await import('../../src/update/reactive-text');
 
     const resolver = () => 'test text';
-    const node = createReactiveTextNode(resolver);
+    const node = createReactiveTextNode(resolver, resolver());
 
     expect(node).toBeDefined();
     expect(node.textContent).toBe('test text');

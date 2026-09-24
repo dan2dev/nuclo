@@ -3,15 +3,14 @@
  *
  * Targets uncovered lines/branches in src/update/reactive-text.ts:
  *
- *  Line 36  – createReactiveTextNode: createTextNode returns null  (document unavailable)
- *  Line 56  – createReactiveTextNode: txt is null after document removed
- *  Lines 84-85 – notifyReactiveTextNodes: WeakRef.deref() returns undefined (GC path)
+ *  - createReactiveTextNode: initial value rendering, no-document contract
+ *  - notifyReactiveTextNodes: WeakRef.deref() returns undefined (GC path),
+ *    unchanged values, throwing resolvers, scope filtering
  *
- * For the "document unavailable" paths we temporarily null out globalThis.document.
- * For the GC path we inject a fake dead WeakRef directly into the exported Map.
+ * For the GC path we inject a fake dead WeakRef directly into the exported Set.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createReactiveTextNode, notifyReactiveTextNodes } from '../../src/update/reactive-text';
 import { reactiveTextNodes } from '../../src/update/registry';
 
@@ -26,103 +25,30 @@ function deadRef<T extends object>(): WeakRef<T> {
 
 // ── Unit: createReactiveTextNode ──────────────────────────────────────────────
 describe('createReactiveTextNode', () => {
-  describe('Happy path', () => {
-    it('returns a Text node with the resolved value', () => {
-      const node = createReactiveTextNode(() => 'hello');
-      expect(node).toBeTruthy();
-      expect((node as Text).textContent).toBe('hello');
-    });
-
-    it('uses pre-evaluated value when supplied', () => {
-      const resolver = vi.fn(() => 'live');
-      const node = createReactiveTextNode(resolver, 'pre');
-      // Pre-evaluated value is used directly – resolver should NOT be called
-      expect((node as Text).textContent).toBe('pre');
-      expect(resolver).not.toHaveBeenCalled();
-    });
-
-    it('uses empty string when preEvaluated is explicitly undefined', () => {
-      // arguments.length === 2, preEvaluated === undefined  →  str = ""
-      const node = createReactiveTextNode(() => 'ignored', undefined);
-      expect((node as Text).textContent).toBe('');
-    });
-
-    it('handles resolver that returns null as empty string', () => {
-      const node = createReactiveTextNode(() => null as unknown as string);
-      expect((node as Text).textContent).toBe('null');
-    });
-
-    it('handles resolver that returns undefined as empty string', () => {
-      const node = createReactiveTextNode(() => undefined as unknown as string);
-      expect((node as Text).textContent).toBe('');
-    });
-
-    it('handles resolver that returns a number', () => {
-      const node = createReactiveTextNode(() => 42 as unknown as string);
-      expect((node as Text).textContent).toBe('42');
-    });
-
-    it('handles resolver that returns boolean true', () => {
-      const node = createReactiveTextNode(() => true as unknown as string);
-      expect((node as Text).textContent).toBe('true');
-    });
+  it('shows the pre-evaluated initial value without calling the resolver', () => {
+    const resolver = vi.fn(() => 'live');
+    const node = createReactiveTextNode(resolver, 'pre');
+    expect(node.textContent).toBe('pre');
+    expect(resolver).not.toHaveBeenCalled();
   });
 
-  describe('Edge cases – invalid resolver', () => {
-    it('returns a fallback text node when resolver is not a function', () => {
-      // Lines 33-38: invalid resolver path
-      const node = createReactiveTextNode('not-a-function' as unknown as () => string);
-      expect(node).toBeTruthy();
-      // Should not throw
-    });
-
-    it('handles resolver that throws on evaluation', () => {
-      const node = createReactiveTextNode(() => {
-        throw new Error('resolver error');
-      });
-      // Falls back to empty string
-      expect((node as Text).textContent).toBe('');
-    });
+  it('renders primitives with String() and nullish/non-primitive initial values as ""', () => {
+    expect(createReactiveTextNode(() => 42, 42).textContent).toBe('42');
+    expect(createReactiveTextNode(() => true, true).textContent).toBe('true');
+    expect(createReactiveTextNode(() => 10n, 10n).textContent).toBe('10');
+    expect(createReactiveTextNode(() => null, null).textContent).toBe('');
+    expect(createReactiveTextNode(() => undefined, undefined).textContent).toBe('');
+    expect(createReactiveTextNode(() => ({}), {}).textContent).toBe('');
   });
 
-  describe('Document unavailable – null document paths', () => {
-    let originalDocument: typeof globalThis.document;
-
-    beforeEach(() => {
-      originalDocument = globalThis.document;
-    });
-
-    afterEach(() => {
-      // Restore document
-      Object.defineProperty(globalThis, 'document', {
-        value: originalDocument,
-        writable: true,
-        configurable: true,
-      });
-    });
-
-    it('throws when createTextNode returns null (no document)', () => {
-      // Remove document so createTextNode returns null (line 55-57)
-      Object.defineProperty(globalThis, 'document', {
-        value: undefined,
-        writable: true,
-        configurable: true,
-      });
-      // Line 36 – invalid resolver path: createTextNode returns null → throws
-      expect(() => createReactiveTextNode('not-a-function' as unknown as () => string)).toThrow();
-    });
-
-    it('throws when txt is null after normal resolution (no document)', () => {
-      // Remove document so createTextNode returns null (line 55-57)
-      Object.defineProperty(globalThis, 'document', {
-        value: undefined,
-        writable: true,
-        configurable: true,
-      });
-      expect(() => createReactiveTextNode(() => 'hello')).toThrow(
-        /Failed to create text node/
-      );
-    });
+  it('throws without a document (the SSR polyfill is required)', () => {
+    const original = globalThis.document;
+    Object.defineProperty(globalThis, 'document', { value: undefined, writable: true, configurable: true });
+    try {
+      expect(() => createReactiveTextNode(() => 'hello', 'hello')).toThrow();
+    } finally {
+      Object.defineProperty(globalThis, 'document', { value: original, writable: true, configurable: true });
+    }
   });
 });
 
@@ -131,7 +57,7 @@ describe('notifyReactiveTextNodes', () => {
   describe('Happy path', () => {
     it('updates text content when resolver returns new value', () => {
       let value = 'initial';
-      const node = createReactiveTextNode(() => value) as Text;
+      const node = createReactiveTextNode(() => value, value);
       document.body.appendChild(node);
       value = 'updated';
       notifyReactiveTextNodes();
@@ -144,26 +70,44 @@ describe('notifyReactiveTextNodes', () => {
       const node = createReactiveTextNode(() => {
         callCount++;
         return 'same';
-      }) as Text;
+      }, 'same');
       document.body.appendChild(node);
-      const countAfterCreate = callCount;
+      let writes = 0;
+      const observer = new MutationObserver((records) => { writes += records.length; });
+      observer.observe(node, { characterData: true });
       notifyReactiveTextNodes();
-      // textContent should be unchanged
       expect(node.textContent).toBe('same');
-      // Resolver was called again but value same so no DOM write
-      expect(callCount).toBeGreaterThan(countAfterCreate);
+      expect(callCount).toBe(1);
+      observer.takeRecords().forEach(() => writes++);
+      observer.disconnect();
+      expect(writes).toBe(0); // same value: no DOM write
       node.remove();
     });
 
-    it('handles resolver that throws during update – falls back to empty string', () => {
+    it('clears the text and logs when the resolver throws during update', () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
       let shouldThrow = false;
-      const _node = createReactiveTextNode(() => {
+      const node = createReactiveTextNode(() => {
         if (shouldThrow) throw new Error('update error');
         return 'ok';
-      }) as Text;
+      }, 'ok');
+      document.body.appendChild(node);
       shouldThrow = true;
       expect(() => notifyReactiveTextNodes()).not.toThrow();
-      // Stays at last good value or becomes ""
+      expect(node.textContent).toBe('');
+      expect(spy).toHaveBeenCalled();
+      spy.mockRestore();
+      node.remove();
+    });
+
+    it('renders a resolver that starts returning an object as ""', () => {
+      let value: unknown = 'text';
+      const node = createReactiveTextNode(() => value, value);
+      document.body.appendChild(node);
+      value = { not: 'text' };
+      notifyReactiveTextNodes();
+      expect(node.textContent).toBe('');
+      node.remove();
     });
   });
 
@@ -194,12 +138,11 @@ describe('notifyReactiveTextNodes', () => {
   describe('Scope filtering', () => {
     it('skips nodes outside the given scope', () => {
       let value = 'initial';
-      const node = createReactiveTextNode(() => value) as Text;
+      const node = createReactiveTextNode(() => value, value);
       document.body.appendChild(node);
 
       value = 'changed';
       const outsideScope = {
-        roots: [] as Element[],
         contains: (_n: Node) => false,
       };
       notifyReactiveTextNodes(outsideScope);

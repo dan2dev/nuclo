@@ -21,13 +21,12 @@
  * element through its own machinery — see the disposeElementLifecycle() call
  * in shared/dom.ts's cleanupNodeTree(), which every ordinary removal
  * (list()/when() diffing, any safeRemoveChild() call) already goes through.
- * The handful of fast paths that intentionally skip that per-node walk for
- * performance (list()'s bulk clear/replace, the single-element when()/else()
- * swap) call disposeLifecyclesInSubtree() directly instead, so destroy still
- * fires exactly at removal time there too — without paying for a bookkeeping
- * walk when nothing in the affected subtree ever registered a lifecycle
- * callback (hasActiveLifecycleRegistrations() short-circuits that to a
- * single integer comparison in the — by far most common — case where
+ * The fast path that intentionally skips that per-node walk for performance
+ * (list()'s bulk clear/replace) calls disposeLifecyclesInSubtree() directly
+ * instead, so destroy still fires exactly at removal time there too —
+ * without paying for a bookkeeping walk when nothing on the page ever
+ * registered a lifecycle callback (hasActiveLifecycleRegistrations() makes
+ * that a single integer comparison in the — by far most common — case where
  * lifecycle hooks aren't used at all).
  *
  * An element removed through means nuclo never observes (e.g. a raw
@@ -93,20 +92,16 @@ interface LifecycleRecord {
   mount: CallbackSlot<MountCallback<Element>> | null;
   destroy: CallbackSlot<DestroyCallback<Element>> | null;
   state: LifecycleStateValue;
-  /** True while this element sits in mountQueue awaiting a flush — guards
-   *  against queuing the same element twice across multiple on()/attribute
-   *  registrations. */
-  queued: boolean;
 }
 
 const records = new WeakMap<Element, LifecycleRecord>();
 
 /**
  * Count of Pending/Mounted records not yet disposeElementLifecycle()'d. Lets
- * the hot, lifecycle-free removal paths (list() bulk clear, the conditional-
- * element swap) skip disposeLifecyclesInSubtree()'s walk entirely with a
- * single comparison — true for the overwhelming majority of apps, which
- * never use onMount/onDestroy at all.
+ * the hot, lifecycle-free removal path (list() bulk clear) skip
+ * disposeLifecyclesInSubtree()'s walk entirely with a single comparison —
+ * true for the overwhelming majority of apps, which never use
+ * onMount/onDestroy at all.
  *
  * Only ever incremented by ensureRecord() and decremented by
  * disposeElementLifecycle(), so an element GC'd via the raw-removal path
@@ -131,12 +126,18 @@ function shouldSkip(): boolean {
   return !isBrowser || isSerializing();
 }
 
+/**
+ * A new record is Pending and queued exactly once, right here: every later
+ * registration for the element finds the record already queued (or already
+ * mounted/disposed), so no per-record "queued" flag is needed.
+ */
 function ensureRecord(element: Element): LifecycleRecord {
   let record = records.get(element);
   if (!record) {
-    record = { mount: null, destroy: null, state: STATE_PENDING, queued: false };
+    record = { mount: null, destroy: null, state: STATE_PENDING };
     records.set(element, record);
     activeCount++;
+    mountQueue.push(new WeakRef(element));
   }
   return record;
 }
@@ -148,12 +149,6 @@ function pushSlot<T>(slot: CallbackSlot<T> | null, cb: T): CallbackSlot<T> {
     return slot;
   }
   return [slot, cb];
-}
-
-function enqueue(element: Element, record: LifecycleRecord): void {
-  if (record.queued || record.state !== STATE_PENDING) return;
-  record.queued = true;
-  mountQueue.push(new WeakRef(element));
 }
 
 /** Registers a mount callback for `element`. See the module doc for timing. */
@@ -170,7 +165,6 @@ export function registerMount<TElement extends Element>(
   // record's callback list for an element that will never mount again.
   if (record.state === STATE_DISPOSED) return;
   record.mount = pushSlot(record.mount, callback as MountCallback<Element>);
-  enqueue(element, record);
 }
 
 /** Registers a destroy callback for `element`. See the module doc for timing. */
@@ -182,7 +176,6 @@ export function registerDestroy<TElement extends Element>(
   const record = ensureRecord(element);
   if (record.state === STATE_DISPOSED) return; // see registerMount()
   record.destroy = pushSlot(record.destroy, callback as DestroyCallback<Element>);
-  enqueue(element, record);
 }
 
 function runMount(element: Element, callback: MountCallback<Element>, record: LifecycleRecord): void {
@@ -215,9 +208,8 @@ function runDestroy(element: Element, callback: DestroyCallback<Element>): void 
 }
 
 function fireMount(element: Element): void {
-  const record = records.get(element);
-  if (!record) return;
-  record.queued = false;
+  // Queued only by ensureRecord(), right after the record was stored.
+  const record = records.get(element)!;
   // Disposed before its queued turn came up (e.g. built and discarded within
   // the same pass) — the mount never observably happened, so don't fire it.
   if (record.state !== STATE_PENDING) return;
@@ -290,10 +282,10 @@ export function disposeElementLifecycle(element: Element): void {
 
 /**
  * True while at least one element anywhere on the page has a live (Pending
- * or Mounted) lifecycle record. Called by disposeLifecyclesInSubtree() in
- * shared/dom.ts (its own short-circuit) and, hoisted out of its per-row
+ * or Mounted) lifecycle record. Checked once, hoisted out of its per-row
  * loop, by list/runtime.ts's bulkClearRecords() — so clearing a large
- * lifecycle-free list costs one comparison, not one skipped call per row.
+ * lifecycle-free list costs one comparison, not one skipped call per row —
+ * and by shared/dom.ts's cleanupNodeTree() to skip snapshotting children.
  */
 export function hasActiveLifecycleRegistrations(): boolean {
   return activeCount > 0;

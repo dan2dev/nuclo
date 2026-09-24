@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { NucloElement } from '../../src/polyfill/Element';
-import { NucloEvent } from '../../src/polyfill/Event';
 
 describe('NucloElement', () => {
   describe('constructor', () => {
@@ -36,104 +35,6 @@ describe('NucloElement', () => {
       expect(div.style).toBeDefined();
     });
 
-    it('should initialize sheet for style elements', () => {
-      const style = new NucloElement('style');
-
-      expect(style.sheet).toBeDefined();
-      expect(style.sheet?.cssRules).toBeDefined();
-    });
-
-    it('should not have sheet for non-style elements', () => {
-      const div = new NucloElement('div');
-
-      expect(div.sheet).toBeUndefined();
-    });
-  });
-
-  describe('innerHTML', () => {
-    it('should serialize children to HTML', () => {
-      const parent = new NucloElement('div');
-      const child1 = new NucloElement('span');
-      const child2 = new NucloElement('p');
-
-      parent.appendChild(child1);
-      parent.appendChild(child2);
-
-      const html = parent.innerHTML;
-
-      expect(html).toContain('<span></span>');
-      expect(html).toContain('<p></p>');
-    });
-
-    it('should serialize nested elements', () => {
-      const parent = new NucloElement('div');
-      const child = new NucloElement('span');
-      const grandchild = new NucloElement('strong');
-
-      child.appendChild(grandchild);
-      parent.appendChild(child);
-
-      const html = parent.innerHTML;
-
-      expect(html).toContain('<span><strong></strong></span>');
-    });
-
-    it('should include element attributes in serialization', () => {
-      const parent = new NucloElement('div');
-      const child = new NucloElement('a');
-
-      child.setAttribute('href', 'https://example.com');
-      child.id = 'link-1';
-      child.className = 'btn primary';
-      parent.appendChild(child);
-
-      const html = parent.innerHTML;
-
-      expect(html).toContain('id="link-1"');
-      expect(html).toContain('class="btn primary"');
-      expect(html).toContain('href="https://example.com"');
-    });
-
-    it('should set innerHTML value', () => {
-      const div = new NucloElement('div');
-
-      div.innerHTML = '<p>Test</p>';
-
-      expect((div as any)._innerHTML).toBe('<p>Test</p>');
-    });
-
-    it('should serialize text nodes', () => {
-      const parent = new NucloElement('div');
-      const text = { nodeType: 3, textContent: 'Hello World' };
-
-      parent.children.push(text);
-
-      const html = parent.innerHTML;
-
-      expect(html).toBe('Hello World');
-    });
-
-    it('should serialize comment nodes', () => {
-      const parent = new NucloElement('div');
-      const comment = { nodeType: 8, data: 'This is a comment' };
-
-      parent.children.push(comment);
-
-      const html = parent.innerHTML;
-
-      expect(html).toBe('<!--This is a comment-->');
-    });
-
-    it('should handle empty data in comment nodes', () => {
-      const parent = new NucloElement('div');
-      const comment = { nodeType: 8, data: undefined };
-
-      parent.children.push(comment);
-
-      const html = parent.innerHTML;
-
-      expect(html).toBe('<!---->');
-    });
   });
 
   describe('style', () => {
@@ -565,306 +466,35 @@ describe('NucloElement', () => {
     });
   });
 
-  describe('event listeners', () => {
-    it('should add event listener', () => {
+  describe('childNodes', () => {
+    it('is the children array: elements, text and comments alike', () => {
       const div = new NucloElement('div');
-      const listener = vi.fn();
-
-      div.addEventListener('click', listener);
-
-      const event = new NucloEvent('click');
-      div.dispatchEvent(event);
-
-      expect(listener).toHaveBeenCalledWith(event);
+      const span = new NucloElement('span');
+      const text = { nodeType: 3, textContent: 'x', parentNode: null } as unknown as Node;
+      div.appendChild(span as unknown as Node);
+      div.appendChild(text);
+      expect(Array.from(div.childNodes as unknown as unknown[])).toEqual([span, text]);
+      expect(div.childNodes).toBe(div.children);
     });
+  });
 
-    it('should remove event listener', () => {
+  describe('SSR stubs', () => {
+    it('accepts and drops event listeners (SSR never dispatches)', () => {
       const div = new NucloElement('div');
       const listener = vi.fn();
-
       div.addEventListener('click', listener);
+      expect(div.dispatchEvent(new Event('click'))).toBe(true);
       div.removeEventListener('click', listener);
-
-      div.dispatchEvent(new NucloEvent('click'));
-
       expect(listener).not.toHaveBeenCalled();
     });
 
-    it('should handle multiple listeners', () => {
+    it('finds nothing with querySelector/querySelectorAll', () => {
       const div = new NucloElement('div');
-      const listener1 = vi.fn();
-      const listener2 = vi.fn();
-
-      div.addEventListener('click', listener1);
-      div.addEventListener('click', listener2);
-
-      div.dispatchEvent(new NucloEvent('click'));
-
-      expect(listener1).toHaveBeenCalled();
-      expect(listener2).toHaveBeenCalled();
-    });
-
-    it('should bubble events to parent', () => {
-      const parent = new NucloElement('div');
-      const child = new NucloElement('span');
-      parent.appendChild(child);
-
-      const parentListener = vi.fn();
-      parent.addEventListener('click', parentListener);
-
-      const event = new NucloEvent('click', { bubbles: true });
-      child.dispatchEvent(event);
-
-      expect(parentListener).toHaveBeenCalledWith(event);
-    });
-
-    it('should not bubble when bubbles is false', () => {
-      const parent = new NucloElement('div');
-      const child = new NucloElement('span');
-      parent.appendChild(child);
-
-      const parentListener = vi.fn();
-      parent.addEventListener('click', parentListener);
-
-      const event = new NucloEvent('click', { bubbles: false });
-      child.dispatchEvent(event);
-
-      expect(parentListener).not.toHaveBeenCalled();
-    });
-
-    it('should catch errors in listeners', () => {
-      const div = new NucloElement('div');
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      div.addEventListener('click', () => {
-        throw new Error('Listener error');
-      });
-
-      const result = div.dispatchEvent(new NucloEvent('click'));
-
-      expect(result).toBe(true);
-      expect(consoleSpy).toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
-    });
-  });
-
-  describe('querySelector', () => {
-    it('should find element by ID', () => {
-      const parent = new NucloElement('div');
-      const child = new NucloElement('span');
-      child.id = 'test-id';
-      parent.appendChild(child);
-
-      const found = parent.querySelector('#test-id');
-
-      expect(found).toBe(child);
-    });
-
-    it('should find element by class', () => {
-      const parent = new NucloElement('div');
-      const child = new NucloElement('span');
-      child.classList.add('test-class');
-      parent.appendChild(child);
-
-      const found = parent.querySelector('.test-class');
-
-      expect(found).toBe(child);
-    });
-
-    it('should find element by tag name', () => {
-      const parent = new NucloElement('div');
-      const child = new NucloElement('span');
-      parent.appendChild(child);
-
-      const found = parent.querySelector('span');
-
-      expect(found).toBe(child);
-    });
-
-    it('should find nested elements', () => {
-      const grandparent = new NucloElement('div');
-      const parent = new NucloElement('section');
-      const child = new NucloElement('span');
-      child.id = 'nested';
-
-      parent.appendChild(child);
-      grandparent.appendChild(parent);
-
-      const found = grandparent.querySelector('#nested');
-
-      expect(found).toBe(child);
-    });
-
-    it('should return null when not found', () => {
-      const parent = new NucloElement('div');
-
-      expect(parent.querySelector('#non-existent')).toBe(null);
-      expect(parent.querySelector('.non-existent')).toBe(null);
-      expect(parent.querySelector('span')).toBe(null);
-    });
-
-    it('should match self for ID selector', () => {
-      const div = new NucloElement('div');
-      div.id = 'self';
-
-      const found = div.querySelector('#self');
-
-      expect(found).toBe(div);
-    });
-
-    it('should match self for class selector', () => {
-      const div = new NucloElement('div');
-      div.classList.add('self');
-
-      const found = div.querySelector('.self');
-
-      expect(found).toBe(div);
-    });
-
-    it('should match self for tag selector', () => {
-      const div = new NucloElement('div');
-
-      const found = div.querySelector('div');
-
-      expect(found).toBe(div);
-    });
-  });
-
-  describe('querySelectorAll', () => {
-    it('should find all elements by class', () => {
-      const parent = new NucloElement('div');
-      const child1 = new NucloElement('span');
-      const child2 = new NucloElement('p');
-      const child3 = new NucloElement('div');
-
-      child1.classList.add('test');
-      child2.classList.add('test');
-      parent.appendChild(child1);
-      parent.appendChild(child2);
-      parent.appendChild(child3);
-
-      const found = parent.querySelectorAll('.test');
-
-      // Note: querySelectorAll also checks parent, so this would include parent if it had the class
-      expect(found.length).toBeGreaterThanOrEqual(2);
-      expect(found).toContain(child1);
-      expect(found).toContain(child2);
-    });
-
-    it('should find all elements by tag name', () => {
-      const parent = new NucloElement('div');
-      const span1 = new NucloElement('span');
-      const span2 = new NucloElement('span');
-      const p = new NucloElement('p');
-
-      parent.appendChild(span1);
-      parent.appendChild(p);
-      parent.appendChild(span2);
-
-      const found = parent.querySelectorAll('span');
-
-      expect(found.length).toBeGreaterThanOrEqual(2);
-      expect(found).toContain(span1);
-      expect(found).toContain(span2);
-    });
-
-    it('should find single element by ID', () => {
-      const parent = new NucloElement('div');
-      const child = new NucloElement('span');
-      child.id = 'unique';
-      parent.appendChild(child);
-
-      const found = parent.querySelectorAll('#unique');
-
-      expect(found.length).toBe(1);
-      expect(found[0]).toBe(child);
-    });
-
-    it('should include self in results', () => {
-      const div = new NucloElement('div');
-      div.classList.add('test');
-
-      const found = div.querySelectorAll('.test');
-
-      expect(found).toContain(div);
-    });
-
-    it('should find nested elements', () => {
-      const grandparent = new NucloElement('div');
-      const parent = new NucloElement('div');
-      const child = new NucloElement('span');
-
-      child.classList.add('nested');
-      parent.classList.add('nested');
-      parent.appendChild(child);
-      grandparent.appendChild(parent);
-
-      const found = grandparent.querySelectorAll('.nested');
-
-      expect(found.length).toBeGreaterThanOrEqual(2);
-      expect(found).toContain(parent);
-      expect(found).toContain(child);
-    });
-
-    it('should return empty array when nothing found', () => {
-      const parent = new NucloElement('div');
-
-      expect(parent.querySelectorAll('.non-existent').length).toBe(0);
-    });
-  });
-
-  describe('style element sheet', () => {
-    it('should insert CSS rule', () => {
-      const style = new NucloElement('style');
-
-      const index = style.sheet!.insertRule('.test { color: red; }', 0);
-
-      expect(index).toBe(0);
-      expect(style.sheet!.cssRules.length).toBe(1);
-      expect((style.sheet!.cssRules[0] as any).cssText).toBe('.test { color: red; }');
-    });
-
-    it('should insert rule at specified index', () => {
-      const style = new NucloElement('style');
-
-      style.sheet!.insertRule('.first { }', 0);
-      style.sheet!.insertRule('.second { }', 1);
-      style.sheet!.insertRule('.middle { }', 1);
-
-      expect((style.sheet!.cssRules[0] as any).cssText).toBe('.first { }');
-      expect((style.sheet!.cssRules[1] as any).cssText).toBe('.middle { }');
-      expect((style.sheet!.cssRules[2] as any).cssText).toBe('.second { }');
-    });
-
-    it('should append rule when index not specified', () => {
-      const style = new NucloElement('style');
-
-      style.sheet!.insertRule('.first { }');
-      style.sheet!.insertRule('.second { }');
-
-      expect(style.sheet!.cssRules.length).toBe(2);
-      expect((style.sheet!.cssRules[1] as any).cssText).toBe('.second { }');
-    });
-
-    it('should delete CSS rule', () => {
-      const style = new NucloElement('style');
-
-      style.sheet!.insertRule('.first { }', 0);
-      style.sheet!.insertRule('.second { }', 1);
-      style.sheet!.deleteRule(0);
-
-      expect(style.sheet!.cssRules.length).toBe(1);
-      expect((style.sheet!.cssRules[0] as any).cssText).toBe('.second { }');
-    });
-
-    it('should parse selector from CSS rule', () => {
-      const style = new NucloElement('style');
-
-      style.sheet!.insertRule('.my-class { color: blue; }', 0);
-
-      const rule = style.sheet!.cssRules[0] as any;
-      expect(rule.selectorText).toBe('.my-class');
+      div.id = 'root';
+      div.appendChild(new NucloElement('span') as unknown as Node);
+      expect(div.querySelector('#root')).toBeNull();
+      expect(div.querySelector('span')).toBeNull();
+      expect(Array.from(div.querySelectorAll('span'))).toEqual([]);
     });
   });
 });

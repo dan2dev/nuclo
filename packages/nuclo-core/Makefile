@@ -1,4 +1,4 @@
-.PHONY: publish release-patch release-minor release-major version show-version ensure-clean help
+.PHONY: publish release-patch release-minor release-major version help
 
 .DEFAULT_GOAL := help
 
@@ -21,15 +21,6 @@ bump-version:
 # Helper: extract current version from package.json
 version:
 	@jq -r '.version' $(PKG_FILE)
-
-show-version: version
-
-# Optional safety: refuse to publish if there are unstaged tracked changes (excluding lock + package.json changes that will change anyway)
-ensure-clean:
-	@if ! git diff --quiet || ! git diff --cached --quiet; then \
-		echo "Working tree not clean. Commit or stash changes before publishing."; \
-		exit 1; \
-	fi
 
 # Main publish + tag workflow:
 # 1. Build

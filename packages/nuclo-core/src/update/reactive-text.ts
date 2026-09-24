@@ -1,117 +1,51 @@
 import { logError } from "../shared/errors";
-import { isNodeConnected, createTextNode } from "../shared/dom";
 import type { UpdateScope } from "./scope";
-import { reactiveTextNodes, reactiveTextNodesByNode, registerReactiveTextNode, removeReactiveTextNodeRef } from "./registry";
-import type { TextResolver } from "./registry";
+import { reactiveTextNodes, reactiveTextNodesByNode, registerReactiveTextNode, type TextResolver } from "./registry";
 import { isBrowser } from "../shared/environment";
 
+/** DSL text semantics: nullish and non-primitive values render as "". */
+export function toText(value: unknown): string {
+  return value == null || typeof value === "object" || typeof value === "function" ? "" : String(value);
+}
+
 /**
- * Creates a reactive text node that automatically updates when its resolver function changes.
- *
- * The text node will be registered for reactive updates and its content will be synchronized
- * whenever notifyReactiveTextNodes() is called.
- *
- * @param resolver - Function that returns the text content (string, number, boolean, etc.)
- * @param preEvaluated - Optional pre-evaluated value to avoid calling resolver immediately
- * @returns A Text node that will reactively update its content
- *
- * @example
- * ```ts
- * const count = signal(0);
- * const textNode = createReactiveTextNode(() => `Count: ${count.value}`);
- * // Later, when count changes and notifyReactiveTextNodes() is called,
- * // the text content automatically updates
- * ```
+ * Creates a text node showing `initial` (the resolver's already-evaluated
+ * value) and registers it so every update() re-evaluates `resolver` into it.
  */
-export function createReactiveTextNode(resolver: TextResolver, preEvaluated?: unknown, sanitize?: boolean): Text | DocumentFragment {
-  if (typeof resolver !== "function") {
-    logError("Invalid resolver provided to createReactiveTextNode");
-    const fallbackNode = createTextNode("");
-    if (!fallbackNode) {
-      throw new Error("Failed to create text node: document not available");
-    }
-    return fallbackNode;
-  }
-
-  let initial: unknown;
-  if (arguments.length > 1) {
-    initial = preEvaluated;
-  } else {
-    try {
-      initial = resolver();
-    } catch (e) {
-      logError("Failed to evaluate reactive text resolver", e);
-      initial = "";
-    }
-  }
-  const str = initial === undefined ? "" : String(initial);
-  const txt = createTextNode(str);
-  
-  if (!txt) {
-    throw new Error("Failed to create text node: document not available");
-  }
-
-  if (isBrowser) {
-    registerReactiveTextNode(txt, { resolver, lastValue: str, sanitize });
-  }
+export function createReactiveTextNode(resolver: TextResolver, initial: unknown): Text {
+  const str = toText(initial);
+  const txt = document.createTextNode(str);
+  if (isBrowser) registerReactiveTextNode(txt, resolver, str);
   return txt;
 }
 
 /**
- * Updates all registered reactive text nodes.
- *
- * Iterates through all reactive text nodes, re-evaluates their resolver functions,
- * and updates their content if it has changed. Automatically cleans up disconnected nodes.
- *
- * This function should be called after state changes to synchronize the DOM with application state.
- *
- * @example
- * ```ts
- * // After updating application state
- * count.value++;
- * notifyReactiveTextNodes(); // All reactive text nodes update
- * ```
+ * Re-evaluates every registered reactive text node (in `scope`, if given) and
+ * writes the ones whose text changed. Disconnected and collected nodes are
+ * pruned as the pass goes.
  */
 export function notifyReactiveTextNodes(scope?: UpdateScope): void {
   for (const ref of reactiveTextNodes) {
     const node = ref.deref();
-    if (node === undefined) {
-      removeReactiveTextNodeRef(ref);
-      continue;
-    }
-
-    const entry = reactiveTextNodesByNode.get(node);
-    if (!entry) {
-      removeReactiveTextNodeRef(ref);
-      continue;
-    }
-    const info = entry.info;
-
-    if (!isNodeConnected(node)) {
-      reactiveTextNodesByNode.delete(node);
-      removeReactiveTextNodeRef(ref);
+    const entry = node && reactiveTextNodesByNode.get(node);
+    if (!entry || !node.isConnected) {
+      if (node) reactiveTextNodesByNode.delete(node);
+      reactiveTextNodes.delete(ref);
       continue;
     }
 
     if (scope && !scope.contains(node)) continue;
 
-    let raw: unknown;
+    let value: string;
     try {
-      raw = info.resolver();
+      value = toText(entry.resolver());
     } catch (e) {
       logError("Failed to update reactive text node", e);
-      raw = undefined;
+      value = "";
     }
-
-    // sanitize: DSL text resolvers render nullish/non-primitive results as ""
-    // (the resolver is registered raw; see ReactiveTextNodeInfo.sanitize).
-    const newVal = info.sanitize
-      ? (raw == null || typeof raw === "object" || typeof raw === "function" ? "" : String(raw))
-      : (raw === undefined ? "" : String(raw));
-    if (newVal !== info.lastValue) {
-      node.textContent = newVal;
-      info.lastValue = newVal;
+    if (value !== entry.lastValue) {
+      node.textContent = value;
+      entry.lastValue = value;
     }
   }
-
 }

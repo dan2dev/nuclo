@@ -6,8 +6,7 @@
  * re-exports and type definitions; the test just ensures the module graph is
  * walked by the coverage tool.
  *
- * Files covered:
- *  - src/index.ts                 (0 % stmts)
+ * Files covered (src/index.ts is pinned by index-exports.test.ts):
  *  - src/update/reactive-text.ts         (0 % stmts – re-exports)
  *  - src/list/index.ts            (0 % stmts – re-exports)
  *  - src/when/index.ts            (re-exports)
@@ -16,43 +15,6 @@
  */
 
 import { describe, it, expect } from 'vitest';
-
-// ── src/index.ts ────────────────────────────────────────────────────────────
-describe('src/index.ts barrel', () => {
-  it('exports key runtime symbols', async () => {
-    const mod = await import('../src');
-
-    expect(typeof mod.initializeRuntime).toBe('function');
-    expect(typeof mod.createHtmlTagBuilder).toBe('function');
-    expect(typeof mod.createSvgTagBuilder).toBe('function');
-    expect(typeof mod.applyNodeModifier).toBe('function');
-    expect(typeof mod.list).toBe('function');
-    expect(typeof mod.when).toBe('function');
-    expect(typeof mod.update).toBe('function');
-    expect(typeof mod.on).toBe('function');
-    expect(typeof mod.scope).toBe('function');
-    expect(typeof mod.render).toBe('function');
-    expect(typeof mod.isBrowser).toBe('boolean');
-    expect(typeof mod.isFunction).toBe('function');
-    expect(typeof mod.isPrimitive).toBe('function');
-  });
-
-  it('exports style utilities', async () => {
-    const mod = await import('../src');
-    expect(typeof mod.createCss).toBe('function');
-    expect(typeof mod.css).toBe('function');
-    expect(typeof mod.cx).toBe('function');
-    expect(typeof mod.keyframes).toBe('function');
-    expect(typeof mod.globalStyle).toBe('function');
-  });
-
-  it('exports DOM helpers', async () => {
-    const mod = await import('../src');
-    expect(typeof mod.appendChildren).toBe('function');
-    expect(typeof mod.createComment).toBe('function');
-    expect(typeof mod.replaceNodeSafely).toBe('function');
-  });
-});
 
 // ── src/update/reactive-text.ts & reactive-attributes.ts ────────────────────────
 describe('reactive modules', () => {
@@ -90,6 +52,8 @@ describe('src/ssr/index.ts barrel', () => {
     expect(typeof mod.renderToString).toBe('function');
     expect(typeof mod.renderManyToString).toBe('function');
     expect(typeof mod.renderToStringWithContainer).toBe('function');
+    expect(typeof mod.getCssText).toBe('function');
+    expect(Object.keys(mod).sort()).toEqual(['getCssText', 'renderManyToString', 'renderToString', 'renderToStringWithContainer']);
   });
 });
 
@@ -101,7 +65,6 @@ describe('src/style/index.ts barrel', () => {
     expect(typeof mod.css).toBe('function');
     expect(typeof mod.cx).toBe('function');
     expect(typeof mod.getCssText).toBe('function');
-    expect(typeof mod.setSSRCollector).toBe('function');
     expect(typeof mod.resetStyles).toBe('function');
   });
 });

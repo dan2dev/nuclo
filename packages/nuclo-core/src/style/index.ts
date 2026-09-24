@@ -21,4 +21,4 @@ export {
 	type VariantsConfig,
 	type VariantsFn,
 } from "./css";
-export { getCssText, resetStyles, setSSRCollector } from "./engine";
+export { getCssText, resetStyles } from "./engine";

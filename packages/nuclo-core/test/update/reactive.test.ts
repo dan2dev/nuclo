@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createReactiveTextNode, notifyReactiveTextNodes } from "../../src/update/reactive-text";
 import { registerAttributeResolver, notifyReactiveElements } from "../../src/update/reactive-attributes";
+import { reactiveElementsByNode } from "../../src/update/registry";
 
 describe("reactive module exports", () => {
   it("should export createReactiveTextNode", () => {
@@ -36,20 +37,9 @@ describe("reactive module exports", () => {
 
     it("should create a reactive text node", () => {
       const resolver = () => "test";
-      const node = createReactiveTextNode(resolver);
+      const node = createReactiveTextNode(resolver, resolver());
       expect(node).toBeInstanceOf(Text);
       expect(node.textContent).toBe("test");
-    });
-
-    it("logs and returns empty text for invalid resolver", () => {
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-      const node = createReactiveTextNode(null as any);
-
-      expect(node).toBeInstanceOf(Text);
-      expect((node as Text).textContent).toBe("");
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
     });
 
     it("should handle pre-evaluated values", () => {
@@ -60,41 +50,27 @@ describe("reactive module exports", () => {
 
     it("should handle number values", () => {
       const resolver = () => 42;
-      const node = createReactiveTextNode(resolver);
+      const node = createReactiveTextNode(resolver, resolver());
       expect(node.textContent).toBe("42");
     });
 
     it("should handle boolean values", () => {
       const resolver = () => true;
-      const node = createReactiveTextNode(resolver);
+      const node = createReactiveTextNode(resolver, resolver());
       expect(node.textContent).toBe("true");
     });
 
-    it("should handle null values", () => {
-      const resolver = () => null;
-      const node = createReactiveTextNode(resolver);
-      // String(null) returns "null", not empty string
-      expect(node.textContent).toBe("null");
-    });
-
-    it("should handle undefined values", () => {
-      const resolver = () => undefined;
-      const node = createReactiveTextNode(resolver);
-      expect(node.textContent).toBe("");
-    });
-
-    it("should handle throwing resolvers gracefully", () => {
-      const resolver = () => {
-        throw new Error("test error");
-      };
-      const node = createReactiveTextNode(resolver);
-      expect(node.textContent).toBe("");
+    it("renders nullish and non-primitive values as empty text", () => {
+      for (const value of [null, undefined, { a: 1 }, [1, 2], () => "fn"]) {
+        const node = createReactiveTextNode(() => value, value);
+        expect(node.textContent).toBe("");
+      }
     });
 
     it("should update text content when resolver changes", () => {
       let value = "initial";
       const resolver = () => value;
-      const node = createReactiveTextNode(resolver);
+      const node = createReactiveTextNode(resolver, resolver());
       expect(node.textContent).toBe("initial");
 
       // Node needs to be connected to DOM for updates to work
@@ -144,7 +120,7 @@ describe("reactive module exports", () => {
         element,
         "class",
         () => className,
-        (value) => {
+        (_el, _key, value) => {
           element.className = String(value);
         }
       );
@@ -164,7 +140,7 @@ describe("reactive module exports", () => {
         element,
         "class",
         () => className,
-        (value) => {
+        (_el, _key, value) => {
           element.className = String(value);
         }
       );
@@ -173,7 +149,7 @@ describe("reactive module exports", () => {
         element,
         "disabled",
         () => disabled,
-        (value) => {
+        (_el, _key, value) => {
           (element as HTMLButtonElement).disabled = Boolean(value);
         }
       );
@@ -198,7 +174,7 @@ describe("reactive module exports", () => {
         () => {
           throw new Error("resolver error");
         },
-        (value) => {
+        (_el, _key, value) => {
           element.className = String(value);
         }
       );
@@ -209,13 +185,35 @@ describe("reactive module exports", () => {
       consoleErrorSpy.mockRestore();
     });
 
+    it("re-registering a key replaces its resolver and leaves the other keys alone", () => {
+      let a = "a1";
+      let b = "b1";
+      const seen: string[] = [];
+      const apply = (el: Element, key: string, value: unknown) => {
+        seen.push(`${key}=${String(value)}`);
+        el.setAttribute(key, String(value));
+      };
+      registerAttributeResolver(element, "data-a", () => a, apply);
+      registerAttributeResolver(element, "data-b", () => b, apply);
+      registerAttributeResolver(element, "data-a", () => "replaced", apply);
+      expect(element.getAttribute("data-a")).toBe("replaced");
+      expect(reactiveElementsByNode.get(element)!.attributeResolvers.map((r) => r.key)).toEqual(["data-a", "data-b"]);
+
+      a = "a2";
+      b = "b2";
+      seen.length = 0;
+      notifyReactiveElements();
+      expect(seen).toEqual(["data-b=b2"]); // data-a's value is unchanged → not re-applied
+      expect(element.getAttribute("data-a")).toBe("replaced");
+    });
+
     it("should clean up disconnected elements", () => {
       let value = "test";
       registerAttributeResolver(
         element,
         "class",
         () => value,
-        (value) => {
+        (_el, _key, value) => {
           element.className = String(value);
         }
       );
@@ -226,18 +224,6 @@ describe("reactive module exports", () => {
 
       // Element should be cleaned up, so no update should occur
       expect(element.className).toBe("test");
-    });
-
-    it("should handle invalid parameters gracefully", () => {
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-      
-      // Testing invalid input - these should be caught by type guards
-      registerAttributeResolver(null as any, "class", () => "test", () => {});
-      registerAttributeResolver(element, "", () => "test", () => {});
-      registerAttributeResolver(element, "class", null as any, () => {});
-
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
     });
   });
 });

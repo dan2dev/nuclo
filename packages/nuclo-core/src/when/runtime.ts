@@ -1,17 +1,12 @@
-import { clearBetweenMarkers, insertNodesBefore, isNodeConnected, withScopedInsertion } from "../shared/dom";
-import { resolveCondition } from "../shared/conditions";
+import { clearBetweenMarkers, insertNodesBefore, withScopedInsertion } from "../shared/dom";
 import type { UpdateScope } from "../update/scope";
-import { applyNodeModifier, modifierProbeCache } from "../element/modifiers";
+import { applyNodeModifier } from "../element/modifiers";
 import { isFunction, isZeroArityFunction } from "../shared/type-guards";
 import { logError } from "../shared/errors";
 
-export type WhenCondition = boolean | (() => boolean);
-export type WhenContent<TTagName extends ElementTagName = ElementTagName> =
-  NodeModLike<TTagName>;
-
 export interface WhenGroup<TTagName extends ElementTagName = ElementTagName> {
   condition: WhenCondition;
-  content: WhenContent<TTagName>[];
+  content: ReadonlyArray<WhenContent<TTagName>>;
 }
 
 export interface WhenRuntime<TTagName extends ElementTagName = ElementTagName> {
@@ -19,8 +14,8 @@ export interface WhenRuntime<TTagName extends ElementTagName = ElementTagName> {
   endMarker: Comment;
   host: ExpandedElement<TTagName>;
   index: number;
-  groups: WhenGroup<TTagName>[];
-  elseContent: WhenContent<TTagName>[];
+  groups: ReadonlyArray<WhenGroup<TTagName>>;
+  elseContent: ReadonlyArray<WhenContent<TTagName>>;
   /**
    * Tracks which branch is currently rendered:
    *  - null:  nothing rendered yet (initial state)
@@ -28,7 +23,6 @@ export interface WhenRuntime<TTagName extends ElementTagName = ElementTagName> {
    *  - >= 0:  groups[activeIndex] is active
    */
   activeIndex: number | null;
-  update(): void;
 }
 
 /**
@@ -57,7 +51,8 @@ export function evaluateActiveCondition<TTagName extends ElementTagName>(
   elseContent: ReadonlyArray<WhenContent<TTagName>>
 ): number | null {
   for (let i = 0; i < groups.length; i++) {
-    if (resolveCondition(groups[i].condition)) {
+    const condition = groups[i].condition;
+    if (typeof condition === "function" ? condition() : condition) {
       return i;
     }
   }
@@ -139,7 +134,7 @@ export function updateWhenRuntimes(scope?: UpdateScope): void {
     }
 
     // Check if markers are still connected to DOM
-    if (!isNodeConnected(startMarker) || !isNodeConnected(runtime.endMarker)) {
+    if (!startMarker.isConnected || !runtime.endMarker.isConnected) {
       whenRuntimeByMarker.delete(startMarker);
       toDelete.push(ref);
       continue;
@@ -149,7 +144,7 @@ export function updateWhenRuntimes(scope?: UpdateScope): void {
     if (scope && !scope.contains(startMarker)) continue;
 
     try {
-      runtime.update();
+      renderWhenContent(runtime);
     } catch (error) {
       // Clean up runtimes that throw errors
       logError("when() branch threw during update; unregistering this conditional", error);
@@ -174,13 +169,7 @@ function renderContentItem<TTagName extends ElementTagName>(
   index: number,
   endMarker: Comment
 ): Node | null {
-  if (!isFunction(item)) {
-    return applyNodeModifier(host, item, index);
-  }
-
-  // Zero-arity functions need cache cleared
-  if (isZeroArityFunction(item)) {
-    modifierProbeCache.delete(item);
+  if (!isFunction(item) || isZeroArityFunction(item)) {
     return applyNodeModifier(host, item, index);
   }
 

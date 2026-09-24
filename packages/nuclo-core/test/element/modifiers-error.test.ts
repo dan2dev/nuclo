@@ -36,27 +36,31 @@ describe('modifierProcessor zero-arg reactive error branch', () => {
     expect(String(firstArgs[0])).toContain('nuclo: Error evaluating reactive text function:');
   });
 
-  it('does not re-evaluate a previously failed zero-arg modifier (uses cached error record)', () => {
+  it('re-evaluates a previously failed zero-arg modifier on its next application', () => {
     const consoleSpy = vi.fn();
     console.error = consoleSpy as any;
 
     let calls = 0;
-    const badFn = () => {
+    let fail = true;
+    const flaky = () => {
       calls += 1;
-      throw new Error('always-bad');
+      if (fail) throw new Error('transient');
+      return 'recovered';
     };
 
-    // First attempt (records failure)
-    const firstNode = applyNodeModifier(parent, badFn, 0);
+    // First application fails: empty fallback text, one logged error.
+    const firstNode = applyNodeModifier(parent, flaky, 0);
     expect(firstNode).toBeInstanceOf(Text);
+    expect(firstNode?.textContent).toBe('');
     expect(calls).toBe(1);
     expect(consoleSpy).toHaveBeenCalledTimes(1);
 
-    // Second attempt should NOT invoke badFn again (cached error path)
-    const secondNode = applyNodeModifier(parent, badFn, 1);
-    expect(secondNode).toBeInstanceOf(Text);
-    expect(secondNode).not.toBe(firstNode); // new fallback reactive text node each time
-    expect(calls).toBe(1); // no additional executions
-    expect(consoleSpy).toHaveBeenCalledTimes(1); // no extra logging
+    // A failure is not remembered: the next application calls it again.
+    fail = false;
+    const secondNode = applyNodeModifier(parent, flaky, 1);
+    expect(calls).toBe(2);
+    expect(secondNode).not.toBe(firstNode);
+    expect(secondNode?.textContent).toBe('recovered');
+    expect(consoleSpy).toHaveBeenCalledTimes(1);
   });
 });

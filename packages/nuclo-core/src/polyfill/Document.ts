@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NucloElement } from './Element';
 import { NucloText } from './Text';
 
@@ -79,12 +78,10 @@ class SSRDocumentFragment {
 export class NucloDocument {
   head: ExpandedElement;
   body: ExpandedElement;
-  private _listeners: Map<string, Map<EventListener, { listener: EventListener; options?: boolean | AddEventListenerOptions }>>;
-  
+
   constructor() {
     this.head = new NucloElement('head') as unknown as ExpandedElement;
     this.body = new NucloElement('body') as unknown as ExpandedElement;
-    this._listeners = new Map();
   }
   
   createElement(tagName: string, _options?: unknown): ExpandedElement {
@@ -119,62 +116,24 @@ export class NucloDocument {
     return new SSRDocumentFragment() as unknown as DocumentFragment;
   }
   
-  querySelector(selector: string): Element | null {
-    // Simple implementation - only supports ID selector for #nuclo-styles
-    if (selector.startsWith('#')) {
-      const id = selector.slice(1);
-      if (id === 'nuclo-styles' && this.head.children) {
-        for (const child of this.head.children) {
-          if ((child as any).id === id) {
-            return child as unknown as Element;
-          }
-        }
-      }
-    }
+  // SSR never dispatches events: listeners are accepted and dropped, and
+  // queries find nothing.
+  querySelector(_selector: string): Element | null {
     return null;
   }
-  
+
   querySelectorAll(_selector: string): NodeListOf<Element> {
     return [] as unknown as NodeListOf<Element>;
   }
-  
-  addEventListener(type: string, listener: EventListener, options?: boolean | AddEventListenerOptions): void {
-    if (!this._listeners.has(type)) {
-      this._listeners.set(type, new Map());
-    }
-    const listenersMap = this._listeners.get(type)!;
-    listenersMap.set(listener, { listener, options });
-  }
-  
-  removeEventListener(type: string, listener: EventListener, _options?: boolean | AddEventListenerOptions): void {
-    const listeners = this._listeners.get(type);
-    if (listeners) {
-      listeners.delete(listener);
-      // Clean up empty maps to prevent memory leaks
-      if (listeners.size === 0) {
-        this._listeners.delete(type);
-      }
-    }
-  }
-  
-  dispatchEvent(event: Event): boolean {
-    const listeners = this._listeners.get(event.type);
-    if (listeners) {
-      // Create a copy to avoid issues if listeners are modified during dispatch
-      const listenersCopy = Array.from(listeners.values());
-      for (let i = 0; i < listenersCopy.length; i++) {
-        const { listener } = listenersCopy[i];
-        try {
-          listener(event);
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.error('Error in event listener:', error);
-        }
-      }
-    }
+
+  addEventListener(_type: string, _listener: EventListener, _options?: boolean | AddEventListenerOptions): void {}
+
+  removeEventListener(_type: string, _listener: EventListener, _options?: boolean | AddEventListenerOptions): void {}
+
+  dispatchEvent(_event: Event): boolean {
     return true;
   }
-  
+
   contains(_node: Node): boolean {
     return false;
   }

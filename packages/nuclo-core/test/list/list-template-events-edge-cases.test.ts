@@ -278,7 +278,7 @@ describe("SLOT_EVENT — no double attachment, no stray listeners", () => {
     expect(log).toEqual(["b:10", "b:11", "b:12"]);
   });
 
-  it("removeAllListeners(type) on one clone leaves its other types and the other rows intact", () => {
+  it("removeAllListeners() on one clone detaches only that row's listeners", () => {
     const log: string[] = [];
     const rows = makeRows(3);
     const runtime = createListRuntime(
@@ -294,11 +294,11 @@ describe("SLOT_EVENT — no double attachment, no stray listeners", () => {
     );
     expect(runtime.template).toBeTruthy();
     const spans = Array.from(container.querySelectorAll("span"));
-    removeAllListeners(spans[1] as HTMLElement, "click");
+    removeAllListeners(spans[1] as HTMLElement);
 
     for (const el of spans) click(el);
-    spans[1]!.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true }));
-    expect(log).toEqual(["click:0", "click:2", "key:1"]);
+    for (const el of spans) el.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true }));
+    expect(log).toEqual(["click:0", "click:2", "key:0", "key:2"]);
   });
 });
 

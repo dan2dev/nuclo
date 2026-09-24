@@ -3,8 +3,8 @@
  *
  * Targets uncovered lines in src/when/runtime.ts:
  *
- *  Lines 127-128 – updateWhenRuntimes: runtime.update() throws → runtime
- *                  is cleaned up and removed from the active set.
+ *  updateWhenRuntimes: a branch condition throws during update → the
+ *  runtime is cleaned up and removed from the active set.
  *
  * Also provides broader combinatorial coverage of evaluateActiveCondition,
  * renderWhenContent, and updateWhenRuntimes edge cases.
@@ -38,21 +38,18 @@ function makeRuntime(
   (host as unknown as HTMLElement).appendChild(start);
   (host as unknown as HTMLElement).appendChild(end);
 
+  // updateFn runs (and may throw) whenever update re-evaluates the branches.
+  const probe: WhenGroup<ElementTagName>[] = updateFn
+    ? [{ condition: () => { updateFn(); return false; }, content: [] }]
+    : [];
   const runtime: WhenRuntime<ElementTagName> = {
     startMarker: start,
     endMarker: end,
     host,
     index: 0,
-    groups,
+    groups: [...probe, ...groups],
     elseContent,
     activeIndex: null,
-    update() {
-      if (updateFn) {
-        updateFn();
-      } else {
-        renderWhenContent(this);
-      }
-    },
   };
   return runtime;
 }

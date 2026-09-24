@@ -15,9 +15,7 @@ import {
   flushMountQueue,
   disposeElementLifecycle,
 } from "../../src/element/lifecycle";
-import { updateConditionalElements } from "../../src/update/conditional";
 import { analyzeFactory } from "../../src/list/template";
-import { createHtmlConditionalElement } from "../helpers/conditionalTestHelpers";
 
 describe("lifecycle: on(\"mount\"/\"destroy\") and { onMount / onDestroy }", () => {
   let container: HTMLElement;
@@ -78,6 +76,41 @@ describe("lifecycle: on(\"mount\"/\"destroy\") and { onMount / onDestroy }", () 
       container,
     );
     expect(mounted.sort()).toEqual(["inner", "outer"]);
+  });
+
+  it("queues an element once however many callbacks it registers, in order", () => {
+    const calls: string[] = [];
+    const el = render(
+      div(
+        on("destroy", () => calls.push("destroy-1")),
+        on("mount", () => calls.push("mount-1")),
+        { onMount: () => calls.push("mount-2"), onDestroy: () => calls.push("destroy-2") },
+        on("mount", () => calls.push("mount-3")),
+      ),
+      container,
+    );
+    expect(calls).toEqual(["mount-1", "mount-2", "mount-3"]);
+
+    // A later flush must not re-run anything for the already-mounted element.
+    update();
+    expect(calls).toEqual(["mount-1", "mount-2", "mount-3"]);
+
+    disposeElementLifecycle(el as unknown as Element);
+    expect(calls).toEqual(["mount-1", "mount-2", "mount-3", "destroy-1", "destroy-2"]);
+  });
+
+  it("never fires mount for an element disposed before its flush, nor re-queues it", () => {
+    const mount = vi.fn();
+    const destroy = vi.fn();
+    const el = document.createElement("div");
+    (on("mount", mount) as (p: Element, i: number) => void)(el, 0);
+    (on("destroy", destroy) as (p: Element, i: number) => void)(el, 0);
+    disposeElementLifecycle(el);
+    (on("mount", mount) as (p: Element, i: number) => void)(el, 0); // dropped: already disposed
+    flushMountQueue();
+    flushMountQueue();
+    expect(mount).not.toHaveBeenCalled();
+    expect(destroy).not.toHaveBeenCalled();
   });
 
   it("fires after hydrate(), for claimed SSR nodes, with the element connected", () => {
@@ -233,22 +266,6 @@ describe("lifecycle: on(\"mount\"/\"destroy\") and { onMount / onDestroy }", () 
     items = [];
     update();
     expect(destroyed.sort()).toEqual(["a", "b"]);
-  });
-
-  it("fires onDestroy when the legacy single-element conditional hides its element", () => {
-    const destroy = vi.fn();
-    let show = true;
-    const node = createHtmlConditionalElement("div", () => show, [{ onDestroy: destroy }]);
-    container.appendChild(node as unknown as Node);
-    // This low-level helper builds the element directly (bypassing
-    // render()/hydrate()), so nothing has flushed its queued registration
-    // into the Mounted state yet — do that explicitly, the way update()
-    // normally would as part of a full pass.
-    flushMountQueue();
-
-    show = false;
-    updateConditionalElements();
-    expect(destroy).toHaveBeenCalledTimes(1);
   });
 
   // ── Error isolation ─────────────────────────────────────────────────────

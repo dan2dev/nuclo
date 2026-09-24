@@ -12,7 +12,6 @@ import {
   renderToString,
   renderManyToString,
   renderToStringWithContainer,
-  setSSRCollector,
   getCssText,
   type RenderableInput,
 } from "../types/ssr";
@@ -21,8 +20,6 @@ import {
   NucloText,
   NucloElement,
   NucloDocument,
-  NucloEvent,
-  NucloCustomEvent,
   document as polyfillDocument,
   Event as PolyfillEvent,
   CustomEvent as PolyfillCustomEvent,
@@ -34,6 +31,15 @@ import {
 // Drift alarm: every declared name must also exist on the runtime modules.
 import * as ssrRuntime from "../src/ssr";
 import * as polyfillRuntime from "../src/polyfill";
+import type * as declaredSsr from "../types/ssr";
+import type * as declaredPolyfill from "../types/polyfill";
+
+type Equal<X, Y> =
+  (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;
+type Expect<T extends true> = T;
+// ...and the declared and runtime value surfaces are exactly the same.
+type _SameSsrSurface = Expect<Equal<keyof typeof declaredSsr, keyof typeof ssrRuntime>>;
+type _SamePolyfillSurface = Expect<Equal<keyof typeof declaredPolyfill, keyof typeof polyfillRuntime>>;
 
 // ─── nuclo/ssr ───────────────────────────────────────────────────────────────
 
@@ -47,8 +53,6 @@ void html; void htmlFromNothing; void many; void wrapped;
 const input: RenderableInput = div("x");
 void input;
 
-setSSRCollector((rule) => { const _r: string = rule; void _r; });
-setSSRCollector(null);
 const sheet: string = getCssText();
 void sheet;
 
@@ -57,7 +61,6 @@ const _ssrParity: {
   renderToString: typeof renderToString;
   renderManyToString: typeof renderManyToString;
   renderToStringWithContainer: typeof renderToStringWithContainer;
-  setSSRCollector: typeof setSSRCollector;
   getCssText: typeof getCssText;
 } = ssrRuntime;
 void _ssrParity;
@@ -77,9 +80,10 @@ void data;
 const doc = new NucloDocument();
 const created: ExpandedElement = doc.createElement("section");
 void created;
-const ev = new NucloEvent("ping", { bubbles: true });
+// Event/CustomEvent are the runtime's own constructors, fully typed.
+const ev = new PolyfillEvent("ping", { bubbles: true });
 ev.preventDefault();
-const custom = new NucloCustomEvent("app:ready", { detail: { ok: true } });
+const custom = new PolyfillCustomEvent("app:ready", { detail: { ok: true } });
 const ok: boolean = custom.detail.ok;
 void ok;
 void NucloNode;
@@ -98,8 +102,6 @@ const _polyfillParity: {
   NucloText: unknown;
   NucloElement: unknown;
   NucloDocument: unknown;
-  NucloEvent: unknown;
-  NucloCustomEvent: unknown;
   document: unknown;
   Event: unknown;
   CustomEvent: unknown;

@@ -3,7 +3,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   registerGlobalTagBuilders,
   HTML_TAGS,
-  SELF_CLOSING_TAGS
 } from '../../src/element/tags';
 
 // Helper to create a fresh target object per test (not polluting globalThis)
@@ -30,7 +29,7 @@ describe('tagRegistry.registerGlobalTagBuilders', () => {
     }
 
     // Spot check that a known self-closing tag exists
-    for (const tag of SELF_CLOSING_TAGS) {
+    for (const tag of ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']) {
       expect(typeof target[tag]).toBe('function');
     }
   });

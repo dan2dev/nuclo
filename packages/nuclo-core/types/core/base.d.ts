@@ -78,10 +78,7 @@ declare global {
   export type ExpandedElement<
     TTagName extends ElementTagName = ElementTagName,
   > = Partial<Omit<HTMLElementTagNameMap[TTagName], "tagName">> &
-    Pick<HTMLElementTagNameMap[TTagName], "tagName"> & {
-      rawMods?: ReadonlyArray<NodeModLike<ElementTagName>>;
-      mods?: ReadonlyArray<NodeMod<ElementTagName>>;
-    };
+    Pick<HTMLElementTagNameMap[TTagName], "tagName">;
 
   // Core modifier types
   export type NodeRenderable<TTagName extends ElementTagName = ElementTagName> =

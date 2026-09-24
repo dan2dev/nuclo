@@ -1,8 +1,8 @@
-import { createMarkerPair, createComment, clearBetweenMarkers, insertNodesBefore, asParentNode } from "../shared/dom";
-import type { WhenCondition, WhenContent, WhenGroup, WhenRuntime } from "./runtime";
+import { createMarkerPair, clearBetweenMarkers, insertNodesBefore } from "../shared/dom";
+import type { WhenGroup, WhenRuntime } from "./runtime";
 import { renderWhenContent, registerWhenRuntime, evaluateActiveCondition, renderContentItems } from "./runtime";
 import { isBrowser } from "../shared/environment";
-import { isHydrating, claimChild, peekChild, setCursor, skipWhitespaceText, runWithoutHydration } from "../hydration";
+import { isHydrating, claimMarkerPair, setCursor, runWithoutHydration } from "../hydration";
 import { applyNodeModifier } from "../element/modifiers";
 
 /**
@@ -25,51 +25,35 @@ function decodeBranch(markerText: string | null): number | null | undefined {
 }
 
 class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
-  private groups: WhenGroup<TTagName>[] = [];
-  private elseContent: WhenContent<TTagName>[] = [];
+  // Never mutated after construction, so chained builders and every runtime
+  // rendered from this builder share them instead of copying.
+  private readonly groups: ReadonlyArray<WhenGroup<TTagName>>;
+  private readonly elseContent: ReadonlyArray<WhenContent<TTagName>>;
 
-  constructor(initialCondition: WhenCondition, ...content: WhenContent<TTagName>[]) {
-    this.groups.push({ condition: initialCondition, content });
+  constructor(groups: ReadonlyArray<WhenGroup<TTagName>>, elseContent: ReadonlyArray<WhenContent<TTagName>>) {
+    this.groups = groups;
+    this.elseContent = elseContent;
   }
 
   cloneWith(
     additionalGroup?: WhenGroup<TTagName>,
-    newElseContent?: WhenContent<TTagName>[],
+    newElseContent?: ReadonlyArray<WhenContent<TTagName>>,
   ): WhenBuilderImpl<TTagName> {
-    const b = Object.create(WhenBuilderImpl.prototype) as WhenBuilderImpl<TTagName>;
-    b.groups = [...this.groups];
-    if (additionalGroup) b.groups.push(additionalGroup);
-    b.elseContent = newElseContent ?? [...this.elseContent];
-    return b;
+    return new WhenBuilderImpl(
+      additionalGroup ? [...this.groups, additionalGroup] : this.groups,
+      newElseContent ?? this.elseContent,
+    );
   }
 
-  when(condition: WhenCondition, ...content: WhenContent<TTagName>[]): WhenBuilderImpl<TTagName> {
-    this.groups.push({ condition, content });
-    return this;
+  render(host: ExpandedElement<TTagName>, index: number): Node {
+    return isHydrating() ? this.hydrateRender(host, index) : this.freshRender(host, index);
   }
 
-  else(...content: WhenContent<TTagName>[]): WhenBuilderImpl<TTagName> {
-    this.elseContent = content;
-    return this;
-  }
-
-  render(host: ExpandedElement<TTagName>, index: number): Node | null {
-    if (!globalThis.document) {
-      return null;
-    }
-
-    if (isHydrating()) {
-      return this.hydrateRender(host, index);
-    }
-
-    return this.freshRender(host, index);
-  }
-
-  private freshRender(host: ExpandedElement<TTagName>, index: number): Node | null {
+  private freshRender(host: ExpandedElement<TTagName>, index: number): Node {
     const { start: startMarker, end: endMarker } = createMarkerPair("when", index);
     const runtime = this.createRuntimeFromMarkers(host, index, startMarker, endMarker);
 
-    const parent = asParentNode(host);
+    const parent = host as unknown as Node & ParentNode;
     parent.appendChild(startMarker);
     parent.appendChild(endMarker);
 
@@ -81,54 +65,19 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     return startMarker;
   }
 
-  private hydrateRender(host: ExpandedElement<TTagName>, index: number): Node | null {
+  private hydrateRender(host: ExpandedElement<TTagName>, index: number): Node {
     const parentNode = host as unknown as Node & ParentNode;
 
-    // Check if next child is actually a when-start comment marker.
-    // If the SSR HTML doesn't contain Nuclo comment markers, fall back
-    // to normal rendering (create new markers + render from scratch).
-    skipWhitespaceText(parentNode);
-    const candidate = peekChild(parentNode);
-    if (!candidate || candidate.nodeType !== 8 ||
-        !(candidate as Comment).textContent?.startsWith('when-start-')) {
-      return this.freshRender(host, index);
-    }
-
-    // Claim existing start marker
-    const startMarker = claimChild(parentNode) as Comment;
-
-    // Find end marker (without claiming). Directly nested when() blocks
-    // share this host, so matching pairs must be depth-counted.
-    let depth = 0;
-    let scanNode: Node | null = peekChild(parentNode);
-    while (scanNode) {
-      if (scanNode.nodeType === 8) {
-        const text = (scanNode as Comment).textContent || '';
-        if (text.startsWith('when-start-')) {
-          depth++;
-        } else if (text === 'when-end') {
-          if (depth === 0) break;
-          depth--;
-        }
-      }
-      scanNode = scanNode.nextSibling;
-    }
-    let endMarker = scanNode as Comment | null;
-    let endMarkerMissing = false;
-    if (!endMarker) {
-      // Corrupt/truncated SSR output — recreate the end marker right after
-      // the start marker and render the branch fresh.
-      const created = createComment('when-end');
-      if (!created) return startMarker;
-      parentNode.insertBefore(created, startMarker.nextSibling);
-      endMarker = created;
-      endMarkerMissing = true;
-    }
+    // No when markers at the cursor (SSR output without Nuclo markers):
+    // create new markers and render from scratch.
+    const pair = claimMarkerPair(parentNode, "when");
+    if (!pair) return this.freshRender(host, index);
+    const { start: startMarker, end: endMarker } = pair;
 
     // Determine which branch the client wants and which the server rendered.
     const activeIndex = evaluateActiveCondition(this.groups, this.elseContent);
     const serverBranch = decodeBranch(startMarker.textContent);
-    const branchMatches = !endMarkerMissing &&
+    const branchMatches = !pair.recreated &&
       (serverBranch === undefined || serverBranch === activeIndex);
 
     if (branchMatches) {
@@ -173,10 +122,9 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
       endMarker,
       host,
       index,
-      groups: [...this.groups],
-      elseContent: [...this.elseContent],
+      groups: this.groups,
+      elseContent: this.elseContent,
       activeIndex,
-      update: function() { renderWhenContent(runtime); },
     };
 
     if (isBrowser) {
@@ -190,7 +138,7 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
 export function createWhenBuilderFunction<TTagName extends ElementTagName>(
   builder: WhenBuilderImpl<TTagName>
 ): WhenBuilder<TTagName> {
-  const nodeModFn = function(host: ExpandedElement<TTagName>, index: number): Node | null {
+  const nodeModFn = function(host: ExpandedElement<TTagName>, index: number): Node {
     return builder.render(host, index);
   };
 

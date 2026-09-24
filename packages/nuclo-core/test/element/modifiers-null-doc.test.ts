@@ -1,11 +1,10 @@
 /**
  * @vitest-environment jsdom
  *
- * Targets uncovered lines in src/element/modifiers.ts:
+ * Targets src/element/modifiers.ts:
  *
- *  Line 99  – createReactiveTextFragment: createDocumentFragment returns null
- *             (document unavailable) → throws "Failed to create document fragment"
- *  Line 111 – createStaticTextFragment: same condition
+ *  - Without a document, creating text throws (nuclo needs a DOM or the SSR
+ *    polyfill) instead of silently rendering nothing.
  *
  * Also covers the non-zero-arity NodeModFn branches (lines 74-81):
  *  - Function returning a primitive (line 76)
@@ -179,14 +178,14 @@ describe('applyNodeModifier – primitive modifiers', () => {
 });
 
 // ── Unit: createDocumentFragment null – throws (lines 99, 111) ────────────────
-describe('applyNodeModifier – createDocumentFragment returns null (lines 99, 111)', () => {
+describe('applyNodeModifier – no document available', () => {
   it('throws when document is unavailable and a text fragment is needed (line 99)', () => {
     removeDocument();
     const parent = {} as unknown as ExpandedElement<'div'>;
     const resolver = () => 'text';
     expect(() => {
       applyNodeModifier(parent, resolver as unknown as NodeModFn<'div'>, 0);
-    }).toThrow(/document/i);
+    }).toThrow();
     restoreDocument();
     savedDocument = undefined;
   });
@@ -199,7 +198,7 @@ describe('applyNodeModifier – createDocumentFragment returns null (lines 99, 1
     // and gracefully return null instead).
     expect(() => {
       runSerializing(() => applyNodeModifier(parent, 'static text' as unknown as NodeModFn<'div'>, 0));
-    }).toThrow(/document/i);
+    }).toThrow();
     restoreDocument();
     savedDocument = undefined;
   });

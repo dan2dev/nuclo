@@ -6,7 +6,6 @@
  *  - src/update/registry.ts lines 66-71: re-registration replaces info in place
  *  - src/update/reactive-text.ts lines 85-88: orphaned text ref is pruned
  *  - src/update/reactive-attributes.ts lines 158-161: orphaned element ref is pruned
- *  - src/update/conditional.ts lines 42-44: node without conditional info is skipped
  *  - src/when/runtime.ts lines 135-138: marker without a runtime is pruned
  */
 import { describe, it, expect } from "vitest";
@@ -17,13 +16,10 @@ import {
   reactiveTextNodesByNode,
   reactiveElements,
   reactiveElementsByNode,
-  storeConditionalInfo,
-  unregisterConditionalNode,
 } from "../../src/update/registry";
 import { notifyReactiveTextNodes } from "../../src/update/reactive-text";
 import { notifyReactiveElements } from "../../src/update/reactive-attributes";
-import { updateConditionalElements } from "../../src/update/conditional";
-import { registerWhenRuntime, updateWhenRuntimes, renderWhenContent } from "../../src/when/runtime";
+import { registerWhenRuntime, updateWhenRuntimes } from "../../src/when/runtime";
 import type { WhenRuntime } from "../../src/when/runtime";
 
 describe("registerReactiveTextNode — re-registration", () => {
@@ -31,10 +27,10 @@ describe("registerReactiveTextNode — re-registration", () => {
     const node = document.createTextNode("first");
     document.body.appendChild(node);
 
-    registerReactiveTextNode(node, { resolver: () => "first", lastValue: "first" });
+    registerReactiveTextNode(node, () => "first", "first");
     const sizeAfterFirst = reactiveTextNodes.size;
 
-    registerReactiveTextNode(node, { resolver: () => "second", lastValue: "stale" });
+    registerReactiveTextNode(node, () => "second", "stale");
     expect(reactiveTextNodes.size).toBe(sizeAfterFirst);
 
     // The replacement info drives the next notify pass.
@@ -49,7 +45,7 @@ describe("notify passes with orphaned WeakMap entries", () => {
   it("prunes a connected text node whose info entry was removed", () => {
     const node = document.createTextNode("x");
     document.body.appendChild(node);
-    registerReactiveTextNode(node, { resolver: () => "x", lastValue: "x" });
+    registerReactiveTextNode(node, () => "x", "x");
 
     // Orphan the iteration-set ref: entry gone, node still alive & connected.
     reactiveTextNodesByNode.delete(node);
@@ -65,7 +61,7 @@ describe("notify passes with orphaned WeakMap entries", () => {
   it("prunes a connected element whose info entry was removed", () => {
     const el = document.createElement("div");
     document.body.appendChild(el);
-    registerReactiveElement(el, { attributeResolvers: [] });
+    registerReactiveElement(el);
 
     reactiveElementsByNode.delete(el);
 
@@ -77,32 +73,6 @@ describe("notify passes with orphaned WeakMap entries", () => {
   });
 });
 
-describe("updateConditionalElements — node without conditional info", () => {
-  it("skips a connected node whose info was removed but whose ref survives", () => {
-    const comment = document.createComment("conditional-div-hidden");
-    document.body.appendChild(comment);
-
-    const info = {
-      condition: () => true,
-      tagName: "div" as ElementTagName,
-      modifiers: [],
-      isSvg: false,
-    };
-
-    // Two stores put two WeakRefs in the active set; unregistering removes
-    // only the second ref and the info map entry — the first ref survives and
-    // now points at a node with no conditional info.
-    storeConditionalInfo(comment, info);
-    storeConditionalInfo(comment, info);
-    unregisterConditionalNode(comment);
-
-    expect(() => updateConditionalElements()).not.toThrow();
-    // Without info the node must NOT be swapped for an element.
-    expect(comment.isConnected).toBe(true);
-    comment.remove();
-  });
-});
-
 describe("updateWhenRuntimes — marker without a runtime", () => {
   it("prunes a ref whose runtime was already removed from the WeakMap", () => {
     const host = document.createElement("div") as unknown as ExpandedElement<"div">;
@@ -111,21 +81,15 @@ describe("updateWhenRuntimes — marker without a runtime", () => {
     (host as unknown as HTMLElement).append(startMarker, endMarker);
     // NOT appended to the document — the markers are disconnected.
 
-    const makeRuntime = (): WhenRuntime<"div"> => {
-      const runtime: WhenRuntime<"div"> = {
-        startMarker,
-        endMarker,
-        host,
-        index: 0,
-        groups: [{ condition: () => true, content: [] }],
-        elseContent: [],
-        activeIndex: null,
-        update() {
-          renderWhenContent(runtime);
-        },
-      };
-      return runtime;
-    };
+    const makeRuntime = (): WhenRuntime<"div"> => ({
+      startMarker,
+      endMarker,
+      host,
+      index: 0,
+      groups: [{ condition: () => true, content: [] }],
+      elseContent: [],
+      activeIndex: null,
+    });
 
     // Two registrations on the same start marker: the second overwrites the
     // WeakMap entry, so the first ref becomes stale after the disconnected

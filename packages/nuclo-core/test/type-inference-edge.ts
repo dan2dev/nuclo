@@ -21,7 +21,6 @@ import {
   globalStyle,
   variants,
   getCssText,
-  setSSRCollector,
   resetStyles,
   type StyleResult,
 } from "../src/style";
@@ -96,11 +95,6 @@ renderToStringWithContainer(div("x")); // container args optional
 // @ts-expect-error container attributes must be a string record
 renderToStringWithContainer(div("x"), "div", 42);
 
-setSSRCollector((rule) => {
-  type _Rule = Expect<Equal<typeof rule, string>>;
-  void rule;
-});
-setSSRCollector(null);
 const sheet: string = getCssText();
 void sheet;
 resetStyles();

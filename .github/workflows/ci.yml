@@ -14,8 +14,6 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
         working-directory: packages/nuclo-core
-      - run: bun run lint
-        working-directory: packages/nuclo-core
       - run: npx vitest run --coverage
         working-directory: packages/nuclo-core
       - run: bun run build

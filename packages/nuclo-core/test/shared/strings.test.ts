@@ -27,23 +27,30 @@ describe('stringUtils', () => {
 
     it('should handle single character strings', () => {
       expect(camelToKebab('a')).toBe('a');
-      expect(camelToKebab('A')).toBe('a');
+      expect(camelToKebab('A')).toBe('-a');
     });
 
-    it('should handle strings starting with uppercase', () => {
-      expect(camelToKebab('BackgroundColor')).toBe('background-color');
-      expect(camelToKebab('FontSize')).toBe('font-size');
+    it('turns a leading capital into a leading dash (CSS vendor-prefix form)', () => {
+      expect(camelToKebab('BackgroundColor')).toBe('-background-color');
+      expect(camelToKebab('FontSize')).toBe('-font-size');
     });
 
     it('should handle consecutive uppercase letters', () => {
-      expect(camelToKebab('XMLHttpRequest')).toBe('x-m-l-http-request');
+      expect(camelToKebab('XMLHttpRequest')).toBe('-x-m-l-http-request');
       expect(camelToKebab('innerHTML')).toBe('inner-h-t-m-l');
     });
 
     it('should handle vendor prefixes', () => {
-      expect(camelToKebab('WebkitTransform')).toBe('webkit-transform');
-      expect(camelToKebab('MozTransition')).toBe('moz-transition');
+      // Capitalized prefixes are the CSSOM/React spelling of -webkit-/-moz-.
+      expect(camelToKebab('WebkitTransform')).toBe('-webkit-transform');
+      expect(camelToKebab('MozTransition')).toBe('-moz-transition');
       expect(camelToKebab('msFilter')).toBe('ms-filter');
+    });
+
+    it('leaves names without capitals alone', () => {
+      expect(camelToKebab('--x')).toBe('--x');
+      expect(camelToKebab('font-size')).toBe('font-size');
+      expect(camelToKebab('')).toBe('');
     });
 
     it('should handle numbers in property names', () => {

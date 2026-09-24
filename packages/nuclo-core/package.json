@@ -17,9 +17,6 @@
 	"type": "module",
 	"main": "./dist/nuclo.cjs",
 	"module": "./dist/nuclo.mjs",
-	"browser": "./dist/nuclo.umd.js",
-	"unpkg": "./dist/nuclo.umd.js",
-	"jsdelivr": "./dist/nuclo.umd.js",
 	"types": "./types/index.d.ts",
 	"exports": {
 		".": {
@@ -46,35 +43,22 @@
 		"types"
 	],
 	"scripts": {
-		"build": "tsdown && tsc --emitDeclarationOnly",
+		"build": "tsdown",
 		"dev": "tsdown --watch",
-		"dev:all": "bun dev & cd examples/basic && bun run dev",
-		"build:watch": "tsdown --watch",
-		"build:types": "tsc --emitDeclarationOnly",
 		"clean": "rm -rf dist *.tsbuildinfo",
 		"typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
 		"test": "npm run typecheck && vitest run --coverage",
 		"test:watch": "vitest --watch --coverage",
 		"bench": "bun bench/ssr.bench.ts && bun bench/hydrate.bench.ts",
 		"bench:style": "bun bench/style.bench.ts",
-		"bench:jfb": "bun bench/js-framework.bench.ts",
-		"lint": "eslint . --ext .ts,.js,.json,.jsonc,.json5,.md,.css",
-		"lint:fix": "eslint . --ext .ts,.js,.json,.jsonc,.json5,.md,.css --fix"
+		"bench:jfb": "bun bench/js-framework.bench.ts"
 	},
 	"devDependencies": {
-		"@eslint/css": "^2.0.0",
-		"@eslint/js": "^10.0.1",
-		"@eslint/json": "^2.1.0",
-		"@eslint/markdown": "^8.0.3",
 		"@types/node": "^26.6.2",
 		"@vitest/coverage-v8": "5.0.0",
-		"eslint": "^10.11.0",
-		"globals": "^17.12.0",
-		"jiti": "^2.7.0",
 		"jsdom": "^30.1.1",
 		"tsdown": "^0.23.0",
 		"typescript": "^7.0.2",
-		"typescript-eslint": "^8.70.1",
 		"vitest": "^5.0.1"
 	},
 	"repository": {

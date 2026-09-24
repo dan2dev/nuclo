@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NucloDocument } from '../../src/polyfill/Document';
-import { NucloEvent } from '../../src/polyfill/Event';
 
 describe('NucloDocument', () => {
   let doc: NucloDocument;
@@ -327,15 +326,6 @@ describe('NucloDocument', () => {
   });
 
   describe('querySelector', () => {
-    it('should find element by ID in head', () => {
-      const style = doc.createElement('style');
-      style.id = 'nuclo-styles';
-      doc.head.appendChild(style);
-
-      const found = doc.querySelector('#nuclo-styles');
-
-      expect(found).toBe(style);
-    });
 
     it('should return null for non-existent ID', () => {
       const found = doc.querySelector('#non-existent');
@@ -346,16 +336,6 @@ describe('NucloDocument', () => {
     it('should return null for non-ID selectors', () => {
       expect(doc.querySelector('.class')).toBe(null);
       expect(doc.querySelector('div')).toBe(null);
-    });
-
-    it('should only work for #nuclo-styles ID specifically', () => {
-      const div = doc.createElement('div');
-      div.id = 'other-id';
-      doc.head.appendChild(div);
-
-      const found = doc.querySelector('#other-id');
-
-      expect(found).toBe(null); // Implementation only supports #nuclo-styles
     });
 
     it('should handle empty head children', () => {
@@ -379,157 +359,13 @@ describe('NucloDocument', () => {
     });
   });
 
-  describe('addEventListener', () => {
-    it('should add an event listener', () => {
+  describe('event listener stubs', () => {
+    it('accepts and drops listeners; dispatch never calls them (SSR has no events)', () => {
       const listener = vi.fn();
-
-      doc.addEventListener('click', listener);
-
-      // Verify by dispatching
-      const event = new NucloEvent('click');
-      doc.dispatchEvent(event);
-
-      expect(listener).toHaveBeenCalledWith(event);
-    });
-
-    it('should add multiple listeners for same event', () => {
-      const listener1 = vi.fn();
-      const listener2 = vi.fn();
-
-      doc.addEventListener('click', listener1);
-      doc.addEventListener('click', listener2);
-
-      const event = new NucloEvent('click');
-      doc.dispatchEvent(event);
-
-      expect(listener1).toHaveBeenCalledWith(event);
-      expect(listener2).toHaveBeenCalledWith(event);
-    });
-
-    it('should add listeners for different events', () => {
-      const clickListener = vi.fn();
-      const keyListener = vi.fn();
-
-      doc.addEventListener('click', clickListener);
-      doc.addEventListener('keydown', keyListener);
-
-      doc.dispatchEvent(new NucloEvent('click'));
-
-      expect(clickListener).toHaveBeenCalled();
-      expect(keyListener).not.toHaveBeenCalled();
-    });
-
-    it('should not add duplicate listeners', () => {
-      const listener = vi.fn();
-
-      doc.addEventListener('click', listener);
-      doc.addEventListener('click', listener); // Same listener
-
-      const event = new NucloEvent('click');
-      doc.dispatchEvent(event);
-
-      // Set only stores unique listeners
-      expect(listener).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('removeEventListener', () => {
-    it('should remove an event listener', () => {
-      const listener = vi.fn();
-
-      doc.addEventListener('click', listener);
-      doc.removeEventListener('click', listener);
-
-      doc.dispatchEvent(new NucloEvent('click'));
-
+      doc.addEventListener('update', listener);
+      expect(doc.dispatchEvent(new Event('update'))).toBe(true);
+      doc.removeEventListener('update', listener);
       expect(listener).not.toHaveBeenCalled();
-    });
-
-    it('should only remove specified listener', () => {
-      const listener1 = vi.fn();
-      const listener2 = vi.fn();
-
-      doc.addEventListener('click', listener1);
-      doc.addEventListener('click', listener2);
-      doc.removeEventListener('click', listener1);
-
-      doc.dispatchEvent(new NucloEvent('click'));
-
-      expect(listener1).not.toHaveBeenCalled();
-      expect(listener2).toHaveBeenCalled();
-    });
-
-    it('should handle removing non-existent listener', () => {
-      const listener = vi.fn();
-
-      doc.removeEventListener('click', listener); // Never added
-
-      // Should not throw
-      doc.dispatchEvent(new NucloEvent('click'));
-    });
-
-    it('should handle removing from non-existent event type', () => {
-      const listener = vi.fn();
-
-      doc.removeEventListener('custom', listener);
-
-      // Should not throw
-      expect(() => doc.dispatchEvent(new NucloEvent('custom'))).not.toThrow();
-    });
-  });
-
-  describe('dispatchEvent', () => {
-    it('should dispatch event to listeners', () => {
-      const listener = vi.fn();
-      doc.addEventListener('test', listener);
-
-      const event = new NucloEvent('test');
-      const result = doc.dispatchEvent(event);
-
-      expect(result).toBe(true);
-      expect(listener).toHaveBeenCalledWith(event);
-    });
-
-    it('should return true even with no listeners', () => {
-      const event = new NucloEvent('test');
-      const result = doc.dispatchEvent(event);
-
-      expect(result).toBe(true);
-    });
-
-    it('should call all listeners in order', () => {
-      const calls: number[] = [];
-      const listener1 = vi.fn(() => calls.push(1));
-      const listener2 = vi.fn(() => calls.push(2));
-      const listener3 = vi.fn(() => calls.push(3));
-
-      doc.addEventListener('test', listener1);
-      doc.addEventListener('test', listener2);
-      doc.addEventListener('test', listener3);
-
-      doc.dispatchEvent(new NucloEvent('test'));
-
-      expect(calls).toEqual([1, 2, 3]);
-    });
-
-    it('should catch errors in listeners', () => {
-      const errorListener = vi.fn(() => {
-        throw new Error('Listener error');
-      });
-      const goodListener = vi.fn();
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      doc.addEventListener('test', errorListener);
-      doc.addEventListener('test', goodListener);
-
-      const result = doc.dispatchEvent(new NucloEvent('test'));
-
-      expect(result).toBe(true);
-      expect(errorListener).toHaveBeenCalled();
-      expect(goodListener).toHaveBeenCalled(); // Should still be called
-      expect(consoleSpy).toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
     });
   });
 

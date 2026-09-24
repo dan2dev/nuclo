@@ -2,7 +2,7 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import '../src'; // This auto-initializes the globals
+import { on, update } from '../src'; // Importing also auto-initializes the globals
 
 describe('Example Integration', () => {
   beforeEach(() => {
@@ -96,12 +96,10 @@ describe('Example Integration', () => {
           }),
         },
         "Click me",
-        (e) => {
-          e.addEventListener?.("click", (event) => {
-            data.color = data.color === "green" ? "blue" : "green";
-            event.currentTarget?.dispatchEvent(new Event("update", { bubbles: true }));
-          });
-        }
+        on("click", () => {
+          data.color = data.color === "green" ? "blue" : "green";
+          update();
+        })
       ),
     )(document.body, 0);
 
@@ -115,7 +113,9 @@ describe('Example Integration', () => {
     // Simulate click
     buttonEl.click();
 
-    // The reactive attributes should update on the "update" event
+    // The click handler's update() re-evaluates the reactive attributes
     expect(buttonEl.className).toBe('blue');
+    expect(buttonEl.style.fontSize).toBe('20px');
+    expect(buttonEl.style.backgroundColor).toBe('blue');
   });
 });

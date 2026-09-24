@@ -25,7 +25,7 @@ describe('dom.ts - cleanupEventListeners for text nodes (lines 73-74)', () => {
     const resolver = () => value;
 
     // Create a reactive text node
-    const textNode = createReactiveTextNode(resolver) as Text;
+    const textNode = createReactiveTextNode(resolver, resolver());
     container.appendChild(textNode);
 
     expect(textNode.textContent).toBe('initial');
@@ -46,7 +46,7 @@ describe('dom.ts - cleanupEventListeners for text nodes (lines 73-74)', () => {
     let value = 'hello';
     const resolver = () => value;
 
-    const textNode = createReactiveTextNode(resolver) as Text;
+    const textNode = createReactiveTextNode(resolver, resolver());
     container.appendChild(textNode);
 
     expect(textNode.textContent).toBe('hello');
@@ -85,7 +85,7 @@ describe('dom.ts - cleanupEventListeners for text nodes (lines 73-74)', () => {
     const value = 'nested';
     const resolver = () => value;
 
-    const textNode = createReactiveTextNode(resolver) as Text;
+    const textNode = createReactiveTextNode(resolver, resolver());
     const wrapper = document.createElement('div');
     wrapper.appendChild(textNode);
     container.appendChild(wrapper);
@@ -106,8 +106,8 @@ describe('dom.ts - cleanupEventListeners for text nodes (lines 73-74)', () => {
     const resolver1 = () => value1;
     const resolver2 = () => value2;
 
-    const textNode1 = createReactiveTextNode(resolver1) as Text;
-    const textNode2 = createReactiveTextNode(resolver2) as Text;
+    const textNode1 = createReactiveTextNode(resolver1, resolver1());
+    const textNode2 = createReactiveTextNode(resolver2, resolver2());
 
     const inner = document.createElement('span');
     inner.appendChild(textNode2);

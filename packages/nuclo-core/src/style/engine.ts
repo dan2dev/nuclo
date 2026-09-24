@@ -17,10 +17,9 @@
  * alias every subpath to this same source file) loads two or three
  * separate copies of this module, each with its own module-scope
  * variables. Without a realm-wide singleton, `css()` (from `nuclo`) would
- * mint rules into one copy's registry while `getCssText()`/
- * `setSSRCollector()` (from `nuclo/ssr`) read an entirely different,
- * always-empty one — SSR output would render the right classes with no
- * matching CSS at all. Storing the registry on `globalThis` instead makes
+ * mint rules into one copy's registry while `getCssText()` (from
+ * `nuclo/ssr`) reads an entirely different, always-empty one — SSR output
+ * would render the right classes with no matching CSS at all. Storing the registry on `globalThis` instead makes
  * every copy of this module share the same state regardless of how many
  * times it ends up bundled.
  *
@@ -38,10 +37,6 @@
  * per design token. See test/style/registry-growth.test.ts.
  */
 
-// SSR collector — optional hook that receives every newly minted rule string
-// (wrapped in its at-rule, if any). Installed once at server startup.
-type SSRCollector = (rule: string) => void;
-
 export interface BlockMeta {
 	readonly query: string | undefined;
 	readonly suffix: string;
@@ -51,8 +46,6 @@ export interface BlockMeta {
 }
 
 interface EngineState {
-	ssrCollector: SSRCollector | null;
-
 	// Registry — the source of truth for all generated CSS.
 	// atomCache: declaration-block key -> class name (dedup)
 	// atomMeta: class name -> what the class means (its selector context and its
@@ -89,7 +82,6 @@ interface EngineState {
 
 function createState(): EngineState {
 	return {
-		ssrCollector: null,
 		atomCache: new Map(),
 		atomMeta: new Map(),
 		rawKeys: new Set(),
@@ -112,11 +104,6 @@ const globalScope = globalThis as unknown as Record<symbol, EngineState>;
 let cachedState: EngineState | undefined;
 function getState(): EngineState {
 	return cachedState ??= globalScope[ENGINE_STATE_KEY] ?? (globalScope[ENGINE_STATE_KEY] = createState());
-}
-
-export function setSSRCollector(fn: SSRCollector | null): void {
-	const state = getState();
-	state.ssrCollector = fn;
 }
 
 /** Pre-register at-rule queries so their cascade order follows theme order. */
@@ -159,15 +146,10 @@ function ruleIdentity(rule: CSSRule): string {
 	return rule instanceof CSSStyleRule ? rule.selectorText : groupQueryOf(rule);
 }
 
-function scopedRuleKey(query: string | undefined, identity: string): string {
-	const scope = query === undefined ? "-" : "+" + query.length + ":" + query;
-	return scope + identity.length + ":" + identity;
-}
-
 function rememberExternalRule(rule: CSSRule, query: string | undefined): void {
 	const state = getState();
 	if (!state.externalRules) return;
-	const key = scopedRuleKey(query, ruleIdentity(rule));
+	const key = contextKeyOf(query, ruleIdentity(rule));
 	let texts = state.externalRules.get(key);
 	if (!texts) {
 		texts = new Set();
@@ -179,7 +161,7 @@ function rememberExternalRule(rule: CSSRule, query: string | undefined): void {
 function consumeExternalRule(rule: CSSRule, query: string | undefined): boolean {
 	const state = getState();
 	if (!state.externalRules) return false;
-	const key = scopedRuleKey(query, ruleIdentity(rule));
+	const key = contextKeyOf(query, ruleIdentity(rule));
 	const texts = state.externalRules.get(key);
 	if (!texts?.delete(rule.cssText)) return false;
 	if (texts.size === 0) state.externalRules.delete(key);
@@ -357,7 +339,6 @@ function record(rule: string, query: string | undefined): void {
 			if (group) insertGrouped(group, rule);
 		}
 	}
-	state.ssrCollector?.(query === undefined ? rule : query + "{" + rule + "}");
 }
 
 /**
@@ -377,7 +358,8 @@ export function hash(input: string): string {
 	return (a >>> 0).toString(36) + ((b >>> 9) % 1296).toString(36);
 }
 
-function contextKeyOf(query: string | undefined, suffix: string): string {
+/** Length-prefixed (query, selector-suffix) key — unambiguous for any strings. */
+export function contextKeyOf(query: string | undefined, suffix: string): string {
 	const queryPart = query === undefined ? "-" : "+" + query.length + ":" + query;
 	return queryPart + suffix.length + ":" + suffix;
 }
@@ -457,7 +439,7 @@ function isValidClassName(name: string): boolean {
  * how a named style's non-base contexts and its cx() merges stay identifiable
  * in devtools without ever colliding with the base class.
  */
-function mintBlock(
+export function atomBlock(
 	query: string | undefined,
 	suffix: string,
 	decls: ReadonlyArray<readonly [string, string]>,
@@ -470,7 +452,6 @@ function mintBlock(
 		contextKey = appendKeyPart(appendKeyPart(contextKey, prop), value);
 	}
 	if (name !== undefined && !isValidClassName(name)) {
-		// eslint-disable-next-line no-console
 		console.warn(
 			`[nuclo] css() name ${JSON.stringify(name)} is not a valid CSS class name ` +
 				"(letters, digits, - and _ only, not starting with a digit); falling back to a generated name.",
@@ -490,7 +471,6 @@ function mintBlock(
 	} else {
 		className = exactName ? name : name + "-" + hash(declKey);
 		if (state.atomMeta.has(className)) {
-			// eslint-disable-next-line no-console
 			console.warn(
 				`[nuclo] css() name ${JSON.stringify(className)} is already used by a different style. ` +
 					"Both rules are emitted under the same class, so they will override each other — rename one.",
@@ -504,22 +484,6 @@ function mintBlock(
 	state.atomMeta.set(className, { query, suffix, decls, name });
 	record(selectorFor(className, suffix) + "{" + body + "}", query);
 	return className;
-}
-
-/**
- * One class per (query, selector-suffix) — every declaration that shares that
- * context compiles into a single rule under a single generated class name,
- * rather than one class per individual property. Pass `name` to give the
- * style a stable, readable identity (see mintBlock).
- */
-export function atomBlock(
-	query: string | undefined,
-	suffix: string,
-	decls: ReadonlyArray<readonly [string, string]>,
-	name?: string,
-	exactName = false,
-): string {
-	return mintBlock(query, suffix, decls, name, exactName);
 }
 
 /**
@@ -542,7 +506,7 @@ export function mergeBlocks(first: string, second: string): string {
 	const lastIndex = new Map<string, number>();
 	for (let i = 0; i < concat.length; i++) lastIndex.set(concat[i][0], i);
 	const merged = concat.filter((decl, i) => lastIndex.get(decl[0]) === i);
-	return mintBlock(a.query, a.suffix, merged, a.name ?? b.name);
+	return atomBlock(a.query, a.suffix, merged, a.name ?? b.name);
 }
 
 /** Conflict key (query|suffix) for a generated class — lets cx() group classes by selector context. */

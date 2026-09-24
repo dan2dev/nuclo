@@ -4,9 +4,7 @@ import {
   createMarkerPair,
   clearBetweenMarkers,
   insertNodesBefore,
-  appendChildren,
   safeRemoveChild,
-  isNodeConnected
 } from '../../src/shared/dom';
 
 describe('utility/dom edge & failure branches', () => {
@@ -16,28 +14,6 @@ describe('utility/dom edge & failure branches', () => {
     document.body.innerHTML = '';
     container = document.createElement('div');
     document.body.appendChild(container);
-  });
-
-  describe('appendChildren edge cases', () => {
-    it('returns parent immediately when parent is null/undefined', () => {
-      const result = appendChildren(null as any, 'x', 'y');
-      expect(result).toBeNull();
-    });
-
-    it('skips null / undefined children and appends valid ones', () => {
-      const span = document.createElement('span');
-      span.textContent = 'ok';
-      appendChildren(container, null, undefined, 'hello', span, undefined, 'world', null);
-      const texts = Array.from(container.childNodes)
-        .map(n => n.textContent)
-        .filter(Boolean);
-      expect(texts).toEqual(['hello', 'ok', 'world']);
-    });
-
-    it('handles empty invocation (no children) without modifying DOM', () => {
-      appendChildren(container);
-      expect(container.childNodes.length).toBe(0);
-    });
   });
 
   describe('safeRemoveChild behavior', () => {
@@ -122,38 +98,6 @@ describe('utility/dom edge & failure branches', () => {
 
       const texts = Array.from(container.childNodes).map(n => n.textContent);
       expect(texts).toEqual(['A', 'B', 'ref']);
-    });
-  });
-
-  describe('isNodeConnected behavior', () => {
-    it('returns false for null / undefined', () => {
-      expect(isNodeConnected(null as any)).toBe(false);
-      expect(isNodeConnected(undefined as any)).toBe(false);
-    });
-
-    it('detects connected node', () => {
-      const el = document.createElement('div');
-      container.appendChild(el);
-      expect(isNodeConnected(el)).toBe(true);
-    });
-
-    it('detects disconnected node after removal', () => {
-      const el = document.createElement('div');
-      container.appendChild(el);
-      expect(isNodeConnected(el)).toBe(true);
-      container.removeChild(el);
-      expect(isNodeConnected(el)).toBe(false);
-    });
-
-    it('detects detached subtree child nodes', () => {
-      const wrapper = document.createElement('section');
-      const child = document.createElement('em');
-      wrapper.appendChild(child);
-      // wrapper not attached to DOM
-      expect(isNodeConnected(wrapper)).toBe(false);
-      expect(isNodeConnected(child)).toBe(false);
-      container.appendChild(wrapper);
-      expect(isNodeConnected(child)).toBe(true);
     });
   });
 

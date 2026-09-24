@@ -33,11 +33,6 @@ export const SVG_TAGS = [
   "symbol", "text", "textPath", "title", "tspan", "use", "view",
 ] as const satisfies ReadonlyArray<keyof SVGElementTagNameMap>;
 
-export const SELF_CLOSING_TAGS = [
-  "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
-  "source", "track", "wbr",
-] as const satisfies ReadonlyArray<ElementTagName>;
-
 
 // Tag builders are installed as self-overwriting lazy getters instead of
 // being created eagerly: registerGlobalTagBuilders() touches ~180 HTML+SVG

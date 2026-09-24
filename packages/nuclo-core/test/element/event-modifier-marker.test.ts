@@ -120,7 +120,7 @@ describe("on() marking", () => {
     el.click();
     expect(handler).toHaveBeenCalledTimes(1);
 
-    removeAllListeners(el, "click");
+    removeAllListeners(el);
     el.click();
     expect(handler).toHaveBeenCalledTimes(1);
   });

@@ -192,6 +192,20 @@ describe("style attribute via tag builder", () => {
     expect(html).toContain("webkit-transform: rotate(45deg);");
   });
 
+  it("renders capitalized vendor prefixes with their leading dash", () => {
+    const html = renderToString(
+      div({ style: { WebkitTransform: "rotate(45deg)", MozUserSelect: "none" } })
+    );
+    expect(html).toContain('style="-webkit-transform: rotate(45deg); -moz-user-select: none;"');
+  });
+
+  it("serializes a value containing ';' or ':' intact", () => {
+    const html = renderToString(
+      div({ style: { backgroundImage: 'url("a;b:c.png")' } })
+    );
+    expect(html).toContain("background-image: url(&quot;a;b:c.png&quot;);");
+  });
+
   it("escapes style values to prevent XSS", () => {
     const html = renderToString(
       div({ style: { fontFamily: '"Arial"; alert("xss")' } })

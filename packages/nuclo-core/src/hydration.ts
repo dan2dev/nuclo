@@ -128,6 +128,40 @@ export function claimChild(parent: Node): Node | null {
 }
 
 /**
+ * Claims a server-rendered `<!--{prefix}-start-…-->` … `<!--{prefix}-end-->`
+ * block (list()/when()) at the cursor, leaving the cursor just after the start
+ * marker. Returns null, claiming nothing, when the next child isn't a start
+ * marker. Pairs are depth-counted because directly nested blocks share a
+ * host. A missing end marker (corrupt/truncated SSR output) is recreated right
+ * after the start marker and reported as `recreated`.
+ */
+export function claimMarkerPair(
+  parent: Node,
+  prefix: "list" | "when",
+): { start: Comment; end: Comment; recreated: boolean } | null {
+  skipWhitespaceText(parent);
+  const start = peekChild(parent);
+  const startPrefix = prefix + "-start-";
+  if (!start || start.nodeType !== 8 || !start.textContent?.startsWith(startPrefix)) return null;
+  claimChild(parent);
+  const endText = prefix + "-end";
+  let depth = 0;
+  for (let node = start.nextSibling; node; node = node.nextSibling) {
+    if (node.nodeType !== 8) continue;
+    const text = node.textContent;
+    if (text === endText) {
+      if (depth === 0) return { start: start as Comment, end: node as Comment, recreated: false };
+      depth--;
+    } else if (text?.startsWith(startPrefix)) {
+      depth++;
+    }
+  }
+  const end = document.createComment(endText);
+  parent.insertBefore(end, start.nextSibling);
+  return { start: start as Comment, end, recreated: true };
+}
+
+/**
  * Attempts to claim an existing element from the parent during hydration.
  * Returns the claimed element if the next child matches the expected tag, or null.
  */

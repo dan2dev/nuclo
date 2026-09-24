@@ -19,15 +19,16 @@ type AttributeCandidate<TTagName extends ElementTagName> =
 /**
  * Applies a resolved (non-function) attribute value to an element.
  *
- * Module-level rather than a closure inside applySingleAttribute so the
- * static-attribute path — the bulk of attributes in list rows — allocates
- * nothing per attribute.
+ * Module-level rather than a closure inside applySingleAttribute so neither
+ * the static-attribute path (the bulk of attributes in list rows) nor a
+ * reactive attribute (it is the registered applier, `merge` left unset)
+ * allocates anything per attribute.
  */
 function setAttributeValue(
-  el: ExpandedElement<ElementTagName>,
+  el: Element,
   key: string,
   v: unknown,
-  merge: boolean,
+  merge?: boolean,
 ): void {
   if (v == null) return;
 
@@ -44,7 +45,7 @@ function setAttributeValue(
   } else if (key in el) {
     // For HTML elements, try to set as property first
     try {
-      (el as Record<string, unknown>)[key] = v;
+      (el as unknown as Record<string, unknown>)[key] = v;
     } catch {
       // If property is read-only, fall back to setAttribute
       if (el instanceof Element) {
@@ -54,6 +55,10 @@ function setAttributeValue(
   } else if (el instanceof Element) {
     el.setAttribute(key, String(v));
   }
+}
+
+function applyReactiveClassName(el: Element, _key: string, v: unknown): void {
+  mergeReactiveClassName(el as HTMLElement, String(v || ''));
 }
 
 export function applySingleAttribute<TTagName extends ElementTagName>(
@@ -117,14 +122,9 @@ export function applySingleAttribute<TTagName extends ElementTagName>(
       // so we can preserve static classes when the reactive className changes
       if (k === 'className' && el instanceof HTMLElement) {
         initReactiveClassName(el);
-
-        registerAttributeResolver(el, k, resolver, function(v) {
-          mergeReactiveClassName(el, String(v || ''));
-        });
+        registerAttributeResolver(el, k, resolver, applyReactiveClassName);
       } else {
-        registerAttributeResolver(el, k, resolver, function(v) {
-          setAttributeValue(el, k, v, false);
-        });
+        registerAttributeResolver(el, k, resolver, setAttributeValue);
       }
       return;
     }
@@ -143,7 +143,7 @@ export function applySingleAttribute<TTagName extends ElementTagName>(
     }
     return;
   }
-  setAttributeValue(el, k, raw, shouldMergeClassName);
+  setAttributeValue(el as unknown as Element, k, raw, shouldMergeClassName);
 }
 
 export function applyAttributes<TTagName extends ElementTagName>(
@@ -151,7 +151,6 @@ export function applyAttributes<TTagName extends ElementTagName>(
   attributes: ExpandedElementAttributes<TTagName>,
   mergeClassName = true,
 ): void {
-  if (!attributes) return;
   // for-in over Object.keys() avoids allocating a key array per element —
   // attribute objects are always plain literals, so no prototype keys leak in.
   for (const k in attributes) {
@@ -163,5 +162,3 @@ export function applyAttributes<TTagName extends ElementTagName>(
     applySingleAttribute(element, key, value, shouldMerge);
   }
 }
-
-export { createReactiveTextNode } from "../update/reactive-text";

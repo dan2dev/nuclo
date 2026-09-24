@@ -25,7 +25,6 @@ import "../../src";
 import { when } from "../../src/when";
 import { list } from "../../src/list";
 import { renderToString } from "../../src/ssr/render-to-string";
-import { createElement } from "../../src/shared/dom";
 
 // Tag builders are installed on globalThis by importing ../../src/index.
 declare const div: ExpandedElementBuilder<"div">;
@@ -56,7 +55,7 @@ function buildReactiveTree(): { root: object; html: string } {
     ul(list(() => items, (item) => li({ "data-key": item }, item))),
     when(() => active, button("toggle")).else(p("hidden")),
   );
-  const container = createElement("div") as unknown as ExpandedElement<"div">;
+  const container = document.createElement("div") as unknown as ExpandedElement<"div">;
   const root = factory(container, 0) as unknown as object;
   const html = renderToString(root as Parameters<typeof renderToString>[0]);
   // Touch `active` so the closures genuinely capture mutable state.
@@ -80,7 +79,6 @@ describe("SSR renders are not retained by global registries", () => {
   itGc("a reactive tree is collectible after render + drop (no strong refs)", async () => {
     let built: { root: object; html: string } | null = buildReactiveTree();
     const ref = new WeakRef(built.root);
-    // eslint-disable-next-line no-useless-assignment -- drop strong ref for GC
     built = null;
 
     await collectGarbage();

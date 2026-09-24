@@ -289,7 +289,7 @@ describe('on utility - advanced edge cases', () => {
       element.click();
       expect(listener).toHaveBeenCalledTimes(1);
 
-      expect(() => removeAllListeners(element, 'click')).not.toThrow();
+      expect(() => removeAllListeners(element)).not.toThrow();
     });
   });
 
@@ -353,7 +353,7 @@ describe('on utility - advanced edge cases', () => {
       for (let i = 0; i < 10; i++) {
         mod(element, 0);
         element.click();
-        removeAllListeners(element, 'click');
+        removeAllListeners(element);
       }
       
       expect(listener).toHaveBeenCalledTimes(10);
@@ -408,7 +408,7 @@ describe('on utility - advanced edge cases', () => {
       expect(sharedListener).toHaveBeenCalledTimes(3);
       
       // Remove from one element
-      removeAllListeners(element, 'click');
+      removeAllListeners(element);
       
       element.click();
       element2.click();
@@ -447,7 +447,7 @@ describe('on utility - advanced edge cases', () => {
       
       // Should still be able to remove listener without error
       expect(() => {
-        removeAllListeners(element, 'click');
+        removeAllListeners(element);
       }).not.toThrow();
       
       // Re-add to DOM and verify listener was removed

@@ -72,52 +72,18 @@ function detachListener(
 }
 
 /**
- * Remove all listeners of a specific type from an element.
+ * Detaches every listener on()/nuclo attached to `element` (called when nuclo
+ * removes the element).
  */
-export function removeAllListeners(
-  element: HTMLElement,
-  type?: string
-): void {
+export function removeAllListeners(element: HTMLElement): void {
   const tracked = elementListeners.get(element);
   if (!tracked) return;
-
-  if (type === undefined) {
-    if (Array.isArray(tracked)) {
-      for (let i = 0; i < tracked.length; i++) {
-        detachListener(element, tracked[i]);
-      }
-    } else {
-      detachListener(element, tracked);
-    }
-    elementListeners.delete(element);
-    return;
-  }
-
-  if (!Array.isArray(tracked)) {
-    if (tracked.type === type) {
-      detachListener(element, tracked);
-      elementListeners.delete(element);
-    }
-    return;
-  }
-
-  // Detach matching listeners, compacting survivors back into the same array.
-  let write = 0;
-  for (let read = 0; read < tracked.length; read++) {
-    const info = tracked[read];
-    if (info.type === type) {
-      detachListener(element, info);
-    } else {
-      tracked[write++] = info;
-    }
-  }
-  if (write === 0) {
-    elementListeners.delete(element);
-  } else if (write === 1) {
-    elementListeners.set(element, tracked[0]);
+  if (Array.isArray(tracked)) {
+    for (let i = 0; i < tracked.length; i++) detachListener(element, tracked[i]);
   } else {
-    tracked.length = write;
+    detachListener(element, tracked);
   }
+  elementListeners.delete(element);
 }
 
 function noopEventModifier(_parent: ExpandedElement<ElementTagName>): void {}

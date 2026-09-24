@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { applyNodeModifier } from "../../src/element/modifiers";
 import { runSerializing } from "../../src/hydration";
+import { notifyReactiveElements } from "../../src/update/reactive-attributes";
 
 describe("modifierProcessor edge cases", () => {
   let parent: HTMLDivElement;
@@ -70,7 +71,7 @@ describe("modifierProcessor edge cases", () => {
       // Now trigger update when it should throw
       shouldThrow = true;
       const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-      parent.dispatchEvent(new Event("update"));
+      notifyReactiveElements();
       // Error is caught and logged
       expect(consoleErrorSpy).toHaveBeenCalled();
       consoleErrorSpy.mockRestore();

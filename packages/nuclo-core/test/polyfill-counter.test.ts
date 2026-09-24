@@ -3,6 +3,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../src/polyfill';
 import '../src';
+import { renderToString } from '../src/ssr/render-to-string';
 
 describe('Simple counter example in Node.js with polyfills', () => {
   beforeEach(() => {
@@ -36,9 +37,8 @@ describe('Simple counter example in Node.js with polyfills', () => {
     // Verify children were created
     expect(divEl.children.length).toBe(4); // h1, div, button, button
 
-    // Find elements by tag
-    const h1El = divEl.querySelector('h1');
-    expect(h1El).toBeTruthy();
+    // The first child is the heading
+    const h1El = divEl.children[0];
     expect(h1El.tagName.toLowerCase()).toBe('h1');
 
     // Count button children directly
@@ -108,10 +108,8 @@ describe('Simple counter example in Node.js with polyfills', () => {
       button('Click')
     );
 
-    render(element);
+    const html = renderToString(element);
 
-    const html = document.body.innerHTML;
-    
     expect(html).toContain('<div');
     expect(html).toContain('id="test"');
     expect(html).toContain('class="container"');
@@ -120,30 +118,10 @@ describe('Simple counter example in Node.js with polyfills', () => {
     expect(html).toContain('</div>');
   });
 
-  it('should support querySelector by id, class, and tag', () => {
-    const app = div(
-      div({ id: 'unique-id' }, 'By ID'),
-      div({ className: 'my-class' }, 'By Class'),
-      span('By Tag')
-    );
-
-    render(app);
-
+  it('returns no query results: SSR output is serialized, not queried', () => {
+    render(div(div({ id: 'unique-id' }, 'By ID'), span('By Tag')));
     const root = document.body.children[0];
-    
-    // Query by ID
-    const byId = root.querySelector('#unique-id');
-    expect(byId).toBeTruthy();
-    expect(byId.id).toBe('unique-id');
-    
-    // Query by class
-    const byClass = root.querySelector('.my-class');
-    expect(byClass).toBeTruthy();
-    expect(byClass.className).toBe('my-class');
-    
-    // Query by tag
-    const byTag = root.querySelector('span');
-    expect(byTag).toBeTruthy();
-    expect(byTag.tagName.toLowerCase()).toBe('span');
+    expect(root.querySelector('#unique-id')).toBeNull();
+    expect(Array.from(root.querySelectorAll('span'))).toEqual([]);
   });
 });

@@ -3,11 +3,9 @@
  * that was passed to a tag builder (children, attributes, text, on(), ...).
  */
 import { applyNodeModifier, type NodeModifier } from "./modifiers";
-import { createElement, createElementNS, SVG_NAMESPACE } from "../shared/dom";
+import { SVG_NAMESPACE } from "../shared/dom";
 import { claimElement, cleanupUnclaimedChildren } from "../hydration";
 import { acquireMetadataOnlyFactory, isMetadataOnlyFactoryMode, setFactoryMeta } from "./factory-meta";
-
-export type { NodeModifier };
 
 /**
  * Applies modifiers to an element, appending newly produced Nodes while avoiding
@@ -22,8 +20,6 @@ export function applyModifiers<TTagName extends ElementTagName>(
   modifiers: ReadonlyArray<NodeModifier<TTagName>>,
   startIndex = 0
 ): void {
-  if (!modifiers || modifiers.length === 0) return;
-
   let localIndex = startIndex;
   const parentNode = element as unknown as Node & ParentNode;
 
@@ -44,98 +40,30 @@ export function applyModifiers<TTagName extends ElementTagName>(
 }
 
 /**
- * Creates an HTML element with the specified tag name and applies modifiers to it.
+ * Creates an element factory for `tagName` with the given modifiers. SVG
+ * factories create namespaced elements and stay opaque to the list() template
+ * engine (no factory metadata outside metadata-only mode), so rows containing
+ * SVG always build through the normal path.
  */
-export function createHtmlElementWithModifiers<TTagName extends ElementTagName>(
-  tagName: TTagName,
-  modifiers: ReadonlyArray<NodeModifier<TTagName>>
-): ExpandedElement<TTagName> {
-  const el = createElement(tagName) as ExpandedElement<TTagName>;
-  if (!el) {
-    throw new Error(`Failed to create element: ${tagName}`);
-  }
-  applyModifiers(el, modifiers, 0);
-  return el;
-}
-
-/**
- * Creates an SVG element with the specified tag name and applies modifiers to it.
- */
-export function createSvgElementWithModifiers<TTagName extends keyof SVGElementTagNameMap>(
-  tagName: TTagName,
-  modifiers: ReadonlyArray<unknown>
-): SVGElementTagNameMap[TTagName] {
-  const el = createElementNS(SVG_NAMESPACE, tagName);
-  if (!el) {
-    throw new Error(`Failed to create SVG element: ${tagName}`);
-  }
-  applyModifiers(el as unknown as ExpandedElement<ElementTagName>, modifiers as ReadonlyArray<NodeModifier<ElementTagName>>, 0);
-  return el as unknown as SVGElementTagNameMap[TTagName];
-}
-
-
-/**
- * Creates an HTML element factory with the given modifiers.
- */
-function createHtmlElementFactory<TTagName extends ElementTagName>(
-  tagName: TTagName,
-  modifiers: ReadonlyArray<NodeModifier<TTagName>>
-): DetachedExpandedElementFactory<TTagName> {
+function createElementFactory(tagName: string, modifiers: ReadonlyArray<unknown>, svg: boolean): unknown {
   if (isMetadataOnlyFactoryMode()) {
-    const factory = acquireMetadataOnlyFactory() as unknown as DetachedExpandedElementFactory<TTagName>;
-    setFactoryMeta(factory, tagName, modifiers);
-    return factory;
+    const stub = acquireMetadataOnlyFactory();
+    setFactoryMeta(stub, tagName, modifiers);
+    return stub;
   }
 
-  const factory = function(_parent?: ExpandedElement<TTagName>, index = 0): ExpandedElement<TTagName> {
-    const parentNode = _parent as unknown as Node | undefined;
-    const claimed = parentNode ? claimElement(parentNode, tagName) as ExpandedElement<TTagName> | null : null;
-    const el = claimed ?? createElement(tagName) as ExpandedElement<TTagName>;
-    if (!el) {
-      throw new Error(`Failed to create element: ${tagName}`);
-    }
-    const elNode = el as unknown as Node;
-    const lastOriginalChild = claimed ? elNode.lastChild : null;
-    applyModifiers(el, modifiers as ReadonlyArray<NodeModifier<TTagName>>, index);
-    if (claimed) {
-      cleanupUnclaimedChildren(elNode, lastOriginalChild);
-    }
+  const factory = function(parent?: Node, index = 0): Element {
+    const claimed = parent ? claimElement(parent, tagName) : null;
+    const el = claimed ?? (svg ? document.createElementNS(SVG_NAMESPACE, tagName) : document.createElement(tagName));
+    const lastOriginalChild = claimed ? el.lastChild : null;
+    applyModifiers(el as unknown as ExpandedElement, modifiers as ReadonlyArray<NodeModifier>, index);
+    if (claimed) cleanupUnclaimedChildren(el, lastOriginalChild);
     return el;
-  } as DetachedExpandedElementFactory<TTagName>;
+  };
   // Lets the list() template engine see the factory's structure (internal
   // symbols — invisible to the public API).
-  setFactoryMeta(factory, tagName, modifiers);
+  if (!svg) setFactoryMeta(factory, tagName, modifiers);
   return factory;
-}
-
-/**
- * Creates an SVG element factory with the given modifiers.
- */
-function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
-  tagName: TTagName,
-  modifiers: ReadonlyArray<unknown>
-): DetachedSVGElementFactory<TTagName> {
-  if (isMetadataOnlyFactoryMode()) {
-    const factory = acquireMetadataOnlyFactory() as unknown as DetachedSVGElementFactory<TTagName>;
-    setFactoryMeta(factory, tagName, modifiers);
-    return factory;
-  }
-
-  return function(_parent?, index = 0): SVGElementTagNameMap[TTagName] {
-    const parentNode = _parent as unknown as Node | undefined;
-    const claimed = parentNode ? claimElement(parentNode, tagName) as ExpandedElement | null : null;
-    const el = claimed ?? createElementNS(SVG_NAMESPACE, tagName);
-    if (!el) {
-      throw new Error(`Failed to create SVG element: ${tagName}`);
-    }
-    const elNode = el as unknown as Node;
-    const lastOriginalChild = claimed ? elNode.lastChild : null;
-    applyModifiers(el as unknown as ExpandedElement<ElementTagName>, modifiers as ReadonlyArray<NodeModifier<ElementTagName>>, index);
-    if (claimed) {
-      cleanupUnclaimedChildren(elNode, lastOriginalChild);
-    }
-    return el as unknown as SVGElementTagNameMap[TTagName];
-  } as DetachedSVGElementFactory<TTagName>;
 }
 
 /**
@@ -144,7 +72,7 @@ function createSvgElementFactory<TTagName extends keyof SVGElementTagNameMap>(
 export function createHtmlTagBuilder<TTagName extends ElementTagName>(
   tagName: TTagName,
 ): ExpandedElementBuilder<TTagName> {
-  return (...mods) => createHtmlElementFactory(tagName, mods);
+  return (...mods) => createElementFactory(tagName, mods, false) as DetachedExpandedElementFactory<TTagName>;
 }
 
 /**
@@ -153,5 +81,5 @@ export function createHtmlTagBuilder<TTagName extends ElementTagName>(
 export function createSvgTagBuilder<TTagName extends keyof SVGElementTagNameMap>(
   tagName: TTagName,
 ): ExpandedSVGElementBuilder<TTagName> {
-  return (...mods) => createSvgElementFactory(tagName, mods);
+  return (...mods) => createElementFactory(tagName, mods, true) as DetachedSVGElementFactory<TTagName>;
 }

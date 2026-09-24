@@ -3,7 +3,6 @@ import { describe, it, expect } from 'vitest';
 import {
   HTML_TAGS as htmlTags,
   SVG_TAGS as svgTags,
-  SELF_CLOSING_TAGS as selfClosingTags,
 } from '../../src/element/tags';
 
 describe('tags arrays', () => {
@@ -145,69 +144,9 @@ describe('tags arrays', () => {
     });
   });
 
-  describe('selfClosingTags', () => {
-    it('should be an array of self-closing HTML tag names', () => {
-      expect(Array.isArray(selfClosingTags)).toBe(true);
-      expect(selfClosingTags.length).toBeGreaterThan(0);
-    });
-
-    it('should contain all void elements according to HTML specification', () => {
-      const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr'];
-      voidElements.forEach(tag => {
-        expect(selfClosingTags).toContain(tag);
-      });
-    });
-
-    it('should be a subset of HTML htmlTags', () => {
-      selfClosingTags.forEach(tag => {
-        expect(htmlTags).toContain(tag);
-      });
-    });
-
-    it('should not contain duplicates', () => {
-      const uniqueTags = [...new Set(selfClosingTags)];
-      expect(selfClosingTags).toHaveLength(uniqueTags.length);
-    });
-
-    it('should contain only lowercase strings', () => {
-      selfClosingTags.forEach(tag => {
-        expect(typeof tag).toBe('string');
-        expect(tag).toBe(tag.toLowerCase());
-      });
-    });
-
-    it('should not contain container elements', () => {
-      const containerElements = ['div', 'span', 'p', 'body', 'html', 'head', 'title'];
-      containerElements.forEach(tag => {
-        expect(selfClosingTags).not.toContain(tag);
-      });
-    });
-
-    it('should be much smaller than the full htmlTags array', () => {
-      expect(selfClosingTags.length).toBeLessThan(htmlTags.length / 2);
-    });
-  });
-
-  describe('array relationships', () => {
-    it('should have no overlap between selfClosingTags and non-self-closing htmlTags', () => {
-      const nonSelfClosingTags = htmlTags.filter(
-        tag => !selfClosingTags.includes(tag as (typeof selfClosingTags)[number]),
-      );
-      const overlap = selfClosingTags.filter(tag => nonSelfClosingTags.includes(tag));
-      expect(overlap).toHaveLength(0);
-    });
-
-    it('should have selfClosingTags + non-self-closing htmlTags equal total HTML htmlTags', () => {
-      const nonSelfClosingTags = htmlTags.filter(
-        tag => !selfClosingTags.includes(tag as (typeof selfClosingTags)[number]),
-      );
-      expect(selfClosingTags.length + nonSelfClosingTags.length).toBe(htmlTags.length);
-    });
-  });
-
   describe('tag validation', () => {
     it('should not contain any empty strings', () => {
-      [...htmlTags, ...svgTags, ...selfClosingTags].forEach(tag => {
+      [...htmlTags, ...svgTags].forEach(tag => {
         expect(tag.trim()).toBe(tag);
         expect(tag.length).toBeGreaterThan(0);
       });
@@ -223,10 +162,6 @@ describe('tags arrays', () => {
 
       svgTags.forEach(tag => {
         expect(validSvgTagPattern.test(tag)).toBe(true);
-      });
-
-      selfClosingTags.forEach(tag => {
-        expect(validHtmlTagPattern.test(tag)).toBe(true);
       });
     });
   });

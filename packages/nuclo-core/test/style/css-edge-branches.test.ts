@@ -96,3 +96,27 @@ describe("variants() with a dangling default", () => {
     expect(getCssText()).toContain("padding:4px");
   });
 });
+
+describe("themeless default-instance helpers", () => {
+  it("variants() and globalStyle() work without createCss()", async () => {
+    const { variants, globalStyle } = await import("../../src/style");
+    const button = variants({
+      base: { p: 4 },
+      variants: { tone: { loud: { weight: 700 } } },
+    });
+    expect(button({ tone: "loud" }).className).toBeTruthy();
+    globalStyle("body", { m: 0, bg: "white", raw: { "scroll-behavior": "smooth" }, hover: { color: "red" } });
+    const text = getCssText();
+    expect(text).toContain("font-weight:700");
+    // Flat top-level declarations only: nested blocks are ignored by globalStyle().
+    expect(text).toContain("body{margin:0;background:white;scroll-behavior:smooth}");
+  });
+
+  it("keyframes() serializes aliases, composites and raw declarations per stop", async () => {
+    const { keyframes } = await import("../../src/style");
+    const name = keyframes({ from: { opacity: 0, px: 2, row: true }, to: { opacity: 1, raw: { "animation-timing-function": "ease-in" } } });
+    expect(getCssText()).toContain(
+      `@keyframes ${name}{from{opacity:0;padding-left:2px;padding-right:2px;display:flex;flex-direction:row}to{opacity:1;animation-timing-function:ease-in}}`,
+    );
+  });
+});

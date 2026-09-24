@@ -1,16 +1,12 @@
 /// <reference path="../../types/index.d.ts" />
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { applyModifiers } from '../../src/element/factory';
-import { createHtmlConditionalElement } from '../helpers/conditionalTestHelpers';
-import { updateConditionalElements } from '../../src/update/conditional';
-import { insertNodesBefore, appendChildren, createMarkerPair } from '../../src/shared/dom';
+import { insertNodesBefore, createMarkerPair } from '../../src/shared/dom';
 
 /**
  * Synthetic / contrived tests to exercise difficult defensive branches:
  * 1. applyModifiers branch where produced node already has the correct parent (skips append)
- * 2. conditionalUpdater consecutive error paths (multiple failing replacements)
- * 3. DOM utils failure paths (safeAppendChild / safeInsertBefore) via appendChildren + insertNodesBefore
- * 4. insertNodesBefore failure (parent.insertBefore throwing)
+ * 2. insertNodesBefore failure (parent.insertBefore throwing)
  *
  * NOTE: These tests intentionally monkey‑patch DOM behaviors to trigger
  * guarded error branches that are unlikely in normal usage.
@@ -52,67 +48,7 @@ describe('synthetic DOM failure / defensive branch coverage', () => {
     });
   });
 
-  describe('conditionalUpdater multiple consecutive replacement failures', () => {
-    it('logs errors on repeated element <-> comment replacement attempts', () => {
-      let visible = false; // start hidden => comment
-      const conditionalNode = createHtmlConditionalElement(
-        'div',
-        () => visible,
-        ['content']
-      ) as unknown as Node;
-
-      // Start with a comment node in DOM
-      expect(conditionalNode.nodeType).toBe(Node.COMMENT_NODE);
-      host.appendChild(conditionalNode);
-
-      // Monkey-patch replaceChild to always throw
-      const originalReplace = host.replaceChild.bind(host);
-      const replaceSpy = vi.fn(() => {
-        throw new Error('synthetic-replace-error');
-      });
-      (host as any).replaceChild = replaceSpy;
-
-      // Attempt comment -> element (should log)
-      visible = true;
-      updateConditionalElements();
-
-      // Attempt element -> comment (still failing; visibility forces second flip)
-      visible = false;
-      updateConditionalElements();
-
-      // Attempt another comment -> element
-      visible = true;
-      updateConditionalElements();
-
-      expect(consoleSpy).toHaveBeenCalled();
-      const messages = consoleSpy.mock.calls.map(c => String(c[0]));
-      // We should have multiple replacement error logs
-      const replacementErrors = messages.filter(m => m.includes('Error replacing conditional node'));
-      expect(replacementErrors.length).toBeGreaterThanOrEqual(2);
-
-      // Node never successfully replaced (still original comment node)
-      expect(host.firstChild?.nodeType).toBe(Node.COMMENT_NODE);
-
-      (host as any).replaceChild = originalReplace;
-    });
-  });
-
   describe('DOM utility failure simulations', () => {
-    it('appendChildren handles parent.appendChild throwing (safeAppendChild failure path)', () => {
-      const throwingParent: any = {
-        childNodes: [] as Node[],
-        appendChild: vi.fn((_n: Node) => {
-          throw new Error('append-failure');
-        }),
-      };
-
-      // Should not throw outward
-      expect(() => appendChildren(throwingParent, 'text1', 'text2')).not.toThrow();
-      expect(throwingParent.appendChild).toHaveBeenCalled();
-      // No children recorded because every append failed
-      expect(throwingParent.childNodes.length).toBe(0);
-    });
-
     it('insertNodesBefore handles parent.insertBefore throwing (safeInsertBefore failure path)', () => {
       const ref = document.createComment('ref');
       host.appendChild(ref);

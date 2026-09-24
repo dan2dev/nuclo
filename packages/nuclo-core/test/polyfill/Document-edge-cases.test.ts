@@ -206,15 +206,6 @@ describe('SSRDocumentFragment – branch edge cases', () => {
 });
 
 describe('NucloDocument.querySelector', () => {
-  it('should find a style element with matching id in head', () => {
-    const doc = new NucloDocument();
-    const style = doc.createElement('style');
-    (style as any).id = 'nuclo-styles';
-    doc.head.appendChild(style as unknown as Node);
-
-    const found = doc.querySelector('#nuclo-styles');
-    expect(found).toBe(style);
-  });
 
   it('should return null when no element matches the id', () => {
     const doc = new NucloDocument();
