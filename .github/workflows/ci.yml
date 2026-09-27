@@ -18,3 +18,33 @@ jobs:
         working-directory: packages/nuclo-core
       - run: bun run build
         working-directory: packages/nuclo-core
+
+  nuclo-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+        working-directory: packages/nuclo-pages
+      - run: npx vitest run
+        working-directory: packages/nuclo-pages
+      - run: bun run build
+        working-directory: packages/nuclo-pages
+
+  nuclo-pages-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+        working-directory: packages/nuclo-core
+      - run: bun run build
+        working-directory: packages/nuclo-pages
+      - run: npx playwright install --with-deps chromium
+        working-directory: examples/pages
+      - run: npx tsc --noEmit
+        working-directory: examples/pages
+      - run: npx playwright test
+        working-directory: examples/pages

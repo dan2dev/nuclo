@@ -88,7 +88,11 @@ function detectPackageManager() {
 function copyTemplate(templateName, targetDir) {
   const srcDir = path.join(templatesDir, templateName);
   fs.mkdirSync(targetDir, { recursive: true });
-  fs.cpSync(srcDir, targetDir, { recursive: true });
+  // Skip installs and builds a local checkout may have inside a template.
+  fs.cpSync(srcDir, targetDir, {
+    recursive: true,
+    filter: (src) => !/(^|[\\/])(node_modules|dist)([\\/]|$)/.test(path.relative(srcDir, src)),
+  });
 
   const gitignorePath = path.join(targetDir, "_gitignore");
   if (fs.existsSync(gitignorePath)) {

@@ -1,0 +1,83 @@
+{
+	"name": "nuclo-pages",
+	"private": false,
+	"version": "0.1.0",
+	"description": "Full-stack meta-framework for Nuclo — file-based routing, SSR with hydration, server functions, API routes and prerendering on Vite.",
+	"license": "MIT",
+	"author": "Danilo Celestino de Castro (https://github.com/dan2dev)",
+	"keywords": [
+		"nuclo",
+		"ssr",
+		"hydration",
+		"router",
+		"server-functions",
+		"vite",
+		"fullstack"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./types/index.d.ts",
+			"import": "./dist/index.mjs"
+		},
+		"./server": {
+			"types": "./types/server.d.ts",
+			"import": "./dist/server.mjs"
+		},
+		"./client": {
+			"types": "./types/client.d.ts",
+			"import": "./dist/client.mjs"
+		},
+		"./vite": {
+			"types": "./types/vite.d.ts",
+			"import": "./dist/vite.mjs"
+		},
+		"./node": {
+			"types": "./types/node.d.ts",
+			"import": "./dist/node.mjs"
+		},
+		"./bun": {
+			"types": "./types/bun.d.ts",
+			"import": "./dist/bun.mjs"
+		},
+		"./types": {
+			"types": "./types/globals.d.ts"
+		}
+	},
+	"files": [
+		"dist",
+		"types"
+	],
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"clean": "rm -rf dist",
+		"typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+		"test": "bun run typecheck && vitest run"
+	},
+	"dependencies": {
+		"devalue": "^5.9.0"
+	},
+	"peerDependencies": {
+		"nuclo": ">=0.2.37",
+		"vite": "^8.2.0"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.2",
+		"jsdom": "30.0.1",
+		"nuclo": "workspace:*",
+		"tsdown": "^0.23.0",
+		"typescript": "^7.0.2",
+		"vite": "^8.2.2",
+		"vitest": "5.0.0"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/dan2dev/nuclo.git",
+		"directory": "packages/nuclo-pages"
+	},
+	"bugs": {
+		"url": "https://github.com/dan2dev/nuclo/issues"
+	},
+	"homepage": "https://nuclo.dev/"
+}

@@ -1,0 +1,9 @@
+{
+  // Used with ADAPTER=cloudflare. Static assets are wired up by @cloudflare/vite-plugin.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nuclo-pages-example",
+  "main": "./src/worker.ts",
+  "compatibility_date": "2026-09-01",
+  // nuclo-pages uses AsyncLocalStorage for getRequestEvent().
+  "compatibility_flags": ["nodejs_als"]
+}
