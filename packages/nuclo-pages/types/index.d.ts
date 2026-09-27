@@ -24,12 +24,12 @@ export type RouteId = Extract<keyof RouteMap, string>;
 export type RouteParams<R extends RouteId = RouteId> = RouteMap[R];
 
 // ---------------------------------------------------------------------------
-// Pages and layouts
+// Pages, layouts and error views
 // ---------------------------------------------------------------------------
 
 /**
- * What a page's `load()` receives. It runs on the server for the first request
- * and in the browser on client navigation, where `$server()` calls become RPC.
+ * What a page's `load()` receives. Name the route to type its params:
+ * `load: ({ params }: LoadEvent<"/blog/[slug]">) => …`.
  */
 export interface LoadEvent<R extends RouteId = RouteId> {
   params: RouteParams<R>;
@@ -41,44 +41,95 @@ export interface LayoutLoadEvent {
   params: Record<string, string>;
 }
 
-type AnyLoad = (event: never) => unknown;
-type DataOf<T> = T extends AnyLoad ? Awaited<ReturnType<T>> : undefined;
-// Infer the whole event: matching `(event: { params: infer P })` would fail, since
-// the real event (e.g. LoadEvent, with `url`) isn't assignable from `{ params }` alone.
-type ParamsOf<T> = T extends RouteId
-  ? RouteParams<T>
-  : T extends (event: infer E) => unknown
-    ? E extends { params: infer P }
-      ? P
-      : Record<string, string>
-    : Record<string, string>;
-
-/** Props of a page view: `PageProps<typeof load>`, or `PageProps<"/route/id">` without a load. */
-export interface PageProps<T extends RouteId | AnyLoad = RouteId> {
-  data: DataOf<T>;
-  params: ParamsOf<T>;
+/** The load event of a page that doesn't name its route. */
+interface AnyLoadEvent {
+  params: Record<string, string>;
   url: URL;
 }
 
-/** Props of a layout view. `children` is the outlet: place it exactly once, e.g. `main(children)`. */
-export interface LayoutProps<T extends AnyLoad | undefined = undefined> {
-  data: DataOf<T>;
+type ActionMap = Record<string, (...args: any[]) => unknown>;
+
+type ParamsOf<E> = E extends { params: infer P } ? P : Record<string, string>;
+
+/** Actions as a view calls them: async, and the page's data reloads after each one. */
+export type BoundActions<A> = {
+  [K in keyof A]: A[K] extends (...args: infer P) => infer R ? (...args: P) => Promise<Awaited<R>> : never;
+};
+
+/** What a page's `render` receives. */
+export interface PageProps<D = undefined, P = Record<string, string>, A = {}> {
+  data: D;
+  params: P;
+  url: URL;
+  actions: BoundActions<A>;
+}
+
+/** What a layout's `render` receives. `children` is the outlet: place it exactly once, e.g. `main(children)`. */
+export interface LayoutProps<D = undefined> {
+  data: D;
   params: Record<string, string>;
   children: ListModifier;
 }
 
-/** Props of `head()`, exported by pages and layouts. */
-export interface HeadProps<T extends RouteId | AnyLoad = RouteId> {
-  data: DataOf<T>;
-  params: ParamsOf<T>;
+/** What `head` receives. */
+export interface HeadProps<D = undefined, P = Record<string, string>> {
+  data: D;
+  params: P;
   url: URL;
 }
 
-/** Props of the `_error` view, which also renders 404s. */
+/** What the `_error` view receives (it also renders 404s). */
 export interface ErrorProps {
   status: number;
   message: string;
 }
+
+export interface PageDefinition<D = undefined, E = AnyLoadEvent, A = {}> {
+  /** Render to HTML at build time. */
+  prerender?: boolean;
+  /**
+   * Loads the page's data. Server only: it runs for the first request and, over
+   * RPC, on client navigation and after actions — so it can use the database directly.
+   */
+  load?: (event: E) => D | Promise<D>;
+  /** The document head. Runs on the server and in the browser. */
+  head?: (props: HeadProps<D, ParamsOf<E>>) => Head | undefined;
+  /**
+   * Server-only functions the view calls as `actions.name(...args)`. The page's
+   * data reloads afterwards, and what changed re-renders.
+   */
+  actions?: A;
+  /** The view. Runs on the server and in the browser. */
+  render: (props: PageProps<D, ParamsOf<E>, A>) => NodeModFn<any>;
+}
+
+export interface LayoutDefinition<D = undefined> {
+  /** Prerender every page below this layout (a page can opt out with `prerender: false`). */
+  prerender?: boolean;
+  /** Server only, like a page's; it re-runs only when the params its folder consumes change. */
+  load?: (event: LayoutLoadEvent) => D | Promise<D>;
+  head?: (props: HeadProps<D>) => Head | undefined;
+  render: (props: LayoutProps<D>) => NodeModFn<any>;
+}
+
+export interface ErrorDefinition {
+  head?: (props: ErrorProps & { url: URL }) => Head | undefined;
+  render: (props: ErrorProps) => NodeModFn<any>;
+}
+
+/**
+ * Defines a page: `export default Page({ load, head, actions, render })` in a
+ * `src/pages` file. `render` gets `data` typed from `load` and `actions` as async calls.
+ */
+export declare function Page<D = undefined, E = AnyLoadEvent, A extends ActionMap = {}>(
+  definition: PageDefinition<D, E, A>,
+): PageDefinition<D, E, A>;
+
+/** Defines a layout: `export default Layout({ render: ({ children }) => main(children) })` in `_layout.ts`. */
+export declare function Layout<D = undefined>(definition: LayoutDefinition<D>): LayoutDefinition<D>;
+
+/** Defines the error view: `export default ErrorPage({ render: ({ status, message }) => … })` in `_error.ts`. */
+export declare function ErrorPage(definition: ErrorDefinition): ErrorDefinition;
 
 /** Document head for a page, merged root layout → page (later wins). */
 export interface Head {

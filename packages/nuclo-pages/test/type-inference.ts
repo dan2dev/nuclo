@@ -16,7 +16,7 @@ import type {
   RouteId,
   RouteParams,
 } from "nuclo-pages";
-import { error, href, isActive, isHttpError, isRedirect, navigate, notFound, redirect, route } from "nuclo-pages";
+import { ErrorPage, Layout, Page, error, href, isActive, isHttpError, isRedirect, navigate, notFound, redirect, route } from "nuclo-pages";
 import { getRequestEvent } from "nuclo-pages/server";
 import handler from "virtual:nuclo-pages/handler";
 
@@ -45,32 +45,79 @@ assert<Equal<RouteParams<"/orgs/[org]/projects/[id]">, { org: string; id: string
 // @ts-expect-error unknown route id
 type Unknown = LoadEvent<"/nope">;
 
-// load → data → view, fully inferred.
-const load = async ({ params, url }: LoadEvent<"/blog/[slug]">) => ({ title: params.slug, at: new Date(), q: url.searchParams.get("q") });
-type Props = PageProps<typeof load>;
-assert<Equal<Props["data"], { title: string; at: Date; q: string | null }>>(true);
-assert<Equal<Props["params"], { slug: string }>>(true);
-assert<Equal<Equal<Props["params"], { id: string }>, false>>(true);
-assert<Equal<Props["url"], URL>>(true);
-assert<Equal<HeadProps<typeof load>["data"], Props["data"]>>(true);
+// A page: data flows from load into head and render; actions become async calls.
+type Todo = { id: number; text: string; done: boolean };
+Page({
+  prerender: true,
+  load: async (): Promise<Todo[]> => [],
+  head: ({ data }) => ({ title: `${data.length} todos` }),
+  actions: {
+    add: async (text: string) => ({ id: 2, text }),
+    clear: () => {},
+  },
+  render: ({ data, actions, params, url }) => {
+    assert<Equal<typeof data, Todo[]>>(true);
+    assert<Equal<typeof actions.add, (text: string) => Promise<{ id: number; text: string }>>>(true);
+    assert<Equal<typeof actions.clear, () => Promise<void>>>(true);
+    assert<Equal<typeof params, Record<string, string>>>(true);
+    assert<Equal<typeof url, URL>>(true);
+    // @ts-expect-error unknown action
+    void actions.remove();
+    // @ts-expect-error wrong argument type
+    void actions.add(1);
+    return section(h1(String(data.length)), button({ onClick: () => actions.add("x") }, "Add"));
+  },
+});
 
-// Pages without a load name their route instead.
-assert<Equal<PageProps<"/docs/[...path]">["params"], { path: string }>>(true);
-assert<Equal<PageProps<"/docs/[...path]">["data"], undefined>>(true);
+// Naming the route in load's event types the params everywhere.
+Page({
+  load: ({ params }: LoadEvent<"/blog/[slug]">) => ({ title: params.slug }),
+  head: ({ data, params }) => ({ title: `${data.title} ${params.slug}` }),
+  render: ({ data, params }) => {
+    assert<Equal<typeof params, { slug: string }>>(true);
+    assert<Equal<Equal<typeof params, { id: string }>, false>>(true);
+    return article(h1(data.title));
+  },
+});
+
+// Without load, data is undefined; without actions, there are none.
+Page({
+  render: ({ data, actions }) => {
+    assert<Equal<typeof data, undefined>>(true);
+    assert<Equal<typeof actions, {}>>(true);
+    return div();
+  },
+});
+// @ts-expect-error render is required
+Page({ load: () => 1 });
+// @ts-expect-error render returns an element
+Page({ render: () => "text" });
 
 // Layouts: data from their own load, children is the outlet.
-const layoutLoad = () => ({ user: "ana" });
-const Layout = ({ data, children }: LayoutProps<typeof layoutLoad>) => div(span(data.user), main(children));
-const _layoutView: (props: LayoutProps<typeof layoutLoad>) => unknown = Layout;
+Layout({
+  load: ({ params }) => ({ user: "ana", org: params.org }),
+  render: ({ data, children }) => {
+    assert<Equal<typeof data, { user: string; org: string }>>(true);
+    return div(span(data.user), main(children));
+  },
+});
+// @ts-expect-error layouts have no actions
+Layout({ actions: {}, render: ({ children }) => div(children) });
 assert<Equal<LayoutProps["data"], undefined>>(true);
 
-// Views are nuclo elements.
-const Post = ({ data }: Props) => article(h1(data.title));
-const _page: (props: Props) => NodeModFn<"article"> = Post;
+ErrorPage({
+  head: ({ status, url }) => ({ title: `${status} ${url.pathname}` }),
+  render: ({ status, message }: ErrorProps) => h1(`${status} ${message}`),
+});
 
-const ErrorView = ({ status, message }: ErrorProps) => h1(`${status} ${message}`);
+// Views can be written apart from their definition.
+const TodoList = ({ data, actions }: PageProps<Todo[], Record<string, string>, { clear: () => void }>) =>
+  ul(...data.map((todo) => li(todo.text)), button({ onClick: () => actions.clear() }, "Clear"));
+const _view: (props: PageProps<Todo[], Record<string, string>, { clear: () => void }>) => NodeModFn<"ul"> = TodoList;
+const _layoutView = ({ children }: LayoutProps) => main(children);
 const _head: Head = { title: "x", meta: { description: "d", "og:title": "t" }, link: [{ rel: "canonical", href: "/" }] };
-void [ErrorView, _layoutView, _page, _head];
+const _headProps = ({ data }: HeadProps<Todo[]>) => ({ title: String(data.length) });
+void [_view, _layoutView, _head, _headProps];
 
 // href is typed by route.
 href("/");

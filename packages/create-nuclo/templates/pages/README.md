@@ -1,6 +1,6 @@
 # Nuclo Pages app
 
-A full-stack [Nuclo](https://nuclo.dev) app: file-based routing, server rendering with hydration, and server functions.
+A full-stack [Nuclo](https://nuclo.dev) app: file-based routing, server rendering with hydration, and server-side data and actions.
 
 ```bash
 npm install
@@ -13,16 +13,19 @@ npm run dev
 src/app.html            the HTML shell (<!--nuclo:head--> and <!--nuclo:body-->)
 src/pages/_layout.ts    wraps every page; stays mounted while you navigate
 src/pages/_error.ts     404s and errors thrown by load()
-src/pages/index.ts      /        (load + a server function)
+src/pages/index.ts      /        (load + an action)
 src/pages/about.ts      /about   (prerendered at build time)
 src/pages/api/hello.ts  /api/hello (an API route)
-src/server/counter.ts   $server() functions
+src/server/counter.ts   server-only state
 ```
 
 - `src/pages/blog/[slug].ts` → `/blog/:slug`, `src/pages/docs/[...path].ts` → catch-all,
   `src/pages/(group)/x.ts` → `/x`. Files and folders starting with `_` are private.
-- A page exports a view (`default`), and optionally `load`, `head` and `prerender`.
-- `src/routes.gen.d.ts` is generated: it types route ids for `href()`, `LoadEvent` and `PageProps`.
+- A page is `export default Page({ load, head, actions, render, prerender })`; only `render` is required.
+  `load` and `actions` run on the server only. After an action, `load` runs again and the page
+  re-renders. Layouts use `Layout({ load, head, render })`, error views `ErrorPage({ head, render })`.
+- To call the server from anywhere else, wrap a function in `$server()`: `export const now = $server(async () => Date.now())`.
+- `src/routes.gen.d.ts` is generated: it types route ids for `href()` and `LoadEvent`.
 
 ## Scripts
 

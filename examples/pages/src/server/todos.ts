@@ -7,8 +7,8 @@ export interface Todo {
   done: boolean;
 }
 
-// Stored in todos.db, in the directory the server runs from. Set up in a single
-// declaration so the browser build drops it along with the node:sqlite import.
+// Stored in todos.db, in the directory the server runs from. Only page loads and
+// actions import this module, so it never reaches the browser.
 const db = (() => {
   const db = new DatabaseSync("todos.db");
   // A new file gets the table and the demo todos.
@@ -24,18 +24,21 @@ const db = (() => {
 // SQLite has no booleans: done is stored as 0 or 1.
 const toTodo = ({ id, text, done }: Record<string, unknown>) => ({ id, text, done: done === 1 }) as Todo;
 
-export const listTodos = $server(async () => db.prepare("SELECT * FROM todos ORDER BY id").all().map(toTodo));
+export const listTodos = () => db.prepare("SELECT * FROM todos ORDER BY id").all().map(toTodo);
 
-export const addTodo = $server(async (text: string) => {
+export const addTodo = (text: string) => {
   const trimmed = text.trim();
   if (!trimmed) error(400, "A todo needs some text");
   return toTodo(db.prepare("INSERT INTO todos (text) VALUES (?) RETURNING *").get(trimmed)!);
-});
+};
 
-export const toggleTodo = $server(async (id: number) =>
-  toTodo(db.prepare("UPDATE todos SET done = NOT done WHERE id = ? RETURNING *").get(id) ?? notFound()),
-);
+export const toggleTodo = (id: number) =>
+  toTodo(db.prepare("UPDATE todos SET done = NOT done WHERE id = ? RETURNING *").get(id) ?? notFound());
 
-export const removeTodo = $server(async (id: number) => {
+export const removeTodo = (id: number) => {
   db.prepare("DELETE FROM todos WHERE id = ?").run(id);
-});
+};
+
+export const clearCompleted = () => {
+  db.prepare("DELETE FROM todos WHERE done = 1").run();
+};

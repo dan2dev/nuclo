@@ -8,7 +8,7 @@ export const METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTION
 export interface ScannedRoute extends RouteDef {
   /** Page or API file, absolute. */
   file: string;
-  /** `export const prerender = true` on the page, or inherited from its nearest layout. */
+  /** `prerender: true` in the page's definition, or inherited from its nearest layout's. */
   prerender: boolean;
 }
 
@@ -48,19 +48,26 @@ export function scanPages(
     const name = parts.pop()!.replace(SOURCE, "");
     const dirPath = parts.join("/");
     const segments = parts.filter((part) => !GROUP.test(part));
+    // Files that don't parse (null) are let through: Vite reports the syntax error when it loads them.
+    const info = routeFileInfo(read(join(dir, file)), file);
     if (name === "_layout") {
+      if (info && info.definition !== "Layout") throw new ScanError(file, "a layout is export default Layout({ render: ({ children }) => … })");
       validate(segments, file);
-      layouts.set(dirPath, { module: add(file), prerender: exportsOf(read(join(dir, file)), file).prerender });
+      layouts.set(dirPath, { module: add(file), prerender: info?.prerender });
     } else if (name === "_error") {
+      if (info && info.definition !== "ErrorPage") throw new ScanError(file, "an error view is export default ErrorPage({ render: ({ status, message }) => … })");
       errors.set(dirPath, add(file));
     } else {
-      const info = exportsOf(read(join(dir, file)), file);
-      if (!info.default && !info.methods.length) {
-        throw new ScanError(file, "a page needs a default export (its view); an API route needs GET/POST/… exports");
+      const api = !!info && info.definition === null && info.methods.length > 0;
+      if (info && !api && info.definition !== "Page") {
+        throw new ScanError(
+          file,
+          info.definition === null ? "a page is export default Page({ render: … }); an API route exports GET/POST/… handlers" : "a page is export default Page({ render: … })",
+        );
       }
       const path = [...segments, ...(name === "index" || GROUP.test(name) ? [] : [name])];
       validate(path, file);
-      pages.push({ file, dir: dirPath, path, api: !info.default, prerender: info.prerender });
+      pages.push({ file, dir: dirPath, path, api, prerender: info?.prerender });
     }
   }
 
@@ -156,33 +163,61 @@ function compareRoutes(a: RouteDef, b: RouteDef): number {
 // oxc's ESTree nodes, loosely typed: only a handful of fields are read.
 type Node = any;
 
-/** What a route file exports: a default view, HTTP method handlers, a literal `prerender` flag. */
-export function exportsOf(code: string, file: string): { default: boolean; methods: string[]; prerender?: boolean } {
+const HELPERS = new Set(["Page", "Layout", "ErrorPage"]);
+
+export interface RouteFileInfo {
+  /** Which helper defines the default export (`export default Page({…})`), "other" for any other default export, null without one. */
+  definition: "Page" | "Layout" | "ErrorPage" | "other" | null;
+  /** Exported HTTP method handlers. */
+  methods: string[];
+  /** A literal `prerender` in the definition. */
+  prerender?: boolean;
+}
+
+const keyName = (key: Node): string | undefined => (key.type === "Identifier" ? key.name : key.type === "Literal" ? String(key.value) : undefined);
+
+/** How a route file is defined; null when it doesn't parse. */
+export function routeFileInfo(code: string, file: string): RouteFileInfo | null {
   const { program, errors } = parseSync(file, code);
-  // A file that doesn't parse is treated as a page; Vite reports the syntax error when it loads it.
-  if (errors.length) return { default: true, methods: [] };
-  const names = new Set<string>();
-  let hasDefault = false;
-  let prerender: boolean | undefined;
+  if (errors.length) return null;
+  // Local names of the helpers imported from nuclo-pages (they may be renamed).
+  const helpers = new Map<string, RouteFileInfo["definition"]>();
   for (const node of program.body as Node[]) {
-    if (node.type === "ExportDefaultDeclaration") hasDefault = true;
+    if (node.type !== "ImportDeclaration" || node.source.value !== "nuclo-pages" || node.importKind === "type") continue;
+    for (const specifier of node.specifiers as Node[]) {
+      const imported = specifier.type === "ImportSpecifier" && specifier.importKind !== "type" ? keyName(specifier.imported) : undefined;
+      if (imported && HELPERS.has(imported)) helpers.set(specifier.local.name, imported as RouteFileInfo["definition"]);
+    }
+  }
+  const names = new Set<string>();
+  const info: RouteFileInfo = { definition: null, methods: [] };
+  for (const node of program.body as Node[]) {
+    if (node.type === "ExportDefaultDeclaration") {
+      const call = node.declaration;
+      const helper = call.type === "CallExpression" && call.callee.type === "Identifier" ? helpers.get(call.callee.name) : undefined;
+      info.definition = helper ?? "other";
+      const object = helper && call.arguments[0]?.type === "ObjectExpression" ? call.arguments[0] : undefined;
+      for (const property of (object?.properties ?? []) as Node[]) {
+        if (property.type === "Property" && !property.computed && keyName(property.key) === "prerender" && typeof property.value.value === "boolean") {
+          info.prerender = property.value.value;
+        }
+      }
+      continue;
+    }
     if (node.type !== "ExportNamedDeclaration" || node.exportKind === "type") continue;
     const declaration = node.declaration;
     if (declaration?.type === "VariableDeclaration") {
-      for (const { id, init } of declaration.declarations as Node[]) {
-        if (id.type !== "Identifier") continue;
-        names.add(id.name);
-        if (id.name === "prerender" && init?.type === "Literal" && typeof init.value === "boolean") prerender = init.value;
-      }
+      for (const { id } of declaration.declarations as Node[]) if (id.type === "Identifier") names.add(id.name);
     } else if (declaration?.id && !declaration.type.startsWith("TS")) {
       names.add(declaration.id.name);
     }
     for (const specifier of (node.specifiers ?? []) as Node[]) {
       if (specifier.exportKind === "type") continue;
-      const name = specifier.exported.type === "Identifier" ? specifier.exported.name : String(specifier.exported.value);
-      if (name === "default") hasDefault = true;
-      else names.add(name);
+      const name = keyName(specifier.exported);
+      if (name === "default") info.definition = "other";
+      else if (name) names.add(name);
     }
   }
-  return { default: hasDefault, methods: METHODS.filter((method) => names.has(method)), prerender };
+  info.methods = METHODS.filter((method) => names.has(method));
+  return info;
 }

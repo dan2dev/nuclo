@@ -1,6 +1,6 @@
 import * as devalue from "devalue";
 import { getCssText, renderToString } from "nuclo/ssr";
-import { compose, errorLevel, firstFailure, layoutLevel, pageLevel, pick, runLoad, type Level, type Outlet } from "../shared/compose";
+import { bindActions, compose, errorLevel, firstFailure, layoutLevel, pageLevel, pick, runLoad, type Level, type Outlet } from "../shared/compose";
 import { errorInfo, isHttpError, isRedirect } from "../shared/errors";
 import { headToHtml, mergeHead } from "../shared/head";
 import type { Match } from "../shared/routes";
@@ -83,7 +83,8 @@ export async function renderPage(ctx: ServerContext, state: EventState, match: M
     const page = layouts.length;
     levels = [
       ...layouts.map(([module, names], i) => layoutLevel(module, mods[i], names, params, data[i])),
-      pageLevel(route.page, mods[page], params, url, data[page]),
+      // On the server, actions are plain calls (a view only triggers them in the browser).
+      pageLevel(route.page, mods[page], params, url, data[page], bindActions(mods[page], async (action, args) => action(...args))),
     ];
   } else {
     // A failing load renders its boundary; an unmatched URL is a 404 inside the root layout.

@@ -1,12 +1,12 @@
 import * as devalue from "devalue";
 import { hydrate, render, update } from "nuclo";
 import type { NavigateOptions } from "../../types/index";
-import { compose, errorLevel, firstFailure, layoutLevel, pageLevel, pick, runLoad, type Level, type Outlet } from "../shared/compose";
+import { bindActions, compose, errorLevel, firstFailure, layoutLevel, pageLevel, pick, runLoad, type Level, type Outlet } from "../shared/compose";
 import { errorInfo, isHttpError, isRedirect } from "../shared/errors";
 import { applyHead, mergeHead } from "../shared/head";
 import { setNavigator, setRoute } from "../shared/route-state";
 import { matchRoute, type Match } from "../shared/routes";
-import type { Loader, Payload, RootDef, RouteDef, RouteModule } from "../shared/types";
+import type { Action, Loader, Payload, RootDef, RouteDef, RouteModule } from "../shared/types";
 import { setBase } from "./rpc";
 
 /** What the generated client entry passes in. */
@@ -21,6 +21,8 @@ export interface StartOptions {
 interface NavOptions extends NavigateOptions {
   /** Navigation triggered by back/forward. */
   pop?: boolean;
+  /** Same page, fresh data (after an action): no history entry, no scrolling. */
+  refresh?: boolean;
   redirects?: number;
 }
 
@@ -37,6 +39,7 @@ const PREFETCH_TTL = 10_000;
 let ctx: StartOptions;
 let current: { url: URL; levels: Level[]; outlets: Outlet[] };
 let navId = 0;
+let refreshId = 0;
 /** History index of the current entry, for scroll restoration. */
 let index = 0;
 const scrolls = new Map<number, [number, number]>();
@@ -76,7 +79,7 @@ export async function start(options: StartOptions): Promise<void> {
   levels.push(
     payload.e
       ? errorLevel(mods[keep], payload.e.s, payload.e.m)
-      : pageLevel(last, mods[keep], payload.p, url, payload.d[keep]),
+      : pageLevel(last, mods[keep], payload.p, url, payload.d[keep], bindActions(mods[keep], runAction)),
   );
 
   setRoute({ id: route?.id ?? "", url, params: payload.p, pending: false });
@@ -141,23 +144,27 @@ function hardNavigate(url: URL, options: NavOptions): void {
   else location.assign(url.href);
 }
 
-/** Loads what changed between the current page and `url`, reusing unchanged layouts. */
-async function resolve(url: URL, match: Match): Promise<Resolved> {
+/**
+ * Loads what changed between the current page and `url`, reusing unchanged
+ * layouts. A refresh reloads every level and keeps those whose data is the same.
+ */
+async function resolve(url: URL, match: Match, refresh = false): Promise<Resolved> {
   const { route, params } = match;
   const mods = await Promise.all(chainOf(route).map(importModule));
   const page = route.layouts.length;
   const levels = chainOf(route).map((module, i) =>
     i < page
       ? layoutLevel(module, mods[i], route.layouts[i][1], params, undefined)
-      : pageLevel(module, mods[i], params, url, undefined),
+      : pageLevel(module, mods[i], params, url, undefined, bindActions(mods[i], runAction)),
   );
   let from = 0;
   while (from < levels.length && levels[from].key === current.levels[from]?.key) from++;
+  const reload = refresh ? 0 : from;
 
-  const prefetch = takePrefetched(url);
+  const prefetch = refresh ? undefined : takePrefetched(url);
   const results = await Promise.allSettled(
     levels.map((_, i) => {
-      if (i < from) return undefined;
+      if (i < reload) return undefined;
       if (i === page && prefetch) return prefetch;
       return runLoad(mods[i], i < page ? { params: pick(params, route.layouts[i][1]) } : { params, url });
     }),
@@ -167,8 +174,16 @@ async function resolve(url: URL, match: Match): Promise<Resolved> {
 
   for (let i = 0; i < levels.length; i++) {
     const result = results[i];
-    if (i < from) levels[i] = current.levels[i];
+    if (i < reload) levels[i] = current.levels[i];
     else levels[i].props.data = result.status === "fulfilled" ? result.value : undefined;
+  }
+  if (refresh) {
+    // Levels whose data didn't change keep their DOM and state.
+    from = 0;
+    while (from < levels.length && levels[from].key === current.levels[from]?.key && sameData(levels[from], current.levels[from])) {
+      levels[from] = current.levels[from];
+      from++;
+    }
   }
   if (!failure) return { match, levels, from };
 
@@ -180,7 +195,7 @@ async function resolve(url: URL, match: Match): Promise<Resolved> {
 }
 
 function commit({ match, levels, from }: Resolved, url: URL, options: NavOptions): void {
-  if (!options.pop) {
+  if (!options.pop && !options.refresh) {
     if (!options.replace) index++;
     history[options.replace ? "replaceState" : "pushState"]({ nuclo: index }, "", url.href);
   }
@@ -201,7 +216,9 @@ function commit({ match, levels, from }: Resolved, url: URL, options: NavOptions
   applyHead(mergeHead(levels.map((level) => level.head?.({ ...level.props, url } as never))));
   update();
 
-  if (options.pop) {
+  if (options.refresh) {
+    // Same page: leave the scroll position alone.
+  } else if (options.pop) {
     const [x, y] = scrolls.get(index) ?? [0, 0];
     window.scrollTo(x, y);
   } else {
@@ -210,6 +227,43 @@ function commit({ match, levels, from }: Resolved, url: URL, options: NavOptions
     else window.scrollTo(0, 0);
   }
   preloadVisibleLinks();
+}
+
+/** Runs an action on the server, then reloads the page's data and re-renders what changed. */
+async function runAction(action: Action, args: unknown[]): Promise<unknown> {
+  let result: unknown;
+  try {
+    result = await action(...args);
+  } catch (e) {
+    // An action that redirects navigates there; the call then resolves with nothing.
+    if (!isRedirect(e)) throw e;
+    await navigate(e.location);
+    return undefined;
+  }
+  await revalidate();
+  return result;
+}
+
+/** Re-runs the current page's loads and re-renders from the first level whose data changed. */
+async function revalidate(): Promise<void> {
+  const nav = navId;
+  const id = ++refreshId;
+  const url = current.url;
+  const match = matchRoute(ctx.routes, url.pathname);
+  if (!match || match.route.api) return;
+  const next = await resolve(url, match, true);
+  // A navigation, or a newer refresh, started meanwhile: it wins.
+  if (nav !== navId || id !== refreshId) return;
+  if (next.redirect !== undefined) return navigate(next.redirect, { replace: true });
+  commit(next, url, { refresh: true });
+}
+
+function sameData(a: Level, b: Level): boolean {
+  try {
+    return devalue.stringify(a.props.data) === devalue.stringify(b.props.data);
+  } catch {
+    return false;
+  }
 }
 
 function onPopState(event: PopStateEvent): void {

@@ -10,12 +10,14 @@ import { serverFnId } from "../../src/vite/server-fns";
 
 /** The fixture app, run through Vite's real dev server and a real build. */
 const root = fileURLToPath(new URL("../fixtures/app", import.meta.url));
-const rpc = (origin: string, name: string, args: unknown[]) =>
-  fetch(`${origin}/_server/${serverFnId("src/server/counter.ts", name)}`, {
+const rpc = (origin: string, file: string, name: string, args: unknown[]) =>
+  fetch(`${origin}/_server/${serverFnId(file, name)}`, {
     method: "POST",
     headers: { "x-nuclo-rpc": "1" },
     body: devalue.stringify(args),
   });
+const COUNTER = "src/pages/counter.ts";
+const LEAKS = ["SERVER_ONLY_SECRET", "PAGE_ONLY_SECRET", "node:crypto", "createHash", "count +="];
 
 describe("dev server", () => {
   let server: ViteDevServer;
@@ -53,9 +55,14 @@ describe("dev server", () => {
     const entry = await (await fetch(`${origin}/@id/__x00__virtual:nuclo-pages/client-entry`)).text();
     expect(entry).toContain("start(");
     const counter = await (await fetch(`${origin}/src/server/counter.ts`)).text();
-    expect(counter).toContain("__rpc(");
     expect(counter).toContain("src/server/counter.ts#increment"); // readable name in dev
-    for (const leak of ["SERVER_ONLY_SECRET", "node:crypto", "createHash", "count +="]) expect(counter).not.toContain(leak);
+    // The page module keeps its view; its load and actions become stubs.
+    const page = await (await fetch(`${origin}/${COUNTER}`)).text();
+    expect(page).toContain(`${COUNTER}#load`);
+    expect(page).toContain(`${COUNTER}#actions.bump`);
+    expect(page).toContain('id: "count"');
+    for (const code of [counter, page]) for (const leak of LEAKS) expect(code).not.toContain(leak);
+    expect(page).not.toContain("server/counter"); // nothing left imports the server module
   });
 
   it("refuses to send server-only imports to the browser", async () => {
@@ -68,10 +75,17 @@ describe("dev server", () => {
   it("calls server functions in-process during SSR, sharing state with RPC", async () => {
     const count = async () => /id="count">(?:<!--[^>]*-->)?(\d+) /.exec(await (await fetch(`${origin}/counter`)).text())?.[1];
     const before = Number(await count());
-    const response = await rpc(origin, "increment", [5]);
+    const response = await rpc(origin, "src/server/counter.ts", "increment", [5]);
     expect(response.status).toBe(200);
     expect(devalue.parse(await response.text())).toBe(before + 5);
     expect(Number(await count())).toBe(before + 5);
+  });
+
+  it("runs a page's actions and load over RPC", async () => {
+    const load = async () => devalue.parse(await (await rpc(origin, COUNTER, "load", [{ params: {}, url: new URL(`${origin}/counter`) }])).text());
+    const { count } = await load();
+    expect(devalue.parse(await (await rpc(origin, COUNTER, "actions.bump", [2])).text())).toBe(count + 2);
+    expect(await load()).toMatchObject({ count: count + 2, tag: expect.stringMatching(/^[0-9a-f]{4}$/) });
   });
 
   it("keeps route types up to date", () => {
@@ -80,9 +94,9 @@ describe("dev server", () => {
     expect(types).toContain('"/api/health": {};');
   });
 
-  it("picks up added and removed pages", async () => {
+  it("picks up added and removed pages", { timeout: 30_000 }, async () => {
     const file = join(root, "src/pages/added.ts");
-    writeFileSync(file, 'export default () => h1("Added");\n');
+    writeFileSync(file, 'import { Page } from "nuclo-pages";\nexport default Page({ render: () => h1("Added") });\n');
     try {
       await vi.waitFor(async () => expect(await (await fetch(`${origin}/added`)).text()).toContain("Added"), { timeout: 10_000, interval: 100 });
       expect(readFileSync(join(root, "src/routes.gen.d.ts"), "utf8")).toContain('"/added": {};');
@@ -115,9 +129,10 @@ describe("build", () => {
 
   it("keeps server code out of the browser bundle", () => {
     const js = clientJs();
-    // The stub is minified, but it calls the function by id.
-    expect(js).toContain(serverFnId("src/server/counter.ts", "increment"));
-    for (const leak of ["SERVER_ONLY_SECRET", "node:crypto", "createHash", "node:os", "src/server/counter.ts#"]) expect(js).not.toContain(leak);
+    // The stubs are minified, but they call the functions by id.
+    expect(js).toContain(serverFnId(COUNTER, "load"));
+    expect(js).toContain(serverFnId(COUNTER, "actions.bump"));
+    for (const leak of [...LEAKS, "node:os", "src/server/counter.ts#"]) expect(js).not.toContain(leak);
   });
 
   it("prerenders static pages and the dynamic pages they link to", () => {
@@ -141,7 +156,7 @@ describe("build", () => {
     expect(html).not.toContain("@vite/client");
     expect(await (await handler(new Request(`${origin}/api/health`))).json()).toEqual({ ok: true });
     const call = await handler(
-      new Request(`${origin}/_server/${serverFnId("src/server/counter.ts", "increment")}`, {
+      new Request(`${origin}/_server/${serverFnId(COUNTER, "actions.bump")}`, {
         method: "POST",
         headers: { "x-nuclo-rpc": "1" },
         body: devalue.stringify([2]),

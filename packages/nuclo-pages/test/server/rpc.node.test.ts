@@ -3,14 +3,14 @@ import "nuclo/polyfill";
 import "nuclo";
 import * as devalue from "devalue";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { error, isHttpError, redirect } from "../../src/index";
+import { Page, error, isHttpError, redirect } from "../../src/index";
 import { __serverFn, getRequestEvent } from "../../src/server/index";
 import type { HandlerOptions } from "../../src/server/index";
 import { createApp } from "../helpers";
 
 afterEach(() => vi.restoreAllMocks());
 
-const app = (options: Partial<HandlerOptions> = {}) => createApp({ "index.ts": { default: () => p("home") } }, options);
+const app = (options: Partial<HandlerOptions> = {}) => createApp({ "index.ts": Page({ render: () => p("home") }) }, options);
 
 const NO_ARGS = devalue.stringify([]);
 

@@ -247,12 +247,12 @@ export function nucloPages(options: NucloPagesOptions = {}): Plugin[] {
           const file = normalizePath(importer.split("?")[0]);
           if (!file.startsWith(src + "/")) return;
           this.error(
-            `${rel(file)} imports "${source}", which only exists on the server. Use it inside a $server() function, or in a module only server code imports.`,
+            `${rel(file)} imports "${source}", which only exists on the server. Use it in a page's load or actions, in a $server() function, or in a module only server code imports.`,
           );
         },
       },
       transform: {
-        filter: { id: { exclude: /[\\/]node_modules[\\/]/ }, code: /\$server\b/ },
+        filter: { id: { exclude: /[\\/]node_modules[\\/]/ }, code: /\$server\b|nuclo-pages/ },
         handler(code, id) {
           const file = normalizePath(id.split("?")[0]);
           if (id.startsWith("\0") || !SOURCE.test(file)) return;

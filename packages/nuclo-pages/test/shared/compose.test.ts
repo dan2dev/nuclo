@@ -2,6 +2,7 @@ import { hydrate, render, update } from "nuclo";
 import { renderToString } from "nuclo/ssr";
 import { describe, expect, it, vi } from "vitest";
 import {
+  bindActions,
   compose,
   defaultError,
   defaultLayout,
@@ -131,13 +132,15 @@ describe("compose + hydrate", () => {
 
 describe("levels", () => {
   const view = () => div();
+  const layout: RouteModule = { default: { render: view } };
 
   it("keys layouts by module and the params they consume", () => {
-    const a = layoutLevel(3, { default: view }, ["org"], { org: "acme", id: "1" }, "data");
-    expect(a.key).toBe(layoutLevel(3, { default: view }, ["org"], { org: "acme", id: "2" }, undefined).key);
-    expect(a.key).not.toBe(layoutLevel(3, { default: view }, ["org"], { org: "other", id: "1" }, undefined).key);
-    expect(a.key).not.toBe(layoutLevel(4, { default: view }, ["org"], { org: "acme" }, undefined).key);
+    const a = layoutLevel(3, layout, ["org"], { org: "acme", id: "1" }, "data");
+    expect(a.key).toBe(layoutLevel(3, layout, ["org"], { org: "acme", id: "2" }, undefined).key);
+    expect(a.key).not.toBe(layoutLevel(3, layout, ["org"], { org: "other", id: "1" }, undefined).key);
+    expect(a.key).not.toBe(layoutLevel(4, layout, ["org"], { org: "acme" }, undefined).key);
     expect(a.props).toEqual({ data: "data", params: { org: "acme" } });
+    expect(a.view).toBe(view);
   });
 
   it("uses the default layout for the built-in root layout (-1)", () => {
@@ -147,16 +150,29 @@ describe("levels", () => {
   it("keys pages by params, and by search only when they load data", () => {
     const url1 = new URL("http://x/p?tab=1");
     const url2 = new URL("http://x/p?tab=2");
-    const withLoad: RouteModule = { default: view, load: () => 1 };
-    const withoutLoad: RouteModule = { default: view };
+    const withLoad: RouteModule = { default: { render: view, load: () => 1 } };
+    const withoutLoad: RouteModule = { default: { render: view } };
     expect(pageLevel(1, withLoad, {}, url1, undefined).key).not.toBe(pageLevel(1, withLoad, {}, url2, undefined).key);
     expect(pageLevel(1, withoutLoad, {}, url1, undefined).key).toBe(pageLevel(1, withoutLoad, {}, url2, undefined).key);
     expect(pageLevel(1, withoutLoad, { a: "1" }, url1, undefined).key).not.toBe(pageLevel(1, withoutLoad, { a: "2" }, url1, undefined).key);
-    expect(pageLevel(1, withLoad, { a: "1" }, url1, "d").props).toEqual({ data: "d", params: { a: "1" }, url: url1 });
+    const actions = { save: async () => 1 };
+    expect(pageLevel(1, withLoad, { a: "1" }, url1, "d", actions).props).toEqual({ data: "d", params: { a: "1" }, url: url1, actions });
+    expect(pageLevel(1, withLoad, {}, url1, "d").props.actions).toEqual({});
   });
 
-  it("requires a page view", () => {
+  it("requires a page definition", () => {
     expect(() => pageLevel(7, {}, {}, new URL("http://x/"), undefined)).toThrow("Route module 7 has no default export");
+    // A module whose default export isn't a definition (e.g. a bare view function).
+    const legacy = { default: view } as unknown as RouteModule;
+    expect(() => pageLevel(7, legacy, {}, new URL("http://x/"), undefined)).toThrow("must come from Page(), Layout() or ErrorPage()");
+    expect(() => layoutLevel(2, legacy, [], {}, undefined)).toThrow("Route module 2");
+  });
+
+  it("uses a definition's view and head", () => {
+    const head = () => ({ title: "t" });
+    const error = errorLevel({ default: { render: view, head } }, 404, "x");
+    expect(error.view).toBe(view);
+    expect(error.head).toBe(head);
   });
 
   it("gives every error level a unique key", () => {
@@ -174,15 +190,18 @@ describe("levels", () => {
 });
 
 describe("runLoad / firstFailure", () => {
+  const render = () => div();
+
   it("runs load with the event, or resolves undefined without one", async () => {
     const load = vi.fn((event: { params: object }) => ({ got: event.params }));
-    await expect(runLoad({ load: load as never }, { params: { a: 1 } })).resolves.toEqual({ got: { a: 1 } });
+    await expect(runLoad({ default: { render, load: load as never } }, { params: { a: 1 } })).resolves.toEqual({ got: { a: 1 } });
+    await expect(runLoad({ default: { render } }, {})).resolves.toBeUndefined();
     await expect(runLoad({}, {})).resolves.toBeUndefined();
   });
 
   it("turns synchronous throws into rejections", async () => {
     const boom = new Error("boom");
-    const promise = runLoad({ load: (() => { throw boom; }) as never }, {});
+    const promise = runLoad({ default: { render, load: (() => { throw boom; }) as never } }, {});
     await expect(promise).rejects.toBe(boom);
   });
 
@@ -197,3 +216,19 @@ describe("runLoad / firstFailure", () => {
     expect(firstFailure([fail(e1), ok, fail(r)])).toEqual({ index: 2, reason: r });
   });
 });
+
+describe("bindActions", () => {
+  it("wraps each action so the caller decides what happens around it", async () => {
+    const save = vi.fn((a: number, b: number) => a + b);
+    const run = vi.fn(async (action: (...args: never[]) => unknown, args: unknown[]) => `ran ${String(action(...(args as never[])))}`);
+    const bound = bindActions({ default: { render: () => div(), actions: { save } } }, run);
+    await expect(bound.save(1, 2)).resolves.toBe("ran 3");
+    expect(run).toHaveBeenCalledWith(save, [1, 2]);
+  });
+
+  it("is empty without actions", () => {
+    expect(bindActions({ default: { render: () => div() } }, vi.fn())).toEqual({});
+    expect(bindActions({}, vi.fn())).toEqual({});
+  });
+});
+

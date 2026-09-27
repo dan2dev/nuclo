@@ -56,7 +56,7 @@
 		"test": "bun run typecheck && vitest run"
 	},
 	"dependencies": {
-		"devalue": "^5.9.0"
+		"devalue": "^5.9.4"
 	},
 	"peerDependencies": {
 		"nuclo": ">=0.2.37",

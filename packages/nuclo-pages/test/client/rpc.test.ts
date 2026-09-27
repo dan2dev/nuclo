@@ -1,7 +1,7 @@
 import * as devalue from "devalue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { __rpc, setBase } from "../../src/client/rpc";
-import { error, redirect } from "../../src/index";
+import { Page, error, redirect } from "../../src/index";
 import { __serverFn } from "../../src/server/index";
 import { isHttpError, isRedirect } from "../../src/shared/errors";
 import { createApp } from "../helpers";
@@ -64,7 +64,7 @@ describe("__rpc", () => {
   });
 
   it("round-trips through a real handler", async () => {
-    const { handler } = createApp({ "index.ts": { default: () => p("x") } });
+    const { handler } = createApp({ "index.ts": Page({ render: () => p("x") }) });
     fetchMock.mockImplementation((input, init) => handler(new Request(new URL(String(input), "http://localhost"), init)));
     __serverFn("rt-sum", (numbers: Set<number>) => ({ total: [...numbers].reduce((a, b) => a + b, 0), at: new Date(3) }));
     __serverFn("rt-fail", () => error(400, "Bad input"));

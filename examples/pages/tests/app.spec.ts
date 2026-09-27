@@ -14,7 +14,7 @@ function watchErrors(page: Page) {
 const hydrated = (page: Page) => page.waitForFunction(() => (history.state as { nuclo?: number } | null)?.nuclo !== undefined);
 
 test.describe("hydration", () => {
-  for (const [path, status] of [["/", 200], ["/about", 200], ["/blog", 200], ["/blog/layouts", 200], ["/todos", 200], ["/missing", 404]] as const) {
+  for (const [path, status] of [["/", 200], ["/about", 200], ["/about/life", 200], ["/blog", 200], ["/blog/layouts", 200], ["/todos", 200], ["/missing", 404]] as const) {
     test(`${path} hydrates onto the server markup`, async ({ page }) => {
       const errors = watchErrors(page);
       const response = await page.goto(path);
@@ -43,6 +43,8 @@ test("navigates client-side and keeps the layout", async ({ page }) => {
   await page.goto("/");
   await hydrated(page);
   await page.evaluate(() => ((window as { __marker?: number }).__marker = 1));
+  // State inside the layout survives navigation.
+  await page.locator("header + div input").fill("kept");
 
   await page.locator("nav").getByRole("link", { name: "Blog" }).click();
   await expect(page).toHaveURL(/\/blog$/);
@@ -61,6 +63,7 @@ test("navigates client-side and keeps the layout", async ({ page }) => {
 
   // Still the same document: no full page load happened.
   expect(await page.evaluate(() => (window as { __marker?: number }).__marker)).toBe(1);
+  await expect(page.locator("header + div input")).toHaveValue("kept");
   expect(errors).toEqual([]);
 });
 
@@ -78,24 +81,28 @@ test("restores the scroll position on back", async ({ page }) => {
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(120);
 });
 
-test("mutates through server functions", async ({ page }) => {
+test("runs actions on the server and re-renders the page with fresh data", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/todos");
   await hydrated(page);
   const text = `e2e ${Date.now()}`;
   const input = page.locator("input[name=text]");
+  await page.locator("header + div input").fill("kept");
 
   await input.fill(text);
   await input.press("Enter");
   const item = page.locator("main li", { hasText: text });
   await expect(item).toBeVisible();
+  // The page re-rendered from the reloaded data; the layout's data didn't change, so it stayed.
   await expect(input).toHaveValue("");
+  await expect(page.locator("header + div input")).toHaveValue("kept");
 
   // A validation error thrown on the server reaches the page.
   await input.press("Enter");
   await expect(page.locator("main form + p")).toHaveText("A todo needs some text");
 
-  await item.getByRole("checkbox").check();
+  await item.getByRole("checkbox").click();
+  await expect(item.getByRole("checkbox")).toBeChecked();
   await page.reload();
   await hydrated(page);
   // The server rendered the saved state.
@@ -105,7 +112,16 @@ test("mutates through server functions", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("renders not-found errors from a server function during client navigation", async ({ page }) => {
+test("calls a $server() function from an event handler", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto("/about");
+  await hydrated(page);
+  await page.getByRole("button", { name: "Ask the server the time" }).click();
+  await expect(page.locator("main p").last()).toHaveText(/^\d{4}-\d\d-\d\dT/);
+  expect(errors).toEqual([]);
+});
+
+test("renders not-found errors from a server load during client navigation", async ({ page }) => {
   await page.goto("/blog");
   await hydrated(page);
   await page.evaluate(() => {

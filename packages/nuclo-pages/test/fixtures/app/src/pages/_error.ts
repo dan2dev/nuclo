@@ -1,5 +1,5 @@
-import type { ErrorProps } from "nuclo-pages";
+import { ErrorPage } from "nuclo-pages";
 
-export default function ErrorPage({ status, message }: ErrorProps) {
-  return h1({ id: "error" }, `${status} ${message}`);
-}
+export default ErrorPage({
+  render: ({ status, message }) => h1({ id: "error" }, `${status} ${message}`),
+});

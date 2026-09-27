@@ -1,11 +1,13 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { matchRoute } from "../../src/shared/routes";
-import { exportsOf, scanPages, type PagesScan } from "../../src/vite/scan";
+import { routeFileInfo, scanPages, type PagesScan } from "../../src/vite/scan";
 
 const DIR = "/app/src/pages";
-const PAGE = "export default function Page() { return div(); }";
-const LAYOUT = "export default ({ children }) => div(children);";
+const definition = (helper: string, extra = "") => `import { ${helper} } from "nuclo-pages";\nexport default ${helper}({ ${extra}render: () => div() });`;
+const PAGE = definition("Page");
+const LAYOUT = definition("Layout");
+const ERROR = definition("ErrorPage");
 
 const scan = (files: Record<string, string>) => scanPages(DIR, (file) => files[file.slice(DIR.length + 1)], Object.keys(files));
 const rel = (s: PagesScan, module: number) => (module < 0 ? null : s.modules[module].file.slice(DIR.length + 1));
@@ -106,10 +108,10 @@ describe("file → URL", () => {
 describe("layouts and error boundaries", () => {
   const app = scan({
     "_layout.ts": LAYOUT,
-    "_error.ts": PAGE,
+    "_error.ts": ERROR,
     "index.ts": PAGE,
     "blog/_layout.ts": LAYOUT,
-    "blog/_error.ts": PAGE,
+    "blog/_error.ts": ERROR,
     "blog/[slug].ts": PAGE,
     "blog/drafts/_layout.ts": LAYOUT,
     "blog/drafts/[id].ts": PAGE,
@@ -170,7 +172,7 @@ describe("API routes", () => {
     const s = scan({
       "api/users.ts": "export async function GET() {}\nexport const POST = () => {};",
       "api/alias.ts": "const handler = () => {};\nexport { handler as GET, handler as DELETE };",
-      "both.ts": "export default () => div();\nexport const GET = () => {};",
+      "both.ts": `${PAGE}\nexport const GET = () => {};`,
     });
     expect(route(s, "/api/users")).toMatchObject({ api: 1, layouts: [], errors: [], prerender: false });
     expect(route(s, "/api/alias").api).toBe(1);
@@ -180,21 +182,21 @@ describe("API routes", () => {
 
   it("rejects route files that are neither a page nor an API route", () => {
     expect(() => scan({ "broken.ts": "export const helper = 1;\nexport type GET = string;" })).toThrow(
-      "src/pages/broken.ts: a page needs a default export",
+      "src/pages/broken.ts: a page is export default Page({ render: … }); an API route exports GET/POST/… handlers",
     );
   });
 });
 
 describe("prerender", () => {
-  it("reads a literal flag on the page, else the nearest layout's", () => {
+  it("reads a literal flag in the page's definition, else the nearest layout's", () => {
     const s = scan({
-      "_layout.ts": `${LAYOUT}\nexport const prerender = true;`,
+      "_layout.ts": definition("Layout", "prerender: true, "),
       "index.ts": PAGE,
-      "dynamic.ts": `${PAGE}\nexport const prerender = false;`,
-      "blog/_layout.ts": `${LAYOUT}\nexport const prerender = false;`,
+      "dynamic.ts": definition("Page", "prerender: false, "),
+      "blog/_layout.ts": definition("Layout", "prerender: false, "),
       "blog/[slug].ts": PAGE,
-      "blog/featured.ts": `${PAGE}\nexport const prerender = true;`,
-      "computed.ts": `${PAGE}\nconst on = true;\nexport const prerender = on;`,
+      "blog/featured.ts": definition("Page", '"prerender": true, '),
+      "computed.ts": `const on = true;\n${definition("Page", "prerender: on, ")}`,
     });
     const flag = (id: string) => route(s, id).prerender;
     expect(flag("/")).toBe(true);
@@ -236,15 +238,33 @@ describe("validation", () => {
   it("treats files that don't parse as pages (Vite reports the syntax error)", () => {
     expect(route(scan({ "index.ts": "export default (" }), "/").api).toBeUndefined();
   });
+
+  it("requires each file to use its helper", () => {
+    fails({ "index.ts": "export default function Page() { return div(); }" }, "src/pages/index.ts: a page is export default Page({ render: … })");
+    fails({ "index.ts": LAYOUT }, "a page is export default Page");
+    fails({ "_layout.ts": PAGE, "index.ts": PAGE }, "src/pages/_layout.ts: a layout is export default Layout(");
+    fails({ "_error.ts": PAGE, "index.ts": PAGE }, "src/pages/_error.ts: an error view is export default ErrorPage(");
+    // Page from somewhere else doesn't count.
+    fails({ "index.ts": 'import { Page } from "./mine";\nexport default Page({ render: () => div() });' }, "a page is export default Page");
+  });
+
+  it("accepts renamed helpers", () => {
+    const s = scan({ "index.ts": 'import { Page as Screen } from "nuclo-pages";\nexport default Screen({ prerender: true, render: () => div() });' });
+    expect(route(s, "/").prerender).toBe(true);
+  });
 });
 
-describe("exportsOf", () => {
-  it("finds default, named and re-exported values, skipping types", () => {
-    expect(exportsOf("export default 1", "a.ts")).toEqual({ default: true, methods: [], prerender: undefined });
-    expect(exportsOf("const a = 1; export { a as default };", "a.ts").default).toBe(true);
-    expect(exportsOf('export { GET } from "./x";', "a.ts").methods).toEqual(["GET"]);
-    expect(exportsOf("export class POST {}\nexport function PUT() {}", "a.ts").methods).toEqual(["POST", "PUT"]);
-    expect(exportsOf("export type GET = 1;\nexport interface POST {}\nexport { type PATCH } from './x';", "a.ts").methods).toEqual([]);
-    expect(exportsOf("export const prerender = false;", "a.js").prerender).toBe(false);
+describe("routeFileInfo", () => {
+  it("reads the defining helper, method exports and a literal prerender", () => {
+    expect(routeFileInfo(PAGE, "a.ts")).toEqual({ definition: "Page", methods: [] });
+    expect(routeFileInfo(definition("Layout", "prerender: true, "), "a.ts")).toEqual({ definition: "Layout", methods: [], prerender: true });
+    expect(routeFileInfo(ERROR, "a.ts")?.definition).toBe("ErrorPage");
+    expect(routeFileInfo("export default 1", "a.ts")?.definition).toBe("other");
+    expect(routeFileInfo("const a = 1; export { a as default };", "a.ts")?.definition).toBe("other");
+    expect(routeFileInfo('import type { Page } from "nuclo-pages";\nexport default Page({ render });', "a.ts")?.definition).toBe("other");
+    expect(routeFileInfo('export { GET } from "./x";', "a.ts")).toEqual({ definition: null, methods: ["GET"] });
+    expect(routeFileInfo("export class POST {}\nexport function PUT() {}", "a.ts")?.methods).toEqual(["POST", "PUT"]);
+    expect(routeFileInfo("export type GET = 1;\nexport interface POST {}\nexport { type PATCH } from './x';", "a.ts")?.methods).toEqual([]);
+    expect(routeFileInfo("export default (", "a.ts")).toBeNull();
   });
 });

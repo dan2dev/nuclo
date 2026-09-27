@@ -1,14 +1,14 @@
 import { update } from "nuclo";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { start } from "../../src/client/router";
-import { error, navigate, redirect, route } from "../../src/index";
+import { ErrorPage, Layout, Page, error, isHttpError, navigate, redirect, route } from "../../src/index";
 import { createRedirect } from "../../src/shared/errors";
-import type { RouteModule } from "../../src/shared/types";
-import { createApp, deferred } from "../helpers";
+import { createApp, deferred, type TestFile } from "../helpers";
 
 /**
  * One app, server-rendered by the real handler, hydrated by the real router.
  * The tests share the page and run in order, like a user clicking around.
+ * (Loads and actions run in-process here; the build turns them into RPC calls.)
  */
 
 const loads: Record<string, number> = {};
@@ -16,11 +16,15 @@ const count = (name: string) => void (loads[name] = (loads[name] ?? 0) + 1);
 const destroyed: string[] = [];
 let gate: Promise<void> | undefined;
 
-const files: Record<string, RouteModule> = {
-  "_layout.ts": {
+// The todo list lives "on the server"; the todos page's actions change it.
+const todos = ["a"];
+let todoActions: { add(text: string): Promise<number>; same(): Promise<string>; fail(): Promise<never>; leave(): Promise<void> };
+
+const files: Record<string, TestFile> = {
+  "_layout.ts": Layout({
     load: () => (count("root"), { user: "ana" }),
     head: () => ({ title: "Site", meta: { description: "site" } }),
-    default: ({ data, children }) =>
+    render: ({ data, children }) =>
       div(
         { id: "shell" },
         nav(
@@ -32,38 +36,55 @@ const files: Record<string, RouteModule> = {
         span({ id: "user" }, data.user),
         main(children),
       ),
-  },
-  "_error.ts": { default: ({ status, message }) => h1({ id: "error" }, `${status} ${message}`) },
-  "index.ts": { default: () => h1({ id: "title" }, "Home") },
-  "about.ts": {
-    default: () => {
+  }),
+  "_error.ts": ErrorPage({ render: ({ status, message }) => h1({ id: "error" }, `${status} ${message}`) }),
+  "index.ts": Page({ render: () => h1({ id: "title" }, "Home") }),
+  "about.ts": Page({
+    render: () => {
       const state = { clicks: 0 };
       return div(h1({ id: "title" }, "About"), button({ id: "inc", onClick: () => (state.clicks++, update()) }, () => String(state.clicks)));
     },
-  },
-  "lazy.ts": { default: () => h1({ id: "title" }, "Lazy") },
-  "blog/_layout.ts": {
+  }),
+  "lazy.ts": Page({ render: () => h1({ id: "title" }, "Lazy") }),
+  "todos.ts": Page({
+    load: async () => {
+      count("todos");
+      if (gate) await gate;
+      return [...todos];
+    },
+    actions: {
+      add: async (text: string) => todos.push(text),
+      same: async () => "unchanged",
+      fail: async () => error(422, "Nope"),
+      leave: async () => redirect("/about"),
+    },
+    render: ({ data, actions }) => {
+      todoActions = actions;
+      return section({ id: "todos" }, h1({ id: "title" }, "Todos"), ul(...data.map((todo) => li(todo))));
+    },
+  }),
+  "blog/_layout.ts": Layout({
     load: () => (count("blog-layout"), null),
-    default: ({ children }) => section({ id: "blog" }, on("destroy", () => destroyed.push("blog-layout")), children),
-  },
-  "blog/[slug].ts": {
-    load: async ({ params, url }: { params: { slug: string }; url: URL }) => {
+    render: ({ children }) => section({ id: "blog" }, on("destroy", () => destroyed.push("blog-layout")), children),
+  }),
+  "blog/[slug].ts": Page({
+    load: async ({ params, url }) => {
       count(`post:${params.slug}`);
       if (params.slug === "slow") await gate;
       return { slug: params.slug, q: url.searchParams.get("q") };
     },
-    head: ({ data }: { data: { slug: string } }) => ({ title: `Post ${data.slug}`, meta: { description: data.slug } }),
-    default: ({ data }) =>
+    head: ({ data }) => ({ title: `Post ${data.slug}`, meta: { description: data.slug } }),
+    render: ({ data }) =>
       article({ id: "post" }, on("destroy", () => destroyed.push(`post:${data.slug}`)), h1({ id: "title" }, data.slug), p({ id: "q" }, String(data.q))),
-  },
-  "org/[org]/_layout.ts": {
-    load: ({ params }: { params: object }) => (count(`org:${JSON.stringify(params)}`), (params as { org: string }).org),
-    default: ({ data, children }) => section({ id: "org" }, span({ id: "org-name" }, data), children),
-  },
-  "org/[org]/[id].ts": { default: ({ params }) => h1({ id: "title" }, `${params.org}/${params.id}`) },
-  "redirect.ts": { load: () => redirect("/about"), default: () => p("never") },
-  "loop.ts": { load: () => redirect("/loop"), default: () => p("never") },
-  "teapot.ts": { load: () => error(418, "I'm a teapot"), default: () => p("never") },
+  }),
+  "org/[org]/_layout.ts": Layout({
+    load: ({ params }) => (count(`org:${JSON.stringify(params)}`), params.org),
+    render: ({ data, children }) => section({ id: "org" }, span({ id: "org-name" }, data), children),
+  }),
+  "org/[org]/[id].ts": Page({ render: ({ params }) => h1({ id: "title" }, `${params.org}/${params.id}`) }),
+  "redirect.ts": Page({ load: () => redirect("/about"), render: () => p("never") }),
+  "loop.ts": Page({ load: () => redirect("/loop"), render: () => p("never") }),
+  "teapot.ts": Page({ load: () => error(418, "I'm a teapot"), render: () => p("never") }),
   "api/data.ts": { GET: () => Response.json({}) },
 };
 
@@ -376,3 +397,55 @@ describe("server function redirects", () => {
     expect(event.defaultPrevented).toBe(false);
   });
 });
+
+describe("actions", () => {
+  const items = () => [...document.querySelectorAll("#todos li")].map((li) => li.textContent);
+
+  it("run, then reload the data and re-render what changed", async () => {
+    await navigate("/todos");
+    const page = $("todos");
+    const before = { todos: loads.todos, root: loads.root };
+    await expect(todoActions.add("b")).resolves.toBe(2);
+    expect(items()).toEqual(["a", "b"]);
+    expect(loads.todos).toBe(before.todos + 1);
+    // Every load re-ran, but only the page's data changed: the layout kept its DOM.
+    expect(loads.root).toBe(before.root + 1);
+    expect($("shell")).toBe(ssrShell);
+    expect($("todos")).not.toBe(page);
+    expect(location.pathname).toBe("/todos");
+  });
+
+  it("keep the page as it is when its data didn't change", async () => {
+    const page = $("todos");
+    await expect(todoActions.same()).resolves.toBe("unchanged");
+    expect($("todos")).toBe(page);
+  });
+
+  it("reject with the action's error, without reloading", async () => {
+    const before = loads.todos;
+    const failure = await todoActions.fail().catch((e: unknown) => e);
+    expect(isHttpError(failure)).toBe(true);
+    expect(failure).toMatchObject({ status: 422, message: "Nope" });
+    expect(loads.todos).toBe(before);
+  });
+
+  it("navigate when they redirect", async () => {
+    await expect(todoActions.leave()).resolves.toBeUndefined();
+    expect(location.pathname).toBe("/about");
+    expect(title()).toBe("About");
+  });
+
+  it("give way to a navigation that starts during their reload", async () => {
+    await navigate("/todos");
+    const release = deferred();
+    gate = release.promise;
+    const action = todoActions.add("c");
+    await vi.waitFor(() => expect(todos).toContain("c"));
+    await navigate("/"); // gate only blocks the todos load
+    release.resolve();
+    await action;
+    gate = undefined;
+    expect(title()).toBe("Home");
+  });
+});
+

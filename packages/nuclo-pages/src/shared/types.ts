@@ -1,17 +1,25 @@
 import type { Head } from "../../types/index";
 
-/** A page, layout, error view or API route module. */
-export interface RouteModule {
-  default?: View;
+export type View = (props: any) => NodeModFn<any>;
+
+export type Action = (...args: any[]) => unknown;
+
+/** What Page(), Layout() and ErrorPage() define, seen from the runtime. */
+export interface Definition {
+  prerender?: boolean;
   load?: (event: never) => unknown;
   head?: (props: never) => Head | undefined;
-  prerender?: boolean;
+  actions?: Record<string, Action>;
+  render: View;
+}
+
+/** A route file: `default` is its definition; API routes export HTTP methods instead. */
+export interface RouteModule {
+  default?: Definition;
   [key: string]: unknown;
 }
 
 export type Loader = () => Promise<RouteModule>;
-
-export type View = (props: any) => NodeModFn<any>;
 
 /**
  * A generated route table entry. Module numbers index the generated module

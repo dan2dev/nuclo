@@ -16,11 +16,11 @@ import { scanPages } from "../../src/vite/scan";
 
 const ROOT = "/app";
 const DIR = `${ROOT}/src/pages`;
-const PAGE = "export default () => div();";
+const PAGE = 'import { Page } from "nuclo-pages";\nexport default Page({ render: () => div() });';
 const files: Record<string, string> = {
-  "_layout.ts": PAGE,
+  "_layout.ts": 'import { Layout } from "nuclo-pages";\nexport default Layout({ render: ({ children }) => div(children) });',
   "index.ts": PAGE,
-  "blog/[slug].ts": `${PAGE}\nexport const prerender = true;`,
+  "blog/[slug].ts": 'import { Page } from "nuclo-pages";\nexport default Page({ prerender: true, render: () => div() });',
   "docs/[...path].ts": PAGE,
   "api/health.ts": "export const GET = () => new Response();",
 };

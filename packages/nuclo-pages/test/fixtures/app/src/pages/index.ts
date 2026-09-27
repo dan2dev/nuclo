@@ -1,7 +1,7 @@
-export const prerender = true;
+import { Page } from "nuclo-pages";
 
-export const head = () => ({ title: "Fixture home" });
-
-export default function Home() {
-  return h1("Home");
-}
+export default Page({
+  prerender: true,
+  head: () => ({ title: "Fixture home" }),
+  render: () => h1("Home"),
+});

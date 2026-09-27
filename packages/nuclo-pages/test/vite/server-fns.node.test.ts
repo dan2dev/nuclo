@@ -213,3 +213,147 @@ describe("misuse", () => {
     expect(error("const ok = $server(() => 1);\nconst fns = [$server(() => 2)];")).toMatch(/:2\)/);
   });
 });
+
+describe("page and layout definitions", () => {
+  const PAGE = "src/pages/todos.ts";
+  const pid = (name: string) => JSON.stringify(serverFnId(PAGE, name));
+  const runPage = (code: string, target: "client" | "server", dev = false) => transformServerFns(code, `/app/${PAGE}`, PAGE, target, dev);
+  const compile = (code: string, target: "client" | "server", dev = false) => {
+    const result = runPage(code, target, dev);
+    if (!result || "error" in result) throw new Error(`expected code, got ${JSON.stringify(result)}`);
+    expect(parseSync("out.js", result.code).errors).toEqual([]);
+    return result.code;
+  };
+  const pageError = (code: string) => {
+    const result = runPage(code, "client");
+    if (!result || !("error" in result)) throw new Error("expected an error");
+    expect(runPage(code, "server")).toEqual(result);
+    return result.error;
+  };
+  const IMPORT = 'import { Page } from "nuclo-pages";';
+
+  const source = [
+    IMPORT,
+    'import { db } from "../server/db";',
+    'import { format } from "../lib/format";',
+    "const SECRET = process.env.SECRET;",
+    "export default Page({",
+    "  prerender: false,",
+    "  load: async () => db.todos(SECRET),",
+    '  head: () => ({ title: format("Todos") }),',
+    "  actions: {",
+    "    add: async (text) => db.add(text),",
+    "    async clear() { await db.clear(SECRET); },",
+    '    "remove-all": () => db.removeAll(),',
+    "  },",
+    '  render: ({ data, actions }) => div(format(data.length), button({ onClick: () => actions.add("x") })),',
+    "});",
+  ].join("\n");
+
+  it("client: load and actions become RPC stubs, and what only they used is removed", () => {
+    const out = compact(compile(source, "client"));
+    expect(out).toContain(`load: __rpc(${pid("load")}),`);
+    expect(out).toContain(`add: __rpc(${pid("actions.add")}),`);
+    expect(out).toContain(`clear: __rpc(${pid("actions.clear")}),`);
+    expect(out).toContain(`"remove-all": __rpc(${pid("actions.remove-all")}),`);
+    expect(out).not.toMatch(/\bdb\b|SECRET|process\.env/);
+    // head and render run in the browser: what they use stays.
+    expect(out).toContain('import { format } from "../lib/format";');
+    expect(out).toContain(IMPORT);
+    expect(out).toContain("prerender: false,");
+    expect(out).toContain("render: ({ data, actions }) =>");
+  });
+
+  it("client: names them in dev", () => {
+    expect(compile(source, "client", true)).toContain(`load: __rpc(${pid("load")}, "${PAGE}#load")`);
+  });
+
+  it("server: registers load and actions in place, turning methods into functions", () => {
+    const out = compile(source, "server");
+    expect(out).toContain(`load: __serverFn(${pid("load")}, async () => db.todos(SECRET)),`);
+    expect(out).toContain(`add: __serverFn(${pid("actions.add")}, async (text) => db.add(text)),`);
+    expect(out).toContain(`clear: __serverFn(${pid("actions.clear")}, async function () { await db.clear(SECRET); }),`);
+    expect(out).toContain(`"remove-all": __serverFn(${pid("actions.remove-all")}, () => db.removeAll()),`);
+    expect(out).toContain('import { db } from "../server/db";');
+    expect(out).toContain('import { __serverFn } from "nuclo-pages/server";');
+  });
+
+  it("keeps every line number", () => {
+    const client = compile(source, "client").split("\n");
+    const server = compile(source, "server").split("\n");
+    const at = (lines: string[], text: string) => lines.findIndex((line) => line.includes(text));
+    for (const lines of [client, server]) {
+      expect(at(lines, "prerender: false")).toBe(5);
+      expect(at(lines, "render: ({ data, actions })")).toBe(13);
+    }
+  });
+
+  it("compiles a page written the documented way", () => {
+    const code = `${IMPORT}
+import { listTodos } from "../server/todos";
+
+export default Page({
+    prerender: true,
+    load: async () => listTodos(),
+    head: () => ({ title: "Life at Nuclo" }),
+    actions: {
+        clearCompleted: () => {
+            // action to clear completed todos
+        }
+    },
+    render: ({ data }) => {
+        const completed = data.filter((todo) => todo.done).length;
+        return section(h1("Life at Nuclo"), p(\`\${completed} completed of \${data.length} total\`));
+    }
+});
+`;
+    const browser = compile(code, "client");
+    expect(compact(browser)).toContain(`load: __rpc(${pid("load")}),`);
+    expect(compact(browser)).toContain(`clearCompleted: __rpc(${pid("actions.clearCompleted")})`);
+    expect(browser).not.toMatch(/listTodos|action to clear/);
+    expect(browser).toContain("const completed = data.filter((todo) => todo.done).length;");
+    const onServer = compile(code, "server");
+    expect(onServer).toContain(`load: __serverFn(${pid("load")}, async () => listTodos()),`);
+    expect(onServer).toContain(`clearCompleted: __serverFn(${pid("actions.clearCompleted")}, () => {`);
+    expect(onServer).toContain('import { listTodos } from "../server/todos";');
+    for (const out of [browser, onServer]) expect(out.split("\n").findIndex((line) => line.includes("render: ({ data })"))).toBe(12);
+  });
+
+  it("handles layouts, renamed imports and $server functions in the same file", () => {
+    const code = [
+      'import { Layout as L, route } from "nuclo-pages";',
+      'import { session } from "../server/session";',
+      "export const whoami = $server(async () => session().user);",
+      "export default L({ load: () => session(), render: ({ children }) => div(route.url.pathname, children) });",
+    ].join("\n");
+    const out = compact(compile(code, "client"));
+    expect(out).toContain(`export const whoami = __rpc(${pid("whoami")});`);
+    expect(out).toContain(`load: __rpc(${pid("load")})`);
+    expect(out).not.toContain("session");
+    expect(serverFnIds(code, `/app/${PAGE}`, PAGE)).toEqual([serverFnId(PAGE, "whoami"), serverFnId(PAGE, "load")]);
+  });
+
+  it("lists the ids of load and actions", () => {
+    expect(serverFnIds(source, `/app/${PAGE}`, PAGE)).toEqual(["load", "actions.add", "actions.clear", "actions.remove-all"].map((name) => serverFnId(PAGE, name)));
+  });
+
+  it("leaves error views, pages without server parts and other modules alone", () => {
+    expect(runPage('import { ErrorPage } from "nuclo-pages";\nexport default ErrorPage({ render: () => div() });', "client")).toBeNull();
+    expect(runPage(`${IMPORT}\nexport default Page({ head: () => ({}), render: () => div() });`, "client")).toBeNull();
+    expect(runPage('import { route } from "nuclo-pages";\nexport const path = () => route.url.pathname;', "client")).toBeNull();
+    expect(runPage('import type { Page } from "nuclo-pages";\nexport const x = 1;', "client")).toBeNull();
+  });
+
+  it("rejects definitions that could hide server code", () => {
+    expect(pageError(`${IMPORT}\nconst page = Page({ render });\nexport default page;`)).toMatch(/Page\(\) must be the default export.*:2\)/);
+    expect(pageError(`${IMPORT}\nexport default Page(definition);`)).toMatch(/takes an object literal/);
+    expect(pageError(`${IMPORT}\nexport default Page({ ...base, render });`)).toMatch(/without spreads or computed keys/);
+    expect(pageError(`${IMPORT}\nexport default Page({ ["load"]: () => 1, render });`)).toMatch(/without spreads or computed keys/);
+    expect(pageError(`${IMPORT}\nexport default Page({ load: loadTodos, render });`)).toMatch(/load must be an inline function/);
+    expect(pageError(`${IMPORT}\nexport default Page({ load, render });`)).toMatch(/load must be an inline function/);
+    expect(pageError(`${IMPORT}\nexport default Page({ get load() { return x; }, render });`)).toMatch(/load must be an inline function/);
+    expect(pageError(`${IMPORT}\nexport default Page({ actions: shared, render });`)).toMatch(/actions must be an object of inline functions/);
+    expect(pageError(`${IMPORT}\nexport default Page({ actions: { save: saveTodo }, render });`)).toMatch(/actions must be an object of inline functions/);
+    expect(pageError(`${IMPORT}\nexport default Page({ actions: { ...others }, render });`)).toMatch(/actions must be an object of inline functions/);
+  });
+});

@@ -4,7 +4,7 @@ import "nuclo";
 import * as devalue from "devalue";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Middleware, RequestEvent } from "../../types/index";
-import { error, redirect } from "../../src/index";
+import { Page, error, redirect } from "../../src/index";
 import { __serverFn, getRequestEvent } from "../../src/server/index";
 import { createApp, readPage } from "../helpers";
 
@@ -73,7 +73,7 @@ describe("API routes", () => {
 
   it("coexists with pages, and is never rendered as one", async () => {
     const { request, scan } = createApp({
-      "index.ts": { default: () => p("home") },
+      "index.ts": Page({ render: () => p("home") }),
       "api/data.ts": { GET: () => Response.json([1]) },
     });
     expect(await (await request("/api/data")).json()).toEqual([1]);
@@ -93,7 +93,7 @@ describe("middleware", () => {
     const whoami = __serverFn("mw-whoami", () => (getRequestEvent().locals as { user?: string }).user);
     const { request } = createApp(
       {
-        "index.ts": { default: ({ data }) => p(data), load: () => (getRequestEvent().locals as { user: string }).user },
+        "index.ts": Page({ load: () => (getRequestEvent().locals as { user: string }).user, render: ({ data }) => p(data) }),
         "api/me.ts": { GET: ({ locals }: RequestEvent) => Response.json(locals) },
       },
       { middleware },
@@ -108,7 +108,7 @@ describe("middleware", () => {
 
   it("can answer without calling next", async () => {
     const page = vi.fn(() => p("secret"));
-    const { request } = createApp({ "index.ts": { default: page } }, { middleware: () => new Response("blocked", { status: 401 }) });
+    const { request } = createApp({ "index.ts": Page({ render: page }) }, { middleware: () => new Response("blocked", { status: 401 }) });
     const response = await request("/");
     expect(response.status).toBe(401);
     expect(await response.text()).toBe("blocked");
@@ -122,13 +122,13 @@ describe("middleware", () => {
       copy.headers.set("x-status-seen", String(response.status));
       return copy;
     };
-    const { request } = createApp({ "index.ts": { default: () => p("x") } }, { middleware });
+    const { request } = createApp({ "index.ts": Page({ render: () => p("x") }) }, { middleware });
     expect((await request("/")).headers.get("x-status-seen")).toBe("200");
     expect((await request("/missing")).headers.get("x-status-seen")).toBe("404");
   });
 
   it("turns thrown redirects and errors into responses", async () => {
-    const files = { "index.ts": { default: () => p("x") } };
+    const files = { "index.ts": Page({ render: () => p("x") }) };
     const redirected = await createApp(files, { middleware: () => redirect("/login") }).request("/");
     expect(redirected.status).toBe(302);
     expect(redirected.headers.get("location")).toBe("/login");
@@ -147,15 +147,15 @@ describe("response headers and cookies", () => {
     };
     const { request } = createApp(
       {
-        "index.ts": {
-          default: () => p("x"),
+        "index.ts": Page({
           load: () => {
             const event = getRequestEvent();
             event.setHeaders({ "cache-control": "max-age=60" });
             event.cookies.set("theme", "dark", { httpOnly: false });
             return null;
           },
-        },
+          render: () => p("x"),
+        }),
         "api/x.ts": { GET: ({ cookies }: RequestEvent) => (cookies.set("api", "yes"), new Response("ok")) },
       },
       { middleware },
@@ -181,7 +181,7 @@ describe("response headers and cookies", () => {
 
   it("merges headers set by redirecting loads", async () => {
     const { request } = createApp({
-      "index.ts": { default: () => p("x"), load: () => (getRequestEvent().cookies.set("flash", "saved"), redirect("/done")) },
+      "index.ts": Page({ load: () => (getRequestEvent().cookies.set("flash", "saved"), redirect("/done")), render: () => p("x") }),
     });
     const response = await request("/");
     expect(response.status).toBe(302);

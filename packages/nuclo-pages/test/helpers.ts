@@ -1,6 +1,6 @@
 import * as devalue from "devalue";
 import { createHandler, type HandlerOptions } from "../src/server/index";
-import type { RouteModule } from "../src/shared/types";
+import type { Definition, RouteModule } from "../src/shared/types";
 import { scanPages } from "../src/vite/scan";
 
 export const TEMPLATE = "<!doctype html><html><head><title>Default</title><!--nuclo:head--></head><body><!--nuclo:body--></body></html>";
@@ -8,26 +8,30 @@ export const ASSETS = { entry: { js: "/entry.js", css: [], preload: [] }, module
 
 const PAGES = "/app/src/pages";
 
-/** Stub source for a route module, so the real scanner can classify it. */
-function sourceOf(mod: RouteModule): string {
-  return Object.keys(mod)
-    .map((key) =>
-      key === "default"
-        ? "export default function View() {}"
-        : key === "prerender"
-          ? `export const prerender = ${String(mod.prerender)};`
-          : `export const ${key} = () => {};`,
-    )
-    .join("\n");
+/** A route file: a Page/Layout/ErrorPage definition, or an API route's HTTP method handlers. */
+export type TestFile = Definition | Record<string, unknown>;
+
+const isDefinition = (file: TestFile): file is Definition => typeof (file as Definition).render === "function";
+
+/** Stub source for a route file, so the real scanner classifies it like the real thing. */
+function sourceOf(path: string, file: TestFile): string {
+  if (!isDefinition(file)) return Object.keys(file).map((key) => `export const ${key} = () => {};`).join("\n");
+  const helper = path.endsWith("_layout.ts") ? "Layout" : path.endsWith("_error.ts") ? "ErrorPage" : "Page";
+  const prerender = file.prerender === undefined ? "" : `prerender: ${String(file.prerender)}, `;
+  return `import { ${helper} } from "nuclo-pages";\nexport default ${helper}({ ${prerender}render: () => null });`;
 }
 
 /**
- * An app from `src/pages` files mapped to module objects: scanned by the real
- * scanner and served by a real handler.
+ * An app from `src/pages` files: scanned by the real scanner and served by a
+ * real handler. Definitions stand in for what the build would import.
  */
-export function createApp(files: Record<string, RouteModule>, options: Partial<HandlerOptions> = {}) {
-  const moduleOf = (file: string) => files[file.slice(PAGES.length + 1)];
-  const scan = scanPages(PAGES, (file) => sourceOf(moduleOf(file)), Object.keys(files));
+export function createApp(files: Record<string, TestFile>, options: Partial<HandlerOptions> = {}) {
+  const fileOf = (path: string) => files[path.slice(PAGES.length + 1)];
+  const scan = scanPages(PAGES, (path) => sourceOf(path, fileOf(path)), Object.keys(files));
+  const moduleOf = (path: string): RouteModule => {
+    const file = fileOf(path);
+    return isDefinition(file) ? { default: file } : file;
+  };
   const modules = scan.modules.map((m) => () => Promise.resolve(moduleOf(m.file)));
   const handler = createHandler({
     modules,

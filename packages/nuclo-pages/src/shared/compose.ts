@@ -1,6 +1,6 @@
 import { list } from "nuclo";
 import { isRedirect } from "./errors";
-import type { RouteModule, View } from "./types";
+import type { Action, Definition, RouteModule, View } from "./types";
 
 /** One rendered level: a layout, the page, or an error view. */
 export interface Level {
@@ -8,7 +8,7 @@ export interface Level {
   key: string;
   view: View;
   props: Record<string, unknown>;
-  head?: RouteModule["head"];
+  head?: Definition["head"];
 }
 
 /** A layout's `children`: a single-item list whose item is swapped on navigation. */
@@ -49,29 +49,58 @@ export function compose(levels: readonly Level[], outlets: Outlet[], from = 0): 
 
 let errorSeq = 0;
 
+/** A route module's Page/Layout/ErrorPage definition; the built-in layout and error view (-1) have none. */
+function definitionOf(mod: RouteModule, module: number): Definition | undefined {
+  const definition = mod.default;
+  if (definition !== undefined && typeof definition?.render !== "function") {
+    throw new TypeError(`Route module ${module}: the default export must come from Page(), Layout() or ErrorPage()`);
+  }
+  return definition;
+}
+
 export function layoutLevel(module: number, mod: RouteModule, names: readonly string[], params: Record<string, string>, data: unknown): Level {
+  const definition = definitionOf(mod, module);
   const own = pick(params, names);
   return {
     key: `${module}:${names.map((name) => own[name]).join("/")}`,
-    view: mod.default ?? defaultLayout,
+    view: definition?.render ?? defaultLayout,
     props: { data, params: own },
-    head: mod.head,
+    head: definition?.head,
   };
 }
 
-export function pageLevel(module: number, mod: RouteModule, params: Record<string, string>, url: URL, data: unknown): Level {
-  if (!mod.default) throw new TypeError(`Route module ${module} has no default export`);
+export function pageLevel(
+  module: number,
+  mod: RouteModule,
+  params: Record<string, string>,
+  url: URL,
+  data: unknown,
+  actions: Record<string, (...args: unknown[]) => Promise<unknown>> = {},
+): Level {
+  const definition = definitionOf(mod, module);
+  if (!definition) throw new TypeError(`Route module ${module} has no default export`);
   return {
     // The search string only matters to pages that load data from it.
-    key: `${module}:${JSON.stringify(params)}${mod.load ? url.search : ""}`,
-    view: mod.default,
-    props: { data, params, url },
-    head: mod.head,
+    key: `${module}:${JSON.stringify(params)}${definition.load ? url.search : ""}`,
+    view: definition.render,
+    props: { data, params, url, actions },
+    head: definition.head,
   };
 }
 
 export function errorLevel(mod: RouteModule, status: number, message: string): Level {
-  return { key: `!${++errorSeq}`, view: mod.default ?? defaultError, props: { status, message }, head: mod.head };
+  const definition = definitionOf(mod, -1);
+  return { key: `!${++errorSeq}`, view: definition?.render ?? defaultError, props: { status, message }, head: definition?.head };
+}
+
+/** A page's actions as its view calls them: `run` decides what happens around each call. */
+export function bindActions(
+  mod: RouteModule,
+  run: (action: Action, args: unknown[]) => Promise<unknown>,
+): Record<string, (...args: unknown[]) => Promise<unknown>> {
+  const bound: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
+  for (const [name, action] of Object.entries(mod.default?.actions ?? {})) bound[name] = (...args) => run(action, args);
+  return bound;
 }
 
 export function pick(params: Record<string, string>, names: readonly string[]): Record<string, string> {
@@ -80,9 +109,9 @@ export function pick(params: Record<string, string>, names: readonly string[]): 
   return out;
 }
 
-/** Runs a module's load(); synchronous throws become rejections. */
+/** Runs a definition's load(); synchronous throws become rejections. */
 export async function runLoad(mod: RouteModule, event: object): Promise<unknown> {
-  return mod.load?.(event as never);
+  return mod.default?.load?.(event as never);
 }
 
 /** The shallowest redirect, else the shallowest error. */
