@@ -49,9 +49,9 @@ jobs:
           git commit -m "chore(core): bump nuclo-core to $VERSION"
       - name: Publish
         working-directory: packages/nuclo-core
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --provenance --access public
+        run: |
+          npm i -g npm@latest
+          npm publish --provenance --access public
       - name: Tag and push
         run: |
           git tag -a "v$VERSION" -m "Release v$VERSION"
