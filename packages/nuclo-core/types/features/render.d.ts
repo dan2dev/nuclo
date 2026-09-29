@@ -19,7 +19,7 @@ declare global {
    * ```
    */
   function render<TTagName extends ElementTagName = ElementTagName>(
-    nodeModFn: NodeModFn<TTagName>,
+    nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
     parent?: Element,
     index?: number
   ): ExpandedElement<TTagName>;
@@ -42,7 +42,31 @@ declare global {
    * ```
    */
   function hydrate<TTagName extends ElementTagName = ElementTagName>(
-    nodeModFn: NodeModFn<TTagName>,
+    nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
+    parent?: Element,
+  ): ExpandedElement<TTagName>;
+
+  /**
+   * Re-evaluates every component-rendered root against its live DOM —
+   * including static values that update() never touches — reusing existing
+   * elements in place (focus, input values and scroll survive).
+   *
+   * Roots become refreshable by rendering the component function itself:
+   *
+   * @example
+   * ```ts
+   * const App = () => div(h1(labels[language].title));
+   * render(App, container);  // the function, not App()
+   * // later, after `language` changed:
+   * forceUpdate();
+   * ```
+   *
+   * The explicit form forceUpdate(App(), parent) force-rehydrates one tree
+   * manually and returns its root element.
+   */
+  function forceUpdate(): void;
+  function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
+    nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
     parent?: Element,
   ): ExpandedElement<TTagName>;
 }

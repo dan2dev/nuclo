@@ -73,7 +73,7 @@
 
 import { logError } from "../shared/errors";
 import { isBrowser } from "../shared/environment";
-import { isSerializing } from "../hydration";
+import { isForceHydrating, isSerializing } from "../hydration";
 
 type CallbackSlot<T> = T | T[];
 
@@ -164,6 +164,11 @@ export function registerMount<TElement extends Element>(
   // already disposed. Dropped rather than stored so it can't grow the
   // record's callback list for an element that will never mount again.
   if (record.state === STATE_DISPOSED) return;
+  // forceUpdate() reclaim: the element is already Mounted — its original
+  // callbacks stay in force. Re-applied hooks are dropped: mount must not
+  // re-fire for an element that never left the document, and repeated force
+  // passes must not grow the callback slots.
+  if (record.state !== STATE_PENDING && isForceHydrating()) return;
   record.mount = pushSlot(record.mount, callback as MountCallback<Element>);
 }
 
@@ -175,6 +180,7 @@ export function registerDestroy<TElement extends Element>(
   if (shouldSkip()) return;
   const record = ensureRecord(element);
   if (record.state === STATE_DISPOSED) return; // see registerMount()
+  if (record.state !== STATE_PENDING && isForceHydrating()) return; // see registerMount()
   record.destroy = pushSlot(record.destroy, callback as DestroyCallback<Element>);
 }
 

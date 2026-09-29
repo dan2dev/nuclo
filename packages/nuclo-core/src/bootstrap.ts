@@ -3,7 +3,7 @@ import { list } from "./list";
 import { update } from "./update/update";
 import { when } from "./when";
 import { on } from "./element/events";
-import { render, hydrate } from "./render";
+import { render, hydrate, forceUpdate } from "./render";
 import { scope } from "./update/scope";
 import { createCss, css, cx, variants, keyframes, globalStyle } from "./style";
 
@@ -22,6 +22,7 @@ export function initializeRuntime(): void {
   registry.scope = scope;
   registry.render = render;
   registry.hydrate = hydrate;
+  registry.forceUpdate = forceUpdate;
 
   // Styling — a themeless default instance plus the factory for themed ones.
   // None of these names collide with window/globalThis properties.

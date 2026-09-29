@@ -43,6 +43,12 @@ export function initReactiveClassName(el: HTMLElement): void {
 	reactiveClassNameFlags.add(el);
 }
 
+// Drop all className bookkeeping for an element (forceUpdate() reclaim).
+export function resetClassNameTracking(el: HTMLElement): void {
+	staticClassNames.delete(el);
+	reactiveClassNameFlags.delete(el);
+}
+
 // Check if element has a reactive className
 export function hasReactiveClassName(el: HTMLElement): boolean {
 	return reactiveClassNameFlags.has(el);

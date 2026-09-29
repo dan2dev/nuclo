@@ -8,7 +8,7 @@ import { createReactiveTextNode, toText } from "../update/reactive-text";
 import { registerReactiveTextNode } from "../update/registry";
 import { logError } from "../shared/errors";
 import { isFunction, isNode, isObject, isPrimitive, isZeroArityFunction } from "../shared/type-guards";
-import { isHydrating, isSerializing, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration";
+import { isHydrating, isForceHydrating, isSerializing, claimBareText, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration";
 import { isBrowser } from "../shared/environment";
 
 export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
@@ -96,12 +96,24 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 					// stay reactive so a later update() can fill it in. The resolver is
 					// registered raw — the notify pass renders nullish/non-primitive
 					// results as "" — so no wrapper closure is allocated per text node.
-					if (isHydrating() && nextChildIsTextComment(parent as unknown as Node)) {
+					if (isHydrating()) {
 						const parentNode = parent as unknown as Node;
-						claimChild(parentNode); // skip <!-- text-N --> comment
 						const expected = toText(v);
-						registerReactiveTextNode(claimTextAfterMarker(parentNode, expected), modifier, expected);
-						return null;
+						// forceUpdate(): client-rendered text nodes carry no marker —
+						// claim the bare text node, patch it, swap in the new resolver.
+						if (isForceHydrating()) {
+							const claimed = claimBareText(parentNode);
+							if (claimed) {
+								if (claimed.textContent !== expected) claimed.textContent = expected;
+								registerReactiveTextNode(claimed, modifier, expected);
+								return null;
+							}
+						}
+						if (nextChildIsTextComment(parentNode)) {
+							claimChild(parentNode); // skip <!-- text-N --> comment
+							registerReactiveTextNode(claimTextAfterMarker(parentNode, expected), modifier, expected);
+							return null;
+						}
 					}
 					return wrapTextNode(index, createReactiveTextNode(modifier, v));
 				}
@@ -126,11 +138,22 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 	// Handle non-function modifiers
 	const candidate = modifier as NodeMod<TTagName>;
 	if (isPrimitive(candidate)) {
-		if (isHydrating() && nextChildIsTextComment(parent as unknown as Node)) {
+		if (isHydrating()) {
 			const parentNode = parent as unknown as Node;
-			claimChild(parentNode); // skip <!-- text-N --> comment
-			claimTextAfterMarker(parentNode, String(candidate));
-			return null;
+			const expected = String(candidate);
+			// forceUpdate(): claim and patch the bare client-rendered text node.
+			if (isForceHydrating()) {
+				const claimed = claimBareText(parentNode);
+				if (claimed) {
+					if (claimed.textContent !== expected) claimed.textContent = expected;
+					return null;
+				}
+			}
+			if (nextChildIsTextComment(parentNode)) {
+				claimChild(parentNode); // skip <!-- text-N --> comment
+				claimTextAfterMarker(parentNode, expected);
+				return null;
+			}
 		}
 		return wrapTextNode(index, document.createTextNode(String(candidate)));
 	}

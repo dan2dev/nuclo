@@ -10,7 +10,7 @@ export { list } from "./list";
 export { when } from "./when";
 
 // Mounting
-export { render, hydrate } from "./render";
+export { render, hydrate, forceUpdate } from "./render";
 
 // Styling: css(), cx(), variants(), keyframes(), globalStyle(), createCss()
 export * from "./style";

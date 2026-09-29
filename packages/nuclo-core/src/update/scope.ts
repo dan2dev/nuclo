@@ -39,6 +39,9 @@ function addScopeRoot(id: ScopeId, el: Element): void {
     set = new Set<WeakRef<Element>>();
     scopeRootsById.set(id, set);
   }
+  // Re-registration (forceUpdate() reclaim) must not grow the set.
+  // linear scan — scope root sets are a handful of elements.
+  for (const ref of set) if (ref.deref() === el) return;
   set.add(new WeakRef(el));
 }
 

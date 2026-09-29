@@ -7,6 +7,7 @@ describe('main index.ts exports', () => {
       'createCss',
       'css',
       'cx',
+      'forceUpdate',
       'getCssText',
       'globalStyle',
       'hydrate',

@@ -1,6 +1,6 @@
 import { createMarkerPair, clearBetweenMarkers, insertNodesBefore } from "../shared/dom";
 import type { WhenGroup, WhenRuntime } from "./runtime";
-import { renderWhenContent, registerWhenRuntime, evaluateActiveCondition, renderContentItems } from "./runtime";
+import { renderWhenContent, registerWhenRuntime, getWhenRuntime, evaluateActiveCondition, renderContentItems } from "./runtime";
 import { isBrowser } from "../shared/environment";
 import { isHydrating, claimMarkerPair, setCursor, runWithoutHydration } from "../hydration";
 import { applyNodeModifier } from "../element/modifiers";
@@ -74,9 +74,13 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     if (!pair) return this.freshRender(host, index);
     const { start: startMarker, end: endMarker } = pair;
 
-    // Determine which branch the client wants and which the server rendered.
+    // Determine which branch the client wants and which is rendered. A live
+    // runtime (forceUpdate() reclaim) knows its actual branch — the marker
+    // text only encodes the branch at SSR time and goes stale after
+    // client-side toggles.
     const activeIndex = evaluateActiveCondition(this.groups, this.elseContent);
-    const serverBranch = decodeBranch(startMarker.textContent);
+    const existing = getWhenRuntime(startMarker);
+    const serverBranch = existing ? existing.activeIndex : decodeBranch(startMarker.textContent);
     const branchMatches = !pair.recreated &&
       (serverBranch === undefined || serverBranch === activeIndex);
 

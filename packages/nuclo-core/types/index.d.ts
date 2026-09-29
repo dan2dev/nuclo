@@ -31,12 +31,17 @@ export function scope<TTagName extends ElementTagName = ElementTagName>(
   ...ids: string[]
 ): NodeModFn<TTagName>;
 export function render<TTagName extends ElementTagName = ElementTagName>(
-  nodeModFn: NodeModFn<TTagName>,
+  nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
   parent?: Element,
   index?: number,
 ): ExpandedElement<TTagName>;
 export function hydrate<TTagName extends ElementTagName = ElementTagName>(
-  nodeModFn: NodeModFn<TTagName>,
+  nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
+  parent?: Element,
+): ExpandedElement<TTagName>;
+export function forceUpdate(): void;
+export function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
+  nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
   parent?: Element,
 ): ExpandedElement<TTagName>;
 

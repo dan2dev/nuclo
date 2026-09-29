@@ -95,10 +95,20 @@ export function renderWhenContent<TTagName extends ElementTagName>(
 export function registerWhenRuntime<TTagName extends ElementTagName>(
   runtime: WhenRuntime<TTagName>
 ): void {
+  const existing = whenRuntimeByMarker.get(runtime.startMarker);
+  whenRuntimeByMarker.set(runtime.startMarker, runtime as WhenRuntime<ElementTagName>);
+  // Re-registration for the same markers (forceUpdate() reclaim): the new
+  // runtime replaced the old in the WeakMap; the iteration set and finalizer
+  // already track this marker, so adding again would only grow the set.
+  if (existing) return;
   const ref = new WeakRef(runtime.startMarker);
   activeWhenRuntimes.add(ref);
-  whenRuntimeByMarker.set(runtime.startMarker, runtime as WhenRuntime<ElementTagName>);
   whenMarkerFinalizer?.register(runtime.startMarker, ref);
+}
+
+/** The live runtime registered for a claimed start marker, if any. */
+export function getWhenRuntime(startMarker: Comment): WhenRuntime<ElementTagName> | undefined {
+  return whenRuntimeByMarker.get(startMarker);
 }
 
 /**

@@ -50,9 +50,13 @@ const listMarkerFinalizer = typeof FinalizationRegistry !== "undefined"
 let updateListFlushEpoch = 0;
 
 function registerListRuntime(startMarker: Comment, runtime: ListRuntime<unknown, ElementTagName>): void {
+  const existing = listRuntimeByMarker.get(startMarker);
+  listRuntimeByMarker.set(startMarker, runtime);
+  // Re-registration for the same markers (forceUpdate() reclaim): see
+  // registerWhenRuntime() — adding another WeakRef would only grow the set.
+  if (existing) return;
   const ref = new WeakRef(startMarker);
   activeListRuntimes.add(ref);
-  listRuntimeByMarker.set(startMarker, runtime);
   listMarkerFinalizer?.register(startMarker, ref);
 }
 

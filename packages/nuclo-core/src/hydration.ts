@@ -11,7 +11,13 @@
  * firstChild/nextSibling pointers are O(1) in every DOM implementation.
  */
 
+import { safeRemoveChild } from "./shared/dom";
+
 let _hydrating = false;
+// True while forceUpdate() re-hydrates a live, client-rendered tree: text
+// claims work without `<!-- text-N -->` markers and reused elements get their
+// previous listeners/class state reset before modifiers re-apply.
+let _force = false;
 // True while renderToString() is building a tree destined for serialization.
 let _serializing = false;
 // Missing entry = cursor at parent.firstChild; null = past the last child.
@@ -19,6 +25,11 @@ let _cursors = new WeakMap<Node, Node | null>();
 
 export function isHydrating(): boolean {
   return _hydrating;
+}
+
+/** True only inside a forceUpdate() pass (never during plain hydrate()). */
+export function isForceHydrating(): boolean {
+  return _hydrating && _force;
 }
 
 /**
@@ -46,8 +57,9 @@ export function runSerializing<T>(fn: () => T): T {
   }
 }
 
-export function startHydration(): void {
+export function startHydration(force = false): void {
   _hydrating = true;
+  _force = force;
   // Each hydration pass starts with a clean cursor slate. Stale cursors from
   // a previous pass would desynchronize claims when a container's content is
   // replaced and re-hydrated (HMR, islands re-mounting).
@@ -56,6 +68,7 @@ export function startHydration(): void {
 
 export function endHydration(): void {
   _hydrating = false;
+  _force = false;
 }
 
 /**
@@ -128,6 +141,28 @@ export function claimChild(parent: Node): Node | null {
 }
 
 /**
+ * forceUpdate() text claim: claims the next child when it is a bare text node
+ * (client renders emit no `<!-- text-N -->` markers). Whitespace-only text
+ * that is followed by a text marker is SSR template formatting, not content —
+ * it is left for the marker path, which skips it. Returns null when nothing
+ * claimable is at the cursor.
+ */
+export function claimBareText(parent: Node): Text | null {
+  const next = peekChild(parent);
+  if (!next || next.nodeType !== 3) return null;
+  if (isWhitespaceText(next)) {
+    let sibling = next.nextSibling;
+    while (sibling && isWhitespaceText(sibling)) sibling = sibling.nextSibling;
+    if (
+      sibling && sibling.nodeType === 8 &&
+      (sibling.textContent ?? "").trimStart().startsWith("text-")
+    ) return null;
+  }
+  claimChild(parent);
+  return next as Text;
+}
+
+/**
  * Claims a server-rendered `<!--{prefix}-start-…-->` … `<!--{prefix}-end-->`
  * block (list()/when()) at the cursor, leaving the cursor just after the start
  * marker. Returns null, claiming nothing, when the next child isn't a start
@@ -187,7 +222,10 @@ export function cleanupUnclaimedChildren(node: Node, lastOriginalChild: Node | n
   let current = peekChild(node);
   while (current) {
     const next = current === lastOriginalChild ? null : current.nextSibling;
-    node.removeChild(current);
+    // safeRemoveChild (not a bare removeChild): during forceUpdate() the
+    // unclaimed nodes were live — their listeners, registrations and
+    // onDestroy hooks must be released, not just detached.
+    safeRemoveChild(current);
     current = next;
   }
   setCursor(node, null);
