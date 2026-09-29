@@ -34,11 +34,11 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
       - run: bun install --frozen-lockfile
-      - name: Bump minor version and refresh docs stats
+      - name: Bump patch version and refresh docs stats
         working-directory: packages/nuclo-core
         run: |
           bun run build
-          version=$(make --no-print-directory bump-version BUMP=minor)
+          version=$(make --no-print-directory bump-version BUMP=patch)
           echo "VERSION=$version" >> "$GITHUB_ENV"
           bun ../../docs/scripts/update-doc-stats.ts
       - name: Commit version bump
