@@ -56,6 +56,16 @@ jobs:
         run: |
           git tag -a "v$VERSION" -m "Release v$VERSION"
           git push --follow-tags
+
+  deploy-docs:
+    needs: publish-nuclo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
       - name: Deploy docs to Cloudflare Pages
         working-directory: docs
         env:
