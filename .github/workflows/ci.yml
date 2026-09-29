@@ -21,7 +21,7 @@ jobs:
 
   publish-nuclo:
     needs: nuclo-core
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'chore(core): bump nuclo-core')
+    if: "${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'chore(core): bump nuclo-core') }}"
     runs-on: ubuntu-latest
     permissions:
       contents: write
