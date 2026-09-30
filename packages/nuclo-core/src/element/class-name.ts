@@ -1,6 +1,18 @@
 // WeakMap/WeakSet replace expando properties — zero `any`, automatic GC on element removal.
-const staticClassNames = new WeakMap<HTMLElement, Set<string>>();
-const reactiveClassNameFlags = new WeakSet<HTMLElement>();
+const staticClassNames = new WeakMap<Element, Set<string>>();
+const reactiveClassNameFlags = new WeakSet<Element>();
+
+// SVG's `className` is a read-only SVGAnimatedString, so non-HTML elements go
+// through the `class` attribute. The SSR polyfill's elements are all
+// HTMLElement and keep the plain `.className` string the serializer reads.
+function getClass(el: Element): string {
+	return el instanceof HTMLElement ? el.className : el.getAttribute('class') || '';
+}
+
+function setClass(el: Element, value: string): void {
+	if (el instanceof HTMLElement) el.className = value;
+	else el.setAttribute('class', value);
+}
 
 /**
  * Splits a className string into non-empty tokens and adds them to a Set.
@@ -34,28 +46,29 @@ function joinClasses(classes: Set<string>): string {
 // reactive-only elements (the common case, e.g. a list row's `class={...}`)
 // skip the Set entirely. mergeReactiveClassName/addStaticClasses both handle a
 // missing Set, so an empty one carries no information.
-export function initReactiveClassName(el: HTMLElement): void {
-	if (el.className && !staticClassNames.has(el)) {
+export function initReactiveClassName(el: Element): void {
+	const current = getClass(el);
+	if (current && !staticClassNames.has(el)) {
 		const classSet = new Set<string>();
-		addClassTokens(classSet, el.className);
+		addClassTokens(classSet, current);
 		staticClassNames.set(el, classSet);
 	}
 	reactiveClassNameFlags.add(el);
 }
 
 // Drop all className bookkeeping for an element (forceUpdate() reclaim).
-export function resetClassNameTracking(el: HTMLElement): void {
+export function resetClassNameTracking(el: Element): void {
 	staticClassNames.delete(el);
 	reactiveClassNameFlags.delete(el);
 }
 
 // Check if element has a reactive className
-export function hasReactiveClassName(el: HTMLElement): boolean {
+export function hasReactiveClassName(el: Element): boolean {
 	return reactiveClassNameFlags.has(el);
 }
 
 // Add static classes to the element's tracked set
-export function addStaticClasses(el: HTMLElement, className: string): void {
+export function addStaticClasses(el: Element, className: string): void {
 	if (!className) return;
 	let classSet = staticClassNames.get(el);
 	if (!classSet) {
@@ -66,18 +79,18 @@ export function addStaticClasses(el: HTMLElement, className: string): void {
 }
 
 // Merge reactive className with static classes — called on every reactive update
-export function mergeReactiveClassName(el: HTMLElement, reactiveClassName: string): void {
+export function mergeReactiveClassName(el: Element, reactiveClassName: string): void {
 	const staticClasses = staticClassNames.get(el);
 
 	if (!staticClasses || staticClasses.size === 0) {
 		// Skip the DOM write when nothing changes — the common case is the very
 		// first apply of a reactive className resolving to '' on a fresh element.
 		const next = reactiveClassName || '';
-		if (el.className !== next) el.className = next;
+		if (getClass(el) !== next) setClass(el, next);
 		return;
 	}
 	if (!reactiveClassName) {
-		el.className = joinClasses(staticClasses);
+		setClass(el, joinClasses(staticClasses));
 		return;
 	}
 	// Hot path: static + reactive. Avoid new Set() — build string directly
@@ -96,19 +109,19 @@ export function mergeReactiveClassName(el: HTMLElement, reactiveClassName: strin
 			start = i + 1;
 		}
 	}
-	el.className = result;
+	setClass(el, result);
 }
 
 // Merge static className (for non-reactive className attributes)
-export function mergeStaticClassName(el: HTMLElement, newClassName: string): void {
+export function mergeStaticClassName(el: Element, newClassName: string): void {
 	if (!newClassName) return;
-	const currentClassName = el.className;
+	const currentClassName = getClass(el);
 	if (currentClassName && currentClassName !== newClassName) {
 		const existing = new Set<string>();
 		addClassTokens(existing, currentClassName);
 		addClassTokens(existing, newClassName);
-		el.className = joinClasses(existing);
+		setClass(el, joinClasses(existing));
 	} else {
-		el.className = newClassName;
+		setClass(el, newClassName);
 	}
 }

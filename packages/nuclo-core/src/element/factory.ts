@@ -61,19 +61,25 @@ export function applyModifiers<TTagName extends ElementTagName>(
 }
 
 /**
- * forceUpdate() reclaim: clears the declarative state the previous build left
- * on a reused element so re-applying the current modifiers converges instead
- * of accumulating — on() listeners are detached (the re-applied modifiers
- * re-attach), reactive attribute resolvers are dropped (re-registered), and
- * class/inline-style state is rebuilt from scratch.
- * attributes the new tree no longer sets keep their old values —
+ * Clears state a claimed element carries from its previous build so
+ * re-applying the current modifiers converges instead of accumulating.
+ *
+ * Every claim (hydrate() and forceUpdate()) rebuilds class state from scratch:
+ * the existing class attribute is the output of className modifiers, and left
+ * in place initReactiveClassName would capture it as static classes that a
+ * dynamic className then adds to instead of replacing.
+ *
+ * forceUpdate() also detaches on() listeners (the re-applied modifiers
+ * re-attach), drops reactive attribute resolvers (re-registered) and rebuilds
+ * inline style. Attributes the new tree no longer sets keep their old values —
  * nuclo keeps no per-element attribute manifest to diff against.
  */
-function resetReusedElement(el: Element): void {
-  removeAllListeners(el as HTMLElement);
-  cleanupReactiveElement(el);
+function resetReusedElement(el: Element, force: boolean): void {
   resetClassNameTracking(el as HTMLElement);
   el.removeAttribute("class");
+  if (!force) return;
+  removeAllListeners(el as HTMLElement);
+  cleanupReactiveElement(el);
   el.removeAttribute("style");
 }
 
@@ -92,7 +98,7 @@ function createElementFactory(tagName: string, modifiers: ReadonlyArray<unknown>
 
   const factory = function(parent?: Node, index = 0): Element {
     const claimed = parent ? claimElement(parent, tagName) : null;
-    if (claimed && isForceHydrating()) resetReusedElement(claimed);
+    if (claimed) resetReusedElement(claimed, isForceHydrating());
     const el = claimed ?? (svg ? document.createElementNS(SVG_NAMESPACE, tagName) : document.createElement(tagName));
     const lastOriginalChild = claimed ? el.lastChild : null;
     applyModifiers(el as unknown as ExpandedElement, modifiers as ReadonlyArray<NodeModifier>, index);

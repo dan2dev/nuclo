@@ -113,29 +113,12 @@ declare global {
             ? ExpandedElement<TTagName>
             : Extract<TValue, Element>;
 
-  // Core modifier types (selfClosing)
-  // export type NodeSelfClosingMod<
-  //   TTagName extends ElementTagName = ElementTagName,
-  // > = ExpandedElementAttributes<TTagName>    | Primitive
-  // | (() => Primitive);
-
-
-
   // Core builder types
   export type ExpandedElementBuilder<
     TTagName extends ElementTagName = ElementTagName,
   > = (
     ...rawMods: readonly NodeModLike<TTagName>[]
   ) => DetachedExpandedElementFactory<TTagName>;
-
-  // export type SelfClosingElementBuilder<
-  //   TTagName extends ElementTagName = ElementTagName,
-  // > = (
-  //   ...rawMods: NodeSelfClosingMod<TTagName>[]
-  // ) => (
-  //   parent?: ExpandedElement<TTagName>,
-  //   index?: number,
-  // ) => ExpandedElement<TTagName>;
 }
 
 export { };

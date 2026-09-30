@@ -269,11 +269,11 @@ document.body.append(el)
 `)}
       <p>Attach it before the next <code>update()</code>. A node that is not in the document when <code>update()</code> runs stops updating for good.</p>
       <h3>SVG</h3>
-      <p>SVG builders take the same arguments. Nuclo sets every SVG attribute with <code>setAttribute</code>, so names such as <code>"stroke-width"</code> work as written. Set classes on SVG with <code>class</code>. <code>className</code> and <code>css()</code>, <code>cx()</code> or <code>variants()</code> results do not work on SVG elements yet: in the browser they write a literal <code>className</code> attribute.</p>
+      <p>SVG builders take the same arguments. Nuclo sets every SVG attribute with <code>setAttribute</code>, so names such as <code>"stroke-width"</code> work as written.</p>
       ${code("icon.ts", `
 const Icon = () =>
   svgSvg(
-    { viewBox: '0 0 24 24', width: 24, height: 24, class: 'icon' },
+    { viewBox: '0 0 24 24', width: 24, height: 24, className: 'icon' },
     circleSvg({ cx: 12, cy: 12, r: 10, fill: 'currentColor' }),
   )
 `)}
@@ -414,7 +414,6 @@ const picker = ul(on<'pick', PickEvent>('pick', (e) => choose(e.detail.id)))
 `)}
       <h3>Which to use</h3>
       <p>Use <code>on*</code> attributes for the usual case. Use <code>on()</code> when you need more than one listener for an event, listener options, or a custom event name such as <code>"my-event"</code>.</p>
-      <p>The SVG builder types do not accept <code>on()</code> yet.</p>
     `,
       },
       {

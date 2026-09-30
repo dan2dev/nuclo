@@ -14,9 +14,15 @@ PKG_FILE := package.json
 DOCS_STATS_SCRIPT := ../../docs/scripts/update-doc-stats.ts
 DOCS_STATS_FILE   := ../../docs/src/generated/nuclo-stats.ts
 
+# create-nuclo's starter template. Its "nuclo" range is rewritten to
+# ^<new version> on every bump — a caret on 0.x never crosses a minor, so a
+# stale range would scaffold apps on an older API.
+TEMPLATE_PKG_FILE := ../create-nuclo/templates/basic/package.json
+
 # Bump version locally without invoking npm workspace resolution.
 bump-version:
 	@node -e 'const fs = require("node:fs"); const pkgPath = process.argv[1]; const bump = process.argv[2]; const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8")); const parts = pkg.version.split(".").map(Number); if (parts.length !== 3 || parts.some(Number.isNaN)) { console.error("Unsupported version format: " + pkg.version); process.exit(1); } if (bump === "patch") { parts[2] += 1; } else if (bump === "minor") { parts[1] += 1; parts[2] = 0; } else if (bump === "major") { parts[0] += 1; parts[1] = 0; parts[2] = 0; } else { console.error("Unsupported bump type: " + bump); process.exit(1); } pkg.version = parts.join("."); fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, "\t") + "\n"); console.log(pkg.version);' "$(PKG_FILE)" "$(BUMP)"
+	@node -e 'const fs = require("node:fs"); const [pkgPath, tplPath] = process.argv.slice(1); const version = JSON.parse(fs.readFileSync(pkgPath, "utf8")).version; const tpl = fs.readFileSync(tplPath, "utf8"); if (!/"nuclo": "[^"]*"/.test(tpl)) { console.error("No nuclo dependency in " + tplPath); process.exit(1); } fs.writeFileSync(tplPath, tpl.replace(/"nuclo": "[^"]*"/, "\"nuclo\": \"^" + version + "\""));' "$(PKG_FILE)" "$(TEMPLATE_PKG_FILE)"
 
 # Helper: extract current version from package.json
 version:
@@ -45,7 +51,7 @@ publish:
 	  echo "==> Refreshing docs stats (version + gzip size) for $$new_version"; \
 	  bun $(DOCS_STATS_SCRIPT); \
 	  echo "==> Staging version bump + docs stats artifacts"; \
-	  git add $(PKG_FILE) $(DOCS_STATS_FILE); \
+	  git add $(PKG_FILE) $(DOCS_STATS_FILE) $(TEMPLATE_PKG_FILE); \
 	  if git diff --cached --quiet; then \
 	    echo "==> No staged changes to commit (possibly already committed)"; \
 	  else \

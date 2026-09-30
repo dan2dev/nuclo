@@ -33,15 +33,15 @@ function setAttributeValue(
   if (v == null) return;
 
   // Special handling for className to merge instead of replace (only for non-reactive updates)
-  if (merge && key === 'className' && el instanceof HTMLElement) {
+  if (merge && key === 'className') {
     mergeStaticClassName(el, String(v));
     return;
   }
 
   // SVG elements should always use setAttribute for most attributes
-  // because many SVG properties are read-only
+  // because many SVG properties are read-only (className included)
   if (el instanceof Element && el.namespaceURI === SVG_NAMESPACE) {
-    el.setAttribute(key, String(v));
+    el.setAttribute(key === 'className' ? 'class' : key, String(v));
   } else if (key in el) {
     // For HTML elements, try to set as property first
     try {
@@ -58,7 +58,7 @@ function setAttributeValue(
 }
 
 function applyReactiveClassName(el: Element, _key: string, v: unknown): void {
-  mergeReactiveClassName(el as HTMLElement, String(v || ''));
+  mergeReactiveClassName(el, String(v || ''));
 }
 
 export function applySingleAttribute<TTagName extends ElementTagName>(
@@ -120,8 +120,8 @@ export function applySingleAttribute<TTagName extends ElementTagName>(
 
       // For reactive className, we need to track which classes are reactive
       // so we can preserve static classes when the reactive className changes
-      if (k === 'className' && el instanceof HTMLElement) {
-        initReactiveClassName(el);
+      if (k === 'className') {
+        initReactiveClassName(el as unknown as Element);
         registerAttributeResolver(el, k, resolver, applyReactiveClassName);
       } else {
         registerAttributeResolver(el, k, resolver, setAttributeValue);
@@ -134,16 +134,17 @@ export function applySingleAttribute<TTagName extends ElementTagName>(
 
   // Static attributes should merge classNames
   // For className, if there's already a reactive className, add to static classes
-  if (k === 'className' && el instanceof HTMLElement && hasReactiveClassName(el)) {
+  const node = el as unknown as Element;
+  if (k === 'className' && hasReactiveClassName(node)) {
     // There's already a reactive className; update the tracked set and DOM atomically.
     const newClassName = String(raw || '');
     if (newClassName) {
-      addStaticClasses(el, newClassName);
-      mergeStaticClassName(el, newClassName);
+      addStaticClasses(node, newClassName);
+      mergeStaticClassName(node, newClassName);
     }
     return;
   }
-  setAttributeValue(el as unknown as Element, k, raw, shouldMergeClassName);
+  setAttributeValue(node, k, raw, shouldMergeClassName);
 }
 
 export function applyAttributes<TTagName extends ElementTagName>(

@@ -6,7 +6,7 @@ declare global {
   // This is needed because SVG DOM properties like 'width' are SVGAnimatedLength,
   // but we set them as strings using setAttribute()
   // Supports state-dependent values (functions) for dynamic attributes
-  export type SVGAttributes = {
+  export type SVGAttributes<TTagName extends SVGTagName = SVGTagName> = {
     // Common SVG attributes
     width?: SVGAttributeValue<string | number>;
     height?: SVGAttributeValue<string | number>;
@@ -72,14 +72,14 @@ declare global {
 
     // Allow any other string attributes (including state-dependent functions)
     // Using a more restrictive type to maintain type safety
-  } & {
-    [K in string]?: SVGAttributeValue;
+  } & SVGEventAttributes<TTagName> & {
+    [K in string]?: SVGAttributeValue | SVGEventAttributes<TTagName>[keyof SVGEventAttributes<TTagName>];
   };
 
   // SVG element modifier types
   export type SVGRenderable<TTagName extends SVGTagName = SVGTagName> =
     | Primitive
-    | SVGAttributes
+    | SVGAttributes<TTagName>
     | SVGElementTagNameMap[TTagName]
     | SVGElement
     | Node;
@@ -96,7 +96,9 @@ declare global {
 
   export type SVGElementModifierLike<TTagName extends SVGTagName = SVGTagName> =
     | SVGElementModifier<TTagName>
-    | SVGElementModifierFn<TTagName>;
+    | SVGElementModifierFn<TTagName>
+    // on() / when() results: they only touch the parent via namespace-agnostic DOM APIs.
+    | NodeModFn;
 
   export type DetachedSVGElementFactory<
     TTagName extends SVGTagName = SVGTagName,

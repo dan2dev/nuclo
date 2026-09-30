@@ -265,13 +265,14 @@ function serializeNode(node: Node): string {
  *
  * @example
  * ```ts
+ * import 'nuclo/polyfill';
+ * import 'nuclo'; // tag builders such as div() are globals only
  * import { renderToString } from 'nuclo/ssr';
- * import { div } from 'nuclo';
  *
  * const html = renderToString(
  *   div("Hello, World!")
  * );
- * // Returns: '<div>Hello, World!</div>'
+ * // Returns: '<div><!-- text-0 -->Hello, World!</div>'
  * ```
  */
 export function renderToString(input: RenderableInput): string {

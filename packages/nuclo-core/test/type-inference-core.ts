@@ -402,4 +402,30 @@ svgSvg(
   circleSvg({ cx: 12, cy: 12, r: 10 }),
 );
 
+// on() modifiers and typed on* handlers work on SVG builders.
+svgSvg(
+  on("click", (e) => {
+    type _Event = Expect<Equal<typeof e.clientX, number>>;
+  }),
+  on("mount", () => {}),
+  {
+    className: "icon",
+    onMount: (el) => {
+      type _El = Expect<Equal<typeof el, SVGSVGElement>>;
+    },
+    onClick: (e) => {
+      type _Event = Expect<Equal<typeof e.clientX, number>>;
+      const _target: SVGSVGElement = e.currentTarget;
+    },
+    onPointerDown: (e) => {
+      type _Event = Expect<Equal<typeof e.pointerId, number>>;
+    },
+  },
+  circleSvg({ onMouseEnter: (e) => e.buttons }),
+);
+// @ts-expect-error handler event type must match the attribute's event
+svgSvg({ onClick: (e: KeyboardEvent) => e.key });
+// @ts-expect-error unknown SVG attributes still take primitives, not objects
+svgSvg({ "data-x": { nope: true } });
+
 export {};

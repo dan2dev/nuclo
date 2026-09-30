@@ -6,7 +6,8 @@ export { updateWhenRuntimes } from "./runtime";
  * Creates a conditional rendering block (when/else logic).
  *
  * Renders different content based on boolean conditions, similar to if/else statements.
- * Conditions can be static booleans or reactive functions that are re-evaluated on updates.
+ * Conditions can be static booleans (read once) or functions that are re-evaluated
+ * on every update().
  *
  * @param condition - Boolean value or function returning a boolean
  * @param content - Content to render when condition is true
@@ -14,14 +15,14 @@ export { updateWhenRuntimes } from "./runtime";
  *
  * @example
  * ```ts
- * const isLoggedIn = signal(false);
+ * let isLoggedIn = false;
  *
  * div(
- *   when(() => isLoggedIn.value,
+ *   when(() => isLoggedIn,
  *     span('Welcome back!')
  *   )
  *   .else(
- *     button('Login', on('click', () => login()))
+ *     button('Login', { onClick: () => { isLoggedIn = true; update(); } })
  *   )
  * )
  * ```
@@ -29,15 +30,17 @@ export { updateWhenRuntimes } from "./runtime";
  * @example
  * ```ts
  * // Multiple conditions
+ * let status: 'loading' | 'error' | 'ready' = 'loading';
+ *
  * div(
- *   when(() => status.value === 'loading',
- *     spinner()
+ *   when(() => status === 'loading',
+ *     p('Loading…')
  *   )
- *   .when(() => status.value === 'error',
- *     errorMessage()
+ *   .when(() => status === 'error',
+ *     p('Something went wrong')
  *   )
  *   .else(
- *     contentView()
+ *     p('Ready')
  *   )
  * )
  * ```

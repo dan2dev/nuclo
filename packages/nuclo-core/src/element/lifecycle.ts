@@ -30,15 +30,15 @@
  * lifecycle hooks aren't used at all).
  *
  * An element removed through means nuclo never observes (e.g. a raw
- * `node.remove()` on a container built by render()) is only noticed the next
- * time render()/hydrate()/update() runs and finds it disconnected — this
- * file does not use a MutationObserver. That never leaks memory (all
- * bookkeeping below is WeakMap-based, exactly like every other nuclo
- * registry — see test/memory/gc-collectability.test.ts), but if an app
- * removes a node that way and never calls update() again afterwards,
- * onDestroy for it will not run either. This matches list()/when()'s own
- * documented "disconnection is noticed lazily, on the next update()"
- * contract; it is not a lifecycle-specific limitation.
+ * `node.remove()` or `innerHTML = ''` on a container built by render()) never
+ * gets its onDestroy callbacks or onMount cleanups run — not even on a later
+ * update(). This file does not use a MutationObserver, and update() only
+ * prunes disconnected nodes from its registries without disposing their
+ * lifecycles. That never leaks memory (all bookkeeping below is
+ * WeakMap-based, exactly like every other nuclo registry — see
+ * test/memory/gc-collectability.test.ts), but timers or subscriptions the
+ * app started in onMount keep running. Apps that need teardown should remove
+ * the subtree through nuclo, e.g. by switching off a when() around it.
  *
  * ── Ordering (parent/child, any depth) ──────────────────────────────────
  * Neither mechanism below cares how many list()s, when()s, or plain

@@ -111,6 +111,7 @@ describe("SVG Icon Components", () => {
 
     const svgElements = container.querySelectorAll("svg");
     expect(svgElements.length).toBe(2);
-    expect(svgElements[0].getAttribute("className")).toBe("icon");
+    expect(svgElements[0].getAttribute("class")).toBe("icon");
+    expect(svgElements[0].hasAttribute("className")).toBe(false);
   });
 });

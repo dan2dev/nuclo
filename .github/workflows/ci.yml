@@ -46,7 +46,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add packages/nuclo-core/package.json docs/src/generated/nuclo-stats.ts
+          git add packages/nuclo-core/package.json docs/src/generated/nuclo-stats.ts packages/create-nuclo/templates/basic/package.json
           git commit -m "chore(core): bump nuclo-core to $VERSION"
       - name: Publish
         working-directory: packages/nuclo-core

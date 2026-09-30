@@ -15,15 +15,16 @@ import 'nuclo';
 
 let count = 0;
 
-const counter = div(
-  h1(() => `Count: ${count}`),
-  button('Increment', { onClick: () => {
-    count++;
-    update();
-  } })
-);
+const Counter = () =>
+  div(
+    h1(() => `Count: ${count}`),
+    button('Increment', { onClick: () => {
+      count++;
+      update();
+    } })
+  );
 
-render(counter, document.body);
+render(Counter, document.body);
 ```
 
 ## Why nuclo?
@@ -31,7 +32,7 @@ render(counter, document.body);
 - **State-dependent values** – Pass a function for any text, attribute, condition, or list that depends on state. Nuclo can run it again later.
 - **Explicit and predictable** – Mutation alone does not trigger reevaluation. You trigger it yourself with an `update()` call.
 - **Real DOM, no virtual layer** – Nuclo creates and updates real DOM nodes directly. There is no virtual DOM to diff.
-- **Small runtime** – About 15 KB gzipped for the entire runtime. Zero dependencies.
+- **Small runtime** – About 14.5 KB gzipped for the entire runtime. Zero dependencies.
 - **Global tag builders** – Global functions cover every HTML and SVG element.
 - **TypeScript-first** – Full type definitions cover all 175 HTML and SVG builders.
 - **Targeted DOM updates** – `update()` re-runs registered state-dependent values. It touches the DOM only where a value changed.
@@ -90,26 +91,35 @@ import 'nuclo';
 
 // Now use div(), update(), on(), list(), when(), render(), etc. globally
 let count = 0;
-const app = div(
-  h1(() => `Count: ${count}`),
-  button('Click', { onClick: () => { count++; update(); } })
-);
-render(app, document.body);
+const App = () =>
+  div(
+    h1(() => `Count: ${count}`),
+    button('Click', { onClick: () => { count++; update(); } })
+  );
+render(App, document.body);
 ```
+
+Pass the component (`render(App, root)`), not the built tree (`render(App(), root)`). The DOM is the same, but only the component form can be rebuilt later by `forceUpdate()`.
 
 ### TypeScript Setup
 
-Add to your `tsconfig.json`:
+Nuclo ships its own types. You need two things:
+
+- `"moduleResolution": "bundler"`. `node16` and `nodenext` are not supported yet.
+- The `DOM` lib. TypeScript includes it by default when you do not set `lib`.
+
+If any file in the project imports `'nuclo'`, every file sees the global types, and you need nothing else. If no file imports it, for example in a separate tsconfig for tests, add the types yourself:
 
 ```json
 {
   "compilerOptions": {
+    "moduleResolution": "bundler",
     "types": ["nuclo/types"]
   }
 }
 ```
 
-Or in your `vite-env.d.ts`:
+Or add this to a `.d.ts` file:
 
 ```ts
 /// <reference types="nuclo/types" />
@@ -126,13 +136,14 @@ import 'nuclo';
 
 let count = 0;
 
-const app = div(
-  h1(() => `Count: ${count}`),
-  button('Increment', { onClick: () => { count++; update(); } }),
-  button('Reset', { onClick: () => { count = 0; update(); } })
-);
+const App = () =>
+  div(
+    h1(() => `Count: ${count}`),
+    button('Increment', { onClick: () => { count++; update(); } }),
+    button('Reset', { onClick: () => { count = 0; update(); } })
+  );
 
-render(app, document.body);
+render(App, document.body);
 ```
 
 ### Todo List
@@ -153,7 +164,7 @@ function addTodo() {
   update();
 }
 
-const app = div(
+const App = () => div(
   { className: 'todo-app' },
 
   // Input
@@ -185,7 +196,7 @@ const app = div(
   )
 );
 
-render(app, document.body);
+render(App, document.body);
 ```
 
 ### Real-time Search Filter
@@ -209,7 +220,7 @@ function filteredUsers() {
   );
 }
 
-const app = div(
+const App = () => div(
   h1('User Directory'),
 
   input(
@@ -237,7 +248,7 @@ const app = div(
   )
 );
 
-render(app, document.body);
+render(App, document.body);
 ```
 
 ### Loading States & Async
@@ -269,7 +280,7 @@ async function fetchProducts() {
   update();
 }
 
-const app = div(
+const App = () => div(
   div(
     input(
       {
@@ -303,7 +314,7 @@ const app = div(
   )
 );
 
-render(app, document.body);
+render(App, document.body);
 ```
 
 ---
@@ -592,16 +603,17 @@ import 'nuclo';
 import { renderToString, getCssText } from 'nuclo/ssr';
 import { App } from './app.ts';
 
-const html = renderToString(App());
-const styles = getCssText();
+const html = renderToString(App);
 
-const page = `<!doctype html><html><head><style>${styles}</style></head>
+const page = `<!doctype html><html><head><style id="nuclo-styles">${getCssText()}</style></head>
 <body><div id="app">${html}</div></body></html>`;
 ```
 
-On the client, call `hydrate()` instead of `render()`. This attaches Nuclo runtimes to the existing markup and does not re-create DOM nodes.
+Keep `id="nuclo-styles"` on the style tag. The client reuses that element and adds only new rules. Without the id, the client injects a second stylesheet with every rule again.
 
-`renderToString()` accepts the built tree (`App()`) or the component function itself (`App`), the same two forms `render()` and `hydrate()` take.
+On the client, call `hydrate(App, document.getElementById('app')!)` instead of `render()`. This attaches Nuclo runtimes to the existing markup and does not re-create DOM nodes. Do not strip HTML comments from the server output: `hydrate()` needs the `<!-- text-N -->` markers.
+
+`renderToString()` accepts the component function (`App`) or the built tree (`App()`). For a component that takes data, pass the built tree: `renderToString(Page(user))`.
 
 `nuclo/ssr` also exports two more functions. `renderManyToString(inputs)` renders a batch of trees at once. `renderToStringWithContainer(input, containerTag?, containerAttrs?)` wraps the output in a container element, without a second serialization pass.
 
@@ -746,7 +758,7 @@ These markers identify conditional and list boundaries in the DOM.
 ### Gotchas
 
 **The parameter count decides what a function modifier means.**
-A modifier with **zero declared parameters** is treated as dynamic text, or a dynamic `cn()` className, and Nuclo calls it with no arguments. A modifier with **one or more declared parameters** is a node-modifier function. Nuclo calls it with `(element, index)`. Default and rest parameters do not count as declared parameters, so `fn.length` is `0` for them. Nuclo treats all of these as *dynamic text*, not as node modifiers:
+A modifier with **zero declared parameters** is treated as dynamic text, or a dynamic `cx()` className, and Nuclo calls it with no arguments. A modifier with **one or more declared parameters** is a node-modifier function. Nuclo calls it with `(element, index)`. Default and rest parameters do not count as declared parameters, so `fn.length` is `0` for them. Nuclo treats all of these as *dynamic text*, not as node modifiers:
 
 ```ts
 div((el = fallback) => el.id);   // dynamic text — el is undefined!

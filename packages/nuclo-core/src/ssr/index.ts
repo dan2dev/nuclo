@@ -6,12 +6,12 @@
  *
  * @example
  * ```ts
+ * import 'nuclo/polyfill'; // DOM for Node, Bun and Deno — load first
+ * import 'nuclo';          // registers the global tag builders (div, p, …)
  * import { renderToString } from 'nuclo/ssr';
- * import '../polyfill'; // Load polyfills for Node.js
- * import { div } from 'nuclo';
  *
  * const html = renderToString(div("Hello, World!"));
- * console.log(html); // '<div>Hello, World!</div>'
+ * console.log(html); // '<div><!-- text-0 -->Hello, World!</div>'
  * ```
  */
 

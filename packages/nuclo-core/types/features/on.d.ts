@@ -20,7 +20,7 @@
 
 declare global {
   /**
-   * Add a strongly typed DOM event listener as a View Craft modifier.
+   * Add a strongly typed DOM event listener as a nuclo modifier.
    *
    * The returned modifier attaches the listener when the element is created.
    *

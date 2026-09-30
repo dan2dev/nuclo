@@ -210,6 +210,20 @@ declare global {
     TEventName extends NucloHTMLElementEventName,
   > = NativeHTMLElementEventForName<TEventName>;
 
+  /**
+   * Typed `on*` handlers (plus onMount/onDestroy) for SVG builders.
+   * SVGElementEventMap carries the same events as HTMLElementEventMap.
+   */
+  export type SVGEventAttributes<TTagName extends SVGTagName = SVGTagName> = {
+    [TAttribute in keyof HTMLElementEventAttributeNameMap]?: EventAttributeValue<
+      SVGElementTagNameMap[TTagName],
+      TAttribute
+    >;
+  } & {
+    onMount?: MountCallback<SVGElementTagNameMap[TTagName]>;
+    onDestroy?: DestroyCallback<SVGElementTagNameMap[TTagName]>;
+  };
+
   export type CamelCaseEventAttributes<
     TTagName extends keyof HTMLElementTagNameMap = keyof HTMLElementTagNameMap,
   > = {
