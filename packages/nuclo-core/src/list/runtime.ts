@@ -632,8 +632,8 @@ function createListRuntimeNormal<TItem, TTagName extends ElementTagName>(
 
   sync(runtime);
 
-  if (isBrowser) {
-    // Register for future update() calls — not needed in SSR
+  if (isBrowser && !isSerializing()) {
+    // Register for future update() calls — never for a renderToString() tree
     registerListRuntime(startMarker, runtime as ListRuntime<unknown, ElementTagName>);
   }
 
@@ -691,7 +691,7 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
 
   const runtime = newRuntime(itemsProvider, renderFn, startMarker, endMarker, records, host, currentItems.slice());
 
-  if (isBrowser) {
+  if (isBrowser && !isSerializing()) {
     registerListRuntime(startMarker, runtime as ListRuntime<unknown, ElementTagName>);
   }
 

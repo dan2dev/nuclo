@@ -73,3 +73,25 @@ export function escapeText(text: string): string {
   }
   return result + text.slice(last);
 }
+
+/**
+ * IDL property name → HTML content attribute name, for the camelCase keys a
+ * real element reflects (tabIndex → tabindex, htmlFor → for,
+ * ariaDescribedBy → aria-describedby, httpEquiv → http-equiv). Lowercase and
+ * kebab-case names pass through unchanged. SSR runs this per polyfill attribute.
+ */
+export function propertyToAttribute(name: string): string {
+  switch (name) {
+    case 'htmlFor': return 'for';
+    case 'httpEquiv': return 'http-equiv';
+    case 'acceptCharset': return 'accept-charset';
+    case 'defaultValue': return 'value';
+    case 'defaultChecked': return 'checked';
+    case 'defaultSelected': return 'selected';
+  }
+  // ARIA reflection: one dash after "aria", the rest lowercased
+  // (ariaDescribedBy → aria-describedby, not aria-described-by).
+  const c = name.charCodeAt(4);
+  if (c >= 65 && c <= 90 && name.startsWith('aria')) return 'aria-' + name.slice(4).toLowerCase();
+  return name.toLowerCase();
+}

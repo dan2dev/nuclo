@@ -3,32 +3,17 @@
  * Renders Nuclo components to HTML strings in Node.js environment
  */
 
-import { escapeHtml, escapeText, camelToKebab } from '../shared/strings';
-import { runSerializing } from '../hydration';
-import { NucloElement } from '../polyfill/Element';
+import { escapeHtml, escapeText, camelToKebab, propertyToAttribute } from '../shared/strings';
+import { runSerializing } from '../shared/serializing';
+import { SVG_NAMESPACE } from '../shared/dom';
 
 type RenderableInput =
   | NodeModFn<ElementTagName>
+  | (() => NodeModFn<ElementTagName>)
   | Element
   | Node
   | null
   | undefined;
-
-/**
- * SVG attributes that are natively camelCase and must NOT be converted to kebab-case.
- * Most SVG attributes are already kebab-case (stroke-width, fill-rule, etc.), but a
- * handful are defined as camelCase in the SVG spec and must be preserved.
- */
-const SVG_PRESERVE_CASE_ATTRS = new Set([
-  'viewBox', 'preserveAspectRatio', 'markerWidth', 'markerHeight',
-  'gradientTransform', 'patternTransform', 'clipPathUnits', 'gradientUnits',
-  'patternUnits', 'pathLength', 'refX', 'refY', 'stdDeviation',
-  'baseFrequency', 'numOctaves', 'kernelMatrix', 'tableValues',
-  'targetX', 'targetY', 'specularExponent', 'specularConstant',
-  'diffuseConstant', 'surfaceScale', 'xChannelSelector', 'yChannelSelector',
-  'edgeMode', 'stitchTiles', 'spreadMethod', 'patternContentUnits',
-  'markerUnits', 'startOffset', 'textLength', 'lengthAdjust',
-]);
 
 /**
  * HTML boolean attributes — presence means true, absence means false.
@@ -120,15 +105,16 @@ function serializeAttributes(element: Element, isPolyfill: boolean): string {
       if (css) result += ` style="${escapeHtml(css)}"`;
     }
 
-    // All remaining attributes from the Map
-    // Convert camelCase ARIA/HTML attribute names (e.g. ariaLabel → aria-label) that the
-    // polyfill stores as-is because NucloElement lacks the browser property mappings.
-    // SVG attributes that are natively camelCase (e.g. viewBox, preserveAspectRatio) must
-    // NOT be converted — they are stored via setAttribute() as-is.
+    // All remaining attributes from the Map. HTML elements: a camelCase key
+    // (tabIndex, htmlFor, ariaDescribedBy) is an IDL property name that a real
+    // element would have reflected to its content attribute (tabindex, for,
+    // aria-describedby) — NucloElement has no such properties, so the key was
+    // stored verbatim and is mapped here. SVG elements: browsers keep
+    // setAttribute() names as-is (viewBox, preserveAspectRatio), so do we.
     if (attrs) {
+      const svg = el.namespaceURI === SVG_NAMESPACE;
       for (const [name, value] of attrs) {
-        const htmlName = SVG_PRESERVE_CASE_ATTRS.has(name) ? name : camelToKebab(name);
-        result += serializeAttribute(htmlName, value);
+        result += serializeAttribute(svg ? name : propertyToAttribute(name), value);
       }
     }
     return result;
@@ -168,10 +154,14 @@ const TAG_CATEGORY: Record<string, 1 | 2> = Object.assign(Object.create(null), {
   script: TAG_RAW_TEXT, style: TAG_RAW_TEXT,
 });
 
+// One precompiled pattern per raw-text tag. Sharing a /g RegExp across calls
+// (and requests) is safe: String.prototype.replace resets lastIndex first.
+const RAW_TEXT_CLOSE_RE: Record<string, RegExp> = { script: /<\/(script)/gi, style: /<\/(style)/gi };
+
 function escapeRawText(tagName: string, text: string): string {
   // "</script" (any case) inside a script would close it — break the sequence
   // the same way JSON serializers do ("<\/script").
-  return text.replace(new RegExp('</(' + tagName + ')', 'gi'), '<\\/$1');
+  return text.replace(RAW_TEXT_CLOSE_RE[tagName], '<\\/$1');
 }
 
 /**
@@ -191,19 +181,15 @@ function serializeNode(node: Node): string {
   // Element node
   if (node.nodeType === 1) { // Node.ELEMENT_NODE
     const element = node as Element;
-    const rawTagName = element.tagName;
     // Duck-typed polyfill discriminator (also used by serializeAttributes): a
-    // plain Array `children` field never occurs on a real
-    // DOM element (HTMLCollection), only on NucloElement — and on hand-rolled
-    // polyfill-shaped test doubles, which is why this alone isn't enough to
-    // skip re-lowercasing tagName below.
+    // plain Array `children` field never occurs on a real DOM element
+    // (HTMLCollection), only on NucloElement and polyfill-shaped test doubles.
     const isPolyfillShape = Array.isArray((element as any).children);
-    // Only a *real* NucloElement is guaranteed to have pre-lowercased tagName
-    // (done once in its constructor) — re-lowercasing it here on every
-    // element would be pure waste, since this is the hottest function in
-    // renderToString. Anything else (browser Element, or a polyfill-shaped
-    // object that didn't go through `new NucloElement()`) still needs it.
-    const tagName = element instanceof NucloElement ? rawTagName : rawTagName.toLowerCase();
+    // Always lowercased: NucloElement already is (toLowerCase() then returns
+    // the same string), browser elements report "DIV". An `instanceof
+    // NucloElement` shortcut only ever hit in-repo — the published nuclo/ssr
+    // and nuclo/polyfill bundles hold different copies of the class.
+    const tagName = element.tagName.toLowerCase();
     const attributes = serializeAttributes(element, isPolyfillShape);
     const category = TAG_CATEGORY[tagName];
 
@@ -298,7 +284,12 @@ export function renderToString(input: RenderableInput): string {
       // true, e.g. SSR running under jsdom.
       const element = runSerializing(() => {
         if (typeof document === 'undefined') throw new Error('Document is not available. Make sure polyfills are loaded.');
-        return input(document.createElement('div') as unknown as ExpandedElement<ElementTagName>, 0);
+        const container = document.createElement('div') as unknown as ExpandedElement<ElementTagName>;
+        let built: unknown = (input as NodeModFn<ElementTagName>)(container, 0);
+        // render(App)-style component function: it returned the tree's
+        // builder instead of the tree — build it (mirrors render()/hydrate()).
+        if (typeof built === 'function') built = (built as NodeModFn<ElementTagName>)(container, 0);
+        return built;
       });
       return element && typeof element === 'object' && 'nodeType' in element ? serializeNode(element as Node) : '';
     } catch (error) {

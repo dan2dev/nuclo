@@ -2,7 +2,7 @@ import { createMarkerPair, clearBetweenMarkers, insertNodesBefore } from "../sha
 import type { WhenGroup, WhenRuntime } from "./runtime";
 import { renderWhenContent, registerWhenRuntime, getWhenRuntime, evaluateActiveCondition, renderContentItems } from "./runtime";
 import { isBrowser } from "../shared/environment";
-import { isHydrating, claimMarkerPair, setCursor, runWithoutHydration } from "../hydration";
+import { isHydrating, isSerializing, claimMarkerPair, setCursor, runWithoutHydration } from "../hydration";
 import { applyNodeModifier } from "../element/modifiers";
 
 /**
@@ -131,7 +131,7 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
       activeIndex,
     };
 
-    if (isBrowser) {
+    if (isBrowser && !isSerializing()) {
       registerWhenRuntime(runtime);
     }
 

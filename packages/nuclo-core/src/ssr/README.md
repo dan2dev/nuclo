@@ -61,7 +61,7 @@ const html = renderToString(
 Renders a Nuclo component to an HTML string.
 
 **Parameters:**
-- `input` - A Nuclo component function, DOM element, or node
+- `input` - A built tree (`App()`), a component function (`App`, as `render()`/`hydrate()` take it), a DOM element, or a node
 
 **Returns:** `string` - HTML string representation
 

@@ -3,6 +3,7 @@ import type { UpdateScope } from "./scope";
 import { reactiveElements, reactiveElementsByNode, registerReactiveElement } from "./registry";
 import type { AttributeApplier, AttributeResolver, AttributeResolverRecord } from "./registry";
 import { isBrowser } from "../shared/environment";
+import { isSerializing } from "../shared/serializing";
 
 const UNSET_LAST_VALUE = {};
 
@@ -42,7 +43,7 @@ export function registerAttributeResolver<TTagName extends ElementTagName>(
 ): void {
   const el = element as unknown as Element;
   const record: AttributeResolverRecord = { key, resolver, apply, lastValue: UNSET_LAST_VALUE };
-  if (isBrowser) {
+  if (isBrowser && !isSerializing()) {
     const resolvers = registerReactiveElement(el).attributeResolvers;
     let i = 0;
     while (i < resolvers.length && resolvers[i].key !== key) i++;

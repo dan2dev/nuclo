@@ -2,6 +2,7 @@ import { logError } from "../shared/errors";
 import type { UpdateScope } from "./scope";
 import { reactiveTextNodes, reactiveTextNodesByNode, registerReactiveTextNode, type TextResolver } from "./registry";
 import { isBrowser } from "../shared/environment";
+import { isSerializing } from "../shared/serializing";
 
 /** DSL text semantics: nullish and non-primitive values render as "". */
 export function toText(value: unknown): string {
@@ -15,7 +16,7 @@ export function toText(value: unknown): string {
 export function createReactiveTextNode(resolver: TextResolver, initial: unknown): Text {
   const str = toText(initial);
   const txt = document.createTextNode(str);
-  if (isBrowser) registerReactiveTextNode(txt, resolver, str);
+  if (isBrowser && !isSerializing()) registerReactiveTextNode(txt, resolver, str);
   return txt;
 }
 
