@@ -3,6 +3,7 @@
  * `update("name")` can refresh just that part of the page.
  */
 import { isBrowser } from "../shared/environment";
+import { isSerializing } from "../shared/serializing";
 
 export interface UpdateScope {
   contains(node: Node): boolean;
@@ -89,7 +90,7 @@ export function scope<TTagName extends ElementTagName = ElementTagName>(
   const scopeIds = normalizeScopeIds(ids);
 
   return function(parent: ExpandedElement<TTagName>): void {
-    if (!isBrowser) return;
+    if (!isBrowser || isSerializing()) return;
     if (!(parent instanceof Element)) return;
     for (const id of scopeIds) addScopeRoot(id, parent);
   };

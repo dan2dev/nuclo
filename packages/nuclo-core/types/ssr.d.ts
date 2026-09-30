@@ -11,9 +11,13 @@
 // so SSR-only consumers get them without importing the main entry.
 import "./index";
 
-/** Anything renderToString accepts: a component factory, a DOM node, or nothing. */
+/**
+ * Anything renderToString accepts: a built tree (`App()`), a component
+ * function (`App`, as render()/hydrate() take it), a DOM node, or nothing.
+ */
 export type RenderableInput =
   | NodeModFn<ElementTagName>
+  | (() => NodeModFn<ElementTagName>)
   | Element
   | Node
   | null

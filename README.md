@@ -601,6 +601,8 @@ const page = `<!doctype html><html><head><style>${styles}</style></head>
 
 On the client, call `hydrate()` instead of `render()`. This attaches Nuclo runtimes to the existing markup and does not re-create DOM nodes.
 
+`renderToString()` accepts the built tree (`App()`) or the component function itself (`App`), the same two forms `render()` and `hydrate()` take.
+
 `nuclo/ssr` also exports two more functions. `renderManyToString(inputs)` renders a batch of trees at once. `renderToStringWithContainer(input, containerTag?, containerAttrs?)` wraps the output in a container element, without a second serialization pass.
 
 ---
