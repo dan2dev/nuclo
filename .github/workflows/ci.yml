@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   nuclo-core:
@@ -59,6 +60,7 @@ jobs:
 
   deploy-docs:
     needs: publish-nuclo
+    if: "${{ !cancelled() && (needs.publish-nuclo.result == 'success' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')) }}"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
