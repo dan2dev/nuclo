@@ -34,16 +34,31 @@ function normalizeScopeIds(ids: readonly string[]): ScopeId[] {
   return normalized;
 }
 
+/** Ids each root is already registered under: O(1) dedup instead of a set scan. */
+const idsByRoot = new WeakMap<Element, Set<ScopeId>>();
+/** Sweep a set of dead refs once it grows past this; doubles with the live size. */
+const sweepAt = new WeakMap<Set<WeakRef<Element>>, number>();
+const MIN_SWEEP = 64;
+
 function addScopeRoot(id: ScopeId, el: Element): void {
-  let set = scopeRootsById.get(id);
-  if (!set) {
-    set = new Set<WeakRef<Element>>();
-    scopeRootsById.set(id, set);
-  }
+  let ids = idsByRoot.get(el);
+  if (!ids) idsByRoot.set(el, ids = new Set());
   // Re-registration (forceUpdate() reclaim) must not grow the set.
-  // linear scan — scope root sets are a handful of elements.
-  for (const ref of set) if (ref.deref() === el) return;
+  if (ids.has(id)) return;
+  ids.add(id);
+
+  let set = scopeRootsById.get(id);
+  if (!set) scopeRootsById.set(id, set = new Set());
   set.add(new WeakRef(el));
+
+  // Ids that are never passed to update(id) are never pruned by getScopeRoots(),
+  // so list rows scoped with scope("row") would grow the set forever. Sweep
+  // collected refs at amortized O(1) per add. Detached roots are kept: they
+  // are legitimately unattached while their tree is still being built.
+  if (set.size >= (sweepAt.get(set) ?? MIN_SWEEP)) {
+    for (const ref of set) if (ref.deref() === undefined) set.delete(ref);
+    sweepAt.set(set, Math.max(MIN_SWEEP, set.size * 2));
+  }
 }
 
 export function getScopeRoots(ids: readonly string[]): Element[] {
@@ -56,26 +71,14 @@ export function getScopeRoots(ids: readonly string[]): Element[] {
     const set = scopeRootsById.get(id);
     if (!set) continue;
 
-    const toDelete: WeakRef<Element>[] = [];
-
     for (const ref of set) {
       const el = ref.deref();
-      if (el === undefined) {
-        // Element was garbage collected
-        toDelete.push(ref);
-        continue;
-      }
-      if (!el.isConnected) {
-        // Element is disconnected, clean it up
-        toDelete.push(ref);
-        continue;
-      }
-      roots.add(el);
-    }
-
-    // Clean up dead and disconnected references
-    for (const ref of toDelete) {
-      set.delete(ref);
+      // Collected or disconnected: drop it (deleting while iterating a Set is safe).
+      if (el === undefined) set.delete(ref);
+      else if (!el.isConnected) {
+        set.delete(ref);
+        idsByRoot.get(el)?.delete(id); // let scope() re-register it if it comes back
+      } else roots.add(el);
     }
 
     if (set.size === 0) scopeRootsById.delete(id);

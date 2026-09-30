@@ -27,6 +27,16 @@ const HTML_BOOLEAN_ATTRIBUTES = new Set([
   'reversed', 'selected',
 ]);
 
+/** The fields of the SSR polyfill's NucloElement that the serializer reads. */
+interface PolyfillElementShape {
+  id?: string;
+  className?: string;
+  namespaceURI?: string;
+  children?: ArrayLike<Node>;
+  _attributes?: Map<string, string>;
+  _style?: Record<string, unknown>;
+}
+
 /**
  * Serializes a DOM attribute value
  */
@@ -76,8 +86,8 @@ function serializeAttributes(element: Element, isPolyfill: boolean): string {
   // `el.attributes` directly would lazily allocate an empty Map for every
   // element being serialized, so the backing `_attributes` field is read instead.
   if (isPolyfill) {
-    const el = element as any;
-    const attrs = el._attributes as Map<string, string> | undefined;
+    const el = element as unknown as PolyfillElementShape;
+    const attrs = el._attributes;
 
     // id — may live on the property rather than in the Map
     if (el.id && !attrs?.has('id')) {
@@ -94,7 +104,7 @@ function serializeAttributes(element: Element, isPolyfill: boolean): string {
     // `el.style`) so elements that never set a style are not forced to lazily
     // allocate an empty SSRStyle just to serialize. Empty values (e.g. reactive
     // styles that resolved to undefined) are skipped.
-    const styleObj = el._style as Record<string, unknown> | undefined;
+    const styleObj = el._style;
     if (styleObj && !attrs?.has('style')) {
       let css = '';
       for (const key in styleObj) {
@@ -184,7 +194,7 @@ function serializeNode(node: Node): string {
     // Duck-typed polyfill discriminator (also used by serializeAttributes): a
     // plain Array `children` field never occurs on a real DOM element
     // (HTMLCollection), only on NucloElement and polyfill-shaped test doubles.
-    const isPolyfillShape = Array.isArray((element as any).children);
+    const isPolyfillShape = Array.isArray((element as unknown as PolyfillElementShape).children);
     // Always lowercased: NucloElement already is (toLowerCase() then returns
     // the same string), browser elements report "DIV". An `instanceof
     // NucloElement` shortcut only ever hit in-repo — the published nuclo/ssr
@@ -198,7 +208,7 @@ function serializeNode(node: Node): string {
       return `<${tagName}${attributes} />`;
     }
 
-    const childNodes: ArrayLike<Node> = isPolyfillShape ? (element as any).children : element.childNodes;
+    const childNodes: ArrayLike<Node> = isPolyfillShape ? (element as unknown as PolyfillElementShape).children! : element.childNodes;
 
     // Raw-text elements: emit text verbatim (no entity escaping, no Nuclo
     // text markers — `<!--` would act as a line comment inside a script).
@@ -230,7 +240,7 @@ function serializeNode(node: Node): string {
       }
     } else {
       // Fallback: textContent set directly on the element (e.g. el.textContent = "...")
-      const tc = (node as any).textContent;
+      const tc = (node as { textContent?: unknown }).textContent;
       if (typeof tc === 'string' && tc) {
         childrenHtml = escapeText(tc);
       }
@@ -242,7 +252,7 @@ function serializeNode(node: Node): string {
   // Document fragment
   if (node.nodeType === 11) { // Node.DOCUMENT_FRAGMENT_NODE
     let result = '';
-    const childNodes: ArrayLike<Node> = (node as any).childNodes ?? [];
+    const childNodes: ArrayLike<Node> = node.childNodes ?? [];
     if (childNodes.length > 0) {
       for (let i = 0; i < childNodes.length; i++) {
         const child = childNodes[i];

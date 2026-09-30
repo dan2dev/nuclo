@@ -126,27 +126,25 @@ export function getWhenRuntime(startMarker: Comment): WhenRuntime<ElementTagName
  * ```
  */
 export function updateWhenRuntimes(scope?: UpdateScope): void {
-  const toDelete: WeakRef<Comment>[] = [];
-
   for (const ref of activeWhenRuntimes) {
     const startMarker = ref.deref();
 
     // Comment node was garbage collected
     if (startMarker === undefined) {
-      toDelete.push(ref);
+      activeWhenRuntimes.delete(ref);
       continue;
     }
 
     const runtime = whenRuntimeByMarker.get(startMarker);
     if (!runtime) {
-      toDelete.push(ref);
+      activeWhenRuntimes.delete(ref);
       continue;
     }
 
     // Check if markers are still connected to DOM
     if (!startMarker.isConnected || !runtime.endMarker.isConnected) {
       whenRuntimeByMarker.delete(startMarker);
-      toDelete.push(ref);
+      activeWhenRuntimes.delete(ref);
       continue;
     }
 
@@ -159,13 +157,8 @@ export function updateWhenRuntimes(scope?: UpdateScope): void {
       // Clean up runtimes that throw errors
       logError("when() branch threw during update; unregistering this conditional", error);
       whenRuntimeByMarker.delete(startMarker);
-      toDelete.push(ref);
+      activeWhenRuntimes.delete(ref);
     }
-  }
-
-  // Clean up dead references
-  for (const ref of toDelete) {
-    activeWhenRuntimes.delete(ref);
   }
 }
 

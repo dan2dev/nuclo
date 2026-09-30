@@ -699,7 +699,6 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
 }
 
 export function updateListRuntimes(scope?: UpdateScope): void {
-  const toDelete: WeakRef<Comment>[] = [];
   updateListFlushEpoch++;
 
   for (const ref of activeListRuntimes) {
@@ -707,20 +706,20 @@ export function updateListRuntimes(scope?: UpdateScope): void {
 
     // Marker was garbage collected
     if (!startMarker) {
-      toDelete.push(ref);
+      activeListRuntimes.delete(ref);
       continue;
     }
 
     const runtime = listRuntimeByMarker.get(startMarker);
     if (!runtime) {
-      toDelete.push(ref);
+      activeListRuntimes.delete(ref);
       continue;
     }
 
     // Clean up if disconnected from DOM
     if (!startMarker.isConnected || !runtime.endMarker.isConnected) {
       listRuntimeByMarker.delete(startMarker);
-      toDelete.push(ref);
+      activeListRuntimes.delete(ref);
       continue;
     }
 
@@ -744,10 +743,5 @@ export function updateListRuntimes(scope?: UpdateScope): void {
       const dyn = records[i].dyn;
       if (dyn) flushRowLeaves(dyn);
     }
-  }
-
-  // Clean up dead references
-  for (const ref of toDelete) {
-    activeListRuntimes.delete(ref);
   }
 }
