@@ -43,7 +43,7 @@ export function DocsPage() {
       {
         class: () => cx(baseStyle, activeId === id ? activeStyle : null).className,
         href: `#${id}`,
-        "aria-current": () => activeId === id ? "location" : undefined,
+        "aria-current": () => activeId === id ? "location" : "false",
       },
       sec.title,
       {
@@ -68,7 +68,7 @@ export function DocsPage() {
           h1("Nuclo documentation"),
           p(
             ds.lead,
-            "A practical reference for installing Nuclo, building with explicit updates, styling with atomic CSS, and rendering server-side HTML.",
+            "A practical reference for installing Nuclo, building with explicit updates, styling with typed CSS, and rendering server-side HTML.",
           ),
         ),
         div(

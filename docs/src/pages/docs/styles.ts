@@ -28,6 +28,9 @@ const contentTypography = {
   "& .code-block-body": { raw: { padding: "18px 20px 20px", "overflow-x": "auto", color: "var(--c-text)", "font-family": mono, "font-size": "0.8rem", "line-height": "1.7", "scrollbar-width": "thin" } },
   "& .code-block-body pre": { raw: { margin: "0", "white-space": "pre", "min-width": "max-content" } },
   "& .docs-callout": { raw: { "background-color": "var(--c-primary-alpha-08)", "border-left": "3px solid var(--c-primary)", "border-radius": "14px", padding: "16px 18px", margin: "20px 0", "font-size": "0.9rem", color: "var(--c-text-dim)" } },
+  "& table": { raw: { display: "block", "max-width": "100%", "overflow-x": "auto", "border-collapse": "collapse", margin: "0 0 20px", "font-size": "0.875rem", color: "var(--c-text-dim)" } },
+  "& th": { raw: { "text-align": "left", "white-space": "nowrap", "font-weight": "700", color: "var(--c-text)", padding: "8px 14px 8px 0", "border-bottom": "1px solid var(--c-border)" } },
+  "& td": { raw: { padding: "8px 14px 8px 0", "border-bottom": "1px solid var(--c-border)", "vertical-align": "top" } },
   "& .docs-callout strong": { raw: { color: "var(--c-primary)" } },
 } as const;
 
