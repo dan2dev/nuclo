@@ -82,9 +82,7 @@ export function renderWhenContent<TTagName extends ElementTagName>(
 
   // Render the active branch
   const contentToRender = newActive >= 0 ? groups[newActive].content : elseContent;
-  const nodes = renderContentItems(contentToRender, host, index, endMarker);
-
-  insertNodesBefore(nodes, endMarker);
+  renderContentItems(contentToRender, host, index, endMarker);
 }
 
 /**
@@ -185,20 +183,21 @@ function renderContentItem<TTagName extends ElementTagName>(
 }
 
 /**
- * Renders a list of content items and collects the resulting nodes.
+ * Renders a list of content items before the end marker, in source order.
+ *
+ * Each node is inserted as soon as its item produces it: nested when()/list()
+ * blocks insert their own markers while they run, so collecting the element
+ * nodes and inserting them afterwards would put every nested block ahead of
+ * the siblings written before it.
  */
 export function renderContentItems<TTagName extends ElementTagName>(
   items: ReadonlyArray<WhenContent<TTagName>>,
   host: ExpandedElement<TTagName>,
   index: number,
   endMarker: Comment
-): Node[] {
-  const nodes: Node[] = [];
+): void {
   for (const item of items) {
     const node = renderContentItem(item, host, index, endMarker);
-    if (node) {
-      nodes.push(node);
-    }
+    if (node) insertNodesBefore([node], endMarker);
   }
-  return nodes;
 }

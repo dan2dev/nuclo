@@ -1,4 +1,4 @@
-import { createMarkerPair, clearBetweenMarkers, insertNodesBefore, safeRemoveChild } from "../shared/dom";
+import { createMarkerPair, clearBetweenMarkers, safeRemoveChild } from "../shared/dom";
 import type { WhenGroup, WhenRuntime } from "./runtime";
 import { renderWhenContent, registerWhenRuntime, getWhenRuntime, evaluateActiveCondition, renderContentItems } from "./runtime";
 import { isBrowser } from "../shared/environment";
@@ -110,11 +110,7 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
       clearBetweenMarkers(startMarker, endMarker);
       if (activeIndex !== null) {
         const contentToRender = activeIndex >= 0 ? this.groups[activeIndex].content : this.elseContent;
-        const end = endMarker;
-        runWithoutHydration(() => {
-          const nodes = renderContentItems(contentToRender, host, index, end);
-          insertNodesBefore(nodes, end);
-        });
+        runWithoutHydration(() => renderContentItems(contentToRender, host, index, endMarker));
       }
     }
 
