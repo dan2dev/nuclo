@@ -46,6 +46,10 @@ export function startHydration(force = false): void {
 export function endHydration(): void {
   _hydrating = false;
   _force = false;
+  // Cursor values are strong node references (the next unclaimed sibling).
+  // Dropped with the pass, so a node the app removes later is not kept alive
+  // by its parent's cursor until the next pass replaces the map.
+  _cursors = new WeakMap<Node, Node | null>();
 }
 
 /**
