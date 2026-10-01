@@ -14,7 +14,7 @@
  *     of freshly built rows are batched into DocumentFragments.
  */
 import { createMarkerPair, safeRemoveChild, disposeLifecyclesInSubtree } from "../shared/dom";
-import { isHydrating, isSerializing, claimMarkerPair, peekChild, setCursor } from "../hydration";
+import { isHydrating, isSerializing, claimMarkerPair, peekChild, setCursor, runFreshAtCursor } from "../hydration";
 import type { ListRuntime, ListItemRecord } from "./types";
 import type { UpdateScope } from "../update/scope";
 import { isBrowser } from "../shared/environment";
@@ -652,7 +652,7 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   // marker (corrupt/truncated SSR output) makes every item claim below miss,
   // so those rows render fresh too.
   const pair = claimMarkerPair(parentNode, "list");
-  if (!pair) return createListRuntimeNormal(itemsProvider, renderFn, host, index);
+  if (!pair) return runFreshAtCursor(parentNode, () => createListRuntimeNormal(itemsProvider, renderFn, host, index));
   const { start: startMarker, end: endMarker } = pair;
 
   // Get current items and claim existing elements by running render functions

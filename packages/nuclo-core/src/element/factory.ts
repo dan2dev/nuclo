@@ -4,7 +4,7 @@
  */
 import { applyNodeModifier, type NodeModifier } from "./modifiers";
 import { SVG_NAMESPACE } from "../shared/dom";
-import { claimElement, claimChild, cleanupUnclaimedChildren, isForceHydrating, peekChild, setCursor } from "../hydration";
+import { claimElement, claimChild, cleanupUnclaimedChildren, isHydrating, isForceHydrating, peekChild, setCursor } from "../hydration";
 import { removeAllListeners } from "./events";
 import { resetClassNameTracking } from "./class-name";
 import { cleanupReactiveElement } from "../update/registry";
@@ -27,6 +27,7 @@ export function applyModifiers<TTagName extends ElementTagName>(
   const parentNode = element as unknown as Node & ParentNode;
   // Hoisted: constant for this frame — runWithoutHydration() only affects
   // nested calls, which hoist their own value.
+  const hydrating = isHydrating();
   const force = isForceHydrating();
 
   for (let i = 0; i < modifiers.length; i += 1) {
@@ -39,12 +40,13 @@ export function applyModifiers<TTagName extends ElementTagName>(
 
     // Only append if the node isn't already where we expect
     if (produced.parentNode !== parentNode) {
-      // forceUpdate(): a fresh node (structural mismatch) lands at the claim
-      // cursor, keeping sibling order — a plain append would push it past
-      // the still-unclaimed old children. insertBefore(x, null) === append.
+      // hydrate()/forceUpdate(): a fresh node (nothing to claim, or a
+      // structural mismatch) lands at the claim cursor, keeping sibling
+      // order — a plain append would put it after the cursor, where a later
+      // sibling's claim would reach it. insertBefore(x, null) === append.
       // The cursor is then pinned explicitly: with no entry, peekChild falls
       // back to firstChild, which the insertion may have just changed.
-      if (force) {
+      if (hydrating) {
         const at = peekChild(parentNode);
         parentNode.insertBefore(produced, at);
         setCursor(parentNode, at);

@@ -11,7 +11,7 @@
  * firstChild/nextSibling pointers are O(1) in every DOM implementation.
  */
 
-import { safeRemoveChild } from "./shared/dom";
+import { safeRemoveChild, withScopedInsertion } from "./shared/dom";
 
 // The serialization flag is realm-shared state (see shared/serializing.ts);
 // re-exported here for callers that already import hydration helpers.
@@ -78,6 +78,19 @@ export function peekChild(parent: Node): Node | null {
  */
 export function setCursor(parent: Node, node: Node | null): void {
   _cursors.set(parent, node);
+}
+
+/**
+ * Builds a fresh list()/when() block in the middle of a hydration pass, when
+ * there are no SSR markers to claim. The block's appends land at the claim
+ * cursor (not after the still-unclaimed children) and the cursor is pinned
+ * behind it, so no later sibling can claim the block's fresh nodes.
+ */
+export function runFreshAtCursor<T>(parent: Node, build: () => T): T {
+  const at = peekChild(parent);
+  // Pin: with no entry, peekChild would follow the block's new firstChild.
+  setCursor(parent, at);
+  return runWithoutHydration(() => at ? withScopedInsertion(parent, at, build) : build());
 }
 
 function isWhitespaceText(node: Node): boolean {
@@ -191,8 +204,9 @@ export function claimElement(parent: Node, tagName: string): Element | null {
  * Removes unclaimed SSR children from a hydrated element.
  * Must be called after modifiers have been applied to a claimed element.
  * Removes nodes from the cursor through `lastOriginalChild` (the element's
- * last child before modifiers ran) — nodes appended by modifiers come after
- * that boundary and are preserved.
+ * last child before modifiers ran) — fresh nodes sit before the cursor and
+ * nodes a modifier appended itself come after that boundary; both are
+ * preserved.
  */
 export function cleanupUnclaimedChildren(node: Node, lastOriginalChild: Node | null): void {
   if (!lastOriginalChild) return;

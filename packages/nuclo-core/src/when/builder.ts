@@ -2,7 +2,7 @@ import { createMarkerPair, clearBetweenMarkers, insertNodesBefore } from "../sha
 import type { WhenGroup, WhenRuntime } from "./runtime";
 import { renderWhenContent, registerWhenRuntime, getWhenRuntime, evaluateActiveCondition, renderContentItems } from "./runtime";
 import { isBrowser } from "../shared/environment";
-import { isHydrating, isSerializing, claimMarkerPair, setCursor, runWithoutHydration } from "../hydration";
+import { isHydrating, isSerializing, claimMarkerPair, setCursor, runWithoutHydration, runFreshAtCursor } from "../hydration";
 import { applyNodeModifier } from "../element/modifiers";
 
 /**
@@ -71,7 +71,7 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
     // No when markers at the cursor (SSR output without Nuclo markers):
     // create new markers and render from scratch.
     const pair = claimMarkerPair(parentNode, "when");
-    if (!pair) return this.freshRender(host, index);
+    if (!pair) return runFreshAtCursor(parentNode, () => this.freshRender(host, index));
     const { start: startMarker, end: endMarker } = pair;
 
     // Determine which branch the client wants and which is rendered. A live
