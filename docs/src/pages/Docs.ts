@@ -58,6 +58,9 @@ export function DocsPage() {
   // Docs navigation state, shared by the sidebar and the mobile sheet.
   let filter = "";
   let sheetOpen = false;
+  let sheetMounted = false; // stays true while the exit animation plays
+  let sheetEl: HTMLElement | undefined;
+  let scrimEl: HTMLElement | undefined;
   const toggled: Record<string, boolean> = {}; // groups the user opened/closed; the rest follow the active section
 
   function setActive(id: string) {
@@ -84,12 +87,115 @@ export function DocsPage() {
   }
 
   // Opening the sheet locks page scroll and listens for Escape; closing undoes both.
+  const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+  const dur = (ms: number) => (matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : ms);
+
+  // Slides the sheet (from `fromPx` down) and fades the scrim out, then unmounts both.
+  function animateOut(fromPx = 0, fade = 1) {
+    const sheet = sheetEl, scrim = scrimEl;
+    if (!sheet) { sheetMounted = false; update(); return; }
+    const opts = { duration: dur(240), easing: EASE, fill: "forwards" as const };
+    scrim?.animate([{ opacity: fade }, { opacity: 0 }], opts);
+    sheet.animate([{ transform: `translateY(${fromPx}px)` }, { transform: "translateY(100%)" }], opts).finished
+      .catch(() => {})
+      .then(() => { if (!sheetOpen) { sheetMounted = false; update(); } });
+  }
+
+  // Drag down to dismiss: from the grabber/header always, and from the list while it is scrolled to the top.
+  // The sheet follows the finger, then closes (far or fast enough) or springs back.
+  function enableDrag(zone: HTMLElement) {
+    let startY = 0, dy = 0, t0 = 0, active = false;
+    const begin = (y: number, t: number) => { active = true; startY = y; dy = 0; t0 = t; };
+    const move = (y: number) => {
+      if (!active || !sheetEl) return;
+      dy = Math.max(0, y - startY);
+      sheetEl.style.transform = `translateY(${dy}px)`;
+      if (scrimEl) scrimEl.style.opacity = String(1 - dy / sheetEl.offsetHeight);
+    };
+    const end = (t: number) => {
+      if (!active || !sheetEl) return;
+      active = false;
+      const h = sheetEl.offsetHeight, fade = 1 - dy / h;
+      if (dy > h * 0.3 || (dy > 30 && dy / (t - t0) > 0.6)) {
+        sheetOpen = false;
+        document.body.style.overflow = "";
+        document.removeEventListener("keydown", onSheetKey);
+        update();
+        animateOut(dy, fade);
+        document.getElementById("docs-section-bar")?.focus({ preventScroll: true });
+      } else {
+        sheetEl.animate([{ transform: `translateY(${dy}px)` }, { transform: "translateY(0)" }], { duration: dur(200), easing: EASE });
+        scrimEl?.animate([{ opacity: fade }, { opacity: 1 }], { duration: dur(200) });
+        sheetEl.style.transform = "";
+        if (scrimEl) scrimEl.style.opacity = "";
+      }
+    };
+
+    // Grabber + header (touch-action: none, so pointer events are enough).
+    zone.addEventListener("pointerdown", (e) => {
+      if ((e.target as HTMLElement).closest("button")) return;
+      begin(e.clientY, e.timeStamp);
+      zone.setPointerCapture(e.pointerId);
+    });
+    zone.addEventListener("pointermove", (e) => move(e.clientY));
+    zone.addEventListener("pointerup", (e) => end(e.timeStamp));
+    zone.addEventListener("pointercancel", (e) => end(e.timeStamp));
+
+    // Rest of the sheet: touch events, so we can take over from native scrolling only at scrollTop 0.
+    const body = zone.parentElement!;
+    let armed = false, y0 = 0;
+    body.addEventListener("touchstart", (e) => {
+      if (zone.contains(e.target as Node)) return;
+      const sc = (e.target as HTMLElement).closest<HTMLElement>("nav");
+      armed = !sc || sc.scrollTop <= 0;
+      y0 = e.touches[0].clientY;
+    }, { passive: true });
+    body.addEventListener("touchmove", (e) => {
+      if (zone.contains(e.target as Node)) return;
+      const y = e.touches[0].clientY;
+      if (!active) {
+        if (!armed) return;
+        const sc = (e.target as HTMLElement).closest<HTMLElement>("nav");
+        if (y - y0 > 0 && (!sc || sc.scrollTop <= 0)) begin(y, e.timeStamp);
+        else { armed = false; return; }
+      }
+      e.preventDefault();
+      move(y);
+    }, { passive: false });
+    body.addEventListener("touchend", (e) => { armed = false; end(e.timeStamp); });
+    body.addEventListener("touchcancel", (e) => { armed = false; end(e.timeStamp); });
+
+    // Mouse: click-drag anywhere on the sheet (same rule: the list must be at the top). A drag swallows its click.
+    let mArmed = false, mId = -1, mY0 = 0;
+    body.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse" || e.button !== 0 || zone.contains(e.target as Node) || (e.target as HTMLElement).closest("input")) return;
+      const sc = (e.target as HTMLElement).closest<HTMLElement>("nav");
+      mArmed = !sc || sc.scrollTop <= 0;
+      mId = e.pointerId; mY0 = e.clientY;
+    });
+    body.addEventListener("pointermove", (e) => {
+      if (!mArmed || e.pointerId !== mId) return;
+      if (!active) {
+        if (e.clientY - mY0 < 4) return;
+        begin(e.clientY, e.timeStamp);
+        body.setPointerCapture(e.pointerId);
+        body.addEventListener("click", (c) => c.stopPropagation(), { capture: true, once: true });
+      }
+      move(e.clientY);
+    });
+    const mEnd = (e: PointerEvent) => { if (e.pointerId === mId) { mArmed = false; end(e.timeStamp); } };
+    body.addEventListener("pointerup", mEnd);
+    body.addEventListener("pointercancel", mEnd);
+  }
+
   function setSheet(open: boolean) {
     sheetOpen = open;
+    if (open) sheetMounted = true;
     document.body.style.overflow = open ? "hidden" : "";
     if (open) document.addEventListener("keydown", onSheetKey);
     else document.removeEventListener("keydown", onSheetKey);
     update();
+    if (!open) animateOut();
     document.getElementById(open ? "docs-sheet-close" : "docs-section-bar")?.focus({ preventScroll: true });
   }
 
@@ -227,14 +333,6 @@ export function DocsPage() {
     );
   }
 
-  function DocsProgress() {
-    return div(
-      ds.progress,
-      { "aria-hidden": "true" },
-      div(ds.progressFill),
-    );
-  }
-
   function SectionBar() {
     return div(
       ds.sectionBar,
@@ -252,20 +350,40 @@ export function DocsPage() {
 
   function Sheet() {
     return when(
-      () => sheetOpen,
-      button(ds.scrim, { type: "button", "aria-label": "Close navigator" }, { onClick: () => setSheet(false) }),
+      () => sheetMounted,
+      button(ds.scrim, {
+        type: "button",
+        "aria-label": "Close navigator",
+        onClick: () => setSheet(false),
+        onMount: (el) => {
+          scrimEl = el;
+          el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: dur(240), easing: "ease-out" });
+          return () => { if (scrimEl === el) scrimEl = undefined; };
+        },
+      }),
       div(
         ds.sheet,
-        { role: "dialog", "aria-modal": "true", "aria-label": "Documentation" },
-        div(ds.sheetGrabber, { "aria-hidden": "true" }),
+        {
+          role: "dialog", "aria-modal": "true", "aria-label": "Documentation",
+          onMount: (el) => {
+            sheetEl = el;
+            el.animate([{ transform: "translateY(100%)" }, { transform: "translateY(0)" }], { duration: dur(340), easing: EASE });
+            return () => { if (sheetEl === el) sheetEl = undefined; };
+          },
+        },
         div(
-          ds.sheetHead,
-          h2(ds.sheetTitle, "Documentation"),
-          button(
-            ds.sheetClose,
-            { type: "button", id: "docs-sheet-close", "aria-label": "Close navigator" },
-            icon(18, CLOSE),
-            { onClick: () => setSheet(false) },
+          ds.sheetDrag,
+          { onMount: (el) => queueMicrotask(() => enableDrag(el)) },
+          div(ds.sheetGrabber, { "aria-hidden": "true" }),
+          div(
+            ds.sheetHead,
+            h2(ds.sheetTitle, "Documentation"),
+            button(
+              ds.sheetClose,
+              { type: "button", id: "docs-sheet-close", "aria-label": "Close navigator" },
+              icon(18, CLOSE),
+              { onClick: () => setSheet(false) },
+            ),
           ),
         ),
         Filter(ds.sheetFilterWrap),
@@ -366,7 +484,6 @@ export function DocsPage() {
         document.removeEventListener("keydown", onSheetKey);
       },
     },
-    DocsProgress(),
     Sidebar(),
     Content(),
     Rail(),
@@ -390,16 +507,6 @@ export function DocsPage() {
 
       sections.forEach(section => observer.observe(section));
       if (window.location.hash && activeId !== "overview") jumpTo(activeId);
-
-      const setProgress = () => {
-        const doc = document.documentElement;
-        const max = doc.scrollHeight - window.innerHeight;
-        const pct = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
-        doc.style.setProperty("--docs-progress", `${pct * 100}%`);
-      };
-
-      setProgress();
-      window.addEventListener("scroll", setProgress, { passive: true });
     });
   }
 

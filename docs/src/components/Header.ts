@@ -15,19 +15,7 @@ const NAV_LINKS: NavItem[] = [
   { label: "Home",     route: "home" },
   { label: "Docs",     route: "docs" },
   { label: "Examples", route: "examples" },
-  { label: "API",      route: "docs", hash: "api-index" },
 ];
-
-// Docs groups in the mobile menu, each pointing at its first section.
-const DOC_GROUPS: NavItem[] = [
-  ["Introduction", "overview"],
-  ["Building UI",  "tag-builders"],
-  ["Updates",      "explicit-updates"],
-  ["Rendering",    "api-render"],
-  ["Styling",      "api-styling"],
-  ["Patterns",     "computed"],
-  ["Reference",    "api-index"],
-].map(([label, hash]) => ({ label, route: "docs", hash }));
 
 const THEMES: [ThemePreference, string][] = [["light", "Light"], ["dark", "Dark"], ["system", "System"]];
 
@@ -43,7 +31,7 @@ function LineIcon(d: string, size = 20) {
 const tapBtn = { display: "flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px", marginRight: "-12px", borderRadius: "8px", hover: { color: colors.text, backgroundColor: colors.bgSecondary } } as const;
 
 const st = {
-  bar: css("components-header-bar", { position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "var(--header-h)", backgroundColor: colors.bg, borderBottom: `1px solid ${colors.border}` }),
+  bar: css("components-header-bar", { userSelect: "none", position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "var(--header-h)", backgroundColor: colors.bg, borderBottom: `1px solid ${colors.border}` }),
   row: css("components-header-row", { display: "flex", alignItems: "center", gap: "40px", height: "100%" }),
   logo: css("components-header-logo", { display: "flex", alignItems: "center", flexShrink: 0 }),
 
@@ -61,41 +49,49 @@ const st = {
   iconBtn: css("components-header-iconBtn", { display: "none", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "8px", color: colors.textDim, hover: { color: colors.text, backgroundColor: colors.bgSecondary }, [DESKTOP]: { display: "flex" } }),
   cta: css("components-header-cta", { alignItems: "center", justifyContent: "center", borderRadius: "8px", backgroundColor: colors.primaryDark, color: "#fff", fontWeight: "600", whiteSpace: "nowrap", hover: { filter: "brightness(0.92)" } }),
   ctaBar: css("components-header-ctaBar", { display: "none", height: "36px", padding: "0 14px", marginLeft: "12px", fontSize: "14px", [WIDE]: { display: "inline-flex" } }),
-  ctaMenu: css("components-header-ctaMenu", { display: "flex", height: "48px", fontSize: "16px" }),
+  ctaMenu: css("components-header-ctaMenu", { display: "flex", height: "52px", fontSize: "16px", borderRadius: "12px" }),
   menuBtn: css("components-header-menuBtn", { ...tapBtn, color: colors.text, [DESKTOP]: { display: "none" } }),
 
   // ── Mobile menu ──
-  menu: css("components-header-menu", { position: "fixed", inset: "0", zIndex: 230, display: "flex", flexDirection: "column", backgroundColor: colors.bg }),
-  menuTop: css("components-header-menuTop", { flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", height: "56px", borderBottom: `1px solid ${colors.border}` }),
-  closeBtn: css("components-header-closeBtn", { ...tapBtn, color: colors.textDim }),
-  menuList: css("components-header-menuList", { flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: "8px 0" }),
+  menu: css("components-header-menu", { position: "fixed", inset: "var(--header-h) 0 0 0", zIndex: 215, display: "flex", flexDirection: "column", backgroundColor: colors.bg }),
+  menuList: css("components-header-menuList", { flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: "12px 0" }),
   menuItem: css("components-header-menuItem", { borderBottom: `1px solid ${colors.border}` }),
-  menuRow: css("components-header-menuRow", { display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", height: "52px", fontSize: "17px", fontWeight: "500", color: colors.text, textAlign: "left" }),
+  menuRow: css("components-header-menuRow", { display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", height: "68px", fontSize: "26px", fontWeight: "600", letterSpacing: "-0.02em", color: colors.text, textAlign: "left" }),
   menuRowOn: css("components-header-menuRowOn", { color: colors.primaryInk }),
   rowIcon: css("components-header-rowIcon", { display: "flex", color: colors.textMuted, transition: "transform 0.2s ease" }),
-  rowIconOpen: css("components-header-rowIconOpen", { transform: "rotate(180deg)" }),
-  menuSub: css("components-header-menuSub", { display: "flex", flexDirection: "column", padding: "0 0 8px 16px" }),
-  menuSubLink: css("components-header-menuSubLink", { display: "flex", alignItems: "center", height: "44px", fontSize: "15px", color: colors.textDim, hover: { color: colors.text } }),
   srOnly: css("components-header-srOnly", { position: "absolute", width: "1px", height: "1px", overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" }),
-  menuFoot: css("components-header-menuFoot", { flexShrink: 0, padding: "16px 0", borderTop: `1px solid ${colors.border}` }),
+  menuFoot: css("components-header-menuFoot", { flexShrink: 0, padding: "16px 0 max(16px, env(safe-area-inset-bottom))", borderTop: `1px solid ${colors.border}` }),
   menuFootInner: css("components-header-menuFootInner", { display: "flex", flexDirection: "column", gap: "12px" }),
-  themeGroup: css("components-header-themeGroup", { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", height: "44px", border: `1px solid ${colors.border}`, borderRadius: "8px", overflow: "hidden" }),
-  themeOpt: css("components-header-themeOpt", { fontSize: "14px", fontWeight: "500", color: colors.textDim }),
-  themeOptOn: css("components-header-themeOptOn", { color: colors.text, backgroundColor: colors.bgSecondary }),
+  themeGroup: css("components-header-themeGroup", { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "4px", padding: "4px", height: "48px", borderRadius: "12px", backgroundColor: colors.bgSecondary }),
+  themeOpt: css("components-header-themeOpt", { borderRadius: "8px", fontSize: "14px", fontWeight: "500", color: colors.textDim, transition: "background-color 0.2s ease, color 0.2s ease" }),
+  themeOptOn: css("components-header-themeOptOn", { color: colors.text, backgroundColor: colors.bgCard, boxShadow: "0 1px 3px rgba(0,0,0,0.12)" }),
 };
 
 export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   let menuOpen = false;
-  let docsOpen = true;
+  let menuMounted = false; // stays true while the exit animation plays
+  let menuEl: HTMLElement | undefined;
 
   const base = typeof import.meta !== 'undefined' ? (import.meta.env?.BASE_URL ?? "/") : "/";
   const route = () => activeRoute ?? getCurrentRoute();
   const href = (r: string, hash?: string) => (r === "home" ? base : `${base}${r}`) + (hash ? `#${hash}` : "");
 
+  const motion = (ms: number) => (matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : ms);
+  const SLIDE = (y: string, o: number) => ({ opacity: o, transform: `translateY(${y})` });
+
+  function openMenu() {
+    menuOpen = menuMounted = true;
+    update();
+  }
+
   function closeMenu() {
     if (!menuOpen) return;
     menuOpen = false;
     update();
+    if (!menuEl) { menuMounted = false; return update(); }
+    menuEl.animate([SLIDE("0", 1), SLIDE("-12px", 0)], { duration: motion(180), easing: "ease-in", fill: "forwards" }).finished
+      .catch(() => {})
+      .then(() => { if (!menuOpen) { menuMounted = false; update(); } });
   }
 
   // Same-route hash links just scroll; everything else goes through the router.
@@ -109,7 +105,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
     }
   }
 
-  function RouteLink({ label, route: r, hash }: NavItem, style: ReturnType<typeof css>, onStyle: ReturnType<typeof css>) {
+  function RouteLink({ label, route: r, hash }: NavItem, style: ReturnType<typeof css>, onStyle: ReturnType<typeof css>, trailing = false) {
     const on = () => !hash && route() === r;
     return a(
       {
@@ -119,6 +115,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
         onClick: (e) => { e.preventDefault(); go(r, hash); },
       },
       label,
+      ...(trailing ? [span(st.rowIcon, LineIcon("M5 12h14 M13 6l6 6-6 6", 18))] : []),
     );
   }
 
@@ -149,13 +146,17 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
         "aria-label": "Menu",
         // Open/close side effects live on the overlay's own lifecycle.
         onMount: (el) => {
+          menuEl = el;
+          el.animate([SLIDE("-12px", 0), SLIDE("0", 1)], { duration: motion(240), easing: "cubic-bezier(0.32, 0.72, 0, 1)" });
+          [...el.querySelectorAll("nav > div > div"), el.lastElementChild!].forEach((n, i) =>
+            n.animate([SLIDE("14px", 0), SLIDE("0", 1)], { duration: motion(380), delay: motion(60 + i * 45), easing: "cubic-bezier(0.32, 0.72, 0, 1)", fill: "backwards" }));
           const ac = new AbortController();
           document.body.style.overflow = "hidden";
           document.addEventListener("keydown", (e) => {
             if (e.key === "Escape") return closeMenu();
             if (e.key !== "Tab") return;
             // Keep focus inside the dialog.
-            const items = el.querySelectorAll<HTMLElement>("a, button");
+            const items = [document.getElementById("site-menu-button")!, ...el.querySelectorAll<HTMLElement>("a, button")];
             const first = items[0], last = items[items.length - 1];
             if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
               e.preventDefault();
@@ -165,46 +166,21 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
           window.matchMedia("(min-width: 768px)").addEventListener("change", (e) => { if (e.matches) closeMenu(); }, { signal: ac.signal });
           window.addEventListener("popstate", closeMenu, { signal: ac.signal });
           return () => {
+            if (menuEl === el) menuEl = undefined;
             ac.abort();
             document.body.style.overflow = "";
             document.getElementById("site-menu-button")?.focus();
           };
         },
       },
-      div(
-        s.container, st.menuTop,
-        Logo(),
-        button(
-          st.closeBtn,
-          { type: "button", "aria-label": "Close menu", onClick: closeMenu, onMount: (el) => el.focus() },
-          LineIcon("M6 6l12 12 M18 6L6 18"),
-        ),
-      ),
       nav(
         st.menuList,
         { "aria-label": "Main" },
         div(
           s.container,
-          div(st.menuItem, RouteLink(NAV_LINKS[0], st.menuRow, st.menuRowOn)),
-          div(
-            st.menuItem,
-            button(
-              {
-                type: "button",
-                class: () => cx(st.menuRow, route() === "docs" ? st.menuRowOn : null).className,
-                "aria-expanded": () => String(docsOpen),
-                "aria-controls": "site-menu-docs",
-                onClick: () => { docsOpen = !docsOpen; update(); },
-              },
-              "Docs",
-              span({ class: () => cx(st.rowIcon, docsOpen ? st.rowIconOpen : null).className }, LineIcon("M6 9l6 6 6-6", 16)),
-            ),
-            when(() => docsOpen,
-              div(st.menuSub, { id: "site-menu-docs" }, ...DOC_GROUPS.map((g) => RouteLink(g, st.menuSubLink, st.menuSubLink))),
-            ),
-          ),
-          div(st.menuItem, RouteLink(NAV_LINKS[2], st.menuRow, st.menuRowOn)),
-          div(st.menuItem, RouteLink(NAV_LINKS[3], st.menuRow, st.menuRowOn)),
+          div(st.menuItem, RouteLink(NAV_LINKS[0], st.menuRow, st.menuRowOn, true)),
+          div(st.menuItem, RouteLink(NAV_LINKS[1], st.menuRow, st.menuRowOn, true)),
+          div(st.menuItem, RouteLink(NAV_LINKS[2], st.menuRow, st.menuRowOn, true)),
           div(
             st.menuItem,
             a(
@@ -274,16 +250,16 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
             {
               id: "site-menu-button",
               type: "button",
-              "aria-label": "Open menu",
+              "aria-label": () => (menuOpen ? "Close menu" : "Open menu"),
               "aria-expanded": () => String(menuOpen),
               "aria-controls": "site-menu",
-              onClick: () => { menuOpen = true; update(); },
+              onClick: () => (menuOpen ? closeMenu() : openMenu()),
             },
-            LineIcon("M4 8h16 M4 16h16"),
+            when(() => menuOpen, LineIcon("M6 6l12 12 M18 6L6 18")).else(LineIcon("M4 8h16 M4 16h16")),
           ),
         ),
       ),
     ),
-    when(() => menuOpen, MobileMenu()),
+    when(() => menuMounted, MobileMenu()),
   );
 }

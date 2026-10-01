@@ -42,9 +42,6 @@ const contentTypography = {
 
 export const ds = {
   layout: css("pages-docs-styles-layout", { display: "grid", gridTemplateColumns: "228px minmax(0, 840px) 184px", gap: "34px", maxWidth: "1336px", margin: "0 auto", padding: "0 28px", minHeight: "100vh", alignItems: "start", raw: { "scrollbar-width": "thin" }, "@media (max-width: 1180px)": { gridTemplateColumns: "224px minmax(0, 1fr)", maxWidth: "1080px", gap: "42px" }, "@media (max-width: 900px)": { display: "block", padding: "0 24px" }, "@media (max-width: 600px)": { padding: "0 18px" } }),
-  // Reading progress: sits on the header's bottom edge, or on the section bar's at <= 900px.
-  progress: css("pages-docs-styles-progress", { position: "fixed", top: "calc(var(--header-h) - 2px)", left: "0", right: "0", zIndex: 225, height: "2px", pointerEvents: "none", "@media (max-width: 900px)": { top: "calc(var(--header-h) + 46px)" } }),
-  progressFill: css("pages-docs-styles-progressFill", { width: "var(--docs-progress)", height: "100%", backgroundColor: colors.primary }),
 
   sidebar: css("pages-docs-styles-sidebar", { display: "flex", flexDirection: "column", gap: "20px", padding: "0 16px 24px 0", borderRight: `1px solid ${colors.border}`, position: "sticky", top: "calc(var(--header-h) + 20px)", height: "calc(100vh - var(--header-h) - 36px)", overflowY: "auto", alignSelf: "start", "&::-webkit-scrollbar": { width: "4px" }, "&::-webkit-scrollbar-track": { backgroundColor: "transparent" }, "&::-webkit-scrollbar-thumb": { backgroundColor: colors.borderLight, borderRadius: "2px" }, "@media (max-width: 900px)": { display: "none" } }),
 
@@ -83,6 +80,7 @@ export const ds = {
 
   scrim: css("pages-docs-styles-scrim", { position: "fixed", top: "0", right: "0", bottom: "0", left: "0", zIndex: 240, backgroundColor: "rgba(0,0,0,0.45)", cursor: "default" }),
   sheet: css("pages-docs-styles-sheet", { position: "fixed", left: "0", right: "0", bottom: "0", zIndex: 241, height: "min(700px, 85vh)", display: "flex", flexDirection: "column", overflow: "hidden", borderRadius: "16px 16px 0 0", borderTop: `1px solid ${colors.border}`, backgroundColor: colors.bgCard }),
+  sheetDrag: css("pages-docs-styles-sheetDrag", { flexShrink: 0, cursor: "grab", raw: { "touch-action": "none" } }),
   sheetGrabber: css("pages-docs-styles-sheetGrabber", { flexShrink: 0, width: "32px", height: "4px", margin: "8px auto 0", borderRadius: "2px", backgroundColor: colors.borderLight }),
   sheetHead: css("pages-docs-styles-sheetHead", { flexShrink: 0, display: "flex", alignItems: "center", height: "52px", padding: "0 6px 0 20px" }),
   sheetTitle: css("pages-docs-styles-sheetTitle", { flex: "1", fontSize: "17px", fontWeight: "600", color: colors.text }),
