@@ -16,8 +16,9 @@ import { animations } from './styles/animations.ts';
 type PageSlot = { fn: PageFunction };
 
 const appStyles = {
-	root: css("app-app-root", { minHeight: '100vh' }),
-  main: css("app-main", { minHeight: 'calc(100vh - 160px)', paddingTop: '96px', animation: `${animations.pageFadeIn} 0.28s ease both` }),
+	// --header-h is the fixed header's height; docs sticky offsets read it too.
+	root: css("app-app-root", { minHeight: '100vh', raw: { '--header-h': '64px' }, '@media (max-width: 767px)': { raw: { '--header-h': '56px' } } }),
+  main: css("app-main", { minHeight: 'calc(100vh - 160px)', paddingTop: 'calc(var(--header-h) + 20px)', animation: `${animations.pageFadeIn} 0.28s ease backwards` }), // not `both`: a leftover transform would trap the docs' fixed elements
   centerState: css("app-centerState", { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '16px' }),
   spinner: css("app-spinner", { width: '32px', height: '32px', border: `2px solid ${colors.border}`, borderTopColor: colors.primary, borderRadius: '50%', animation: `${animations.spin} 0.6s linear infinite` }),
   loadingText: css("app-loadingText", { fontSize: '13px', color: colors.textMuted }),

@@ -1,5 +1,4 @@
 import { css, colors } from "../../styles.ts";
-import { animations } from "../../styles/animations.ts";
 
 export const hs = {
   heroCanvas: css("pages-home-styles-heroCanvas", { position: "absolute", inset: "0", width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }),
@@ -7,13 +6,16 @@ export const hs = {
   paneHidden: css("pages-home-styles-paneHidden", { display: "none" }),
   preWrap: css("pages-home-styles-preWrap", { margin: "0", whiteSpace: "pre-wrap" }),
   demoTabBtnActive: css("pages-home-styles-demoTabBtnActive", { color: colors.primary, borderBottom: `2px solid ${colors.primary}` }),
-  pipe: css("pages-home-styles-pipe", { display: "grid", gridTemplateColumns: "1fr", gap: "0", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 54px 1fr 54px 1fr", alignItems: "stretch" } }),
-  pipeNode: css("pages-home-styles-pipeNode", { position: "relative", backgroundColor: colors.bgCard, borderRadius: "16px", padding: "26px 26px 24px", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)", boxShadow: "0 18px 44px -24px var(--c-primary-glow)" } }),
-  pipeLink: css("pages-home-styles-pipeLink", { position: "relative", minHeight: "44px", "&::before": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "repeating-linear-gradient(180deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { content: "''", position: "absolute", left: "50%", top: "6px", bottom: "6px", width: "2px", transform: "translateX(-50%)", backgroundImage: "linear-gradient(180deg, transparent, var(--c-primary), transparent)", backgroundSize: "100% 55%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRunY} 2.3s ease-in-out infinite` }, "@media (min-width: 901px)": { minHeight: "0", "&::before": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "repeating-linear-gradient(90deg, var(--c-primary-alpha-19) 0 5px, transparent 5px 11px)" }, "&::after": { left: "5px", right: "5px", top: "50%", bottom: "auto", width: "auto", height: "2px", transform: "translateY(-50%)", backgroundImage: "linear-gradient(90deg, transparent, var(--c-primary), transparent)", backgroundSize: "55% 100%", backgroundRepeat: "no-repeat", animation: `${animations.connectorRun} 2.3s ease-in-out infinite` } } }),
-  pipeKicker: css("pages-home-styles-pipeKicker", { display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: "ui-monospace, monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary }),
-  pipeTitle: css("pages-home-styles-pipeTitle", { fontSize: "1.02rem", fontWeight: "700", marginBottom: "8px" }),
-  pipeDesc: css("pages-home-styles-pipeDesc", { fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65", marginBottom: "16px" }),
-  pipeCode: css("pages-home-styles-pipeCode", { fontFamily: "ui-monospace, monospace", fontSize: "0.78rem", lineHeight: "1.6", backgroundColor: colors.bgCode, borderRadius: "10px", padding: "12px 14px", overflowX: "auto", whiteSpace: "pre" }),
+  // One panel, three steps split by 1px dividers; a chevron on each divider shows the direction.
+  pipe: css("pages-home-styles-pipe", { display: "grid", gridTemplateColumns: "1fr", marginTop: "46px", padding: "0", listStyle: "none", backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "16px", "& > li + li": { raw: { "border-top": "1px solid var(--c-border)" } }, "@media (min-width: 901px)": { gridTemplateColumns: "repeat(3, minmax(0, 1fr))", "& > li + li": { raw: { "border-top": "none", "border-left": "1px solid var(--c-border)" } } } }),
+  // Step cells; the features panel reuses pipeNode/pipeStep/pipeNum/pipeTitle.
+  pipeNode: css("pages-home-styles-pipeNode", { position: "relative", display: "flex", flexDirection: "column", minWidth: "0", padding: "28px 24px", medium: { padding: "32px 28px" } }),
+  pipeArrow: css("pages-home-styles-pipeArrow", { position: "absolute", top: "-13px", left: "24px", display: "flex", alignItems: "center", justifyContent: "center", width: "24px", height: "24px", borderRadius: "50%", backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, color: colors.textMuted, "& svg": { raw: { transform: "rotate(90deg)" } }, medium: { left: "28px" }, "@media (min-width: 901px)": { top: "34px", left: "-13px", "& svg": { raw: { transform: "none" } } } }),
+  pipeStep: css("pages-home-styles-pipeStep", { display: "flex", alignItems: "baseline", gap: "10px", marginBottom: "14px", fontSize: "0.8125rem", fontWeight: "500", color: colors.textMuted }),
+  pipeNum: css("pages-home-styles-pipeNum", { fontFamily: "ui-monospace, monospace", color: colors.primaryInk }),
+  pipeTitle: css("pages-home-styles-pipeTitle", { fontSize: "1.125rem", fontWeight: "600", marginBottom: "8px" }),
+  pipeDesc: css("pages-home-styles-pipeDesc", { fontSize: "0.9375rem", color: colors.textDim, lineHeight: "1.65", marginBottom: "20px" }),
+  pipeCode: css("pages-home-styles-pipeCode", { marginTop: "auto", fontFamily: "ui-monospace, monospace", fontSize: "0.8rem", lineHeight: "1.6", backgroundColor: colors.bgCode, border: `1px solid ${colors.border}`, borderRadius: "10px", padding: "12px 14px", overflowX: "auto", whiteSpace: "pre" }),
   cmpGrid: css("pages-home-styles-cmpGrid", { display: "grid", gridTemplateColumns: "1fr", gap: "16px", marginTop: "46px", "@media (min-width: 901px)": { gridTemplateColumns: "1fr 1fr 1fr", gap: "18px" } }),
   cmpCol: css("pages-home-styles-cmpCol", { backgroundColor: colors.bgCard, borderRadius: "16px", padding: "28px 26px", transition: "transform 0.22s ease", hover: { transform: "translateY(-3px)" } }),
   cmpColFeatured: css("pages-home-styles-cmpColFeatured", { backgroundColor: colors.bgSecondary, boxShadow: "0 26px 64px -32px var(--c-primary-glow)", hover: { boxShadow: "0 30px 72px -30px var(--c-primary-glow)" } }),
@@ -23,8 +25,8 @@ export const hs = {
   cmpLi: css("pages-home-styles-cmpLi", { display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.6", padding: "7px 0", "& svg": { flexShrink: 0, marginTop: "4px" } }),
   cmpLiGood: css("pages-home-styles-cmpLiGood", { color: colors.text, "& svg": { color: colors.primary } }),
   cmpLiDim: css("pages-home-styles-cmpLiDim", { "& svg": { color: colors.textMuted } }),
-  ctaPanel: css("pages-home-styles-ctaPanel", { position: "relative", overflow: "hidden", borderRadius: "24px", backgroundColor: colors.bgSecondary, boxShadow: "var(--c-shadow)", padding: "68px 24px", textAlign: "center", "&::before": { content: "''", position: "absolute", top: "-80px", right: "-68px", width: "220px", height: "220px", borderRadius: "42px", backgroundColor: colors.primary, opacity: "0.14", transform: "rotate(14deg)", pointerEvents: "none" }, "& > *": { position: "relative" }, medium: { padding: "84px 48px" } }),
-  heroSection: css("pages-home-styles-heroSection", { padding: "12px 0 0", medium: { paddingBottom: "24px" }, large: { padding: "20px 0 32px" } }),
+  // Cancels <main>'s 20px top gap so the card sits as far below the header as from the side edges (heroShell: 8 / 14 / 20px).
+  heroSection: css("pages-home-styles-heroSection", { marginTop: "-20px", padding: "8px 0 0", medium: { padding: "14px 0 24px" }, large: { padding: "20px 0 32px" } }),
 
   heroShell: css("pages-home-styles-heroShell", { width: "calc(100% - 16px)", maxWidth: "1560px", margin: "0 auto", medium: { width: "calc(100% - 28px)" }, large: { width: "calc(100% - 40px)" } }),
 
@@ -82,35 +84,31 @@ export const hs = {
   // Philosophy section
   philosophySection: css("pages-home-styles-philosophySection", { position: "relative", overflow: "hidden", padding: "64px 0", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, medium: { padding: "96px 0" } }),
 
-  philosophyInner: css("pages-home-styles-philosophyInner", { display: "grid", gridTemplateColumns: "1fr", gap: "42px", alignItems: "center", large: { gridTemplateColumns: "0.9fr 1.1fr", gap: "80px" } }),
+  philosophyInner: css("pages-home-styles-philosophyInner", { display: "grid", gridTemplateColumns: "1fr", gap: "36px", alignItems: "start", large: { gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr)", gap: "72px" } }),
 
-  philosophyQuote: css("pages-home-styles-philosophyQuote", { position: "relative", fontSize: "1.55rem", fontWeight: "800", lineHeight: "1.32", letterSpacing: "0", marginBottom: "32px", medium: { fontSize: "2rem" } }),
+  philosophyQuote: css("pages-home-styles-philosophyQuote", { fontSize: "1.5rem", fontWeight: "700", lineHeight: "1.3", letterSpacing: "-0.01em", raw: { "text-wrap": "balance" }, "& code": { raw: { "font-family": "ui-monospace, monospace", "font-size": "0.9em", color: "var(--c-primary-ink)" } }, medium: { fontSize: "2rem" } }),
 
-  philosophyMark: css("pages-home-styles-philosophyMark", { display: "block", fontFamily: "Georgia, serif", fontSize: "4.6rem", lineHeight: "0.6", color: colors.primary, opacity: "0.35", marginBottom: "18px" }),
+  // Same bordered panel as Pipeline/Features; the <ol> carries the order, the visible number is decorative.
+  philosophyPoints: css("pages-home-styles-philosophyPoints", { listStyle: "none", margin: "0", padding: "0", backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "16px", "& > li + li": { borderTop: `1px solid ${colors.border}` } }),
 
-  philosophyPoints: css("pages-home-styles-philosophyPoints", { display: "flex", flexDirection: "column", gap: "10px" }),
+  philosophyPoint: css("pages-home-styles-philosophyPoint", { display: "grid", gridTemplateColumns: "28px minmax(0, 1fr)", gap: "14px", padding: "24px", medium: { padding: "28px" } }),
 
-  philosophyPoint: css("pages-home-styles-philosophyPoint", { display: "flex", gap: "16px", alignItems: "flex-start", padding: "16px 18px", borderRadius: "8px", transition: "transform 0.2s ease", hover: { backgroundColor: colors.bgCard, transform: "translateX(4px)" } }),
+  philosophyPointNum: css("pages-home-styles-philosophyPointNum", { paddingTop: "3px", fontFamily: "ui-monospace, monospace", fontSize: "0.8125rem", color: colors.primaryInk }),
 
-  philosophyPointIcon: css("pages-home-styles-philosophyPointIcon", { width: "38px", height: "38px", borderRadius: "8px", backgroundColor: colors.primaryAlpha08, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "ui-monospace, monospace", fontSize: "0.78rem", fontWeight: "800", color: colors.primary, flexShrink: 0 }),
+  philosophyPointTitle: css("pages-home-styles-philosophyPointTitle", { fontSize: "1.0625rem", fontWeight: "600", marginBottom: "6px" }),
 
-  philosophyPointTitle: css("pages-home-styles-philosophyPointTitle", { fontSize: "0.97rem", fontWeight: "600", marginBottom: "4px" }),
+  philosophyPointDesc: css("pages-home-styles-philosophyPointDesc", { fontSize: "0.9375rem", color: colors.textDim, lineHeight: "1.65", "& code": { raw: { "font-family": "ui-monospace, monospace", "font-size": "0.875em", padding: "1px 5px", "border-radius": "4px", "background-color": "var(--c-bg-secondary)", color: "var(--c-text)" } } }),
 
-  philosophyPointDesc: css("pages-home-styles-philosophyPointDesc", { fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65" }),
-
-  // Pipeline section. content-visibility skips layout/paint/style work for this
-  // section while it's off-screen — notably including the connector-line
-  // shimmer animation below (`connectorRun`/`connectorRunY`), which animates
-  // `background-position` (a paint-triggering property, unlike transform/opacity)
-  // and runs on an `infinite` CSS loop with no JS-side visibility gating.
-  // contain-intrinsic-size is a placeholder height used only before this section
-  // has ever been rendered once; the browser remembers the real size after that.
+  // Pipeline section. content-visibility skips layout/paint while off-screen;
+  // contain-intrinsic-size is only a placeholder until it has rendered once.
   pipelineSection: css("pages-home-styles-pipelineSection", { padding: "8px 0 64px", borderBottom: `1px solid ${colors.border}`, medium: { padding: "96px 0" }, raw: { "content-visibility": "auto", "contain-intrinsic-size": "auto 560px" } }),
 
-  // Features section
-  featuresSection: css("pages-home-styles-featuresSection", { padding: "64px 0", medium: { padding: "96px 0" } }),
+  // Features section: one panel, stacked then 2x2 from 601px, cells split by 1px dividers.
+  featuresSection: css("pages-home-styles-featuresSection", { padding: "64px 0", borderBottom: `1px solid ${colors.border}`, medium: { padding: "96px 0" } }),
 
-  featureIcon: css("pages-home-styles-featureIcon", { width: "42px", height: "42px", borderRadius: "12px", backgroundColor: colors.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 14px 28px -20px var(--c-primary-glow)" }),
+  features: css("pages-home-styles-features", { display: "grid", gridTemplateColumns: "1fr", marginTop: "46px", listStyle: "none", backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "16px", "& > li + li": { borderTop: `1px solid ${colors.border}` }, medium: { gridTemplateColumns: "repeat(2, minmax(0, 1fr))", "& > li:nth-child(2)": { borderTop: "none" }, "& > li:nth-child(even)": { borderLeft: `1px solid ${colors.border}` } } }),
+
+  featureDesc: css("pages-home-styles-featureDesc", { fontSize: "0.9375rem", color: colors.textDim, lineHeight: "1.65", "& code": { raw: { "font-family": "ui-monospace, monospace", "font-size": "0.875em", padding: "1px 5px", "border-radius": "4px", "background-color": "var(--c-bg-secondary)", color: "var(--c-text)" } } }),
 
   featureKicker: css("pages-home-styles-featureKicker", { fontFamily: "ui-monospace, monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "6px" }),
 
@@ -119,40 +117,37 @@ export const hs = {
 
   cmpBadge: css("pages-home-styles-cmpBadge", { display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.64rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary, padding: "3px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08 }),
 
-  // Benchmark section
-  benchSection: css("pages-home-styles-benchSection", { padding: "64px 0", medium: { padding: "96px 0" } }),
+  // Benchmark section: one panel (caption row, ranked bars, footnote) split by 1px dividers.
+  benchSection: css("pages-home-styles-benchSection", { padding: "64px 0", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgFooter, medium: { padding: "96px 0" } }),
 
-  benchPanel: css("pages-home-styles-benchPanel", { backgroundColor: colors.bgCard, boxShadow: "var(--c-shadow)", borderRadius: "20px", padding: "26px 20px", marginTop: "46px", medium: { padding: "38px 42px" } }),
+  benchPanel: css("pages-home-styles-benchPanel", { marginTop: "46px", backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "16px" }),
 
-  benchHead: css("pages-home-styles-benchHead", { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "26px" }),
+  benchHead: css("pages-home-styles-benchHead", { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "4px 16px", flexWrap: "wrap", padding: "16px 20px", borderBottom: `1px solid ${colors.border}`, fontSize: "0.8125rem", color: colors.textDim, medium: { padding: "18px 28px" } }),
 
-  benchKicker: css("pages-home-styles-benchKicker", { fontFamily: "ui-monospace, monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary }),
+  benchCaption: css("pages-home-styles-benchCaption", { fontSize: "0.9375rem", fontWeight: "600", color: colors.text }),
 
-  benchHint: css("pages-home-styles-benchHint", { fontFamily: "ui-monospace, monospace", fontSize: "0.68rem", color: colors.textMuted }),
+  benchRows: css("pages-home-styles-benchRows", { display: "flex", flexDirection: "column", gap: "16px", padding: "24px 20px", listStyle: "none", medium: { gap: "14px", padding: "28px" } }),
 
-  benchRows: css("pages-home-styles-benchRows", { display: "flex", flexDirection: "column", gap: "14px" }),
+  // Name + score on one line with the bar below; a single line from 601px.
+  benchRow: css("pages-home-styles-benchRow", { display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gridTemplateAreas: '"name value" "bar bar"', alignItems: "center", gap: "6px 12px", medium: { gridTemplateColumns: "168px minmax(0, 1fr) 40px", gridTemplateAreas: '"name bar value"', gap: "18px" } }),
 
-  benchRow: css("pages-home-styles-benchRow", { display: "grid", gridTemplateColumns: "1fr", gap: "6px", alignItems: "center", medium: { gridTemplateColumns: "168px 1fr", gap: "18px" } }),
+  benchName: css("pages-home-styles-benchName", { gridArea: "name", fontSize: "0.875rem", fontWeight: "500", color: colors.textDim, whiteSpace: "nowrap" }),
 
-  benchName: css("pages-home-styles-benchName", { fontSize: "0.875rem", fontWeight: "600", color: colors.textDim, whiteSpace: "nowrap" }),
+  benchNameFeatured: css("pages-home-styles-benchNameFeatured", { color: colors.primaryInk, fontWeight: "600" }),
 
-  benchNameFeatured: css("pages-home-styles-benchNameFeatured", { color: colors.text, fontWeight: "700" }),
+  benchVersion: css("pages-home-styles-benchVersion", { fontFamily: "ui-monospace, monospace", fontSize: "0.75rem", fontWeight: "400", color: colors.textMuted, marginLeft: "8px" }),
 
-  benchVersion: css("pages-home-styles-benchVersion", { fontFamily: "ui-monospace, monospace", fontSize: "0.7rem", fontWeight: "400", color: colors.textMuted, marginLeft: "7px" }),
+  benchBar: css("pages-home-styles-benchBar", { gridArea: "bar", height: "8px", borderRadius: "2px", backgroundColor: colors.borderLight }),
 
-  benchTrack: css("pages-home-styles-benchTrack", { position: "relative", height: "32px" }),
+  benchBarFeatured: css("pages-home-styles-benchBarFeatured", { backgroundColor: colors.primary }),
 
-  benchFill: css("pages-home-styles-benchFill", { position: "relative", height: "32px", minWidth: "54px", borderRadius: "999px", overflow: "hidden", backgroundColor: colors.bgLight }),
+  benchValue: css("pages-home-styles-benchValue", { gridArea: "value", textAlign: "right", fontFamily: "ui-monospace, monospace", fontSize: "0.8125rem", color: colors.textDim, fontVariantNumeric: "tabular-nums" }),
 
-  benchFillFeatured: css("pages-home-styles-benchFillFeatured", { backgroundColor: colors.primary, boxShadow: "0 14px 30px -16px var(--c-primary-glow)" }),
+  benchValueFeatured: css("pages-home-styles-benchValueFeatured", { color: colors.primaryInk, fontWeight: "600" }),
 
-  benchValue: css("pages-home-styles-benchValue", { position: "absolute", right: "13px", top: "50%", transform: "translateY(-50%)", fontFamily: "ui-monospace, monospace", fontSize: "0.72rem", fontWeight: "700", color: colors.textDim, fontVariantNumeric: "tabular-nums" }),
+  benchFoot: css("pages-home-styles-benchFoot", { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "8px 24px", flexWrap: "wrap", padding: "16px 20px", borderTop: `1px solid ${colors.border}`, fontSize: "0.8125rem", color: colors.textDim, lineHeight: "1.6", medium: { padding: "18px 28px" } }),
 
-  benchValueFeatured: css("pages-home-styles-benchValueFeatured", { color: "#fff" }),
-
-  benchFoot: css("pages-home-styles-benchFoot", { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "10px 24px", flexWrap: "wrap", marginTop: "28px", paddingTop: "18px", borderTop: `1px solid ${colors.border}`, fontSize: "0.78rem", color: colors.textMuted, lineHeight: "1.6" }),
-
-  benchSourceLink: css("pages-home-styles-benchSourceLink", { whiteSpace: "nowrap", color: colors.textDim, fontWeight: "600", borderBottom: `1px solid ${colors.borderLight}`, hover: { color: colors.primary, borderColor: colors.borderPrimary } }),
+  benchSourceLink: css("pages-home-styles-benchSourceLink", { whiteSpace: "nowrap", color: colors.text, fontWeight: "500", borderBottom: `1px solid ${colors.borderLight}`, hover: { borderColor: colors.text } }),
 
   // Quick start section
   quickStartSection: css("pages-home-styles-quickStartSection", { padding: "64px 0", medium: { padding: "96px 0" } }),
@@ -173,9 +168,25 @@ export const hs = {
   teaserCodePane: css("pages-home-styles-teaserCodePane", { padding: "16px 20px", backgroundColor: colors.bgCode, fontFamily: "ui-monospace, monospace", fontSize: "0.78rem", lineHeight: "1.7", overflowX: "auto" }),
 
   // CTA section
-  ctaSection: css("pages-home-styles-ctaSection", { padding: "72px 0 88px", textAlign: "center", medium: { padding: "104px 0 120px" } }),
+  // Closing CTA: one bordered panel; copy left, install + actions right from 901px.
+  ctaSection: css("pages-home-styles-ctaSection", { padding: "64px 0 80px", medium: { padding: "96px 0 112px" } }),
 
-  ctaActions: css("pages-home-styles-ctaActions", { display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", marginTop: "34px" }),
+  ctaPanel: css("pages-home-styles-ctaPanel", { display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: "28px", padding: "28px 20px", backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "16px", medium: { padding: "40px" }, "@media (min-width: 901px)": { gridTemplateColumns: "minmax(0, 1fr) minmax(320px, auto)", alignItems: "center", gap: "48px", padding: "48px" } }),
 
-  ctaInstall: css("pages-home-styles-ctaInstall", { display: "flex", justifyContent: "center", marginTop: "26px" }),
+  ctaTitle: css("pages-home-styles-ctaTitle", { fontSize: "1.75rem", fontWeight: "700", lineHeight: "1.15", letterSpacing: "-0.02em", marginBottom: "10px", medium: { fontSize: "2.25rem" } }),
+
+  ctaSub: css("pages-home-styles-ctaSub", { maxWidth: "480px", fontSize: "1rem", lineHeight: "1.65", color: colors.textDim }),
+
+  ctaSide: css("pages-home-styles-ctaSide", { display: "flex", flexDirection: "column", gap: "12px" }),
+
+  // Overrides the shared install bar (hero keeps its own look).
+  ctaInstallCmd: css("pages-home-styles-ctaInstallCmd", { display: "flex", width: "100%", boxSizing: "border-box", whiteSpace: "nowrap", fontSize: "0.8125rem", boxShadow: "none", border: `1px solid ${colors.border}`, borderRadius: "10px", backgroundColor: colors.bgCode, "& > button": { marginLeft: "auto" } }),
+
+  ctaActions: css("pages-home-styles-ctaActions", { display: "flex", flexWrap: "wrap", gap: "10px", "& > a": { flex: "1 1 auto" } }),
+
+  ctaBtn: css("pages-home-styles-ctaBtn", { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", height: "44px", padding: "0 18px", borderRadius: "8px", fontSize: "0.9375rem", fontWeight: "600", whiteSpace: "nowrap" }),
+
+  ctaBtnPrimary: css("pages-home-styles-ctaBtnPrimary", { backgroundColor: colors.primaryDark, color: "#fff", hover: { filter: "brightness(0.92)" } }),
+
+  ctaBtnSecondary: css("pages-home-styles-ctaBtnSecondary", { border: `1px solid ${colors.borderLight}`, color: colors.text, hover: { backgroundColor: colors.bgSecondary } }),
 };

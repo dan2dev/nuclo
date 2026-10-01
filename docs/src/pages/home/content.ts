@@ -102,26 +102,22 @@ export const PHILOSOPHY_POINTS = [
 
 export const FEATURES = [
   {
-    num: "01 - EXPLICIT",
-    icon: "zap",
+    num: "01 · Explicit",
     title: "You own the update cycle",
     desc: "Mutate freely, then call update() once. Nuclo needs no subscriptions and no schedulers, and it never surprises you with a diff. The DOM syncs when you decide.",
   },
   {
-    num: "02 - LIGHTWEIGHT",
-    icon: "feather",
+    num: "02 · Lightweight",
     title: "Zero dependencies",
     desc: `About ${NUCLO_GZIP_KB} KB gzipped for the entire runtime. Nuclo needs no compiler and no build plugins. Add one import and start building.`,
   },
   {
-    num: "03 - TYPED",
-    icon: "braces",
+    num: "03 · Typed",
     title: "TypeScript-first",
     desc: "175 fully-typed HTML and SVG builders give you autocomplete for every attribute, style property, and event.",
   },
   {
-    num: "04 - PRECISE",
-    icon: "target",
+    num: "04 · Precise",
     title: "Fine-grained patching",
     desc: "Dynamic expressions re-evaluate on update(). Only the values that actually changed touch the DOM.",
   },

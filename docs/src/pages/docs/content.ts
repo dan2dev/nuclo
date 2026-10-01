@@ -21,7 +21,7 @@ function TerminalCommand(command: string) {
     span(css("docs-terminal-prompt", { color: colors.textMuted, fontFamily: "ui-monospace, monospace" }), "$"),
     span(command),
     button(
-      css("docs-terminal-copy-button", { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "6px", color: colors.textMuted, backgroundColor: "transparent", border: "none", cursor: "pointer", hover: { color: colors.primary, backgroundColor: colors.primaryAlpha08 } }),
+      css("docs-terminal-copy-button", { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "6px", color: colors.textMuted, backgroundColor: "transparent", border: "none", cursor: "pointer", hover: { color: colors.text, backgroundColor: colors.bgLight } }),
       { title: "Copy to clipboard", "aria-label": "Copy command" },
       when(() => copied, CheckIcon({ size: 14 })).else(CopyIcon({ size: 14 })),
       { onClick: handleCopy },

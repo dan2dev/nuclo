@@ -1,218 +1,289 @@
 import { css, colors, cx, s } from "../styles.ts";
-import { fx } from "../styles/effects.ts";
-import { animations } from "../styles/animations.ts";
 import { setRoute, getCurrentRoute } from "../router.ts";
-import { toggleTheme, isDark } from "../theme.ts";
+import { toggleTheme, isDark, getThemePreference, setThemePreference, type ThemePreference } from "../theme.ts";
+import { docsSection } from "../docs-state.ts";
 import { BrandLogo } from "./BrandLogo.ts";
-import { ArrowIcon, MoonIcon, SunIcon } from "./icons.ts";
+import { GitHubSvg } from "./icons.ts";
 
-const NAV_LINKS: { label: string; route: string }[] = [
+const GITHUB_URL = "https://github.com/dan2dev/nuclo";
+const DESKTOP = "@media (min-width: 768px)";
+const WIDE = "@media (min-width: 1024px)";
+
+type NavItem = { label: string; route: string; hash?: string };
+
+const NAV_LINKS: NavItem[] = [
   { label: "Home",     route: "home" },
   { label: "Docs",     route: "docs" },
   { label: "Examples", route: "examples" },
+  { label: "API",      route: "docs", hash: "api-index" },
 ];
 
-function GitHubIcon() {
+// Docs groups in the mobile menu, each pointing at its first section.
+const DOC_GROUPS: NavItem[] = [
+  ["Introduction", "overview"],
+  ["Building UI",  "tag-builders"],
+  ["Updates",      "explicit-updates"],
+  ["Rendering",    "api-render"],
+  ["Styling",      "api-styling"],
+  ["Patterns",     "computed"],
+  ["Reference",    "api-index"],
+].map(([label, hash]) => ({ label, route: "docs", hash }));
+
+const THEMES: [ThemePreference, string][] = [["light", "Light"], ["dark", "Dark"], ["system", "System"]];
+
+// Single-path stroked icon (menu, close, chevron, external arrow).
+function LineIcon(d: string, size = 20) {
   return svgSvg(
-    { width: "15", height: "15", viewBox: "0 0 24 24", fill: "currentColor" },
-    pathSvg({ d: "M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" })
+    { width: String(size), height: String(size), viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" },
+    pathSvg({ d }),
   );
 }
 
+// 44px tap target; the negative margin lines the icon up with the container edge.
+const tapBtn = { display: "flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px", marginRight: "-12px", borderRadius: "8px", hover: { color: colors.text, backgroundColor: colors.bgSecondary } } as const;
+
+const st = {
+  bar: css("components-header-bar", { position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "var(--header-h)", backgroundColor: colors.bg, borderBottom: `1px solid ${colors.border}` }),
+  row: css("components-header-row", { display: "flex", alignItems: "center", gap: "40px", height: "100%" }),
+  logo: css("components-header-logo", { display: "flex", alignItems: "center", flexShrink: 0 }),
+
+  navWrap: css("components-header-navWrap", { display: "none", alignItems: "center", gap: "24px", height: "100%", minWidth: 0, [DESKTOP]: { display: "flex" } }),
+  nav: css("components-header-nav", { display: "flex", alignItems: "stretch", gap: "28px", height: "100%" }),
+  // The 2px underline sits on the header's bottom border (negative margin).
+  navLink: css("components-header-navLink", { display: "flex", alignItems: "center", marginBottom: "-1px", borderBottom: "2px solid transparent", fontSize: "14px", fontWeight: "500", color: colors.textDim, whiteSpace: "nowrap", transition: "color 0.15s ease", hover: { color: colors.text } }),
+  navLinkOn: css("components-header-navLinkOn", { color: colors.text, borderBottomColor: colors.primary }),
+
+  crumbDivider: css("components-header-crumbDivider", { display: "none", flexShrink: 0, width: "1px", height: "16px", backgroundColor: colors.borderLight, "@media (min-width: 1100px)": { display: "block" } }),
+  crumb: css("components-header-crumb", { display: "none", alignItems: "center", gap: "8px", minWidth: 0, fontSize: "13px", color: colors.textMuted, whiteSpace: "nowrap", "@media (min-width: 1100px)": { display: "flex" } }),
+  crumbTitle: css("components-header-crumbTitle", { maxWidth: "280px", overflow: "hidden", textOverflow: "ellipsis", color: colors.textDim }),
+
+  right: css("components-header-right", { display: "flex", alignItems: "center", gap: "4px", marginLeft: "auto" }),
+  iconBtn: css("components-header-iconBtn", { display: "none", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "8px", color: colors.textDim, hover: { color: colors.text, backgroundColor: colors.bgSecondary }, [DESKTOP]: { display: "flex" } }),
+  cta: css("components-header-cta", { alignItems: "center", justifyContent: "center", borderRadius: "8px", backgroundColor: colors.primaryDark, color: "#fff", fontWeight: "600", whiteSpace: "nowrap", hover: { filter: "brightness(0.92)" } }),
+  ctaBar: css("components-header-ctaBar", { display: "none", height: "36px", padding: "0 14px", marginLeft: "12px", fontSize: "14px", [WIDE]: { display: "inline-flex" } }),
+  ctaMenu: css("components-header-ctaMenu", { display: "flex", height: "48px", fontSize: "16px" }),
+  menuBtn: css("components-header-menuBtn", { ...tapBtn, color: colors.text, [DESKTOP]: { display: "none" } }),
+
+  // ── Mobile menu ──
+  menu: css("components-header-menu", { position: "fixed", inset: "0", zIndex: 230, display: "flex", flexDirection: "column", backgroundColor: colors.bg }),
+  menuTop: css("components-header-menuTop", { flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", height: "56px", borderBottom: `1px solid ${colors.border}` }),
+  closeBtn: css("components-header-closeBtn", { ...tapBtn, color: colors.textDim }),
+  menuList: css("components-header-menuList", { flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: "8px 0" }),
+  menuItem: css("components-header-menuItem", { borderBottom: `1px solid ${colors.border}` }),
+  menuRow: css("components-header-menuRow", { display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", height: "52px", fontSize: "17px", fontWeight: "500", color: colors.text, textAlign: "left" }),
+  menuRowOn: css("components-header-menuRowOn", { color: colors.primaryInk }),
+  rowIcon: css("components-header-rowIcon", { display: "flex", color: colors.textMuted, transition: "transform 0.2s ease" }),
+  rowIconOpen: css("components-header-rowIconOpen", { transform: "rotate(180deg)" }),
+  menuSub: css("components-header-menuSub", { display: "flex", flexDirection: "column", padding: "0 0 8px 16px" }),
+  menuSubLink: css("components-header-menuSubLink", { display: "flex", alignItems: "center", height: "44px", fontSize: "15px", color: colors.textDim, hover: { color: colors.text } }),
+  srOnly: css("components-header-srOnly", { position: "absolute", width: "1px", height: "1px", overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" }),
+  menuFoot: css("components-header-menuFoot", { flexShrink: 0, padding: "16px 0", borderTop: `1px solid ${colors.border}` }),
+  menuFootInner: css("components-header-menuFootInner", { display: "flex", flexDirection: "column", gap: "12px" }),
+  themeGroup: css("components-header-themeGroup", { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", height: "44px", border: `1px solid ${colors.border}`, borderRadius: "8px", overflow: "hidden" }),
+  themeOpt: css("components-header-themeOpt", { fontSize: "14px", fontWeight: "500", color: colors.textDim }),
+  themeOptOn: css("components-header-themeOptOn", { color: colors.text, backgroundColor: colors.bgSecondary }),
+};
+
 export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   let menuOpen = false;
+  let docsOpen = true;
 
-  function toggleMenu() {
-    menuOpen = !menuOpen;
+  const base = typeof import.meta !== 'undefined' ? (import.meta.env?.BASE_URL ?? "/") : "/";
+  const route = () => activeRoute ?? getCurrentRoute();
+  const href = (r: string, hash?: string) => (r === "home" ? base : `${base}${r}`) + (hash ? `#${hash}` : "");
+
+  function closeMenu() {
+    if (!menuOpen) return;
+    menuOpen = false;
     update();
   }
 
-  function closeMenu() {
-    if (menuOpen) {
-      menuOpen = false;
-      update();
+  // Same-route hash links just scroll; everything else goes through the router.
+  function go(r: string, hash?: string) {
+    closeMenu();
+    if (hash && r === route()) {
+      document.getElementById(hash)?.scrollIntoView({ block: "start" });
+      history.replaceState(null, "", `#${hash}`);
+    } else {
+      setRoute(r, hash);
     }
   }
 
-  function isActive(route: string): boolean {
-    const r = activeRoute ?? getCurrentRoute();
-    return r === route;
-  }
-
-  const base = typeof import.meta !== 'undefined' ? (import.meta.env?.BASE_URL ?? "/") : "/";
-
-  // ── Desktop nav link ─────────────────────────────────────────────────────
-  function NavLink(label: string, route: string) {
+  function RouteLink({ label, route: r, hash }: NavItem, style: ReturnType<typeof css>, onStyle: ReturnType<typeof css>) {
+    const on = () => !hash && route() === r;
     return a(
-      { href: route === "home" ? base : `${base}${route}` },
-      navLinkStyle,
-      { class: () => cx(navLinkStyle, isActive(route) ? navLinkActiveStyle : null).className },
-      label,
       {
-        onClick: (e) => {
-          e.preventDefault();
-          setRoute(route);
-          closeMenu();
-        },
+        href: href(r, hash),
+        class: () => cx(style, on() ? onStyle : null).className,
+        "aria-current": () => (on() ? "page" : "false"),
+        onClick: (e) => { e.preventDefault(); go(r, hash); },
       },
+      label,
     );
   }
 
-  // ── Mobile nav link (full-width, larger tap target) ───────────────────────
-  function MobileNavLink(label: string, route: string) {
+  function Logo() {
     return a(
-      { href: route === "home" ? base : `${base}${route}` },
-      mobileNavLinkStyle,
-      { class: () => cx(mobileNavLinkStyle, isActive(route) ? mobileNavLinkActiveStyle : null).className },
-      label,
-      {
-        onClick: (e) => {
-          e.preventDefault();
-          setRoute(route);
-          closeMenu();
-        },
-      },
+      st.logo,
+      { href: base, "aria-label": "Nuclo home", onClick: (e) => { e.preventDefault(); go("home"); } },
+      BrandLogo(),
     );
   }
 
-  // ── Hamburger / X animated icon ───────────────────────────────────────────
-  function MenuIcon() {
+  function GetStarted(variant: ReturnType<typeof css>) {
+    return a(
+      st.cta, variant,
+      { href: href("docs", "quick-start"), onClick: (e) => { e.preventDefault(); go("docs", "quick-start"); } },
+      "Get started",
+    );
+  }
+
+  // ── Mobile menu (only rendered while open) ────────────────────────────────
+  function MobileMenu() {
     return div(
-      menuIconStyle,
-      div(menuLineStyle, { class: () => cx(menuLineStyle, menuOpen ? menuLineTopOpenStyle : null).className }),
-      div(menuLineStyle, { class: () => cx(menuLineStyle, menuOpen ? menuLineMiddleOpenStyle : null).className }),
-      div(menuLineStyle, { class: () => cx(menuLineStyle, menuOpen ? menuLineBottomOpenStyle : null).className }),
-    );
-  }
-
-  // ── Styles ────────────────────────────────────────────────────────────────
-  const navLinkStyle = css("components-header-navLinkStyle", { display: "inline-flex", alignItems: "center", height: "34px", padding: "0 12px", borderRadius: "9999px", fontSize: "0.8rem", fontWeight: "600", color: colors.textDim, hover: { color: colors.text, backgroundColor: colors.bgSecondary } });
-  const navLinkActiveStyle = css("components-header-navLinkActiveStyle", { color: colors.text, backgroundColor: colors.primaryAlpha08 });
-  const mobileNavLinkStyle = css("components-header-mobileNavLinkStyle", { display: "flex", alignItems: "center", padding: "16px 24px", fontSize: "1rem", fontWeight: "700", color: colors.textDim, borderBottom: `1px solid ${colors.border}`, hover: { color: colors.text, backgroundColor: colors.bgSecondary } });
-  const mobileNavLinkActiveStyle = css("components-header-mobileNavLinkActiveStyle", { color: colors.primary, fontWeight: "800" });
-  const menuIconStyle = css("components-header-menuIconStyle", { display: "flex", flexDirection: "column", gap: "5px", alignItems: "center", justifyContent: "center", width: "20px", height: "20px" });
-  const menuLineStyle = css("components-header-menuLineStyle", { display: "block", width: "20px", height: "2px", backgroundColor: colors.textDim, borderRadius: "2px", transition: "opacity 0.28s cubic-bezier(0.4,0,0.2,1), transform 0.28s cubic-bezier(0.4,0,0.2,1)" });
-  const menuLineTopOpenStyle = css("components-header-menuLineTopOpenStyle", { transform: "translateY(7px) rotate(45deg)" });
-  const menuLineMiddleOpenStyle = css("components-header-menuLineMiddleOpenStyle", { opacity: "0", transform: "scaleX(0)" });
-  const menuLineBottomOpenStyle = css("components-header-menuLineBottomOpenStyle", { transform: "translateY(-7px) rotate(-45deg)" });
-  const navStyle = css("components-header-navStyle", { position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "76px", backgroundColor: "var(--c-header-bg)", borderBottom: `1px solid ${colors.border}`, boxShadow: "0 1px 0 rgba(255,255,255,0.02)", animation: `${animations.pageFadeIn} 0.34s ease both`, display: "flex", alignItems: "center" });
-
-  const navInnerStyle = css("components-header-navInnerStyle", { display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: "22px" });
-
-  const logoStyle = css("components-header-logoStyle", { display: "flex", alignItems: "center", justifySelf: "start", cursor: "pointer", transition: "opacity 0.15s ease, transform 0.15s ease", hover: { opacity: "0.9", transform: "translateY(-1px)" } });
-
-  const rightGroup = css("components-header-rightGroup", { display: "flex", alignItems: "center", gap: "8px", justifySelf: "end" });
-
-  // Desktop nav links - hidden on mobile, flex on medium+
-  const desktopNavLinks = css("components-header-desktopNavLinks", { display: "none", alignItems: "center", justifySelf: "center", gap: "8px", medium: { display: "flex" } });
-
-  // Desktop GitHub button - hidden on mobile
-  const desktopGithub = css("components-header-desktopGithub", { display: "none", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "9999px", color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "transform 0.18s ease", medium: { display: "flex" },
-      hover: { color: colors.text, backgroundColor: colors.bgLight, transform: "translateY(-1px)" } });
-
-  const themeBtn = css("components-header-themeBtn", { display: "flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "9999px", color: colors.textDim, backgroundColor: colors.bgSecondary, transition: "transform 0.18s ease", fontSize: "15px", flexShrink: 0, hover: { color: colors.text, backgroundColor: colors.bgLight, transform: "translateY(-1px)" } });
-
-  const getStartedBtn = css("components-header-getStartedBtn", { display: "none", alignItems: "center", gap: "7px", height: "36px", padding: "0 17px", borderRadius: "9999px", color: "#fff", backgroundColor: colors.primary, fontSize: "0.78rem", fontWeight: "700", boxShadow: "0 14px 30px -20px var(--c-primary-glow)", transition: "transform 0.18s ease", large: { display: "inline-flex" }, hover: { transform: "translateY(-1px)", boxShadow: "0 18px 36px -20px var(--c-primary-glow)", backgroundColor: colors.primaryHover } });
-
-  // Mobile hamburger button - flex on mobile, hidden on medium+
-  const hamburgerBtn = css("components-header-hamburgerBtn", { display: "flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "9999px", color: colors.textDim, backgroundColor: colors.bgSecondary, cursor: "pointer", medium: { display: "none" },
-      hover: { color: colors.text, backgroundColor: colors.bgLight } });
-
-  // Mobile dropdown panel - hidden on medium+ via CSS
-  const mobileMenuPanel = css("components-header-mobileMenuPanel", { position: "fixed", top: "76px", left: "0", right: "0", zIndex: 210, backgroundColor: "var(--c-mobile-menu-bg)", borderBottom: `1px solid ${colors.border}`, overflow: "hidden", maxHeight: "0", transition: "opacity 0.25s ease", medium: { display: "none" } });
-  const mobileMenuPanelOpen = css("components-header-mobileMenuPanelOpen", { maxHeight: "480px", opacity: "1", pointerEvents: "auto" });
-  const mobileMenuPanelClosed = css("components-header-mobileMenuPanelClosed", { maxHeight: "0", opacity: "0", pointerEvents: "none" });
-
-  // Transparent backdrop to close menu on outside click
-  const backdropStyle = css("components-header-backdropStyle", { position: "fixed", top: "76px", left: "0", right: "0", bottom: "0", zIndex: 205, backgroundColor: "rgba(0,0,0,0.35)", transition: "opacity 0.25s ease" });
-  const backdropOpenStyle = css("components-header-backdropOpenStyle", { opacity: "1", pointerEvents: "auto" });
-  const backdropClosedStyle = css("components-header-backdropClosedStyle", { opacity: "0", pointerEvents: "none" });
-
-  return div(
-    // ── Navbar ──────────────────────────────────────────────────────────────
-    nav(
-      navStyle,
-      // Gradient hairline along the bottom edge
+      st.menu,
+      {
+        id: "site-menu",
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-label": "Menu",
+        // Open/close side effects live on the overlay's own lifecycle.
+        onMount: (el) => {
+          const ac = new AbortController();
+          document.body.style.overflow = "hidden";
+          document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") return closeMenu();
+            if (e.key !== "Tab") return;
+            // Keep focus inside the dialog.
+            const items = el.querySelectorAll<HTMLElement>("a, button");
+            const first = items[0], last = items[items.length - 1];
+            if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
+              e.preventDefault();
+              (e.shiftKey ? last : first).focus();
+            }
+          }, { signal: ac.signal });
+          window.matchMedia("(min-width: 768px)").addEventListener("change", (e) => { if (e.matches) closeMenu(); }, { signal: ac.signal });
+          window.addEventListener("popstate", closeMenu, { signal: ac.signal });
+          return () => {
+            ac.abort();
+            document.body.style.overflow = "";
+            document.getElementById("site-menu-button")?.focus();
+          };
+        },
+      },
       div(
-        fx.hairline,
-        { "aria-hidden": "true" },
-        css("components-header-header-inline-1", { position: "absolute", left: "0", right: "0", bottom: "-1px" }),
+        s.container, st.menuTop,
+        Logo(),
+        button(
+          st.closeBtn,
+          { type: "button", "aria-label": "Close menu", onClick: closeMenu, onMount: (el) => el.focus() },
+          LineIcon("M6 6l12 12 M18 6L6 18"),
+        ),
       ),
-      div(
-        s.container,
-        css("components-header-header-inline-2", { width: "100%" }),
+      nav(
+        st.menuList,
+        { "aria-label": "Main" },
         div(
-          navInnerStyle,
-          // Left: logo
-          a(
-            { href: base, "aria-label": "Nuclo home" },
-            logoStyle,
-            { onClick: (e) => { e.preventDefault(); setRoute("home"); closeMenu(); } },
-            BrandLogo(),
-          ),
-          // Center: route navigation
+          s.container,
+          div(st.menuItem, RouteLink(NAV_LINKS[0], st.menuRow, st.menuRowOn)),
           div(
-            desktopNavLinks,
-            ...NAV_LINKS.map(({ label, route }) => NavLink(label, route)),
+            st.menuItem,
+            button(
+              {
+                type: "button",
+                class: () => cx(st.menuRow, route() === "docs" ? st.menuRowOn : null).className,
+                "aria-expanded": () => String(docsOpen),
+                "aria-controls": "site-menu-docs",
+                onClick: () => { docsOpen = !docsOpen; update(); },
+              },
+              "Docs",
+              span({ class: () => cx(st.rowIcon, docsOpen ? st.rowIconOpen : null).className }, LineIcon("M6 9l6 6 6-6", 16)),
+            ),
+            when(() => docsOpen,
+              div(st.menuSub, { id: "site-menu-docs" }, ...DOC_GROUPS.map((g) => RouteLink(g, st.menuSubLink, st.menuSubLink))),
+            ),
           ),
-          // Right: controls
+          div(st.menuItem, RouteLink(NAV_LINKS[2], st.menuRow, st.menuRowOn)),
+          div(st.menuItem, RouteLink(NAV_LINKS[3], st.menuRow, st.menuRowOn)),
           div(
-            rightGroup,
-            // Desktop GitHub (hidden on mobile)
+            st.menuItem,
             a(
-              { href: "https://github.com/dan2dev/nuclo", target: "_blank", rel: "noopener noreferrer", title: "GitHub", "aria-label": "Open Nuclo on GitHub" },
-              desktopGithub,
-              GitHubIcon(),
-            ),
-            button(
-              getStartedBtn,
-              "Get Started",
-              ArrowIcon({ size: 14 }),
-              { onClick: () => setRoute("docs") },
-            ),
-            // Theme toggle (always visible)
-            button(
-              themeBtn,
-              { title: "Toggle theme", "aria-label": "Toggle color theme" },
-              when(() => isDark(), MoonIcon()).else(SunIcon()),
-              { onClick: toggleTheme },
-            ),
-            // Mobile hamburger (hidden on desktop)
-            button(
-              hamburgerBtn,
-              { title: "Toggle menu", "aria-label": "Toggle navigation menu", "aria-expanded": () => String(menuOpen) },
-              MenuIcon(),
-              { onClick: toggleMenu },
+              st.menuRow,
+              { href: GITHUB_URL, target: "_blank", rel: "noopener noreferrer" },
+              span("GitHub", span(st.srOnly, " (opens in a new tab)")),
+              span(st.rowIcon, LineIcon("M7 17L17 7 M8 7h9v9", 16)),
             ),
           ),
         ),
       ),
-    ),
+      div(
+        st.menuFoot,
+        div(
+          s.container, st.menuFootInner,
+          div(
+            st.themeGroup,
+            { role: "radiogroup", "aria-label": "Theme" },
+            ...THEMES.map(([pref, label]) => button(
+              {
+                type: "button",
+                role: "radio",
+                class: () => cx(st.themeOpt, getThemePreference() === pref ? st.themeOptOn : null).className,
+                "aria-checked": () => String(getThemePreference() === pref),
+                onClick: () => setThemePreference(pref),
+              },
+              label,
+            )),
+          ),
+          GetStarted(st.ctaMenu),
+        ),
+      ),
+    );
+  }
 
-    // ── Mobile dropdown menu ─────────────────────────────────────────────────
-    div(
-      mobileMenuPanel,
-      { class: () => cx(mobileMenuPanel, menuOpen ? mobileMenuPanelOpen : mobileMenuPanelClosed).className },
-      ...NAV_LINKS.map(({ label, route }) => MobileNavLink(label, route)),
-      MobileNavLink("Get Started", "docs"),
-      // GitHub in mobile menu
-      a(
-        {
-          href: "https://github.com/dan2dev/nuclo",
-          target: "_blank",
-          rel: "noopener noreferrer",
-        },
-        css("components-header-header-inline-3", { display: "flex", alignItems: "center", gap: "10px", padding: "16px 24px", fontSize: "1rem", fontWeight: "500", color: colors.textDim, hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
-        GitHubIcon(),
-        "GitHub",
+  return div(
+    header(
+      st.bar,
+      div(
+        s.container, st.row,
+        Logo(),
+        div(
+          st.navWrap,
+          nav(st.nav, { "aria-label": "Main" }, ...NAV_LINKS.map((l) => RouteLink(l, st.navLink, st.navLinkOn))),
+          when(() => route() === "docs" && docsSection.title !== "",
+            span(st.crumbDivider, { "aria-hidden": "true" }),
+            div(
+              st.crumb,
+              span(() => docsSection.group),
+              span({ "aria-hidden": "true" }, "/"),
+              span(st.crumbTitle, () => docsSection.title),
+            ),
+          ),
+        ),
+        div(
+          st.right,
+          a(st.iconBtn, { href: GITHUB_URL, target: "_blank", rel: "noopener noreferrer", "aria-label": "Nuclo on GitHub" }, GitHubSvg({ size: 18 })),
+          button(
+            st.iconBtn,
+            { type: "button", "aria-label": "Switch color theme", onClick: toggleTheme },
+            when(() => isDark(), LineIcon("M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z", 17))
+              .else(LineIcon("M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M6.34 17.66l-1.41 1.41 M19.07 4.93l-1.41 1.41", 17)),
+          ),
+          GetStarted(st.ctaBar),
+          button(
+            st.menuBtn,
+            {
+              id: "site-menu-button",
+              type: "button",
+              "aria-label": "Open menu",
+              "aria-expanded": () => String(menuOpen),
+              "aria-controls": "site-menu",
+              onClick: () => { menuOpen = true; update(); },
+            },
+            LineIcon("M4 8h16 M4 16h16"),
+          ),
+        ),
       ),
     ),
-
-    // ── Backdrop (click outside to close) ────────────────────────────────────
-    div(
-      backdropStyle,
-      { class: () => cx(backdropStyle, menuOpen ? backdropOpenStyle : backdropClosedStyle).className },
-      { onClick: closeMenu },
-    ),
+    when(() => menuOpen, MobileMenu()),
   );
 }

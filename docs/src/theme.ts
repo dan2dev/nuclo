@@ -1,7 +1,8 @@
-
 export type Theme = "dark" | "light";
+export type ThemePreference = Theme | "system";
 
 let currentTheme: Theme = "light";
+let preference: ThemePreference = "system";
 
 export function getTheme(): Theme {
   return currentTheme;
@@ -11,17 +12,31 @@ export function isDark(): boolean {
   return currentTheme === "dark";
 }
 
-export function setTheme(theme: Theme) {
+export function getThemePreference(): ThemePreference {
+  return preference;
+}
+
+function systemTheme(): Theme {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(theme: Theme) {
   currentTheme = theme;
   document.documentElement.setAttribute("data-theme", theme);
+}
+
+export function setThemePreference(pref: ThemePreference) {
+  preference = pref;
   try {
-    localStorage.setItem("nuclo-theme", theme);
+    if (pref === "system") localStorage.removeItem("nuclo-theme");
+    else localStorage.setItem("nuclo-theme", pref);
   } catch {}
+  applyTheme(pref === "system" ? systemTheme() : pref);
   update();
 }
 
 export function toggleTheme() {
-  setTheme(currentTheme === "dark" ? "light" : "dark");
+  setThemePreference(currentTheme === "dark" ? "light" : "dark");
 }
 
 export function initTheme() {
@@ -29,7 +44,11 @@ export function initTheme() {
   try {
     saved = localStorage.getItem("nuclo-theme") as Theme | null;
   } catch {}
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  currentTheme = saved ?? (prefersDark ? "dark" : "light");
-  document.documentElement.setAttribute("data-theme", currentTheme);
+  preference = saved ?? "system";
+  applyTheme(saved ?? systemTheme());
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if (preference !== "system") return;
+    applyTheme(systemTheme());
+    update();
+  });
 }

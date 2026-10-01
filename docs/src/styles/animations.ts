@@ -13,14 +13,6 @@ export const animations = {
     "0%, 49%": { raw: {"opacity": "1"} },
     "50%, 100%": { raw: {"opacity": "0"} },
   }),
-  connectorRun: keyframes({
-    "0%": { raw: {"background-position": "-80% 0"} },
-    "100%": { raw: {"background-position": "180% 0"} },
-  }),
-  connectorRunY: keyframes({
-    "0%": { raw: {"background-position": "0 -80%"} },
-    "100%": { raw: {"background-position": "0 180%"} },
-  }),
   spin: keyframes({
     "to": { raw: {"transform": "rotate(360deg)"} },
   }),

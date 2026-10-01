@@ -14,10 +14,8 @@ import {
 } from "./content.ts";
 import { CodeBlock, highlightCode, codeTokenStyle, terminalCodeTokenStyle } from "../../components/CodeBlock.ts";
 import { copyText } from "../../components/clipboard.ts";
-import {
-  GitHubSvg, CheckIcon, MinusIcon, CopyIcon,
-  ZapIcon, FeatherIcon, BracesIcon, TargetIcon,
-} from "../../components/icons.ts";
+import { withCode } from "../../components/inline-code.ts";
+import { GitHubSvg, CheckIcon, MinusIcon, CopyIcon } from "../../components/icons.ts";
 import { setRoute } from "../../router.ts";
 import { initHeroBackground } from "./hero-background.ts";
 
@@ -28,14 +26,14 @@ function DemoDot(color: string) {
   );
 }
 
-/** Splits a "01 - EXPLICIT" / "01 · Mutate" step label into a short corner-badge number and its kicker text. */
+/** Splits a "01 · Mutate" / "01 - INSTALL" step label into its number and its label text. */
 function splitStepLabel(raw: string): { badge: string; kicker: string } {
   const m = raw.match(/^(\d+)\s*[-·]\s*(.+)$/);
   return m ? { badge: m[1], kicker: m[2] } : { badge: raw, kicker: "" };
 }
 
 /** Install command bar with shimmer sheen and a copy-to-clipboard button. */
-function InstallCommand() {
+function InstallCommand(variant?: ReturnType<typeof css>) {
   let copied = false;
 
   function handleCopy() {
@@ -49,6 +47,7 @@ function InstallCommand() {
 
   return div(
     s.installCmd,
+    ...(variant ? [variant] : []),
     span(css("pages-home-components-components-inline-2", { color: colors.textMuted, fontFamily: "ui-monospace, monospace" }), "$"),
     span(INSTALL_CMD),
     button(
@@ -203,19 +202,23 @@ export function HomeHeroSection() {
 }
 
 export function PipelineSection() {
-  function PipeNode(step: typeof PIPELINE_STEPS[number], revealClass: string) {
+  function PipeNode(step: typeof PIPELINE_STEPS[number], index: number) {
     const { badge, kicker } = splitStepLabel(step.kicker);
-    return div(
+    return li(
       hs.pipeNode,
-      { className: `${hs.pipeNode.className} ${revealClass}` },
-      div(
-        s.cardHeadRow,
-        div(hs.pipeKicker, kicker || step.kicker),
-        span(s.cardCornerBadge, badge),
-      ),
-      div(hs.pipeTitle, step.title),
-      div(hs.pipeDesc, step.desc),
+      { className: `${hs.pipeNode.className} rv rv-d${index + 1}` },
+      ...(index > 0 ? [span(hs.pipeArrow, { "aria-hidden": "true" }, PipeChevron())] : []),
+      div(hs.pipeStep, span(hs.pipeNum, badge), span(kicker)),
+      h3(hs.pipeTitle, step.title),
+      p(hs.pipeDesc, step.desc),
       div(hs.pipeCode, { innerHTML: step.code }),
+    );
+  }
+
+  function PipeChevron() {
+    return svgSvg(
+      { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2.4", "stroke-linecap": "round", "stroke-linejoin": "round" },
+      pathSvg({ d: "M9 6l6 6-6 6" }),
     );
   }
 
@@ -226,14 +229,7 @@ export function PipelineSection() {
       div(s.sectionLabel, { className: "rv" }, "How it works"),
       h2(s.sectionTitle, { className: "rv" }, "One explicit cycle."),
       p(s.sectionSub, { className: "rv" }, "State-dependent values, no dependency graph, no scheduler. You decide when they run - a single predictable path from your data to the screen."),
-      div(
-        hs.pipe,
-        PipeNode(PIPELINE_STEPS[0], "rv rv-d1"),
-        div(hs.pipeLink, { className: "rv rv-d1", "aria-hidden": "true" }),
-        PipeNode(PIPELINE_STEPS[1], "rv rv-d2"),
-        div(hs.pipeLink, { className: "rv rv-d2", "aria-hidden": "true" }),
-        PipeNode(PIPELINE_STEPS[2], "rv rv-d3"),
-      ),
+      ol(hs.pipe, ...PIPELINE_STEPS.map(PipeNode)),
     ),
   );
 }
@@ -253,24 +249,19 @@ export function PhilosophySection() {
             css("pages-home-components-components-inline-11", { marginBottom: "16px" }),
             "Philosophy",
           ),
-          blockquote(
-            hs.philosophyQuote,
-            css("pages-home-components-components-inline-12", { fontStyle: "normal" }),
-            span(hs.philosophyMark, { "aria-hidden": "true" }, "“"),
-            PHILOSOPHY_QUOTE,
-          ),
+          blockquote(hs.philosophyQuote, ...withCode(PHILOSOPHY_QUOTE)),
         ),
         // Right: 3 points
-        div(
+        ol(
           hs.philosophyPoints,
           ...PHILOSOPHY_POINTS.map(({ num, title, desc }, i) =>
-            div(
+            li(
               hs.philosophyPoint,
               { className: `rv rv-d${i + 1}` },
-              div(hs.philosophyPointIcon, num),
+              span(hs.philosophyPointNum, { "aria-hidden": "true" }, num),
               div(
-                div(hs.philosophyPointTitle, title),
-                div(hs.philosophyPointDesc, desc),
+                h3(hs.philosophyPointTitle, title),
+                p(hs.philosophyPointDesc, ...withCode(desc)),
               ),
             )
           ),
@@ -280,13 +271,6 @@ export function PhilosophySection() {
   );
 }
 
-const FEATURE_ICONS: Record<string, () => ReturnType<typeof svgSvg>> = {
-  zap: () => ZapIcon({ size: 18 }),
-  feather: () => FeatherIcon({ size: 18 }),
-  braces: () => BracesIcon({ size: 18 }),
-  target: () => TargetIcon({ size: 18 }),
-};
-
 export function FeaturesSection() {
   return section(
     hs.featuresSection,
@@ -294,22 +278,17 @@ export function FeaturesSection() {
       s.container,
       div(s.sectionLabel, { className: "rv" }, "Features"),
       h2(s.sectionTitle, { className: "rv" }, "Built for clarity."),
-      p(s.sectionSub, { className: "rv" }, css("pages-home-components-components-inline-13", { marginBottom: "48px" }), "No magic. No surprises. Every update is intentional."),
-      div(
-        s.featureGrid,
-        { className: "rv" },
-        ...FEATURES.map(({ num, icon, title, desc }) => {
+      p(s.sectionSub, { className: "rv" }, "No magic. No surprises. Every update is intentional."),
+      ul(
+        hs.features,
+        ...FEATURES.map(({ num, title, desc }, i) => {
           const { badge, kicker } = splitStepLabel(num);
-          return div(
-            s.featureCard,
-            div(
-              s.cardHeadRow,
-              div(hs.featureIcon, (FEATURE_ICONS[icon] ?? FEATURE_ICONS.zap)()),
-              span(s.cardCornerBadge, badge),
-            ),
-            kicker ? div(hs.featureKicker, kicker) : null,
-            div(s.featureTitle, title),
-            div(s.featureDesc, desc),
+          return li(
+            hs.pipeNode,
+            { className: `rv rv-d${i + 1}` },
+            div(hs.pipeStep, span(hs.pipeNum, badge), span(kicker)),
+            h3(hs.pipeTitle, title),
+            p(hs.featureDesc, ...withCode(desc)),
           );
         }),
       ),
@@ -360,7 +339,7 @@ export function BenchmarkSection() {
       `pages-home-components-benchmark-fill-${entry.name.toLowerCase()}`,
       { width: `${((entry.score / max) * 100).toFixed(1)}%` },
     );
-    return div(
+    return li(
       hs.benchRow,
       div(
         hs.benchName,
@@ -368,17 +347,8 @@ export function BenchmarkSection() {
         entry.name,
         span(hs.benchVersion, entry.version),
       ),
-      div(
-        hs.benchTrack,
-        div(
-          cx(hs.benchFill, entry.featured ? hs.benchFillFeatured : null, widthCls),
-          span(
-            hs.benchValue,
-            entry.featured ? hs.benchValueFeatured : null,
-            entry.score.toFixed(2),
-          ),
-        ),
-      ),
+      div(cx(hs.benchBar, entry.featured ? hs.benchBarFeatured : null, widthCls)),
+      span(hs.benchValue, entry.featured ? hs.benchValueFeatured : null, entry.score.toFixed(2)),
     );
   }
 
@@ -391,13 +361,13 @@ export function BenchmarkSection() {
       p(s.sectionSub, { className: "rv" }, BENCHMARK_SUB),
       div(
         hs.benchPanel,
-        { className: `${hs.benchPanel.className} rv rv-d1` },
+        { className: "rv rv-d1" },
         div(
           hs.benchHead,
-          span(hs.benchKicker, BENCHMARK_SOURCE_LABEL),
-          span(hs.benchHint, "lower is better"),
+          span(hs.benchCaption, BENCHMARK_SOURCE_LABEL),
+          span("Lower is better"),
         ),
-        div(hs.benchRows, ...BENCHMARK_ENTRIES.map(BenchRow)),
+        ol(hs.benchRows, ...BENCHMARK_ENTRIES.map(BenchRow)),
         div(
           hs.benchFoot,
           span(css("pages-home-components-components-inline-14", { maxWidth: "560px" }), BENCHMARK_NOTE),
@@ -408,7 +378,7 @@ export function BenchmarkSection() {
               target: "_blank",
               rel: "noopener noreferrer",
             },
-            "Source: js-framework-benchmark ↗",
+            "Source: js-framework-benchmark",
           ),
         ),
       ),
@@ -613,34 +583,28 @@ export function CTASection() {
       s.container,
       div(
         hs.ctaPanel, { className: "rv" },
-        div(s.sectionLabel, "Get Started"),
-        h2(
-          css("pages-home-components-components-inline-31", { fontSize: "2.1rem", fontWeight: "800", letterSpacing: "0", lineHeight: "1.2", marginBottom: "18px", medium: { fontSize: "2.7rem" } }),
-          CTA_TITLE,
-        ),
-        p(
-          css("pages-home-components-components-inline-32", { fontSize: "1.05rem", color: colors.textDim, maxWidth: "520px", margin: "0 auto 0", lineHeight: "1.7" }),
-          CTA_SUB,
+        div(
+          h2(hs.ctaTitle, CTA_TITLE),
+          p(hs.ctaSub, CTA_SUB),
         ),
         div(
-          hs.ctaActions,
-          button(
-            s.btn, s.btnPrimary,
-            "Read the Docs →",
-            { onClick: () => setRoute("docs") },
-          ),
-          a(
-            {
-              href: "https://github.com/dan2dev/nuclo",
-              target: "_blank",
-              rel: "noopener noreferrer",
-            },
-            s.btn, s.btnSecondary,
-            GitHubSvg({ size: 15 }),
-            "GitHub",
+          hs.ctaSide,
+          InstallCommand(hs.ctaInstallCmd),
+          div(
+            hs.ctaActions,
+            a(
+              hs.ctaBtn, hs.ctaBtnPrimary,
+              { href: "/docs", onClick: (e) => { e.preventDefault(); setRoute("docs"); } },
+              "Read the docs",
+            ),
+            a(
+              hs.ctaBtn, hs.ctaBtnSecondary,
+              { href: "https://github.com/dan2dev/nuclo", target: "_blank", rel: "noopener noreferrer" },
+              GitHubSvg({ size: 16 }),
+              "GitHub",
+            ),
           ),
         ),
-        div(hs.ctaInstall, InstallCommand()),
       ),
     ),
   );

@@ -1,5 +1,4 @@
 import { css, colors, s } from "../styles.ts";
-import { fx } from "../styles/effects.ts";
 import { setRoute } from "../router.ts";
 import { BrandLogo } from "./BrandLogo.ts";
 import { GitHubSvg } from "./icons.ts";
@@ -16,31 +15,33 @@ export function Footer() {
 
   const tagline = css("components-footer-tagline", { fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.65" });
 
-  const builtWith = css("components-footer-builtWith", { display: "inline-flex", alignItems: "center", gap: "7px", fontFamily: "ui-monospace, monospace", fontSize: "0.7rem", color: colors.textMuted, padding: "6px 12px", borderRadius: "999px", backgroundColor: colors.bgCard });
+  const builtWith = css("components-footer-builtWith", { fontSize: "0.8125rem", color: colors.textMuted });
 
-  const colTitle = css("components-footer-colTitle", { fontFamily: "ui-monospace, monospace", fontSize: "0.68rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.textMuted, marginBottom: "14px" });
+  const colTitle = css("components-footer-colTitle", { fontSize: "0.875rem", fontWeight: "600", color: colors.text, marginBottom: "10px" });
 
-  const colLinks = css("components-footer-colLinks", { display: "flex", flexDirection: "column", gap: "4px", alignItems: "flex-start" });
+  const colLinks = css("components-footer-colLinks", { display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-start", listStyle: "none" });
 
-  const linkStyle = css("components-footer-linkStyle", { display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.875rem", fontWeight: "500", color: colors.textDim, cursor: "pointer", padding: "5px 0", hover: { color: colors.primary } });
+  const linkStyle = css("components-footer-linkStyle", { display: "inline-flex", alignItems: "center", gap: "8px", padding: "5px 0", fontSize: "0.875rem", color: colors.textDim, hover: { color: colors.text } });
 
   const bottomBar = css("components-footer-bottomBar", { display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifyContent: "space-between", paddingTop: "24px", borderTop: `1px solid ${colors.border}`, medium: { flexDirection: "row" } });
 
-  const fineprint = css("components-footer-fineprint", { fontSize: "0.78rem", color: colors.textMuted });
+  const fineprint = css("components-footer-fineprint", { fontSize: "0.8125rem", color: colors.textMuted });
 
-  const versionBadge = css("components-footer-versionBadge", { display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "ui-monospace, monospace", fontSize: "0.7rem", fontWeight: "800", color: colors.primary, padding: "4px 10px", borderRadius: "999px", backgroundColor: colors.primaryAlpha08 });
+  const version = css("components-footer-version", { fontFamily: "ui-monospace, monospace", fontSize: "0.8125rem", color: colors.textMuted });
+
+  const base = typeof import.meta !== "undefined" ? (import.meta.env?.BASE_URL ?? "/") : "/";
 
   function RouteLink(label: string, route: string) {
-    return span(linkStyle, label, { onClick: () => setRoute(route) });
+    return li(a(linkStyle, { href: `${base}${route}`, onClick: (e) => { e.preventDefault(); setRoute(route); } }, label));
   }
 
   function ExternalLink(label: string, href: string, icon?: ReturnType<typeof svgSvg>) {
-    return a(
+    return li(a(
       { href, target: "_blank", rel: "noopener noreferrer" },
       linkStyle,
       icon ?? null,
       label,
-    );
+    ));
   }
 
   return footer(
@@ -54,16 +55,12 @@ export function Footer() {
           brandGroup,
           BrandLogo({ size: "footer" }),
           span(tagline, "The explicit UI runtime. Plain functions, mutable state, and one call between your data and the DOM."),
-          span(
-            builtWith,
-            span(fx.badgeDot),
-            "this site is built with nuclo",
-          ),
+          span(builtWith, "This site is built with Nuclo."),
         ),
         // Explore column
         div(
-          div(colTitle, "Explore"),
-          div(
+          h2(colTitle, "Explore"),
+          ul(
             colLinks,
             RouteLink("Documentation", "docs"),
             RouteLink("Examples", "examples"),
@@ -73,10 +70,10 @@ export function Footer() {
         ),
         // Project column
         div(
-          div(colTitle, "Project"),
-          div(
+          h2(colTitle, "Project"),
+          ul(
             colLinks,
-            ExternalLink("GitHub", GITHUB_URL, GitHubSvg({ size: 14 })),
+            ExternalLink("GitHub", GITHUB_URL, GitHubSvg({ size: 16 })),
             ExternalLink("MIT License", `${GITHUB_URL}/blob/main/LICENSE.md`),
           ),
         ),
@@ -84,7 +81,7 @@ export function Footer() {
       div(
         bottomBar,
         span(fineprint, "© 2026 Danilo Castro (@dan2dev) · MIT License"),
-        span(versionBadge, `v${NUCLO_VERSION}`),
+        span(version, `v${NUCLO_VERSION}`),
       ),
     ),
   );

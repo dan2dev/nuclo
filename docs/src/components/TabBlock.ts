@@ -13,11 +13,12 @@ export interface TabBlockOptions {
 
 const wrap = css("components-tabblock-wrap", { display: "flex", flexDirection: "column", minWidth: "0" });
 
-const tabsBar = css("components-tabblock-tabsBar", { display: "flex", gap: "4px", borderBottom: `1px solid ${colors.border}` });
+const tabsBar = css("components-tabblock-tabsBar", { display: "flex", gap: "20px", borderBottom: `1px solid ${colors.border}` });
 
-const tabBtn = css("components-tabblock-tabBtn", { fontSize: "0.8rem", fontWeight: "700", color: colors.textMuted, padding: "8px 12px", borderBottom: "2px solid transparent", borderRadius: "6px 6px 0 0", cursor: "pointer", backgroundColor: "transparent", border: "none", fontFamily: "system-ui, sans-serif", hover: { color: colors.textDim, backgroundColor: colors.bgSecondary } });
+// The 2px underline sits on the bar's bottom border (negative margin).
+const tabBtn = css("components-tabblock-tabBtn", { padding: "10px 2px", marginBottom: "-1px", borderBottom: "2px solid transparent", fontSize: "0.875rem", fontWeight: "500", color: colors.textDim, hover: { color: colors.text } });
 
-const tabBtnActive = css("components-tabblock-tabBtnActive", { color: colors.primary, borderBottomColor: colors.primary, backgroundColor: colors.primaryAlpha08, hover: { color: colors.primary } });
+const tabBtnActive = css("components-tabblock-tabBtnActive", { color: colors.text, borderBottomColor: colors.primary });
 
 const pane = css("components-tabblock-pane", { display: "none" });
 

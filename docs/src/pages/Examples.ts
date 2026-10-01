@@ -1,53 +1,8 @@
 import { cx, s } from "../styles.ts";
 import { EXAMPLES } from "../content/examples.ts";
-import { CodeBlock } from "../components/CodeBlock.ts";
-import { cardDelay, es } from "./examples/styles.ts";
+import { es } from "./examples/styles.ts";
+import { ExampleCard } from "./examples/card.ts";
 import { StylingGallery } from "./examples/styling-gallery.ts";
-
-function ExampleCard(ex: typeof EXAMPLES[number], index: number) {
-  let activeTab: "preview" | "code" = "preview";
-
-  function Tab(label: string, tab: "preview" | "code") {
-    return button(
-      es.tab,
-      {
-        class: () => cx(es.tab, activeTab === tab ? es.tabActive : null).className,
-      },
-      label,
-      { onClick: () => { activeTab = tab; update(); } },
-    );
-  }
-
-  return div(
-    es.card,
-    cardDelay(index),
-    div(
-      es.cardTop,
-      div(
-        es.cardMetaRow,
-        div(es.cardBadge, "Live"),
-        div(es.cardNumber, String(index + 1).padStart(2, "0")),
-      ),
-      div(es.cardTitle, ex.title),
-      div(es.cardDesc, ex.desc),
-    ),
-    div(
-      es.tabs,
-      Tab("Preview", "preview"),
-      Tab("Code", "code"),
-    ),
-    div(
-      es.pane,
-      { class: () => cx(es.pane, activeTab === "preview" ? es.paneActive : null).className },
-      div(es.previewPane, buildPreview(ex.id)),
-    ),
-    div(
-      es.pane,
-      { class: () => cx(es.pane, activeTab === "code" ? es.codePaneActive : null).className },
-      CodeBlock({ filename: `${ex.title.replace(/\s+/g, "")}.ts`, code: ex.code }),
-    ),
-  );
-}
 
 function buildPreview(id: string) {
   switch (id) {
@@ -75,6 +30,13 @@ function CounterDemo() {
   );
 }
 
+function CloseIcon() {
+  return svgSvg(
+    { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "aria-hidden": "true" },
+    pathSvg({ d: "M6 6l12 12 M18 6L6 18" }),
+  );
+}
+
 function TodoDemo() {
   let todos: { id: number; text: string; done: boolean }[] = [];
   let filter: "all" | "active" | "done" = "all";
@@ -84,7 +46,7 @@ function TodoDemo() {
 
   const inputEl = input(
     es.input,
-    { type: "text", placeholder: "Add a task..." } as any,
+    { type: "text", placeholder: "Add a task...", "aria-label": "New task" } as any,
     { onInput: (e) => { inputValue = (e.target as HTMLInputElement).value; } },
     { onKeyDown: (e) => { if ((e as KeyboardEvent).key === "Enter") addTodo(); } },
     ((el: HTMLInputElement) => { domInput = el; }) as any,
@@ -108,7 +70,10 @@ function TodoDemo() {
   function FilterBtn(label: string, nextFilter: "all" | "active" | "done") {
     return button(
       es.filter,
-      { class: () => cx(es.filter, filter === nextFilter ? es.filterActive : null).className },
+      {
+        class: () => cx(es.filter, filter === nextFilter ? es.filterActive : null).className,
+        "aria-pressed": () => String(filter === nextFilter),
+      },
       label,
       { onClick: () => { filter = nextFilter; update(); } },
     );
@@ -141,7 +106,8 @@ function TodoDemo() {
           span(es.itemText, { class: () => cx(es.itemText, todo.done ? es.itemDoneText : null).className }, todo.text),
           button(
             es.itemDelete,
-            "x",
+            { "aria-label": `Delete "${todo.text}"` },
+            CloseIcon(),
             {
               onClick: () => {
                 todos = todos.filter(x => x.id !== todo.id);
@@ -187,7 +153,7 @@ function SearchDemo() {
     input(
       es.input,
       es.searchInput,
-      { type: "text", placeholder: "Search users..." },
+      { type: "text", placeholder: "Search users...", "aria-label": "Search users" },
       {
         onInput: (e) => {
           query = (e.target as HTMLInputElement).value;
@@ -196,6 +162,7 @@ function SearchDemo() {
       },
     ),
     div(
+      es.list,
       list(
         () => results(),
         (user) => div(
@@ -207,7 +174,7 @@ function SearchDemo() {
           ),
         ),
       ),
-      when(() => results().length === 0, div(es.noResults, "No users found.")),
+      when(() => results().length === 0, div(es.empty, "No users found.")),
     ),
   );
 }
@@ -260,26 +227,14 @@ function StyleDemo() {
 
 export function ExamplesPage() {
   const pageHeader = div(
-    es.heroSection,
+    es.header,
     div(
       s.container,
-      div(
-        es.hero,
-        div(
-          es.heroInner,
-          div(
-            div(es.kicker, "Examples"),
-            h1(es.title, "Practical examples. Live demos."),
-            p(
-              es.lead,
-              "Explore small Nuclo patterns with interactive previews and source code beside each behavior.",
-            ),
-          ),
-          div(
-            es.heroMarkWrap,
-            img(es.heroMark, { src: "/nuclo-icon@3x.png", alt: "", "aria-hidden": "true" }),
-          ),
-        ),
+      div(s.sectionLabel, "Examples"),
+      h1(s.sectionTitle, "Practical examples. Live demos."),
+      p(
+        s.sectionSub,
+        "Explore small Nuclo patterns with interactive previews and source code beside each behavior.",
       ),
     ),
   );
@@ -291,7 +246,7 @@ export function ExamplesPage() {
       s.container,
       div(
         es.grid,
-        ...EXAMPLES.map((ex, index) => ExampleCard(ex, index)),
+        ...EXAMPLES.map((ex, index) => ExampleCard({ ...ex, preview: () => buildPreview(ex.id) }, index)),
       ),
     ),
     StylingGallery(),

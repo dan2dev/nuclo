@@ -22,12 +22,12 @@ export function isValidRoute(path: string): boolean {
   return routeMap.has(path);
 }
 
-export function setRoute(route: Route) {
+export function setRoute(route: Route, hash?: string) {
   currentRoute = route;
   const base = import.meta.env.BASE_URL || '/';
   const url =
     route === 'home' ? base : base.endsWith('/') ? `${base}${route}` : `${base}/${route}`;
-  window.history.pushState({}, '', url);
+  window.history.pushState({}, '', hash ? `${url}#${hash}` : url);
   window.scrollTo(0, 0);
   updatePageMeta(route);
   update();

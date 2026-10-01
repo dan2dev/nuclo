@@ -1,6 +1,6 @@
-import { css as uiCss, cx as uiCx, colors, s } from "../../styles.ts";
-import { CodeBlock } from "../../components/CodeBlock.ts";
+import { css as uiCss, colors, s } from "../../styles.ts";
 import { es } from "./styles.ts";
+import { ExampleCard } from "./card.ts";
 
 // Bound to the site's own theme custom properties (not fixed hex) so these previews
 // actually switch with light/dark mode instead of always rendering a light card.
@@ -20,12 +20,8 @@ const demo = createCss({
 const { css, cx } = demo;
 
 const gs = {
-  wrap: uiCss({ padding: "8px 0 72px" }),
-  headWrap: uiCss({ borderTop: `1px solid ${colors.border}`, paddingTop: "44px", marginTop: "8px" }),
-  kicker: uiCss({ fontFamily: "ui-monospace, monospace", fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary, marginBottom: "12px" }),
-  title: uiCss({ fontSize: "2.2rem", fontWeight: "800", letterSpacing: "0", lineHeight: "1.1", marginBottom: "14px", "@media (max-width: 600px)": { fontSize: "1.7rem" } }),
-  lead: uiCss({ maxWidth: "620px", fontSize: "1.02rem", color: colors.textDim, lineHeight: "1.7", marginBottom: "6px" }),
-  grid: uiCss({ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "18px", padding: "32px 0 0", "@media (max-width: 980px)": { gridTemplateColumns: "1fr" } }),
+  wrap: uiCss({ paddingTop: "8px" }),
+  headWrap: uiCss({ borderTop: `1px solid ${colors.border}`, paddingTop: "48px", marginTop: "8px", medium: { paddingTop: "64px" } }),
 };
 
 interface StylingFeature {
@@ -33,44 +29,6 @@ interface StylingFeature {
   desc: string;
   code: string;
   preview: () => NodeModLike<"div">;
-}
-
-function StylingCard(feature: StylingFeature, index: number) {
-  let activeTab: "preview" | "code" = "preview";
-
-  function Tab(label: string, tab: "preview" | "code") {
-    return button(
-      es.tab,
-      { class: () => uiCx(es.tab, activeTab === tab ? es.tabActive : null).className },
-      label,
-      { onClick: () => { activeTab = tab; update(); } },
-    );
-  }
-
-  return div(
-    es.card,
-    div(
-      es.cardTop,
-      div(
-        es.cardMetaRow,
-        div(es.cardBadge, "Styling"),
-        div(es.cardNumber, String(index + 1).padStart(2, "0")),
-      ),
-      div(es.cardTitle, feature.title),
-      div(es.cardDesc, feature.desc),
-    ),
-    div(es.tabs, Tab("Preview", "preview"), Tab("Code", "code")),
-    div(
-      es.pane,
-      { class: () => uiCx(es.pane, activeTab === "preview" ? es.paneActive : null).className },
-      div(es.previewPane, feature.preview()),
-    ),
-    div(
-      es.pane,
-      { class: () => uiCx(es.pane, activeTab === "code" ? es.codePaneActive : null).className },
-      CodeBlock({ filename: `${feature.title.replace(/[^a-zA-Z0-9]+/g, "")}.ts`, code: feature.code }),
-    ),
-  );
 }
 
 const cardStyle = css("pages-examples-styling-gallery-cardStyle", {
@@ -224,11 +182,11 @@ export function StylingGallery() {
       s.container,
       div(
         gs.headWrap,
-        div(gs.kicker, "Styling"),
-        h2(gs.title, "Styling basics"),
-        p(gs.lead, "A short set of styling examples: create a class, compose a class, and use a tiny theme."),
+        div(s.sectionLabel, "Styling"),
+        h2(s.sectionTitle, "Styling basics"),
+        p(s.sectionSub, "A short set of styling examples: create a class, compose a class, and use a tiny theme."),
       ),
-      div(gs.grid, ...FEATURES.map((feature, index) => StylingCard(feature, index))),
+      div(es.grid, ...FEATURES.map((feature, index) => ExampleCard({ ...feature, heading: "h3" }, index))),
     ),
   );
 }
