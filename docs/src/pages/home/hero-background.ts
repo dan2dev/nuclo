@@ -1,3 +1,5 @@
+import { HERO_BG } from "./styles.ts";
+
 // Hero background: an ambient grid of drifting particles that ripple when the
 // hero is clicked (desktop) or touched (mobile). Two renderers share one
 // lifecycle (resize/visibility/interaction plumbing below):
@@ -331,7 +333,6 @@ function createCanvas2DRenderer(canvas: HTMLCanvasElement): Renderer | null {
   let width = 1;
   let height = 1;
   let particles: ParticleBase[] = [];
-  let cachedGradient: CanvasGradient | null = null;
   const circlePaths = new Map<number, Path2D>();
 
   return {
@@ -344,18 +345,11 @@ function createCanvas2DRenderer(canvas: HTMLCanvasElement): Renderer | null {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       particles = computeParticleGrid(width, height);
 
-      // Gradient only depends on width/height, so it only needs rebuilding
-      // here, not on every animation frame (createLinearGradient() isn't free).
-      const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, "#ff7a1a");
-      gradient.addColorStop(0.48, "#ff4817");
-      gradient.addColorStop(1, "#dc2715");
-      cachedGradient = gradient;
     },
     // Mirrors VERTEX_SHADER_SRC above line for line — keep the two in step.
     draw({ time, waves }) {
       ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = cachedGradient ?? "#ff5a1a";
+      ctx.fillStyle = HERO_BG;
       ctx.fillRect(0, 0, width, height);
 
       ctx.save();
@@ -438,13 +432,11 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
   if (!frame) return;
   const heroFrame = frame;
 
-  // Static CSS background (gradient + scanlines) so the hero reads correctly
-  // even before the first frame is drawn, and stays correct as a graceful
-  // fallback in the (extremely unlikely) case the GL renderer's shaders fail
-  // to build after the canvas is already bound to a WebGL2 context.
-  canvas.style.backgroundImage =
-    "repeating-linear-gradient(to bottom, rgba(87,12,0,0.07) 0px, rgba(87,12,0,0.07) 1px, transparent 1px, transparent 4px), " +
-    "linear-gradient(135deg, #ff7a1a 0%, #ff4817 48%, #dc2715 100%)";
+  // Static CSS background so the hero reads correctly even before the first
+  // frame is drawn, and stays correct as a graceful fallback in the (extremely
+  // unlikely) case the GL renderer's shaders fail to build after the canvas is
+  // already bound to a WebGL2 context.
+  canvas.style.backgroundColor = HERO_BG;
 
   const maybeRenderer = createGLRenderer(canvas) ?? createCanvas2DRenderer(canvas);
   if (!maybeRenderer) return;

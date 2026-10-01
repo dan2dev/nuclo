@@ -1,8 +1,10 @@
 import { css, colors } from "../../styles.ts";
 
+// Deep enough that white hero text passes AA; shared with hero-background.ts.
+export const HERO_BG = "#d43c0c";
+
 export const hs = {
   heroCanvas: css("pages-home-styles-heroCanvas", { position: "absolute", inset: "0", width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }),
-  dotGrid: css("pages-home-styles-dotGrid", { position: "absolute", inset: "0", pointerEvents: "none", zIndex: 1, opacity: "0.46", backgroundImage: "radial-gradient(rgba(255,255,255,0.34) 1px, transparent 1.4px)", backgroundSize: "28px 28px", raw: { "-webkit-mask-image": "linear-gradient(180deg, rgba(0,0,0,0.45), transparent 68%)", "mask-image": "linear-gradient(180deg, rgba(0,0,0,0.45), transparent 68%)" } }),
   paneHidden: css("pages-home-styles-paneHidden", { display: "none" }),
   preWrap: css("pages-home-styles-preWrap", { margin: "0", whiteSpace: "pre-wrap" }),
   demoTabBtnActive: css("pages-home-styles-demoTabBtnActive", { color: colors.primary, borderBottom: `2px solid ${colors.primary}` }),
@@ -30,40 +32,43 @@ export const hs = {
 
   heroShell: css("pages-home-styles-heroShell", { width: "calc(100% - 16px)", maxWidth: "1560px", margin: "0 auto", medium: { width: "calc(100% - 28px)" }, large: { width: "calc(100% - 40px)" } }),
 
-  heroFrame: css("pages-home-styles-heroFrame", { position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "28px", backgroundColor: colors.primary, boxShadow: "var(--c-shadow)", minHeight: "540px", padding: "28px 22px", medium: { padding: "52px 42px", borderRadius: "32px" }, large: { padding: "50px 64px" } }),
+  heroFrame: css("pages-home-styles-heroFrame", { position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "24px", backgroundColor: HERO_BG, minHeight: "540px", padding: "28px 22px", medium: { padding: "52px 42px" }, large: { padding: "50px 64px" } }),
 
   heroInner: css("pages-home-styles-heroInner", { position: "relative", zIndex: 2, display: "grid", width: "100%", maxWidth: "1180px", margin: "0 auto", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.96fr) minmax(420px, 1.04fr)", gap: "76px" } }),
 
-  heroBadge: css("pages-home-styles-heroBadge", { display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primaryText }),
+  heroBadge: css("pages-home-styles-heroBadge", { fontSize: "0.875rem", fontWeight: "600", color: "rgba(255,255,255,0.88)" }),
 
-  heroBadgeDot: css("pages-home-styles-heroBadgeDot", { width: "6px", height: "6px", borderRadius: "50%", backgroundColor: colors.primaryText, flexShrink: 0 }),
-
-  heroRule: css("pages-home-styles-heroRule", { width: "42px", height: "2px", backgroundColor: colors.primaryText, marginBottom: "20px", medium: { marginBottom: "26px" } }),
-
-  heroTitle: css("pages-home-styles-heroTitle", { fontSize: "2.65rem", fontWeight: "700", letterSpacing: "0", lineHeight: "1.02", marginBottom: "18px", color: colors.primaryText, medium: { fontSize: "3.55rem", marginBottom: "24px" }, large: { fontSize: "4.15rem" } }),
+  heroTitle: css("pages-home-styles-heroTitle", { fontSize: "2.65rem", fontWeight: "700", letterSpacing: "-0.03em", lineHeight: "1.02", marginBottom: "18px", color: colors.primaryText, medium: { fontSize: "3.55rem", marginBottom: "24px" }, large: { fontSize: "4.15rem" } }),
 
   heroDesc: css("pages-home-styles-heroDesc", { fontSize: "1rem", color: colors.primaryText, lineHeight: "1.68", marginBottom: "20px", maxWidth: "520px", medium: { marginBottom: "28px" } }),
 
   heroInstall: css("pages-home-styles-heroInstall", { marginBottom: "20px", medium: { marginBottom: "28px" } }),
 
-  heroCopyBtn: css("pages-home-styles-heroCopyBtn", { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "30px", height: "30px", borderRadius: "6px", color: colors.textMuted, border: "1px solid transparent", flexShrink: 0, hover: { color: colors.primary, borderColor: colors.borderPrimary, backgroundColor: colors.primaryAlpha08 } }),
+  heroCopyBtn: css("pages-home-styles-heroCopyBtn", { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "30px", height: "30px", borderRadius: "6px", color: colors.textMuted, flexShrink: 0, hover: { color: colors.text, backgroundColor: colors.bgLight } }),
 
   heroActions: css("pages-home-styles-heroActions", { display: "flex", gap: "12px", flexWrap: "wrap" }),
 
-  heroPrimaryBtn: css("pages-home-styles-heroPrimaryBtn", { backgroundColor: colors.primaryText, color: colors.primary, boxShadow: "0 14px 28px -18px rgba(0,0,0,0.35)", hover: { backgroundColor: "rgba(255,255,255,0.9)", boxShadow: "0 18px 34px -18px rgba(0,0,0,0.4)", transform: "translateY(-1px)" } }),
+  // Hero buttons/install bar sit on the orange, so their colours don't follow the theme.
+  heroBtn: css("pages-home-styles-heroBtn", { display: "inline-flex", alignItems: "center", justifyContent: "center", height: "44px", padding: "0 20px", borderRadius: "8px", fontSize: "0.9375rem", fontWeight: "600", whiteSpace: "nowrap" }),
+
+  heroPrimaryBtn: css("pages-home-styles-heroPrimaryBtn", { backgroundColor: "#fff", color: "#b52500", hover: { backgroundColor: "rgba(255,255,255,0.9)" } }),
+
+  heroSecondaryBtn: css("pages-home-styles-heroSecondaryBtn", { backgroundColor: "#141414", color: "#fff", hover: { backgroundColor: "#000" } }),
+
+  heroInstallCmd: css("pages-home-styles-heroInstallCmd", { boxShadow: "none", backgroundColor: "#141414", color: "#fff8f2", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "10px", "& > span:first-child": { color: "rgba(255,255,255,0.5)" }, "& > button": { color: "rgba(255,255,255,0.6)" }, "& > button:hover": { color: "#fff", backgroundColor: "rgba(255,255,255,0.08)" } }),
 
   // Stats - fixed 3-column grid so items never drop to a new row; labels wrap within their own column instead.
   statsRow: css("pages-home-styles-statsRow", { display: "none", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", columnGap: "20px", rowGap: "12px", padding: "28px 0 0", borderTop: "1px solid rgba(255,255,255,0.25)", marginTop: "32px", medium: { display: "grid" } }),
 
   statNum: css("pages-home-styles-statNum", { fontSize: "1.75rem", fontWeight: "700", color: colors.primaryText, lineHeight: "1", marginBottom: "6px", fontVariantNumeric: "tabular-nums" }),
 
-  statLabel: css("pages-home-styles-statLabel", { fontSize: "0.78rem", color: "rgba(255,255,255,0.72)", lineHeight: "1.4" }),
+  statLabel: css("pages-home-styles-statLabel", { fontSize: "0.8125rem", color: "rgba(255,255,255,0.82)", lineHeight: "1.4" }),
 
   heroVisual: css("pages-home-styles-heroVisual", { position: "relative", minHeight: "360px", display: "none", alignItems: "center", justifyContent: "center", large: { display: "flex" } }),
 
   heroBrandMark: css("pages-home-styles-heroBrandMark", { position: "absolute", width: "260px", height: "260px", right: "-18px", top: "10px", opacity: "0.96", filter: "drop-shadow(0 36px 46px rgba(0,0,0,0.25))", transform: "rotate(8deg)", large: { width: "330px", height: "330px", right: "-48px", top: "-22px" } }),
 
-  heroDemoArea: css("pages-home-styles-heroDemoArea", { position: "relative", width: "100%", borderRadius: "14px", overflow: "hidden", zIndex: 1 }),
+  heroDemoArea: css("pages-home-styles-heroDemoArea", { position: "relative", width: "100%", borderRadius: "16px", overflow: "hidden", zIndex: 1, border: "1px solid rgba(0,0,0,0.2)" }),
 
   // Demo card (macOS chrome overlay)
   demoChrome: css("pages-home-styles-demoChrome", { display: "flex", alignItems: "center", gap: "6px", padding: "13px 16px", backgroundColor: "var(--terminal-bar)", borderBottom: `1px solid ${colors.border}` }),
@@ -101,7 +106,7 @@ export const hs = {
 
   // Pipeline section. content-visibility skips layout/paint while off-screen;
   // contain-intrinsic-size is only a placeholder until it has rendered once.
-  pipelineSection: css("pages-home-styles-pipelineSection", { padding: "8px 0 64px", borderBottom: `1px solid ${colors.border}`, medium: { padding: "96px 0" }, raw: { "content-visibility": "auto", "contain-intrinsic-size": "auto 560px" } }),
+  pipelineSection: css("pages-home-styles-pipelineSection", { padding: "56px 0 64px", borderBottom: `1px solid ${colors.border}`, medium: { padding: "96px 0" }, raw: { "content-visibility": "auto", "contain-intrinsic-size": "auto 560px" } }),
 
   // Features section: one panel, stacked then 2x2 from 601px, cells split by 1px dividers.
   featuresSection: css("pages-home-styles-featuresSection", { padding: "64px 0", borderBottom: `1px solid ${colors.border}`, medium: { padding: "96px 0" } }),

@@ -84,12 +84,12 @@ function HeroDemoCard() {
       div(
         css("pages-home-components-components-inline-6", { display: "flex", gap: "10px", justifyContent: "center" }),
         button(
-          css("pages-home-components-components-inline-7", { padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgSecondary, fontFamily: "system-ui, sans-serif", hover: { color: colors.text, borderColor: colors.primary } }),
+          css("pages-home-components-components-inline-7", { minWidth: "44px", height: "40px", padding: "0 18px", borderRadius: "8px", fontSize: "0.9375rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.text, fontFamily: "system-ui, sans-serif", hover: { backgroundColor: colors.bgSecondary } }),
           "−",
           { onClick: (event) => changeCount(event, -1) },
         ),
         button(
-          css("pages-home-components-components-inline-8", { padding: "9px 22px", borderRadius: "7px", fontSize: "0.875rem", fontWeight: "600", cursor: "pointer", border: `1px solid transparent`, color: "#fff", backgroundColor: colors.primary, fontFamily: "system-ui, sans-serif", hover: { backgroundColor: colors.primaryHover } }),
+          css("pages-home-components-components-inline-8", { minWidth: "44px", height: "40px", padding: "0 18px", borderRadius: "8px", fontSize: "0.9375rem", fontWeight: "600", cursor: "pointer", border: "1px solid transparent", color: "#fff", backgroundColor: colors.primaryDark, fontFamily: "system-ui, sans-serif", hover: { filter: "brightness(0.92)" } }),
           "+",
           { onClick: (event) => changeCount(event, 1) },
         ),
@@ -99,7 +99,6 @@ function HeroDemoCard() {
 
   return div(
     hs.heroDemoArea,
-    fx.gradientBorder, fx.demoElevated,
     { "data-hero-demo": "" },
     div(
       hs.demoPreviewPane,
@@ -133,7 +132,6 @@ export function HomeHeroSection() {
           hs.heroCanvas,
           { "data-hero-background": "", "aria-hidden": "true" },
         ),
-        div(hs.dotGrid, { "aria-hidden": "true" }),
         div(
           hs.heroInner,
           // Left: copy
@@ -143,11 +141,8 @@ export function HomeHeroSection() {
               hs.heroBadge,
               { className: "he he-1" },
               css("pages-home-components-components-inline-9", { marginBottom: "14px", medium: { marginBottom: "22px" } }),
-              span(hs.heroBadgeDot),
               HERO_BADGE,
             ),
-            // Rule
-            div(hs.heroRule, { className: "he he-2" }),
             // Title
             h1(
               hs.heroTitle,
@@ -157,20 +152,20 @@ export function HomeHeroSection() {
             // Description
             p(hs.heroDesc, { className: "he he-3" }, HERO_DESC),
             // Install command
-            div(hs.heroInstall, { className: "he he-4" }, InstallCommand()),
+            div(hs.heroInstall, { className: "he he-4" }, InstallCommand(hs.heroInstallCmd)),
             // Action buttons
             div(
               hs.heroActions,
               { className: "he he-5" },
-              button(
-                s.btn, hs.heroPrimaryBtn,
-                "Get Started →",
-                { onClick: () => setRoute("docs") },
+              a(
+                hs.heroBtn, hs.heroPrimaryBtn,
+                { href: "/docs", onClick: (e) => { e.preventDefault(); setRoute("docs"); } },
+                "Get started",
               ),
-              button(
-                s.btn, s.btnSecondary,
-                "View Examples",
-                { onClick: () => setRoute("examples") },
+              a(
+                hs.heroBtn, hs.heroSecondaryBtn,
+                { href: "/examples", onClick: (e) => { e.preventDefault(); setRoute("examples"); } },
+                "View examples",
               ),
             ),
             // Stats
@@ -333,11 +328,13 @@ export function ComparisonSection() {
 
 export function BenchmarkSection() {
   const max = Math.max(...BENCHMARK_ENTRIES.map((e) => e.score));
+  // Bars start at 1.0 (the fastest possible score) instead of 0 so small gaps are visible; labels keep the real scores.
+  const BAR_BASE = 1.0;
 
   function BenchRow(entry: typeof BENCHMARK_ENTRIES[number]) {
     const widthCls = css(
       `pages-home-components-benchmark-fill-${entry.name.toLowerCase()}`,
-      { width: `${((entry.score / max) * 100).toFixed(1)}%` },
+      { width: `${(((entry.score - BAR_BASE) / (max - BAR_BASE)) * 100).toFixed(1)}%` },
     );
     return li(
       hs.benchRow,
