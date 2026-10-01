@@ -68,6 +68,7 @@ export function Footer() {
             RouteLink("Documentation", "docs"),
             RouteLink("Examples", "examples"),
             ExternalLink("README", `${GITHUB_URL}#readme`),
+            ExternalLink("llms.txt", "/llms.txt"),
           ),
         ),
         // Project column

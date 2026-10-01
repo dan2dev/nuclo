@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "HOST=0.0.0.0 BASE_URL=/ bun --tsconfig-override tsconfig.bun.json src/server.ts",
     "clean": "rm -f .*.bun-build",
-    "build": "bun run clean && bun run update:stats && tsc && vite build && bun build-server.ts",
+    "build": "bun run clean && bun run update:stats && bun run update:llms && tsc && vite build && bun build-server.ts",
     "update:stats": "bun scripts/update-doc-stats.ts",
+    "update:llms": "bun --tsconfig-override tsconfig.bun.json scripts/generate-llms.ts",
     "start": "HOST=0.0.0.0 bun start.ts",
     "preview": "bun run build && bun run start",
     "stress:front": "bun run --cwd ../packages/nuclo-core build && bun run build && bunx playwright test tests/front-stress.spec.ts",
@@ -15,7 +16,7 @@
     "stress:front:ui": "bun run --cwd ../packages/nuclo-core build && bun run build && bunx playwright test tests/front-stress.spec.ts --headed --project=stress-chromium",
     "stress:server": "bun tests/server-stress.ts",
     "preview:macos": "bun run build && ./build/server-bun-darwin-arm64",
-    "deploy:cloudflare": "bun run --cwd ../packages/nuclo-core build && bun run clean && bun run update:stats && tsc && vite build && wrangler pages deploy build/dist --commit-dirty=true",
+    "deploy:cloudflare": "bun run --cwd ../packages/nuclo-core build && bun run clean && bun run update:stats && bun run update:llms && tsc && vite build && wrangler pages deploy build/dist --commit-dirty=true",
     "cf:dev": "bun run build && wrangler pages dev build/dist"
   },
   "dependencies": {

@@ -31,16 +31,18 @@ function TerminalCommand(command: string) {
 
 const quickStartTabsWrap = css("quickStartTabsWrap", { margin: "22px 0" });
 
+const CREATE_COMMANDS = {
+  npm: "npm create nuclo@latest",
+  bun: "bun create nuclo",
+  pnpm: "pnpm create nuclo",
+  deno: "deno run -A npm:create-nuclo",
+};
+
 function QuickStartTabs() {
   return div(
     quickStartTabsWrap,
     TabBlock({
-      tabs: [
-        { id: "npm", label: "npm", content: TerminalCommand("npm create nuclo@latest") },
-        { id: "bun", label: "bun", content: TerminalCommand("bun create nuclo") },
-        { id: "pnpm", label: "pnpm", content: TerminalCommand("pnpm create nuclo") },
-        { id: "deno", label: "deno", content: TerminalCommand("deno run -A npm:create-nuclo") },
-      ],
+      tabs: Object.entries(CREATE_COMMANDS).map(([id, cmd]) => ({ id, label: id, content: TerminalCommand(cmd) })),
     }),
   );
 }
@@ -71,6 +73,7 @@ export interface DocSection {
   apiSig?: string;
   content: string; // raw HTML inner content, rendered first
   render?: () => NodeModLike<any>; // optional live component, rendered after `content`
+  renderText?: string; // raw HTML stand-in for `render` in text exports (llms-full.txt)
   afterContent?: string; // raw HTML, rendered after `render`
 }
 
@@ -117,6 +120,7 @@ render(App, document.getElementById('app')!)
       <p><code>create-nuclo</code> scaffolds a Vite and TypeScript project that is ready for Nuclo:</p>
     `,
         render: QuickStartTabs,
+        renderText: sh(...Object.values(CREATE_COMMANDS)),
         afterContent: `
       <p>It asks for a project name. To skip the prompt, pass the name and flags. With npm, put <code>--</code> before the flags:</p>
       ${sh("npm create nuclo@latest my-app -- --template basic --yes")}

@@ -1,4 +1,5 @@
 import type { RoutePath } from './route-definitions.ts';
+import { NUCLO_VERSION } from './generated/nuclo-stats.ts';
 
 export interface PageMeta {
   title: string;
@@ -13,22 +14,22 @@ export const routeMeta: Record<RoutePath, PageMeta> = {
   home: {
     title: "Nuclo - Lightweight DOM Framework with Explicit Updates",
     description:
-      "A lightweight, type-safe JS/TS DOM framework with plain mutable state and explicit updates. Build the UI with functions, change plain state, call update()-Nuclo syncs the DOM. No proxies, signals, or virtual DOM.",
+      "Nuclo is a lightweight, zero-dependency TypeScript DOM library. Build UI with functions, mutate plain state, call update(). No virtual DOM, proxies or signals.",
     keywords: "nuclo, dom framework, state-dependent values, explicit updates, mutable state, javascript, typescript, ui framework, lightweight",
     type: "WebPage",
   },
   docs: {
-    title: "Docs - Nuclo",
+    title: "Nuclo Docs - Guide & API Reference",
     description:
-      "Nuclo documentation - installation, core concepts, and full API reference.",
+      "Nuclo docs: install, tag builders, explicit update(), when() and list(), events, lifecycle, SSR and hydration, typed atomic CSS, and the full API reference.",
     keywords: "nuclo documentation, api reference, getting started, update, list, when, on",
     type: "TechArticle",
   },
   examples: {
-    title: "Examples - Nuclo",
+    title: "Nuclo Examples - Counter, Todo List, Search & Styling",
     description:
-      "Interactive examples for Nuclo - counter, todo list, search filter, and async loading states.",
-    keywords: "nuclo examples, counter, todo, search, async, live demos",
+      "Live Nuclo examples with source code: a counter, a todo list, a real-time search filter, and typed atomic CSS styling.",
+    keywords: "nuclo examples, counter, todo, search filter, css-in-ts, live demos",
     type: "CollectionPage",
   },
 };
@@ -83,6 +84,22 @@ export function generateStructuredData(route: string): object[] {
     description: "A lightweight, type-safe DOM framework with plain mutable state and explicit updates",
   };
 
+  const software = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "@id": `${SEO_BASE_URL}#software`,
+    name: "Nuclo",
+    description: website.description,
+    url: SEO_BASE_URL,
+    codeRepository: "https://github.com/dan2dev/nuclo",
+    programmingLanguage: ["TypeScript", "JavaScript"],
+    runtimePlatform: ["Browser", "Node.js", "Bun", "Deno"],
+    license: "https://opensource.org/licenses/MIT",
+    version: NUCLO_VERSION,
+    author: { "@type": "Person", name: "Danilo Celestino de Castro", url: "https://github.com/dan2dev" },
+    sameAs: ["https://github.com/dan2dev/nuclo", "https://www.npmjs.com/package/nuclo"],
+  };
+
   const page: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": meta.type ?? "WebPage",
@@ -90,7 +107,8 @@ export function generateStructuredData(route: string): object[] {
     description: meta.description,
     url: pageUrl,
     isPartOf: { "@id": `${SEO_BASE_URL}#website` },
+    about: { "@id": `${SEO_BASE_URL}#software` },
   };
 
-  return [website, page];
+  return [website, software, page];
 }

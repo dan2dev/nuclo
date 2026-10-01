@@ -1,0 +1,1598 @@
+# Nuclo documentation
+
+> Complete Nuclo v0.3.9 documentation as a single Markdown file, generated from https://nuclo.dev/docs. Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript: build UI with global tag builders, keep state in plain mutable variables, and call `update()` to sync the real DOM. No virtual DOM, no compiler, no proxies, no signals.
+
+Index: https://nuclo.dev/llms.txt · Source: https://github.com/dan2dev/nuclo · npm: https://www.npmjs.com/package/nuclo
+
+## Introduction
+
+### Overview
+
+Source: https://nuclo.dev/docs#overview
+
+Nuclo is a small DOM library for TypeScript. You build the page with plain functions such as `div()` and `button()`, keep state in ordinary variables, and call `update()` when the page should change.
+
+Nuclo has no virtual DOM, no compiler, no proxies and no signals.
+
+```ts
+// main.ts
+import 'nuclo'
+
+let count = 0
+
+const App = () =>
+  div(
+    h1(() => `Count: ${count}`),
+    button('Add one', { onClick: () => { count++; update() } }),
+  )
+
+render(App, document.getElementById('app')!)
+```
+
+#### The mental model
+
+1. Build the UI with tag builders.
+2. Pass a function for every value that depends on state.
+3. Change state with plain JavaScript.
+4. Call `update()`. Nuclo runs the functions again and patches the DOM.
+
+Changing a variable does not touch the DOM. The page changes only when you call `update()`.
+
+### Quick Start
+
+Source: https://nuclo.dev/docs#quick-start
+
+`create-nuclo` scaffolds a Vite and TypeScript project that is ready for Nuclo:
+
+```bash
+npm create nuclo@latest
+bun create nuclo
+pnpm create nuclo
+deno run -A npm:create-nuclo
+```
+
+It asks for a project name. To skip the prompt, pass the name and flags. With npm, put `--` before the flags:
+
+```bash
+npm create nuclo@latest my-app -- --template basic --yes
+```
+
+Then install and start the dev server:
+
+```bash
+cd my-app
+npm install
+npm run dev
+```
+
+#### Options
+
+- `[project-name]`: the target folder. The default is `nuclo-app`.
+- `-t, --template <name>`: the template to copy. Only `basic` exists today.
+- `-y, --yes`: never prompt, use the defaults.
+- `-f, --force`: write into a folder that is not empty.
+- `-h, --help`: print the help.
+
+### Installation & Imports
+
+Source: https://nuclo.dev/docs#installation
+
+To add Nuclo to an existing project:
+
+```bash
+npm install nuclo
+```
+
+Or use `pnpm add nuclo`, `yarn add nuclo` or `bun add nuclo`. Nuclo has no dependencies.
+
+#### Globals
+
+`import 'nuclo'` puts these on `globalThis`:
+
+- **175 tag builders**: 112 for HTML (`div`, `span`, `button`, …) and 63 for SVG, with an `Svg` suffix (`svgSvg`, `pathSvg`, …). See [Tag Builders](https://nuclo.dev/docs#tag-builders).
+- **14 helpers**: `update`, `scope`, `when`, `list`, `on`, `render`, `hydrate`, `forceUpdate`, `css`, `cx`, `createCss`, `variants`, `keyframes` and `globalStyle`.
+
+The import must run before any code that calls a builder. ES modules run in import order, so this fails:
+
+```ts
+// main.ts
+import { App } from './app' // app.ts calls div() → ReferenceError: div is not defined
+import 'nuclo'
+```
+
+Put `import 'nuclo'` first in your entry file, or import it in every file that uses the globals.
+
+#### Named imports
+
+The helpers are also named exports. They are the same functions as the globals. `getCssText()` and `resetStyles()` are named exports only. Tag builders are globals only, so `import { div } from 'nuclo'` does not work.
+
+```ts
+// main.ts
+import { render, update, getCssText } from 'nuclo'
+```
+
+#### Entry points
+
+- `nuclo`: registers the globals and exports the 14 helpers plus `getCssText` and `resetStyles`.
+- `nuclo/ssr`: `renderToString`, `renderManyToString`, `renderToStringWithContainer` and `getCssText`. See [Server Rendering](https://nuclo.dev/docs#api-ssr).
+- `nuclo/polyfill`: a small DOM for Node, Bun and Deno. See [nuclo/polyfill](https://nuclo.dev/docs#api-polyfill).
+- `nuclo/types`: types only. See [TypeScript](https://nuclo.dev/docs#typescript-setup).
+
+### TypeScript
+
+Source: https://nuclo.dev/docs#typescript-setup
+
+Nuclo ships its own types. You need two things:
+
+- `"moduleResolution": "bundler"`. `node16` and `nodenext` are not supported yet.
+- The `DOM` lib. TypeScript includes it by default when you do not set `lib`.
+
+If any file in the project imports `'nuclo'`, every file sees the global types. You need nothing else. If no file imports it, for example in a separate tsconfig for tests, add the types yourself:
+
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "types": ["nuclo/types"]
+  }
+}
+```
+
+Or add `/// <reference types="nuclo/types" />` to a `.d.ts` file.
+
+#### Useful types
+
+These types are global, so you use them without an import:
+
+- `NodeModFn<Tag>`: what a tag builder returns. Use it as a component's return type.
+- `NodeModLike<Tag>`: anything a tag builder accepts as an argument.
+- `ExpandedElement<Tag>`: what `render()` and `hydrate()` return.
+- `ElementTagName`: any HTML tag name.
+- `ExpandedElementAttributes<Tag>`: the attribute object a tag builder accepts, including `on*` handlers, `onMount` and `onDestroy`. Use it for components that pass attributes through.
+- `MountCallback` and `DestroyCallback`: `onMount` and `onDestroy` handlers.
+- `WhenBuilder`, `ListModifier`: what `when()` and `list()` return.
+- `StyleResult`, `Style`, `ThemeConfig`, `CssInstance` and the other styling types. You can also import these: `import type { StyleResult } from 'nuclo'`.
+
+```ts
+// badge.ts
+function Badge(text: string): NodeModFn<'span'> {
+  return span(text)
+}
+```
+
+`ExpandedElement<Tag>` marks every DOM member as optional. Cast it when you need the full element type: `render(App, root) as HTMLDivElement`.
+
+## Building UI
+
+### Tag Builders
+
+Source: https://nuclo.dev/docs#tag-builders
+
+Every HTML tag is a global function with the same name: `div`, `span`, `input`, … The one exception is `<var>`, which is `var_` because `var` is a reserved word. Every SVG tag has an `Svg` suffix: `svgSvg`, `pathSvg`, `circleSvg`, …
+
+Calling a tag builder does not create an element yet. `div('Hi')` returns a **builder**: a function that creates the element later. Nuclo calls it when you mount it with `render()` or place it inside another builder, `when()` or `list()`. Each use creates a new element.
+
+```ts
+// card.ts
+let name = 'Ada'
+
+const Card = () =>
+  div(
+    { id: 'card', className: 'card' },
+    h2('Profile'),
+    p(() => `Hello, ${name}`),
+    button('Rename', { onClick: () => { name = 'Grace'; update() } }),
+  )
+
+render(Card, document.body)
+```
+
+#### Arguments
+
+A builder takes any number of arguments and applies them from left to right:
+
+- **string, number, bigint**: a text node.
+- **`() => value`**: text that changes on `update()`. See [Dynamic Values](https://nuclo.dev/docs#dynamic-functions).
+- **`null`, `undefined`**: skipped.
+- **`true`, `false`**: rendered as the text "true" or "false". Use `when()` for conditions.
+- **A plain object**: attributes. See [Attributes](https://nuclo.dev/docs#attributes).
+- **A `css()`, `cx()` or `variants()` result**: adds its classes.
+- **`on(...)`**: an event listener or lifecycle hook.
+- **Another builder, `when()` or `list()`**: a child.
+- **A DOM `Node`**: appended as it is.
+- **`(el, index) => …`**: a custom modifier. See below.
+
+#### Gotchas
+
+- `div(isAdmin && span('Admin'))` renders the text "false". Write `div(when(() => isAdmin, span('Admin')))`.
+- Arrays are not children. Spread them: `ul(...names.map((n) => li(n)))`. For lists that change, use `list()`.
+- A local variable with a tag name hides the builder. Inside `function Row(label: string)`, `label(...)` is not callable. Rename locals such as `label`, `title`, `data`, `p`, `a` and `i`.
+- Browsers expose every element that has an `id` as a global variable. If the page contains `<main id="main">` before Nuclo loads, Nuclo leaves that global in place, so `main(...)` throws a `TypeError`. Use other ids.
+
+#### Custom modifiers
+
+A function that declares at least one parameter runs once, in argument order, while the element is being built. Its first argument is the element. The second is an internal index, so do not rely on it. If it returns a string or number, that becomes text. A `Node` is appended. An object is applied as attributes.
+
+```ts
+// example.ts
+const field = input((el) => {
+  el.autocomplete = 'off'
+})
+```
+
+#### Getting the element
+
+`render()` returns the root element. Inside a tree, use `on("mount", (el) => …)` or a custom modifier. You can also call the builder function yourself to create a detached element:
+
+```ts
+// example.ts
+const el = div('Hello')() as HTMLDivElement
+document.body.append(el)
+```
+
+Attach it before the next `update()`. A node that is not in the document when `update()` runs stops updating for good.
+
+#### SVG
+
+SVG builders take the same arguments. Nuclo sets every SVG attribute with `setAttribute`, so names such as `"stroke-width"` work as written.
+
+```ts
+// icon.ts
+const Icon = () =>
+  svgSvg(
+    { viewBox: '0 0 24 24', width: 24, height: 24, className: 'icon' },
+    circleSvg({ cx: 12, cy: 12, r: 10, fill: 'currentColor' }),
+  )
+```
+
+#### All builders
+
+**HTML:** a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark menu meta meter nav noscript object ol optgroup option output p picture pre progress q rp rt ruby s samp script search section select slot small source span strong style sub summary sup table tbody td template textarea tfoot th thead time title tr track u ul var_ video wbr
+
+**SVG:** aSvg animateSvg animateMotionSvg animateTransformSvg circleSvg clipPathSvg defsSvg descSvg ellipseSvg feBlendSvg feColorMatrixSvg feComponentTransferSvg feCompositeSvg feConvolveMatrixSvg feDiffuseLightingSvg feDisplacementMapSvg feDistantLightSvg feDropShadowSvg feFloodSvg feFuncASvg feFuncBSvg feFuncGSvg feFuncRSvg feGaussianBlurSvg feImageSvg feMergeSvg feMergeNodeSvg feMorphologySvg feOffsetSvg fePointLightSvg feSpecularLightingSvg feSpotLightSvg feTileSvg feTurbulenceSvg filterSvg foreignObjectSvg gSvg imageSvg lineSvg linearGradientSvg markerSvg maskSvg metadataSvg mpathSvg pathSvg patternSvg polygonSvg polylineSvg radialGradientSvg rectSvg scriptSvg setSvg stopSvg styleSvg svgSvg switchSvg symbolSvg textSvg textPathSvg titleSvg tspanSvg useSvg viewSvg
+
+### Components
+
+Source: https://nuclo.dev/docs#components
+
+A component is a plain function that returns a builder, such as `button(...)`. There is no component API. Nothing is created until you render it or place it in a tree.
+
+```ts
+// counter.ts
+function Counter(label: string) {
+  let count = 0 // one per call
+  return button(() => `${label}: ${count}`, {
+    onClick: () => { count++; update() },
+  })
+}
+
+render(() => div(Counter('A'), Counter('B')))
+```
+
+State declared inside the function belongs to that instance. State declared outside is shared by every instance. `forceUpdate()` calls components again, which resets the state declared inside them.
+
+Children are just arguments:
+
+```ts
+// card.ts
+function Card(heading: string, ...children: NodeModLike<'div'>[]) {
+  return div({ className: 'card' }, h2(heading), ...children)
+}
+
+render(() => Card('Hi', p('one'), p('two')))
+```
+
+### Attributes
+
+Source: https://nuclo.dev/docs#attributes
+
+Pass a plain object to set attributes. You can pass several objects. For the same key, the later value wins, except `className` and `style`, which merge. A value can be static, or a function with no parameters that runs again on every `update()`.
+
+```ts
+// example.ts
+let busy = false
+
+const save = button(
+  { type: 'submit', disabled: () => busy, 'aria-busy': () => String(busy), 'data-id': 42 },
+  'Save',
+)
+```
+
+#### How a value is set
+
+- If the HTML element has a property with that name (`value`, `checked`, `disabled`, `htmlFor`, `tabIndex`, …), Nuclo sets the property. Otherwise it calls `setAttribute(key, String(value))`, for example for `"aria-*"` and `"data-*"`.
+- On SVG elements, Nuclo always calls `setAttribute`.
+- `null` and `undefined` are skipped. A dynamic value that returns `null` or `undefined` keeps the old value. To clear a value, return `""`, or `false` for a boolean property.
+- Booleans work for DOM boolean properties, such as `disabled` on a button, `checked`, `hidden` and `required`. Anywhere else, `true` and `false` are written as the strings "true" and "false".
+- Use `"data-*"` keys. `dataset` is not supported.
+- `innerHTML` is not escaped, and server rendering does not output it. Avoid it.
+
+#### Classes
+
+Use `className`. Static class strings, `css()` results and a dynamic `className` all merge. A dynamic `className` keeps the static classes, and when it returns `""` only the static classes remain.
+
+```ts
+// example.ts
+let active = false
+const base = css({ p: 8 })
+
+const item = li(base, { className: 'item' }, { className: () => (active ? 'active' : '') }, 'Home')
+// class="<base> item", then "<base> item active" after active = true; update()
+```
+
+Do not use the `class` key on HTML elements. It sets the raw attribute and replaces every class applied before it, including `css()` classes.
+
+#### Inline styles
+
+`style` takes an object with camelCase keys, or a function that returns one.
+
+```ts
+// example.ts
+let progress = 30
+
+const bar = div({ style: () => ({ width: `${progress}%`, backgroundColor: 'teal' }) })
+```
+
+- Nuclo adds no units. Write `"12px"`, not `12`. Unitless properties such as `opacity` and `zIndex` accept numbers.
+- `""`, `null` and `undefined` clear a property.
+- A dynamic style sets only the keys it returns. A key it stops returning keeps its old value, so return `""` to clear it.
+- Style strings (`"color: red"`) and custom properties (`"--gap"`) are not supported. Use `css()` instead. It takes custom properties through [`raw`](https://nuclo.dev/docs#style-objects).
+
+### Events
+
+Source: https://nuclo.dev/docs#events
+
+```ts
+// DOM events such as "click". El and Ev are inferred from the tag and the event name.
+function on(type: DOMEventName, listener: (this: El, e: Ev) => unknown, options?: boolean | AddEventListenerOptions): NodeModFn
+// Custom events
+function on<K extends string, E extends Event = Event>(type: K, listener: (this: El, e: E) => unknown, options?: boolean | AddEventListenerOptions): NodeModFn
+// Lifecycle, see Lifecycle
+function on(type: "mount", listener: MountCallback): NodeModFn
+function on(type: "destroy", listener: DestroyCallback): NodeModFn
+```
+
+There are two ways to listen to events: `on*` attributes and the `on()` modifier.
+
+#### `on*` attributes
+
+In an attribute object, a function under a key such as `onClick` (`on` followed by a capital letter) is an event handler, not a dynamic value.
+
+```ts
+// search.ts
+let query = ''
+
+const search = input({
+  placeholder: 'Search',
+  value: () => query,
+  onInput: (e) => { query = e.currentTarget.value; update() },
+  onKeyDown: (e) => { if (e.key === 'Escape') { query = ''; update() } },
+})
+```
+
+- TypeScript infers the event type from the key and the element. `e.currentTarget` and `this` are the element.
+- Nuclo sets the native property, so `onClick` becomes `el.onclick`. There is one handler per event: a later `onClick` replaces an earlier one.
+- `onDoubleClick` and `onDblClick` both mean `dblclick`. Lowercase keys such as `onclick` are type errors.
+- A name that is not a known event listens to its lowercase form: `onMyEvent` listens to `"myevent"`.
+- Errors thrown by the handler are not caught.
+
+#### `on()`
+
+`on()` returns a modifier that calls `addEventListener` on the element.
+
+```ts
+// panel.ts
+const panel = div(
+  on('scroll', onScroll, { passive: true }),
+  on('click', logClick),
+  on('click', closeMenu),
+)
+```
+
+- Every `on()` adds a listener. All of them run, in order.
+- `options` goes straight to `addEventListener`: `capture`, `once`, `passive`, `signal`.
+- Pass `on()` straight to a builder and the element type is inferred: `input(on('input', (e) => e.currentTarget.value))`.
+- If a listener throws, Nuclo logs the error with `console.error`, and the other listeners still run.
+- Nuclo removes the listener when it removes the element. On the server, `on()` does nothing.
+- You can reuse one `on()` value on many elements.
+
+For a custom event, pass the event type as a generic:
+
+```ts
+// picker.ts
+type PickEvent = CustomEvent<{ id: number }>
+
+const picker = ul(on<'pick', PickEvent>('pick', (e) => choose(e.detail.id)))
+```
+
+#### Which to use
+
+Use `on*` attributes for the usual case. Use `on()` when you need more than one listener for an event, listener options, or a custom event name such as `"my-event"`.
+
+### Lifecycle
+
+Source: https://nuclo.dev/docs#lifecycle
+
+```ts
+// As attributes
+{ onMount?: (el: El) => void | (() => void), onDestroy?: (el: El) => void }
+// Or with on()
+function on(type: "mount", listener: (el: El) => void | (() => void)): NodeModFn
+function on(type: "destroy", listener: (el: El) => void): NodeModFn
+```
+
+`onMount` runs once, after the element is inserted. `onDestroy` runs once, when Nuclo removes the element. Write them as attributes or with `on()`. Both forms behave the same, and the element is typed from its tag.
+
+```ts
+// timer.ts
+let seconds = 0
+
+const Timer = () =>
+  span(
+    {
+      onMount: () => {
+        const id = setInterval(() => { seconds++; update() }, 1000)
+        return () => clearInterval(id) // runs when the span is removed
+      },
+    },
+    () => `${seconds}s`,
+  )
+
+const search = input(on('mount', (el) => el.focus()))
+```
+
+#### When they run
+
+- `onMount` runs at the end of the `render()`, `hydrate()`, `update()` or `forceUpdate()` call that inserted the element. It never runs while the tree is being built.
+- If `onMount` returns a function, that function runs on destroy, after the element's `onDestroy` callbacks.
+- `onDestroy` runs when Nuclo removes the element: a `list()` row is removed, a `when()` branch switches, or `forceUpdate()` drops it. It runs just before removal, so the element is still in the document.
+
+#### Raw DOM removal
+
+If you remove an element yourself, with `node.remove()` or `innerHTML = ''`, its `onDestroy` and cleanups never run, and timers keep running. Nuclo has no `unmount()`. To tear down an app with cleanup, wrap it in `when()`:
+
+```ts
+// main.ts
+let mounted = true
+render(() => div(when(() => mounted, App())), root)
+
+mounted = false
+update() // App's onDestroy hooks and cleanups run
+```
+
+#### Order and errors
+
+- You can register as many hooks as you like, in either form. They run in registration order.
+- `onDestroy` always runs children first, then the parent.
+- Elements mount in the order of their first `onMount` hook, which follows argument order, and each element runs all its hooks together. Pass a parent's hook before its children if they depend on it.
+- A hook that throws is logged with `console.error`. The other hooks still run.
+- The callback must return nothing or a cleanup function, so do not make it `async`. A returned Promise is never used as a cleanup. Start async work inside it: `{ onMount: (el) => { void load(el) } }`.
+- Hooks never run on the server. On the client, they run after `hydrate()`.
+
+> **Note:** Hooks are not effects. They never run again when state changes. Each one runs at most once per element.
+
+## Updates
+
+### Explicit Updates
+
+Source: https://nuclo.dev/docs#explicit-updates
+
+Nuclo never updates the page on its own. Change your state, then call `update()`.
+
+```ts
+// counter.ts
+let count = 0
+
+const Counter = () =>
+  button(() => `Clicked ${count} times`, {
+    onClick: () => { count++; update() },
+  })
+
+render(Counter)
+```
+
+Change as much state as you like, then call `update()` once:
+
+```ts
+// example.ts
+let first = 'Ada'
+let last = 'Lovelace'
+
+render(() => p(() => `${first} ${last}`))
+
+first = 'Grace'
+last = 'Hopper'
+update() // one pass, both changes
+```
+
+Call `update()` from event handlers, timers, fetch callbacks or `onMount`. Do not call it from inside a dynamic value.
+
+### Dynamic Values
+
+Source: https://nuclo.dev/docs#dynamic-functions
+
+A function with **no parameters** is a **dynamic value**. Nuclo runs it once when it builds the element, and again on every `update()`. Use dynamic values for text children, attribute values, `style` and `className`. For children that appear, disappear or repeat, use [`when()`](https://nuclo.dev/docs#api-when) and [`list()`](https://nuclo.dev/docs#api-list).
+
+```ts
+// example.ts
+let name = 'Alice'
+let busy = false
+
+const Profile = () =>
+  div(
+    h1('Welcome'),              // static
+    p(() => `Hello, ${name}`),  // dynamic text
+    button({ disabled: () => busy }, 'Save'),
+  )
+```
+
+Nuclo checks the parameter count (`fn.length`). A function that declares a parameter is a [custom modifier](https://nuclo.dev/docs#tag-builders) and runs only once. `(x = 0) => …` and `(...args) => …` have a length of 0, so they are dynamic.
+
+#### Dynamic text
+
+- A string, number, bigint or boolean renders as `String(value)`. `() => ok && 'Saved'` shows "false", so write `() => (ok ? 'Saved' : '')`.
+- `null` and `undefined` render as empty text.
+- A `css()` or `cx()` result on the first run makes the function a dynamic class, not text. See [`cx()`](https://nuclo.dev/docs#api-cx).
+- A node, builder, array or plain object renders nothing, and never updates.
+
+#### Dynamic attributes
+
+- Nuclo writes a value only when it differs from the last value Nuclo wrote. It does not compare against the live DOM, so if a user types into an input and your function returns the same value as before, the text they typed stays.
+- A result of `null` or `undefined` writes nothing, so the old value stays. `className` is the exception: any falsy result removes the dynamic classes and keeps the static ones.
+- A `style` function applies the returned object on every update.
+
+#### Errors
+
+If a dynamic value throws, Nuclo catches the error and the rest of the update still runs. Text becomes empty or keeps its old value, and an attribute keeps its old value. Both recover on the next `update()` that succeeds. The exception: a text function that throws on its **first** run stays empty for good.
+
+### update()
+
+Source: https://nuclo.dev/docs#api-update
+
+```ts
+function update(...scopeIds: string[]): void
+```
+
+Runs one synchronous pass over every dynamic value on the page. With ids, it only updates what is inside the elements marked with those [`scope()`](https://nuclo.dev/docs#api-scope) ids. Each pass runs these steps in order:
+
+1. `list()`: reads the items again and adds, moves or removes rows.
+2. `when()`: checks the conditions again. A branch is rebuilt only when a different branch becomes active.
+3. Dynamic attributes, including `style` and `className`.
+4. Dynamic text.
+5. `onMount` for the elements that steps 1 and 2 inserted.
+
+- **It runs everything.** Every dynamic value runs on every call, even when its data did not change. Only the DOM write is skipped. Keep dynamic values fast and free of side effects.
+- **Only nodes in the document.** If a node is not in the document when `update()` runs, Nuclo stops tracking it. It never updates again, even after you attach it. This applies to `list()` and `when()` too. Render into a container that is in the document.
+- **Static values never change.** Plain strings and attribute values are fixed when the element is built. To rebuild them, use [`forceUpdate()`](https://nuclo.dev/docs#api-force-update).
+- **Errors.** Text and attribute errors are caught, and the pass continues. If a `when()` condition throws, the error is logged and that `when()` stops updating. If a `list()` `items` or `renderItem` function throws, the error escapes `update()` and the remaining steps do not run.
+- **Server.** `update()` does nothing on the server.
+
+### scope()
+
+Source: https://nuclo.dev/docs#api-scope
+
+```ts
+function scope(...ids: string[]): NodeModFn
+```
+
+Gives the element it is passed to one or more scope ids. `update('id')` then updates only what is inside that element, including the element's own attributes.
+
+```ts
+// example.ts
+let cartItems: string[] = []
+let user = 'Ada'
+
+const App = () =>
+  div(
+    header(() => `Hi, ${user}`),
+    aside(scope('cart'), span(() => `Items: ${cartItems.length}`)),
+  )
+
+render(App)
+
+cartItems.push('apple')
+user = 'Grace'
+update('cart') // "Items: 1", the header still says "Hi, Ada"
+update()       // everything, the header now says "Hi, Grace"
+```
+
+- An element can have several ids: `scope('cart', 'sidebar')`.
+- `update('a', 'b')` updates everything inside `a` or `b`. If several elements use the same id, all of them update.
+- With nested scopes, `update('outer')` includes the inner scope. `update('inner')` does not touch the outer one.
+- An id that no element in the document has updates **nothing** and raises no error, so check the spelling.
+- `scope()` does nothing on the server.
+
+### when()
+
+Source: https://nuclo.dev/docs#api-when
+
+```ts
+function when(condition: boolean | (() => boolean), ...content: NodeModLike[]): WhenBuilder
+
+interface WhenBuilder {
+  when(condition: boolean | (() => boolean), ...content: NodeModLike[]): WhenBuilder
+  else(...content: NodeModLike[]): WhenBuilder
+}
+```
+
+Renders content based on a condition. Nuclo checks the conditions again on every `update()`. The first true condition wins. If none is true, the `.else()` content renders. Without `.else()`, nothing renders.
+
+```ts
+// status.ts
+let status: 'loading' | 'error' | 'ready' = 'loading'
+
+const Status = () =>
+  div(
+    when(() => status === 'loading', p('Loading…'))
+      .when(() => status === 'error', p('Something went wrong'))
+      .else(p('Ready')),
+  )
+```
+
+#### Conditions
+
+- For state, pass a function. A plain boolean is read once: `when(open, …)` never changes.
+- In TypeScript the function must return a boolean. Write `() => items.length > 0` or `() => user != null`.
+
+#### What updates
+
+- While the same branch stays active, its elements are kept. Dynamic values, lists and `when()` blocks inside it keep updating.
+- When a different branch becomes active, the old content is removed and its `onDestroy` hooks run. The new branch is built from scratch and its `onMount` hooks run. State in the old elements, such as input text or focus, is lost.
+
+#### Branch content
+
+Put children in a branch: text, dynamic text, builders, `list()` and nested `when()`. Pass builders such as `p('Hi')`, not DOM nodes: a DOM node stops updating after its branch hides once.
+
+Attribute objects and `on()` in a branch apply to the parent element, and they stay after the branch hides. For a conditional attribute, use a dynamic attribute: `{ className: () => (active ? 'active' : '') }`.
+
+#### Chaining
+
+`.when()` and `.else()` return a new builder and do not change the original. If you call `.else()` twice, the last call wins.
+
+### list()
+
+Source: https://nuclo.dev/docs#api-list
+
+```ts
+function list<T>(
+  items: () => readonly T[] | Iterable<T>,
+  renderItem: (item: T, index: number) => ListRenderResult,
+): ListModifier
+```
+
+Renders one row per item. On every `update()`, Nuclo calls `items()` again and matches the new items to the existing rows by identity (`===`).
+
+```ts
+// fruits.ts
+let fruits = ['Apple', 'Banana']
+
+const Fruits = () => ul(list(() => fruits, (fruit) => li(fruit)))
+
+render(Fruits)
+
+fruits.push('Cherry')
+update()
+```
+
+#### How rows are matched
+
+- An item that is still there keeps its row. Nuclo moves the row if needed, and does not call `renderItem` again.
+- A new item gets a new row. A removed item loses its row, and its `onDestroy` hooks run.
+- Duplicate items each get their own row.
+- You can change the array in place (`push`, `splice`, `sort`) or return a new array.
+
+A kept row is never rendered again, so use dynamic values for the fields that change:
+
+```ts
+// todos.ts
+const todos = [{ text: 'Write docs', done: false }]
+
+const Todos = () =>
+  ul(
+    list(() => todos, (todo) =>
+      li({ className: () => (todo.done ? 'done' : '') }, () => todo.text),
+    ),
+  )
+
+render(Todos)
+
+todos[0].done = true
+update() // same <li>, its class is now "done"
+```
+
+Copies are new items, so replacing the array with `todos.map((t) => ({ ...t }))` rebuilds every row.
+
+#### What `renderItem` returns
+
+- Return one element, such as `li(...)`, `tr(...)` or an SVG builder. Return `null` or `undefined` to skip an item. Strings, text nodes and fragments render nothing.
+- Do not return `when()` or `list()` directly. Put them inside the row element: `li(todo.text, when(() => todo.done, ' ✓'))`.
+- To hide items, filter in `items()`, not in `renderItem`.
+- Keep `renderItem` free of side effects. Nuclo may call it more than once for the same item.
+
+#### The index
+
+`index` is the item's position when its row was created. It is not updated when rows move. For the current position, use a dynamic value: `li(() => `${names.indexOf(name) + 1}. ${name}`)`.
+
+#### Iterables
+
+Any iterable works: arrays, `Set`, generators and `map.values()`. Returning the same array or `Set` each time is fine. An iterator, such as a generator or `map.values()`, is used up after one pass, so create it inside `items()` on every call. Iterating a `Map` directly creates new `[key, value]` arrays each time, so every row is rebuilt. Use `map.values()` instead.
+
+#### Placement
+
+Rows appear where `list()` sits among its siblings, between two comment markers. Other children of the parent are not touched. `list()` also works inside SVG builders.
+
+### forceUpdate()
+
+Source: https://nuclo.dev/docs#api-force-update
+
+```ts
+function forceUpdate(): void
+function forceUpdate(nodeModFn: NodeModFn | (() => NodeModFn), parent?: Element): ExpandedElement
+```
+
+`update()` only runs dynamic values. Static values, such as the text in `h1(labels[lang].title)`, are fixed when the tree is built. `forceUpdate()` calls your components again and patches the live DOM to match, static values included. Use it for rare, app-wide changes, such as switching the language. Use `update()` for everything else.
+
+```ts
+// i18n.ts
+const labels = { en: { title: 'Hello' }, pt: { title: 'Olá' } }
+let lang: keyof typeof labels = 'en'
+
+const App = () => div(h1(labels[lang].title))
+render(App, root)
+
+lang = 'pt'
+forceUpdate() // same <h1> element, now "Olá"
+```
+
+With no arguments, `forceUpdate()` rebuilds every root rendered with `render(App)` or `hydrate(App)`. Roots rendered with `render(App())` are skipped. If a component throws, the error is logged and that root keeps its old DOM. An error thrown later, while the new build is applied, is logged too, but the parts already patched stay patched.
+
+#### What stays and what changes
+
+- Children are matched in order, by tag. A matching element is reused, so focus and typed input values stay, and its `onMount` hooks do not run again. Once one child's tag differs, that child and every later sibling are built fresh.
+- Text, attributes, classes, styles, listeners, `when()` branches and `list()` rows follow the new build.
+- New elements are created, and their `onMount` hooks run. Elements the new build no longer makes are removed, and their `onDestroy` hooks run.
+- `list()` rows are matched by position too, not by item, so a reused row element can end up showing a different item.
+- Attributes the new build no longer sets are not removed.
+
+> **Watch out:** state declared inside a component function is reset, because the function runs again. Keep state that must survive outside the component.
+
+**Explicit form.** `forceUpdate(App(), parent)` rebuilds one tree in `parent` and returns its root. It does not register the root for later calls. Like `hydrate()`, it expects the root to be the first node in `parent`. If the first node has a different tag, it is replaced.
+
+On the server, `forceUpdate()` does nothing.
+
+## Rendering
+
+### render()
+
+Source: https://nuclo.dev/docs#api-render
+
+```ts
+function render(nodeModFn: NodeModFn | (() => NodeModFn), parent?: Element, index?: number): ExpandedElement
+```
+
+Builds your tree and appends its root element to `parent`. `parent` defaults to `document.body`. It returns the root element.
+
+```ts
+// main.ts
+import 'nuclo'
+import { App } from './app.ts'
+
+render(App, document.getElementById('app')!)
+```
+
+- You can pass the component (`render(App)`) or the builder it returns (`render(App())`). The DOM is the same. Only `render(App)` lets [`forceUpdate()`](https://nuclo.dev/docs#api-force-update) rebuild the root later, so prefer it.
+- It appends. It does not clear `parent`, so calling it twice adds two copies.
+- Every `onMount` in the tree has run when `render()` returns.
+- Render into an element that is in the document. See [`update()`](https://nuclo.dev/docs#api-update).
+- The root must be an element, such as `div(...)`, not `when()` or `list()`.
+- `index` is internal. It does not choose where the element is inserted. Leave it out.
+
+A component passed as `render(App)` must take no parameters. A required parameter is a type error. An optional one type-checks, but `render()` throws at runtime. Wrap a component that takes props:
+
+```ts
+// main.ts
+const Page = (props: { name: string }) => div(h1('Hi ', props.name))
+
+render(() => Page({ name: 'Ana' }), root)
+```
+
+### hydrate()
+
+Source: https://nuclo.dev/docs#api-hydrate
+
+```ts
+function hydrate(nodeModFn: NodeModFn | (() => NodeModFn), parent?: Element): ExpandedElement
+```
+
+Takes over HTML made by [`renderToString()`](https://nuclo.dev/docs#api-ssr). It reuses the existing elements, attaches event listeners, and connects dynamic values, `when()` and `list()`, so `update()` works afterward. Then it runs the `onMount` hooks. `parent` defaults to `document.body`. It returns the root element.
+
+```ts
+// client.ts
+import 'nuclo'
+import { App } from './app.ts'
+
+hydrate(App, document.getElementById('root')!)
+```
+
+- Use the same component, and the same data, as the server.
+- Hydrate into a dedicated container. The app's root must be its first node, although whitespace is fine. If another node comes first, Nuclo replaces that node and leaves the server copy behind.
+- As with `render()`, pass `App`, not `App()`, so `forceUpdate()` can rebuild the root later. `App` must take no parameters. With an optional one, `hydrate()` silently attaches nothing. Wrap a component that takes props: `hydrate(() => Page(props), root)`.
+- If there is no server HTML, use `render()`.
+
+#### When the server and the client differ
+
+The client wins:
+
+- A different root tag: that node is replaced with fresh DOM. An empty container: fresh DOM is appended.
+- Different text is patched. Different `list()` items and `when()` branches follow the client.
+- Extra server children are removed, and missing ones are created.
+- Attributes that the server wrote but the client does not set are left as they are.
+
+`renderToString()` writes HTML comments as markers, such as `<!-- text-0 -->` before each text node. `hydrate()` needs them, so do not strip comments from the server HTML. Without the markers, hydration deletes the `list()` rows, and `list()` and `when()` stop updating.
+
+### Server Rendering
+
+Source: https://nuclo.dev/docs#api-ssr
+
+```ts
+// import { ... } from 'nuclo/ssr'
+function renderToString(input: RenderableInput): string
+function renderManyToString(inputs: RenderableInput[]): string[]
+function renderToStringWithContainer(input: RenderableInput, containerTag?: string, containerAttrs?: Record<string, string>): string
+function getCssText(): string
+
+type RenderableInput = NodeModFn | (() => NodeModFn) | Element | Node | null | undefined
+```
+
+Render a component to an HTML string on the server. In the browser, call [`hydrate()`](https://nuclo.dev/docs#api-hydrate) with the same component to make that HTML interactive. Server runtimes have no `document`, so import [`nuclo/polyfill`](https://nuclo.dev/docs#api-polyfill) first.
+
+```ts
+// app.ts
+let count = 0
+const heading = css({ color: 'red' })
+
+export const App = () =>
+  main(
+    h1(heading, () => `Count: ${count}`),
+    button({ onClick: () => { count++; update() } }, '+1'),
+  )
+```
+
+```ts
+// server.ts
+import 'nuclo/polyfill'
+import 'nuclo'
+import { renderToString, getCssText } from 'nuclo/ssr'
+import { App } from './app.ts'
+
+const html = renderToString(App)
+const page = `<!doctype html>
+<html>
+  <head><style id="nuclo-styles">${getCssText()}</style></head>
+  <body>
+    <div id="root">${html}</div>
+    <script type="module" src="/client.js"></script>
+  </body>
+</html>`
+```
+
+```ts
+// client.ts
+import 'nuclo'
+import { App } from './app.ts'
+
+hydrate(App, document.getElementById('root')!)
+```
+
+Keep `id="nuclo-styles"` on the style tag. The client reuses that element and adds only new rules. See [`getCssText()`](https://nuclo.dev/docs#api-css-text).
+
+#### What runs on the server
+
+- Each `renderToString()` call builds the tree and runs each dynamic value once.
+- Event handlers, `onMount` and `onDestroy` never run. `update()`, `scope()` and `forceUpdate()` do nothing.
+- Rendering is synchronous. Load your data first, then render.
+- Nothing stays registered after a render, so one process can serve many requests. Pass request data as arguments, such as `renderToString(Page(user))`. Module-level variables are shared by all requests.
+- Do not call `render()` on the server. It appends to the shared `document.body`.
+
+#### `renderToString()`
+
+Takes a builder (`App()`), a component (`App`) or a DOM node. `null` and `undefined` return `""`. The root must be an element. A component passed as `renderToString(Page)` must take no parameters, so pass `Page(user)` for one that takes data.
+
+```ts
+// example.ts
+renderToString(p('Hello'))
+// '<p><!-- text-0 -->Hello</p>'
+```
+
+- Text and attribute values are HTML-escaped. Text inside `script()` and `style()` is written as is, with only closing tags broken up, so never put user input there.
+- It does not throw. If the component, a `list()` function or a `when()` condition throws, or the polyfill is missing, it logs the error and returns `""`. Check for an empty result if the request should fail. A text or attribute function that throws only renders empty.
+
+#### `renderManyToString()`
+
+The same as `inputs.map(renderToString)`.
+
+#### `renderToStringWithContainer()`
+
+Wraps the output in one element. `containerTag` defaults to `"div"`, and `containerAttrs` to `{}`. Attribute values are escaped. Attribute names are written as given, so use HTML names such as `class`. Never pass user input as the tag.
+
+```ts
+// example.ts
+renderToStringWithContainer(p('Hi'), 'section', { id: 'main', class: 'page' })
+// '<section id="main" class="page"><p><!-- text-0 -->Hi</p></section>'
+```
+
+### nuclo/polyfill
+
+Source: https://nuclo.dev/docs#api-polyfill
+
+```ts
+import 'nuclo/polyfill'
+// Named exports:
+// document, Event, CustomEvent, Node, Element, HTMLElement,
+// NucloDocument, NucloElement, NucloText, NucloNode
+```
+
+A small DOM so Nuclo can build trees in Node, Bun and Deno. Import it once, before your first render. Most apps only need the plain import.
+
+- When there is no `window`, it sets `globalThis.document`, `Node`, `Element` and `HTMLElement`, but only the ones that are missing. It does not create `window`.
+- In a browser, or under jsdom, it does nothing.
+- `Event` and `CustomEvent` are the runtime's own constructors. `Node`, `Element` and `HTMLElement` are aliases of the polyfill classes.
+
+It is a DOM for building trees, not a browser. It has no `innerHTML` and no `getElementById`, `querySelector()` returns `null`, and event listeners are ignored. Use `renderToString()` to get the HTML.
+
+## Styling
+
+### css()
+
+Source: https://nuclo.dev/docs#api-styling
+
+```ts
+function css(style: Style): StyleResult
+function css(name: string, style: Style): StyleResult
+
+type StyleResult = { className: string }
+```
+
+Turns a typed style object into generated CSS classes. Pass the result to any tag builder. In the browser, the rules go into one `<style id="nuclo-styles">` element. On the server, [`getCssText()`](https://nuclo.dev/docs#api-css-text) returns them.
+
+```ts
+// card.ts
+const card = css({
+  p: 16,
+  rounded: 8,
+  bg: '#fff7ed',
+  hover: { bg: '#ffedd5' },
+})
+
+const Card = () => div(card, 'Simple card')
+```
+
+- `css()` makes one class for the base declarations, plus one class for each pseudo key, selector and media block. The card above gets two classes.
+- Class names are hashes of the content. Identical styles share a class, and the server and the client produce the same names.
+- Define styles once, at module level. `css()` caches by object, so a new object on every call is processed again each time.
+- Changing a style object after passing it to `css()` does nothing.
+- Every style stays registered for the life of the page or server process. For values that change per item, such as a width from data, use the [`style` attribute](https://nuclo.dev/docs#attributes).
+
+#### Named styles
+
+Pass a name first to get a readable class name:
+
+```ts
+// title.ts
+const pageTitle = css('page-title', { text: 24, hover: { color: 'red' } })
+
+pageTitle.className // "page-title page-title-<hash>"
+```
+
+- The base class is exactly the name. Other blocks get `name-<hash>`.
+- The name must be a valid class name. Otherwise Nuclo warns and generates one.
+- Names are global. If two different styles use the same name, Nuclo warns.
+
+#### Using the result
+
+```ts
+// example.ts
+const card = css({ p: 8 })
+
+div(card)                           // best
+div(card, { className: 'featured' }) // className merges
+div(card, { class: 'featured' })     // replaces: only "featured" is left
+```
+
+`String(card)` and `card.className` both return the class names.
+
+### Style Objects
+
+Source: https://nuclo.dev/docs#style-objects
+
+The object you pass to `css()` uses common CSS properties in camelCase, a set of shorthands, and nested keys for pseudo states, selectors and media queries. TypeScript autocompletes all of them. Properties outside the typed set, such as `borderTopLeftRadius`, `fill` or `paddingInline`, go in `raw` (see below).
+
+#### Values
+
+- Numbers become `px`, except `0` and unitless properties: `zIndex`, `opacity`, `fontWeight`, `lineHeight`, `flex`, `flexGrow`, `flexShrink`, `order`, `aspectRatio`, `gridColumn` and `gridRow`. In `raw`, `zoom`, `scale`, `column-count`, `orphans`, `widows`, `tab-size` and `animation-iteration-count` are unitless too.
+- Strings are used as written. `null`, `undefined` and `false` are skipped.
+- `lineHeight` (and `leading`) is unitless, so `leading: 24` means 24 times the font size. Write `"24px"` for pixels.
+
+```ts
+// example.ts
+css({ p: 16, m: 0, opacity: 0.5, leading: 1.5, z: 10, w: '50%' })
+// padding:16px; margin:0; opacity:0.5; line-height:1.5; z-index:10; width:50%
+```
+
+#### Shorthands
+
+| Key | CSS |
+| --- | --- |
+| `p`, `pt`, `pr`, `pb`, `pl` | padding, and each side |
+| `px` / `py` | padding left and right / top and bottom |
+| `m`, `mt`, `mr`, `mb`, `ml`, `mx`, `my` | the same for margin |
+| `w`, `h`, `minW`, `maxW`, `minH`, `maxH` | width, height, and their min and max |
+| `size` | width and height |
+| `bg` | background |
+| `text` / `font` / `weight` | font-size / font-family / font-weight |
+| `leading` / `tracking` | line-height / letter-spacing |
+| `align` / `items` / `justify` | text-align / align-items / justify-content |
+| `z` / `rounded` / `shadow` / `select` | z-index / border-radius / box-shadow / user-select |
+
+These keys take `true`:
+
+| Key | CSS |
+| --- | --- |
+| `row` | display: flex; flex-direction: row |
+| `col` | display: flex; flex-direction: column |
+| `center` | align-items: center; justify-content: center (does not set display) |
+| `truncate` | overflow: hidden; text-overflow: ellipsis; white-space: nowrap |
+
+#### Pseudo states
+
+`hover`, `focus`, `focusVisible`, `focusWithin`, `active`, `visited`, `disabled`, `enabled`, `checked`, `required`, `invalid`, `valid`, `readOnly`, `first` (`:first-child`), `last` (`:last-child`), `only` (`:only-child`), `odd`, `even`, `empty`, `placeholderShown`, `placeholder`, `before`, `after`, `selection`, `marker`, `firstLine` and `firstLetter`. They nest: `hover: { focus: {…} }` gives `:hover:focus`.
+
+#### Selectors and at-rules
+
+A key that starts with `&` is a selector, and each `&` becomes the class. A key that starts with `@` is an at-rule: `@media`, `@container` or `@supports`.
+
+```ts
+// menu.ts
+const menu = css({
+  p: 8,
+  '& > li': { py: 4 },
+  '& > li:hover': { color: 'red' },
+  '&:is(.dark *)': { color: 'white' },
+  '@media (min-width: 768px)': { p: 16 },
+})
+```
+
+- The key must start with `&`. A key such as `".dark &"` is ignored, so write `"&:is(.dark *)"`.
+- Two nested `@media` blocks combine with `and`. Any other nested at-rule replaces the outer one.
+
+#### `raw`
+
+Use `raw` for any property, with the name written exactly as in CSS. Numbers still get `px`, so pass strings:
+
+```ts
+// example.ts
+css({ raw: { '--gap': '8px', '-webkit-line-clamp': '2' } })
+```
+
+Any other flat key is converted to kebab-case and written out as is, so a typo such as `colr: 'red'` becomes a declaration the browser drops. A nested object under a key that is not a pseudo state, a screen, or an `&` or `@` key is ignored. TypeScript reports both.
+
+### cx()
+
+Source: https://nuclo.dev/docs#api-cx
+
+```ts
+function cx(...inputs: ClassInput[]): StyleResult
+
+type ClassInput = StyleResult | string | false | null | undefined | ClassInput[]
+```
+
+Combines styles. When two inputs set the same property, the later input wins.
+
+```ts
+// example.ts
+const base = css({ p: 8, color: 'red' })
+const blue = css({ color: 'blue' })
+
+cx(base, blue)                  // padding: 8px; color: blue
+cx(base, false, null, 'extra')  // base's classes plus "extra"
+div(cx(base, blue), 'Blue text')
+```
+
+- Falsy inputs are skipped, arrays are flattened, and strings are split and de-duplicated.
+- Generated classes for the same block (base, the same pseudo, the same media query) merge into one new class. Other class names pass through unchanged.
+- Only `cx()` knows argument order. With `div(base, blue)`, both classes are added, and the rule that was created last wins. Put styles that override each other in one `cx()` call.
+- When a named style's block merges with another input's block, the merged class is `name-<hash>`, not the bare name. Blocks that do not merge keep their class, so `cx(pageTitle, 'extra')` still has `page-title`.
+
+#### Dynamic classes
+
+Pass a function that always returns `cx(...)`:
+
+```ts
+// toggle.ts
+const baseButton = css({ px: 12, py: 8, border: '1px solid #ccc' })
+const activeButton = css({ bg: '#ff3f00', color: 'white' })
+
+let active = false
+
+const Toggle = () =>
+  button(
+    () => cx(baseButton, active && activeButton),
+    () => (active ? 'Active' : 'Inactive'),
+    { onClick: () => { active = !active; update() } },
+  )
+```
+
+The function must return a style result on its first run. `() => active && activeButton` renders the text "false" instead of a class.
+
+### createCss()
+
+Source: https://nuclo.dev/docs#api-create-css
+
+```ts
+function createCss<const T extends ThemeConfig>(theme?: T): CssInstance<T>
+
+// CssInstance<T> = { css, cx, variants, keyframes, globalStyle, theme }
+```
+
+Returns its own `css`, `cx`, `variants`, `keyframes` and `globalStyle`, bound to a theme. A theme gives names to values: with the theme below, `borderColor: 'border'` writes `#e5e7eb`, and TypeScript autocompletes the names. Each entry in `screens` becomes a style key for a media query, such as `md: {…}`.
+
+```ts
+// theme.ts
+export const { css, cx, variants } = createCss({
+  colors: { primary: '#ff3f00', border: '#e5e7eb' },
+  radii: { card: '12px' },
+  screens: { md: '(min-width: 768px)' },
+})
+
+const panel = css({
+  p: 12,
+  rounded: 'card',
+  border: '1px solid',
+  borderColor: 'border',
+  md: { p: 24 },
+})
+```
+
+| Theme key | Used by |
+| --- | --- |
+| `colors` | `bg`, `backgroundColor`, `color`, `borderColor` and each side, `outlineColor`, `caretColor`, `textDecorationColor` |
+| `fonts` | `font`, `fontFamily` |
+| `shadows` | `shadow`, `boxShadow` |
+| `radii` | `rounded`, `borderRadius` |
+| `screens` | new style keys, such as `md: {…}` |
+
+- A theme name resolves only when it is the whole value. `border: "1px solid primary"` is not resolved.
+- A screen value without `@` becomes `@media <value>`. A value that starts with `@` is used as written, for example `"@container (min-width: 400px)"`.
+- Screens exist only on instances made with `createCss()`. The global `css()` has none, but it accepts `@media` keys.
+- All instances and the global helpers share one stylesheet. Screen media rules are output in the order the screens are declared, not the order you use them, so list `min-width` screens from small to large. Use one `createCss()` instance per app, so that order is the one in your theme.
+- `theme` on the result is the theme you passed.
+
+### variants()
+
+Source: https://nuclo.dev/docs#api-variants
+
+```ts
+function variants(config: {
+  base?: Style
+  variants?: { [group: string]: { [value: string]: Style } }
+  defaultVariants?: { [group: string]: value }
+  compoundVariants?: ({ [group: string]: value } & { css: Style })[]
+}): (props?: { [group: string]: value }) => StyleResult
+```
+
+Builds a function that returns a style for a set of options, such as a button's intent and size.
+
+```ts
+// button.ts
+const buttonClass = variants({
+  base: { px: 12, py: 8, rounded: 6 },
+  variants: {
+    intent: { primary: { bg: '#2563eb' }, danger: { bg: '#dc2626' } },
+    size: { sm: { text: 12 }, lg: { text: 18 } },
+    block: { true: { w: '100%' } },
+  },
+  defaultVariants: { intent: 'primary', size: 'sm' },
+  compoundVariants: [{ intent: 'danger', size: 'lg', css: { weight: 700 } }],
+})
+
+button(buttonClass(), 'Save')                                                // primary, sm
+button(buttonClass({ intent: 'danger', size: 'lg', block: true }), 'Delete') // bold, full width
+```
+
+- Styles merge in this order: `base`, the chosen value of each group, then each matching compound. Later styles win per property.
+- A missing, `undefined` or `null` option uses the default. A group with no default is skipped.
+- A group with only `true` and `false` keys takes a boolean.
+- A compound applies when every group it lists matches, defaults included.
+- Each selection is built once and cached.
+
+### keyframes() & globalStyle()
+
+Source: https://nuclo.dev/docs#api-keyframes
+
+```ts
+function keyframes(frames: KeyframeFrames): string
+function globalStyle(selector: string, style: FlatStyle): void
+```
+
+`keyframes()` registers an animation and returns its generated name. Frame keys are `from`, `to` and percentages, such as `"50%"` or `"0%, 100%"`. Frames take flat properties only. Identical frames return the same name.
+
+```ts
+// fade.ts
+const fadeIn = keyframes({
+  from: { opacity: 0 },
+  to: { opacity: 1 },
+})
+
+const panel = css({ animation: `${fadeIn} 200ms ease-out` })
+```
+
+`globalStyle()` adds a rule for any selector:
+
+```ts
+// reset.ts
+globalStyle('*, *::before, *::after', { boxSizing: 'border-box' })
+globalStyle('body', { m: 0, font: 'system-ui, sans-serif' })
+```
+
+- The selector is used exactly as written.
+- Only flat properties work. Pseudo keys, screens and `@` keys are ignored, so `globalStyle()` cannot write media rules.
+- The same rule is added once. A different style for the same selector adds a second rule, and the later one wins.
+
+### getCssText() & resetStyles()
+
+Source: https://nuclo.dev/docs#api-css-text
+
+```ts
+function getCssText(): string   // from 'nuclo/ssr' or 'nuclo'
+function resetStyles(): void    // from 'nuclo'
+```
+
+`getCssText()` returns every rule that `css()`, `cx()`, `variants()`, `keyframes()` and `globalStyle()` have created in this process: base rules first, then the `@media`, `@container` and `@supports` blocks. Use it for server rendering.
+
+- Call it after `renderToString()`. Rules created during the render are included.
+- It covers the whole process, not one page or request, and it only grows. That is safe, because class names are content hashes.
+- Put it in `<style id="nuclo-styles">`. The client reuses that element and skips the rules already in it. With another id, or none, the client adds a second stylesheet with every rule again.
+- The text is not escaped, so never put untrusted input into style values.
+
+`resetStyles()` is a test helper. It removes every rule and the `#nuclo-styles` element. Styles you created earlier keep their class names but lose their CSS. Do not call it in an app or on a server.
+
+```ts
+// setup.test.ts
+import { resetStyles } from 'nuclo'
+
+beforeEach(() => resetStyles())
+```
+
+## Patterns
+
+### Computed Values
+
+Source: https://nuclo.dev/docs#computed
+
+Nuclo has no computed API. Use a plain function, and call it from dynamic values:
+
+```ts
+// example.ts
+let items = ['apple', 'banana', 'cherry']
+let filter = ''
+
+const visible = () => items.filter((item) => item.includes(filter))
+
+const Fruits = () =>
+  div(
+    p(() => `Showing ${visible().length} of ${items.length}`),
+    ul(list(visible, (item) => li(item))),
+  )
+
+filter = 'an'
+update()
+```
+
+### Async & Loading
+
+Source: https://nuclo.dev/docs#async
+
+Use plain `async`/`await`, and call `update()` each time the state changes. For a fetch, that means once before the `await` and once after:
+
+```ts
+// example.ts
+let status: 'idle' | 'loading' | 'done' | 'error' = 'idle'
+let result: unknown = null
+
+async function loadData() {
+  status = 'loading'
+  update()
+  try {
+    result = await fetch('/api/data').then((r) => r.json())
+    status = 'done'
+  } catch {
+    status = 'error'
+  }
+  update()
+}
+```
+
+### Best Practices
+
+Source: https://nuclo.dev/docs#best-practices
+
+- **Batch changes.** Change all the state you need, then call `update()` once.
+- **Keep dynamic values fast and pure.** All of them run on every `update()`.
+- **Use `scope()`** for small, frequent updates, such as typing or timers.
+- **Render into the document.** Nodes that are not in the document when `update()` runs stop updating.
+- **Use `when()` and `list()`** for children that change, not a function that returns nodes.
+- **Use `className`, not `class`**, and use `() => cx(...)` or `{ className: () => … }` for dynamic classes.
+- **Define styles once**, at module level.
+- **Server rendering:** render first, then put `getCssText()` in `<style id="nuclo-styles">`. Pass request data as arguments, and keep HTML comments in the output.
+
+## Reference
+
+### API Index
+
+Source: https://nuclo.dev/docs#api-index
+
+Every public function, and where it comes from.
+
+#### `nuclo` (global and named export)
+
+- [`update(...scopeIds)`](https://nuclo.dev/docs#api-update): run all dynamic values, or those in the given scopes.
+- [`scope(...ids)`](https://nuclo.dev/docs#api-scope): give an element scope ids for `update(id)`.
+- [`when(condition, ...content)`](https://nuclo.dev/docs#api-when): conditional content, with `.when()` and `.else()`.
+- [`list(items, renderItem)`](https://nuclo.dev/docs#api-list): one row per item, matched by identity.
+- [`on(type, listener, options?)`](https://nuclo.dev/docs#events): an event listener, or [`on('mount')` / `on('destroy')`](https://nuclo.dev/docs#lifecycle).
+- [`render(App, parent?)`](https://nuclo.dev/docs#api-render): build and append.
+- [`hydrate(App, parent?)`](https://nuclo.dev/docs#api-hydrate): take over server HTML.
+- [`forceUpdate()`](https://nuclo.dev/docs#api-force-update): call components again and patch the DOM.
+- [`css(name?, style)`](https://nuclo.dev/docs#api-styling): generated classes from a style object.
+- [`cx(...inputs)`](https://nuclo.dev/docs#api-cx): combine styles, later wins.
+- [`createCss(theme)`](https://nuclo.dev/docs#api-create-css): themed `css`, `cx`, `variants`, `keyframes` and `globalStyle`.
+- [`variants(config)`](https://nuclo.dev/docs#api-variants): styles from options.
+- [`keyframes(frames)`](https://nuclo.dev/docs#api-keyframes) and [`globalStyle(selector, style)`](https://nuclo.dev/docs#api-keyframes).
+
+#### `nuclo` (named export only)
+
+- [`getCssText()`](https://nuclo.dev/docs#api-css-text) and [`resetStyles()`](https://nuclo.dev/docs#api-css-text).
+
+#### `nuclo/ssr`
+
+- [`renderToString(input)`](https://nuclo.dev/docs#api-ssr), `renderManyToString(inputs)`, `renderToStringWithContainer(input, tag?, attrs?)` and `getCssText()`.
+
+#### `nuclo/polyfill`
+
+- [A side-effect import](https://nuclo.dev/docs#api-polyfill), plus `document`, `Event`, `CustomEvent`, `Node`, `Element`, `HTMLElement` and the `Nuclo*` classes.
+
+#### Globals only
+
+- [175 tag builders](https://nuclo.dev/docs#tag-builders): `div`, `span`, …, `var_`, and `svgSvg`, `pathSvg`, ….
+- [Types](https://nuclo.dev/docs#typescript-setup): `NodeModFn`, `NodeModLike`, `ExpandedElement` and more. Styling types such as `StyleResult` can also be imported from `'nuclo'`.
+
+#### Special keys
+
+- [Attributes](https://nuclo.dev/docs#attributes): `className`, `style`, [`on*` handlers](https://nuclo.dev/docs#events), [`onMount` and `onDestroy`](https://nuclo.dev/docs#lifecycle).
+- [Style objects](https://nuclo.dev/docs#style-objects): shorthands, pseudo states, `&` selectors, `@` rules and `raw`.
+
+### Frequently Asked Questions
+
+Source: https://nuclo.dev/docs#faq
+
+#### Does changing state update the UI?
+
+No. The DOM stays as it is until you call `update()`.
+
+#### Does Nuclo use signals, proxies or a virtual DOM?
+
+No. State stays plain JavaScript. When a tree is rendered, Nuclo creates real elements and text nodes. `update()` runs every registered dynamic value, or those inside the given scopes, and patches those same nodes where a value changed. There is no dependency graph and no virtual tree.
+
+#### Why does my page show "false"?
+
+Booleans render as text. `div(ok && span('Done'))` shows "false". Use `when(() => ok, span('Done'))` for children, and `ok ? 'Done' : ''` for text.
+
+#### Why doesn't my list row change when I edit the item?
+
+Rows for items that are still in the list are kept, not rendered again. Use dynamic values such as `() => todo.text` for fields that change. See [`list()`](https://nuclo.dev/docs#api-list).
+
+#### Why does part of my UI stop updating?
+
+Usually its nodes were not in the document when `update()` ran. Nuclo stops tracking those nodes, even after you attach them, so render into a container that is in the document. Two other causes: a `when()` whose condition throws stops updating, and a text function that throws on its first run stays empty. See [`update()`](https://nuclo.dev/docs#api-update).
+
+#### When should I use `forceUpdate()`?
+
+Only for rare changes to static values, such as switching the language. For everything else, use `update()`. See [`forceUpdate()`](https://nuclo.dev/docs#api-force-update).
+
+#### How do I unmount an app?
+
+Wrap it in `when()` and switch the condition off. Removing the DOM yourself does not run `onDestroy`. See [Lifecycle](https://nuclo.dev/docs#lifecycle).
+
+#### Does Nuclo have effects?
+
+No. `onMount` and `onDestroy` run once per element, tied to insertion and removal. Nothing runs again because some state changed.
+
+## Examples
+
+Live versions: https://nuclo.dev/examples
+
+### Counter
+
+Mutate state, then call update(). The dynamic text refreshes.
+
+```ts
+import 'nuclo'
+
+let count = 0
+
+export function Counter() {
+  return div(
+    p(() => count),
+    p("COUNT"),
+    button("-", { onClick: () => { count--; update() } }),
+    button("Reset", { onClick: () => { count = 0; update() } }),
+    button("+", { onClick: () => { count++; update() } }),
+  )
+}
+```
+
+### Todo List
+
+Use list() for repeated items. Call update() after each mutation.
+
+```ts
+import 'nuclo'
+
+interface Todo {
+  id: number
+  text: string
+  done: boolean
+}
+
+let todos: Todo[] = []
+let filter: "all" | "active" | "done" = "all"
+let text = ""
+let nextId = 1
+
+function visible() {
+  if (filter === "active") return todos.filter((t) => !t.done)
+  if (filter === "done") return todos.filter((t) => t.done)
+  return todos
+}
+
+function addTodo() {
+  if (!text.trim()) return
+
+  todos.push({ id: nextId++, text, done: false })
+  text = ""
+  update()
+}
+
+export function TodoList() {
+  return div(
+    input(
+      { placeholder: "Add a task..." },
+      {
+        onInput: (event) => {
+          text = (event.target as HTMLInputElement).value
+        },
+      },
+    ),
+    button("Add", { onClick: addTodo }),
+    div(
+      button("All", { onClick: () => { filter = "all"; update() } }),
+      button("Active", { onClick: () => { filter = "active"; update() } }),
+      button("Done", { onClick: () => { filter = "done"; update() } }),
+    ),
+    ul(
+      list(
+        () => visible(),
+        (todo) => li(
+          input(
+            { type: "checkbox", checked: () => todo.done },
+            { onChange: () => { todo.done = !todo.done; update() } },
+          ),
+          span(() => todo.done ? todo.text + " done" : todo.text),
+          button("x", { onClick: () => {
+            todos = todos.filter((item) => item.id !== todo.id)
+            update()
+          } }),
+        ),
+      ),
+      when(() => visible().length === 0, div("No tasks yet.")),
+    ),
+    p(() => `${todos.filter((t) => !t.done).length} of ${todos.length} remaining`),
+  )
+}
+```
+
+### Search Filter
+
+Filter an array with plain JavaScript. Render the result with list().
+
+```ts
+import 'nuclo'
+
+const users = [
+  { name: "Alice Chen", email: "alice@example.com", initials: "AC" },
+  { name: "Bob Smith", email: "bob@example.com", initials: "BS" },
+  { name: "Charlie Davis", email: "charlie@example.com", initials: "CD" },
+  { name: "Diana Park", email: "diana@example.com", initials: "DP" },
+]
+let query = ""
+
+function results() {
+  const q = query.toLowerCase()
+  if (!q) return users
+  return users.filter((user) =>
+    user.name.toLowerCase().includes(q) ||
+    user.email.toLowerCase().includes(q)
+  )
+}
+
+export function SearchFilter() {
+  return div(
+    input(
+      { placeholder: "Search users..." },
+      {
+        onInput: (event) => {
+          query = (event.target as HTMLInputElement).value
+          update()
+        },
+      },
+    ),
+    div(
+      list(
+        () => results(),
+        (user) => div(
+          div(user.initials),
+          div(user.name),
+          div(user.email),
+        ),
+      ),
+      when(() => results().length === 0, div("No users found.")),
+    ),
+  )
+}
+```
+
+### Styling
+
+Use css() for classes. Use cx() for small conditional changes.
+
+```ts
+import 'nuclo'
+
+const { css, cx } = createCss({
+  colors: {
+    primary: "#ff3f00",
+    border: "#e5e7eb",
+    text: "#1f2937",
+  },
+})
+
+const baseButton = css("content-examples-baseButton", {
+  px: 14,
+  py: 9,
+  rounded: 6,
+  border: "1px solid",
+  borderColor: "border",
+  color: "text",
+  cursor: "pointer",
+})
+
+const selectedButton = css("content-examples-selectedButton", {
+  bg: "primary",
+  color: "white",
+  borderColor: "primary",
+})
+
+let selected = false
+
+export function StyledButton() {
+  return button(
+    () => cx(baseButton, selected && selectedButton),
+    () => selected ? "Selected" : "Select",
+    { onClick: () => { selected = !selected; update() } },
+  )
+}
+```

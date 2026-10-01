@@ -777,8 +777,8 @@ When `update()` runs, Nuclo prunes the registered state-dependent values, such a
 
 Full documentation is available at [https://nuclo.dev/](https://nuclo.dev/)
 
-- [Getting Started](https://nuclo.dev/getting-started)
-- [API Reference](https://nuclo.dev/core-api)
+- [Getting Started](https://nuclo.dev/docs#quick-start)
+- [API Reference](https://nuclo.dev/docs#api-index)
 - [Examples](https://nuclo.dev/examples)
 
 ---

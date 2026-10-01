@@ -1,0 +1,84 @@
+# Nuclo
+
+> Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript. You build the UI with global tag-builder functions such as `div()` and `button()`, keep state in plain mutable variables, and call `update()` to sync the real DOM. There is no virtual DOM, no compiler, no proxies, no signals and no automatic change tracking. It ships server-side rendering with hydration and a typed atomic CSS-in-TS engine. MIT licensed.
+
+Nuclo is not React, Vue, Solid or Svelte. There are no hooks, no JSX, no components API, no reactive primitives and no effects. A component is a plain function that returns a builder. Nothing on the page changes until code calls `update()`.
+
+## Core rules
+
+- Install with `npm install nuclo`, or scaffold a Vite + TypeScript app with `npm create nuclo@latest`.
+- `import 'nuclo'` once, before any code that calls a builder. It registers globals: 175 tag builders (`div`, `span`, ..., `var_` for `<var>`; SVG tags use an `Svg` suffix: `svgSvg`, `pathSvg`, `circleSvg`) and 14 helpers: `update`, `scope`, `when`, `list`, `on`, `render`, `hydrate`, `forceUpdate`, `css`, `cx`, `createCss`, `variants`, `keyframes`, `globalStyle`.
+- Tag builders are globals only: `import { div } from 'nuclo'` does not work. Helpers are also named exports.
+- A function with zero parameters is a dynamic value, re-run on every `update()`: ``p(() => `Hi ${name}`)``, `{ disabled: () => busy }`. A function that declares a parameter is a modifier that receives the element and runs once.
+- Mutate state directly (`count++`, `todos.push(t)`), then call `update()` once. `update('id')` only updates elements marked with `scope('id')`.
+- Conditionals: `when(() => cond, ...children).when(...).else(...)`. Never `cond && el`: booleans render as the text "false".
+- Lists: `list(() => items, (item, index) => li(...))`. Rows are matched by object identity and kept rows are not rendered again, so use dynamic values for fields that change.
+- Events: `{ onClick: (e) => ... }` in an attribute object, or `on('click', fn, options)` for several listeners, listener options or custom events.
+- Lifecycle: `{ onMount: (el) => cleanup?, onDestroy: (el) => ... }`. Hooks run once per element and are not effects.
+- Classes: use `className` (or a `css()` result), not `class`. Inline `style` takes a camelCase object with explicit units.
+- Mount with `render(App, root)`: pass the component, not `App()`. Render into an element that is in the document; detached nodes stop updating.
+- SSR: `import 'nuclo/polyfill'` then `import 'nuclo'` on the server, call `renderToString(App)` and put `getCssText()` in `<style id="nuclo-styles">`. On the client call `hydrate(App, root)`. Do not strip HTML comments from server output.
+- TypeScript: set `"moduleResolution": "bundler"`.
+
+```ts
+import 'nuclo'
+
+let count = 0
+
+const App = () =>
+  div(
+    h1(() => `Count: ${count}`),
+    button('Add one', { onClick: () => { count++; update() } }),
+  )
+
+render(App, document.getElementById('app')!)
+```
+
+## Docs
+
+- [Full documentation as Markdown](https://nuclo.dev/llms-full.txt): every docs section plus all examples in one file. Prefer this for complete context.
+- [Overview](https://nuclo.dev/docs#overview): what Nuclo is and the mental model
+- [Quick Start](https://nuclo.dev/docs#quick-start): scaffold a project with create-nuclo
+- [Installation & Imports](https://nuclo.dev/docs#installation): globals, named exports and entry points (`nuclo`, `nuclo/ssr`, `nuclo/polyfill`, `nuclo/types`)
+- [TypeScript](https://nuclo.dev/docs#typescript-setup): tsconfig setup and global types such as `NodeModFn` and `NodeModLike`
+- [Tag Builders](https://nuclo.dev/docs#tag-builders): builder arguments, custom modifiers, SVG and the full list of builders
+- [Components](https://nuclo.dev/docs#components): plain functions, per-instance state and children
+- [Attributes](https://nuclo.dev/docs#attributes): properties vs attributes, `className` merging and inline styles
+- [Events](https://nuclo.dev/docs#events): `on*` attributes and the `on()` modifier
+- [Lifecycle](https://nuclo.dev/docs#lifecycle): `onMount`, `onDestroy`, cleanups and unmounting
+- [Explicit Updates](https://nuclo.dev/docs#explicit-updates): why and when to call `update()`
+- [Dynamic Values](https://nuclo.dev/docs#dynamic-functions): how zero-parameter functions become live text and attributes
+
+## API reference
+
+- [update()](https://nuclo.dev/docs#api-update): run every dynamic value, or only those inside given scopes
+- [scope()](https://nuclo.dev/docs#api-scope): mark an element as a named update root
+- [when()](https://nuclo.dev/docs#api-when): conditional content with `.when()` and `.else()` chains
+- [list()](https://nuclo.dev/docs#api-list): render one row per item, matched by identity
+- [forceUpdate()](https://nuclo.dev/docs#api-force-update): re-run components to refresh static values, such as a language switch
+- [render()](https://nuclo.dev/docs#api-render): build a tree and append it to the DOM
+- [hydrate()](https://nuclo.dev/docs#api-hydrate): take over server-rendered HTML
+- [Server Rendering](https://nuclo.dev/docs#api-ssr): `renderToString`, `renderManyToString`, `renderToStringWithContainer` from `nuclo/ssr`
+- [nuclo/polyfill](https://nuclo.dev/docs#api-polyfill): the minimal DOM for Node, Bun and Deno
+- [css()](https://nuclo.dev/docs#api-styling): typed style objects compiled to atomic classes
+- [Style Objects](https://nuclo.dev/docs#style-objects): shorthands, pseudo states, `&` selectors, `@` rules and `raw`
+- [cx()](https://nuclo.dev/docs#api-cx): compose styles with last-wins conflict resolution
+- [createCss()](https://nuclo.dev/docs#api-create-css): themed styling with colors, fonts, radii, shadows and screens
+- [variants()](https://nuclo.dev/docs#api-variants): typed style recipes with default and compound variants
+- [keyframes() & globalStyle()](https://nuclo.dev/docs#api-keyframes): animations and global rules
+- [getCssText() & resetStyles()](https://nuclo.dev/docs#api-css-text): collect CSS for SSR, reset styles in tests
+- [API Index](https://nuclo.dev/docs#api-index): every public function and where it is exported from
+
+## Guides
+
+- [Computed Values](https://nuclo.dev/docs#computed): derived state with plain functions
+- [Async & Loading](https://nuclo.dev/docs#async): fetch with loading and error states
+- [Best Practices](https://nuclo.dev/docs#best-practices): batching, scopes, styles and SSR checklist
+- [FAQ](https://nuclo.dev/docs#faq): common pitfalls such as text showing "false" or parts of the UI not updating
+- [Examples](https://nuclo.dev/examples): live counter, todo list, search filter and styling demos with source
+
+## Optional
+
+- [GitHub repository](https://github.com/dan2dev/nuclo): source code, issues and the README
+- [npm package](https://www.npmjs.com/package/nuclo): published versions
+- [create-nuclo](https://www.npmjs.com/package/create-nuclo): project scaffolding CLI

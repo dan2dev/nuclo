@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
 
+# LLM-friendly docs: https://nuclo.dev/llms.txt (index), https://nuclo.dev/llms-full.txt (full Markdown)
+
 Sitemap: https://nuclo.dev/sitemap.xml
-Host: nuclo.dev
