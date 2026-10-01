@@ -191,6 +191,26 @@ describe('forceUpdate()', () => {
       expect(pEl.textContent).toBe('sim');
     });
 
+    it('reuses every node of a multi-item branch', () => {
+      const raw = document.createElement('hr');
+      let label = 'a';
+      const App = () => div(when(true, p(label), 'text', () => label, raw, ul(list(() => [1, 2], (n) => li(String(n))))), footer());
+
+      render(App(), container);
+      const before = Array.from(container.querySelector('div')!.childNodes);
+      const rows = Array.from(container.querySelectorAll('li'));
+
+      label = 'b';
+      forceUpdate(App(), container);
+      forceUpdate(App(), container);
+
+      const after = Array.from(container.querySelector('div')!.childNodes);
+      expect(after.length).toBe(before.length);
+      after.forEach((node, i) => expect(node).toBe(before[i]));
+      expect(Array.from(container.querySelectorAll('li'))).toEqual(rows);
+      expect(container.querySelector('div')!.textContent).toBe('btextb12');
+    });
+
     it('handles a branch toggled by update() before forceUpdate', () => {
       let flag = true;
       let label = 'on';

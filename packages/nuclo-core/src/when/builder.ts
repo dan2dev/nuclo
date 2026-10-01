@@ -1,9 +1,10 @@
-import { createMarkerPair, clearBetweenMarkers, insertNodesBefore } from "../shared/dom";
+import { createMarkerPair, clearBetweenMarkers, insertNodesBefore, safeRemoveChild } from "../shared/dom";
 import type { WhenGroup, WhenRuntime } from "./runtime";
 import { renderWhenContent, registerWhenRuntime, getWhenRuntime, evaluateActiveCondition, renderContentItems } from "./runtime";
 import { isBrowser } from "../shared/environment";
-import { isHydrating, isSerializing, claimMarkerPair, setCursor, runWithoutHydration, runFreshAtCursor } from "../hydration";
-import { applyNodeModifier } from "../element/modifiers";
+import { isHydrating, isSerializing, claimMarkerPair, peekChild, setCursor, runWithoutHydration, runFreshAtCursor } from "../hydration";
+import { applyModifiers } from "../element/factory";
+import type { NodeModifier } from "../element/modifiers";
 
 /**
  * Encodes the active branch into the start marker so hydration can detect
@@ -88,9 +89,20 @@ class WhenBuilderImpl<TTagName extends ElementTagName = ElementTagName> {
       // Re-run active branch content to register reactivity on existing nodes
       if (activeIndex !== null) {
         const contentToRender = activeIndex >= 0 ? this.groups[activeIndex].content : this.elseContent;
+        // applyModifiers (not a bare applyNodeModifier): a node that could
+        // not be claimed is inserted at the claim cursor instead of dropped.
+        // One call per item — every branch item shares the block's `index`,
+        // as in renderContentItems.
         for (const item of contentToRender) {
-          applyNodeModifier(host, item as NodeMod<TTagName> | NodeModFn<TTagName>, index);
+          applyModifiers(host, [item as NodeModifier<TTagName>], index);
         }
+      }
+      // Remove the SSR nodes the branch did not claim (same as list()).
+      let leftover = peekChild(parentNode);
+      while (leftover && leftover !== endMarker) {
+        const next: Node | null = leftover.nextSibling;
+        safeRemoveChild(leftover);
+        leftover = next;
       }
     } else {
       // Server rendered a different branch (or the markup is unusable):

@@ -73,4 +73,55 @@ describe("when() hydration with corrupt or missing markers", () => {
       .map((n) => n.textContent);
     expect(commentTexts).toContain("when-end");
   });
+
+  it("inserts the branch content when the matching SSR block is empty", () => {
+    container.innerHTML = "<div><!--when-start-0:0--><!--when-end--></div>";
+
+    const el = hydrate(div(when(() => true, span("a"))), container);
+
+    expect(el.innerHTML).toBe(
+      "<!--when-start-0:0--><span><!-- text-0 -->a</span><!--when-end-->",
+    );
+  });
+
+  it("replaces unclaimable SSR content inside a matching block", () => {
+    container.innerHTML =
+      "<div><!--when-start-0:0--><span>old</span><!--when-end--><footer></footer></div>";
+    const existingFooter = container.querySelector("footer")!;
+
+    const el = hydrate(div(when(() => true, p("new")), footer()), container);
+
+    expect(el.querySelector("span")).toBeNull();
+    const block = el.querySelector("p")!;
+    expect(block.textContent).toBe("new");
+    expect(block.previousSibling?.textContent).toBe("when-start-0:0");
+    expect(block.nextSibling?.textContent).toBe("when-end");
+    // Siblings after the block are still claimed, not rebuilt.
+    expect(el.querySelector("footer")).toBe(existingFooter);
+  });
+
+  it("removes SSR nodes left over after the claimed branch content", () => {
+    container.innerHTML =
+      "<div><!--when-start-0-b0--><span>a</span><span>extra</span><!--when-end--></div>";
+    const existingSpan = container.querySelector("span")!;
+
+    const el = hydrate(div(when(() => true, span("a"))), container);
+
+    const spans = el.querySelectorAll("span");
+    expect(spans.length).toBe(1);
+    expect(spans[0]).toBe(existingSpan);
+  });
+
+  it("keeps the repaired block toggling on update()", () => {
+    container.innerHTML = "<div><!--when-start-0:0--><!--when-end--></div>";
+    let flag = true;
+
+    const el = hydrate(div(when(() => flag, span("a")).else(p("b"))), container);
+    expect(el.textContent).toBe("a");
+
+    flag = false;
+    update();
+    expect(el.querySelector("span")).toBeNull();
+    expect(el.textContent).toBe("b");
+  });
 });
