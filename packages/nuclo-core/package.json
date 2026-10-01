@@ -51,7 +51,8 @@
 		"test:watch": "vitest --watch --coverage",
 		"bench": "bun bench/ssr.bench.ts && bun bench/hydrate.bench.ts",
 		"bench:style": "bun bench/style.bench.ts",
-		"bench:jfb": "bun bench/js-framework.bench.ts"
+		"bench:jfb": "bun bench/js-framework.bench.ts",
+		"bench:when": "bun bench/when.bench.ts"
 	},
 	"devDependencies": {
 		"@types/node": "^26.6.2",

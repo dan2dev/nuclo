@@ -251,6 +251,25 @@ export function flushMountQueue(): void {
   }
 }
 
+/** Current end of the mount queue — pass it to cancelMountsSince(). */
+export function mountQueueMark(): number {
+  return mountQueue.length;
+}
+
+/**
+ * Cancels the mounts queued since `mark` for elements that never made it into
+ * the document: the operation that was building them threw, so they were
+ * discarded instead of attached. Left queued, the next flush would fire
+ * onMount on a detached element — one nuclo never removes, so its cleanup and
+ * onDestroy could never run. Elements that did get attached keep their turn.
+ */
+export function cancelMountsSince(mark: number): void {
+  for (let i = mountQueue.length - 1; i >= mark; i--) {
+    const element = mountQueue[i].deref();
+    if (element && !element.isConnected) disposeElementLifecycle(element);
+  }
+}
+
 /**
  * Finalizes one element's lifecycle: silently cancels a mount that never got
  * to run (state was still Pending — built and discarded within one pass), or

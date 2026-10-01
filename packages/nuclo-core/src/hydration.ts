@@ -109,12 +109,19 @@ function isWhitespaceText(node: Node): boolean {
  * whitespace comes from the surrounding template or an HTML
  * formatter/minifier.  Skipping (without removing) keeps the cursor aligned
  * while leaving the document's visual whitespace untouched.
+ *
+ * forceUpdate() is different: the DOM it walks was built by nuclo, where a
+ * bare whitespace text is a real text child. One that sits where the new tree
+ * expects an element or a marker is a child the tree no longer produces — it
+ * is dropped (`drop`), or it would survive in front of the cursor forever.
  */
-export function skipWhitespaceText(parent: Node): void {
+export function skipWhitespaceText(parent: Node, drop = _force): void {
   let child = peekChild(parent);
   let advanced = false;
   while (child && isWhitespaceText(child)) {
-    child = child.nextSibling;
+    const next = child.nextSibling;
+    if (drop) safeRemoveChild(child);
+    child = next;
     advanced = true;
   }
   if (advanced) {
@@ -198,8 +205,11 @@ export function claimElement(parent: Node, tagName: string): Element | null {
   if (!_hydrating) return null;
   skipWhitespaceText(parent);
   const candidate = peekChild(parent);
-  if (candidate && candidate.nodeType === 1 && (candidate as Element).tagName.toLowerCase() === tagName) {
-    return claimChild(parent) as Element;
+  if (candidate && candidate.nodeType === 1) {
+    // HTML elements report "DIV"; SVG elements keep their case — exact match
+    // first, so camelCase SVG tags (linearGradient, clipPath) are claimable.
+    const name = (candidate as Element).tagName;
+    if (name === tagName || name.toLowerCase() === tagName) return claimChild(parent) as Element;
   }
   return null;
 }
@@ -211,9 +221,15 @@ export function claimElement(parent: Node, tagName: string): Element | null {
  * last child before modifiers ran) — fresh nodes sit before the cursor and
  * nodes a modifier appended itself come after that boundary; both are
  * preserved.
+ *
+ * When `lastOriginalChild` is no longer a child, the modifiers already dealt
+ * with every original node: a `textContent`/`innerHTML` attribute replaced
+ * them wholesale, or the claim walk reached and dropped it. Whatever the
+ * element holds now is the new build's own content — walking it for a boundary
+ * that is gone would remove all of it.
  */
 export function cleanupUnclaimedChildren(node: Node, lastOriginalChild: Node | null): void {
-  if (!lastOriginalChild) return;
+  if (!lastOriginalChild || lastOriginalChild.parentNode !== node) return;
   let current = peekChild(node);
   while (current) {
     const next = current === lastOriginalChild ? null : current.nextSibling;

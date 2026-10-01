@@ -13,14 +13,14 @@
  *     the longest increasing subsequence of old positions never move, and runs
  *     of freshly built rows are batched into DocumentFragments.
  */
-import { createMarkerPair, safeRemoveChild, disposeLifecyclesInSubtree } from "../shared/dom";
+import { createMarkerPair, clearBetweenMarkers, safeRemoveChild, disposeLifecyclesInSubtree } from "../shared/dom";
 import { isHydrating, isSerializing, claimMarkerPair, peekChild, setCursor, runFreshAtCursor } from "../hydration";
 import type { ListRuntime, ListItemRecord } from "./types";
 import type { UpdateScope } from "../update/scope";
 import { isBrowser } from "../shared/environment";
 import { getFactoryMods, getFactoryTag, withMetadataOnlyFactories, getMetadataOnlyFactoryCheckpoint, releaseMetadataOnlyFactories } from "../element/factory-meta";
 import { analyzeFactory, prepareSkeleton, instantiateTemplate, adoptTemplateLeaves, flushRowLeaves, type RowLeaves } from "./template";
-import { hasActiveLifecycleRegistrations } from "../element/lifecycle";
+import { hasActiveLifecycleRegistrations, mountQueueMark, cancelMountsSince } from "../element/lifecycle";
 
 function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
   if (a === b) return true;
@@ -340,13 +340,38 @@ function buildAndInsert<TItem, TTagName extends ElementTagName>(
 export function sync<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>
 ): void {
-  const { startMarker, endMarker } = runtime;
-  const parent = (startMarker.parentNode ?? (runtime.host as unknown as Node & ParentNode)) as
-    Node & ParentNode;
-
   const items = normalizeItems(runtime.itemsProvider());
 
   if (arraysEqual(runtime.lastSyncedItems, items)) return;
+
+  const mark = mountQueueMark();
+  try {
+    diffRows(runtime, items);
+  } catch (error) {
+    // A render function threw mid-diff: rows may already be removed, moved or
+    // recorded without being inserted, so the records no longer mirror the
+    // DOM. Reset to an empty list — the next sync rebuilds it from scratch
+    // instead of diffing against a state that does not exist.
+    const { startMarker, endMarker } = runtime;
+    if (startMarker.parentNode && startMarker.parentNode === endMarker.parentNode) {
+      clearBetweenMarkers(startMarker, endMarker);
+    }
+    runtime.records = [];
+    runtime.lastSyncedItems = [];
+    runtime.allRecordsCreatedAt = undefined;
+    // Rows built but never inserted must not mount on a later flush.
+    cancelMountsSince(mark);
+    throw error;
+  }
+}
+
+function diffRows<TItem, TTagName extends ElementTagName>(
+  runtime: ListRuntime<TItem, TTagName>,
+  items: readonly TItem[],
+): void {
+  const { startMarker, endMarker } = runtime;
+  const parent = (startMarker.parentNode ?? (runtime.host as unknown as Node & ParentNode)) as
+    Node & ParentNode;
 
   const oldRecords = runtime.records;
   const oldLen = oldRecords.length;

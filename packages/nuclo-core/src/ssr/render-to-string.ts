@@ -77,7 +77,7 @@ function serializeAttribute(name: string, value: unknown): string {
  * to decide whether tagName needs lowercasing) so this doesn't repeat the
  * same `Array.isArray` discriminator check per element.
  */
-function serializeAttributes(element: Element, isPolyfill: boolean): string {
+function serializeAttributes(element: Element, isPolyfill: boolean, textarea: boolean): string {
   let result = '';
 
   // Handle polyfill elements. NucloElement keeps every child in a plain Array
@@ -124,6 +124,8 @@ function serializeAttributes(element: Element, isPolyfill: boolean): string {
     if (attrs) {
       const svg = el.namespaceURI === SVG_NAMESPACE;
       for (const [name, value] of attrs) {
+        // Rendered as the element's content, not as attributes — see serializeNode().
+        if (name === 'innerHTML' || (textarea && name === 'value')) continue;
         result += serializeAttribute(svg ? name : propertyToAttribute(name), value);
       }
     }
@@ -151,7 +153,8 @@ function serializeAttributes(element: Element, isPolyfill: boolean): string {
  */
 const TAG_VOID = 1;
 const TAG_RAW_TEXT = 2;
-const TAG_CATEGORY: Record<string, 1 | 2> = Object.assign(Object.create(null), {
+const TAG_RCDATA = 3;
+const TAG_CATEGORY: Record<string, 1 | 2 | 3> = Object.assign(Object.create(null), {
   // Self-closing HTML tags that don't have closing tags
   area: TAG_VOID, base: TAG_VOID, br: TAG_VOID, col: TAG_VOID, embed: TAG_VOID,
   hr: TAG_VOID, img: TAG_VOID, input: TAG_VOID, link: TAG_VOID, meta: TAG_VOID,
@@ -162,6 +165,10 @@ const TAG_CATEGORY: Record<string, 1 | 2> = Object.assign(Object.create(null), {
   // sequence in the content would terminate the element early, so it is
   // neutralized (see escapeRawText).
   script: TAG_RAW_TEXT, style: TAG_RAW_TEXT,
+  // Escapable raw-text elements — entities are decoded but markup is not
+  // parsed, so a `<!-- text-N -->` marker would show up literally (in the
+  // page title, in a textarea's value). Text only, escaped.
+  title: TAG_RCDATA, textarea: TAG_RCDATA,
 });
 
 // One precompiled pattern per raw-text tag. Sharing a /g RegExp across calls
@@ -200,8 +207,11 @@ function serializeNode(node: Node): string {
     // NucloElement` shortcut only ever hit in-repo — the published nuclo/ssr
     // and nuclo/polyfill bundles hold different copies of the class.
     const tagName = element.tagName.toLowerCase();
-    const attributes = serializeAttributes(element, isPolyfillShape);
-    const category = TAG_CATEGORY[tagName];
+    let category: 1 | 2 | 3 | undefined = TAG_CATEGORY[tagName];
+    // <title> inside <svg> is an ordinary element — only HTML's is RCDATA.
+    if (category === TAG_RCDATA && element.namespaceURI === SVG_NAMESPACE) category = undefined;
+    const textarea = category === TAG_RCDATA && tagName === 'textarea';
+    const attributes = serializeAttributes(element, isPolyfillShape, textarea);
 
     // Self-closing tags
     if (category === TAG_VOID) {
@@ -212,7 +222,7 @@ function serializeNode(node: Node): string {
 
     // Raw-text elements: emit text verbatim (no entity escaping, no Nuclo
     // text markers — `<!--` would act as a line comment inside a script).
-    if (category === TAG_RAW_TEXT) {
+    if (category === TAG_RAW_TEXT || category === TAG_RCDATA) {
       let rawContent = '';
       const rawChildren = childNodes;
       if (rawChildren && rawChildren.length > 0) {
@@ -226,11 +236,29 @@ function serializeNode(node: Node): string {
         const tc = (node as { textContent?: unknown }).textContent;
         if (typeof tc === 'string') rawContent = tc;
       }
-      return `<${tagName}${attributes}>${escapeRawText(tagName, rawContent)}</${tagName}>`;
+      if (category === TAG_RAW_TEXT) {
+        return `<${tagName}${attributes}>${escapeRawText(tagName, rawContent)}</${tagName}>`;
+      }
+      if (textarea) {
+        // A textarea's value is its content: `{ value }` (a property on a real
+        // element, a stored attribute on the polyfill) wins over text children.
+        const value = isPolyfillShape
+          ? (element as unknown as PolyfillElementShape)._attributes?.get('value')
+          : (element as HTMLTextAreaElement).value;
+        if (typeof value === 'string' && value) rawContent = value;
+        // The parser drops one newline right after the start tag.
+        if (rawContent.charCodeAt(0) === 10) rawContent = '\n' + rawContent;
+      }
+      return `<${tagName}${attributes}>${escapeText(rawContent)}</${tagName}>`;
     }
 
-    // Regular elements with children
-    let childrenHtml = '';
+    // Regular elements with children. `{ innerHTML }` is a property on a real
+    // element (its parsed children are serialized below); the polyfill stores
+    // it as an attribute, emitted here verbatim like the browser would parse it.
+    const innerHTML = isPolyfillShape
+      ? (element as unknown as PolyfillElementShape)._attributes?.get('innerHTML')
+      : undefined;
+    let childrenHtml = innerHTML === undefined ? '' : String(innerHTML);
     if (childNodes && childNodes.length > 0) {
       for (let i = 0; i < childNodes.length; i++) {
         const child = childNodes[i];
@@ -238,7 +266,7 @@ function serializeNode(node: Node): string {
           childrenHtml += serializeNode(child);
         }
       }
-    } else {
+    } else if (innerHTML === undefined) {
       // Fallback: textContent set directly on the element (e.g. el.textContent = "...")
       const tc = (node as { textContent?: unknown }).textContent;
       if (typeof tc === 'string' && tc) {

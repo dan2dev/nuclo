@@ -24,11 +24,11 @@
  *
  * Any construct outside the supported shape (style objects, on("mount") /
  * on("destroy") and other arbitrary NodeModFns, nested list()/when(), node
- * children, resolvers returning non-primitives, multiple className sources
- * per element, SVG) bails to the normal build path — the template is per-list
- * state, so unsupported lists simply never activate it. A per-row shape
- * mismatch (heterogeneous render output) deactivates the template for that
- * list and rebuilds the row normally.
+ * children, resolvers returning non-primitives, the same attribute key set by
+ * two attribute objects of one element, SVG) bails to the normal build path —
+ * the template is per-list state, so unsupported lists simply never activate
+ * it. A per-row shape mismatch (heterogeneous render output) deactivates the
+ * template for that list and rebuilds the row normally.
  */
 
 import { getFactoryMods, getFactoryTag, isEventModifier } from "../element/factory-meta";
@@ -73,6 +73,12 @@ export interface AttrSpec {
   kind: number;
   /** Static attrs: element exposes the key as a property (filled from the skeleton). */
   prop: boolean;
+  /**
+   * Static attrs: a skeleton clone already carries the first-row value, so a
+   * row with that same value needs no write. False for state cloneNode() does
+   * not copy (e.g. a <select>'s value) — those rows always write.
+   */
+  cloned: boolean;
   /** Static attrs: first-row value. Events: normalized native property name. */
   value?: unknown;
 }
@@ -95,13 +101,24 @@ export interface ListTemplate {
   skeleton: Element;
 }
 
+/** True when an earlier attribute object of the same element already sets `key`. */
+function setsAttribute(slots: readonly TemplateSlot[], key: string): boolean {
+  for (let i = 0; i < slots.length; i++) {
+    const slot = slots[i];
+    if (slot.kind !== SLOT_ATTRS) continue;
+    for (let k = 0; k < slot.keys.length; k++) {
+      if (slot.keys[k].key === key && slot.keys[k].kind !== ATTR_NULL) return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Classifies a factory's modifier tree into a slot program, or returns null
  * when any modifier falls outside the supported shape.
  */
 export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateNode | null {
   const slots: TemplateSlot[] = [];
-  let classNameSources = 0;
 
   for (let i = 0; i < mods.length; i++) {
     const mod = mods[i];
@@ -155,20 +172,24 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
         const key = keys[k];
         const v = attrs[key];
         if (v == null) {
-          specs.push({ key, kind: ATTR_NULL, prop: false });
+          specs.push({ key, kind: ATTR_NULL, prop: false, cloned: false });
           continue;
         }
         if (key === "style") return null;
+        // The same key set by two attribute objects (className merging, or a
+        // plain "last one wins" attribute): patching a clone slot by slot
+        // can't replay that — a later slot whose value equals its first-row
+        // value is skipped, leaving an earlier slot's row value in place.
+        if (setsAttribute(slots, key)) return null;
         const vt = typeof v;
         if (vt === "function") {
           const eventProperty = eventAttributeToProperty(key);
           if (eventProperty) {
-            specs.push({ key, kind: ATTR_EVENT, prop: false, value: eventProperty });
+            specs.push({ key, kind: ATTR_EVENT, prop: false, cloned: false, value: eventProperty });
             continue;
           }
           if (key === "className" && (v as () => unknown).length === 0) {
-            if (classNameSources++) return null;
-            specs.push({ key, kind: ATTR_REACTIVE_CLASSNAME, prop: false });
+            specs.push({ key, kind: ATTR_REACTIVE_CLASSNAME, prop: false, cloned: false });
             continue;
           }
           // Reactive non-className attributes need skeleton scrubbing per
@@ -176,8 +197,7 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
           return null;
         }
         if (vt === "object") return null;
-        if (key === "className" && classNameSources++) return null;
-        specs.push({ key, kind: ATTR_STATIC, prop: false, value: v });
+        specs.push({ key, kind: ATTR_STATIC, prop: false, cloned: false, value: v });
       }
       slots.push({ kind: SLOT_ATTRS, keys: specs });
       continue;
@@ -207,6 +227,9 @@ export function prepareSkeleton(tmpl: TemplateNode, skeleton: Element): void {
           const spec = specs[k];
           if (spec.kind === ATTR_STATIC) {
             spec.prop = spec.key in skeleton;
+            spec.cloned = spec.prop
+              ? (skeleton as unknown as Record<string, unknown>)[spec.key] === spec.value
+              : skeleton.getAttribute(spec.key) === String(spec.value);
           } else if (spec.kind === ATTR_REACTIVE_CLASSNAME) {
             // Drop the attribute rather than assigning "": className = ""
             // leaves an empty class="" that every clone would copy — per-row
@@ -266,7 +289,7 @@ export function instantiateTemplate(
           switch (spec.kind) {
             case ATTR_STATIC: {
               if (v == null || typeof v === "object" || typeof v === "function") return false;
-              if (v === spec.value) break;
+              if (v === spec.value && spec.cloned) break;
               if (spec.prop) {
                 const target = el as unknown as Record<string, unknown>;
                 if (target[spec.key] !== v) target[spec.key] = v;

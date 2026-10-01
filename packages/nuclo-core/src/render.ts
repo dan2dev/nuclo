@@ -1,6 +1,6 @@
-import { startHydration, endHydration, peekChild, setCursor } from "./hydration";
+import { startHydration, endHydration, peekChild, setCursor, skipWhitespaceText } from "./hydration";
 import { safeRemoveChild } from "./shared/dom";
-import { flushMountQueue } from "./element/lifecycle";
+import { flushMountQueue, mountQueueMark, cancelMountsSince } from "./element/lifecycle";
 import { isFunction, isZeroArityFunction } from "./shared/type-guards";
 import { isBrowser } from "./shared/environment";
 import { logError } from "./shared/errors";
@@ -83,8 +83,16 @@ export function render<TTagName extends ElementTagName = ElementTagName>(
 ): ExpandedElement<TTagName> {
   const { build, component } = unwrapComponent(nodeModFn);
   const targetParent = (parent || document.body) as ExpandedElement<TTagName>;
-  const element = build(targetParent, index) as ExpandedElement<TTagName>;
-  (targetParent as unknown as Node).appendChild(element as Node);
+  const mark = mountQueueMark();
+  let element: ExpandedElement<TTagName>;
+  try {
+    element = build(targetParent, index) as ExpandedElement<TTagName>;
+    (targetParent as unknown as Node).appendChild(element as Node);
+  } catch (error) {
+    // The half-built tree is discarded: nothing in it may mount later.
+    cancelMountsSince(mark);
+    throw error;
+  }
   // The whole tree was built off-document and just got attached in this one
   // call — every onMount queued while building it can fire now.
   flushMountQueue();
@@ -144,7 +152,9 @@ export function hydrate<TTagName extends ElementTagName = ElementTagName>(
  * resolvers and class/inline-style state on reused elements are replaced by
  * the new build; lifecycle hooks on reused elements keep their original
  * registrations (onMount does not re-fire). Nodes the new tree no longer
- * produces are removed with full cleanup (onDestroy fires).
+ * produces are removed with full cleanup (onDestroy fires) — including
+ * whitespace-only text inside the tree that sits where an element or block is
+ * now expected (the container's own whitespace is never touched).
  *
  * Roots rendered from an already-built tree (render(App())) are not
  * registered — their static values were captured and cannot be re-evaluated.
@@ -210,6 +220,11 @@ function hydrateRoot<TTagName extends ElementTagName>(
   // A known root (bare forceUpdate()): pin the claim cursor to it so the walk
   // starts exactly there — foreign siblings in the parent are never touched.
   if (at) setCursor(parentNode, at);
+  // The container belongs to the app, not to nuclo: step over its template
+  // whitespace here so a force pass (which drops stale whitespace text inside
+  // the tree it rebuilds) never removes it.
+  else if (force) skipWhitespaceText(parentNode, false);
+  const mark = mountQueueMark();
   let element: ExpandedElement<TTagName>;
   try {
     element = nodeModFn(targetParent, 0) as ExpandedElement<TTagName>;
@@ -231,6 +246,11 @@ function hydrateRoot<TTagName extends ElementTagName>(
         setCursor(parentNode, null);
       }
     }
+  } catch (error) {
+    // Fresh nodes of the half-built tree are discarded: they may not mount
+    // later. Claimed nodes are live in the document and keep their turn.
+    cancelMountsSince(mark);
+    throw error;
   } finally {
     endHydration();
   }

@@ -5,7 +5,7 @@
  */
 import { applyAttributes } from "./attributes";
 import { createReactiveTextNode, toText } from "../update/reactive-text";
-import { registerReactiveTextNode } from "../update/registry";
+import { cleanupReactiveTextNode, registerReactiveTextNode } from "../update/registry";
 import { logError } from "../shared/errors";
 import { isFunction, isNode, isObject, isPrimitive, isZeroArityFunction } from "../shared/type-guards";
 import { isHydrating, isForceHydrating, isSerializing, claimBareText, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration";
@@ -142,16 +142,22 @@ export function applyNodeModifier<TTagName extends ElementTagName>(
 			const parentNode = parent as unknown as Node;
 			const expected = String(candidate);
 			// forceUpdate(): claim and patch the bare client-rendered text node.
-			if (isForceHydrating()) {
+			// The node may have been reactive in the previous build (the tree
+			// shifted) — unregister it, or the next update() would overwrite
+			// this static text with the stale resolver's value.
+			const force = isForceHydrating();
+			if (force) {
 				const claimed = claimBareText(parentNode);
 				if (claimed) {
+					cleanupReactiveTextNode(claimed);
 					if (claimed.textContent !== expected) claimed.textContent = expected;
 					return null;
 				}
 			}
 			if (nextChildIsTextComment(parentNode)) {
 				claimChild(parentNode); // skip <!-- text-N --> comment
-				claimTextAfterMarker(parentNode, expected);
+				const claimed = claimTextAfterMarker(parentNode, expected);
+				if (force) cleanupReactiveTextNode(claimed);
 				return null;
 			}
 		}

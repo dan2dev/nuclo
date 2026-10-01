@@ -8,6 +8,7 @@
     "test/type-inference-edge.ts",
     "test/type-inference-module.ts",
     "test/type-inference-subpaths.ts",
+    "test/type-inference-scenarios.ts",
     "test/svg/type-check-list.ts"
   ]
 }

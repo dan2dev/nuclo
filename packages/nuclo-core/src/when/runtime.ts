@@ -1,6 +1,8 @@
 import { clearBetweenMarkers, insertNodesBefore, withScopedInsertion } from "../shared/dom";
 import type { UpdateScope } from "../update/scope";
 import { applyNodeModifier } from "../element/modifiers";
+import { getFactoryMods } from "../element/factory-meta";
+import { mountQueueMark, cancelMountsSince } from "../element/lifecycle";
 import { isFunction, isZeroArityFunction } from "../shared/type-guards";
 import { logError } from "../shared/errors";
 
@@ -149,6 +151,7 @@ export function updateWhenRuntimes(scope?: UpdateScope): void {
     // Skip if outside update scope
     if (scope && !scope.contains(startMarker)) continue;
 
+    const mark = mountQueueMark();
     try {
       renderWhenContent(runtime);
     } catch (error) {
@@ -156,6 +159,8 @@ export function updateWhenRuntimes(scope?: UpdateScope): void {
       logError("when() branch threw during update; unregistering this conditional", error);
       whenRuntimeByMarker.delete(startMarker);
       activeWhenRuntimes.delete(ref);
+      // Content built but never inserted must not mount on the next flush.
+      cancelMountsSince(mark);
     }
   }
 }
@@ -170,11 +175,17 @@ function renderContentItem<TTagName extends ElementTagName>(
   index: number,
   endMarker: Comment
 ): Node | null {
-  if (!isFunction(item) || isZeroArityFunction(item)) {
+  // Primitives, attribute objects, reactive text and tag-builder factories
+  // (which build their element detached) never append to the host themselves:
+  // the caller inserts whatever node comes back. Keeping them off the scoped
+  // path matters — it adds and deletes an own `appendChild` on the host, which
+  // drops the element out of the engine's fast property mode for good.
+  if (!isFunction(item) || isZeroArityFunction(item) || getFactoryMods(item) !== undefined) {
     return applyNodeModifier(host, item, index);
   }
 
-  // Non-zero-arity functions need scoped insertion to insert before endMarker
+  // Other functions (nested when()/list() blocks, custom modifiers) may append
+  // to the host: scope those appends so they land before endMarker.
   return withScopedInsertion(host, endMarker, () => {
     const maybeNode = applyNodeModifier(host, item, index);
     // Only include nodes that weren't already inserted
