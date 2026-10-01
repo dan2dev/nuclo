@@ -17,19 +17,65 @@ type AttributeCandidate<TTagName extends ElementTagName> =
   ExpandedElementAttributes<TTagName>[AttributeKey<TTagName>];
 
 /**
+ * The value each <select> was last asked to show.
+ *
+ * A select only accepts a value one of its options carries, and attributes
+ * are applied before children — so `select({ value }, option(...), ...)`
+ * writes the value into a select that has no options yet and the browser
+ * drops it. hydrate()/forceUpdate() have the mirror problem: the value is
+ * applied against the old options, which are then re-labelled in place. The
+ * element factory therefore re-applies it once the children are settled.
+ */
+const selectValues = new WeakMap<Element, unknown>();
+
+/**
+ * Sets a <select>'s value. When no option carries it (yet) the assignment
+ * would only deselect everything, so the previous selection is put back;
+ * `false` keeps a reactive value uncached so every update() retries it until
+ * an option matches.
+ */
+function setSelectValue(select: HTMLSelectElement, v: unknown): boolean | void {
+  const value = String(v);
+  selectValues.set(select, v);
+  if (select.value === value) return;
+  const previous = select.selectedIndex;
+  select.value = value;
+  if (select.value === value) return;
+  select.selectedIndex = previous;
+  return false;
+}
+
+/**
+ * Re-applies a <select>'s value once its children are built (called by the
+ * element factory): the options it needs exist only now.
+ */
+export function retrySelectValue(el: Element): void {
+  const value = selectValues.get(el);
+  if (value !== undefined) setSelectValue(el as HTMLSelectElement, value);
+}
+
+/** Drops a reused <select>'s remembered value before its new build re-applies (or omits) it. */
+export function forgetSelectValue(el: Element): void {
+  selectValues.delete(el);
+}
+
+/**
  * Applies a resolved (non-function) attribute value to an element.
  *
  * Module-level rather than a closure inside applySingleAttribute so neither
  * the static-attribute path (the bulk of attributes in list rows) nor a
  * reactive attribute (it is the registered applier, `merge` left unset)
  * allocates anything per attribute.
+ *
+ * Returns false when the write did not take (see setSelectValue), which keeps
+ * a reactive value from being cached until it does.
  */
 function setAttributeValue(
   el: Element,
   key: string,
   v: unknown,
   merge?: boolean,
-): void {
+): boolean | void {
   if (v == null) return;
 
   // Special handling for className to merge instead of replace (only for non-reactive updates)
@@ -44,6 +90,7 @@ function setAttributeValue(
     el.setAttribute(key === 'className' ? 'class' : key, String(v));
   } else if (key in el) {
     // For HTML elements, try to set as property first
+    if (key === 'value' && el.localName === 'select') return setSelectValue(el as HTMLSelectElement, v);
     try {
       (el as unknown as Record<string, unknown>)[key] = v;
     } catch {
@@ -152,14 +199,30 @@ export function applyAttributes<TTagName extends ElementTagName>(
   attributes: ExpandedElementAttributes<TTagName>,
   mergeClassName = true,
 ): void {
+  // An <input>'s value is sanitized against its type/min/max/step as they
+  // stand when it is written (a range input clamps it), so it is applied
+  // after the object's other keys — `{ value: 150, max: 200 }` must not
+  // clamp to the default max of 100.
+  let valueLast = false;
   // for-in over Object.keys() avoids allocating a key array per element —
   // attribute objects are always plain literals, so no prototype keys leak in.
   for (const k in attributes) {
+    if (k === 'value' && (element as unknown as Element).localName === 'input') {
+      valueLast = true;
+      continue;
+    }
     const key = k as AttributeKey<TTagName>;
     const value = (attributes as Record<string, unknown>)[k] as
       AttributeCandidate<TTagName> | undefined;
     // Only merge className for non-className keys OR when explicitly enabled for className
     const shouldMerge = mergeClassName && key === 'className';
     applySingleAttribute(element, key, value, shouldMerge);
+  }
+  if (valueLast) {
+    applySingleAttribute(
+      element,
+      'value' as AttributeKey<TTagName>,
+      (attributes as Record<string, unknown>).value as AttributeCandidate<TTagName> | undefined,
+    );
   }
 }

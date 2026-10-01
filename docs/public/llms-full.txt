@@ -1,6 +1,6 @@
 # Nuclo documentation
 
-> Complete Nuclo v0.3.9 documentation as a single Markdown file, generated from https://nuclo.dev/docs. Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript: build UI with global tag builders, keep state in plain mutable variables, and call `update()` to sync the real DOM. No virtual DOM, no compiler, no proxies, no signals.
+> Complete Nuclo v0.3.16 documentation as a single Markdown file, generated from https://nuclo.dev/docs. Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript: build UI with global tag builders, keep state in plain mutable variables, and call `update()` to sync the real DOM. No virtual DOM, no compiler, no proxies, no signals.
 
 Index: https://nuclo.dev/llms.txt · Source: https://github.com/dan2dev/nuclo · npm: https://www.npmjs.com/package/nuclo
 

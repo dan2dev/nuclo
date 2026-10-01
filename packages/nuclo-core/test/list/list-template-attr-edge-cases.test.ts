@@ -129,4 +129,67 @@ describe("list() row template — attribute edge cases", () => {
       }
     });
   });
+  describe("event attributes and unusual values on template rows", () => {
+    it("non-click on* attributes are attached per row (input, change, dblclick, custom)", () => {
+      const log: string[] = [];
+      const items = Array.from({ length: 6 }, (_, id) => ({ id }));
+      render(
+        div(list(() => items, (it) =>
+          input({
+            onInput: () => { log.push(`input ${it.id}`); },
+            onChange: () => { log.push(`change ${it.id}`); },
+            onDoubleClick: () => { log.push(`dbl ${it.id}`); },
+            onKeyDown: () => { log.push(`key ${it.id}`); },
+          }))),
+        container,
+      );
+      const els = rows<HTMLInputElement>("input");
+      for (const [k, el] of els.entries()) {
+        log.length = 0;
+        el.dispatchEvent(new Event("input"));
+        el.dispatchEvent(new Event("change"));
+        el.dispatchEvent(new Event("dblclick"));
+        el.dispatchEvent(new Event("keydown"));
+        expect(log).toEqual([`input ${k}`, `change ${k}`, `dbl ${k}`, `key ${k}`]);
+      }
+    });
+
+    it("a handler for an event with no native on* property is attached per row too", () => {
+      const log: number[] = [];
+      const items = Array.from({ length: 5 }, (_, id) => ({ id }));
+      render(div(list(() => items, (it) => span({ onRowPing: () => { log.push(it.id); } } as never, String(it.id)))), container);
+      for (const el of rows("span")) el.dispatchEvent(new Event("rowping"));
+      expect(log).toEqual([0, 1, 2, 3, 4]);
+    });
+
+    it("an attribute spelled as a number in one row and a string in another renders the same", () => {
+      const items: Array<{ n: number | string }> = [{ n: 1 }, { n: "1" }, { n: 2 }, { n: "2" }, { n: 1 }];
+      render(div(list(() => items, (it) => span({ "data-n": it.n, "aria-level": it.n } as never, "x"))), container);
+      expect(rows("span").map((el) => el.getAttribute("data-n"))).toEqual(["1", "1", "2", "2", "1"]);
+      expect(rows("span").map((el) => el.getAttribute("aria-level"))).toEqual(["1", "1", "2", "2", "1"]);
+    });
+
+    it("rows with an object-valued attribute are built normally and stay correct", () => {
+      const items = Array.from({ length: 4 }, (_, id) => ({ id, tags: { kind: `k${id}` } }));
+      render(
+        div(list(() => items, (it) => span({ style: { order: String(it.id) }, "data-id": String(it.id) }, it.tags.kind))),
+        container,
+      );
+      expect(rows<HTMLSpanElement>("span").map((el) => `${el.style.order}:${el.getAttribute("data-id")}:${el.textContent}`))
+        .toEqual(["0:0:k0", "1:1:k1", "2:2:k2", "3:3:k3"]);
+    });
+
+    it("a null attribute in the first row does not swallow a different key in later rows", () => {
+      const items = [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }];
+      render(
+        div(list(() => items, (it) =>
+          span(it.id === 0 ? { title: null } : it.id === 1 ? { className: "second" } : it.id === 2 ? { title: "third" } : { lang: "pt" }, "x"))),
+        container,
+      );
+      const els = rows("span");
+      expect(els.map((el) => el.className)).toEqual(["", "second", "", ""]);
+      expect(els.map((el) => el.getAttribute("title"))).toEqual([null, null, "third", null]);
+      expect(els.map((el) => el.getAttribute("lang"))).toEqual([null, null, null, "pt"]);
+    });
+  });
 });

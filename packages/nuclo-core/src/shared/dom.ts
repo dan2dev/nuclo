@@ -86,8 +86,17 @@ function safeInsertBefore(parent: Node, newNode: Node, referenceNode: Node | nul
   }
 }
 
+/**
+ * Creates one of nuclo's own marker comments (text / list / when). The extra
+ * argument is ignored by a real DOM; the SSR polyfill records it so
+ * renderToString() can emit markers without inspecting their text.
+ */
+export function createMarker(text: string): Comment {
+  return (document as unknown as { createComment(data: string, marker: boolean): Comment }).createComment(text, true);
+}
+
 export function createMarkerPair(prefix: string, id: number): { start: Comment; end: Comment } {
-  return { start: document.createComment(`${prefix}-start-${id}`), end: document.createComment(`${prefix}-end`) };
+  return { start: createMarker(`${prefix}-start-${id}`), end: createMarker(`${prefix}-end`) };
 }
 
 export function clearBetweenMarkers(startMarker: Comment, endMarker: Comment): void {

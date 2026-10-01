@@ -3,6 +3,7 @@
  * that was passed to a tag builder (children, attributes, text, on(), ...).
  */
 import { applyNodeModifier, type NodeModifier } from "./modifiers";
+import { forgetSelectValue, retrySelectValue } from "./attributes";
 import { SVG_NAMESPACE } from "../shared/dom";
 import { claimElement, claimChild, cleanupUnclaimedChildren, isHydrating, isForceHydrating, peekChild, setCursor } from "../hydration";
 import { removeAllListeners } from "./events";
@@ -100,11 +101,16 @@ function createElementFactory(tagName: string, modifiers: ReadonlyArray<unknown>
 
   const factory = function(parent?: Node, index = 0): Element {
     const claimed = parent ? claimElement(parent, tagName) : null;
-    if (claimed) resetReusedElement(claimed, isForceHydrating());
+    if (claimed) {
+      resetReusedElement(claimed, isForceHydrating());
+      if (tagName === "select") forgetSelectValue(claimed);
+    }
     const el = claimed ?? (svg ? document.createElementNS(SVG_NAMESPACE, tagName) : document.createElement(tagName));
     const lastOriginalChild = claimed ? el.lastChild : null;
     applyModifiers(el as unknown as ExpandedElement, modifiers as ReadonlyArray<NodeModifier>, index);
     if (claimed) cleanupUnclaimedChildren(el, lastOriginalChild);
+    // A select's value can only be applied once its options are in place.
+    if (tagName === "select") retrySelectValue(el);
     return el;
   };
   // Lets the list() template engine see the factory's structure (internal

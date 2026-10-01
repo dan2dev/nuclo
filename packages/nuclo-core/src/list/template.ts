@@ -327,7 +327,10 @@ export function instantiateTemplate(
               break;
             }
             case ATTR_NULL: {
-              if (v != null) return false;
+              // The key must be there and nullish: a row whose object has a
+              // different key in its place also reads as undefined here, and
+              // would otherwise lose that attribute.
+              if (v != null || !(spec.key in attrs)) return false;
               break;
             }
           }

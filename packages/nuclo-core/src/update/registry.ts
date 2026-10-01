@@ -33,8 +33,11 @@ export type AttributeResolver = () => unknown;
 /**
  * Writes a resolved value to the element. A shared module-level function
  * (not a per-registration closure), so a reactive attribute costs no closure.
+ * Returning `false` reports that the write did not take (a <select> value
+ * whose <option> does not exist yet): the value is then not cached, so the
+ * next update() applies it again.
  */
-export type AttributeApplier = (element: Element, key: string, value: unknown) => void;
+export type AttributeApplier = (element: Element, key: string, value: unknown) => boolean | void;
 
 export interface AttributeResolverRecord {
   key: string;

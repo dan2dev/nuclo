@@ -98,7 +98,12 @@ export class NucloDocument {
     return new NucloText(data) as unknown as Text;
   }
   
-  createComment(data: string): Comment {
+  /**
+   * `marker` is passed by nuclo's own text/list/when markers (see
+   * createMarker() in shared/dom.ts): renderToString() emits those verbatim
+   * and only inspects comments the app created itself.
+   */
+  createComment(data: string, marker?: boolean): Comment {
     const comment = {
       nodeType: 8,
       nodeName: '#comment',
@@ -107,7 +112,8 @@ export class NucloDocument {
       nodeValue: data,
       parentNode: null,
       nextSibling: null,
-      previousSibling: null
+      previousSibling: null,
+      marker: marker === true
     };
     return comment as unknown as Comment;
   }

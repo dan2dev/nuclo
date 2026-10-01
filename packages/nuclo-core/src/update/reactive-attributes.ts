@@ -22,8 +22,8 @@ function updateRecord(element: Element, record: AttributeResolverRecord): void {
   if (cacheable && Object.is(nextValue, record.lastValue)) return;
 
   try {
-    record.apply(element, record.key, nextValue);
-    record.lastValue = cacheable ? nextValue : UNSET_LAST_VALUE;
+    const applied = record.apply(element, record.key, nextValue);
+    record.lastValue = cacheable && applied !== false ? nextValue : UNSET_LAST_VALUE;
   } catch (e) {
     logError(`Failed to apply reactive attribute: ${record.key}`, e);
   }

@@ -129,6 +129,12 @@ describe("renderToString — { innerHTML }", () => {
     expect(parse(html).querySelector("div")!.textContent).toBe("ab");
   });
 
+  it("{ innerText } is escaped text content too, not an attribute", () => {
+    const html = renderToString(p({ innerText: "<b>not bold</b> & co", id: "x" }));
+    expect(html).toBe('<p id="x">&lt;b&gt;not bold&lt;/b&gt; &amp; co</p>');
+    expect(renderToString(p({ innerText: () => "reactive" }))).toBe("<p>reactive</p>");
+  });
+
   it("{ textContent } is escaped text, not markup", () => {
     const html = renderToString(p({ textContent: "<b>not bold</b> & co" }));
     const el = parse(html).querySelector("p")!;

@@ -10,6 +10,7 @@ import { logError } from "../shared/errors";
 import { isFunction, isNode, isObject, isPrimitive, isZeroArityFunction } from "../shared/type-guards";
 import { isHydrating, isForceHydrating, isSerializing, claimBareText, claimChild, peekChild, setCursor, skipWhitespaceText } from "../hydration";
 import { isBrowser } from "../shared/environment";
+import { createMarker } from "../shared/dom";
 
 export type NodeModifier<TTagName extends ElementTagName = ElementTagName> =
 	| NodeMod<TTagName>
@@ -187,7 +188,7 @@ function wrapTextNode(index: number, textNode: Text): Node {
 		return textNode;
 	}
 	const fragment = document.createDocumentFragment();
-	fragment.appendChild(document.createComment(` text-${index} `));
+	fragment.appendChild(createMarker(` text-${index} `));
 	fragment.appendChild(textNode);
 	return fragment;
 }

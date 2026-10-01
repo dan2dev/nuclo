@@ -92,6 +92,15 @@ export class NucloElement extends NucloNode {
     this._attributes = value;
   }
 
+  // `{ innerText }` behaves like `{ textContent }` on the server: plain text
+  // the serializer escapes. (Prototype accessor — no per-element field.)
+  get innerText(): string {
+    return this.textContent;
+  }
+  set innerText(value: string) {
+    this.textContent = value;
+  }
+
   get style(): CSSStyleDeclaration {
     return (this._style ??= new SSRStyle() as unknown as CSSStyleDeclaration);
   }

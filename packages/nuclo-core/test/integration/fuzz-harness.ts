@@ -263,11 +263,18 @@ export interface GenOptions {
   maxDepth?: number;
 }
 
-const CONTAINER_TAGS = ["div", "span", "section", "em", "header"] as const;
+const CONTAINER_TAGS = ["div", "span", "section", "em", "header", "nav", "aside"] as const;
+/** Every <nav>/<aside> is an update scope root named after its tag: update("nav"). */
+const SCOPE_TAGS: ReadonlySet<string> = new Set(["nav", "aside"]);
 
 /** innerHTML snippets and what they parse to, in snap()/model() notation. */
 const HTML_POOL = ["", "<b>x</b>", "plain &amp; simple", "<i>a</i><u>b</u>tail"] as const;
 const HTML_POOL_MODEL = ["", '<b>"x"</b>', '"plain & simple"', '<i>"a"</i><u>"b"</u>"tail"'] as const;
+
+function selectValueOf(state: State, k: number): string {
+  const options = state.prims[k]!;
+  return options.length ? String(options[options.length - 1]) : "";
+}
 
 function contentText(content: NonNullable<ElSpec["content"]>, state: State, item: Item | null): string {
   if (content.f === "item") return item!.label;
@@ -292,7 +299,7 @@ interface Gen {
 function planFor(g: Gen, tag: string): TagPlan {
   let plan = g.plans.get(tag);
   if (!plan) {
-    plan = tag === "input"
+    plan = tag === "input" || tag === "select"
       ? { title: false, data: false, style: false }
       : { title: chance(g.rng, 0.3), data: chance(g.rng, 0.3), style: chance(g.rng, 0.2) };
     g.plans.set(tag, plan);
@@ -323,6 +330,7 @@ function genEl(g: Gen, depth: number, inRow: boolean, listDepth: number, simple 
   let tag: string;
   if (r < 0.1) tag = "button";
   else if (r < 0.15 && !simple) tag = "input";
+  else if (r < 0.17 && !simple) tag = "select";
   else if (r < 0.19 && !simple) tag = "code";
   else if (r < 0.22 && !simple) tag = "samp";
   else if (r < 0.3 && g.lifecycle && !simple) tag = "article";
@@ -337,13 +345,13 @@ function genEl(g: Gen, depth: number, inRow: boolean, listDepth: number, simple 
       ? { reactive: true, k: int(g.rng, SLOTS) }
       : { reactive: false, v: pick(g.rng, COLOR_POOL) };
   }
-  if (tag !== "input") {
+  if (tag !== "input" && tag !== "select") {
     spec.cls = simple
       ? pick<ClassSrc | undefined>(g.rng, [undefined, { f: "static", v: "row" }, { f: "item", v: "on" }, { f: "reactive", k: int(g.rng, SLOTS) }])
       : genClassSrc(g, inRow);
   }
 
-  if (tag === "input") return spec;
+  if (tag === "input" || tag === "select") return spec;
   if (tag === "code" || tag === "samp") {
     const r2 = g.rng();
     spec.content = {
@@ -546,10 +554,21 @@ function buildEl(s: ElSpec, env: Env): unknown {
   for (const _ in attrs) { hasAttrs = true; break; }
   if (hasAttrs) args.push(attrs);
   if (extra) args.push(extra);
+  if (SCOPE_TAGS.has(s.tag)) args.push(scope(s.tag));
   if (s.tag === "button" && env.app.clickFlavor === 1) args.push(on("click", () => { hooks.clicks.push(uid); }));
   if (s.tag === "article" && env.app.lcFlavor === 1) {
     args.push(on("mount", (el: Element) => onMounted(hooks, el)));
     args.push(on("destroy", (el: Element) => onDestroyed(hooks, el)));
+  }
+  if (s.tag === "select") {
+    // Every <select> shows the LAST entry of a primitive list as its value,
+    // with one <option> per entry — the value is declared before the options
+    // exist, and the browser's own default would be the first option.
+    const k = s.id % SLOTS;
+    return select(
+      { value: () => selectValueOf(state, k) },
+      list(() => state.prims[k]!, (n) => option({ value: String(n) }, String(n))),
+    );
   }
   for (const m of s.mods) args.push(buildMod(m, env));
   return tagBuilder(s.tag)(...args);
@@ -623,7 +642,20 @@ export interface Expected {
   articles: number;
 }
 
-interface MEnv { state: State; item: Item | null; path: string }
+/**
+ * What a scoped update("nav") leaves on screen: everything outside the named
+ * scope roots still shows the state of the last full update (`state` is that
+ * snapshot), everything inside shows the live state. Items keep their id
+ * across the snapshot, which is how a row crossing into a scope root finds its
+ * live object.
+ */
+export interface ScopedView {
+  live: State;
+  liveById: Map<number, Item>;
+  ids: ReadonlySet<string>;
+}
+
+interface MEnv { state: State; item: Item | null; path: string; scoped?: ScopedView }
 type Part = { text: string } | { html: string };
 
 const esc = (v: string): string => JSON.stringify(v);
@@ -668,6 +700,11 @@ function openTag(tag: string, attrs: Array<[string, string]>, props = ""): strin
 }
 
 function modelEl(s: ElSpec, env: MEnv, exp: Expected): string {
+  const view = env.scoped;
+  if (view && view.ids.has(s.tag)) {
+    // Entering an updated scope root: it and its whole subtree are live.
+    env = { state: view.live, item: env.item ? view.liveById.get(env.item.id)! : null, path: env.path };
+  }
   const { state } = env;
   const attrs: Array<[string, string]> = [];
   if (s.title) attrs.push(["title", modelValue(s.title, env)]);
@@ -688,6 +725,11 @@ function modelEl(s: ElSpec, env: MEnv, exp: Expected): string {
   if (s.tag === "input") {
     attrs.push(["type", "checkbox"]);
     props = ` .checked=${state.flags[s.id % SLOTS]}`;
+  }
+  if (s.tag === "select") {
+    const k = s.id % SLOTS;
+    const options = state.prims[k]!.map((n) => `<option value=${esc(String(n))}>${esc(String(n))}</option>`).join("");
+    return `<select .value=${esc(selectValueOf(state, k))}>${options}</select>`;
   }
   if (s.tag === "button") exp.buttons.push(`${s.id}@${env.path}`);
   if (s.tag === "article") exp.articles++;
@@ -720,7 +762,7 @@ function modelMod(m: Mod, env: MEnv, parts: Part[], exp: Expected): void {
     case "list": {
       const items = m.src.f === "state" ? state.lists[m.src.k]! : env.item!.kids;
       for (const item of items) {
-        parts.push({ html: modelEl(m.rows[item.kind], { state, item, path: `${env.path}/${m.id}:${item.id}` }, exp) });
+        parts.push({ html: modelEl(m.rows[item.kind], { state, item, path: `${env.path}/${m.id}:${item.id}`, scoped: env.scoped }, exp) });
       }
       break;
     }
@@ -737,9 +779,9 @@ function modelMod(m: Mod, env: MEnv, parts: Part[], exp: Expected): void {
   }
 }
 
-export function model(app: AppSpec, state: State): Expected {
+export function model(app: AppSpec, state: State, scoped?: ScopedView): Expected {
   const exp: Expected = { html: "", buttons: [], articles: 0 };
-  exp.html = modelEl(app.root, { state, item: null, path: "" }, exp);
+  exp.html = modelEl(app.root, { state, item: null, path: "", scoped }, exp);
   return exp;
 }
 
@@ -779,12 +821,14 @@ function snapEl(el: Element, props: boolean): string {
     } else if (attr.name === "style") {
       value = value.split(";").map((d) => d.trim()).filter(Boolean).sort().join("; ");
       if (!value) continue;
-    } else if (attr.name === "checked") {
-      continue; // compared as a property
+    } else if (attr.name === "checked" || attr.name === "selected") {
+      continue; // compared as a property (checked / the select's value)
     }
     attrs.push([attr.name, value]);
   }
-  const extra = tag === "input" && props ? ` .checked=${(el as HTMLInputElement).checked}` : "";
+  let extra = "";
+  if (props && tag === "input") extra = ` .checked=${(el as HTMLInputElement).checked}`;
+  else if (props && tag === "select") extra = ` .value=${esc((el as HTMLSelectElement).value)}`;
   return `${openTag(tag, attrs, extra)}${snap(el, props)}</${tag}>`;
 }
 
@@ -796,6 +840,8 @@ export interface RunOptions extends GenOptions {
   rounds?: number;
   /** Upper bound for the initial size of each top-level list (default 6). */
   maxListSize?: number;
+  /** Debugging aid: called before every check with the step name and the live state. */
+  trace?: (step: string, state: State, container: Element) => void;
   /** Called with the app's container right before it is removed from the document. */
   onTeardown?: (container: Element) => void;
   /**
@@ -872,8 +918,8 @@ export function runSeed(seed: number, kind: Mode, opts: RunOptions): void {
   const container = document.createElement("div");
   document.body.appendChild(container);
 
-  const check = (step: string): void => {
-    const expected = model(app, state);
+  const check = (step: string, expected: Expected = model(app, state)): void => {
+    opts.trace?.(step, state, container);
     const actual = snap(container);
     if (actual !== expected.html) {
       fail(seed, mode, step, `DOM diverged from the model\n  expected: ${expected.html}\n  actual:   ${actual}`);
@@ -905,6 +951,21 @@ export function runSeed(seed: number, kind: Mode, opts: RunOptions): void {
     }
   };
 
+  // update("nav") / update("aside") / update("nav", "aside"): only the named
+  // scope roots catch up with the state; a full update() then reconciles.
+  const scopedRounds = (label: string): void => {
+    for (let r = 0; r < Math.ceil(rounds / 2); r++) {
+      const snapshot = structuredClone(state);
+      const liveById = new Map(allItems(state).map((item) => [item.id, item] as const));
+      mutateReactive(rng, state);
+      const ids = pick(rng, [["nav"], ["aside"], ["nav", "aside"], ["aside", "nav", "nav"], ["none"]] as const);
+      update(...ids);
+      check(`${label} update(${ids.join(", ")}) #${r}`, model(app, snapshot, { live: state, liveById, ids: new Set(ids) }));
+      update();
+      check(`${label} full update #${r}`);
+    }
+  };
+
   try {
     if (kind === "client") {
       render(App, container);
@@ -914,10 +975,10 @@ export function runSeed(seed: number, kind: Mode, opts: RunOptions): void {
       const html = polyfill ? withServerGlobals(() => renderToString(ssrApp)) : renderToString(ssrApp);
       if (ssrHooks.mounted.size || ssrHooks.clicks.length) fail(seed, mode, "ssr", "renderToString ran lifecycle/event callbacks");
       container.innerHTML = html;
-      // Property state (checked) is only serialized by the polyfill; a
-      // real-DOM SSR pass sets the property, which is not an attribute.
-      const expected = polyfill ? model(app, state).html : model(app, state).html.replace(/ \.checked=(true|false)/g, "");
-      const parsed = snap(container, polyfill);
+      // The parsed server markup alone — before any client code runs — must
+      // already show the model's state, form control properties included.
+      const expected = model(app, state).html;
+      const parsed = snap(container);
       if (parsed !== expected) {
         fail(seed, mode, "ssr", `SSR HTML diverged from the model\n  expected: ${expected}\n  actual:   ${parsed}\n  html:     ${html}`);
       }
@@ -939,6 +1000,8 @@ export function runSeed(seed: number, kind: Mode, opts: RunOptions): void {
       check(`update #${r}`);
     }
 
+    scopedRounds("scoped");
+
     // update() with nothing changed is a no-op.
     let before = elements(container);
     update();
@@ -956,6 +1019,8 @@ export function runSeed(seed: number, kind: Mode, opts: RunOptions): void {
     forceUpdate();
     if (!sameElements(before, elements(container))) fail(seed, mode, "idle forceUpdate", "forceUpdate() replaced elements without a state change");
     check("idle forceUpdate");
+
+    scopedRounds("post-force scoped");
 
     // Reactivity is intact after the forced rebuild.
     for (let r = 0; r < rounds; r++) {

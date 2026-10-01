@@ -337,6 +337,16 @@ function buildAndInsert<TItem, TTagName extends ElementTagName>(
   if (fragment.firstChild) parent.insertBefore(fragment, anchor);
 }
 
+/**
+ * The single-choice <select> whose options a list renders: its direct parent,
+ * or an <optgroup>'s parent. (A `multiple` select has no one value to keep.)
+ */
+function selectOwning(parent: Node | null): HTMLSelectElement | null {
+  if (!parent) return null;
+  const node = parent.nodeName === "OPTGROUP" ? parent.parentNode : parent;
+  return node && node.nodeName === "SELECT" && !(node as HTMLSelectElement).multiple ? node as HTMLSelectElement : null;
+}
+
 export function sync<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>
 ): void {
@@ -344,9 +354,21 @@ export function sync<TItem, TTagName extends ElementTagName>(
 
   if (arraysEqual(runtime.lastSyncedItems, items)) return;
 
+  // Removing, moving or rebuilding <option>s makes the browser re-pick the
+  // selection — rows rebuilt from refetched data, or a plain reorder, would
+  // silently change what a <select> shows. Keep it on the value it had.
+  const select = isBrowser ? selectOwning(runtime.startMarker.parentNode) : null;
+  const selectedValue = select && select.selectedIndex >= 0 ? select.value : null;
+
   const mark = mountQueueMark();
   try {
     diffRows(runtime, items);
+    if (selectedValue !== null && select!.value !== selectedValue) {
+      const fallback = select!.selectedIndex;
+      select!.value = selectedValue;
+      // No option carries that value any more: keep the browser's pick.
+      if (select!.value !== selectedValue) select!.selectedIndex = fallback;
+    }
   } catch (error) {
     // A render function threw mid-diff: rows may already be removed, moved or
     // recorded without being inserted, so the records no longer mirror the

@@ -16,7 +16,21 @@ type ScopeId = string;
  * Stores weak references to scope root elements.
  * Using WeakRef prevents memory leaks - elements can be garbage collected when removed from DOM.
  */
-const scopeRootsById = new Map<ScopeId, Set<WeakRef<Element>>>();
+export const scopeRootsById = new Map<ScopeId, Set<WeakRef<Element>>>();
+
+/**
+ * Drops a collected root's entry — and its id, once no root is left under it.
+ * Without this, per-row ids (scope(`row-${id}`)) that are never passed to
+ * update() again would stay in the map forever: one id, one Set and one dead
+ * WeakRef per row the app ever rendered. The sweeps below only bound a single
+ * id's set, not the number of ids.
+ */
+const scopeRootFinalizer = typeof FinalizationRegistry !== "undefined"
+  ? new FinalizationRegistry<{ id: ScopeId; ref: WeakRef<Element> }>(({ id, ref }) => {
+      const set = scopeRootsById.get(id);
+      if (set?.delete(ref) && set.size === 0) scopeRootsById.delete(id);
+    })
+  : null;
 
 function normalizeScopeIds(ids: readonly string[]): ScopeId[] {
   const normalized: ScopeId[] = [];
@@ -49,7 +63,9 @@ function addScopeRoot(id: ScopeId, el: Element): void {
 
   let set = scopeRootsById.get(id);
   if (!set) scopeRootsById.set(id, set = new Set());
-  set.add(new WeakRef(el));
+  const ref = new WeakRef(el);
+  set.add(ref);
+  scopeRootFinalizer?.register(el, { id, ref });
 
   // Ids that are never passed to update(id) are never pruned by getScopeRoots(),
   // so list rows scoped with scope("row") would grow the set forever. Sweep

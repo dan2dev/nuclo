@@ -22,9 +22,10 @@ type RenderableInput =
  */
 const HTML_BOOLEAN_ATTRIBUTES = new Set([
   'allowfullscreen', 'async', 'autofocus', 'autoplay', 'checked', 'controls',
-  'default', 'defer', 'disabled', 'formnovalidate', 'hidden', 'ismap', 'loop',
-  'multiple', 'muted', 'nomodule', 'novalidate', 'open', 'readonly', 'required',
-  'reversed', 'selected',
+  'default', 'defer', 'disabled', 'disablepictureinpicture',
+  'disableremoteplayback', 'formnovalidate', 'hidden', 'inert', 'ismap',
+  'itemscope', 'loop', 'multiple', 'muted', 'nomodule', 'novalidate', 'open',
+  'playsinline', 'readonly', 'required', 'reversed', 'selected',
 ]);
 
 /** The fields of the SSR polyfill's NucloElement that the serializer reads. */
@@ -35,6 +36,32 @@ interface PolyfillElementShape {
   children?: ArrayLike<Node>;
   _attributes?: Map<string, string>;
   _style?: Record<string, unknown>;
+}
+
+/**
+ * Characters that cannot appear in an HTML attribute name. A name containing
+ * one would end the attribute — or the tag — early and let the rest be parsed
+ * as markup (`{ 'x><script>…': '' }`), so such attributes are dropped. The
+ * browser refuses them too: setAttribute() throws on these names. Only names
+ * that come from the app's own objects are checked — a real element's
+ * attributes were validated by the DOM, and id/class/style are fixed.
+ */
+const UNSAFE_ATTRIBUTE_NAME = /[\s"'<>\/=\u0000-\u001f\u007f]/;
+
+/**
+ * IDL property name → HTML attribute name, or '' for a name that must not be
+ * emitted. The same few names repeat on every element, so both the mapping
+ * and the safety check are paid once per distinct name. Bounded, so
+ * attacker-chosen names cannot grow it without limit.
+ */
+const htmlAttributeNames = new Map<string, string>();
+function htmlAttributeName(name: string): string {
+  let mapped = htmlAttributeNames.get(name);
+  if (mapped === undefined) {
+    mapped = UNSAFE_ATTRIBUTE_NAME.test(name) ? '' : propertyToAttribute(name);
+    if (htmlAttributeNames.size < 1024) htmlAttributeNames.set(name, mapped);
+  }
+  return mapped;
 }
 
 /**
@@ -77,7 +104,7 @@ function serializeAttribute(name: string, value: unknown): string {
  * to decide whether tagName needs lowercasing) so this doesn't repeat the
  * same `Array.isArray` discriminator check per element.
  */
-function serializeAttributes(element: Element, isPolyfill: boolean, textarea: boolean): string {
+function serializeAttributes(element: Element, isPolyfill: boolean, valueIsContent: boolean): string {
   let result = '';
 
   // Handle polyfill elements. NucloElement keeps every child in a plain Array
@@ -125,8 +152,10 @@ function serializeAttributes(element: Element, isPolyfill: boolean, textarea: bo
       const svg = el.namespaceURI === SVG_NAMESPACE;
       for (const [name, value] of attrs) {
         // Rendered as the element's content, not as attributes — see serializeNode().
-        if (name === 'innerHTML' || (textarea && name === 'value')) continue;
-        result += serializeAttribute(svg ? name : propertyToAttribute(name), value);
+        if (name === 'innerHTML' || (valueIsContent && name === 'value')) continue;
+        const attribute = htmlAttributeName(name);
+        if (attribute === '') continue;
+        result += serializeAttribute(svg ? name : attribute, value);
       }
     }
     return result;
@@ -154,7 +183,11 @@ function serializeAttributes(element: Element, isPolyfill: boolean, textarea: bo
 const TAG_VOID = 1;
 const TAG_RAW_TEXT = 2;
 const TAG_RCDATA = 3;
-const TAG_CATEGORY: Record<string, 1 | 2 | 3> = Object.assign(Object.create(null), {
+const TAG_SELECT = 4;
+const TAG_OPTION = 5;
+const TAG_OPTGROUP = 6;
+type TagCategory = 1 | 2 | 3 | 4 | 5 | 6;
+const TAG_CATEGORY: Record<string, TagCategory> = Object.assign(Object.create(null), {
   // Self-closing HTML tags that don't have closing tags
   area: TAG_VOID, base: TAG_VOID, br: TAG_VOID, col: TAG_VOID, embed: TAG_VOID,
   hr: TAG_VOID, img: TAG_VOID, input: TAG_VOID, link: TAG_VOID, meta: TAG_VOID,
@@ -169,6 +202,8 @@ const TAG_CATEGORY: Record<string, 1 | 2 | 3> = Object.assign(Object.create(null
   // parsed, so a `<!-- text-N -->` marker would show up literally (in the
   // page title, in a textarea's value). Text only, escaped.
   title: TAG_RCDATA, textarea: TAG_RCDATA,
+  // A select's `{ value }` is rendered as its matching option's `selected`.
+  select: TAG_SELECT, option: TAG_OPTION, optgroup: TAG_OPTGROUP,
 });
 
 // One precompiled pattern per raw-text tag. Sharing a /g RegExp across calls
@@ -184,15 +219,70 @@ function escapeRawText(tagName: string, text: string): string {
 /**
  * Serializes a DOM node to HTML string
  */
-function serializeNode(node: Node): string {
+/**
+ * SSR on a real DOM (jsdom, happy-dom): a form control keeps what it shows in
+ * properties — `input({ checked })`, `input({ value })` and a select's
+ * selected option never become attributes there, so the markup would render
+ * an unchecked box, an empty field and the first option. Emit the attributes
+ * that make the parsed page show the same state. (The polyfill stores these
+ * as attributes already.)
+ */
+function formStateAttributes(element: Element): string {
+  if ((element as HTMLOptionElement).selected !== undefined && element.localName === 'option') {
+    const option = element as HTMLOptionElement;
+    if (!option.selected || option.hasAttribute('selected')) return '';
+    // The first option of a single-choice select is selected by default.
+    // (Parent walk rather than closest(): jsdom caches selector matches on
+    // the document, which would keep the serialized tree alive.)
+    let owner = option.parentNode;
+    if (owner && owner.nodeName === 'OPTGROUP') owner = owner.parentNode;
+    const select = owner && owner.nodeName === 'SELECT' ? owner as HTMLSelectElement : null;
+    return select && !select.multiple && select.options[0] === option ? '' : ' selected';
+  }
+  const input = element as HTMLInputElement;
+  let result = '';
+  if (input.checked === true && !input.hasAttribute('checked')) result += ' checked';
+  const value = input.value;
+  if (typeof value === 'string' && value !== '' && !input.hasAttribute('value')) {
+    // An unset checkbox/radio reports the default value "on".
+    const toggle = input.type === 'checkbox' || input.type === 'radio';
+    if (!(toggle && value === 'on') && input.type !== 'file') result += serializeAttribute('value', value);
+  }
+  return result;
+}
+
+/** Concatenated data of an element's direct text children. */
+function textOf(element: Element): string {
+  const children = (element as unknown as PolyfillElementShape).children;
+  let text = '';
+  if (children) {
+    for (let i = 0; i < children.length; i++) {
+      if (children[i].nodeType === 3) text += children[i].textContent || '';
+    }
+  }
+  return text;
+}
+
+/**
+ * `selectValue` is the `{ value }` of the enclosing <select> (polyfill trees
+ * only): HTML has no value attribute for a select — the matching <option> is
+ * marked `selected` instead.
+ */
+function serializeNode(node: Node, selectValue?: string): string {
   // Text node — only & < > need escaping; quotes are safe in text content
   if (node.nodeType === 3) { // Node.TEXT_NODE
     return escapeText(node.textContent || '');
   }
 
-  // Comment node
+  // Comment node. nuclo's own markers (flagged by the polyfill) are emitted
+  // as they are. In a comment the app supplied, "-->" (or a leading ">") would
+  // end it early and expose the rest as markup, so ">" is written as an
+  // entity — comments do not decode entities.
   if (node.nodeType === 8) { // Node.COMMENT_NODE
-    return `<!--${node.textContent || ''}-->`;
+    const data = node.textContent || '';
+    return (node as { marker?: boolean }).marker === true || !data.includes('>')
+      ? `<!--${data}-->`
+      : `<!--${data.replace(/>/g, '&gt;')}-->`;
   }
 
   // Element node
@@ -207,11 +297,26 @@ function serializeNode(node: Node): string {
     // NucloElement` shortcut only ever hit in-repo — the published nuclo/ssr
     // and nuclo/polyfill bundles hold different copies of the class.
     const tagName = element.tagName.toLowerCase();
-    let category: 1 | 2 | 3 | undefined = TAG_CATEGORY[tagName];
+    let category: TagCategory | undefined = TAG_CATEGORY[tagName];
     // <title> inside <svg> is an ordinary element — only HTML's is RCDATA.
     if (category === TAG_RCDATA && element.namespaceURI === SVG_NAMESPACE) category = undefined;
     const textarea = category === TAG_RCDATA && tagName === 'textarea';
-    const attributes = serializeAttributes(element, isPolyfillShape, textarea);
+    const polyfillAttrs = isPolyfillShape ? (element as unknown as PolyfillElementShape)._attributes : undefined;
+    let attributes = serializeAttributes(element, isPolyfillShape, textarea || category === TAG_SELECT);
+    if (category === TAG_SELECT) {
+      const value = polyfillAttrs?.get('value');
+      selectValue = value == null ? undefined : String(value);
+    } else if (selectValue !== undefined) {
+      if (category === TAG_OPTION) {
+        // An option's value defaults to its text.
+        const own = polyfillAttrs?.get('value') ?? textOf(element);
+        if (String(own) === selectValue && !polyfillAttrs?.has('selected')) attributes += ' selected';
+      }
+      if (category !== TAG_OPTGROUP) selectValue = undefined;
+    }
+    if (!isPolyfillShape && (category === TAG_OPTION || tagName === 'input')) {
+      attributes += formStateAttributes(element);
+    }
 
     // Self-closing tags
     if (category === TAG_VOID) {
@@ -255,15 +360,13 @@ function serializeNode(node: Node): string {
     // Regular elements with children. `{ innerHTML }` is a property on a real
     // element (its parsed children are serialized below); the polyfill stores
     // it as an attribute, emitted here verbatim like the browser would parse it.
-    const innerHTML = isPolyfillShape
-      ? (element as unknown as PolyfillElementShape)._attributes?.get('innerHTML')
-      : undefined;
+    const innerHTML = polyfillAttrs?.get('innerHTML');
     let childrenHtml = innerHTML === undefined ? '' : String(innerHTML);
     if (childNodes && childNodes.length > 0) {
       for (let i = 0; i < childNodes.length; i++) {
         const child = childNodes[i];
         if (child) {
-          childrenHtml += serializeNode(child);
+          childrenHtml += serializeNode(child, selectValue);
         }
       }
     } else if (innerHTML === undefined) {
@@ -369,7 +472,7 @@ export function renderToStringWithContainer(
 ): string {
   const content = renderToString(input);
   const attrs = Object.entries(containerAttrs)
-    .map(([key, value]) => serializeAttribute(key, value))
+    .map(([key, value]) => (key === '' || UNSAFE_ATTRIBUTE_NAME.test(key) ? '' : serializeAttribute(key, value)))
     .join('');
 
   return `<${containerTag}${attrs}>${content}</${containerTag}>`;
