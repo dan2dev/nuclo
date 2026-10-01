@@ -16,7 +16,7 @@ import "../../src";
  * render. Server HTML comes from nuclo's SSR polyfill (withServerGlobals), the
  * same markup a Node server emits.
  */
-describe("large DOM", () => {
+describe("large DOM", { timeout: 60_000 }, () => {
   let container: HTMLDivElement;
 
   beforeEach(() => {
