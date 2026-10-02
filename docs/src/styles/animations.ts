@@ -9,6 +9,10 @@ export const animations = {
     "from": { raw: {"opacity": "0", "transform": "translateY(18px)"} },
     "to": { raw: {"opacity": "1", "transform": "translateY(0)"} },
   }),
+  heroIn: keyframes({
+    "from": { raw: {"opacity": "0", "transform": "translateY(22px)"} },
+    "to": { raw: {"opacity": "1", "transform": "translateY(0)"} },
+  }),
   caretBlink: keyframes({
     "0%, 49%": { raw: {"opacity": "1"} },
     "50%, 100%": { raw: {"opacity": "0"} },
