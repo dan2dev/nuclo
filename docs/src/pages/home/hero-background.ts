@@ -24,10 +24,10 @@ const MAX_WAVES = 4;
 
 type DrawParams = {
   time: number; // seconds
-  // MAX_WAVES × vec4, packed as [originX, originY, elapsedSeconds, sign].
+  // (MAX_WAVES + 1) × vec4, packed as [originX, originY, elapsedSeconds, sign].
   // sign is 0 while the slot is inactive, +1 for an outward blast, -1 for an
-  // inward implosion. Shared verbatim with the GL uniform array, so the CPU
-  // packs it once.
+  // inward implosion; the last slot is the intro (sign = INTRO_STRENGTH, see
+  // below). Shared verbatim with the GL uniform array, so the CPU packs it once.
   waves: Float32Array;
 };
 
@@ -36,8 +36,6 @@ interface Renderer {
   draw(params: DrawParams): void;
   dispose(): void;
 }
-
-const activeCanvases = new WeakSet<HTMLCanvasElement>();
 
 // --- Wave model ------------------------------------------------------------
 //
@@ -70,6 +68,20 @@ const WAVE_OMEGA = 5.6; // rad/s — angular frequency (period ≈ 1.12s)
 const WAVE_DAMP = 1.613; // 1/s — envelope decay, ζ ≈ 0.28
 const WAVE_NORM = 1.5091; // normalises the response so its first crest is exactly 1
 const WAVE_LIFETIME = 5.6; // s — travel across the hero diagonal + settle to sub-pixel
+
+// --- Intro -----------------------------------------------------------------
+//
+// When the hero mounts, one big ripple sweeps the field from INTRO_ORIGIN and
+// the dots appear with it: each stays at opacity 0 until the crest reaches
+// it, then fades in over INTRO_REVEAL while riding the crest. It is an
+// ordinary wave in the model above, at INTRO_STRENGTH× a tap's displacement
+// and glow, kept in its own slot (INTRO_SLOT) that taps never claim.
+const INTRO_SLOT = MAX_WAVES;
+const INTRO_STRENGTH = 2.0; // × WAVE_AMPLITUDE (and glow) of a tap
+const INTRO_DELAY = 0.15; // s — lets the page fade-in finish before the crest leaves
+const INTRO_REVEAL = 0.2; // s — per-dot fade-in once the crest arrives (≈ 136px band)
+const INTRO_ORIGIN_X = 0; // fraction of hero width — top-left corner
+const INTRO_ORIGIN_Y = 0; // fraction of hero height
 
 function computeParticleGrid(width: number, height: number): ParticleBase[] {
   const gap = width < 640 ? 38 : 46;
@@ -111,8 +123,9 @@ uniform vec2 uResolution;
 uniform float uTime;
 uniform float uDpr;
 uniform float uMaxPointSize;
-// xy = origin (px), z = seconds since the tap, w = sign (0 inactive, ±1 live)
-uniform vec4 uWaves[${MAX_WAVES}];
+// xy = origin (px), z = seconds since the tap, w = sign (0 inactive, ±1 live);
+// the last slot is the intro (w = INTRO_STRENGTH).
+uniform vec4 uWaves[${MAX_WAVES + 1}];
 
 out float vAlpha;
 
@@ -134,7 +147,8 @@ void main() {
   float sj = sin(jitter);
 
   float energy = 0.0;
-  for (int i = 0; i < ${MAX_WAVES}; i++) {
+  float fade = 1.0;
+  for (int i = 0; i <= ${MAX_WAVES}; i++) {
     vec4 wave = uWaves[i];
     if (abs(wave.w) < 0.5) continue;
 
@@ -142,21 +156,23 @@ void main() {
     float d = length(toParticle);
     // Constant celerity: the crest reaches this dot at t = d / c.
     float tau = wave.z - d / ${f(WAVE_SPEED)};
+    // Intro: the dot stays hidden until its crest arrives.
+    if (i == ${INTRO_SLOT}) fade = smoothstep(0.0, ${f(INTRO_REVEAL)}, tau);
     if (tau <= 0.0) continue; // crest hasn't arrived — dot is still at rest
 
     float resp = ${f(WAVE_NORM)} * exp(-${f(WAVE_DAMP)} * tau) * sin(${f(WAVE_OMEGA)} * tau);
     float amp = ${f(WAVE_AMPLITUDE)} * variance * inversesqrt(1.0 + d / ${f(WAVE_FALLOFF)});
 
     vec2 dir = d > 0.001 ? toParticle / d : vec2(0.0, -1.0);
-    // wave.w (±1) flips an implosion's displacement back toward the origin
-    // instead of away from it.
+    // wave.w flips an implosion's (-1) displacement back toward the origin
+    // instead of away from it, and scales the intro's (INTRO_STRENGTH).
     pos += vec2(dir.x * cj - dir.y * sj, dir.x * sj + dir.y * cj) * (amp * resp * wave.w);
-    energy += abs(resp) * variance;
+    energy += abs(resp) * variance * abs(wave.w);
   }
   energy = min(energy, 1.5);
 
   float shimmer = (sin(uTime * 0.8 + phase) + 1.0) * 0.5;
-  vAlpha = 0.13 + shimmer * 0.11 + energy * 0.38;
+  vAlpha = (0.13 + shimmer * 0.11 + energy * 0.38) * fade;
 
   vec2 clip = (pos / uResolution) * 2.0 - 1.0;
   clip.y = -clip.y;
@@ -368,7 +384,8 @@ function createCanvas2DRenderer(canvas: HTMLCanvasElement): Renderer | null {
         const sj = Math.sin(jitter);
 
         let energy = 0;
-        for (let i = 0; i < MAX_WAVES; i++) {
+        let fade = 1;
+        for (let i = 0; i <= MAX_WAVES; i++) {
           const o = i * 4;
           const sign = waves[o + 3];
           if (Math.abs(sign) < 0.5) continue;
@@ -377,6 +394,10 @@ function createCanvas2DRenderer(canvas: HTMLCanvasElement): Renderer | null {
           const dy = baseY - waves[o + 1];
           const d = Math.hypot(dx, dy);
           const tau = waves[o + 2] - d / WAVE_SPEED;
+          if (i === INTRO_SLOT) {
+            const k = Math.min(Math.max(tau / INTRO_REVEAL, 0), 1);
+            fade = k * k * (3 - 2 * k); // smoothstep
+          }
           if (tau <= 0) continue;
 
           const resp = WAVE_NORM * Math.exp(-WAVE_DAMP * tau) * Math.sin(WAVE_OMEGA * tau);
@@ -386,12 +407,12 @@ function createCanvas2DRenderer(canvas: HTMLCanvasElement): Renderer | null {
           const dirY = d > 0.001 ? dy / d : -1;
           x += (dirX * cj - dirY * sj) * amp * resp * sign;
           y += (dirX * sj + dirY * cj) * amp * resp * sign;
-          energy += Math.abs(resp) * variance;
+          energy += Math.abs(resp) * variance * Math.abs(sign);
         }
         energy = Math.min(energy, 1.5);
 
         const shimmer = (Math.sin(time * 0.8 + phase) + 1) * 0.5;
-        const bucket = Math.round((0.13 + shimmer * 0.11 + energy * 0.38) * ALPHA_STEPS);
+        const bucket = Math.round((0.13 + shimmer * 0.11 + energy * 0.38) * fade * ALPHA_STEPS);
 
         let circlePath = circlePaths.get(bucket);
         if (!circlePath) {
@@ -422,12 +443,13 @@ function createCanvas2DRenderer(canvas: HTMLCanvasElement): Renderer | null {
 // Shared lifecycle: resize/visibility/interaction plumbing, used by either
 // renderer. The only interactions this hero responds to are a click
 // (desktop) or a touch-down (mobile) — both just start a ripple.
+//
+// Wired as the canvas's onMount, so it starts when nuclo inserts the canvas
+// (and the intro plays from that moment), and the returned cleanup runs when
+// nuclo removes it.
 // ---------------------------------------------------------------------------
 
-export function initHeroBackground(canvas: HTMLCanvasElement) {
-  if (activeCanvases.has(canvas)) return;
-  activeCanvases.add(canvas);
-
+export function initHeroBackground(canvas: HTMLCanvasElement): (() => void) | undefined {
   const frame = canvas.parentElement;
   if (!frame) return;
   const heroFrame = frame;
@@ -449,17 +471,29 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
   let inView = true;
   // Live ripples, packed for the GL uniform array (see DrawParams.waves).
   // Slots are claimed round-robin, so a 5th rapid click evicts the oldest.
-  const waves = new Float32Array(MAX_WAVES * 4);
-  const waveStarts = new Float64Array(MAX_WAVES);
+  const waves = new Float32Array((MAX_WAVES + 1) * 4);
+  const waveStarts = new Float64Array(MAX_WAVES + 1);
   let nextWaveSlot = 0;
   // The sign given to the most recently triggered ripple, used to alternate
   // polarity — see triggerWave().
   let lastSign = 1;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const eventController = new AbortController();
+  // The intro (see INTRO_* above) launches on the first animated frame, so a
+  // tab opened in the background doesn't play it unseen.
+  let introPending = !reduceMotion;
 
   function paintOnce(time: number) {
     renderer.draw({ time, waves });
+  }
+
+  function startIntro(now: number) {
+    const offset = INTRO_SLOT * 4;
+    waves[offset] = width * INTRO_ORIGIN_X;
+    waves[offset + 1] = height * INTRO_ORIGIN_Y;
+    waves[offset + 2] = -INTRO_DELAY;
+    waves[offset + 3] = INTRO_STRENGTH;
+    waveStarts[INTRO_SLOT] = now + INTRO_DELAY * 1000;
   }
 
   function hasActiveWave(): boolean {
@@ -491,9 +525,9 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
     waveStarts[slot] = performance.now();
   }
 
-  /** Advances each live ripple's clock, retiring the ones past WAVE_LIFETIME. */
+  /** Advances each live ripple's clock (the intro's too), retiring the ones past WAVE_LIFETIME. */
   function advanceWaves(now: number) {
-    for (let i = 0; i < MAX_WAVES; i++) {
+    for (let i = 0; i <= MAX_WAVES; i++) {
       const offset = i * 4;
       if (Math.abs(waves[offset + 3]) < 0.5) continue;
       const elapsed = (now - waveStarts[i]) / 1000;
@@ -532,7 +566,6 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
   function cleanup() {
     cancelAnimationFrame(animationFrame);
     resizeObserver.disconnect();
-    connectionObserver.disconnect();
     visibilityObserver.disconnect();
     eventController.abort();
     renderer.dispose();
@@ -555,11 +588,6 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
   }
 
   function simulate(now: number) {
-    if (!canvas.isConnected) {
-      cleanup();
-      return;
-    }
-
     if (!inView) {
       // Scrolled out of the viewport: stop scheduling frames entirely.
       // The IntersectionObserver below restarts the loop once it's visible again.
@@ -567,6 +595,10 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
       return;
     }
 
+    if (introPending) {
+      introPending = false;
+      startIntro(now);
+    }
     advanceWaves(now);
     paintOnce(now / 1000);
     animationFrame = requestAnimationFrame(simulate);
@@ -576,18 +608,14 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
     resize();
     if (reduceMotion) paintOnce(0);
   });
-  const connectionObserver = new MutationObserver(() => {
-    if (!canvas.isConnected) cleanup();
-  });
   const visibilityObserver = new IntersectionObserver((entries) => {
     const entry = entries[entries.length - 1];
     inView = entry?.isIntersecting ?? true;
-    if (inView && !reduceMotion && animationFrame === 0 && canvas.isConnected) {
+    if (inView && !reduceMotion && animationFrame === 0) {
       animationFrame = requestAnimationFrame(simulate);
     }
   });
   resizeObserver.observe(heroFrame);
-  connectionObserver.observe(document.body, { childList: true, subtree: true });
   visibilityObserver.observe(heroFrame);
   // Ripple trigger: full click on desktop, immediate touch-down on mobile.
   heroFrame.addEventListener("click", handleClick, { signal: eventController.signal });
@@ -600,8 +628,5 @@ export function initHeroBackground(canvas: HTMLCanvasElement) {
   if (reduceMotion) paintOnce(0);
   else animationFrame = requestAnimationFrame(simulate);
 
-  window.addEventListener("pagehide", cleanup, {
-    once: true,
-    signal: eventController.signal,
-  });
+  return cleanup;
 }

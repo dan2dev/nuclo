@@ -115,13 +115,6 @@ function HeroDemoCard() {
 }
 
 export function HomeHeroSection() {
-  if (typeof window !== "undefined") {
-    requestAnimationFrame(() => {
-      const canvasElement = document.querySelector<HTMLCanvasElement>("[data-hero-background]");
-      if (canvasElement) initHeroBackground(canvasElement);
-    });
-  }
-
   return section(
     hs.heroSection,
     div(
@@ -130,7 +123,9 @@ export function HomeHeroSection() {
         hs.heroFrame,
         canvas(
           hs.heroCanvas,
-          { "data-hero-background": "", "aria-hidden": "true" },
+          // Runs once the canvas is in the document (after hydrate() or the
+          // route's update()); its cleanup runs when nuclo removes the hero.
+          { "aria-hidden": "true", onMount: initHeroBackground },
         ),
         div(
           hs.heroInner,
