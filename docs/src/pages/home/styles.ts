@@ -31,7 +31,8 @@ export const hs = {
 
   heroShell: css("pages-home-styles-heroShell", { width: "calc(100% - 16px)", maxWidth: "1560px", margin: "0 auto", medium: { width: "calc(100% - 28px)" }, large: { width: "calc(100% - 40px)" } }),
 
-  heroFrame: css("pages-home-styles-heroFrame", { position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "24px", backgroundColor: HERO_BG, minHeight: "540px", padding: "28px 22px", medium: { padding: "52px 42px" }, large: { padding: "50px 64px" } }),
+  // Faint 1px scanlines every 4px over the flat orange.
+  heroFrame: css("pages-home-styles-heroFrame", { position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "24px", backgroundColor: HERO_BG, raw: { "background-image": "repeating-linear-gradient(to bottom, transparent 0 3px, rgba(87, 12, 0, 0.08) 3px 4px)" }, minHeight: "540px", padding: "28px 22px", medium: { padding: "52px 42px" }, large: { padding: "50px 64px" } }),
 
   heroInner: css("pages-home-styles-heroInner", { position: "relative", zIndex: 2, display: "grid", width: "100%", maxWidth: "1180px", margin: "0 auto", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.96fr) minmax(420px, 1.04fr)", gap: "76px" } }),
 
