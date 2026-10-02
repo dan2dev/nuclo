@@ -17,7 +17,6 @@ import { copyText } from "../../components/clipboard.ts";
 import { withCode } from "../../components/inline-code.ts";
 import { GitHubSvg, CheckIcon, MinusIcon, CopyIcon } from "../../components/icons.ts";
 import { setRoute } from "../../router.ts";
-import { initHeroBackground } from "./hero-background.ts";
 
 function DemoDot(color: string) {
   return div(
@@ -121,12 +120,6 @@ export function HomeHeroSection() {
       hs.heroShell,
       div(
         hs.heroFrame,
-        canvas(
-          hs.heroCanvas,
-          // Runs once the canvas is in the document (after hydrate() or the
-          // route's update()); its cleanup runs when nuclo removes the hero.
-          { "aria-hidden": "true", onMount: initHeroBackground },
-        ),
         div(
           hs.heroInner,
           // Left: copy

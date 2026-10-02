@@ -1,10 +1,9 @@
 import { css, colors } from "../../styles.ts";
 
-// Deep enough that white hero text passes AA; shared with hero-background.ts.
+// Deep enough that white hero text passes AA.
 export const HERO_BG = "#d43c0c";
 
 export const hs = {
-  heroCanvas: css("pages-home-styles-heroCanvas", { position: "absolute", inset: "0", width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }),
   paneHidden: css("pages-home-styles-paneHidden", { display: "none" }),
   preWrap: css("pages-home-styles-preWrap", { margin: "0", whiteSpace: "pre-wrap" }),
   demoTabBtnActive: css("pages-home-styles-demoTabBtnActive", { color: colors.primary, borderBottom: `2px solid ${colors.primary}` }),

@@ -32,7 +32,7 @@ export function registerGlobalStyles() {
   globalStyle("html[data-anim] .rv-in.rv-d3", { raw: {"animation-delay": "0.24s"} });
   globalStyle("html[data-anim] .rv-in.rv-d4", { raw: {"animation-delay": "0.32s"} });
   // Hero entrance: each block (each title line on its own) fades and rises
-  // in, staggered top-left to bottom-right to follow the dot wave. Pure CSS,
+  // in, staggered top-left to bottom-right. Pure CSS,
   // so it plays from the SSR paint with no flash at hydrate; `backwards`
   // leaves no transform behind once it ends.
   [".he-1", ".he-2 > div:nth-child(1)", ".he-2 > div:nth-child(2)", ".he-2 > div:nth-child(3)", ".he-7", ".he-3", ".he-4", ".he-5", ".he-6"].forEach((selector, i) =>
