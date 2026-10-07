@@ -55,7 +55,12 @@ export const s = {
 };
 
 // A titled panel: heading + description + a body node (usually a grid of cards).
-export function feature(title: string, description: string, content: NodeModLike<"div">) {
+//
+// The body is typed for the *host* tag (`section`), not `div`: a built element
+// from any builder carries nuclo's any-parent marker and so is assignable,
+// while `NodeModLike<"div">` would also admit div-only attribute objects that
+// `section()` cannot take.
+export function feature(title: string, description: string, content: NodeModLike<"section">) {
   return section(s.sectionBox, h2(s.sectionTitle, title), p(s.sectionDesc, description), content);
 }
 
