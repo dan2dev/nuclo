@@ -379,12 +379,6 @@ export type ClassInput = StyleResult | string | false | null | undefined | reado
 /** A themed styling instance returned by createCss(). */
 export interface CssInstance<T extends ThemeConfig = ThemeConfig> {
 	/**
-	 * Compile a style object into CSS classes — one per selector context
-	 * (base, each pseudo-selector, each media query) it touches.
-	 * Returns `{ className }` — usable directly as a nuclo attributes object.
-	 */
-	css(style: Style<T>): StyleResult;
-	/**
 	 * Compile a style object under a readable, stable class name:
 	 * `css("app-root", { minHeight: "100vh" })` → `.app-root`.
 	 * The base context takes the name verbatim; the style's other contexts
@@ -392,6 +386,16 @@ export interface CssInstance<T extends ThemeConfig = ThemeConfig> {
 	 * as well as content, so they never share a class with an unrelated style.
 	 */
 	css(name: string, style: Style<T>): StyleResult;
+	/**
+	 * Compile a style object into CSS classes — one per selector context
+	 * (base, each pseudo-selector, each media query) it touches.
+	 * Returns `{ className }` — usable directly as a nuclo attributes object.
+	 *
+	 * Declared after the named form so `Parameters<typeof css>[0]` is the style
+	 * object — `Parameters` resolves against the last overload, which makes the
+	 * declaration order part of the public API.
+	 */
+	css(style: Style<T>): StyleResult;
 	/**
 	 * Compose class lists with exact conflict resolution: when two inputs
 	 * style the same (query, selector, property), the last one wins.

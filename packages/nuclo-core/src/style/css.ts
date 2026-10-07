@@ -165,10 +165,44 @@ function toQuery(screen: string): string {
 	return screen.charCodeAt(0) === 64 /* @ */ ? screen : "@media " + screen;
 }
 
+/**
+ * True for an @media prelude that is a bare condition list ("(min-width: 40em)
+ * and (hover)") rather than one led by a media type ("print", "only screen").
+ * Only a bare list can sit on the right of an `and`: per the media-query
+ * grammar a type (and the `only` keyword) must lead the whole query, so
+ * "(min-width: 768px) and print" is not a valid query — every browser
+ * normalizes it to `not all` and the block silently never matches.
+ */
+function isBareCondition(condition: string): boolean {
+	return condition.charCodeAt(0) === 40 /* ( */;
+}
+
+/** A leading `not` negates the whole query, so it can never be flattened with `and`. */
+function leadsWithNot(condition: string): boolean {
+	if (!condition.startsWith("not")) return false;
+	const after = condition.charCodeAt(3);
+	return Number.isNaN(after) || after === 32 /* space */ || after === 40 /* ( */;
+}
+
 function combineQuery(outer: string | undefined, inner: string): string {
 	// Nested @media conditions combine with "and"; other combinations: inner wins.
 	if (outer !== undefined && outer.startsWith("@media") && inner.startsWith("@media")) {
-		return outer + " and" + inner.slice(6);
+		const outerCondition = outer.slice(6).trim();
+		const innerCondition = inner.slice(6).trim();
+		// Put the media-type side first — the only arrangement the grammar allows.
+		if (!leadsWithNot(outerCondition) && !leadsWithNot(innerCondition)) {
+			if (isBareCondition(innerCondition)) return "@media " + outerCondition + " and " + innerCondition;
+			if (isBareCondition(outerCondition)) return "@media " + innerCondition + " and " + outerCondition;
+		}
+		// Two media types, or a `not` on either side: no single flat prelude means
+		// what was authored, and the engine emits one group per query rather than
+		// nested groups. Drop the outer condition (as for any other nested at-rule)
+		// instead of emitting a prelude that silently matches nothing.
+		console.warn(
+			`[nuclo] cannot combine nested media queries ${JSON.stringify(outer)} and ${JSON.stringify(inner)}; ` +
+				"using the inner query alone. Author one query that states both conditions.",
+		);
+		return inner;
 	}
 	return inner;
 }
@@ -430,8 +464,8 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 	 * against identical anonymous blocks. Name the styles you want to find in
 	 * devtools; leave the rest anonymous to keep the sheet small.
 	 */
-	function css(style: Style<T>): StyleResult;
 	function css(name: string, style: Style<T>): StyleResult;
+	function css(style: Style<T>): StyleResult;
 	function css(nameOrStyle: string | Style<T>, maybeStyle?: Style<T>): StyleResult {
 		const named = typeof nameOrStyle === "string";
 		const style = (named ? maybeStyle : nameOrStyle) as Style<T>;
@@ -602,8 +636,8 @@ function getDefaultInstance(): CssInstance<object> {
 
 /** Themeless css() — full property/variant typing, no tokens or screens. */
 export const css: {
-	(style: Style<object>): StyleResult;
 	(name: string, style: Style<object>): StyleResult;
+	(style: Style<object>): StyleResult;
 } = (nameOrStyle: string | Style<object>, style?: Style<object>): StyleResult =>
 	typeof nameOrStyle === "string"
 		? getDefaultInstance().css(nameOrStyle, style as Style<object>)

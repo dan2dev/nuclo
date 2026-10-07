@@ -28,6 +28,25 @@ css({
   paddng: 16,
 });
 
+// `Parameters<typeof css>[0]` is the style object, not the optional class name:
+// TypeScript resolves `Parameters` against the LAST overload, so the
+// single-argument form has to stay declared last. Typing a shared style
+// fragment this way is the natural idiom, and it silently started producing
+// `string` when the named `css(name, style)` overload was appended.
+const sharedFragment = {
+  rounded: "md",
+  weight: 600,
+  bg: "primary",
+} satisfies Parameters<typeof css>[0];
+
+css({ ...sharedFragment, color: "#fff" });
+
+// Both call forms still resolve after the declaration swap.
+const anonymous: StyleResult = css({ p: 8 });
+const named: StyleResult = css("app-root", { p: 8 });
+void anonymous;
+void named;
+
 css({
   // @ts-expect-error unknown variant key should not be accepted
   desktop: { bg: "green" },

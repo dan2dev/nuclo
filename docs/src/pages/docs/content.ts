@@ -1014,7 +1014,7 @@ const menu = css({
 `)}
       <ul>
         <li>The key must start with <code>&amp;</code>. A key such as <code>".dark &amp;"</code> is ignored, so write <code>"&amp;:is(.dark *)"</code>.</li>
-        <li>Two nested <code>@media</code> blocks combine with <code>and</code>. Any other nested at-rule replaces the outer one.</li>
+        <li>Two nested <code>@media</code> blocks combine with <code>and</code>. A query led by a media type (<code>print</code>, <code>only screen</code>) is placed first, because the grammar allows a type only at the start. A pair that cannot be flattened — two media types, or a leading <code>not</code> — warns and uses the inner query alone. Any other nested at-rule replaces the outer one.</li>
       </ul>
       <h3><code>raw</code></h3>
       <p>Use <code>raw</code> for any property, with the name written exactly as in CSS. Numbers still get <code>px</code>, so pass strings:</p>

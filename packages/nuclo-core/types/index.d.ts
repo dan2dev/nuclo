@@ -73,8 +73,10 @@ export function on<K extends string, E extends Event = Event, TTagName extends E
 
 // Styling (themeless default instance + themed factory)
 export function createCss<const T extends ThemeConfig>(theme?: T): CssInstance<T>;
-export function css(style: Style<object>): StyleResult;
+// The single-argument form is declared last so `Parameters<typeof css>[0]` is
+// the style object: `Parameters` resolves against the final overload.
 export function css(name: string, style: Style<object>): StyleResult;
+export function css(style: Style<object>): StyleResult;
 export function cx(...inputs: ClassInput[]): StyleResult;
 export function variants<const V extends VariantDefinitions<object>>(
   config: VariantsConfig<object, V>,

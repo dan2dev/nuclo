@@ -60,10 +60,14 @@ declare global {
 	 */
 	function createCss<const T extends ThemeConfig>(theme?: T): CssInstance<T>;
 
-	/** Themeless css() — full property/variant typing, no tokens or screens. */
-	function css(style: Style<object>): StyleResult;
 	/** Themeless css() under a readable, stable class name: `css("app-root", { … })` → `.app-root`. */
 	function css(name: string, style: Style<object>): StyleResult;
+	/**
+	 * Themeless css() — full property/variant typing, no tokens or screens.
+	 * Declared last so `Parameters<typeof css>[0]` is the style object:
+	 * `Parameters` resolves against the final overload.
+	 */
+	function css(style: Style<object>): StyleResult;
 	/** Compose class lists with last-wins conflict resolution. */
 	function cx(...inputs: ClassInput[]): StyleResult;
 	/** Themeless variants() recipe helper. */

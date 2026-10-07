@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createCss, css as defaultCss, getCssText, resetStyles } from '../../src/style';
 
 beforeEach(() => {
@@ -181,6 +181,65 @@ describe('css() — variants', () => {
 		});
 		css({ md: { dark: { color: 'white' } } });
 		expect(getCssText()).toContain('@media (min-width: 768px) and (prefers-color-scheme: dark){');
+	});
+
+	// A media type ("print") or the `only` keyword must lead the whole query, so
+	// "(min-width: 768px) and print" is not a valid media query: Chromium, WebKit
+	// and Firefox all normalize it to `not all` and the block never matches. The
+	// type-led side has to come first regardless of which way round it was nested.
+	it('puts the media-type side first when combining nested media queries', () => {
+		const { css } = createCss({ screens: { md: '(min-width: 768px)', print: 'print' } });
+		css({ md: { print: { display: 'none' } } });
+		const text = getCssText();
+		expect(text).toContain('@media print and (min-width: 768px){');
+		expect(text).not.toContain('and print');
+	});
+
+	it('combines an inline @media with a media type the same way', () => {
+		const { css } = createCss({ screens: { md: '(min-width: 768px)' } });
+		css({ md: { '@media print': { display: 'none' } } } as Parameters<typeof css>[0]);
+		expect(getCssText()).toContain('@media print and (min-width: 768px){');
+	});
+
+	it('keeps a type-led outer query leading', () => {
+		const { css } = createCss({ screens: { md: '(min-width: 768px)', print: 'print' } });
+		css({ print: { md: { display: 'none' } } });
+		expect(getCssText()).toContain('@media print and (min-width: 768px){');
+	});
+
+	it('combines an "only"-prefixed query with a bare condition', () => {
+		const { css } = createCss({ screens: { md: '(min-width: 768px)' } });
+		css({ md: { '@media only screen and (min-width: 900px)': { color: 'red' } } } as Parameters<typeof css>[0]);
+		expect(getCssText()).toContain('@media only screen and (min-width: 900px) and (min-width: 768px){');
+	});
+
+	it('warns and falls back to the inner query when the two cannot be flattened', () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		try {
+			const { css } = createCss({ screens: { md: '(min-width: 768px)' } });
+			// A leading `not` negates the whole query, so `and`-joining either way
+			// changes what was authored.
+			css({ md: { '@media not all and (monochrome)': { color: 'red' } } } as Parameters<typeof css>[0]);
+			const text = getCssText();
+			expect(text).toContain('@media not all and (monochrome){');
+			expect(text).not.toContain('(min-width: 768px) and');
+			expect(warn).toHaveBeenCalledTimes(1);
+			expect(warn.mock.calls[0][0]).toContain('cannot combine nested media queries');
+		} finally {
+			warn.mockRestore();
+		}
+	});
+
+	it('warns when both nested queries lead with a media type', () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		try {
+			const { css } = createCss({ screens: { print: 'print', tv: 'screen' } });
+			css({ print: { tv: { color: 'red' } } });
+			expect(getCssText()).toContain('@media screen{');
+			expect(warn).toHaveBeenCalledTimes(1);
+		} finally {
+			warn.mockRestore();
+		}
 	});
 
 	it('supports arbitrary & selectors', () => {
