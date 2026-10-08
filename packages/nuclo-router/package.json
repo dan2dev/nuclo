@@ -2,7 +2,7 @@
 	"name": "nuclo-router",
 	"private": false,
 	"version": "0.1.0",
-	"description": "Routing for nuclo \u2014 SSR, hydration, code-split routes and idle preloading, built on list() and update().",
+	"description": "Routing for nuclo — SSR, hydration, code-split routes and idle preloading, built on list() and update().",
 	"license": "MIT",
 	"author": "Danilo Celestino de Castro (https://github.com/dan2dev)",
 	"keywords": [
@@ -46,9 +46,9 @@
 		"nuclo": ">=0.3.0"
 	},
 	"devDependencies": {
-		"@types/node": "^26.6.3",
+		"@types/node": "^26.6.4",
 		"@vitest/coverage-v8": "5.0.3",
-		"jsdom": "^30.1.1",
+		"jsdom": "^30.1.2",
 		"nuclo": "workspace:*",
 		"tsdown": "^0.23.0",
 		"typescript": "^7.0.2",
