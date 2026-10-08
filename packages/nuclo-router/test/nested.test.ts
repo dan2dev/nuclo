@@ -62,7 +62,7 @@ describe("a parent is not destroyed by its children", () => {
     builds = {};
     const route = await start(createRouter(table(), { preload: false }), "/docs");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const shell = container.querySelector("#docs")!;
     const field = container.querySelector<HTMLInputElement>("#docs-field")!;
@@ -86,7 +86,7 @@ describe("a parent is not destroyed by its children", () => {
     builds = {};
     const route = await start(createRouter(table(), { preload: false }), "/docs/intro");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
     const shell = container.querySelector("#docs")!;
 
     await route.go("/docs/hydration");
@@ -100,7 +100,7 @@ describe("a parent is not destroyed by its children", () => {
     builds = {};
     const route = await start(createRouter(table(), { preload: false }), "/docs/intro");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     expect(container.querySelector("#docs-outlet > #intro")).not.toBeNull();
     // The static child wins over the sibling ":topic", nesting or not.
@@ -120,7 +120,7 @@ describe("a parent is not destroyed by its children", () => {
     );
     const route = await start(router, "/a/x");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
     const first = container.querySelector("#a")!;
 
     await route.go("/b/x");
@@ -134,7 +134,7 @@ describe("a parent is not destroyed by its children", () => {
     builds = {};
     const route = await start(createRouter(table(), { preload: false }), "/docs/one");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
     const shell = container.querySelector("#docs")!;
 
     await route.go("/docs/two");
@@ -148,7 +148,7 @@ describe("a parent is not destroyed by its children", () => {
     builds = {};
     const route = await start(createRouter(table(), { preload: false }), "/docs/intro");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     await route.go("/docs");
     expect(container.querySelector("#intro")).toBeNull();
@@ -170,7 +170,7 @@ describe("a parent is not destroyed by its children", () => {
     );
     const route = await start(router, "/a/b/c");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     expect(container.querySelector("#a-outlet > #b")).not.toBeNull();
     expect(container.querySelector("#b-outlet > #c")).not.toBeNull();
@@ -196,7 +196,7 @@ describe("a parent is not destroyed by its children", () => {
       { preload: false },
     );
     const route = await start(router, "/u/7/posts/42");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     expect(seen).toEqual([
       { pattern: "/u/:id", path: "/u/7", id: "7" },
@@ -212,7 +212,7 @@ describe("a parent is not destroyed by its children", () => {
     builds = {};
     const route = await start(createRouter(table(), { preload: false }), "/docs");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
     const shell = container.querySelector("#docs")!;
 
     const anchor = document.createElement("a");
@@ -254,7 +254,7 @@ describe("loaders and nesting", () => {
     );
     const route = await start(router, "/shop/a");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
     expect(parentLoads).toBe(1);
     expect(childLoads).toBe(1);
 
@@ -280,7 +280,7 @@ describe("loaders and nesting", () => {
       },
     });
     const route = await start(router, "/a/b");
-    render(route.view(), mount());
+    render(route.pages(), mount());
     expect(order.sort()).toEqual(["a", "b"]);
     void route;
   });
@@ -295,7 +295,7 @@ describe("outlets", () => {
       { preload: false },
     );
     const route = await start(router, "/p/c");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0][0]).toMatch(/never called its outlet/);
@@ -305,7 +305,7 @@ describe("outlets", () => {
   it("does not warn for a leaf, or for a parent showing its own page", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const route = await start(createRouter(table(), { preload: false }), "/docs");
-    render(route.view(), mount());
+    render(route.pages(), mount());
     expect(warn).not.toHaveBeenCalled();
     void route;
   });
@@ -313,7 +313,7 @@ describe("outlets", () => {
 
 describe("SSR and hydration", () => {
   it("renders the whole chain on the server and claims it on the client", async () => {
-    const App = (route: Route) => () => div({ id: "app" }, route.view());
+    const App = (route: Route) => () => div({ id: "app" }, route.pages());
 
     const server = await start(createRouter(table(), { preload: false }), "/docs/intro");
     const html = renderToString(App(server));
@@ -353,7 +353,7 @@ describe("layers and nesting", () => {
     );
     const route = await start(router, "/docs");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
     const shell = container.querySelector("#docs")!;
 
     const pending = route.push("./modal");

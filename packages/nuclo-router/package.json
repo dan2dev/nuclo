@@ -15,6 +15,7 @@
 		"typescript"
 	],
 	"type": "module",
+	"sideEffects": false,
 	"main": "./dist/nuclo-router.cjs",
 	"module": "./dist/nuclo-router.mjs",
 	"types": "./dist/nuclo-router.d.mts",

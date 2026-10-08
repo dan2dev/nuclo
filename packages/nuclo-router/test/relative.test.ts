@@ -234,7 +234,7 @@ describe("relative navigation", () => {
       { preload: false },
     );
     const route = await start(router, "/invoices/42");
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const pending = route.push("./preview");
     await flush();
@@ -272,7 +272,7 @@ describe("relative navigation", () => {
     };
     const router = createRouter({ "/": () => P("home"), "/modal": () => Modal }, { preload: false });
     const route = await start(router, "/");
-    render(route.view(), mountEl());
+    render(route.pages(), mountEl());
 
     const pushed = route.push("/modal");
     await flush();

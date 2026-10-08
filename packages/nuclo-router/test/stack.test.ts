@@ -50,7 +50,7 @@ describe("push()", () => {
   it("opens a layer without rebuilding the page underneath", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const baseNode = container.children[0];
     const field = baseNode.children[0] as HTMLInputElement;
@@ -75,7 +75,7 @@ describe("push()", () => {
 
   it("resolves with whatever the layer closes with", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     const pending = route.push<{ id: number }>("/modal");
     await flush();
@@ -88,7 +88,7 @@ describe("push()", () => {
 
   it("resolves with undefined when the layer is dismissed", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     const pending = route.push("/modal");
     await flush();
@@ -101,7 +101,7 @@ describe("push()", () => {
 
   it("puts the layer's URL in the address bar and reports it on the Route", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    render(route.view(), mount());
+    render(route.pages(), mount());
     const pending = route.push("/modal?q=1");
     await flush();
 
@@ -119,7 +119,7 @@ describe("push()", () => {
   it("stacks several layers, each with its own depth", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const first = route.push("/modal");
     await flush();
@@ -142,7 +142,7 @@ describe("push()", () => {
 
   it("closing a middle layer closes everything above it", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     const first = route.push("/modal");
     await flush();
@@ -164,7 +164,7 @@ describe("push()", () => {
     const router = createRouter({ "/": () => Base, "/modal": () => gate.promise }, { preload: false });
     const route = await start(router, "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const pending = route.push("/modal");
     await flush();
@@ -188,7 +188,7 @@ describe("history", () => {
   it("Back closes the top layer and resolves it as dismissed", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const pending = route.push("/modal");
     await flush();
@@ -205,7 +205,7 @@ describe("history", () => {
   it("an ordinary navigation replaces the stack and dismisses open layers", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const pending = route.push("/modal");
     await flush();
@@ -223,7 +223,7 @@ describe("history", () => {
   it("a popstate that lands on the row already showing keeps it, and does not scroll", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
     const baseNode = container.children[0];
     (window.scrollTo as unknown as ReturnType<typeof vi.fn>).mockClear();
 
@@ -283,7 +283,7 @@ describe("failures", () => {
       { preload: false },
     );
     const route = await start(router, "/");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     expect(baseLayer!.depth).toBe(0);
     expect(() => baseLayer!.close("ignored")).not.toThrow();
@@ -293,7 +293,7 @@ describe("failures", () => {
 
   it("stop() dismisses every open layer so no caller is left awaiting", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     const first = route.push("/modal");
     await flush();
@@ -316,7 +316,7 @@ describe("failures", () => {
     );
     const route = await start(router, "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const pushed = route.push("/modal");
     await flush();
@@ -338,7 +338,7 @@ describe("failures", () => {
     const gate = deferred<{ default: PageComponent }>();
     const router = createRouter({ "/": () => Base, "/modal": () => gate.promise }, { preload: false });
     const route = await start(router, "/");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     const pushed = route.push("/modal");
     await flush();
@@ -354,7 +354,7 @@ describe("failures", () => {
 
   it("a stale Layer handle used after stop() is inert", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     const pushed = route.push("/modal");
     await flush();
@@ -402,7 +402,7 @@ describe("Layer.push()", () => {
     );
     const route = await start(router, "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const outer = route.push("/outer");
     await flush();
@@ -461,7 +461,7 @@ describe("the dropdown scenario", () => {
     const router = createRouter({ "/form": () => Form, "/options/new": () => NewOption }, { preload: false });
     const route = await start(router, "/form");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const formNode = container.children[0];
     const notes = formNode.querySelector("#notes") as HTMLInputElement;

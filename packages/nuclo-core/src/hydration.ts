@@ -173,7 +173,7 @@ export function claimBareText(parent: Node): Text | null {
  */
 export function claimMarkerPair(
   parent: Node,
-  prefix: "list" | "when",
+  prefix: "list" | "when" | "region",
 ): { start: Comment; end: Comment; recreated: boolean } | null {
   skipWhitespaceText(parent);
   const start = peekChild(parent);

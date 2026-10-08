@@ -19,6 +19,9 @@ function cleanupNodeTree(node: Node): void {
     cleanupReactiveElement(element);
   } else if (node.nodeType === Node.TEXT_NODE) {
     cleanupReactiveTextNode(node as Text);
+  } else if (node.nodeType === 8) {
+    // A region's start marker or a view's anchor carries a disposer.
+    disposeElementLifecycle(node);
   }
 
   // Recursively clean up all child nodes
@@ -57,8 +60,8 @@ export function disposeLifecyclesInSubtree(node: Node): void {
   for (let i = 0; i < children.length; i++) {
     disposeLifecyclesInSubtree(children[i]);
   }
-  if (node.nodeType === Node.ELEMENT_NODE) {
-    disposeElementLifecycle(node as Element);
+  if (node.nodeType === Node.ELEMENT_NODE || node.nodeType === 8) {
+    disposeElementLifecycle(node);
   }
 }
 

@@ -1,13 +1,16 @@
 # nuclo-router
 
 Routing for [nuclo](https://nuclo.dev/) — SSR, hydration, code-split routes and
-idle preloading. **2.6 kB gzipped**, no dependencies beyond nuclo itself.
+idle preloading. **5.3 kB gzipped** (4.8 kB brotli), no dependencies beyond nuclo
+itself, and no side effects — it tree-shakes away when unused.
 
-The router owns no DOM of its own. `route.view()` is a `list()` over the layer
-stack — one row per layer, so an ordinary page is a single row — and the server
-and the client build the *same* tree, so `hydrate()` claims the server's nodes
-instead of replacing them. Everything else is `history`, one delegated `click`
-listener, and `requestIdleCallback`.
+The router owns no DOM of its own and decides only *what* to load. The layer
+stack is one `list()` — one row per layer, so an ordinary page is a single row
+— mounted beside the app, and each page says *where* it goes by returning a
+nuclo `view()` into one of the layout's `region()`s. The server and the client
+build the *same* tree, so `hydrate()` claims the server's nodes instead of
+replacing them. Everything else is `history`, one delegated `click` listener,
+and `requestIdleCallback`.
 
 ```bash
 npm install nuclo nuclo-router
@@ -21,8 +24,8 @@ const route  = await router.start();   // the active route — one per page load
 ```
 
 `start()` resolves the matching route's module **before** it returns, so the
-first tree is complete on both the server and the client. `route.view()` is
-where the page renders.
+first tree is complete on both the server and the client. `route.app(App)` is
+the app rendered under the route, with the pages mounted beside it.
 
 ## A whole app
 
@@ -43,10 +46,18 @@ export const App = (route: Route) => () =>
     main(
       when(() => route.pending, Spinner()),
       when(() => route.error !== null, ErrorView()),
-      route.view(),
+      // Where the pages land. Nothing of the router's is in this tree.
+      region({ id: "main" }),
     ),
     footer("© nuclo"),
   );
+```
+
+```ts
+// pages/Post.ts — a page says where it goes
+export default function Post(ctx: RouteContext) {
+  return view("main", article(h1(ctx.params.slug)));
+}
 ```
 
 ```ts
@@ -55,7 +66,7 @@ import "nuclo";
 import { router, App } from "./routes.ts";
 
 const route = await router.start();
-hydrate(App(route), document.getElementById("app")!);
+hydrate(route.app(App), document.getElementById("app")!);
 ```
 
 ```ts
@@ -66,7 +77,7 @@ import { renderToString } from "nuclo/ssr";
 import { router, App } from "./routes.ts";
 
 const route = await router.start(request.url);
-const html = renderToString(App(route));
+const html = renderToString(route.app(App));
 ```
 
 That is the whole integration. Links work because an `<a href>` is just an
@@ -84,6 +95,53 @@ export default function Post(ctx: RouteContext) {
   return article(h1(ctx.params.slug), p(ctx.search.get("preview") ? "draft" : ""));
 }
 ```
+
+## Placing the pages
+
+The router decides only *what* to load; a page decides *where* it goes, with
+a nuclo **view** into one of the layout's **regions**:
+
+```ts
+// Layout.ts — never sees the Route
+export const Layout = () =>
+  div(
+    aside(Filters()),
+    main(region({ id: "main", type: "stack", empty: p("Nothing open.") })),
+  );
+
+// pages/Post.ts
+export default function Post(ctx: RouteContext) {
+  return view("main", article(h1(ctx.params.slug)));
+}
+
+// App.ts — nothing of the router's in here
+export const App = (route: Route) => () => div(Header(route), Layout(), Footer());
+```
+
+`route.app(App)` renders the app with the pages mounted beside it: in the
+browser as comments on the document root — nothing visible — placed before the
+app's own tree is built, so each page's `view()` is already waiting when the
+layout's region arrives and claims the server's nodes on hydration; on the
+server inside that one render, on a host that is never serialized, so the
+HTML carries the page in the region and nothing else of the router's. A page
+may fill several regions at once with `view({ main: …, sidebar: … })`, and a
+parent page can be a view while its children render inside its `outlet()`.
+`region()` and `view()` are nuclo globals, not router API — see the
+[nuclo README](../nuclo-core/README.md#regionoptions-and-viewid-content).
+
+A region shows a pushed layer over the page beneath it: a `"stack"` region
+renders both, a `"simple"` one (the default) renders the layer alone and
+brings the page back, rebuilt, when the layer closes.
+
+To render pages **where they are written** instead, place `route.pages()` in
+the tree — once — and have pages return plain content:
+
+```ts
+div(Header(route), main(route.pages()), Footer());   // with render(App(route), …)
+```
+
+A page that returns a `view()` still lands in its region from there. Use one
+of the two: `route.app()` mounts nothing once `pages()` has been placed.
 
 ## Patterns
 
@@ -303,8 +361,8 @@ page stays on screen while it is. A chunk that fails to load surfaces as
 | `preload` | `true` | Load the remaining routes' modules when the page goes idle. |
 | `onNavigate` | — | `(ctx) => void` after every resolved navigation in the browser, including the initial one. The hook for `document.title`, meta tags and analytics. Never called during SSR. |
 
-Returns `{ start }`. The route table, the compiled matcher and the module cache
-live here, so they are shared across requests on a server.
+Returns `{ start, match }`. The route table, the compiled matcher and the
+module cache live here, so they are shared across requests on a server.
 
 ### `router.start(url?)` → `Promise<Route>`
 
@@ -340,7 +398,8 @@ const owned = router.match(href) !== null;
 | `pending` | a navigation is waiting for its page module |
 | `error` | the last failed load, cleared by the next navigation |
 | `depth` | how many layers are on the stack (1 for an ordinary page) |
-| `view()` | the outlet the layer stack renders into, bottom layer first. **Place it once** — every call renders the whole stack, so a second one duplicates the page (the router warns if you do). |
+| `app(App)` | the app rendered under this route, for `render()`, `hydrate()` and `renderToString()`: the pages are mounted beside it and reach their regions through their own `view()`. Unmounted by `stop()`. |
+| `pages()` | the alternative: the layer stack placed by the app itself, bottom layer first, where pages that return plain content render. **Place it once** — a second live placement duplicates the page (the router warns if it finds two in the document). |
 | `go(href, { replace })` | navigate, loading the module if needed. Never rejects — a module that fails, by rejecting *or* by throwing outright, lands on `error`. |
 | `push(href)` | open a route as a **new layer** on top, resolving with what it closes with. Accepts `./`. Rejects on no-match or a failed module. |
 | `back(delta?)` | go back, as the Back button would. The only way to traverse in `"memory"` mode. Asynchronous. |
@@ -350,8 +409,21 @@ const owned = router.match(href) !== null;
 ### `RouteContext`
 
 A page's **first** argument (of three — the others are its `Layer` and its
-loader `data`): `path`, `pattern`, `params`, `search`, `hash`, `url`. It is the context the page was *built* with — read `route.*` for live
-values (they differ only when the hash changed without a rebuild).
+loader `data`): `path`, `pattern`, `params`, `search`, `hash`, `url`. It is the
+context the page was *built* with — read `route.*` for live values (they differ
+only when the hash changed without a rebuild).
+
+`params` is `{ [name]: string }` by default. A page can type it from its own
+pattern with `Params`, which turns `"/blog/:slug"` into `{ slug: string }` and
+`"/files/*rest"` into `{ rest: string }`:
+
+```ts
+import type { Params, RouteContext } from "nuclo-router";
+
+export default function Post(ctx: RouteContext<Params<"/blog/:slug">>) {
+  return article(h1(ctx.params.slug));   // slug: string — nothing else exists
+}
+```
 
 ### `DataLoader`
 
@@ -371,7 +443,7 @@ A page's **second** argument — where it sits in the stack, and its way out.
 ## The layer stack
 
 `push()` opens a route **on top of** the current one instead of replacing it,
-and resolves with whatever that layer closes with. Because `view()` is a
+and resolves with whatever that layer closes with. Because `pages()` is a
 single `list()` over the stack, opening a layer is an append — the page
 underneath is not re-rendered, so its DOM, its focus and its half-filled form
 are all still there when the layer closes.
@@ -416,11 +488,11 @@ three layers deep.
 
 ## Sub-routers
 
-There is one `view()` and no route nesting, so a sub-router is composition.
+There is one stack and no route nesting, so a sub-router is composition.
 Two shapes, both in [`examples/router`](../../examples/router):
 
 **Nest the feature's table under the parent.** One router, one outlet, and the
-section's chrome in the shell — outside `view()`, which is what makes it
+section's chrome in the shell — outside `pages()`, which is what makes it
 survive navigation within the section:
 
 ```ts
@@ -546,7 +618,7 @@ bun run dev   # in either folder
 ## Tests
 
 ```bash
-bun run test          # typecheck + 261 tests, 100% statements/branches/functions/lines
+bun run test          # typecheck + 309 tests, 100% statements/branches/functions/lines
 ```
 
 MIT © Danilo Celestino de Castro

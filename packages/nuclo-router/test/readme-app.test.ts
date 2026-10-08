@@ -1,6 +1,6 @@
 /**
  * The app shape the README documents, end to end: pending/error when() blocks
- * as siblings of route.view() inside one host, server-rendered then hydrated
+ * as siblings of route.pages() inside one host, server-rendered then hydrated
  * then navigated. Sibling when() blocks share the host's claim cursor with the
  * view's list(), so this is the shape most likely to expose a marker mismatch.
  */
@@ -32,7 +32,7 @@ const App = (route: Route) => () =>
       { id: "outlet" },
       when(() => route.pending, Spinner()),
       when(() => route.error !== null, ErrorView(route)),
-      route.view(),
+      route.pages(),
     ),
     footer({ id: "foot" }, "© nuclo"),
   );

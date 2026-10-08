@@ -15,11 +15,28 @@
  * module variable those would be two unrelated booleans.
  */
 const SERIALIZING_KEY = Symbol.for("nuclo.serializing.v1");
-const globalScope = globalThis as unknown as Record<symbol, { on: boolean } | undefined>;
-const shared = globalScope[SERIALIZING_KEY] ?? (globalScope[SERIALIZING_KEY] = { on: false });
+interface SerializingState { on: boolean; scratch: Map<string, unknown> }
+const globalScope = globalThis as unknown as Record<symbol, SerializingState | undefined>;
+const shared = globalScope[SERIALIZING_KEY]
+  ?? (globalScope[SERIALIZING_KEY] = { on: false, scratch: new Map<string, unknown>() });
 
 export function isSerializing(): boolean {
   return shared.on;
+}
+
+/**
+ * Scratch space for the current renderToString() call, emptied when that call
+ * ends.
+ *
+ * A server renders every request from one process, so any registry a feature
+ * keeps in module scope is shared by every request and every user at once.
+ * Anything a server tree needs to look up mid-build goes here instead: it is
+ * reachable for exactly as long as the tree is being built, and nothing from
+ * one request is reachable from the next. Keys are namespaced by the feature
+ * that owns them.
+ */
+export function serializingScratch(): Map<string, unknown> {
+  return shared.scratch;
 }
 
 /**
@@ -33,5 +50,8 @@ export function runSerializing<T>(fn: () => T): T {
     return fn();
   } finally {
     shared.on = previous;
+    // Only the outermost call clears: a nested renderToString() is still part
+    // of the same request and the tree around it is still being built.
+    if (!shared.on) shared.scratch.clear();
   }
 }

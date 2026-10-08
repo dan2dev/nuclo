@@ -173,7 +173,7 @@ function renderContentItem<TTagName extends ElementTagName>(
   item: WhenContent<TTagName>,
   host: ExpandedElement<TTagName>,
   index: number,
-  endMarker: Comment
+  endMarker: Node
 ): Node | null {
   // Primitives, attribute objects, reactive text and tag-builder factories
   // (which build their element detached) never append to the host themselves:
@@ -194,7 +194,9 @@ function renderContentItem<TTagName extends ElementTagName>(
 }
 
 /**
- * Renders a list of content items before the end marker, in source order.
+ * Renders a list of content items before `endMarker` (any reference node in
+ * the host — a region inserts ahead of its unclaimed server markup), in
+ * source order.
  *
  * Each node is inserted as soon as its item produces it: nested when()/list()
  * blocks insert their own markers while they run, so collecting the element
@@ -205,7 +207,7 @@ export function renderContentItems<TTagName extends ElementTagName>(
   items: ReadonlyArray<WhenContent<TTagName>>,
   host: ExpandedElement<TTagName>,
   index: number,
-  endMarker: Comment
+  endMarker: Node
 ): void {
   for (const item of items) {
     const node = renderContentItem(item, host, index, endMarker);

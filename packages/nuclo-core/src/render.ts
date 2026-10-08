@@ -1,4 +1,5 @@
 import { startHydration, endHydration, peekChild, setCursor, skipWhitespaceText } from "./hydration";
+import { sweepRegions } from "./region";
 import { safeRemoveChild } from "./shared/dom";
 import { flushMountQueue, mountQueueMark, cancelMountsSince } from "./element/lifecycle";
 import { isFunction, isZeroArityFunction } from "./shared/type-guards";
@@ -253,6 +254,9 @@ function hydrateRoot<TTagName extends ElementTagName>(
     throw error;
   } finally {
     endHydration();
+    // After the pass, not during it: only now is it settled which views a
+    // region got, so server markup none of them claimed can be dropped.
+    sweepRegions();
   }
   // Claimed nodes were already connected (they're existing SSR output inside
   // the live `parent`); freshly-built replacement nodes just got attached

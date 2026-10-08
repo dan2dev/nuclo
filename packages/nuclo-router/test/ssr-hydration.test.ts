@@ -27,7 +27,7 @@ const App = (route: Route) => () =>
   div(
     { id: "shell" },
     header({ id: "nav" }, a({ href: route.href("/") }, "home")),
-    main({ id: "outlet" }, route.view()),
+    main({ id: "outlet" }, route.pages()),
     footer({ id: "foot" }, "© nuclo"),
   );
 

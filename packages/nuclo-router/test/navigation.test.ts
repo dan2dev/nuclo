@@ -38,7 +38,7 @@ describe("link clicks", () => {
   it("navigates a plain internal link", async () => {
     const route = await start(basicRouter(), "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     expect(click(link({ href: "/about" }))).toBe(true);
     await flush();
@@ -212,7 +212,7 @@ describe("popstate", () => {
   it("renders the entry the browser went back to", async () => {
     const route = await start(basicRouter(), "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     await route.go("/about");
     expect(route.path).toBe("/about");
@@ -253,7 +253,7 @@ describe("popstate", () => {
     const router = createRouter({ "/": () => Home, "/slow": () => gate.promise });
     const route = await start(router, "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const navigation = route.go("/slow");
     expect(route.pending).toBe(true);
@@ -304,7 +304,7 @@ describe("stop()", () => {
     const router = createRouter({ "/": () => Home, "/about": () => gate.promise });
     const route = await start(router, "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const promise = route.go("/about");
     expect(route.pending).toBe(true);

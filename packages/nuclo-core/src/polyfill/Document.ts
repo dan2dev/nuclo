@@ -1,5 +1,6 @@
 import { NucloElement } from './Element';
 import { NucloText } from './Text';
+import { NucloComment } from './Node';
 
 /**
  * Lightweight DocumentFragment for SSR — prototype methods instead of per-instance closures.
@@ -104,18 +105,7 @@ export class NucloDocument {
    * and only inspects comments the app created itself.
    */
   createComment(data: string, marker?: boolean): Comment {
-    const comment = {
-      nodeType: 8,
-      nodeName: '#comment',
-      data,
-      textContent: data,
-      nodeValue: data,
-      parentNode: null,
-      nextSibling: null,
-      previousSibling: null,
-      marker: marker === true
-    };
-    return comment as unknown as Comment;
+    return new NucloComment(data, marker === true) as unknown as Comment;
   }
   
   createDocumentFragment(): DocumentFragment {

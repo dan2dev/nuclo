@@ -2,7 +2,7 @@
 /**
  * nuclo-router — routing for nuclo, built on list() and update().
  *
- * The router owns no DOM of its own: `route.view()` is a `list()` over the
+ * The router owns no DOM of its own: `route.pages()` is a `list()` over the
  * layer stack — one row per layer, so an ordinary page is a single row and a
  * pushed layer is an appended sibling. That is what makes SSR and hydration
  * work for free: the server and the client build the same tree, so hydrate()
@@ -17,20 +17,30 @@
  * });
  *
  * export const App = (route: Route) =>
- *   div(Header(route), main(route.view()), Footer());
+ *   div(Header(route), main(region({ id: "main" })), Footer());
+ *
+ * // pages/Post.ts — a page says where it goes
+ * export default (ctx) => view("main", article(h1(ctx.params.slug)));
  *
  * // server.ts — one Route per request, no shared mutable state
  * const route = await router.start(req.url);
- * const html = renderToString(App(route));
+ * const html = renderToString(route.app(App));
  *
  * // main.ts — one Route per page load
  * const route = await router.start();
- * hydrate(() => App(route), document.getElementById("app")!);
+ * hydrate(route.app(App), document.getElementById("app")!);
  * ```
  *
  * `start()` resolves the active route's module *before* returning, so the
  * first tree is complete on both sides. Everything after that — link clicks,
  * popstate, idle preloading — is handled by the Route it returned.
+ *
+ * The router decides what to load, not where it goes. `route.app(App)` mounts
+ * the pages beside the app — on the document itself in the browser, on a host
+ * that is never serialized on the server — and each page lands in a region
+ * through its own `view()`. The app tree carries nothing of the router's. For
+ * pages that render where they are written instead, `route.pages()` places
+ * the stack in the tree.
  */
 import { list, update } from "nuclo";
 import {
@@ -64,13 +74,40 @@ const isBrowser = typeof window !== "undefined" && typeof document !== "undefine
  */
 const ORIGIN = isBrowser ? window.location.origin : "http://nuclo.local";
 
+/**
+ * The params a pattern yields, as a type: `Params<"/blog/:slug">` is
+ * `{ readonly slug: string }`, a `"*rest"` catch-all adds `rest`, and the bare
+ * `"*"` route adds `"*"`. A page that wants its params typed names its own
+ * pattern:
+ *
+ * ```ts
+ * export default function Post(ctx: RouteContext<Params<"/blog/:slug">>) {
+ *   return article(h1(ctx.params.slug));   // slug: string, nothing else
+ * }
+ * ```
+ */
+export type Params<TPattern extends string> = Flatten<ParamsOf<TPattern>>;
+
+type ParamsOf<TPattern extends string> = TPattern extends `${infer Head}/${infer Tail}`
+  ? SegmentParam<Head> & ParamsOf<Tail>
+  : SegmentParam<TPattern>;
+
+type SegmentParam<TSegment extends string> = TSegment extends `:${infer Name}`
+  ? { readonly [K in Name]: string }
+  : TSegment extends `*${infer Rest}`
+    ? { readonly [K in Rest extends "" ? "*" : Rest]: string }
+    : {};
+
+/** One object type instead of an intersection, for readable hovers. */
+type Flatten<T> = { readonly [K in keyof T]: T[K] };
+
 /** What the matched route resolved to. Handed to the page component. */
-export interface RouteContext {
+export interface RouteContext<TParams extends RouteParams = RouteParams> {
   /** Canonical decoded path, base stripped: "/blog/hello". */
   readonly path: string;
   /** The table key that matched: "/blog/:slug". */
   readonly pattern: string;
-  readonly params: RouteParams;
+  readonly params: TParams;
   readonly search: URLSearchParams;
   /** Including the leading "#", or "" when there is none. */
   readonly hash: string;
@@ -123,8 +160,8 @@ export interface Layer {
  */
 export type Outlet = () => ListModifier;
 
-export type PageComponent<TData = unknown> = (
-  ctx: RouteContext,
+export type PageComponent<TData = unknown, TParams extends RouteParams = RouteParams> = (
+  ctx: RouteContext<TParams>,
   layer: Layer,
   data: TData,
   outlet: Outlet,
@@ -152,14 +189,24 @@ export type PageComponent<TData = unknown> = (
  * reused, the loader runs again every time. A loader that throws (or rejects)
  * lands on `route.error`, exactly like a module that fails to load.
  */
-export type DataLoader<TData = unknown> = (ctx: RouteContext) => TData | Promise<TData>;
+export type DataLoader<TData = unknown, TParams extends RouteParams = RouteParams> = (
+  ctx: RouteContext<TParams>,
+) => TData | Promise<TData>;
 
+/**
+ * A page module. Its params are `any` here on purpose: the table cannot know
+ * which pattern a page typed itself with (see {@link Params}), and a page
+ * typed for `"/blog/:slug"` must still be a valid module.
+ */
 export type RouteModule<TData = unknown> =
-  | PageComponent<TData>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | PageComponent<TData, any>
   | {
-      readonly default: PageComponent<TData>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      readonly default: PageComponent<TData, any>;
       /** Optional per-navigation data loader — see {@link DataLoader}. */
-      readonly load?: DataLoader<TData>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      readonly load?: DataLoader<TData, any>;
     };
 
 /**
@@ -366,10 +413,34 @@ export interface Route {
    */
   readonly depth: number;
   /**
-   * The slot the active stack renders into — every layer, bottom first. Place
-   * it once in the app tree.
+   * The app, rendered under this Route: the pages are mounted beside it and
+   * reach their regions through their own `view()`, so the app's tree carries
+   * nothing of the router's. Pass the result to `render()`, `hydrate()` or
+   * `renderToString()`:
+   *
+   * ```ts
+   * hydrate(route.app(App), document.getElementById("app")!);   // browser
+   * renderToString(route.app(App));                             // server
+   * ```
+   *
+   * In the browser the pages mount once per Route, as comments on the
+   * document root — nothing visible — before the app's own tree is built, so
+   * they are already waiting when its regions arrive and claim the server's
+   * nodes on hydration. On the server they mount inside the render, on a host
+   * that is never serialized, which keeps each request's pages to its own
+   * render. `stop()` unmounts them.
+   *
+   * A page that returns plain content rather than a `view()` has nowhere to
+   * go here; the router warns once. Use `pages()` to render pages in place.
    */
-  view(): ListModifier;
+  app(build: (route: Route) => NodeModFn | (() => NodeModFn)): () => NodeModFn;
+  /**
+   * The alternative to `app()`: the slot the active stack renders into —
+   * every layer, bottom first — placed by the app itself, once, wherever the
+   * pages should render. A page that returns a `view()` still lands in its
+   * region; one that returns plain content renders here.
+   */
+  pages(): ListModifier;
   /** Navigates, loading the target's module if needed. Never rejects. */
   go(href: string, options?: NavigateOptions): Promise<void>;
   /**
@@ -736,7 +807,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     // ── per-Route state ──────────────────────────────────────────────────
     /**
      * The layer stack, and list()'s items array. Index 0 is the base page;
-     * push() appends. Because view() is one list() over this array, appending
+     * push() appends. Because pages() is one list() over this array, appending
      * a layer is a pure insertion — the rows below are never rebuilt, so the
      * page underneath keeps its DOM, its focus and its form state.
      *
@@ -852,8 +923,25 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     let pendingPath: string | null = null;
     let error: Error | null = null;
     let stopped = false;
-    /** How many times view() has been called, to catch a second outlet. */
-    let views = 0;
+    /** The marker of the last pages() placed in a tree, to catch a second live one. */
+    let outlet: WeakRef<Comment> | null = null;
+    let warnedOutlets = false;
+    /** The document-root mount made by app() in the browser, until stop(). */
+    let mounted: { start: Node; end: Node } | null = null;
+    /** True once pages() was placed by the app: app() then mounts nothing. */
+    let placed = false;
+    /** True once app() has mounted the pages, on either side: pages() then warns. */
+    let mountedOnce = false;
+    let warnedPlain = false;
+    /**
+     * The location the last history event delivered, as layer depth plus
+     * href — one Back can arrive as both a popstate and a hashchange (hash
+     * mode), and the second must not navigate, or call onNavigate, again.
+     * Depth is part of it because two layers can sit on one href. Cleared by
+     * every navigation the router makes itself, so the next event is always
+     * taken on its own terms.
+     */
+    let handled: string | null = null;
     /** One warning per Route about a parent that never rendered its outlet. */
     let warnedOutlet = false;
     /** Detaches the history subscription; set when the Route starts listening. */
@@ -881,9 +969,67 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       idleId = undefined;
     }
 
+    /** The stack as a list(): the rows are the pages' outputs. */
+    function rowsOf(auto: boolean): ListModifier {
+      // The automatic mount empties itself on stop(), so every page leaves
+      // its region through nuclo. A page that is not a view() has nowhere to
+      // go on an automatic mount — it would sit after </body> — so say so.
+      const render = (entry: Entry): ListRenderResult => {
+        const built = renderLevel(entry.root, entry.layer);
+        if (!auto) return built;
+        return ((host: ExpandedElement, index: number): Node | null => {
+          const node = typeof built === "function" ? (built as NodeModFn)(host, index) : built;
+          if (node && (node as Node).nodeType !== 8 && !warnedPlain) {
+            warnedPlain = true;
+            console.warn(
+              `nuclo-router: "${leafOf(entry).ctx.pattern}" returned content without a view(), ` +
+                "so it renders nowhere visible. Return view(\"<region id>\", …) from the page, " +
+                "or place route.pages() in the tree to render pages where it sits.",
+            );
+          }
+          return node as Node | null;
+        }) as unknown as ListRenderResult;
+      };
+      return list(() => (auto && stopped ? [] : slot), render);
+    }
+
+    /** Browser: mounts the stack on the document root, once per Route. */
+    function mountPages(): void {
+      if (mounted || placed) return;
+      const html = document.documentElement as unknown as ExpandedElement;
+      const start = rowsOf(true)(html, 0) as unknown as Node;
+      mounted = { start, end: (html as unknown as Node).lastChild! };
+      mountedOnce = true;
+    }
+
+    /** Takes the automatic mount down: rows through nuclo, then the markers. */
+    function unmountPages(): void {
+      if (!mounted) return;
+      const { start, end } = mounted;
+      mounted = null;
+      // stopped: the list now holds no rows, so each page's view leaves its region.
+      update();
+      for (let node: Node | null = start; node; ) {
+        const next: Node | null = node === end ? null : node.nextSibling;
+        node.parentNode?.removeChild(node);
+        node = next;
+      }
+    }
+
+    function locationKey(): string {
+      return depthFromState(location.state()) + " " + location.read();
+    }
+
     function restoreScroll(hash: string): void {
-      const target = hash.length > 1 ? document.getElementById(hash.slice(1)) : null;
-      target?.scrollIntoView();
+      if (hash.length < 2) return;
+      let id = hash.slice(1);
+      // The URL carries it encoded; the element's id is the decoded text.
+      try {
+        id = decodeURIComponent(id);
+      } catch {
+        // Not valid encoding: look it up as written.
+      }
+      document.getElementById(id)?.scrollIntoView();
     }
 
     /**
@@ -1009,6 +1155,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       // History after the module is in hand, so a failed push leaves the URL
       // alone. Back now closes this layer.
       location.push(href, { [DEPTH_KEY]: depth });
+      handled = null;
       const entry = pushEntry(resolved);
       current = entry;
       error = null;
@@ -1061,6 +1208,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       const { ctx, match: found } = parsed;
       if (mode === "push") location.push(href, null);
       else if (mode === "replace") location.replace(href, null);
+      if (mode !== "pop") handled = null;
 
       const mine = ++generation;
       const scroll = mode !== "pop";
@@ -1119,6 +1267,9 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     }
 
     function onLocationChange(): void {
+      const key = locationKey();
+      if (key === handled) return;
+      handled = key;
       // Back out of one or more open layers. The depth recorded in
       // history.state is the authority, so this is right however many entries
       // the user jumped and whether they got here via Back or close().
@@ -1250,7 +1401,13 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         return leafOf(current).ctx.search;
       },
       get hash() {
-        return !stopped ? parse(location.read())?.ctx.hash ?? leafOf(current).ctx.hash : leafOf(current).ctx.hash;
+        // Live, like `url`: an in-page anchor changes the fragment without a
+        // navigation. The adapters keep the route's own fragment after the
+        // first "#" in every mode, so no parsing is needed to find it.
+        if (stopped) return leafOf(current).ctx.hash;
+        const href = location.read();
+        const at = href.indexOf("#");
+        return at === -1 ? "" : href.slice(at);
       },
       /**
        * The live app-relative href — "/blog/x?a=1#top", base included. The
@@ -1273,18 +1430,49 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       get depth() {
         return slot.length;
       },
-      view: () => {
-        // Two outlets would render the stack twice — duplicate ids, duplicate
-        // form controls, every page component invoked twice — and hydration
-        // claims both copies happily, so there is no other symptom to notice.
-        if (++views === 2) {
-          console.warn(
-            "nuclo-router: route.view() was called more than once. Every call renders the " +
-              "whole layer stack, so the active page is now in the tree twice. Place view() " +
-              "once and switch the surrounding chrome instead.",
-          );
+      app: (build) => () => {
+        // Browser: once per Route, outside any hydration pass — this runs
+        // before render()/hydrate() start walking the app's tree — so the
+        // pages' views are waiting when the layout's regions arrive. Server:
+        // inside this render pass, on a host nothing serializes, so the views
+        // reach this request's regions and no other's.
+        if (isBrowser) mountPages();
+        else if (!placed) {
+          rowsOf(false)(document.createElement("div") as unknown as ExpandedElement, 0);
+          mountedOnce = true;
         }
-        return list(() => slot, (entry: Entry) => renderLevel(entry.root, entry.layer));
+        const tree = build(route);
+        return (typeof tree === "function" && tree.length === 0 ? (tree as () => NodeModFn)() : tree) as NodeModFn;
+      },
+      pages: () => {
+        placed = true;
+        if (mountedOnce) {
+          console.warn("nuclo-router: route.pages() was placed after route.app() mounted the pages — use one or the other.");
+        }
+        const rows = rowsOf(false);
+        return function (host: ExpandedElement, index: number): Comment {
+          const marker = rows(host, index);
+          const previous = outlet?.deref();
+          outlet = new WeakRef(marker);
+          // Two outlets would render the stack twice — duplicate ids, duplicate
+          // form controls, every page component invoked twice — and hydration
+          // claims both copies happily, so there is no other symptom to notice.
+          // Judged a microtask later, once the tree is attached: a pass that
+          // re-runs the app (forceUpdate(), a re-hydrate) claims the same marker
+          // again, and a tree thrown away and rendered anew leaves a detached one.
+          if (isBrowser && previous && previous !== marker) {
+            queueMicrotask(() => {
+              if (warnedOutlets || !previous.isConnected || !marker.isConnected) return;
+              warnedOutlets = true;
+              console.warn(
+                "nuclo-router: route.pages() is placed twice. Every call renders the whole " +
+                  "layer stack, so the active page is in the tree twice. Place pages() once " +
+                  "and switch the surrounding chrome instead.",
+              );
+            });
+          }
+          return marker;
+        } as unknown as ListModifier;
       },
       push: <T,>(href: string) => pushLayer(href) as Promise<T | undefined>,
       go: (href, navOptions) => navigate(href, navOptions?.replace ? "replace" : "push"),
@@ -1311,6 +1499,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         // promise that can never settle.
         settleAll(slot.splice(1));
         current = slot[0];
+        unmountPages();
         // A retired Route is not loading anything. Without this, a Route
         // stopped mid-navigation would report pending forever and leave an
         // app's `when(() => route.pending, Spinner())` on screen for good.
@@ -1330,6 +1519,9 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       // previous one instead of stacking a second set of listeners on it.
       liveRoute?.stop();
       liveRoute = route;
+      // Seeded with the current location: a popstate some browsers fire on
+      // load, for the entry already shown, changes nothing.
+      handled = locationKey();
       // Whatever the history mode is subscribed to: popstate for browser
       // history, popstate + hashchange for hash, the adapter's own listener
       // set for memory.

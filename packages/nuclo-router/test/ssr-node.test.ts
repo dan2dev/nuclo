@@ -13,7 +13,7 @@ import { createRouter, type PageComponent, type Route } from "../src/index";
 const Home: PageComponent = () => div({ id: "home" }, "home");
 const Post: PageComponent = (ctx) => div({ id: "post" }, ctx.params.slug);
 
-const App = (route: Route) => () => div({ id: "shell" }, main(route.view()));
+const App = (route: Route) => () => div({ id: "shell" }, main(route.pages()));
 
 const table = {
   "/": () => Home,

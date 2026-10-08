@@ -27,6 +27,11 @@ describe('Global availability', () => {
     expect(typeof when).toBe('function');
   });
 
+  it('should make region() and view() available globally', () => {
+    expect(typeof region).toBe('function');
+    expect(typeof view).toBe('function');
+  });
+
   it('should register the var_ builder for the reserved-word <var> tag', () => {
     expect(typeof var_).toBe('function');
     const el = var_('x')(undefined, 0);

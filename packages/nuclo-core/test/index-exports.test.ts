@@ -14,11 +14,13 @@ describe('main index.ts exports', () => {
       'keyframes',
       'list',
       'on',
+      'region',
       'render',
       'resetStyles',
       'scope',
       'update',
       'variants',
+      'view',
       'when',
     ]);
     for (const value of Object.values(index)) expect(typeof value).toBe('function');

@@ -1,0 +1,154 @@
+/**
+ * Behaviour a user feels directly and that is easy to get subtly wrong: one
+ * onNavigate per Back in hash mode, two layers on one href, a `hash` that is
+ * live and cheap, encoded fragment targets, and params typed from the pattern.
+ */
+import { describe, it, expect, expectTypeOf, vi } from "vitest";
+import "nuclo";
+import {
+  createRouter,
+  type Params,
+  type PageComponent,
+  type Route,
+  type RouteContext,
+  type Router,
+} from "../src/index";
+import { flush, mount, useRouterEnv, waitFor } from "./helpers";
+
+const routes = useRouterEnv();
+
+const Home: PageComponent = () => div({ id: "home" }, "home");
+const About: PageComponent = () => div({ id: "about" }, h1({ id: "café" }, "café"), p({ id: "plain" }, "x"));
+const Modal: PageComponent = (_ctx, layer) => div({ id: `modal-${layer.depth}` });
+
+async function start(router: Router, url?: string): Promise<Route> {
+  const route = await router.start(url);
+  routes.push(route);
+  return route;
+}
+
+describe("one location change, one navigation", () => {
+  it("calls onNavigate once per Back in hash mode", async () => {
+    // jsdom, like a browser, fires both popstate and hashchange for one Back.
+    const onNavigate = vi.fn();
+    const route = await start(
+      createRouter({ "/": () => Home, "/about": () => About }, { history: "hash", preload: false, onNavigate }),
+    );
+    render(route.pages(), mount());
+    await route.go("/about");
+    onNavigate.mockClear();
+
+    window.history.back();
+    await waitFor(() => route.path === "/");
+    await flush();
+
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes exactly one layer per Back when two layers share an href", async () => {
+    const route = await start(createRouter({ "/": () => Home, "/modal": () => Modal }, { preload: false }), "/");
+    const container = mount();
+    render(route.pages(), container);
+    const first = route.push("/modal");
+    await flush();
+    const second = route.push("/modal");
+    await flush();
+    expect(route.depth).toBe(3);
+
+    window.history.back();
+    await waitFor(() => route.depth === 2);
+
+    await expect(second).resolves.toBeUndefined();
+    expect([...container.children].map((c) => c.id)).toEqual(["home", "modal-1"]);
+
+    route.stop();
+    await first;
+  });
+});
+
+describe("route.hash", () => {
+  it("is the live fragment, with no navigation needed to change it", async () => {
+    const route = await start(createRouter({ "/": () => Home, "/about": () => About }, { preload: false }), "/");
+    render(route.pages(), mount());
+    expect(route.hash).toBe("");
+
+    await route.go("/about#plain");
+    expect(route.hash).toBe("#plain");
+
+    // An in-page anchor changes only the fragment.
+    window.history.replaceState(null, "", "/about#other");
+    expect(route.hash).toBe("#other");
+
+    // A stopped Route reports what its page was built with.
+    route.stop();
+    expect(route.hash).toBe("#plain");
+  });
+
+  it("is the route's own fragment in hash mode", async () => {
+    const route = await start(
+      createRouter({ "/": () => Home, "/about": () => About }, { history: "hash", preload: false }),
+    );
+    render(route.pages(), mount());
+
+    await route.go("/about#plain");
+
+    expect(window.location.hash).toBe("#/about#plain");
+    expect(route.hash).toBe("#plain");
+  });
+});
+
+describe("fragment scrolling", () => {
+  it("decodes the fragment before looking the element up", async () => {
+    const route = await start(createRouter({ "/": () => Home, "/about": () => About }, { preload: false }), "/");
+    render(route.pages(), mount());
+
+    await route.go("/about#caf%C3%A9");
+
+    const target = document.getElementById("café")!;
+    expect(target).not.toBeNull();
+    const scrolled = (Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>).mock;
+    expect(scrolled.calls.length).toBe(1);
+    expect(scrolled.contexts[0]).toBe(target);
+  });
+
+  it("looks a malformed fragment up as written", async () => {
+    const route = await start(createRouter({ "/": () => Home, "/about": () => About }, { preload: false }), "/");
+    render(route.pages(), mount());
+
+    await route.go("/about#%E0%A4%A");
+
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+    expect(route.path).toBe("/about");
+  });
+});
+
+describe("a second outlet", () => {
+  it("is not reported when it is rendered into a detached container", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const route = await start(createRouter({ "/": () => Home }, { preload: false }), "/");
+    render(route.pages(), mount());
+    render(route.pages(), document.createElement("div"));
+    await flush();
+
+    expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe("typed params", () => {
+  it("derives the param names from the pattern", () => {
+    expectTypeOf<Params<"/blog/:slug">>().toEqualTypeOf<{ readonly slug: string }>();
+    expectTypeOf<Params<"/u/:id/edit/:tab">>().toEqualTypeOf<{ readonly id: string; readonly tab: string }>();
+    expectTypeOf<Params<"/files/*rest">>().toEqualTypeOf<{ readonly rest: string }>();
+    expectTypeOf<Params<"*">>().toEqualTypeOf<{ readonly "*": string }>();
+    expectTypeOf<Params<"/docs/intro">>().toEqualTypeOf<{}>();
+  });
+
+  it("lets a page type its context with its own pattern", async () => {
+    const Post = (ctx: RouteContext<Params<"/blog/:slug">>) => div({ id: "post" }, ctx.params.slug);
+    const route = await start(createRouter({ "/blog/:slug": () => Post }, { preload: false }), "/blog/hello");
+    const container = mount();
+    render(route.pages(), container);
+
+    expect(container.querySelector("#post")!.textContent).toBe("hello");
+  });
+});

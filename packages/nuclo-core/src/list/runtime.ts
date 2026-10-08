@@ -21,6 +21,7 @@ import { isBrowser } from "../shared/environment";
 import { getFactoryMods, getFactoryTag, withMetadataOnlyFactories, getMetadataOnlyFactoryCheckpoint, releaseMetadataOnlyFactories } from "../element/factory-meta";
 import { analyzeFactory, prepareSkeleton, instantiateTemplate, adoptTemplateLeaves, flushRowLeaves, type RowLeaves } from "./template";
 import { hasActiveLifecycleRegistrations, mountQueueMark, cancelMountsSince } from "../element/lifecycle";
+import { isViewAnchor } from "../region/runtime";
 
 function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
   if (a === b) return true;
@@ -66,8 +67,10 @@ function normalizeItems<TItem>(items: ListItemsInput<TItem>): readonly TItem[] {
 
 /**
  * Resolves a render() result — a tag-builder factory / NodeModFn (called with
- * the host) or an already-built element — to the row element. Anything else
- * (null, primitives, attribute objects, non-element nodes) renders no row.
+ * the host) or an already-built element — to the row node. A view() is a row
+ * too: its anchor stands in the list and its content lives in the region, so
+ * the row leaving the list takes the content with it. Anything else (null,
+ * primitives, attribute objects, other non-element nodes) renders no row.
  */
 function toRowElement<TTagName extends ElementTagName>(
   result: unknown,
@@ -75,9 +78,8 @@ function toRowElement<TTagName extends ElementTagName>(
   index: number,
 ): ExpandedElement<TTagName> | null {
   const value = typeof result === "function" ? (result as NodeModFn<TTagName>)(host, index) : result;
-  return value !== null && typeof value === "object" && "tagName" in value
-    ? value as ExpandedElement<TTagName>
-    : null;
+  if (value === null || typeof value !== "object") return null;
+  return "tagName" in value || isViewAnchor(value as Node) ? (value as ExpandedElement<TTagName>) : null;
 }
 
 /**

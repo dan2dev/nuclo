@@ -119,7 +119,7 @@ describe('history: "hash"', () => {
   it("intercepts link clicks written with route.href()", async () => {
     const route = await start(createRouter(table(), { history: "hash", preload: false }));
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     expect(click(link(route.href("/docs")))).toBe(true);
     await flush();
@@ -138,7 +138,7 @@ describe('history: "hash"', () => {
       { history: "hash", preload: false },
     );
     const route = await start(router);
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     const pending = route.push("/modal");
     await flush();
@@ -294,7 +294,7 @@ describe('history: "memory"', () => {
     );
     const route = await start(router, "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const pending = route.push("/modal");
     await flush();
@@ -309,7 +309,7 @@ describe('history: "memory"', () => {
 
   it("intercepts links, because they are still in a document", async () => {
     const route = await start(createRouter(table(), { history: "memory", preload: false }), "/");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     expect(click(link("/docs"))).toBe(true);
     await flush();

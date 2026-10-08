@@ -2,6 +2,7 @@ import { registerGlobalTagBuilders } from "./element/tags";
 import { list } from "./list";
 import { update } from "./update/update";
 import { when } from "./when";
+import { region, view } from "./region";
 import { on } from "./element/events";
 import { render, hydrate, forceUpdate } from "./render";
 import { scope } from "./update/scope";
@@ -18,6 +19,8 @@ export function initializeRuntime(): void {
   registry.list = list;
   registry.update = update;
   registry.when = when;
+  registry.region = region;
+  registry.view = view;
   registry.on = on;
   registry.scope = scope;
   registry.render = render;

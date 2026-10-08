@@ -7,12 +7,16 @@ import { updateListRuntimes } from "../list/runtime";
 import { notifyReactiveElements } from "./reactive-attributes";
 import { notifyReactiveTextNodes } from "./reactive-text";
 import { updateWhenRuntimes } from "../when";
+import { pruneRegions } from "../region/runtime";
 import { getScopeRoots } from "./scope";
 import { flushMountQueue } from "../element/lifecycle";
 import type { UpdateScope } from "./scope";
 
 // `satisfies` checks every entry matches the signature without widening the tuple type.
 const updaters = [
+	// First: a region or view whose tree left the document behind nuclo's back
+	// is let go of before any when()/list() content runs and looks regions up.
+	pruneRegions,
 	updateListRuntimes,
 	updateWhenRuntimes,
 	notifyReactiveElements,

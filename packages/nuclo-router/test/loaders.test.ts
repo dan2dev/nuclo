@@ -46,7 +46,7 @@ describe("load()", () => {
     const router = createRouter({ "/blog/:slug": () => postModule }, { preload: false });
     const route = await start(router, "/blog/hello");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     expect(container.querySelector("#post")!.textContent).toBe("Post hello");
   });
@@ -66,7 +66,7 @@ describe("load()", () => {
       { preload: false },
     );
     const route = await start(router, "/blog/hi?draft=1#top");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     expect(seen).toMatchObject({ path: "/blog/hi", pattern: "/blog/:slug" });
     expect(seen!.params.slug).toBe("hi");
@@ -94,7 +94,7 @@ describe("load()", () => {
     );
     const route = await start(router, "/blog/a");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
     expect(container.querySelector("#post")!.textContent).toBe("a");
 
     await route.go("/blog/b");
@@ -120,7 +120,7 @@ describe("load()", () => {
     );
     const route = await start(router, "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
     expect(container.querySelector("#n")!.textContent).toBe("1");
 
     // The revalidate idiom: navigate to where you already are, without a
@@ -133,7 +133,7 @@ describe("load()", () => {
     const Plain: PageComponent = () => div({ id: "plain" });
     const route = await start(createRouter({ "/": () => Plain }, { preload: false }), "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
     const node = container.children[0];
 
     await route.go("/");
@@ -148,7 +148,7 @@ describe("load()", () => {
     };
     const router = createRouter({ "/": () => Sync, "/other": () => Sync }, { preload: false });
     const route = await start(router, "/");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     const promise = route.go("/other");
     // No await: a sync module plus a sync loader never flips pending.
@@ -169,7 +169,7 @@ describe("load()", () => {
     );
     const route = await start(router, "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const navigation = route.go("/slow");
     await flush();
@@ -196,7 +196,7 @@ describe("load() failures", () => {
     );
     const route = await start(router, "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     await expect(route.go("/bad")).resolves.toBeUndefined();
     expect(route.error?.message).toBe("fetch failed");
@@ -269,7 +269,7 @@ describe("load() failures", () => {
     );
     const route = await start(router, "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const first = route.go("/slow");
     await flush();
@@ -300,7 +300,7 @@ describe("load() with layers and SSR", () => {
     );
     const route = await start(router, "/invoices/42");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const pending = route.push("./preview");
     await flush();
@@ -337,7 +337,7 @@ describe("load() with layers and SSR", () => {
       { preload: false },
     );
     const route = await start(router, "/");
-    render(route.view(), mount());
+    render(route.pages(), mount());
     expect(route.data).toBe("base");
 
     const pending = route.push("/over");
@@ -352,7 +352,7 @@ describe("load() with layers and SSR", () => {
   it("puts the data in the server's HTML, so there is nothing to fetch on arrival", async () => {
     const router = createRouter({ "/blog/:slug": () => postModule });
     const route = await start(router, "/blog/ssr");
-    const html = renderToString(() => div({ id: "app" }, route.view()));
+    const html = renderToString(() => div({ id: "app" }, route.pages()));
 
     expect(html).toContain("Post ssr");
   });

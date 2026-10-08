@@ -5,6 +5,7 @@ import "./html/tags";
 import "./svg/tags";
 import "./features/list";
 import "./features/when";
+import "./features/region";
 import "./features/update";
 import "./features/scope";
 import "./features/on";
@@ -26,6 +27,11 @@ export function when<TTagName extends ElementTagName = ElementTagName>(
   condition: WhenCondition,
   ...content: WhenContent<TTagName>[]
 ): WhenBuilder<TTagName>;
+export function region(options: RegionOptions): NodeModFn;
+export function view(id: string, ...content: WhenContent[]): NodeModFn;
+export function view(
+  regions: Readonly<Record<string, WhenContent | readonly WhenContent[]>>,
+): NodeModFn;
 export function update(...scopeIds: string[]): void;
 export function scope<TTagName extends ElementTagName = ElementTagName>(
   ...ids: string[]

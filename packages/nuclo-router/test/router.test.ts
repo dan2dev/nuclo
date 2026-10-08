@@ -67,7 +67,7 @@ describe("start()", () => {
     };
     const router = createRouter({ "/blog/:slug": () => Post });
     const route = await start(router, "/blog/hello?page=2#top");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     expect(seen).toMatchObject({
       path: "/blog/hello",
@@ -151,7 +151,7 @@ describe("base", () => {
 });
 
 describe("view()", () => {
-  it("warns once when it is called more than once", async () => {
+  it("warns once when it is placed twice in the live tree", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const router = createRouter({ "/": () => Home }, { preload: false });
     const route = await start(router, "/");
@@ -159,30 +159,64 @@ describe("view()", () => {
 
     // Two outlets render the stack twice — duplicate ids, duplicate form
     // controls, the component invoked twice — and hydration claims both
-    // copies, so a warning is the only signal there is.
-    render(div(div({ id: "a" }, route.view()), div({ id: "b" }, route.view())), container);
+    // copies, so a warning is the only signal there is. It is judged once the
+    // tree is attached, a microtask later.
+    render(div(div({ id: "a" }, route.pages()), div({ id: "b" }, route.pages())), container);
+    await flush();
 
     expect(container.querySelectorAll("#home").length).toBe(2);
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0][0]).toMatch(/called more than once/);
+    expect(warn.mock.calls[0][0]).toMatch(/placed twice/);
 
-    // Still once after a third call: one warning per Route, not per call.
-    route.view();
+    // Still once after a third placement: one warning per Route.
+    render(div({ id: "c" }, route.pages()), container);
+    await flush();
     expect(warn).toHaveBeenCalledTimes(1);
   });
 
   it("does not warn for the normal single outlet", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const route = await start(createRouter({ "/": () => Home }, { preload: false }), "/");
-    render(route.view(), mount());
+    render(route.pages(), mount());
+    await flush();
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("does not warn when forceUpdate() re-runs the app", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const route = await start(createRouter({ "/": () => Home }, { preload: false }), "/");
+    const App = () => div(route.pages());
+    const container = mount();
+    render(App, container);
+    const home = container.querySelector("#home")!;
+
+    forceUpdate();
+    forceUpdate();
+    await flush();
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(container.querySelector("#home")).toBe(home);
+    expect(container.querySelectorAll("#home").length).toBe(1);
+  });
+
+  it("does not warn when a thrown-away tree is rendered again", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const route = await start(createRouter({ "/": () => Home }, { preload: false }), "/");
+    const container = mount();
+    render(route.pages(), container);
+    container.innerHTML = "";
+    render(route.pages(), container);
+    await flush();
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(container.querySelectorAll("#home").length).toBe(1);
   });
 
   it("renders the active page", async () => {
     const router = createRouter({ "/": () => Home, "/about": () => About });
     const route = await start(router, "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     expect(container.querySelector("#home")).not.toBeNull();
   });
@@ -191,7 +225,7 @@ describe("view()", () => {
     const router = createRouter({ "/": () => Home, "/about": () => About });
     const route = await start(router, "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     await route.go("/about");
     expect(container.querySelector("#home")).toBeNull();
@@ -202,7 +236,7 @@ describe("view()", () => {
     const router = createRouter({ "/": () => Home, "/about": () => About });
     const route = await start(router, "/about");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
     const before = container.querySelector("#about");
 
     await route.go("/about");
@@ -214,7 +248,7 @@ describe("view()", () => {
     const router = createRouter({ "/blog/:slug": () => Post });
     const route = await start(router, "/blog/a");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
     expect(container.querySelector("#post-a")).not.toBeNull();
 
     await route.go("/blog/b");
@@ -230,7 +264,7 @@ describe("view()", () => {
     };
     const router = createRouter({ "/": () => Page });
     const route = await start(router, "/?a=1");
-    render(route.view(), mount());
+    render(route.pages(), mount());
     expect(builds).toBe(1);
 
     await route.go("/?a=2");
@@ -434,7 +468,7 @@ describe("go()", () => {
     });
     const route = await start(router, "/");
     const container = mount();
-    render(route.view(), container);
+    render(route.pages(), container);
 
     const first = route.go("/slow");
     const second = route.go("/third");
@@ -464,7 +498,7 @@ describe("scrolling", () => {
     const Anchored: PageComponent = () => div(div({ id: "section" }, "s"));
     const router = createRouter({ "/": () => Home, "/about": () => Anchored });
     const route = await start(router, "/");
-    render(route.view(), mount());
+    render(route.pages(), mount());
 
     await route.go("/about#section");
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
