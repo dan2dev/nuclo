@@ -98,6 +98,30 @@
         "vite": "^7.2.4",
       },
     },
+    "examples/router": {
+      "name": "nuclo-example-router",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/node": "^26.6.3",
+        "nuclo": "workspace:*",
+        "nuclo-router": "workspace:*",
+        "typescript": "~7.0.2",
+        "vite": "^8.3.2",
+      },
+    },
+    "examples/router-ssr": {
+      "name": "nuclo-example-router-ssr",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "^1.4.2",
+        "@types/node": "^26.6.3",
+        "concurrently": "^10.0.5",
+        "nuclo": "workspace:*",
+        "nuclo-router": "workspace:*",
+        "typescript": "~7.0.2",
+        "vite": "^8.3.2",
+      },
+    },
     "examples/styling": {
       "name": "nuclo-example-styling",
       "version": "0.0.0",
@@ -117,7 +141,7 @@
     },
     "packages/nuclo-core": {
       "name": "nuclo",
-      "version": "0.3.17",
+      "version": "0.3.21",
       "devDependencies": {
         "@types/node": "^26.6.3",
         "@vitest/coverage-v8": "5.0.3",
@@ -125,6 +149,22 @@
         "tsdown": "^0.23.0",
         "typescript": "^7.0.2",
         "vitest": "^5.0.3",
+      },
+    },
+    "packages/nuclo-router": {
+      "name": "nuclo-router",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@types/node": "^26.6.3",
+        "@vitest/coverage-v8": "5.0.3",
+        "jsdom": "^30.1.1",
+        "nuclo": "workspace:*",
+        "tsdown": "^0.23.0",
+        "typescript": "^7.0.2",
+        "vitest": "^5.0.3",
+      },
+      "peerDependencies": {
+        "nuclo": ">=0.3.0",
       },
     },
   },
@@ -896,7 +936,13 @@
 
     "nuclo-docs": ["nuclo-docs@workspace:docs"],
 
+    "nuclo-example-router": ["nuclo-example-router@workspace:examples/router"],
+
+    "nuclo-example-router-ssr": ["nuclo-example-router-ssr@workspace:examples/router-ssr"],
+
     "nuclo-example-styling": ["nuclo-example-styling@workspace:examples/styling"],
+
+    "nuclo-router": ["nuclo-router@workspace:packages/nuclo-router"],
 
     "obug": ["obug@2.1.1", "", {}, "sha512-uTqF9MuPraAQ+IsnPf366RG4cP9RtUi7MLO1N3KEc+wb0a6yKpeL0lmk2IB1jY5KHPAlTc6T/JRdC/YqxHNwkQ=="],
 

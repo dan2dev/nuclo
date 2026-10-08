@@ -1,0 +1,24 @@
+{
+  "name": "nuclo-example-router-ssr",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Server-side rendering and hydration with nuclo-router: one Route per request, real 404 status codes, code-split pages, idle preloading and a non-root base.",
+  "scripts": {
+    "build:deps": "bun run --cwd ../../packages/nuclo-core build && bun run --cwd ../../packages/nuclo-router build",
+    "build:client": "vite build",
+    "build": "bun run build:deps && tsc && bun run build:client",
+    "dev": "bun run build && concurrently --kill-others --names vite,server -c cyan,magenta \"vite build --watch\" \"bun --watch src/server.ts\"",
+    "start": "bun src/server.ts",
+    "preview": "bun run build && bun run start"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "@types/node": "^26.6.3",
+    "concurrently": "^10.0.5",
+    "nuclo": "workspace:*",
+    "nuclo-router": "workspace:*",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.2"
+  }
+}
