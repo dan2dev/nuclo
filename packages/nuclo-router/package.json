@@ -1,0 +1,65 @@
+{
+	"name": "nuclo-router",
+	"private": false,
+	"version": "0.1.0",
+	"description": "Routing for nuclo \u2014 SSR, hydration, code-split routes and idle preloading, built on list() and update().",
+	"license": "MIT",
+	"author": "Danilo Celestino de Castro (https://github.com/dan2dev)",
+	"keywords": [
+		"nuclo",
+		"router",
+		"routing",
+		"ssr",
+		"hydration",
+		"code-splitting",
+		"typescript"
+	],
+	"type": "module",
+	"main": "./dist/nuclo-router.cjs",
+	"module": "./dist/nuclo-router.mjs",
+	"types": "./dist/nuclo-router.d.mts",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/nuclo-router.d.mts",
+				"default": "./dist/nuclo-router.mjs"
+			},
+			"require": {
+				"types": "./dist/nuclo-router.d.cts",
+				"default": "./dist/nuclo-router.cjs"
+			}
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"clean": "rm -rf dist *.tsbuildinfo",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"test": "npm run typecheck && vitest run --coverage",
+		"test:watch": "vitest --watch --coverage"
+	},
+	"peerDependencies": {
+		"nuclo": ">=0.3.0"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.3",
+		"@vitest/coverage-v8": "5.0.3",
+		"jsdom": "^30.1.1",
+		"nuclo": "workspace:*",
+		"tsdown": "^0.23.0",
+		"typescript": "^7.0.2",
+		"vitest": "^5.0.3"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/dan2dev/nuclo.git",
+		"directory": "packages/nuclo-router"
+	},
+	"bugs": {
+		"url": "https://github.com/dan2dev/nuclo/issues"
+	},
+	"homepage": "https://nuclo.dev/"
+}
