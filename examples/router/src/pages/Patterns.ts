@@ -9,7 +9,7 @@
  * from behaviour: match.ts for the matching itself — compile() for the forms
  * and the errors, createMatcher() for the three buckets and the precedence
  * order, splitPath()/decodeSegment() for normalization, matchOne() for how
- * params are filled in — and index.ts for ctx, start() and route.href().
+ * params are filled in — and index.ts for ctx, start() and router.href().
  *
  * Every link is a real navigation. Follow one and watch the Route readout at
  * the top of the shell change — then come back with the browser's Back
@@ -367,7 +367,7 @@ export default function PatternsPage(ctx: RouteContext) {
     p(
       s.note,
       "The links on this page are written as plain paths because this showcase is mounted " +
-      "at the root. Under a base, build hrefs with route.href(path) — it prefixes the " +
+      "at the root. Under a base, build hrefs with router.href(path) — it prefixes the " +
       "base, and the matcher strips it again before any of the above applies.",
     ),
   ));

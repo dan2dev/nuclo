@@ -6,25 +6,24 @@ import { code, feature, pill, s } from "../ui.ts";
 const INTEGRATION = `// routes.ts — the table and the router, created once
 export const router = createRouter(routeTable, { preload: false });
 
-// app.ts — nothing of the router's in here: a region is where pages land
-export const App = (route: Route) => () =>
-  div(nav(/* links */), main(region({ id: "main" })));
+// app.ts — reads the router; a region is where pages land
+export const App = () => div(nav(/* links */), main(region({ id: "main" })));
 
 // pages/Post.ts — a page says where it goes
 export default (ctx) => view("main", article(h1(ctx.params.slug)));
 
 // main.ts — the whole browser integration
-const route = await router.start();
-render(route.app(App), document.querySelector("#app")!);`;
+await router.start();
+render(App, document.querySelector("#app")!);`;
 
 const SSR = `// server.ts — one Route per request; the only thing the router
 // shares between them is the page-module cache
 const route = await router.start(request.url);
-const body = renderToString(route.app(App));
+const body = route.run(() => renderToString(App));
 
 // entry-client.ts — same two lines, hydrate instead of render
-const route = await router.start();
-hydrate(route.app(App), document.getElementById("app")!);`;
+await router.start();
+hydrate(App, document.getElementById("app")!);`;
 
 /** A row in the "what to try" map: a path pill and what that page is about. */
 function tryRow(path: string, what: string) {
@@ -45,8 +44,8 @@ export default function OverviewPage(_ctx: RouteContext) {
         "anything special for either.",
       p(
         s.panelDesc,
-        "The panel below the nav is a direct readout of the Route object: every state member " +
-          "of the interface — path, pattern, params, search, hash, url, pending, error — " +
+        "The panel below the nav is a direct readout of the router: every state member " +
+          "it reads from the active route — path, pattern, params, search, hash, url, pending, error — " +
           "re-read on each update(), plus a log of onNavigate firing. Nothing on this page " +
           "writes to it; it only ever reflects what the router did.",
       ),
@@ -75,10 +74,10 @@ export default function OverviewPage(_ctx: RouteContext) {
         s.note,
         tryRow("/patterns", "static, :param and *catch-all, and the precedence between them."),
         tryRow("/links", "which clicks the delegated listener takes over, and which it leaves to the browser."),
-        tryRow("/api", "every Route member: the eight state getters plus go(), href() and stop()."),
+        tryRow("/api", "every router member: the eight state getters plus go(), href() and stop()."),
         tryRow("/settings", "the three RouterOptions: base, preload and onNavigate."),
-        tryRow("/slow", "route.pending while a chunk is still in flight — the old page stays on screen."),
-        tryRow("/broken", "route.error, and why retrying works: a rejected load is evicted from the cache."),
+        tryRow("/slow", "router.pending while a chunk is still in flight — the old page stays on screen."),
+        tryRow("/broken", "router.error, and why retrying works: a rejected load is evicted from the cache."),
         tryRow("/eager", "a loader that returns the component directly, so navigation is synchronous."),
       ),
       p(

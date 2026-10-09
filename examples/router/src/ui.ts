@@ -168,7 +168,7 @@ export function bootFailure(error: unknown) {
         css({ text: 14, color: "textDim" }),
         "router.start() rejected, so there is no Route to hang an error on yet — " +
           "an app has to handle this one itself. Every later navigation surfaces " +
-          "its failure on route.error instead.",
+          "its failure on router.error instead.",
       ),
       pre(s.code, message),
       a({ href: "/" }, css({ color: "accent", text: 13 }), "\u2190 back to the overview"),

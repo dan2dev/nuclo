@@ -18,10 +18,8 @@ const container = document.getElementById("app")!;
 const outlet = container.querySelector("main#outlet");
 const serverPage = outlet?.firstElementChild ?? null;
 
-const route = await router.start();
-// route.app(App) mounts the pages on the document root before the app's tree
-// hydrates, so each page's view() is waiting when the region claims its nodes.
-hydrate(route.app(App), container);
+await router.start();
+hydrate(App, container);
 
 const claimed = serverPage !== null && outlet?.firstElementChild === serverPage;
 console.info(
@@ -31,4 +29,4 @@ console.info(
 );
 
 // Handy for poking at the router from the devtools console.
-Object.assign(window as unknown as Record<string, unknown>, { route, router, claimed });
+Object.assign(window as unknown as Record<string, unknown>, { router, claimed });

@@ -22,10 +22,10 @@ let runs = 0;
 
 export const load: DataLoader<Report> = async (ctx) => {
   runs++;
-  // ?slow=1 makes the loader take its time, so route.pending is observable.
+  // ?slow=1 makes the loader take its time, so router.pending is observable.
   const slowly = ctx.search.get("slow") === "1";
   if (slowly) await new Promise((resolve) => setTimeout(resolve, 1200));
-  // ?fail=1 makes it reject, so route.error is observable.
+  // ?fail=1 makes it reject, so router.error is observable.
   if (ctx.search.get("fail") === "1") throw new Error("the loader rejected (?fail=1)");
   return { runs, forPath: ctx.path, slowly, at: runs };
 };
@@ -67,16 +67,16 @@ export default function DataPage(ctx: RouteContext, layer: Layer, report: Report
         // Revalidating is a navigation to where you already are, with no new
         // history entry.
         a({ href: ctx.path }, btn.primary, "revalidate (load again)"),
-        a({ href: `${ctx.path}?slow=1` }, btn.base, "?slow=1 — watch route.pending"),
-        a({ href: `${ctx.path}?fail=1` }, btn.base, "?fail=1 — watch route.error"),
+        a({ href: `${ctx.path}?slow=1` }, btn.base, "?slow=1 — watch router.pending"),
+        a({ href: `${ctx.path}?fail=1` }, btn.base, "?fail=1 — watch router.error"),
         a({ href: ctx.path }, btn.base, "back to plain"),
       ),
 
       p(
         s.note,
         "the ?slow=1 link keeps this page on screen for 1.2s while the next one loads — " +
-          "the spinner in the shell is route.pending. ?fail=1 leaves you here with " +
-          "route.error set and the page you were on untouched, and the next successful " +
+          "the spinner in the shell is router.pending. ?fail=1 leaves you here with " +
+          "router.error set and the page you were on untouched, and the next successful " +
           "navigation clears it.",
       ),
 
@@ -118,7 +118,7 @@ export default function DataPage(ctx: RouteContext, layer: Layer, report: Report
         ),
         card(
           "revalidate by navigating",
-          span("route.go(route.url, { replace: true }) runs the loader again without a new history entry."),
+          span("router.go(router.url, { replace: true }) runs the loader again without a new history entry."),
         ),
       ),
     ),

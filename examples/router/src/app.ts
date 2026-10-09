@@ -1,14 +1,13 @@
 /**
- * The app shell: nav, a live readout of every `Route` member, a log of
+ * The app shell: nav, a live readout of every route member, a log of
  * onNavigate firing, and the outlet the active page renders into.
  *
- * The Route is passed in rather than read from a module singleton — the same
- * shape the SSR example needs, where each request has its own Route.
+ * It reads the router it imports — `router.path`, `router.go()` — so main.ts
+ * renders it as plain `render(App, container)`.
  */
-import type { Route } from "nuclo-router";
 import { css, cx } from "./theme.ts";
 import { btn, pill, s, spinner } from "./ui.ts";
-import { history_, NAV } from "./routes.ts";
+import { history_, NAV, router } from "./routes.ts";
 
 const st = {
   nav: css({ row: true, items: "center", gap: 6, flexWrap: "wrap", mb: 14 }),
@@ -74,17 +73,17 @@ const st = {
   }),
 };
 
-/** Every member of the Route interface, re-read on each update(). */
-function liveState(route: Route) {
+/** Every state member of the router, re-read on each update(). */
+function liveState() {
   const rows: Array<[string, () => string]> = [
-    ["route.path", () => route.path],
-    ["route.pattern", () => route.pattern],
-    ["route.params", () => JSON.stringify({ ...route.params })],
-    ["route.search", () => route.search.toString() || "(empty)"],
-    ["route.hash", () => route.hash || "(empty)"],
-    ["route.url", () => route.url],
-    ["route.pending", () => String(route.pending)],
-    ["route.error", () => (route.error ? route.error.message : "null")],
+    ["router.path", () => router.path],
+    ["router.pattern", () => router.pattern],
+    ["router.params", () => JSON.stringify({ ...router.params })],
+    ["router.search", () => router.search.toString() || "(empty)"],
+    ["router.hash", () => router.hash || "(empty)"],
+    ["router.url", () => router.url],
+    ["router.pending", () => String(router.pending)],
+    ["router.error", () => (router.error ? router.error.message : "null")],
   ];
   return div(
     st.state,
@@ -102,7 +101,7 @@ function liveState(route: Route) {
 }
 
 /**
- * A layout that places the active page without ever seeing the Route.
+ * A layout that places the active page without ever seeing the router.
  *
  * `region()` marks the spot; every page returns `view("main", …)` and lands
  * in it. Nothing is threaded through props, so this component stays reusable
@@ -135,14 +134,14 @@ export const Layout = (props: { sidebar: NodeModLike }) =>
     ),
   )
 
-export const App = (route: Route) => () =>
+export const App = () =>
   div(
     s.shell,
     h1(s.title, "nuclo-router"),
     p(
       s.lead,
       "Every feature and setting, live. The panel below is a direct readout of the " +
-      "Route object — watch it change as you navigate. All navigation here is " +
+      "router — watch it change as you navigate. All navigation here is " +
       "client-side: no page reload, no flash.",
     ),
 
@@ -152,27 +151,27 @@ export const App = (route: Route) => () =>
         // Plain anchors. One delegated click listener on `document` handles
         // every one of them; nothing per-link is wired up.
         a(
-          { href: route.href(path) },
+          { href: router.href(path) },
           st.link,
-          () => (route.path === path ? st.active : ""),
+          () => (router.path === path ? st.active : ""),
           label,
         ),
       ),
     ),
 
-    liveState(route),
+    liveState(),
 
-    // Programmatic navigation, straight off the Route.
+    // Programmatic navigation, straight off the router.
     div(
       cx(s.row, css({ mb: 16 })),
-      span(s.caption, "route.go():"),
-      button(btn.base, { onClick: () => void route.go("/blog/hello-world") }, "/blog/hello-world"),
-      button(btn.base, { onClick: () => void route.go("/blog/hello-world/42") }, "two params"),
-      button(btn.base, { onClick: () => void route.go("/files/docs/intro/readme.md") }, "catch-all"),
-      button(btn.base, { onClick: () => void route.go("/patterns?tab=params&q=hi#anchor") }, "query + hash"),
+      span(s.caption, "router.go():"),
+      button(btn.base, { onClick: () => void router.go("/blog/hello-world") }, "/blog/hello-world"),
+      button(btn.base, { onClick: () => void router.go("/blog/hello-world/42") }, "two params"),
+      button(btn.base, { onClick: () => void router.go("/files/docs/intro/readme.md") }, "catch-all"),
+      button(btn.base, { onClick: () => void router.go("/patterns?tab=params&q=hi#anchor") }, "query + hash"),
       button(
         btn.base,
-        { onClick: () => void route.go("/patterns", { replace: true }) },
+        { onClick: () => void router.go("/patterns", { replace: true }) },
         "{ replace: true }",
       ),
     ),
@@ -182,12 +181,12 @@ export const App = (route: Route) => () =>
       st.outlet,
       // While a chunk is in flight the outgoing page stays on screen and this
       // appears above it — no blank frame, no layout shift.
-      when(() => route.pending, spinner()),
+      when(() => router.pending, spinner()),
       when(
-        () => route.error !== null,
+        () => router.error !== null,
         div(
           cx(s.cardBox, css({ borderColor: "danger" })),
-          div(s.row, pill("bad", "route.error"), span(() => route.error?.message ?? "")),
+          div(s.row, pill("bad", "router.error"), span(() => router.error?.message ?? "")),
           span(
             s.caption,
             "The page you were on is still here — a failed chunk never blanks the app.",
@@ -196,16 +195,16 @@ export const App = (route: Route) => () =>
             s.row,
             button(
               btn.primary,
-              { onClick: () => void route.go(route.error ? "/broken" : "/") },
+              { onClick: () => void router.go(router.error ? "/broken" : "/") },
               "Retry /broken",
             ),
           ),
         ),
       ),
       // The layout owns the region the pages land in; it is handed a sidebar
-      // and nothing else. Nothing of the router's is in this tree: main.ts
-      // renders it with route.app(App), which mounts the pages beside it, and
-      // every page lands in the region through its own view().
+      // and nothing else. Nothing of the router's is in this tree: the pages
+      // mount themselves beside the app, and every page lands in the region
+      // through its own view().
       Layout({ sidebar: span(s.caption, "Sidebar — also never rebuilt.") }),
     ),
 

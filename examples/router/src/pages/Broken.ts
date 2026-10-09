@@ -48,7 +48,7 @@ export function BrokenPage(_ctx: RouteContext) {
       div(
         s.grid,
         card(
-          "route.error",
+          "router.error",
           span(
             "set to the Error the loader rejected with. the shell above reads it straight " +
               "off the route and renders the red panel — message and all.",
@@ -57,7 +57,7 @@ export function BrokenPage(_ctx: RouteContext) {
         card(
           "go() resolved",
           span(
-            "the promise route.go() returned fulfilled; it did not reject. a stray link " +
+            "the promise router.go() returned fulfilled; it did not reject. a stray link " +
               "click can never produce an unhandled rejection, which is why the failure " +
               "has to be surfaced on the route instead.",
           ),
@@ -67,11 +67,11 @@ export function BrokenPage(_ctx: RouteContext) {
           span(
             'the router logged `nuclo-router: failed to load "/broken"` with the cause ' +
               "as a second argument, so the failure is never silent even if the app " +
-              "ignores route.error.",
+              "ignores router.error.",
           ),
         ),
         card(
-          "route.pending",
+          "router.pending",
           span(
             "went true while the chunk was in flight and back to false when it rejected. " +
               "the shell's spinner is tied to it, so nothing was left spinning.",
@@ -89,7 +89,7 @@ export function BrokenPage(_ctx: RouteContext) {
           "the url had already changed",
           span(
             "pushState runs before the loader is called, so the address bar said /broken " +
-              'while the error showed. the panel\'s button calls route.go("/broken") ' +
+              'while the error showed. the panel\'s button calls router.go("/broken") ' +
               "again, which is all a retry takes. a reload is not a retry, though: a cold " +
               "start() at this URL replays attempt 1 and rejects before the app renders.",
           ),
@@ -99,7 +99,7 @@ export function BrokenPage(_ctx: RouteContext) {
       p(
         s.note,
         "a failure that arrives after you have navigated somewhere else is dropped at the " +
-          "router's generation check: no route.error, not even the console line. a stale " +
+          "router's generation check: no router.error, not even the console line. a stale " +
           "load cannot show you a stale error any more than it can show you a stale page.",
       ),
     ),
@@ -140,7 +140,7 @@ export function BrokenPage(_ctx: RouteContext) {
         card(
           "when the error clears",
           span(
-            "committing this navigation set route.error back to null. a route that has to " +
+            "committing this navigation set router.error back to null. a route that has to " +
               "wait for its chunk clears it the moment the load starts, too — so the red " +
               "panel never outlives the attempt that caused it.",
           ),

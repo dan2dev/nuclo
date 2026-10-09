@@ -3,6 +3,7 @@ import { sweepRegions } from "./region";
 import { safeRemoveChild } from "./shared/dom";
 import { flushMountQueue, mountQueueMark, cancelMountsSince } from "./element/lifecycle";
 import { isFunction, isZeroArityFunction } from "./shared/type-guards";
+import { runRootHooks } from "./shared/root-hooks";
 import { isBrowser } from "./shared/environment";
 import { logError } from "./shared/errors";
 
@@ -83,6 +84,7 @@ export function render<TTagName extends ElementTagName = ElementTagName>(
   index: number = 0
 ): ExpandedElement<TTagName> {
   const { build, component } = unwrapComponent(nodeModFn);
+  runRootHooks(false);
   const targetParent = (parent || document.body) as ExpandedElement<TTagName>;
   const mark = mountQueueMark();
   let element: ExpandedElement<TTagName>;
@@ -131,6 +133,7 @@ export function hydrate<TTagName extends ElementTagName = ElementTagName>(
   parent?: Element,
 ): ExpandedElement<TTagName> {
   const { build, component } = unwrapComponent(nodeModFn);
+  runRootHooks(false);
   const element = hydrateRoot(build, parent, false, null);
   registerForcedRoot(element, component as Component<ElementTagName> | null);
   return element;
@@ -175,7 +178,9 @@ export function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
   parent?: Element,
 ): ExpandedElement<TTagName> | void {
   if (nodeModFn !== undefined) {
-    return hydrateRoot(unwrapComponent(nodeModFn).build, parent, true, null);
+    const { build } = unwrapComponent(nodeModFn);
+    runRootHooks(false);
+    return hydrateRoot(build, parent, true, null);
   }
 
   let write = 0;
@@ -189,8 +194,10 @@ export function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
       continue;
     }
     try {
+      const build = entry.component() as NodeModFn<ElementTagName>;
+      runRootHooks(false);
       const el = hydrateRoot(
-        entry.component() as NodeModFn<ElementTagName>,
+        build,
         parentEl as Element,
         true,
         root,

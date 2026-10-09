@@ -1,7 +1,7 @@
 // /slow — the pending window, from the inside.
 //
 // This route's loader sleeps 1.2s after its import() resolves, so the stretch
-// where `route.pending` is true is long enough to actually watch. The point is
+// where `router.pending` is true is long enough to actually watch. The point is
 // not the delay: it is what the router does *not* do during it. The outgoing
 // page is still mounted, the URL has already changed, and the spinner is an
 // addition to the tree rather than a replacement of it.
@@ -58,10 +58,10 @@ export function SlowPage(_ctx: RouteContext) {
         css({ mt: 14 }),
         fact(
           "info",
-          "route.pending === true",
+          "router.pending === true",
           "the loader returned a promise, so the router set pending, cleared " +
-            "route.error and called update() straight away. the shell's " +
-            "when(() => route.pending, spinner()) turned on, inside the outlet and " +
+            "router.error and called update() straight away. the shell's " +
+            "when(() => router.pending, spinner()) turned on, inside the outlet and " +
             "right above the page row.",
         ),
         fact(
@@ -81,17 +81,17 @@ export function SlowPage(_ctx: RouteContext) {
       ),
       p(
         s.note,
-        "the readout at the top of this app shows the seam: for those 1.2s route.url " +
-          "reads the new href (it is read off window.location) while route.path, " +
+        "the readout at the top of this app shows the seam: for those 1.2s router.url " +
+          "reads the new href (it is read off window.location) while router.path, " +
           ".pattern and .params still describe the page on screen — they come from the " +
-          "entry that is committed, and nothing is committed yet. route.pending is how " +
+          "entry that is committed, and nothing is committed yet. router.pending is how " +
           "you tell that gap from a settled route.",
       ),
     ),
 
     feature(
       "now do it again",
-      "navigate away and come back. there is no spinner the second time, and route.pending never becomes true — not briefly, not for one frame.",
+      "navigate away and come back. there is no spinner the second time, and router.pending never becomes true — not briefly, not for one frame.",
       div(
         s.row,
         a({ href: "/patterns" }, st.link, "→ /patterns"),

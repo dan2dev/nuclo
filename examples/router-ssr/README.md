@@ -19,7 +19,7 @@ bun run dev          # vite build --watch + bun --watch src/server.ts
 | Pages that place themselves | `src/pages/*.ts`, `src/routes.ts` | Every page returns `view("main", …)` and lands in the shell's `region({ id: "main" })`; the shell itself carries nothing of the router's |
 | Hydration claims the page in place | `src/entry-client.ts` | The console says `hydration: claimed the server's page node in place` — the page's view() claimed the node the server rendered into the region rather than rebuilding it |
 | One `Route` per request | `src/server.ts` | `router.start(request.url)` — concurrent requests never share route state; only the module cache is shared |
-| `base` setting | `src/base.ts` | The app is mounted at `/app`. The router strips it, Vite prefixes assets with it, `route.href()` re-adds it |
+| `base` setting | `src/base.ts` | The app is mounted at `/app`. The router strips it, Vite prefixes assets with it, `router.href()` re-adds it |
 | URLs outside `base` | `src/server.ts` | `/outside-base` → `start()` rejects → real **404** |
 | Router-level 404 | `src/pages/NotFound.ts` | `/app/nope` matches `"*"`, and the server turns that into a real **404** status via `route.pattern === "*"` |
 | Code splitting | `vite.config.ts` | `vite build` emits `chunks/Home-*.js`, `chunks/Post-*.js`, … one per page |
@@ -39,14 +39,14 @@ src/base.ts          the mount path, shared by the router, Vite and the server
 src/routes.ts        route table + App shell — the only module both sides import
 src/pages/*.ts       one code-split page per route
 src/entry-client.ts  await router.start() → hydrate()
-src/server.ts        Bun.serve: per-request start() → renderToString() → HTML
+src/server.ts        Bun.serve: per-request start() → run(renderToString) → HTML
 ```
 
 The whole client entry is:
 
 ```ts
-const route = await router.start();
-hydrate(route.app(App), document.getElementById("app")!);
+await router.start();
+hydrate(App, document.getElementById("app")!);
 ```
 
 `start()` resolves the active route's module *before* returning, so the tree is
@@ -63,18 +63,20 @@ export default function HomePage(ctx: RouteContext) {
 ```
 
 so the shell hosts the pages through a plain `region()` and never has to know
-what the router loaded. `route.app(App)` mounts the pages beside the app — on
-the server inside that one render, on a host that is never serialized, so the
-HTML carries nothing of the router's; in the browser on the document root,
-before the shell hydrates. The server serializes the region's content like any
-other markup, and in the browser the page's `view()` claims those nodes.
+what the router loaded. The pages mount themselves beside the app — on the
+server inside each render `route.run()` wraps, on a host that is never
+serialized, so the HTML carries nothing of the router's; in the browser on the
+document root, before the shell hydrates. The server serializes the region's
+content like any other markup, and in the browser the page's `view()` claims
+those nodes.
 
 And the whole server is:
 
 ```ts
 const route = await router.start(request.url);
 const status = route.pattern === "*" ? 404 : 200;
-new Response(document_(renderToString(route.app(App)), getCssText()), { status });
+const body = route.run(() => renderToString(App));   // App reads this request's Route
+new Response(document_(body, getCssText()), { status });
 ```
 
 ## Route loaders, and the one thing SSR needs from you

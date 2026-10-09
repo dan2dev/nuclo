@@ -87,9 +87,9 @@ Bun.serve({
     // The "*" route matched → answer with a real 404, not a 200 with a 404 page.
     const status = route.pattern === "*" ? 404 : 200;
     const title = route.pattern === "*" ? "404 — nuclo-router SSR" : `${route.path} — nuclo-router SSR`;
-    // route.app(App): the pages mount inside this render, on a host that is
-    // never serialized, so they reach this request's regions and no other's.
-    const body = renderToString(route.app(App));
+    // run(): App reads the shared router, and for this render that is this
+    // request's Route and no other's.
+    const body = route.run(() => renderToString(App));
 
     return new Response(document_(body, getCssText(), title, route.data), {
       status,

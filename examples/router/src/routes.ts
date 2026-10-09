@@ -62,13 +62,13 @@ export const routeTable = {
   "/api": () => import("./pages/Api.ts"),
   "/settings": () => import("./pages/Settings.ts"),
 
-  // An artificially slow chunk, so `route.pending` is observable.
+  // An artificially slow chunk, so `router.pending` is observable.
   "/slow": () => import("./pages/Slow.ts").then(async (m) => {
     await new Promise((resolve) => setTimeout(resolve, 1200));
     return m.SlowPage;
   }),
 
-  // A loader that fails the first time, so `route.error` and retry are
+  // A loader that fails the first time, so `router.error` and retry are
   // observable. See pages/Broken.ts for the counter it reads.
   "/broken": () => import("./pages/Broken.ts").then((m) => m.load()),
 
@@ -92,7 +92,7 @@ function EagerPage() {
       p(
         "This page is not code-split. Its loader is just `() => EagerPage`, so it " +
         "lives in the entry bundle and navigating here is always synchronous — " +
-        "route.pending is never true for it, and the router's idle preloader has " +
+        "router.pending is never true for it, and the router's idle preloader has " +
         "nothing to fetch.",
       ),
     ),

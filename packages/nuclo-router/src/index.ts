@@ -2,7 +2,7 @@
 /**
  * nuclo-router — routing for nuclo, built on list() and update().
  *
- * The router owns no DOM of its own: `route.pages()` is a `list()` over the
+ * The router owns no DOM of its own: the pages are a `list()` over the
  * layer stack — one row per layer, so an ordinary page is a single row and a
  * pushed layer is an appended sibling. That is what makes SSR and hydration
  * work for free: the server and the client build the same tree, so hydrate()
@@ -16,33 +16,33 @@
  *   "*":           () => import("./pages/NotFound.ts"),
  * });
  *
- * export const App = (route: Route) =>
- *   div(Header(route), main(region({ id: "main" })), Footer());
+ * export const App = () => div(Header(), main(region({ id: "main" })), Footer());
  *
  * // pages/Post.ts — a page says where it goes
  * export default (ctx) => view("main", article(h1(ctx.params.slug)));
  *
+ * // main.ts — the browser
+ * await router.start();
+ * hydrate(App, document.getElementById("app")!);
+ *
  * // server.ts — one Route per request, no shared mutable state
  * const route = await router.start(req.url);
- * const html = renderToString(route.app(App));
- *
- * // main.ts — one Route per page load
- * const route = await router.start();
- * hydrate(route.app(App), document.getElementById("app")!);
+ * const html = route.run(() => renderToString(App));
  * ```
  *
  * `start()` resolves the active route's module *before* returning, so the
  * first tree is complete on both sides. Everything after that — link clicks,
- * popstate, idle preloading — is handled by the Route it returned.
+ * popstate, idle preloading — is handled by the Route it returned, which the
+ * router itself reads through: `router.path`, `router.go()`.
  *
- * The router decides what to load, not where it goes. `route.app(App)` mounts
- * the pages beside the app — on the document itself in the browser, on a host
- * that is never serialized on the server — and each page lands in a region
- * through its own `view()`. The app tree carries nothing of the router's. For
- * pages that render where they are written instead, `route.pages()` places
- * the stack in the tree.
+ * The router decides what to load, not where it goes. The pages mount
+ * themselves beside the app with its first render — on the document root in
+ * the browser, inside the render on a host nothing serializes on the server —
+ * and each page lands in a region through its own `view()`. The app's tree
+ * carries nothing of the router's. For pages that render where they are
+ * written instead, the app places `pages()`.
  */
-import { list, update } from "nuclo";
+import { list, onRootBuild, update } from "nuclo";
 import {
   browserHistory,
   hashHistory,
@@ -413,34 +413,28 @@ export interface Route {
    */
   readonly depth: number;
   /**
-   * The app, rendered under this Route: the pages are mounted beside it and
-   * reach their regions through their own `view()`, so the app's tree carries
-   * nothing of the router's. Pass the result to `render()`, `hydrate()` or
-   * `renderToString()`:
-   *
-   * ```ts
-   * hydrate(route.app(App), document.getElementById("app")!);   // browser
-   * renderToString(route.app(App));                             // server
-   * ```
-   *
-   * In the browser the pages mount once per Route, as comments on the
-   * document root — nothing visible — before the app's own tree is built, so
-   * they are already waiting when its regions arrive and claim the server's
-   * nodes on hydration. On the server they mount inside the render, on a host
-   * that is never serialized, which keeps each request's pages to its own
-   * render. `stop()` unmounts them.
-   *
-   * A page that returns plain content rather than a `view()` has nowhere to
-   * go here; the router warns once. Use `pages()` to render pages in place.
-   */
-  app(build: (route: Route) => NodeModFn | (() => NodeModFn)): () => NodeModFn;
-  /**
-   * The alternative to `app()`: the slot the active stack renders into —
-   * every layer, bottom first — placed by the app itself, once, wherever the
-   * pages should render. A page that returns a `view()` still lands in its
-   * region; one that returns plain content renders here.
+   * The alternative to the automatic mount: the slot the layer stack renders
+   * into — every layer, bottom first — placed by the app, once, before the
+   * render that shows it. A page that returns plain content renders here; one
+   * that returns a `view()` still lands in its region. Once placed, nothing is
+   * mounted automatically.
    */
   pages(): ListModifier;
+  /**
+   * Runs `fn` with this Route as the router's active one, and returns what it
+   * returns. For the server, where every request has its own Route and the
+   * app reads the shared router:
+   *
+   * ```ts
+   * const route = await router.start(request.url);
+   * const html = route.run(() => renderToString(App));
+   * ```
+   *
+   * Each `renderToString()` inside `fn` mounts this Route's pages within that
+   * render. The browser never needs it: `start()` makes its Route the active
+   * one.
+   */
+  run<T>(fn: () => T): T;
   /** Navigates, loading the target's module if needed. Never rejects. */
   go(href: string, options?: NavigateOptions): Promise<void>;
   /**
@@ -484,11 +478,21 @@ export interface Route {
   stop(): void;
 }
 
-export interface Router {
+/**
+ * The route table, plus every member of the active Route read through it —
+ * `router.path`, `router.go()`, `router.href()` — so an app imports the
+ * router instead of being handed a Route. The active Route is the one the
+ * last `start()` returned in the browser (stopped or not), or the one whose
+ * `run()` is executing on the server; reading a member with neither throws.
+ */
+export interface Router extends Omit<Route, "run"> {
   /**
    * Resolves a URL to its page module and returns the Route for it.
    * Defaults to `location.href` in the browser; pass the request URL on the
    * server. Rejects when nothing matches and the table has no "*" route.
+   *
+   * In the browser the Route becomes the router's active one and its pages
+   * mount with the next `render()` or `hydrate()`; `stop()` unmounts them.
    */
   start(url?: string): Promise<Route>;
   /**
@@ -638,8 +642,20 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
    */
   const cache = new Map<RouteLoader, RouteModuleShape | Promise<RouteModuleShape>>();
 
-  /** Browser only: the Route from the last start(), so a second start() can retire it. */
-  let liveRoute: Route | null = null;
+  /**
+   * The Route the router's own members read: in the browser the one from the
+   * last start() — kept after its stop(), like any stopped Route it still
+   * answers with its last match — until a second start() retires it; on the
+   * server the one whose run() is executing.
+   */
+  let active: Route | null = null;
+
+  function activeRoute(): Route {
+    if (active) return active;
+    throw new Error(
+      "nuclo-router: no active route — await router.start() first (on the server, render inside route.run())",
+    );
+  }
 
   function load(loader: RouteLoader, pattern: string): RouteModuleShape | Promise<RouteModuleShape> {
     const hit = cache.get(loader);
@@ -926,13 +942,15 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     /** The marker of the last pages() placed in a tree, to catch a second live one. */
     let outlet: WeakRef<Comment> | null = null;
     let warnedOutlets = false;
-    /** The document-root mount made by app() in the browser, until stop(). */
+    /** The automatic mount on the document root, in the browser, until stop(). */
     let mounted: { start: Node; end: Node } | null = null;
-    /** True once pages() was placed by the app: app() then mounts nothing. */
+    /** True once the app placed pages() itself: nothing is mounted automatically. */
     let placed = false;
-    /** True once app() has mounted the pages, on either side: pages() then warns. */
+    /** True once the pages were mounted automatically, on either side: pages() then warns. */
     let mountedOnce = false;
     let warnedPlain = false;
+    /** Unregisters the browser's root-build hook; set by start(). */
+    let unhookRoot: (() => void) | undefined;
     /**
      * The location the last history event delivered, as layer depth plus
      * href — one Back can arrive as both a popstate and a hashchange (hash
@@ -984,7 +1002,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
             console.warn(
               `nuclo-router: "${leafOf(entry).ctx.pattern}" returned content without a view(), ` +
                 "so it renders nowhere visible. Return view(\"<region id>\", …) from the page, " +
-                "or place route.pages() in the tree to render pages where it sits.",
+                "or place router.pages() in the tree to render pages where it sits.",
             );
           }
           return node as Node | null;
@@ -993,12 +1011,24 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       return list(() => (auto && stopped ? [] : slot), render);
     }
 
-    /** Browser: mounts the stack on the document root, once per Route. */
-    function mountPages(): void {
-      if (mounted || placed) return;
-      const html = document.documentElement as unknown as ExpandedElement;
-      const start = rowsOf(true)(html, 0) as unknown as Node;
-      mounted = { start, end: (html as unknown as Node).lastChild! };
+    /**
+     * Mounts the stack beside the app, from nuclo's root-build hook: after the
+     * app's component has run — so a pages() it placed is known — and before
+     * its tree is built, so each page's view() is waiting when its region
+     * arrives. In the browser that is once per Route, as comments on the
+     * document root, outside any hydration pass. In a server render it is
+     * inside that render, on a host nothing serializes, so the views reach
+     * this render's regions and no other's.
+     */
+    function mountPages(serializing: boolean): void {
+      if (placed) return;
+      if (serializing) {
+        rowsOf(false)(document.createElement("div") as unknown as ExpandedElement, 0);
+      } else if (!mounted) {
+        const html = document.documentElement as unknown as ExpandedElement;
+        const start = rowsOf(true)(html, 0) as unknown as Node;
+        mounted = { start, end: (html as unknown as Node).lastChild! };
+      }
       mountedOnce = true;
     }
 
@@ -1430,24 +1460,13 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       get depth() {
         return slot.length;
       },
-      app: (build) => () => {
-        // Browser: once per Route, outside any hydration pass — this runs
-        // before render()/hydrate() start walking the app's tree — so the
-        // pages' views are waiting when the layout's regions arrive. Server:
-        // inside this render pass, on a host nothing serializes, so the views
-        // reach this request's regions and no other's.
-        if (isBrowser) mountPages();
-        else if (!placed) {
-          rowsOf(false)(document.createElement("div") as unknown as ExpandedElement, 0);
-          mountedOnce = true;
-        }
-        const tree = build(route);
-        return (typeof tree === "function" && tree.length === 0 ? (tree as () => NodeModFn)() : tree) as NodeModFn;
-      },
       pages: () => {
         placed = true;
         if (mountedOnce) {
-          console.warn("nuclo-router: route.pages() was placed after route.app() mounted the pages — use one or the other.");
+          console.warn(
+            "nuclo-router: pages() was placed after the pages were mounted automatically — " +
+              "place it before the render that shows it, or leave it out.",
+          );
         }
         const rows = rowsOf(false);
         return function (host: ExpandedElement, index: number): Comment {
@@ -1474,6 +1493,21 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
           return marker;
         } as unknown as ListModifier;
       },
+      run: (fn) => {
+        const previous = active;
+        active = route;
+        // Server renders inside fn mount this Route's pages; browser renders
+        // are the browser hook's.
+        const unhook = onRootBuild((serializing) => {
+          if (serializing) mountPages(true);
+        });
+        try {
+          return fn();
+        } finally {
+          unhook();
+          active = previous;
+        }
+      },
       push: <T,>(href: string) => pushLayer(href) as Promise<T | undefined>,
       go: (href, navOptions) => navigate(href, navOptions?.replace ? "replace" : "push"),
       back: (delta = 1) => {
@@ -1499,26 +1533,27 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         // promise that can never settle.
         settleAll(slot.splice(1));
         current = slot[0];
-        unmountPages();
         // A retired Route is not loading anything. Without this, a Route
         // stopped mid-navigation would report pending forever and leave an
         // app's `when(() => route.pending, Spinner())` on screen for good.
         pendingPath = null;
         cancelIdle();
+        unmountPages();
         if (isBrowser) {
+          unhookRoot?.();
+          unhookRoot = undefined;
           unsubscribe?.();
           unsubscribe = undefined;
           document.removeEventListener("click", onClick);
         }
-        if (liveRoute === route) liveRoute = null;
       },
     };
 
     if (isBrowser) {
       // One page, one Route: a second start() (HMR, a re-mount) retires the
       // previous one instead of stacking a second set of listeners on it.
-      liveRoute?.stop();
-      liveRoute = route;
+      active?.stop();
+      active = route;
       // Seeded with the current location: a popstate some browsers fire on
       // load, for the entry already shown, changes nothing.
       handled = locationKey();
@@ -1527,6 +1562,10 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       // set for memory.
       unsubscribe = location.subscribe(onLocationChange);
       document.addEventListener("click", onClick);
+      // The pages mount with the first render() or hydrate() of the app.
+      unhookRoot = onRootBuild((serializing) => {
+        if (!serializing) mountPages(false);
+      });
       onNavigate?.(leafOf(current).ctx);
       startPreload();
     }
@@ -1534,8 +1573,20 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     return route;
   }
 
-  return {
+  const router = {
     start,
-    match: (url) => parse(url ?? location.read())?.ctx ?? null,
-  };
+    match: (url?: string) => parse(url ?? location.read())?.ctx ?? null,
+    // Idempotent like Route.stop(), so it cannot throw once nothing is active.
+    stop: () => active?.stop(),
+  } as Router;
+  for (const key of DELEGATED) {
+    Object.defineProperty(router, key, { get: () => activeRoute()[key], enumerable: true });
+  }
+  return router;
 }
+
+/** The Route members the router reads through to its active Route. */
+const DELEGATED = [
+  "path", "pattern", "params", "search", "hash", "url", "pending", "error", "data", "depth",
+  "pages", "go", "push", "back", "href",
+] as const satisfies ReadonlyArray<Exclude<keyof Route, "run" | "stop">>;

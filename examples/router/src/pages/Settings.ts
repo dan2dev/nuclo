@@ -44,20 +44,20 @@ export default function SettingsPage(_ctx: RouteContext) {
     feature(
       "base",
       "the URL prefix the app is mounted under. the router strips it before matching, " +
-        "and route.href() puts it back — so your route table stays written in app-relative " +
+        "and router.href() puts it back — so your route table stays written in app-relative " +
         "paths and never learns where it was deployed.",
       div(
         s.row,
         pill("neutral", 'default "/"'),
         pill("info", "stripped before matching"),
-        pill("info", "re-added by route.href()"),
+        pill("info", "re-added by router.href()"),
       ),
       code(
         [
           'createRouter(table, { base: "/app" })',
           "",
-          '  route.href("/docs")  →  "/app/docs"',
-          '  route.href("/")      →  "/app"',
+          '  router.href("/docs")  →  "/app/docs"',
+          '  router.href("/")      →  "/app"',
           "",
           "  URL the browser is on      matched against",
           '  "/app/docs"            →   "/docs"',
@@ -118,9 +118,9 @@ export default function SettingsPage(_ctx: RouteContext) {
           "requestIdleCallback(step)   // or setTimeout(step, 200) where it is missing",
           "",
           "//  · skips routes already in the cache",
-          "//  · while route.pending, it requeues instead of fetching",
+          "//  · while router.pending, it requeues instead of fetching",
           "//  · a chunk that fails is stepped over, never retried",
-          "//  · route.stop() cancels the pending idle callback",
+          "//  · router.stop() cancels the pending idle callback",
         ].join("\n"),
       ),
       div(
@@ -129,7 +129,7 @@ export default function SettingsPage(_ctx: RouteContext) {
           "why it pauses on pending",
           p(
             s.panelDesc,
-            "the loop checks route.pending at the top of every step. a navigation in flight is " +
+            "the loop checks router.pending at the top of every step. a navigation in flight is " +
               "a user waiting on a chunk; speculative work must not compete with it for " +
               "bandwidth, so the step requeues itself and tries again on the next idle slice.",
           ),
@@ -200,7 +200,7 @@ export default function SettingsPage(_ctx: RouteContext) {
             s.panelDesc,
             "after the initial call in start(), commit() is the only place it is called from — " +
               "so a chunk that fails to load and a popstate onto a URL outside the routes both " +
-              "set route.error without ever reaching the hook.",
+              "set router.error without ever reaching the hook.",
           ),
         ),
         card(
@@ -229,8 +229,8 @@ export default function SettingsPage(_ctx: RouteContext) {
         [
           "interface NavigateOptions { replace?: boolean }",
           "",
-          'route.go("/patterns")                      // pushState — back returns here',
-          'route.go("/patterns", { replace: true })   // replaceState — this entry is gone',
+          'router.go("/patterns")                      // pushState — back returns here',
+          'router.go("/patterns", { replace: true })   // replaceState — this entry is gone',
         ].join("\n"),
       ),
       div(
@@ -251,7 +251,7 @@ export default function SettingsPage(_ctx: RouteContext) {
             "an href that matches nothing — outside base, or no pattern for it — is read as an " +
               "explicit request to leave the app: go() performs a full location.assign(). it " +
               "never rejects either way, so a stray call cannot produce an unhandled rejection; " +
-              "a load failure surfaces as route.error instead.",
+              "a load failure surfaces as router.error instead.",
           ),
         ),
       ),

@@ -47,7 +47,7 @@ export default function RecordPage(ctx: RouteContext, layer: Layer, _data: unkno
 
     feature(
       "Open it relatively",
-      'route.href("./preview") and layer.push("./preview") resolve against the ACTIVE ' +
+      'router.href("./preview") and layer.push("./preview") resolve against the ACTIVE ' +
         "route, so the same string reaches a different URL under each parent. a browser " +
         "would have resolved \"./preview\" one segment higher.",
 
@@ -69,10 +69,9 @@ export default function RecordPage(ctx: RouteContext, layer: Layer, _data: unkno
         div(
           s.row,
           button(btn.primary, { id: "open-preview", onClick: () => void openPreview() }, 'push("./preview")'),
-          // A plain link to the same place. A page holds ctx, not the Route,
-          // so it builds the href from ctx.path — which is exactly what
-          // route.href("./preview") returns from somewhere that has the Route
-          // (the app shell, say), with `base` added.
+          // A plain link to the same place, built from ctx.path rather than
+          // router.href("./preview"): this page is also the preview's parent,
+          // and a relative href resolves against the matched — deepest — route.
           a({ id: "preview-link", href: `${ctx.path}/preview` }, btn.base, "or navigate to it"),
         ),
 

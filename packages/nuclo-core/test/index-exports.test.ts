@@ -14,6 +14,7 @@ describe('main index.ts exports', () => {
       'keyframes',
       'list',
       'on',
+      'onRootBuild',
       'region',
       'render',
       'resetStyles',

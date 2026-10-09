@@ -21,7 +21,7 @@ the companion example: [`examples/router-ssr`](../router-ssr).
 | Page | Features |
 |---|---|
 | `src/routes.ts` | the whole route table — every pattern form, all four loader shapes, and the `createRouter` options |
-| `src/app.ts` | the shell: a `Layout` that hosts the pages through a nuclo `region()` and never sees the `Route`, `route.href()` links, `pending`/`error` blocks, `go()` buttons, and the live `Route` readout |
+| `src/app.ts` | the shell: a `Layout` that hosts the pages through a nuclo `region()` and never sees the router, `router.href()` links, `pending`/`error` blocks, `go()` buttons, and the live router readout |
 | `pages/Overview.ts` | what the router is, and the two-line integration |
 | `pages/Patterns.ts` | static · `:param` · `*catch-all` · `"*"` · full precedence · slash and percent-encoding normalization · the edge cases (`%2F`, `+`, case sensitivity, dot segments, duplicate param names, `*` as a literal) · the two `createRouter`-time pattern errors |
 | `pages/Deep.ts` | a multi-segment static route is still one Map lookup |
@@ -49,7 +49,7 @@ Both examples are deliberately configured differently so that every setting is
 | Setting | here | in `router-ssr` |
 |---|---|---|
 | `preload` | **`false`** — so the `/slow` and `/broken` demos actually show their `pending` and `error` states | `true` (the default) — watch every chunk arrive on idle in the network panel |
-| `base` | `"/"` (the default) | **`/app`** — the router strips it, Vite prefixes assets with it, `route.href()` re-adds it |
+| `base` | `"/"` (the default) | **`/app`** — the router strips it, Vite prefixes assets with it, `router.href()` re-adds it |
 | `onNavigate` | sets `document.title` and appends to the visible log | sets `document.title`; it never fires during SSR, so the routes module still imports cleanly on the server |
 
 ## Things worth clicking
@@ -234,11 +234,11 @@ module behind it is imported once.
 Three links on the page cover the behaviour:
 
 - **revalidate** — a navigation to where you already are. The loader runs
-  again and the row rebuilds. (`route.go(route.url, { replace: true })` does
+  again and the row rebuilds. (`router.go(router.url, { replace: true })` does
   the same without a history entry.)
-- **`?slow=1`** — `route.pending` goes true for 1.2 s and *this page stays on
+- **`?slow=1`** — `router.pending` goes true for 1.2 s and *this page stays on
   screen* while the next one loads.
-- **`?fail=1`** — the loader rejects, `route.error` is set, the page you were
+- **`?fail=1`** — the loader rejects, `router.error` is set, the page you were
   on is untouched, and the next successful navigation clears it.
 
 The loader also runs on the server — see [`examples/router-ssr`](../router-ssr),
@@ -249,13 +249,14 @@ client so hydration does not refetch it.
 
 - Every link on these pages is a plain `<a href>`. The router adds **one**
   delegated `click` listener to `document`; nothing is wired per link.
-- Nothing of the router's is in the app tree: `src/main.ts` renders it with
-  `route.app(App)`, which mounts the pages beside the app.
+- The shell reads the router it imports — `router.path`, `router.go()` — so
+  `src/main.ts` is just `await router.start()` then `render(App, container)`.
+  Nothing of the router's is in the app tree: the pages mount themselves
+  beside it with that render.
 - Every page returns `view("main", …)`, so it lands in the `region({ id: "main" })`
   the `Layout` declares. That is what lets the layout's filter box keep its
   text and its focus while the page inside it changes — type in it, then
   navigate.
-- Pages receive a `RouteContext` (the match they were built with), not the
-  `Route`. For live values — and for `go()`/`stop()` — read the `Route`;
-  `src/main.ts` puts it on `window` so `pages/Api.ts` and your devtools
-  console can reach it.
+- Pages receive a `RouteContext` (the match they were built with). For live
+  values — and for `go()`/`stop()` — import the router, as `pages/Api.ts`
+  does; `src/main.ts` also puts it on `window` for your devtools console.

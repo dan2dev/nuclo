@@ -96,7 +96,7 @@ export default function DocsShell(ctx: RouteContext, _layer: Layer, _data: unkno
             { href },
             st.link,
             // Re-read on every update(), so the active pill follows the child
-            // route. An app mounted under a `base` would compare route.path.
+            // route. An app mounted under a `base` would compare router.path.
             () => (location.pathname === href ? st.active : ""),
             label,
           );

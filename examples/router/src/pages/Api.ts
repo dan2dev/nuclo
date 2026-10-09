@@ -1,30 +1,22 @@
-// Api.ts — the Route API, member by member, with a live control for each.
+// Api.ts — the router API, member by member, with a live control for each.
 //
 // What this page demonstrates:
 //   · the six read-only members that describe the match — path, pattern,
 //     params, search, hash, url — and which two of them read the live
 //     location instead of the match
 //   · pending and error, the two flags that describe a navigation in flight
-//   · pages(), the one list() over the layer stack that is why SSR and hydration work
+//   · pages(), the one list() over the layer stack, and why this app never places it
 //   · go(), go(…, { replace: true }) and href(), driven from buttons and
 //     live readouts
 //   · stop(), and why you almost never write it yourself
 //   · the Router side: createRouter(table, options) and start(url?)
 //
-// A page is handed a RouteContext — the match — not the Route, so the buttons
-// here cannot reach go()/stop() through their argument. src/main.ts puts the
-// Route on `window` for exactly this page; in real code you pass it down from
-// the shell, the way app.ts does.
-import type { Route, RouteContext } from "nuclo-router";
+// The buttons reach go() and stop() the same way the shell does: through the
+// router this page imports.
+import type { RouteContext } from "nuclo-router";
+import { router } from "../routes.ts";
 import { css, cx } from "../theme.ts";
 import { btn, card, code, feature, pill, s } from "../ui.ts";
-
-/**
- * main.ts assigns `window.route` *after* the first render(), so when /api is
- * the entry URL this tree is built before the assignment lands.
- * Hence the optional read: every call below goes through `?.`.
- */
-const live = (): Route | undefined => (window as unknown as { route?: Route }).route;
 
 const st = {
   desc: css({ text: 13, color: "textDim" }),
@@ -39,7 +31,7 @@ function member(signature: string, description: string, ...controls: NodeModLike
 
 /** A button that navigates. `void` because go() returns a promise nobody awaits. */
 function goButton(href: string, label = href) {
-  return button(btn.base, { onClick: () => void live()?.go(href) }, label);
+  return button(btn.base, { onClick: () => void router.go(href) }, label);
 }
 
 /** A label + live value row, re-read on every update(). */
@@ -51,23 +43,23 @@ export default function ApiPage(_ctx: RouteContext) {
   // Placed by the page itself: into the layout's region({ id: "main" }).
   return view("main", div(
     s.page,
-    h2(s.title, "The Route API"),
+    h2(s.title, "The router API"),
     p(
       s.lead,
-      "every member of the Route interface: what it is, and a control that makes it " +
+      "every member of the router: what it is, and a control that makes it " +
         "move. the readout at the top of the page is the same object these buttons " +
         "talk to, so each click shows up there immediately.",
     ),
 
     feature(
       "Reading the match",
-      "path, pattern, params and search come from the match, so they change only when a navigation commits. hash and url read window.location while the Route is running — the router deliberately leaves hash-only clicks to the browser, so the match would never hear about them.",
+      "path, pattern, params and search come from the match, so they change only when a navigation commits. hash and url read window.location while the router is running — the router deliberately leaves hash-only clicks to the browser, so the match would never hear about them.",
 
       div(
         s.cols2,
 
         member(
-          "route.path",
+          "router.path",
           "the canonical decoded path with the base stripped: %xx decoded, no trailing " +
             "slash, no empty segments. the address bar keeps the href you navigated to; " +
             "this is its canonical form.",
@@ -75,30 +67,30 @@ export default function ApiPage(_ctx: RouteContext) {
         ),
 
         member(
-          "route.pattern",
+          "router.pattern",
           "the table key that matched, not the URL. it is the page's identity — " +
             "routes.ts feeds it to document.title from onNavigate.",
           div(s.row, goButton("/files/docs/a/b.md", "→ /files/*rest")),
         ),
 
         member(
-          "route.params",
+          "router.params",
           "decoded segment values by name, on a null-prototype object so a segment " +
             'called "__proto__" lands as data instead of touching Object.prototype. a ' +
             "param-less match shares one frozen empty object, so never write to what " +
-            "you get — spread it ({ ...route.params }) if you need your own.",
+            "you get — spread it ({ ...router.params }) if you need your own.",
           div(s.row, goButton("/blog/hello/42", "two params"), goButton("/blog/caf%C3%A9", "decoding")),
         ),
 
         member(
-          "route.search",
+          "router.search",
           "the matched URL's URLSearchParams, untouched. the router never flattens a " +
             "query string for you, so a repeated key survives and .getAll() can see it.",
           div(s.row, goButton("/patterns?tab=params&tab=search&q=hi", "repeated key")),
         ),
 
         member(
-          "route.hash",
+          "router.hash",
           "window.location.hash, read live — including the leading \"#\", or \"\" when " +
             "there is none. a click on a #fragment link is left to the browser on " +
             "purpose (native scrolling and history are better), so nothing navigates. " +
@@ -112,8 +104,8 @@ export default function ApiPage(_ctx: RouteContext) {
         ),
 
         member(
-          "route.url",
-          "window.location.href while the Route is running. after stop() — and during " +
+          "router.url",
+          "window.location.href while the router is running. after stop() — and during " +
             "SSR, where there is no location — it is the href the context was resolved " +
             'from instead, which for a client navigation is the href you passed: go("/patterns") ' +
             'records "/patterns", not an absolute URL.',
@@ -142,7 +134,7 @@ export default function ApiPage(_ctx: RouteContext) {
         s.cols2,
 
         member(
-          "route.pending",
+          "router.pending",
           "true from the moment a navigation needs a module that is not in the cache " +
             "until that module arrives — or fails. the outgoing page stays mounted the " +
             "whole time — app.ts puts the spinner above it, so there is no blank frame. " +
@@ -152,7 +144,7 @@ export default function ApiPage(_ctx: RouteContext) {
         ),
 
         member(
-          "route.error",
+          "router.error",
           "set when a page module fails to load, cleared by the next commit. go() never " +
             "rejects — a stray link click must not raise an unhandled rejection — so the " +
             "failure surfaces here, and is console.error'd as well. the rejected load is " +
@@ -164,23 +156,22 @@ export default function ApiPage(_ctx: RouteContext) {
       ),
 
       card(
-        "route.pages(): ListModifier",
+        "router.pages(): ListModifier",
         span(
           st.desc,
-          "a one-item list() whose single row is the active page. place it exactly once " +
-            "in the tree. that is the whole trick behind SSR and hydration: server and " +
-            "client build the same list markers, so hydrate() claims the server's nodes " +
-            "instead of replacing them. the items array behind it is one allocation for " +
-            "the Route's life — a navigation swaps the single row and calls update().",
+          "the layer stack is a one-item list() whose single row is the active page. you " +
+            "never place it in this app: start() mounts it beside the app on the first " +
+            "render, and every page view()s itself into a region. place it yourself — once " +
+            "— only for pages that return plain content and should render where it sits. " +
+            "either way, server and client build the same tree, so hydrate() claims the " +
+            "server's nodes instead of replacing them.",
         ),
-        code(`// app.ts — the outlet (abridged: it renders route.error here too)
-main(
-  { id: "outlet" },
-  // the spinner sits *above* the old page, never in place of it
-  when(() => route.pending, spinner()),
-  // the one place a page renders. exactly once in the tree.
-  route.pages(),
-)`),
+        code(`// main.ts — the pages mount themselves with this render
+await router.start();
+render(App, document.querySelector("#app")!);
+
+// the opt-in: pages that return plain content render here
+main({ id: "outlet" }, router.pages())`),
         span(
           st.desc,
           "navigating to a cached module with the same page function, path and search " +
@@ -194,7 +185,7 @@ main(
         s.cols2,
 
         member(
-          "route.go(href)",
+          "router.go(href)",
           "pushes a history entry, loads the target's module if it is not cached, " +
             "commits, then scrolls — to the hash's element if there is one, otherwise to " +
             "the top. the promise resolves once the page is on screen and never rejects. " +
@@ -205,7 +196,7 @@ main(
         ),
 
         member(
-          "route.go(href, { replace: true })",
+          "router.go(href, { replace: true })",
           "replaceState instead of pushState: the entry you are on right now is " +
             "overwritten, so Back skips it and lands on whatever preceded it. for " +
             "redirects, and for filter state you do not want piling up in the history.",
@@ -213,7 +204,7 @@ main(
             s.row,
             button(
               btn.primary,
-              { onClick: () => void live()?.go("/patterns", { replace: true }) },
+              { onClick: () => void router.go("/patterns", { replace: true }) },
               'go("/patterns", { replace: true })',
             ),
           ),
@@ -221,15 +212,15 @@ main(
         ),
 
         member(
-          "route.href(path)",
+          "router.href(path)",
           "normalizes a path and prefixes the base option. use it for every " +
             "a({ href }) — the same tree then keeps working when the app moves to a " +
             "sub-path, as ../router-ssr does by mounting under /app, where this call " +
             'returns "/app/patterns". the root is special-cased: href("/") is the base ' +
             'itself, or "/" when there is no base — as in this app.',
-          readout('href("/patterns")', () => live()?.href("/patterns") ?? "…"),
-          readout('href("patterns/")', () => live()?.href("patterns/") ?? "…"),
-          readout('href("/")', () => live()?.href("/") ?? "…"),
+          readout('href("/patterns")', () => router.href("/patterns")),
+          readout('href("patterns/")', () => router.href("patterns/")),
+          readout('href("/")', () => router.href("/")),
         ),
       ),
     ),
@@ -247,7 +238,8 @@ main(
             "no pattern to a regex: a static route is one Map lookup, a dynamic one a " +
             "segment count plus a literal compare per segment. it also holds the module " +
             "cache, so every Route it starts shares the pages already loaded. the object " +
-            "it returns has two methods: start(), below, and match(url?), which resolves a " +
+            "it returns is also what the app reads — every member on this page — plus " +
+            "start(), below, and match(url?), which resolves a " +
             "URL to its RouteContext (or null) with no import, no history and no " +
             "listeners — a server's 404 check, or is this link ours? the options (base, " +
             "preload, onNavigate) get their own page: ",
@@ -265,18 +257,18 @@ main(
             "onNavigate for the initial match and queues idle preloading; on the server " +
             "you pass the request URL and none of that happens.",
         ),
-        code(`// server.ts — one Route per request, no shared mutable state
+        code(`// main.ts — one Route per page load, read through the router
+await router.start();
+render(App, document.querySelector("#app")!);
+
+// server.ts — one Route per request; run() makes it the one App reads
 try {
   const route = await router.start(req.url);
-  return html(renderToString(route.app(App)));
+  return html(route.run(() => renderToString(App)));
 } catch {
   // nothing matched and the table has no "*" route
   return status(404);
-}
-
-// main.ts — one Route per page load
-const route = await router.start();
-render(route.app(App), document.querySelector("#app")!);`),
+}`),
         span(
           st.desc,
           'it rejects when nothing matches and the table has no "*" route — that ' +
@@ -287,7 +279,7 @@ render(route.app(App), document.querySelector("#app")!);`),
 
       div(
         cx(s.cardBox, st.danger),
-        span(s.caption, "route.stop(): void"),
+        span(s.caption, "router.stop(): void"),
         div(s.row, pill("bad", "this button breaks the page")),
         span(
           st.desc,
@@ -301,7 +293,7 @@ render(route.app(App), document.querySelector("#app")!);`),
           "click it and the router lets go of the page: the delegated click listener is " +
             "gone, so every link becomes a plain browser navigation — a full page load, " +
             "not a client-side one — and go() returns an already-resolved promise " +
-            "without doing anything. route.hash and route.url stop following the address " +
+            "without doing anything. router.hash and router.url stop following the address " +
             "bar too, falling back to the last committed match.",
         ),
         div(s.row, pill("good", "rarely yours to call")),
@@ -313,7 +305,7 @@ render(route.app(App), document.querySelector("#app")!);`),
         ),
         div(
           s.row,
-          button(btn.danger, { onClick: () => live()?.stop() }, "route.stop()"),
+          button(btn.danger, { onClick: () => router.stop() }, "router.stop()"),
           button(btn.base, { onClick: () => window.location.reload() }, "reload the page"),
         ),
       ),

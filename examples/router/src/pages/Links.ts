@@ -3,7 +3,7 @@
  *
  * Link handling is exactly one listener: a non-capturing `click` on
  * `document`, added in start() — next to the `popstate` listener, the only
- * other one the Route installs — and removed by route.stop(). There is no
+ * other one the Route installs — and removed by router.stop(). There is no
  * <Link> component and nothing is wired up per link: a plain <a> is the whole
  * API.
  *
@@ -60,7 +60,7 @@ function intercepted(ctx: RouteContext) {
     "the router navigates",
     "Left-click, no modifiers, an in-origin href that one of the table's patterns matches. " +
       "The listener calls preventDefault() and hands the path to the same navigate() that " +
-      "route.go() uses — so these are pushState navigations, not reloads.",
+      "router.go() uses — so these are pushState navigations, not reloads.",
 
     branch(
       'a({ href: "/patterns" })',
@@ -345,7 +345,7 @@ export function LinksPage(ctx: RouteContext) {
         s.note,
         "Nothing here reads the DOM beyond the clicked anchor's attributes, and nothing is " +
           "registered per link — so links rendered later, by a list() row or an async page, are " +
-          "handled with no registration step. Write hrefs with route.href(path) when the app is " +
+          "handled with no registration step. Write hrefs with router.href(path) when the app is " +
           "mounted under a base, so the base ends up in the attribute the browser and the listener " +
           "both read.",
       ),

@@ -1,7 +1,6 @@
 /**
  * Pages that place themselves, with the stack placed in the tree by the app
- * (`route.pages()`) rather than mounted by `route.app()` — see app.test.ts
- * for that. The router only decides what to load: a page returns
+ * (`route.pages()`). The router only decides what to load: a page returns
  * `view("main", …)` and lands in the layout's `region({ id: "main" })`,
  * wherever `route.pages()` happens to sit — before or after the layout, at any
  * depth. The router never knows a region id. The layout is never rebuilt, so

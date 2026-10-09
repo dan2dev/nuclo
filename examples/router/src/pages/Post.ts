@@ -180,7 +180,7 @@ export default function PostPage(ctx: RouteContext<Params<"/blog/:slug">>) {
               ),
               // ctx.url, not ctx.path: ctx.path carries no query, so go(ctx.path)
               // from a url that has one changes the query and does rebuild.
-              code('route.go(ctx.url) // same path + query → row kept, update() only'),
+              code('router.go(ctx.url) // same path + query → row kept, update() only'),
             ),
             card(
               "hash only  ·  the router never sees it",
@@ -219,7 +219,7 @@ export default function PostPage(ctx: RouteContext<Params<"/blog/:slug">>) {
                 "the hash links above move the url without re-running this page, so " +
                   "ctx.hash can fall behind. the live readout is a function child: " +
                   "it is re-read on update(), which is why the button changes it. " +
-                  "route.hash on the Route reads location.hash directly.",
+                  "router.hash reads location.hash directly.",
               ),
             ),
           ),

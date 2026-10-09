@@ -5,6 +5,8 @@
 
 import { escapeHtml, escapeText, camelToKebab, propertyToAttribute } from '../shared/strings';
 import { runSerializing } from '../shared/serializing';
+import { runRootHooks } from '../shared/root-hooks';
+import { isZeroArityFunction } from '../shared/type-guards';
 import { SVG_NAMESPACE } from '../shared/dom';
 
 type RenderableInput =
@@ -427,9 +429,10 @@ export function renderToString(input: RenderableInput): string {
       const element = runSerializing(() => {
         if (typeof document === 'undefined') throw new Error('Document is not available. Make sure polyfills are loaded.');
         const container = document.createElement('div') as unknown as ExpandedElement<ElementTagName>;
-        let built: unknown = (input as NodeModFn<ElementTagName>)(container, 0);
-        // render(App)-style component function: it returned the tree's
-        // builder instead of the tree — build it (mirrors render()/hydrate()).
+        // render(App)-style component function: call it for the tree's
+        // builder (mirrors render()/hydrate()), run the root hooks, then build.
+        let built: unknown = isZeroArityFunction(input) ? (input as () => unknown)() : input;
+        runRootHooks(true);
         if (typeof built === 'function') built = (built as NodeModFn<ElementTagName>)(container, 0);
         return built;
       });

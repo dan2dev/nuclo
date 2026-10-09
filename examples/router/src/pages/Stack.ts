@@ -37,14 +37,14 @@ export default function StackPage(_ctx: RouteContext, layer: Layer) {
 
     feature(
       "A stack of layers, not a replaced page",
-      "route.push() opens a route as a new layer on top of this one and resolves with " +
+      "router.push() opens a route as a new layer on top of this one and resolves with " +
         "whatever that layer closes with. the stack is one list(), so opening a layer is " +
         "an append — this page is not rebuilt, and its DOM, focus and form state stay " +
         "exactly as they were.",
 
       div(
         s.row,
-        pill("info", "route.push(href)"),
+        pill("info", "router.push(href)"),
         pill("good", "layer.close(result)"),
         pill("neutral", `this page is layer ${layer.depth}`),
       ),

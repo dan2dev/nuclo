@@ -28,7 +28,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import "nuclo";
-import { createRouter, type PageComponent, type Route } from "../src/index";
+import { createRouter, type PageComponent, type Route, type Router } from "../src/index";
 import { deferred, flush, mount, useRouterEnv } from "./helpers";
 
 useRouterEnv();
@@ -115,14 +115,15 @@ async function captureTreeKeepingRoute(): Promise<{ route: Route; refs: WeakRef<
 }
 
 describe("Route collectability", () => {
-  itGc("a stopped Route is collected once the app drops it", async () => {
-    const router = createRouter(table(), { preload: false });
-    let route: Route | null = await router.start("/");
-    const ref = new WeakRef(route);
+  itGc("a stopped Route is collected once the app drops it and its router", async () => {
+    async function capture(): Promise<WeakRef<Route>> {
+      const router = createRouter(table(), { preload: false });
+      const route = await router.start("/");
+      route.stop();
+      return new WeakRef(route);
+    }
 
-    route.stop();
-    route = null;
-
+    const ref = await capture();
     await collectGarbage();
     expect(ref.deref()).toBeUndefined();
   });
@@ -453,13 +454,16 @@ describe("in-flight work after stop()", () => {
     (globalThis as Record<string, unknown>).cancelIdleCallback = () => {};
 
     try {
-      const router = createRouter({ "/": () => Home, "/about": () => About });
-      let route: Route | null = await router.start("/");
-      const ref = new WeakRef(route);
+      // The router keeps its last Route, so it is dropped with it.
+      async function capture(): Promise<WeakRef<Route>> {
+        const router = createRouter({ "/": () => Home, "/about": () => About });
+        const route = await router.start("/");
+        route.stop();
+        return new WeakRef(route);
+      }
+      const ref = await capture();
 
       expect(queued).toHaveLength(1);
-      route.stop();
-      route = null;
       // The callback is still queued and still holds its closure; running it
       // after stop() must be inert, and must not resurrect the Route.
       queued.shift()!();
@@ -473,42 +477,44 @@ describe("in-flight work after stop()", () => {
   });
 });
 
-describe("route.app()", () => {
+describe("an app that reads the router", () => {
   const Page: PageComponent = () => view("main", div({ id: "page" }, "page"));
   const Other: PageComponent = () => view("main", div({ id: "other" }, "other"));
   const Modal: PageComponent = (_ctx, layer) => view("main", div({ id: "modal" }, button({ onClick: () => layer.close() })));
-  const Shell = (route: Route) => () =>
-    div({ id: "shell" }, a({ href: route.href("/") }), main({ id: "outlet" }, region({ id: "main" })));
-
-  function appTable() {
-    return { "/": () => Page, "/other": () => Other, "/modal": () => Modal };
-  }
+  /** What an app module is: a component reading the router it imports. */
+  const Shell = (router: Router) => () =>
+    div({ id: "shell" }, a({ href: router.href("/") }), main({ id: "outlet" }, region({ id: "main" })));
 
   /** The nodes the router put on the document root, taken from childNodes. */
   function rootMountNodes(): Node[] {
     return [...document.documentElement.childNodes].filter((n) => n.nodeType === 8);
   }
 
-  itGc("a stopped Route, its mount and its page are all released", async () => {
-    async function capture(): Promise<WeakRef<object>[]> {
+  function appTable() {
+    return { "/": () => Page, "/other": () => Other, "/modal": () => Modal };
+  }
+
+  itGc("a stopped Route's tree and page are released while the router lives on", async () => {
+    async function capture(): Promise<{ router: Router; refs: WeakRef<object>[] }> {
       const router = createRouter(appTable(), { preload: false });
       const route = await router.start("/");
       const container = mount();
-      const shell = render(route.app(Shell), container) as unknown as Element;
-      const outlet = shell.children[1];
-      const refs: WeakRef<object>[] = [new WeakRef(route), new WeakRef(container), new WeakRef(outlet.children[0])];
+      const shell = render(Shell(router), container) as unknown as Element;
+      const refs: WeakRef<object>[] = [new WeakRef(container), new WeakRef(shell), new WeakRef(shell.children[1].children[0])];
       for (const node of rootMountNodes()) refs.push(new WeakRef(node));
       expect(refs.length).toBe(6);
 
       route.stop();
       container.remove();
-      return refs;
+      return { router, refs };
     }
 
-    const refs = await capture();
+    // The router still answers from the stopped Route, which holds no DOM.
+    const { router, refs } = await capture();
     await collectGarbage();
     expect(alive(refs)).toBe(0);
     expect(rootMountNodes().length).toBe(0);
+    expect(router.path).toBe("/");
   });
 
   itGc("navigating releases the previous page", async () => {
@@ -516,20 +522,17 @@ describe("route.app()", () => {
       const router = createRouter(appTable(), { preload: false });
       const route = await router.start("/");
       const container = mount();
-      const shell = render(route.app(Shell), container) as unknown as Element;
-      const outlet = shell.children[1];
-      const refs: WeakRef<object>[] = [new WeakRef(outlet.children[0])];
-      // The page's anchor on the document root goes with it.
-      refs.push(new WeakRef(rootMountNodes()[1]));
+      const shell = render(Shell(router), container) as unknown as Element;
+      // The page's node in the region, and its anchor on the document root.
+      const refs: WeakRef<object>[] = [new WeakRef(shell.children[1].children[0]), new WeakRef(rootMountNodes()[1])];
 
-      await route.go("/other");
+      await router.go("/other");
       return { route, refs };
     }
 
     const { route, refs } = await withoutJsdomHistory(capture);
     await collectGarbage();
     expect(alive(refs)).toBe(0);
-    expect(rootMountNodes().length).toBe(3);
     route.stop();
   });
 
@@ -538,13 +541,12 @@ describe("route.app()", () => {
       const router = createRouter(appTable(), { preload: false });
       const route = await router.start("/");
       const container = mount();
-      const shell = render(route.app(Shell), container) as unknown as Element;
+      const shell = render(Shell(router), container) as unknown as Element;
       const outlet = shell.children[1];
 
-      const pushed = route.push("/modal");
+      const pushed = router.push("/modal");
       await new Promise((r) => setTimeout(r, 0));
-      // The layer's node in the region, and its anchor on the document root.
-      const refs: WeakRef<object>[] = [new WeakRef(outlet.children[0]), new WeakRef(rootMountNodes()[2])];
+      const refs: WeakRef<object>[] = [new WeakRef(outlet.children[0])];
 
       window.history.back();
       await pushed;

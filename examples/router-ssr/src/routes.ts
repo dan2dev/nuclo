@@ -2,11 +2,11 @@
  * The route table and the app shell — the one module both sides import.
  *
  * Nothing here is server-only or client-only, which is what makes SSR and
- * hydration line up: `renderToString(route.app(App))` on the server and
- * `hydrate(route.app(App), …)` in the browser build the same tree, so hydration
- * claims the server's nodes instead of replacing them.
+ * hydration line up: `route.run(() => renderToString(App))` on the server and
+ * `hydrate(App, …)` in the browser build the same tree, so hydration claims
+ * the server's nodes instead of replacing them.
  */
-import { createRouter, type Route } from "nuclo-router";
+import { createRouter } from "nuclo-router";
 import { BASE } from "./base.ts";
 import { s } from "./ui.ts";
 
@@ -29,8 +29,8 @@ export const routeTable = {
 /**
  * One router for the whole process. The route table, the compiled matcher and
  * the page-module cache live here and are shared across every request — the
- * per-request state is the Route that `start()` returns, so concurrent
- * requests cannot see each other's route.
+ * per-request state is the Route that `start()` returns, and server.ts renders
+ * inside its `run()`, so concurrent requests cannot see each other's route.
  *
  * `onNavigate` is never called during SSR, so it is safe to touch `document`
  * in it even though this module is imported on the server.
@@ -51,10 +51,10 @@ const NAV = [
 ] as const;
 
 /**
- * The app shell. Takes the Route explicitly rather than reading a singleton —
- * that is what keeps concurrent SSR requests independent.
+ * The app shell. Reads the router like any app; on the server, `route.run()`
+ * decides which request's Route that is.
  */
-export const App = (route: Route) => () =>
+export const App = () =>
   div(
     s.shell,
     nav(
@@ -63,10 +63,10 @@ export const App = (route: Route) => () =>
         // A plain <a href>. The router's one delegated click listener handles
         // it in the browser; with JavaScript disabled the server handles it.
         a(
-          { href: route.href(path) },
+          { href: router.href(path) },
           s.link,
           // Re-evaluated on every update(), so the active pill follows navigation.
-          () => (route.path === path ? s.linkActive : ""),
+          () => (router.path === path ? s.linkActive : ""),
           label,
         ),
       ),
@@ -74,16 +74,15 @@ export const App = (route: Route) => () =>
     main(
       { id: "outlet" },
       // Every page returns view("main", …), so this is where it lands; the
-      // router is mounted beside the app by route.app(App) in server.ts and
-      // entry-client.ts, never in this tree. The region serializes its
-      // content like any other markup, and on the client the page's view()
+      // pages mount themselves beside the app, never in this tree. The region
+      // serializes its content like any other markup, and on the client the page's view()
       // claims the server's nodes rather than rebuilding them — which is what
       // entry-client.ts checks before it reports success.
       region({ id: "main" }),
       // The outgoing page stays visible while the next chunk loads, so there
       // is no blank frame and no layout shift.
-      when(() => route.pending, div(s.pill, "loading chunk…")),
-      when(() => route.error !== null, div(s.pill, () => `error: ${route.error?.message ?? ""}`)),
+      when(() => router.pending, div(s.pill, "loading chunk…")),
+      when(() => router.error !== null, div(s.pill, () => `error: ${router.error?.message ?? ""}`)),
     ),
     footer(s.foot, "Rendered on the server, hydrated in place."),
   );

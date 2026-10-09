@@ -12,6 +12,7 @@ export { region, view } from "./region";
 
 // Mounting
 export { render, hydrate, forceUpdate } from "./render";
+export { onRootBuild } from "./shared/root-hooks";
 
 // Styling: css(), cx(), variants(), keyframes(), globalStyle(), createCss()
 export * from "./style";
