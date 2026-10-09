@@ -32,7 +32,7 @@ const Base: PageComponent = () => div({ id: "base" }, input({ id: "field" }));
 let layers: Array<Layer | undefined> = [];
 
 /** The pushed page: records its own Layer handle as it renders. */
-const Modal: PageComponent = (_ctx, layer) => {
+const Modal: PageComponent = (_ctx, { layer }) => {
   layers[layer.depth] = layer;
   return div({ id: `modal-${layer.depth}` }, button({ id: `save-${layer.depth}` }, "save"));
 };
@@ -271,11 +271,53 @@ describe("failures", () => {
     expect(route.pending).toBe(false);
   });
 
+  it("rejects with an Error when the layer's loader throws synchronously, whatever it threw", async () => {
+    const router = createRouter(
+      {
+        "/": () => Base,
+        "/modal": () => ({
+          default: Modal,
+          load: () => {
+            throw "not an Error";
+          },
+        }),
+      },
+      { preload: false },
+    );
+    const route = await start(router, "/");
+
+    const failure = await route.push("/modal").catch((e: unknown) => e);
+    expect(failure).toBeInstanceOf(Error);
+    expect((failure as Error).message).toBe("not an Error");
+    expect(route.depth).toBe(1);
+    expect(window.location.pathname).toBe("/");
+  });
+
+  it("clears the pending flag of a navigation it overtakes", async () => {
+    const gate = deferred<{ default: PageComponent }>();
+    const router = createRouter({ "/": () => Base, "/slow": () => gate.promise, "/modal": () => Modal }, { preload: false });
+    const route = await start(router, "/");
+    render(route.pages(), mount());
+
+    const navigation = route.go("/slow");
+    expect(route.pending).toBe(true);
+    // Lands in the same task: the module is eager.
+    void route.push("/modal");
+    expect(route.depth).toBe(2);
+    expect(route.pending).toBe(false);
+
+    // The overtaken navigation is stale when it lands, and leaves it cleared.
+    gate.resolve({ default: Base });
+    await navigation;
+    expect(route.pending).toBe(false);
+    expect(route.depth).toBe(2);
+  });
+
   it("close() on the base page is a no-op", async () => {
     let baseLayer: Layer | undefined;
     const router = createRouter(
       {
-        "/": () => ((_ctx, layer) => {
+        "/": () => ((_ctx, { layer }) => {
           baseLayer = layer;
           return div({ id: "base" });
         }) as PageComponent,
@@ -381,11 +423,11 @@ describe("Layer.push()", () => {
     const results: unknown[] = [];
 
     // Depth 2: opened by the page at depth 1, which only ever had its Layer.
-    const Inner: PageComponent = (_ctx, layer) => {
+    const Inner: PageComponent = (_ctx, { layer }) => {
       layers[layer.depth] = layer;
       return div({ id: "inner" });
     };
-    const Outer: PageComponent = (_ctx, layer) => {
+    const Outer: PageComponent = (_ctx, { layer }) => {
       layers[layer.depth] = layer;
       return div(
         { id: "outer" },
@@ -433,7 +475,7 @@ describe("the dropdown scenario", () => {
     let selected = "a";
     let createdCount = 0;
 
-    const NewOption: PageComponent = (_ctx, layer) =>
+    const NewOption: PageComponent = (_ctx, { layer }) =>
       div(
         { id: "new-option" },
         button({

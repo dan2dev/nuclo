@@ -90,7 +90,7 @@ export const load: DataLoader<Post> = async (ctx) => {
   return fetchPost(ctx.params.slug);           // every navigation after
 };
 
-export default function PostPage(ctx: RouteContext, _layer: Layer, post: Post) {
+export default function PostPage(ctx: RouteContext, { data: post }: PageProps<Post>) {
   return article(h1(post.title));
 }
 ```

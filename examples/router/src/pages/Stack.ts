@@ -6,12 +6,12 @@
  * with is folded straight into this page's state — while this page is never
  * closed, never re-rendered and never loses what was typed into it.
  */
-import type { Layer, RouteContext } from "nuclo-router";
+import type { PageProps, RouteContext } from "nuclo-router";
 import { css, cx } from "../theme.ts";
 import { btn, card, code, feature, field, pill, s } from "../ui.ts";
 import { options, type Option } from "../stack/store.ts";
 
-export default function StackPage(_ctx: RouteContext, layer: Layer) {
+export default function StackPage(_ctx: RouteContext, { layer }: PageProps) {
   // Ordinary closure state. Nothing here is special — that is the point.
   let notes = "";
   let selected = options[0].id;
@@ -53,7 +53,7 @@ export default function StackPage(_ctx: RouteContext, layer: Layer) {
         `// here, at the bottom of the stack\n` +
           `const created = await layer.push<Option>("/stack/new-option");\n` +
           `if (created) { selected = created.id; update(); }\n\n` +
-          `// in the pushed page — \`layer\` is its second argument\n` +
+          `// in the pushed page — (ctx, { layer })\n` +
           `layer.close(created);   // resolves the push() above\n` +
           `layer.close();          // dismissed: resolves undefined`,
       ),

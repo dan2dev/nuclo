@@ -22,6 +22,7 @@ describe('main index.ts exports', () => {
       'update',
       'variants',
       'view',
+      'viewWaiting',
       'when',
     ]);
     for (const value of Object.values(index)) expect(typeof value).toBe('function');

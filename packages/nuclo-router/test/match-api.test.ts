@@ -73,7 +73,9 @@ describe("match()", () => {
   it("accepts an absolute URL and defaults to the current location", () => {
     window.history.replaceState(null, "", "/blog/from-location");
     const router = createRouter(table());
-    expect(router.match("https://example.com/blog/abs")!.params.slug).toBe("abs");
+    expect(router.match(`${window.location.origin}/blog/abs`)!.params.slug).toBe("abs");
+    // Another site is not ours, whatever its path.
+    expect(router.match("https://example.com/blog/abs")).toBeNull();
     expect(router.match()!.params.slug).toBe("from-location");
   });
 

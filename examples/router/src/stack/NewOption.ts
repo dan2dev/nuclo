@@ -4,12 +4,12 @@
  * It has no reference to the Route: `layer.push()` is how a layer opens a
  * layer, and the promise it returns is how the result comes back.
  */
-import type { Layer, RouteContext } from "nuclo-router";
+import type { PageProps, RouteContext } from "nuclo-router";
 import { css } from "../theme.ts";
 import { btn, field, modal, pill, s } from "../ui.ts";
 import { categories, createOption, type Category } from "./store.ts";
 
-export default function NewOption(_ctx: RouteContext, layer: Layer) {
+export default function NewOption(_ctx: RouteContext, { layer }: PageProps) {
   let label = "";
   let category = categories[0].id;
   let saving = false;

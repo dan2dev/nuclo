@@ -66,17 +66,47 @@ describe("route.run() with no window", () => {
     route.run(() => renderToString(App));
     route.pages();
 
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0][0]).toMatch(/placed after the pages were mounted automatically/);
+    // The plain page is reported too: it was left out of the HTML.
+    expect(warn.mock.calls.map((call) => call[0])).toEqual([
+      expect.stringMatching(/returned content without a view\(\)/),
+      expect.stringMatching(/placed after the pages were mounted automatically/),
+    ]);
     warn.mockRestore();
   });
 
-  it("leaves a page that is not a view out of the HTML", async () => {
+  it("leaves a page that is not a view out of the HTML, and says so", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const route = await router.start("/plain");
     const html = route.run(() => renderToString(App));
 
     expect(html).not.toContain('id="plain"');
     expect(html).toContain(">none<");
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toMatch(/"\/plain" returned content without a view\(\)/);
+    warn.mockRestore();
+  });
+
+  it("warns once the render is over when a page's view has no region in it", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const typo = createRouter({ "/": () => () => view("mian", div({ id: "typo" }, "typo")) });
+    const route = await typo.start("/");
+    const html = route.run(() => renderToString(() => div(main(region({ id: "main" })))));
+    await Promise.resolve();
+
+    expect(html).not.toContain('id="typo"');
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toMatch(/"\/" returned a view\(\) whose region is not in the tree/);
+    warn.mockRestore();
+  });
+
+  it("stays quiet for a page whose view landed", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const route = await router.start("/about");
+    route.run(() => renderToString(App));
+    await Promise.resolve();
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it("has no active route outside run(), even after start()", async () => {

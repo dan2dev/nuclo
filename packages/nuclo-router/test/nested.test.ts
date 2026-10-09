@@ -12,8 +12,8 @@ import { renderToString } from "nuclo/ssr";
 import {
   createRouter,
   type Layer,
-  type Outlet,
   type PageComponent,
+  type PageProps,
   type Route,
   type RouteContext,
   type RouteTable,
@@ -39,7 +39,7 @@ function page(id: string): PageComponent {
 
 /** A layout: renders its own chrome plus whatever child route is active. */
 function layout(id: string): PageComponent {
-  return (_ctx: RouteContext, _layer: Layer, _data: unknown, outlet: Outlet) => {
+  return (_ctx: RouteContext, { outlet }: PageProps) => {
     builds[id] = (builds[id] ?? 0) + 1;
     return div({ id }, input({ id: `${id}-field` }), div({ id: `${id}-outlet` }, outlet()));
   };
@@ -186,7 +186,7 @@ describe("a parent is not destroyed by its children", () => {
 
   it("gives each level its own pattern and its own slice of the path", async () => {
     const seen: Array<{ pattern: string; path: string; id?: string }> = [];
-    const record = (): PageComponent => (ctx, _layer, _data, outlet) => {
+    const record = (): PageComponent => (ctx, { outlet }) => {
       seen.push({ pattern: ctx.pattern, path: ctx.path, id: ctx.params.id });
       return div(outlet());
     };
@@ -238,7 +238,7 @@ describe("loaders and nesting", () => {
               parentLoads++;
               return "shop";
             },
-            default: ((_c, _l, data: string, outlet: Outlet) =>
+            default: ((_c, { data, outlet }) =>
               div({ id: "shop" }, data, div({ id: "shop-outlet" }, outlet()))) as PageComponent<string>,
           }),
           "./:sku": () => ({
@@ -246,7 +246,7 @@ describe("loaders and nesting", () => {
               childLoads++;
               return ctx.params.sku;
             },
-            default: ((_c, _l, data: string) => div({ id: "item" }, data)) as PageComponent<string>,
+            default: ((_c, { data }) => div({ id: "item" }, data)) as PageComponent<string>,
           }),
         },
       },
@@ -271,7 +271,7 @@ describe("loaders and nesting", () => {
       "/a": {
         "/": () => ({
           load: () => void order.push("a"),
-          default: ((_c, _l, _d, outlet: Outlet) => div({ id: "a" }, outlet())) as PageComponent,
+          default: ((_c, { outlet }) => div({ id: "a" }, outlet())) as PageComponent,
         }),
         "./b": () => ({
           load: () => void order.push("b"),
@@ -299,6 +299,7 @@ describe("outlets", () => {
 
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0][0]).toMatch(/never called its outlet/);
+    expect(warn.mock.calls[0][0]).toContain("takes (ctx, { outlet })");
     void route;
   });
 
@@ -343,7 +344,7 @@ describe("SSR and hydration", () => {
 describe("layers and nesting", () => {
   it("a pushed layer renders the page alone, since its parent is already mounted", async () => {
     let captured: Layer | undefined;
-    const Modal: PageComponent = (_ctx, layer) => {
+    const Modal: PageComponent = (_ctx, { layer }) => {
       captured = layer;
       return div({ id: "modal" });
     };

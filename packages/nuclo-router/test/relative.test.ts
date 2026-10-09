@@ -221,7 +221,7 @@ describe("relative navigation", () => {
   it("pushes a relative layer, which is the usual shape of one", async () => {
     const container = mountEl();
     let captured: Layer | undefined;
-    const Preview: PageComponent = (_ctx, layer) => {
+    const Preview: PageComponent = (_ctx, { layer }) => {
       captured = layer;
       return div({ id: "preview" });
     };
@@ -266,7 +266,7 @@ describe("relative navigation", () => {
     // Otherwise the page keeps a Layer handle for a depth that no longer
     // exists, and its close()/Cancel silently does nothing.
     let seen: Layer | undefined;
-    const Modal: PageComponent = (_ctx, layer) => {
+    const Modal: PageComponent = (_ctx, { layer }) => {
       seen = layer;
       return div({ id: "modal" });
     };

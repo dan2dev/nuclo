@@ -6,7 +6,7 @@
  * sends already contains the post: view source and the title is there, with no
  * fetch-after-hydration and no loading flash.
  */
-import type { DataLoader, Layer, Params, RouteContext } from "nuclo-router";
+import type { DataLoader, PageProps, Params, RouteContext } from "nuclo-router";
 import { s } from "../ui.ts";
 import { takeServerData } from "../ssr-data.ts";
 
@@ -44,7 +44,7 @@ export const load: DataLoader<Post, PostParams> = async (ctx) => {
   };
 };
 
-export default function PostPage(ctx: RouteContext<PostParams>, _layer: Layer, post: Post) {
+export default function PostPage(ctx: RouteContext<PostParams>, { data: post }: PageProps<Post>) {
   // Placed by the page itself: into the shell's region({ id: "main" }).
   return view("main", div(
     s.panel,

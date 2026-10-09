@@ -1,9 +1,9 @@
 // A second page inside the fragment, at "./preview/raw". Both keys are
 // relative, so both move together when the section is declared under another parent.
-import type { Layer, RouteContext } from "nuclo-router";
+import type { PageProps, RouteContext } from "nuclo-router";
 import { btn, card, panelOrModal, s } from "../ui.ts";
 
-export default function Raw(ctx: RouteContext, layer: Layer) {
+export default function Raw(ctx: RouteContext, { layer }: PageProps) {
   const parent = ctx.path.replace(/\/preview\/raw$/, "");
 
   return panelOrModal(

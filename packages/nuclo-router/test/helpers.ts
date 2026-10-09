@@ -121,3 +121,13 @@ export async function waitFor(predicate: () => boolean, timeoutMs = 1000): Promi
     await new Promise((resolve) => setTimeout(resolve, 5));
   }
 }
+
+/**
+ * history.length, counted from the top of the history: an earlier test's Back
+ * can leave forward entries that the next push truncates, which would skew a
+ * before/after comparison. Pushing the current URL drops them first.
+ */
+export function historyLength(): number {
+  window.history.pushState(null, "", window.location.href);
+  return window.history.length;
+}

@@ -289,10 +289,10 @@ describe("loader data", () => {
         {
           "/p/:n": () => ({
             load: (ctx: { params: Record<string, string> }) => ({ payload: `data for ${ctx.params.n}` }),
-            default: ((_c, _l, data: { payload: string }) => {
+            default: ((_c, { data }) => {
               seenData = data;
               return div({ id: "p" }, data.payload);
-            }) as PageComponent,
+            }) as PageComponent<{ payload: string }>,
           }),
           "/elsewhere": () => Home,
         },
@@ -323,7 +323,7 @@ describe("loader data", () => {
 describe("the layer stack", () => {
   itGc("a closed layer's DOM, entry and resolver are all released", async () => {
     async function capture(): Promise<{ route: Route; refs: WeakRef<object>[]; depthAfter: number }> {
-      const Modal: PageComponent = (_ctx, layer) => div({ id: `layer-${layer.depth}` }, "modal");
+      const Modal: PageComponent = (_ctx, { layer }) => div({ id: `layer-${layer.depth}` }, "modal");
       const router = createRouter({ "/": () => Home, "/modal": () => Modal }, { preload: false });
       const route = await router.start("/");
       const container = mount();
@@ -351,7 +351,7 @@ describe("the layer stack", () => {
 
   itGc("opening and closing many layers accumulates nothing", async () => {
     async function capture(): Promise<{ route: Route; refs: WeakRef<object>[]; maxRows: number }> {
-      const Modal: PageComponent = (_ctx, layer) => div({ id: `layer-${layer.depth}` }, "modal");
+      const Modal: PageComponent = (_ctx, { layer }) => div({ id: `layer-${layer.depth}` }, "modal");
       const router = createRouter({ "/": () => Home, "/modal": () => Modal }, { preload: false });
       const route = await router.start("/");
       const container = mount();
@@ -382,7 +382,7 @@ describe("the layer stack", () => {
 
   itGc("stop() with layers open releases the Route and every layer", async () => {
     async function capture(): Promise<WeakRef<object>[]> {
-      const Modal: PageComponent = (_ctx, layer) => div({ id: `layer-${layer.depth}` }, "modal");
+      const Modal: PageComponent = (_ctx, { layer }) => div({ id: `layer-${layer.depth}` }, "modal");
       const router = createRouter({ "/": () => Home, "/modal": () => Modal }, { preload: false });
       const route = await router.start("/");
       const container = mount();
@@ -480,7 +480,7 @@ describe("in-flight work after stop()", () => {
 describe("an app that reads the router", () => {
   const Page: PageComponent = () => view("main", div({ id: "page" }, "page"));
   const Other: PageComponent = () => view("main", div({ id: "other" }, "other"));
-  const Modal: PageComponent = (_ctx, layer) => view("main", div({ id: "modal" }, button({ onClick: () => layer.close() })));
+  const Modal: PageComponent = (_ctx, { layer }) => view("main", div({ id: "modal" }, button({ onClick: () => layer.close() })));
   /** What an app module is: a component reading the router it imports. */
   const Shell = (router: Router) => () =>
     div({ id: "shell" }, a({ href: router.href("/") }), main({ id: "outlet" }, region({ id: "main" })));

@@ -10,7 +10,7 @@
  * text and the focus stay exactly where they were, because this is literally
  * the same DOM node throughout.
  */
-import type { Layer, Outlet, RouteContext } from "nuclo-router";
+import type { PageProps, RouteContext } from "nuclo-router";
 import { css, cx } from "../theme.ts";
 import { card, code, feature, field, pill, s } from "../ui.ts";
 import { DOCS_BASE, DOCS_NAV } from "./routes.ts";
@@ -39,7 +39,7 @@ const st = {
 /** How many times this layout has been built, across the whole session. */
 let builds = 0;
 
-export default function DocsShell(ctx: RouteContext, _layer: Layer, _data: unknown, outlet: Outlet) {
+export default function DocsShell(ctx: RouteContext, { outlet }: PageProps) {
   builds++;
 
   // Placed by the page itself: into the layout's region({ id: "main" }).

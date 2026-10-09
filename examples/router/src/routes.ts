@@ -85,7 +85,8 @@ export const routeTable = {
  * Defined here rather than in pages/ precisely to make the point — there is no
  * module to split off. h2, not h1: the shell renders the document's only h1.
  */
-function EagerPage() {
+function EagerPage(props) {
+  console.log(props);
   return view({
     "main": div(
       h2("Eager route"),

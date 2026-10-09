@@ -68,7 +68,9 @@ describe("renderToString", () => {
   });
 
   it("accepts an absolute request URL", async () => {
-    const html = await ssr("https://nuclo.dev/blog/abc?draft=1");
+    // Same origin: under jsdom this is a browser, where another origin is
+    // never the app's. A real server matches any — see ssr-node.test.ts.
+    const html = await ssr(`${window.location.origin}/blog/abc?draft=1`);
     expect(html).toContain("abc");
   });
 

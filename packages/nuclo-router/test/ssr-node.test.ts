@@ -8,7 +8,7 @@ import { describe, it, expect, vi } from "vitest";
 import "nuclo/polyfill";
 import "nuclo";
 import { renderToString } from "nuclo/ssr";
-import { createRouter, type PageComponent, type Route } from "../src/index";
+import { createRouter, Redirect, type PageComponent, type Route } from "../src/index";
 
 const Home: PageComponent = () => div({ id: "home" }, "home");
 const Post: PageComponent = (ctx) => div({ id: "post" }, ctx.params.slug);
@@ -94,7 +94,7 @@ describe("a Route with no window", () => {
   it("hands pages a depth-0 layer whose close() is inert", async () => {
     let seen: { depth: number; close: (r?: unknown) => void } | undefined;
     const router = createRouter({
-      "/": () => ((_ctx, layer) => {
+      "/": () => ((_ctx, { layer }) => {
         seen = layer;
         return div("home");
       }) as PageComponent,
@@ -144,5 +144,56 @@ describe("a Route with no window", () => {
 
     expect(renderToString(App(a))).toContain(">a<");
     expect(renderToString(App(b))).toContain(">b<");
+  });
+});
+
+describe("a Redirect on the server", () => {
+  const to = (href: string) => () => ({
+    default: Home,
+    load: () => {
+      throw new Redirect(href);
+    },
+  });
+  const redirectOf = (router: { start(url: string): Promise<Route> }, url: string) =>
+    router.start(url).then(
+      () => null,
+      (error: unknown) => error,
+    );
+
+  it("rejects start() with it, for the app to answer with a 3xx", async () => {
+    const router = createRouter({ "/admin": to("/login"), "/login": () => Home });
+    const error = await redirectOf(router, "https://site.example/admin");
+
+    expect(error).toBeInstanceOf(Redirect);
+    expect((error as Redirect).href).toBe("/login");
+  });
+
+  it("resolves a relative href against the request, base included", async () => {
+    const router = createRouter({ "/a/:id": to("./edit") }, { base: "/app" });
+    const error = (await redirectOf(router, "/app/a/7")) as Redirect;
+
+    expect(error.href).toBe("/app/a/7/edit");
+  });
+
+  it("passes another origin through untouched", async () => {
+    const router = createRouter({ "/sso": to("https://auth.example.com/login") });
+    const error = (await redirectOf(router, "/sso")) as Redirect;
+
+    expect(error.href).toBe("https://auth.example.com/login");
+  });
+
+  it("does not follow it, even to a route the table has", async () => {
+    const onNavigate = vi.fn();
+    const router = createRouter({ "/admin": to("/login"), "/login": () => Home }, { onNavigate });
+    await redirectOf(router, "/admin");
+
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("request URLs on the server", () => {
+  it("match from any origin — there is no document origin to compare", () => {
+    const router = createRouter(table);
+    expect(router.match("https://site.example/blog/x")?.params.slug).toBe("x");
   });
 });

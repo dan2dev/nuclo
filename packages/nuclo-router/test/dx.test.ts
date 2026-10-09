@@ -9,6 +9,7 @@ import {
   createRouter,
   type Params,
   type PageComponent,
+  type PageProps,
   type Route,
   type RouteContext,
   type Router,
@@ -19,7 +20,7 @@ const routes = useRouterEnv();
 
 const Home: PageComponent = () => div({ id: "home" }, "home");
 const About: PageComponent = () => div({ id: "about" }, h1({ id: "café" }, "café"), p({ id: "plain" }, "x"));
-const Modal: PageComponent = (_ctx, layer) => div({ id: `modal-${layer.depth}` });
+const Modal: PageComponent = (_ctx, { layer }) => div({ id: `modal-${layer.depth}` });
 
 async function start(router: Router, url?: string): Promise<Route> {
   const route = await router.start(url);
@@ -150,5 +151,42 @@ describe("typed params", () => {
     render(route.pages(), container);
 
     expect(container.querySelector("#post")!.textContent).toBe("hello");
+  });
+});
+
+describe("a page's second argument", () => {
+  it("carries the layer, the loader's data and the outlet", async () => {
+    let props: PageProps<string> | undefined;
+    const Page = ((_ctx, given) => {
+      props = given;
+      return div({ id: "page" }, given.outlet());
+    }) as PageComponent<string>;
+    const route = await start(createRouter({ "/": () => ({ load: () => "loaded", default: Page }) }, { preload: false }), "/");
+    const container = mount();
+    render(route.pages(), container);
+
+    expect(props!.layer.depth).toBe(0);
+    expect(props!.data).toBe("loaded");
+    // No child route: the outlet renders nothing.
+    expect(container.querySelector("#page")!.textContent).toBe("");
+  });
+
+  it("hands undefined data to a page whose route has no load()", async () => {
+    let data: unknown = "unset";
+    const route = await start(
+      createRouter({ "/": () => (_ctx, props) => ((data = props.data), div()) }, { preload: false }),
+      "/",
+    );
+    render(route.pages(), mount());
+
+    expect(data).toBeUndefined();
+  });
+
+  it("types data from the page's own type parameter", () => {
+    expectTypeOf<Parameters<PageComponent<{ title: string }>>[1]["data"]>().toEqualTypeOf<{ title: string }>();
+    expectTypeOf<PageProps["data"]>().toBeUnknown();
+    // A page may still take fewer arguments than it is given.
+    expectTypeOf<() => HTMLDivElement>().toExtend<PageComponent>();
+    expectTypeOf<(ctx: RouteContext) => HTMLDivElement>().toExtend<PageComponent>();
   });
 });

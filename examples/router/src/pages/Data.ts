@@ -2,11 +2,11 @@
  * /data — route loaders.
  *
  * `load` runs before this page is built, every time you navigate here, and
- * what it returns arrives as the page's third argument. The counter below is
+ * what it returns arrives as the page's `data`. The counter below is
  * the proof: it goes up on every visit, while the module behind it is
  * imported exactly once.
  */
-import type { DataLoader, Layer, RouteContext } from "nuclo-router";
+import type { DataLoader, PageProps, RouteContext } from "nuclo-router";
 import { css, cx } from "../theme.ts";
 import { btn, card, code, feature, pill, s } from "../ui.ts";
 
@@ -30,7 +30,7 @@ export const load: DataLoader<Report> = async (ctx) => {
   return { runs, forPath: ctx.path, slowly, at: runs };
 };
 
-export default function DataPage(ctx: RouteContext, layer: Layer, report: Report) {
+export default function DataPage(ctx: RouteContext, { layer, data: report }: PageProps<Report>) {
   // Placed by the page itself: into the layout's region({ id: "main" }).
   return view("main", div(
     s.page,
@@ -52,7 +52,7 @@ export default function DataPage(ctx: RouteContext, layer: Layer, report: Report
           `export const load: DataLoader<Report> = async (ctx) => {\n` +
           `  return fetchReport(ctx.params, ctx.search);\n` +
           `};\n\n` +
-          `export default function DataPage(ctx, layer, report: Report) { … }\n\n` +
+          `export default function DataPage(ctx, { data: report }: PageProps<Report>) { … }\n\n` +
           `// routes.ts — unchanged\n` +
           `"/data": () => import("./pages/Data.ts"),`,
       ),

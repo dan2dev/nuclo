@@ -14,7 +14,7 @@ const routes = useRouterEnv();
 
 const Home: PageComponent = () => view("main", div({ id: "home" }, h1("Home")));
 const About: PageComponent = () => view("main", div({ id: "about" }, h1("About")));
-const Modal: PageComponent = (_ctx, layer) =>
+const Modal: PageComponent = (_ctx, { layer }) =>
   view("main", div({ id: "modal" }, button({ id: "close", onClick: () => layer.close() }, "close")));
 const Plain: PageComponent = () => div({ id: "plain" }, "not a view");
 
@@ -166,6 +166,42 @@ describe("render(App) in the browser", () => {
     await router.go("/");
     await router.go("/plain");
     expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it("warns once, after the render, about a view whose region is not in the tree", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    router = createRouter({ "/": () => Home, "/typo": () => () => view("mian", div({ id: "typo" })) }, { preload: false });
+    await start("/typo", false);
+    const container = mount();
+    render(App, container);
+    await flush();
+
+    expect(container.querySelector("#typo")).toBeNull();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toMatch(/"\/typo" returned a view\(\) whose region is not in the tree/);
+
+    await router.go("/");
+    await router.go("/typo");
+    await flush();
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays quiet when the same update builds the region after the page", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    router = createRouter(
+      { "/": () => Home, "/wide": () => () => view("wide", div({ id: "wide-page" })) },
+      { preload: false },
+    );
+    await start("/", false);
+    const container = mount();
+    // The "wide" region only exists in the layout /wide switches to.
+    render(() => div(region({ id: "main" }), when(() => router.path === "/wide", section(region({ id: "wide" })))), container);
+
+    await router.go("/wide");
+    await flush();
+
+    expect(container.querySelector("#wide-page")).not.toBeNull();
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it("mounts nothing of its own when the app places pages() itself", async () => {

@@ -4,12 +4,12 @@
  * Nothing here knows about the Route, or about who opened it. It resolves
  * with the category it created and lets its caller decide what that means.
  */
-import type { Layer, RouteContext } from "nuclo-router";
+import type { PageProps, RouteContext } from "nuclo-router";
 import { css } from "../theme.ts";
 import { btn, field, modal, s } from "../ui.ts";
 import { createCategory } from "./store.ts";
 
-export default function NewCategory(_ctx: RouteContext, layer: Layer) {
+export default function NewCategory(_ctx: RouteContext, { layer }: PageProps) {
   let label = "";
   let saving = false;
 

@@ -6,11 +6,11 @@
  * modal over whichever record you were looking at — and that record's page
  * keeps its scroll position and anything typed into it.
  */
-import type { Layer, Outlet, RouteContext } from "nuclo-router";
+import type { PageProps, RouteContext } from "nuclo-router";
 import { css } from "../theme.ts";
 import { btn, card, code, panelOrModal, pill, s } from "../ui.ts";
 
-export default function Preview(ctx: RouteContext, layer: Layer, _data: unknown, outlet: Outlet) {
+export default function Preview(ctx: RouteContext, { layer, outlet }: PageProps) {
   // The parent's id, captured by whichever :param pattern mounted us.
   const id = ctx.params.id ?? "—";
   const parent = ctx.path.replace(/\/preview$/, "");

@@ -58,6 +58,14 @@ export function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
  * nuclo-router's pages. Returns the function that unregisters it.
  */
 export function onRootBuild(hook: (serializing: boolean) => void): () => void;
+/**
+ * True while the view() that left this anchor has nowhere to show: every
+ * region it names is still to be built. False for any other node, and once
+ * one of its views is placed. For libraries that place views on the app's
+ * behalf, such as nuclo-router, to tell a page that landed from one that
+ * renders nowhere.
+ */
+export function viewWaiting(node: Node): boolean;
 
 // on() helper (same overloads as the global)
 export function on<

@@ -95,10 +95,10 @@ export const docsSection = {
 };
 ```
 
-The layout takes a fourth argument and places its child wherever it belongs:
+The layout takes `outlet` from its second argument and places its child wherever it belongs:
 
 ```ts
-export default function DocsShell(ctx, _layer, _data, outlet: Outlet) {
+export default function DocsShell(ctx, { outlet }: PageProps) {
   return div(Filter(), Nav(), div({ id: "docs-outlet" }, outlet()));
 }
 ```
@@ -127,7 +127,7 @@ the user wants.
 const created = await layer.push<Option>("/stack/new-option");
 if (created) { selected = created.id; update(); }
 
-// the pushed page — `layer` is its second argument
+// the pushed page — (ctx, { layer })
 layer.close(created);   // resolves the push() above
 layer.close();          // dismissed: resolves undefined
 ```
@@ -181,7 +181,7 @@ The record page is a **layout**: it renders whichever child is active in its
 `outlet()`, and the router keeps it mounted when that child changes.
 
 ```ts
-export default function Record(ctx, _layer, _data, outlet: Outlet) {
+export default function Record(ctx, { outlet }: PageProps) {
   return div(…, input({ id: "scratch" }), div({ id: "record-outlet" }, outlet()));
 }
 ```
@@ -224,7 +224,7 @@ are route-relative — a bare `preview` is left to ordinary browser rules.
 
 ```ts
 export const load: DataLoader<Report> = async (ctx) => fetchReport(ctx.search);
-export default function DataPage(ctx, layer, report: Report) { … }
+export default function DataPage(ctx, { data: report }: PageProps<Report>) { … }
 ```
 
 The page is not built until `load` settles, so it never renders without its

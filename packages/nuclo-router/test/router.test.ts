@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import "nuclo";
-import { createRouter, type PageComponent, type Route, type RouteContext } from "../src/index";
-import { deferred, flush, mount, stubAssign, useRouterEnv } from "./helpers";
+import { createRouter, type PageComponent, type Route, type RouteContext, type RouterOptions } from "../src/index";
+import { deferred, flush, historyLength, mount, stubAssign, useRouterEnv, waitFor, type Deferred } from "./helpers";
 
 const routes = useRouterEnv();
 
@@ -334,9 +334,9 @@ describe("go()", () => {
 
     expect(route.error?.message).toBe("chunk failed");
     expect(route.pending).toBe(false);
-    // The old page is still on screen and the URL reflects the attempt.
+    // The old page is still on screen, and so is its URL.
     expect(route.path).toBe("/");
-    expect(window.location.pathname).toBe("/about");
+    expect(window.location.pathname).toBe("/");
     expect(error).toHaveBeenCalled();
   });
 
@@ -481,6 +481,163 @@ describe("go()", () => {
     expect(route.path).toBe("/third");
     expect(container.querySelector("#third")).not.toBeNull();
     expect(route.pending).toBe(false);
+  });
+});
+
+describe("go() writes history when the page lands", () => {
+  type Gate = Deferred<{ default: PageComponent }>;
+  const slowRouter = (gate: Gate, options: RouterOptions = {}) =>
+    createRouter({ "/": () => Home, "/about": () => About, "/slow": () => gate.promise }, { preload: false, ...options });
+
+  it("leaves the URL alone while the page loads", async () => {
+    const gate: Gate = deferred();
+    const route = await start(slowRouter(gate), "/");
+    const length = historyLength();
+
+    const navigation = route.go("/slow");
+    expect(route.pending).toBe(true);
+    // The address bar, url and path all still name the page on screen.
+    expect(window.location.pathname).toBe("/");
+    expect(route.url).toBe("/");
+    expect(route.path).toBe("/");
+
+    gate.resolve({ default: About });
+    await navigation;
+    expect(window.location.pathname).toBe("/slow");
+    expect(route.url).toBe("/slow");
+    expect(window.history.length).toBe(length + 1);
+  });
+
+  it("writes nothing for a data loader that rejects", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const router = createRouter(
+      { "/": () => Home, "/data": () => ({ default: About, load: () => Promise.reject(new Error("api down")) }) },
+      { preload: false },
+    );
+    const route = await start(router, "/");
+    const length = historyLength();
+
+    await route.go("/data");
+    expect(route.error?.message).toBe("api down");
+    expect(window.location.pathname).toBe("/");
+    expect(window.history.length).toBe(length);
+  });
+
+  it("writes nothing for a loader that throws synchronously", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const router = createRouter({
+      "/": () => Home,
+      "/boom": () => ({
+        default: About,
+        load: () => {
+          throw new Error("sync");
+        },
+      }),
+    });
+    const route = await start(router, "/");
+
+    await route.go("/boom");
+    expect(route.error?.message).toBe("sync");
+    expect(window.location.pathname).toBe("/");
+  });
+
+  it("records only the navigation that won", async () => {
+    const gate: Gate = deferred();
+    const route = await start(slowRouter(gate), "/");
+    const length = historyLength();
+
+    const overtaken = route.go("/slow");
+    await route.go("/about");
+    gate.resolve({ default: Home });
+    await overtaken;
+
+    expect(route.path).toBe("/about");
+    expect(window.location.pathname).toBe("/about");
+    // One entry: the overtaken navigation never wrote one for Back to land on.
+    expect(window.history.length).toBe(length + 1);
+  });
+
+  it("replaces only once the page lands", async () => {
+    const gate: Gate = deferred();
+    const route = await start(slowRouter(gate), "/");
+    const length = historyLength();
+
+    const navigation = route.go("/slow", { replace: true });
+    expect(window.location.pathname).toBe("/");
+    gate.resolve({ default: About });
+    await navigation;
+
+    expect(window.location.pathname).toBe("/slow");
+    expect(window.history.length).toBe(length);
+  });
+
+  it("writes nothing for a navigation stop() abandoned", async () => {
+    const gate: Gate = deferred();
+    const route = await start(slowRouter(gate), "/");
+
+    const navigation = route.go("/slow");
+    route.stop();
+    gate.resolve({ default: About });
+    await navigation;
+
+    expect(window.location.pathname).toBe("/");
+  });
+
+  it("lets Back leave the page on screen, dropping the one still loading", async () => {
+    const gate: Gate = deferred();
+    const route = await start(slowRouter(gate), "/");
+    await route.go("/about");
+
+    const navigation = route.go("/slow");
+    window.history.back();
+    await waitFor(() => route.path === "/");
+    gate.resolve({ default: Home });
+    await navigation;
+
+    // As a browser does: Back from /about while /slow loads lands on "/".
+    expect(route.path).toBe("/");
+    expect(window.location.pathname).toBe("/");
+    expect(route.pending).toBe(false);
+  });
+
+  it("has the new URL in place before the page builds and onNavigate runs", async () => {
+    const seen: string[] = [];
+    const gate: Gate = deferred();
+    const Probe: PageComponent = (ctx) => {
+      seen.push(`build ${ctx.path} at ${window.location.pathname}`);
+      return div();
+    };
+    const router = createRouter(
+      { "/": () => Home, "/eager": () => Probe, "/slow": () => gate.promise },
+      { preload: false, onNavigate: (ctx) => void seen.push(`nav ${ctx.path} at ${window.location.pathname}`) },
+    );
+    const route = await start(router, "/");
+    render(route.pages(), mount());
+    seen.length = 0;
+
+    await route.go("/eager");
+    const navigation = route.go("/slow");
+    gate.resolve({ default: Probe });
+    await navigation;
+
+    // De-duplicated: nuclo's list() may call a row's builder twice (a template pass).
+    expect([...new Set(seen)]).toEqual([
+      "build /eager at /eager",
+      "nav /eager at /eager",
+      "build /slow at /slow",
+      "nav /slow at /slow",
+    ]);
+  });
+
+  it.each(["hash", "memory"] as const)("does the same in %s mode", async (history) => {
+    const gate: Gate = deferred();
+    const route = await start(slowRouter(gate, { history }), "/");
+
+    const navigation = route.go("/slow");
+    expect(route.url).toBe("/");
+    gate.resolve({ default: About });
+    await navigation;
+    expect(route.url).toBe("/slow");
   });
 });
 

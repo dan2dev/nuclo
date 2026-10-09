@@ -129,7 +129,7 @@ describe('history: "hash"', () => {
 
   it("stacks layers, with Back closing the top one", async () => {
     let captured: Layer | undefined;
-    const Modal: PageComponent = (_ctx, layer) => {
+    const Modal: PageComponent = (_ctx, { layer }) => {
       captured = layer;
       return div({ id: "modal" });
     };
@@ -284,7 +284,7 @@ describe('history: "memory"', () => {
 
   it("stacks layers and closes them through its own entries", async () => {
     let captured: Layer | undefined;
-    const Modal: PageComponent = (_ctx, layer) => {
+    const Modal: PageComponent = (_ctx, { layer }) => {
       captured = layer;
       return div({ id: "modal" });
     };

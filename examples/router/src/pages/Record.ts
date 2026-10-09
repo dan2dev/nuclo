@@ -5,11 +5,11 @@
  * Type into the scratch field before opening the preview: the preview is a
  * layer, so this page is never rebuilt and the text is still there afterwards.
  */
-import type { Layer, Outlet, RouteContext } from "nuclo-router";
+import type { PageProps, RouteContext } from "nuclo-router";
 import { css, cx } from "../theme.ts";
 import { btn, card, code, feature, field, pill, s } from "../ui.ts";
 
-export default function RecordPage(ctx: RouteContext, layer: Layer, _data: unknown, outlet: Outlet) {
+export default function RecordPage(ctx: RouteContext, { layer, outlet }: PageProps) {
   let scratch = "";
   const log: string[] = [];
 

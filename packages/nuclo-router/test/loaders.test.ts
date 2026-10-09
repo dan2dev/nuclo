@@ -13,6 +13,7 @@ import {
   type DataLoader,
   type Layer,
   type PageComponent,
+  type PageProps,
   type Route,
   type RouteContext,
 } from "../src/index";
@@ -37,7 +38,7 @@ const postModule = {
     slug: ctx.params.slug,
     title: `Post ${ctx.params.slug}`,
   })) satisfies DataLoader<Post>,
-  default: ((_ctx: RouteContext, _layer: Layer, post: Post) =>
+  default: ((_ctx: RouteContext, { data: post }: PageProps<Post>) =>
     div({ id: "post" }, post.title)) satisfies PageComponent<Post>,
 };
 
@@ -60,7 +61,7 @@ describe("load()", () => {
             seen = ctx;
             return ctx.params.slug.toUpperCase();
           },
-          default: ((_c, _l, data: string) => div({ id: "p" }, data)) as PageComponent<string>,
+          default: ((_c, { data }) => div({ id: "p" }, data)) as PageComponent<string>,
         }),
       },
       { preload: false },
@@ -86,7 +87,7 @@ describe("load()", () => {
               loads++;
               return ctx.params.slug;
             },
-            default: ((_c, _l, slug: string) => div({ id: "post" }, slug)) as PageComponent<string>,
+            default: ((_c, { data: slug }) => div({ id: "post" }, slug)) as PageComponent<string>,
           });
         },
       },
@@ -113,7 +114,7 @@ describe("load()", () => {
       {
         "/": () => ({
           load: () => ++n,
-          default: ((_c, _l, value: number) => div({ id: "n" }, String(value))) as PageComponent<number>,
+          default: ((_c, { data: value }) => div({ id: "n" }, String(value))) as PageComponent<number>,
         }),
       },
       { preload: false },
@@ -144,7 +145,7 @@ describe("load()", () => {
   it("accepts a synchronous loader and commits in the same task", async () => {
     const Sync = {
       load: () => "sync",
-      default: ((_c, _l, data: string) => div({ id: "s" }, data)) as PageComponent<string>,
+      default: ((_c, { data }) => div({ id: "s" }, data)) as PageComponent<string>,
     };
     const router = createRouter({ "/": () => Sync, "/other": () => Sync }, { preload: false });
     const route = await start(router, "/");
@@ -161,7 +162,7 @@ describe("load()", () => {
     const gate = deferred<string>();
     const Slow = {
       load: () => gate.promise,
-      default: ((_c, _l, data: string) => div({ id: "slow" }, data)) as PageComponent<string>,
+      default: ((_c, { data }) => div({ id: "slow" }, data)) as PageComponent<string>,
     };
     const router = createRouter(
       { "/": () => (() => div({ id: "home" })) as PageComponent, "/slow": () => Slow },
@@ -237,7 +238,7 @@ describe("load() failures", () => {
             if (++attempt === 1) throw new Error("flaky");
             return "ok";
           },
-          default: ((_c, _l, data: string) => div({ id: "flaky" }, data)) as PageComponent<string>,
+          default: ((_c, { data }) => div({ id: "flaky" }, data)) as PageComponent<string>,
         }),
       },
       { preload: false },
@@ -262,7 +263,7 @@ describe("load() failures", () => {
     const router = createRouter(
       {
         "/": () => (() => div({ id: "home" })) as PageComponent,
-        "/slow": () => ({ load: () => slow.promise, default: ((_c, _l, d: string) => div({ id: "slow" }, d)) as PageComponent<string> }),
+        "/slow": () => ({ load: () => slow.promise, default: ((_c, { data: d }) => div({ id: "slow" }, d)) as PageComponent<string> }),
         "/fast": () => (() => div({ id: "fast" })) as PageComponent,
       },
       { preload: false },
@@ -290,7 +291,7 @@ describe("load() with layers and SSR", () => {
         "/invoices/:id": () => (() => div({ id: "invoice" })) as PageComponent,
         "/invoices/:id/preview": () => ({
           load: (ctx: RouteContext) => `preview of ${ctx.params.id}`,
-          default: ((_c, layer: Layer, data: string) => {
+          default: ((_c, { layer, data }) => {
             captured = layer;
             return div({ id: "preview" }, data);
           }) as PageComponent<string>,
@@ -325,10 +326,10 @@ describe("load() with layers and SSR", () => {
     let captured: Layer | undefined;
     const router = createRouter(
       {
-        "/": () => ({ load: () => "base", default: ((_c, _l, d: string) => div(d)) as PageComponent<string> }),
+        "/": () => ({ load: () => "base", default: ((_c, { data: d }) => div(d)) as PageComponent<string> }),
         "/over": () => ({
           load: () => "layer",
-          default: ((_c, layer: Layer, d: string) => {
+          default: ((_c, { layer, data: d }) => {
             captured = layer;
             return div(d);
           }) as PageComponent<string>,

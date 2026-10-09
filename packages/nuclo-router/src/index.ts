@@ -42,7 +42,7 @@
  * carries nothing of the router's. For pages that render where they are
  * written instead, the app places `pages()`.
  */
-import { list, onRootBuild, update } from "nuclo";
+import { list, onRootBuild, update, viewWaiting } from "nuclo";
 import {
   browserHistory,
   hashHistory,
@@ -65,7 +65,6 @@ export type { Match, RouteParams } from "./match";
 export type { HistoryKind, LocationAdapter } from "./history";
 
 const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
-/** Only ever used to parse a path into a URL on the server. */
 /**
  * URL parsing needs an origin, but the router only ever uses the path, search
  * and hash it gets back. In a browser this is the real origin so that a
@@ -118,8 +117,8 @@ export interface RouteContext<TParams extends RouteParams = RouteParams> {
 /**
  * Control over the stack layer a page is rendered in.
  *
- * Handed to every page as its second argument; pages that are never stacked
- * can ignore it. See `Route.push()` for the stack itself.
+ * Handed to every page as `layer` in its {@link PageProps}; pages that are
+ * never stacked can ignore it. See `Route.push()` for the stack itself.
  */
 export interface Layer {
   /** 0 for the base page; 1 and up for pages opened with `push()`. */
@@ -145,10 +144,6 @@ export interface Layer {
 }
 
 /**
- * A page. Returns anything list() accepts — a built element, a tag builder
- * call, or a NodeModFn. Pages that need neither argument take none.
- */
-/**
  * Where a parent page renders its child route.
  *
  * Call it once, wherever the child belongs. It is its own one-item `list()`,
@@ -160,17 +155,29 @@ export interface Layer {
  */
 export type Outlet = () => ListModifier;
 
+/** A page's second argument. Destructure what it needs: `(ctx, { data, outlet })`. */
+export interface PageProps<TData = unknown> {
+  /** Where the page sits in the layer stack, and its way out. */
+  readonly layer: Layer;
+  /** Whatever the route's `load()` returned, or `undefined` when it has none. */
+  readonly data: TData;
+  /** Where a parent page renders its child route. */
+  readonly outlet: Outlet;
+}
+
+/**
+ * A page. Returns anything list() accepts — a built element, a tag builder
+ * call, or a NodeModFn. Pages that need neither argument take none.
+ */
 export type PageComponent<TData = unknown, TParams extends RouteParams = RouteParams> = (
   ctx: RouteContext<TParams>,
-  layer: Layer,
-  data: TData,
-  outlet: Outlet,
+  props: PageProps<TData>,
 ) => ListRenderResult;
 
 /**
  * A route's data loader. Runs on **every** navigation to the route — before
- * its page is built — and whatever it returns is handed to the page as its
- * third argument.
+ * its page is built — and whatever it returns is handed to the page as
+ * `data`.
  *
  * It runs on the server too, so a server-rendered page has its data in the
  * first HTML it emits rather than fetching after hydration.
@@ -180,7 +187,7 @@ export type PageComponent<TData = unknown, TParams extends RouteParams = RoutePa
  * export async function load(ctx: RouteContext): Promise<Post> {
  *   return fetchPost(ctx.params.slug);
  * }
- * export default function Post(_ctx: RouteContext, _layer: Layer, post: Post) {
+ * export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>) {
  *   return article(h1(post.title));
  * }
  * ```
@@ -222,6 +229,34 @@ export type RouteLoader<TData = unknown> = () =>
   | Promise<RouteModule<TData>>;
 
 /**
+ * Thrown from a route's `load()` — or from its loader in the table — to send
+ * the navigation somewhere else:
+ *
+ * ```ts
+ * export const load: DataLoader = (ctx) => {
+ *   if (!session()) throw new Redirect(`/login?next=${encodeURIComponent(ctx.url)}`);
+ * };
+ *
+ * createRouter({ "/old": () => { throw new Redirect("/new"); }, … });
+ * ```
+ *
+ * `href` is what `go()` takes; a relative one resolves against the URL being
+ * navigated to. The browser follows it, and the redirected-from URL never
+ * reaches history. On the server `start()` rejects with it — `href` resolved —
+ * for the app to answer with a 3xx.
+ */
+export class Redirect extends Error {
+  readonly href: string;
+  constructor(href: string) {
+    super(`nuclo-router: redirect to "${href}"`);
+    this.href = href;
+  }
+}
+
+/** A Redirect that leads to another, and so on, gives up after this many. */
+const MAX_REDIRECTS = 10;
+
+/**
  * A route table maps a pattern to a loader — or to another table, whose keys
  * are relative to it.
  *
@@ -241,10 +276,9 @@ export type RouteLoader<TData = unknown> = () =>
  * });
  * ```
  *
- * Nesting composes **paths, not layouts**. Each entry is still an independent
- * route with its own page: `"/"` is the parent's page, and navigating to a
- * child replaces it rather than rendering inside it. (To keep the parent on
- * screen, open the child as a layer with `push("./preview")`.)
+ * Nesting composes **layouts as well as paths**: `"/"` is the parent's page,
+ * and a child renders inside it, wherever the parent calls `outlet()`. A
+ * navigation between children keeps the parent mounted.
  *
  * Each entry may carry its own data type, which a single record type cannot
  * preserve — hence the `any`. A `RouteLoader<Post>` is assignable here, and
@@ -392,7 +426,7 @@ export interface Route {
   readonly error: Error | null;
   /**
    * Whatever the active route's `load()` returned, or `undefined` when it has
-   * none.
+   * none. Only the matched page's: a parent's `load()` result is not on it.
    *
    * Mainly for SSR: a server can serialize this into the HTML so the client's
    * loader can take it instead of fetching the same thing again during
@@ -433,6 +467,10 @@ export interface Route {
    * Each `renderToString()` inside `fn` mounts this Route's pages within that
    * render. The browser never needs it: `start()` makes its Route the active
    * one.
+   *
+   * The scope ends when `fn` returns, so only a synchronous render sees it —
+   * which `renderToString()` is. An async or streaming render would need it
+   * carried across `await`s (AsyncLocalStorage, say), which this does not do.
    */
   run<T>(fn: () => T): T;
   /** Navigates, loading the target's module if needed. Never rejects. */
@@ -450,7 +488,7 @@ export interface Route {
    * const created = await route.push<Option>("/options/new");
    * if (created) { options.push(created); selected = created.id; update(); }
    *
-   * // in the pushed page — `layer` is its second argument
+   * // in the pushed page — `(ctx, { layer })`
    * layer.close(created);   // resolves the push() above with the new option
    * layer.close();          // dismissed: resolves with undefined
    * ```
@@ -460,7 +498,8 @@ export interface Route {
    *
    * Unlike `go()`, this **rejects** when the href matches no route or its
    * module fails to load: the caller is already awaiting a result, so the
-   * failure belongs there rather than on `route.error`.
+   * failure belongs there rather than on `route.error`. A loader's
+   * `Redirect` opens its target as the layer instead.
    */
   push<T = unknown>(href: string): Promise<T | undefined>;
   /**
@@ -490,6 +529,8 @@ export interface Router extends Omit<Route, "run"> {
    * Resolves a URL to its page module and returns the Route for it.
    * Defaults to `location.href` in the browser; pass the request URL on the
    * server. Rejects when nothing matches and the table has no "*" route.
+   * A loader's `Redirect` is followed in the browser; on the server `start()`
+   * rejects with it, `href` resolved, for the app to answer with a 3xx.
    *
    * In the browser the Route becomes the router's active one and its pages
    * mount with the next `render()` or `hydrate()`; `stop()` unmounts them.
@@ -498,7 +539,7 @@ export interface Router extends Omit<Route, "run"> {
   /**
    * Resolves a URL against the table **without loading anything**, and
    * returns the context it would produce — or null when the URL is outside
-   * `base` or matches no pattern.
+   * `base`, matches no pattern, or — in the browser — is on another origin.
    *
    * Pure and side-effect free on both sides: no import, no history, no
    * listeners, no Route. Defaults to `location.href` in the browser.
@@ -771,6 +812,25 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     return (path === "/" ? base || "/" : base + path) + suffix;
   }
 
+  /** Resolves a route-relative href ("./x", "../x", "." or "..") against `fromPath`; anything else comes back unchanged. */
+  function resolveFrom(href: string, fromPath: string): string {
+    const relative = href === "." || href === ".." || href.startsWith("./") || href.startsWith("../");
+    return relative ? resolveRelative(href, fromPath) : href;
+  }
+
+  /**
+   * Where a failed navigation to `fromPath` goes instead: a Redirect's href,
+   * resolved — or, for anything else and for a redirect chain past
+   * MAX_REDIRECTS, the Error to fail with.
+   */
+  function redirectOf(cause: unknown, fromPath: string, hops: number): string | Error {
+    if (!(cause instanceof Redirect)) return toError(cause);
+    if (hops >= MAX_REDIRECTS) {
+      return new Error(`nuclo-router: more than ${MAX_REDIRECTS} redirects in a row, the last to "${cause.href}"`);
+    }
+    return resolveFrom(cause.href, fromPath);
+  }
+
   /** The canonical app-relative href for a context: base + path + ?search + #hash. */
   function appHref(ctx: RouteContext): string {
     const path = ctx.path === "/" ? base || "/" : base + ctx.path;
@@ -787,6 +847,9 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     } catch {
       return null;
     }
+    // Another site is never ours, whatever its path. Only a browser has an
+    // origin to compare: a server matches the request URLs it is handed.
+    if (isBrowser && url.origin !== ORIGIN) return null;
     const inner = stripBase(url.pathname, base);
     if (inner === null) return null;
     const found = match(inner);
@@ -804,7 +867,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     };
   }
 
-  async function start(url?: string): Promise<Route> {
+  async function start(url?: string, hops = 0): Promise<Route> {
     const href = url ?? location.read();
     const parsed = parse(href);
     if (!parsed) {
@@ -818,7 +881,23 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
 
     // The whole chain, parents included: a deep link must render its layouts
     // too, and on a server they have to be in the first HTML.
-    const resolved = await resolveLevels(planChain(parsed.match.value, parsed.ctx));
+    let resolved: ResolvedLevel[];
+    try {
+      resolved = await resolveLevels(planChain(parsed.match.value, parsed.ctx));
+    } catch (cause) {
+      if (!(cause instanceof Redirect)) throw cause;
+      const to = redirectOf(cause, parsed.ctx.path, hops);
+      if (typeof to !== "string") throw to;
+      // A server answers with a 3xx itself, and needs the href resolved.
+      if (!isBrowser) throw new Redirect(to);
+      // Not one of ours: the browser leaves for it, and there is no Route.
+      if (!parse(to)) {
+        location.leave(to);
+        throw new Redirect(to);
+      }
+      location.replace(to, null);
+      return start(to, hops + 1);
+    }
 
     // ── per-Route state ──────────────────────────────────────────────────
     /**
@@ -891,13 +970,13 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         used = true;
         return list(() => instance.children, (child: LevelInstance) => renderLevel(child, layer));
       };
-      const built = instance.level.component(instance.level.ctx, layer, instance.level.data, outlet);
+      const built = instance.level.component(instance.level.ctx, { layer, data: instance.level.data, outlet });
       if (!used && instance.children.length > 0 && !warnedOutlet) {
         warnedOutlet = true;
         console.warn(
           `nuclo-router: "${instance.level.node.pattern}" has a child route but never called its ` +
             `outlet(), so "${instance.children[0].level.node.pattern}" cannot render. A parent page ` +
-            `takes (ctx, layer, data, outlet) and must place outlet() where its child belongs.`,
+            `takes (ctx, { outlet }) and must place outlet() where its child belongs.`,
         );
       }
       return built;
@@ -918,8 +997,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
      * active route; anything else comes back unchanged.
      */
     function abs(href: string): string {
-      const relative = href === "." || href === ".." || href.startsWith("./") || href.startsWith("../");
-      return relative ? resolveRelative(href, leafOf(current).ctx.path) : href;
+      return resolveFrom(href, leafOf(current).ctx.path);
     }
 
     /**
@@ -949,6 +1027,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     /** True once the pages were mounted automatically, on either side: pages() then warns. */
     let mountedOnce = false;
     let warnedPlain = false;
+    let warnedNowhere = false;
     /** Unregisters the browser's root-build hook; set by start(). */
     let unhookRoot: (() => void) | undefined;
     /**
@@ -987,28 +1066,46 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       idleId = undefined;
     }
 
-    /** The stack as a list(): the rows are the pages' outputs. */
-    function rowsOf(auto: boolean): ListModifier {
-      // The automatic mount empties itself on stop(), so every page leaves
-      // its region through nuclo. A page that is not a view() has nowhere to
-      // go on an automatic mount — it would sit after </body> — so say so.
+    /**
+     * The stack as a list(): the rows are the pages' outputs. `mount` names
+     * the automatic mount it is for, or null for a pages() the app placed.
+     */
+    function rowsOf(mount: "browser" | "server" | null): ListModifier {
+      // An automatically mounted page has nowhere to go but a region — in the
+      // browser it would sit after </body>, on a server on a host nothing
+      // serializes — so say so when it does not land there: content that is
+      // not a view(), or a view() whose region is not in the tree.
       const render = (entry: Entry): ListRenderResult => {
         const built = renderLevel(entry.root, entry.layer);
-        if (!auto) return built;
+        if (!mount) return built;
         return ((host: ExpandedElement, index: number): Node | null => {
           const node = typeof built === "function" ? (built as NodeModFn)(host, index) : built;
+          const pattern = leafOf(entry).ctx.pattern;
           if (node && (node as Node).nodeType !== 8 && !warnedPlain) {
             warnedPlain = true;
             console.warn(
-              `nuclo-router: "${leafOf(entry).ctx.pattern}" returned content without a view(), ` +
+              `nuclo-router: "${pattern}" returned content without a view(), ` +
                 "so it renders nowhere visible. Return view(\"<region id>\", …) from the page, " +
                 "or place router.pages() in the tree to render pages where it sits.",
             );
+          } else if (node && !warnedNowhere) {
+            // Judged once the render is over: the pages are built before the
+            // app's tree, so a region arrives after the view waiting for it.
+            queueMicrotask(() => {
+              if (warnedNowhere || !viewWaiting(node as Node)) return;
+              warnedNowhere = true;
+              console.warn(
+                `nuclo-router: "${pattern}" returned a view() whose region is not in the tree, ` +
+                  "so it renders nowhere visible. Check its id against the layout's region({ id }).",
+              );
+            });
           }
           return node as Node | null;
         }) as unknown as ListRenderResult;
       };
-      return list(() => (auto && stopped ? [] : slot), render);
+      // The browser's mount empties itself on stop(), so every page leaves
+      // its region through nuclo.
+      return list(() => (mount === "browser" && stopped ? [] : slot), render);
     }
 
     /**
@@ -1023,10 +1120,10 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     function mountPages(serializing: boolean): void {
       if (placed) return;
       if (serializing) {
-        rowsOf(false)(document.createElement("div") as unknown as ExpandedElement, 0);
+        rowsOf("server")(document.createElement("div") as unknown as ExpandedElement, 0);
       } else if (!mounted) {
         const html = document.documentElement as unknown as ExpandedElement;
-        const start = rowsOf(true)(html, 0) as unknown as Node;
+        const start = rowsOf("browser")(html, 0) as unknown as Node;
         mounted = { start, end: (html as unknown as Node).lastChild! };
       }
       mountedOnce = true;
@@ -1063,15 +1160,6 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     }
 
     /**
-     * Same page function and same URL-without-hash: keep the row, skip the
-     * rebuild.
-     *
-     * The depth check matters: a navigation lands its entry at the bottom of
-     * a fresh stack, so reusing a row that is currently a *layer* would leave
-     * the page holding a Layer handle for a depth that no longer exists —
-     * and close() would silently do nothing. Rebuild it at depth 0 instead.
-     */
-    /**
      * Lands an ordinary navigation. A navigation is not a layer: it replaces
      * the whole stack, so any open layers are dismissed and their push()
      * callers resolve with undefined.
@@ -1082,7 +1170,9 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
      */
     function commit(levels: readonly ResolvedLevel[], scroll: boolean): void {
       const leafCtx = levels[levels.length - 1].ctx;
-      // Reuse is a base-page concern; a layer is its own row.
+      // Reuse is a base-page concern. A row that is currently a layer holds a
+      // Layer handle for a depth the new stack will not have — its close()
+      // would silently do nothing — so it is rebuilt at depth 0 instead.
       const reusable = current.layer.depth === 0 && slot.length === 1;
       const mounted = reusable ? levelsOf(current) : [];
       const keep = reusable ? matchingPrefix(mounted, levels) : 0;
@@ -1140,7 +1230,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     }
 
     /** Opens `href` as a new layer. See Route.push(). */
-    async function pushLayer(rawHref: string): Promise<unknown> {
+    async function pushLayer(rawHref: string, hops = 0): Promise<unknown> {
       if (!isBrowser || stopped) return undefined;
 
       // A pushed layer is usually a child of the page pushing it, which is
@@ -1152,34 +1242,41 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       }
 
       const mine = ++generation;
-      // A layer renders the matched page alone, not its layout chain: its
-      // parents are already mounted in the row beneath it, and rendering them
-      // again would show the same layout twice.
-      const loaded = resolveLevels(planChain(parsed.match.value, parsed.ctx).slice(-1));
       let resolved: ResolvedLevel[];
-      if (isPromise<ResolvedLevel[]>(loaded)) {
-        // The caller is awaiting, but the app's own pending UI should still
-        // show — a layer that has to fetch its chunk is a navigation too.
-        pendingPath = parsed.ctx.path;
-        error = null;
-        update();
-        try {
+      try {
+        // A layer renders the matched page alone, not its layout chain: its
+        // parents are already mounted in the row beneath it, and rendering them
+        // again would show the same layout twice.
+        const loaded = resolveLevels(planChain(parsed.match.value, parsed.ctx).slice(-1));
+        if (isPromise<ResolvedLevel[]>(loaded)) {
+          // The caller is awaiting, but the app's own pending UI should still
+          // show — a layer that has to fetch its chunk is a navigation too.
+          pendingPath = parsed.ctx.path;
+          error = null;
+          update();
           resolved = await loaded;
-        } catch (cause) {
-          if (generation === mine) {
-            pendingPath = null;
-            update();
-          }
-          // Rejected rather than surfaced: nothing opened, and the caller is
-          // the only one who knows what to do about it.
-          throw toError(cause);
+        } else {
+          resolved = loaded;
         }
-        // Overtaken by a navigation, or the Route was retired: open nothing.
-        if (stopped || generation !== mine) return undefined;
-        pendingPath = null;
-      } else {
-        resolved = loaded;
+      } catch (cause) {
+        const live = generation === mine;
+        if (live) {
+          pendingPath = null;
+          update();
+        }
+        const to = redirectOf(cause, parsed.ctx.path, hops);
+        // A loader's Redirect opens its target instead — unless something
+        // overtook this push while it loaded.
+        if (typeof to === "string") return live ? pushLayer(to, hops + 1) : undefined;
+        // Rejected rather than surfaced: nothing opened, and the caller is
+        // the only one who knows what to do about it.
+        throw to;
       }
+      // Overtaken by a navigation, or the Route was retired: open nothing.
+      if (stopped || generation !== mine) return undefined;
+      // The layer supersedes any navigation still in flight, whose own
+      // completion is now stale and will never clear the flag.
+      pendingPath = null;
 
       const depth = slot.length;
       // History after the module is in hand, so a failed push leaves the URL
@@ -1210,7 +1307,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       location.go(depth - slot.length);
     }
 
-    function navigate(rawHref: string, mode: "push" | "replace" | "pop"): Promise<void> {
+    function navigate(rawHref: string, mode: "push" | "replace" | "pop", hops = 0): Promise<void> {
       if (!isBrowser || stopped) return Promise.resolve();
 
       // "./x" and "../x" are relative to the active route, so they resolve to
@@ -1236,12 +1333,31 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       }
 
       const { ctx, match: found } = parsed;
-      if (mode === "push") location.push(href, null);
-      else if (mode === "replace") location.replace(href, null);
-      if (mode !== "pop") handled = null;
-
       const mine = ++generation;
       const scroll = mode !== "pop";
+
+      // History is written when the page lands, not when the navigation
+      // starts — as push() does — so the address bar never names a page that
+      // is not on screen: not while it loads, not after it fails, and not for
+      // a navigation something else overtook.
+      const land = (levels: readonly ResolvedLevel[]): void => {
+        if (mode !== "pop") {
+          if (mode === "push") location.push(href, null);
+          else location.replace(href, null);
+          handled = null;
+        }
+        commit(levels, scroll);
+      };
+
+      // A loader's Redirect is followed as a navigation of its own. This one
+      // wrote no history, so a push stays a push; a pop already sits on its
+      // entry, which the target replaces.
+      const failed = (cause: unknown): Promise<void> => {
+        const to = redirectOf(cause, ctx.path, hops);
+        if (typeof to === "string") return navigate(to, mode === "pop" ? "replace" : mode, hops + 1);
+        fail(ctx, to);
+        return Promise.resolve();
+      };
 
       // A loader can fail two ways: by rejecting, or by throwing before it
       // ever returns a promise. Both land on `fail` below, so go() keeps its
@@ -1256,14 +1372,13 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         // does not re-run just because one of its children changed.
         loaded = resolveLevels(planned.slice(shared));
       } catch (cause) {
-        fail(ctx, cause);
-        return Promise.resolve();
+        return failed(cause);
       }
 
       // Already loaded (eager route, cache hit, or preloaded): swap in the
       // same task. No pending flag, no spinner frame, no layout shift.
       if (!isPromise<ResolvedLevel[]>(loaded)) {
-        commit([...kept, ...loaded], scroll);
+        land([...kept, ...loaded]);
         return Promise.resolve();
       }
 
@@ -1274,11 +1389,11 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       return loaded.then(
         (resolved) => {
           if (generation !== mine) return;
-          commit([...kept, ...resolved], scroll);
+          land([...kept, ...resolved]);
         },
         (cause: unknown) => {
           if (generation !== mine) return;
-          fail(ctx, cause);
+          return failed(cause);
         },
       );
     }
@@ -1468,7 +1583,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
               "place it before the render that shows it, or leave it out.",
           );
         }
-        const rows = rowsOf(false);
+        const rows = rowsOf(null);
         return function (host: ExpandedElement, index: number): Comment {
           const marker = rows(host, index);
           const previous = outlet?.deref();

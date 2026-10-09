@@ -92,8 +92,9 @@ makes that Route the one the router reads for the length of the render. In
 the browser there is one Route per page load and `start()` makes it the
 router's own — no `run()` needed.
 
-A page receives its [`RouteContext`](#routecontext); pages that don't need it
-take no argument:
+A page receives its [`RouteContext`](#routecontext) and its
+[`PageProps`](#pageprops) — `(ctx, { layer, data, outlet })`. Pages that don't
+need them take fewer arguments:
 
 ```ts
 // pages/Post.ts
@@ -138,6 +139,11 @@ them. A page may fill several regions at once with
 children render inside its `outlet()`. `region()` and `view()` are nuclo
 globals, not router API — see the
 [nuclo README](../nuclo-core/README.md#regionoptions-and-viewid-content).
+
+A page that lands nowhere is reported once per Route, in the browser and on
+the server alike: one that returns content without a `view()`, and — once the
+render is over — one whose `view()` names a region that is not in the tree,
+which is what a typo in the id looks like.
 
 A region shows a pushed layer over the page beneath it: a `"stack"` region
 renders both, a `"simple"` one (the default) renders the layer alone and
@@ -210,8 +216,8 @@ A parent and its children are a real hierarchy: the parent renders, and its
 child renders **inside it**, wherever it calls `outlet()`.
 
 ```ts
-// Record.ts — a parent page takes (ctx, layer, data, outlet)
-export default function Record(ctx: RouteContext, _layer: Layer, _data: unknown, outlet: Outlet) {
+// Record.ts — a parent page takes its outlet from (ctx, { outlet })
+export default function Record(ctx: RouteContext, { outlet }: PageProps) {
   return div(Header(ctx), input({ id: "notes" }), main(outlet()));
 }
 ```
@@ -283,15 +289,15 @@ first built with.
 
 A page module may export a `load` function. It runs **before the page is
 built**, on every navigation to that route, and whatever it returns is handed
-to the page as its third argument:
+to the page as `data`:
 
 ```ts
 // pages/Post.ts
-import type { DataLoader, Layer, PageComponent, RouteContext } from "nuclo-router";
+import type { DataLoader, PageProps, RouteContext } from "nuclo-router";
 
 export const load: DataLoader<Post> = (ctx) => fetchPost(ctx.params.slug);
 
-export default function Post(_ctx: RouteContext, _layer: Layer, post: Post) {
+export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>) {
   return article(h1(post.title), p(post.body));
 }
 ```
@@ -314,7 +320,7 @@ can simply be retried.
 | | |
 |---|---|
 | while it runs | `router.pending` is true and the page you were on stays up |
-| it throws or rejects | lands on `router.error`; `go()` still never rejects; retryable |
+| it throws or rejects | lands on `router.error`; `go()` still never rejects; retryable. A [`Redirect`](#redirects) is followed instead. |
 | during `start()` | the rejection comes out of `start()` — there is no Route yet to put it on |
 | a pushed layer | runs its own loader, with its own data |
 | the idle preloader | warms **modules only**. It has no context to pass, and would be fetching data for a route you may never open |
@@ -327,10 +333,51 @@ entry:
 await router.go(router.url, { replace: true });   // runs load() again
 ```
 
-Two things it deliberately does not do: there is no serialization of server
-data into the HTML (the client's `load` runs again on hydration — have it read
-from a `window.__DATA__` your server emits if that matters), and a loader
-cannot redirect. Throw, catch it on `router.error`, and navigate.
+There is no serialization of server data into the HTML, by design: the
+client's `load` runs again on hydration. If that matters, have the server emit
+`route.data` — say as `window.__DATA__` — and the loader take it first.
+`route.data` is the **matched page's** data only. A parent's `load()` result
+is not on it, so a parent that needs the same treatment stashes what it
+fetched for the server to emit itself.
+
+### Redirects
+
+A loader that throws a `Redirect` sends the navigation elsewhere — the guard
+for a page that needs a session:
+
+```ts
+import { Redirect, type DataLoader } from "nuclo-router";
+
+export const load: DataLoader<User> = async (ctx) => {
+  const user = await currentUser();
+  if (!user) throw new Redirect(`/login?next=${encodeURIComponent(ctx.url)}`);
+  return user;
+};
+```
+
+A loader in the table can throw one too, for a page that moved:
+`"/old": () => { throw new Redirect("/new"); }`.
+
+| | |
+|---|---|
+| `href` | what `go()` takes. A relative one (`./x`, `../x`) resolves against the URL being navigated to; another origin leaves the app. |
+| `go()` and link clicks | land on the target. The redirected-from URL never reaches history — a push stays one push, and Back skips it. |
+| Back onto a URL that now redirects | the target replaces that history entry |
+| `push()` | opens the target as the layer |
+| `start()` in the browser | follows it, replacing the URL it started on |
+| `start()` on the server | **rejects** with the `Redirect`, its `href` resolved, for you to answer with a 3xx |
+| a chain | is followed. More than 10 in a row is a failure like any other — `router.error`, or a rejection from `push()` or `start()` — which is what ends a loop. |
+
+```ts
+// server.ts
+try {
+  const route = await router.start(request.url);
+  return new Response(route.run(() => renderToString(App)));
+} catch (error) {
+  if (error instanceof Redirect) return Response.redirect(new URL(error.href, request.url), 302);
+  throw error;
+}
+```
 
 ## Code splitting and preloading
 
@@ -382,7 +429,8 @@ requests on a server.
 
 Resolves `url` (default: `location.href` in the browser) to its page module and
 returns the `Route`. Rejects when nothing matches and the table has no `"*"`
-route — on a server, that is your 404. In the browser it also makes the Route
+route — on a server, that is your 404 — and, on a server only, with the
+[`Redirect`](#redirects) a loader threw. In the browser it also makes the Route
 the router's active one, mounts its pages with the next `render()` or
 `hydrate()`, attaches the `popstate` and delegated `click` listeners and
 schedules preloading; a second `start()` retires the previous `Route` — and
@@ -393,8 +441,9 @@ its pages — for you. On the server it touches nothing shared — render inside
 
 Resolves a URL against the table **without loading anything** — no import, no
 history, no listeners, no `Route`. Returns `null` when the URL is outside
-`base` or matches no pattern. Works on the server and in the browser, where it
-defaults to `location.href`.
+`base`, matches no pattern, or — in the browser — is on another origin. Works
+on the server, where a request URL matches whatever its origin, and in the
+browser, where it defaults to `location.href`.
 
 It takes absolute URLs only: `./` resolution needs an active route to resolve
 *against*, so it lives on the Route (`href`, `go`, `push`), not here.
@@ -416,19 +465,20 @@ Every member but `run()` is also on the router, which is where an app reads it.
 | `path` `pattern` `params` `search` `hash` `url` | the active match. `search` is a `URLSearchParams`. |
 | `pending` | a navigation is waiting for its page module |
 | `error` | the last failed load, cleared by the next navigation |
+| `data` | what the matched page's `load()` returned, for a server to serialize. A parent's is not on it. |
 | `depth` | how many layers are on the stack (1 for an ordinary page) |
 | `pages()` | the alternative to the automatic mount: the layer stack placed by the app itself, bottom layer first, where pages that return plain content render. **Place it once**, before the render that shows it — a second live placement duplicates the page (the router warns if it finds two in the document). |
 | `go(href, { replace })` | navigate, loading the module if needed. Never rejects — a module that fails, by rejecting *or* by throwing outright, lands on `error`. |
-| `push(href)` | open a route as a **new layer** on top, resolving with what it closes with. Accepts `./`. Rejects on no-match or a failed module. |
+| `push(href)` | open a route as a **new layer** on top, resolving with what it closes with. Accepts `./`. Rejects on no-match or a failed module; a loader's `Redirect` opens its target instead. |
 | `back(delta?)` | go back, as the Back button would. The only way to traverse in `"memory"` mode. Asynchronous. |
 | `href(path)` | prefix a path with `base`, for `a({ href })`. Resolves `./` and `../` against the active route. |
 | `stop()` | detach every listener, cancel preloading, dismiss open layers, unmount the pages. Idempotent. A stopped Route still answers with its last match; `go()` does nothing. |
-| `run(fn)` | call `fn` with this Route as the router's active one, mounting its pages in each `renderToString()` inside, and return its result — `route.run(() => renderToString(App))` on the server. |
+| `run(fn)` | call `fn` with this Route as the router's active one, mounting its pages in each `renderToString()` inside, and return its result — `route.run(() => renderToString(App))` on the server. Synchronous only: the Route stops being active when `fn` returns. |
 
 ### `RouteContext`
 
-A page's **first** argument (of three — the others are its `Layer` and its
-loader `data`): `path`, `pattern`, `params`, `search`, `hash`, `url`. It is the
+A page's **first** argument: `path`, `pattern`, `params`, `search`, `hash`,
+`url`. It is the
 context the page was *built* with — read `router.*` for live values (they differ
 only when the hash changed without a rebuild).
 
@@ -449,9 +499,19 @@ export default function Post(ctx: RouteContext<Params<"/blog/:slug">>) {
 `(ctx: RouteContext) => TData | Promise<TData>` — a page module's optional
 `load` export. See [Route loaders](#route-loaders).
 
+### `PageProps`
+
+A page's **second** argument. Destructure what the page needs.
+
+| | |
+| --- | --- |
+| `layer` | where the page sits in the stack — see [`Layer`](#layer) |
+| `data` | what the route's `load()` returned, or `undefined` without one. Typed by `PageProps<TData>`. |
+| `outlet` | where a parent page renders its child route — see [Relative routes](#relative-routes) |
+
 ### `Layer`
 
-A page's **second** argument — where it sits in the stack, and its way out.
+Where a page sits in the stack, and its way out.
 
 | | |
 | --- | --- |
@@ -475,7 +535,7 @@ throwing away the form the user was filling in:
 const created = await layer.push<Option>("/options/new");
 if (created) { options.push(created); selected = created.id; update(); }
 
-// the pushed page — `layer` is its second argument
+// the pushed page — (ctx, { layer })
 layer.close(created);   // resolves the push() above with the new option
 layer.close();          // dismissed: resolves with undefined
 ```
@@ -507,12 +567,12 @@ three layers deep.
 
 ## Sub-routers
 
-There is one stack and no route nesting, so a sub-router is composition.
-Two shapes, both in [`examples/router`](../../examples/router):
+Routes nest, so a sub-router is usually just a nested table. Two shapes, both
+in [`examples/router`](../../examples/router):
 
-**Nest the feature's table under the parent.** One router, one outlet, and the
-section's chrome in the shell — outside the pages, which is what makes it
-survive navigation within the section:
+**Nest the feature's table under the parent.** One router: the section's own
+`"/"` page is its chrome, and its children render in that page's `outlet()`,
+so the chrome survives navigation within the section:
 
 ```ts
 createRouter({ "/": …, "/docs": docsRoutes, "*": … });
@@ -608,6 +668,9 @@ view. `popstate` leaves scrolling to the browser.
 - **Concurrency-safe on the server.** `start()` returns per-request state and
   `run()` scopes it to one synchronous render, so interleaved requests cannot
   see each other's route. Only the module cache is shared, which is the point.
+  The scope ends when `run()`'s function returns: `renderToString()` is
+  synchronous, so that is enough. An async or streaming render would need the
+  Route carried across `await`s (AsyncLocalStorage), which `run()` does not do.
 - **Scroll restoration on `popstate`** is the browser's (`scrollRestoration`),
   not the router's.
 - **Start one router per document.** Each `start()` adds its own delegated
@@ -616,9 +679,10 @@ view. `popstate` leaves scrolling to the browser.
   run pushes history, the second then sees "same URL" and never navigates —
   while `popstate` reaches both. To resolve a URL against another table, create
   a router and call only `match()`: it attaches nothing.
-- **Not included, by design:** named or parallel outlets (two routed regions
-  at once), and hover preloading. Prefetch on hover by calling the route's own
-  loader from a `mouseenter`.
+- **Not included, by design:** two independently routed areas driven by one
+  URL — a page can fill several regions with `view({ … })`, but they all
+  belong to the one matched route — and hover preloading. Prefetch on hover by
+  calling the route's own loader from a `mouseenter`.
 
 ## Examples
 
@@ -637,7 +701,7 @@ bun run dev   # in either folder
 ## Tests
 
 ```bash
-bun run test          # typecheck + 309 tests, 100% statements/branches/functions/lines
+bun run test          # typecheck + 364 tests, 100% statements/branches/functions/lines
 ```
 
 MIT © Danilo Celestino de Castro

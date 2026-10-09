@@ -10,19 +10,19 @@
 import { describe, it, expect } from "vitest";
 import "nuclo";
 import { renderToString } from "nuclo/ssr";
-import { createRouter, type Outlet, type PageComponent, type Route } from "../src/index";
+import { createRouter, type PageComponent, type Route } from "../src/index";
 import { flush, mount, useRouterEnv } from "./helpers";
 
 const routes = useRouterEnv();
 
 const Home: PageComponent = () => view("main", div({ id: "home" }, h1("Home")));
 const About: PageComponent = () => view("main", div({ id: "about" }, h1("About")));
-const Modal: PageComponent = (_ctx, layer) =>
+const Modal: PageComponent = (_ctx, { layer }) =>
   view("main", div({ id: "modal" }, button({ id: "close", onClick: () => layer.close() }, "close")));
 /** Fills two regions at once. */
 const Docs: PageComponent = () => view({ main: div({ id: "docs" }), side: div({ id: "docs-links" }) });
 /** A parent that keeps its child inside its own content. */
-const Records: PageComponent = (_ctx, _layer, _data, outlet: Outlet) =>
+const Records: PageComponent = (_ctx, { outlet }) =>
   view("main", div({ id: "records" }, input({ id: "notes" }), main({ id: "child" }, outlet())));
 const Preview: PageComponent = () => div({ id: "preview" });
 
