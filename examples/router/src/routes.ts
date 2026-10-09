@@ -85,7 +85,19 @@ export const routeTable = {
  * Defined here rather than in pages/ precisely to make the point — there is no
  * module to split off. h2, not h1: the shell renders the document's only h1.
  */
-function EagerPage(props) {
+
+/** Props the router hands to a page — "/eager" declares no params. */
+interface EagerPageProps {
+  [key: string]: unknown;
+}
+
+/** The shell regions this page fills: the main pane and the sidebar. */
+interface EagerPageRegions {
+  main: ReturnType<typeof div>;
+  sidebar: ReturnType<typeof div>;
+}
+
+function EagerPage(props: EagerPageProps): ReturnType<typeof view> {
   console.log(props);
   return view({
     "main": div(
@@ -98,12 +110,12 @@ function EagerPage(props) {
       ),
     ),
     "sidebar": div(
-      input(),
+      // input(),
       span(
-        "I'm the sidebar content from EagerPage."
+        "from EagerPage."
       )
     ),
-  });
+  } satisfies EagerPageRegions);
 }
 
 /**
