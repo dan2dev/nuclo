@@ -25,16 +25,16 @@ let _force = false;
 // Missing entry = cursor at parent.firstChild; null = past the last child.
 let _cursors = new WeakMap<Node, Node | null>();
 
-export function isHydrating(): boolean {
+export function isHydrating() {
   return _hydrating;
 }
 
 /** True only inside a forceUpdate() pass (never during plain hydrate()). */
-export function isForceHydrating(): boolean {
+export function isForceHydrating() {
   return _hydrating && _force;
 }
 
-export function startHydration(force = false): void {
+export function startHydration(force = false) {
   _hydrating = true;
   _force = force;
   // Each hydration pass starts with a clean cursor slate. Stale cursors from
@@ -43,7 +43,7 @@ export function startHydration(force = false): void {
   _cursors = new WeakMap<Node, Node | null>();
 }
 
-export function endHydration(): void {
+export function endHydration() {
   _hydrating = false;
   _force = false;
   // Cursor values are strong node references (the next unclaimed sibling).
@@ -80,7 +80,7 @@ export function peekChild(parent: Node): Node | null {
 /**
  * Sets the cursor to a specific child node (or null for "past the end").
  */
-export function setCursor(parent: Node, node: Node | null): void {
+export function setCursor(parent: Node, node: Node | null) {
   _cursors.set(parent, node);
 }
 
@@ -97,7 +97,7 @@ export function runFreshAtCursor<T>(parent: Node, build: () => T): T {
   return runWithoutHydration(() => at ? withScopedInsertion(parent, at, build) : build());
 }
 
-function isWhitespaceText(node: Node): boolean {
+function isWhitespaceText(node: Node) {
   return node.nodeType === 3 && !/\S/.test(node.textContent || '');
 }
 
@@ -115,7 +115,7 @@ function isWhitespaceText(node: Node): boolean {
  * expects an element or a marker is a child the tree no longer produces — it
  * is dropped (`drop`), or it would survive in front of the cursor forever.
  */
-export function skipWhitespaceText(parent: Node, drop = _force): void {
+export function skipWhitespaceText(parent: Node, drop = _force) {
   let child = peekChild(parent);
   let advanced = false;
   while (child && isWhitespaceText(child)) {
@@ -228,7 +228,7 @@ export function claimElement(parent: Node, tagName: string): Element | null {
  * element holds now is the new build's own content — walking it for a boundary
  * that is gone would remove all of it.
  */
-export function cleanupUnclaimedChildren(node: Node, lastOriginalChild: Node | null): void {
+export function cleanupUnclaimedChildren(node: Node, lastOriginalChild: Node | null) {
   if (!lastOriginalChild || lastOriginalChild.parentNode !== node) return;
   let current = peekChild(node);
   while (current) {

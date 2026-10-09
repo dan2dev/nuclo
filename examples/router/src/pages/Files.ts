@@ -46,7 +46,7 @@ export default function FilesPage(ctx: RouteContext<Params<"/files/*rest">>) {
   const segments = rest === "" ? [] : rest.split("/");
 
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
 
     h2(s.title, "Named catch-all"),

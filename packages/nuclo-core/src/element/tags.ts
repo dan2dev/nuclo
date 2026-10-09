@@ -40,7 +40,7 @@ export const SVG_TAGS = [
 // createHtmlTagBuilder()/createSvgTagBuilder() closure allocation to first
 // access keeps boot-time work and idle memory proportional to what the app
 // actually uses instead of the whole tag catalogue.
-function defineLazyGlobal<T>(target: Record<string, unknown>, key: string, tagName: T, create: (tagName: T) => unknown): void {
+function defineLazyGlobal<T>(target: Record<string, unknown>, key: string, tagName: T, create: (tagName: T) => unknown) {
   Object.defineProperty(target, key, {
     configurable: true,
     enumerable: true,
@@ -53,13 +53,13 @@ function defineLazyGlobal<T>(target: Record<string, unknown>, key: string, tagNa
     // (`globalThis.div = ...`), unlike the eager `target[tagName] = builder`
     // it replaces. Route writes through the same "become a normal data
     // property" path so overwriting behaves exactly as before.
-    set(value: unknown): void {
+    set(value: unknown) {
       Object.defineProperty(target, key, { value, configurable: true, enumerable: true, writable: true });
     },
   });
 }
 
-function registerHtmlTag(target: Record<string, unknown>, tagName: ElementTagName): void {
+function registerHtmlTag(target: Record<string, unknown>, tagName: ElementTagName) {
   // Don't overwrite non-function properties (safety check)
   if (tagName in target && typeof target[tagName] !== 'function') {
     return;
@@ -72,7 +72,7 @@ function registerHtmlTag(target: Record<string, unknown>, tagName: ElementTagNam
   }
 }
 
-function registerSvgTag(target: Record<string, unknown>, tagName: keyof SVGElementTagNameMap): void {
+function registerSvgTag(target: Record<string, unknown>, tagName: keyof SVGElementTagNameMap) {
   // All SVG tags use camelCase Svg suffix: aSvg, rectSvg, pathSvg, etc.
   const exportName = `${tagName}Svg`;
 
@@ -81,7 +81,7 @@ function registerSvgTag(target: Record<string, unknown>, tagName: keyof SVGEleme
   }
 }
 
-export function registerGlobalTagBuilders(target: Record<string, unknown> = globalThis): void {
+export function registerGlobalTagBuilders(target: Record<string, unknown> = globalThis) {
   const marker = "__nuclo_tags_registered";
   if ((target as Record<string, boolean>)[marker]) return;
 

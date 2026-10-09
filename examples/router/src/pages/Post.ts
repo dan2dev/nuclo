@@ -3,7 +3,7 @@
 // what this page demonstrates:
 //   · ctx.params for a single :slug segment, and how the router decodes it
 //   · Params<"/blog/:slug">, which types ctx.params from the pattern itself
-//   · view({ main, sidebar }): one page placing content into two regions
+//   · into({ main, sidebar }): one page placing content into two regions
 //   · ctx.pattern (the table key) next to ctx.path (the canonical decoded path)
 //   · ctx.search and ctx.hash, and why a ctx is a snapshot of one navigation
 //   · when a navigation rebuilds this page, and when it keeps the live dom
@@ -62,7 +62,7 @@ export default function PostPage(ctx: RouteContext<Params<"/blog/:slug">>) {
   // One page, two regions: the body goes into the layout's region({ id:
   // "main" }) and a note into its region({ id: "sidebar" }). Both leave when
   // this page does.
-  return view({
+  return into({
     main: div(
       s.page,
       h2(s.title, "one param"),
@@ -236,7 +236,7 @@ export default function PostPage(ctx: RouteContext<Params<"/blog/:slug">>) {
     sidebar: div(
       css({ col: true, gap: 6 }),
       span(s.caption, "from /blog/:slug"),
-      span(st.hint, 'placed here by the page itself, with view({ main, sidebar }) — ' + `this is build #${build}.`),
+      span(st.hint, 'placed here by the page itself, with into({ main, sidebar }) — ' + `this is build #${build}.`),
     ),
   });
 }

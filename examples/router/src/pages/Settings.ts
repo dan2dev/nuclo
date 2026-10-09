@@ -25,7 +25,7 @@ const ROWS: ReadonlyArray<readonly [string, string, string]> = [
 
 export default function SettingsPage(_ctx: RouteContext) {
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
     h2(s.title, "createRouter() settings"),
     p(

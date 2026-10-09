@@ -19,7 +19,7 @@
  * export const App = () => div(Header(), main(region({ id: "main" })), Footer());
  *
  * // pages/Post.ts — a page says where it goes
- * export default (ctx) => view("main", article(h1(ctx.params.slug)));
+ * export default (ctx) => into("main", article(h1(ctx.params.slug)));
  *
  * // main.ts — the browser
  * await router.start();
@@ -38,9 +38,8 @@
  * The router decides what to load, not where it goes. The pages mount
  * themselves beside the app with its first render — on the document root in
  * the browser, inside the render on a host nothing serializes on the server —
- * and each page lands in a region through its own `view()`. The app's tree
- * carries nothing of the router's. For pages that render where they are
- * written instead, the app places `pages()`.
+ * and each page lands in a region through its own `into()`. The app's tree
+ * carries nothing of the router's.
  */
 import { list, onRootBuild, update, viewWaiting } from "nuclo";
 import {
@@ -332,7 +331,7 @@ function flatten(
   table: RouteTable,
   prefix: string | null = null,
   parents: readonly RouteNode[] = [],
-  into: Record<string, RouteChain> = {},
+  result: Record<string, RouteChain> = {},
 ): FlatTable {
   // This table's own page, if it declares one. Found in a first pass, so the
   // order of the object's keys cannot decide whether children see their
@@ -356,17 +355,17 @@ function flatten(
     if (typeof value === "function") {
       // The table's own page sits beside its parents, not under itself.
       const isSelf = prefix !== null && childKey(key) === "/";
-      into[pattern] = {
+      result[pattern] = {
         leaf: routeNode(pattern, value as RouteLoader),
         parents: isSelf ? parents : inherited,
       };
     } else {
       // A nested table hangs off this key. normalizeBase trims it so "/a/" and
       // "a" compose the same way.
-      flatten(value, normalizeBase(pattern), inherited, into);
+      flatten(value, normalizeBase(pattern), inherited, result);
     }
   }
-  return into;
+  return result;
 }
 
 /** Joins a child key onto its parent prefix. "./x", "/x" and "x" are all the same here. */
@@ -446,14 +445,6 @@ export interface Route {
    * `push()`ed layer is open, and so on.
    */
   readonly depth: number;
-  /**
-   * The alternative to the automatic mount: the slot the layer stack renders
-   * into — every layer, bottom first — placed by the app, once, before the
-   * render that shows it. A page that returns plain content renders here; one
-   * that returns a `view()` still lands in its region. Once placed, nothing is
-   * mounted automatically.
-   */
-  pages(): ListModifier;
   /**
    * Runs `fn` with this Route as the router's active one, and returns what it
    * returns. For the server, where every request has its own Route and the
@@ -902,9 +893,10 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     // ── per-Route state ──────────────────────────────────────────────────
     /**
      * The layer stack, and list()'s items array. Index 0 is the base page;
-     * push() appends. Because pages() is one list() over this array, appending
-     * a layer is a pure insertion — the rows below are never rebuilt, so the
-     * page underneath keeps its DOM, its focus and its form state.
+     * push() appends. Because the pages are one list() over this array, appending
+     * a layer is a pure insertion — the rows below are never rebuilt, so in a
+     * "stack" region the page underneath keeps its DOM, its focus and its form
+     * state.
      *
      * A reload always starts at depth 1: the URL names the top layer but not
      * the stack beneath it, so a pushed route has to stand on its own when it
@@ -1017,15 +1009,8 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     let pendingPath: string | null = null;
     let error: Error | null = null;
     let stopped = false;
-    /** The marker of the last pages() placed in a tree, to catch a second live one. */
-    let outlet: WeakRef<Comment> | null = null;
-    let warnedOutlets = false;
-    /** The automatic mount on the document root, in the browser, until stop(). */
+    /** The mount on the document root, in the browser, until stop(). */
     let mounted: { start: Node; end: Node } | null = null;
-    /** True once the app placed pages() itself: nothing is mounted automatically. */
-    let placed = false;
-    /** True once the pages were mounted automatically, on either side: pages() then warns. */
-    let mountedOnce = false;
     let warnedPlain = false;
     let warnedNowhere = false;
     /** Unregisters the browser's root-build hook; set by start(). */
@@ -1066,27 +1051,22 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       idleId = undefined;
     }
 
-    /**
-     * The stack as a list(): the rows are the pages' outputs. `mount` names
-     * the automatic mount it is for, or null for a pages() the app placed.
-     */
-    function rowsOf(mount: "browser" | "server" | null): ListModifier {
-      // An automatically mounted page has nowhere to go but a region — in the
-      // browser it would sit after </body>, on a server on a host nothing
-      // serializes — so say so when it does not land there: content that is
-      // not a view(), or a view() whose region is not in the tree.
+    /** The stack as a list(): the rows are the pages' outputs. */
+    function rowsOf(mount: "browser" | "server"): ListModifier {
+      // A page has nowhere to go but a region — in the browser it would sit
+      // after </body>, on a server on a host nothing serializes — so say so
+      // when it does not land there: content that is not an into(), or a
+      // into() whose region is not in the tree.
       const render = (entry: Entry): ListRenderResult => {
         const built = renderLevel(entry.root, entry.layer);
-        if (!mount) return built;
         return ((host: ExpandedElement, index: number): Node | null => {
           const node = typeof built === "function" ? (built as NodeModFn)(host, index) : built;
           const pattern = leafOf(entry).ctx.pattern;
           if (node && (node as Node).nodeType !== 8 && !warnedPlain) {
             warnedPlain = true;
             console.warn(
-              `nuclo-router: "${pattern}" returned content without a view(), ` +
-                "so it renders nowhere visible. Return view(\"<region id>\", …) from the page, " +
-                "or place router.pages() in the tree to render pages where it sits.",
+              `nuclo-router: "${pattern}" returned content without an into(), ` +
+                "so it renders nowhere visible. Return into(\"<region id>\", …) from the page.",
             );
           } else if (node && !warnedNowhere) {
             // Judged once the render is over: the pages are built before the
@@ -1095,7 +1075,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
               if (warnedNowhere || !viewWaiting(node as Node)) return;
               warnedNowhere = true;
               console.warn(
-                `nuclo-router: "${pattern}" returned a view() whose region is not in the tree, ` +
+                `nuclo-router: "${pattern}" returned an into() whose region is not in the tree, ` +
                   "so it renders nowhere visible. Check its id against the layout's region({ id }).",
               );
             });
@@ -1109,16 +1089,14 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     }
 
     /**
-     * Mounts the stack beside the app, from nuclo's root-build hook: after the
-     * app's component has run — so a pages() it placed is known — and before
-     * its tree is built, so each page's view() is waiting when its region
-     * arrives. In the browser that is once per Route, as comments on the
+     * Mounts the stack beside the app, from nuclo's root-build hook: before
+     * the app's tree is built, so each page's into() is waiting when its
+     * region arrives. In the browser that is once per Route, as comments on the
      * document root, outside any hydration pass. In a server render it is
      * inside that render, on a host nothing serializes, so the views reach
      * this render's regions and no other's.
      */
     function mountPages(serializing: boolean): void {
-      if (placed) return;
       if (serializing) {
         rowsOf("server")(document.createElement("div") as unknown as ExpandedElement, 0);
       } else if (!mounted) {
@@ -1126,10 +1104,9 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         const start = rowsOf("browser")(html, 0) as unknown as Node;
         mounted = { start, end: (html as unknown as Node).lastChild! };
       }
-      mountedOnce = true;
     }
 
-    /** Takes the automatic mount down: rows through nuclo, then the markers. */
+    /** Takes the mount down: rows through nuclo, then the markers. */
     function unmountPages(): void {
       if (!mounted) return;
       const { start, end } = mounted;
@@ -1575,39 +1552,6 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       get depth() {
         return slot.length;
       },
-      pages: () => {
-        placed = true;
-        if (mountedOnce) {
-          console.warn(
-            "nuclo-router: pages() was placed after the pages were mounted automatically — " +
-              "place it before the render that shows it, or leave it out.",
-          );
-        }
-        const rows = rowsOf(null);
-        return function (host: ExpandedElement, index: number): Comment {
-          const marker = rows(host, index);
-          const previous = outlet?.deref();
-          outlet = new WeakRef(marker);
-          // Two outlets would render the stack twice — duplicate ids, duplicate
-          // form controls, every page component invoked twice — and hydration
-          // claims both copies happily, so there is no other symptom to notice.
-          // Judged a microtask later, once the tree is attached: a pass that
-          // re-runs the app (forceUpdate(), a re-hydrate) claims the same marker
-          // again, and a tree thrown away and rendered anew leaves a detached one.
-          if (isBrowser && previous && previous !== marker) {
-            queueMicrotask(() => {
-              if (warnedOutlets || !previous.isConnected || !marker.isConnected) return;
-              warnedOutlets = true;
-              console.warn(
-                "nuclo-router: route.pages() is placed twice. Every call renders the whole " +
-                  "layer stack, so the active page is in the tree twice. Place pages() once " +
-                  "and switch the surrounding chrome instead.",
-              );
-            });
-          }
-          return marker;
-        } as unknown as ListModifier;
-      },
       run: (fn) => {
         const previous = active;
         active = route;
@@ -1703,5 +1647,5 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
 /** The Route members the router reads through to its active Route. */
 const DELEGATED = [
   "path", "pattern", "params", "search", "hash", "url", "pending", "error", "data", "depth",
-  "pages", "go", "push", "back", "href",
+  "go", "push", "back", "href",
 ] as const satisfies ReadonlyArray<Exclude<keyof Route, "run" | "stop">>;

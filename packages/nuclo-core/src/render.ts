@@ -16,18 +16,13 @@ type Component<TTagName extends ElementTagName> = () => NodeModFn<TTagName>;
 
 interface ForcedRoot {
   root: WeakRef<Element>;
-  component: Component<ElementTagName>;
 }
 
 /**
- * Roots rendered/hydrated from a component function, so a bare forceUpdate()
- * can rebuild every one of them. Only a WeakRef to the root element is held;
- * disconnected roots are pruned on the next forceUpdate(). The entry itself
- * strongly holds the component closure, so — unlike the WeakRef-only
- * registries — a FinalizationRegistry drops the entry once its root is
- * collected: the closure (and whatever it captures) must not outlive the
- * app it renders, even if forceUpdate() is never called again.
+ * Iteration holds only weak roots; component closures live under their DOM
+ * root in a WeakMap so a closure capturing its own root is collectible too.
  */
+const forcedComponents = new WeakMap<Element, { component: Component<ElementTagName> }>();
 const forcedRoots: ForcedRoot[] = [];
 const forcedRootFinalizer = typeof FinalizationRegistry !== "undefined"
   ? new FinalizationRegistry<ForcedRoot>((entry) => {
@@ -53,10 +48,17 @@ function unwrapComponent<TTagName extends ElementTagName>(
   return { build: fn as NodeModFn<TTagName>, component: null };
 }
 
-function registerForcedRoot(element: unknown, component: Component<ElementTagName> | null): void {
+function registerForcedRoot(element: unknown, component: Component<ElementTagName> | null) {
   if (!component || !isBrowser) return;
   if (!element || (element as Node).nodeType !== 1) return;
-  const entry: ForcedRoot = { root: new WeakRef(element as Element), component };
+  const root = element as Element;
+  const existing = forcedComponents.get(root);
+  if (existing) {
+    existing.component = component;
+    return;
+  }
+  const entry: ForcedRoot = { root: new WeakRef(root) };
+  forcedComponents.set(root, { component });
   forcedRoots.push(entry);
   forcedRootFinalizer?.register(element as Element, entry, entry);
 }
@@ -78,11 +80,21 @@ function registerForcedRoot(element: unknown, component: Component<ElementTagNam
  * @param index The index to pass to the NodeModFn (defaults to 0)
  * @returns The rendered element
  */
+export function render(
+  nodeModFn: MarkerModifier | (() => MarkerModifier),
+  parent?: Element,
+  index?: number,
+): Comment;
 export function render<TTagName extends ElementTagName = ElementTagName>(
   nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
   parent?: Element,
-  index: number = 0
-): ExpandedElement<TTagName> {
+  index?: number
+): ExpandedElement<TTagName>;
+export function render<TTagName extends ElementTagName = ElementTagName>(
+  nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
+  parent?: Element,
+  index = 0
+): ExpandedElement<TTagName> | Comment {
   const { build, component } = unwrapComponent(nodeModFn);
   runRootHooks(false);
   const targetParent = (parent || document.body) as ExpandedElement<TTagName>;
@@ -90,7 +102,11 @@ export function render<TTagName extends ElementTagName = ElementTagName>(
   let element: ExpandedElement<TTagName>;
   try {
     element = build(targetParent, index) as ExpandedElement<TTagName>;
-    (targetParent as unknown as Node).appendChild(element as Node);
+    // Marker blocks (region, list, when) attach their own start/end pair and
+    // return the start marker: re-appending it would move it past the end.
+    if ((element as unknown as Node).parentNode !== targetParent) {
+      (targetParent as unknown as Node).appendChild(element as Node);
+    }
   } catch (error) {
     // The half-built tree is discarded: nothing in it may mount later.
     cancelMountsSince(mark);
@@ -128,10 +144,18 @@ export function render<TTagName extends ElementTagName = ElementTagName>(
  * hydrate(App, app);
  * ```
  */
+export function hydrate(
+  nodeModFn: MarkerModifier | (() => MarkerModifier),
+  parent?: Element,
+): Comment;
 export function hydrate<TTagName extends ElementTagName = ElementTagName>(
   nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
   parent?: Element,
-): ExpandedElement<TTagName> {
+): ExpandedElement<TTagName>;
+export function hydrate<TTagName extends ElementTagName = ElementTagName>(
+  nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
+  parent?: Element,
+): ExpandedElement<TTagName> | Comment {
   const { build, component } = unwrapComponent(nodeModFn);
   runRootHooks(false);
   const element = hydrateRoot(build, parent, false, null);
@@ -169,6 +193,10 @@ export function hydrate<TTagName extends ElementTagName = ElementTagName>(
  * changes (e.g. switching the UI language).
  */
 export function forceUpdate(): void;
+export function forceUpdate(
+  nodeModFn: MarkerModifier | (() => MarkerModifier),
+  parent?: Element,
+): Comment;
 export function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
   nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
   parent?: Element,
@@ -176,7 +204,7 @@ export function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
 export function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
   nodeModFn?: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
   parent?: Element,
-): ExpandedElement<TTagName> | void {
+): ExpandedElement<TTagName> | Comment | void {
   if (nodeModFn !== undefined) {
     const { build } = unwrapComponent(nodeModFn);
     runRootHooks(false);
@@ -191,10 +219,12 @@ export function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
     // Collected, disconnected or reparented-out-of-an-element roots drop out.
     if (!root || !root.isConnected || !parentEl || parentEl.nodeType !== 1) {
       forcedRootFinalizer?.unregister(entry);
+      if (root) forcedComponents.delete(root);
       continue;
     }
+    const record = forcedComponents.get(root)!;
     try {
-      const build = entry.component() as NodeModFn<ElementTagName>;
+      const build = record.component();
       runRootHooks(false);
       const el = hydrateRoot(
         build,
@@ -204,6 +234,8 @@ export function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
       );
       // The walk replaces the root only on a tag mismatch — track the new one.
       if ((el as unknown) !== root) {
+        forcedComponents.delete(root);
+        forcedComponents.set(el as unknown as Element, record);
         entry.root = new WeakRef(el as unknown as Element);
         forcedRootFinalizer?.unregister(entry);
         forcedRootFinalizer?.register(el as unknown as Element, entry, entry);

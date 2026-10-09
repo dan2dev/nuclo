@@ -57,7 +57,7 @@ const UNSAFE_ATTRIBUTE_NAME = /[\s"'<>\/=\u0000-\u001f\u007f]/;
  * attacker-chosen names cannot grow it without limit.
  */
 const htmlAttributeNames = new Map<string, string>();
-function htmlAttributeName(name: string): string {
+function htmlAttributeName(name: string) {
   let mapped = htmlAttributeNames.get(name);
   if (mapped === undefined) {
     mapped = UNSAFE_ATTRIBUTE_NAME.test(name) ? '' : propertyToAttribute(name);
@@ -69,7 +69,7 @@ function htmlAttributeName(name: string): string {
 /**
  * Serializes a DOM attribute value
  */
-function serializeAttribute(name: string, value: unknown): string {
+function serializeAttribute(name: string, value: unknown) {
   if (value === null || value === undefined || value === false) {
     return '';
   }
@@ -106,7 +106,7 @@ function serializeAttribute(name: string, value: unknown): string {
  * to decide whether tagName needs lowercasing) so this doesn't repeat the
  * same `Array.isArray` discriminator check per element.
  */
-function serializeAttributes(element: Element, isPolyfill: boolean, valueIsContent: boolean): string {
+function serializeAttributes(element: Element, isPolyfill: boolean, valueIsContent: boolean) {
   let result = '';
 
   // Handle polyfill elements. NucloElement keeps every child in a plain Array
@@ -212,7 +212,7 @@ const TAG_CATEGORY: Record<string, TagCategory> = Object.assign(Object.create(nu
 // (and requests) is safe: String.prototype.replace resets lastIndex first.
 const RAW_TEXT_CLOSE_RE: Record<string, RegExp> = { script: /<\/(script)/gi, style: /<\/(style)/gi };
 
-function escapeRawText(tagName: string, text: string): string {
+function escapeRawText(tagName: string, text: string) {
   // "</script" (any case) inside a script would close it — break the sequence
   // the same way JSON serializers do ("<\/script").
   return text.replace(RAW_TEXT_CLOSE_RE[tagName], '<\\/$1');
@@ -229,7 +229,7 @@ function escapeRawText(tagName: string, text: string): string {
  * that make the parsed page show the same state. (The polyfill stores these
  * as attributes already.)
  */
-function formStateAttributes(element: Element): string {
+function formStateAttributes(element: Element) {
   if ((element as HTMLOptionElement).selected !== undefined && element.localName === 'option') {
     const option = element as HTMLOptionElement;
     if (!option.selected || option.hasAttribute('selected')) return '';
@@ -254,7 +254,7 @@ function formStateAttributes(element: Element): string {
 }
 
 /** Concatenated data of an element's direct text children. */
-function textOf(element: Element): string {
+function textOf(element: Element) {
   const children = (element as unknown as PolyfillElementShape).children;
   let text = '';
   if (children) {
@@ -270,7 +270,7 @@ function textOf(element: Element): string {
  * only): HTML has no value attribute for a select — the matching <option> is
  * marked `selected` instead.
  */
-function serializeNode(node: Node, selectValue?: string): string {
+function serializeNode(node: Node, selectValue?: string) {
   // Text node — only & < > need escaping; quotes are safe in text content
   if (node.nodeType === 3) { // Node.TEXT_NODE
     return escapeText(node.textContent || '');
@@ -418,7 +418,7 @@ function serializeNode(node: Node, selectValue?: string): string {
  * // Returns: '<div><!-- text-0 -->Hello, World!</div>'
  * ```
  */
-export function renderToString(input: RenderableInput): string {
+export function renderToString(input: RenderableInput) {
   if (!input) return '';
 
   if (typeof input === 'function') {
@@ -470,9 +470,9 @@ export function renderManyToString(inputs: RenderableInput[]): string[] {
  */
 export function renderToStringWithContainer(
   input: RenderableInput,
-  containerTag: string = 'div',
+  containerTag = 'div',
   containerAttrs: Record<string, string> = {}
-): string {
+) {
   const content = renderToString(input);
   const attrs = Object.entries(containerAttrs)
     .map(([key, value]) => (key === '' || UNSAFE_ATTRIBUTE_NAME.test(key) ? '' : serializeAttribute(key, value)))

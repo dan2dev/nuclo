@@ -17,6 +17,7 @@
  * - Listeners are automatically cleaned up when elements are garbage collected.
  */
 
+import { removeEventAttributes } from "./event-attributes";
 import { logError } from "../shared/errors";
 import { isBrowser } from "../shared/environment";
 import { registerMount, registerDestroy } from "./lifecycle";
@@ -50,7 +51,7 @@ const elementListeners = new WeakMap<HTMLElement, TrackedListeners>();
 function trackListener(
   element: HTMLElement,
   info: TrackedListener,
-): void {
+) {
   const tracked = elementListeners.get(element);
   if (!tracked) {
     elementListeners.set(element, info);
@@ -67,7 +68,7 @@ function trackListener(
 function detachListener(
   element: HTMLElement,
   info: TrackedListener,
-): void {
+) {
   element.removeEventListener(info.type, info.wrapped, info.capture);
 }
 
@@ -75,7 +76,8 @@ function detachListener(
  * Detaches every listener on()/nuclo attached to `element` (called when nuclo
  * removes the element).
  */
-export function removeAllListeners(element: HTMLElement): void {
+export function removeAllListeners(element: HTMLElement) {
+  removeEventAttributes(element);
   const tracked = elementListeners.get(element);
   if (!tracked) return;
   if (Array.isArray(tracked)) {
@@ -86,7 +88,7 @@ export function removeAllListeners(element: HTMLElement): void {
   elementListeners.delete(element);
 }
 
-function noopEventModifier(_parent: ExpandedElement<ElementTagName>): void {}
+function noopEventModifier(_parent: ExpandedElement<ElementTagName>) {}
 
 /**
  * "mount"/"destroy" are pseudo-events: there is no native DOM event to
@@ -100,7 +102,7 @@ function createLifecycleModifier<TTagName extends ElementTagName>(
 ): NodeModFn<TTagName> {
   if (!isBrowser) return noopEventModifier as NodeModFn<TTagName>;
 
-  return function(parent: ExpandedElement<TTagName>): void {
+  return function(parent: ExpandedElement<TTagName>) {
     if (!parent) return;
     const el = parent as unknown as HTMLElementTagNameMap[TTagName];
     if (kind === "mount") {
@@ -116,7 +118,7 @@ function createTrackedListener<TTagName extends ElementTagName>(
   listener: TypedEventListener<HTMLElementTagNameMap[TTagName], Event>,
   capture: boolean,
 ): TrackedListener {
-  const wrapped = function(this: EventTarget, event: Event): void {
+  const wrapped = function(this: EventTarget, event: Event) {
     const currentTarget = this as HTMLElementTagNameMap[TTagName];
     try {
       listener.call(
@@ -210,7 +212,7 @@ export function on<TTagName extends ElementTagName = ElementTagName>(
 
   // Marked so list() row templates can replay it on cloned rows instead of
   // falling back to a full per-row build (see list/template.ts SLOT_EVENT).
-  return markEventModifier(function(parent: ExpandedElement<TTagName>): void {
+  return markEventModifier(function(parent: ExpandedElement<TTagName>) {
     // Type guard: verify parent is an HTMLElement with addEventListener
     if (!parent || typeof (parent as HTMLElement).addEventListener !== "function") {
       return;

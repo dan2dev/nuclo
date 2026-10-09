@@ -14,13 +14,14 @@ import {
   type RouteContext,
   type Router,
 } from "../src/index";
-import { flush, mount, useRouterEnv, waitFor } from "./helpers";
+import { App, flush, mount, useRouterEnv, waitFor } from "./helpers";
 
 const routes = useRouterEnv();
 
-const Home: PageComponent = () => div({ id: "home" }, "home");
-const About: PageComponent = () => div({ id: "about" }, h1({ id: "café" }, "café"), p({ id: "plain" }, "x"));
-const Modal: PageComponent = (_ctx, { layer }) => div({ id: `modal-${layer.depth}` });
+const Home: PageComponent = () => into("main", div({ id: "home" }, "home"));
+const About: PageComponent = () =>
+  into("main", div({ id: "about" }, h1({ id: "café" }, "café"), p({ id: "plain" }, "x")));
+const Modal: PageComponent = (_ctx, { layer }) => into("main", div({ id: `modal-${layer.depth}` }));
 
 async function start(router: Router, url?: string): Promise<Route> {
   const route = await router.start(url);
@@ -35,7 +36,7 @@ describe("one location change, one navigation", () => {
     const route = await start(
       createRouter({ "/": () => Home, "/about": () => About }, { history: "hash", preload: false, onNavigate }),
     );
-    render(route.pages(), mount());
+    render(App, mount());
     await route.go("/about");
     onNavigate.mockClear();
 
@@ -49,7 +50,7 @@ describe("one location change, one navigation", () => {
   it("closes exactly one layer per Back when two layers share an href", async () => {
     const route = await start(createRouter({ "/": () => Home, "/modal": () => Modal }, { preload: false }), "/");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
     const first = route.push("/modal");
     await flush();
     const second = route.push("/modal");
@@ -60,7 +61,7 @@ describe("one location change, one navigation", () => {
     await waitFor(() => route.depth === 2);
 
     await expect(second).resolves.toBeUndefined();
-    expect([...container.children].map((c) => c.id)).toEqual(["home", "modal-1"]);
+    expect([...container.firstElementChild!.children].map((c) => c.id)).toEqual(["home", "modal-1"]);
 
     route.stop();
     await first;
@@ -70,7 +71,7 @@ describe("one location change, one navigation", () => {
 describe("route.hash", () => {
   it("is the live fragment, with no navigation needed to change it", async () => {
     const route = await start(createRouter({ "/": () => Home, "/about": () => About }, { preload: false }), "/");
-    render(route.pages(), mount());
+    render(App, mount());
     expect(route.hash).toBe("");
 
     await route.go("/about#plain");
@@ -89,7 +90,7 @@ describe("route.hash", () => {
     const route = await start(
       createRouter({ "/": () => Home, "/about": () => About }, { history: "hash", preload: false }),
     );
-    render(route.pages(), mount());
+    render(App, mount());
 
     await route.go("/about#plain");
 
@@ -101,7 +102,7 @@ describe("route.hash", () => {
 describe("fragment scrolling", () => {
   it("decodes the fragment before looking the element up", async () => {
     const route = await start(createRouter({ "/": () => Home, "/about": () => About }, { preload: false }), "/");
-    render(route.pages(), mount());
+    render(App, mount());
 
     await route.go("/about#caf%C3%A9");
 
@@ -114,24 +115,12 @@ describe("fragment scrolling", () => {
 
   it("looks a malformed fragment up as written", async () => {
     const route = await start(createRouter({ "/": () => Home, "/about": () => About }, { preload: false }), "/");
-    render(route.pages(), mount());
+    render(App, mount());
 
     await route.go("/about#%E0%A4%A");
 
     expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
     expect(route.path).toBe("/about");
-  });
-});
-
-describe("a second outlet", () => {
-  it("is not reported when it is rendered into a detached container", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const route = await start(createRouter({ "/": () => Home }, { preload: false }), "/");
-    render(route.pages(), mount());
-    render(route.pages(), document.createElement("div"));
-    await flush();
-
-    expect(warn).not.toHaveBeenCalled();
   });
 });
 
@@ -145,10 +134,10 @@ describe("typed params", () => {
   });
 
   it("lets a page type its context with its own pattern", async () => {
-    const Post = (ctx: RouteContext<Params<"/blog/:slug">>) => div({ id: "post" }, ctx.params.slug);
+    const Post = (ctx: RouteContext<Params<"/blog/:slug">>) => into("main", div({ id: "post" }, ctx.params.slug));
     const route = await start(createRouter({ "/blog/:slug": () => Post }, { preload: false }), "/blog/hello");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     expect(container.querySelector("#post")!.textContent).toBe("hello");
   });
@@ -159,11 +148,11 @@ describe("a page's second argument", () => {
     let props: PageProps<string> | undefined;
     const Page = ((_ctx, given) => {
       props = given;
-      return div({ id: "page" }, given.outlet());
+      return into("main", div({ id: "page" }, given.outlet()));
     }) as PageComponent<string>;
     const route = await start(createRouter({ "/": () => ({ load: () => "loaded", default: Page }) }, { preload: false }), "/");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     expect(props!.layer.depth).toBe(0);
     expect(props!.data).toBe("loaded");
@@ -174,10 +163,10 @@ describe("a page's second argument", () => {
   it("hands undefined data to a page whose route has no load()", async () => {
     let data: unknown = "unset";
     const route = await start(
-      createRouter({ "/": () => (_ctx, props) => ((data = props.data), div()) }, { preload: false }),
+      createRouter({ "/": () => (_ctx, props) => ((data = props.data), into("main", div())) }, { preload: false }),
       "/",
     );
-    render(route.pages(), mount());
+    render(App, mount());
 
     expect(data).toBeUndefined();
   });

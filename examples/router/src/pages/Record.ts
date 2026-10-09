@@ -21,7 +21,7 @@ export default function RecordPage(ctx: RouteContext, { layer, outlet }: PagePro
   }
 
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
 
     feature(

@@ -7,9 +7,9 @@ import { renderToString } from "../../src/ssr/render-to-string";
 import "../../src";
 
 /**
- * A region's content is built by a view() somewhere else in the tree, so the
+ * A region's content is built by an into() somewhere else in the tree, so the
  * hydration cursor cannot simply walk it: the region parks a claim cursor of
- * its own between its markers and each view() claims from there in turn.
+ * its own between its markers and each into() claims from there in turn.
  *
  * These tests round-trip through renderToString and then assert on *node
  * identity* — hydration that rebuilds the server's DOM looks identical in
@@ -32,7 +32,7 @@ describe("region() hydration", () => {
   const stacked = (layers: readonly string[]) => () =>
     div(
       div({ id: "main-host" }, region({ id: "main", type: "stack", empty: p({ id: "none" }, "empty") })),
-      ...layers.map((name) => view("main", section({ id: name }, name))),
+      ...layers.map((name) => into("main", section({ id: name }, name))),
     );
 
   it("claims the server's nodes instead of rebuilding them", () => {
@@ -101,7 +101,7 @@ describe("region() hydration", () => {
     const app = () => () =>
       div(
         div({ id: "main-host" }, region({ id: "main" }), span({ id: "after" }, "sibling")),
-        view("main", section({ id: "page" }, "page")),
+        into("main", section({ id: "page" }, "page")),
       );
     container.innerHTML = renderToString(app()());
     const after = container.querySelector("#after")!;
@@ -128,7 +128,7 @@ describe("region() hydration", () => {
     const app = () => () =>
       div(
         div({ id: "main-host" }, region({ id: "main" })),
-        div({ id: "elsewhere" }, view("main", section({ id: "page" }, "page"))),
+        div({ id: "elsewhere" }, into("main", section({ id: "page" }, "page"))),
       );
     container.innerHTML = renderToString(app()());
     const elsewhere = container.querySelector("#elsewhere")!;
@@ -144,7 +144,7 @@ describe("region() hydration", () => {
   it("claims the server's nodes for a view written before its region", () => {
     const app = () => () =>
       div(
-        view("main", section({ id: "page" }, "page")),
+        into("main", section({ id: "page" }, "page")),
         div({ id: "main-host" }, region({ id: "main", empty: p({ id: "none" }, "empty") })),
       );
     container.innerHTML = renderToString(app()());
@@ -164,8 +164,8 @@ describe("region() hydration", () => {
         div({ id: "main-host" }, region({ id: "main", type: "stack" })),
         // On the server this branch is off; on the client it is on, so the
         // view inside is built fresh while the region still holds a's markup.
-        when(() => flag, view("main", section({ id: "b" }, "b"))),
-        view("main", section({ id: "a" }, "a")),
+        when(() => flag, into("main", section({ id: "b" }, "b"))),
+        into("main", section({ id: "a" }, "a")),
       );
     container.innerHTML = renderToString(app()());
     const a = container.querySelector("#a")!;
@@ -185,8 +185,8 @@ describe("region() hydration", () => {
     const app = () => () =>
       div(
         div({ id: "main-host" }, region({ id: "main" })),
-        view("main", div({ id: "inner-host" }, region({ id: "inner" }))),
-        view("inner", span({ id: "deep" }, "deep")),
+        into("main", div({ id: "inner-host" }, region({ id: "inner" }))),
+        into("inner", span({ id: "deep" }, "deep")),
       );
     container.innerHTML = renderToString(app()());
     const deep = container.querySelector("#deep")!;
@@ -204,8 +204,8 @@ describe("region() hydration", () => {
     const app = () => () =>
       div(
         div({ id: "main-host" }, region({ id: "main" })),
-        view("main", region({ id: "inner" })),
-        view("inner", span({ id: "deep" }, "deep")),
+        into("main", region({ id: "inner" })),
+        into("inner", span({ id: "deep" }, "deep")),
       );
     container.innerHTML = renderToString(app()());
     const deep = container.querySelector("#deep")!;
@@ -227,7 +227,7 @@ describe("region() hydration", () => {
     const app = () => () =>
       div(
         div({ id: "main-host" }, region({ id: "main" })),
-        view("main", "plain ", () => `count ${count}`),
+        into("main", "plain ", () => `count ${count}`),
       );
     container.innerHTML = renderToString(app()());
     const host = container.querySelector("#main-host")!;
@@ -274,7 +274,7 @@ describe("region() hydration", () => {
     const app = () =>
       div(
         div({ id: "main-host" }, region({ id: "main", type: "stack" })),
-        view("main", section({ id: "page" }, input({ id: "field" }))),
+        into("main", section({ id: "page" }, input({ id: "field" }))),
       );
     container.innerHTML = renderToString(app());
 
@@ -291,7 +291,7 @@ describe("region() hydration", () => {
       div(
         { id: "main-host" },
         region({ id: "main" }),
-        section({ id: "after" }, article(view("main", span({ id: "page" }, "page")))),
+        section({ id: "after" }, article(into("main", span({ id: "page" }, "page")))),
       );
     container.innerHTML = renderToString(app()());
     const page = container.querySelector("#page")!;
@@ -308,7 +308,7 @@ describe("region() hydration", () => {
     const app = () => () =>
       div(
         main({ id: "main-host" }, region({ id: "a" }), region({ id: "b" })),
-        view("a", div({ id: "in-a" }, view("b", span({ id: "in-b" }, "b")))),
+        into("a", div({ id: "in-a" }, into("b", span({ id: "in-b" }, "b")))),
       );
     container.innerHTML = renderToString(app()());
     const inA = container.querySelector("#in-a")!;
@@ -333,7 +333,7 @@ describe("region() hydration", () => {
     const app = () => () =>
       div(
         div({ id: "main-host" }, region({ id: "main", type: "stack" })),
-        view("main", div({ id: "outer" }, "outer", view("main", div({ id: "inner" }, "inner")))),
+        into("main", div({ id: "outer" }, "outer", into("main", div({ id: "inner" }, "inner")))),
       );
     container.innerHTML = renderToString(app()());
     const outer = container.querySelector("#outer")!;
@@ -349,7 +349,7 @@ describe("region() hydration", () => {
 
   it("steps over a formatter's whitespace around the view's anchor", () => {
     const app = () => () =>
-      div(div({ id: "main-host" }, region({ id: "main" })), div({ id: "from" }, view("main", span({ id: "page" }, "page"))));
+      div(div({ id: "main-host" }, region({ id: "main" })), div({ id: "from" }, into("main", span({ id: "page" }, "page"))));
     container.innerHTML = renderToString(app()()).replace(
       /<div id="from">(<!--view-\d+-->)<\/div>/,
       '<div id="from">\n  $1\n</div>',
@@ -364,9 +364,9 @@ describe("region() hydration", () => {
     expect([...from.childNodes].filter((n) => n.nodeType === 8)).toEqual([anchor]);
   });
 
-  it("claims an empty view()", () => {
+  it("claims an empty into()", () => {
     const app = () => () =>
-      div(div({ id: "main-host" }, region({ id: "main", empty: p({ id: "none" }, "nothing") })), view("main"));
+      div(div({ id: "main-host" }, region({ id: "main", empty: p({ id: "none" }, "nothing") })), into("main"));
     container.innerHTML = renderToString(app()());
     expect(container.querySelector("#none")).toBeNull();
 
@@ -381,7 +381,7 @@ describe("region() hydration", () => {
       const App = () =>
         div(
           div({ id: "main-host" }, region({ id: "main", type: "stack" })),
-          view("main", section({ id: "page" }, input({ id: "field" }))),
+          into("main", section({ id: "page" }, input({ id: "field" }))),
         );
       render(App, container);
       const field = container.querySelector<HTMLInputElement>("#field")!;
@@ -397,7 +397,7 @@ describe("region() hydration", () => {
     it("reclaims a view written before its region", () => {
       const App = () =>
         div(
-          view("main", section({ id: "page" }, input({ id: "field" }))),
+          into("main", section({ id: "page" }, input({ id: "field" }))),
           div({ id: "main-host" }, region({ id: "main", type: "stack" })),
         );
       render(App, container);
@@ -413,7 +413,7 @@ describe("region() hydration", () => {
 
     it("re-evaluates static values inside a view", () => {
       let label = "before";
-      const App = () => div(div({ id: "main-host" }, region({ id: "main" })), view("main", p({ id: "text" }, label)));
+      const App = () => div(div({ id: "main-host" }, region({ id: "main" })), into("main", p({ id: "text" }, label)));
       render(App, container);
       const text = container.querySelector("#text")!;
 
@@ -429,8 +429,8 @@ describe("region() hydration", () => {
       const App = () =>
         div(
           div({ id: "main-host" }, region({ id: "main", type: "stack" })),
-          view("main", section({ id: "base" }, "base")),
-          when(() => open, view("main", section({ id: "layer" }, "layer"))),
+          into("main", section({ id: "base" }, "base")),
+          when(() => open, into("main", section({ id: "layer" }, "layer"))),
         );
       render(App, container);
       const base = container.querySelector("#base")!;
@@ -448,8 +448,8 @@ describe("region() hydration", () => {
       const App = () =>
         div(
           div({ id: "main-host" }, region({ id: "main", type: "stack" })),
-          view("main", section({ id: "base" }, "base")),
-          when(() => open, view("main", section({ id: "layer" }, "layer"))),
+          into("main", section({ id: "base" }, "base")),
+          when(() => open, into("main", section({ id: "layer" }, "layer"))),
         );
       render(App, container);
       const base = container.querySelector("#base")!;
@@ -481,8 +481,8 @@ describe("region() hydration", () => {
       const App = () =>
         div(
           div({ id: "main-host" }, region({ id: "main", type: "stack" })),
-          view("main", wide ? div({ id: "wide" }, span("w"), span("w")) : span({ id: "narrow" }, "n")),
-          view("main", section({ id: "after" }, "after")),
+          into("main", wide ? div({ id: "wide" }, span("w"), span("w")) : span({ id: "narrow" }, "n")),
+          into("main", section({ id: "after" }, "after")),
         );
       render(App, container);
       const after = container.querySelector("#after")!;
@@ -500,7 +500,7 @@ describe("region() hydration", () => {
       // cannot re-run it; the region's root can. The view must survive.
       const layoutRoot = document.createElement("div");
       document.body.appendChild(layoutRoot);
-      render(div(view("main", section({ id: "page" }, "page"))), container);
+      render(div(into("main", section({ id: "page" }, "page"))), container);
       const Layout = () => div(div({ id: "main-host" }, region({ id: "main", type: "stack" })));
       render(Layout, layoutRoot);
       const page = layoutRoot.querySelector("#page")!;

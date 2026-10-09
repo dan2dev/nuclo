@@ -10,10 +10,10 @@ import "nuclo";
 import { renderToString } from "nuclo/ssr";
 import { createRouter, Redirect, type PageComponent, type Route } from "../src/index";
 
-const Home: PageComponent = () => div({ id: "home" }, "home");
-const Post: PageComponent = (ctx) => div({ id: "post" }, ctx.params.slug);
+const Home: PageComponent = () => into("main", div({ id: "home" }, "home"));
+const Post: PageComponent = (ctx) => into("main", div({ id: "post" }, ctx.params.slug));
 
-const App = (route: Route) => () => div({ id: "shell" }, main(route.pages()));
+const App = () => div({ id: "shell" }, main(region({ id: "main" })));
 
 const table = {
   "/": () => Home,
@@ -32,7 +32,7 @@ describe("a Route with no window", () => {
 
     expect(route.path).toBe("/blog/node-side");
     expect(route.params.slug).toBe("node-side");
-    expect(renderToString(App(route))).toContain("node-side");
+    expect(route.run(() => renderToString(App))).toContain("node-side");
   });
 
   it("defaults to '/' when no URL is given", async () => {
@@ -45,7 +45,7 @@ describe("a Route with no window", () => {
     const onNavigate = vi.fn();
     const router = createRouter(table, { onNavigate });
     const route = await router.start("/");
-    renderToString(App(route));
+    route.run(() => renderToString(App));
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
@@ -96,11 +96,11 @@ describe("a Route with no window", () => {
     const router = createRouter({
       "/": () => ((_ctx, { layer }) => {
         seen = layer;
-        return div("home");
+        return into("main", div("home"));
       }) as PageComponent,
     });
     const route = await router.start("/");
-    renderToString(App(route));
+    route.run(() => renderToString(App));
 
     // A server-rendered page is always the base layer, and there is no
     // history to walk back through.
@@ -142,8 +142,8 @@ describe("a Route with no window", () => {
     const router = createRouter(table);
     const [a, b] = await Promise.all([router.start("/blog/a"), router.start("/blog/b")]);
 
-    expect(renderToString(App(a))).toContain(">a<");
-    expect(renderToString(App(b))).toContain(">b<");
+    expect(a.run(() => renderToString(App))).toContain(">a<");
+    expect(b.run(() => renderToString(App))).toContain(">b<");
   });
 });
 

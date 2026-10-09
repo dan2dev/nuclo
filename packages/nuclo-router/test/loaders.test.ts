@@ -17,7 +17,7 @@ import {
   type Route,
   type RouteContext,
 } from "../src/index";
-import { deferred, flush, mount, useRouterEnv } from "./helpers";
+import { App, deferred, flush, mount, useRouterEnv } from "./helpers";
 
 const routes = useRouterEnv();
 
@@ -39,7 +39,7 @@ const postModule = {
     title: `Post ${ctx.params.slug}`,
   })) satisfies DataLoader<Post>,
   default: ((_ctx: RouteContext, { data: post }: PageProps<Post>) =>
-    div({ id: "post" }, post.title)) satisfies PageComponent<Post>,
+    into("main", div({ id: "post" }, post.title))) satisfies PageComponent<Post>,
 };
 
 describe("load()", () => {
@@ -47,7 +47,7 @@ describe("load()", () => {
     const router = createRouter({ "/blog/:slug": () => postModule }, { preload: false });
     const route = await start(router, "/blog/hello");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     expect(container.querySelector("#post")!.textContent).toBe("Post hello");
   });
@@ -61,13 +61,13 @@ describe("load()", () => {
             seen = ctx;
             return ctx.params.slug.toUpperCase();
           },
-          default: ((_c, { data }) => div({ id: "p" }, data)) as PageComponent<string>,
+          default: ((_c, { data }) => into("main", div({ id: "p" }, data))) as PageComponent<string>,
         }),
       },
       { preload: false },
     );
     const route = await start(router, "/blog/hi?draft=1#top");
-    render(route.pages(), mount());
+    render(App, mount());
 
     expect(seen).toMatchObject({ path: "/blog/hi", pattern: "/blog/:slug" });
     expect(seen!.params.slug).toBe("hi");
@@ -87,7 +87,7 @@ describe("load()", () => {
               loads++;
               return ctx.params.slug;
             },
-            default: ((_c, { data: slug }) => div({ id: "post" }, slug)) as PageComponent<string>,
+            default: ((_c, { data: slug }) => into("main", div({ id: "post" }, slug))) as PageComponent<string>,
           });
         },
       },
@@ -95,7 +95,7 @@ describe("load()", () => {
     );
     const route = await start(router, "/blog/a");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
     expect(container.querySelector("#post")!.textContent).toBe("a");
 
     await route.go("/blog/b");
@@ -114,14 +114,14 @@ describe("load()", () => {
       {
         "/": () => ({
           load: () => ++n,
-          default: ((_c, { data: value }) => div({ id: "n" }, String(value))) as PageComponent<number>,
+          default: ((_c, { data: value }) => into("main", div({ id: "n" }, String(value)))) as PageComponent<number>,
         }),
       },
       { preload: false },
     );
     const route = await start(router, "/");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
     expect(container.querySelector("#n")!.textContent).toBe("1");
 
     // The revalidate idiom: navigate to where you already are, without a
@@ -131,25 +131,26 @@ describe("load()", () => {
   });
 
   it("still reuses the row for a route with no loader", async () => {
-    const Plain: PageComponent = () => div({ id: "plain" });
+    const Plain: PageComponent = () => into("main", div({ id: "plain" }));
     const route = await start(createRouter({ "/": () => Plain }, { preload: false }), "/");
     const container = mount();
-    render(route.pages(), container);
-    const node = container.children[0];
+    render(App, container);
+    const node = container.querySelector("#plain");
+    expect(node).not.toBeNull();
 
     await route.go("/");
     // undefined === undefined, so the fast path still skips the rebuild.
-    expect(container.children[0]).toBe(node);
+    expect(container.querySelector("#plain")).toBe(node);
   });
 
   it("accepts a synchronous loader and commits in the same task", async () => {
     const Sync = {
       load: () => "sync",
-      default: ((_c, { data }) => div({ id: "s" }, data)) as PageComponent<string>,
+      default: ((_c, { data }) => into("main", div({ id: "s" }, data))) as PageComponent<string>,
     };
     const router = createRouter({ "/": () => Sync, "/other": () => Sync }, { preload: false });
     const route = await start(router, "/");
-    render(route.pages(), mount());
+    render(App, mount());
 
     const promise = route.go("/other");
     // No await: a sync module plus a sync loader never flips pending.
@@ -162,15 +163,15 @@ describe("load()", () => {
     const gate = deferred<string>();
     const Slow = {
       load: () => gate.promise,
-      default: ((_c, { data }) => div({ id: "slow" }, data)) as PageComponent<string>,
+      default: ((_c, { data }) => into("main", div({ id: "slow" }, data))) as PageComponent<string>,
     };
     const router = createRouter(
-      { "/": () => (() => div({ id: "home" })) as PageComponent, "/slow": () => Slow },
+      { "/": () => (() => into("main", div({ id: "home" }))) as PageComponent, "/slow": () => Slow },
       { preload: false },
     );
     const route = await start(router, "/");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     const navigation = route.go("/slow");
     await flush();
@@ -190,14 +191,14 @@ describe("load() failures", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const router = createRouter(
       {
-        "/": () => (() => div({ id: "home" })) as PageComponent,
-        "/bad": () => ({ load: () => Promise.reject(new Error("fetch failed")), default: (() => div()) as PageComponent }),
+        "/": () => (() => into("main", div({ id: "home" }))) as PageComponent,
+        "/bad": () => ({ load: () => Promise.reject(new Error("fetch failed")), default: (() => into("main", div())) as PageComponent }),
       },
       { preload: false },
     );
     const route = await start(router, "/");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     await expect(route.go("/bad")).resolves.toBeUndefined();
     expect(route.error?.message).toBe("fetch failed");
@@ -210,12 +211,12 @@ describe("load() failures", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const router = createRouter(
       {
-        "/": () => (() => div({ id: "home" })) as PageComponent,
+        "/": () => (() => into("main", div({ id: "home" }))) as PageComponent,
         "/bad": () => ({
           load: () => {
             throw new Error("sync fetch failed");
           },
-          default: (() => div()) as PageComponent,
+          default: (() => into("main", div())) as PageComponent,
         }),
       },
       { preload: false },
@@ -232,13 +233,13 @@ describe("load() failures", () => {
     let attempt = 0;
     const router = createRouter(
       {
-        "/": () => (() => div({ id: "home" })) as PageComponent,
+        "/": () => (() => into("main", div({ id: "home" }))) as PageComponent,
         "/flaky": () => ({
           load: () => {
             if (++attempt === 1) throw new Error("flaky");
             return "ok";
           },
-          default: ((_c, { data }) => div({ id: "flaky" }, data)) as PageComponent<string>,
+          default: ((_c, { data }) => into("main", div({ id: "flaky" }, data))) as PageComponent<string>,
         }),
       },
       { preload: false },
@@ -254,7 +255,7 @@ describe("load() failures", () => {
   });
 
   it("rejects start() when the initial route's loader fails", async () => {
-    const router = createRouter({ "/": () => ({ load: () => Promise.reject(new Error("boot data")), default: (() => div()) as PageComponent }) });
+    const router = createRouter({ "/": () => ({ load: () => Promise.reject(new Error("boot data")), default: (() => into("main", div())) as PageComponent }) });
     await expect(router.start("/")).rejects.toThrow("boot data");
   });
 
@@ -262,15 +263,15 @@ describe("load() failures", () => {
     const slow = deferred<string>();
     const router = createRouter(
       {
-        "/": () => (() => div({ id: "home" })) as PageComponent,
-        "/slow": () => ({ load: () => slow.promise, default: ((_c, { data: d }) => div({ id: "slow" }, d)) as PageComponent<string> }),
-        "/fast": () => (() => div({ id: "fast" })) as PageComponent,
+        "/": () => (() => into("main", div({ id: "home" }))) as PageComponent,
+        "/slow": () => ({ load: () => slow.promise, default: ((_c, { data: d }) => into("main", div({ id: "slow" }, d))) as PageComponent<string> }),
+        "/fast": () => (() => into("main", div({ id: "fast" }))) as PageComponent,
       },
       { preload: false },
     );
     const route = await start(router, "/");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     const first = route.go("/slow");
     await flush();
@@ -288,12 +289,12 @@ describe("load() with layers and SSR", () => {
     let captured: Layer | undefined;
     const router = createRouter(
       {
-        "/invoices/:id": () => (() => div({ id: "invoice" })) as PageComponent,
+        "/invoices/:id": () => (() => into("main", div({ id: "invoice" }))) as PageComponent,
         "/invoices/:id/preview": () => ({
           load: (ctx: RouteContext) => `preview of ${ctx.params.id}`,
           default: ((_c, { layer, data }) => {
             captured = layer;
-            return div({ id: "preview" }, data);
+            return into("main", div({ id: "preview" }, data));
           }) as PageComponent<string>,
         }),
       },
@@ -301,7 +302,7 @@ describe("load() with layers and SSR", () => {
     );
     const route = await start(router, "/invoices/42");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     const pending = route.push("./preview");
     await flush();
@@ -313,7 +314,7 @@ describe("load() with layers and SSR", () => {
   });
 
   it("exposes the active data on the Route, for a server to serialize", async () => {
-    const router = createRouter({ "/blog/:slug": () => postModule, "/plain": () => (() => div()) as PageComponent });
+    const router = createRouter({ "/blog/:slug": () => postModule, "/plain": () => (() => into("main", div())) as PageComponent });
     const route = await start(router, "/blog/x");
 
     expect(route.data).toEqual({ slug: "x", title: "Post x" });
@@ -326,19 +327,19 @@ describe("load() with layers and SSR", () => {
     let captured: Layer | undefined;
     const router = createRouter(
       {
-        "/": () => ({ load: () => "base", default: ((_c, { data: d }) => div(d)) as PageComponent<string> }),
+        "/": () => ({ load: () => "base", default: ((_c, { data: d }) => into("main", div(d))) as PageComponent<string> }),
         "/over": () => ({
           load: () => "layer",
           default: ((_c, { layer, data: d }) => {
             captured = layer;
-            return div(d);
+            return into("main", div(d));
           }) as PageComponent<string>,
         }),
       },
       { preload: false },
     );
     const route = await start(router, "/");
-    render(route.pages(), mount());
+    render(App, mount());
     expect(route.data).toBe("base");
 
     const pending = route.push("/over");
@@ -353,7 +354,7 @@ describe("load() with layers and SSR", () => {
   it("puts the data in the server's HTML, so there is nothing to fetch on arrival", async () => {
     const router = createRouter({ "/blog/:slug": () => postModule });
     const route = await start(router, "/blog/ssr");
-    const html = renderToString(() => div({ id: "app" }, route.pages()));
+    const html = route.run(() => renderToString(App));
 
     expect(html).toContain("Post ssr");
   });
@@ -363,7 +364,7 @@ describe("load() with layers and SSR", () => {
     let imports = 0;
     let loads = 0;
     const router = createRouter({
-      "/": () => (() => div({ id: "home" })) as PageComponent,
+      "/": () => (() => into("main", div({ id: "home" }))) as PageComponent,
       "/later": () => {
         imports++;
         return Promise.resolve({
@@ -371,7 +372,7 @@ describe("load() with layers and SSR", () => {
             loads++;
             return "x";
           },
-          default: (() => div()) as PageComponent,
+          default: (() => into("main", div())) as PageComponent,
         });
       },
     });

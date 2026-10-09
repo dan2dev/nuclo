@@ -103,7 +103,7 @@ function liveState() {
 /**
  * A layout that places the active page without ever seeing the router.
  *
- * `region()` marks the spot; every page returns `view("main", …)` and lands
+ * `region()` marks the spot; every page returns `into("main", …)` and lands
  * in it. Nothing is threaded through props, so this component stays reusable
  * — and because navigation never rebuilds it, the filter box below keeps its
  * text and its focus while the page inside changes.
@@ -117,7 +117,7 @@ export const Layout = (props: { sidebar: NodeModLike }) =>
       input(st.field, { id: "layout-filter", placeholder: "type, then navigate" }),
       props.sidebar,
       // A second region, for pages that place something here themselves —
-      // open a blog post: it fills both with one view({ main, sidebar }).
+      // open a blog post: it fills both with one into({ main, sidebar }).
       region({ id: "sidebar", empty: span(s.caption, "(no page content here)") }),
       region({ id: "sidebar2", empty: span(s.caption, "(no page content here)") }),
     ),
@@ -125,9 +125,9 @@ export const Layout = (props: { sidebar: NodeModLike }) =>
       st.stage,
       region({
         id: "main",
-        // Every page is a view() into this region. "stack" renders all of
+        // Every page is an into() into this region. "stack" renders all of
         // them in arrival order, which is what shows a pushed layer over the
-        // page beneath it; "simple" would keep only the newest.
+        // page beneath it; "latest" would keep only the newest.
         type: "stack",
         empty: span(s.caption, "Nothing in the main region."),
       }),
@@ -204,7 +204,7 @@ export const App = () =>
       // The layout owns the region the pages land in; it is handed a sidebar
       // and nothing else. Nothing of the router's is in this tree: the pages
       // mount themselves beside the app, and every page lands in the region
-      // through its own view().
+      // through its own into().
       Layout({ sidebar: span(s.caption, "Sidebar — also never rebuilt.") }),
     ),
 

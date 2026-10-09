@@ -7,7 +7,7 @@ import { isMounted, setNodeDisposer } from "../element/lifecycle";
 import type { NodeModifier } from "../element/modifiers";
 
 /**
- * One view() placement. A view is a portal: its content lives between its
+ * One into() placement. A view is a portal: its content lives between its
  * region's markers, and the view itself is a single `<!--view-N-->` anchor
  * comment standing where it was written. The anchor is what ties the content
  * to the view's own lifetime — when nuclo removes the anchor (its when()
@@ -19,22 +19,31 @@ export interface ViewRuntime {
   id: string;
   content: readonly WhenContent<ElementTagName>[];
   anchor: Comment;
-  /** The region showing this view; null while it waits for one. */
-  region: RegionRuntime<ElementTagName> | null;
+  /**
+   * The region showing this view; null while it waits for one. Held weakly,
+   * like everything else that points into the DOM: a view outlives a region
+   * wiped behind nuclo's back, and must not keep that layout in memory. A
+   * region collected under a view leaves it orphaned until the next region
+   * with its id takes it — see takeOrphans().
+   */
+  region: WeakRef<RegionRuntime<ElementTagName>> | null;
   /** Its entry in the waiting list, while it waits. */
   pendingRef: WeakRef<Comment> | null;
+  /** Its entry in the placed list, while a region holds it. */
+  placedRef?: WeakRef<Comment> | null;
   /**
    * First and last top-level node of its content between the region's
    * markers, both null when the content produced nothing. Top-level nodes are
    * stable: a nested list()/when() only ever changes what sits between its own
    * markers, so the range stays correct until the region or the view drops it.
+   * Weak for the same reason as `region`.
    */
-  first: Node | null;
-  last: Node | null;
+  first: WeakRef<Node> | null;
+  last: WeakRef<Node> | null;
 }
 
 /**
- * A region is a named place in the tree; `view()` calls fill it from anywhere
+ * A region is a named place in the tree; `into()` calls fill it from anywhere
  * else, in any order. The region owns a marker pair and every view's content
  * is inserted between them.
  */
@@ -46,19 +55,19 @@ export interface RegionRuntime<TTagName extends ElementTagName = ElementTagName>
   endMarker: Comment;
   host: ExpandedElement<TTagName>;
   index: number;
-  /** The views it shows, in arrival order — one at most for "simple". */
+  /** The views it shows, in arrival order — one at most for "latest". */
   views: ViewRuntime[];
   /**
-   * "simple" only: the views a newer one replaced, oldest first. They keep
+   * "latest" only: the views a newer one replaced, oldest first. They keep
    * their place so the one underneath shows again — rebuilt — when the view
-   * on top leaves, which is what lets a layer open over a page in a simple
+   * on top leaves, which is what lets a layer open over a page in a latest
    * region and close without taking the page with it.
    */
   hidden: ViewRuntime[];
   /** True while the `empty` content occupies the markers. */
   showingEmpty: boolean;
   /**
-   * Server markup between the markers that no view() has claimed yet, and the
+   * Server markup between the markers that no into() has claimed yet, and the
    * cursor to claim it from. Null outside a hydration pass. The region's own
    * host cursor is parked past the end marker as usual — the host keeps
    * hydrating its later children — so claiming swaps this one in and out.
@@ -74,13 +83,15 @@ export interface RegionRuntime<TTagName extends ElementTagName = ElementTagName>
 }
 
 /**
- * Regions are addressed by id, which has to survive until a view() looks it
+ * Regions are addressed by id, which has to survive until an into() looks it
  * up, but must not keep a detached layout alive. Same shape as the when()
  * registry: the id map holds only a WeakRef to the start marker (which the DOM
  * holds strongly while it is in the tree) and the runtime hangs off it in a
  * WeakMap, so dropping the subtree drops the runtime, its host and its
  * content. Views waiting for a region are kept the same way, by a WeakRef to
- * their anchor.
+ * their anchor, and so are the views a region shows: a view holds its region
+ * only weakly, so the placed list is how a region that takes the id over
+ * finds the views of one that was collected.
  *
  * This registry belongs to one page. On a server the same module scope serves
  * every request and every user at once, so a server tree never touches it —
@@ -92,9 +103,15 @@ interface Registry {
   regions: Map<string, WeakRef<Comment>>;
   /** region id → anchors of the views waiting for it, in arrival order. */
   pending: Map<string, Set<WeakRef<Comment>>>;
+  /** region id → anchors of the views a region with this id shows or hides, in arrival order. */
+  placed: Map<string, Set<WeakRef<Comment>>>;
 }
 
-const page: Registry = { regions: new Map(), pending: new Map() };
+function emptyRegistry(): Registry {
+  return { regions: new Map(), pending: new Map(), placed: new Map() };
+}
+
+const page: Registry = emptyRegistry();
 const runtimeByMarker = new WeakMap<Comment, RegionRuntime<ElementTagName>>();
 const viewsByAnchor = new WeakMap<Comment, ViewRuntime[]>();
 
@@ -105,7 +122,7 @@ function registry(): Registry {
   if (!isSerializing()) return page;
   const scratch = serializingScratch();
   let reg = scratch.get(SSR_KEY) as Registry | undefined;
-  if (!reg) scratch.set(SSR_KEY, (reg = { regions: new Map(), pending: new Map() }));
+  if (!reg) scratch.set(SSR_KEY, (reg = emptyRegistry()));
   return reg;
 }
 
@@ -134,12 +151,12 @@ const claimingRegions: Array<RegionRuntime<ElementTagName>> = [];
  * tree still being built, which is detached by design. The same test every
  * other registry applies on update().
  */
-function dropped(marker: Comment): boolean {
+function dropped(marker: Comment) {
   return isMounted(marker) && !marker.isConnected;
 }
 
 /** Unregisters a region; its views go back to waiting for the next one with this id. */
-function dropRegion(rt: RegionRuntime<ElementTagName>): void {
+export function dropRegion(rt: RegionRuntime<ElementTagName>) {
   runtimeByMarker.delete(rt.startMarker);
   const reg = registry();
   if (reg.regions.get(rt.id)?.deref() === rt.startMarker) reg.regions.delete(rt.id);
@@ -155,12 +172,12 @@ function dropRegion(rt: RegionRuntime<ElementTagName>): void {
 }
 
 /**
- * update()'s pass over the registry: a region or a view (waiting or shown) in
+ * update()'s pass over the registry: a region or a into (waiting or shown) in
  * a tree that left the document behind nuclo's back is let go of now rather
  * than on its next lookup, so a live view does not keep a wiped layout alive,
  * and a wiped view neither stays in a live region nor waits for one.
  */
-export function pruneRegions(): void {
+export function pruneRegions() {
   const reg = registry();
   for (const [id, waiting] of reg.pending) {
     for (const ref of waiting) {
@@ -172,6 +189,10 @@ export function pruneRegions(): void {
       if (view) view.pendingRef = null;
     }
     if (waiting.size === 0) reg.pending.delete(id);
+  }
+  for (const [id, placed] of reg.placed) {
+    for (const ref of placed) if (!ref.deref()) placed.delete(ref);
+    if (placed.size === 0) reg.placed.delete(id);
   }
   for (const [id, ref] of reg.regions) {
     const marker = ref.deref();
@@ -189,7 +210,7 @@ export function pruneRegions(): void {
   }
 }
 
-export function registerRegion<TTagName extends ElementTagName>(runtime: RegionRuntime<TTagName>): void {
+export function registerRegion<TTagName extends ElementTagName>(runtime: RegionRuntime<TTagName>) {
   const rt = runtime as unknown as RegionRuntime<ElementTagName>;
   const reg = registry();
   const previous = reg.regions.get(rt.id)?.deref();
@@ -201,7 +222,7 @@ export function registerRegion<TTagName extends ElementTagName>(runtime: RegionR
   // id.
   if (previous && previous !== rt.startMarker && previous.isConnected) {
     console.warn(
-      `nuclo: two regions share the id "${rt.id}". Every view("${rt.id}", …) now ` +
+      `nuclo: two regions share the id "${rt.id}". Every into("${rt.id}", …) now ` +
         "goes to the one built last; the other stays empty. Give each region its own id.",
     );
   } else if (previous && previous !== rt.startMarker && dropped(previous)) {
@@ -221,35 +242,60 @@ export function registerRegion<TTagName extends ElementTagName>(runtime: RegionR
   setNodeDisposer(rt.startMarker, onMarkerDisposed);
   if (rt.claiming) claimingRegions.push(rt);
   // The region takes the views that were waiting for it, in the order they
-  // arrived.
+  // arrived — then those of an earlier region with this id that was collected
+  // before nuclo saw it go, as update() would have handed them on.
   const waiting = reg.pending.get(rt.id);
-  if (!waiting) return;
-  reg.pending.delete(rt.id);
-  for (const anchorRef of waiting) {
-    if (!isSerializing()) markerFinalizer?.unregister(anchorRef);
-    const view = waitingView(anchorRef, rt.id);
-    if (!view) continue;
-    view.pendingRef = null;
-    addView(rt, view, null);
+  if (waiting) {
+    reg.pending.delete(rt.id);
+    for (const anchorRef of waiting) {
+      if (!isSerializing()) markerFinalizer?.unregister(anchorRef);
+      const view = waitingView(anchorRef, rt.id);
+      if (!view) continue;
+      view.pendingRef = null;
+      addView(rt, view, null);
+    }
   }
+  for (const view of takeOrphans(reg, rt.id)) addView(rt, view, null);
 }
 
 /**
- * True for the anchor comment a view() left where it was written. list()
+ * The views whose region with this id was collected — a layout wiped behind
+ * nuclo's back with no update() since — in arrival order, taken off the
+ * placed list. Views wiped along with it are left behind.
+ */
+function takeOrphans(reg: Registry, id: string): ViewRuntime[] {
+  const placed = reg.placed.get(id);
+  if (!placed) return [];
+  const orphans: ViewRuntime[] = [];
+  for (const ref of placed) {
+    const anchor = ref.deref();
+    const view = anchor && viewsByAnchor.get(anchor)?.find((v) => v.placedRef === ref);
+    if (view && regionOf(view)) continue;
+    placed.delete(ref);
+    if (!view) continue;
+    detach(view);
+    if (!dropped(view.anchor)) orphans.push(view);
+  }
+  if (placed.size === 0) reg.placed.delete(id);
+  return orphans;
+}
+
+/**
+ * True for the anchor comment an into() left where it was written. list()
  * accepts one as a row, which is what lets a page place itself: the row is
  * the anchor, and the row leaving the list takes the content out of the region.
  */
-export function isViewAnchor(node: Node): boolean {
+export function isViewAnchor(node: Node) {
   return node.nodeType === 8 && viewsByAnchor.has(node as Comment);
 }
 
 /**
- * True while the view() that left this anchor has nowhere to show: every
+ * True while the into() that left this anchor has nowhere to show: every
  * region it names is still to be built. False for any other node, and once
  * one of its views is placed — the check a library makes after a render, to
  * tell content that landed from content that renders nowhere.
  */
-export function viewWaiting(node: Node): boolean {
+export function viewWaiting(node: Node) {
   const views = viewsByAnchor.get(node as Comment);
   return !!views?.length && views.every((v) => v.pendingRef !== null);
 }
@@ -273,7 +319,7 @@ export function getRegion(id: string): RegionRuntime<ElementTagName> | undefined
 /**
  * The region already live on a claimed marker pair — a forceUpdate() pass, or
  * hydrate() over a tree that is live already. Its runtime and views are kept;
- * each view() re-running in the pass then reclaims its own content in place.
+ * each into() re-running in the pass then reclaims its own content in place.
  */
 export function liveRegionAt(start: Comment, end: Comment): RegionRuntime<ElementTagName> | undefined {
   const rt = runtimeByMarker.get(start);
@@ -281,7 +327,7 @@ export function liveRegionAt(start: Comment, end: Comment): RegionRuntime<Elemen
 }
 
 /** How many views are waiting for a region with this id (for tests). */
-export function pendingViewCount(id: string): number {
+export function pendingViewCount(id: string) {
   return registry().pending.get(id)?.size ?? 0;
 }
 
@@ -292,7 +338,7 @@ function waitingView(ref: WeakRef<Comment>, id: string): ViewRuntime | undefined
   return viewsByAnchor.get(anchor)?.find((v) => v.id === id && v.region === null);
 }
 
-function forgetPending(reg: Registry, id: string, ref: WeakRef<Comment>): void {
+function forgetPending(reg: Registry, id: string, ref: WeakRef<Comment>) {
   const waiting = reg.pending.get(id);
   if (!waiting) return;
   waiting.delete(ref);
@@ -300,7 +346,7 @@ function forgetPending(reg: Registry, id: string, ref: WeakRef<Comment>): void {
 }
 
 /** Queues a view for a region that does not exist yet. */
-function pendView(view: ViewRuntime): void {
+function pendView(view: ViewRuntime) {
   if (view.pendingRef) return;
   const reg = registry();
   let waiting = reg.pending.get(view.id);
@@ -313,7 +359,7 @@ function pendView(view: ViewRuntime): void {
 }
 
 /** Takes a view off the waiting list. */
-function unpend(view: ViewRuntime): void {
+function unpend(view: ViewRuntime) {
   const ref = view.pendingRef;
   if (!ref) return;
   view.pendingRef = null;
@@ -328,8 +374,11 @@ function unpend(view: ViewRuntime): void {
  * replaced: a view still shown by its region reclaims that content in place,
  * and one still waiting keeps its place in the waiting list.
  */
-export function attachViews(anchor: Comment, views: ViewRuntime[]): void {
+export function attachViews(anchor: Comment, views: ViewRuntime[]) {
   const earlier = viewsByAnchor.get(anchor);
+  for (const old of earlier ?? []) {
+    if (!views.some((view) => view.id === old.id)) removeView(old);
+  }
   viewsByAnchor.set(anchor, views);
   setNodeDisposer(anchor, onMarkerDisposed);
   for (const view of views) {
@@ -349,31 +398,63 @@ export function attachViews(anchor: Comment, views: ViewRuntime[]): void {
 }
 
 /** `region-start-{index}-v{views}`, so hydration knows what the server left. */
-function stamp(rt: RegionRuntime<ElementTagName>): void {
+function stamp(rt: RegionRuntime<ElementTagName>) {
   rt.startMarker.textContent = `region-start-${rt.index}-v${rt.views.length}`;
 }
 
 /** Reads the view count out of an SSR start marker. */
-export function decodeCount(markerText: string | null): number {
+export function decodeCount(markerText: string | null) {
   const match = /-v(\d+)$/.exec(markerText || "");
   return match ? parseInt(match[1], 10) : 0;
 }
 
-function detach(view: ViewRuntime): void {
+/** The region showing a view: null while it waits, and once its region was collected. */
+function regionOf(view: ViewRuntime): RegionRuntime<ElementTagName> | null {
+  return view.region?.deref() ?? null;
+}
+
+/**
+ * Records that `rt` shows `view`. A view taking over from `earlier` on the
+ * same anchor (a pass re-running a live tree) takes over its placed entry too,
+ * and with it its place in arrival order.
+ */
+function showIn(view: ViewRuntime, rt: RegionRuntime<ElementTagName>, earlier: ViewRuntime | null = null) {
+  view.region = new WeakRef(rt);
+  if (earlier?.placedRef) {
+    view.placedRef = earlier.placedRef;
+    earlier.placedRef = null;
+  }
+  if (view.placedRef) return;
+  const reg = registry();
+  let placed = reg.placed.get(view.id);
+  if (!placed) reg.placed.set(view.id, (placed = new Set()));
+  view.placedRef = new WeakRef(view.anchor);
+  placed.add(view.placedRef);
+}
+
+function detach(view: ViewRuntime) {
   view.region = null;
   view.first = null;
   view.last = null;
+  const ref = view.placedRef;
+  if (!ref) return;
+  view.placedRef = null;
+  const reg = registry();
+  const placed = reg.placed.get(view.id);
+  if (!placed) return;
+  placed.delete(ref);
+  if (placed.size === 0) reg.placed.delete(view.id);
 }
 
 /** Records which nodes a view just produced: everything between `before` and `stop`. */
-function setRange(view: ViewRuntime, before: Node, stop: Node): void {
+function setRange(view: ViewRuntime, before: Node, stop: Node) {
   const first = before.nextSibling;
-  view.first = first === stop ? null : first;
-  view.last = view.first ? stop.previousSibling : null;
+  view.first = first === stop || !first ? null : new WeakRef(first);
+  view.last = view.first ? new WeakRef(stop.previousSibling!) : null;
 }
 
 /** Puts the region back to its `empty` content, replacing whatever it holds. */
-export function showEmpty<TTagName extends ElementTagName>(runtime: RegionRuntime<TTagName>): void {
+export function showEmpty<TTagName extends ElementTagName>(runtime: RegionRuntime<TTagName>) {
   const rt = runtime as unknown as RegionRuntime<ElementTagName>;
   clearBetweenMarkers(rt.startMarker, rt.endMarker);
   for (const view of rt.views) detach(view);
@@ -386,11 +467,11 @@ export function showEmpty<TTagName extends ElementTagName>(runtime: RegionRuntim
 }
 
 /**
- * Adds one view()'s content to a region.
+ * Adds one into()'s content to a region.
  *
  * "stack" keeps every view, bottom first — the view that arrives second opens
  * over the first without touching it, so the content underneath keeps its DOM,
- * its focus and its form state. "simple" keeps only the newest.
+ * its focus and its form state. "latest" keeps only the newest.
  *
  * `earlier` is the view this one replaces on the same anchor (a hydration pass
  * re-running a live tree): if the region still shows it, the new view takes
@@ -400,7 +481,7 @@ function addView(
   rt: RegionRuntime<ElementTagName>,
   view: ViewRuntime,
   earlier: ViewRuntime | null,
-): void {
+) {
   // Arrived from inside the content being placed right now: its turn comes
   // once that content is complete, so the two node ranges stay separate.
   if (rt.deferred) {
@@ -417,24 +498,24 @@ function addView(
   }
 }
 
-function placeView(rt: RegionRuntime<ElementTagName>, view: ViewRuntime, earlier: ViewRuntime | null): void {
-  if (earlier && earlier.region === rt) {
+function placeView(rt: RegionRuntime<ElementTagName>, view: ViewRuntime, earlier: ViewRuntime | null) {
+  if (earlier && regionOf(earlier) === rt) {
     // A view underneath a newer one keeps its place there, still unseen.
     const h = rt.hidden.indexOf(earlier);
     if (h !== -1) {
       rt.hidden[h] = view;
+      showIn(view, rt, earlier);
       earlier.region = null;
-      view.region = rt;
       return;
     }
     reclaimView(rt, view, earlier);
     return;
   }
-  if (rt.showingEmpty || (rt.type === "simple" && rt.views.length > 0)) {
+  if (rt.showingEmpty || (rt.type === "latest" && rt.views.length > 0)) {
     // Clearing throws away the server markup along with everything else, so it
     // also ends any claim in progress: the rest of this region renders fresh.
     clearBetweenMarkers(rt.startMarker, rt.endMarker);
-    // A simple region shows only the newest, but the one it replaces is not
+    // A latest region shows only the newest, but the one it replaces is not
     // gone: it comes back when the newer view leaves.
     for (const old of rt.views) {
       old.first = null;
@@ -447,7 +528,7 @@ function placeView(rt: RegionRuntime<ElementTagName>, view: ViewRuntime, earlier
     rt.claimCursor = null;
   }
   rt.views.push(view);
-  view.region = rt;
+  showIn(view, rt);
   if (isHydrating() && rt.claiming) {
     const { before, cursor } = claimAt(rt, view.content);
     setRange(view, before, cursor);
@@ -502,35 +583,43 @@ function claimRange(
   const parent = rt.host as unknown as Node;
   const hostCursor = peekChild(parent);
   const before = from.previousSibling!;
-  setCursor(parent, from);
-  for (const item of content) applyModifiers(rt.host, [item as NodeModifier<ElementTagName>], rt.index);
-  let leftover = peekChild(parent);
-  while (leftover && leftover !== stop) {
-    const next: Node | null = leftover.nextSibling;
-    safeRemoveChild(leftover);
-    leftover = next;
+  // A non-claimable boundary keeps growing content from consuming the next view.
+  const boundary = document.createComment("region-claim-boundary");
+  parent.insertBefore(boundary, stop);
+  setCursor(parent, from === stop ? boundary : from);
+  try {
+    for (const item of content) applyModifiers(rt.host, [item as NodeModifier<ElementTagName>], rt.index);
+    let leftover = peekChild(parent);
+    while (leftover && leftover !== boundary) {
+      const next: Node | null = leftover.nextSibling;
+      safeRemoveChild(leftover);
+      leftover = next;
+    }
+  } finally {
+    parent.removeChild(boundary);
+    setCursor(parent, hostCursor);
   }
-  setCursor(parent, hostCursor);
   return before;
 }
 
 /** The node right after a view's content: the next view's first node, or the end marker. */
 function boundaryAfter(rt: RegionRuntime<ElementTagName>, view: ViewRuntime): Node {
-  if (view.last) return view.last.nextSibling ?? rt.endMarker;
+  const last = view.last?.deref();
+  if (last) return last.nextSibling ?? rt.endMarker;
   for (let i = rt.views.indexOf(view) + 1; i < rt.views.length; i++) {
-    const first = rt.views[i].first;
+    const first = rt.views[i].first?.deref();
     if (first) return first;
   }
   return rt.endMarker;
 }
 
 /** A view re-running over its own earlier content takes its place and claims its nodes. */
-function reclaimView(rt: RegionRuntime<ElementTagName>, view: ViewRuntime, earlier: ViewRuntime): void {
+function reclaimView(rt: RegionRuntime<ElementTagName>, view: ViewRuntime, earlier: ViewRuntime) {
   const stop = boundaryAfter(rt, earlier);
-  const before = claimRange(rt, view.content, earlier.first ?? stop, stop);
+  const before = claimRange(rt, view.content, earlier.first?.deref() ?? stop, stop);
   rt.views[rt.views.indexOf(earlier)] = view;
+  showIn(view, rt, earlier);
   detach(earlier);
-  view.region = rt;
   setRange(view, before, stop);
   stamp(rt);
 }
@@ -540,22 +629,26 @@ function reclaimView(rt: RegionRuntime<ElementTagName>, view: ViewRuntime, earli
  * on either side. Leaves the region claiming, so the sweep still drops
  * anything the empty content did not account for.
  */
-export function claimEmpty<TTagName extends ElementTagName>(runtime: RegionRuntime<TTagName>): void {
+export function claimEmpty<TTagName extends ElementTagName>(runtime: RegionRuntime<TTagName>) {
   const rt = runtime as unknown as RegionRuntime<ElementTagName>;
   if (rt.empty.length) claimAt(rt, rt.empty);
   rt.showingEmpty = true;
 }
 
 /** Re-claims a live region's `empty` content in place (a pass re-running a live tree). */
-export function reclaimEmpty(rt: RegionRuntime<ElementTagName>): void {
+export function reclaimEmpty(rt: RegionRuntime<ElementTagName>) {
   claimRange(rt, rt.empty, rt.startMarker.nextSibling ?? rt.endMarker, rt.endMarker);
 }
 
 /** Takes a view's content out of its region; the region falls back to `empty` when none is left. */
-function removeView(view: ViewRuntime): void {
+function removeView(view: ViewRuntime) {
   unpend(view);
-  const rt = view.region;
-  if (!rt) return;
+  const rt = regionOf(view);
+  if (!rt) {
+    // Waiting, or orphaned by a collected region: nothing left to take out.
+    detach(view);
+    return;
+  }
   const h = rt.hidden.indexOf(view);
   if (h !== -1) {
     rt.hidden.splice(h, 1);
@@ -565,8 +658,9 @@ function removeView(view: ViewRuntime): void {
   const i = rt.views.indexOf(view);
   if (i !== -1) {
     rt.views.splice(i, 1);
-    const stop = view.last ? view.last.nextSibling : null;
-    let node = view.first;
+    const last = view.last?.deref();
+    const stop = last ? last.nextSibling : null;
+    let node = view.first?.deref() ?? null;
     while (node && node !== stop) {
       const next: Node | null = node.nextSibling;
       safeRemoveChild(node);
@@ -592,7 +686,7 @@ function removeView(view: ViewRuntime): void {
  * views back to waiting, in order, so a region that returns under the same id
  * (a layout switched off and on) shows them again.
  */
-function onMarkerDisposed(node: Node): void {
+function onMarkerDisposed(node: Node) {
   const anchor = node as Comment;
   const views = viewsByAnchor.get(anchor);
   if (views) {
@@ -605,13 +699,13 @@ function onMarkerDisposed(node: Node): void {
 }
 
 /**
- * Drops server markup no view() claimed, once the hydration pass is over.
+ * Drops server markup no into() claimed, once the hydration pass is over.
  *
  * Nothing announces "this region has all its views now" mid-pass, so the
  * leftovers can only be judged at the end: a client that renders fewer views
  * than the server did leaves the tail of the region unclaimed.
  */
-export function sweepRegions(): void {
+export function sweepRegions() {
   for (const rt of claimingRegions) {
     // A region torn down mid-pass (inside a when() branch the client did not
     // keep) is no longer the one under its marker; nothing of it is settled.

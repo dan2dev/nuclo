@@ -23,7 +23,7 @@ export function applyModifiers<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
   modifiers: ReadonlyArray<NodeModifier<TTagName>>,
   startIndex = 0
-): void {
+) {
   let localIndex = startIndex;
   const parentNode = element as unknown as Node & ParentNode;
   // Hoisted: constant for this frame — runWithoutHydration() only affects
@@ -72,13 +72,13 @@ export function applyModifiers<TTagName extends ElementTagName>(
  * in place initReactiveClassName would capture it as static classes that a
  * dynamic className then adds to instead of replacing.
  *
- * forceUpdate() also detaches on() listeners (the re-applied modifiers
+ * forceUpdate() also detaches on() and event-attribute listeners (the re-applied modifiers
  * re-attach), drops reactive attribute resolvers (re-registered) and rebuilds
  * inline style. Attributes the new tree no longer sets keep their old values —
  * nuclo keeps no per-element attribute manifest to diff against.
  */
-function resetReusedElement(el: Element, force: boolean): void {
-  resetClassNameTracking(el as HTMLElement);
+function resetReusedElement(el: Element, force: boolean) {
+  resetClassNameTracking(el);
   el.removeAttribute("class");
   if (!force) return;
   removeAllListeners(el as HTMLElement);

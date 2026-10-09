@@ -15,6 +15,7 @@ const RESERVED_LIFECYCLE_ATTRIBUTES = new Set(["onMount", "onDestroy"]);
 type FallbackEventListenerList = Array<string | EventListener>;
 
 const fallbackEventListeners = new WeakMap<EventTarget, FallbackEventListenerList>();
+const nativeEventHandlers = new WeakMap<HTMLElement, Map<string, EventListener>>();
 
 /** Converts a public camel-cased event attribute to its native IDL property. */
 export function eventAttributeToProperty(attribute: string): string | null {
@@ -41,9 +42,12 @@ export function setEventAttribute(
   element: HTMLElement,
   property: string,
   listener: EventListener,
-): void {
+) {
   if (property in element) {
     (element as unknown as Record<string, unknown>)[property] = listener;
+    let handlers = nativeEventHandlers.get(element);
+    if (!handlers) nativeEventHandlers.set(element, handlers = new Map());
+    handlers.set(property, listener);
     return;
   }
 
@@ -68,4 +72,24 @@ export function setEventAttribute(
 
   element.addEventListener(type, listener);
   fallbackEventListeners.set(element, [type, listener]);
+}
+
+/** Releases only handlers installed through nuclo's event attributes. */
+export function removeEventAttributes(element: HTMLElement) {
+  const handlers = nativeEventHandlers.get(element);
+  if (handlers) {
+    const target = element as unknown as Record<string, unknown>;
+    for (const [property, listener] of handlers) {
+      // Leave a handler that external code replaced after our assignment alone.
+      if (target[property] === listener) target[property] = null;
+    }
+    nativeEventHandlers.delete(element);
+  }
+  const listeners = fallbackEventListeners.get(element);
+  if (listeners) {
+    for (let i = 0; i < listeners.length; i += 2) {
+      element.removeEventListener(listeners[i] as string, listeners[i + 1] as EventListener);
+    }
+    fallbackEventListeners.delete(element);
+  }
 }

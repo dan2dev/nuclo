@@ -13,7 +13,7 @@ const container = document.getElementById("app")!;
 // The server's page node, taken before hydration. Hydration that rebuilt the
 // markup instead of claiming it would look identical on screen, so identity is
 // the only honest check — and the page lands inside a region(), which claims
-// through a cursor of its own because the page's view() runs outside the
+// through a cursor of its own because the page's into() runs outside the
 // app's tree entirely.
 const outlet = container.querySelector("main#outlet");
 const serverPage = outlet?.firstElementChild ?? null;

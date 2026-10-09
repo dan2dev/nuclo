@@ -278,7 +278,7 @@ function left(ctx: RouteContext) {
 
 export function LinksPage(ctx: RouteContext) {
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
 
     h2(s.panelTitle, "Link handling"),

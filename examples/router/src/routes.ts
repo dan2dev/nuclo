@@ -97,9 +97,9 @@ interface EagerPageRegions {
   sidebar: ReturnType<typeof div>;
 }
 
-function EagerPage(props: EagerPageProps): ReturnType<typeof view> {
+function EagerPage(props: EagerPageProps): ReturnType<typeof into> {
   console.log(props);
-  return view({
+  return into({
     "main": div(
       h2("Eager route"),
       p(

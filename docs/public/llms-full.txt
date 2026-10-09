@@ -1,6 +1,6 @@
 # Nuclo documentation
 
-> Complete Nuclo v0.3.17 documentation as a single Markdown file, generated from https://nuclo.dev/docs. Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript: build UI with global tag builders, keep state in plain mutable variables, and call `update()` to sync the real DOM. No virtual DOM, no compiler, no proxies, no signals.
+> Complete Nuclo v0.3.22 documentation as a single Markdown file, generated from https://nuclo.dev/docs. Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript: build UI with global tag builders, keep state in plain mutable variables, and call `update()` to sync the real DOM. No virtual DOM, no compiler, no proxies, no signals.
 
 Index: https://nuclo.dev/llms.txt · Source: https://github.com/dan2dev/nuclo · npm: https://www.npmjs.com/package/nuclo
 
@@ -90,7 +90,7 @@ Or use `pnpm add nuclo`, `yarn add nuclo` or `bun add nuclo`. Nuclo has no depen
 `import 'nuclo'` puts these on `globalThis`:
 
 - **175 tag builders**: 112 for HTML (`div`, `span`, `button`, …) and 63 for SVG, with an `Svg` suffix (`svgSvg`, `pathSvg`, …). See [Tag Builders](https://nuclo.dev/docs#tag-builders).
-- **14 helpers**: `update`, `scope`, `when`, `list`, `on`, `render`, `hydrate`, `forceUpdate`, `css`, `cx`, `createCss`, `variants`, `keyframes` and `globalStyle`.
+- **16 helpers**: `update`, `scope`, `when`, `list`, `region`, `into`, `on`, `render`, `hydrate`, `forceUpdate`, `css`, `cx`, `createCss`, `variants`, `keyframes` and `globalStyle`.
 
 The import must run before any code that calls a builder. ES modules run in import order, so this fails:
 
@@ -104,7 +104,7 @@ Put `import 'nuclo'` first in your entry file, or import it in every file that u
 
 #### Named imports
 
-The helpers are also named exports. They are the same functions as the globals. `getCssText()` and `resetStyles()` are named exports only. Tag builders are globals only, so `import { div } from 'nuclo'` does not work.
+The helpers are also named exports. They are the same functions as the globals. `getCssText()`, `resetStyles()`, `viewWaiting()` and `onRootBuild()` are named exports only. Tag builders are globals only, so `import { div } from 'nuclo'` does not work.
 
 ```ts
 // main.ts
@@ -113,7 +113,7 @@ import { render, update, getCssText } from 'nuclo'
 
 #### Entry points
 
-- `nuclo`: registers the globals and exports the 14 helpers plus `getCssText` and `resetStyles`.
+- `nuclo`: registers the globals and exports the 16 helpers plus `getCssText`, `resetStyles`, `viewWaiting` and `onRootBuild`.
 - `nuclo/ssr`: `renderToString`, `renderManyToString`, `renderToStringWithContainer` and `getCssText`. See [Server Rendering](https://nuclo.dev/docs#api-ssr).
 - `nuclo/polyfill`: a small DOM for Node, Bun and Deno. See [nuclo/polyfill](https://nuclo.dev/docs#api-polyfill).
 - `nuclo/types`: types only. See [TypeScript](https://nuclo.dev/docs#typescript-setup).
@@ -155,6 +155,7 @@ These types are global, so you use them without an import:
 - `ExpandedElementAttributes<Tag>`: the attribute object a tag builder accepts, including `on*` handlers, `onMount` and `onDestroy`. Use it for components that pass attributes through.
 - `MountCallback` and `DestroyCallback`: `onMount` and `onDestroy` handlers.
 - `WhenBuilder`, `ListModifier`: what `when()` and `list()` return.
+- `RegionOptions`, `RegionType`: the options `region()` takes.
 - `StyleResult`, `Style`, `ThemeConfig`, `CssInstance` and the other styling types. You can also import these: `import type { StyleResult } from 'nuclo'`.
 
 ```ts
@@ -449,7 +450,7 @@ const search = input(on('mount', (el) => el.focus()))
 
 - `onMount` runs at the end of the `render()`, `hydrate()`, `update()` or `forceUpdate()` call that inserted the element. It never runs while the tree is being built.
 - If `onMount` returns a function, that function runs on destroy, after the element's `onDestroy` callbacks.
-- `onDestroy` runs when Nuclo removes the element: a `list()` row is removed, a `when()` branch switches, or `forceUpdate()` drops it. It runs just before removal, so the element is still in the document.
+- `onDestroy` runs when Nuclo removes the element: a `list()` row is removed, a `when()` branch switches, an `into()` leaves its region, or `forceUpdate()` drops it. It runs just before removal, so the element is still in the document.
 
 #### Raw DOM removal
 
@@ -724,6 +725,87 @@ Any iterable works: arrays, `Set`, generators and `map.values()`. Returning the 
 #### Placement
 
 Rows appear where `list()` sits among its siblings, between two comment markers. Other children of the parent are not touched. `list()` also works inside SVG builders.
+
+### region() & into()
+
+Source: https://nuclo.dev/docs#api-region
+
+```ts
+function region(options: RegionOptions): NodeModFn
+function into(id: string, ...content: NodeModLike[]): NodeModFn
+function into(regions: Record<string, NodeModLike | NodeModLike[]>): NodeModFn
+
+interface RegionOptions {
+  id: string
+  type?: 'latest' | 'stack' // default: 'latest'
+  empty?: NodeModLike
+}
+```
+
+`region()` marks a named place in the tree. `into()` fills it from anywhere else, at any depth. The layout does not receive the content as a prop, and the component that builds the content does not know where it lands.
+
+```ts
+// app.ts
+const Layout = () =>
+  div(
+    aside(nav(a({ href: '/' }, 'Home'))),
+    main(region({ id: 'main', empty: p('Nothing open.') })),
+  )
+
+// Anywhere in the tree, before or after the region
+const Article = () => into('main', article(h1('Hello')))
+
+render(() => div(Layout(), Article()))
+```
+
+#### How it works
+
+- `into()` leaves only a comment where it is written. Its content renders between the region's markers.
+- Order does not matter. A `into()` built before its region waits and shows the moment the region is built. Views show in the order they were written.
+- The content lives as long as the view. When the `when()` that holds an `into()` closes, or its `list()` row is removed, the content leaves the region. Opening it again adds one copy, not two.
+- When a region goes away, for example its `when()` closes, its views wait again. A region built later with the same id shows them.
+- A `into()` whose id matches no region renders nothing and raises no error, so check the spelling.
+- Ids are unique in the tree. A second region built under a live id logs a warning.
+- Regions work with [server rendering](https://nuclo.dev/docs#api-ssr). On `hydrate()`, each view claims the HTML the server rendered instead of building it again.
+
+#### Options
+
+- `id`: the name `into()` calls use to find the region.
+- `type`: `'latest'` (the default) shows only the newest view. `'stack'` shows every view, in arrival order.
+- `empty`: rendered while the region holds no views.
+
+#### Stacked regions
+
+With `type: 'stack'`, a view that opens over another does not rebuild the one underneath. Its DOM, focus and form state stay. Use this for a layer such as a dialog over a page.
+
+```ts
+// layers.ts
+let open = false
+
+const App = () =>
+  div(
+    region({ id: 'main', type: 'stack' }),
+    into('main', form(input({ placeholder: 'Keeps its text' }))),
+    when(() => open, into('main', div('On top'))),
+  )
+```
+
+#### Several regions at once
+
+Pass an object to fill more than one region from a single `into()`. A value can be one child or an array of children. Either form nests: an `into()` inside another view's content targets its own region.
+
+```ts
+// page.ts
+const Page = () =>
+  into({
+    main: article(h1('Eager route')),
+    sidebar: [h2('Related'), ul(li('One'), li('Two'))],
+  })
+```
+
+#### For libraries
+
+`viewWaiting(node)`, a named export, tells whether the `into()` that returned `node` still has no region to show in. `onRootBuild(hook)` registers a callback that runs on every `render()`, `hydrate()`, `forceUpdate()` and `renderToString()` pass, after the root component is called and before its tree is built. It returns the unregister function. Routers use both to place pages beside the app and report one that lands nowhere.
 
 ### forceUpdate()
 
@@ -1067,7 +1149,7 @@ const menu = css({
 ```
 
 - The key must start with `&`. A key such as `".dark &"` is ignored, so write `"&:is(.dark *)"`.
-- Two nested `@media` blocks combine with `and`. Any other nested at-rule replaces the outer one.
+- Two nested `@media` blocks combine with `and`. A query led by a media type (`print`, `only screen`) is placed first, because the grammar allows a type only at the start. A pair that cannot be flattened — two media types, or a leading `not` — warns and uses the inner query alone. Any other nested at-rule replaces the outer one.
 
 #### `raw`
 
@@ -1343,6 +1425,7 @@ Every public function, and where it comes from.
 - [`scope(...ids)`](https://nuclo.dev/docs#api-scope): give an element scope ids for `update(id)`.
 - [`when(condition, ...content)`](https://nuclo.dev/docs#api-when): conditional content, with `.when()` and `.else()`.
 - [`list(items, renderItem)`](https://nuclo.dev/docs#api-list): one row per item, matched by identity.
+- [`region(options)`](https://nuclo.dev/docs#api-region) and [`into(id, ...content)`](https://nuclo.dev/docs#api-region): a named place in the tree, and content that fills it from anywhere.
 - [`on(type, listener, options?)`](https://nuclo.dev/docs#events): an event listener, or [`on('mount')` / `on('destroy')`](https://nuclo.dev/docs#lifecycle).
 - [`render(App, parent?)`](https://nuclo.dev/docs#api-render): build and append.
 - [`hydrate(App, parent?)`](https://nuclo.dev/docs#api-hydrate): take over server HTML.
@@ -1356,6 +1439,7 @@ Every public function, and where it comes from.
 #### `nuclo` (named export only)
 
 - [`getCssText()`](https://nuclo.dev/docs#api-css-text) and [`resetStyles()`](https://nuclo.dev/docs#api-css-text).
+- [`viewWaiting(node)`](https://nuclo.dev/docs#api-region) and [`onRootBuild(hook)`](https://nuclo.dev/docs#api-region): hooks for libraries that place content for the app.
 
 #### `nuclo/ssr`
 
@@ -1402,6 +1486,10 @@ Usually its nodes were not in the document when `update()` ran. Nuclo stops trac
 #### When should I use `forceUpdate()`?
 
 Only for rare changes to static values, such as switching the language. For everything else, use `update()`. See [`forceUpdate()`](https://nuclo.dev/docs#api-force-update).
+
+#### How do I put a page into a layout without passing it down as a prop?
+
+Mark the place with `region({ id: 'main' })` and have the page return `into('main', …)`. See [`region()` & `into()`](https://nuclo.dev/docs#api-region).
 
 #### How do I unmount an app?
 

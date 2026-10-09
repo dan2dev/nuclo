@@ -16,8 +16,8 @@ bun run dev          # vite build --watch + bun --watch src/server.ts
 | Thing | Where | How to see it |
 |---|---|---|
 | `renderToString()` per request | `src/server.ts` | View source — the HTML arrives fully formed |
-| Pages that place themselves | `src/pages/*.ts`, `src/routes.ts` | Every page returns `view("main", …)` and lands in the shell's `region({ id: "main" })`; the shell itself carries nothing of the router's |
-| Hydration claims the page in place | `src/entry-client.ts` | The console says `hydration: claimed the server's page node in place` — the page's view() claimed the node the server rendered into the region rather than rebuilding it |
+| Pages that place themselves | `src/pages/*.ts`, `src/routes.ts` | Every page returns `into("main", …)` and lands in the shell's `region({ id: "main" })`; the shell itself carries nothing of the router's |
+| Hydration claims the page in place | `src/entry-client.ts` | The console says `hydration: claimed the server's page node in place` — the page's into() claimed the node the server rendered into the region rather than rebuilding it |
 | One `Route` per request | `src/server.ts` | `router.start(request.url)` — concurrent requests never share route state; only the module cache is shared |
 | `base` setting | `src/base.ts` | The app is mounted at `/app`. The router strips it, Vite prefixes assets with it, `router.href()` re-adds it |
 | URLs outside `base` | `src/server.ts` | `/outside-base` → `start()` rejects → real **404** |
@@ -54,11 +54,11 @@ complete when `hydrate()` walks it. That is the entire reason SSR and hydration
 line up — there is no separate "routes manifest" to keep in sync.
 
 The router decides only *what* to load. Each page says *where* it goes by
-returning a `view()`:
+returning an `into()`:
 
 ```ts
 export default function HomePage(ctx: RouteContext) {
-  return view("main", div(…));   // into the shell's region({ id: "main" })
+  return into("main", div(…));   // into the shell's region({ id: "main" })
 }
 ```
 
@@ -67,7 +67,7 @@ what the router loaded. The pages mount themselves beside the app — on the
 server inside each render `route.run()` wraps, on a host that is never
 serialized, so the HTML carries nothing of the router's; in the browser on the
 document root, before the shell hydrates. The server serializes the region's
-content like any other markup, and in the browser the page's `view()` claims
+content like any other markup, and in the browser the page's `into()` claims
 those nodes.
 
 And the whole server is:

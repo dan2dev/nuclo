@@ -33,7 +33,7 @@ function fact(tone: "good" | "info" | "neutral", label: string, text: string) {
 
 export function SlowPage(_ctx: RouteContext) {
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
 
     h2(s.title, "Slow chunk"),

@@ -17,7 +17,7 @@ import "../../src";
  * this a stack region would grow a copy of a layer every time it was opened,
  * and a closed modal would stay on screen.
  */
-describe("region() / view() — content lifetime", () => {
+describe("region() / into() — content lifetime", () => {
   let container: HTMLDivElement;
 
   beforeEach(() => {
@@ -42,8 +42,8 @@ describe("region() / view() — content lifetime", () => {
     render(
       div(
         div({ id: "main-host" }, region({ id: "main", type: "stack" })),
-        view("main", div({ id: "base" }, input({ id: "field" }))),
-        when(() => open, view("main", div({ id: "layer" }, "on top"))),
+        into("main", div({ id: "base" }, input({ id: "field" }))),
+        when(() => open, into("main", div({ id: "layer" }, "on top"))),
       ),
       container,
     );
@@ -62,7 +62,7 @@ describe("region() / view() — content lifetime", () => {
     render(
       div(
         div({ id: "main-host" }, region({ id: "main", type: "stack" })),
-        when(() => open, view("main", div({ id: "layer" }, "on top"))),
+        when(() => open, into("main", div({ id: "layer" }, "on top"))),
       ),
       container,
     );
@@ -79,12 +79,12 @@ describe("region() / view() — content lifetime", () => {
     expect(container.querySelectorAll("#layer").length).toBe(1);
   });
 
-  it("falls back to `empty` when a simple region's only view goes", () => {
+  it("falls back to `empty` when a latest region's only view goes", () => {
     let open = true;
     render(
       div(
         div({ id: "main-host" }, region({ id: "main", empty: p({ id: "none" }, "nothing") })),
-        when(() => open, view("main", div({ id: "page" }, "page"))),
+        when(() => open, into("main", div({ id: "page" }, "page"))),
       ),
       container,
     );
@@ -101,9 +101,9 @@ describe("region() / view() — content lifetime", () => {
     render(
       div(
         div({ id: "main-host" }, region({ id: "main", type: "stack" })),
-        view("main", div({ id: "a" })),
-        when(() => middle, view("main", div({ id: "b" }))),
-        view("main", div({ id: "c" })),
+        into("main", div({ id: "a" })),
+        when(() => middle, into("main", div({ id: "b" }))),
+        into("main", div({ id: "c" })),
       ),
       container,
     );
@@ -129,7 +129,7 @@ describe("region() / view() — content lifetime", () => {
     render(
       div(
         div({ id: "main-host" }, region({ id: "main", type: "stack" })),
-        ul(list(() => items, (item) => li({ id: `row-${item}` }, view("main", span({ id: item }, item))))),
+        ul(list(() => items, (item) => li({ id: `row-${item}` }, into("main", span({ id: item }, item))))),
       ),
       container,
     );
@@ -149,7 +149,7 @@ describe("region() / view() — content lifetime", () => {
       div(
         div({ id: "main-host" }, region({ id: "main", type: "stack", empty: p({ id: "none" }, "nothing") })),
         // The list spans its whole parent: list()'s single-write clear path.
-        ul(list(() => items, (item) => li(view("main", span({ id: item }, item))))),
+        ul(list(() => items, (item) => li(into("main", span({ id: item }, item))))),
       ),
       container,
     );
@@ -166,7 +166,7 @@ describe("region() / view() — content lifetime", () => {
     render(
       div(
         div({ id: "main-host" }, region({ id: "main" })),
-        view("main", list(() => items, (item) => span({ id: item }, item))),
+        into("main", list(() => items, (item) => span({ id: item }, item))),
       ),
       container,
     );
@@ -184,8 +184,8 @@ describe("region() / view() — content lifetime", () => {
     render(
       div(
         div({ id: "main-host" }, region({ id: "main", type: "stack" })),
-        view("main", div({ id: "base" })),
-        when(() => open, view("main", list(() => items, (item) => span({ id: item }, item)))),
+        into("main", div({ id: "base" })),
+        when(() => open, into("main", list(() => items, (item) => span({ id: item }, item)))),
       ),
       container,
     );
@@ -206,7 +206,7 @@ describe("region() / view() — content lifetime", () => {
     render(
       div(
         div({ id: "main-host" }, region({ id: "main" })),
-        when(() => open, view("main", div({ id: "page", onDestroy: destroyed }, "page"))),
+        when(() => open, into("main", div({ id: "page", onDestroy: destroyed }, "page"))),
       ),
       container,
     );
@@ -226,7 +226,7 @@ describe("region() / view() — content lifetime", () => {
 
     const other = document.createElement("div");
     document.body.appendChild(other);
-    expect(() => render(div(view("main", div({ id: "page" }, "page")), boom), other)).toThrow("boom");
+    expect(() => render(div(into("main", div({ id: "page" }, "page")), boom), other)).toThrow("boom");
 
     // The view ran and placed its content before the build failed; the
     // discarded tree takes it back out.
@@ -239,7 +239,7 @@ describe("region() / view() — content lifetime", () => {
     render(
       div(
         div({ id: "main-host" }, region({ id: "main" })),
-        div({ id: "elsewhere" }, view("main", div({ id: "page" }, "page"))),
+        div({ id: "elsewhere" }, into("main", div({ id: "page" }, "page"))),
       ),
       container,
     );
@@ -252,7 +252,7 @@ describe("region() / view() — content lifetime", () => {
   describe("bookkeeping", () => {
     it("keeps one waiting entry per view, however often its when() toggles", () => {
       let open = false;
-      render(div(when(() => open, view("toggled", span("x")))), container);
+      render(div(when(() => open, into("toggled", span("x")))), container);
 
       for (let i = 0; i < 20; i++) {
         open = true;
@@ -268,7 +268,7 @@ describe("region() / view() — content lifetime", () => {
     });
 
     it("forgets a waiting view whose tree was wiped behind nuclo's back, on the next update()", () => {
-      render(div(view("wiped", span("x"))), container);
+      render(div(into("wiped", span("x"))), container);
       expect(pendingViewCount("wiped")).toBe(1);
 
       container.innerHTML = "";
@@ -278,7 +278,7 @@ describe("region() / view() — content lifetime", () => {
     });
 
     it("keeps one waiting entry per view across forceUpdate() passes", () => {
-      const App = () => div(view("forced", span("x")));
+      const App = () => div(into("forced", span("x")));
       render(App, container);
 
       forceUpdate();
@@ -291,7 +291,7 @@ describe("region() / view() — content lifetime", () => {
       const boom = ((_host: unknown, _index: number): Node => {
         throw new Error("boom");
       }) as NodeModFn;
-      expect(() => render(div(view("failed", span("x")), boom), container)).toThrow("boom");
+      expect(() => render(div(into("failed", span("x")), boom), container)).toThrow("boom");
 
       expect(pendingViewCount("failed")).toBe(0);
     });
@@ -300,7 +300,7 @@ describe("region() / view() — content lifetime", () => {
       const layoutRoot = document.createElement("div");
       document.body.appendChild(layoutRoot);
       render(div({ id: "main-host" }, region({ id: "main" })), layoutRoot);
-      render(div(view("main", span({ id: "page" }, "page"))), container);
+      render(div(into("main", span({ id: "page" }, "page"))), container);
       expect(layoutRoot.querySelector("#page")).not.toBeNull();
 
       layoutRoot.innerHTML = "";
@@ -319,7 +319,7 @@ describe("region() / view() — content lifetime", () => {
       const pageRoot = document.createElement("div");
       document.body.appendChild(pageRoot);
       render(div({ id: "main-host" }, region({ id: "main", empty: p({ id: "none" }, "nothing") })), container);
-      render(div(view("main", span({ id: "page" }, "page"))), pageRoot);
+      render(div(into("main", span({ id: "page" }, "page"))), pageRoot);
       expect(idsIn()).toEqual(["page"]);
 
       pageRoot.innerHTML = "";
@@ -329,14 +329,14 @@ describe("region() / view() — content lifetime", () => {
     });
   });
 
-  describe("a simple region with a view over another", () => {
+  describe("a latest region with a view over another", () => {
     it("shows the view underneath again when the one on top leaves", () => {
       let open = false;
       render(
         div(
           div({ id: "main-host" }, region({ id: "main", empty: p({ id: "none" }, "nothing") })),
-          view("main", div({ id: "page" }, "page")),
-          when(() => open, view("main", div({ id: "layer" }, "layer"))),
+          into("main", div({ id: "page" }, "page")),
+          when(() => open, into("main", div({ id: "layer" }, "layer"))),
         ),
         container,
       );
@@ -348,7 +348,7 @@ describe("region() / view() — content lifetime", () => {
 
       open = false;
       update();
-      // Rebuilt, not kept: a simple region holds one view's DOM at a time.
+      // Rebuilt, not kept: a latest region holds one view's DOM at a time.
       expect(idsIn()).toEqual(["page"]);
       expect(container.querySelector("#main-host")!.firstChild!.textContent).toBe("region-start-0-v1");
     });
@@ -358,9 +358,9 @@ describe("region() / view() — content lifetime", () => {
       render(
         div(
           div({ id: "main-host" }, region({ id: "main" })),
-          view("main", div({ id: "base" })),
-          when(() => depth >= 1, view("main", div({ id: "one" }))),
-          when(() => depth >= 2, view("main", div({ id: "two" }))),
+          into("main", div({ id: "base" })),
+          when(() => depth >= 1, into("main", div({ id: "one" }))),
+          when(() => depth >= 2, into("main", div({ id: "two" }))),
         ),
         container,
       );
@@ -383,8 +383,8 @@ describe("region() / view() — content lifetime", () => {
       render(
         div(
           div({ id: "main-host" }, region({ id: "main", empty: p({ id: "none" }, "nothing") })),
-          when(() => base, view("main", div({ id: "base" }))),
-          when(() => layer, view("main", div({ id: "layer" }))),
+          when(() => base, into("main", div({ id: "base" }))),
+          when(() => layer, into("main", div({ id: "layer" }))),
         ),
         container,
       );
@@ -404,8 +404,8 @@ describe("region() / view() — content lifetime", () => {
       render(
         div(
           when(() => layout, div({ id: "main-host" }, region({ id: "main", type: "stack" }))),
-          view("main", div({ id: "base" })),
-          view("main", div({ id: "layer" })),
+          into("main", div({ id: "base" })),
+          into("main", div({ id: "layer" })),
         ),
         container,
       );

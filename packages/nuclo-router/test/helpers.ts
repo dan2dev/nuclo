@@ -77,6 +77,13 @@ export function flush(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+/**
+ * The app the jsdom suites render: one "stack" region, so every layer's
+ * `into("main", …)` lands in it bottom first and the rows beneath a pushed
+ * layer are never rebuilt.
+ */
+export const App = () => div(region({ id: "main", type: "stack" }));
+
 export function mount(): HTMLElement {
   const container = document.createElement("div");
   document.body.appendChild(container);

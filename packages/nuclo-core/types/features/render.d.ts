@@ -18,6 +18,11 @@ declare global {
    * render(app, container); // Renders to specific container
    * ```
    */
+  function render(
+    nodeModFn: MarkerModifier | (() => MarkerModifier),
+    parent?: Element,
+    index?: number,
+  ): Comment;
   function render<TTagName extends ElementTagName = ElementTagName>(
     nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
     parent?: Element,
@@ -41,6 +46,10 @@ declare global {
    * hydrate(div(h1("Hello")), app);
    * ```
    */
+  function hydrate(
+    nodeModFn: MarkerModifier | (() => MarkerModifier),
+    parent?: Element,
+  ): Comment;
   function hydrate<TTagName extends ElementTagName = ElementTagName>(
     nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
     parent?: Element,
@@ -65,6 +74,10 @@ declare global {
    * manually and returns its root element.
    */
   function forceUpdate(): void;
+  function forceUpdate(
+    nodeModFn: MarkerModifier | (() => MarkerModifier),
+    parent?: Element,
+  ): Comment;
   function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
     nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
     parent?: Element,

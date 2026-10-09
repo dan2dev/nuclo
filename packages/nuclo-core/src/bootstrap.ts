@@ -2,7 +2,7 @@ import { registerGlobalTagBuilders } from "./element/tags";
 import { list } from "./list";
 import { update } from "./update/update";
 import { when } from "./when";
-import { region, view } from "./region";
+import { region, into } from "./region";
 import { on } from "./element/events";
 import { render, hydrate, forceUpdate } from "./render";
 import { scope } from "./update/scope";
@@ -12,7 +12,7 @@ import { createCss, css, cx, variants, keyframes, globalStyle } from "./style";
  * Initializes the nuclo runtime by exposing tag builders and utilities.
  */
 
-export function initializeRuntime(): void {
+export function initializeRuntime() {
   registerGlobalTagBuilders();
 
   const registry = globalThis as Record<string, unknown>;
@@ -20,7 +20,7 @@ export function initializeRuntime(): void {
   registry.update = update;
   registry.when = when;
   registry.region = region;
-  registry.view = view;
+  registry.into = into;
   registry.on = on;
   registry.scope = scope;
   registry.render = render;

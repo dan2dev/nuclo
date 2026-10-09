@@ -46,7 +46,7 @@ describe("real GC — region registry", () => {
     const root = render(
       div(
         div({ id: "host" }, region({ id: "main", type: "stack", empty: p("empty") })),
-        view("main", section({ id: "page" }, "content")),
+        into("main", section({ id: "page" }, "content")),
       ),
       container,
     );
@@ -80,7 +80,7 @@ describe("real GC — region registry", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
 
-    const root = render(div(div({ id: "from" }, view("nowhere", section({ id: "page" }, "content")))), container);
+    const root = render(div(div({ id: "from" }, into("nowhere", section({ id: "page" }, "content")))), container);
     const from = (root as unknown as Element).children[0];
     // The view's anchor, and the element it was written in.
     const refs = [new WeakRef(from), new WeakRef(from.firstChild!)];
@@ -113,7 +113,7 @@ describe("real GC — region registry", () => {
     const root = render(
       div(
         when(() => show, div({ id: "host" }, region({ id: "main", type: "stack" }))),
-        view("main", section({ id: "page" }, "content")),
+        into("main", section({ id: "page" }, "content")),
       ),
       container,
     );
@@ -148,7 +148,7 @@ describe("real GC — region registry", () => {
     document.body.append(layoutRoot, pageRoot);
 
     const layout = render(div({ id: "host" }, region({ id: "main" })), layoutRoot);
-    render(div(view("main", section({ id: "page" }, "content"))), pageRoot);
+    render(div(into("main", section({ id: "page" }, "content"))), pageRoot);
     const host = layout as unknown as Element;
     const refs = [new WeakRef(host), new WeakRef(host.children[0])];
 
@@ -166,12 +166,44 @@ describe("real GC — region registry", () => {
     expect(refs.map((r) => r.deref())).toEqual([undefined, undefined]);
   });
 
+  /**
+   * The same, with no update() at all — a router whose pages outlive the app
+   * they were placed in. The views hold the region weakly, so nothing waits
+   * for nuclo to notice.
+   */
+  function wipeLayoutUnderLiveViews(): WeakRef<Node>[] {
+    const layoutRoot = document.createElement("div");
+    const pageRoot = document.createElement("div");
+    document.body.append(layoutRoot, pageRoot);
+
+    const layout = render(div({ id: "host" }, region({ id: "main", type: "stack" })), layoutRoot);
+    render(div(into("main", section({ id: "a" }, "a")), into("main", section({ id: "b" }, "b"))), pageRoot);
+    const host = layout as unknown as Element;
+    const refs = [new WeakRef(host), new WeakRef(host.children[0]), new WeakRef(host.children[1])];
+
+    layoutRoot.remove();
+    return refs;
+  }
+
+  itGc("lets go of a wiped layout with no update() while the views that filled it live on", async () => {
+    const refs = wipeLayoutUnderLiveViews();
+    await collectGarbage();
+
+    expect(refs.map((r) => r.deref())).toEqual([undefined, undefined, undefined]);
+
+    // The next region with the id takes the orphaned views, in arrival order.
+    const other = document.createElement("div");
+    document.body.appendChild(other);
+    const host = render(div({ id: "host" }, region({ id: "main", type: "stack" })), other) as unknown as Element;
+    expect([...host.children].map((c) => c.id)).toEqual(["a", "b"]);
+  });
+
   /** A waiting view opened and closed repeatedly: every anchor it leaves behind. */
   function churnWaitingView(): WeakRef<Node>[] {
     const container = document.createElement("div");
     document.body.appendChild(container);
     let open = false;
-    const root = render(div(when(() => open, view("nowhere", span("x")))), container) as unknown as Element;
+    const root = render(div(when(() => open, into("nowhere", span("x")))), container) as unknown as Element;
     const refs: WeakRef<Node>[] = [];
     for (let i = 0; i < 5; i++) {
       open = true;
@@ -190,7 +222,7 @@ describe("real GC — region registry", () => {
     expect(refs.map((r) => r.deref())).toEqual([undefined, undefined, undefined, undefined, undefined]);
   });
 
-  /** A simple region: B replaces A, then B leaves and A comes back rebuilt. */
+  /** A latest region: B replaces A, then B leaves and A comes back rebuilt. */
   function replaceAndRestore(): { refs: WeakRef<Node>[]; close: () => void } {
     const container = document.createElement("div");
     document.body.appendChild(container);
@@ -198,8 +230,8 @@ describe("real GC — region registry", () => {
     const root = render(
       div(
         div({ id: "host" }, region({ id: "main" })),
-        view("main", section({ id: "a" }, "a")),
-        when(() => open, view("main", section({ id: "b" }, "b"))),
+        into("main", section({ id: "a" }, "a")),
+        when(() => open, into("main", section({ id: "b" }, "b"))),
       ),
       container,
     ) as unknown as Element;
@@ -215,7 +247,7 @@ describe("real GC — region registry", () => {
     };
   }
 
-  itGc("releases the DOM of a view a simple region replaced, and of the one that replaced it", async () => {
+  itGc("releases the DOM of a view a latest region replaced, and of the one that replaced it", async () => {
     const { refs, close } = replaceAndRestore();
     close();
     await collectGarbage();

@@ -11,7 +11,7 @@ import "../../src";
  * alive — that is the app. These tests prove the entry does not outlive the
  * root: once the rendered root is removed and collected, the root nodes AND
  * the component closure (with everything it captured) must be collectible,
- * even if forceUpdate() is never called again (FinalizationRegistry path).
+ * even if forceUpdate() is never called again (weak root ownership).
  *
  * See gc-collectability.test.ts for the querySelector() retention gotcha —
  * node references here come from render()'s return value only.

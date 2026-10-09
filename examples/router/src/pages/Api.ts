@@ -5,7 +5,7 @@
 //     params, search, hash, url — and which two of them read the live
 //     location instead of the match
 //   · pending and error, the two flags that describe a navigation in flight
-//   · pages(), the one list() over the layer stack, and why this app never places it
+//   · where the pages go: the layer stack mounts itself, and each page into()s into a region
 //   · go(), go(…, { replace: true }) and href(), driven from buttons and
 //     live readouts
 //   · stop(), and why you almost never write it yourself
@@ -41,7 +41,7 @@ function readout(label: string, read: () => string) {
 
 export default function ApiPage(_ctx: RouteContext) {
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
     h2(s.title, "The router API"),
     p(
@@ -156,22 +156,20 @@ export default function ApiPage(_ctx: RouteContext) {
       ),
 
       card(
-        "router.pages(): ListModifier",
+        "the pages: into() + region()",
         span(
           st.desc,
-          "the layer stack is a one-item list() whose single row is the active page. you " +
-            "never place it in this app: start() mounts it beside the app on the first " +
-            "render, and every page view()s itself into a region. place it yourself — once " +
-            "— only for pages that return plain content and should render where it sits. " +
-            "either way, server and client build the same tree, so hydrate() claims the " +
-            "server's nodes instead of replacing them.",
+          "the layer stack is a list() whose rows are the open pages. start() mounts it " +
+            "beside the app on the first render, and every page into()s itself into a " +
+            "region of the layout. server and client build the same tree, so hydrate() " +
+            "claims the server's nodes instead of replacing them.",
         ),
         code(`// main.ts — the pages mount themselves with this render
 await router.start();
 render(App, document.querySelector("#app")!);
 
-// the opt-in: pages that return plain content render here
-main({ id: "outlet" }, router.pages())`),
+// a page says where it goes
+export default () => into("main", article(h1("Hello")));`),
         span(
           st.desc,
           "navigating to a cached module with the same page function, path and search " +

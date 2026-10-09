@@ -6,7 +6,7 @@
 import { describe, it, expect, vi } from "vitest";
 import "nuclo";
 import { createRouter, Redirect, type Layer, type PageComponent, type Route, type Router } from "../src/index";
-import { deferred, flush, historyLength, mount, stubAssign, useRouterEnv, waitFor } from "./helpers";
+import { App, deferred, flush, historyLength, mount, stubAssign, useRouterEnv, waitFor } from "./helpers";
 
 const routes = useRouterEnv();
 
@@ -16,7 +16,10 @@ async function start(router: Router, url?: string): Promise<Route> {
   return route;
 }
 
-const P = (id: string): PageComponent => () => div({ id }, id);
+/** A page at the root of its match. */
+const P = (id: string): PageComponent => () => into("main", div({ id }, id));
+/** A child, rendered inside its parent's outlet() rather than a region. */
+const C = (id: string): PageComponent => () => div({ id }, id);
 
 /** A route whose loader throws a Redirect to `href`. */
 const to = (href: string) => () => ({
@@ -64,7 +67,7 @@ describe("a Redirect from go()", () => {
       "/",
     );
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
     onNavigate.mockClear();
     const length = historyLength();
 
@@ -257,17 +260,18 @@ describe("a Redirect from go()", () => {
   });
 
   it("keeps a parent mounted when its child redirects to a sibling", async () => {
-    const Parent: PageComponent = (_ctx, { outlet }) => div({ id: "parent" }, outlet());
+    const Parent: PageComponent = (_ctx, { outlet }) => into("main", div({ id: "parent" }, outlet()));
     const route = await start(
       createRouter(
-        { "/p": { "/": () => Parent, "./a": to("../b"), "./b": () => P("b"), "./c": () => P("c") } },
+        { "/p": { "/": () => Parent, "./a": to("../b"), "./b": () => C("b"), "./c": () => C("c") } },
         { preload: false },
       ),
       "/p/c",
     );
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
     const parent = container.querySelector("#parent");
+    expect(parent).not.toBeNull();
 
     await route.go("/p/a");
 
@@ -366,7 +370,7 @@ describe("a Redirect from push()", () => {
   let layer: Layer | undefined;
   const Login: PageComponent = (_ctx, props) => {
     layer = props.layer;
-    return div({ id: `login-${props.layer.depth}` });
+    return into("main", div({ id: `login-${props.layer.depth}` }));
   };
   const table = (gate?: Promise<never>) => ({
     "/": () => P("home"),
@@ -380,7 +384,7 @@ describe("a Redirect from push()", () => {
   it("opens the target as the layer", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     const result = route.push<string>("/new");
     await flush();
@@ -397,7 +401,7 @@ describe("a Redirect from push()", () => {
   it("follows a loader that rejects with one", async () => {
     const gate = deferred<never>();
     const route = await start(createRouter(table(gate.promise), { preload: false }), "/");
-    render(route.pages(), mount());
+    render(App, mount());
 
     void route.push("/slow");
     expect(route.pending).toBe(true);

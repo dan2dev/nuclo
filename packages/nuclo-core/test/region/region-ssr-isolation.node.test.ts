@@ -3,10 +3,10 @@
 /**
  * Regions on a server.
  *
- * `view()` finds its region by id through a registry, and a server renders
+ * `into()` finds its region by id through a registry, and a server renders
  * every request from one process — so a module-scope registry would be shared
  * by every request and every user at once. The failure mode is not a crash: a
- * `view("main", …)` in one request would find another request's region and
+ * `into("main", …)` in one request would find another request's region and
  * render one user's content into another user's page, or hold a finished
  * request's DOM alive for the life of the process.
  *
@@ -35,7 +35,7 @@ const Page = (user: User) => () =>
     { id: "app" },
     main(region({ id: "main" })),
     aside(region({ id: "side" })),
-    view({
+    into({
       main: div({ id: `user-${user.id}` }, user.name),
       side: span({ "data-secret": user.secret }, "session"),
     }),
@@ -78,7 +78,7 @@ describe("region() — SSR request isolation", () => {
   it("cannot see a region from an earlier request", () => {
     // A tree whose region is declared in a *previous* render only.
     renderToString(Page(users[0]));
-    const orphan = renderToString(() => div({ id: "app" }, view("main", div("leaked"))));
+    const orphan = renderToString(() => div({ id: "app" }, into("main", div("leaked"))));
 
     // The view waits for a region that never comes: only its anchor is emitted.
     expect(orphan).not.toContain("leaked");
@@ -87,7 +87,7 @@ describe("region() — SSR request isolation", () => {
 
   it("never hands a view waiting in one request to a region in another", () => {
     // Request A has the view but no region; request B has the region.
-    renderToString(() => div({ id: "app" }, view("main", div({ id: "leaked" }, "leaked"))));
+    renderToString(() => div({ id: "app" }, into("main", div({ id: "leaked" }, "leaked"))));
     const other = renderToString(() => div({ id: "app" }, main(region({ id: "main", empty: p("nothing") }))));
 
     expect(other).not.toContain("leaked");
@@ -97,7 +97,7 @@ describe("region() — SSR request isolation", () => {
 
   it("renders a view written before its region", () => {
     const html = renderToString(() =>
-      div({ id: "app" }, view("main", div({ id: "page" }, "page")), main(region({ id: "main" }))),
+      div({ id: "app" }, into("main", div({ id: "page" }, "page")), main(region({ id: "main" }))),
     );
 
     expect(html).toMatch(
@@ -110,16 +110,16 @@ describe("region() — SSR request isolation", () => {
   describe("on the polyfill DOM", () => {
     it("drops the `empty` content once a view arrives", () => {
       const html = renderToString(() =>
-        div(main(region({ id: "main", empty: p({ id: "none" }, "nothing") })), view("main", div({ id: "page" }, "page"))),
+        div(main(region({ id: "main", empty: p({ id: "none" }, "nothing") })), into("main", div({ id: "page" }, "page"))),
       );
 
       expect(html).not.toContain("nothing");
       expect(html).toMatch(/region-start-0-v1--><div id="page">/);
     });
 
-    it("keeps only the newest view in a simple region", () => {
+    it("keeps only the newest view in a latest region", () => {
       const html = renderToString(() =>
-        div(main(region({ id: "main" })), view("main", div({ id: "first" })), view("main", div({ id: "second" }))),
+        div(main(region({ id: "main" })), into("main", div({ id: "first" })), into("main", div({ id: "second" }))),
       );
 
       expect(html).not.toContain("first");
@@ -130,8 +130,8 @@ describe("region() — SSR request isolation", () => {
       const html = renderToString(() =>
         div(
           main(region({ id: "main", type: "stack" })),
-          view("main", div({ id: "first" })),
-          view("main", div({ id: "second" })),
+          into("main", div({ id: "first" })),
+          into("main", div({ id: "second" })),
         ),
       );
 
@@ -142,8 +142,8 @@ describe("region() — SSR request isolation", () => {
       const html = renderToString(() =>
         div(
           main(region({ id: "main" })),
-          view("main", div({ id: "inner-host" }, region({ id: "inner" }))),
-          view("inner", span({ id: "deep" }, "deep")),
+          into("main", div({ id: "inner-host" }, region({ id: "inner" }))),
+          into("inner", span({ id: "deep" }, "deep")),
         ),
       );
 
@@ -156,7 +156,7 @@ describe("region() — SSR request isolation", () => {
       const html = renderToString(() =>
         div(
           main(region({ id: "main", type: "stack" })),
-          view("main", div({ id: "outer" }, view("main", div({ id: "inner" })))),
+          into("main", div({ id: "outer" }, into("main", div({ id: "inner" })))),
         ),
       );
 
@@ -165,7 +165,7 @@ describe("region() — SSR request isolation", () => {
 
     it("emits the anchor where the view was written", () => {
       const html = renderToString(() =>
-        div(main(region({ id: "main" })), aside({ id: "from" }, view("main", span("page")))),
+        div(main(region({ id: "main" })), aside({ id: "from" }, into("main", span("page")))),
       );
 
       expect(html).toMatch(/<aside id="from"><!--view-\d+--><\/aside>/);
@@ -180,7 +180,7 @@ describe("region() — SSR request isolation", () => {
         { id: "app" },
         main(region({ id: "main" })),
         p(renderToString(() => span("inner")) ? "inner rendered" : ""),
-        view("main", div({ id: "outer" }, "outer")),
+        into("main", div({ id: "outer" }, "outer")),
       ),
     );
 
@@ -197,8 +197,8 @@ describe("viewWaiting() after a server render", () => {
     renderToString(() =>
       div(
         main(region({ id: "main" })),
-        (host: ExpandedElement, index: number) => (landed = view("main", p("in"))(host, index) as Node),
-        (host: ExpandedElement, index: number) => (lost = view("nowhere", p("out"))(host, index) as Node),
+        (host: ExpandedElement, index: number) => (landed = into("main", p("in"))(host, index) as Node),
+        (host: ExpandedElement, index: number) => (lost = into("nowhere", p("out"))(host, index) as Node),
       ),
     );
 

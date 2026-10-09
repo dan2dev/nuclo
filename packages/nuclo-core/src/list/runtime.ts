@@ -13,17 +13,17 @@
  *     the longest increasing subsequence of old positions never move, and runs
  *     of freshly built rows are batched into DocumentFragments.
  */
-import { createMarkerPair, clearBetweenMarkers, safeRemoveChild, disposeLifecyclesInSubtree } from "../shared/dom";
+import { createMarkerPair, clearBetweenMarkers, safeRemoveChild, cleanupNodeTree } from "../shared/dom";
 import { isHydrating, isSerializing, claimMarkerPair, peekChild, setCursor, runFreshAtCursor } from "../hydration";
 import type { ListRuntime, ListItemRecord } from "./types";
 import type { UpdateScope } from "../update/scope";
 import { isBrowser } from "../shared/environment";
 import { getFactoryMods, getFactoryTag, withMetadataOnlyFactories, getMetadataOnlyFactoryCheckpoint, releaseMetadataOnlyFactories } from "../element/factory-meta";
 import { analyzeFactory, prepareSkeleton, instantiateTemplate, adoptTemplateLeaves, flushRowLeaves, type RowLeaves } from "./template";
-import { hasActiveLifecycleRegistrations, mountQueueMark, cancelMountsSince } from "../element/lifecycle";
+import { mountQueueMark, cancelMountsSince } from "../element/lifecycle";
 import { isViewAnchor } from "../region/runtime";
 
-function arraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
+function arraysEqual<T>(a: readonly T[], b: readonly T[]) {
   if (a === b) return true;
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
@@ -50,7 +50,7 @@ const listMarkerFinalizer = typeof FinalizationRegistry !== "undefined"
   : null;
 let updateListFlushEpoch = 0;
 
-function registerListRuntime(startMarker: Comment, runtime: ListRuntime<unknown, ElementTagName>): void {
+function registerListRuntime(startMarker: Comment, runtime: ListRuntime<unknown, ElementTagName>) {
   const existing = listRuntimeByMarker.get(startMarker);
   listRuntimeByMarker.set(startMarker, runtime);
   // Re-registration for the same markers (forceUpdate() reclaim): see
@@ -67,7 +67,7 @@ function normalizeItems<TItem>(items: ListItemsInput<TItem>): readonly TItem[] {
 
 /**
  * Resolves a render() result — a tag-builder factory / NodeModFn (called with
- * the host) or an already-built element — to the row node. A view() is a row
+ * the host) or an already-built element — to the row node. A into() is a row
  * too: its anchor stands in the list and its content lives in the region, so
  * the row leaving the list takes the content with it. Anything else (null,
  * primitives, attribute objects, other non-element nodes) renders no row.
@@ -195,53 +195,22 @@ function renderItemWithTemplate<TItem, TTagName extends ElementTagName>(
 }
 
 /**
- * Detaches every record's row element from the DOM with a plain removeChild
- * loop — one call per top-level row, never descending into a row's subtree.
- * Each record's element is a direct child of `parent` (the rows between the two
- * list markers), so iterating records removes exactly the same nodes the
- * markers span.
- *
- * This is O(rows): removeChild is O(1) given the node. We deliberately do NOT
- * use Range.deleteContents() here. Its spec-faithful "is this node contained?"
- * check (compareBoundaryPointsPosition → isFollowing) re-walks the tree from
- * the range start for *every* spanned node, which is O(nodes²) in non-native
- * DOM implementations (jsdom) and — because the walk visits descendants — scales
- * with nodes-per-row, so a nested `tr>td>td` row template made replace/clear
- * quadratic where a flat `div` row only looked linear.
- *
- * Unlike safeRemoveChild, this does NOT eagerly walk each subtree to detach
- * listeners and prune reactive registries. That walk is the dominant per-row
- * cost when clearing/replacing a large list, and it is redundant here:
- *  - Reactive text/attribute registries hold their targets only through
- *    WeakRef/WeakMap, and every update() prunes entries whose node became
- *    disconnected (which removeChild makes them). The real-GC tests in
- *    test/memory/gc-collectability.test.ts prove a detached subtree is
- *    collectible with no eager cleanup and no extra update pass.
- *  - Event listeners are tracked in a WeakMap keyed by element, so they are
- *    released when the element is collected.
- *
- * Returns false (and mutates nothing) when the markers aren't both children of
- * `parent`, so the caller can fall back to per-node removal.
+ * Cleans every row before detaching it. Weak bookkeeping permits collection,
+ * but retained DOM nodes must stop invoking removed views' event handlers.
+ * Keep the native bulk removal below to avoid Range's quadratic DOM walk.
+ * Returns false without mutation when the markers no longer share a parent.
  */
 function bulkClearRecords<TItem, TTagName extends ElementTagName>(
   records: ReadonlyArray<ListItemRecord<TItem, TTagName>>,
   parent: Node & ParentNode,
   startMarker: Comment,
   endMarker: Comment,
-): boolean {
+) {
   if (startMarker.parentNode !== parent || endMarker.parentNode !== parent) return false;
 
-  // Neither fast path below walks each row's subtree (that's the whole point
-  // — see the class doc comment), so it can't rely on cleanupNodeTree() to
-  // fire onDestroy for rows using it. Firing it here first keeps that
-  // guarantee without costing anything when lifecycle hooks aren't in use
-  // anywhere on the page (the single comparison inside
-  // hasActiveLifecycleRegistrations() short-circuits the whole loop).
-  if (hasActiveLifecycleRegistrations()) {
-    for (let i = 0; i < records.length; i++) {
-      const node = records[i].element as unknown as Node | null;
-      if (node) disposeLifecyclesInSubtree(node);
-    }
+  for (let i = 0; i < records.length; i++) {
+    const node = records[i].element as unknown as Node | null;
+    if (node) cleanupNodeTree(node);
   }
 
   // Fastest clear: when the list spans the whole parent (the common case — a
@@ -320,7 +289,7 @@ function buildAndInsert<TItem, TTagName extends ElementTagName>(
   endIndexExclusive: number,
   anchor: Node,
   targetRecords: ListItemRecord<TItem, TTagName>[],
-): void {
+) {
   const fragment = document.createDocumentFragment();
   for (let i = startIndex; i < endIndexExclusive; i++) {
     const item = items[i];
@@ -351,7 +320,7 @@ function selectOwning(parent: Node | null): HTMLSelectElement | null {
 
 export function sync<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>
-): void {
+) {
   const items = normalizeItems(runtime.itemsProvider());
 
   if (arraysEqual(runtime.lastSyncedItems, items)) return;
@@ -392,7 +361,7 @@ export function sync<TItem, TTagName extends ElementTagName>(
 function diffRows<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>,
   items: readonly TItem[],
-): void {
+) {
   const { startMarker, endMarker } = runtime;
   const parent = (startMarker.parentNode ?? (runtime.host as unknown as Node & ParentNode)) as
     Node & ParentNode;
@@ -401,8 +370,7 @@ function diffRows<TItem, TTagName extends ElementTagName>(
   const oldLen = oldRecords.length;
   const newLen = items.length;
 
-  // Fast path — clear: one removeChild per row, skipping the eager per-subtree
-  // cleanup walk (see bulkClearRecords).
+  // Fast path — clear: clean the rows before the native bulk removal.
   if (newLen === 0) {
     if (oldLen > 0 && !bulkClearRecords(oldRecords, parent, startMarker, endMarker)) {
       for (let i = 0; i < oldLen; i++) safeRemoveChild(oldRecords[i].element as unknown as Node);
@@ -747,7 +715,7 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
   return runtime;
 }
 
-export function updateListRuntimes(scope?: UpdateScope): void {
+export function updateListRuntimes(scope?: UpdateScope) {
   updateListFlushEpoch++;
 
   for (const ref of activeListRuntimes) {

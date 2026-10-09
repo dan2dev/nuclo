@@ -1,7 +1,7 @@
 /// <reference path="../../types/index.d.ts" />
 import { expect, it, vi } from "vitest";
 import { registerMount, registerDestroy, flushMountQueue } from "../../src/element/lifecycle";
-import { safeRemoveChild, disposeLifecyclesInSubtree } from "../../src/shared/dom";
+import { safeRemoveChild, cleanupNodeTree } from "../../src/shared/dom";
 
 it("runs cleanup returned after a mount callback removes its own element", () => {
   const element = document.createElement("div");
@@ -18,7 +18,7 @@ it("runs cleanup returned after a mount callback removes its own element", () =>
   expect(laterMount).not.toHaveBeenCalled();
 });
 
-it.each([safeRemoveChild, disposeLifecyclesInSubtree])(
+it.each([safeRemoveChild, cleanupNodeTree])(
   "destroys every sibling when a destroy callback removes itself (%s)",
   (dispose) => {
     const parent = document.createElement("div");

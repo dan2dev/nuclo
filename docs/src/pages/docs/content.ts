@@ -147,7 +147,7 @@ render(App, document.getElementById('app')!)
       <p><code>import 'nuclo'</code> puts these on <code>globalThis</code>:</p>
       <ul>
         <li><strong>175 tag builders</strong>: 112 for HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) and 63 for SVG, with an <code>Svg</code> suffix (<code>svgSvg</code>, <code>pathSvg</code>, …). See <a href="#tag-builders">Tag Builders</a>.</li>
-        <li><strong>14 helpers</strong>: <code>update</code>, <code>scope</code>, <code>when</code>, <code>list</code>, <code>on</code>, <code>render</code>, <code>hydrate</code>, <code>forceUpdate</code>, <code>css</code>, <code>cx</code>, <code>createCss</code>, <code>variants</code>, <code>keyframes</code> and <code>globalStyle</code>.</li>
+        <li><strong>16 helpers</strong>: <code>update</code>, <code>scope</code>, <code>when</code>, <code>list</code>, <code>region</code>, <code>into</code>, <code>on</code>, <code>render</code>, <code>hydrate</code>, <code>forceUpdate</code>, <code>css</code>, <code>cx</code>, <code>createCss</code>, <code>variants</code>, <code>keyframes</code> and <code>globalStyle</code>.</li>
       </ul>
       <p>The import must run before any code that calls a builder. ES modules run in import order, so this fails:</p>
       ${code("main.ts", `
@@ -156,13 +156,13 @@ import 'nuclo'
 `)}
       <p>Put <code>import 'nuclo'</code> first in your entry file, or import it in every file that uses the globals.</p>
       <h3>Named imports</h3>
-      <p>The helpers are also named exports. They are the same functions as the globals. <code>getCssText()</code> and <code>resetStyles()</code> are named exports only. Tag builders are globals only, so <code>import { div } from 'nuclo'</code> does not work.</p>
+      <p>The helpers are also named exports. They are the same functions as the globals. <code>getCssText()</code>, <code>resetStyles()</code>, <code>viewWaiting()</code> and <code>onRootBuild()</code> are named exports only. Tag builders are globals only, so <code>import { div } from 'nuclo'</code> does not work.</p>
       ${code("main.ts", `
 import { render, update, getCssText } from 'nuclo'
 `)}
       <h3>Entry points</h3>
       <ul>
-        <li><code>nuclo</code>: registers the globals and exports the 14 helpers plus <code>getCssText</code> and <code>resetStyles</code>.</li>
+        <li><code>nuclo</code>: registers the globals and exports the 16 helpers plus <code>getCssText</code>, <code>resetStyles</code>, <code>viewWaiting</code> and <code>onRootBuild</code>.</li>
         <li><code>nuclo/ssr</code>: <code>renderToString</code>, <code>renderManyToString</code>, <code>renderToStringWithContainer</code> and <code>getCssText</code>. See <a href="#api-ssr">Server Rendering</a>.</li>
         <li><code>nuclo/polyfill</code>: a small DOM for Node, Bun and Deno. See <a href="#api-polyfill">nuclo/polyfill</a>.</li>
         <li><code>nuclo/types</code>: types only. See <a href="#typescript-setup">TypeScript</a>.</li>
@@ -201,6 +201,7 @@ import { render, update, getCssText } from 'nuclo'
         <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: the attribute object a tag builder accepts, including <code>on*</code> handlers, <code>onMount</code> and <code>onDestroy</code>. Use it for components that pass attributes through.</li>
         <li><code>MountCallback</code> and <code>DestroyCallback</code>: <code>onMount</code> and <code>onDestroy</code> handlers.</li>
         <li><code>WhenBuilder</code>, <code>ListModifier</code>: what <code>when()</code> and <code>list()</code> return.</li>
+        <li><code>RegionOptions</code>, <code>RegionType</code>: the options <code>region()</code> takes.</li>
         <li><code>StyleResult</code>, <code>Style</code>, <code>ThemeConfig</code>, <code>CssInstance</code> and the other styling types. You can also import these: <code>import type { StyleResult } from 'nuclo'</code>.</li>
       </ul>
       ${code("badge.ts", `
@@ -453,7 +454,7 @@ const search = input(on('mount', (el) => el.focus()))
       <ul>
         <li><code>onMount</code> runs at the end of the <code>render()</code>, <code>hydrate()</code>, <code>update()</code> or <code>forceUpdate()</code> call that inserted the element. It never runs while the tree is being built.</li>
         <li>If <code>onMount</code> returns a function, that function runs on destroy, after the element's <code>onDestroy</code> callbacks.</li>
-        <li><code>onDestroy</code> runs when Nuclo removes the element: a <code>list()</code> row is removed, a <code>when()</code> branch switches, or <code>forceUpdate()</code> drops it. It runs just before removal, so the element is still in the document.</li>
+        <li><code>onDestroy</code> runs when Nuclo removes the element: a <code>list()</code> row is removed, a <code>when()</code> branch switches, an <code>into()</code> leaves its region, or <code>forceUpdate()</code> drops it. It runs just before removal, so the element is still in the document.</li>
       </ul>
       <h3>Raw DOM removal</h3>
       <p>If you remove an element yourself, with <code>node.remove()</code> or <code>innerHTML = ''</code>, its <code>onDestroy</code> and cleanups never run, and timers keep running. Nuclo has no <code>unmount()</code>. To tear down an app with cleanup, wrap it in <code>when()</code>:</p>
@@ -702,6 +703,76 @@ update() // same <li>, its class is now "done"
       <p>Any iterable works: arrays, <code>Set</code>, generators and <code>map.values()</code>. Returning the same array or <code>Set</code> each time is fine. An iterator, such as a generator or <code>map.values()</code>, is used up after one pass, so create it inside <code>items()</code> on every call. Iterating a <code>Map</code> directly creates new <code>[key, value]</code> arrays each time, so every row is rebuilt. Use <code>map.values()</code> instead.</p>
       <h3>Placement</h3>
       <p>Rows appear where <code>list()</code> sits among its siblings, between two comment markers. Other children of the parent are not touched. <code>list()</code> also works inside SVG builders.</p>
+    `,
+      },
+      {
+        id: "api-region",
+        title: "region() & into()",
+        apiTag: "fn",
+        apiSig: sig(`
+function region(options: RegionOptions): NodeModFn
+function into(id: string, ...content: NodeModLike[]): NodeModFn
+function into(regions: Record<string, NodeModLike | NodeModLike[]>): NodeModFn
+
+interface RegionOptions {
+  id: string
+  type?: 'latest' | 'stack' // default: 'latest'
+  empty?: NodeModLike
+}
+`),
+        content: `
+      <p><code>region()</code> marks a named place in the tree. <code>into()</code> fills it from anywhere else, at any depth. The layout does not receive the content as a prop, and the component that builds the content does not know where it lands.</p>
+      ${code("app.ts", `
+const Layout = () =>
+  div(
+    aside(nav(a({ href: '/' }, 'Home'))),
+    main(region({ id: 'main', empty: p('Nothing open.') })),
+  )
+
+// Anywhere in the tree, before or after the region
+const Article = () => into('main', article(h1('Hello')))
+
+render(() => div(Layout(), Article()))
+`)}
+      <h3>How it works</h3>
+      <ul>
+        <li><code>into()</code> leaves only a comment where it is written. Its content renders between the region's markers.</li>
+        <li>Order does not matter. A <code>into()</code> built before its region waits and shows the moment the region is built. Views show in the order they were written.</li>
+        <li>The content lives as long as the view. When the <code>when()</code> that holds an <code>into()</code> closes, or its <code>list()</code> row is removed, the content leaves the region. Opening it again adds one copy, not two.</li>
+        <li>When a region goes away, for example its <code>when()</code> closes, its views wait again. A region built later with the same id shows them.</li>
+        <li>A <code>into()</code> whose id matches no region renders nothing and raises no error, so check the spelling.</li>
+        <li>Ids are unique in the tree. A second region built under a live id logs a warning.</li>
+        <li>Regions work with <a href="#api-ssr">server rendering</a>. On <code>hydrate()</code>, each view claims the HTML the server rendered instead of building it again.</li>
+      </ul>
+      <h3>Options</h3>
+      <ul>
+        <li><code>id</code>: the name <code>into()</code> calls use to find the region.</li>
+        <li><code>type</code>: <code>'latest'</code> (the default) shows only the newest view. <code>'stack'</code> shows every view, in arrival order.</li>
+        <li><code>empty</code>: rendered while the region holds no views.</li>
+      </ul>
+      <h3>Stacked regions</h3>
+      <p>With <code>type: 'stack'</code>, a view that opens over another does not rebuild the one underneath. Its DOM, focus and form state stay. Use this for a layer such as a dialog over a page.</p>
+      ${code("layers.ts", `
+let open = false
+
+const App = () =>
+  div(
+    region({ id: 'main', type: 'stack' }),
+    into('main', form(input({ placeholder: 'Keeps its text' }))),
+    when(() => open, into('main', div('On top'))),
+  )
+`)}
+      <h3>Several regions at once</h3>
+      <p>Pass an object to fill more than one region from a single <code>into()</code>. A value can be one child or an array of children. Either form nests: an <code>into()</code> inside another view's content targets its own region.</p>
+      ${code("page.ts", `
+const Page = () =>
+  into({
+    main: article(h1('Eager route')),
+    sidebar: [h2('Related'), ul(li('One'), li('Two'))],
+  })
+`)}
+      <h3>For libraries</h3>
+      <p><code>viewWaiting(node)</code>, a named export, tells whether the <code>into()</code> that returned <code>node</code> still has no region to show in. <code>onRootBuild(hook)</code> registers a callback that runs on every <code>render()</code>, <code>hydrate()</code>, <code>forceUpdate()</code> and <code>renderToString()</code> pass, after the root component is called and before its tree is built. It returns the unregister function. Routers use both to place pages beside the app and report one that lands nowhere.</p>
     `,
       },
       {
@@ -1290,6 +1361,7 @@ async function loadData() {
         <li><a href="#api-scope"><code>scope(...ids)</code></a>: give an element scope ids for <code>update(id)</code>.</li>
         <li><a href="#api-when"><code>when(condition, ...content)</code></a>: conditional content, with <code>.when()</code> and <code>.else()</code>.</li>
         <li><a href="#api-list"><code>list(items, renderItem)</code></a>: one row per item, matched by identity.</li>
+        <li><a href="#api-region"><code>region(options)</code></a> and <a href="#api-region"><code>into(id, ...content)</code></a>: a named place in the tree, and content that fills it from anywhere.</li>
         <li><a href="#events"><code>on(type, listener, options?)</code></a>: an event listener, or <a href="#lifecycle"><code>on('mount')</code> / <code>on('destroy')</code></a>.</li>
         <li><a href="#api-render"><code>render(App, parent?)</code></a>: build and append.</li>
         <li><a href="#api-hydrate"><code>hydrate(App, parent?)</code></a>: take over server HTML.</li>
@@ -1303,6 +1375,7 @@ async function loadData() {
       <h3><code>nuclo</code> (named export only)</h3>
       <ul>
         <li><a href="#api-css-text"><code>getCssText()</code></a> and <a href="#api-css-text"><code>resetStyles()</code></a>.</li>
+        <li><a href="#api-region"><code>viewWaiting(node)</code></a> and <a href="#api-region"><code>onRootBuild(hook)</code></a>: hooks for libraries that place content for the app.</li>
       </ul>
       <h3><code>nuclo/ssr</code></h3>
       <ul>
@@ -1345,6 +1418,9 @@ async function loadData() {
 
       <h3>When should I use <code>forceUpdate()</code>?</h3>
       <p>Only for rare changes to static values, such as switching the language. For everything else, use <code>update()</code>. See <a href="#api-force-update"><code>forceUpdate()</code></a>.</p>
+
+      <h3>How do I put a page into a layout without passing it down as a prop?</h3>
+      <p>Mark the place with <code>region({ id: 'main' })</code> and have the page return <code>into('main', …)</code>. See <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a>.</p>
 
       <h3>How do I unmount an app?</h3>
       <p>Wrap it in <code>when()</code> and switch the condition off. Removing the DOM yourself does not run <code>onDestroy</code>. See <a href="#lifecycle">Lifecycle</a>.</p>

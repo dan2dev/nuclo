@@ -5,7 +5,7 @@ import { isBrowser } from "../shared/environment";
 import { isSerializing } from "../shared/serializing";
 
 /** DSL text semantics: nullish and non-primitive values render as "". */
-export function toText(value: unknown): string {
+export function toText(value: unknown) {
   return value == null || typeof value === "object" || typeof value === "function" ? "" : String(value);
 }
 
@@ -25,7 +25,7 @@ export function createReactiveTextNode(resolver: TextResolver, initial: unknown)
  * writes the ones whose text changed. Disconnected and collected nodes are
  * pruned as the pass goes.
  */
-export function notifyReactiveTextNodes(scope?: UpdateScope): void {
+export function notifyReactiveTextNodes(scope?: UpdateScope) {
   for (const ref of reactiveTextNodes) {
     const node = ref.deref();
     const entry = node && reactiveTextNodesByNode.get(node);

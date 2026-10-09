@@ -9,10 +9,10 @@ import { renderToString } from "../../src/ssr/render-to-string";
 import "../../src";
 
 /**
- * A list() row that is a view().
+ * A list() row that is an into().
  *
  * This is how a page places itself: a router's list() renders the page, the
- * page returns `view("main", …)`, and the view's anchor is the row. The row
+ * page returns `into("main", …)`, and the view's anchor is the row. The row
  * standing in the list is what keeps the content in the region; the row
  * leaving the list is what takes it out.
  */
@@ -35,7 +35,7 @@ describe("list() rows that are views", () => {
     return [...container.querySelector(`#${hostId}`)!.children].map((c) => c.id);
   }
 
-  const Page = (name: string) => view("main", div({ id: name }, name));
+  const Page = (name: string) => into("main", div({ id: name }, name));
 
   it("places the content in the region and keeps it across update() passes", () => {
     const pages = ["a"];
@@ -81,7 +81,7 @@ describe("list() rows that are views", () => {
     expect(idsIn()).toEqual(["c"]);
   });
 
-  it("replaces the page in a simple region as the single item changes", () => {
+  it("replaces the page in a latest region as the single item changes", () => {
     let current = "first";
     render(
       div(

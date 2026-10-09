@@ -7,7 +7,7 @@ export const NO_CHILDREN: never[] = [];
  * Computed on each read rather than kept as pointers: appendChild is the
  * hottest path in renderToString() and would pay for pointer upkeep on every
  * node, while a sibling walk on a server is rare and short — a region
- * replacing its `empty` content, or a simple region taking a second view.
+ * replacing its `empty` content, or a latest region taking a second view.
  */
 export function siblingOf(node: object, offset: 1 | -1): Node | null {
   const parent = (node as { parentNode: { childNodes?: ArrayLike<Node> } | null }).parentNode;
@@ -21,11 +21,11 @@ export function siblingOf(node: object, offset: 1 | -1): Node | null {
  * Base Node class for instanceof checks in Node.js polyfill
  */
 export class NucloNode {
-  nodeType: number = 1; // ELEMENT_NODE
-  nodeName: string = '';
+  nodeType = 1; // ELEMENT_NODE
+  nodeName = '';
   nodeValue: string | null = null;
   parentNode: unknown = null;
-  textContent: string = '';
+  textContent = '';
 
   get childNodes(): NodeListOf<ChildNode> {
     return NO_CHILDREN as unknown as NodeListOf<ChildNode>;

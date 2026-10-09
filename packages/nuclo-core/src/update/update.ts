@@ -23,7 +23,7 @@ const updaters = [
 	notifyReactiveTextNodes,
 ] satisfies ReadonlyArray<(scope?: UpdateScope) => void>;
 
-export function update(...scopeIds: string[]): void {
+export function update(...scopeIds: string[]) {
 	let scope: UpdateScope | undefined;
 
 	if (scopeIds.length > 0) {

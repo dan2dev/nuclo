@@ -21,6 +21,6 @@ export function onRootBuild(hook: RootHook): () => void {
   return () => void hooks.delete(hook);
 }
 
-export function runRootHooks(serializing: boolean): void {
+export function runRootHooks(serializing: boolean) {
   for (const hook of hooks) hook(serializing);
 }

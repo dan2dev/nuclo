@@ -7,7 +7,7 @@ itself, and no side effects — it tree-shakes away when unused.
 The router owns no DOM of its own and decides only *what* to load. The layer
 stack is one `list()` — one row per layer, so an ordinary page is a single row
 — mounted beside the app, and each page says *where* it goes by returning a
-nuclo `view()` into one of the layout's `region()`s. The server
+nuclo `into()` into one of the layout's `region()`s. The server
 and the client build the *same* tree, so `hydrate()` claims the server's nodes
 instead of replacing them. Everything else is `history`, one delegated `click`
 listener, and `requestIdleCallback`.
@@ -58,7 +58,7 @@ export const App = () =>
 ```ts
 // pages/Post.ts — a page says where it goes
 export default function Post(ctx: RouteContext) {
-  return view("main", article(h1(ctx.params.slug)));
+  return into("main", article(h1(ctx.params.slug)));
 }
 ```
 
@@ -120,7 +120,7 @@ export const Layout = () =>
 
 // pages/Post.ts
 export default function Post(ctx: RouteContext) {
-  return view("main", article(h1(ctx.params.slug)));
+  return into("main", article(h1(ctx.params.slug)));
 }
 
 // App.ts — nothing of the router's in here
@@ -130,34 +130,24 @@ export const App = () => div(Header(), Layout(), Footer());
 The pages mount themselves beside the app, with the first `render()` or
 `hydrate()` after `start()`: in the browser as comments on the document root —
 nothing visible — placed before the app's own tree is built, so each page's
-`view()` is already waiting when the layout's region arrives and claims the
+`into()` is already waiting when the layout's region arrives and claims the
 server's nodes on hydration; on the server inside each `renderToString()` that
 `route.run()` wraps, on a host that is never serialized, so the HTML carries
 the page in the region and nothing else of the router's. `stop()` unmounts
 them. A page may fill several regions at once with
-`view({ main: …, sidebar: … })`, and a parent page can be a view while its
-children render inside its `outlet()`. `region()` and `view()` are nuclo
+`into({ main: …, sidebar: … })`, and a parent page can be a view while its
+children render inside its `outlet()`. `region()` and `into()` are nuclo
 globals, not router API — see the
 [nuclo README](../nuclo-core/README.md#regionoptions-and-viewid-content).
 
 A page that lands nowhere is reported once per Route, in the browser and on
-the server alike: one that returns content without a `view()`, and — once the
-render is over — one whose `view()` names a region that is not in the tree,
+the server alike: one that returns content without an `into()`, and — once the
+render is over — one whose `into()` names a region that is not in the tree,
 which is what a typo in the id looks like.
 
 A region shows a pushed layer over the page beneath it: a `"stack"` region
-renders both, a `"simple"` one (the default) renders the layer alone and
+renders both, a `"latest"` one (the default) renders the layer alone and
 brings the page back, rebuilt, when the layer closes.
-
-To render pages **where they are written** instead, place `router.pages()` in
-the tree — once — and have pages return plain content:
-
-```ts
-export const App = () => div(Header(), main(router.pages()), Footer());
-```
-
-A page that returns a `view()` still lands in its region from there. Once
-`pages()` is placed, nothing is mounted automatically.
 
 ## Patterns
 
@@ -467,7 +457,6 @@ Every member but `run()` is also on the router, which is where an app reads it.
 | `error` | the last failed load, cleared by the next navigation |
 | `data` | what the matched page's `load()` returned, for a server to serialize. A parent's is not on it. |
 | `depth` | how many layers are on the stack (1 for an ordinary page) |
-| `pages()` | the alternative to the automatic mount: the layer stack placed by the app itself, bottom layer first, where pages that return plain content render. **Place it once**, before the render that shows it — a second live placement duplicates the page (the router warns if it finds two in the document). |
 | `go(href, { replace })` | navigate, loading the module if needed. Never rejects — a module that fails, by rejecting *or* by throwing outright, lands on `error`. |
 | `push(href)` | open a route as a **new layer** on top, resolving with what it closes with. Accepts `./`. Rejects on no-match or a failed module; a loader's `Redirect` opens its target instead. |
 | `back(delta?)` | go back, as the Back button would. The only way to traverse in `"memory"` mode. Asynchronous. |
@@ -523,9 +512,9 @@ Where a page sits in the stack, and its way out.
 
 `push()` opens a route **on top of** the current one instead of replacing it,
 and resolves with whatever that layer closes with. Because the pages are a
-single `list()` over the stack, opening a layer is an append — the page
-underneath is not re-rendered, so its DOM, its focus and its half-filled form
-are all still there when the layer closes.
+single `list()` over the stack, opening a layer is an append — in a `"stack"`
+region the page underneath is not re-rendered, so its DOM, its focus and its
+half-filled form are all still there when the layer closes.
 
 That makes the "I need a record that doesn't exist yet" flow work without
 throwing away the form the user was filling in:
@@ -680,7 +669,7 @@ view. `popstate` leaves scrolling to the browser.
   while `popstate` reaches both. To resolve a URL against another table, create
   a router and call only `match()`: it attaches nothing.
 - **Not included, by design:** two independently routed areas driven by one
-  URL — a page can fill several regions with `view({ … })`, but they all
+  URL — a page can fill several regions with `into({ … })`, but they all
   belong to the one matched route — and hover preloading. Prefetch on hover by
   calling the route's own loader from a `mouseenter`.
 
@@ -701,7 +690,7 @@ bun run dev   # in either folder
 ## Tests
 
 ```bash
-bun run test          # typecheck + 364 tests, 100% statements/branches/functions/lines
+bun run test          # typecheck + 355 tests, 100% statements/branches/functions/lines
 ```
 
 MIT © Danilo Celestino de Castro

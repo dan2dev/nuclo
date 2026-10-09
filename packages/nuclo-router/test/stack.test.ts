@@ -2,14 +2,15 @@
  * The layer stack: push() / layer.close().
  *
  * The property that matters most is the one asserted by node identity below —
- * opening a layer must not rebuild the page underneath. view() is one list()
- * over the stack array, so a push is a pure insertion and the rows below keep
- * their DOM, their focus and their form state.
+ * opening a layer must not rebuild the page underneath. The layer stack is one
+ * list() over the stack array and the region is a "stack" one, so a push is a
+ * pure insertion and the rows below keep their DOM, their focus and their form
+ * state.
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import "nuclo";
 import { createRouter, type Layer, type PageComponent, type Route } from "../src/index";
-import { deferred, flush, mount, useRouterEnv, waitFor } from "./helpers";
+import { App, deferred, flush, mount, useRouterEnv, waitFor } from "./helpers";
 
 /** nuclo's <option> builder, aliased so it does not read like a variable. */
 const optionEl = option;
@@ -26,7 +27,14 @@ async function start(router: { start(url?: string): Promise<Route> }, url?: stri
   return route;
 }
 
-const Base: PageComponent = () => div({ id: "base" }, input({ id: "field" }));
+/** Renders the app and returns its region's host: its children are the layers, bottom first. */
+function show(): Element {
+  const container = mount();
+  render(App, container);
+  return container.firstElementChild!;
+}
+
+const Base: PageComponent = () => into("main", div({ id: "base" }, input({ id: "field" })));
 
 /** Layers by depth, so a test can drive any one of them. */
 let layers: Array<Layer | undefined> = [];
@@ -34,13 +42,13 @@ let layers: Array<Layer | undefined> = [];
 /** The pushed page: records its own Layer handle as it renders. */
 const Modal: PageComponent = (_ctx, { layer }) => {
   layers[layer.depth] = layer;
-  return div({ id: `modal-${layer.depth}` }, button({ id: `save-${layer.depth}` }, "save"));
+  return into("main", div({ id: `modal-${layer.depth}` }, button({ id: `save-${layer.depth}` }, "save")));
 };
 
 function table() {
   return {
     "/": () => Base,
-    "/other": () => (() => div({ id: "other" })) as PageComponent,
+    "/other": () => (() => into("main", div({ id: "other" }))) as PageComponent,
     "/modal": () => Modal,
     "/modal2": () => Modal,
   };
@@ -49,8 +57,7 @@ function table() {
 describe("push()", () => {
   it("opens a layer without rebuilding the page underneath", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    const container = mount();
-    render(route.pages(), container);
+    const container = show();
 
     const baseNode = container.children[0];
     const field = baseNode.children[0] as HTMLInputElement;
@@ -75,7 +82,7 @@ describe("push()", () => {
 
   it("resolves with whatever the layer closes with", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    render(route.pages(), mount());
+    show();
 
     const pending = route.push<{ id: number }>("/modal");
     await flush();
@@ -88,7 +95,7 @@ describe("push()", () => {
 
   it("resolves with undefined when the layer is dismissed", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    render(route.pages(), mount());
+    show();
 
     const pending = route.push("/modal");
     await flush();
@@ -101,7 +108,7 @@ describe("push()", () => {
 
   it("puts the layer's URL in the address bar and reports it on the Route", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    render(route.pages(), mount());
+    show();
     const pending = route.push("/modal?q=1");
     await flush();
 
@@ -118,8 +125,7 @@ describe("push()", () => {
 
   it("stacks several layers, each with its own depth", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    const container = mount();
-    render(route.pages(), container);
+    const container = show();
 
     const first = route.push("/modal");
     await flush();
@@ -142,7 +148,7 @@ describe("push()", () => {
 
   it("closing a middle layer closes everything above it", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    render(route.pages(), mount());
+    show();
 
     const first = route.push("/modal");
     await flush();
@@ -163,8 +169,7 @@ describe("push()", () => {
     const gate = deferred<{ default: PageComponent }>();
     const router = createRouter({ "/": () => Base, "/modal": () => gate.promise }, { preload: false });
     const route = await start(router, "/");
-    const container = mount();
-    render(route.pages(), container);
+    const container = show();
 
     const pending = route.push("/modal");
     await flush();
@@ -187,8 +192,7 @@ describe("push()", () => {
 describe("history", () => {
   it("Back closes the top layer and resolves it as dismissed", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    const container = mount();
-    render(route.pages(), container);
+    const container = show();
 
     const pending = route.push("/modal");
     await flush();
@@ -204,8 +208,7 @@ describe("history", () => {
 
   it("an ordinary navigation replaces the stack and dismisses open layers", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    const container = mount();
-    render(route.pages(), container);
+    const container = show();
 
     const pending = route.push("/modal");
     await flush();
@@ -222,8 +225,7 @@ describe("history", () => {
 
   it("a popstate that lands on the row already showing keeps it, and does not scroll", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    const container = mount();
-    render(route.pages(), container);
+    const container = show();
     const baseNode = container.children[0];
     (window.scrollTo as unknown as ReturnType<typeof vi.fn>).mockClear();
 
@@ -297,7 +299,7 @@ describe("failures", () => {
     const gate = deferred<{ default: PageComponent }>();
     const router = createRouter({ "/": () => Base, "/slow": () => gate.promise, "/modal": () => Modal }, { preload: false });
     const route = await start(router, "/");
-    render(route.pages(), mount());
+    show();
 
     const navigation = route.go("/slow");
     expect(route.pending).toBe(true);
@@ -319,13 +321,13 @@ describe("failures", () => {
       {
         "/": () => ((_ctx, { layer }) => {
           baseLayer = layer;
-          return div({ id: "base" });
+          return into("main", div({ id: "base" }));
         }) as PageComponent,
       },
       { preload: false },
     );
     const route = await start(router, "/");
-    render(route.pages(), mount());
+    show();
 
     expect(baseLayer!.depth).toBe(0);
     expect(() => baseLayer!.close("ignored")).not.toThrow();
@@ -335,7 +337,7 @@ describe("failures", () => {
 
   it("stop() dismisses every open layer so no caller is left awaiting", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    render(route.pages(), mount());
+    show();
 
     const first = route.push("/modal");
     await flush();
@@ -353,12 +355,11 @@ describe("failures", () => {
   it("a push overtaken by a navigation opens nothing", async () => {
     const gate = deferred<{ default: PageComponent }>();
     const router = createRouter(
-      { "/": () => Base, "/other": () => (() => div({ id: "other" })) as PageComponent, "/modal": () => gate.promise },
+      { "/": () => Base, "/other": () => (() => into("main", div({ id: "other" }))) as PageComponent, "/modal": () => gate.promise },
       { preload: false },
     );
     const route = await start(router, "/");
-    const container = mount();
-    render(route.pages(), container);
+    const container = show();
 
     const pushed = route.push("/modal");
     await flush();
@@ -380,7 +381,7 @@ describe("failures", () => {
     const gate = deferred<{ default: PageComponent }>();
     const router = createRouter({ "/": () => Base, "/modal": () => gate.promise }, { preload: false });
     const route = await start(router, "/");
-    render(route.pages(), mount());
+    show();
 
     const pushed = route.push("/modal");
     await flush();
@@ -396,7 +397,7 @@ describe("failures", () => {
 
   it("a stale Layer handle used after stop() is inert", async () => {
     const route = await start(createRouter(table(), { preload: false }), "/");
-    render(route.pages(), mount());
+    show();
 
     const pushed = route.push("/modal");
     await flush();
@@ -425,16 +426,19 @@ describe("Layer.push()", () => {
     // Depth 2: opened by the page at depth 1, which only ever had its Layer.
     const Inner: PageComponent = (_ctx, { layer }) => {
       layers[layer.depth] = layer;
-      return div({ id: "inner" });
+      return into("main", div({ id: "inner" }));
     };
     const Outer: PageComponent = (_ctx, { layer }) => {
       layers[layer.depth] = layer;
-      return div(
-        { id: "outer" },
-        button({
-          id: "open-inner",
-          onClick: () => void layer.push<string>("/inner").then((r) => results.push(r)),
-        }),
+      return into(
+        "main",
+        div(
+          { id: "outer" },
+          button({
+            id: "open-inner",
+            onClick: () => void layer.push<string>("/inner").then((r) => results.push(r)),
+          }),
+        ),
       );
     };
 
@@ -443,8 +447,7 @@ describe("Layer.push()", () => {
       { preload: false },
     );
     const route = await start(router, "/");
-    const container = mount();
-    render(route.pages(), container);
+    const container = show();
 
     const outer = route.push("/outer");
     await flush();
@@ -476,34 +479,39 @@ describe("the dropdown scenario", () => {
     let createdCount = 0;
 
     const NewOption: PageComponent = (_ctx, { layer }) =>
-      div(
-        { id: "new-option" },
-        button({
-          id: "create",
-          onClick: () => {
-            createdCount++;
-            layer.close({ id: `new-${createdCount}`, label: `Created ${createdCount}` });
-          },
-        }, "create"),
+      into(
+        "main",
+        div(
+          { id: "new-option" },
+          button({
+            id: "create",
+            onClick: () => {
+              createdCount++;
+              layer.close({ id: `new-${createdCount}`, label: `Created ${createdCount}` });
+            },
+          }, "create"),
+        ),
       );
 
     const Form: PageComponent = () =>
-      div(
-        { id: "form" },
-        input({ id: "notes" }),
-        select(
-          { id: "picker", value: () => selected },
-          list(
-            () => options,
-            (option) => optionEl({ value: option.id }, option.label),
+      into(
+        "main",
+        div(
+          { id: "form" },
+          input({ id: "notes" }),
+          select(
+            { id: "picker", value: () => selected },
+            list(
+              () => options,
+              (option) => optionEl({ value: option.id }, option.label),
+            ),
           ),
         ),
       );
 
     const router = createRouter({ "/form": () => Form, "/options/new": () => NewOption }, { preload: false });
     const route = await start(router, "/form");
-    const container = mount();
-    render(route.pages(), container);
+    const container = show();
 
     const formNode = container.children[0];
     const notes = formNode.querySelector("#notes") as HTMLInputElement;

@@ -10,7 +10,7 @@
 import { describe, it, expect } from "vitest";
 import "nuclo";
 import { createRouter, type Layer, type PageComponent, type Route } from "../src/index";
-import { click, flush, mount, stubAssign, useRouterEnv, waitFor } from "./helpers";
+import { App, click, flush, mount, stubAssign, useRouterEnv, waitFor } from "./helpers";
 
 const routes = useRouterEnv();
 
@@ -20,7 +20,7 @@ async function start(router: { start(url?: string): Promise<Route> }, url?: stri
   return route;
 }
 
-const P = (id: string): PageComponent => () => div({ id }, id);
+const P = (id: string): PageComponent => () => into("main", div({ id }, id));
 
 function table() {
   return {
@@ -119,7 +119,7 @@ describe('history: "hash"', () => {
   it("intercepts link clicks written with route.href()", async () => {
     const route = await start(createRouter(table(), { history: "hash", preload: false }));
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     expect(click(link(route.href("/docs")))).toBe(true);
     await flush();
@@ -131,14 +131,14 @@ describe('history: "hash"', () => {
     let captured: Layer | undefined;
     const Modal: PageComponent = (_ctx, { layer }) => {
       captured = layer;
-      return div({ id: "modal" });
+      return into("main", div({ id: "modal" }));
     };
     const router = createRouter(
       { "/": () => P("home"), "/modal": () => Modal },
       { history: "hash", preload: false },
     );
     const route = await start(router);
-    render(route.pages(), mount());
+    render(App, mount());
 
     const pending = route.push("/modal");
     await flush();
@@ -286,7 +286,7 @@ describe('history: "memory"', () => {
     let captured: Layer | undefined;
     const Modal: PageComponent = (_ctx, { layer }) => {
       captured = layer;
-      return div({ id: "modal" });
+      return into("main", div({ id: "modal" }));
     };
     const router = createRouter(
       { "/": () => P("home"), "/modal": () => Modal },
@@ -294,12 +294,12 @@ describe('history: "memory"', () => {
     );
     const route = await start(router, "/");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     const pending = route.push("/modal");
     await flush();
     expect(route.depth).toBe(2);
-    expect([...container.children].map((c) => c.id)).toEqual(["home", "modal"]);
+    expect([...container.firstElementChild!.children].map((c) => c.id)).toEqual(["home", "modal"]);
 
     captured!.close("picked");
     await waitFor(() => route.depth === 1);
@@ -309,7 +309,7 @@ describe('history: "memory"', () => {
 
   it("intercepts links, because they are still in a document", async () => {
     const route = await start(createRouter(table(), { history: "memory", preload: false }), "/");
-    render(route.pages(), mount());
+    render(App, mount());
 
     expect(click(link("/docs"))).toBe(true);
     await flush();

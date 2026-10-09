@@ -14,7 +14,7 @@ const link = css({ textDecoration: "none" });
 
 export default function BlogNewPage(ctx: RouteContext) {
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
     feature(
       "static wins, wherever it sits",

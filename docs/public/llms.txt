@@ -7,12 +7,13 @@ Nuclo is not React, Vue, Solid or Svelte. There are no hooks, no JSX, no compone
 ## Core rules
 
 - Install with `npm install nuclo`, or scaffold a Vite + TypeScript app with `npm create nuclo@latest`.
-- `import 'nuclo'` once, before any code that calls a builder. It registers globals: 175 tag builders (`div`, `span`, ..., `var_` for `<var>`; SVG tags use an `Svg` suffix: `svgSvg`, `pathSvg`, `circleSvg`) and 14 helpers: `update`, `scope`, `when`, `list`, `on`, `render`, `hydrate`, `forceUpdate`, `css`, `cx`, `createCss`, `variants`, `keyframes`, `globalStyle`.
+- `import 'nuclo'` once, before any code that calls a builder. It registers globals: 175 tag builders (`div`, `span`, ..., `var_` for `<var>`; SVG tags use an `Svg` suffix: `svgSvg`, `pathSvg`, `circleSvg`) and 16 helpers: `update`, `scope`, `when`, `list`, `region`, `into`, `on`, `render`, `hydrate`, `forceUpdate`, `css`, `cx`, `createCss`, `variants`, `keyframes`, `globalStyle`.
 - Tag builders are globals only: `import { div } from 'nuclo'` does not work. Helpers are also named exports.
 - A function with zero parameters is a dynamic value, re-run on every `update()`: ``p(() => `Hi ${name}`)``, `{ disabled: () => busy }`. A function that declares a parameter is a modifier that receives the element and runs once.
 - Mutate state directly (`count++`, `todos.push(t)`), then call `update()` once. `update('id')` only updates elements marked with `scope('id')`.
 - Conditionals: `when(() => cond, ...children).when(...).else(...)`. Never `cond && el`: booleans render as the text "false".
 - Lists: `list(() => items, (item, index) => li(...))`. Rows are matched by object identity and kept rows are not rendered again, so use dynamic values for fields that change.
+- Regions: `region({ id: 'main' })` marks a place in the tree; `into('main', ...children)` fills it from anywhere else, before or after, at any depth. `type: 'stack'` shows every view, the default shows only the newest. Content leaves the region when the `when()` or `list()` row holding the `into()` goes.
 - Events: `{ onClick: (e) => ... }` in an attribute object, or `on('click', fn, options)` for several listeners, listener options or custom events.
 - Lifecycle: `{ onMount: (el) => cleanup?, onDestroy: (el) => ... }`. Hooks run once per element and are not effects.
 - Classes: use `className` (or a `css()` result), not `class`. Inline `style` takes a camelCase object with explicit units.
@@ -55,6 +56,7 @@ render(App, document.getElementById('app')!)
 - [scope()](https://nuclo.dev/docs#api-scope): mark an element as a named update root
 - [when()](https://nuclo.dev/docs#api-when): conditional content with `.when()` and `.else()` chains
 - [list()](https://nuclo.dev/docs#api-list): render one row per item, matched by identity
+- [region() & into()](https://nuclo.dev/docs#api-region): a named place in the tree, filled from anywhere by `into()`; stacked layers, SSR-safe
 - [forceUpdate()](https://nuclo.dev/docs#api-force-update): re-run components to refresh static values, such as a language switch
 - [render()](https://nuclo.dev/docs#api-render): build a tree and append it to the DOM
 - [hydrate()](https://nuclo.dev/docs#api-hydrate): take over server-rendered HTML

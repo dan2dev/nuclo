@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import "nuclo";
 import { createRouter, type PageComponent, type Route } from "../src/index";
-import { click, deferred, flush, mount, useRouterEnv } from "./helpers";
+import { App, click, deferred, flush, mount, useRouterEnv } from "./helpers";
 
 // Registered before useRouterEnv() so it runs after the routes are stopped:
 // stop() still needs cancelIdleCallback.
@@ -19,8 +19,8 @@ async function start(router: { start(url?: string): Promise<Route> }, url?: stri
   return route;
 }
 
-const Home: PageComponent = () => div({ id: "home" }, "home");
-const About: PageComponent = () => div({ id: "about" }, "about");
+const Home: PageComponent = () => into("main", div({ id: "home" }, "home"));
+const About: PageComponent = () => into("main", div({ id: "about" }, "about"));
 
 function link(attrs: Record<string, string>, child?: string): HTMLAnchorElement {
   const anchor = document.createElement("a");
@@ -38,7 +38,7 @@ describe("link clicks", () => {
   it("navigates a plain internal link", async () => {
     const route = await start(basicRouter(), "/");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     expect(click(link({ href: "/about" }))).toBe(true);
     await flush();
@@ -212,7 +212,7 @@ describe("popstate", () => {
   it("renders the entry the browser went back to", async () => {
     const route = await start(basicRouter(), "/");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     await route.go("/about");
     expect(route.path).toBe("/about");
@@ -253,7 +253,7 @@ describe("popstate", () => {
     const router = createRouter({ "/": () => Home, "/slow": () => gate.promise });
     const route = await start(router, "/");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     const navigation = route.go("/slow");
     expect(route.pending).toBe(true);
@@ -304,7 +304,7 @@ describe("stop()", () => {
     const router = createRouter({ "/": () => Home, "/about": () => gate.promise });
     const route = await start(router, "/");
     const container = mount();
-    render(route.pages(), container);
+    render(App, container);
 
     const promise = route.go("/about");
     expect(route.pending).toBe(true);

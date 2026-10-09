@@ -2,7 +2,7 @@
  * `render(App, container)`: the app reads the router it imports and carries
  * nothing of the router's. The pages mount themselves beside it — in the
  * browser on the document root, on the server inside the render, on a host
- * nothing serializes — and reach their regions through their own view().
+ * nothing serializes — and reach their regions through their own into().
  */
 import { describe, it, expect, vi } from "vitest";
 import "nuclo";
@@ -12,17 +12,17 @@ import { flush, mount, useRouterEnv } from "./helpers";
 
 const routes = useRouterEnv();
 
-const Home: PageComponent = () => view("main", div({ id: "home" }, h1("Home")));
-const About: PageComponent = () => view("main", div({ id: "about" }, h1("About")));
+const Home: PageComponent = () => into("main", div({ id: "home" }, h1("Home")));
+const About: PageComponent = () => into("main", div({ id: "about" }, h1("About")));
 const Modal: PageComponent = (_ctx, { layer }) =>
-  view("main", div({ id: "modal" }, button({ id: "close", onClick: () => layer.close() }, "close")));
+  into("main", div({ id: "modal" }, button({ id: "close", onClick: () => layer.close() }, "close")));
 const Plain: PageComponent = () => div({ id: "plain" }, "not a view");
 
 const table = { "/": () => Home, "/about": () => About, "/modal": () => Modal, "/plain": () => Plain };
 
 let router = createRouter(table, { preload: false });
 
-/** Reads the module-level router, as an app does; the region is "simple" on purpose. */
+/** Reads the module-level router, as an app does; the region is "latest" on purpose. */
 const App = () =>
   div(
     { id: "shell" },
@@ -74,7 +74,7 @@ describe("render(App) in the browser", () => {
     expect(container.querySelector("#nav")).toBe(nav);
   });
 
-  it("opens a layer over the page in a simple region and brings the page back on close", async () => {
+  it("opens a layer over the page in a latest region and brings the page back on close", async () => {
     await start("/");
     const container = mount();
     render(App, container);
@@ -161,7 +161,7 @@ describe("render(App) in the browser", () => {
     render(App, mount());
 
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0][0]).toMatch(/"\/plain" returned content without a view\(\)/);
+    expect(warn.mock.calls[0][0]).toMatch(/"\/plain" returned content without an into\(\)/);
 
     await router.go("/");
     await router.go("/plain");
@@ -170,7 +170,7 @@ describe("render(App) in the browser", () => {
 
   it("warns once, after the render, about a view whose region is not in the tree", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    router = createRouter({ "/": () => Home, "/typo": () => () => view("mian", div({ id: "typo" })) }, { preload: false });
+    router = createRouter({ "/": () => Home, "/typo": () => () => into("mian", div({ id: "typo" })) }, { preload: false });
     await start("/typo", false);
     const container = mount();
     render(App, container);
@@ -178,7 +178,7 @@ describe("render(App) in the browser", () => {
 
     expect(container.querySelector("#typo")).toBeNull();
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0][0]).toMatch(/"\/typo" returned a view\(\) whose region is not in the tree/);
+    expect(warn.mock.calls[0][0]).toMatch(/"\/typo" returned an into\(\) whose region is not in the tree/);
 
     await router.go("/");
     await router.go("/typo");
@@ -189,7 +189,7 @@ describe("render(App) in the browser", () => {
   it("stays quiet when the same update builds the region after the page", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     router = createRouter(
-      { "/": () => Home, "/wide": () => () => view("wide", div({ id: "wide-page" })) },
+      { "/": () => Home, "/wide": () => () => into("wide", div({ id: "wide-page" })) },
       { preload: false },
     );
     await start("/", false);
@@ -202,26 +202,6 @@ describe("render(App) in the browser", () => {
 
     expect(container.querySelector("#wide-page")).not.toBeNull();
     expect(warn).not.toHaveBeenCalled();
-  });
-
-  it("mounts nothing of its own when the app places pages() itself", async () => {
-    await start("/plain");
-    const container = mount();
-    render(() => div(main({ id: "outlet" }, router.pages())), container);
-
-    expect(outlet(container)).toEqual(["plain"]);
-    expect(rootMount()).toEqual([]);
-  });
-
-  it("warns when pages() is placed after the pages were mounted", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    await start("/");
-    render(App, mount());
-
-    render(div(router.pages()), mount());
-
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0][0]).toMatch(/placed after the pages were mounted automatically/);
   });
 
   it("renders nothing, and says nothing, for a page that returns nothing", async () => {

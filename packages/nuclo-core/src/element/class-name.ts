@@ -5,11 +5,11 @@ const reactiveClassNameFlags = new WeakSet<Element>();
 // SVG's `className` is a read-only SVGAnimatedString, so non-HTML elements go
 // through the `class` attribute. The SSR polyfill's elements are all
 // HTMLElement and keep the plain `.className` string the serializer reads.
-function getClass(el: Element): string {
+function getClass(el: Element) {
 	return el instanceof HTMLElement ? el.className : el.getAttribute('class') || '';
 }
 
-function setClass(el: Element, value: string): void {
+function setClass(el: Element, value: string) {
 	if (el instanceof HTMLElement) el.className = value;
 	else el.setAttribute('class', value);
 }
@@ -18,7 +18,7 @@ function setClass(el: Element, value: string): void {
  * Splits a className string into non-empty tokens and adds them to a Set.
  * Single-pass via charCodeAt — avoids intermediate array from split().filter().
  */
-function addClassTokens(target: Set<string>, className: string): void {
+function addClassTokens(target: Set<string>, className: string) {
 	const len = className.length;
 	let start = 0;
 	for (let i = 0; i <= len; i++) {
@@ -32,7 +32,7 @@ function addClassTokens(target: Set<string>, className: string): void {
 /**
  * Joins a Set of class names into a single space-separated string.
  */
-function joinClasses(classes: Set<string>): string {
+function joinClasses(classes: Set<string>) {
 	let result = '';
 	for (const cls of classes) {
 		if (result) result += ' ';
@@ -46,7 +46,7 @@ function joinClasses(classes: Set<string>): string {
 // reactive-only elements (the common case, e.g. a list row's `class={...}`)
 // skip the Set entirely. mergeReactiveClassName/addStaticClasses both handle a
 // missing Set, so an empty one carries no information.
-export function initReactiveClassName(el: Element): void {
+export function initReactiveClassName(el: Element) {
 	const current = getClass(el);
 	if (current && !staticClassNames.has(el)) {
 		const classSet = new Set<string>();
@@ -57,18 +57,18 @@ export function initReactiveClassName(el: Element): void {
 }
 
 // Drop all className bookkeeping for an element (forceUpdate() reclaim).
-export function resetClassNameTracking(el: Element): void {
+export function resetClassNameTracking(el: Element) {
 	staticClassNames.delete(el);
 	reactiveClassNameFlags.delete(el);
 }
 
 // Check if element has a reactive className
-export function hasReactiveClassName(el: Element): boolean {
+export function hasReactiveClassName(el: Element) {
 	return reactiveClassNameFlags.has(el);
 }
 
 // Add static classes to the element's tracked set
-export function addStaticClasses(el: Element, className: string): void {
+export function addStaticClasses(el: Element, className: string) {
 	if (!className) return;
 	let classSet = staticClassNames.get(el);
 	if (!classSet) {
@@ -79,7 +79,7 @@ export function addStaticClasses(el: Element, className: string): void {
 }
 
 // Merge reactive className with static classes — called on every reactive update
-export function mergeReactiveClassName(el: Element, reactiveClassName: string): void {
+export function mergeReactiveClassName(el: Element, reactiveClassName: string) {
 	const staticClasses = staticClassNames.get(el);
 
 	if (!staticClasses || staticClasses.size === 0) {
@@ -113,7 +113,7 @@ export function mergeReactiveClassName(el: Element, reactiveClassName: string): 
 }
 
 // Merge static className (for non-reactive className attributes)
-export function mergeStaticClassName(el: Element, newClassName: string): void {
+export function mergeStaticClassName(el: Element, newClassName: string) {
 	if (!newClassName) return;
 	const currentClassName = getClass(el);
 	if (currentClassName && currentClassName !== newClassName) {

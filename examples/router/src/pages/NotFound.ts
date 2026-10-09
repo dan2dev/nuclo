@@ -40,7 +40,7 @@ function value(text: string) {
 
 export default function NotFoundPage(ctx: RouteContext) {
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
 
     div(s.row, pill("bad", "404"), pill("neutral", 'pattern: "*"')),

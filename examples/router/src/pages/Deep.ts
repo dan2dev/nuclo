@@ -16,7 +16,7 @@ const link = css({ textDecoration: "none" });
 
 export default function DeepPage(ctx: RouteContext) {
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
     feature(
       "/patterns/nested/deep",

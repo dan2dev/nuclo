@@ -67,7 +67,7 @@ export function evaluateActiveCondition<TTagName extends ElementTagName>(
  */
 export function renderWhenContent<TTagName extends ElementTagName>(
   runtime: WhenRuntime<TTagName>
-): void {
+) {
   const { groups, elseContent, host, index, endMarker } = runtime;
 
   const newActive = evaluateActiveCondition(groups, elseContent);
@@ -94,7 +94,7 @@ export function renderWhenContent<TTagName extends ElementTagName>(
  */
 export function registerWhenRuntime<TTagName extends ElementTagName>(
   runtime: WhenRuntime<TTagName>
-): void {
+) {
   const existing = whenRuntimeByMarker.get(runtime.startMarker);
   whenRuntimeByMarker.set(runtime.startMarker, runtime as WhenRuntime<ElementTagName>);
   // Re-registration for the same markers (forceUpdate() reclaim): the new
@@ -125,7 +125,7 @@ export function getWhenRuntime(startMarker: Comment): WhenRuntime<ElementTagName
  * updateWhenRuntimes(); // All when() conditionals re-evaluate
  * ```
  */
-export function updateWhenRuntimes(scope?: UpdateScope): void {
+export function updateWhenRuntimes(scope?: UpdateScope) {
   for (const ref of activeWhenRuntimes) {
     const startMarker = ref.deref();
 
@@ -208,7 +208,7 @@ export function renderContentItems<TTagName extends ElementTagName>(
   host: ExpandedElement<TTagName>,
   index: number,
   endMarker: Node
-): void {
+) {
   for (const item of items) {
     const node = renderContentItem(item, host, index, endMarker);
     if (node) insertNodesBefore([node], endMarker);

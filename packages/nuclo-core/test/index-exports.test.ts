@@ -11,6 +11,7 @@ describe('main index.ts exports', () => {
       'getCssText',
       'globalStyle',
       'hydrate',
+      'into',
       'keyframes',
       'list',
       'on',
@@ -21,7 +22,6 @@ describe('main index.ts exports', () => {
       'scope',
       'update',
       'variants',
-      'view',
       'viewWaiting',
       'when',
     ]);

@@ -150,7 +150,7 @@ const UNITLESS = new Set([
 // a ceiling for arbitrary custom property names. Already-lowercase names skip
 // the cache entirely.
 const kebabCache = new Map<string, string>();
-function kebab(prop: string): string {
+function kebab(prop: string) {
 	if (!/[A-Z]/.test(prop)) return prop;
 	let out = kebabCache.get(prop);
 	if (out === undefined) {
@@ -161,7 +161,7 @@ function kebab(prop: string): string {
 	return out;
 }
 
-function toQuery(screen: string): string {
+function toQuery(screen: string) {
 	return screen.charCodeAt(0) === 64 /* @ */ ? screen : "@media " + screen;
 }
 
@@ -173,18 +173,18 @@ function toQuery(screen: string): string {
  * "(min-width: 768px) and print" is not a valid query — every browser
  * normalizes it to `not all` and the block silently never matches.
  */
-function isBareCondition(condition: string): boolean {
+function isBareCondition(condition: string) {
 	return condition.charCodeAt(0) === 40 /* ( */;
 }
 
 /** A leading `not` negates the whole query, so it can never be flattened with `and`. */
-function leadsWithNot(condition: string): boolean {
+function leadsWithNot(condition: string) {
 	if (!condition.startsWith("not")) return false;
 	const after = condition.charCodeAt(3);
 	return Number.isNaN(after) || after === 32 /* space */ || after === 40 /* ( */;
 }
 
-function combineQuery(outer: string | undefined, inner: string): string {
+function combineQuery(outer: string | undefined, inner: string) {
 	// Nested @media conditions combine with "and"; other combinations: inner wins.
 	if (outer !== undefined && outer.startsWith("@media") && inner.startsWith("@media")) {
 		const outerCondition = outer.slice(6).trim();
@@ -242,7 +242,7 @@ class StyleResultImpl {
 	constructor(className: string) {
 		this.className = className;
 	}
-	toString(): string {
+	toString() {
 		return this.className;
 	}
 }
@@ -251,7 +251,7 @@ function makeResult(className: string): StyleResult {
 	return new StyleResultImpl(className);
 }
 
-function pickClass(picked: Map<string, string>, name: string): void {
+function pickClass(picked: Map<string, string>, name: string) {
 	const key = conflictKeyOf(name);
 	if (key === undefined) {
 		// External class the engine didn't mint — pass through, dedupe by name.
@@ -266,7 +266,7 @@ function pickClass(picked: Map<string, string>, name: string): void {
 	else picked.set(key, mergeBlocks(prev, name));
 }
 
-function collectClassString(className: string, picked: Map<string, string>): void {
+function collectClassString(className: string, picked: Map<string, string>) {
 	let start = 0;
 	for (let i = 0; i <= className.length; i++) {
 		const code = i === className.length ? 32 : className.charCodeAt(i);
@@ -277,7 +277,7 @@ function collectClassString(className: string, picked: Map<string, string>): voi
 	}
 }
 
-function collectClasses(inputs: readonly ClassInput[], picked: Map<string, string>): void {
+function collectClasses(inputs: readonly ClassInput[], picked: Map<string, string>) {
 	for (const input of inputs) {
 		if (!input) continue;
 		if (typeof input === "string") {
@@ -290,7 +290,7 @@ function collectClasses(inputs: readonly ClassInput[], picked: Map<string, strin
 	}
 }
 
-function composeClassName(inputs: readonly ClassInput[]): string {
+function composeClassName(inputs: readonly ClassInput[]) {
 	const picked = new Map<string, string>();
 	collectClasses(inputs, picked);
 	let className = "";
@@ -367,7 +367,7 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 	// hand back the wrong classes. WeakMap: entries die with the style object.
 	const memo = new WeakMap<object, { epoch: number; name: string | undefined; result: StyleResult }>();
 
-	function toCssValue(prop: string, value: string | number): string {
+	function toCssValue(prop: string, value: string | number) {
 		if (typeof value === "number") {
 			return value === 0 || UNITLESS.has(prop) ? String(value) : value + "px";
 		}
@@ -392,7 +392,7 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 		return bucket;
 	}
 
-	function walk(style: Record<string, unknown>, query: string | undefined, suffix: string, buckets: Map<string, Bucket>): void {
+	function walk(style: Record<string, unknown>, query: string | undefined, suffix: string, buckets: Map<string, Bucket>) {
 		for (const key in style) {
 			const value = style[key];
 			if (value == null || value === false) continue;
@@ -495,7 +495,7 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 	}
 
 	/** Top-level declarations only (nested blocks are ignored), serialized. */
-	function flatDecls(style: Record<string, unknown>): string {
+	function flatDecls(style: Record<string, unknown>) {
 		const buckets = new Map<string, Bucket>();
 		walk(style, undefined, "", buckets);
 		let decls = "";
@@ -504,7 +504,7 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 	}
 
 	/** Register a @keyframes block; returns its generated name for use in `animation`. */
-	function keyframes(frames: KeyframeFrames<T>): string {
+	function keyframes(frames: KeyframeFrames<T>) {
 		let body = "";
 		for (const stop in frames) {
 			body += stop + "{" + flatDecls(frames[stop] as Record<string, unknown>) + "}";
@@ -515,7 +515,7 @@ export function createCss<const T extends ThemeConfig>(theme: T = {} as T): CssI
 	}
 
 	/** Global selector styles (body, resets). Flat properties only. */
-	function globalStyle(selector: string, style: FlatStyle<T>): void {
+	function globalStyle(selector: string, style: FlatStyle<T>) {
 		const rule = selector + "{" + flatDecls(style as Record<string, unknown>) + "}";
 		addRawRule("g|" + rule, rule);
 	}

@@ -32,7 +32,7 @@ export default function StackPage(_ctx: RouteContext, { layer }: PageProps) {
   }
 
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
 
     feature(

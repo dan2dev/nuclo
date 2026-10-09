@@ -8,7 +8,7 @@ import { render } from "../../src/render";
 import "../../src";
 
 /**
- * A view() and its region() can be written, and built, in any order.
+ * A into() and its region() can be written, and built, in any order.
  *
  * A view whose region does not exist yet waits — for as long as the view's
  * own anchor is in the tree — and shows the moment a region with that id is
@@ -16,7 +16,7 @@ import "../../src";
  * closes) hands its views back to waiting, so a region that returns under the
  * same id shows them again.
  */
-describe("region() / view() — order independence", () => {
+describe("region() / into() — order independence", () => {
   let container: HTMLDivElement;
   let warn: ReturnType<typeof vi.spyOn>;
 
@@ -45,7 +45,7 @@ describe("region() / view() — order independence", () => {
   it("renders a view written before its region, in the same tree", () => {
     render(
       div(
-        div({ id: "elsewhere" }, view("main", span({ id: "page" }, "hello"))),
+        div({ id: "elsewhere" }, into("main", span({ id: "page" }, "hello"))),
         div({ id: "main-host" }, region({ id: "main" })),
       ),
       container,
@@ -61,7 +61,7 @@ describe("region() / view() — order independence", () => {
     let ready = false;
     render(
       div(
-        view("main", span({ id: "page" }, "page")),
+        into("main", span({ id: "page" }, "page")),
         section(article(when(() => ready, div({ id: "main-host" }, region({ id: "main" }))))),
       ),
       container,
@@ -85,7 +85,7 @@ describe("region() / view() — order independence", () => {
     const layoutRoot = document.createElement("div");
     document.body.append(pageRoot, layoutRoot);
 
-    render(div(view("main", span({ id: "page" }, "page"))), pageRoot);
+    render(div(into("main", span({ id: "page" }, "page"))), pageRoot);
     expect(document.querySelector("#page")).toBeNull();
 
     render(div({ id: "main-host" }, region({ id: "main" })), layoutRoot);
@@ -97,8 +97,8 @@ describe("region() / view() — order independence", () => {
   it("keeps arrival order for several waiting views in a stack", () => {
     render(
       div(
-        view("main", span({ id: "first" }, "one")),
-        view("main", span({ id: "second" }, "two")),
+        into("main", span({ id: "first" }, "one")),
+        into("main", span({ id: "second" }, "two")),
         div({ id: "main-host" }, region({ id: "main", type: "stack" })),
       ),
       container,
@@ -107,11 +107,11 @@ describe("region() / view() — order independence", () => {
     expect(contentOf()).toBe('<span id="first">one</span><span id="second">two</span>');
   });
 
-  it("keeps only the newest waiting view in a simple region", () => {
+  it("keeps only the newest waiting view in a latest region", () => {
     render(
       div(
-        view("main", span({ id: "first" }, "one")),
-        view("main", span({ id: "second" }, "two")),
+        into("main", span({ id: "first" }, "one")),
+        into("main", span({ id: "second" }, "two")),
         div({ id: "main-host" }, region({ id: "main" })),
       ),
       container,
@@ -123,7 +123,7 @@ describe("region() / view() — order independence", () => {
   it("replaces `empty` with the view that was already waiting", () => {
     render(
       div(
-        view("main", span({ id: "page" }, "page")),
+        into("main", span({ id: "page" }, "page")),
         div({ id: "main-host" }, region({ id: "main", empty: p({ id: "none" }, "nothing") })),
       ),
       container,
@@ -138,7 +138,7 @@ describe("region() / view() — order independence", () => {
     let layout = false;
     render(
       div(
-        when(() => show, view("main", span({ id: "page" }, "page"))),
+        when(() => show, into("main", span({ id: "page" }, "page"))),
         when(() => layout, div({ id: "main-host" }, region({ id: "main", empty: p({ id: "none" }, "nothing") }))),
       ),
       container,
@@ -152,11 +152,11 @@ describe("region() / view() — order independence", () => {
     expect(contentOf()).toBe('<p id="none">nothing</p>');
   });
 
-  it("fills the regions of one view({ … }) as each of them arrives", () => {
+  it("fills the regions of one into({ … }) as each of them arrives", () => {
     let aside = false;
     render(
       div(
-        view({ main: span({ id: "page" }, "page"), aside: span({ id: "links" }, "links") }),
+        into({ main: span({ id: "page" }, "page"), aside: span({ id: "links" }, "links") }),
         div({ id: "main-host" }, region({ id: "main" })),
         when(() => aside, div({ id: "aside-host" }, region({ id: "aside" }))),
       ),
@@ -173,11 +173,11 @@ describe("region() / view() — order independence", () => {
     expect(contentOf()).toBe('<span id="page">page</span>');
   });
 
-  it("routes a view() nested in waiting content once that content renders", () => {
+  it("routes an into() nested in waiting content once that content renders", () => {
     let aside = false;
     render(
       div(
-        view("main", div({ id: "page" }, "page", view("aside", span({ id: "links" }, "links")))),
+        into("main", div({ id: "page" }, "page", into("aside", span({ id: "links" }, "links")))),
         div({ id: "main-host" }, region({ id: "main" })),
         when(() => aside, div({ id: "aside-host" }, region({ id: "aside" }))),
       ),
@@ -198,7 +198,7 @@ describe("region() / view() — order independence", () => {
     render(
       div(
         when(() => layout, div({ id: "main-host" }, region({ id: "main" }))),
-        view("main", input({ id: "field" })),
+        into("main", input({ id: "field" })),
       ),
       container,
     );
@@ -220,8 +220,8 @@ describe("region() / view() — order independence", () => {
       div(
         when(() => variant === "a", div({ id: "a-host" }, region({ id: "main", type: "stack" })))
           .else(div({ id: "b-host" }, region({ id: "main", type: "stack" }))),
-        view("main", span({ id: "base" }, "base")),
-        view("main", span({ id: "layer" }, "layer")),
+        into("main", span({ id: "base" }, "base")),
+        into("main", span({ id: "layer" }, "layer")),
       ),
       container,
     );
@@ -240,7 +240,7 @@ describe("region() / view() — order independence", () => {
     let layout = false;
     render(
       div(
-        view("main", span({ id: "page" }, "page")),
+        into("main", span({ id: "page" }, "page")),
         when(() => layout, div({ id: "main-host" }, region({ id: "main", type: "stack" }))),
       ),
       container,
@@ -258,7 +258,7 @@ describe("region() / view() — order independence", () => {
     const items = ["a", "b"];
     render(
       div(
-        ul(list(() => items, (item) => li(view("main", span({ id: item }, item))))),
+        ul(list(() => items, (item) => li(into("main", span({ id: item }, item))))),
         div({ id: "main-host" }, region({ id: "main", type: "stack" })),
       ),
       container,
@@ -272,7 +272,7 @@ describe("region() / view() — order independence", () => {
     let layout = false;
     render(
       div(
-        view("main", span({ id: "page", onMount: mounted }, "page")),
+        into("main", span({ id: "page", onMount: mounted }, "page")),
         when(() => layout, div({ id: "main-host" }, region({ id: "main" }))),
       ),
       container,
@@ -291,7 +291,7 @@ describe("region() / view() — order independence", () => {
       div(
         { id: "main-host" },
         region({ id: "main" }),
-        section({ id: "after" }, article(view("main", span({ id: "page" }, "page")))),
+        section({ id: "after" }, article(into("main", span({ id: "page" }, "page")))),
       ),
       container,
     );
@@ -304,7 +304,7 @@ describe("region() / view() — order independence", () => {
   it("renders a view written in an ancestor of the region's host", () => {
     render(
       div(
-        view("main", span({ id: "page" }, "page")),
+        into("main", span({ id: "page" }, "page")),
         section(article(div({ id: "main-host" }, region({ id: "main" })))),
       ),
       container,
@@ -313,8 +313,8 @@ describe("region() / view() — order independence", () => {
     expect(contentOf()).toBe('<span id="page">page</span>');
   });
 
-  it("accepts a view() as the whole rendered tree", () => {
-    render(view("main", span({ id: "page" }, "page")), container);
+  it("accepts an into() as the whole rendered tree", () => {
+    render(into("main", span({ id: "page" }, "page")), container);
     expect(container.childNodes.length).toBe(1);
     expect(container.firstChild!.nodeType).toBe(8);
 
@@ -327,8 +327,8 @@ describe("region() / view() — order independence", () => {
     const rows: string[] = [];
     render(
       div(
-        view("row-a", span({ id: "for-a" }, "A")),
-        view("row-b", span({ id: "for-b" }, "B")),
+        into("row-a", span({ id: "for-a" }, "A")),
+        into("row-b", span({ id: "for-b" }, "B")),
         ul(list(() => rows, (row) => li({ id: `${row}-host` }, region({ id: row })))),
       ),
       container,
@@ -350,8 +350,8 @@ describe("region() / view() — order independence", () => {
     render(
       div(
         div({ id: "main-host" }, region({ id: "main" })),
-        when(() => open, view("main", div({ id: "inner-host" }, region({ id: "inner" })))),
-        view("inner", span({ id: "deep" }, "deep")),
+        when(() => open, into("main", div({ id: "inner-host" }, region({ id: "inner" })))),
+        into("inner", span({ id: "deep" }, "deep")),
       ),
       container,
     );
@@ -367,18 +367,18 @@ describe("region() / view() — order independence", () => {
     expect(container.querySelectorAll("#deep").length).toBe(1);
   });
 
-  it("takes the views nested in a simple region's old content out with it", () => {
+  it("takes the views nested in a latest region's old content out with it", () => {
     render(
       div(
         div({ id: "main-host" }, region({ id: "main" })),
         div({ id: "aside-host" }, region({ id: "aside" })),
-        view("main", div({ id: "first" }, view("aside", span({ id: "links" }, "links")))),
+        into("main", div({ id: "first" }, into("aside", span({ id: "links" }, "links")))),
       ),
       container,
     );
     expect(contentOf("aside")).toBe('<span id="links">links</span>');
 
-    render(view("main", div({ id: "second" }, "second")), container);
+    render(into("main", div({ id: "second" }, "second")), container);
 
     expect(contentOf()).toBe('<div id="second">second</div>');
     expect(contentOf("aside")).toBe("");
@@ -389,7 +389,7 @@ describe("region() / view() — order independence", () => {
       render(
         div(
           div({ id: "main-host" }, region({ id: "main", type: "stack" })),
-          view("main", div({ id: "outer" }, "outer", view("main", div({ id: "inner" }, "inner")))),
+          into("main", div({ id: "outer" }, "outer", into("main", div({ id: "inner" }, "inner")))),
         ),
         container,
       );
@@ -399,11 +399,11 @@ describe("region() / view() — order independence", () => {
       expect(host.firstChild!.textContent).toBe("region-start-0-v2");
     });
 
-    it("replaces the content that placed it in a simple region", () => {
+    it("replaces the content that placed it in a latest region", () => {
       render(
         div(
           div({ id: "main-host" }, region({ id: "main" })),
-          view("main", div({ id: "outer" }, "outer", view("main", div({ id: "inner" }, "inner")))),
+          into("main", div({ id: "outer" }, "outer", into("main", div({ id: "inner" }, "inner")))),
         ),
         container,
       );
@@ -418,8 +418,8 @@ describe("region() / view() — order independence", () => {
       render(
         div(
           div({ id: "main-host" }, region({ id: "main", type: "stack" })),
-          view("main", div({ id: "base" }, "base")),
-          when(() => open, view("main", div({ id: "outer" }, view("main", div({ id: "inner" }))))),
+          into("main", div({ id: "base" }, "base")),
+          when(() => open, into("main", div({ id: "outer" }, into("main", div({ id: "inner" }))))),
         ),
         container,
       );

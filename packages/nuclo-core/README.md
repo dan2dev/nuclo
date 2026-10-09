@@ -413,13 +413,13 @@ Mutate the array (push, splice, reverse), then call `update()`. Elements are reu
 
 ### 5. **Named regions**
 
-`region({ id })` marks a place in the tree and `view(id, …)` fills it from
+`region({ id })` marks a place in the tree and `into(id, …)` fills it from
 anywhere else, so a layout can place content it never receives as a prop:
 
 ```ts
 main(region({ id: "main" }))
 // …elsewhere in the tree
-view("main", article("the page"))
+into("main", article("the page"))
 ```
 
 ## API Reference
@@ -467,9 +467,9 @@ when(() => count > 10,
 
 First matching condition wins. DOM is preserved if the active branch doesn't change.
 
-#### `region(options)` and `view(id, ...content)`
+#### `region(options)` and `into(id, ...content)`
 
-A **region** is a named place in the tree; `view()` fills it from anywhere
+A **region** is a named place in the tree; `into()` fills it from anywhere
 else. This decouples *where* content appears from *who* builds it, so a layout
 can host content it never receives as a prop:
 
@@ -481,36 +481,36 @@ div(
 )
 
 // anywhere after it, at any depth
-view("main", article(h1("Hello")))
+into("main", article(h1("Hello")))
 ```
 
-`view()` leaves only an anchor comment where it is written — it is a pointer,
+`into()` leaves only an anchor comment where it is written — it is a pointer,
 not a container.
 
 | option | |
 | --- | --- |
-| `id` | the name `view()` calls use to find the region. Unique in the tree. |
-| `type` | `"simple"` (the default) renders only the newest view; `"stack"` renders every view, in arrival order. |
+| `id` | the name `into()` calls use to find the region. Unique in the tree. |
+| `type` | `"latest"` (the default) renders only the newest view; `"stack"` renders every view, in arrival order. |
 | `empty` | rendered whenever the region holds no views. |
 
 A stacked region is how one view opens *over* another: the one underneath is
 not re-rendered, so its DOM, its focus and its half-filled form are all still
 there.
 
-**Any order.** A `view()` written before its region — or rendered into another
+**Any order.** A `into()` written before its region — or rendered into another
 root earlier — waits and shows the moment the region is built; views arrive in
 the order they were written. A region that goes away (its `when()` closes)
 hands its views back to waiting, so a region that returns under the same id
 shows them again.
 
-**Content lives as long as the view.** When the `when()` holding a `view()`
+**Content lives as long as the view.** When the `when()` holding an `into()`
 closes, or its `list()` row goes, the content leaves the region too — a closed
 layer does not stay on screen, and re-opening it adds one copy, not two.
 
 Regions survive SSR — each view claims the server's nodes on hydration rather
 than rebuilding them.
 
-`viewWaiting(node)`, imported from `nuclo`, tells whether the view() behind an
+`viewWaiting(node)`, imported from `nuclo`, tells whether the into() behind an
 anchor — the node its `NodeModFn` returned — still has no region to show in.
 It is for libraries that place views for the app, such as nuclo-router, which
 uses it to report a page whose region id matches nothing.

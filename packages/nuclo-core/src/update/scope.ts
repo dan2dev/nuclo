@@ -54,7 +54,7 @@ const idsByRoot = new WeakMap<Element, Set<ScopeId>>();
 const sweepAt = new WeakMap<Set<WeakRef<Element>>, number>();
 const MIN_SWEEP = 64;
 
-function addScopeRoot(id: ScopeId, el: Element): void {
+function addScopeRoot(id: ScopeId, el: Element) {
   let ids = idsByRoot.get(el);
   if (!ids) idsByRoot.set(el, ids = new Set());
   // Re-registration (forceUpdate() reclaim) must not grow the set.
@@ -108,7 +108,7 @@ export function scope<TTagName extends ElementTagName = ElementTagName>(
 ): NodeModFn<TTagName> {
   const scopeIds = normalizeScopeIds(ids);
 
-  return function(parent: ExpandedElement<TTagName>): void {
+  return function(parent: ExpandedElement<TTagName>) {
     if (!isBrowser || isSerializing()) return;
     if (!(parent instanceof Element)) return;
     for (const id of scopeIds) addScopeRoot(id, parent);

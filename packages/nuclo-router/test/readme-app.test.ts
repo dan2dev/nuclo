@@ -1,8 +1,8 @@
 /**
  * The app shape the README documents, end to end: pending/error when() blocks
- * as siblings of route.pages() inside one host, server-rendered then hydrated
- * then navigated. Sibling when() blocks share the host's claim cursor with the
- * view's list(), so this is the shape most likely to expose a marker mismatch.
+ * as siblings of the pages' region inside one host, server-rendered then
+ * hydrated then navigated. Sibling when() blocks share the host's claim cursor
+ * with the region, so this is the shape most likely to expose a marker mismatch.
  */
 import { describe, it, expect, vi } from "vitest";
 import "nuclo";
@@ -12,10 +12,10 @@ import { click, deferred, flush, mount, useRouterEnv } from "./helpers";
 
 const routes = useRouterEnv();
 
-const Home: PageComponent = () => div({ id: "home" }, h1("Home"));
-const Docs: PageComponent = () => div({ id: "docs" }, h1("Docs"));
-const Post: PageComponent = (ctx: RouteContext) => div({ id: "post" }, h1(ctx.params.slug));
-const NotFound: PageComponent = () => div({ id: "nf" }, h1("404"));
+const Home: PageComponent = () => into("main", div({ id: "home" }, h1("Home")));
+const Docs: PageComponent = () => into("main", div({ id: "docs" }, h1("Docs")));
+const Post: PageComponent = (ctx: RouteContext) => into("main", div({ id: "post" }, h1(ctx.params.slug)));
+const NotFound: PageComponent = () => into("main", div({ id: "nf" }, h1("404")));
 
 const Spinner = () => div({ id: "spinner" }, "Loading…");
 const ErrorView = (route: Route) => div({ id: "err" }, () => route.error?.message ?? "");
@@ -32,7 +32,7 @@ const App = (route: Route) => () =>
       { id: "outlet" },
       when(() => route.pending, Spinner()),
       when(() => route.error !== null, ErrorView(route)),
-      route.pages(),
+      region({ id: "main" }),
     ),
     footer({ id: "foot" }, "© nuclo"),
   );
@@ -48,7 +48,7 @@ function makeRouter(slow?: Promise<{ default: PageComponent }>) {
 
 async function serverThenClient(url: string, slow?: Promise<{ default: PageComponent }>) {
   const server = await makeRouter().start(url);
-  const html = renderToString(App(server));
+  const html = server.run(() => renderToString(App(server)));
   server.stop();
 
   const container = mount();
@@ -155,7 +155,7 @@ describe("the README app", () => {
     expect(container.querySelectorAll("#shell").length).toBe(1);
     expect(container.querySelectorAll("#docs").length).toBe(1);
     expect(container.querySelectorAll("#post").length).toBe(0);
-    // One page row plus the two when() blocks' markers — never a growing pile.
+    // One page plus the when() blocks' and the region's markers — never a growing pile.
     expect(outlet.children.length).toBe(1);
     expect(route.path).toBe("/docs");
   });

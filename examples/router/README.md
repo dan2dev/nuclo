@@ -26,7 +26,7 @@ the companion example: [`examples/router-ssr`](../router-ssr).
 | `pages/Patterns.ts` | static · `:param` · `*catch-all` · `"*"` · full precedence · slash and percent-encoding normalization · the edge cases (`%2F`, `+`, case sensitivity, dot segments, duplicate param names, `*` as a literal) · the two `createRouter`-time pattern errors |
 | `pages/Deep.ts` | a multi-segment static route is still one Map lookup |
 | `pages/BlogNew.ts` | static beats `:param` — table order never has to protect a static route |
-| `pages/Post.ts` | one param, decoded, typed from the pattern with `Params<"/blog/:slug">`; query and hash; rebuild-vs-reuse; one page filling two regions with `view({ main, sidebar })` |
+| `pages/Post.ts` | one param, decoded, typed from the pattern with `Params<"/blog/:slug">`; query and hash; rebuild-vs-reuse; one page filling two regions with `into({ main, sidebar })` |
 | `pages/Comment.ts` | two params, both typed by `Params<…>`; segment count disambiguates |
 | `pages/Files.ts` | named catch-all, including the bare-prefix empty tail |
 | `pages/Links.ts` | the delegated click listener: every case it navigates, and all fourteen it steps aside for |
@@ -34,7 +34,7 @@ the companion example: [`examples/router-ssr`](../router-ssr).
 | `pages/Stack.ts` + `stack/*` | **the layer stack**: `push()` opens a route as a modal on top without closing the page underneath, and resolves with what that layer closes with. Three layers deep, with a nested `layer.push()` |
 | `pages/Record.ts` + `preview/*` | **relative routes**: one section written with `./` keys, declared under two parents, and opened from either with the same `push("./preview")` |
 | `pages/Data.ts` | **route loaders**: `export const load` runs before the page is built, with `?slow=1` and `?fail=1` to watch `pending` and `error`, and revalidation by navigating |
-| `pages/Api.ts` | every `Route` member, with live controls: `path` `pattern` `params` `search` `hash` `url` `pending` `error` `pages()` `go()` `go(…, { replace })` `href()` `stop()` |
+| `pages/Api.ts` | every `Route` member, with live controls: `path` `pattern` `params` `search` `hash` `url` `pending` `error` `go()` `go(…, { replace })` `href()` `stop()` |
 | `pages/Settings.ts` | `base`, `preload`, `onNavigate` — defaults, effects and ordering |
 | `pages/Slow.ts` | `pending`, the outgoing page staying visible, and the cache making the second visit instant |
 | `pages/Broken.ts` | `error`, cache eviction and retry — `go()` never rejects |
@@ -253,7 +253,7 @@ client so hydration does not refetch it.
   `src/main.ts` is just `await router.start()` then `render(App, container)`.
   Nothing of the router's is in the app tree: the pages mount themselves
   beside it with that render.
-- Every page returns `view("main", …)`, so it lands in the `region({ id: "main" })`
+- Every page returns `into("main", …)`, so it lands in the `region({ id: "main" })`
   the `Layout` declares. That is what lets the layout's filter box keep its
   text and its focus while the page inside it changes — type in it, then
   navigate.

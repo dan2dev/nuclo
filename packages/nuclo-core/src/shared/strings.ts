@@ -4,7 +4,7 @@
  * (WebkitTransition → -webkit-transition). Char-code loop with a
  * no-uppercase fast path: SSR runs this per style declaration.
  */
-export function camelToKebab(str: string): string {
+export function camelToKebab(str: string) {
   let firstUpper = 0;
   for (; firstUpper < str.length; firstUpper++) {
     const code = str.charCodeAt(firstUpper);
@@ -27,7 +27,7 @@ const TEXT_ESCAPE_RE = /[&<>]/;
 /**
  * Escapes HTML special characters in attribute values (includes " and ')
  */
-export function escapeHtml(text: string): string {
+export function escapeHtml(text: string) {
   // Fast path: most strings contain no special characters at all.
   const first = ATTR_ESCAPE_RE.exec(text);
   if (!first) return text;
@@ -54,7 +54,7 @@ export function escapeHtml(text: string): string {
  * Escapes HTML special characters in text node content.
  * Only &, < and > need escaping — quotes are safe inside text nodes.
  */
-export function escapeText(text: string): string {
+export function escapeText(text: string) {
   const first = TEXT_ESCAPE_RE.exec(text);
   if (!first) return text;
 
@@ -80,7 +80,7 @@ export function escapeText(text: string): string {
  * ariaDescribedBy → aria-describedby, httpEquiv → http-equiv). Lowercase and
  * kebab-case names pass through unchanged. SSR runs this per polyfill attribute.
  */
-export function propertyToAttribute(name: string): string {
+export function propertyToAttribute(name: string) {
   switch (name) {
     case 'htmlFor': return 'for';
     case 'httpEquiv': return 'http-equiv';

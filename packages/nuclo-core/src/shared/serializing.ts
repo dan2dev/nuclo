@@ -20,7 +20,7 @@ const globalScope = globalThis as unknown as Record<symbol, SerializingState | u
 const shared = globalScope[SERIALIZING_KEY]
   ?? (globalScope[SERIALIZING_KEY] = { on: false, scratch: new Map<string, unknown>() });
 
-export function isSerializing(): boolean {
+export function isSerializing() {
   return shared.on;
 }
 

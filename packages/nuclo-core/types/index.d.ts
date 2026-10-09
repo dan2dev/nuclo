@@ -27,25 +27,38 @@ export function when<TTagName extends ElementTagName = ElementTagName>(
   condition: WhenCondition,
   ...content: WhenContent<TTagName>[]
 ): WhenBuilder<TTagName>;
-export function region(options: RegionOptions): NodeModFn;
-export function view(id: string, ...content: WhenContent[]): NodeModFn;
-export function view(
+export function region(options: RegionOptions): MarkerModifier;
+export function into(id: string, ...content: WhenContent[]): MarkerModifier;
+export function into(
   regions: Readonly<Record<string, WhenContent | readonly WhenContent[]>>,
-): NodeModFn;
+): MarkerModifier;
 export function update(...scopeIds: string[]): void;
 export function scope<TTagName extends ElementTagName = ElementTagName>(
   ...ids: string[]
 ): NodeModFn<TTagName>;
+export function render(
+  nodeModFn: MarkerModifier | (() => MarkerModifier),
+  parent?: Element,
+  index?: number,
+): Comment;
 export function render<TTagName extends ElementTagName = ElementTagName>(
   nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
   parent?: Element,
   index?: number,
 ): ExpandedElement<TTagName>;
+export function hydrate(
+  nodeModFn: MarkerModifier | (() => MarkerModifier),
+  parent?: Element,
+): Comment;
 export function hydrate<TTagName extends ElementTagName = ElementTagName>(
   nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
   parent?: Element,
 ): ExpandedElement<TTagName>;
 export function forceUpdate(): void;
+export function forceUpdate(
+  nodeModFn: MarkerModifier | (() => MarkerModifier),
+  parent?: Element,
+): Comment;
 export function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
   nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
   parent?: Element,
@@ -59,7 +72,7 @@ export function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
  */
 export function onRootBuild(hook: (serializing: boolean) => void): () => void;
 /**
- * True while the view() that left this anchor has nowhere to show: every
+ * True while the into() that left this anchor has nowhere to show: every
  * region it names is still to be built. False for any other node, and once
  * one of its views is placed. For libraries that place views on the app's
  * behalf, such as nuclo-router, to tell a page that landed from one that

@@ -8,7 +8,7 @@
 import { describe, it, expect } from "vitest";
 import "nuclo";
 import { createRouter, type Layer, type PageComponent, type Route, type RouteTable } from "../src/index";
-import { click, flush, mount as mountEl, useRouterEnv, waitFor } from "./helpers";
+import { App, click, flush, mount as mountEl, useRouterEnv, waitFor } from "./helpers";
 
 const routes = useRouterEnv();
 
@@ -18,7 +18,8 @@ async function start(router: { start(url?: string): Promise<Route> }, url?: stri
   return route;
 }
 
-const P = (id: string): PageComponent => () => div({ id }, id);
+// No page here calls outlet(), so every one that renders is the root of its match.
+const P = (id: string): PageComponent => () => into("main", div({ id }, id));
 
 /** A section: it has no idea where it will live. */
 const recordSection: RouteTable = {
@@ -223,7 +224,7 @@ describe("relative navigation", () => {
     let captured: Layer | undefined;
     const Preview: PageComponent = (_ctx, { layer }) => {
       captured = layer;
-      return div({ id: "preview" });
+      return into("main", div({ id: "preview" }));
     };
     const router = createRouter(
       {
@@ -234,13 +235,14 @@ describe("relative navigation", () => {
       { preload: false },
     );
     const route = await start(router, "/invoices/42");
-    render(route.pages(), container);
+    render(App, container);
+    const pages = container.firstElementChild!;
 
     const pending = route.push("./preview");
     await flush();
     expect(route.depth).toBe(2);
     expect(route.path).toBe("/invoices/42/preview");
-    expect([...container.children].map((c) => c.id)).toEqual(["invoice", "preview"]);
+    expect([...pages.children].map((c) => c.id)).toEqual(["invoice", "preview"]);
 
     captured!.close("done");
     await flush();
@@ -251,7 +253,7 @@ describe("relative navigation", () => {
     const second = route.push("./preview");
     await flush();
     expect(route.path).toBe("/customers/7/preview");
-    expect([...container.children].map((c) => c.id)).toEqual(["customer", "preview"]);
+    expect([...pages.children].map((c) => c.id)).toEqual(["customer", "preview"]);
     captured!.close();
     await second;
   });
@@ -268,11 +270,11 @@ describe("relative navigation", () => {
     let seen: Layer | undefined;
     const Modal: PageComponent = (_ctx, { layer }) => {
       seen = layer;
-      return div({ id: "modal" });
+      return into("main", div({ id: "modal" }));
     };
     const router = createRouter({ "/": () => P("home"), "/modal": () => Modal }, { preload: false });
     const route = await start(router, "/");
-    render(route.pages(), mountEl());
+    render(App, mountEl());
 
     const pushed = route.push("/modal");
     await flush();

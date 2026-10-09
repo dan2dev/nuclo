@@ -5,6 +5,7 @@ import {
   isHydrating,
   peekChild,
   runFreshAtCursor,
+  runWithoutHydration,
   setCursor,
   skipWhitespaceText,
 } from "../hydration";
@@ -13,6 +14,7 @@ import {
   attachViews,
   claimEmpty,
   decodeCount,
+  dropRegion,
   liveRegionAt,
   reclaimEmpty,
   registerRegion,
@@ -31,7 +33,7 @@ function makeRuntime(
   const empty = options.empty === undefined ? [] : [options.empty];
   return {
     id: options.id,
-    type: options.type ?? "simple",
+    type: options.type ?? "latest",
     empty,
     startMarker,
     endMarker,
@@ -50,7 +52,7 @@ function freshRegion(
   options: RegionOptions,
   host: ExpandedElement<ElementTagName>,
   index: number,
-): Node {
+): Comment {
   const { start, end } = createMarkerPair("region", index);
   const parent = host as unknown as Node & ParentNode;
   parent.appendChild(start);
@@ -68,7 +70,7 @@ function hydrateRegion(
   options: RegionOptions,
   host: ExpandedElement<ElementTagName>,
   index: number,
-): Node {
+): Comment {
   const parent = host as unknown as Node & ParentNode;
 
   // No region markers at the cursor (SSR output from something else): build
@@ -79,17 +81,26 @@ function hydrateRegion(
 
   // The host carries on hydrating its own later children past the region. The
   // region's content is claimed through a cursor of its own, because the
-  // view() that claims it runs somewhere else entirely in the tree.
+  // into() that claims it runs somewhere else entirely in the tree.
   setCursor(parent, end.nextSibling);
 
   // A region already live on these markers — forceUpdate(), or hydrate() over
-  // a tree that is live — keeps its runtime and its views: every view() that
+  // a tree that is live — keeps its runtime and its views: every into() that
   // re-runs in this pass reclaims its own content in place, so nothing here
   // can tell a view in another root from server leftovers and nothing is
   // swept. Only the options are taken fresh.
   const live = liveRegionAt(start, end);
+  if (live && (live.id !== options.id || live.type !== (options.type ?? "latest"))) {
+    dropRegion(live);
+    const runtime = makeRuntime(options, host, index, start, end);
+    runWithoutHydration(() => {
+      showEmpty(runtime);
+      registerRegion(runtime);
+    });
+    return start;
+  }
   if (live) {
-    live.type = options.type ?? "simple";
+    live.type = options.type ?? "latest";
     live.empty = options.empty === undefined ? [] : [options.empty];
     live.host = host;
     live.index = index;
@@ -116,15 +127,15 @@ function hydrateRegion(
 }
 
 /**
- * Marks a named place in the tree for `view()` to fill.
+ * Marks a named place in the tree for `into()` to fill.
  *
  * A region decouples *where* content appears from *who* builds it: the layout
  * says `region({ id: "main" })` and anything, at any depth, can put content
- * there with `view("main", …)` — no props threaded through every component in
+ * there with `into("main", …)` — no props threaded through every component in
  * between.
  *
  * `type` decides what happens when a region holds more than one view:
- * `"stack"` renders all of them, in arrival order, and `"simple"` (the
+ * `"stack"` renders all of them, in arrival order, and `"latest"` (the
  * default) renders only the newest.
  *
  * Order does not matter: a view written before its region, or rendered into
@@ -143,13 +154,13 @@ function hydrateRegion(
  * )
  *
  * // anywhere else, at any depth, before or after
- * view("main", h1("Hello from the main region"))
+ * into("main", h1("Hello from the main region"))
  * ```
  */
-export function region(options: RegionOptions): NodeModFn {
-  return function (host: ExpandedElement<ElementTagName>, index: number): Node {
+export function region(options: RegionOptions): MarkerModifier {
+  return function (host: ExpandedElement<ElementTagName>, index: number) {
     return isHydrating() ? hydrateRegion(options, host, index) : freshRegion(options, host, index);
-  } as NodeModFn;
+  };
 }
 
 /** Claims the `<!--view-N-->` anchor the server left at the cursor, if any. */
@@ -165,10 +176,10 @@ function claimAnchor(parent: Node): Comment | null {
  * Renders content into the `region()` with a matching id, wherever that region
  * sits in the tree.
  *
- * `view()` is a portal: where it is written it leaves only an anchor comment,
+ * `into()` is a portal: where it is written it leaves only an anchor comment,
  * so a component can declare where its own output belongs instead of being
  * handed down to the right place. A page loaded by a router is the usual case
- * — it returns a `view()` and lands in the app's layout without the layout,
+ * — it returns an `into()` and lands in the app's layout without the layout,
  * or the app, knowing anything about it.
  *
  * The content lives exactly as long as the view does: when the `when()` that
@@ -176,28 +187,28 @@ function claimAnchor(parent: Node): Comment | null {
  * region too. A view whose region is not built yet waits for it.
  *
  * Pass one id, or an object to fill several regions at once. Either form
- * nests: a `view()` inside another view's content targets its own region.
+ * nests: an `into()` inside another view's content targets its own region.
  *
  * @example
  * ```ts
  * // one region
- * view("main", div(h1("Eager route")))
+ * into("main", div(h1("Eager route")))
  *
  * // several at once
- * view({
+ * into({
  *   main: div(h1("Eager route")),
  *   sidebar: div("Related links"),
  * })
  * ```
  */
-export function view(id: string, ...content: WhenContent[]): NodeModFn;
-export function view(
+export function into(id: string, ...content: WhenContent[]): MarkerModifier;
+export function into(
   regions: Readonly<Record<string, WhenContent | readonly WhenContent[]>>,
-): NodeModFn;
-export function view(
+): MarkerModifier;
+export function into(
   idOrRegions: string | Readonly<Record<string, unknown>>,
   ...content: WhenContent[]
-): NodeModFn {
+): MarkerModifier {
   const targets: Array<[string, readonly WhenContent<ElementTagName>[]]> =
     typeof idOrRegions === "string"
       ? [[idOrRegions, content]]
@@ -206,7 +217,7 @@ export function view(
           (Array.isArray(value) ? value : [value]) as readonly WhenContent<ElementTagName>[],
         ]);
 
-  return function (host: ExpandedElement<ElementTagName>, index: number): Node {
+  return function (host: ExpandedElement<ElementTagName>, index: number) {
     const parent = host as unknown as Node & ParentNode;
     const anchor = (isHydrating() && claimAnchor(parent)) || createMarker(`view-${index}`);
     const views: ViewRuntime[] = targets.map(([id, items]) => ({
@@ -220,5 +231,5 @@ export function view(
     }));
     attachViews(anchor, views);
     return anchor;
-  } as NodeModFn;
+  };
 }

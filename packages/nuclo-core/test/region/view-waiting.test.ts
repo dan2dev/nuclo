@@ -9,7 +9,7 @@ import { viewWaiting } from "../../src";
 import "../../src";
 
 /**
- * viewWaiting(): whether the view() behind an anchor has nowhere to show.
+ * viewWaiting(): whether the into() behind an anchor has nowhere to show.
  * The anchor is whatever the view's NodeModFn returned, captured here.
  */
 describe("viewWaiting()", () => {
@@ -39,18 +39,18 @@ describe("viewWaiting()", () => {
   });
 
   it("is true for a view whose region is not in the tree", () => {
-    render(div(capture(view("mian", p("typo")))), container);
+    render(div(capture(into("mian", p("typo")))), container);
     expect(viewWaiting(anchor)).toBe(true);
   });
 
   it("is false once the view is placed, whichever was written first", () => {
-    render(div(capture(view("main", p("page"))), region({ id: "main" })), container);
+    render(div(capture(into("main", p("page"))), region({ id: "main" })), container);
     expect(viewWaiting(anchor)).toBe(false);
   });
 
   it("turns false when a region with the id is built later", () => {
     let open = false;
-    render(div(capture(view("side", p("x"))), when(() => open, region({ id: "side" }))), container);
+    render(div(capture(into("side", p("x"))), when(() => open, region({ id: "side" }))), container);
     expect(viewWaiting(anchor)).toBe(true);
 
     open = true;
@@ -60,7 +60,7 @@ describe("viewWaiting()", () => {
 
   it("turns true again when its region goes away", () => {
     let open = true;
-    render(div(when(() => open, region({ id: "side" })), capture(view("side", p("x")))), container);
+    render(div(when(() => open, region({ id: "side" })), capture(into("side", p("x")))), container);
     expect(viewWaiting(anchor)).toBe(false);
 
     open = false;
@@ -69,17 +69,17 @@ describe("viewWaiting()", () => {
   });
 
   it("is false for a multi-region view when any one of its regions exists", () => {
-    render(div(region({ id: "main" }), capture(view({ main: p("a"), nowhere: p("b") }))), container);
+    render(div(region({ id: "main" }), capture(into({ main: p("a"), nowhere: p("b") }))), container);
     expect(viewWaiting(anchor)).toBe(false);
   });
 
   it("is true for a multi-region view when none of its regions exists", () => {
-    render(div(capture(view({ one: p("a"), two: p("b") }))), container);
+    render(div(capture(into({ one: p("a"), two: p("b") }))), container);
     expect(viewWaiting(anchor)).toBe(true);
   });
 
   it("is false for a view that names no region", () => {
-    render(div(capture(view({}))), container);
+    render(div(capture(into({}))), container);
     expect(viewWaiting(anchor)).toBe(false);
   });
 
@@ -88,8 +88,8 @@ describe("viewWaiting()", () => {
     render(
       div(
         region({ id: "main" }),
-        (host: ExpandedElement, index: number) => (first = view("main", p("under"))(host, index) as Node),
-        view("main", p("over")),
+        (host: ExpandedElement, index: number) => (first = into("main", p("under"))(host, index) as Node),
+        into("main", p("over")),
       ),
       container,
     );
@@ -98,7 +98,7 @@ describe("viewWaiting()", () => {
 
   it("is false once the view itself is gone", () => {
     let open = true;
-    render(div(when(() => open, capture(view("nowhere", p("x"))))), container);
+    render(div(when(() => open, capture(into("nowhere", p("x"))))), container);
     expect(viewWaiting(anchor)).toBe(true);
 
     open = false;

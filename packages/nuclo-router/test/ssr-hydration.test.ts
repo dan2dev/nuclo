@@ -12,9 +12,9 @@ import { mount, useRouterEnv } from "./helpers";
 
 const routes = useRouterEnv();
 
-const Home: PageComponent = () => div({ id: "home" }, h1("Home"), p("welcome"));
-const About: PageComponent = () => div({ id: "about" }, h1("About"));
-const Post: PageComponent = (ctx) => div({ id: "post" }, h1(ctx.params.slug));
+const Home: PageComponent = () => into("main", div({ id: "home" }, h1("Home"), p("welcome")));
+const About: PageComponent = () => into("main", div({ id: "about" }, h1("About")));
+const Post: PageComponent = (ctx) => into("main", div({ id: "post" }, h1(ctx.params.slug)));
 
 const table = {
   "/": () => Home,
@@ -27,7 +27,7 @@ const App = (route: Route) => () =>
   div(
     { id: "shell" },
     header({ id: "nav" }, a({ href: route.href("/") }, "home")),
-    main({ id: "outlet" }, route.pages()),
+    main({ id: "outlet" }, region({ id: "main" })),
     footer({ id: "foot" }, "© nuclo"),
   );
 
@@ -40,7 +40,7 @@ async function ssr(url: string): Promise<string> {
   const router = createRouter(table);
   const route = await router.start(url);
   try {
-    return renderToString(App(route));
+    return route.run(() => renderToString(App(route)));
   } finally {
     route.stop();
   }
@@ -55,10 +55,10 @@ describe("renderToString", () => {
     expect(html).not.toContain('id="home"');
   });
 
-  it("emits the list markers hydration claims", async () => {
+  it("emits the region markers hydration claims", async () => {
     const html = await ssr("/");
-    expect(html).toMatch(/<!--list-start-\d+-->/);
-    expect(html).toContain("<!--list-end-->");
+    expect(html).toMatch(/<!--region-start-\d+-v1-->/);
+    expect(html).toContain("<!--region-end-->");
   });
 
   it("renders a param route with its params", async () => {
@@ -80,8 +80,8 @@ describe("renderToString", () => {
     const route = await router.start("/about");
     routes.push(route);
 
-    renderToString(App(route));
-    renderToString(App(route));
+    route.run(() => renderToString(App(route)));
+    route.run(() => renderToString(App(route)));
     // Only the initial resolve counts. (With no window at all it never fires
     // — see ssr-node.test.ts.)
     expect(onNavigate).toHaveBeenCalledTimes(1);
@@ -183,7 +183,7 @@ describe("concurrent requests", () => {
     // One import() for three concurrent requests — the in-flight promise is shared.
     expect(loads).toBe(1);
 
-    const [htmlA, htmlB] = [renderToString(App(a)), renderToString(App(b))];
+    const [htmlA, htmlB] = [a.run(() => renderToString(App(a))), b.run(() => renderToString(App(b)))];
     expect(htmlA).toContain(">a<");
     expect(htmlB).toContain(">b<");
     expect(htmlA).not.toContain(">b<");
@@ -196,8 +196,8 @@ describe("concurrent requests", () => {
     routes.push(first, second);
 
     // Render out of order: a Route's output must depend only on itself.
-    const htmlSecond = renderToString(App(second));
-    const htmlFirst = renderToString(App(first));
+    const htmlSecond = second.run(() => renderToString(App(second)));
+    const htmlFirst = first.run(() => renderToString(App(first)));
 
     expect(htmlFirst).toContain("one");
     expect(htmlFirst).not.toContain("two");

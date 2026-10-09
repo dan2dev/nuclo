@@ -43,7 +43,7 @@ export default function DocsShell(ctx: RouteContext, { outlet }: PageProps) {
   builds++;
 
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
 
     feature(

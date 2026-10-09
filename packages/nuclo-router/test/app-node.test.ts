@@ -11,8 +11,8 @@ import "nuclo";
 import { renderToString } from "nuclo/ssr";
 import { createRouter, type PageComponent } from "../src/index";
 
-const Home: PageComponent = () => view("main", div({ id: "home" }, "home"));
-const About: PageComponent = () => view("main", div({ id: "about" }, "about"));
+const Home: PageComponent = () => into("main", div({ id: "home" }, "home"));
+const About: PageComponent = () => into("main", div({ id: "about" }, "about"));
 const Plain: PageComponent = () => div({ id: "plain" }, "plain");
 
 const router = createRouter({ "/": () => Home, "/about": () => About, "/plain": () => Plain });
@@ -52,28 +52,6 @@ describe("route.run() with no window", () => {
     expect(second.match(/id="home"/g)?.length).toBe(1);
   });
 
-  it("mounts nothing of its own when the app places pages() itself", async () => {
-    const route = await router.start("/plain");
-    const html = route.run(() => renderToString(() => div({ id: "shell" }, main({ id: "outlet" }, router.pages()))));
-
-    expect(html.match(/id="plain"/g)?.length).toBe(1);
-    expect(html).toMatch(/<main id="outlet"><!--list-start-\d+--><div id="plain">/);
-  });
-
-  it("warns when pages() is placed after a render mounted the pages", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const route = await router.start("/plain");
-    route.run(() => renderToString(App));
-    route.pages();
-
-    // The plain page is reported too: it was left out of the HTML.
-    expect(warn.mock.calls.map((call) => call[0])).toEqual([
-      expect.stringMatching(/returned content without a view\(\)/),
-      expect.stringMatching(/placed after the pages were mounted automatically/),
-    ]);
-    warn.mockRestore();
-  });
-
   it("leaves a page that is not a view out of the HTML, and says so", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const route = await router.start("/plain");
@@ -82,20 +60,20 @@ describe("route.run() with no window", () => {
     expect(html).not.toContain('id="plain"');
     expect(html).toContain(">none<");
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0][0]).toMatch(/"\/plain" returned content without a view\(\)/);
+    expect(warn.mock.calls[0][0]).toMatch(/"\/plain" returned content without an into\(\)/);
     warn.mockRestore();
   });
 
   it("warns once the render is over when a page's view has no region in it", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const typo = createRouter({ "/": () => () => view("mian", div({ id: "typo" }, "typo")) });
+    const typo = createRouter({ "/": () => () => into("mian", div({ id: "typo" }, "typo")) });
     const route = await typo.start("/");
     const html = route.run(() => renderToString(() => div(main(region({ id: "main" })))));
     await Promise.resolve();
 
     expect(html).not.toContain('id="typo"');
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0][0]).toMatch(/"\/" returned a view\(\) whose region is not in the tree/);
+    expect(warn.mock.calls[0][0]).toMatch(/"\/" returned an into\(\) whose region is not in the tree/);
     warn.mockRestore();
   });
 

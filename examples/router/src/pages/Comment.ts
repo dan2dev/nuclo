@@ -21,7 +21,7 @@ export default function CommentPage(ctx: RouteContext<Params<"/blog/:slug/:comme
   const comment = ctx.params.comment;
 
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
 
     h2(s.title, "two params"),

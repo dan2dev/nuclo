@@ -35,7 +35,7 @@ function isClassNameOnlyObject(v: unknown): v is ClassNameOnlyObject {
 	);
 }
 
-function nextChildIsTextComment(parent: Node): boolean {
+function nextChildIsTextComment(parent: Node) {
 	skipWhitespaceText(parent);
 	const child = peekChild(parent);
 	return !!child && child.nodeType === 8 &&
@@ -194,6 +194,6 @@ function wrapTextNode(index: number, textNode: Text): Node {
 }
 
 /** Resolver for text whose first evaluation threw: stays empty. */
-function emptyText(): string {
+function emptyText() {
 	return "";
 }

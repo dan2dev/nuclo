@@ -32,7 +32,7 @@ export const load: DataLoader<Report> = async (ctx) => {
 
 export default function DataPage(ctx: RouteContext, { layer, data: report }: PageProps<Report>) {
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
 
     feature(

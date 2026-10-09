@@ -49,13 +49,13 @@ function setSelectValue(select: HTMLSelectElement, v: unknown): boolean | void {
  * Re-applies a <select>'s value once its children are built (called by the
  * element factory): the options it needs exist only now.
  */
-export function retrySelectValue(el: Element): void {
+export function retrySelectValue(el: Element) {
   const value = selectValues.get(el);
   if (value !== undefined) setSelectValue(el as HTMLSelectElement, value);
 }
 
 /** Drops a reused <select>'s remembered value before its new build re-applies (or omits) it. */
-export function forgetSelectValue(el: Element): void {
+export function forgetSelectValue(el: Element) {
   selectValues.delete(el);
 }
 
@@ -104,7 +104,7 @@ function setAttributeValue(
   }
 }
 
-function applyReactiveClassName(el: Element, _key: string, v: unknown): void {
+function applyReactiveClassName(el: Element, _key: string, v: unknown) {
   mergeReactiveClassName(el, String(v || ''));
 }
 
@@ -113,7 +113,7 @@ export function applySingleAttribute<TTagName extends ElementTagName>(
   key: AttributeKey<TTagName>,
   raw: AttributeCandidate<TTagName> | undefined,
   shouldMergeClassName = false,
-): void {
+) {
   if (raw == null) return;
   const k = key as string;
 
@@ -136,9 +136,9 @@ export function applySingleAttribute<TTagName extends ElementTagName>(
       return;
     }
 
-    // Keep the dominant event path to one comparison and one assignment.
+    // Keep the dominant event path free of event-name normalization.
     if (k === "onClick") {
-      (el as Record<string, unknown>).onclick = raw;
+      setEventAttribute(el as HTMLElement, "onclick", raw as EventListener);
       return;
     }
 
@@ -156,7 +156,7 @@ export function applySingleAttribute<TTagName extends ElementTagName>(
       // Preserve runtime compatibility for native lowercase IDL properties
       // passed from untyped JavaScript. Public types reject these names.
       if (k in el) {
-        (el as Record<string, unknown>)[k] = raw;
+        setEventAttribute(el as HTMLElement, k, raw as EventListener);
         return;
       }
     }
@@ -198,7 +198,7 @@ export function applyAttributes<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
   attributes: ExpandedElementAttributes<TTagName>,
   mergeClassName = true,
-): void {
+) {
   // An <input>'s value is sanitized against its type/min/max/step as they
   // stand when it is written (a range input clamps it), so it is applied
   // after the object's other keys — `{ value: 150, max: 200 }` must not

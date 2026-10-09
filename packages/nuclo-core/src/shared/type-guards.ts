@@ -24,5 +24,5 @@ export function isFunction(value: unknown): value is (...args: unknown[]) => unk
 }
 
 export function isZeroArityFunction(value: unknown): value is () => unknown {
-	return isFunction(value) && (value as { length: number }).length === 0;
+	return isFunction(value) && value.length === 0;
 }

@@ -7,7 +7,7 @@ import { s } from "../ui.ts";
 export default function FilesPage(ctx: RouteContext<Params<"/files/*rest">>) {
   const segments = ctx.params.rest.split("/").filter(Boolean);
   // Placed by the page itself: into the shell's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.panel,
     h1(s.h1, "Catch-all route"),
     div(

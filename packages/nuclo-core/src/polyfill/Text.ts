@@ -12,7 +12,7 @@ export class NucloText {
     this.textContent = data;
   }
   
-  get nodeValue(): string {
+  get nodeValue() {
     return this.data;
   }
   

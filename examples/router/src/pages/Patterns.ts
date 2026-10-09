@@ -112,8 +112,8 @@ const normalization: ReadonlyArray<readonly [string, string, string]> = [
 
 export default function PatternsPage(ctx: RouteContext) {
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
-    view("sidebar", span(s.caption, "I'm the sidebar content.")),
+  return into("main", div(
+    into("sidebar", span(s.caption, "I'm the sidebar content.")),
     s.page,
     h2(s.title, "Patterns"),
     p(

@@ -20,7 +20,7 @@ import { s } from "./ui.ts";
  * (named export, eager) are shown in ../router.
  */
 export const routeTable = {
-  "/": () => import("./pages/Home.ts"),
+  "/": import("./pages/Home.ts"),
   "/blog/:slug": () => import("./pages/Post.ts"),
   "/files/*rest": () => import("./pages/Files.ts"),
   "*": () => import("./pages/NotFound.ts"),
@@ -73,12 +73,12 @@ export const App = () =>
     ),
     main(
       { id: "outlet" },
-      // Every page returns view("main", …), so this is where it lands; the
+      // Every page returns into("main", …), so this is where it lands; the
       // pages mount themselves beside the app, never in this tree. The region
-      // serializes its content like any other markup, and on the client the page's view()
+      // serializes its content like any other markup, and on the client the page's into()
       // claims the server's nodes rather than rebuilding them — which is what
       // entry-client.ts checks before it reports success.
-      region({ id: "main" }),
+      region({ id: "main", empty: div("loading") }),
       // The outgoing page stays visible while the next chunk loads, so there
       // is no blank frame and no layout shift.
       when(() => router.pending, div(s.pill, "loading chunk…")),

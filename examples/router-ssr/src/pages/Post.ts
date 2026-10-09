@@ -46,7 +46,7 @@ export const load: DataLoader<Post, PostParams> = async (ctx) => {
 
 export default function PostPage(ctx: RouteContext<PostParams>, { data: post }: PageProps<Post>) {
   // Placed by the page itself: into the shell's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.panel,
     h1(s.h1, post.title),
     p(s.lead, post.body),

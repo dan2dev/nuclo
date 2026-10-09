@@ -229,7 +229,7 @@ export function modal(
 
   // A layer places itself like any page: into the layout's region({ id:
   // "main" }), which is a stack, so it shows over the page beneath.
-  return view("main", div(
+  return into("main", div(
     // The shade belongs to this layer, so each one dims what is under it.
     standalone
       ? a({ href: backHref, tabindex: -1, "aria-hidden": "true" }, modalStyles.shade)

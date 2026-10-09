@@ -73,7 +73,7 @@ export const reactiveElementsByNode = new WeakMap<Element, ReactiveElementEntry>
  * Registers a reactive text node. Re-registration (e.g. repeated hydration)
  * replaces the resolver and last value in place.
  */
-export function registerReactiveTextNode(node: Text, resolver: TextResolver, lastValue: string): void {
+export function registerReactiveTextNode(node: Text, resolver: TextResolver, lastValue: string) {
   const existing = reactiveTextNodesByNode.get(node);
   if (existing) {
     existing.resolver = resolver;
@@ -98,7 +98,7 @@ export function registerReactiveElement(element: Element): ReactiveElementEntry 
 }
 
 /** Unregisters a reactive text node (called when nuclo removes it). */
-export function cleanupReactiveTextNode(node: Text): void {
+export function cleanupReactiveTextNode(node: Text) {
   const entry = reactiveTextNodesByNode.get(node);
   if (entry) {
     reactiveTextNodes.delete(entry.ref);
@@ -107,7 +107,7 @@ export function cleanupReactiveTextNode(node: Text): void {
 }
 
 /** Unregisters a reactive element (called when nuclo removes it). */
-export function cleanupReactiveElement(element: Element): void {
+export function cleanupReactiveElement(element: Element) {
   const entry = reactiveElementsByNode.get(element);
   if (entry) {
     reactiveElements.delete(entry.ref);

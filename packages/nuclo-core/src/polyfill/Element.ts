@@ -7,17 +7,17 @@ import { NucloNode } from './Node';
 class SSRStyle {
   [key: string]: unknown;
 
-  get cssText(): string {
+  get cssText() {
     const entries = Object.entries(this);
     if (entries.length === 0) return '';
     return entries.map(([k, v]) => `${k}: ${v}`).join('; ');
   }
 
-  setProperty(name: string, value: string): void {
+  setProperty(name: string, value: string) {
     (this as Record<string, unknown>)[name] = value;
   }
 
-  getPropertyValue(name: string): string {
+  getPropertyValue(name: string) {
     return ((this as Record<string, unknown>)[name] as string) || '';
   }
 }
@@ -29,31 +29,31 @@ class SSRClassList {
 
   private tokens(): string[] { return this._el.className.split(' ').filter(Boolean); }
 
-  add(...tokens: string[]): void {
+  add(...tokens: string[]) {
     const classes = this.tokens();
     for (const t of tokens) if (t && !classes.includes(t)) classes.push(t);
     this._el.className = classes.join(' ');
   }
-  remove(...tokens: string[]): void {
+  remove(...tokens: string[]) {
     this._el.className = this.tokens().filter(c => !tokens.includes(c)).join(' ');
   }
-  contains(token: string): boolean { return this.tokens().includes(token); }
-  toggle(token: string, force?: boolean): boolean {
+  contains(token: string) { return this.tokens().includes(token); }
+  toggle(token: string, force?: boolean) {
     const on = force ?? !this.contains(token);
     if (on) this.add(token); else this.remove(token);
     return on;
   }
-  replace(oldToken: string, newToken: string): boolean {
+  replace(oldToken: string, newToken: string) {
     if (!this.contains(oldToken)) return false;
     this.remove(oldToken); this.add(newToken); return true;
   }
   item(index: number): string | null { return this.tokens()[index] ?? null; }
-  get length(): number { return this.tokens().length; }
-  get value(): string { return this._el.className; }
+  get length() { return this.tokens().length; }
+  get value() { return this._el.className; }
   set value(v: string) { this._el.className = v; }
-  toString(): string { return this._el.className; }
-  supports(_token: string): boolean { return false; }
-  forEach(cb: (value: string, key: number, parent: DOMTokenList) => void): void {
+  toString() { return this._el.className; }
+  supports(_token: string) { return false; }
+  forEach(cb: (value: string, key: number, parent: DOMTokenList) => void) {
     this.tokens().forEach((token, i) => cb(token, i, this as unknown as DOMTokenList));
   }
   [Symbol.iterator](): IterableIterator<string> { return this.tokens().values(); }
@@ -65,10 +65,10 @@ class SSRClassList {
 export class NucloElement extends NucloNode {
   tagName: string;
   children: unknown[];
-  className: string = '';
-  textContent: string = '';
+  className = '';
+  textContent = '';
   parentNode: unknown = null;
-  id: string = '';
+  id = '';
   namespaceURI?: string;
 
   // style/classList are allocated lazily: the vast majority of SSR elements
@@ -94,7 +94,7 @@ export class NucloElement extends NucloNode {
 
   // `{ innerText }` behaves like `{ textContent }` on the server: plain text
   // the serializer escapes. (Prototype accessor — no per-element field.)
-  get innerText(): string {
+  get innerText() {
     return this.textContent;
   }
   set innerText(value: string) {
@@ -150,7 +150,7 @@ export class NucloElement extends NucloNode {
     return child;
   }
   
-  setAttribute(name: string, value: string): void {
+  setAttribute(name: string, value: string) {
     (this._attributes ??= new Map<string, string>()).set(name, value);
     if (name === 'class') {
       this.className = value;
@@ -163,14 +163,14 @@ export class NucloElement extends NucloNode {
     return this._attributes?.get(name) ?? null;
   }
 
-  removeAttribute(name: string): void {
+  removeAttribute(name: string) {
     this._attributes?.delete(name);
     if (name === 'class') {
       this.className = '';
     }
   }
 
-  hasAttribute(name: string): boolean {
+  hasAttribute(name: string) {
     return this._attributes?.has(name) ?? false;
   }
   
@@ -224,9 +224,9 @@ export class NucloElement extends NucloNode {
   
   // SSR never dispatches events: listeners are accepted and dropped, and
   // queries find nothing (serialize with renderToString instead).
-  addEventListener(_type: string, _listener: EventListener): void {}
-  removeEventListener(_type: string, _listener: EventListener): void {}
-  dispatchEvent(_event: Event): boolean {
+  addEventListener(_type: string, _listener: EventListener) {}
+  removeEventListener(_type: string, _listener: EventListener) {}
+  dispatchEvent(_event: Event) {
     return true;
   }
   querySelector(_selector: string): Element | null {

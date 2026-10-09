@@ -10,7 +10,7 @@ export const router = createRouter(routeTable, { preload: false });
 export const App = () => div(nav(/* links */), main(region({ id: "main" })));
 
 // pages/Post.ts — a page says where it goes
-export default (ctx) => view("main", article(h1(ctx.params.slug)));
+export default (ctx) => into("main", article(h1(ctx.params.slug)));
 
 // main.ts — the whole browser integration
 await router.start();
@@ -32,13 +32,13 @@ function tryRow(path: string, what: string) {
 
 export default function OverviewPage(_ctx: RouteContext) {
   // Placed by the page itself: into the layout's region({ id: "main" }).
-  return view("main", div(
+  return into("main", div(
     s.page,
 
     feature(
       "A router made of list()",
       "nuclo-router owns no DOM of its own and decides only what to load: the layer stack is a " +
-        "one-item list() mounted beside the app, each page says where it goes with a view() " +
+        "one-item list() mounted beside the app, each page says where it goes with an into() " +
         "into one of the layout's regions, and navigating swaps that row. Because the server and " +
         "the client build the same tree, SSR and hydration line up without the router doing " +
         "anything special for either.",

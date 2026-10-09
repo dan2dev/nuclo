@@ -80,6 +80,9 @@ declare global {
   > = Partial<Omit<HTMLElementTagNameMap[TTagName], "tagName">> &
     Pick<HTMLElementTagNameMap[TTagName], "tagName">;
 
+  /** A block or portal modifier returns its comment anchor. */
+  export type MarkerModifier = (parent: ExpandedElement, index: number) => Comment;
+
   // Core modifier types
   export type NodeRenderable<TTagName extends ElementTagName = ElementTagName> =
     | Primitive
