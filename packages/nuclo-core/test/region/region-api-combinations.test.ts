@@ -1,7 +1,7 @@
 /// <reference path="../../types/index.d.ts" />
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { forceUpdate, hydrate, into, list, on, onRootBuild, region, render, scope, update, viewWaiting, when } from "../../src";
+import { forceUpdate, hydrate, into, list, on, region, render, scope, update, when } from "../../src";
 import { renderToString } from "../../src/ssr/render-to-string";
 import { withServerGlobals } from "../integration/fuzz-harness";
 
@@ -176,37 +176,6 @@ describe("region/into API combinations", () => {
     expect(root.querySelector("p")!.textContent).toBe("1");
   });
 
-  it.each(["latest", "stack"] as const)("tracks waiting %s views through region and row removal", (type) => {
-    let present = false;
-    let rows = ["a"];
-    const mounted = vi.fn();
-    const destroyed = vi.fn();
-    render(() => div(
-      div({ id: "source" }, list(() => rows, id => into("main", p({ id, onMount: mounted, onDestroy: destroyed }, id)))),
-      when(() => present, section(region({ id: "main", type }))),
-    ), root);
-    const source = root.querySelector("#source")!;
-    const anchor = Array.from(source.childNodes).find(node => node.textContent?.startsWith("view-"))!;
-    expect(viewWaiting(anchor)).toBe(true);
-    forceUpdate();
-    expect(viewWaiting(anchor)).toBe(true);
-    present = true;
-    forceUpdate();
-    expect(viewWaiting(anchor)).toBe(false);
-    expect(mounted).toHaveBeenCalledTimes(1);
-    present = false;
-    forceUpdate();
-    expect(viewWaiting(anchor)).toBe(true);
-    expect(destroyed).toHaveBeenCalledTimes(1);
-    rows = [];
-    forceUpdate();
-    expect(viewWaiting(anchor)).toBe(false);
-    present = true;
-    forceUpdate();
-    expect(root.querySelector("p")).toBeNull();
-    expect(mounted).toHaveBeenCalledTimes(1);
-  });
-
   it.each([false, true])("refreshes cross-root views regardless of registration order (sourceFirst=%s)", (sourceFirst) => {
     let count = 0;
     const calls = vi.fn();
@@ -275,26 +244,6 @@ describe("region/into API combinations", () => {
     expect(root.querySelector("button")).toBe(buttonEl);
     expect(buttonEl.textContent).toBe("2");
     expect(Array.from(root.querySelectorAll("span"), el => el.textContent)).toEqual(["0", "1"]);
-  });
-
-  it("runs root hooks once per pass, before mounts, and unregisters them", () => {
-    const calls: string[] = [];
-    const off = onRootBuild(serializing => calls.push(`root:${serializing}`));
-    const App = () => div(region({ id: "main" }), into("main", span(
-      on("mount", () => { calls.push("mount"); }), "view")));
-    try {
-      root.innerHTML = withServerGlobals(() => renderToString(App));
-      expect(calls.splice(0)).toEqual(["root:true"]);
-      hydrate(App, root);
-      expect(calls.splice(0)).toEqual(["root:false", "mount"]);
-      forceUpdate();
-      expect(calls.splice(0)).toEqual(["root:false"]);
-      update();
-      expect(calls).toEqual([]);
-      off();
-      forceUpdate();
-      expect(calls).toEqual([]);
-    } finally { off(); }
   });
 
   it.each(["attributes", "modifiers"] as const)("preserves original %s lifecycle hooks and destroys children first", (api) => {

@@ -289,16 +289,6 @@ export function isViewAnchor(node: Node) {
   return node.nodeType === 8 && viewsByAnchor.has(node as Comment);
 }
 
-/**
- * True while the into() that left this anchor has nowhere to show: every
- * region it names is still to be built. False for any other node, and once
- * one of its views is placed — the check a library makes after a render, to
- * tell content that landed from content that renders nowhere.
- */
-export function viewWaiting(node: Node) {
-  const views = viewsByAnchor.get(node as Comment);
-  return !!views?.length && views.every((v) => v.pendingRef !== null);
-}
 
 /** The live region registered under an id, if one is still in the tree. */
 export function getRegion(id: string): RegionRuntime<ElementTagName> | undefined {

@@ -5,7 +5,6 @@
 
 import { escapeHtml, escapeText, camelToKebab, propertyToAttribute } from '../shared/strings';
 import { runSerializing } from '../shared/serializing';
-import { runRootHooks } from '../shared/root-hooks';
 import { isZeroArityFunction } from '../shared/type-guards';
 import { SVG_NAMESPACE } from '../shared/dom';
 
@@ -432,7 +431,6 @@ export function renderToString(input: RenderableInput) {
         // render(App)-style component function: call it for the tree's
         // builder (mirrors render()/hydrate()), run the root hooks, then build.
         let built: unknown = isZeroArityFunction(input) ? (input as () => unknown)() : input;
-        runRootHooks(true);
         if (typeof built === 'function') built = (built as NodeModFn<ElementTagName>)(container, 0);
         return built;
       });

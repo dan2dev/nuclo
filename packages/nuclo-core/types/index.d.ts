@@ -63,23 +63,6 @@ export function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
   nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
   parent?: Element,
 ): ExpandedElement<TTagName>;
-/**
- * Registers a callback run by every root pass — render(), hydrate(),
- * forceUpdate() and renderToString() — once the root's component has been
- * called and before its tree is built; `serializing` is true inside
- * renderToString(). For libraries that keep content beside the app, such as
- * nuclo-router's pages. Returns the function that unregisters it.
- */
-export function onRootBuild(hook: (serializing: boolean) => void): () => void;
-/**
- * True while the into() that left this anchor has nowhere to show: every
- * region it names is still to be built. False for any other node, and once
- * one of its views is placed. For libraries that place views on the app's
- * behalf, such as nuclo-router, to tell a page that landed from one that
- * renders nowhere.
- */
-export function viewWaiting(node: Node): boolean;
-
 // on() helper (same overloads as the global)
 export function on<
   K extends NucloHTMLElementEventName,

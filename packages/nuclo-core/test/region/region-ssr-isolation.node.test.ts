@@ -18,7 +18,7 @@ import "../../src/polyfill";
 import "../../src";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderToString } from "../../src/ssr/render-to-string";
-import { getRegion, viewWaiting } from "../../src/region/runtime";
+import { getRegion } from "../../src/region/runtime";
 import { serializingScratch } from "../../src/shared/serializing";
 
 interface User { id: number; name: string; secret: string }
@@ -187,24 +187,5 @@ describe("region() — SSR request isolation", () => {
     // Between the outer region's markers, not dropped by the inner render.
     expect(html).toMatch(/region-start-0-v1--><div id="outer">(<!-- text-\d+ -->)?outer<\/div><!--region-end/);
     expect(warn).not.toHaveBeenCalled();
-  });
-});
-
-describe("viewWaiting() after a server render", () => {
-  it("tells a view that had no region in its render from one that landed", () => {
-    let landed: Node | undefined;
-    let lost: Node | undefined;
-    renderToString(() =>
-      div(
-        main(region({ id: "main" })),
-        (host: ExpandedElement, index: number) => (landed = into("main", p("in"))(host, index) as Node),
-        (host: ExpandedElement, index: number) => (lost = into("nowhere", p("out"))(host, index) as Node),
-      ),
-    );
-
-    // Still answerable once the render is over — its registry is gone, the
-    // views are not.
-    expect(viewWaiting(landed!)).toBe(false);
-    expect(viewWaiting(lost!)).toBe(true);
   });
 });

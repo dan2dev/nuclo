@@ -510,11 +510,6 @@ layer does not stay on screen, and re-opening it adds one copy, not two.
 Regions survive SSR — each view claims the server's nodes on hydration rather
 than rebuilding them.
 
-`viewWaiting(node)`, imported from `nuclo`, tells whether the into() behind an
-anchor — the node its `NodeModFn` returned — still has no region to show in.
-It is for libraries that place views for the app, such as nuclo-router, which
-uses it to report a page whose region id matches nothing.
-
 #### Events
 
 Attach strongly typed handlers directly as camel-cased `on*` attribute props such as `onClick`, `onInput`, and `onChange`. The event and `currentTarget` types are inferred from the attribute and element:
