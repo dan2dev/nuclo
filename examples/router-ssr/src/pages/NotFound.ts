@@ -4,8 +4,7 @@ import type { RouteContext } from "nuclo-router";
 import { s } from "../ui.ts";
 
 export default function NotFoundPage(ctx: RouteContext) {
-  // Placed by the page itself: into the shell's region({ id: "main" }).
-  return into("main", div(
+  return div(
     s.panel,
     h1(s.h1, "404 — no route matched"),
     p(s.lead, "The bare \"*\" pattern matched, which is how a router-level 404 works."),
@@ -25,5 +24,5 @@ export default function NotFoundPage(ctx: RouteContext) {
         "\"*\" last no matter where it sits in the table, so it only ever catches " +
         "what nothing else did.",
     ),
-  ));
+  );
 }

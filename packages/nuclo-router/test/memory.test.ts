@@ -68,19 +68,14 @@ function alive(refs: readonly WeakRef<object>[]): number {
   return count;
 }
 
-const Home: PageComponent = () => into("main", div({ id: "home" }, "home"));
+const Home: PageComponent = () => div({ id: "home" }, "home");
 
 /** The last data object a loader page was handed, for GC tracking. */
 let seenData: object | undefined;
-const About: PageComponent = () => into("main", div({ id: "about" }, "about"));
+const About: PageComponent = () => div({ id: "about" }, "about");
 
 function table() {
   return { "/": () => Home, "/about": () => About };
-}
-
-/** The nodes the router put on the document root, taken from childNodes. */
-function rootMountNodes(): Node[] {
-  return [...document.documentElement.childNodes].filter((n) => n.nodeType === 8);
 }
 
 /** Mounts a Route's view, then drops every strong reference to it. */
@@ -88,20 +83,18 @@ async function captureMountAndDrop(): Promise<WeakRef<object>[]> {
   const router = createRouter(table(), { preload: false });
   const route = await router.start("/");
   const container = mount();
-  const rendered = render(App, container) as unknown as Node;
+  const rendered = render(App(router), container) as unknown as Node;
 
   const refs: WeakRef<object>[] = [
     new WeakRef(route),
     new WeakRef(container),
     new WeakRef(rendered),
   ];
-  // The region's markers and the page between them, then the router's mount
-  // on the document root: its list markers and the page's view anchor.
+  // The outlet's markers and the page between them.
   for (let i = 0; i < rendered.childNodes.length; i++) {
     refs.push(new WeakRef(rendered.childNodes[i]));
   }
-  for (const node of rootMountNodes()) refs.push(new WeakRef(node));
-  expect(refs.length).toBe(9);
+  expect(refs.length).toBe(6);
 
   route.stop();
   container.remove();
@@ -113,9 +106,9 @@ async function captureTreeKeepingRoute(): Promise<{ route: Route; refs: WeakRef<
   const router = createRouter(table(), { preload: false });
   const route = await router.start("/");
   const container = mount();
-  const rendered = render(App, container) as unknown as Node;
+  const rendered = render(App(router), container) as unknown as Node;
 
-  // The region's markers and the page between them.
+  // The outlet's markers and the page between them.
   const refs: WeakRef<Node>[] = [new WeakRef(container), new WeakRef(rendered)];
   for (let i = 0; i < rendered.childNodes.length; i++) {
     refs.push(new WeakRef(rendered.childNodes[i]));
@@ -166,7 +159,7 @@ describe("navigation does not accumulate", () => {
     async function capture(): Promise<{ route: Route; rows: number; outgoing: WeakRef<Element> }> {
       const router = createRouter(table(), { preload: false });
       const route = await router.start("/");
-      const app = render(App, mount()) as unknown as Element;
+      const app = render(App(router), mount()) as unknown as Element;
 
       // From children, never querySelector.
       const outgoing = new WeakRef(app.children[0]);
@@ -184,10 +177,10 @@ describe("navigation does not accumulate", () => {
 
   itGc("every page of a long navigation run is collected", async () => {
     async function capture(): Promise<{ route: Route; refs: WeakRef<Element>[]; maxRows: number }> {
-      const Page: PageComponent = (ctx) => into("main", div({ id: `p${ctx.params.n}` }, ctx.params.n));
+      const Page: PageComponent = (ctx) => div({ id: `p${ctx.params.n}` }, ctx.params.n);
       const router = createRouter({ "/p/:n": () => Page }, { preload: false });
       const route = await router.start("/p/0");
-      const app = render(App, mount()) as unknown as Element;
+      const app = render(App(router), mount()) as unknown as Element;
 
       const refs: WeakRef<Element>[] = [];
       let maxRows = 0;
@@ -306,7 +299,7 @@ describe("loader data", () => {
             load: (ctx: { params: Record<string, string> }) => ({ payload: `data for ${ctx.params.n}` }),
             default: ((_c, { data }) => {
               seenData = data;
-              return into("main", div({ id: "p" }, data.payload));
+              return div({ id: "p" }, data.payload);
             }) as PageComponent<{ payload: string }>,
           }),
           "/elsewhere": () => Home,
@@ -314,7 +307,7 @@ describe("loader data", () => {
         { preload: false },
       );
       const route = await router.start("/p/0");
-      render(App, mount());
+      render(App(router), mount());
 
       const refs: WeakRef<object>[] = [];
       for (let i = 1; i <= 20; i++) {
@@ -337,10 +330,10 @@ describe("loader data", () => {
 describe("the layer stack", () => {
   itGc("a closed layer's DOM, entry and resolver are all released", async () => {
     async function capture(): Promise<{ route: Route; refs: WeakRef<object>[]; depthAfter: number }> {
-      const Modal: PageComponent = (_ctx, { layer }) => into("main", div({ id: `layer-${layer.depth}` }, "modal"));
+      const Modal: PageComponent = (_ctx, { layer }) => div({ id: `layer-${layer.depth}` }, "modal");
       const router = createRouter({ "/": () => Home, "/modal": () => Modal }, { preload: false });
       const route = await router.start("/");
-      const app = render(App, mount()) as unknown as Element;
+      const app = render(App(router), mount()) as unknown as Element;
 
       const pushed = route.push("/modal");
       await new Promise((r) => setTimeout(r, 0));
@@ -364,10 +357,10 @@ describe("the layer stack", () => {
 
   itGc("opening and closing many layers accumulates nothing", async () => {
     async function capture(): Promise<{ route: Route; refs: WeakRef<object>[]; maxRows: number }> {
-      const Modal: PageComponent = (_ctx, { layer }) => into("main", div({ id: `layer-${layer.depth}` }, "modal"));
+      const Modal: PageComponent = (_ctx, { layer }) => div({ id: `layer-${layer.depth}` }, "modal");
       const router = createRouter({ "/": () => Home, "/modal": () => Modal }, { preload: false });
       const route = await router.start("/");
-      const app = render(App, mount()) as unknown as Element;
+      const app = render(App(router), mount()) as unknown as Element;
 
       const refs: WeakRef<object>[] = [];
       let maxRows = 0;
@@ -394,11 +387,11 @@ describe("the layer stack", () => {
 
   itGc("stop() with layers open releases the Route and every layer", async () => {
     async function capture(): Promise<WeakRef<object>[]> {
-      const Modal: PageComponent = (_ctx, { layer }) => into("main", div({ id: `layer-${layer.depth}` }, "modal"));
+      const Modal: PageComponent = (_ctx, { layer }) => div({ id: `layer-${layer.depth}` }, "modal");
       const router = createRouter({ "/": () => Home, "/modal": () => Modal }, { preload: false });
       const route = await router.start("/");
       const container = mount();
-      const app = render(App, container) as unknown as Element;
+      const app = render(App(router), container) as unknown as Element;
 
       const first = route.push("/modal");
       await new Promise((r) => setTimeout(r, 0));
@@ -406,13 +399,11 @@ describe("the layer stack", () => {
       await new Promise((r) => setTimeout(r, 0));
 
       const refs: WeakRef<object>[] = [new WeakRef(route), new WeakRef(container), new WeakRef(app)];
-      // The region's markers and the three pages between them, then the
-      // router's mount on the document root: its list markers and three anchors.
+      // The outlet's markers and the three pages between them.
       for (let i = 0; i < app.childNodes.length; i++) {
         refs.push(new WeakRef(app.childNodes[i]));
       }
-      for (const node of rootMountNodes()) refs.push(new WeakRef(node));
-      expect(refs.length).toBe(13);
+      expect(refs.length).toBe(8);
 
       route.stop();
       // Both awaiting callers are released rather than left hanging.
@@ -438,7 +429,7 @@ describe("in-flight work after stop()", () => {
       );
       const route = await router.start("/");
       const container = mount();
-      const app = render(App, container) as unknown as Element;
+      const app = render(App(router), container) as unknown as Element;
 
       const navigation = route.go("/late");
       const refs: WeakRef<object>[] = [new WeakRef(route), new WeakRef(container), new WeakRef(app)];
@@ -497,12 +488,12 @@ describe("in-flight work after stop()", () => {
 });
 
 describe("an app that reads the router", () => {
-  const Page: PageComponent = () => into("main", div({ id: "page" }, "page"));
-  const Other: PageComponent = () => into("main", div({ id: "other" }, "other"));
-  const Modal: PageComponent = (_ctx, { layer }) => into("main", div({ id: "modal" }, button({ onClick: () => layer.close() })));
+  const Page: PageComponent = () => div({ id: "page" }, "page");
+  const Other: PageComponent = () => div({ id: "other" }, "other");
+  const Modal: PageComponent = (_ctx, { layer }) => div({ id: "modal" }, button({ onClick: () => layer.close() }));
   /** What an app module is: a component reading the router it imports. */
   const Shell = (router: Router) => () =>
-    div({ id: "shell" }, a({ href: router.href("/") }), main({ id: "outlet" }, region({ id: "main" })));
+    div({ id: "shell" }, a({ href: router.href("/") }), main({ id: "outlet" }, router.outlet()));
 
   function appTable() {
     return { "/": () => Page, "/other": () => Other, "/modal": () => Modal };
@@ -515,8 +506,6 @@ describe("an app that reads the router", () => {
       const container = mount();
       const shell = render(Shell(router), container) as unknown as Element;
       const refs: WeakRef<object>[] = [new WeakRef(container), new WeakRef(shell), new WeakRef(shell.children[1].children[0])];
-      for (const node of rootMountNodes()) refs.push(new WeakRef(node));
-      expect(refs.length).toBe(6);
 
       route.stop();
       container.remove();
@@ -527,7 +516,6 @@ describe("an app that reads the router", () => {
     const { router, refs } = await capture();
     await collectGarbage();
     expect(alive(refs)).toBe(0);
-    expect(rootMountNodes().length).toBe(0);
     expect(router.path).toBe("/");
   });
 
@@ -537,8 +525,8 @@ describe("an app that reads the router", () => {
       const route = await router.start("/");
       const container = mount();
       const shell = render(Shell(router), container) as unknown as Element;
-      // The page's node in the region, and its anchor on the document root.
-      const refs: WeakRef<object>[] = [new WeakRef(shell.children[1].children[0]), new WeakRef(rootMountNodes()[1])];
+      // The page's node in the outlet.
+      const refs: WeakRef<object>[] = [new WeakRef(shell.children[1].children[0])];
 
       await router.go("/other");
       return { route, refs };
@@ -550,7 +538,7 @@ describe("an app that reads the router", () => {
     route.stop();
   });
 
-  itGc("a layer over a page in a latest region is released when it closes", async () => {
+  itGc("a layer over a page is released when it closes", async () => {
     async function capture(): Promise<{ route: Route; refs: WeakRef<object>[] }> {
       const router = createRouter(appTable(), { preload: false });
       const route = await router.start("/");
@@ -560,7 +548,7 @@ describe("an app that reads the router", () => {
 
       const pushed = router.push("/modal");
       await new Promise((r) => setTimeout(r, 0));
-      const refs: WeakRef<object>[] = [new WeakRef(outlet.children[0])];
+      const refs: WeakRef<object>[] = [new WeakRef(outlet.children[1])];
 
       window.history.back();
       await pushed;

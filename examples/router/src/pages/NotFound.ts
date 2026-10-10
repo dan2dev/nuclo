@@ -39,8 +39,7 @@ function value(text: string) {
 }
 
 export default function NotFoundPage(ctx: RouteContext) {
-  // Placed by the page itself: into the layout's region({ id: "main" }).
-  return into("main", div(
+  return div(
     s.page,
 
     div(s.row, pill("bad", "404"), pill("neutral", 'pattern: "*"')),
@@ -146,5 +145,5 @@ export default function NotFoundPage(ctx: RouteContext) {
         "same clicks fall through to a real navigation — which is what makes a " +
         "server-rendered 404 reachable.",
     ),
-  ));
+  );
 }

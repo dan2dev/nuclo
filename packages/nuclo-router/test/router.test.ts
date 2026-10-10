@@ -1,19 +1,22 @@
 import { describe, it, expect, vi } from "vitest";
 import "nuclo";
-import { createRouter, type PageComponent, type Route, type RouteContext, type RouterOptions } from "../src/index";
+import { createRouter, type PageComponent, type Route, type RouteContext, type Router, type RouterOptions } from "../src/index";
 import { App, deferred, flush, historyLength, mount, stubAssign, useRouterEnv, waitFor, type Deferred } from "./helpers";
 
 const routes = useRouterEnv();
 
 /** Tracks every started Route so afterEach can detach its listeners. */
-async function start(router: { start(url?: string): Promise<Route> }, url?: string): Promise<Route> {
-  const route = await router.start(url);
+let router: Router;
+
+async function start(r: Router, url?: string): Promise<Route> {
+  router = r;
+  const route = await r.start(url);
   routes.push(route);
   return route;
 }
 
-const Home: PageComponent = () => into("main", div({ id: "home" }, "home"));
-const About: PageComponent = () => into("main", div({ id: "about" }, "about"));
+const Home: PageComponent = () => div({ id: "home" }, "home");
+const About: PageComponent = () => div({ id: "about" }, "about");
 
 describe("start()", () => {
   it("resolves the matching page and exposes the match", async () => {
@@ -63,11 +66,11 @@ describe("start()", () => {
     let seen: RouteContext | undefined;
     const Post: PageComponent = (ctx) => {
       seen = ctx;
-      return into("main", div("post"));
+      return div("post");
     };
     const router = createRouter({ "/blog/:slug": () => Post });
     const route = await start(router, "/blog/hello?page=2#top");
-    render(App, mount());
+    render(App(router), mount());
 
     expect(seen).toMatchObject({
       path: "/blog/hello",
@@ -85,7 +88,7 @@ describe("start()", () => {
   });
 
   it("falls back to a '*' route instead of throwing", async () => {
-    const NotFound: PageComponent = () => into("main", div("404"));
+    const NotFound: PageComponent = () => div("404");
     const router = createRouter({ "/": () => Home, "*": () => NotFound });
     const route = await start(router, "/nope");
     expect(route.pattern).toBe("*");
@@ -150,49 +153,12 @@ describe("base", () => {
   });
 });
 
-describe("into()", () => {
-  it("does not warn for the normal single region", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    await start(createRouter({ "/": () => Home }, { preload: false }), "/");
-    render(App, mount());
-    await flush();
-    expect(warn).not.toHaveBeenCalled();
-  });
-
-  it("does not warn when forceUpdate() re-runs the app", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    await start(createRouter({ "/": () => Home }, { preload: false }), "/");
-    const container = mount();
-    render(App, container);
-    const home = container.querySelector("#home")!;
-
-    forceUpdate();
-    forceUpdate();
-    await flush();
-
-    expect(warn).not.toHaveBeenCalled();
-    expect(container.querySelector("#home")).toBe(home);
-    expect(container.querySelectorAll("#home").length).toBe(1);
-  });
-
-  it("does not warn when a thrown-away tree is rendered again", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    await start(createRouter({ "/": () => Home }, { preload: false }), "/");
-    const container = mount();
-    render(App, container);
-    container.innerHTML = "";
-    render(App, container);
-    await flush();
-
-    expect(warn).not.toHaveBeenCalled();
-    expect(container.querySelectorAll("#home").length).toBe(1);
-  });
-
+describe("pages", () => {
   it("renders the active page", async () => {
     const router = createRouter({ "/": () => Home, "/about": () => About });
     const route = await start(router, "/");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
 
     expect(container.querySelector("#home")).not.toBeNull();
   });
@@ -201,7 +167,7 @@ describe("into()", () => {
     const router = createRouter({ "/": () => Home, "/about": () => About });
     const route = await start(router, "/");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
 
     await route.go("/about");
     expect(container.querySelector("#home")).toBeNull();
@@ -212,7 +178,7 @@ describe("into()", () => {
     const router = createRouter({ "/": () => Home, "/about": () => About });
     const route = await start(router, "/about");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
     const before = container.querySelector("#about");
 
     await route.go("/about");
@@ -220,11 +186,11 @@ describe("into()", () => {
   });
 
   it("rebuilds when only the params change", async () => {
-    const Post: PageComponent = (ctx) => into("main", div({ id: `post-${ctx.params.slug}` }, ctx.params.slug));
+    const Post: PageComponent = (ctx) => div({ id: `post-${ctx.params.slug}` }, ctx.params.slug);
     const router = createRouter({ "/blog/:slug": () => Post });
     const route = await start(router, "/blog/a");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
     expect(container.querySelector("#post-a")).not.toBeNull();
 
     await route.go("/blog/b");
@@ -236,11 +202,11 @@ describe("into()", () => {
     let builds = 0;
     const Page: PageComponent = () => {
       builds++;
-      return into("main", div("page"));
+      return div("page");
     };
     const router = createRouter({ "/": () => Page });
     const route = await start(router, "/?a=1");
-    render(App, mount());
+    render(App(router), mount());
     expect(builds).toBe(1);
 
     await route.go("/?a=2");
@@ -272,15 +238,15 @@ describe("go()", () => {
     expect(window.history.length).toBe(depth);
   });
 
-  it("commits a cached route synchronously — pending never flips", async () => {
+  it("commits a cached route without flipping pending", async () => {
     const router = createRouter({ "/": () => Home, "/about": () => About });
     const route = await start(router, "/");
 
     const promise = route.go("/about");
-    // Resolved before a single microtask: no spinner frame for a loaded route.
-    expect(route.path).toBe("/about");
+    // No spinner frame for a loaded route: it lands before the next paint.
     expect(route.pending).toBe(false);
     await promise;
+    expect(route.path).toBe("/about");
   });
 
   it("reports pending while an uncached module loads", async () => {
@@ -436,7 +402,7 @@ describe("go()", () => {
 
   it("drops a slow navigation that a later one overtook", async () => {
     const slow = deferred<{ default: PageComponent }>();
-    const Third: PageComponent = () => into("main", div({ id: "third" }, "third"));
+    const Third: PageComponent = () => div({ id: "third" }, "third");
     const router = createRouter({
       "/": () => Home,
       "/slow": () => slow.promise,
@@ -444,7 +410,7 @@ describe("go()", () => {
     });
     const route = await start(router, "/");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
 
     const first = route.go("/slow");
     const second = route.go("/third");
@@ -581,14 +547,14 @@ describe("go() writes history when the page lands", () => {
     const gate: Gate = deferred();
     const Probe: PageComponent = (ctx) => {
       seen.push(`build ${ctx.path} at ${window.location.pathname}`);
-      return into("main", div());
+      return div();
     };
     const router = createRouter(
       { "/": () => Home, "/eager": () => Probe, "/slow": () => gate.promise },
       { preload: false, onNavigate: (ctx) => void seen.push(`nav ${ctx.path} at ${window.location.pathname}`) },
     );
     const route = await start(router, "/");
-    render(App, mount());
+    render(App(router), mount());
     seen.length = 0;
 
     await route.go("/eager");
@@ -605,16 +571,6 @@ describe("go() writes history when the page lands", () => {
     ]);
   });
 
-  it.each(["hash", "memory"] as const)("does the same in %s mode", async (history) => {
-    const gate: Gate = deferred();
-    const route = await start(slowRouter(gate, { history }), "/");
-
-    const navigation = route.go("/slow");
-    expect(route.url).toBe("/");
-    gate.resolve({ default: About });
-    await navigation;
-    expect(route.url).toBe("/slow");
-  });
 });
 
 describe("scrolling", () => {
@@ -628,10 +584,10 @@ describe("scrolling", () => {
   });
 
   it("scrolls a hash target into view when the new page has one", async () => {
-    const Anchored: PageComponent = () => into("main", div(div({ id: "section" }, "s")));
+    const Anchored: PageComponent = () => div(div({ id: "section" }, "s"));
     const router = createRouter({ "/": () => Home, "/about": () => Anchored });
     const route = await start(router, "/");
-    render(App, mount());
+    render(App(router), mount());
 
     await route.go("/about#section");
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled();

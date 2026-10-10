@@ -111,8 +111,7 @@ const normalization: ReadonlyArray<readonly [string, string, string]> = [
 ];
 
 export default function PatternsPage(ctx: RouteContext) {
-  // Placed by the page itself: into the layout's region({ id: "main" }).
-  return into("main", div(
+  return div(
     into("sidebar", span(s.caption, "I'm the sidebar content.")),
     s.page,
     h2(s.title, "Patterns"),
@@ -370,5 +369,5 @@ export default function PatternsPage(ctx: RouteContext) {
       "at the root. Under a base, build hrefs with router.href(path) — it prefixes the " +
       "base, and the matcher strips it again before any of the above applies.",
     ),
-  ));
+  );
 }

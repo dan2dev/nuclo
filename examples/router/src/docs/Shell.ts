@@ -42,8 +42,7 @@ let builds = 0;
 export default function DocsShell(ctx: RouteContext, { outlet }: PageProps) {
   builds++;
 
-  // Placed by the page itself: into the layout's region({ id: "main" }).
-  return into("main", div(
+  return div(
     s.page,
 
     feature(
@@ -157,5 +156,5 @@ export default function DocsShell(ctx: RouteContext, { outlet }: PageProps) {
           `const page = await docsRoutes[hit.pattern]();`,
       ),
     ),
-  ));
+  );
 }

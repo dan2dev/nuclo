@@ -1,26 +1,26 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import "nuclo";
-import { createRouter, type PageComponent, type Route } from "../src/index";
+import { createRouter, type Router, type PageComponent, type Route } from "../src/index";
 import { App, click, deferred, flush, mount, useRouterEnv } from "./helpers";
 
-// Registered before useRouterEnv() so it runs after the routes are stopped:
-// stop() still needs cancelIdleCallback.
 afterEach(() => {
   vi.useRealTimers();
   delete (globalThis as Record<string, unknown>).requestIdleCallback;
-  delete (globalThis as Record<string, unknown>).cancelIdleCallback;
 });
 
 const routes = useRouterEnv();
 
-async function start(router: { start(url?: string): Promise<Route> }, url?: string): Promise<Route> {
-  const route = await router.start(url);
+let router: Router;
+
+async function start(r: Router, url?: string): Promise<Route> {
+  router = r;
+  const route = await r.start(url);
   routes.push(route);
   return route;
 }
 
-const Home: PageComponent = () => into("main", div({ id: "home" }, "home"));
-const About: PageComponent = () => into("main", div({ id: "about" }, "about"));
+const Home: PageComponent = () => div({ id: "home" }, "home");
+const About: PageComponent = () => div({ id: "about" }, "about");
 
 function link(attrs: Record<string, string>, child?: string): HTMLAnchorElement {
   const anchor = document.createElement("a");
@@ -38,7 +38,7 @@ describe("link clicks", () => {
   it("navigates a plain internal link", async () => {
     const route = await start(basicRouter(), "/");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
 
     expect(click(link({ href: "/about" }))).toBe(true);
     await flush();
@@ -212,7 +212,7 @@ describe("popstate", () => {
   it("renders the entry the browser went back to", async () => {
     const route = await start(basicRouter(), "/");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
 
     await route.go("/about");
     expect(route.path).toBe("/about");
@@ -253,7 +253,7 @@ describe("popstate", () => {
     const router = createRouter({ "/": () => Home, "/slow": () => gate.promise });
     const route = await start(router, "/");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
 
     const navigation = route.go("/slow");
     expect(route.pending).toBe(true);
@@ -304,7 +304,7 @@ describe("stop()", () => {
     const router = createRouter({ "/": () => Home, "/about": () => gate.promise });
     const route = await start(router, "/");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
 
     const promise = route.go("/about");
     expect(route.pending).toBe(true);
@@ -384,11 +384,11 @@ describe("idle preloading", () => {
     await vi.advanceTimersByTimeAsync(1000);
     expect(loaded).toEqual(["a", "b"]);
 
-    // Preloaded routes then navigate without an async gap.
+    // Preloaded routes then navigate without flipping pending.
     const promise = route.go("/a");
-    expect(route.path).toBe("/a");
     expect(route.pending).toBe(false);
     await promise;
+    expect(route.path).toBe("/a");
   });
 
   it("uses requestIdleCallback when the browser has one", async () => {
@@ -397,8 +397,6 @@ describe("idle preloading", () => {
       queued.push(fn);
       return queued.length;
     };
-    (globalThis as Record<string, unknown>).cancelIdleCallback = vi.fn();
-
     let loadedA = false;
     const router = createRouter({
       "/": () => Home,
@@ -411,10 +409,8 @@ describe("idle preloading", () => {
 
     expect(queued.length).toBe(1);
     queued.shift()!();
+    await flush();
     expect(loadedA).toBe(true);
-
-    route.stop();
-    expect(globalThis.cancelIdleCallback).toHaveBeenCalled();
   });
 
   it("can be turned off", async () => {

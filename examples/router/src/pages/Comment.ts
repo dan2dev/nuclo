@@ -20,8 +20,7 @@ export default function CommentPage(ctx: RouteContext<Params<"/blog/:slug/:comme
   const slug = ctx.params.slug;
   const comment = ctx.params.comment;
 
-  // Placed by the page itself: into the layout's region({ id: "main" }).
-  return into("main", div(
+  return div(
     s.page,
 
     h2(s.title, "two params"),
@@ -108,5 +107,5 @@ if (c.rest === null ? segs.length !== n : segs.length < n) return null;
           "when the page function, the path and the search string are all unchanged.",
       ),
     ),
-  ));
+  );
 }

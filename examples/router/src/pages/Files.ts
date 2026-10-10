@@ -45,8 +45,7 @@ export default function FilesPage(ctx: RouteContext<Params<"/files/*rest">>) {
   const rest = ctx.params.rest;
   const segments = rest === "" ? [] : rest.split("/");
 
-  // Placed by the page itself: into the layout's region({ id: "main" }).
-  return into("main", div(
+  return div(
     s.page,
 
     h2(s.title, "Named catch-all"),
@@ -170,5 +169,5 @@ export default function FilesPage(ctx: RouteContext<Params<"/files/*rest">>) {
           "up front, not on the navigation that would have hit it.",
       ),
     ),
-  ));
+  );
 }

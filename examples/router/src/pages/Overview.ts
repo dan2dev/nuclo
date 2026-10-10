@@ -6,11 +6,11 @@ import { code, feature, pill, s } from "../ui.ts";
 const INTEGRATION = `// routes.ts — the table and the router, created once
 export const router = createRouter(routeTable, { preload: false });
 
-// app.ts — reads the router; a region is where pages land
-export const App = () => div(nav(/* links */), main(region({ id: "main" })));
+// app.ts — reads the router; its outlet is where the pages land
+export const App = () => div(nav(/* links */), main(router.outlet()));
 
-// pages/Post.ts — a page says where it goes
-export default (ctx) => into("main", article(h1(ctx.params.slug)));
+// pages/Post.ts — a page is plain content
+export default (ctx) => article(h1(ctx.params.slug));
 
 // main.ts — the whole browser integration
 await router.start();
@@ -31,15 +31,13 @@ function tryRow(path: string, what: string) {
 }
 
 export default function OverviewPage(_ctx: RouteContext) {
-  // Placed by the page itself: into the layout's region({ id: "main" }).
-  return into("main", div(
+  return div(
     s.page,
 
     feature(
       "A router made of list()",
-      "nuclo-router owns no DOM of its own and decides only what to load: the layer stack is a " +
-        "one-item list() mounted beside the app, each page says where it goes with an into() " +
-        "into one of the layout's regions, and navigating swaps that row. Because the server and " +
+      "nuclo-router decides only what to load: the layer stack is a list() the app places " +
+        "with router.outlet(), one row per open page, and navigating swaps that row. Because the server and " +
         "the client build the same tree, SSR and hydration line up without the router doing " +
         "anything special for either.",
       p(
@@ -89,5 +87,5 @@ export default function OverviewPage(_ctx: RouteContext) {
           "where the whole app is mounted under /app.",
       ),
     ),
-  ));
+  );
 }

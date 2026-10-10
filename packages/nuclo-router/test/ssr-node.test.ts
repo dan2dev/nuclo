@@ -8,12 +8,12 @@ import { describe, it, expect, vi } from "vitest";
 import "nuclo/polyfill";
 import "nuclo";
 import { renderToString } from "nuclo/ssr";
-import { createRouter, Redirect, type PageComponent, type Route } from "../src/index";
+import { createRouter, type PageComponent, type Route, type Router } from "../src/index";
 
-const Home: PageComponent = () => into("main", div({ id: "home" }, "home"));
-const Post: PageComponent = (ctx) => into("main", div({ id: "post" }, ctx.params.slug));
+const Home: PageComponent = () => div({ id: "home" }, "home");
+const Post: PageComponent = (ctx) => div({ id: "post" }, ctx.params.slug);
 
-const App = () => div({ id: "shell" }, main(region({ id: "main" })));
+const App = (router: Router) => () => div({ id: "shell" }, main(router.outlet()));
 
 const table = {
   "/": () => Home,
@@ -32,7 +32,7 @@ describe("a Route with no window", () => {
 
     expect(route.path).toBe("/blog/node-side");
     expect(route.params.slug).toBe("node-side");
-    expect(route.run(() => renderToString(App))).toContain("node-side");
+    expect(route.run(() => renderToString(App(router)))).toContain("node-side");
   });
 
   it("defaults to '/' when no URL is given", async () => {
@@ -45,7 +45,7 @@ describe("a Route with no window", () => {
     const onNavigate = vi.fn();
     const router = createRouter(table, { onNavigate });
     const route = await router.start("/");
-    route.run(() => renderToString(App));
+    route.run(() => renderToString(App(router)));
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
@@ -96,11 +96,11 @@ describe("a Route with no window", () => {
     const router = createRouter({
       "/": () => ((_ctx, { layer }) => {
         seen = layer;
-        return into("main", div("home"));
+        return div("home");
       }) as PageComponent,
     });
     const route = await router.start("/");
-    route.run(() => renderToString(App));
+    route.run(() => renderToString(App(router)));
 
     // A server-rendered page is always the base layer, and there is no
     // history to walk back through.
@@ -142,52 +142,8 @@ describe("a Route with no window", () => {
     const router = createRouter(table);
     const [a, b] = await Promise.all([router.start("/blog/a"), router.start("/blog/b")]);
 
-    expect(a.run(() => renderToString(App))).toContain(">a<");
-    expect(b.run(() => renderToString(App))).toContain(">b<");
-  });
-});
-
-describe("a Redirect on the server", () => {
-  const to = (href: string) => () => ({
-    default: Home,
-    load: () => {
-      throw new Redirect(href);
-    },
-  });
-  const redirectOf = (router: { start(url: string): Promise<Route> }, url: string) =>
-    router.start(url).then(
-      () => null,
-      (error: unknown) => error,
-    );
-
-  it("rejects start() with it, for the app to answer with a 3xx", async () => {
-    const router = createRouter({ "/admin": to("/login"), "/login": () => Home });
-    const error = await redirectOf(router, "https://site.example/admin");
-
-    expect(error).toBeInstanceOf(Redirect);
-    expect((error as Redirect).href).toBe("/login");
-  });
-
-  it("resolves a relative href against the request, base included", async () => {
-    const router = createRouter({ "/a/:id": to("./edit") }, { base: "/app" });
-    const error = (await redirectOf(router, "/app/a/7")) as Redirect;
-
-    expect(error.href).toBe("/app/a/7/edit");
-  });
-
-  it("passes another origin through untouched", async () => {
-    const router = createRouter({ "/sso": to("https://auth.example.com/login") });
-    const error = (await redirectOf(router, "/sso")) as Redirect;
-
-    expect(error.href).toBe("https://auth.example.com/login");
-  });
-
-  it("does not follow it, even to a route the table has", async () => {
-    const onNavigate = vi.fn();
-    const router = createRouter({ "/admin": to("/login"), "/login": () => Home }, { onNavigate });
-    await redirectOf(router, "/admin");
-
-    expect(onNavigate).not.toHaveBeenCalled();
+    expect(a.run(() => renderToString(App(router)))).toContain(">a<");
+    expect(b.run(() => renderToString(App(router)))).toContain(">b<");
   });
 });
 

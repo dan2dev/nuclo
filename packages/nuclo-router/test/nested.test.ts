@@ -10,7 +10,7 @@ import { describe, it, expect, vi } from "vitest";
 import "nuclo";
 import { renderToString } from "nuclo/ssr";
 import {
-  createRouter,
+  createRouter, type Router,
   type Layer,
   type PageComponent,
   type PageProps,
@@ -22,8 +22,11 @@ import { App, click, flush, mount, useRouterEnv, waitFor } from "./helpers";
 
 const routes = useRouterEnv();
 
-async function start(router: { start(url?: string): Promise<Route> }, url?: string): Promise<Route> {
-  const route = await router.start(url);
+let router: Router;
+
+async function start(r: Router, url?: string): Promise<Route> {
+  router = r;
+  const route = await r.start(url);
   routes.push(route);
   return route;
 }
@@ -45,24 +48,15 @@ function layout(id: string): PageComponent {
   };
 }
 
-/**
- * A page at the root of a match lands in the app's region; a child rendered
- * through its parent's outlet() stays plain. page(), layout() and record()
- * serve as both, so each root use is wrapped.
- */
-function root(component: PageComponent): PageComponent {
-  return (ctx, props) => into("main", component(ctx, props) as WhenContent);
-}
-
 function table(): RouteTable {
   return {
-    "/": () => root(page("home")),
+    "/": () => page("home"),
     "/docs": {
-      "/": () => root(layout("docs")),
+      "/": () => layout("docs"),
       "./intro": () => page("intro"),
       "./:topic": () => page("topic"),
     },
-    "*": () => root(page("nf")),
+    "*": () => page("nf"),
   };
 }
 
@@ -71,7 +65,7 @@ describe("a parent is not destroyed by its children", () => {
     builds = {};
     const route = await start(createRouter(table(), { preload: false }), "/docs");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
 
     const shell = container.querySelector("#docs")!;
     const field = container.querySelector<HTMLInputElement>("#docs-field")!;
@@ -95,7 +89,7 @@ describe("a parent is not destroyed by its children", () => {
     builds = {};
     const route = await start(createRouter(table(), { preload: false }), "/docs/intro");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
     const shell = container.querySelector("#docs")!;
 
     await route.go("/docs/hydration");
@@ -109,7 +103,7 @@ describe("a parent is not destroyed by its children", () => {
     builds = {};
     const route = await start(createRouter(table(), { preload: false }), "/docs/intro");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
 
     expect(container.querySelector("#docs-outlet > #intro")).not.toBeNull();
     // The static child wins over the sibling ":topic", nesting or not.
@@ -122,14 +116,14 @@ describe("a parent is not destroyed by its children", () => {
     builds = {};
     const router = createRouter(
       {
-        "/a": { "/": () => root(layout("a")), "./x": () => page("ax") },
-        "/b": { "/": () => root(layout("b")), "./x": () => page("bx") },
+        "/a": { "/": () => layout("a"), "./x": () => page("ax") },
+        "/b": { "/": () => layout("b"), "./x": () => page("bx") },
       },
       { preload: false },
     );
     const route = await start(router, "/a/x");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
     const first = container.querySelector("#a")!;
 
     await route.go("/b/x");
@@ -143,7 +137,7 @@ describe("a parent is not destroyed by its children", () => {
     builds = {};
     const route = await start(createRouter(table(), { preload: false }), "/docs/one");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
     const shell = container.querySelector("#docs")!;
 
     await route.go("/docs/two");
@@ -157,7 +151,7 @@ describe("a parent is not destroyed by its children", () => {
     builds = {};
     const route = await start(createRouter(table(), { preload: false }), "/docs/intro");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
 
     await route.go("/docs");
     expect(container.querySelector("#intro")).toBeNull();
@@ -171,7 +165,7 @@ describe("a parent is not destroyed by its children", () => {
     const router = createRouter(
       {
         "/a": {
-          "/": () => root(layout("a")),
+          "/": () => layout("a"),
           "./b": { "/": () => layout("b"), "./c": () => page("c"), "./d": () => page("d") },
         },
       },
@@ -179,7 +173,7 @@ describe("a parent is not destroyed by its children", () => {
     );
     const route = await start(router, "/a/b/c");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
 
     expect(container.querySelector("#a-outlet > #b")).not.toBeNull();
     expect(container.querySelector("#b-outlet > #c")).not.toBeNull();
@@ -201,11 +195,11 @@ describe("a parent is not destroyed by its children", () => {
     };
     const router = createRouter(
       // A loader returns the component; `record()` IS the component.
-      { "/u/:id": { "/": () => root(record()), "./posts": { "/": () => record(), "./:post": () => record() } } },
+      { "/u/:id": { "/": () => record(), "./posts": { "/": () => record(), "./:post": () => record() } } },
       { preload: false },
     );
     const route = await start(router, "/u/7/posts/42");
-    render(App, mount());
+    render(App(router), mount());
 
     expect(seen).toEqual([
       { pattern: "/u/:id", path: "/u/7", id: "7" },
@@ -221,7 +215,7 @@ describe("a parent is not destroyed by its children", () => {
     builds = {};
     const route = await start(createRouter(table(), { preload: false }), "/docs");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
     const shell = container.querySelector("#docs")!;
 
     const anchor = document.createElement("a");
@@ -248,7 +242,7 @@ describe("loaders and nesting", () => {
               return "shop";
             },
             default: ((_c, { data, outlet }) =>
-              into("main", div({ id: "shop" }, data, div({ id: "shop-outlet" }, outlet())))) as PageComponent<string>,
+              div({ id: "shop" }, data, div({ id: "shop-outlet" }, outlet()))) as PageComponent<string>,
           }),
           "./:sku": () => ({
             load: (ctx: RouteContext) => {
@@ -263,7 +257,7 @@ describe("loaders and nesting", () => {
     );
     const route = await start(router, "/shop/a");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
     expect(parentLoads).toBe(1);
     expect(childLoads).toBe(1);
 
@@ -280,7 +274,7 @@ describe("loaders and nesting", () => {
       "/a": {
         "/": () => ({
           load: () => void order.push("a"),
-          default: ((_c, { outlet }) => into("main", div({ id: "a" }, outlet()))) as PageComponent,
+          default: ((_c, { outlet }) => div({ id: "a" }, outlet())) as PageComponent,
         }),
         "./b": () => ({
           load: () => void order.push("b"),
@@ -289,44 +283,17 @@ describe("loaders and nesting", () => {
       },
     });
     const route = await start(router, "/a/b");
-    render(App, mount());
+    render(App(router), mount());
     expect(order.sort()).toEqual(["a", "b"]);
-    void route;
-  });
-});
-
-describe("outlets", () => {
-  it("warns when a parent never renders its outlet", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const router = createRouter(
-      // The parent ignores its outlet, so the child has nowhere to go.
-      { "/p": { "/": () => root(page("p")), "./c": () => page("c") } },
-      { preload: false },
-    );
-    const route = await start(router, "/p/c");
-    render(App, mount());
-
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0][0]).toMatch(/never called its outlet/);
-    expect(warn.mock.calls[0][0]).toContain("takes (ctx, { outlet })");
-    void route;
-  });
-
-  it("does not warn for a leaf, or for a parent showing its own page", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const route = await start(createRouter(table(), { preload: false }), "/docs");
-    render(App, mount());
-    expect(warn).not.toHaveBeenCalled();
     void route;
   });
 });
 
 describe("SSR and hydration", () => {
   it("renders the whole chain on the server and claims it on the client", async () => {
-    const SsrApp = () => div({ id: "app" }, region({ id: "main", type: "stack" }));
-
-    const server = await start(createRouter(table(), { preload: false }), "/docs/intro");
-    const html = server.run(() => renderToString(SsrApp));
+    const serverRouter = createRouter(table(), { preload: false });
+    const server = await start(serverRouter, "/docs/intro");
+    const html = server.run(() => renderToString(App(serverRouter)));
     server.stop();
 
     expect(html).toContain('id="docs"');
@@ -334,16 +301,16 @@ describe("SSR and hydration", () => {
 
     const container = mount();
     container.innerHTML = html;
-    const ssrShell = container.querySelector("#app")!.firstElementChild;
+    const ssrShell = container.querySelector("#outlet")!.firstElementChild;
     const ssrOutlet = container.querySelector("#docs-outlet")!;
     const ssrChild = ssrOutlet.firstElementChild;
 
     window.history.replaceState(null, "", "/docs/intro");
     const route = await start(createRouter(table(), { preload: false }));
-    hydrate(SsrApp, container);
+    hydrate(App(router), container);
 
     // Nested outlets hydrate like any other list(): same nodes, not replaced.
-    expect(container.querySelector("#app")!.firstElementChild).toBe(ssrShell);
+    expect(container.querySelector("#outlet")!.firstElementChild).toBe(ssrShell);
     expect(container.querySelector("#docs-outlet")!.firstElementChild).toBe(ssrChild);
     expect(container.querySelectorAll("#docs").length).toBe(1);
     expect(container.querySelectorAll("#intro").length).toBe(1);
@@ -355,15 +322,15 @@ describe("layers and nesting", () => {
     let captured: Layer | undefined;
     const Modal: PageComponent = (_ctx, { layer }) => {
       captured = layer;
-      return into("main", div({ id: "modal" }));
+      return div({ id: "modal" });
     };
     const router = createRouter(
-      { "/docs": { "/": () => root(layout("docs")), "./modal": () => Modal } },
+      { "/docs": { "/": () => layout("docs"), "./modal": () => Modal } },
       { preload: false },
     );
     const route = await start(router, "/docs");
     const container = mount();
-    render(App, container);
+    render(App(router), container);
     const shell = container.querySelector("#docs")!;
 
     const pending = route.push("./modal");

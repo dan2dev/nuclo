@@ -13,8 +13,7 @@ import { btn, code, feature, pill, s } from "../ui.ts";
 const link = css({ textDecoration: "none" });
 
 export default function BlogNewPage(ctx: RouteContext) {
-  // Placed by the page itself: into the layout's region({ id: "main" }).
-  return into("main", div(
+  return div(
     s.page,
     feature(
       "static wins, wherever it sits",
@@ -65,5 +64,5 @@ export default function BlogNewPage(ctx: RouteContext) {
           "static precedence is per-path, not a prefix that shadows everything below it.",
       ),
     ),
-  ));
+  );
 }

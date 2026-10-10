@@ -1,27 +1,24 @@
 /**
- * Pages that place themselves. The router only decides what to load: a page
- * returns `into("main", …)` and lands in the layout's `region({ id: "main" })`,
- * at any depth. The router never knows a region id. The layout is never
- * rebuilt, so its own controls keep their state while the page inside
- * changes, and the server's page node is claimed in place on hydration.
+ * Pages are plain content in the router's outlet. A page may still fill the
+ * layout's other regions with into(); that content leaves with the page.
  */
 import { describe, it, expect } from "vitest";
 import "nuclo";
 import { renderToString } from "nuclo/ssr";
-import { createRouter, type PageComponent } from "../src/index";
+import { createRouter, type PageComponent, type Router } from "../src/index";
 import { flush, mount, useRouterEnv } from "./helpers";
 
 const routes = useRouterEnv();
 
-const Home: PageComponent = () => into("main", div({ id: "home" }, h1("Home")));
-const About: PageComponent = () => into("main", div({ id: "about" }, h1("About")));
+const Home: PageComponent = () => div({ id: "home" }, h1("Home"));
+const About: PageComponent = () => div({ id: "about" }, h1("About"));
 const Modal: PageComponent = (_ctx, { layer }) =>
-  into("main", div({ id: "modal" }, button({ id: "close", onClick: () => layer.close() }, "close")));
-/** Fills two regions at once. */
-const Docs: PageComponent = () => into({ main: div({ id: "docs" }), side: div({ id: "docs-links" }) });
+  div({ id: "modal" }, button({ id: "close", onClick: () => layer.close() }, "close"));
+/** Fills the layout's side region as well. */
+const Docs: PageComponent = () => div({ id: "docs" }, into("side", div({ id: "docs-links" })));
 /** A parent that keeps its child inside its own content. */
 const Records: PageComponent = (_ctx, { outlet }) =>
-  into("main", div({ id: "records" }, input({ id: "notes" }), main({ id: "child" }, outlet())));
+  div({ id: "records" }, input({ id: "notes" }), main({ id: "child" }, outlet()));
 const Preview: PageComponent = () => div({ id: "preview" });
 
 const table = {
@@ -32,22 +29,21 @@ const table = {
   "/records": { "/": () => Records, "./preview": () => Preview },
 };
 
-/** A layout that never sees the Route. */
-const Layout = () =>
+const Layout = (router: Router) =>
   div(
     { id: "layout" },
     aside({ id: "side-host" }, input({ id: "filter" }), region({ id: "side" })),
-    main({ id: "outlet" }, region({ id: "main", type: "stack", empty: p({ id: "none" }, "Nothing open.") })),
+    main({ id: "outlet" }, router.outlet()),
   );
 
-const App = () => div({ id: "shell" }, Layout());
+const App = (router: Router) => () => div({ id: "shell" }, Layout(router));
 
-async function start(url: string) {
+async function boot(url: string) {
   const router = createRouter(table, { preload: false });
   window.history.replaceState(null, "", url);
   const route = await router.start();
   routes.push(route);
-  return { route, container: mount() };
+  return { router, route, container: mount() };
 }
 
 /** Element ids directly inside the outlet, in order. */
@@ -55,18 +51,10 @@ function outlet(container: HTMLElement): string[] {
   return [...container.querySelector("#outlet")!.children].map((c) => c.id);
 }
 
-describe("pages that return an into()", () => {
-  it("land in the region, with nothing of the router's in the app tree", async () => {
-    const { container } = await start("/");
-    render(App, container);
-    expect(outlet(container)).toEqual(["home"]);
-    expect(container.querySelector("#none")).toBeNull();
-    expect([...container.querySelector("#shell")!.childNodes].map((n) => (n as Element).id)).toEqual(["layout"]);
-  });
-
-  it("swap the page in the region without rebuilding the layout", async () => {
-    const { route, container } = await start("/");
-    render(App, container);
+describe("pages in the outlet", () => {
+  it("swap without rebuilding the layout", async () => {
+    const { router, route, container } = await boot("/");
+    render(App(router), container);
     const layout = container.querySelector("#layout")!;
     const filter = container.querySelector<HTMLInputElement>("#filter")!;
     filter.value = "typed";
@@ -80,9 +68,9 @@ describe("pages that return an into()", () => {
     expect(document.activeElement).toBe(filter);
   });
 
-  it("stack a pushed layer over the page, inside the region", async () => {
-    const { route, container } = await start("/");
-    render(App, container);
+  it("stack a pushed layer over the page", async () => {
+    const { router, route, container } = await boot("/");
+    render(App(router), container);
     const home = container.querySelector("#home")!;
 
     const pending = route.push("/modal");
@@ -95,9 +83,9 @@ describe("pages that return an into()", () => {
     expect(outlet(container)).toEqual(["home"]);
   });
 
-  it("fill several regions from one page, and clear them all on leaving", async () => {
-    const { route, container } = await start("/docs");
-    render(App, container);
+  it("fill another region from a page, and clear it on leaving", async () => {
+    const { router, route, container } = await boot("/docs");
+    render(App(router), container);
     expect(outlet(container)).toEqual(["docs"]);
     expect(container.querySelector("#side-host #docs-links")).not.toBeNull();
 
@@ -107,9 +95,9 @@ describe("pages that return an into()", () => {
     expect(container.querySelector("#docs-links")).toBeNull();
   });
 
-  it("keep a parent's view while its child changes inside it", async () => {
-    const { route, container } = await start("/records");
-    render(App, container);
+  it("keep a parent while its child changes inside it", async () => {
+    const { router, route, container } = await boot("/records");
+    render(App(router), container);
     const records = container.querySelector("#records")!;
     const notes = container.querySelector<HTMLInputElement>("#notes")!;
     notes.value = "draft";
@@ -122,13 +110,13 @@ describe("pages that return an into()", () => {
     expect(outlet(container)).toEqual(["records"]);
   });
 
-  it("show the region's `empty` content after stop()", async () => {
-    const { route, container } = await start("/");
-    render(App, container);
+  it("leave the outlet empty after stop()", async () => {
+    const { router, route, container } = await boot("/");
+    render(App(router), container);
     expect(outlet(container)).toEqual(["home"]);
 
     route.stop();
-    expect(outlet(container)).toEqual(["none"]);
+    expect(outlet(container)).toEqual([]);
   });
 
   describe("server-rendered", () => {
@@ -136,28 +124,26 @@ describe("pages that return an into()", () => {
       const router = createRouter(table);
       const route = await router.start(url);
       try {
-        return route.run(() => renderToString(App));
+        return route.run(() => renderToString(App(router)));
       } finally {
         route.stop();
       }
     }
 
-    it("emits the page between the region's markers and nothing else of the router's", async () => {
-      const html = await ssr("/about");
-      expect(html).toMatch(/<main id="outlet"><!--region-start-\d+-v1--><div id="about">.*<!--region-end--><\/main>/);
-      expect(html).not.toContain("list-start");
-      expect(html).not.toContain("<!--view-");
-      expect(html).not.toContain("Nothing open.");
+    it("emits the page inside the outlet and the side content inside its region", async () => {
+      const html = await ssr("/docs");
+      expect(html).toMatch(/<main id="outlet"><!--list-start[^>]*--><div id="docs">/);
+      expect(html).toMatch(/<!--region-start[^>]*-->.*<div id="docs-links">/);
     });
 
     it("claims the server's page in place", async () => {
       const html = await ssr("/about");
-      const { route, container } = await start("/about");
+      const { router, route, container } = await boot("/about");
       container.innerHTML = html;
       const ssrPage = container.querySelector("#about")!;
       const ssrFilter = container.querySelector("#filter")!;
 
-      hydrate(App, container);
+      hydrate(App(router), container);
 
       expect(container.querySelector("#about")).toBe(ssrPage);
       expect(container.querySelector("#filter")).toBe(ssrFilter);
@@ -168,14 +154,14 @@ describe("pages that return an into()", () => {
       expect(container.querySelector("#filter")).toBe(ssrFilter);
     });
 
-    it("claims a parent view with its child inside it", async () => {
+    it("claims a parent with its child inside it", async () => {
       const html = await ssr("/records/preview");
-      const { container } = await start("/records/preview");
+      const { router, container } = await boot("/records/preview");
       container.innerHTML = html;
       const ssrRecords = container.querySelector("#records")!;
       const ssrPreview = container.querySelector("#preview")!;
 
-      hydrate(App, container);
+      hydrate(App(router), container);
 
       expect(container.querySelector("#records")).toBe(ssrRecords);
       expect(container.querySelector("#preview")).toBe(ssrPreview);

@@ -156,13 +156,13 @@ import 'nuclo'
 `)}
       <p>Put <code>import 'nuclo'</code> first in your entry file, or import it in every file that uses the globals.</p>
       <h3>Named imports</h3>
-      <p>The helpers are also named exports. They are the same functions as the globals. <code>getCssText()</code>, <code>resetStyles()</code>, <code>viewWaiting()</code> and <code>onRootBuild()</code> are named exports only. Tag builders are globals only, so <code>import { div } from 'nuclo'</code> does not work.</p>
+      <p>The helpers are also named exports. They are the same functions as the globals. <code>getCssText()</code> and <code>resetStyles()</code> are named exports only. Tag builders are globals only, so <code>import { div } from 'nuclo'</code> does not work.</p>
       ${code("main.ts", `
 import { render, update, getCssText } from 'nuclo'
 `)}
       <h3>Entry points</h3>
       <ul>
-        <li><code>nuclo</code>: registers the globals and exports the 16 helpers plus <code>getCssText</code>, <code>resetStyles</code>, <code>viewWaiting</code> and <code>onRootBuild</code>.</li>
+        <li><code>nuclo</code>: registers the globals and exports the 16 helpers plus <code>getCssText</code> and <code>resetStyles</code>.</li>
         <li><code>nuclo/ssr</code>: <code>renderToString</code>, <code>renderManyToString</code>, <code>renderToStringWithContainer</code> and <code>getCssText</code>. See <a href="#api-ssr">Server Rendering</a>.</li>
         <li><code>nuclo/polyfill</code>: a small DOM for Node, Bun and Deno. See <a href="#api-polyfill">nuclo/polyfill</a>.</li>
         <li><code>nuclo/types</code>: types only. See <a href="#typescript-setup">TypeScript</a>.</li>
@@ -771,8 +771,6 @@ const Page = () =>
     sidebar: [h2('Related'), ul(li('One'), li('Two'))],
   })
 `)}
-      <h3>For libraries</h3>
-      <p><code>viewWaiting(node)</code>, a named export, tells whether the <code>into()</code> that returned <code>node</code> still has no region to show in. <code>onRootBuild(hook)</code> registers a callback that runs on every <code>render()</code>, <code>hydrate()</code>, <code>forceUpdate()</code> and <code>renderToString()</code> pass, after the root component is called and before its tree is built. It returns the unregister function. Routers use both to place pages beside the app and report one that lands nowhere.</p>
     `,
       },
       {
@@ -1375,7 +1373,6 @@ async function loadData() {
       <h3><code>nuclo</code> (named export only)</h3>
       <ul>
         <li><a href="#api-css-text"><code>getCssText()</code></a> and <a href="#api-css-text"><code>resetStyles()</code></a>.</li>
-        <li><a href="#api-region"><code>viewWaiting(node)</code></a> and <a href="#api-region"><code>onRootBuild(hook)</code></a>: hooks for libraries that place content for the app.</li>
       </ul>
       <h3><code>nuclo/ssr</code></h3>
       <ul>

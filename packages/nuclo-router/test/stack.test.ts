@@ -3,13 +3,12 @@
  *
  * The property that matters most is the one asserted by node identity below —
  * opening a layer must not rebuild the page underneath. The layer stack is one
- * list() over the stack array and the region is a "stack" one, so a push is a
- * pure insertion and the rows below keep their DOM, their focus and their form
- * state.
+ * list() over the stack array, so a push is a pure insertion and the rows
+ * below keep their DOM, their focus and their form state.
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import "nuclo";
-import { createRouter, type Layer, type PageComponent, type Route } from "../src/index";
+import { createRouter, type Router, type Layer, type PageComponent, type Route } from "../src/index";
 import { App, deferred, flush, mount, useRouterEnv, waitFor } from "./helpers";
 
 /** nuclo's <option> builder, aliased so it does not read like a variable. */
@@ -21,20 +20,23 @@ beforeEach(() => {
   layers = [];
 });
 
-async function start(router: { start(url?: string): Promise<Route> }, url?: string): Promise<Route> {
-  const route = await router.start(url);
+let router: Router;
+
+async function start(r: Router, url?: string): Promise<Route> {
+  router = r;
+  const route = await r.start(url);
   routes.push(route);
   return route;
 }
 
-/** Renders the app and returns its region's host: its children are the layers, bottom first. */
+/** Renders the app and returns the outlet: its children are the layers, bottom first. */
 function show(): Element {
   const container = mount();
-  render(App, container);
+  render(App(router), container);
   return container.firstElementChild!;
 }
 
-const Base: PageComponent = () => into("main", div({ id: "base" }, input({ id: "field" })));
+const Base: PageComponent = () => div({ id: "base" }, input({ id: "field" }));
 
 /** Layers by depth, so a test can drive any one of them. */
 let layers: Array<Layer | undefined> = [];
@@ -42,13 +44,13 @@ let layers: Array<Layer | undefined> = [];
 /** The pushed page: records its own Layer handle as it renders. */
 const Modal: PageComponent = (_ctx, { layer }) => {
   layers[layer.depth] = layer;
-  return into("main", div({ id: `modal-${layer.depth}` }, button({ id: `save-${layer.depth}` }, "save")));
+  return div({ id: `modal-${layer.depth}` }, button({ id: `save-${layer.depth}` }, "save"));
 };
 
 function table() {
   return {
     "/": () => Base,
-    "/other": () => (() => into("main", div({ id: "other" }))) as PageComponent,
+    "/other": () => (() => div({ id: "other" })) as PageComponent,
     "/modal": () => Modal,
     "/modal2": () => Modal,
   };
@@ -303,8 +305,9 @@ describe("failures", () => {
 
     const navigation = route.go("/slow");
     expect(route.pending).toBe(true);
-    // Lands in the same task: the module is eager.
+    // The module is eager: the layer lands before the slow navigation does.
     void route.push("/modal");
+    await flush();
     expect(route.depth).toBe(2);
     expect(route.pending).toBe(false);
 
@@ -321,7 +324,7 @@ describe("failures", () => {
       {
         "/": () => ((_ctx, { layer }) => {
           baseLayer = layer;
-          return into("main", div({ id: "base" }));
+          return div({ id: "base" });
         }) as PageComponent,
       },
       { preload: false },
@@ -355,7 +358,7 @@ describe("failures", () => {
   it("a push overtaken by a navigation opens nothing", async () => {
     const gate = deferred<{ default: PageComponent }>();
     const router = createRouter(
-      { "/": () => Base, "/other": () => (() => into("main", div({ id: "other" }))) as PageComponent, "/modal": () => gate.promise },
+      { "/": () => Base, "/other": () => (() => div({ id: "other" })) as PageComponent, "/modal": () => gate.promise },
       { preload: false },
     );
     const route = await start(router, "/");
@@ -426,20 +429,17 @@ describe("Layer.push()", () => {
     // Depth 2: opened by the page at depth 1, which only ever had its Layer.
     const Inner: PageComponent = (_ctx, { layer }) => {
       layers[layer.depth] = layer;
-      return into("main", div({ id: "inner" }));
+      return div({ id: "inner" });
     };
     const Outer: PageComponent = (_ctx, { layer }) => {
       layers[layer.depth] = layer;
-      return into(
-        "main",
-        div(
+      return div(
           { id: "outer" },
           button({
             id: "open-inner",
             onClick: () => void layer.push<string>("/inner").then((r) => results.push(r)),
           }),
-        ),
-      );
+        );
     };
 
     const router = createRouter(
@@ -479,9 +479,7 @@ describe("the dropdown scenario", () => {
     let createdCount = 0;
 
     const NewOption: PageComponent = (_ctx, { layer }) =>
-      into(
-        "main",
-        div(
+      div(
           { id: "new-option" },
           button({
             id: "create",
@@ -490,13 +488,10 @@ describe("the dropdown scenario", () => {
               layer.close({ id: `new-${createdCount}`, label: `Created ${createdCount}` });
             },
           }, "create"),
-        ),
-      );
+        );
 
     const Form: PageComponent = () =>
-      into(
-        "main",
-        div(
+      div(
           { id: "form" },
           input({ id: "notes" }),
           select(
@@ -506,8 +501,7 @@ describe("the dropdown scenario", () => {
               (option) => optionEl({ value: option.id }, option.label),
             ),
           ),
-        ),
-      );
+        );
 
     const router = createRouter({ "/form": () => Form, "/options/new": () => NewOption }, { preload: false });
     const route = await start(router, "/form");

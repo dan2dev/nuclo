@@ -7,19 +7,22 @@
  */
 import { describe, it, expect } from "vitest";
 import "nuclo";
-import { createRouter, type Layer, type PageComponent, type Route, type RouteTable } from "../src/index";
+import { createRouter, type Router, type Layer, type PageComponent, type Route, type RouteTable } from "../src/index";
 import { App, click, flush, mount as mountEl, useRouterEnv, waitFor } from "./helpers";
 
 const routes = useRouterEnv();
 
-async function start(router: { start(url?: string): Promise<Route> }, url?: string): Promise<Route> {
-  const route = await router.start(url);
+let router: Router;
+
+async function start(r: Router, url?: string): Promise<Route> {
+  router = r;
+  const route = await r.start(url);
   routes.push(route);
   return route;
 }
 
 // No page here calls outlet(), so every one that renders is the root of its match.
-const P = (id: string): PageComponent => () => into("main", div({ id }, id));
+const P = (id: string): PageComponent => () => div({ id }, id);
 
 /** A section: it has no idea where it will live. */
 const recordSection: RouteTable = {
@@ -224,7 +227,7 @@ describe("relative navigation", () => {
     let captured: Layer | undefined;
     const Preview: PageComponent = (_ctx, { layer }) => {
       captured = layer;
-      return into("main", div({ id: "preview" }));
+      return div({ id: "preview" });
     };
     const router = createRouter(
       {
@@ -235,7 +238,7 @@ describe("relative navigation", () => {
       { preload: false },
     );
     const route = await start(router, "/invoices/42");
-    render(App, container);
+    render(App(router), container);
     const pages = container.firstElementChild!;
 
     const pending = route.push("./preview");
@@ -270,11 +273,11 @@ describe("relative navigation", () => {
     let seen: Layer | undefined;
     const Modal: PageComponent = (_ctx, { layer }) => {
       seen = layer;
-      return into("main", div({ id: "modal" }));
+      return div({ id: "modal" });
     };
     const router = createRouter({ "/": () => P("home"), "/modal": () => Modal }, { preload: false });
     const route = await start(router, "/");
-    render(App, mountEl());
+    render(App(router), mountEl());
 
     const pushed = route.push("/modal");
     await flush();

@@ -3,8 +3,7 @@ import type { RouteContext } from "nuclo-router";
 import { s } from "../ui.ts";
 
 export default function HomePage(ctx: RouteContext) {
-  // Placed by the page itself: into the shell's region({ id: "main" }).
-  return into("main", div(
+  return div(
     s.panel,
     h1(s.h1, "Rendered on the server"),
     p(
@@ -26,5 +25,5 @@ export default function HomePage(ctx: RouteContext) {
         "network panel); after the page goes idle the router preloads the rest, so " +
         "every later navigation is instant and never shows the loading pill.",
     ),
-  ));
+  );
 }

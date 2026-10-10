@@ -277,8 +277,7 @@ function left(ctx: RouteContext) {
 }
 
 export function LinksPage(ctx: RouteContext) {
-  // Placed by the page itself: into the layout's region({ id: "main" }).
-  return into("main", div(
+  return div(
     s.page,
 
     h2(s.panelTitle, "Link handling"),
@@ -350,5 +349,5 @@ export function LinksPage(ctx: RouteContext) {
           "both read.",
       ),
     ),
-  ));
+  );
 }

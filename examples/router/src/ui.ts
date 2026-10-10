@@ -227,9 +227,8 @@ export function modal(
     ? a({ href: backHref, "aria-label": "Close" }, btn.base, "\u2715")
     : button(btn.base, { onClick: () => layer.close(), "aria-label": "Close" }, "\u2715");
 
-  // A layer places itself like any page: into the layout's region({ id:
-  // "main" }), which is a stack, so it shows over the page beneath.
-  return into("main", div(
+  // A layer is one more row of the outlet, so it shows over the page beneath.
+  return div(
     // The shade belongs to this layer, so each one dims what is under it.
     standalone
       ? a({ href: backHref, tabindex: -1, "aria-hidden": "true" }, modalStyles.shade)
@@ -258,7 +257,7 @@ export function modal(
       ),
       ...body,
     ),
-  ));
+  );
 }
 
 export const field = {

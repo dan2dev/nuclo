@@ -32,8 +32,7 @@ function fact(tone: "good" | "info" | "neutral", label: string, text: string) {
 }
 
 export function SlowPage(_ctx: RouteContext) {
-  // Placed by the page itself: into the layout's region({ id: "main" }).
-  return into("main", div(
+  return div(
     s.page,
 
     h2(s.title, "Slow chunk"),
@@ -134,5 +133,5 @@ export function SlowPage(_ctx: RouteContext) {
         ),
       ),
     ),
-  ));
+  );
 }

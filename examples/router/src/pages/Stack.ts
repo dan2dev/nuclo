@@ -31,8 +31,7 @@ export default function StackPage(_ctx: RouteContext, { layer }: PageProps) {
     update();
   }
 
-  // Placed by the page itself: into the layout's region({ id: "main" }).
-  return into("main", div(
+  return div(
     s.page,
 
     feature(
@@ -163,5 +162,5 @@ export default function StackPage(_ctx: RouteContext, { layer }: PageProps) {
           "that also works the long way round.",
       ),
     ),
-  ));
+  );
 }

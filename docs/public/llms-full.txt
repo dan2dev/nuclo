@@ -104,7 +104,7 @@ Put `import 'nuclo'` first in your entry file, or import it in every file that u
 
 #### Named imports
 
-The helpers are also named exports. They are the same functions as the globals. `getCssText()`, `resetStyles()`, `viewWaiting()` and `onRootBuild()` are named exports only. Tag builders are globals only, so `import { div } from 'nuclo'` does not work.
+The helpers are also named exports. They are the same functions as the globals. `getCssText()` and `resetStyles()` are named exports only. Tag builders are globals only, so `import { div } from 'nuclo'` does not work.
 
 ```ts
 // main.ts
@@ -113,7 +113,7 @@ import { render, update, getCssText } from 'nuclo'
 
 #### Entry points
 
-- `nuclo`: registers the globals and exports the 16 helpers plus `getCssText`, `resetStyles`, `viewWaiting` and `onRootBuild`.
+- `nuclo`: registers the globals and exports the 16 helpers plus `getCssText` and `resetStyles`.
 - `nuclo/ssr`: `renderToString`, `renderManyToString`, `renderToStringWithContainer` and `getCssText`. See [Server Rendering](https://nuclo.dev/docs#api-ssr).
 - `nuclo/polyfill`: a small DOM for Node, Bun and Deno. See [nuclo/polyfill](https://nuclo.dev/docs#api-polyfill).
 - `nuclo/types`: types only. See [TypeScript](https://nuclo.dev/docs#typescript-setup).
@@ -803,10 +803,6 @@ const Page = () =>
   })
 ```
 
-#### For libraries
-
-`viewWaiting(node)`, a named export, tells whether the `into()` that returned `node` still has no region to show in. `onRootBuild(hook)` registers a callback that runs on every `render()`, `hydrate()`, `forceUpdate()` and `renderToString()` pass, after the root component is called and before its tree is built. It returns the unregister function. Routers use both to place pages beside the app and report one that lands nowhere.
-
 ### forceUpdate()
 
 Source: https://nuclo.dev/docs#api-force-update
@@ -1439,7 +1435,6 @@ Every public function, and where it comes from.
 #### `nuclo` (named export only)
 
 - [`getCssText()`](https://nuclo.dev/docs#api-css-text) and [`resetStyles()`](https://nuclo.dev/docs#api-css-text).
-- [`viewWaiting(node)`](https://nuclo.dev/docs#api-region) and [`onRootBuild(hook)`](https://nuclo.dev/docs#api-region): hooks for libraries that place content for the app.
 
 #### `nuclo/ssr`
 

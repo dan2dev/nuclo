@@ -1,17 +1,8 @@
 /**
- * Path matching — the only non-DOM logic in this package.
- *
- * Patterns are plain paths with `:name` params and a trailing `*name`
- * catch-all:
- *
- *   "/"  "/docs/intro"   static  — matched by one Map lookup
- *   "/blog/:slug"                — one param per segment
- *   "/files/*rest"  "*"          — catch-all tail (the `*` route is the 404)
- *
- * Precedence: static patterns first, then dynamic ones in declaration order,
- * then catch-alls (longest literal prefix first). So a `"*"` route matches
- * only what nothing else does, wherever it sits in the table — declaration
- * order never has to encode specificity.
+ * Path matching. Patterns are plain paths with `:name` params and a trailing
+ * `*name` catch-all (bare `*` is the 404). Precedence: static, then dynamic in
+ * declaration order, then catch-alls longest first — so `"*"` matches only
+ * what nothing else does, wherever it sits in the table.
  */
 
 export interface RouteParams {
@@ -27,17 +18,11 @@ export interface Match<T> {
   readonly path: string;
 }
 
-/** Shared for every param-less match — a match costs no allocation. */
+/** Shared by every param-less match. Null-prototype, like every params object, so a segment named "__proto__" is data. */
 const NO_PARAMS: RouteParams = Object.freeze(Object.create(null) as RouteParams);
 
-const SLASH = 47;
-const COLON = 58;
-const STAR = 42;
-
-function decodeSegment(raw: string): string {
-  if (raw.indexOf("%") === -1) return raw;
-  // A malformed escape (%zz) is a client-supplied value, not a bug: keep the
-  // raw segment rather than throwing out of the match.
+/** A malformed escape (%zz) is client input, not a bug: keep it as written. */
+export function decode(raw: string): string {
   try {
     return decodeURIComponent(raw);
   } catch {
@@ -45,154 +30,85 @@ function decodeSegment(raw: string): string {
   }
 }
 
-/** Splits a path into non-empty segments: "/a//b/" -> ["a", "b"]. */
-export function splitPath(path: string, decode: boolean): string[] {
+/** "/a//b/" -> ["a", "b"] */
+export function splitPath(path: string, decodeSegments = false): string[] {
   const segs = path.split("/").filter(Boolean);
-  return decode ? segs.map(decodeSegment) : segs;
+  return decodeSegments ? segs.map(decode) : segs;
 }
 
-export function joinSegments(segs: readonly string[]): string {
-  return segs.length === 0 ? "/" : "/" + segs.join("/");
-}
+export const joinSegments = (segs: readonly string[]): string => "/" + segs.join("/");
 
-/** "docs/" -> "/docs"; "" and "/" -> "/". */
-export function normalizePath(path: string): string {
-  return joinSegments(splitPath(path, false));
-}
+/** "docs/" -> "/docs"; "" and "/" -> "/" */
+export const normalizePath = (path: string): string => joinSegments(splitPath(path));
 
 /** "" for a root base, else "/prefix" with no trailing slash. */
-export function normalizeBase(base: string | undefined): string {
-  if (!base) return "";
-  const segs = splitPath(base, false);
-  return segs.length === 0 ? "" : "/" + segs.join("/");
-}
+export const normalizeBase = (base = ""): string => normalizePath(base).replace(/^\/$/, "");
 
-/**
- * Removes the base prefix from a pathname, or returns null when the pathname
- * sits outside the base (the app does not own that URL — the router must let
- * the browser navigate to it).
- */
+/** The pathname minus the base, or null when it sits outside it (not the app's URL). */
 export function stripBase(pathname: string, base: string): string | null {
-  if (base === "") return pathname;
+  if (!base) return pathname;
   if (!pathname.startsWith(base)) return null;
   const rest = pathname.slice(base.length);
-  if (rest === "") return "/";
-  return rest.charCodeAt(0) === SLASH ? rest : null;
+  return rest === "" ? "/" : rest[0] === "/" ? rest : null;
 }
 
 interface Compiled<T> {
   readonly pattern: string;
   readonly value: T;
-  /** Literal text per segment; "" where names[i] holds a param name. */
-  readonly lits: readonly string[];
-  readonly names: readonly (string | null)[];
-  /** Param name of the trailing catch-all, or null when there is none. */
+  /** Literal or `:name` per segment, catch-all excluded. */
+  readonly segs: readonly string[];
+  /** The catch-all's param name, or null. */
   readonly rest: string | null;
-  /** Canonical path — only meaningful (and only used) for static patterns. */
-  readonly key: string;
-  readonly isStatic: boolean;
+  /** 0 static, 1 dynamic, 2 catch-all. */
+  readonly rank: number;
 }
 
 function compile<T>(pattern: string, value: T): Compiled<T> {
-  const raw = splitPath(pattern, true);
-  const lits: string[] = [];
-  const names: (string | null)[] = [];
-  let rest: string | null = null;
-  let isStatic = true;
-
-  for (let i = 0; i < raw.length; i++) {
-    const seg = raw[i];
-    const first = seg.charCodeAt(0);
-    if (first === STAR) {
-      if (i !== raw.length - 1) {
-        throw new Error(`nuclo-router: "${pattern}" — a *catch-all must be the last segment`);
-      }
-      rest = seg.slice(1) || "*";
-      isStatic = false;
-      break;
-    }
-    // A "." or ".." segment can never match: incoming paths are canonicalized
-    // without resolving dot segments, so "./x" would compile to the literal
-    // path "/./x" and silently match nothing. Relative keys are meaningful
-    // only to mount(), which rewrites them before the table is compiled.
+  const segs = splitPath(pattern, true);
+  const star = segs.findIndex((seg) => seg[0] === "*");
+  if (star !== -1 && star !== segs.length - 1) {
+    throw new Error(`nuclo-router: "${pattern}" — a *catch-all must be the last segment`);
+  }
+  const rest = star === -1 ? null : segs.pop()!.slice(1) || "*";
+  for (const seg of segs) {
     if (seg === "." || seg === "..") {
       throw new Error(
         `nuclo-router: "${pattern}" — a route pattern is absolute. ` +
           `A "./" or "../" key only works nested inside a parent table, which resolves it. Nest it, or write the full path.`,
       );
     }
-    if (first === COLON) {
-      const name = seg.slice(1);
-      if (!name) throw new Error(`nuclo-router: "${pattern}" — ":" needs a param name`);
-      lits.push("");
-      names.push(name);
-      isStatic = false;
-      continue;
-    }
-    lits.push(seg);
-    names.push(null);
+    if (seg === ":") throw new Error(`nuclo-router: "${pattern}" — ":" needs a param name`);
   }
-
-  return { pattern, value, lits, names, rest, key: joinSegments(lits), isStatic };
+  const rank = rest !== null ? 2 : segs.some((seg) => seg[0] === ":") ? 1 : 0;
+  return { pattern, value, segs, rest, rank };
 }
 
 function matchOne<T>(c: Compiled<T>, segs: readonly string[]): RouteParams | null {
-  const n = c.lits.length;
+  const n = c.segs.length;
   if (c.rest === null ? segs.length !== n : segs.length < n) return null;
-
-  const names = c.names;
-  // Literals first, so a pattern that cannot match allocates nothing.
+  let params: Record<string, string> | null = null;
   for (let i = 0; i < n; i++) {
-    if (names[i] === null && c.lits[i] !== segs[i]) return null;
+    const want = c.segs[i];
+    if (want[0] === ":") (params ??= Object.create(null))[want.slice(1)] = segs[i];
+    else if (want !== segs[i]) return null;
   }
-  // Null-prototype: a URL segment named "__proto__" or "constructor" must land
-  // in the params object as data, never on Object.prototype. Only dynamic and
-  // catch-all patterns reach here, so this object is never empty — static
-  // matches short-circuit to the shared NO_PARAMS in createMatcher().
-  const params = Object.create(null) as Record<string, string>;
-  for (let i = 0; i < n; i++) {
-    const name = names[i];
-    if (name !== null) params[name] = segs[i];
-  }
-  if (c.rest !== null) params[c.rest] = segs.slice(n).join("/");
-  return params;
+  if (c.rest !== null) (params ??= Object.create(null))[c.rest] = segs.slice(n).join("/");
+  return params ?? NO_PARAMS;
 }
 
-/**
- * Compiles a pattern table once into a matcher closure. Matching a static
- * route is a single Map lookup; a dynamic one is a segment-count check plus a
- * literal comparison per segment — no regexes are built or run.
- */
-export function createMatcher<T>(
-  table: Readonly<Record<string, T>>,
-): (pathname: string) => Match<T> | null {
-  const statics = new Map<string, Compiled<T>>();
-  const dynamic: Compiled<T>[] = [];
-  const catchAll: Compiled<T>[] = [];
+/** Compiles the table once into a matcher: a segment comparison per pattern, no regexes. */
+export function createMatcher<T>(table: Readonly<Record<string, T>>): (pathname: string) => Match<T> | null {
+  const compiled = Object.keys(table)
+    .map((pattern) => compile(pattern, table[pattern]))
+    // Stable: declaration order breaks ties. Catch-alls: longest literal prefix first.
+    .sort((a, b) => a.rank - b.rank || (a.rank === 2 ? b.segs.length - a.segs.length : 0));
 
-  for (const pattern of Object.keys(table)) {
-    const c = compile(pattern, table[pattern]);
-    if (c.rest !== null) catchAll.push(c);
-    else if (c.isStatic) statics.set(c.key, c);
-    else dynamic.push(c);
-  }
-  // Longest literal prefix first, so "/files/*rest" is preferred over "*".
-  catchAll.sort((a, b) => b.lits.length - a.lits.length);
-
-  return function match(pathname: string): Match<T> | null {
+  return (pathname) => {
     const segs = splitPath(pathname, true);
     const path = joinSegments(segs);
-
-    const exact = statics.get(path);
-    if (exact) return { pattern: exact.pattern, value: exact.value, params: NO_PARAMS, path };
-
-    for (let i = 0; i < dynamic.length; i++) {
-      const params = matchOne(dynamic[i], segs);
-      if (params) return { pattern: dynamic[i].pattern, value: dynamic[i].value, params, path };
-    }
-    for (let i = 0; i < catchAll.length; i++) {
-      const params = matchOne(catchAll[i], segs);
-      if (params) return { pattern: catchAll[i].pattern, value: catchAll[i].value, params, path };
+    for (const c of compiled) {
+      const params = matchOne(c, segs);
+      if (params) return { pattern: c.pattern, value: c.value, params, path };
     }
     return null;
   };

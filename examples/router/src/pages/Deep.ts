@@ -15,8 +15,7 @@ import { card, code, feature, pill, s } from "../ui.ts";
 const link = css({ textDecoration: "none" });
 
 export default function DeepPage(ctx: RouteContext) {
-  // Placed by the page itself: into the layout's region({ id: "main" }).
-  return into("main", div(
+  return div(
     s.page,
     feature(
       "/patterns/nested/deep",
@@ -91,5 +90,5 @@ export default function DeepPage(ctx: RouteContext) {
         a({ href: "/patterns" }, link, s.caption, "← back to /patterns"),
       ),
     ),
-  ));
+  );
 }

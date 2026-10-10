@@ -101,12 +101,9 @@ function liveState() {
 }
 
 /**
- * A layout that places the active page without ever seeing the router.
- *
- * `region()` marks the spot; every page returns `into("main", …)` and lands
- * in it. Nothing is threaded through props, so this component stays reusable
- * — and because navigation never rebuilds it, the filter box below keeps its
- * text and its focus while the page inside changes.
+ * The layout: it places the router's outlet, and nothing else of the router's.
+ * Navigation never rebuilds it, so the filter box below keeps its text and its
+ * focus while the page inside changes.
  */
 export const Layout = (props: { sidebar: NodeModLike }) =>
   div(
@@ -115,22 +112,17 @@ export const Layout = (props: { sidebar: NodeModLike }) =>
       st.side,
       label(st.k, { for: "layout-filter" }, "Filter (never rebuilt)"),
       input(st.field, { id: "layout-filter", placeholder: "type, then navigate" }),
-      props.sidebar,
-      // A second region, for pages that place something here themselves —
-      // open a blog post: it fills both with one into({ main, sidebar }).
+      // props.sidebar,
+      // Regions a page can fill from inside its own content — open a blog
+      // post: it returns its article with an into("sidebar", …) inside.
       region({ id: "sidebar", empty: span(s.caption, "(no page content here)") }),
       region({ id: "sidebar2", empty: span(s.caption, "(no page content here)") }),
     ),
     div(
       st.stage,
-      region({
-        id: "main",
-        // Every page is an into() into this region. "stack" renders all of
-        // them in arrival order, which is what shows a pushed layer over the
-        // page beneath it; "latest" would keep only the newest.
-        type: "stack",
-        empty: span(s.caption, "Nothing in the main region."),
-      }),
+      // Every page is a row here, bottom first: a pushed layer is a later row
+      // over the page beneath it.
+      router.outlet(),
     ),
   )
 
@@ -201,10 +193,8 @@ export const App = () =>
           ),
         ),
       ),
-      // The layout owns the region the pages land in; it is handed a sidebar
-      // and nothing else. Nothing of the router's is in this tree: the pages
-      // mount themselves beside the app, and every page lands in the region
-      // through its own into().
+      // The layout owns the outlet the pages land in; it is handed a sidebar
+      // and nothing else.
       Layout({ sidebar: span(s.caption, "Sidebar — also never rebuilt.") }),
     ),
 

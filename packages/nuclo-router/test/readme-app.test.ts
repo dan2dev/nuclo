@@ -1,38 +1,38 @@
 /**
  * The app shape the README documents, end to end: pending/error when() blocks
- * as siblings of the pages' region inside one host, server-rendered then
- * hydrated then navigated. Sibling when() blocks share the host's claim cursor
- * with the region, so this is the shape most likely to expose a marker mismatch.
+ * as siblings of the outlet inside one host, server-rendered then hydrated
+ * then navigated. Sibling when() blocks share the host's claim cursor with the
+ * outlet, so this is the shape most likely to expose a marker mismatch.
  */
 import { describe, it, expect, vi } from "vitest";
 import "nuclo";
 import { renderToString } from "nuclo/ssr";
-import { createRouter, type PageComponent, type Route, type RouteContext } from "../src/index";
+import { createRouter, type PageComponent, type RouteContext, type Router } from "../src/index";
 import { click, deferred, flush, mount, useRouterEnv } from "./helpers";
 
 const routes = useRouterEnv();
 
-const Home: PageComponent = () => into("main", div({ id: "home" }, h1("Home")));
-const Docs: PageComponent = () => into("main", div({ id: "docs" }, h1("Docs")));
-const Post: PageComponent = (ctx: RouteContext) => into("main", div({ id: "post" }, h1(ctx.params.slug)));
-const NotFound: PageComponent = () => into("main", div({ id: "nf" }, h1("404")));
+const Home: PageComponent = () => div({ id: "home" }, h1("Home"));
+const Docs: PageComponent = () => div({ id: "docs" }, h1("Docs"));
+const Post: PageComponent = (ctx: RouteContext) => div({ id: "post" }, h1(ctx.params.slug));
+const NotFound: PageComponent = () => div({ id: "nf" }, h1("404"));
 
 const Spinner = () => div({ id: "spinner" }, "Loading…");
-const ErrorView = (route: Route) => div({ id: "err" }, () => route.error?.message ?? "");
+const ErrorView = (router: Router) => div({ id: "err" }, () => router.error?.message ?? "");
 
 /** Verbatim from the README. */
-const App = (route: Route) => () =>
+const App = (router: Router) => () =>
   div(
     { id: "shell" },
     header(
-      a({ id: "to-home", href: route.href("/") }, "Home"),
-      a({ id: "to-docs", href: route.href("/docs") }, "Docs"),
+      a({ id: "to-home", href: router.href("/") }, "Home"),
+      a({ id: "to-docs", href: router.href("/docs") }, "Docs"),
     ),
     main(
       { id: "outlet" },
-      when(() => route.pending, Spinner()),
-      when(() => route.error !== null, ErrorView(route)),
-      region({ id: "main" }),
+      when(() => router.pending, Spinner()),
+      when(() => router.error !== null, ErrorView(router)),
+      router.outlet(),
     ),
     footer({ id: "foot" }, "© nuclo"),
   );
@@ -47,8 +47,9 @@ function makeRouter(slow?: Promise<{ default: PageComponent }>) {
 }
 
 async function serverThenClient(url: string, slow?: Promise<{ default: PageComponent }>) {
-  const server = await makeRouter().start(url);
-  const html = server.run(() => renderToString(App(server)));
+  const serverRouter = makeRouter();
+  const server = await serverRouter.start(url);
+  const html = server.run(() => renderToString(App(serverRouter)));
   server.stop();
 
   const container = mount();
@@ -58,9 +59,10 @@ async function serverThenClient(url: string, slow?: Promise<{ default: PageCompo
   const ssrPage = ssrOutlet.children[0];
 
   window.history.replaceState(null, "", url);
-  const route = await makeRouter(slow).start();
+  const router = makeRouter(slow);
+  const route = await router.start();
   routes.push(route);
-  hydrate(App(route), container);
+  hydrate(App(router), container);
   return { html, container, route, ssrShell, ssrOutlet, ssrPage };
 }
 

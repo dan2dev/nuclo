@@ -86,37 +86,18 @@ export const routeTable = {
  * module to split off. h2, not h1: the shell renders the document's only h1.
  */
 
-/** Props the router hands to a page — "/eager" declares no params. */
-interface EagerPageProps {
-  [key: string]: unknown;
+function EagerPage(): ReturnType<typeof div> {
+  return div(
+    h2("Eager route"),
+    p(
+      "This page is not code-split. Its loader is just `() => EagerPage`, so it " +
+        "lives in the entry bundle and navigating here never flips router.pending, " +
+        "and the router's idle preloader has nothing to fetch.",
+    ),
+    into("sidebar", span("from EagerPage.")),
+  );
 }
 
-/** The shell regions this page fills: the main pane and the sidebar. */
-interface EagerPageRegions {
-  main: ReturnType<typeof div>;
-  sidebar: ReturnType<typeof div>;
-}
-
-function EagerPage(props: EagerPageProps): ReturnType<typeof into> {
-  console.log(props);
-  return into({
-    "main": div(
-      h2("Eager route"),
-      p(
-        "This page is not code-split. Its loader is just `() => EagerPage`, so it " +
-        "lives in the entry bundle and navigating here is always synchronous — " +
-        "router.pending is never true for it, and the router's idle preloader has " +
-        "nothing to fetch.",
-      ),
-    ),
-    "sidebar": div(
-      // input(),
-      span(
-        "from EagerPage."
-      )
-    ),
-  } satisfies EagerPageRegions);
-}
 
 /**
  * `preload` is OFF here on purpose. With idle preloading on (the default),

@@ -5,7 +5,7 @@
 //     params, search, hash, url — and which two of them read the live
 //     location instead of the match
 //   · pending and error, the two flags that describe a navigation in flight
-//   · where the pages go: the layer stack mounts itself, and each page into()s into a region
+//   · where the pages go: router.outlet(), one list() whose rows are the open pages
 //   · go(), go(…, { replace: true }) and href(), driven from buttons and
 //     live readouts
 //   · stop(), and why you almost never write it yourself
@@ -40,8 +40,7 @@ function readout(label: string, read: () => string) {
 }
 
 export default function ApiPage(_ctx: RouteContext) {
-  // Placed by the page itself: into the layout's region({ id: "main" }).
-  return into("main", div(
+  return div(
     s.page,
     h2(s.title, "The router API"),
     p(
@@ -156,20 +155,18 @@ export default function ApiPage(_ctx: RouteContext) {
       ),
 
       card(
-        "the pages: into() + region()",
+        "the pages: router.outlet()",
         span(
           st.desc,
-          "the layer stack is a list() whose rows are the open pages. start() mounts it " +
-            "beside the app on the first render, and every page into()s itself into a " +
-            "region of the layout. server and client build the same tree, so hydrate() " +
+          "the layer stack is a list() whose rows are the open pages, and router.outlet() " +
+            "is where the app places it. server and client build the same tree, so hydrate() " +
             "claims the server's nodes instead of replacing them.",
         ),
-        code(`// main.ts — the pages mount themselves with this render
-await router.start();
-render(App, document.querySelector("#app")!);
+        code(`// app.ts — the outlet is where the pages land
+export const App = () => div(nav(/* links */), main(router.outlet()));
 
-// a page says where it goes
-export default () => into("main", article(h1("Hello")));`),
+// a page is plain content
+export default () => article(h1("Hello"));`),
         span(
           st.desc,
           "navigating to a cached module with the same page function, path and search " +
@@ -308,5 +305,5 @@ try {
         ),
       ),
     ),
-  ));
+  );
 }

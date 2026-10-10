@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, vi } from "vitest";
 import "nuclo";
-import type { Route } from "../src/index";
+import type { Route, Router } from "../src/index";
 
 /**
  * jsdom leaves scrolling unimplemented and tries to really navigate on a
@@ -77,12 +77,8 @@ export function flush(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-/**
- * The app the jsdom suites render: one "stack" region, so every layer's
- * `into("main", …)` lands in it bottom first and the rows beneath a pushed
- * layer are never rebuilt.
- */
-export const App = () => div(region({ id: "main", type: "stack" }));
+/** The app the jsdom suites render: the router's outlet, where every layer lands bottom first. */
+export const App = (router: Router) => () => div({ id: "outlet" }, router.outlet());
 
 export function mount(): HTMLElement {
   const container = document.createElement("div");
