@@ -17,7 +17,7 @@
  */
 import type { RouteContext } from "nuclo-router";
 import { css, cx } from "../theme.ts";
-import { card, code, feature, pill, s } from "../ui.ts";
+import { card, code, feature, pill, s, probe } from "../ui.ts";
 
 const st = {
   link: css({
@@ -114,6 +114,7 @@ export default function PatternsPage(ctx: RouteContext) {
   return div(
     into("sidebar", span(s.caption, "I'm the sidebar content.")),
     s.page,
+    probe(),
     h2(s.title, "Patterns"),
     p(
       s.lead,

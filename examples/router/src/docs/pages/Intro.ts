@@ -1,10 +1,11 @@
 // A static route inside the child table.
 import type { RouteContext } from "nuclo-router";
-import { card, s } from "../../ui.ts";
+import { card, s, probe } from "../../ui.ts";
 
 export default function DocsIntro(ctx: RouteContext) {
   return div(
     s.grid,
+    probe(),
     card("the child matched", span(`pattern "${ctx.pattern}" · path "${ctx.path}"`)),
     card(
       "its own chunk",

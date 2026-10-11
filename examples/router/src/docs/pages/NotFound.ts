@@ -1,10 +1,11 @@
 // The child's own fallback. The app's "*" route never sees these URLs.
 import type { RouteContext } from "nuclo-router";
-import { card, pill, s } from "../../ui.ts";
+import { card, pill, s, probe } from "../../ui.ts";
 
 export default function DocsNotFound(ctx: RouteContext) {
   return div(
     s.grid,
+    probe(),
     card(
       "the child's 404",
       div(s.row, pill("warn", `pattern "${ctx.pattern}"`)),

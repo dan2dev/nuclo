@@ -13,7 +13,7 @@
  */
 import type { RouteContext } from "nuclo-router";
 import { css } from "../theme.ts";
-import { card, code, feature, pill, s } from "../ui.ts";
+import { card, code, feature, pill, s, probe } from "../ui.ts";
 
 const st = {
   link: css({
@@ -41,6 +41,7 @@ function value(text: string) {
 export default function NotFoundPage(ctx: RouteContext) {
   return div(
     s.page,
+    probe(),
 
     div(s.row, pill("bad", "404"), pill("neutral", 'pattern: "*"')),
     h2(st.title, "nothing matched"),

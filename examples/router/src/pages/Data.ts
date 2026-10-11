@@ -8,7 +8,7 @@
  */
 import type { DataLoader, PageProps, RouteContext } from "nuclo-router";
 import { css, cx } from "../theme.ts";
-import { btn, card, code, feature, pill, s } from "../ui.ts";
+import { btn, card, code, feature, pill, s, probe } from "../ui.ts";
 
 export interface Report {
   runs: number;
@@ -33,6 +33,7 @@ export const load: DataLoader<Report> = async (ctx) => {
 export default function DataPage(ctx: RouteContext, { layer, data: report }: PageProps<Report>) {
   return div(
     s.page,
+    probe(),
 
     feature(
       "A loader runs before the page",

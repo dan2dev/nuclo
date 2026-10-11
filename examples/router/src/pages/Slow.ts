@@ -10,7 +10,7 @@
 // is synchronous, because the resolved page function is kept per loader.
 import type { RouteContext } from "nuclo-router";
 import { css } from "../theme.ts";
-import { code, feature, pill, s } from "../ui.ts";
+import { code, feature, pill, s, probe } from "../ui.ts";
 
 const st = {
   link: css({
@@ -34,6 +34,7 @@ function fact(tone: "good" | "info" | "neutral", label: string, text: string) {
 export function SlowPage(_ctx: RouteContext) {
   return div(
     s.page,
+    probe(),
 
     h2(s.title, "Slow chunk"),
     p(
@@ -46,7 +47,7 @@ export function SlowPage(_ctx: RouteContext) {
 
     feature(
       "what just happened",
-      "a loading route adds a spinner; it does not remove a page. that is the whole reason this example needs no loading placeholder and no skeleton — the spinner takes up room above the page while it is there, but nothing is ever unmounted or left blank.",
+      "a loading route adds a spinner; it does not remove a page. that is the whole reason this example needs no loading placeholder and no skeleton — the spinner lights up a fixed-height status row above the page, so nothing moves, nothing is unmounted and nothing is left blank.",
       code(
         '"/slow": () => import("./pages/Slow.ts").then(async (m) => {\n' +
           "  await new Promise((resolve) => setTimeout(resolve, 1200));\n" +

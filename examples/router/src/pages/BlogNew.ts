@@ -8,13 +8,14 @@
  */
 import type { RouteContext } from "nuclo-router";
 import { css } from "../theme.ts";
-import { btn, code, feature, pill, s } from "../ui.ts";
+import { btn, code, feature, pill, s, probe } from "../ui.ts";
 
 const link = css({ textDecoration: "none" });
 
 export default function BlogNewPage(ctx: RouteContext) {
   return div(
     s.page,
+    probe(),
     feature(
       "static wins, wherever it sits",
       "the matcher compiles the table once into three buckets: static patterns into a Map, " +

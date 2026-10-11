@@ -10,7 +10,7 @@
 //     table is only consulted between dynamic patterns that could both match,
 //     and these two never can
 import type { Params, RouteContext } from "nuclo-router";
-import { btn, card, code, feature, pill, s } from "../ui.ts";
+import { btn, card, code, feature, pill, s, probe } from "../ui.ts";
 
 export default function CommentPage(ctx: RouteContext<Params<"/blog/:slug/:comment">>) {
   // Params<…> types ctx.params from the pattern: both names are strings, and
@@ -22,6 +22,7 @@ export default function CommentPage(ctx: RouteContext<Params<"/blog/:slug/:comme
 
   return div(
     s.page,
+    probe(),
 
     h2(s.title, "two params"),
     p(

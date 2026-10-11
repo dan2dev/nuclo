@@ -9,7 +9,7 @@
 import type { PageProps, RouteContext } from "nuclo-router";
 import { css, cx } from "../theme.ts";
 import { btn, card, code, feature, field, pill, s } from "../ui.ts";
-import { options, type Option } from "../stack/store.ts";
+import { categoryLabel, options, type Option } from "../stack/store.ts";
 
 export default function StackPage(_ctx: RouteContext, { layer }: PageProps) {
   // Ordinary closure state. Nothing here is special — that is the point.
@@ -95,7 +95,7 @@ export default function StackPage(_ctx: RouteContext, { layer }: PageProps) {
               },
               list(
                 () => options,
-                (item) => option({ value: item.id }, `${item.label}  ·  ${item.category}`),
+                (item) => option({ value: item.id }, `${item.label}  ·  ${categoryLabel(item.category)}`),
               ),
             ),
             button(btn.primary, { id: "add-option", onClick: () => void addOption() }, "+ New option"),

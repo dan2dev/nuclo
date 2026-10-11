@@ -39,14 +39,33 @@ const st = {
   }),
   k: css({ font: "mono", text: 12, color: "textMuted" }),
   v: css({ font: "mono", text: 12, color: "accent", raw: { "word-break": "break-all" } }),
-  log: css({ font: "mono", text: 11, color: "textDim", col: true, gap: 2 }),
+  // Fixed height: the panel must not grow as onNavigate entries arrive.
+  log: css({ font: "mono", text: 11, color: "textDim", col: true, gap: 2, h: 150, overflow: "auto" }),
   outlet: css({ minH: 320 }),
+  // One fixed-height row for pending and error, so neither state moves the layout below.
+  status: css({
+    row: true,
+    items: "center",
+    gap: 10,
+    h: 44,
+    px: 12,
+    mb: 16,
+    bg: "surface",
+    border: "1px solid",
+    borderColor: "border",
+    rounded: "md",
+    overflow: "hidden",
+  }),
+  statusError: css({ borderColor: "danger" }),
+  statusMsg: css({ text: 13, flex: 1, minW: 0, truncate: true }),
   layout: css({ row: true, gap: 16, items: "stretch" }),
   side: css({
     col: true,
     gap: 8,
     p: 14,
-    minW: 190,
+    // Fixed width: content a page places here must not resize the stage.
+    flex: "0 0 190px",
+    minW: 0,
     bg: "surface",
     border: "1px solid",
     borderColor: "border",
@@ -54,6 +73,7 @@ const st = {
   }),
   stage: css({
     flex: 1,
+    minW: 0,
     p: 14,
     bg: "surface",
     border: "1px dashed",
@@ -63,6 +83,7 @@ const st = {
   field: css({
     font: "body",
     text: 13,
+    w: "100%",
     px: 10,
     py: 7,
     rounded: "md",
@@ -105,14 +126,13 @@ function liveState() {
  * Navigation never rebuilds it, so the filter box below keeps its text and its
  * focus while the page inside changes.
  */
-export const Layout = (props: { sidebar: NodeModLike }) =>
+export const Layout = () =>
   div(
     st.layout,
     div(
       st.side,
       label(st.k, { for: "layout-filter" }, "Filter (never rebuilt)"),
       input(st.field, { id: "layout-filter", placeholder: "type, then navigate" }),
-      // props.sidebar,
       // Regions a page can fill from inside its own content — open a blog
       // post: it returns its article with an into("sidebar", …) inside.
       region({ id: "sidebar", empty: span(s.caption, "(no page content here)") }),
@@ -171,31 +191,26 @@ export const App = () =>
     main(
       { id: "outlet" },
       st.outlet,
-      // While a chunk is in flight the outgoing page stays on screen and this
-      // appears above it — no blank frame, no layout shift.
-      when(() => router.pending, spinner()),
-      when(
-        () => router.error !== null,
-        div(
-          cx(s.cardBox, css({ borderColor: "danger" })),
-          div(s.row, pill("bad", "router.error"), span(() => router.error?.message ?? "")),
-          span(
-            s.caption,
-            "The page you were on is still here — a failed chunk never blanks the app.",
-          ),
-          div(
-            s.row,
-            button(
-              btn.primary,
-              { onClick: () => void router.go(router.error ? "/broken" : "/") },
-              "Retry /broken",
-            ),
-          ),
+      // While a chunk is in flight the outgoing page stays on screen and the
+      // spinner shows in this row. The row has a fixed height whether it is
+      // idle, pending or showing an error — no blank frame, no layout shift.
+      div(
+        st.status,
+        () => (router.error ? st.statusError : ""),
+        when(() => router.pending, spinner()),
+        when(
+          () => router.error !== null,
+          pill("bad", "router.error"),
+          span(st.statusMsg, { title: "The page you were on is still here — a failed chunk never blanks the app." }, () => router.error?.message ?? ""),
+          button(btn.primary, { onClick: () => void router.go("/broken") }, "Retry /broken"),
+        ),
+        when(
+          () => !router.pending && router.error === null,
+          span(s.caption, "router.pending / router.error show here; the page below stays mounted either way"),
         ),
       ),
-      // The layout owns the outlet the pages land in; it is handed a sidebar
-      // and nothing else.
-      Layout({ sidebar: span(s.caption, "Sidebar — also never rebuilt.") }),
+      // The layout owns the outlet the pages land in.
+      Layout(),
     ),
 
     footer(

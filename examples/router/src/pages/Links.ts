@@ -18,7 +18,7 @@
  * because when two branches apply the first one wins.
  */
 import { css, cx } from "../theme.ts";
-import { card, code, feature, pill, s } from "../ui.ts";
+import { card, code, feature, pill, s, probe } from "../ui.ts";
 import type { RouteContext } from "nuclo-router";
 
 const st = {
@@ -279,6 +279,7 @@ function left(ctx: RouteContext) {
 export function LinksPage(ctx: RouteContext) {
   return div(
     s.page,
+    probe(),
 
     h2(s.panelTitle, "Link handling"),
     p(

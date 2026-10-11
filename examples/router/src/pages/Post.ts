@@ -13,7 +13,7 @@
 // `reuses()` and `onClick()` in packages/nuclo-router/src/index.ts.
 import type { Params, RouteContext } from "nuclo-router";
 import { css, cx } from "../theme.ts";
-import { btn, card, code, feature, pill, s } from "../ui.ts";
+import { btn, card, code, feature, pill, s, probe } from "../ui.ts";
 
 const st = {
   kv: css({ display: "grid", gap: 8, gridTemplateColumns: "auto 1fr", items: "baseline" }),
@@ -63,6 +63,7 @@ export default function PostPage(ctx: RouteContext<Params<"/blog/:slug">>) {
   // "sidebar" }) from inside it. Both leave when this page does.
   return div(
       s.page,
+      probe(),
       h2(s.title, "one param"),
       p(
         s.lead,

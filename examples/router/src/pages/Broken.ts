@@ -14,7 +14,7 @@
 // `await router.start()` in main.ts and nothing renders at all. Only a
 // client-side retry recovers — see the last card below.
 import type { RouteContext } from "nuclo-router";
-import { card, code, feature, pill, s } from "../ui.ts";
+import { card, code, feature, pill, s, probe } from "../ui.ts";
 
 /**
  * How many times load() has run. A module-level counter, so it survives the
@@ -31,6 +31,7 @@ export function load() {
 export function BrokenPage(_ctx: RouteContext) {
   return div(
     s.page,
+    probe(),
 
     feature(
       "attempt 1 failed, and nothing else did",

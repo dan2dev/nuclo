@@ -453,6 +453,8 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         update();
         return;
       }
+      // Going where we already are (same path, query, hash) is not a new history entry. Retry after an error, or with layers open, still runs.
+      if (mode === "push" && !error && pendingPath === null && slot.length <= 1 && new URL(href, window.location.href).href === window.location.href) return;
       const mine = ++generation;
       const planned = plan(parsed.chain, parsed.ctx);
       const kept = reusable(planned);

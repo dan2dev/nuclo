@@ -41,7 +41,7 @@ export const s = {
   panelDesc: css({ text: 14, color: "textDim", mb: 16, maxW: 820 }),
 
   grid: css({ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 12 }),
-  cols2: css({ display: "grid", gap: 12, md: { gridTemplateColumns: "1fr 1fr" } }),
+  cols2: css({ display: "grid", gap: 12, md: { gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" } }),
 
   cardBox: css({
     bg: "surfaceMuted",
@@ -138,7 +138,7 @@ export function code(text: string) {
 /** The loading indicator used while a route's chunk is in flight. */
 export function spinner(label = "loading chunk…") {
   return div(
-    css({ row: true, items: "center", gap: 10, py: 30, justify: "center" }),
+    css({ row: true, items: "center", gap: 10 }),
     div(
       css({
         size: 22,
@@ -239,7 +239,9 @@ export function modal(
         role: "dialog",
         "aria-modal": "true",
         "aria-label": title,
-        style: { transform: `translate(calc(-50% + ${offset}px), calc(-50% + ${offset}px))` },
+        // `translate`, not `transform`: fadeIn animates `transform`, which would override
+        // the centering until the animation ends and make the frame jump into place.
+        style: { translate: `calc(-50% + ${offset}px) calc(-50% + ${offset}px)` },
       },
       div(
         modalStyles.head,
@@ -277,6 +279,11 @@ export const field = {
   }),
   row: css({ mb: 14 }),
 };
+
+/** Type here, then navigate away and back: if the text survives, the page was not destroyed. */
+export function probe() {
+  return label(s.caption, "state probe ", input(field.input, { placeholder: "type, then navigate away and back" }));
+}
 
 /**
  * Renders a page either inline or as a stacked modal, depending on how it was

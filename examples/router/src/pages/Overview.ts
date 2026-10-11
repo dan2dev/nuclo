@@ -1,7 +1,7 @@
 // The landing page: what the router is, the whole integration in one block,
 // and a map of the rest of the showcase.
 import type { RouteContext } from "nuclo-router";
-import { code, feature, pill, s } from "../ui.ts";
+import { code, feature, pill, s, probe } from "../ui.ts";
 
 const INTEGRATION = `// routes.ts — the table and the router, created once
 export const router = createRouter(routeTable, { preload: false });
@@ -33,6 +33,7 @@ function tryRow(path: string, what: string) {
 export default function OverviewPage(_ctx: RouteContext) {
   return div(
     s.page,
+    probe(),
 
     feature(
       "A router made of list()",

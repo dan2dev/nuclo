@@ -10,13 +10,14 @@
  */
 import type { RouteContext } from "nuclo-router";
 import { css } from "../theme.ts";
-import { card, code, feature, pill, s } from "../ui.ts";
+import { card, code, feature, pill, s, probe } from "../ui.ts";
 
 const link = css({ textDecoration: "none" });
 
 export default function DeepPage(ctx: RouteContext) {
   return div(
     s.page,
+    probe(),
     feature(
       "/patterns/nested/deep",
       "a static pattern with three segments. no pattern here is tried against " +

@@ -16,7 +16,7 @@
 import type { RouteContext } from "nuclo-router";
 import { router } from "../routes.ts";
 import { css, cx } from "../theme.ts";
-import { btn, card, code, feature, pill, s } from "../ui.ts";
+import { btn, card, code, feature, pill, s, probe } from "../ui.ts";
 
 const st = {
   desc: css({ text: 13, color: "textDim" }),
@@ -42,6 +42,7 @@ function readout(label: string, read: () => string) {
 export default function ApiPage(_ctx: RouteContext) {
   return div(
     s.page,
+    probe(),
     h2(s.title, "The router API"),
     p(
       s.lead,

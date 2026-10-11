@@ -14,7 +14,7 @@
  */
 import type { Params, RouteContext } from "nuclo-router";
 import { css } from "../theme.ts";
-import { card, code, feature, pill, s } from "../ui.ts";
+import { card, code, feature, pill, s, probe } from "../ui.ts";
 
 const st = {
   link: css({
@@ -47,6 +47,7 @@ export default function FilesPage(ctx: RouteContext<Params<"/files/*rest">>) {
 
   return div(
     s.page,
+    probe(),
 
     h2(s.title, "Named catch-all"),
     p(

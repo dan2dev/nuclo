@@ -24,6 +24,9 @@ export const options: Option[] = [
   { id: "pear", label: "Pear", category: "fruit" },
 ];
 
+/** A category's name for display; an option stores only its id. */
+export const categoryLabel = (id: string): string => categories.find((c) => c.id === id)?.label ?? id;
+
 let serial = 0;
 const nextId = (prefix: string) => `${prefix}-${++serial}`;
 

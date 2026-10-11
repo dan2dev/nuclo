@@ -9,7 +9,7 @@
  */
 import type { RouteContext } from "nuclo-router";
 import { css } from "../theme.ts";
-import { card, code, feature, pill, s } from "../ui.ts";
+import { card, code, feature, pill, s, probe } from "../ui.ts";
 
 const defaults = css({ display: "grid", gridTemplateColumns: "auto auto 1fr", gap: 10, items: "baseline" });
 const k = css({ font: "mono", text: 12, color: "accent" });
@@ -26,6 +26,7 @@ const ROWS: ReadonlyArray<readonly [string, string, string]> = [
 export default function SettingsPage(_ctx: RouteContext) {
   return div(
     s.page,
+    probe(),
     h2(s.title, "createRouter() settings"),
     p(
       s.lead,
