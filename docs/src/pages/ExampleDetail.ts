@@ -137,6 +137,7 @@ function fillFrame(layer: Layer, from: ExampleSource, index: number, bar: NodeMo
 function AppLayout(ex: Example) {
   const files = ex.files ?? [{ name: `${ex.title.replace(/[^a-zA-Z0-9]+/g, "")}.ts`, code: ex.code }];
   let active = 0; // 0 is the preview, then one per file
+  let moreDesc = false; // phones: the full description, instead of its first lines
 
   const Tab = (name: string, i: number) =>
     button(
@@ -152,9 +153,13 @@ function AppLayout(ex: Example) {
     header(
       es.appHead,
       h2(es.appTitle, { tabindex: "-1" }, ex.title),
-      p(es.appDesc, ...withCode(ex.desc)),
-      a(es.standaloneLaunch, { href: router.href(`/apps/${ex.id}`), target: "_blank", rel: "noopener", title: `Open ${ex.title} in a new tab`, "aria-label": `Open ${ex.title} in standalone in a new tab` }, "Open in standalone", Icon("M14 3h7v7 M21 3l-9 9 M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5")),
-      ex.docs ? a(es.appDocs, { href: router.href(`/docs#${ex.docs}`) }, "Read the docs →") : null,
+      p({ class: () => cx(es.appDesc, moreDesc ? null : es.appDescClamp).className }, ...withCode(ex.desc)),
+      button(es.appMore, { type: "button", "aria-expanded": () => String(moreDesc), onClick: () => { moreDesc = !moreDesc; update(); } }, () => (moreDesc ? "Less" : "More")),
+      div(
+        es.appLinks,
+        a(es.standaloneLaunch, { href: router.href(`/apps/${ex.id}`), target: "_blank", rel: "noopener", title: `Open ${ex.title} in a new tab`, "aria-label": `Open ${ex.title} in standalone in a new tab` }, "Open in standalone", Icon("M14 3h7v7 M21 3l-9 9 M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5")),
+        ex.docs ? a(es.appDocs, { href: router.href(`/docs#${ex.docs}`) }, "Read the docs →") : null,
+      ),
     ),
     div(es.appTabs, { role: "tablist" }, Tab("Preview", 0), ...files.map((f, i) => Tab(f.name, i + 1))),
     Pane(0, es.appPreview, ex.preview()),

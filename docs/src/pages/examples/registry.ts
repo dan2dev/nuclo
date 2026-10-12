@@ -3,6 +3,8 @@ import { API_DEMOS } from "../../components/api-demos.ts";
 import { STYLING_FEATURES } from "./styling-demos.ts";
 import { SVG_EXAMPLES } from "./svg-demos.ts";
 import { SVG_INTERACTIVE_EXAMPLES } from "./svg-interactive-demos.ts";
+import { DATA_CHART_EXAMPLES } from "./svg-chart-demos.ts";
+import { LIVE_CHART_EXAMPLES } from "./svg-live-chart-demos.ts";
 import { ROUTER_EXAMPLES } from "./router-demos.ts";
 import { FORM_EXAMPLES } from "./form-demos.ts";
 import { COMPONENT_EXAMPLES } from "./component-demos.ts";
@@ -61,7 +63,7 @@ export const EXAMPLE_GROUPS: ExampleGroup[] = [
   {
     title: "SVG",
     sub: "Charts, animations, tools and games from the SVG tag builders, driven by plain data, pointer events and update().",
-    examples: [...SVG_EXAMPLES, ...SVG_INTERACTIVE_EXAMPLES].map((ex) => ({ ...ex, group: "SVG" })),
+    examples: [...SVG_EXAMPLES, ...LIVE_CHART_EXAMPLES, ...DATA_CHART_EXAMPLES, ...SVG_INTERACTIVE_EXAMPLES].map((ex) => ({ ...ex, group: "SVG" })),
   },
   {
     title: "Routing",

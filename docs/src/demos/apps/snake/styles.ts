@@ -31,12 +31,13 @@ export const s = {
   food: css("snake-food", { position: "absolute", top: "0", left: "0", width: cell, height: cell, backgroundImage: "radial-gradient(circle closest-side, var(--c-accent-cool) 70%, transparent 76%)", animation: `${pop} 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)` }),
   overlay: css("snake-overlay", {
     position: "absolute", inset: "0", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px", padding: "16px", textAlign: "center",
-    backgroundColor: "color-mix(in srgb, var(--c-bg) 72%, transparent)", "& strong": { fontSize: "1.25rem" }, "& p": { fontSize: "0.875rem", color: "var(--c-text-dim)" },
+    backgroundColor: "color-mix(in srgb, var(--c-bg) 88%, transparent)", backdropFilter: "blur(3px)", "& strong": { fontSize: "1.25rem" }, "& p": { fontSize: "0.875rem", color: "var(--c-text-dim)" },
   }),
   small: css("snake-small", { fontSize: "0.75rem", color: "var(--c-text-muted)" }),
   again: css("snake-again", { ...control, marginTop: "8px", backgroundColor: "var(--c-primary-dark)", borderColor: "transparent", color: "#fff", hover: { filter: "brightness(0.92)" } }),
   panel: css("snake-panel", { gridArea: "stats", display: "flex", flexDirection: "column", gap: "10px", minWidth: "0" }),
-  stats: css("snake-stats", { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: "6px" }),
+  // Cells grow to fill each row, so five stats never leave one orphaned in a half-empty row.
+  stats: css("snake-stats", { display: "flex", flexWrap: "wrap", gap: "6px", "& > *": { flex: "1 1 88px" } }),
   stat: css("snake-stat", {
     padding: "6px 10px", borderRadius: "10px", border: "1px solid var(--c-border)", backgroundColor: "var(--c-bg-card)",
     "& dt": { fontSize: "0.6875rem", color: "var(--c-text-muted)" }, "& dd": { margin: "2px 0 0", fontFamily: mono, fontSize: "1rem", fontWeight: "600", fontVariantNumeric: "tabular-nums" },

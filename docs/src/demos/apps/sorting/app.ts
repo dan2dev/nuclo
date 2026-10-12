@@ -119,5 +119,11 @@ export function SortingStepper() {
       span(() => `${compares} comparisons · ${swaps} swaps`),
       span(status),
     ),
+    div(
+      s.legend,
+      span(s.key, span(s.dot, s.compare), "Comparing"),
+      span(s.key, span(s.dot, s.swap), "Swapping"),
+      span(s.key, span(s.dot, s.sorted), "In place"),
+    ),
   );
 }

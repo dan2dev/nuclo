@@ -1,6 +1,6 @@
 // server.ts: a fake chat backend and its socket. The channel's history is
 // 5,000 messages generated from their id, so the same cursor always returns
-// the same page. Requests take a moment and sometimes fail. The socket brings
+// the same page. Requests take a moment, and sending sometimes fails. The socket brings
 // what other people post, after showing that they are typing, and a bot
 // answers what you send. Nothing here knows about the UI.
 
@@ -58,9 +58,8 @@ function archived(id: number): Message {
 
 /** The messages before `before` (the id of the oldest one you have), oldest first. Empty at the beginning of the channel. */
 export function fetchHistory(before = HISTORY): Promise<Message[]> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     setTimeout(() => {
-      if (Math.random() < 0.1) return reject(new Error("Could not load older messages."));
       const from = Math.max(0, before - PAGE);
       resolve(Array.from({ length: before - from }, (_, i) => archived(from + i)));
     }, 300 + Math.random() * 400);

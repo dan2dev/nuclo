@@ -64,10 +64,10 @@ const is = {
   textInput: css("pages-examples-svg-interactive-demos-textInput", { flex: "none", width: "100%", maxWidth: "300px" }),
 };
 
-const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+export const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
 /** The pointer in viewBox units: the svg is scaled to its box, so a fraction of the box is a fraction of the viewBox. */
-function pointer(e: PointerEvent, w: number, h: number) {
+export function pointer(e: PointerEvent, w: number, h: number) {
   const box = (e.currentTarget as Element).getBoundingClientRect();
   return [((e.clientX - box.left) / box.width) * w, ((e.clientY - box.top) / box.height) * h];
 }
@@ -78,7 +78,7 @@ function pointer(e: PointerEvent, w: number, h: number) {
  * dt is the frame's length in 60 fps frames. step() returns false when nothing
  * moved, which skips the update.
  */
-const frames = (id: string, step: (dt: number) => boolean | void) => () => {
+export const frames = (id: string, step: (dt: number) => boolean | void) => () => {
   let last = performance.now();
   let raf = requestAnimationFrame(function tick(now: number) {
     const dt = Math.min(2, (now - last) / (1000 / 60));
@@ -90,7 +90,7 @@ const frames = (id: string, step: (dt: number) => boolean | void) => () => {
 };
 
 /** A labeled range input with its value beside it. */
-function Slider(name: string, min: number, max: number, step: number, get: () => number, set: (v: number) => void) {
+export function Slider(name: string, min: number, max: number, step: number, get: () => number, set: (v: number) => void) {
   return label(
     is.field,
     span(name),

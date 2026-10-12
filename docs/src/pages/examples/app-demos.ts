@@ -53,7 +53,7 @@ export const APP_EXAMPLES: AppExample[] = [
   app(
     "kanban",
     "Kanban Board",
-    "Columns and cards are plain arrays of the same objects; every move is a `splice()`. Rows are matched by identity, so dragging or sorting inside a column reuses the elements. The mount count on screen proves it.",
+    "A team board: add tasks, assign them to people, edit them in a dialog, filter by person or search, drag them between columns and undo a delete. Columns and cards are plain arrays of the same objects; every move is a `splice()`. Rows are matched by identity, so dragging, sorting, assigning or editing a card reuses its element. The mount count on screen proves it.",
     KanbanBoard,
     "api-list",
   ),

@@ -14,10 +14,10 @@ export const s = {
   grid: css("seq-grid", { display: "flex", flexDirection: "column", gap: "6px", flex: "0 1 auto", minHeight: "0", overflow: "auto", padding: "10px 10px 10px 0", borderRadius: "12px", border: "1px solid var(--c-border)", backgroundColor: "var(--c-bg-secondary)" }),
   track: css("seq-track", { display: "flex", gap: "10px", minWidth: "max-content" }),
   muted: css("seq-muted", { "& > div + div": { opacity: "0.35" } }),
-  head: css("seq-head", { position: "sticky", left: "0", zIndex: 1, display: "flex", alignItems: "center", gap: "6px", width: "170px", flexShrink: 0, padding: "0 4px 0 10px", backgroundColor: "var(--c-bg-secondary)" }),
+  head: css("seq-head", { position: "sticky", left: "0", zIndex: 1, display: "flex", alignItems: "center", gap: "6px", width: "170px", flexShrink: 0, padding: "0 4px 0 10px", backgroundColor: "var(--c-bg-secondary)", "@media (max-width: 599px)": { width: "136px", gap: "4px", padding: "0 2px 0 8px" } }),
   name: css("seq-name", { flex: "1", minWidth: "0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.8125rem", fontWeight: "600" }),
   mute: css("seq-mute", { width: "26px", height: "26px", flexShrink: 0, borderRadius: "6px", border: "1px solid var(--c-border-light)", fontSize: "0.6875rem", fontWeight: "700", color: "var(--c-text-dim)", hover: { color: "var(--c-text)" }, "&[aria-pressed=true]": { backgroundColor: "var(--c-text-dim)", borderColor: "transparent", color: "var(--c-bg)" } }),
-  volume: css("seq-volume", { width: "52px", flexShrink: 0, accentColor: "var(--c-primary)" }),
+  volume: css("seq-volume", { width: "52px", flexShrink: 0, accentColor: "var(--c-primary)", "@media (max-width: 599px)": { width: "36px" } }),
   beat: css("seq-beat", { display: "flex", gap: "3px", flex: "1" }),
   cell: css("seq-cell", { flex: "1", minWidth: "26px", height: "34px", borderRadius: "6px", border: "1px solid var(--c-border)", backgroundColor: "var(--c-bg-card)", cursor: "pointer", "@media (min-width: 900px)": { height: "44px" }, hover: { borderColor: "var(--c-primary)" }, "&[aria-pressed=true]": { backgroundColor: "var(--c-primary)", borderColor: "var(--c-primary)" } }),
   // The playhead column: lit when empty, brighter when it plays a hit.

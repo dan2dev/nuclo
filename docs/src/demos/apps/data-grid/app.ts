@@ -156,7 +156,7 @@ function Table() {
     s.scroller,
     table(
       s.table,
-      { style: () => ({ width: `${columns.reduce((sum, column) => sum + column.width, CHECK)}px` }) },
+      { style: () => ({ width: `max(100%, ${columns.reduce((sum, column) => sum + column.width, CHECK)}px)` }) },
       colgroup(col({ style: { width: `${CHECK}px` } }), ...columns.map((column) => col({ style: () => ({ width: `${column.width}px` }) }))),
       thead(tr(th(s.th, s.check, PageCheckbox()), ...columns.map(HeaderCell))),
       tbody(

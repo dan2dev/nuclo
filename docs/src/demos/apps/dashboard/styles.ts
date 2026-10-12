@@ -1,5 +1,7 @@
 // styles.ts: the cards and their grid. One column on phones, two on tablets,
-// three on desktops, where the tickers run down the left.
+// three on desktops, where the tickers run down the left. The queries do not
+// overlap: media rules are emitted in the order they were first seen, so two
+// min-width queries that both match would not cascade by size.
 import "nuclo";
 
 const mono = "ui-monospace, monospace";
@@ -16,7 +18,7 @@ export const s = {
   on: css("dash-on", { backgroundColor: "var(--c-primary-dark)", color: "#fff", hover: { color: "#fff" } }),
   btn: css("dash-btn", { height: "34px", padding: "0 14px", borderRadius: "8px", border: "1px solid var(--c-border-light)", backgroundColor: "var(--c-bg)", color: "var(--c-text)", fontSize: "0.8125rem", fontWeight: "600", hover: { backgroundColor: "var(--c-bg-secondary)" } }),
   hint: css("dash-hint", { flexBasis: "100%", fontSize: "0.8125rem", lineHeight: "1.5", color: "var(--c-text-dim)", "& code": { fontFamily: mono, fontSize: "0.75rem", color: "var(--c-primary-ink)" } }),
-  grid: css("dash-grid", { display: "grid", gridTemplateColumns: "minmax(0, 1fr)", alignContent: "start", gap: "12px", flex: "1", minHeight: "0", overflowY: "auto", "@media (min-width: 600px)": { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }, [desktop]: { gridTemplateColumns: "repeat(3, minmax(0, 1fr))" } }),
+  grid: css("dash-grid", { display: "grid", gridTemplateColumns: "minmax(0, 1fr)", alignContent: "start", gap: "12px", flex: "1", minHeight: "0", overflowY: "auto", "@media (min-width: 600px) and (max-width: 899px)": { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }, [desktop]: { gridTemplateColumns: "repeat(3, minmax(0, 1fr))" } }),
   card: css("dash-card", { display: "flex", flexDirection: "column", gap: "8px", minWidth: "0", padding: "12px 14px", borderRadius: "12px", border: "1px solid var(--c-border)", backgroundColor: "var(--c-bg-card)" }),
   tall: css("dash-tall", { [desktop]: { gridRow: "span 2" } }),
   wide: css("dash-wide", { [desktop]: { gridColumn: "span 2" } }),

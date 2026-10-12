@@ -1,6 +1,6 @@
 // api.ts: a fake backend with no end. fetchPage() behaves like a real request:
-// it takes a moment, it answers with one page and the cursor of the next, and
-// once in a while it fails. Rows are generated on the fly from their id, so
+// it takes a moment and answers with one page and the cursor of the next.
+// Rows are generated on the fly from their id, so
 // the same cursor always returns the same page. Nothing here knows about the UI.
 
 export interface Post {
@@ -40,9 +40,8 @@ function post(id: number): Post {
 }
 
 export function fetchPage(cursor: number): Promise<Page> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     setTimeout(() => {
-      if (Math.random() < 0.03) return reject(new Error("The network dropped the request"));
       const items = Array.from({ length: PAGE_SIZE }, (_, i) => post(cursor + i));
       resolve({ items, next: cursor + PAGE_SIZE });
     }, 60 + Math.random() * 140);
