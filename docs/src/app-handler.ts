@@ -11,8 +11,8 @@
  * `transformHtml` to inject the built <script>/<link> tags.
  */
 import { renderToString, getCssText } from 'nuclo/ssr';
-import { ssrMatchRoute } from './ssr-app.ts';
-import { routeMap } from './route-definitions.ts';
+import { App } from './app.ts';
+import { router, routeName } from './router.ts';
 import { SEO_BASE_URL, generateStructuredData, getMetaForRoute } from './seo.ts';
 
 export const htmlTemplate = `<!doctype html>
@@ -156,13 +156,13 @@ export async function appFetch(
 ): Promise<Response> {
   const { pathname } = new URL(req.url);
 
-  const route = pathname === '/' ? 'home' : pathname.replace(/^\/|\/+$/g, '');
-  const known = routeMap.has(route);
-  const renderRoute = known ? route : 'home';
+  // One Route per request: App reads the shared router, and run() makes it this request's.
+  const route = await router.start(req.url);
+  const known = route.pattern !== '*';
+  const renderRoute = routeName(route.pattern);
   const status = known ? 200 : 404;
 
-  const element = await ssrMatchRoute(renderRoute);
-  const ssrHtml = renderToString(element);
+  const ssrHtml = route.run(() => renderToString(App));
 
   // Full atomic stylesheet - base rules first, then screens in theme order.
   // Atomic classes are shared across pages, so shipping the full sheet costs

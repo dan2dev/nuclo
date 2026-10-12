@@ -16,7 +16,7 @@ import { CodeBlock, highlightCode, codeTokenStyle, terminalCodeTokenStyle } from
 import { copyText } from "../../components/clipboard.ts";
 import { withCode } from "../../components/inline-code.ts";
 import { GitHubSvg, CheckIcon, MinusIcon, CopyIcon } from "../../components/icons.ts";
-import { setRoute } from "../../router.ts";
+import { router } from "../../router.ts";
 
 function DemoDot(color: string) {
   return div(
@@ -147,12 +147,12 @@ export function HomeHeroSection() {
               { className: "he he-5" },
               a(
                 hs.heroBtn, hs.heroPrimaryBtn,
-                { href: "/docs", onClick: (e) => { e.preventDefault(); setRoute("docs"); } },
+                { href: "/docs" },
                 "Get started",
               ),
               a(
                 hs.heroBtn, hs.heroSecondaryBtn,
-                { href: "/examples", onClick: (e) => { e.preventDefault(); setRoute("examples"); } },
+                { href: "/examples" },
                 "View examples",
               ),
             ),
@@ -408,7 +408,7 @@ export function HomeQuickStartSection() {
           button(
             s.btn, s.btnSecondary,
             "Read the full docs →",
-            { onClick: () => setRoute("docs") },
+            { onClick: () => router.go("/docs") },
           ),
         ),
       ),
@@ -553,7 +553,7 @@ export function ExamplesTeaserSection() {
           button(
             s.btn, s.btnSecondary,
             "View all examples →",
-            { onClick: () => setRoute("examples") },
+            { onClick: () => router.go("/examples") },
           ),
         ),
       ),
@@ -579,7 +579,7 @@ export function CTASection() {
             hs.ctaActions,
             a(
               hs.ctaBtn, hs.ctaBtnPrimary,
-              { href: "/docs", onClick: (e) => { e.preventDefault(); setRoute("docs"); } },
+              { href: "/docs" },
               "Read the docs",
             ),
             a(

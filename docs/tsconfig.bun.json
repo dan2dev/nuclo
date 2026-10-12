@@ -4,7 +4,8 @@
     "paths": {
       "nuclo": ["../packages/nuclo-core/src/index.ts"],
       "nuclo/ssr": ["../packages/nuclo-core/src/ssr/index.ts"],
-      "nuclo/polyfill": ["../packages/nuclo-core/src/polyfill/index.ts"]
+      "nuclo/polyfill": ["../packages/nuclo-core/src/polyfill/index.ts"],
+      "nuclo-router": ["../packages/nuclo-router/src/index.ts"]
     }
   }
 }

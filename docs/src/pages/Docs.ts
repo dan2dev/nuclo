@@ -1,3 +1,4 @@
+import type { RouteContext } from "nuclo-router";
 import { css, cx } from "../styles.ts";
 import { DOC_GROUPS, DOC_SECTIONS, SECTION_MAP } from "./docs/content.ts";
 import { ds, sectionDelay } from "./docs/styles.ts";
@@ -12,9 +13,10 @@ const DOC_FACTS = [
   { label: "Runtime model", value: "Explicit" },
 ];
 
-function getInitialSectionId(): string {
+// The route's hash, not window.location's: the page builds before the address bar changes.
+function getInitialSectionId(hash: string): string {
   if (typeof window === "undefined") return "overview";
-  const id = window.location.hash.replace(/^#/, "");
+  const id = hash.replace(/^#/, "");
   return SECTION_MAP.has(id) ? id : "overview";
 }
 
@@ -52,8 +54,8 @@ function icon(size: number, d: string) {
   );
 }
 
-export function DocsPage() {
-  let activeId = getInitialSectionId();
+export function DocsPage(ctx: RouteContext) {
+  let activeId = getInitialSectionId(ctx.hash);
   publishSection(activeId);
   // Docs navigation state, shared by the sidebar and the mobile sheet.
   let filter = "";

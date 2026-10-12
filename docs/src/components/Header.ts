@@ -1,5 +1,5 @@
 import { css, colors, cx, s } from "../styles.ts";
-import { setRoute, getCurrentRoute } from "../router.ts";
+import { router, currentRoute } from "../router.ts";
 import { toggleTheme, isDark, getThemePreference, setThemePreference, type ThemePreference } from "../theme.ts";
 import { docsSection } from "../docs-state.ts";
 import { BrandLogo } from "./BrandLogo.ts";
@@ -67,14 +67,13 @@ const st = {
   themeOptOn: css("components-header-themeOptOn", { color: colors.text, backgroundColor: colors.bgCard, boxShadow: "0 1px 3px rgba(0,0,0,0.12)" }),
 };
 
-export function Header({ activeRoute }: { activeRoute?: string } = {}) {
+export function Header() {
   let menuOpen = false;
   let menuMounted = false; // stays true while the exit animation plays
   let menuEl: HTMLElement | undefined;
 
-  const base = typeof import.meta !== 'undefined' ? (import.meta.env?.BASE_URL ?? "/") : "/";
-  const route = () => activeRoute ?? getCurrentRoute();
-  const href = (r: string, hash?: string) => (r === "home" ? base : `${base}${r}`) + (hash ? `#${hash}` : "");
+  const route = currentRoute;
+  const href = (r: string, hash?: string) => router.href(r === "home" ? "/" : `/${r}`) + (hash ? `#${hash}` : "");
 
   const motion = (ms: number) => (matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : ms);
   const SLIDE = (y: string, o: number) => ({ opacity: o, transform: `translateY(${y})` });
@@ -94,17 +93,6 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
       .then(() => { if (!menuOpen) { menuMounted = false; update(); } });
   }
 
-  // Same-route hash links just scroll; everything else goes through the router.
-  function go(r: string, hash?: string) {
-    closeMenu();
-    if (hash && r === route()) {
-      document.getElementById(hash)?.scrollIntoView({ block: "start" });
-      history.replaceState(null, "", `#${hash}`);
-    } else {
-      setRoute(r, hash);
-    }
-  }
-
   function RouteLink({ label, route: r, hash }: NavItem, style: ReturnType<typeof css>, onStyle: ReturnType<typeof css>, trailing = false) {
     const on = () => !hash && route() === r;
     return a(
@@ -112,7 +100,8 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
         href: href(r, hash),
         class: () => cx(style, on() ? onStyle : null).className,
         "aria-current": () => (on() ? "page" : "false"),
-        onClick: (e) => { e.preventDefault(); go(r, hash); },
+        // Not prevented: the router navigates, a same-page #hash is the browser's.
+        onClick: closeMenu,
       },
       label,
       ...(trailing ? [span(st.rowIcon, LineIcon("M5 12h14 M13 6l6 6-6 6", 18))] : []),
@@ -122,7 +111,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   function Logo() {
     return a(
       st.logo,
-      { href: base, "aria-label": "Nuclo home", onClick: (e) => { e.preventDefault(); go("home"); } },
+      { href: href("home"), "aria-label": "Nuclo home", onClick: closeMenu },
       BrandLogo(),
     );
   }
@@ -130,7 +119,7 @@ export function Header({ activeRoute }: { activeRoute?: string } = {}) {
   function GetStarted(variant: ReturnType<typeof css>) {
     return a(
       st.cta, variant,
-      { href: href("docs", "quick-start"), onClick: (e) => { e.preventDefault(); go("docs", "quick-start"); } },
+      { href: href("docs", "quick-start"), onClick: closeMenu },
       "Get started",
     );
   }

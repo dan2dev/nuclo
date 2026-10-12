@@ -16,11 +16,12 @@
     "stress:front:ui": "bun run --cwd ../packages/nuclo-core build && bun run build && bunx playwright test tests/front-stress.spec.ts --headed --project=stress-chromium",
     "stress:server": "bun tests/server-stress.ts",
     "preview:macos": "bun run build && ./build/server-bun-darwin-arm64",
-    "deploy:cloudflare": "bun run --cwd ../packages/nuclo-core build && bun run clean && bun run update:stats && bun run update:llms && tsc && vite build && wrangler pages deploy build/dist --commit-dirty=true",
+    "deploy:cloudflare": "bun run --cwd ../packages/nuclo-core build && bun run --cwd ../packages/nuclo-router build && bun run clean && bun run update:stats && bun run update:llms && tsc && vite build && wrangler pages deploy build/dist --commit-dirty=true",
     "cf:dev": "bun run build && wrangler pages dev build/dist"
   },
   "dependencies": {
-    "nuclo": "workspace:*"
+    "nuclo": "workspace:*",
+    "nuclo-router": "workspace:*"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",

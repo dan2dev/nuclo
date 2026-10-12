@@ -19,7 +19,7 @@ const demo = createCss({
 
 const { css, cx } = demo;
 
-const gs = {
+export const gs = {
   wrap: uiCss({ paddingTop: "8px" }),
   headWrap: uiCss({ borderTop: `1px solid ${colors.border}`, paddingTop: "48px", marginTop: "8px", medium: { paddingTop: "64px" } }),
 };

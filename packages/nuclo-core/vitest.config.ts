@@ -1,9 +1,10 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
     environment: 'jsdom',
+    exclude: [...configDefaults.exclude, '**/.claude/**'],
     setupFiles: ['./test/setup.ts'],
     // Expose global.gc so memory tests can assert real collectability
     // (simulated WeakRef tests cannot detect strong-reference retention).

@@ -1,6 +1,6 @@
 # Nuclo documentation
 
-> Complete Nuclo v0.3.22 documentation as a single Markdown file, generated from https://nuclo.dev/docs. Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript: build UI with global tag builders, keep state in plain mutable variables, and call `update()` to sync the real DOM. No virtual DOM, no compiler, no proxies, no signals.
+> Complete Nuclo v0.3.23 documentation as a single Markdown file, generated from https://nuclo.dev/docs. Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript: build UI with global tag builders, keep state in plain mutable variables, and call `update()` to sync the real DOM. No virtual DOM, no compiler, no proxies, no signals.
 
 Index: https://nuclo.dev/llms.txt · Source: https://github.com/dan2dev/nuclo · npm: https://www.npmjs.com/package/nuclo
 
@@ -801,6 +801,56 @@ const Page = () =>
     main: article(h1('Eager route')),
     sidebar: [h2('Related'), ul(li('One'), li('Two'))],
   })
+```
+
+#### Live example
+
+```ts
+// region-app.ts
+import 'nuclo'
+
+let page: 'home' | 'article' | null = 'home'
+let dialog = false
+
+const go = (next: typeof page) => () => { page = next; dialog = false; update() }
+
+const Layout = () =>
+  div(
+    nav(
+      button('Home', { onClick: go('home') }),
+      button('Article', { onClick: go('article') }),
+      button('Close page', { onClick: go(null) }),
+    ),
+    main(region({ id: 'main', type: 'stack', empty: p('Nothing open.') })),
+    aside(region({ id: 'side', empty: p('No related links.') })),
+  )
+
+// Pages fill the layout's regions from outside it.
+const Home = () =>
+  into('main',
+    input({ placeholder: 'Type here, then open the dialog' }),
+    button('Open dialog', { onClick: () => { dialog = true; update() } }),
+  )
+
+const Article = () =>
+  into({
+    main: article(h2('Article'), p('One into() fills both regions.')),
+    side: [h2('Related'), ul(li('One'), li('Two'))],
+  })
+
+// Stacks over Home, so Home keeps its DOM and the text you typed.
+const Dialog = () =>
+  into('main',
+    div(p('On top of Home.'), button('Close', { onClick: () => { dialog = false; update() } })),
+  )
+
+export const RegionApp = () =>
+  div(
+    Layout(),
+    when(() => page === 'home', Home()),
+    when(() => page === 'article', Article()),
+    when(() => dialog, Dialog()),
+  )
 ```
 
 ### forceUpdate()

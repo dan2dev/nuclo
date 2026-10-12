@@ -1,60 +1,34 @@
 /**
- * router.ts - client-only.
- * Manages browser navigation state. Never imported by server code.
+ * router.ts - isomorphic.
+ * The site's router: the server renders each request inside its Route's run(),
+ * the browser starts it before hydrating. Links are plain <a href>s.
  */
+import { createRouter } from 'nuclo-router';
+import { routeDefinitions, type RoutePath } from './route-definitions.ts';
 import { updatePageMeta } from './seo.ts';
-import { routeMap } from './route-definitions.ts';
+import { scanReveals } from './reveal.ts';
 
-export type Route = string;
+const pages = Object.fromEntries(
+  routeDefinitions.map((def) => [def.path === 'home' ? '/' : `/${def.path}`, def.loader]),
+);
 
-let currentRoute: Route = 'home';
-let _loadPage: (path: string) => Promise<void> = async () => {};
+export const router = createRouter(
+  // Unknown paths render Home; the server answers them with a 404.
+  { ...pages, '*': routeDefinitions[0].loader },
+  {
+    base: import.meta.env?.BASE_URL,
+    // Browser only, after the DOM caught up.
+    onNavigate: (ctx, kind) => {
+      if (kind === 'push' && !ctx.hash) window.scrollTo(0, 0);
+      updatePageMeta(routeName(ctx.pattern));
+      scanReveals();
+    },
+  },
+);
 
-export function getCurrentRoute(): Route {
-  return currentRoute;
+/** The routeDefinitions path a matched pattern renders. */
+export function routeName(pattern: string): RoutePath {
+  return (pattern === '/' || pattern === '*' ? 'home' : pattern.slice(1)) as RoutePath;
 }
 
-export function setCurrentRoute(route: Route) {
-  currentRoute = route;
-}
-
-export function isValidRoute(path: string): boolean {
-  return routeMap.has(path);
-}
-
-export function setRoute(route: Route, hash?: string) {
-  currentRoute = route;
-  const base = import.meta.env.BASE_URL || '/';
-  const url =
-    route === 'home' ? base : base.endsWith('/') ? `${base}${route}` : `${base}/${route}`;
-  window.history.pushState({}, '', hash ? `${url}#${hash}` : url);
-  window.scrollTo(0, 0);
-  updatePageMeta(route);
-  update();
-  _loadPage(route);
-}
-
-export function initRouter(loadPage: (path: string) => Promise<void>) {
-  _loadPage = loadPage;
-
-  const base = import.meta.env.BASE_URL || '/';
-  const routePath = window.location.pathname
-    .replace(base, '')
-    .replace(/^\/+|\/+$/g, '');
-  const route = routePath || 'home';
-  currentRoute = isValidRoute(route) ? route : 'home';
-
-  updatePageMeta(currentRoute);
-  update();
-  loadPage(currentRoute);
-
-  window.addEventListener('popstate', () => {
-    const newPath = window.location.pathname
-      .replace(base, '')
-      .replace(/^\/+|\/+$/g, '');
-    const newRoute = newPath || 'home';
-    currentRoute = isValidRoute(newRoute) ? newRoute : 'home';
-    updatePageMeta(currentRoute);
-    loadPage(currentRoute);
-  });
-}
+export const currentRoute = (): RoutePath => routeName(router.pattern);

@@ -3,6 +3,7 @@ import { TabBlock } from "../../components/TabBlock.ts";
 import { CopyIcon, CheckIcon } from "../../components/icons.ts";
 import { copyText } from "../../components/clipboard.ts";
 import { highlightCode } from "../../components/CodeBlock.ts";
+import { API_DEMOS, Live } from "../../components/api-demos.ts";
 
 function TerminalCommand(command: string) {
   let copied = false;
@@ -238,6 +239,9 @@ const Card = () =>
 
 render(Card, document.body)
 `)}
+    `,
+        render: () => Live("tag-builders"),
+        afterContent: `
       <h3>Arguments</h3>
       <p>A builder takes any number of arguments and applies them from left to right:</p>
       <ul>
@@ -302,6 +306,9 @@ function Counter(label: string) {
 
 render(() => div(Counter('A'), Counter('B')))
 `)}
+    `,
+        render: () => Live("components"),
+        afterContent: `
       <p>State declared inside the function belongs to that instance. State declared outside is shared by every instance. <code>forceUpdate()</code> calls components again, which resets the state declared inside them.</p>
       <p>Children are just arguments:</p>
       ${code("card.ts", `
@@ -326,6 +333,9 @@ const save = button(
   'Save',
 )
 `)}
+    `,
+        render: () => Live("attributes"),
+        afterContent: `
       <h3>How a value is set</h3>
       <ul>
         <li>If the HTML element has a property with that name (<code>value</code>, <code>checked</code>, <code>disabled</code>, <code>htmlFor</code>, <code>tabIndex</code>, …), Nuclo sets the property. Otherwise it calls <code>setAttribute(key, String(value))</code>, for example for <code>"aria-*"</code> and <code>"data-*"</code>.</li>
@@ -394,6 +404,9 @@ const search = input({
         <li>A name that is not a known event listens to its lowercase form: <code>onMyEvent</code> listens to <code>"myevent"</code>.</li>
         <li>Errors thrown by the handler are not caught.</li>
       </ul>
+    `,
+        render: () => Live("events"),
+        afterContent: `
       <h3><code>on()</code></h3>
       <p><code>on()</code> returns a modifier that calls <code>addEventListener</code> on the element.</p>
       ${code("panel.ts", `
@@ -450,6 +463,9 @@ const Timer = () =>
 
 const search = input(on('mount', (el) => el.focus()))
 `)}
+    `,
+        render: () => Live("lifecycle"),
+        afterContent: `
       <h3>When they run</h3>
       <ul>
         <li><code>onMount</code> runs at the end of the <code>render()</code>, <code>hydrate()</code>, <code>update()</code> or <code>forceUpdate()</code> call that inserted the element. It never runs while the tree is being built.</li>
@@ -499,6 +515,9 @@ const Counter = () =>
 
 render(Counter)
 `)}
+    `,
+        render: () => Live("explicit-updates"),
+        afterContent: `
       <p>Change as much state as you like, then call <code>update()</code> once:</p>
       ${code("example.ts", `
 let first = 'Ada'
@@ -529,6 +548,9 @@ const Profile = () =>
     button({ disabled: () => busy }, 'Save'),
   )
 `)}
+    `,
+        render: () => Live("dynamic-functions"),
+        afterContent: `
       <p>Nuclo checks the parameter count (<code>fn.length</code>). A function that declares a parameter is a <a href="#tag-builders">custom modifier</a> and runs only once. <code>(x = 0) =&gt; …</code> and <code>(...args) =&gt; …</code> have a length of 0, so they are dynamic.</p>
       <h3>Dynamic text</h3>
       <ul>
@@ -569,6 +591,7 @@ const Profile = () =>
         <li><strong>Server.</strong> <code>update()</code> does nothing on the server.</li>
       </ul>
     `,
+        render: () => Live("api-update"),
       },
       {
         id: "api-scope",
@@ -594,6 +617,9 @@ user = 'Grace'
 update('cart') // "Items: 1", the header still says "Hi, Ada"
 update()       // everything, the header now says "Hi, Grace"
 `)}
+    `,
+        render: () => Live("api-scope"),
+        afterContent: `
       <ul>
         <li>An element can have several ids: <code>scope('cart', 'sidebar')</code>.</li>
         <li><code>update('a', 'b')</code> updates everything inside <code>a</code> or <code>b</code>. If several elements use the same id, all of them update.</li>
@@ -627,6 +653,9 @@ const Status = () =>
       .else(p('Ready')),
   )
 `)}
+    `,
+        render: () => Live("api-when"),
+        afterContent: `
       <h3>Conditions</h3>
       <ul>
         <li>For state, pass a function. A plain boolean is read once: <code>when(open, …)</code> never changes.</li>
@@ -690,6 +719,9 @@ todos[0].done = true
 update() // same <li>, its class is now "done"
 `)}
       <p>Copies are new items, so replacing the array with <code>todos.map((t) =&gt; ({ ...t }))</code> rebuilds every row.</p>
+    `,
+        render: () => Live("api-list"),
+        afterContent: `
       <h3>What <code>renderItem</code> returns</h3>
       <ul>
         <li>Return one element, such as <code>li(...)</code>, <code>tr(...)</code> or an SVG builder. Return <code>null</code> or <code>undefined</code> to skip an item. Strings, text nodes and fragments render nothing.</li>
@@ -771,7 +803,10 @@ const Page = () =>
     sidebar: [h2('Related'), ul(li('One'), li('Two'))],
   })
 `)}
+      <h3>Live example</h3>
+      ${code("region-app.ts", API_DEMOS.find((d) => d.id === "api-region")!.code)}
     `,
+        render: () => Live("api-region"),
       },
       {
         id: "api-force-update",
@@ -793,6 +828,9 @@ render(App, root)
 lang = 'pt'
 forceUpdate() // same <h1> element, now "Olá"
 `)}
+    `,
+        render: () => Live("api-force-update"),
+        afterContent: `
       <p>With no arguments, <code>forceUpdate()</code> rebuilds every root rendered with <code>render(App)</code> or <code>hydrate(App)</code>. Roots rendered with <code>render(App())</code> are skipped. If a component throws, the error is logged and that root keeps its old DOM. An error thrown later, while the new build is applied, is logged too, but the parts already patched stay patched.</p>
       <h3>What stays and what changes</h3>
       <ul>

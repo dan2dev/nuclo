@@ -1,5 +1,5 @@
 import { css, colors, s } from "../styles.ts";
-import { setRoute } from "../router.ts";
+import { router } from "../router.ts";
 import { BrandLogo } from "./BrandLogo.ts";
 import { GitHubSvg } from "./icons.ts";
 import { NUCLO_VERSION } from "../generated/nuclo-stats.ts";
@@ -29,10 +29,8 @@ export function Footer() {
 
   const version = css("components-footer-version", { fontFamily: "ui-monospace, monospace", fontSize: "0.8125rem", color: colors.textMuted });
 
-  const base = typeof import.meta !== "undefined" ? (import.meta.env?.BASE_URL ?? "/") : "/";
-
   function RouteLink(label: string, route: string) {
-    return li(a(linkStyle, { href: `${base}${route}`, onClick: (e) => { e.preventDefault(); setRoute(route); } }, label));
+    return li(a(linkStyle, { href: router.href(`/${route}`) }, label));
   }
 
   function ExternalLink(label: string, href: string, icon?: ReturnType<typeof svgSvg>) {

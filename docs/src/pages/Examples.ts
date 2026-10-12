@@ -2,7 +2,8 @@ import { cx, s } from "../styles.ts";
 import { EXAMPLES } from "../content/examples.ts";
 import { es } from "./examples/styles.ts";
 import { ExampleCard } from "./examples/card.ts";
-import { StylingGallery } from "./examples/styling-gallery.ts";
+import { StylingGallery, gs } from "./examples/styling-gallery.ts";
+import { API_DEMOS } from "../components/api-demos.ts";
 
 function buildPreview(id: string) {
   switch (id) {
@@ -225,6 +226,24 @@ function StyleDemo() {
   );
 }
 
+// One card per API, the same demos the docs sections embed.
+function ApiGallery() {
+  return section(
+    gs.wrap,
+    { id: "api-demos" },
+    div(
+      s.container,
+      div(
+        gs.headWrap,
+        div(s.sectionLabel, "API"),
+        h2(s.sectionTitle, "Every API, live"),
+        p(s.sectionSub, "One small demo per building block, from tag builders to forceUpdate(), with its source beside it."),
+      ),
+      div(es.grid, ...API_DEMOS.map((demo, index) => ExampleCard({ ...demo, heading: "h3" }, index))),
+    ),
+  );
+}
+
 export function ExamplesPage() {
   const pageHeader = div(
     es.header,
@@ -249,6 +268,7 @@ export function ExamplesPage() {
         ...EXAMPLES.map((ex, index) => ExampleCard({ ...ex, preview: () => buildPreview(ex.id) }, index)),
       ),
     ),
+    ApiGallery(),
     StylingGallery(),
   );
 }

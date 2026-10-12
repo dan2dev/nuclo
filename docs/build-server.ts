@@ -20,6 +20,7 @@ const nucloPlugin: BunPlugin = {
     build.onResolve({ filter: /^nuclo$/ }, () => ({ path: `${nucloSrc}/index.ts` }));
     build.onResolve({ filter: /^nuclo\/ssr$/ }, () => ({ path: `${nucloSrc}/ssr/index.ts` }));
     build.onResolve({ filter: /^nuclo\/polyfill$/ }, () => ({ path: `${nucloSrc}/polyfill/index.ts` }));
+    build.onResolve({ filter: /^nuclo-router$/ }, () => ({ path: resolve(import.meta.dir, "../packages/nuclo-router/src/index.ts") }));
   },
 };
 
