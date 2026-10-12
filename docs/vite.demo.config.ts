@@ -1,5 +1,5 @@
 // The routing demo (demos/router/index.html + src/demos/router) is its own app in an
-// iframe, built separately so the main bundle keeps its single-chunk output.
+// iframe, built separately so its chunks and the site's stay independent.
 import { defineConfig } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
 

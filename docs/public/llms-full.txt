@@ -805,6 +805,156 @@ const Page = () =>
   })
 ```
 
+#### A dialog opened from deep in the tree
+
+The overlay region sits at the root. Any component, at any depth, opens a dialog by wrapping an `into()` in a `when()`. Closing the `when()` removes the dialog from the region.
+
+```ts
+// dialog.ts
+let confirming = false
+
+const App = () =>
+  div(
+    Page(),
+    div({ className: 'overlay' }, region({ id: 'overlay' })),
+  )
+
+// Deep inside Page()
+const DeleteButton = () =>
+  div(
+    button('Delete', { onClick: () => { confirming = true; update() } }),
+    when(() => confirming,
+      into('overlay',
+        dialog({ open: true },
+          p('Delete this item?'),
+          button('Cancel', { onClick: () => { confirming = false; update() } }),
+        ),
+      ),
+    ),
+  )
+```
+
+#### Toasts from list rows
+
+Each row of a `list()` is a view. A stacked region shows them in order, and removing an item from the array removes its toast.
+
+```ts
+// toasts.ts
+const toasts: { text: string }[] = []
+
+const notify = (text: string) => {
+  toasts.push({ text })
+  update()
+}
+
+const dismiss = (toast: { text: string }) => {
+  toasts.splice(toasts.indexOf(toast), 1)
+  update()
+}
+
+const App = () =>
+  div(
+    button('Save', { onClick: () => notify('Saved.') }),
+    div({ className: 'toasts' }, region({ id: 'toasts', type: 'stack' })),
+    list(() => toasts, (toast) =>
+      into('toasts', div(toast.text, button('×', { onClick: () => dismiss(toast) }))),
+    ),
+  )
+```
+
+#### A page title set by the page
+
+With the default `type: 'latest'`, the newest view wins. The layout owns the heading, and whichever page is open names it. A page without an `into('title', …)` leaves the `empty` text.
+
+```ts
+// title.ts
+let page: 'home' | 'settings' = 'home'
+
+const Layout = () =>
+  div(
+    h1(region({ id: 'title', empty: 'My app' })),
+    when(() => page === 'home', Home()).else(Settings()),
+  )
+
+const Home = () => p('Welcome.')
+
+const Settings = () =>
+  div(
+    into('title', 'Settings'),
+    form(/* … */),
+  )
+```
+
+#### Dynamic values inside a view
+
+The content of an `into()` is ordinary Nuclo content. Functions in it are state-dependent values and refresh on `update()`, wherever the region is.
+
+```ts
+// status.ts
+const selected = new Set<string>()
+
+const Layout = () =>
+  div(
+    header(region({ id: 'status' })),
+    Table(),
+  )
+
+const Table = () =>
+  div(
+    into('status', () => `${selected.size} selected`),
+    list(() => rows, (row) =>
+      label(
+        input({ type: 'checkbox', onChange: (e) => {
+          e.currentTarget.checked ? selected.add(row.id) : selected.delete(row.id)
+          update()
+        } }),
+        row.name,
+      ),
+    ),
+  )
+```
+
+#### A region that comes and goes
+
+The dashboard's `into()` is written once. While the user is signed out there is no `main` region, so the view waits. Signing in builds the region and the view shows. Signing out removes the region and the view waits again.
+
+```ts
+// auth.ts
+let user: { name: string } | null = null
+
+const App = () =>
+  div(
+    when(() => user !== null,
+      main(region({ id: 'main' })),
+    ).else(
+      LoginForm(),
+    ),
+    into('main', Dashboard()),
+  )
+```
+
+#### A view with its own region
+
+A view can contain a `region()`, and other views can target it. Here the editor page brings a `tabs` region with it, and each tab fills it. When the editor closes, its region goes with it.
+
+```ts
+// editor.ts
+let tab: 'code' | 'preview' = 'code'
+
+const Editor = () =>
+  into('main',
+    div(
+      nav(
+        button('Code', { onClick: () => { tab = 'code'; update() } }),
+        button('Preview', { onClick: () => { tab = 'preview'; update() } }),
+      ),
+      section(region({ id: 'tabs' })),
+    ),
+    when(() => tab === 'code', into('tabs', textarea()))
+      .else(into('tabs', iframe({ src: '/preview' }))),
+  )
+```
+
 #### Live example
 
 ```ts

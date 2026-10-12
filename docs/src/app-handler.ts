@@ -13,6 +13,7 @@
 import { renderToString, getCssText } from 'nuclo/ssr';
 import { App } from './app.ts';
 import { router } from './router.ts';
+import { pageModules } from './route-definitions.ts';
 import { SEO_BASE_URL, generateStructuredData, resolveMeta, type RouteInfo } from './seo.ts';
 
 export const htmlTemplate = `<!doctype html>
@@ -131,23 +132,34 @@ export type ViteManifest = Record<string, { file: string; css?: string[]; import
  * manifest, and returns a transformHtml callback that swaps them into the
  * dev-time <script src="/src/main.ts"> tag. Shared by the Bun prod server
  * and the Cloudflare Pages Function - both just need to supply the manifest.
+ *
+ * Besides the entry's own imports, the matched route's page chunks are
+ * modulepreloaded: the router import()s them right after main.js runs, and the
+ * hint lets the browser fetch them alongside it instead of after it.
  */
-export function buildProdTransform(manifest: ViteManifest): (html: string) => Promise<string> {
+export function buildProdTransform(manifest: ViteManifest): (html: string, url: string) => Promise<string> {
   const entry = manifest['src/main.ts'];
-  const cssLinks = (entry.css ?? [])
-    .map((f) => `<link rel="stylesheet" href="/${f}" />`)
-    .join('\n    ');
-  const preloadLinks = (entry.imports ?? [])
-    .map((key) => manifest[key]?.file)
-    .filter(Boolean)
-    .map((f) => `<link rel="modulepreload" href="/${f}" />`)
-    .join('\n    ');
-  const prodAssets = [cssLinks, preloadLinks, `<script type="module" src="/${entry.file}"></script>`]
-    .filter(Boolean)
-    .join('\n    ');
 
-  return async (html: string) =>
-    html.replace('<script type="module" src="/src/main.ts"></script>', prodAssets);
+  /** A chunk and its static imports, in dependency order, skipping ones already listed. */
+  const collect = (key: string, seen: Set<string>): string[] => {
+    const chunk = manifest[key];
+    if (!chunk || seen.has(key)) return [];
+    seen.add(key);
+    return [...(chunk.imports ?? []).flatMap((dep) => collect(dep, seen)), chunk.file];
+  };
+
+  return async (html, url) => {
+    const seen = new Set(['src/main.ts']);
+    const entryImports = (entry.imports ?? []).flatMap((key) => collect(key, seen));
+    const pattern = router.match(url)?.pattern ?? '*';
+    const pageChunks = pageModules(pattern).flatMap((key) => collect(key, seen));
+
+    const cssLinks = (entry.css ?? []).map((f) => `<link rel="stylesheet" href="/${f}" />`);
+    const preloadLinks = [...entryImports, ...pageChunks].map((f) => `<link rel="modulepreload" href="/${f}" />`);
+    const prodAssets = [...cssLinks, ...preloadLinks, `<script type="module" src="/${entry.file}"></script>`].join('\n    ');
+
+    return html.replace('<script type="module" src="/src/main.ts"></script>', prodAssets);
+  };
 }
 
 /** The embedded routing demo's prefix: its HTML is served for every path under it. */

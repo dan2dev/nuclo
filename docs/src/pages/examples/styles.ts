@@ -56,6 +56,22 @@ export const es = {
   // Sources are formatted to fit; long lines wrap rather than scroll sideways.
   codePane: css("pages-examples-styles-codePane", { display: "flex", flexDirection: "column", minWidth: "0", "& > div": { flex: "1", display: "flex", flexDirection: "column", border: "none", borderRadius: "0" }, "& > div > *:last-child": { flex: "1" }, "& pre": { whiteSpace: "pre-wrap", overflowWrap: "anywhere", minWidth: "0" } }),
 
+  // ── The "app" layout (Example.layout): a compact head, then tabs: the preview fills the rest, each file is a tab ──
+  appFill: css("pages-examples-styles-appFill", { height: "100%" }),
+  app: css("pages-examples-styles-app", { display: "flex", flexDirection: "column", height: "100%" }),
+  appHead: css("pages-examples-styles-appHead", { display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "2px 16px", padding: "16px 20px 10px", medium: { padding: "18px 32px 10px" } }),
+  appTitle: css("pages-examples-styles-appTitle", { fontSize: "1.25rem", fontWeight: "700", letterSpacing: "-0.01em", lineHeight: "1.3", outline: "none" }),
+  appDesc: css("pages-examples-styles-appDesc", { flex: "1 1 360px", fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.55", "& code": { fontFamily: mono, fontSize: "0.875em", backgroundColor: colors.bgSecondary, padding: "1px 5px", borderRadius: "4px", color: colors.text } }),
+  appDocs: css("pages-examples-styles-appDocs", { fontSize: "0.8125rem", fontWeight: "500", color: colors.primaryInk, whiteSpace: "nowrap", hover: { textDecoration: "underline" } }),
+  appTabs: css("pages-examples-styles-appTabs", { display: "flex", flexShrink: 0, height: "40px", padding: "0 12px", borderBottom: `1px solid ${colors.border}`, overflowX: "auto", raw: { "scrollbar-width": "none" }, medium: { padding: "0 24px" } }),
+  appTab: css("pages-examples-styles-appTab", { display: "flex", alignItems: "center", flexShrink: 0, padding: "0 12px", marginBottom: "-1px", borderBottom: "2px solid transparent", fontFamily: mono, fontSize: "0.75rem", color: colors.textMuted, whiteSpace: "nowrap", hover: { color: colors.text } }),
+  appTabActive: css("pages-examples-styles-appTabActive", { color: colors.text, borderBottomColor: colors.primary }),
+  // The panes are all built once and only shown or hidden, so the running app keeps its state while the reader reads its source.
+  appPane: css("pages-examples-styles-appPane", { display: "none", flexDirection: "column", flex: "1", minHeight: "0" }),
+  appPaneShow: css("pages-examples-styles-appPaneShow", { display: "flex" }),
+  appPreview: css("pages-examples-styles-appPreview", { padding: "16px 20px 20px", backgroundColor: colors.bgCard, overflow: "auto", medium: { padding: "20px 32px 24px" } }),
+  appCode: css("pages-examples-styles-appCode", { overflow: "auto", "& > div": { flex: "1 0 auto", border: "none", borderRadius: "0" }, "& pre": { whiteSpace: "pre-wrap", overflowWrap: "anywhere", minWidth: "0" } }),
+
   // ── An embedded standalone app (demo-frame.ts): a browser-like chrome over an iframe ──
   demo: css("pages-examples-styles-demo", { display: "flex", flexDirection: "column", width: "100%", maxWidth: "560px", border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden", backgroundColor: colors.bg }),
   demoBar: css("pages-examples-styles-demoBar", { display: "flex", alignItems: "center", gap: "4px", height: "38px", padding: "0 8px", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary }),

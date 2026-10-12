@@ -13,7 +13,9 @@ export { routeName };
 const pages: RouteTable = Object.fromEntries(
   routeDefinitions.map((def) => [
     def.path === 'home' ? '/' : `/${def.path}`,
-    'children' in def ? { '/': def.loader, ...def.children } : def.loader,
+    'children' in def
+      ? { '/': def.loader, ...Object.fromEntries(Object.entries(def.children).map(([k, page]) => [k, page.loader])) }
+      : def.loader,
   ]),
 );
 

@@ -21,10 +21,12 @@ export default defineConfig({
     outDir: './build/dist',
     emptyOutDir: true,
     manifest: true,
-    rollupOptions: {
+    rolldownOptions: {
       input: 'src/main.ts',
       output: {
-        inlineDynamicImports: true,
+        // Pages stay in their own chunks (the router import()s them on demand);
+        // the framework gets a stable chunk so a docs edit does not invalidate it.
+        codeSplitting: { groups: [{ name: 'nuclo', test: /\/packages\/nuclo-/ }] },
       },
     },
   },

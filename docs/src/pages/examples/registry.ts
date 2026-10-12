@@ -5,6 +5,7 @@ import { SVG_EXAMPLES } from "./svg-demos.ts";
 import { ROUTER_EXAMPLES } from "./router-demos.ts";
 import { FORM_EXAMPLES } from "./form-demos.ts";
 import { COMPONENT_EXAMPLES } from "./component-demos.ts";
+import { APP_EXAMPLES } from "./app-demos.ts";
 import { buildPreview } from "./demos.ts";
 import type { CodeFile } from "../../components/CodeBlock.ts";
 
@@ -18,6 +19,7 @@ export interface Example {
   preview: () => NodeModLike<"div">;
   docs?: string; // the docs section this example belongs to
   install?: string; // a package beyond nuclo the example needs, such as "nuclo-router"
+  layout?: "app"; // "app": the preview fills the modal and the files sit behind tabs (ExampleDetail.ts)
 }
 
 export interface ExampleGroup {
@@ -64,6 +66,11 @@ export const EXAMPLE_GROUPS: ExampleGroup[] = [
     title: "Routing",
     sub: "Route tables, matching, the active route, layers and loaders. nuclo-router is a separate package: npm install nuclo nuclo-router.",
     examples: ROUTER_EXAMPLES.map((ex) => ({ ...ex, group: "Routing" })),
+  },
+  {
+    title: "Apps",
+    sub: "Bigger programs, full screen: an engine in plain JavaScript, identity-tracked lists under drag and drop, and a library that owns its own state.",
+    examples: APP_EXAMPLES.map((ex) => ({ ...ex, group: "Apps" })),
   },
 ];
 
