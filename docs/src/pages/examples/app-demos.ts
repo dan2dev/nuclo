@@ -74,7 +74,7 @@ export const APP_EXAMPLES: AppExample[] = [
   app(
     "desktop",
     "Desktop",
-    "A working desktop with Files, Notes, Terminal, Calculator and Timer. Create and organize folders, edit notes, and use shell commands on one shared simulated disk saved in your browser. Windows keep their state as you move, resize and switch between apps; a running timer fills the taskbar tray with into().",
+    "A working desktop with Files, Notes, Terminal, Calculator, Timer, a Kanban board and a Calendar. Create and organize folders, edit notes, and use shell commands on one shared simulated disk saved in your browser. Type into the Calculator straight from the keyboard, click anywhere in the Terminal to focus its input line, and drag cards between columns on the board. Windows keep their state as you move, resize and switch between apps; a running timer fills the taskbar tray with into().",
     Desktop,
     "api-region",
   ),
@@ -88,7 +88,7 @@ export const APP_EXAMPLES: AppExample[] = [
   app(
     "chat",
     "Chat",
-    "A chat pinned to the bottom while its history loads upward forever. Every request is plain async/await with an update() before and after. Older pages go in with unshift() and the scroll position grows by the height they added, so nothing on screen jumps. Your message shows at once, and send() only changes fields on the same object, so its row is never rebuilt, even when it fails and you retry.",
+    "A chat with three channels, each one plain object: its history, cursor, typing, draft and scroll position, so switching keeps every channel exactly as it was, and update(\"chat-sidebar\") refreshes only the unread badges. History loads upward forever with unshift() and a scrollTop that grows by the height it added. Your message shows before the server has it, send() patches the same object, and Retry, Edit, Delete and reactions never rebuild its row. Messages render code, bold, links and @mentions.",
     ChatApp,
     "async",
   ),
