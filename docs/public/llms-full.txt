@@ -1,6 +1,6 @@
 # Nuclo documentation
 
-> Complete Nuclo v0.3.24 documentation as a single Markdown file, generated from https://nuclo.dev/docs. Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript: build UI with global tag builders, keep state in plain mutable variables, and call `update()` to sync the real DOM. No virtual DOM, no compiler, no proxies, no signals.
+> Complete Nuclo v0.3.26 documentation as a single Markdown file, generated from https://nuclo.dev/docs. Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript: build UI with global tag builders, keep state in plain mutable variables, and call `update()` to sync the real DOM. No virtual DOM, no compiler, no proxies, no signals.
 
 Index: https://nuclo.dev/llms.txt · Source: https://github.com/dan2dev/nuclo · npm: https://www.npmjs.com/package/nuclo
 
@@ -84,6 +84,8 @@ npm install nuclo
 ```
 
 Or use `pnpm add nuclo`, `yarn add nuclo` or `bun add nuclo`. Nuclo has no dependencies.
+
+Routing is not part of the core package. It ships separately as [`nuclo-router`](https://nuclo.dev/docs#router-overview), which you install next to `nuclo` when you need it.
 
 #### Globals
 
@@ -1395,6 +1397,594 @@ import { resetStyles } from 'nuclo'
 beforeEach(() => resetStyles())
 ```
 
+## Routing
+
+### nuclo-router
+
+Source: https://nuclo.dev/docs#router-overview
+
+> **Separate package:** `nuclo-router` is not part of the Nuclo core package. Install it next to `nuclo`. It is a preview release, so its API may still change.
+
+Routing for Nuclo: server rendering, hydration, code-split routes and idle preloading, built on `list()` and `update()`. About 4.6 KB gzipped, with no dependencies beyond Nuclo itself and no side effects, so it tree-shakes away when unused.
+
+```bash
+npm install nuclo nuclo-router
+```
+
+Or use `pnpm add`, `yarn add` or `bun add` with the same two names. It needs `nuclo` 0.3 or later as a peer dependency.
+
+The router decides what to load. The app says where with `router.outlet()`: one `list()` over the layer stack, one row per layer, so an ordinary page is a single row. The server and the client build the same tree, so `hydrate()` claims the server's nodes instead of replacing them. Everything else is `history`, one delegated `click` listener and `requestIdleCallback`.
+
+#### One import
+
+```ts
+// main.ts
+export const router = createRouter(routes)   // define once, import anywhere
+await router.start()                          // resolve the current URL
+render(App, document.getElementById('app')!) // App places router.outlet() and reads router.path, router.go(), …
+```
+
+`start()` resolves the matching route's modules before it returns, so the first tree is complete on both the server and the client. After that the router reads through to the route it started: `router.path`, `router.pending`, `router.go()`.
+
+#### A whole app
+
+```ts
+// routes.ts
+// isomorphic: imported by the browser and the server
+import { createRouter } from 'nuclo-router'
+
+export const router = createRouter({
+  '/':           () => import('./pages/Home.ts'),
+  '/docs':       () => import('./pages/Docs.ts'),
+  '/blog/:slug': () => import('./pages/Post.ts'),
+  '*':           () => import('./pages/NotFound.ts'),
+})
+
+export const App = () =>
+  div(
+    header(a({ href: router.href('/') }, 'Home'), a({ href: router.href('/docs') }, 'Docs')),
+    main(
+      when(() => router.pending, Spinner()),
+      when(() => router.error !== null, ErrorView()),
+      router.outlet(),   // where the pages land
+    ),
+    footer('© nuclo'),
+  )
+```
+
+```ts
+// pages/Post.ts
+import type { RouteContext } from 'nuclo-router'
+import { router } from '../routes.ts'
+
+// A page is plain content
+export default function Post(ctx: RouteContext) {
+  // A query-only change keeps the page, so the query is read live.
+  return article(h1(ctx.params.slug), p(() => (router.search.has('preview') ? 'draft' : '')))
+}
+```
+
+```ts
+// main.ts
+import 'nuclo'
+import { router, App } from './routes.ts'
+
+await router.start()
+hydrate(App, document.getElementById('app')!)   // or render() without SSR
+```
+
+```ts
+// server.ts
+import 'nuclo/polyfill'
+import 'nuclo'
+import { renderToString } from 'nuclo/ssr'
+import { router, App } from './routes.ts'
+
+// one Route per request
+const route = await router.start(request.url)
+const html = route.run(() => renderToString(App))
+```
+
+That is the whole integration. Links work because an `<a href>` is just an `<a href>`. One delegated listener on `document` intercepts the links the router owns and leaves every other link to the browser.
+
+On the server, `start()` returns a `Route` per request and leaves the router alone, so concurrent requests cannot see each other's route. `route.run()` makes that Route the one the router, and so the outlet, reads for the length of the render. In the browser there is one Route per page load, and `start()` makes it the router's own. No `run()` is needed.
+
+A page receives its [`RouteContext`](https://nuclo.dev/docs#router-api) and its [`PageProps`](https://nuclo.dev/docs#router-api), as `(ctx, { layer, data, outlet, beforeLeave })`, and may take fewer arguments. It returns anything `list()` accepts. To fill another part of the layout as well, return an `into()` from inside the page, such as `div(article(…), into('sidebar', nav(…)))`. That content leaves with the page. See [Pages & Regions](https://nuclo.dev/docs#router-regions).
+
+### Patterns & Nested Routes
+
+Source: https://nuclo.dev/docs#router-patterns
+
+| Pattern | Matches | `params` |
+| --- | --- | --- |
+| `/`, `/docs/intro` | exactly that path | `{}` |
+| `/blog/:slug` | `/blog/hello` | `{ slug: 'hello' }` |
+| `/u/:id/edit` | `/u/7/edit` | `{ id: '7' }` |
+| `/files/*rest` | `/files/a/b.txt` | `{ rest: 'a/b.txt' }` |
+| `*` | anything unmatched, your 404 | `{ '*': '…' }` |
+
+Precedence is static, then dynamic in declaration order, then catch-all with the longest prefix first. So `'*'` only matches what nothing else does and can sit anywhere in the table. Trailing slashes, duplicate slashes and percent-encoding are normalized, and param values arrive decoded. Matching is a segment comparison per pattern. No regexes are built or run.
+
+#### Relative routes
+
+A pattern written with `./` is relative to the parent that declares it, and an href written with `./` is relative to the active route. Together they make a reusable section that means the same thing under every parent. A table's value is either a loader or another table, whose keys are relative to it:
+
+```ts
+// records/routes.ts
+import type { RouteTable } from 'nuclo-router'
+
+// a section, with no idea where it lives
+export const recordSection: RouteTable = {
+  '/':             () => import('./Record.ts'),   // the parent path itself
+  './preview':     () => import('./Preview.ts'),
+  './preview/raw': () => import('./Raw.ts'),
+}
+```
+
+```ts
+// routes.ts
+// declare it wherever it belongs
+createRouter({
+  '/': () => import('./pages/Home.ts'),
+  '/invoices/:id':  recordSection,
+  '/customers/:id': recordSection,
+  '*': () => import('./pages/NotFound.ts'),
+})
+```
+
+Those two lines produce all six patterns with no path written twice. Both parents get the same loader objects, so they share one module cache and one `import()`.
+
+- Inside a child table, `'./x'`, `'/x'` and `'x'` all mean the same thing, `'/'` means the parent path itself, and `'*rest'` gives the section its own catch-all. Nesting goes as deep as you like.
+- Top-level keys are used as written, so `'*'` stays `'*'`.
+- A child under a `*catch-all` parent is a `createRouter()` error, since a catch-all has to end its pattern.
+
+#### Parent pages and `outlet()`
+
+A parent and its children are a real hierarchy. The parent renders, and its child renders inside it, wherever it calls `outlet()`:
+
+```ts
+// records/Record.ts
+import type { PageProps, RouteContext } from 'nuclo-router'
+
+// a parent page takes its outlet from (ctx, { outlet })
+export default function Record(ctx: RouteContext, { outlet }: PageProps) {
+  return div(Header(ctx), input({ id: 'notes' }), main(outlet()))
+}
+```
+
+Navigating between children does not rebuild the parent. Its DOM node is the same node, so its focus, its scroll position, its half-typed input and any state in its closure all survive.
+
+- A page with no child route renders nothing from its outlet, so a layout can call it unconditionally. A parent that has a child and never calls `outlet()` swallows it.
+- There are no index routes. `'/'` is the layout itself, so the parent path renders the layout with an empty outlet rather than a separate index page inside it. Put the landing content in the layout, or give it a real child path.
+
+The same call then works from either parent, and from a page that does not know which one it is in:
+
+```ts
+// example.ts
+router.href('./preview')      // '/invoices/42/preview' or '/customers/7/preview'
+await router.go('./preview')
+await layer.push('./preview') // the usual shape: a child layer
+```
+
+`./x`, `../x`, `.` and `..` resolve against the current route's path, not the URL's "directory". From `/invoices/42`, `./preview` is `/invoices/42/preview`, where a browser would have said `/invoices/preview`, and a trailing slash on the URL changes nothing. `../` walks up a segment and stops at the root. The query and hash are carried through, `base` is re-added, and the resolved absolute path is what goes into history. This is the same deviation from URL resolution that React Router makes for `<Link to="./x">`.
+
+- Only `./` and `../` are route-relative. A bare `preview` in an href is left to ordinary browser rules.
+- Build relative links with `router.href('./preview')` rather than writing `href="./preview"` by hand. `href()` resolves at render time, so the markup that ships is absolute and still correct for a crawler, for a middle-click and with JavaScript disabled.
+
+#### What is kept, and what is rebuilt
+
+| Node | On navigation |
+| --- | --- |
+| a parent whose pattern and path are unchanged | **kept**: same node, and its `load()` is not re-run |
+| the matched page | **kept** when its pattern and path are unchanged and it has no `load()`, so a query or hash change keeps it. A route with a loader refreshes on every visit. |
+| a parent whose path changed | rebuilt, along with everything under it |
+| a pushed layer | renders the matched page alone. Its parents are already mounted in the row beneath it. |
+
+A kept page keeps the `ctx` it was built with. That is the meaning of `ctx` everywhere: read `router.*` for live values. Query-driven state, such as filters, pagination and tabs, reads `router.search` inside a dynamic value and writes with `router.go('?page=2', { replace: true })`. The page, its focus and its half-typed input stay put.
+
+### Pages & Regions
+
+Source: https://nuclo.dev/docs#router-regions
+
+`router.outlet()` puts the page in one place. A page that also needs a sidebar, a toolbar or a heading somewhere else in the layout fills it with [`into()`](https://nuclo.dev/docs#api-region). The layout marks the place with `region()`, and the page returns an `into()` next to its own content. The layout never receives page content as a prop, and navigation never rebuilds it.
+
+```ts
+// app.ts
+export const App = () =>
+  div(
+    aside(
+      input({ placeholder: 'Filter' }),   // keeps its text across navigations
+      region({ id: 'sidebar', empty: p('Nothing to show.') }),
+    ),
+    main(router.outlet()),
+  )
+```
+
+```ts
+// pages/Post.ts
+import type { PageProps, RouteContext } from 'nuclo-router'
+
+export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>) {
+  return div(
+    article(h1(post.title), p(post.body)),
+    into('sidebar', nav(h2('In this post'), ul(list(() => post.headings, (h) => li(h))))),
+  )
+}
+```
+
+The page's content is a row of the outlet's `list()`, and an `into()` lives as long as the row that holds it. So the sidebar content arrives with the page and leaves with it: navigating to a page without an `into('sidebar', …)` shows the region's `empty` content again. The page can use its `ctx` and `data` for both parts, since both are built by the same function.
+
+#### What happens on navigation
+
+- **A kept page keeps its regions.** A query or hash change that [keeps the page](https://nuclo.dev/docs#router-patterns) does not touch the region content either. Read `router.search` inside a dynamic value if the sidebar depends on it.
+- **A rebuilt page refills them.** When the route changes, the old row is removed and the new page's `into()` views take over. Nothing is left behind.
+- **A pushed layer adds a view.** The layer is a later row of the outlet, so its `into()` is a newer view of the same region. With the default `type: 'latest'` it covers the page's view until the layer closes, and then the page's view shows again. With `type: 'stack'` both show.
+- **A parent page can fill regions too.** Its views stay while its children change, because the parent is not rebuilt.
+- **Server rendering works as is.** The server builds the page inside `route.run()`, so its `into()` views are in the HTML, and `hydrate()` claims them.
+
+#### Several regions from one page
+
+Pass an object to fill more than one region at once. The page's main content still goes through the outlet, so return it beside the `into()`:
+
+```ts
+// pages/Report.ts
+export default function Report(ctx: RouteContext) {
+  return div(
+    table(…),
+    into({
+      toolbar: [button('Export'), button('Print')],
+      sidebar: nav(a({ href: router.href('./summary') }, 'Summary')),
+    }),
+  )
+}
+```
+
+#### Which tool for which job
+
+- **`outlet()`** is for a child route: content the URL decides, rendered inside its parent page. See [Nested Routes](https://nuclo.dev/docs#router-patterns).
+- **`into()`** is for the matched page spreading itself across the layout. The content belongs to the page and uses its data.
+- **`matches()`** is for the layout deciding from the URL alone, with its own small table and no page involved. See [`matches()`](https://nuclo.dev/docs#router-matches).
+
+All of these belong to the one matched route. The router does not drive two independent areas from one URL, so a sidebar with its own routes is a region a page fills, not a second outlet.
+
+### Route Loaders & Code Splitting
+
+Source: https://nuclo.dev/docs#router-loaders
+
+A page module may export a `load` function. It runs before the page is built, on every navigation to that route, and whatever it returns is handed to the page as `data`:
+
+```ts
+// pages/Post.ts
+import type { DataLoader, PageProps, RouteContext } from 'nuclo-router'
+
+export const load: DataLoader<Post> = (ctx) => fetchPost(ctx.params.slug)
+
+export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>) {
+  return article(h1(post.title), p(post.body))
+}
+```
+
+The route table is unchanged. The loader travels with the page. It gets the matched `RouteContext`, so `params`, `search` and `path` are all available. It may be sync or async, and it runs on the server too, so a server-rendered page ships with its data already in the HTML instead of fetching after hydration.
+
+**The module is cached. The data is not.** A route's chunk is fetched once and reused, and its loader runs again on every navigation. That is why `/blog/a` and `/blog/b` cannot be confused, and why a failed loader can simply be retried.
+
+| Situation | Behavior |
+| --- | --- |
+| while it runs | `router.pending` is true and the page you were on stays up |
+| it throws or rejects | lands on `router.error`. `go()` still never rejects, and the navigation can be retried. |
+| during `start()` | the rejection comes out of `start()`. There is no Route yet to put it on. |
+| a pushed layer | runs its own loader, with its own data |
+| the idle preloader | warms modules only. It has no context to pass, and would be fetching data for a route you may never open. |
+| re-navigating to the same URL | the loader runs again and the row rebuilds. A route without a loader keeps its row. |
+
+To revalidate, navigate to where you already are without adding a history entry:
+
+```ts
+// example.ts
+await router.go(router.url, { replace: true })   // runs load() again
+```
+
+#### Starting the data with the chunk
+
+A `load` exported by the page module can only run once that module has arrived, so a cold navigation fetches the chunk, then the data. To start both at once, declare the loader in the table with `withLoad()`:
+
+```ts
+// routes.ts
+import { createRouter, withLoad } from 'nuclo-router'
+import { loadPost } from './data.ts'   // small, in the main bundle
+
+createRouter({
+  '/blog/:slug': withLoad(() => import('./pages/Post.ts'), loadPost),
+})
+```
+
+It replaces the module's own `load` and runs on every visit like it. A rejection while the chunk is still loading lands on `router.error` like any other.
+
+There is no serialization of server data into the HTML, by design. The client's `load` runs again on hydration. If that matters, have the server emit `route.data`, for example as `window.__DATA__`, and the loader take it first. `route.data` is the matched page's data only. A parent's `load()` result is not on it.
+
+#### Code splitting and preloading
+
+A route's value is always a function that returns the page component, so the component is reached lazily:
+
+```ts
+// routes.ts
+'/a': () => import('./A.ts'),                      // default export (+ optional load)
+'/b': () => import('./B.ts').then(m => m.BPage),   // named export
+'/c': () => CPage,                                 // eager, not split
+'/d': () => ({ default: DPage, load: loadD }),     // eager, module-shaped
+```
+
+Only the module-shaped forms can carry a `load` export. Picking a named component with `.then(m => m.BPage)` hands the router the function alone.
+
+Each module is imported once and cached. Concurrent navigations to the same route share one `import()`. Once the page goes idle, the remaining routes are loaded in the background, one per idle slice, pausing whenever a navigation the user is waiting for is in flight.
+
+A preloaded or eager route never flips `router.pending` and lands before the next paint: no spinner frame, no layout shift. `router.pending` is only true for a module or loader that has to be waited for, and the outgoing page stays on screen while it is. A chunk that fails to load surfaces as `router.error`, never as an unhandled rejection, and can simply be retried.
+
+### Router API
+
+Source: https://nuclo.dev/docs#router-api
+
+```ts
+// import { ... } from 'nuclo-router'
+function createRouter(table: RouteTable, options?: RouterOptions): Router
+function withLoad(loader: RouteLoader, load: DataLoader): RouteLoader
+
+interface RouterOptions { base?: string; preload?: boolean; onNavigate?: (ctx: RouteContext, kind: NavigationKind) => void }
+```
+
+#### `createRouter(table, options?)`
+
+`table` maps a pattern to a loader, or to a nested table. Options:
+
+| Option | Default |  |
+| --- | --- | --- |
+| `base` | `'/'` | URL prefix the app is served under, such as `'/docs'`. It only matches at a segment boundary: `/docs/intro` is inside `'/docs'`, `/docsearch` is not. URLs outside it match nothing, so `start()` rejects (your server-side 404) and links to them are left to the browser. |
+| `preload` | `true` | Load the remaining routes' modules when the page goes idle. |
+| `onNavigate` |  | `(ctx, kind) => void`, called after every resolved navigation in the browser, including the initial one, once the DOM has caught up. `kind` is `'start'`, `'push'`, `'replace'`, `'pop'` (Back, Forward, `close()`) or `'layer'`. The hook for `document.title`, meta tags, focus, scrolling and analytics. Never called during SSR. |
+
+Returns the router: `start()`, `match()`, `outlet()`, `matches()`, and every `Route` member except `run()`, read through to the active Route. That is the one the last `start()` returned in the browser, or the one whose `run()` is executing on the server. Reading a member with neither throws. The route table, the compiled matcher and the module cache live on the router, so they are shared across requests on a server.
+
+#### `router.start(url?)`
+
+Resolves `url` (default: `location.href` in the browser) to its page modules and returns a `Promise<Route>`. Rejects when nothing matches and the table has no `'*'` route. On a server, that is your 404. In the browser it also makes the Route the router's active one, attaches the `popstate` and delegated `click` listeners and schedules preloading. A second `start()` retires the previous Route for you. On the server it touches nothing shared, so render inside `route.run()`.
+
+#### `router.match(url?)`
+
+Resolves a URL against the table without loading anything: no import, no history, no listeners, no Route. Returns a `RouteContext`, or `null` when the URL is outside `base`, matches no pattern or, in the browser, is on another origin. Absolute URLs only, since `./` resolution needs an active route.
+
+```ts
+// example.ts
+// 404 before importing a single chunk
+if (!router.match(request.url)) return new Response(null, { status: 404 })
+
+// "is this link ours?" for a custom link component or a prefetch rule
+const owned = router.match(href) !== null
+```
+
+#### `router.outlet()`
+
+The active route's pages as a `list()`. Place it once, wherever the pages go. A pushed layer is a later row of it. It is empty before `start()` resolves and after `stop()`. On the server it renders the Route whose `run()` is executing.
+
+#### `router.matches(table)`
+
+Renders the view of a second table that the active route's path matches, as a `list()` you place anywhere. See [`matches()`](https://nuclo.dev/docs#router-matches).
+
+#### `Route`
+
+Every member but `run()` is also on the router, which is where an app reads it.
+
+| Member |  |
+| --- | --- |
+| `path`, `pattern`, `params`, `search`, `hash`, `url` | the active match. `search` is a `URLSearchParams`. `search`, `hash` and `url` are live. |
+| `pending` | a navigation is waiting for a module or a loader |
+| `error` | the last failed load, cleared by the next navigation |
+| `data` | what the matched page's `load()` returned, for a server to serialize. A parent's is not on it. |
+| `depth` | how many layers are on the stack (1 for an ordinary page) |
+| `go(href, { replace })` | navigate, loading the module if needed. Never rejects: a module that fails, by rejecting or by throwing, lands on `error`. |
+| `push(href)` | open a route as a new layer on top, resolving with what it closes with. Accepts `./`. Rejects on no match or a failed module. |
+| `href(path)` | prefix a path with `base`, for `a({ href })`. Resolves `./` and `../` against the active route. |
+| `stop()` | detach every listener, dismiss open layers, empty the outlet. Idempotent. A stopped Route still answers with its last match, and `go()` does nothing. |
+| `run(fn)` | call `fn` with this Route as the router's active one and return its result: `route.run(() => renderToString(App))` on the server. Synchronous only. The Route stops being active when `fn` returns. |
+
+#### `RouteContext`
+
+A page's first argument: `path`, `pattern`, `params`, `search`, `hash`, `url`. It is the context the page was built with. Read `router.*` for live values. They differ only when the query or hash changed without a rebuild.
+
+`params` is `{ [name]: string }` by default. A page can type it from its own pattern with `Params`, which turns `'/blog/:slug'` into `{ slug: string }` and `'/files/*rest'` into `{ rest: string }`:
+
+```ts
+// pages/Post.ts
+import type { Params, RouteContext } from 'nuclo-router'
+
+export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
+  return article(h1(ctx.params.slug))   // slug: string, nothing else exists
+}
+```
+
+#### `PageProps`
+
+A page's second argument. Destructure what the page needs.
+
+| Prop |  |
+| --- | --- |
+| `layer` | where the page sits in the stack. See `Layer` below. |
+| `data` | what the route's `load()` returned, or `undefined` without one. Typed by `PageProps<TData>`. |
+| `outlet` | where a parent page renders its child route. See [Nested Routes](https://nuclo.dev/docs#router-patterns). |
+| `beforeLeave` | registers a guard asked before this page is discarded. See [Leave guards](https://nuclo.dev/docs#router-layers). |
+
+#### `Layer`
+
+Where a page sits in the stack, and its way out.
+
+| Member |  |
+| --- | --- |
+| `depth` | 0 for the base page, 1 and up for pushed layers |
+| `push(href)` | open another layer from inside a page, same as `Route.push()` |
+| `close(result?)` | close this layer and everything above it, resolving the `push()` that opened it. No argument means dismissed. A no-op at depth 0. |
+
+#### `DataLoader` and `withLoad()`
+
+`DataLoader` is `(ctx: RouteContext) => TData | Promise<TData>`, a page module's optional `load` export. `withLoad(loader, load)` makes a route whose `load` starts beside its chunk's import instead of after it. See [Route Loaders](https://nuclo.dev/docs#router-loaders).
+
+#### Types
+
+Every type is a named export of `nuclo-router`, so a page, a loader or a guard can be typed without importing from a path.
+
+| Type | What it is |
+| --- | --- |
+| `Params<'/blog/:slug'>` | the params object for a pattern. `RouteParams` is the untyped shape, and `Match` is the matcher's result. |
+| `PageComponent` | a page: `(ctx, { layer, data, outlet, beforeLeave }) => …` |
+| `RouteModule` | a page module: the component itself, or `{ default, load? }` as `import()` yields |
+| `RouteLoader` | `() => RouteModule | Promise<RouteModule>`, optionally carrying a `load` from `withLoad()` |
+| `RouteTable` | the table `createRouter()` takes: pattern to loader, or to a nested table |
+| `RouterOptions` | `{ base?, preload?, onNavigate? }` |
+| `NavigateOptions` | `{ replace? }`, the second argument of `go()` |
+| `NavigationKind` | `'start' | 'push' | 'replace' | 'pop' | 'layer'`, the second argument of `onNavigate` |
+| `Outlet` | the type of `outlet()` from `PageProps` |
+| `LeaveGuard` | `(to) => boolean | void | Promise<…>`, what `beforeLeave()` takes |
+| `MatchView` | what a `matches()` view is: params in, content or `import()` of a page out |
+
+### Layers & Leave Guards
+
+Source: https://nuclo.dev/docs#router-layers
+
+`push()` opens a route on top of the current one instead of replacing it, and resolves with whatever that layer closes with. Because the pages are a single `list()` over the stack, opening a layer is an append. The page underneath is not re-rendered, so its DOM, its focus and its half-filled form are all still there when the layer closes.
+
+That makes the "I need a record that doesn't exist yet" flow work without throwing away the form the user was filling in:
+
+```ts
+// pages/Edit.ts
+// the page underneath
+const created = await layer.push<Option>('/options/new')
+if (created) { options.push(created); selected = created.id; update() }
+```
+
+```ts
+// pages/NewOption.ts
+// the pushed page: (ctx, { layer })
+layer.close(created)   // resolves the push() above with the new option
+layer.close()          // dismissed: resolves with undefined
+```
+
+Layers nest. A dialog that needs its own dialog calls `layer.push()` and awaits it, with no reference to the Route.
+
+- **The URL is the top layer.** `push()` adds a history entry, so a layer is linkable and Back closes it, resolving its `push()` as dismissed, exactly like Cancel. Back and `close()` are one code path: `close()` records its result and walks history back, and the depth in `history.state` is the authority.
+- **An ordinary navigation clears the stack.** A link click or `go()` is not a layer. It replaces everything and dismisses every open layer, so no caller is left awaiting.
+- **A cold load is a standalone page.** The URL names the top layer but not the stack beneath it, so opening a layer's URL directly renders it at depth 1 with `layer.depth === 0` and an inert `close()`. A pushed route has to make sense on its own. Branch on `layer.depth` to offer a link out instead of a dead Cancel button.
+- **The promise cannot survive a reload**, because it lives in a closure. Treat the result as a shortcut through a flow that also works the long way round.
+- **Nothing is left awaiting.** `stop()` dismisses every open layer, and a layer abandoned by a navigation resolves with `undefined`.
+
+#### Leave guards
+
+A page that holds something worth keeping, such as a half-filled form, registers a guard. It is asked before the page is discarded, and returning `false` (or a promise of it) keeps the page:
+
+```ts
+// pages/Edit.ts
+import type { PageProps, RouteContext } from 'nuclo-router'
+
+export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
+  let dirty = false
+  beforeLeave(() => !dirty || confirm('Discard your changes?'))
+  return form(input({ onInput: () => (dirty = true) }), …)
+}
+```
+
+- **Only when the page goes.** A child navigation under a layout, or a query or hash change that keeps the page, does not ask. A guard lives and dies with its page, so there is nothing to unregister.
+- **Every way out.** A link, `go()`, Back and Forward, a layer's `close()`, and `go()` to a URL the router does not own (leaving the app, where `to` is `null`). A refused Back or Forward is walked back, so the address bar stays on the page. Closing the tab or reloading is `beforeunload`'s job.
+- **`to`** is the `RouteContext` the navigation is heading to. Guards run innermost first and stop at the first refusal. One that throws keeps the page. `close(result)` goes through the guard too, so clear your flag before closing with a result.
+- The router can only walk back history entries it wrote. A Back or Forward onto one it did not, such as a native `#fragment` link or another script's `pushState`, is not asked.
+
+### matches() & Sub-routers
+
+Source: https://nuclo.dev/docs#router-matches
+
+`router.outlet()` renders the page. `router.matches(table)` renders something else that depends on where you are, such as a sidebar, breadcrumbs or a toolbar, from its own small table, without loading a route or adding a page:
+
+```ts
+// app.ts
+div(
+  aside(
+    router.matches({
+      '/':           () => nav('Home links'),
+      '/blog/new':   () => nav('Drafting tips'),
+      '/blog/:slug': ({ slug }) => nav(`More like ${slug}`),
+      '*':           () => import('./Sidebar.ts'),   // code-split, rendered once loaded
+    }),
+  ),
+  main(router.outlet()),
+)
+```
+
+- **Same matching as the route table.** The patterns, precedence, raw-path matching and `base` stripping are the router's own, so a view and a page always agree about the URL. It reads the top layer's path, like `router.path`.
+- **A view** is `(params, ctx) => content`, where `params` is typed from its pattern and `ctx` is the `RouteContext` with the view's `pattern` and `params`. It may instead return `import()` of a page module, which is called with `ctx` once it lands.
+- **Nothing matches, nothing renders.** Add a `'*'` view for a fallback. It is empty before `start()` and after `stop()`, like the outlet.
+- **It re-renders only when the route changes**, so a view keeps its DOM across anything that keeps the page.
+- **A lazy view renders nothing until its module arrives.** A failed `import()` is logged with `console.error`, does not set `router.error`, and is retried on the next navigation. A plain `update()` does not retry.
+- **On the server** a lazy view ships nothing, since its module lands on the client. Use a synchronous view for anything the first HTML must contain.
+
+#### Sub-routers
+
+Routes nest, so a sub-router is usually just a nested table. One router: the section's own `'/'` page is its chrome, and its children render in that page's `outlet()`, so the chrome survives navigation within the section:
+
+```ts
+// routes.ts
+createRouter({ '/': …, '/docs': docsRoutes, '*': … })
+```
+
+Or give the feature a router of its own, created but never started. The parent owns a single catch-all entry and the child resolves the tail against its own patterns, params and fallback:
+
+```ts
+// routes.ts
+// parent table
+'/docs/*rest': () => import('./docs/Shell.ts'),
+```
+
+```ts
+// docs/Shell.ts
+const docs = createRouter(docsRoutes, { base: '/docs' })
+const hit = docs.match()                       // { pattern: '/:topic', … }
+const page = await docsRoutes[hit.pattern]()   // the app's own lookup
+```
+
+Never starting it is the point. `start()` is what attaches the listeners, and two started routers conflict. The trade is that the child owns resolution, so route loaders, which a started router runs, are yours to call. This shape also rebuilds the shell when the tail changes, because the router sees one route and the shell resolves the rest itself. A nested table is what gets you a parent the router keeps mounted, so prefer it unless the feature really needs its own router, base and fallback.
+
+### Link Handling
+
+Source: https://nuclo.dev/docs#router-links
+
+The delegated listener navigates a left-click on an `<a href>`, including an SVG `<a>` and clicks on anything nested inside one, and steps aside for everything else: modifier-clicks and middle-clicks, a `target` other than `_self`, `download`, `rel="external"`, cross-origin hrefs, hash-only links on the current page, paths outside `base`, paths no route matches (so a server-rendered 404 is still reachable), and any event an app handler already called `preventDefault()` on. Opt a link out explicitly with `data-nuclo-router="off"`.
+
+#### Scrolling
+
+A pushed navigation preserves the current scroll position. When the new URL has a `#hash` matching an element on the page, that element is scrolled into view. `popstate` leaves scrolling to the browser. To land new pages at the top, do it in `onNavigate`, which says how the navigation happened:
+
+```ts
+// routes.ts
+let shown = ''
+createRouter(routes, {
+  onNavigate: (ctx, kind) => {
+    // Not on Back/Forward (the browser restores those), nor for a query change on the same page.
+    if (kind === 'push' && ctx.path !== shown && !ctx.hash) window.scrollTo(0, 0)
+    shown = ctx.path
+  },
+})
+```
+
+#### Notes
+
+- **Nothing is retained.** The Route holds the page function and its context, never DOM. Navigating away releases the previous page. `stop()` releases the listeners and any in-flight load, and clears `pending`, so a retired Route never strands a spinner. A module that resolves after `stop()` is dropped silently.
+- **Concurrency-safe on the server.** `start()` returns per-request state and `run()` scopes it to one synchronous render, so interleaved requests cannot see each other's route. Only the module cache is shared. The scope ends when `run()`'s function returns. `renderToString()` is synchronous, so that is enough. An async or streaming render would need the Route carried across `await`s, which `run()` does not do.
+- **Scroll restoration on `popstate`** is the browser's (`scrollRestoration`), not the router's.
+- **Start one router per document.** Each `start()` adds its own delegated `click` listener, and a second router's `start()` does not retire the first. Only a second `start()` on the same router does. To resolve a URL against another table, create a router and call only `match()`. It attaches nothing.
+- **Not included, by design:** hash and memory history, since the route lives in the pathname and a server must serve every route; two independently routed areas driven by one URL, since a page can fill several regions with `into()` but they all belong to the one matched route; and hover preloading, which you get by calling the route's own loader from a `mouseenter`.
+
+#### Examples
+
+Two runnable examples in the repository complement each other, so every setting is observable somewhere:
+
+- [`examples/router`](https://github.com/dan2dev/nuclo/tree/main/examples/router): a client-side tour of the whole API. Every pattern form and precedence rule, the link-handling opt-outs, every Route member with live controls, a sub-router, the layer stack three deep, a relative section mounted at two parents, and route loaders with `pending` and `error`. Sets `preload: false` so those states stay visible.
+- [`examples/router-ssr`](https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr): `renderToString()` per request, hydration that provably claims the server's nodes, real 404 status codes, a non-root `base`, idle preloading you can watch in the network panel, and a loader whose data is handed from the server to the client so hydration does not refetch.
+
 ## Patterns
 
 ### Computed Values
@@ -1494,6 +2084,12 @@ Every public function, and where it comes from.
 
 - [A side-effect import](https://nuclo.dev/docs#api-polyfill), plus `document`, `Event`, `CustomEvent`, `Node`, `Element`, `HTMLElement` and the `Nuclo*` classes.
 
+#### `nuclo-router` (separate package)
+
+- [`createRouter(table, options?)`](https://nuclo.dev/docs#router-api): the router, with `start()`, `match()`, `outlet()`, `matches()`, `go()`, `push()`, `href()` and `stop()`.
+- [`withLoad(loader, load)`](https://nuclo.dev/docs#router-loaders): a route whose data loader starts beside its chunk.
+- [Types](https://nuclo.dev/docs#router-api): `RouteContext`, `PageProps`, `Params`, `DataLoader`, `RouteTable` and more.
+
 #### Globals only
 
 - [175 tag builders](https://nuclo.dev/docs#tag-builders): `div`, `span`, …, `var_`, and `svgSvg`, `pathSvg`, ….
@@ -1539,6 +2135,10 @@ Mark the place with `region({ id: 'main' })` and have the page return `into('mai
 #### How do I unmount an app?
 
 Wrap it in `when()` and switch the condition off. Removing the DOM yourself does not run `onDestroy`. See [Lifecycle](https://nuclo.dev/docs#lifecycle).
+
+#### Does Nuclo include a router?
+
+Not in the core package. Routing ships separately as `nuclo-router`, with server rendering, hydration, code-split routes and idle preloading. Install it with `npm install nuclo nuclo-router`. See [nuclo-router](https://nuclo.dev/docs#router-overview).
 
 #### Does Nuclo have effects?
 

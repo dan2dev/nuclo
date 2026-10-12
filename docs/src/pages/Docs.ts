@@ -9,7 +9,7 @@ import { docsSection } from "../docs-state.ts";
 const DOC_FACTS = [
   { label: "Current release", value: `v${NUCLO_VERSION}` },
   { label: "Tag builders", value: "175" },
-  { label: "Gzipped ESM", value: `~${NUCLO_GZIP_KB} KB` },
+  { label: "Core, gzipped", value: `~${NUCLO_GZIP_KB} KB` },
   { label: "Runtime model", value: "Explicit" },
 ];
 

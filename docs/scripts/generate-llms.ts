@@ -53,6 +53,7 @@ function toMarkdown(html: string): string {
     .replace(/<\/?strong>/g, "**")
     .replace(/<\/?code>/g, "`")
     .replace(/<a href="#([^"]+)">([\s\S]*?)<\/a>/g, `[$2](${DOCS_URL}#$1)`)
+    .replace(/<a href="(https?:[^"]+)">([\s\S]*?)<\/a>/g, "[$2]($1)")
     .replace(/\s*<\/?tbody>/g, "")
     .replace(/<\/?(ul|table)>/g, "\n");
 

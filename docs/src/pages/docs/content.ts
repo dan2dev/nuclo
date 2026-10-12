@@ -4,6 +4,7 @@ import { CopyIcon, CheckIcon } from "../../components/icons.ts";
 import { copyText } from "../../components/clipboard.ts";
 import { highlightCode } from "../../components/CodeBlock.ts";
 import { API_DEMOS, Live } from "../../components/api-demos.ts";
+import { NUCLO_ROUTER_GZIP_KB } from "../../generated/nuclo-stats.ts";
 
 function TerminalCommand(command: string) {
   let copied = false;
@@ -144,6 +145,7 @@ render(App, document.getElementById('app')!)
       <p>To add Nuclo to an existing project:</p>
       ${sh("npm install nuclo")}
       <p>Or use <code>pnpm add nuclo</code>, <code>yarn add nuclo</code> or <code>bun add nuclo</code>. Nuclo has no dependencies.</p>
+      <p>Routing is not part of the core package. It ships separately as <a href="#router-overview"><code>nuclo-router</code></a>, which you install next to <code>nuclo</code> when you need it.</p>
       <h3>Globals</h3>
       <p><code>import 'nuclo'</code> puts these on <code>globalThis</code>:</p>
       <ul>
@@ -1314,6 +1316,505 @@ beforeEach(() => resetStyles())
     ],
   },
 
+  // ── Routing ──────────────────────────────────────────────────────────────
+  {
+    title: "Routing",
+    sections: [
+      {
+        id: "router-overview",
+        title: "nuclo-router",
+        content: `
+      <div class="docs-callout"><strong>Separate package:</strong> <code>nuclo-router</code> is not part of the Nuclo core package. Install it next to <code>nuclo</code>. It is a preview release, so its API may still change.</div>
+      <p>Routing for Nuclo: server rendering, hydration, code-split routes and idle preloading, built on <code>list()</code> and <code>update()</code>. About ${NUCLO_ROUTER_GZIP_KB} KB gzipped, with no dependencies beyond Nuclo itself and no side effects, so it tree-shakes away when unused.</p>
+      ${sh("npm install nuclo nuclo-router")}
+      <p>Or use <code>pnpm add</code>, <code>yarn add</code> or <code>bun add</code> with the same two names. It needs <code>nuclo</code> 0.3 or later as a peer dependency.</p>
+      <p>The router decides <em>what</em> to load. The app says <em>where</em> with <code>router.outlet()</code>: one <code>list()</code> over the layer stack, one row per layer, so an ordinary page is a single row. The server and the client build the same tree, so <code>hydrate()</code> claims the server's nodes instead of replacing them. Everything else is <code>history</code>, one delegated <code>click</code> listener and <code>requestIdleCallback</code>.</p>
+      <h3>One import</h3>
+      ${code("main.ts", `
+export const router = createRouter(routes)   // define once, import anywhere
+await router.start()                          // resolve the current URL
+render(App, document.getElementById('app')!) // App places router.outlet() and reads router.path, router.go(), …
+`)}
+      <p><code>start()</code> resolves the matching route's modules before it returns, so the first tree is complete on both the server and the client. After that the router reads through to the route it started: <code>router.path</code>, <code>router.pending</code>, <code>router.go()</code>.</p>
+      <h3>A whole app</h3>
+      ${code("routes.ts", `
+// isomorphic: imported by the browser and the server
+import { createRouter } from 'nuclo-router'
+
+export const router = createRouter({
+  '/':           () => import('./pages/Home.ts'),
+  '/docs':       () => import('./pages/Docs.ts'),
+  '/blog/:slug': () => import('./pages/Post.ts'),
+  '*':           () => import('./pages/NotFound.ts'),
+})
+
+export const App = () =>
+  div(
+    header(a({ href: router.href('/') }, 'Home'), a({ href: router.href('/docs') }, 'Docs')),
+    main(
+      when(() => router.pending, Spinner()),
+      when(() => router.error !== null, ErrorView()),
+      router.outlet(),   // where the pages land
+    ),
+    footer('© nuclo'),
+  )
+`)}
+      ${code("pages/Post.ts", `
+import type { RouteContext } from 'nuclo-router'
+import { router } from '../routes.ts'
+
+// A page is plain content
+export default function Post(ctx: RouteContext) {
+  // A query-only change keeps the page, so the query is read live.
+  return article(h1(ctx.params.slug), p(() => (router.search.has('preview') ? 'draft' : '')))
+}
+`)}
+      ${code("main.ts", `
+import 'nuclo'
+import { router, App } from './routes.ts'
+
+await router.start()
+hydrate(App, document.getElementById('app')!)   // or render() without SSR
+`)}
+      ${code("server.ts", `
+import 'nuclo/polyfill'
+import 'nuclo'
+import { renderToString } from 'nuclo/ssr'
+import { router, App } from './routes.ts'
+
+// one Route per request
+const route = await router.start(request.url)
+const html = route.run(() => renderToString(App))
+`)}
+      <p>That is the whole integration. Links work because an <code>&lt;a href&gt;</code> is just an <code>&lt;a href&gt;</code>. One delegated listener on <code>document</code> intercepts the links the router owns and leaves every other link to the browser.</p>
+      <p>On the server, <code>start()</code> returns a <code>Route</code> per request and leaves the router alone, so concurrent requests cannot see each other's route. <code>route.run()</code> makes that Route the one the router, and so the outlet, reads for the length of the render. In the browser there is one Route per page load, and <code>start()</code> makes it the router's own. No <code>run()</code> is needed.</p>
+      <p>A page receives its <a href="#router-api"><code>RouteContext</code></a> and its <a href="#router-api"><code>PageProps</code></a>, as <code>(ctx, { layer, data, outlet, beforeLeave })</code>, and may take fewer arguments. It returns anything <code>list()</code> accepts. To fill another part of the layout as well, return an <code>into()</code> from inside the page, such as <code>div(article(…), into('sidebar', nav(…)))</code>. That content leaves with the page. See <a href="#router-regions">Pages &amp; Regions</a>.</p>
+    `,
+      },
+      {
+        id: "router-patterns",
+        title: "Patterns & Nested Routes",
+        content: `
+      <table>
+        <thead><tr><th>Pattern</th><th>Matches</th><th><code>params</code></th></tr></thead>
+        <tbody>
+          <tr><td><code>/</code>, <code>/docs/intro</code></td><td>exactly that path</td><td><code>{}</code></td></tr>
+          <tr><td><code>/blog/:slug</code></td><td><code>/blog/hello</code></td><td><code>{ slug: 'hello' }</code></td></tr>
+          <tr><td><code>/u/:id/edit</code></td><td><code>/u/7/edit</code></td><td><code>{ id: '7' }</code></td></tr>
+          <tr><td><code>/files/*rest</code></td><td><code>/files/a/b.txt</code></td><td><code>{ rest: 'a/b.txt' }</code></td></tr>
+          <tr><td><code>*</code></td><td>anything unmatched, your 404</td><td><code>{ '*': '…' }</code></td></tr>
+        </tbody>
+      </table>
+      <p>Precedence is static, then dynamic in declaration order, then catch-all with the longest prefix first. So <code>'*'</code> only matches what nothing else does and can sit anywhere in the table. Trailing slashes, duplicate slashes and percent-encoding are normalized, and param values arrive decoded. Matching is a segment comparison per pattern. No regexes are built or run.</p>
+      <h3>Relative routes</h3>
+      <p>A pattern written with <code>./</code> is relative to the parent that declares it, and an href written with <code>./</code> is relative to the active route. Together they make a reusable section that means the same thing under every parent. A table's value is either a loader or another table, whose keys are relative to it:</p>
+      ${code("records/routes.ts", `
+import type { RouteTable } from 'nuclo-router'
+
+// a section, with no idea where it lives
+export const recordSection: RouteTable = {
+  '/':             () => import('./Record.ts'),   // the parent path itself
+  './preview':     () => import('./Preview.ts'),
+  './preview/raw': () => import('./Raw.ts'),
+}
+`)}
+      ${code("routes.ts", `
+// declare it wherever it belongs
+createRouter({
+  '/': () => import('./pages/Home.ts'),
+  '/invoices/:id':  recordSection,
+  '/customers/:id': recordSection,
+  '*': () => import('./pages/NotFound.ts'),
+})
+`)}
+      <p>Those two lines produce all six patterns with no path written twice. Both parents get the same loader objects, so they share one module cache and one <code>import()</code>.</p>
+      <ul>
+        <li>Inside a child table, <code>'./x'</code>, <code>'/x'</code> and <code>'x'</code> all mean the same thing, <code>'/'</code> means the parent path itself, and <code>'*rest'</code> gives the section its own catch-all. Nesting goes as deep as you like.</li>
+        <li>Top-level keys are used as written, so <code>'*'</code> stays <code>'*'</code>.</li>
+        <li>A child under a <code>*catch-all</code> parent is a <code>createRouter()</code> error, since a catch-all has to end its pattern.</li>
+      </ul>
+      <h3>Parent pages and <code>outlet()</code></h3>
+      <p>A parent and its children are a real hierarchy. The parent renders, and its child renders inside it, wherever it calls <code>outlet()</code>:</p>
+      ${code("records/Record.ts", `
+import type { PageProps, RouteContext } from 'nuclo-router'
+
+// a parent page takes its outlet from (ctx, { outlet })
+export default function Record(ctx: RouteContext, { outlet }: PageProps) {
+  return div(Header(ctx), input({ id: 'notes' }), main(outlet()))
+}
+`)}
+      <p>Navigating between children does not rebuild the parent. Its DOM node is the same node, so its focus, its scroll position, its half-typed input and any state in its closure all survive.</p>
+      <ul>
+        <li>A page with no child route renders nothing from its outlet, so a layout can call it unconditionally. A parent that has a child and never calls <code>outlet()</code> swallows it.</li>
+        <li>There are no index routes. <code>'/'</code> is the layout itself, so the parent path renders the layout with an empty outlet rather than a separate index page inside it. Put the landing content in the layout, or give it a real child path.</li>
+      </ul>
+      <p>The same call then works from either parent, and from a page that does not know which one it is in:</p>
+      ${code("example.ts", `
+router.href('./preview')      // '/invoices/42/preview' or '/customers/7/preview'
+await router.go('./preview')
+await layer.push('./preview') // the usual shape: a child layer
+`)}
+      <p><code>./x</code>, <code>../x</code>, <code>.</code> and <code>..</code> resolve against the current route's path, not the URL's "directory". From <code>/invoices/42</code>, <code>./preview</code> is <code>/invoices/42/preview</code>, where a browser would have said <code>/invoices/preview</code>, and a trailing slash on the URL changes nothing. <code>../</code> walks up a segment and stops at the root. The query and hash are carried through, <code>base</code> is re-added, and the resolved absolute path is what goes into history. This is the same deviation from URL resolution that React Router makes for <code>&lt;Link to="./x"&gt;</code>.</p>
+      <ul>
+        <li>Only <code>./</code> and <code>../</code> are route-relative. A bare <code>preview</code> in an href is left to ordinary browser rules.</li>
+        <li>Build relative links with <code>router.href('./preview')</code> rather than writing <code>href="./preview"</code> by hand. <code>href()</code> resolves at render time, so the markup that ships is absolute and still correct for a crawler, for a middle-click and with JavaScript disabled.</li>
+      </ul>
+      <h3>What is kept, and what is rebuilt</h3>
+      <table>
+        <thead><tr><th>Node</th><th>On navigation</th></tr></thead>
+        <tbody>
+          <tr><td>a parent whose pattern and path are unchanged</td><td><strong>kept</strong>: same node, and its <code>load()</code> is not re-run</td></tr>
+          <tr><td>the matched page</td><td><strong>kept</strong> when its pattern and path are unchanged and it has no <code>load()</code>, so a query or hash change keeps it. A route with a loader refreshes on every visit.</td></tr>
+          <tr><td>a parent whose path changed</td><td>rebuilt, along with everything under it</td></tr>
+          <tr><td>a pushed layer</td><td>renders the matched page alone. Its parents are already mounted in the row beneath it.</td></tr>
+        </tbody>
+      </table>
+      <p>A kept page keeps the <code>ctx</code> it was built with. That is the meaning of <code>ctx</code> everywhere: read <code>router.*</code> for live values. Query-driven state, such as filters, pagination and tabs, reads <code>router.search</code> inside a dynamic value and writes with <code>router.go('?page=2', { replace: true })</code>. The page, its focus and its half-typed input stay put.</p>
+    `,
+      },
+      {
+        id: "router-regions",
+        title: "Pages & Regions",
+        content: `
+      <p><code>router.outlet()</code> puts the page in one place. A page that also needs a sidebar, a toolbar or a heading somewhere else in the layout fills it with <a href="#api-region"><code>into()</code></a>. The layout marks the place with <code>region()</code>, and the page returns an <code>into()</code> next to its own content. The layout never receives page content as a prop, and navigation never rebuilds it.</p>
+      ${code("app.ts", `
+export const App = () =>
+  div(
+    aside(
+      input({ placeholder: 'Filter' }),   // keeps its text across navigations
+      region({ id: 'sidebar', empty: p('Nothing to show.') }),
+    ),
+    main(router.outlet()),
+  )
+`)}
+      ${code("pages/Post.ts", `
+import type { PageProps, RouteContext } from 'nuclo-router'
+
+export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>) {
+  return div(
+    article(h1(post.title), p(post.body)),
+    into('sidebar', nav(h2('In this post'), ul(list(() => post.headings, (h) => li(h))))),
+  )
+}
+`)}
+      <p>The page's content is a row of the outlet's <code>list()</code>, and an <code>into()</code> lives as long as the row that holds it. So the sidebar content arrives with the page and leaves with it: navigating to a page without an <code>into('sidebar', …)</code> shows the region's <code>empty</code> content again. The page can use its <code>ctx</code> and <code>data</code> for both parts, since both are built by the same function.</p>
+      <h3>What happens on navigation</h3>
+      <ul>
+        <li><strong>A kept page keeps its regions.</strong> A query or hash change that <a href="#router-patterns">keeps the page</a> does not touch the region content either. Read <code>router.search</code> inside a dynamic value if the sidebar depends on it.</li>
+        <li><strong>A rebuilt page refills them.</strong> When the route changes, the old row is removed and the new page's <code>into()</code> views take over. Nothing is left behind.</li>
+        <li><strong>A pushed layer adds a view.</strong> The layer is a later row of the outlet, so its <code>into()</code> is a newer view of the same region. With the default <code>type: 'latest'</code> it covers the page's view until the layer closes, and then the page's view shows again. With <code>type: 'stack'</code> both show.</li>
+        <li><strong>A parent page can fill regions too.</strong> Its views stay while its children change, because the parent is not rebuilt.</li>
+        <li><strong>Server rendering works as is.</strong> The server builds the page inside <code>route.run()</code>, so its <code>into()</code> views are in the HTML, and <code>hydrate()</code> claims them.</li>
+      </ul>
+      <h3>Several regions from one page</h3>
+      <p>Pass an object to fill more than one region at once. The page's main content still goes through the outlet, so return it beside the <code>into()</code>:</p>
+      ${code("pages/Report.ts", `
+export default function Report(ctx: RouteContext) {
+  return div(
+    table(…),
+    into({
+      toolbar: [button('Export'), button('Print')],
+      sidebar: nav(a({ href: router.href('./summary') }, 'Summary')),
+    }),
+  )
+}
+`)}
+      <h3>Which tool for which job</h3>
+      <ul>
+        <li><strong><code>outlet()</code></strong> is for a child route: content the URL decides, rendered inside its parent page. See <a href="#router-patterns">Nested Routes</a>.</li>
+        <li><strong><code>into()</code></strong> is for the matched page spreading itself across the layout. The content belongs to the page and uses its data.</li>
+        <li><strong><code>matches()</code></strong> is for the layout deciding from the URL alone, with its own small table and no page involved. See <a href="#router-matches"><code>matches()</code></a>.</li>
+      </ul>
+      <p>All of these belong to the one matched route. The router does not drive two independent areas from one URL, so a sidebar with its own routes is a region a page fills, not a second outlet.</p>
+    `,
+      },
+      {
+        id: "router-loaders",
+        title: "Route Loaders & Code Splitting",
+        content: `
+      <p>A page module may export a <code>load</code> function. It runs before the page is built, on every navigation to that route, and whatever it returns is handed to the page as <code>data</code>:</p>
+      ${code("pages/Post.ts", `
+import type { DataLoader, PageProps, RouteContext } from 'nuclo-router'
+
+export const load: DataLoader<Post> = (ctx) => fetchPost(ctx.params.slug)
+
+export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>) {
+  return article(h1(post.title), p(post.body))
+}
+`)}
+      <p>The route table is unchanged. The loader travels with the page. It gets the matched <code>RouteContext</code>, so <code>params</code>, <code>search</code> and <code>path</code> are all available. It may be sync or async, and it runs on the server too, so a server-rendered page ships with its data already in the HTML instead of fetching after hydration.</p>
+      <p><strong>The module is cached. The data is not.</strong> A route's chunk is fetched once and reused, and its loader runs again on every navigation. That is why <code>/blog/a</code> and <code>/blog/b</code> cannot be confused, and why a failed loader can simply be retried.</p>
+      <table>
+        <thead><tr><th>Situation</th><th>Behavior</th></tr></thead>
+        <tbody>
+          <tr><td>while it runs</td><td><code>router.pending</code> is true and the page you were on stays up</td></tr>
+          <tr><td>it throws or rejects</td><td>lands on <code>router.error</code>. <code>go()</code> still never rejects, and the navigation can be retried.</td></tr>
+          <tr><td>during <code>start()</code></td><td>the rejection comes out of <code>start()</code>. There is no Route yet to put it on.</td></tr>
+          <tr><td>a pushed layer</td><td>runs its own loader, with its own data</td></tr>
+          <tr><td>the idle preloader</td><td>warms modules only. It has no context to pass, and would be fetching data for a route you may never open.</td></tr>
+          <tr><td>re-navigating to the same URL</td><td>the loader runs again and the row rebuilds. A route without a loader keeps its row.</td></tr>
+        </tbody>
+      </table>
+      <p>To revalidate, navigate to where you already are without adding a history entry:</p>
+      ${code("example.ts", `
+await router.go(router.url, { replace: true })   // runs load() again
+`)}
+      <h3>Starting the data with the chunk</h3>
+      <p>A <code>load</code> exported by the page module can only run once that module has arrived, so a cold navigation fetches the chunk, then the data. To start both at once, declare the loader in the table with <code>withLoad()</code>:</p>
+      ${code("routes.ts", `
+import { createRouter, withLoad } from 'nuclo-router'
+import { loadPost } from './data.ts'   // small, in the main bundle
+
+createRouter({
+  '/blog/:slug': withLoad(() => import('./pages/Post.ts'), loadPost),
+})
+`)}
+      <p>It replaces the module's own <code>load</code> and runs on every visit like it. A rejection while the chunk is still loading lands on <code>router.error</code> like any other.</p>
+      <p>There is no serialization of server data into the HTML, by design. The client's <code>load</code> runs again on hydration. If that matters, have the server emit <code>route.data</code>, for example as <code>window.__DATA__</code>, and the loader take it first. <code>route.data</code> is the matched page's data only. A parent's <code>load()</code> result is not on it.</p>
+      <h3>Code splitting and preloading</h3>
+      <p>A route's value is always a function that returns the page component, so the component is reached lazily:</p>
+      ${code("routes.ts", `
+'/a': () => import('./A.ts'),                      // default export (+ optional load)
+'/b': () => import('./B.ts').then(m => m.BPage),   // named export
+'/c': () => CPage,                                 // eager, not split
+'/d': () => ({ default: DPage, load: loadD }),     // eager, module-shaped
+`)}
+      <p>Only the module-shaped forms can carry a <code>load</code> export. Picking a named component with <code>.then(m =&gt; m.BPage)</code> hands the router the function alone.</p>
+      <p>Each module is imported once and cached. Concurrent navigations to the same route share one <code>import()</code>. Once the page goes idle, the remaining routes are loaded in the background, one per idle slice, pausing whenever a navigation the user is waiting for is in flight.</p>
+      <p>A preloaded or eager route never flips <code>router.pending</code> and lands before the next paint: no spinner frame, no layout shift. <code>router.pending</code> is only true for a module or loader that has to be waited for, and the outgoing page stays on screen while it is. A chunk that fails to load surfaces as <code>router.error</code>, never as an unhandled rejection, and can simply be retried.</p>
+    `,
+      },
+      {
+        id: "router-api",
+        title: "Router API",
+        apiTag: "fn",
+        apiSig: sig(`
+// import { ... } from 'nuclo-router'
+function createRouter(table: RouteTable, options?: RouterOptions): Router
+function withLoad(loader: RouteLoader, load: DataLoader): RouteLoader
+
+interface RouterOptions { base?: string; preload?: boolean; onNavigate?: (ctx: RouteContext, kind: NavigationKind) => void }
+`),
+        content: `
+      <h3><code>createRouter(table, options?)</code></h3>
+      <p><code>table</code> maps a pattern to a loader, or to a nested table. Options:</p>
+      <table>
+        <thead><tr><th>Option</th><th>Default</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><code>base</code></td><td><code>'/'</code></td><td>URL prefix the app is served under, such as <code>'/docs'</code>. It only matches at a segment boundary: <code>/docs/intro</code> is inside <code>'/docs'</code>, <code>/docsearch</code> is not. URLs outside it match nothing, so <code>start()</code> rejects (your server-side 404) and links to them are left to the browser.</td></tr>
+          <tr><td><code>preload</code></td><td><code>true</code></td><td>Load the remaining routes' modules when the page goes idle.</td></tr>
+          <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>, called after every resolved navigation in the browser, including the initial one, once the DOM has caught up. <code>kind</code> is <code>'start'</code>, <code>'push'</code>, <code>'replace'</code>, <code>'pop'</code> (Back, Forward, <code>close()</code>) or <code>'layer'</code>. The hook for <code>document.title</code>, meta tags, focus, scrolling and analytics. Never called during SSR.</td></tr>
+        </tbody>
+      </table>
+      <p>Returns the router: <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code>, and every <code>Route</code> member except <code>run()</code>, read through to the active Route. That is the one the last <code>start()</code> returned in the browser, or the one whose <code>run()</code> is executing on the server. Reading a member with neither throws. The route table, the compiled matcher and the module cache live on the router, so they are shared across requests on a server.</p>
+      <h3><code>router.start(url?)</code></h3>
+      <p>Resolves <code>url</code> (default: <code>location.href</code> in the browser) to its page modules and returns a <code>Promise&lt;Route&gt;</code>. Rejects when nothing matches and the table has no <code>'*'</code> route. On a server, that is your 404. In the browser it also makes the Route the router's active one, attaches the <code>popstate</code> and delegated <code>click</code> listeners and schedules preloading. A second <code>start()</code> retires the previous Route for you. On the server it touches nothing shared, so render inside <code>route.run()</code>.</p>
+      <h3><code>router.match(url?)</code></h3>
+      <p>Resolves a URL against the table without loading anything: no import, no history, no listeners, no Route. Returns a <code>RouteContext</code>, or <code>null</code> when the URL is outside <code>base</code>, matches no pattern or, in the browser, is on another origin. Absolute URLs only, since <code>./</code> resolution needs an active route.</p>
+      ${code("example.ts", `
+// 404 before importing a single chunk
+if (!router.match(request.url)) return new Response(null, { status: 404 })
+
+// "is this link ours?" for a custom link component or a prefetch rule
+const owned = router.match(href) !== null
+`)}
+      <h3><code>router.outlet()</code></h3>
+      <p>The active route's pages as a <code>list()</code>. Place it once, wherever the pages go. A pushed layer is a later row of it. It is empty before <code>start()</code> resolves and after <code>stop()</code>. On the server it renders the Route whose <code>run()</code> is executing.</p>
+      <h3><code>router.matches(table)</code></h3>
+      <p>Renders the view of a second table that the active route's path matches, as a <code>list()</code> you place anywhere. See <a href="#router-matches"><code>matches()</code></a>.</p>
+      <h3><code>Route</code></h3>
+      <p>Every member but <code>run()</code> is also on the router, which is where an app reads it.</p>
+      <table>
+        <thead><tr><th>Member</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><code>path</code>, <code>pattern</code>, <code>params</code>, <code>search</code>, <code>hash</code>, <code>url</code></td><td>the active match. <code>search</code> is a <code>URLSearchParams</code>. <code>search</code>, <code>hash</code> and <code>url</code> are live.</td></tr>
+          <tr><td><code>pending</code></td><td>a navigation is waiting for a module or a loader</td></tr>
+          <tr><td><code>error</code></td><td>the last failed load, cleared by the next navigation</td></tr>
+          <tr><td><code>data</code></td><td>what the matched page's <code>load()</code> returned, for a server to serialize. A parent's is not on it.</td></tr>
+          <tr><td><code>depth</code></td><td>how many layers are on the stack (1 for an ordinary page)</td></tr>
+          <tr><td><code>go(href, { replace })</code></td><td>navigate, loading the module if needed. Never rejects: a module that fails, by rejecting or by throwing, lands on <code>error</code>.</td></tr>
+          <tr><td><code>push(href)</code></td><td>open a route as a new layer on top, resolving with what it closes with. Accepts <code>./</code>. Rejects on no match or a failed module.</td></tr>
+          <tr><td><code>href(path)</code></td><td>prefix a path with <code>base</code>, for <code>a({ href })</code>. Resolves <code>./</code> and <code>../</code> against the active route.</td></tr>
+          <tr><td><code>stop()</code></td><td>detach every listener, dismiss open layers, empty the outlet. Idempotent. A stopped Route still answers with its last match, and <code>go()</code> does nothing.</td></tr>
+          <tr><td><code>run(fn)</code></td><td>call <code>fn</code> with this Route as the router's active one and return its result: <code>route.run(() =&gt; renderToString(App))</code> on the server. Synchronous only. The Route stops being active when <code>fn</code> returns.</td></tr>
+        </tbody>
+      </table>
+      <h3><code>RouteContext</code></h3>
+      <p>A page's first argument: <code>path</code>, <code>pattern</code>, <code>params</code>, <code>search</code>, <code>hash</code>, <code>url</code>. It is the context the page was built with. Read <code>router.*</code> for live values. They differ only when the query or hash changed without a rebuild.</p>
+      <p><code>params</code> is <code>{ [name]: string }</code> by default. A page can type it from its own pattern with <code>Params</code>, which turns <code>'/blog/:slug'</code> into <code>{ slug: string }</code> and <code>'/files/*rest'</code> into <code>{ rest: string }</code>:</p>
+      ${code("pages/Post.ts", `
+import type { Params, RouteContext } from 'nuclo-router'
+
+export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
+  return article(h1(ctx.params.slug))   // slug: string, nothing else exists
+}
+`)}
+      <h3><code>PageProps</code></h3>
+      <p>A page's second argument. Destructure what the page needs.</p>
+      <table>
+        <thead><tr><th>Prop</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><code>layer</code></td><td>where the page sits in the stack. See <code>Layer</code> below.</td></tr>
+          <tr><td><code>data</code></td><td>what the route's <code>load()</code> returned, or <code>undefined</code> without one. Typed by <code>PageProps&lt;TData&gt;</code>.</td></tr>
+          <tr><td><code>outlet</code></td><td>where a parent page renders its child route. See <a href="#router-patterns">Nested Routes</a>.</td></tr>
+          <tr><td><code>beforeLeave</code></td><td>registers a guard asked before this page is discarded. See <a href="#router-layers">Leave guards</a>.</td></tr>
+        </tbody>
+      </table>
+      <h3><code>Layer</code></h3>
+      <p>Where a page sits in the stack, and its way out.</p>
+      <table>
+        <thead><tr><th>Member</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><code>depth</code></td><td>0 for the base page, 1 and up for pushed layers</td></tr>
+          <tr><td><code>push(href)</code></td><td>open another layer from inside a page, same as <code>Route.push()</code></td></tr>
+          <tr><td><code>close(result?)</code></td><td>close this layer and everything above it, resolving the <code>push()</code> that opened it. No argument means dismissed. A no-op at depth 0.</td></tr>
+        </tbody>
+      </table>
+      <h3><code>DataLoader</code> and <code>withLoad()</code></h3>
+      <p><code>DataLoader</code> is <code>(ctx: RouteContext) =&gt; TData | Promise&lt;TData&gt;</code>, a page module's optional <code>load</code> export. <code>withLoad(loader, load)</code> makes a route whose <code>load</code> starts beside its chunk's import instead of after it. See <a href="#router-loaders">Route Loaders</a>.</p>
+      <h3>Types</h3>
+      <p>Every type is a named export of <code>nuclo-router</code>, so a page, a loader or a guard can be typed without importing from a path.</p>
+      <table>
+        <thead><tr><th>Type</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td><code>Params&lt;'/blog/:slug'&gt;</code></td><td>the params object for a pattern. <code>RouteParams</code> is the untyped shape, and <code>Match</code> is the matcher's result.</td></tr>
+          <tr><td><code>PageComponent</code></td><td>a page: <code>(ctx, { layer, data, outlet, beforeLeave }) =&gt; …</code></td></tr>
+          <tr><td><code>RouteModule</code></td><td>a page module: the component itself, or <code>{ default, load? }</code> as <code>import()</code> yields</td></tr>
+          <tr><td><code>RouteLoader</code></td><td><code>() =&gt; RouteModule | Promise&lt;RouteModule&gt;</code>, optionally carrying a <code>load</code> from <code>withLoad()</code></td></tr>
+          <tr><td><code>RouteTable</code></td><td>the table <code>createRouter()</code> takes: pattern to loader, or to a nested table</td></tr>
+          <tr><td><code>RouterOptions</code></td><td><code>{ base?, preload?, onNavigate? }</code></td></tr>
+          <tr><td><code>NavigateOptions</code></td><td><code>{ replace? }</code>, the second argument of <code>go()</code></td></tr>
+          <tr><td><code>NavigationKind</code></td><td><code>'start' | 'push' | 'replace' | 'pop' | 'layer'</code>, the second argument of <code>onNavigate</code></td></tr>
+          <tr><td><code>Outlet</code></td><td>the type of <code>outlet()</code> from <code>PageProps</code></td></tr>
+          <tr><td><code>LeaveGuard</code></td><td><code>(to) =&gt; boolean | void | Promise&lt;…&gt;</code>, what <code>beforeLeave()</code> takes</td></tr>
+          <tr><td><code>MatchView</code></td><td>what a <code>matches()</code> view is: params in, content or <code>import()</code> of a page out</td></tr>
+        </tbody>
+      </table>
+    `,
+      },
+      {
+        id: "router-layers",
+        title: "Layers & Leave Guards",
+        content: `
+      <p><code>push()</code> opens a route on top of the current one instead of replacing it, and resolves with whatever that layer closes with. Because the pages are a single <code>list()</code> over the stack, opening a layer is an append. The page underneath is not re-rendered, so its DOM, its focus and its half-filled form are all still there when the layer closes.</p>
+      <p>That makes the "I need a record that doesn't exist yet" flow work without throwing away the form the user was filling in:</p>
+      ${code("pages/Edit.ts", `
+// the page underneath
+const created = await layer.push<Option>('/options/new')
+if (created) { options.push(created); selected = created.id; update() }
+`)}
+      ${code("pages/NewOption.ts", `
+// the pushed page: (ctx, { layer })
+layer.close(created)   // resolves the push() above with the new option
+layer.close()          // dismissed: resolves with undefined
+`)}
+      <p>Layers nest. A dialog that needs its own dialog calls <code>layer.push()</code> and awaits it, with no reference to the Route.</p>
+      <ul>
+        <li><strong>The URL is the top layer.</strong> <code>push()</code> adds a history entry, so a layer is linkable and Back closes it, resolving its <code>push()</code> as dismissed, exactly like Cancel. Back and <code>close()</code> are one code path: <code>close()</code> records its result and walks history back, and the depth in <code>history.state</code> is the authority.</li>
+        <li><strong>An ordinary navigation clears the stack.</strong> A link click or <code>go()</code> is not a layer. It replaces everything and dismisses every open layer, so no caller is left awaiting.</li>
+        <li><strong>A cold load is a standalone page.</strong> The URL names the top layer but not the stack beneath it, so opening a layer's URL directly renders it at depth 1 with <code>layer.depth === 0</code> and an inert <code>close()</code>. A pushed route has to make sense on its own. Branch on <code>layer.depth</code> to offer a link out instead of a dead Cancel button.</li>
+        <li><strong>The promise cannot survive a reload</strong>, because it lives in a closure. Treat the result as a shortcut through a flow that also works the long way round.</li>
+        <li><strong>Nothing is left awaiting.</strong> <code>stop()</code> dismisses every open layer, and a layer abandoned by a navigation resolves with <code>undefined</code>.</li>
+      </ul>
+      <h3>Leave guards</h3>
+      <p>A page that holds something worth keeping, such as a half-filled form, registers a guard. It is asked before the page is discarded, and returning <code>false</code> (or a promise of it) keeps the page:</p>
+      ${code("pages/Edit.ts", `
+import type { PageProps, RouteContext } from 'nuclo-router'
+
+export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
+  let dirty = false
+  beforeLeave(() => !dirty || confirm('Discard your changes?'))
+  return form(input({ onInput: () => (dirty = true) }), …)
+}
+`)}
+      <ul>
+        <li><strong>Only when the page goes.</strong> A child navigation under a layout, or a query or hash change that keeps the page, does not ask. A guard lives and dies with its page, so there is nothing to unregister.</li>
+        <li><strong>Every way out.</strong> A link, <code>go()</code>, Back and Forward, a layer's <code>close()</code>, and <code>go()</code> to a URL the router does not own (leaving the app, where <code>to</code> is <code>null</code>). A refused Back or Forward is walked back, so the address bar stays on the page. Closing the tab or reloading is <code>beforeunload</code>'s job.</li>
+        <li><strong><code>to</code></strong> is the <code>RouteContext</code> the navigation is heading to. Guards run innermost first and stop at the first refusal. One that throws keeps the page. <code>close(result)</code> goes through the guard too, so clear your flag before closing with a result.</li>
+        <li>The router can only walk back history entries it wrote. A Back or Forward onto one it did not, such as a native <code>#fragment</code> link or another script's <code>pushState</code>, is not asked.</li>
+      </ul>
+    `,
+      },
+      {
+        id: "router-matches",
+        title: "matches() & Sub-routers",
+        content: `
+      <p><code>router.outlet()</code> renders the page. <code>router.matches(table)</code> renders something else that depends on where you are, such as a sidebar, breadcrumbs or a toolbar, from its own small table, without loading a route or adding a page:</p>
+      ${code("app.ts", `
+div(
+  aside(
+    router.matches({
+      '/':           () => nav('Home links'),
+      '/blog/new':   () => nav('Drafting tips'),
+      '/blog/:slug': ({ slug }) => nav(\`More like \${slug}\`),
+      '*':           () => import('./Sidebar.ts'),   // code-split, rendered once loaded
+    }),
+  ),
+  main(router.outlet()),
+)
+`)}
+      <ul>
+        <li><strong>Same matching as the route table.</strong> The patterns, precedence, raw-path matching and <code>base</code> stripping are the router's own, so a view and a page always agree about the URL. It reads the top layer's path, like <code>router.path</code>.</li>
+        <li><strong>A view</strong> is <code>(params, ctx) =&gt; content</code>, where <code>params</code> is typed from its pattern and <code>ctx</code> is the <code>RouteContext</code> with the view's <code>pattern</code> and <code>params</code>. It may instead return <code>import()</code> of a page module, which is called with <code>ctx</code> once it lands.</li>
+        <li><strong>Nothing matches, nothing renders.</strong> Add a <code>'*'</code> view for a fallback. It is empty before <code>start()</code> and after <code>stop()</code>, like the outlet.</li>
+        <li><strong>It re-renders only when the route changes</strong>, so a view keeps its DOM across anything that keeps the page.</li>
+        <li><strong>A lazy view renders nothing until its module arrives.</strong> A failed <code>import()</code> is logged with <code>console.error</code>, does not set <code>router.error</code>, and is retried on the next navigation. A plain <code>update()</code> does not retry.</li>
+        <li><strong>On the server</strong> a lazy view ships nothing, since its module lands on the client. Use a synchronous view for anything the first HTML must contain.</li>
+      </ul>
+      <h3>Sub-routers</h3>
+      <p>Routes nest, so a sub-router is usually just a nested table. One router: the section's own <code>'/'</code> page is its chrome, and its children render in that page's <code>outlet()</code>, so the chrome survives navigation within the section:</p>
+      ${code("routes.ts", `
+createRouter({ '/': …, '/docs': docsRoutes, '*': … })
+`)}
+      <p>Or give the feature a router of its own, created but never started. The parent owns a single catch-all entry and the child resolves the tail against its own patterns, params and fallback:</p>
+      ${code("routes.ts", `
+// parent table
+'/docs/*rest': () => import('./docs/Shell.ts'),
+`)}
+      ${code("docs/Shell.ts", `
+const docs = createRouter(docsRoutes, { base: '/docs' })
+const hit = docs.match()                       // { pattern: '/:topic', … }
+const page = await docsRoutes[hit.pattern]()   // the app's own lookup
+`)}
+      <p>Never starting it is the point. <code>start()</code> is what attaches the listeners, and two started routers conflict. The trade is that the child owns resolution, so route loaders, which a started router runs, are yours to call. This shape also rebuilds the shell when the tail changes, because the router sees one route and the shell resolves the rest itself. A nested table is what gets you a parent the router keeps mounted, so prefer it unless the feature really needs its own router, base and fallback.</p>
+    `,
+      },
+      {
+        id: "router-links",
+        title: "Link Handling",
+        content: `
+      <p>The delegated listener navigates a left-click on an <code>&lt;a href&gt;</code>, including an SVG <code>&lt;a&gt;</code> and clicks on anything nested inside one, and steps aside for everything else: modifier-clicks and middle-clicks, a <code>target</code> other than <code>_self</code>, <code>download</code>, <code>rel="external"</code>, cross-origin hrefs, hash-only links on the current page, paths outside <code>base</code>, paths no route matches (so a server-rendered 404 is still reachable), and any event an app handler already called <code>preventDefault()</code> on. Opt a link out explicitly with <code>data-nuclo-router="off"</code>.</p>
+      <h3>Scrolling</h3>
+      <p>A pushed navigation preserves the current scroll position. When the new URL has a <code>#hash</code> matching an element on the page, that element is scrolled into view. <code>popstate</code> leaves scrolling to the browser. To land new pages at the top, do it in <code>onNavigate</code>, which says how the navigation happened:</p>
+      ${code("routes.ts", `
+let shown = ''
+createRouter(routes, {
+  onNavigate: (ctx, kind) => {
+    // Not on Back/Forward (the browser restores those), nor for a query change on the same page.
+    if (kind === 'push' && ctx.path !== shown && !ctx.hash) window.scrollTo(0, 0)
+    shown = ctx.path
+  },
+})
+`)}
+      <h3>Notes</h3>
+      <ul>
+        <li><strong>Nothing is retained.</strong> The Route holds the page function and its context, never DOM. Navigating away releases the previous page. <code>stop()</code> releases the listeners and any in-flight load, and clears <code>pending</code>, so a retired Route never strands a spinner. A module that resolves after <code>stop()</code> is dropped silently.</li>
+        <li><strong>Concurrency-safe on the server.</strong> <code>start()</code> returns per-request state and <code>run()</code> scopes it to one synchronous render, so interleaved requests cannot see each other's route. Only the module cache is shared. The scope ends when <code>run()</code>'s function returns. <code>renderToString()</code> is synchronous, so that is enough. An async or streaming render would need the Route carried across <code>await</code>s, which <code>run()</code> does not do.</li>
+        <li><strong>Scroll restoration on <code>popstate</code></strong> is the browser's (<code>scrollRestoration</code>), not the router's.</li>
+        <li><strong>Start one router per document.</strong> Each <code>start()</code> adds its own delegated <code>click</code> listener, and a second router's <code>start()</code> does not retire the first. Only a second <code>start()</code> on the same router does. To resolve a URL against another table, create a router and call only <code>match()</code>. It attaches nothing.</li>
+        <li><strong>Not included, by design:</strong> hash and memory history, since the route lives in the pathname and a server must serve every route; two independently routed areas driven by one URL, since a page can fill several regions with <code>into()</code> but they all belong to the one matched route; and hover preloading, which you get by calling the route's own loader from a <code>mouseenter</code>.</li>
+      </ul>
+      <h3>Examples</h3>
+      <p>Two runnable examples in the repository complement each other, so every setting is observable somewhere:</p>
+      <ul>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: a client-side tour of the whole API. Every pattern form and precedence rule, the link-handling opt-outs, every Route member with live controls, a sub-router, the layer stack three deep, a relative section mounted at two parents, and route loaders with <code>pending</code> and <code>error</code>. Sets <code>preload: false</code> so those states stay visible.</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> per request, hydration that provably claims the server's nodes, real 404 status codes, a non-root <code>base</code>, idle preloading you can watch in the network panel, and a loader whose data is handed from the server to the client so hydration does not refetch.</li>
+      </ul>
+    `,
+      },
+    ],
+  },
+
   // ── Patterns ─────────────────────────────────────────────────────────────
   {
     title: "Patterns",
@@ -1420,6 +1921,12 @@ async function loadData() {
       <ul>
         <li><a href="#api-polyfill">A side-effect import</a>, plus <code>document</code>, <code>Event</code>, <code>CustomEvent</code>, <code>Node</code>, <code>Element</code>, <code>HTMLElement</code> and the <code>Nuclo*</code> classes.</li>
       </ul>
+      <h3><code>nuclo-router</code> (separate package)</h3>
+      <ul>
+        <li><a href="#router-api"><code>createRouter(table, options?)</code></a>: the router, with <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code>, <code>go()</code>, <code>push()</code>, <code>href()</code> and <code>stop()</code>.</li>
+        <li><a href="#router-loaders"><code>withLoad(loader, load)</code></a>: a route whose data loader starts beside its chunk.</li>
+        <li><a href="#router-api">Types</a>: <code>RouteContext</code>, <code>PageProps</code>, <code>Params</code>, <code>DataLoader</code>, <code>RouteTable</code> and more.</li>
+      </ul>
       <h3>Globals only</h3>
       <ul>
         <li><a href="#tag-builders">175 tag builders</a>: <code>div</code>, <code>span</code>, …, <code>var_</code>, and <code>svgSvg</code>, <code>pathSvg</code>, ….</li>
@@ -1459,6 +1966,9 @@ async function loadData() {
 
       <h3>How do I unmount an app?</h3>
       <p>Wrap it in <code>when()</code> and switch the condition off. Removing the DOM yourself does not run <code>onDestroy</code>. See <a href="#lifecycle">Lifecycle</a>.</p>
+
+      <h3>Does Nuclo include a router?</h3>
+      <p>Not in the core package. Routing ships separately as <code>nuclo-router</code>, with server rendering, hydration, code-split routes and idle preloading. Install it with <code>npm install nuclo nuclo-router</code>. See <a href="#router-overview">nuclo-router</a>.</p>
 
       <h3>Does Nuclo have effects?</h3>
       <p>No. <code>onMount</code> and <code>onDestroy</code> run once per element, tied to insertion and removal. Nothing runs again because some state changed.</p>

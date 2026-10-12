@@ -20,6 +20,7 @@ Nuclo is not React, Vue, Solid or Svelte. There are no hooks, no JSX, no compone
 - Mount with `render(App, root)`: pass the component, not `App()`. Render into an element that is in the document; detached nodes stop updating.
 - SSR: `import 'nuclo/polyfill'` then `import 'nuclo'` on the server, call `renderToString(App)` and put `getCssText()` in `<style id="nuclo-styles">`. On the client call `hydrate(App, root)`. Do not strip HTML comments from server output.
 - TypeScript: set `"moduleResolution": "bundler"`.
+- Routing is not in the core package. Install `nuclo-router` next to `nuclo` (`npm install nuclo nuclo-router`): `createRouter({ '/': () => import('./Home.ts'), '/blog/:slug': () => import('./Post.ts'), '*': () => import('./NotFound.ts') })`, `await router.start()`, then place `router.outlet()` in the app. Pages are `(ctx, { layer, data, outlet, beforeLeave }) => ...`.
 
 ```ts
 import 'nuclo'
@@ -71,6 +72,17 @@ render(App, document.getElementById('app')!)
 - [getCssText() & resetStyles()](https://nuclo.dev/docs#api-css-text): collect CSS for SSR, reset styles in tests
 - [API Index](https://nuclo.dev/docs#api-index): every public function and where it is exported from
 
+## Routing (nuclo-router, a separate package)
+
+- [nuclo-router](https://nuclo.dev/docs#router-overview): install, one import, a whole app with SSR and hydration
+- [Patterns & Nested Routes](https://nuclo.dev/docs#router-patterns): `:param`, `*rest`, `*`, relative `./` routes, `outlet()` and what is kept across navigations
+- [Pages & Regions](https://nuclo.dev/docs#router-regions): a page fills layout regions with `into()`, next to `router.outlet()`
+- [Route Loaders & Code Splitting](https://nuclo.dev/docs#router-loaders): `load`, `withLoad()`, `pending`, `error` and idle preloading
+- [Router API](https://nuclo.dev/docs#router-api): `createRouter()` options, `start()`, `match()`, `Route`, `RouteContext`, `PageProps`, `Layer` and types
+- [Layers & Leave Guards](https://nuclo.dev/docs#router-layers): `push()`, `close()` and `beforeLeave()`
+- [matches() & Sub-routers](https://nuclo.dev/docs#router-matches): route-dependent views and nested routers
+- [Link Handling](https://nuclo.dev/docs#router-links): which links the router owns, scrolling and server notes
+
 ## Guides
 
 - [Computed Values](https://nuclo.dev/docs#computed): derived state with plain functions
@@ -83,4 +95,5 @@ render(App, document.getElementById('app')!)
 
 - [GitHub repository](https://github.com/dan2dev/nuclo): source code, issues and the README
 - [npm package](https://www.npmjs.com/package/nuclo): published versions
+- [nuclo-router on npm](https://www.npmjs.com/package/nuclo-router): the router package, installed separately
 - [create-nuclo](https://www.npmjs.com/package/create-nuclo): project scaffolding CLI

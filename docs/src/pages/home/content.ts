@@ -12,7 +12,7 @@ export const INSTALL_CMD = "npm create nuclo@latest";
 export const HERO_STATS = [
   { num: "0",   sup: "",   label: "dependencies" },
   { num: "175", sup: "",   label: "typed HTML & SVG builders" },
-  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "gzipped, entire runtime" },
+  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "gzipped, core runtime" },
 ];
 
 export const HERO_CODE = `import 'nuclo'
@@ -109,7 +109,7 @@ export const FEATURES = [
   {
     num: "02 · Lightweight",
     title: "Zero dependencies",
-    desc: `About ${NUCLO_GZIP_KB} KB gzipped for the entire runtime. Nuclo needs no compiler and no build plugins. Add one import and start building.`,
+    desc: `About ${NUCLO_GZIP_KB} KB gzipped for the core runtime. Nuclo needs no compiler and no build plugins. Add one import and start building.`,
   },
   {
     num: "03 · Typed",
