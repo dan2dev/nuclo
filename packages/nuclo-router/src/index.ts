@@ -89,6 +89,15 @@ export type RouteModule<TData = unknown> =
 /** Produces a page module lazily: `() => import("./Home.ts")`, `() => import("./Home.ts").then(m => m.Home)` or `() => Home`. */
 export type RouteLoader<TData = unknown> = () => RouteModule<TData> | Promise<RouteModule<TData>>;
 
+/** A page matches() renders: it takes the context alone. */
+type MatchPage = (ctx: RouteContext<any>) => ListRenderResult;
+
+/** A matches() view: renders from the match's params, or returns `import()` of a page module (code-split, rendered once loaded). */
+export type MatchView<TParams extends RouteParams = RouteParams> = (
+  params: TParams,
+  ctx: RouteContext<TParams>,
+) => ListRenderResult | Promise<MatchPage | { readonly default: MatchPage }>;
+
 /** Pattern -> loader, or -> a nested table whose keys are relative to it ("/" is the parent's own page). */
 export type RouteTable = Readonly<{ [pattern: string]: RouteLoader<any> | RouteTable }>;
 
@@ -136,6 +145,8 @@ export interface Router extends Omit<Route, "run"> {
   match(url?: string): RouteContext | null;
   /** The active route's pages as a list(). Place it once, where the pages go. */
   outlet(): ListModifier;
+  /** Renders the view of the `table` pattern the active route's path matches, by the route table's patterns and precedence; nothing when none does. */
+  matches<const T extends string>(table: { readonly [K in T]: MatchView<Params<K> & RouteParams> }): ListModifier;
 }
 
 /** A loaded page module. */
@@ -251,6 +262,8 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
   const match = createMatcher(routes);
   const base = normalizeBase(options.base);
   const { onNavigate } = options;
+  /** Each parsed context's undecoded path, base stripped, so matches() matches what the router did instead of a decoded (lossy) path. */
+  const rawPath = new WeakMap<RouteContext, string>();
   /** Modules by loader, an in-flight promise under the same key, so concurrent navigations share one import(). A failed load is evicted so it can be retried. */
   const cache = new Map<RouteLoader, Shape | Promise<Shape>>();
   /** The Route the router reads through: the last start() in the browser, the running run() on the server. */
@@ -330,11 +343,53 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     if (isBrowser && url.origin !== ORIGIN) return null;
     const inner = stripBase(url.pathname, base);
     const found = inner === null ? null : match(inner);
-    return (
-      found && {
-        chain: found.value,
-        ctx: { path: found.path, pattern: found.pattern, params: found.params, search: url.searchParams, hash: url.hash, url: href },
-      }
+    if (!found) return null;
+    const ctx = { path: found.path, pattern: found.pattern, params: found.params, search: url.searchParams, hash: url.hash, url: href };
+    rawPath.set(ctx, inner!);
+    return { chain: found.value, ctx };
+  }
+
+  function matches(table: Readonly<Record<string, MatchView>>): ListModifier {
+    const find = createMatcher(table);
+    /** Imported pages by the view that imported them; the promise while in flight. */
+    const pages = new Map<MatchView, MatchPage | Promise<void>>();
+    let last: { readonly at: RouteContext; readonly page: unknown; readonly view: MatchView; readonly ctx: RouteContext } | null = null;
+    return list(
+      () => {
+        // The top layer's page, like route.path; nothing once stopped, like the outlet.
+        const top = (active && rowsOf.get(active)?.())?.at(-1);
+        const at = top && leaf(top).ctx;
+        const found = at && find(rawPath.get(at)!);
+        if (!found) return [];
+        // A new row only when the route or the page's load state changed: otherwise the row keeps its DOM.
+        const page = pages.get(found.value);
+        if (last?.at !== at || last.page !== page) {
+          last = { at, page, view: found.value, ctx: { ...at, pattern: found.pattern, params: found.params } };
+        }
+        return [last];
+      },
+      ({ view, ctx }) => {
+        const page = pages.get(view);
+        if (typeof page === "function") return page(ctx);
+        if (page) return null;
+        const out = view(ctx.params, ctx);
+        if (!isPromise(out)) return out;
+        // ponytail: a server render ships without a lazy view (it lands on the client); preload in start() if SSR needs it.
+        pages.set(
+          view,
+          out
+            .then((mod) => {
+              pages.set(view, pick(mod, ctx.pattern).component as MatchPage);
+              update();
+            })
+            .catch((cause: unknown) => {
+              // Evicted, so the next navigation here retries.
+              pages.delete(view);
+              console.error(`nuclo-router: failed to load the view for "${ctx.pattern}"`, cause);
+            }),
+        );
+        return null;
+      },
     );
   }
 
@@ -697,6 +752,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         () => (active && rowsOf.get(active)?.()) || [],
         (entry: Entry) => renderLevel(entry.root, entry.layer),
       ),
+    matches,
   } as Router;
   for (const key of DELEGATED) {
     Object.defineProperty(router, key, { get: () => activeRoute()[key], enumerable: true });

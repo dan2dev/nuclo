@@ -213,6 +213,15 @@ export const App = () =>
       Layout(),
     ),
 
+
+    // with router.matches() you can conditionally render based on the current route.
+    router.matches({
+      "/": () => div("Home route"),
+      "/blog/:slug": ({ slug }) => div(`Blog post: ${slug}`),
+      "/files/*rest": ({ rest }) => div(`Files: ${rest}`),
+      "*": () => import("./pages/NotFound.ts"),
+    }),
+
     footer(
       css({ mt: 26, pt: 14, borderTop: "1px solid", borderColor: "border", text: 12, color: "textMuted" }),
       "Source: ",

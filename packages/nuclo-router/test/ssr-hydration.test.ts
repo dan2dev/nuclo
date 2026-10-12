@@ -205,3 +205,37 @@ describe("concurrent requests", () => {
     expect(htmlSecond).not.toContain("one");
   });
 });
+
+describe("matches() through SSR and hydrate", () => {
+  const MatchesApp = (router: Router) => () =>
+    div(
+      { id: "shell" },
+      main(router.outlet()),
+      aside({ id: "m" }, router.matches({ "/": () => span("home"), "/blog/:slug": ({ slug }) => span(slug) })),
+    );
+
+  it("claims the server's view, then follows navigation", async () => {
+    const server = createRouter(table);
+    const serverRoute = await server.start("/blog/hello");
+    const html = serverRoute.run(() => renderToString(MatchesApp(server)));
+    serverRoute.stop();
+
+    const container = mount();
+    container.innerHTML = html;
+    const ssrView = container.querySelector("#m span")!;
+    expect(ssrView.textContent).toBe("hello");
+
+    window.history.replaceState(null, "", "/blog/hello");
+    const router = createRouter(table);
+    const route = await router.start();
+    routes.push(route);
+    hydrate(MatchesApp(router), container);
+
+    expect(container.querySelector("#m span")).toBe(ssrView);
+    expect(container.querySelectorAll("#m span").length).toBe(1);
+
+    await route.go("/");
+    expect(container.querySelector("#m")!.textContent).toBe("home");
+    expect(container.querySelector("#home")).not.toBeNull();
+  });
+});
