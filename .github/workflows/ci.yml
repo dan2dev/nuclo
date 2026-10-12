@@ -39,6 +39,7 @@ jobs:
         working-directory: packages/nuclo-core
         run: |
           bun run build
+          (cd ../nuclo-router && bun run build)
           version=$(make --no-print-directory bump-version BUMP=patch)
           echo "VERSION=$version" >> "$GITHUB_ENV"
           bun ../../docs/scripts/update-doc-stats.ts
