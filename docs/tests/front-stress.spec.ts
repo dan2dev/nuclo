@@ -350,6 +350,9 @@ async function runRouteScenario(
   if (route === "/examples") {
     await expect(page.locator("#examples-page")).toBeVisible({ timeout: 3000 });
 
+    // Each example opens full screen at its own route; Escape goes back to the grid.
+    await page.locator('#examples-page a[href="/examples/counter"]').first().click();
+    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 3000 });
     const plusButton = page.getByRole("button", { name: "+" }).first();
     if (await plusButton.isVisible().catch(() => false)) {
       await plusButton.click();
@@ -358,6 +361,7 @@ async function runRouteScenario(
       stats.exampleInteractions += 1;
     }
 
+    await page.keyboard.press("ArrowRight"); // /examples/todo
     const todoInput = page.getByPlaceholder(/Add a task/).first();
     if (await todoInput.isVisible().catch(() => false)) {
       const taskText = `stress-task-r${round}-${Date.now()}`;
@@ -374,6 +378,7 @@ async function runRouteScenario(
       stats.exampleInteractions += 1;
     }
 
+    await page.keyboard.press("ArrowRight"); // /examples/search
     const searchInput = page.getByPlaceholder(/Search users/).first();
     if (await searchInput.isVisible().catch(() => false)) {
       await searchInput.fill("Alice");
@@ -405,6 +410,8 @@ async function runRouteScenario(
       await chartSelect.selectOption("pie");
       stats.exampleInteractions += 1;
     }
+
+    await page.keyboard.press("Escape"); // back to the grid
 
     return stats;
   }

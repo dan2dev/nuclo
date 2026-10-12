@@ -68,7 +68,9 @@ export function TodoList() {
     button("Add", { onClick: addTodo }),
     div(
       button("All", { onClick: () => { filter = "all"; update() } }),
-      button("Active", { onClick: () => { filter = "active"; update() } }),
+      button("Active", {
+        onClick: () => { filter = "active"; update() },
+      }),
       button("Done", { onClick: () => { filter = "done"; update() } }),
     ),
     ul(
@@ -88,7 +90,10 @@ export function TodoList() {
       ),
       when(() => visible().length === 0, div("No tasks yet.")),
     ),
-    p(() => \`\${todos.filter((t) => !t.done).length} of \${todos.length} remaining\`),
+    p(() => {
+      const left = todos.filter((t) => !t.done).length
+      return \`\${left} of \${todos.length} remaining\`
+    }),
   )
 }`,
   },

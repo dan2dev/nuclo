@@ -122,14 +122,23 @@ function ExplicitUpdates() {
 
 function DynamicValues() {
   let name = "Alice";
-  return div(
+  let host: Element | undefined;
+
+  const Greeting = () => div(
     ls.stack,
-    { style: { width: "100%" } },
     input(ls.input, { "aria-label": "Name", value: () => name, onInput: (e) => { name = e.currentTarget.value; update(); } }),
     div(
       p(span(ls.muted, "static: "), `Hello, ${name}`),
       p(span(ls.muted, "dynamic: "), () => `Hello, ${name}`),
     ),
+  );
+
+  return div(
+    ls.stack,
+    { style: { width: "100%" } },
+    div({ style: { width: "100%" }, onMount: (el) => { host = el as unknown as Element; } }, Greeting()),
+    // Rebuilds Greeting, so the static text catches up too.
+    btn("forceUpdate()", () => { if (host) forceUpdate(Greeting(), host); }),
   );
 }
 
@@ -250,8 +259,8 @@ function Region() {
 
 function ForceUpdate() {
   const labels = {
-    en: { title: "Hello", body: "Static text, fixed when the tree was built." },
-    pt: { title: "Olá", body: "Texto estático, fixado quando a árvore foi criada." },
+    en: { title: "Hello", body: "Static text, fixed on build." },
+    pt: { title: "Olá", body: "Texto estático, fixado na criação." },
   };
   let lang: keyof typeof labels = "en";
   let host: Element | undefined;
@@ -295,7 +304,10 @@ export const Card = () =>
     h2('Profile'),
     p(() => \`Hello, \${name}\`),
     button('Rename', {
-      onClick: () => { name = name === 'Ada' ? 'Grace' : 'Ada'; update() },
+      onClick: () => {
+        name = name === 'Ada' ? 'Grace' : 'Ada'
+        update()
+      },
     }),
   )
 `, TagBuilders),
@@ -321,7 +333,12 @@ let busy = false
 export const SaveButton = () =>
   div(
     button(
-      { type: 'submit', disabled: () => busy, 'aria-busy': () => String(busy), 'data-id': 42 },
+      {
+        type: 'submit',
+        disabled: () => busy,
+        'aria-busy': () => String(busy),
+        'data-id': 42,
+      },
       'Save',
     ),
     button(() => \`busy = \${busy}\`, {
@@ -342,9 +359,11 @@ export const Search = () =>
       placeholder: 'Search',
       value: () => query,
       onInput: (e) => { query = e.currentTarget.value; update() },
-      onKeyDown: (e) => { if (e.key === 'Escape') { query = ''; update() } },
+      onKeyDown: (e) => {
+        if (e.key === 'Escape') { query = ''; update() }
+      },
     }),
-    p(() => (query ? \`query = "\${query}"\` : 'Type something, then press Escape.')),
+    p(() => (query ? \`query = "\${query}"\` : 'Type, then press Escape.')),
   )
 `, Events),
 
@@ -382,21 +401,36 @@ let count = 0
 export const Counter = () =>
   div(
     p(() => \`Clicked \${count} times\`),
-    button('count++', { onClick: () => { count++ } }), // no update(): the text stays
+    // No update() here, so the text stays as it is.
+    button('count++', { onClick: () => { count++ } }),
     button('update()', { onClick: () => update() }),
   )
 `, ExplicitUpdates),
 
-  demo("dynamic-functions", "Dynamic Values", "Edit the name. The static text was fixed when the element was built; the dynamic one runs again on every update().", `
+  demo("dynamic-functions", "Dynamic Values", "Edit the name. The static text was fixed when the element was built; the dynamic one runs again on every update(). forceUpdate() rebuilds the tree, so the static text catches up too.", `
 import 'nuclo'
 
 let name = 'Alice'
+let host: Element | undefined
 
-export const Greeting = () =>
+const Greeting = () =>
   div(
-    input({ value: () => name, onInput: (e) => { name = e.currentTarget.value; update() } }),
+    input({
+      value: () => name,
+      onInput: (e) => { name = e.currentTarget.value; update() },
+    }),
     p('static: ', \`Hello, \${name}\`),        // built once
     p('dynamic: ', () => \`Hello, \${name}\`), // runs on every update()
+  )
+
+export const App = () =>
+  div(
+    div({ onMount: (el) => { host = el as unknown as Element } }, Greeting()),
+    // Calls Greeting() again and patches the same nodes: the static text
+    // catches up. The explicit form rebuilds only this tree.
+    button('forceUpdate()', {
+      onClick: () => { if (host) forceUpdate(Greeting(), host) },
+    }),
   )
 `, DynamicValues),
 
@@ -407,7 +441,8 @@ let runs = 0
 
 export const RunCounter = () =>
   div(
-    // A side effect on purpose, to count the runs. Keep real dynamic values pure.
+    // A side effect on purpose, to count the runs.
+    // Keep real dynamic values pure.
     p(() => \`This dynamic value has run \${++runs} times.\`),
     button('update()', { onClick: () => update() }),
   )
@@ -429,8 +464,12 @@ export const Shop = () =>
   div(
     div(() => \`Hi, \${user}\`),
     div(scope('cart'), () => \`Items: \${cartItems.length}\`),
-    button("update('cart')", { onClick: () => { change(); update('cart') } }),
-    button('update()', { onClick: () => { change(); update() } }),
+    button("update('cart')", {
+      onClick: () => { change(); update('cart') },
+    }),
+    button('update()', {
+      onClick: () => { change(); update() },
+    }),
   )
 `, Scope),
 
@@ -460,19 +499,34 @@ import 'nuclo'
 
 const pool = ['Cherry', 'Date', 'Elderberry', 'Fig', 'Grape']
 let next = 0
-const fruits = [{ name: 'Apple', done: false }, { name: 'Banana', done: false }]
+const fruits = [
+  { name: 'Apple', done: false },
+  { name: 'Banana', done: false },
+]
+
+function add() {
+  fruits.push({ name: pool[next++ % pool.length], done: false })
+  update()
+}
 
 export const Fruits = () =>
   div(
-    button('Add', { onClick: () => { fruits.push({ name: pool[next++ % pool.length], done: false }); update() } }),
+    button('Add', { onClick: add }),
     button('Reverse', { onClick: () => { fruits.reverse(); update() } }),
     button('Remove first', { onClick: () => { fruits.shift(); update() } }),
     ul(
       list(() => fruits, (fruit) =>
         li(
           label(
-            input({ type: 'checkbox', checked: () => fruit.done, onChange: () => { fruit.done = !fruit.done; update() } }),
-            span({ className: () => (fruit.done ? 'done' : '') }, () => fruit.name),
+            input({
+              type: 'checkbox',
+              checked: () => fruit.done,
+              onChange: () => { fruit.done = !fruit.done; update() },
+            }),
+            span(
+              { className: () => (fruit.done ? 'done' : '') },
+              () => fruit.name,
+            ),
           ),
         ),
       ),
@@ -486,7 +540,11 @@ import 'nuclo'
 let page: 'home' | 'article' | null = 'home'
 let dialog = false
 
-const go = (next: typeof page) => () => { page = next; dialog = false; update() }
+const go = (next: typeof page) => () => {
+  page = next
+  dialog = false
+  update()
+}
 
 const Layout = () =>
   div(
@@ -495,7 +553,9 @@ const Layout = () =>
       button('Article', { onClick: go('article') }),
       button('Close page', { onClick: go(null) }),
     ),
-    main(region({ id: 'main', type: 'stack', empty: p('Nothing open.') })),
+    main(
+      region({ id: 'main', type: 'stack', empty: p('Nothing open.') }),
+    ),
     aside(region({ id: 'side', empty: p('No related links.') })),
   )
 
@@ -503,7 +563,9 @@ const Layout = () =>
 const Home = () =>
   into('main',
     input({ placeholder: 'Type here, then open the dialog' }),
-    button('Open dialog', { onClick: () => { dialog = true; update() } }),
+    button('Open dialog', {
+      onClick: () => { dialog = true; update() },
+    }),
   )
 
 const Article = () =>
@@ -515,7 +577,10 @@ const Article = () =>
 // Stacks over Home, so Home keeps its DOM and the text you typed.
 const Dialog = () =>
   into('main',
-    div(p('On top of Home.'), button('Close', { onClick: () => { dialog = false; update() } })),
+    div(
+      p('On top of Home.'),
+      button('Close', { onClick: () => { dialog = false; update() } }),
+    ),
   )
 
 export const RegionApp = () =>
@@ -531,8 +596,8 @@ export const RegionApp = () =>
 import 'nuclo'
 
 const labels = {
-  en: { title: 'Hello', body: 'Static text, fixed when the tree was built.' },
-  pt: { title: 'Olá', body: 'Texto estático, fixado quando a árvore foi criada.' },
+  en: { title: 'Hello', body: 'Static text, fixed on build.' },
+  pt: { title: 'Olá', body: 'Texto estático, fixado na criação.' },
 }
 let lang: keyof typeof labels = 'en'
 let host: Element | undefined

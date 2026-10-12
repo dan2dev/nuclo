@@ -1,7 +1,3 @@
-import { css as uiCss, colors, s } from "../../styles.ts";
-import { es } from "./styles.ts";
-import { ExampleCard } from "./card.ts";
-
 // Bound to the site's own theme custom properties (not fixed hex) so these previews
 // actually switch with light/dark mode instead of always rendering a light card.
 const demo = createCss({
@@ -19,19 +15,16 @@ const demo = createCss({
 
 const { css, cx } = demo;
 
-export const gs = {
-  wrap: uiCss({ paddingTop: "8px" }),
-  headWrap: uiCss({ borderTop: `1px solid ${colors.border}`, paddingTop: "48px", marginTop: "8px", medium: { paddingTop: "64px" } }),
-};
-
-interface StylingFeature {
+export interface StylingFeature {
+  id: string;
+  docs: string; // the docs section it demonstrates
   title: string;
   desc: string;
   code: string;
   preview: () => NodeModLike<"div">;
 }
 
-const cardStyle = css("pages-examples-styling-gallery-cardStyle", {
+const cardStyle = css("pages-examples-styling-demos-cardStyle", {
   p: 16,
   rounded: 8,
   border: "1px solid",
@@ -42,7 +35,7 @@ const cardStyle = css("pages-examples-styling-gallery-cardStyle", {
   maxW: 260,
 });
 
-const quietText = css("pages-examples-styling-gallery-quietText", { color: "muted", text: 13, lineHeight: "1.5", marginTop: 6 });
+const quietText = css("pages-examples-styling-demos-quietText", { color: "muted", text: 13, lineHeight: "1.5", marginTop: 6 });
 
 function CssPreview() {
   return div(
@@ -52,7 +45,7 @@ function CssPreview() {
   );
 }
 
-const baseButton = css("pages-examples-styling-gallery-baseButton", {
+const baseButton = css("pages-examples-styling-demos-baseButton", {
   px: 14,
   py: 9,
   rounded: 6,
@@ -62,7 +55,7 @@ const baseButton = css("pages-examples-styling-gallery-baseButton", {
   cursor: "pointer",
 });
 
-const selectedButton = css("pages-examples-styling-gallery-selectedButton", {
+const selectedButton = css("pages-examples-styling-demos-selectedButton", {
   bg: "primary",
   color: "white",
   borderColor: "primary",
@@ -72,17 +65,17 @@ function CxPreview() {
   let selected = false;
 
   return div(
-    css("pages-examples-styling-gallery-styling-gallery-inline-1", { col: true, gap: 10, items: "center" }),
+    css("pages-examples-styling-demos-styling-gallery-inline-1", { col: true, gap: 10, items: "center" }),
     button(
       () => cx(baseButton, selected ? selectedButton : null),
       () => selected ? "Selected" : "Select",
       { onClick: () => { selected = !selected; update(); } },
     ),
-    span(css("pages-examples-styling-gallery-styling-gallery-inline-2", { color: "muted", text: 12 }), "cx() adds the selected class."),
+    span(css("pages-examples-styling-demos-styling-gallery-inline-2", { color: "muted", text: 12 }), "cx() adds the selected class."),
   );
 }
 
-const responsiveCard = css("pages-examples-styling-gallery-responsiveCard", {
+const responsiveCard = css("pages-examples-styling-demos-responsiveCard", {
   p: 12,
   rounded: 8,
   border: "1px solid",
@@ -105,11 +98,13 @@ function ThemePreview() {
   );
 }
 
-const FEATURES: StylingFeature[] = [
+export const STYLING_FEATURES: StylingFeature[] = [
   {
+    id: "css",
+    docs: "api-styling",
     title: "css()",
     desc: "Create a class from one typed style object.",
-    code: `const card = css("pages-examples-styling-gallery-card", {
+    code: `const card = css({
   p: 16,
   rounded: 8,
   border: "1px solid",
@@ -124,9 +119,11 @@ function Card() {
     preview: CssPreview,
   },
   {
+    id: "cx",
+    docs: "api-cx",
     title: "cx()",
     desc: "Compose classes conditionally. Later styles win.",
-    code: `const baseButton = css("pages-examples-styling-gallery-baseButton", {
+    code: `const baseButton = css({
   px: 14,
   py: 9,
   rounded: 6,
@@ -134,7 +131,7 @@ function Card() {
   borderColor: "border",
 })
 
-const selectedButton = css("pages-examples-styling-gallery-selectedButton", {
+const selectedButton = css({
   bg: "primary",
   color: "white",
   borderColor: "primary",
@@ -152,6 +149,8 @@ function Button() {
     preview: CxPreview,
   },
   {
+    id: "create-css",
+    docs: "api-create-css",
     title: "createCss()",
     desc: "Define a small theme and use its tokens.",
     code: `const { css } = createCss({
@@ -165,7 +164,7 @@ function Button() {
   },
 })
 
-const box = css("pages-examples-styling-gallery-box", {
+const box = css({
   p: 12,
   bg: "surface",
   borderColor: "border",
@@ -174,19 +173,3 @@ const box = css("pages-examples-styling-gallery-box", {
     preview: ThemePreview,
   },
 ];
-
-export function StylingGallery() {
-  return section(
-    gs.wrap,
-    div(
-      s.container,
-      div(
-        gs.headWrap,
-        div(s.sectionLabel, "Styling"),
-        h2(s.sectionTitle, "Styling basics"),
-        p(s.sectionSub, "A short set of styling examples: create a class, compose a class, and use a tiny theme."),
-      ),
-      div(es.grid, ...FEATURES.map((feature, index) => ExampleCard({ ...feature, heading: "h3" }, index))),
-    ),
-  );
-}

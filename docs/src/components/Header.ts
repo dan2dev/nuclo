@@ -140,7 +140,7 @@ export function Header() {
           [...el.querySelectorAll("nav > div > div"), el.lastElementChild!].forEach((n, i) =>
             n.animate([SLIDE("14px", 0), SLIDE("0", 1)], { duration: motion(380), delay: motion(60 + i * 45), easing: "cubic-bezier(0.32, 0.72, 0, 1)", fill: "backwards" }));
           const ac = new AbortController();
-          document.body.style.overflow = "hidden";
+          document.documentElement.style.overflow = "hidden";
           document.addEventListener("keydown", (e) => {
             if (e.key === "Escape") return closeMenu();
             if (e.key !== "Tab") return;
@@ -157,7 +157,7 @@ export function Header() {
           return () => {
             if (menuEl === el) menuEl = undefined;
             ac.abort();
-            document.body.style.overflow = "";
+            document.documentElement.style.overflow = "";
             document.getElementById("site-menu-button")?.focus();
           };
         },

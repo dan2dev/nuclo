@@ -12,8 +12,8 @@
  */
 import { renderToString, getCssText } from 'nuclo/ssr';
 import { App } from './app.ts';
-import { router, routeName } from './router.ts';
-import { SEO_BASE_URL, generateStructuredData, getMetaForRoute } from './seo.ts';
+import { router } from './router.ts';
+import { SEO_BASE_URL, generateStructuredData, resolveMeta, type RouteInfo } from './seo.ts';
 
 export const htmlTemplate = `<!doctype html>
 <html lang="en" data-theme="light">
@@ -63,19 +63,20 @@ function routeToAbsoluteUrl(pathname: string): string {
   return `${SEO_BASE_URL.replace(/\/$/, '')}${normalizedPath}`;
 }
 
-function buildSeoHead(route: string, pathname: string, known: boolean): string {
+function buildSeoHead(ctx: RouteInfo, data: unknown, pathname: string, known: boolean): string {
+  const resolved = resolveMeta(ctx, data);
   const meta = known
-    ? getMetaForRoute(route)
+    ? resolved.meta
     : {
         title: 'Page Not Found - Nuclo',
         description: 'The requested page could not be found on the Nuclo documentation site.',
       };
 
-  const pageUrl = known ? (route === 'home' ? SEO_BASE_URL : `${SEO_BASE_URL}${route}`) : routeToAbsoluteUrl(pathname);
+  const pageUrl = known ? resolved.url : routeToAbsoluteUrl(pathname);
   const robots = known ? 'index, follow' : 'noindex, nofollow';
   const ogType = meta.type === 'TechArticle' ? 'article' : 'website';
   const jsonLdSchemas = known
-    ? generateStructuredData(route)
+    ? generateStructuredData(meta, pageUrl)
     : [
         {
           '@context': 'https://schema.org',
@@ -158,8 +159,8 @@ export async function appFetch(
 
   // One Route per request: App reads the shared router, and run() makes it this request's.
   const route = await router.start(req.url);
-  const known = route.pattern !== '*';
-  const renderRoute = routeName(route.pattern);
+  // A page whose load() returned null (an example id that does not exist) is a 404 too.
+  const known = route.pattern !== '*' && route.data !== null;
   const status = known ? 200 : 404;
 
   const ssrHtml = route.run(() => renderToString(App));
@@ -169,7 +170,7 @@ export async function appFetch(
   // little and guarantees no flash of unstyled content on navigation.
   const nucloStyles = getCssText();
 
-  const seoHead = buildSeoHead(renderRoute, pathname, known);
+  const seoHead = buildSeoHead(route, route.data, pathname, known);
   const html = (await transformHtml(htmlTemplate, known ? pathname : '/'))
     .replace('{{seoHead}}', seoHead)
     .replace('{{html}}', ssrHtml)

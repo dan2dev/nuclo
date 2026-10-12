@@ -11,7 +11,14 @@ export function registerGlobalStyles() {
   globalStyle("*", { raw: {"box-sizing": "border-box", "margin": "0", "padding": "0"} });
   globalStyle("*::before", { raw: {"box-sizing": "border-box", "margin": "0", "padding": "0"} });
   globalStyle("*::after", { raw: {"box-sizing": "border-box", "margin": "0", "padding": "0"} });
-  globalStyle("html", { raw: {"font-size": "16px"} });
+  globalStyle("html", { raw: { "font-size": "16px", "scrollbar-gutter": "stable" } });
+  // Thin, theme-aware scrollbars everywhere.
+  globalStyle("*", { raw: { "scrollbar-width": "thin", "scrollbar-color": "var(--c-border-light) transparent" } });
+  globalStyle("::-webkit-scrollbar", { raw: { width: "8px", height: "8px" } });
+  globalStyle("::-webkit-scrollbar-track", { raw: { background: "transparent" } });
+  globalStyle("::-webkit-scrollbar-thumb", { raw: { "background-color": "var(--c-border-light)", "border-radius": "8px", border: "2px solid transparent", "background-clip": "padding-box" } });
+  globalStyle("::-webkit-scrollbar-thumb:hover", { raw: { "background-color": "var(--c-text-muted)" } });
+  globalStyle("::-webkit-scrollbar-corner", { raw: { background: "transparent" } });
   globalStyle("body", { raw: {"font-family": "system-ui, sans-serif", "background-color": "var(--c-bg)", "color": "var(--c-text)", "line-height": "1.65", "-webkit-font-smoothing": "antialiased"} });
   globalStyle("a", { raw: {"color": "inherit", "text-decoration": "none"} });
   // Controls and navigation chrome aren't meant to be selected (also stops highlights while dragging the sheet).

@@ -1,4 +1,4 @@
-import type { RoutePath } from './route-definitions.ts';
+import { routeName, type RoutePath } from './route-definitions.ts';
 import { NUCLO_VERSION } from './generated/nuclo-stats.ts';
 
 export interface PageMeta {
@@ -34,14 +34,33 @@ export const routeMeta: Record<RoutePath, PageMeta> = {
   },
 };
 
-export function getMetaForRoute(route: string): PageMeta {
-  return Object.prototype.hasOwnProperty.call(routeMeta, route)
-    ? routeMeta[route as RoutePath]
-    : routeMeta["home"];
+/** What a matched route needs for its meta: the pattern, the path and the page's load() result. */
+export interface RouteInfo { pattern: string; path: string }
+
+// The example page's load() returns the example (see pages/ExampleDetail.ts); SEO reads its title and text.
+type ExampleData = { title: string; desc: string } | null | undefined;
+
+export function resolveMeta(ctx: RouteInfo, data?: unknown): { meta: PageMeta; url: string } {
+  const route = routeName(ctx.pattern);
+  const url = route === 'home' ? SEO_BASE_URL : `${SEO_BASE_URL}${ctx.path.replace(/^\/|\/+$/g, '')}`;
+  const example = ctx.pattern === '/examples/:id' ? (data as ExampleData) : undefined;
+  if (example) {
+    return {
+      url,
+      meta: {
+        title: `${example.title} - Nuclo Examples`,
+        description: `${example.desc} A live Nuclo example with its source code.`,
+        keywords: `nuclo example, ${example.title.toLowerCase()}, live demo, source code`,
+        type: 'TechArticle',
+      },
+    };
+  }
+  const meta = Object.prototype.hasOwnProperty.call(routeMeta, route) ? routeMeta[route] : routeMeta.home;
+  return { meta, url };
 }
 
-export function updatePageMeta(route: string): void {
-  const meta = getMetaForRoute(route);
+export function updatePageMeta(ctx: RouteInfo, data?: unknown): void {
+  const { meta, url: pageUrl } = resolveMeta(ctx, data);
   document.title = meta.title;
 
   function setMeta(name: string, content: string) {
@@ -54,8 +73,6 @@ export function updatePageMeta(route: string): void {
     if (!el) { el = document.createElement('meta'); el.setAttribute('property', property); document.head.appendChild(el); }
     el.content = content;
   }
-
-  const pageUrl = route === 'home' ? SEO_BASE_URL : `${SEO_BASE_URL}${route}`;
 
   setMeta('description', meta.description);
   if (meta.keywords) setMeta('keywords', meta.keywords);
@@ -71,9 +88,7 @@ export function updatePageMeta(route: string): void {
   canonical.href = pageUrl;
 }
 
-export function generateStructuredData(route: string): object[] {
-  const meta = getMetaForRoute(route);
-  const pageUrl = route === 'home' ? SEO_BASE_URL : `${SEO_BASE_URL}${route}`;
+export function generateStructuredData(meta: PageMeta, pageUrl: string): object[] {
 
   const website = {
     "@context": "https://schema.org",

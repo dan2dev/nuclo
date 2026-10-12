@@ -120,7 +120,7 @@ export function DocsPage(ctx: RouteContext) {
       const h = sheetEl.offsetHeight, fade = 1 - dy / h;
       if (dy > h * 0.3 || (dy > 30 && dy / (t - t0) > 0.6)) {
         sheetOpen = false;
-        document.body.style.overflow = "";
+        document.documentElement.style.overflow = "";
         document.removeEventListener("keydown", onSheetKey);
         update();
         animateOut(dy, fade);
@@ -193,7 +193,7 @@ export function DocsPage(ctx: RouteContext) {
   function setSheet(open: boolean) {
     sheetOpen = open;
     if (open) sheetMounted = true;
-    document.body.style.overflow = open ? "hidden" : "";
+    document.documentElement.style.overflow = open ? "hidden" : "";
     if (open) document.addEventListener("keydown", onSheetKey);
     else document.removeEventListener("keydown", onSheetKey);
     update();
@@ -482,7 +482,7 @@ export function DocsPage(ctx: RouteContext) {
     {
       onDestroy: () => {
         if (!sheetOpen) return;
-        document.body.style.overflow = "";
+        document.documentElement.style.overflow = "";
         document.removeEventListener("keydown", onSheetKey);
       },
     },

@@ -2,7 +2,7 @@ import 'nuclo/polyfill';
 import 'nuclo';
 import { dirname, resolve } from 'node:path';
 import { appFetch, buildProdTransform, type ViteManifest } from './app-handler.ts';
-import { routeDefinitions } from './route-definitions.ts';
+import { pageLoaders } from './route-definitions.ts';
 import { registerGlobalStyles } from './styles.ts';
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -14,8 +14,8 @@ registerGlobalStyles();
 // Warm up: eagerly import all page modules so their module-level css() calls
 // populate the style registry before the first request is served. After this
 // completes the CSS set is stable and getCssText() returns the full sheet.
-for (const def of routeDefinitions) {
-  try { await def.loader(); } catch { /* skip broken routes */ }
+for (const load of pageLoaders) {
+  try { await load(); } catch { /* skip broken routes */ }
 }
 
 // --- Gzip compression ---

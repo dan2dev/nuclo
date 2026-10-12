@@ -3,14 +3,21 @@
  * The site's router: the server renders each request inside its Route's run(),
  * the browser starts it before hydrating. Links are plain <a href>s.
  */
-import { createRouter } from 'nuclo-router';
-import { routeDefinitions, type RoutePath } from './route-definitions.ts';
+import { createRouter, type RouteTable } from 'nuclo-router';
+import { routeDefinitions, routeName } from './route-definitions.ts';
 import { updatePageMeta } from './seo.ts';
 import { scanReveals } from './reveal.ts';
 
-const pages = Object.fromEntries(
-  routeDefinitions.map((def) => [def.path === 'home' ? '/' : `/${def.path}`, def.loader]),
+export { routeName };
+
+const pages: RouteTable = Object.fromEntries(
+  routeDefinitions.map((def) => [
+    def.path === 'home' ? '/' : `/${def.path}`,
+    'children' in def ? { '/': def.loader, ...def.children } : def.loader,
+  ]),
 );
+
+let shownSection = '';
 
 export const router = createRouter(
   // Unknown paths render Home; the server answers them with a 404.
@@ -19,16 +26,14 @@ export const router = createRouter(
     base: import.meta.env?.BASE_URL,
     // Browser only, after the DOM caught up.
     onNavigate: (ctx, kind) => {
-      if (kind === 'push' && !ctx.hash) window.scrollTo(0, 0);
-      updatePageMeta(routeName(ctx.pattern));
+      // New pages land at the top, except within a section (opening an example keeps the grid's scroll).
+      const section = routeName(ctx.pattern);
+      if (kind === 'push' && !ctx.hash && section !== shownSection) window.scrollTo(0, 0);
+      shownSection = section;
+      updatePageMeta(ctx, router.data);
       scanReveals();
     },
   },
 );
 
-/** The routeDefinitions path a matched pattern renders. */
-export function routeName(pattern: string): RoutePath {
-  return (pattern === '/' || pattern === '*' ? 'home' : pattern.slice(1)) as RoutePath;
-}
-
-export const currentRoute = (): RoutePath => routeName(router.pattern);
+export const currentRoute = () => routeName(router.pattern);

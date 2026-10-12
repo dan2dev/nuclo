@@ -814,7 +814,11 @@ import 'nuclo'
 let page: 'home' | 'article' | null = 'home'
 let dialog = false
 
-const go = (next: typeof page) => () => { page = next; dialog = false; update() }
+const go = (next: typeof page) => () => {
+  page = next
+  dialog = false
+  update()
+}
 
 const Layout = () =>
   div(
@@ -823,7 +827,9 @@ const Layout = () =>
       button('Article', { onClick: go('article') }),
       button('Close page', { onClick: go(null) }),
     ),
-    main(region({ id: 'main', type: 'stack', empty: p('Nothing open.') })),
+    main(
+      region({ id: 'main', type: 'stack', empty: p('Nothing open.') }),
+    ),
     aside(region({ id: 'side', empty: p('No related links.') })),
   )
 
@@ -831,7 +837,9 @@ const Layout = () =>
 const Home = () =>
   into('main',
     input({ placeholder: 'Type here, then open the dialog' }),
-    button('Open dialog', { onClick: () => { dialog = true; update() } }),
+    button('Open dialog', {
+      onClick: () => { dialog = true; update() },
+    }),
   )
 
 const Article = () =>
@@ -843,7 +851,10 @@ const Article = () =>
 // Stacks over Home, so Home keeps its DOM and the text you typed.
 const Dialog = () =>
   into('main',
-    div(p('On top of Home.'), button('Close', { onClick: () => { dialog = false; update() } })),
+    div(
+      p('On top of Home.'),
+      button('Close', { onClick: () => { dialog = false; update() } }),
+    ),
   )
 
 export const RegionApp = () =>
@@ -2213,7 +2224,9 @@ export function TodoList() {
     button("Add", { onClick: addTodo }),
     div(
       button("All", { onClick: () => { filter = "all"; update() } }),
-      button("Active", { onClick: () => { filter = "active"; update() } }),
+      button("Active", {
+        onClick: () => { filter = "active"; update() },
+      }),
       button("Done", { onClick: () => { filter = "done"; update() } }),
     ),
     ul(
@@ -2233,7 +2246,10 @@ export function TodoList() {
       ),
       when(() => visible().length === 0, div("No tasks yet.")),
     ),
-    p(() => `${todos.filter((t) => !t.done).length} of ${todos.length} remaining`),
+    p(() => {
+      const left = todos.filter((t) => !t.done).length
+      return `${left} of ${todos.length} remaining`
+    }),
   )
 }
 ```

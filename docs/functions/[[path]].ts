@@ -15,7 +15,7 @@
 import 'nuclo/polyfill';
 import 'nuclo';
 import { appFetch, buildProdTransform, type ViteManifest } from '../src/app-handler.ts';
-import { routeDefinitions } from '../src/route-definitions.ts';
+import { pageLoaders } from '../src/route-definitions.ts';
 import { registerGlobalStyles } from '../src/styles.ts';
 
 interface Env {
@@ -31,8 +31,8 @@ let warmUp: Promise<void> | null = null;
 function ensureWarm(): Promise<void> {
   if (!warmUp) {
     warmUp = (async () => {
-      for (const def of routeDefinitions) {
-        try { await def.loader(); } catch { /* skip broken routes */ }
+      for (const load of pageLoaders) {
+        try { await load(); } catch { /* skip broken routes */ }
       }
     })();
   }

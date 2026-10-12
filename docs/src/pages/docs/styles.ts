@@ -31,7 +31,7 @@ const contentTypography = {
   "& .code-block-frame": { raw: { margin: "22px 0", "background-color": "var(--c-bg-code)", border: "1px solid var(--c-border)", "border-radius": "10px", overflow: "hidden", "max-width": "100%" } },
   "& .code-block-header": { raw: { display: "flex", "align-items": "center", "justify-content": "space-between", "min-height": "38px", padding: "9px 16px", "border-bottom": "1px solid var(--c-border)" } },
   "& .code-block-filename": { raw: { "font-family": mono, "font-size": "0.75rem", color: "var(--c-text-muted)" } },
-  "& .code-block-body": { raw: { padding: "18px 20px 20px", "overflow-x": "auto", color: "var(--c-text)", "font-family": mono, "font-size": "0.8rem", "line-height": "1.7", "scrollbar-width": "thin" } },
+  "& .code-block-body": { raw: { padding: "18px 20px 20px", "overflow-x": "auto", color: "var(--c-text)", "font-family": mono, "font-size": "0.8rem", "line-height": "1.7" } },
   "& .code-block-body pre": { raw: { margin: "0", "white-space": "pre", "min-width": "max-content" } },
   "& .docs-callout": { raw: { "background-color": "var(--c-bg-secondary)", border: "1px solid var(--c-border)", "border-radius": "10px", padding: "16px 18px", margin: "20px 0", "font-size": "0.9375rem", "line-height": "1.65", color: "var(--c-text-dim)" } },
   "& table": { raw: { display: "block", "max-width": "100%", "overflow-x": "auto", "border-collapse": "collapse", margin: "0 0 20px", "font-size": "0.875rem", color: "var(--c-text-dim)" } },
@@ -41,9 +41,9 @@ const contentTypography = {
 } as const;
 
 export const ds = {
-  layout: css("pages-docs-styles-layout", { display: "grid", gridTemplateColumns: "228px minmax(0, 840px) 184px", gap: "34px", maxWidth: "1336px", margin: "0 auto", padding: "0 28px", minHeight: "100vh", alignItems: "start", raw: { "scrollbar-width": "thin" }, "@media (max-width: 1180px)": { gridTemplateColumns: "224px minmax(0, 1fr)", maxWidth: "1080px", gap: "42px" }, "@media (max-width: 900px)": { display: "block", padding: "0 24px" }, "@media (max-width: 600px)": { padding: "0 18px" } }),
+  layout: css("pages-docs-styles-layout", { display: "grid", gridTemplateColumns: "228px minmax(0, 840px) 184px", gap: "34px", maxWidth: "1336px", margin: "0 auto", padding: "0 28px", minHeight: "100vh", alignItems: "start", "@media (max-width: 1180px)": { gridTemplateColumns: "224px minmax(0, 1fr)", maxWidth: "1080px", gap: "42px" }, "@media (max-width: 900px)": { display: "block", padding: "0 24px" }, "@media (max-width: 600px)": { padding: "0 18px" } }),
 
-  sidebar: css("pages-docs-styles-sidebar", { display: "flex", flexDirection: "column", gap: "20px", padding: "0 16px 24px 0", borderRight: `1px solid ${colors.border}`, position: "sticky", top: "calc(var(--header-h) + 20px)", height: "calc(100vh - var(--header-h) - 36px)", overflowY: "auto", alignSelf: "start", "&::-webkit-scrollbar": { width: "4px" }, "&::-webkit-scrollbar-track": { backgroundColor: "transparent" }, "&::-webkit-scrollbar-thumb": { backgroundColor: colors.borderLight, borderRadius: "2px" }, "@media (max-width: 900px)": { display: "none" } }),
+  sidebar: css("pages-docs-styles-sidebar", { display: "flex", flexDirection: "column", gap: "20px", padding: "0 16px 24px 0", borderRight: `1px solid ${colors.border}`, position: "sticky", top: "calc(var(--header-h) + 20px)", height: "calc(100vh - var(--header-h) - 36px)", overflowY: "auto", alignSelf: "start", "@media (max-width: 900px)": { display: "none" } }),
 
   // Shared by the sidebar (> 900px) and the navigator sheet (only opened at <= 900px, so its touch sizes live in the 900px query).
   filterWrap: css("pages-docs-styles-filterWrap", { display: "block" }),
@@ -102,7 +102,7 @@ export const ds = {
 
   apiHeadingRow: css("pages-docs-styles-apiHeadingRow", { display: "flex", alignItems: "baseline", gap: "8px", margin: "12px 0 10px", fontSize: "0.8125rem", color: colors.textMuted }),
   apiTag: css("pages-docs-styles-apiTag", { fontFamily: mono }),
-  apiSig: css("pages-docs-styles-apiSig", { fontFamily: mono, fontSize: "0.8rem", backgroundColor: colors.bgCode, border: `1px solid ${colors.border}`, borderRadius: "10px", padding: "16px 20px", margin: "16px 0 20px", color: colors.text, overflowX: "auto", lineHeight: "1.7", whiteSpace: "pre-wrap", raw: { "scrollbar-width": "thin" }, maxWidth: "100%", "& .kw": { color: "var(--c-tok-keyword)", fontStyle: "normal" }, "& .fn": { color: "var(--c-tok-fn)", fontStyle: "normal" }, "& .ty": { color: "var(--c-tok-type)", fontStyle: "normal" }, "& .pt": { color: "var(--c-tok-punct)", fontStyle: "normal" }, "& .pr": { color: "var(--c-tok-prop)", fontStyle: "normal" } }),
+  apiSig: css("pages-docs-styles-apiSig", { fontFamily: mono, fontSize: "0.8rem", backgroundColor: colors.bgCode, border: `1px solid ${colors.border}`, borderRadius: "10px", padding: "16px 20px", margin: "16px 0 20px", color: colors.text, overflowX: "auto", lineHeight: "1.7", whiteSpace: "pre-wrap", maxWidth: "100%", "& .kw": { color: "var(--c-tok-keyword)", fontStyle: "normal" }, "& .fn": { color: "var(--c-tok-fn)", fontStyle: "normal" }, "& .ty": { color: "var(--c-tok-type)", fontStyle: "normal" }, "& .pt": { color: "var(--c-tok-punct)", fontStyle: "normal" }, "& .pr": { color: "var(--c-tok-prop)", fontStyle: "normal" } }),
 
   rail: css("pages-docs-styles-rail", { position: "sticky", top: "calc(var(--header-h) + 20px)", alignSelf: "start", "@media (max-width: 1180px)": { display: "none" } }),
   toc: css("pages-docs-styles-toc", { marginBottom: "20px" }),
