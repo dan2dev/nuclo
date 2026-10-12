@@ -2,7 +2,11 @@ import { EXAMPLES } from "../../content/examples.ts";
 import { API_DEMOS } from "../../components/api-demos.ts";
 import { STYLING_FEATURES } from "./styling-demos.ts";
 import { SVG_EXAMPLES } from "./svg-demos.ts";
+import { ROUTER_EXAMPLES } from "./router-demos.ts";
+import { FORM_EXAMPLES } from "./form-demos.ts";
+import { COMPONENT_EXAMPLES } from "./component-demos.ts";
 import { buildPreview } from "./demos.ts";
+import type { CodeFile } from "../../components/CodeBlock.ts";
 
 export interface Example {
   id: string; // the URL segment: /examples/:id
@@ -10,8 +14,10 @@ export interface Example {
   title: string;
   desc: string;
   code: string;
+  files?: CodeFile[]; // a multi-file example: the modal shows one tab per file
   preview: () => NodeModLike<"div">;
   docs?: string; // the docs section this example belongs to
+  install?: string; // a package beyond nuclo the example needs, such as "nuclo-router"
 }
 
 export interface ExampleGroup {
@@ -30,6 +36,11 @@ export const EXAMPLE_GROUPS: ExampleGroup[] = [
     examples: EXAMPLES.map((ex) => ({ ...ex, group: "Basics", docs: BASIC_DOCS[ex.id], preview: () => buildPreview(ex.id) })),
   },
   {
+    title: "Components",
+    sub: "Plain functions with static and dynamic params, children, lists matched by identity and nested data. Every preview counts its mounts.",
+    examples: COMPONENT_EXAMPLES.map((ex) => ({ ...ex, group: "Components" })),
+  },
+  {
     title: "API",
     sub: "One small demo per building block, the same ones the docs embed.",
     examples: API_DEMOS.map((demo) => ({ ...demo, group: "API", docs: demo.id })),
@@ -40,9 +51,19 @@ export const EXAMPLE_GROUPS: ExampleGroup[] = [
     examples: STYLING_FEATURES.map((f) => ({ ...f, group: "Styling" })),
   },
   {
+    title: "Forms",
+    sub: "Validation as plain functions over plain state, touched fields, steps and dynamic rows.",
+    examples: FORM_EXAMPLES.map((ex) => ({ ...ex, group: "Forms" })),
+  },
+  {
     title: "SVG",
     sub: "Charts and animations from the SVG tag builders, driven by plain data and update().",
     examples: SVG_EXAMPLES.map((ex) => ({ ...ex, group: "SVG" })),
+  },
+  {
+    title: "Routing",
+    sub: "Route tables, matching, the active route, layers and loaders. nuclo-router is a separate package: npm install nuclo nuclo-router.",
+    examples: ROUTER_EXAMPLES.map((ex) => ({ ...ex, group: "Routing" })),
   },
 ];
 

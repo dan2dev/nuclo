@@ -54,6 +54,9 @@ function getTransform(env: Env, origin: string) {
 export const onRequest = async (context: { request: Request; env: Env }): Promise<Response> => {
   await ensureWarm();
   const { request, env } = context;
-  const transform = await getTransform(env, new URL(request.url).origin);
-  return appFetch(request, transform);
+  const origin = new URL(request.url).origin;
+  const transform = await getTransform(env, origin);
+  // The routing demo app: its built page from the static assets, for every path under its prefix.
+  const demoHtml = () => env.ASSETS.fetch(`${origin}/demos/router/index.html`).then((res) => (res.ok ? res.text() : null));
+  return appFetch(request, transform, demoHtml);
 };

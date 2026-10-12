@@ -149,12 +149,15 @@ export default function ExampleDetail(ctx: RouteContext, { data: ex, layer }: Pa
       div(es.detailKicker, ex.group),
       h2(es.detailTitle, { tabindex: "-1" }, ex.title),
       p(es.detailDesc, ...withCode(ex.desc)),
+      ex.install
+        ? div(es.installNote, { role: "note" }, strong("Separate package:"), span(code(ex.install), " is not part of nuclo and must be installed:"), code(`npm install nuclo ${ex.install}`))
+        : null,
       ex.docs ? a(es.detailDocs, { href: router.href(`/docs#${ex.docs}`) }, "Read the docs →") : null,
     ),
     div(
       es.panes,
       section(es.previewPane, div(es.paneLabel, "Preview"), div(es.previewBody, ex.preview())),
-      section(es.codePane, CodeBlock({ filename: file, code: ex.code })),
+      section(es.codePane, CodeBlock({ filename: file, code: ex.code, files: ex.files })),
     ),
   ));
 }

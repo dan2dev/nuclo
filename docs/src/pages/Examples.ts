@@ -25,7 +25,11 @@ function Card(ex: Example, index: number) {
     span(es.cardNum, String(index + 1).padStart(2, "0")),
     h3(es.cardTitle, ex.title),
     p(es.cardDesc, ...withCode(ex.desc)),
-    div(es.cardFoot, span(ex.group), span(es.cardArrow, { "data-arrow": "" }, ArrowIcon())),
+    div(
+      es.cardFoot,
+      span(ex.group, ex.install ? span(es.cardPkg, { title: `Needs the ${ex.install} package` }, `+ ${ex.install}`) : null),
+      span(es.cardArrow, { "data-arrow": "" }, ArrowIcon()),
+    ),
   );
 }
 

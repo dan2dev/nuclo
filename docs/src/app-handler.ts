@@ -150,12 +150,21 @@ export function buildProdTransform(manifest: ViteManifest): (html: string) => Pr
     html.replace('<script type="module" src="/src/main.ts"></script>', prodAssets);
 }
 
+/** The embedded routing demo's prefix: its HTML is served for every path under it. */
+export const DEMO_PREFIX = '/demos/router';
+
 /** Shared between dev and prod, and between the Bun server and Cloudflare Function. */
 export async function appFetch(
   req: Request,
   transformHtml: (template: string, url: string) => Promise<string>,
+  demoHtml?: () => Promise<string | null>,
 ): Promise<Response> {
   const { pathname } = new URL(req.url);
+
+  if (demoHtml && (pathname === DEMO_PREFIX || pathname.startsWith(`${DEMO_PREFIX}/`))) {
+    const html = await demoHtml();
+    if (html !== null) return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  }
 
   // One Route per request: App reads the shared router, and run() makes it this request's.
   const route = await router.start(req.url);

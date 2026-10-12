@@ -1,34 +1,35 @@
 {
-  "name": "nuclo-docs",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "HOST=0.0.0.0 BASE_URL=/ bun --tsconfig-override tsconfig.bun.json src/server.ts",
-    "clean": "rm -f .*.bun-build",
-    "build": "bun run clean && bun run update:stats && bun run update:llms && tsc && vite build && bun build-server.ts",
-    "update:stats": "bun scripts/update-doc-stats.ts",
-    "update:llms": "bun --tsconfig-override tsconfig.bun.json scripts/generate-llms.ts",
-    "start": "HOST=0.0.0.0 bun start.ts",
-    "preview": "bun run build && bun run start",
-    "stress:front": "bun run --cwd ../packages/nuclo-core build && bun run build && bunx playwright test tests/front-stress.spec.ts",
-    "stress:front:strict": "bun run --cwd ../packages/nuclo-core build && bun run build && STRESS_STRICT=true bunx playwright test tests/front-stress.spec.ts",
-    "stress:front:ui": "bun run --cwd ../packages/nuclo-core build && bun run build && bunx playwright test tests/front-stress.spec.ts --headed --project=stress-chromium",
-    "stress:server": "bun tests/server-stress.ts",
-    "preview:macos": "bun run build && ./build/server-bun-darwin-arm64",
-    "deploy:cloudflare": "bun run --cwd ../packages/nuclo-core build && bun run --cwd ../packages/nuclo-router build && bun run clean && bun run update:stats && bun run update:llms && tsc && vite build && wrangler pages deploy build/dist --commit-dirty=true",
-    "cf:dev": "bun run build && wrangler pages dev build/dist"
-  },
-  "dependencies": {
-    "nuclo": "workspace:*",
-    "nuclo-router": "workspace:*"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.64.0",
-    "@types/bun": "^1.4.2",
-    "@types/node": "^26.6.4",
-    "typescript": "~7.0.2",
-    "vite": "^8.3.4",
-    "wrangler": "^4.149.0"
-  }
+	"name": "nuclo-docs",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "bun run update:demos && HOST=0.0.0.0 BASE_URL=/ bun --tsconfig-override tsconfig.bun.json src/server.ts",
+		"clean": "rm -f .*.bun-build",
+		"build": "bun run clean && bun run update:stats && bun run update:llms && bun run update:demos && tsc && vite build && vite build --config vite.demo.config.ts && bun build-server.ts",
+		"update:stats": "bun scripts/update-doc-stats.ts",
+		"update:llms": "bun --tsconfig-override tsconfig.bun.json scripts/generate-llms.ts",
+		"start": "HOST=0.0.0.0 bun start.ts",
+		"preview": "bun run build && bun run start",
+		"stress:front": "bun run --cwd ../packages/nuclo-core build && bun run build && bunx playwright test tests/front-stress.spec.ts",
+		"stress:front:strict": "bun run --cwd ../packages/nuclo-core build && bun run build && STRESS_STRICT=true bunx playwright test tests/front-stress.spec.ts",
+		"stress:front:ui": "bun run --cwd ../packages/nuclo-core build && bun run build && bunx playwright test tests/front-stress.spec.ts --headed --project=stress-chromium",
+		"stress:server": "bun tests/server-stress.ts",
+		"preview:macos": "bun run build && ./build/server-bun-darwin-arm64",
+		"deploy:cloudflare": "bun run --cwd ../packages/nuclo-core build && bun run --cwd ../packages/nuclo-router build && bun run clean && bun run update:stats && bun run update:llms && bun run update:demos && tsc && vite build && vite build --config vite.demo.config.ts && wrangler pages deploy build/dist --commit-dirty=true",
+		"cf:dev": "bun run build && wrangler pages dev build/dist",
+		"update:demos": "bun scripts/update-demo-sources.ts"
+	},
+	"dependencies": {
+		"nuclo": "workspace:*",
+		"nuclo-router": "workspace:*"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.64.0",
+		"@types/bun": "^1.4.2",
+		"@types/node": "^26.6.4",
+		"typescript": "~7.0.2",
+		"vite": "^8.3.4",
+		"wrangler": "^4.149.0"
+	}
 }

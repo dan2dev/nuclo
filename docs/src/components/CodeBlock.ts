@@ -1,4 +1,4 @@
-import { css, colors, s } from "../styles.ts";
+import { css, colors, cx, s } from "../styles.ts";
 import { copyText } from "./clipboard.ts";
 
 // ── Simple tokenizer for TypeScript/JS syntax highlighting ─────────────────
@@ -104,9 +104,15 @@ function tokenizeLine(line: string): string {
   return out;
 }
 
+export interface CodeFile {
+  name: string;
+  code: string;
+}
+
 export interface CodeBlockOptions {
   filename?: string;
   code: string;
+  files?: CodeFile[]; // more than one file: the header becomes IDE-style tabs, one per file
   showCopy?: boolean;
   preTokenized?: boolean;
 }
@@ -135,16 +141,19 @@ export const terminalCodeTokenStyle = css("components-codeblock-terminalCodeToke
   "& .pr": { color: "var(--terminal-tok-prop)" },
 });
 
-export function CodeBlock({ filename, code, showCopy = true, preTokenized = false }: CodeBlockOptions) {
+export function CodeBlock({ filename, code, files, showCopy = true, preTokenized = false }: CodeBlockOptions) {
   let copied = false;
+  let active = 0;
 
-  const tokenized = preTokenized ? code : highlightCode(code);
+  const tabs = files && files.length > 1 ? files : null;
+  const sources = tabs ? tabs.map((f) => f.code) : [code];
+  const tokenized = sources.map((src) => (preTokenized ? src : highlightCode(src)));
 
   const copyBtn = css("components-codeblock-copyBtn", { display: "flex", alignItems: "center", height: "28px", padding: "0 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: "500", color: colors.textMuted, hover: { color: colors.text, backgroundColor: colors.bgLight } });
   const preStyle = css("components-codeblock-preStyle", { margin: "0", whiteSpace: "pre", minWidth: "max-content" });
 
   function handleCopy() {
-    copyText(code).then((ok) => {
+    copyText(sources[active]).then((ok) => {
       if (!ok) return;
       copied = true;
       update();
@@ -154,10 +163,22 @@ export function CodeBlock({ filename, code, showCopy = true, preTokenized = fals
 
   return div(
     s.codeBlockFrame,
-    ...(filename || showCopy ? [
+    ...(tabs || filename || showCopy ? [
       div(
         s.codeBlockHeader,
-        filename
+        tabs
+          ? div(
+              s.codeBlockTabs,
+              { role: "tablist" },
+              ...tabs.map((f, i) =>
+                button(
+                  { role: "tab", class: () => cx(s.codeBlockTab, i === active ? s.codeBlockTabActive : null).className, "aria-selected": () => String(i === active) },
+                  f.name,
+                  { onClick: () => { active = i; update(); } },
+                ),
+              ),
+            )
+          : filename
           ? span(s.codeBlockFilename, filename)
           : span(),
         showCopy
@@ -172,7 +193,7 @@ export function CodeBlock({ filename, code, showCopy = true, preTokenized = fals
     div(
       s.codeBlockBody,
       codeTokenStyle,
-      { innerHTML: () => `<pre class="${preStyle.className}">${tokenized}</pre>` },
+      { innerHTML: () => `<pre class="${preStyle.className}">${tokenized[active]}</pre>` },
     ),
   );
 }

@@ -82,7 +82,12 @@ if (isProd) {
         if (await file.exists()) return gzipResponse(req, new Response(file));
       }
 
-      return gzipResponse(req, await appFetch(req, transformHtml));
+      // The routing demo app: a built page, served for every path under its prefix.
+      const demoHtml = async () => {
+        const file = Bun.file(resolve(distDir, 'demos/router/index.html'));
+        return (await file.exists()) ? file.text() : null;
+      };
+      return gzipResponse(req, await appFetch(req, transformHtml, demoHtml));
     },
   });
 
@@ -111,8 +116,15 @@ else {
                   headers: nodeReq.headers as HeadersInit,
                 });
 
-                const res = await appFetch(req, (html, url) =>
-                  server.transformIndexHtml(url, html),
+                // The routing demo app: its source HTML, with Vite's dev transforms.
+                const demoHtml = () =>
+                  Bun.file(resolve(import.meta.dir, '../demos/router/index.html'))
+                    .text()
+                    .then((html) => server.transformIndexHtml(nodeReq.url ?? '/', html));
+                const res = await appFetch(
+                  req,
+                  (html, url) => server.transformIndexHtml(url, html),
+                  demoHtml,
                 );
 
                 nodeRes.writeHead(res.status, Object.fromEntries(res.headers.entries()));

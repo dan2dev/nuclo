@@ -18,6 +18,7 @@ export const es = {
   cardNum: css("pages-examples-styles-cardNum", { fontFamily: mono, fontSize: "0.75rem", color: colors.primaryInk }),
   cardTitle: css("pages-examples-styles-cardTitle", { fontSize: "1.0625rem", fontWeight: "600", lineHeight: "1.3" }),
   cardDesc: css("pages-examples-styles-cardDesc", { flex: "1", fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.6", display: "-webkit-box", overflow: "hidden", raw: { "-webkit-line-clamp": "3", "-webkit-box-orient": "vertical" }, "& code": { fontFamily: mono, fontSize: "0.875em", backgroundColor: colors.bgSecondary, padding: "1px 5px", borderRadius: "4px", color: colors.text } }),
+  cardPkg: css("pages-examples-styles-cardPkg", { marginLeft: "8px", padding: "2px 7px", borderRadius: "999px", border: `1px solid ${colors.borderPrimary}`, fontFamily: mono, fontSize: "0.6875rem", color: colors.primaryInk, whiteSpace: "nowrap" }),
   cardFoot: css("pages-examples-styles-cardFoot", { display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8125rem", color: colors.textMuted, marginTop: "4px" }),
   cardArrow: css("pages-examples-styles-cardArrow", { display: "inline-flex", color: colors.textMuted, transition: "transform 0.18s ease, color 0.18s ease" }),
 
@@ -43,6 +44,8 @@ export const es = {
   detailKicker: css("pages-examples-styles-detailKicker", { fontSize: "0.8125rem", fontWeight: "600", color: colors.primaryInk, marginBottom: "8px" }),
   detailTitle: css("pages-examples-styles-detailTitle", { fontSize: "1.75rem", fontWeight: "700", letterSpacing: "-0.02em", lineHeight: "1.15", marginBottom: "10px", outline: "none", medium: { fontSize: "2.125rem" } }),
   detailDesc: css("pages-examples-styles-detailDesc", { fontSize: "1rem", color: colors.textDim, lineHeight: "1.65", maxWidth: "680px", "& code": { fontFamily: mono, fontSize: "0.875em", backgroundColor: colors.bgSecondary, padding: "1px 5px", borderRadius: "4px", color: colors.text } }),
+  // "Separate package" callout for examples that need more than nuclo.
+  installNote: css("pages-examples-styles-installNote", { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 10px", marginTop: "16px", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${colors.borderPrimary}`, backgroundColor: colors.primaryAlpha08, fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.5", "& strong": { color: colors.text }, "& code": { fontFamily: mono, fontSize: "0.8125em", padding: "2px 6px", borderRadius: "5px", backgroundColor: colors.bgCode, border: `1px solid ${colors.border}`, color: colors.text, whiteSpace: "nowrap" } }),
   detailDocs: css("pages-examples-styles-detailDocs", { display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "14px", fontSize: "0.875rem", fontWeight: "500", color: colors.primaryInk, hover: { textDecoration: "underline" } }),
   // Side by side only from 1200px: narrower than that the code pane would wrap its lines.
   panes: css("pages-examples-styles-panes", { display: "grid", flex: "1", gridTemplateColumns: "minmax(0, 1fr)", borderTop: `1px solid ${colors.border}`, "@media (min-width: 1200px)": { gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.35fr)" } }),
@@ -52,6 +55,14 @@ export const es = {
   // The code block fills its pane flush, so its own frame (border, radius) is dropped.
   // Sources are formatted to fit; long lines wrap rather than scroll sideways.
   codePane: css("pages-examples-styles-codePane", { display: "flex", flexDirection: "column", minWidth: "0", "& > div": { flex: "1", display: "flex", flexDirection: "column", border: "none", borderRadius: "0" }, "& > div > *:last-child": { flex: "1" }, "& pre": { whiteSpace: "pre-wrap", overflowWrap: "anywhere", minWidth: "0" } }),
+
+  // ── An embedded standalone app (demo-frame.ts): a browser-like chrome over an iframe ──
+  demo: css("pages-examples-styles-demo", { display: "flex", flexDirection: "column", width: "100%", maxWidth: "560px", border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden", backgroundColor: colors.bg }),
+  demoBar: css("pages-examples-styles-demoBar", { display: "flex", alignItems: "center", gap: "4px", height: "38px", padding: "0 8px", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary }),
+  demoBtn: css("pages-examples-styles-demoBtn", { display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "7px", color: colors.textDim, hover: { color: colors.text, backgroundColor: colors.bgLight } }),
+  demoUrl: css("pages-examples-styles-demoUrl", { flex: "1", minWidth: "0", height: "26px", lineHeight: "26px", margin: "0 6px", padding: "0 10px", borderRadius: "7px", backgroundColor: colors.bg, border: `1px solid ${colors.border}`, fontFamily: mono, fontSize: "0.75rem", color: colors.textDim, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }),
+  demoOpen: css("pages-examples-styles-demoOpen", { flexShrink: 0, padding: "0 6px", fontSize: "0.75rem", fontWeight: "600", color: colors.primaryInk, whiteSpace: "nowrap", hover: { textDecoration: "underline" } }),
+  demoFrame: css("pages-examples-styles-demoFrame", { display: "block", width: "100%", height: "380px", border: "0", backgroundColor: colors.bgCard }),
 
   notFound: css("pages-examples-styles-notFound", { padding: "72px 24px", textAlign: "center", color: colors.textDim, "& a": { color: colors.primaryInk, fontWeight: "500" } }),
 

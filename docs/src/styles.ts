@@ -72,6 +72,11 @@ export const s = {
 
   codeBlockFilename: css("styles-codeBlockFilename", { fontFamily: "ui-monospace, monospace", fontSize: '0.75rem', color: colors.textMuted }),
 
+  // IDE-style file tabs for a multi-file block: flush with the header's left edge, one tab per file.
+  codeBlockTabs: css("styles-codeBlockTabs", { display: 'flex', alignSelf: 'stretch', minWidth: '0', marginLeft: '-18px', overflowX: 'auto', raw: { 'scrollbar-width': 'none' } }),
+  codeBlockTab: css("styles-codeBlockTab", { display: 'flex', alignItems: 'center', flexShrink: 0, padding: '0 14px', borderRight: `1px solid ${colors.border}`, boxShadow: 'inset 0 -2px 0 transparent', fontFamily: "ui-monospace, monospace", fontSize: '0.75rem', color: colors.textMuted, whiteSpace: 'nowrap', hover: { color: colors.text } }),
+  codeBlockTabActive: css("styles-codeBlockTabActive", { color: colors.text, backgroundColor: colors.bgLight, boxShadow: `inset 0 -2px 0 ${colors.primary}` }),
+
   codeBlockBody: css("styles-codeBlockBody", { padding: '16px 18px', overflow: 'auto', fontFamily: "ui-monospace, monospace", fontSize: '0.8125rem', lineHeight: '1.7' }),
 
   // "01 Label" step row: the number in s.cardCornerBadge, the label as plain text.
