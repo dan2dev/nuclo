@@ -805,6 +805,132 @@ const Page = () =>
     sidebar: [h2('Related'), ul(li('One'), li('Two'))],
   })
 `)}
+      <h3>A dialog opened from deep in the tree</h3>
+      <p>The overlay region sits at the root. Any component, at any depth, opens a dialog by wrapping an <code>into()</code> in a <code>when()</code>. Closing the <code>when()</code> removes the dialog from the region.</p>
+      ${code("dialog.ts", `
+let confirming = false
+
+const App = () =>
+  div(
+    Page(),
+    div({ className: 'overlay' }, region({ id: 'overlay' })),
+  )
+
+// Deep inside Page()
+const DeleteButton = () =>
+  div(
+    button('Delete', { onClick: () => { confirming = true; update() } }),
+    when(() => confirming,
+      into('overlay',
+        dialog({ open: true },
+          p('Delete this item?'),
+          button('Cancel', { onClick: () => { confirming = false; update() } }),
+        ),
+      ),
+    ),
+  )
+`)}
+      <h3>Toasts from list rows</h3>
+      <p>Each row of a <code>list()</code> is a view. A stacked region shows them in order, and removing an item from the array removes its toast.</p>
+      ${code("toasts.ts", `
+const toasts: { text: string }[] = []
+
+const notify = (text: string) => {
+  toasts.push({ text })
+  update()
+}
+
+const dismiss = (toast: { text: string }) => {
+  toasts.splice(toasts.indexOf(toast), 1)
+  update()
+}
+
+const App = () =>
+  div(
+    button('Save', { onClick: () => notify('Saved.') }),
+    div({ className: 'toasts' }, region({ id: 'toasts', type: 'stack' })),
+    list(() => toasts, (toast) =>
+      into('toasts', div(toast.text, button('×', { onClick: () => dismiss(toast) }))),
+    ),
+  )
+`)}
+      <h3>A page title set by the page</h3>
+      <p>With the default <code>type: 'latest'</code>, the newest view wins. The layout owns the heading, and whichever page is open names it. A page without an <code>into('title', …)</code> leaves the <code>empty</code> text.</p>
+      ${code("title.ts", `
+let page: 'home' | 'settings' = 'home'
+
+const Layout = () =>
+  div(
+    h1(region({ id: 'title', empty: 'My app' })),
+    when(() => page === 'home', Home()).else(Settings()),
+  )
+
+const Home = () => p('Welcome.')
+
+const Settings = () =>
+  div(
+    into('title', 'Settings'),
+    form(/* … */),
+  )
+`)}
+      <h3>Dynamic values inside a view</h3>
+      <p>The content of an <code>into()</code> is ordinary Nuclo content. Functions in it are state-dependent values and refresh on <code>update()</code>, wherever the region is.</p>
+      ${code("status.ts", `
+const selected = new Set<string>()
+
+const Layout = () =>
+  div(
+    header(region({ id: 'status' })),
+    Table(),
+  )
+
+const Table = () =>
+  div(
+    into('status', () => \`\${selected.size} selected\`),
+    list(() => rows, (row) =>
+      label(
+        input({ type: 'checkbox', onChange: (e) => {
+          e.currentTarget.checked ? selected.add(row.id) : selected.delete(row.id)
+          update()
+        } }),
+        row.name,
+      ),
+    ),
+  )
+`)}
+      <h3>A region that comes and goes</h3>
+      <p>The dashboard's <code>into()</code> is written once. While the user is signed out there is no <code>main</code> region, so the view waits. Signing in builds the region and the view shows. Signing out removes the region and the view waits again.</p>
+      ${code("auth.ts", `
+let user: { name: string } | null = null
+
+const App = () =>
+  div(
+    when(() => user !== null,
+      main(region({ id: 'main' })),
+    ).else(
+      LoginForm(),
+    ),
+    into('main', Dashboard()),
+  )
+`)}
+      <h3>A view with its own region</h3>
+      <p>A view can contain a <code>region()</code>, and other views can target it. Here the editor page brings a <code>tabs</code> region with it, and each tab fills it. When the editor closes, its region goes with it.</p>
+      ${code("editor.ts", `
+let tab: 'code' | 'preview' = 'code'
+
+const Editor = () =>
+  into('main',
+    div(
+      nav(
+        button('Code', { onClick: () => { tab = 'code'; update() } }),
+        button('Preview', { onClick: () => { tab = 'preview'; update() } }),
+      ),
+      section(region({ id: 'tabs' })),
+    ),
+    when(() => tab === 'code', into('tabs', textarea()))
+      .else(into('tabs', iframe({ src: '/preview' }))),
+  )
+`)}
       <h3>Live example</h3>
       ${code("region-app.ts", API_DEMOS.find((d) => d.id === "api-region")!.code)}
     `,

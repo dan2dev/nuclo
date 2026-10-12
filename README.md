@@ -507,6 +507,89 @@ shows them again.
 closes, or its `list()` row goes, the content leaves the region too — a closed
 layer does not stay on screen, and re-opening it adds one copy, not two.
 
+**Examples.** A dialog opened from deep in the tree — the overlay region sits
+at the root, and closing the `when()` removes the dialog:
+
+```ts
+let confirming = false
+
+const App = () => div(Page(), div({ className: "overlay" }, region({ id: "overlay" })))
+
+// deep inside Page()
+const DeleteButton = () =>
+  div(
+    button("Delete", { onClick: () => { confirming = true; update() } }),
+    when(() => confirming,
+      into("overlay", dialog({ open: true },
+        p("Delete this item?"),
+        button("Cancel", { onClick: () => { confirming = false; update() } }),
+      )),
+    ),
+  )
+```
+
+Toasts from `list()` rows — each row is a view, a stacked region shows them in
+order, and removing the item removes its toast:
+
+```ts
+const toasts: { text: string }[] = []
+
+div(
+  div({ className: "toasts" }, region({ id: "toasts", type: "stack" })),
+  list(() => toasts, (toast) =>
+    into("toasts", div(toast.text, button("×", { onClick: () => {
+      toasts.splice(toasts.indexOf(toast), 1); update()
+    } }))),
+  ),
+)
+```
+
+A heading owned by the layout and named by the page — with `"latest"` the
+newest view wins, and a page without an `into("title", …)` leaves the `empty`
+text:
+
+```ts
+const Layout = () =>
+  div(
+    h1(region({ id: "title", empty: "My app" })),
+    when(() => page === "home", Home()).else(Settings()),
+  )
+
+const Settings = () => div(into("title", "Settings"), form(/* … */))
+```
+
+Dynamic values inside a view — `into()` content is ordinary Nuclo content, so
+its functions refresh on `update()` wherever the region is:
+
+```ts
+header(region({ id: "status" }))
+// …
+into("status", () => `${selected.size} selected`)
+```
+
+A region that comes and goes — the view is written once; it waits while the
+user is signed out, shows when the region is built, and waits again when it
+goes:
+
+```ts
+div(
+  when(() => user !== null, main(region({ id: "main" }))).else(LoginForm()),
+  into("main", Dashboard()),
+)
+```
+
+A view with its own region — the editor brings a `tabs` region with it, each
+tab fills it, and the region leaves with the editor:
+
+```ts
+const Editor = () =>
+  into("main",
+    div(nav(/* tab buttons */), section(region({ id: "tabs" }))),
+    when(() => tab === "code", into("tabs", textarea()))
+      .else(into("tabs", iframe({ src: "/preview" }))),
+  )
+```
+
 Regions survive SSR — each view claims the server's nodes on hydration rather
 than rebuilding them.
 

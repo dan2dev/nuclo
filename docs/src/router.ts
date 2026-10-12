@@ -30,7 +30,8 @@ export const router = createRouter(
       const section = routeName(ctx.pattern);
       if (kind === 'push' && !ctx.hash && section !== shownSection) window.scrollTo(0, 0);
       shownSection = section;
-      updatePageMeta(ctx, router.data);
+      // A load() that returned null is a 404: keep the server's noindex meta instead of the section's.
+      if (router.data !== null) updatePageMeta(ctx, router.data);
       scanReveals();
     },
   },
