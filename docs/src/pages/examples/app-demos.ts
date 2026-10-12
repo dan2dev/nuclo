@@ -16,6 +16,7 @@ import { PixelEditor } from "../../demos/apps/pixel-editor/app.ts";
 import { SnakeGame } from "../../demos/apps/snake/app.ts";
 import { StepSequencer } from "../../demos/apps/sequencer/app.ts";
 import { LocaleShop } from "../../demos/apps/i18n/app.ts";
+import { PageBuilder } from "../../demos/apps/page-builder/app.ts";
 import { ThemeEditor } from "../../demos/apps/theme-editor/app.ts";
 
 export interface AppExample {
@@ -35,6 +36,13 @@ function app(id: string, title: string, desc: string, preview: () => NodeModLike
 }
 
 export const APP_EXAMPLES: AppExample[] = [
+  app(
+    "page-builder",
+    "Page Builder",
+    "Write directly on the page, drag grips to reorder blocks or move them into layouts, press / to insert, and right-click for actions. Style grid and flex layouts, undo edits, preview at phone size and export HTML.",
+    PageBuilder,
+    "api-list",
+  ),
   app(
     "sorting",
     "Algorithm Stepper",
@@ -66,7 +74,7 @@ export const APP_EXAMPLES: AppExample[] = [
   app(
     "desktop",
     "Desktop",
-    "A tiny desktop OS. The windows are a list() over one array of plain objects, and focusing one only raises its z-index, so no window element moves and text typed in it stays. The layout leaves two regions, a tray and a modal layer, and programs fill them from inside their windows with into(): a running timer sits in the taskbar, an unsaved note asks before closing over the whole desktop, and both leave with their window.",
+    "A working desktop with Files, Notes, Terminal, Calculator and Timer. Create and organize folders, edit notes, and use shell commands on one shared simulated disk saved in your browser. Windows keep their state as you move, resize and switch between apps; a running timer fills the taskbar tray with into().",
     Desktop,
     "api-region",
   ),

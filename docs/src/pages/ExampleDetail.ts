@@ -153,6 +153,7 @@ function AppLayout(ex: Example) {
       es.appHead,
       h2(es.appTitle, { tabindex: "-1" }, ex.title),
       p(es.appDesc, ...withCode(ex.desc)),
+      a(es.standaloneLaunch, { href: router.href(`/apps/${ex.id}`), target: "_blank", rel: "noopener", title: `Open ${ex.title} in a new tab`, "aria-label": `Open ${ex.title} in standalone in a new tab` }, "Open in standalone", Icon("M14 3h7v7 M21 3l-9 9 M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5")),
       ex.docs ? a(es.appDocs, { href: router.href(`/docs#${ex.docs}`) }, "Read the docs →") : null,
     ),
     div(es.appTabs, { role: "tablist" }, Tab("Preview", 0), ...files.map((f, i) => Tab(f.name, i + 1))),

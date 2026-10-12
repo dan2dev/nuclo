@@ -18,6 +18,16 @@ export const routeDefinitions = [
     loader: () => import("./pages/Home.ts").then(m => ({ default: m.HomePage })),
   },
   {
+    path: "apps/:id",
+    module: "src/pages/StandaloneExample.ts",
+    loader: () => import("./pages/StandaloneExample.ts"),
+  },
+  {
+    path: "desktop",
+    module: "src/pages/StandaloneExample.ts",
+    loader: () => import("./pages/StandaloneExample.ts"),
+  },
+  {
     path: "docs",
     module: "src/pages/Docs.ts",
     loader: () => import("./pages/Docs.ts").then(m => ({ default: m.DocsPage })),
@@ -46,7 +56,7 @@ export const pageLoaders: RouteLoader<any>[] = routeDefinitions.flatMap((def) =>
 /** The section a matched pattern belongs to: "/examples/:id" renders inside "examples". */
 export function routeName(pattern: string): RoutePath {
   const section = pattern.split("/")[1];
-  return (!section || pattern === "*" ? "home" : section) as RoutePath;
+  return routeDefinitions.find((def) => def.path.split("/")[0] === section)?.path ?? "home";
 }
 
 /** The manifest keys of the page modules a matched pattern imports: the section and, nested, its child. */

@@ -31,6 +31,8 @@ function ErrorDisplay() {
 }
 
 export function App() {
+  // Standalone apps own the viewport, without the documentation shell.
+  if (router.pattern === '/desktop' || router.pattern === '/apps/:id') return div(router.outlet());
   return div(
     appStyles.root,
     Header(),

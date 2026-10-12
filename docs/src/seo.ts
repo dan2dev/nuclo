@@ -18,6 +18,16 @@ export const routeMeta: Record<RoutePath, PageMeta> = {
     keywords: "nuclo, dom framework, state-dependent values, explicit updates, mutable state, javascript, typescript, ui framework, lightweight",
     type: "WebPage",
   },
+  'apps/:id': {
+    title: "Standalone Apps - Nuclo Examples",
+    description: "Interactive Nuclo app examples in a full-browser workspace.",
+    type: "WebPage",
+  },
+  desktop: {
+    title: "Nuclo OS - Desktop",
+    description: "A standalone desktop with working apps and a simulated file system saved in your browser.",
+    type: "WebPage",
+  },
   docs: {
     title: "Nuclo Docs - Guide & API Reference",
     description:
@@ -43,7 +53,7 @@ type ExampleData = { id: string; title: string; desc: string } | null | undefine
 export function resolveMeta(ctx: RouteInfo, data?: unknown): { meta: PageMeta; url: string } {
   const route = routeName(ctx.pattern);
   const url = route === 'home' ? SEO_BASE_URL : `${SEO_BASE_URL}${ctx.path.replace(/^\/|\/+$/g, '')}`;
-  const example = ctx.pattern === '/examples/:id' || ctx.pattern === '/docs/:example' ? (data as ExampleData) : undefined;
+  const example = ctx.pattern === '/examples/:id' || ctx.pattern === '/docs/:example' || ctx.pattern === '/apps/:id' ? (data as ExampleData) : undefined;
   if (example) {
     return {
       // One canonical URL per example: /docs/example-<id> is the same page over the docs.

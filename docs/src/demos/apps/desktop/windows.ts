@@ -17,7 +17,7 @@ export interface Win<S = unknown> {
   state: S; // the program's state lives on its window, so it outlives the view
 }
 
-const MIN = { w: 200, h: 130 };
+const MIN = { w: 300, h: 220 };
 
 export const windows: Win[] = [];
 const desk = { w: 960, h: 520 }; // the desktop's size: a guess on the server, measured in the browser
@@ -33,7 +33,7 @@ export function open<S>(program: Program<S>): Win<S> {
   const step = (windows.length % 6) * 28; // cascade: each new window a little lower and to the right
   const [w, h] = program.size;
   const win: Win<S> = {
-    id: nextId++, program, title: program.name, x: 0, y: 0, w: Math.min(w, desk.w - 16), h: Math.min(h, desk.h - 16),
+    id: nextId++, program, title: program.name, x: 0, y: 0, w: Math.max(1, Math.min(w, desk.w - 16)), h: Math.max(1, Math.min(h, desk.h - 16)),
     z: ++topZ, minimized: false, maximized: false, confirming: false, state: program.init(),
   };
   move(win, 104 + step, 16 + step); // right of the desktop icons
@@ -42,7 +42,8 @@ export function open<S>(program: Program<S>): Win<S> {
 }
 
 export function close(win: Win) {
-  windows.splice(windows.indexOf(win), 1);
+  const index = windows.indexOf(win);
+  if (index !== -1) windows.splice(index, 1);
 }
 
 /** Closes it, unless its program has unsaved work: then it asks first. */
@@ -71,8 +72,8 @@ export function move(win: Win, x: number, y: number) {
 }
 
 export function resize(win: Win, w: number, h: number) {
-  win.w = Math.max(MIN.w, Math.min(w, desk.w - win.x));
-  win.h = Math.max(MIN.h, Math.min(h, desk.h - win.y));
+  win.w = Math.min(desk.w - win.x, Math.max(MIN.w, w));
+  win.h = Math.min(desk.h - win.y, Math.max(MIN.h, h));
 }
 
 /** The desktop changed size: every window shrinks and moves back inside it. */
