@@ -464,6 +464,23 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     let index = 0;
     /** Set while walking a refused Back or Forward back: that popstate is the router's own. */
     let reverting = false;
+    /** The href a navigation is landing on, while the DOM catches up and before history names it: search, hash and url read it. */
+    let landing: string | null = null;
+    const live = (): string => landing ?? here();
+
+    /** Updates the DOM with `href` already live, then writes it to history: the page changes before the address bar. */
+    function land(href: string, write: "pushState" | "replaceState", state: object): void {
+      const url = new URL(href, window.location.href);
+      landing = url.pathname + url.search + url.hash;
+      try {
+        update();
+      } finally {
+        // Written even if a page threw, so history still agrees with the stack.
+        landing = null;
+        window.history[write](state, "", href);
+        handled = null;
+      }
+    }
 
     function makeEntry(lv: readonly Level[], depth: number): Entry {
       return {
@@ -524,7 +541,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     }
 
     /** Lands a navigation: `kept` leading levels stay mounted, `fresh` replace what was under them. An ordinary navigation is not a layer: open layers are dismissed. */
-    function commit(kept: readonly Level[], fresh: readonly Level[], ctx: RouteContext, mode: "push" | "replace" | "pop"): void {
+    function commit(kept: readonly Level[], fresh: readonly Level[], ctx: RouteContext, mode: "push" | "replace" | "pop", href: string): void {
       if (kept.length === 0) {
         const entry = makeEntry(fresh, 0);
         settleAll(slot.splice(0, slot.length, entry));
@@ -539,7 +556,9 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       }
       pendingPath = null;
       error = null;
-      update();
+      // A pop's URL is already in the address bar.
+      if (mode === "pop") update();
+      else land(href, mode === "push" ? "pushState" : "replaceState", { [INDEX_KEY]: mode === "push" ? ++index : index });
       if (mode !== "pop" && ctx.hash.length > 1) document.getElementById(decode(ctx.hash.slice(1)))?.scrollIntoView();
       // After the DOM caught up, so the hook can read the new page (focus its heading, say).
       onNavigate?.(ctx, mode);
@@ -595,11 +614,8 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         return;
       }
       if (generation !== mine) return;
-      // History is written when the page lands, so the address bar never names a page that is not on screen.
-      if (mode === "push") window.history.pushState({ [INDEX_KEY]: ++index }, "", href);
-      else if (mode === "replace") window.history.replaceState({ [INDEX_KEY]: index }, "", href);
-      if (mode !== "pop") handled = null;
-      commit(kept, fresh, parsed.ctx, mode);
+      // History is written once the page is on screen, so the address bar never names a page that is not.
+      commit(kept, fresh, parsed.ctx, mode, href);
     }
 
     async function pushLayer(raw: string): Promise<unknown> {
@@ -628,13 +644,11 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       // Overtaken by a navigation, or retired: open nothing.
       if (stopped || generation !== mine) return undefined;
       pendingPath = null;
-      // History once the module is in hand, so a failed push leaves the URL alone. Back now closes this layer.
-      window.history.pushState({ [DEPTH_KEY]: slot.length, [INDEX_KEY]: ++index }, "", href);
-      handled = null;
       const entry = pushEntry(resolved);
       current = entry;
       error = null;
-      update();
+      // History once the layer is on screen, so a failed push leaves the URL alone. Back now closes this layer.
+      land(href, "pushState", { [DEPTH_KEY]: entry.layer.depth, [INDEX_KEY]: ++index });
       onNavigate?.(parsed.ctx, "layer");
       return new Promise((settle) => {
         entry.settle = settle;
@@ -759,17 +773,18 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       },
       /** Live, like `hash`: a query-only navigation keeps the page, which reads this instead of its ctx. */
       get search() {
-        return isBrowser && !stopped ? new URLSearchParams(window.location.search) : leaf(current).ctx.search;
+        return isBrowser && !stopped ? new URL(live(), ORIGIN).searchParams : leaf(current).ctx.search;
       },
       /** Live, like `url`: an in-page anchor changes the fragment without a navigation. */
       get hash() {
         if (!isBrowser || stopped) return leaf(current).ctx.hash;
-        const at = here().indexOf("#");
-        return at === -1 ? "" : here().slice(at);
+        const href = live();
+        const at = href.indexOf("#");
+        return at === -1 ? "" : href.slice(at);
       },
       /** The live app-relative href, base included. */
       get url() {
-        return isBrowser && !stopped ? here() : hrefOf(leaf(current).ctx);
+        return isBrowser && !stopped ? live() : hrefOf(leaf(current).ctx);
       },
       get pending() {
         return pendingPath !== null;

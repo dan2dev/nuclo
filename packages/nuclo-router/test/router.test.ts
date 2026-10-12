@@ -548,7 +548,7 @@ describe("go() writes history when the page lands", () => {
     expect(route.pending).toBe(false);
   });
 
-  it("has the new URL in place before the page builds and onNavigate runs", async () => {
+  it("builds the page before history names it, and has the new URL in place for onNavigate", async () => {
     const seen: string[] = [];
     const gate: Gate = deferred();
     const Probe: PageComponent = (ctx) => {
@@ -570,9 +570,9 @@ describe("go() writes history when the page lands", () => {
 
     // De-duplicated: nuclo's list() may call a row's builder twice (a template pass).
     expect([...new Set(seen)]).toEqual([
-      "build /eager at /eager",
+      "build /eager at /",
       "nav /eager at /eager",
-      "build /slow at /slow",
+      "build /slow at /eager",
       "nav /slow at /slow",
     ]);
   });

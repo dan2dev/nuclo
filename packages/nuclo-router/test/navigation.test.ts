@@ -208,6 +208,32 @@ describe("link clicks", () => {
   });
 });
 
+describe("DOM before address bar", () => {
+  it("renders the new page, reading the new url live, before history names it", async () => {
+    const seen: string[] = [];
+    // Rendered inside the update() that lands the navigation: the address bar must still be on the old page.
+    const Probe: PageComponent = () =>
+      div({ id: "probe" }, () => {
+        seen.push(`${window.location.pathname + window.location.search} ${router.url} ${router.search.get("q")} ${router.hash}`);
+        return "probe";
+      });
+    const route = await start(createRouter({ "/": () => Home, "/probe": () => Probe }), "/");
+    render(App(router), mount());
+
+    await route.go("/probe?q=1#x");
+    expect(seen[0]).toBe("/ /probe?q=1#x 1 #x");
+    expect(window.location.pathname + window.location.search + window.location.hash).toBe("/probe?q=1#x");
+    expect(router.url).toBe("/probe?q=1#x");
+
+    // A layer too.
+    void route.push("/probe?q=2");
+    await flush();
+    expect(seen).toContain("/probe?q=1 /probe?q=2 2 ");
+    expect(window.location.search).toBe("?q=2");
+    expect(window.history.state.nucloRouterDepth).toBe(1);
+  });
+});
+
 describe("popstate", () => {
   it("renders the entry the browser went back to", async () => {
     const route = await start(basicRouter(), "/");
