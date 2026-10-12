@@ -7,7 +7,7 @@ import { isSerializing } from "../shared/serializing";
 
 const UNSET_LAST_VALUE = {};
 
-function updateRecord(element: Element, record: AttributeResolverRecord): void {
+function updateRecord(element: Element, record: AttributeResolverRecord) {
   let nextValue: unknown;
   try {
     nextValue = record.resolver();
@@ -40,7 +40,7 @@ export function registerAttributeResolver<TTagName extends ElementTagName>(
   key: string,
   resolver: AttributeResolver,
   apply: AttributeApplier,
-): void {
+) {
   const el = element as unknown as Element;
   const record: AttributeResolverRecord = { key, resolver, apply, lastValue: UNSET_LAST_VALUE };
   if (isBrowser && !isSerializing()) {
@@ -57,7 +57,7 @@ export function registerAttributeResolver<TTagName extends ElementTagName>(
  * (in `scope`, if given). Disconnected and collected elements are pruned as
  * the pass goes.
  */
-export function notifyReactiveElements(scope?: UpdateScope): void {
+export function notifyReactiveElements(scope?: UpdateScope) {
   for (const ref of reactiveElements) {
     const el = ref.deref();
     const entry = el && reactiveElementsByNode.get(el);

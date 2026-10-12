@@ -6,6 +6,7 @@
     "test/type-inference-public.ts",
     "test/type-inference-core.ts",
     "test/type-inference-edge.ts",
+    "test/type-inference-region.ts",
     "test/type-inference-module.ts",
     "test/type-inference-subpaths.ts",
     "test/type-inference-scenarios.ts",

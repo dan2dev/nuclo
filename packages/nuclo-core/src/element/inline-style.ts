@@ -12,7 +12,7 @@ type StyleResolver = () => StyleAssignment | null | undefined;
 export function assignInlineStyles<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
   styles: StyleAssignment | null | undefined,
-): void {
+) {
   const style = element.style as unknown as Record<string, string> | undefined;
   if (!style || !styles) return;
 
@@ -27,14 +27,14 @@ export function assignInlineStyles<TTagName extends ElementTagName>(
   }
 }
 
-function applyReactiveStyle(element: Element, _key: string, styles: unknown): void {
+function applyReactiveStyle(element: Element, _key: string, styles: unknown) {
   assignInlineStyles(element as unknown as ExpandedElement, styles as StyleAssignment | null | undefined);
 }
 
 export function applyStyleAttribute<TTagName extends ElementTagName>(
   element: ExpandedElement<TTagName>,
   styleValue: StyleAssignment | StyleResolver | null | undefined
-): void {
+) {
   if (isFunction(styleValue)) {
     registerAttributeResolver(element, 'style', styleValue, applyReactiveStyle);
   } else {

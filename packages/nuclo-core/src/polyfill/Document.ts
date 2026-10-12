@@ -1,15 +1,16 @@
 import { NucloElement } from './Element';
 import { NucloText } from './Text';
+import { NucloComment } from './Node';
 
 /**
  * Lightweight DocumentFragment for SSR — prototype methods instead of per-instance closures.
  */
 class SSRDocumentFragment {
-  nodeType: number = 11;
-  nodeName: string = '#document-fragment';
+  nodeType = 11;
+  nodeName = '#document-fragment';
   childNodes: Node[] = [];
   children: Element[] = [];
-  textContent: string = '';
+  textContent = '';
 
   get firstChild(): Node | null {
     return this.childNodes.length > 0 ? this.childNodes[0] : null;
@@ -104,18 +105,7 @@ export class NucloDocument {
    * and only inspects comments the app created itself.
    */
   createComment(data: string, marker?: boolean): Comment {
-    const comment = {
-      nodeType: 8,
-      nodeName: '#comment',
-      data,
-      textContent: data,
-      nodeValue: data,
-      parentNode: null,
-      nextSibling: null,
-      previousSibling: null,
-      marker: marker === true
-    };
-    return comment as unknown as Comment;
+    return new NucloComment(data, marker === true) as unknown as Comment;
   }
   
   createDocumentFragment(): DocumentFragment {
@@ -132,15 +122,15 @@ export class NucloDocument {
     return [] as unknown as NodeListOf<Element>;
   }
 
-  addEventListener(_type: string, _listener: EventListener, _options?: boolean | AddEventListenerOptions): void {}
+  addEventListener(_type: string, _listener: EventListener, _options?: boolean | AddEventListenerOptions) {}
 
-  removeEventListener(_type: string, _listener: EventListener, _options?: boolean | AddEventListenerOptions): void {}
+  removeEventListener(_type: string, _listener: EventListener, _options?: boolean | AddEventListenerOptions) {}
 
-  dispatchEvent(_event: Event): boolean {
+  dispatchEvent(_event: Event) {
     return true;
   }
 
-  contains(_node: Node): boolean {
+  contains(_node: Node) {
     return false;
   }
 }

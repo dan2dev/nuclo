@@ -67,7 +67,7 @@ export function evaluateActiveCondition<TTagName extends ElementTagName>(
  */
 export function renderWhenContent<TTagName extends ElementTagName>(
   runtime: WhenRuntime<TTagName>
-): void {
+) {
   const { groups, elseContent, host, index, endMarker } = runtime;
 
   const newActive = evaluateActiveCondition(groups, elseContent);
@@ -94,7 +94,7 @@ export function renderWhenContent<TTagName extends ElementTagName>(
  */
 export function registerWhenRuntime<TTagName extends ElementTagName>(
   runtime: WhenRuntime<TTagName>
-): void {
+) {
   const existing = whenRuntimeByMarker.get(runtime.startMarker);
   whenRuntimeByMarker.set(runtime.startMarker, runtime as WhenRuntime<ElementTagName>);
   // Re-registration for the same markers (forceUpdate() reclaim): the new
@@ -125,7 +125,7 @@ export function getWhenRuntime(startMarker: Comment): WhenRuntime<ElementTagName
  * updateWhenRuntimes(); // All when() conditionals re-evaluate
  * ```
  */
-export function updateWhenRuntimes(scope?: UpdateScope): void {
+export function updateWhenRuntimes(scope?: UpdateScope) {
   for (const ref of activeWhenRuntimes) {
     const startMarker = ref.deref();
 
@@ -173,7 +173,7 @@ function renderContentItem<TTagName extends ElementTagName>(
   item: WhenContent<TTagName>,
   host: ExpandedElement<TTagName>,
   index: number,
-  endMarker: Comment
+  endMarker: Node
 ): Node | null {
   // Primitives, attribute objects, reactive text and tag-builder factories
   // (which build their element detached) never append to the host themselves:
@@ -194,7 +194,9 @@ function renderContentItem<TTagName extends ElementTagName>(
 }
 
 /**
- * Renders a list of content items before the end marker, in source order.
+ * Renders a list of content items before `endMarker` (any reference node in
+ * the host — a region inserts ahead of its unclaimed server markup), in
+ * source order.
  *
  * Each node is inserted as soon as its item produces it: nested when()/list()
  * blocks insert their own markers while they run, so collecting the element
@@ -205,8 +207,8 @@ export function renderContentItems<TTagName extends ElementTagName>(
   items: ReadonlyArray<WhenContent<TTagName>>,
   host: ExpandedElement<TTagName>,
   index: number,
-  endMarker: Comment
-): void {
+  endMarker: Node
+) {
   for (const item of items) {
     const node = renderContentItem(item, host, index, endMarker);
     if (node) insertNodesBefore([node], endMarker);

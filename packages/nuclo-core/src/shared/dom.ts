@@ -9,7 +9,7 @@ export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
  * Recursively removes all event listeners and reactive subscriptions from a node and its descendants
  * to prevent memory leaks when elements are removed from the DOM.
  */
-function cleanupNodeTree(node: Node): void {
+export function cleanupNodeTree(node: Node) {
   // Clean up the node itself based on its type. Order-independent bookkeeping
   // (listeners, reactive registrations) runs up front; onDestroy is fired
   // below, after descendants — see the comment there.
@@ -19,6 +19,9 @@ function cleanupNodeTree(node: Node): void {
     cleanupReactiveElement(element);
   } else if (node.nodeType === Node.TEXT_NODE) {
     cleanupReactiveTextNode(node as Text);
+  } else if (node.nodeType === 8) {
+    // A region's start marker or a view's anchor carries a disposer.
+    disposeElementLifecycle(node);
   }
 
   // Recursively clean up all child nodes
@@ -43,26 +46,7 @@ function cleanupNodeTree(node: Node): void {
   }
 }
 
-/**
- * Fires onDestroy for a subtree that list()'s bulk clear/replace is about to
- * drop without walking through cleanupNodeTree()/safeRemoveChild(). Callers
- * skip it entirely unless hasActiveLifecycleRegistrations(), so the fast path
- * stays fast when lifecycle hooks aren't in use.
- *
- * Same post-order (children, then self) as cleanupNodeTree() above, for the
- * same reason — see the comment there.
- */
-export function disposeLifecyclesInSubtree(node: Node): void {
-  const children = Array.from(node.childNodes);
-  for (let i = 0; i < children.length; i++) {
-    disposeLifecyclesInSubtree(children[i]);
-  }
-  if (node.nodeType === Node.ELEMENT_NODE) {
-    disposeElementLifecycle(node as Element);
-  }
-}
-
-export function safeRemoveChild(child: Node): boolean {
+export function safeRemoveChild(child: Node) {
   if (!child?.parentNode) return false;
   try {
     // Clean up all event listeners before removing the element
@@ -76,7 +60,7 @@ export function safeRemoveChild(child: Node): boolean {
   }
 }
 
-function safeInsertBefore(parent: Node, newNode: Node, referenceNode: Node | null): boolean {
+function safeInsertBefore(parent: Node, newNode: Node, referenceNode: Node | null) {
   try {
     parent.insertBefore(newNode, referenceNode);
     return true;
@@ -99,7 +83,7 @@ export function createMarkerPair(prefix: string, id: number): { start: Comment; 
   return { start: createMarker(`${prefix}-start-${id}`), end: createMarker(`${prefix}-end`) };
 }
 
-export function clearBetweenMarkers(startMarker: Comment, endMarker: Comment): void {
+export function clearBetweenMarkers(startMarker: Comment, endMarker: Comment) {
   let current = startMarker.nextSibling;
   while (current && current !== endMarker) {
     const next = current.nextSibling;
@@ -108,7 +92,7 @@ export function clearBetweenMarkers(startMarker: Comment, endMarker: Comment): v
   }
 }
 
-export function insertNodesBefore(nodes: Node[], referenceNode: Node): void {
+export function insertNodesBefore(nodes: Node[], referenceNode: Node) {
   const parent = referenceNode.parentNode;
   if (parent) {
     for (let i = 0; i < nodes.length; i++) {

@@ -5,6 +5,7 @@ import "./html/tags";
 import "./svg/tags";
 import "./features/list";
 import "./features/when";
+import "./features/region";
 import "./features/update";
 import "./features/scope";
 import "./features/on";
@@ -26,25 +27,42 @@ export function when<TTagName extends ElementTagName = ElementTagName>(
   condition: WhenCondition,
   ...content: WhenContent<TTagName>[]
 ): WhenBuilder<TTagName>;
+export function region(options: RegionOptions): MarkerModifier;
+export function into(id: string, ...content: WhenContent[]): MarkerModifier;
+export function into(
+  regions: Readonly<Record<string, WhenContent | readonly WhenContent[]>>,
+): MarkerModifier;
 export function update(...scopeIds: string[]): void;
 export function scope<TTagName extends ElementTagName = ElementTagName>(
   ...ids: string[]
 ): NodeModFn<TTagName>;
+export function render(
+  nodeModFn: MarkerModifier | (() => MarkerModifier),
+  parent?: Element,
+  index?: number,
+): Comment;
 export function render<TTagName extends ElementTagName = ElementTagName>(
   nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
   parent?: Element,
   index?: number,
 ): ExpandedElement<TTagName>;
+export function hydrate(
+  nodeModFn: MarkerModifier | (() => MarkerModifier),
+  parent?: Element,
+): Comment;
 export function hydrate<TTagName extends ElementTagName = ElementTagName>(
   nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
   parent?: Element,
 ): ExpandedElement<TTagName>;
 export function forceUpdate(): void;
+export function forceUpdate(
+  nodeModFn: MarkerModifier | (() => MarkerModifier),
+  parent?: Element,
+): Comment;
 export function forceUpdate<TTagName extends ElementTagName = ElementTagName>(
   nodeModFn: NodeModFn<TTagName> | (() => NodeModFn<TTagName>),
   parent?: Element,
 ): ExpandedElement<TTagName>;
-
 // on() helper (same overloads as the global)
 export function on<
   K extends NucloHTMLElementEventName,

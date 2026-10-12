@@ -1,0 +1,21 @@
+{
+  "name": "nuclo-example-router",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "A live showcase of every feature and setting in nuclo-router — patterns, params, code splitting, idle preloading, pending/error states and link handling.",
+  "scripts": {
+    "predev": "bun run build:deps",
+    "dev": "vite",
+    "build:deps": "bun run --cwd ../../packages/nuclo-core build && bun run --cwd ../../packages/nuclo-router build",
+    "build": "bun run build:deps && tsc && vite build",
+    "preview": "bun run build && vite preview"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "nuclo": "workspace:*",
+    "nuclo-router": "workspace:*",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.2"
+  }
+}

@@ -48,7 +48,7 @@ export function setFactoryMeta(
   factory: unknown,
   tag: string,
   mods: readonly unknown[],
-): void {
+) {
   (factory as TaggedFactory)[FACTORY_TAG] = tag;
   (factory as TaggedFactory)[FACTORY_MODS] = mods;
 }
@@ -69,11 +69,11 @@ export function markEventModifier<T extends object>(fn: T): T {
 }
 
 /** True for a modifier returned by on() for a native DOM event. */
-export function isEventModifier(fn: unknown): boolean {
+export function isEventModifier(fn: unknown) {
   return typeof fn === "function" && (fn as { [EVENT_MODIFIER]?: boolean })[EVENT_MODIFIER] === true;
 }
 
-export function isMetadataOnlyFactoryMode(): boolean {
+export function isMetadataOnlyFactoryMode() {
   return metadataOnlyFactoryDepth > 0;
 }
 

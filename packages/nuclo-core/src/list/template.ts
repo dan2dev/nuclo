@@ -102,7 +102,7 @@ export interface ListTemplate {
 }
 
 /** True when an earlier attribute object of the same element already sets `key`. */
-function setsAttribute(slots: readonly TemplateSlot[], key: string): boolean {
+function setsAttribute(slots: readonly TemplateSlot[], key: string) {
   for (let i = 0; i < slots.length; i++) {
     const slot = slots[i];
     if (slot.kind !== SLOT_ATTRS) continue;
@@ -215,7 +215,7 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
  * flag and scrubs reactive classNames (the first row may have rendered with
  * row-specific state, e.g. a selected row's "danger" class).
  */
-export function prepareSkeleton(tmpl: TemplateNode, skeleton: Element): void {
+export function prepareSkeleton(tmpl: TemplateNode, skeleton: Element) {
   const slots = tmpl.slots;
   let child: Node | null = skeleton.firstChild;
   for (let i = 0; i < slots.length; i++) {
@@ -266,7 +266,7 @@ export function instantiateTemplate(
   mods: readonly unknown[],
   el: Element,
   leaves: RowLeaves,
-): boolean {
+) {
   const slots = tmpl.slots;
   if (mods.length !== slots.length) return false;
   let child: Node | null = el.firstChild;
@@ -302,11 +302,7 @@ export function instantiateTemplate(
             case ATTR_EVENT: {
               if (typeof v !== "function") return false;
               const eventProperty = spec.value as string;
-              if (eventProperty === "onclick") {
-                (el as unknown as Record<string, unknown>).onclick = v;
-              } else {
-                setEventAttribute(el as HTMLElement, eventProperty, v as EventListener);
-              }
+              setEventAttribute(el as HTMLElement, eventProperty, v as EventListener);
               break;
             }
             case ATTR_REACTIVE_CLASSNAME: {
@@ -406,7 +402,7 @@ export function adoptTemplateLeaves(
   mods: readonly unknown[],
   el: Element,
   leaves: RowLeaves,
-): boolean {
+) {
   const slots = tmpl.slots;
   if (mods.length !== slots.length) return false;
   let child: Node | null = el.firstChild;
@@ -480,7 +476,7 @@ export function adoptTemplateLeaves(
  * writes the DOM only on change. Resolver errors leave the previous value in
  * place (matching the notify passes' error tolerance).
  */
-export function flushRowLeaves(leaves: RowLeaves): void {
+export function flushRowLeaves(leaves: RowLeaves) {
   for (let i = 0; i < leaves.length; i += LEAF_STRIDE) {
     let v: unknown;
     try {

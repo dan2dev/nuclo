@@ -8,6 +8,7 @@ export { update } from "./update/update";
 export { scope } from "./update/scope";
 export { list } from "./list";
 export { when } from "./when";
+export { region, into } from "./region";
 
 // Mounting
 export { render, hydrate, forceUpdate } from "./render";

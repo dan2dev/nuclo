@@ -11,3 +11,4 @@ drafts/poc02/target/
 packages/create-nuclo/templates/basic/package-lock.json
 packages/create-nuclo/templates/basic/dist/
 packages/create-nuclo/templates/basic/bun.lock
+**/dist

@@ -21,13 +21,8 @@
  * element through its own machinery — see the disposeElementLifecycle() call
  * in shared/dom.ts's cleanupNodeTree(), which every ordinary removal
  * (list()/when() diffing, any safeRemoveChild() call) already goes through.
- * The fast path that intentionally skips that per-node walk for performance
- * (list()'s bulk clear/replace) calls disposeLifecyclesInSubtree() directly
- * instead, so destroy still fires exactly at removal time there too —
- * without paying for a bookkeeping walk when nothing on the page ever
- * registered a lifecycle callback (hasActiveLifecycleRegistrations() makes
- * that a single integer comparison in the — by far most common — case where
- * lifecycle hooks aren't used at all).
+ * list()'s bulk clear/replace also cleans each row before detaching it, so
+ * destroy fires at removal time there too.
  *
  * An element removed through means nuclo never observes (e.g. a raw
  * `node.remove()` or `innerHTML = ''` on a container built by render()) never
@@ -53,9 +48,8 @@
  *    even invoked, since applying modifiers is a synchronous, in-order walk.
  *    A child's onMount can safely assume any context the parent's onMount
  *    set up is already in place.
- *  - onDestroy fires child-before-parent (see cleanupNodeTree() and
- *    disposeLifecyclesInSubtree() in shared/dom.ts, both post-order: they
- *    recurse into every descendant *before* disposing the node itself). A
+ *  - onDestroy fires child-before-parent (cleanupNodeTree() in shared/dom.ts
+ *    recurses into every descendant before disposing the node itself). A
  *    parent's onDestroy can safely release something its children were
  *    still using — they have already run by the time it does.
  * Together: mount is top-down, destroy is bottom-up — the same order a
@@ -91,31 +85,29 @@ const STATE_DISPOSED: LifecycleStateValue = 2;
 interface LifecycleRecord {
   mount: CallbackSlot<MountCallback<Element>> | null;
   destroy: CallbackSlot<DestroyCallback<Element>> | null;
+  /**
+   * nuclo's own teardown for a marker node (a region's start marker, a
+   * view's anchor). Unlike `destroy`, it runs whether or not the node ever
+   * mounted: a tree discarded half-built (cancelMountsSince) may already have
+   * put a view's content into a live region elsewhere.
+   */
+  dispose: ((node: Node) => void) | null;
   state: LifecycleStateValue;
 }
 
-const records = new WeakMap<Element, LifecycleRecord>();
+// Keyed by Node, not Element: comment markers register a disposer too.
+const records = new WeakMap<Node, LifecycleRecord>();
 
 /**
- * Count of Pending/Mounted records not yet disposeElementLifecycle()'d. Lets
- * the hot, lifecycle-free removal path (list() bulk clear) skip
- * disposeLifecyclesInSubtree()'s walk entirely with a single comparison —
- * true for the overwhelming majority of apps, which never use
- * onMount/onDestroy at all.
- *
- * Only ever incremented by ensureRecord() and decremented by
- * disposeElementLifecycle(), so an element GC'd via the raw-removal path
- * documented above (disposed by neither) leaves this one too high until the
- * page's very last such element is finally disposed — never unbounded, and
- * the cost of staying "on" a little longer than strictly necessary is just
- * the same cheap WeakMap probe this counter exists to let most apps skip
- * entirely, so it isn't worth a FinalizationRegistry to correct.
+ * Count of Pending/Mounted records not yet disposed. Without live callbacks,
+ * cleanupNodeTree() can walk childNodes without a mutation-safe snapshot.
+ * Raw DOM removals can leave this count high, causing only extra snapshots.
  */
 let activeCount = 0;
 
-let mountQueue: WeakRef<Element>[] = [];
+let mountQueue: WeakRef<Node>[] = [];
 
-function shouldSkip(): boolean {
+function shouldSkip() {
   // isSerializing() is checked in addition to isBrowser (unlike on()'s plain
   // DOM-event path) because renderToString() can run under jsdom, where
   // isBrowser is true. A DOM event registered there is inert (nothing ever
@@ -131,13 +123,13 @@ function shouldSkip(): boolean {
  * registration for the element finds the record already queued (or already
  * mounted/disposed), so no per-record "queued" flag is needed.
  */
-function ensureRecord(element: Element): LifecycleRecord {
-  let record = records.get(element);
+function ensureRecord(node: Node): LifecycleRecord {
+  let record = records.get(node);
   if (!record) {
-    record = { mount: null, destroy: null, state: STATE_PENDING };
-    records.set(element, record);
+    record = { mount: null, destroy: null, dispose: null, state: STATE_PENDING };
+    records.set(node, record);
     activeCount++;
-    mountQueue.push(new WeakRef(element));
+    mountQueue.push(new WeakRef(node));
   }
   return record;
 }
@@ -155,7 +147,7 @@ function pushSlot<T>(slot: CallbackSlot<T> | null, cb: T): CallbackSlot<T> {
 export function registerMount<TElement extends Element>(
   element: TElement,
   callback: MountCallback<TElement>,
-): void {
+) {
   if (shouldSkip()) return;
   const record = ensureRecord(element);
   // Not reachable through the tag-builder DSL (every modifier — on()/attrs —
@@ -176,7 +168,7 @@ export function registerMount<TElement extends Element>(
 export function registerDestroy<TElement extends Element>(
   element: TElement,
   callback: DestroyCallback<TElement>,
-): void {
+) {
   if (shouldSkip()) return;
   const record = ensureRecord(element);
   if (record.state === STATE_DISPOSED) return; // see registerMount()
@@ -184,7 +176,19 @@ export function registerDestroy<TElement extends Element>(
   record.destroy = pushSlot(record.destroy, callback as DestroyCallback<Element>);
 }
 
-function runMount(element: Element, callback: MountCallback<Element>, record: LifecycleRecord): void {
+/**
+ * Internal: nuclo's own teardown for a marker node, run once when nuclo
+ * removes it (see `dispose` on the record). Idempotent per node, so a
+ * forceUpdate() reclaim that passes the same function again changes nothing.
+ */
+export function setNodeDisposer(node: Node, dispose: (node: Node) => void) {
+  if (shouldSkip()) return;
+  const record = ensureRecord(node);
+  if (record.state === STATE_DISPOSED) return;
+  record.dispose = dispose;
+}
+
+function runMount(element: Element, callback: MountCallback<Element>, record: LifecycleRecord) {
   if (record.state !== STATE_MOUNTED) return;
   try {
     const cleanup = callback(element);
@@ -205,7 +209,7 @@ function runMount(element: Element, callback: MountCallback<Element>, record: Li
   }
 }
 
-function runDestroy(element: Element, callback: DestroyCallback<Element>): void {
+function runDestroy(element: Element, callback: DestroyCallback<Element>) {
   try {
     callback(element);
   } catch (error) {
@@ -213,8 +217,9 @@ function runDestroy(element: Element, callback: DestroyCallback<Element>): void 
   }
 }
 
-function fireMount(element: Element): void {
-  // Queued only by ensureRecord(), right after the record was stored.
+function fireMount(element: Element) {
+  // Queued only by ensureRecord(), right after the record was stored. A
+  // marker node's record has no mount callbacks; it just turns Mounted here.
   const record = records.get(element)!;
   // Disposed before its queued turn came up (e.g. built and discarded within
   // the same pass) — the mount never observably happened, so don't fire it.
@@ -241,18 +246,18 @@ function fireMount(element: Element): void {
  * queue and flushes it in its own, inner call) can't corrupt or be corrupted
  * by the batch this call is still draining.
  */
-export function flushMountQueue(): void {
+export function flushMountQueue() {
   if (mountQueue.length === 0) return;
   const batch = mountQueue;
   mountQueue = [];
   for (let i = 0; i < batch.length; i++) {
     const element = batch[i].deref();
-    if (element) fireMount(element);
+    if (element) fireMount(element as Element);
   }
 }
 
 /** Current end of the mount queue — pass it to cancelMountsSince(). */
-export function mountQueueMark(): number {
+export function mountQueueMark() {
   return mountQueue.length;
 }
 
@@ -263,7 +268,7 @@ export function mountQueueMark(): number {
  * onMount on a detached element — one nuclo never removes, so its cleanup and
  * onDestroy could never run. Elements that did get attached keep their turn.
  */
-export function cancelMountsSince(mark: number): void {
+export function cancelMountsSince(mark: number) {
   for (let i = mountQueue.length - 1; i >= mark; i--) {
     const element = mountQueue[i].deref();
     if (element && !element.isConnected) disposeElementLifecycle(element);
@@ -278,8 +283,8 @@ export function cancelMountsSince(mark: number): void {
  * cleanupNodeTree() and, redundantly, once more from a fast-path caller that
  * doesn't know whether the eager walk already reached this node.
  */
-export function disposeElementLifecycle(element: Element): void {
-  const record = records.get(element);
+export function disposeElementLifecycle(node: Node) {
+  const record = records.get(node);
   if (!record) return;
   if (record.state === STATE_DISPOSED) return;
 
@@ -287,6 +292,17 @@ export function disposeElementLifecycle(element: Element): void {
   record.state = STATE_DISPOSED;
   activeCount--;
 
+  const dispose = record.dispose;
+  if (dispose !== null) {
+    record.dispose = null;
+    try {
+      dispose(node);
+    } catch (error) {
+      logError("Error disposing node", error);
+    }
+  }
+
+  const element = node as Element;
   if (wasMounted) {
     const destroy = record.destroy;
     if (destroy !== null) {
@@ -305,13 +321,12 @@ export function disposeElementLifecycle(element: Element): void {
   record.destroy = null;
 }
 
-/**
- * True while at least one element anywhere on the page has a live (Pending
- * or Mounted) lifecycle record. Checked once, hoisted out of its per-row
- * loop, by list/runtime.ts's bulkClearRecords() — so clearing a large
- * lifecycle-free list costs one comparison, not one skipped call per row —
- * and by shared/dom.ts's cleanupNodeTree() to skip snapshotting children.
- */
-export function hasActiveLifecycleRegistrations(): boolean {
+/** True once the node's queued mount has flushed: nuclo attached the tree it is in. */
+export function isMounted(node: Node) {
+  return records.get(node)?.state === STATE_MOUNTED;
+}
+
+/** Whether cleanup must snapshot children that lifecycle callbacks could mutate. */
+export function hasActiveLifecycleRegistrations() {
   return activeCount > 0;
 }

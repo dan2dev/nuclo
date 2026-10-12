@@ -11,7 +11,7 @@ import type { NodeModifier } from "../element/modifiers";
  * server/client branch mismatches: `when-start-{index}-b{branch}` where
  * branch is the group index, -1 for the else branch, or `n` for none.
  */
-function encodeBranch(index: number, activeIndex: number | null): string {
+function encodeBranch(index: number, activeIndex: number | null) {
   return `when-start-${index}-b${activeIndex === null ? 'n' : activeIndex}`;
 }
 

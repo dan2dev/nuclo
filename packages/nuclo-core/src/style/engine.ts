@@ -107,7 +107,7 @@ function getState(): EngineState {
 }
 
 /** Pre-register at-rule queries so their cascade order follows theme order. */
-export function registerQueries(queries: Iterable<string>): void {
+export function registerQueries(queries: Iterable<string>) {
 	for (const query of queries) {
 		const state = getState();
 		if (!state.queryRules.has(query)) state.queryRules.set(query, []);
@@ -132,7 +132,7 @@ function createGroup(s: CSSStyleSheet, query: string): CSSGroupingRule | null {
 // insertion would serialize all previous children and make loading quadratic.
 // Weak keys allow detached stylesheets to be collected after reset/rebinding.
 const groupQueries = new WeakMap<CSSRule, string>();
-function groupQueryOf(rule: CSSRule): string {
+function groupQueryOf(rule: CSSRule) {
 	const cached = groupQueries.get(rule);
 	if (cached !== undefined) return cached;
 	const text = rule.cssText;
@@ -142,11 +142,11 @@ function groupQueryOf(rule: CSSRule): string {
 	return query;
 }
 
-function ruleIdentity(rule: CSSRule): string {
+function ruleIdentity(rule: CSSRule) {
 	return rule instanceof CSSStyleRule ? rule.selectorText : groupQueryOf(rule);
 }
 
-function rememberExternalRule(rule: CSSRule, query: string | undefined): void {
+function rememberExternalRule(rule: CSSRule, query: string | undefined) {
 	const state = getState();
 	if (!state.externalRules) return;
 	const key = contextKeyOf(query, ruleIdentity(rule));
@@ -158,7 +158,7 @@ function rememberExternalRule(rule: CSSRule, query: string | undefined): void {
 	texts.add(rule.cssText);
 }
 
-function consumeExternalRule(rule: CSSRule, query: string | undefined): boolean {
+function consumeExternalRule(rule: CSSRule, query: string | undefined) {
 	const state = getState();
 	if (!state.externalRules) return false;
 	const key = contextKeyOf(query, ruleIdentity(rule));
@@ -178,7 +178,7 @@ function consumeExternalRule(rule: CSSRule, query: string | undefined): boolean 
  * so exact server/client matches can be skipped without hiding a changed
  * named or global rule that happens to reuse the same selector.
  */
-function indexExternalRules(rules: CSSRuleList): void {
+function indexExternalRules(rules: CSSRuleList) {
 	const state = getState();
 	for (let i = 0; i < rules.length; i++) {
 		const rule = rules[i];
@@ -201,7 +201,7 @@ function indexExternalRules(rules: CSSRuleList): void {
 	}
 }
 
-function insertBase(s: CSSStyleSheet, rule: string): void {
+function insertBase(s: CSSStyleSheet, rule: string) {
 	const state = getState();
 	try {
 		s.insertRule(rule, state.baseRuleCount);
@@ -216,7 +216,7 @@ function insertBase(s: CSSStyleSheet, rule: string): void {
 	}
 }
 
-function insertGrouped(group: CSSGroupingRule, rule: string): void {
+function insertGrouped(group: CSSGroupingRule, rule: string) {
 	const state = getState();
 	try {
 		const index = group.cssRules.length;
@@ -313,7 +313,7 @@ export function ensureSheet(): CSSStyleSheet | null {
 	return state.sheet;
 }
 
-function record(rule: string, query: string | undefined): void {
+function record(rule: string, query: string | undefined) {
 	const state = getState();
 	// Bind/replay *before* this rule joins the registry, so a fresh bind's
 	// replay only ever covers previously-known rules — never this one twice.
@@ -347,7 +347,7 @@ function record(rule: string, query: string | undefined): void {
  * is not an option; 42 bits keeps collision odds low (~1e-5 at 10k
  * unique declaration blocks).
  */
-export function hash(input: string): string {
+export function hash(input: string) {
 	let a = 0x811c9dc5;
 	let b = 0x7ee3623b;
 	for (let i = 0; i < input.length; i++) {
@@ -359,16 +359,16 @@ export function hash(input: string): string {
 }
 
 /** Length-prefixed (query, selector-suffix) key — unambiguous for any strings. */
-export function contextKeyOf(query: string | undefined, suffix: string): string {
+export function contextKeyOf(query: string | undefined, suffix: string) {
 	const queryPart = query === undefined ? "-" : "+" + query.length + ":" + query;
 	return queryPart + suffix.length + ":" + suffix;
 }
 
-function appendKeyPart(key: string, value: string): string {
+function appendKeyPart(key: string, value: string) {
 	return key + value.length + ":" + value;
 }
 
-export function expandAmpersands(input: string, replacement: string): string {
+export function expandAmpersands(input: string, replacement: string) {
 	let expanded = "";
 	let quote = 0;
 	for (let i = 0; i < input.length; i++) {
@@ -392,7 +392,7 @@ export function expandAmpersands(input: string, replacement: string): string {
 	return expanded;
 }
 
-function selectorFor(className: string, suffix: string): string {
+function selectorFor(className: string, suffix: string) {
 	const selector = "." + className;
 	return selector + expandAmpersands(suffix, selector);
 }
@@ -403,7 +403,7 @@ function selectorFor(className: string, suffix: string): string {
  * Char-code loop rather than a RegExp — this runs on the cold mint path but
  * stays allocation-free either way.
  */
-function isValidClassName(name: string): boolean {
+function isValidClassName(name: string) {
 	if (name.length === 0 || name === "-") return false;
 	for (let i = 0; i < name.length; i++) {
 		const c = name.charCodeAt(i);
@@ -445,7 +445,7 @@ export function atomBlock(
 	decls: ReadonlyArray<readonly [string, string]>,
 	name?: string,
 	exactName = false,
-): string {
+) {
 	const state = getState();
 	let contextKey = contextKeyOf(query, suffix);
 	for (const [prop, value] of decls) {
@@ -495,7 +495,7 @@ export function atomBlock(
  * the same class name, on server and client alike. A named base passes its
  * name down as a prefix, so `cx(appRoot, active)` reads as `app-root-1a2b3c`.
  */
-export function mergeBlocks(first: string, second: string): string {
+export function mergeBlocks(first: string, second: string) {
 	const state = getState();
 	const a = state.atomMeta.get(first);
 	const b = state.atomMeta.get(second);
@@ -517,12 +517,12 @@ export function conflictKeyOf(className: string): string | undefined {
 }
 
 /** Current registry generation, used to invalidate per-instance WeakMap hits after resetStyles(). */
-export function getStyleEpoch(): number {
+export function getStyleEpoch() {
 	return (cachedState ?? globalScope[ENGINE_STATE_KEY])?.styleEpoch ?? 0;
 }
 
 /** Register a non-atomic rule (keyframes, global styles) once per dedupe key. */
-export function addRawRule(dedupeKey: string, rule: string): void {
+export function addRawRule(dedupeKey: string, rule: string) {
 	const state = getState();
 	if (state.rawKeys.has(dedupeKey)) {
 		ensureSheet();
@@ -533,7 +533,7 @@ export function addRawRule(dedupeKey: string, rule: string): void {
 }
 
 /** All generated CSS — base rules first, then at-rule groups in registration order. */
-export function getCssText(): string {
+export function getCssText() {
 	const state = getState();
 	if (state.cssTextCache !== null) return state.cssTextCache;
 	let out = state.baseRules.join("");
@@ -545,7 +545,7 @@ export function getCssText(): string {
 }
 
 /** Clear all engine state (test helper). Removes the injected style element. */
-export function resetStyles(): void {
+export function resetStyles() {
 	const state = getState();
 	state.atomCache.clear();
 	state.atomMeta.clear();

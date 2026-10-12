@@ -1,3 +1,5 @@
+import { NO_CHILDREN, siblingOf } from './Node';
+
 export class NucloText {
   nodeType = 3; // Node.TEXT_NODE
   nodeName = '#text';
@@ -10,12 +12,24 @@ export class NucloText {
     this.textContent = data;
   }
   
-  get nodeValue(): string {
+  get nodeValue() {
     return this.data;
   }
   
   set nodeValue(value: string) {
     this.data = value;
     this.textContent = value;
+  }
+
+  get childNodes(): NodeListOf<ChildNode> {
+    return NO_CHILDREN as unknown as NodeListOf<ChildNode>;
+  }
+
+  get nextSibling(): Node | null {
+    return siblingOf(this, 1);
+  }
+
+  get previousSibling(): Node | null {
+    return siblingOf(this, -1);
   }
 }

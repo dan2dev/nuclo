@@ -148,7 +148,7 @@ describe("lifecycle: nesting depth independence", () => {
     // The outer list is the *only* content of its host, and shrinks to zero
     // — this is exactly the shape bulkClearRecords() fast-paths with a
     // single `textContent = ""`, which does not walk each row's subtree on
-    // its own (see disposeLifecyclesInSubtree() in shared/dom.ts).
+    // its own (see cleanupNodeTree() in shared/dom.ts).
     render(
       div(list(() => groups, (group) =>
         div(

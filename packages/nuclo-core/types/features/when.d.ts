@@ -5,7 +5,7 @@ declare global {
     NodeModLike<TTagName>;
 
   export interface WhenBuilder<TTagName extends ElementTagName = ElementTagName>
-    extends NodeModFn<TTagName>, AnyParentNodeModifier {
+    extends MarkerModifier, AnyParentNodeModifier {
     when(condition: WhenCondition, ...content: WhenContent<TTagName>[]): WhenBuilder<TTagName>;
     else(...content: WhenContent<TTagName>[]): WhenBuilder<TTagName>;
   }
