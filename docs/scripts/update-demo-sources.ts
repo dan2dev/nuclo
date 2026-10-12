@@ -18,6 +18,15 @@ const APP_FILES: Record<string, string[]> = {
   kanban: ["app.ts", "board.ts", "styles.ts"],
   three: ["app.ts", "scene.ts", "styles.ts"],
   "infinite-scroll": ["app.ts", "api.ts", "styles.ts"],
+  desktop: ["app.ts", "windows.ts", "programs.ts", "styles.ts"],
+  "data-grid": ["app.ts", "data.ts", "styles.ts"],
+  chat: ["app.ts", "server.ts", "styles.ts"],
+  dashboard: ["app.ts", "feeds.ts", "styles.ts"],
+  "pixel-editor": ["app.ts", "history.ts", "styles.ts"],
+  snake: ["app.ts", "game.ts", "styles.ts"],
+  sequencer: ["app.ts", "audio.ts", "styles.ts"],
+  i18n: ["app.ts", "messages.ts", "styles.ts"],
+  "theme-editor": ["app.ts", "theme.ts", "gallery.ts", "styles.ts"],
 };
 
 const read = async (dir: string, file: string) => (await Bun.file(join(dir, file)).text()).trim();

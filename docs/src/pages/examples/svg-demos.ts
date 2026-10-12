@@ -16,7 +16,7 @@ export interface SvgExample {
   preview: () => NodeModLike<"div">;
 }
 
-const ss = {
+export const ss = {
   wrap: css("pages-examples-svg-demos-wrap", { display: "flex", flexDirection: "column", alignItems: "center", gap: "18px", width: "100%", maxWidth: "380px" }),
   svg: css("pages-examples-svg-demos-svg", { width: "100%", height: "auto", overflow: "visible", color: "var(--c-primary)" }),
   axis: css("pages-examples-svg-demos-axis", { raw: { stroke: "var(--c-border-light)" } }),
@@ -51,7 +51,7 @@ const ss = {
   heart: css("pages-examples-svg-demos-heart", { transition: "fill 0.2s ease" }),
 };
 
-const rand = (min: number, max: number) => Math.round(min + Math.random() * (max - min));
+export const rand = (min: number, max: number) => Math.round(min + Math.random() * (max - min));
 
 // ── Bar chart ────────────────────────────────────────────────────────────
 

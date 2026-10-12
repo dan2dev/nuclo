@@ -24,6 +24,8 @@ declare global {
     transform?: SVGAttributeValue<string>;
     className?: SVGAttributeValue<string>;
     id?: SVGAttributeValue<string>;
+    // Inline style, as on HTML elements: an object, or a function returning one
+    style?: ValueOrFactory<CSSStyleObject>;
 
     // Path attributes
     d?: SVGAttributeValue<string>;
@@ -71,9 +73,10 @@ declare global {
     mask?: SVGAttributeValue<string>;
 
     // Allow any other string attributes (including state-dependent functions)
-    // Using a more restrictive type to maintain type safety
+    // Using a more restrictive type to maintain type safety. Every key above
+    // must also satisfy this signature, so it admits the style type too.
   } & SVGEventAttributes<TTagName> & {
-    [K in string]?: SVGAttributeValue | SVGEventAttributes<TTagName>[keyof SVGEventAttributes<TTagName>];
+    [K in string]?: SVGAttributeValue | ValueOrFactory<CSSStyleObject> | SVGEventAttributes<TTagName>[keyof SVGEventAttributes<TTagName>];
   };
 
   // SVG element modifier types

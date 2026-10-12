@@ -2,6 +2,7 @@ import { EXAMPLES } from "../../content/examples.ts";
 import { API_DEMOS } from "../../components/api-demos.ts";
 import { STYLING_FEATURES } from "./styling-demos.ts";
 import { SVG_EXAMPLES } from "./svg-demos.ts";
+import { SVG_INTERACTIVE_EXAMPLES } from "./svg-interactive-demos.ts";
 import { ROUTER_EXAMPLES } from "./router-demos.ts";
 import { FORM_EXAMPLES } from "./form-demos.ts";
 import { COMPONENT_EXAMPLES } from "./component-demos.ts";
@@ -59,8 +60,8 @@ export const EXAMPLE_GROUPS: ExampleGroup[] = [
   },
   {
     title: "SVG",
-    sub: "Charts and animations from the SVG tag builders, driven by plain data and update().",
-    examples: SVG_EXAMPLES.map((ex) => ({ ...ex, group: "SVG" })),
+    sub: "Charts, animations, tools and games from the SVG tag builders, driven by plain data, pointer events and update().",
+    examples: [...SVG_EXAMPLES, ...SVG_INTERACTIVE_EXAMPLES].map((ex) => ({ ...ex, group: "SVG" })),
   },
   {
     title: "Routing",
@@ -69,7 +70,7 @@ export const EXAMPLE_GROUPS: ExampleGroup[] = [
   },
   {
     title: "Apps",
-    sub: "Bigger programs, full screen: an engine in plain JavaScript, identity-tracked lists under drag and drop, and a library that owns its own state.",
+    sub: "Bigger programs, full screen, with their real source behind tabs: a desktop with windows, a data grid, a chat, games, editors and libraries that own their own state.",
     examples: APP_EXAMPLES.map((ex) => ({ ...ex, group: "Apps" })),
   },
 ];
