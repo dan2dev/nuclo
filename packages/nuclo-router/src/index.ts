@@ -62,12 +62,20 @@ export interface Layer {
 /** Where a parent page renders its child route: its own one-item list(), so a child swap leaves the parent's DOM alone. */
 export type Outlet = () => ListModifier;
 
+/** Asked before its page is discarded; false (or a promise of it) keeps the page. `to` is where the navigation goes, null when it leaves the app. */
+export type LeaveGuard = (to: RouteContext | null) => boolean | void | Promise<boolean | void>;
+
+/** How a navigation happened: the first resolve, a link or go() (push, replace), Back, Forward or close() (pop), or a pushed layer. */
+export type NavigationKind = "start" | "push" | "replace" | "pop" | "layer";
+
 /** A page's second argument. */
 export interface PageProps<TData = unknown> {
   readonly layer: Layer;
   /** What the route's load() returned, or undefined. */
   readonly data: TData;
   readonly outlet: Outlet;
+  /** Registers a guard asked before this page is discarded, never while it is kept (a child, query or hash change). It goes with the page. */
+  readonly beforeLeave: (guard: LeaveGuard) => void;
 }
 
 /** A page. Returns anything list() accepts. */
@@ -86,8 +94,10 @@ export type RouteModule<TData = unknown> =
   | PageComponent<TData, any>
   | { readonly default: PageComponent<TData, any>; readonly load?: DataLoader<TData, any> };
 
-/** Produces a page module lazily: `() => import("./Home.ts")`, `() => import("./Home.ts").then(m => m.Home)` or `() => Home`. */
-export type RouteLoader<TData = unknown> = () => RouteModule<TData> | Promise<RouteModule<TData>>;
+/** Produces a page module lazily: `() => import("./Home.ts")`, `() => import("./Home.ts").then(m => m.Home)` or `() => Home`. A `load` on it comes from withLoad(). */
+export type RouteLoader<TData = unknown> = (() => RouteModule<TData> | Promise<RouteModule<TData>>) & {
+  readonly load?: DataLoader<TData, any>;
+};
 
 /** A page matches() renders: it takes the context alone. */
 type MatchPage = (ctx: RouteContext<any>) => ListRenderResult;
@@ -106,8 +116,8 @@ export interface RouterOptions {
   base?: string;
   /** Load the other routes' modules once the page is idle. Default true. */
   preload?: boolean;
-  /** Called in the browser after every navigation, the initial one included. Never during SSR. */
-  onNavigate?: (ctx: RouteContext) => void;
+  /** Called in the browser after every navigation, the initial one included, with how it happened. Never during SSR. */
+  onNavigate?: (ctx: RouteContext, kind: NavigationKind) => void;
 }
 
 export interface NavigateOptions {
@@ -177,6 +187,8 @@ interface Level extends Planned {
 interface Instance {
   readonly level: Level;
   readonly children: Instance[];
+  /** What beforeLeave() registered; dropped with the instance. */
+  readonly guards: LeaveGuard[];
 }
 /** One row of the layer stack. */
 interface Entry {
@@ -190,6 +202,8 @@ interface Entry {
 
 /** history.state key for the top layer's index, so Back, Forward and a reload agree with the stack. */
 const DEPTH_KEY = "nucloRouterDepth";
+/** history.state key for the entry's position, so a Back or Forward a guard refuses can be walked back. */
+const INDEX_KEY = "nucloRouterIndex";
 /** The rows the router's outlet renders for a Route. */
 const rowsOf = new WeakMap<Route, () => readonly Entry[]>();
 
@@ -201,6 +215,33 @@ const toError = (value: unknown): Error => (value instanceof Error ? value : new
 function depthOf(state: unknown): number {
   const depth = (state as Record<string, unknown> | null)?.[DEPTH_KEY];
   return typeof depth === "number" && depth > 0 ? depth : 0;
+}
+
+function indexOf(state: unknown): number | null {
+  const index = (state as Record<string, unknown> | null)?.[INDEX_KEY];
+  return typeof index === "number" ? index : null;
+}
+
+/** A route whose `load` starts beside its chunk's import instead of after it: `withLoad(() => import("./Post.ts"), loadPost)`. It replaces the module's own `load`. */
+export function withLoad(loader: RouteLoader<any>, load: DataLoader<unknown, any>): RouteLoader<any> {
+  return Object.assign(() => loader(), { load });
+}
+
+const guarded = (leaving: readonly Instance[]): boolean => leaving.some((at) => at.guards.length > 0);
+
+/** Asks the guards of the pages a navigation discards, innermost first. One that throws keeps the page. */
+async function mayLeave(leaving: readonly Instance[], to: RouteContext | null): Promise<boolean> {
+  for (const at of [...leaving].reverse()) {
+    for (const guard of at.guards) {
+      try {
+        if ((await guard(to)) === false) return false;
+      } catch (cause) {
+        console.error("nuclo-router: a beforeLeave guard threw — staying on the page", cause);
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 function node(pattern: string, loader: RouteLoader): RouteNode {
@@ -237,14 +278,15 @@ const leaf = (entry: Entry): Level => levels(entry).at(-1)!.level;
 
 function build(lv: readonly Level[]): Instance | undefined {
   let child: Instance | undefined;
-  for (let i = lv.length - 1; i >= 0; i--) child = { level: lv[i], children: child ? [child] : [] };
+  for (let i = lv.length - 1; i >= 0; i--) child = { level: lv[i], children: child ? [child] : [], guards: [] };
   return child;
 }
 
 /** Renders one level with an outlet over its own children, so a child swap touches only that subtree. */
 function renderLevel(instance: Instance, layer: Layer): ListRenderResult {
   const outlet: Outlet = () => list(() => instance.children, (child: Instance) => renderLevel(child, layer));
-  return instance.level.component(instance.level.ctx, { layer, data: instance.level.data, outlet });
+  const beforeLeave = (guard: LeaveGuard): void => void instance.guards.push(guard);
+  return instance.level.component(instance.level.ctx, { layer, data: instance.level.data, outlet, beforeLeave });
 }
 
 function pick(mod: RouteModule, pattern: string): Shape {
@@ -297,8 +339,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     return hit;
   }
 
-  function withData(shape: Shape, p: Planned): Level | Promise<Level> {
-    const data = shape.load?.(p.ctx);
+  function withData(shape: Shape, p: Planned, data: unknown): Level | Promise<Level> {
     return isPromise(data)
       ? data.then((value) => ({ ...p, component: shape.component, data: value }))
       : { ...p, component: shape.component, data };
@@ -307,8 +348,15 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
   /** Each level's module (cached) and data (never cached). `onWait` runs when something actually has to be waited for, so a loaded route never flips `pending`. */
   async function resolve(planned: readonly Planned[], onWait?: () => void): Promise<Level[]> {
     const parts = planned.map((p) => {
+      const own = p.node.loader.load;
+      // A withLoad() route's data starts beside the import, not after it.
+      const early = own?.(p.ctx);
       const shape = load(p.node);
-      return isPromise(shape) ? shape.then((loaded) => withData(loaded, p)) : withData(shape, p);
+      const data = (loaded: Shape): unknown => (own ? early : loaded.load?.(p.ctx));
+      // all() claims `early` now, so a rejection while the chunk is still loading is never unhandled.
+      return isPromise(shape) || isPromise(early)
+        ? Promise.all([shape, early]).then(([loaded]) => withData(loaded, p, data(loaded)))
+        : withData(shape, p, data(shape));
     });
     if (parts.some(isPromise)) onWait?.();
     return Promise.all(parts);
@@ -412,6 +460,10 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     let handled: string | null = null;
     /** Bumped by every navigation and by stop(): a module resolving under a stale generation is dropped. */
     let generation = 0;
+    /** The current entry's INDEX_KEY, so a refused Back or Forward knows how far to walk back. */
+    let index = 0;
+    /** Set while walking a refused Back or Forward back: that popstate is the router's own. */
+    let reverting = false;
 
     function makeEntry(lv: readonly Level[], depth: number): Entry {
       return {
@@ -455,7 +507,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       return withBase(normalizePath(url.pathname)) + url.search + url.hash;
     }
 
-    /** The leading planned levels already mounted and unchanged: parents by pattern and path; the page itself also by query, and only without a load() (one with a loader refreshes on every visit). */
+    /** The leading planned levels already mounted and unchanged, by pattern and path; the page itself only without a load() (one with a loader refreshes on every visit). A query or hash change keeps it: it reads router.search. */
     function reusable(planned: readonly Planned[]): Level[] {
       if (current.layer.depth !== 0 || slot.length !== 1) return [];
       const kept: Level[] = [];
@@ -464,8 +516,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         if (!want || have.node.pattern !== want.node.pattern || have.ctx.path !== want.ctx.path) break;
         if (i === planned.length - 1) {
           const shape = cache.get(want.node.loader);
-          if (!shape || isPromise(shape) || shape.load || shape.component !== have.component) break;
-          if (have.ctx.search.toString() !== want.ctx.search.toString()) break;
+          if (!shape || isPromise(shape) || shape.load || want.node.loader.load || shape.component !== have.component) break;
         }
         kept.push(have);
       }
@@ -473,8 +524,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     }
 
     /** Lands a navigation: `kept` leading levels stay mounted, `fresh` replace what was under them. An ordinary navigation is not a layer: open layers are dismissed. */
-    function commit(kept: readonly Level[], fresh: readonly Level[], scroll: boolean): void {
-      const ctx = (fresh.at(-1) ?? kept.at(-1))!.ctx;
+    function commit(kept: readonly Level[], fresh: readonly Level[], ctx: RouteContext, mode: "push" | "replace" | "pop"): void {
       if (kept.length === 0) {
         const entry = makeEntry(fresh, 0);
         settleAll(slot.splice(0, slot.length, entry));
@@ -490,18 +540,23 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       pendingPath = null;
       error = null;
       update();
-      if (scroll && ctx.hash.length > 1) document.getElementById(decode(ctx.hash.slice(1)))?.scrollIntoView();
+      if (mode !== "pop" && ctx.hash.length > 1) document.getElementById(decode(ctx.hash.slice(1)))?.scrollIntoView();
       // After the DOM caught up, so the hook can read the new page (focus its heading, say).
-      onNavigate?.(ctx);
+      onNavigate?.(ctx, mode);
     }
 
-    async function navigate(raw: string, mode: "push" | "replace" | "pop"): Promise<void> {
+    /** `revert` walks a popstate back; a pop without one is not asked, since the router could not stay. */
+    async function navigate(raw: string, mode: "push" | "replace" | "pop", revert?: () => void): Promise<void> {
       if (!isBrowser || stopped) return;
       const href = abs(raw);
       const parsed = parse(href);
       if (!parsed) {
         // Not ours: go() to it is a request to leave the app; a popstate onto it is an entry the router cannot render.
-        if (mode !== "pop") return window.location.assign(href);
+        if (mode !== "pop") {
+          const leaving = slot.flatMap(levels);
+          if (guarded(leaving) && !(await mayLeave(leaving, null))) return;
+          return window.location.assign(href);
+        }
         generation++;
         pendingPath = null;
         error = new Error(`nuclo-router: no route matches "${href}"`);
@@ -510,9 +565,18 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       }
       // Going where we already are (same path, query, hash) is not a new history entry. Retry after an error, or with layers open, still runs.
       if (mode === "push" && !error && pendingPath === null && slot.length <= 1 && new URL(href, window.location.href).href === window.location.href) return;
-      const mine = ++generation;
       const planned = plan(parsed.chain, parsed.ctx);
       const kept = reusable(planned);
+      // Awaited only when a guard is set, so an unguarded navigation starts loading in this tick.
+      const leaving = kept.length > 0 ? levels(current).slice(kept.length) : slot.flatMap(levels);
+      if (guarded(leaving) && (mode !== "pop" || revert)) {
+        const before = generation;
+        const stay = !(await mayLeave(leaving, parsed.ctx));
+        // Overtaken while asking: the later navigation decides.
+        if (stopped || generation !== before) return;
+        if (stay) return revert?.();
+      }
+      const mine = ++generation;
       const wait = (): void => {
         pendingPath = parsed.ctx.path;
         error = null;
@@ -532,10 +596,10 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       }
       if (generation !== mine) return;
       // History is written when the page lands, so the address bar never names a page that is not on screen.
-      if (mode === "push") window.history.pushState(null, "", href);
-      else if (mode === "replace") window.history.replaceState(null, "", href);
+      if (mode === "push") window.history.pushState({ [INDEX_KEY]: ++index }, "", href);
+      else if (mode === "replace") window.history.replaceState({ [INDEX_KEY]: index }, "", href);
       if (mode !== "pop") handled = null;
-      commit(kept, fresh, mode !== "pop");
+      commit(kept, fresh, parsed.ctx, mode);
     }
 
     async function pushLayer(raw: string): Promise<unknown> {
@@ -565,13 +629,13 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       if (stopped || generation !== mine) return undefined;
       pendingPath = null;
       // History once the module is in hand, so a failed push leaves the URL alone. Back now closes this layer.
-      window.history.pushState({ [DEPTH_KEY]: slot.length }, "", href);
+      window.history.pushState({ [DEPTH_KEY]: slot.length, [INDEX_KEY]: ++index }, "", href);
       handled = null;
       const entry = pushEntry(resolved);
       current = entry;
       error = null;
       update();
-      onNavigate?.(parsed.ctx);
+      onNavigate?.(parsed.ctx, "layer");
       return new Promise((settle) => {
         entry.settle = settle;
       });
@@ -587,18 +651,46 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     const locationKey = (): string => `${depthOf(window.history.state)} ${here()}`;
 
     function onLocationChange(): void {
+      if (reverting) {
+        reverting = false;
+        handled = locationKey();
+        return;
+      }
       const key = locationKey();
       if (key === handled) return;
       handled = key;
+      // How far Back or Forward moved. An entry the router did not write (a native #fragment) has no index, and cannot be walked back.
+      const to = indexOf(window.history.state);
+      const delta = to === null ? 0 : to - index;
+      index = to ?? index;
+      const revert = delta
+        ? (): void => {
+            index -= delta;
+            reverting = true;
+            window.history.go(-delta);
+          }
+        : undefined;
       // Back out of open layers: the depth in history.state is the authority, however many entries were jumped.
       const target = depthOf(window.history.state) + 1;
       if (target < slot.length) {
-        trimTo(target);
-        onNavigate?.(leaf(current).ctx);
+        const pop = (): void => {
+          trimTo(target);
+          onNavigate?.(leaf(current).ctx, "pop");
+        };
+        const leaving = slot.slice(target).flatMap(levels);
+        if (!revert || !guarded(leaving)) return pop();
+        const before = generation;
+        void mayLeave(leaving, leaf(slot[target - 1]).ctx).then((leave) => {
+          if (stopped || generation !== before) return;
+          if (leave) return pop();
+          // Staying: what close() asked to resolve with no longer applies.
+          for (const entry of slot.slice(target)) entry.result = undefined;
+          revert();
+        });
         return;
       }
       // Anything else replaces the stack, Forward into a layer the router no longer holds included.
-      void navigate(here(), "pop");
+      void navigate(here(), "pop", revert);
     }
 
     function onClick(event: MouseEvent): void {
@@ -665,8 +757,9 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       get params() {
         return leaf(current).ctx.params;
       },
+      /** Live, like `hash`: a query-only navigation keeps the page, which reads this instead of its ctx. */
       get search() {
-        return leaf(current).ctx.search;
+        return isBrowser && !stopped ? new URLSearchParams(window.location.search) : leaf(current).ctx.search;
       },
       /** Live, like `url`: an in-page anchor changes the fragment without a navigation. */
       get hash() {
@@ -733,9 +826,12 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       active = route;
       // Seeded with the current location: a popstate some browsers fire on load changes nothing.
       handled = locationKey();
+      // A reload keeps the entry's index; a fresh entry is stamped 0.
+      index = indexOf(window.history.state) ?? 0;
+      window.history.replaceState({ ...window.history.state, [INDEX_KEY]: index }, "");
       window.addEventListener("popstate", onLocationChange);
       document.addEventListener("click", onClick);
-      onNavigate?.(leaf(current).ctx);
+      onNavigate?.(leaf(current).ctx, "start");
       // An app rendered before start() resolved has an empty outlet until now.
       update();
       if (options.preload !== false) void preload();

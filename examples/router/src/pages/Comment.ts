@@ -105,7 +105,7 @@ if (c.rest === null ? segs.length !== n : segs.length < n) return null;
         s.note,
         "the sibling link changes only :comment, so it matches this same pattern and this same " +
           "page function — but the row is still rebuilt, because the router only reuses a row " +
-          "when the page function, the path and the search string are all unchanged.",
+          "when the page function and the path are unchanged (a query or hash change keeps it).",
       ),
     ),
   );

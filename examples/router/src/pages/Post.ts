@@ -131,7 +131,8 @@ export default function PostPage(ctx: RouteContext<Params<"/blog/:slug">>) {
                 st.hint,
                 "matching only ever looks at the path. the rest arrives beside " +
                   "it: ctx.search, a URLSearchParams, and ctx.hash, leading # " +
-                  'included ("" when there is none).',
+                  'included ("" when there is none). from /blog/hello the page is kept, so ' +
+                  "ctx stays the snapshot it was built with: router.search is the live query.",
               ),
             ),
             card(

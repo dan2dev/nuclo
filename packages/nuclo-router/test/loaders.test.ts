@@ -9,7 +9,7 @@ import { describe, it, expect, vi } from "vitest";
 import "nuclo";
 import { renderToString } from "nuclo/ssr";
 import {
-  createRouter, type Router,
+  createRouter, withLoad, type Router,
   type DataLoader,
   type Layer,
   type PageComponent,
@@ -387,5 +387,63 @@ describe("load() with layers and SSR", () => {
     expect(imports).toBe(1);
     expect(loads).toBe(0);
     vi.useRealTimers();
+  });
+});
+
+describe("withLoad()", () => {
+  const Page = (_ctx: RouteContext, { data }: PageProps<string>) => div({ id: "page" }, data);
+
+  it("starts the data beside the chunk instead of after it", async () => {
+    const chunk = deferred<{ default: typeof Page }>();
+    const load = vi.fn((ctx: RouteContext) => `data for ${ctx.params.id}`);
+    const router = createRouter(
+      { "/": () => Page, "/item/:id": withLoad(() => chunk.promise, load) },
+      { preload: false },
+    );
+    const route = await start(router, "/");
+    const container = mount();
+    render(App(router), container);
+
+    const going = route.go("/item/7");
+    // The chunk is still in flight, and the data is already asked for.
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(route.pending).toBe(true);
+    chunk.resolve({ default: Page });
+    await going;
+    expect(container.querySelector("#page")!.textContent).toBe("data for 7");
+  });
+
+  it("replaces the module's own load, and runs again on every visit", async () => {
+    const own = vi.fn(() => "own");
+    let n = 0;
+    const router = createRouter(
+      { "/": withLoad(() => ({ default: Page, load: own }), () => `table ${++n}`) },
+      { preload: false },
+    );
+    const route = await start(router, "/");
+    const container = mount();
+    render(App(router), container);
+    expect(container.querySelector("#page")!.textContent).toBe("table 1");
+
+    await route.go("/", { replace: true });
+    expect(container.querySelector("#page")!.textContent).toBe("table 2");
+    expect(own).not.toHaveBeenCalled();
+  });
+
+  it("surfaces data that fails while the chunk is loading as route.error, never unhandled", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const chunk = deferred<{ default: typeof Page }>();
+    const router = createRouter(
+      { "/": () => Page, "/bad": withLoad(() => chunk.promise, () => Promise.reject(new Error("no data"))) },
+      { preload: false },
+    );
+    const route = await start(router, "/");
+
+    const going = route.go("/bad");
+    await flush();
+    chunk.resolve({ default: Page });
+    await going;
+    expect(route.error?.message).toBe("no data");
+    expect(route.path).toBe("/");
   });
 });

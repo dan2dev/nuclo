@@ -55,9 +55,11 @@ export const App = () =>
 ```ts
 // pages/Post.ts — a page is plain content
 import type { RouteContext } from "nuclo-router";
+import { router } from "../routes.ts";
 
 export default function Post(ctx: RouteContext) {
-  return article(h1(ctx.params.slug), p(ctx.search.get("preview") ? "draft" : ""));
+  // A query-only change keeps the page, so the query is read live.
+  return article(h1(ctx.params.slug), p(() => (router.search.has("preview") ? "draft" : "")));
 }
 ```
 
@@ -92,7 +94,7 @@ of the render. In the browser there is one Route per page load and `start()`
 makes it the router's own — no `run()` needed.
 
 A page receives its [`RouteContext`](#routecontext) and its
-[`PageProps`](#pageprops) — `(ctx, { layer, data, outlet })` — and may take
+[`PageProps`](#pageprops) — `(ctx, { layer, data, outlet, beforeLeave })` — and may take
 fewer arguments. It returns anything `list()` accepts. To fill another part of
 the layout as well, return a nuclo `into()` from inside the page —
 `div(article(…), into("sidebar", nav(…)))` — and that content leaves with the
@@ -212,14 +214,17 @@ React Router makes for `<Link to="./x">`. Two consequences worth knowing:
 | | |
 |---|---|
 | a parent whose pattern and path are unchanged | **kept** — same node, and its `load()` is not re-run |
-| the matched page | rebuilt, unless its pattern, path and query are unchanged *and* it has no `load()` (a route with a loader refreshes on every visit) |
+| the matched page | **kept** when its pattern and path are unchanged *and* it has no `load()` — so a query or hash change keeps it. A route with a loader refreshes on every visit |
 | a parent whose path changed | rebuilt, along with everything under it |
 | a pushed layer | renders the matched page **alone** — its parents are already mounted in the row beneath it, so re-rendering them would show the layout twice |
 
-A kept parent keeps the `ctx` it was built with, which is the documented
-meaning of `ctx` everywhere: read `router.*` for live values. So a parent that
-survives a child navigation may hold a `search` or `hash` from the URL it was
-first built with.
+A kept page keeps the `ctx` it was built with, which is the documented
+meaning of `ctx` everywhere: read `router.*` for live values. So a page that
+survives a query change, or a parent that survives a child navigation, may
+hold a `search` or `hash` from the URL it was first built with. Query-driven
+state — filters, pagination, tabs — reads `router.search` inside a reactive
+function and writes with `router.go("?page=2", { replace: true })`: the page,
+its focus and its half-typed input stay put.
 
 ## Route loaders
 
@@ -269,6 +274,25 @@ entry:
 await router.go(router.url, { replace: true });   // runs load() again
 ```
 
+### Starting the data with the chunk
+
+A `load` exported by the page module can only run once that module has
+arrived, so a cold navigation fetches the chunk, *then* the data. To start
+both at once, declare the loader in the table with `withLoad()`:
+
+```ts
+import { createRouter, withLoad } from "nuclo-router";
+import { loadPost } from "./data.ts";   // small, in the main bundle
+
+createRouter({
+  "/blog/:slug": withLoad(() => import("./pages/Post.ts"), loadPost),
+});
+```
+
+It replaces the module's own `load`, runs on every visit like it, and a
+rejection while the chunk is still loading lands on `router.error` like any
+other.
+
 There is no serialization of server data into the HTML, by design: the
 client's `load` runs again on hydration. If that matters, have the server emit
 `route.data` — say as `window.__DATA__` — and the loader take it first.
@@ -313,7 +337,7 @@ retried.
 | --- | --- | --- |
 | `base` | `"/"` | URL prefix the app is served under, e.g. `"/docs"`. It only matches at a segment boundary — `/docs/intro` is inside `"/docs"`, `/docsearch` is not. URLs outside it match nothing, so `start()` rejects (your server-side 404) and links to them are left to the browser. |
 | `preload` | `true` | Load the remaining routes' modules when the page goes idle. |
-| `onNavigate` | — | `(ctx) => void` after every resolved navigation in the browser, including the initial one, once the DOM has caught up. The hook for `document.title`, meta tags, focus and analytics. Never called during SSR. |
+| `onNavigate` | — | `(ctx, kind) => void` after every resolved navigation in the browser, including the initial one, once the DOM has caught up. `kind` is `"start"`, `"push"`, `"replace"`, `"pop"` (Back, Forward, `close()`) or `"layer"`. The hook for `document.title`, meta tags, focus, scrolling and analytics. Never called during SSR. |
 
 Returns the router: `start()`, `match()`, `outlet()`, and every
 [`Route`](#route) member except `run()`, read through to the active Route — the
@@ -362,7 +386,7 @@ Every member but `run()` is also on the router, which is where an app reads it.
 
 | | |
 | --- | --- |
-| `path` `pattern` `params` `search` `hash` `url` | the active match. `search` is a `URLSearchParams`. `hash` and `url` are live. |
+| `path` `pattern` `params` `search` `hash` `url` | the active match. `search` is a `URLSearchParams`. `search`, `hash` and `url` are live. |
 | `pending` | a navigation is waiting for a module or a loader |
 | `error` | the last failed load, cleared by the next navigation |
 | `data` | what the matched page's `load()` returned, for a server to serialize. A parent's is not on it. |
@@ -377,7 +401,7 @@ Every member but `run()` is also on the router, which is where an app reads it.
 
 A page's **first** argument: `path`, `pattern`, `params`, `search`, `hash`,
 `url`. It is the context the page was *built* with — read `router.*` for live
-values (they differ only when the hash changed without a rebuild).
+values (they differ only when the query or hash changed without a rebuild).
 
 `params` is `{ [name]: string }` by default. A page can type it from its own
 pattern with `Params`, which turns `"/blog/:slug"` into `{ slug: string }` and
@@ -396,6 +420,11 @@ export default function Post(ctx: RouteContext<Params<"/blog/:slug">>) {
 `(ctx: RouteContext) => TData | Promise<TData>` — a page module's optional
 `load` export. See [Route loaders](#route-loaders).
 
+### `withLoad(loader, load)`
+
+A route whose `load` starts beside its chunk's import instead of after it.
+See [Starting the data with the chunk](#starting-the-data-with-the-chunk).
+
 ### `PageProps`
 
 A page's **second** argument. Destructure what the page needs.
@@ -405,6 +434,7 @@ A page's **second** argument. Destructure what the page needs.
 | `layer` | where the page sits in the stack — see [`Layer`](#layer) |
 | `data` | what the route's `load()` returned, or `undefined` without one. Typed by `PageProps<TData>`. |
 | `outlet` | where a parent page renders its child route — see [Relative routes](#relative-routes) |
+| `beforeLeave` | registers a guard asked before this page is discarded — see [Leave guards](#leave-guards) |
 
 ### `Layer`
 
@@ -462,6 +492,35 @@ awaits it, with no reference to the `Route`.
 [`examples/router`](../../examples/router) runs the whole flow at `/stack`,
 three layers deep.
 
+## Leave guards
+
+A page that holds something worth keeping — a half-filled form — registers a
+guard. It is asked before the page is **discarded**, and returning `false`
+(or a promise of it) keeps the page:
+
+```ts
+export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
+  let dirty = false;
+  beforeLeave(() => !dirty || confirm("Discard your changes?"));
+  return form(input({ onInput: () => (dirty = true) }), …);
+}
+```
+
+- **Only when the page goes.** A child navigation under a layout, or a query
+  or hash change that keeps the page, does not ask. A guard lives and dies
+  with its page — there is nothing to unregister.
+- **Every way out.** A link, `go()`, Back and Forward, a layer's `close()`,
+  and `go()` to a URL the router does not own (leaving the app, where `to`
+  is `null`). A refused Back or Forward is walked back, so the address bar
+  stays on the page. Closing the tab or reloading is `beforeunload`'s job.
+- **`to`** is the `RouteContext` the navigation is heading to. Guards run
+  innermost first and stop at the first refusal; one that throws keeps the
+  page. `close(result)` goes through the guard too, so clear your flag
+  before closing with a result.
+- The router can only walk back history entries it wrote. A Back or Forward
+  onto one it did not — a native `#fragment` link, another script's
+  `pushState` — is not asked.
+
 ## Sub-routers
 
 Routes nest, so a sub-router is usually just a nested table. Two shapes, both
@@ -512,7 +571,19 @@ called `preventDefault()` on. Opt a link out explicitly with
 
 A pushed navigation preserves the current scroll position. When the new URL
 has a `#hash` matching an element on the page, that element is scrolled into
-view. `popstate` leaves scrolling to the browser.
+view. `popstate` leaves scrolling to the browser. To land new pages at the
+top, do it in `onNavigate`, which says how the navigation happened:
+
+```ts
+let shown = "";
+createRouter(routes, {
+  onNavigate: (ctx, kind) => {
+    // Not on Back/Forward (the browser restores those), nor for a query change on the same page.
+    if (kind === "push" && ctx.path !== shown && !ctx.hash) window.scrollTo(0, 0);
+    shown = ctx.path;
+  },
+});
+```
 
 ## Notes
 
@@ -556,7 +627,7 @@ bun run dev   # in either folder
 ## Tests
 
 ```bash
-bun run test          # typecheck + 282 tests
+bun run test          # typecheck + 313 tests
 ```
 
 MIT © Danilo Celestino de Castro

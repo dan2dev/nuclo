@@ -198,19 +198,25 @@ describe("pages", () => {
     expect(container.querySelector("#post-b")).not.toBeNull();
   });
 
-  it("rebuilds when only the query changes", async () => {
+  it("keeps the page when only the query changes; router.search follows the URL", async () => {
     let builds = 0;
     const Page: PageComponent = () => {
       builds++;
-      return div("page");
+      return div({ id: "q" }, () => router.search.get("a") ?? "");
     };
     const router = createRouter({ "/": () => Page });
-    const route = await start(router, "/?a=1");
-    render(App(router), mount());
-    expect(builds).toBe(1);
+    window.history.replaceState(null, "", "/?a=1");
+    const route = await start(router);
+    const container = mount();
+    render(App(router), container);
+    const node = container.querySelector("#q");
+    expect(node!.textContent).toBe("1");
 
-    await route.go("/?a=2");
-    expect(builds).toBe(2);
+    await route.go("/?a=2", { replace: true });
+    expect(builds).toBe(1);
+    expect(container.querySelector("#q")).toBe(node);
+    expect(node!.textContent).toBe("2");
+    expect(route.search.get("a")).toBe("2");
   });
 });
 
@@ -615,6 +621,23 @@ describe("onNavigate", () => {
     await route.go("/about");
 
     expect(seen).toEqual(["/", "/about"]);
+  });
+
+  it("says how each navigation happened", async () => {
+    const seen: string[] = [];
+    const router = createRouter(
+      { "/": () => Home, "/about": () => About, "/modal": () => About },
+      { preload: false, onNavigate: (ctx, kind) => seen.push(`${kind} ${ctx.path}${ctx.search.size ? `?${ctx.search}` : ""}`) },
+    );
+    const route = await start(router, "/");
+    await route.go("/about");
+    await route.go("/about?x=1", { replace: true });
+    window.history.back();
+    await waitFor(() => seen.length === 4);
+    void route.push("/modal");
+    await waitFor(() => seen.length === 5);
+
+    expect(seen).toEqual(["start /", "push /about", "replace /about?x=1", "pop /", "layer /modal"]);
   });
 
   it("does not fire for a failed navigation", async () => {
