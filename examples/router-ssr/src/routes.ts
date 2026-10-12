@@ -23,6 +23,10 @@ export const routeTable = {
   "/": () => import("./pages/Home.ts"),
   "/blog/:slug": () => import("./pages/Post.ts"),
   "/files/*rest": () => import("./pages/Files.ts"),
+  "/profile": {
+    "/":  () => import("./pages/profile/index.ts"),
+    "/:person":  () => import("./pages/profile/person.ts"),
+  },
   "*": () => import("./pages/NotFound.ts"),
 };
 
@@ -50,6 +54,8 @@ const NAV = [
   ["/", "Home"],
   ["/blog/hello-ssr", "A post"],
   ["/files/a/b/readme.md", "Nested file"],
+  ["/profile", "Profiles"],
+  ["/profile/ana", "A profile"],
   ["/nope", "Unknown (404)"],
 ] as const;
 

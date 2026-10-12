@@ -20,13 +20,18 @@ const DIST = new URL("../dist/", import.meta.url).pathname;
  * getCssText() returns the complete sheet for any route. (The router's own
  * `preload` option is the client-side counterpart of this.)
  */
-for (const [pattern, loader] of Object.entries(routeTable)) {
-  try {
-    await loader();
-  } catch (error) {
-    console.warn(`warm-up failed for "${pattern}":`, error);
+async function warmUp(table: object, prefix = ""): Promise<void> {
+  for (const [pattern, loader] of Object.entries(table)) {
+    if (typeof loader !== "function") await warmUp(loader, prefix + pattern);
+    else
+      try {
+        await loader();
+      } catch (error) {
+        console.warn(`warm-up failed for "${prefix + pattern}":`, error);
+      }
   }
 }
+await warmUp(routeTable);
 
 const ASSET = /\.(?:js|mjs|css|map|svg|png|ico|webp|woff2?)$/;
 
