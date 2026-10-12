@@ -115,8 +115,10 @@ and the data never is.
 - The server has no bundler. `vite build` only produces the **client** bundle;
   `src/server.ts` runs straight off TypeScript under Bun, with
   `nuclo/polyfill` providing a DOM.
-- `onNavigate` touches `document` even though this module is imported on the
-  server — safe, because the hook only ever fires in the browser.
+- `onNavigate` touches `document` and `window` even though this module is
+  imported on the server — safe, because the hook only ever fires in the
+  browser. It uses its `kind` to scroll a `"push"` to the top and leave a
+  `"pop"` to the browser's scroll restoration.
 - Set `BASE = ""` in `src/base.ts` to serve from the root instead. Nothing else
   changes.
 

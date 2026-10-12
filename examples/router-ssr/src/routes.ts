@@ -38,8 +38,11 @@ export const routeTable = {
 export const router = createRouter(routeTable, {
   base: BASE,
   preload: true,
-  onNavigate: (ctx) => {
+  onNavigate: (ctx, kind) => {
     document.title = `${ctx.path === "/" ? "Home" : ctx.path} — nuclo-router SSR`;
+    // The router keeps the scroll position; land a pushed page at the top.
+    // A "pop" (Back/Forward) is left to the browser's own scroll restoration.
+    if (kind === "push" && !ctx.hash) window.scrollTo(0, 0);
   },
 });
 

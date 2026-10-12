@@ -157,20 +157,21 @@ export default function SettingsPage(_ctx: RouteContext) {
     // ── onNavigate ──────────────────────────────────────────────────────────
     feature(
       "onNavigate",
-      "called in the browser after every resolved navigation, including the initial one. " +
-        "the hook for document.title, meta tags and analytics.",
+      "called in the browser after every resolved navigation, including the initial one, " +
+        "with how it happened. the hook for document.title, meta tags, scrolling and analytics.",
       div(
         s.row,
         pill("neutral", "default none"),
         pill("good", "never called during SSR"),
         pill("info", "runs after update()"),
+        pill("info", "(ctx, kind)"),
       ),
       code(
         [
           "// the router's commit, in order:",
           "update();                  // its own re-render",
           "restoreScroll(ctx.hash);   // matching hash target only — skipped on popstate",
-          "onNavigate(ctx);           // last — the DOM is already settled",
+          "onNavigate(ctx, kind);     // last — the DOM is already settled",
         ].join("\n"),
       ),
       div(
@@ -195,12 +196,22 @@ export default function SettingsPage(_ctx: RouteContext) {
           ),
         ),
         card(
+          "kind: how it happened",
+          p(
+            s.panelDesc,
+            '"start" for the initial match, "push" or "replace" for a link or go(), "pop" for ' +
+              'Back, Forward and a layer\'s close(), "layer" for push(). the live panel above ' +
+              "logs it; this example uses it to scroll a push to a new path to the top, and " +
+              "leaves a pop to the browser's own scroll restoration.",
+          ),
+        ),
+        card(
           "resolved navigations only",
           p(
             s.panelDesc,
-            "after the initial call in start(), commit() is the only place it is called from — " +
-              "so a chunk that fails to load and a popstate onto a URL outside the routes both " +
-              "set router.error without ever reaching the hook.",
+            "a chunk that fails to load and a popstate onto a URL outside the routes both set " +
+              "router.error without ever reaching the hook, and a navigation a leave guard " +
+              "refused never happened at all.",
           ),
         ),
         card(
@@ -268,10 +279,13 @@ export default function SettingsPage(_ctx: RouteContext) {
           "export const router = createRouter(routeTable, {",
           '  // base: left at its default "/" — ../router-ssr mounts under /app instead.',
           "  preload: false,",
-          "  onNavigate: (ctx) => {",
+          "  onNavigate: (ctx, kind) => {",
           "    document.title = `${ctx.pattern} — nuclo-router`;",
-          "    history_.push({ pattern: ctx.pattern, path: ctx.path });",
+          "    history_.push({ kind, pattern: ctx.pattern, path: ctx.path });",
           "    if (history_.length > 8) history_.shift();",
+          "    // the router keeps the scroll position; land a new page at the top.",
+          '    if (kind === "push" && ctx.path !== shownPath && !ctx.hash) window.scrollTo(0, 0);',
+          "    shownPath = ctx.path;",
           "    // onNavigate runs after the router's own update(), so whatever the hook",
           "    // changes needs one of its own.",
           "    update();",

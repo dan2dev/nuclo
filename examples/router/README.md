@@ -34,8 +34,11 @@ the companion example: [`examples/router-ssr`](../router-ssr).
 | `pages/Stack.ts` + `stack/*` | **the layer stack**: `push()` opens a route as a modal on top without closing the page underneath, and resolves with what that layer closes with. Three layers deep, with a nested `layer.push()` |
 | `pages/Record.ts` + `preview/*` | **relative routes**: one section written with `./` keys, declared under two parents, and opened from either with the same `push("./preview")` |
 | `pages/Data.ts` | **route loaders**: `export const load` runs before the page is built, with `?slow=1` and `?fail=1` to watch `pending` and `error`, and revalidation by navigating |
+| `pages/Early.ts` + `timing.ts` | **`withLoad()`**: the same page at `/data/serial` (exported `load`, so chunk *then* data) and `/data/early` (loader declared in the table, so both at once), timed from the click |
+| `pages/Search.ts` | **query as state**: `?q=` written with `go(…, { replace: true })` on every keystroke, read live from `router.search`; a query-only navigation keeps the page, its focus and its caret |
+| `pages/Guard.ts` + `pages/GuardEdit.ts` | **leave guards**: `beforeLeave()` on a page with an unsaved draft, and on a form opened as a layer — asked on links, `go()`, Back and `close()`, never on a query or hash change |
 | `pages/Api.ts` | every `Route` member, with live controls: `path` `pattern` `params` `search` `hash` `url` `pending` `error` `go()` `go(…, { replace })` `href()` `stop()` |
-| `pages/Settings.ts` | `base`, `preload`, `onNavigate` — defaults, effects and ordering |
+| `pages/Settings.ts` | `base`, `preload`, `onNavigate(ctx, kind)` — defaults, effects and ordering |
 | `pages/Slow.ts` | `pending`, the outgoing page staying visible, and the cache making the second visit instant |
 | `pages/Broken.ts` | `error`, cache eviction and retry — `go()` never rejects |
 | `pages/NotFound.ts` | the `"*"` route, and how a server turns it into a real 404 |
@@ -50,7 +53,7 @@ Both examples are deliberately configured differently so that every setting is
 |---|---|---|
 | `preload` | **`false`** — so the `/slow` and `/broken` demos actually show their `pending` and `error` states | `true` (the default) — watch every chunk arrive on idle in the network panel |
 | `base` | `"/"` (the default) | **`/app`** — the router strips it, Vite prefixes assets with it, `router.href()` re-adds it |
-| `onNavigate` | sets `document.title` and appends to the visible log | sets `document.title`; it never fires during SSR, so the routes module still imports cleanly on the server |
+| `onNavigate` | sets `document.title`, appends `kind` and the route to the visible log, and scrolls a push to a new path to the top | sets `document.title` and scrolls a push to the top; it never fires during SSR, so the routes module still imports cleanly on the server |
 
 ## Things worth clicking
 
@@ -66,9 +69,16 @@ Both examples are deliberately configured differently so that every setting is
 - **`/docs`, type in the filter, then click its nav** — the layout, your text
   and your focus all survive every child navigation, 404 included.
 - **Back and Forward** — `popstate` renders the entry and leaves scrolling to
-  the browser, which is what makes native scroll restoration work. Regular
-  route navigation also preserves the current scroll position; matching hash
+  the browser, which is what makes native scroll restoration work. The router
+  keeps the scroll position on a push too; this example's `onNavigate` uses
+  its `kind` to land a push to a new path at the top, and matching hash
   targets still scroll into view.
+- **`/search`, type in the box** — the address bar follows every keystroke and
+  the page's build counter stays at 1: a query-only navigation keeps the page.
+- **`/guard`, type a draft, then click away or press Back** — you are asked
+  first, and Cancel leaves you on the page with the address bar walked back.
+- **`/data`, then both "measure" buttons** — `/data/serial` lands in ~1200 ms,
+  `/data/early` (`withLoad()`) in ~600 ms. Reload to measure cold again.
 - **`/stack`** — type a note, then stack two modals on top of it and watch the
   note, the form and the dropdown survive the whole round trip.
 - **`/invoices/42` vs `/customers/7`** — press the same button on each and

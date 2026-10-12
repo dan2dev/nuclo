@@ -98,7 +98,7 @@ function intercepted(ctx: RouteContext) {
       "query + hash",
       "good",
       "intercepted",
-      "The pathname differs from the current one, so this is a real navigation. The router pushes pathname + search + hash together, then scrolls to the hash's element if that id exists on the new page — otherwise to the top.",
+      "The pathname differs from the current one, so this is a real navigation. The router pushes pathname + search + hash together, then scrolls to the hash's element if that id exists on the new page. Landing at the top otherwise is this example's onNavigate, not the router (see /settings).",
       a({ href: "/patterns?tab=params&q=hi#anchor" }, st.link, "/patterns?tab=params&q=hi#anchor"),
     ),
 

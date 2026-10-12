@@ -2,7 +2,7 @@
 //
 // What this page demonstrates:
 //   · the six read-only members that describe the match — path, pattern,
-//     params, search, hash, url — and which two of them read the live
+//     params, search, hash, url — and which three of them read the live
 //     location instead of the match
 //   · pending and error, the two flags that describe a navigation in flight
 //   · where the pages go: router.outlet(), one list() whose rows are the open pages
@@ -53,7 +53,7 @@ export default function ApiPage(_ctx: RouteContext) {
 
     feature(
       "Reading the match",
-      "path, pattern, params and search come from the match, so they change only when a navigation commits. hash and url read window.location while the router is running — the router deliberately leaves hash-only clicks to the browser, so the match would never hear about them.",
+      "path, pattern and params come from the match, so they change only when a navigation commits. search, hash and url read window.location while the router is running — a query-only navigation keeps the page, and the router deliberately leaves hash-only clicks to the browser, so the match alone would fall behind.",
 
       div(
         s.cols2,
@@ -84,8 +84,9 @@ export default function ApiPage(_ctx: RouteContext) {
 
         member(
           "router.search",
-          "the matched URL's URLSearchParams, untouched. the router never flattens a " +
-            "query string for you, so a repeated key survives and .getAll() can see it.",
+          "window.location.search as URLSearchParams, read live — a query-only navigation " +
+            "keeps the page, so this is where the current query is (see /search). never " +
+            "flattened for you, so a repeated key survives and .getAll() can see it.",
           div(s.row, goButton("/patterns?tab=params&tab=search&q=hi", "repeated key")),
         ),
 
@@ -118,10 +119,10 @@ export default function ApiPage(_ctx: RouteContext) {
         s.row,
         pill("info", "RouteContext"),
         span(
-          "your page receives the match as a plain RouteContext. path, pattern, params " +
-            "and search are the identical values; hash and url are the ones resolved at " +
-            "match time rather than the live ones. that is what lets the same page render " +
-            "on a server.",
+          "your page receives the match as a plain RouteContext. path, pattern and params " +
+            "are the identical values; search, hash and url are the ones resolved when the " +
+            "page was built rather than the live ones. that is what lets the same page " +
+            "render on a server.",
         ),
       ),
     ),
@@ -170,10 +171,9 @@ export const App = () => div(nav(/* links */), main(router.outlet()));
 export default () => article(h1("Hello"));`),
         span(
           st.desc,
-          "navigating to a cached module with the same page function, path and search " +
-            "as the row on screen keeps that row: the URL changes and nothing is " +
-            "rebuilt. the scroll that follows uses the kept row's own hash rather than " +
-            "the new one, which is one more reason #links are left to the browser.",
+          "navigating to a cached module with the same page function and path as the " +
+            "row on screen — and no load() — keeps that row: the URL changes, query and " +
+            "hash included, and nothing is rebuilt.",
         ),
       ),
 
@@ -182,9 +182,10 @@ export default () => article(h1("Hello"));`),
 
         member(
           "router.go(href)",
-          "pushes a history entry, loads the target's module if it is not cached, " +
-            "commits, then scrolls — to the hash's element if there is one, otherwise to " +
-            "the top. the promise resolves once the page is on screen and never rejects. " +
+          "asks the leave guards of the pages it would discard, pushes a history entry, " +
+            "loads the target's module if it is not cached, commits, then scrolls to the " +
+            "hash's element if there is one (landing at the top otherwise is this " +
+            "example's onNavigate). the promise resolves once the page is on screen and never rejects. " +
             "an href the router does not own (outside base, or matching no pattern when " +
             'there is no "*" route) is read as an explicit request to leave the SPA and ' +
             "handed to location.assign().",

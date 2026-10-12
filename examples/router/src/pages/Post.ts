@@ -169,18 +169,19 @@ export default function PostPage(ctx: RouteContext<Params<"/blog/:slug">>) {
           div(
             cx(s.grid, css({ mt: 14 })),
             card(
-              "same path + query  ·  kept",
+              "same path  ·  kept, whatever the query",
+              div(s.row, link("?draft=1", "?draft=1"), link("?draft=2", "?draft=2")),
               span(
                 st.hint,
                 "a navigation through the router reuses the row when the page " +
-                  "function, the path and the query string all match what is " +
-                  "already there. the row is left untouched, update() runs, the " +
-                  "counter stays put. only the synchronous path can do this — a " +
-                  "navigation still waiting on its chunk always commits a new row.",
+                  "function and the path match what is already there and the page " +
+                  "has no load(). the query and hash may differ: the row is left " +
+                  "untouched, update() runs, the counter stays put — and ctx.search " +
+                  "keeps the build's query while router.search moves. only the " +
+                  "synchronous path can do this — a navigation still waiting on its " +
+                  "chunk always commits a new row.",
               ),
-              // ctx.url, not ctx.path: ctx.path carries no query, so go(ctx.path)
-              // from a url that has one changes the query and does rebuild.
-              code('router.go(ctx.url) // same path + query → row kept, update() only'),
+              code('router.go("?draft=2") // same path → row kept, update() only'),
             ),
             card(
               "hash only  ·  the router never sees it",
@@ -200,8 +201,8 @@ export default function PostPage(ctx: RouteContext<Params<"/blog/:slug">>) {
               "then press back",
               span(
                 st.hint,
-                "popstate does reach the router. it resolves the same path and " +
-                  "query, keeps the row, and skips scroll restoration — scrolling " +
+                "popstate does reach the router. it resolves the same path, keeps " +
+                  "the row, and skips scroll restoration — scrolling " +
                   "is applied for push and replace only, so the browser's own " +
                   "restore is not fought over.",
               ),

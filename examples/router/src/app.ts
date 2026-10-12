@@ -115,7 +115,8 @@ function liveState() {
       // A list() over the log, so each entry is its own row.
       list(
         () => history_.slice().reverse(),
-        (entry, i) => span(i === 0 ? css({ color: "accent" }) : css({}), `${entry.pattern}  →  ${entry.path}`),
+        (entry, i) =>
+          span(i === 0 ? css({ color: "accent" }) : css({}), `[${entry.kind}] ${entry.pattern}  →  ${entry.path}`),
       ),
     ),
   );

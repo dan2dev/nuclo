@@ -7,8 +7,16 @@
  * imported exactly once.
  */
 import type { DataLoader, PageProps, RouteContext } from "nuclo-router";
+import { router } from "../routes.ts";
 import { css, cx } from "../theme.ts";
+import { startClock } from "../timing.ts";
 import { btn, card, code, feature, pill, s, probe } from "../ui.ts";
+
+/** Starts the withLoad() demo's clock, then navigates. */
+function measure(path: string): void {
+  startClock();
+  void router.go(path);
+}
 
 export interface Report {
   runs: number;
@@ -84,6 +92,36 @@ export default function DataPage(ctx: RouteContext, { layer, data: report }: Pag
         cx(s.cardBox, css({ gap: 6 })),
         span(s.caption, "this render's data"),
         pre(s.code, JSON.stringify(report, null, 2)),
+      ),
+    ),
+
+    feature(
+      "Starting the data with the chunk: withLoad()",
+      "an exported load() lives inside the page's chunk, so on a cold navigation the data " +
+        "cannot start until the chunk has arrived: chunk, then data. withLoad() declares the " +
+        "loader in the table instead, so both start at once.",
+
+      code(
+        `// routes.ts — the loader sits in the entry bundle, the page stays split
+` +
+          `import { createRouter, withLoad } from "nuclo-router";
+
+` +
+          `"/data/early": withLoad(() => import("./pages/Early.ts"), loadTimed),`,
+      ),
+
+      div(
+        s.row,
+        button(btn.base, { onClick: () => measure("/data/serial") }, "measure /data/serial — ~1200 ms"),
+        button(btn.primary, { onClick: () => measure("/data/early") }, "measure /data/early — ~600 ms"),
+      ),
+
+      p(
+        s.note,
+        "both routes import the same page through a chunk held for 600 ms, and load data that " +
+          "takes 600 ms. withLoad() replaces the module's own load, runs on every visit like it, " +
+          "and a rejection while the chunk is still loading lands on router.error. the first " +
+          "visit to each is the cold one — reload to measure again.",
       ),
     ),
 
