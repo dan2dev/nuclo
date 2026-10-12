@@ -1,6 +1,7 @@
-// api.ts: a fake backend. fetchPage() behaves like a real request: it takes a
-// moment, it answers with one page and the cursor of the next, and now and
-// then it fails. Nothing here knows about the UI.
+// api.ts: a fake backend with no end. fetchPage() behaves like a real request:
+// it takes a moment, it answers with one page and the cursor of the next, and
+// once in a while it fails. Rows are generated on the fly from their id, so
+// the same cursor always returns the same page. Nothing here knows about the UI.
 
 export interface Post {
   id: number;
@@ -13,44 +14,37 @@ export interface Post {
 
 export interface Page {
   items: Post[];
-  next: number | null; // the cursor of the next page; null after the last one
+  next: number; // the cursor of the next page
 }
 
-export const TOTAL = 96;
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 20;
 
-const AUTHORS = ["Ada", "Grace", "Linus", "Margaret", "Dennis", "Barbara", "Ken", "Radia"];
-const TEXTS = [
-  "Shipped the new list diff. Rows on screen are never rebuilt now.",
-  "Reminder: mutate, then update(). One call per event is plenty.",
-  "Replaced 400 lines of store boilerplate with an array and a function.",
-  "The sentinel row loaded three pages while I was writing this.",
-  "Hot take: most state managers exist because mutation was banned.",
-  "Pairing on the kanban demo. Dragging across columns feels great.",
-  "Breakpoint at update() and you see every change in the app. Try it.",
-  "Profiling says the fake fetch is the slow part. As it should be.",
-  "Added undo by cloning state. Twelve lines, including the slider.",
-  "Today I learned IntersectionObserver takes a rootMargin.",
-  "Our docs site renders on the server and hydrates the same tree.",
-  "Closing the week with zero re-render bugs. There are no re-renders.",
-];
+const AUTHORS = ["Ada", "Grace", "Linus", "Margaret", "Dennis", "Barbara", "Ken", "Radia", "Edsger", "Frances", "Tony", "Yukihiro"];
+const OPENERS = ["Shipped", "Fixed", "Rewrote", "Profiled", "Deleted half of", "Paired on", "Reviewed", "Benchmarked", "Documented", "Simplified"];
+const SUBJECTS = ["the list diff", "the kanban demo", "the router", "the fake fetch", "the docs build", "the three.js inspector", "the form validation", "the SSR hydration", "the style engine", "the undo stack"];
+const OUTCOMES = ["and it is faster now.", "with half the code.", "before lunch.", "and nothing re-rendered.", "and found the slow part.", "in one update() call.", "without a store.", "by mutating the array in place.", "and the mount count stayed put.", "while this feed kept loading."];
+const EXTRAS = ["Breakpoint at update() showed every change.", "Rows already on screen were never rebuilt.", "The sentinel loaded the next page early.", "Plain objects, plain arrays, one update()."];
 
-const post = (id: number): Post => ({
-  id,
-  author: AUTHORS[id % AUTHORS.length],
-  text: TEXTS[(id * 7) % TEXTS.length],
-  likes: (id * 37) % 240,
-  liked: false,
-  minutesAgo: id * 9 + 3,
-});
+// A small integer hash: every field of a post is a deterministic function of its id.
+function hash(n: number) {
+  n = Math.imul(n ^ (n >>> 16), 0x45d9f3b);
+  n = Math.imul(n ^ (n >>> 16), 0x45d9f3b);
+  return (n ^ (n >>> 16)) >>> 0;
+}
+const pick = <T,>(list: T[], id: number, salt: number) => list[hash(id * 31 + salt) % list.length];
+
+function post(id: number): Post {
+  let text = `${pick(OPENERS, id, 1)} ${pick(SUBJECTS, id, 2)} ${pick(OUTCOMES, id, 3)}`;
+  if (hash(id) % 3 === 0) text += ` ${pick(EXTRAS, id, 4)}`;
+  return { id, author: pick(AUTHORS, id, 5), text, likes: hash(id + 7) % 900, liked: false, minutesAgo: id * 3 + 1 };
+}
 
 export function fetchPage(cursor: number): Promise<Page> {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      if (Math.random() < 0.15) return reject(new Error("The network dropped the request"));
-      const end = Math.min(cursor + PAGE_SIZE, TOTAL);
-      const items = Array.from({ length: end - cursor }, (_, i) => post(cursor + i));
-      resolve({ items, next: end < TOTAL ? end : null });
-    }, 500 + Math.random() * 700);
+      if (Math.random() < 0.03) return reject(new Error("The network dropped the request"));
+      const items = Array.from({ length: PAGE_SIZE }, (_, i) => post(cursor + i));
+      resolve({ items, next: cursor + PAGE_SIZE });
+    }, 60 + Math.random() * 140);
   });
 }

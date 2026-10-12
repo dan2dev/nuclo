@@ -50,7 +50,7 @@ export const APP_EXAMPLES: AppExample[] = [
   app(
     "infinite-scroll",
     "Infinite Scroll",
-    "Pages from a fake `fetch()` land in one plain array with `push()`, so the rows on screen are never rebuilt. A sentinel row creates an IntersectionObserver in `on(\"mount\")`, returns its cleanup, and asks for the next page as it comes into view.",
+    "A feed with no end: a fast fake `fetch()` generates every page on the fly into one plain array. Only the rows near the viewport are in the DOM: the `list()` renders `posts.slice(start, end)` between two spacers, so the page stays light at a hundred thousand posts. A sentinel at the real end asks for the next page before it comes into view.",
     InfiniteFeed,
     "lifecycle",
   ),
