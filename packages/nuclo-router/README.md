@@ -1,5 +1,7 @@
 # nuclo-router
 
+> **Preview:** this is a preview version of the router. The API may change.
+
 Routing for [nuclo](https://nuclo.dev/) — SSR, hydration, code-split routes and
 idle preloading. **<!-- size:router-gzip -->4.6<!-- /size --> kB gzipped** (<!-- size:router-brotli -->4.2<!-- /size --> kB brotli), no dependencies beyond nuclo
 itself, and no side effects — it tree-shakes away when unused.
@@ -13,6 +15,13 @@ claims the server's nodes instead of replacing them. Everything else is
 ```bash
 npm install nuclo nuclo-router
 ```
+
+**Contents:** [One import](#one-import) · [A whole app](#a-whole-app) ·
+[Patterns](#patterns) · [Relative routes](#relative-routes) ·
+[Route loaders](#route-loaders) · [Code splitting](#code-splitting-and-preloading) ·
+[API](#api) · [The layer stack](#the-layer-stack) · [Leave guards](#leave-guards) ·
+[matches()](#matches) · [Sub-routers](#sub-routers) · [Link handling](#link-handling) ·
+[Notes](#notes) · [Examples](#examples)
 
 ## One import
 
@@ -99,7 +108,7 @@ fewer arguments. It returns anything `list()` accepts. To fill another part of
 the layout as well, return a nuclo `into()` from inside the page —
 `div(article(…), into("sidebar", nav(…)))` — and that content leaves with the
 page. `into()` and `region()` are nuclo globals, not router API: see the
-[nuclo README](../nuclo-core/README.md#regionoptions-and-viewid-content).
+[nuclo README](../nuclo-core/README.md#regionoptions-and-intoid-content).
 
 ## Patterns
 
@@ -339,7 +348,7 @@ retried.
 | `preload` | `true` | Load the remaining routes' modules when the page goes idle. |
 | `onNavigate` | — | `(ctx, kind) => void` after every resolved navigation in the browser, including the initial one, once the DOM has caught up. `kind` is `"start"`, `"push"`, `"replace"`, `"pop"` (Back, Forward, `close()`) or `"layer"`. The hook for `document.title`, meta tags, focus, scrolling and analytics. Never called during SSR. |
 
-Returns the router: `start()`, `match()`, `outlet()`, and every
+Returns the router: `start()`, `match()`, `outlet()`, `matches()`, and every
 [`Route`](#route) member except `run()`, read through to the active Route — the
 one the last `start()` returned in the browser (stopped or not), or the one
 whose `run()` is executing on the server. Reading a member with neither throws.
@@ -379,6 +388,11 @@ const owned = router.match(href) !== null;
 The active route's pages as a `list()`: place it once, wherever the pages go.
 A pushed layer is a later row of it. It is empty before `start()` resolves and
 after `stop()`. On the server it renders the Route whose `run()` is executing.
+
+### `router.matches(table)` → `ListModifier`
+
+Renders the view of a second table that the active route's path matches, as a
+`list()` you place anywhere. See [`matches()`](#matches).
 
 ### `Route`
 
@@ -539,6 +553,44 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
   onto one it did not — a native `#fragment` link, another script's
   `pushState` — is not asked.
 
+## `matches()`
+
+`router.outlet()` renders the *page*. `router.matches(table)` renders something
+**else** that depends on where you are — a sidebar, breadcrumbs, a toolbar — from
+its own small table, without loading a route or adding a page:
+
+```ts
+div(
+  aside(
+    router.matches({
+      "/":           () => nav("Home links"),
+      "/blog/new":   () => nav("Drafting tips"),
+      "/blog/:slug": ({ slug }) => nav(`More like ${slug}`),
+      "*":           () => import("./Sidebar.ts"),   // code-split, rendered once loaded
+    }),
+  ),
+  main(router.outlet()),
+);
+```
+
+- **Same matching as the route table.** The table's patterns, precedence
+  (static → dynamic → catch-all), raw-path matching and `base` stripping are the
+  router's own, so a view and a page always agree about the URL. It reads the
+  top layer's path, like `router.path`.
+- **A view** is `(params, ctx) => content`, where `params` is typed from its
+  pattern and `ctx` is the `RouteContext` with the *view's* `pattern` and
+  `params`. It may instead return `import()` of a page module (a component, or
+  `{ default }`), which is called with `ctx` once it lands.
+- **Nothing matches, nothing renders** — add a `"*"` view for a fallback. It is
+  empty before `start()` and after `stop()`, like the outlet.
+- **It re-renders only when the route changes**, so a view keeps its DOM across
+  anything that keeps the page.
+- **A lazy view renders nothing until its module arrives.** A failed `import()`
+  is logged with `console.error` — it does **not** set `router.error` — and is
+  retried on the next navigation; a plain `update()` does not retry.
+- **On the server** a lazy view ships nothing (its module lands on the client);
+  use a synchronous view for anything the first HTML must contain.
+
 ## Sub-routers
 
 Routes nest, so a sub-router is usually just a nested table. Two shapes, both
@@ -645,7 +697,7 @@ bun run dev   # in either folder
 ## Tests
 
 ```bash
-bun run test          # typecheck + 313 tests
+bun run test          # typecheck + 314 tests
 ```
 
 MIT © Danilo Celestino de Castro
