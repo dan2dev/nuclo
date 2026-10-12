@@ -8,12 +8,12 @@ import { recipesSection } from "./sections/recipes.ts";
 import { animationSection } from "./sections/animation.ts";
 import { generatedSection } from "./sections/generated.ts";
 
-export const app = div(
+export const App = () => div(
   s.page,
   h1(s.pageTitle, "nuclo styling"),
   p(
     s.pageLead,
-    "Atomic, theme-aware, typed CSS-in-TS. Everything below is defined with css() / cx() / variants() / keyframes() / globalStyle() from a single themed createCss() instance, and rendered live.",
+    "Theme-aware, typed CSS-in-TS. Everything below is defined with css() / cx() / variants() / keyframes() / globalStyle() from a single themed createCss() instance, and rendered live.",
   ),
   basicsSection,
   compositesSection,

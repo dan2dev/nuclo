@@ -1,8 +1,8 @@
 # nuclo-router
 
 Routing for [nuclo](https://nuclo.dev/) — SSR, hydration, code-split routes and
-idle preloading. No dependencies beyond nuclo itself, and no side effects — it
-tree-shakes away when unused.
+idle preloading. **<!-- size:router-gzip -->4.6<!-- /size --> kB gzipped** (<!-- size:router-brotli -->4.2<!-- /size --> kB brotli), no dependencies beyond nuclo
+itself, and no side effects — it tree-shakes away when unused.
 
 The router decides *what* to load; the app says *where* with `router.outlet()`:
 one `list()` over the layer stack, one row per layer, so an ordinary page is a
@@ -445,6 +445,24 @@ Where a page sits in the stack, and its way out.
 | `depth` | 0 for the base page, 1 and up for pushed layers |
 | `push(href)` | open another layer from inside a page, same as `Route.push()` |
 | `close(result?)` | close this layer and everything above it, resolving the `push()` that opened it. No argument means dismissed. A no-op at depth 0. |
+
+### Types
+
+Every type is a named export, so a page, a loader or a guard can be typed without importing from a path.
+
+| Type | What it is |
+| --- | --- |
+| `Params<"/blog/:slug">` | the params object for a pattern. `RouteParams` is the untyped shape; `Match` is the matcher's result. |
+| `PageComponent` | a page: `(ctx, { layer, data, outlet, beforeLeave }) => …` |
+| `RouteModule` | a page module: the component itself, or `{ default, load? }` as `import()` yields |
+| `RouteLoader` | `() => RouteModule \| Promise<RouteModule>`, optionally carrying a `load` from `withLoad()` |
+| `RouteTable` | the table `createRouter()` takes: pattern → loader, or → a nested table |
+| `RouterOptions` | `{ base?, preload?, onNavigate? }` |
+| `NavigateOptions` | `{ replace? }`, the second argument of `go()` |
+| `NavigationKind` | `"start" \| "push" \| "replace" \| "pop" \| "layer"`, the second argument of `onNavigate` |
+| `Outlet` | the type of `outlet()` from `PageProps` |
+| `LeaveGuard` | `(to) => boolean \| void \| Promise<…>`, what `beforeLeave()` takes |
+| `MatchView` | what a `matches()` view is: params in, content or `import()` of a page out |
 
 ## The layer stack
 

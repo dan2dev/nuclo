@@ -1,6 +1,6 @@
 // Styling global type definitions.
 //
-// nuclo styling is atomic, theme-aware, typed CSS-in-TS:
+// nuclo styling is block-based, theme-aware, typed CSS-in-TS:
 //
 //   const { css, cx } = createCss({
 //     colors: { primary: "#6366f1" },

@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "A live showcase of every feature in nuclo's atomic CSS-in-TS styling system.",
+  "description": "A live showcase of every feature in nuclo's typed CSS-in-TS styling system.",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

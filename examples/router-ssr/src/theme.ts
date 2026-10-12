@@ -1,5 +1,5 @@
 // One themed styling instance, shared by the server and the browser. Every
-// module-level css() call records into nuclo's single atomic stylesheet, which
+// module-level css() call records into nuclo's single stylesheet, which
 // the server serializes with getCssText() — see src/server.ts.
 import "nuclo";
 

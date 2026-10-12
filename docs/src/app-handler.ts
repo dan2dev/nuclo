@@ -164,8 +164,8 @@ export async function appFetch(
 
   const ssrHtml = route.run(() => renderToString(App));
 
-  // Full atomic stylesheet - base rules first, then screens in theme order.
-  // Atomic classes are shared across pages, so shipping the full sheet costs
+  // Full stylesheet - base rules first, then screens in theme order.
+  // Generated classes are shared across pages, so shipping the full sheet costs
   // little and guarantees no flash of unstyled content on navigation.
   const nucloStyles = getCssText();
 

@@ -28,7 +28,7 @@ bun run dev          # vite build --watch + bun --watch src/server.ts
 | **Route loaders** | `src/pages/Post.ts` | `export const load` runs **before** the page is built — on the server for the first request, in the browser for every navigation after. View source: the post is already in the HTML |
 | Server → client data handoff | `src/ssr-data.ts` | The server serializes `route.data` into a script tag and the browser's loader takes it once, so hydration does not refetch. The page prints **"server"** on a cold load and **"browser"** after a client navigation |
 | Named catch-all | `src/pages/Files.ts` | `/app/files/a/b/readme.md` → `params.rest === "a/b/readme.md"` |
-| `getCssText()` | `src/server.ts` | The atomic stylesheet is inlined into `<head>`, so there is no unstyled flash |
+| `getCssText()` | `src/server.ts` | The generated stylesheet is inlined into `<head>`, so there is no unstyled flash |
 | Styles survive SSR | `src/ui.ts` | Page modules are imported at boot so their `css()` calls are in the sheet before the first response |
 | Works without JavaScript | — | Disable JS and the links still work: the server renders every route |
 

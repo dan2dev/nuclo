@@ -21,14 +21,14 @@ export const routeMeta: Record<RoutePath, PageMeta> = {
   docs: {
     title: "Nuclo Docs - Guide & API Reference",
     description:
-      "Nuclo docs: install, tag builders, explicit update(), when() and list(), events, lifecycle, SSR and hydration, typed atomic CSS, and the full API reference.",
+      "Nuclo docs: install, tag builders, explicit update(), when() and list(), events, lifecycle, SSR and hydration, typed CSS-in-TS, and the full API reference.",
     keywords: "nuclo documentation, api reference, getting started, update, list, when, on",
     type: "TechArticle",
   },
   examples: {
     title: "Nuclo Examples - Counter, Todo List, Search & Styling",
     description:
-      "Live Nuclo examples with source code: a counter, a todo list, a real-time search filter, and typed atomic CSS styling.",
+      "Live Nuclo examples with source code: a counter, a todo list, a real-time search filter, and typed CSS-in-TS styling.",
     keywords: "nuclo examples, counter, todo, search filter, css-in-ts, live demos",
     type: "CollectionPage",
   },

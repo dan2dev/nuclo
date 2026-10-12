@@ -3,7 +3,7 @@ import { styles as s } from "./styles";
 
 let count = 0;
 
-export const app = div(
+export const App = () => div(
 	s.app,
 
 	h1(s.heading, img(
@@ -23,10 +23,7 @@ export const app = div(
 	),
 	button(
 		s.button,
-		on("click", () => {
-			count++;
-			update();
-		}),
+		{ onClick: () => { count++; update(); } },
 		() => `Count: ${count}`
 	),
 	div(

@@ -34,7 +34,7 @@ function stop() {
 }
 // delete els.el;
 
-export const app = div(
+export const App = () => div(
   s.body,
   div(
     s.container,

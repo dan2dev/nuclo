@@ -32,7 +32,7 @@ render(Counter, document.body);
 - **State-Dependent Values** – Pass a function for any text, attribute, condition, or list that depends on state; Nuclo can evaluate it again later
 - **Explicit and Predictable** – Reevaluation doesn't happen on mutation — you trigger it yourself with a simple `update()` call
 - **Real DOM, No Virtual Layer** – Nuclo creates and updates real DOM nodes directly; there's no virtual DOM to diff
-- **Tiny Footprint** – ~14.5 KB gzipped, zero dependencies
+- **Tiny Footprint** – ~<!-- size:core-gzip -->18.0<!-- /size --> KB gzipped, zero dependencies
 - **Global Tag Builders** – Natural API with global functions for all HTML and SVG elements
 - **TypeScript-First** – Full type definitions for all 175 HTML and SVG builders
 - **Targeted DOM Updates** – `update()` re-runs registered state-dependent values and only touches DOM where values changed
@@ -170,7 +170,7 @@ const App = () => div(
   // Input
   div(
     input({ value: () => inputValue },
-      on('input', e => { inputValue = e.target.value; update(); }),
+      on('input', e => { inputValue = e.currentTarget.value; update(); }),
       on('keydown', e => e.key === 'Enter' && addTodo())
     ),
     button('Add', { onClick: addTodo })
@@ -230,7 +230,7 @@ const App = () => div(
       value: () => searchQuery
     },
     on('input', e => {
-      searchQuery = e.target.value;
+      searchQuery = e.currentTarget.value;
       update();
     })
   ),
@@ -289,7 +289,7 @@ const App = () => div(
         value: () => searchQuery
       },
       on('input', e => {
-        searchQuery = e.target.value;
+        searchQuery = e.currentTarget.value;
         update();
       }),
       on('keydown', e => e.key === 'Enter' && fetchProducts())
@@ -565,6 +565,17 @@ cartItems.push(nextItem);
 update('cart'); // only updates runtimes inside the "cart" scope
 ```
 
+#### `forceUpdate()`
+
+`update()` only runs dynamic values. Static values, such as the text in `h1(labels[lang].title)`, are fixed when the tree is built. `forceUpdate()` calls the components again and patches the live DOM to match, static values included. Use it for rare, app-wide changes, such as switching the language:
+
+```ts
+lang = 'pt';
+forceUpdate(); // rebuilds every root rendered with render(App) or hydrate(App)
+```
+
+Roots rendered with `render(App())` are skipped, so pass the component. On the server, `forceUpdate()` does nothing.
+
 ### Tag Builders
 
 All HTML and SVG tags are available globally:
@@ -623,6 +634,8 @@ const el = div(card, 'Hello');
 `css()` returns an object with a `className` key that can be passed directly to any tag builder. Global styles and keyframe animations use `globalStyle()` and `keyframes()`.
 
 Every distinct declaration block `css()` ever compiles mints a class that lives for the life of the process (only a manual test reset clears it) — this is what lets identical styles dedupe globally, but it means `css()` is for a bounded design-token vocabulary, not per-instance dynamic values. For data that varies per element instance (a user's chosen color, a computed position), use the `style` prop instead of routing it through `css({ raw: {...} })`.
+
+`getCssText()` and `resetStyles()` are named exports. `resetStyles()` is a test helper that removes every rule and the `#nuclo-styles` element. Do not call it in an app or on a server.
 
 #### Composing with `cx()`
 

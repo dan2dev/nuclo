@@ -69,10 +69,10 @@ self.onmessage = (e) => {
 //   try {
 //     // Now import Nuclo and your app - each worker gets fresh instances
 //     // const { render } = await import('nuclo')
-//     // const { app } = await import('./app.ts')
+//     // const { App } = await import('./app.ts')
 
 //     // Render the app to the virtual DOM
-//     // render(app, document.body)
+//     // render(App, document.body)
 
 //     // Extract the HTML
 //     const html = `<div id="app">hello world</div>`

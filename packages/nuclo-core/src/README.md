@@ -7,7 +7,7 @@ function you are working on, you know which folder to open.
 src/
 ├── index.ts        Public entry point — exports the whole API, auto-runs bootstrap
 ├── bootstrap.ts    Puts div(), span(), update(), list(), when(), css()… on globalThis
-├── render.ts       render() and hydrate() — mounting an app into the DOM
+├── render.ts       render(), hydrate() and forceUpdate() — mounting and rebuilding an app
 ├── hydration.ts    Cursor that walks server-rendered HTML during hydrate()/SSR
 │
 ├── element/        How div("hi", { id: "x" }) becomes a real DOM element
@@ -17,7 +17,9 @@ src/
 │   ├── attributes.ts     Applies attribute objects (static and reactive)
 │   ├── class-name.ts     className merge rules (static + reactive classes)
 │   ├── inline-style.ts   The style attribute/property
-│   └── events.ts         on("click", …) modifier + listener cleanup
+│   ├── event-attributes.ts  onClick-style attribute props → listeners
+│   ├── events.ts         on("click", …) modifier + listener cleanup
+│   └── lifecycle.ts      onMount / onDestroy (attributes and on("mount" | "destroy"))
 │
 ├── update/         update() — the reactivity engine
 │   ├── update.ts             update(): re-runs everything below
@@ -26,9 +28,10 @@ src/
 │   ├── reactive-text.ts        Re-evaluates function-valued text nodes
 │   └── registry.ts             Bookkeeping: which nodes update() must visit
 │
-├── list/           list(items, render) — keyed list rendering
+├── list/           list(items, render) — list rendering, items tracked by identity
 ├── when/           when(cond, …).else(…) — conditional blocks
-├── style/          css(), cx(), variants(), keyframes() — the CSS-in-JS engine
+├── region/         region() and into() — named places in the tree filled from elsewhere
+├── style/          css(), cx(), variants(), keyframes(), globalStyle() — the CSS-in-TS engine
 ├── ssr/            renderToString() — server-side rendering
 ├── polyfill/       Minimal DOM implementation for running nuclo without a browser
 │

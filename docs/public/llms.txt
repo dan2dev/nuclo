@@ -1,6 +1,6 @@
 # Nuclo
 
-> Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript. You build the UI with global tag-builder functions such as `div()` and `button()`, keep state in plain mutable variables, and call `update()` to sync the real DOM. There is no virtual DOM, no compiler, no proxies, no signals and no automatic change tracking. It ships server-side rendering with hydration and a typed atomic CSS-in-TS engine. MIT licensed.
+> Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript. You build the UI with global tag-builder functions such as `div()` and `button()`, keep state in plain mutable variables, and call `update()` to sync the real DOM. There is no virtual DOM, no compiler, no proxies, no signals and no automatic change tracking. It ships server-side rendering with hydration and a typed CSS-in-TS engine. MIT licensed.
 
 Nuclo is not React, Vue, Solid or Svelte. There are no hooks, no JSX, no components API, no reactive primitives and no effects. A component is a plain function that returns a builder. Nothing on the page changes until code calls `update()`.
 
@@ -62,7 +62,7 @@ render(App, document.getElementById('app')!)
 - [hydrate()](https://nuclo.dev/docs#api-hydrate): take over server-rendered HTML
 - [Server Rendering](https://nuclo.dev/docs#api-ssr): `renderToString`, `renderManyToString`, `renderToStringWithContainer` from `nuclo/ssr`
 - [nuclo/polyfill](https://nuclo.dev/docs#api-polyfill): the minimal DOM for Node, Bun and Deno
-- [css()](https://nuclo.dev/docs#api-styling): typed style objects compiled to atomic classes
+- [css()](https://nuclo.dev/docs#api-styling): typed style objects compiled to shared classes
 - [Style Objects](https://nuclo.dev/docs#style-objects): shorthands, pseudo states, `&` selectors, `@` rules and `raw`
 - [cx()](https://nuclo.dev/docs#api-cx): compose styles with last-wins conflict resolution
 - [createCss()](https://nuclo.dev/docs#api-create-css): themed styling with colors, fonts, radii, shadows and screens

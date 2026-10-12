@@ -9,10 +9,12 @@ BUMP ?= patch
 PKG_FILE := package.json
 
 # The docs site's generated version/bundle-size stats file, and the script
-# that regenerates it from this package's package.json + dist output. Kept
-# in sync with the version bump below so both land in the same commit.
+# that regenerates it (plus the bundle sizes quoted in the markdown READMEs)
+# from the packages' package.json + dist output. Kept in sync with the version
+# bump below so everything lands in the same commit.
 DOCS_STATS_SCRIPT := ../../docs/scripts/update-doc-stats.ts
 DOCS_STATS_FILE   := ../../docs/src/generated/nuclo-stats.ts
+DOCS_STATS_MD     := ../../README.md README.md ../nuclo-router/README.md
 
 # create-nuclo's starter template. Its "nuclo" range is rewritten to
 # ^<new version> on every bump — a caret on 0.x never crosses a minor, so a
@@ -29,7 +31,7 @@ version:
 	@jq -r '.version' $(PKG_FILE)
 
 # Main publish + tag workflow:
-# 1. Build
+# 1. Build (nuclo-core + nuclo-router, whose sizes the stats script reads)
 # 2. Login to npm registry
 # 3. Bump version (no auto tag/commit)
 # 4. Refresh docs' generated version/bundle-size stats for the new version
@@ -40,6 +42,7 @@ version:
 publish:
 	@echo "==> Building (bun run build)"
 	@bun run build
+	@bun run --cwd ../nuclo-router build
 	@echo "==> Logging in to npm registry"
 	@if ! npm login; then \
 	  echo "ERROR: npm login failed. Cannot proceed with publish."; \
@@ -48,10 +51,10 @@ publish:
 	@echo "==> Bumping $(BUMP) version (local package.json update)"
 	@new_version=$$($(MAKE) --no-print-directory bump-version BUMP=$(BUMP)); \
 	  echo "==> New version: $$new_version"; \
-	  echo "==> Refreshing docs stats (version + gzip size) for $$new_version"; \
+	  echo "==> Refreshing docs stats + markdown bundle sizes (version + gzip size) for $$new_version"; \
 	  bun $(DOCS_STATS_SCRIPT); \
 	  echo "==> Staging version bump + docs stats artifacts"; \
-	  git add $(PKG_FILE) $(DOCS_STATS_FILE) $(TEMPLATE_PKG_FILE); \
+	  git add $(PKG_FILE) $(DOCS_STATS_FILE) $(DOCS_STATS_MD) $(TEMPLATE_PKG_FILE); \
 	  if git diff --cached --quiet; then \
 	    echo "==> No staged changes to commit (possibly already committed)"; \
 	  else \

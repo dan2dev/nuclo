@@ -1,4 +1,4 @@
-// Atomic, theme-aware, typed CSS-in-TS.
+// Theme-aware, typed CSS-in-TS.
 export {
 	createCss,
 	css,

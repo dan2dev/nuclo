@@ -37,7 +37,7 @@ function document_(body: string, styles: string, title: string, routeData: unkno
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${title}</title>
-    <!-- The atomic stylesheet nuclo collected while rendering: no flash of
+    <!-- The stylesheet nuclo collected while rendering: no flash of
          unstyled content, and no style recalculation on hydration. -->
     <style id="nuclo-styles">${styles}</style>
     <!-- The data this page's loader produced, so the browser does not fetch

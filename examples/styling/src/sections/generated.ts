@@ -1,6 +1,6 @@
-// The atomic stylesheet. Every css()/variants()/keyframes()/globalStyle() call
+// The generated stylesheet. Every css()/variants()/keyframes()/globalStyle() call
 // records rules into one shared <style id="nuclo-styles"> sheet, injected via
-// CSSOM. Identical declarations dedupe to a single class shared across every
+// CSSOM. Identical style blocks dedupe to a single class shared across every
 // component, so reuse grows as the app grows. On the server the same sheet is
 // serialized with getCssText() (from "nuclo/ssr") and inlined into <head>.
 import { css } from "../theme.ts";
@@ -24,7 +24,7 @@ function readSheet(): string {
 
 function summary(): string {
   const count = liveSheet()?.cssRules.length ?? 0;
-  return `${count} atomic rules · ${(readSheet().length / 1024).toFixed(1)} KB — one shared sheet`;
+  return `${count} rules · ${(readSheet().length / 1024).toFixed(1)} KB — one shared sheet`;
 }
 
 const label = css({ font: "mono", text: 12, color: "accent", mb: 10 });
@@ -35,8 +35,8 @@ const sheetBox = css({
 });
 
 export const generatedSection = feature(
-  "The atomic stylesheet",
-  "Declarations dedupe to reusable atomic classes in one shared sheet (getCssText() serializes it for SSR). This is the live sheet for everything on this page:",
+  "The generated stylesheet",
+  "Identical style blocks dedupe to one reusable class in one shared sheet (getCssText() serializes it for SSR). This is the live sheet for everything on this page:",
   div(
     div(label, () => summary()),
     pre(sheetBox, () => readSheet()),

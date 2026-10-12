@@ -32,11 +32,11 @@ render(Counter, document.body);
 - **State-dependent values** – Pass a function for any text, attribute, condition, or list that depends on state. Nuclo can run it again later.
 - **Explicit and predictable** – Mutation alone does not trigger reevaluation. You trigger it yourself with an `update()` call.
 - **Real DOM, no virtual layer** – Nuclo creates and updates real DOM nodes directly. There is no virtual DOM to diff.
-- **Small runtime** – About 14.5 KB gzipped for the entire runtime. Zero dependencies.
+- **Small runtime** – About <!-- size:core-gzip -->18.0<!-- /size --> KB gzipped for the entire runtime. Zero dependencies.
 - **Global tag builders** – Global functions cover every HTML and SVG element.
 - **TypeScript-first** – Full type definitions cover all 175 HTML and SVG builders.
 - **Targeted DOM updates** – `update()` re-runs registered state-dependent values. It touches the DOM only where a value changed.
-- **Atomic styling** – Built-in `css()` and `createCss()` give TypeScript autocomplete, theming, and SSR CSS collection.
+- **Typed styling** – Built-in `css()` and `createCss()` give TypeScript autocomplete, theming, and SSR CSS collection.
 - **Server-side rendering** – `renderToString()` and `hydrate()` work together with a lightweight DOM polyfill.
 
 ---
@@ -170,7 +170,7 @@ const App = () => div(
   // Input
   div(
     input({ value: () => inputValue },
-      on('input', e => { inputValue = e.target.value; update(); }),
+      on('input', e => { inputValue = e.currentTarget.value; update(); }),
       on('keydown', e => e.key === 'Enter' && addTodo())
     ),
     button('Add', { onClick: addTodo })
@@ -230,7 +230,7 @@ const App = () => div(
       value: () => searchQuery
     },
     on('input', e => {
-      searchQuery = e.target.value;
+      searchQuery = e.currentTarget.value;
       update();
     })
   ),
@@ -289,7 +289,7 @@ const App = () => div(
         value: () => searchQuery
       },
       on('input', e => {
-        searchQuery = e.target.value;
+        searchQuery = e.currentTarget.value;
         update();
       }),
       on('keydown', e => e.key === 'Enter' && fetchProducts())
@@ -411,6 +411,17 @@ list(() => items, (item, index) =>
 
 Mutate the array with `push`, `splice`, or `reverse`. Then call `update()`. Nuclo reuses an element when the item reference stays the same.
 
+### 5. **Named regions**
+
+`region({ id })` marks a place in the tree and `into(id, …)` fills it from
+anywhere else, so a layout can place content it never receives as a prop:
+
+```ts
+main(region({ id: "main" }))
+// …elsewhere in the tree
+into("main", article("the page"))
+```
+
 ## API Reference
 
 ### Core Functions
@@ -456,6 +467,49 @@ when(() => count > 10,
 
 The first matching condition wins. The DOM stays unchanged if the active branch does not change.
 
+#### `region(options)` and `into(id, ...content)`
+
+A **region** is a named place in the tree; `into()` fills it from anywhere
+else. This decouples *where* content appears from *who* builds it, so a layout
+can host content it never receives as a prop:
+
+```ts
+// the layout — knows nothing about what goes in it
+div(
+  aside(nav(/* … */)),
+  main(region({ id: "main", empty: p("Nothing open.") })),
+)
+
+// anywhere after it, at any depth
+into("main", article(h1("Hello")))
+```
+
+`into()` leaves only an anchor comment where it is written — it is a pointer,
+not a container.
+
+| option | |
+| --- | --- |
+| `id` | the name `into()` calls use to find the region. Unique in the tree. |
+| `type` | `"latest"` (the default) renders only the newest view; `"stack"` renders every view, in arrival order. |
+| `empty` | rendered whenever the region holds no views. |
+
+A stacked region is how one view opens *over* another: the one underneath is
+not re-rendered, so its DOM, its focus and its half-filled form are all still
+there.
+
+**Any order.** A `into()` written before its region — or rendered into another
+root earlier — waits and shows the moment the region is built; views arrive in
+the order they were written. A region that goes away (its `when()` closes)
+hands its views back to waiting, so a region that returns under the same id
+shows them again.
+
+**Content lives as long as the view.** When the `when()` holding an `into()`
+closes, or its `list()` row goes, the content leaves the region too — a closed
+layer does not stay on screen, and re-opening it adds one copy, not two.
+
+Regions survive SSR — each view claims the server's nodes on hydration rather
+than rebuilding them.
+
 #### Events
 
 Attach event listeners with camelCase `on*` attribute props, such as `onClick`, `onInput`, `onChange`, and `onKeyDown`. In an attribute object, a key that matches a known event and holds a function value is registered as a listener, not as a reactive attribute:
@@ -475,6 +529,28 @@ button('Click me',
 )
 ```
 
+Standard names are inferred from the common HTML, media, video, and body event maps. Custom events can provide their event type explicitly with `on<"app:ready", CustomEvent<Detail>>(...)`.
+
+#### Lifecycle (`onMount` / `onDestroy`)
+
+Run code once an element is created and connected to the document, and once it's removed — as an `onMount`/`onDestroy` attribute pair (same object-literal style as events) or via `on("mount", ...)`/`on("destroy", ...)`:
+
+```ts
+div({
+  onMount(el) {
+    const id = setInterval(() => tick(el), 1000);
+    return () => clearInterval(id); // ran on destroy, like onDestroy
+  },
+  onDestroy(el) {
+    analytics.track('closed', el.id);
+  },
+})
+```
+
+`onMount` may return a cleanup function (no arguments) — it's called on destroy exactly like a separate `onDestroy` would be, so a subscription started in `onMount` can be released right next to where it's opened.
+
+Because nuclo builds a tree off-document before attaching it in one shot, `onMount` can't fire the instant the element is built — it's queued and fires once `render()`/`hydrate()`/`update()` finishes inserting that element, with it already connected. `onDestroy` fires when nuclo removes the element itself (a `list()` row is removed, a `when()` branch switches, or `forceUpdate()` drops it). If you remove an element yourself — a raw `node.remove()` or `innerHTML = ''` — its `onDestroy` and cleanups never run, and timers keep running. To tear down an app with cleanup, wrap it in `when()` and switch the condition off. Nuclo's own bookkeeping is WeakMap-based, so it never keeps a removed element alive — no manual cleanup registry to manage.
+
 #### `scope(...ids)`
 
 Registers an element as a named update root. After this, `update("id")` re-runs only the dynamic bindings inside that root, not the whole page:
@@ -488,6 +564,17 @@ div(
 cartItems.push(nextItem);
 update('cart'); // only updates runtimes inside the "cart" scope
 ```
+
+#### `forceUpdate()`
+
+`update()` only runs dynamic values. Static values, such as the text in `h1(labels[lang].title)`, are fixed when the tree is built. `forceUpdate()` calls the components again and patches the live DOM to match, static values included. Use it for rare, app-wide changes, such as switching the language:
+
+```ts
+lang = 'pt';
+forceUpdate(); // rebuilds every root rendered with render(App) or hydrate(App)
+```
+
+Roots rendered with `render(App())` are skipped, so pass the component. On the server, `forceUpdate()` does nothing.
 
 ### Tag Builders
 
@@ -524,7 +611,7 @@ div({
 
 ### Styling
 
-Nuclo includes an atomic CSS-in-TS engine. `css()` is available globally after `import 'nuclo'`. Use `createCss()` for theming and responsive breakpoints:
+Nuclo includes a block-based CSS-in-TS engine. `css()` is available globally after `import 'nuclo'`. Use `createCss()` for theming and responsive breakpoints:
 
 ```ts
 import 'nuclo';
@@ -546,9 +633,13 @@ const el = div(card, 'Hello');
 
 `css()` returns an object with a `className` key. Pass this object directly to any tag builder. For global styles and keyframe animations, use `globalStyle()` and `keyframes()`.
 
+Every distinct declaration block that `css()` compiles mints a class that lives for the life of the process. Only `resetStyles()`, a test helper, clears them. This is what lets identical styles dedupe globally. It also means `css()` fits a bounded design-token vocabulary, not per-instance dynamic values. For data that varies per element instance, such as a user's chosen color or a computed position, use the `style` prop.
+
+`getCssText()` and `resetStyles()` are named exports. `resetStyles()` is a test helper that removes every rule and the `#nuclo-styles` element. Do not call it in an app or on a server.
+
 #### Composing with `cx()`
 
-`cx()` composes styles and resolves conflicts with an exact, last-wins rule. The engine knows which declaration each class represents, so a later `color` atom drops the earlier one. No guessing is involved, unlike tools such as tailwind-merge. `cx()` accepts style results, raw class strings, falsy values, and nested arrays:
+`cx()` composes styles and resolves conflicts with an exact, last-wins rule. When two generated classes target the same selector context, Nuclo merges their declaration blocks and the later value wins per property. No guessing is involved, unlike tools such as tailwind-merge. `cx()` accepts style results, raw class strings, falsy values, and nested arrays:
 
 ```ts
 cx(base, isActive && activeStyle);          // conditional
@@ -557,7 +648,7 @@ cx([base, isActive && activeStyle], extra); // arrays are flattened
 
 #### Typed variants with `variants()`
 
-`variants()` turns a base style plus named variant groups into a strongly-typed recipe. Nuclo infers variant names and values, so selecting an unknown variant is a compile error. Select `true`/`false` value groups with real booleans. Every variant compiles to atomic classes once, at definition time. A call is a cached lookup plus a `cx()` merge.
+`variants()` turns a base style plus named variant groups into a strongly-typed recipe. Nuclo infers variant names and values, so selecting an unknown variant is a compile error. Select `true`/`false` value groups with real booleans. Nuclo merges each selected combination, compiles it once, and caches it for later calls.
 
 ```ts
 import 'nuclo';

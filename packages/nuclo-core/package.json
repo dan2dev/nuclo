@@ -10,7 +10,7 @@
 		"ui",
 		"ssr",
 		"hydration",
-		"atomic-css",
+		"css-in-ts",
 		"no-vdom",
 		"typescript"
 	],

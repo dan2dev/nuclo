@@ -1,6 +1,6 @@
 # nuclo styling — feature showcase
 
-A live, runnable tour of **every feature** in nuclo's atomic CSS-in-TS styling
+A live, runnable tour of **every feature** in nuclo's typed CSS-in-TS styling
 system. Each section is built with `css()` / `cx()` / `variants()` /
 `keyframes()` / `globalStyle()` from a single themed `createCss()` instance and
 rendered to the DOM.
@@ -22,7 +22,7 @@ bun run dev      # in this folder, then open the printed URL
 | `sections/compose.ts` | `cx()` last-wins conflict resolution, conditionals, array flattening, external classes |
 | `sections/recipes.ts` | `variants()` — `base`, variant groups, boolean variants, `defaultVariants`, `compoundVariants` |
 | `sections/animation.ts` | `keyframes()` (`from`/`to` and percentage stops) driving `animation` |
-| `sections/generated.ts` | `getCssText()` — the serialized atomic stylesheet (SSR CSS collection) |
+| `sections/generated.ts` | `getCssText()` — the serialized stylesheet (SSR CSS collection) |
 
 Type safety is on display too: this project builds under `tsc --strict`, and
 selecting an undefined variant or mistyping a property is a compile error.
