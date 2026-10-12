@@ -17,6 +17,7 @@ const APP_FILES: Record<string, string[]> = {
   sorting: ["app.ts", "algorithms.ts", "styles.ts"],
   kanban: ["app.ts", "board.ts", "styles.ts"],
   three: ["app.ts", "scene.ts", "styles.ts"],
+  "infinite-scroll": ["app.ts", "api.ts", "styles.ts"],
 };
 
 const read = async (dir: string, file: string) => (await Bun.file(join(dir, file)).text()).trim();

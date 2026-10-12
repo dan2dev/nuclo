@@ -7,6 +7,7 @@ import { APP_DEMO_SOURCES } from "../../generated/app-demo-sources.ts";
 import { SortingStepper } from "../../demos/apps/sorting/app.ts";
 import { KanbanBoard } from "../../demos/apps/kanban/app.ts";
 import { ThreeInspector } from "../../demos/apps/three/app.ts";
+import { InfiniteFeed } from "../../demos/apps/infinite-scroll/app.ts";
 
 export interface AppExample {
   id: string;
@@ -45,5 +46,12 @@ export const APP_EXAMPLES: AppExample[] = [
     "A library that owns its own state. The panel reads positions, colors and flags straight from the three.js objects and writes edits back to them. The render loop calls `update()` once per frame; nothing is mirrored.",
     ThreeInspector,
     "api-update",
+  ),
+  app(
+    "infinite-scroll",
+    "Infinite Scroll",
+    "Pages from a fake `fetch()` land in one plain array with `push()`, so the rows on screen are never rebuilt. A sentinel row creates an IntersectionObserver in `on(\"mount\")`, returns its cleanup, and asks for the next page as it comes into view.",
+    InfiniteFeed,
+    "lifecycle",
   ),
 ];
