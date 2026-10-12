@@ -9,9 +9,12 @@
     "dev": "vite",
     "build:deps": "bun run --cwd ../../packages/nuclo-core build && bun run --cwd ../../packages/nuclo-router build",
     "build": "bun run build:deps && tsc && vite build",
-    "preview": "bun run build && vite preview"
+    "preview": "bun run build && vite preview",
+    "start": "bun src/server.ts",
+    "preview:ssr": "bun run build && bun run start"
   },
   "devDependencies": {
+    "@types/bun": "^1.4.2",
     "@types/node": "^26.6.3",
     "nuclo": "workspace:*",
     "nuclo-router": "workspace:*",

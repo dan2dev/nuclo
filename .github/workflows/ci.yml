@@ -20,9 +20,46 @@ jobs:
       - run: bun run build
         working-directory: packages/nuclo-core
 
+  nuclo-router:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+        working-directory: packages/nuclo-core
+      - run: bun run test
+        working-directory: packages/nuclo-router
+      - run: bun run build
+        working-directory: packages/nuclo-router
+
+  # A package changed when its directory differs from the commit of its last
+  # release tag (v* for nuclo-core, nuclo-router-v* for nuclo-router).
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      # Publishing only happens on pushes to main that are not bot bump commits.
+      release: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'chore(') }}
+      core: ${{ steps.diff.outputs.core }}
+      router: ${{ steps.diff.outputs.router }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: diff
+        run: |
+          changed() { # $1=tag glob, $2=path
+            local tag
+            tag=$(git describe --tags --match "$1" --abbrev=0 2>/dev/null) || { echo true; return; }
+            git diff --quiet "$tag" HEAD -- "$2" && echo false || echo true
+          }
+          echo "core=$(changed 'v[0-9]*' packages/nuclo-core)" >> "$GITHUB_OUTPUT"
+          echo "router=$(changed 'nuclo-router-v*' packages/nuclo-router)" >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
+
   publish-nuclo:
-    needs: nuclo-core
-    if: "${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'chore(core): bump nuclo-core') }}"
+    needs: [nuclo-core, nuclo-router, detect]
+    if: ${{ needs.detect.outputs.release == 'true' && needs.detect.outputs.core == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -47,7 +84,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add packages/nuclo-core/package.json docs/src/generated/nuclo-stats.ts packages/create-nuclo/templates/basic/package.json
+          git add packages/nuclo-core/package.json docs/src/generated/nuclo-stats.ts packages/create-nuclo/templates/basic/package.json README.md packages/*/README.md
           git commit -m "chore(core): bump nuclo-core to $VERSION"
       - name: Publish
         working-directory: packages/nuclo-core
@@ -59,9 +96,52 @@ jobs:
           git tag -a "v$VERSION" -m "Release v$VERSION"
           git push --follow-tags
 
+  # Runs after publish-nuclo (never in parallel: both push to main) and checks
+  # out main again so it builds on top of the core bump commit, if any.
+  publish-router:
+    needs: [nuclo-core, nuclo-router, detect, publish-nuclo]
+    if: ${{ !cancelled() && needs.detect.outputs.release == 'true' && needs.detect.outputs.router == 'true' && needs.nuclo-core.result == 'success' && needs.nuclo-router.result == 'success' && (needs.publish-nuclo.result == 'success' || needs.publish-nuclo.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: bun install --frozen-lockfile
+      - name: Bump patch version and refresh docs stats
+        working-directory: packages/nuclo-router
+        run: |
+          (cd ../nuclo-core && bun run build)
+          bun run build
+          version=$(make --no-print-directory bump-version BUMP=patch)
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          bun ../../docs/scripts/update-doc-stats.ts
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/nuclo-router/package.json docs/src/generated/nuclo-stats.ts README.md packages/*/README.md
+          git commit -m "chore(router): bump nuclo-router to $VERSION"
+      - name: Publish
+        working-directory: packages/nuclo-router
+        run: |
+          npm i -g npm@latest
+          npm publish --provenance --access public
+      - name: Tag and push
+        run: |
+          git tag -a "nuclo-router-v$VERSION" -m "Release nuclo-router v$VERSION"
+          git push --follow-tags
+
   deploy-docs:
-    needs: publish-nuclo
-    if: "${{ !cancelled() && (needs.publish-nuclo.result == 'success' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')) }}"
+    needs: [publish-nuclo, publish-router]
+    if: "${{ !cancelled() && (needs.publish-nuclo.result == 'success' || needs.publish-router.result == 'success' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')) }}"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

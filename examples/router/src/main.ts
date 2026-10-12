@@ -2,8 +2,8 @@
  * The browser entry.
  *
  * `start()` resolves the current URL's page module before returning, so the
- * first tree is complete — then render (or `hydrate`, if the HTML came from a
- * server).
+ * first tree is complete — then render, or `hydrate` when the HTML came from
+ * `bun run start` (src/server.ts).
  *
  * The try/catch is not boilerplate: the *initial* load is the one failure the
  * router cannot report on a Route, because there is no Route yet. Everything
@@ -20,7 +20,8 @@ const container = document.querySelector<HTMLDivElement>("#app")!;
 
 try {
   await router.start();
-  render(App, container);
+  // Server-rendered markup in the container → claim it; otherwise build it.
+  (container.hasChildNodes() ? hydrate : render)(App, container);
   // Exposed so your devtools console can drive the router.
   Object.assign(window as unknown as Record<string, unknown>, { router });
 } catch (error) {

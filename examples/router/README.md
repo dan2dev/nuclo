@@ -13,8 +13,19 @@ bun run dev      # in this folder, then open the printed URL
 `bun run dev` builds `nuclo` and `nuclo-router` first (they resolve from their
 `dist/`), then starts Vite.
 
-For **server rendering, hydration, idle preloading and a non-root `base`**, see
-the companion example: [`examples/router-ssr`](../router-ssr).
+```bash
+bun run preview:ssr   # build, then serve every route server-rendered on :5175
+```
+
+`src/server.ts` renders each request with the `vite build` output as its HTML
+template, and `src/main.ts` hydrates it when the container already has markup
+(otherwise it renders, as under `bun run dev`). Unknown paths answer with a
+real 404. Known gap: the `router.matches()` block in `app.ts` uses a lazy
+view, which the router does not server-render, so it appears only after
+hydration.
+
+For the annotated, minimal version — plus idle preloading, a non-root `base`
+and the loader-data handoff — see [`examples/router-ssr`](../router-ssr).
 
 ## What each page covers
 
