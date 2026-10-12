@@ -65,16 +65,16 @@ function Icon(d: string) {
   );
 }
 
-function NavLink(layer: Layer, from: ExampleSource, target: Example | undefined, dir: "left" | "right") {
+/** A fixed-size icon button; the neighbor's title is its tooltip, so the pager never changes width. */
+function PagerButton(layer: Layer, from: ExampleSource, target: Example | undefined, dir: "left" | "right") {
   const label = dir === "left" ? "Previous" : "Next";
-  const chevron = Icon(dir === "left" ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6");
   return a(
-    es.navLink,
+    es.pagerBtn,
     target
-      ? { href: exampleHref(target.id, from), "aria-label": `${label}: ${target.title}`, onClick: (e: MouseEvent) => { e.preventDefault(); stepTo(layer, from, target.id); } }
-      : { "aria-disabled": "true" },
-    !target ? es.navLinkOff : null,
-    ...(dir === "left" ? [chevron, span(target?.title ?? label)] : [span(target?.title ?? label), chevron]),
+      ? { href: exampleHref(target.id, from), "aria-label": `${label}: ${target.title}`, title: `${label}: ${target.title}`, onClick: (e: MouseEvent) => { e.preventDefault(); stepTo(layer, from, target.id); } }
+      : { "aria-disabled": "true", "aria-label": label },
+    !target ? es.pagerBtnOff : null,
+    Icon(dir === "left" ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"),
   );
 }
 
@@ -82,10 +82,13 @@ function Nav(layer: Layer, from: ExampleSource, ex: Example, index: number) {
   return nav(
     es.nav,
     { "aria-label": "Examples navigation" },
-    span(es.navCrumb, span("Examples"), span("/"), strong(ex.group)),
-    NavLink(layer, from, ALL_EXAMPLES[index - 1], "left"),
-    span(es.navPos, `${String(index + 1).padStart(2, "0")} / ${ALL_EXAMPLES.length}`),
-    NavLink(layer, from, ALL_EXAMPLES[index + 1], "right"),
+    div(
+      es.pager,
+      PagerButton(layer, from, ALL_EXAMPLES[index - 1], "left"),
+      span(es.navPos, `${String(index + 1).padStart(2, "0")} / ${ALL_EXAMPLES.length}`),
+      PagerButton(layer, from, ALL_EXAMPLES[index + 1], "right"),
+    ),
+    span(es.navCrumb, span(es.navCrumbPath, span("Examples"), span("/"), span(ex.group), span("/")), strong(ex.title)),
   );
 }
 

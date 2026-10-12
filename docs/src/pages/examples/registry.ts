@@ -1,6 +1,7 @@
 import { EXAMPLES } from "../../content/examples.ts";
 import { API_DEMOS } from "../../components/api-demos.ts";
 import { STYLING_FEATURES } from "./styling-demos.ts";
+import { SVG_EXAMPLES } from "./svg-demos.ts";
 import { buildPreview } from "./demos.ts";
 
 export interface Example {
@@ -37,6 +38,11 @@ export const EXAMPLE_GROUPS: ExampleGroup[] = [
     title: "Styling",
     sub: "Create a class, compose a class, and use a tiny theme.",
     examples: STYLING_FEATURES.map((f) => ({ ...f, group: "Styling" })),
+  },
+  {
+    title: "SVG",
+    sub: "Charts and animations from the SVG tag builders, driven by plain data and update().",
+    examples: SVG_EXAMPLES.map((ex) => ({ ...ex, group: "SVG" })),
   },
 ];
 

@@ -28,12 +28,14 @@ export const es = {
   close: css("pages-examples-styles-close", { display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, width: "40px", height: "40px", marginLeft: "auto", borderRadius: "10px", color: colors.textDim, hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
   body: css("pages-examples-styles-body", { flex: "1", minHeight: "0", overflow: "auto", raw: { "overscroll-behavior": "contain", "scrollbar-gutter": "stable" } }),
 
-  // ── Prev/next in the bar ──
-  nav: css("pages-examples-styles-nav", { display: "flex", alignItems: "center", gap: "4px", minWidth: "0", flex: "1" }),
-  navCrumb: css("pages-examples-styles-navCrumb", { display: "none", alignItems: "center", gap: "8px", fontSize: "0.8125rem", color: colors.textMuted, whiteSpace: "nowrap", marginRight: "12px", "& strong": { fontWeight: "500", color: colors.textDim }, medium: { display: "flex" } }),
-  navLink: css("pages-examples-styles-navLink", { display: "inline-flex", alignItems: "center", gap: "6px", height: "36px", padding: "0 10px", borderRadius: "9px", fontSize: "0.8125rem", fontWeight: "500", color: colors.textDim, whiteSpace: "nowrap", hover: { color: colors.text, backgroundColor: colors.bgSecondary }, "& span": { display: "none", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", large: { display: "inline" } } }),
-  navLinkOff: css("pages-examples-styles-navLinkOff", { opacity: "0.35", pointerEvents: "none" }),
-  navPos: css("pages-examples-styles-navPos", { fontFamily: mono, fontSize: "0.75rem", color: colors.textMuted, padding: "0 8px", whiteSpace: "nowrap" }),
+  // ── The bar: a fixed-width pager (prev, position, next) so nothing moves between examples, then the crumb ──
+  nav: css("pages-examples-styles-nav", { display: "flex", alignItems: "center", gap: "14px", minWidth: "0", flex: "1" }),
+  pager: css("pages-examples-styles-pager", { display: "inline-flex", alignItems: "center", flexShrink: 0, height: "34px", border: `1px solid ${colors.border}`, borderRadius: "10px", overflow: "hidden", "& > * + *": { raw: { "border-left": "1px solid var(--c-border)" } } }),
+  pagerBtn: css("pages-examples-styles-pagerBtn", { display: "flex", alignItems: "center", justifyContent: "center", width: "38px", height: "100%", color: colors.textDim, hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
+  pagerBtnOff: css("pages-examples-styles-pagerBtnOff", { opacity: "0.35", pointerEvents: "none" }),
+  navPos: css("pages-examples-styles-navPos", { display: "flex", alignItems: "center", justifyContent: "center", height: "100%", minWidth: "72px", padding: "0 10px", fontFamily: mono, fontSize: "0.75rem", color: colors.textMuted, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }),
+  navCrumb: css("pages-examples-styles-navCrumb", { display: "flex", alignItems: "center", gap: "8px", minWidth: "0", fontSize: "0.8125rem", color: colors.textMuted, whiteSpace: "nowrap", "& strong": { fontWeight: "600", color: colors.text, overflow: "hidden", textOverflow: "ellipsis" } }),
+  navCrumbPath: css("pages-examples-styles-navCrumbPath", { display: "none", alignItems: "center", gap: "8px", medium: { display: "flex" } }),
 
   // ── The example itself, inside the panel body ──
   detail: css("pages-examples-styles-detail", { display: "flex", flexDirection: "column", minHeight: "100%" }),
