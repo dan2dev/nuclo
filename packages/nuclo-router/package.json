@@ -1,7 +1,7 @@
 {
 	"name": "nuclo-router",
 	"private": false,
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "Routing for nuclo — SSR, hydration, code-split routes and idle preloading, built on list() and update().",
 	"license": "MIT",
 	"author": "Danilo Celestino de Castro (https://github.com/dan2dev)",
