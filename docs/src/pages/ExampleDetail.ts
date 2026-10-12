@@ -1,88 +1,146 @@
 /**
- * /examples/:id - one example, rendered inside the frame the examples page
- * owns. The page returns its content for the outlet and an into() that puts
- * prev/next navigation in the frame's bar. Both leave with the page.
+ * /examples/:id - one example, shown in a modal over whatever page is beneath.
+ *
+ * Also served as /docs/example-:id, so an example opened from the docs keeps
+ * the docs in the address bar. In the app it is opened with router.push()
+ * (examples/open.ts), so it is a layer: the docs or the grid stay mounted under
+ * it, and Back or close() walk history back to exactly where the reader was. On
+ * a direct load it is the parent page's child route instead. Either way the
+ * page fills the app's modal frame (examples/frame.ts) with into(), so the
+ * frame is built once and only its content changes from example to example.
  */
-import type { DataLoader, PageProps, RouteContext } from "nuclo-router";
+import type { DataLoader, Layer, PageProps, RouteContext } from "nuclo-router";
 import { router } from "../router.ts";
 import { CodeBlock } from "../components/CodeBlock.ts";
 import { withCode } from "../components/inline-code.ts";
 import { es } from "./examples/styles.ts";
 import { ALL_EXAMPLES, findExample, type Example } from "./examples/registry.ts";
-import { NAV_REGION } from "./Examples.ts";
+import { EXAMPLE_PREFIX, exampleHref, type ExampleSource } from "./examples/open.ts";
+import { BAR_REGION, BODY_REGION } from "./examples/frame.ts";
+
+/** Which parent the route sits under, from its pattern. */
+const sourceOf = (ctx: RouteContext): ExampleSource => (ctx.pattern.startsWith("/docs") ? "docs" : "examples");
+
+/** The example id of either URL shape; null for /docs/<anything else>. */
+function idOf(ctx: RouteContext): string | null {
+  if (sourceOf(ctx) === "examples") return ctx.params.id;
+  const seg = ctx.params.example;
+  return seg.startsWith(EXAMPLE_PREFIX) ? seg.slice(EXAMPLE_PREFIX.length) : null;
+}
 
 // null means "no such example": the server answers with a 404 (see app-handler.ts).
-export const load: DataLoader<Example | null> = (ctx) => findExample(ctx.params.id) ?? null;
+export const load: DataLoader<Example | null> = (ctx) => {
+  const id = idOf(ctx);
+  return (id ? findExample(id) : undefined) ?? null;
+};
 
-function Chevron(dir: "left" | "right") {
+/** The first layer of examples, so a deeper one can close the whole stack at once. */
+let firstLayer: Layer | undefined;
+
+/** Closes every open example: back to the page beneath, or to the parent page on a direct load. */
+function closeExamples(layer: Layer, from: ExampleSource) {
+  if (layer.depth > 0) firstLayer?.close();
+  else void router.go(router.href(from === "docs" ? "/docs" : "/examples"));
+}
+
+/** Prev/next: another layer when stacked (Back steps through them), a sibling route on a direct load. */
+function stepTo(layer: Layer, from: ExampleSource, id: string) {
+  if (layer.depth > 0) void layer.push(exampleHref(id, from));
+  else void router.go(exampleHref(id, from));
+}
+
+/** The topmost example owns the keyboard: lower layers keep their modals but stay quiet. */
+const isTop = (layer: Layer) => layer.depth === router.depth - 1;
+
+let locks = 0;
+function lockScroll() {
+  if (locks++ === 0) document.documentElement.style.overflow = "hidden";
+  return () => { if (--locks === 0) document.documentElement.style.overflow = ""; };
+}
+
+function Icon(d: string) {
   return svgSvg(
     { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" },
-    pathSvg({ d: dir === "left" ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6" }),
+    pathSvg({ d }),
   );
 }
 
-function NavLink(target: Example | undefined, dir: "left" | "right") {
+function NavLink(layer: Layer, from: ExampleSource, target: Example | undefined, dir: "left" | "right") {
   const label = dir === "left" ? "Previous" : "Next";
+  const chevron = Icon(dir === "left" ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6");
   return a(
     es.navLink,
-    target ? { href: router.href(`/examples/${target.id}`), "aria-label": `${label}: ${target.title}` } : { "aria-disabled": "true" },
+    target
+      ? { href: exampleHref(target.id, from), "aria-label": `${label}: ${target.title}`, onClick: (e: MouseEvent) => { e.preventDefault(); stepTo(layer, from, target.id); } }
+      : { "aria-disabled": "true" },
     !target ? es.navLinkOff : null,
-    ...(dir === "left" ? [Chevron("left"), span(target?.title ?? label)] : [span(target?.title ?? label), Chevron("right")]),
+    ...(dir === "left" ? [chevron, span(target?.title ?? label)] : [span(target?.title ?? label), chevron]),
   );
 }
 
-/** Prev/next and position, placed in the frame's bar by the page below. */
-function Nav(ex: Example, index: number) {
+function Nav(layer: Layer, from: ExampleSource, ex: Example, index: number) {
   return nav(
     es.nav,
     { "aria-label": "Examples navigation" },
     span(es.navCrumb, span("Examples"), span("/"), strong(ex.group)),
-    NavLink(ALL_EXAMPLES[index - 1], "left"),
+    NavLink(layer, from, ALL_EXAMPLES[index - 1], "left"),
     span(es.navPos, `${String(index + 1).padStart(2, "0")} / ${ALL_EXAMPLES.length}`),
-    NavLink(ALL_EXAMPLES[index + 1], "right"),
+    NavLink(layer, from, ALL_EXAMPLES[index + 1], "right"),
   );
 }
 
-// Keys and scroll lock live as long as the page: Esc closes, arrows step.
-function dialogBehavior(index: number) {
+// Keys and the scroll lock live as long as the modal: Esc closes, arrows step.
+function dialogBehavior(layer: Layer, from: ExampleSource, index: number) {
   return on("mount", (el) => {
-    const prev = ALL_EXAMPLES[index - 1];
+    if (layer.depth === 1) firstLayer = layer;
+    const prev = index > 0 ? ALL_EXAMPLES[index - 1] : undefined;
     const next = index >= 0 ? ALL_EXAMPLES[index + 1] : undefined;
     const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key === "Escape") router.go("/examples");
-      else if (e.key === "ArrowLeft" && prev) router.go(`/examples/${prev.id}`);
-      else if (e.key === "ArrowRight" && next) router.go(`/examples/${next.id}`);
+      if (!isTop(layer) || e.defaultPrevented || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === "Escape") closeExamples(layer, from);
+      else if (e.key === "ArrowLeft" && prev) stepTo(layer, from, prev.id);
+      else if (e.key === "ArrowRight" && next) stepTo(layer, from, next.id);
     };
     document.addEventListener("keydown", onKey);
-    const overflow = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    el.parentElement?.scrollTo(0, 0);
+    const unlock = lockScroll();
+    el.parentElement?.scrollTo(0, 0); // the frame's body keeps its scroll between examples
     (el.querySelector("h2") as HTMLElement | null)?.focus({ preventScroll: true });
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.documentElement.style.overflow = overflow;
+      unlock();
     };
   });
 }
 
-export default function ExampleDetail(ctx: RouteContext, { data: ex }: PageProps<Example | null>) {
+/** Fills the frame: the bar gets the nav and the close button, the body gets the example. */
+function fillFrame(layer: Layer, from: ExampleSource, index: number, bar: NodeModLike, body: NodeModLike) {
+  const close = a(
+    es.close,
+    { href: router.href(from === "docs" ? "/docs" : "/examples"), "aria-label": "Close example", title: "Close (Esc)", onClick: (e: MouseEvent) => { e.preventDefault(); closeExamples(layer, from); } },
+    Icon("M6 6l12 12 M18 6L6 18"),
+  );
+  return into({
+    [BAR_REGION]: [bar, close],
+    [BODY_REGION]: div(dialogBehavior(layer, from, index), body),
+  });
+}
+
+export default function ExampleDetail(ctx: RouteContext, { data: ex, layer }: PageProps<Example | null>) {
+  const from = sourceOf(ctx);
   if (!ex) {
-    return div(
+    return fillFrame(layer, from, -1, span(), div(
       es.notFound,
-      dialogBehavior(-1),
-      p(`There is no example called "${ctx.params.id}".`),
-      p(a({ href: router.href("/examples") }, "Back to all examples")),
-    );
+      h2(es.detailTitle, { tabindex: "-1" }, "Not found"),
+      p(`There is no example called "${idOf(ctx) ?? ctx.params.example}".`),
+      p(a({ href: router.href("/examples") }, "All examples")),
+    ));
   }
 
   const index = ALL_EXAMPLES.indexOf(ex);
   const file = `${ex.title.replace(/[^a-zA-Z0-9]+/g, "")}.ts`;
 
-  return div(
+  return fillFrame(layer, from, index, Nav(layer, from, ex, index), div(
     es.detail,
-    dialogBehavior(index),
-    into(NAV_REGION, Nav(ex, index)),
     header(
       es.detailHead,
       div(es.detailKicker, ex.group),
@@ -95,5 +153,5 @@ export default function ExampleDetail(ctx: RouteContext, { data: ex }: PageProps
       section(es.previewPane, div(es.paneLabel, "Preview"), div(es.previewBody, ex.preview())),
       section(es.codePane, CodeBlock({ filename: file, code: ex.code })),
     ),
-  );
+  ));
 }

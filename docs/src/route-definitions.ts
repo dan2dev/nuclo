@@ -4,7 +4,12 @@ import type { RouteLoader } from "nuclo-router";
 // the section page is the layout and each child renders inside its outlet().
 export const routeDefinitions = [
   { path: "home",     loader: () => import("./pages/Home.ts").then(m => ({ default: m.HomePage })) },
-  { path: "docs",     loader: () => import("./pages/Docs.ts").then(m => ({ default: m.DocsPage })) },
+  {
+    path: "docs",
+    loader: () => import("./pages/Docs.ts").then(m => ({ default: m.DocsPage })),
+    // /docs/example-<id>: an example over the docs. Params are whole segments, so the page strips the prefix.
+    children: { "./:example": () => import("./pages/ExampleDetail.ts") },
+  },
   {
     path: "examples",
     loader: () => import("./pages/Examples.ts").then(m => ({ default: m.ExamplesPage })),

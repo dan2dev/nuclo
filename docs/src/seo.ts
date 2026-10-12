@@ -38,15 +38,16 @@ export const routeMeta: Record<RoutePath, PageMeta> = {
 export interface RouteInfo { pattern: string; path: string }
 
 // The example page's load() returns the example (see pages/ExampleDetail.ts); SEO reads its title and text.
-type ExampleData = { title: string; desc: string } | null | undefined;
+type ExampleData = { id: string; title: string; desc: string } | null | undefined;
 
 export function resolveMeta(ctx: RouteInfo, data?: unknown): { meta: PageMeta; url: string } {
   const route = routeName(ctx.pattern);
   const url = route === 'home' ? SEO_BASE_URL : `${SEO_BASE_URL}${ctx.path.replace(/^\/|\/+$/g, '')}`;
-  const example = ctx.pattern === '/examples/:id' ? (data as ExampleData) : undefined;
+  const example = ctx.pattern === '/examples/:id' || ctx.pattern === '/docs/:example' ? (data as ExampleData) : undefined;
   if (example) {
     return {
-      url,
+      // One canonical URL per example: /docs/example-<id> is the same page over the docs.
+      url: `${SEO_BASE_URL}examples/${example.id}`,
       meta: {
         title: `${example.title} - Nuclo Examples`,
         description: `${example.desc} A live Nuclo example with its source code.`,

@@ -1,9 +1,11 @@
-import type { RouteContext } from "nuclo-router";
+import type { PageProps, RouteContext } from "nuclo-router";
 import { css, cx } from "../styles.ts";
 import { DOC_GROUPS, DOC_SECTIONS, SECTION_MAP } from "./docs/content.ts";
 import { ds, sectionDelay } from "./docs/styles.ts";
 import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../generated/nuclo-stats.ts";
 import { docsSection } from "../docs-state.ts";
+import { ALL_EXAMPLES } from "./examples/registry.ts";
+import { exampleHref, onOpenExample } from "./examples/open.ts";
 
 
 const DOC_FACTS = [
@@ -18,6 +20,25 @@ function getInitialSectionId(hash: string): string {
   if (typeof window === "undefined") return "overview";
   const id = hash.replace(/^#/, "");
   return SECTION_MAP.has(id) ? id : "overview";
+}
+
+function PlayIcon() {
+  return svgSvg(
+    { width: "12", height: "12", viewBox: "0 0 24 24", fill: "currentColor", "aria-hidden": "true" },
+    pathSvg({ d: "M7 4.5v15l12-7.5z" }),
+  );
+}
+
+/** Pills that open the examples demonstrating this section, in the examples modal. */
+function ExampleLinks(sectionId: string) {
+  const related = ALL_EXAMPLES.filter((ex) => ex.docs === sectionId);
+  if (!related.length) return null;
+  return div(
+    ds.exampleLinks,
+    ...related.map((ex) =>
+      a(ds.exampleLink, { href: exampleHref(ex.id, "docs"), title: `Open the ${ex.title} example`, onClick: onOpenExample(ex.id, "docs") }, PlayIcon(), `Example: ${ex.title}`),
+    ),
+  );
 }
 
 function sectionNumber(index: number): string {
@@ -54,7 +75,7 @@ function icon(size: number, d: string) {
   );
 }
 
-export function DocsPage(ctx: RouteContext) {
+export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
   let activeId = getInitialSectionId(ctx.hash);
   publishSection(activeId);
   // Docs navigation state, shared by the sidebar and the mobile sheet.
@@ -457,6 +478,7 @@ export function DocsPage(ctx: RouteContext) {
                 { onClick: () => setActive(sec.id) },
               ),
             ),
+            ExampleLinks(sec.id),
           ),
           ...(sec.apiTag ? [
             div(
@@ -490,6 +512,7 @@ export function DocsPage(ctx: RouteContext) {
     Content(),
     Rail(),
     Sheet(),
+    outlet(), // /docs/example-<id> on a direct load; it renders into the app's modal region
   );
 
   // IntersectionObserver for sidebar active state - only on client

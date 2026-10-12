@@ -1,24 +1,15 @@
 /**
- * /examples - the grid of every example, and the modal frame an open example
- * renders in. /examples/:id is a child route: it lands in router.outlet() inside
- * the frame, so opening one never rebuilds the grid. The frame's bar holds a
- * region the open example fills with into('example-nav', …).
+ * /examples - the grid of every example. A card opens its example as a layer
+ * (see examples/open.ts), so the grid stays mounted beneath the modal. A direct
+ * load of /examples/:id renders the example as this page's child route instead:
+ * it lands in outlet() and sends its modal to the app's region the same way.
  */
 import type { PageProps, RouteContext } from "nuclo-router";
-import { cx, s } from "../styles.ts";
-import { router } from "../router.ts";
+import { s } from "../styles.ts";
 import { withCode } from "../components/inline-code.ts";
 import { es } from "./examples/styles.ts";
 import { EXAMPLE_GROUPS, type Example } from "./examples/registry.ts";
-
-export const NAV_REGION = "example-nav";
-
-function CloseIcon() {
-  return svgSvg(
-    { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "aria-hidden": "true" },
-    pathSvg({ d: "M6 6l12 12 M18 6L6 18" }),
-  );
-}
+import { exampleHref, onOpenExample } from "./examples/open.ts";
 
 function ArrowIcon() {
   return svgSvg(
@@ -30,7 +21,7 @@ function ArrowIcon() {
 function Card(ex: Example, index: number) {
   return a(
     es.card,
-    { href: router.href(`/examples/${ex.id}`), style: { animationDelay: `${Math.min(index, 8) * 40}ms` } },
+    { href: exampleHref(ex.id), style: { animationDelay: `${Math.min(index, 8) * 40}ms` }, onClick: onOpenExample(ex.id) },
     span(es.cardNum, String(index + 1).padStart(2, "0")),
     h3(es.cardTitle, ex.title),
     p(es.cardDesc, ...withCode(ex.desc)),
@@ -49,8 +40,6 @@ function Group(group: (typeof EXAMPLE_GROUPS)[number], offset: number) {
     ),
   );
 }
-
-const isOpen = () => router.pattern.startsWith("/examples/");
 
 export function ExamplesPage(_ctx: RouteContext, { outlet }: PageProps) {
   let offset = 0;
@@ -72,21 +61,6 @@ export function ExamplesPage(_ctx: RouteContext, { outlet }: PageProps) {
       ),
     ),
     ...groups,
-    // The frame: shown while a child route is active. The open example renders in the
-    // outlet and fills the bar's region with its own navigation.
-    div(
-      es.overlay,
-      { className: () => cx(es.overlay, isOpen() ? es.overlayOpen : null).className, "aria-hidden": () => String(!isOpen()) },
-      div(
-        es.panel,
-        { role: "dialog", "aria-modal": "true", "aria-label": "Example" },
-        div(
-          es.bar,
-          region({ id: NAV_REGION }),
-          a(es.close, { href: router.href("/examples"), "aria-label": "Close example", title: "Close (Esc)" }, CloseIcon()),
-        ),
-        div(es.body, outlet()),
-      ),
-    ),
+    outlet(),
   );
 }

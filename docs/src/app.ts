@@ -11,6 +11,7 @@ import { Footer } from './components/Footer.ts';
 import { router } from './router.ts';
 import { css, colors } from './styles.ts';
 import { animations } from './styles/animations.ts';
+import { ExampleFrame } from './pages/examples/frame.ts';
 
 const appStyles = {
 	// --header-h is the fixed header's height; docs sticky offsets read it too.
@@ -41,5 +42,7 @@ export function App() {
       router.outlet(),
     ),
     Footer(),
+    // The examples modal, outside main's transform. Example pages fill its regions.
+    ExampleFrame(),
   );
 }

@@ -1,5 +1,6 @@
 import { css, colors } from "../styles.ts";
 import { withCode } from "./inline-code.ts";
+import { exampleHref, onOpenExample } from "../pages/examples/open.ts";
 
 // One live demo per API, shown on /examples (ExampleCard) and inside each docs section (Live).
 // Each demo keeps its own state, so every visit starts fresh. `code` is what the
@@ -17,6 +18,7 @@ const ls = {
     "&& ul": { raw: { padding: "0", "list-style": "none" } },
   }),
   frame: css("docs-live-frame", { margin: "22px 0", border: `1px solid ${colors.border}`, borderRadius: "10px", overflow: "hidden", backgroundColor: colors.bgCard }),
+  open: css("docs-live-open", { flexShrink: 0, marginLeft: "auto", fontSize: "0.75rem", fontWeight: "600", color: colors.primaryInk, whiteSpace: "nowrap", hover: { textDecoration: "underline" } }),
   head: css("docs-live-head", { display: "flex", alignItems: "baseline", gap: "10px", padding: "9px 16px", borderBottom: `1px solid ${colors.border}`, fontSize: "0.8125rem", lineHeight: "1.5", color: colors.textMuted }),
   badge: css("docs-live-badge", { flexShrink: 0, fontFamily: mono, fontSize: "0.75rem", fontWeight: "700", color: colors.primaryInk }),
   body: css("docs-live-body", { padding: "20px", "@media (max-width: 600px)": { padding: "16px" } }),
@@ -625,7 +627,12 @@ export function Live(id: string) {
   const d = DEMOS.get(id)!;
   return div(
     ls.frame,
-    div(ls.head, span(ls.badge, "Live"), span(...withCode(d.desc))),
+    div(
+      ls.head,
+      span(ls.badge, "Live"),
+      span(...withCode(d.desc)),
+      a(ls.open, { href: exampleHref(d.id, "docs"), title: "Open this example full screen", onClick: onOpenExample(d.id, "docs") }, "Open ↗"),
+    ),
     div(ls.body, d.preview()),
   );
 }

@@ -21,15 +21,14 @@ export const es = {
   cardFoot: css("pages-examples-styles-cardFoot", { display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8125rem", color: colors.textMuted, marginTop: "4px" }),
   cardArrow: css("pages-examples-styles-cardArrow", { display: "inline-flex", color: colors.textMuted, transition: "transform 0.18s ease, color 0.18s ease" }),
 
-  // ── The modal frame the examples page owns: a backdrop, a panel and a bar with the nav region ──
-  overlay: css("pages-examples-styles-overlay", { display: "none", position: "fixed", inset: "0", zIndex: 230, padding: "0", backgroundColor: "rgba(0, 0, 0, 0.45)", backdropFilter: "blur(6px)", medium: { padding: "24px" }, large: { padding: "32px 40px" } }),
-  overlayOpen: css("pages-examples-styles-overlayOpen", { display: "flex", alignItems: "stretch", justifyContent: "center", animation: `${animations.pageFadeIn} 0.22s ease both` }),
+  // ── The modal an open example sends to the app's "modal" region: a backdrop, a panel and a bar with the nav ──
+  overlay: css("pages-examples-styles-overlay", { display: "flex", alignItems: "stretch", justifyContent: "center", position: "fixed", inset: "0", zIndex: 230, padding: "0", backgroundColor: "rgba(0, 0, 0, 0.45)", backdropFilter: "blur(6px)", animation: `${animations.pageFadeIn} 0.22s ease both`, medium: { padding: "24px" }, large: { padding: "32px 40px" } }),
   panel: css("pages-examples-styles-panel", { display: "flex", flexDirection: "column", width: "100%", maxWidth: "1240px", minHeight: "0", backgroundColor: colors.bg, border: `1px solid ${colors.border}`, boxShadow: "0 40px 90px -40px rgba(0,0,0,0.5)", overflow: "hidden", medium: { borderRadius: "18px" } }),
   bar: css("pages-examples-styles-bar", { display: "flex", alignItems: "center", gap: "12px", flexShrink: 0, height: "56px", padding: "0 8px 0 16px", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgCard, medium: { padding: "0 12px 0 22px" } }),
   close: css("pages-examples-styles-close", { display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, width: "40px", height: "40px", marginLeft: "auto", borderRadius: "10px", color: colors.textDim, hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
   body: css("pages-examples-styles-body", { flex: "1", minHeight: "0", overflow: "auto", raw: { "overscroll-behavior": "contain", "scrollbar-gutter": "stable" } }),
 
-  // ── The nav an open example places into the bar with into('example-nav', …) ──
+  // ── Prev/next in the bar ──
   nav: css("pages-examples-styles-nav", { display: "flex", alignItems: "center", gap: "4px", minWidth: "0", flex: "1" }),
   navCrumb: css("pages-examples-styles-navCrumb", { display: "none", alignItems: "center", gap: "8px", fontSize: "0.8125rem", color: colors.textMuted, whiteSpace: "nowrap", marginRight: "12px", "& strong": { fontWeight: "500", color: colors.textDim }, medium: { display: "flex" } }),
   navLink: css("pages-examples-styles-navLink", { display: "inline-flex", alignItems: "center", gap: "6px", height: "36px", padding: "0 10px", borderRadius: "9px", fontSize: "0.8125rem", fontWeight: "500", color: colors.textDim, whiteSpace: "nowrap", hover: { color: colors.text, backgroundColor: colors.bgSecondary }, "& span": { display: "none", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", large: { display: "inline" } } }),
