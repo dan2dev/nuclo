@@ -81,7 +81,8 @@ export function pointer(e: PointerEvent, w: number, h: number) {
 export const frames = (id: string, step: (dt: number) => boolean | void) => () => {
   let last = performance.now();
   let raf = requestAnimationFrame(function tick(now: number) {
-    const dt = Math.min(2, (now - last) / (1000 / 60));
+    // rAF's timestamp is the frame's start, which can precede the performance.now() above
+    const dt = clamp((now - last) / (1000 / 60), 0, 2);
     last = now;
     if (step(dt) !== false) update(id);
     raf = requestAnimationFrame(tick);
