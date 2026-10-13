@@ -2,39 +2,62 @@
 // spreadsheet and a dashboard of charts over the same array. Every Tx is a
 // plain object; the spreadsheet edits cells in place and the charts read the
 // same array through function bindings, so editing a cell moves every chart.
-// The ledger is saved to IndexedDB after every change and loaded on mount.
+// The ledger is one array shared by every Finance window: it is loaded from
+// IndexedDB once and saved after every change.
 //
 // Like the rest of the desktop, views are built once and update() re-runs
 // the dynamic bindings — so the charts take their data as factories, and the
 // two tabs stay mounted with their visibility toggled by a binding. Updates
-// are scoped: keystrokes and edits refresh only this window, and the chart
-// hover refreshes only the charts sub-scope, never the 63-row spreadsheet.
+// are scoped: a change to the ledger refreshes every Finance window and
+// nothing else, opening an editor or switching tabs refreshes only its own
+// window, and the chart hover refreshes only the charts sub-scope, never the
+// 63-row spreadsheet.
 import "nuclo";
 import type { Program } from "./programs.ts";
-import { winScopeId } from "./windows.ts";
+import { scopesOf, winScopeId } from "./windows.ts";
 import { byCategory, byDate, CATEGORIES, CATEGORY_COLORS, fmtDate, money, monthly, monthTotals, seed, signed, totals, type Tx } from "./money.ts";
 import { deleteTx, loadTxs, replaceAll, saveTx, supported } from "./db.ts";
 import { BarChart, DonutChart, LineChart, type DonutSlice } from "./charts.ts";
 import { s } from "./styles.ts";
 
+/** What each window keeps for itself: the tab it shows and the cell it edits. */
 interface FinState {
-  txs: Tx[];
-  loaded: boolean;
   tab: "charts" | "sheet";
   editing: { id: number; field: Field } | null;
   draft: string;
-  error: string;
 }
 type Field = "date" | "description" | "category" | "amount";
 type KeyEvent = KeyboardEvent & { currentTarget: HTMLElement };
 
+/** The ledger every Finance window reads. */
+const ledger = { txs: [] as Tx[], loaded: false, error: "" };
+let loading = false;
 let nextId = 1;
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
-function commit(state: FinState, scopeId: string) {
+/** The ledger changed: every Finance window updates, and nothing else. */
+const refresh = () => update(...scopesOf(finance));
+
+// IndexedDB only exists in the browser, so the ledger loads when the first
+// window mounts, not at init: the server renders the window with its loading state.
+async function loadLedger() {
+  if (loading) return;
+  loading = true;
+  if (!supported()) ledger.error = "IndexedDB is not available here.";
+  else try {
+    let rows = await loadTxs();
+    if (!rows.length) { rows = seed(); await replaceAll(rows); }
+    ledger.txs = rows;
+    nextId = rows.reduce((m, t) => Math.max(m, t.id), 0) + 1;
+  } catch (error) { ledger.error = (error as Error).message; }
+  ledger.loaded = true;
+  refresh();
+}
+
+function commit(state: FinState) {
   const e = state.editing;
   if (!e) return;
-  const t = state.txs.find((tx) => tx.id === e.id);
+  const t = ledger.txs.find((tx) => tx.id === e.id);
   if (t) {
     const v = state.draft.trim();
     if (e.field === "date") t.date = v || t.date;
@@ -44,7 +67,7 @@ function commit(state: FinState, scopeId: string) {
     saveTx(t);
   }
   state.editing = null;
-  update(scopeId);
+  refresh();
 }
 
 /** One cell of the spreadsheet: a button that shows the value, or the editor. */
@@ -57,15 +80,15 @@ function Cell(state: FinState, t: Tx, field: Field, scopeId: string) {
     return t.description || "—";
   };
   const keys = (e: KeyEvent) => {
-    if (e.key === "Enter") commit(state, scopeId);
+    if (e.key === "Enter") commit(state);
     else if (e.key === "Escape") { state.editing = null; update(scopeId); }
   };
   return when(() => state.editing?.id === t.id && state.editing.field === field,
     field === "category" ? select(s.finInput,
-      { "aria-label": "Category", value: () => state.draft, onMount: (el) => el.focus(), onChange: (e) => { state.draft = e.currentTarget.value; }, onBlur: () => commit(state, scopeId), onKeyDown: keys },
+      { "aria-label": "Category", value: () => state.draft, onMount: (el) => el.focus(), onChange: (e) => { state.draft = e.currentTarget.value; }, onBlur: () => commit(state), onKeyDown: keys },
       ...CATEGORIES.map((c) => option({ value: c }, c)))
     : input(s.finInput,
-      { "aria-label": field, type: field === "date" ? "date" : field === "amount" ? "number" : "text", step: field === "amount" ? "0.01" : undefined, value: () => state.draft, onMount: (el) => { el.focus(); el.select(); }, onInput: (e) => { state.draft = e.currentTarget.value; }, onBlur: () => commit(state, scopeId), onKeyDown: keys }),
+      { "aria-label": field, type: field === "date" ? "date" : field === "amount" ? "number" : "text", step: field === "amount" ? "0.01" : undefined, value: () => state.draft, onMount: (el) => { el.focus(); el.select(); }, onInput: (e) => { state.draft = e.currentTarget.value; }, onBlur: () => commit(state), onKeyDown: keys }),
   ).else(button(s.finCell, { title: "Click to edit", class: () => cx(s.finCell, field === "description" && !t.description ? s.finPlaceholder : null).className, onClick: start }, () => display()));
 }
 
@@ -75,12 +98,12 @@ function RowView(state: FinState, t: Tx, scopeId: string) {
     td(s.finTd, Cell(state, t, "description", scopeId)),
     td(s.finTd, Cell(state, t, "category", scopeId)),
     td(s.finTd, s.finAmount, { class: () => cx(s.finTd, s.finAmount, t.amount < 0 ? s.finExpense : s.finIncome).className }, Cell(state, t, "amount", scopeId)),
-    td(s.finTd, s.finDelete, button(s.finIcon, { title: "Delete", "aria-label": "Delete", onClick: () => { state.txs.splice(state.txs.indexOf(t), 1); state.editing = null; deleteTx(t.id); update(scopeId); } }, "×")),
+    td(s.finTd, s.finDelete, button(s.finIcon, { title: "Delete", "aria-label": "Delete", onClick: () => { ledger.txs.splice(ledger.txs.indexOf(t), 1); state.editing = null; deleteTx(t.id); refresh(); } }, "×")),
   );
 }
 
 function SheetView(state: FinState, scopeId: string) {
-  const rows = () => byDate(state.txs);
+  const rows = () => byDate(ledger.txs);
   return div(s.finSheet,
     div(s.finScroller,
       table(s.finTable,
@@ -97,14 +120,14 @@ function SheetView(state: FinState, scopeId: string) {
     div(s.finFoot,
       button(s.btn, s.primary, "＋ Add", { onClick: () => {
         const t: Tx = { id: nextId++, date: today(), description: "", category: "Other", amount: 0 };
-        state.txs.push(t);
+        ledger.txs.push(t);
         state.editing = { id: t.id, field: "description" };
         state.draft = "";
         saveTx(t);
-        update(scopeId);
+        refresh();
       } }),
       span(() => `${rows().length} transactions`),
-      span(s.finFootTotal, "Balance ", strong(() => signed(totals(state.txs).balance))),
+      span(s.finFootTotal, "Balance ", strong(() => signed(totals(ledger.txs).balance))),
     ),
   );
 }
@@ -123,9 +146,9 @@ const donutSlices = (txs: Tx[]): DonutSlice[] => {
   return CATEGORIES.map((category) => ({ label: category, value: sums.get(category) ?? 0, color: CATEGORY_COLORS[category] ?? "#8a93a0" }));
 };
 
-function ChartsView(state: FinState, scopeId: string) {
-  const months = () => monthly(state.txs, 6);
-  const top = () => byCategory(state.txs);
+function ChartsView(scopeId: string) {
+  const months = () => monthly(ledger.txs, 6);
+  const top = () => byCategory(ledger.txs);
   // The legend is six fixed slots (no list() rebuilds on every update); each
   // slot reads the i-th biggest category, hiding itself when there is none.
   const Legend = () => div(s.finLegend, ...Array.from({ length: 6 }, (_, i) => div(s.finLegendItem,
@@ -136,10 +159,10 @@ function ChartsView(state: FinState, scopeId: string) {
   )));
   return div(s.finCharts,
     div(s.finCards,
-      StatCard("Balance", "all time", () => signed(totals(state.txs).balance), () => totals(state.txs).balance >= 0),
-      StatCard("Income", "this month", () => `+${money(monthTotals(state.txs).income)}`, () => true),
-      StatCard("Spending", "this month", () => `−${money(monthTotals(state.txs).expense)}`, () => false),
-      StatCard("Saved", "this month", () => signed(monthTotals(state.txs).net), () => monthTotals(state.txs).net >= 0),
+      StatCard("Balance", "all time", () => signed(totals(ledger.txs).balance), () => totals(ledger.txs).balance >= 0),
+      StatCard("Income", "this month", () => `+${money(monthTotals(ledger.txs).income)}`, () => true),
+      StatCard("Spending", "this month", () => `−${money(monthTotals(ledger.txs).expense)}`, () => false),
+      StatCard("Saved", "this month", () => signed(monthTotals(ledger.txs).net), () => monthTotals(ledger.txs).net >= 0),
     ),
     div(s.finGrid,
       section(s.finCard, s.finWide,
@@ -149,7 +172,7 @@ function ChartsView(state: FinState, scopeId: string) {
       section(s.finCard,
         div(s.finCardHead, h3("Spending"), span(s.finCardSub, "by category · all time")),
         div(s.finDonutRow,
-          DonutChart(() => donutSlices(state.txs), { value: () => `−${money(totals(state.txs).expense)}`, sub: "all time" }),
+          DonutChart(() => donutSlices(ledger.txs), { value: () => `−${money(totals(ledger.txs).expense)}`, sub: "all time" }),
           Legend(),
         ),
       ),
@@ -167,26 +190,13 @@ function ChartsView(state: FinState, scopeId: string) {
 
 export const finance: Program<FinState> = {
   name: "Finance", icon: "finance", size: [780, 500],
-  init: () => ({ txs: [], loaded: false, tab: "charts", editing: null, draft: "", error: "" }),
+  init: () => ({ tab: "charts", editing: null, draft: "" }),
   view: (win) => {
     const state = win.state;
     const scopeId = winScopeId(win);
     const chartsScope = `os-fin-charts-${win.id}`; // the hover refreshes the charts, not the spreadsheet
     return div(s.finance,
-      // IndexedDB only exists in the browser, so the ledger loads on mount,
-      // not at init: the server renders the window with its loading state.
-      on("mount", async () => {
-        if (state.loaded) return;
-        if (!supported()) { state.error = "IndexedDB is not available here."; state.loaded = true; update(scopeId); return; }
-        try {
-          let rows = await loadTxs();
-          if (!rows.length) { rows = seed(); await replaceAll(rows); }
-          state.txs = rows;
-          nextId = rows.reduce((m, t) => Math.max(m, t.id), 0) + 1;
-        } catch (error) { state.error = (error as Error).message; }
-        state.loaded = true;
-        update(scopeId);
-      }),
+      on("mount", loadLedger),
       div(s.toolbar,
         strong(s.financeHeading, "Finance"),
         div(s.finTabs, { role: "tablist", "aria-label": "Finance views" },
@@ -194,20 +204,20 @@ export const finance: Program<FinState> = {
           button({ role: "tab", "aria-selected": () => String(state.tab === "sheet"), class: () => cx(s.finTab, state.tab === "sheet" ? s.finTabOn : null).className, onClick: () => { state.tab = "sheet"; update(scopeId); } }, "Spreadsheet"),
         ),
         span(s.finHint, "Saved in this browser · IndexedDB"),
-        button(s.btn, "Reset demo", { title: "Restore the sample ledger", disabled: () => !state.loaded, onClick: () => {
+        button(s.btn, "Reset demo", { title: "Restore the sample ledger", disabled: () => !ledger.loaded, onClick: () => {
           const fresh = seed();
-          state.txs = fresh;
+          ledger.txs = fresh;
           nextId = fresh.reduce((m, t) => Math.max(m, t.id), 0) + 1;
           replaceAll(fresh);
-          update(scopeId);
+          refresh();
         } }),
       ),
-      when(() => !!state.error, p(s.error, { role: "alert" }, () => state.error)),
+      when(() => !!ledger.error, p(s.error, { role: "alert" }, () => ledger.error)),
       // Both tabs stay mounted; a binding toggles the visible one. That way
       // the charts and the sheet are built once and update() keeps them live.
-      p(s.finLoading, { class: () => cx(s.finLoading, state.loaded ? s.finHidden : null).className }, "Opening the ledger…"),
-      div(s.finBody, scope(chartsScope), { class: () => cx(s.finBody, state.loaded && state.tab === "charts" ? null : s.finHidden).className }, ChartsView(state, chartsScope)),
-      div(s.finBody, { class: () => cx(s.finBody, state.loaded && state.tab === "sheet" ? null : s.finHidden).className }, SheetView(state, scopeId)),
+      p(s.finLoading, { class: () => cx(s.finLoading, ledger.loaded ? s.finHidden : null).className }, "Opening the ledger…"),
+      div(s.finBody, scope(chartsScope), { class: () => cx(s.finBody, ledger.loaded && state.tab === "charts" ? null : s.finHidden).className }, ChartsView(chartsScope)),
+      div(s.finBody, { class: () => cx(s.finBody, ledger.loaded && state.tab === "sheet" ? null : s.finHidden).className }, SheetView(state, scopeId)),
     );
   },
 };

@@ -67,6 +67,9 @@ export function focus(win: Win) {
  */
 export const winScopeId = (win: Win) => `os-win-${win.id}`;
 
+/** The scope ids of every window running `program`, for data its windows share. */
+export const scopesOf = (program: Program) => windows.filter((w) => w.program === program).map(winScopeId);
+
 export function minimize(win: Win) {
   win.minimized = true;
 }
