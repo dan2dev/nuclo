@@ -16,6 +16,7 @@ export const App = () =>
       s.nav,
       link("/", "Home"),
       link("/docs", "Docs"),
+      link("/shop/toys", "Shop"),
       link("/blog/hello-world", "Blog post"),
       link("/blog/broken", "Broken post"),
       link("/orders/new", "New order"),

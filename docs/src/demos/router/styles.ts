@@ -20,6 +20,9 @@ export const s = {
   error: css({ padding: "10px 12px", border: "1px solid var(--primary)", borderRadius: "8px", marginBottom: "12px" }),
   docs: css({ display: "grid", gridTemplateColumns: "150px 1fr", gap: "16px" }),
   side: css({ display: "flex", flexDirection: "column", gap: "6px", borderRight: "1px solid var(--line)", paddingRight: "12px" }),
+  shop: css({ display: "grid", gridTemplateColumns: "1fr 200px", gap: "16px", alignItems: "start" }),
+  shopMain: css({ "& > a": { marginRight: "12px" } }),
+  sidebarBox: css({ border: "1px solid var(--line)", borderRadius: "10px", padding: "12px", backgroundColor: "var(--bg2)" }),
   layer: css({ padding: "14px", border: "1px solid var(--primary)", borderRadius: "10px", backgroundColor: "var(--bg2)" }),
   muted: css({ color: "var(--dim)", fontSize: "12px" }),
 };

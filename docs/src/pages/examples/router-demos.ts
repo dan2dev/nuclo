@@ -139,6 +139,12 @@ export const ROUTER_EXAMPLES: RouterExample[] = [
     preview: () => DemoFrame("/orders/new", "Layers"),
   },
   {
+    id: "router-multi", docs: "router-multi", install, title: "Multiple Routers & Loading",
+    desc: "Two routers, two spinners. The shop layout and its section both have load()s: they run in parallel under one router.pending. The sidebar has a router of its own, created but never started, with its own loading flag refreshed from onNavigate.",
+    ...sources("routes.ts", "sidebar.ts", "pages/Shop.ts", "pages/Section.ts"),
+    preview: () => DemoFrame("/shop/toys", "Multiple routers & loading"),
+  },
+  {
     id: "router-match", docs: "router-patterns", install, title: "Pattern Matching",
     desc: "Static, :param and *rest patterns, and a section table mounted under two parents. Type a path and watch match(), which resolves without loading anything.",
     code: MATCH_CODE,

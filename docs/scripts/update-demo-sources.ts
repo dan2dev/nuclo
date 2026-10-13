@@ -9,6 +9,7 @@ const generatedDir = join(docsDir, "src", "generated");
 const ROUTER_FILES = [
   "routes.ts", "app.ts", "main.ts",
   "pages/Home.ts", "pages/Docs.ts", "pages/Topic.ts", "pages/Post.ts",
+  "pages/Shop.ts", "pages/Section.ts", "sidebar.ts",
   "pages/Order.ts", "pages/NewCustomer.ts", "pages/NotFound.ts",
 ];
 

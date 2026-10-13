@@ -1806,7 +1806,7 @@ export default function Report(ctx: RouteContext) {
 - **`into()`** is for the matched page spreading itself across the layout. The content belongs to the page and uses its data.
 - **`matches()`** is for the layout deciding from the URL alone, with its own small table and no page involved. See [`matches()`](https://nuclo.dev/docs#router-matches).
 
-All of these belong to the one matched route. The router does not drive two independent areas from one URL, so a sidebar with its own routes is a region a page fills, not a second outlet.
+All of these belong to the one matched route. The router does not drive two independent areas from one URL, so a sidebar with its own routes is a region a page fills, not a second outlet. A sidebar that really wants its own router, loading and fallback keeps one unstarted and resolves with `match()` — see [Multiple Routers & Combined Loading](https://nuclo.dev/docs#router-multi).
 
 ### Route Loaders & Code Splitting
 
@@ -2109,6 +2109,109 @@ const page = await docsRoutes[hit.pattern]()   // the app's own lookup
 
 Never starting it is the point. `start()` is what attaches the listeners, and two started routers conflict. The trade is that the child owns resolution, so route loaders, which a started router runs, are yours to call. This shape also rebuilds the shell when the tail changes, because the router sees one route and the shell resolves the rest itself. A nested table is what gets you a parent the router keeps mounted, so prefer it unless the feature really needs its own router, base and fallback.
 
+### Multiple Routers & Combined Loading
+
+Source: https://nuclo.dev/docs#router-multi
+
+An app can have as many routers as it has areas. The rule that keeps this simple: **start exactly one per document**, and let every other router stay unstarted, resolving URLs with `match()`. Only the started router owns the URL, the history and the click listener. The rest are tables you ask questions of — and each area can load on its own clock, with its own spinner.
+
+#### Combined loading: a chain of loaders
+
+Every page on a matched chain may export `load()`. On a cold navigation to a child route, the layout's loader and the page's loader run **in parallel**, and one `router.pending` covers the whole chain: the previous page stays on screen until the pair resolves, so a half-loaded tree never paints. Each component receives its own `data`:
+
+```ts
+// routes.ts
+'/shop': {
+  '/':          () => import('./pages/Shop.ts'),    // layout, has a load()
+  './:section': () => import('./pages/Section.ts'), // page, has a load()
+},
+```
+
+```ts
+// pages/Shop.ts
+import type { DataLoader, PageProps, RouteContext } from 'nuclo-router'
+
+export const load: DataLoader<ShopData> = async () => {
+  await wait(500)                              // a slow API
+  return { sections: ['toys', 'books', 'music'] }
+}
+
+// the layout gets its own data, and its outlet for the child page
+export default function Shop(_ctx: RouteContext, { data, outlet }: PageProps<ShopData>) {
+  return div(
+    h1('Shop'),
+    nav(...data.sections.map((s) => a({ href: router.href(`/shop/${s}`) }, s))),
+    main(outlet()),
+  )
+}
+```
+
+```ts
+// pages/Section.ts
+export const load: DataLoader<SectionData> = async (ctx) => {
+  await wait(900)                              // slower than the layout's
+  return { section: ctx.params.section, items: catalog[ctx.params.section] }
+}
+
+// the page gets its own data: the two loaders ran beside each other
+export default function Section(_ctx: RouteContext, { data }: PageProps<SectionData>) {
+  return article(h2(data.section), ul(...data.items.map((i) => li(i))))
+}
+```
+
+Both loaders start together, not one after the other. `router.pending` is true while either one is awaited, and false the rest of the time — a preloaded or eager route never flips it. Moving between sections keeps the layout, so only the section's loader runs again; the layout's data, its DOM and a half-typed input all survive. Re-navigating to the same URL re-runs the leaf's loader and rebuilds its row, exactly as with a single page.
+
+#### Multiple loading: a second router with its own spinner
+
+An independent area — a sidebar, a tray, a live region — gets a router of its own, created but never started, and its own loading flag. `router.pending` belongs to the started router and says nothing about this area, so the two can load side by side and either can finish first:
+
+```ts
+// sidebar.ts
+import { createRouter } from 'nuclo-router'
+
+// Created but never started: start() is what attaches the history and click
+// listeners, and only the main router is started. match() attaches nothing.
+const standIn = () => ({ default: () => div() })   // never rendered
+
+const sidebarRouter = createRouter({
+  '/shop':          standIn,
+  '/shop/:section': standIn,
+  '*':              standIn,
+}, { base: '/docs' })              // the same base as the main router
+
+export const sidebar = { loading: false, info: null as SidebarInfo | null }
+
+export async function refreshSidebar(at: string) {
+  const hit = sidebarRouter.match(at)          // the second router resolves
+  if (!hit || (hit.pattern !== '/shop' && hit.pattern !== '/shop/:section')) {
+    sidebar.info = null; update(); return
+  }
+  sidebar.loading = true                       // its own flag, its own spinner
+  sidebar.info = null; update()
+  const data = await fetchSidebar(hit.params.section)
+  sidebar.loading = false; sidebar.info = data
+  update()
+}
+```
+
+```ts
+// routes.ts
+createRouter(routes, {
+  onNavigate: (ctx, kind) => {
+    announce(kind)
+    refreshSidebar(ctx.url)   // every navigation re-resolves the sidebar
+  },
+})
+```
+
+The second router is asked, never told: `match()` reads the URL and returns a context, and nothing about the sidebar ever enters the main route table. `onNavigate` runs after every resolved navigation, the initial one included, so it is the one place that keeps an independent area in step with the URL.
+
+- **`pending` belongs to the started router.** A never-started router has no Route, no `pending` and no `error`. The area tracks its own flags, and a second spinner can sit next to the first. In the demo the sidebar loads for 800ms while the route's loaders run for 900ms, so the page can finish before the sidebar or the other way round.
+- **`match()` attaches nothing.** Any number of unstarted routers may share the document; each has its own table, base and module cache, and none of them touch history. They cost a table and a matcher.
+- **Its loaders never run.** The started router runs the `load()` of the pages it matches. A never-started router only resolves, so if its views need data, fetch it yourself — the demo's `refreshSidebar()`. If you want loaders, a [nested table](https://nuclo.dev/docs#router-matches) or a [region a page fills](https://nuclo.dev/docs#router-regions) keeps that job with the started router.
+- **Guard stale replies.** A slow sidebar fetch must not land on the section you navigated away from. Bump a generation counter per refresh and drop replies that no longer match, the way the router itself retires overtaken navigations.
+- **A lazy `matches()` view has no `pending` either.** It renders nothing until its module lands. Three loading systems, three independent clocks: the route's `pending`, your own flags, and a lazy view that simply is not there yet.
+
 ### Link Handling
 
 Source: https://nuclo.dev/docs#router-links
@@ -2136,8 +2239,8 @@ createRouter(routes, {
 - **Nothing is retained.** The Route holds the page function and its context, never DOM. Navigating away releases the previous page. `stop()` releases the listeners and any in-flight load, and clears `pending`, so a retired Route never strands a spinner. A module that resolves after `stop()` is dropped silently.
 - **Concurrency-safe on the server.** `start()` returns per-request state and `run()` scopes it to one synchronous render, so interleaved requests cannot see each other's route. Only the module cache is shared. The scope ends when `run()`'s function returns. `renderToString()` is synchronous, so that is enough. An async or streaming render would need the Route carried across `await`s, which `run()` does not do.
 - **Scroll restoration on `popstate`** is the browser's (`scrollRestoration`), not the router's.
-- **Start one router per document.** Each `start()` adds its own delegated `click` listener, and a second router's `start()` does not retire the first. Only a second `start()` on the same router does. To resolve a URL against another table, create a router and call only `match()`. It attaches nothing.
-- **Not included, by design:** hash and memory history, since the route lives in the pathname and a server must serve every route; two independently routed areas driven by one URL, since a page can fill several regions with `into()` but they all belong to the one matched route; and hover preloading, which you get by calling the route's own loader from a `mouseenter`.
+- **Start one router per document.** Each `start()` adds its own delegated `click` listener, and a second router's `start()` does not retire the first. Only a second `start()` on the same router does. To resolve a URL against another table, create a router and call only `match()`. It attaches nothing. An independent area can run its own loading beside the route's `pending` that way. See [Multiple Routers & Combined Loading](https://nuclo.dev/docs#router-multi).
+- **Not included, by design:** hash and memory history, since the route lives in the pathname and a server must serve every route; two independently routed areas driven by one URL, since a page can fill several regions with `into()` but they all belong to the one matched route — an independent area can still keep its own unstarted router and loading, as in [Multiple Routers & Combined Loading](https://nuclo.dev/docs#router-multi); and hover preloading, which you get by calling the route's own loader from a `mouseenter`.
 
 #### Examples
 

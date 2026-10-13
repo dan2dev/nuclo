@@ -1651,7 +1651,7 @@ export default function Report(ctx: RouteContext) {
         <li><strong><code>into()</code></strong> is for the matched page spreading itself across the layout. The content belongs to the page and uses its data.</li>
         <li><strong><code>matches()</code></strong> is for the layout deciding from the URL alone, with its own small table and no page involved. See <a href="#router-matches"><code>matches()</code></a>.</li>
       </ul>
-      <p>All of these belong to the one matched route. The router does not drive two independent areas from one URL, so a sidebar with its own routes is a region a page fills, not a second outlet.</p>
+      <p>All of these belong to the one matched route. The router does not drive two independent areas from one URL, so a sidebar with its own routes is a region a page fills, not a second outlet. A sidebar that really wants its own router, loading and fallback keeps one unstarted and resolves with <code>match()</code> — see <a href="#router-multi">Multiple Routers &amp; Combined Loading</a>.</p>
     `,
       },
       {
@@ -1906,6 +1906,95 @@ const page = await docsRoutes[hit.pattern]()   // the app's own lookup
     `,
       },
       {
+        id: "router-multi",
+        title: "Multiple Routers & Combined Loading",
+        content: `
+      <p>An app can have as many routers as it has areas. The rule that keeps this simple: <strong>start exactly one per document</strong>, and let every other router stay unstarted, resolving URLs with <code>match()</code>. Only the started router owns the URL, the history and the click listener. The rest are tables you ask questions of — and each area can load on its own clock, with its own spinner.</p>
+      <h3>Combined loading: a chain of loaders</h3>
+      <p>Every page on a matched chain may export <code>load()</code>. On a cold navigation to a child route, the layout's loader and the page's loader run <strong>in parallel</strong>, and one <code>router.pending</code> covers the whole chain: the previous page stays on screen until the pair resolves, so a half-loaded tree never paints. Each component receives its own <code>data</code>:</p>
+      ${code("routes.ts", `
+'/shop': {
+  '/':          () => import('./pages/Shop.ts'),    // layout, has a load()
+  './:section': () => import('./pages/Section.ts'), // page, has a load()
+},
+`)}
+      ${code("pages/Shop.ts", `
+import type { DataLoader, PageProps, RouteContext } from 'nuclo-router'
+
+export const load: DataLoader<ShopData> = async () => {
+  await wait(500)                              // a slow API
+  return { sections: ['toys', 'books', 'music'] }
+}
+
+// the layout gets its own data, and its outlet for the child page
+export default function Shop(_ctx: RouteContext, { data, outlet }: PageProps<ShopData>) {
+  return div(
+    h1('Shop'),
+    nav(...data.sections.map((s) => a({ href: router.href(\`/shop/\${s}\`) }, s))),
+    main(outlet()),
+  )
+}
+`)}
+      ${code("pages/Section.ts", `
+export const load: DataLoader<SectionData> = async (ctx) => {
+  await wait(900)                              // slower than the layout's
+  return { section: ctx.params.section, items: catalog[ctx.params.section] }
+}
+
+// the page gets its own data: the two loaders ran beside each other
+export default function Section(_ctx: RouteContext, { data }: PageProps<SectionData>) {
+  return article(h2(data.section), ul(...data.items.map((i) => li(i))))
+}
+`)}
+      <p>Both loaders start together, not one after the other. <code>router.pending</code> is true while either one is awaited, and false the rest of the time — a preloaded or eager route never flips it. Moving between sections keeps the layout, so only the section's loader runs again; the layout's data, its DOM and a half-typed input all survive. Re-navigating to the same URL re-runs the leaf's loader and rebuilds its row, exactly as with a single page.</p>
+      <h3>Multiple loading: a second router with its own spinner</h3>
+      <p>An independent area — a sidebar, a tray, a live region — gets a router of its own, created but never started, and its own loading flag. <code>router.pending</code> belongs to the started router and says nothing about this area, so the two can load side by side and either can finish first:</p>
+      ${code("sidebar.ts", `
+import { createRouter } from 'nuclo-router'
+
+// Created but never started: start() is what attaches the history and click
+// listeners, and only the main router is started. match() attaches nothing.
+const standIn = () => ({ default: () => div() })   // never rendered
+
+const sidebarRouter = createRouter({
+  '/shop':          standIn,
+  '/shop/:section': standIn,
+  '*':              standIn,
+}, { base: '/docs' })              // the same base as the main router
+
+export const sidebar = { loading: false, info: null as SidebarInfo | null }
+
+export async function refreshSidebar(at: string) {
+  const hit = sidebarRouter.match(at)          // the second router resolves
+  if (!hit || (hit.pattern !== '/shop' && hit.pattern !== '/shop/:section')) {
+    sidebar.info = null; update(); return
+  }
+  sidebar.loading = true                       // its own flag, its own spinner
+  sidebar.info = null; update()
+  const data = await fetchSidebar(hit.params.section)
+  sidebar.loading = false; sidebar.info = data
+  update()
+}
+`)}
+      ${code("routes.ts", `
+createRouter(routes, {
+  onNavigate: (ctx, kind) => {
+    announce(kind)
+    refreshSidebar(ctx.url)   // every navigation re-resolves the sidebar
+  },
+})
+`)}
+      <p>The second router is asked, never told: <code>match()</code> reads the URL and returns a context, and nothing about the sidebar ever enters the main route table. <code>onNavigate</code> runs after every resolved navigation, the initial one included, so it is the one place that keeps an independent area in step with the URL.</p>
+      <ul>
+        <li><strong><code>pending</code> belongs to the started router.</strong> A never-started router has no Route, no <code>pending</code> and no <code>error</code>. The area tracks its own flags, and a second spinner can sit next to the first. In the demo the sidebar loads for 800ms while the route's loaders run for 900ms, so the page can finish before the sidebar or the other way round.</li>
+        <li><strong><code>match()</code> attaches nothing.</strong> Any number of unstarted routers may share the document; each has its own table, base and module cache, and none of them touch history. They cost a table and a matcher.</li>
+        <li><strong>Its loaders never run.</strong> The started router runs the <code>load()</code> of the pages it matches. A never-started router only resolves, so if its views need data, fetch it yourself — the demo's <code>refreshSidebar()</code>. If you want loaders, a <a href="#router-matches">nested table</a> or a <a href="#router-regions">region a page fills</a> keeps that job with the started router.</li>
+        <li><strong>Guard stale replies.</strong> A slow sidebar fetch must not land on the section you navigated away from. Bump a generation counter per refresh and drop replies that no longer match, the way the router itself retires overtaken navigations.</li>
+        <li><strong>A lazy <code>matches()</code> view has no <code>pending</code> either.</strong> It renders nothing until its module lands. Three loading systems, three independent clocks: the route's <code>pending</code>, your own flags, and a lazy view that simply is not there yet.</li>
+      </ul>
+    `,
+      },
+      {
         id: "router-links",
         title: "Link Handling",
         content: `
@@ -1927,8 +2016,8 @@ createRouter(routes, {
         <li><strong>Nothing is retained.</strong> The Route holds the page function and its context, never DOM. Navigating away releases the previous page. <code>stop()</code> releases the listeners and any in-flight load, and clears <code>pending</code>, so a retired Route never strands a spinner. A module that resolves after <code>stop()</code> is dropped silently.</li>
         <li><strong>Concurrency-safe on the server.</strong> <code>start()</code> returns per-request state and <code>run()</code> scopes it to one synchronous render, so interleaved requests cannot see each other's route. Only the module cache is shared. The scope ends when <code>run()</code>'s function returns. <code>renderToString()</code> is synchronous, so that is enough. An async or streaming render would need the Route carried across <code>await</code>s, which <code>run()</code> does not do.</li>
         <li><strong>Scroll restoration on <code>popstate</code></strong> is the browser's (<code>scrollRestoration</code>), not the router's.</li>
-        <li><strong>Start one router per document.</strong> Each <code>start()</code> adds its own delegated <code>click</code> listener, and a second router's <code>start()</code> does not retire the first. Only a second <code>start()</code> on the same router does. To resolve a URL against another table, create a router and call only <code>match()</code>. It attaches nothing.</li>
-        <li><strong>Not included, by design:</strong> hash and memory history, since the route lives in the pathname and a server must serve every route; two independently routed areas driven by one URL, since a page can fill several regions with <code>into()</code> but they all belong to the one matched route; and hover preloading, which you get by calling the route's own loader from a <code>mouseenter</code>.</li>
+        <li><strong>Start one router per document.</strong> Each <code>start()</code> adds its own delegated <code>click</code> listener, and a second router's <code>start()</code> does not retire the first. Only a second <code>start()</code> on the same router does. To resolve a URL against another table, create a router and call only <code>match()</code>. It attaches nothing. An independent area can run its own loading beside the route's <code>pending</code> that way. See <a href="#router-multi">Multiple Routers &amp; Combined Loading</a>.</li>
+        <li><strong>Not included, by design:</strong> hash and memory history, since the route lives in the pathname and a server must serve every route; two independently routed areas driven by one URL, since a page can fill several regions with <code>into()</code> but they all belong to the one matched route — an independent area can still keep its own unstarted router and loading, as in <a href="#router-multi">Multiple Routers &amp; Combined Loading</a>; and hover preloading, which you get by calling the route's own loader from a <code>mouseenter</code>.</li>
       </ul>
       <h3>Examples</h3>
       <p>Two runnable examples in the repository complement each other, so every setting is observable somewhere:</p>
