@@ -241,6 +241,61 @@ describe("history", () => {
     expect(window.scrollTo).not.toHaveBeenCalled();
   });
 
+  // Browsers keep about 50 entries a tab and drop the oldest: a long enough walk
+  // through layers loses the entry beneath them, and history.go() to it does nothing.
+  async function threeLayers(route: Route) {
+    const first = route.push<string>("/modal");
+    await flush();
+    void layers[1]!.push("/modal2");
+    await flush();
+    void layers[2]!.push("/modal");
+    await flush();
+    expect(route.depth).toBe(4);
+    return { first }; // wrapped: returning the promise would make the caller await the close
+  }
+  function browserKeeps(entries: number) {
+    Object.defineProperty(window.history, "length", { configurable: true, get: () => entries });
+    return () => Reflect.deleteProperty(window.history, "length");
+  }
+
+  it("close() still closes when the browser has dropped the entry beneath", async () => {
+    const route = await start(createRouter(table(), { preload: false }), "/");
+    const container = show();
+    const { first } = await threeLayers(route);
+
+    const restore = browserKeeps(3); // the three layers, not the page beneath
+    const go = vi.spyOn(window.history, "go");
+    layers[1]!.close("done");
+    await flush();
+    restore();
+
+    expect(go).not.toHaveBeenCalled();
+    expect(route.depth).toBe(1);
+    expect(container.children.length).toBe(1);
+    expect(window.location.pathname).toBe("/");
+    expect(window.history.state.nucloRouterDepth).toBe(0);
+    await expect(first).resolves.toBe("done");
+  });
+
+  it("counts Forward entries as out of reach when deciding whether Back can get there", async () => {
+    const route = await start(createRouter(table(), { preload: false }), "/");
+    show();
+    const { first } = await threeLayers(route);
+    window.history.back();
+    await waitFor(() => route.depth === 3);
+
+    // 3 entries kept, one of them ahead: the current one is second, and two steps back is gone.
+    const restore = browserKeeps(3);
+    const go = vi.spyOn(window.history, "go");
+    layers[1]!.close();
+    await flush();
+    restore();
+
+    expect(go).not.toHaveBeenCalled();
+    expect(route.depth).toBe(1);
+    await expect(first).resolves.toBeUndefined();
+  });
+
   it("a layer opened cold starts at depth 1 — the stack below it is not reconstructible", async () => {
     // What a reload of a layer's URL looks like: history.state carries a depth
     // but the layers underneath are gone, so it renders standalone.

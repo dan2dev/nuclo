@@ -462,6 +462,8 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     let generation = 0;
     /** The current entry's INDEX_KEY, so a refused Back or Forward knows how far to walk back. */
     let index = 0;
+    /** The newest entry's INDEX_KEY: the entries between `index` and it are Forward entries, until the next push drops them. */
+    let last = 0;
     /** Set while walking a refused Back or Forward back: that popstate is the router's own. */
     let reverting = false;
     /** The href a navigation is landing on, while the DOM catches up and before history names it: search, hash and url read it. */
@@ -478,6 +480,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         // Written even if a page threw, so history still agrees with the stack.
         landing = null;
         window.history[write](state, "", href);
+        if (write === "pushState") last = index;
         handled = null;
       }
     }
@@ -659,7 +662,25 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
     function closeLayer(depth: number, result: unknown): void {
       if (!isBrowser || stopped || depth < 1 || depth >= slot.length) return;
       slot[depth].result = result;
-      window.history.go(depth - slot.length);
+      const steps = slot.length - depth;
+      if (steps < window.history.length - (last - index)) return window.history.go(-steps);
+      // Browsers keep about 50 entries a tab and drop the oldest, so a deep enough stack
+      // has lost the entry beneath this layer, and history.go() would do nothing. Close
+      // here instead, and rewrite the current entry to the layer that is left.
+      const leaving = slot.slice(depth).flatMap(levels);
+      const drop = (): void => {
+        window.history.replaceState({ [DEPTH_KEY]: depth - 1, [INDEX_KEY]: index }, "", hrefOf(leaf(slot[depth - 1]).ctx));
+        handled = null;
+        trimTo(depth);
+        onNavigate?.(leaf(current).ctx, "pop");
+      };
+      if (!guarded(leaving)) return drop();
+      const before = generation;
+      void mayLeave(leaving, leaf(slot[depth - 1]).ctx).then((leave) => {
+        if (stopped || generation !== before) return;
+        if (leave) drop();
+        else for (const entry of slot.slice(depth)) entry.result = undefined;
+      });
     }
 
     const locationKey = (): string => `${depthOf(window.history.state)} ${here()}`;
@@ -677,6 +698,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       const to = indexOf(window.history.state);
       const delta = to === null ? 0 : to - index;
       index = to ?? index;
+      last = Math.max(last, index);
       const revert = delta
         ? (): void => {
             index -= delta;
@@ -843,6 +865,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       handled = locationKey();
       // A reload keeps the entry's index; a fresh entry is stamped 0.
       index = indexOf(window.history.state) ?? 0;
+      last = index;
       window.history.replaceState({ ...window.history.state, [INDEX_KEY]: index }, "");
       window.addEventListener("popstate", onLocationChange);
       document.addEventListener("click", onClick);

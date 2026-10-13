@@ -2029,7 +2029,7 @@ layer.close()          // dismissed: resolves with undefined
 
 Layers nest. A dialog that needs its own dialog calls `layer.push()` and awaits it, with no reference to the Route.
 
-- **The URL is the top layer.** `push()` adds a history entry, so a layer is linkable and Back closes it, resolving its `push()` as dismissed, exactly like Cancel. Back and `close()` are one code path: `close()` records its result and walks history back, and the depth in `history.state` is the authority.
+- **The URL is the top layer.** `push()` adds a history entry, so a layer is linkable and Back closes it, resolving its `push()` as dismissed, exactly like Cancel. Back and `close()` are one code path: `close()` records its result and walks history back, and the depth in `history.state` is the authority. Browsers keep about 50 entries a tab, so after a long walk through layers the entry beneath may be gone: then `close()` closes the layers in place and rewrites the current entry to the page left showing.
 - **An ordinary navigation clears the stack.** A link click or `go()` is not a layer. It replaces everything and dismisses every open layer, so no caller is left awaiting.
 - **A cold load is a standalone page.** The URL names the top layer but not the stack beneath it, so opening a layer's URL directly renders it at depth 1 with `layer.depth === 0` and an inert `close()`. A pushed route has to make sense on its own. Branch on `layer.depth` to offer a link out instead of a dead Cancel button.
 - **The promise cannot survive a reload**, because it lives in a closure. Treat the result as a shortcut through a flow that also works the long way round.

@@ -506,7 +506,9 @@ awaits it, with no reference to the `Route`.
   linkable and **Back closes it** — resolving its `push()` as dismissed,
   exactly like Cancel. Back and `close()` are one code path: `close()` records
   its result and walks history back, and the depth in `history.state` is the
-  authority.
+  authority. Browsers keep about 50 entries a tab, so after a long walk
+  through layers the entry beneath may be gone: then `close()` closes the
+  layers in place and rewrites the current entry to the page left showing.
 - **An ordinary navigation clears the stack.** A link click or `go()` is not a
   layer: it replaces everything and dismisses every open layer, so no caller
   is left awaiting.
