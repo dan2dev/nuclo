@@ -305,6 +305,23 @@ describe("history", () => {
     expect(route.path).toBe("/modal");
     expect(route.depth).toBe(1);
   });
+
+  it("a layer opened cold is the base page in history too, so a layer it pushes closes back onto it", async () => {
+    window.history.replaceState({ nucloRouterDepth: 1 }, "", "/modal");
+    const route = await start(createRouter(table(), { preload: false }));
+    const container = show();
+    const cold = container.children[0];
+    expect(window.history.state.nucloRouterDepth ?? 0).toBe(0);
+
+    const pending = route.push<{ id: number }>("/modal2");
+    await flush();
+    layers[1]!.close({ id: 7 });
+
+    await expect(pending).resolves.toEqual({ id: 7 });
+    expect(route.depth).toBe(1);
+    // Popped, not rebuilt: the stale depth used to send this Back through a full navigation.
+    expect(container.children[0]).toBe(cold);
+  });
 });
 
 describe("failures", () => {

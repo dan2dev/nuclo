@@ -468,10 +468,14 @@ describe("in-flight work after stop()", () => {
       async function capture(): Promise<WeakRef<Route>> {
         const router = createRouter({ "/": () => Home, "/about": () => About });
         const route = await router.start("/");
+        // The quiet second passes, so the idle slice is asked for before stop().
+        await vi.advanceTimersByTimeAsync(1000);
         route.stop();
         return new WeakRef(route);
       }
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
       const ref = await capture();
+      vi.useRealTimers();
 
       expect(queued).toHaveLength(1);
       // The callback is still queued and still holds its closure; running it
@@ -481,9 +485,23 @@ describe("in-flight work after stop()", () => {
       await collectGarbage();
       expect(ref.deref()).toBeUndefined();
     } finally {
+      vi.useRealTimers();
       delete (globalThis as Record<string, unknown>).requestIdleCallback;
       delete (globalThis as Record<string, unknown>).cancelIdleCallback;
     }
+  });
+
+  itGc("stop() during the quiet wait drops its listeners and timer with the Route", async () => {
+    async function capture(): Promise<WeakRef<Route>> {
+      const router = createRouter({ "/": () => Home, "/about": () => About });
+      const route = await router.start("/");
+      route.stop();
+      return new WeakRef(route);
+    }
+    const ref = await capture();
+
+    await collectGarbage();
+    expect(ref.deref()).toBeUndefined();
   });
 });
 

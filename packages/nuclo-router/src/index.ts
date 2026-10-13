@@ -114,8 +114,10 @@ export type RouteTable = Readonly<{ [pattern: string]: RouteLoader<any> | RouteT
 export interface RouterOptions {
   /** URL prefix the app is served under, e.g. "/docs". */
   base?: string;
-  /** Load the other routes' modules once the page is idle. Default true. */
+  /** Load the other routes' modules once the user has left the page alone for `idleTimeout`. Default true. */
   preload?: boolean;
+  /** Milliseconds without input before preloading starts, or resumes after the user was busy. Default 1000. */
+  idleTimeout?: number;
   /** Called in the browser after every navigation, the initial one included, with how it happened. Never during SSR. */
   onNavigate?: (ctx: RouteContext, kind: NavigationKind) => void;
 }
@@ -204,6 +206,8 @@ interface Entry {
 const DEPTH_KEY = "nucloRouterDepth";
 /** history.state key for the entry's position, so a Back or Forward a guard refuses can be walked back. */
 const INDEX_KEY = "nucloRouterIndex";
+/** Input that means the user is busy: each one pauses preloading for another idleTimeout. */
+const ACTIVITY = ["pointerdown", "keydown", "wheel", "touchstart", "scroll"] as const;
 /** The rows the router's outlet renders for a Route. */
 const rowsOf = new WeakMap<Route, () => readonly Entry[]>();
 
@@ -303,7 +307,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
   const routes = flatten(table);
   const match = createMatcher(routes);
   const base = normalizeBase(options.base);
-  const { onNavigate } = options;
+  const { onNavigate, idleTimeout = 1000 } = options;
   /** Each parsed context's undecoded path, base stripped, so matches() matches what the router did instead of a decoded (lossy) path. */
   const rawPath = new WeakMap<RouteContext, string>();
   /** Modules by loader, an in-flight promise under the same key, so concurrent navigations share one import(). A failed load is evicted so it can be retried. */
@@ -760,26 +764,56 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       void navigate(href, "push");
     }
 
-    const idle = (): Promise<void> =>
-      new Promise((done) =>
-        typeof requestIdleCallback === "function" ? requestIdleCallback(() => done()) : setTimeout(done, 200),
-      );
+    /** When the user last did something: the preloader only runs once idleTimeout ms have passed since. */
+    let lastInput = 0;
+    const onInput = () => {
+      lastInput = Date.now();
+    };
+    /** Ends the wait in progress; stop() calls it so preload() exits and drops its listeners with the Route. */
+    let endWait = (): void => {};
 
-    /** Warms every route's module, one per idle slice, yielding to a navigation the user is waiting for. Modules only: a data loader has no context here. */
+    /** Resolves in the browser's next idle slice, once the user has left the page alone for idleTimeout. */
+    const idle = (): Promise<void> =>
+      new Promise((done) => {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const check = () => {
+          // A navigation the user is waiting for counts as activity.
+          if (pendingPath !== null) lastInput = Date.now();
+          const left = lastInput + idleTimeout - Date.now();
+          if (stopped) done();
+          else if (left > 0) timer = setTimeout(check, left);
+          else if (typeof requestIdleCallback === "function") requestIdleCallback(() => done());
+          else done();
+        };
+        endWait = () => {
+          clearTimeout(timer);
+          done();
+        };
+        check();
+      });
+
+    /** Warms every route's module, one per idle slice, while the page has been left alone for idleTimeout. Modules only: a data loader has no context here. */
     async function preload(): Promise<void> {
-      const seen = new Set<RouteLoader>();
-      for (const at of Object.values(routes).flat()) {
-        if (seen.has(at.loader) || cache.has(at.loader)) continue;
-        seen.add(at.loader);
-        // ponytail: one idle wait may outlive stop(); it exits on `stopped` without loading anything.
-        do await idle();
-        while (!stopped && pendingPath !== null);
-        if (stopped) return;
-        try {
-          await load(at);
-        } catch {
-          // A preload failure is not the user's problem.
+      // Loading the page is activity too: the first module waits a full quiet period.
+      lastInput = Date.now();
+      for (const type of ACTIVITY) window.addEventListener(type, onInput, { capture: true, passive: true });
+      try {
+        const seen = new Set<RouteLoader>();
+        for (const at of Object.values(routes).flat()) {
+          if (seen.has(at.loader) || cache.has(at.loader)) continue;
+          seen.add(at.loader);
+          // ponytail: an idle slice already asked for still runs after stop(); it only resolves a settled wait.
+          do await idle();
+          while (!stopped && pendingPath !== null);
+          if (stopped) return;
+          try {
+            await load(at);
+          } catch {
+            // A preload failure is not the user's problem.
+          }
         }
+      } finally {
+        for (const type of ACTIVITY) window.removeEventListener(type, onInput, true);
       }
     }
 
@@ -849,6 +883,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         if (isBrowser) {
           window.removeEventListener("popstate", onLocationChange);
           document.removeEventListener("click", onClick);
+          endWait();
           // The rows are [] now: the outlet empties.
           update();
         }
@@ -863,10 +898,12 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       active = route;
       // Seeded with the current location: a popstate some browsers fire on load changes nothing.
       handled = locationKey();
-      // A reload keeps the entry's index; a fresh entry is stamped 0.
+      // A reload keeps the entry's index; a fresh entry is stamped 0. Its depth goes:
+      // a reloaded layer is the base page now, and a stale depth would make Back
+      // onto it rebuild the stack instead of popping.
       index = indexOf(window.history.state) ?? 0;
       last = index;
-      window.history.replaceState({ ...window.history.state, [INDEX_KEY]: index }, "");
+      window.history.replaceState({ ...window.history.state, [DEPTH_KEY]: 0, [INDEX_KEY]: index }, "");
       window.addEventListener("popstate", onLocationChange);
       document.addEventListener("click", onClick);
       onNavigate?.(leaf(current).ctx, "start");

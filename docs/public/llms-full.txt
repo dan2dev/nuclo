@@ -1566,7 +1566,7 @@ Source: https://nuclo.dev/docs#router-overview
 
 > **Separate package:** `nuclo-router` is not part of the Nuclo core package. Install it next to `nuclo`. It is a preview release, so its API may still change.
 
-Routing for Nuclo: server rendering, hydration, code-split routes and idle preloading, built on `list()` and `update()`. About 4.6 KB gzipped, with no dependencies beyond Nuclo itself and no side effects, so it tree-shakes away when unused.
+Routing for Nuclo: server rendering, hydration, code-split routes and idle preloading, built on `list()` and `update()`. About 4.9 KB gzipped, with no dependencies beyond Nuclo itself and no side effects, so it tree-shakes away when unused.
 
 ```bash
 npm install nuclo nuclo-router
@@ -1877,7 +1877,7 @@ A route's value is always a function that returns the page component, so the com
 
 Only the module-shaped forms can carry a `load` export. Picking a named component with `.then(m => m.BPage)` hands the router the function alone.
 
-Each module is imported once and cached. Concurrent navigations to the same route share one `import()`. Once the page goes idle, the remaining routes are loaded in the background, one per idle slice, pausing whenever a navigation the user is waiting for is in flight.
+Each module is imported once and cached. Concurrent navigations to the same route share one `import()`. Once the user has left the page alone for a second (no taps, keys, wheel or scroll), the remaining routes are loaded in the background, one per idle slice (`requestIdleCallback`). Any input, or a navigation the user is waiting for, pauses it until the next quiet second.
 
 A preloaded or eager route never flips `router.pending` and lands before the next paint: no spinner frame, no layout shift. `router.pending` is only true for a module or loader that has to be waited for, and the outgoing page stays on screen while it is. A chunk that fails to load surfaces as `router.error`, never as an unhandled rejection, and can simply be retried.
 
@@ -1900,7 +1900,7 @@ interface RouterOptions { base?: string; preload?: boolean; onNavigate?: (ctx: R
 | Option | Default |  |
 | --- | --- | --- |
 | `base` | `'/'` | URL prefix the app is served under, such as `'/docs'`. It only matches at a segment boundary: `/docs/intro` is inside `'/docs'`, `/docsearch` is not. URLs outside it match nothing, so `start()` rejects (your server-side 404) and links to them are left to the browser. |
-| `preload` | `true` | Load the remaining routes' modules when the page goes idle. |
+| `preload` | `true` | Load the remaining routes' modules once the user has left the page alone for a second. |
 | `onNavigate` |  | `(ctx, kind) => void`, called after every resolved navigation in the browser, including the initial one, once the DOM has caught up. `kind` is `'start'`, `'push'`, `'replace'`, `'pop'` (Back, Forward, `close()`) or `'layer'`. The hook for `document.title`, meta tags, focus, scrolling and analytics. Never called during SSR. |
 
 Returns the router: `start()`, `match()`, `outlet()`, `matches()`, and every `Route` member except `run()`, read through to the active Route. That is the one the last `start()` returned in the browser, or the one whose `run()` is executing on the server. Reading a member with neither throws. The route table, the compiled matcher and the module cache live on the router, so they are shared across requests on a server.

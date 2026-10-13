@@ -1706,7 +1706,7 @@ createRouter({
 '/d': () => ({ default: DPage, load: loadD }),     // eager, module-shaped
 `)}
       <p>Only the module-shaped forms can carry a <code>load</code> export. Picking a named component with <code>.then(m =&gt; m.BPage)</code> hands the router the function alone.</p>
-      <p>Each module is imported once and cached. Concurrent navigations to the same route share one <code>import()</code>. Once the page goes idle, the remaining routes are loaded in the background, one per idle slice, pausing whenever a navigation the user is waiting for is in flight.</p>
+      <p>Each module is imported once and cached. Concurrent navigations to the same route share one <code>import()</code>. Once the user has left the page alone for <code>idleTimeout</code> (a second by default; no taps, keys, wheel or scroll), the remaining routes are loaded in the background, one per idle slice (<code>requestIdleCallback</code>). Any input, or a navigation the user is waiting for, pauses it until the page is idle again.</p>
       <p>A preloaded or eager route never flips <code>router.pending</code> and lands before the next paint: no spinner frame, no layout shift. <code>router.pending</code> is only true for a module or loader that has to be waited for, and the outgoing page stays on screen while it is. A chunk that fails to load surfaces as <code>router.error</code>, never as an unhandled rejection, and can simply be retried.</p>
     `,
       },
@@ -1719,7 +1719,7 @@ createRouter({
 function createRouter(table: RouteTable, options?: RouterOptions): Router
 function withLoad(loader: RouteLoader, load: DataLoader): RouteLoader
 
-interface RouterOptions { base?: string; preload?: boolean; onNavigate?: (ctx: RouteContext, kind: NavigationKind) => void }
+interface RouterOptions { base?: string; preload?: boolean; idleTimeout?: number; onNavigate?: (ctx: RouteContext, kind: NavigationKind) => void }
 `),
         content: `
       <h3><code>createRouter(table, options?)</code></h3>
@@ -1728,7 +1728,8 @@ interface RouterOptions { base?: string; preload?: boolean; onNavigate?: (ctx: R
         <thead><tr><th>Option</th><th>Default</th><th></th></tr></thead>
         <tbody>
           <tr><td><code>base</code></td><td><code>'/'</code></td><td>URL prefix the app is served under, such as <code>'/docs'</code>. It only matches at a segment boundary: <code>/docs/intro</code> is inside <code>'/docs'</code>, <code>/docsearch</code> is not. URLs outside it match nothing, so <code>start()</code> rejects (your server-side 404) and links to them are left to the browser.</td></tr>
-          <tr><td><code>preload</code></td><td><code>true</code></td><td>Load the remaining routes' modules when the page goes idle.</td></tr>
+          <tr><td><code>preload</code></td><td><code>true</code></td><td>Load the remaining routes' modules in the background once the page is idle. <code>false</code> turns it off.</td></tr>
+          <tr><td><code>idleTimeout</code></td><td><code>1000</code></td><td>Milliseconds without taps, keys, wheel or scroll before preloading starts, or resumes after the user was busy.</td></tr>
           <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>, called after every resolved navigation in the browser, including the initial one, once the DOM has caught up. <code>kind</code> is <code>'start'</code>, <code>'push'</code>, <code>'replace'</code>, <code>'pop'</code> (Back, Forward, <code>close()</code>) or <code>'layer'</code>. The hook for <code>document.title</code>, meta tags, focus, scrolling and analytics. Never called during SSR.</td></tr>
         </tbody>
       </table>
@@ -1808,7 +1809,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
           <tr><td><code>RouteModule</code></td><td>a page module: the component itself, or <code>{ default, load? }</code> as <code>import()</code> yields</td></tr>
           <tr><td><code>RouteLoader</code></td><td><code>() =&gt; RouteModule | Promise&lt;RouteModule&gt;</code>, optionally carrying a <code>load</code> from <code>withLoad()</code></td></tr>
           <tr><td><code>RouteTable</code></td><td>the table <code>createRouter()</code> takes: pattern to loader, or to a nested table</td></tr>
-          <tr><td><code>RouterOptions</code></td><td><code>{ base?, preload?, onNavigate? }</code></td></tr>
+          <tr><td><code>RouterOptions</code></td><td><code>{ base?, preload?, idleTimeout?, onNavigate? }</code></td></tr>
           <tr><td><code>NavigateOptions</code></td><td><code>{ replace? }</code>, the second argument of <code>go()</code></td></tr>
           <tr><td><code>NavigationKind</code></td><td><code>'start' | 'push' | 'replace' | 'pop' | 'layer'</code>, the second argument of <code>onNavigate</code></td></tr>
           <tr><td><code>Outlet</code></td><td>the type of <code>outlet()</code> from <code>PageProps</code></td></tr>

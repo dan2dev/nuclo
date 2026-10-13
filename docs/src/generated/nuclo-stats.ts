@@ -2,4 +2,4 @@
 export const NUCLO_VERSION = "0.3.28";
 export const NUCLO_GZIP_KB = "18.0";
 export const NUCLO_ROUTER_VERSION = "0.1.4";
-export const NUCLO_ROUTER_GZIP_KB = "4.7";
+export const NUCLO_ROUTER_GZIP_KB = "4.9";

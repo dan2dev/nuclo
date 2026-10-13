@@ -407,7 +407,10 @@ describe("idle preloading", () => {
     routes.push(route);
 
     expect(loaded).toEqual([]);
-    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(999);
+    expect(loaded).toEqual([]);
+    // After a quiet second the rest follow straight away, not one per second.
+    await vi.advanceTimersByTimeAsync(1);
     expect(loaded).toEqual(["a", "b"]);
 
     // Preloaded routes then navigate without flipping pending.
@@ -417,7 +420,53 @@ describe("idle preloading", () => {
     expect(route.path).toBe("/a");
   });
 
+  it("waits while the user is interacting with the page", async () => {
+    vi.useFakeTimers();
+    let loaded = false;
+    const router = createRouter({
+      "/": () => Home,
+      "/a": () => {
+        loaded = true;
+        return About;
+      },
+    });
+    routes.push(await router.start("/"));
+
+    for (const type of ["pointerdown", "keydown", "wheel", "touchstart", "scroll"]) {
+      await vi.advanceTimersByTimeAsync(900);
+      window.dispatchEvent(new Event(type));
+    }
+    expect(loaded).toBe(false);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(loaded).toBe(true);
+  });
+
+  it("pauses again when the user comes back mid-preload", async () => {
+    vi.useFakeTimers();
+    const gate = deferred<{ default: PageComponent }>();
+    let loadedB = false;
+    const router = createRouter({
+      "/": () => Home,
+      "/a": () => gate.promise,
+      "/b": () => {
+        loadedB = true;
+        return About;
+      },
+    });
+    routes.push(await router.start("/"));
+
+    await vi.advanceTimersByTimeAsync(1000);
+    // /a is loading when the user returns: /b waits for the next quiet second.
+    window.dispatchEvent(new Event("keydown"));
+    gate.resolve({ default: About });
+    await vi.advanceTimersByTimeAsync(999);
+    expect(loadedB).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(loadedB).toBe(true);
+  });
+
   it("uses requestIdleCallback when the browser has one", async () => {
+    vi.useFakeTimers();
     const queued: Array<() => void> = [];
     (globalThis as Record<string, unknown>).requestIdleCallback = (fn: () => void) => {
       queued.push(fn);
@@ -430,13 +479,20 @@ describe("idle preloading", () => {
         loadedA = true;
         return About;
       },
+      "/b": () => About,
     });
-    const route = await start(router, "/");
+    await start(router, "/");
 
+    // The idle slot is only asked for after the quiet second.
+    expect(queued.length).toBe(0);
+    await vi.advanceTimersByTimeAsync(1000);
     expect(queued.length).toBe(1);
+    expect(loadedA).toBe(false);
     queued.shift()!();
-    await flush();
+    await vi.advanceTimersByTimeAsync(0);
     expect(loadedA).toBe(true);
+    // Still quiet: the next module takes the next idle slot, without another second.
+    expect(queued.length).toBe(1);
   });
 
   it("can be turned off", async () => {
@@ -456,6 +512,27 @@ describe("idle preloading", () => {
 
     await vi.advanceTimersByTimeAsync(2000);
     expect(loaded).toBe(false);
+  });
+
+  it("waits for a custom idleTimeout", async () => {
+    vi.useFakeTimers();
+    let loaded = false;
+    const router = createRouter(
+      {
+        "/": () => Home,
+        "/a": () => {
+          loaded = true;
+          return About;
+        },
+      },
+      { idleTimeout: 3000 },
+    );
+    routes.push(await router.start("/"));
+
+    await vi.advanceTimersByTimeAsync(2999);
+    expect(loaded).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(loaded).toBe(true);
   });
 
   it("waits while the user is waiting for a navigation", async () => {

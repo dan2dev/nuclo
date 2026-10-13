@@ -18,8 +18,12 @@ export const router = createRouter(
       "./:section": () => import("./pages/Section.ts"),
     },
     "/blog/:slug": () => import("./pages/Post.ts"), // has a load()
-    "/orders/new": () => import("./pages/Order.ts"), // opens a layer
-    "/customers/new": () => import("./pages/NewCustomer.ts"),
+    // The order opens ./customer as a layer. Nested, the layer's URL names the
+    // page beneath it, so a reload or a fresh tab can put the stack back.
+    "/orders/new": {
+      "/": () => import("./pages/Order.ts"),
+      "./customer": () => import("./pages/NewCustomer.ts"),
+    },
     "*": () => import("./pages/NotFound.ts"),
   },
   {

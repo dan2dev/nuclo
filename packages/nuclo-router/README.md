@@ -3,7 +3,7 @@
 > **Preview:** this is a preview version of the router. The API may change.
 
 Routing for [nuclo](https://nuclo.dev/) — SSR, hydration, code-split routes and
-idle preloading. **<!-- size:router-gzip -->4.7<!-- /size --> kB gzipped** (<!-- size:router-brotli -->4.2<!-- /size --> kB brotli), no dependencies beyond nuclo
+idle preloading. **<!-- size:router-gzip -->4.9<!-- /size --> kB gzipped** (<!-- size:router-brotli -->4.4<!-- /size --> kB brotli), no dependencies beyond nuclo
 itself, and no side effects — it tree-shakes away when unused.
 
 The router decides *what* to load; the app says *where* with `router.outlet()`:
@@ -325,9 +325,11 @@ Only the module-shaped forms can carry a `load` export — picking a named
 component with `.then(m => m.BPage)` hands the router the function alone.
 
 Each module is imported **once** and cached; concurrent navigations to the same
-route share one `import()`. Once the page goes idle the remaining routes are
-loaded in the background, one per idle slice, pausing whenever a navigation the
-user is actually waiting for is in flight.
+route share one `import()`. Once the user has left the page alone for
+`idleTimeout` (a second by default; no taps, keys, wheel or scroll), the
+remaining routes are loaded in the background, one per idle slice
+(`requestIdleCallback`). Any input, or a navigation the user is actually
+waiting for, pauses it until the page is idle again.
 
 The payoff: a preloaded or eager route never flips `router.pending` and lands
 before the next paint — no spinner frame, no layout shift. `router.pending` is
@@ -345,7 +347,8 @@ retried.
 | Option | Default | |
 | --- | --- | --- |
 | `base` | `"/"` | URL prefix the app is served under, e.g. `"/docs"`. It only matches at a segment boundary — `/docs/intro` is inside `"/docs"`, `/docsearch` is not. URLs outside it match nothing, so `start()` rejects (your server-side 404) and links to them are left to the browser. |
-| `preload` | `true` | Load the remaining routes' modules when the page goes idle. |
+| `preload` | `true` | Load the remaining routes' modules in the background once the page is idle. `false` turns it off. |
+| `idleTimeout` | `1000` | Milliseconds without taps, keys, wheel or scroll before preloading starts, or resumes after the user was busy. |
 | `onNavigate` | — | `(ctx, kind) => void` after every resolved navigation in the browser, including the initial one, once the DOM has caught up. `kind` is `"start"`, `"push"`, `"replace"`, `"pop"` (Back, Forward, `close()`) or `"layer"`. The hook for `document.title`, meta tags, focus, scrolling and analytics. Never called during SSR. |
 
 Returns the router: `start()`, `match()`, `outlet()`, `matches()`, and every
@@ -471,7 +474,7 @@ Every type is a named export, so a page, a loader or a guard can be typed withou
 | `RouteModule` | a page module: the component itself, or `{ default, load? }` as `import()` yields |
 | `RouteLoader` | `() => RouteModule \| Promise<RouteModule>`, optionally carrying a `load` from `withLoad()` |
 | `RouteTable` | the table `createRouter()` takes: pattern → loader, or → a nested table |
-| `RouterOptions` | `{ base?, preload?, onNavigate? }` |
+| `RouterOptions` | `{ base?, preload?, idleTimeout?, onNavigate? }` |
 | `NavigateOptions` | `{ replace? }`, the second argument of `go()` |
 | `NavigationKind` | `"start" \| "push" \| "replace" \| "pop" \| "layer"`, the second argument of `onNavigate` |
 | `Outlet` | the type of `outlet()` from `PageProps` |

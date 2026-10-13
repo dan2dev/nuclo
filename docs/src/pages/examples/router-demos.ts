@@ -135,7 +135,7 @@ export const ROUTER_EXAMPLES: RouterExample[] = [
   {
     id: "router-layers", docs: "router-layers", install, title: "Layers",
     desc: "The order form pushes the customer page as a layer and awaits its result. The form is not re-rendered, so its notes survive. Save resolves the push, Cancel or Back dismisses it.",
-    ...sources("pages/Order.ts", "pages/NewCustomer.ts"),
+    ...sources("pages/Order.ts", "pages/NewCustomer.ts", "routes.ts"),
     preview: () => DemoFrame("/orders/new", "Layers"),
   },
   {

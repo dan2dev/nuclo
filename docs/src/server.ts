@@ -76,10 +76,15 @@ if (isProd) {
     async fetch(req) {
       const { pathname } = new URL(req.url);
 
-      // Serve static assets from dist/.
+      // Serve static assets from dist/. Without Cache-Control (and Bun sends no
+      // validators) Chrome re-downloads the favicon on every client-side
+      // navigation. Hashed /assets/ never change; the rest match Cloudflare Pages.
       if (pathname !== '/' && pathname !== '/index.html') {
         const file = Bun.file(resolve(distDir, `.${pathname}`));
-        if (await file.exists()) return gzipResponse(req, new Response(file));
+        const cacheControl = pathname.startsWith('/assets/')
+          ? 'public, max-age=31536000, immutable'
+          : 'public, max-age=14400, must-revalidate';
+        if (await file.exists()) return gzipResponse(req, new Response(file, { headers: { 'Cache-Control': cacheControl } }));
       }
 
       // The routing demo app: a built page, served for every path under its prefix.
