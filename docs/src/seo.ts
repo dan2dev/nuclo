@@ -25,7 +25,7 @@ export const routeMeta: Record<RoutePath, PageMeta> = {
   },
   desktop: {
     title: "Nuclo OS - Desktop",
-    description: "A standalone desktop with working apps and a simulated file system saved in your browser.",
+    description: "A standalone desktop with working apps — Files, Notes, Terminal, Calculator, Timer, a Kanban board, Finance with charts and a spreadsheet, and a Calendar — and a simulated file system saved in your browser.",
     type: "WebPage",
   },
   docs: {

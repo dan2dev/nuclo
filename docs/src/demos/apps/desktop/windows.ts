@@ -58,6 +58,15 @@ export function focus(win: Win) {
   if (win.z !== topZ) win.z = ++topZ;
 }
 
+/**
+ * The update scope id of a window's element. The desktop tags each window
+ * with scope(winScopeId(win)), so update(winScopeId(win)) re-evaluates that
+ * window and nothing else — other windows, the taskbar and the desktop stay
+ * untouched. Programs use it for their own keystrokes, ticks and drags, and
+ * the window manager adds "os-taskbar" when the task buttons need it too.
+ */
+export const winScopeId = (win: Win) => `os-win-${win.id}`;
+
 export function minimize(win: Win) {
   win.minimized = true;
 }

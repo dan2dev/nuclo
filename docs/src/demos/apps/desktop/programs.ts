@@ -1,15 +1,19 @@
 // programs.ts: what runs in the windows. A program is a plain object: a name,
 // an icon, a default size, init() for the state of a new window, and a view
 // of that state. The state is kept on the window, so leaving the example and
-// coming back builds the views again around the same note, sum and shell
-// history. The Timer reaches outside its window: while it runs, it puts its
-// countdown in the taskbar tray with into().
+// coming back builds the views again around the same note, sum, shell
+// history and board. The Timer reaches outside its window: while it runs, it
+// puts its countdown in the taskbar tray with into().
 import "nuclo";
-import { focus, open, windows, type Win } from "./windows.ts";
+import { focus, open, windows, winScopeId, type Win } from "./windows.ts";
 import { contextMenuKey, showContextMenu } from "./context-menu.ts";
 import { icon } from "./icons.ts";
 import { available, children, createEntry, entries, getEntry, moveEntry, pathOf, renameEntry, resolvePath, restoreEntry, storageStatus, trashEntry, writeEntry, type Entry } from "./filesystem.ts";
+import { kanban } from "./kanban.ts";
+import { calendar } from "./calendar.ts";
+import { finance } from "./finance.ts";
 import { s } from "./styles.ts";
+export { kanban, calendar, finance };
 
 export interface Program<S = unknown> {
   name: string;
@@ -33,7 +37,7 @@ function saveNote(win: Win<Note>, copy = false) {
     note.saved = note.text; note.error = "";
     win.title = getEntry(note.file)!.name;
   } catch (error) { note.error = (error as Error).message; }
-  update();
+  update(); // rare, and cross-window: the new file shows in Files, the new title in the taskbar
 }
 export function openFile(entry: Entry) {
   if (entry.kind !== "file" || !available(entry.id)) return;
@@ -52,7 +56,7 @@ export const notes: Program<Note> = {
       button(s.btn, s.primary, "Save", { onClick: () => saveNote(win) }),
       button(s.btn, "Save copy", { onClick: () => saveNote(win, true) }),
     ),
-    textarea(s.textarea, { "aria-label": "Note", placeholder: "A little room for your thoughts…", value: () => win.state.text, onInput: (e) => { win.state.text = e.currentTarget.value; update(); }, onKeyDown: (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); saveNote(win); } } }),
+    textarea(s.textarea, { "aria-label": "Note", placeholder: "A little room for your thoughts…", value: () => win.state.text, onInput: (e) => { win.state.text = e.currentTarget.value; update(winScopeId(win)); }, onKeyDown: (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); saveNote(win); } } }),
     when(() => !!win.state.error, p(s.error, { role: "alert" }, () => win.state.error)),
     div(s.foot, span(() => unsaved(win) ? "Unsaved changes" : win.state.file ? "All changes saved" : "New note · save to Documents"), span(() => `${win.state.text.length} characters`)),
   ),
@@ -64,18 +68,20 @@ export const files: Program<Explorer> = {
   init: () => ({ folder: "documents", selected: "", search: "", action: "", name: "", destination: "root", error: "", layout: "list" }),
   view: (win) => {
     const state = win.state;
-    const navigate = (folder: string) => { Object.assign(state, { folder, selected: "", search: "", action: "", error: "" }); update(); };
+    const refresh = () => update(winScopeId(win)); // files updates stay in this window
+    const navigate = (folder: string) => { Object.assign(state, { folder, selected: "", search: "", action: "", error: "" }); refresh(); };
     const selected = () => rows().find((entry) => entry.id === state.selected);
     const isTrash = () => state.folder === "trash";
     const rows = () => (isTrash() ? entries.filter((e) => e.trashed) : available(state.folder) ? children(state.folder) : []).filter((e) => e.name.toLowerCase().includes(state.search.toLowerCase()));
-    const perform = (fn: () => void) => { try { fn(); state.error = ""; state.action = ""; } catch (e) { state.error = (e as Error).message; } update(); };
-    const start = (action: string) => { state.action = action; state.name = action === "rename" ? selected()?.name ?? "" : action === "file" ? "Untitled.txt" : "New folder"; state.error = ""; update(); };
+    const perform = (fn: () => void) => { try { fn(); state.error = ""; state.action = ""; } catch (e) { state.error = (e as Error).message; } refresh(); };
+    const start = (action: string) => { state.action = action; state.name = action === "rename" ? selected()?.name ?? "" : action === "file" ? "Untitled.txt" : "New folder"; state.error = ""; refresh(); };
+    // Opening a note (or another window) changes the window list: one global update.
     const activate = (entry: Entry) => { if (isTrash()) return; if (entry.kind === "folder") navigate(entry.id); else { openFile(entry); update(); } };
     const folderActions = () => [
       { label: "New folder", icon: "files", disabled: isTrash() || !available(state.folder), run: () => start("folder") },
       { label: "New note", icon: "notes", disabled: isTrash() || !available(state.folder), run: () => start("file") },
-      { label: state.layout === "list" ? "View as grid" : "View as list", icon: "grid", run: () => { state.layout = state.layout === "list" ? "grid" : "list"; } },
-      { label: "Open in Terminal", icon: "terminal", disabled: isTrash() || !available(state.folder), run: () => { open(terminal).state.cwd = state.folder; } },
+      { label: state.layout === "list" ? "View as grid" : "View as list", icon: "grid", run: () => { state.layout = state.layout === "list" ? "grid" : "list"; refresh(); } },
+      { label: "Open in Terminal", icon: "terminal", disabled: isTrash() || !available(state.folder), run: () => { open(terminal).state.cwd = state.folder; update(); } },
     ];
     const entryActions = (entry: Entry) => {
       state.selected = entry.id;
@@ -98,10 +104,10 @@ export const files: Program<Explorer> = {
         div(s.toolbar,
           button(s.btn, { "aria-label": "Parent folder", disabled: () => state.folder === "root" || isTrash(), onClick: () => navigate(getEntry(state.folder)?.parent ?? "root") }, icon("up", 16)),
           span(s.breadcrumb, () => isTrash() ? "Trash" : pathOf(state.folder)),
-          button(s.btn, { "aria-label": "Toggle file layout", onClick: () => { state.layout = state.layout === "list" ? "grid" : "list"; update(); } }, icon("grid", 16)),
+          button(s.btn, { "aria-label": "Toggle file layout", onClick: () => { state.layout = state.layout === "list" ? "grid" : "list"; refresh(); } }, icon("grid", 16)),
         ),
         div(s.toolbar,
-          input(s.input, { type: "search", "aria-label": "Search files", placeholder: "Search this folder", value: () => state.search, onInput: (e) => { state.search = e.currentTarget.value; update(); } }),
+          input(s.input, { type: "search", "aria-label": "Search files", placeholder: "Search this folder", value: () => state.search, onInput: (e) => { state.search = e.currentTarget.value; refresh(); } }),
           button(s.btn, { disabled: isTrash, onClick: () => start("folder") }, "New folder"),
           button(s.btn, s.primary, { disabled: isTrash, onClick: () => start("file") }, "New note"),
         ),
@@ -113,11 +119,11 @@ export const files: Program<Explorer> = {
           when(() => state.action === "move", select(s.input, { "aria-label": "Destination folder", value: () => state.destination, onChange: (e) => { state.destination = e.currentTarget.value; } }, option({ value: "root" }, "Home"), list(() => entries.filter((e) => e.kind === "folder" && available(e.id)), (e) => option({ value: e.id }, () => pathOf(e.id)))))
             .else(input(s.input, { "aria-label": "Item name", value: () => state.name, onMount: (el) => { el.focus(); el.select(); }, onInput: (e) => { state.name = e.currentTarget.value; } })),
           button(s.btn, s.primary, { type: "submit" }, () => state.action === "rename" ? "Rename" : state.action === "move" ? "Move" : "Create"),
-          button(s.btn, { type: "button", onClick: () => { state.action = ""; state.error = ""; update(); } }, "Cancel"),
+          button(s.btn, { type: "button", onClick: () => { state.action = ""; state.error = ""; refresh(); } }, "Cancel"),
         )),
         when(() => !!state.error, p(s.error, { role: "alert" }, () => state.error)),
         div(s.fileList, { tabIndex: 0, "aria-haspopup": "menu", "aria-label": "Folder contents", onContextMenu: (e) => showContextMenu(e, isTrash() ? "Trash" : pathOf(state.folder), folderActions()), onKeyDown: (e) => { if (e.target === e.currentTarget) contextMenuKey(e, isTrash() ? "Trash" : pathOf(state.folder), folderActions()); }, class: () => cx(s.fileList, state.layout === "grid" ? s.fileGrid : null).className },
-          list(rows, (entry) => button(s.fileRow, { "aria-haspopup": "menu", onContextMenu: (e) => showContextMenu(e, entry.name, entryActions(entry)), "aria-pressed": () => String(state.selected === entry.id), onClick: () => { state.selected = entry.id; update(); }, onDblClick: () => activate(entry), onKeyDown: (e) => { if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) { contextMenuKey(e, entry.name, entryActions(entry)); return; } if (e.key === "Enter") { e.preventDefault(); activate(entry); } } },
+          list(rows, (entry) => button(s.fileRow, { "aria-haspopup": "menu", onContextMenu: (e) => showContextMenu(e, entry.name, entryActions(entry)), "aria-pressed": () => String(state.selected === entry.id), onClick: () => { state.selected = entry.id; refresh(); }, onDblClick: () => activate(entry), onKeyDown: (e) => { if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) { contextMenuKey(e, entry.name, entryActions(entry)); return; } if (e.key === "Enter") { e.preventDefault(); activate(entry); } } },
             span(s.fileIcon, icon(entry.kind === "folder" ? "files" : "notes", 25)),
             span(s.fileName, () => entry.name), span(s.fileMeta, () => entry.kind === "folder" ? `${children(entry.id).length} items` : `${new TextEncoder().encode(entry.content).length} B`),
           )),
@@ -144,6 +150,16 @@ const OPS: Record<string, (a: number, b: number) => number> = { "+": (a, b) => a
 const KEYS = [..."789÷456×123−C0.+="];
 const cleared = (): Calc => ({ shown: "0", acc: 0, op: "", fresh: true });
 
+// The keyboard reaches the same press() as the buttons: digits and "." type,
+// + - * / are the operators, Enter (or =) equals, Escape (or Delete, c) clears.
+function calcKey(key: string): string | null {
+  if (/^[0-9.]$/.test(key)) return key;
+  if (key === "+" || key === "-" || key === "*" || key === "/") return { "+": "+", "-": "−", "*": "×", "/": "÷" }[key]!;
+  if (key === "Enter" || key === "=") return "=";
+  if (key === "Escape" || key === "Delete" || key === "Backspace" || key === "c" || key === "C") return "C";
+  return null;
+}
+
 function press(c: Calc, key: string) {
   if (key === "C") Object.assign(c, cleared());
   else if (key === "=" || key in OPS) {
@@ -161,13 +177,20 @@ function press(c: Calc, key: string) {
 export const calculator: Program<Calc> = {
   name: "Calculator",
   icon: "calculator",
-  size: [250, 320],
+  size: [250, 330],
   init: cleared,
   view: (win) =>
-    div(
-      s.calc,
+    div(s.calc,
+      { tabIndex: 0, "aria-label": "Calculator. Type on your keyboard.", onKeyDown: (e) => {
+        const key = calcKey(e.key);
+        if (!key) return;
+        e.preventDefault();
+        press(win.state, key);
+        update(winScopeId(win));
+      }, onMount: (el) => el.focus() },
       output(s.display, () => win.state.shown),
-      div(s.keys, ...KEYS.map((key) => button(cx(s.key, key === "=" ? s.primary : null), key, { onClick: () => { press(win.state, key); update(); } }))),
+      div(s.keys, ...KEYS.map((key) => button(cx(s.key, key === "=" ? s.primary : null), key, { onClick: () => { press(win.state, key); update(winScopeId(win)); } }))),
+      p(s.calcHint, "Type with the keyboard · Enter = · Esc clears"),
     ),
 };
 
@@ -180,6 +203,9 @@ export const timer: Program<{ left: number; running: boolean }> = {
   init: () => ({ left: 60, running: false }),
   view: (win) => {
     const t = win.state;
+    // The countdown is drawn twice: in the window and, while it runs, in the
+    // taskbar tray — so a tick refreshes this window and the taskbar scope.
+    const tick = () => update(winScopeId(win), "os-taskbar");
     return div(
       s.timer,
       // The window owns the interval: closing it, or leaving the example, stops it.
@@ -187,24 +213,24 @@ export const timer: Program<{ left: number; running: boolean }> = {
         const id = setInterval(() => {
           if (!t.running) return;
           t.running = --t.left > 0; // stops at zero
-          update();
+          tick();
         }, 1000);
         return () => clearInterval(id);
       }),
       output(s.countdown, () => mmss(t.left)),
       div(
         s.row,
-        button(s.btn, s.primary, () => (t.running ? "Pause" : "Start"), { disabled: () => t.left === 0, onClick: () => { t.running = !t.running; update(); } }),
-        button(s.btn, "+1 min", { onClick: () => { t.left += 60; update(); } }),
-        button(s.btn, "Reset", { onClick: () => { Object.assign(t, timer.init()); update(); } }),
+        button(s.btn, s.primary, () => (t.running ? "Pause" : "Start"), { disabled: () => t.left === 0, onClick: () => { t.running = !t.running; tick(); } }),
+        button(s.btn, "+1 min", { onClick: () => { t.left += 60; tick(); } }),
+        button(s.btn, "Reset", { onClick: () => { Object.assign(t, timer.init()); tick(); } }),
       ),
       // Written here, drawn in the taskbar. It goes when the timer stops or this window closes.
-      when(() => t.running, into("os-tray", button(s.trayItem, { title: "Show the timer", onClick: () => { focus(win); update(); } }, icon("timer", 15), () => mmss(t.left)))),
+      when(() => t.running, into("os-tray", button(s.trayItem, { title: "Show the timer", onClick: () => { focus(win); update(winScopeId(win), "os-taskbar"); } }, icon("timer", 15), () => mmss(t.left)))),
     );
   },
 };
 
-interface Shell { lines: string[]; cwd: string; history: string[]; cursor: number }
+interface Shell { lines: string[]; cwd: string; history: string[]; cursor: number; opened: boolean }
 const COMMANDS: Record<string, (args: string[], shell: Shell) => string | void> = {
   help: () => "Files: pwd · ls [path] · cd <folder> · cat <file>\nEdit: mkdir <name> · touch <name> · echo <text> > <file> · rm <path>\nApps: apps · open <app or file> · windows\nOther: date · clear · help\nUse quotes for names with spaces. rm moves items to Trash.",
   pwd: (_, shell) => pathOf(shell.cwd),
@@ -239,6 +265,7 @@ const COMMANDS: Record<string, (args: string[], shell: Shell) => string | void> 
   date: () => new Date().toString(),
   clear: (_, shell) => { shell.lines.length = 0; },
   open: ([name = ""], shell) => {
+    shell.opened = true; // a new window joins the desktop: the caller needs a global update
     if (PROGRAMS[name.toLowerCase()]) { open(PROGRAMS[name.toLowerCase()]); return; }
     const entry = getEntry(resolvePath(name, shell.cwd) ?? "");
     if (!entry) throw new Error('App or file not found. Try "apps" or "ls".');
@@ -253,11 +280,13 @@ function createAtPath(path: string, cwd: string, kind: Entry["kind"]) {
   if (!parent) throw new Error("Parent folder not found.");
   return createEntry(parent, path.slice(slash + 1), kind);
 }
+/** Runs one command line. Returns true when it opened a window: then the caller needs a global update. */
 function run(shell: Shell, line: string) {
   if (!available(shell.cwd)) shell.cwd = "root";
   shell.lines.push(`${pathOf(shell.cwd)} $ ${line}`);
-  if (!line.trim()) return;
+  if (!line.trim()) return false;
   shell.history.push(line); shell.cursor = shell.history.length;
+  shell.opened = false;
   try {
     const tokens = line.match(/"[^"\n]*"|'[^'\n]*'|[^\s]+/g) ?? [];
     const [name, ...args] = tokens.map((token) => token.replace(/^(["'])(.*)\1$/, "$2"));
@@ -265,19 +294,31 @@ function run(shell: Shell, line: string) {
     const out = COMMANDS[name](args, shell);
     if (out) shell.lines.push(out);
   } catch (e) { shell.lines.push((e as Error).message); }
+  return shell.opened;
 }
 export const terminal: Program<Shell> = {
   name: "Terminal", icon: "terminal", size: [510, 340],
-  init: () => ({ lines: ['Nuclo shell · your local workspace', 'Type "help" for commands.'], cwd: "documents", history: [], cursor: 0 }),
+  init: () => ({ lines: ['Nuclo shell · your local workspace', 'Type "help" for commands.'], cwd: "documents", history: [], cursor: 0, opened: false }),
   view: (win) => div(s.term,
+    // Click anywhere — on the output, the prompt, the blank space — and the
+    // input line takes the keystrokes. Only a click on the input itself keeps
+    // the caret where it is.
+    { title: "Click anywhere to type", onClick: (e) => {
+      const input = e.currentTarget.querySelector<HTMLInputElement>("input");
+      if (!input || e.target === input) return;
+      input.focus();
+      const end = input.value.length;
+      input.setSelectionRange(end, end);
+    } },
     div(pre(() => win.state.lines.join("\n")),
-      div(s.prompt, span(() => `${pathOf(win.state.cwd)} $`), input({ "aria-label": "Command", autocomplete: "off", spellcheck: false, onKeyDown: (e) => {
+      div(s.prompt, span(() => `${pathOf(win.state.cwd)} $`), input({ "aria-label": "Command", autocomplete: "off", spellcheck: false, onMount: (el) => el.focus(), onKeyDown: (e) => {
         if (e.key === "ArrowUp" || e.key === "ArrowDown") {
           e.preventDefault(); win.state.cursor = Math.max(0, Math.min(win.state.history.length, win.state.cursor + (e.key === "ArrowUp" ? -1 : 1)));
           e.currentTarget.value = win.state.history[win.state.cursor] ?? ""; return;
         }
         if (e.key !== "Enter") return;
-        run(win.state, e.currentTarget.value); e.currentTarget.value = ""; update();
+        const opened = run(win.state, e.currentTarget.value); e.currentTarget.value = "";
+        if (opened) update(); else update(winScopeId(win)); // opening an app changes the windows list
       } })),
     ),
   ),
@@ -287,6 +328,7 @@ export const settings: Program<null> = {
   name: "Settings", icon: "settings", size: [360, 320], init: () => null,
   view: () => div(s.about,
     h3("Make it yours"), p("Choose a backdrop for your workspace."),
+    // Global: the wallpaper attribute lives on the desktop root, outside this window.
     div(s.wallpapers, ...[["grove", "Grove"], ["dusk", "Dusk"], ["slate", "Slate"]].map(([value, label]) => button(s.swatch, { "aria-pressed": () => String(appearance.wallpaper === value), "data-wallpaper": value, onClick: () => { appearance.wallpaper = value; try { localStorage.setItem("nuclo-desktop-wallpaper", value); } catch {} update(); } }, label))),
     h3("Your local workspace"), p(() => storageStatus), p("This is a simulated file system. Files stay in this browser, and no real files on your device are changed."),
   ),
@@ -294,10 +336,10 @@ export const settings: Program<null> = {
 export const about: Program<null> = {
   name: "About", icon: "about", size: [360, 310], init: () => null,
   view: () => div(s.about,
-    h3("Welcome to Nuclo OS"), p("A small desktop with room to work. Files, Notes and Terminal share one simulated disk."),
+    h3("Welcome to Nuclo OS"), p("A small desktop with room to work. Files, Notes and Terminal share one simulated disk; the Kanban board and the Calendar keep their own notes, and Finance keeps a ledger in IndexedDB."),
     p("Open an app with one click. Drag a title to move its window; double-click to maximize. Your open apps live in the taskbar."),
     button(s.btn, "Explore your files", { onClick: () => { open(files); update(); } }),
     h3("Running apps"), ol(list(() => [...windows].sort((a, b) => b.z - a.z), (w) => li(button(s.runningApp, { onClick: () => { focus(w); update(); } }, icon(w.program.icon, 16), () => w.title, span(() => w.minimized ? "Minimized" : "Open"))))),
   ),
 };
-export const PROGRAMS: Record<string, Program> = { files, notes, terminal, calculator, timer, settings, about };
+export const PROGRAMS: Record<string, Program> = { files, notes, terminal, calculator, timer, kanban, finance, calendar, settings, about };

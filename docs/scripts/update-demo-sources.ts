@@ -20,7 +20,7 @@ const APP_FILES: Record<string, string[]> = {
   kanban: ["app.ts", "board.ts", "styles.ts"],
   three: ["app.ts", "scene.ts", "styles.ts"],
   "infinite-scroll": ["app.ts", "api.ts", "styles.ts"],
-  desktop: ["app.ts", "windows.ts", "programs.ts", "filesystem.ts", "icons.ts", "context-menu.ts", "styles.ts"],
+  desktop: ["app.ts", "windows.ts", "programs.ts", "filesystem.ts", "board.ts", "kanban.ts", "calendar.ts", "money.ts", "db.ts", "charts.ts", "finance.ts", "icons.ts", "context-menu.ts", "styles.ts"],
   "data-grid": ["app.ts", "data.ts", "styles.ts"],
   chat: ["app.ts", "server.ts", "styles.ts"],
   dashboard: ["app.ts", "feeds.ts", "styles.ts"],

@@ -74,7 +74,7 @@ export const APP_EXAMPLES: AppExample[] = [
   app(
     "desktop",
     "Desktop",
-    "A working desktop with Files, Notes, Terminal, Calculator, Timer, a Kanban board and a Calendar. Create and organize folders, edit notes, and use shell commands on one shared simulated disk saved in your browser. Type into the Calculator straight from the keyboard, click anywhere in the Terminal to focus its input line, and drag cards between columns on the board. Windows keep their state as you move, resize and switch between apps; a running timer fills the taskbar tray with into().",
+    "A working desktop with Files, Notes, Terminal, Calculator, Timer, a Kanban board, Finance and a Calendar. Create and organize folders, edit notes, and use shell commands on one shared simulated disk saved in your browser. Type into the Calculator straight from the keyboard, click anywhere in the Terminal to focus its input line, drag cards between columns on the board, or keep a ledger in the Finance spreadsheet and watch its charts move — the ledger lives in IndexedDB. Windows keep their state as you move, resize and switch between apps; a running timer fills the taskbar tray with into().",
     Desktop,
     "api-region",
   ),

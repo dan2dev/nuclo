@@ -11,6 +11,8 @@ export default function Order(_ctx: RouteContext, { layer }: PageProps) {
   let customer: Customer | undefined;
 
   return form(
+    // Enter in the notes has no submit action: it must not reload the frame.
+    { onSubmit: (e) => { e.preventDefault(); } },
     h1("New order"),
     input({ placeholder: "Notes: type, then open the layer" }),
     p(s.muted, () =>

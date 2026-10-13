@@ -6,9 +6,15 @@
 // what it puts there lives as long as the window does: close a running Timer
 // and its tray icon goes with it. Close an unsaved note and the dialog that
 // asks first is written in the window but drawn above the whole desktop.
+//
+// Updates are scoped: every window carries scope(winScopeId(win)), and the
+// taskbar, the clock and the context menu carry their own scopes, so a
+// keystroke in one window (or a chart hover) re-evaluates that window alone.
+// A plain update() is left for the rare structural changes — opening or
+// closing a window, which rebuilds the windows list everywhere.
 import "nuclo";
-import { appearance, files, notes, openFile, PROGRAMS, settings, terminal, type Program } from "./programs.ts";
-import { active, close, focus, minimize, move, open, requestClose, resize, setDesk, toggleMaximize, windows, type Win } from "./windows.ts";
+import { appearance, calendar, files, finance, kanban, notes, openFile, PROGRAMS, settings, terminal, type Program } from "./programs.ts";
+import { active, close, focus, minimize, move, open, requestClose, resize, setDesk, toggleMaximize, windows, winScopeId, type Win } from "./windows.ts";
 import { icon } from "./icons.ts";
 import { getEntry, loadDisk } from "./filesystem.ts";
 import { ContextMenu, contextMenuKey, contextMenuLifecycle, dismissContextMenu, showContextMenu } from "./context-menu.ts";
@@ -23,6 +29,16 @@ let diskLoaded = false;
 open(files);
 
 type Press = PointerEvent & { currentTarget: HTMLElement };
+
+/** Re-evaluates one window — and, for manager changes, the task buttons too. */
+const winUpdate = (win: Win, ...extra: string[]) => update(winScopeId(win), ...extra);
+
+/** Raises a window: its frame and the previously active frame, plus the taskbar. */
+function raise(win: Win) {
+  const prev = active();
+  focus(win);
+  update(winScopeId(win), ...(prev && prev !== win ? [winScopeId(prev)] : []), "os-taskbar");
+}
 
 // A drag handle. Pointer capture keeps the moves coming to the handle even
 // outside the window, for a mouse, a pen or a finger (touch-action: none).
@@ -40,7 +56,7 @@ function drag(win: Win, from: () => [number, number], to: (a: number, b: number)
     onPointerMove: (e: Press) => {
       if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
       to(e.clientX + dx, e.clientY + dy);
-      update();
+      winUpdate(win); // only this window's frame moves
     },
   };
 }
@@ -52,7 +68,7 @@ function ConfirmDialog(win: Win) {
       s.dialog,
       { role: "alertdialog", "aria-modal": "true", "aria-label": "Discard changes?" },
       { onKeyDown: (e) => {
-        if (e.key === "Escape") { e.stopPropagation(); win.confirming = false; update(); }
+        if (e.key === "Escape") { e.stopPropagation(); win.confirming = false; winUpdate(win); }
         if (e.key === "Tab") {
           const controls = e.currentTarget.querySelectorAll<HTMLButtonElement>("button");
           if (e.shiftKey && document.activeElement === controls[0]) { e.preventDefault(); controls[1].focus(); }
@@ -63,7 +79,7 @@ function ConfirmDialog(win: Win) {
       p(`${win.title} has text that is not saved.`),
       div(
         s.actions,
-        button(s.btn, "Keep editing", { onMount: (el) => el.focus(), onClick: () => { win.confirming = false; update(); } }),
+        button(s.btn, "Keep editing", { onMount: (el) => el.focus(), onClick: () => { win.confirming = false; winUpdate(win); } }),
         // Closing the window removes its list() row, and this dialog with it.
         button(s.btn, s.danger, "Discard", { onClick: () => { close(win); update(); } }),
       ),
@@ -84,6 +100,9 @@ function desktopActions() {
     { label: "Open Files", icon: "files", run: () => { open(files); } },
     { label: "New note", icon: "notes", run: () => { open(notes); } },
     { label: "Open Terminal", icon: "terminal", run: () => { open(terminal); } },
+    { label: "Open Kanban", icon: "kanban", run: () => { open(kanban); } },
+    { label: "Open Finance", icon: "finance", run: () => { open(finance); } },
+    { label: "Open Calendar", icon: "calendar", run: () => { open(calendar); } },
     { label: "Change wallpaper", icon: "settings", run: () => { open(settings); } },
     { label: "Show desktop", icon: "minimize", disabled: !windows.some((win) => !win.minimized), run: () => { for (const win of windows) minimize(win); } },
   ];
@@ -92,6 +111,7 @@ function desktopActions() {
 function WindowView(win: Win) {
   return section(
     s.win,
+    scope(winScopeId(win)),
     {
       "data-os-window": String(win.id),
       "aria-label": () => win.title,
@@ -100,14 +120,15 @@ function WindowView(win: Win) {
         const [left, top, width, height] = win.maximized ? ["0", "0", "100%", "100%"] : [win.x, win.y, win.w, win.h].map((n) => `${n}px`);
         return { left, top, width, height, zIndex: String(win.z) };
       },
-      onPointerDown: () => { focus(win); update(); },
+      onPointerDown: () => raise(win),
     },
     header(
       s.bar,
-      { tabIndex: 0, "aria-haspopup": "menu", "aria-label": () => `${win.title} window controls`, onContextMenu: (e) => { focus(win); showContextMenu(e, win.title, windowActions(win)); }, onKeyDown: (e) => { contextMenuKey(e, win.title, windowActions(win)); } },
-      div(s.title, { onDblClick: () => { toggleMaximize(win); update(); } }, drag(win, () => [win.x, win.y], (x, y) => move(win, x, y)), icon(win.program.icon, 17), span(() => win.title), span(s.dirty, () => win.program.unsaved?.(win) ? "•" : "")),
-      button(s.ctl, { title: "Minimize", "aria-label": "Minimize", onClick: () => { minimize(win); update(); } }, icon("minimize", 15)),
-      button(s.ctl, { title: () => (win.maximized ? "Restore" : "Maximize"), "aria-label": "Maximize", "aria-pressed": () => String(win.maximized), onClick: () => { toggleMaximize(win); update(); } }, icon("maximize", 14)),
+      { tabIndex: 0, "aria-haspopup": "menu", "aria-label": () => `${win.title} window controls`, onContextMenu: (e) => { focus(win); winUpdate(win, "os-taskbar"); showContextMenu(e, win.title, windowActions(win)); }, onKeyDown: (e) => { contextMenuKey(e, win.title, windowActions(win)); } },
+      div(s.title, { onDblClick: () => { toggleMaximize(win); winUpdate(win); } }, drag(win, () => [win.x, win.y], (x, y) => move(win, x, y)), icon(win.program.icon, 17), span(() => win.title), span(s.dirty, () => win.program.unsaved?.(win) ? "•" : "")),
+      button(s.ctl, { title: "Minimize", "aria-label": "Minimize", onClick: () => { minimize(win); winUpdate(win, "os-taskbar"); } }, icon("minimize", 15)),
+      button(s.ctl, { title: () => (win.maximized ? "Restore" : "Maximize"), "aria-label": "Maximize", "aria-pressed": () => String(win.maximized), onClick: () => { toggleMaximize(win); winUpdate(win); } }, icon("maximize", 14)),
+      // Closing is structural: the windows list rebuilds, so one global update.
       button(s.ctl, s.close, { title: "Close", "aria-label": "Close", onClick: () => { requestClose(win); update(); } }, icon("close", 15)),
     ),
     div(s.body, win.program.view(win)),
@@ -126,7 +147,12 @@ function TaskButton(win: Win) {
       onKeyDown: (e) => { contextMenuKey(e, win.title, windowActions(win)); },
       title: () => win.title,
       "aria-pressed": () => String(win === active()),
-      onClick: () => { if (win === active()) minimize(win); else focus(win); update(); },
+      onClick: () => {
+        const prev = active();
+        if (win === prev) minimize(win);
+        else focus(win);
+        update(winScopeId(win), ...(prev && prev !== win ? [winScopeId(prev)] : []), "os-taskbar");
+      },
     },
     icon(win.program.icon, 18),
     span(s.label, () => win.title),
@@ -151,8 +177,9 @@ function Icon(program: Program) {
 function Clock() {
   return time(
     s.clock,
+    scope("os-clock"),
     on("mount", () => {
-      const tick = () => { const now = new Date(); clock = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); date = now.toLocaleDateString([], { month: "short", day: "numeric" }); update(); };
+      const tick = () => { const now = new Date(); clock = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); date = now.toLocaleDateString([], { month: "short", day: "numeric" }); update("os-clock"); };
       tick();
       const id = setInterval(tick, 30000);
       return () => clearInterval(id);
@@ -177,7 +204,7 @@ export function Desktop() {
         showContextMenu(e, win?.title ?? "Desktop", win ? windowActions(win) : desktopActions());
       },
       onKeyDown: (e) => {
-        if (e.key === "Escape" && menuOpen) { e.stopPropagation(); menuOpen = false; update(); }
+        if (e.key === "Escape" && menuOpen) { e.stopPropagation(); menuOpen = false; update("os-taskbar"); }
         if (e.key !== "ContextMenu" && !(e.shiftKey && e.key === "F10")) return;
         if ((e.target as Element).closest(".os-backdrop")) { e.preventDefault(); return; }
         const id = (e.target as Element).closest("[data-os-window]")?.getAttribute("data-os-window");
@@ -213,28 +240,30 @@ export function Desktop() {
       { tabIndex: 0, "aria-haspopup": "menu", "aria-label": "Desktop workspace", onContextMenu: (e) => {
         if ((e.target as Element).closest("[data-os-window], .os-icon")) return;
         menuOpen = false; showContextMenu(e, "Desktop", desktopActions());
-      }, onKeyDown: (e) => { if (e.target === e.currentTarget) contextMenuKey(e, "Desktop", desktopActions()); }, onPointerDown: () => { if (menuOpen) { menuOpen = false; update(); } } },
+      }, onKeyDown: (e) => { if (e.target === e.currentTarget) contextMenuKey(e, "Desktop", desktopActions()); }, onPointerDown: () => { if (menuOpen) { menuOpen = false; update("os-taskbar"); } } },
       div(s.wallpaper, { "aria-hidden": "true" }, div(s.orbit), div(s.orbit, s.orbitTwo)),
       div(s.desktopHeading, strong("A little room to work."), span("Your files. Your ideas. Your pace.")),
-      div(s.icons, ...Object.values(PROGRAMS).slice(0, 5).map(Icon)),
+      div(s.icons, ...Object.values(PROGRAMS).slice(0, 7).map(Icon)),
       list(() => windows, WindowView),
     ),
     footer(
       s.taskbar,
-      button(s.start, { "aria-expanded": () => String(menuOpen), onClick: () => { dismissContextMenu(); menuOpen = !menuOpen; update(); } }, icon("grid", 18), span("Apps")),
+      scope("os-taskbar"),
+      button(s.start, { "aria-expanded": () => String(menuOpen), onClick: () => { dismissContextMenu(); menuOpen = !menuOpen; update("os-taskbar"); } }, icon("grid", 18), span("Apps")),
       when(() => menuOpen, nav(s.menu, { "aria-label": "Applications" },
         div(s.launcherHeading, strong("Your workspace"), span("Find something to open")),
-        input(s.input, { type: "search", "aria-label": "Search apps", placeholder: "Search apps…", value: () => search, onMount: (el) => el.focus(), onInput: (e) => { search = e.currentTarget.value; update(); }, onKeyDown: (e) => { if (e.key === "Enter") { const program = Object.values(PROGRAMS).find((p) => p.name.toLowerCase().includes(search.toLowerCase())); if (program) { open(program); menuOpen = false; update(); } } } }),
+        input(s.input, { type: "search", "aria-label": "Search apps", placeholder: "Search apps…", value: () => search, onMount: (el) => el.focus(), onInput: (e) => { search = e.currentTarget.value; update("os-taskbar"); }, onKeyDown: (e) => { if (e.key === "Enter") { const program = Object.values(PROGRAMS).find((p) => p.name.toLowerCase().includes(search.toLowerCase())); if (program) { open(program); menuOpen = false; update(); } } } }),
         list(() => Object.values(PROGRAMS).filter((p) => p.name.toLowerCase().includes(search.toLowerCase())), (p) => button(s.item, { onClick: () => { menuOpen = false; open(p); update(); } }, icon(p.icon), p.name)),
         when(() => !Object.values(PROGRAMS).some((p) => p.name.toLowerCase().includes(search.toLowerCase())), p(s.empty, "No matching apps")),
       )),
       div(s.tasks, list(() => windows, TaskButton)),
-      button(s.showDesktop, { title: "Show desktop", "aria-label": "Show desktop", onClick: () => { for (const win of windows) minimize(win); update(); } }, icon("minimize", 18)),
+      button(s.showDesktop, { title: "Show desktop", "aria-label": "Show desktop", onClick: () => { for (const win of windows) minimize(win); update(...windows.map((win) => winScopeId(win)), "os-taskbar"); } }, icon("minimize", 18)),
       // The tray: programs put their own icons here with into("os-tray", ...).
       div(s.tray, region({ id: "os-tray", type: "stack" }), Clock()),
     ),
-    // The modal layer, over the desktop and the taskbar.
-    ContextMenu(),
+    // The modal layer, over the desktop and the taskbar. The context menu
+    // list runs inside its own wrapper, so its scope stays out of the windows.
+    div(scope("os-context-menu"), ContextMenu()),
     region({ id: "os-modal", type: "stack" }),
   );
 }

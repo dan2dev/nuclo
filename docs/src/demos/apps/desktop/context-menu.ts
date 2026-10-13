@@ -10,11 +10,11 @@ export function dismissContextMenu(restoreFocus = false) {
   const anchor = menu?.anchor;
   menu = null;
   if (restoreFocus && anchor?.isConnected) anchor.focus();
-  update();
+  update("os-context-menu");
 }
 function show(anchor: HTMLElement, x: number, y: number, label: string, actions: Action[]) {
   menu = { anchor, x, y, label, actions };
-  update();
+  update("os-context-menu");
 }
 export function showContextMenu(event: MouseEvent & { currentTarget: HTMLElement }, label: string, actions: Action[]) {
   event.preventDefault(); event.stopPropagation();
