@@ -18,6 +18,7 @@ import { StepSequencer } from "../../demos/apps/sequencer/app.ts";
 import { LocaleShop } from "../../demos/apps/i18n/app.ts";
 import { PageBuilder } from "../../demos/apps/page-builder/app.ts";
 import { ThemeEditor } from "../../demos/apps/theme-editor/app.ts";
+import { NodeGraph } from "../../demos/apps/node-graph/app.ts";
 
 export interface AppExample {
   id: string;
@@ -77,6 +78,13 @@ export const APP_EXAMPLES: AppExample[] = [
     "A working desktop with Files, Notes, Terminal, Calculator, Timer, a Kanban board, Finance and a Calendar. Create and organize folders, edit notes, and use shell commands on one shared simulated disk saved in your browser. Type into the Calculator straight from the keyboard, click anywhere in the Terminal to focus its input line, drag cards between columns on the board, or keep a ledger in the Finance spreadsheet and watch its charts move — the ledger lives in IndexedDB. Windows keep their state as you move, resize and switch between apps; a running timer fills the taskbar tray with into().",
     Desktop,
     "api-region",
+  ),
+  app(
+    "node-graph",
+    "Node Graph",
+    "Wire numbers, text and switches through math, comparisons and If nodes, and every value updates as you type. Functions are graphs too: their Input and Output nodes are the ports of every Call, and a Call can name its own function, so factorial and sum recurse with an If as the way out. The engine is plain JavaScript: each node is a generator that yields to ask for an input, and one loop drives them from its own stack, so sum(50000) nests fifty thousand calls deep in about a tenth of a second without touching the JavaScript call stack. Only a step budget stops a recursion with no way out. Dragging writes x and y and updates only the canvas scope; the run count shows the graph never runs for a move.",
+    NodeGraph,
+    "api-scope",
   ),
   app(
     "data-grid",

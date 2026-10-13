@@ -29,6 +29,7 @@ const APP_FILES: Record<string, string[]> = {
   sequencer: ["app.ts", "audio.ts", "styles.ts"],
   i18n: ["app.ts", "messages.ts", "styles.ts"],
   "theme-editor": ["app.ts", "theme.ts", "gallery.ts", "styles.ts"],
+  "node-graph": ["app.ts", "engine.ts", "graph.ts", "styles.ts"],
 };
 
 const read = async (dir: string, file: string) => (await Bun.file(join(dir, file)).text()).trim();
