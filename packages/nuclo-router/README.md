@@ -3,7 +3,7 @@
 > **Preview:** this is a preview version of the router. The API may change.
 
 Routing for [nuclo](https://nuclo.dev/) — SSR, hydration, code-split routes and
-idle preloading. **<!-- size:router-gzip -->4.6<!-- /size --> kB gzipped** (<!-- size:router-brotli -->4.2<!-- /size --> kB brotli), no dependencies beyond nuclo
+idle preloading. **<!-- size:router-gzip -->4.7<!-- /size --> kB gzipped** (<!-- size:router-brotli -->4.2<!-- /size --> kB brotli), no dependencies beyond nuclo
 itself, and no side effects — it tree-shakes away when unused.
 
 The router decides *what* to load; the app says *where* with `router.outlet()`:
