@@ -1,0 +1,19 @@
+{
+  "name": "nuclo-example-css-editor",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "A real-time visual CSS class editor: GUI controls on the left, live CSS on the right, both kept in sync.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "check": "bun src/css.check.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "nuclo": "workspace:*",
+    "typescript": "~6.0.3",
+    "vite": "^8.0.14"
+  }
+}
