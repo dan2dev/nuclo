@@ -62,4 +62,17 @@ export const animations = {
     "60%": { raw: {"opacity": "1", "transform": "translateY(-2px) scale(1.08)"} },
     "to": { raw: {"opacity": "1", "transform": "translateY(0) scale(1)"} },
   }),
+  // The code view opens; the hero's glows drift behind the card; a bar grows from its base
+  modalIn: keyframes({
+    "from": { raw: {"opacity": "0", "transform": "translateY(18px) scale(0.98)"} },
+    "to": { raw: {"opacity": "1", "transform": "none"} },
+  }),
+  drift: keyframes({
+    "from": { raw: {"transform": "translate(0, 0) scale(1)"} },
+    "to": { raw: {"transform": "translate(-10%, 12%) scale(1.18)"} },
+  }),
+  growUp: keyframes({
+    "from": { raw: {"transform": "scaleY(0)"} },
+    "to": { raw: {"transform": "scaleY(1)"} },
+  }),
 } as const;

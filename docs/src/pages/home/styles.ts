@@ -32,10 +32,14 @@ export const hs = {
 
   heroShell: css("pages-home-styles-heroShell", { width: "calc(100% - 16px)", maxWidth: "1560px", margin: "0 auto", medium: { width: "calc(100% - 28px)" }, large: { width: "calc(100% - 40px)" } }),
 
-  // Faint 1px scanlines every 4px over the flat orange.
-  heroFrame: css("pages-home-styles-heroFrame", { position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "24px", backgroundColor: HERO_BG, raw: { "background-image": "repeating-linear-gradient(to bottom, transparent 0 3px, rgba(87, 12, 0, 0.08) 3px 4px)" }, minHeight: "540px", padding: "28px 22px", medium: { padding: "52px 42px" }, large: { padding: "50px 64px" } }),
+  // Faint 1px scanlines every 4px over the flat orange; two soft lights drift behind the card.
+  heroFrame: css("pages-home-styles-heroFrame", {
+    position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "24px", backgroundColor: HERO_BG, raw: { "background-image": "repeating-linear-gradient(to bottom, transparent 0 3px, rgba(87, 12, 0, 0.08) 3px 4px)" }, minHeight: "540px", padding: "28px 22px", medium: { padding: "52px 42px" }, large: { padding: "50px 64px" },
+    before: { content: '""', position: "absolute", zIndex: -1, top: "-35%", right: "-20%", width: "75%", aspectRatio: "1", borderRadius: "50%", raw: { "background-image": "radial-gradient(closest-side, rgba(255, 190, 120, 0.42), transparent)" }, animation: `${animations.drift} 16s ease-in-out infinite alternate`, "@media (prefers-reduced-motion: reduce)": { animation: "none" } },
+    after: { content: '""', position: "absolute", zIndex: -1, bottom: "-45%", left: "-25%", width: "80%", aspectRatio: "1", borderRadius: "50%", raw: { "background-image": "radial-gradient(closest-side, rgba(110, 8, 0, 0.4), transparent)" }, animation: `${animations.drift} 21s ease-in-out -7s infinite alternate-reverse`, "@media (prefers-reduced-motion: reduce)": { animation: "none" } },
+  }),
 
-  heroInner: css("pages-home-styles-heroInner", { position: "relative", zIndex: 2, display: "grid", width: "100%", maxWidth: "1180px", margin: "0 auto", gridTemplateColumns: "minmax(0, 1fr)", gap: "36px", alignItems: "center", medium: { gap: "48px" }, large: { gridTemplateColumns: "minmax(0, 0.96fr) minmax(420px, 1.04fr)", gap: "76px" } }),
+  heroInner: css("pages-home-styles-heroInner", { position: "relative", zIndex: 2, display: "grid", width: "100%", maxWidth: "1180px", margin: "0 auto", gridTemplateColumns: "minmax(0, 1fr)", gap: "36px", alignItems: "center", medium: { gap: "48px" }, large: { gridTemplateColumns: "minmax(0, 0.92fr) minmax(440px, 1.08fr)", gap: "64px" } }),
 
   heroBadge: css("pages-home-styles-heroBadge", { display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "0.875rem", fontWeight: "600", color: "rgba(255,255,255,0.88)" }),
 
@@ -72,7 +76,7 @@ export const hs = {
 
   heroVisual: css("pages-home-styles-heroVisual", { position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "0" }),
 
-  heroDemoArea: css("pages-home-styles-heroDemoArea", { position: "relative", width: "100%", borderRadius: "16px", overflow: "hidden", zIndex: 1, border: "1px solid rgba(0,0,0,0.2)", backgroundColor: colors.bgCard, boxShadow: "0 30px 60px -30px rgba(60, 10, 0, 0.5)" }),
+  heroDemoArea: css("pages-home-styles-heroDemoArea", { position: "relative", width: "100%", borderRadius: "18px", overflow: "hidden", zIndex: 1, border: "1px solid rgba(0,0,0,0.3)", backgroundColor: colors.bgCard, color: colors.text, boxShadow: "0 40px 80px -36px rgba(60, 10, 0, 0.7), 0 0 0 6px rgba(255, 255, 255, 0.06)" }),
 
   // Demo card (macOS chrome overlay)
   demoChrome: css("pages-home-styles-demoChrome", { display: "flex", alignItems: "center", gap: "6px", padding: "13px 16px", backgroundColor: "var(--terminal-bar)", borderBottom: `1px solid ${colors.border}` }),

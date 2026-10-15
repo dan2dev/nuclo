@@ -2,7 +2,7 @@ import { css, cx } from "../../styles.ts";
 import { animations } from "../../styles/animations.ts";
 import { terminalCodeTokenStyle } from "../../components/CodeBlock.ts";
 import { hs } from "./styles.ts";
-import { ex, EASE, type HeroExample } from "./examples.ts";
+import { ex, EASE, motion, svgPoint, type HeroExample } from "./examples.ts";
 
 // The hero's first example: Nuclo's whole model in one card. The left grid is a plain array of
 // booleans; painting it is a mutation and nothing more. The right grid is the DOM: it moves only
@@ -34,7 +34,6 @@ const SELF_DEMO_STEP = 120;
 const TRAVEL_MS = 380; // the update's trip along the arrow
 
 const reduced = { "@media (prefers-reduced-motion: reduce)": { animation: "none" } } as const;
-const motion = () => typeof document !== "undefined" && document.documentElement.hasAttribute("data-anim");
 
 const ps = {
   label: css("pages-home-playground-label", { fontFamily: MONO, fontSize: "10px", fontWeight: "700", letterSpacing: "0.08em", textTransform: "uppercase", raw: { fill: "var(--c-text-muted)" } }),
@@ -57,6 +56,7 @@ const ps = {
 export const Paint: HeroExample = {
   api: "update()",
   title: "Paint, then patch",
+  note: "The left grid is a plain array of booleans: painting it is a mutation and nothing more. The DOM on the right moves only when update() runs, and then only the cells that changed are patched.",
   build,
 };
 
@@ -112,12 +112,10 @@ function build() {
     pixels.forEach((v, i) => v && paint(i, false));
   }
 
-  // The cell under the pointer, or -1. The viewBox scales uniformly with the width
+  // The cell under the pointer, or -1
   function cellAt(e: PointerEvent): number {
-    const box = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
-    const k = W / box.width;
-    const x = (e.clientX - box.left) * k;
-    const y = (e.clientY - box.top) * k - TOP;
+    const [x, top] = svgPoint(e);
+    const y = top - TOP;
     const col = Math.floor(x / STEP);
     const row = Math.floor(y / STEP);
     return x < 0 || y < 0 || col >= COLS || row >= ROWS ? -1 : row * COLS + col;
@@ -149,6 +147,7 @@ function build() {
         viewBox: `0 0 ${W} ${H}`,
         role: "img",
         "data-grab": "",
+        style: { touchAction: "none" }, // a drag paints, it never scrolls
         "aria-label": "Paint the state grid, then press update() to patch the DOM grid",
         onPointerDown: (e: PointerEvent) => {
           const i = cellAt(e);
@@ -223,7 +222,7 @@ function build() {
   }
 
   return {
-    preview: [Canvas(), Bar()],
+    preview: [div(ex.stage, Canvas()), Bar()],
     code: Code(),
     root: [
       scope(SCOPE),
@@ -234,7 +233,7 @@ function build() {
           const timers: number[] = [];
           const at = (ms: number, fn: () => void) => timers.push(window.setTimeout(() => { if (!touched) fn(); }, ms));
           PLAY.forEach((i, k) => at(SELF_DEMO_AT + k * SELF_DEMO_STEP, () => paint(i, true)));
-          at(SELF_DEMO_AT + PLAY.length * SELF_DEMO_STEP + 650, commit);
+          at(SELF_DEMO_AT + PLAY.length * SELF_DEMO_STEP + 650, () => { commit(); touched = true; }); // once is enough
           return () => timers.forEach(clearTimeout);
         },
       },
