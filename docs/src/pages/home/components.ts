@@ -3,7 +3,7 @@ import { fx } from "../../styles/effects.ts";
 import { hs } from "./styles.ts";
 import {
   HERO_BADGE, HERO_TITLE_LINES, HERO_DESC, INSTALL_CMD, HERO_STATS,
-  HERO_CODE, COUNTER_TEASER_CODE, TODO_TEASER_CODE,
+  COUNTER_TEASER_CODE, TODO_TEASER_CODE,
   PHILOSOPHY_QUOTE, PHILOSOPHY_POINTS,
   FEATURES, QUICK_START_STEPS,
   PIPELINE_STEPS,
@@ -12,11 +12,12 @@ import {
   BENCHMARK_SOURCE_URL, BENCHMARK_SOURCE_LABEL, BENCHMARK_ENTRIES,
   CTA_TITLE, CTA_SUB,
 } from "./content.ts";
-import { CodeBlock, highlightCode, codeTokenStyle, terminalCodeTokenStyle } from "../../components/CodeBlock.ts";
+import { CodeBlock, highlightCode, codeTokenStyle } from "../../components/CodeBlock.ts";
 import { copyText } from "../../components/clipboard.ts";
 import { withCode } from "../../components/inline-code.ts";
 import { GitHubSvg, CheckIcon, MinusIcon, CopyIcon } from "../../components/icons.ts";
 import { router } from "../../router.ts";
+import { HeroCard } from "./hero-card.ts";
 
 function DemoDot(color: string) {
   return div(
@@ -59,58 +60,10 @@ function InstallCommand(variant?: ReturnType<typeof css>) {
   );
 }
 
-function HeroDemoCard() {
-  const heroCodeHtml = highlightCode(HERO_CODE);
-  let count = 0;
-
-  function changeCount(event: Event, amount: number) {
-    count += amount;
-    const buttonElement = event.currentTarget as HTMLButtonElement;
-    const demo = buttonElement.closest<HTMLElement>("[data-hero-demo]");
-    const value = demo?.querySelector<HTMLElement>("[data-demo-count]");
-    if (value) value.textContent = String(count);
-  }
-
-  function CounterPreview() {
-    return div(
-      css("pages-home-components-components-inline-4", { textAlign: "center", width: "100%" }),
-      div(
-        fx.accentText,
-        css("pages-home-components-components-inline-5", { fontSize: "5.2rem", fontWeight: "700", lineHeight: "1", marginBottom: "26px", fontVariantNumeric: "tabular-nums" }),
-        { "data-demo-count": "" },
-        "0",
-      ),
-      div(
-        css("pages-home-components-components-inline-6", { display: "flex", gap: "10px", justifyContent: "center" }),
-        button(
-          css("pages-home-components-components-inline-7", { minWidth: "44px", height: "40px", padding: "0 18px", borderRadius: "8px", fontSize: "0.9375rem", fontWeight: "600", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.text, fontFamily: "system-ui, sans-serif", hover: { backgroundColor: colors.bgSecondary } }),
-          "−",
-          { onClick: (event) => changeCount(event, -1) },
-        ),
-        button(
-          css("pages-home-components-components-inline-8", { minWidth: "44px", height: "40px", padding: "0 18px", borderRadius: "8px", fontSize: "0.9375rem", fontWeight: "600", cursor: "pointer", border: "1px solid transparent", color: "#fff", backgroundColor: colors.primaryDark, fontFamily: "system-ui, sans-serif", hover: { filter: "brightness(0.92)" } }),
-          "+",
-          { onClick: (event) => changeCount(event, 1) },
-        ),
-      ),
-    );
-  }
-
-  return div(
-    hs.heroDemoArea,
-    { "data-hero-demo": "" },
-    div(
-      hs.demoPreviewPane,
-      { "data-demo-pane": "preview" },
-      CounterPreview(),
-    ),
-    div(
-      hs.demoCodePane,
-      terminalCodeTokenStyle,
-      { "data-demo-pane": "code" },
-      { innerHTML: `<pre class="${hs.preWrap.className}">${heroCodeHtml}</pre>` },
-    ),
-  );
+// A title line with a *marked* word: the word gets the highlight
+function TitleLine(line: string) {
+  const parts = line.split(/\*([^*]+)\*/);
+  return div(...parts.map((part, i) => (i % 2 ? span(hs.heroEm, part) : part)));
 }
 
 export function HomeHeroSection() {
@@ -129,13 +82,14 @@ export function HomeHeroSection() {
               hs.heroBadge,
               { className: "he he-1" },
               css("pages-home-components-components-inline-9", { marginBottom: "14px", medium: { marginBottom: "22px" } }),
+              span(fx.badgeDot, hs.heroBadgeDot),
               HERO_BADGE,
             ),
             // Title
             h1(
               hs.heroTitle,
               { className: "he he-2" },
-              ...HERO_TITLE_LINES.map((line) => div(line)),
+              ...HERO_TITLE_LINES.map(TitleLine),
             ),
             // Description
             p(hs.heroDesc, { className: "he he-3" }, HERO_DESC),
@@ -172,11 +126,11 @@ export function HomeHeroSection() {
               ),
             ),
           ),
-          // Right: demo card
+          // Right: the examples card
           div(
             hs.heroVisual,
             { className: "he he-7" },
-            HeroDemoCard(),
+            HeroCard(),
           ),
         ),
       ),

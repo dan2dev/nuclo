@@ -1,4 +1,5 @@
 import { css, colors } from "../../styles.ts";
+import { animations } from "../../styles/animations.ts";
 
 // Deep enough that white hero text passes AA.
 export const HERO_BG = "#d43c0c";
@@ -34,11 +35,16 @@ export const hs = {
   // Faint 1px scanlines every 4px over the flat orange.
   heroFrame: css("pages-home-styles-heroFrame", { position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "24px", backgroundColor: HERO_BG, raw: { "background-image": "repeating-linear-gradient(to bottom, transparent 0 3px, rgba(87, 12, 0, 0.08) 3px 4px)" }, minHeight: "540px", padding: "28px 22px", medium: { padding: "52px 42px" }, large: { padding: "50px 64px" } }),
 
-  heroInner: css("pages-home-styles-heroInner", { position: "relative", zIndex: 2, display: "grid", width: "100%", maxWidth: "1180px", margin: "0 auto", gridTemplateColumns: "1fr", gap: "48px", alignItems: "center", large: { gridTemplateColumns: "minmax(0, 0.96fr) minmax(420px, 1.04fr)", gap: "76px" } }),
+  heroInner: css("pages-home-styles-heroInner", { position: "relative", zIndex: 2, display: "grid", width: "100%", maxWidth: "1180px", margin: "0 auto", gridTemplateColumns: "minmax(0, 1fr)", gap: "36px", alignItems: "center", medium: { gap: "48px" }, large: { gridTemplateColumns: "minmax(0, 0.96fr) minmax(420px, 1.04fr)", gap: "76px" } }),
 
-  heroBadge: css("pages-home-styles-heroBadge", { fontSize: "0.875rem", fontWeight: "600", color: "rgba(255,255,255,0.88)" }),
+  heroBadge: css("pages-home-styles-heroBadge", { display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "0.875rem", fontWeight: "600", color: "rgba(255,255,255,0.88)" }),
+
+  heroBadgeDot: css("pages-home-styles-heroBadgeDot", { backgroundColor: "#fff" }),
 
   heroTitle: css("pages-home-styles-heroTitle", { fontSize: "2.65rem", fontWeight: "700", letterSpacing: "-0.03em", lineHeight: "1.02", marginBottom: "18px", color: colors.primaryText, medium: { fontSize: "3.55rem", marginBottom: "24px" }, large: { fontSize: "4.15rem" } }),
+
+  // The marked word: a dark highlight, drawn behind it from the left once the title has risen.
+  heroEm: css("pages-home-styles-heroEm", { position: "relative", isolation: "isolate", display: "inline-block", padding: "0 0.1em", margin: "0 -0.1em", before: { content: '""', position: "absolute", zIndex: -1, inset: "0.04em 0 -0.02em", borderRadius: "0.16em", backgroundColor: "#141414", transformOrigin: "left", animation: `${animations.draw} 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.75s backwards`, "@media (prefers-reduced-motion: reduce)": { animation: "none" } } }),
 
   heroDesc: css("pages-home-styles-heroDesc", { fontSize: "1rem", color: colors.primaryText, lineHeight: "1.68", marginBottom: "20px", maxWidth: "520px", medium: { marginBottom: "28px" } }),
 
@@ -64,11 +70,9 @@ export const hs = {
 
   statLabel: css("pages-home-styles-statLabel", { fontSize: "0.8125rem", color: "rgba(255,255,255,0.82)", lineHeight: "1.4" }),
 
-  heroVisual: css("pages-home-styles-heroVisual", { position: "relative", minHeight: "360px", display: "none", alignItems: "center", justifyContent: "center", large: { display: "flex" } }),
+  heroVisual: css("pages-home-styles-heroVisual", { position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "0" }),
 
-  heroBrandMark: css("pages-home-styles-heroBrandMark", { position: "absolute", width: "260px", height: "260px", right: "-18px", top: "10px", opacity: "0.96", filter: "drop-shadow(0 36px 46px rgba(0,0,0,0.25))", transform: "rotate(8deg)", large: { width: "330px", height: "330px", right: "-48px", top: "-22px" } }),
-
-  heroDemoArea: css("pages-home-styles-heroDemoArea", { position: "relative", width: "100%", borderRadius: "16px", overflow: "hidden", zIndex: 1, border: "1px solid rgba(0,0,0,0.2)" }),
+  heroDemoArea: css("pages-home-styles-heroDemoArea", { position: "relative", width: "100%", borderRadius: "16px", overflow: "hidden", zIndex: 1, border: "1px solid rgba(0,0,0,0.2)", backgroundColor: colors.bgCard, boxShadow: "0 30px 60px -30px rgba(60, 10, 0, 0.5)" }),
 
   // Demo card (macOS chrome overlay)
   demoChrome: css("pages-home-styles-demoChrome", { display: "flex", alignItems: "center", gap: "6px", padding: "13px 16px", backgroundColor: "var(--terminal-bar)", borderBottom: `1px solid ${colors.border}` }),
@@ -82,7 +86,6 @@ export const hs = {
   demoTabBtn: css("pages-home-styles-demoTabBtn", { fontSize: "0.8rem", fontWeight: "700", color: colors.textMuted, padding: "10px 14px", borderBottom: "2px solid transparent", cursor: "pointer", backgroundColor: "transparent", border: "none", fontFamily: "system-ui, sans-serif", hover: { color: colors.textDim } }),
 
 
-  demoPreviewPane: css("pages-home-styles-demoPreviewPane", { padding: "36px 24px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "250px", backgroundColor: colors.bgCard }),
 
   demoCodePane: css("pages-home-styles-demoCodePane", { padding: "20px 22px", backgroundColor: "var(--terminal-bg)", color: "var(--terminal-text)", fontFamily: "ui-monospace, monospace", fontSize: "0.8rem", lineHeight: "1.7", overflowX: "auto", minHeight: "250px" }),
 

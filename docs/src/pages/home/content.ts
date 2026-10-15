@@ -2,7 +2,8 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · zero dependencies`;
 
-export const HERO_TITLE_LINES = ["Build explicit", "interfaces with", "nuclo."];
+// A *word* is marked: the hero draws a highlight behind it.
+export const HERO_TITLE_LINES = ["Build *explicit*", "interfaces with", "nuclo."];
 
 export const HERO_DESC =
   "A small, type-safe DOM framework. State stays plain and mutable. You control every update. No proxies, no signals, no virtual DOM.";
@@ -14,18 +15,6 @@ export const HERO_STATS = [
   { num: "175", sup: "",   label: "typed HTML & SVG builders" },
   { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "gzipped, core runtime" },
 ];
-
-export const HERO_CODE = `import 'nuclo'
-
-let count = 0
-
-export function Counter() {
-  return div(
-    p(() => count),
-    button("-", { onClick: () => { count--; update() } }),
-    button("+", { onClick: () => { count++; update() } }),
-  )
-}`;
 
 export const COUNTER_TEASER_CODE = `import 'nuclo'
 
