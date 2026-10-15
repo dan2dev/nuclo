@@ -8,9 +8,8 @@ import { notifyReactiveElements } from "./reactive-attributes";
 import { notifyReactiveTextNodes } from "./reactive-text";
 import { updateWhenRuntimes } from "../when";
 import { pruneRegions } from "../region/runtime";
-import { getScopeRoots } from "./scope";
+import { getScopeRoots, indexPending, type UpdateScope } from "./scope";
 import { flushMountQueue } from "../element/lifecycle";
-import type { UpdateScope } from "./scope";
 
 // `satisfies` checks every entry matches the signature without widening the tuple type.
 const updaters = [
@@ -24,25 +23,10 @@ const updaters = [
 ] satisfies ReadonlyArray<(scope?: UpdateScope) => void>;
 
 export function update(...scopeIds: string[]) {
-	let scope: UpdateScope | undefined;
-
-	if (scopeIds.length > 0) {
-		const roots = getScopeRoots(scopeIds);
-
-		if (roots.length === 1) {
-			const root = roots[0]!;
-			scope = { contains: (node) => root.contains(node) };
-		} else {
-			scope = {
-				contains: (node) => {
-					for (const root of roots) {
-						if (root.contains(node)) return true;
-					}
-					return false;
-				},
-			};
-		}
-	}
+	// File everything registered since the last pass under its scope roots,
+	// now that the trees it was built in are attached.
+	indexPending();
+	const scope: UpdateScope | undefined = scopeIds.length > 0 ? { roots: getScopeRoots(scopeIds) } : undefined;
 
 	for (const fn of updaters) fn(scope);
 

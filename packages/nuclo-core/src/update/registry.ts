@@ -16,6 +16,8 @@
  * husk is just an empty WeakRef until the next update() sweeps it.
  */
 
+import { all, track, ELEMENT_KIND, TEXT_KIND } from "./scope";
+
 export type TextResolver = () => unknown;
 
 /**
@@ -57,14 +59,14 @@ export interface ReactiveElementEntry {
   attributeResolvers: AttributeResolverRecord[];
 }
 
-/** Iteration set of weak references to reactive text nodes. */
-export const reactiveTextNodes = new Set<WeakRef<Text>>();
+/** Iteration set of weak references to reactive text nodes (owned by the scope index). */
+export const reactiveTextNodes = all[TEXT_KIND] as Set<WeakRef<Text>>;
 
 /** O(1) lookup of a reactive text node's entry. */
 export const reactiveTextNodesByNode = new WeakMap<Text, ReactiveTextEntry>();
 
-/** Iteration set of weak references to reactive elements. */
-export const reactiveElements = new Set<WeakRef<Element>>();
+/** Iteration set of weak references to reactive elements (owned by the scope index). */
+export const reactiveElements = all[ELEMENT_KIND] as Set<WeakRef<Element>>;
 
 /** O(1) lookup of a reactive element's entry. */
 export const reactiveElementsByNode = new WeakMap<Element, ReactiveElementEntry>();
@@ -81,7 +83,7 @@ export function registerReactiveTextNode(node: Text, resolver: TextResolver, las
     return;
   }
   const ref = new WeakRef(node);
-  reactiveTextNodes.add(ref);
+  track(TEXT_KIND, ref);
   reactiveTextNodesByNode.set(node, { ref, resolver, lastValue });
 }
 
@@ -91,7 +93,7 @@ export function registerReactiveElement(element: Element): ReactiveElementEntry 
   if (!entry) {
     const ref = new WeakRef(element);
     entry = { ref, attributeResolvers: [] };
-    reactiveElements.add(ref);
+    track(ELEMENT_KIND, ref);
     reactiveElementsByNode.set(element, entry);
   }
   return entry;

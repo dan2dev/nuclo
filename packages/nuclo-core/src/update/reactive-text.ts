@@ -1,5 +1,5 @@
 import { logError } from "../shared/errors";
-import type { UpdateScope } from "./scope";
+import { membersOf, TEXT_KIND, type UpdateScope } from "./scope";
 import { reactiveTextNodes, reactiveTextNodesByNode, registerReactiveTextNode, type TextResolver } from "./registry";
 import { isBrowser } from "../shared/environment";
 import { isSerializing } from "../shared/serializing";
@@ -21,21 +21,27 @@ export function createReactiveTextNode(resolver: TextResolver, initial: unknown)
 }
 
 /**
- * Re-evaluates every registered reactive text node (in `scope`, if given) and
- * writes the ones whose text changed. Disconnected and collected nodes are
- * pruned as the pass goes.
+ * Re-evaluates every registered reactive text node (under `scope`'s roots,
+ * if given) and writes the ones whose text changed. Disconnected and
+ * collected nodes are pruned as the pass goes.
  */
 export function notifyReactiveTextNodes(scope?: UpdateScope) {
-  for (const ref of reactiveTextNodes) {
+  if (!scope) return notifyTextSet(reactiveTextNodes);
+  for (const root of scope.roots) notifyTextSet(membersOf(root, TEXT_KIND) as Set<WeakRef<Text>>);
+}
+
+function notifyTextSet(set: Set<WeakRef<Text>>) {
+  for (const ref of set) {
     const node = ref.deref();
     const entry = node && reactiveTextNodesByNode.get(node);
-    if (!entry || !node.isConnected) {
-      if (node) reactiveTextNodesByNode.delete(node);
+    // A scope member whose node was unregistered and registered again is
+    // stale: its live entry carries a newer ref.
+    if (!entry || entry.ref !== ref || !node.isConnected) {
+      if (entry && entry.ref === ref) reactiveTextNodesByNode.delete(node);
+      set.delete(ref);
       reactiveTextNodes.delete(ref);
       continue;
     }
-
-    if (scope && !scope.contains(node)) continue;
 
     let value: string;
     try {

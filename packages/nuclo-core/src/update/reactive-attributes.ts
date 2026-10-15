@@ -1,5 +1,5 @@
 import { logError } from "../shared/errors";
-import type { UpdateScope } from "./scope";
+import { membersOf, ELEMENT_KIND, type UpdateScope } from "./scope";
 import { reactiveElements, reactiveElementsByNode, registerReactiveElement } from "./registry";
 import type { AttributeApplier, AttributeResolver, AttributeResolverRecord } from "./registry";
 import { isBrowser } from "../shared/environment";
@@ -54,20 +54,26 @@ export function registerAttributeResolver<TTagName extends ElementTagName>(
 
 /**
  * Re-evaluates the attribute resolvers of every registered reactive element
- * (in `scope`, if given). Disconnected and collected elements are pruned as
- * the pass goes.
+ * (under `scope`'s roots, if given). Disconnected and collected elements are
+ * pruned as the pass goes.
  */
 export function notifyReactiveElements(scope?: UpdateScope) {
-  for (const ref of reactiveElements) {
+  if (!scope) return notifyElementSet(reactiveElements);
+  for (const root of scope.roots) notifyElementSet(membersOf(root, ELEMENT_KIND) as Set<WeakRef<Element>>);
+}
+
+function notifyElementSet(set: Set<WeakRef<Element>>) {
+  for (const ref of set) {
     const el = ref.deref();
     const entry = el && reactiveElementsByNode.get(el);
-    if (!entry || !el.isConnected) {
-      if (el) reactiveElementsByNode.delete(el);
+    // A scope member whose element was unregistered and registered again
+    // (forceUpdate() reclaim) is stale: its live entry carries a newer ref.
+    if (!entry || entry.ref !== ref || !el.isConnected) {
+      if (entry && entry.ref === ref) reactiveElementsByNode.delete(el);
+      set.delete(ref);
       reactiveElements.delete(ref);
       continue;
     }
-
-    if (scope && !scope.contains(el)) continue;
 
     const resolvers = entry.attributeResolvers;
     for (let i = 0; i < resolvers.length; i++) updateRecord(el, resolvers[i]);

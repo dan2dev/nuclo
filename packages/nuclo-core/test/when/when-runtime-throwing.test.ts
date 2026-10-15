@@ -18,6 +18,7 @@ import {
   type WhenRuntime,
   type WhenGroup,
 } from '../../src/when/runtime';
+import { indexPending, scope } from '../../src/update/scope';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -218,11 +219,16 @@ describe('updateWhenRuntimes – scope filtering', () => {
     const runtime = makeRuntime([], [], () => { updated = true; });
     registerWhenRuntime(runtime);
 
-    const excludeScope = { roots: [], contains: (_n: Node) => false };
-    updateWhenRuntimes(excludeScope);
+    // Another element is the scope root: this runtime is not among its members.
+    const other = document.createElement('div');
+    document.body.appendChild(other);
+    scope('exclude')(other as unknown as ExpandedElement<'div'>, 0);
+    indexPending();
+    updateWhenRuntimes({ roots: [other] });
 
     expect(updated).toBe(false);
 
+    other.remove();
     (runtime.host as unknown as HTMLElement).remove();
   });
 
@@ -231,8 +237,10 @@ describe('updateWhenRuntimes – scope filtering', () => {
     const runtime = makeRuntime([], [], () => { updated = true; });
     registerWhenRuntime(runtime);
 
-    const includeScope = { roots: [], contains: (_n: Node) => true };
-    updateWhenRuntimes(includeScope);
+    const host = runtime.host as unknown as HTMLElement;
+    scope('include')(host as unknown as ExpandedElement<'div'>, 0);
+    indexPending(); // update() does this before its passes
+    updateWhenRuntimes({ roots: [host] });
 
     expect(updated).toBe(true);
 

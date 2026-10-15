@@ -1,5 +1,5 @@
 import { clearBetweenMarkers, insertNodesBefore, withScopedInsertion } from "../shared/dom";
-import type { UpdateScope } from "../update/scope";
+import { all, membersOf, track, WHEN_KIND, type UpdateScope } from "../update/scope";
 import { applyNodeModifier } from "../element/modifiers";
 import { getFactoryMods } from "../element/factory-meta";
 import { mountQueueMark, cancelMountsSince } from "../element/lifecycle";
@@ -38,7 +38,7 @@ export interface WhenRuntime<TTagName extends ElementTagName = ElementTagName> {
  * FinalizationRegistry prunes dead WeakRefs once the marker is collected;
  * updateWhenRuntimes() also prunes as it iterates.
  */
-const activeWhenRuntimes = new Set<WeakRef<Comment>>();
+const activeWhenRuntimes = all[WHEN_KIND] as Set<WeakRef<Comment>>;
 const whenRuntimeByMarker = new WeakMap<Comment, WhenRuntime<ElementTagName>>();
 const whenMarkerFinalizer = typeof FinalizationRegistry !== "undefined"
   ? new FinalizationRegistry<WeakRef<Comment>>((ref) => { activeWhenRuntimes.delete(ref); })
@@ -102,7 +102,7 @@ export function registerWhenRuntime<TTagName extends ElementTagName>(
   // already track this marker, so adding again would only grow the set.
   if (existing) return;
   const ref = new WeakRef(runtime.startMarker);
-  activeWhenRuntimes.add(ref);
+  track(WHEN_KIND, ref);
   whenMarkerFinalizer?.register(runtime.startMarker, ref);
 }
 
@@ -126,17 +126,25 @@ export function getWhenRuntime(startMarker: Comment): WhenRuntime<ElementTagName
  * ```
  */
 export function updateWhenRuntimes(scope?: UpdateScope) {
-  for (const ref of activeWhenRuntimes) {
+  if (!scope) return updateWhenSet(activeWhenRuntimes);
+  for (const root of scope.roots) updateWhenSet(membersOf(root, WHEN_KIND) as Set<WeakRef<Comment>>);
+}
+
+/** `set` is the global registry or one scope root's members; pruning hits both. */
+function updateWhenSet(set: Set<WeakRef<Comment>>) {
+  for (const ref of set) {
     const startMarker = ref.deref();
 
     // Comment node was garbage collected
     if (startMarker === undefined) {
+      set.delete(ref);
       activeWhenRuntimes.delete(ref);
       continue;
     }
 
     const runtime = whenRuntimeByMarker.get(startMarker);
     if (!runtime) {
+      set.delete(ref);
       activeWhenRuntimes.delete(ref);
       continue;
     }
@@ -144,12 +152,10 @@ export function updateWhenRuntimes(scope?: UpdateScope) {
     // Check if markers are still connected to DOM
     if (!startMarker.isConnected || !runtime.endMarker.isConnected) {
       whenRuntimeByMarker.delete(startMarker);
+      set.delete(ref);
       activeWhenRuntimes.delete(ref);
       continue;
     }
-
-    // Skip if outside update scope
-    if (scope && !scope.contains(startMarker)) continue;
 
     const mark = mountQueueMark();
     try {
@@ -158,6 +164,7 @@ export function updateWhenRuntimes(scope?: UpdateScope) {
       // Clean up runtimes that throw errors
       logError("when() branch threw during update; unregistering this conditional", error);
       whenRuntimeByMarker.delete(startMarker);
+      set.delete(ref);
       activeWhenRuntimes.delete(ref);
       // Content built but never inserted must not mount on the next flush.
       cancelMountsSince(mark);

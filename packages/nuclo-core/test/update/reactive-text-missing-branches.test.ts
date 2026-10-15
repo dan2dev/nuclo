@@ -142,10 +142,8 @@ describe('notifyReactiveTextNodes', () => {
       document.body.appendChild(node);
 
       value = 'changed';
-      const outsideScope = {
-        contains: (_n: Node) => false,
-      };
-      notifyReactiveTextNodes(outsideScope);
+      // A scope with no live roots has no members to visit.
+      notifyReactiveTextNodes({ roots: [] });
       // Value should NOT be updated since node is outside scope
       expect(node.textContent).toBe('initial');
 

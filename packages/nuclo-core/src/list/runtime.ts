@@ -16,7 +16,7 @@
 import { createMarkerPair, clearBetweenMarkers, safeRemoveChild, cleanupNodeTree } from "../shared/dom";
 import { isHydrating, isSerializing, claimMarkerPair, peekChild, setCursor, runFreshAtCursor } from "../hydration";
 import type { ListRuntime, ListItemRecord } from "./types";
-import type { UpdateScope } from "../update/scope";
+import { all, membersOf, track, LIST_KIND, type UpdateScope } from "../update/scope";
 import { isBrowser } from "../shared/environment";
 import { getFactoryMods, getFactoryTag, withMetadataOnlyFactories, getMetadataOnlyFactoryCheckpoint, releaseMetadataOnlyFactories } from "../element/factory-meta";
 import { analyzeFactory, prepareSkeleton, instantiateTemplate, adoptTemplateLeaves, flushRowLeaves, type RowLeaves } from "./template";
@@ -43,7 +43,7 @@ function arraysEqual<T>(a: readonly T[], b: readonly T[]) {
  * FinalizationRegistry prunes dead WeakRefs from the set once the marker is
  * collected; updateListRuntimes() also prunes as it iterates.
  */
-const activeListRuntimes = new Set<WeakRef<Comment>>();
+const activeListRuntimes = all[LIST_KIND] as Set<WeakRef<Comment>>;
 const listRuntimeByMarker = new WeakMap<Comment, ListRuntime<unknown, ElementTagName>>();
 const listMarkerFinalizer = typeof FinalizationRegistry !== "undefined"
   ? new FinalizationRegistry<WeakRef<Comment>>((ref) => { activeListRuntimes.delete(ref); })
@@ -57,7 +57,7 @@ function registerListRuntime(startMarker: Comment, runtime: ListRuntime<unknown,
   // registerWhenRuntime() — adding another WeakRef would only grow the set.
   if (existing) return;
   const ref = new WeakRef(startMarker);
-  activeListRuntimes.add(ref);
+  track(LIST_KIND, ref);
   listMarkerFinalizer?.register(startMarker, ref);
 }
 
@@ -717,18 +717,25 @@ function hydrateListRuntime<TItem, TTagName extends ElementTagName>(
 
 export function updateListRuntimes(scope?: UpdateScope) {
   updateListFlushEpoch++;
+  if (!scope) return updateListSet(activeListRuntimes);
+  for (const root of scope.roots) updateListSet(membersOf(root, LIST_KIND) as Set<WeakRef<Comment>>);
+}
 
-  for (const ref of activeListRuntimes) {
+/** `set` is the global registry or one scope root's members; pruning hits both. */
+function updateListSet(set: Set<WeakRef<Comment>>) {
+  for (const ref of set) {
     const startMarker = ref.deref();
 
     // Marker was garbage collected
     if (!startMarker) {
+      set.delete(ref);
       activeListRuntimes.delete(ref);
       continue;
     }
 
     const runtime = listRuntimeByMarker.get(startMarker);
     if (!runtime) {
+      set.delete(ref);
       activeListRuntimes.delete(ref);
       continue;
     }
@@ -736,12 +743,10 @@ export function updateListRuntimes(scope?: UpdateScope) {
     // Clean up if disconnected from DOM
     if (!startMarker.isConnected || !runtime.endMarker.isConnected) {
       listRuntimeByMarker.delete(startMarker);
+      set.delete(ref);
       activeListRuntimes.delete(ref);
       continue;
     }
-
-    // Skip if outside update scope
-    if (scope && !scope.contains(startMarker)) continue;
 
     runtime.currentFlushEpoch = updateListFlushEpoch;
     try {
