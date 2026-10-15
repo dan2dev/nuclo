@@ -64,13 +64,42 @@ export function membersOf(root: Element, kind: number): Set<WeakRef<Node>> {
   return membersByRoot.get(root)?.[kind] ?? EMPTY;
 }
 
+const NO_ROOTS: readonly Element[] = [];
+/**
+ * Scope roots at or above each node, memoized for one indexPending() call:
+ * the members of a list row share every ancestor above the row, so after the
+ * first one the others stop at their parent. The DOM does not change during
+ * a drain, so the memo is never stale.
+ */
+let rootsMemo: Map<Node, readonly Element[]> | null = null;
+const unmemoized: Node[] = [];
+
+function rootsAtOrAbove(start: Node): readonly Element[] {
+  let node: Node | null = start;
+  let roots: readonly Element[] | undefined;
+  while (node && (roots = rootsMemo!.get(node)) === undefined) {
+    unmemoized.push(node);
+    node = node.parentNode;
+  }
+  if (roots === undefined) roots = NO_ROOTS;
+  for (let i = unmemoized.length - 1; i >= 0; i--) {
+    const n = unmemoized[i];
+    if (n.nodeType === 1 && idsByRoot.has(n as Element)) roots = [n as Element, ...roots];
+    rootsMemo!.set(n, roots);
+  }
+  unmemoized.length = 0;
+  return roots;
+}
+
 function indexMember(kind: number, ref: WeakRef<Node>) {
   const node = ref.deref();
   if (!node || !node.isConnected) return;
-  for (let a: Node | null = node; a; a = a.parentNode) {
-    if (a.nodeType !== 1 || !idsByRoot.has(a as Element)) continue;
-    let members = membersByRoot.get(a as Element);
-    if (!members) membersByRoot.set(a as Element, members = [new Set(), new Set(), new Set(), new Set()]);
+  // A text node or marker is never a root: start from its parent.
+  const roots = rootsAtOrAbove(node.nodeType === 1 ? node : node.parentNode!);
+  for (let i = 0; i < roots.length; i++) {
+    const root = roots[i];
+    let members = membersByRoot.get(root);
+    if (!members) membersByRoot.set(root, members = [new Set(), new Set(), new Set(), new Set()]);
     const set = members[kind];
     set.add(ref);
     if (set.size >= (sweepAt.get(set) ?? MIN_SWEEP)) sweepCollected(set);
@@ -82,18 +111,24 @@ export function indexPending() {
   if (reindex) {
     reindex = false;
     membersByRoot = new WeakMap();
+    rootsMemo = new Map();
     for (let k = 0; k < KINDS; k++) {
       pending[k].length = 0;
       for (const ref of all[k]) indexMember(k, ref);
     }
+    rootsMemo = null;
     return;
   }
   for (let k = 0; k < KINDS; k++) {
     const queue = pending[k];
     if (queue.length === 0) continue;
-    if (hasRoots) for (let i = 0; i < queue.length; i++) indexMember(k, queue[i]);
+    if (hasRoots) {
+      rootsMemo ??= new Map();
+      for (let i = 0; i < queue.length; i++) indexMember(k, queue[i]);
+    }
     queue.length = 0;
   }
+  rootsMemo = null;
 }
 
 type ScopeId = string;
