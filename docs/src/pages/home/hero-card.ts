@@ -2,17 +2,17 @@ import { css, colors, cx } from "../../styles.ts";
 import { animations } from "../../styles/animations.ts";
 import { hs } from "./styles.ts";
 import { ex, EASE, type HeroExample } from "./examples.ts";
-import { Fireworks, Waves, Sort, Chase, Reflex, Warp, Life } from "./examples.ts";
+import { Draw, Fireworks, Waves, Sort, Chase, Reflex, Warp, Life } from "./examples.ts";
 import { Paint } from "./playground.ts";
 
-// The hero's card: eight live examples, one at a time. Arrows, dots, the arrow keys and a swipe
+// The hero's card: nine live examples, one at a time. Arrows, dots, the arrow keys and a swipe
 // move between them; on its own the card moves on every few seconds until someone touches it.
 // Each example is a when() branch: built from its closures when it comes on (its state survives
 // a round trip), torn down when it goes (its onMount cleanup runs). "Code" opens the example in
 // a <dialog> beside its source: the card's branch goes and the dialog's comes on, so one
 // instance runs at a time and its state carries over both ways.
 
-export const EXAMPLES: HeroExample[] = [Paint, Fireworks, Waves, Sort, Chase, Reflex, Warp, Life];
+export const EXAMPLES: HeroExample[] = [Paint, Draw, Fireworks, Waves, Sort, Chase, Reflex, Warp, Life];
 const N = EXAMPLES.length;
 const HERO = "hero-card";
 const AUTO_MS = 9000; // per example, while the card plays on its own

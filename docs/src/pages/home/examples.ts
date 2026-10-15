@@ -2,6 +2,7 @@ import { css, colors, cx } from "../../styles.ts";
 import { animations } from "../../styles/animations.ts";
 import { highlightCode, terminalCodeTokenStyle } from "../../components/CodeBlock.ts";
 import { hs } from "./styles.ts";
+import { icon, pathD, N as POINTS, STROKE } from "../../components/brand-geometry.ts";
 
 // The hero's examples. Each one is a small app on Nuclo's own API: plain state, dynamic
 // values, one update(). A build() returns the preview's nodes, the code for the code view, and
@@ -731,6 +732,98 @@ setInterval(tick, 120)`),
           onMount: (el: Element) => {
             if (!touched) playing = motion();
             return frames(el, (dt) => { if (playing && (acc += dt) >= 7) { acc = 0; step(); } });
+          },
+        },
+      ],
+    };
+  },
+};
+
+// ── Draw: the logo's wheel, arms, pens and lines all read one number; a timeline scrubs it ─
+const dw = {
+  track: css("pages-home-examples-drawTrack", { flex: "1 1 160px", minWidth: "0" }),
+  range: css("pages-home-examples-drawRange", { flex: "1 1 auto", minWidth: "0", raw: { "accent-color": "var(--c-primary)" }, focusVisible: focus }),
+  toggle: css("pages-home-examples-drawToggle", { minWidth: "84px", justifyContent: "center" }),
+};
+
+export const Draw: HeroExample = {
+  api: "d: () =>",
+  title: "Draw the mark",
+  note: "The Nuclo mark is a Spirograph: one wheel rolling inside a ring, two pens on it. The wheel, its arms, the pens and the lines are all functions of one number, t. The timeline and the frame loop only set t; update('draw') re-runs what reads it.",
+  build() {
+    const S = "hero-draw", DRAW = 3.2, FADE = 0.6, TOTAL = DRAW + FADE; // seconds: one lap, then the guides fade
+    let t = TOTAL; // SSR paints the finished mark
+    let playing = false, touched = false;
+    const k = () => Math.round((0.5 - Math.cos(Math.PI * Math.min(1, t / DRAW)) / 2) * POINTS); // points drawn, eased like the site's logo
+    const guides = () => 1 - clamp((t - DRAW) / FADE, 0, 1);
+    const at = (pts: number[][], i: number) => () => pts[k()][i];
+    const pens = [icon.shape, icon.play];
+
+    const mark = svgSvg(
+      ex.canvas,
+      { viewBox: "0 0 200 200", role: "img", "aria-label": "The Nuclo mark drawn by a Spirograph; the timeline scrubs the drawing" },
+      gSvg(
+        { fill: "none", stroke: STROKE, "stroke-width": 1.5, opacity: guides },
+        circleSvg({ cx: icon.cx, cy: icon.cy, r: icon.ring, "stroke-opacity": 0.4, "stroke-dasharray": "2 4" }),
+        circleSvg({ cx: at(icon.hub, 0), cy: at(icon.hub, 1), r: icon.wheel, fill: STROKE, "fill-opacity": 0.1 }),
+        ...pens.map((pts) => lineSvg({ x1: at(icon.hub, 0), y1: at(icon.hub, 1), x2: at(pts, 0), y2: at(pts, 1) })),
+      ),
+      // Lines only: the mark is never filled
+      ...pens.map((pts) => pathSvg({ d: () => pathD([pts], k()), fill: "none", stroke: STROKE, "stroke-width": 3, "stroke-linecap": "round", "stroke-linejoin": "round" })),
+      ...pens.map((pts) => circleSvg({ cx: at(pts, 0), cy: at(pts, 1), r: 5, fill: "#fff8f2", stroke: STROKE, "stroke-width": 1.5, opacity: guides })),
+    );
+    function toggle() {
+      touched = true;
+      if (!playing && t >= TOTAL) t = 0;
+      playing = !playing;
+      update(S);
+    }
+    function scrub(e: Event) {
+      touched = true;
+      playing = false;
+      t = +(e.target as HTMLInputElement).value;
+      update(S);
+    }
+
+    return {
+      preview: [
+        div(ex.stage, mark),
+        div(
+          ex.bar,
+          button(ex.btn, dw.toggle, { type: "button", onClick: toggle }, () => (playing ? "pause" : t >= TOTAL ? "replay" : "play")),
+          label(wv.slider, dw.track, "t", input(dw.range, { type: "range", min: "0", max: String(TOTAL), step: "0.01", value: () => String(t), "aria-label": "Timeline", onInput: scrub })),
+          div(ex.status, b(() => String(k())), `/${POINTS} pts · `, b(() => t.toFixed(2)), "s"),
+        ),
+      ],
+      code: StaticCode(`let t = 0                                 // seconds: the drawing reads only this
+const k = () => Math.round(ease(t / 3.2) * 360)  // points drawn so far
+const at = (pts, i) => () => pts[k()][i]
+
+svgSvg(
+  circleSvg({ cx: at(hub, 0), cy: at(hub, 1), r: 18 }),         // the wheel rolls
+  pathSvg({ d: () => path(outline, k()), fill: 'none' }),       // the line it has drawn
+  circleSvg({ cx: at(outline, 0), cy: at(outline, 1), r: 5 }),  // its pen
+)
+
+input({ type: 'range', max: 3.8, step: 0.01, value: () => t,
+  onInput: e => { t = +e.target.value; update('draw') } })
+
+function frame() {
+  if (playing) { t += 1 / 60; update('draw') }
+  requestAnimationFrame(frame)
+}`),
+      root: [
+        scope(S),
+        {
+          // Left alone, it draws itself each time it comes on; a touch hands the timeline over
+          onMount: (el: Element) => {
+            if (!touched && motion()) { if (t >= TOTAL) t = 0; playing = true; }
+            return frames(el, (dt) => {
+              if (!playing) return;
+              t = Math.min(TOTAL, t + dt / 60);
+              if (t >= TOTAL) playing = false;
+              update(S);
+            });
           },
         },
       ],

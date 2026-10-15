@@ -32,11 +32,11 @@ test("hero card: the code view opens the live example beside its source", async 
   await expect(demo.locator("[data-cell='state-5']")).toHaveCount(1);
 
   await dialog.getByRole("button", { name: "Next example" }).click();
-  await expect(dialog).toContainText("Tap the sky");
+  await expect(dialog).toContainText("Draw the mark");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(demo.locator("[data-demo-pane='preview']")).toBeVisible();
-  await expect(demo).toContainText("02/08");
+  await expect(demo).toContainText("02/09");
 });
 
 test("hero card: arrows move through the examples and keep their state", async ({ page }) => {
@@ -49,20 +49,20 @@ test("hero card: arrows move through the examples and keep their state", async (
   // Paint a cell, leave, come back: the mutation is still pending
   await demo.locator("[data-cell='state-3']").click();
   await next.click();
-  await expect(demo).toContainText("Tap the sky");
+  await expect(demo).toContainText("Draw the mark");
   await expect(demo.locator("[data-cell='state-3']")).toHaveCount(0);
   await prev.click();
   await expect(demo.locator("[data-cell='state-3']")).toHaveAttribute("data-on", "true");
 
   // Wrap around backwards to the last example and forwards to the first
   await prev.click();
-  await expect(demo).toContainText("08/08");
+  await expect(demo).toContainText("09/09");
   await expect(demo).toContainText("Game of Life");
   await next.click();
-  await expect(demo).toContainText("01/08");
+  await expect(demo).toContainText("01/09");
 
   // list(): sorting moves the nodes, it never makes new ones
-  await demo.getByRole("button", { name: "Example 4: Sorted, never rebuilt" }).click();
+  await demo.getByRole("button", { name: "Example 5: Sorted, never rebuilt" }).click();
   await expect(demo).toContainText("18 nodes ever created");
   await demo.getByRole("button", { name: "shuffle", exact: true }).click();
   await demo.getByRole("button", { name: "reverse", exact: true }).click();
