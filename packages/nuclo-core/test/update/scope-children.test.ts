@@ -302,3 +302,62 @@ describe("hydrate() and forceUpdate() with scopes", () => {
     expect(q("#y").getAttribute("title")).toBe("1");
   });
 });
+
+describe("depth: when() and list() nested to any level", () => {
+  // Each level is a list() of rows; each row holds a when() whose branch
+  // holds the next level. Every level has its own scope root, and every
+  // level's branch condition and text read the same shared state.
+  // 2048 leaves: enough levels to prove depth is irrelevant, small enough for
+  // jsdom's querySelectorAll in the assertions (the library side is linear).
+  const DEPTH = 10;
+  function build(level: number, n: () => number, open: () => boolean): NodeModFn<"ul"> {
+    return ul(
+      scope(`lvl-${level}`),
+      list(
+        () => [0, 1],
+        (k) =>
+          li(
+            span({ className: `t${level}` }, () => `${level}.${k}:${n()}`),
+            when(() => open(), level < DEPTH ? build(level + 1, n, open) : b({ className: "leaf" }, () => `${n()}`)),
+          ),
+      ),
+    );
+  }
+
+  it("a scoped update at any level refreshes everything below it and nothing above or beside it", () => {
+    let n = 0;
+    let open = true;
+    render(div(build(0, () => n, () => open)));
+    expect(all(".leaf")).toHaveLength(2 ** (DEPTH + 1));
+    update("lvl-0");
+
+    n = 1;
+    update(`lvl-${DEPTH}`); // only the deepest level's texts and leaves
+    expect(all(`.t${DEPTH}`).every((el) => el.textContent!.endsWith(":1"))).toBe(true);
+    expect(all(".leaf").every((el) => el.textContent === "1")).toBe(true);
+    expect(all(`.t${DEPTH - 1}`).every((el) => el.textContent!.endsWith(":0"))).toBe(true);
+    expect(all(".t0").every((el) => el.textContent!.endsWith(":0"))).toBe(true);
+
+    n = 2;
+    update("lvl-6"); // middle: levels 6..DEPTH follow, 0..5 do not
+    for (let l = 0; l <= DEPTH; l++) {
+      const want = l >= 6 ? ":2" : l === DEPTH ? ":1" : ":0";
+      expect(all(`.t${l}`).every((el) => el.textContent!.endsWith(want)), `level ${l}`).toBe(true);
+    }
+
+    open = false;
+    n = 3;
+    update("lvl-0"); // top: every branch below closes in one pass
+    expect(all(".leaf")).toHaveLength(0);
+    expect(all("li")).toHaveLength(2); // only level 0's rows remain
+    expect(all(".t0").every((el) => el.textContent!.endsWith(":3"))).toBe(true);
+
+    open = true;
+    update("lvl-0"); // reopens all levels: fresh roots, fresh members
+    expect(all(".leaf")).toHaveLength(2 ** (DEPTH + 1));
+    n = 4;
+    update(`lvl-${DEPTH}`); // the rebuilt deepest level answers on its own again
+    expect(all(".leaf").every((el) => el.textContent === "4")).toBe(true);
+    expect(all(".t0").every((el) => el.textContent!.endsWith(":3"))).toBe(true);
+  }, 20_000);
+});
