@@ -361,3 +361,135 @@ describe("depth: when() and list() nested to any level", () => {
     expect(all(".t0").every((el) => el.textContent!.endsWith(":3"))).toBe(true);
   }, 20_000);
 });
+
+describe("structure that only scoped updates ever build", () => {
+  // No update() without an id anywhere in these: every node that appears is
+  // created by update(id) and must keep following update(id) afterwards.
+
+  it("branch opens → list inside grows → nested branch opens → texts refresh, all via one id", () => {
+    let open = false;
+    let items: number[] = [];
+    let inner = false;
+    let n = 0;
+    render(
+      div(
+        scope("s"),
+        when(
+          () => open,
+          ul(list(() => items, (it) => li({ className: "row", title: () => `${it}:${n}` }, when(() => inner, b({ className: "in" }, () => `${it}:${n}`))))),
+        ),
+      ),
+    );
+    open = true;
+    update("s");
+    expect(q("ul")).not.toBeNull();
+    items = [1, 2, 3];
+    update("s");
+    expect(all(".row").map((el) => el.getAttribute("title"))).toEqual(["1:0", "2:0", "3:0"]);
+    inner = true;
+    update("s");
+    expect(all(".in").map((el) => el.textContent)).toEqual(["1:0", "2:0", "3:0"]);
+    n = 1;
+    items = [3, 1, 4];
+    update("s");
+    expect(all(".row").map((el) => el.getAttribute("title"))).toEqual(["3:1", "1:1", "4:1"]);
+    expect(all(".in").map((el) => el.textContent)).toEqual(["3:1", "1:1", "4:1"]);
+    inner = false;
+    update("s");
+    expect(all(".in")).toHaveLength(0);
+    inner = true;
+    n = 2;
+    update("s");
+    expect(all(".in").map((el) => el.textContent)).toEqual(["3:2", "1:2", "4:2"]);
+  });
+
+  it("a scope root that a scoped update creates answers its own id from then on", () => {
+    let open = false;
+    let items: number[] = [];
+    let n = 0;
+    render(
+      div(
+        scope("outer"),
+        when(() => open, ul(list(() => items, (it) => li(scope(`row-${it}`), span({ className: "v" }, () => `${it}:${n}`))))),
+      ),
+    );
+    open = true;
+    items = [1, 2];
+    update("outer"); // opens the branch; rows arrive on the next pass
+    update("outer");
+    expect(all(".v").map((el) => el.textContent)).toEqual(["1:0", "2:0"]);
+    n = 1;
+    update("row-2"); // the new root, never seen by a full update
+    expect(all(".v").map((el) => el.textContent)).toEqual(["1:0", "2:1"]);
+    items = [2, 1, 3];
+    update("outer");
+    n = 2;
+    update("row-3");
+    expect(all(".v").map((el) => el.textContent)).toEqual(["2:1", "1:1", "3:2"]);
+    update("outer");
+    expect(all(".v").map((el) => el.textContent)).toEqual(["2:2", "1:2", "3:2"]);
+  });
+
+  it("new rows carrying when() and attributes, created by update(id), then changed by every data operation", () => {
+    let items = [{ id: 1, on: false, v: "a" }];
+    let n = 0;
+    render(
+      div(
+        scope("ops"),
+        ul(list(() => items, (it) => li({ "data-id": it.id, className: () => (it.on ? "on" : "off") }, () => `${it.v}${n}`, when(() => it.on, b({ className: "w" }, () => it.v))))),
+      ),
+    );
+    const rows = () => all("li").map((el) => `${el.getAttribute("data-id")}:${el.className}:${el.textContent}`);
+    items = [...items, { id: 2, on: true, v: "b" }]; // append
+    update("ops");
+    expect(rows()).toEqual(["1:off:a0", "2:on:b0b"]);
+    items = [{ id: 0, on: true, v: "z" }, ...items]; // prepend
+    update("ops");
+    expect(rows()).toEqual(["0:on:z0z", "1:off:a0", "2:on:b0b"]);
+    items[1].on = true; // toggle a branch in an existing row
+    items[2].v = "B"; // change a text in an existing row
+    n = 1;
+    update("ops");
+    expect(rows()).toEqual(["0:on:z1z", "1:on:a1a", "2:on:B1B"]);
+    items = [items[2], items[0]]; // remove and reorder
+    update("ops");
+    expect(rows()).toEqual(["2:on:B1B", "0:on:z1z"]);
+    items = []; // clear
+    update("ops");
+    expect(rows()).toEqual([]);
+    items = [{ id: 7, on: false, v: "q" }]; // refill
+    update("ops");
+    expect(rows()).toEqual(["7:off:q1"]);
+    items[0].on = true;
+    n = 2;
+    update("ops");
+    expect(rows()).toEqual(["7:on:q2q"]);
+  });
+
+  it("alternating two scopes: each only sees the data at its own last update", () => {
+    let a = 0;
+    let b = 0;
+    let openA = false;
+    let openB = false;
+    render(
+      div(
+        div(scope("a"), when(() => openA, span({ id: "a" }, () => `${a}/${b}`))),
+        div(scope("b"), when(() => openB, span({ id: "b" }, () => `${a}/${b}`))),
+      ),
+    );
+    openA = true;
+    a = 1;
+    update("a");
+    expect(text("#a")).toBe("1/0");
+    expect(q("#b")).toBeNull();
+    openB = true;
+    b = 1;
+    update("b");
+    expect(text("#b")).toBe("1/1");
+    expect(text("#a")).toBe("1/0");
+    a = 2;
+    update("a");
+    expect(text("#a")).toBe("2/1");
+    expect(text("#b")).toBe("1/1");
+  });
+});

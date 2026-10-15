@@ -75,6 +75,11 @@ export interface State {
   lists: Item[][];
   prims: Array<Array<number | string>>;
   nextId: number;
+  /**
+   * Every item ever created, listed or not. A row keeps the object of an
+   * item that left its list; a scope root inside that row still reads it.
+   */
+  every: Item[];
 }
 
 const SLOTS = 4;
@@ -93,12 +98,14 @@ function newItem(rng: Rng, state: State, depth: number): Item {
     const n = int(rng, 4);
     for (let i = 0; i < n; i++) kids.push(newItem(rng, state, depth + 1));
   }
-  return { id: state.nextId++, kind: int(rng, 2) as 0 | 1, label: pick(rng, LABEL_POOL), flag: chance(rng, 0.5), kids };
+  const item: Item = { id: state.nextId++, kind: int(rng, 2) as 0 | 1, label: pick(rng, LABEL_POOL), flag: chance(rng, 0.5), kids };
+  state.every.push(item);
+  return item;
 }
 
 export function genState(rng: Rng, maxListSize = 6): State {
   const state: State = {
-    texts: [], flags: [], classes: [], attrs: [], colors: [], statics: [], sflags: [], lists: [], prims: [], nextId: 1,
+    texts: [], flags: [], classes: [], attrs: [], colors: [], statics: [], sflags: [], lists: [], prims: [], nextId: 1, every: [],
   };
   for (let i = 0; i < SLOTS; i++) {
     state.texts.push(pick(rng, TEXT_POOL));
@@ -643,19 +650,26 @@ export interface Expected {
 }
 
 /**
- * What a scoped update("nav") leaves on screen: everything outside the named
- * scope roots still shows the state of the last full update (`state` is that
- * snapshot), everything inside shows the live state. Items keep their id
- * across the snapshot, which is how a row crossing into a scope root finds its
- * live object.
+ * What a run of scoped updates leaves on screen. Every node shows the state
+ * as of the last update that covered it: a full update(), or an update(...)
+ * naming its own scope tag or the tag of a scope root above it. `snapshots`
+ * holds the state after each update (index = time), `global` the time of the
+ * last full update and `lastByTag` the last time each tag was named. Items
+ * keep their id across snapshots, which is how a row crossing into a scope
+ * root finds the object of its own time.
  */
-export interface ScopedView {
-  live: State;
-  liveById: Map<number, Item>;
-  ids: ReadonlySet<string>;
+export interface History {
+  snapshots: Array<{ state: State; byId: Map<number, Item> }>;
+  global: number;
+  lastByTag: Map<string, number>;
 }
 
-interface MEnv { state: State; item: Item | null; path: string; scoped?: ScopedView }
+export function snapshotOf(state: State): History["snapshots"][number] {
+  const copy = structuredClone(state); // one clone call: list entries and `every` share objects
+  return { state: copy, byId: new Map(copy.every.map((item) => [item.id, item] as const)) };
+}
+
+interface MEnv { state: State; item: Item | null; path: string; history?: History; time: number }
 type Part = { text: string } | { html: string };
 
 const esc = (v: string): string => JSON.stringify(v);
@@ -700,10 +714,15 @@ function openTag(tag: string, attrs: Array<[string, string]>, props = ""): strin
 }
 
 function modelEl(s: ElSpec, env: MEnv, exp: Expected): string {
-  const view = env.scoped;
-  if (view && view.ids.has(s.tag)) {
-    // Entering an updated scope root: it and its whole subtree are live.
-    env = { state: view.live, item: env.item ? view.liveById.get(env.item.id)! : null, path: env.path };
+  const history = env.history;
+  if (history && SCOPE_TAGS.has(s.tag)) {
+    // Entering a scope root: it and its whole subtree show the state of the
+    // most recent update that covered it, by name or through a root above.
+    const time = Math.max(env.time, history.lastByTag.get(s.tag) ?? 0);
+    if (time !== env.time) {
+      const snap = history.snapshots[time]!;
+      env = { state: snap.state, item: env.item ? snap.byId.get(env.item.id)! : null, path: env.path, history, time };
+    }
   }
   const { state } = env;
   const attrs: Array<[string, string]> = [];
@@ -762,7 +781,7 @@ function modelMod(m: Mod, env: MEnv, parts: Part[], exp: Expected): void {
     case "list": {
       const items = m.src.f === "state" ? state.lists[m.src.k]! : env.item!.kids;
       for (const item of items) {
-        parts.push({ html: modelEl(m.rows[item.kind], { state, item, path: `${env.path}/${m.id}:${item.id}`, scoped: env.scoped }, exp) });
+        parts.push({ html: modelEl(m.rows[item.kind], { ...env, item, path: `${env.path}/${m.id}:${item.id}` }, exp) });
       }
       break;
     }
@@ -779,9 +798,13 @@ function modelMod(m: Mod, env: MEnv, parts: Part[], exp: Expected): void {
   }
 }
 
-export function model(app: AppSpec, state: State, scoped?: ScopedView): Expected {
+/** With a `history`, `state` is ignored: every node shows its own time's snapshot. */
+export function model(app: AppSpec, state: State, history?: History): Expected {
   const exp: Expected = { html: "", buttons: [], articles: 0 };
-  exp.html = modelEl(app.root, { state, item: null, path: "", scoped }, exp);
+  const env: MEnv = history
+    ? { state: history.snapshots[history.global]!.state, item: null, path: "", history, time: history.global }
+    : { state, item: null, path: "", time: 0 };
+  exp.html = modelEl(app.root, env, exp);
   return exp;
 }
 
@@ -901,6 +924,88 @@ function sameElements(a: Element[], b: Element[]): boolean {
   return true;
 }
 
+/** The live DOM, its handlers and its lifecycle state must all match `expected`. */
+function verify(seed: number, mode: string, step: string, container: Element, expected: Expected, hooks: Hooks): void {
+  const actual = snap(container);
+  if (actual !== expected.html) {
+    fail(seed, mode, step, `DOM diverged from the model\n  expected: ${expected.html}\n  actual:   ${actual}`);
+  }
+  // Every button fires exactly its own, current handler — once.
+  // getElementsByTagName, not querySelectorAll: jsdom caches selector
+  // matches on the document, which would pin removed trees (memory tests).
+  const buttons = Array.from(container.getElementsByTagName("button"));
+  for (let i = 0; i < buttons.length; i++) {
+    hooks.clicks.length = 0;
+    buttons[i]!.dispatchEvent(new Event("click"));
+    if (hooks.clicks.length !== 1 || hooks.clicks[0] !== expected.buttons[i]) {
+      fail(seed, mode, step, `button #${i} fired [${hooks.clicks.join(", ")}], expected [${expected.buttons[i]}]`);
+    }
+  }
+  if (hooks.violations.length) fail(seed, mode, step, `lifecycle violations: ${hooks.violations.join("; ")}`);
+  // Lifecycle: live <article>s are exactly the mounted-and-not-destroyed set.
+  const articles = Array.from(container.getElementsByTagName("article"));
+  let live = 0;
+  for (const el of hooks.mounted) if (!hooks.destroyed.has(el)) live++;
+  if (articles.length !== expected.articles || live !== articles.length) {
+    fail(seed, mode, step, `lifecycle: ${articles.length} <article> in DOM, model has ${expected.articles}, ${live} mounted-and-not-destroyed`);
+  }
+  for (const el of articles) {
+    if (!hooks.mounted.has(el) || hooks.destroyed.has(el)) fail(seed, mode, step, "a connected <article> is not in the mounted state");
+  }
+  if (hooks.cleanedUp.size !== hooks.destroyed.size) {
+    fail(seed, mode, step, `mount cleanups (${hooks.cleanedUp.size}) != destroys (${hooks.destroyed.size})`);
+  }
+}
+
+/**
+ * A long run of scoped updates with no full update() in between: nodes that
+ * one update("nav") builds (a branch that opens, rows that arrive, a scope
+ * root inside them) must keep following every later update that covers
+ * them, while everything else stays at the state of its own last update.
+ * Throws (with the seed and step in the message) on the first divergence.
+ */
+export function runScopedSeed(seed: number, opts: RunOptions): void {
+  const mode = "scoped";
+  const rng = mulberry32(seed);
+  const app = genApp(rng, opts);
+  const state = genState(rng, opts.maxListSize);
+  const hooks = makeHooks();
+  const App = buildApp(app, state, hooks);
+  const rounds = opts.rounds ?? 16;
+  const TARGETS = [["nav"], ["aside"], ["nav", "aside"], ["aside", "nav"], ["nav", "none"], ["none"]] as const;
+
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const history: History = { snapshots: [], global: 0, lastByTag: new Map() };
+  const check = (step: string): void => {
+    opts.trace?.(step, state, container);
+    verify(seed, mode, step, container, model(app, state, history), hooks);
+  };
+
+  try {
+    render(App, container);
+    history.snapshots.push(snapshotOf(state));
+    check("initial");
+    for (let r = 0; r < rounds; r++) {
+      mutateReactive(rng, state);
+      // Mostly scoped; a rare full update() re-bases everything, then the
+      // scoped run goes on from there.
+      const ids = chance(rng, 0.12) ? [] : pick(rng, TARGETS);
+      update(...ids);
+      const time = history.snapshots.push(snapshotOf(state)) - 1;
+      if (ids.length === 0) history.global = time;
+      for (const id of ids) history.lastByTag.set(id, time);
+      check(`#${r} update(${ids.join(", ")})`);
+    }
+    update();
+    history.global = history.snapshots.push(snapshotOf(state)) - 1;
+    check("final full update");
+  } finally {
+    opts.onTeardown?.(container);
+    container.remove();
+  }
+}
+
 /**
  * Runs one seeded scenario end to end. Throws (with the seed, mode and step in
  * the message) on the first divergence between the live DOM and the model.
@@ -920,47 +1025,20 @@ export function runSeed(seed: number, kind: Mode, opts: RunOptions): void {
 
   const check = (step: string, expected: Expected = model(app, state)): void => {
     opts.trace?.(step, state, container);
-    const actual = snap(container);
-    if (actual !== expected.html) {
-      fail(seed, mode, step, `DOM diverged from the model\n  expected: ${expected.html}\n  actual:   ${actual}`);
-    }
-    // Every button fires exactly its own, current handler — once.
-    // getElementsByTagName, not querySelectorAll: jsdom caches selector
-    // matches on the document, which would pin removed trees (memory tests).
-    const buttons = Array.from(container.getElementsByTagName("button"));
-    for (let i = 0; i < buttons.length; i++) {
-      hooks.clicks.length = 0;
-      buttons[i]!.dispatchEvent(new Event("click"));
-      if (hooks.clicks.length !== 1 || hooks.clicks[0] !== expected.buttons[i]) {
-        fail(seed, mode, step, `button #${i} fired [${hooks.clicks.join(", ")}], expected [${expected.buttons[i]}]`);
-      }
-    }
-    if (hooks.violations.length) fail(seed, mode, step, `lifecycle violations: ${hooks.violations.join("; ")}`);
-    // Lifecycle: live <article>s are exactly the mounted-and-not-destroyed set.
-    const articles = Array.from(container.getElementsByTagName("article"));
-    let live = 0;
-    for (const el of hooks.mounted) if (!hooks.destroyed.has(el)) live++;
-    if (articles.length !== expected.articles || live !== articles.length) {
-      fail(seed, mode, step, `lifecycle: ${articles.length} <article> in DOM, model has ${expected.articles}, ${live} mounted-and-not-destroyed`);
-    }
-    for (const el of articles) {
-      if (!hooks.mounted.has(el) || hooks.destroyed.has(el)) fail(seed, mode, step, "a connected <article> is not in the mounted state");
-    }
-    if (hooks.cleanedUp.size !== hooks.destroyed.size) {
-      fail(seed, mode, step, `mount cleanups (${hooks.cleanedUp.size}) != destroys (${hooks.destroyed.size})`);
-    }
+    verify(seed, mode, step, container, expected, hooks);
   };
 
   // update("nav") / update("aside") / update("nav", "aside"): only the named
   // scope roots catch up with the state; a full update() then reconciles.
   const scopedRounds = (label: string): void => {
     for (let r = 0; r < Math.ceil(rounds / 2); r++) {
-      const snapshot = structuredClone(state);
-      const liveById = new Map(allItems(state).map((item) => [item.id, item] as const));
+      const history: History = { snapshots: [snapshotOf(state)], global: 0, lastByTag: new Map() };
       mutateReactive(rng, state);
       const ids = pick(rng, [["nav"], ["aside"], ["nav", "aside"], ["aside", "nav", "nav"], ["none"]] as const);
       update(...ids);
-      check(`${label} update(${ids.join(", ")}) #${r}`, model(app, snapshot, { live: state, liveById, ids: new Set(ids) }));
+      history.snapshots.push(snapshotOf(state));
+      for (const id of ids) history.lastByTag.set(id, 1);
+      check(`${label} update(${ids.join(", ")}) #${r}`, model(app, state, history));
       update();
       check(`${label} full update #${r}`);
     }
