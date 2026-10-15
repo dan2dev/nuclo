@@ -11,9 +11,9 @@
     "check": "bun src/css.check.ts"
   },
   "devDependencies": {
-    "@types/node": "^25.9.1",
+    "@types/node": "^25.9.9",
     "nuclo": "workspace:*",
     "typescript": "~6.0.3",
-    "vite": "^8.0.14"
+    "vite": "^8.3.4"
   }
 }

@@ -320,7 +320,7 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
         ),
         div(
           ds.heroMarkWrap,
-          NucloLogo({ animate: true, class: ds.heroMark, label: "Nuclo mark, click to redraw" }),
+          NucloLogo({ animate: true, class: ds.heroMark, label: "Nuclo mark" }),
         ),
       ),
       div(

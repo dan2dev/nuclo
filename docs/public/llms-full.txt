@@ -1,6 +1,6 @@
 # Nuclo documentation
 
-> Complete Nuclo v0.3.28 documentation as a single Markdown file, generated from https://nuclo.dev/docs. Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript: build UI with global tag builders, keep state in plain mutable variables, and call `update()` to sync the real DOM. No virtual DOM, no compiler, no proxies, no signals.
+> Complete Nuclo v0.3.29 documentation as a single Markdown file, generated from https://nuclo.dev/docs. Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript: build UI with global tag builders, keep state in plain mutable variables, and call `update()` to sync the real DOM. No virtual DOM, no compiler, no proxies, no signals.
 
 Index: https://nuclo.dev/llms.txt · Source: https://github.com/dan2dev/nuclo · npm: https://www.npmjs.com/package/nuclo
 
@@ -1877,7 +1877,7 @@ A route's value is always a function that returns the page component, so the com
 
 Only the module-shaped forms can carry a `load` export. Picking a named component with `.then(m => m.BPage)` hands the router the function alone.
 
-Each module is imported once and cached. Concurrent navigations to the same route share one `import()`. Once the user has left the page alone for a second (no taps, keys, wheel or scroll), the remaining routes are loaded in the background, one per idle slice (`requestIdleCallback`). Any input, or a navigation the user is waiting for, pauses it until the next quiet second.
+Each module is imported once and cached. Concurrent navigations to the same route share one `import()`. Once the user has left the page alone for `idleTimeout` (a second by default; no taps, keys, wheel or scroll), the remaining routes are loaded in the background, one per idle slice (`requestIdleCallback`). Any input, or a navigation the user is waiting for, pauses it until the page is idle again.
 
 A preloaded or eager route never flips `router.pending` and lands before the next paint: no spinner frame, no layout shift. `router.pending` is only true for a module or loader that has to be waited for, and the outgoing page stays on screen while it is. A chunk that fails to load surfaces as `router.error`, never as an unhandled rejection, and can simply be retried.
 
@@ -1890,7 +1890,7 @@ Source: https://nuclo.dev/docs#router-api
 function createRouter(table: RouteTable, options?: RouterOptions): Router
 function withLoad(loader: RouteLoader, load: DataLoader): RouteLoader
 
-interface RouterOptions { base?: string; preload?: boolean; onNavigate?: (ctx: RouteContext, kind: NavigationKind) => void }
+interface RouterOptions { base?: string; preload?: boolean; idleTimeout?: number; onNavigate?: (ctx: RouteContext, kind: NavigationKind) => void }
 ```
 
 #### `createRouter(table, options?)`
@@ -1900,7 +1900,8 @@ interface RouterOptions { base?: string; preload?: boolean; onNavigate?: (ctx: R
 | Option | Default |  |
 | --- | --- | --- |
 | `base` | `'/'` | URL prefix the app is served under, such as `'/docs'`. It only matches at a segment boundary: `/docs/intro` is inside `'/docs'`, `/docsearch` is not. URLs outside it match nothing, so `start()` rejects (your server-side 404) and links to them are left to the browser. |
-| `preload` | `true` | Load the remaining routes' modules once the user has left the page alone for a second. |
+| `preload` | `true` | Load the remaining routes' modules in the background once the page is idle. `false` turns it off. |
+| `idleTimeout` | `1000` | Milliseconds without taps, keys, wheel or scroll before preloading starts, or resumes after the user was busy. |
 | `onNavigate` |  | `(ctx, kind) => void`, called after every resolved navigation in the browser, including the initial one, once the DOM has caught up. `kind` is `'start'`, `'push'`, `'replace'`, `'pop'` (Back, Forward, `close()`) or `'layer'`. The hook for `document.title`, meta tags, focus, scrolling and analytics. Never called during SSR. |
 
 Returns the router: `start()`, `match()`, `outlet()`, `matches()`, and every `Route` member except `run()`, read through to the active Route. That is the one the last `start()` returned in the browser, or the one whose `run()` is executing on the server. Reading a member with neither throws. The route table, the compiled matcher and the module cache live on the router, so they are shared across requests on a server.
@@ -1998,7 +1999,7 @@ Every type is a named export of `nuclo-router`, so a page, a loader or a guard c
 | `RouteModule` | a page module: the component itself, or `{ default, load? }` as `import()` yields |
 | `RouteLoader` | `() => RouteModule | Promise<RouteModule>`, optionally carrying a `load` from `withLoad()` |
 | `RouteTable` | the table `createRouter()` takes: pattern to loader, or to a nested table |
-| `RouterOptions` | `{ base?, preload?, onNavigate? }` |
+| `RouterOptions` | `{ base?, preload?, idleTimeout?, onNavigate? }` |
 | `NavigateOptions` | `{ replace? }`, the second argument of `go()` |
 | `NavigationKind` | `'start' | 'push' | 'replace' | 'pop' | 'layer'`, the second argument of `onNavigate` |
 | `Outlet` | the type of `outlet()` from `PageProps` |

@@ -51,7 +51,7 @@ export function Footer() {
         // Brand column
         div(
           brandGroup,
-          NucloBrand({ height: 38 }),
+          NucloBrand({ height: 38, animate: "visible" }),
           span(tagline, "The explicit UI runtime. Plain functions, mutable state, and one call between your data and the DOM."),
           span(builtWith, "This site is built with Nuclo."),
         ),
