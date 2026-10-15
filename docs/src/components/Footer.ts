@@ -1,6 +1,6 @@
 import { css, colors, s } from "../styles.ts";
 import { router } from "../router.ts";
-import { BrandLogo } from "./BrandLogo.ts";
+import { NucloBrand } from "./NucloBrand.ts";
 import { GitHubSvg } from "./icons.ts";
 import { NUCLO_VERSION } from "../generated/nuclo-stats.ts";
 
@@ -51,7 +51,7 @@ export function Footer() {
         // Brand column
         div(
           brandGroup,
-          BrandLogo({ size: "footer" }),
+          NucloBrand({ height: 38 }),
           span(tagline, "The explicit UI runtime. Plain functions, mutable state, and one call between your data and the DOM."),
           span(builtWith, "This site is built with Nuclo."),
         ),

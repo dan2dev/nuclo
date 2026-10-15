@@ -59,7 +59,7 @@ export const ds = {
   heroShell: css("pages-docs-styles-heroShell", { display: "grid", gridTemplateColumns: "minmax(0, 1fr) 170px", alignItems: "center", gap: "28px", "@media (max-width: 700px)": { display: "block" } }),
   heroCopy: css("pages-docs-styles-heroCopy", { minWidth: "0" }),
   heroMarkWrap: css("pages-docs-styles-heroMarkWrap", { display: "flex", justifyContent: "flex-end", "@media (max-width: 700px)": { display: "none" } }),
-  heroMark: css("pages-docs-styles-heroMark", { width: "138px", height: "138px", transform: "rotate(7deg)", filter: "drop-shadow(0 24px 30px rgba(255,63,0,0.22))" }),
+  heroMark: css("pages-docs-styles-heroMark", { width: "138px", height: "138px", cursor: "pointer", transform: "rotate(7deg)", filter: "drop-shadow(0 24px 30px rgba(255,63,0,0.22))" }),
   eyebrow: css("pages-docs-styles-eyebrow", { fontFamily: mono, fontSize: "0.72rem", fontWeight: "800", letterSpacing: "0", textTransform: "uppercase", color: colors.primary, marginBottom: "12px" }),
   lead: css("pages-docs-styles-lead", { fontSize: "1.05rem", color: colors.textDim, lineHeight: "1.75", maxWidth: "720px", marginBottom: "0" }),
   quickstart: css("pages-docs-styles-quickstart", { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "18px", marginTop: "24px", padding: "13px 14px 13px 16px", backgroundColor: colors.bgSecondary, borderRadius: "16px", transition: "transform 0.2s ease", boxShadow: "0 18px 42px -34px rgba(0,0,0,0.34)", hover: { transform: "translateY(-2px)", boxShadow: "0 18px 44px -32px var(--c-primary-glow)" }, "@media (max-width: 600px)": { alignItems: "stretch", flexDirection: "column", gap: "10px" } }),

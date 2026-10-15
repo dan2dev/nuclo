@@ -28,9 +28,8 @@ export function registerGlobalStyles() {
   globalStyle('a, button, input, select, textarea, summary, [role="button"], [role="tab"]', { raw: {"-webkit-tap-highlight-color": "transparent"} });
   globalStyle("img", { raw: {"display": "block"} });
   globalStyle("svg", { raw: {"display": "block"} });
-  globalStyle(".nuclo-logo-dark", { raw: {"display": "none"} });
-  globalStyle("[data-theme=\"dark\"] .nuclo-logo-light", { raw: {"display": "none"} });
-  globalStyle("[data-theme=\"dark\"] .nuclo-logo-dark", { raw: {"display": "block"} });
+  // An animated logo stays hidden until hydration starts its drawing, so the finished logo never flashes first.
+  globalStyle("html[data-anim] .nuclo-draw:not(.nuclo-draw-on)", { raw: {"visibility": "hidden"} });
   globalStyle("::selection", { raw: {"background": "var(--c-selection-bg)", "color": "var(--c-text)"} });
   globalStyle("html[data-anim] .rv", { raw: {"opacity": "0"} });
   globalStyle("html[data-anim] .rv.rv-in", { raw: {"animation": `${animations.riseIn} 0.7s cubic-bezier(0.22, 1, 0.36, 1) both`} });

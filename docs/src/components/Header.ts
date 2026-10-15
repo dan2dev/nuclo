@@ -2,7 +2,7 @@ import { css, colors, cx, s } from "../styles.ts";
 import { router, currentRoute } from "../router.ts";
 import { toggleTheme, isDark, getThemePreference, setThemePreference, type ThemePreference } from "../theme.ts";
 import { docsSection } from "../docs-state.ts";
-import { BrandLogo } from "./BrandLogo.ts";
+import { NucloBrand } from "./NucloBrand.ts";
 import { GitHubSvg } from "./icons.ts";
 
 const GITHUB_URL = "https://github.com/dan2dev/nuclo";
@@ -112,7 +112,7 @@ export function Header() {
     return a(
       st.logo,
       { href: href("home"), "aria-label": "Nuclo home", onClick: closeMenu },
-      BrandLogo(),
+      NucloBrand({ animate: true }),
     );
   }
 

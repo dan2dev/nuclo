@@ -4,6 +4,7 @@ import { DOC_GROUPS, DOC_SECTIONS, SECTION_MAP } from "./docs/content.ts";
 import { ds, sectionDelay } from "./docs/styles.ts";
 import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../generated/nuclo-stats.ts";
 import { docsSection } from "../docs-state.ts";
+import { NucloLogo } from "../components/NucloBrand.ts";
 import { ALL_EXAMPLES } from "./examples/registry.ts";
 import { exampleHref, onOpenExample } from "./examples/open.ts";
 
@@ -319,7 +320,7 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
         ),
         div(
           ds.heroMarkWrap,
-          img(ds.heroMark, { src: "/nuclo-icon@3x.png", alt: "", "aria-hidden": "true" }),
+          NucloLogo({ animate: true, class: ds.heroMark, label: "Nuclo mark, click to redraw" }),
         ),
       ),
       div(
