@@ -114,9 +114,17 @@ export async function createWorld(canvas: HTMLCanvasElement): Promise<World> {
       });
       return () => cancelAnimationFrame(frame);
     },
-    dispose: () => renderer.dispose(),
+    dispose() {
+      lut.dispose();
+      renderer.dispose();
+    },
   };
 
   for (let i = 0; i < 5; i++) add();
+  // three.js shares one lookup texture (DFG_LUT) between every renderer, and
+  // that texture keeps each renderer that drew with it reachable, canvas and
+  // page included, until it is disposed. Render once to get hold of it.
+  renderer.render(scene, camera);
+  const lut = (renderer.properties.get(meshes()[0].material) as { uniforms: { dfgLUT: { value: THREE.Texture } } }).uniforms.dfgLUT.value;
   return world;
 }

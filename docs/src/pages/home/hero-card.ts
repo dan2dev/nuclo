@@ -23,8 +23,9 @@ const focus = { outline: `2px solid ${colors.primary}`, outlineOffset: "2px" } a
 const WIDE = "@media (min-width: 901px)";
 
 const cs = {
-  // Hovering or focusing the card holds the autoplay's progress where it is
-  card: css("pages-home-herocard-card", { "&:hover [data-dot] > span, &:focus-within [data-dot] > span": { raw: { "animation-play-state": "paused" } } }),
+  // Hovering or focusing the card holds the autoplay's progress where it is, and so does
+  // scrolling it out of view: nobody would see the examples it mounts
+  card: css("pages-home-herocard-card", { "&:hover [data-dot] > span, &:focus-within [data-dot] > span, &[data-offscreen] [data-dot] > span": { raw: { "animation-play-state": "paused" } } }),
   head: css("pages-home-herocard-head", { display: "flex", alignItems: "center", gap: "6px", padding: "10px 10px 10px 16px", backgroundColor: colors.bgCard, borderBottom: `1px solid ${colors.border}`, medium: { gap: "10px", padding: "12px 12px 12px 18px" } }),
   titles: css("pages-home-herocard-titles", { display: "flex", flexDirection: "column", minWidth: "0", flex: "1 1 auto", gap: "1px" }),
   kicker: css("pages-home-herocard-kicker", { fontFamily: MONO, fontSize: "0.6875rem", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: colors.primaryInk, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }),
@@ -137,6 +138,11 @@ export function HeroCard() {
       "data-hero-demo": "",
       "data-theme": "dark", // the card stays dark on the orange, like the install bar
       class: () => cx(hs.heroDemoArea, cs.card, dir > 0 ? cs.fromRight : cs.fromLeft).className,
+      onMount: (el: HTMLElement) => {
+        const io = new IntersectionObserver(([e]) => el.toggleAttribute("data-offscreen", !e.isIntersecting));
+        io.observe(el);
+        return () => io.disconnect();
+      },
       // Arrow keys anywhere in the card or its dialog, unless someone is typing or sliding
       onKeyDown: (e: KeyboardEvent) => {
         if ((e.target as HTMLElement).tagName === "INPUT") return;

@@ -139,7 +139,7 @@ export function LocaleShop() {
   coupon = ""; // and its coupon field starts empty
   return div(
     s.app,
-    div(s.host, { onMount: (el) => { host = el; } }, Shop()),
+    div(s.host, { onMount: (el) => { host = el; return () => { host = undefined; }; } }, Shop()),
     div(
       s.diag,
       span(s.diagLabel, "Diagnostics"),

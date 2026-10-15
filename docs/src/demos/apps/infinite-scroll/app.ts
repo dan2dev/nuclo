@@ -18,7 +18,7 @@ let loading = false;
 let error: string | null = null;
 let scrollTop = 0;
 let viewport = 0; // the feed's visible height
-let lookAgain = () => {}; // set by the sentinel: checks again whether it is in view
+let lookAgain: (() => void) | null = null; // set by the mounted sentinel: checks again whether it is in view
 
 const start = () => Math.max(0, Math.floor(scrollTop / ROW) - OVERSCAN);
 const end = () => Math.min(posts.length, Math.ceil((scrollTop + viewport) / ROW) + OVERSCAN);
@@ -36,7 +36,7 @@ async function loadMore() {
   }
   loading = false;
   update();
-  lookAgain(); // a short page can leave the sentinel in view: then load the next one too
+  lookAgain?.(); // a short page can leave the sentinel in view: then load the next one too
 }
 
 function retry() {
@@ -50,7 +50,7 @@ function startOver() {
   error = null;
   scrollTop = 0;
   update();
-  lookAgain();
+  lookAgain?.();
 }
 
 const ago = (m: number) => (m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`);
@@ -86,7 +86,7 @@ function Sentinel() {
       );
       observer.observe(el);
       lookAgain = () => { observer.unobserve(el); observer.observe(el); };
-      return () => observer.disconnect();
+      return () => { observer.disconnect(); lookAgain = null; }; // left set, it would keep this element alive
     }),
     when(() => loading, Skeleton(), Skeleton(), Skeleton())
       .when(() => error !== null, div(s.error, span(() => error ?? ""), button(s.btn, "Retry", { onClick: retry }))),

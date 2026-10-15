@@ -187,7 +187,7 @@ export const Sort: HeroExample = {
     const mix = <T>(xs: T[]) => { for (let i = xs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [xs[i], xs[j]] = [xs[j], xs[i]]; } return xs; };
     let bars: Bar[] = mix(Array.from({ length: N }, (_, i) => ({ v: i + 1, color: `hsl(${6 + (40 * i) / (N - 1)} 96% ${50 + (14 * i) / (N - 1)}%)` })));
     let hot: Bar[] = [];
-    let swaps = 0, created = 0, touched = false, timer = 0, later = 0;
+    let swaps = 0, created = 0, touched = false, playing = false, acc = 0, later = 0;
     let steps: Generator<Bar[]> | null = null;
     const nodes = new Map<Bar, HTMLElement>();
 
@@ -213,18 +213,20 @@ export const Sort: HeroExample = {
       }
     }
     const after = (ms: number, fn: () => void) => { clearTimeout(later); later = window.setTimeout(fn, ms); };
-    function pause() { clearInterval(timer); timer = 0; }
-    function play() {
-      pause();
-      steps ??= bubble();
-      timer = window.setInterval(() => act(() => {
+    function pause() { playing = false; }
+    function play() { steps ??= bubble(); playing = true; }
+    // One comparison every 80 ms, on the frame loop: it holds while the card is off screen
+    function tick(dt: number) {
+      if (!playing || (acc += dt) < 4.8) return;
+      acc = 0;
+      act(() => {
         const r = steps!.next();
         hot = r.done ? [] : r.value;
         if (!r.done) return;
         pause(); steps = null;
         // On its own, it loops: a beat, a shuffle, another sort
         if (!touched && motion()) after(1500, () => { act(() => mix(bars), 560); after(900, play); });
-      }, 260), 80);
+      }, 260);
     }
     const user = (fn: () => void) => () => { touched = true; clearTimeout(later); fn(); update(S); };
 
@@ -246,7 +248,7 @@ export const Sort: HeroExample = {
         div(ex.stage, chart),
         div(
           ex.bar,
-          button(ex.btn, { type: "button", onClick: user(() => (timer ? pause() : play())) }, () => (timer ? "pause" : "sort")),
+          button(ex.btn, { type: "button", onClick: user(() => (playing ? pause() : play())) }, () => (playing ? "pause" : "sort")),
           button(ex.ghost, { type: "button", onClick: user(() => { pause(); steps = null; hot = []; act(() => mix(bars), 560); }) }, "shuffle"),
           button(ex.ghost, { type: "button", onClick: user(() => { pause(); steps = null; hot = []; act(() => bars.reverse(), 560); }) }, "reverse"),
           div(ex.status, b(() => String(swaps)), " swaps · ", b(() => String(created)), " nodes ever created"),
@@ -276,9 +278,10 @@ setInterval(() => {
       root: [
         scope(S),
         {
-          onMount: () => {
-            if (!touched && motion() && !timer) after(700, play);
-            return () => { pause(); clearTimeout(later); hot = []; created = 0; }; // the next mount counts afresh
+          onMount: (el: Element) => {
+            if (!touched && motion() && !playing) after(700, play);
+            const stop = frames(el, tick);
+            return () => { stop(); pause(); clearTimeout(later); hot = []; created = 0; }; // the next mount counts afresh
           },
         },
       ],
@@ -558,6 +561,7 @@ export const Warp: HeroExample = {
     const center = { x: W / 2, y: H / 2 - 10 }, aim = { x: W / 2, y: H / 2 - 10 };
     let mounted = true, held = false, speed = 0, loops = 0, cleanups = 0;
 
+    const tenth = (v: number) => Math.round(v * 10) / 10; // a tenth of a viewBox unit is under a pixel
     const place = (s: Star, z: number) => { s.x = (Math.random() - 0.5) * 4; s.y = (Math.random() - 0.5) * 2.8; s.z = z; };
     const stars: Star[] = Array.from({ length: N }, (_, i) => {
       const s = { x: 0, y: 0, z: 1, sx: 0, sy: 0, px: 0, py: 0, color: i % 6 ? "#fff8f2" : i % 12 ? "#ffb545" : "#ff6a3d" };
@@ -599,9 +603,11 @@ export const Warp: HeroExample = {
       },
       defsSvg(radialGradientSvg({ id: "hero-warp-core" }, stopSvg({ offset: "0", "stop-color": "#ff6a3d", "stop-opacity": "0.45" }), stopSvg({ offset: "1", "stop-color": "#ff6a3d", "stop-opacity": "0" }))),
       circleSvg({ cx: () => center.x, cy: () => center.y, r: 190, fill: "url(#hero-warp-core)", opacity: () => clamp(speed / 0.03, 0.08, 1) }),
-      ...stars.map((s) => lineSvg(wp.star, {
-        x1: () => s.px, y1: () => s.py, x2: () => s.sx, y2: () => s.sy, stroke: s.color,
-        "stroke-width": () => 0.6 + (1 - s.z) * 2.2, opacity: () => clamp((1 - s.z) * 1.4, 0, 1),
+      // One d per streak instead of four coordinates, and its width and fade in steps too small to
+      // see: most frames a star rewrites one attribute, not six
+      ...stars.map((s) => pathSvg(wp.star, {
+        d: () => `M${tenth(s.px)} ${tenth(s.py)}L${tenth(s.sx)} ${tenth(s.sy)}`, stroke: s.color,
+        "stroke-width": () => tenth(0.6 + (1 - s.z) * 2.2), opacity: () => Math.round(clamp((1 - s.z) * 1.4, 0, 1) * 20) / 20,
       })),
     );
     // The cleanup ran during the first pass; the second shows its count
@@ -626,8 +632,8 @@ const Stars = () => svgSvg(
       })
       return () => cancelAnimationFrame(raf)    // run once it is removed
   } },
-  ...stars.map(s => lineSvg({
-    x1: () => s.px, y1: () => s.py, x2: () => s.sx, y2: () => s.sy,
+  ...stars.map(s => pathSvg({
+    d: () => \`M\${s.px} \${s.py}L\${s.sx} \${s.sy}\`,      // the streak
   })),
 )
 
@@ -640,10 +646,13 @@ button('unmount', { onClick: () => { mounted = !mounted; update() } })`),
 
 // ── Life: a plain array a tick; each cell's class is a function of its age ───────────────
 const lf = {
-  cell: css("pages-home-examples-lifeCell", { transition: `fill 0.35s ${EASE}`, raw: { fill: "var(--c-bg-light)" } }),
+  // No CSS fade: one would keep every frame busy. A cell that just died glows as an ember for one
+  // generation instead, the afterglow the fade used to leave, and only the steps do any work
+  cell: css("pages-home-examples-lifeCell", { raw: { fill: "var(--c-bg-light)" } }),
   born: css("pages-home-examples-lifeBorn", { raw: { fill: "#ffd166" } }),
   young: css("pages-home-examples-lifeYoung", { raw: { fill: "#ff6a3d" } }),
   old: css("pages-home-examples-lifeOld", { raw: { fill: "#b8270b" } }),
+  ember: css("pages-home-examples-lifeEmber", { raw: { fill: "color-mix(in srgb, #ff6a3d 35%, var(--c-bg-light))" } }),
 };
 
 export const Life: HeroExample = {
@@ -653,12 +662,14 @@ export const Life: HeroExample = {
   build() {
     const S = "hero-life", C = 30, R = 18, STEP = 14;
     const W = C * STEP - 2, H = R * STEP - 2;
-    const CLASSES = [lf.cell, cx(lf.cell, lf.born), cx(lf.cell, lf.young), cx(lf.cell, lf.old)].map((c) => c.className);
+    const CLASSES = [lf.cell, cx(lf.cell, lf.born), cx(lf.cell, lf.young), cx(lf.cell, lf.old), cx(lf.cell, lf.ember)].map((c) => c.className);
     const kind = (a: number) => (a === 0 ? 0 : a === 1 ? 1 : a < 6 ? 2 : 3);
-    let age: number[] = [];
+    // A cell that died on the last step is an ember while the board plays
+    const look = (i: number) => (age[i] === 0 && playing && was[i] ? 4 : kind(age[i]));
+    let age: number[] = [], was: number[] = []; // was: the generation before
     let gen = 0, patched = 0, acc = 0, playing = true, touched = false, drawing = false;
 
-    function seed() { age = Array.from({ length: C * R }, () => (Math.random() < 0.26 ? 1 : 0)); gen = 0; }
+    function seed() { age = Array.from({ length: C * R }, () => (Math.random() < 0.26 ? 1 : 0)); was = []; gen = 0; }
     seed();
     function step() {
       const next = age.map((a, i) => {
@@ -667,8 +678,10 @@ export const Life: HeroExample = {
         for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && age[((r + dy + R) % R) * C + ((c + dx + C) % C)]) n++;
         return n === 3 || (a && n === 2) ? Math.min(a + 1, 9) : 0;
       });
-      patched = next.reduce((k, a, i) => k + (kind(a) !== kind(age[i]) ? 1 : 0), 0);
+      const before = age.map((_, i) => look(i));
+      was = age;
       age = next;
+      patched = before.filter((l, i) => l !== look(i)).length;
       gen++;
       // Left alone, a fresh soup once this one has settled
       if (!touched && (gen > 320 || !age.some(Boolean))) seed();
@@ -692,7 +705,7 @@ export const Life: HeroExample = {
         onPointerUp: () => { drawing = false; },
         onPointerCancel: () => { drawing = false; },
       },
-      ...Array.from({ length: C * R }, (_, i) => rectSvg({ x: (i % C) * STEP, y: ((i / C) | 0) * STEP, width: STEP - 2, height: STEP - 2, rx: 3, class: () => CLASSES[kind(age[i])] })),
+      ...Array.from({ length: C * R }, (_, i) => rectSvg({ x: (i % C) * STEP, y: ((i / C) | 0) * STEP, width: STEP - 2, height: STEP - 2, rx: 3, class: () => CLASSES[look(i)] })),
     );
     const user = (fn: () => void) => () => { touched = true; fn(); update(S); };
 
@@ -704,7 +717,7 @@ export const Life: HeroExample = {
           button(ex.btn, { type: "button", onClick: user(() => { playing = !playing; }) }, () => (playing ? "pause" : "play")),
           button(ex.ghost, { type: "button", onClick: user(step) }, "step"),
           button(ex.ghost, { type: "button", onClick: user(seed) }, "random"),
-          button(ex.ghost, { type: "button", onClick: user(() => { age = age.map(() => 0); gen = 0; }) }, "clear"),
+          button(ex.ghost, { type: "button", onClick: user(() => { age = age.map(() => 0); was = []; gen = 0; }) }, "clear"),
           div(ex.status, "gen ", b(() => String(gen)), " · ", b(() => String(patched)), " patched"),
         ),
       ],

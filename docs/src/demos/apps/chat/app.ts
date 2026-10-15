@@ -74,7 +74,7 @@ let composerFocused = false;
 let menu = false; // the phone drawer
 let picker: Msg | null = null; // the message whose reaction picker is open
 let composerPicker = false;
-let lookAgain = () => {}; // set by the sentinel: checks again whether it is in view
+let lookAgain: (() => void) | null = null; // set by the mounted sentinel: checks again whether it is in view
 
 const toMsg = (m: Message, fresh = false): Msg => {
   const msg: Msg = { ...m, status: "sent", first: true, day: "", fresh, edited: false, editing: false, copied: false, reactions: [] };
@@ -137,7 +137,7 @@ async function loadOlder() {
   update();
   if (ch === active && scroller) {
     scroller.scrollTop += scroller.scrollHeight - height;
-    lookAgain(); // a short page can leave the sentinel in view: then load the next one too
+    lookAgain?.(); // a short page can leave the sentinel in view: then load the next one too
   }
 }
 
@@ -450,7 +450,7 @@ function Sentinel() {
       );
       observer.observe(el);
       lookAgain = () => { observer.unobserve(el); observer.observe(el); };
-      return () => { observer.disconnect(); lookAgain = () => {}; };
+      return () => { observer.disconnect(); lookAgain = null; }; // left set, it would keep this element alive
     }),
     when(() => active.error !== null, div(s.error, span(() => active.error ?? ""), button(s.btn, { type: "button", onClick: () => { active.error = null; loadOlder(); } }, "Retry")))
       .when(() => active.atStart, p(s.beginning, () => `This is the beginning of ${active.info.name}.`))
@@ -523,7 +523,7 @@ function openChannel(ch: Channel) {
     }
   }
   if (focusComposer && pointerFine) composerEl?.focus();
-  lookAgain(); // the sentinel may be in view again: load the next page
+  lookAgain?.(); // the sentinel may be in view again: load the next page
 }
 
 export function ChatApp() {
@@ -589,7 +589,7 @@ export function ChatApp() {
             },
             onFocus: () => { composerFocused = true; },
             onBlur: () => { composerFocused = false; },
-          }, on("mount", (el) => { composerEl = el; el.focus(); })),
+          }, on("mount", (el) => { composerEl = el; el.focus(); return () => { composerEl = null; }; })),
           button(s.emojiBtn, { type: "button", title: "Add an emoji", "aria-label": "Add an emoji", onClick: () => { composerPicker = !composerPicker; update("chat-composer"); } }, "😊"),
           button(s.send, { type: "submit", disabled: () => !active.draft.trim() }, "Send"),
         ),
