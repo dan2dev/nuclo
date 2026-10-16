@@ -105,15 +105,25 @@ const N = 48
 const W = 320
 const H = 140
 const STEP = W / N
+
+// Seeded random numbers, so the first frame is always the same.
+let seed = 11
+const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647
 const walk = (v: number, k: number) =>
-  Math.max(4, Math.min(100, v + (Math.random() - 0.48) * k))
+  Math.max(4, Math.min(100, v + (random() - 0.48) * k))
 
 let ticks = 0
 let top = 100
 let paused = false
 let hover: number | null = null
-const a = Array.from({ length: N + 1 }, () => walk(50, 30))
-const b = Array.from({ length: N + 1 }, () => walk(30, 20))
+const a: number[] = []
+const b: number[] = []
+for (let i = 0, p = 50, q = 30; i <= N; i++) {
+  p = walk(p, 14)
+  q = walk(q, 10)
+  a.push(p)
+  b.push(q)
+}
 
 // A sample keeps the same x for as long as it lives. The whole
 // group slides left by one step per tick, and a CSS transition
@@ -121,32 +131,53 @@ const b = Array.from({ length: N + 1 }, () => walk(30, 20))
 const x = (j: number) => (ticks - N + j) * STEP
 const y = (v: number) => H - 6 - (v / top) * (H - 18)
 const line = (s: number[]) =>
-  s.map((v, j) => (j ? 'L' : 'M') + x(j) + ',' + y(v)).join(' ')
+  s.map((v, j) => (j ? 'L' : 'M') + x(j).toFixed(1) + ',' + y(v).toFixed(1)).join(' ')
+const at = () => hover ?? N
 
-// onMount starts the timer and returns its cleanup. Each tick
-// updates only the scope, and the y scale eases toward the peak.
-const every = (id: string, ms: number, step: () => boolean | void) => () => {
-  const timer = setInterval(() => {
-    if (step() !== false) update(id)
-  }, ms)
-  return () => clearInterval(timer)
-}
-
+// Each tick adds a sample, drops the oldest one and updates only
+// this scope. The y scale eases toward the peak.
 function tick() {
-  if (paused) return false
+  if (paused) return
   ticks++
   a.push(walk(a[N], 14)); a.shift()
   b.push(walk(b[N], 10)); b.shift()
   top += (Math.max(60, ...a, ...b) * 1.15 - top) * 0.25
+  update('stream')
 }
+
+const muted = { 'font-family': 'ui-monospace, monospace', 'font-size': 11, fill: '#8a8a8a' }
 
 export const LiveStream = () =>
   div(
+    { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px', width: '100%', maxWidth: '380px' } },
     scope('stream'),
     svgSvg(
-      { viewBox: '0 0 320 140', width: '320', height: '140', onMount: every('stream', 120, tick) },
+      {
+        viewBox: '0 0 320 140', role: 'img', 'aria-label': 'Live stream chart',
+        style: { width: '100%', height: 'auto', overflow: 'visible' },
+        // onMount starts the timer and returns its cleanup.
+        onMount: () => {
+          const timer = setInterval(tick, 120)
+          return () => clearInterval(timer)
+        },
+      },
       defsSvg(
+        linearGradientSvg(
+          { id: 'fill', x1: '0', y1: '0', x2: '0', y2: '1' },
+          stopSvg({ offset: '0', 'stop-color': '#ff3f00', 'stop-opacity': 0.3 }),
+          stopSvg({ offset: '1', 'stop-color': '#ff3f00', 'stop-opacity': 0 }),
+        ),
         clipPathSvg({ id: 'clip' }, rectSvg({ x: 0, y: 0, width: W, height: H })),
+      ),
+      // Grid lines and their labels follow the y scale.
+      ...[0.25, 0.5, 0.75, 1].map((f) =>
+        gSvg(
+          lineSvg({
+            x1: 0, x2: W, stroke: '#ddd', 'stroke-dasharray': '2 4',
+            y1: () => y(top * f) + 0.5, y2: () => y(top * f) + 0.5,
+          }),
+          textSvg(muted, { x: W - 2, 'text-anchor': 'end', y: () => y(top * f) - 3 }, () => Math.round(top * f)),
+        ),
       ),
       gSvg(
         { 'clip-path': 'url(#clip)' },
@@ -158,28 +189,53 @@ export const LiveStream = () =>
             }),
           },
           pathSvg({
-            fill: '#ff3f00', 'fill-opacity': 0.15,
+            fill: 'url(#fill)',
             d: () => line(a) + ' L' + x(N) + ',' + H + ' L' + x(0) + ',' + H + ' Z',
           }),
-          pathSvg({ fill: 'none', stroke: '#ff3f00', 'stroke-width': 2, d: () => line(a) }),
-          pathSvg({ fill: 'none', stroke: '#2563eb', 'stroke-width': 1.5, d: () => line(b) }),
+          pathSvg({ fill: 'none', stroke: '#ff3f00', 'stroke-width': 2, 'stroke-linejoin': 'round', d: () => line(a) }),
+          pathSvg({ fill: 'none', stroke: '#2563eb', 'stroke-width': 1.5, 'stroke-linejoin': 'round', d: () => line(b) }),
+          circleSvg({ r: 4, fill: '#ff3f00', cx: () => x(N), cy: () => y(a[N]) }),
         ),
+      ),
+      // The hover cursor: a line and one dot per series.
+      gSvg(
+        { stroke: '#8a8a8a', 'pointer-events': 'none', opacity: () => (hover === null ? 0 : 1) },
+        lineSvg({ y1: 0, y2: H, x1: () => at() * STEP, x2: () => at() * STEP }),
+        circleSvg({ r: 4, fill: '#fff', stroke: '#ff3f00', 'stroke-width': 2, cx: () => at() * STEP, cy: () => y(a[at()]) }),
+        circleSvg({ r: 4, fill: '#fff', stroke: '#2563eb', 'stroke-width': 2, cx: () => at() * STEP, cy: () => y(b[at()]) }),
       ),
       // A transparent rect on top follows the pointer.
       rectSvg({
-        x: 0, y: 0, width: W, height: H, fill: 'transparent',
+        x: 0, y: 0, width: W, height: H, fill: 'transparent', style: { cursor: 'crosshair', touchAction: 'none' },
         onPointerMove: (e) => {
           const box = e.currentTarget.getBoundingClientRect()
-          hover = Math.round(((e.clientX - box.left) / box.width) * N)
+          hover = Math.round(Math.max(0, Math.min(1, (e.clientX - box.left) / box.width)) * N)
           update('stream')
         },
         onPointerLeave: () => { hover = null; update('stream') },
       }),
     ),
-    p(() => 'requests ' + Math.round(a[hover ?? N]) + ' · latency ' + Math.round(b[hover ?? N])),
-    button(() => (paused ? 'Resume' : 'Pause'), {
-      onClick: () => { paused = !paused; update('stream') },
-    }),
+    div(
+      { style: { fontFamily: 'ui-monospace, monospace', fontSize: '12px', color: '#8a8a8a', textAlign: 'center' } },
+      () =>
+        (hover === null ? 'now' : '-' + ((N - at()) * 0.12).toFixed(1) + 's') +
+        ' · requests ' + Math.round(a[at()]) +
+        ' · latency ' + Math.round(b[at()]) +
+        ' · peak ' + Math.round(Math.max(...a)),
+    ),
+    div(
+      { style: { display: 'flex', gap: '8px', justifyContent: 'center' } },
+      button(() => (paused ? 'Resume' : 'Pause'), {
+        onClick: () => { paused = !paused; update('stream') },
+      }),
+      button('Spike', {
+        onClick: () => {
+          a[N] = Math.min(100, a[N] + 45)
+          b[N] = Math.min(100, b[N] + 25)
+          update('stream')
+        },
+      }),
+    ),
   )`;
 
 // ── Candlesticks ─────────────────────────────────────────────────────────
@@ -318,26 +374,41 @@ const CANDLES_CODE = `import 'nuclo'
 type Candle = { o: number; h: number; l: number; c: number; v: number }
 
 const W = 320
-const PW = 282
+const H = 196
+const PW = 282 // the plot; the price labels sit to its right
+const PH = 130
 const SLOTS = 40
+const UP = '#2563eb'
+const DOWN = '#ff3f00'
+
+// Seeded random numbers, so the first frame is always the same.
+let seed = 5
+const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647
 const next = (o: number): Candle => {
-  const c = o + (Math.random() - 0.48) * 4
+  const c = o + (random() - 0.48) * 4
   return {
-    o, c, v: 20 + Math.random() * 80,
-    h: Math.max(o, c) + Math.random() * 2,
-    l: Math.min(o, c) - Math.random() * 2,
+    o, c,
+    h: Math.max(o, c) + random() * 2,
+    l: Math.min(o, c) - random() * 2,
+    v: 20 + random() * 80,
   }
 }
 const raw: Candle[] = []
 for (let i = 0, p = 100; i < 120; i++) { raw.push(next(p)); p = raw[i].c }
 
 let agg = 1 // 1, 3 or 5 raw candles per candle
+let showSma = true
+let live = true
+let hover: number | null = null
 let view: Candle[] = []
 let lo = 0
 let hi = 1
+let vmax = 1
+let n = 0
+const sum = (list: number[]) => list.reduce((s, v) => s + v, 0)
 
-// Group the raw candles from the newest backwards, then fit the
-// price scale to what is visible. Called after every change.
+// Group the raw candles from the newest backwards, so the last one
+// is always complete, then fit the scales to what is visible.
 function refresh() {
   view = []
   for (let end = raw.length; end > 0 && view.length < SLOTS; end -= agg) {
@@ -345,61 +416,157 @@ function refresh() {
     view.unshift({
       o: g[0].o, c: g[g.length - 1].c,
       h: Math.max(...g.map((k) => k.h)), l: Math.min(...g.map((k) => k.l)),
-      v: g.reduce((s, k) => s + k.v, 0),
+      v: sum(g.map((k) => k.v)),
     })
   }
-  lo = Math.min(...view.map((k) => k.l))
-  hi = Math.max(...view.map((k) => k.h))
+  const span = Math.max(...view.map((k) => k.h)) - Math.min(...view.map((k) => k.l))
+  lo = Math.min(...view.map((k) => k.l)) - span * 0.06
+  hi = Math.max(...view.map((k) => k.h)) + span * 0.06
+  vmax = Math.max(...view.map((k) => k.v))
 }
 refresh()
 
 const cx = (i: number) => ((i + 0.5) * PW) / view.length
-const y = (v: number) => 4 + (1 - (v - lo) / (hi - lo)) * 122
+const y = (v: number) => 4 + (1 - (v - lo) / (hi - lo)) * (PH - 8)
 const pick = (i: number) => view[Math.min(i, view.length - 1)]
-const color = (i: number) => (pick(i).c >= pick(i).o ? '#2563eb' : '#ff3f00')
+const color = (i: number) => (pick(i).c >= pick(i).o ? UP : DOWN)
+const last = () => view[view.length - 1]
+const lastColor = () => (last().c >= last().o ? UP : DOWN)
+const slotWidth = () => (PW / view.length) * 0.62
+
+// Simple moving average of the last five closes.
+const sma = () =>
+  view
+    .map((_, i) => [cx(i), y(sum(view.slice(i - 4, i + 1).map((k) => k.c)) / 5)])
+    .filter((_, i) => i >= 4)
+    .map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1))
+    .join(' ')
+
+// The live timer moves the newest raw candle; every 8th tick opens a new one.
+function tick() {
+  if (!live) return
+  const k = raw[raw.length - 1]
+  k.c += (random() - 0.5) * 2.4
+  k.h = Math.max(k.h, k.c)
+  k.l = Math.min(k.l, k.c)
+  k.v += random() * 8
+  if (++n % 8 === 0) {
+    raw.push(next(k.c))
+    raw.shift()
+  }
+  refresh()
+  update('candles')
+}
+// Run a change, refit the scales, update only this scope.
+const set = (change: () => void) => () => { change(); refresh(); update('candles') }
+
+const muted = { 'font-family': 'ui-monospace, monospace', 'font-size': 11, fill: '#8a8a8a' }
 
 // A fixed number of slots, each reading its own candle. When
-// fewer candles exist, the extra slots fade out. The live timer
-// mutates the newest raw candle, refreshes and updates the scope.
+// fewer candles exist, the extra slots fade out.
 export const Candles = () =>
   div(
+    { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px', width: '100%', maxWidth: '380px' } },
     scope('candles'),
     svgSvg(
       {
-        viewBox: '0 0 320 196', width: '320', height: '196',
+        viewBox: '0 0 320 196', role: 'img', 'aria-label': 'Candlestick chart',
+        style: { width: '100%', height: 'auto', overflow: 'visible' },
         onMount: () => {
-          const timer = setInterval(() => {
-            const k = raw[raw.length - 1]
-            k.c += (Math.random() - 0.5) * 2.4
-            k.h = Math.max(k.h, k.c)
-            k.l = Math.min(k.l, k.c)
-            refresh()
-            update('candles')
-          }, 450)
+          const timer = setInterval(tick, 450)
           return () => clearInterval(timer)
         },
       },
+      // Price grid
+      ...[0.1, 0.35, 0.6, 0.85].map((f) =>
+        gSvg(
+          lineSvg({
+            x1: 0, x2: PW, stroke: '#ddd', 'stroke-dasharray': '2 4',
+            y1: () => y(lo + (hi - lo) * f) + 0.5, y2: () => y(lo + (hi - lo) * f) + 0.5,
+          }),
+          textSvg(muted, { x: PW + 4, y: () => y(lo + (hi - lo) * f) + 4 }, () => (lo + (hi - lo) * f).toFixed(0)),
+        ),
+      ),
       ...Array.from({ length: SLOTS }, (_, i) =>
         gSvg(
           { opacity: () => (i < view.length ? 1 : 0) },
+          // wick
           lineSvg({
             'stroke-width': 1.4, stroke: () => color(i),
             x1: () => cx(i), x2: () => cx(i),
             y1: () => y(pick(i).h), y2: () => y(pick(i).l),
           }),
+          // body
           rectSvg({
-            fill: () => color(i),
-            x: () => cx(i) - (PW / view.length) * 0.31,
-            width: () => (PW / view.length) * 0.62,
+            rx: 1, fill: () => color(i),
+            x: () => cx(i) - slotWidth() / 2,
+            width: () => slotWidth(),
             y: () => y(Math.max(pick(i).o, pick(i).c)),
             height: () => Math.max(1.5, Math.abs(y(pick(i).o) - y(pick(i).c))),
           }),
+          // volume
+          rectSvg({
+            'fill-opacity': 0.35, fill: () => color(i),
+            x: () => cx(i) - slotWidth() / 2,
+            width: () => slotWidth(),
+            y: () => H - 2 - (pick(i).v / vmax) * 38,
+            height: () => (pick(i).v / vmax) * 38,
+          }),
         ),
       ),
+      pathSvg({
+        fill: 'none', stroke: '#ff8a00', 'stroke-width': 1.6, 'stroke-linejoin': 'round',
+        opacity: () => (showSma ? 1 : 0), d: sma,
+      }),
+      // The last price: a dashed line and a tag on the axis.
+      lineSvg({
+        'stroke-dasharray': '3 3', x1: 0, x2: PW,
+        stroke: lastColor, y1: () => y(last().c), y2: () => y(last().c),
+      }),
+      rectSvg({ rx: 3, x: PW + 1, width: 37, height: 14, fill: lastColor, y: () => y(last().c) - 7 }),
+      textSvg(muted, { x: PW + 4, style: { fill: '#fff' }, y: () => y(last().c) + 4 }, () => last().c.toFixed(1)),
+      // The hover cursor
+      gSvg(
+        { stroke: '#8a8a8a', 'pointer-events': 'none', opacity: () => (hover === null ? 0 : 1) },
+        lineSvg({ y1: 0, y2: H, x1: () => cx(hover ?? 0), x2: () => cx(hover ?? 0) }),
+        lineSvg({ x1: 0, x2: PW, y1: () => y(pick(hover ?? 0).c), y2: () => y(pick(hover ?? 0).c) }),
+      ),
+      // A transparent rect on top follows the pointer.
+      rectSvg({
+        x: 0, y: 0, width: PW, height: H, fill: 'transparent', style: { cursor: 'crosshair', touchAction: 'none' },
+        onPointerMove: (e) => {
+          const box = e.currentTarget.getBoundingClientRect()
+          const i = Math.floor(((e.clientX - box.left) / box.width) * view.length)
+          hover = Math.max(0, Math.min(view.length - 1, i))
+          update('candles')
+        },
+        onPointerLeave: () => { hover = null; update('candles') },
+      }),
     ),
-    button('1m', { onClick: () => { agg = 1; refresh(); update('candles') } }),
-    button('3m', { onClick: () => { agg = 3; refresh(); update('candles') } }),
-    button('5m', { onClick: () => { agg = 5; refresh(); update('candles') } }),
+    div(
+      { style: { fontFamily: 'ui-monospace, monospace', fontSize: '12px', color: '#8a8a8a', textAlign: 'center', minHeight: '36px' } },
+      () => {
+        const k = pick(hover ?? view.length - 1)
+        return 'O ' + k.o.toFixed(1) + ' · H ' + k.h.toFixed(1) + ' · L ' + k.l.toFixed(1) +
+          ' · C ' + k.c.toFixed(1) + ' · ' + (((k.c - k.o) / k.o) * 100).toFixed(2) + '%'
+      },
+    ),
+    div(
+      { style: { display: 'flex', gap: '8px', justifyContent: 'center' } },
+      ...[1, 3, 5].map((m) =>
+        button(m + 'm', {
+          'aria-pressed': () => String(agg === m),
+          style: () => ({ outline: agg === m ? '2px solid currentColor' : 'none', outlineOffset: '2px' }),
+          onClick: set(() => { agg = m; hover = null }),
+        }),
+      ),
+      button('SMA', {
+        'aria-pressed': () => String(showSma),
+        style: () => ({ outline: showSma ? '2px solid currentColor' : 'none', outlineOffset: '2px' }),
+        onClick: set(() => { showSma = !showSma }),
+      }),
+      button(() => (live ? 'Live' : 'Paused'), { onClick: set(() => { live = !live }) }),
+    ),
   )`;
 
 // ── Bar chart race ───────────────────────────────────────────────────────
@@ -484,18 +651,26 @@ function Race() {
 
 const RACE_CODE = `import 'nuclo'
 
+const W = 320
 const ROW = 24
 const TOP = 6
+const LABEL = 68
+const H = TOP * ROW + 6
 const KEYS = 13
+const FIRST = 2012
 const names = ['Atlas', 'Borealis', 'Cobalt', 'Delta', 'Ember', 'Fjord', 'Garnet', 'Helix', 'Indigo', 'Juno']
+
+// Seeded random numbers, so the first frame is always the same.
+let seed = 23
+const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647
 
 // One value per name per year. Each name grows at its own pace.
 const series = names.map(() => {
-  let v = 20 + Math.random() * 60
-  const g = -0.04 + Math.random() * 0.34
+  let v = 20 + random() * 60
+  const g = -0.04 + random() * 0.34
   return Array.from({ length: KEYS }, () => {
     const out = v
-    v *= 1 + g + (Math.random() - 0.5) * 0.3
+    v *= 1 + g + (random() - 0.5) * 0.3
     return out
   })
 })
@@ -516,6 +691,9 @@ function measure() {
 }
 measure()
 
+const year = () => FIRST + Math.floor(t + 0.001)
+const barWidth = (i: number) => Math.max(2, (value[i] / peak) * (W - LABEL - 44))
+
 // The list never reorders: every bar keeps its place in the DOM
 // and moves with translateY(rank), so a CSS transition slides it
 // to its new row. Names below the top six fade out below the chart.
@@ -523,10 +701,12 @@ measure()
 // every frame. The frame loop updates only the 'race' scope.
 export const Race = () =>
   div(
+    { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px', width: '100%', maxWidth: '380px' } },
     scope('race'),
     svgSvg(
       {
-        viewBox: '0 0 320 150', width: '320', height: '150',
+        viewBox: '0 0 320 150', role: 'img', 'aria-label': 'Bar chart race',
+        style: { width: '100%', height: 'auto', overflow: 'visible' },
         onMount: () => {
           let id = requestAnimationFrame(function frame() {
             if (playing) {
@@ -540,41 +720,58 @@ export const Race = () =>
           return () => cancelAnimationFrame(id)
         },
       },
+      // The big year sits behind the bars.
+      textSvg(
+        { x: W - 4, y: H - 8, 'text-anchor': 'end', 'font-size': 54, 'font-weight': 800, 'fill-opacity': 0.12, 'pointer-events': 'none' },
+        () => year(),
+      ),
       ...names.map((name, i) =>
         gSvg(
           {
             opacity: () => (rank[i] < TOP ? 1 : 0),
             style: () => ({
-              transition: 'transform 0.45s ease, opacity 0.3s',
+              transition: 'transform 0.45s ease, opacity 0.3s ease',
               transform: 'translateY(' + Math.min(rank[i], TOP) * ROW + 'px)',
             }),
           },
-          textSvg({ x: 62, y: 15, 'text-anchor': 'end' }, name),
+          textSvg({ x: LABEL - 6, y: 15, 'text-anchor': 'end', 'font-size': 11, 'font-weight': 600 }, name),
           rectSvg({
-            x: 68, y: 3, height: ROW - 6, rx: 4,
+            x: LABEL, y: 3, height: ROW - 6, rx: 4,
             fill: 'hsl(' + ((i * 47 + 12) % 360) + ' 72% 52%)',
-            width: () => Math.max(2, (value[i] / peak) * 208),
+            width: () => barWidth(i),
           }),
           textSvg(
-            { y: 15, x: () => 68 + Math.max(2, (value[i] / peak) * 208) + 5 },
+            { y: 15, 'font-family': 'ui-monospace, monospace', 'font-size': 11, fill: '#8a8a8a', x: () => LABEL + barWidth(i) + 5 },
             () => Math.round(value[i]),
           ),
         ),
       ),
     ),
-    button(() => (playing ? 'Pause' : 'Play'), {
-      onClick: () => { playing = !playing; update('race') },
-    }),
-    input({
-      type: 'range', min: 0, max: (KEYS - 1) * 100,
-      value: () => Math.round(t * 100),
-      onInput: (e) => {
-        t = Number(e.currentTarget.value) / 100
-        playing = false
-        measure()
-        update('race')
-      },
-    }),
+    div(
+      { style: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '8px' } },
+      button(() => (playing ? 'Pause' : t >= KEYS - 1 ? 'Replay' : 'Play'), {
+        onClick: () => {
+          if (t >= KEYS - 1) { t = 0; measure() }
+          playing = !playing
+          update('race')
+        },
+      }),
+      input({
+        type: 'range', min: '0', max: String((KEYS - 1) * 100), step: '1', 'aria-label': 'Year',
+        style: { width: '100%', maxWidth: '320px' },
+        value: () => String(Math.round(t * 100)),
+        onInput: (e) => {
+          t = Number(e.currentTarget.value) / 100
+          playing = false
+          measure()
+          update('race')
+        },
+      }),
+    ),
+    div(
+      { style: { fontFamily: 'ui-monospace, monospace', fontSize: '12px', color: '#8a8a8a', textAlign: 'center' } },
+      () => year() + ' · ' + names[rank.indexOf(0)] + ' leads · sample data',
+    ),
   )`;
 
 export const LIVE_CHART_EXAMPLES: SvgExample[] = [

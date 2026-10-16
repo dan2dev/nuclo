@@ -193,11 +193,18 @@ let points = [20, 45, 30, 70, 55, 85, 60]
 
 const x = (i: number) => (i / (points.length - 1)) * 300 + 10
 const y = (value: number) => 140 - value * 1.2
+const rand = () => Math.round(5 + Math.random() * 95)
 
 // A path's d is a plain string, so build it from the data.
 const line = () =>
   points.map((v, i) => \`\${i ? 'L' : 'M'}\${x(i)},\${y(v)}\`).join(' ')
 const area = () => \`\${line()} L\${x(6)},150 L\${x(0)},150 Z\`
+
+// Each point becomes the average of itself and its neighbours.
+const smooth = () =>
+  points.map((v, i, all) =>
+    Math.round((all[i - 1] ?? v) * 0.25 + v * 0.5 + (all[i + 1] ?? v) * 0.25),
+  )
 
 export const LineChart = () =>
   div(
@@ -207,16 +214,27 @@ export const LineChart = () =>
         linearGradientSvg(
           { id: 'fill', x1: 0, y1: 0, x2: 0, y2: 1 },
           stopSvg({
-            offset: 0, 'stop-color': '#ff3f00', 'stop-opacity': 0.35,
+            offset: '0', 'stop-color': '#ff3f00', 'stop-opacity': 0.35,
           }),
           stopSvg({
-            offset: 1, 'stop-color': '#ff3f00', 'stop-opacity': 0,
+            offset: '1', 'stop-color': '#ff3f00', 'stop-opacity': 0,
           }),
         ),
       ),
-      pathSvg({ fill: 'url(#fill)', d: area }),
+      // Grid lines at fixed values.
+      ...[0, 25, 50, 75, 100].map((v) =>
+        lineSvg({
+          x1: 10, x2: 310, y1: y(v) + 0.5, y2: y(v) + 0.5,
+          stroke: '#ddd', 'stroke-dasharray': v ? '2 4' : '',
+        }),
+      ),
       pathSvg({
-        fill: 'none', stroke: '#ff3f00', 'stroke-width': 2.5, d: line,
+        fill: 'url(#fill)', stroke: 'none', d: area,
+        style: { transition: 'd 0.4s' },
+      }),
+      pathSvg({
+        fill: 'none', stroke: '#ff3f00', 'stroke-width': 2.5,
+        'stroke-linejoin': 'round', style: { transition: 'd 0.4s' }, d: line,
       }),
       ...points.map((_, i) =>
         circleSvg({
@@ -224,17 +242,19 @@ export const LineChart = () =>
           fill: '#fff',
           stroke: '#ff3f00',
           'stroke-width': 2,
+          style: { transition: 'cx 0.4s, cy 0.4s' },
           cx: x(i),
           cy: () => y(points[i]),
         }),
       ),
     ),
-    button('New data', {
-      onClick: () => {
-        points = points.map(() => Math.round(5 + Math.random() * 95))
-        update()
-      },
-    }),
+    div(
+      { style: { display: 'flex', gap: '8px', justifyContent: 'center' } },
+      button('New data', {
+        onClick: () => { points = points.map(rand); update() },
+      }),
+      button('Smooth', { onClick: () => { points = smooth(); update() } }),
+    ),
   )`;
 
 // ── Donut chart ──────────────────────────────────────────────────────────
@@ -278,7 +298,8 @@ const DONUT_CHART_CODE = `import 'nuclo'
 
 const names = ['Core', 'Router', 'Docs']
 const colors = ['#ff3f00', '#2563eb', '#ff8a00']
-let parts = [52, 18, 30]
+const start = [52, 18, 30]
+let parts = [...start]
 
 const C = 2 * Math.PI * 54 // the ring's circumference
 const total = () => parts.reduce((a, b) => a + b, 0)
@@ -286,29 +307,44 @@ const share = (i: number) => parts[i] / total()
 const before = (i: number) =>
   parts.slice(0, i).reduce((a, b) => a + b, 0) / total()
 
+const ring = { cx: 80, cy: 80, r: 54, fill: 'none', 'stroke-width': 18 }
+
 // One circle per slice: the dash array is its share of the ring,
 // the dash offset moves it past the slices before it.
 export const DonutChart = () =>
   div(
     svgSvg(
       { viewBox: '0 0 160 160', width: '160', height: '160' },
+      circleSvg(ring, { stroke: '#eee' }),
       ...parts.map((_, i) =>
-        circleSvg({
-          cx: 80, cy: 80, r: 54, fill: 'none', 'stroke-width': 18,
+        circleSvg(ring, {
           stroke: colors[i],
           transform: 'rotate(-90 80 80)',
+          style: {
+            transition: 'stroke-dasharray 0.5s, stroke-dashoffset 0.5s',
+          },
           'stroke-dasharray': () => \`\${share(i) * C} \${C}\`,
           'stroke-dashoffset': () => -before(i) * C,
         }),
       ),
       textSvg(
-        { x: 80, y: 80, 'text-anchor': 'middle' },
-        { 'dominant-baseline': 'middle' },
+        {
+          x: 80, y: 80, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
+          'font-size': 22, 'font-weight': 700,
+        },
         () => \`\${Math.round(share(0) * 100)}%\`,
       ),
+      textSvg(
+        { x: 80, y: 102, 'text-anchor': 'middle', 'font-size': 11 },
+        names[0],
+      ),
     ),
-    ...names.map((name, i) =>
-      button(\`+ \${name}\`, { onClick: () => { parts[i] += 10; update() } }),
+    div(
+      { style: { display: 'flex', gap: '8px', justifyContent: 'center' } },
+      ...names.map((name, i) =>
+        button(\`+ \${name}\`, { onClick: () => { parts[i] += 10; update() } }),
+      ),
+      button('Reset', { onClick: () => { parts = [...start]; update() } }),
     ),
   )`;
 
@@ -365,6 +401,11 @@ let svg: SVGSVGElement | undefined
 let paused = false
 let speed = 1
 
+const setSpeed = (next: number) => {
+  speed = next
+  update()
+}
+
 // SMIL elements are builders too: animateSvg drives one attribute,
 // animateTransformSvg a transform. A modifier function receives the
 // element, here to keep the <svg> for pauseAnimations().
@@ -372,7 +413,12 @@ export const Orbit = () =>
   div(
     svgSvg(
       { viewBox: '0 0 200 200', width: '200', height: '200' },
-      (el) => { svg = el },
+      (el: SVGSVGElement) => { svg = el },
+      circleSvg({
+        cx: 100, cy: 100, r: 70, fill: 'none', stroke: '#eee',
+        'stroke-width': 1.5, 'stroke-dasharray': '3 5',
+      }),
+      // The sun pulses.
       circleSvg(
         { cx: 100, cy: 100, r: 22, fill: '#ff3f00' },
         animateSvg({
@@ -380,6 +426,7 @@ export const Orbit = () =>
           repeatCount: 'indefinite',
         }),
       ),
+      // The planet orbits; its moon spins around it.
       gSvg(
         animateTransformSvg({
           attributeName: 'transform', type: 'rotate',
@@ -387,16 +434,29 @@ export const Orbit = () =>
           dur: () => \`\${6 / speed}s\`, // dynamic: update() changes the speed
         }),
         circleSvg({ cx: 170, cy: 100, r: 10, fill: '#2563eb' }),
+        gSvg(
+          animateTransformSvg({
+            attributeName: 'transform', type: 'rotate',
+            from: '0 170 100', to: '360 170 100', dur: '1.5s',
+            repeatCount: 'indefinite',
+          }),
+          circleSvg({ cx: 188, cy: 100, r: 4, fill: '#ff8a00' }),
+        ),
       ),
     ),
-    button(() => (paused ? 'Play' : 'Pause'), {
-      onClick: () => {
-        paused = !paused
-        paused ? svg?.pauseAnimations() : svg?.unpauseAnimations()
-        update()
-      },
-    }),
-    button('Faster', { onClick: () => { speed *= 2; update() } }),
+    div(
+      { style: { display: 'flex', gap: '8px', justifyContent: 'center' } },
+      button(() => (paused ? 'Play' : 'Pause'), {
+        onClick: () => {
+          paused = !paused
+          paused ? svg?.pauseAnimations() : svg?.unpauseAnimations()
+          update()
+        },
+      }),
+      button('Slower', { onClick: () => setSpeed(Math.max(0.25, speed / 2)) }),
+      button(() => \`\${speed}×\`, { onClick: () => setSpeed(1) }),
+      button('Faster', { onClick: () => setSpeed(Math.min(8, speed * 2)) }),
+    ),
   )`;
 
 // ── Gauge ────────────────────────────────────────────────────────────────
@@ -526,7 +586,8 @@ function RadarChart() {
 const RADAR_CODE = `import 'nuclo'
 
 const axes = ['Speed', 'Size', 'DX', 'SSR', 'Docs']
-let values = [90, 95, 80, 70, 60]
+const start = [90, 95, 80, 70, 60]
+let values = [...start]
 
 // Axis i points at -90° + i * 72°; a value is a distance along it.
 const angle = (i: number) => ((-90 + i * 72) * Math.PI) / 180
@@ -549,11 +610,25 @@ export const RadarChart = () =>
       ...[25, 50, 75, 100].map((v) =>
         pathSvg({ d: ring(v), fill: 'none', stroke: '#ddd' }),
       ),
+      ...axes.map((_, i) =>
+        lineSvg({
+          x1: 100, y1: 100, x2: px(i, 100), y2: py(i, 100), stroke: '#ddd',
+        }),
+      ),
       pathSvg({
         fill: '#ff3f00', 'fill-opacity': 0.25, stroke: '#ff3f00',
-        'stroke-width': 2, style: { transition: 'd 0.4s' },
+        'stroke-width': 2, 'stroke-linejoin': 'round',
+        style: { transition: 'd 0.4s' },
         d: shape,
       }),
+      ...axes.map((_, i) =>
+        circleSvg({
+          r: 3.5, fill: '#fff', stroke: '#ff3f00', 'stroke-width': 2,
+          style: { transition: 'cx 0.4s, cy 0.4s' },
+          cx: () => px(i, values[i]),
+          cy: () => py(i, values[i]),
+        }),
+      ),
       ...axes.map((name, i) =>
         textSvg(
           { x: px(i, 126), y: py(i, 126) + 4, 'text-anchor': 'middle' },
@@ -562,12 +637,16 @@ export const RadarChart = () =>
         ),
       ),
     ),
-    button('Randomize', {
-      onClick: () => {
-        values = values.map(() => Math.round(20 + Math.random() * 80))
-        update()
-      },
-    }),
+    div(
+      { style: { display: 'flex', gap: '8px', justifyContent: 'center' } },
+      button('Randomize', {
+        onClick: () => {
+          values = values.map(() => Math.round(20 + Math.random() * 80))
+          update()
+        },
+      }),
+      button('Reset', { onClick: () => { values = [...start]; update() } }),
+    ),
   )`;
 
 // ── Heatmap ──────────────────────────────────────────────────────────────
@@ -610,9 +689,8 @@ const HEATMAP_CODE = `import 'nuclo'
 const COLS = 14
 const ROWS = 7
 const OPACITY = [0.08, 0.3, 0.55, 0.8, 1]
-let levels = Array.from({ length: COLS * ROWS }, () =>
-  Math.floor(Math.random() * 5),
-)
+const random = () => Math.floor(Math.random() * 5)
+let levels = Array.from({ length: COLS * ROWS }, random)
 
 // One rect per cell, column by column. Its fill-opacity is a
 // function of the cell's level, and a titleSvg child is the
@@ -628,6 +706,7 @@ export const Heatmap = () =>
             y: (i % ROWS) * 17,
             width: 14, height: 14, rx: 3,
             fill: '#ff3f00',
+            style: { cursor: 'pointer', transition: 'fill-opacity 0.2s' },
             'fill-opacity': () => OPACITY[levels[i]],
             onClick: () => { levels[i] = (levels[i] + 1) % 5; update() },
           },
@@ -635,13 +714,16 @@ export const Heatmap = () =>
         ),
       ),
     ),
-    p(() => \`\${levels.reduce((a, b) => a + b, 0)} commits\`),
-    button('Shuffle', {
-      onClick: () => {
-        levels = levels.map(() => Math.floor(Math.random() * 5))
-        update()
-      },
-    }),
+    div(() => \`\${levels.reduce((a, b) => a + b, 0)} commits · click a cell\`),
+    div(
+      { style: { display: 'flex', gap: '8px', justifyContent: 'center' } },
+      button('Shuffle', {
+        onClick: () => { levels = levels.map(random); update() },
+      }),
+      button('Clear', {
+        onClick: () => { levels = levels.map(() => 0); update() },
+      }),
+    ),
   )`;
 
 // ── Hover tooltip ────────────────────────────────────────────────────────
@@ -693,10 +775,11 @@ function Scatter() {
 
 const SCATTER_CODE = `import 'nuclo'
 
-let points = Array.from({ length: 24 }, () => ({
+const random = () => ({
   x: Math.round(Math.random() * 100),
   y: Math.round(Math.random() * 100),
-}))
+})
+let points = Array.from({ length: 24 }, random)
 let active: number | null = null
 
 const sx = (v: number) => 16 + (v / 100) * 288
@@ -712,10 +795,14 @@ export const Scatter = () =>
         viewBox: '0 0 320 180', width: '320', height: '180',
         onPointerLeave: () => { active = null; update() },
       },
+      lineSvg({ x1: 16, y1: 164, x2: 304, y2: 164, stroke: '#ddd' }),
+      lineSvg({ x1: 16, y1: 16, x2: 16, y2: 164, stroke: '#ddd' }),
       ...points.map((_, i) =>
         circleSvg({
           fill: '#ff3f00',
-          style: { transition: 'r 0.15s, fill-opacity 0.15s' },
+          style: {
+            cursor: 'pointer', transition: 'r 0.15s, fill-opacity 0.15s',
+          },
           cx: () => sx(points[i].x),
           cy: () => sy(points[i].y),
           r: () => (active === i ? 7 : 4.5),
@@ -741,6 +828,12 @@ export const Scatter = () =>
           () => (active === null ? '' : \`\${points[active].x}, \${points[active].y}\`),
         ),
       ),
+    ),
+    div(
+      { style: { display: 'flex', gap: '8px', justifyContent: 'center' } },
+      button('New data', {
+        onClick: () => { points = points.map(random); update() },
+      }),
     ),
   )`;
 
@@ -970,11 +1063,12 @@ const line = (y: number, transform: () => string) =>
   })
 
 // Menu → cross: each line's CSS transform is a function of \`open\`.
-export const MenuIcon = () =>
+const MenuIcon = () =>
   svgSvg(
     {
-      viewBox: '0 0 24 24', width: '48', height: '48', fill: 'none',
+      viewBox: '0 0 24 24', width: '64', height: '64', fill: 'none',
       stroke: '#222', 'stroke-width': 2, 'stroke-linecap': 'round',
+      style: { cursor: 'pointer' },
       onClick: () => { open = !open; update() },
     },
     line(6, () => (open ? 'translateY(6px) rotate(45deg)' : '')),
@@ -984,11 +1078,12 @@ export const MenuIcon = () =>
 
 // Heart: the fill is a function of \`liked\`. A SMIL scale that
 // begins on click pops it, with no state of its own.
-export const HeartIcon = () =>
+const HeartIcon = () =>
   svgSvg(
     {
-      viewBox: '0 0 24 24', width: '48', height: '48',
+      viewBox: '0 0 24 24', width: '64', height: '64',
       stroke: '#ff3f00', 'stroke-width': 2, 'stroke-linejoin': 'round',
+      style: { cursor: 'pointer' },
       onClick: () => { liked = !liked; update() },
     },
     gSvg(
@@ -1003,6 +1098,20 @@ export const HeartIcon = () =>
         style: { transition: 'fill 0.2s' },
         fill: () => (liked ? '#ff3f00' : 'none'),
       }),
+    ),
+  )
+
+// Both icons side by side, and a text that reads the same two variables.
+export const IconToggles = () =>
+  div(
+    div(
+      { style: { display: 'flex', gap: '28px', justifyContent: 'center' } },
+      MenuIcon(),
+      HeartIcon(),
+    ),
+    div(
+      { style: { textAlign: 'center', fontSize: '12px', color: '#666' } },
+      () => \`menu \${open ? 'open' : 'closed'} · \${liked ? 'liked' : 'not liked'}\`,
     ),
   )`;
 

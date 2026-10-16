@@ -55,23 +55,30 @@ function addTodo() {
   update()
 }
 
+// A filter button: pressed while its filter is the active one
+function FilterButton(label: string, next: typeof filter) {
+  return button(label, {
+    "aria-pressed": () => String(filter === next),
+    style: () => ({ fontWeight: filter === next ? "700" : "400" }),
+    onClick: () => { filter = next; update() },
+  })
+}
+
 export function TodoList() {
   return div(
     input(
-      { placeholder: "Add a task..." },
+      // value: () => text keeps the input in sync, so Add can clear it
+      { placeholder: "Add a task...", value: () => text },
       {
-        onInput: (event) => {
-          text = (event.target as HTMLInputElement).value
-        },
+        onInput: (event) => { text = (event.target as HTMLInputElement).value },
+        onKeyDown: (event) => { if (event.key === "Enter") addTodo() },
       },
     ),
     button("Add", { onClick: addTodo }),
     div(
-      button("All", { onClick: () => { filter = "all"; update() } }),
-      button("Active", {
-        onClick: () => { filter = "active"; update() },
-      }),
-      button("Done", { onClick: () => { filter = "done"; update() } }),
+      FilterButton("All", "all"),
+      FilterButton("Active", "active"),
+      FilterButton("Done", "done"),
     ),
     ul(
       list(
@@ -81,11 +88,19 @@ export function TodoList() {
             { type: "checkbox", checked: () => todo.done },
             { onChange: () => { todo.done = !todo.done; update() } },
           ),
-          span(() => todo.done ? todo.text + " done" : todo.text),
-          button("x", { onClick: () => {
-            todos = todos.filter((item) => item.id !== todo.id)
-            update()
-          } }),
+          span(todo.text, {
+            style: () => ({
+              textDecoration: todo.done ? "line-through" : "none",
+              opacity: todo.done ? "0.6" : "1",
+            }),
+          }),
+          button("✕", {
+            "aria-label": "Delete",
+            onClick: () => {
+              todos = todos.filter((item) => item.id !== todo.id)
+              update()
+            },
+          }),
         ),
       ),
       when(() => visible().length === 0, div("No tasks yet.")),
@@ -159,7 +174,7 @@ const { css, cx } = createCss({
   },
 })
 
-const baseButton = css("content-examples-baseButton", {
+const baseButton = css({
   px: 14,
   py: 9,
   rounded: 6,
@@ -169,7 +184,7 @@ const baseButton = css("content-examples-baseButton", {
   cursor: "pointer",
 })
 
-const selectedButton = css("content-examples-selectedButton", {
+const selectedButton = css({
   bg: "primary",
   color: "white",
   borderColor: "primary",
@@ -178,10 +193,17 @@ const selectedButton = css("content-examples-selectedButton", {
 let selected = false
 
 export function StyledButton() {
-  return button(
-    () => cx(baseButton, selected && selectedButton),
-    () => selected ? "Selected" : "Select",
-    { onClick: () => { selected = !selected; update() } },
+  return div(
+    p(
+      code("css()"), " creates the base class. ",
+      code("cx()"), " adds the selected class only when state changes.",
+    ),
+    button(
+      // cx() joins the classes that are truthy
+      () => cx(baseButton, selected ? selectedButton : null),
+      () => selected ? "Selected" : "Select",
+      { onClick: () => { selected = !selected; update() } },
+    ),
   )
 }`,
   },

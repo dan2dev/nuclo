@@ -365,7 +365,7 @@ export const Search = () =>
         if (e.key === 'Escape') { query = ''; update() }
       },
     }),
-    p(() => (query ? \`query = "\${query}"\` : 'Type, then press Escape.')),
+    p(() => (query ? \`query = "\${query}"\` : 'Type something, then press Escape.')),
   )
 `, Events),
 

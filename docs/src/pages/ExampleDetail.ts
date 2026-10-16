@@ -59,6 +59,16 @@ function lockScroll() {
   return () => { if (--locks === 0) document.documentElement.style.overflow = ""; };
 }
 
+/**
+ * Opens the example on StackBlitz as a project that runs. The code that builds the project, with the sources
+ * it ships, is loaded when the button is clicked, never before. A fragment with no component to render
+ * (css's createCss, router-match) gets no button; examples/stackblitz.ts applies the same rule.
+ */
+const StackBlitz = (ex: Example) =>
+  ex.files || /^(?:export )?(?:function|const) [A-Z]/m.test(ex.code)
+    ? button(es.standaloneLaunch, { type: "button", title: `Open ${ex.title} in StackBlitz`, onClick: () => void import("./examples/stackblitz.ts").then((m) => m.openExampleInStackBlitz(ex)) }, "Open in StackBlitz")
+    : null;
+
 function Icon(d: string) {
   return svgSvg(
     { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" },
@@ -158,6 +168,7 @@ function AppLayout(ex: Example) {
       div(
         es.appLinks,
         a(es.standaloneLaunch, { href: router.href(`/apps/${ex.id}`), target: "_blank", rel: "noopener", title: `Open ${ex.title} in a new tab`, "aria-label": `Open ${ex.title} in standalone in a new tab` }, "Open in standalone", Icon("M14 3h7v7 M21 3l-9 9 M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5")),
+        StackBlitz(ex),
         ex.docs ? a(es.appDocs, { href: router.href(`/docs#${ex.docs}`) }, "Read the docs →") : null,
       ),
     ),
@@ -192,7 +203,7 @@ export default function ExampleDetail(ctx: RouteContext, { data: ex, layer }: Pa
       ex.install
         ? div(es.installNote, { role: "note" }, strong("Separate package:"), span(code(ex.install), " is not part of nuclo and must be installed:"), code(`npm install nuclo ${ex.install}`))
         : null,
-      ex.docs ? a(es.detailDocs, { href: router.href(`/docs#${ex.docs}`) }, "Read the docs →") : null,
+      div(es.detailLinks, StackBlitz(ex), ex.docs ? a(es.appDocs, { href: router.href(`/docs#${ex.docs}`) }, "Read the docs →") : null),
     ),
     div(
       es.panes,

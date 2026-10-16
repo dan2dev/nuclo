@@ -96,7 +96,19 @@ const PROPS_CODE = `import 'nuclo'
 
 let cart = 2
 let user = { name: 'Ada', plan: 'Pro' }
+let updates = 0
+let mounts = 0
 const price = () => cart * 9
+
+// Every component below carries mounted(). It counts each time a node
+// is built, and refreshes only the "stats" scope (not the whole page).
+const mounted = () =>
+  on('mount', () => {
+    mounts++
+    queueMicrotask(() => update('stats'))
+  })
+const commit = () => { updates++; update() }
+const row = { style: { display: 'flex', flexWrap: 'wrap', gap: '6px' } }
 
 // A component is a plain function. What it is passed decides what
 // can change later:
@@ -106,29 +118,44 @@ const price = () => cart * 9
 // it again; it only re-runs the functions inside it.
 
 function Stat(label: string, value: () => string | number) {
-  return span(label, ' ', b(() => String(value())))
+  return span(mounted(), label, ' ', b(() => String(value())))
 }
 
 // Static: built with a snapshot. Rename the user and it stays "Ada".
 function Profile(u: { name: string; plan: string }) {
-  return div(h3(u.name), small(\`plan \${u.plan}\`))
+  return div(
+    mounted(),
+    div(h3(u.name), small('static: built with its values')),
+    span(\`plan \${u.plan}\`),
+  )
 }
 
 // Dynamic: reads through a function, so a new user object shows up.
 function LiveProfile(u: () => { name: string; plan: string }) {
-  return div(h3(() => u().name), small(() => \`plan \${u().plan}\`))
+  return div(
+    mounted(),
+    div(h3(() => u().name), small('dynamic: reads a function')),
+    span(() => \`plan \${u().plan}\`),
+  )
 }
 
 export const App = () =>
   div(
-    Stat('items', () => cart),
-    Stat('price', () => \`$\${price()}\`),
+    div(scope('stats'), span('mounts ', b(() => String(mounts))), span('updates ', b(() => String(updates)))),
+    div(row, Stat('items', () => cart), Stat('price', () => \`$\${price()}\`), Stat('user', () => user.name)),
     Profile(user),
     LiveProfile(() => user),
-    button('Add item', { onClick: () => { cart++; update() } }),
-    button('Rename', {
-      onClick: () => { user = { ...user, name: 'Grace' }; update() },
-    }),
+    div(
+      row,
+      button('Add item', { onClick: () => { cart++; commit() } }),
+      button('Rename user', {
+        onClick: () => { user = { ...user, name: user.name === 'Ada' ? 'Grace' : 'Ada' }; commit() },
+      }),
+      button('Toggle plan', {
+        onClick: () => { user = { ...user, plan: user.plan === 'Pro' ? 'Free' : 'Pro' }; commit() },
+      }),
+    ),
+    p('The mount count never moves: update() re-runs the functions and patches text. The static card keeps the values it was built with, by design.'),
   )`;
 
 // ── Children and modifiers ───────────────────────────────────────────────
@@ -168,12 +195,21 @@ const CHILDREN_CODE = `import 'nuclo'
 
 let open = true
 let saved = 0
+let mounts = 0
+
+// Counts every Card built, refreshing only the "stats" scope.
+const mounted = () =>
+  on('mount', () => {
+    mounts++
+    queueMicrotask(() => update('stats'))
+  })
+const row = { style: { display: 'flex', flexWrap: 'wrap', gap: '6px' } }
 
 // Children are whatever a tag builder accepts: builders, text, attribute
 // objects and modifiers. A component forwards them with a spread, so a
 // caller can add attributes or hooks without the component knowing.
-function Card(title: string | (() => string), ...children: NodeModLike[]) {
-  return div({ className: 'card' }, h3(title), ...children)
+function Card(title: string | (() => string), ...children: NodeModLike<'div'>[]) {
+  return div(mounted(), div(h3(title), small('Card')), ...children)
 }
 
 // A modifier is a function with a parameter: it gets the element once.
@@ -183,22 +219,23 @@ const tooltip = (text: string) => (el: ExpandedElement<'div'>) => {
 
 export const App = () =>
   div(
+    div(scope('stats'), span('mounts ', b(() => String(mounts)))),
     Card(
       'Settings',
-      p('Children, an attribute object and a modifier, passed through.'),
+      p('Children, text, an attribute object and a modifier, all passed through.'),
       { 'data-section': 'settings' },
-      tooltip('Set by a modifier'),
-      button(() => \`Saved \${saved}×\`, {
+      tooltip('Hover: a modifier set this title'),
+      div(row, button(() => \`Saved \${saved}×\`, {
         onClick: () => { saved++; update() },
-      }),
+      })),
     ),
     Card(
       () => (open ? 'Details (open)' : 'Details (closed)'), // dynamic title
       // Conditional children go in when(): the card is never rebuilt.
-      when(() => open, p('Only while open.')),
-      button(() => (open ? 'Close' : 'Open'), {
+      when(() => open, p('This paragraph is inside a when(): closing removes it, opening builds it again. The card around it stays.')),
+      div(row, button(() => (open ? 'Close' : 'Open'), {
         onClick: () => { open = !open; update() },
-      }),
+      })),
     ),
   )`;
 
@@ -255,42 +292,69 @@ let people: Person[] = [
   { id: 3, name: 'Linus' },
 ]
 let nextId = 4
+let clone = false
+let mounts = 0
+
+// Counts every row built, refreshing only the "stats" scope.
+const mounted = () =>
+  on('mount', () => {
+    mounts++
+    queueMicrotask(() => update('stats'))
+  })
+const row = { style: { display: 'flex', flexWrap: 'wrap', gap: '6px' } }
 
 // list() matches rows to items by identity (===). A row whose item is
 // still in the array is kept: its DOM, its input's text, its focus.
 // Reordering moves the same nodes. Only new items build new rows.
+// With the switch on, every update() hands list() fresh copies of the
+// objects. They are not the same items any more, so every row is rebuilt.
+const items = () => (clone ? people.map((p) => ({ ...p })) : people)
+
 function Row(p: Person) {
   return div(
-    input({ placeholder: \`Note for \${p.name}\` }),
+    mounted(),
+    { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+    small(\`#\${p.id}\`),
+    input({ placeholder: \`Type here: \${p.name}\`, 'aria-label': \`Note for \${p.name}\` }),
     span(() => p.name),   // dynamic: a rename shows without a rebuild
     button('✕', {
-      onClick: () => { people = people.filter((x) => x !== p); update() },
+      'aria-label': \`Remove \${p.name}\`,
+      onClick: () => { people = people.filter((x) => x.id !== p.id); update() },
     }),
   )
 }
 
 export const App = () =>
   div(
-    list(() => people, Row),
-    button('Reverse', {
-      onClick: () => { people = [...people].reverse(); update() },
-    }),
-    button('Insert at top', {
-      onClick: () => {
-        people = [{ id: nextId, name: \`Person \${nextId++}\` }, ...people]
-        update()
-      },
-    }),
-    // Mutate the item in place: the row is kept and the text updates.
-    button('Rename first', {
-      onClick: () => { people[0].name += '!'; update() },
-    }),
-  )
-
-// The pitfall: new objects every update are new items to list(), so
-// every row is torn down and rebuilt, and typed text is lost.
-//   list(() => people.map((p) => ({ ...p })), Row)   // do not do this
-// Keep the same objects, and mutate them, or replace only what changed.`;
+    div(scope('stats'), span('rows ', b(() => String(people.length))), span('mounts ', b(() => String(mounts)))),
+    list(items, Row),
+    div(
+      row,
+      button('Reverse', {
+        onClick: () => { people = [...people].reverse(); update() },
+      }),
+      button('Sort by name', {
+        onClick: () => { people = [...people].sort((a, b) => a.name.localeCompare(b.name)); update() },
+      }),
+      button('Insert at top', {
+        onClick: () => {
+          people = [{ id: nextId, name: \`Person \${nextId++}\` }, ...people]
+          update()
+        },
+      }),
+      // Mutate the item in place: the row is kept and the text updates.
+      button('Rename first', {
+        onClick: () => { people[0].name += '!'; update() },
+      }),
+    ),
+    // The pitfall: new objects every update are new items to list(),
+    // so every row is torn down and rebuilt, and typed text is lost.
+    label(
+      input({ type: 'checkbox' }, { checked: () => clone }, { onChange: () => { clone = !clone; update() } }),
+      'Clone the objects on every update (breaks identity)',
+    ),
+    p('Type into a row, then reorder or insert: the row keeps its input and its focus, and the mount count only grows by what was inserted. Flip the switch and every change rebuilds every row.'),
+  )`;
 
 // ── Nested data ──────────────────────────────────────────────────────────
 
@@ -354,6 +418,8 @@ const TREE_CODE = `import 'nuclo'
 interface Task { id: number; title: string; done: boolean }
 interface Member { id: number; name: string; tasks: Task[] }
 
+let nextId = 100
+let mounts = 0
 const team: { name: string; members: Member[] } = {
   name: 'Core',
   members: [
@@ -367,19 +433,33 @@ const team: { name: string; members: Member[] } = {
   ],
 }
 
+// Counts every node built, refreshing only the "stats" scope.
+const mounted = () =>
+  on('mount', () => {
+    mounts++
+    queueMicrotask(() => update('stats'))
+  })
+const row = { style: { display: 'flex', flexWrap: 'wrap', gap: '6px' } }
+
 // One component per level of the data. Each takes its own object and
 // renders the level below with list(). Derived numbers are functions
 // over the same objects, so they follow every change with no bookkeeping.
 
 function TaskRow(member: Member, task: Task) {
   return div(
+    mounted(),
+    { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
     input({
       type: 'checkbox',
       checked: () => task.done,
       onChange: () => { task.done = !task.done; update() },
     }),
-    span({ className: () => (task.done ? 'done' : '') }, () => task.title),
+    span(
+      { style: () => ({ textDecoration: task.done ? 'line-through' : 'none', opacity: task.done ? '0.5' : '1' }) },
+      () => task.title,
+    ),
     button('✕', {
+      'aria-label': \`Remove \${task.title}\`,
       onClick: () => {
         member.tasks = member.tasks.filter((t) => t !== task)
         update()
@@ -391,25 +471,51 @@ function TaskRow(member: Member, task: Task) {
 function MemberCard(member: Member) {
   const open = () => member.tasks.filter((t) => !t.done).length
   return div(
-    h3(() => member.name, small(() => \` \${open()} open\`)),
-    list(() => member.tasks, (t) => TaskRow(member, t)),
-    button('Add task', {
-      onClick: () => {
-        member.tasks.push({ id: Date.now(), title: 'New', done: false })
-        update()
-      },
-    }),
+    mounted(),
+    div(h3(() => member.name), small(() => \`\${open()} open of \${member.tasks.length}\`)),
+    div(
+      { style: { display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '10px', borderLeft: '2px solid #ddd' } },
+      list(() => member.tasks, (t) => TaskRow(member, t)),
+    ),
+    div(
+      row,
+      button('Add task', {
+        onClick: () => {
+          member.tasks.push({ id: nextId, title: \`Task \${nextId++}\`, done: false })
+          update()
+        },
+      }),
+      button('Rename', {
+        onClick: () => {
+          member.name = member.name.endsWith('!') ? member.name.slice(0, -1) : \`\${member.name}!\`
+          update()
+        },
+      }),
+    ),
   )
 }
 
+const allOpen = () =>
+  team.members.reduce((n, m) => n + m.tasks.filter((t) => !t.done).length, 0)
+
 export const Team = () =>
   div(
-    h2(() => \`\${team.name}: \${team.members.length} members\`),
+    div(scope('stats'), span('open tasks ', b(() => String(allOpen()))), span('mounts ', b(() => String(mounts)))),
     list(() => team.members, MemberCard),
-    // The cards are the same nodes after the swap: list() moves them.
-    button('Swap members', {
-      onClick: () => { team.members.reverse(); update() },
-    }),
+    div(
+      row,
+      // The cards are the same nodes after the swap: list() moves them.
+      button('Swap members', {
+        onClick: () => { team.members.reverse(); update() },
+      }),
+      button('Add member', {
+        onClick: () => {
+          team.members.push({ id: nextId, name: \`Member \${nextId++}\`, tasks: [] })
+          update()
+        },
+      }),
+    ),
+    p('Check a task, rename a member or swap the cards: the counts at every level follow, and the mount count only grows for what was actually added.'),
   )`;
 
 export const COMPONENT_EXAMPLES: ComponentExample[] = [

@@ -174,24 +174,47 @@ const DRAWING_PAD_CODE = `import 'nuclo'
 
 type Stroke = { color: string; size: number; points: number[][] }
 
-const COLORS = ['#ff3f00', '#2563eb', '#ff8a00', '#222']
+const W = 320
+const H = 200
+const COLORS = [
+  ['Orange', '#ff3f00'],
+  ['Blue', '#2563eb'],
+  ['Amber', '#ff8a00'],
+  ['Ink', '#222'],
+]
 const SIZES = [2, 5, 10]
 let strokes: Stroke[] = []
-let color = COLORS[0]
-let size = 5
+let color = COLORS[0][1]
+let size = SIZES[1]
 let current: Stroke | null = null
 
 // The pointer in viewBox units, kept inside the pad: the pointer
 // is captured, so a stroke can leave the box.
 const at = (e: PointerEvent) => {
   const box = (e.currentTarget as Element).getBoundingClientRect()
-  const x = ((e.clientX - box.left) / box.width) * 320
-  const y = ((e.clientY - box.top) / box.height) * 200
+  const x = ((e.clientX - box.left) / box.width) * W
+  const y = ((e.clientY - box.top) / box.height) * H
   return [
-    Math.round(Math.max(0, Math.min(320, x))),
-    Math.round(Math.max(0, Math.min(200, y))),
+    Math.round(Math.max(4, Math.min(W - 4, x))),
+    Math.round(Math.max(4, Math.min(H - 4, y))),
   ]
 }
+
+// A round tool button; the pressed one gets an outline.
+const tool = (name: string, pressed: () => boolean, onClick: () => void, dot: number, background: string) =>
+  button(
+    {
+      'aria-label': name,
+      'aria-pressed': () => String(pressed()),
+      style: () => ({
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: '36px', height: '36px', padding: '0', borderRadius: '50%',
+        outline: pressed() ? '2px solid currentColor' : 'none', outlineOffset: '2px',
+      }),
+      onClick: () => { onClick(); update() },
+    },
+    span({ style: { width: dot + 'px', height: dot + 'px', borderRadius: '50%', background } }),
+  )
 
 // list() renders one polyline per stroke. Its points are a
 // function, so the stroke being drawn grows on every update().
@@ -200,8 +223,8 @@ export const DrawingPad = () =>
   div(
     svgSvg(
       {
-        viewBox: '0 0 320 200', width: '320', height: '200',
-        style: { touchAction: 'none', cursor: 'crosshair', background: '#fafafa' },
+        viewBox: \`0 0 \${W} \${H}\`, width: '320', height: '200',
+        style: { touchAction: 'none', cursor: 'crosshair' },
         onPointerDown: (e) => {
           e.currentTarget.setPointerCapture(e.pointerId)
           const p = at(e)
@@ -211,11 +234,26 @@ export const DrawingPad = () =>
         },
         onPointerMove: (e) => {
           if (!current) return
-          current.points.push(at(e))
+          const p = at(e)
+          const last = current.points[current.points.length - 1]
+          if (Math.hypot(p[0] - last[0], p[1] - last[1]) < 1.5) return
+          current.points.push(p)
           update()
         },
         onPointerUp: () => { current = null },
+        onPointerCancel: () => { current = null },
       },
+      rectSvg({
+        x: 0.5, y: 0.5, width: W - 1, height: H - 1, rx: 12,
+        fill: 'none', stroke: '#ddd',
+      }),
+      textSvg(
+        {
+          x: W / 2, y: H / 2 + 4, 'text-anchor': 'middle', 'font-size': 11,
+          fill: '#999', opacity: () => (strokes.length ? 0 : 1),
+        },
+        'draw here',
+      ),
       list(() => strokes, (stroke) =>
         polylineSvg({
           points: () => stroke.points.join(' '),
@@ -227,22 +265,17 @@ export const DrawingPad = () =>
         }),
       ),
     ),
-    ...COLORS.map((c) =>
-      button({
-        'aria-label': c,
-        'aria-pressed': () => String(color === c),
-        style: { width: '28px', height: '28px', borderRadius: '50%', background: c },
-        onClick: () => { color = c; update() },
-      }),
+    div(
+      { style: { display: 'flex', gap: '8px', justifyContent: 'center' } },
+      ...COLORS.map(([name, c]) => tool(name, () => color === c, () => { color = c }, 20, c)),
+      ...SIZES.map((s) => tool('Size ' + s, () => size === s, () => { size = s }, s + 4, 'currentColor')),
     ),
-    ...SIZES.map((s) =>
-      button(\`\${s}px\`, {
-        'aria-pressed': () => String(size === s),
-        onClick: () => { size = s; update() },
-      }),
+    div(
+      { style: { display: 'flex', gap: '8px', justifyContent: 'center' } },
+      button('Undo', { onClick: () => { strokes.pop(); update() } }),
+      button('Clear', { onClick: () => { strokes = []; update() } }),
     ),
-    button('Undo', { onClick: () => { strokes.pop(); update() } }),
-    button('Clear', { onClick: () => { strokes = []; update() } }),
+    div(() => \`\${strokes.length} \${strokes.length === 1 ? 'stroke' : 'strokes'}\`),
   )`;
 
 // ── Rotary knob ──────────────────────────────────────────────────────────
@@ -317,11 +350,10 @@ let value = 40
 
 const set = (next: number) => {
   value = Math.round(Math.max(0, Math.min(100, next)))
-  update()
+  update() // refresh everything that reads \`value\`
 }
 
 // 0..100 maps to -135°..135°, clockwise from 12 o'clock.
-const angle = () => -135 + value * 2.7
 const polar = (deg: number, r: number) => {
   const rad = (deg * Math.PI) / 180
   return \`\${100 + r * Math.sin(rad)},\${100 - r * Math.cos(rad)}\`
@@ -335,7 +367,7 @@ function turn(e: PointerEvent) {
   const x = e.clientX - box.left - box.width / 2
   const y = e.clientY - box.top - box.height / 2
   let deg = (Math.atan2(x, -y) * 180) / Math.PI
-  if (Math.abs(deg) > 135) deg = value > 50 ? 135 : -135
+  if (Math.abs(deg) > 135) deg = value > 50 ? 135 : -135 // in the gap: stay at the nearer end
   set((deg + 135) / 2.7)
 }
 
@@ -344,54 +376,86 @@ const KEYS: Record<string, number> = {
   PageUp: 10, PageDown: -10, Home: -100, End: 100,
 }
 
+const caption = { fontSize: '0.8125rem', color: '#8b949e' }
+
 // pathLength="100" makes the arc 100 units long, whatever its
 // real length, so the value is the dash length as it is.
 export const Knob = () =>
-  svgSvg(
-    {
-      viewBox: '0 0 200 200', width: '200', height: '200',
-      tabindex: '0', role: 'slider', 'aria-label': 'Volume',
-      'aria-valuemin': '0', 'aria-valuemax': '100',
-      'aria-valuenow': () => String(value),
-      style: { touchAction: 'none', cursor: 'grab' },
-      onPointerDown: (e) => {
-        e.currentTarget.setPointerCapture(e.pointerId)
-        turn(e)
+  div(
+    { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' } },
+    svgSvg(
+      {
+        viewBox: '0 0 200 200', width: '200', height: '200',
+        tabindex: '0', role: 'slider', 'aria-label': 'Volume',
+        'aria-valuemin': '0', 'aria-valuemax': '100',
+        'aria-valuenow': () => String(value),
+        style: { touchAction: 'none', cursor: 'grab', borderRadius: '50%', outline: 'none' },
+        onPointerDown: (e) => {
+          e.currentTarget.setPointerCapture(e.pointerId)
+          turn(e)
+        },
+        onPointerMove: turn,
+        onKeyDown: (e) => {
+          if (!(e.key in KEYS)) return
+          e.preventDefault()
+          set(value + KEYS[e.key])
+        },
       },
-      onPointerMove: turn,
-      onKeyDown: (e) => {
-        if (!(e.key in KEYS)) return
-        e.preventDefault()
-        set(value + KEYS[e.key])
-      },
-    },
-    ...Array.from({ length: 27 }, (_, i) =>
-      lineSvg({
-        x1: 100, y1: 4, x2: 100, y2: 11,
-        'stroke-width': 2.5, 'stroke-linecap': 'round',
-        transform: \`rotate(\${-135 + i * 10.38} 100 100)\`,
-        stroke: () => (i * 3.85 <= value ? '#ff3f00' : '#ddd'),
+      // 27 ticks light up as the value passes them
+      ...Array.from({ length: 27 }, (_, i) =>
+        lineSvg({
+          x1: 100, y1: 4, x2: 100, y2: 11,
+          'stroke-width': 2.5, 'stroke-linecap': 'round',
+          transform: \`rotate(\${-135 + (i * 270) / 26} 100 100)\`,
+          style: () => ({
+            stroke: (i / 26) * 100 <= value ? '#ff3f00' : '#ddd',
+            transition: 'stroke 0.15s ease',
+          }),
+        }),
+      ),
+      pathSvg({
+        d: ARC, pathLength: '100', fill: 'none', stroke: '#eee',
+        'stroke-width': 7, 'stroke-linecap': 'round',
       }),
+      pathSvg({
+        d: ARC, pathLength: '100', fill: 'none', stroke: '#ff3f00',
+        'stroke-width': 7, 'stroke-linecap': 'round',
+        'stroke-dasharray': () => \`\${value} 100\`,
+        style: { transition: 'stroke-dasharray 0.12s ease-out' },
+      }),
+      circleSvg({
+        cx: 100, cy: 100, r: 58, fill: '#fff', stroke: '#ddd',
+        style: { filter: 'drop-shadow(0 8px 14px rgba(0,0,0,0.22))' },
+      }),
+      gSvg(
+        {
+          style: () => ({
+            transform: \`rotate(\${-135 + value * 2.7}deg)\`,
+            transformOrigin: '100px 100px',
+            transition: 'transform 0.12s ease-out',
+          }),
+        },
+        lineSvg({
+          x1: 100, y1: 50, x2: 100, y2: 64,
+          stroke: '#ff3f00', 'stroke-width': 4, 'stroke-linecap': 'round',
+        }),
+      ),
+      textSvg(
+        { x: 100, y: 112, 'text-anchor': 'middle', 'font-size': 30, 'font-weight': 700 },
+        () => String(value),
+      ),
+      textSvg(
+        { x: 100, y: 130, 'text-anchor': 'middle', 'font-size': 10, fill: '#8b949e' },
+        'VOLUME',
+      ),
     ),
-    pathSvg({
-      d: ARC, pathLength: '100', fill: 'none', stroke: '#eee',
-      'stroke-width': 7, 'stroke-linecap': 'round',
-    }),
-    pathSvg({
-      d: ARC, pathLength: '100', fill: 'none', stroke: '#ff3f00',
-      'stroke-width': 7, 'stroke-linecap': 'round',
-      'stroke-dasharray': () => \`\${value} 100\`,
-    }),
-    circleSvg({ cx: 100, cy: 100, r: 58, fill: '#fff', stroke: '#ddd' }),
-    lineSvg({
-      x1: 100, y1: 50, x2: 100, y2: 64,
-      stroke: '#ff3f00', 'stroke-width': 4, 'stroke-linecap': 'round',
-      transform: () => \`rotate(\${angle()} 100 100)\`,
-    }),
-    textSvg(
-      { x: 100, y: 112, 'text-anchor': 'middle', 'font-size': 30 },
-      () => String(value),
+    div(
+      { style: { display: 'flex', gap: '8px' } },
+      button('Mute', { onClick: () => set(0) }),
+      button('Half', { onClick: () => set(50) }),
+      button('Max', { onClick: () => set(100) }),
     ),
+    div({ style: caption }, 'drag it, or focus it and use the arrow keys'),
   )`;
 
 // ── Color wheel ──────────────────────────────────────────────────────────
@@ -474,6 +538,8 @@ const COLOR_WHEEL_CODE = `import 'nuclo'
 
 type Swatch = { hue: number; sat: number; val: number; hex: string }
 
+const R = 90 // the radius of the wheel
+
 let hue = 18  // the angle, 0..360
 let sat = 0.9 // the distance from the center, 0..1
 let val = 1   // the brightness slider, 0..1
@@ -492,7 +558,7 @@ const current = () => hex(hue, sat, val)
 
 const rad = (deg: number) => (deg * Math.PI) / 180
 const at = (deg: number) =>
-  \`\${100 + 90 * Math.cos(rad(deg))},\${100 + 90 * Math.sin(rad(deg))}\`
+  \`\${100 + R * Math.cos(rad(deg))},\${100 + R * Math.sin(rad(deg))}\`
 
 // The pointer's angle is the hue, its distance the saturation.
 function pick(e: PointerEvent) {
@@ -501,7 +567,13 @@ function pick(e: PointerEvent) {
   const x = ((e.clientX - box.left) / box.width) * 200 - 100
   const y = ((e.clientY - box.top) / box.height) * 200 - 100
   hue = Math.round(((Math.atan2(y, x) * 180) / Math.PI + 360) % 360)
-  sat = Math.min(1, Math.hypot(x, y) / 90)
+  sat = Math.min(1, Math.hypot(x, y) / R)
+  update()
+}
+
+function save() {
+  const c = current()
+  saved = [{ hue, sat, val, hex: c }, ...saved.filter((s) => s.hex !== c)].slice(0, 8)
   update()
 }
 
@@ -522,48 +594,58 @@ export const ColorWheel = () =>
       defsSvg(
         radialGradientSvg(
           { id: 'white' },
-          stopSvg({ offset: '0', 'stop-color': '#fff' }),
-          stopSvg({ offset: '1', 'stop-color': '#fff', 'stop-opacity': 0 }),
+          stopSvg({ offset: '0', 'stop-color': 'white' }),
+          stopSvg({ offset: '1', 'stop-color': 'white', 'stop-opacity': 0 }),
         ),
       ),
       ...Array.from({ length: 90 }, (_, i) =>
         pathSvg({
-          d: \`M100,100 L\${at(i * 4)} A90,90 0 0 1 \${at(i * 4 + 4.5)} Z\`,
+          d: \`M100,100 L\${at(i * 4)} A\${R},\${R} 0 0 1 \${at(i * 4 + 4.5)} Z\`,
           fill: \`hsl(\${i * 4 + 2}, 100%, 50%)\`,
         }),
       ),
-      circleSvg({ cx: 100, cy: 100, r: 90, fill: 'url(#white)' }),
+      circleSvg({ cx: 100, cy: 100, r: R, fill: 'url(#white)' }),
       circleSvg({
-        cx: 100, cy: 100, r: 90, fill: '#000',
+        cx: 100, cy: 100, r: R, fill: 'black',
         'fill-opacity': () => 1 - val,
       }),
       circleSvg({
-        r: 9, fill: current, stroke: '#fff', 'stroke-width': 3,
-        cx: () => 100 + sat * 90 * Math.cos(rad(hue)),
-        cy: () => 100 + sat * 90 * Math.sin(rad(hue)),
+        r: 9, fill: current, stroke: 'white', 'stroke-width': 3,
+        cx: () => 100 + sat * R * Math.cos(rad(hue)),
+        cy: () => 100 + sat * R * Math.sin(rad(hue)),
       }),
     ),
-    input({
-      type: 'range', min: '0', max: '100',
-      value: () => String(Math.round(val * 100)),
-      onInput: (e) => { val = Number(e.currentTarget.value) / 100; update() },
-    }),
-    code(current),
-    button('Save', {
-      onClick: () => {
-        const c = current()
-        saved = [{ hue, sat, val, hex: c }, ...saved.filter((s) => s.hex !== c)]
-        update()
-      },
-    }),
+    label(
+      span('Bright'),
+      input({
+        type: 'range', min: '0', max: '100', step: '1',
+        value: () => String(Math.round(val * 100)),
+        onInput: (e) => { val = Number(e.currentTarget.value) / 100; update() },
+      }),
+      span(() => String(Math.round(val * 100))),
+    ),
     div(
+      { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+      div({
+        style: () => ({
+          width: '40px', height: '40px', borderRadius: '10px',
+          border: '1px solid #ccc', background: current(),
+        }),
+      }),
+      span(current),
+      button('Save', { onClick: save }),
+    ),
+    div(
+      { style: { display: 'flex', flexWrap: 'wrap', gap: '6px', minHeight: '26px' } },
       list(() => saved, (s) =>
         button({
           title: s.hex,
-          style: { width: '24px', height: '24px', background: s.hex },
+          'aria-label': 'Use ' + s.hex,
+          style: { width: '26px', height: '26px', padding: '0', borderRadius: '7px', background: s.hex },
           onClick: () => { hue = s.hue; sat = s.sat; val = s.val; update() },
         }),
       ),
+      when(() => !saved.length, span('saved colors land here')),
     ),
   )`;
 
@@ -652,49 +734,76 @@ function Spirograph() {
 const SPIROGRAPH_CODE = `import 'nuclo'
 
 const R = 96 // the fixed ring
-let r = 60   // the rolling wheel
-let d = 52   // the pen's distance from the wheel's center
-let line = ''
+const STEPS = 180 // points per lap of the wheel around the ring
+let r = 60 // the rolling wheel
+let d = 52 // the pen's distance from the wheel's center
+let pts: number[][] = []
 let lens: number[] = [] // the curve's length up to each point
-let k = 0               // how many points are drawn
+let line = ''
+let s = 1 // the scale that fits the drawing in the box
+let k = 0 // how many points are drawn
+let playing = true
 
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a)
+const rand = (min: number, max: number) => Math.round(min + Math.random() * (max - min))
 
-// A hypotrochoid. The pen is back at its start after
-// r / gcd(R, r) laps, 180 points per lap.
+// A hypotrochoid. The pen is back at its start after r / gcd(R, r) laps.
 function trace() {
-  const n = (r / gcd(R, r)) * 180
-  const s = 88 / Math.max(R, R - r + d) // fit it in the box
-  const pts: number[][] = []
+  const n = (r / gcd(R, r)) * STEPS
+  s = 88 / Math.max(R, R - r + d)
+  pts = []
   lens = [0]
   for (let i = 0; i <= n; i++) {
-    const t = (i / 180) * 2 * Math.PI
+    const t = (i / STEPS) * 2 * Math.PI
     const p = [
       100 + s * ((R - r) * Math.cos(t) + d * Math.cos(((R - r) / r) * t)),
       100 + s * ((R - r) * Math.sin(t) - d * Math.sin(((R - r) / r) * t)),
-    ]
+    ].map((v) => Math.round(v * 10) / 10)
     if (i) lens.push(lens[i - 1] + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]))
     pts.push(p)
   }
   line = pts.join(' ')
   k = 0
+  playing = true
 }
 trace()
+
+const last = () => pts.length - 1
+const done = () => k >= last()
+const pen = () => pts[Math.floor(k)]
+const wheel = () => {
+  const t = (Math.floor(k) / STEPS) * 2 * Math.PI
+  return [100 + s * (R - r) * Math.cos(t), 100 + s * (R - r) * Math.sin(t)]
+}
+
+// A labeled range input with its value beside it.
+const slider = (name: string, min: number, max: number, step: number, get: () => number, set: (v: number) => void) =>
+  label(
+    { style: { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.8125rem' } },
+    span(name),
+    input({
+      type: 'range', min: String(min), max: String(max), step: String(step),
+      value: () => String(get()),
+      onInput: (e) => set(Number(e.currentTarget.value)),
+    }),
+    span(() => String(get())),
+  )
 
 // The points are computed once per shape. Drawing it is only a
 // longer dash on every frame, and update('spiro') refreshes the
 // scoped element alone instead of the whole page.
 export const Spirograph = () =>
   div(
+    { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px' } },
     scope('spiro'),
     svgSvg(
       {
         viewBox: '0 0 200 200', width: '200', height: '200',
+        style: { color: '#ff3f00', overflow: 'visible' },
         onMount: () => {
           let id = requestAnimationFrame(function frame() {
-            const last = lens.length - 1
-            if (k < last) {
-              k = Math.min(last, k + Math.max(3, last / 300))
+            if (playing && !done()) {
+              k = Math.min(last(), k + Math.max(3, last() / 300))
               update('spiro')
             }
             id = requestAnimationFrame(frame)
@@ -702,31 +811,35 @@ export const Spirograph = () =>
           return () => cancelAnimationFrame(id)
         },
       },
+      // the whole curve, faint
+      polylineSvg({ points: () => line, fill: 'none', stroke: 'currentColor', 'stroke-opacity': 0.14 }),
+      // the part drawn so far: one dash that grows
       polylineSvg({
-        points: () => line, fill: 'none',
-        stroke: '#ff3f00', 'stroke-opacity': 0.15,
+        points: () => line, fill: 'none', stroke: 'currentColor',
+        'stroke-width': 1.4, 'stroke-linejoin': 'round',
+        'stroke-dasharray': () => \`\${lens[Math.floor(k)]} \${lens[last()]}\`,
       }),
-      polylineSvg({
-        points: () => line, fill: 'none',
-        stroke: '#ff3f00', 'stroke-width': 1.4,
-        'stroke-dasharray': () =>
-          \`\${lens[Math.floor(k)]} \${lens[lens.length - 1]}\`,
-      }),
+      // the ring, the rolling wheel, the pen arm and the pen; they fade out when done
+      gSvg(
+        { opacity: () => (done() ? 0 : 1), style: { transition: 'opacity 0.4s ease' } },
+        circleSvg({ cx: 100, cy: 100, r: () => R * s, fill: 'none', stroke: '#2563eb', 'stroke-opacity': 0.4 }),
+        circleSvg({ cx: () => wheel()[0], cy: () => wheel()[1], r: () => r * s, fill: 'none', stroke: '#2563eb' }),
+        lineSvg({ x1: () => wheel()[0], y1: () => wheel()[1], x2: () => pen()[0], y2: () => pen()[1], stroke: '#2563eb' }),
+        circleSvg({ cx: () => pen()[0], cy: () => pen()[1], r: 3, fill: '#2563eb' }),
+      ),
     ),
-    label(
-      'Wheel',
-      input({
-        type: 'range', min: '24', max: '84', step: '4',
-        value: () => String(r),
-        onInput: (e) => { r = Number(e.currentTarget.value); trace() },
+    slider('Wheel', 24, 84, 4, () => r, (v) => { r = v; trace() }),
+    slider('Pen', 10, 90, 2, () => d, (v) => { d = v; trace() }),
+    div(
+      { style: { display: 'flex', gap: '8px' } },
+      button(() => (done() ? 'Replay' : playing ? 'Pause' : 'Play'), {
+        onClick: () => {
+          if (done()) { k = 0; playing = true } else playing = !playing
+          update('spiro')
+        },
       }),
-    ),
-    label(
-      'Pen',
-      input({
-        type: 'range', min: '10', max: '90', step: '2',
-        value: () => String(d),
-        onInput: (e) => { d = Number(e.currentTarget.value); trace() },
+      button('Random', {
+        onClick: () => { r = rand(6, 21) * 4; d = rand(5, 45) * 2; trace() },
       }),
     ),
   )`;
@@ -839,8 +952,10 @@ type Ball = { x: number; y: number; vx: number; vy: number; r: number; color: st
 const W = 320
 const H = 200
 const COLORS = ['#ff3f00', '#2563eb', '#ff8a00']
+const rand = (min: number, max: number) => Math.round(min + Math.random() * (max - min))
+
 let balls: Ball[] = Array.from({ length: 7 }, (_, i) => ({
-  x: 30 + i * 42, y: 40, vx: i % 2 ? 2 : -2, vy: 0,
+  x: 30 + i * 42, y: 40 + (i % 3) * 30, vx: i % 2 ? 2 : -2, vy: 0,
   r: 10 + (i % 3) * 4, color: COLORS[i % 3],
 }))
 let gravity = true
@@ -854,16 +969,17 @@ const at = (e: PointerEvent) => {
   ]
 }
 
-function step() {
+// dt is the frame's length in 60 fps frames.
+function step(dt: number) {
   for (const b of balls) {
-    if (gravity) b.vy += 0.3
-    b.x += b.vx
-    b.y += b.vy
+    if (gravity) b.vy += 0.3 * dt
+    b.x += b.vx * dt
+    b.y += b.vy * dt
     // Walls: back inside, bounce, lose a little energy.
     if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.85 }
     if (b.x > W - b.r) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.85 }
     if (b.y < b.r) { b.y = b.r; b.vy = Math.abs(b.vy) * 0.85 }
-    if (b.y > H - b.r) { b.y = H - b.r; b.vy = -Math.abs(b.vy) * 0.85 }
+    if (b.y > H - b.r) { b.y = H - b.r; b.vy = -Math.abs(b.vy) * 0.85; b.vx *= 0.98 }
   }
   // Ball against ball: push the pair apart, then trade momentum
   // along the line between the centers. The mass is r².
@@ -898,10 +1014,12 @@ export const Balls = () =>
     svgSvg(
       {
         viewBox: '0 0 320 200', width: '320', height: '200',
-        style: { touchAction: 'none', background: '#fafafa' },
+        style: { touchAction: 'none' },
         onMount: () => {
-          let id = requestAnimationFrame(function frame() {
-            step()
+          let last = performance.now()
+          let id = requestAnimationFrame(function frame(now: number) {
+            step(Math.max(0, Math.min(2, (now - last) / (1000 / 60))))
+            last = now
             update('balls')
             id = requestAnimationFrame(frame)
           })
@@ -920,28 +1038,54 @@ export const Balls = () =>
           balls.push({
             x: aim.x, y: aim.y,
             vx: (aim.x - aim.toX) / 8, vy: (aim.y - aim.toY) / 8,
-            r: 8 + Math.random() * 10, color: COLORS[balls.length % 3],
+            r: rand(8, 18), color: COLORS[balls.length % 3],
           })
           if (balls.length > 30) balls.shift()
           aim = null
         },
       },
+      rectSvg({
+        x: 0.5, y: 0.5, width: W - 1, height: H - 1, rx: 12,
+        fill: 'none', stroke: '#ddd',
+      }),
       list(() => balls, (b) =>
-        circleSvg({ r: b.r, fill: b.color, cx: () => b.x, cy: () => b.y }),
+        gSvg(
+          { transform: () => \`translate(\${b.x.toFixed(1)} \${b.y.toFixed(1)})\` },
+          circleSvg({ r: b.r, fill: b.color }),
+          // a small highlight
+          circleSvg({
+            cx: -b.r * 0.35, cy: -b.r * 0.35, r: b.r * 0.32,
+            fill: 'white', 'fill-opacity': 0.35,
+          }),
+        ),
       ),
       when(() => aim !== null,
         lineSvg({
-          stroke: '#999', 'stroke-dasharray': '4 4',
+          stroke: '#999', 'stroke-width': 2, 'stroke-dasharray': '4 4',
           x1: () => aim?.x ?? 0, y1: () => aim?.y ?? 0,
           x2: () => (aim ? 2 * aim.x - aim.toX : 0),
           y2: () => (aim ? 2 * aim.y - aim.toY : 0),
         }),
+        circleSvg({
+          r: 12, fill: 'none', stroke: '#999', 'stroke-width': 2,
+          cx: () => aim?.x ?? 0, cy: () => aim?.y ?? 0,
+        }),
       ),
     ),
-    button(() => (gravity ? 'Gravity on' : 'Gravity off'), {
-      onClick: () => { gravity = !gravity },
-    }),
-    button('Clear', { onClick: () => { balls = [] } }),
+    div(
+      { style: { display: 'flex', gap: '8px', justifyContent: 'center' } },
+      button(() => (gravity ? 'Gravity on' : 'Gravity off'), {
+        'aria-pressed': () => String(gravity),
+        onClick: () => { gravity = !gravity },
+      }),
+      button('Shake', {
+        onClick: () => {
+          for (const b of balls) { b.vx += rand(-6, 6); b.vy -= rand(4, 9) }
+        },
+      }),
+      button('Clear', { onClick: () => { balls = [] } }),
+    ),
+    div(() => \`\${balls.length} balls · pull back and let go to launch one\`),
   )`;
 
 // ── Gooey blobs ──────────────────────────────────────────────────────────
@@ -1017,20 +1161,31 @@ let target: { x: number; y: number } | null = null
 let blur = 10
 let goo = true
 let t = 0
+let last = performance.now()
 
 // Each blob eases toward the one before it. The first follows
 // the pointer, or a figure eight while there is none.
-function step() {
-  t += 0.016
+function step(dt: number) {
+  t += 0.016 * dt
   const lead = target ?? {
     x: W / 2 + Math.sin(t * 1.3) * 110,
     y: H / 2 + Math.sin(t * 2.6) * 55,
   }
+  const ease = 1 - 0.7 ** dt
   trail.forEach((p, i) => {
     const to = i ? trail[i - 1] : lead
-    p.x += (to.x - p.x) * 0.3
-    p.y += (to.y - p.y) * 0.3
+    p.x += (to.x - p.x) * ease
+    p.y += (to.y - p.y) * ease
   })
+}
+
+// The pointer in viewBox units: the svg is scaled to its box.
+function follow(e: PointerEvent) {
+  const box = (e.currentTarget as Element).getBoundingClientRect()
+  target = {
+    x: ((e.clientX - box.left) / box.width) * W,
+    y: ((e.clientY - box.top) / box.height) * H,
+  }
 }
 
 // The filter blurs the blobs, then a color matrix multiplies the
@@ -1038,34 +1193,29 @@ function step() {
 // and blobs whose blurs overlap melt into one shape.
 export const Goo = () =>
   div(
+    { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px' } },
     scope('goo'),
     svgSvg(
       {
-        viewBox: '0 0 320 200', width: '320', height: '200',
-        style: { touchAction: 'none' },
+        viewBox: \`0 0 \${W} \${H}\`, width: '100%', role: 'img', 'aria-label': 'Gooey blobs',
+        style: { maxWidth: '380px', touchAction: 'none', overflow: 'visible' },
+        // redraw every frame, and only this scope
         onMount: () => {
-          let id = requestAnimationFrame(function frame() {
-            step()
+          let id = requestAnimationFrame(function frame(now: number) {
+            step(Math.max(0, Math.min(2, (now - last) / (1000 / 60))))
+            last = now
             update('goo')
             id = requestAnimationFrame(frame)
           })
           return () => cancelAnimationFrame(id)
         },
-        onPointerMove: (e) => {
-          const box = e.currentTarget.getBoundingClientRect()
-          target = {
-            x: ((e.clientX - box.left) / box.width) * W,
-            y: ((e.clientY - box.top) / box.height) * H,
-          }
-        },
+        onPointerDown: follow,
+        onPointerMove: follow,
         onPointerLeave: () => { target = null },
       },
       defsSvg(
         filterSvg(
-          {
-            id: 'goo', filterUnits: 'userSpaceOnUse',
-            x: 0, y: 0, width: W, height: H,
-          },
+          { id: 'goo', filterUnits: 'userSpaceOnUse', x: 0, y: 0, width: W, height: H },
           feGaussianBlurSvg({ in: 'SourceGraphic', stdDeviation: () => blur }),
           feColorMatrixSvg({
             mode: 'matrix',
@@ -1073,22 +1223,32 @@ export const Goo = () =>
           }),
         ),
       ),
+      rectSvg({
+        x: 0.5, y: 0.5, width: W - 1, height: H - 1, rx: 12,
+        fill: 'none', stroke: '#ddd',
+      }),
       gSvg(
         { fill: '#ff3f00', filter: () => (goo ? 'url(#goo)' : 'none') },
-        circleSvg({ cx: 64, cy: () => 100 + Math.sin(t * 2) * 14, r: 28 }),
-        circleSvg({ cx: 256, cy: () => 100 + Math.cos(t * 2) * 14, r: 28 }),
+        circleSvg({ cx: 64, cy: () => 100 + Math.sin(t * 2) * 14, r: 28, fill: '#2563eb' }),
+        circleSvg({ cx: 256, cy: () => 100 + Math.cos(t * 2) * 14, r: 28, fill: '#ff8a00' }),
         ...trail.map((p, i) =>
           circleSvg({ r: SIZES[i], cx: () => p.x, cy: () => p.y }),
         ),
       ),
     ),
-    input({
-      type: 'range', min: '0', max: '16', value: '10',
-      onInput: (e) => { blur = Number(e.currentTarget.value) },
-    }),
-    button(() => (goo ? 'Goo on' : 'Goo off'), {
+    label(
+      { style: { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.8125rem' } },
+      span('Blur'),
+      input({
+        type: 'range', min: '0', max: '16', step: '1', value: () => String(blur),
+        onInput: (e) => { blur = Number(e.currentTarget.value) },
+      }),
+      span(() => String(blur)),
+    ),
+    button({ 'aria-pressed': () => String(goo) }, () => (goo ? 'Goo on' : 'Goo off'), {
       onClick: () => { goo = !goo },
     }),
+    div({ style: { fontSize: '0.75rem', color: '#8b949e' } }, 'move the pointer over it'),
   )`;
 
 // ── Force graph ──────────────────────────────────────────────────────────
@@ -1211,9 +1371,13 @@ const H = 220
 const COLORS = ['#ff3f00', '#ff8a00', '#2563eb']
 let nodes: Node[] = []
 let links: [Node, Node][] = []
-let heat = 1 // scales the forces and cools each frame
+let heat = 1 // scales every force and cools each frame
 let held: Node | null = null
+let press = [0, 0]
 let moved = false
+
+const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v))
+const rand = (min: number, max: number) => Math.round(min + Math.random() * (max - min))
 
 function grow(parent?: Node) {
   const a = nodes.length * 2.4
@@ -1227,13 +1391,19 @@ function grow(parent?: Node) {
   heat = 1
 }
 
-grow()
-for (let i = 1; i < 10; i++) grow(nodes[Math.floor((i - 1) / 2)])
+function reset() {
+  nodes = []
+  links = []
+  grow()
+  for (let i = 1; i < 10; i++) grow(nodes[Math.floor((i - 1) / 2)])
+}
+reset()
 
 // Every pair repels, every link pulls toward 32px, everything
 // drifts to the center. Once the heat is gone the loop stops
 // calling update(), so a settled graph costs nothing.
 function step() {
+  if (heat < 0.005) return false
   for (const a of nodes) {
     for (const b of nodes) {
       if (a === b) continue
@@ -1255,59 +1425,83 @@ function step() {
   for (const n of nodes) {
     n.vx += (W / 2 - n.x) * 0.015 * heat
     n.vy += (H / 2 - n.y) * 0.015 * heat
-    if (n !== held) { n.x += n.vx; n.y += n.vy }
+    if (n !== held) {
+      n.x = clamp(n.x + n.vx, 10, W - 10)
+      n.y = clamp(n.y + n.vy, 10, H - 10)
+    }
     n.vx *= 0.6
     n.vy *= 0.6
   }
   heat = held ? Math.max(heat, 0.3) : heat * 0.985
 }
 
+// The pointer in viewBox units: the svg is scaled to its box.
+function pointer(e: PointerEvent) {
+  const box = (e.currentTarget as Element).getBoundingClientRect()
+  return [((e.clientX - box.left) / box.width) * W, ((e.clientY - box.top) / box.height) * H]
+}
+
 export const Graph = () =>
   div(
+    { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px' } },
     scope('graph'),
     svgSvg(
       {
-        viewBox: '0 0 320 220', width: '320', height: '220',
-        style: { touchAction: 'none' },
+        viewBox: \`0 0 \${W} \${H}\`, width: '100%', role: 'img', 'aria-label': 'Force-directed graph',
+        style: { maxWidth: '380px', touchAction: 'none', overflow: 'visible' },
+        // simulate every frame, and update only this scope while it moves
         onMount: () => {
           let id = requestAnimationFrame(function frame() {
-            if (heat > 0.005) { step(); update('graph') }
+            if (step() !== false) update('graph')
             id = requestAnimationFrame(frame)
           })
           return () => cancelAnimationFrame(id)
         },
         onPointerMove: (e) => {
           if (!held) return
-          const box = e.currentTarget.getBoundingClientRect()
-          held.x = ((e.clientX - box.left) / box.width) * W
-          held.y = ((e.clientY - box.top) / box.height) * H
-          moved = true
+          if (Math.hypot(e.clientX - press[0], e.clientY - press[1]) > 4) moved = true
+          if (moved) [held.x, held.y] = pointer(e)
         },
         onPointerUp: () => {
-          // A press that did not move is a click: grow a child.
-          if (held && !moved && nodes.length < 40) grow(held)
+          if (held && !moved && nodes.length < 40) grow(held) // a press that did not move is a click
           held = null
         },
       },
       list(() => links, ([a, b]) =>
         lineSvg({
-          stroke: '#ccc', 'stroke-width': 1.5,
+          stroke: '#ddd', 'stroke-width': 1.5,
           x1: () => a.x, y1: () => a.y, x2: () => b.x, y2: () => b.y,
         }),
       ),
       list(() => nodes, (n) =>
         circleSvg({
           r: n.depth ? 7 : 10, fill: COLORS[n.depth % 3],
-          stroke: '#fff', 'stroke-width': 2, style: { cursor: 'grab' },
+          stroke: '#fff', 'stroke-width': 2,
           cx: () => n.x, cy: () => n.y,
+          style: { cursor: 'grab' },
           onPointerDown: (e) => {
             e.currentTarget.setPointerCapture(e.pointerId)
             held = n
+            press = [e.clientX, e.clientY]
             moved = false
             heat = Math.max(heat, 0.3)
           },
         }),
       ),
+    ),
+    div(
+      { style: { display: 'flex', gap: '8px' } },
+      button('Shake', {
+        onClick: () => {
+          for (const n of nodes) { n.x = rand(20, W - 20); n.y = rand(20, H - 20) }
+          heat = 1
+        },
+      }),
+      button('Reset', { onClick: reset }),
+    ),
+    div(
+      { style: { fontSize: '0.75rem', color: '#8b949e' } },
+      () => \`\${nodes.length} nodes · click one to grow it, drag to move it\`,
     ),
   )`;
 
@@ -1411,30 +1605,32 @@ const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647
 const data: number[] = []
 for (let i = 0, v = 50; i < N; i++) {
   v = Math.max(5, Math.min(95, v + (random() - 0.5) * 16))
-  data.push(v)
+  data.push(Math.round(v * 10) / 10)
 }
 
 let from = 30
 let to = 70
 let grab: { move: boolean; at: number } | null = null
 
+const slice = () => data.slice(from, to + 1)
+
 // The overview: every day in the strip at the bottom.
 const ox = (i: number) => (i / (N - 1)) * W
 const overview = data
-  .map((v, i) => \`\${i ? 'L' : 'M'}\${ox(i)},\${196 - v * 0.42}\`)
+  .map((v, i) => \`\${i ? 'L' : 'M'}\${ox(i).toFixed(1)},\${(196 - v * 0.42).toFixed(1)}\`)
   .join(' ')
 
 // The focus: the brushed days across the full width, with the
 // y scale fitted to their own min and max.
 function focus() {
-  const days = data.slice(from, to + 1)
+  const days = slice()
   const min = Math.min(...days)
   const max = Math.max(...days)
   return days
     .map((v, j) => {
-      const x = (j / (to - from)) * W
-      const y = 112 - ((v - min) / (max - min)) * 100
-      return \`\${j ? 'L' : 'M'}\${x},\${y}\`
+      const x = (j / Math.max(1, to - from)) * W
+      const y = 112 - ((v - min) / Math.max(1, max - min)) * 100
+      return \`\${j ? 'L' : 'M'}\${x.toFixed(1)},\${y.toFixed(1)}\`
     })
     .join(' ')
 }
@@ -1450,57 +1646,88 @@ const index = (e: PointerEvent) => {
 // the pointer: inside the brush a drag moves it, outside it
 // draws a new one.
 export const BrushZoom = () =>
-  svgSvg(
-    { viewBox: '0 0 320 200', width: '320', height: '200' },
-    defsSvg(
-      clipPathSvg(
-        { id: 'brush' },
-        rectSvg({
-          y: 136, height: 64,
-          x: () => ox(from), width: () => ox(to) - ox(from),
-        }),
+  div(
+    svgSvg(
+      { viewBox: '0 0 320 200', width: '320', height: '200' },
+      defsSvg(
+        linearGradientSvg(
+          { id: 'fade', x1: '0', y1: '0', x2: '0', y2: '1' },
+          stopSvg({ offset: '0', 'stop-color': '#ff3f00', 'stop-opacity': 0.3 }),
+          stopSvg({ offset: '1', 'stop-color': '#ff3f00', 'stop-opacity': 0 }),
+        ),
+        clipPathSvg(
+          { id: 'brush' },
+          rectSvg({
+            y: 136, height: 64,
+            x: () => ox(from), width: () => ox(to) - ox(from),
+          }),
+        ),
       ),
+      ...[12, 62, 112].map((y) =>
+        lineSvg({ x1: 0, x2: W, y1: y + 0.5, y2: y + 0.5, stroke: '#ddd', 'stroke-dasharray': '2 4' }),
+      ),
+      pathSvg({ d: () => \`\${focus()} L\${W},120 L0,120 Z\`, fill: 'url(#fade)' }),
+      pathSvg({
+        d: focus, fill: 'none', stroke: '#ff3f00',
+        'stroke-width': 2, 'stroke-linejoin': 'round',
+      }),
+      textSvg({ x: 0, y: 132, 'font-size': 11, fill: '#999' }, () => \`day \${from}\`),
+      textSvg(
+        { x: W, y: 132, 'text-anchor': 'end', 'font-size': 11, fill: '#999' },
+        () => \`day \${to}\`,
+      ),
+      pathSvg({ d: overview, fill: 'none', stroke: '#ddd', 'stroke-width': 1.5 }),
+      pathSvg({
+        d: overview, fill: 'none', stroke: '#ff3f00',
+        'stroke-width': 1.5, 'clip-path': 'url(#brush)',
+      }),
+      rectSvg({
+        y: 140, height: 58, rx: 4, fill: '#ff3f00', 'fill-opacity': 0.1, stroke: '#ff3f00',
+        x: () => ox(from), width: () => ox(to) - ox(from),
+        style: { pointerEvents: 'none' },
+      }),
+      rectSvg({
+        x: 0, y: 136, width: W, height: 64, fill: 'transparent',
+        style: { cursor: 'crosshair', touchAction: 'none' },
+        onPointerDown: (e) => {
+          e.currentTarget.setPointerCapture(e.pointerId)
+          const i = index(e)
+          grab = i >= from && i <= to
+            ? { move: true, at: i - from }
+            : { move: false, at: i }
+          if (!grab.move) from = to = i
+          update()
+        },
+        onPointerMove: (e) => {
+          if (!grab) return
+          const i = index(e)
+          if (grab.move) {
+            const len = to - from
+            from = Math.max(0, Math.min(N - 1 - len, i - grab.at))
+            to = from + len
+          } else {
+            from = Math.min(grab.at, i)
+            to = Math.max(grab.at, i)
+          }
+          update()
+        },
+        onPointerUp: () => {
+          grab = null
+          if (to - from < 4) { to = Math.min(N - 1, from + 4); from = to - 4 }
+          update()
+        },
+      }),
     ),
-    pathSvg({ d: focus, fill: 'none', stroke: '#ff3f00', 'stroke-width': 2 }),
-    pathSvg({ d: overview, fill: 'none', stroke: '#ccc' }),
-    pathSvg({
-      d: overview, fill: 'none', stroke: '#ff3f00', 'clip-path': 'url(#brush)',
+    div(() => {
+      const days = slice()
+      const avg = days.reduce((a, b) => a + b, 0) / days.length
+      return \`\${to - from + 1} days · avg \${avg.toFixed(1)} · max \${Math.max(...days)}\`
     }),
-    rectSvg({
-      y: 140, height: 58, fill: '#ff3f00', 'fill-opacity': 0.1,
-      x: () => ox(from), width: () => ox(to) - ox(from),
-    }),
-    rectSvg({
-      x: 0, y: 136, width: W, height: 64, fill: 'transparent',
-      style: { cursor: 'crosshair', touchAction: 'none' },
-      onPointerDown: (e) => {
-        e.currentTarget.setPointerCapture(e.pointerId)
-        const i = index(e)
-        grab = i >= from && i <= to
-          ? { move: true, at: i - from }
-          : { move: false, at: i }
-        if (!grab.move) from = to = i
-        update()
-      },
-      onPointerMove: (e) => {
-        if (!grab) return
-        const i = index(e)
-        if (grab.move) {
-          const len = to - from
-          from = Math.max(0, Math.min(N - 1 - len, i - grab.at))
-          to = from + len
-        } else {
-          from = Math.min(grab.at, i)
-          to = Math.max(grab.at, i)
-        }
-        update()
-      },
-      onPointerUp: () => {
-        grab = null
-        if (to - from < 4) { to = Math.min(N - 1, from + 4); from = to - 4 }
-        update()
-      },
-    }),
+    div(
+      { style: { display: 'flex', gap: '8px' } },
+      button('All', { onClick: () => { from = 0; to = N - 1; update() } }),
+      button('Last 30', { onClick: () => { from = N - 30; to = N - 1; update() } }),
+    ),
   )`;
 
 // ── Tic-tac-toe ──────────────────────────────────────────────────────────
@@ -1591,10 +1818,13 @@ const LINES = [
   [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6],
 ]
 let board: Mark[] = Array(9).fill(null)
+const score = { you: 0, cpu: 0, draw: 0 }
 
 const winner = () =>
   LINES.find(([a, b, c]) => board[a] && board[a] === board[b] && board[a] === board[c])
-const over = () => !!winner() || board.every(Boolean)
+const full = () => board.every(Boolean)
+const over = () => !!winner() || full()
+const center = (i: number) => [(i % 3) * 70 + 35, Math.floor(i / 3) * 70 + 35]
 
 // Win if possible, else block, else the center, else any free cell.
 function computer() {
@@ -1611,7 +1841,27 @@ function play(i: number) {
   if (board[i] || over()) return
   board[i] = 'X'
   if (!over()) board[computer()] = 'O'
+  const w = winner()
+  if (w) score[board[w[0]] === 'X' ? 'you' : 'cpu']++
+  else if (full()) score.draw++
   update()
+}
+
+// The line through the three winning cells, a little longer at both ends.
+function winLine() {
+  const w = winner()
+  if (!w) return ''
+  const [x1, y1] = center(w[0])
+  const [x2, y2] = center(w[2])
+  const dx = Math.sign(x2 - x1) * 24
+  const dy = Math.sign(y2 - y1) * 24
+  return \`M\${x1 - dx},\${y1 - dy} L\${x2 + dx},\${y2 + dy}\`
+}
+
+const status = () => {
+  const w = winner()
+  if (w) return board[w[0]] === 'X' ? 'You win!' : 'The computer wins.'
+  return full() ? 'A draw.' : 'Your move. You are X.'
 }
 
 // pathLength '1' makes every stroke 1 unit long, so a dash of 1
@@ -1621,8 +1871,16 @@ const draw = keyframes({
   from: { raw: { 'stroke-dashoffset': 1 } },
   to: { raw: { 'stroke-dashoffset': 0 } },
 })
-const drawn = css({ animation: \`\${draw} 0.35s ease-out both\` })
-const drawnLate = css({ animation: \`\${draw} 0.35s 0.3s ease-out both\` })
+const drawn = css({ pointerEvents: 'none', animation: \`\${draw} 0.35s ease-out both\` })
+const drawnLate = css({ pointerEvents: 'none', animation: \`\${draw} 0.35s 0.3s ease-out both\` })
+const drawnLast = css({ pointerEvents: 'none', animation: \`\${draw} 0.35s 0.6s ease-out both\` })
+const gridDraw = css({ animation: \`\${draw} 0.6s ease-out both\` })
+const cell = css({
+  cursor: 'pointer', outline: 'none',
+  raw: { fill: 'transparent' },
+  '&:hover': { raw: { fill: 'rgba(255, 63, 0, 0.08)' } },
+  '&:focus-visible': { raw: { fill: 'rgba(255, 63, 0, 0.14)' } },
+})
 const ink = {
   fill: 'none', 'stroke-width': 7, 'stroke-linecap': 'round',
   pathLength: '1', 'stroke-dasharray': '1',
@@ -1630,15 +1888,19 @@ const ink = {
 
 export const TicTacToe = () =>
   div(
+    { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px' } },
     svgSvg(
-      { viewBox: '-5 -5 220 220', width: '220', height: '220' },
-      pathSvg({
+      {
+        viewBox: '-5 -5 220 220', width: '220', height: '220', role: 'group',
+        'aria-label': 'Tic-tac-toe board',
+      },
+      pathSvg(gridDraw, {
         d: 'M70,4 V206 M140,4 V206 M4,70 H206 M4,140 H206',
-        stroke: '#ccc', 'stroke-width': 3, 'stroke-linecap': 'round',
+        fill: 'none', stroke: '#ddd', 'stroke-width': 3, 'stroke-linecap': 'round',
+        pathLength: '1', 'stroke-dasharray': '1',
       }),
       ...Array.from({ length: 9 }, (_, i) => {
-        const x = (i % 3) * 70 + 35
-        const y = Math.floor(i / 3) * 70 + 35
+        const [x, y] = center(i)
         return gSvg(
           when(() => board[i] === 'X',
             pathSvg(drawn, ink, {
@@ -1648,19 +1910,30 @@ export const TicTacToe = () =>
           ).when(() => board[i] === 'O',
             circleSvg(drawnLate, ink, { stroke: '#2563eb', cx: x, cy: y, r: 19 }),
           ),
-          rectSvg({
-            x: x - 35, y: y - 35, width: 70, height: 70,
-            fill: 'transparent', style: { cursor: 'pointer' },
+          rectSvg(cell, {
+            x: x - 33, y: y - 33, width: 66, height: 66, rx: 8,
+            tabindex: '0', role: 'button',
+            'aria-label': () =>
+              \`Row \${Math.floor(i / 3) + 1}, column \${(i % 3) + 1}: \${board[i] ?? 'empty'}\`,
             onClick: () => play(i),
+            onKeyDown: (e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return
+              e.preventDefault()
+              play(i)
+            },
           }),
         )
       }),
+      // the winning line draws in last
+      when(() => !!winner(),
+        pathSvg(drawnLast, ink, { stroke: '#222', 'stroke-width': 5, d: winLine }),
+      ),
     ),
-    p(() => {
-      const w = winner()
-      if (w) return board[w[0]] === 'X' ? 'You win!' : 'The computer wins.'
-      return over() ? 'A draw.' : 'Your move. You are X.'
-    }),
+    div({ 'aria-live': 'polite', style: { fontWeight: '600' } }, status),
+    div(
+      { style: { fontSize: '0.75rem', color: '#8b949e' } },
+      () => \`you \${score.you} · draws \${score.draw} · computer \${score.cpu}\`,
+    ),
     button('New game', {
       onClick: () => { board = Array(9).fill(null); update() },
     }),
@@ -1717,6 +1990,7 @@ const CIRCULAR_TEXT_CODE = `import 'nuclo'
 let text = 'Nuclo • SVG • Builders'
 let radius = 66
 let spinning = true
+let guide = false
 
 // A circle as a path: from the top, clockwise, so the letters
 // stand on its outside.
@@ -1737,12 +2011,15 @@ const spin = keyframes({ to: { transform: 'rotate(360deg)' } })
 export const CircularText = () =>
   div(
     svgSvg(
-      { viewBox: '0 0 200 200', width: '200', height: '200' },
+      {
+        viewBox: '0 0 200 200', width: '200', height: '200',
+        role: 'img', 'aria-label': () => \`Badge: \${text}\`,
+      },
       defsSvg(pathSvg({ id: 'ring', d: ring })),
       circleSvg({ cx: 100, cy: 100, r: () => radius - 24, fill: '#ff3f00' }),
       textSvg(
         {
-          x: 100, y: 100, fill: '#fff', 'font-weight': 800,
+          x: 100, y: 100, fill: 'white', 'font-weight': 800,
           'text-anchor': 'middle', 'dominant-baseline': 'central',
           'font-size': () => Math.round(radius * 0.8),
         },
@@ -1756,6 +2033,11 @@ export const CircularText = () =>
             animationPlayState: spinning ? 'running' : 'paused',
           }),
         },
+        // the path itself, shown on request
+        pathSvg({
+          d: ring, fill: 'none', stroke: '#ccc', 'stroke-dasharray': '3 4',
+          opacity: () => (guide ? 1 : 0),
+        }),
         textSvg(
           {
             'font-weight': 700,
@@ -1769,16 +2051,27 @@ export const CircularText = () =>
       ),
     ),
     input({
-      value: text, maxLength: 40,
+      value: text, maxLength: 40, 'aria-label': 'Badge text',
       onInput: (e) => { text = e.currentTarget.value; update() },
     }),
-    input({
-      type: 'range', min: '48', max: '80', value: String(radius),
-      onInput: (e) => { radius = Number(e.currentTarget.value); update() },
-    }),
-    button(() => (spinning ? 'Pause' : 'Spin'), {
-      onClick: () => { spinning = !spinning; update() },
-    }),
+    label(
+      span('Radius'),
+      input({
+        type: 'range', min: '48', max: '80', step: '1', value: () => String(radius),
+        onInput: (e) => { radius = Number(e.currentTarget.value); update() },
+      }),
+      span(() => String(radius)),
+    ),
+    div(
+      { style: { display: 'flex', gap: '8px' } },
+      button(() => (spinning ? 'Pause' : 'Spin'), {
+        onClick: () => { spinning = !spinning; update() },
+      }),
+      button(() => (guide ? 'Hide path' : 'Show path'), {
+        'aria-pressed': () => String(guide),
+        onClick: () => { guide = !guide; update() },
+      }),
+    ),
   )`;
 
 export const SVG_INTERACTIVE_EXAMPLES: SvgExample[] = [

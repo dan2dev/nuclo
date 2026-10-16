@@ -113,24 +113,26 @@ function ValidationForm() {
 
 const VALIDATION_CODE = `import 'nuclo'
 
-const form = { username: '', email: '', password: '', confirm: '' }
-const touched = new Set<keyof typeof form>()
+const values = { username: '', email: '', password: '', confirm: '' }
+const touched = new Set<keyof typeof values>()
 let availability: 'idle' | 'checking' | 'taken' | 'free' = 'idle'
+let submitted: string | null = null
+const taken = ['ada', 'grace', 'linus'] // stands in for a server
 
 // Validation is a plain function over the state. It runs on every
 // update(), so the messages are always current.
 const errors = () => ({
   username:
-    form.username.length < 3 ? 'At least 3 characters'
+    values.username.length < 3 ? 'At least 3 characters'
     : availability === 'taken' ? 'Already taken'
     : null,
-  email: /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(form.email)
+  email: /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(values.email)
     ? null : 'Enter a valid email',
   password:
-    form.password.length < 8 ? 'At least 8 characters'
-    : !/\\d/.test(form.password) ? 'Include a number'
+    values.password.length < 8 ? 'At least 8 characters'
+    : !/\\d/.test(values.password) ? 'Include a number'
     : null,
-  confirm: form.confirm === form.password ? null : 'Passwords do not match',
+  confirm: values.confirm === values.password ? null : 'Passwords do not match',
 })
 const valid = () =>
   Object.values(errors()).every((e) => e === null) &&
@@ -140,25 +142,35 @@ const valid = () =>
 let timer: ReturnType<typeof setTimeout>
 function checkUsername() {
   clearTimeout(timer)
+  if (values.username.length < 3) { availability = 'idle'; return }
   availability = 'checking'
-  timer = setTimeout(async () => {
-    availability = (await isTaken(form.username)) ? 'taken' : 'free'
+  timer = setTimeout(() => {
+    availability = taken.includes(values.username.toLowerCase()) ? 'taken' : 'free'
     update()
   }, 500)
 }
 
-// A field shows its error only once it was touched (blurred).
-function Field(key: keyof typeof form, label: string, type = 'text') {
+// A field shows its error only once it was touched (blurred):
+// red while invalid, green once it passes.
+function Field(
+  key: keyof typeof values,
+  text: string,
+  type = 'text',
+  placeholder = '',
+  hint: () => string = () => '',
+) {
   const show = () => touched.has(key) && errors()[key]
+  const ok = () => touched.has(key) && !errors()[key]
   return div(
-    label(label),
+    label(text, ' ', small(hint)),
     input({
       type,
-      value: () => form[key],
-      className: () => (show() ? 'invalid' : ''),
+      placeholder,
+      value: () => values[key],
+      style: () => ({ borderColor: show() ? '#ef4444' : ok() ? '#22c55e' : '' }),
       'aria-invalid': () => String(!!show()),
       onInput: (e) => {
-        form[key] = e.currentTarget.value
+        values[key] = e.currentTarget.value
         if (key === 'username') checkUsername()
         update()
       },
@@ -170,12 +182,24 @@ function Field(key: keyof typeof form, label: string, type = 'text') {
 
 export const SignUp = () =>
   form(
-    Field('username', 'Username'),
-    Field('email', 'Email', 'email'),
-    Field('password', 'Password', 'password'),
+    Field('username', 'Username', 'text', 'ada, grace and linus are taken', () =>
+      availability === 'checking' ? 'checking…' : availability === 'free' ? 'available' : ''),
+    Field('email', 'Email', 'email', 'you@example.com'),
+    Field('password', 'Password', 'password', '8+ characters, one number'),
     Field('confirm', 'Confirm password', 'password'),
-    // Disabled until every rule passes and the async check is done.
-    button('Create account', { disabled: () => !valid() }),
+    div(
+      // Disabled until every rule passes and the async check is done.
+      button('Create account', {
+        type: 'button',
+        disabled: () => !valid(),
+        onClick: () => {
+          submitted = JSON.stringify({ username: values.username, email: values.email })
+          update()
+        },
+      }),
+      small(() => (valid() ? '' : 'Fix the fields above')),
+    ),
+    when(() => submitted !== null, p('Submitted ', code(() => submitted ?? ''))),
   )`;
 
 // ── Multi-step wizard ────────────────────────────────────────────────────
@@ -252,6 +276,9 @@ const WIZARD_CODE = `import 'nuclo'
 
 const data = { name: '', email: '', street: '', city: '', zip: '' }
 type Key = keyof typeof data
+const labels: Record<Key, string> = {
+  name: 'Full name', email: 'Email', street: 'Street', city: 'City', zip: 'ZIP',
+}
 const touched = new Set<Key>()
 let step = 0
 let done = false
@@ -262,7 +289,7 @@ const errors = (): Record<Key, string | null> => ({
     ? null : 'Enter a valid email',
   street: data.street.trim() ? null : 'Required',
   city: data.city.trim() ? null : 'Required',
-  zip: /^\\d{5}(-\\d{4})?$/.test(data.zip) ? null : 'Five digits',
+  zip: /^\\d{5}(-\\d{4})?$/.test(data.zip) ? null : 'Five digits, like 12345',
 })
 
 // Each step owns some fields. It is valid when they all are.
@@ -281,40 +308,60 @@ function next() {
   update()
 }
 
-function Field(key: Key, label: string, type = 'text') {
+function Field(key: Key, type = 'text') {
   const show = () => touched.has(key) && errors()[key]
+  const ok = () => touched.has(key) && !errors()[key]
   return div(
-    label(label),
+    label(labels[key]),
     input({
       type,
       value: () => data[key],
-      className: () => (show() ? 'invalid' : ''),
+      style: () => ({ borderColor: show() ? '#ef4444' : ok() ? '#22c55e' : '' }),
+      'aria-invalid': () => String(!!show()),
       onInput: (e) => { data[key] = e.currentTarget.value; update() },
       onBlur: () => { touched.add(key); update() },
     }),
-    p(() => show() || ''),
+    p({ role: 'alert' }, () => show() || ''),
   )
 }
+
+// A bar per step, filled up to the current one
+const Progress = () =>
+  div(
+    { style: { display: 'flex', gap: '6px' } },
+    ...steps.map((_, i) =>
+      div({
+        style: () => ({
+          flex: '1',
+          height: '4px',
+          borderRadius: '2px',
+          backgroundColor: i <= step ? '#ff3f00' : '#cccccc',
+        }),
+      }),
+    ),
+  )
 
 // A step is a when() branch, so moving on builds the next step fresh
 // and keeps the data in the plain object above.
 export const Wizard = () =>
   div(
-    p(() => \`\${steps[step].title}, step \${step + 1} of \${steps.length}\`),
-    when(() => step === 0,
-      Field('name', 'Full name'),
-      Field('email', 'Email', 'email'),
+    Progress(),
+    strong(() => steps[step].title, ' ', small(() => \`step \${step + 1} of \${steps.length}\`)),
+    when(() => step === 0 && !done,
+      Field('name'),
+      Field('email', 'email'),
     )
-      .when(() => step === 1,
-        Field('street', 'Street'),
-        Field('city', 'City'),
-        Field('zip', 'ZIP'),
+      .when(() => step === 1 && !done,
+        Field('street'),
+        Field('city'),
+        Field('zip'),
       )
       .when(() => step === 2 && !done,
-        dl(...(Object.keys(data) as Key[]).flatMap((k) => [
-          dt(k),
+        dl(...(Object.keys(labels) as Key[]).flatMap((k) => [
+          dt(labels[k]),
           dd(() => data[k]),
           button('Edit', {
+            type: 'button',
             onClick: () => {
               step = steps.findIndex((s) => s.fields.includes(k))
               update()
@@ -322,13 +369,17 @@ export const Wizard = () =>
           }),
         ])),
       )
-      .else(p('Submitted.')),
-    button('Back', {
-      disabled: () => step === 0,
-      onClick: () => { step--; update() },
-    }),
-    when(() => step < 2, button('Next', { onClick: next }))
-      .else(button('Submit', { onClick: () => { done = true; update() } })),
+      .else(p('Submitted. ', code(() => JSON.stringify(data)))),
+    when(() => !done,
+      div(
+        button('Back', {
+          disabled: () => step === 0,
+          onClick: () => { step--; update() },
+        }),
+        when(() => step < 2, button('Next', { onClick: next }))
+          .else(button('Submit', { onClick: () => { done = true; update() } })),
+      ),
+    ),
   )`;
 
 // ── Dynamic rows ─────────────────────────────────────────────────────────
@@ -393,14 +444,18 @@ const INVOICE_CODE = `import 'nuclo'
 
 interface Line { id: number; item: string; qty: string; price: string }
 
-let nextId = 2
-let lines: Line[] = [{ id: 1, item: '', qty: '1', price: '' }]
+let nextId = 3
+let lines: Line[] = [
+  { id: 1, item: 'Design', qty: '2', price: '120' },
+  { id: 2, item: '', qty: '1', price: '' },
+]
 const touched = new Set<number>()   // line ids that were blurred
+let submitted: string | null = null
 
 // Validation per row, and for the whole form.
 const lineErrors = (l: Line) => ({
   item: l.item.trim() ? null : 'Name the item',
-  qty: Number.isInteger(+l.qty) && +l.qty > 0 ? null : 'Whole number > 0',
+  qty: Number.isInteger(+l.qty) && +l.qty > 0 ? null : 'Whole number above 0',
   price: l.price !== '' && +l.price >= 0 ? null : 'A price',
 })
 const lineValid = (l: Line) =>
@@ -409,13 +464,21 @@ const valid = () => lines.length > 0 && lines.every(lineValid)
 const total = () =>
   lines.filter(lineValid).reduce((sum, l) => sum + +l.qty * +l.price, 0)
 
+const rowStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) 64px 84px 36px',
+  gap: '6px',
+}
+
 // One input per cell. The row object is the state, so an input writes
 // straight into it and update() refreshes the errors and the total.
-const cell = (l: Line, key: 'item' | 'qty' | 'price') =>
+const cell = (l: Line, key: 'item' | 'qty' | 'price', placeholder: string, type = 'text') =>
   input({
+    type,
+    placeholder,
     value: () => l[key],
-    className: () =>
-      touched.has(l.id) && lineErrors(l)[key] ? 'invalid' : '',
+    style: () => ({ borderColor: touched.has(l.id) && lineErrors(l)[key] ? '#ef4444' : '' }),
+    'aria-label': \`\${key} of line \${l.id}\`,
     onInput: (e) => { l[key] = e.currentTarget.value; update() },
     onBlur: () => { touched.add(l.id); update() },
   })
@@ -424,23 +487,48 @@ const cell = (l: Line, key: 'item' | 'qty' | 'price') =>
 // removing other rows does not touch them, and their focus survives.
 export const Invoice = () =>
   form(
+    div({ style: rowStyle }, small('Item'), small('Qty'), small('Price'), span()),
     list(() => lines, (l) =>
       div(
-        cell(l, 'item'), cell(l, 'qty'), cell(l, 'price'),
-        button('✕', {
-          onClick: () => { lines = lines.filter((x) => x !== l); update() },
-        }),
-        p(() => Object.values(lineErrors(l)).find((e) => e) ?? ''),
+        div(
+          { style: rowStyle },
+          cell(l, 'item', 'Item'),
+          cell(l, 'qty', '1', 'number'),
+          cell(l, 'price', '0.00', 'number'),
+          button('✕', {
+            type: 'button',
+            title: 'Remove',
+            'aria-label': 'Remove line',
+            onClick: () => { lines = lines.filter((x) => x !== l); update() },
+          }),
+        ),
+        p({ role: 'alert' }, () =>
+          touched.has(l.id) ? Object.values(lineErrors(l)).find((e) => e) ?? '' : ''),
       ),
     ),
-    p(() => \`Total \${total().toFixed(2)}\`),
-    button('Add line', {
-      onClick: () => {
-        lines.push({ id: nextId++, item: '', qty: '1', price: '' })
-        update()
-      },
-    }),
-    button('Send invoice', { disabled: () => !valid() }),
+    div(
+      { style: { display: 'flex', justifyContent: 'space-between', fontWeight: '600' } },
+      span('Total'),
+      span(() => total().toFixed(2)),
+    ),
+    div(
+      button('Add line', {
+        type: 'button',
+        onClick: () => {
+          lines.push({ id: nextId++, item: '', qty: '1', price: '' })
+          update()
+        },
+      }),
+      button('Send invoice', {
+        type: 'button',
+        disabled: () => !valid(),
+        onClick: () => {
+          submitted = \`\${lines.length} lines, total \${total().toFixed(2)}\`
+          update()
+        },
+      }),
+    ),
+    when(() => submitted !== null, p(() => submitted ?? '')),
   )`;
 
 export const FORM_EXAMPLES: FormExample[] = [

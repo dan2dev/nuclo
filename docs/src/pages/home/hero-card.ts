@@ -12,7 +12,10 @@ import { Paint } from "./playground.ts";
 // a <dialog> beside its source: the card's branch goes and the dialog's comes on, so one
 // instance runs at a time and its state carries over both ways.
 
-export const EXAMPLES: HeroExample[] = [Paint, Draw, Fireworks, Waves, Sort, Chase, Reflex, Warp, Life];
+// Keyed by export name, which "Open in StackBlitz" imports from the shipped source
+const BY_NAME = { Paint, Draw, Fireworks, Waves, Sort, Chase, Reflex, Warp, Life };
+export const EXAMPLES: HeroExample[] = Object.values(BY_NAME);
+const NAMES = Object.keys(BY_NAME);
 const N = EXAMPLES.length;
 const HERO = "hero-card";
 const AUTO_MS = 9000; // per example, while the card plays on its own
@@ -199,6 +202,7 @@ export function HeroCard() {
         ms.head,
         Titles("hero-code-title"),
         Arrows(),
+        button(cs.codeBtn, { type: "button", onClick: () => void import("../../stackblitz.ts").then((m) => m.openHeroExample(NAMES[active], EXAMPLES[active].title)) }, Icon("M13 3L4 14h7l-1 7 9-11h-7l1-7z", 16), "StackBlitz"),
         button(cs.arrow, { type: "button", "aria-label": "Close code view", onClick: () => dialogEl?.close() }, Icon("M6 6l12 12M18 6L6 18")),
       ),
       inDialog,

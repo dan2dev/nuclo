@@ -116,17 +116,27 @@ const STACKED_CODE = `import 'nuclo'
 type Mode = 'stacked' | 'stream' | 'percent'
 
 const W = 320
-const PT = 6
-const PH = 142
+const H = 170
+const PT = 6 // plot top
+const PH = 142 // plot height
+const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const names = ['Core', 'Router', 'Docs', 'Tools']
 const colors = ['#ff3f00', '#2563eb', '#ff8a00', '#6b7280']
-const data = names.map(() =>
-  Array.from({ length: 12 }, () => 10 + Math.round(Math.random() * 40)),
-)
-const on = names.map(() => true)
-let mode: Mode = 'stacked'
 
-const x = (i: number) => 28 + (i / 11) * (W - 34)
+// A seeded random walk per series, so every reload draws the same chart.
+let seed = 3
+const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v))
+const data = names.map((_, k) => {
+  let v = 16 + k * 6 + random() * 8
+  return months.map(() => Math.round((v = clamp(v + (random() - 0.45) * 10, 6, 52))))
+})
+
+const on = names.map(() => true) // which series are shown
+let mode: Mode = 'stacked'
+let hover: number | null = null // the month under the pointer
+
+const x = (i: number) => 28 + (i / (months.length - 1)) * (W - 34)
 
 // Every series is a band between a low edge and a high edge.
 // A hidden series only gets zero thickness, so every path keeps
@@ -135,7 +145,7 @@ const x = (i: number) => 28 + (i / 11) * (W - 34)
 //   stream:  the pile is centered on zero
 //   percent: each month is divided by its total
 function layout() {
-  const rows = data[0].map((_, i) => data.map((s, k) => (on[k] ? s[i] : 0)))
+  const rows = months.map((_, i) => data.map((s, k) => (on[k] ? s[i] : 0)))
   const totals = rows.map((r) => r.reduce((a, b) => a + b, 0))
   const peak = Math.max(1, ...totals)
   const lo = names.map((): number[] => [])
@@ -159,10 +169,11 @@ const py = (v: number, d0: number, d1: number) =>
 
 // Curves with horizontal tangents never overshoot the data.
 function smooth(pts: number[][], from: 'M' | 'L') {
-  let d = from + pts[0]
+  let d = from + pts[0][0].toFixed(1) + ',' + pts[0][1].toFixed(1)
   for (let i = 1; i < pts.length; i++) {
-    const mid = (pts[i - 1][0] + pts[i][0]) / 2
-    d += ' C' + mid + ',' + pts[i - 1][1] + ' ' + mid + ',' + pts[i][1] + ' ' + pts[i]
+    const mid = ((pts[i - 1][0] + pts[i][0]) / 2).toFixed(1)
+    d += ' C' + mid + ',' + pts[i - 1][1].toFixed(1) + ' ' + mid + ',' + pts[i][1].toFixed(1) +
+      ' ' + pts[i][0].toFixed(1) + ',' + pts[i][1].toFixed(1)
   }
   return d
 }
@@ -175,26 +186,97 @@ function band(k: number) {
   return smooth(top, 'M') + ' ' + smooth(bottom, 'L') + ' Z'
 }
 
+// The y of a grid line, and the label that goes with it.
+function level(f: number) {
+  const { d0, d1 } = layout()
+  return py(d0 + (d1 - d0) * f, d0, d1)
+}
+function label(f: number) {
+  const { d0, d1 } = layout()
+  if (mode === 'stream') return ''
+  return mode === 'percent' ? Math.round(f * 100) + '%' : String(Math.round(d0 + (d1 - d0) * f))
+}
+
+const caption = () =>
+  hover === null
+    ? 'Hover a month. Click a name to hide it.'
+    : months[hover] + ' · ' +
+      names.map((n, k) => (on[k] ? n + ' ' + data[k][hover!] : '')).filter(Boolean).join(' · ')
+
+const row = { display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px' }
+
 export const StackedArea = () =>
   div(
+    { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px', width: '100%', maxWidth: '380px' } },
     svgSvg(
-      { viewBox: '0 0 320 170', width: '320', height: '170' },
+      {
+        viewBox: '0 0 320 170', role: 'img', 'aria-label': 'Stacked area chart',
+        style: { width: '100%', overflow: 'visible' },
+        onPointerLeave: () => { hover = null; update() },
+      },
+      // grid lines and their labels follow the layout
+      ...[0, 0.25, 0.5, 0.75, 1].map((f) =>
+        gSvg(
+          lineSvg({ x1: 24, x2: W, stroke: '#ddd', 'stroke-dasharray': '2 4', y1: () => level(f) + 0.5, y2: () => level(f) + 0.5 }),
+          textSvg({ x: 20, 'text-anchor': 'end', 'font-size': 11, 'fill-opacity': 0.6, y: () => level(f) + 4 }, () => label(f)),
+        ),
+      ),
       ...names.map((_, k) =>
         pathSvg({
-          fill: colors[k], 'fill-opacity': 0.88, stroke: '#fff',
+          fill: colors[k], 'fill-opacity': 0.88, stroke: '#fff', 'stroke-width': 1,
           style: { transition: 'd 0.5s cubic-bezier(0.22, 1, 0.36, 1)' },
           d: () => band(k),
         }),
       ),
-    ),
-    ...names.map((name, k) =>
-      button(name, {
-        'aria-pressed': () => String(on[k]),
-        onClick: () => { on[k] = !on[k]; update() },
+      // a dashed line that follows the pointer
+      lineSvg({
+        x1: 0, x2: 0, y1: PT, y2: PT + PH, stroke: '#888', 'stroke-dasharray': '3 3',
+        opacity: () => (hover === null ? 0 : 1),
+        style: () => ({ pointerEvents: 'none', transition: 'transform 0.12s ease-out', transform: 'translateX(' + x(hover ?? 0) + 'px)' }),
+      }),
+      ...months.map((m, i) =>
+        textSvg({ x: x(i), y: H - 4, 'text-anchor': 'middle', 'font-size': 11, 'fill-opacity': 0.6, opacity: i % 2 ? 0 : 1 }, m),
+      ),
+      // a transparent rect over the plot reads the pointer and picks the month
+      rectSvg({
+        x: 0, y: 0, width: W, height: PT + PH, fill: 'transparent',
+        style: { cursor: 'crosshair', touchAction: 'none' },
+        onPointerMove: (e) => {
+          const box = (e.currentTarget as Element).getBoundingClientRect()
+          hover = Math.round(clamp((e.clientX - box.left) / box.width, 0, 1) * (months.length - 1))
+          update()
+        },
       }),
     ),
-    ...(['stacked', 'stream', 'percent'] as const).map((m) =>
-      button(m, { onClick: () => { mode = m; update() } }),
+    div(
+      { style: { fontFamily: 'ui-monospace, monospace', fontSize: '12px', textAlign: 'center', minHeight: '36px', opacity: '0.7' } },
+      caption,
+    ),
+    // one chip per series: click to hide or show it
+    div(
+      { style: row },
+      ...names.map((name, k) =>
+        button(
+          {
+            'aria-pressed': () => String(on[k]),
+            style: () => ({ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '15px', opacity: on[k] ? '1' : '0.45' }),
+            onClick: () => { on[k] = !on[k]; update() },
+          },
+          span({ style: { width: '9px', height: '9px', borderRadius: '50%', backgroundColor: colors[k] } }),
+          name,
+        ),
+      ),
+    ),
+    // the layout buttons: the pressed one gets an outline
+    div(
+      { style: row },
+      ...(['stacked', 'stream', 'percent'] as const).map((m) =>
+        button(m, {
+          'aria-pressed': () => String(mode === m),
+          style: () => ({ outline: mode === m ? '2px solid currentColor' : 'none', outlineOffset: '2px' }),
+          onClick: () => { mode = m; update() },
+        }),
+      ),
     ),
   )`;
 
@@ -322,53 +404,64 @@ function Treemap() {
 
 const TREEMAP_CODE = `import 'nuclo'
 
-type Node = { name: string; kb: number; hue: number; parent?: Node; children?: Node[] }
+type Node = { name: string; kb: number; gz: number; hue: number; parent?: Node; children?: Node[] }
 type Rect = { x: number; y: number; w: number; h: number }
+type Metric = 'kb' | 'gz' | 'count'
 
 const W = 320
 const H = 200
 const colors = ['#ff3f00', '#2563eb', '#ff8a00', '#6b7280']
+const fade = keyframes({ from: { opacity: '0' }, to: { opacity: '1' } })
+const slide = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
-const leaf = (name: string, kb: number): Node => ({ name, kb, hue: 0 })
+const leaf = (name: string, kb: number, gz: number): Node => ({ name, kb, gz, hue: 0 })
 const group = (name: string, ...children: Node[]): Node =>
-  ({ name, kb: 0, hue: 0, children })
+  ({ name, kb: 0, gz: 0, hue: 0, children })
 
 const root = group('bundle',
-  group('core', leaf('element', 14), leaf('list', 9), leaf('update', 6), leaf('ssr', 12)),
-  group('router', leaf('match', 5), leaf('layers', 4), leaf('link', 2)),
+  group('core', leaf('element', 14, 5.1), leaf('list', 9, 3.2), leaf('when', 4, 1.6), leaf('update', 6, 2.4), leaf('style', 11, 3.9), leaf('svg', 8, 2.1), leaf('ssr', 12, 4.4)),
+  group('router', leaf('match', 5, 1.9), leaf('layers', 4, 1.5), leaf('loaders', 6, 2.2), leaf('link', 2, 0.9), leaf('history', 3, 1.3)),
   group('docs',
-    group('pages', leaf('home', 18), leaf('api', 24)),
-    group('demos', leaf('charts', 22), leaf('forms', 16)),
+    group('pages', leaf('home', 18, 5), leaf('api', 24, 7.5), leaf('examples', 30, 9.4)),
+    group('demos', leaf('charts', 22, 7.1), leaf('forms', 16, 5.2), leaf('apps', 34, 10.2)),
   ),
-  group('tools', leaf('cli', 10), leaf('vite', 7)),
+  group('tools', leaf('cli', 10, 3.7), leaf('vite', 7, 2.8), leaf('lint', 5, 1.8)),
 )
 // parents and colors: one hue per top-level child
-root.children!.forEach((n, i) => {
-  const set = (c: Node, parent: Node) => {
-    c.parent = parent; c.hue = i
-    c.children?.forEach((cc) => set(cc, c))
+root.children!.forEach((top, i) => {
+  const paint = (n: Node, parent: Node) => {
+    n.parent = parent
+    n.hue = i
+    n.children?.forEach((c) => paint(c, n))
   }
-  set(n, root)
+  paint(top, root)
 })
 
-let focus = root
-let metric: 'kb' | 'count' = 'kb'
-let shown: Node[] = []
-let pos = new Map<Node, Rect>()
+let metric: Metric = 'kb'
+let focus = root // the node we zoomed into
+let hover: Node | null = null
+let shown: Node[] = [] // the cells on screen
+let pos = new Map<Node, Rect>() // the box of every cell
 
+const sum = (list: number[]) => list.reduce((a, b) => a + b, 0)
 const weight = (n: Node): number =>
-  n.children ? n.children.reduce((s, c) => s + weight(c), 0) : metric === 'kb' ? n.kb : 1
+  n.children ? sum(n.children.map(weight)) : metric === 'count' ? 1 : n[metric]
+const trail = (n: Node): Node[] => (n.parent ? [...trail(n.parent), n] : [n])
+const format = (n: Node) =>
+  metric === 'count'
+    ? weight(n) + (weight(n) === 1 ? ' module' : ' modules')
+    : weight(n).toFixed(1) + ' KB'
 
 // Squarified layout: keep adding to the row while the worst
 // aspect ratio of the row gets better, then start a new row.
 function tile(nodes: Node[], box: Rect) {
-  const total = nodes.reduce((s, n) => s + weight(n), 0)
+  const total = sum(nodes.map(weight))
   let rest = nodes
     .map((node) => ({ node, area: (weight(node) / total) * box.w * box.h }))
     .sort((a, b) => b.area - a.area)
   let { x, y, w, h } = box
   const worst = (row: number[], side: number) => {
-    const s = row.reduce((a, b) => a + b, 0)
+    const s = sum(row)
     return Math.max(...row.map((a) => Math.max((side * side * a) / (s * s), (s * s) / (side * side * a))))
   }
   while (rest.length) {
@@ -378,7 +471,7 @@ function tile(nodes: Node[], box: Rect) {
       worst(rest.slice(0, n + 1).map((r) => r.area), side) <=
       worst(rest.slice(0, n).map((r) => r.area), side)) n++
     const row = rest.slice(0, n)
-    const s = row.reduce((a, r) => a + r.area, 0)
+    const s = sum(row.map((r) => r.area))
     if (w >= h) { // a column on the left
       let cy = y
       for (const r of row) { pos.set(r.node, { x, y: cy, w: s / h, h: r.area / (s / h) }); cy += r.area / (s / h) }
@@ -398,17 +491,31 @@ function relayout() {
   tile(focus.children!, { x: 0, y: 0, w: W, h: H })
   for (const n of focus.children!) {
     const r = pos.get(n)!
-    if (n.children) tile(n.children, { x: r.x + 3, y: r.y + 17, w: r.w - 6, h: r.h - 20 })
+    if (n.children) tile(n.children, { x: r.x + 3, y: r.y + 17, w: Math.max(1, r.w - 6), h: Math.max(1, r.h - 20) })
   }
 }
 
 function go(node: Node) {
   focus = node
+  hover = null
   shown = node.children!.flatMap((n) => (n.children ? [n, ...n.children] : [n]))
   relayout()
   update()
 }
 go(root)
+
+const box = (n: Node) => pos.get(n) ?? { x: 0, y: 0, w: 0, h: 0 }
+// a name is only shown when the cell is big enough for it
+const fits = (n: Node, w: number, h: number) => (box(n).w > w && box(n).h > h ? 1 : 0)
+
+const caption = () =>
+  hover
+    ? trail(hover).slice(1).map((n) => n.name).join(' / ') + ' · ' + format(hover) +
+      ' · ' + Math.round((weight(hover) / weight(focus)) * 100) + '%'
+    : format(focus) + ' · ' +
+      (focus.children!.some((n) => n.children) ? 'click a group to zoom in' : focus.children!.length + ' modules')
+
+const row = { display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px' }
 
 // list() matches nodes by identity. Switching the metric keeps
 // every cell, so the CSS transition on width, height and
@@ -416,32 +523,79 @@ go(root)
 // swaps the cells, and a fade animation brings the new ones in.
 export const Treemap = () =>
   div(
+    { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px', width: '100%', maxWidth: '380px' } },
     svgSvg(
-      { viewBox: '0 0 320 200', width: '320', height: '200' },
+      {
+        viewBox: '0 0 320 200', role: 'img', 'aria-label': 'Treemap',
+        style: { width: '100%', overflow: 'visible' },
+        onPointerLeave: () => { hover = null; update() },
+      },
       list(() => shown, (n) =>
         gSvg(
           {
             style: () => ({
-              transition: 'transform 0.45s',
-              transform: 'translate(' + pos.get(n)!.x + 'px,' + pos.get(n)!.y + 'px)',
+              animation: fade + ' 0.45s ease both',
+              transition: 'transform 0.45s ' + slide,
+              transform: 'translate(' + box(n).x + 'px,' + box(n).y + 'px)',
               cursor: n.children ? 'pointer' : 'default',
             }),
             onClick: () => { if (n.children) go(n) },
+            onPointerEnter: () => { hover = n; update() },
           },
           rectSvg({
-            x: 0.5, y: 0.5, rx: 3, fill: colors[n.hue],
-            'fill-opacity': n.children ? 0.18 : 0.82,
-            style: { transition: 'width 0.45s, height 0.45s' },
-            width: () => pos.get(n)!.w - 1,
-            height: () => pos.get(n)!.h - 1,
+            x: 0.5, y: 0.5, rx: 3, fill: colors[n.hue], stroke: '#fff',
+            style: { transition: 'width 0.45s ' + slide + ', height 0.45s ' + slide + ', fill-opacity 0.2s' },
+            'fill-opacity': () =>
+              n.children
+                ? (n.parent === focus ? 0.18 : hover === n ? 0.8 : 0.55)
+                : (hover === n ? 1 : 0.82),
+            width: () => Math.max(0, box(n).w - 1),
+            height: () => Math.max(0, box(n).h - 1),
           }),
-          textSvg({ x: 6, y: n.children ? 12 : 14, 'font-size': 10 }, n.name),
+          textSvg(
+            {
+              x: 6, y: n.children ? 12 : 14, 'font-size': n.children ? 11 : 10, 'font-weight': n.children ? 600 : 400,
+              style: { pointerEvents: 'none', transition: 'opacity 0.2s', fill: n.children ? 'currentColor' : '#fff' },
+              opacity: () => fits(n, n.name.length * 5.6 + 12, 16),
+            },
+            n.name,
+          ),
+          n.children ? null : textSvg(
+            {
+              x: 6, y: 26, 'font-size': 10, 'fill-opacity': 0.8,
+              style: { pointerEvents: 'none', transition: 'opacity 0.2s', fill: '#fff' },
+              opacity: () => fits(n, 54, 34),
+            },
+            () => format(n),
+          ),
         ),
       ),
     ),
-    button('Size', { onClick: () => { metric = 'kb'; relayout(); update() } }),
-    button('Modules', { onClick: () => { metric = 'count'; relayout(); update() } }),
-    button('Back', { onClick: () => { if (focus.parent) go(focus.parent) } }),
+    // breadcrumbs: click one to zoom back out
+    div(
+      { style: { display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '4px', fontSize: '0.8125rem' } },
+      list(() => trail(focus), (n) =>
+        button(n.name, {
+          'aria-current': () => String(n === focus),
+          style: () => ({ height: 'auto', padding: '2px 8px', borderRadius: '10px', border: 'none', fontWeight: n === focus ? '700' : '400' }),
+          onClick: () => { if (n !== focus) go(n) },
+        }),
+      ),
+    ),
+    div(
+      { style: { fontFamily: 'ui-monospace, monospace', fontSize: '12px', textAlign: 'center', minHeight: '36px', opacity: '0.7' } },
+      caption,
+    ),
+    div(
+      { style: row },
+      ...([['kb', 'Size'], ['gz', 'Gzip'], ['count', 'Modules']] as const).map(([m, name]) =>
+        button(name, {
+          'aria-pressed': () => String(metric === m),
+          style: () => ({ outline: metric === m ? '2px solid currentColor' : 'none', outlineOffset: '2px' }),
+          onClick: () => { metric = m; relayout(); update() },
+        }),
+      ),
+    ),
   )`;
 
 // ── Histogram ────────────────────────────────────────────────────────────
@@ -537,36 +691,46 @@ const HISTOGRAM_CODE = `import 'nuclo'
 type Dist = 'normal' | 'uniform' | 'bimodal' | 'skewed'
 
 const W = 320
-const BASE = 136
+const H = 150
+const BASE = H - 14 // the y of the baseline
+const MAX_BINS = 40
+
+// A seeded generator, so the first frame is always the same.
+let seed = 41
+const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647
 const gauss = (mean: number, sd: number) =>
-  mean + sd * Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random())
+  mean + sd * Math.sqrt(-2 * Math.log(1 - random())) * Math.cos(2 * Math.PI * random())
 
 const draw: Record<Dist, () => number> = {
   normal: () => gauss(50, 14),
-  uniform: () => Math.random() * 100,
-  bimodal: () => (Math.random() < 0.5 ? gauss(27, 8) : gauss(72, 10)),
-  skewed: () => -Math.log(1 - Math.random()) * 18,
+  uniform: () => random() * 100,
+  bimodal: () => (random() < 0.5 ? gauss(27, 8) : gauss(72, 10)),
+  skewed: () => -Math.log(1 - random()) * 18,
 }
 
 let dist: Dist = 'normal'
 let bins = 20
 let samples: number[] = []
 let streaming = false
+let fit = true
 let counts: number[] = []
 let peak = 4
 let mean = 0
 let sd = 1
+
+const sum = (list: number[]) => list.reduce((a, b) => a + b, 0)
 
 // One pass over the samples gives the counts per bin and the stats.
 function recount() {
   counts = Array(bins).fill(0)
   for (const s of samples) if (s >= 0 && s < 100) counts[Math.floor((s / 100) * bins)]++
   peak = Math.max(4, ...counts)
-  mean = samples.reduce((a, b) => a + b, 0) / (samples.length || 1)
-  sd = Math.sqrt(samples.reduce((a, s) => a + (s - mean) ** 2, 0) / (samples.length || 1)) || 1
+  mean = sum(samples) / (samples.length || 1)
+  sd = Math.sqrt(sum(samples.map((s) => (s - mean) ** 2)) / (samples.length || 1)) || 1
 }
 function add(count: number) {
   for (let i = 0; i < count; i++) samples.push(draw[dist]())
+  if (samples.length > 6000) samples = samples.slice(-6000)
   recount()
 }
 add(500)
@@ -579,21 +743,30 @@ const curve = () =>
     const v = (i / 60) * 100
     const n = samples.length * (100 / bins) *
       (Math.exp(-0.5 * ((v - mean) / sd) ** 2) / (sd * Math.sqrt(2 * Math.PI)))
-    return (i ? 'L' : 'M') + (v / 100) * W + ',' + (BASE - Math.min(n * scale(), BASE))
+    return (i ? 'L' : 'M') + ((v / 100) * W).toFixed(1) + ',' + (BASE - Math.min(n * scale(), BASE)).toFixed(1)
   }).join(' ')
 
 // The bars come from a list of slots, and the slider only
 // changes how many of them are shown. Every bar reads its count,
 // so a stream of samples grows them, and a CSS transition on
 // x, width, y and height smooths both that and a new bin count.
-const slots = Array.from({ length: 40 }, (_, i) => ({ i }))
+const slots = Array.from({ length: MAX_BINS }, (_, i) => ({ i }))
+
+// Run a change, recount, and update only the 'hist' scope.
+const run = (change: () => void) => () => { change(); recount(); update('hist') }
+
+const row = { display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px' }
+const pressed = (on: () => boolean) => () => ({ outline: on() ? '2px solid currentColor' : 'none', outlineOffset: '2px' })
 
 export const Histogram = () =>
   div(
+    { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px', width: '100%', maxWidth: '380px' } },
     scope('hist'),
     svgSvg(
       {
-        viewBox: '0 0 320 150', width: '320', height: '150',
+        viewBox: '0 0 320 150', role: 'img', 'aria-label': 'Histogram',
+        style: { width: '100%', overflow: 'visible' },
+        // a timer that adds samples while streaming
         onMount: () => {
           const timer = setInterval(() => {
             if (!streaming) return
@@ -603,28 +776,72 @@ export const Histogram = () =>
           return () => clearInterval(timer)
         },
       },
+      lineSvg({ x1: 0, x2: W, y1: BASE + 0.5, y2: BASE + 0.5, stroke: '#ddd' }),
       list(() => slots.slice(0, bins), (s) =>
         rectSvg({
-          rx: 2, fill: '#ff3f00',
-          style: { transition: 'x 0.25s, y 0.25s, width 0.25s, height 0.25s' },
+          rx: 2, fill: '#ff3f00', 'fill-opacity': 0.85,
+          style: { transition: 'x 0.25s ease, y 0.25s ease, width 0.25s ease, height 0.25s ease' },
           x: () => (s.i * W) / bins + 0.75,
           width: () => W / bins - 1.5,
           y: () => BASE - counts[s.i] * scale(),
           height: () => counts[s.i] * scale(),
         }),
       ),
-      pathSvg({ d: curve, fill: 'none', stroke: '#222', 'stroke-width': 2 }),
+      pathSvg({
+        fill: 'none', stroke: '#222', 'stroke-width': 2, 'stroke-linejoin': 'round',
+        style: { pointerEvents: 'none' },
+        opacity: () => (fit && samples.length > 1 ? 1 : 0),
+        d: curve,
+      }),
+      lineSvg({
+        y1: 4, y2: BASE, stroke: '#888', 'stroke-dasharray': '3 3', style: { pointerEvents: 'none' },
+        x1: () => (mean / 100) * W,
+        x2: () => (mean / 100) * W,
+      }),
+      ...[0, 25, 50, 75, 100].map((v) =>
+        textSvg(
+          { x: (v / 100) * W, y: H - 2, 'font-size': 11, 'fill-opacity': 0.6, 'text-anchor': v === 0 ? 'start' : v === 100 ? 'end' : 'middle' },
+          String(v),
+        ),
+      ),
     ),
-    p(() => 'n ' + samples.length + ' · mean ' + mean.toFixed(1) + ' · σ ' + sd.toFixed(1)),
-    ...(['normal', 'uniform', 'bimodal', 'skewed'] as const).map((d) =>
-      button(d, { onClick: () => { dist = d; samples = []; add(500); update('hist') } }),
+    div(
+      { style: { fontFamily: 'ui-monospace, monospace', fontSize: '12px', textAlign: 'center', minHeight: '36px', opacity: '0.7' } },
+      () => 'n ' + samples.length + ' · mean ' + mean.toFixed(1) + ' · σ ' + sd.toFixed(1) + ' · tallest bin ' + peak,
     ),
-    button('+100', { onClick: () => { add(100); update('hist') } }),
-    button('Stream', { onClick: () => { streaming = !streaming; update('hist') } }),
-    input({
-      type: 'range', min: 5, max: 40, value: () => bins,
-      onInput: (e) => { bins = Number(e.currentTarget.value); recount(); update('hist') },
-    }),
+    div(
+      { style: row },
+      ...(['normal', 'uniform', 'bimodal', 'skewed'] as const).map((d) =>
+        button(d, {
+          'aria-pressed': () => String(dist === d),
+          style: pressed(() => dist === d),
+          onClick: run(() => { dist = d; samples = []; add(500) }),
+        }),
+      ),
+    ),
+    div(
+      { style: row },
+      button('+100', { style: { color: '#fff', backgroundColor: '#ff3f00', borderColor: '#ff3f00' }, onClick: run(() => add(100)) }),
+      button('Stream', {
+        'aria-pressed': () => String(streaming),
+        style: pressed(() => streaming),
+        onClick: () => { streaming = !streaming; update('hist') },
+      }),
+      button('Normal fit', {
+        'aria-pressed': () => String(fit),
+        style: pressed(() => fit),
+        onClick: () => { fit = !fit; update('hist') },
+      }),
+    ),
+    label(
+      { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+      span('Bins'),
+      input({
+        type: 'range', min: '5', max: String(MAX_BINS), step: '1', value: () => String(bins),
+        onInput: (e) => { bins = Number(e.currentTarget.value); recount(); update('hist') },
+      }),
+      span(() => String(bins)),
+    ),
   )`;
 
 export const DATA_CHART_EXAMPLES: SvgExample[] = [
