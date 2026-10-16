@@ -57,9 +57,6 @@ yarn create nuclo
 
 # bun
 bun create nuclo
-
-# deno
-deno run -A npm:create-nuclo
 ```
 
 Follow the prompts to choose a project name and template. Or skip the prompts:

@@ -37,7 +37,6 @@ const CREATE_COMMANDS = {
   npm: "npm create nuclo@latest",
   bun: "bun create nuclo",
   pnpm: "pnpm create nuclo",
-  deno: "deno run -A npm:create-nuclo",
 };
 
 function QuickStartTabs() {
@@ -167,7 +166,7 @@ import { render, update, getCssText } from 'nuclo'
       <ul>
         <li><code>nuclo</code>: registers the globals and exports the 16 helpers plus <code>getCssText</code> and <code>resetStyles</code>.</li>
         <li><code>nuclo/ssr</code>: <code>renderToString</code>, <code>renderManyToString</code>, <code>renderToStringWithContainer</code> and <code>getCssText</code>. See <a href="#api-ssr">Server Rendering</a>.</li>
-        <li><code>nuclo/polyfill</code>: a small DOM for Node, Bun and Deno. See <a href="#api-polyfill">nuclo/polyfill</a>.</li>
+        <li><code>nuclo/polyfill</code>: a small DOM for Node and Bun. See <a href="#api-polyfill">nuclo/polyfill</a>.</li>
         <li><code>nuclo/types</code>: types only. See <a href="#typescript-setup">TypeScript</a>.</li>
       </ul>
     `,
@@ -1125,7 +1124,7 @@ import 'nuclo/polyfill'
 // NucloDocument, NucloElement, NucloText, NucloNode
 `),
         content: `
-      <p>A small DOM so Nuclo can build trees in Node, Bun and Deno. Import it once, before your first render. Most apps only need the plain import.</p>
+      <p>A small DOM so Nuclo can build trees in Node and Bun. Import it once, before your first render. Most apps only need the plain import.</p>
       <ul>
         <li>When there is no <code>window</code>, it sets <code>globalThis.document</code>, <code>Node</code>, <code>Element</code> and <code>HTMLElement</code>, but only the ones that are missing. It does not create <code>window</code>.</li>
         <li>In a browser, or under jsdom, it does nothing.</li>

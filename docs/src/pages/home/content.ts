@@ -222,7 +222,7 @@ export const QUICK_START_STEPS = [
   {
     num: "01 - INSTALL",
     title: "Install",
-    desc: "Add Nuclo to your project with npm, pnpm, yarn, bun, or deno.",
+    desc: "Add Nuclo to your project with npm, pnpm, yarn, or bun.",
     code: `<span class="pt">$</span> <span class="fn">npm</span> create nuclo@latest<span class="tcaret"></span>`,
     lang: "terminal",
   },

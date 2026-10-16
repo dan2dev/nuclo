@@ -62,7 +62,7 @@ render(App, document.getElementById('app')!)
 - [render()](https://nuclo.dev/docs#api-render): build a tree and append it to the DOM
 - [hydrate()](https://nuclo.dev/docs#api-hydrate): take over server-rendered HTML
 - [Server Rendering](https://nuclo.dev/docs#api-ssr): `renderToString`, `renderManyToString`, `renderToStringWithContainer` from `nuclo/ssr`
-- [nuclo/polyfill](https://nuclo.dev/docs#api-polyfill): the minimal DOM for Node, Bun and Deno
+- [nuclo/polyfill](https://nuclo.dev/docs#api-polyfill): the minimal DOM for Node and Bun
 - [css()](https://nuclo.dev/docs#api-styling): typed style objects compiled to shared classes
 - [Style Objects](https://nuclo.dev/docs#style-objects): shorthands, pseudo states, `&` selectors, `@` rules and `raw`
 - [cx()](https://nuclo.dev/docs#api-cx): compose styles with last-wins conflict resolution

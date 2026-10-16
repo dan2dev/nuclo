@@ -48,7 +48,6 @@ Source: https://nuclo.dev/docs#quick-start
 npm create nuclo@latest
 bun create nuclo
 pnpm create nuclo
-deno run -A npm:create-nuclo
 ```
 
 It asks for a project name. To skip the prompt, pass the name and flags. With npm, put `--` before the flags:
@@ -117,7 +116,7 @@ import { render, update, getCssText } from 'nuclo'
 
 - `nuclo`: registers the globals and exports the 16 helpers plus `getCssText` and `resetStyles`.
 - `nuclo/ssr`: `renderToString`, `renderManyToString`, `renderToStringWithContainer` and `getCssText`. See [Server Rendering](https://nuclo.dev/docs#api-ssr).
-- `nuclo/polyfill`: a small DOM for Node, Bun and Deno. See [nuclo/polyfill](https://nuclo.dev/docs#api-polyfill).
+- `nuclo/polyfill`: a small DOM for Node and Bun. See [nuclo/polyfill](https://nuclo.dev/docs#api-polyfill).
 - `nuclo/types`: types only. See [TypeScript](https://nuclo.dev/docs#typescript-setup).
 
 ### TypeScript
@@ -1227,7 +1226,7 @@ import 'nuclo/polyfill'
 // NucloDocument, NucloElement, NucloText, NucloNode
 ```
 
-A small DOM so Nuclo can build trees in Node, Bun and Deno. Import it once, before your first render. Most apps only need the plain import.
+A small DOM so Nuclo can build trees in Node and Bun. Import it once, before your first render. Most apps only need the plain import.
 
 - When there is no `window`, it sets `globalThis.document`, `Node`, `Element` and `HTMLElement`, but only the ones that are missing. It does not create `window`.
 - In a browser, or under jsdom, it does nothing.

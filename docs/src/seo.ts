@@ -119,7 +119,7 @@ export function generateStructuredData(meta: PageMeta, pageUrl: string): object[
     url: SEO_BASE_URL,
     codeRepository: "https://github.com/dan2dev/nuclo",
     programmingLanguage: ["TypeScript", "JavaScript"],
-    runtimePlatform: ["Browser", "Node.js", "Bun", "Deno"],
+    runtimePlatform: ["Browser", "Node.js", "Bun"],
     license: "https://opensource.org/licenses/MIT",
     version: NUCLO_VERSION,
     author: { "@type": "Person", name: "Danilo Celestino de Castro", url: "https://github.com/dan2dev" },
