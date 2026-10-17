@@ -1,26 +1,18 @@
 import type { PageProps, RouteContext } from "nuclo-router";
 import { css, cx, s } from "../styles.ts";
-import { DOC_GROUPS, DOC_SECTIONS, SECTION_MAP } from "./docs/content.ts";
+import { docsIndex, docsText, type DocSection } from "./docs/content.ts";
 import { ds, sectionDelay } from "./docs/styles.ts";
 import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../generated/nuclo-stats.ts";
 import { docsSection } from "../docs-state.ts";
 import { NucloLogo } from "../components/NucloBrand.ts";
-import { ALL_EXAMPLES } from "./examples/registry.ts";
+import { allExamples } from "./examples/registry.ts";
 import { exampleHref, onOpenExample } from "./examples/open.ts";
 
-
-const DOC_FACTS = [
-  { label: "Current release", value: `v${NUCLO_VERSION}` },
-  { label: "Tag builders", value: "175" },
-  { label: "Core, gzipped", value: `~${NUCLO_GZIP_KB} KB` },
-  { label: "Runtime model", value: "Explicit" },
-];
-
 // The route's hash, not window.location's: the page builds before the address bar changes.
-function getInitialSectionId(hash: string): string {
+function getInitialSectionId(hash: string, known: Map<string, DocSection>): string {
   if (typeof window === "undefined") return "overview";
   const id = hash.replace(/^#/, "");
-  return SECTION_MAP.has(id) ? id : "overview";
+  return known.has(id) ? id : "overview";
 }
 
 function PlayIcon() {
@@ -32,12 +24,13 @@ function PlayIcon() {
 
 /** Pills that open the examples demonstrating this section, in the examples modal. */
 function ExampleLinks(sectionId: string) {
-  const related = ALL_EXAMPLES.filter((ex) => ex.docs === sectionId);
+  const L = docsText().LABELS;
+  const related = allExamples().filter((ex) => ex.docs === sectionId);
   if (!related.length) return null;
   return div(
     ds.exampleLinks,
     ...related.map((ex) =>
-      a(ds.exampleLink, { href: exampleHref(ex.id, "docs"), title: `Open the ${ex.title} example`, onClick: onOpenExample(ex.id, "docs") }, PlayIcon(), `Example: ${ex.title}`),
+      a(ds.exampleLink, { href: exampleHref(ex.id, "docs"), title: L.openExample(ex.title), onClick: onOpenExample(ex.id, "docs") }, PlayIcon(), L.example(ex.title)),
     ),
   );
 }
@@ -46,25 +39,17 @@ function sectionNumber(index: number): string {
   return String(index + 1).padStart(2, "0");
 }
 
-// Sections with ids added to their <h3>s, plus those headings for "On this page".
-// content.ts stays plain HTML; the ids exist only in the rendered output.
-const SECTIONS = DOC_SECTIONS.map((sec) => {
-  const headings: { id: string; text: string }[] = [];
-  const withIds = (html: string) => html.replace(/<h3>([\s\S]*?)<\/h3>/g, (_, inner: string) => {
-    const text = inner.replace(/<[^>]+>/g, "").trim();
-    const id = `${sec.id}--${text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
-    headings.push({ id, text });
-    return `<h3 id="${id}">${inner}</h3>`;
-  });
-  return { ...sec, content: withIds(sec.content), afterContent: sec.afterContent && withIds(sec.afterContent), headings };
-});
-
 // The header breadcrumb reads the active section from docsSection.
-function publishSection(id: string) {
-  const sec = SECTION_MAP.get(id);
+function publishSection(sec: DocSection | undefined) {
   docsSection.group = sec?.groupTitle ?? "";
   docsSection.title = sec?.title ?? "";
 }
+
+// One observer for the sidebar's active state: a rebuild (a locale switch) replaces it.
+let sectionObserver: IntersectionObserver | undefined;
+
+// The hero's mark, built once: a locale switch rebuilds the page over the same svg (see NucloBrand.ts).
+const heroMark = NucloLogo({ animate: true, class: ds.heroMark, label: () => docsText().LABELS.nucloMark });
 
 const CHEVRON = "M6 9l6 6 6-6";
 const CLOSE = "M6 6l12 12 M18 6L6 18";
@@ -77,8 +62,17 @@ function icon(size: number, d: string) {
 }
 
 export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
-  let activeId = getInitialSectionId(ctx.hash);
-  publishSection(activeId);
+  // The docs in the current locale. Read per build: a locale switch builds the page again.
+  const { groups: DOC_GROUPS, sections: SECTIONS, byId: SECTION_MAP } = docsIndex();
+  const L = docsText().LABELS;
+  const DOC_FACTS = [
+    { label: L.facts.release, value: `v${NUCLO_VERSION}` },
+    { label: L.facts.builders, value: "175" },
+    { label: L.facts.gzipped, value: `~${NUCLO_GZIP_KB} KB` },
+    { label: L.facts.model, value: L.facts.modelValue },
+  ];
+  let activeId = getInitialSectionId(ctx.hash, SECTION_MAP);
+  publishSection(SECTION_MAP.get(activeId));
   // Docs navigation state, shared by the sidebar and the mobile sheet.
   let filter = "";
   let sheetOpen = false;
@@ -89,7 +83,7 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
 
   function setActive(id: string) {
     activeId = id;
-    publishSection(id);
+    publishSection(SECTION_MAP.get(id));
     update();
   }
 
@@ -268,10 +262,10 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
   function Filter(wrapStyle: ReturnType<typeof css>) {
     return label(
       wrapStyle,
-      span(ds.srOnly, "Filter sections"),
+      span(ds.srOnly, L.filterSections),
       input(
         ds.filter,
-        { type: "search", placeholder: "Filter", autocomplete: "off", value: () => filter },
+        { type: "search", placeholder: L.filter, autocomplete: "off", value: () => filter },
         { onInput: (e) => { filter = (e.target as HTMLInputElement).value; update(); } },
       ),
     );
@@ -311,29 +305,26 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
         ds.heroShell,
         div(
           ds.heroCopy,
-          div(ds.eyebrow, "Documentation"),
-          h1("Nuclo documentation"),
-          p(
-            ds.lead,
-            "A practical reference for installing Nuclo, building with explicit updates, styling with typed CSS, and rendering server-side HTML.",
-          ),
+          div(ds.eyebrow, L.documentation),
+          h1(L.title),
+          p(ds.lead, L.lead),
         ),
         div(
           ds.heroMarkWrap,
-          NucloLogo({ animate: true, class: ds.heroMark, label: "Nuclo mark" }),
+          heroMark,
         ),
       ),
       div(
         ds.quickstart,
         div(
           ds.quickstartCopy,
-          span(ds.quickstartLabel, "Quick start"),
+          span(ds.quickstartLabel, L.quickStart),
           code(ds.quickstartCode, "npm create nuclo@latest"),
         ),
         a(
           ds.quickstartLink,
           { href: "#quick-start" },
-          "Quick Start",
+          L.quickStartLink,
           {
             onClick: (e) => {
               e.preventDefault();
@@ -377,7 +368,7 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
       () => sheetMounted,
       button(ds.scrim, {
         type: "button",
-        "aria-label": "Close navigator",
+        "aria-label": L.closeNavigator,
         onClick: () => setSheet(false),
         onMount: (el) => {
           scrimEl = el;
@@ -388,7 +379,7 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
       div(
         ds.sheet,
         {
-          role: "dialog", "aria-modal": "true", "aria-label": "Documentation",
+          role: "dialog", "aria-modal": "true", "aria-label": L.documentation,
           onMount: (el) => {
             sheetEl = el;
             el.animate([{ transform: "translateY(100%)" }, { transform: "translateY(0)" }], { duration: dur(340), easing: EASE });
@@ -401,17 +392,17 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
           div(ds.sheetGrabber, { "aria-hidden": "true" }),
           div(
             ds.sheetHead,
-            h2(ds.sheetTitle, "Documentation"),
+            h2(ds.sheetTitle, L.documentation),
             button(
               ds.sheetClose,
-              { type: "button", id: "docs-sheet-close", "aria-label": "Close navigator" },
+              { type: "button", id: "docs-sheet-close", "aria-label": L.closeNavigator },
               icon(18, CLOSE),
               { onClick: () => setSheet(false) },
             ),
           ),
         ),
         Filter(ds.sheetFilterWrap),
-        nav(ds.sheetList, { "aria-label": "Docs sections" }, ...NavGroups()),
+        nav(ds.sheetList, { "aria-label": L.docsSections }, ...NavGroups()),
       ),
     );
   }
@@ -419,7 +410,7 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
   function Sidebar() {
     return nav(
       ds.sidebar,
-      { "aria-label": "Docs navigation" },
+      { "aria-label": L.docsNavigation },
       Filter(ds.filterWrap),
       div(ds.navGroups, ...NavGroups()),
     );
@@ -428,11 +419,11 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
   function Rail() {
     return aside(
       ds.rail,
-      { "aria-label": "On this page" },
+      { "aria-label": L.onThisPage },
       ...SECTIONS.filter(sec => sec.headings.length).map(sec =>
         div(
           { class: () => cx(ds.toc, activeId === sec.id ? null : ds.hidden).className },
-          div(ds.tocTitle, "On this page"),
+          div(ds.tocTitle, L.onThisPage),
           ...sec.headings.map(h =>
             a(ds.tocLink, { href: `#${h.id}` }, h.text, {
               onClick: (e) => {
@@ -472,8 +463,8 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
                 {
                   class: `${ds.sectionAnchor.className} section-anchor`,
                   href: `#${sec.id}`,
-                  title: `Link to ${sec.title}`,
-                  "aria-label": `Link to ${sec.title}`,
+                  title: L.linkTo(sec.title),
+                  "aria-label": L.linkTo(sec.title),
                 },
                 "#",
                 { onClick: () => setActive(sec.id) },
@@ -485,7 +476,7 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
             div(
               ds.apiHeadingRow,
               span(ds.apiTag, sec.apiTag),
-              span("Public API"),
+              span(L.publicApi),
             ),
           ] : []),
           ...(sec.apiSig ? [
@@ -522,14 +513,15 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
       const sections = document.querySelectorAll("[data-docs-content] section[id]");
       if (!sections.length) return;
 
-      const observer = new IntersectionObserver(
+      sectionObserver?.disconnect();
+      const observer = (sectionObserver = new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {
             if (entry.isIntersecting && !pinned) setActive(entry.target.id);
           }
         },
         { rootMargin: "-20% 0px -70% 0px" }
-      );
+      ));
 
       sections.forEach(section => observer.observe(section));
       if (window.location.hash && activeId !== "overview") jumpTo(activeId);

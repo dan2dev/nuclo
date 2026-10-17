@@ -29,7 +29,7 @@ export function registerGlobalStyles() {
   globalStyle("img", { raw: {"display": "block"} });
   globalStyle("svg", { raw: {"display": "block"} });
   // An animated logo stays hidden until hydration starts its drawing, so the finished logo never flashes first.
-  globalStyle("html[data-anim] .nuclo-draw:not(.nuclo-draw-on)", { raw: {"visibility": "hidden"} });
+  globalStyle("html[data-anim] .nuclo-draw:not([data-draw=\"on\"])", { raw: {"visibility": "hidden"} });
   globalStyle("::selection", { raw: {"background": "var(--c-selection-bg)", "color": "var(--c-text)"} });
   globalStyle("html[data-anim] .rv", { raw: {"opacity": "0"} });
   globalStyle("html[data-anim] .rv.rv-in", { raw: {"animation": `${animations.riseIn} 0.7s cubic-bezier(0.22, 1, 0.36, 1) both`} });

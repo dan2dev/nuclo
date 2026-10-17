@@ -15,7 +15,8 @@ import { cx } from "../styles.ts";
 import { CodeBlock } from "../components/CodeBlock.ts";
 import { withCode } from "../components/inline-code.ts";
 import { es } from "./examples/styles.ts";
-import { ALL_EXAMPLES, findExample, type Example } from "./examples/registry.ts";
+import { allExamples, examplesText, findExample, type Example } from "./examples/registry.ts";
+import { t } from "../i18n/index.ts";
 import { EXAMPLE_PREFIX, exampleHref, type ExampleSource } from "./examples/open.ts";
 import { BAR_REGION, BODY_REGION } from "./examples/frame.ts";
 
@@ -66,7 +67,7 @@ function lockScroll() {
  */
 const StackBlitz = (ex: Example) =>
   ex.files || /^(?:export )?(?:function|const) [A-Z]/m.test(ex.code)
-    ? button(es.standaloneLaunch, { type: "button", title: `Open ${ex.title} in StackBlitz`, onClick: () => void import("./examples/stackblitz.ts").then((m) => m.openExampleInStackBlitz(ex)) }, "Open in StackBlitz")
+    ? button(es.standaloneLaunch, { type: "button", title: examplesText().LABELS.openInStackBlitzTitle(ex.title), onClick: () => void import("./examples/stackblitz.ts").then((m) => m.openExampleInStackBlitz(ex)) }, examplesText().LABELS.openInStackBlitz)
     : null;
 
 function Icon(d: string) {
@@ -78,7 +79,8 @@ function Icon(d: string) {
 
 /** A fixed-size icon button; the neighbor's title is its tooltip, so the pager never changes width. */
 function PagerButton(layer: Layer, from: ExampleSource, target: Example | undefined, dir: "left" | "right") {
-  const label = dir === "left" ? "Previous" : "Next";
+  const L = examplesText().LABELS;
+  const label = dir === "left" ? L.previous : L.next;
   return a(
     es.pagerBtn,
     target
@@ -90,16 +92,17 @@ function PagerButton(layer: Layer, from: ExampleSource, target: Example | undefi
 }
 
 function Nav(layer: Layer, from: ExampleSource, ex: Example, index: number) {
+  const all = allExamples();
   return nav(
     es.nav,
-    { "aria-label": "Examples navigation" },
+    { "aria-label": examplesText().LABELS.examplesNavigation },
     div(
       es.pager,
-      PagerButton(layer, from, ALL_EXAMPLES[index - 1], "left"),
-      span(es.navPos, `${String(index + 1).padStart(2, "0")} / ${ALL_EXAMPLES.length}`),
-      PagerButton(layer, from, ALL_EXAMPLES[index + 1], "right"),
+      PagerButton(layer, from, all[index - 1], "left"),
+      span(es.navPos, `${String(index + 1).padStart(2, "0")} / ${all.length}`),
+      PagerButton(layer, from, all[index + 1], "right"),
     ),
-    span(es.navCrumb, span(es.navCrumbPath, span("Examples"), span("/"), span(ex.group), span("/")), strong(ex.title)),
+    span(es.navCrumb, span(es.navCrumbPath, span(examplesText().LABELS.examples), span("/"), span(ex.group), span("/")), strong(ex.title)),
   );
 }
 
@@ -107,8 +110,9 @@ function Nav(layer: Layer, from: ExampleSource, ex: Example, index: number) {
 function dialogBehavior(layer: Layer, from: ExampleSource, index: number) {
   return on("mount", (el) => {
     if (layer.depth === 1) firstLayer = layer;
-    const prev = index > 0 ? ALL_EXAMPLES[index - 1] : undefined;
-    const next = index >= 0 ? ALL_EXAMPLES[index + 1] : undefined;
+    const all = allExamples();
+    const prev = index > 0 ? all[index - 1] : undefined;
+    const next = index >= 0 ? all[index + 1] : undefined;
     const onKey = (e: KeyboardEvent) => {
       if (!isTop(layer) || e.defaultPrevented || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
       if (e.key === "Escape") closeExamples(layer, from);
@@ -130,7 +134,7 @@ function dialogBehavior(layer: Layer, from: ExampleSource, index: number) {
 function fillFrame(layer: Layer, from: ExampleSource, index: number, bar: NodeModLike, body: NodeModLike, fill = false) {
   const close = a(
     es.close,
-    { href: router.href(from === "docs" ? "/docs" : "/examples"), "aria-label": "Close example", title: "Close (Esc)", onClick: (e: MouseEvent) => { e.preventDefault(); closeExamples(layer, from); } },
+    { href: router.href(from === "docs" ? "/docs" : "/examples"), "aria-label": examplesText().LABELS.closeExample, title: examplesText().LABELS.closeEsc, onClick: (e: MouseEvent) => { e.preventDefault(); closeExamples(layer, from); } },
     Icon("M6 6l12 12 M18 6L6 18"),
   );
   return into({
@@ -145,6 +149,7 @@ function fillFrame(layer: Layer, from: ExampleSource, index: number, bar: NodeMo
  * and back finds the app exactly as it was left.
  */
 function AppLayout(ex: Example) {
+  const L = examplesText().LABELS;
   const files = ex.files ?? [{ name: `${ex.title.replace(/[^a-zA-Z0-9]+/g, "")}.ts`, code: ex.code }];
   let active = 0; // 0 is the preview, then one per file
   let moreDesc = false; // phones: the full description, instead of its first lines
@@ -164,32 +169,35 @@ function AppLayout(ex: Example) {
       es.appHead,
       h2(es.appTitle, { tabindex: "-1" }, ex.title),
       p({ class: () => cx(es.appDesc, moreDesc ? null : es.appDescClamp).className }, ...withCode(ex.desc)),
-      button(es.appMore, { type: "button", "aria-expanded": () => String(moreDesc), onClick: () => { moreDesc = !moreDesc; update(); } }, () => (moreDesc ? "Less" : "More")),
+      button(es.appMore, { type: "button", "aria-expanded": () => String(moreDesc), onClick: () => { moreDesc = !moreDesc; update(); } }, () => (moreDesc ? L.less : L.more)),
       div(
         es.appLinks,
-        a(es.standaloneLaunch, { href: router.href(`/apps/${ex.id}`), target: "_blank", rel: "noopener", title: `Open ${ex.title} in a new tab`, "aria-label": `Open ${ex.title} in standalone in a new tab` }, "Open in standalone", Icon("M14 3h7v7 M21 3l-9 9 M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5")),
+        a(es.standaloneLaunch, { href: router.href(`/apps/${ex.id}`), target: "_blank", rel: "noopener", title: L.openInNewTab(ex.title), "aria-label": L.openStandaloneInNewTab(ex.title) }, L.openInStandalone, Icon("M14 3h7v7 M21 3l-9 9 M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5")),
         StackBlitz(ex),
-        ex.docs ? a(es.appDocs, { href: router.href(`/docs#${ex.docs}`) }, "Read the docs →") : null,
+        ex.docs ? a(es.appDocs, { href: router.href(`/docs#${ex.docs}`) }, t.common.readTheDocs) : null,
       ),
     ),
-    div(es.appTabs, { role: "tablist" }, Tab("Preview", 0), ...files.map((f, i) => Tab(f.name, i + 1))),
+    div(es.appTabs, { role: "tablist" }, Tab(t.common.preview, 0), ...files.map((f, i) => Tab(f.name, i + 1))),
     Pane(0, es.appPreview, ex.preview()),
     ...files.map((f, i) => Pane(i + 1, es.appCode, CodeBlock({ code: f.code }))),
   );
 }
 
-export default function ExampleDetail(ctx: RouteContext, { data: ex, layer }: PageProps<Example | null>) {
+export default function ExampleDetail(ctx: RouteContext, { data, layer }: PageProps<Example | null>) {
   const from = sourceOf(ctx);
+  const L = examplesText().LABELS;
+  // The loaded example, in the current locale: data was resolved when the route was entered.
+  const ex = data && findExample(data.id);
   if (!ex) {
     return fillFrame(layer, from, -1, span(), div(
       es.notFound,
-      h2(es.detailTitle, { tabindex: "-1" }, "Not found"),
-      p(`There is no example called "${idOf(ctx) ?? ctx.params.example}".`),
-      p(a({ href: router.href("/examples") }, "All examples")),
+      h2(es.detailTitle, { tabindex: "-1" }, L.notFound),
+      p(L.noExampleCalled(idOf(ctx) ?? ctx.params.example)),
+      p(a({ href: router.href("/examples") }, L.allExamples)),
     ));
   }
 
-  const index = ALL_EXAMPLES.indexOf(ex);
+  const index = allExamples().findIndex((e) => e.id === ex.id);
   if (ex.layout === "app") return fillFrame(layer, from, index, Nav(layer, from, ex, index), AppLayout(ex), true);
   const file = `${ex.title.replace(/[^a-zA-Z0-9]+/g, "")}.ts`;
 
@@ -201,13 +209,13 @@ export default function ExampleDetail(ctx: RouteContext, { data: ex, layer }: Pa
       h2(es.detailTitle, { tabindex: "-1" }, ex.title),
       p(es.detailDesc, ...withCode(ex.desc)),
       ex.install
-        ? div(es.installNote, { role: "note" }, strong("Separate package:"), span(code(ex.install), " is not part of nuclo and must be installed:"), code(`npm install nuclo ${ex.install}`))
+        ? div(es.installNote, { role: "note" }, strong(L.separatePackage), span(code(ex.install), L.mustBeInstalled), code(`npm install nuclo ${ex.install}`))
         : null,
-      div(es.detailLinks, StackBlitz(ex), ex.docs ? a(es.appDocs, { href: router.href(`/docs#${ex.docs}`) }, "Read the docs →") : null),
+      div(es.detailLinks, StackBlitz(ex), ex.docs ? a(es.appDocs, { href: router.href(`/docs#${ex.docs}`) }, t.common.readTheDocs) : null),
     ),
     div(
       es.panes,
-      section(es.previewPane, div(es.paneLabel, "Preview"), div(es.previewBody, ex.preview())),
+      section(es.previewPane, div(es.paneLabel, t.common.preview), div(es.previewBody, ex.preview())),
       section(es.codePane, CodeBlock({ filename: file, code: ex.code, files: ex.files })),
     ),
   ));

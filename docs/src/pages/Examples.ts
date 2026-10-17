@@ -8,7 +8,7 @@ import type { PageProps, RouteContext } from "nuclo-router";
 import { s } from "../styles.ts";
 import { withCode } from "../components/inline-code.ts";
 import { es } from "./examples/styles.ts";
-import { EXAMPLE_GROUPS, type Example } from "./examples/registry.ts";
+import { exampleGroups, examplesText, type Example, type ExampleGroup } from "./examples/registry.ts";
 import { exampleHref, onOpenExample } from "./examples/open.ts";
 
 function ArrowIcon() {
@@ -27,13 +27,13 @@ function Card(ex: Example, index: number) {
     p(es.cardDesc, ...withCode(ex.desc)),
     div(
       es.cardFoot,
-      span(ex.group, ex.install ? span(es.cardPkg, { title: `Needs the ${ex.install} package` }, `+ ${ex.install}`) : null),
+      span(ex.group, ex.install ? span(es.cardPkg, { title: examplesText().LABELS.needsPackage(ex.install) }, `+ ${ex.install}`) : null),
       span(es.cardArrow, { "data-arrow": "" }, ArrowIcon()),
     ),
   );
 }
 
-function Group(group: (typeof EXAMPLE_GROUPS)[number], offset: number) {
+function Group(group: ExampleGroup, offset: number) {
   return section(
     es.group,
     div(
@@ -46,8 +46,9 @@ function Group(group: (typeof EXAMPLE_GROUPS)[number], offset: number) {
 }
 
 export function ExamplesPage(_ctx: RouteContext, { outlet }: PageProps) {
+  const L = examplesText().LABELS;
   let offset = 0;
-  const groups = EXAMPLE_GROUPS.map((g) => {
+  const groups = exampleGroups().map((g) => {
     const node = Group(g, offset);
     offset += g.examples.length;
     return node;
@@ -59,9 +60,9 @@ export function ExamplesPage(_ctx: RouteContext, { outlet }: PageProps) {
       es.header,
       div(
         s.container,
-        div(s.sectionLabel, "Examples"),
-        h1(s.sectionTitle, "Practical examples. Live demos."),
-        p(s.sectionSub, "Pick an example to open it full screen, with the live preview and its source side by side."),
+        div(s.sectionLabel, L.examples),
+        h1(s.sectionTitle, L.title),
+        p(s.sectionSub, L.sub),
       ),
     ),
     ...groups,

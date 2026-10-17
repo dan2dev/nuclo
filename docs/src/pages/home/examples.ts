@@ -11,8 +11,6 @@ import { icon, pathD, N as POINTS, STROKE } from "../../components/brand-geometr
 type Child = NodeModLike<any>; // anything div() accepts: nodes, modifiers, attributes
 export type HeroExample = {
   api: string; // the feature on show, as written in code
-  title: string;
-  note: string; // what to look for, shown beside the code
   build: () => { preview: Child[]; code: Child; root?: Child[] };
 };
 
@@ -79,8 +77,6 @@ const PALETTES = [["#ff4a17", "#ffb545"], ["#ffd166", "#fff8f2"], ["#ff5d8f", "#
 
 export const Fireworks: HeroExample = {
   api: "list()",
-  title: "Tap the sky",
-  note: "Every spark is a plain object in an array. list() gives each one a <line>, and drops it the frame its object leaves the array. One update() a frame; nothing is diffed.",
   build() {
     const S = "hero-fireworks", W = 480, H = 300, G = 0.12;
     type Rocket = { x: number; y: number; vy: number; pal: string[] };
@@ -179,8 +175,6 @@ const so = {
 
 export const Sort: HeroExample = {
   api: "list()",
-  title: "Sorted, never rebuilt",
-  note: "Bubble sort swaps objects in a plain array. list() keys each bar to its object, so update() moves the existing nodes into the new order. Watch the counter: no bar is ever recreated.",
   build() {
     const S = "hero-sort", N = 18;
     type Bar = { v: number; color: string };
@@ -298,8 +292,6 @@ const wv = {
 
 export const Waves: HeroExample = {
   api: "() => values",
-  title: "Bend the wave",
-  note: "Each path's d is a plain function of three numbers. The sliders and the frame loop only change the numbers; update('waves') re-runs the functions that read them.",
   build() {
     const S = "hero-waves", W = 480, H = 300, MID = H / 2 - 8;
     let amp = 54, freq = 2.2, phase = 0;
@@ -374,8 +366,6 @@ const ch = {
 
 export const Chase: HeroExample = {
   api: "scope()",
-  title: "Lead the rope",
-  note: "The card is a scope(). Every frame moves 32 plain points and calls update('chase'): Nuclo recomputes the attributes in this card and leaves the rest of the page alone.",
   build() {
     const S = "hero-chase", W = 480, H = 300, N = 32, GAP = 7;
     const pts = Array.from({ length: N }, (_, i) => ({ x: W / 2 - i * GAP, y: H / 2 }));
@@ -467,8 +457,6 @@ const rx = {
 
 export const Reflex: HeroExample = {
   api: "when()",
-  title: "Tap on green",
-  note: "One plain string decides what the stage shows. Each when() branch is built when its condition comes true and removed when it goes; the stage's class is a function of the same string.",
   build() {
     const S = "hero-reflex";
     let state: ReflexState = "idle";
@@ -553,8 +541,6 @@ const wp = {
 
 export const Warp: HeroExample = {
   api: "onMount",
-  title: "Hold to warp",
-  note: "onMount starts the frame loop and returns its cleanup. Unmount the field and Nuclo runs that cleanup: the loop stops and nothing is left running.",
   build() {
     const S = "hero-warp", W = 480, H = 300, N = 200, F = 120, CRUISE = 0.005;
     type Star = { x: number; y: number; z: number; sx: number; sy: number; px: number; py: number; color: string };
@@ -657,8 +643,6 @@ const lf = {
 
 export const Life: HeroExample = {
   api: "class: () =>",
-  title: "Game of Life",
-  note: "The board is a plain array of ages. A tick computes the next one and calls update(); every cell's class is a function of its age, so only the cells that changed are patched.",
   build() {
     const S = "hero-life", C = 30, R = 18, STEP = 14;
     const W = C * STEP - 2, H = R * STEP - 2;
@@ -761,8 +745,6 @@ const dw = {
 
 export const Draw: HeroExample = {
   api: "d: () =>",
-  title: "Draw the mark",
-  note: "The Nuclo mark is a Spirograph: one wheel rolling inside a ring, two pens on it. The wheel, its arms, the pens and the lines are all functions of one number, t. The timeline and the frame loop only set t; update('draw') re-runs what reads it.",
   build() {
     const S = "hero-draw", DRAW = 3.2, FADE = 0.6, TOTAL = DRAW + FADE; // seconds: one lap, then the guides fade
     let t = TOTAL; // SSR paints the finished mark

@@ -6,19 +6,21 @@ import { NucloBrand } from "./NucloBrand.ts";
 import { GRADIENT, box, brandBox, brandIcon } from "./brand-geometry.ts";
 import { GitHubSvg } from "./icons.ts";
 import { animations } from "../styles/animations.ts";
+import { LOCALES, i18n, isLocale, setLocale, t, type Locale } from "../i18n/index.ts";
 
 const GITHUB_URL = "https://github.com/dan2dev/nuclo";
 const DESKTOP = "@media (min-width: 768px)";
 
-type NavItem = { label: string; route: string; hash?: string };
+type NavItem = { label: "home" | "docs" | "examples"; route: string; hash?: string }; // label: the key in t.nav
 
 const NAV_LINKS: NavItem[] = [
-  { label: "Home",     route: "home" },
-  { label: "Docs",     route: "docs" },
-  { label: "Examples", route: "examples" },
+  { label: "home",     route: "home" },
+  { label: "docs",     route: "docs" },
+  { label: "examples", route: "examples" },
 ];
 
-const THEMES: [ThemePreference, string][] = [["light", "Light"], ["dark", "Dark"], ["system", "System"]];
+const THEMES: ThemePreference[] = ["light", "dark", "system"];
+const LOCALE_CODES = Object.keys(LOCALES) as Locale[];
 
 // Single-path stroked icon (menu, close, chevron, external arrow).
 function LineIcon(d: string, size = 20) {
@@ -93,6 +95,8 @@ const st = {
 
   right: css("components-header-right", { gridColumn: "3", justifySelf: "end", display: "flex", alignItems: "center", gap: "4px" }),
   iconBtn: css("components-header-iconBtn", { ...iconBtn, display: "none", width: "36px", height: "36px", [DESKTOP]: { display: "flex" } }),
+  // The language select: a pill like the bar's buttons, its own chevron drawn in
+  locale: css("components-header-locale", { display: "none", height: "36px", padding: "0 26px 0 10px", borderRadius: "10px", border: "none", fontFamily: "inherit", fontSize: "13px", fontWeight: "500", color: colors.textDim, backgroundColor: "transparent", cursor: "pointer", appearance: "none", raw: { "background-image": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", "background-repeat": "no-repeat", "background-position": "right 8px center", "background-size": "14px" }, transition: `color 0.2s ${EASE}, background-color 0.2s ${EASE}`, hover: { color: colors.text, backgroundColor: colors.border }, focusVisible: ring, [DESKTOP]: { display: "block" } }),
   // A swapped theme icon's stroke is drawn end to end (not the first one: the header enters still)
   icon: css("components-header-icon", { display: "flex" }),
   iconIn: css("components-header-iconIn", { "& path": { ...motion(`${A.strokeDraw} 0.5s ${EASE}`), raw: { "stroke-dasharray": "1" } } }),
@@ -120,6 +124,13 @@ const st = {
   themeOptOn: css("components-header-themeOptOn", { color: colors.text, backgroundColor: colors.bgCard, boxShadow: "0 1px 3px rgba(0,0,0,0.12)" }),
 };
 
+// The nav's handle follows the current page: read on every update, measured only when it changes or the nav resizes.
+// Module state, not Header()'s: a locale switch builds Header() again over the same nav element.
+let navEl: HTMLElement | undefined;
+let handleAt = -2;
+// The lockup, built once: a locale switch rebuilds Header() over the same svg, and this instance's drawing carries on.
+const brand = NucloBrand({ height: 36, animate: true, hideWordAfter: WORD_SCROLL });
+
 export function Header() {
   let themeSwapped = false; // after the first toggle the theme icon draws itself in
   let menuOpen = false;
@@ -128,9 +139,6 @@ export function Header() {
 
   const route = currentRoute;
 
-  // The nav's handle follows the current page: read on every update, measured only when it changes or the nav resizes
-  let navEl: HTMLElement | undefined;
-  let handleAt = -2;
   const currentLink = () => NAV_LINKS.findIndex((l) => !l.hash && route() === l.route);
   function placeHandle() {
     const link = navEl?.querySelectorAll<HTMLElement>(":scope > a")[handleAt];
@@ -167,7 +175,7 @@ export function Header() {
         // Not prevented: the router navigates, a same-page #hash is the browser's.
         onClick: closeMenu,
       },
-      label,
+      t.nav[label],
       ...(trailing ? [span(st.rowIcon, LineIcon("M5 12h14 M13 6l6 6-6 6", 18))] : []),
     );
   }
@@ -175,8 +183,8 @@ export function Header() {
   function Logo() {
     return a(
       st.logo,
-      { href: href("home"), "aria-label": "Nuclo home", onClick: closeMenu },
-      NucloBrand({ height: 36, animate: true, hideWordAfter: WORD_SCROLL }),
+      { href: href("home"), "aria-label": t.nav.nucloHome, onClick: closeMenu },
+      brand,
     );
   }
 
@@ -186,7 +194,20 @@ export function Header() {
     return a(
       st.cta, variant,
       { href: href("docs", "quick-start"), onClick: closeMenu },
-      "Get started",
+      t.nav.getStarted,
+    );
+  }
+
+  // The language, a native <select> in the bar: picking one loads that locale's text and rebuilds the page.
+  function LocaleSelect() {
+    return select(
+      st.locale,
+      {
+        "aria-label": t.nav.language,
+        value: () => i18n.locale,
+        onChange: (e) => { const code = e.currentTarget.value; if (isLocale(code)) void setLocale(code); },
+      },
+      ...LOCALE_CODES.map((code) => option({ value: code, lang: code }, LOCALES[code])),
     );
   }
 
@@ -198,7 +219,7 @@ export function Header() {
         id: "site-menu",
         role: "dialog",
         "aria-modal": "true",
-        "aria-label": "Menu",
+        "aria-label": t.nav.menu,
         // Open/close side effects live on the overlay's own lifecycle.
         onMount: (el) => {
           menuEl = el;
@@ -229,7 +250,7 @@ export function Header() {
       },
       nav(
         st.menuList,
-        { "aria-label": "Main" },
+        { "aria-label": t.nav.main },
         div(
           s.container,
           div(st.menuItem, RouteLink(NAV_LINKS[0], st.menuRow, st.menuRowOn, true)),
@@ -240,7 +261,7 @@ export function Header() {
             a(
               st.menuRow,
               { href: GITHUB_URL, target: "_blank", rel: "noopener noreferrer" },
-              span("GitHub", span(st.srOnly, " (opens in a new tab)")),
+              span("GitHub", span(st.srOnly, t.nav.opensInNewTab)),
               span(st.rowIcon, LineIcon("M7 17L17 7 M8 7h9v9", 16)),
             ),
           ),
@@ -252,8 +273,8 @@ export function Header() {
           s.container, st.menuFootInner,
           div(
             st.themeGroup,
-            { role: "radiogroup", "aria-label": "Theme" },
-            ...THEMES.map(([pref, label]) => button(
+            { role: "radiogroup", "aria-label": t.nav.theme },
+            ...THEMES.map((pref) => button(
               {
                 type: "button",
                 role: "radio",
@@ -261,7 +282,22 @@ export function Header() {
                 "aria-checked": () => String(getThemePreference() === pref),
                 onClick: () => setThemePreference(pref),
               },
-              label,
+              t.nav.themes[pref],
+            )),
+          ),
+          div(
+            st.themeGroup,
+            { role: "radiogroup", "aria-label": t.nav.language },
+            ...LOCALE_CODES.map((code) => button(
+              {
+                type: "button",
+                role: "radio",
+                lang: code,
+                class: () => cx(st.themeOpt, i18n.locale === code ? st.themeOptOn : null).className,
+                "aria-checked": () => String(i18n.locale === code),
+                onClick: () => void setLocale(code),
+              },
+              LOCALES[code],
             )),
           ),
           GetStarted(st.ctaMenu),
@@ -291,7 +327,7 @@ export function Header() {
         nav(
           st.nav,
           {
-            "aria-label": "Main",
+            "aria-label": t.nav.main,
             // The index of the current page's link, -1 for none. When it changes the handle moves there
             "data-at": () => {
               const i = currentLink();
@@ -313,10 +349,11 @@ export function Header() {
         ),
         div(
           st.right,
-          a(st.iconBtn, { href: GITHUB_URL, target: "_blank", rel: "noopener noreferrer", "aria-label": "Nuclo on GitHub" }, GitHubSvg({ size: 18 })),
+          LocaleSelect(),
+          a(st.iconBtn, { href: GITHUB_URL, target: "_blank", rel: "noopener noreferrer", "aria-label": t.nav.nucloOnGitHub }, GitHubSvg({ size: 18 })),
           button(
             st.iconBtn,
-            { type: "button", "aria-label": "Switch color theme", onClick: () => { themeSwapped = true; toggleTheme(); } },
+            { type: "button", "aria-label": t.nav.switchTheme, onClick: () => { themeSwapped = true; toggleTheme(); } },
             when(() => isDark(), span(ThemeIcon(), LineIcon("M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z", 17)))
               .else(span(ThemeIcon(), LineIcon("M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M6.34 17.66l-1.41 1.41 M19.07 4.93l-1.41 1.41", 17))),
           ),
@@ -325,7 +362,7 @@ export function Header() {
             {
               id: "site-menu-button",
               type: "button",
-              "aria-label": () => (menuOpen ? "Close menu" : "Open menu"),
+              "aria-label": () => (menuOpen ? t.nav.closeMenu : t.nav.openMenu),
               "aria-expanded": () => String(menuOpen),
               "aria-controls": "site-menu",
               onClick: () => (menuOpen ? closeMenu() : openMenu()),

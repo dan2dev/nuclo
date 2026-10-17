@@ -1,5 +1,6 @@
-import { routeName, type RoutePath } from './route-definitions.ts';
+import { routeName } from './route-definitions.ts';
 import { NUCLO_VERSION } from './generated/nuclo-stats.ts';
+import { t } from './i18n/index.ts';
 
 export interface PageMeta {
   title: string;
@@ -10,39 +11,13 @@ export interface PageMeta {
 
 export const SEO_BASE_URL = "https://nuclo.dev/";
 
-export const routeMeta: Record<RoutePath, PageMeta> = {
-  home: {
-    title: "Nuclo - Lightweight DOM Framework with Explicit Updates",
-    description:
-      "Nuclo is a lightweight, zero-dependency TypeScript DOM library. Build UI with functions, mutate plain state, call update(). No virtual DOM, proxies or signals.",
-    keywords: "nuclo, dom framework, state-dependent values, explicit updates, mutable state, javascript, typescript, ui framework, lightweight",
-    type: "WebPage",
-  },
-  'apps/:id': {
-    title: "Standalone Apps - Nuclo Examples",
-    description: "Interactive Nuclo app examples in a full-browser workspace.",
-    type: "WebPage",
-  },
-  desktop: {
-    title: "Nuclo OS - Desktop",
-    description: "A standalone desktop with working apps — Files, Notes, Terminal, Calculator, Timer, a Kanban board, Finance with charts and a spreadsheet, and a Calendar — and a simulated file system saved in your browser.",
-    type: "WebPage",
-  },
-  docs: {
-    title: "Nuclo Docs - Guide & API Reference",
-    description:
-      "Nuclo docs: install, tag builders, explicit update(), when() and list(), events, lifecycle, SSR and hydration, typed CSS-in-TS, and the full API reference.",
-    keywords: "nuclo documentation, api reference, getting started, update, list, when, on",
-    type: "TechArticle",
-  },
-  examples: {
-    title: "Nuclo Examples - Counter, Todo List, Search & Styling",
-    description:
-      "Live Nuclo examples with source code: a counter, a todo list, a real-time search filter, and typed CSS-in-TS styling.",
-    keywords: "nuclo examples, counter, todo, search filter, css-in-ts, live demos",
-    type: "CollectionPage",
-  },
-};
+// The titles and descriptions are the locale's (i18n/<locale>/ui.ts); the schema type is the route's.
+const routeTypes: Record<string, PageMeta["type"]> = { home: "WebPage", 'apps/:id': "WebPage", desktop: "WebPage", docs: "TechArticle", examples: "CollectionPage" };
+
+function routeMeta(route: string): PageMeta {
+  const text = t.seo.routes[route] ?? t.seo.routes.home;
+  return { ...text, type: routeTypes[route] ?? "WebPage" };
+}
 
 /** What a matched route needs for its meta: the pattern, the path and the page's load() result. */
 export interface RouteInfo { pattern: string; path: string }
@@ -59,15 +34,14 @@ export function resolveMeta(ctx: RouteInfo, data?: unknown): { meta: PageMeta; u
       // One canonical URL per example: /docs/example-<id> is the same page over the docs.
       url: `${SEO_BASE_URL}examples/${example.id}`,
       meta: {
-        title: `${example.title} - Nuclo Examples`,
-        description: `${example.desc} A live Nuclo example with its source code.`,
-        keywords: `nuclo example, ${example.title.toLowerCase()}, live demo, source code`,
+        title: t.seo.exampleTitle(example.title),
+        description: t.seo.exampleDescription(example.desc),
+        keywords: t.seo.exampleKeywords(example.title),
         type: 'TechArticle',
       },
     };
   }
-  const meta = Object.prototype.hasOwnProperty.call(routeMeta, route) ? routeMeta[route] : routeMeta.home;
-  return { meta, url };
+  return { meta: routeMeta(route), url };
 }
 
 export function updatePageMeta(ctx: RouteInfo, data?: unknown): void {

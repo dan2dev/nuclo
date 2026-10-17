@@ -3,10 +3,14 @@ import { router } from "../router.ts";
 import { NucloBrand } from "./NucloBrand.ts";
 import { GitHubSvg } from "./icons.ts";
 import { NUCLO_VERSION } from "../generated/nuclo-stats.ts";
+import { t } from "../i18n/index.ts";
 
 const GITHUB_URL = "https://github.com/dan2dev/nuclo";
+// Built once: a locale switch rebuilds Footer() over the same svg (see NucloBrand.ts).
+const brand = NucloBrand({ height: 38, animate: "visible" });
 
 export function Footer() {
+  const L = t.footer;
   const footerStyle = css("components-footer-footerStyle", { position: "relative", backgroundColor: colors.bgFooter, padding: "56px 0 28px", borderTop: `1px solid ${colors.border}`, medium: { padding: "66px 0 32px" } });
 
   const topGrid = css("components-footer-topGrid", { display: "grid", gridTemplateColumns: "1fr", gap: "36px", paddingBottom: "40px", medium: { gridTemplateColumns: "minmax(0, 1.65fr) 1fr 1fr", gap: "30px" } });
@@ -51,34 +55,34 @@ export function Footer() {
         // Brand column
         div(
           brandGroup,
-          NucloBrand({ height: 38, animate: "visible" }),
-          span(tagline, "The explicit UI runtime. Plain functions, mutable state, and one call between your data and the DOM."),
-          span(builtWith, "This site is built with Nuclo."),
+          brand,
+          span(tagline, L.tagline),
+          span(builtWith, L.builtWith),
         ),
         // Explore column
         div(
-          h2(colTitle, "Explore"),
+          h2(colTitle, L.explore),
           ul(
             colLinks,
-            RouteLink("Documentation", "docs"),
-            RouteLink("Examples", "examples"),
-            ExternalLink("README", `${GITHUB_URL}#readme`),
+            RouteLink(L.documentation, "docs"),
+            RouteLink(L.examples, "examples"),
+            ExternalLink(L.readme, `${GITHUB_URL}#readme`),
             ExternalLink("llms.txt", "/llms.txt"),
           ),
         ),
         // Project column
         div(
-          h2(colTitle, "Project"),
+          h2(colTitle, L.project),
           ul(
             colLinks,
-            ExternalLink("GitHub", GITHUB_URL, GitHubSvg({ size: 16 })),
-            ExternalLink("MIT License", `${GITHUB_URL}/blob/main/LICENSE.md`),
+            ExternalLink(L.github, GITHUB_URL, GitHubSvg({ size: 16 })),
+            ExternalLink(L.license, `${GITHUB_URL}/blob/main/LICENSE.md`),
           ),
         ),
       ),
       div(
         bottomBar,
-        span(fineprint, "© 2026 Danilo Castro (@dan2dev) · MIT License"),
+        span(fineprint, L.fineprint),
         span(version, `v${NUCLO_VERSION}`),
       ),
     ),

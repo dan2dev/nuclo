@@ -1,17 +1,8 @@
 import { css, colors, cx, s } from "../../styles.ts";
 import { fx } from "../../styles/effects.ts";
 import { hs } from "./styles.ts";
-import {
-  HERO_BADGE, HERO_TITLE_LINES, HERO_DESC, INSTALL_CMD, HERO_STATS,
-  COUNTER_TEASER_CODE, TODO_TEASER_CODE,
-  PHILOSOPHY_QUOTE, PHILOSOPHY_POINTS,
-  FEATURES, QUICK_START_STEPS,
-  PIPELINE_STEPS,
-  COMPARISON_TITLE, COMPARISON_SUB, COMPARISON_COLS,
-  BENCHMARK_TITLE, BENCHMARK_SUB, BENCHMARK_NOTE,
-  BENCHMARK_SOURCE_URL, BENCHMARK_SOURCE_LABEL, BENCHMARK_ENTRIES,
-  CTA_TITLE, CTA_SUB,
-} from "./content.ts";
+import { home } from "./content.ts";
+import { t } from "../../i18n/index.ts";
 import { CodeBlock, highlightCode, codeTokenStyle } from "../../components/CodeBlock.ts";
 import { copyText } from "../../components/clipboard.ts";
 import { withCode } from "../../components/inline-code.ts";
@@ -34,6 +25,7 @@ function splitStepLabel(raw: string): { badge: string; kicker: string } {
 
 /** Install command bar with shimmer sheen and a copy-to-clipboard button. */
 function InstallCommand(variant?: ReturnType<typeof css>) {
+  const { INSTALL_CMD, LABELS: L } = home();
   let copied = false;
 
   function handleCopy() {
@@ -52,7 +44,7 @@ function InstallCommand(variant?: ReturnType<typeof css>) {
     span(INSTALL_CMD),
     button(
       hs.heroCopyBtn,
-      { title: "Copy to clipboard", "aria-label": "Copy install command" },
+      { title: t.common.copyToClipboard, "aria-label": L.copyInstall },
       { class: () => cx(hs.heroCopyBtn, copied ? css("pages-home-components-components-inline-3", { color: colors.primary }) : null).className },
       when(() => copied, CheckIcon({ size: 14 })).else(CopyIcon({ size: 14 })),
       { onClick: handleCopy },
@@ -67,6 +59,7 @@ function TitleLine(line: string) {
 }
 
 export function HomeHeroSection() {
+  const { HERO_BADGE, HERO_TITLE_LINES, HERO_DESC, HERO_STATS, LABELS: L } = home();
   return section(
     hs.heroSection,
     div(
@@ -102,12 +95,12 @@ export function HomeHeroSection() {
               a(
                 hs.heroBtn, hs.heroPrimaryBtn,
                 { href: "/docs" },
-                "Get started",
+                L.getStarted,
               ),
               a(
                 hs.heroBtn, hs.heroSecondaryBtn,
                 { href: "/examples" },
-                "View examples",
+                L.viewExamples,
               ),
             ),
             // Stats
@@ -139,6 +132,7 @@ export function HomeHeroSection() {
 }
 
 export function PipelineSection() {
+  const { PIPELINE_STEPS, LABELS: L } = home();
   function PipeNode(step: typeof PIPELINE_STEPS[number], index: number) {
     const { badge, kicker } = splitStepLabel(step.kicker);
     return li(
@@ -163,15 +157,16 @@ export function PipelineSection() {
     hs.pipelineSection,
     div(
       s.container,
-      div(s.sectionLabel, { className: "rv" }, "How it works"),
-      h2(s.sectionTitle, { className: "rv" }, "One explicit cycle."),
-      p(s.sectionSub, { className: "rv" }, "State-dependent values, no dependency graph, no scheduler. You decide when they run - a single predictable path from your data to the screen."),
+      div(s.sectionLabel, { className: "rv" }, L.howItWorks),
+      h2(s.sectionTitle, { className: "rv" }, L.pipelineTitle),
+      p(s.sectionSub, { className: "rv" }, L.pipelineSub),
       ol(hs.pipe, ...PIPELINE_STEPS.map(PipeNode)),
     ),
   );
 }
 
 export function PhilosophySection() {
+  const { PHILOSOPHY_QUOTE, PHILOSOPHY_POINTS, LABELS: L } = home();
   return section(
     hs.philosophySection,
     div(
@@ -184,7 +179,7 @@ export function PhilosophySection() {
           div(
             s.sectionLabel,
             css("pages-home-components-components-inline-11", { marginBottom: "16px" }),
-            "Philosophy",
+            L.philosophy,
           ),
           blockquote(hs.philosophyQuote, ...withCode(PHILOSOPHY_QUOTE)),
         ),
@@ -209,13 +204,14 @@ export function PhilosophySection() {
 }
 
 export function FeaturesSection() {
+  const { FEATURES, LABELS: L } = home();
   return section(
     hs.featuresSection,
     div(
       s.container,
-      div(s.sectionLabel, { className: "rv" }, "Features"),
-      h2(s.sectionTitle, { className: "rv" }, "Built for clarity."),
-      p(s.sectionSub, { className: "rv" }, "No magic. No surprises. Every update is intentional."),
+      div(s.sectionLabel, { className: "rv" }, L.features),
+      h2(s.sectionTitle, { className: "rv" }, L.featuresTitle),
+      p(s.sectionSub, { className: "rv" }, L.featuresSub),
       ul(
         hs.features,
         ...FEATURES.map(({ num, title, desc }, i) => {
@@ -234,11 +230,12 @@ export function FeaturesSection() {
 }
 
 export function ComparisonSection() {
+  const { COMPARISON_TITLE, COMPARISON_SUB, COMPARISON_COLS, LABELS: L } = home();
   return section(
     hs.comparisonSection,
     div(
       s.container,
-      div(s.sectionLabel, { className: "rv" }, "Comparison"),
+      div(s.sectionLabel, { className: "rv" }, L.comparison),
       h2(s.sectionTitle, { className: "rv" }, COMPARISON_TITLE),
       p(s.sectionSub, { className: "rv" }, COMPARISON_SUB),
       div(
@@ -250,7 +247,7 @@ export function ComparisonSection() {
             div(
               hs.cmpHead,
               div(hs.cmpName, col.name),
-              col.featured ? span(hs.cmpBadge, span(fx.badgeDot), "the nuclo way") : null,
+              col.featured ? span(hs.cmpBadge, span(fx.badgeDot), L.theNucloWay) : null,
             ),
             div(hs.cmpSub, col.sub),
             ...col.items.map((item) =>
@@ -269,6 +266,7 @@ export function ComparisonSection() {
 }
 
 export function BenchmarkSection() {
+  const { BENCHMARK_TITLE, BENCHMARK_SUB, BENCHMARK_NOTE, BENCHMARK_SOURCE_URL, BENCHMARK_SOURCE_LABEL, BENCHMARK_ENTRIES, LABELS: L } = home();
   const max = Math.max(...BENCHMARK_ENTRIES.map((e) => e.score));
   // Bars start at 1.0 (the fastest possible score) instead of 0 so small gaps are visible; labels keep the real scores.
   const BAR_BASE = 1.0;
@@ -295,7 +293,7 @@ export function BenchmarkSection() {
     hs.benchSection,
     div(
       s.container,
-      div(s.sectionLabel, { className: "rv" }, "Benchmarks"),
+      div(s.sectionLabel, { className: "rv" }, L.benchmarks),
       h2(s.sectionTitle, { className: "rv" }, BENCHMARK_TITLE),
       p(s.sectionSub, { className: "rv" }, BENCHMARK_SUB),
       div(
@@ -304,7 +302,7 @@ export function BenchmarkSection() {
         div(
           hs.benchHead,
           span(hs.benchCaption, BENCHMARK_SOURCE_LABEL),
-          span("Lower is better"),
+          span(L.lowerIsBetter),
         ),
         ol(hs.benchRows, ...BENCHMARK_ENTRIES.map(BenchRow)),
         div(
@@ -317,7 +315,7 @@ export function BenchmarkSection() {
               target: "_blank",
               rel: "noopener noreferrer",
             },
-            "Source: js-framework-benchmark",
+            L.benchmarkSource,
           ),
         ),
       ),
@@ -326,15 +324,16 @@ export function BenchmarkSection() {
 }
 
 export function HomeQuickStartSection() {
+  const { QUICK_START_STEPS, LABELS: L } = home();
   return div(
     div(s.divider),
     section(
       hs.quickStartSection,
       div(
         s.container,
-        div(s.sectionLabel, { className: "rv" }, "Quick Start"),
-        h2(s.sectionTitle, { className: "rv" }, "Up and running in minutes."),
-        p(s.sectionSub, { className: "rv" }, css("pages-home-components-components-inline-15", { marginBottom: "40px" }), "Three steps and you're building real UIs."),
+        div(s.sectionLabel, { className: "rv" }, L.quickStart),
+        h2(s.sectionTitle, { className: "rv" }, L.quickStartTitle),
+        p(s.sectionSub, { className: "rv" }, css("pages-home-components-components-inline-15", { marginBottom: "40px" }), L.quickStartSub),
         div(
           s.stepsGrid,
           ...QUICK_START_STEPS.map(({ num, title, desc, code, lang }, i) => {
@@ -361,7 +360,7 @@ export function HomeQuickStartSection() {
           { className: "rv" },
           button(
             s.btn, s.btnSecondary,
-            "Read the full docs →",
+            L.readFullDocs,
             { onClick: () => router.go("/docs") },
           ),
         ),
@@ -371,6 +370,7 @@ export function HomeQuickStartSection() {
 }
 
 export function ExamplesTeaserSection() {
+  const { COUNTER_TEASER_CODE, TODO_TEASER_CODE, LABELS: L } = home();
   function TeaserCard(
     filename: string,
     code: string,
@@ -398,8 +398,8 @@ export function ExamplesTeaserSection() {
       ),
       div(
         hs.demoTabBar,
-        Tab("Preview", "preview"),
-        Tab("Code", "code"),
+        Tab(t.common.preview, "preview"),
+        Tab(t.common.code, "code"),
       ),
       div(
         hs.teaserDemoPane,
@@ -428,7 +428,7 @@ export function ExamplesTeaserSection() {
         ),
         button(
           css("pages-home-components-components-inline-21", { padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: "none", color: "#fff", backgroundColor: colors.primary, fontFamily: "inherit" }),
-          "Reset", { onClick: () => { n = 0; update(); } }
+          L.reset, { onClick: () => { n = 0; update(); } }
         ),
         button(
           css("pages-home-components-components-inline-22", { padding: "7px 16px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: `1px solid ${colors.borderLight}`, color: colors.textDim, backgroundColor: colors.bgLight, fontFamily: "inherit" }),
@@ -460,7 +460,7 @@ export function ExamplesTeaserSection() {
           css("pages-home-components-components-inline-25", { flex: "1", padding: "9px 13px", borderRadius: "6px", border: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgSecondary, color: colors.text, fontFamily: "system-ui, sans-serif", fontSize: "0.875rem", outline: "none", marginBottom: "10px", width: "100%", focus: { borderColor: colors.primary } }),
           {
             type: "text",
-            placeholder: "Add a task…",
+            placeholder: L.addATask,
           },
           { onInput: (e) => { inputValue = (e.target as HTMLInputElement).value; } },
           { onKeyDown: (e) => { if ((e as KeyboardEvent).key === "Enter") addTodo(); } },
@@ -468,7 +468,7 @@ export function ExamplesTeaserSection() {
         ),
         button(
           css("pages-home-components-components-inline-26", { padding: "9px 14px", borderRadius: "6px", fontSize: "0.85rem", cursor: "pointer", border: "none", color: "#fff", backgroundColor: colors.primary, fontFamily: "inherit", whiteSpace: "nowrap" }),
-          "Add",
+          L.add,
           { onClick: addTodo },
         ),
       ),
@@ -493,9 +493,9 @@ export function ExamplesTeaserSection() {
       hs.examplesTeaserSection,
       div(
         s.container,
-        div(s.sectionLabel, { className: "rv" }, "Examples"),
-        h2(s.sectionTitle, { className: "rv" }, "See it in action."),
-        p(s.sectionSub, { className: "rv" }, "Interactive demos. Explore the code behind each one."),
+        div(s.sectionLabel, { className: "rv" }, L.examples),
+        h2(s.sectionTitle, { className: "rv" }, L.examplesTitle),
+        p(s.sectionSub, { className: "rv" }, L.examplesSub),
         div(
           hs.examplesTeaserGrid,
           TeaserCard("counter.ts", COUNTER_TEASER_CODE, CounterPreview, "rv rv-d1"),
@@ -506,7 +506,7 @@ export function ExamplesTeaserSection() {
           { className: "rv" },
           button(
             s.btn, s.btnSecondary,
-            "View all examples →",
+            L.viewAllExamples,
             { onClick: () => router.go("/examples") },
           ),
         ),
@@ -516,6 +516,7 @@ export function ExamplesTeaserSection() {
 }
 
 export function CTASection() {
+  const { CTA_TITLE, CTA_SUB, LABELS: L } = home();
   return section(
     hs.ctaSection,
     div(
@@ -534,7 +535,7 @@ export function CTASection() {
             a(
               hs.ctaBtn, hs.ctaBtnPrimary,
               { href: "/docs" },
-              "Read the docs",
+              L.readTheDocs,
             ),
             a(
               hs.ctaBtn, hs.ctaBtnSecondary,

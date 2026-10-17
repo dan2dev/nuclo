@@ -4,6 +4,8 @@ import { hs } from "./styles.ts";
 import { ex, EASE, type HeroExample } from "./examples.ts";
 import { Draw, Fireworks, Waves, Sort, Chase, Reflex, Warp, Life } from "./examples.ts";
 import { Paint } from "./playground.ts";
+import { home } from "./content.ts";
+import { t } from "../../i18n/index.ts";
 
 // The hero's card: nine live examples, one at a time. Arrows, dots, the arrow keys and a swipe
 // move between them; on its own the card moves on every few seconds until someone touches it.
@@ -16,6 +18,8 @@ import { Paint } from "./playground.ts";
 const BY_NAME = { Paint, Draw, Fireworks, Waves, Sort, Chase, Reflex, Warp, Life };
 export const EXAMPLES: HeroExample[] = Object.values(BY_NAME);
 const NAMES = Object.keys(BY_NAME);
+// An example's title and note in the current locale, by its export name
+const text = (i: number) => home().HERO_EXAMPLES[NAMES[i]] ?? { title: NAMES[i], note: "" };
 const N = EXAMPLES.length;
 const HERO = "hero-card";
 const AUTO_MS = 9000; // per example, while the card plays on its own
@@ -106,13 +110,13 @@ export function HeroCard() {
       cs.titles,
       { "aria-live": () => (auto ? "off" : "polite"), onMount: (el: HTMLElement) => { titleEls.add(el); return () => titleEls.delete(el); } },
       div(cs.kicker, () => `${pad(active + 1)}/${pad(N)} · ${EXAMPLES[active].api}`),
-      div(cs.title, id ? { id } : null, () => EXAMPLES[active].title),
+      div(cs.title, id ? { id } : null, () => text(active).title),
     );
   const Arrows = () =>
     div(
       cs.arrows,
-      button(cs.arrow, { type: "button", "aria-label": "Previous example", onClick: () => step(-1) }, Icon("M15 6l-6 6 6 6")),
-      button(cs.arrow, { type: "button", "aria-label": "Next example", onClick: () => step(1) }, Icon("M9 6l6 6-6 6")),
+      button(cs.arrow, { type: "button", "aria-label": home().LABELS.previousExample, onClick: () => step(-1) }, Icon("M15 6l-6 6 6 6")),
+      button(cs.arrow, { type: "button", "aria-label": home().LABELS.nextExample, onClick: () => step(1) }, Icon("M9 6l6 6-6 6")),
     );
 
   function Preview(i: number) {
@@ -123,7 +127,7 @@ export function HeroCard() {
     const { preview, code, root = [] } = built[i];
     return div(
       ms.body, cs.enter, ...root,
-      div(ms.live, div(ex.pane, { "data-demo-pane": "preview" }, ...preview), p(ms.note, EXAMPLES[i].note)),
+      div(ms.live, div(ex.pane, { "data-demo-pane": "preview" }, ...preview), p(ms.note, text(i).note)),
       div(ms.code, code),
     );
   }
@@ -170,12 +174,12 @@ export function HeroCard() {
       Titles(),
       div(
         cs.dots,
-        ...EXAMPLES.map((e, i) =>
+        ...EXAMPLES.map((_, i) =>
           button(
             cs.dot,
             {
               type: "button", "data-dot": "",
-              "aria-label": `Example ${i + 1}: ${e.title}`,
+              "aria-label": home().LABELS.example(i + 1, text(i).title),
               "aria-current": () => (i === active ? "true" : "false"),
               class: () => cx(cs.dot, i === active ? cs.dotOn : null, auto && i === active ? cs.dotAuto : null).className,
               onClick: () => go(i),
@@ -185,7 +189,7 @@ export function HeroCard() {
           ),
         ),
       ),
-      button(cs.codeBtn, { type: "button", "aria-haspopup": "dialog", onClick: openCode }, Icon("M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14", 16), "Code"),
+      button(cs.codeBtn, { type: "button", "aria-haspopup": "dialog", onClick: openCode }, Icon("M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14", 16), t.common.code),
       Arrows(),
     ),
     // While the example is in the dialog, an empty pane keeps the card's height
@@ -202,8 +206,8 @@ export function HeroCard() {
         ms.head,
         Titles("hero-code-title"),
         Arrows(),
-        button(cs.codeBtn, { type: "button", onClick: () => void import("../../stackblitz.ts").then((m) => m.openHeroExample(NAMES[active], EXAMPLES[active].title)) }, Icon("M13 3L4 14h7l-1 7 9-11h-7l1-7z", 16), "StackBlitz"),
-        button(cs.arrow, { type: "button", "aria-label": "Close code view", onClick: () => dialogEl?.close() }, Icon("M6 6l12 12M18 6L6 18")),
+        button(cs.codeBtn, { type: "button", onClick: () => void import("../../stackblitz.ts").then((m) => m.openHeroExample(NAMES[active], text(active).title)) }, Icon("M13 3L4 14h7l-1 7 9-11h-7l1-7z", 16), "StackBlitz"),
+        button(cs.arrow, { type: "button", "aria-label": home().LABELS.closeCodeView, onClick: () => dialogEl?.close() }, Icon("M6 6l12 12M18 6L6 18")),
       ),
       inDialog,
     ),

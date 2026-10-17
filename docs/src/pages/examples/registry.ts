@@ -11,6 +11,11 @@ import { COMPONENT_EXAMPLES } from "./component-demos.ts";
 import { APP_EXAMPLES } from "./app-demos.ts";
 import { buildPreview } from "./demos.ts";
 import type { CodeFile } from "../../components/CodeBlock.ts";
+import * as en from "../../i18n/en/examples.ts";
+import { i18n } from "../../i18n/index.ts";
+import { examplesText } from "./text.ts";
+
+export { examplesText };
 
 export interface Example {
   id: string; // the URL segment: /examples/:id
@@ -26,6 +31,7 @@ export interface Example {
 }
 
 export interface ExampleGroup {
+  key: en.GroupKey;
   title: string;
   sub: string;
   examples: Example[];
@@ -34,49 +40,36 @@ export interface ExampleGroup {
 // The docs section each basic example demonstrates.
 const BASIC_DOCS: Record<string, string> = { counter: "api-update", todo: "api-list", search: "computed", styling: "api-cx" };
 
-export const EXAMPLE_GROUPS: ExampleGroup[] = [
-  {
-    title: "Basics",
-    sub: "The patterns every Nuclo app is made of.",
-    examples: EXAMPLES.map((ex) => ({ ...ex, group: "Basics", docs: BASIC_DOCS[ex.id], preview: () => buildPreview(ex.id) })),
-  },
-  {
-    title: "Components",
-    sub: "Plain functions with static and dynamic params, children, lists matched by identity and nested data. Every preview counts its mounts.",
-    examples: COMPONENT_EXAMPLES.map((ex) => ({ ...ex, group: "Components" })),
-  },
-  {
-    title: "API",
-    sub: "One small demo per building block, the same ones the docs embed.",
-    examples: API_DEMOS.map((demo) => ({ ...demo, group: "API", docs: demo.id })),
-  },
-  {
-    title: "Styling",
-    sub: "Create a class, compose a class, and use a tiny theme.",
-    examples: STYLING_FEATURES.map((f) => ({ ...f, group: "Styling" })),
-  },
-  {
-    title: "Forms",
-    sub: "Validation as plain functions over plain state, touched fields, steps and dynamic rows.",
-    examples: FORM_EXAMPLES.map((ex) => ({ ...ex, group: "Forms" })),
-  },
-  {
-    title: "SVG",
-    sub: "Charts, animations, tools and games from the SVG tag builders, driven by plain data, pointer events and update().",
-    examples: [...SVG_EXAMPLES, ...LIVE_CHART_EXAMPLES, ...DATA_CHART_EXAMPLES, ...SVG_INTERACTIVE_EXAMPLES].map((ex) => ({ ...ex, group: "SVG" })),
-  },
-  {
-    title: "Routing",
-    sub: "Route tables, matching, the active route, layers and loaders. nuclo-router is a separate package: npm install nuclo nuclo-router.",
-    examples: ROUTER_EXAMPLES.map((ex) => ({ ...ex, group: "Routing" })),
-  },
-  {
-    title: "Apps",
-    sub: "Bigger programs, full screen, with their real source behind tabs: a desktop with windows, a data grid, a chat, games, editors and libraries that own their own state.",
-    examples: APP_EXAMPLES.map((ex) => ({ ...ex, group: "Apps" })),
-  },
+// The English examples, by group, with their titles and descriptions as written in the source files.
+const SOURCE: [en.GroupKey, Omit<Example, "group">[]][] = [
+  ["basics", EXAMPLES.map((ex) => ({ ...ex, docs: BASIC_DOCS[ex.id], preview: () => buildPreview(ex.id) }))],
+  ["components", COMPONENT_EXAMPLES],
+  ["api", API_DEMOS.map((demo) => ({ ...demo, docs: demo.id }))],
+  ["styling", STYLING_FEATURES],
+  ["forms", FORM_EXAMPLES],
+  ["svg", [...SVG_EXAMPLES, ...LIVE_CHART_EXAMPLES, ...DATA_CHART_EXAMPLES, ...SVG_INTERACTIVE_EXAMPLES]],
+  ["routing", ROUTER_EXAMPLES],
+  ["apps", APP_EXAMPLES],
 ];
 
-export const ALL_EXAMPLES: Example[] = EXAMPLE_GROUPS.flatMap((g) => g.examples);
+const localized = new Map<string, ExampleGroup[]>();
 
-export const findExample = (id: string): Example | undefined => ALL_EXAMPLES.find((ex) => ex.id === id);
+/** The groups in the current locale: the English entries with the locale's group names, titles and descriptions laid over. Built once per locale. */
+export function exampleGroups(): ExampleGroup[] {
+  const cached = localized.get(i18n.locale);
+  if (cached) return cached;
+  const text = examplesText();
+  const groups = SOURCE.map(([key, examples]) => {
+    const { title, sub } = text.groups[key];
+    return { key, title, sub, examples: examples.map((ex) => ({ ...ex, ...text.items[ex.id], group: title })) };
+  });
+  localized.set(i18n.locale, groups);
+  return groups;
+}
+
+export const allExamples = (): Example[] => exampleGroups().flatMap((g) => g.examples);
+
+export const findExample = (id: string): Example | undefined => allExamples().find((ex) => ex.id === id);
+
+// The English list, for the servers' SEO and the text exports.
+export const ALL_EXAMPLES: Example[] = SOURCE.flatMap(([key, examples]) => examples.map((ex) => ({ ...ex, group: en.groups[key].title })));

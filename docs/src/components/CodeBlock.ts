@@ -1,5 +1,6 @@
 import { css, colors, cx, s } from "../styles.ts";
 import { copyText } from "./clipboard.ts";
+import { t } from "../i18n/index.ts";
 
 // ── Simple tokenizer for TypeScript/JS syntax highlighting ─────────────────
 export function highlightCode(code: string): string {
@@ -184,7 +185,7 @@ export function CodeBlock({ filename, code, files, showCopy = true, preTokenized
         showCopy
           ? button(
               copyBtn,
-              when(() => copied, "✓ Copied").else("Copy"),
+              when(() => copied, () => t.common.copied).else(() => t.common.copy),
               { onClick: handleCopy },
             )
           : span(),

@@ -1,6 +1,7 @@
 import { css, colors } from "../styles.ts";
 import { withCode } from "./inline-code.ts";
 import { exampleHref, onOpenExample } from "../pages/examples/open.ts";
+import { bundle, t } from "../i18n/index.ts";
 
 // One live demo per API, shown on /examples (ExampleCard) and inside each docs section (Live).
 // Each demo keeps its own state, so every visit starts fresh. `code` is what the
@@ -629,9 +630,9 @@ export function Live(id: string) {
     ls.frame,
     div(
       ls.head,
-      span(ls.badge, "Live"),
-      span(...withCode(d.desc)),
-      a(ls.open, { href: exampleHref(d.id, "docs"), title: "Open this example full screen", onClick: onOpenExample(d.id, "docs") }, "Open ↗"),
+      span(ls.badge, t.common.live),
+      span(...withCode(bundle()?.examples.items[d.id]?.desc ?? d.desc)),
+      a(ls.open, { href: exampleHref(d.id, "docs"), title: t.common.openFullScreen, onClick: onOpenExample(d.id, "docs") }, t.common.open),
     ),
     div(ls.body, d.preview()),
   );

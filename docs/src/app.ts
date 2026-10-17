@@ -12,6 +12,7 @@ import { router } from './router.ts';
 import { css, colors } from './styles.ts';
 import { animations } from './styles/animations.ts';
 import { ExampleFrame } from './pages/examples/frame.ts';
+import { i18n, t } from './i18n/index.ts';
 
 const appStyles = {
 	// --header-h is the fixed header's height; docs sticky offsets read it too.
@@ -21,19 +22,26 @@ const appStyles = {
   errorState: css("app-errorState", { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '12px', padding: '48px' }),
   errorTitle: css("app-errorTitle", { fontSize: '15px', fontWeight: '600', color: '#ef4444' }),
   errorMessage: css("app-errorMessage", { fontSize: '13px', color: colors.textMuted, fontFamily: 'monospace' }),
+  // The page-wide loader while a locale's text is fetched: a veil over everything, a ring in the middle.
+  loader: css("app-loader", { position: 'fixed', inset: '0', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'color-mix(in srgb, var(--c-bg) 72%, transparent)', raw: { 'backdrop-filter': 'blur(3px)', '-webkit-backdrop-filter': 'blur(3px)' }, animation: `${animations.pageFadeIn} 0.15s ease` }),
+  loaderRing: css("app-loaderRing", { width: '36px', height: '36px', borderRadius: '50%', border: `3px solid ${colors.border}`, borderTopColor: colors.primary, animation: `${animations.spin} 0.8s linear infinite` }),
 };
+
+function LocaleLoader() {
+  return div(appStyles.loader, { role: 'status', 'aria-live': 'polite', 'aria-label': t.app.loadingLanguage }, div(appStyles.loaderRing));
+}
 
 function ErrorDisplay() {
   return div(
     appStyles.errorState,
-    span(appStyles.errorTitle, 'Failed to load page'),
+    span(appStyles.errorTitle, t.app.failedToLoad),
     span(appStyles.errorMessage, () => router.error?.message ?? ''),
   );
 }
 
 export function App() {
   // Standalone apps own the viewport, without the documentation shell.
-  if (router.pattern === '/desktop' || router.pattern === '/apps/:id') return div(router.outlet());
+  if (router.pattern === '/desktop' || router.pattern === '/apps/:id') return div(router.outlet(), when(() => i18n.loading, LocaleLoader()));
   return div(
     appStyles.root,
     Header(),
@@ -47,5 +55,6 @@ export function App() {
     Footer(),
     // The examples modal, outside main's transform. Example pages fill its regions.
     ExampleFrame(),
+    when(() => i18n.loading, LocaleLoader()),
   );
 }

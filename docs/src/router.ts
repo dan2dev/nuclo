@@ -7,6 +7,7 @@ import { createRouter, type RouteTable } from 'nuclo-router';
 import { routeDefinitions, routeName } from './route-definitions.ts';
 import { updatePageMeta } from './seo.ts';
 import { scanReveals } from './reveal.ts';
+import { i18n } from './i18n/index.ts';
 
 export { routeName };
 
@@ -40,3 +41,10 @@ export const router = createRouter(
 );
 
 export const currentRoute = () => routeName(router.pattern);
+
+// A locale switch rebuilt every page in place: the title and meta follow, and the
+// reveal classes the rebuild dropped are observed again.
+i18n.onChange = () => {
+  if (router.data !== null) updatePageMeta(router, router.data);
+  scanReveals();
+};

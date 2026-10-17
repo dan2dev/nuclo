@@ -9,13 +9,18 @@ import { brandBox, brandIcon, glyphs, icon, pathD, GRADIENT, INK, N, STROKE, typ
 // finished logo never flashes first. With `hideWordAfter`, the word runs on a clock of its own: once the
 // page scrolls past that many px it is un-drawn, o to n, each ink lifting back to its line and the pen
 // winding it up; back above, it is drawn again. The svg's `data-word="off"` marks it gone, for a layout
-// that closes the space it leaves.
+// that closes the space it leaves. `data-draw="on"` marks a drawing begun: a data attribute, not a class,
+// because a forceUpdate() rebuild re-applies the build's classes and would drop it.
+//
+// Build an animated instance once (a module-level const) where its host can be rebuilt by forceUpdate():
+// the rebuild then re-applies this same closure, whose clock, scope and listeners carry on. A new
+// Drawing() over the old element would start a second clock the element never hears from.
 
 const svg = css("components-nuclobrand-svg", { display: "block", height: "auto", flexShrink: 0 });
 
 let instances = 0;
 
-type Options = { animate?: boolean | "visible"; hideWordAfter?: number; class?: ReturnType<typeof css> | null; label?: string };
+type Options = { animate?: boolean | "visible"; hideWordAfter?: number; class?: ReturnType<typeof css> | null; label?: string | (() => string) };
 
 // One drawn thing: its contours, its fill, and when its pen runs. k is how many points are drawn, ink its fill.
 // A letter runs on the word's clock
@@ -74,7 +79,7 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
     raf = requestAnimationFrame(tick);
   }
   function start() {
-    el.classList.add("nuclo-draw-on");
+    el.dataset.draw = "on";
     now = wt = 0;
     paint();
     run();
@@ -83,7 +88,7 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
   function clear() {
     cancelAnimationFrame(raf);
     raf = 0;
-    el.classList.remove("nuclo-draw-on");
+    delete el.dataset.draw;
     now = wt = -1;
     paint();
   }

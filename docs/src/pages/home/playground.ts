@@ -55,8 +55,6 @@ const ps = {
 
 export const Paint: HeroExample = {
   api: "update()",
-  title: "Paint, then patch",
-  note: "The left grid is a plain array of booleans: painting it is a mutation and nothing more. The DOM on the right moves only when update() runs, and then only the cells that changed are patched.",
   build,
 };
 

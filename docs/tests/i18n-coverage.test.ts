@@ -1,0 +1,30 @@
+// Every locale carries the same docs sections, every example and every hero example.
+import "nuclo/polyfill";
+import "nuclo";
+import { test, expect } from "bun:test";
+import * as en from "../src/i18n/en/docs.ts";
+import * as enHome from "../src/i18n/en/home.ts";
+import pt from "../src/i18n/pt/index.ts";
+import es from "../src/i18n/es/index.ts";
+import { ALL_EXAMPLES } from "../src/pages/examples/registry.ts";
+
+const sectionIds = (groups: { sections: { id: string }[] }[]) => groups.flatMap((g) => g.sections.map((s) => s.id));
+
+for (const [name, bundle] of [["pt", pt], ["es", es]] as const) {
+  test(`${name}: the docs have the same groups and sections, in order`, () => {
+    expect(sectionIds(bundle.docs.GROUPS)).toEqual(sectionIds(en.GROUPS));
+    expect(bundle.docs.GROUPS.map((g) => g.sections.length)).toEqual(en.GROUPS.map((g) => g.sections.length));
+    // Where the English has afterContent, the translation does too (and nowhere else).
+    const after = (groups: typeof en.GROUPS) => groups.flatMap((g) => g.sections.map((s) => [s.id, !!s.afterContent]));
+    expect(after(bundle.docs.GROUPS)).toEqual(after(en.GROUPS));
+  });
+
+  test(`${name}: every example has a title and description`, () => {
+    const missing = ALL_EXAMPLES.map((ex) => ex.id).filter((id) => !bundle.examples.items[id]?.title || !bundle.examples.items[id]?.desc);
+    expect(missing).toEqual([]);
+  });
+
+  test(`${name}: every hero example has a title and note`, () => {
+    expect(Object.keys(bundle.home.HERO_EXAMPLES).sort()).toEqual(Object.keys(enHome.HERO_EXAMPLES).sort());
+  });
+}
