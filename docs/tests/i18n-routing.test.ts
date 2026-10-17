@@ -1,7 +1,7 @@
 import "nuclo/polyfill";
 import "nuclo";
 import { expect, test } from "bun:test";
-import { appFetch, preferredLocale } from "../src/app-handler.ts";
+import { appFetch, preferredLocale, localeRedirect } from "../src/app-handler.ts";
 import { isLocale, LOCALES, LOCALE_CODES, loadLocale, applyLocale, t } from "../src/i18n/index.ts";
 import { ALL_EXAMPLES } from "../src/pages/examples/registry.ts";
 import { resolveMeta } from "../src/seo.ts";
@@ -40,6 +40,35 @@ test("root and old URLs redirect without losing query parameters", async () => {
   const old = await request("/examples/counter?from=old");
   expect(old.status).toBe(301);
   expect(old.headers.get("location")).toBe("/en/examples/counter?from=old");
+});
+
+test("entry language follows saved choice, browser preferences, then English", () => {
+  const cases = [
+    { language: "ja", cookie: "nuclo-locale=pt-br", expected: "pt-br" },
+    { language: "sv-SE, fr-CA;q=0.9, en;q=0.8", expected: "fr" },
+    { language: "pt-PT, en;q=0.5", expected: "pt-br" },
+    { language: "sv-SE", expected: "en" },
+    { language: "", expected: "en" },
+    { language: "de", cookie: "nuclo-locale=invalid", expected: "de" },
+  ];
+  for (const { language, cookie, expected } of cases) {
+    for (const path of ["/", "/index.html"]) {
+      const response = localeRedirect(new Request(`http://localhost${path}?from=welcome`, {
+        headers: { "Accept-Language": language, ...(cookie ? { Cookie: cookie } : {}) },
+      }));
+      expect(response?.status).toBe(302);
+      expect(response?.headers.get("location")).toBe(`/${expected}?from=welcome`);
+      expect(response?.headers.get("cache-control")).toBe("no-store");
+      expect(response?.headers.get("vary")).toBe("Cookie, Accept-Language");
+    }
+  }
+  for (const locale of LOCALE_CODES) {
+    for (const suffix of ["", "/docs", "/examples/counter"]) {
+      expect(localeRedirect(new Request(`http://localhost/${locale}${suffix}`, {
+        headers: { "Accept-Language": "de", Cookie: "nuclo-locale=pt-br" },
+      }))).toBeNull();
+    }
+  }
 });
 
 for (const locale of LOCALE_CODES) {
