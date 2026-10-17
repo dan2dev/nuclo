@@ -12,7 +12,7 @@ export const GROUPS_1: DocGroupText[] = [
         title: "Visão geral",
         content: `
       <p>Nuclo é uma pequena biblioteca DOM para TypeScript. Você constrói a página com funções simples como <code>div()</code> e <code>button()</code>, mantém o estado em variáveis comuns e chama <code>update()</code> quando a página deve mudar.</p>
-      <p>Nuclo não tem virtual DOM, compilador, proxies nem signals.</p>
+      <p>Nuclo não tem DOM virtual, compilador, proxies nem signals.</p>
       ${code("main.ts", `
 import 'nuclo'
 
@@ -51,15 +51,15 @@ render(App, document.getElementById('app')!)
       <ul>
         <li><code>[project-name]</code>: a pasta de destino. O padrão é <code>nuclo-app</code>.</li>
         <li><code>-t, --template &lt;name&gt;</code>: o template a copiar. Hoje só existe <code>basic</code>.</li>
-        <li><code>-y, --yes</code>: nunca perguntar, usar os padrões.</li>
+        <li><code>-y, --yes</code>: usar os valores padrão sem fazer perguntas.</li>
         <li><code>-f, --force</code>: escrever em uma pasta que não está vazia.</li>
-        <li><code>-h, --help</code>: imprimir a ajuda.</li>
+        <li><code>-h, --help</code>: exibir a ajuda.</li>
       </ul>
     `,
       },
       {
         id: "installation",
-        title: "Instalação e Imports",
+        title: "Instalação e imports",
         content: `
       <p>Para adicionar o Nuclo a um projeto existente:</p>
       ${sh("npm install nuclo")}
@@ -179,9 +179,9 @@ render(Card, document.body)
       <h3>Armadilhas</h3>
       <ul>
         <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> renderiza o texto "false". Escreva <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
-        <li>Arrays não são filhos. Espalhe-os: <code>ul(...names.map((n) =&gt; li(n)))</code>. Para listas que mudam, use <code>list()</code>.</li>
-        <li>Uma variável local com nome de tag esconde o construtor. Dentro de <code>function Row(label: string)</code>, <code>label(...)</code> não é chamável. Renomeie locais como <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> e <code>i</code>.</li>
-        <li>Navegadores expõem todo elemento com <code>id</code> como uma variável global. Se a página contém <code>&lt;main id="main"&gt;</code> antes do Nuclo carregar, Nuclo deixa esse global no lugar, então <code>main(...)</code> lança um <code>TypeError</code>. Use outros ids.</li>
+        <li>Arrays não são aceitos como filhos. Use o operador spread: <code>ul(...names.map((n) =&gt; li(n)))</code>. Para listas que mudam, use <code>list()</code>.</li>
+        <li>Uma variável local com nome de tag esconde o construtor. Dentro de <code>function Row(label: string)</code>, <code>label(...)</code> não é chamável. Renomeie variáveis locais como <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> e <code>i</code>.</li>
+        <li>Navegadores expõem todo elemento com <code>id</code> como uma variável global. Se a página contém <code>&lt;main id="main"&gt;</code> antes do Nuclo carregar, Nuclo preserva essa variável global, então <code>main(...)</code> lança um <code>TypeError</code>. Use outros ids.</li>
       </ul>
       <h3>Modificadores personalizados</h3>
       <p>Uma função que declara pelo menos um parâmetro roda uma vez, na ordem dos argumentos, enquanto o elemento é construído. Seu primeiro argumento é o elemento. O segundo é um índice interno, então não dependa dele. Se ela retorna uma string ou number, isso vira texto. Um <code>Node</code> é anexado. Um objeto é aplicado como atributos.</p>
@@ -191,14 +191,14 @@ const field = input((el) => {
 })
 `)}
       <h3>Obtendo o elemento</h3>
-      <p><code>render()</code> retorna o elemento raiz. Dentro de uma árvore, use <code>on("mount", (el) =&gt; …)</code> ou um modificador personalizado. Você também pode chamar a função builder você mesmo para criar um elemento desanexado:</p>
+      <p><code>render()</code> retorna o elemento raiz. Dentro de uma árvore, use <code>on("mount", (el) =&gt; …)</code> ou um modificador personalizado. Você também pode chamar a função builder você mesmo para criar um elemento fora do documento:</p>
       ${code("example.ts", `
 const el = div('Hello')() as HTMLDivElement
 document.body.append(el)
 `)}
-      <p>Anexe-o antes do próximo <code>update()</code>. Um nó que não está no documento quando <code>update()</code> roda para de atualizar para sempre.</p>
+      <p>Anexe-o antes do próximo <code>update()</code>. Um nó que não está no documento quando <code>update()</code> roda deixa de ser atualizado permanentemente.</p>
       <h3>SVG</h3>
-      <p>Construtores SVG recebem os mesmos argumentos. Nuclo define todo atributo SVG com <code>setAttribute</code>, então nomes como <code>"stroke-width"</code> funcionam como escritos.</p>
+      <p>Construtores SVG recebem os mesmos argumentos. Nuclo define todo atributo SVG com <code>setAttribute</code>, então nomes como <code>"stroke-width"</code> funcionam exatamente como foram escritos.</p>
       ${code("icon.ts", `
 const Icon = () =>
   svgSvg(
@@ -371,7 +371,7 @@ const search = input(on('mount', (el) => el.focus()))
         <li><code>onDestroy</code> roda quando Nuclo remove o elemento: uma linha de <code>list()</code> é removida, um ramo de <code>when()</code> troca, um <code>into()</code> sai de sua região, ou <code>forceUpdate()</code> o descarta. Roda logo antes da remoção, então o elemento ainda está no documento.</li>
       </ul>
       <h3>Remoção direta do DOM</h3>
-      <p>Se você remove um elemento por conta própria, com <code>node.remove()</code> ou <code>innerHTML = ''</code>, seu <code>onDestroy</code> e seus cleanups nunca rodam, e timers continuam rodando. Nuclo não tem <code>unmount()</code>. Para desmontar um app com limpeza, envolva-o em <code>when()</code>:</p>
+      <p>Se você remove um elemento por conta própria, com <code>node.remove()</code> ou <code>innerHTML = ''</code>, seu <code>onDestroy</code> e suas funções de limpeza nunca rodam, e timers continuam rodando. Nuclo não tem <code>unmount()</code>. Para desmontar um app com limpeza, envolva-o em <code>when()</code>:</p>
       ${code("main.ts", `
 let mounted = true
 render(() => div(when(() => mounted, App())), root)
@@ -385,7 +385,7 @@ update() // App's onDestroy hooks and cleanups run
         <li><code>onDestroy</code> sempre roda primeiro nos filhos, depois no pai.</li>
         <li>Elementos montam na ordem do seu primeiro hook <code>onMount</code>, que segue a ordem dos argumentos, e cada elemento roda todos os seus hooks juntos. Passe o hook do pai antes dos filhos se eles dependerem dele.</li>
         <li>Um hook que lança um erro é registrado com <code>console.error</code>. Os outros hooks ainda rodam.</li>
-        <li>O callback deve retornar nada ou uma função de cleanup, então não o torne <code>async</code>. Uma Promise retornada nunca é usada como cleanup. Inicie trabalho assíncrono dentro dele: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
+        <li>O callback deve retornar uma função de limpeza ou não retornar nada, então não o torne <code>async</code>. Uma Promise retornada nunca é usada como função de limpeza. Inicie trabalho assíncrono dentro dele: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
         <li>Hooks nunca rodam no servidor. No cliente, rodam depois de <code>hydrate()</code>.</li>
       </ul>
       <div class="docs-callout"><strong>Nota:</strong> hooks não são effects. Eles nunca rodam de novo quando o estado muda. Cada um roda no máximo uma vez por elemento.</div>
@@ -457,7 +457,7 @@ const Profile = () =>
       </ul>
       <h3>Atributos dinâmicos</h3>
       <ul>
-        <li>Nuclo escreve um valor apenas quando ele difere do último valor que Nuclo escreveu. Ele não compara com o DOM ao vivo, então se um usuário digita em um input e sua função retorna o mesmo valor de antes, o texto digitado permanece.</li>
+        <li>Nuclo escreve um valor apenas quando ele difere do último valor que Nuclo escreveu. Ele não compara com o estado atual do DOM, então se um usuário digita em um input e sua função retorna o mesmo valor de antes, o texto digitado permanece.</li>
         <li>Um resultado <code>null</code> ou <code>undefined</code> não escreve nada, então o valor antigo permanece. <code>className</code> é a exceção: qualquer resultado falsy remove as classes dinâmicas e mantém as estáticas.</li>
         <li>Uma função de <code>style</code> aplica o objeto retornado em cada atualização.</li>
       </ul>
@@ -557,7 +557,7 @@ const Status = () =>
         id: "api-list",
         title: "list()",
         content: `
-      <p>Renderiza uma linha por item. Em cada <code>update()</code>, Nuclo chama <code>items()</code> de novo e casa os novos itens com as linhas existentes por identidade (<code>===</code>).</p>
+      <p>Renderiza uma linha por item. Em cada <code>update()</code>, Nuclo chama <code>items()</code> de novo e associa os novos itens às linhas existentes por identidade (<code>===</code>).</p>
       ${code("fruits.ts", `
 let fruits = ['Apple', 'Banana']
 
@@ -568,7 +568,7 @@ render(Fruits)
 fruits.push('Cherry')
 update()
 `)}
-      <h3>Como as linhas são casadas</h3>
+      <h3>Como os itens são associados às linhas</h3>
       <ul>
         <li>Um item que ainda está lá mantém sua linha. Nuclo move a linha se necessário, e não chama <code>renderItem</code> de novo.</li>
         <li>Um item novo recebe uma linha nova. Um item removido perde sua linha, e seus hooks <code>onDestroy</code> rodam.</li>
@@ -634,7 +634,7 @@ render(() => div(Layout(), Article()))
         <li>Quando uma região desaparece, por exemplo quando seu <code>when()</code> fecha, suas views voltam a esperar. Uma região construída depois com o mesmo id as mostra.</li>
         <li>Um <code>into()</code> cujo id não corresponde a nenhuma região não renderiza nada e não gera erro, então verifique a grafia.</li>
         <li>Ids são únicos na árvore. Uma segunda região construída sob um id ativo registra um aviso.</li>
-        <li>Regiões funcionam com <a href="#api-ssr">renderização no servidor</a>. Em <code>hydrate()</code>, cada view reivindica o HTML que o servidor renderizou em vez de construí-lo de novo.</li>
+        <li>Regiões funcionam com <a href="#api-ssr">renderização no servidor</a>. Em <code>hydrate()</code>, cada view reutiliza o HTML que o servidor renderizou em vez de construí-lo de novo.</li>
       </ul>
       <h3>Opções</h3>
       <ul>
@@ -655,7 +655,7 @@ const App = () =>
   )
 `)}
       <h3>Várias regiões de uma vez</h3>
-      <p>Passe um objeto para preencher mais de uma região a partir de um único <code>into()</code>. Um valor pode ser um filho ou um array de filhos. Ambas as formas aninham: um <code>into()</code> dentro do conteúdo de outra view mira sua própria região.</p>
+      <p>Passe um objeto para preencher mais de uma região a partir de um único <code>into()</code>. Um valor pode ser um filho ou um array de filhos. Ambas as formas podem ser aninhadas: um <code>into()</code> dentro do conteúdo de outra view aponta para sua própria região.</p>
       ${code("page.ts", `
 const Page = () =>
   into({
@@ -772,7 +772,7 @@ const App = () =>
   )
 `)}
       <h3>Uma view com sua própria região</h3>
-      <p>Uma view pode conter um <code>region()</code>, e outras views podem mirá-lo. Aqui a página do editor traz consigo uma região <code>tabs</code>, e cada aba a preenche. Quando o editor fecha, sua região vai junto.</p>
+      <p>Uma view pode conter um <code>region()</code>, e outras views podem direcionar conteúdo para ele. Aqui a página do editor traz consigo uma região <code>tabs</code>, e cada aba a preenche. Quando o editor fecha, sua região vai junto.</p>
       ${code("editor.ts", `
 let tab: 'code' | 'preview' = 'code'
 
@@ -797,7 +797,7 @@ const Editor = () =>
         id: "api-force-update",
         title: "forceUpdate()",
         content: `
-      <p><code>update()</code> só executa valores dinâmicos. Valores estáticos, como o texto em <code>h1(labels[lang].title)</code>, são fixados quando a árvore é construída. <code>forceUpdate()</code> chama seus componentes de novo e ajusta o DOM ao vivo para corresponder, valores estáticos incluídos. Use-o para mudanças raras e globais no app, como trocar o idioma. Use <code>update()</code> para todo o resto.</p>
+      <p><code>update()</code> só executa valores dinâmicos. Valores estáticos, como o texto em <code>h1(labels[lang].title)</code>, são fixados quando a árvore é construída. <code>forceUpdate()</code> chama seus componentes de novo e ajusta o DOM existente à nova árvore, incluindo os valores estáticos. Use-o para mudanças raras e globais no app, como trocar o idioma. Use <code>update()</code> para todo o resto.</p>
       ${code("i18n.ts", `
 const labels = { en: { title: 'Hello' }, pt: { title: 'Olá' } }
 let lang: keyof typeof labels = 'en'
@@ -813,10 +813,10 @@ forceUpdate() // same <h1> element, now "Olá"
       <p>Sem argumentos, <code>forceUpdate()</code> reconstrói toda raiz renderizada com <code>render(App)</code> ou <code>hydrate(App)</code>. Raízes renderizadas com <code>render(App())</code> são puladas. Se um componente lança um erro, o erro é registrado e aquela raiz mantém seu DOM antigo. Um erro lançado depois, enquanto a nova construção é aplicada, também é registrado, mas as partes já ajustadas permanecem ajustadas.</p>
       <h3>O que permanece e o que muda</h3>
       <ul>
-        <li>Filhos são casados em ordem, por tag. Um elemento correspondente é reutilizado, então o foco e os valores digitados em inputs permanecem, e seus hooks <code>onMount</code> não rodam de novo. Assim que a tag de um filho difere, esse filho e todos os irmãos seguintes são construídos do zero.</li>
+        <li>Os elementos filhos são associados em ordem, por tag. Um elemento correspondente é reutilizado, então o foco e os valores digitados em inputs permanecem, e seus hooks <code>onMount</code> não rodam de novo. Assim que a tag de um filho difere, esse filho e todos os irmãos seguintes são construídos do zero.</li>
         <li>Texto, atributos, classes, estilos, listeners, ramos de <code>when()</code> e linhas de <code>list()</code> seguem a nova construção.</li>
         <li>Novos elementos são criados, e seus hooks <code>onMount</code> rodam. Elementos que a nova construção não produz mais são removidos, e seus hooks <code>onDestroy</code> rodam.</li>
-        <li>Linhas de <code>list()</code> também são casadas por posição, não por item, então um elemento de linha reutilizado pode acabar mostrando um item diferente.</li>
+        <li>Linhas de <code>list()</code> também são associadas por posição, não por item, então um elemento de linha reutilizado pode acabar mostrando um item diferente.</li>
         <li>Atributos que a nova construção não define mais não são removidos.</li>
       </ul>
       <div class="docs-callout"><strong>Atenção:</strong> estado declarado dentro de uma função de componente é reiniciado, porque a função roda de novo. Mantenha fora do componente o estado que precisa sobreviver.</div>
@@ -862,7 +862,7 @@ render(() => Page({ name: 'Ana' }), root)
         id: "api-hydrate",
         title: "hydrate()",
         content: `
-      <p>Assume o HTML produzido por <a href="#api-ssr"><code>renderToString()</code></a>. Ele reutiliza os elementos existentes, anexa listeners de eventos e conecta valores dinâmicos, <code>when()</code> e <code>list()</code>, para que <code>update()</code> funcione depois. Então executa os hooks <code>onMount</code>. <code>parent</code> tem como padrão <code>document.body</code>. Retorna o elemento raiz.</p>
+      <p>Reutiliza o HTML produzido por <a href="#api-ssr"><code>renderToString()</code></a>. Ele reutiliza os elementos existentes, anexa listeners de eventos e conecta valores dinâmicos, <code>when()</code> e <code>list()</code>, para que <code>update()</code> funcione depois. Então executa os hooks <code>onMount</code>. <code>parent</code> tem como padrão <code>document.body</code>. Retorna o elemento raiz.</p>
       ${code("client.ts", `
 import 'nuclo'
 import { App } from './app.ts'

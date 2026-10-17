@@ -12,7 +12,7 @@ export const GROUPS_1: DocGroupText[] = [
         title: "Panoramica",
         content: `
       <p>Nuclo è una piccola libreria DOM per TypeScript. Costruisci la pagina con semplici funzioni come <code>div()</code> e <code>button()</code>, tieni lo stato in normali variabili e chiami <code>update()</code> quando la pagina deve cambiare.</p>
-      <p>Nuclo non ha virtual DOM, compilatore, proxy né signal.</p>
+      <p>Nuclo non ha DOM virtuale, compilatore, proxy né signal.</p>
       ${code("main.ts", `
 import 'nuclo'
 
@@ -28,7 +28,7 @@ render(App, document.getElementById('app')!)
 `)}
       <h3>Il modello mentale</h3>
       <ol>
-        <li>Costruisci la UI con i costruttori di tag.</li>
+        <li>Costruisci la UI con i builder di tag.</li>
         <li>Passa una funzione per ogni valore che dipende dallo stato.</li>
         <li>Cambia lo stato con JavaScript puro.</li>
         <li>Chiama <code>update()</code>. Nuclo esegue di nuovo le funzioni e applica le modifiche al DOM.</li>
@@ -51,9 +51,9 @@ render(App, document.getElementById('app')!)
       <ul>
         <li><code>[project-name]</code>: la cartella di destinazione. Il valore predefinito è <code>nuclo-app</code>.</li>
         <li><code>-t, --template &lt;name&gt;</code>: il template da copiare. Oggi esiste solo <code>basic</code>.</li>
-        <li><code>-y, --yes</code>: non chiedere mai, usa i valori predefiniti.</li>
+        <li><code>-y, --yes</code>: salta le domande e usa i valori predefiniti.</li>
         <li><code>-f, --force</code>: scrivi in una cartella non vuota.</li>
-        <li><code>-h, --help</code>: stampa l'aiuto.</li>
+        <li><code>-h, --help</code>: mostra la guida.</li>
       </ul>
     `,
       },
@@ -68,17 +68,17 @@ render(App, document.getElementById('app')!)
       <h3>Globali</h3>
       <p><code>import 'nuclo'</code> mette su <code>globalThis</code>:</p>
       <ul>
-        <li><strong>175 costruttori di tag</strong>: 112 per HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) e 63 per SVG, con il suffisso <code>Svg</code> (<code>svgSvg</code>, <code>pathSvg</code>, …). Vedi <a href="#tag-builders">Costruttori di tag</a>.</li>
+        <li><strong>175 builder di tag</strong>: 112 per HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) e 63 per SVG, con il suffisso <code>Svg</code> (<code>svgSvg</code>, <code>pathSvg</code>, …). Vedi <a href="#tag-builders">Builder di tag</a>.</li>
         <li><strong>16 helper</strong>: <code>update</code>, <code>scope</code>, <code>when</code>, <code>list</code>, <code>region</code>, <code>into</code>, <code>on</code>, <code>render</code>, <code>hydrate</code>, <code>forceUpdate</code>, <code>css</code>, <code>cx</code>, <code>createCss</code>, <code>variants</code>, <code>keyframes</code> e <code>globalStyle</code>.</li>
       </ul>
-      <p>L'import deve essere eseguito prima di qualsiasi codice che chiama un costruttore. I moduli ES vengono eseguiti nell'ordine di import, quindi questo fallisce:</p>
+      <p>L'import deve essere eseguito prima di qualsiasi codice che chiama un builder. I moduli ES vengono eseguiti nell'ordine di import, quindi questo fallisce:</p>
       ${code("main.ts", `
 import { App } from './app' // app.ts calls div() → ReferenceError: div is not defined
 import 'nuclo'
 `)}
       <p>Metti <code>import 'nuclo'</code> per primo nel file di ingresso, oppure importalo in ogni file che usa i globali.</p>
       <h3>Import nominati</h3>
-      <p>Gli helper sono anche export nominati. Sono le stesse funzioni dei globali. <code>getCssText()</code> e <code>resetStyles()</code> sono solo export nominati. I costruttori di tag sono solo globali, quindi <code>import { div } from 'nuclo'</code> non funziona.</p>
+      <p>Gli helper sono anche export nominati. Sono le stesse funzioni dei globali. <code>getCssText()</code> e <code>resetStyles()</code> sono solo export nominati. I builder di tag sono solo globali, quindi <code>import { div } from 'nuclo'</code> non funziona.</p>
       ${code("main.ts", `
 import { render, update, getCssText } from 'nuclo'
 `)}
@@ -116,11 +116,11 @@ import { render, update, getCssText } from 'nuclo'
       <h3>Tipi utili</h3>
       <p>Questi tipi sono globali, quindi li usi senza import:</p>
       <ul>
-        <li><code>NodeModFn&lt;Tag&gt;</code>: ciò che restituisce un costruttore di tag. Usalo come tipo di ritorno di un componente.</li>
-        <li><code>NodeModLike&lt;Tag&gt;</code>: qualsiasi cosa un costruttore di tag accetti come argomento.</li>
+        <li><code>NodeModFn&lt;Tag&gt;</code>: ciò che restituisce un builder di tag. Usalo come tipo di ritorno di un componente.</li>
+        <li><code>NodeModLike&lt;Tag&gt;</code>: qualsiasi cosa un builder di tag accetti come argomento.</li>
         <li><code>ExpandedElement&lt;Tag&gt;</code>: ciò che restituiscono <code>render()</code> e <code>hydrate()</code>.</li>
         <li><code>ElementTagName</code>: qualsiasi nome di tag HTML.</li>
-        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: l'oggetto degli attributi che un costruttore di tag accetta, inclusi gli handler <code>on*</code>, <code>onMount</code> e <code>onDestroy</code>. Usalo per i componenti che passano gli attributi al loro interno.</li>
+        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: l'oggetto degli attributi che un builder di tag accetta, inclusi gli handler <code>on*</code>, <code>onMount</code> e <code>onDestroy</code>. Usalo per i componenti che inoltrano gli attributi agli elementi al loro interno.</li>
         <li><code>MountCallback</code> e <code>DestroyCallback</code>: gli handler <code>onMount</code> e <code>onDestroy</code>.</li>
         <li><code>WhenBuilder</code>, <code>ListModifier</code>: ciò che restituiscono <code>when()</code> e <code>list()</code>.</li>
         <li><code>RegionOptions</code>, <code>RegionType</code>: le opzioni che accetta <code>region()</code>.</li>
@@ -143,10 +143,10 @@ function Badge(text: string): NodeModFn<'span'> {
     sections: [
       {
         id: "tag-builders",
-        title: "Costruttori di tag",
+        title: "Builder di tag",
         content: `
       <p>Ogni tag HTML è una funzione globale con lo stesso nome: <code>div</code>, <code>span</code>, <code>input</code>, … L'unica eccezione è <code>&lt;var&gt;</code>, che è <code>var_</code> perché <code>var</code> è una parola riservata. Ogni tag SVG ha il suffisso <code>Svg</code>: <code>svgSvg</code>, <code>pathSvg</code>, <code>circleSvg</code>, …</p>
-      <p>Chiamare un costruttore di tag non crea ancora un elemento. <code>div('Hi')</code> restituisce un <strong>builder</strong>: una funzione che crea l'elemento in seguito. Nuclo la chiama quando lo monti con <code>render()</code> o lo inserisci dentro un altro builder, <code>when()</code> o <code>list()</code>. Ogni uso crea un nuovo elemento.</p>
+      <p>Chiamare un builder di tag non crea ancora un elemento. <code>div('Hi')</code> restituisce un <strong>builder</strong>: una funzione che crea l'elemento in seguito. Nuclo la chiama quando lo monti con <code>render()</code> o lo inserisci dentro un altro builder, <code>when()</code> o <code>list()</code>. Ogni uso crea un nuovo elemento.</p>
       ${code("card.ts", `
 let name = 'Ada'
 
@@ -180,7 +180,7 @@ render(Card, document.body)
       <ul>
         <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> rende il testo "false". Scrivi <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
         <li>Gli array non sono figli. Espandili: <code>ul(...names.map((n) =&gt; li(n)))</code>. Per le liste che cambiano, usa <code>list()</code>.</li>
-        <li>Una variabile locale con il nome di un tag nasconde il costruttore. Dentro <code>function Row(label: string)</code>, <code>label(...)</code> non è chiamabile. Rinomina le variabili locali come <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> e <code>i</code>.</li>
+        <li>Una variabile locale con il nome di un tag nasconde il builder. Dentro <code>function Row(label: string)</code>, <code>label(...)</code> non è chiamabile. Cambia i nomi delle variabili locali come <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> e <code>i</code>.</li>
         <li>I browser espongono ogni elemento con un <code>id</code> come variabile globale. Se la pagina contiene <code>&lt;main id="main"&gt;</code> prima che Nuclo venga caricato, Nuclo lascia quel globale al suo posto, quindi <code>main(...)</code> lancia un <code>TypeError</code>. Usa altri id.</li>
       </ul>
       <h3>Modificatori personalizzati</h3>
@@ -191,14 +191,14 @@ const field = input((el) => {
 })
 `)}
       <h3>Ottenere l'elemento</h3>
-      <p><code>render()</code> restituisce l'elemento radice. Dentro un albero, usa <code>on("mount", (el) =&gt; …)</code> o un modificatore personalizzato. Puoi anche chiamare tu stesso la funzione builder per creare un elemento staccato:</p>
+      <p><code>render()</code> restituisce l'elemento radice. Dentro un albero, usa <code>on("mount", (el) =&gt; …)</code> o un modificatore personalizzato. Puoi anche chiamare tu stesso la funzione builder per creare un elemento scollegato dal DOM:</p>
       ${code("example.ts", `
 const el = div('Hello')() as HTMLDivElement
 document.body.append(el)
 `)}
       <p>Inseriscilo nel documento prima del prossimo <code>update()</code>. Un nodo che non è nel documento quando <code>update()</code> viene eseguito smette di aggiornarsi per sempre.</p>
       <h3>SVG</h3>
-      <p>I costruttori SVG accettano gli stessi argomenti. Nuclo imposta ogni attributo SVG con <code>setAttribute</code>, quindi nomi come <code>"stroke-width"</code> funzionano così come sono scritti.</p>
+      <p>I builder SVG accettano gli stessi argomenti. Nuclo imposta ogni attributo SVG con <code>setAttribute</code>, quindi nomi come <code>"stroke-width"</code> funzionano così come sono scritti.</p>
       ${code("icon.ts", `
 const Icon = () =>
   svgSvg(
@@ -206,7 +206,7 @@ const Icon = () =>
     circleSvg({ cx: 12, cy: 12, r: 10, fill: 'currentColor' }),
   )
 `)}
-      <h3>Tutti i costruttori</h3>
+      <h3>Tutti i builder</h3>
       <p><strong>HTML:</strong> a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark menu meta meter nav noscript object ol optgroup option output p picture pre progress q rp rt ruby s samp script search section select slot small source span strong style sub summary sup table tbody td template textarea tfoot th thead time title tr track u ul var_ video wbr</p>
       <p><strong>SVG:</strong> aSvg animateSvg animateMotionSvg animateTransformSvg circleSvg clipPathSvg defsSvg descSvg ellipseSvg feBlendSvg feColorMatrixSvg feComponentTransferSvg feCompositeSvg feConvolveMatrixSvg feDiffuseLightingSvg feDisplacementMapSvg feDistantLightSvg feDropShadowSvg feFloodSvg feFuncASvg feFuncBSvg feFuncGSvg feFuncRSvg feGaussianBlurSvg feImageSvg feMergeSvg feMergeNodeSvg feMorphologySvg feOffsetSvg fePointLightSvg feSpecularLightingSvg feSpotLightSvg feTileSvg feTurbulenceSvg filterSvg foreignObjectSvg gSvg imageSvg lineSvg linearGradientSvg markerSvg maskSvg metadataSvg mpathSvg pathSvg patternSvg polygonSvg polylineSvg radialGradientSvg rectSvg scriptSvg setSvg stopSvg styleSvg svgSvg switchSvg symbolSvg textSvg textPathSvg titleSvg tspanSvg useSvg viewSvg</p>
     `,
@@ -368,7 +368,7 @@ const search = input(on('mount', (el) => el.focus()))
       <ul>
         <li><code>onMount</code> viene eseguito alla fine della chiamata a <code>render()</code>, <code>hydrate()</code>, <code>update()</code> o <code>forceUpdate()</code> che ha inserito l'elemento. Non viene mai eseguito mentre l'albero è in costruzione.</li>
         <li>Se <code>onMount</code> restituisce una funzione, quella funzione viene eseguita alla distruzione, dopo le callback <code>onDestroy</code> dell'elemento.</li>
-        <li><code>onDestroy</code> viene eseguito quando Nuclo rimuove l'elemento: una riga di <code>list()</code> viene rimossa, un ramo di <code>when()</code> cambia, un <code>into()</code> lascia la sua region, oppure <code>forceUpdate()</code> lo scarta. Viene eseguito subito prima della rimozione, quindi l'elemento è ancora nel documento.</li>
+        <li><code>onDestroy</code> viene eseguito quando Nuclo rimuove l'elemento: una riga di <code>list()</code> viene rimossa, un ramo di <code>when()</code> cambia, un <code>into()</code> lascia la sua regione, oppure <code>forceUpdate()</code> lo scarta. Viene eseguito subito prima della rimozione, quindi l'elemento è ancora nel documento.</li>
       </ul>
       <h3>Rimozione diretta dal DOM</h3>
       <p>Se rimuovi un elemento tu stesso, con <code>node.remove()</code> o <code>innerHTML = ''</code>, i suoi <code>onDestroy</code> e le pulizie non vengono mai eseguiti, e i timer continuano a girare. Nuclo non ha <code>unmount()</code>. Per smontare un'app con pulizia, avvolgila in un <code>when()</code>:</p>
@@ -385,7 +385,7 @@ update() // App's onDestroy hooks and cleanups run
         <li><code>onDestroy</code> esegue sempre prima i figli, poi il genitore.</li>
         <li>Gli elementi vengono montati nell'ordine del loro primo hook <code>onMount</code>, che segue l'ordine degli argomenti, e ogni elemento esegue tutti i suoi hook insieme. Passa l'hook di un genitore prima dei suoi figli se questi dipendono da esso.</li>
         <li>Un hook che lancia un errore viene registrato con <code>console.error</code>. Gli altri hook vengono comunque eseguiti.</li>
-        <li>La callback deve restituire nulla oppure una funzione di pulizia, quindi non renderla <code>async</code>. Una Promise restituita non viene mai usata come pulizia. Avvia il lavoro asincrono al suo interno: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
+        <li>La callback non deve restituire alcun valore, salvo una funzione di pulizia, quindi non renderla <code>async</code>. Una Promise restituita non viene mai usata come pulizia. Avvia il lavoro asincrono al suo interno: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
         <li>Gli hook non vengono mai eseguiti sul server. Sul client, vengono eseguiti dopo <code>hydrate()</code>.</li>
       </ul>
       <div class="docs-callout"><strong>Nota:</strong> gli hook non sono effetti. Non vengono mai eseguiti di nuovo quando lo stato cambia. Ognuno viene eseguito al massimo una volta per elemento.</div>
@@ -450,7 +450,7 @@ const Profile = () =>
       <p>Nuclo controlla il numero di parametri (<code>fn.length</code>). Una funzione che dichiara un parametro è un <a href="#tag-builders">modificatore personalizzato</a> e viene eseguita una sola volta. <code>(x = 0) =&gt; …</code> e <code>(...args) =&gt; …</code> hanno length 0, quindi sono dinamiche.</p>
       <h3>Testo dinamico</h3>
       <ul>
-        <li>Una string, number, bigint o boolean viene resa come <code>String(value)</code>. <code>() =&gt; ok &amp;&amp; 'Saved'</code> mostra "false", quindi scrivi <code>() =&gt; (ok ? 'Saved' : '')</code>.</li>
+        <li>Un valore di tipo string, number, bigint o boolean viene convertito con <code>String(value)</code>. <code>() =&gt; ok &amp;&amp; 'Saved'</code> mostra "false", quindi scrivi <code>() =&gt; (ok ? 'Saved' : '')</code>.</li>
         <li><code>null</code> e <code>undefined</code> vengono resi come testo vuoto.</li>
         <li>Un risultato di <code>css()</code> o <code>cx()</code> alla prima esecuzione rende la funzione una classe dinamica, non testo. Vedi <a href="#api-cx"><code>cx()</code></a>.</li>
         <li>Un nodo, un builder, un array o un oggetto semplice non rende nulla, e non si aggiorna mai.</li>
@@ -628,21 +628,21 @@ render(() => div(Layout(), Article()))
 `)}
       <h3>Come funziona</h3>
       <ul>
-        <li><code>into()</code> lascia solo un commento nel punto in cui è scritto. Il suo contenuto viene reso tra i marcatori della region.</li>
-        <li>L'ordine non conta. Un <code>into()</code> costruito prima della sua region aspetta e appare nel momento in cui la region viene costruita. Le viste appaiono nell'ordine in cui sono state scritte.</li>
-        <li>Il contenuto vive quanto la vista. Quando il <code>when()</code> che contiene un <code>into()</code> si chiude, o la sua riga di <code>list()</code> viene rimossa, il contenuto lascia la region. Riaprirlo aggiunge una copia, non due.</li>
-        <li>Quando una region scompare, per esempio perché il suo <code>when()</code> si chiude, le sue viste tornano in attesa. Una region costruita in seguito con lo stesso id le mostra.</li>
-        <li>Un <code>into()</code> il cui id non corrisponde a nessuna region non rende nulla e non genera errori, quindi controlla l'ortografia.</li>
-        <li>Gli id sono unici nell'albero. Una seconda region costruita con un id già attivo registra un avviso.</li>
-        <li>Le region funzionano con il <a href="#api-ssr">rendering lato server</a>. Con <code>hydrate()</code>, ogni vista rivendica l'HTML reso dal server invece di costruirlo di nuovo.</li>
+        <li><code>into()</code> lascia solo un commento nel punto in cui è scritto. Il suo contenuto viene reso tra i marcatori della regione.</li>
+        <li>L'ordine non conta. Un <code>into()</code> costruito prima della sua regione aspetta e appare nel momento in cui la regione viene costruita. Le viste appaiono nell'ordine in cui sono state scritte.</li>
+        <li>Il contenuto vive quanto la vista. Quando il <code>when()</code> che contiene un <code>into()</code> si chiude, o la sua riga di <code>list()</code> viene rimossa, il contenuto lascia la regione. Riaprirlo aggiunge una copia, non due.</li>
+        <li>Quando una regione scompare, per esempio perché il suo <code>when()</code> si chiude, le sue viste tornano in attesa. Una regione costruita in seguito con lo stesso id le mostra.</li>
+        <li>Un <code>into()</code> il cui id non corrisponde a nessuna regione non rende nulla e non genera errori, quindi controlla l'ortografia.</li>
+        <li>Gli id sono unici nell'albero. Una seconda regione costruita con un id già attivo registra un avviso.</li>
+        <li>Le regioni funzionano con il <a href="#api-ssr">rendering lato server</a>. Con <code>hydrate()</code>, ogni vista riutilizza l'HTML prodotto dal server invece di costruirlo di nuovo.</li>
       </ul>
       <h3>Opzioni</h3>
       <ul>
-        <li><code>id</code>: il nome che le chiamate a <code>into()</code> usano per trovare la region.</li>
+        <li><code>id</code>: il nome che le chiamate a <code>into()</code> usano per trovare la regione.</li>
         <li><code>type</code>: <code>'latest'</code> (il predefinito) mostra solo la vista più recente. <code>'stack'</code> mostra tutte le viste, in ordine di arrivo.</li>
-        <li><code>empty</code>: reso mentre la region non contiene viste.</li>
+        <li><code>empty</code>: reso mentre la regione non contiene viste.</li>
       </ul>
-      <h3>Region a pila</h3>
+      <h3>Regioni a pila</h3>
       <p>Con <code>type: 'stack'</code>, una vista che si apre sopra un'altra non ricostruisce quella sottostante. Il suo DOM, il focus e lo stato del form restano. Usalo per un livello come un dialog sopra una pagina.</p>
       ${code("layers.ts", `
 let open = false
@@ -654,8 +654,8 @@ const App = () =>
     when(() => open, into('main', div('On top'))),
   )
 `)}
-      <h3>Più region contemporaneamente</h3>
-      <p>Passa un oggetto per riempire più di una region da un singolo <code>into()</code>. Un valore può essere un singolo figlio o un array di figli. Entrambe le forme si annidano: un <code>into()</code> dentro il contenuto di un'altra vista punta alla propria region.</p>
+      <h3>Più regioni contemporaneamente</h3>
+      <p>Passa un oggetto per riempire più di una regione da un singolo <code>into()</code>. Un valore può essere un singolo figlio o un array di figli. Entrambe le forme si annidano: un <code>into()</code> dentro il contenuto di un'altra vista punta alla propria regione.</p>
       ${code("page.ts", `
 const Page = () =>
   into({
@@ -664,7 +664,7 @@ const Page = () =>
   })
 `)}
       <h3>Un dialog aperto dal profondo dell'albero</h3>
-      <p>La region overlay si trova alla radice. Qualsiasi componente, a qualsiasi profondità, apre un dialog avvolgendo un <code>into()</code> in un <code>when()</code>. Chiudere il <code>when()</code> rimuove il dialog dalla region.</p>
+      <p>La regione overlay si trova alla radice. Qualsiasi componente, a qualsiasi profondità, apre un dialog avvolgendo un <code>into()</code> in un <code>when()</code>. Chiudere il <code>when()</code> rimuove il dialog dalla regione.</p>
       ${code("dialog.ts", `
 let confirming = false
 
@@ -689,7 +689,7 @@ const DeleteButton = () =>
   )
 `)}
       <h3>Toast dalle righe di una lista</h3>
-      <p>Ogni riga di un <code>list()</code> è una vista. Una region a pila le mostra in ordine, e rimuovere un elemento dall'array rimuove il suo toast.</p>
+      <p>Ogni riga di un <code>list()</code> è una vista. Una regione a pila le mostra in ordine, e rimuovere un elemento dall'array rimuove il suo toast.</p>
       ${code("toasts.ts", `
 const toasts: { text: string }[] = []
 
@@ -713,7 +713,7 @@ const App = () =>
   )
 `)}
       <h3>Un titolo di pagina impostato dalla pagina</h3>
-      <p>Con il predefinito <code>type: 'latest'</code>, vince la vista più recente. Il layout possiede l'intestazione, e la pagina aperta in quel momento le dà il nome. Una pagina senza <code>into('title', …)</code> lascia il testo di <code>empty</code>.</p>
+      <p>Con il predefinito <code>type: 'latest'</code>, vince la vista più recente. Il layout definisce l'intestazione, e la pagina aperta in quel momento le dà il nome. Una pagina senza <code>into('title', …)</code> lascia il testo di <code>empty</code>.</p>
       ${code("title.ts", `
 let page: 'home' | 'settings' = 'home'
 
@@ -732,7 +732,7 @@ const Settings = () =>
   )
 `)}
       <h3>Valori dinamici dentro una vista</h3>
-      <p>Il contenuto di un <code>into()</code> è normale contenuto Nuclo. Le funzioni al suo interno sono valori dipendenti dallo stato e si aggiornano a ogni <code>update()</code>, ovunque si trovi la region.</p>
+      <p>Il contenuto di un <code>into()</code> è normale contenuto Nuclo. Le funzioni al suo interno sono valori dipendenti dallo stato e si aggiornano a ogni <code>update()</code>, ovunque si trovi la regione.</p>
       ${code("status.ts", `
 const selected = new Set<string>()
 
@@ -756,8 +756,8 @@ const Table = () =>
     ),
   )
 `)}
-      <h3>Una region che va e viene</h3>
-      <p>L'<code>into()</code> della dashboard è scritto una sola volta. Mentre l'utente è disconnesso non esiste una region <code>main</code>, quindi la vista aspetta. L'accesso costruisce la region e la vista appare. La disconnessione rimuove la region e la vista torna in attesa.</p>
+      <h3>Una regione che va e viene</h3>
+      <p>L'<code>into()</code> della dashboard è scritto una sola volta. Mentre l'utente è disconnesso non esiste una regione <code>main</code>, quindi la vista aspetta. L'accesso costruisce la regione e la vista appare. La disconnessione rimuove la regione e la vista torna in attesa.</p>
       ${code("auth.ts", `
 let user: { name: string } | null = null
 
@@ -771,8 +771,8 @@ const App = () =>
     into('main', Dashboard()),
   )
 `)}
-      <h3>Una vista con la propria region</h3>
-      <p>Una vista può contenere una <code>region()</code>, e altre viste possono puntarvi. Qui la pagina dell'editor porta con sé una region <code>tabs</code>, e ogni tab la riempie. Quando l'editor si chiude, la sua region se ne va con lui.</p>
+      <h3>Una vista con la propria regione</h3>
+      <p>Una vista può contenere una <code>region()</code>, e altre viste possono puntarvi. Qui la pagina dell'editor porta con sé una regione <code>tabs</code>, e ogni tab la riempie. Quando l'editor si chiude, la sua regione se ne va con lui.</p>
       ${code("editor.ts", `
 let tab: 'code' | 'preview' = 'code'
 
@@ -872,7 +872,7 @@ hydrate(App, document.getElementById('root')!)
       <ul>
         <li>Usa lo stesso componente, e gli stessi dati, del server.</li>
         <li>Idrata in un contenitore dedicato. La radice dell'app deve essere il suo primo nodo, anche se gli spazi bianchi vanno bene. Se un altro nodo viene prima, Nuclo sostituisce quel nodo e lascia lì la copia del server.</li>
-        <li>Come con <code>render()</code>, passa <code>App</code>, non <code>App()</code>, così che <code>forceUpdate()</code> possa ricostruire la radice in seguito. <code>App</code> non deve avere parametri. Con uno opzionale, <code>hydrate()</code> non collega nulla in silenzio. Avvolgi un componente che accetta props: <code>hydrate(() =&gt; Page(props), root)</code>.</li>
+        <li>Come con <code>render()</code>, passa <code>App</code>, non <code>App()</code>, così che <code>forceUpdate()</code> possa ricostruire la radice in seguito. <code>App</code> non deve avere parametri. Con uno opzionale, <code>hydrate()</code> non collega nulla e non segnala errori. Avvolgi un componente che accetta props: <code>hydrate(() =&gt; Page(props), root)</code>.</li>
         <li>Se non c'è HTML dal server, usa <code>render()</code>.</li>
       </ul>
       <h3>Quando server e client differiscono</h3>
@@ -940,7 +940,7 @@ renderToString(p('Hello'))
 `)}
       <ul>
         <li>I valori di testo e attributi vengono escapati come HTML. Il testo dentro <code>script()</code> e <code>style()</code> viene scritto così com'è, con solo i tag di chiusura spezzati, quindi non metterci mai input dell'utente.</li>
-        <li>Non lancia errori. Se il componente, una funzione di <code>list()</code> o una condizione di <code>when()</code> lancia un errore, o il polyfill manca, registra l'errore e restituisce <code>""</code>. Controlla se il risultato è vuoto quando la richiesta deve fallire. Una funzione di testo o attributo che lancia un errore rende soltanto vuoto.</li>
+        <li>Non lancia errori. Se il componente, una funzione di <code>list()</code> o una condizione di <code>when()</code> lancia un errore, o il polyfill manca, registra l'errore e restituisce <code>""</code>. Controlla se il risultato è vuoto quando la richiesta deve fallire. Una funzione di testo o attributo che lancia un errore produce soltanto un valore vuoto.</li>
       </ul>
       <h3><code>renderManyToString()</code></h3>
       <p>Equivale a <code>inputs.map(renderToString)</code>.</p>

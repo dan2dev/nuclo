@@ -8,11 +8,11 @@ export const GROUPS: DocGroupText[] = [...GROUPS_1, ...GROUPS_2];
 export const LABELS = {
   documentation: "ドキュメント",
   title: "Nuclo ドキュメント",
-  lead: "Nuclo のインストール、明示的な更新による構築、型付き CSS によるスタイリング、サーバーサイド HTML のレンダリングのための実践的なリファレンス。",
+  lead: "Nuclo のインストールから、明示的な更新による UI の構築、型付き CSS によるスタイリング、サーバーサイドでの HTML レンダリングまでを扱う実践的なリファレンス。",
   quickStart: "クイックスタート",
   quickStartLink: "クイックスタート",
   nucloMark: "Nuclo のマーク",
-  facts: { release: "現在のリリース", builders: "タグビルダー", gzipped: "コア、gzip 圧縮時", model: "ランタイムモデル", modelValue: "明示的" },
+  facts: { release: "現在のリリース", builders: "タグビルダー", gzipped: "コアの gzip 圧縮後サイズ", model: "ランタイムモデル", modelValue: "明示的" },
   filterSections: "セクションを絞り込む",
   filter: "絞り込み",
   closeNavigator: "ナビゲーターを閉じる",

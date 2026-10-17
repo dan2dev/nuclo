@@ -5,7 +5,7 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · zero dipendenze`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["Costruisci interfacce", "*esplicite* con", "nuclo."];
+export const HERO_TITLE_LINES = ["Con nuclo,", "ogni aggiornamento", "è *esplicito*."];
 
 export const HERO_DESC =
   "Un framework DOM piccolo e type-safe. Lo stato resta semplice e mutabile. Controlli tu ogni aggiornamento. Niente proxy, niente signal, niente DOM virtuale.";
@@ -94,7 +94,7 @@ export const PHILOSOPHY_POINTS = [
 export const FEATURES = [
   {
     num: "01 · Esplicito",
-    title: "Il ciclo di aggiornamento è tuo",
+    title: "Controlli tu il ciclo di aggiornamento",
     desc: "Muta liberamente, poi chiama update() una volta. Nuclo non richiede sottoscrizioni né scheduler, e non ti sorprende mai con un diff. Il DOM si sincronizza quando lo decidi tu.",
   },
   {
@@ -109,7 +109,7 @@ export const FEATURES = [
   },
   {
     num: "04 · Preciso",
-    title: "Patch granulari",
+    title: "Aggiornamenti mirati del DOM",
     desc: "Le espressioni dinamiche vengono rivalutate a ogni update(). Solo i valori effettivamente cambiati toccano il DOM.",
   },
 ];
@@ -176,7 +176,7 @@ export const COMPARISON_COLS: {
     items: [
       { good: true, text: "Stato mutabile semplice, senza wrapper e senza proxy" },
       { good: true, text: "Una sola chiamata, update(), è l'intero modello mentale" },
-      { good: true, text: "Patcha solo i valori che sono cambiati" },
+      { good: true, text: "Aggiorna solo i valori che sono cambiati" },
       { good: true, text: `Circa ${NUCLO_GZIP_KB} KB, zero dipendenze, TypeScript-first` },
     ],
   },
@@ -188,7 +188,7 @@ export const BENCHMARK_SUB =
   "Numeri indipendenti da js-framework-benchmark, per creare, aggiornare, scambiare e cancellare migliaia di righe.";
 
 export const BENCHMARK_NOTE =
-  "Questo punteggio è il rallentamento della durata rispetto all'implementazione più veloce misurata. È una media geometrica ponderata di tutti i benchmark keyed.";
+  "Questo punteggio indica quanto tempo impiega ogni implementazione rispetto alla più veloce tra quelle misurate. È una media geometrica ponderata di tutti i benchmark keyed.";
 
 export const BENCHMARK_SOURCE_URL =
   "https://krausest.github.io/js-framework-benchmark/2026/chrome152.html";
@@ -231,7 +231,7 @@ export const QUICK_START_STEPS = [
   {
     num: "02 - IMPORTA",
     title: "Importa",
-    desc: "Un solo import con side effect registra globalmente tutti i 175 tag builder.",
+    desc: "Un solo import con side effect registra globalmente tutti i 175 builder di tag.",
     code: `<span class="kw">import</span> <span class="st">'nuclo'</span>`,
     lang: "main.ts",
   },
@@ -294,8 +294,8 @@ export const LABELS = {
 // ── The hero card's examples, keyed by their export in home/examples.ts and home/playground.ts ──
 export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   Paint: {
-    title: "Dipingi, poi patcha",
-    note: "La griglia a sinistra è un semplice array di booleani: dipingerla è una mutazione e niente più. Il DOM a destra si muove solo quando gira update(), e allora vengono patchate solo le celle cambiate.",
+    title: "Dipingi, poi aggiorna",
+    note: "La griglia a sinistra è un semplice array di booleani: dipingerla è una mutazione e niente più. Il DOM a destra cambia solo quando viene eseguito update(), che aggiorna soltanto le celle modificate.",
   },
   Draw: {
     title: "Disegna il marchio",
@@ -323,10 +323,10 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Warp: {
     title: "Tieni premuto per il warp",
-    note: "onMount avvia il ciclo dei frame e restituisce la sua pulizia. Smonta il campo e Nuclo esegue quella pulizia: il ciclo si ferma e nulla resta in esecuzione.",
+    note: "onMount avvia il ciclo di animazione e restituisce una funzione di pulizia. Smonta il campo e Nuclo esegue quella funzione: il ciclo si ferma e nulla resta in esecuzione.",
   },
   Life: {
     title: "Gioco della vita",
-    note: "La griglia è un semplice array di età. Un tick calcola la successiva e chiama update(); la classe di ogni cella è una funzione della sua età, così vengono patchate solo le celle cambiate.",
+    note: "La griglia è un semplice array di età. Un tick calcola la generazione successiva e chiama update(); la classe di ogni cella è una funzione della sua età, così vengono aggiornate solo le celle modificate.",
   },
 };

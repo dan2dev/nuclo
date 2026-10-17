@@ -5,7 +5,7 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · null Abhängigkeiten`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["Baue *explizite*", "Oberflächen mit", "nuclo."];
+export const HERO_TITLE_LINES = ["Baue UIs mit", "*expliziten* Updates.", "Mit nuclo."];
 
 export const HERO_DESC =
   "Ein kleines, typsicheres DOM-Framework. State bleibt einfach und veränderbar. Du steuerst jedes Update. Keine Proxies, keine Signals, kein virtuelles DOM.";
@@ -15,7 +15,7 @@ export const INSTALL_CMD = "npm create nuclo@latest";
 export const HERO_STATS = [
   { num: "0",   sup: "",   label: "Abhängigkeiten" },
   { num: "175", sup: "",   label: "typisierte HTML- & SVG-Builder" },
-  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "gzipped, Kern-Runtime" },
+  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "Kern-Runtime, gzip-komprimiert" },
 ];
 
 export const COUNTER_TEASER_CODE = `import 'nuclo'
@@ -82,7 +82,7 @@ export const PHILOSOPHY_POINTS = [
   {
     num: "02",
     title: "Frei bündeln, einmal aktualisieren",
-    desc: "Mache zehn Veränderungen, dann rufe einmal update() auf. Das DOM sieht nur den Endzustand. Kein Rendern wird verschwendet.",
+    desc: "Mache zehn Veränderungen, dann rufe einmal update() auf. Das DOM sieht nur den Endzustand. Keine unnötigen Renderdurchläufe.",
   },
   {
     num: "03",
@@ -94,23 +94,23 @@ export const PHILOSOPHY_POINTS = [
 export const FEATURES = [
   {
     num: "01 · Explizit",
-    title: "Du besitzt den Update-Zyklus",
-    desc: "Verändere frei, dann rufe einmal update() auf. Nuclo braucht keine Subscriptions und keine Scheduler, und es überrascht dich nie mit einem Diff. Das DOM synchronisiert, wenn du es entscheidest.",
+    title: "Du steuerst den Update-Zyklus",
+    desc: "Verändere frei, dann rufe einmal update() auf. Nuclo braucht keine Subscriptions und keine Scheduler, und es überrascht dich nie mit einem Diff. Das DOM wird synchronisiert, wenn du es entscheidest.",
   },
   {
     num: "02 · Leichtgewichtig",
     title: "Null Abhängigkeiten",
-    desc: `Etwa ${NUCLO_GZIP_KB} KB gzipped für die Kern-Runtime. Nuclo braucht keinen Compiler und keine Build-Plugins. Füge einen Import hinzu und fang an zu bauen.`,
+    desc: `Etwa ${NUCLO_GZIP_KB} KB für die gzip-komprimierte Kern-Runtime. Nuclo braucht keinen Compiler und keine Build-Plugins. Füge einen Import hinzu und fang an zu bauen.`,
   },
   {
     num: "03 · Typisiert",
-    title: "TypeScript zuerst",
+    title: "Für TypeScript entwickelt",
     desc: "175 vollständig typisierte HTML- und SVG-Builder geben dir Autovervollständigung für jedes Attribut, jede Style-Eigenschaft und jedes Event.",
   },
   {
     num: "04 · Präzise",
-    title: "Feinkörniges Patchen",
-    desc: "Dynamische Ausdrücke werden bei update() neu ausgewertet. Nur die Werte, die sich tatsächlich geändert haben, berühren das DOM.",
+    title: "Gezielte DOM-Updates",
+    desc: "Dynamische Ausdrücke werden bei update() neu ausgewertet. Nur Werte, die sich tatsächlich geändert haben, werden ins DOM geschrieben.",
   },
 ];
 
@@ -124,9 +124,9 @@ export const PIPELINE_STEPS = [
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
-    kicker: "02 · Festschreiben",
+    kicker: "02 · Anwenden",
     title: "Rufe update() auf",
-    desc: "Eine globale Funktion schreibt deine Änderungen fest. Bündle ein Dutzend Veränderungen, dann schreibe einmal fest. Nichts rendert, bis du es sagst.",
+    desc: "Eine globale Funktion übernimmt deine Änderungen ins DOM. Bündle ein Dutzend Änderungen und wende sie mit einem einzigen Aufruf an. Gerendert wird erst, wenn du es entscheidest.",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
@@ -161,7 +161,7 @@ export const COMPARISON_COLS: {
   },
   {
     name: "Signals & Proxies",
-    sub: "Signale · Zustandsspeicher · Effekte",
+    sub: "Signals · Stores · Effects",
     items: [
       { good: false, text: "Verpackt deinen State in Proxies und Subscriptions" },
       { good: false, text: "Verfolgt Abhängigkeiten unsichtbar, zur Laufzeit" },
@@ -177,7 +177,7 @@ export const COMPARISON_COLS: {
       { good: true, text: "Einfacher veränderbarer State, ohne Wrapper und ohne Proxies" },
       { good: true, text: "Ein Aufruf, update(), ist das ganze mentale Modell" },
       { good: true, text: "Patcht nur die Werte, die sich geändert haben" },
-      { good: true, text: `Etwa ${NUCLO_GZIP_KB} KB, null Abhängigkeiten, TypeScript zuerst` },
+      { good: true, text: `Etwa ${NUCLO_GZIP_KB} KB, null Abhängigkeiten, für TypeScript entwickelt` },
     ],
   },
 ];
@@ -218,7 +218,7 @@ export const BENCHMARK_ENTRIES: {
 // ── CTA ─────────────────────────────────────────────────────────────────────
 export const CTA_TITLE = "Bereit, wenn du es bist.";
 export const CTA_SUB =
-  "Installiere Nuclo, importiere es einmal und liefere UIs, die genau dann aktualisieren, wenn du es sagst. Die ganze API lernst du an einem Nachmittag.";
+  "Installiere Nuclo, importiere es einmal und entwickle UIs, die genau dann aktualisiert werden, wenn du es entscheidest. Die ganze API lernst du an einem Nachmittag.";
 
 export const QUICK_START_STEPS = [
   {
@@ -262,7 +262,7 @@ export const LABELS = {
   copyInstall: "Installationsbefehl kopieren",
   howItWorks: "So funktioniert es",
   pipelineTitle: "Ein expliziter Zyklus.",
-  pipelineSub: "Zustandsabhängige Werte, kein Abhängigkeitsgraph, kein Scheduler. Du entscheidest, wann sie laufen - ein einziger vorhersehbarer Weg von deinen Daten zum Bildschirm.",
+  pipelineSub: "Zustandsabhängige Werte, kein Abhängigkeitsgraph, kein Scheduler. Du entscheidest, wann sie ausgewertet werden – ein einziger vorhersehbarer Weg von deinen Daten zum Bildschirm.",
   philosophy: "Philosophie",
   features: "Funktionen",
   featuresTitle: "Gebaut für Klarheit.",
@@ -323,10 +323,10 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Warp: {
     title: "Halten zum Warpen",
-    note: "onMount startet die Frame-Schleife und gibt ihr Cleanup zurück. Unmounte das Feld und Nuclo führt dieses Cleanup aus: die Schleife stoppt und nichts läuft weiter.",
+    note: "onMount startet die Frame-Schleife und gibt eine Aufräumfunktion zurück. Wenn das Feld ausgehängt wird, führt Nuclo diese Funktion aus: die Schleife stoppt und nichts läuft weiter.",
   },
   Life: {
     title: "Spiel des Lebens",
-    note: "Das Spielfeld ist ein einfaches Array aus Altern. Ein Tick berechnet das nächste und ruft update() auf; die Klasse jeder Zelle ist eine Funktion ihres Alters, also werden nur die Zellen gepatcht, die sich geändert haben.",
+    note: "Das Spielfeld ist ein einfaches Array mit den Alterswerten der Zellen. Ein Tick berechnet die nächste Generation und ruft update() auf; die Klasse jeder Zelle ist eine Funktion ihres Alters, also werden nur die Zellen gepatcht, die sich geändert haben.",
   },
 };

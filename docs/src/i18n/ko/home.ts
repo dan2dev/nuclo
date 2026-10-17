@@ -5,7 +5,7 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · 외부 의존성 없음`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["*명시적인* UI를", "만들어 보세요", "nuclo로."];
+export const HERO_TITLE_LINES = ["*명시적 업데이트*로", "UI를 만드세요", "nuclo로."];
 
 export const HERO_DESC =
   "작고 타입 안전한 DOM 프레임워크입니다. 상태는 일반적인 변경 가능한 데이터로 유지됩니다. 모든 업데이트를 직접 제어합니다. 프록시, 시그널, 가상 DOM이 없습니다.";
@@ -87,7 +87,7 @@ export const PHILOSOPHY_POINTS = [
   {
     num: "03",
     title: "컴포넌트 대신 함수",
-    desc: "일반 JavaScript 함수로 만듭니다. 클래스, 데코레이터, 특수 문법이 필요하지 않습니다. 각 함수는 DOM 노드를 반환합니다. 필요한 경우에만 onMount와 onDestroy를 일반 수정자로 추가합니다.",
+    desc: "일반 JavaScript 함수로 만듭니다. 클래스, 데코레이터, 특수 문법이 필요하지 않습니다. 각 함수는 DOM 노드를 반환합니다. 필요한 경우에만 onMount와 onDestroy를 일반 수정자(modifier)로 추가합니다.",
   },
 ];
 
@@ -109,7 +109,7 @@ export const FEATURES = [
   },
   {
     num: "04 · 정밀함",
-    title: "세밀한 패치",
+    title: "필요한 DOM만 업데이트",
     desc: "동적 표현식은 update()에서 다시 평가됩니다. 실제로 변경된 값만 DOM에 반영됩니다.",
   },
 ];
@@ -165,7 +165,7 @@ export const COMPARISON_COLS: {
     items: [
       { good: false, text: "상태를 프록시와 구독으로 감쌉니다" },
       { good: false, text: "런타임에 의존성을 보이지 않게 추적합니다" },
-      { good: false, text: "제어할 수 없는 일정에 따라 업데이트가 연쇄적으로 발생합니다" },
+      { good: false, text: "직접 제어할 수 없는 시점에 업데이트가 연쇄적으로 발생합니다" },
       { good: false, text: "디버거에서 단계별로 따라가기 어렵습니다" },
     ],
   },
@@ -261,8 +261,8 @@ export const LABELS = {
   viewExamples: "예제 보기",
   copyInstall: "설치 명령 복사",
   howItWorks: "동작 방식",
-  pipelineTitle: "하나의 명시적인 주기.",
-  pipelineSub: "상태 의존 값만 있습니다. 의존성 그래프나 스케줄러는 없습니다. 실행 시점을 직접 결정하며, 데이터에서 화면까지의 경로를 예측할 수 있습니다.",
+  pipelineTitle: "직접 제어하는 하나의 업데이트 주기.",
+  pipelineSub: "상태에 따라 달라지는 값만 있습니다. 의존성 그래프나 스케줄러는 없습니다. 실행 시점을 직접 결정하며, 데이터에서 화면까지의 경로를 예측할 수 있습니다.",
   philosophy: "철학",
   features: "특징",
   featuresTitle: "명확함을 위한 설계.",
@@ -294,7 +294,7 @@ export const LABELS = {
 // ── The hero card's examples, keyed by their export in home/examples.ts and home/playground.ts ──
 export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   Paint: {
-    title: "칠한 다음 패치하기",
+    title: "칠한 다음 DOM에 반영하기",
     note: "왼쪽 격자는 불리언 값의 일반 배열입니다. 칠하기는 데이터를 변경할 뿐입니다. 오른쪽 DOM은 update()가 실행될 때만 바뀌며, 변경된 셀만 패치됩니다.",
   },
   Draw: {
@@ -323,7 +323,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Warp: {
     title: "길게 눌러 공간 왜곡하기",
-    note: "onMount는 프레임 루프를 시작하고 정리 함수를 반환합니다. 필드를 마운트 해제하면 Nuclo가 정리 함수를 실행해 루프를 멈추고 실행 중인 작업을 남기지 않습니다.",
+    note: "onMount는 프레임 루프를 시작하고 정리 함수를 반환합니다. 별이 표시되는 영역을 마운트 해제하면 Nuclo가 정리 함수를 실행해 루프를 멈추고 실행 중인 작업을 남기지 않습니다.",
   },
   Life: {
     title: "생명 게임",

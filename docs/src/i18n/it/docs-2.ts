@@ -10,7 +10,7 @@ export const GROUPS_2: DocGroupText[] = [
         id: "api-styling",
         title: "css()",
         content: `
-      <p>Trasforma un oggetto di stile tipizzato in classi CSS generate. Passa il risultato a qualsiasi costruttore di tag. Nel browser, le regole finiscono in un unico elemento <code>&lt;style id="nuclo-styles"&gt;</code>. Sul server, le restituisce <a href="#api-css-text"><code>getCssText()</code></a>.</p>
+      <p>Trasforma un oggetto di stile tipizzato in classi CSS generate. Passa il risultato a qualsiasi builder di tag. Nel browser, le regole finiscono in un unico elemento <code>&lt;style id="nuclo-styles"&gt;</code>. Sul server, le restituisce <a href="#api-css-text"><code>getCssText()</code></a>.</p>
       ${code("card.ts", `
 const card = css({
   p: 16,
@@ -55,7 +55,7 @@ div(card, { class: 'featured' })     // replaces: only "featured" is left
         id: "style-objects",
         title: "Oggetti di stile",
         content: `
-      <p>L'oggetto che passi a <code>css()</code> usa le proprietà CSS comuni in camelCase, un insieme di abbreviazioni e chiavi annidate per pseudo stati, selettori e media query. TypeScript le completa tutte. Le proprietà fuori dall'insieme tipizzato, come <code>borderTopLeftRadius</code>, <code>fill</code> o <code>paddingInline</code>, vanno in <code>raw</code> (vedi sotto).</p>
+      <p>L'oggetto che passi a <code>css()</code> usa le proprietà CSS comuni in camelCase, un insieme di abbreviazioni e chiavi annidate per pseudoclassi e pseudoelementi, selettori e media query. TypeScript le completa tutte. Le proprietà fuori dall'insieme tipizzato, come <code>borderTopLeftRadius</code>, <code>fill</code> o <code>paddingInline</code>, vanno in <code>raw</code> (vedi sotto).</p>
       <h3>Valori</h3>
       <ul>
         <li>I numeri diventano <code>px</code>, tranne <code>0</code> e le proprietà senza unità: <code>zIndex</code>, <code>opacity</code>, <code>fontWeight</code>, <code>lineHeight</code>, <code>flex</code>, <code>flexGrow</code>, <code>flexShrink</code>, <code>order</code>, <code>aspectRatio</code>, <code>gridColumn</code> e <code>gridRow</code>. In <code>raw</code>, anche <code>zoom</code>, <code>scale</code>, <code>column-count</code>, <code>orphans</code>, <code>widows</code>, <code>tab-size</code> e <code>animation-iteration-count</code> sono senza unità.</li>
@@ -92,7 +92,7 @@ css({ p: 16, m: 0, opacity: 0.5, leading: 1.5, z: 10, w: '50%' })
           <tr><td><code>truncate</code></td><td>overflow: hidden; text-overflow: ellipsis; white-space: nowrap</td></tr>
         </tbody>
       </table>
-      <h3>Pseudo stati</h3>
+      <h3>Pseudoclassi e pseudoelementi</h3>
       <p><code>hover</code>, <code>focus</code>, <code>focusVisible</code>, <code>focusWithin</code>, <code>active</code>, <code>visited</code>, <code>disabled</code>, <code>enabled</code>, <code>checked</code>, <code>required</code>, <code>invalid</code>, <code>valid</code>, <code>readOnly</code>, <code>first</code> (<code>:first-child</code>), <code>last</code> (<code>:last-child</code>), <code>only</code> (<code>:only-child</code>), <code>odd</code>, <code>even</code>, <code>empty</code>, <code>placeholderShown</code>, <code>placeholder</code>, <code>before</code>, <code>after</code>, <code>selection</code>, <code>marker</code>, <code>firstLine</code> e <code>firstLetter</code>. Si annidano: <code>hover: { focus: {…} }</code> produce <code>:hover:focus</code>.</p>
       <h3>Selettori e at-rule</h3>
       <p>Una chiave che inizia con <code>&amp;</code> è un selettore, e ogni <code>&amp;</code> diventa la classe. Una chiave che inizia con <code>@</code> è una at-rule: <code>@media</code>, <code>@container</code> o <code>@supports</code>.</p>
@@ -114,7 +114,7 @@ const menu = css({
       ${code("example.ts", `
 css({ raw: { '--gap': '8px', '-webkit-line-clamp': '2' } })
 `)}
-      <p>Qualsiasi altra chiave piatta viene convertita in kebab-case e scritta così com'è, quindi un errore di battitura come <code>colr: 'red'</code> diventa una dichiarazione che il browser scarta. Un oggetto annidato sotto una chiave che non è uno pseudo stato, uno screen, o una chiave <code>&amp;</code> o <code>@</code> viene ignorato. TypeScript segnala entrambi i casi.</p>
+      <p>Qualsiasi altra chiave piatta viene convertita in kebab-case e scritta così com'è, quindi un errore di battitura come <code>colr: 'red'</code> diventa una dichiarazione che il browser scarta. Un oggetto annidato sotto una chiave che non è una pseudoclasse o uno pseudoelemento, uno screen, o una chiave <code>&amp;</code> o <code>@</code> viene ignorato. TypeScript segnala entrambi i casi.</p>
     `,
       },
       {
@@ -134,7 +134,7 @@ div(cx(base, blue), 'Blue text')
         <li>Gli input falsy vengono saltati, gli array appiattiti, e le stringhe divise e deduplicate.</li>
         <li>Le classi generate per lo stesso blocco (base, stesso pseudo, stessa media query) si fondono in una nuova classe. Gli altri nomi di classe passano invariati.</li>
         <li>Solo <code>cx()</code> conosce l'ordine degli argomenti. Con <code>div(base, blue)</code> vengono aggiunte entrambe le classi, e vince la regola creata per ultima. Metti gli stili che si sovrascrivono a vicenda in un'unica chiamata a <code>cx()</code>.</li>
-        <li>Quando il blocco di uno stile con nome si fonde con il blocco di un altro input, la classe risultante è <code>name-&lt;hash&gt;</code>, non il nome nudo. I blocchi che non si fondono mantengono la loro classe, quindi <code>cx(pageTitle, 'extra')</code> ha ancora <code>page-title</code>.</li>
+        <li>Quando il blocco di uno stile con nome si fonde con il blocco di un altro input, la classe risultante è <code>name-&lt;hash&gt;</code>, non il solo nome. I blocchi che non si fondono mantengono la loro classe, quindi <code>cx(pageTitle, 'extra')</code> ha ancora <code>page-title</code>.</li>
       </ul>
       <h3>Classi dinamiche</h3>
       <p>Passa una funzione che restituisce sempre <code>cx(...)</code>:</p>
@@ -186,7 +186,7 @@ const panel = css({
       </table>
       <ul>
         <li>Un nome del tema viene risolto solo quando è l'intero valore. <code>border: "1px solid primary"</code> non viene risolto.</li>
-        <li>Un valore di screen senza <code>@</code> diventa <code>@media &lt;valore&gt;</code>. Un valore che inizia con <code>@</code> è usato così come è scritto, per esempio <code>"@container (min-width: 400px)"</code>.</li>
+        <li>Un valore di screen senza <code>@</code> diventa <code>@media &lt;value&gt;</code>. Un valore che inizia con <code>@</code> è usato così come è scritto, per esempio <code>"@container (min-width: 400px)"</code>.</li>
         <li>Gli screen esistono solo sulle istanze create con <code>createCss()</code>. Il <code>css()</code> globale non ne ha, ma accetta chiavi <code>@media</code>.</li>
         <li>Tutte le istanze e gli helper globali condividono un unico foglio di stile. Le regole media degli screen vengono emesse nell'ordine in cui gli screen sono dichiarati, non nell'ordine in cui li usi, quindi elenca gli screen <code>min-width</code> dal più piccolo al più grande. Usa una sola istanza di <code>createCss()</code> per app, così quell'ordine è quello del tuo tema.</li>
         <li><code>theme</code> sul risultato è il tema che hai passato.</li>
@@ -256,7 +256,7 @@ globalStyle('body', { m: 0, font: 'system-ui, sans-serif' })
         <li>Chiamala dopo <code>renderToString()</code>. Le regole create durante il render sono incluse.</li>
         <li>Copre l'intero processo, non una pagina o una richiesta, e cresce soltanto. È sicuro, perché i nomi delle classi sono hash del contenuto.</li>
         <li>Mettila in <code>&lt;style id="nuclo-styles"&gt;</code>. Il client riusa quell'elemento e salta le regole che già contiene. Con un altro id, o senza id, il client aggiunge un secondo foglio di stile con tutte le regole di nuovo.</li>
-        <li>Il testo non viene escapato, quindi non mettere mai input non fidato nei valori di stile.</li>
+        <li>Il testo non viene escapato, quindi non mettere mai input non attendibile nei valori di stile.</li>
       </ul>
       <p><code>resetStyles()</code> è un helper per i test. Rimuove ogni regola e l'elemento <code>#nuclo-styles</code>. Gli stili creati prima mantengono i nomi delle classi ma perdono il loro CSS. Non chiamarla in un'app o su un server.</p>
       ${code("setup.test.ts", `
@@ -271,7 +271,7 @@ beforeEach(() => resetStyles())
 
   // ── Routing ──────────────────────────────────────────────────────────────
   {
-    title: "Instradamento",
+    title: "Routing",
     sections: [
       {
         id: "router-overview",
@@ -281,14 +281,14 @@ beforeEach(() => resetStyles())
       <p>Routing per Nuclo: rendering lato server, idratazione, rotte con code splitting e precaricamento in idle, costruito su <code>list()</code> e <code>update()</code>. Circa ${NUCLO_ROUTER_GZIP_KB} KB gzip, senza dipendenze oltre a Nuclo stesso e senza side effect, quindi il tree-shaking lo elimina quando non è usato.</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>Oppure usa <code>pnpm add</code>, <code>yarn add</code> o <code>bun add</code> con gli stessi due nomi. Richiede <code>nuclo</code> 0.3 o successivo come peer dependency.</p>
-      <p>Il router decide <em>cosa</em> caricare. L'app dice <em>dove</em> con <code>router.outlet()</code>: una <code>list()</code> sullo stack dei livelli, una riga per livello, quindi una pagina ordinaria è una sola riga. Server e client costruiscono lo stesso albero, così <code>hydrate()</code> reclama i nodi del server invece di sostituirli. Tutto il resto è <code>history</code>, un listener <code>click</code> delegato e <code>requestIdleCallback</code>.</p>
+      <p>Il router decide <em>cosa</em> caricare. L'app dice <em>dove</em> con <code>router.outlet()</code>: una <code>list()</code> sullo stack dei livelli, una riga per livello, quindi una pagina ordinaria è una sola riga. Server e client costruiscono lo stesso albero, così <code>hydrate()</code> riutilizza i nodi del server invece di sostituirli. Tutto il resto è <code>history</code>, un listener <code>click</code> delegato e <code>requestIdleCallback</code>.</p>
       <h3>Un solo import</h3>
       ${code("main.ts", `
 export const router = createRouter(routes)   // define once, import anywhere
 await router.start()                          // resolve the current URL
 render(App, document.getElementById('app')!) // App places router.outlet() and reads router.path, router.go(), …
 `)}
-      <p><code>start()</code> risolve i moduli della rotta corrispondente prima di restituire, quindi il primo albero è completo sia sul server sia sul client. Da lì in avanti il router legge attraverso la rotta che ha avviato: <code>router.path</code>, <code>router.pending</code>, <code>router.go()</code>.</p>
+      <p><code>start()</code> risolve i moduli della rotta corrispondente prima di restituire, quindi il primo albero è completo sia sul server sia sul client. Da lì in avanti il router espone i valori e i metodi della rotta che ha avviato: <code>router.path</code>, <code>router.pending</code>, <code>router.go()</code>.</p>
       <h3>Un'app completa</h3>
       ${code("routes.ts", `
 // isomorphic: imported by the browser and the server
@@ -399,7 +399,7 @@ export default function Record(ctx: RouteContext, { outlet }: PageProps) {
       <p>Navigare tra i figli non ricostruisce il genitore. Il suo nodo DOM è lo stesso nodo, quindi il focus, la posizione di scroll, l'input digitato a metà e qualsiasi stato nella sua closure sopravvivono tutti.</p>
       <ul>
         <li>Una pagina senza rotta figlia non renderizza nulla dal suo outlet, quindi un layout può chiamarlo incondizionatamente. Un genitore che ha un figlio e non chiama mai <code>outlet()</code> lo inghiotte.</li>
-        <li>Non esistono rotte index. <code>'/'</code> è il layout stesso, quindi il percorso del genitore renderizza il layout con un outlet vuoto invece di una pagina index separata al suo interno. Metti il contenuto di atterraggio nel layout, oppure dagli un vero percorso figlio.</li>
+        <li>Non esistono rotte index. <code>'/'</code> è il layout stesso, quindi il percorso del genitore renderizza il layout con un outlet vuoto invece di una pagina index separata al suo interno. Metti il contenuto iniziale nel layout, oppure dagli un vero percorso figlio.</li>
       </ul>
       <p>La stessa chiamata funziona poi da entrambi i genitori, e da una pagina che non sa in quale dei due si trova:</p>
       ${code("example.ts", `
@@ -457,7 +457,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
         <li><strong>Una pagina ricostruita le riempie di nuovo.</strong> Quando la rotta cambia, la vecchia riga viene rimossa e le viste <code>into()</code> della nuova pagina prendono il suo posto. Non resta nulla indietro.</li>
         <li><strong>Un livello aperto con push aggiunge una vista.</strong> Il livello è una riga successiva dell'outlet, quindi il suo <code>into()</code> è una vista più recente della stessa regione. Con il default <code>type: 'latest'</code> copre la vista della pagina finché il livello non si chiude, e poi la vista della pagina riappare. Con <code>type: 'stack'</code> si vedono entrambe.</li>
         <li><strong>Anche una pagina genitore può riempire regioni.</strong> Le sue viste restano mentre i figli cambiano, perché il genitore non viene ricostruito.</li>
-        <li><strong>Il rendering lato server funziona così com'è.</strong> Il server costruisce la pagina dentro <code>route.run()</code>, quindi le sue viste <code>into()</code> sono nell'HTML, e <code>hydrate()</code> le reclama.</li>
+        <li><strong>Il rendering lato server funziona così com'è.</strong> Il server costruisce la pagina dentro <code>route.run()</code>, quindi le sue viste <code>into()</code> sono nell'HTML, e <code>hydrate()</code> le riutilizza.</li>
       </ul>
       <h3>Più regioni da una sola pagina</h3>
       <p>Passa un oggetto per riempire più regioni insieme. Il contenuto principale della pagina passa comunque dall'outlet, quindi restituiscilo accanto all'<code>into()</code>:</p>
@@ -504,7 +504,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
           <tr><td>lancia un'eccezione o rifiuta</td><td>finisce in <code>router.error</code>. <code>go()</code> continua a non rifiutare mai, e la navigazione può essere ritentata.</td></tr>
           <tr><td>durante <code>start()</code></td><td>il rifiuto esce da <code>start()</code>. Non c'è ancora una Route su cui metterlo.</td></tr>
           <tr><td>un livello aperto con push</td><td>esegue il proprio loader, con i propri dati</td></tr>
-          <tr><td>il precaricatore in idle</td><td>scalda solo i moduli. Non ha alcun contesto da passare, e scaricherebbe dati per una rotta che potresti non aprire mai.</td></tr>
+          <tr><td>il precaricamento in idle</td><td>precarica solo i moduli. Non ha alcun contesto da passare, e scaricherebbe dati per una rotta che potresti non aprire mai.</td></tr>
           <tr><td>rinavigare allo stesso URL</td><td>il loader viene rieseguito e la riga ricostruita. Una rotta senza loader mantiene la sua riga.</td></tr>
         </tbody>
       </table>
@@ -512,7 +512,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
       ${code("example.ts", `
 await router.go(router.url, { replace: true })   // runs load() again
 `)}
-      <h3>Avviare i dati insieme al chunk</h3>
+      <h3>Caricare i dati insieme al chunk</h3>
       <p>Un <code>load</code> esportato dal modulo di pagina può partire solo quando quel modulo è arrivato, quindi una navigazione a freddo scarica il chunk, poi i dati. Per avviare entrambi insieme, dichiara il loader nella tabella con <code>withLoad()</code>:</p>
       ${code("routes.ts", `
 import { createRouter, withLoad } from 'nuclo-router'
@@ -523,7 +523,7 @@ createRouter({
 })
 `)}
       <p>Sostituisce il <code>load</code> proprio del modulo e viene eseguito a ogni visita come quello. Un rifiuto mentre il chunk è ancora in caricamento finisce in <code>router.error</code> come qualsiasi altro.</p>
-      <p>Non esiste alcuna serializzazione dei dati del server nell'HTML, per scelta. Il <code>load</code> del client viene rieseguito all'idratazione. Se la cosa è importante, fai emettere al server <code>route.data</code>, per esempio come <code>window.__DATA__</code>, e fai in modo che il loader lo prenda per primo. <code>route.data</code> sono solo i dati della pagina corrispondente. Il risultato del <code>load()</code> di un genitore non ci sta.</p>
+      <p>Non esiste alcuna serializzazione dei dati del server nell'HTML, per scelta. Il <code>load</code> del client viene rieseguito all'idratazione. Se la cosa è importante, fai emettere al server <code>route.data</code>, per esempio come <code>window.__DATA__</code>, e fai in modo che il loader lo prenda per primo. <code>route.data</code> sono solo i dati della pagina corrispondente. Il risultato del <code>load()</code> di un genitore non è incluso.</p>
       <h3>Code splitting e precaricamento</h3>
       <p>Il valore di una rotta è sempre una funzione che restituisce il componente di pagina, quindi il componente viene raggiunto in modo lazy:</p>
       ${code("routes.ts", `
@@ -532,9 +532,9 @@ createRouter({
 '/c': () => CPage,                                 // eager, not split
 '/d': () => ({ default: DPage, load: loadD }),     // eager, module-shaped
 `)}
-      <p>Solo le forme a modulo possono portare un export <code>load</code>. Scegliere un componente con nome tramite <code>.then(m =&gt; m.BPage)</code> consegna al router la sola funzione.</p>
+      <p>Solo i valori con struttura di modulo possono includere un export <code>load</code>. Scegliere un componente con nome tramite <code>.then(m =&gt; m.BPage)</code> consegna al router la sola funzione.</p>
       <p>Ogni modulo viene importato una volta e messo in cache. Navigazioni concorrenti verso la stessa rotta condividono un solo <code>import()</code>. Una volta che l'utente ha lasciato la pagina in pace per <code>idleTimeout</code> (un secondo di default; nessun tocco, tasto, rotella o scroll), le rotte rimanenti vengono caricate in background, una per ogni intervallo idle (<code>requestIdleCallback</code>). Qualsiasi input, o una navigazione che l'utente sta aspettando, lo mette in pausa finché la pagina non torna idle.</p>
-      <p>Una rotta precaricata o eager non attiva mai <code>router.pending</code> e atterra prima del paint successivo: nessun frame di spinner, nessun layout shift. <code>router.pending</code> è true solo per un modulo o un loader che va atteso, e la pagina in uscita resta sullo schermo nel frattempo. Un chunk che non riesce a caricarsi emerge come <code>router.error</code>, mai come un rifiuto non gestito, e può semplicemente essere ritentato.</p>
+      <p>Una rotta precaricata o eager non attiva mai <code>router.pending</code> e viene visualizzata prima del prossimo aggiornamento dello schermo: nessun frame con lo spinner, nessuno spostamento del layout. <code>router.pending</code> è true solo per un modulo o un loader che va atteso, e la pagina in uscita resta sullo schermo nel frattempo. Un chunk che non riesce a caricarsi emerge come <code>router.error</code>, mai come un rifiuto non gestito, e può semplicemente essere ritentato.</p>
     `,
       },
       {
@@ -576,7 +576,7 @@ const owned = router.match(href) !== null
           <tr><td><code>path</code>, <code>pattern</code>, <code>params</code>, <code>search</code>, <code>hash</code>, <code>url</code></td><td>la corrispondenza attiva. <code>search</code> è un <code>URLSearchParams</code>. <code>search</code>, <code>hash</code> e <code>url</code> sono live.</td></tr>
           <tr><td><code>pending</code></td><td>una navigazione sta aspettando un modulo o un loader</td></tr>
           <tr><td><code>error</code></td><td>l'ultimo caricamento fallito, azzerato dalla navigazione successiva</td></tr>
-          <tr><td><code>data</code></td><td>ciò che il <code>load()</code> della pagina corrispondente ha restituito, perché un server lo serializzi. Quello di un genitore non ci sta.</td></tr>
+          <tr><td><code>data</code></td><td>ciò che il <code>load()</code> della pagina corrispondente ha restituito, perché un server lo serializzi. Quello di un genitore non è incluso.</td></tr>
           <tr><td><code>depth</code></td><td>quanti livelli ci sono nello stack (1 per una pagina ordinaria)</td></tr>
           <tr><td><code>go(href, { replace })</code></td><td>naviga, caricando il modulo se serve. Non rifiuta mai: un modulo che fallisce, rifiutando o lanciando un'eccezione, finisce in <code>error</code>.</td></tr>
           <tr><td><code>push(href)</code></td><td>apre una rotta come nuovo livello in cima, risolvendosi con ciò con cui si chiude. Accetta <code>./</code>. Rifiuta se nulla corrisponde o il modulo fallisce.</td></tr>
@@ -656,9 +656,9 @@ layer.close()          // dismissed: resolves with undefined
 `)}
       <p>I livelli si annidano. Un dialogo che ha bisogno di un proprio dialogo chiama <code>layer.push()</code> e lo attende, senza alcun riferimento alla Route.</p>
       <ul>
-        <li><strong>L'URL è il livello in cima.</strong> <code>push()</code> aggiunge una voce alla history, quindi un livello è linkabile e Indietro lo chiude, risolvendo il suo <code>push()</code> come chiuso senza risultato, esattamente come Annulla. Indietro e <code>close()</code> sono un unico percorso di codice: <code>close()</code> registra il suo risultato e torna indietro nella history, e la profondità in <code>history.state</code> è l'autorità. I browser conservano circa 50 voci per tab, quindi dopo una lunga camminata tra i livelli la voce sottostante potrebbe essere sparita: in quel caso <code>close()</code> chiude i livelli sul posto e riscrive la voce corrente con la pagina rimasta visibile.</li>
+        <li><strong>L'URL è il livello in cima.</strong> <code>push()</code> aggiunge una voce alla history, quindi un livello è linkabile e Indietro lo chiude, risolvendo il suo <code>push()</code> come chiuso senza risultato, esattamente come Annulla. Indietro e <code>close()</code> sono un unico percorso di codice: <code>close()</code> registra il suo risultato e torna indietro nella history, e la profondità in <code>history.state</code> è l'autorità. I browser conservano circa 50 voci per tab, quindi dopo una lunga sequenza di navigazioni tra i livelli la voce sottostante potrebbe essere sparita: in quel caso <code>close()</code> chiude i livelli sul posto e riscrive la voce corrente con la pagina rimasta visibile.</li>
         <li><strong>Una navigazione ordinaria svuota lo stack.</strong> Un click su un link o <code>go()</code> non è un livello. Sostituisce tutto e chiude ogni livello aperto, così nessun chiamante resta in attesa.</li>
-        <li><strong>Un caricamento a freddo è una pagina autonoma.</strong> L'URL indica il livello in cima ma non lo stack sotto di esso, quindi aprire direttamente l'URL di un livello lo renderizza a profondità 1 con <code>layer.depth === 0</code> e un <code>close()</code> inerte. Una rotta aperta con push deve avere senso da sola. Diramati su <code>layer.depth</code> per offrire un link di uscita invece di un pulsante Annulla morto.</li>
+        <li><strong>Un caricamento a freddo è una pagina autonoma.</strong> L'URL indica il livello in cima ma non lo stack sotto di esso, quindi aprire direttamente l'URL di un livello lo renderizza a profondità 1 con <code>layer.depth === 0</code> e un <code>close()</code> inerte. Una rotta aperta con push deve avere senso da sola. Diramati su <code>layer.depth</code> per offrire un link di uscita invece di un pulsante Annulla che non fa nulla.</li>
         <li><strong>La promise non può sopravvivere a un ricaricamento</strong>, perché vive in una closure. Tratta il risultato come una scorciatoia attraverso un flusso che funziona anche per la strada lunga.</li>
         <li><strong>Nulla resta in attesa.</strong> <code>stop()</code> chiude ogni livello aperto, e un livello abbandonato da una navigazione si risolve con <code>undefined</code>.</li>
       </ul>
@@ -731,7 +731,7 @@ const page = await docsRoutes[hit.pattern]()   // the app's own lookup
         content: `
       <p>Un'app può avere tanti router quante sono le sue aree. La regola che mantiene tutto semplice: <strong>avviane esattamente uno per documento</strong>, e lascia ogni altro router non avviato, a risolvere URL con <code>match()</code>. Solo il router avviato possiede l'URL, la history e il listener dei click. Gli altri sono tabelle a cui fai domande — e ogni area può caricare con il proprio ritmo, con il proprio spinner.</p>
       <h3>Caricamento combinato: una catena di loader</h3>
-      <p>Ogni pagina di una catena corrispondente può esportare <code>load()</code>. In una navigazione a freddo verso una rotta figlia, il loader del layout e quello della pagina vengono eseguiti <strong>in parallelo</strong>, e un unico <code>router.pending</code> copre l'intera catena: la pagina precedente resta sullo schermo finché la coppia non si risolve, così un albero caricato a metà non viene mai dipinto. Ogni componente riceve i propri <code>data</code>:</p>
+      <p>Ogni pagina di una catena corrispondente può esportare <code>load()</code>. In una navigazione a freddo verso una rotta figlia, il loader del layout e quello della pagina vengono eseguiti <strong>in parallelo</strong>, e un unico <code>router.pending</code> copre l'intera catena: la pagina precedente resta sullo schermo finché la coppia non si risolve, così un albero caricato a metà non viene mai visualizzato. Ogni componente riceve i propri <code>data</code>:</p>
       ${code("routes.ts", `
 '/shop': {
   '/':          () => import('./pages/Shop.ts'),    // layout, has a load()
@@ -809,7 +809,7 @@ createRouter(routes, {
         <li><strong><code>pending</code> appartiene al router avviato.</strong> Un router mai avviato non ha una Route, né <code>pending</code> né <code>error</code>. L'area traccia i propri flag, e un secondo spinner può stare accanto al primo. Nella demo la sidebar carica per 800ms mentre i loader della rotta girano per 900ms, quindi la pagina può finire prima della sidebar o viceversa.</li>
         <li><strong><code>match()</code> non aggancia nulla.</strong> Un numero qualsiasi di router non avviati può condividere il documento; ciascuno ha la propria tabella, base e cache dei moduli, e nessuno di essi tocca la history. Costano una tabella e un matcher.</li>
         <li><strong>I suoi loader non vengono mai eseguiti.</strong> Il router avviato esegue il <code>load()</code> delle pagine a cui corrisponde. Un router mai avviato risolve soltanto, quindi se le sue viste hanno bisogno di dati, recuperali tu — il <code>refreshSidebar()</code> della demo. Se vuoi i loader, una <a href="#router-matches">tabella annidata</a> o una <a href="#router-regions">regione riempita da una pagina</a> lascia quel compito al router avviato.</li>
-        <li><strong>Proteggiti dalle risposte stantie.</strong> Un fetch lento della sidebar non deve atterrare sulla sezione da cui ti sei allontanato. Incrementa un contatore di generazione a ogni refresh e scarta le risposte che non corrispondono più, come fa il router stesso quando ritira le navigazioni superate.</li>
+        <li><strong>Gestisci le risposte obsolete.</strong> Una risposta lenta della sidebar non deve aggiornare una sezione che hai già lasciato. Incrementa un contatore di generazione a ogni refresh e scarta le risposte che non corrispondono più, come fa il router stesso quando ritira le navigazioni superate.</li>
         <li><strong>Nemmeno una vista lazy di <code>matches()</code> ha un <code>pending</code>.</strong> Non renderizza nulla finché il suo modulo non arriva. Tre sistemi di caricamento, tre orologi indipendenti: il <code>pending</code> della rotta, i tuoi flag, e una vista lazy che semplicemente non c'è ancora.</li>
       </ul>
     `,
@@ -818,9 +818,9 @@ createRouter(routes, {
         id: "router-links",
         title: "Gestione dei link",
         content: `
-      <p>Il listener delegato naviga un click sinistro su un <code>&lt;a href&gt;</code>, inclusi un <code>&lt;a&gt;</code> SVG e i click su qualsiasi cosa annidata al suo interno, e si fa da parte per tutto il resto: click con modificatori e con il tasto centrale, un <code>target</code> diverso da <code>_self</code>, <code>download</code>, <code>rel="external"</code>, href cross-origin, link con solo hash sulla pagina corrente, percorsi fuori da <code>base</code>, percorsi a cui nessuna rotta corrisponde (così una 404 renderizzata lato server resta raggiungibile), e qualsiasi evento su cui un handler dell'app ha già chiamato <code>preventDefault()</code>. Escludi un link esplicitamente con <code>data-nuclo-router="off"</code>.</p>
+      <p>Il listener delegato gestisce la navigazione quando fai clic con il tasto sinistro su un <code>&lt;a href&gt;</code>, inclusi un <code>&lt;a&gt;</code> SVG e i click su qualsiasi cosa annidata al suo interno, e si fa da parte per tutto il resto: click con modificatori e con il tasto centrale, un <code>target</code> diverso da <code>_self</code>, <code>download</code>, <code>rel="external"</code>, href cross-origin, link con solo hash sulla pagina corrente, percorsi fuori da <code>base</code>, percorsi a cui nessuna rotta corrisponde (così una 404 renderizzata lato server resta raggiungibile), e qualsiasi evento su cui un handler dell'app ha già chiamato <code>preventDefault()</code>. Escludi un link esplicitamente con <code>data-nuclo-router="off"</code>.</p>
       <h3>Scroll</h3>
-      <p>Una navigazione con push conserva la posizione di scroll corrente. Quando il nuovo URL ha un <code>#hash</code> che corrisponde a un elemento della pagina, quell'elemento viene portato in vista. <code>popstate</code> lascia lo scroll al browser. Per far atterrare le nuove pagine in cima, fallo in <code>onNavigate</code>, che dice come è avvenuta la navigazione:</p>
+      <p>Una navigazione con push conserva la posizione di scroll corrente. Quando il nuovo URL ha un <code>#hash</code> che corrisponde a un elemento della pagina, quell'elemento viene portato in vista. <code>popstate</code> lascia lo scroll al browser. Per aprire le nuove pagine con lo scroll in cima, fallo in <code>onNavigate</code>, che dice come è avvenuta la navigazione:</p>
       ${code("routes.ts", `
 let shown = ''
 createRouter(routes, {
@@ -843,7 +843,7 @@ createRouter(routes, {
       <p>Due esempi eseguibili nel repository si completano a vicenda, così ogni impostazione è osservabile da qualche parte:</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: un tour lato client dell'intera API. Ogni forma di pattern e regola di precedenza, le esclusioni della gestione dei link, ogni membro di Route con controlli live, un sub-router, lo stack dei livelli profondo tre, una sezione relativa montata su due genitori, e loader di rotta con <code>pending</code> ed <code>error</code>. Imposta <code>preload: false</code> così quegli stati restano visibili.</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> per richiesta, idratazione che reclama in modo dimostrabile i nodi del server, veri codici di stato 404, un <code>base</code> non radice, precaricamento in idle osservabile nel pannello di rete, e un loader i cui dati passano dal server al client così l'idratazione non rifà il fetch.</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> per richiesta, idratazione che mostra il riutilizzo dei nodi del server, veri codici di stato 404, un <code>base</code> non radice, precaricamento in idle osservabile nel pannello di rete, e un loader i cui dati passano dal server al client così l'idratazione non rifà il fetch.</li>
       </ul>
     `,
       },
@@ -964,13 +964,13 @@ async function loadData() {
       </ul>
       <h3>Solo globali</h3>
       <ul>
-        <li><a href="#tag-builders">175 costruttori di tag</a>: <code>div</code>, <code>span</code>, …, <code>var_</code>, e <code>svgSvg</code>, <code>pathSvg</code>, ….</li>
+        <li><a href="#tag-builders">175 builder di tag</a>: <code>div</code>, <code>span</code>, …, <code>var_</code>, e <code>svgSvg</code>, <code>pathSvg</code>, ….</li>
         <li><a href="#typescript-setup">Tipi</a>: <code>NodeModFn</code>, <code>NodeModLike</code>, <code>ExpandedElement</code> e altri. I tipi di stile come <code>StyleResult</code> possono anche essere importati da <code>'nuclo'</code>.</li>
       </ul>
       <h3>Chiavi speciali</h3>
       <ul>
         <li><a href="#attributes">Attributi</a>: <code>className</code>, <code>style</code>, <a href="#events">handler <code>on*</code></a>, <a href="#lifecycle"><code>onMount</code> e <code>onDestroy</code></a>.</li>
-        <li><a href="#style-objects">Oggetti di stile</a>: abbreviazioni, pseudo stati, selettori <code>&amp;</code>, regole <code>@</code> e <code>raw</code>.</li>
+        <li><a href="#style-objects">Oggetti di stile</a>: abbreviazioni, pseudoclassi e pseudoelementi, selettori <code>&amp;</code>, regole <code>@</code> e <code>raw</code>.</li>
       </ul>
     `,
       },

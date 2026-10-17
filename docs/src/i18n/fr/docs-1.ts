@@ -65,7 +65,7 @@ render(App, document.getElementById('app')!)
       ${sh("npm install nuclo")}
       <p>Ou utilisez <code>pnpm add nuclo</code>, <code>yarn add nuclo</code> ou <code>bun add nuclo</code>. Nuclo n'a aucune dépendance.</p>
       <p>Le routage ne fait pas partie du paquet principal. Il est publié séparément sous le nom <a href="#router-overview"><code>nuclo-router</code></a>, que vous installez à côté de <code>nuclo</code> quand vous en avez besoin.</p>
-      <h3>Globales</h3>
+      <h3>Fonctions globales</h3>
       <p><code>import 'nuclo'</code> place ces éléments sur <code>globalThis</code> :</p>
       <ul>
         <li><strong>175 constructeurs de balises</strong> : 112 pour HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) et 63 pour SVG, avec un suffixe <code>Svg</code> (<code>svgSvg</code>, <code>pathSvg</code>, …). Voir <a href="#tag-builders">Constructeurs de balises</a>.</li>
@@ -384,8 +384,8 @@ update() // App's onDestroy hooks and cleanups run
         <li>Vous pouvez enregistrer autant de hooks que vous voulez, sous l'une ou l'autre forme. Ils s'exécutent dans l'ordre d'enregistrement.</li>
         <li><code>onDestroy</code> exécute toujours les enfants d'abord, puis le parent.</li>
         <li>Les éléments sont montés dans l'ordre de leur premier hook <code>onMount</code>, qui suit l'ordre des arguments, et chaque élément exécute tous ses hooks ensemble. Passez le hook d'un parent avant ses enfants s'ils en dépendent.</li>
-        <li>Un hook qui lève une erreur est journalisé avec <code>console.error</code>. Les autres hooks s'exécutent quand même.</li>
-        <li>Le callback doit ne rien renvoyer ou renvoyer une fonction de nettoyage, ne le rendez donc pas <code>async</code>. Une Promise renvoyée n'est jamais utilisée comme nettoyage. Démarrez le travail asynchrone à l'intérieur : <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
+        <li>Une erreur levée par un hook est journalisée avec <code>console.error</code>. Les autres hooks s'exécutent quand même.</li>
+        <li>Le callback doit renvoyer une fonction de nettoyage ou ne rien renvoyer ; ne le déclarez donc pas <code>async</code>. Une Promise renvoyée n'est jamais utilisée comme nettoyage. Démarrez le travail asynchrone à l'intérieur : <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
         <li>Les hooks ne s'exécutent jamais côté serveur. Côté client, ils s'exécutent après <code>hydrate()</code>.</li>
       </ul>
       <div class="docs-callout"><strong>Note :</strong> les hooks ne sont pas des effets. Ils ne se réexécutent jamais quand l'état change. Chacun s'exécute au plus une fois par élément.</div>
@@ -415,7 +415,7 @@ render(Counter)
 `)}
     `,
         afterContent: `
-      <p>Modifiez autant d'état que vous voulez, puis appelez <code>update()</code> une seule fois :</p>
+      <p>Modifiez l'état autant que nécessaire, puis appelez <code>update()</code> une seule fois :</p>
       ${code("example.ts", `
 let first = 'Ada'
 let last = 'Lovelace'
@@ -538,7 +538,7 @@ const Status = () =>
         afterContent: `
       <h3>Conditions</h3>
       <ul>
-        <li>Pour de l'état, passez une fonction. Un booléen simple est lu une seule fois : <code>when(open, …)</code> ne change jamais.</li>
+        <li>Pour une condition qui dépend de l'état, passez une fonction. Un booléen simple est lu une seule fois : <code>when(open, …)</code> ne change jamais.</li>
         <li>En TypeScript, la fonction doit renvoyer un booléen. Écrivez <code>() =&gt; items.length &gt; 0</code> ou <code>() =&gt; user != null</code>.</li>
       </ul>
       <h3>Ce qui est mis à jour</h3>
@@ -606,7 +606,7 @@ update() // same <li>, its class is now "done"
       <h3>Itérables</h3>
       <p>Tout itérable fonctionne : tableaux, <code>Set</code>, générateurs et <code>map.values()</code>. Renvoyer le même tableau ou <code>Set</code> à chaque fois est correct. Un itérateur, comme un générateur ou <code>map.values()</code>, est épuisé après une passe, créez-le donc dans <code>items()</code> à chaque appel. Itérer directement une <code>Map</code> crée de nouveaux tableaux <code>[key, value]</code> à chaque fois, donc chaque ligne est reconstruite. Utilisez <code>map.values()</code> à la place.</p>
       <h3>Placement</h3>
-      <p>Les lignes apparaissent là où <code>list()</code> se trouve parmi ses frères, entre deux marqueurs de commentaire. Les autres enfants du parent ne sont pas touchés. <code>list()</code> fonctionne aussi dans les constructeurs SVG.</p>
+      <p>Les lignes apparaissent à la position de <code>list()</code> parmi les éléments de même niveau, entre deux marqueurs de commentaire. Les autres enfants du parent ne sont pas touchés. <code>list()</code> fonctionne aussi dans les constructeurs SVG.</p>
     `,
       },
       {
@@ -634,7 +634,7 @@ render(() => div(Layout(), Article()))
         <li>Quand une région disparaît, par exemple parce que son <code>when()</code> se ferme, ses vues se remettent en attente. Une région construite plus tard avec le même id les affiche.</li>
         <li>Un <code>into()</code> dont l'id ne correspond à aucune région ne rend rien et ne lève aucune erreur, vérifiez donc l'orthographe.</li>
         <li>Les ids sont uniques dans l'arbre. Une seconde région construite sous un id actif journalise un avertissement.</li>
-        <li>Les régions fonctionnent avec le <a href="#api-ssr">rendu côté serveur</a>. Lors de <code>hydrate()</code>, chaque vue réclame le HTML rendu par le serveur au lieu de le reconstruire.</li>
+        <li>Les régions fonctionnent avec le <a href="#api-ssr">rendu côté serveur</a>. Lors de <code>hydrate()</code>, chaque vue réutilise le HTML rendu par le serveur au lieu de le reconstruire.</li>
       </ul>
       <h3>Options</h3>
       <ul>
@@ -813,7 +813,7 @@ forceUpdate() // same <h1> element, now "Olá"
       <p>Sans argument, <code>forceUpdate()</code> reconstruit chaque racine rendue avec <code>render(App)</code> ou <code>hydrate(App)</code>. Les racines rendues avec <code>render(App())</code> sont ignorées. Si un composant lève une erreur, elle est journalisée et cette racine conserve son ancien DOM. Une erreur levée plus tard, pendant l'application de la nouvelle construction, est aussi journalisée, mais les parties déjà mises à jour le restent.</p>
       <h3>Ce qui reste et ce qui change</h3>
       <ul>
-        <li>Les enfants sont appariés dans l'ordre, par balise. Un élément correspondant est réutilisé, donc le focus et les valeurs saisies restent, et ses hooks <code>onMount</code> ne se réexécutent pas. Dès que la balise d'un enfant diffère, cet enfant et tous les frères suivants sont reconstruits.</li>
+        <li>Les enfants sont appariés dans l'ordre, par balise. Un élément correspondant est réutilisé, donc le focus et les valeurs saisies restent, et ses hooks <code>onMount</code> ne se réexécutent pas. Dès que la balise d'un enfant diffère, cet enfant et tous les éléments suivants de même niveau sont reconstruits.</li>
         <li>Le texte, les attributs, les classes, les styles, les écouteurs, les branches de <code>when()</code> et les lignes de <code>list()</code> suivent la nouvelle construction.</li>
         <li>Les nouveaux éléments sont créés, et leurs hooks <code>onMount</code> s'exécutent. Les éléments que la nouvelle construction ne produit plus sont retirés, et leurs hooks <code>onDestroy</code> s'exécutent.</li>
         <li>Les lignes de <code>list()</code> sont aussi appariées par position, pas par élément, donc un élément de ligne réutilisé peut finir par afficher un autre élément.</li>
@@ -844,7 +844,7 @@ render(App, document.getElementById('app')!)
 `)}
       <ul>
         <li>Vous pouvez passer le composant (<code>render(App)</code>) ou le constructeur qu'il renvoie (<code>render(App())</code>). Le DOM est le même. Seul <code>render(App)</code> permet à <a href="#api-force-update"><code>forceUpdate()</code></a> de reconstruire la racine plus tard, préférez-le donc.</li>
-        <li>Il ajoute. Il ne vide pas <code>parent</code>, donc l'appeler deux fois ajoute deux copies.</li>
+        <li>Le contenu est ajouté sans vider <code>parent</code>. Deux appels ajoutent donc deux copies.</li>
         <li>Tous les <code>onMount</code> de l'arbre ont été exécutés quand <code>render()</code> rend la main.</li>
         <li>Rendez dans un élément qui est dans le document. Voir <a href="#api-update"><code>update()</code></a>.</li>
         <li>La racine doit être un élément, comme <code>div(...)</code>, pas un <code>when()</code> ou un <code>list()</code>.</li>
@@ -890,7 +890,7 @@ hydrate(App, document.getElementById('root')!)
         id: "api-ssr",
         title: "Rendu côté serveur",
         content: `
-      <p>Rendez un composant en chaîne HTML sur le serveur. Dans le navigateur, appelez <a href="#api-hydrate"><code>hydrate()</code></a> avec le même composant pour rendre ce HTML interactif. Les environnements serveur n'ont pas de <code>document</code>, importez donc <a href="#api-polyfill"><code>nuclo/polyfill</code></a> en premier.</p>
+      <p>Générez une chaîne HTML à partir d'un composant sur le serveur. Dans le navigateur, appelez <a href="#api-hydrate"><code>hydrate()</code></a> avec le même composant pour rendre ce HTML interactif. Les environnements serveur n'ont pas de <code>document</code>, importez donc <a href="#api-polyfill"><code>nuclo/polyfill</code></a> en premier.</p>
       ${code("app.ts", `
 let count = 0
 const heading = css({ color: 'red' })
@@ -928,7 +928,7 @@ hydrate(App, document.getElementById('root')!)
       <ul>
         <li>Chaque appel à <code>renderToString()</code> construit l'arbre et exécute chaque valeur dynamique une fois.</li>
         <li>Les gestionnaires d'événements, <code>onMount</code> et <code>onDestroy</code> ne s'exécutent jamais. <code>update()</code>, <code>scope()</code> et <code>forceUpdate()</code> ne font rien.</li>
-        <li>Le rendu est synchrone. Chargez vos données d'abord, puis rendez.</li>
+        <li>Le rendu est synchrone. Chargez d'abord vos données, puis effectuez le rendu.</li>
         <li>Rien ne reste enregistré après un rendu, un même processus peut donc servir de nombreuses requêtes. Passez les données de la requête en arguments, par exemple <code>renderToString(Page(user))</code>. Les variables au niveau du module sont partagées par toutes les requêtes.</li>
         <li>N'appelez pas <code>render()</code> côté serveur. Il ajoute au <code>document.body</code> partagé.</li>
       </ul>
@@ -940,7 +940,7 @@ renderToString(p('Hello'))
 `)}
       <ul>
         <li>Le texte et les valeurs d'attributs sont échappés en HTML. Le texte dans <code>script()</code> et <code>style()</code> est écrit tel quel, seules les balises fermantes étant découpées, n'y placez donc jamais de saisie utilisateur.</li>
-        <li>Il ne lève pas d'erreur. Si le composant, une fonction de <code>list()</code> ou une condition de <code>when()</code> lève une erreur, ou si le polyfill manque, il journalise l'erreur et renvoie <code>""</code>. Vérifiez si le résultat est vide lorsque la requête doit échouer. Une fonction texte ou attribut qui lève une erreur ne rend qu'un contenu vide.</li>
+        <li>Il ne lève pas d'erreur. Si le composant, une fonction de <code>list()</code> ou une condition de <code>when()</code> lève une erreur, ou si le polyfill manque, il journalise l'erreur et renvoie <code>""</code>. Vérifiez si le résultat est vide lorsque la requête doit échouer. Une fonction de texte ou d'attribut qui lève une erreur ne rend qu'un contenu vide.</li>
       </ul>
       <h3><code>renderManyToString()</code></h3>
       <p>Équivalent à <code>inputs.map(renderToString)</code>.</p>

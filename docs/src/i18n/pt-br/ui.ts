@@ -20,7 +20,7 @@ export const nav = {
 };
 
 export const footer = {
-  tagline: "O runtime de UI explícito. Funções simples, estado mutável e uma chamada entre seus dados e o DOM.",
+  tagline: "O runtime de UI com atualizações explícitas. Funções simples, estado mutável e uma chamada entre seus dados e o DOM.",
   builtWith: "Este site é construído com Nuclo.",
   explore: "Explorar",
   documentation: "Documentação",
@@ -57,12 +57,12 @@ export const seo = {
   routes: {
     home: {
       title: "Nuclo - Framework DOM leve com atualizações explícitas",
-      description: "Nuclo é uma biblioteca DOM em TypeScript, leve e sem dependências. Construa a UI com funções, mute o estado simples e chame update(). Sem DOM virtual, proxies ou signals.",
+      description: "Nuclo é uma biblioteca DOM em TypeScript, leve e sem dependências. Construa a UI com funções, altere o estado simples e chame update(). Sem DOM virtual, proxies ou signals.",
       keywords: "nuclo, framework dom, valores dependentes de estado, atualizações explícitas, estado mutável, javascript, typescript, framework de ui, leve",
     },
     "apps/:id": {
       title: "Apps independentes - Exemplos do Nuclo",
-      description: "Exemplos interativos de apps Nuclo em um espaço de trabalho de navegador inteiro.",
+      description: "Exemplos interativos de apps Nuclo em um espaço de trabalho que ocupa toda a janela do navegador.",
     },
     desktop: {
       title: "Nuclo OS - Desktop",

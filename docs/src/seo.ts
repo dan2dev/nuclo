@@ -157,7 +157,7 @@ export function generateStructuredData(meta: PageMeta, pageUrl: string, locale: 
     "@id": `${SEO_BASE_URL}#website`,
     name: "Nuclo",
     url: SEO_BASE_URL,
-    description: "A lightweight, type-safe DOM framework with plain mutable state and explicit updates",
+    description: t.seo.routes.home.description,
   };
 
   const software = {

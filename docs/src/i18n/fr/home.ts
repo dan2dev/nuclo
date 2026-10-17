@@ -5,17 +5,17 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · zéro dépendance`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["Construisez des interfaces", "*explicites* avec", "nuclo."];
+export const HERO_TITLE_LINES = ["Des mises à jour", "*explicites* avec", "nuclo."];
 
 export const HERO_DESC =
-  "Un petit framework DOM typé. L'état reste ordinaire et mutable. Vous contrôlez chaque mise à jour. Ni proxies, ni signaux, ni DOM virtuel.";
+  "Un petit framework DOM au typage sûr. L'état reste simple et mutable. Vous contrôlez chaque mise à jour. Ni proxies, ni signaux, ni DOM virtuel.";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
 export const HERO_STATS = [
   { num: "0",   sup: "",   label: "dépendance" },
   { num: "175", sup: "",   label: "constructeurs HTML et SVG typés" },
-  { num: `~${NUCLO_GZIP_KB}`, sup: "Ko", label: "gzippé, runtime de base" },
+  { num: `~${NUCLO_GZIP_KB}`, sup: "Ko", label: "runtime principal, compressé avec gzip" },
 ];
 
 export const COUNTER_TEASER_CODE = `import 'nuclo'
@@ -71,18 +71,18 @@ export function TodoList() {
 }`;
 
 export const PHILOSOPHY_QUOTE =
-  "Quand vous mutez l'état, rien ne se passe. Appelez update(), et Nuclo fait exactement ce que vous avez demandé. Ni plus, ni moins.";
+  "Quand vous modifiez l'état, rien ne se passe. Appelez update(), et Nuclo fait exactement ce que vous avez demandé. Ni plus, ni moins.";
 
 export const PHILOSOPHY_POINTS = [
   {
     num: "01",
     title: "L'explicite vaut mieux que l'implicite",
-    desc: "Aucun proxy ne surveille vos moindres gestes. Vous mutez l'état, puis vous appelez update(). La cause et l'effet restent clairs et prévisibles.",
+    desc: "Aucun proxy ne surveille vos moindres gestes. Vous modifiez l'état, puis vous appelez update(). La cause et l'effet restent clairs et prévisibles.",
   },
   {
     num: "02",
-    title: "Groupez librement, mettez à jour une fois",
-    desc: "Faites dix mutations, puis appelez update() une fois. Le DOM ne voit que l'état final. Aucun rendu n'est gaspillé.",
+    title: "Regroupez vos changements, puis mettez à jour",
+    desc: "Effectuez dix modifications, puis appelez update() une seule fois. Le DOM ne reflète que l'état final. Aucun rendu inutile.",
   },
   {
     num: "03",
@@ -94,32 +94,32 @@ export const PHILOSOPHY_POINTS = [
 export const FEATURES = [
   {
     num: "01 · Explicite",
-    title: "Vous possédez le cycle de mise à jour",
-    desc: "Mutez librement, puis appelez update() une fois. Nuclo n'a besoin ni d'abonnements ni d'ordonnanceurs, et il ne vous surprend jamais avec un diff. Le DOM se synchronise quand vous le décidez.",
+    title: "Vous contrôlez le cycle de mise à jour",
+    desc: "Modifiez librement l'état, puis appelez update() une seule fois. Nuclo n'a besoin ni d'abonnements ni d'ordonnanceurs, et il ne vous surprend jamais avec un diff. Le DOM se synchronise quand vous le décidez.",
   },
   {
     num: "02 · Léger",
     title: "Zéro dépendance",
-    desc: `Environ ${NUCLO_GZIP_KB} Ko gzippé pour le runtime de base. Nuclo n'a besoin ni de compilateur ni de plugins de build. Ajoutez un import et commencez à construire.`,
+    desc: `Environ ${NUCLO_GZIP_KB} Ko pour le runtime principal compressé avec gzip. Nuclo n'a besoin ni de compilateur ni de plugins de build. Ajoutez un import et créez votre interface.`,
   },
   {
     num: "03 · Typé",
-    title: "TypeScript d'abord",
+    title: "Pensé pour TypeScript",
     desc: "175 constructeurs HTML et SVG entièrement typés vous donnent l'autocomplétion pour chaque attribut, propriété de style et événement.",
   },
   {
     num: "04 · Précis",
-    title: "Patch à grain fin",
-    desc: "Les expressions dynamiques sont réévaluées à update(). Seules les valeurs qui ont réellement changé touchent le DOM.",
+    title: "Mises à jour ciblées du DOM",
+    desc: "Les expressions dynamiques sont réévaluées à chaque appel à update(). Seules les valeurs qui ont changé sont répercutées dans le DOM.",
   },
 ];
 
 // ── "How update() works" pipeline ──────────────────────────────────────────
 export const PIPELINE_STEPS = [
   {
-    kicker: "01 · Muter",
+    kicker: "01 · Modifier",
     title: "Changez vos données",
-    desc: "L'état est du JavaScript ordinaire : variables, tableaux, objets. Mutez-le comme vous voulez, autant de fois que vous voulez.",
+    desc: "L'état est du JavaScript ordinaire : variables, tableaux, objets. Modifiez-le comme vous voulez, autant de fois que nécessaire.",
     code: `<span class="pr">todos</span><span class="pt">.</span><span class="fn">push</span><span class="pt">(</span><span class="pr">newTodo</span><span class="pt">)</span>
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
@@ -130,7 +130,7 @@ export const PIPELINE_STEPS = [
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
-    kicker: "03 · Patcher",
+    kicker: "03 · Synchroniser",
     title: "Nuclo synchronise le DOM",
     desc: "Chaque expression dynamique est réévaluée. Nuclo n'écrit dans le DOM que les valeurs qui ont réellement changé. Ni diff, ni re-rendu.",
     code: `<span class="cm">// 2 nœuds patchés,</span>
@@ -153,10 +153,10 @@ export const COMPARISON_COLS: {
     name: "DOM virtuel",
     sub: "rendu → comparaison → application",
     items: [
-      { good: false, text: "Re-rend des arbres de composants à chaque changement d'état" },
+      { good: false, text: "Effectue un nouveau rendu des arbres de composants à chaque changement d'état" },
       { good: false, text: "Compare l'ancien et le nouvel arbre pour trouver ce qui a changé" },
       { good: false, text: "A besoin de mémoïsation pour regagner en performance" },
-      { good: false, text: "Laisse des closures obsolètes et des tableaux de dépendances" },
+      { good: false, text: "Impose de gérer les closures obsolètes et les tableaux de dépendances" },
     ],
   },
   {
@@ -165,19 +165,19 @@ export const COMPARISON_COLS: {
     items: [
       { good: false, text: "Enveloppe votre état dans des proxies et des abonnements" },
       { good: false, text: "Suit les dépendances de façon invisible, à l'exécution" },
-      { good: false, text: "Propage les mises à jour selon des calendriers que vous ne contrôlez pas" },
+      { good: false, text: "Propage les mises à jour selon un ordonnancement que vous ne contrôlez pas" },
       { good: false, text: "Est difficile à parcourir pas à pas dans un débogueur" },
     ],
   },
   {
     name: "Nuclo",
-    sub: "muter → update()",
+    sub: "modifier → update()",
     featured: true,
     items: [
       { good: true, text: "Un état mutable ordinaire, sans enveloppe et sans proxies" },
-      { good: true, text: "Un seul appel, update(), est tout le modèle mental" },
-      { good: true, text: "Ne patche que les valeurs qui ont changé" },
-      { good: true, text: `Environ ${NUCLO_GZIP_KB} Ko, zéro dépendance, TypeScript d'abord` },
+      { good: true, text: "Tout le modèle mental tient dans un appel : update()" },
+      { good: true, text: "Ne met à jour que les valeurs qui ont changé" },
+      { good: true, text: `Environ ${NUCLO_GZIP_KB} Ko, zéro dépendance, Pensé pour TypeScript` },
     ],
   },
 ];
@@ -188,7 +188,7 @@ export const BENCHMARK_SUB =
   "Ce sont des chiffres indépendants issus de js-framework-benchmark, pour la création, la mise à jour, l'échange et la suppression de milliers de lignes.";
 
 export const BENCHMARK_NOTE =
-  "Ce score est le ralentissement de durée par rapport à l'implémentation la plus rapide mesurée. C'est une moyenne géométrique pondérée de tous les benchmarks keyed.";
+  "Ce score mesure le temps d'exécution relatif à l'implémentation la plus rapide mesurée. C'est une moyenne géométrique pondérée de tous les benchmarks keyed.";
 
 export const BENCHMARK_SOURCE_URL =
   "https://krausest.github.io/js-framework-benchmark/2026/chrome152.html";
@@ -216,9 +216,9 @@ export const BENCHMARK_ENTRIES: {
 ];
 
 // ── CTA ─────────────────────────────────────────────────────────────────────
-export const CTA_TITLE = "Prêt quand vous l'êtes.";
+export const CTA_TITLE = "Lancez-vous quand vous voulez.";
 export const CTA_SUB =
-  "Installez Nuclo, importez-le une fois et livrez des interfaces qui se mettent à jour exactement quand vous le dites. Vous pouvez apprendre toute l'API en un après-midi.";
+  "Installez Nuclo, importez-le une fois et livrez des interfaces qui se mettent à jour exactement quand vous le décidez. Vous pouvez apprendre toute l'API en un après-midi.";
 
 export const QUICK_START_STEPS = [
   {
@@ -262,7 +262,7 @@ export const LABELS = {
   copyInstall: "Copier la commande d'installation",
   howItWorks: "Comment ça marche",
   pipelineTitle: "Un seul cycle explicite.",
-  pipelineSub: "Des valeurs dépendantes de l'état, sans graphe de dépendances ni ordonnanceur. Vous décidez quand elles s'exécutent - un seul chemin prévisible de vos données à l'écran.",
+  pipelineSub: "Des valeurs dépendantes de l'état, sans graphe de dépendances ni ordonnanceur. Vous décidez quand elles sont évaluées : un seul chemin prévisible de vos données à l'écran.",
   philosophy: "Philosophie",
   features: "Fonctionnalités",
   featuresTitle: "Conçu pour la clarté.",
@@ -270,7 +270,7 @@ export const LABELS = {
   comparison: "Comparaison",
   theNucloWay: "la méthode nuclo",
   benchmarks: "Benchmarks",
-  lowerIsBetter: "Plus bas, c'est mieux",
+  lowerIsBetter: "Un score plus faible est meilleur",
   benchmarkSource: "Source : js-framework-benchmark",
   quickStart: "Démarrage rapide",
   quickStartTitle: "Opérationnel en quelques minutes.",
@@ -294,12 +294,12 @@ export const LABELS = {
 // ── The hero card's examples, keyed by their export in home/examples.ts and home/playground.ts ──
 export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   Paint: {
-    title: "Peignez, puis patchez",
-    note: "La grille de gauche est un simple tableau de booléens : la peindre est une mutation et rien de plus. Le DOM à droite ne bouge que quand update() s'exécute, et alors seules les cellules qui ont changé sont patchées.",
+    title: "Peignez, puis mettez à jour",
+    note: "La grille de gauche est un simple tableau de booléens : la peindre ne fait que modifier ce tableau. Le DOM à droite ne bouge que quand update() s'exécute, et alors seules les cellules qui ont changé sont mises à jour.",
   },
   Draw: {
     title: "Dessinez le logo",
-    note: "Le logo Nuclo est un spirographe : une roue qui roule à l'intérieur d'un anneau, deux stylos dessus. La roue, ses bras, les stylos et les lignes sont tous des fonctions d'un seul nombre, t. La ligne de temps et la boucle d'images ne font que fixer t ; update('draw') réexécute ce qui le lit.",
+    note: "Le logo Nuclo est un spirographe : une roue qui roule à l'intérieur d'un anneau, deux stylos dessus. La roue, ses bras, les stylos et les lignes sont tous des fonctions d'un seul nombre, t. La timeline et la boucle d'animation ne font que fixer t ; update('draw') réexécute ce qui le lit.",
   },
   Fireworks: {
     title: "Touchez le ciel",
@@ -307,7 +307,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Waves: {
     title: "Courbez la vague",
-    note: "Le d de chaque path est une simple fonction de trois nombres. Les curseurs et la boucle d'images ne changent que les nombres ; update('waves') réexécute les fonctions qui les lisent.",
+    note: "Le d de chaque path est une simple fonction de trois nombres. Les curseurs et la boucle d'animation ne changent que les nombres ; update('waves') réexécute les fonctions qui les lisent.",
   },
   Sort: {
     title: "Trié, jamais reconstruit",
@@ -319,14 +319,14 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Reflex: {
     title: "Touchez au vert",
-    note: "Une simple chaîne décide de ce que la scène affiche. Chaque branche when() est construite quand sa condition devient vraie et retirée quand elle cesse de l'être ; la classe de la scène est une fonction de la même chaîne.",
+    note: "Une simple chaîne de caractères détermine ce que la scène affiche. Chaque branche when() est construite quand sa condition devient vraie et retirée quand elle cesse de l'être ; la classe de la scène est une fonction de la même chaîne.",
   },
   Warp: {
     title: "Maintenez pour accélérer",
-    note: "onMount démarre la boucle d'images et retourne son nettoyage. Démontez le champ et Nuclo exécute ce nettoyage : la boucle s'arrête et rien ne reste en cours.",
+    note: "onMount démarre la boucle d'animation et renvoie une fonction de nettoyage. Démontez le champ et Nuclo exécute ce nettoyage : la boucle s'arrête et rien ne reste en cours.",
   },
   Life: {
     title: "Jeu de la vie",
-    note: "Le plateau est un simple tableau d'âges. Un tic calcule le suivant et appelle update() ; la classe de chaque cellule est une fonction de son âge, seules les cellules qui ont changé sont donc patchées.",
+    note: "Le plateau est un simple tableau d'âges. Chaque pas calcule le tableau suivant et appelle update() ; la classe de chaque cellule est une fonction de son âge, seules les cellules qui ont changé sont donc patchées.",
   },
 };

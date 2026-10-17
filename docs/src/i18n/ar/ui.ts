@@ -70,7 +70,7 @@ export const seo = {
     },
     docs: {
       title: "توثيق Nuclo - الدليل ومرجع API",
-      description: "توثيق Nuclo: التثبيت، وبُناة الوسوم، واستدعاء update() الصريح، وwhen() وlist()، والأحداث، ودورة الحياة، وSSR والترطيب، وCSS-in-TS محدد الأنواع، ومرجع API الكامل.",
+      description: "توثيق Nuclo: التثبيت، ودوال بناء الوسوم، واستدعاء update() الصريح، وwhen() وlist()، والأحداث، ودورة الحياة، وSSR والترطيب، وCSS-in-TS محدد الأنواع، ومرجع API الكامل.",
       keywords: "توثيق nuclo, مرجع API, البدء, update, list, when, on",
     },
     examples: {

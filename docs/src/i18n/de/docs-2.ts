@@ -70,7 +70,7 @@ css({ p: 16, m: 0, opacity: 0.5, leading: 1.5, z: 10, w: '50%' })
       <table>
         <thead><tr><th>Key</th><th>CSS</th></tr></thead>
         <tbody>
-          <tr><td><code>p</code>, <code>pt</code>, <code>pr</code>, <code>pb</code>, <code>pl</code></td><td>padding und jede Seite</td></tr>
+          <tr><td><code>p</code>, <code>pt</code>, <code>pr</code>, <code>pb</code>, <code>pl</code></td><td>padding für alle oder einzelne Seiten</td></tr>
           <tr><td><code>px</code> / <code>py</code></td><td>padding links und rechts / oben und unten</td></tr>
           <tr><td><code>m</code>, <code>mt</code>, <code>mr</code>, <code>mb</code>, <code>ml</code>, <code>mx</code>, <code>my</code></td><td>dasselbe für margin</td></tr>
           <tr><td><code>w</code>, <code>h</code>, <code>minW</code>, <code>maxW</code>, <code>minH</code>, <code>maxH</code></td><td>width, height sowie deren min und max</td></tr>
@@ -82,7 +82,7 @@ css({ p: 16, m: 0, opacity: 0.5, leading: 1.5, z: 10, w: '50%' })
           <tr><td><code>z</code> / <code>rounded</code> / <code>shadow</code> / <code>select</code></td><td>z-index / border-radius / box-shadow / user-select</td></tr>
         </tbody>
       </table>
-      <p>Diese Keys nehmen <code>true</code>:</p>
+      <p>Diese Schlüssel akzeptieren <code>true</code>:</p>
       <table>
         <thead><tr><th>Key</th><th>CSS</th></tr></thead>
         <tbody>
@@ -396,7 +396,7 @@ export default function Record(ctx: RouteContext, { outlet }: PageProps) {
   return div(Header(ctx), input({ id: 'notes' }), main(outlet()))
 }
 `)}
-      <p>Die Navigation zwischen Kindern baut den Parent nicht neu. Sein DOM-Knoten bleibt derselbe Knoten, sein Fokus, seine Scrollposition, sein halb ausgefülltes Input und jeder Zustand in seiner Closure überleben also.</p>
+      <p>Die Navigation zwischen Kindern baut den Parent nicht neu. Sein DOM-Knoten bleibt derselbe Knoten, sein Fokus, seine Scrollposition, sein halb ausgefülltes Eingabefeld und jeder Zustand in seiner Closure überleben also.</p>
       <ul>
         <li>Eine Seite ohne Kind-Route rendert aus ihrem Outlet nichts, ein Layout kann es also bedingungslos aufrufen. Ein Parent, der ein Kind hat und <code>outlet()</code> nie aufruft, verschluckt es.</li>
         <li>Es gibt keine Index-Routen. <code>'/'</code> ist das Layout selbst, der Parent-Pfad rendert also das Layout mit leerem Outlet statt einer separaten Index-Seite darin. Pack den Landing-Inhalt ins Layout oder gib ihm einen echten Kind-Pfad.</li>
@@ -409,7 +409,7 @@ await layer.push('./preview') // the usual shape: a child layer
 `)}
       <p><code>./x</code>, <code>../x</code>, <code>.</code> und <code>..</code> werden gegen den Pfad der aktuellen Route aufgelöst, nicht gegen das "Verzeichnis" der URL. Von <code>/invoices/42</code> aus ist <code>./preview</code> gleich <code>/invoices/42/preview</code>, wo ein Browser <code>/invoices/preview</code> gesagt hätte, und ein abschließender Slash in der URL ändert nichts. <code>../</code> geht ein Segment nach oben und stoppt an der Wurzel. Query und Hash werden mitgenommen, <code>base</code> wird wieder vorangestellt, und der aufgelöste absolute Pfad ist das, was in die History geht. Das ist dieselbe Abweichung von der URL-Auflösung, die React Router für <code>&lt;Link to="./x"&gt;</code> macht.</p>
       <ul>
-        <li>Nur <code>./</code> und <code>../</code> sind routen-relativ. Ein nacktes <code>preview</code> in einem href bleibt den gewöhnlichen Browserregeln überlassen.</li>
+        <li>Nur <code>./</code> und <code>../</code> sind routen-relativ. Ein einfaches <code>preview</code> in einem href bleibt den gewöhnlichen Browserregeln überlassen.</li>
         <li>Baue relative Links mit <code>router.href('./preview')</code>, statt <code>href="./preview"</code> von Hand zu schreiben. <code>href()</code> löst zur Renderzeit auf, das ausgelieferte Markup ist also absolut und bleibt korrekt für einen Crawler, für einen Mittelklick und bei deaktiviertem JavaScript.</li>
       </ul>
       <h3>Was erhalten bleibt, und was neu gebaut wird</h3>
@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>ein gepushter Layer</td><td>rendert die passende Seite allein. Seine Parents sind bereits in der Zeile darunter gemountet.</td></tr>
         </tbody>
       </table>
-      <p>Eine erhaltene Seite behält den <code>ctx</code>, mit dem sie gebaut wurde. Das ist die Bedeutung von <code>ctx</code> überall: Lies <code>router.*</code> für Live-Werte. Query-getriebener Zustand wie Filter, Paginierung und Tabs liest <code>router.search</code> in einem dynamischen Wert und schreibt mit <code>router.go('?page=2', { replace: true })</code>. Die Seite, ihr Fokus und ihr halb ausgefülltes Input bleiben, wo sie sind.</p>
+      <p>Eine erhaltene Seite behält den <code>ctx</code>, mit dem sie gebaut wurde. Das ist die Bedeutung von <code>ctx</code> überall: Lies <code>router.*</code> für Live-Werte. Query-getriebener Zustand wie Filter, Paginierung und Tabs liest <code>router.search</code> in einem dynamischen Wert und schreibt mit <code>router.go('?page=2', { replace: true })</code>. Die Seite, ihr Fokus und ihr halb ausgefülltes Eingabefeld bleiben, wo sie sind.</p>
     `,
       },
       {
@@ -495,16 +495,16 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
   return article(h1(post.title), p(post.body))
 }
 `)}
-      <p>Die Routentabelle bleibt unverändert. Der Loader reist mit der Seite. Er erhält den passenden <code>RouteContext</code>, <code>params</code>, <code>search</code> und <code>path</code> stehen also alle zur Verfügung. Er kann synchron oder asynchron sein, und er läuft auch auf dem Server, eine servergerenderte Seite kommt also mit ihren Daten bereits im HTML, statt nach der Hydration zu fetchen.</p>
+      <p>Die Routentabelle bleibt unverändert. Der Loader gehört zum Seitenmodul. Er erhält den passenden <code>RouteContext</code>, <code>params</code>, <code>search</code> und <code>path</code> stehen also alle zur Verfügung. Er kann synchron oder asynchron sein, und er läuft auch auf dem Server, eine servergerenderte Seite kommt also mit ihren Daten bereits im HTML, statt nach der Hydration zu fetchen.</p>
       <p><strong>Das Modul wird gecacht. Die Daten nicht.</strong> Der Chunk einer Route wird einmal geladen und wiederverwendet, ihr Loader läuft bei jeder Navigation erneut. Deshalb können <code>/blog/a</code> und <code>/blog/b</code> nicht verwechselt werden, und deshalb lässt sich ein fehlgeschlagener Loader einfach erneut versuchen.</p>
       <table>
         <thead><tr><th>Situation</th><th>Verhalten</th></tr></thead>
         <tbody>
           <tr><td>während er läuft</td><td><code>router.pending</code> ist true, und die Seite, auf der du warst, bleibt stehen</td></tr>
-          <tr><td>er wirft oder rejected</td><td>landet auf <code>router.error</code>. <code>go()</code> rejected weiterhin nie, und die Navigation kann wiederholt werden.</td></tr>
+          <tr><td>er wirft einen Fehler oder sein Promise wird abgelehnt</td><td>der Fehler wird in <code>router.error</code> gespeichert. Das Promise von <code>go()</code> wird weiterhin nie abgelehnt, und die Navigation kann wiederholt werden.</td></tr>
           <tr><td>während <code>start()</code></td><td>die Rejection kommt aus <code>start()</code>. Es gibt noch keine Route, auf der sie landen könnte.</td></tr>
           <tr><td>ein gepushter Layer</td><td>führt seinen eigenen Loader aus, mit eigenen Daten</td></tr>
-          <tr><td>der Idle-Preloader</td><td>wärmt nur Module vor. Er hat keinen Kontext zum Übergeben und würde Daten für eine Route holen, die du vielleicht nie öffnest.</td></tr>
+          <tr><td>der Idle-Preloader</td><td>lädt nur Module vorab. Er hat keinen Kontext zum Übergeben und würde Daten für eine Route holen, die du vielleicht nie öffnest.</td></tr>
           <tr><td>erneute Navigation zur selben URL</td><td>der Loader läuft erneut, und die Zeile wird neu gebaut. Eine Route ohne Loader behält ihre Zeile.</td></tr>
         </tbody>
       </table>
@@ -513,7 +513,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
 await router.go(router.url, { replace: true })   // runs load() again
 `)}
       <h3>Daten zusammen mit dem Chunk starten</h3>
-      <p>Ein vom Seitenmodul exportiertes <code>load</code> kann erst laufen, wenn dieses Modul angekommen ist, eine kalte Navigation holt also erst den Chunk, dann die Daten. Um beides gleichzeitig zu starten, deklariere den Loader in der Tabelle mit <code>withLoad()</code>:</p>
+      <p>Ein vom Seitenmodul exportiertes <code>load</code> kann erst laufen, wenn dieses Modul geladen ist, eine kalte Navigation holt also erst den Chunk, dann die Daten. Um beides gleichzeitig zu starten, deklariere den Loader in der Tabelle mit <code>withLoad()</code>:</p>
       ${code("routes.ts", `
 import { createRouter, withLoad } from 'nuclo-router'
 import { loadPost } from './data.ts'   // small, in the main bundle
@@ -525,16 +525,16 @@ createRouter({
       <p>Es ersetzt das eigene <code>load</code> des Moduls und läuft wie dieses bei jedem Besuch. Eine Rejection, während der Chunk noch lädt, landet wie jede andere auf <code>router.error</code>.</p>
       <p>Es gibt absichtlich keine Serialisierung von Serverdaten ins HTML. Das <code>load</code> des Clients läuft bei der Hydration erneut. Wenn das wichtig ist, lass den Server <code>route.data</code> ausgeben, zum Beispiel als <code>window.__DATA__</code>, und den Loader es zuerst nehmen. <code>route.data</code> sind nur die Daten der passenden Seite. Das Ergebnis des <code>load()</code> eines Parents ist nicht enthalten.</p>
       <h3>Code-Splitting und Preloading</h3>
-      <p>Der Wert einer Route ist immer eine Funktion, die die Seitenkomponente zurückgibt, die Komponente wird also lazy erreicht:</p>
+      <p>Der Wert einer Route ist immer eine Funktion, die die Seitenkomponente zurückgibt. Die Komponente wird also erst bei Bedarf geladen:</p>
       ${code("routes.ts", `
 '/a': () => import('./A.ts'),                      // default export (+ optional load)
 '/b': () => import('./B.ts').then(m => m.BPage),   // named export
 '/c': () => CPage,                                 // eager, not split
 '/d': () => ({ default: DPage, load: loadD }),     // eager, module-shaped
 `)}
-      <p>Nur die modulförmigen Varianten können einen <code>load</code>-Export tragen. Eine benannte Komponente mit <code>.then(m =&gt; m.BPage)</code> auszuwählen, gibt dem Router nur die Funktion.</p>
+      <p>Nur die Varianten, die ein Modul zurückgeben, können einen <code>load</code>-Export bereitstellen. Eine benannte Komponente mit <code>.then(m =&gt; m.BPage)</code> auszuwählen, gibt dem Router nur die Funktion.</p>
       <p>Jedes Modul wird einmal importiert und gecacht. Parallele Navigationen zur selben Route teilen sich ein <code>import()</code>. Sobald der User die Seite <code>idleTimeout</code> lang in Ruhe gelassen hat (standardmäßig eine Sekunde; keine Taps, Tasten, Mausrad oder Scrollen), werden die restlichen Routen im Hintergrund geladen, eine pro Idle-Slice (<code>requestIdleCallback</code>). Jede Eingabe, oder eine Navigation, auf die der User wartet, pausiert das, bis die Seite wieder idle ist.</p>
-      <p>Eine vorgeladene oder eager Route kippt <code>router.pending</code> nie und landet vor dem nächsten Paint: kein Spinner-Frame, kein Layout-Shift. <code>router.pending</code> ist nur true für ein Modul oder einen Loader, auf den gewartet werden muss, und die ausgehende Seite bleibt währenddessen auf dem Bildschirm. Ein Chunk, der nicht geladen werden kann, erscheint als <code>router.error</code>, nie als unbehandelte Rejection, und lässt sich einfach erneut versuchen.</p>
+      <p>Eine vorgeladene oder direkt verfügbare Route setzt <code>router.pending</code> nie auf true und wird vor dem nächsten Paint angezeigt: kein Spinner-Frame, kein Layout-Shift. <code>router.pending</code> ist nur true für ein Modul oder einen Loader, auf den gewartet werden muss, und die ausgehende Seite bleibt währenddessen auf dem Bildschirm. Ein Chunk, der nicht geladen werden kann, erscheint als <code>router.error</code>, nie als unbehandelte Rejection, und lässt sich einfach erneut versuchen.</p>
     `,
       },
       {
@@ -546,15 +546,15 @@ createRouter({
       <table>
         <thead><tr><th>Option</th><th>Default</th><th></th></tr></thead>
         <tbody>
-          <tr><td><code>base</code></td><td><code>'/'</code></td><td>URL-Präfix, unter dem die App ausgeliefert wird, etwa <code>'/docs'</code>. Es passt nur an einer Segmentgrenze: <code>/docs/intro</code> liegt innerhalb von <code>'/docs'</code>, <code>/docsearch</code> nicht. URLs außerhalb passen auf nichts, <code>start()</code> rejected also (deine serverseitige 404), und Links dorthin bleiben dem Browser überlassen.</td></tr>
+          <tr><td><code>base</code></td><td><code>'/'</code></td><td>URL-Präfix, unter dem die App ausgeliefert wird, etwa <code>'/docs'</code>. Es passt nur an einer Segmentgrenze: <code>/docs/intro</code> liegt innerhalb von <code>'/docs'</code>, <code>/docsearch</code> nicht. URLs außerhalb passen auf nichts, das Promise von <code>start()</code> wird also abgelehnt (deine serverseitige 404), und Links dorthin bleiben dem Browser überlassen.</td></tr>
           <tr><td><code>preload</code></td><td><code>true</code></td><td>Die Module der restlichen Routen im Hintergrund laden, sobald die Seite idle ist. <code>false</code> schaltet es ab.</td></tr>
           <tr><td><code>idleTimeout</code></td><td><code>1000</code></td><td>Millisekunden ohne Taps, Tasten, Mausrad oder Scrollen, bevor das Preloading startet oder nach User-Aktivität wieder aufgenommen wird.</td></tr>
           <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>, aufgerufen nach jeder aufgelösten Navigation im Browser, die erste eingeschlossen, sobald das DOM nachgezogen hat. <code>kind</code> ist <code>'start'</code>, <code>'push'</code>, <code>'replace'</code>, <code>'pop'</code> (Zurück, Vorwärts, <code>close()</code>) oder <code>'layer'</code>. Der Hook für <code>document.title</code>, Meta-Tags, Fokus, Scrollen und Analytics. Wird während SSR nie aufgerufen.</td></tr>
         </tbody>
       </table>
-      <p>Gibt den Router zurück: <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code> und jedes <code>Route</code>-Member außer <code>run()</code>, durchgereicht zur aktiven Route. Das ist im Browser die, die das letzte <code>start()</code> zurückgegeben hat, oder auf dem Server die, deren <code>run()</code> gerade ausgeführt wird. Ein Member ohne beides zu lesen, wirft. Die Routentabelle, der kompilierte Matcher und der Modul-Cache liegen auf dem Router und werden auf einem Server also über Requests hinweg geteilt.</p>
+      <p>Gibt den Router zurück: <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code> und jedes <code>Route</code>-Member außer <code>run()</code>, durchgereicht zur aktiven Route. Das ist im Browser die, die das letzte <code>start()</code> zurückgegeben hat, oder auf dem Server die, deren <code>run()</code> gerade ausgeführt wird. Werden Member gelesen, ohne dass eine dieser Bedingungen erfüllt ist, wird ein Fehler geworfen. Die Routentabelle, der kompilierte Matcher und der Modul-Cache liegen auf dem Router und werden auf einem Server also über Requests hinweg geteilt.</p>
       <h3><code>router.start(url?)</code></h3>
-      <p>Löst <code>url</code> (Default: <code>location.href</code> im Browser) zu ihren Seitenmodulen auf und gibt ein <code>Promise&lt;Route&gt;</code> zurück. Rejected, wenn nichts passt und die Tabelle keine <code>'*'</code>-Route hat. Auf einem Server ist das deine 404. Im Browser macht es die Route außerdem zur aktiven des Routers, hängt die <code>popstate</code>- und delegierten <code>click</code>-Listener an und plant das Preloading. Ein zweites <code>start()</code> zieht die vorherige Route für dich zurück. Auf dem Server berührt es nichts Geteiltes, rendere also innerhalb von <code>route.run()</code>.</p>
+      <p>Löst <code>url</code> (Default: <code>location.href</code> im Browser) zu ihren Seitenmodulen auf und gibt ein <code>Promise&lt;Route&gt;</code> zurück. Das Promise wird abgelehnt, wenn nichts passt und die Tabelle keine <code>'*'</code>-Route hat. Auf einem Server ist das deine 404. Im Browser macht es die Route außerdem zur aktiven des Routers, hängt die <code>popstate</code>- und delegierten <code>click</code>-Listener an und plant das Preloading. Ein zweites <code>start()</code> beendet die vorherige Route automatisch. Auf dem Server berührt es nichts Geteiltes, rendere also innerhalb von <code>route.run()</code>.</p>
       <h3><code>router.match(url?)</code></h3>
       <p>Löst eine URL gegen die Tabelle auf, ohne etwas zu laden: kein Import, keine History, keine Listener, keine Route. Gibt einen <code>RouteContext</code> zurück, oder <code>null</code>, wenn die URL außerhalb von <code>base</code> liegt, auf kein Pattern passt oder, im Browser, auf einem anderen Origin liegt. Nur absolute URLs, da die <code>./</code>-Auflösung eine aktive Route braucht.</p>
       ${code("example.ts", `
@@ -578,8 +578,8 @@ const owned = router.match(href) !== null
           <tr><td><code>error</code></td><td>der letzte fehlgeschlagene Ladevorgang, von der nächsten Navigation gelöscht</td></tr>
           <tr><td><code>data</code></td><td>was das <code>load()</code> der passenden Seite zurückgegeben hat, damit ein Server es serialisieren kann. Das eines Parents ist nicht enthalten.</td></tr>
           <tr><td><code>depth</code></td><td>wie viele Layer auf dem Stack liegen (1 für eine gewöhnliche Seite)</td></tr>
-          <tr><td><code>go(href, { replace })</code></td><td>navigieren und bei Bedarf das Modul laden. Rejected nie: Ein Modul, das fehlschlägt, durch Rejection oder Throw, landet auf <code>error</code>.</td></tr>
-          <tr><td><code>push(href)</code></td><td>eine Route als neuen Layer obenauf öffnen; wird mit dem aufgelöst, womit er schließt. Akzeptiert <code>./</code>. Rejected bei fehlendem Match oder fehlgeschlagenem Modul.</td></tr>
+          <tr><td><code>go(href, { replace })</code></td><td>navigieren und bei Bedarf das Modul laden. Das Promise wird nie abgelehnt: Schlägt das Laden eines Moduls durch eine Promise-Ablehnung oder einen geworfenen Fehler fehl, wird der Fehler in <code>error</code> gespeichert.</td></tr>
+          <tr><td><code>push(href)</code></td><td>eine Route als neuen Layer obenauf öffnen; wird mit dem aufgelöst, womit er schließt. Akzeptiert <code>./</code>. Das Promise wird abgelehnt, wenn keine Route passt oder das Laden des Moduls fehlschlägt.</td></tr>
           <tr><td><code>href(path)</code></td><td>einen Pfad mit <code>base</code> präfixen, für <code>a({ href })</code>. Löst <code>./</code> und <code>../</code> gegen die aktive Route auf.</td></tr>
           <tr><td><code>stop()</code></td><td>jeden Listener lösen, offene Layer verwerfen, das Outlet leeren. Idempotent. Eine gestoppte Route antwortet weiterhin mit ihrem letzten Match, und <code>go()</code> tut nichts.</td></tr>
           <tr><td><code>run(fn)</code></td><td><code>fn</code> mit dieser Route als aktiver Route des Routers aufrufen und ihr Ergebnis zurückgeben: <code>route.run(() =&gt; renderToString(App))</code> auf dem Server. Nur synchron. Die Route ist nicht mehr aktiv, sobald <code>fn</code> zurückkehrt.</td></tr>
@@ -654,16 +654,16 @@ if (created) { options.push(created); selected = created.id; update() }
 layer.close(created)   // resolves the push() above with the new option
 layer.close()          // dismissed: resolves with undefined
 `)}
-      <p>Layer lassen sich verschachteln. Ein Dialog, der seinen eigenen Dialog braucht, ruft <code>layer.push()</code> auf und awaitet es, ohne Referenz auf die Route.</p>
+      <p>Layer lassen sich verschachteln. Ein Dialog, der einen weiteren Dialog braucht, ruft <code>layer.push()</code> auf und wartet mit await auf das Ergebnis. Eine Referenz auf die Route ist dafür nicht nötig.</p>
       <ul>
-        <li><strong>Die URL ist der oberste Layer.</strong> <code>push()</code> fügt einen History-Eintrag hinzu, ein Layer ist also verlinkbar, und Zurück schließt ihn und löst sein <code>push()</code> als verworfen auf, genau wie Abbrechen. Zurück und <code>close()</code> sind ein Codepfad: <code>close()</code> merkt sich sein Ergebnis und geht in der History zurück, und die Tiefe in <code>history.state</code> ist die Autorität. Browser behalten etwa 50 Einträge pro Tab, nach einem langen Weg durch Layer kann der Eintrag darunter also weg sein: Dann schließt <code>close()</code> die Layer an Ort und Stelle und überschreibt den aktuellen Eintrag mit der Seite, die sichtbar bleibt.</li>
+        <li><strong>Die URL ist der oberste Layer.</strong> <code>push()</code> fügt einen History-Eintrag hinzu, ein Layer ist also verlinkbar, und Zurück schließt ihn und löst sein <code>push()</code> als verworfen auf, genau wie Abbrechen. Zurück und <code>close()</code> sind ein Codepfad: <code>close()</code> merkt sich sein Ergebnis und geht in der History zurück, und die Tiefe in <code>history.state</code> ist dabei maßgeblich. Browser behalten etwa 50 Einträge pro Tab, nach einem langen Weg durch Layer kann der Eintrag darunter also weg sein: Dann schließt <code>close()</code> die Layer an Ort und Stelle und überschreibt den aktuellen Eintrag mit der Seite, die sichtbar bleibt.</li>
         <li><strong>Eine gewöhnliche Navigation leert den Stack.</strong> Ein Link-Klick oder <code>go()</code> ist kein Layer. Es ersetzt alles und verwirft jeden offenen Layer, kein Aufrufer bleibt also wartend zurück.</li>
-        <li><strong>Ein kalter Aufruf ist eine eigenständige Seite.</strong> Die URL benennt den obersten Layer, aber nicht den Stack darunter, das direkte Öffnen der URL eines Layers rendert ihn also bei Tiefe 1 mit <code>layer.depth === 0</code> und einem wirkungslosen <code>close()</code>. Eine gepushte Route muss für sich allein Sinn ergeben. Verzweige auf <code>layer.depth</code>, um einen Link hinaus anzubieten statt eines toten Abbrechen-Buttons.</li>
+        <li><strong>Beim direkten Aufruf entsteht eine eigenständige Seite.</strong> Die URL benennt den obersten Layer, aber nicht den Stack darunter, das direkte Öffnen der URL eines Layers rendert ihn also bei Tiefe 1 mit <code>layer.depth === 0</code> und einem wirkungslosen <code>close()</code>. Eine gepushte Route muss für sich allein Sinn ergeben. Verzweige auf <code>layer.depth</code>, um einen Link hinaus anzubieten statt eines toten Abbrechen-Buttons.</li>
         <li><strong>Das Promise kann einen Reload nicht überleben</strong>, weil es in einer Closure lebt. Behandle das Ergebnis als Abkürzung durch einen Ablauf, der auch auf dem langen Weg funktioniert.</li>
         <li><strong>Nichts bleibt wartend zurück.</strong> <code>stop()</code> verwirft jeden offenen Layer, und ein von einer Navigation aufgegebener Layer wird mit <code>undefined</code> aufgelöst.</li>
       </ul>
       <h3>Leave-Guards</h3>
-      <p>Eine Seite, die etwas Bewahrenswertes hält, etwa ein halb ausgefülltes Formular, registriert einen Guard. Er wird gefragt, bevor die Seite verworfen wird, und die Rückgabe von <code>false</code> (oder einem Promise darauf) behält die Seite:</p>
+      <p>Eine Seite mit Daten, die erhalten bleiben sollen, etwa einem halb ausgefüllten Formular, registriert einen Guard. Er wird gefragt, bevor die Seite verworfen wird, und die Rückgabe von <code>false</code> (oder einem Promise darauf) behält die Seite:</p>
       ${code("pages/Edit.ts", `
 import type { PageProps, RouteContext } from 'nuclo-router'
 
@@ -674,9 +674,9 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
 }
 `)}
       <ul>
-        <li><strong>Nur wenn die Seite geht.</strong> Eine Kind-Navigation unter einem Layout, oder eine Query- oder Hash-Änderung, die die Seite behält, fragt nicht. Ein Guard lebt und stirbt mit seiner Seite, es gibt also nichts abzumelden.</li>
+        <li><strong>Nur beim Verlassen der Seite.</strong> Eine Kind-Navigation unter einem Layout, oder eine Query- oder Hash-Änderung, die die Seite behält, fragt nicht. Ein Guard lebt und stirbt mit seiner Seite, es gibt also nichts abzumelden.</li>
         <li><strong>Jeder Weg hinaus.</strong> Ein Link, <code>go()</code>, Zurück und Vorwärts, das <code>close()</code> eines Layers, und <code>go()</code> zu einer URL, die dem Router nicht gehört (Verlassen der App, wobei <code>to</code> dann <code>null</code> ist). Ein abgelehntes Zurück oder Vorwärts wird rückgängig gemacht, die Adressleiste bleibt also auf der Seite. Das Schließen des Tabs oder ein Reload ist Sache von <code>beforeunload</code>.</li>
-        <li><strong><code>to</code></strong> ist der <code>RouteContext</code>, zu dem die Navigation führt. Guards laufen von innen nach außen und stoppen bei der ersten Ablehnung. Einer, der wirft, behält die Seite. <code>close(result)</code> geht ebenfalls durch den Guard, setz dein Flag also zurück, bevor du mit einem Ergebnis schließt.</li>
+        <li><strong><code>to</code></strong> ist der <code>RouteContext</code>, zu dem die Navigation führt. Guards laufen von innen nach außen und stoppen bei der ersten Ablehnung. Wirft ein Guard einen Fehler, bleibt die Seite erhalten. <code>close(result)</code> geht ebenfalls durch den Guard, setz dein Flag also zurück, bevor du mit einem Ergebnis schließt.</li>
         <li>Der Router kann nur History-Einträge zurückgehen, die er selbst geschrieben hat. Ein Zurück oder Vorwärts auf einen, den er nicht geschrieben hat, etwa einen nativen <code>#fragment</code>-Link oder das <code>pushState</code> eines anderen Skripts, wird nicht gefragt.</li>
       </ul>
     `,
@@ -722,14 +722,14 @@ const docs = createRouter(docsRoutes, { base: '/docs' })
 const hit = docs.match()                       // { pattern: '/:topic', … }
 const page = await docsRoutes[hit.pattern]()   // the app's own lookup
 `)}
-      <p>Ihn nie zu starten, ist der Punkt. <code>start()</code> ist das, was die Listener anhängt, und zwei gestartete Router geraten in Konflikt. Der Preis ist, dass das Kind die Auflösung besitzt, Routen-Loader, die ein gestarteter Router ausführt, musst du also selbst aufrufen. Diese Form baut außerdem die Shell neu, wenn sich der Rest ändert, weil der Router eine Route sieht und die Shell den Rest selbst auflöst. Eine verschachtelte Tabelle ist das, was dir einen Parent verschafft, den der Router gemountet hält, bevorzuge sie also, sofern das Feature nicht wirklich einen eigenen Router, eine eigene base und einen eigenen Fallback braucht.</p>
+      <p>Entscheidend ist, diesen Router nie zu starten. <code>start()</code> ist das, was die Listener anhängt, und zwei gestartete Router geraten in Konflikt. Der Preis ist, dass der untergeordnete Router die Auflösung übernimmt, Routen-Loader, die ein gestarteter Router ausführt, musst du also selbst aufrufen. Diese Form baut außerdem die Shell neu, wenn sich der Rest ändert, weil der Router eine Route sieht und die Shell den Rest selbst auflöst. Eine verschachtelte Tabelle ist das, was dir einen Parent verschafft, den der Router gemountet hält, bevorzuge sie also, sofern das Feature nicht wirklich einen eigenen Router, eine eigene base und einen eigenen Fallback braucht.</p>
     `,
       },
       {
         id: "router-multi",
         title: "Mehrere Router & kombiniertes Laden",
         content: `
-      <p>Eine App kann so viele Router haben, wie sie Bereiche hat. Die Regel, die das einfach hält: <strong>Starte genau einen pro Dokument</strong>, und lass jeden anderen Router ungestartet, der URLs mit <code>match()</code> auflöst. Nur der gestartete Router besitzt URL, History und den Click-Listener. Die übrigen sind Tabellen, die du befragst — und jeder Bereich kann nach eigener Uhr laden, mit eigenem Spinner.</p>
+      <p>Eine App kann so viele Router haben, wie sie Bereiche hat. Die Regel, die das einfach hält: <strong>Starte genau einen pro Dokument</strong>, und lass jeden anderen Router ungestartet, der URLs mit <code>match()</code> auflöst. Nur der gestartete Router besitzt URL, History und den Click-Listener. Die übrigen sind Tabellen, die du befragst — und jeder Bereich kann unabhängig laden, mit eigenem Spinner.</p>
       <h3>Kombiniertes Laden: eine Kette von Loadern</h3>
       <p>Jede Seite auf einer passenden Kette darf <code>load()</code> exportieren. Bei einer kalten Navigation zu einer Kind-Route laufen der Loader des Layouts und der Loader der Seite <strong>parallel</strong>, und ein einziges <code>router.pending</code> deckt die ganze Kette ab: Die vorherige Seite bleibt auf dem Bildschirm, bis das Paar aufgelöst ist, ein halb geladener Baum wird also nie gezeichnet. Jede Komponente erhält ihre eigenen <code>data</code>:</p>
       ${code("routes.ts", `
@@ -766,7 +766,7 @@ export default function Section(_ctx: RouteContext, { data }: PageProps<SectionD
   return article(h2(data.section), ul(...data.items.map((i) => li(i))))
 }
 `)}
-      <p>Beide Loader starten zusammen, nicht nacheinander. <code>router.pending</code> ist true, solange auf einen von beiden gewartet wird, und sonst false — eine vorgeladene oder eager Route kippt es nie. Der Wechsel zwischen Sections behält das Layout, es läuft also nur der Loader der Section erneut; die Daten des Layouts, sein DOM und ein halb ausgefülltes Input überleben alle. Die erneute Navigation zur selben URL führt den Loader des Blatts erneut aus und baut dessen Zeile neu, genau wie bei einer einzelnen Seite.</p>
+      <p>Beide Loader starten zusammen, nicht nacheinander. <code>router.pending</code> ist true, solange auf einen von beiden gewartet wird, und sonst false — eine vorgeladene oder direkt verfügbare Route setzt es nie auf true. Der Wechsel zwischen Sections behält das Layout, es läuft also nur der Loader der Section erneut; die Daten des Layouts, sein DOM und ein halb ausgefülltes Eingabefeld überleben alle. Die erneute Navigation zur selben URL führt den Loader des Blatts erneut aus und baut dessen Zeile neu, genau wie bei einer einzelnen Seite.</p>
       <h3>Mehrfaches Laden: ein zweiter Router mit eigenem Spinner</h3>
       <p>Ein unabhängiger Bereich — eine Sidebar, ein Tray, eine Live-Region — bekommt einen eigenen Router, erzeugt, aber nie gestartet, und sein eigenes Lade-Flag. <code>router.pending</code> gehört dem gestarteten Router und sagt nichts über diesen Bereich aus, die beiden können also nebeneinander laden, und jeder kann zuerst fertig werden:</p>
       ${code("sidebar.ts", `
@@ -820,7 +820,7 @@ createRouter(routes, {
         content: `
       <p>Der delegierte Listener navigiert bei einem Linksklick auf ein <code>&lt;a href&gt;</code>, einschließlich eines SVG-<code>&lt;a&gt;</code> und Klicks auf alles, was darin verschachtelt ist, und hält sich bei allem anderen zurück: Klicks mit Modifier-Taste und Mittelklicks, ein <code>target</code> ungleich <code>_self</code>, <code>download</code>, <code>rel="external"</code>, Cross-Origin-hrefs, reine Hash-Links auf der aktuellen Seite, Pfade außerhalb von <code>base</code>, Pfade, auf die keine Route passt (eine servergerenderte 404 bleibt also erreichbar), und jedes Event, auf dem ein App-Handler bereits <code>preventDefault()</code> aufgerufen hat. Nimm einen Link explizit mit <code>data-nuclo-router="off"</code> heraus.</p>
       <h3>Scrollen</h3>
-      <p>Eine gepushte Navigation behält die aktuelle Scrollposition. Hat die neue URL einen <code>#hash</code>, der auf ein Element der Seite passt, wird dieses Element in den sichtbaren Bereich gescrollt. <code>popstate</code> überlässt das Scrollen dem Browser. Um neue Seiten oben zu landen, mach das in <code>onNavigate</code>, das sagt, wie die Navigation zustande kam:</p>
+      <p>Eine gepushte Navigation behält die aktuelle Scrollposition. Hat die neue URL einen <code>#hash</code>, der auf ein Element der Seite passt, wird dieses Element in den sichtbaren Bereich gescrollt. <code>popstate</code> überlässt das Scrollen dem Browser. Um neue Seiten am Seitenanfang anzuzeigen, nutze <code>onNavigate</code>, das sagt, wie die Navigation zustande kam:</p>
       ${code("routes.ts", `
 let shown = ''
 createRouter(routes, {
@@ -833,10 +833,10 @@ createRouter(routes, {
 `)}
       <h3>Hinweise</h3>
       <ul>
-        <li><strong>Nichts wird festgehalten.</strong> Die Route hält die Seitenfunktion und ihren Kontext, nie DOM. Wegnavigieren gibt die vorherige Seite frei. <code>stop()</code> gibt die Listener und jeden laufenden Ladevorgang frei und löscht <code>pending</code>, eine zurückgezogene Route lässt also nie einen Spinner hängen. Ein Modul, das nach <code>stop()</code> aufgelöst wird, wird stillschweigend verworfen.</li>
-        <li><strong>Nebenläufigkeitssicher auf dem Server.</strong> <code>start()</code> gibt Zustand pro Request zurück, und <code>run()</code> begrenzt ihn auf einen synchronen Render, verschränkte Requests können also nicht die Route des anderen sehen. Nur der Modul-Cache wird geteilt. Der Scope endet, wenn die Funktion von <code>run()</code> zurückkehrt. <code>renderToString()</code> ist synchron, das reicht also. Ein asynchroner oder streamender Render müsste die Route über <code>await</code>s hinweg mitführen, was <code>run()</code> nicht tut.</li>
+        <li><strong>Nichts wird festgehalten.</strong> Die Route hält die Seitenfunktion und ihren Kontext, nie DOM. Wegnavigieren gibt die vorherige Seite frei. <code>stop()</code> gibt die Listener und jeden laufenden Ladevorgang frei und löscht <code>pending</code>, eine gestoppte Route lässt also nie einen Spinner hängen. Ein Modul, das nach <code>stop()</code> aufgelöst wird, wird stillschweigend verworfen.</li>
+        <li><strong>Sicher bei parallelen Serveranfragen.</strong> <code>start()</code> gibt Zustand pro Request zurück, und <code>run()</code> begrenzt ihn auf einen synchronen Render, verschränkte Requests können also nicht die Route des anderen sehen. Nur der Modul-Cache wird geteilt. Der Scope endet, wenn die Funktion von <code>run()</code> zurückkehrt. <code>renderToString()</code> ist synchron, das reicht also. Ein asynchroner oder streamender Render müsste die Route über <code>await</code>s hinweg mitführen, was <code>run()</code> nicht tut.</li>
         <li><strong>Scroll-Wiederherstellung bei <code>popstate</code></strong> ist Sache des Browsers (<code>scrollRestoration</code>), nicht des Routers.</li>
-        <li><strong>Starte einen Router pro Dokument.</strong> Jedes <code>start()</code> fügt seinen eigenen delegierten <code>click</code>-Listener hinzu, und das <code>start()</code> eines zweiten Routers zieht den ersten nicht zurück. Nur ein zweites <code>start()</code> auf demselben Router tut das. Um eine URL gegen eine andere Tabelle aufzulösen, erzeuge einen Router und rufe nur <code>match()</code> auf. Es hängt nichts an. Ein unabhängiger Bereich kann so sein eigenes Laden neben dem <code>pending</code> der Route betreiben. Siehe <a href="#router-multi">Mehrere Router &amp; kombiniertes Laden</a>.</li>
+        <li><strong>Starte einen Router pro Dokument.</strong> Jedes <code>start()</code> fügt seinen eigenen delegierten <code>click</code>-Listener hinzu, und das <code>start()</code> eines zweiten Routers stoppt den ersten nicht. Nur ein zweites <code>start()</code> auf demselben Router tut das. Um eine URL gegen eine andere Tabelle aufzulösen, erzeuge einen Router und rufe nur <code>match()</code> auf. Es hängt nichts an. Ein unabhängiger Bereich kann so sein eigenes Laden neben dem <code>pending</code> der Route betreiben. Siehe <a href="#router-multi">Mehrere Router &amp; kombiniertes Laden</a>.</li>
         <li><strong>Absichtlich nicht enthalten:</strong> Hash- und Memory-History, da die Route im Pathname lebt und ein Server jede Route ausliefern muss; zwei unabhängig geroutete Bereiche aus einer URL, da eine Seite mit <code>into()</code> zwar mehrere Regionen füllen kann, sie aber alle zu der einen passenden Route gehören — ein unabhängiger Bereich kann trotzdem seinen eigenen ungestarteten Router und sein eigenes Laden behalten, wie in <a href="#router-multi">Mehrere Router &amp; kombiniertes Laden</a>; und Hover-Preloading, das du bekommst, indem du den eigenen Loader der Route aus einem <code>mouseenter</code> aufrufst.</li>
       </ul>
       <h3>Beispiele</h3>
@@ -905,7 +905,7 @@ async function loadData() {
         content: `
       <ul>
         <li><strong>Änderungen bündeln.</strong> Ändere den gesamten nötigen Zustand, dann ruf <code>update()</code> einmal auf.</li>
-        <li><strong>Dynamische Werte schnell und pur halten.</strong> Sie laufen alle bei jedem <code>update()</code>.</li>
+        <li><strong>Dynamische Werte schnell und frei von Seiteneffekten halten.</strong> Sie laufen alle bei jedem <code>update()</code>.</li>
         <li><strong>Nimm <code>scope()</code></strong> für kleine, häufige Updates, etwa Tippen oder Timer.</li>
         <li><strong>Ins Dokument rendern.</strong> Knoten, die beim <code>update()</code> nicht im Dokument sind, hören auf, sich zu aktualisieren.</li>
         <li><strong>Nimm <code>when()</code> und <code>list()</code></strong> für Kinder, die sich ändern, nicht eine Funktion, die Knoten zurückgibt.</li>
@@ -940,7 +940,7 @@ async function loadData() {
         <li><a href="#api-force-update"><code>forceUpdate()</code></a>: Komponenten erneut aufrufen und das DOM patchen.</li>
         <li><a href="#api-styling"><code>css(name?, style)</code></a>: generierte Klassen aus einem Style-Objekt.</li>
         <li><a href="#api-cx"><code>cx(...inputs)</code></a>: Styles kombinieren, später gewinnt.</li>
-        <li><a href="#api-create-css"><code>createCss(theme)</code></a>: themed <code>css</code>, <code>cx</code>, <code>variants</code>, <code>keyframes</code> und <code>globalStyle</code>.</li>
+        <li><a href="#api-create-css"><code>createCss(theme)</code></a>: an ein Theme gebundene Versionen von <code>css</code>, <code>cx</code>, <code>variants</code>, <code>keyframes</code> und <code>globalStyle</code>.</li>
         <li><a href="#api-variants"><code>variants(config)</code></a>: Styles aus Optionen.</li>
         <li><a href="#api-keyframes"><code>keyframes(frames)</code></a> und <a href="#api-keyframes"><code>globalStyle(selector, style)</code></a>.</li>
       </ul>

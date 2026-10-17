@@ -370,7 +370,7 @@ const search = input(on('mount', (el) => el.focus()))
         <li><code>onMount</code> が関数を返した場合、その関数は破棄時に、要素の <code>onDestroy</code> コールバックの後に実行されます。</li>
         <li><code>onDestroy</code> は Nuclo が要素を削除するときに実行されます: <code>list()</code> の行が削除されたとき、<code>when()</code> のブランチが切り替わったとき、<code>into()</code> がリージョンから離れたとき、<code>forceUpdate()</code> が要素を破棄したときです。削除の直前に実行されるため、要素はまだドキュメント内にあります。</li>
       </ul>
-      <h3>生の DOM 操作による削除</h3>
+      <h3>DOM を直接操作して削除する場合</h3>
       <p><code>node.remove()</code> や <code>innerHTML = ''</code> で要素を自分で削除した場合、その <code>onDestroy</code> とクリーンアップは実行されず、タイマーは動き続けます。Nuclo に <code>unmount()</code> はありません。クリーンアップを伴ってアプリを破棄するには、<code>when()</code> でラップします。</p>
       ${code("main.ts", `
 let mounted = true
@@ -433,7 +433,7 @@ update() // one pass, both changes
         id: "dynamic-functions",
         title: "動的な値",
         content: `
-      <p><strong>パラメーターを持たない</strong>関数は<strong>動的な値</strong>です。Nuclo は要素の構築時に 1 回実行し、その後 <code>update()</code> ごとに再実行します。動的な値は、テキストの子要素、属性値、<code>style</code>、<code>className</code> に使います。出現・消滅・繰り返しのある子要素には、<a href="#api-when"><code>when()</code></a> と <a href="#api-list"><code>list()</code></a> を使います。</p>
+      <p><strong>パラメーターを持たない</strong>関数は<strong>動的な値</strong>です。Nuclo は要素の構築時に 1 回実行し、その後 <code>update()</code> ごとに再実行します。動的な値は、テキストの子要素、属性値、<code>style</code>、<code>className</code> に使います。表示の切り替えや繰り返しを伴う子要素には、<a href="#api-when"><code>when()</code></a> と <a href="#api-list"><code>list()</code></a> を使います。</p>
       ${code("example.ts", `
 let name = 'Alice'
 let busy = false
@@ -469,7 +469,7 @@ const Profile = () =>
         id: "api-update",
         title: "update()",
         content: `
-      <p>ページ上のすべての動的な値に対して、同期的なパスを 1 回実行します。id を渡した場合は、<a href="#api-scope"><code>scope()</code></a> でその id が付けられた要素の内側だけを更新します。各パスは次のステップを順に実行します。</p>
+      <p>ページ上のすべての動的な値を、同期的に 1 回ずつ評価します。id を渡した場合は、<a href="#api-scope"><code>scope()</code></a> でその id が付けられた要素の内側だけを更新します。1 回の更新では、次のステップを順に実行します。</p>
       <ol>
         <li><code>list()</code>: アイテムを再度読み取り、行を追加・移動・削除します。</li>
         <li><code>when()</code>: 条件を再度確認します。ブランチは、別のブランチがアクティブになったときにだけ再構築されます。</li>
@@ -481,7 +481,7 @@ const Profile = () =>
         <li><strong>すべてを実行します。</strong>データが変わっていなくても、呼び出しごとにすべての動的な値が実行されます。スキップされるのは DOM への書き込みだけです。動的な値は高速に、副作用のないものにしてください。</li>
         <li><strong>ドキュメント内のノードのみ。</strong><code>update()</code> の実行時にノードがドキュメント内にない場合、Nuclo はそのノードの追跡を停止します。後で追加しても、再び更新されることはありません。これは <code>list()</code> と <code>when()</code> にも当てはまります。ドキュメント内にあるコンテナーへレンダリングしてください。</li>
         <li><strong>静的な値は変化しません。</strong>プレーンな文字列と属性値は、要素の構築時に固定されます。それらを再構築するには、<a href="#api-force-update"><code>forceUpdate()</code></a> を使います。</li>
-        <li><strong>エラー。</strong>テキストと属性のエラーはキャッチされ、パスは続行されます。<code>when()</code> の条件が例外を投げた場合、エラーはログに出力され、その <code>when()</code> は更新を停止します。<code>list()</code> の <code>items</code> または <code>renderItem</code> 関数が例外を投げた場合、エラーは <code>update()</code> の外へ伝播し、残りのステップは実行されません。</li>
+        <li><strong>エラー。</strong>テキストと属性のエラーはキャッチされ、更新処理は続行されます。<code>when()</code> の条件が例外を投げた場合、エラーはログに出力され、その <code>when()</code> は更新を停止します。<code>list()</code> の <code>items</code> または <code>renderItem</code> 関数が例外を投げた場合、エラーは <code>update()</code> の外へ伝播し、残りのステップは実行されません。</li>
         <li><strong>サーバー。</strong><code>update()</code> はサーバー上では何もしません。</li>
       </ul>
     `,
@@ -604,7 +604,7 @@ update() // same <li>, its class is now "done"
       <h3>インデックス</h3>
       <p><code>index</code> は、行が作成された時点のアイテムの位置です。行が移動しても更新されません。現在の位置が必要な場合は、動的な値を使います: <code>li(() =&gt; \`\${names.indexOf(name) + 1}. \${name}\`)</code>。</p>
       <h3>イテラブル</h3>
-      <p>任意のイテラブルが使えます: 配列、<code>Set</code>、ジェネレーター、<code>map.values()</code>。毎回同じ配列や <code>Set</code> を返しても問題ありません。ジェネレーターや <code>map.values()</code> のようなイテレーターは 1 回のパスで消費されるため、呼び出しごとに <code>items()</code> の内側で作成してください。<code>Map</code> を直接イテレートすると毎回新しい <code>[key, value]</code> 配列が作られ、すべての行が再構築されます。代わりに <code>map.values()</code> を使ってください。</p>
+      <p>任意のイテラブルが使えます: 配列、<code>Set</code>、ジェネレーター、<code>map.values()</code>。毎回同じ配列や <code>Set</code> を返しても問題ありません。ジェネレーターや <code>map.values()</code> のようなイテレーターは 1 回の更新で消費されるため、呼び出しごとに <code>items()</code> の内側で作成してください。<code>Map</code> を直接イテレートすると毎回新しい <code>[key, value]</code> 配列が作られ、すべての行が再構築されます。代わりに <code>map.values()</code> を使ってください。</p>
       <h3>配置</h3>
       <p>行は、兄弟要素の中で <code>list()</code> が置かれた位置に、2 つのコメントマーカーの間に現れます。親の他の子要素には触れません。<code>list()</code> は SVG ビルダーの内側でも動作します。</p>
     `,
@@ -630,10 +630,10 @@ render(() => div(Layout(), Article()))
       <ul>
         <li><code>into()</code> は、書かれた場所にはコメントだけを残します。そのコンテンツはリージョンのマーカーの間にレンダリングされます。</li>
         <li>順序は関係ありません。リージョンより前に構築された <code>into()</code> は待機し、リージョンが構築された瞬間に表示されます。ビューは書かれた順序で表示されます。</li>
-        <li>コンテンツはビューと同じ寿命を持ちます。<code>into()</code> を保持する <code>when()</code> が閉じたり、その <code>list()</code> の行が削除されたりすると、コンテンツはリージョンから離れます。再度開くと、2 つではなく 1 つのコピーが追加されます。</li>
+        <li>コンテンツのライフサイクルはビューと同じです。<code>into()</code> を保持する <code>when()</code> が閉じたり、その <code>list()</code> の行が削除されたりすると、コンテンツはリージョンから離れます。再度開くと、2 つではなく 1 つのコピーが追加されます。</li>
         <li>リージョンがなくなると、たとえばその <code>when()</code> が閉じると、そのビューは再び待機します。後で同じ id で構築されたリージョンがそれらを表示します。</li>
         <li>どのリージョンにも一致しない id の <code>into()</code> は何もレンダリングせず、エラーも発生しないため、スペルを確認してください。</li>
-        <li>id はツリー内で一意です。生存中の id で 2 つ目のリージョンを構築すると、警告がログに出力されます。</li>
+        <li>id はツリー内で一意です。すでに存在するリージョンと同じ id で 2 つ目のリージョンを構築すると、警告がログに出力されます。</li>
         <li>リージョンは<a href="#api-ssr">サーバーサイドレンダリング</a>でも動作します。<code>hydrate()</code> では、各ビューは再構築する代わりに、サーバーがレンダリングした HTML を引き継ぎます。</li>
       </ul>
       <h3>オプション</h3>
@@ -712,8 +712,8 @@ const App = () =>
     ),
   )
 `)}
-      <h3>ページ自身が設定するページタイトル</h3>
-      <p>デフォルトの <code>type: 'latest'</code> では、最新のビューが優先されます。見出しはレイアウトが所有し、開いているページがその名前を決めます。<code>into('title', …)</code> を持たないページでは <code>empty</code> のテキストが残ります。</p>
+      <h3>ページ側でタイトルを設定する</h3>
+      <p>デフォルトの <code>type: 'latest'</code> では、最新のビューが優先されます。見出し要素はレイアウトに置き、そのテキストは開いているページが決めます。<code>into('title', …)</code> を持たないページでは <code>empty</code> のテキストが残ります。</p>
       ${code("title.ts", `
 let page: 'home' | 'settings' = 'home'
 
@@ -872,7 +872,7 @@ hydrate(App, document.getElementById('root')!)
       <ul>
         <li>サーバーと同じコンポーネント、同じデータを使ってください。</li>
         <li>専用のコンテナーへハイドレーションしてください。アプリのルートはその最初のノードでなければなりません。ただし空白は問題ありません。別のノードが先にある場合、Nuclo はそのノードを置き換え、サーバー側のコピーは残されます。</li>
-        <li><code>render()</code> と同様に、<code>forceUpdate()</code> が後でルートを再構築できるよう、<code>App()</code> ではなく <code>App</code> を渡してください。<code>App</code> はパラメーターを取ってはいけません。オプショナルなパラメーターがある場合、<code>hydrate()</code> は何も取り付けずに静かに終了します。props を取るコンポーネントはラップしてください: <code>hydrate(() =&gt; Page(props), root)</code>。</li>
+        <li><code>render()</code> と同様に、<code>forceUpdate()</code> が後でルートを再構築できるよう、<code>App()</code> ではなく <code>App</code> を渡してください。<code>App</code> はパラメーターを取ってはいけません。オプショナルなパラメーターがある場合、<code>hydrate()</code> は何も取り付けず、エラーも出さずに終了します。props を取るコンポーネントはラップしてください: <code>hydrate(() =&gt; Page(props), root)</code>。</li>
         <li>サーバー側の HTML がない場合は、<code>render()</code> を使ってください。</li>
       </ul>
       <h3>サーバーとクライアントが異なる場合</h3>

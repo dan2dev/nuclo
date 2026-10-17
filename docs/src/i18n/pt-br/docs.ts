@@ -15,7 +15,7 @@ export const LABELS = {
   facts: { release: "Versão atual", builders: "Construtores de tags", gzipped: "Núcleo, em gzip", model: "Modelo de runtime", modelValue: "Explícito" },
   filterSections: "Filtrar seções",
   filter: "Filtrar",
-  closeNavigator: "Fechar navegador",
+  closeNavigator: "Fechar navegação",
   docsSections: "Seções da documentação",
   docsNavigation: "Navegação da documentação",
   onThisPage: "Nesta página",

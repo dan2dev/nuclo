@@ -2,7 +2,7 @@ import type { DocGroupText } from "../../pages/docs/content.ts";
 import { GROUPS_1 } from "./docs-1.ts";
 import { GROUPS_2 } from "./docs-2.ts";
 
-export const GROUPS: DocGroupText[] = [...GROUPS_1, ...GROUPS_2];
+export const GROUPS: DocGroupText[] = [...GROUPS_1,...GROUPS_2];
 
 // ── The docs page's chrome ──
 export const LABELS = {

@@ -28,19 +28,19 @@ render(App, document.getElementById('app')!)
 `)}
       <h3>心智模型</h3>
       <ol>
-        <li>用标签构建器构建 UI。</li>
-        <li>每个依赖状态的值都传一个函数。</li>
+        <li>用标签构建函数构建 UI。</li>
+        <li>用函数传入每个依赖状态的值。</li>
         <li>用普通 JavaScript 修改状态。</li>
-        <li>调用 <code>update()</code>。Nuclo 重新运行这些函数并修补 DOM。</li>
+        <li>调用 <code>update()</code>。Nuclo 重新运行这些函数，并更新 DOM 中发生变化的部分。</li>
       </ol>
-      <p>修改变量不会触碰 DOM。只有在你调用 <code>update()</code> 时页面才会变化。</p>
+      <p>修改变量不会改变 DOM。只有在你调用 <code>update()</code> 时页面才会变化。</p>
     `,
       },
       {
         id: "quick-start",
         title: "快速开始",
         content: `
-      <p><code>create-nuclo</code> 会搭建一个为 Nuclo 准备好的 Vite + TypeScript 项目：</p>
+      <p><code>create-nuclo</code> 会搭建一个已配置好 Nuclo 的 Vite + TypeScript 项目：</p>
     `,
         afterContent: `
       <p>它会询问项目名称。要跳过提示，直接传入名称和参数。使用 npm 时，在参数前加上 <code>--</code>：</p>
@@ -51,9 +51,9 @@ render(App, document.getElementById('app')!)
       <ul>
         <li><code>[project-name]</code>：目标文件夹。默认为 <code>nuclo-app</code>。</li>
         <li><code>-t, --template &lt;name&gt;</code>：要复制的模板。目前只有 <code>basic</code>。</li>
-        <li><code>-y, --yes</code>：从不提示，使用默认值。</li>
+        <li><code>-y, --yes</code>：跳过交互提示，使用默认值。</li>
         <li><code>-f, --force</code>：写入非空文件夹。</li>
-        <li><code>-h, --help</code>：打印帮助。</li>
+        <li><code>-h, --help</code>：显示帮助信息。</li>
       </ul>
     `,
       },
@@ -68,7 +68,7 @@ render(App, document.getElementById('app')!)
       <h3>全局变量</h3>
       <p><code>import 'nuclo'</code> 会把以下内容挂到 <code>globalThis</code> 上：</p>
       <ul>
-        <li><strong>175 个标签构建器</strong>：112 个用于 HTML（<code>div</code>、<code>span</code>、<code>button</code>……），63 个用于 SVG，带 <code>Svg</code> 后缀（<code>svgSvg</code>、<code>pathSvg</code>……）。参见<a href="#tag-builders">标签构建器</a>。</li>
+        <li><strong>175 个标签构建函数</strong>：112 个用于 HTML（<code>div</code>、<code>span</code>、<code>button</code>……），63 个用于 SVG，带 <code>Svg</code> 后缀（<code>svgSvg</code>、<code>pathSvg</code>……）。参见<a href="#tag-builders">标签构建函数</a>。</li>
         <li><strong>16 个辅助函数</strong>：<code>update</code>、<code>scope</code>、<code>when</code>、<code>list</code>、<code>region</code>、<code>into</code>、<code>on</code>、<code>render</code>、<code>hydrate</code>、<code>forceUpdate</code>、<code>css</code>、<code>cx</code>、<code>createCss</code>、<code>variants</code>、<code>keyframes</code> 和 <code>globalStyle</code>。</li>
       </ul>
       <p>这个导入必须在任何调用构建器的代码之前运行。ES 模块按导入顺序执行，所以下面的写法会失败：</p>
@@ -78,7 +78,7 @@ import 'nuclo'
 `)}
       <p>把 <code>import 'nuclo'</code> 放在入口文件的最前面，或者在每个使用这些全局变量的文件中导入它。</p>
       <h3>命名导入</h3>
-      <p>辅助函数同时也是命名导出，与全局变量是同一批函数。<code>getCssText()</code> 和 <code>resetStyles()</code> 只有命名导出。标签构建器只有全局形式，所以 <code>import { div } from 'nuclo'</code> 不可用。</p>
+      <p>辅助函数同时也是命名导出，与全局变量是同一批函数。<code>getCssText()</code> 和 <code>resetStyles()</code> 只有命名导出。标签构建函数只有全局形式，所以 <code>import { div } from 'nuclo'</code> 不可用。</p>
       ${code("main.ts", `
 import { render, update, getCssText } from 'nuclo'
 `)}
@@ -87,7 +87,7 @@ import { render, update, getCssText } from 'nuclo'
         <li><code>nuclo</code>：注册全局变量，并导出 16 个辅助函数以及 <code>getCssText</code> 和 <code>resetStyles</code>。</li>
         <li><code>nuclo/ssr</code>：<code>renderToString</code>、<code>renderManyToString</code>、<code>renderToStringWithContainer</code> 和 <code>getCssText</code>。参见<a href="#api-ssr">服务端渲染</a>。</li>
         <li><code>nuclo/polyfill</code>：供 Node 和 Bun 使用的小型 DOM。参见 <a href="#api-polyfill">nuclo/polyfill</a>。</li>
-        <li><code>nuclo/types</code>：仅类型。参见 <a href="#typescript-setup">TypeScript</a>。</li>
+        <li><code>nuclo/types</code>：仅包含类型。参见 <a href="#typescript-setup">TypeScript</a>。</li>
       </ul>
     `,
       },
@@ -116,11 +116,11 @@ import { render, update, getCssText } from 'nuclo'
       <h3>常用类型</h3>
       <p>这些类型是全局的，无需导入即可使用：</p>
       <ul>
-        <li><code>NodeModFn&lt;Tag&gt;</code>：标签构建器的返回值。可用作组件的返回类型。</li>
-        <li><code>NodeModLike&lt;Tag&gt;</code>：标签构建器可接受的任意参数。</li>
+        <li><code>NodeModFn&lt;Tag&gt;</code>：标签构建函数的返回值。可用作组件的返回类型。</li>
+        <li><code>NodeModLike&lt;Tag&gt;</code>：标签构建函数可接受的任意参数。</li>
         <li><code>ExpandedElement&lt;Tag&gt;</code>：<code>render()</code> 和 <code>hydrate()</code> 的返回值。</li>
         <li><code>ElementTagName</code>：任意 HTML 标签名。</li>
-        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>：标签构建器接受的属性对象，包括 <code>on*</code> 处理器、<code>onMount</code> 和 <code>onDestroy</code>。适用于透传属性的组件。</li>
+        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>：标签构建函数接受的属性对象，包括 <code>on*</code> 处理器、<code>onMount</code> 和 <code>onDestroy</code>。适用于透传属性的组件。</li>
         <li><code>MountCallback</code> 和 <code>DestroyCallback</code>：<code>onMount</code> 和 <code>onDestroy</code> 处理器。</li>
         <li><code>WhenBuilder</code>、<code>ListModifier</code>：<code>when()</code> 和 <code>list()</code> 的返回值。</li>
         <li><code>RegionOptions</code>、<code>RegionType</code>：<code>region()</code> 接受的选项。</li>
@@ -143,10 +143,10 @@ function Badge(text: string): NodeModFn<'span'> {
     sections: [
       {
         id: "tag-builders",
-        title: "标签构建器",
+        title: "标签构建函数",
         content: `
       <p>每个 HTML 标签都是一个同名的全局函数：<code>div</code>、<code>span</code>、<code>input</code>……唯一的例外是 <code>&lt;var&gt;</code>，因为 <code>var</code> 是保留字，所以它叫 <code>var_</code>。每个 SVG 标签都带 <code>Svg</code> 后缀：<code>svgSvg</code>、<code>pathSvg</code>、<code>circleSvg</code>……</p>
-      <p>调用标签构建器并不会立刻创建元素。<code>div('Hi')</code> 返回一个<strong>构建器</strong>：一个稍后创建元素的函数。当你用 <code>render()</code> 挂载它，或把它放进另一个构建器、<code>when()</code> 或 <code>list()</code> 中时，Nuclo 才会调用它。每次使用都会创建一个新元素。</p>
+      <p>调用标签构建函数并不会立刻创建元素。<code>div('Hi')</code> 返回一个<strong>构建器</strong>：一个稍后创建元素的函数。当你用 <code>render()</code> 挂载它，或把它放进另一个构建器、<code>when()</code> 或 <code>list()</code> 中时，Nuclo 才会调用它。每次使用都会创建一个新元素。</p>
       ${code("card.ts", `
 let name = 'Ada'
 
@@ -191,7 +191,7 @@ const field = input((el) => {
 })
 `)}
       <h3>获取元素</h3>
-      <p><code>render()</code> 返回根元素。在树内部，使用 <code>on("mount", (el) =&gt; …)</code> 或自定义修饰器。你也可以自己调用构建器函数来创建一个游离的元素：</p>
+      <p><code>render()</code> 返回根元素。在树内部，使用 <code>on("mount", (el) =&gt; …)</code> 或自定义修饰器。你也可以自己调用构建器函数来创建一个尚未挂载的元素：</p>
       ${code("example.ts", `
 const el = div('Hello')() as HTMLDivElement
 document.body.append(el)
@@ -370,8 +370,8 @@ const search = input(on('mount', (el) => el.focus()))
         <li>如果 <code>onMount</code> 返回一个函数，该函数会在销毁时运行，位于该元素的 <code>onDestroy</code> 回调之后。</li>
         <li><code>onDestroy</code> 在 Nuclo 移除元素时运行：<code>list()</code> 的行被移除、<code>when()</code> 切换分支、<code>into()</code> 离开其区域，或 <code>forceUpdate()</code> 丢弃它。它在移除之前运行，所以此时元素仍在文档中。</li>
       </ul>
-      <h3>直接操作 DOM 移除</h3>
-      <p>如果你自己移除元素，例如用 <code>node.remove()</code> 或 <code>innerHTML = ''</code>，它的 <code>onDestroy</code> 和清理函数永远不会运行，定时器也会继续运行。Nuclo 没有 <code>unmount()</code>。要带清理地卸载整个应用，把它包进 <code>when()</code>：</p>
+      <h3>通过原生 DOM API 移除元素</h3>
+      <p>如果你自己移除元素，例如用 <code>node.remove()</code> 或 <code>innerHTML = ''</code>，它的 <code>onDestroy</code> 和清理函数永远不会运行，定时器也会继续运行。Nuclo 没有 <code>unmount()</code>。要在卸载整个应用时执行清理，把它包进 <code>when()</code>：</p>
       ${code("main.ts", `
 let mounted = true
 render(() => div(when(() => mounted, App())), root)
@@ -385,7 +385,7 @@ update() // App's onDestroy hooks and cleanups run
         <li><code>onDestroy</code> 总是先运行子元素的，再运行父元素的。</li>
         <li>元素按其第一个 <code>onMount</code> 钩子的顺序挂载，该顺序即参数顺序，并且每个元素会一起运行它的所有钩子。如果子元素依赖父元素的钩子，请把父元素的钩子放在子元素之前。</li>
         <li>抛出错误的钩子会用 <code>console.error</code> 记录。其他钩子仍会运行。</li>
-        <li>回调必须返回空或一个清理函数，所以不要把它写成 <code>async</code>。返回的 Promise 永远不会被当作清理函数。请在回调内部启动异步工作：<code>{ onMount: (el) =&gt; { void load(el) } }</code>。</li>
+        <li>回调必须不返回值，或返回一个清理函数，所以不要把它写成 <code>async</code>。返回的 Promise 永远不会被当作清理函数。请在回调内部启动异步工作：<code>{ onMount: (el) =&gt; { void load(el) } }</code>。</li>
         <li>钩子从不在服务端运行。在客户端，它们在 <code>hydrate()</code> 之后运行。</li>
       </ul>
       <div class="docs-callout"><strong>注意：</strong>钩子不是 effect。状态变化时它们不会再次运行。每个钩子在每个元素上最多运行一次。</div>
@@ -481,7 +481,7 @@ const Profile = () =>
         <li><strong>它会运行所有内容。</strong>每次调用时所有动态值都会运行，即使其数据没有变化。只有 DOM 写入会被跳过。请让动态值保持快速且无副作用。</li>
         <li><strong>只处理文档中的节点。</strong>如果 <code>update()</code> 运行时某个节点不在文档中，Nuclo 会停止追踪它。即使之后再挂上去，它也永不更新。这同样适用于 <code>list()</code> 和 <code>when()</code>。请渲染到位于文档中的容器。</li>
         <li><strong>静态值永不改变。</strong>普通字符串和属性值在元素构建时就固定了。要重建它们，使用 <a href="#api-force-update"><code>forceUpdate()</code></a>。</li>
-        <li><strong>错误。</strong>文本和属性的错误会被捕获，更新继续进行。如果 <code>when()</code> 的条件抛出错误，错误会被记录，并且该 <code>when()</code> 停止更新。如果 <code>list()</code> 的 <code>items</code> 或 <code>renderItem</code> 函数抛出错误，错误会从 <code>update()</code> 中逃逸，剩余步骤不再运行。</li>
+        <li><strong>错误。</strong>文本和属性的错误会被捕获，更新继续进行。如果 <code>when()</code> 的条件抛出错误，错误会被记录，并且该 <code>when()</code> 停止更新。如果 <code>list()</code> 的 <code>items</code> 或 <code>renderItem</code> 函数抛出错误，错误会从 <code>update()</code> 向外抛出，剩余步骤不再运行。</li>
         <li><strong>服务端。</strong><code>update()</code> 在服务端什么也不做。</li>
       </ul>
     `,
@@ -513,7 +513,7 @@ update()       // everything, the header now says "Hi, Grace"
       <ul>
         <li>一个元素可以有多个 id：<code>scope('cart', 'sidebar')</code>。</li>
         <li><code>update('a', 'b')</code> 更新 <code>a</code> 或 <code>b</code> 内部的所有内容。如果多个元素使用同一个 id，它们全都会更新。</li>
-        <li>对于嵌套作用域，<code>update('outer')</code> 包含内层作用域。<code>update('inner')</code> 不会触碰外层。</li>
+        <li>对于嵌套作用域，<code>update('outer')</code> 包含内层作用域。<code>update('inner')</code> 不会更新外层。</li>
         <li>文档中没有任何元素拥有的 id <strong>不会更新任何内容</strong>，也不会报错，所以请检查拼写。</li>
         <li><code>scope()</code> 在服务端什么也不做。</li>
       </ul>
@@ -557,7 +557,7 @@ const Status = () =>
         id: "api-list",
         title: "list()",
         content: `
-      <p>为每个 item 渲染一行。每次 <code>update()</code> 时，Nuclo 重新调用 <code>items()</code>，并按同一性（<code>===</code>）把新 item 与现有行匹配。</p>
+      <p>为每个 item 渲染一行。每次 <code>update()</code> 时，Nuclo 重新调用 <code>items()</code>，并按严格相等（<code>===</code>）把新 item 与现有行匹配。</p>
       ${code("fruits.ts", `
 let fruits = ['Apple', 'Banana']
 
@@ -591,7 +591,7 @@ render(Todos)
 todos[0].done = true
 update() // same <li>, its class is now "done"
 `)}
-      <p>副本是新的 item，所以用 <code>todos.map((t) =&gt; ({ ...t }))</code> 替换数组会重建所有行。</p>
+      <p>复制得到的对象是新的列表项，所以用 <code>todos.map((t) =&gt; ({ ...t }))</code> 替换数组会重建所有行。</p>
     `,
         afterContent: `
       <h3><code>renderItem</code> 的返回值</h3>
@@ -713,7 +713,7 @@ const App = () =>
   )
 `)}
       <h3>由页面设置的页面标题</h3>
-      <p>使用默认的 <code>type: 'latest'</code> 时，最新的视图生效。布局拥有标题，而当前打开的页面决定标题内容。没有 <code>into('title', …)</code> 的页面会留下 <code>empty</code> 文本。</p>
+      <p>使用默认的 <code>type: 'latest'</code> 时，最新的视图生效。布局定义标题的位置，当前打开的页面决定标题内容。没有 <code>into('title', …)</code> 的页面会留下 <code>empty</code> 文本。</p>
       ${code("title.ts", `
 let page: 'home' | 'settings' = 'home'
 
@@ -797,7 +797,7 @@ const Editor = () =>
         id: "api-force-update",
         title: "forceUpdate()",
         content: `
-      <p><code>update()</code> 只运行动态值。静态值（例如 <code>h1(labels[lang].title)</code> 中的文本）在树构建时就固定了。<code>forceUpdate()</code> 会重新调用你的组件，并修补实际 DOM 使其与之匹配，静态值也包括在内。它适用于罕见的、全应用范围的变化，例如切换语言。其他情况一律使用 <code>update()</code>。</p>
+      <p><code>update()</code> 只运行动态值。静态值（例如 <code>h1(labels[lang].title)</code> 中的文本）在树构建时就固定了。<code>forceUpdate()</code> 会重新调用你的组件，并按新的构建结果更新现有 DOM，静态值也包括在内。它适用于偶尔发生的全局变化，例如切换语言。其他情况一律使用 <code>update()</code>。</p>
       ${code("i18n.ts", `
 const labels = { en: { title: 'Hello' }, pt: { title: 'Olá' } }
 let lang: keyof typeof labels = 'en'
@@ -810,7 +810,7 @@ forceUpdate() // same <h1> element, now "Olá"
 `)}
     `,
         afterContent: `
-      <p>不带参数时，<code>forceUpdate()</code> 会重建所有通过 <code>render(App)</code> 或 <code>hydrate(App)</code> 渲染的根。通过 <code>render(App())</code> 渲染的根会被跳过。如果某个组件抛出错误，错误会被记录，该根保留旧 DOM。在应用新构建结果的过程中稍后抛出的错误同样会被记录，但已经修补的部分保持修补后的状态。</p>
+      <p>不带参数时，<code>forceUpdate()</code> 会重建所有通过 <code>render(App)</code> 或 <code>hydrate(App)</code> 渲染的根。通过 <code>render(App())</code> 渲染的根会被跳过。如果某个组件抛出错误，错误会被记录，该根保留旧 DOM。在应用新构建结果的过程中稍后抛出的错误同样会被记录，但已更新的部分不会回滚。</p>
       <h3>保留什么，改变什么</h3>
       <ul>
         <li>子节点按顺序、按标签匹配。匹配的元素会被复用，所以焦点和已输入的值得以保留，其 <code>onMount</code> 钩子也不会再次运行。一旦某个子节点的标签不同，该子节点及其后的所有兄弟节点都会重新构建。</li>
@@ -862,7 +862,7 @@ render(() => Page({ name: 'Ana' }), root)
         id: "api-hydrate",
         title: "hydrate()",
         content: `
-      <p>接管由 <a href="#api-ssr"><code>renderToString()</code></a> 生成的 HTML。它复用已有元素，附加事件监听器，并接通动态值、<code>when()</code> 和 <code>list()</code>，使之后的 <code>update()</code> 能正常工作。然后运行 <code>onMount</code> 钩子。<code>parent</code> 默认为 <code>document.body</code>。返回根元素。</p>
+      <p>接管由 <a href="#api-ssr"><code>renderToString()</code></a> 生成的 HTML。它复用已有元素，附加事件监听器，并注册动态值、<code>when()</code> 和 <code>list()</code>，使之后的 <code>update()</code> 能正常工作。然后运行 <code>onMount</code> 钩子。<code>parent</code> 默认为 <code>document.body</code>。返回根元素。</p>
       ${code("client.ts", `
 import 'nuclo'
 import { App } from './app.ts'
@@ -879,7 +879,7 @@ hydrate(App, document.getElementById('root')!)
       <p>以客户端为准：</p>
       <ul>
         <li>根标签不同：该节点被替换为新的 DOM。容器为空：追加新的 DOM。</li>
-        <li>不同的文本会被修补。不同的 <code>list()</code> item 和 <code>when()</code> 分支跟随客户端。</li>
+        <li>不一致的文本会被更新。不同的 <code>list()</code> item 和 <code>when()</code> 分支跟随客户端。</li>
         <li>服务端多出的子节点会被移除，缺少的会被创建。</li>
         <li>服务端写入但客户端未设置的属性保持原样。</li>
       </ul>
@@ -939,7 +939,7 @@ renderToString(p('Hello'))
 // '<p><!-- text-0 -->Hello</p>'
 `)}
       <ul>
-        <li>文本和属性值会进行 HTML 转义。<code>script()</code> 和 <code>style()</code> 内部的文本按原样写出，只会拆开闭合标签，所以绝不要把用户输入放在那里。</li>
+        <li>文本和属性值会进行 HTML 转义。<code>script()</code> 和 <code>style()</code> 内部的文本按原样写出，仅对结束标签做拆分处理，所以绝不要把用户输入放在那里。</li>
         <li>它不会抛出错误。如果组件、<code>list()</code> 函数或 <code>when()</code> 条件抛出错误，或者缺少 polyfill，它会记录错误并返回 <code>""</code>。如果请求应当失败，请检查结果是否为空。抛出错误的文本或属性函数只会渲染为空。</li>
       </ul>
       <h3><code>renderManyToString()</code></h3>

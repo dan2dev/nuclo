@@ -697,10 +697,10 @@ render(() => div(Layout(), Article()))
       <h3>How it works</h3>
       <ul>
         <li><code>into()</code> leaves only a comment where it is written. Its content renders between the region's markers.</li>
-        <li>Order does not matter. A <code>into()</code> built before its region waits and shows the moment the region is built. Views show in the order they were written.</li>
+        <li>Order does not matter. An <code>into()</code> built before its region waits and shows the moment the region is built. Views show in the order they were written.</li>
         <li>The content lives as long as the view. When the <code>when()</code> that holds an <code>into()</code> closes, or its <code>list()</code> row is removed, the content leaves the region. Opening it again adds one copy, not two.</li>
         <li>When a region goes away, for example its <code>when()</code> closes, its views wait again. A region built later with the same id shows them.</li>
-        <li>A <code>into()</code> whose id matches no region renders nothing and raises no error, so check the spelling.</li>
+        <li>An <code>into()</code> whose id matches no region renders nothing and raises no error, so check the spelling.</li>
         <li>Ids are unique in the tree. A second region built under a live id logs a warning.</li>
         <li>Regions work with <a href="#api-ssr">server rendering</a>. On <code>hydrate()</code>, each view claims the HTML the server rendered instead of building it again.</li>
       </ul>

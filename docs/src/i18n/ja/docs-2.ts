@@ -22,7 +22,7 @@ const card = css({
 const Card = () => div(card, 'Simple card')
 `)}
       <ul>
-        <li><code>css()</code> は基本の宣言に対して 1 つのクラスを作り、さらに各疑似キー、セレクター、メディアブロックごとに 1 つずつクラスを作ります。上のカードは 2 つのクラスを得ます。</li>
+        <li><code>css()</code> は基本の宣言に対して 1 つのクラスを作り、さらに各疑似キー、セレクター、メディアブロックごとに 1 つずつクラスを作ります。上のカードには 2 つのクラスが適用されます。</li>
         <li>クラス名は内容のハッシュです。同一のスタイルはクラスを共有し、サーバーとクライアントは同じ名前を生成します。</li>
         <li>スタイルはモジュールレベルで一度だけ定義してください。<code>css()</code> はオブジェクト単位でキャッシュするため、呼び出しごとに新しいオブジェクトを渡すと毎回処理し直されます。</li>
         <li><code>css()</code> に渡した後でスタイルオブジェクトを変更しても何も起こりません。</li>
@@ -55,7 +55,7 @@ div(card, { class: 'featured' })     // replaces: only "featured" is left
         id: "style-objects",
         title: "スタイルオブジェクト",
         content: `
-      <p><code>css()</code> に渡すオブジェクトでは、一般的な CSS プロパティを camelCase で書き、一連のショートハンドと、疑似状態・セレクター・メディアクエリ用のネストしたキーを使います。TypeScript がそのすべてを補完します。<code>borderTopLeftRadius</code>、<code>fill</code>、<code>paddingInline</code> など型付きセットの外にあるプロパティは <code>raw</code> に書きます（後述）。</p>
+      <p><code>css()</code> に渡すオブジェクトでは、一般的な CSS プロパティを camelCase で書き、一連のショートハンドと、疑似状態・セレクター・メディアクエリ用のネストしたキーを使います。TypeScript がそのすべてを補完します。<code>borderTopLeftRadius</code>、<code>fill</code>、<code>paddingInline</code> など型定義に含まれないプロパティは <code>raw</code> に書きます（後述）。</p>
       <h3>値</h3>
       <ul>
         <li>数値は <code>px</code> になります。ただし <code>0</code> と単位なしプロパティは例外です: <code>zIndex</code>、<code>opacity</code>、<code>fontWeight</code>、<code>lineHeight</code>、<code>flex</code>、<code>flexGrow</code>、<code>flexShrink</code>、<code>order</code>、<code>aspectRatio</code>、<code>gridColumn</code>、<code>gridRow</code>。<code>raw</code> では <code>zoom</code>、<code>scale</code>、<code>column-count</code>、<code>orphans</code>、<code>widows</code>、<code>tab-size</code>、<code>animation-iteration-count</code> も単位なしです。</li>
@@ -131,7 +131,7 @@ cx(base, false, null, 'extra')  // base's classes plus "extra"
 div(cx(base, blue), 'Blue text')
 `)}
       <ul>
-        <li>偽値の入力はスキップされ、配列は平坦化され、文字列は分割されて重複が除かれます。</li>
+        <li>falsy な入力はスキップされ、配列は平坦化され、文字列は分割されて重複が除かれます。</li>
         <li>同じブロック（基本、同じ疑似状態、同じメディアクエリ）に対する生成クラスは 1 つの新しいクラスにマージされます。その他のクラス名はそのまま通過します。</li>
         <li>引数の順序を知っているのは <code>cx()</code> だけです。<code>div(base, blue)</code> では両方のクラスが追加され、最後に作成されたルールが優先されます。互いに上書きし合うスタイルは 1 つの <code>cx()</code> 呼び出しにまとめてください。</li>
         <li>名前付きスタイルのブロックが別の入力のブロックとマージされた場合、マージ後のクラスは名前そのものではなく <code>name-&lt;hash&gt;</code> になります。マージされないブロックはクラスを保つので、<code>cx(pageTitle, 'extra')</code> には引き続き <code>page-title</code> が含まれます。</li>
@@ -197,7 +197,7 @@ const panel = css({
         id: "api-variants",
         title: "variants()",
         content: `
-      <p>ボタンの意図やサイズのような一連のオプションに対してスタイルを返す関数を構築します。</p>
+      <p>ボタンの用途やサイズのような一連のオプションに対してスタイルを返す関数を構築します。</p>
       ${code("button.ts", `
 const buttonClass = variants({
   base: { px: 12, py: 8, rounded: 6 },
@@ -288,7 +288,7 @@ export const router = createRouter(routes)   // define once, import anywhere
 await router.start()                          // resolve the current URL
 render(App, document.getElementById('app')!) // App places router.outlet() and reads router.path, router.go(), …
 `)}
-      <p><code>start()</code> は、一致したルートのモジュールを解決してから戻るため、最初のツリーはサーバーとクライアントの両方で完全です。その後、ルーターは開始したルートを読み通します: <code>router.path</code>、<code>router.pending</code>、<code>router.go()</code>。</p>
+      <p><code>start()</code> は、一致したルートのモジュールを解決してから戻るため、最初のツリーはサーバーとクライアントの両方で完全です。その後、ルーターを通じて、開始した Route の値やメソッドにアクセスできます: <code>router.path</code>、<code>router.pending</code>、<code>router.go()</code>。</p>
       <h3>アプリ全体</h3>
       ${code("routes.ts", `
 // isomorphic: imported by the browser and the server
@@ -341,7 +341,7 @@ const html = route.run(() => renderToString(App))
 `)}
       <p>これが統合のすべてです。リンクが動くのは、<code>&lt;a href&gt;</code> が単なる <code>&lt;a href&gt;</code> だからです。<code>document</code> 上の 1 つの委譲リスナーが、ルーターが所有するリンクを捕まえ、それ以外のリンクはすべてブラウザに任せます。</p>
       <p>サーバーでは、<code>start()</code> はリクエストごとに <code>Route</code> を返し、ルーター自体には触れないため、同時リクエストが互いのルートを見ることはありません。<code>route.run()</code> は、レンダリングの間、その Route をルーター（つまりアウトレット）が読む対象にします。ブラウザではページ読み込みごとに 1 つの Route があり、<code>start()</code> がそれをルーター自身のものにします。<code>run()</code> は必要ありません。</p>
-      <p>ページは <a href="#router-api"><code>RouteContext</code></a> と <a href="#router-api"><code>PageProps</code></a> を <code>(ctx, { layer, data, outlet, beforeLeave })</code> として受け取り、引数を減らしても構いません。戻り値は <code>list()</code> が受け付けるものなら何でもよいです。レイアウトの別の部分も埋めたい場合は、<code>div(article(…), into('sidebar', nav(…)))</code> のようにページ内から <code>into()</code> を返します。そのコンテンツはページとともに去ります。<a href="#router-regions">ページとリージョン</a>を参照してください。</p>
+      <p>ページは <a href="#router-api"><code>RouteContext</code></a> と <a href="#router-api"><code>PageProps</code></a> を <code>(ctx, { layer, data, outlet, beforeLeave })</code> として受け取り、引数を減らしても構いません。戻り値は <code>list()</code> が受け付けるものなら何でもよいです。レイアウトの別の部分も埋めたい場合は、<code>div(article(…), into('sidebar', nav(…)))</code> のようにページ内から <code>into()</code> を返します。そのコンテンツはページが破棄されると削除されます。<a href="#router-regions">ページとリージョン</a>を参照してください。</p>
     `,
       },
       {
@@ -387,7 +387,7 @@ createRouter({
         <li><code>*catch-all</code> の親の下に子を置くと <code>createRouter()</code> のエラーになります。キャッチオールはパターンの末尾でなければならないためです。</li>
       </ul>
       <h3>親ページと <code>outlet()</code></h3>
-      <p>親とその子は本物の階層です。親がレンダリングされ、子は親が <code>outlet()</code> を呼び出した場所の内側にレンダリングされます。</p>
+      <p>親子ルートは実際の階層構造になります。親がレンダリングされ、子は親が <code>outlet()</code> を呼び出した場所の内側にレンダリングされます。</p>
       ${code("records/Record.ts", `
 import type { PageProps, RouteContext } from 'nuclo-router'
 
@@ -396,9 +396,9 @@ export default function Record(ctx: RouteContext, { outlet }: PageProps) {
   return div(Header(ctx), input({ id: 'notes' }), main(outlet()))
 }
 `)}
-      <p>子の間を移動しても親は再構築されません。その DOM ノードは同じノードなので、フォーカス、スクロール位置、入力途中の値、クロージャ内の状態はすべて生き残ります。</p>
+      <p>子の間を移動しても親は再構築されません。その DOM ノードは同じノードなので、フォーカス、スクロール位置、入力途中の値、クロージャ内の状態はすべて保持されます。</p>
       <ul>
-        <li>子ルートを持たないページはアウトレットから何も描画しないので、レイアウトは無条件に呼び出せます。子を持つ親が <code>outlet()</code> を呼ばない場合、その子は飲み込まれます。</li>
+        <li>子ルートを持たないページはアウトレットから何も描画しないので、レイアウトは無条件に呼び出せます。子を持つ親が <code>outlet()</code> を呼ばない場合、その子は表示されません。</li>
         <li>インデックスルートはありません。<code>'/'</code> はレイアウトそのものなので、親パスは、内側に別のインデックスページを置くのではなく、空のアウトレットでレイアウトを描画します。ランディングコンテンツはレイアウト内に置くか、実際の子パスを与えてください。</li>
       </ul>
       <p>同じ呼び出しが、どちらの親からでも、また自分がどの親の中にいるか知らないページからでも機能します。</p>
@@ -450,7 +450,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
   )
 }
 `)}
-      <p>ページのコンテンツはアウトレットの <code>list()</code> の 1 行であり、<code>into()</code> はそれを保持する行と同じ寿命を持ちます。したがってサイドバーのコンテンツはページとともに到着し、ページとともに去ります。<code>into('sidebar', …)</code> を持たないページに移動すると、リージョンの <code>empty</code> コンテンツが再び表示されます。両方の部分は同じ関数で構築されるので、ページは <code>ctx</code> と <code>data</code> をどちらにも使えます。</p>
+      <p>ページのコンテンツはアウトレットの <code>list()</code> の 1 行であり、<code>into()</code> はそれを保持する行と同じライフサイクルを持ちます。したがってサイドバーのコンテンツはページの表示とともに現れ、ページの破棄とともに削除されます。<code>into('sidebar', …)</code> を持たないページに移動すると、リージョンの <code>empty</code> コンテンツが再び表示されます。両方の部分は同じ関数で構築されるので、ページは <code>ctx</code> と <code>data</code> をどちらにも使えます。</p>
       <h3>ナビゲーション時に起こること</h3>
       <ul>
         <li><strong>保持されたページはリージョンも保持します。</strong><a href="#router-patterns">ページを保持する</a>クエリやハッシュの変更は、リージョンのコンテンツにも触れません。サイドバーがクエリに依存する場合は、動的な値の中で <code>router.search</code> を読んでください。</li>
@@ -472,7 +472,7 @@ export default function Report(ctx: RouteContext) {
   )
 }
 `)}
-      <h3>どの仕事にどのツールを使うか</h3>
+      <h3>用途に応じた使い分け</h3>
       <ul>
         <li><strong><code>outlet()</code></strong> は子ルート用です。URL が決めるコンテンツを、親ページの内側に描画します。<a href="#router-patterns">ネストしたルート</a>を参照してください。</li>
         <li><strong><code>into()</code></strong> は、一致したページがレイアウト全体に自身を広げるためのものです。コンテンツはページに属し、ページのデータを使います。</li>
@@ -495,7 +495,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
   return article(h1(post.title), p(post.body))
 }
 `)}
-      <p>ルートテーブルは変わりません。ローダーはページとともに移動します。一致した <code>RouteContext</code> を受け取るので、<code>params</code>、<code>search</code>、<code>path</code> がすべて使えます。同期でも非同期でもよく、サーバーでも実行されるため、サーバーレンダリングされたページは、ハイドレーション後にフェッチするのではなく、データを HTML に含めた状態で配信されます。</p>
+      <p>ルートテーブルは変わりません。ローダーはページモジュールで定義します。一致した <code>RouteContext</code> を受け取るので、<code>params</code>、<code>search</code>、<code>path</code> がすべて使えます。同期でも非同期でもよく、サーバーでも実行されるため、サーバーレンダリングされたページは、ハイドレーション後にフェッチするのではなく、データを HTML に含めた状態で配信されます。</p>
       <p><strong>モジュールはキャッシュされます。データはキャッシュされません。</strong>ルートのチャンクは一度フェッチされて再利用され、そのローダーはナビゲーションごとに再実行されます。だからこそ <code>/blog/a</code> と <code>/blog/b</code> が混同されることはなく、失敗したローダーは単純に再試行できます。</p>
       <table>
         <thead><tr><th>状況</th><th>挙動</th></tr></thead>
@@ -504,7 +504,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
           <tr><td>throw または reject した</td><td><code>router.error</code> に入ります。<code>go()</code> は引き続き決して reject せず、ナビゲーションは再試行できます。</td></tr>
           <tr><td><code>start()</code> の間</td><td>reject は <code>start()</code> から出てきます。それを載せる Route がまだないためです。</td></tr>
           <tr><td>プッシュされたレイヤー</td><td>独自のローダーを実行し、独自のデータを持ちます</td></tr>
-          <tr><td>アイドル時のプリローダー</td><td>モジュールのみを温めます。渡すコンテキストがなく、開かれないかもしれないルートのデータをフェッチすることになるためです。</td></tr>
+          <tr><td>アイドル時のプリローダー</td><td>モジュールのみを事前に読み込みます。渡すコンテキストがなく、開かれないかもしれないルートのデータをフェッチすることになるためです。</td></tr>
           <tr><td>同じ URL への再ナビゲーション</td><td>ローダーが再実行され、行が再構築されます。ローダーのないルートは行を保持します。</td></tr>
         </tbody>
       </table>
@@ -512,7 +512,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
       ${code("example.ts", `
 await router.go(router.url, { replace: true })   // runs load() again
 `)}
-      <h3>データをチャンクと同時に開始する</h3>
+      <h3>データとチャンクの読み込みを同時に開始する</h3>
       <p>ページモジュールがエクスポートする <code>load</code> は、そのモジュールが届いてからしか実行できないため、コールドナビゲーションではチャンク、次にデータの順でフェッチします。両方を同時に開始するには、<code>withLoad()</code> でテーブル内にローダーを宣言します。</p>
       ${code("routes.ts", `
 import { createRouter, withLoad } from 'nuclo-router'
@@ -525,7 +525,7 @@ createRouter({
       <p>これはモジュール自身の <code>load</code> を置き換え、同様に訪問ごとに実行されます。チャンクの読み込み中の reject は、他と同様に <code>router.error</code> に入ります。</p>
       <p>サーバーデータの HTML へのシリアライズは、意図的に行いません。クライアントの <code>load</code> はハイドレーション時に再実行されます。それが問題になる場合は、サーバーに <code>route.data</code> を、たとえば <code>window.__DATA__</code> として出力させ、ローダーがそれを先に取るようにしてください。<code>route.data</code> は一致したページのデータだけです。親の <code>load()</code> の結果は含まれません。</p>
       <h3>コード分割とプリロード</h3>
-      <p>ルートの値は常にページコンポーネントを返す関数なので、コンポーネントには遅延して到達します。</p>
+      <p>ルートの値は常にページコンポーネントを返す関数なので、コンポーネントは必要になった時点で読み込まれます。</p>
       ${code("routes.ts", `
 '/a': () => import('./A.ts'),                      // default export (+ optional load)
 '/b': () => import('./B.ts').then(m => m.BPage),   // named export
@@ -534,7 +534,7 @@ createRouter({
 `)}
       <p>モジュール形式のものだけが <code>load</code> エクスポートを持てます。<code>.then(m =&gt; m.BPage)</code> で名前付きコンポーネントを選ぶと、ルーターには関数だけが渡されます。</p>
       <p>各モジュールは一度だけインポートされ、キャッシュされます。同じルートへの同時ナビゲーションは 1 つの <code>import()</code> を共有します。ユーザーがページを <code>idleTimeout</code>（デフォルトで 1 秒。タップ、キー、ホイール、スクロールがない状態）の間放置すると、残りのルートがバックグラウンドで、アイドルスライス（<code>requestIdleCallback</code>）ごとに 1 つずつ読み込まれます。何らかの入力や、ユーザーが待っているナビゲーションがあると、ページが再びアイドルになるまで一時停止します。</p>
-      <p>プリロード済みまたは eager なルートは <code>router.pending</code> を決して切り替えず、次の描画の前に着地します。スピナーのフレームもレイアウトシフトもありません。<code>router.pending</code> は、待たなければならないモジュールやローダーがあるときだけ true になり、その間は離脱中のページが画面に残ります。読み込みに失敗したチャンクは、未処理の reject ではなく <code>router.error</code> として現れ、単純に再試行できます。</p>
+      <p>プリロード済みまたは eager なルートは <code>router.pending</code> を決して切り替えず、次の描画までに読み込みが完了します。スピナーのフレームもレイアウトシフトもありません。<code>router.pending</code> は、待たなければならないモジュールやローダーがあるときだけ true になり、その間は離脱中のページが画面に残ります。読み込みに失敗したチャンクは、未処理の reject ではなく <code>router.error</code> として現れ、単純に再試行できます。</p>
     `,
       },
       {
@@ -552,9 +552,9 @@ createRouter({
           <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>。ブラウザで解決されたすべてのナビゲーション（最初のものを含む）の後、DOM が追いついた時点で呼ばれます。<code>kind</code> は <code>'start'</code>、<code>'push'</code>、<code>'replace'</code>、<code>'pop'</code>（戻る、進む、<code>close()</code>）、<code>'layer'</code> のいずれかです。<code>document.title</code>、メタタグ、フォーカス、スクロール、アナリティクスのためのフックです。SSR 中は呼ばれません。</td></tr>
         </tbody>
       </table>
-      <p>ルーターを返します: <code>start()</code>、<code>match()</code>、<code>outlet()</code>、<code>matches()</code>、および <code>run()</code> を除くすべての <code>Route</code> メンバーで、これらはアクティブな Route を読み通します。アクティブな Route とは、ブラウザでは最後の <code>start()</code> が返したもの、サーバーでは <code>run()</code> が実行中のものです。どちらもない状態でメンバーを読むと throw します。ルートテーブル、コンパイル済みのマッチャー、モジュールキャッシュはルーター上にあるので、サーバーではリクエスト間で共有されます。</p>
+      <p>ルーターを返します: <code>start()</code>、<code>match()</code>、<code>outlet()</code>、<code>matches()</code>、および <code>run()</code> を除くすべての <code>Route</code> メンバーで、これらはアクティブな Route の値やメソッドにアクセスします。アクティブな Route とは、ブラウザでは最後の <code>start()</code> が返したもの、サーバーでは <code>run()</code> が実行中のものです。どちらもない状態でメンバーを読むと throw します。ルートテーブル、コンパイル済みのマッチャー、モジュールキャッシュはルーター上にあるので、サーバーではリクエスト間で共有されます。</p>
       <h3><code>router.start(url?)</code></h3>
-      <p><code>url</code>（デフォルト: ブラウザでは <code>location.href</code>）をページモジュールに解決し、<code>Promise&lt;Route&gt;</code> を返します。何にも一致せず、テーブルに <code>'*'</code> ルートがない場合は reject します。サーバーでは、それが 404 です。ブラウザではさらに、その Route をルーターのアクティブなものにし、<code>popstate</code> と委譲された <code>click</code> リスナーを取り付け、プリロードをスケジュールします。2 回目の <code>start()</code> は以前の Route を自動的に退役させます。サーバーでは共有されるものには何も触れないので、<code>route.run()</code> の中でレンダリングしてください。</p>
+      <p><code>url</code>（デフォルト: ブラウザでは <code>location.href</code>）をページモジュールに解決し、<code>Promise&lt;Route&gt;</code> を返します。何にも一致せず、テーブルに <code>'*'</code> ルートがない場合は reject します。サーバーでは、それが 404 です。ブラウザではさらに、その Route をルーターのアクティブなものにし、<code>popstate</code> と委譲された <code>click</code> リスナーを取り付け、プリロードをスケジュールします。2 回目の <code>start()</code> は以前の Route を自動的に停止します。サーバーでは共有されるものには何も触れないので、<code>route.run()</code> の中でレンダリングしてください。</p>
       <h3><code>router.match(url?)</code></h3>
       <p>何も読み込まずに URL をテーブルに対して解決します。インポートも、history も、リスナーも、Route もありません。<code>RouteContext</code> を返すか、URL が <code>base</code> の外、どのパターンにも一致しない、またはブラウザで別オリジンの場合は <code>null</code> を返します。<code>./</code> の解決にはアクティブなルートが必要なため、絶対 URL のみです。</p>
       ${code("example.ts", `
@@ -617,7 +617,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         </tbody>
       </table>
       <h3><code>DataLoader</code> と <code>withLoad()</code></h3>
-      <p><code>DataLoader</code> は <code>(ctx: RouteContext) =&gt; TData | Promise&lt;TData&gt;</code> で、ページモジュールの任意の <code>load</code> エクスポートです。<code>withLoad(loader, load)</code> は、チャンクのインポートの後ではなく、その隣で <code>load</code> を開始するルートを作ります。<a href="#router-loaders">ルートローダー</a>を参照してください。</p>
+      <p><code>DataLoader</code> は <code>(ctx: RouteContext) =&gt; TData | Promise&lt;TData&gt;</code> で、ページモジュールの任意の <code>load</code> エクスポートです。<code>withLoad(loader, load)</code> は、チャンクのインポート完了後ではなく、それと並行して <code>load</code> を開始するルートを作ります。<a href="#router-loaders">ルートローダー</a>を参照してください。</p>
       <h3>型</h3>
       <p>すべての型は <code>nuclo-router</code> の名前付きエクスポートなので、ページ、ローダー、ガードはパスからインポートせずに型付けできます。</p>
       <table>
@@ -658,8 +658,8 @@ layer.close()          // dismissed: resolves with undefined
       <ul>
         <li><strong>URL は最上位のレイヤーです。</strong><code>push()</code> は history エントリを追加するので、レイヤーはリンク可能で、「戻る」で閉じられ、その <code>push()</code> は Cancel とまったく同じく「閉じられた」として解決します。「戻る」と <code>close()</code> は 1 つのコードパスです。<code>close()</code> は結果を記録して history を戻し、<code>history.state</code> 内の depth が正となります。ブラウザはタブごとに約 50 エントリしか保持しないため、レイヤーを長く辿った後には下のエントリが消えていることがあります。その場合 <code>close()</code> はレイヤーをその場で閉じ、現在のエントリを表示されたまま残るページに書き換えます。</li>
         <li><strong>通常のナビゲーションはスタックをクリアします。</strong>リンクのクリックや <code>go()</code> はレイヤーではありません。すべてを置き換え、開いているレイヤーをすべて閉じるので、await したまま取り残される呼び出し元はありません。</li>
-        <li><strong>コールドロードは独立したページです。</strong>URL は最上位のレイヤーを示しますが、その下のスタックは示さないため、レイヤーの URL を直接開くと、depth 1 で、<code>layer.depth === 0</code> かつ無効な <code>close()</code> を持つ状態で描画されます。プッシュされるルートは単独でも意味を持つ必要があります。<code>layer.depth</code> で分岐して、機能しない Cancel ボタンの代わりに外へ出るリンクを用意してください。</li>
-        <li><strong>Promise はリロードを生き延びられません。</strong>クロージャの中にあるためです。結果は、遠回りでも動くフローの近道として扱ってください。</li>
+        <li><strong>URL を直接開くと、独立したページになります。</strong>URL は最上位のレイヤーを示しますが、その下のスタックは示さないため、レイヤーの URL を直接開くと、depth 1 で、<code>layer.depth === 0</code> かつ無効な <code>close()</code> を持つ状態で描画されます。プッシュされるルートは単独でも意味を持つ必要があります。<code>layer.depth</code> で分岐して、機能しない Cancel ボタンの代わりに外へ出るリンクを用意してください。</li>
+        <li><strong>Promise はページの再読み込み後には引き継がれません。</strong>クロージャの中にあるためです。結果は、遠回りでも動くフローの近道として扱ってください。</li>
         <li><strong>何も await したまま取り残されません。</strong><code>stop()</code> は開いているレイヤーをすべて閉じ、ナビゲーションによって放棄されたレイヤーは <code>undefined</code> で解決します。</li>
       </ul>
       <h3>離脱ガード</h3>
@@ -705,10 +705,10 @@ div(
         <li><strong>何も一致しなければ何も描画されません。</strong>フォールバックには <code>'*'</code> ビューを追加してください。アウトレットと同様に、<code>start()</code> の前と <code>stop()</code> の後は空です。</li>
         <li><strong>再描画されるのはルートが変わったときだけ</strong>なので、ページを保持するあらゆる変更の間、ビューは DOM を保ちます。</li>
         <li><strong>遅延ビューはモジュールが届くまで何も描画しません。</strong>失敗した <code>import()</code> は <code>console.error</code> でログされ、<code>router.error</code> は設定せず、次のナビゲーションで再試行されます。単なる <code>update()</code> では再試行されません。</li>
-        <li><strong>サーバーでは</strong>遅延ビューは何も出力しません。そのモジュールはクライアントで着地するためです。最初の HTML に含めなければならないものには同期ビューを使ってください。</li>
+        <li><strong>サーバーでは</strong>遅延ビューは何も出力しません。そのモジュールはクライアントで読み込まれるためです。最初の HTML に含めなければならないものには同期ビューを使ってください。</li>
       </ul>
       <h3>サブルーター</h3>
-      <p>ルートはネストするので、サブルーターは通常、単にネストしたテーブルです。ルーターは 1 つで、セクション自身の <code>'/'</code> ページがそのクロームとなり、子はそのページの <code>outlet()</code> に描画されるため、セクション内のナビゲーションの間クロームは生き残ります。</p>
+      <p>ルートはネストするので、サブルーターは通常、単にネストしたテーブルです。ルーターは 1 つで、セクション自身の <code>'/'</code> ページが共通のレイアウトとなり、子はそのページの <code>outlet()</code> に描画されるため、セクション内のナビゲーションの間共通のレイアウトは保持されます。</p>
       ${code("routes.ts", `
 createRouter({ '/': …, '/docs': docsRoutes, '*': … })
 `)}
@@ -722,7 +722,7 @@ const docs = createRouter(docsRoutes, { base: '/docs' })
 const hit = docs.match()                       // { pattern: '/:topic', … }
 const page = await docsRoutes[hit.pattern]()   // the app's own lookup
 `)}
-      <p>決して開始しないことが要点です。<code>start()</code> がリスナーを取り付けるものであり、開始された 2 つのルーターは衝突します。その代償として、解決は子が所有するので、開始されたルーターが実行するルートローダーは自分で呼び出すことになります。またこの形では、ルーターはルートを 1 つしか見ておらず、残りはシェルが自ら解決するため、残りのパスが変わるとシェルが再構築されます。ルーターがマウントし続ける親を得られるのはネストしたテーブルなので、その機能が本当に独自のルーター、base、フォールバックを必要とするのでなければ、ネストしたテーブルを優先してください。</p>
+      <p>決して開始しないことが要点です。<code>start()</code> がリスナーを取り付けるものであり、開始された 2 つのルーターは衝突します。その代償として、ルートの解決は子ルーターが担当するので、開始されたルーターが実行するルートローダーは自分で呼び出すことになります。またこの形では、ルーターはルートを 1 つしか見ておらず、残りはシェルが自ら解決するため、残りのパスが変わるとシェルが再構築されます。ルーターがマウントし続ける親を得られるのはネストしたテーブルなので、その機能が本当に独自のルーター、base、フォールバックを必要とするのでなければ、ネストしたテーブルを優先してください。</p>
     `,
       },
       {
@@ -766,7 +766,7 @@ export default function Section(_ctx: RouteContext, { data }: PageProps<SectionD
   return article(h2(data.section), ul(...data.items.map((i) => li(i))))
 }
 `)}
-      <p>両方のローダーは順番ではなく同時に開始します。<code>router.pending</code> はどちらかが await されている間 true で、それ以外は false です。プリロード済みまたは eager なルートは決してこれを切り替えません。セクション間の移動ではレイアウトが保持されるので、セクションのローダーだけが再実行されます。レイアウトのデータ、その DOM、入力途中の値はすべて生き残ります。同じ URL への再ナビゲーションは、単一ページの場合とまったく同様に、末端のローダーを再実行してその行を再構築します。</p>
+      <p>両方のローダーは順番ではなく同時に開始します。<code>router.pending</code> はどちらかが await されている間 true で、それ以外は false です。プリロード済みまたは eager なルートは決してこれを切り替えません。セクション間の移動ではレイアウトが保持されるので、セクションのローダーだけが再実行されます。レイアウトのデータ、その DOM、入力途中の値はすべて保持されます。同じ URL への再ナビゲーションは、単一ページの場合とまったく同様に、末端のローダーを再実行してその行を再構築します。</p>
       <h3>複数のローディング: 独自のスピナーを持つ 2 つ目のルーター</h3>
       <p>サイドバー、トレイ、ライブリージョンのような独立した領域には、作成はするが決して開始しない専用のルーターと、独自のローディングフラグを与えます。<code>router.pending</code> は開始されたルーターのものであり、この領域については何も語らないため、2 つは並んで読み込め、どちらが先に終わっても構いません。</p>
       ${code("sidebar.ts", `
@@ -809,8 +809,8 @@ createRouter(routes, {
         <li><strong><code>pending</code> は開始されたルーターのものです。</strong>開始されていないルーターには Route も、<code>pending</code> も、<code>error</code> もありません。領域は独自のフラグを管理し、2 つ目のスピナーを最初のものの隣に置けます。デモではサイドバーが 800ms、ルートのローダーが 900ms かけて読み込むので、ページが先に終わることも、逆になることもあります。</li>
         <li><strong><code>match()</code> は何も取り付けません。</strong>開始されていないルーターはいくつでもドキュメントを共有できます。それぞれが独自のテーブル、base、モジュールキャッシュを持ち、どれも history には触れません。コストはテーブルとマッチャー 1 つ分です。</li>
         <li><strong>そのローダーは決して実行されません。</strong>開始されたルーターは、一致したページの <code>load()</code> を実行します。開始されていないルーターは解決するだけなので、そのビューにデータが必要なら自分でフェッチしてください。デモの <code>refreshSidebar()</code> がそれです。ローダーを使いたいなら、<a href="#router-matches">ネストしたテーブル</a>か<a href="#router-regions">ページが埋めるリージョン</a>にすれば、その仕事は開始されたルーターに残ります。</li>
-        <li><strong>古い応答を防いでください。</strong>遅いサイドバーのフェッチが、すでに離れたセクションに着地してはいけません。更新ごとに世代カウンターを進め、一致しなくなった応答を捨ててください。ルーター自身が追い越されたナビゲーションを退役させるのと同じ方法です。</li>
-        <li><strong>遅延 <code>matches()</code> ビューにも <code>pending</code> はありません。</strong>モジュールが着地するまで何も描画しません。3 つのローディングの仕組みに 3 つの独立したタイミングがあります: ルートの <code>pending</code>、自前のフラグ、そして単にまだ存在しない遅延ビューです。</li>
+        <li><strong>古い応答を防いでください。</strong>サイドバーの取得に時間がかかっても、すでに離れたセクションのデータを表示しないようにしてください。更新ごとに世代カウンターを進め、一致しなくなった応答を捨ててください。新しいナビゲーションが始まった際に、ルーターが古いナビゲーションを無効にするのと同じ方法です。</li>
+        <li><strong>遅延 <code>matches()</code> ビューにも <code>pending</code> はありません。</strong>モジュールの読み込みが完了するまで何も描画しません。3 つのローディングの仕組みに 3 つの独立したタイミングがあります: ルートの <code>pending</code>、自前のフラグ、そして単にまだ存在しない遅延ビューです。</li>
       </ul>
     `,
       },
@@ -833,10 +833,10 @@ createRouter(routes, {
 `)}
       <h3>補足</h3>
       <ul>
-        <li><strong>何も保持しません。</strong>Route はページ関数とそのコンテキストを保持しますが、DOM は決して保持しません。離れると前のページは解放されます。<code>stop()</code> はリスナーと進行中の読み込みを解放し、<code>pending</code> をクリアするので、退役した Route がスピナーを取り残すことはありません。<code>stop()</code> の後に解決したモジュールは黙って破棄されます。</li>
-        <li><strong>サーバーで並行安全です。</strong><code>start()</code> はリクエストごとの状態を返し、<code>run()</code> はそれを 1 回の同期レンダリングにスコープするので、交錯するリクエストが互いのルートを見ることはありません。共有されるのはモジュールキャッシュだけです。スコープは <code>run()</code> の関数が戻ると終わります。<code>renderToString()</code> は同期なので、それで十分です。非同期やストリーミングのレンダリングでは Route を <code>await</code> をまたいで運ぶ必要がありますが、<code>run()</code> はそれを行いません。</li>
+        <li><strong>何も保持しません。</strong>Route はページ関数とそのコンテキストを保持しますが、DOM は決して保持しません。離れると前のページは解放されます。<code>stop()</code> はリスナーと進行中の読み込みを解放し、<code>pending</code> をクリアするので、停止した Route がスピナーを取り残すことはありません。<code>stop()</code> の後に解決したモジュールはエラーを出さずに破棄されます。</li>
+        <li><strong>サーバーで複数のリクエストを安全に並行処理できます。</strong><code>start()</code> はリクエストごとの状態を返し、<code>run()</code> はそれを 1 回の同期レンダリングにスコープするので、交錯するリクエストが互いのルートを見ることはありません。共有されるのはモジュールキャッシュだけです。スコープは <code>run()</code> の関数が戻ると終わります。<code>renderToString()</code> は同期なので、それで十分です。非同期やストリーミングのレンダリングでは Route を <code>await</code> をまたいで運ぶ必要がありますが、<code>run()</code> はそれを行いません。</li>
         <li><strong><code>popstate</code> でのスクロール復元</strong>はブラウザのもの（<code>scrollRestoration</code>）であり、ルーターのものではありません。</li>
-        <li><strong>ドキュメントごとに 1 つのルーターを開始してください。</strong>各 <code>start()</code> は独自の委譲 <code>click</code> リスナーを追加し、2 つ目のルーターの <code>start()</code> は最初のものを退役させません。退役させるのは同じルーターへの 2 回目の <code>start()</code> だけです。別のテーブルに対して URL を解決するには、ルーターを作成して <code>match()</code> だけを呼んでください。何も取り付けません。独立した領域は、その方法でルートの <code>pending</code> の隣に独自のローディングを持てます。<a href="#router-multi">複数のルーターと複合ローディング</a>を参照してください。</li>
+        <li><strong>ドキュメントごとに 1 つのルーターを開始してください。</strong>各 <code>start()</code> は独自の委譲 <code>click</code> リスナーを追加し、2 つ目のルーターの <code>start()</code> は最初のものを停止しません。停止するのは同じルーターへの 2 回目の <code>start()</code> だけです。別のテーブルに対して URL を解決するには、ルーターを作成して <code>match()</code> だけを呼んでください。何も取り付けません。独立した領域は、その方法でルートの <code>pending</code> の隣に独自のローディングを持てます。<a href="#router-multi">複数のルーターと複合ローディング</a>を参照してください。</li>
         <li><strong>意図的に含めていないもの:</strong> ハッシュ history とメモリ history（ルートは pathname にあり、サーバーはすべてのルートを配信しなければならないため）。1 つの URL で駆動される 2 つの独立したルーティング領域（ページは <code>into()</code> で複数のリージョンを埋められますが、それらはすべて 1 つの一致したルートに属するため。独立した領域は、<a href="#router-multi">複数のルーターと複合ローディング</a>のように、開始しない独自のルーターとローディングを持つことはできます）。そしてホバー時のプリロード（<code>mouseenter</code> からルート自身のローダーを呼べば実現できます）。</li>
       </ul>
       <h3>サンプル</h3>
@@ -905,7 +905,7 @@ async function loadData() {
         content: `
       <ul>
         <li><strong>変更をまとめる。</strong>必要な状態をすべて変更してから、<code>update()</code> を一度だけ呼び出してください。</li>
-        <li><strong>動的な値は速く、純粋に保つ。</strong>それらはすべて <code>update()</code> のたびに実行されます。</li>
+        <li><strong>動的な値を返す関数は高速で副作用のないものにする。</strong>それらはすべて <code>update()</code> のたびに実行されます。</li>
         <li><strong><code>scope()</code> を使う。</strong>タイピングやタイマーのような、小さく頻繁な更新に向いています。</li>
         <li><strong>ドキュメント内にレンダリングする。</strong><code>update()</code> の実行時にドキュメント内にないノードは更新されなくなります。</li>
         <li><strong><code>when()</code> と <code>list()</code> を使う。</strong>変化する子には、ノードを返す関数ではなくこれらを使ってください。</li>
@@ -954,7 +954,7 @@ async function loadData() {
       </ul>
       <h3><code>nuclo/polyfill</code></h3>
       <ul>
-        <li><a href="#api-polyfill">副作用のためのインポート</a>。加えて <code>document</code>、<code>Event</code>、<code>CustomEvent</code>、<code>Node</code>、<code>Element</code>、<code>HTMLElement</code>、および <code>Nuclo*</code> クラス。</li>
+        <li><a href="#api-polyfill">副作用インポート</a>。加えて <code>document</code>、<code>Event</code>、<code>CustomEvent</code>、<code>Node</code>、<code>Element</code>、<code>HTMLElement</code>、および <code>Nuclo*</code> クラス。</li>
       </ul>
       <h3><code>nuclo-router</code>（別パッケージ）</h3>
       <ul>

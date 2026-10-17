@@ -845,7 +845,7 @@ export const Histogram = () =>
   )`;
 
 export const DATA_CHART_EXAMPLES: SvgExample[] = [
-  { id: "stacked-area-chart", docs: "api-update", title: "Stacked Area Chart", desc: "Four bands morph between stacked, stream and percent layouts. Hiding a series only gives its band zero thickness, so every path keeps its shape.", code: STACKED_CODE, preview: StackedArea },
+  { id: "stacked-area-chart", docs: "api-update", title: "Stacked Area Chart", desc: "Four bands morph between stacked, stream and percent layouts. Hiding a series only gives its band zero thickness, so every path keeps the same command structure.", code: STACKED_CODE, preview: StackedArea },
   { id: "treemap", docs: "api-list", title: "Treemap", desc: "A squarified layout you drill into. Switching the metric slides every cell to its new box, and clicking a group swaps in its children.", code: TREEMAP_CODE, preview: Treemap },
   { id: "live-histogram", docs: "api-list", title: "Live Histogram", desc: "Samples pour in from four distributions. The bins re-count on every change, a fitted bell follows the mean, and a slider sets the bin count.", code: HISTOGRAM_CODE, preview: Histogram },
 ];
