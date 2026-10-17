@@ -762,10 +762,10 @@ render(() => div(Layout(), Article()))
 #### How it works
 
 - `into()` leaves only a comment where it is written. Its content renders between the region's markers.
-- Order does not matter. A `into()` built before its region waits and shows the moment the region is built. Views show in the order they were written.
+- Order does not matter. An `into()` built before its region waits and shows the moment the region is built. Views show in the order they were written.
 - The content lives as long as the view. When the `when()` that holds an `into()` closes, or its `list()` row is removed, the content leaves the region. Opening it again adds one copy, not two.
 - When a region goes away, for example its `when()` closes, its views wait again. A region built later with the same id shows them.
-- A `into()` whose id matches no region renders nothing and raises no error, so check the spelling.
+- An `into()` whose id matches no region renders nothing and raises no error, so check the spelling.
 - Ids are unique in the tree. A second region built under a live id logs a warning.
 - Regions work with [server rendering](https://nuclo.dev/docs#api-ssr). On `hydrate()`, each view claims the HTML the server rendered instead of building it again.
 

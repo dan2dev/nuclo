@@ -2,9 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { LOCALES, LOCALE_CODES } from "../src/i18n/index.ts";
 import { LOCALES as SHOP_LOCALES, localize, type Code } from "../src/demos/apps/i18n/messages.ts";
 
-async function chooseLanguage(page: Page, locale: keyof typeof LOCALES, mobile = false) {
-  const navigation = mobile ? page.locator("#site-menu") : page.locator("header");
-  await navigation.locator('button[aria-haspopup="dialog"]').click();
+async function chooseLanguage(page: Page, locale: keyof typeof LOCALES) {
+  await page.locator('header button[aria-haspopup="dialog"]').click();
   const dialog = page.locator('dialog[aria-labelledby="language-title"]');
   await expect(dialog).toBeVisible();
   await dialog.locator(`button[lang="${LOCALES[locale].lang}"]`).click();
@@ -91,7 +90,7 @@ test("the multilingual shop keeps the cart and coupon while switching languages"
 test.describe("mobile languages", () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   for (const [index, locale] of LOCALE_CODES.entries()) {
-    test(`${locale}: pages fit the viewport and switch through the mobile menu`, async ({ page }) => {
+    test(`${locale}: pages fit the viewport and switch languages with the mobile menu open`, async ({ page }) => {
       test.setTimeout(45_000);
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
@@ -107,7 +106,7 @@ test.describe("mobile languages", () => {
         }
         await page.locator("#site-menu-button").click();
         const next = LOCALE_CODES[(index + 1) % LOCALE_CODES.length]!;
-        await chooseLanguage(page, next, true);
+        await chooseLanguage(page, next);
         await expect(page.locator("html")).toHaveAttribute("lang", LOCALES[next].lang);
         await expect(page.locator("html")).toHaveAttribute("dir", LOCALES[next].dir);
         await expect(page.locator("#site-menu")).toHaveCount(0);

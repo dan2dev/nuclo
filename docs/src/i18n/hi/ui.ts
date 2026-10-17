@@ -60,7 +60,7 @@ export const seo = {
     },
     "apps/:id": {
       title: "स्वतंत्र ऐप - Nuclo उदाहरण",
-      description: "पूरे ब्राउज़र के कार्यरीजन में चलने वाले इंटरैक्टिव Nuclo ऐप के उदाहरण।",
+      description: "ब्राउज़र की पूरी विंडो में चलने वाले इंटरैक्टिव Nuclo ऐप के उदाहरण।",
     },
     desktop: {
       title: "Nuclo OS - डेस्कटॉप",

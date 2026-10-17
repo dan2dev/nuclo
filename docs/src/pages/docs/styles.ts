@@ -74,7 +74,7 @@ export const ds = {
   metaLabel: css("pages-docs-styles-metaLabel", { fontSize: "0.76rem", color: colors.textMuted }),
 
   // Mobile (<= 900px) section bar: full-bleed, sticks under the header, opens the navigator sheet.
-  sectionBar: css("pages-docs-styles-sectionBar", { display: "none", "@media (max-width: 900px)": { display: "block", position: "sticky", top: "var(--header-h)", zIndex: 40, height: "48px", margin: "0 -24px", padding: "0 24px", backgroundColor: colors.bg, borderBottom: `1px solid ${colors.border}` }, "@media (max-width: 600px)": { margin: "0 -18px", padding: "0 18px" } }),
+  sectionBar: css("pages-docs-styles-sectionBar", { display: "none", "@media (max-width: 900px)": { display: "block", position: "sticky", top: "var(--header-h)", zIndex: 40, height: "48px", margin: "0 calc(-1 * var(--gutter))", padding: "0 var(--gutter)", backgroundColor: colors.bg, borderBottom: `1px solid ${colors.border}` } }),
   sectionBarButton: css("pages-docs-styles-sectionBarButton", { display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "47px", fontSize: "14px", color: colors.textMuted, textAlign: "left", "& svg": { marginLeft: "auto", flexShrink: 0 } }),
   sectionBarGroup: css("pages-docs-styles-sectionBarGroup", { flexShrink: 0, whiteSpace: "nowrap" }),
   sectionBarTitle: css("pages-docs-styles-sectionBarTitle", { minWidth: "0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: colors.text }),
