@@ -136,7 +136,7 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
               addEventListener("scroll", check, { passive: true, signal: ac.signal });
               check();
             }
-            return () => { ac.abort(); io?.disconnect(); cancelAnimationFrame(raf); };
+            return () => { ac.abort(); io?.disconnect(); cancelAnimationFrame(raf); raf = 0; };
           }
         : undefined,
     },
