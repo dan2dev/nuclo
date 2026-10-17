@@ -154,11 +154,11 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
         stopSvg({ offset: "1", "stop-color": GRADIENT.to }),
       ),
     ),
-    // The spirograph: ring, wheel and arms. The ring is a dim orange plate under the drawing.
+    // The spirograph: ring, wheel and arms.
     // All of it fades out with the pens when the ink fills the icon
     gSvg(
       { fill: "none", stroke: STROKE, "stroke-width": 2, opacity: () => 1 - wheel.ink },
-      circleSvg({ cx: ic.cx, cy: ic.cy, r: ic.ring, fill: STROKE, "fill-opacity": 0.2, "stroke-opacity": 0.25 }),
+      circleSvg({ cx: ic.cx, cy: ic.cy, r: ic.ring, "stroke-opacity": 0.25 }),
       circleSvg({ cx: () => ic.hub[wheel.k][0], cy: () => ic.hub[wheel.k][1], r: ic.wheel }),
       ...pieces.slice(0, 2).map(Arm),
     ),
