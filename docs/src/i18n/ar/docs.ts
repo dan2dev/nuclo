@@ -12,7 +12,7 @@ export const LABELS = {
   quickStart: "البدء السريع",
   quickStartLink: "البدء السريع",
   nucloMark: "شعار Nuclo",
-  facts: { release: "الإصدار الحالي", builders: "بُناة الوسوم", gzipped: "النواة، مضغوطة بـ gzip", model: "نموذج التشغيل", modelValue: "صريح" },
+  facts: { release: "الإصدار الحالي", builders: "دوال بناء الوسوم", gzipped: "النواة، مضغوطة بـ gzip", model: "نموذج التشغيل", modelValue: "صريح" },
   filterSections: "تصفية الأقسام",
   filter: "تصفية",
   closeNavigator: "إغلاق المتصفح الجانبي",

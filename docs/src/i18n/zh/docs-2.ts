@@ -10,7 +10,7 @@ export const GROUPS_2: DocGroupText[] = [
         id: "api-styling",
         title: "css()",
         content: `
-      <p>把一个带类型的样式对象转换为生成的 CSS 类。把结果传给任意标签构建器即可。在浏览器中，规则写入唯一的 <code>&lt;style id="nuclo-styles"&gt;</code> 元素；在服务端，由 <a href="#api-css-text"><code>getCssText()</code></a> 返回。</p>
+      <p>根据类型安全的样式对象生成 CSS 类。把结果传给任意标签构建函数即可。在浏览器中，规则写入唯一的 <code>&lt;style id="nuclo-styles"&gt;</code> 元素；在服务端，由 <a href="#api-css-text"><code>getCssText()</code></a> 返回。</p>
       ${code("card.ts", `
 const card = css({
   p: 16,
@@ -121,7 +121,7 @@ css({ raw: { '--gap': '8px', '-webkit-line-clamp': '2' } })
         id: "api-cx",
         title: "cx()",
         content: `
-      <p>组合样式。两个输入设置同一属性时，后面的输入胜出。</p>
+      <p>组合样式。多个输入设置同一属性时，以最后一个输入为准。</p>
       ${code("example.ts", `
 const base = css({ p: 8, color: 'red' })
 const blue = css({ color: 'blue' })
@@ -133,8 +133,8 @@ div(cx(base, blue), 'Blue text')
       <ul>
         <li>假值输入会被跳过，数组会被展开，字符串会被拆分并去重。</li>
         <li>同一个块（基础块、同一伪类、同一媒体查询）的生成类会合并为一个新类。其他类名原样通过。</li>
-        <li>只有 <code>cx()</code> 知道参数顺序。写成 <code>div(base, blue)</code> 时两个类都会被加上，而最后创建的规则胜出。互相覆盖的样式应放在同一个 <code>cx()</code> 调用里。</li>
-        <li>当命名样式的某个块与另一个输入的块合并时，合并后的类是 <code>name-&lt;hash&gt;</code>，而不是裸名字。没有合并的块保留原来的类，所以 <code>cx(pageTitle, 'extra')</code> 仍然带有 <code>page-title</code>。</li>
+        <li>只有 <code>cx()</code> 知道参数顺序。写成 <code>div(base, blue)</code> 时两个类都会被加上，实际生效的是最后创建的规则。互相覆盖的样式应放在同一个 <code>cx()</code> 调用里。</li>
+        <li>当命名样式的某个块与另一个输入的块合并时，合并后的类是 <code>name-&lt;hash&gt;</code>，而不是不带哈希的名称。没有合并的块保留原来的类，所以 <code>cx(pageTitle, 'extra')</code> 仍然带有 <code>page-title</code>。</li>
       </ul>
       <h3>动态类</h3>
       <p>传一个始终返回 <code>cx(...)</code> 的函数：</p>
@@ -214,7 +214,7 @@ button(buttonClass(), 'Save')                                                // 
 button(buttonClass({ intent: 'danger', size: 'lg', block: true }), 'Delete') // bold, full width
 `)}
       <ul>
-        <li>样式按此顺序合并：<code>base</code>，每个分组被选中的值，然后是每个匹配的 compound。每个属性由后面的样式胜出。</li>
+        <li>样式按此顺序合并：<code>base</code>，每个分组被选中的值，然后是每个匹配的 compound。同一属性以后面的样式为准。</li>
         <li>缺失、<code>undefined</code> 或 <code>null</code> 的选项使用默认值。没有默认值的分组会被跳过。</li>
         <li>只有 <code>true</code> 和 <code>false</code> 键的分组接受布尔值。</li>
         <li>当 compound 列出的每个分组都匹配时（包括默认值）才会应用。</li>
@@ -243,7 +243,7 @@ globalStyle('body', { m: 0, font: 'system-ui, sans-serif' })
       <ul>
         <li>选择器按原样使用。</li>
         <li>只支持平铺属性。伪类键、screen 和 <code>@</code> 键会被忽略，所以 <code>globalStyle()</code> 无法写出媒体规则。</li>
-        <li>同一条规则只添加一次。同一选择器的不同样式会添加第二条规则，后面的胜出。</li>
+        <li>同一条规则只添加一次。同一选择器的不同样式会添加第二条规则，以后面的规则为准。</li>
       </ul>
     `,
       },
@@ -281,14 +281,14 @@ beforeEach(() => resetStyles())
       <p>Nuclo 的路由方案：服务端渲染、水合、代码分割的路由和空闲预加载，构建在 <code>list()</code> 和 <code>update()</code> 之上。gzip 后约 ${NUCLO_ROUTER_GZIP_KB} KB，除 Nuclo 本身外没有任何依赖，也没有副作用，所以未使用时会被 tree-shake 掉。</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>也可以用 <code>pnpm add</code>、<code>yarn add</code> 或 <code>bun add</code> 安装同样的两个包。它需要 <code>nuclo</code> 0.3 或更高版本作为 peer dependency。</p>
-      <p>路由器决定加载<em>什么</em>。应用通过 <code>router.outlet()</code> 说明放在<em>哪里</em>：一个覆盖图层栈的 <code>list()</code>，每个图层一行，所以普通页面就是单独一行。服务端和客户端构建同一棵树，因此 <code>hydrate()</code> 会接管服务端的节点而不是替换它们。其余的就是 <code>history</code>、一个委托的 <code>click</code> 监听器和 <code>requestIdleCallback</code>。</p>
+      <p>路由器决定加载<em>什么</em>。应用通过 <code>router.outlet()</code> 说明放在<em>哪里</em>：一个遍历整个图层栈的 <code>list()</code>，每个图层一行，所以普通页面就是单独一行。服务端和客户端构建同一棵树，因此 <code>hydrate()</code> 会接管服务端的节点而不是替换它们。其余的就是 <code>history</code>、一个委托的 <code>click</code> 监听器和 <code>requestIdleCallback</code>。</p>
       <h3>一次导入</h3>
       ${code("main.ts", `
 export const router = createRouter(routes)   // define once, import anywhere
 await router.start()                          // resolve the current URL
 render(App, document.getElementById('app')!) // App places router.outlet() and reads router.path, router.go(), …
 `)}
-      <p><code>start()</code> 在返回前解析匹配路由的模块，所以服务端和客户端的第一棵树都是完整的。之后路由器透传到它启动的那个路由：<code>router.path</code>、<code>router.pending</code>、<code>router.go()</code>。</p>
+      <p><code>start()</code> 在返回前解析匹配路由的模块，所以服务端和客户端的第一棵树都是完整的。之后，路由器的成员会转发到它启动的那个 Route：<code>router.path</code>、<code>router.pending</code>、<code>router.go()</code>。</p>
       <h3>一个完整的应用</h3>
       ${code("routes.ts", `
 // isomorphic: imported by the browser and the server
@@ -339,7 +339,7 @@ import { router, App } from './routes.ts'
 const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
-      <p>这就是全部的集成工作。链接之所以能用，是因为 <code>&lt;a href&gt;</code> 就是普通的 <code>&lt;a href&gt;</code>。<code>document</code> 上的一个委托监听器拦截路由器拥有的链接，其他链接全部交给浏览器。</p>
+      <p>这就是全部的集成工作。链接之所以能用，是因为 <code>&lt;a href&gt;</code> 就是普通的 <code>&lt;a href&gt;</code>。<code>document</code> 上的一个委托监听器拦截由路由器处理的链接，其他链接全部交给浏览器。</p>
       <p>在服务端，<code>start()</code> 为每个请求返回一个 <code>Route</code>，不触碰路由器本身，所以并发请求看不到彼此的路由。<code>route.run()</code> 让这个 Route 在整个渲染期间成为路由器（也就是 outlet）读取的那一个。在浏览器中，每次页面加载只有一个 Route，<code>start()</code> 会把它设为路由器自己的，不需要 <code>run()</code>。</p>
       <p>页面以 <code>(ctx, { layer, data, outlet, beforeLeave })</code> 的形式接收它的 <a href="#router-api"><code>RouteContext</code></a> 和 <a href="#router-api"><code>PageProps</code></a>，可以只接收更少的参数。它返回 <code>list()</code> 接受的任何内容。若还要填充布局的其他部分，在页面内部返回一个 <code>into()</code>，比如 <code>div(article(…), into('sidebar', nav(…)))</code>。这些内容随页面一起离开。见<a href="#router-regions">页面与区域</a>。</p>
     `,
@@ -398,8 +398,8 @@ export default function Record(ctx: RouteContext, { outlet }: PageProps) {
 `)}
       <p>在子级之间导航不会重建父级。它的 DOM 节点还是同一个节点，所以焦点、滚动位置、输入了一半的内容以及闭包里的任何状态都会保留。</p>
       <ul>
-        <li>没有子路由的页面，其 outlet 不渲染任何内容，所以布局可以无条件调用它。有子级却从不调用 <code>outlet()</code> 的父级会把子级吞掉。</li>
-        <li>没有索引路由。<code>'/'</code> 就是布局本身，所以父级路径渲染的是带空 outlet 的布局，而不是布局内嵌一个独立的索引页。把落地内容放进布局，或者给它一个真实的子路径。</li>
+        <li>没有子路由的页面，其 outlet 不渲染任何内容，所以布局可以无条件调用它。有子级却不调用 <code>outlet()</code> 的父级不会显示子级内容。</li>
+        <li>没有索引路由。<code>'/'</code> 就是布局本身，所以父级路径渲染的是带空 outlet 的布局，而不是布局内嵌一个独立的索引页。把默认页面内容放进布局，或者给它一个真实的子路径。</li>
       </ul>
       <p>于是同一个调用在任一父级下都能工作，在不知道自己处于哪个父级下的页面中也能工作：</p>
       ${code("example.ts", `
@@ -450,7 +450,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
   )
 }
 `)}
-      <p>页面的内容是 outlet 那个 <code>list()</code> 的一行，而 <code>into()</code> 与承载它的那一行同生共死。所以侧栏内容随页面到来，也随页面离开：导航到一个没有 <code>into('sidebar', …)</code> 的页面时，区域会重新显示它的 <code>empty</code> 内容。页面可以在两部分中同时使用它的 <code>ctx</code> 和 <code>data</code>，因为两者由同一个函数构建。</p>
+      <p>页面的内容是 outlet 那个 <code>list()</code> 的一行，而 <code>into()</code> 与承载它的那一行具有相同的生命周期。所以侧栏内容随页面到来，也随页面离开：导航到一个没有 <code>into('sidebar', …)</code> 的页面时，区域会重新显示它的 <code>empty</code> 内容。页面可以在两部分中同时使用它的 <code>ctx</code> 和 <code>data</code>，因为两者由同一个函数构建。</p>
       <h3>导航时会发生什么</h3>
       <ul>
         <li><strong>被保留的页面保留它的区域。</strong><a href="#router-patterns">保留页面</a>的查询串或哈希变化同样不会触碰区域内容。如果侧栏依赖它，请在动态值中读 <code>router.search</code>。</li>
@@ -534,7 +534,7 @@ createRouter({
 `)}
       <p>只有模块形态的写法才能携带 <code>load</code> 导出。用 <code>.then(m =&gt; m.BPage)</code> 挑选命名组件时，交给路由器的只有那个函数。</p>
       <p>每个模块只导入一次并缓存。对同一路由的并发导航共享一次 <code>import()</code>。用户让页面空闲超过 <code>idleTimeout</code>（默认一秒；没有触摸、按键、滚轮或滚动）后，其余路由会在后台加载，每个空闲时间片加载一个（<code>requestIdleCallback</code>）。任何输入，或用户正在等待的导航，都会暂停预加载，直到页面再次空闲。</p>
-      <p>已预加载或 eager 的路由永远不会翻转 <code>router.pending</code>，并在下一次绘制之前落地：没有 spinner 帧，没有布局抖动。<code>router.pending</code> 只在必须等待某个模块或加载器时为 true，此时离开中的页面保持在屏幕上。加载失败的 chunk 以 <code>router.error</code> 的形式呈现，绝不会成为未处理的 rejection，可以直接重试。</p>
+      <p>已预加载或同步提供的路由不会将 <code>router.pending</code> 设为 true，并且会在下一次绘制之前完成导航：不会短暂显示加载指示器，也不会发生布局抖动。<code>router.pending</code> 只在必须等待某个模块或加载器时为 true，此时离开中的页面保持在屏幕上。加载失败的 chunk 以 <code>router.error</code> 的形式呈现，绝不会成为未处理的 rejection，可以直接重试。</p>
     `,
       },
       {
@@ -552,9 +552,9 @@ createRouter({
           <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>，在浏览器中每次导航解析完成且 DOM 跟上之后调用，包括首次导航。<code>kind</code> 为 <code>'start'</code>、<code>'push'</code>、<code>'replace'</code>、<code>'pop'</code>（后退、前进、<code>close()</code>）或 <code>'layer'</code>。这是处理 <code>document.title</code>、meta 标签、焦点、滚动和统计分析的钩子。SSR 期间绝不会被调用。</td></tr>
         </tbody>
       </table>
-      <p>返回路由器：<code>start()</code>、<code>match()</code>、<code>outlet()</code>、<code>matches()</code>，以及除 <code>run()</code> 之外的所有 <code>Route</code> 成员，它们透传到活动的 Route。活动 Route 在浏览器中是最后一次 <code>start()</code> 返回的那个，在服务端是其 <code>run()</code> 正在执行的那个。两者都没有时读取成员会抛出。路由表、编译后的匹配器和模块缓存都放在路由器上，所以在服务端跨请求共享。</p>
+      <p>返回路由器：<code>start()</code>、<code>match()</code>、<code>outlet()</code>、<code>matches()</code>，以及除 <code>run()</code> 之外的所有 <code>Route</code> 成员，这些成员会转发到当前活动的 Route。活动 Route 在浏览器中是最后一次 <code>start()</code> 返回的那个，在服务端是其 <code>run()</code> 正在执行的那个。两者都没有时，读取成员会抛出错误。路由表、编译后的匹配器和模块缓存都放在路由器上，所以在服务端跨请求共享。</p>
       <h3><code>router.start(url?)</code></h3>
-      <p>把 <code>url</code>（浏览器中默认为 <code>location.href</code>）解析到它的页面模块，返回 <code>Promise&lt;Route&gt;</code>。没有任何匹配且路由表没有 <code>'*'</code> 路由时 reject。在服务端，这就是你的 404。在浏览器中，它还会把这个 Route 设为路由器的活动 Route，挂上 <code>popstate</code> 和委托的 <code>click</code> 监听器，并安排预加载。第二次 <code>start()</code> 会替你退役上一个 Route。在服务端它不触碰任何共享状态，所以请在 <code>route.run()</code> 内渲染。</p>
+      <p>把 <code>url</code>（浏览器中默认为 <code>location.href</code>）解析到它的页面模块，返回 <code>Promise&lt;Route&gt;</code>。没有任何匹配且路由表没有 <code>'*'</code> 路由时 reject。在服务端，这就是你的 404。在浏览器中，它还会把这个 Route 设为路由器的活动 Route，挂上 <code>popstate</code> 和委托的 <code>click</code> 监听器，并安排预加载。第二次 <code>start()</code> 会停止上一个 Route。在服务端它不触碰任何共享状态，所以请在 <code>route.run()</code> 内渲染。</p>
       <h3><code>router.match(url?)</code></h3>
       <p>用路由表解析一个 URL，不加载任何东西：没有 import，没有 history，没有监听器，没有 Route。返回 <code>RouteContext</code>；当 URL 在 <code>base</code> 之外、不匹配任何模式，或在浏览器中属于另一个源时，返回 <code>null</code>。只接受绝对 URL，因为 <code>./</code> 解析需要一个活动路由。</p>
       ${code("example.ts", `
@@ -581,7 +581,7 @@ const owned = router.match(href) !== null
           <tr><td><code>go(href, { replace })</code></td><td>导航，需要时加载模块。永不 reject：模块失败（无论 reject 还是抛出）都落到 <code>error</code> 上。</td></tr>
           <tr><td><code>push(href)</code></td><td>把一条路由作为新图层打开在顶部，以它关闭时的值 resolve。接受 <code>./</code>。无匹配或模块失败时 reject。</td></tr>
           <tr><td><code>href(path)</code></td><td>给路径加上 <code>base</code> 前缀，用于 <code>a({ href })</code>。相对于活动路由解析 <code>./</code> 和 <code>../</code>。</td></tr>
-          <tr><td><code>stop()</code></td><td>卸下所有监听器，关闭打开的图层，清空 outlet。幂等。已停止的 Route 仍以最后一次匹配作答，<code>go()</code> 不做任何事。</td></tr>
+          <tr><td><code>stop()</code></td><td>卸下所有监听器，关闭打开的图层，清空 outlet。幂等。已停止的 Route 仍返回最后一次匹配的结果，<code>go()</code> 不做任何事。</td></tr>
           <tr><td><code>run(fn)</code></td><td>以此 Route 作为路由器的活动 Route 调用 <code>fn</code> 并返回其结果：服务端上的 <code>route.run(() =&gt; renderToString(App))</code>。仅限同步。<code>fn</code> 返回后该 Route 不再是活动的。</td></tr>
         </tbody>
       </table>
@@ -607,7 +607,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         </tbody>
       </table>
       <h3><code>Layer</code></h3>
-      <p>页面在栈中的位置，以及它的退出方式。</p>
+      <p>页面在栈中的位置，以及关闭该图层的方法。</p>
       <table>
         <thead><tr><th>成员</th><th></th></tr></thead>
         <tbody>
@@ -619,7 +619,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
       <h3><code>DataLoader</code> 与 <code>withLoad()</code></h3>
       <p><code>DataLoader</code> 是 <code>(ctx: RouteContext) =&gt; TData | Promise&lt;TData&gt;</code>，即页面模块可选的 <code>load</code> 导出。<code>withLoad(loader, load)</code> 创建一条路由，其 <code>load</code> 与 chunk 的 import 同时开始，而不是在其之后。见<a href="#router-loaders">路由加载器</a>。</p>
       <h3>类型</h3>
-      <p>每个类型都是 <code>nuclo-router</code> 的命名导出，所以页面、加载器或守卫都可以在不从路径导入的情况下标注类型。</p>
+      <p>所有类型均由 <code>nuclo-router</code> 具名导出，因此可以直接从包入口导入，为页面、加载器或守卫标注类型。</p>
       <table>
         <thead><tr><th>类型</th><th>含义</th></tr></thead>
         <tbody>
@@ -642,7 +642,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         id: "router-layers",
         title: "图层与离开守卫",
         content: `
-      <p><code>push()</code> 把一条路由打开在当前路由之上而不是替换它，并以该图层关闭时的值 resolve。因为页面是覆盖整个栈的单个 <code>list()</code>，打开图层就是一次追加。下面的页面不会被重新渲染，所以图层关闭时它的 DOM、焦点和填了一半的表单都还在。</p>
+      <p><code>push()</code> 把一条路由打开在当前路由之上而不是替换它，并以该图层关闭时的值 resolve。因为页面是遍历整个栈的单个 <code>list()</code>，打开图层就是一次追加。下面的页面不会被重新渲染，所以图层关闭时它的 DOM、焦点和填了一半的表单都还在。</p>
       <p>这让"我需要一条还不存在的记录"这类流程得以实现，而不必丢掉用户正在填写的表单：</p>
       ${code("pages/Edit.ts", `
 // the page underneath
@@ -659,7 +659,7 @@ layer.close()          // dismissed: resolves with undefined
         <li><strong>URL 就是顶层图层。</strong><code>push()</code> 添加一条 history 条目，所以图层可以被链接，后退会关闭它，并把它的 <code>push()</code> 以取消的方式 resolve，和点击取消完全一样。后退和 <code>close()</code> 是同一条代码路径：<code>close()</code> 记录结果并把 history 往回走，<code>history.state</code> 中的深度是权威来源。浏览器每个标签页大约保留 50 条条目，所以在图层间走了很长一段之后，下面那条条目可能已经不在：此时 <code>close()</code> 就地关闭图层，并把当前条目重写为留下显示的那个页面。</li>
         <li><strong>普通导航会清空栈。</strong>链接点击或 <code>go()</code> 不是图层。它替换一切并关闭所有打开的图层，所以没有调用方会一直 await 下去。</li>
         <li><strong>冷加载是独立页面。</strong>URL 只指明顶层图层，不指明它下面的栈，所以直接打开某个图层的 URL 会以 depth 1 渲染它，此时 <code>layer.depth === 0</code>，<code>close()</code> 不起作用。被推入的路由必须能独立成立。根据 <code>layer.depth</code> 分支，提供一个离开的链接，而不是一个失效的取消按钮。</li>
-        <li><strong>promise 无法在重新加载后存活</strong>，因为它存在于闭包中。把结果当作一条流程的捷径，而这条流程绕远路也同样能走通。</li>
+        <li><strong>Promise 不会在页面重新加载后保留</strong>，因为它存在于闭包中。通过返回结果可以简化交互流程，但流程也应支持直接访问页面的情况。</li>
         <li><strong>不会有任何悬而未决的 await。</strong><code>stop()</code> 关闭所有打开的图层，被导航抛弃的图层以 <code>undefined</code> resolve。</li>
       </ul>
       <h3>离开守卫</h3>
@@ -674,8 +674,8 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
 }
 `)}
       <ul>
-        <li><strong>只在页面离开时。</strong>布局下的子级导航，或保留页面的查询串、哈希变化，都不会询问。守卫与页面同生共死，所以没有什么需要注销。</li>
-        <li><strong>覆盖每一种出口。</strong>链接、<code>go()</code>、后退与前进、图层的 <code>close()</code>，以及 <code>go()</code> 到路由器不拥有的 URL（离开应用，此时 <code>to</code> 为 <code>null</code>）。被拒绝的后退或前进会被走回去，所以地址栏停留在当前页面。关闭标签页或重新加载是 <code>beforeunload</code> 的工作。</li>
+        <li><strong>只在页面离开时。</strong>布局下的子级导航，或保留页面的查询串、哈希变化，都不会询问。守卫的生命周期与页面一致，所以没有什么需要注销。</li>
+        <li><strong>覆盖所有离开页面的方式。</strong>链接、<code>go()</code>、后退与前进、图层的 <code>close()</code>，以及 <code>go()</code> 到路由器不拥有的 URL（离开应用，此时 <code>to</code> 为 <code>null</code>）。被守卫阻止的后退或前进会被撤销，所以地址栏停留在当前页面。关闭标签页或重新加载是 <code>beforeunload</code> 的工作。</li>
         <li><strong><code>to</code></strong> 是导航要前往的 <code>RouteContext</code>。守卫从最内层开始运行，在第一个拒绝处停止。抛出异常的守卫会保留页面。<code>close(result)</code> 同样经过守卫，所以带结果关闭之前先清掉你的标记。</li>
         <li>路由器只能走回它自己写入的 history 条目。后退或前进到它没有写入的条目（比如原生 <code>#fragment</code> 链接或其他脚本的 <code>pushState</code>）时不会询问。</li>
       </ul>
@@ -729,7 +729,7 @@ const page = await docsRoutes[hit.pattern]()   // the app's own lookup
         id: "router-multi",
         title: "多路由器与组合加载",
         content: `
-      <p>应用有多少个区域，就可以有多少个路由器。让这一切保持简单的规则是：<strong>每个 document 只启动一个</strong>，其余路由器一律不启动，用 <code>match()</code> 解析 URL。只有已启动的路由器拥有 URL、history 和点击监听器。其余的只是供你查询的表——而且每个区域可以按自己的节奏加载，拥有自己的 spinner。</p>
+      <p>应用有多少个区域，就可以有多少个路由器。让这一切保持简单的规则是：<strong>每个 document 只启动一个</strong>，其余路由器一律不启动，用 <code>match()</code> 解析 URL。只有已启动的路由器拥有 URL、history 和点击监听器。其余的只是供你查询的表——而且每个区域可以按自己的节奏加载，显示自己的加载指示器。</p>
       <h3>组合加载：一串加载器</h3>
       <p>匹配链上的每个页面都可以导出 <code>load()</code>。冷导航到子路由时，布局的加载器和页面的加载器<strong>并行</strong>运行，一个 <code>router.pending</code> 覆盖整条链：前一个页面保持在屏幕上直到两者都 resolve，所以半加载的树永远不会被绘制出来。每个组件接收它自己的 <code>data</code>：</p>
       ${code("routes.ts", `
@@ -766,8 +766,8 @@ export default function Section(_ctx: RouteContext, { data }: PageProps<SectionD
   return article(h2(data.section), ul(...data.items.map((i) => li(i))))
 }
 `)}
-      <p>两个加载器同时开始，而不是一个接一个。任一加载器仍在等待时 <code>router.pending</code> 为 true，其余时间为 false——已预加载或 eager 的路由永远不会翻转它。在 section 之间移动会保留布局，所以只有 section 的加载器再次运行；布局的数据、它的 DOM 和输入了一半的内容都会保留。重新导航到同一 URL 会重新运行叶子的加载器并重建它的行，和单页面时完全一样。</p>
-      <h3>多重加载：带自己 spinner 的第二个路由器</h3>
+      <p>两个加载器同时开始，而不是一个接一个。任一加载器仍在等待时 <code>router.pending</code> 为 true，其余时间为 false——已预加载或同步提供的路由不会将它设为 true。在 section 之间移动会保留布局，所以只有 section 的加载器再次运行；布局的数据、它的 DOM 和输入了一半的内容都会保留。重新导航到同一 URL 会重新运行叶子的加载器并重建它的行，和单页面时完全一样。</p>
+      <h3>多重加载：有独立加载指示器的第二个路由器</h3>
       <p>一个独立区域——侧栏、托盘、实时区域——拥有自己的路由器（只创建、永不启动）和自己的加载标记。<code>router.pending</code> 属于已启动的路由器，与这个区域无关，所以两者可以并排加载，谁先完成都可以：</p>
       ${code("sidebar.ts", `
 import { createRouter } from 'nuclo-router'
@@ -804,12 +804,12 @@ createRouter(routes, {
   },
 })
 `)}
-      <p>第二个路由器只被询问，从不被指挥：<code>match()</code> 读取 URL 并返回一个上下文，关于侧栏的任何东西都不会进入主路由表。<code>onNavigate</code> 在每次导航解析完成后运行，包括首次导航，所以它是让独立区域与 URL 保持同步的唯一位置。</p>
+      <p>第二个路由器只负责匹配，不执行导航：<code>match()</code> 读取 URL 并返回一个上下文，关于侧栏的任何东西都不会进入主路由表。<code>onNavigate</code> 在每次导航解析完成后运行，包括首次导航，所以它是让独立区域与 URL 保持同步的唯一位置。</p>
       <ul>
-        <li><strong><code>pending</code> 属于已启动的路由器。</strong>从未启动的路由器没有 Route，没有 <code>pending</code>，也没有 <code>error</code>。区域维护自己的标记，第二个 spinner 可以放在第一个旁边。在演示中，侧栏加载 800ms，而路由的加载器运行 900ms，所以页面可能先于侧栏完成，也可能反过来。</li>
+        <li><strong><code>pending</code> 属于已启动的路由器。</strong>从未启动的路由器没有 Route，没有 <code>pending</code>，也没有 <code>error</code>。区域维护自己的标记，第二个加载指示器可以与第一个并排显示。在演示中，侧栏加载 800ms，而路由的加载器运行 900ms，所以页面可能先于侧栏完成，也可能反过来。</li>
         <li><strong><code>match()</code> 不挂任何东西。</strong>任意数量的未启动路由器可以共存于同一 document；每个都有自己的表、base 和模块缓存，没有一个会触碰 history。它们的开销只是一张表和一个匹配器。</li>
         <li><strong>它的加载器永远不会运行。</strong>已启动的路由器运行它匹配到的页面的 <code>load()</code>。从未启动的路由器只做解析，所以如果它的视图需要数据，请自己获取——就像演示中的 <code>refreshSidebar()</code>。如果你想要加载器，<a href="#router-matches">嵌套表</a>或<a href="#router-regions">由页面填充的区域</a>可以把这项工作留给已启动的路由器。</li>
-        <li><strong>防范过期的响应。</strong>缓慢的侧栏请求不能落到你已经离开的 section 上。每次刷新递增一个代数计数器，丢弃不再匹配的响应，就像路由器自己退役被超越的导航那样。</li>
+        <li><strong>防范过期的响应。</strong>缓慢的侧栏请求不能落到你已经离开的 section 上。每次刷新递增一个请求序号计数器，丢弃不再匹配的响应，就像路由器会取消被后续导航取代的旧导航一样。</li>
         <li><strong>惰性的 <code>matches()</code> 视图同样没有 <code>pending</code>。</strong>模块到达之前它不渲染任何内容。三套加载系统，三个独立的时钟：路由的 <code>pending</code>、你自己的标记，以及一个还不存在的惰性视图。</li>
       </ul>
     `,
@@ -833,10 +833,10 @@ createRouter(routes, {
 `)}
       <h3>说明</h3>
       <ul>
-        <li><strong>不保留任何东西。</strong>Route 持有页面函数和它的上下文，从不持有 DOM。导航离开会释放前一个页面。<code>stop()</code> 释放监听器和进行中的加载，并清除 <code>pending</code>，所以退役的 Route 永远不会留下一个转个不停的 spinner。在 <code>stop()</code> 之后才 resolve 的模块会被静默丢弃。</li>
+        <li><strong>不保留任何东西。</strong>Route 持有页面函数和它的上下文，从不持有 DOM。导航离开会释放前一个页面。<code>stop()</code> 释放监听器和进行中的加载，并清除 <code>pending</code>，所以已停止的 Route 不会留下持续显示的加载指示器。在 <code>stop()</code> 之后才 resolve 的模块会被静默丢弃。</li>
         <li><strong>服务端并发安全。</strong><code>start()</code> 返回按请求隔离的状态，<code>run()</code> 把它限定在一次同步渲染内，所以交错的请求看不到彼此的路由。只有模块缓存是共享的。作用域在 <code>run()</code> 的函数返回时结束。<code>renderToString()</code> 是同步的，所以这已经足够。异步或流式渲染需要在 <code>await</code> 之间携带 Route，而 <code>run()</code> 不会这么做。</li>
         <li><strong><code>popstate</code> 时的滚动恢复</strong>由浏览器负责（<code>scrollRestoration</code>），而不是路由器。</li>
-        <li><strong>每个 document 只启动一个路由器。</strong>每次 <code>start()</code> 都会添加它自己的委托 <code>click</code> 监听器，而第二个路由器的 <code>start()</code> 不会退役第一个。只有同一路由器上的第二次 <code>start()</code> 才会。要用另一张表解析 URL，创建一个路由器并只调用 <code>match()</code>，它不挂任何东西。独立区域可以用这种方式在路由的 <code>pending</code> 之外运行自己的加载。见<a href="#router-multi">多路由器与组合加载</a>。</li>
+        <li><strong>每个 document 只启动一个路由器。</strong>每次 <code>start()</code> 都会添加它自己的委托 <code>click</code> 监听器，而第二个路由器的 <code>start()</code> 不会停止第一个。只有同一路由器上的第二次 <code>start()</code> 才会。要用另一张表解析 URL，创建一个路由器并只调用 <code>match()</code>，它不挂任何东西。独立区域可以用这种方式在路由的 <code>pending</code> 之外运行自己的加载。见<a href="#router-multi">多路由器与组合加载</a>。</li>
         <li><strong>按设计不包含：</strong>哈希和内存 history，因为路由存在于 pathname 中，服务端必须能服务每条路由；由一个 URL 驱动的两个独立路由区域，因为页面可以用 <code>into()</code> 填充多个区域，但它们都属于唯一匹配到的那条路由——独立区域仍然可以保留自己的未启动路由器和加载，如<a href="#router-multi">多路由器与组合加载</a>所述；以及悬停预加载，你可以在 <code>mouseenter</code> 中调用该路由自己的加载器来实现。</li>
       </ul>
       <h3>示例</h3>
@@ -905,12 +905,12 @@ async function loadData() {
         content: `
       <ul>
         <li><strong>批量修改。</strong>先改完所有需要的状态，再调用一次 <code>update()</code>。</li>
-        <li><strong>保持动态值快速且纯粹。</strong>每次 <code>update()</code> 都会运行它们全部。</li>
+        <li><strong>确保动态值计算高效且无副作用。</strong>每次 <code>update()</code> 都会运行它们全部。</li>
         <li><strong>使用 <code>scope()</code></strong> 处理小而频繁的更新，比如输入或定时器。</li>
         <li><strong>渲染到 document 中。</strong><code>update()</code> 运行时不在 document 中的节点会停止更新。</li>
         <li><strong>使用 <code>when()</code> 和 <code>list()</code></strong> 处理会变化的子节点，而不是返回节点的函数。</li>
         <li><strong>使用 <code>className</code>，而不是 <code>class</code></strong>，动态类使用 <code>() =&gt; cx(...)</code> 或 <code>{ className: () =&gt; … }</code>。</li>
-        <li><strong>只定义一次样式</strong>，在模块级别。</li>
+        <li><strong>在模块级别定义样式</strong>，只定义一次。</li>
         <li><strong>服务端渲染：</strong>先渲染，再把 <code>getCssText()</code> 放进 <code>&lt;style id="nuclo-styles"&gt;</code>。请求数据以参数形式传入，并保留输出中的 HTML 注释。</li>
       </ul>
     `,
@@ -932,14 +932,14 @@ async function loadData() {
         <li><a href="#api-update"><code>update(...scopeIds)</code></a>：运行所有动态值，或给定作用域内的动态值。</li>
         <li><a href="#api-scope"><code>scope(...ids)</code></a>：为元素指定作用域 id，供 <code>update(id)</code> 使用。</li>
         <li><a href="#api-when"><code>when(condition, ...content)</code></a>：条件内容，带 <code>.when()</code> 和 <code>.else()</code>。</li>
-        <li><a href="#api-list"><code>list(items, renderItem)</code></a>：每项一行，按标识匹配。</li>
+        <li><a href="#api-list"><code>list(items, renderItem)</code></a>：每项一行，按严格相等匹配。</li>
         <li><a href="#api-region"><code>region(options)</code></a> 和 <a href="#api-region"><code>into(id, ...content)</code></a>：树中的一个命名位置，以及从任何地方填充它的内容。</li>
         <li><a href="#events"><code>on(type, listener, options?)</code></a>：事件监听器，或 <a href="#lifecycle"><code>on('mount')</code> / <code>on('destroy')</code></a>。</li>
         <li><a href="#api-render"><code>render(App, parent?)</code></a>：构建并追加。</li>
         <li><a href="#api-hydrate"><code>hydrate(App, parent?)</code></a>：接管服务端 HTML。</li>
-        <li><a href="#api-force-update"><code>forceUpdate()</code></a>：再次调用组件并修补 DOM。</li>
+        <li><a href="#api-force-update"><code>forceUpdate()</code></a>：再次调用组件并更新现有 DOM。</li>
         <li><a href="#api-styling"><code>css(name?, style)</code></a>：从样式对象生成类。</li>
-        <li><a href="#api-cx"><code>cx(...inputs)</code></a>：组合样式，后者胜出。</li>
+        <li><a href="#api-cx"><code>cx(...inputs)</code></a>：组合样式，后者优先。</li>
         <li><a href="#api-create-css"><code>createCss(theme)</code></a>：带主题的 <code>css</code>、<code>cx</code>、<code>variants</code>、<code>keyframes</code> 和 <code>globalStyle</code>。</li>
         <li><a href="#api-variants"><code>variants(config)</code></a>：由选项生成样式。</li>
         <li><a href="#api-keyframes"><code>keyframes(frames)</code></a> 和 <a href="#api-keyframes"><code>globalStyle(selector, style)</code></a>。</li>
@@ -964,7 +964,7 @@ async function loadData() {
       </ul>
       <h3>仅全局</h3>
       <ul>
-        <li><a href="#tag-builders">175 个标签构建器</a>：<code>div</code>、<code>span</code>、…、<code>var_</code>，以及 <code>svgSvg</code>、<code>pathSvg</code>、…。</li>
+        <li><a href="#tag-builders">175 个标签构建函数</a>：<code>div</code>、<code>span</code>、…、<code>var_</code>，以及 <code>svgSvg</code>、<code>pathSvg</code>、…。</li>
         <li><a href="#typescript-setup">类型</a>：<code>NodeModFn</code>、<code>NodeModLike</code>、<code>ExpandedElement</code> 等。<code>StyleResult</code> 等样式类型也可以从 <code>'nuclo'</code> 导入。</li>
       </ul>
       <h3>特殊键</h3>
@@ -982,7 +982,7 @@ async function loadData() {
       <p>不会。在你调用 <code>update()</code> 之前，DOM 保持原样。</p>
 
       <h3>Nuclo 使用 signal、proxy 或虚拟 DOM 吗？</h3>
-      <p>不。状态就是普通的 JavaScript。渲染一棵树时，Nuclo 创建真实的元素和文本节点。<code>update()</code> 运行所有已注册的动态值（或给定作用域内的动态值），并在值发生变化的地方修补这些同样的节点。没有依赖图，也没有虚拟树。</p>
+      <p>不。状态就是普通的 JavaScript。渲染一棵树时，Nuclo 创建真实的元素和文本节点。<code>update()</code> 运行所有已注册的动态值（或给定作用域内的动态值），并在值发生变化时更新现有节点。没有依赖图，也没有虚拟树。</p>
 
       <h3>为什么我的页面显示 "false"？</h3>
       <p>布尔值会被渲染为文本。<code>div(ok &amp;&amp; span('Done'))</code> 会显示 "false"。子节点请用 <code>when(() =&gt; ok, span('Done'))</code>，文本请用 <code>ok ? 'Done' : ''</code>。</p>

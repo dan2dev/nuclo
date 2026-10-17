@@ -18,8 +18,8 @@ export const nav = {
 };
 
 export const footer = {
-  tagline: "Le runtime UI explicite. Des fonctions ordinaires, un état mutable et un seul appel entre vos données et le DOM.",
-  builtWith: "Ce site est construit avec Nuclo.",
+  tagline: "Le runtime d'interface à mises à jour explicites. Des fonctions ordinaires, un état mutable et un seul appel entre vos données et le DOM.",
+  builtWith: "Ce site est réalisé avec Nuclo.",
   explore: "Explorer",
   documentation: "Documentation",
   examples: "Exemples",
@@ -27,7 +27,7 @@ export const footer = {
   project: "Projet",
   github: "GitHub",
   license: "Licence MIT",
-  fineprint: "© 2026 Danilo Castro (@dan2dev) · MIT License",
+  fineprint: "© 2026 Danilo Castro (@dan2dev) · Licence MIT",
 };
 
 export const app = {
@@ -55,12 +55,12 @@ export const seo = {
   routes: {
     home: {
       title: "Nuclo - Framework DOM léger à mises à jour explicites",
-      description: "Nuclo est une bibliothèque DOM TypeScript légère et sans dépendance. Construisez l'interface avec des fonctions, mutez un état ordinaire, appelez update(). Ni DOM virtuel, ni proxies, ni signaux.",
+      description: "Nuclo est une bibliothèque DOM TypeScript légère et sans dépendance. Construisez l'interface avec des fonctions, modifiez un état ordinaire, appelez update(). Ni DOM virtuel, ni proxies, ni signaux.",
       keywords: "nuclo, framework dom, valeurs dépendantes de l'état, mises à jour explicites, état mutable, javascript, typescript, framework ui, léger",
     },
     "apps/:id": {
       title: "Applications autonomes - Exemples Nuclo",
-      description: "Exemples d'applications Nuclo interactives dans un espace de travail plein navigateur.",
+      description: "Exemples d'applications Nuclo interactives dans un espace de travail qui occupe tout le navigateur.",
     },
     desktop: {
       title: "Nuclo OS - Bureau",

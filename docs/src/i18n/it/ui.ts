@@ -18,7 +18,7 @@ export const nav = {
 };
 
 export const footer = {
-  tagline: "Il runtime UI esplicito. Funzioni semplici, stato mutabile e una sola chiamata tra i tuoi dati e il DOM.",
+  tagline: "Il runtime UI con aggiornamenti espliciti. Funzioni semplici, stato mutabile e una sola chiamata tra i tuoi dati e il DOM.",
   builtWith: "Questo sito è costruito con Nuclo.",
   explore: "Esplora",
   documentation: "Documentazione",
@@ -27,7 +27,7 @@ export const footer = {
   project: "Progetto",
   github: "GitHub",
   license: "Licenza MIT",
-  fineprint: "© 2026 Danilo Castro (@dan2dev) · MIT License",
+  fineprint: "© 2026 Danilo Castro (@dan2dev) · Licenza MIT",
 };
 
 export const app = {
@@ -60,7 +60,7 @@ export const seo = {
     },
     "apps/:id": {
       title: "App standalone - Esempi Nuclo",
-      description: "Esempi interattivi di app Nuclo in uno spazio di lavoro a tutto browser.",
+      description: "Esempi interattivi di app Nuclo in uno spazio di lavoro che occupa tutta la finestra del browser.",
     },
     desktop: {
       title: "Nuclo OS - Desktop",
@@ -68,7 +68,7 @@ export const seo = {
     },
     docs: {
       title: "Documentazione Nuclo - Guida e riferimento API",
-      description: "Documentazione Nuclo: installazione, tag builder, update() esplicito, when() e list(), eventi, ciclo di vita, SSR e idratazione, CSS-in-TS tipizzato e il riferimento API completo.",
+      description: "Documentazione Nuclo: installazione, builder di tag, aggiornamenti espliciti con update(), when() e list(), eventi, ciclo di vita, SSR e idratazione, CSS-in-TS tipizzato e il riferimento API completo.",
       keywords: "documentazione nuclo, riferimento api, primi passi, update, list, when, on",
     },
     examples: {

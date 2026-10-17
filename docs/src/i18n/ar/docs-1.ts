@@ -11,7 +11,7 @@ export const GROUPS_1: DocGroupText[] = [
         id: "overview",
         title: "نظرة عامة",
         content: `
-      <p>Nuclo هي مكتبة DOM صغيرة لـ TypeScript. يمكنك إنشاء الصفحة بدوال عادية مثل <code>div()</code> و<code>button()</code>، والحفاظ على الحالة في المتغيرات العادية، واستدعاء <code>update()</code> عندما يجب أن تتغير الصفحة.</p>
+      <p>Nuclo هي مكتبة DOM صغيرة لـ TypeScript. يمكنك إنشاء الصفحة بدوال عادية مثل <code>div()</code> و<code>button()</code>، وحفظ الحالة في متغيرات عادية، واستدعاء <code>update()</code> عندما يجب أن تتغير الصفحة.</p>
       <p>Nuclo ليس لديه DOM افتراضي، ولا مصرّف، ولا بروكسيات ولا إشارات.</p>
       ${code("main.ts", `
 import 'nuclo'
@@ -28,19 +28,19 @@ render(App, document.getElementById('app')!)
 `)}
       <h3>النموذج الذهني</h3>
       <ol>
-        <li>قم ببناء UI باستخدام منشئي العلامات.</li>
+        <li>ابنِ الواجهة باستخدام دوال بناء الوسوم.</li>
         <li>قم بتمرير دالة لكل قيمة تعتمد على الحالة.</li>
         <li>قم بتغيير الحالة باستخدام JavaScript العادي.</li>
-        <li>اتصل بـ <code>update()</code>. يقوم Nuclo بتشغيل الدوال مرة أخرى ويقوم بتعديل DOM.</li>
+        <li>استدعِ <code>update()</code>. يقوم Nuclo بتشغيل الدوال مرة أخرى ويقوم بتعديل DOM.</li>
       </ol>
-      <p>تغيير المتغير لا يمس DOM. تتغير الصفحة فقط عند الاتصال بـ <code>update()</code>.</p>
+      <p>تغيير المتغير لا يمس DOM. تتغير الصفحة فقط عند استدعاء <code>update()</code>.</p>
     `,
       },
       {
         id: "quick-start",
         title: "البدء السريع",
         content: `
-      <p><code>create-nuclo</code> تدعم مشروع Vite وTypeScript الجاهز لـ Nuclo:</p>
+      <p>ينشئ <code>create-nuclo</code> هيكل مشروع Vite وTypeScript جاهزًا لاستخدام Nuclo:</p>
     `,
         afterContent: `
       <p>يطلب اسم المشروع. لتخطي المطالبة، قم بتمرير الاسم والأعلام. باستخدام npm، ضع <code>--</code> قبل الأعلام:</p>
@@ -63,30 +63,30 @@ render(App, document.getElementById('app')!)
         content: `
       <p>لإضافة Nuclo إلى مشروع موجود:</p>
       ${sh("npm install nuclo")}
-      <p>أو استخدم <code>pnpm add nuclo</code> أو <code>yarn add nuclo</code> أو <code>bun add nuclo</code>. Nuclo لا يوجد لديه تبعيات.</p>
-      <p>جزءًا من الحزمة الأساسية. يتم شحنه بشكل منفصل باسم <a href="#router-overview"><code>nuclo-router</code></a>، والذي تقوم بتثبيته بجوار <code>nuclo</code> عندما تحتاج إليه.</p>
+      <p>أو استخدم <code>pnpm add nuclo</code> أو <code>yarn add nuclo</code> أو <code>bun add nuclo</code>. لا يعتمد Nuclo على حزم خارجية.</p>
+      <p>التوجيه ليس جزءًا من الحزمة الأساسية. يتوفر في حزمة مستقلة باسم <a href="#router-overview"><code>nuclo-router</code></a>، تثبّتها إلى جانب <code>nuclo</code> عند الحاجة.</p>
       <h3>الأسماء في النطاق العام</h3>
       <p><code>import 'nuclo'</code> يضع هذه على <code>globalThis</code>:</p>
       <ul>
-        <li><strong>175 أدوات إنشاء العلامات </strong>: 112 لـ HTML (<code>div</code>، <code>span</code>، <code>button</code>، ...) و63 لـ SVG، مع لاحقة <code>Svg</code> (<code>svgSvg</code>، <code>pathSvg</code>، ...). راجع منشئي العلامات <a href="#tag-builders"></a>.</li>
-        <li><strong>16</strong>: <code>update</code>، <code>scope</code>، <code>when</code>، <code>list</code>، <code>region</code>، <code>into</code>، <code>on</code>، <code>render</code>، <code>hydrate</code>، <code>forceUpdate</code>، <code>css</code>، <code>cx</code>، <code>createCss</code>، <code>variants</code>، <code>keyframes</code> و<code>globalStyle</code>.</li>
+        <li><strong>175 دالة لبناء الوسوم</strong>: 112 لـ HTML (<code>div</code>، <code>span</code>، <code>button</code>، ...) و63 لـ SVG، بلاحقة <code>Svg</code> (<code>svgSvg</code>، <code>pathSvg</code>، ...). راجع <a href="#tag-builders">دوال بناء الوسوم</a>.</li>
+        <li><strong>16 دالة مساعدة</strong>: <code>update</code>، <code>scope</code>، <code>when</code>، <code>list</code>، <code>region</code>، <code>into</code>، <code>on</code>، <code>render</code>، <code>hydrate</code>، <code>forceUpdate</code>، <code>css</code>، <code>cx</code>، <code>createCss</code>، <code>variants</code>، <code>keyframes</code> و<code>globalStyle</code>.</li>
       </ul>
-      <p>يجب أن يتم تشغيل الاستيراد قبل أي تعليمات برمجية تستدعي المنشئ. تعمل وحدات ES بترتيب الاستيراد، لذلك يفشل هذا:</p>
+      <p>يجب أن يتم تشغيل الاستيراد قبل أي تعليمات برمجية تستدعي دالة البناء. تعمل وحدات ES بترتيب الاستيراد، لذلك يفشل هذا:</p>
       ${code("main.ts", `
 import { App } from './app' // app.ts calls div() → ReferenceError: div is not defined
 import 'nuclo'
 `)}
-      <p>ضع <code>import 'nuclo'</code> أولاً في ملف الإدخال الخاص بك، أو قم باستيراده في كل ملف يستخدم العناصر العالمية.</p>
+      <p>ضع <code>import 'nuclo'</code> أولاً في ملف الإدخال الخاص بك، أو قم باستيراده في كل ملف يستخدم الأسماء في النطاق العام.</p>
       <h3>الاستيرادات المسماة</h3>
-      <p>يتم تسمية المساعدين أيضًا بالصادرات. إنها نفس دوال العوالم. يتم تسمية <code>getCssText()</code> و<code>resetStyles()</code> بالصادرات فقط. منشئو العلامات هم عالميون فقط، لذا فإن <code>import { div } from 'nuclo'</code> لا يعمل.</p>
+      <p>تتوفر الدوال المساعدة أيضًا كتصديرات مسماة، وهي الدوال نفسها المسجّلة في النطاق العام. أما <code>getCssText()</code> و<code>resetStyles()</code> فتتوفران كتصديرات مسماة فقط. دوال بناء الوسوم متاحة في النطاق العام فقط، لذا لا يعمل <code>import { div } from 'nuclo'</code>.</p>
       ${code("main.ts", `
 import { render, update, getCssText } from 'nuclo'
 `)}
       <h3>نقاط الدخول</h3>
       <ul>
-        <li><code>nuclo</code>: يسجل العناصر العالمية ويصدر 16 مساعدًا بالإضافة إلى <code>getCssText</code> و<code>resetStyles</code>.</li>
-        <li><code>nuclo/ssr</code>: <code>renderToString</code>، <code>renderManyToString</code>، <code>renderToStringWithContainer</code> و<code>getCssText</code>. راجع عرض <a href="#api-ssr">Server</a>.</li>
-        <li><code>nuclo/polyfill</code>: DOM صغير للعقدة والكعكة. انظر <a href="#api-polyfill">nuclo/polyfill</a>.</li>
+        <li><code>nuclo</code>: يسجل الأسماء في النطاق العام ويصدر 16 مساعدًا بالإضافة إلى <code>getCssText</code> و<code>resetStyles</code>.</li>
+        <li><code>nuclo/ssr</code>: <code>renderToString</code>، <code>renderManyToString</code>، <code>renderToStringWithContainer</code> و<code>getCssText</code>. راجع <a href="#api-ssr">التصيير على الخادم</a>.</li>
+        <li><code>nuclo/polyfill</code>: تنفيذ صغير لـ DOM في Node وBun. انظر <a href="#api-polyfill">nuclo/polyfill</a>.</li>
         <li><code>nuclo/types</code>: الأنواع فقط. انظر <a href="#typescript-setup">TypeScript</a>.</li>
       </ul>
     `,
@@ -95,10 +95,10 @@ import { render, update, getCssText } from 'nuclo'
         id: "typescript-setup",
         title: "TypeScript",
         content: `
-      <p>Nuclo يشحن أنواعه الخاصة. تحتاج إلى شيئين:</p>
+      <p>يتضمن Nuclo تعريفات أنواعه. تحتاج إلى شيئين:</p>
       <ul>
         <li><code>"moduleResolution": "bundler"</code>. <code>node16</code> و<code>nodenext</code> غير مدعومين حتى الآن.</li>
-        <li>ليب <code>DOM</code>. يقوم TypeScript بتضمينه بشكل افتراضي عندما لا تقوم بضبط <code>lib</code>.</li>
+        <li>مكتبة <code>DOM</code>. يقوم TypeScript بتضمينه بشكل افتراضي عندما لا تقوم بضبط <code>lib</code>.</li>
       </ul>
       <p>إذا قام أي ملف في المشروع باستيراد <code>'nuclo'</code>، فسيرى كل ملف الأنواع العامة. لا تحتاج إلى أي شيء آخر. إذا لم يستورده أي ملف، على سبيل المثال في ملف tsconfig منفصل للاختبارات، فأضف الأنواع بنفسك:</p>
       ${code("tsconfig.json", `
@@ -114,24 +114,24 @@ import { render, update, getCssText } from 'nuclo'
 `)}
       <p>أو أضف <code>/// &lt;reference types="nuclo/types" /&gt;</code> إلى ملف <code>.d.ts</code>.</p>
       <h3>أنواع مفيدة</h3>
-      <p>هذه الأنواع عالمية، لذا يمكنك استخدامها دون استيراد:</p>
+      <p>هذه الأنواع متاحة في النطاق العام، لذا يمكنك استخدامها دون استيراد:</p>
       <ul>
-        <li><code>NodeModFn&lt;Tag&gt;</code>: ما يعود به منشئ العلامات. استخدمه كنوع إرجاع للمكون.</li>
-        <li><code>NodeModLike&lt;Tag&gt;</code>: أي شيء يقبله منشئ العلامات كوسيطة.</li>
-        <li><code>ExpandedElement&lt;Tag&gt;</code>: ما يعود <code>render()</code> و <code>hydrate()</code>.</li>
-        <li><code>ElementTagName</code>: أي اسم علامة HTML.</li>
-        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: كائن السمة الذي يقبله منشئ العلامات، بما في ذلك معالجات <code>on*</code> و<code>onMount</code> و<code>onDestroy</code>. استخدمه للمكونات التي تمرر السمات من خلالها.</li>
+        <li><code>NodeModFn&lt;Tag&gt;</code>: نوع القيمة التي تُرجعها دالة بناء الوسوم. استخدمه كنوع إرجاع للمكون.</li>
+        <li><code>NodeModLike&lt;Tag&gt;</code>: أي شيء تقبله دالة بناء الوسوم كوسيطة.</li>
+        <li><code>ExpandedElement&lt;Tag&gt;</code>: نوع القيمة التي تُرجعها <code>render()</code> و<code>hydrate()</code>.</li>
+        <li><code>ElementTagName</code>: أي اسم وسم HTML.</li>
+        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: كائن السمة الذي تقبله دالة بناء الوسوم، بما في ذلك معالجات <code>on*</code> و<code>onMount</code> و<code>onDestroy</code>. استخدمه للمكونات التي تمرر السمات من خلالها.</li>
         <li><code>MountCallback</code> و<code>DestroyCallback</code>: معالجات <code>onMount</code> و<code>onDestroy</code>.</li>
-        <li><code>WhenBuilder</code>، <code>ListModifier</code>: ما يعود به <code>when()</code> و<code>list()</code>.</li>
-        <li><code>RegionOptions</code>، <code>RegionType</code>: الخيارات التي يتخذها <code>region()</code>.</li>
-        <li><code>StyleResult</code>، <code>Style</code>، <code>ThemeConfig</code>، <code>CssInstance</code> وأنواع التصميم الأخرى. يمكنك أيضًا استيراد هذه: <code>import type { StyleResult } from 'nuclo'</code>.</li>
+        <li><code>WhenBuilder</code>، <code>ListModifier</code>: نوعا القيمتين اللتين تُرجعهما <code>when()</code> و<code>list()</code>.</li>
+        <li><code>RegionOptions</code>، <code>RegionType</code>: الخيارات التي تقبلها <code>region()</code>.</li>
+        <li><code>StyleResult</code>، <code>Style</code>، <code>ThemeConfig</code>، <code>CssInstance</code> وأنواع التنسيق الأخرى. يمكنك أيضًا استيراد هذه: <code>import type { StyleResult } from 'nuclo'</code>.</li>
       </ul>
       ${code("badge.ts", `
 function Badge(text: string): NodeModFn<'span'> {
   return span(text)
 }
 `)}
-      <p>يقوم <code>ExpandedElement&lt;Tag&gt;</code> بوضع علامة على كل عضو في DOM كاختياري. قم بإلقائها عندما تحتاج إلى نوع العنصر الكامل: <code>render(App, root) as HTMLDivElement</code>.</p>
+      <p>يقوم <code>ExpandedElement&lt;Tag&gt;</code> بوضع علامة على كل عضو في DOM كاختياري. استخدم تحويل النوع عندما تحتاج إلى نوع العنصر الكامل: <code>render(App, root) as HTMLDivElement</code>.</p>
     `,
       },
     ],
@@ -143,10 +143,10 @@ function Badge(text: string): NodeModFn<'span'> {
     sections: [
       {
         id: "tag-builders",
-        title: "بُناة الوسوم",
+        title: "دوال بناء الوسوم",
         content: `
-      <p>كل علامة HTML هي دالة عامة بنفس الاسم: <code>div</code>، <code>span</code>، <code>input</code>، ... الاستثناء الوحيد هو <code>&lt;var&gt;</code>، وهو <code>var_</code> لأن <code>var</code> هي كلمة محجوزة. تحتوي كل علامة SVG على لاحقة <code>Svg</code>: <code>svgSvg</code>، <code>pathSvg</code>، <code>circleSvg</code>، ...</p>
-      <p>لا يؤدي استدعاء منشئ العلامات إلى إنشاء عنصر بعد. تقوم <code>div('Hi')</code> بإرجاع <strong>builder</strong>: دالة تقوم بإنشاء العنصر لاحقًا. يستدعيه Nuclo عندما تقوم بتركيبه باستخدام <code>render()</code> أو وضعه داخل منشئ آخر، <code>when()</code> أو <code>list()</code>. كل استخدام يخلق عنصرا جديدا.</p>
+      <p>كل وسم HTML له دالة عامة بنفس الاسم: <code>div</code>، <code>span</code>، <code>input</code>، ... الاستثناء الوحيد هو <code>&lt;var&gt;</code>، وهو <code>var_</code> لأن <code>var</code> هي كلمة محجوزة. تحمل دالة كل وسم SVG اللاحقة <code>Svg</code>: <code>svgSvg</code>، <code>pathSvg</code>، <code>circleSvg</code>، ...</p>
+      <p>لا يؤدي استدعاء دالة بناء الوسوم إلى إنشاء عنصر بعد. تقوم <code>div('Hi')</code> بإرجاع <strong>دالة بناء</strong>: دالة تقوم بإنشاء العنصر لاحقًا. يستدعيه Nuclo عندما تقوم بتركيبه باستخدام <code>render()</code> أو وضعه داخل دالة بناء أخرى، <code>when()</code> أو <code>list()</code>. يُنشئ كل استخدام عنصرًا جديدًا.</p>
       ${code("card.ts", `
 let name = 'Ada'
 
@@ -163,28 +163,28 @@ render(Card, document.body)
     `,
         afterContent: `
       <h3>الوسائط</h3>
-      <p>يأخذ المنشئ أي عدد من الوسائط ويطبقها من اليسار إلى اليمين:</p>
+      <p>تقبل دالة البناء أي عدد من الوسائط ويطبقها من اليسار إلى اليمين:</p>
       <ul>
         <li><strong>string، number، bigint</strong>: عقدة نصية.</li>
         <li><strong><code>() =&gt; value</code></strong>: النص الذي يتغير على <code>update()</code>. راجع <a href="#dynamic-functions"> القيم الديناميكية </a>.</li>
         <li><strong><code>null</code>، <code>undefined</code></strong>: تم تخطيه.</li>
-        <li><strong><code>true</code>، <code>false</code></strong>: يتم تقديمه كنص "صحيح" أو "false". استخدم <code>when()</code> للشروط.</li>
-        <li><strong>A كائن عادي </strong>: السمات. راجع <a href="#attributes">Attributes</a>.</li>
-        <li><strong>A <code>css()</code> أو <code>cx()</code> أو <code>variants()</code></strong>: تضيف فئاتها.</li>
+        <li><strong><code>true</code>، <code>false</code></strong>: تُعرض كنص "true" أو "false". استخدم <code>when()</code> للشروط.</li>
+        <li><strong>كائن عادي</strong>: السمات. راجع <a href="#attributes">السمات</a>.</li>
+        <li><strong>نتيجة <code>css()</code> أو <code>cx()</code> أو <code>variants()</code></strong>: تضيف فئاتها.</li>
         <li><strong><code>on(...)</code></strong>: مستمع الأحداث أو خطاف دورة الحياة.</li>
-        <li><strong> منشئ آخر، <code>when()</code> أو <code>list()</code></strong>: طفل.</li>
-        <li><strong>A DOM <code>Node</code></strong>: ملحق كما هو.</li>
+        <li><strong> دالة بناء أخرى، <code>when()</code> أو <code>list()</code></strong>: عنصر فرعي.</li>
+        <li><strong>عقدة DOM من نوع <code>Node</code></strong>: ملحق كما هو.</li>
         <li><strong><code>(el, index) =&gt; …</code></strong>: معدل مخصص. انظر أدناه.</li>
       </ul>
       <h3>محاذير شائعة</h3>
       <ul>
         <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> يعرض النص "false". اكتب <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
-        <li>ليست عناصر فرعيةًا. انشروها: <code>ul(...names.map((n) =&gt; li(n)))</code>. بالنسبة للقوائم التي تتغير، استخدم <code>list()</code>.</li>
-        <li>يخفي المتغير المحلي الذي يحمل اسم العلامة المنشئ. داخل <code>function Row(label: string)</code>، <code>label(...)</code> غير قابل للاستدعاء. إعادة تسمية السكان المحليين مثل <code>label</code>، <code>title</code>، <code>data</code>، <code>p</code>، <code>a</code> و<code>i</code>.</li>
-        <li>كل عنصر يحتوي على <code>id</code> كمتغير عام. إذا كانت الصفحة تحتوي على <code>&lt;main id="main"&gt;</code> قبل تحميل Nuclo، فإن Nuclo يترك ذلك العمومي في مكانه، لذلك يقوم <code>main(...)</code> بطرح <code>TypeError</code>. استخدم معرفات أخرى.</li>
+        <li>المصفوفات ليست عناصر فرعية بحد ذاتها. انشر عناصرها: <code>ul(...names.map((n) =&gt; li(n)))</code>. بالنسبة للقوائم التي تتغير، استخدم <code>list()</code>.</li>
+        <li>يخفي المتغير المحلي الذي يحمل اسم الوسم دالة البناء. داخل <code>function Row(label: string)</code>، <code>label(...)</code> غير قابل للاستدعاء. غيّر أسماء المتغيرات المحلية مثل <code>label</code>، <code>title</code>، <code>data</code>، <code>p</code>، <code>a</code> و<code>i</code>.</li>
+        <li>تتيح المتصفحات كل عنصر يحمل <code>id</code> كمتغير عام. إذا احتوت الصفحة على <code>&lt;main id="main"&gt;</code> قبل تحميل Nuclo، يُبقي Nuclo هذا المتغير كما هو، لذا يرمي <code>main(...)</code> خطأ <code>TypeError</code>. استخدم معرّفات أخرى.</li>
       </ul>
       <h3>معدّلات مخصصة</h3>
-      <p>يتم تشغيل الدالة التي تعلن عن معلمة واحدة على الأقل مرة واحدة، بترتيب الوسيطة، أثناء إنشاء العنصر. حجتها الأولى هي العنصر. والثاني هو فهرس داخلي فلا تعتمد عليه. إذا أعادت سلسلة أو رقمًا، فسيصبح ذلك نصًا. تم إلحاق <code>Node</code>. يتم تطبيق كائن كسمات.</p>
+      <p>يتم تشغيل الدالة التي تعلن عن معلمة واحدة على الأقل مرة واحدة، بترتيب الوسائط، أثناء إنشاء العنصر. وسيطتها الأولى هي العنصر. والثانية هي فهرس داخلي فلا تعتمد عليه. إذا أعادت سلسلة أو رقمًا، فسيصبح ذلك نصًا. إذا أعادت <code>Node</code> أُلحقت العقدة، وإذا أعادت كائنًا طُبّق كسمات.</p>
       ${code("example.ts", `
 const field = input((el) => {
   el.autocomplete = 'off'
@@ -198,7 +198,7 @@ document.body.append(el)
 `)}
       <p>قم بإرفاقه قبل <code>update()</code> التالي. العقدة غير الموجودة في المستند عند تشغيل <code>update()</code> تتوقف عن التحديث للأبد.</p>
       <h3>SVG</h3>
-      <p>SVG نفس الحجج. يقوم Nuclo بتعيين كل سمة SVG مع <code>setAttribute</code>، لذلك تعمل الأسماء مثل <code>"stroke-width"</code> كما هو مكتوب.</p>
+      <p>تقبل دوال بناء SVG الوسائط نفسها. يعيّن Nuclo كل سمة SVG باستخدام <code>setAttribute</code>، لذلك تعمل الأسماء مثل <code>"stroke-width"</code> كما هو مكتوب.</p>
       ${code("icon.ts", `
 const Icon = () =>
   svgSvg(
@@ -215,7 +215,7 @@ const Icon = () =>
         id: "components",
         title: "المكوّنات",
         content: `
-      <p>المكون هو دالة بسيطة تقوم بإرجاع منشئ، مثل <code>button(...)</code>. لا يوجد مكون API. لا يتم خلق شيء حتى تصنعه أو تضعه في شجرة.</p>
+      <p>المكون هو دالة بسيطة تقوم بإرجاع منشئ، مثل <code>button(...)</code>. لا توجد واجهة API خاصة بالمكوّنات. لا يُنشأ شيء حتى تصيّره أو تضعه في شجرة.</p>
       ${code("counter.ts", `
 function Counter(label: string) {
   let count = 0 // one per call
@@ -228,8 +228,8 @@ render(() => div(Counter('A'), Counter('B')))
 `)}
     `,
         afterContent: `
-      <p>المعلنة داخل الدالة إلى هذا المثيل. يتم مشاركة الدولة المعلنة بالخارج في كل حالة. يقوم <code>forceUpdate()</code> باستدعاء المكونات مرة أخرى، مما يؤدي إلى إعادة تعيين الحالة المعلنة بداخلها.</p>
-      <p>العناصر الفرعية مجرد حجج:</p>
+      <p>تخص الحالة المعرّفة داخل الدالة ذلك المثيل وحده، أما الحالة المعرّفة خارجها فتشترك فيها جميع المثيلات. يعيد <code>forceUpdate()</code> استدعاء المكوّنات، فتُعاد تهيئة الحالة المعرّفة داخلها.</p>
+      <p>العناصر الفرعية مجرد وسائط:</p>
       ${code("card.ts", `
 function Card(heading: string, ...children: NodeModLike<'div'>[]) {
   return div({ className: 'card' }, h2(heading), ...children)
@@ -256,12 +256,12 @@ const save = button(
         afterContent: `
       <h3>كيفية تعيين القيمة</h3>
       <ul>
-        <li>اذا كان العنصر HTML يحتوي على خاصية بهذا الاسم (<code>value</code>، <code>checked</code>، <code>disabled</code>، <code>htmlFor</code>، <code>tabIndex</code>، ...)، يقوم Nuclo بتعيين الخاصية. وإلا فإنه يستدعي <code>setAttribute(key, String(value))</code>، على سبيل المثال <code>"aria-*"</code> و<code>"data-*"</code>.</li>
+        <li>اذا كان العنصر HTML يحتوي على خاصية بهذا الاسم (<code>value</code>، <code>checked</code>، <code>disabled</code>، <code>htmlFor</code>، <code>tabIndex</code>، ...)، يعيّن Nuclo الخاصية. وإلا فإنه يستدعي <code>setAttribute(key, String(value))</code>، على سبيل المثال <code>"aria-*"</code> و<code>"data-*"</code>.</li>
         <li>في عناصر SVG، يستدعي Nuclo دائمًا <code>setAttribute</code>.</li>
         <li>تم تخطي <code>null</code> و<code>undefined</code>. القيمة الديناميكية التي تُرجع <code>null</code> أو <code>undefined</code> تحافظ على القيمة القديمة. لمسح قيمة، قم بإرجاع <code>""</code> أو <code>false</code> لخاصية منطقية.</li>
-        <li>على الخصائص المنطقية DOM، مثل <code>disabled</code> على زر، و<code>checked</code>، و<code>hidden</code>، و<code>required</code>. في أي مكان آخر، تتم كتابة <code>true</code> و<code>false</code> كالسلسلتين "true" و"false".</li>
+        <li>تعمل القيم المنطقية مع خصائص DOM المنطقية، مثل <code>disabled</code> في الأزرار و<code>checked</code> و<code>hidden</code> و<code>required</code>. وفي غير ذلك، تُكتب <code>true</code> و<code>false</code> كسلسلتين نصيتين "true" و"false".</li>
         <li>استخدم مفاتيح <code>"data-*"</code>. <code>dataset</code> غير مدعوم.</li>
-        <li>لم يتم الهروب من <code>innerHTML</code>، ولا يقوم عرض الخادم بإخراجه. تجنب ذلك.</li>
+        <li>لا تُحوَّل محارف <code>innerHTML</code> الخاصة إلى كيانات HTML، ولا يظهر محتواه في مخرجات التصيير على الخادم. تجنّب استخدامه.</li>
       </ul>
       <h3>أصناف CSS</h3>
       <p>استخدم <code>className</code>. يتم دمج سلاسل الفئات الثابتة ونتائج <code>css()</code> و<code>className</code> الديناميكية. تحافظ <code>className</code> الديناميكية على الفئات الثابتة، وعندما تقوم بإرجاع <code>""</code> تبقى الفئات الثابتة فقط.</p>
@@ -282,9 +282,9 @@ const bar = div({ style: () => ({ width: \`\${progress}%\`, backgroundColor: 'te
 `)}
       <ul>
         <li>Nuclo لا يضيف أي وحدات. اكتب <code>"12px"</code>، وليس <code>12</code>. الخصائص بدون وحدات مثل <code>opacity</code> و<code>zIndex</code> تقبل الأرقام.</li>
-        <li><code>""</code> و<code>null</code> و<code>undefined</code> بمسح خاصية.</li>
+        <li><code>""</code> و<code>null</code> و<code>undefined</code> تمسح الخاصية.</li>
         <li>يقوم النمط الديناميكي بتعيين المفاتيح التي يُرجعها فقط. المفتاح الذي يتوقف عن العودة يحتفظ بقيمته القديمة، لذا قم بإرجاع <code>""</code> لمسحه.</li>
-        <li>سلاسل الأنماط (<code>"color: red"</code>) والخصائص المخصصة (<code>"--gap"</code>) غير مدعومة. استخدم <code>css()</code> بدلاً من ذلك. يستغرق خصائص مخصصة من خلال <a href="#style-objects"><code>raw</code></a>.</li>
+        <li>سلاسل الأنماط (<code>"color: red"</code>) والخصائص المخصصة (<code>"--gap"</code>) غير مدعومة. استخدم <code>css()</code> بدلاً من ذلك. يقبل الخصائص المخصصة من خلال <a href="#style-objects"><code>raw</code></a>.</li>
       </ul>
     `,
       },
@@ -307,10 +307,10 @@ const search = input({
 `)}
       <ul>
         <li>يستنتج TypeScript نوع الحدث من المفتاح والعنصر. <code>e.currentTarget</code> و <code>this</code> هما العنصر.</li>
-        <li>Nuclo بتعيين الخاصية الأصلية، بحيث يصبح <code>onClick</code> <code>el.onclick</code>. يوجد معالج واحد لكل حدث: يحل <code>onClick</code> الأحدث محل معالج سابق.</li>
-        <li><code>onDoubleClick</code> و<code>onDblClick</code> كلاهما يعني <code>dblclick</code>. المفاتيح الصغيرة مثل <code>onclick</code> هي أخطاء في الكتابة.</li>
-        <li>الاسم الذي ليس حدثًا معروفًا يستمع إلى شكله الصغير: <code>onMyEvent</code> يستمع إلى <code>"myevent"</code>.</li>
-        <li>لا يتم اكتشاف الأخطاء التي يلقيها المعالج.</li>
+        <li>يعيّن Nuclo الخاصية الأصلية، بحيث يصبح <code>onClick</code> <code>el.onclick</code>. يوجد معالج واحد لكل حدث: يحل <code>onClick</code> الأحدث محل معالج سابق.</li>
+        <li><code>onDoubleClick</code> و<code>onDblClick</code> كلاهما يعني <code>dblclick</code>. المفاتيح المكتوبة بأحرف صغيرة مثل <code>onclick</code> تسبب أخطاء في الأنواع.</li>
+        <li>الاسم الذي ليس حدثًا معروفًا يستمع إلى اسمه بالأحرف الصغيرة: <code>onMyEvent</code> يستمع إلى <code>"myevent"</code>.</li>
+        <li>لا تُلتقط الاستثناءات التي يرميها المعالج.</li>
       </ul>
     `,
         afterContent: `
@@ -324,10 +324,10 @@ const panel = div(
 )
 `)}
       <ul>
-        <li>يضيف كل <code>on()</code> مستمعًا. كلهم يركضون بالترتيب.</li>
+        <li>يضيف كل <code>on()</code> مستمعًا مستقلًا، وتُنفَّذ جميع المستمعات بالترتيب.</li>
         <li><code>options</code> ينتقل مباشرة إلى <code>addEventListener</code>: <code>capture</code>، <code>once</code>، <code>passive</code>، <code>signal</code>.</li>
-        <li>قم بتمرير <code>on()</code> مباشرة إلى المُنشئ ويتم استنتاج نوع العنصر: <code>input(on('input', (e) =&gt; e.currentTarget.value))</code>.</li>
-        <li>إذا قام المستمع بالرمي، يقوم Nuclo بتسجيل الخطأ باستخدام <code>console.error</code>، وتظل المستمعات الأخرى قيد التشغيل.</li>
+        <li>قم بتمرير <code>on()</code> مباشرة إلى دالة البناء ويتم استنتاج نوع العنصر: <code>input(on('input', (e) =&gt; e.currentTarget.value))</code>.</li>
+        <li>إذا رمى أحد المستمعات استثناءً، يسجّل Nuclo الخطأ باستخدام <code>console.error</code> ويواصل تنفيذ المستمعات الأخرى.</li>
         <li>Nuclo يزيل المستمع عندما يزيل العنصر. على الخادم، <code>on()</code> لا يفعل شيئًا.</li>
         <li>يمكنك إعادة استخدام قيمة <code>on()</code> واحدة على العديد من العناصر.</li>
       </ul>
@@ -345,7 +345,7 @@ const picker = ul(on<'pick', PickEvent>('pick', (e) => choose(e.detail.id)))
         id: "lifecycle",
         title: "دورة الحياة",
         content: `
-      <p><code>onMount</code> مرة واحدة، بعد إدراج العنصر. يتم تشغيل <code>onDestroy</code> مرة واحدة، عندما يقوم Nuclo بإزالة العنصر. اكتبها كسمات أو باستخدام <code>on()</code>. يتصرف كلا النموذجين بنفس الطريقة، ويتم كتابة العنصر من علامته.</p>
+      <p>يُنفَّذ <code>onMount</code> مرة واحدة بعد إدراج العنصر، ويُنفَّذ <code>onDestroy</code> مرة واحدة عند إزالة Nuclo للعنصر. اكتبهما كسمات أو باستخدام <code>on()</code>. يعمل الشكلان بالطريقة نفسها، ويُستنتج نوع العنصر من وسمه.</p>
       ${code("timer.ts", `
 let seconds = 0
 
@@ -366,8 +366,8 @@ const search = input(on('mount', (el) => el.focus()))
         afterContent: `
       <h3>متى تُنفَّذ؟</h3>
       <ul>
-        <li><code>onMount</code> في نهاية استدعاء <code>render()</code> أو <code>hydrate()</code> أو <code>update()</code> أو <code>forceUpdate()</code> الذي قام بإدراج العنصر. لا تعمل أبدًا أثناء بناء الشجرة.</li>
-        <li>إذا قام <code>onMount</code> بإرجاع دالة، فسيتم تشغيل هذه الدالة عند التدمير، بعد عمليات الاسترجاعات <code>onDestroy</code> للعنصر.</li>
+        <li>يُنفَّذ <code>onMount</code> في نهاية استدعاء <code>render()</code> أو <code>hydrate()</code> أو <code>update()</code> أو <code>forceUpdate()</code> الذي أدرج العنصر. لا يُنفَّذ أثناء بناء الشجرة.</li>
+        <li>إذا قام <code>onMount</code> بإرجاع دالة، فسيتم تشغيل هذه الدالة عند التدمير، بعد دوال <code>onDestroy</code> للعنصر.</li>
         <li>يتم تشغيل <code>onDestroy</code> عندما يقوم Nuclo بإزالة العنصر: تتم إزالة صف <code>list()</code>، أو يقوم فرع <code>when()</code> بتبديله، أو يترك <code>into()</code> منطقته، أو يقوم <code>forceUpdate()</code> بإسقاطه. يتم تشغيله قبل الإزالة مباشرةً، لذا يظل العنصر موجودًا في المستند.</li>
       </ul>
       <h3>إزالة عناصر DOM مباشرة</h3>
@@ -381,14 +381,14 @@ update() // App's onDestroy hooks and cleanups run
 `)}
       <h3>الترتيب والأخطاء</h3>
       <ul>
-        <li>يمكنك تسجيل أي عدد تريده من الخطافات، في أي من النموذجين. أنها تعمل في ترتيب التسجيل.</li>
-        <li>يقوم <code>onDestroy</code> دائمًا بتشغيل العناصر الفرعية أولاً، ثم الوالدين.</li>
-        <li>بترتيب خطاف <code>onMount</code> الأول، والذي يتبع ترتيب الوسيطة، ويقوم كل عنصر بتشغيل جميع خطافاته معًا. مرر خطاف الوالدين قبل أبنائه إذا كانوا يعتمدون عليه.</li>
-        <li>يتم تسجيل الخطاف الذي يتم رميه باستخدام <code>console.error</code>. الخطافات الأخرى لا تزال تعمل.</li>
-        <li>يجب أن لا يُرجع رد الاتصال شيئًا أو يُرجع دالة تنظيف، لذا لا تجعله <code>async</code>. لا يتم استخدام الوعد الذي تم إرجاعه أبدًا كتنظيف. ابدأ العمل غير المتزامن بداخله: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
-        <li>مطلقًا على الخادم. على العميل، يتم تشغيلها بعد <code>hydrate()</code>.</li>
+        <li>يمكنك تسجيل أي عدد من الخطافات بأي من الشكلين، وتُنفَّذ بترتيب تسجيلها.</li>
+        <li>تُنفَّذ خطافات <code>onDestroy</code> للعناصر الفرعية أولًا، ثم للعنصر الأب.</li>
+        <li>تُركَّب العناصر حسب ترتيب أول خطاف <code>onMount</code> لكل منها، وهو ترتيب الوسائط، وتُنفَّذ جميع خطافات العنصر معًا. مرّر خطاف العنصر الأب قبل عناصره الفرعية إذا كانت تعتمد عليه.</li>
+        <li>إذا رمى خطاف استثناءً، يُسجَّل الخطأ باستخدام <code>console.error</code> ويستمر تنفيذ الخطافات الأخرى.</li>
+        <li>يجب أن تُرجع دالة الاستدعاء إما لا شيء أو دالة تنظيف، لذا لا تجعله <code>async</code>. لا يتم استخدام الوعد الذي تم إرجاعه أبدًا كتنظيف. ابدأ العمل غير المتزامن بداخله: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
+        <li>لا تُنفَّذ الخطافات على الخادم مطلقًا. وعلى العميل تُنفَّذ بعد <code>hydrate()</code>.</li>
       </ul>
-      <div class="docs-callout"><strong>ملاحظة: خطافات </strong> ليست تأثيرات. لا يركضون مرة أخرى أبدًا عندما تتغير الحالة. يتم تشغيل كل واحد مرة واحدة على الأكثر لكل عنصر.</div>
+      <div class="docs-callout"><strong>ملاحظة: الخطافات </strong> ليست تأثيرات. لا تُنفّذ مجددًا عندما تتغير الحالة. يتم تشغيل كل واحد مرة واحدة على الأكثر لكل عنصر.</div>
     `,
       },
     ],
@@ -402,7 +402,7 @@ update() // App's onDestroy hooks and cleanups run
         id: "explicit-updates",
         title: "التحديثات الصريحة",
         content: `
-      <p>Nuclo لا يقوم أبدًا بتحديث الصفحة من تلقاء نفسه. قم بتغيير حالتك، ثم اتصل بـ <code>update()</code>.</p>
+      <p>Nuclo لا يقوم أبدًا بتحديث الصفحة من تلقاء نفسه. قم بتغيير حالتك، ثم استدعِ <code>update()</code>.</p>
       ${code("counter.ts", `
 let count = 0
 
@@ -415,7 +415,7 @@ render(Counter)
 `)}
     `,
         afterContent: `
-      <p>قم بتغيير الحالة كما تريد، ثم اتصل بـ <code>update()</code> مرة واحدة:</p>
+      <p>قم بتغيير الحالة كما تريد، ثم استدعِ <code>update()</code> مرة واحدة:</p>
       ${code("example.ts", `
 let first = 'Ada'
 let last = 'Lovelace'
@@ -426,14 +426,14 @@ first = 'Grace'
 last = 'Hopper'
 update() // one pass, both changes
 `)}
-      <p>اتصل بـ <code>update()</code> من معالجات الأحداث أو أجهزة ضبط الوقت أو جلب عمليات الاسترجاعات أو <code>onMount</code>. لا تسميها من داخل قيمة ديناميكية.</p>
+      <p>استدعِ <code>update()</code> من معالجات الأحداث أو المؤقتات أو دوال معالجة نتائج الجلب أو <code>onMount</code>. لا تستدعها من داخل دالة قيمة ديناميكية.</p>
     `,
       },
       {
         id: "dynamic-functions",
         title: "القيم الديناميكية",
         content: `
-      <p>دالة ذات <strong> لا توجد معلمات </strong> هي قيمة ديناميكية <strong></strong>. يقوم Nuclo بتشغيله مرة واحدة عندما يقوم ببناء العنصر، ومرة ​​أخرى على كل <code>update()</code>. استخدم القيم الديناميكية لأبناء النص وقيم السمات و<code>style</code> و<code>className</code>. بالنسبة للعناصر فرعية الذين يظهرون أو يختفون أو يتكررون، استخدم <a href="#api-when"><code>when()</code></a> و<a href="#api-list"><code>list()</code></a>.</p>
+      <p>الدالة التي <strong>لا تقبل معلمات</strong> هي <strong>قيمة ديناميكية</strong>. يشغّلها Nuclo مرة عند بناء العنصر، ثم عند كل <code>update()</code>. استخدمها للنصوص وقيم السمات و<code>style</code> و<code>className</code>. أما العناصر الفرعية التي تظهر أو تختفي أو تتكرر، فاستخدم لها <a href="#api-when"><code>when()</code></a> و<a href="#api-list"><code>list()</code></a>.</p>
       ${code("example.ts", `
 let name = 'Alice'
 let busy = false
@@ -447,22 +447,22 @@ const Profile = () =>
 `)}
     `,
         afterContent: `
-      <p>Nuclo يتحقق من عدد المعلمات (<code>fn.length</code>). الدالة التي تعلن عن معلمة هي <a href="#tag-builders"> معدل مخصص </a> ويتم تشغيلها مرة واحدة فقط. يبلغ طول <code>(x = 0) =&gt; …</code> و<code>(...args) =&gt; …</code> 0، لذا فهما ديناميكيان.</p>
+      <p>يتحقق Nuclo من عدد المعلمات (<code>fn.length</code>). الدالة التي تعرّف معلمة هي <a href="#tag-builders">معدّل مخصص</a> وتُنفَّذ مرة واحدة فقط. تبلغ قيمة length للدالتين <code>(x = 0) =&gt; …</code> و<code>(...args) =&gt; …</code> 0، لذا فهما ديناميكيان.</p>
       <h3>النص الديناميكي</h3>
       <ul>
-        <li>يتم عرض سلسلة أو رقم أو قيمة كبيرة أو منطقية على أنها <code>String(value)</code>. يعرض <code>() =&gt; ok &amp;&amp; 'Saved'</code> "false"، لذا اكتب <code>() =&gt; (ok ? 'Saved' : '')</code>.</li>
-        <li><code>null</code> و<code>undefined</code> كنص فارغ.</li>
-        <li>نتيجة <code>css()</code> أو <code>cx()</code> عند التشغيل الأول تجعل الدالة فئة ديناميكية، وليس نصًا. انظر <a href="#api-cx"><code>cx()</code></a>.</li>
-        <li>العقدة أو المنشئ أو المصفوفة أو الكائن العادي لا يعرض شيئًا ولا يتم تحديثه أبدًا.</li>
+        <li>يتم عرض سلسلة أو رقم أو قيمة bigint أو قيمة منطقية على أنها <code>String(value)</code>. يعرض <code>() =&gt; ok &amp;&amp; 'Saved'</code> "false"، لذا اكتب <code>() =&gt; (ok ? 'Saved' : '')</code>.</li>
+        <li>تُعرض <code>null</code> و<code>undefined</code> كنص فارغ.</li>
+        <li>إذا أعادت الدالة نتيجة <code>css()</code> أو <code>cx()</code> عند أول تشغيل، تُعامل كمصدر لصنف CSS ديناميكي بدلًا من نص. انظر <a href="#api-cx"><code>cx()</code></a>.</li>
+        <li>العقدة أو دالة البناء أو المصفوفة أو الكائن العادي لا يعرض شيئًا ولا يتم تحديثه أبدًا.</li>
       </ul>
       <h3>السمات الديناميكية</h3>
       <ul>
-        <li>Nuclo يكتب قيمة فقط عندما تختلف عن القيمة الأخيرة التي كتبها Nuclo. ولا تتم مقارنتها بـ DOM المباشر، لذلك إذا قام المستخدم بالكتابة في أحد المدخلات وأرجعت وظيفتك نفس القيمة كما كانت من قبل، فسيظل النص الذي كتبه موجودًا.</li>
-        <li>نتيجة <code>null</code> أو <code>undefined</code> لا تكتب شيئًا، لذا تبقى القيمة القديمة. <code>className</code> هو الاستثناء: أي نتيجة خاطئة تزيل الفئات الديناميكية وتحتفظ بالفئات الثابتة.</li>
+        <li>Nuclo يكتب قيمة فقط عندما تختلف عن القيمة الأخيرة التي كتبها Nuclo. ولا تتم مقارنتها بـ DOM المباشر، لذلك إذا قام المستخدم بالكتابة في أحد المدخلات وأرجعت دالتك نفس القيمة كما كانت من قبل، فسيظل النص الذي كتبه موجودًا.</li>
+        <li>نتيجة <code>null</code> أو <code>undefined</code> لا تكتب شيئًا، لذا تبقى القيمة القديمة. <code>className</code> هو الاستثناء: أي قيمة falsy تزيل الفئات الديناميكية وتحتفظ بالفئات الثابتة.</li>
         <li>تقوم الدالة <code>style</code> بتطبيق الكائن الذي يتم إرجاعه في كل تحديث.</li>
       </ul>
       <h3>الأخطاء</h3>
-      <p>إذا ظهرت قيمة ديناميكية، فسيكتشف Nuclo الخطأ وسيستمر تشغيل بقية التحديث. يصبح النص فارغًا أو يحتفظ بقيمته القديمة، وتحتفظ السمة بقيمتها القديمة. كلاهما يتعافى في <code>update()</code> التالي الذي ينجح. الاستثناء: دالة النص التي يتم طرحها عند تشغيل <strong>first</strong> تظل فارغة إلى الأبد.</p>
+      <p>إذا رمت دالة قيمة ديناميكية استثناءً، يلتقط Nuclo الخطأ ويواصل بقية التحديث. يصبح النص فارغًا أو يحتفظ بقيمته السابقة، وتحتفظ السمة بقيمتها السابقة. يعود كلاهما للعمل عند أول <code>update()</code> ناجح. الاستثناء هو دالة النص التي ترمي استثناءً عند تشغيلها <strong>لأول مرة</strong>: يظل نصها فارغًا دائمًا.</p>
     `,
       },
       {
@@ -474,15 +474,15 @@ const Profile = () =>
         <li><code>list()</code>: يقرأ العناصر مرة أخرى ويضيف أو ينقل أو يزيل الصفوف.</li>
         <li><code>when()</code>: التحقق من الشروط مرة أخرى. تتم إعادة بناء الفرع فقط عندما يصبح فرع مختلف نشطًا.</li>
         <li>السمات الديناميكية، بما في ذلك <code>style</code> و<code>className</code>.</li>
-        <li>نص ديناميكي.</li>
-        <li><code>onMount</code> للعناصر التي تم إدراج الخطوتين 1 و2 فيها.</li>
+        <li>النص الديناميكي.</li>
+        <li><code>onMount</code> للعناصر التي أُدرجت في الخطوتين 1 و2.</li>
       </ol>
       <ul>
-        <li><strong> إنه يقوم بتشغيل كل شيء. </strong> يتم تشغيل كل قيمة ديناميكية في كل مكالمة، حتى عندما لا تتغير بياناتها. يتم تخطي الكتابة DOM فقط. حافظ على القيم الديناميكية سريعة وخالية من الآثار الجانبية.</li>
-        <li><strong> العقد فقط في الوثيقة. </strong> إذا لم تكن العقدة موجودة في الوثيقة عند تشغيل <code>update()</code>، فسيتوقف Nuclo عن تتبعها. ولا يتم تحديثه مرة أخرى أبدًا، حتى بعد إرفاقه. وهذا ينطبق على <code>list()</code> و<code>when()</code> أيضًا. تقديم في حاوية موجودة في المستند.</li>
-        <li><strong> القيم الثابتة لا تتغير أبدًا. </strong> يتم إصلاح السلاسل البسيطة وقيم السمات عند إنشاء العنصر. لإعادة بنائها، استخدم <a href="#api-force-update"><code>forceUpdate()</code></a>.</li>
-        <li><strong>Errors.</strong> يتم اكتشاف أخطاء النص والسمات، ويستمر المرور. إذا ظهرت حالة <code>when()</code>، فسيتم تسجيل الخطأ ويتوقف <code>when()</code> عن التحديث. في حالة ظهور دالة <code>list()</code> <code>items</code> أو <code>renderItem</code>، يفلت الخطأ من <code>update()</code> ولا يتم تشغيل الخطوات المتبقية.</li>
-        <li><strong>Server.</strong> <code>update()</code> لا يقوم بأي شيء على الخادم.</li>
+        <li><strong> إنه يقوم بتشغيل كل شيء. </strong> يتم تشغيل كل قيمة ديناميكية في كل استدعاء، حتى عندما لا تتغير بياناتها. يتم تخطي الكتابة إلى DOM فقط. حافظ على القيم الديناميكية سريعة وخالية من الآثار الجانبية.</li>
+        <li><strong>العقد الموجودة في المستند فقط.</strong> إذا لم تكن العقدة في المستند عند تشغيل <code>update()</code>، يتوقف Nuclo عن تتبّعها وتحديثها نهائيًا، حتى إذا أُرفقت لاحقًا. ينطبق ذلك أيضًا على <code>list()</code> و<code>when()</code>. صيّر داخل حاوية موجودة في المستند.</li>
+        <li><strong> القيم الثابتة لا تتغير أبدًا. </strong> تُحدَّد السلاسل النصية الثابتة وقيم السمات عند إنشاء العنصر. لإعادة بنائها، استخدم <a href="#api-force-update"><code>forceUpdate()</code></a>.</li>
+        <li><strong>الأخطاء.</strong> تُلتقط أخطاء النص والسمات وتستمر دورة التحديث. إذا رمى شرط <code>when()</code> استثناءً، يُسجَّل الخطأ ويتوقف <code>when()</code> عن التحديث. وإذا رمت دالة <code>items</code> أو <code>renderItem</code> في <code>list()</code> استثناءً، يخرج الخطأ من <code>update()</code> ولا تُنفَّذ الخطوات المتبقية.</li>
+        <li><strong>على الخادم.</strong> <code>update()</code> لا يقوم بأي شيء على الخادم.</li>
       </ul>
     `,
       },
@@ -490,7 +490,7 @@ const Profile = () =>
         id: "api-scope",
         title: "scope()",
         content: `
-      <p>يعطي العنصر الذي تم تمريره إلى معرف نطاق واحد أو أكثر. يقوم <code>update('id')</code> بعد ذلك بتحديث ما هو موجود داخل هذا العنصر فقط، بما في ذلك سمات العنصر الخاصة.</p>
+      <p>يمنح العنصر الذي تمرّره إليه معرّف نطاق واحدًا أو أكثر. بعدها يحدّث <code>update('id')</code> ذلك العنصر ومحتواه فقط، بما في ذلك سمات العنصر نفسه.</p>
       ${code("example.ts", `
 let cartItems: string[] = []
 let user = 'Ada'
@@ -512,9 +512,9 @@ update()       // everything, the header now says "Hi, Grace"
         afterContent: `
       <ul>
         <li>يمكن أن يحتوي العنصر على عدة معرفات: <code>scope('cart', 'sidebar')</code>.</li>
-        <li><code>update('a', 'b')</code> بتحديث كل شيء داخل <code>a</code> أو <code>b</code>. إذا كانت عدة عناصر تستخدم نفس المعرف، فسيتم تحديثها جميعًا.</li>
+        <li><code>update('a', 'b')</code> يحدّث كل شيء داخل <code>a</code> أو <code>b</code>. إذا كانت عدة عناصر تستخدم نفس المعرف، فسيتم تحديثها جميعًا.</li>
         <li>مع النطاقات المتداخلة، يتضمن <code>update('outer')</code> النطاق الداخلي. <code>update('inner')</code> لا يلمس الجزء الخارجي.</li>
-        <li>معرف عدم وجود أي عنصر في الوثيقة يحتوي على تحديثات <strong>nothing</strong> ولا يسبب أي خطأ، لذا قم بالتحقق من التهجئة.</li>
+        <li>إذا لم يحمل أي عنصر في المستند المعرّف المطلوب، فلن يُحدَّث <strong>أي شيء</strong> ولن يظهر خطأ، لذا تحقّق من كتابة المعرّف.</li>
         <li><code>scope()</code> لا يفعل شيئًا على الخادم.</li>
       </ul>
     `,
@@ -523,7 +523,7 @@ update()       // everything, the header now says "Hi, Grace"
         id: "api-when",
         title: "when()",
         content: `
-      <p>يعرض المحتوى بناءً على شرط ما. يقوم Nuclo بالتحقق من الشروط مرة أخرى في كل <code>update()</code>. الشرط الحقيقي الأول يفوز. إذا لم يكن أي شيء صحيحًا، فسيتم عرض محتوى <code>.else()</code>. بدون <code>.else()</code>، لن يتم عرض أي شيء.</p>
+      <p>يعرض المحتوى بناءً على شرط ما. يقوم Nuclo بالتحقق من الشروط مرة أخرى عند كل <code>update()</code>. الشرط الحقيقي الأول يفوز. إذا لم يكن أي شيء صحيحًا، فسيتم عرض محتوى <code>.else()</code>. بدون <code>.else()</code>، لن يتم عرض أي شيء.</p>
       ${code("status.ts", `
 let status: 'loading' | 'error' | 'ready' = 'loading'
 
@@ -550,14 +550,14 @@ const Status = () =>
       <p>ضع العناصر الفرعية في فرع: النص، والنص الديناميكي، والبناة، و<code>list()</code> و<code>when()</code> المتداخلة. تمرير منشئي العقد مثل <code>p('Hi')</code>، وليس عقد DOM: تتوقف عقدة DOM عن التحديث بعد إخفاء فرعها مرة واحدة.</p>
       <p>تنطبق كائنات السمات و<code>on()</code> الموجودة في الفرع على العنصر الأصلي، وتظل بعد إخفاء الفرع. بالنسبة للسمة الشرطية، استخدم سمة ديناميكية: <code>{ className: () =&gt; (active ? 'active' : '') }</code>.</p>
       <h3>ربط الشروط</h3>
-      <p><code>.when()</code> و<code>.else()</code> بإرجاع منشئ جديد ولا يغيران الأصل. إذا اتصلت بـ <code>.else()</code> مرتين، فستفوز المكالمة الأخيرة.</p>
+      <p>تُرجع <code>.when()</code> و<code>.else()</code> دالة بناء جديدة ولا تغيّران الأصل. إذا استدعيت <code>.else()</code> مرتين، يُستخدم الاستدعاء الأخير.</p>
     `,
       },
       {
         id: "api-list",
         title: "list()",
         content: `
-      <p>يعرض صفًا واحدًا لكل عنصر. في كل <code>update()</code>، يستدعي Nuclo <code>items()</code> مرة أخرى ويطابق العناصر الجديدة مع الصفوف الموجودة حسب الهوية (<code>===</code>).</p>
+      <p>يعرض صفًا واحدًا لكل عنصر. عند كل <code>update()</code>، يستدعي Nuclo <code>items()</code> مرة أخرى ويطابق العناصر الجديدة مع الصفوف الموجودة حسب الهوية (<code>===</code>).</p>
       ${code("fruits.ts", `
 let fruits = ['Apple', 'Banana']
 
@@ -572,10 +572,10 @@ update()
       <ul>
         <li>العنصر الذي لا يزال موجودًا يحتفظ بصفه. يقوم Nuclo بنقل الصف إذا لزم الأمر، ولا يقوم باستدعاء <code>renderItem</code> مرة أخرى.</li>
         <li>عنصر جديد يحصل على صف جديد. يفقد العنصر الذي تمت إزالته صفه، ويتم تشغيل خطافات <code>onDestroy</code> الخاصة به.</li>
-        <li>كل عنصر مكرر له صف خاص به.</li>
+        <li>لكل ظهور مكرر للعنصر صف خاص به.</li>
         <li>يمكنك تغيير المصفوفة الموجودة في مكانها (<code>push</code>، <code>splice</code>، <code>sort</code>) أو إرجاع مصفوفة جديدة.</li>
       </ul>
-      <p>لن يتم عرض الصف المحفوظ مرة أخرى أبدًا، لذا استخدم القيم الديناميكية للحقول التي تتغير:</p>
+      <p>لا تُستدعى دالة بناء الصف المحفوظ مجددًا، لذا استخدم القيم الديناميكية للحقول التي تتغير:</p>
       ${code("todos.ts", `
 const todos = [{ text: 'Write docs', done: false }]
 
@@ -591,12 +591,12 @@ render(Todos)
 todos[0].done = true
 update() // same <li>, its class is now "done"
 `)}
-      <p>عناصر جديدة، لذا فإن استبدال المصفوفة بـ <code>todos.map((t) =&gt; ({ ...t }))</code> يعيد بناء كل صف.</p>
+      <p>الكائنات الجديدة عناصر جديدة من حيث الهوية، لذا فإن استبدال المصفوفة بـ <code>todos.map((t) =&gt; ({ ...t }))</code> يعيد بناء كل صف.</p>
     `,
         afterContent: `
       <h3>ما تُرجعه <code>renderItem</code></h3>
       <ul>
-        <li>تقوم بإرجاع عنصر واحد، مثل <code>li(...)</code> أو <code>tr(...)</code> أو منشئ SVG. قم بإرجاع <code>null</code> أو <code>undefined</code> لتخطي أحد العناصر. السلاسل والعقد النصية والأجزاء لا تقدم شيئًا.</li>
+        <li>تقوم بإرجاع عنصر واحد، مثل <code>li(...)</code> أو <code>tr(...)</code> أو دالة بناء SVG. قم بإرجاع <code>null</code> أو <code>undefined</code> لتخطي أحد العناصر. السلاسل والعقد النصية والأجزاء لا تقدم شيئًا.</li>
         <li>لا تقم بإرجاع <code>when()</code> أو <code>list()</code> مباشرة. ضعهم داخل عنصر الصف: <code>li(todo.text, when(() =&gt; todo.done, ' ✓'))</code>.</li>
         <li>لإخفاء العناصر، قم بالتصفية في <code>items()</code>، وليس في <code>renderItem</code>.</li>
         <li>حافظ على <code>renderItem</code> خاليًا من الآثار الجانبية. Nuclo قد يستدعيه أكثر من مرة لنفس العنصر.</li>
@@ -604,16 +604,16 @@ update() // same <li>, its class is now "done"
       <h3>الفهرس</h3>
       <p><code>index</code> هو موضع العنصر عند إنشاء الصف الخاص به. ولا يتم تحديثه عند نقل الصفوف. بالنسبة للموضع الحالي، استخدم قيمة ديناميكية: <code>li(() =&gt; \`\${names.indexOf(name) + 1}. \${name}\`)</code>.</p>
       <h3>الكائنات القابلة للتكرار</h3>
-      <p>أي أعمال قابلة للتكرار: المصفوفات، <code>Set</code>، المولدات و<code>map.values()</code>. يعد إرجاع نفس المصفوفة أو <code>Set</code> في كل مرة أمرًا جيدًا. يتم استخدام المكرر، مثل المولد أو <code>map.values()</code>، بعد مرور واحد، لذا قم بإنشائه داخل <code>items()</code> في كل مكالمة. يؤدي تكرار <code>Map</code> مباشرة إلى إنشاء مصفوفات <code>[key, value]</code> جديدة في كل مرة، لذلك يتم إعادة بناء كل صف. استخدم <code>map.values()</code> بدلاً من ذلك.</p>
+      <p>يمكن استخدام أي كائن قابل للتكرار: المصفوفات و<code>Set</code> والمولّدات و<code>map.values()</code>. يمكن إرجاع المصفوفة أو <code>Set</code> نفسها في كل مرة. أما المكرّر، مثل المولّد أو <code>map.values()</code>، فيُستهلك بعد مرور واحد، لذا أنشئه داخل <code>items()</code> في كل استدعاء. يؤدي تكرار <code>Map</code> مباشرة إلى إنشاء مصفوفات <code>[key, value]</code> جديدة في كل مرة، فيُعاد بناء جميع الصفوف. استخدم <code>map.values()</code> بدلًا منه.</p>
       <h3>موضع الصفوف</h3>
-      <p>حيث يقع <code>list()</code> بين أشقائه، بين علامتي تعليق. لا يتم لمس العناصر الفرعية الآخرين من الوالدين. يعمل <code>list()</code> أيضًا داخل منشئي SVG.</p>
+      <p>تظهر الصفوف في موضع <code>list()</code> بين العناصر المجاورة له، بين علامتي تعليق. لا يتم لمس العناصر الفرعية الأخرى للعنصر الأب. يعمل <code>list()</code> أيضًا داخل دوال بناء SVG.</p>
     `,
       },
       {
         id: "api-region",
         title: "region() وinto()",
         content: `
-      <p><code>region()</code> يمثل مكانًا مسمىًا في الشجرة. <code>into()</code> يملأها من أي مكان آخر، وبأي عمق. لا يتلقى التخطيط المحتوى كدعم، ولا يعرف المكون الذي يبني المحتوى مكان وصوله.</p>
+      <p><code>region()</code> يمثل مكانًا مسمىًا في الشجرة. <code>into()</code> يملأها من أي مكان آخر، وبأي عمق. لا يتلقى التخطيط المحتوى كخاصية، ولا يعرف المكون الذي يبني المحتوى مكان وصوله.</p>
       ${code("app.ts", `
 const Layout = () =>
   div(
@@ -629,21 +629,21 @@ render(() => div(Layout(), Article()))
       <h3>كيف يعمل</h3>
       <ul>
         <li><code>into()</code> لا يترك سوى تعليق حيث تم كتابته. يتم عرض محتواه بين علامات المنطقة.</li>
-        <li>لا يهم الطلب. تم بناء <code>into()</code> قبل أن تنتظر منطقتها وتظهر لحظة بناء المنطقة. تظهر المشاهدات بالترتيب الذي كتبت به.</li>
-        <li>يبقى المحتوى طالما تم عرضه. عند إغلاق <code>when()</code> الذي يحتوي على <code>into()</code>، أو عند إزالة صف <code>list()</code> الخاص به، يغادر المحتوى المنطقة. يؤدي فتحه مرة أخرى إلى إضافة نسخة واحدة، وليس نسختين.</li>
-        <li>عندما تختفي منطقة ما، على سبيل المثال يتم إغلاق <code>when()</code>، تنتظر عروضها مرة أخرى. تظهرهم المنطقة التي تم إنشاؤها لاحقًا بنفس المعرف.</li>
+        <li>لا يهم ترتيب البناء. إذا بُني <code>into()</code> قبل منطقته، ينتظر ويظهر فور بناء المنطقة. تظهر العروض بترتيب تعريفها.</li>
+        <li>يبقى المحتوى طوال عمر العرض الذي ينتمي إليه. عند إغلاق <code>when()</code> الذي يحتوي على <code>into()</code>، أو عند إزالة صف <code>list()</code> الخاص به، يغادر المحتوى المنطقة. يؤدي فتحه مرة أخرى إلى إضافة نسخة واحدة، وليس نسختين.</li>
+        <li>عندما تختفي منطقة ما، على سبيل المثال يتم إغلاق <code>when()</code>، تنتظر عروضها مرة أخرى. تعرضها المنطقة التي تم إنشاؤها لاحقًا بنفس المعرف.</li>
         <li><code>into()</code> الذي لا يتطابق معرفه مع أي منطقة لا يعرض شيئًا ولا يسبب أي خطأ، لذا تحقق من التهجئة.</li>
-        <li>المعرفات فريدة في الشجرة. تقوم المنطقة الثانية التي تم إنشاؤها تحت معرف مباشر بتسجيل تحذير.</li>
-        <li>تعمل المناطق مع عرض <a href="#api-ssr">server</a>. في <code>hydrate()</code>، تطالب كل طريقة عرض بـ HTML الذي قدمه الخادم بدلاً من إنشائه مرة أخرى.</li>
+        <li>المعرفات فريدة في الشجرة. تقوم المنطقة الثانية التي تم إنشاؤها تحت معرّف لمنطقة لا تزال موجودة بتسجيل تحذير.</li>
+        <li>تعمل المناطق مع <a href="#api-ssr">التصيير على الخادم</a>. في <code>hydrate()</code>، يعيد كل عرض استخدام HTML القادم من الخادم بدلاً من إنشائه مرة أخرى.</li>
       </ul>
       <h3>الخيارات</h3>
       <ul>
-        <li><code>id</code>: يستخدم الاسم <code>into()</code> للعثور على المنطقة.</li>
-        <li><code>type</code>: يعرض <code>'latest'</code> (الافتراضي) العرض الأحدث فقط. يعرض <code>'stack'</code> كل طريقة عرض بترتيب الوصول.</li>
-        <li><code>empty</code>: يتم عرضه بينما لا تحتوي المنطقة على أي مشاهدات.</li>
+        <li><code>id</code>: الاسم الذي تستخدمه استدعاءات <code>into()</code> للعثور على المنطقة.</li>
+        <li><code>type</code>: يعرض <code>'latest'</code> (الافتراضي) العرض الأحدث فقط. يعرض <code>'stack'</code> جميع العروض بترتيب وصولها.</li>
+        <li><code>empty</code>: المحتوى الذي يُعرض عندما لا تحتوي المنطقة على أي عروض.</li>
       </ul>
       <h3>المناطق المكدّسة</h3>
-      <p>مع <code>type: 'stack'</code>، طريقة العرض التي يتم فتحها فوق طريقة عرض أخرى لا تؤدي إلى إعادة بناء الطريقة الموجودة أسفلها. DOM، التركيز وحالة الشكل ثابتة. استخدم هذا لطبقة مثل مربع حوار فوق الصفحة.</p>
+      <p>مع <code>type: 'stack'</code>، لا يؤدي فتح عرض فوق آخر إلى إعادة بناء العرض الموجود تحته. تبقى عناصر DOM والتركيز وحالة النموذج كما هي. استخدم هذا لطبقة مثل مربع حوار فوق الصفحة.</p>
       ${code("layers.ts", `
 let open = false
 
@@ -655,7 +655,7 @@ const App = () =>
   )
 `)}
       <h3>عدة مناطق دفعة واحدة</h3>
-      <p>قم بتمرير كائن لملء أكثر من منطقة من <code>into()</code> واحد. يمكن أن تكون القيمة طفلًا واحدًا أو مجموعة من العناصر الفرعية. يتداخل كلا النموذجين: يستهدف <code>into()</code> داخل محتوى طريقة عرض أخرى منطقته الخاصة.</p>
+      <p>قم بتمرير كائن لملء أكثر من منطقة من <code>into()</code> واحد. يمكن أن تكون القيمة عنصرًا فرعيًا واحدًا أو مجموعة من العناصر الفرعية. يتداخل كلا النموذجين: يستهدف <code>into()</code> داخل محتوى طريقة عرض أخرى منطقته الخاصة.</p>
       ${code("page.ts", `
 const Page = () =>
   into({
@@ -689,7 +689,7 @@ const DeleteButton = () =>
   )
 `)}
       <h3>إشعارات عابرة من صفوف القائمة</h3>
-      <p>كل صف من <code>list()</code> هو عرض. تعرض المنطقة المكدسة العناصر بالترتيب، وإزالة عنصر من المصفوفة يؤدي إلى إزالة نخبه.</p>
+      <p>كل صف من <code>list()</code> هو عرض. تعرض المنطقة المكدسة العناصر بالترتيب، وإزالة عنصر من المصفوفة يؤدي إلى إزالة الإشعار المرتبط به.</p>
       ${code("toasts.ts", `
 const toasts: { text: string }[] = []
 
@@ -713,7 +713,7 @@ const App = () =>
   )
 `)}
       <h3>عنوان تحدده الصفحة لنفسها</h3>
-      <p>باستخدام <code>type: 'latest'</code> الافتراضي، يفوز العرض الأحدث. يمتلك التخطيط العنوان، وأي صفحة مفتوحة تسميه. الصفحة التي لا تحتوي على <code>into('title', …)</code> تترك النص <code>empty</code>.</p>
+      <p>باستخدام <code>type: 'latest'</code> الافتراضي، يفوز العرض الأحدث. يحدد التخطيط موضع العنوان، وتحدد الصفحة المفتوحة نصّه. الصفحة التي لا تحتوي على <code>into('title', …)</code> تترك النص <code>empty</code>.</p>
       ${code("title.ts", `
 let page: 'home' | 'settings' = 'home'
 
@@ -757,7 +757,7 @@ const Table = () =>
   )
 `)}
       <h3>منطقة تظهر وتختفي</h3>
-      <p>تتم كتابة <code>into()</code> للوحة القيادة مرة واحدة. أثناء قيام المستخدم بتسجيل الخروج، لا توجد منطقة <code>main</code>، لذا ينتظر العرض. يؤدي تسجيل الدخول إلى إنشاء المنطقة ويظهر العرض. يؤدي تسجيل الخروج إلى إزالة المنطقة وينتظر العرض مرة أخرى.</p>
+      <p>يُعرَّف <code>into()</code> الخاص بلوحة المعلومات مرة واحدة. ما دام المستخدم غير مسجّل الدخول، لا توجد منطقة <code>main</code>، فينتظر العرض. عند تسجيل الدخول، تُنشأ المنطقة ويظهر العرض. وعند تسجيل الخروج، تُزال المنطقة ويعود العرض إلى الانتظار.</p>
       ${code("auth.ts", `
 let user: { name: string } | null = null
 
@@ -772,7 +772,7 @@ const App = () =>
   )
 `)}
       <h3>عرض بمنطقته الخاصة</h3>
-      <p>يمكن أن تحتوي المشاهدة على <code>region()</code>، ويمكن أن تستهدفها المشاهدات الأخرى. هنا تقوم صفحة المحرر بإحضار منطقة <code>tabs</code> معها، وكل علامة تبويب تملأها. عندما يغلق المحرر، منطقته تذهب معه.</p>
+      <p>يمكن أن يتضمن العرض <code>region()</code> تستهدفها عروض أخرى. هنا تتضمن صفحة المحرر منطقة <code>tabs</code> التي تملؤها علامات التبويب. عند إغلاق المحرر، تُزال منطقته معه.</p>
       ${code("editor.ts", `
 let tab: 'code' | 'preview' = 'code'
 
@@ -797,7 +797,7 @@ const Editor = () =>
         id: "api-force-update",
         title: "forceUpdate()",
         content: `
-      <p><code>update()</code> يقوم بتشغيل القيم الديناميكية فقط. يتم إصلاح القيم الثابتة، مثل النص الموجود في <code>h1(labels[lang].title)</code>، عند إنشاء الشجرة. يستدعي <code>forceUpdate()</code> مكوناتك مرة أخرى ويصحح DOM المباشر للمطابقة، مع تضمين القيم الثابتة. استخدمه لإجراء تغييرات نادرة على مستوى التطبيق، مثل تبديل اللغة. استخدم <code>update()</code> لكل شيء آخر.</p>
+      <p><code>update()</code> يقوم بتشغيل القيم الديناميكية فقط. تُحدَّد القيم الثابتة، مثل النص الموجود في <code>h1(labels[lang].title)</code>، عند إنشاء الشجرة. يستدعي <code>forceUpdate()</code> مكوناتك مرة أخرى ويعدّل شجرة DOM الفعلية لتطابق النتيجة، مع تضمين القيم الثابتة. استخدمه لإجراء تغييرات نادرة على مستوى التطبيق، مثل تبديل اللغة. استخدم <code>update()</code> لكل شيء آخر.</p>
       ${code("i18n.ts", `
 const labels = { en: { title: 'Hello' }, pt: { title: 'Olá' } }
 let lang: keyof typeof labels = 'en'
@@ -810,17 +810,17 @@ forceUpdate() // same <h1> element, now "Olá"
 `)}
     `,
         afterContent: `
-      <p>بدون وسائط، يقوم <code>forceUpdate()</code> بإعادة بناء كل جذر تم تقديمه باستخدام <code>render(App)</code> أو <code>hydrate(App)</code>. يتم تخطي الجذور المقدمة بـ <code>render(App())</code>. في حالة ظهور أحد المكونات، يتم تسجيل الخطأ ويحتفظ هذا الجذر برقم DOM القديم. يتم أيضًا تسجيل خطأ تم طرحه لاحقًا، أثناء تطبيق البنية الجديدة، ولكن الأجزاء التي تم تعديلها بالفعل تظل مصححة.</p>
+      <p>من دون وسائط، يعيد <code>forceUpdate()</code> بناء كل جذر صُيّر باستخدام <code>render(App)</code> أو <code>hydrate(App)</code>، ويتخطى الجذور المصيّرة باستخدام <code>render(App())</code>. إذا رمى أحد المكوّنات استثناءً، يُسجَّل الخطأ ويحتفظ الجذر بشجرة DOM السابقة. ويُسجَّل أيضًا أي خطأ يحدث لاحقًا أثناء تطبيق البنية الجديدة، مع بقاء التعديلات التي طُبّقت بالفعل.</p>
       <h3>ما يبقى وما يتغير</h3>
       <ul>
-        <li>تتم مطابقة العناصر الفرعية بالترتيب حسب العلامة. تتم إعادة استخدام العنصر المطابق، لذلك تظل قيم التركيز والإدخال المكتوبة، ولا تعمل خطافات <code>onMount</code> الخاصة به مرة أخرى. بمجرد اختلاف علامة طفل واحد، يتم بناء هذا الطفل وكل أخ لاحق من جديد.</li>
-        <li>النص والسمات والفئات والأنماط والمستمعين وفروع <code>when()</code> وصفوف <code>list()</code> تتبع البنية الجديدة.</li>
+        <li>تتم مطابقة العناصر الفرعية بالترتيب حسب العلامة. تتم إعادة استخدام العنصر المطابق، لذلك تظل قيم التركيز والإدخال المكتوبة، ولا تعمل خطافات <code>onMount</code> الخاصة به مرة أخرى. بمجرد اختلاف وسم عنصر فرعي واحد، يتم بناء هذا العنصر وكل عنصر يليه من جديد.</li>
+        <li>النص والسمات والفئات والأنماط والمستمعات وفروع <code>when()</code> وصفوف <code>list()</code> تتبع البنية الجديدة.</li>
         <li>يتم إنشاء عناصر جديدة وتشغيل خطافات <code>onMount</code> الخاصة بها. تتم إزالة العناصر التي لم يعد البناء الجديد يصنعها، ويتم تشغيل خطافات <code>onDestroy</code> الخاصة بها.</li>
-        <li><code>list()</code> حسب الموضع أيضًا، وليس حسب العنصر، لذلك يمكن أن يؤدي عنصر الصف المُعاد استخدامه إلى إظهار عنصر مختلف.</li>
-        <li>لم تعد يتم إزالة مجموعات سمات البنية الجديدة.</li>
+        <li>تُطابق صفوف <code>list()</code> حسب الموضع أيضًا، وليس حسب العنصر، لذلك يمكن أن يؤدي عنصر الصف المُعاد استخدامه إلى إظهار عنصر مختلف.</li>
+        <li>لا تُزال السمات التي لم تعد البنية الجديدة تعيّنها.</li>
       </ul>
-      <div class="docs-callout"><strong> انتبه: تتم إعادة تعيين حالة </strong> المعلنة داخل دالة المكون، لأن الدالة تعمل مرة أخرى. احتفظ بالحالة التي يجب أن تبقى خارج المكون.</div>
-      <p><strong> نموذج صريح. </strong> <code>forceUpdate(App(), parent)</code> يعيد بناء شجرة واحدة في <code>parent</code> ويعيد جذرها. ولا يسجل الجذر للمكالمات اللاحقة. مثل <code>hydrate()</code>، فإنه يتوقع أن يكون الجذر هو العقدة الأولى في <code>parent</code>. إذا كانت العقدة الأولى تحتوي على علامة مختلفة، فسيتم استبدالها.</p>
+      <div class="docs-callout"><strong> انتبه: تُعاد تهيئة الحالة </strong> المعلنة داخل دالة المكون، لأن الدالة تعمل مرة أخرى. احتفظ بالحالة التي يجب أن تبقى خارج المكون.</div>
+      <p><strong> نموذج صريح. </strong> <code>forceUpdate(App(), parent)</code> يعيد بناء شجرة واحدة في <code>parent</code> ويعيد جذرها. ولا يسجل الجذر للاستدعاءات اللاحقة. مثل <code>hydrate()</code>، فإنه يتوقع أن يكون الجذر هو العقدة الأولى في <code>parent</code>. إذا كانت العقدة الأولى تحتوي على وسم مختلف، فسيتم استبدالها.</p>
       <p>على الخادم، <code>forceUpdate()</code> لا يفعل شيئا.</p>
     `,
       },
@@ -843,14 +843,14 @@ import { App } from './app.ts'
 render(App, document.getElementById('app')!)
 `)}
       <ul>
-        <li>يمكنك تمرير المكون (<code>render(App)</code>) أو المنشئ الذي يقوم بإرجاعه (<code>render(App())</code>). DOM هو نفسه. فقط <code>render(App)</code> يسمح لـ <a href="#api-force-update"><code>forceUpdate()</code></a> بإعادة بناء الجذر لاحقًا، لذا تفضل ذلك.</li>
-        <li>يتم إلحاقه. لا يقوم بمسح <code>parent</code>، لذا فإن الاتصال به مرتين يضيف نسختين.</li>
+        <li>يمكنك تمرير المكون (<code>render(App)</code>) أو دالة البناء الذي يقوم بإرجاعه (<code>render(App())</code>). DOM هو نفسه. فقط <code>render(App)</code> يسمح لـ <a href="#api-force-update"><code>forceUpdate()</code></a> بإعادة بناء الجذر لاحقًا، لذا تفضل ذلك.</li>
+        <li>يتم إلحاقه. لا يقوم بمسح <code>parent</code>، لذا فإن استدعاءه مرتين يضيف نسختين.</li>
         <li>تم تشغيل كل <code>onMount</code> في الشجرة عند إرجاع <code>render()</code>.</li>
-        <li>يتم تحويله إلى عنصر موجود في الوثيقة. انظر <a href="#api-update"><code>update()</code></a>.</li>
+        <li>صيّر داخل عنصر موجود في المستند. راجع <a href="#api-update"><code>update()</code></a>.</li>
         <li>يجب أن يكون الجذر عنصرًا، مثل <code>div(...)</code>، وليس <code>when()</code> أو <code>list()</code>.</li>
         <li><code>index</code> داخلي. لا يختار مكان إدراج العنصر. اتركه.</li>
       </ul>
-      <p>يجب أن لا يأخذ المكون الذي تم تمريره كـ <code>render(App)</code> أي معلمات. المعلمة المطلوبة هي خطأ في النوع. نوع اختياري واحد، ولكن <code>render()</code> يرمي في وقت التشغيل. لف مكونًا يأخذ الدعائم:</p>
+      <p>يجب ألا يقبل المكوّن الممرّر إلى <code>render(App)</code> أي معلمات. المعلمة الإلزامية تسبب خطأ في الأنواع. أما المعلمة الاختيارية فتجتاز فحص الأنواع، لكن <code>render()</code> يرمي استثناءً أثناء التشغيل. غلّف المكوّن الذي يقبل خصائص بدالة:</p>
       ${code("main.ts", `
 const Page = (props: { name: string }) => div(h1('Hi ', props.name))
 
@@ -862,7 +862,7 @@ render(() => Page({ name: 'Ana' }), root)
         id: "api-hydrate",
         title: "hydrate()",
         content: `
-      <p>يستحوذ على HTML المصنوع بواسطة <a href="#api-ssr"><code>renderToString()</code></a>. فهو يعيد استخدام العناصر الموجودة، ويرفق مستمعي الأحداث، ويربط القيم الديناميكية <code>when()</code> و<code>list()</code>، لذلك يعمل <code>update()</code> بعد ذلك. ثم يقوم بتشغيل خطافات <code>onMount</code>. <code>parent</code> الافتراضي هو <code>document.body</code>. يقوم بإرجاع العنصر الجذر.</p>
+      <p>يفعّل HTML المصيَّر بواسطة <a href="#api-ssr"><code>renderToString()</code></a>. فهو يعيد استخدام العناصر الموجودة، ويرفق مستمعي الأحداث، ويربط القيم الديناميكية وكتل <code>when()</code> وقوائم <code>list()</code>، لذلك يعمل <code>update()</code> بعد ذلك. ثم يقوم بتشغيل خطافات <code>onMount</code>. <code>parent</code> الافتراضي هو <code>document.body</code>. يقوم بإرجاع العنصر الجذر.</p>
       ${code("client.ts", `
 import 'nuclo'
 import { App } from './app.ts'
@@ -871,26 +871,26 @@ hydrate(App, document.getElementById('root')!)
 `)}
       <ul>
         <li>استخدم نفس المكون ونفس البيانات مثل الخادم.</li>
-        <li>قم بترطيبه في حاوية مخصصة. يجب أن يكون جذر التطبيق هو العقدة الأولى، على الرغم من أن المسافة البيضاء جيدة. إذا جاءت عقدة أخرى أولاً، فإن Nuclo تستبدل تلك العقدة وتترك نسخة الخادم خلفها.</li>
-        <li>كما هو الحال مع <code>render()</code>، قم بتمرير <code>App</code>، وليس <code>App()</code>، حتى يتمكن <code>forceUpdate()</code> من إعادة بناء الجذر لاحقًا. يجب ألا يأخذ <code>App</code> أي معلمات. مع الخيار الاختياري، <code>hydrate()</code> لا يعلق أي شيء بصمت. لف مكونًا يأخذ الدعائم: <code>hydrate(() =&gt; Page(props), root)</code>.</li>
-        <li>إذا لم يكن هناك خادم HTML، استخدم <code>render()</code>.</li>
+        <li>نفّذ الترطيب في حاوية مخصصة. يجب أن يكون جذر التطبيق هو العقدة الأولى، مع السماح بمسافات بيضاء قبله. إذا جاءت عقدة أخرى أولاً، فإن Nuclo تستبدل تلك العقدة وتترك نسخة الخادم خلفها.</li>
+        <li>كما في <code>render()</code>، مرّر <code>App</code> بدلًا من <code>App()</code> لتتمكن <code>forceUpdate()</code> من إعادة بناء الجذر لاحقًا. يجب ألا تقبل <code>App</code> أي معلمات. إذا قبلت معلمة اختيارية، فلن يربط <code>hydrate()</code> شيئًا ولن يُظهر خطأ. غلّف المكوّن الذي يقبل خصائص بدالة: <code>hydrate(() =&gt; Page(props), root)</code>.</li>
+        <li>إذا لم يوجد HTML مصيَّر على الخادم، استخدم <code>render()</code>.</li>
       </ul>
       <h3>عندما يختلف الخادم والعميل</h3>
-      <p>العميل يفوز:</p>
+      <p>تُعتمد بنية العميل:</p>
       <ul>
-        <li>علامة جذر مختلفة: يتم استبدال تلك العقدة بـ DOM الجديدة. حاوية فارغة: تم إلحاق DOM جديد.</li>
+        <li>وسم جذر مختلف: يتم استبدال تلك العقدة بـ DOM الجديدة. حاوية فارغة: تم إلحاق DOM جديد.</li>
         <li>تم تعديل النص المختلف. تتبع عناصر <code>list()</code> المختلفة وفروع <code>when()</code> العميل.</li>
-        <li>تتم إزالة أبناء الخادم الإضافيين، ويتم إنشاء أبناء الخادم المفقودين.</li>
+        <li>تتم إزالة العناصر الفرعية الزائدة في نسخة الخادم، ويتم إنشاء العناصر الفرعية الناقصة في نسخة الخادم.</li>
         <li>يتم ترك السمات التي كتبها الخادم ولكن لم يقم العميل بتعيينها كما هي.</li>
       </ul>
-      <p>يقوم <code>renderToString()</code> بكتابة تعليقات HTML كعلامات، مثل <code>&lt;!-- text-0 --&gt;</code> قبل كل عقدة نصية. <code>hydrate()</code> يحتاج إليها، لذا لا تقم بإزالة التعليقات من الخادم HTML. بدون العلامات، يؤدي الترطيب إلى حذف الصفوف <code>list()</code>، ويتوقف <code>list()</code> و<code>when()</code> عن التحديث.</p>
+      <p>يقوم <code>renderToString()</code> بكتابة تعليقات HTML كعلامات، مثل <code>&lt;!-- text-0 --&gt;</code> قبل كل عقدة نصية. <code>hydrate()</code> يحتاج إليها، لذا لا تقم بإزالة التعليقات من HTML الذي أنشأه الخادم. بدون العلامات، يؤدي الترطيب إلى حذف الصفوف <code>list()</code>، ويتوقف <code>list()</code> و<code>when()</code> عن التحديث.</p>
     `,
       },
       {
         id: "api-ssr",
         title: "العرض على الخادم",
         content: `
-      <p>قم بعرض مكون لسلسلة HTML على الخادم. في المتصفح، اتصل بـ <a href="#api-hydrate"><code>hydrate()</code></a> بنفس المكون لجعل HTML تفاعليًا. لا تحتوي أوقات تشغيل الخادم على <code>document</code>، لذا قم باستيراد <a href="#api-polyfill"><code>nuclo/polyfill</code></a> أولاً.</p>
+      <p>صيّر مكوّنًا إلى سلسلة HTML على الخادم. في المتصفح، استدعِ <a href="#api-hydrate"><code>hydrate()</code></a> بنفس المكون لجعل HTML تفاعليًا. لا تحتوي أوقات تشغيل الخادم على <code>document</code>، لذا قم باستيراد <a href="#api-polyfill"><code>nuclo/polyfill</code></a> أولاً.</p>
       ${code("app.ts", `
 let count = 0
 const heading = css({ color: 'red' })
@@ -923,7 +923,7 @@ import { App } from './app.ts'
 
 hydrate(App, document.getElementById('root')!)
 `)}
-      <p>احتفظ بـ <code>id="nuclo-styles"</code> على علامة النمط. يعيد العميل استخدام هذا العنصر ويضيف قواعد جديدة فقط. انظر <a href="#api-css-text"><code>getCssText()</code></a>.</p>
+      <p>احتفظ بـ <code>id="nuclo-styles"</code> على وسم التنسيق. يعيد العميل استخدام هذا العنصر ويضيف قواعد جديدة فقط. انظر <a href="#api-css-text"><code>getCssText()</code></a>.</p>
       <h3>ما يعمل على الخادم</h3>
       <ul>
         <li>يقوم كل استدعاء <code>renderToString()</code> بإنشاء الشجرة وتشغيل كل قيمة ديناميكية مرة واحدة.</li>
@@ -939,13 +939,13 @@ renderToString(p('Hello'))
 // '<p><!-- text-0 -->Hello</p>'
 `)}
       <ul>
-        <li>قيم النص والخصائص المميزة تم تخطيها بواسطة HTML. تتم كتابة النص الموجود داخل <code>script()</code> و<code>style()</code> كما هو، مع تقسيم علامات الإغلاق فقط، لذا لا تضع إدخالات المستخدم هناك أبدًا.</li>
-        <li>لا يرمي. إذا تم طرح المكون، أو دالة <code>list()</code> أو شرط <code>when()</code>، أو كان polyfill مفقودًا، فإنه يسجل الخطأ ويعيد <code>""</code>. تحقق من وجود نتيجة فارغة في حالة فشل الطلب. دالة النص أو السمة التي يتم عرضها فارغة فقط.</li>
+        <li>تُحوَّل المحارف الخاصة في النصوص وقيم السمات إلى كيانات HTML. يُكتب النص داخل <code>script()</code> و<code>style()</code> كما هو، مع تقسيم وسوم الإغلاق فقط، لذا لا تضع فيه مدخلات المستخدم مطلقًا.</li>
+        <li>لا يرمي استثناءات. إذا رمى المكوّن أو دالة <code>list()</code> أو شرط <code>when()</code> استثناءً، أو غاب polyfill، يُسجَّل الخطأ وتُعاد <code>""</code>. تحقّق من النتيجة الفارغة إذا أردت اعتبار الطلب فاشلًا. أما دالة النص أو السمة التي ترمي استثناءً فتنتج قيمة فارغة لذلك الموضع فقط.</li>
       </ul>
       <h3><code>renderManyToString()</code></h3>
       <p>نفس <code>inputs.map(renderToString)</code>.</p>
       <h3><code>renderToStringWithContainer()</code></h3>
-      <p>يقوم بتغليف المخرجات في عنصر واحد. يتم تعيين <code>containerTag</code> افتراضيًا على <code>"div"</code>، و<code>containerAttrs</code> على <code>{}</code>. يتم هروب قيم السمات. تتم كتابة أسماء السمات كما هو محدد، لذا استخدم أسماء HTML مثل <code>class</code>. لا تقم مطلقًا بتمرير إدخال المستخدم كعلامة.</p>
+      <p>يغلّف المخرجات بعنصر واحد. القيمة الافتراضية لـ <code>containerTag</code> هي <code>"div"</code>، ولـ <code>containerAttrs</code> هي <code>{}</code>. تُحوَّل المحارف الخاصة في قيم السمات إلى كيانات HTML. تُكتب أسماء السمات كما تمرّرها، لذا استخدم أسماء HTML مثل <code>class</code>. لا تستخدم مدخلات المستخدم كاسم وسم مطلقًا.</p>
       ${code("example.ts", `
 renderToStringWithContainer(p('Hi'), 'section', { id: 'main', class: 'page' })
 // '<section id="main" class="page"><p><!-- text-0 -->Hi</p></section>'
@@ -960,7 +960,7 @@ renderToStringWithContainer(p('Hi'), 'section', { id: 'main', class: 'page' })
       <ul>
         <li>عندما لا يكون هناك <code>window</code>، فإنه يقوم بتعيين <code>globalThis.document</code> و<code>Node</code> و<code>Element</code> و<code>HTMLElement</code>، ولكن فقط تلك المفقودة. لا يقوم بإنشاء <code>window</code>.</li>
         <li>في المتصفح، أو ضمن jsdom، لا يفعل شيئًا.</li>
-        <li><code>Event</code> و<code>CustomEvent</code> هما المنشئان الخاصان بوقت التشغيل. <code>Node</code>، <code>Element</code> و<code>HTMLElement</code> هي أسماء مستعارة لفئات polyfill.</li>
+        <li><code>Event</code> و<code>CustomEvent</code> هما المُنشئان الأصليان في بيئة التشغيل. <code>Node</code>، <code>Element</code> و<code>HTMLElement</code> هي أسماء مستعارة لفئات polyfill.</li>
       </ul>
       <p>هو DOM لبناء الأشجار وليس متصفح. لا يحتوي على <code>innerHTML</code> ولا <code>getElementById</code>، <code>querySelector()</code> يُرجع <code>null</code>، ويتم تجاهل مستمعي الأحداث. استخدم <code>renderToString()</code> للحصول على HTML.</p>
     `,

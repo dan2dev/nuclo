@@ -32,6 +32,6 @@
 		"@types/three": "0.186.0",
 		"typescript": "~7.0.2",
 		"vite": "^8.3.4",
-		"wrangler": "^4.151.0"
+		"wrangler": "^4.151.1"
 	}
 }

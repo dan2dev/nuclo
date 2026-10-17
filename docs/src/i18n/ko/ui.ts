@@ -18,7 +18,7 @@ export const nav = {
 };
 
 export const footer = {
-  tagline: "명시적인 UI 런타임. 일반 함수와 변경 가능한 상태를 사용하며, 한 번의 호출로 데이터와 DOM을 연결합니다.",
+  tagline: "명시적 업데이트를 사용하는 UI 런타임. 일반 함수와 변경 가능한 상태를 사용하며, 한 번의 호출로 데이터와 DOM을 연결합니다.",
   builtWith: "이 사이트는 Nuclo로 만들었습니다.",
   explore: "둘러보기",
   documentation: "문서",

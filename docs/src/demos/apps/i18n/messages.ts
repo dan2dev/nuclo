@@ -28,7 +28,7 @@ const en = {
   empty: "Your cart is empty.", thanks: "Thank you! Your order is on its way.",
   less: "Remove one", more: "Add one",
   subtotal: "Subtotal", shipping: "Shipping", free: "Free", discount: "Discount", total: "Total",
-  freeOver: (amount: string) => `Free shipping over ${amount}.`,
+  freeOver: (amount: string) => `Free shipping on orders of ${amount} or more.`,
   coupon: "Coupon code", couponHint: "Try NUCLO", delivery: "Delivery", checkout: "Check out",
   shipsTo: (countries: string) => `Ships to: ${countries}.`,
   rates: "Prices converted from US dollars at fixed demo rates.",
@@ -45,19 +45,19 @@ type Messages = typeof en;
 
 const pt: Messages = {
   title: "Mercadinho da Esquina", tagline: "Coisas boas para a sua cozinha.", language: "Idioma",
-  add: "Adicionar", cart: "Seu carrinho", items: { one: "# item", other: "# itens" },
+  add: "Adicionar ao carrinho", cart: "Seu carrinho", items: { one: "# item", other: "# itens" },
   empty: "Seu carrinho está vazio.", thanks: "Obrigado! Seu pedido está a caminho.",
   less: "Remover um", more: "Adicionar um",
   subtotal: "Subtotal", shipping: "Frete", free: "Grátis", discount: "Desconto", total: "Total",
-  freeOver: (amount) => `Frete grátis acima de ${amount}.`,
+  freeOver: (amount) => `Frete grátis a partir de ${amount}.`,
   coupon: "Cupom de desconto", couponHint: "Experimente NUCLO", delivery: "Entrega", checkout: "Finalizar compra",
   shipsTo: (countries) => `Países de entrega: ${countries}.`,
-  rates: "Preços convertidos do dólar com taxas fixas de demonstração.",
+  rates: "Preços convertidos de dólares americanos com taxas de câmbio fixas para esta demonstração.",
   products: {
     coffee: ["Café em grãos", "Torra média, 500 g"],
     matcha: ["Matcha", "Grau cerimonial, 30 g"],
     chocolate: ["Chocolate amargo", "Barra 70% cacau"],
-    honey: ["Mel silvestre", "Puro, pote de 350 g"],
+    honey: ["Mel silvestre", "Não pasteurizado, pote de 350 g"],
     cookies: ["Biscoitos amanteigados", "Assados hoje de manhã"],
     teapot: ["Bule de ferro fundido", "Capacidade de 0,8 litro"],
   },
@@ -86,7 +86,7 @@ const de: Messages = {
 const ja: Messages = {
   title: "街角ストア", tagline: "キッチンに、いいものを。", language: "言語",
   add: "カートに追加", cart: "カート", items: { other: "#点" },
-  empty: "カートは空です。", thanks: "ありがとうございます！ご注文を承りました。",
+  empty: "カートは空です。", thanks: "ありがとうございます！ご注文の商品は配送中です。",
   less: "1つ減らす", more: "1つ増やす",
   subtotal: "小計", shipping: "送料", free: "無料", discount: "割引", total: "合計",
   freeOver: (amount) => `${amount}以上で送料無料。`,
@@ -96,10 +96,10 @@ const ja: Messages = {
   products: {
     coffee: ["コーヒー豆", "中煎り・500 g"],
     matcha: ["抹茶", "茶道用・30 g"],
-    chocolate: ["ダークチョコレート", "カカオ70%"],
-    honey: ["百花蜜", "非加熱・350 g"],
+    chocolate: ["ダークチョコレート", "カカオ70%の板チョコレート"],
+    honey: ["百花蜜", "非加熱・350 g入りの瓶"],
     cookies: ["バタークッキー", "今朝焼きました"],
-    teapot: ["南部鉄器の急須", "容量0.8 L"],
+    teapot: ["鋳鉄製の急須", "容量0.8 L"],
   },
 };
 
@@ -109,16 +109,16 @@ const ar: Messages = {
   add: "أضف إلى السلة", cart: "سلة التسوق",
   items: { zero: "لا منتجات", one: "منتج واحد", two: "منتجان", few: "# منتجات", many: "# منتجًا", other: "# منتج" },
   empty: "سلتك فارغة.", thanks: "شكرًا لك! طلبك في الطريق.",
-  less: "إزالة واحد", more: "إضافة واحد",
+  less: "تقليل الكمية", more: "زيادة الكمية",
   subtotal: "المجموع الفرعي", shipping: "الشحن", free: "مجاني", discount: "الخصم", total: "الإجمالي",
-  freeOver: (amount) => `شحن مجاني للطلبات فوق ${amount}`, // no period: the currency ends with one
+  freeOver: (amount) => `شحن مجاني للطلبات بقيمة ${amount} أو أكثر`, // no period: the currency ends with one
   coupon: "رمز القسيمة", couponHint: "جرّب NUCLO", delivery: "موعد التوصيل", checkout: "إتمام الشراء",
   shipsTo: (countries) => `نشحن إلى: ${countries}.`,
   rates: "الأسعار محوّلة من الدولار الأمريكي بأسعار صرف ثابتة للعرض.",
   products: {
     coffee: ["حبوب القهوة", "تحميص متوسط، ٥٠٠ غرام"],
     matcha: ["ماتشا", "درجة احتفالية، ٣٠ غرامًا"],
-    chocolate: ["شوكولاتة داكنة", "لوح كاكاو ٧٠٪"],
+    chocolate: ["شوكولاتة داكنة", "لوح شوكولاتة بنسبة كاكاو ٧٠٪"],
     honey: ["عسل الزهور البرية", "خام، برطمان ٣٥٠ غرامًا"],
     cookies: ["بسكويت بالزبدة", "مخبوز هذا الصباح"],
     teapot: ["إبريق شاي من الحديد الزهر", "سعة ٠٫٨ لتر"],

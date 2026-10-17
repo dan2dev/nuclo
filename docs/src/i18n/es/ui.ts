@@ -18,7 +18,7 @@ export const nav = {
 };
 
 export const footer = {
-  tagline: "El runtime de UI explícito. Funciones simples, estado mutable y una sola llamada entre tus datos y el DOM.",
+  tagline: "El runtime de interfaces con actualizaciones explícitas. Funciones simples, estado mutable y una sola llamada entre tus datos y el DOM.",
   builtWith: "Este sitio está construido con Nuclo.",
   explore: "Explorar",
   documentation: "Documentación",
@@ -68,7 +68,7 @@ export const seo = {
     },
     docs: {
       title: "Documentación de Nuclo - Guía y referencia de API",
-      description: "Documentación de Nuclo: instalación, constructores de etiquetas, update() explícito, when() y list(), eventos, ciclo de vida, SSR e hidratación, CSS-in-TS tipado y la referencia completa de la API.",
+      description: "Documentación de Nuclo: instalación, funciones constructoras de etiquetas, llamadas explícitas a update(), when() y list(), eventos, ciclo de vida, SSR e hidratación, CSS-in-TS tipado y la referencia completa de la API.",
       keywords: "documentación nuclo, referencia de api, primeros pasos, update, list, when, on",
     },
     examples: {

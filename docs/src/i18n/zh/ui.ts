@@ -18,7 +18,7 @@ export const nav = {
 };
 
 export const footer = {
-  tagline: "显式的 UI 运行时。普通函数、可变状态，以及数据与 DOM 之间的一次调用。",
+  tagline: "采用显式更新的 UI 运行时。使用普通函数和可变状态，只需一次调用即可将数据同步到 DOM。",
   builtWith: "本站使用 Nuclo 构建。",
   explore: "探索",
   documentation: "文档",
@@ -60,7 +60,7 @@ export const seo = {
     },
     "apps/:id": {
       title: "独立应用 - Nuclo 示例",
-      description: "在全浏览器工作区中运行的交互式 Nuclo 应用示例。",
+      description: "在占满浏览器窗口的工作区中运行的交互式 Nuclo 应用示例。",
     },
     desktop: {
       title: "Nuclo OS - 桌面",
@@ -68,12 +68,12 @@ export const seo = {
     },
     docs: {
       title: "Nuclo 文档 - 指南与 API 参考",
-      description: "Nuclo 文档：安装、标签构建器、显式 update()、when() 与 list()、事件、生命周期、SSR 与水合、类型化 CSS-in-TS，以及完整的 API 参考。",
+      description: "Nuclo 文档：安装、标签构建函数、显式 update()、when() 与 list()、事件、生命周期、SSR 与水合、类型安全的 CSS-in-TS，以及完整的 API 参考。",
       keywords: "nuclo 文档, api 参考, 入门, update, list, when, on",
     },
     examples: {
       title: "Nuclo 示例 - 计数器、待办列表、搜索与样式",
-      description: "带源码的 Nuclo 实时示例：计数器、待办列表、实时搜索过滤器，以及类型化 CSS-in-TS 样式。",
+      description: "带源码的 Nuclo 实时示例：计数器、待办列表、实时搜索过滤器，以及类型安全的 CSS-in-TS 样式。",
       keywords: "nuclo 示例, 计数器, 待办, 搜索过滤, css-in-ts, 实时演示",
     },
   } as Record<string, { title: string; description: string; keywords?: string }>,

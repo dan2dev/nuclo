@@ -33,7 +33,7 @@ render(App, document.getElementById('app')!)
         <li>Ändere den State mit normalem JavaScript.</li>
         <li>Rufe <code>update()</code> auf. Nuclo führt die Funktionen erneut aus und patcht das DOM.</li>
       </ol>
-      <p>Das Ändern einer Variable berührt das DOM nicht. Die Seite ändert sich nur, wenn du <code>update()</code> aufrufst.</p>
+      <p>Das Ändern einer Variablen berührt das DOM nicht. Die Seite ändert sich nur, wenn du <code>update()</code> aufrufst.</p>
     `,
       },
       {
@@ -120,7 +120,7 @@ import { render, update, getCssText } from 'nuclo'
         <li><code>NodeModLike&lt;Tag&gt;</code>: alles, was ein Tag-Builder als Argument akzeptiert.</li>
         <li><code>ExpandedElement&lt;Tag&gt;</code>: was <code>render()</code> und <code>hydrate()</code> zurückgeben.</li>
         <li><code>ElementTagName</code>: ein beliebiger HTML-Tag-Name.</li>
-        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: das Attribut-Objekt, das ein Tag-Builder akzeptiert, einschließlich <code>on*</code>-Handlern, <code>onMount</code> und <code>onDestroy</code>. Verwende ihn für Komponenten, die Attribute durchreichen.</li>
+        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: das Attribut-Objekt, das ein Tag-Builder akzeptiert, einschließlich <code>on*</code>-Handlern, <code>onMount</code> und <code>onDestroy</code>. Verwende diesen Typ für Komponenten, die Attribute durchreichen.</li>
         <li><code>MountCallback</code> und <code>DestroyCallback</code>: <code>onMount</code>- und <code>onDestroy</code>-Handler.</li>
         <li><code>WhenBuilder</code>, <code>ListModifier</code>: was <code>when()</code> und <code>list()</code> zurückgeben.</li>
         <li><code>RegionOptions</code>, <code>RegionType</code>: die Optionen, die <code>region()</code> entgegennimmt.</li>
@@ -131,7 +131,7 @@ function Badge(text: string): NodeModFn<'span'> {
   return span(text)
 }
 `)}
-      <p><code>ExpandedElement&lt;Tag&gt;</code> markiert jedes DOM-Member als optional. Caste es, wenn du den vollständigen Elementtyp brauchst: <code>render(App, root) as HTMLDivElement</code>.</p>
+      <p><code>ExpandedElement&lt;Tag&gt;</code> markiert jedes DOM-Member als optional. Verwende einen Type-Cast, wenn du den vollständigen Elementtyp brauchst: <code>render(App, root) as HTMLDivElement</code>.</p>
     `,
       },
     ],
@@ -181,10 +181,10 @@ render(Card, document.body)
         <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> rendert den Text "false". Schreibe <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
         <li>Arrays sind keine Kinder. Spreade sie: <code>ul(...names.map((n) =&gt; li(n)))</code>. Für Listen, die sich ändern, verwende <code>list()</code>.</li>
         <li>Eine lokale Variable mit einem Tag-Namen verdeckt den Builder. Innerhalb von <code>function Row(label: string)</code> ist <code>label(...)</code> nicht aufrufbar. Benenne lokale Variablen wie <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> und <code>i</code> um.</li>
-        <li>Browser stellen jedes Element mit einer <code>id</code> als globale Variable bereit. Wenn die Seite <code>&lt;main id="main"&gt;</code> enthält, bevor Nuclo lädt, lässt Nuclo dieses Global unangetastet, sodass <code>main(...)</code> einen <code>TypeError</code> wirft. Verwende andere ids.</li>
+        <li>Browser stellen jedes Element mit einer <code>id</code> als globale Variable bereit. Wenn die Seite <code>&lt;main id="main"&gt;</code> enthält, bevor Nuclo lädt, lässt Nuclo dieses Global unangetastet, sodass <code>main(...)</code> einen <code>TypeError</code> wirft. Verwende andere IDs.</li>
       </ul>
       <h3>Eigene Modifier</h3>
-      <p>Eine Funktion, die mindestens einen Parameter deklariert, läuft einmal, in Argument-Reihenfolge, während das Element gebaut wird. Ihr erstes Argument ist das Element. Das zweite ist ein interner Index, verlass dich also nicht darauf. Gibt sie einen String oder eine Zahl zurück, wird daraus Text. Ein <code>Node</code> wird angehängt. Ein Objekt wird als Attribute angewendet.</p>
+      <p>Eine Funktion, die mindestens einen Parameter deklariert, läuft einmal, in Argument-Reihenfolge, während das Element gebaut wird. Ihr erstes Argument ist das Element. Das zweite ist ein interner Index, verlass dich also nicht darauf. Gibt sie einen String oder eine Zahl zurück, wird daraus Text. Ein <code>Node</code> wird angehängt. Bei einem Objekt werden dessen Einträge als Attribute gesetzt.</p>
       ${code("example.ts", `
 const field = input((el) => {
   el.autocomplete = 'off'
@@ -462,14 +462,14 @@ const Profile = () =>
         <li>Eine <code>style</code>-Funktion wendet das zurückgegebene Objekt bei jedem Update an.</li>
       </ul>
       <h3>Fehler</h3>
-      <p>Wirft ein dynamischer Wert, fängt Nuclo den Fehler ab, und der Rest des Updates läuft trotzdem. Text wird leer oder behält seinen alten Wert, und ein Attribut behält seinen alten Wert. Beide erholen sich beim nächsten erfolgreichen <code>update()</code>. Die Ausnahme: eine Textfunktion, die beim <strong>ersten</strong> Durchlauf wirft, bleibt endgültig leer.</p>
+      <p>Wirft die Funktion eines dynamischen Werts einen Fehler, fängt Nuclo den Fehler ab, und der Rest des Updates läuft trotzdem. Text wird leer oder behält seinen alten Wert, und ein Attribut behält seinen alten Wert. Beide erholen sich beim nächsten erfolgreichen <code>update()</code>. Die Ausnahme: eine Textfunktion, die beim <strong>ersten</strong> Durchlauf wirft, bleibt endgültig leer.</p>
     `,
       },
       {
         id: "api-update",
         title: "update()",
         content: `
-      <p>Führt einen synchronen Durchlauf über jeden dynamischen Wert auf der Seite aus. Mit ids aktualisiert es nur, was sich innerhalb der mit diesen <a href="#api-scope"><code>scope()</code></a>-ids markierten Elemente befindet. Jeder Durchlauf führt diese Schritte in Reihenfolge aus:</p>
+      <p>Führt einen synchronen Durchlauf über jeden dynamischen Wert auf der Seite aus. Mit IDs aktualisiert es nur, was sich innerhalb der mit diesen <a href="#api-scope"><code>scope()</code></a>-IDs markierten Elemente befindet. Jeder Durchlauf führt diese Schritte in Reihenfolge aus:</p>
       <ol>
         <li><code>list()</code>: liest die Items erneut und fügt Zeilen hinzu, verschiebt oder entfernt sie.</li>
         <li><code>when()</code>: prüft die Bedingungen erneut. Ein Zweig wird nur neu gebaut, wenn ein anderer Zweig aktiv wird.</li>
@@ -481,7 +481,7 @@ const Profile = () =>
         <li><strong>Es führt alles aus.</strong> Jeder dynamische Wert läuft bei jedem Aufruf, auch wenn sich seine Daten nicht geändert haben. Nur der DOM-Schreibvorgang wird übersprungen. Halte dynamische Werte schnell und frei von Seiteneffekten.</li>
         <li><strong>Nur Knoten im Dokument.</strong> Ist ein Knoten beim Ausführen von <code>update()</code> nicht im Dokument, hört Nuclo auf, ihn zu verfolgen. Er wird nie wieder aktualisiert, auch nicht, nachdem du ihn eingehängt hast. Das gilt auch für <code>list()</code> und <code>when()</code>. Rendere in einen Container, der im Dokument ist.</li>
         <li><strong>Statische Werte ändern sich nie.</strong> Einfache Strings und Attributwerte werden beim Bauen des Elements festgelegt. Um sie neu zu bauen, verwende <a href="#api-force-update"><code>forceUpdate()</code></a>.</li>
-        <li><strong>Fehler.</strong> Text- und Attributfehler werden abgefangen, und der Durchlauf geht weiter. Wirft eine <code>when()</code>-Bedingung, wird der Fehler protokolliert und dieses <code>when()</code> hört auf, sich zu aktualisieren. Wirft eine <code>items</code>- oder <code>renderItem</code>-Funktion von <code>list()</code>, entkommt der Fehler aus <code>update()</code>, und die restlichen Schritte laufen nicht.</li>
+        <li><strong>Fehler.</strong> Text- und Attributfehler werden abgefangen, und der Durchlauf geht weiter. Wirft eine <code>when()</code>-Bedingung, wird der Fehler protokolliert und dieses <code>when()</code> hört auf, sich zu aktualisieren. Wirft eine <code>items</code>- oder <code>renderItem</code>-Funktion von <code>list()</code>, wird der Fehler aus <code>update()</code> weitergegeben, und die restlichen Schritte laufen nicht.</li>
         <li><strong>Server.</strong> <code>update()</code> tut auf dem Server nichts.</li>
       </ul>
     `,
@@ -490,7 +490,7 @@ const Profile = () =>
         id: "api-scope",
         title: "scope()",
         content: `
-      <p>Gibt dem Element, an das es übergeben wird, eine oder mehrere Scope-ids. <code>update('id')</code> aktualisiert dann nur, was innerhalb dieses Elements liegt, einschließlich der Attribute des Elements selbst.</p>
+      <p>Gibt dem Element, an das es übergeben wird, eine oder mehrere Scope-IDs. <code>update('id')</code> aktualisiert dann nur, was innerhalb dieses Elements liegt, einschließlich der Attribute des Elements selbst.</p>
       ${code("example.ts", `
 let cartItems: string[] = []
 let user = 'Ada'
@@ -511,10 +511,10 @@ update()       // everything, the header now says "Hi, Grace"
     `,
         afterContent: `
       <ul>
-        <li>Ein Element kann mehrere ids haben: <code>scope('cart', 'sidebar')</code>.</li>
+        <li>Ein Element kann mehrere IDs haben: <code>scope('cart', 'sidebar')</code>.</li>
         <li><code>update('a', 'b')</code> aktualisiert alles innerhalb von <code>a</code> oder <code>b</code>. Verwenden mehrere Elemente dieselbe id, werden alle aktualisiert.</li>
         <li>Bei verschachtelten Scopes schließt <code>update('outer')</code> den inneren Scope ein. <code>update('inner')</code> berührt den äußeren nicht.</li>
-        <li>Eine id, die kein Element im Dokument hat, aktualisiert <strong>nichts</strong> und löst keinen Fehler aus, prüfe also die Schreibweise.</li>
+        <li>Eine ID, der kein Element im Dokument zugeordnet ist, aktualisiert <strong>nichts</strong> und löst keinen Fehler aus, prüfe also die Schreibweise.</li>
         <li><code>scope()</code> tut auf dem Server nichts.</li>
       </ul>
     `,
@@ -575,7 +575,7 @@ update()
         <li>Doppelte Items bekommen jeweils ihre eigene Zeile.</li>
         <li>Du kannst das Array in place ändern (<code>push</code>, <code>splice</code>, <code>sort</code>) oder ein neues Array zurückgeben.</li>
       </ul>
-      <p>Eine behaltene Zeile wird nie erneut gerendert, verwende also dynamische Werte für die Felder, die sich ändern:</p>
+      <p>Eine beibehaltene Zeile wird nie erneut gerendert, verwende also dynamische Werte für die Felder, die sich ändern:</p>
       ${code("todos.ts", `
 const todos = [{ text: 'Write docs', done: false }]
 
@@ -732,7 +732,7 @@ const Settings = () =>
   )
 `)}
       <h3>Dynamische Werte innerhalb einer View</h3>
-      <p>Der Inhalt eines <code>into()</code> ist gewöhnlicher Nuclo-Inhalt. Funktionen darin sind state-abhängige Werte und werden bei <code>update()</code> aktualisiert, wo immer die Region ist.</p>
+      <p>Der Inhalt eines <code>into()</code> ist gewöhnlicher Nuclo-Inhalt. Funktionen darin sind stateabhängige Werte und werden bei <code>update()</code> aktualisiert, wo immer die Region ist.</p>
       ${code("status.ts", `
 const selected = new Set<string>()
 
@@ -797,7 +797,7 @@ const Editor = () =>
         id: "api-force-update",
         title: "forceUpdate()",
         content: `
-      <p><code>update()</code> führt nur dynamische Werte aus. Statische Werte, etwa der Text in <code>h1(labels[lang].title)</code>, werden beim Bauen des Baums festgelegt. <code>forceUpdate()</code> ruft deine Komponenten erneut auf und patcht das Live-DOM entsprechend, statische Werte eingeschlossen. Verwende es für seltene, app-weite Änderungen, etwa das Umschalten der Sprache. Für alles andere verwende <code>update()</code>.</p>
+      <p><code>update()</code> führt nur dynamische Werte aus. Statische Werte, etwa der Text in <code>h1(labels[lang].title)</code>, werden beim Bauen des Baums festgelegt. <code>forceUpdate()</code> ruft deine Komponenten erneut auf und patcht das Live-DOM entsprechend, statische Werte eingeschlossen. Verwende es für seltene, appweite Änderungen, etwa das Umschalten der Sprache. Für alles andere verwende <code>update()</code>.</p>
       ${code("i18n.ts", `
 const labels = { en: { title: 'Hello' }, pt: { title: 'Olá' } }
 let lang: keyof typeof labels = 'en'
@@ -844,13 +844,13 @@ render(App, document.getElementById('app')!)
 `)}
       <ul>
         <li>Du kannst die Komponente (<code>render(App)</code>) oder den Builder übergeben, den sie zurückgibt (<code>render(App())</code>). Das DOM ist dasselbe. Nur <code>render(App)</code> erlaubt <a href="#api-force-update"><code>forceUpdate()</code></a>, die Wurzel später neu zu bauen, bevorzuge es also.</li>
-        <li>Es hängt an. Es leert <code>parent</code> nicht, ein zweifacher Aufruf fügt also zwei Kopien hinzu.</li>
+        <li>Es hängt das Element an, ohne <code>parent</code> zu leeren. Ein zweifacher Aufruf fügt also zwei Kopien hinzu.</li>
         <li>Jedes <code>onMount</code> im Baum ist gelaufen, wenn <code>render()</code> zurückkehrt.</li>
         <li>Rendere in ein Element, das im Dokument ist. Siehe <a href="#api-update"><code>update()</code></a>.</li>
         <li>Die Wurzel muss ein Element sein, etwa <code>div(...)</code>, nicht <code>when()</code> oder <code>list()</code>.</li>
         <li><code>index</code> ist intern. Es bestimmt nicht, wo das Element eingefügt wird. Lass es weg.</li>
       </ul>
-      <p>Eine als <code>render(App)</code> übergebene Komponente darf keine Parameter haben. Ein erforderlicher Parameter ist ein Typfehler. Ein optionaler besteht die Typprüfung, aber <code>render()</code> wirft zur Laufzeit. Wickle eine Komponente, die Props nimmt, ein:</p>
+      <p>Eine als <code>render(App)</code> übergebene Komponente darf keine Parameter haben. Ein erforderlicher Parameter ist ein Typfehler. Ein optionaler Parameter besteht die Typprüfung, aber <code>render()</code> wirft zur Laufzeit einen Fehler. Wickle eine Komponente, die Props nimmt, ein:</p>
       ${code("main.ts", `
 const Page = (props: { name: string }) => div(h1('Hi ', props.name))
 
@@ -940,7 +940,7 @@ renderToString(p('Hello'))
 `)}
       <ul>
         <li>Text- und Attributwerte werden HTML-escaped. Text innerhalb von <code>script()</code> und <code>style()</code> wird unverändert geschrieben, nur schließende Tags werden aufgebrochen, setze dort also nie Nutzereingaben ein.</li>
-        <li>Es wirft nicht. Wirft die Komponente, eine <code>list()</code>-Funktion oder eine <code>when()</code>-Bedingung, oder fehlt der Polyfill, protokolliert es den Fehler und gibt <code>""</code> zurück. Prüfe auf ein leeres Ergebnis, wenn der Request fehlschlagen soll. Eine Text- oder Attributfunktion, die wirft, rendert nur leer.</li>
+        <li>Es gibt keine Fehler an den Aufrufer weiter. Wirft die Komponente, eine <code>list()</code>-Funktion oder eine <code>when()</code>-Bedingung einen Fehler oder fehlt der Polyfill, protokolliert es den Fehler und gibt <code>""</code> zurück. Prüfe auf ein leeres Ergebnis, wenn der Request fehlschlagen soll. Eine Text- oder Attributfunktion, die einen Fehler wirft, erzeugt lediglich einen leeren Wert.</li>
       </ul>
       <h3><code>renderManyToString()</code></h3>
       <p>Dasselbe wie <code>inputs.map(renderToString)</code>.</p>

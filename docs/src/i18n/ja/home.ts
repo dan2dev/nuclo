@@ -5,10 +5,10 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · 依存関係ゼロ`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["*明示的な*", "インターフェースを", "nuclo で構築。"];
+export const HERO_TITLE_LINES = ["更新を*明示する*", "インターフェースを", "nuclo で構築。"];
 
 export const HERO_DESC =
-  "小さく型安全な DOM フレームワーク。状態はプレーンでミュータブルなまま。すべての更新をあなたが制御します。プロキシも、シグナルも、仮想 DOM もありません。";
+  "小さく型安全な DOM フレームワーク。状態には通常の変数やオブジェクトを使い、そのまま変更できます。更新のタイミングは自分で制御します。プロキシも、シグナルも、仮想 DOM もありません。";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
@@ -77,25 +77,25 @@ export const PHILOSOPHY_POINTS = [
   {
     num: "01",
     title: "暗黙より明示",
-    desc: "プロキシがあなたの一挙一動を追跡することはありません。状態を変更し、それから update() を呼び出します。原因と結果が明確で予測可能なままです。",
+    desc: "プロキシによる変更の追跡はありません。状態を変更し、それから update() を呼び出します。原因と結果が明確で予測可能なままです。",
   },
   {
     num: "02",
     title: "自由にまとめて、一度だけ更新",
-    desc: "10 回変更してから、update() を一度だけ呼び出します。DOM が見るのは最終状態だけ。無駄なレンダリングはありません。",
+    desc: "10 回変更してから、update() を一度だけ呼び出します。DOM に反映されるのは最終状態だけ。無駄なレンダリングはありません。",
   },
   {
     num: "03",
     title: "コンポーネントではなく関数",
-    desc: "プレーンな JavaScript の関数で構築します。Nuclo にはクラスも、デコレーターも、特別な構文も必要ありません。各関数は DOM ノードを返します。onMount と onDestroy は、必要なときだけ通常の修飾子として追加します。",
+    desc: "プレーンな JavaScript の関数で構築します。Nuclo にはクラスも、デコレーターも、特別な構文も必要ありません。各関数は DOM ノードを返します。onMount と onDestroy は、必要なときだけ通常のモディファイアとして追加します。",
   },
 ];
 
 export const FEATURES = [
   {
     num: "01 · 明示的",
-    title: "更新サイクルはあなたのもの",
-    desc: "自由に変更し、それから update() を一度だけ呼び出します。Nuclo にはサブスクリプションもスケジューラーも必要なく、予期しない diff であなたを驚かせることもありません。DOM はあなたが決めたときに同期します。",
+    title: "更新のタイミングを自分で決める",
+    desc: "自由に変更し、それから update() を一度だけ呼び出します。Nuclo にはサブスクリプションもスケジューラーも必要なく、予期しない差分処理もありません。DOM はあなたが決めたときに同期します。",
   },
   {
     num: "02 · 軽量",
@@ -109,8 +109,8 @@ export const FEATURES = [
   },
   {
     num: "04 · 精密",
-    title: "きめ細かなパッチ",
-    desc: "動的な式は update() 時に再評価されます。実際に変わった値だけが DOM に触れます。",
+    title: "DOM の必要な箇所だけを更新",
+    desc: "動的な式は update() 時に再評価されます。実際に変わった値だけが DOM に書き込まれます。",
   },
 ];
 
@@ -126,7 +126,7 @@ export const PIPELINE_STEPS = [
   {
     kicker: "02 · コミット",
     title: "update() を呼び出す",
-    desc: "1 つのグローバル関数が変更をコミットします。十数回の変更をまとめて、一度だけコミットします。あなたが言うまで何もレンダリングされません。",
+    desc: "1 つのグローバル関数が変更をコミットします。十数回の変更をまとめて、一度だけコミットします。呼び出すまで画面は更新されません。",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
@@ -156,7 +156,7 @@ export const COMPARISON_COLS: {
       { good: false, text: "状態が変わるたびにコンポーネントツリーを再レンダリングする" },
       { good: false, text: "変更箇所を見つけるために新旧のツリーを diff する" },
       { good: false, text: "パフォーマンスを取り戻すためにメモ化が必要" },
-      { good: false, text: "古いクロージャーと依存配列を残す" },
+      { good: false, text: "古い値を参照するクロージャーや依存配列への対処が必要" },
     ],
   },
   {
@@ -174,9 +174,9 @@ export const COMPARISON_COLS: {
     sub: "変更 → update()",
     featured: true,
     items: [
-      { good: true, text: "ラッパーもプロキシもない、プレーンでミュータブルな状態" },
+      { good: true, text: "ラッパーもプロキシもない、通常の変数やオブジェクトで管理する、変更可能な状態" },
       { good: true, text: "update() という 1 つの呼び出しがメンタルモデルのすべて" },
-      { good: true, text: "変わった値だけをパッチする" },
+      { good: true, text: "変わった値だけを DOM に反映する" },
       { good: true, text: `約 ${NUCLO_GZIP_KB} KB、依存関係ゼロ、TypeScript ファースト` },
     ],
   },
@@ -188,7 +188,7 @@ export const BENCHMARK_SUB =
   "これは js-framework-benchmark による独立した数値で、数千行の作成、更新、入れ替え、クリアを測定したものです。";
 
 export const BENCHMARK_NOTE =
-  "このスコアは、測定された最速の実装に対する所要時間の遅さを示します。すべての keyed ベンチマークの加重幾何平均です。";
+  "このスコアは、測定対象で最速の実装に対する所要時間の倍率を示します。すべての keyed ベンチマークの加重幾何平均です。";
 
 export const BENCHMARK_SOURCE_URL =
   "https://krausest.github.io/js-framework-benchmark/2026/chrome152.html";
@@ -218,7 +218,7 @@ export const BENCHMARK_ENTRIES: {
 // ── CTA ─────────────────────────────────────────────────────────────────────
 export const CTA_TITLE = "準備ができたら、いつでも。";
 export const CTA_SUB =
-  "Nuclo をインストールし、一度 import して、あなたが言ったとおりに正確に更新される UI を届けましょう。API 全体は午後の半日で学べます。";
+  "Nuclo をインストールし、一度 import して、意図したとおりに更新される UI を作りましょう。API 全体は半日で学べます。";
 
 export const QUICK_START_STEPS = [
   {
@@ -231,7 +231,7 @@ export const QUICK_START_STEPS = [
   {
     num: "02 - インポート",
     title: "インポート",
-    desc: "副作用のある import を 1 つ書くだけで、175 個すべてのタグビルダーがグローバルに登録されます。",
+    desc: "副作用インポートを 1 行書くだけで、175 個すべてのタグビルダーがグローバルに登録されます。",
     code: `<span class="kw">import</span> <span class="st">'nuclo'</span>`,
     lang: "main.ts",
   },
@@ -262,8 +262,8 @@ export const LABELS = {
   copyInstall: "インストールコマンドをコピー",
   howItWorks: "仕組み",
   pipelineTitle: "1 つの明示的なサイクル。",
-  pipelineSub: "状態依存の値。依存グラフもスケジューラーもありません。いつ実行するかはあなたが決めます - データから画面までの、予測可能な 1 本の道。",
-  philosophy: "哲学",
+  pipelineSub: "状態依存の値。依存グラフもスケジューラーもありません。実行のタイミングは自分で決めます。データから画面までの流れはシンプルで予測可能です。",
+  philosophy: "設計思想",
   features: "機能",
   featuresTitle: "明快さのために。",
   featuresSub: "魔法なし。驚きなし。すべての更新は意図的です。",
@@ -278,7 +278,7 @@ export const LABELS = {
   readFullDocs: "ドキュメント全体を読む →",
   examples: "サンプル",
   examplesTitle: "実際に見てみる。",
-  examplesSub: "インタラクティブなデモ。それぞれの裏にあるコードを探索してください。",
+  examplesSub: "インタラクティブなデモ。各デモのコードも確認できます。",
   viewAllExamples: "すべてのサンプルを見る →",
   readTheDocs: "ドキュメントを読む",
   addATask: "タスクを追加…",
@@ -294,12 +294,12 @@ export const LABELS = {
 // ── The hero card's examples, keyed by their export in home/examples.ts and home/playground.ts ──
 export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   Paint: {
-    title: "描いて、パッチする",
-    note: "左のグリッドはプレーンな真偽値の配列です: 塗ることは単なる変更にすぎません。右の DOM は update() が実行されたときにだけ動き、そのときも変わったセルだけがパッチされます。",
+    title: "描いて、DOM に反映",
+    note: "左のグリッドはプレーンな真偽値の配列です: 塗る操作は配列の値を変えるだけです。右の DOM は update() が実行されたときにだけ更新され、そのときも変わったセルだけがパッチされます。",
   },
   Draw: {
     title: "マークを描く",
-    note: "Nuclo のマークはスピログラフです: リングの内側を転がる 1 つの車輪と、その上の 2 本のペン。車輪、そのアーム、ペン、線はすべて 1 つの数値 t の関数です。タイムラインとフレームループは t を設定するだけで、update('draw') がそれを読むものを再実行します。",
+    note: "Nuclo のマークはスピログラフです: リングの内側を転がる 1 つの車輪と、その上の 2 本のペン。車輪、そのアーム、ペン、線はすべて 1 つの数値 t の関数です。タイムラインとフレームループは t を設定するだけで、update('draw') がその値を参照する関数を再実行します。",
   },
   Fireworks: {
     title: "空をタップ",
@@ -318,7 +318,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "このカードは scope() です。毎フレーム 32 個のプレーンな点を動かして update('chase') を呼び出します: Nuclo はこのカード内の属性を再計算し、ページの残りには触れません。",
   },
   Reflex: {
-    title: "緑でタップ",
+    title: "緑になったらタップ",
     note: "1 つのプレーンな文字列がステージに何を表示するかを決めます。各 when() ブランチは条件が真になったときに構築され、偽になったときに取り除かれます。ステージのクラスは同じ文字列の関数です。",
   },
   Warp: {
@@ -327,6 +327,6 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Life: {
     title: "ライフゲーム",
-    note: "ボードはプレーンな年齢の配列です。ティックごとに次の状態を計算して update() を呼び出します。各セルのクラスはその年齢の関数なので、変わったセルだけがパッチされます。",
+    note: "盤面は各セルの生存期間を表す通常の配列です。ティックごとに次の状態を計算して update() を呼び出します。各セルのクラスはその生存期間から決まるので、変わったセルだけがパッチされます。",
   },
 };

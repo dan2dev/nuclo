@@ -18,9 +18,9 @@ export const nav = {
 };
 
 export const footer = {
-  tagline: "明示的な UI ランタイム。プレーンな関数、ミュータブルな状態、そしてデータと DOM の間にある一度の呼び出し。",
+  tagline: "明示的に更新する UI ランタイム。通常の関数と変更可能な状態を使い、1 回の呼び出しでデータを DOM に反映します。",
   builtWith: "このサイトは Nuclo で構築されています。",
-  explore: "探索",
+  explore: "コンテンツ",
   documentation: "ドキュメント",
   examples: "サンプル",
   readme: "README",
@@ -73,11 +73,11 @@ export const seo = {
     },
     examples: {
       title: "Nuclo サンプル - カウンター、Todo リスト、検索、スタイリング",
-      description: "ソースコード付きのライブ Nuclo サンプル: カウンター、Todo リスト、リアルタイム検索フィルター、型付き CSS-in-TS スタイリング。",
+      description: "ソースコード付きの Nuclo ライブサンプル: カウンター、Todo リスト、リアルタイム検索フィルター、型付き CSS-in-TS スタイリング。",
       keywords: "nuclo サンプル, カウンター, todo, 検索フィルター, css-in-ts, ライブデモ",
     },
   } as Record<string, { title: string; description: string; keywords?: string }>,
   exampleTitle: (title: string) => `${title} - Nuclo サンプル`,
-  exampleDescription: (desc: string) => `${desc} ソースコード付きのライブ Nuclo サンプルです。`,
+  exampleDescription: (desc: string) => `${desc} ソースコード付きの Nuclo ライブサンプルです。`,
   exampleKeywords: (title: string) => `nuclo サンプル, ${title.toLowerCase()}, ライブデモ, ソースコード`,
 };

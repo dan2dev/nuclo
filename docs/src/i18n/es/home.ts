@@ -5,7 +5,7 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · cero dependencias`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["Construye interfaces", "*explícitas* con", "nuclo."];
+export const HERO_TITLE_LINES = ["Construye interfaces", "con actualizaciones", "*explícitas* en nuclo."];
 
 export const HERO_DESC =
   "Un framework DOM pequeño y con tipado seguro. El estado se mantiene simple y mutable. Tú controlas cada actualización. Sin proxies, sin señales, sin DOM virtual.";
@@ -14,8 +14,8 @@ export const INSTALL_CMD = "npm create nuclo@latest";
 
 export const HERO_STATS = [
   { num: "0",   sup: "",   label: "dependencias" },
-  { num: "175", sup: "",   label: "constructores HTML y SVG tipados" },
-  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "con gzip, runtime principal" },
+  { num: "175", sup: "",   label: "funciones HTML y SVG tipadas" },
+  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "runtime principal, con gzip" },
 ];
 
 export const COUNTER_TEASER_CODE = `import 'nuclo'
@@ -82,7 +82,7 @@ export const PHILOSOPHY_POINTS = [
   {
     num: "02",
     title: "Agrupa libremente, actualiza una vez",
-    desc: "Haz diez mutaciones y luego llama a update() una sola vez. El DOM solo ve el estado final. No se desperdicia ningún render.",
+    desc: "Haz diez mutaciones y luego llama a update() una sola vez. El DOM solo ve el estado final. Sin renderizados innecesarios.",
   },
   {
     num: "03",
@@ -104,12 +104,12 @@ export const FEATURES = [
   },
   {
     num: "03 · Tipado",
-    title: "TypeScript primero",
-    desc: "175 constructores HTML y SVG completamente tipados te dan autocompletado para cada atributo, propiedad de estilo y evento.",
+    title: "Diseñado para TypeScript",
+    desc: "175 funciones constructoras de etiquetas HTML y SVG completamente tipadas te dan autocompletado para cada atributo, propiedad de estilo y evento.",
   },
   {
     num: "04 · Preciso",
-    title: "Parcheo de grano fino",
+    title: "Actualizaciones precisas del DOM",
     desc: "Las expresiones dinámicas se reevalúan en update(). Solo los valores que realmente cambiaron tocan el DOM.",
   },
 ];
@@ -177,7 +177,7 @@ export const COMPARISON_COLS: {
       { good: true, text: "Estado mutable simple, sin envoltorios ni proxies" },
       { good: true, text: "Una sola llamada, update(), es todo el modelo mental" },
       { good: true, text: "Parchea solo los valores que cambiaron" },
-      { good: true, text: `Unos ${NUCLO_GZIP_KB} KB, cero dependencias, TypeScript primero` },
+      { good: true, text: `Unos ${NUCLO_GZIP_KB} KB, cero dependencias, Diseñado para TypeScript` },
     ],
   },
 ];
@@ -188,7 +188,7 @@ export const BENCHMARK_SUB =
   "Estas son cifras independientes de js-framework-benchmark, para crear, actualizar, intercambiar y vaciar miles de filas.";
 
 export const BENCHMARK_NOTE =
-  "Esta puntuación es la ralentización de duración frente a la implementación más rápida medida. Es una media geométrica ponderada de todos los benchmarks keyed.";
+  "Esta puntuación indica cuánto tarda cada implementación en comparación con la más rápida de las medidas. Es una media geométrica ponderada de todos los benchmarks con claves (keyed).";
 
 export const BENCHMARK_SOURCE_URL =
   "https://krausest.github.io/js-framework-benchmark/2026/chrome152.html";
@@ -231,7 +231,7 @@ export const QUICK_START_STEPS = [
   {
     num: "02 - IMPORTAR",
     title: "Importar",
-    desc: "Un solo import con efecto secundario registra los 175 constructores de etiquetas globalmente.",
+    desc: "Una sola importación por sus efectos secundarios registra globalmente las 175 funciones constructoras de etiquetas.",
     code: `<span class="kw">import</span> <span class="st">'nuclo'</span>`,
     lang: "main.ts",
   },
@@ -270,7 +270,7 @@ export const LABELS = {
   comparison: "Comparación",
   theNucloWay: "a la manera de nuclo",
   benchmarks: "Benchmarks",
-  lowerIsBetter: "Menor es mejor",
+  lowerIsBetter: "Cuanto menor, mejor",
   benchmarkSource: "Fuente: js-framework-benchmark",
   quickStart: "Inicio rápido",
   quickStartTitle: "En marcha en minutos.",
@@ -295,7 +295,7 @@ export const LABELS = {
 export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   Paint: {
     title: "Pinta y luego parchea",
-    note: "La cuadrícula izquierda es un array simple de booleanos: pintarla es una mutación y nada más. El DOM de la derecha solo se mueve cuando corre update(), y entonces solo se parchean las celdas que cambiaron.",
+    note: "La cuadrícula izquierda es un array simple de booleanos: pintarla es una mutación y nada más. El DOM de la derecha solo cambia cuando se ejecuta update(), y entonces solo se parchean las celdas que cambiaron.",
   },
   Draw: {
     title: "Dibuja la marca",
@@ -323,10 +323,10 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Warp: {
     title: "Mantén pulsado para saltar",
-    note: "onMount inicia el bucle de frames y devuelve su limpieza. Desmonta el campo y Nuclo ejecuta esa limpieza: el bucle se detiene y nada queda en ejecución.",
+    note: "onMount inicia el bucle de frames y devuelve una función de limpieza. Desmonta el campo y Nuclo ejecuta esa limpieza: el bucle se detiene y nada queda en ejecución.",
   },
   Life: {
     title: "Juego de la vida",
-    note: "El tablero es un array simple de edades. Un tick calcula el siguiente y llama a update(); la clase de cada celda es una función de su edad, así que solo se parchean las celdas que cambiaron.",
+    note: "El tablero es un array simple de edades. En cada tick se calcula el siguiente estado y se llama a update(); la clase de cada celda es una función de su edad, así que solo se parchean las celdas que cambiaron.",
   },
 };

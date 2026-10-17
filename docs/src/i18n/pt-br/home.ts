@@ -5,10 +5,10 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · zero dependências`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["Construa interfaces", "*explícitas* com", "nuclo."];
+export const HERO_TITLE_LINES = ["Crie interfaces com", "atualizações *explícitas*", "no nuclo."];
 
 export const HERO_DESC =
-  "Um framework DOM pequeno e type-safe. O estado permanece simples e mutável. Você controla cada atualização. Sem proxies, sem signals, sem DOM virtual.";
+  "Um framework DOM pequeno e com segurança de tipos. O estado permanece simples e mutável. Você controla cada atualização. Sem proxies, sem signals, sem DOM virtual.";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
@@ -71,13 +71,13 @@ export function TodoList() {
 }`;
 
 export const PHILOSOPHY_QUOTE =
-  "Quando você muta o estado, nada acontece. Chame update(), e o Nuclo faz exatamente o que você pediu. Nem mais, nem menos.";
+  "Quando você altera o estado, nada acontece. Chame update(), e o Nuclo faz exatamente o que você pediu. Nem mais, nem menos.";
 
 export const PHILOSOPHY_POINTS = [
   {
     num: "01",
     title: "Explícito é melhor que implícito",
-    desc: "Nenhum proxy rastreia cada passo seu. Você muta o estado e depois chama update(). Causa e efeito permanecem claros e previsíveis.",
+    desc: "Nenhum proxy rastreia cada passo seu. Você altera o estado e depois chama update(). Causa e efeito permanecem claros e previsíveis.",
   },
   {
     num: "02",
@@ -94,8 +94,8 @@ export const PHILOSOPHY_POINTS = [
 export const FEATURES = [
   {
     num: "01 · Explícito",
-    title: "Você é dono do ciclo de atualização",
-    desc: "Mute à vontade e chame update() uma vez. O Nuclo não precisa de assinaturas nem de agendadores, e nunca te surpreende com um diff. O DOM sincroniza quando você decide.",
+    title: "Você controla o ciclo de atualização",
+    desc: "Altere o estado à vontade e chame update() uma vez. O Nuclo não precisa de assinaturas nem de agendadores, e nunca te surpreende com um diff. O DOM é sincronizado quando você decide.",
   },
   {
     num: "02 · Leve",
@@ -105,21 +105,21 @@ export const FEATURES = [
   {
     num: "03 · Tipado",
     title: "TypeScript em primeiro lugar",
-    desc: "175 construtores HTML e SVG totalmente tipados dão autocompletar para cada atributo, propriedade de estilo e evento.",
+    desc: "175 construtores HTML e SVG totalmente tipados oferecem autocompletar para cada atributo, propriedade de estilo e evento.",
   },
   {
     num: "04 · Preciso",
-    title: "Patching granular",
-    desc: "Expressões dinâmicas são reavaliadas no update(). Só os valores que realmente mudaram tocam o DOM.",
+    title: "Atualizações granulares",
+    desc: "Expressões dinâmicas são reavaliadas no update(). Só os valores que realmente mudaram são aplicados ao DOM.",
   },
 ];
 
 // ── "How update() works" pipeline ──────────────────────────────────────────
 export const PIPELINE_STEPS = [
   {
-    kicker: "01 · Mutar",
+    kicker: "01 · Alterar",
     title: "Altere seus dados",
-    desc: "O estado é JavaScript simples: variáveis, arrays, objetos. Mute-o como quiser, quantas vezes quiser.",
+    desc: "O estado é JavaScript simples: variáveis, arrays, objetos. Altere-o como quiser, quantas vezes quiser.",
     code: `<span class="pr">todos</span><span class="pt">.</span><span class="fn">push</span><span class="pt">(</span><span class="pr">newTodo</span><span class="pt">)</span>
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
@@ -156,7 +156,7 @@ export const COMPARISON_COLS: {
       { good: false, text: "Re-renderiza árvores de componentes a cada mudança de estado" },
       { good: false, text: "Compara as árvores antiga e nova para achar o que mudou" },
       { good: false, text: "Precisa de memoização para recuperar o desempenho" },
-      { good: false, text: "Deixa closures obsoletas e arrays de dependências" },
+      { good: false, text: "Exige lidar com closures desatualizadas e arrays de dependências" },
     ],
   },
   {
@@ -171,11 +171,11 @@ export const COMPARISON_COLS: {
   },
   {
     name: "Nuclo",
-    sub: "mutar → update()",
+    sub: "alterar → update()",
     featured: true,
     items: [
       { good: true, text: "Estado mutável simples, sem wrappers e sem proxies" },
-      { good: true, text: "Uma chamada, update(), é todo o modelo mental" },
+      { good: true, text: "Todo o modelo mental se resume a uma chamada: update()" },
       { good: true, text: "Aplica só os valores que mudaram" },
       { good: true, text: `Cerca de ${NUCLO_GZIP_KB} KB, zero dependências, TypeScript em primeiro lugar` },
     ],
@@ -188,7 +188,7 @@ export const BENCHMARK_SUB =
   "Estes são números independentes do js-framework-benchmark, para criar, atualizar, trocar e limpar milhares de linhas.";
 
 export const BENCHMARK_NOTE =
-  "Esta pontuação é a lentidão relativa à implementação mais rápida medida. É uma média geométrica ponderada de todos os benchmarks keyed.";
+  "Esta pontuação indica quanto cada implementação é mais lenta que a mais rápida medida. É uma média geométrica ponderada de todos os benchmarks keyed.";
 
 export const BENCHMARK_SOURCE_URL =
   "https://krausest.github.io/js-framework-benchmark/2026/chrome152.html";
@@ -295,7 +295,7 @@ export const LABELS = {
 export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   Paint: {
     title: "Pinte, depois aplique",
-    note: "A grade da esquerda é um array simples de booleanos: pintá-la é uma mutação e nada mais. O DOM da direita só se move quando update() roda, e então só as células que mudaram são atualizadas.",
+    note: "A grade da esquerda é um array simples de booleanos: pintá-la é uma mutação e nada mais. O DOM da direita só muda quando update() roda, e então só as células que mudaram são atualizadas.",
   },
   Draw: {
     title: "Desenhe a marca",
@@ -323,10 +323,10 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Warp: {
     title: "Segure para distorcer",
-    note: "onMount inicia o loop de quadros e retorna sua limpeza. Desmonte o campo e o Nuclo executa essa limpeza: o loop para e nada fica rodando.",
+    note: "onMount inicia o loop de quadros e retorna uma função de limpeza. Desmonte o campo e o Nuclo executa essa limpeza: o loop para e nada fica rodando.",
   },
   Life: {
     title: "Jogo da Vida",
-    note: "O tabuleiro é um array simples de idades. Um tick calcula o próximo e chama update(); a classe de cada célula é uma função da sua idade, então só as células que mudaram são atualizadas.",
+    note: "O tabuleiro é um array simples de idades. Um tick calcula o próximo estado e chama update(); a classe de cada célula é uma função da sua idade, então só as células que mudaram são atualizadas.",
   },
 };

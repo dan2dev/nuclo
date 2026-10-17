@@ -12,7 +12,7 @@ export const GROUPS_1: DocGroupText[] = [
         title: "Visión general",
         content: `
       <p>Nuclo es una pequeña biblioteca DOM para TypeScript. Construyes la página con funciones simples como <code>div()</code> y <code>button()</code>, guardas el estado en variables ordinarias y llamas a <code>update()</code> cuando la página debe cambiar.</p>
-      <p>Nuclo no tiene DOM virtual, ni compilador, ni proxies, ni signals.</p>
+      <p>Nuclo no tiene DOM virtual, ni compilador, ni proxies, ni señales.</p>
       ${code("main.ts", `
 import 'nuclo'
 
@@ -28,7 +28,7 @@ render(App, document.getElementById('app')!)
 `)}
       <h3>El modelo mental</h3>
       <ol>
-        <li>Construye la UI con constructores de etiquetas.</li>
+        <li>Construye la UI con funciones constructoras de etiquetas.</li>
         <li>Pasa una función por cada valor que dependa del estado.</li>
         <li>Cambia el estado con JavaScript normal.</li>
         <li>Llama a <code>update()</code>. Nuclo ejecuta las funciones de nuevo y parchea el DOM.</li>
@@ -68,17 +68,17 @@ render(App, document.getElementById('app')!)
       <h3>Globales</h3>
       <p><code>import 'nuclo'</code> registra esto en <code>globalThis</code>:</p>
       <ul>
-        <li><strong>175 constructores de etiquetas</strong>: 112 para HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) y 63 para SVG, con el sufijo <code>Svg</code> (<code>svgSvg</code>, <code>pathSvg</code>, …). Consulta <a href="#tag-builders">Constructores de etiquetas</a>.</li>
+        <li><strong>175 funciones constructoras de etiquetas</strong>: 112 para HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) y 63 para SVG, con el sufijo <code>Svg</code> (<code>svgSvg</code>, <code>pathSvg</code>, …). Consulta <a href="#tag-builders">Funciones constructoras de etiquetas</a>.</li>
         <li><strong>16 helpers</strong>: <code>update</code>, <code>scope</code>, <code>when</code>, <code>list</code>, <code>region</code>, <code>into</code>, <code>on</code>, <code>render</code>, <code>hydrate</code>, <code>forceUpdate</code>, <code>css</code>, <code>cx</code>, <code>createCss</code>, <code>variants</code>, <code>keyframes</code> y <code>globalStyle</code>.</li>
       </ul>
-      <p>La importación debe ejecutarse antes que cualquier código que llame a un constructor. Los módulos ES se ejecutan en orden de importación, así que esto falla:</p>
+      <p>La importación debe ejecutarse antes que cualquier código que llame a una función constructora. Los módulos ES se ejecutan en orden de importación, así que esto falla:</p>
       ${code("main.ts", `
 import { App } from './app' // app.ts calls div() → ReferenceError: div is not defined
 import 'nuclo'
 `)}
       <p>Pon <code>import 'nuclo'</code> al principio de tu archivo de entrada, o impórtalo en cada archivo que use los globales.</p>
       <h3>Importaciones con nombre</h3>
-      <p>Los helpers también son exportaciones con nombre. Son las mismas funciones que los globales. <code>getCssText()</code> y <code>resetStyles()</code> solo existen como exportaciones con nombre. Los constructores de etiquetas solo existen como globales, así que <code>import { div } from 'nuclo'</code> no funciona.</p>
+      <p>Los helpers también son exportaciones con nombre. Son las mismas funciones que los globales. <code>getCssText()</code> y <code>resetStyles()</code> solo existen como exportaciones con nombre. Las funciones constructoras de etiquetas solo existen como globales, así que <code>import { div } from 'nuclo'</code> no funciona.</p>
       ${code("main.ts", `
 import { render, update, getCssText } from 'nuclo'
 `)}
@@ -116,11 +116,11 @@ import { render, update, getCssText } from 'nuclo'
       <h3>Tipos útiles</h3>
       <p>Estos tipos son globales, así que los usas sin importarlos:</p>
       <ul>
-        <li><code>NodeModFn&lt;Tag&gt;</code>: lo que devuelve un constructor de etiquetas. Úsalo como tipo de retorno de un componente.</li>
-        <li><code>NodeModLike&lt;Tag&gt;</code>: cualquier cosa que un constructor de etiquetas acepta como argumento.</li>
+        <li><code>NodeModFn&lt;Tag&gt;</code>: lo que devuelve una función constructora de etiquetas. Úsalo como tipo de retorno de un componente.</li>
+        <li><code>NodeModLike&lt;Tag&gt;</code>: cualquier cosa que una función constructora de etiquetas acepta como argumento.</li>
         <li><code>ExpandedElement&lt;Tag&gt;</code>: lo que devuelven <code>render()</code> y <code>hydrate()</code>.</li>
         <li><code>ElementTagName</code>: cualquier nombre de etiqueta HTML.</li>
-        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: el objeto de atributos que acepta un constructor de etiquetas, incluidos los manejadores <code>on*</code>, <code>onMount</code> y <code>onDestroy</code>. Úsalo en componentes que reenvían atributos.</li>
+        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: el objeto de atributos que acepta una función constructora de etiquetas, incluidos los manejadores <code>on*</code>, <code>onMount</code> y <code>onDestroy</code>. Úsalo en componentes que reenvían atributos.</li>
         <li><code>MountCallback</code> y <code>DestroyCallback</code>: manejadores de <code>onMount</code> y <code>onDestroy</code>.</li>
         <li><code>WhenBuilder</code>, <code>ListModifier</code>: lo que devuelven <code>when()</code> y <code>list()</code>.</li>
         <li><code>RegionOptions</code>, <code>RegionType</code>: las opciones que recibe <code>region()</code>.</li>
@@ -143,10 +143,10 @@ function Badge(text: string): NodeModFn<'span'> {
     sections: [
       {
         id: "tag-builders",
-        title: "Constructores de etiquetas",
+        title: "Funciones constructoras de etiquetas",
         content: `
       <p>Cada etiqueta HTML es una función global con el mismo nombre: <code>div</code>, <code>span</code>, <code>input</code>, … La única excepción es <code>&lt;var&gt;</code>, que es <code>var_</code> porque <code>var</code> es una palabra reservada. Cada etiqueta SVG lleva el sufijo <code>Svg</code>: <code>svgSvg</code>, <code>pathSvg</code>, <code>circleSvg</code>, …</p>
-      <p>Llamar a un constructor de etiquetas todavía no crea un elemento. <code>div('Hi')</code> devuelve un <strong>builder</strong>: una función que crea el elemento más tarde. Nuclo la llama cuando lo montas con <code>render()</code> o lo colocas dentro de otro builder, <code>when()</code> o <code>list()</code>. Cada uso crea un elemento nuevo.</p>
+      <p>Llamar a una función constructora de etiquetas todavía no crea un elemento. <code>div('Hi')</code> devuelve un <strong>builder</strong>: una función que crea el elemento más tarde. Nuclo la llama cuando lo montas con <code>render()</code> o lo colocas dentro de otro builder, <code>when()</code> o <code>list()</code>. Cada uso crea un elemento nuevo.</p>
       ${code("card.ts", `
 let name = 'Ada'
 
@@ -180,7 +180,7 @@ render(Card, document.body)
       <ul>
         <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> renderiza el texto "false". Escribe <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
         <li>Los arrays no son hijos. Expándelos: <code>ul(...names.map((n) =&gt; li(n)))</code>. Para listas que cambian, usa <code>list()</code>.</li>
-        <li>Una variable local con el nombre de una etiqueta oculta el constructor. Dentro de <code>function Row(label: string)</code>, <code>label(...)</code> no se puede llamar. Renombra las locales como <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> e <code>i</code>.</li>
+        <li>Una variable local con el nombre de una etiqueta oculta la función constructora. Dentro de <code>function Row(label: string)</code>, <code>label(...)</code> no se puede llamar. Cambia los nombres de variables locales como <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> e <code>i</code>.</li>
         <li>Los navegadores exponen cada elemento con <code>id</code> como una variable global. Si la página contiene <code>&lt;main id="main"&gt;</code> antes de que Nuclo cargue, Nuclo deja ese global en su sitio, así que <code>main(...)</code> lanza un <code>TypeError</code>. Usa otros ids.</li>
       </ul>
       <h3>Modificadores personalizados</h3>
@@ -198,7 +198,7 @@ document.body.append(el)
 `)}
       <p>Insértalo antes del siguiente <code>update()</code>. Un nodo que no está en el documento cuando se ejecuta <code>update()</code> deja de actualizarse para siempre.</p>
       <h3>SVG</h3>
-      <p>Los constructores SVG aceptan los mismos argumentos. Nuclo establece cada atributo SVG con <code>setAttribute</code>, así que nombres como <code>"stroke-width"</code> funcionan tal como se escriben.</p>
+      <p>Las funciones constructoras de SVG aceptan los mismos argumentos. Nuclo establece cada atributo SVG con <code>setAttribute</code>, así que nombres como <code>"stroke-width"</code> funcionan tal como se escriben.</p>
       ${code("icon.ts", `
 const Icon = () =>
   svgSvg(
@@ -206,7 +206,7 @@ const Icon = () =>
     circleSvg({ cx: 12, cy: 12, r: 10, fill: 'currentColor' }),
   )
 `)}
-      <h3>Todos los constructores</h3>
+      <h3>Todas las funciones constructoras</h3>
       <p><strong>HTML:</strong> a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark menu meta meter nav noscript object ol optgroup option output p picture pre progress q rp rt ruby s samp script search section select slot small source span strong style sub summary sup table tbody td template textarea tfoot th thead time title tr track u ul var_ video wbr</p>
       <p><strong>SVG:</strong> aSvg animateSvg animateMotionSvg animateTransformSvg circleSvg clipPathSvg defsSvg descSvg ellipseSvg feBlendSvg feColorMatrixSvg feComponentTransferSvg feCompositeSvg feConvolveMatrixSvg feDiffuseLightingSvg feDisplacementMapSvg feDistantLightSvg feDropShadowSvg feFloodSvg feFuncASvg feFuncBSvg feFuncGSvg feFuncRSvg feGaussianBlurSvg feImageSvg feMergeSvg feMergeNodeSvg feMorphologySvg feOffsetSvg fePointLightSvg feSpecularLightingSvg feSpotLightSvg feTileSvg feTurbulenceSvg filterSvg foreignObjectSvg gSvg imageSvg lineSvg linearGradientSvg markerSvg maskSvg metadataSvg mpathSvg pathSvg patternSvg polygonSvg polylineSvg radialGradientSvg rectSvg scriptSvg setSvg stopSvg styleSvg svgSvg switchSvg symbolSvg textSvg textPathSvg titleSvg tspanSvg useSvg viewSvg</p>
     `,
@@ -264,7 +264,7 @@ const save = button(
         <li><code>innerHTML</code> no se escapa, y el renderizado en el servidor no lo emite. Evítalo.</li>
       </ul>
       <h3>Clases</h3>
-      <p>Usa <code>className</code>. Los strings de clases estáticos, los resultados de <code>css()</code> y un <code>className</code> dinámico se combinan. Un <code>className</code> dinámico conserva las clases estáticas, y cuando devuelve <code>""</code> solo quedan las clases estáticas.</p>
+      <p>Usa <code>className</code>. Las cadenas estáticas de nombres de clase, los resultados de <code>css()</code> y un <code>className</code> dinámico se combinan. Un <code>className</code> dinámico conserva las clases estáticas, y cuando devuelve <code>""</code> solo quedan las clases estáticas.</p>
       ${code("example.ts", `
 let active = false
 const base = css({ p: 8 })
@@ -371,7 +371,7 @@ const search = input(on('mount', (el) => el.focus()))
         <li><code>onDestroy</code> se ejecuta cuando Nuclo quita el elemento: se elimina una fila de <code>list()</code>, cambia una rama de <code>when()</code>, un <code>into()</code> abandona su región, o <code>forceUpdate()</code> lo descarta. Se ejecuta justo antes de la eliminación, así que el elemento todavía está en el documento.</li>
       </ul>
       <h3>Eliminación directa del DOM</h3>
-      <p>Si quitas un elemento tú mismo, con <code>node.remove()</code> o <code>innerHTML = ''</code>, su <code>onDestroy</code> y sus limpiezas nunca se ejecutan, y los temporizadores siguen corriendo. Nuclo no tiene <code>unmount()</code>. Para desmontar una app con limpieza, envuélvela en <code>when()</code>:</p>
+      <p>Si quitas un elemento tú mismo, con <code>node.remove()</code> o <code>innerHTML = ''</code>, su <code>onDestroy</code> y sus limpiezas nunca se ejecutan, y los temporizadores siguen ejecutándose. Nuclo no tiene <code>unmount()</code>. Para desmontar una app con limpieza, envuélvela en <code>when()</code>:</p>
       ${code("main.ts", `
 let mounted = true
 render(() => div(when(() => mounted, App())), root)
@@ -384,8 +384,8 @@ update() // App's onDestroy hooks and cleanups run
         <li>Puedes registrar tantos hooks como quieras, en cualquiera de las dos formas. Se ejecutan en orden de registro.</li>
         <li><code>onDestroy</code> siempre ejecuta primero los hijos y después el padre.</li>
         <li>Los elementos se montan en el orden de su primer hook <code>onMount</code>, que sigue el orden de los argumentos, y cada elemento ejecuta todos sus hooks juntos. Pasa el hook de un padre antes que sus hijos si estos dependen de él.</li>
-        <li>Un hook que lanza un error se registra con <code>console.error</code>. Los demás hooks se ejecutan igualmente.</li>
-        <li>El callback debe devolver nada o una función de limpieza, así que no lo hagas <code>async</code>. Una Promise devuelta nunca se usa como limpieza. Inicia el trabajo asíncrono dentro: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
+        <li>Si un hook lanza un error, este se registra con <code>console.error</code>. Los demás hooks se ejecutan igualmente.</li>
+        <li>El callback no debe devolver ningún valor, salvo una función de limpieza, así que no lo hagas <code>async</code>. Una Promise devuelta nunca se usa como limpieza. Inicia el trabajo asíncrono dentro: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
         <li>Los hooks nunca se ejecutan en el servidor. En el cliente, se ejecutan después de <code>hydrate()</code>.</li>
       </ul>
       <div class="docs-callout"><strong>Nota:</strong> los hooks no son efectos. Nunca se ejecutan de nuevo cuando cambia el estado. Cada uno se ejecuta como máximo una vez por elemento.</div>
@@ -481,7 +481,7 @@ const Profile = () =>
         <li><strong>Ejecuta todo.</strong> Cada valor dinámico se ejecuta en cada llamada, incluso cuando sus datos no cambiaron. Solo se omite la escritura en el DOM. Mantén los valores dinámicos rápidos y sin efectos secundarios.</li>
         <li><strong>Solo nodos en el documento.</strong> Si un nodo no está en el documento cuando se ejecuta <code>update()</code>, Nuclo deja de seguirlo. Nunca vuelve a actualizarse, ni siquiera después de insertarlo. Esto también aplica a <code>list()</code> y <code>when()</code>. Renderiza en un contenedor que esté en el documento.</li>
         <li><strong>Los valores estáticos nunca cambian.</strong> Los strings simples y los valores de atributos quedan fijados cuando se construye el elemento. Para reconstruirlos, usa <a href="#api-force-update"><code>forceUpdate()</code></a>.</li>
-        <li><strong>Errores.</strong> Los errores de texto y atributos se capturan, y la pasada continúa. Si una condición de <code>when()</code> lanza un error, el error se registra y ese <code>when()</code> deja de actualizarse. Si una función <code>items</code> o <code>renderItem</code> de <code>list()</code> lanza un error, el error escapa de <code>update()</code> y los pasos restantes no se ejecutan.</li>
+        <li><strong>Errores.</strong> Los errores de texto y atributos se capturan, y la pasada continúa. Si una condición de <code>when()</code> lanza un error, el error se registra y ese <code>when()</code> deja de actualizarse. Si una función <code>items</code> o <code>renderItem</code> de <code>list()</code> lanza un error, el error se propaga fuera de <code>update()</code> y los pasos restantes no se ejecutan.</li>
         <li><strong>Servidor.</strong> <code>update()</code> no hace nada en el servidor.</li>
       </ul>
     `,
@@ -573,7 +573,7 @@ update()
         <li>Un elemento que sigue presente conserva su fila. Nuclo mueve la fila si hace falta, y no llama a <code>renderItem</code> de nuevo.</li>
         <li>Un elemento nuevo recibe una fila nueva. Un elemento eliminado pierde su fila, y se ejecutan sus hooks <code>onDestroy</code>.</li>
         <li>Los elementos duplicados reciben cada uno su propia fila.</li>
-        <li>Puedes modificar el array en el sitio (<code>push</code>, <code>splice</code>, <code>sort</code>) o devolver un array nuevo.</li>
+        <li>Puedes modificar el array directamente (<code>push</code>, <code>splice</code>, <code>sort</code>) o devolver un array nuevo.</li>
       </ul>
       <p>Una fila conservada nunca se renderiza de nuevo, así que usa valores dinámicos para los campos que cambian:</p>
       ${code("todos.ts", `
@@ -634,7 +634,7 @@ render(() => div(Layout(), Article()))
         <li>Cuando una región desaparece, por ejemplo porque su <code>when()</code> se cierra, sus vistas vuelven a esperar. Una región construida más tarde con el mismo id las muestra.</li>
         <li>Un <code>into()</code> cuyo id no coincide con ninguna región no renderiza nada y no lanza ningún error, así que revisa la ortografía.</li>
         <li>Los ids son únicos en el árbol. Una segunda región construida con un id ya activo registra una advertencia.</li>
-        <li>Las regiones funcionan con el <a href="#api-ssr">renderizado en el servidor</a>. En <code>hydrate()</code>, cada vista reclama el HTML que el servidor renderizó en lugar de construirlo de nuevo.</li>
+        <li>Las regiones funcionan con el <a href="#api-ssr">renderizado en el servidor</a>. En <code>hydrate()</code>, cada vista reutiliza el HTML que el servidor renderizó en lugar de construirlo de nuevo.</li>
       </ul>
       <h3>Opciones</h3>
       <ul>
@@ -713,7 +713,7 @@ const App = () =>
   )
 `)}
       <h3>Un título de página definido por la propia página</h3>
-      <p>Con el <code>type: 'latest'</code> por defecto, gana la vista más reciente. El layout es dueño del encabezado, y la página que esté abierta le pone nombre. Una página sin <code>into('title', …)</code> deja el texto de <code>empty</code>.</p>
+      <p>Con el <code>type: 'latest'</code> por defecto, gana la vista más reciente. El layout define el encabezado y la página abierta proporciona su título. Una página sin <code>into('title', …)</code> deja el texto de <code>empty</code>.</p>
       ${code("title.ts", `
 let page: 'home' | 'settings' = 'home'
 

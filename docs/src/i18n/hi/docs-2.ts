@@ -10,7 +10,7 @@ export const GROUPS_2: DocGroupText[] = [
         id: "api-styling",
         title: "css()",
         content: `
-      <p>एक टाइप की गई स्टाइल ऑब्जेक्ट को जेनरेट किए गए CSS क्लास में बदल देता है। परिणाम को किसी भी टैग बिल्डर को भेजें। ब्राउज़र में, नियम एक <code>&lt;style id="nuclo-styles"&gt;</code> तत्व में जाते हैं। सर्वर पर, <a href="#api-css-text"><code>getCssText()</code></a> उन्हें लौटाता है।</p>
+      <p>टाइपयुक्त स्टाइल ऑब्जेक्ट को जेनरेट किए गए CSS क्लास में बदल देता है। परिणाम को किसी भी टैग बिल्डर को भेजें। ब्राउज़र में, नियम एक <code>&lt;style id="nuclo-styles"&gt;</code> एलिमेंट में जाते हैं। सर्वर पर, <a href="#api-css-text"><code>getCssText()</code></a> उन्हें लौटाता है।</p>
       ${code("card.ts", `
 const card = css({
   p: 16,
@@ -22,14 +22,14 @@ const card = css({
 const Card = () => div(card, 'Simple card')
 `)}
       <ul>
-        <li><code>css()</code> आधार घोषणाओं के लिए एक वर्ग बनाता है, साथ ही प्रत्येक छद्म कुंजी, चयनकर्ता और मीडिया ब्लॉक के लिए एक वर्ग बनाता है। उपरोक्त कार्ड को दो वर्ग मिलते हैं।</li>
-        <li>क्लास नाम सामग्री के हैश हैं। समान शैलियाँ एक वर्ग साझा करती हैं, और सर्वर और क्लाइंट समान नाम उत्पन्न करते हैं।</li>
-        <li>मॉड्यूल स्तर पर एक बार शैलियों को परिभाषित करें। <code>css()</code> ऑब्जेक्ट द्वारा कैश होता है, इसलिए प्रत्येक कॉल पर एक नया ऑब्जेक्ट हर बार फिर से संसाधित होता है।</li>
+        <li><code>css()</code> आधार घोषणाओं के लिए एक क्लास बनाता है, साथ ही प्रत्येक स्यूडो कुंजी, सेलेक्टर और मीडिया ब्लॉक के लिए एक क्लास बनाता है। उपरोक्त कार्ड को दो क्लास मिलते हैं।</li>
+        <li>क्लास नाम सामग्री के हैश हैं। समान स्टाइल एक क्लास साझा करती हैं, और सर्वर और क्लाइंट समान नाम उत्पन्न करते हैं।</li>
+        <li>मॉड्यूल स्तर पर एक बार स्टाइल को परिभाषित करें। <code>css()</code> ऑब्जेक्ट द्वारा कैश होता है, इसलिए प्रत्येक कॉल पर एक नया ऑब्जेक्ट हर बार फिर से संसाधित होता है।</li>
         <li>किसी स्टाइल ऑब्जेक्ट को <code>css()</code> में पास करने के बाद उसे बदलने से कुछ नहीं होता है।</li>
-        <li>प्रत्येक शैली पृष्ठ या सर्वर प्रक्रिया के जीवनकाल के लिए पंजीकृत रहती है। उन मानों के लिए जो प्रति आइटम बदलते हैं, जैसे डेटा से चौड़ाई, <a href="#attributes"><code>style</code> विशेषता</a> का उपयोग करें।</li>
+        <li>प्रत्येक स्टाइल पृष्ठ या सर्वर प्रक्रिया के जीवनकाल के लिए पंजीकृत रहती है। उन मानों के लिए जो प्रति आइटम बदलते हैं, जैसे डेटा से चौड़ाई, <a href="#attributes"><code>style</code> एट्रिब्यूट</a> का उपयोग करें।</li>
       </ul>
-      <h3>नामांकित शैलियाँ</h3>
-      <p>पठनीय वर्ग नाम पाने के लिए पहले एक नाम पास करें:</p>
+      <h3>नाम वाली स्टाइल</h3>
+      <p>पठनीय क्लास नाम पाने के लिए पहले एक नाम पास करें:</p>
       ${code("title.ts", `
 const pageTitle = css('page-title', { text: 24, hover: { color: 'red' } })
 
@@ -37,8 +37,8 @@ pageTitle.className // "page-title page-title-<hash>"
 `)}
       <ul>
         <li>बेस क्लास बिल्कुल नाम है। अन्य ब्लॉकों को <code>name-&lt;hash&gt;</code> मिलता है।</li>
-        <li>नाम एक वैध वर्ग नाम होना चाहिए। अन्यथा Nuclo चेतावनी देता है और एक उत्पन्न करता है।</li>
-        <li>नाम वैश्विक हैं। यदि दो अलग-अलग शैलियाँ एक ही नाम का उपयोग करती हैं, तो Nuclo चेतावनी देता है।</li>
+        <li>नाम एक वैध क्लास नाम होना चाहिए। अन्यथा Nuclo चेतावनी देता है और एक उत्पन्न करता है।</li>
+        <li>नाम ग्लोबल हैं। यदि दो अलग-अलग स्टाइल एक ही नाम का उपयोग करती हैं, तो Nuclo चेतावनी देता है।</li>
       </ul>
       <h3>परिणाम का उपयोग करना</h3>
       ${code("example.ts", `
@@ -48,19 +48,19 @@ div(card)                           // best
 div(card, { className: 'featured' }) // className merges
 div(card, { class: 'featured' })     // replaces: only "featured" is left
 `)}
-      <p><code>String(card)</code> और <code>card.className</code> दोनों वर्ग नाम लौटाते हैं।</p>
+      <p><code>String(card)</code> और <code>card.className</code> दोनों क्लास नाम लौटाते हैं।</p>
     `,
       },
       {
         id: "style-objects",
         title: "स्टाइल ऑब्जेक्ट",
         content: `
-      <p>आप जिस ऑब्जेक्ट को <code>css()</code> पर पास करते हैं, वह camelCase में सामान्य CSS गुणों, शॉर्टहैंड का एक सेट और छद्म स्टेटों, चयनकर्ताओं और मीडिया प्रश्नों के लिए नेस्टेड कुंजियों का उपयोग करता है। TypeScript उन सभी को स्वत: पूर्ण करता है। टाइप किए गए सेट के बाहर की संपत्तियाँ, जैसे <code>borderTopLeftRadius</code>, <code>fill</code> या <code>paddingInline</code>, <code>raw</code> में जाती हैं (नीचे देखें)।</p>
+      <p><code>css()</code> को दिए ऑब्जेक्ट में camelCase CSS प्रॉपर्टी, शॉर्टहैंड और स्यूडो स्टेट, सेलेक्टर व मीडिया क्वेरी के लिए नेस्टेड कुंजियाँ होती हैं। TypeScript इन सभी के लिए ऑटोकंप्लीट देता है। टाइपयुक्त सेट से बाहर की प्रॉपर्टी, जैसे <code>borderTopLeftRadius</code>, <code>fill</code> या <code>paddingInline</code>, <code>raw</code> में रखें (नीचे देखें)।</p>
       <h3>मान</h3>
       <ul>
-        <li>संख्याएँ <code>0</code> और इकाई रहित संपत्तियों को छोड़कर <code>px</code> बन जाती हैं: <code>zIndex</code>, <code>opacity</code>, <code>fontWeight</code>, <code>lineHeight</code>, <code>flex</code>, <code>flexGrow</code>, <code>flexShrink</code>, <code>order</code>, <code>aspectRatio</code>, <code>gridColumn</code> और <code>gridRow</code>। <code>raw</code> में, <code>zoom</code>, <code>scale</code>, <code>column-count</code>, <code>orphans</code>, <code>widows</code>, <code>tab-size</code> और <code>animation-iteration-count</code> भी यूनिटलेस हैं।</li>
+        <li>संख्याएँ <code>0</code> और इकाई रहित प्रॉपर्टी को छोड़कर <code>px</code> बन जाती हैं: <code>zIndex</code>, <code>opacity</code>, <code>fontWeight</code>, <code>lineHeight</code>, <code>flex</code>, <code>flexGrow</code>, <code>flexShrink</code>, <code>order</code>, <code>aspectRatio</code>, <code>gridColumn</code> और <code>gridRow</code>। <code>raw</code> में, <code>zoom</code>, <code>scale</code>, <code>column-count</code>, <code>orphans</code>, <code>widows</code>, <code>tab-size</code> और <code>animation-iteration-count</code> भी यूनिटलेस हैं।</li>
         <li>स्ट्रिंग्स का उपयोग लिखित रूप में किया जाता है। <code>null</code>, <code>undefined</code> और <code>false</code> को छोड़ दिया गया है।</li>
-        <li><code>lineHeight</code> (और <code>leading</code>) इकाई रहित है, इसलिए <code>leading: 24</code> का अर्थ फ़ॉन्ट आकार का 24 गुना है। पिक्सेल के लिए <code>"24px"</code> लिखें.</li>
+        <li><code>lineHeight</code> (और <code>leading</code>) इकाई रहित है, इसलिए <code>leading: 24</code> का अर्थ फ़ॉन्ट आकार का 24 गुना है। पिक्सेल के लिए <code>"24px"</code> लिखें।</li>
       </ul>
       ${code("example.ts", `
 css({ p: 16, m: 0, opacity: 0.5, leading: 1.5, z: 10, w: '50%' })
@@ -72,7 +72,7 @@ css({ p: 16, m: 0, opacity: 0.5, leading: 1.5, z: 10, w: '50%' })
         <tbody>
           <tr><td><code>p</code>, <code>pt</code>, <code>pr</code>, <code>pb</code>, <code>pl</code></td><td>पैडिंग, और प्रत्येक साइड</td></tr>
           <tr><td><code>px</code> / <code>py</code></td><td>पैडिंग बाएँ और दाएँ / ऊपर और नीचे</td></tr>
-          <tr><td><code>m</code>, <code>mt</code>, <code>mr</code>, <code>mb</code>, <code>ml</code>, <code>mx</code>, <code>my</code></td><td>the मार्जिन</td></tr> के लिए भी यही बात लागू है
+          <tr><td><code>m</code>, <code>mt</code>, <code>mr</code>, <code>mb</code>, <code>ml</code>, <code>mx</code>, <code>my</code></td><td>मार्जिन के लिए वही दिशाएँ</td></tr>
           <tr><td><code>w</code>, <code>h</code>, <code>minW</code>, <code>maxW</code>, <code>minH</code>, <code>maxH</code></td><td>चौड़ाई, ऊंचाई और उनकी न्यूनतम और अधिकतम</td></tr>
           <tr><td><code>size</code></td><td>चौड़ाई और ऊंचाई</td></tr>
           <tr><td><code>bg</code></td><td>पृष्ठभूमि</td></tr>
@@ -92,10 +92,10 @@ css({ p: 16, m: 0, opacity: 0.5, leading: 1.5, z: 10, w: '50%' })
           <tr><td><code>truncate</code></td><td>overflow: hidden; text-overflow: ellipsis; white-space: nowrap</td></tr>
         </tbody>
       </table>
-      <h3>छद्म स्टेट</h3>
-      <p><code>hover</code>, <code>focus</code>, <code>focusVisible</code>, <code>focusWithin</code>, <code>active</code>, <code>visited</code>, <code>disabled</code>, <code>enabled</code>, <code>checked</code>, <code>required</code>, <code>invalid</code>, <code>valid</code>, <code>readOnly</code>, <code>first</code> (<code>:first-child</code>), <code>last</code> (<code>:last-child</code>), <code>only</code> (<code>:only-child</code>), <code>odd</code>, <code>even</code>, <code>empty</code>, <code>placeholderShown</code>, <code>placeholder</code>, <code>before</code>, <code>after</code>, <code>selection</code>, <code>marker</code>, <code>firstLine</code> और <code>firstLetter</code>। वे घोंसला बनाते हैं: <code>hover: { focus: {…} }</code> <code>:hover:focus</code> देता है।</p>
-      <h3>चयनकर्ता और नियम</h3>
-      <p>एक कुंजी जो <code>&amp;</code> से शुरू होती है वह एक चयनकर्ता है, और प्रत्येक <code>&amp;</code> वर्ग बन जाता है। एक कुंजी जो <code>@</code> से शुरू होती है वह एक नियम है: <code>@media</code>, <code>@container</code> या <code>@supports</code>।</p>
+      <h3>स्यूडो स्टेट</h3>
+      <p><code>hover</code>, <code>focus</code>, <code>focusVisible</code>, <code>focusWithin</code>, <code>active</code>, <code>visited</code>, <code>disabled</code>, <code>enabled</code>, <code>checked</code>, <code>required</code>, <code>invalid</code>, <code>valid</code>, <code>readOnly</code>, <code>first</code> (<code>:first-child</code>), <code>last</code> (<code>:last-child</code>), <code>only</code> (<code>:only-child</code>), <code>odd</code>, <code>even</code>, <code>empty</code>, <code>placeholderShown</code>, <code>placeholder</code>, <code>before</code>, <code>after</code>, <code>selection</code>, <code>marker</code>, <code>firstLine</code> और <code>firstLetter</code>। इन्हें नेस्ट कर सकते हैं: <code>hover: { focus: {…} }</code> <code>:hover:focus</code> देता है।</p>
+      <h3>सेलेक्टर और नियम</h3>
+      <p>एक कुंजी जो <code>&amp;</code> से शुरू होती है वह एक सेलेक्टर है, और प्रत्येक <code>&amp;</code> क्लास बन जाता है। एक कुंजी जो <code>@</code> से शुरू होती है वह एक नियम है: <code>@media</code>, <code>@container</code> या <code>@supports</code>।</p>
       ${code("menu.ts", `
 const menu = css({
   p: 8,
@@ -107,21 +107,21 @@ const menu = css({
 `)}
       <ul>
         <li>कुंजी <code>&amp;</code> से शुरू होनी चाहिए। <code>".dark &amp;"</code> जैसी कुंजी को नजरअंदाज कर दिया जाता है, इसलिए <code>"&amp;:is(.dark *)"</code> लिखें।</li>
-        <li>दो नेस्टेड <code>@media</code> ब्लॉक <code>and</code> के साथ संयोजित होते हैं। मीडिया प्रकार (<code>print</code>, <code>only screen</code>) के नेतृत्व वाली क्वेरी को पहले रखा जाता है, क्योंकि व्याकरण केवल शुरुआत में ही प्रकार की अनुमति देता है। एक जोड़ी जिसे समतल नहीं किया जा सकता - दो मीडिया प्रकार, या एक अग्रणी <code>not</code> - केवल आंतरिक क्वेरी को चेतावनी देता है और उसका उपयोग करता है। कोई भी अन्य नेस्टेड एट-रूल बाहरी को प्रतिस्थापित कर देता है।</li>
+        <li>दो नेस्टेड <code>@media</code> ब्लॉक <code>and</code> से जुड़ते हैं। मीडिया टाइप (<code>print</code>, <code>only screen</code>) से शुरू होने वाली क्वेरी पहले रखी जाती है, क्योंकि सिंटैक्स में टाइप केवल शुरुआत में आ सकता है। यदि दोनों को एक क्वेरी में नहीं बदल सकते—दो मीडिया टाइप हों या शुरुआत में <code>not</code> हो—तो चेतावनी के साथ केवल अंदर वाली क्वेरी इस्तेमाल होती है। कोई भी दूसरा नेस्टेड एट-रूल बाहर वाले को बदल देता है।</li>
       </ul>
       <h3><code>raw</code></h3>
-      <p>किसी भी संपत्ति के लिए <code>raw</code> का उपयोग करें, नाम बिल्कुल CSS जैसा लिखा गया है। नंबर अभी भी <code>px</code> मिलते हैं, इसलिए स्ट्रिंग पास करें:</p>
+      <p>किसी भी प्रॉपर्टी के लिए <code>raw</code> का उपयोग करें, नाम बिल्कुल CSS जैसा लिखा गया है। संख्याओं में यहाँ भी <code>px</code> जुड़ता है, इसलिए स्ट्रिंग पास करें:</p>
       ${code("example.ts", `
 css({ raw: { '--gap': '8px', '-webkit-line-clamp': '2' } })
 `)}
-      <p>किसी भी अन्य फ़्लैट कुंजी को कबाब-केस में बदल दिया जाता है और उसे वैसे ही लिखा जाता है, इसलिए <code>colr: 'red'</code> जैसी टाइपो एक घोषणा बन जाती है जिसे ब्राउज़र ड्रॉप कर देता है। किसी कुंजी के अंतर्गत एक नेस्टेड ऑब्जेक्ट जो एक छद्म स्थिति, एक स्क्रीन, या एक <code>&amp;</code> या <code>@</code> कुंजी नहीं है, को नजरअंदाज कर दिया जाता है। TypeScript दोनों की रिपोर्ट करता है।</p>
+      <p>किसी भी अन्य फ़्लैट कुंजी को कबाब-केस में बदल दिया जाता है और उसे वैसे ही लिखा जाता है, इसलिए <code>colr: 'red'</code> जैसी टाइपो एक घोषणा बन जाती है जिसे ब्राउज़र ड्रॉप कर देता है। किसी कुंजी के अंतर्गत एक नेस्टेड ऑब्जेक्ट जो एक स्यूडो स्थिति, एक स्क्रीन, या एक <code>&amp;</code> या <code>@</code> कुंजी नहीं है, को नजरअंदाज कर दिया जाता है। TypeScript दोनों की रिपोर्ट करता है।</p>
     `,
       },
       {
         id: "api-cx",
         title: "cx()",
         content: `
-      <p>शैलियों को जोड़ती है। जब दो इनपुट समान गुण सेट करते हैं, तो बाद वाला इनपुट जीत जाता है।</p>
+      <p>स्टाइल मर्ज करता है। दो इनपुट एक ही प्रॉपर्टी सेट करें, तो बाद वाले मान को प्राथमिकता मिलती है।</p>
       ${code("example.ts", `
 const base = css({ p: 8, color: 'red' })
 const blue = css({ color: 'blue' })
@@ -131,12 +131,12 @@ cx(base, false, null, 'extra')  // base's classes plus "extra"
 div(cx(base, blue), 'Blue text')
 `)}
       <ul>
-        <li>गलत इनपुट को छोड़ दिया जाता है, एरे को चपटा कर दिया जाता है, और स्ट्रिंग्स को विभाजित और डी-डुप्लिकेट कर दिया जाता है।</li>
-        <li>एक ही ब्लॉक (आधार, एक ही छद्म, एक ही मीडिया क्वेरी) के लिए जेनरेट की गई कक्षाएं एक नई कक्षा में विलय हो जाती हैं। अन्य वर्ग के नाम अपरिवर्तित रहते हैं।</li>
-        <li>केवल <code>cx()</code> तर्क क्रम जानता है। <code>div(base, blue)</code> के साथ, दोनों वर्ग जोड़े जाते हैं, और जो नियम पिछली बार बनाया गया था वह जीत जाता है। एक <code>cx()</code> कॉल में एक-दूसरे को ओवरराइड करने वाली शैलियाँ डालें।</li>
-        <li>जब एक नामित शैली का ब्लॉक किसी अन्य इनपुट के ब्लॉक के साथ विलय हो जाता है, तो मर्ज किया गया वर्ग <code>name-&lt;hash&gt;</code> होता है, न कि मूल नाम। जो ब्लॉक मर्ज नहीं होते हैं वे अपनी कक्षा बनाए रखते हैं, इसलिए <code>cx(pageTitle, 'extra')</code> में अभी भी <code>page-title</code> है।</li>
+        <li>falsy इनपुट छोड़ दिए जाते हैं। ऐरे फ़्लैट किए जाते हैं। स्ट्रिंग में दिए क्लास नाम अलग किए जाते हैं और दोहराए गए नाम हटा दिए जाते हैं।</li>
+        <li>एक ही ब्लॉक (आधार, एक ही स्यूडो, एक ही मीडिया क्वेरी) के लिए जेनरेट की गई क्लास एक नई क्लास में विलय हो जाती हैं। अन्य क्लास के नाम अपरिवर्तित रहते हैं।</li>
+        <li>केवल <code>cx()</code> आर्ग्युमेंट क्रम जानता है। <code>div(base, blue)</code> के साथ, दोनों क्लास जोड़े जाते हैं, और जो नियम सबसे बाद में बना था उसे प्राथमिकता मिलती है। एक <code>cx()</code> कॉल में एक-दूसरे को ओवरराइड करने वाली स्टाइल डालें।</li>
+        <li>जब एक नामित स्टाइल का ब्लॉक किसी अन्य इनपुट के ब्लॉक के साथ विलय हो जाता है, तो मर्ज की गई क्लास <code>name-&lt;hash&gt;</code> होता है, न कि मूल नाम। जो ब्लॉक मर्ज नहीं होते हैं वे अपनी क्लास बनाए रखते हैं, इसलिए <code>cx(pageTitle, 'extra')</code> में अभी भी <code>page-title</code> है।</li>
       </ul>
-      <h3>गतिशील कक्षाएं</h3>
+      <h3>डायनेमिक क्लास</h3>
       <p>एक फ़ंक्शन पास करें जो हमेशा <code>cx(...)</code> लौटाता है:</p>
       ${code("toggle.ts", `
 const baseButton = css({ px: 12, py: 8, border: '1px solid #ccc' })
@@ -151,14 +151,14 @@ const Toggle = () =>
     { onClick: () => { active = !active; update() } },
   )
 `)}
-      <p>फ़ंक्शन को अपने पहले रन पर एक स्टाइल परिणाम लौटाना होगा। <code>() =&gt; active &amp;&amp; activeButton</code> एक क्लास के बजाय "false" टेक्स्ट को प्रस्तुत करता है।</p>
+      <p>फ़ंक्शन को अपने पहले रन पर एक स्टाइल परिणाम लौटाना होगा। <code>() =&gt; active &amp;&amp; activeButton</code> एक क्लास के बजाय "false" टेक्स्ट को रेंडर करता है।</p>
     `,
       },
       {
         id: "api-create-css",
         title: "createCss()",
         content: `
-      <p>एक थीम से बंधे अपने स्वयं के <code>css</code>, <code>cx</code>, <code>variants</code>, <code>keyframes</code> और <code>globalStyle</code> लौटाता है। एक थीम मानों को नाम देती है: नीचे दी गई थीम के साथ, <code>borderColor: 'border'</code> <code>#e5e7eb</code> लिखता है, और TypeScript नामों को स्वतः पूर्ण करता है। <code>screens</code> में प्रत्येक प्रविष्टि मीडिया क्वेरी के लिए एक शैली कुंजी बन जाती है, जैसे <code>md: {…}</code>।</p>
+      <p>एक थीम से बंधे अपने स्वयं के <code>css</code>, <code>cx</code>, <code>variants</code>, <code>keyframes</code> और <code>globalStyle</code> लौटाता है। एक थीम मानों को नाम देती है: नीचे दी गई थीम के साथ, <code>borderColor: 'border'</code> <code>#e5e7eb</code> लिखता है, और TypeScript नामों को स्वतः पूर्ण करता है। <code>screens</code> में प्रत्येक प्रविष्टि मीडिया क्वेरी के लिए एक स्टाइल कुंजी बन जाती है, जैसे <code>md: {…}</code>।</p>
       ${code("theme.ts", `
 export const { css, cx, variants } = createCss({
   colors: { primary: '#ff3f00', border: '#e5e7eb' },
@@ -175,7 +175,7 @@ const panel = css({
 })
 `)}
       <table>
-        <thead><tr><th>थीम कुंजी</th><th></th></tr></thead> द्वारा उपयोग किया गया
+        <thead><tr><th>थीम कुंजी</th><th>कहाँ उपयोग होती है</th></tr></thead>
         <tbody>
           <tr><td><code>colors</code></td><td><code>bg</code>, <code>backgroundColor</code>, <code>color</code>, <code>borderColor</code> और प्रत्येक पक्ष, <code>outlineColor</code>, <code>caretColor</code>, <code>textDecorationColor</code></td></tr>
           <tr><td><code>fonts</code></td><td><code>font</code>, <code>fontFamily</code></td></tr>
@@ -185,11 +185,11 @@ const panel = css({
         </tbody>
       </table>
       <ul>
-        <li>एक थीम नाम तभी हल होता है जब वह संपूर्ण मान हो। <code>border: "1px solid primary"</code> का समाधान नहीं हुआ।</li>
+        <li>एक थीम नाम तभी हल होता है जब वह संपूर्ण मान हो। <code>border: "1px solid primary"</code> में नाम हल नहीं होता।</li>
         <li><code>@</code> के बिना एक स्क्रीन मान <code>@media &lt;value&gt;</code> हो जाता है। <code>@</code> से शुरू होने वाला मान लिखित रूप में उपयोग किया जाता है, उदाहरण के लिए <code>"@container (min-width: 400px)"</code>।</li>
-        <li>स्क्रीन केवल <code>createCss()</code> से बने इंस्टेंस पर मौजूद हैं। वैश्विक <code>css()</code> में कोई नहीं है, लेकिन यह <code>@media</code> कुंजी स्वीकार करता है।</li>
-        <li>सभी उदाहरण और वैश्विक सहायक एक स्टाइलशीट साझा करते हैं। स्क्रीन मीडिया नियम स्क्रीन घोषित होने के क्रम में आउटपुट होते हैं, न कि उस क्रम में जिस क्रम में आप उनका उपयोग करते हैं, इसलिए <code>min-width</code> स्क्रीन को छोटे से बड़े तक सूचीबद्ध करें। प्रति ऐप एक <code>createCss()</code> इंस्टेंस का उपयोग करें, ताकि वह ऑर्डर आपकी थीम में से एक हो।</li>
-        <li><code>theme</code> वह विषय है जिसे आपने उत्तीर्ण किया है।</li>
+        <li>स्क्रीन केवल <code>createCss()</code> से बने इंस्टेंस पर मौजूद हैं। ग्लोबल <code>css()</code> में कोई नहीं है, लेकिन यह <code>@media</code> कुंजी स्वीकार करता है।</li>
+        <li>सभी इंस्टेंस और ग्लोबल हेल्पर एक स्टाइलशीट साझा करते हैं। स्क्रीन के मीडिया नियम घोषणा के क्रम में लिखे जाते हैं, उपयोग के क्रम में नहीं। इसलिए <code>min-width</code> स्क्रीन छोटे से बड़े क्रम में लिखें। हर ऐप में एक <code>createCss()</code> इंस्टेंस रखें ताकि क्रम आपकी थीम के अनुसार हो।</li>
+        <li><code>theme</code> वही थीम है जो आपने पास की थी।</li>
       </ul>
     `,
       },
@@ -197,7 +197,7 @@ const panel = css({
         id: "api-variants",
         title: "variants()",
         content: `
-      <p>एक फ़ंक्शन बनाता है जो विकल्पों के एक सेट के लिए एक शैली लौटाता है, जैसे कि बटन का इरादा और आकार।</p>
+      <p>एक फ़ंक्शन बनाता है जो विकल्पों के एक सेट के लिए एक स्टाइल लौटाता है, जैसे कि बटन का उद्देश्य और आकार।</p>
       ${code("button.ts", `
 const buttonClass = variants({
   base: { px: 12, py: 8, rounded: 6 },
@@ -214,7 +214,7 @@ button(buttonClass(), 'Save')                                                // 
 button(buttonClass({ intent: 'danger', size: 'lg', block: true }), 'Delete') // bold, full width
 `)}
       <ul>
-        <li>शैलियाँ इस क्रम में विलीन हो जाती हैं: <code>base</code>, प्रत्येक समूह का चुना हुआ मान, फिर प्रत्येक मिलान यौगिक। बाद की शैलियाँ प्रति संपत्ति जीतती हैं।</li>
+        <li>स्टाइल इस क्रम में मर्ज होते हैं: <code>base</code>, हर समूह का चुना मान और फिर हर मिलता कंपाउंड वैरिएंट। हर प्रॉपर्टी के लिए बाद वाले मान को प्राथमिकता मिलती है।</li>
         <li>एक अनुपलब्ध, <code>undefined</code> या <code>null</code> विकल्प डिफ़ॉल्ट का उपयोग करता है। बिना किसी डिफ़ॉल्ट वाले समूह को छोड़ दिया जाता है।</li>
         <li>केवल <code>true</code> और <code>false</code> कुंजियों वाला एक समूह एक बूलियन लेता है।</li>
         <li>एक कंपाउंड तब लागू होता है जब इसमें सूचीबद्ध प्रत्येक समूह मेल खाता है, डिफ़ॉल्ट शामिल हैं।</li>
@@ -226,7 +226,7 @@ button(buttonClass({ intent: 'danger', size: 'lg', block: true }), 'Delete') // 
         id: "api-keyframes",
         title: "keyframes() और globalStyle()",
         content: `
-      <p><code>keyframes()</code> एक एनीमेशन पंजीकृत करता है और उसका उत्पन्न नाम लौटाता है। फ़्रेम कुंजियाँ <code>from</code>, <code>to</code> और प्रतिशत हैं, जैसे <code>"50%"</code> या <code>"0%, 100%"</code>। फ़्रेम केवल समतल गुण लेते हैं. समान फ़्रेम समान नाम लौटाते हैं.</p>
+      <p><code>keyframes()</code> एक एनीमेशन पंजीकृत करता है और उसका उत्पन्न नाम लौटाता है। फ़्रेम कुंजियाँ <code>from</code>, <code>to</code> और प्रतिशत हैं, जैसे <code>"50%"</code> या <code>"0%, 100%"</code>। फ़्रेम केवल फ़्लैट प्रॉपर्टी लेते हैं. समान फ़्रेम समान नाम लौटाते हैं.</p>
       ${code("fade.ts", `
 const fadeIn = keyframes({
   from: { opacity: 0 },
@@ -235,15 +235,15 @@ const fadeIn = keyframes({
 
 const panel = css({ animation: \`\${fadeIn} 200ms ease-out\` })
 `)}
-      <p><code>globalStyle()</code> किसी भी चयनकर्ता के लिए एक नियम जोड़ता है:</p>
+      <p><code>globalStyle()</code> किसी भी सेलेक्टर के लिए एक नियम जोड़ता है:</p>
       ${code("reset.ts", `
 globalStyle('*, *::before, *::after', { boxSizing: 'border-box' })
 globalStyle('body', { m: 0, font: 'system-ui, sans-serif' })
 `)}
       <ul>
-        <li>चयनकर्ता का उपयोग बिल्कुल वैसे ही किया गया है जैसा लिखा गया है।</li>
-        <li>केवल फ्लैट संपत्तियां ही काम करती हैं। छद्म कुंजियाँ, स्क्रीन और <code>@</code> कुंजियाँ नजरअंदाज कर दी जाती हैं, इसलिए <code>globalStyle()</code> मीडिया नियम नहीं लिख सकता।</li>
-        <li>एक ही नियम एक बार जोड़ा जाता है। एक ही चयनकर्ता के लिए एक अलग शैली दूसरा नियम जोड़ती है, और बाद वाला जीतता है।</li>
+        <li>सेलेक्टर का उपयोग बिल्कुल वैसे ही किया गया है जैसा लिखा गया है।</li>
+        <li>केवल फ्लैट प्रॉपर्टी ही काम करती हैं। स्यूडो कुंजियाँ, स्क्रीन और <code>@</code> कुंजियाँ नजरअंदाज कर दी जाती हैं, इसलिए <code>globalStyle()</code> मीडिया नियम नहीं लिख सकता।</li>
+        <li>एक ही नियम एक बार जोड़ा जाता है। एक ही सेलेक्टर के लिए एक अलग स्टाइल दूसरा नियम जोड़ती है, और बाद वाला जीतता है।</li>
       </ul>
     `,
       },
@@ -254,11 +254,11 @@ globalStyle('body', { m: 0, font: 'system-ui, sans-serif' })
       <p><code>getCssText()</code> हर नियम लौटाता है जो <code>css()</code>, <code>cx()</code>, <code>variants()</code>, <code>keyframes()</code> और <code>globalStyle()</code> ने इस प्रक्रिया में बनाया है: पहले आधार नियम, फिर <code>@media</code>, <code>@container</code> और <code>@supports</code> ब्लॉक। सर्वर रेंडरिंग के लिए इसका उपयोग करें।</p>
       <ul>
         <li>इसे <code>renderToString()</code> के बाद कॉल करें। रेंडर के दौरान बनाए गए नियम शामिल हैं।</li>
-        <li>यह एक पेज या अनुरोध को नहीं बल्कि पूरी प्रक्रिया को कवर करता है, और यह केवल बढ़ता है। यह सुरक्षित है, क्योंकि वर्ग के नाम सामग्री हैश हैं।</li>
-        <li>इसे <code>&lt;style id="nuclo-styles"&gt;</code> में डालें। क्लाइंट उस तत्व का पुन: उपयोग करता है और उसमें पहले से मौजूद नियमों को छोड़ देता है। किसी अन्य आईडी के साथ, या किसी भी आईडी के साथ, क्लाइंट प्रत्येक नियम के साथ फिर से एक दूसरी स्टाइलशीट जोड़ता है।</li>
-        <li>टेक्स्ट बच नहीं पाया है, इसलिए शैली मानों में कभी भी अविश्वसनीय इनपुट न डालें।</li>
+        <li>यह एक पेज या अनुरोध को नहीं बल्कि पूरी प्रक्रिया को कवर करता है, और यह केवल बढ़ता है। यह सुरक्षित है, क्योंकि क्लास के नाम सामग्री हैश हैं।</li>
+        <li>इसे <code>&lt;style id="nuclo-styles"&gt;</code> में डालें। क्लाइंट उस एलिमेंट का पुन: उपयोग करता है और उसमें पहले से मौजूद नियमों को छोड़ देता है। किसी दूसरी आईडी के साथ, या बिना आईडी के, क्लाइंट प्रत्येक नियम के साथ फिर से एक दूसरी स्टाइलशीट जोड़ता है।</li>
+        <li>टेक्स्ट एस्केप नहीं होता, इसलिए स्टाइल मानों में कभी भी अविश्वसनीय इनपुट न डालें।</li>
       </ul>
-      <p><code>resetStyles()</code> एक परीक्षण सहायक है। यह प्रत्येक नियम और <code>#nuclo-styles</code> तत्व को हटा देता है। आपके द्वारा पहले बनाई गई शैलियाँ अपने वर्ग के नाम तो रखती हैं लेकिन अपना CSS खो देती हैं। इसे किसी ऐप या सर्वर पर कॉल न करें.</p>
+      <p><code>resetStyles()</code> एक परीक्षण हेल्पर है। यह प्रत्येक नियम और <code>#nuclo-styles</code> एलिमेंट को हटा देता है। आपके द्वारा पहले बनाई गई स्टाइल अपने क्लास के नाम तो रखती हैं लेकिन अपना CSS खो देती हैं। इसे किसी ऐप या सर्वर पर कॉल न करें।</p>
       ${code("setup.test.ts", `
 import { resetStyles } from 'nuclo'
 
@@ -277,18 +277,18 @@ beforeEach(() => resetStyles())
         id: "router-overview",
         title: "nuclo-router",
         content: `
-      <div class="docs-callout"><strong>अलग पैकेज: </strong> <code>nuclo-router</code> Nuclo कोर पैकेज का हिस्सा नहीं है। इसे <code>nuclo</code> के बगल में स्थापित करें। यह एक पूर्वावलोकन रिलीज़ है, इसलिए इसका API अभी भी बदल सकता है।</div>
-      <p>Nuclo के लिए रूटिंग: सर्वर रेंडरिंग, हाइड्रेशन, कोड-स्प्लिट रूट और निष्क्रिय प्रीलोडिंग, <code>list()</code> और <code>update()</code> पर निर्मित। ${NUCLO_ROUTER_GZIP_KB} KB के बारे में gzipped, Nuclo से परे कोई निर्भरता नहीं है और कोई साइड इफेक्ट नहीं है, इसलिए अप्रयुक्त होने पर यह ट्री से हिल जाता है।</p>
+      <div class="docs-callout"><strong>अलग पैकेज: </strong> <code>nuclo-router</code> Nuclo कोर पैकेज का हिस्सा नहीं है। इसे <code>nuclo</code> के साथ इंस्टॉल करें। यह एक प्रीव्यू रिलीज़ है, इसलिए इसका API अभी भी बदल सकता है।</div>
+      <p>Nuclo के लिए रूटिंग: सर्वर रेंडरिंग, हाइड्रेशन, कोड-स्प्लिट रूट और आइडल प्रीलोडिंग, <code>list()</code> और <code>update()</code> पर निर्मित। gzip के बाद लगभग ${NUCLO_ROUTER_GZIP_KB} KB। Nuclo के अलावा कोई डिपेंडेंसी नहीं और कोई साइड इफ़ेक्ट नहीं, इसलिए इस्तेमाल न होने पर ट्री शेकिंग इसे हटा देती है।</p>
       ${sh("npm install nuclo nuclo-router")}
-      <p>या समान दो नामों के साथ <code>pnpm add</code>, <code>yarn add</code> या <code>bun add</code> का उपयोग करें। इसे सहकर्मी निर्भरता के रूप में <code>nuclo</code> 0.3 या बाद के संस्करण की आवश्यकता है।</p>
-      <p>राउटर <em>what</em> को लोड करने का निर्णय लेता है। ऐप कहता है <em>where</em> <code>router.outlet()</code> के साथ: परत स्टैक पर एक <code>list()</code>, प्रति परत एक पंक्ति, इसलिए एक साधारण पृष्ठ एक पंक्ति है। सर्वर और क्लाइंट एक ही ट्री बनाते हैं, इसलिए <code>hydrate()</code> सर्वर के नोड्स को बदलने के बजाय उन पर दावा करता है। बाकी सब कुछ <code>history</code> है, एक प्रत्यायोजित <code>click</code> श्रोता और <code>requestIdleCallback</code> है।</p>
-      <h3>एक आयात</h3>
+      <p>या समान दो नामों के साथ <code>pnpm add</code>, <code>yarn add</code> या <code>bun add</code> का उपयोग करें। इसे पीयर डिपेंडेंसी के रूप में <code>nuclo</code> 0.3 या उससे नया संस्करण चाहिए।</p>
+      <p>राउटर तय करता है कि <em>क्या</em> लोड होगा। ऐप बताता है कि <em>कहाँ</em> दिखेगा <code>router.outlet()</code> के साथ: लेयर स्टैक पर एक <code>list()</code>, प्रति लेयर एक पंक्ति, इसलिए एक साधारण पृष्ठ एक पंक्ति है। सर्वर और क्लाइंट एक ही ट्री बनाते हैं, इसलिए <code>hydrate()</code> सर्वर के मौजूदा नोड का पुनः उपयोग करता है। बाकी सब कुछ <code>history</code> है, एक डेलिगेटेड <code>click</code> लिसनर और <code>requestIdleCallback</code> है।</p>
+      <h3>एक इम्पोर्ट</h3>
       ${code("main.ts", `
 export const router = createRouter(routes)   // define once, import anywhere
 await router.start()                          // resolve the current URL
 render(App, document.getElementById('app')!) // App places router.outlet() and reads router.path, router.go(), …
 `)}
-      <p><code>start()</code> मिलान रूट के मॉड्यूल को वापस लौटने से पहले हल करता है, इसलिए पहला ट्री सर्वर और क्लाइंट दोनों पर पूरा हो जाता है। उसके बाद राउटर उस रूट को पढ़ता है जो उसने शुरू किया था: <code>router.path</code>, <code>router.pending</code>, <code>router.go()</code>।</p>
+      <p><code>start()</code> लौटने से पहले मिलते रूट का मॉड्यूल लोड कर लेता है, इसलिए पहला ट्री सर्वर और क्लाइंट दोनों पर पूरा हो जाता है। उसके बाद राउटर उस रूट का स्टेट पढ़ता है जिसे उसने शुरू किया: <code>router.path</code>, <code>router.pending</code>, <code>router.go()</code>।</p>
       <h3>एक संपूर्ण ऐप</h3>
       ${code("routes.ts", `
 // isomorphic: imported by the browser and the server
@@ -339,9 +339,9 @@ import { router, App } from './routes.ts'
 const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
-      <p>यह संपूर्ण एकीकरण है। लिंक काम करते हैं क्योंकि <code>&lt;a href&gt;</code> सिर्फ एक <code>&lt;a href&gt;</code> है। <code>document</code> पर एक प्रत्यायोजित श्रोता राउटर के स्वामित्व वाले लिंक को रोकता है और ब्राउज़र पर हर दूसरे लिंक को छोड़ देता है।</p>
-      <p>सर्वर पर, <code>start()</code> प्रति अनुरोध एक <code>Route</code> लौटाता है और राउटर को अकेला छोड़ देता है, इसलिए समवर्ती अनुरोध एक दूसरे का मार्ग नहीं देख सकते हैं। <code>route.run()</code> उस रूट को बनाता है जो राउटर, और इसलिए आउटलेट, रेंडर की लंबाई के लिए पढ़ता है। ब्राउज़र में प्रति पेज लोड एक रूट होता है, और <code>start()</code> इसे राउटर का अपना बनाता है। कोई <code>run()</code> की आवश्यकता नहीं है.</p>
-      <p>एक पृष्ठ को इसका <a href="#router-api"><code>RouteContext</code></a> और इसका <a href="#router-api"><code>PageProps</code></a>, <code>(ctx, { layer, data, outlet, beforeLeave })</code> के रूप में प्राप्त होता है, और कम तर्क ले सकता है। यह <code>list()</code> द्वारा स्वीकार की गई कोई भी चीज़ लौटाता है। लेआउट के अन्य भाग को भी भरने के लिए, पृष्ठ के अंदर से एक <code>into()</code> लौटाएँ, जैसे <code>div(article(…), into('sidebar', nav(…)))</code>। वह सामग्री पृष्ठ के साथ चली जाती है। <a href="#router-regions">Pages &amp; क्षेत्र</a> देखें।</p>
+      <p>यह संपूर्ण एकीकरण है। लिंक काम करते हैं क्योंकि <code>&lt;a href&gt;</code> सिर्फ एक <code>&lt;a href&gt;</code> है। <code>document</code> पर एक डेलिगेटेड लिसनर राउटर के स्वामित्व वाले लिंक को रोकता है और ब्राउज़र पर हर दूसरे लिंक को छोड़ देता है।</p>
+      <p>सर्वर पर, <code>start()</code> प्रति अनुरोध एक <code>Route</code> लौटाता है और राउटर को अकेला छोड़ देता है, इसलिए एक साथ चलने वाले अनुरोध एक-दूसरे का रूट नहीं देख सकते। <code>route.run()</code> रेंडर पूरा होने तक उस रूट को राउटर का सक्रिय रूट बनाता है, इसलिए आउटलेट भी उसी को पढ़ता है। ब्राउज़र में प्रति पेज लोड एक रूट होता है, और <code>start()</code> इसे राउटर का अपना बनाता है। <code>run()</code> की ज़रूरत नहीं होती।</p>
+      <p>एक पृष्ठ को इसका <a href="#router-api"><code>RouteContext</code></a> और इसका <a href="#router-api"><code>PageProps</code></a>, <code>(ctx, { layer, data, outlet, beforeLeave })</code> के रूप में प्राप्त होता है, और कम आर्ग्युमेंट ले सकता है। यह <code>list()</code> द्वारा स्वीकार की गई कोई भी चीज़ लौटाता है। लेआउट के अन्य भाग को भी भरने के लिए, पृष्ठ के अंदर से एक <code>into()</code> लौटाएँ, जैसे <code>div(article(…), into('sidebar', nav(…)))</code>। वह सामग्री पृष्ठ के साथ चली जाती है। <a href="#router-regions">पेज और रीजन</a> देखें।</p>
     `,
       },
       {
@@ -349,18 +349,18 @@ const html = route.run(() => renderToString(App))
         title: "पैटर्न और नेस्टेड रूट",
         content: `
       <table>
-        <thead><tr><th>नमूना</th><th>माचिस</th><th><code>params</code></th></tr></thead>
+        <thead><tr><th>पैटर्न</th><th>किससे मेल खाता है</th><th><code>params</code></th></tr></thead>
         <tbody>
           <tr><td><code>/</code>, <code>/docs/intro</code></td><td>बिल्कुल वही path</td><td><code>{}</code></td></tr>
           <tr><td><code>/blog/:slug</code></td><td><code>/blog/hello</code></td><td><code>{ slug: 'hello' }</code></td></tr>
           <tr><td><code>/u/:id/edit</code></td><td><code>/u/7/edit</code></td><td><code>{ id: '7' }</code></td></tr>
           <tr><td><code>/files/*rest</code></td><td><code>/files/a/b.txt</code></td><td><code>{ rest: 'a/b.txt' }</code></td></tr>
-          <tr><td><code>*</code></td><td>Zकुछ भी बेजोड़, आपका 404</td><td><code>{ '*': '…' }</code></td></tr>
+          <tr><td><code>*</code></td><td>बाकी सभी पथ, यानी आपका 404</td><td><code>{ '*': '…' }</code></td></tr>
         </tbody>
       </table>
-      <p>प्राथमिकता स्थिर है, फिर घोषणा क्रम में गतिशील है, फिर पहले सबसे लंबे उपसर्ग के साथ सभी को पकड़ें। तो <code>'*'</code> केवल वही मेल खाता है जो कोई और नहीं करता है और तालिका में कहीं भी बैठ सकता है। ट्रेलिंग स्लैश, डुप्लिकेट स्लैश और प्रतिशत-एन्कोडिंग को सामान्यीकृत किया जाता है, और परम मान डिकोड किए जाते हैं। मिलान प्रति पैटर्न एक खंड तुलना है। कोई रेगेक्स नहीं बनाया या चलाया जाता है।</p>
-      <h3>सापेक्ष मार्ग</h3>
-      <p><code>./</code> के साथ लिखा गया एक पैटर्न इसे घोषित करने वाले माता-पिता के सापेक्ष है, और <code>./</code> के साथ लिखा गया href सक्रिय मार्ग के सापेक्ष है। वे मिलकर एक पुन: प्रयोज्य अनुभाग बनाते हैं जिसका अर्थ प्रत्येक माता-पिता के लिए समान होता है। किसी तालिका का मान या तो एक लोडर होता है या कोई अन्य तालिका, जिसकी कुंजियाँ उससे संबंधित होती हैं:</p>
+      <p>पहले स्टैटिक पैटर्न, फिर घोषणा के क्रम में डायनेमिक पैटर्न और अंत में सबसे लंबे प्रीफ़िक्स वाला कैच-ऑल चुना जाता है। तो <code>'*'</code> केवल वही मेल खाता है जो कोई और नहीं करता है और तालिका में कहीं भी बैठ सकता है। ट्रेलिंग स्लैश, डुप्लिकेट स्लैश और प्रतिशत-एन्कोडिंग को सामान्यीकृत किया जाता है, और पैरामीटर के मान डिकोड किए जाते हैं। मिलान प्रति पैटर्न एक सेगमेंट की तुलना है। कोई रेगेक्स नहीं बनाया या चलाया जाता है।</p>
+      <h3>रूट के सापेक्ष पथ</h3>
+      <p><code>./</code> के साथ लिखा गया एक पैटर्न इसे घोषित करने वाले पैरेंट के सापेक्ष है, और <code>./</code> के साथ लिखा गया href सक्रिय रूट के सापेक्ष है। वे मिलकर एक पुन: प्रयोज्य अनुभाग बनाते हैं जिसका अर्थ प्रत्येक पैरेंट के लिए समान होता है। किसी तालिका का मान या तो एक लोडर होता है या कोई अन्य तालिका, जिसकी कुंजियाँ उससे संबंधित होती हैं:</p>
       ${code("records/routes.ts", `
 import type { RouteTable } from 'nuclo-router'
 
@@ -380,14 +380,14 @@ createRouter({
   '*': () => import('./pages/NotFound.ts'),
 })
 `)}
-      <p>वे दो पंक्तियाँ सभी छह पैटर्न उत्पन्न करती हैं जिनमें कोई पथ दो बार नहीं लिखा होता है। माता-पिता दोनों को समान लोडर ऑब्जेक्ट मिलते हैं, इसलिए वे एक मॉड्यूल कैश और एक <code>import()</code> साझा करते हैं।</p>
+      <p>वे दो पंक्तियाँ सभी छह पैटर्न उत्पन्न करती हैं जिनमें कोई पथ दो बार नहीं लिखा होता है। पैरेंट दोनों को समान लोडर ऑब्जेक्ट मिलते हैं, इसलिए वे एक मॉड्यूल कैश और एक <code>import()</code> साझा करते हैं।</p>
       <ul>
-        <li>एक चाइल्ड टेबल के अंदर, <code>'./x'</code>, <code>'/x'</code> और <code>'x'</code> सभी का मतलब एक ही है, <code>'/'</code> का मतलब मूल पथ ही है, और <code>'*rest'</code> अनुभाग को अपना स्वयं का कैच-ऑल देता है। घोंसला बनाना आप जितना चाहें उतना गहरा हो जाता है।</li>
+        <li>एक चाइल्ड टेबल के अंदर, <code>'./x'</code>, <code>'/x'</code> और <code>'x'</code> सभी का मतलब एक ही है, <code>'/'</code> का मतलब मूल पथ ही है, और <code>'*rest'</code> अनुभाग को अपना स्वयं का कैच-ऑल देता है। इन्हें जितनी चाहें उतनी गहराई तक नेस्ट कर सकते हैं।</li>
         <li>शीर्ष-स्तरीय कुंजियों का उपयोग लिखित रूप में किया जाता है, इसलिए <code>'*'</code> <code>'*'</code> रहता है।</li>
-        <li><code>*catch-all</code> माता-पिता के अंतर्गत एक बच्चा एक <code>createRouter()</code> त्रुटि है, क्योंकि कैच-ऑल को अपना पैटर्न समाप्त करना होता है।</li>
+        <li><code>*catch-all</code> पैरेंट के अंतर्गत एक चाइल्ड नोड एक <code>createRouter()</code> त्रुटि है, क्योंकि कैच-ऑल को अपना पैटर्न समाप्त करना होता है।</li>
       </ul>
-      <h3>मूल पृष्ठ और <code>outlet()</code></h3>
-      <p>एक माता-पिता और उसके चाइल्ड नोड एक वास्तविक पदानुक्रम हैं। पेरेंट रेंडर करता है, और उसका बच्चा इसके अंदर रेंडर करता है, जहां भी वह <code>outlet()</code> कहता है:</p>
+      <h3>पैरेंट पेज और <code>outlet()</code></h3>
+      <p>एक पैरेंट और उसके चाइल्ड नोड एक वास्तविक हायरार्की हैं। पैरेंट रेंडर होता है और चाइल्ड उसके अंदर रेंडर होता है, जहां भी वह <code>outlet()</code> कहता है:</p>
       ${code("records/Record.ts", `
 import type { PageProps, RouteContext } from 'nuclo-router'
 
@@ -396,33 +396,33 @@ export default function Record(ctx: RouteContext, { outlet }: PageProps) {
   return div(Header(ctx), input({ id: 'notes' }), main(outlet()))
 }
 `)}
-      <p>चाइल्ड नोड के बीच नेविगेट करने से माता-पिता का पुनर्निर्माण नहीं होता है। इसका DOM नोड एक ही नोड है, इसलिए इसका फोकस, इसकी स्क्रॉल स्थिति, इसका आधा टाइप किया गया इनपुट और इसके बंद होने की कोई भी स्थिति सभी जीवित रहती है।</p>
+      <p>चाइल्ड रूट बदलने पर पैरेंट दोबारा नहीं बनता। उसका DOM नोड वही रहता है, इसलिए फ़ोकस, स्क्रॉल स्थिति, आधा लिखा इनपुट और क्लोज़र का स्टेट बने रहते हैं।</p>
       <ul>
-        <li>बिना किसी चाइल्ड रूट वाला पेज अपने आउटलेट से कुछ भी प्रस्तुत नहीं करता है, इसलिए एक लेआउट इसे बिना शर्त कॉल कर सकता है। एक माता-पिता जिसके पास एक बच्चा है और वह कभी भी <code>outlet()</code> को नहीं बुलाता है, वह उसे निगल जाता है।</li>
-        <li>कोई सूचकांक मार्ग नहीं हैं। <code>'/'</code> स्वयं लेआउट है, इसलिए मूल पथ लेआउट को उसके अंदर एक अलग इंडेक्स पेज के बजाय एक खाली आउटलेट के साथ प्रस्तुत करता है। लैंडिंग सामग्री को लेआउट में रखें, या इसे वास्तविक चाइल्ड पथ दें।</li>
+        <li>चाइल्ड रूट न हो, तो पेज का आउटलेट कुछ रेंडर नहीं करता, इसलिए लेआउट उसे बिना शर्त कॉल कर सकता है। यदि पैरेंट के चाइल्ड रूट हों लेकिन वह <code>outlet()</code> कॉल न करे, तो चाइल्ड दिखाई नहीं देंगे।</li>
+        <li>अलग इंडेक्स रूट नहीं होते। <code>'/'</code> खुद लेआउट है, इसलिए पैरेंट पथ पर लेआउट खाली आउटलेट के साथ दिखता है, अलग इंडेक्स पेज के साथ नहीं। शुरुआती सामग्री लेआउट में रखें या उसके लिए चाइल्ड पथ बनाएँ।</li>
       </ul>
-      <p>फिर वही कॉल माता-पिता में से किसी एक से और एक ऐसे पेज से काम करती है जो यह नहीं जानता कि यह किसमें है:</p>
+      <p>फिर वही कॉल पैरेंट में से किसी एक से और एक ऐसे पेज से काम करती है जो यह नहीं जानता कि यह किसमें है:</p>
       ${code("example.ts", `
 router.href('./preview')      // '/invoices/42/preview' or '/customers/7/preview'
 await router.go('./preview')
 await layer.push('./preview') // the usual shape: a child layer
 `)}
-      <p><code>./x</code>, <code>../x</code>, <code>.</code> और <code>..</code> वर्तमान रूट के पथ के विरुद्ध समाधान करते हैं, URL की "निर्देशिका" के विरुद्ध नहीं। <code>/invoices/42</code> से, <code>./preview</code> <code>/invoices/42/preview</code> है, जहां एक ब्राउज़र ने <code>/invoices/preview</code> कहा होगा, और URL पर एक पिछला स्लैश कुछ भी नहीं बदलता है। <code>../</code> एक खंड तक चलता है और मूल पर रुकता है। क्वेरी और हैश को आगे बढ़ाया जाता है, <code>base</code> को फिर से जोड़ा जाता है, और हल किया गया निरपेक्ष पथ इतिहास में चला जाता है। यह URL रिज़ॉल्यूशन से वही विचलन है जो रिएक्ट राउटर <code>&lt;Link to="./x"&gt;</code> के लिए करता है।</p>
+      <p><code>./x</code>, <code>../x</code>, <code>.</code> और <code>..</code> मौजूदा रूट के पथ के सापेक्ष हल होते हैं, URL की "डायरेक्टरी" के नहीं। <code>/invoices/42</code> से <code>./preview</code> का अर्थ <code>/invoices/42/preview</code> है, जबकि ब्राउज़र इसे <code>/invoices/preview</code> बनाता। URL के अंत में स्लैश से यह व्यवहार नहीं बदलता। <code>../</code> एक सेगमेंट ऊपर जाता है और रूट पर रुक जाता है। क्वेरी और हैश बचाए जाते हैं, <code>base</code> फिर जुड़ता है और पूरा एब्सोल्यूट पथ हिस्ट्री में जाता है। React Router भी <code>&lt;Link to="./x"&gt;</code> के लिए सामान्य URL रिज़ॉल्यूशन से यही बदलाव करता है।</p>
       <ul>
-        <li>केवल <code>./</code> और <code>../</code> मार्ग-सापेक्ष हैं। एक href में एक नंगे <code>preview</code> को सामान्य ब्राउज़र नियमों के लिए छोड़ दिया गया है।</li>
-        <li>हाथ से <code>href="./preview"</code> लिखने के बजाय <code>router.href('./preview')</code> के साथ सापेक्ष लिंक बनाएं। <code>href()</code> रेंडर समय पर हल हो जाता है, इसलिए जो मार्कअप भेजा जाता है वह क्रॉलर के लिए, मध्य-क्लिक के लिए और JavaScript अक्षम होने पर भी पूर्ण और सही होता है।</li>
+        <li>केवल <code>./</code> और <code>../</code> रूट के सापेक्ष हैं। href में बिना प्रीफ़िक्स वाले <code>preview</code> को ब्राउज़र के सामान्य नियमों से हल किया जाता है।</li>
+        <li>हाथ से <code>href="./preview"</code> लिखने के बजाय <code>router.href('./preview')</code> के साथ सापेक्ष लिंक बनाएँ। <code>href()</code> रेंडर समय पर हल हो जाता है, इसलिए जो मार्कअप उपलब्ध है वह क्रॉलर के लिए, मध्य-क्लिक के लिए और JavaScript अक्षम होने पर भी पूर्ण और सही होता है।</li>
       </ul>
-      <h3>क्या रखा है, और क्या बनाया गया है</h3>
+      <h3>क्या बचता है और क्या दोबारा बनता है</h3>
       <table>
         <thead><tr><th>नोड</th><th>नेविगेशन पर</th></tr></thead>
         <tbody>
-          <tr><td>a पैरेंट जिसका पैटर्न और पथ अपरिवर्तित है</td><td><strong>kept</strong>: वही नोड, और इसका <code>load()</code> नहीं है </td></tr> को पुनः चलाएँ
-          <tr><td> मिलान किया गया पृष्ठ</td><td><strong>kept</strong> जब इसका पैटर्न और पथ अपरिवर्तित होता है और इसमें कोई <code>load()</code> नहीं होता है, तो एक क्वेरी या हैश परिवर्तन इसे रखता है। प्रत्येक विज़िट पर लोडर वाला मार्ग ताज़ा हो जाता है।</td></tr>
-          <tr><td>एक अभिभावक जिसका मार्ग बदल गया</td><td>, इसके तहत सब कुछ के साथ, फिर से बनाया गया</td></tr>
-          <tr><td>a पुश लेयर</td><td> अकेले मिलान किए गए पृष्ठ को प्रस्तुत करता है। इसके माता-पिता पहले से ही इसके नीचे की पंक्ति में आरूढ़ हैं।</td></tr>
+          <tr><td>पैरेंट जिसका पैटर्न और पथ अपरिवर्तित है</td><td><strong>बना रहता है</strong>: वही नोड, और इसका <code>load()</code> दोबारा नहीं चलता</td></tr>
+          <tr><td> मिलान किया गया पृष्ठ</td><td><strong>बना रहता है</strong> जब इसका पैटर्न और पथ अपरिवर्तित होता है और इसमें कोई <code>load()</code> नहीं होता है, तो एक क्वेरी या हैश परिवर्तन इसे रखता है। प्रत्येक विज़िट पर लोडर वाला मार्ग ताज़ा हो जाता है।</td></tr>
+          <tr><td>वह पैरेंट जिसका पथ बदल गया</td><td>अपने अंदर की सारी सामग्री के साथ दोबारा बनता है</td></tr>
+          <tr><td>पुश की गई लेयर</td><td> अकेले मिलान किए गए पृष्ठ को रेंडर करता है। इसके पैरेंट पहले से ही इसके नीचे की पंक्ति में माउंट हैं।</td></tr>
         </tbody>
       </table>
-      <p>एक रखा हुआ पेज उस <code>ctx</code> को रखता है जिसके साथ इसे बनाया गया था। हर जगह <code>ctx</code> का यही अर्थ है: जीवंत मूल्यों के लिए <code>router.*</code> पढ़ें। क्वेरी-संचालित स्थिति, जैसे फ़िल्टर, पेजिनेशन और टैब, एक गतिशील मान के अंदर <code>router.search</code> को पढ़ता है और <code>router.go('?page=2', { replace: true })</code> के साथ लिखता है। पेज, उसका फोकस और उसका आधा-टाइप इनपुट यथावत रहता है।</p>
+      <p>जो पेज बना रहता है, उसका <code>ctx</code> भी वही रहता है जिससे वह बना था। हर जगह <code>ctx</code> का यही अर्थ है। लाइव मानों के लिए <code>router.*</code> पढ़ें। क्वेरी पर निर्भर फ़िल्टर, पेजिनेशन और टैब के लिए डायनेमिक मान में <code>router.search</code> पढ़ें और <code>router.go('?page=2', { replace: true })</code> से लिखें। पेज, फ़ोकस और आधा लिखा इनपुट बने रहते हैं।</p>
     `,
       },
       {
@@ -450,17 +450,17 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
   )
 }
 `)}
-      <p>पृष्ठ की सामग्री आउटलेट के <code>list()</code> की एक पंक्ति है, और एक <code>into()</code> तब तक जीवित रहता है जब तक वह पंक्ति इसे धारण करती है। तो साइडबार सामग्री पृष्ठ के साथ आती है और उसके साथ चली जाती है: <code>into('sidebar', …)</code> के बिना किसी पृष्ठ पर नेविगेट करने से क्षेत्र की <code>empty</code> सामग्री फिर से दिखाई देती है। पेज दोनों भागों के लिए अपने <code>ctx</code> और <code>data</code> का उपयोग कर सकता है, क्योंकि दोनों एक ही फ़ंक्शन द्वारा बनाए गए हैं।</p>
+      <p>पृष्ठ की सामग्री आउटलेट के <code>list()</code> की एक पंक्ति है, और एक <code>into()</code> तब तक जीवित रहता है जब तक वह पंक्ति इसे धारण करती है। तो साइडबार सामग्री पृष्ठ के साथ आती है और उसके साथ चली जाती है: <code>into('sidebar', …)</code> के बिना किसी पृष्ठ पर नेविगेट करने से रीजन की <code>empty</code> सामग्री फिर से दिखाई देती है। पेज दोनों भागों के लिए अपने <code>ctx</code> और <code>data</code> का उपयोग कर सकता है, क्योंकि दोनों एक ही फ़ंक्शन द्वारा बनाए गए हैं।</p>
       <h3>नेविगेशन पर क्या होता है</h3>
       <ul>
-        <li><strong>A रखा गया पेज अपने क्षेत्रों को रखता है। </strong> एक क्वेरी या हैश परिवर्तन जो <a href="#router-patterns"> पेज को रखता है</a> क्षेत्र की सामग्री को भी नहीं छूता है। यदि साइडबार इस पर निर्भर करता है तो डायनामिक मान के अंदर <code>router.search</code> पढ़ें।</li>
-        <li><strong>A पुनर्निर्मित पृष्ठ उन्हें पुनः भर देता है। </strong> जब मार्ग बदलता है, तो पुरानी पंक्ति हटा दी जाती है और नए पृष्ठ के <code>into()</code> दृश्य आ जाते हैं। कुछ भी पीछे नहीं छूटा.</li>
-        <li><strong>A पुश की गई परत एक दृश्य जोड़ती है। </strong> परत आउटलेट की बाद की पंक्ति है, इसलिए इसका <code>into()</code> उसी क्षेत्र का एक नया दृश्य है। डिफ़ॉल्ट <code>type: 'latest'</code> के साथ यह परत बंद होने तक पृष्ठ के दृश्य को कवर करता है, और फिर पृष्ठ का दृश्य फिर से दिखाई देता है। <code>type: 'stack'</code> के साथ दोनों शो।</li>
-        <li><strong>A मूल पृष्ठ क्षेत्रों को भी भर सकता है।</strong> इसके दृश्य तब भी बने रहते हैं जब इसके चाइल्ड नोड बदलते हैं, क्योंकि मूल पृष्ठ का पुनर्निर्माण नहीं किया जाता है।</li>
-        <li><strong>सर्वर रेंडरिंग वैसे ही काम करता है जैसे </strong> सर्वर <code>route.run()</code> के अंदर पेज बनाता है, इसलिए इसके <code>into()</code> दृश्य HTML में हैं, और <code>hydrate()</code> उनका दावा करता है।</li>
+        <li><strong>जो पेज बना रहता है, उसके रीजन भी बने रहते हैं।</strong> पेज बचाए रखने वाले <a href="#router-patterns">क्वेरी या हैश बदलाव</a> रीजन की सामग्री भी नहीं बदलते। साइडबार क्वेरी पर निर्भर हो, तो डायनेमिक मान में <code>router.search</code> पढ़ें।</li>
+        <li><strong>दोबारा बना पेज उन्हें पुनः भर देता है। </strong> जब मार्ग बदलता है, तो पुरानी पंक्ति हटा दी जाती है और नए पृष्ठ के <code>into()</code> व्यू आ जाते हैं। कुछ भी पीछे नहीं छूटा.</li>
+        <li><strong>पुश की गई लेयर एक व्यू जोड़ती है। </strong> लेयर आउटलेट की बाद की पंक्ति है, इसलिए इसका <code>into()</code> उसी रीजन का एक नया व्यू है। डिफ़ॉल्ट <code>type: 'latest'</code> के साथ यह लेयर बंद होने तक पृष्ठ के व्यू को कवर करता है, और फिर पृष्ठ का व्यू फिर से दिखाई देता है। <code>type: 'stack'</code> के साथ दोनों दिखाई देते हैं।</li>
+        <li><strong>पैरेंट पेज रीजनों को भी भर सकता है।</strong> इसके व्यू तब भी बने रहते हैं जब इसके चाइल्ड नोड बदलते हैं, क्योंकि पैरेंट पेज का पुनर्निर्माण नहीं किया जाता है।</li>
+        <li><strong>सर्वर रेंडरिंग भी इसी तरह काम करती है। </strong> सर्वर <code>route.run()</code> के अंदर पेज बनाता है, इसलिए इसके <code>into()</code> व्यू HTML में हैं, और <code>hydrate()</code> उन्हें पुनः उपयोग करता है।</li>
       </ul>
-      <h3>एक पृष्ठ से कई क्षेत्र</h3>
-      <p>एक बार में एक से अधिक क्षेत्र भरने के लिए किसी ऑब्जेक्ट को पास करें। पृष्ठ की मुख्य सामग्री अभी भी आउटलेट के माध्यम से जाती है, इसलिए इसे <code>into()</code> के पास लौटा दें:</p>
+      <h3>एक पृष्ठ से कई रीजन</h3>
+      <p>एक बार में एक से अधिक रीजन भरने के लिए किसी ऑब्जेक्ट को पास करें। पृष्ठ की मुख्य सामग्री अभी भी आउटलेट के माध्यम से जाती है, इसलिए इसे <code>into()</code> के पास लौटा दें:</p>
       ${code("pages/Report.ts", `
 export default function Report(ctx: RouteContext) {
   return div(
@@ -474,18 +474,18 @@ export default function Report(ctx: RouteContext) {
 `)}
       <h3>किस काम के लिए कौन सा टूल</h3>
       <ul>
-        <li><strong><code>outlet()</code></strong> एक चाइल्ड रूट के लिए है: यूआरएल द्वारा तय की गई सामग्री, उसके मूल पृष्ठ के अंदर प्रस्तुत की गई है। <a href="#router-patterns">नेस्टेड रूट</a> देखें।</li>
+        <li><strong><code>outlet()</code></strong> एक चाइल्ड रूट के लिए है: यूआरएल द्वारा तय की गई सामग्री, उसके पैरेंट पेज के अंदर रेंडर की गई है। <a href="#router-patterns">नेस्टेड रूट</a> देखें।</li>
         <li><strong><code>into()</code></strong> मिलान किए गए पेज के लिए है जो पूरे लेआउट में फैला हुआ है। सामग्री पृष्ठ से संबंधित है और उसके डेटा का उपयोग करती है।</li>
         <li><strong><code>matches()</code></strong> अकेले यूआरएल से लेआउट तय करने के लिए है, इसकी अपनी छोटी तालिका है और इसमें कोई पेज शामिल नहीं है। <a href="#router-matches"><code>matches()</code></a> देखें।</li>
       </ul>
-      <p>ये सभी एक सुमेलित मार्ग से संबंधित हैं। राउटर एक यूआरएल से दो स्वतंत्र क्षेत्रों को नहीं चलाता है, इसलिए अपने स्वयं के मार्गों के साथ एक साइडबार वह क्षेत्र है जिसे एक पृष्ठ भरता है, दूसरा आउटलेट नहीं। एक साइडबार जो वास्तव में अपना स्वयं का राउटर चाहता है, लोडिंग और फ़ॉलबैक को अनस्टार्ट रखता है और <code>match()</code> के साथ हल करता है - <a href="#router-multi">मल्टीपल राउटर्स &amp; कंबाइंड लोडिंग</a> देखें।</p>
+      <p>ये सभी एक ही मिलते रूट के हिस्से हैं। राउटर एक URL से दो स्वतंत्र रीजन नहीं चलाता। इसलिए अपने पथों वाला साइडबार पेज से भरा रीजन है, दूसरा आउटलेट नहीं। साइडबार को अपना राउटर, लोडिंग और फ़ॉलबैक चाहिए, तो राउटर शुरू न करें और <code>match()</code> से मिलान करें। <a href="#router-multi">कई राउटर और संयुक्त लोडिंग</a> देखें।</p>
     `,
       },
       {
         id: "router-loaders",
-        title: "रूट लोडर और कोड विभाजन",
+        title: "रूट लोडर और कोड स्प्लिटिंग",
         content: `
-      <p>एक पेज मॉड्यूल एक <code>load</code> फ़ंक्शन निर्यात कर सकता है। यह पेज बनने से पहले, उस रूट के हर नेविगेशन पर चलता है, और जो कुछ भी लौटाता है उसे <code>data</code> के रूप में पेज पर भेज दिया जाता है:</p>
+      <p>एक पेज मॉड्यूल एक <code>load</code> फ़ंक्शन एक्सपोर्ट कर सकता है। यह पेज बनने से पहले, उस रूट के हर नेविगेशन पर चलता है, और जो कुछ भी लौटाता है उसे <code>data</code> के रूप में पेज पर भेज दिया जाता है:</p>
       ${code("pages/Post.ts", `
 import type { DataLoader, PageProps, RouteContext } from 'nuclo-router'
 
@@ -495,25 +495,25 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
   return article(h1(post.title), p(post.body))
 }
 `)}
-      <p>रूट तालिका अपरिवर्तित है। लोडर पेज के साथ यात्रा करता है। इसमें मिलान <code>RouteContext</code> मिलता है, इसलिए <code>params</code>, <code>search</code> और <code>path</code> सभी उपलब्ध हैं। यह सिंक या एसिंक हो सकता है, और यह सर्वर पर भी चलता है, इसलिए सर्वर-रेंडर पेज हाइड्रेशन के बाद लाने के बजाय पहले से ही HTML में अपना डेटा भेजता है।</p>
-      <p><strong> मॉड्यूल कैश्ड है। डेटा नहीं है.</strong> एक रूट का हिस्सा एक बार लाया जाता है और पुन: उपयोग किया जाता है, और इसका लोडर हर नेविगेशन पर फिर से चलता है। यही कारण है कि <code>/blog/a</code> और <code>/blog/b</code> को भ्रमित नहीं किया जा सकता है, और एक असफल लोडर को आसानी से पुनः प्रयास किया जा सकता है।</p>
+      <p>रूट टेबल वही रहती है। लोडर पेज के मॉड्यूल में रहता है। उसे मिलान का <code>RouteContext</code> मिलता है, इसलिए <code>params</code>, <code>search</code> और <code>path</code> उपलब्ध हैं। यह सिंक या एसिंक हो सकता है और सर्वर पर भी चलता है। इसलिए सर्वर से भेजे HTML में डेटा पहले से होता है, उसे पहली बार दिखाने के लिए हाइड्रेशन के बाद डेटा आने का इंतज़ार नहीं करना पड़ता।</p>
+      <p><strong> मॉड्यूल कैश्ड है। डेटा नहीं है.</strong> एक रूट का चंक एक बार लाया जाता है और पुन: उपयोग किया जाता है, और इसका लोडर हर नेविगेशन पर फिर से चलता है। यही कारण है कि <code>/blog/a</code> और <code>/blog/b</code> को भ्रमित नहीं किया जा सकता है, और एक असफल लोडर को आसानी से पुनः प्रयास किया जा सकता है।</p>
       <table>
         <thead><tr><th>स्थिति</th><th>व्यवहार</th></tr></thead>
         <tbody>
-          <tr><td> चलता है</td><td><code>router.pending</code> सच है और जिस पेज पर आप थे वह चालू रहता है</td></tr>
-          <tr><td>it </td><td> को <code>router.error</code> पर फेंकता या अस्वीकार करता है। <code>go()</code> अभी भी कभी भी अस्वीकार नहीं करता है, और नेविगेशन का पुनः प्रयास किया जा सकता है।</td></tr>
-          <tr><td><code>start()</code></td><td> के दौरान अस्वीकृति <code>start()</code> से आती है। इसे लगाने के लिए अभी तक कोई रूट नहीं है.</td></tr>
-          <tr><td>a पुश लेयर</td><td> अपने स्वयं के डेटा के साथ अपना स्वयं का लोडर चलाता है</td></tr>
-          <tr><td>केवल निष्क्रिय प्रीलोडर</td><td>वार्म्स मॉड्यूल। इसमें पारित करने के लिए कोई संदर्भ नहीं है, और यह उस मार्ग के लिए डेटा लाएगा जिसे आप कभी नहीं खोल सकते।</td></tr>
-          <tr><td> उसी URL</td><td> पर पुनः नेविगेट करने पर लोडर फिर से चलता है और पंक्ति फिर से बन जाती है। लोडर के बिना एक मार्ग अपनी पंक्ति रखता है।</td></tr>
+          <tr><td>लोडर चल रहा है</td><td><code>router.pending</code> true रहता है और पिछला पेज स्क्रीन पर बना रहता है</td></tr>
+          <tr><td>लोडर थ्रो या रिजेक्ट करता है</td><td>त्रुटि <code>router.error</code> में मिलती है। <code>go()</code> रिजेक्ट नहीं होता और नेविगेशन दोबारा आज़माया जा सकता है।</td></tr>
+          <tr><td><code>start()</code> के दौरान</td><td>रिजेक्शन <code>start()</code> से मिलता है। त्रुटि रखने के लिए अभी कोई रूट नहीं बना है।</td></tr>
+          <tr><td>पुश की गई लेयर</td><td> अपने स्वयं के डेटा के साथ अपना स्वयं का लोडर चलाता है</td></tr>
+          <tr><td>आइडल प्रीलोडर</td><td>केवल मॉड्यूल लोड करता है। इसे देने के लिए कोई कॉन्टेक्स्ट नहीं होता और डेटा लोड करने से ऐसे रूट का डेटा भी आ सकता है जिसे आप कभी खोलें ही नहीं।</td></tr>
+          <tr><td>उसी URL पर दोबारा नेविगेशन</td><td>लोडर फिर चलता है और पंक्ति दोबारा बनती है। बिना लोडर वाला रूट अपनी पंक्ति बनाए रखता है।</td></tr>
         </tbody>
       </table>
       <p>पुनः सत्यापित करने के लिए, इतिहास प्रविष्टि जोड़े बिना उस स्थान पर नेविगेट करें जहां आप पहले से हैं:</p>
       ${code("example.ts", `
 await router.go(router.url, { replace: true })   // runs load() again
 `)}
-      <h3>खंड के साथ डेटा प्रारंभ करना</h3>
-      <p>पेज मॉड्यूल द्वारा निर्यात किया गया <code>load</code> केवल उस मॉड्यूल के आने के बाद ही चल सकता है, इसलिए एक ठंडा नेविगेशन खंड, फिर डेटा प्राप्त करता है। दोनों को एक साथ शुरू करने के लिए, लोडर को <code>withLoad()</code> के साथ तालिका में घोषित करें:</p>
+      <h3>चंक के साथ डेटा लोड करना</h3>
+      <p>पेज मॉड्यूल द्वारा एक्सपोर्ट किया गया <code>load</code> केवल उस मॉड्यूल के आने के बाद ही चल सकता है, इसलिए कैश खाली होने पर नेविगेशन पहले चंक और फिर डेटा लोड करता है। दोनों को एक साथ शुरू करने के लिए, लोडर को <code>withLoad()</code> के साथ तालिका में घोषित करें:</p>
       ${code("routes.ts", `
 import { createRouter, withLoad } from 'nuclo-router'
 import { loadPost } from './data.ts'   // small, in the main bundle
@@ -522,19 +522,19 @@ createRouter({
   '/blog/:slug': withLoad(() => import('./pages/Post.ts'), loadPost),
 })
 `)}
-      <p>यह मॉड्यूल के अपने <code>load</code> को प्रतिस्थापित करता है और हर विजिट पर इसी तरह चलता है। एक अस्वीकृति जबकि हिस्सा अभी भी किसी अन्य की तरह <code>router.error</code> पर लैंड लोड कर रहा है।</p>
-      <p>डिज़ाइन के अनुसार, HTML में सर्वर डेटा का कोई क्रमांकन नहीं है। क्लाइंट का <code>load</code> फिर से हाइड्रेशन पर चलता है। यदि यह मायने रखता है, तो सर्वर को <code>route.data</code> उत्सर्जित करने दें, उदाहरण के लिए <code>window.__DATA__</code> के रूप में, और लोडर इसे पहले ले। <code>route.data</code> केवल मिलान किए गए पृष्ठ का डेटा है। माता-पिता का <code>load()</code> परिणाम इस पर नहीं है।</p>
-      <h3>कोड विभाजन और प्रीलोडिंग</h3>
-      <p>एक रूट का मान हमेशा एक फ़ंक्शन होता है जो पृष्ठ घटक लौटाता है, इसलिए घटक तक आलसी तरीके से पहुंचा जाता है:</p>
+      <p>यह मॉड्यूल के अपने <code>load</code> की जगह लेता है और हर विजिट पर इसी तरह चलता है। चंक लोड होने के दौरान डेटा लोडर रिजेक्ट हो, तो त्रुटि सामान्य रूप से <code>router.error</code> में मिलती है।</p>
+      <p>डिज़ाइन के अनुसार, HTML में सर्वर डेटा का सीरियलाइज़ेशन नहीं है। क्लाइंट का <code>load</code> फिर से हाइड्रेशन पर चलता है। यदि यह मायने रखता है, तो सर्वर को <code>route.data</code> आउटपुट में लिखने दें, उदाहरण के लिए <code>window.__DATA__</code> के रूप में, और लोडर इसे पहले ले। <code>route.data</code> केवल मिलान किए गए पृष्ठ का डेटा है। इसमें पैरेंट के <code>load()</code> का परिणाम नहीं होता।</p>
+      <h3>कोड स्प्लिटिंग और प्रीलोडिंग</h3>
+      <p>एक रूट का मान हमेशा एक फ़ंक्शन होता है जो पृष्ठ कंपोनेंट लौटाता है, इसलिए कंपोनेंट ज़रूरत पड़ने पर ही लोड होता है:</p>
       ${code("routes.ts", `
 '/a': () => import('./A.ts'),                      // default export (+ optional load)
 '/b': () => import('./B.ts').then(m => m.BPage),   // named export
 '/c': () => CPage,                                 // eager, not split
 '/d': () => ({ default: DPage, load: loadD }),     // eager, module-shaped
 `)}
-      <p>केवल मॉड्यूल-आकार वाले फॉर्म ही <code>load</code> निर्यात कर सकते हैं। <code>.then(m =&gt; m.BPage)</code> के साथ नामित घटक को चुनने से राउटर को अकेले ही फ़ंक्शन सौंप दिया जाता है।</p>
-      <p>प्रत्येक मॉड्यूल को एक बार आयात किया जाता है और कैश किया जाता है। एक ही मार्ग पर समवर्ती नेविगेशन एक <code>import()</code> साझा करते हैं। एक बार जब उपयोगकर्ता ने पृष्ठ को <code>idleTimeout</code> (डिफ़ॉल्ट रूप से एक सेकंड; कोई टैप, कुंजी, पहिया या स्क्रॉल नहीं) के लिए अकेला छोड़ दिया है, तो शेष मार्ग पृष्ठभूमि में लोड हो जाते हैं, प्रति निष्क्रिय स्लाइस (<code>requestIdleCallback</code>)। उपयोगकर्ता जिस भी इनपुट, या नेविगेशन की प्रतीक्षा कर रहा है, उसे तब तक रोक देता है जब तक कि पृष्ठ फिर से निष्क्रिय न हो जाए।</p>
-      <p>एक प्रीलोडेड या उत्सुक मार्ग कभी भी <code>router.pending</code> को फ्लिप नहीं करता है और अगले पेंट से पहले लैंड करता है: कोई स्पिनर फ्रेम नहीं, कोई लेआउट शिफ्ट नहीं। <code>router.pending</code> केवल एक मॉड्यूल या लोडर के लिए सही है जिसके लिए इंतजार करना पड़ता है, और आउटगोइंग पेज तब भी स्क्रीन पर रहता है। एक टुकड़ा जो सतहों को <code>router.error</code> के रूप में लोड करने में विफल रहता है, कभी भी एक अनचाहे अस्वीकृति के रूप में नहीं, और बस पुनः प्रयास किया जा सकता है।</p>
+      <p>केवल मॉड्यूल के रूप वाले विकल्प ही <code>load</code> एक्सपोर्ट कर सकते हैं। <code>.then(m =&gt; m.BPage)</code> के साथ नामित कंपोनेंट को चुनने से राउटर को अकेले ही फ़ंक्शन सौंप दिया जाता है।</p>
+      <p>हर मॉड्यूल एक बार इम्पोर्ट होकर कैश होता है। एक ही रूट पर साथ चल रहे नेविगेशन एक <code>import()</code> साझा करते हैं। पेज पर <code>idleTimeout</code> तक कोई गतिविधि न हो (डिफ़ॉल्ट एक सेकंड; कोई टैप, कुंजी, व्हील इवेंट या स्क्रॉल नहीं), तो बाकी रूट पृष्ठभूमि में लोड होते हैं: हर आइडल अवधि (<code>requestIdleCallback</code>) में एक। कोई भी इनपुट या प्रतीक्षारत नेविगेशन इसे पेज के फिर आइडल होने तक रोक देता है।</p>
+      <p>एक प्रीलोडेड या पहले से लोड रूट कभी भी <code>router.pending</code> को फ्लिप नहीं करता है और अगले पेंट से पहले लैंड करता है: कोई स्पिनर फ्रेम नहीं, कोई लेआउट शिफ्ट नहीं। <code>router.pending</code> केवल एक मॉड्यूल या लोडर के लिए सही है जिसके लिए इंतजार करना पड़ता है, और आउटगोइंग पेज तब भी स्क्रीन पर रहता है। चंक लोड होने में विफलता <code>router.error</code> में मिलती है। यह अनहैंडल्ड रिजेक्शन नहीं बनती और दोबारा कोशिश की जा सकती है।</p>
     `,
       },
       {
@@ -544,19 +544,19 @@ createRouter({
       <h3><code>createRouter(table, options?)</code></h3>
       <p><code>table</code> एक पैटर्न को लोडर, या नेस्टेड टेबल पर मैप करता है। विकल्प:</p>
       <table>
-        <thead><tr><th>विकल्प</th><th>गलती करना</th><th></th></tr></thead>
+        <thead><tr><th>विकल्प</th><th>डिफ़ॉल्ट</th><th></th></tr></thead>
         <tbody>
           <tr><td><code>base</code></td><td><code>'/'</code></td><td>URL उपसर्ग के तहत ऐप परोसा जाता है, जैसे <code>'/docs'</code>। यह केवल खंड सीमा पर मेल खाता है: <code>/docs/intro</code> <code>'/docs'</code> के अंदर है, <code>/docsearch</code> नहीं है। इसके बाहर के यूआरएल किसी भी तरह से मेल नहीं खाते हैं, इसलिए <code>start()</code> अस्वीकार कर देता है (आपका सर्वर-साइड 404) और उनके लिंक ब्राउज़र पर छोड़ दिए जाते हैं।</td></tr>
           <tr><td><code>preload</code></td><td><code>true</code></td><td>पृष्ठ निष्क्रिय होने पर शेष मार्गों के मॉड्यूल को पृष्ठभूमि में लोड करें। <code>false</code> इसे बंद कर देता है.</td></tr>
-          <tr><td><code>idleTimeout</code></td><td><code>1000</code></td><td>मिलीसेकंड प्रीलोडिंग शुरू होने से पहले, या उपयोगकर्ता के शुरू होने के बाद फिर से शुरू होता है व्यस्त.</td></tr>
-          <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>, ब्राउज़र में प्रत्येक हल किए गए नेविगेशन के बाद कॉल किया जाता है, जिसमें शुरुआती नेविगेशन भी शामिल है, एक बार DOM पकड़ लिया है. <code>kind</code> <code>'start'</code>, <code>'push'</code>, <code>'replace'</code>, <code>'pop'</code> (पीछे, आगे, <code>close()</code>) या <code>'layer'</code> है। <code>document.title</code>, मेटा टैग, फोकस, स्क्रॉलिंग और एनालिटिक्स के लिए हुक। SSR.</td></tr> के दौरान कभी कॉल नहीं किया गया
+          <tr><td><code>idleTimeout</code></td><td><code>1000</code></td><td>टैप, कुंजी, व्हील इवेंट या स्क्रॉल के बिना बीतने वाला समय, मिलीसेकंड में, जिसके बाद प्रीलोडिंग शुरू होती है या गतिविधि के बाद फिर शुरू होती है।</td></tr>
+          <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>, ब्राउज़र में प्रत्येक हल किए गए नेविगेशन के बाद कॉल किया जाता है, जिसमें शुरुआती नेविगेशन भी शामिल है, DOM अपडेट होने के बाद. <code>kind</code> <code>'start'</code>, <code>'push'</code>, <code>'replace'</code>, <code>'pop'</code> (पीछे, आगे, <code>close()</code>) या <code>'layer'</code> है। <code>document.title</code>, मेटा टैग, फोकस, स्क्रॉलिंग और एनालिटिक्स के लिए हुक। SSR के दौरान कभी कॉल नहीं होता।</td></tr>
         </tbody>
       </table>
-      <p>राउटर लौटाता है: <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code>, और <code>run()</code> को छोड़कर प्रत्येक <code>Route</code> सदस्य, सक्रिय रूट को पढ़ता है। वह वह है जो ब्राउज़र में लौटाया गया अंतिम <code>start()</code> है, या वह जिसका <code>run()</code> सर्वर पर निष्पादित हो रहा है। किसी भी थ्रो के साथ एक सदस्य को पढ़ना। रूट तालिका, संकलित मिलानकर्ता और मॉड्यूल कैश राउटर पर रहते हैं, इसलिए उन्हें सर्वर पर अनुरोधों के बीच साझा किया जाता है।</p>
+      <p>यह एक राउटर लौटाता है: <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code> और <code>run()</code> को छोड़कर <code>Route</code> के सभी सदस्य। ये सदस्य सक्रिय रूट पढ़ते हैं: ब्राउज़र में आखिरी पूरे हुए <code>start()</code> का रूट, या सर्वर पर वह रूट जिसका <code>run()</code> चल रहा है। कोई सक्रिय रूट न होने पर सदस्य पढ़ने से त्रुटि थ्रो होती है। रूट टेबल, कंपाइल किया गया मैचर और मॉड्यूल कैश राउटर में रहते हैं, इसलिए सर्वर पर अनुरोध इन्हें साझा करते हैं।</p>
       <h3><code>router.start(url?)</code></h3>
-      <p>अपने पेज मॉड्यूल में <code>url</code> (ब्राउज़र में डिफ़ॉल्ट: <code>location.href</code>) को हल करता है और एक <code>Promise&lt;Route&gt;</code> लौटाता है। जब कुछ भी मेल नहीं खाता और तालिका में कोई <code>'*'</code> रूट नहीं है तो अस्वीकार कर देता है। एक सर्वर पर, वह आपका 404 है। ब्राउज़र में यह रूटर को सक्रिय बनाता है, <code>popstate</code> और प्रत्यायोजित <code>click</code> श्रोताओं को जोड़ता है और प्रीलोडिंग शेड्यूल करता है। दूसरा <code>start()</code> आपके लिए पिछले रूट को समाप्त कर देता है। सर्वर पर यह साझा की गई किसी भी चीज़ को नहीं छूता है, इसलिए <code>route.run()</code> के अंदर प्रस्तुत करें।</p>
+      <p>अपने पेज मॉड्यूल में <code>url</code> (ब्राउज़र में डिफ़ॉल्ट: <code>location.href</code>) को हल करता है और एक <code>Promise&lt;Route&gt;</code> लौटाता है। जब कुछ भी मेल नहीं खाता और तालिका में कोई <code>'*'</code> रूट नहीं है तो अस्वीकार कर देता है। एक सर्वर पर, वह आपका 404 है। ब्राउज़र में यह उस Route को राउटर का सक्रिय रूट बनाता है, <code>popstate</code> और डेलिगेटेड <code>click</code> लिसनर को जोड़ता है और प्रीलोडिंग शेड्यूल करता है। दूसरा <code>start()</code> आपके लिए पिछले रूट को समाप्त कर देता है। सर्वर पर यह साझा की गई किसी भी चीज़ को नहीं छूता है, इसलिए <code>route.run()</code> के अंदर रेंडर करें।</p>
       <h3><code>router.match(url?)</code></h3>
-      <p>कुछ भी लोड किए बिना तालिका के विरुद्ध एक यूआरएल का समाधान करता है: कोई आयात नहीं, कोई इतिहास नहीं, कोई श्रोता नहीं, कोई रूट नहीं। जब URL <code>base</code> के बाहर हो, किसी पैटर्न से मेल न खाता हो या ब्राउज़र में किसी अन्य मूल पर हो, तो <code>RouteContext</code>, या <code>null</code> लौटाता है। केवल पूर्ण URL, क्योंकि <code>./</code> रिज़ॉल्यूशन के लिए एक सक्रिय रूट की आवश्यकता होती है।</p>
+      <p>बिना कुछ लोड किए टेबल से URL का मिलान करता है: कोई इम्पोर्ट, हिस्ट्री बदलाव, लिसनर या रूट नहीं बनता। मिलान होने पर <code>RouteContext</code> लौटाता है। URL <code>base</code> के बाहर हो, किसी पैटर्न से न मिले या ब्राउज़र में दूसरे ओरिजिन का हो, तो <code>null</code> लौटाता है। केवल एब्सोल्यूट URL लेता है, क्योंकि <code>./</code> रिज़ॉल्यूशन के लिए सक्रिय रूट चाहिए।</p>
       ${code("example.ts", `
 // 404 before importing a single chunk
 if (!router.match(request.url)) return new Response(null, { status: 404 })
@@ -565,28 +565,28 @@ if (!router.match(request.url)) return new Response(null, { status: 404 })
 const owned = router.match(href) !== null
 `)}
       <h3><code>router.outlet()</code></h3>
-      <p>सक्रिय मार्ग के पृष्ठ <code>list()</code> के रूप में। जहाँ भी पन्ने जाते हैं, इसे एक बार रखें। एक धकेली गई परत इसकी एक बाद की पंक्ति है। यह <code>start()</code> के समाधान से पहले और <code>stop()</code> के बाद खाली है। सर्वर पर यह उस रूट को प्रस्तुत करता है जिसका <code>run()</code> निष्पादित हो रहा है।</p>
+      <p>सक्रिय रूट के पेज एक <code>list()</code> के रूप में लौटाता है। पेज जहाँ दिखाने हों, वहाँ इसे एक बार रखें। पुश की गई लेयर इसमें बाद की पंक्ति होती है। <code>start()</code> पूरा होने से पहले और <code>stop()</code> के बाद यह खाली रहता है। सर्वर पर यह उसी रूट को रेंडर करता है जिसका <code>run()</code> चल रहा है।</p>
       <h3><code>router.matches(table)</code></h3>
-      <p>एक दूसरी तालिका का दृश्य प्रस्तुत करता है जो सक्रिय मार्ग के पथ से मेल खाता है, <code>list()</code> के रूप में आप इसे कहीं भी रख सकते हैं। <a href="#router-matches"><code>matches()</code></a> देखें।</p>
+      <p>एक दूसरी तालिका का व्यू रेंडर करता है जो सक्रिय रूट के पथ से मेल खाता है, <code>list()</code> के रूप में आप इसे कहीं भी रख सकते हैं। <a href="#router-matches"><code>matches()</code></a> देखें।</p>
       <h3><code>Route</code></h3>
       <p><code>run()</code> को छोड़कर प्रत्येक सदस्य राउटर पर भी है, जहां एक ऐप इसे पढ़ता है।</p>
       <table>
         <thead><tr><th>सदस्य</th><th></th></tr></thead>
         <tbody>
-          <tr><td><code>path</code>, <code>pattern</code>, <code>params</code>, <code>search</code>, <code>hash</code>, <code>url</code></td><td>सक्रिय मैच.<code>search</code>एक है<code>URLSearchParams</code>. <code>search</code>, <code>hash</code>और<code>url</code>लाइव हैं.</td></tr>
-          <tr><td><code>pending</code></td><td>a नेविगेशन एक मॉड्यूल या लोडर की प्रतीक्षा कर रहा है</td></tr>
+          <tr><td><code>path</code>, <code>pattern</code>, <code>params</code>, <code>search</code>, <code>hash</code>, <code>url</code></td><td>सक्रिय मिलान। <code>search</code> एक <code>URLSearchParams</code> है। <code>search</code>, <code>hash</code> और <code>url</code> लाइव मान हैं।</td></tr>
+          <tr><td><code>pending</code></td><td>कोई नेविगेशन एक मॉड्यूल या लोडर की प्रतीक्षा कर रहा है</td></tr>
           <tr><td><code>error</code></td><td>अंतिम विफल लोड, अगले नेविगेशन द्वारा साफ़ किया गया</td></tr>
-          <tr><td><code>data</code></td><td> मिलान किए गए पृष्ठ का <code>load()</code> क्या लौटा, सर्वर को क्रमबद्ध करने के लिए। इस पर माता-पिता का नाम नहीं है.</td></tr>
-          <tr><td><code>depth</code></td><td> स्टैक पर कितनी परतें हैं (एक सामान्य पृष्ठ के लिए 1)</td></tr>
-          <tr><td><code>go(href, { replace })</code></td><td>नेविगेट करें, यदि आवश्यक हो तो मॉड्यूल लोड करें। कभी अस्वीकार नहीं करता: एक मॉड्यूल जो विफल हो जाता है, अस्वीकार करके या फेंककर, <code>error</code>.</td></tr> पर लैंड करता है
-          <tr><td><code>push(href)</code></td><td> एक रूट को शीर्ष पर एक नई परत के रूप में खोलें, जिस पर यह बंद होता है उसके साथ हल करें। <code>./</code> स्वीकार करता है। कोई मिलान नहीं होने या विफल मॉड्यूल पर अस्वीकार कर दिया गया।</td></tr>
-          <tr><td><code>href(path)</code></td><td> <code>a({ href })</code> के लिए <code>base</code> के साथ एक पथ उपसर्ग करें। सक्रिय मार्ग के विरुद्ध <code>./</code> और <code>../</code> का समाधान करता है।</td></tr>
-          <tr><td><code>stop()</code></td><td> प्रत्येक श्रोता को अलग करें, खुली परतों को खारिज करें, आउटलेट खाली करें। नपुंसक। रुका हुआ रूट अभी भी अपने अंतिम मैच के साथ उत्तर देता है, और <code>go()</code> कुछ नहीं करता है।</td></tr>
-          <tr><td><code>run(fn)</code></td><td> को राउटर के सक्रिय रूट के रूप में इस रूट के साथ <code>fn</code> पर कॉल करें और इसका परिणाम लौटाएं: सर्वर पर <code>route.run(() =&gt; renderToString(App))</code>। केवल तुल्यकालिक. <code>fn</code> के वापस आने पर रूट सक्रिय होना बंद हो जाता है।</td></tr>
+          <tr><td><code>data</code></td><td> मिलान किए गए पृष्ठ का <code>load()</code> क्या लौटा, सर्वर पर सीरियलाइज़ करने के लिए। इसमें पैरेंट का डेटा नहीं है.</td></tr>
+          <tr><td><code>depth</code></td><td> स्टैक पर कितनी लेयर हैं (एक सामान्य पृष्ठ के लिए 1)</td></tr>
+          <tr><td><code>go(href, { replace })</code></td><td>नेविगेट करता है और ज़रूरत हो तो मॉड्यूल लोड करता है। कभी रिजेक्ट नहीं होता: मॉड्यूल रिजेक्ट या थ्रो करे, तो त्रुटि <code>error</code> में मिलती है।</td></tr>
+          <tr><td><code>push(href)</code></td><td>रूट को ऊपर नई लेयर में खोलता है। लेयर बंद होने पर उसके परिणाम से रिज़ॉल्व होता है। <code>./</code> स्वीकार करता है। मिलान न होने या मॉड्यूल विफल होने पर रिजेक्ट होता है।</td></tr>
+          <tr><td><code>href(path)</code></td><td> <code>a({ href })</code> के लिए <code>base</code> के साथ एक पथ उपसर्ग करें। सक्रिय रूट के विरुद्ध <code>./</code> और <code>../</code> का समाधान करता है।</td></tr>
+          <tr><td><code>stop()</code></td><td> प्रत्येक लिसनर को अलग करें, खुली लेयरों को खारिज करें, आउटलेट खाली करें। दोबारा कॉल करने पर भी वही परिणाम रहता है। रुका हुआ रूट अभी भी अपने अंतिम मैच के साथ उत्तर देता है, और <code>go()</code> कुछ नहीं करता है।</td></tr>
+          <tr><td><code>run(fn)</code></td><td>इस रूट को राउटर का सक्रिय रूट बनाकर <code>fn</code> कॉल करता है और उसका परिणाम लौटाता है। सर्वर पर: <code>route.run(() =&gt; renderToString(App))</code>। केवल सिंक्रोनस। <code>fn</code> लौटते ही रूट का सक्रिय स्कोप खत्म हो जाता है।</td></tr>
         </tbody>
       </table>
       <h3><code>RouteContext</code></h3>
-      <p>एक पृष्ठ का पहला तर्क: <code>path</code>, <code>pattern</code>, <code>params</code>, <code>search</code>, <code>hash</code>, <code>url</code>। यह वह संदर्भ है जिसके साथ पेज बनाया गया था। जीवंत मूल्यों के लिए <code>router.*</code> पढ़ें। वे केवल तभी भिन्न होते हैं जब क्वेरी या हैश पुनर्निर्माण के बिना बदल जाता है।</p>
+      <p>एक पृष्ठ का पहला आर्ग्युमेंट: <code>path</code>, <code>pattern</code>, <code>params</code>, <code>search</code>, <code>hash</code>, <code>url</code>। यह वह संदर्भ है जिसके साथ पेज बनाया गया था। जीवंत मानों के लिए <code>router.*</code> पढ़ें। वे केवल तभी भिन्न होते हैं जब क्वेरी या हैश पुनर्निर्माण के बिना बदल जाता है।</p>
       <p><code>params</code> डिफ़ॉल्ट रूप से <code>{ [name]: string }</code> है। एक पेज इसे <code>Params</code> के साथ अपने पैटर्न से टाइप कर सकता है, जो <code>'/blog/:slug'</code> को <code>{ slug: string }</code> में और <code>'/files/*rest'</code> को <code>{ rest: string }</code> में बदल देता है:</p>
       ${code("pages/Post.ts", `
 import type { Params, RouteContext } from 'nuclo-router'
@@ -596,44 +596,44 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
 }
 `)}
       <h3><code>PageProps</code></h3>
-      <p>एक पेज का दूसरा तर्क। पृष्ठ को जो चाहिए उसे नष्ट करें।</p>
+      <p>एक पेज का दूसरा आर्ग्युमेंट। पेज को जो चाहिए, उसे डीस्ट्रक्चर करके लें।</p>
       <table>
         <thead><tr><th>प्रॉप</th><th></th></tr></thead>
         <tbody>
           <tr><td><code>layer</code></td><td>जहां पेज स्टैक में बैठता है। नीचे <code>Layer</code> देखें।</td></tr>
-          <tr><td><code>data</code></td><td>रूट का <code>load()</code> क्या लौटा, या <code>undefined</code> बिना किसी के। <code>PageProps&lt;TData&gt;</code>.</td></tr> द्वारा टाइप किया गया
-          <tr><td><code>outlet</code></td><td> जहां एक मूल पृष्ठ अपने चाइल्ड रूट को प्रस्तुत करता है। <a href="#router-patterns">नेस्टेड रूट देखें</a>.</td></tr>
-          <tr><td><code>beforeLeave</code></td><td> इस पृष्ठ को खारिज करने से पहले एक गार्ड से पूछा गया पंजीकरण करता है। देखें <a href="#router-layers">गार्ड छोड़ें</a>.</td></tr>
+          <tr><td><code>data</code></td><td>रूट का <code>load()</code> क्या लौटा, या <code>undefined</code> जब लोडर न हो। <code>PageProps&lt;TData&gt;</code> से टाइप किया जाता है।</td></tr>
+          <tr><td><code>outlet</code></td><td> जहां एक पैरेंट पेज अपने चाइल्ड रूट को रेंडर करता है। <a href="#router-patterns">नेस्टेड रूट देखें</a>.</td></tr>
+          <tr><td><code>beforeLeave</code></td><td>एक गार्ड रजिस्टर करता है जिसे पेज हटाने से पहले कॉल किया जाता है। <a href="#router-layers">लीव गार्ड</a> देखें।</td></tr>
         </tbody>
       </table>
       <h3><code>Layer</code></h3>
-      <p>जहां एक पेज स्टैक में बैठता है, और उसका रास्ता बाहर आता है।</p>
+      <p>स्टैक में पेज की जगह और उससे बाहर निकलने का तरीका।</p>
       <table>
         <thead><tr><th>सदस्य</th><th></th></tr></thead>
         <tbody>
-          <tr><td><code>depth</code></td><td>0, पुश लेयर्स के लिए 1 और ऊपर</td></tr>
-          <tr><td><code>push(href)</code></td><td><code>Route.push()</code></td></tr> के समान, एक पृष्ठ के अंदर से एक और परत खोलें
-          <tr><td><code>close(result?)</code></td><td>इस परत और इसके ऊपर की सभी चीज़ों को बंद करें, इसे खोलने वाले <code>push()</code> को हल करें। किसी भी तर्क का मतलब खारिज नहीं किया गया. गहराई पर एक नो-ऑप 0.</td></tr>
+          <tr><td><code>depth</code></td><td>बेस पेज के लिए 0, पुश की गई लेयर के लिए 1 और उससे ऊपर</td></tr>
+          <tr><td><code>push(href)</code></td><td><code>Route.push()</code> की तरह, पेज के अंदर से दूसरी लेयर खोलता है</td></tr>
+          <tr><td><code>close(result?)</code></td><td>इस लेयर और इसके ऊपर की सभी चीज़ों को बंद करें, इसे खोलने वाले <code>push()</code> को हल करें। बिना आर्ग्युमेंट के कॉल करने का मतलब रद्द करना है। गहराई 0 पर यह कुछ नहीं करता।</td></tr>
         </tbody>
       </table>
       <h3><code>DataLoader</code> और <code>withLoad()</code></h3>
-      <p><code>DataLoader</code> <code>(ctx: RouteContext) =&gt; TData | Promise&lt;TData&gt;</code> है, जो एक पेज मॉड्यूल का वैकल्पिक <code>load</code> निर्यात है। <code>withLoad(loader, load)</code> एक मार्ग बनाता है जिसका <code>load</code> उसके हिस्से के आयात के बाद के बजाय उसके बगल से शुरू होता है। <a href="#router-loaders">रूट लोडर</a> देखें।</p>
-      <h3>प्रकार</h3>
-      <p>प्रत्येक प्रकार <code>nuclo-router</code> का नामित निर्यात है, इसलिए एक पेज, एक लोडर या एक गार्ड को पथ से आयात किए बिना टाइप किया जा सकता है।</p>
+      <p><code>DataLoader</code> <code>(ctx: RouteContext) =&gt; TData | Promise&lt;TData&gt;</code> है, जो एक पेज मॉड्यूल का वैकल्पिक <code>load</code> एक्सपोर्ट है। <code>withLoad(loader, load)</code> एक मार्ग बनाता है जिसका <code>load</code> उसके चंक के इम्पोर्ट के बाद शुरू होने के बजाय उसके साथ-साथ शुरू होता है। <a href="#router-loaders">रूट लोडर</a> देखें।</p>
+      <h3>टाइप</h3>
+      <p>हर टाइप <code>nuclo-router</code> का नेम्ड एक्सपोर्ट है, इसलिए एक पेज, एक लोडर या एक गार्ड को पथ से इम्पोर्ट किए बिना टाइप किया जा सकता है।</p>
       <table>
         <thead><tr><th>टाइप</th><th>यह क्या है</th></tr></thead>
         <tbody>
-          <tr><td><code>Params&lt;'/blog/:slug'&gt;</code></td><td> एक पैटर्न के लिए पैरामीटर ऑब्जेक्ट। <code>RouteParams</code> अलिखित आकार है, और <code>Match</code> मिलानकर्ता का परिणाम है।</td></tr>
-          <tr><td><code>PageComponent</code></td><td>a पेज: <code>(ctx, { layer, data, outlet, beforeLeave }) =&gt; …</code></td></tr>
-          <tr><td><code>RouteModule</code></td><td>a पेज मॉड्यूल: घटक स्वयं, या <code>import()</code> उपज के रूप में <code>{ default, load? }</code></td></tr>
-          <tr><td><code>RouteLoader</code></td><td><code>() =&gt; RouteModule | Promise&lt;RouteModule&gt;</code>, वैकल्पिक रूप से एक ले जाना <code>load</code> से <code>withLoad()</code></td></tr>
-          <tr><td><code>RouteTable</code></td><td> तालिका <code>createRouter()</code> लेती है: लोडर के लिए पैटर्न, या एक नेस्टेड तालिका </td></tr>
+          <tr><td><code>Params&lt;'/blog/:slug'&gt;</code></td><td> एक पैटर्न के लिए पैरामीटर ऑब्जेक्ट। <code>RouteParams</code> बिना विशेष टाइप वाला रूप है, और <code>Match</code> मिलानकर्ता का परिणाम है।</td></tr>
+          <tr><td><code>PageComponent</code></td><td>पेज: <code>(ctx, { layer, data, outlet, beforeLeave }) =&gt; …</code></td></tr>
+          <tr><td><code>RouteModule</code></td><td>पेज मॉड्यूल: खुद कंपोनेंट, या <code>import()</code> से मिलने वाला <code>{ default, load? }</code></td></tr>
+          <tr><td><code>RouteLoader</code></td><td><code>() =&gt; RouteModule | Promise&lt;RouteModule&gt;</code>, वैकल्पिक रूप से <code>withLoad()</code> से मिला <code>load</code> भी रखता है</td></tr>
+          <tr><td><code>RouteTable</code></td><td><code>createRouter()</code> को दी जाने वाली टेबल: पैटर्न से लोडर या नेस्टेड टेबल का मैप</td></tr>
           <tr><td><code>RouterOptions</code></td><td><code>{ base?, preload?, idleTimeout?, onNavigate? }</code></td></tr>
-          <tr><td><code>NavigateOptions</code></td><td><code>{ replace? }</code>, <code>go()</code></td></tr> का दूसरा तर्क
-          <tr><td><code>NavigationKind</code></td><td><code>'start' | 'push' | 'replace' | 'pop' | 'layer'</code>, <code>onNavigate</code></td></tr> का दूसरा तर्क
-          <tr><td><code>Outlet</code></td><td>का प्रकार <code>outlet()</code> से <code>PageProps</code></td></tr>
+          <tr><td><code>NavigateOptions</code></td><td><code>{ replace? }</code>, <code>go()</code> का दूसरा आर्ग्युमेंट</td></tr>
+          <tr><td><code>NavigationKind</code></td><td><code>'start' | 'push' | 'replace' | 'pop' | 'layer'</code>, <code>onNavigate</code> का दूसरा आर्ग्युमेंट</td></tr>
+          <tr><td><code>Outlet</code></td><td><code>PageProps</code> में <code>outlet()</code> का टाइप</td></tr>
           <tr><td><code>LeaveGuard</code></td><td><code>(to) =&gt; boolean | void | Promise&lt;…&gt;</code>, <code>beforeLeave()</code> क्या लेता है</td></tr>
-          <tr><td><code>MatchView</code></td><td><code>matches()</code> दृश्य क्या है: किसी पृष्ठ के पैरामीटर, सामग्री या <code>import()</code></td></tr>
+          <tr><td><code>MatchView</code></td><td><code>matches()</code> का व्यू: पैरामीटर लेकर सामग्री या पेज का <code>import()</code> लौटाता है</td></tr>
         </tbody>
       </table>
     `,
@@ -642,8 +642,8 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         id: "router-layers",
         title: "लेयर और लीव गार्ड",
         content: `
-      <p><code>push()</code> वर्तमान रूट को बदलने के बजाय उसके शीर्ष पर एक रूट खोलता है, और जो भी परत उसके साथ बंद होती है, उसके साथ उसका समाधान हो जाता है। क्योंकि पेज स्टैक के ऊपर एक एकल <code>list()</code> हैं, एक परत खोलना एक परिशिष्ट है। नीचे दिए गए पृष्ठ को दोबारा प्रस्तुत नहीं किया गया है, इसलिए परत बंद होने पर इसका DOM, इसका फोकस और इसका आधा-भरा फॉर्म सभी अभी भी वहीं हैं।</p>
-      <p>यह "मुझे एक ऐसे रिकॉर्ड की आवश्यकता है जो अभी तक मौजूद नहीं है" प्रवाह को उस फॉर्म को हटाए बिना काम करता है जिसे उपयोगकर्ता भर रहा था:</p>
+      <p><code>push()</code> मौजूदा रूट को बदलने के बजाय उसके ऊपर नया रूट खोलता है। लेयर बंद होने पर दिए परिणाम से इसका Promise रिज़ॉल्व होता है। पेज स्टैक पर एक ही <code>list()</code> है, इसलिए लेयर खोलना उसमें नई पंक्ति जोड़ना है। नीचे का पेज दोबारा रेंडर नहीं होता। लेयर बंद होने पर उसका DOM, फ़ोकस और आधा भरा फ़ॉर्म बना रहता है।</p>
+      <p>इससे उपयोगकर्ता का आधा भरा फ़ॉर्म हटाए बिना नया रिकॉर्ड बनाया जा सकता है, जब ज़रूरी रिकॉर्ड अभी मौजूद न हो:</p>
       ${code("pages/Edit.ts", `
 // the page underneath
 const created = await layer.push<Option>('/options/new')
@@ -654,16 +654,16 @@ if (created) { options.push(created); selected = created.id; update() }
 layer.close(created)   // resolves the push() above with the new option
 layer.close()          // dismissed: resolves with undefined
 `)}
-      <p>परतें घोंसला। एक संवाद जिसे अपने स्वयं के संवाद की आवश्यकता होती है वह <code>layer.push()</code> को कॉल करता है और रूट के संदर्भ के बिना, इसकी प्रतीक्षा करता है।</p>
+      <p>लेयर को नेस्ट कर सकते हैं। दूसरे डायलॉग की ज़रूरत हो, तो डायलॉग <code>layer.push()</code> कॉल करके उसका इंतज़ार कर सकता है। उसे रूट का रेफ़रेंस नहीं चाहिए।</p>
       <ul>
-        <li><strong>URL शीर्ष परत है। </strong> <code>push()</code> एक इतिहास प्रविष्टि जोड़ता है, इसलिए एक परत लिंक करने योग्य है और वापस इसे बंद कर देता है, इसके <code>push()</code> को खारिज कर दिया गया है, बिल्कुल रद्द की तरह। पीछे और <code>close()</code> एक कोड पथ हैं: <code>close()</code> अपना परिणाम रिकॉर्ड करता है और इतिहास को पीछे ले जाता है, और <code>history.state</code> में गहराई प्राधिकरण है। ब्राउज़र लगभग 50 प्रविष्टियों को एक टैब में रखते हैं, इसलिए परतों के माध्यम से लंबे समय तक चलने के बाद नीचे की प्रविष्टि गायब हो सकती है: फिर <code>close()</code> परतों को जगह में बंद कर देता है और वर्तमान प्रविष्टि को दिखाए जाने वाले पृष्ठ पर फिर से लिखता है।</li>
-        <li><strong>एक साधारण नेविगेशन स्टैक को साफ़ करता है।</strong> एक लिंक क्लिक या <code>go()</code> एक परत नहीं है। यह सब कुछ बदल देता है और हर खुली परत को खारिज कर देता है, इसलिए किसी भी कॉल करने वाले को इंतजार नहीं करना पड़ता है।</li>
-        <li><strong>A कोल्ड लोड एक स्टैंडअलोन पेज है। </strong> URL शीर्ष परत का नाम देता है, लेकिन उसके नीचे के स्टैक का नहीं, इसलिए एक परत का URL खोलने पर यह सीधे <code>layer.depth === 0</code> और एक निष्क्रिय <code>close()</code> के साथ गहराई 1 पर प्रस्तुत होता है। एक धकेले गए मार्ग को अपने आप में अर्थपूर्ण होना चाहिए। रद्द करें बटन के स्थान पर लिंक आउट की पेशकश करने के लिए <code>layer.depth</code> पर शाखा करें।</li>
-        <li><strong>वादा पुनः लोड</strong> तक नहीं टिक सकता, क्योंकि यह एक समापन स्थिति में रहता है। परिणाम को प्रवाह के माध्यम से एक शॉर्टकट के रूप में मानें जो लंबे समय तक भी काम करता है।</li>
-        <li><strong> प्रतीक्षा में कुछ भी नहीं बचा है। </strong> <code>stop()</code> प्रत्येक खुली परत को खारिज कर देता है, और नेविगेशन द्वारा छोड़ी गई परत <code>undefined</code> के साथ हल हो जाती है।</li>
+        <li><strong>URL सबसे ऊपर की लेयर का होता है।</strong> <code>push()</code> हिस्ट्री में एंट्री जोड़ता है, इसलिए लेयर का लिंक बनाया जा सकता है। Back उसे Cancel की तरह बंद करता है और उसका <code>push()</code> रद्द होने के परिणाम से रिज़ॉल्व होता है। Back और <code>close()</code> एक ही कोड पथ इस्तेमाल करते हैं: <code>close()</code> परिणाम रखकर हिस्ट्री में पीछे जाता है और <code>history.state</code> की गहराई तय करती है कि क्या दिखेगा। ब्राउज़र हर टैब में लगभग 50 एंट्री रखते हैं। लेयर में लंबा नेविगेशन होने पर नीचे की एंट्री हट सकती है। तब <code>close()</code> लेयर को वहीं बंद करता है और मौजूदा एंट्री को दिख रहे पेज के URL से बदल देता है।</li>
+        <li><strong>एक साधारण नेविगेशन स्टैक को साफ़ करता है।</strong> एक लिंक क्लिक या <code>go()</code> एक लेयर नहीं है। यह सब कुछ बदल देता है और हर खुली लेयर को खारिज कर देता है, इसलिए किसी भी कॉल करने वाले को इंतजार नहीं करना पड़ता है।</li>
+        <li><strong>सीधे URL खोलने पर लेयर अलग पेज होती है।</strong> URL सबसे ऊपर की लेयर बताता है, नीचे का स्टैक नहीं। इसलिए उसका URL सीधे खोलने पर वह गहराई 1 पर रेंडर होती है, जहाँ <code>layer.depth === 0</code> है और <code>close()</code> कुछ नहीं करता। पुश किया जाने वाला रूट अपने आप में भी उपयोगी होना चाहिए। <code>layer.depth</code> जाँचकर Cancel बटन की जगह बाहर जाने का लिंक दिखाएँ।</li>
+        <li><strong>Promise रीलोड के बाद नहीं बच सकता,</strong> क्योंकि वह क्लोज़र के स्टेट में रहता है। परिणाम लौटाना इस प्रक्रिया को छोटा करने का तरीका है; प्रक्रिया को सीधे खोलने पर भी काम करना चाहिए।</li>
+        <li><strong> प्रतीक्षा में कुछ भी नहीं बचा है। </strong> <code>stop()</code> प्रत्येक खुली लेयर को खारिज कर देता है, और नेविगेशन द्वारा छोड़ी गई लेयर <code>undefined</code> के साथ हल हो जाती है।</li>
       </ul>
-      <h3>गार्ड छोड़ें</h3>
-      <p>एक पृष्ठ जिसमें रखने योग्य कुछ चीज़ होती है, जैसे कि आधा भरा हुआ फॉर्म, एक गार्ड को पंजीकृत करता है। पृष्ठ को त्यागने से पहले यह पूछा जाता है, और <code>false</code> (या इसका वादा) लौटाने से पृष्ठ बना रहता है:</p>
+      <h3>लीव गार्ड</h3>
+      <p>एक पृष्ठ जिसमें रखने योग्य कुछ चीज़ होती है, जैसे कि आधा भरा हुआ फॉर्म, एक गार्ड को पंजीकृत करता है। पृष्ठ को त्यागने से पहले यह पूछा जाता है, और <code>false</code> (या इसका Promise) लौटाने से पृष्ठ बना रहता है:</p>
       ${code("pages/Edit.ts", `
 import type { PageProps, RouteContext } from 'nuclo-router'
 
@@ -674,10 +674,10 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
 }
 `)}
       <ul>
-        <li><strong>केवल जब पेज जाता है।</strong> लेआउट के तहत एक चाइल्ड नेविगेशन, या एक क्वेरी या हैश परिवर्तन जो पेज रखता है, नहीं पूछता है। एक गार्ड अपने पेज के साथ जीता और मरता है, इसलिए अपंजीकृत करने जैसा कुछ भी नहीं है।</li>
-        <li><strong>हर तरह से बाहर।</strong> एक लिंक, <code>go()</code>, पीछे और आगे, एक परत का <code>close()</code>, और <code>go()</code> एक यूआरएल पर जो राउटर के पास नहीं है (ऐप को छोड़कर, जहां <code>to</code> <code>null</code> है)। अस्वीकृत बैक या फ़ॉरवर्ड को वापस चला दिया जाता है, इसलिए पता बार पृष्ठ पर बना रहता है। टैब बंद करना या पुनः लोड करना <code>beforeunload</code> का काम है।</li>
-        <li><strong><code>to</code></strong> वह <code>RouteContext</code> है जिस पर नेविगेशन जा रहा है। गार्ड सबसे पहले अंतरतम दौड़ते हैं और पहले इनकार पर रुक जाते हैं। जो फेंकता है वह पृष्ठ रखता है। <code>close(result)</code> गार्ड से भी गुजरता है, इसलिए परिणाम के साथ बंद करने से पहले अपना ध्वज साफ़ करें।</li>
-        <li>राउटर केवल अपने द्वारा लिखी गई इतिहास प्रविष्टियों को वापस चला सकता है। जिस पर बैक या फॉरवर्ड नहीं किया गया, जैसे कि मूल <code>#fragment</code> लिंक या किसी अन्य स्क्रिप्ट का <code>pushState</code>, नहीं पूछा जाता है।</li>
+        <li><strong>केवल पेज हटने पर।</strong> लेआउट के चाइल्ड रूट बदलने या पेज बचाए रखने वाले क्वेरी/हैश बदलाव पर गार्ड नहीं पूछा जाता। गार्ड का जीवनकाल पेज से जुड़ा है, इसलिए उसे अलग से अनरजिस्टर नहीं करना पड़ता।</li>
+        <li><strong>पेज छोड़ने के सभी रास्तों पर।</strong> लिंक, <code>go()</code>, Back और Forward, लेयर का <code>close()</code> और राउटर के बाहर के URL पर <code>go()</code>—ऐप छोड़ते समय <code>to</code> का मान <code>null</code> होता है। गार्ड Back या Forward रोके, तो हिस्ट्री वापस की जाती है ताकि एड्रेस बार मौजूदा पेज से मेल खाए। टैब बंद करना या रीलोड करना <code>beforeunload</code> के ज़रिए संभालें।</li>
+        <li><strong><code>to</code></strong> गंतव्य का <code>RouteContext</code> है। गार्ड सबसे अंदर वाले पेज से शुरू होते हैं और पहले इनकार पर रुक जाते हैं। गार्ड त्रुटि थ्रो करे, तो पेज बना रहता है। <code>close(result)</code> भी गार्ड से होकर जाता है, इसलिए परिणाम के साथ बंद करने से पहले अपना फ़्लैग साफ़ करें।</li>
+        <li>राउटर केवल अपनी बनाई हिस्ट्री एंट्री का नेविगेशन वापस कर सकता है। ब्राउज़र के सामान्य <code>#fragment</code> लिंक या दूसरी स्क्रिप्ट के <code>pushState</code> से बनी एंट्री पर Back या Forward करने पर गार्ड नहीं पूछा जाता।</li>
       </ul>
     `,
       },
@@ -685,7 +685,7 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
         id: "router-matches",
         title: "matches() और सब-राउटर",
         content: `
-      <p><code>router.outlet()</code> पृष्ठ प्रस्तुत करता है। <code>router.matches(table)</code> कुछ और प्रस्तुत करता है जो इस पर निर्भर करता है कि आप कहां हैं, जैसे साइडबार, ब्रेडक्रंब या टूलबार, अपनी छोटी तालिका से, बिना रूट लोड किए या पेज जोड़े:</p>
+      <p><code>router.outlet()</code> पेज रेंडर करता है। <code>router.matches(table)</code> मौजूदा पथ के अनुसार अपनी छोटी टेबल से साइडबार, ब्रेडक्रंब या टूलबार जैसी दूसरी सामग्री रेंडर करता है। इसके लिए रूट लोड करने या पेज जोड़ने की ज़रूरत नहीं:</p>
       ${code("app.ts", `
 div(
   aside(
@@ -700,19 +700,19 @@ div(
 )
 `)}
       <ul>
-        <li><strong>रूट तालिका के समान मिलान।</strong> पैटर्न, प्राथमिकता, कच्चे-पथ मिलान और <code>base</code> स्ट्रिपिंग राउटर के स्वयं के हैं, इसलिए एक दृश्य और एक पृष्ठ हमेशा यूआरएल के बारे में सहमत होते हैं। यह <code>router.path</code> की तरह शीर्ष परत का पथ पढ़ता है।</li>
-        <li><strong>A view</strong> <code>(params, ctx) =&gt; content</code> है, जहां <code>params</code> इसके पैटर्न से टाइप किया गया है और <code>ctx</code> व्यू के <code>pattern</code> और <code>params</code> के साथ <code>RouteContext</code> है। इसके बजाय यह पेज मॉड्यूल का <code>import()</code> लौटा सकता है, जिसे लैंड करने के बाद <code>ctx</code> के साथ कॉल किया जाता है।</li>
-        <li><strong>कुछ भी मेल नहीं खाता, कुछ भी प्रस्तुत नहीं करता।</strong> फ़ॉलबैक के लिए एक <code>'*'</code> दृश्य जोड़ें। यह आउटलेट की तरह <code>start()</code> से पहले और <code>stop()</code> के बाद खाली है।</li>
-        <li><strong>यह केवल तभी पुन: प्रस्तुत होता है जब मार्ग बदलता है</strong>, इसलिए एक दृश्य पृष्ठ को रखने वाली किसी भी चीज़ पर अपना DOM रखता है।</li>
-        <li><strong>A आलसी दृश्य अपने मॉड्यूल आने तक कुछ भी प्रस्तुत नहीं करता है। </strong> एक विफल <code>import()</code> को <code>console.error</code> के साथ लॉग किया गया है, <code>router.error</code> सेट नहीं करता है, और अगले नेविगेशन पर पुनः प्रयास किया जाता है। एक साधारण <code>update()</code> पुनः प्रयास नहीं करता है।</li>
-        <li><strong> सर्वर</strong> पर एक आलसी दृश्य कुछ भी नहीं भेजता है, क्योंकि इसका मॉड्यूल क्लाइंट पर लैंड करता है। पहले HTML में शामिल होने वाली किसी भी चीज़ के लिए एक समकालिक दृश्य का उपयोग करें।</li>
+        <li><strong>रूट टेबल के समान मिलान।</strong> पैटर्न, प्राथमिकता, कच्चे-पथ मिलान और <code>base</code> स्ट्रिपिंग राउटर के स्वयं के हैं, इसलिए एक व्यू और एक पृष्ठ हमेशा यूआरएल के बारे में सहमत होते हैं। यह <code>router.path</code> की तरह शीर्ष लेयर का पथ पढ़ता है।</li>
+        <li><strong>व्यू</strong> <code>(params, ctx) =&gt; content</code> है, जहां <code>params</code> इसके पैटर्न से टाइप किया गया है और <code>ctx</code> व्यू के <code>pattern</code> और <code>params</code> के साथ <code>RouteContext</code> है। इसके बजाय यह पेज मॉड्यूल का <code>import()</code> लौटा सकता है, जिसे लैंड करने के बाद <code>ctx</code> के साथ कॉल किया जाता है।</li>
+        <li><strong>कुछ भी मेल नहीं खाता, कुछ भी रेंडर नहीं करता।</strong> फ़ॉलबैक के लिए एक <code>'*'</code> व्यू जोड़ें। यह आउटलेट की तरह <code>start()</code> से पहले और <code>stop()</code> के बाद खाली है।</li>
+        <li><strong>यह केवल रूट बदलने पर दोबारा रेंडर होता है</strong>, इसलिए जिन बदलावों पर पेज बना रहता है, उन पर व्यू का DOM भी बना रहता है।</li>
+        <li><strong>लेज़ी व्यू अपने मॉड्यूल आने तक कुछ भी रेंडर नहीं करता है। </strong> एक विफल <code>import()</code> को <code>console.error</code> के साथ लॉग किया गया है, <code>router.error</code> सेट नहीं करता है, और अगले नेविगेशन पर पुनः प्रयास किया जाता है। एक साधारण <code>update()</code> पुनः प्रयास नहीं करता है।</li>
+        <li><strong> सर्वर</strong> पर लेज़ी व्यू कुछ भी नहीं भेजता है, क्योंकि इसका मॉड्यूल क्लाइंट पर लैंड करता है। पहले HTML में शामिल होने वाली किसी भी चीज़ के लिए एक सिंक्रोनस व्यू का उपयोग करें।</li>
       </ul>
       <h3>सब-राउटर</h3>
-      <p>रूट्स नेस्ट, इसलिए एक सब-राउटर आमतौर पर सिर्फ एक नेस्टेड टेबल होता है। एक राउटर: सेक्शन का अपना <code>'/'</code> पेज इसका क्रोम है, और इसके चाइल्ड नोड उस पेज के <code>outlet()</code> में रेंडर करते हैं, इसलिए क्रोम सेक्शन के भीतर नेविगेशन से बच जाता है:</p>
+      <p>रूट नेस्ट होते हैं, इसलिए एक सब-राउटर आमतौर पर सिर्फ एक नेस्टेड टेबल होता है। एक राउटर: सेक्शन का अपना <code>'/'</code> पेज इसका बाहरी UI है, और इसके चाइल्ड नोड उस पेज के <code>outlet()</code> में रेंडर करते हैं, इसलिए बाहरी UI सेक्शन के भीतर नेविगेशन से बच जाता है:</p>
       ${code("routes.ts", `
 createRouter({ '/': …, '/docs': docsRoutes, '*': … })
 `)}
-      <p>या फीचर को अपना स्वयं का राउटर दें, बनाया गया लेकिन कभी शुरू नहीं हुआ। माता-पिता के पास एकल कैच-ऑल प्रविष्टि होती है और बच्चा अपने स्वयं के पैटर्न, पैरामीटर और फ़ॉलबैक के अनुसार पूंछ का समाधान करता है:</p>
+      <p>या फ़ीचर का अलग राउटर बनाएँ और उसे शुरू न करें। पैरेंट में एक कैच-ऑल एंट्री हो और चाइल्ड अपने पैटर्न, पैरामीटर व फ़ॉलबैक के अनुसार बाकी पथ का मिलान करे:</p>
       ${code("routes.ts", `
 // parent table
 '/docs/*rest': () => import('./docs/Shell.ts'),
@@ -722,16 +722,16 @@ const docs = createRouter(docsRoutes, { base: '/docs' })
 const hit = docs.match()                       // { pattern: '/:topic', … }
 const page = await docsRoutes[hit.pattern]()   // the app's own lookup
 `)}
-      <p>इसे कभी शुरू न करना ही मुद्दा है। <code>start()</code> वह है जो श्रोताओं को जोड़ता है, और दो शुरू किए गए राउटर संघर्ष करते हैं। व्यापार यह है कि चाइल्ड नोड के पास रिज़ॉल्यूशन होता है, इसलिए रूट लोडर, जो एक स्टार्टर राउटर चलाता है, आपको कॉल करना है। यह आकार पूंछ बदलने पर शेल का पुनर्निर्माण भी करता है, क्योंकि राउटर एक मार्ग देखता है और शेल बाकी को स्वयं ही हल कर लेता है। नेस्टेड टेबल वह है जो आपको माता-पिता बनाती है, राउटर माउंटेड रहता है, इसलिए इसे तब तक प्राथमिकता दें जब तक कि फीचर को वास्तव में अपने राउटर, बेस और फ़ॉलबैक की आवश्यकता न हो।</p>
+      <p>इसे शुरू न करना ज़रूरी है। <code>start()</code> लिसनर जोड़ता है और दो शुरू किए गए राउटर आपस में टकराते हैं। इस रूप में चाइल्ड खुद रूट हल करता है, इसलिए शुरू किया गया राउटर जिन रूट लोडर को चलाता, उन्हें आपको कॉल करना होगा। शेष पथ बदलने पर शेल भी दोबारा बनता है: मुख्य राउटर को एक ही रूट दिखता है और शेल बाकी पथ खुद हल करता है। नेस्टेड टेबल पैरेंट पेज को माउंट रखती है। इसलिए उसे प्राथमिकता दें, जब तक फ़ीचर को अपना राउटर, बेस और फ़ॉलबैक चाहिए ही न हो।</p>
     `,
       },
       {
         id: "router-multi",
         title: "कई राउटर और संयुक्त लोडिंग",
         content: `
-      <p>एक ऐप में उतने ही राउटर हो सकते हैं जितने उसके क्षेत्र हैं। नियम जो इसे सरल रखता है: <strong>प्रति दस्तावेज़ </strong> बिल्कुल एक शुरू करें, और <code>match()</code> के साथ यूआरएल को हल करते हुए, हर दूसरे राउटर को अनस्टार्ट रहने दें। केवल प्रारंभ किया गया राउटर ही यूआरएल, इतिहास और क्लिक श्रोता का स्वामी होता है। बाकी टेबलें हैं जिनके बारे में आप प्रश्न पूछते हैं - और प्रत्येक क्षेत्र अपने स्वयं के स्पिनर के साथ अपनी घड़ी पर लोड कर सकता है।</p>
+      <p>ऐप में हर रीजन का अपना राउटर हो सकता है। नियम सरल है: <strong>हर document में एक ही राउटर शुरू करें</strong>। बाकी राउटर शुरू न करें और उनसे <code>match()</code> के ज़रिए URL का मिलान पूछें। केवल शुरू किया राउटर URL, हिस्ट्री और क्लिक लिसनर संभालता है। बाकी रूट टेबल हैं जिनसे मिलान पूछ सकते हैं। हर रीजन अपने स्पिनर के साथ स्वतंत्र रूप से लोड हो सकता है।</p>
       <h3>संयुक्त लोडिंग: लोडर की एक श्रृंखला</h3>
-      <p>मिलान श्रृंखला का प्रत्येक पृष्ठ निर्यात किया जा सकता है <code>load()</code>. चाइल्ड रूट के ठंडे नेविगेशन पर, लेआउट का लोडर और पेज का लोडर चलता है <strong>समानांतर में</strong>, और एक <code>router.pending</code> पूरी श्रृंखला को कवर करता है: पिछला पृष्ठ जोड़ी के सुलझने तक स्क्रीन पर रहता है, इसलिए आधा भरा हुआ ट्री कभी पेंट नहीं करता। प्रत्येक घटक को अपना स्वयं का प्राप्त होता है <code>data</code>:</p>
+      <p>मिलान की श्रृंखला का हर पेज <code>load()</code> एक्सपोर्ट कर सकता है। कैश खाली होने पर चाइल्ड रूट खोलें, तो लेआउट और पेज के लोडर <strong>समानांतर चलते हैं</strong>। एक <code>router.pending</code> पूरी श्रृंखला की स्थिति बताता है। दोनों पूरे होने तक पिछला पेज स्क्रीन पर रहता है, इसलिए अधूरा ट्री कभी दिखाई नहीं देता। हर कंपोनेंट को अपना <code>data</code> मिलता है:</p>
       ${code("routes.ts", `
 '/shop': {
   '/':          () => import('./pages/Shop.ts'),    // layout, has a load()
@@ -766,9 +766,9 @@ export default function Section(_ctx: RouteContext, { data }: PageProps<SectionD
   return article(h2(data.section), ul(...data.items.map((i) => li(i))))
 }
 `)}
-      <p>दोनों लोडर एक के बाद एक नहीं बल्कि एक साथ शुरू होते हैं। <code>router.pending</code> तब सत्य है जब इनमें से किसी एक का इंतजार किया जा रहा है, और false शेष समय में - एक प्रीलोडेड या उत्सुक मार्ग इसे कभी फ़्लिप नहीं करता है। अनुभागों के बीच जाने से लेआउट बना रहता है, इसलिए केवल अनुभाग का लोडर ही दोबारा चलता है; लेआउट का डेटा, इसका DOM और आधा टाइप किया गया इनपुट सभी जीवित हैं। उसी यूआरएल पर दोबारा नेविगेट करने से लीफ का लोडर फिर से चलता है और उसकी पंक्ति फिर से बन जाती है, बिल्कुल एक पेज की तरह।</p>
+      <p>दोनों लोडर एक के बाद एक चलने के बजाय साथ शुरू होते हैं। किसी का भी इंतज़ार हो, तो <code>router.pending</code> true होता है; बाकी समय false। पहले से उपलब्ध या प्रीलोड हुए रूट पर यह नहीं बदलता। सेक्शन बदलने पर लेआउट बना रहता है, इसलिए केवल सेक्शन का लोडर दोबारा चलता है। लेआउट का डेटा, DOM और आधा लिखा इनपुट बचा रहता है। उसी URL पर दोबारा नेविगेट करने पर अंतिम पेज का लोडर फिर चलता है और उसकी पंक्ति फिर बनती है, जैसे अकेले पेज के लिए होता है।</p>
       <h3>एकाधिक लोडिंग: अपने स्वयं के स्पिनर के साथ एक दूसरा राउटर</h3>
-      <p>एक स्वतंत्र क्षेत्र - एक साइडबार, एक ट्रे, एक लाइव क्षेत्र - को अपना स्वयं का राउटर मिलता है, बनाया गया लेकिन कभी शुरू नहीं हुआ, और इसका अपना लोडिंग फ़्लैग होता है। <code>router.pending</code> प्रारंभ किए गए राउटर से संबंधित है और इस क्षेत्र के बारे में कुछ नहीं कहता है, इसलिए दोनों साथ-साथ लोड हो सकते हैं और कोई भी पहले समाप्त कर सकता है:</p>
+      <p>एक स्वतंत्र रीजन - एक साइडबार, एक ट्रे, एक लाइव रीजन - को अपना स्वयं का राउटर मिलता है, बनाया गया लेकिन कभी शुरू नहीं हुआ, और इसका अपना लोडिंग फ़्लैग होता है। <code>router.pending</code> प्रारंभ किए गए राउटर से संबंधित है और इस रीजन के बारे में कुछ नहीं कहता है, इसलिए दोनों साथ-साथ लोड हो सकते हैं और कोई भी पहले समाप्त कर सकता है:</p>
       ${code("sidebar.ts", `
 import { createRouter } from 'nuclo-router'
 
@@ -804,13 +804,13 @@ createRouter(routes, {
   },
 })
 `)}
-      <p>दूसरे राउटर के बारे में पूछा गया, लेकिन कभी नहीं बताया गया: <code>match()</code> यूआरएल पढ़ता है और एक संदर्भ देता है, और साइडबार के बारे में कुछ भी मुख्य रूट टेबल में प्रवेश नहीं करता है। <code>onNavigate</code> प्रत्येक हल किए गए नेविगेशन के बाद चलता है, जिसमें प्रारंभिक भी शामिल है, इसलिए यह एक ऐसा स्थान है जो यूआरएल के साथ एक स्वतंत्र क्षेत्र रखता है।</p>
+      <p>दूसरे राउटर से केवल मिलान पूछा जाता है; उसे नेविगेट करने को नहीं कहा जाता। <code>match()</code> URL पढ़कर कॉन्टेक्स्ट लौटाता है। साइडबार की कोई जानकारी मुख्य रूट टेबल में नहीं जाती। <code>onNavigate</code> हर पूरा हुए नेविगेशन के बाद चलता है, शुरुआती नेविगेशन सहित। इसलिए स्वतंत्र रीजन को URL के साथ सिंक रखने के लिए यही एक जगह पर्याप्त है।</p>
       <ul>
-        <li><strong><code>pending</code> प्रारंभ किए गए राउटर से संबंधित है। </strong> एक कभी प्रारंभ न होने वाले राउटर का कोई रूट नहीं है, कोई <code>pending</code> नहीं है और कोई <code>error</code> नहीं है। क्षेत्र अपने स्वयं के फ़्लैग ट्रैक करता है, और दूसरा स्पिनर पहले के बगल में बैठ सकता है। डेमो में साइडबार 800 एमएस के लिए लोड होता है जबकि रूट के लोडर 900 एमएस के लिए चलते हैं, इसलिए पेज साइडबार से पहले या दूसरे तरीके से खत्म हो सकता है।</li>
+        <li><strong><code>pending</code> शुरू किए गए राउटर का है।</strong> बिना शुरू किए राउटर में कोई रूट, <code>pending</code> या <code>error</code> नहीं होता। रीजन अपने फ़्लैग रखता है और उसका स्पिनर मुख्य स्पिनर के साथ दिख सकता है। डेमो में साइडबार 800 मिलीसेकंड लेता है और रूट के लोडर 900 मिलीसेकंड, इसलिए पेज या साइडबार में से कोई भी पहले पूरा हो सकता है।</li>
         <li><strong><code>match()</code> कुछ भी नहीं जोड़ता है। </strong> किसी भी संख्या में अनस्टार्ट राउटर दस्तावेज़ साझा कर सकते हैं; प्रत्येक की अपनी तालिका, आधार और मॉड्यूल कैश है, और उनमें से कोई भी इतिहास को नहीं छूता है। उनकी कीमत एक टेबल और एक मैचर है।</li>
-        <li><strong>इसके लोडर कभी नहीं चलते हैं।</strong> प्रारंभ किया गया राउटर उससे मेल खाने वाले पृष्ठों के <code>load()</code> को चलाता है। कभी भी प्रारंभ न किया गया राउटर ही समस्या का समाधान करता है, इसलिए यदि इसके दृश्यों को डेटा की आवश्यकता है, तो इसे स्वयं प्राप्त करें - डेमो का <code>refreshSidebar()</code>। यदि आप लोडर चाहते हैं, तो एक <a href="#router-matches">नेस्टेड टेबल</a> या एक <a href="#router-regions">region एक पेज भरता है</a> उस काम को स्टार्ट किए गए राउटर के साथ रखता है।</li>
-        <li><strong>Guard बासी उत्तर.</strong> धीमी साइडबार फ़ेच को उस अनुभाग पर नहीं उतरना चाहिए जहां से आपने नेविगेट किया था। प्रति रिफ्रेश एक जनरेशन काउंटर को टक्कर देता है और उन उत्तरों को छोड़ देता है जो अब मेल नहीं खाते हैं, जिस तरह राउटर खुद ही ओवरटेक किए गए नेविगेशन को रिटायर कर देता है।</li>
-        <li><strong>A आलसी <code>matches()</code> दृश्य में कोई <code>pending</code> भी नहीं है। </strong> यह तब तक कुछ भी प्रस्तुत नहीं करता जब तक इसका मॉड्यूल लैंड नहीं हो जाता। तीन लोडिंग सिस्टम, तीन स्वतंत्र घड़ियाँ: मार्ग का <code>pending</code>, आपके अपने फ़्लैग, और एक आलसी दृश्य जो अभी तक वहाँ नहीं है।</li>
+        <li><strong>इसके लोडर कभी नहीं चलते हैं।</strong> प्रारंभ किया गया राउटर उससे मेल खाने वाले पृष्ठों के <code>load()</code> को चलाता है। बिना शुरू किया गया राउटर केवल URL का मिलान करता है, इसलिए यदि इसके व्यू को डेटा की आवश्यकता है, तो इसे स्वयं प्राप्त करें - डेमो का <code>refreshSidebar()</code>। यदि आप लोडर चाहते हैं, तो एक <a href="#router-matches">नेस्टेड टेबल</a> या एक <a href="#router-regions">पेज से भरा जाने वाला रीजन</a> उस काम को स्टार्ट किए गए राउटर के साथ रखता है।</li>
+        <li><strong>पुराने जवाबों से बचें।</strong> धीमे साइडबार फ़ेच का परिणाम उस सेक्शन पर लागू न हो जहाँ से आप जा चुके हैं। हर रीफ़्रेश पर जनरेशन काउंटर बढ़ाएँ और पुराने जवाब छोड़ दें। राउटर भी नए नेविगेशन के आगे निकलने पर पिछले नेविगेशन को इसी तरह निष्क्रिय कर देता है।</li>
+        <li><strong>लेज़ी <code>matches()</code> व्यू में कोई <code>pending</code> भी नहीं है। </strong> यह तब तक कुछ भी रेंडर नहीं करता जब तक इसका मॉड्यूल लैंड नहीं हो जाता। तीन लोडिंग सिस्टम, तीन स्वतंत्र घड़ियाँ: मार्ग का <code>pending</code>, आपके अपने फ़्लैग, और लेज़ी व्यू जो अभी तक वहाँ नहीं है।</li>
       </ul>
     `,
       },
@@ -818,9 +818,9 @@ createRouter(routes, {
         id: "router-links",
         title: "लिंक संभालना",
         content: `
-      <p>प्रत्यायोजित श्रोता एक SVG <code>&lt;a&gt;</code> सहित <code>&lt;a href&gt;</code> पर एक बायाँ-क्लिक नेविगेट करता है और एक के अंदर नेस्टेड किसी भी चीज़ पर क्लिक करता है, और बाकी सभी चीज़ों के लिए अलग हट जाता है: संशोधक-क्लिक और मध्य-क्लिक, <code>_self</code> के अलावा एक <code>target</code>, <code>download</code>, <code>rel="external"</code>, क्रॉस-ओरिजिन hrefs, वर्तमान पृष्ठ पर हैश-केवल लिंक, <code>base</code> के बाहर पथ, कोई रूट मेल नहीं खाने वाले पथ (इसलिए सर्वर-रेंडर 404 अभी भी पहुंच योग्य है), और किसी भी घटना पर ऐप हैंडलर ने पहले से ही <code>preventDefault()</code> पर कॉल किया है। <code>data-nuclo-router="off"</code> के साथ स्पष्ट रूप से एक लिंक ऑप्ट आउट करें।</p>
+      <p>डेलिगेटेड लिसनर <code>&lt;a href&gt;</code> या उसके अंदर के किसी एलिमेंट पर बाएँ क्लिक से नेविगेट करता है, SVG <code>&lt;a&gt;</code> सहित। बाकी मामलों को ब्राउज़र पर छोड़ देता है: मॉडिफ़ायर कुंजी के साथ क्लिक, मध्य क्लिक, <code>_self</code> से अलग <code>target</code>, <code>download</code>, <code>rel="external"</code>, दूसरे ओरिजिन के href, मौजूदा पेज के केवल हैश वाले लिंक, <code>base</code> के बाहर के पथ, किसी रूट से न मिलते पथ (ताकि सर्वर का 404 खुल सके) और वे इवेंट जिन पर ऐप का हैंडलर पहले ही <code>preventDefault()</code> कॉल कर चुका हो। किसी लिंक को इससे बाहर रखने के लिए <code>data-nuclo-router="off"</code> लगाएँ।</p>
       <h3>स्क्रॉलिंग</h3>
-      <p>एक पुश किया गया नेविगेशन वर्तमान स्क्रॉल स्थिति को सुरक्षित रखता है। जब नए URL में पृष्ठ पर किसी तत्व से मेल खाने वाला <code>#hash</code> होता है, तो वह तत्व दृश्य में स्क्रॉल हो जाता है। <code>popstate</code> ब्राउज़र पर स्क्रॉल करना छोड़ देता है। नए पृष्ठों को शीर्ष पर लाने के लिए, इसे <code>onNavigate</code> में करें, जो बताता है कि नेविगेशन कैसे हुआ:</p>
+      <p>पुश नेविगेशन मौजूदा स्क्रॉल स्थिति बनाए रखता है। नए URL का <code>#hash</code> पेज के एलिमेंट से मिले, तो वह एलिमेंट स्क्रॉल करके दिखाया जाता है। <code>popstate</code> पर स्क्रॉल ब्राउज़र संभालता है। नए पेज को ऊपर से दिखाने के लिए <code>onNavigate</code> उपयोग करें, जो नेविगेशन का तरीका बताता है:</p>
       ${code("routes.ts", `
 let shown = ''
 createRouter(routes, {
@@ -833,17 +833,17 @@ createRouter(routes, {
 `)}
       <h3>नोट्स</h3>
       <ul>
-        <li><strong>कुछ भी बरकरार नहीं रखा गया है।</strong> रूट पेज फ़ंक्शन और उसके संदर्भ को रखता है, कभी DOM को नहीं। दूर नेविगेट करने से पिछला पृष्ठ रिलीज़ हो जाता है। <code>stop()</code> श्रोताओं और किसी भी इन-फ़्लाइट लोड को रिलीज़ करता है, और <code>pending</code> को साफ़ करता है, इसलिए एक सेवानिवृत्त रूट कभी भी स्पिनर को परेशान नहीं करता है। एक मॉड्यूल जो <code>stop()</code> के बाद हल हो जाता है चुपचाप हटा दिया जाता है।</li>
-        <li><strong>सर्वर पर समवर्ती-सुरक्षित.</strong> <code>start()</code>प्रति-अनुरोध स्थिति लौटाता है और<code>run()</code>इसे एक सिंक्रोनस रेंडर तक सीमित करता है, इसलिए इंटरलीव्ड अनुरोध एक-दूसरे का रूट नहीं देख सकते हैं। केवल मॉड्यूल कैश साझा किया गया है। दायरा ख़त्म हो जाता है जब<code>run()</code>का फ़ंक्शन वापस आ जाता है.<code>renderToString()</code>समकालिक है, इसलिए यह पर्याप्त है। एक एसिंक्स या स्ट्रीमिंग रेंडर के लिए रूट को पार करने की आवश्यकता होगी<code>await</code>एस, जो<code>run()</code>ऐसा नहीं करते।</li>
+        <li><strong>पिछले पेज को कैश में नहीं रखा जाता।</strong> रूट पेज का फ़ंक्शन और कॉन्टेक्स्ट रखता है, DOM नहीं। दूसरे पेज पर जाने पर पिछला पेज रिलीज़ होता है। <code>stop()</code> लिसनर और चल रहे लोड रिलीज़ करके <code>pending</code> साफ़ करता है, इसलिए निष्क्रिय रूट स्पिनर को अटका नहीं सकता। <code>stop()</code> के बाद लोड हुआ मॉड्यूल चुपचाप छोड़ दिया जाता है।</li>
+        <li><strong>सर्वर पर एक साथ चलने वाले अनुरोध सुरक्षित हैं।</strong> <code>start()</code> हर अनुरोध का अलग स्टेट लौटाता है और <code>run()</code> उसे एक सिंक्रोनस रेंडर तक सीमित रखता है, इसलिए बीच-बीच में चलने वाले अनुरोध एक-दूसरे का रूट नहीं पढ़ सकते। केवल मॉड्यूल कैश साझा होता है। <code>run()</code> का फ़ंक्शन लौटते ही स्कोप खत्म हो जाता है। <code>renderToString()</code> सिंक्रोनस है, इसलिए इतना पर्याप्त है। एसिंक या स्ट्रीमिंग रेंडर में रूट को <code>await</code> के पार भी बचाना पड़ता, जो <code>run()</code> नहीं करता।</li>
         <li><strong><code>popstate</code></strong> पर स्क्रॉल पुनर्स्थापन ब्राउज़र का (<code>scrollRestoration</code>) है, राउटर का नहीं।</li>
-        <li><strong>प्रति दस्तावेज़ एक राउटर प्रारंभ करें।</strong> प्रत्येक <code>start()</code> अपना स्वयं का प्रतिनिधि <code>click</code> श्रोता जोड़ता है, और दूसरे राउटर का <code>start()</code> पहले को रिटायर नहीं करता है। उसी राउटर पर केवल दूसरा <code>start()</code> काम करता है। किसी अन्य तालिका के विरुद्ध URL को हल करने के लिए, एक राउटर बनाएं और केवल <code>match()</code> पर कॉल करें। यह कुछ भी नहीं जोड़ता है. एक स्वतंत्र क्षेत्र इस तरह मार्ग के <code>pending</code> के बगल में अपनी लोडिंग चला सकता है। <a href="#router-multi">मल्टीपल राउटर्स &amp; कंबाइंड लोडिंग</a> देखें।</li>
-        <li><strong> डिज़ाइन द्वारा शामिल नहीं है:</strong> हैश और मेमोरी इतिहास, क्योंकि रूट पथनाम में रहता है और एक सर्वर को हर रूट की सेवा करनी चाहिए; एक यूआरएल द्वारा संचालित दो स्वतंत्र रूप से रूट किए गए क्षेत्र, क्योंकि एक पेज कई क्षेत्रों को <code>into()</code> से भर सकता है, लेकिन वे सभी एक मिलान रूट से संबंधित हैं - एक स्वतंत्र क्षेत्र अभी भी अपना स्वयं का अनस्टार्ट राउटर और लोडिंग रख सकता है, जैसा कि <a href="#router-multi"> मल्टीपल राउटर्स &amp; कंबाइंड लोडिंग</a> में होता है; और होवर प्रीलोडिंग, जो आपको <code>mouseenter</code> से रूट के स्वयं के लोडर को कॉल करके मिलती है।</li>
+        <li><strong>हर document में एक राउटर शुरू करें।</strong> हर <code>start()</code> अपना डेलिगेटेड <code>click</code> लिसनर जोड़ता है। दूसरे राउटर का <code>start()</code> पहले को नहीं रोकता; उसी राउटर पर दूसरा <code>start()</code> ऐसा करता है। दूसरी टेबल से URL मिलाना हो, तो राउटर बनाकर केवल <code>match()</code> कॉल करें। यह कोई लिसनर नहीं जोड़ता। स्वतंत्र रीजन इस तरह रूट के <code>pending</code> से अलग अपनी लोडिंग चला सकता है। <a href="#router-multi">कई राउटर और संयुक्त लोडिंग</a> देखें।</li>
+        <li><strong>डिज़ाइन के कारण शामिल नहीं:</strong> हैश और मेमोरी हिस्ट्री, क्योंकि रूट pathname में होता है और सर्वर को हर रूट उपलब्ध कराना चाहिए; एक URL से दो स्वतंत्र रीजन की रूटिंग, क्योंकि पेज <code>into()</code> से कई रीजन भर सकता है लेकिन वे एक ही मिलते रूट के हिस्से होते हैं—स्वतंत्र रीजन फिर भी बिना शुरू किए अपना राउटर और लोडिंग रख सकता है, जैसा <a href="#router-multi">कई राउटर और संयुक्त लोडिंग</a> में है; और होवर प्रीलोडिंग, जिसे आप <code>mouseenter</code> से रूट का लोडर खुद कॉल करके कर सकते हैं।</li>
       </ul>
       <h3>उदाहरण</h3>
       <p>रिपॉजिटरी में दो रन करने योग्य उदाहरण एक दूसरे के पूरक हैं, इसलिए हर सेटिंग कहीं न कहीं देखने योग्य है:</p>
       <ul>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: संपूर्ण API का क्लाइंट-साइड टूर। प्रत्येक पैटर्न फॉर्म और प्राथमिकता नियम, लिंक-हैंडलिंग ऑप्ट-आउट, लाइव नियंत्रण के साथ प्रत्येक रूट सदस्य, एक उप-राउटर, लेयर स्टैक तीन गहरी, दो माता-पिता पर एक सापेक्ष अनुभाग, और <code>pending</code> और <code>error</code> के साथ रूट लोडर। <code>preload: false</code> सेट करता है ताकि वे स्थितियाँ दृश्यमान रहें।</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> प्रति अनुरोध, हाइड्रेशन जो सर्वर के नोड्स, वास्तविक 404 स्थिति कोड, एक गैर-रूट <code>base</code>, निष्क्रिय प्रीलोडिंग का दावा करता है जिसे आप नेटवर्क पैनल में देख सकते हैं, और एक लोडर जिसका डेटा सर्वर से दिया जाता है ग्राहक इसलिए हाइड्रेशन पुनः प्राप्त नहीं करता है।</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: संपूर्ण API का क्लाइंट-साइड टूर। प्रत्येक पैटर्न फॉर्म और प्राथमिकता नियम, लिंक-हैंडलिंग ऑप्ट-आउट, लाइव नियंत्रण के साथ प्रत्येक रूट सदस्य, एक उप-राउटर, लेयर स्टैक तीन गहरी, दो पैरेंट पर एक सापेक्ष अनुभाग, और <code>pending</code> और <code>error</code> के साथ रूट लोडर। <code>preload: false</code> सेट करता है ताकि वे स्थितियाँ दिखाई रहें।</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: हर अनुरोध पर <code>renderToString()</code>, सर्वर के नोड दोबारा इस्तेमाल करने वाला हाइड्रेशन, वास्तविक 404 स्टेटस कोड, रूट से अलग <code>base</code>, नेटवर्क पैनल में दिखने वाली आइडल प्रीलोडिंग और ऐसा लोडर जिसका डेटा सर्वर से क्लाइंट को मिलता है ताकि हाइड्रेशन उसे दोबारा न लाए।</li>
       </ul>
     `,
       },
@@ -858,7 +858,7 @@ createRouter(routes, {
         id: "computed",
         title: "गणना किए गए मान",
         content: `
-      <p>Nucloकोई गणना नहीं हैAPI. एक साधारण फ़ंक्शन का उपयोग करें, और इसे गतिशील मानों से कॉल करें:</p>
+      <p>Nuclo में computed API नहीं है। एक साधारण फ़ंक्शन लिखें और उसे डायनेमिक मानों से कॉल करें:</p>
       ${code("example.ts", `
 let items = ['apple', 'banana', 'cherry']
 let filter = ''
@@ -880,7 +880,7 @@ update()
         id: "async",
         title: "एसिंक और लोडिंग",
         content: `
-      <p>साधारण <code>async</code>/<code>await</code> का उपयोग करें, और हर बार स्थिति बदलने पर <code>update()</code> पर कॉल करें। एक फ़ेच के लिए, इसका मतलब है एक बार <code>await</code> से पहले और एक बार बाद में:</p>
+      <p>साधारण <code>async</code>/<code>await</code> का उपयोग करें, और हर बार स्टेट बदलने पर <code>update()</code> कॉल करें। एक फ़ेच के लिए, इसका मतलब है एक बार <code>await</code> से पहले और एक बार बाद में:</p>
       ${code("example.ts", `
 let status: 'idle' | 'loading' | 'done' | 'error' = 'idle'
 let result: unknown = null
@@ -904,14 +904,14 @@ async function loadData() {
         title: "सुझाए गए तरीके",
         content: `
       <ul>
-        <li><strong>बैच परिवर्तन।</strong> आपको आवश्यक सभी स्थिति बदलें, फिर एक बार <code>update()</code> पर कॉल करें।</li>
-        <li><strong> गतिशील मूल्यों को तेज और शुद्ध रखें। </strong> ये सभी प्रत्येक <code>update()</code> पर चलते हैं।</li>
+        <li><strong>बदलाव एक साथ करें।</strong> ज़रूरी सभी स्टेट बदलें, फिर एक बार <code>update()</code> कॉल करें।</li>
+        <li><strong> डायनेमिक मानों को तेज़ और साइड इफ़ेक्ट से मुक्त रखें। </strong> ये सभी प्रत्येक <code>update()</code> पर चलते हैं।</li>
         <li><strong>छोटे, लगातार अपडेट, जैसे टाइपिंग या टाइमर के लिए <code>scope()</code></strong> का उपयोग करें।</li>
-        <li><strong> दस्तावेज़ में प्रस्तुत करें। </strong> नोड्स जो दस्तावेज़ में नहीं हैं जब <code>update()</code> चलता है तो अपडेट करना बंद कर देता है।</li>
-        <li><strong>उन चाइल्ड नोड के लिए <code>when()</code> और <code>list()</code></strong> का उपयोग करें, न कि कोई फ़ंक्शन जो नोड्स लौटाता है।</li>
-        <li><strong><code>className</code> का उपयोग करें, <code>class</code></strong> का नहीं, और गतिशील क्लास के लिए <code>() =&gt; cx(...)</code> या <code>{ className: () =&gt; … }</code> का उपयोग करें।</li>
-        <li><strong>मॉड्यूल स्तर पर शैलियों को एक बार परिभाषित करें</strong>।</li>
-        <li><strong> सर्वर रेंडरिंग: </strong> पहले रेंडर करें, फिर <code>&lt;style id="nuclo-styles"&gt;</code> में <code>getCssText()</code> डालें। अनुरोध डेटा को तर्क के रूप में पास करें, और आउटपुट में HTML टिप्पणियाँ रखें।</li>
+        <li><strong>document में रेंडर करें।</strong> <code>update()</code> चलते समय जो नोड document में नहीं हैं, वे आगे अपडेट होना बंद कर देते हैं।</li>
+        <li><strong>बदलने वाले चाइल्ड नोड के लिए <code>when()</code> और <code>list()</code></strong> उपयोग करें, नोड लौटाने वाला फ़ंक्शन नहीं।</li>
+        <li><strong><code>className</code> का उपयोग करें, <code>class</code></strong> का नहीं, और डायनेमिक क्लास के लिए <code>() =&gt; cx(...)</code> या <code>{ className: () =&gt; … }</code> का उपयोग करें।</li>
+        <li><strong>मॉड्यूल स्तर पर स्टाइल को एक बार परिभाषित करें</strong>।</li>
+        <li><strong> सर्वर रेंडरिंग: </strong> पहले रेंडर करें, फिर <code>&lt;style id="nuclo-styles"&gt;</code> में <code>getCssText()</code> डालें। अनुरोध डेटा को आर्ग्युमेंट के रूप में पास करें, और आउटपुट में HTML टिप्पणियाँ रखें।</li>
       </ul>
     `,
       },
@@ -924,27 +924,27 @@ async function loadData() {
     sections: [
       {
         id: "api-index",
-        title: "API सूचकांक",
+        title: "API इंडेक्स",
         content: `
-      <p>प्रत्येक सार्वजनिक समारोह, और यह कहाँ से आता है।</p>
-      <h3><code>nuclo</code> (वैश्विक और नामित निर्यात)</h3>
+      <p>हर सार्वजनिक फ़ंक्शन और वह कहाँ से मिलता है।</p>
+      <h3><code>nuclo</code> (ग्लोबल और नेम्ड एक्सपोर्ट)</h3>
       <ul>
-        <li><a href="#api-update"><code>update(...scopeIds)</code></a>: सभी गतिशील मान, या दिए गए दायरे में चलाएं।</li>
+        <li><a href="#api-update"><code>update(...scopeIds)</code></a>: सभी डायनेमिक मान, या दिए गए दायरे में चलाएँ।</li>
         <li><a href="#api-scope"><code>scope(...ids)</code></a>: <code>update(id)</code> के लिए एक एलिमेंट स्कोप आईडी दें।</li>
         <li><a href="#api-when"><code>when(condition, ...content)</code></a>: सशर्त सामग्री, <code>.when()</code> और <code>.else()</code> के साथ।</li>
         <li><a href="#api-list"><code>list(items, renderItem)</code></a>: प्रति आइटम एक पंक्ति, पहचान से मेल खाती है।</li>
         <li><a href="#api-region"><code>region(options)</code></a> और <a href="#api-region"><code>into(id, ...content)</code></a>: ट्री में एक नामित स्थान, और सामग्री जो इसे कहीं से भी भरती है।</li>
-        <li><a href="#events"><code>on(type, listener, options?)</code></a>: एक इवेंट श्रोता, या <a href="#lifecycle"><code>on('mount')</code> / <code>on('destroy')</code></a>।</li>
-        <li><a href="#api-render"><code>render(App, parent?)</code></a>: बनाएं और जोड़ें।</li>
-        <li><a href="#api-hydrate"><code>hydrate(App, parent?)</code></a>: सर्वर HTML पर कब्ज़ा करें।</li>
-        <li><a href="#api-force-update"><code>forceUpdate()</code></a>: घटकों को फिर से कॉल करें और DOM को पैच करें।</li>
-        <li><a href="#api-styling"><code>css(name?, style)</code></a>: एक स्टाइल ऑब्जेक्ट से उत्पन्न कक्षाएं।</li>
-        <li><a href="#api-cx"><code>cx(...inputs)</code></a>: शैलियों को मिलाएं, बाद में जीतें।</li>
+        <li><a href="#events"><code>on(type, listener, options?)</code></a>: एक इवेंट लिसनर, या <a href="#lifecycle"><code>on('mount')</code> / <code>on('destroy')</code></a>।</li>
+        <li><a href="#api-render"><code>render(App, parent?)</code></a>: बनाएँ और जोड़ें।</li>
+        <li><a href="#api-hydrate"><code>hydrate(App, parent?)</code></a>: सर्वर के HTML को क्लाइंट पर सक्रिय करें।</li>
+        <li><a href="#api-force-update"><code>forceUpdate()</code></a>: कंपोनेंट को फिर से कॉल करें और DOM को पैच करें।</li>
+        <li><a href="#api-styling"><code>css(name?, style)</code></a>: एक स्टाइल ऑब्जेक्ट से उत्पन्न क्लास।</li>
+        <li><a href="#api-cx"><code>cx(...inputs)</code></a>: स्टाइल मर्ज करें; बाद वाले मानों को प्राथमिकता मिलती है।</li>
         <li><a href="#api-create-css"><code>createCss(theme)</code></a>: थीम वाले <code>css</code>, <code>cx</code>, <code>variants</code>, <code>keyframes</code> और <code>globalStyle</code>।</li>
-        <li><a href="#api-variants"><code>variants(config)</code></a>: विकल्पों में से शैलियाँ।</li>
+        <li><a href="#api-variants"><code>variants(config)</code></a>: विकल्पों में से स्टाइल।</li>
         <li><a href="#api-keyframes"><code>keyframes(frames)</code></a> और <a href="#api-keyframes"><code>globalStyle(selector, style)</code></a>।</li>
       </ul>
-      <h3><code>nuclo</code> (केवल निर्यात नाम से)</h3>
+      <h3><code>nuclo</code> (केवल नेम्ड एक्सपोर्ट)</h3>
       <ul>
         <li><a href="#api-css-text"><code>getCssText()</code></a> और <a href="#api-css-text"><code>resetStyles()</code></a>।</li>
       </ul>
@@ -954,23 +954,23 @@ async function loadData() {
       </ul>
       <h3><code>nuclo/polyfill</code></h3>
       <ul>
-        <li><a href="#api-polyfill">A साइड-इफेक्ट आयात</a>, प्लस <code>document</code>, <code>Event</code>, <code>CustomEvent</code>, <code>Node</code>, <code>Element</code>, <code>HTMLElement</code> और <code>Nuclo*</code> कक्षाएं।</li>
+        <li><a href="#api-polyfill">साइड-इफ़ेक्ट इम्पोर्ट</a>, प्लस <code>document</code>, <code>Event</code>, <code>CustomEvent</code>, <code>Node</code>, <code>Element</code>, <code>HTMLElement</code> और <code>Nuclo*</code> क्लास।</li>
       </ul>
       <h3><code>nuclo-router</code> (अलग पैकेज)</h3>
       <ul>
         <li><a href="#router-api"><code>createRouter(table, options?)</code></a>: राउटर, <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code>, <code>go()</code>, <code>push()</code> के साथ, <code>href()</code> और <code>stop()</code>।</li>
-        <li><a href="#router-loaders"><code>withLoad(loader, load)</code></a>: एक मार्ग जिसका डेटा लोडर उसके हिस्से के बगल से शुरू होता है।</li>
-        <li><a href="#router-api">Types</a>: <code>RouteContext</code>, <code>PageProps</code>, <code>Params</code>, <code>DataLoader</code>, <code>RouteTable</code> और अधिक।</li>
+        <li><a href="#router-loaders"><code>withLoad(loader, load)</code></a>: ऐसा रूट जिसका डेटा लोडर उसके चंक के साथ शुरू होता है।</li>
+        <li><a href="#router-api">टाइप</a>: <code>RouteContext</code>, <code>PageProps</code>, <code>Params</code>, <code>DataLoader</code>, <code>RouteTable</code> और अधिक।</li>
       </ul>
       <h3>ग्लोबल्स</h3>
       <ul>
-        <li><a href="#tag-builders">175 टैग बिल्डर्स</a>: <code>div</code>, <code>span</code>, ..., <code>var_</code>, और <code>svgSvg</code>, <code>pathSvg</code>, ....</li>
-        <li><a href="#typescript-setup">Types</a>: <code>NodeModFn</code>, <code>NodeModLike</code>, <code>ExpandedElement</code> और अधिक। <code>StyleResult</code> जैसे स्टाइलिंग प्रकार को <code>'nuclo'</code> से भी आयात किया जा सकता है।</li>
+        <li><a href="#tag-builders">175 टैग बिल्डर</a>: <code>div</code>, <code>span</code>, ..., <code>var_</code>, और <code>svgSvg</code>, <code>pathSvg</code>, ....</li>
+        <li><a href="#typescript-setup">टाइप</a>: <code>NodeModFn</code>, <code>NodeModLike</code>, <code>ExpandedElement</code> और अधिक। <code>StyleResult</code> जैसे स्टाइलिंग टाइप को <code>'nuclo'</code> से भी इम्पोर्ट किया जा सकता है।</li>
       </ul>
       <h3>विशेष कुंजी</h3>
       <ul>
-        <li><a href="#attributes">विशेषताएं</a>: <code>className</code>, <code>style</code>, <a href="#events"><code>on*</code> हैंडलर</a>, <a href="#lifecycle"><code>onMount</code> और <code>onDestroy</code></a>.</li>
-        <li><a href="#style-objects"> स्टाइल ऑब्जेक्ट</a>: शॉर्टहैंड, छद्म स्टेट, <code>&amp;</code> चयनकर्ता, <code>@</code> नियम और <code>raw</code>।</li>
+        <li><a href="#attributes">एट्रिब्यूट</a>: <code>className</code>, <code>style</code>, <a href="#events"><code>on*</code> हैंडलर</a>, <a href="#lifecycle"><code>onMount</code> और <code>onDestroy</code></a>.</li>
+        <li><a href="#style-objects"> स्टाइल ऑब्जेक्ट</a>: शॉर्टहैंड, स्यूडो स्टेट, <code>&amp;</code> सेलेक्टर, <code>@</code> नियम और <code>raw</code>।</li>
       </ul>
     `,
       },
@@ -978,35 +978,35 @@ async function loadData() {
         id: "faq",
         title: "अक्सर पूछे जाने वाले प्रश्न",
         content: `
-      <h3>क्या स्थिति बदलने से UI अपडेट हो जाता है?</h3>
-      <p>नंबर। DOM तब तक वैसा ही रहता है जब तक आप <code>update()</code> पर कॉल नहीं करते।</p>
+      <h3>क्या स्टेट बदलने से UI अपडेट हो जाता है?</h3>
+      <p>नहीं। DOM तब तक वैसा ही रहता है जब तक आप <code>update()</code> कॉल नहीं करते।</p>
 
       <h3>क्या Nuclo सिग्नल, प्रॉक्सी या वर्चुअल DOM का उपयोग करता है?</h3>
-      <p>नंबर स्टेट साधारण JavaScript रहता है। जब एक ट्री प्रस्तुत किया जाता है, तो Nuclo वास्तविक तत्व और टेक्स्ट नोड बनाता है। <code>update()</code> प्रत्येक पंजीकृत गतिशील मान, या दिए गए दायरे के अंदर चलाता है, और उन्हीं नोड्स को पैच करता है जहां मान बदल गया है। कोई निर्भरता ग्राफ़ और कोई वर्चुअल ट्री नहीं है।</p>
+      <p>नहीं। स्टेट साधारण JavaScript रहता है। जब एक ट्री रेंडर किया जाता है, तो Nuclo वास्तविक एलिमेंट और टेक्स्ट नोड बनाता है। <code>update()</code> प्रत्येक पंजीकृत डायनेमिक मान, या दिए गए दायरे के अंदर चलाता है, और उन्हीं नोड्स को पैच करता है जहां मान बदल गया है। कोई निर्भरता ग्राफ़ और कोई वर्चुअल ट्री नहीं है।</p>
 
       <h3>मेरा पेज "false" क्यों दिखाता है?</h3>
-      <p>बूलियन्स पाठ के रूप में प्रस्तुत करते हैं। <code>div(ok &amp;&amp; span('Done'))</code> "false" दिखाता है। चाइल्ड नोड के लिए <code>when(() =&gt; ok, span('Done'))</code> और टेक्स्ट के लिए <code>ok ? 'Done' : ''</code> का उपयोग करें।</p>
+      <p>बूलियन मान टेक्स्ट के रूप में रेंडर करते हैं। <code>div(ok &amp;&amp; span('Done'))</code> "false" दिखाता है। चाइल्ड नोड के लिए <code>when(() =&gt; ok, span('Done'))</code> और टेक्स्ट के लिए <code>ok ? 'Done' : ''</code> का उपयोग करें।</p>
 
       <h3>जब मैं आइटम संपादित करता हूं तो मेरी सूची पंक्ति क्यों नहीं बदलती?</h3>
-      <p>उन आइटमों की पंक्तियाँ जो अभी भी सूची में हैं, रखी जाती हैं, दोबारा प्रस्तुत नहीं की जाती हैं। बदलने वाले फ़ील्ड के लिए <code>() =&gt; todo.text</code> जैसे गतिशील मानों का उपयोग करें। <a href="#api-list"><code>list()</code></a> देखें।</p>
+      <p>उन आइटमों की पंक्तियाँ जो अभी भी सूची में हैं, रखी जाती हैं, दोबारा रेंडर नहीं की जाती हैं। बदलने वाले फ़ील्ड के लिए <code>() =&gt; todo.text</code> जैसे डायनेमिक मानों का उपयोग करें। <a href="#api-list"><code>list()</code></a> देखें।</p>
 
       <h3>मेरे UI का हिस्सा अपडेट होना क्यों बंद हो जाता है?</h3>
-      <p>आमतौर पर जब <code>update()</code> चलता था तो इसके नोड्स दस्तावेज़ में नहीं होते थे। Nuclo उन नोड्स को ट्रैक करना बंद कर देता है, भले ही आप उन्हें संलग्न कर लें, इसलिए दस्तावेज़ में मौजूद कंटेनर में प्रस्तुत करें। दो अन्य कारण: एक <code>when()</code> जिसकी स्थिति थ्रो अपडेट करना बंद कर देती है, और एक टेक्स्ट फ़ंक्शन जो अपने पहले रन पर थ्रो करता है वह खाली रहता है। <a href="#api-update"><code>update()</code></a> देखें।</p>
+      <p>आमतौर पर जब <code>update()</code> चलता था तो इसके नोड्स दस्तावेज़ में नहीं होते थे। Nuclo उन नोड्स को ट्रैक करना बंद कर देता है, भले ही आप उन्हें संलग्न कर लें, इसलिए दस्तावेज़ में मौजूद कंटेनर में रेंडर करें। दो अन्य कारण: एक <code>when()</code> जिसकी शर्त थ्रो करे तो अपडेट होना बंद हो जाता है, और एक टेक्स्ट फ़ंक्शन जो अपने पहले रन पर थ्रो करता है वह खाली रहता है। <a href="#api-update"><code>update()</code></a> देखें।</p>
 
       <h3>मुझे <code>forceUpdate()</code> का उपयोग कब करना चाहिए?</h3>
-      <p>केवल स्थिर मानों में दुर्लभ परिवर्तनों के लिए, जैसे भाषा बदलना। बाकी सभी चीज़ों के लिए, <code>update()</code> का उपयोग करें। <a href="#api-force-update"><code>forceUpdate()</code></a> देखें।</p>
+      <p>केवल स्टैटिक मानों में दुर्लभ परिवर्तनों के लिए, जैसे भाषा बदलना। बाकी सभी चीज़ों के लिए, <code>update()</code> का उपयोग करें। <a href="#api-force-update"><code>forceUpdate()</code></a> देखें।</p>
 
       <h3>मैं किसी पेज को प्रोप के रूप में पास किए बिना लेआउट में कैसे डालूं?</h3>
-      <p><code>region({ id: 'main' })</code> के साथ स्थान को चिह्नित करें और पृष्ठ को <code>into('main', …)</code> पर लौटाएं। <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a> देखें।</p>
+      <p><code>region({ id: 'main' })</code> से जगह चिह्नित करें और पेज से <code>into('main', …)</code> लौटाएँ। <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a> देखें।</p>
 
       <h3>मैं किसी ऐप को कैसे अनमाउंट करूं?</h3>
-      <p>इसे <code>when()</code> में लपेटें और स्थिति को बंद कर दें। DOM को स्वयं हटाने से <code>onDestroy</code> नहीं चलता है। <a href="#lifecycle">Lifecycle</a> देखें।</p>
+      <p>इसे <code>when()</code> में लपेटें और शर्त false कर दें। DOM को स्वयं हटाने से <code>onDestroy</code> नहीं चलता है। <a href="#lifecycle">लाइफ़साइकल</a> देखें।</p>
 
       <h3>क्या Nuclo में राउटर शामिल है?</h3>
-      <p>कोर पैकेज में नहीं है। सर्वर रेंडरिंग, हाइड्रेशन, कोड-स्प्लिट रूट और निष्क्रिय प्रीलोडिंग के साथ जहाजों को <code>nuclo-router</code> के रूप में अलग से रूट करना। इसे <code>npm install nuclo nuclo-router</code> के साथ इंस्टॉल करें। <a href="#router-overview">nuclo-router</a> देखें।</p>
+      <p>कोर पैकेज में नहीं। रूटिंग अलग <code>nuclo-router</code> पैकेज में मिलती है, जिसमें सर्वर रेंडरिंग, हाइड्रेशन, कोड-स्प्लिट रूट और आइडल प्रीलोडिंग हैं। इसे <code>npm install nuclo nuclo-router</code> से इंस्टॉल करें। <a href="#router-overview">nuclo-router</a> देखें।</p>
 
-      <h3>क्या Nuclo का प्रभाव है?</h3>
-      <p>नंबर <code>onMount</code> और <code>onDestroy</code> प्रति तत्व एक बार चलते हैं, सम्मिलन और निष्कासन से बंधे होते हैं। कुछ भी दोबारा नहीं चलता क्योंकि कुछ स्टेट बदल गए।</p>
+      <h3>क्या Nuclo में इफ़ेक्ट हैं?</h3>
+      <p>नहीं। <code>onMount</code> और <code>onDestroy</code> एलिमेंट जुड़ने और हटने पर प्रति एलिमेंट एक बार चलते हैं। केवल स्टेट बदलने से कुछ भी दोबारा नहीं चलता।</p>
     `,
       },
     ],

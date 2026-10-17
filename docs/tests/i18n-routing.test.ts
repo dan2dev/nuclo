@@ -85,6 +85,16 @@ for (const locale of LOCALE_CODES) {
       expect(head).toContain(`<link rel="canonical" href="${canonical}"`);
       expect(head.match(/rel="alternate" hreflang=/g)).toHaveLength(13);
       expect(head).toContain(`"inLanguage":"${LOCALES[locale].lang}"`);
+      const schema = JSON.parse(head.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1]);
+      for (const entry of schema.filter((entry: { "@type": string }) => ["WebSite", "SoftwareSourceCode"].includes(entry["@type"]))) {
+        expect(entry.description).toBe(t.seo.routes.home.description);
+      }
+      const page = schema.at(-1);
+      expect(head).toContain(`<title>${escape(page.name)}</title>`);
+      expect(head).toContain(`<meta property="og:title" content="${escape(page.name)}"`);
+      expect(head).toContain(`<meta property="og:description" content="${escape(page.description)}"`);
+      expect(head).toContain(`<meta name="twitter:title" content="${escape(page.name)}"`);
+      expect(head).toContain(`<meta name="twitter:description" content="${escape(page.description)}"`);
       expect(head).toContain(`<meta property="og:locale" content="${LOCALES[locale].og}"`);
       expect(html).toContain(escape(t.footer.builtWith));
       if (suffix.endsWith("counter")) {
