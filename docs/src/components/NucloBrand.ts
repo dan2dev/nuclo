@@ -16,7 +16,9 @@ import { brandBox, brandIcon, glyphs, icon, pathD, GRADIENT, INK, N, STROKE, typ
 // the rebuild then re-applies this same closure, whose clock, scope and listeners carry on. A new
 // Drawing() over the old element would start a second clock the element never hears from.
 
-const svg = css("components-nuclobrand-svg", { display: "block", height: "auto", flexShrink: 0 });
+// willChange: the drawing repaints every frame; its own layer keeps that off the header bar's scanline gradient
+// (re-rastered per frame otherwise, which a phone's GPU shows as low fps) and keeps the lines sharp at a high pixel ratio
+const svg = css("components-nuclobrand-svg", { display: "block", height: "auto", flexShrink: 0, willChange: "transform" });
 
 let instances = 0;
 
@@ -112,7 +114,7 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
   const Arm = (p: Piece) => lineSvg({ x1: () => ic.hub[p.k][0], y1: () => ic.hub[p.k][1], x2: () => p.contours[0][p.k][0], y2: () => p.contours[0][p.k][1] });
   // The line a pen has drawn so far. It fills when the contour closes
   const Ink = (p: Piece) =>
-    pathSvg({ d: () => pathD(p.contours, p.k), fill: p.fill, "fill-opacity": () => p.ink, stroke: STROKE, "stroke-width": 5, "stroke-opacity": () => (p.ink < 1 ? 1 : 0) });
+    pathSvg({ d: () => pathD(p.contours, p.k), fill: p.fill, "fill-opacity": () => p.ink, stroke: p.letter ? p.fill : STROKE, "stroke-width": 8, "stroke-opacity": () => (p.letter || p.ink < 1 ? 1 : 0) });
 
   return svgSvg(
     cx(svg, extra, animate ? "nuclo-draw" : null),
