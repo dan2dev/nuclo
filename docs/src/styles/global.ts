@@ -20,6 +20,9 @@ export function registerGlobalStyles() {
   globalStyle("::-webkit-scrollbar-thumb:hover", { raw: { "background-color": "var(--c-text-muted)" } });
   globalStyle("::-webkit-scrollbar-corner", { raw: { background: "transparent" } });
   globalStyle("body", { raw: {"font-family": "system-ui, sans-serif", "background-color": "var(--c-bg)", "color": "var(--c-text)", "line-height": "1.65", "-webkit-font-smoothing": "antialiased"} });
+  // Keep API punctuation and source indentation intact within right-to-left prose.
+  globalStyle('html[dir="rtl"] code, html[dir="rtl"] pre', { raw: { direction: "ltr", "unicode-bidi": "isolate" } });
+  globalStyle('html[dir="rtl"] pre', { raw: { "text-align": "left" } });
   globalStyle("a", { raw: {"color": "inherit", "text-decoration": "none"} });
   // Controls and navigation chrome aren't meant to be selected (also stops highlights while dragging the sheet).
   globalStyle("button, a, nav, [role=\"dialog\"], [role=\"dialog\"] :not(input)", { raw: {"-webkit-user-select": "none", "user-select": "none"} });

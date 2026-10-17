@@ -16,12 +16,16 @@ import { cx } from "../styles.ts";
 import { CodeBlock } from "../components/CodeBlock.ts";
 import { withCode } from "../components/inline-code.ts";
 import { es } from "./examples/styles.ts";
-import { allExamples, examplesText, findExample, type Example } from "./examples/registry.ts";
+import { ALL_EXAMPLES, allExamples, examplesText, findExample, type Example } from "./examples/registry.ts";
 import { EXAMPLE_PREFIX, exampleHref, type ExampleSource } from "./examples/open.ts";
 import { BAR_REGION, BODY_REGION } from "./examples/frame.ts";
 
 /** Which parent the route sits under, from its pattern. */
 const sourceOf = (ctx: RouteContext): ExampleSource => (ctx.pattern.includes("/docs") ? "docs" : "examples");
+
+// Filenames belong to the source, not its translated display title.
+const filenameOf = (ex: Example) =>
+  `${(ALL_EXAMPLES.find((source) => source.id === ex.id)?.title ?? ex.id).replace(/[^a-zA-Z0-9]+/g, "")}.ts`;
 
 /** The example id of either URL shape; null for /docs/<anything else>. */
 function idOf(ctx: RouteContext): string | null {
@@ -153,7 +157,7 @@ function fillFrame(layer: Layer, from: ExampleSource, index: number, bar: NodeMo
  */
 function AppLayout(ex: Example) {
   const L = examplesText().LABELS;
-  const files = ex.files ?? [{ name: `${ex.title.replace(/[^a-zA-Z0-9]+/g, "")}.ts`, code: ex.code }];
+  const files = ex.files ?? [{ name: filenameOf(ex), code: ex.code }];
   let active = 0; // 0 is the preview, then one per file
   let moreDesc = false; // phones: the full description, instead of its first lines
 
@@ -203,7 +207,7 @@ export default function ExampleDetail(ctx: RouteContext, { data, layer }: PagePr
 
   const index = allExamples().findIndex((e) => e.id === ex.id);
   if (ex.layout === "app") return fillFrame(layer, from, index, Nav(layer, from, ex, index), AppLayout(ex), true);
-  const file = `${ex.title.replace(/[^a-zA-Z0-9]+/g, "")}.ts`;
+  const file = filenameOf(ex);
 
   return fillFrame(layer, from, index, Nav(layer, from, ex, index), div(
     es.detail,

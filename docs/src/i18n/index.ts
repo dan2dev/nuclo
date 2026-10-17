@@ -14,12 +14,22 @@
  */
 import * as enUi from "./en/ui.ts";
 
-export type Locale = "en" | "pt-br" | "es";
+export type Locale = "en" | "pt-br" | "es" | "fr" | "it" | "de" | "ja" | "zh" | "ko" | "ar" | "ru" | "hi";
 export const DEFAULT_LOCALE: Locale = "en";
-export const LOCALES: Record<Locale, { name: string; lang: string; og: string }> = {
-  en: { name: "English", lang: "en", og: "en_US" },
-  "pt-br": { name: "Português", lang: "pt-BR", og: "pt_BR" },
-  es: { name: "Español", lang: "es", og: "es_ES" },
+/** Each locale: its name in its own language, its BCP 47 tag (html lang, hreflang), its Open Graph locale and its text direction. */
+export const LOCALES: Record<Locale, { name: string; lang: string; og: string; dir: "ltr" | "rtl" }> = {
+  en: { name: "English", lang: "en", og: "en_US", dir: "ltr" },
+  "pt-br": { name: "Português", lang: "pt-BR", og: "pt_BR", dir: "ltr" },
+  es: { name: "Español", lang: "es", og: "es_ES", dir: "ltr" },
+  fr: { name: "Français", lang: "fr", og: "fr_FR", dir: "ltr" },
+  it: { name: "Italiano", lang: "it", og: "it_IT", dir: "ltr" },
+  de: { name: "Deutsch", lang: "de", og: "de_DE", dir: "ltr" },
+  ja: { name: "日本語", lang: "ja", og: "ja_JP", dir: "ltr" },
+  zh: { name: "中文", lang: "zh-CN", og: "zh_CN", dir: "ltr" },
+  ko: { name: "한국어", lang: "ko", og: "ko_KR", dir: "ltr" },
+  ar: { name: "العربية", lang: "ar", og: "ar_AR", dir: "rtl" },
+  ru: { name: "Русский", lang: "ru", og: "ru_RU", dir: "ltr" },
+  hi: { name: "हिन्दी", lang: "hi", og: "hi_IN", dir: "ltr" },
 };
 export const LOCALE_CODES = Object.keys(LOCALES) as Locale[];
 
@@ -39,6 +49,15 @@ export interface LocaleBundle {
 const loaders: Record<Exclude<Locale, "en">, () => Promise<{ default: LocaleBundle }>> = {
   "pt-br": () => import("./pt-br/index.ts"),
   es: () => import("./es/index.ts"),
+  fr: () => import("./fr/index.ts"),
+  it: () => import("./it/index.ts"),
+  de: () => import("./de/index.ts"),
+  ja: () => import("./ja/index.ts"),
+  zh: () => import("./zh/index.ts"),
+  ko: () => import("./ko/index.ts"),
+  ar: () => import("./ar/index.ts"),
+  ru: () => import("./ru/index.ts"),
+  hi: () => import("./hi/index.ts"),
 };
 const bundles: Partial<Record<Locale, LocaleBundle>> = {};
 
@@ -54,7 +73,7 @@ export let t: UiMessages = enUi;
 /** The current locale's page content, null for English: each page then uses its own en/ module. */
 export const bundle = (): LocaleBundle | null => bundles[i18n.locale] ?? null;
 
-export const isLocale = (code: unknown): code is Locale => typeof code === "string" && code in LOCALES;
+export const isLocale = (code: unknown): code is Locale => typeof code === "string" && Object.hasOwn(LOCALES, code);
 
 /** The locale of a route's params, English when the route has none (the standalone apps). */
 export const localeOf = (params: Record<string, string>): Locale | null =>

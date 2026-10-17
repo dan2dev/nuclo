@@ -94,7 +94,8 @@ const st = {
 
   right: css("components-header-right", { gridColumn: "3", justifySelf: "end", display: "flex", alignItems: "center", gap: "4px" }),
   iconBtn: css("components-header-iconBtn", { ...iconBtn, display: "none", width: "36px", height: "36px", [DESKTOP]: { display: "flex" } }),
-  // The language select: a pill like the bar's buttons, its own chevron drawn in
+  // The language select: a pill like the bar's buttons, its own chevron drawn in. In the menu it is a full-width row
+  localeMenu: css("components-header-localeMenu", { display: "block", height: "48px", padding: "0 36px 0 16px", fontSize: "14px", color: colors.text, backgroundColor: colors.bgSecondary, raw: { "background-position": "right 14px center" } }),
   locale: css("components-header-locale", { display: "none", height: "36px", padding: "0 26px 0 10px", borderRadius: "10px", border: "none", fontFamily: "inherit", fontSize: "13px", fontWeight: "500", color: colors.textDim, backgroundColor: "transparent", cursor: "pointer", appearance: "none", raw: { "background-image": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", "background-repeat": "no-repeat", "background-position": "right 8px center", "background-size": "14px" }, transition: `color 0.2s ${EASE}, background-color 0.2s ${EASE}`, hover: { color: colors.text, backgroundColor: colors.border }, focusVisible: ring, [DESKTOP]: { display: "block" } }),
   // A swapped theme icon's stroke is drawn end to end (not the first one: the header enters still)
   icon: css("components-header-icon", { display: "flex" }),
@@ -198,9 +199,9 @@ export function Header() {
   }
 
   // The language, a native <select> in the bar: picking one loads that locale's text and rebuilds the page.
-  function LocaleSelect() {
+  function LocaleSelect(variant?: ReturnType<typeof css>) {
     return select(
-      st.locale,
+      cx(st.locale, variant ?? null),
       {
         "aria-label": t.nav.language,
         value: () => i18n.locale,
@@ -284,21 +285,7 @@ export function Header() {
               t.nav.themes[pref],
             )),
           ),
-          div(
-            st.themeGroup,
-            { role: "radiogroup", "aria-label": t.nav.language },
-            ...LOCALE_CODES.map((code) => button(
-              {
-                type: "button",
-                role: "radio",
-                lang: LOCALES[code].lang,
-                class: () => cx(st.themeOpt, i18n.locale === code ? st.themeOptOn : null).className,
-                "aria-checked": () => String(i18n.locale === code),
-                onClick: () => switchLocale(code),
-              },
-              LOCALES[code].name,
-            )),
-          ),
+          LocaleSelect(st.localeMenu),
           GetStarted(st.ctaMenu),
         ),
       ),

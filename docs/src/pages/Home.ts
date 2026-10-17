@@ -1,5 +1,5 @@
 import type { DataLoader, PageProps, RouteContext } from "nuclo-router";
-import { applyLocale, loadLocale, localePath, t, type Locale } from "../i18n/index.ts";
+import { applyLocale, loadLocale, localeOf, localePath, t, type Locale } from "../i18n/index.ts";
 import { s } from "../styles.ts";
 import {
   HomeHeroSection,
@@ -10,12 +10,15 @@ import {
   CTASection,
 } from "./home/components.ts";
 
-// The locale's text, fetched before the page is built. null (an unknown locale) is the site's 404.
-export const load: DataLoader<Locale | null> = (ctx) => loadLocale(ctx.params);
+// Fetch the locale before building. Unknown locales and unmatched paths return the site's 404.
+export const load: DataLoader<Locale | null> = async (ctx) => {
+  const locale = await loadLocale(ctx.params);
+  return ctx.pattern === "*" || ctx.pattern.endsWith("/*") ? null : locale;
+};
 
-export function HomePage(_ctx: RouteContext, { data }: PageProps<Locale | null>) {
-  applyLocale(data);
-  // No such locale: the server answered 404; the page says so in the default language.
+export function HomePage(ctx: RouteContext, { data }: PageProps<Locale | null>) {
+  applyLocale(localeOf(ctx.params));
+  // Keep a missing page in the URL's language when that locale exists.
   if (data === null) {
     return div(s.container, { id: "not-found", style: { padding: "80px 0" } },
       h1(s.sectionTitle, t.app.notFound),

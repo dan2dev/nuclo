@@ -76,8 +76,9 @@ function withHeadings(sec: DocSection) {
   const headings: DocHeading[] = [];
   const withIds = (html: string) => html.replace(/<h3>([\s\S]*?)<\/h3>/g, (_, inner: string) => {
     const text = inner.replace(/<[^>]+>/g, "").trim();
-    const slug = text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-    const id = `${sec.id}--${slug}`;
+    // Latin headings keep a readable slug; scripts the slug cannot spell (ja, ar, hi, …) are numbered.
+    const slug = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const id = `${sec.id}--${slug || `h${headings.length + 1}`}`;
     headings.push({ id, text });
     return `<h3 id="${id}">${inner}</h3>`;
   });

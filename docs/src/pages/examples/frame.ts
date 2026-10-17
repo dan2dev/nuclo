@@ -6,6 +6,7 @@
  */
 import { router } from "../../router.ts";
 import { es } from "./styles.ts";
+import { t } from "../../i18n/index.ts";
 
 export const BAR_REGION = "example-bar";
 export const BODY_REGION = "example-body";
@@ -20,7 +21,7 @@ export function ExampleFrame() {
       es.overlay,
       div(
         es.panel,
-        { role: "dialog", "aria-modal": "true", "aria-label": "Example" },
+        { role: "dialog", "aria-modal": "true", "aria-label": t.nav.examples },
         div(es.bar, region({ id: BAR_REGION })),
         div(es.body, region({ id: BODY_REGION })),
       ),

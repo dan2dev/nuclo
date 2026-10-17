@@ -42,16 +42,19 @@ const absolute = (locale: Locale | null, path: string): string => {
 };
 
 export function resolveMeta(ctx: RouteInfo, data?: unknown): ResolvedMeta {
+  const known = ctx.pattern !== '*' && data !== null;
   const route = routeName(ctx.pattern);
   const localized = ctx.pattern.startsWith(LOCALE_PREFIX);
-  const locale = localized ? (localeOf(ctx.params) ?? DEFAULT_LOCALE) : null;
+  const locale = localized ? localeOf(ctx.params) : null;
   // The page's path without its locale: "/pt-br/docs" is "/docs".
-  const path = localized ? ctx.path.replace(/^\/[^/]+/, '') || '/' : ctx.path.replace(/\/+$/, '') || '/';
+  const path = localized && locale ? ctx.path.replace(/^\/[^/]+/, '') || '/' : ctx.path.replace(/\/+$/, '') || '/';
   const pattern = localized ? ctx.pattern.slice(LOCALE_PREFIX.length) : ctx.pattern;
   const example = pattern === '/examples/:id' || pattern === '/docs/:example' || pattern === '/apps/:id' ? (data as ExampleData) : undefined;
   // One canonical URL per example: /docs/example-<id> is the same page over the docs.
   const canonicalPath = example ? `/examples/${example.id}` : path;
-  const meta: PageMeta = example
+  const meta: PageMeta = !known
+    ? { title: `${t.app.notFound} - Nuclo`, description: t.app.notFoundHint, type: 'WebPage' }
+    : example
     ? {
         title: t.seo.exampleTitle(example.title),
         description: t.seo.exampleDescription(example.desc),
@@ -62,8 +65,8 @@ export function resolveMeta(ctx: RouteInfo, data?: unknown): ResolvedMeta {
   return {
     meta,
     locale,
-    url: absolute(locale, canonicalPath),
-    alternates: localized ? LOCALE_CODES.map((code) => ({ locale: code, url: absolute(code, canonicalPath) })) : [],
+    url: absolute(example && !localized ? DEFAULT_LOCALE : locale, canonicalPath),
+    alternates: known && localized ? LOCALE_CODES.map((code) => ({ locale: code, url: absolute(code, canonicalPath) })) : [],
   };
 }
 
@@ -79,8 +82,12 @@ export function hreflangLinks(resolved: ResolvedMeta): { hreflang: string; href:
 
 export function updatePageMeta(ctx: RouteInfo, data?: unknown): void {
   const resolved = resolveMeta(ctx, data);
+  const known = ctx.pattern !== '*' && data !== null;
+  const language = LOCALES[resolved.locale ?? DEFAULT_LOCALE];
   const { meta, url: pageUrl } = resolved;
   document.title = meta.title;
+  document.documentElement.lang = language.lang;
+  document.documentElement.dir = language.dir;
 
   function setMeta(name: string, content: string) {
     let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
@@ -93,8 +100,13 @@ export function updatePageMeta(ctx: RouteInfo, data?: unknown): void {
     el.content = content;
   }
 
+  setMeta('title', meta.title);
   setMeta('description', meta.description);
+  setMeta('language', language.lang);
+  setMeta('robots', known ? 'index, follow' : 'noindex, nofollow');
   if (meta.keywords) setMeta('keywords', meta.keywords);
+  else document.querySelector('meta[name="keywords"]')?.remove();
+  setOg('og:type', meta.type === 'TechArticle' ? 'article' : 'website');
   setOg('og:title', meta.title);
   setOg('og:description', meta.description);
   setOg('og:url', pageUrl);
@@ -115,7 +127,26 @@ export function updatePageMeta(ctx: RouteInfo, data?: unknown): void {
     link.href = href;
     document.head.appendChild(link);
   }
-  if (resolved.locale) setOg('og:locale', LOCALES[resolved.locale].og);
+  setOg('og:locale', language.og);
+  document.querySelectorAll('meta[property="og:locale:alternate"]').forEach((el) => el.remove());
+  if (resolved.locale) {
+    for (const code of LOCALE_CODES.filter((code) => code !== resolved.locale)) {
+      const el = document.createElement('meta');
+      el.setAttribute('property', 'og:locale:alternate');
+      el.content = LOCALES[code].og;
+      document.head.appendChild(el);
+    }
+  }
+
+  let schema = document.head.querySelector('script[type="application/ld+json"]');
+  if (!schema) {
+    schema = document.createElement('script');
+    schema.setAttribute('type', 'application/ld+json');
+    document.head.appendChild(schema);
+  }
+  schema.textContent = JSON.stringify(known
+    ? generateStructuredData(meta, pageUrl, resolved.locale)
+    : [{ '@context': 'https://schema.org', '@type': 'WebPage', name: meta.title, description: meta.description, url: pageUrl, inLanguage: language.lang }]);
 }
 
 export function generateStructuredData(meta: PageMeta, pageUrl: string, locale: Locale | null): object[] {

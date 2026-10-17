@@ -18,7 +18,7 @@ import { SEO_BASE_URL, generateStructuredData, hreflangLinks, resolveMeta, type 
 import { DEFAULT_LOCALE, LOCALES, LOCALE_CODES, isLocale, localeOfPath, type Locale } from './i18n/index.ts';
 
 export const htmlTemplate = `<!doctype html>
-<html lang="{{lang}}" data-theme="light">
+<html lang="{{lang}}" dir="{{dir}}" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <!-- Blocking theme script: runs synchronously before first paint so there
@@ -67,17 +67,12 @@ function routeToAbsoluteUrl(pathname: string): string {
 
 function buildSeoHead(ctx: RouteInfo, data: unknown, pathname: string, known: boolean): string {
   const resolved = resolveMeta(ctx, data);
-  const meta = known
-    ? resolved.meta
-    : {
-        title: 'Page Not Found - Nuclo',
-        description: 'The requested page could not be found on the Nuclo documentation site.',
-      };
+  const meta = resolved.meta;
 
   const pageUrl = known ? resolved.url : routeToAbsoluteUrl(pathname);
   const robots = known ? 'index, follow' : 'noindex, nofollow';
   const ogType = meta.type === 'TechArticle' ? 'article' : 'website';
-  const locale = known ? resolved.locale : null;
+  const locale = resolved.locale;
   const lang = LOCALES[locale ?? DEFAULT_LOCALE];
   const alternates = known ? hreflangLinks(resolved) : [];
   const jsonLdSchemas = known
@@ -89,6 +84,7 @@ function buildSeoHead(ctx: RouteInfo, data: unknown, pathname: string, known: bo
           name: meta.title,
           description: meta.description,
           url: pageUrl,
+          inLanguage: lang.lang,
           isPartOf: { '@id': `${SEO_BASE_URL}#website` },
         },
       ];
@@ -178,12 +174,18 @@ export function preferredLocale(req: Request): Locale {
   if (isLocale(cookie)) return cookie;
   const accepted = (req.headers.get('accept-language') ?? '')
     .split(',')
-    .map((part) => part.trim().split(';')[0].toLowerCase())
-    .filter(Boolean);
-  for (const tag of accepted) {
-    if (tag === 'pt' || tag.startsWith('pt-')) return 'pt-br';
-    if (tag === 'es' || tag.startsWith('es-')) return 'es';
-    if (tag === 'en' || tag.startsWith('en-')) return 'en';
+    .map((part) => {
+      const [tag, ...parameters] = part.trim().toLowerCase().split(';');
+      const quality = parameters.find((parameter) => parameter.trim().startsWith('q='));
+      return { tag, quality: quality ? Number(quality.trim().slice(2)) : 1 };
+    })
+    .filter(({ tag, quality }) => tag && quality > 0 && quality <= 1)
+    .sort((a, b) => b.quality - a.quality);
+  // The first accepted language whose primary subtag we have: "pt-PT" lands on pt-br, "zh-TW" on zh.
+  for (const { tag } of accepted) {
+    const primary = tag.split('-')[0];
+    const hit = LOCALE_CODES.find((code) => code.split('-')[0] === primary);
+    if (hit) return hit;
   }
   return DEFAULT_LOCALE;
 }
@@ -235,12 +237,13 @@ export async function appFetch(
   const nucloStyles = getCssText();
 
   const seoHead = buildSeoHead(route, route.data, pathname, known);
-  const lang = LOCALES[(known && resolveMeta(route, route.data).locale) || DEFAULT_LOCALE].lang;
+  const { lang, dir } = LOCALES[resolveMeta(route, route.data).locale ?? DEFAULT_LOCALE];
   const html = (await transformHtml(htmlTemplate, known ? pathname : '/'))
-    .replace('{{lang}}', lang)
-    .replace('{{seoHead}}', seoHead)
-    .replace('{{html}}', ssrHtml)
-    .replace('{{nucloStyles}}', nucloStyles);
+    .replace('{{lang}}', () => lang)
+    .replace('{{dir}}', () => dir)
+    .replace('{{seoHead}}', () => seoHead)
+    .replace('{{html}}', () => ssrHtml)
+    .replace('{{nucloStyles}}', () => nucloStyles);
 
   const responseHeaders: Record<string, string> = {
     'Content-Type': 'text/html; charset=utf-8',
