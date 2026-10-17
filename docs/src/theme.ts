@@ -12,10 +12,6 @@ export function isDark(): boolean {
   return currentTheme === "dark";
 }
 
-export function getThemePreference(): ThemePreference {
-  return preference;
-}
-
 function systemTheme(): Theme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }

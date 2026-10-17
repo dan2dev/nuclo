@@ -16,24 +16,27 @@ import { brandBox, brandIcon, glyphs, icon, pathD, GRADIENT, INK, N, STROKE, typ
 // the rebuild then re-applies this same closure, whose clock, scope and listeners carry on. A new
 // Drawing() over the old element would start a second clock the element never hears from.
 
-const svg = css("components-nuclobrand-svg", { display: "block", height: "auto", flexShrink: 0 });
+// willChange: the drawing repaints every frame; its own layer keeps that off the header bar's scanline gradient
+// (re-rastered per frame otherwise, which a phone's GPU shows as low fps) and keeps the lines sharp at a high pixel ratio
+const svg = css("components-nuclobrand-svg", { display: "block", height: "auto", flexShrink: 0, willChange: "transform" });
 
 let instances = 0;
 
-type Options = { animate?: boolean | "visible"; hideWordAfter?: number; class?: ReturnType<typeof css> | null; label?: string | (() => string) };
+type Options = { animate?: boolean | "visible"; hideWordAfter?: number; hideWord?: () => boolean; class?: ReturnType<typeof css> | null; label?: string | (() => string) };
 
 // One drawn thing: its contours, its fill, and when its pen runs. k is how many points are drawn, ink its fill.
 // A letter runs on the word's clock
 type Piece = { contours: number[][][]; fill: string; start: number; end: number; letter: boolean; k: number; ink: number };
 
 const ICON_DRAW = 1.4; // seconds the wheel takes
-const LETTER_DRAW = 0.34; // seconds a pen takes per letter
-const INK_SET = 0.28; // seconds the ink takes to set, starting just before the pen finishes
-const LEAD = 0.1;
+const LETTER_DRAW = 0.6; // seconds a pen takes per letter
+const INK_SET = 0.2; // seconds the ink takes to set, once the pen has closed the outline
+const LEAD = 0.2;
 const UNDRAW = 1.6; // how much faster the word is un-drawn than drawn
 
-function Drawing(ic: Icon, letters: number[][][][], view: [number, number, number, number], width: number, { animate = false, hideWordAfter, class: extra = null, label = "Nuclo" }: Options) {
+function Drawing(ic: Icon, letters: number[][][][], view: [number, number, number, number], width: number, { animate = false, hideWordAfter, hideWord, class: extra = null, label = "Nuclo" }: Options) {
   const id = `nuclo-brand-${instances++}`;
+  const sw = +(1.2 / (width / view[2])).toFixed(2); // the pen line is ~1.2px whatever the size: 8 units on the lockup, ~2 on the icon alone
 
   // The timeline: the icon's two pens share the wheel's window; each letter follows the last
   const piece = (contours: number[][][], fill: string, start: number, end: number, letter = false): Piece => ({ contours, fill, start, end, letter, k: N, ink: 1 });
@@ -60,7 +63,8 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
   function paint() {
     for (const p of pieces) {
       p.k = Math.round(ease(seg(at(p), p.start, p.end)) * N);
-      p.ink = seg(at(p), p.end - LEAD, p.end - LEAD + INK_SET);
+      // Fills only once the outline is closed: an open path would fill its chord
+      p.ink = seg(at(p), p.end, p.end + INK_SET);
     }
     update(id);
   }
@@ -111,7 +115,7 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
   const Arm = (p: Piece) => lineSvg({ x1: () => ic.hub[p.k][0], y1: () => ic.hub[p.k][1], x2: () => p.contours[0][p.k][0], y2: () => p.contours[0][p.k][1] });
   // The line a pen has drawn so far. It fills when the contour closes
   const Ink = (p: Piece) =>
-    pathSvg({ d: () => pathD(p.contours, p.k), fill: p.fill, "fill-opacity": () => p.ink, stroke: STROKE, "stroke-width": 3, "stroke-opacity": () => 1 - p.ink });
+    pathSvg({ d: () => pathD(p.contours, p.k), fill: p.fill, "fill-opacity": () => p.ink, stroke: p.letter ? p.fill : STROKE, "stroke-width": sw, "stroke-opacity": () => (p.letter || p.ink < 1 ? 1 : 0) });
 
   return svgSvg(
     cx(svg, extra, animate ? "nuclo-draw" : null),
@@ -138,8 +142,10 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
               io.observe(el);
             } else if (animate && !still) start();
             if (hideWordAfter !== undefined) {
-              const check = () => setWord(scrollY <= hideWordAfter);
+              // `hideWord` hides the word whatever the scroll; dispatch "wordcheck" on the svg when it may have changed
+              const check = () => setWord(!hideWord?.() && scrollY <= hideWordAfter);
               addEventListener("scroll", check, { passive: true, signal: ac.signal });
+              el.addEventListener("wordcheck", check, { signal: ac.signal });
               check();
             }
             return () => { ac.abort(); io?.disconnect(); cancelAnimationFrame(raf); raf = 0; };

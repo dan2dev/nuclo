@@ -11,6 +11,9 @@ initTheme();
 // Register Nuclo globalStyle() rules on the client for SPA-only fallback pages.
 registerGlobalStyles();
 
+// iOS Safari only applies :active (the controls' press feedback; the tap highlight is off) when the body listens for touchstart.
+document.body.addEventListener('touchstart', () => {}, { passive: true });
+
 // Resolve the current page first so the outlet starts populated.
 // hydrate() then claims existing SSR nodes - no remove+add, no CLS.
 await router.start();

@@ -14,8 +14,6 @@ export const nav = {
   nucloOnGitHub: "GitHub पर Nuclo",
   opensInNewTab: " (नए टैब में खुलता है)",
   switchTheme: "रंग थीम बदलें",
-  theme: "थीम",
-  themes: { light: "हल्की", dark: "गहरी", system: "सिस्टम" },
   language: "भाषा",
 };
 

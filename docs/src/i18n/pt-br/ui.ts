@@ -14,8 +14,6 @@ export const nav = {
   nucloOnGitHub: "Nuclo no GitHub",
   opensInNewTab: " (abre em uma nova aba)",
   switchTheme: "Alternar tema de cores",
-  theme: "Tema",
-  themes: { light: "Claro", dark: "Escuro", system: "Sistema" },
   language: "Idioma",
 };
 
