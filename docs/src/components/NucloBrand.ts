@@ -36,6 +36,7 @@ const UNDRAW = 1.6; // how much faster the word is un-drawn than drawn
 
 function Drawing(ic: Icon, letters: number[][][][], view: [number, number, number, number], width: number, { animate = false, hideWordAfter, hideWord, class: extra = null, label = "Nuclo" }: Options) {
   const id = `nuclo-brand-${instances++}`;
+  const sw = +(1.2 / (width / view[2])).toFixed(2); // the pen line is ~1.2px whatever the size: 8 units on the lockup, ~2 on the icon alone
 
   // The timeline: the icon's two pens share the wheel's window; each letter follows the last
   const piece = (contours: number[][][], fill: string, start: number, end: number, letter = false): Piece => ({ contours, fill, start, end, letter, k: N, ink: 1 });
@@ -114,7 +115,7 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
   const Arm = (p: Piece) => lineSvg({ x1: () => ic.hub[p.k][0], y1: () => ic.hub[p.k][1], x2: () => p.contours[0][p.k][0], y2: () => p.contours[0][p.k][1] });
   // The line a pen has drawn so far. It fills when the contour closes
   const Ink = (p: Piece) =>
-    pathSvg({ d: () => pathD(p.contours, p.k), fill: p.fill, "fill-opacity": () => p.ink, stroke: p.letter ? p.fill : STROKE, "stroke-width": 8, "stroke-opacity": () => (p.letter || p.ink < 1 ? 1 : 0) });
+    pathSvg({ d: () => pathD(p.contours, p.k), fill: p.fill, "fill-opacity": () => p.ink, stroke: p.letter ? p.fill : STROKE, "stroke-width": sw, "stroke-opacity": () => (p.letter || p.ink < 1 ? 1 : 0) });
 
   return svgSvg(
     cx(svg, extra, animate ? "nuclo-draw" : null),
