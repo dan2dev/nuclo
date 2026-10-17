@@ -28,7 +28,7 @@ type Piece = { contours: number[][][]; fill: string; start: number; end: number;
 
 const ICON_DRAW = 1.4; // seconds the wheel takes
 const LETTER_DRAW = 0.6; // seconds a pen takes per letter
-const INK_SET = 0.28; // seconds the ink takes to set, once the pen has closed the outline
+const INK_SET = 0.2; // seconds the ink takes to set, once the pen has closed the outline
 const LEAD = 0.2;
 const UNDRAW = 1.6; // how much faster the word is un-drawn than drawn
 
@@ -60,7 +60,8 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
   function paint() {
     for (const p of pieces) {
       p.k = Math.round(ease(seg(at(p), p.start, p.end)) * N);
-      p.ink = seg(at(p), p.end, p.end + INK_SET); // fills only once the outline is closed: an open path would fill its chord
+      // Fills only once the outline is closed: an open path would fill its chord
+      p.ink = seg(at(p), p.end, p.end + INK_SET);
     }
     update(id);
   }
@@ -111,7 +112,7 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
   const Arm = (p: Piece) => lineSvg({ x1: () => ic.hub[p.k][0], y1: () => ic.hub[p.k][1], x2: () => p.contours[0][p.k][0], y2: () => p.contours[0][p.k][1] });
   // The line a pen has drawn so far. It fills when the contour closes
   const Ink = (p: Piece) =>
-    pathSvg({ d: () => pathD(p.contours, p.k), fill: p.fill, "fill-opacity": () => p.ink, stroke: STROKE, "stroke-width": 5, "stroke-opacity": () => 1 - p.ink });
+    pathSvg({ d: () => pathD(p.contours, p.k), fill: p.fill, "fill-opacity": () => p.ink, stroke: STROKE, "stroke-width": 5, "stroke-opacity": () => (p.ink < 1 ? 1 : 0) });
 
   return svgSvg(
     cx(svg, extra, animate ? "nuclo-draw" : null),
