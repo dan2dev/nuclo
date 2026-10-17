@@ -20,6 +20,7 @@ export const colors = {
   bgCode:       'var(--c-bg-code)',
   bgNav:        'var(--c-bg-nav)',
   bgNavTrack:   'var(--c-bg-nav-track)', // the nav toggle's groove, a step darker than the bar
+  navScan:      'var(--c-nav-scan)', // the header's scanlines, like the home hero's
   bgIcon:       'var(--c-bg-icon)',
   bgFooter:     'var(--c-bg-footer)',
 

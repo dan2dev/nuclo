@@ -3,7 +3,7 @@ import { router, currentRoute } from "../router.ts";
 import { toggleTheme, isDark, getThemePreference, setThemePreference, type ThemePreference } from "../theme.ts";
 import { docsSection } from "../docs-state.ts";
 import { NucloBrand } from "./NucloBrand.ts";
-import { GRADIENT, STROKE, box, brandBox, brandIcon } from "./brand-geometry.ts";
+import { GRADIENT, box, brandBox, brandIcon } from "./brand-geometry.ts";
 import { GitHubSvg } from "./icons.ts";
 import { animations } from "../styles/animations.ts";
 
@@ -37,8 +37,6 @@ const plateOn = { backgroundColor: colors.primaryDark, boxShadow: `inset 0 1px 0
 const A = animations;
 const motion = (animation: string) => ({ animation, "@media (prefers-reduced-motion: reduce)": { animation: "none" } });
 const ring = { outline: `2px solid ${colors.primary}`, outlineOffset: "3px" } as const;
-// The reading line is scrubbed by the page's scroll where the browser can; elsewhere it stays undrawn
-const SCROLL = "@supports (animation-timeline: scroll())";
 // Past this much scroll the word is un-drawn and the logo closes on its icon: the lockup's width and the icon's, per px of its height
 const WORD_SCROLL = 96;
 const iconBox = box([brandIcon.shape]);
@@ -53,10 +51,8 @@ const delays = (n: number, from: number, step: number) =>
 const st = {
   // The bar is translucent and blurs the page behind it. Its rule is always drawn, so on a dark page the header
   // still reads as its own band with everything centred in it, and the first block sits a gutter below it.
-  // The rule is also the pen's line, drawn from the left as far as the page has been read.
-  bar: css("components-header-bar", { userSelect: "none", position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "var(--header-h)", backgroundColor: colors.bgNav, backdropFilter: "saturate(180%) blur(14px)", raw: { "-webkit-backdrop-filter": "saturate(180%) blur(14px)" }, boxShadow: `inset 0 -1px 0 ${colors.border}`,
-    before: { content: '""', position: "absolute", left: "0", right: "0", bottom: "0", height: "2px", backgroundColor: STROKE, transformOrigin: "left", transform: "scaleX(0)" },
-    [SCROLL]: { before: { raw: { animation: `${A.draw} linear both`, "animation-timeline": "scroll(root)" } } } }),
+  // Faint 1px scanlines every 4px run across it, as on the home hero's card.
+  bar: css("components-header-bar", { userSelect: "none", position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "var(--header-h)", backgroundColor: colors.bgNav, backdropFilter: "saturate(180%) blur(14px)", raw: { "-webkit-backdrop-filter": "saturate(180%) blur(14px)", "background-image": `repeating-linear-gradient(to bottom, transparent 0 3px, ${colors.navScan} 3px 4px)` }, boxShadow: `inset 0 -1px 0 ${colors.border}` }),
   // Three zones in the wide frame: the brand (and on docs pages, where you are), the nav dead centre, the actions.
   // The side columns share what is left equally, so the nav stays put while the logo's word comes and goes
   row: css("components-header-row", { display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)", alignItems: "center", columnGap: "24px", height: "100%" }),
@@ -67,9 +63,9 @@ const st = {
   logo: css("components-header-logo", { display: "flex", alignItems: "center", flexShrink: 0, overflow: "hidden", padding: "4px 0", borderRadius: "6px", focusVisible: ring,
     raw: { "--logo-h": "30px", "--logo-w": `calc(var(--logo-h) * ${LOCKUP_W})`, "--logo-icon-w": `calc(var(--logo-h) * ${ICON_W})` },
     // The lockup's ink sits low in its box: the l's ascender tops it, while the icon's lobe and the word's body
-    // rest on the baseline. Lifted by 11% of its height, the word's body lines up with the nav's labels. The
-    // lift holds while the word comes and goes, so the icon never moves up or down
-    "& > svg": { height: "var(--logo-h)", width: "auto", transform: "translateY(calc(var(--logo-h) * -0.11))", transition: `margin-right 0.4s ${EASE}` },
+    // rest on the baseline. Lifted by 3% of its height it sits optically centred in the bar, between the icon's
+    // middle and the word's. The lift holds while the word comes and goes, so the icon never moves up or down
+    "& > svg": { height: "var(--logo-h)", width: "auto", transform: "translateY(calc(var(--logo-h) * -0.03))", transition: `margin-right 0.4s ${EASE}` },
     '& > svg[data-word="off"]': { marginRight: "calc(var(--logo-icon-w) - var(--logo-w))" },
     [DESKTOP]: { raw: { "--logo-h": "36px" } },
     "@media (prefers-reduced-motion: reduce)": { "& > svg": { transition: "none" } } }),
