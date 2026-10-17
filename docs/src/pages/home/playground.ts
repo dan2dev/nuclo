@@ -145,7 +145,6 @@ function build() {
         viewBox: `0 0 ${W} ${H}`,
         role: "img",
         "data-grab": "",
-        style: { touchAction: "none" }, // a drag paints, it never scrolls
         "aria-label": "Paint the state grid, then press update() to patch the DOM grid",
         onPointerDown: (e: PointerEvent) => {
           const i = cellAt(e);
