@@ -6,7 +6,7 @@ import { NucloBrand } from "./NucloBrand.ts";
 import { GRADIENT, box, brandBox, brandIcon } from "./brand-geometry.ts";
 import { GitHubSvg } from "./icons.ts";
 import { animations } from "../styles/animations.ts";
-import { LOCALES, LOCALE_CODES, i18n, isLocale, t } from "../i18n/index.ts";
+import { LOCALES, LOCALE_CODES, i18n, loadLocale, type Locale, t } from "../i18n/index.ts";
 
 const GITHUB_URL = "https://github.com/dan2dev/nuclo";
 const DESKTOP = "@media (min-width: 768px)";
@@ -94,9 +94,21 @@ const st = {
 
   right: css("components-header-right", { gridColumn: "3", justifySelf: "end", display: "flex", alignItems: "center", gap: "4px" }),
   iconBtn: css("components-header-iconBtn", { ...iconBtn, display: "none", width: "36px", height: "36px", [DESKTOP]: { display: "flex" } }),
-  // The language select: a pill like the bar's buttons, its own chevron drawn in. In the menu it is a full-width row
-  localeMenu: css("components-header-localeMenu", { display: "block", height: "48px", padding: "0 36px 0 16px", fontSize: "14px", color: colors.text, backgroundColor: colors.bgSecondary, raw: { "background-position": "right 14px center" } }),
-  locale: css("components-header-locale", { display: "none", height: "36px", padding: "0 26px 0 10px", borderRadius: "10px", border: "none", fontFamily: "inherit", fontSize: "13px", fontWeight: "500", color: colors.textDim, backgroundColor: "transparent", cursor: "pointer", appearance: "none", raw: { "background-image": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", "background-repeat": "no-repeat", "background-position": "right 8px center", "background-size": "14px" }, transition: `color 0.2s ${EASE}, background-color 0.2s ${EASE}`, hover: { color: colors.text, backgroundColor: colors.border }, focusVisible: ring, [DESKTOP]: { display: "block" } }),
+  localeMenu: css("components-header-localeMenu", { width: "100%", height: "48px", justifyContent: "space-between", padding: "0 16px", backgroundColor: colors.bgSecondary }),
+  locale: css("components-header-locale", { display: "flex", alignItems: "center", gap: "8px", height: "36px", padding: "0 10px", borderRadius: "10px", fontSize: "13px", color: colors.textDim, cursor: "pointer", hover: { color: colors.text, backgroundColor: colors.border }, focusVisible: ring }),
+  languageDialog: css("components-header-languageDialog", { width: "min(700px, calc(100vw - 32px))", maxHeight: "calc(100dvh - 32px)", margin: "auto", padding: "0", border: `1px solid ${colors.borderLight}`, borderRadius: "24px", backgroundColor: colors.bgCard, color: colors.text, boxShadow: "0 32px 120px #0008", overflowY: "auto",
+    "&::backdrop": { backgroundColor: "rgba(0,0,0,0.65)", raw: { "backdrop-filter": "blur(10px)" }, ...motion(`${A.ink} 0.2s ease`) },
+    "&[open]": { ...motion(`${A.modalIn} 0.3s ${SLIDE}`) },
+    "@media (max-width: 480px)": { borderRadius: "20px" } }),
+  languageHead: css("components-header-languageHead", { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", padding: "28px", borderBottom: `1px solid ${colors.border}`, "& h2": { fontSize: "28px", letterSpacing: "-0.04em", margin: "4px 0 0" }, "& small": { color: colors.primary, fontSize: "12px", letterSpacing: "0.12em" }, "@media (max-width: 480px)": { padding: "20px" } }),
+  languageClose: css("components-header-languageClose", { ...iconBtn, width: "40px", height: "40px", flexShrink: 0 }),
+  languageGrid: css("components-header-languageGrid", { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "12px", padding: "24px", "@media (max-width: 600px)": { gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "8px", padding: "16px" } }),
+  languageOption: css("components-header-languageOption", { display: "flex", flexDirection: "column", alignItems: "stretch", gap: "16px", padding: "16px", minWidth: 0, borderRadius: "14px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary, color: colors.text, textAlign: "start", cursor: "pointer", transition: "border-color 0.2s, transform 0.2s, background-color 0.2s", ...motion(`${A.riseIn} 0.35s ${SLIDE} backwards`),
+    "& > span": { display: "flex", justifyContent: "space-between", alignItems: "center", color: colors.textMuted, fontSize: "11px", letterSpacing: "0.08em" }, "& strong": { fontSize: "17px", fontWeight: "500" },
+    '&[aria-pressed="true"]': { borderColor: colors.primary, backgroundColor: colors.primaryGlow },
+    '&[data-loading="true"] svg': { ...motion(`${A.spin} 0.8s linear infinite`) },
+    hover: { borderColor: colors.primary, transform: "translateY(-2px)" }, focusVisible: ring,
+    "&:disabled": { cursor: "wait" }, "@media (prefers-reduced-motion: reduce)": { transition: "none" } }),
   // A swapped theme icon's stroke is drawn end to end (not the first one: the header enters still)
   icon: css("components-header-icon", { display: "flex" }),
   iconIn: css("components-header-iconIn", { "& path": { ...motion(`${A.strokeDraw} 0.5s ${EASE}`), raw: { "stroke-dasharray": "1" } } }),
@@ -130,6 +142,10 @@ let navEl: HTMLElement | undefined;
 let handleAt = -2;
 // The lockup, built once: a locale switch rebuilds Header() over the same svg, and this instance's drawing carries on.
 const brand = NucloBrand({ height: 36, animate: true, hideWordAfter: WORD_SCROLL });
+
+let languageEl: HTMLDialogElement | undefined;
+let languageTrigger: HTMLElement | undefined;
+let pendingLocale: Locale | null = null;
 
 export function Header() {
   let themeSwapped = false; // after the first toggle the theme icon draws itself in
@@ -198,16 +214,72 @@ export function Header() {
     );
   }
 
-  // The language, a native <select> in the bar: picking one loads that locale's text and rebuilds the page.
-  function LocaleSelect(variant?: ReturnType<typeof css>) {
-    return select(
+
+  function LanguageButton(variant?: ReturnType<typeof css>) {
+    return button(
       cx(st.locale, variant ?? null),
-      {
-        "aria-label": t.nav.language,
-        value: () => i18n.locale,
-        onChange: (e) => { const code = e.currentTarget.value; if (isLocale(code)) switchLocale(code); },
+      { type: "button", "aria-label": t.nav.language, "aria-haspopup": "dialog", onClick: (e) => {
+        languageTrigger = e.currentTarget;
+        languageEl?.showModal();
+      } },
+      LineIcon("M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18 M3 12h18 M12 3a18 18 0 0 1 0 18 18 18 0 0 1 0-18", 17),
+      () => LOCALES[i18n.locale].name,
+    );
+  }
+
+  async function chooseLanguage(code: Locale) {
+    if (pendingLocale) return;
+    if (code === i18n.locale) { languageEl?.close(); return; }
+    pendingLocale = code;
+    update();
+    try {
+      await loadLocale({ locale: code });
+      if (languageEl) await languageEl.animate([{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(0.97)" }], { duration: motion(180), easing: EASE }).finished;
+      languageEl?.close();
+      closeMenu();
+      switchLocale(code);
+    } catch {
+      // A normal navigation lets the page loader handle a failed translation fetch.
+      languageEl?.close();
+      window.location.assign(window.location.href.replace(`/${i18n.locale}`, `/${code}`));
+    } finally {
+      pendingLocale = null;
+      update();
+    }
+  }
+
+  function LanguageModal() {
+    return dialog(
+      st.languageDialog,
+      { "aria-labelledby": "language-title", "aria-busy": () => String(pendingLocale !== null),
+        onClick: (e) => { if (e.target === e.currentTarget) {
+          const rect = e.currentTarget.getBoundingClientRect();
+          if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) e.currentTarget.close();
+        } },
+        onClose: () => languageTrigger?.isConnected && languageTrigger.focus(),
+        onMount: (el) => { languageEl = el; return () => { languageEl = undefined; }; },
       },
-      ...LOCALE_CODES.map((code) => option({ value: code, lang: LOCALES[code].lang }, LOCALES[code].name)),
+      div(st.languageHead,
+        div(small(`NUCLO / ${LOCALE_CODES.length}`), h2({ id: "language-title" }, t.nav.language)),
+        button(st.languageClose, { type: "button", "aria-label": t.nav.closeMenu, onClick: () => languageEl?.close() }, LineIcon("M6 6l12 12 M6 18L18 6")),
+      ),
+      div(st.languageGrid,
+        ...LOCALE_CODES.map((code, index) => button(
+          st.languageOption,
+          { type: "button", lang: LOCALES[code].lang, dir: LOCALES[code].dir,
+            style: { animationDelay: `${index * 20}ms` },
+            "aria-pressed": () => String(code === i18n.locale),
+            "data-loading": () => String(code === pendingLocale),
+            disabled: () => pendingLocale !== null,
+            onClick: () => void chooseLanguage(code),
+          },
+          span(LOCALES[code].lang.toUpperCase(),
+            when(() => pendingLocale === code, LineIcon("M21 12a9 9 0 1 1-9-9", 16))
+              .else(when(() => code === i18n.locale, LineIcon("M5 12l4 4L19 6", 16)).else(LineIcon("M7 17L17 7 M7 7h10v10", 16))),
+          ),
+          strong(LOCALES[code].name),
+        )),
+      ),
     );
   }
 
@@ -228,6 +300,7 @@ export function Header() {
           const ac = new AbortController();
           document.documentElement.style.overflow = "hidden";
           document.addEventListener("keydown", (e) => {
+            if (languageEl?.open) return;
             if (e.key === "Escape") return closeMenu();
             if (e.key !== "Tab") return;
             // Keep focus inside the dialog.
@@ -285,7 +358,7 @@ export function Header() {
               t.nav.themes[pref],
             )),
           ),
-          LocaleSelect(st.localeMenu),
+          LanguageButton(st.localeMenu),
           GetStarted(st.ctaMenu),
         ),
       ),
@@ -335,7 +408,7 @@ export function Header() {
         ),
         div(
           st.right,
-          LocaleSelect(),
+          LanguageButton(),
           a(st.iconBtn, { href: GITHUB_URL, target: "_blank", rel: "noopener noreferrer", "aria-label": t.nav.nucloOnGitHub }, GitHubSvg({ size: 18 })),
           button(
             st.iconBtn,
@@ -359,5 +432,6 @@ export function Header() {
       ),
     ),
     when(() => menuMounted, MobileMenu()),
+    LanguageModal(),
   );
 }
