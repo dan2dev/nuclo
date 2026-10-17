@@ -64,10 +64,10 @@ const st = {
   logo: css("components-header-logo", { display: "flex", alignItems: "center", flexShrink: 0, overflow: "hidden", padding: "4px 0", borderRadius: "6px", focusVisible: ring,
     raw: { "--logo-h": "30px", "--logo-w": `calc(var(--logo-h) * ${LOCKUP_W})`, "--logo-icon-w": `calc(var(--logo-h) * ${ICON_W})` },
     // The lockup's ink sits low in its box: the l's ascender tops it, while the icon's lobe and the word's body
-    // rest on the baseline. Lifted by 11% of its height, the word's body lines up with the nav's labels; the
-    // icon alone settles back to the centre
-    "& > svg": { height: "var(--logo-h)", width: "auto", transform: "translateY(calc(var(--logo-h) * -0.11))", transition: `margin-right 0.4s ${EASE}, transform 0.4s ${EASE}` },
-    '& > svg[data-word="off"]': { marginRight: "calc(var(--logo-icon-w) - var(--logo-w))", transform: "none" },
+    // rest on the baseline. Lifted by 11% of its height, the word's body lines up with the nav's labels. The
+    // lift holds while the word comes and goes, so the icon never moves up or down
+    "& > svg": { height: "var(--logo-h)", width: "auto", transform: "translateY(calc(var(--logo-h) * -0.11))", transition: `margin-right 0.4s ${EASE}` },
+    '& > svg[data-word="off"]': { marginRight: "calc(var(--logo-icon-w) - var(--logo-w))" },
     [DESKTOP]: { raw: { "--logo-h": "36px" } },
     "@media (prefers-reduced-motion: reduce)": { "& > svg": { transition: "none" } } }),
 
