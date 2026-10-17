@@ -82,7 +82,6 @@ export function HeroCard() {
   let dir: -1 | 1 = 1;
   let auto = true; // plays on its own until the first touch
   let open = false; // the code view
-  let dialogEl: HTMLDialogElement | undefined;
   let swipe: { x: number; y: number } | null = null;
   const titleEls = new Set<HTMLElement>();
   const built = EXAMPLES.map((e) => e.build());
@@ -98,11 +97,11 @@ export function HeroCard() {
   }
   const step = (d: -1 | 1) => go((active + d + N) % N, d);
   const stop = () => { if (auto) { auto = false; update(HERO); } };
-  function openCode() {
+  function openCode(e: MouseEvent) {
     stop();
     open = true;
     update(HERO);
-    dialogEl?.showModal();
+    (e.currentTarget as HTMLElement).closest("[data-hero-demo]")?.querySelector("dialog")?.showModal();
   }
 
   const Titles = (id?: string) =>
@@ -198,16 +197,15 @@ export function HeroCard() {
       ms.dialog,
       {
         "aria-labelledby": "hero-code-title",
-        onMount: (el: HTMLDialogElement) => { dialogEl = el; },
         onClose: () => { open = false; update(HERO); },
-        onClick: (e: MouseEvent) => { if (e.target === dialogEl) dialogEl.close(); }, // the backdrop
+        onClick: (e: MouseEvent) => { if (e.target === e.currentTarget) (e.currentTarget as HTMLDialogElement).close(); }, // the backdrop
       },
       div(
         ms.head,
         Titles("hero-code-title"),
         Arrows(),
         button(cs.codeBtn, { type: "button", onClick: () => void import("../../stackblitz.ts").then((m) => m.openHeroExample(NAMES[active], text(active).title)) }, Icon("M13 3L4 14h7l-1 7 9-11h-7l1-7z", 16), "StackBlitz"),
-        button(cs.arrow, { type: "button", "aria-label": home().LABELS.closeCodeView, onClick: () => dialogEl?.close() }, Icon("M6 6l12 12M18 6L6 18")),
+        button(cs.arrow, { type: "button", "aria-label": home().LABELS.closeCodeView, onClick: (e: MouseEvent) => (e.currentTarget as HTMLElement).closest("dialog")?.close() }, Icon("M6 6l12 12M18 6L6 18")),
       ),
       inDialog,
     ),

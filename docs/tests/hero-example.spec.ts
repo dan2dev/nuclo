@@ -70,3 +70,29 @@ test("hero card: arrows move through the examples and keep their state", async (
   await expect(demo).toContainText(/[1-9]\d* swaps/);
   await expect(demo).toContainText("18 nodes ever created");
 });
+
+test("hero card: code modal works after switching languages", async ({ page }) => {
+  test.setTimeout(60_000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/en", { waitUntil: "networkidle" });
+
+  for (const [language, locale] of [["PT-BR Português", "pt-br"], ["ES Español", "es"], ["EN English", "en"]]) {
+    await page.locator('header button[aria-haspopup="dialog"]').click();
+    await page.getByRole("button", { name: language, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/${locale}$`));
+    const demo = page.locator("[data-hero-demo]");
+    const dialog = demo.locator("dialog");
+    await demo.locator('button[aria-haspopup="dialog"]').click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator("[data-demo-pane='code']")).toBeVisible();
+    await dialog.locator(':scope > div').first().getByRole("button").last().click();
+    await expect(dialog).toBeHidden();
+    await expect(demo.locator("[data-demo-pane='preview']")).toBeVisible();
+    await demo.locator('button[aria-haspopup="dialog"]').click();
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  }
+  expect(errors).toEqual([]);
+});
