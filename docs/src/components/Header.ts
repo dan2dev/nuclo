@@ -49,10 +49,10 @@ const delays = (n: number, from: number, step: number) =>
   Object.fromEntries(Array.from({ length: n }, (_, i) => [`& > :nth-child(${i + 1})`, { raw: { "--d": `${(from + i * step).toFixed(2)}s` } }]));
 
 const st = {
-  // The bar is translucent and blurs the page behind it. Its rule is always drawn, so on a dark page the header
+  // The bar is opaque, almost black on a dark page. Its rule is always drawn, so on a dark page the header
   // still reads as its own band with everything centred in it, and the first block sits a gutter below it.
   // Faint 1px scanlines every 4px run across it, as on the home hero's card.
-  bar: css("components-header-bar", { userSelect: "none", position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "var(--header-h)", backgroundColor: colors.bgNav, backdropFilter: "saturate(180%) blur(14px)", raw: { "-webkit-backdrop-filter": "saturate(180%) blur(14px)", "background-image": `repeating-linear-gradient(to bottom, transparent 0 3px, ${colors.navScan} 3px 4px)` }, boxShadow: `inset 0 -1px 0 ${colors.border}` }),
+  bar: css("components-header-bar", { userSelect: "none", position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "var(--header-h)", backgroundColor: colors.bgNav, raw: { "background-image": `repeating-linear-gradient(to bottom, transparent 0 3px, ${colors.navScan} 3px 4px)` }, boxShadow: `inset 0 -1px 0 ${colors.border}` }),
   // Three zones in the wide frame: the brand (and on docs pages, where you are), the nav dead centre, the actions.
   // The side columns share what is left equally, so the nav stays put while the logo's word comes and goes
   row: css("components-header-row", { display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)", alignItems: "center", columnGap: "24px", height: "100%" }),
