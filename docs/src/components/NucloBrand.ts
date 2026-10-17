@@ -4,8 +4,8 @@ import { brandBox, brandIcon, glyphs, icon, pathD, GRADIENT, INK, N, STROKE, typ
 // The icon and the lockup, drawn the way they were designed and read: left to right. A Spirograph
 // wheel draws the icon and its ink sets; then a pen draws each letter in turn, n to o, each inking
 // as the next begins. SSR paints the finished logo; in the browser an animated instance starts
-// over: once on mount, or each time more than half of it scrolls into view (it clears again when it
-// leaves). `html[data-anim]` (set when JS runs and motion is allowed) hides it until then, so the
+// over: once on mount, or each time it scrolls into view after leaving the viewport completely.
+// It clears only once fully outside. `html[data-anim]` (set when JS runs and motion is allowed) hides it until then, so the
 // finished logo never flashes first. With `hideWordAfter`, the word runs on a clock of its own: once the
 // page scrolls past that many px it is un-drawn, o to n, each ink lifting back to its line and the pen
 // winding it up; back above, it is drawn again. The svg's `data-word="off"` marks it gone, for a layout
@@ -128,7 +128,13 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
             const ac = new AbortController();
             let io: IntersectionObserver | undefined;
             if (animate === "visible" && !still) {
-              io = new IntersectionObserver(([e]) => (e.isIntersecting ? start() : clear()), { threshold: 0.5 });
+              let visible = false;
+              io = new IntersectionObserver(([e]) => {
+                if (e.isIntersecting === visible) return;
+                visible = e.isIntersecting;
+                if (visible) start();
+                else clear();
+              });
               io.observe(el);
             } else if (animate && !still) start();
             if (hideWordAfter !== undefined) {

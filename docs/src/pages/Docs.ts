@@ -50,7 +50,7 @@ function publishSection(sec: DocSection | undefined) {
 let sectionObserver: IntersectionObserver | undefined;
 
 // The hero's mark, built once: a locale switch rebuilds the page over the same svg (see NucloBrand.ts).
-const heroMark = NucloLogo({ animate: true, class: ds.heroMark, label: () => docsText().LABELS.nucloMark });
+const heroMark = NucloLogo({ animate: "visible", class: ds.heroMark, label: () => docsText().LABELS.nucloMark });
 
 const CHEVRON = "M6 9l6 6 6-6";
 const CLOSE = "M6 6l12 12 M18 6L6 18";
