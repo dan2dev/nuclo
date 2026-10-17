@@ -33,6 +33,9 @@ export function registerGlobalStyles() {
   globalStyle("svg", { raw: {"display": "block"} });
   // An animated logo stays hidden until hydration starts its drawing, so the finished logo never flashes first.
   globalStyle("html[data-anim] .nuclo-draw:not([data-draw=\"on\"])", { raw: {"visibility": "hidden"} });
+  // The docs crumb beside the logo fades in once the word is gone and the logo has closed on its icon.
+  globalStyle("html[data-anim] .components-header-brand > :not(a)", { raw: {"transition": "opacity 0.3s ease"} });
+  globalStyle("html[data-anim] .components-header-brand:not(:has(svg[data-word=\"off\"])) > :not(a)", { raw: {"opacity": "0"} });
   globalStyle("::selection", { raw: {"background": "var(--c-selection-bg)", "color": "var(--c-text)"} });
   globalStyle("html[data-anim] .rv", { raw: {"opacity": "0"} });
   globalStyle("html[data-anim] .rv.rv-in", { raw: {"animation": `${animations.riseIn} 0.7s cubic-bezier(0.22, 1, 0.36, 1) both`} });

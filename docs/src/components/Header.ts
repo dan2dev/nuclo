@@ -38,11 +38,12 @@ const plateOn = { backgroundColor: colors.primaryDark, boxShadow: `inset 0 1px 0
 const A = animations;
 const motion = (animation: string) => ({ animation, "@media (prefers-reduced-motion: reduce)": { animation: "none" } });
 const ring = { outline: `2px solid ${colors.primary}`, outlineOffset: "3px" } as const;
-// Past this much scroll the word is un-drawn and the logo closes on its icon: the lockup's width and the icon's, per px of its height
-const WORD_SCROLL = 96;
+// Past this much scroll the word is un-drawn; its space stays, so nothing slides. On docs pages the word is
+// un-drawn at once and the logo closes on its icon, then the crumb fades in: the lockup is clipped to the icon's width
 const iconBox = box([brandIcon.shape]);
-const LOCKUP_W = (brandBox[2] / brandBox[3]).toFixed(4);
-const ICON_W = ((iconBox[0] + iconBox[2] - brandBox[0]) / brandBox[3]).toFixed(4);
+const ICON_FRAC = (iconBox[0] + iconBox[2] - brandBox[0]) / brandBox[2];
+const LOCKUP_W = brandBox[2] / brandBox[3];
+const WORD_SCROLL = 96;
 // A square hit area for an icon. The negative margin lines the icon up with the container edge.
 const iconBtn = { display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", color: colors.textDim, transition: `color 0.2s ${EASE}, background-color 0.2s ${EASE}, transform 0.2s ${EASE}`, hover: { color: colors.text, backgroundColor: colors.border }, active: { transform: "scale(0.92)" }, focusVisible: ring } as const;
 // The menu rows' delays, as --d: the pen reaches them one after the other
@@ -62,14 +63,13 @@ const st = {
   // the word, and once it is gone the link closes on the icon (keeping its "Nuclo home" label); back at
   // the top it opens and the word is drawn again.
   logo: css("components-header-logo", { display: "flex", alignItems: "center", flexShrink: 0, overflow: "hidden", padding: "4px 0", borderRadius: "6px", focusVisible: ring,
-    raw: { "--logo-h": "30px", "--logo-w": `calc(var(--logo-h) * ${LOCKUP_W})`, "--logo-icon-w": `calc(var(--logo-h) * ${ICON_W})` },
+    raw: { "--logo-h": "30px" },
     // The lockup's ink sits low in its box: the l's ascender tops it, while the icon's lobe and the word's body
     // rest on the baseline. Lifted by 3% of its height it sits optically centred in the bar, between the icon's
     // middle and the word's. The lift holds while the word comes and goes, so the icon never moves up or down
-    "& > svg": { height: "var(--logo-h)", width: "auto", transform: "translateY(calc(var(--logo-h) * -0.03))", transition: `margin-right 0.4s ${EASE}` },
-    '& > svg[data-word="off"]': { marginRight: "calc(var(--logo-icon-w) - var(--logo-w))" },
-    [DESKTOP]: { raw: { "--logo-h": "36px" } },
-    "@media (prefers-reduced-motion: reduce)": { "& > svg": { transition: "none" } } }),
+    "& > svg": { height: "var(--logo-h)", width: "auto", transform: "translateY(calc(var(--logo-h) * -0.03))" },
+    '&[data-docs="on"] > svg[data-word="off"]': { clipPath: `inset(0 ${(100 * (1 - ICON_FRAC)).toFixed(2)}% 0 0)`, marginRight: `calc(var(--logo-h) * ${(LOCKUP_W * (ICON_FRAC - 1)).toFixed(4)})` },
+    [DESKTOP]: { raw: { "--logo-h": "36px" } } }),
 
   // A three-way toggle: the links sit in a track as tall as the bar's buttons (its corners follow the pills' at its
   // 4px inset), and the current page sits on a handle that slides between them, taking each label's width.
@@ -141,7 +141,7 @@ const st = {
 let navEl: HTMLElement | undefined;
 let handleAt = -2;
 // The lockup, built once: a locale switch rebuilds Header() over the same svg, and this instance's drawing carries on.
-const brand = NucloBrand({ height: 36, animate: true, hideWordAfter: WORD_SCROLL });
+const brand = NucloBrand({ height: 36, animate: true, hideWordAfter: WORD_SCROLL, hideWord: () => currentRoute() === "docs" });
 
 let languageEl: HTMLDialogElement | undefined;
 let languageTrigger: HTMLElement | undefined;
@@ -199,7 +199,11 @@ export function Header() {
   function Logo() {
     return a(
       st.logo,
-      { href: href("home"), "aria-label": t.nav.nucloHome, onClick: closeMenu },
+      { href: href("home"), "aria-label": t.nav.nucloHome, onClick: closeMenu, "data-docs": () => {
+        const docs = route() === "docs";
+        queueMicrotask(() => document.querySelector(".components-header-logo > svg")?.dispatchEvent(new Event("wordcheck")));
+        return docs ? "on" : "off";
+      } },
       brand,
     );
   }
