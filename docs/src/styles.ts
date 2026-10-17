@@ -50,6 +50,9 @@ export const { css, cx } = createCss({
   },
 });
 
+// Hover styles for touch-used controls go under this: on a phone a tap leaves :hover stuck until the next tap elsewhere.
+export const CAN_HOVER = "@media (hover: hover)";
+
 // Shared style helpers.
 export const s = {
   // The site's one frame, wide enough for the docs' sidebar, page and outline. The header, every page and the footer

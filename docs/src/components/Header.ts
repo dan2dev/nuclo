@@ -1,6 +1,6 @@
-import { css, colors, cx, s } from "../styles.ts";
+import { css, colors, cx, s, CAN_HOVER } from "../styles.ts";
 import { href as sectionHref, currentRoute, switchLocale } from "../router.ts";
-import { toggleTheme, isDark, getThemePreference, setThemePreference, type ThemePreference } from "../theme.ts";
+import { toggleTheme, isDark } from "../theme.ts";
 import { docsSection } from "../docs-state.ts";
 import { NucloBrand } from "./NucloBrand.ts";
 import { GRADIENT, box, brandBox, brandIcon } from "./brand-geometry.ts";
@@ -19,7 +19,10 @@ const NAV_LINKS: NavItem[] = [
   { label: "examples", route: "examples" },
 ];
 
-const THEMES: ThemePreference[] = ["light", "dark", "system"];
+const ARROW = "M5 12h14 M13 6l6 6-6 6";
+const OUT = "M7 17L17 7 M8 7h9v9";
+const MOON = "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z";
+const SUN = "M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M6.34 17.66l-1.41 1.41 M19.07 4.93l-1.41 1.41";
 
 // Single-path stroked icon (menu, close, chevron, external arrow).
 function LineIcon(d: string, size = 20) {
@@ -45,8 +48,8 @@ const ICON_FRAC = (iconBox[0] + iconBox[2] - brandBox[0]) / brandBox[2];
 const LOCKUP_W = brandBox[2] / brandBox[3];
 const WORD_SCROLL = 96;
 // A square hit area for an icon. The negative margin lines the icon up with the container edge.
-const iconBtn = { display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", color: colors.textDim, transition: `color 0.2s ${EASE}, background-color 0.2s ${EASE}, transform 0.2s ${EASE}`, hover: { color: colors.text, backgroundColor: colors.border }, active: { transform: "scale(0.92)" }, focusVisible: ring } as const;
-// The menu rows' delays, as --d: the pen reaches them one after the other
+const iconBtn = { display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", color: colors.textDim, transition: `color 0.2s ${EASE}, background-color 0.2s ${EASE}, transform 0.2s ${EASE}`, [CAN_HOVER]: { hover: { color: colors.text, backgroundColor: colors.border } }, active: { transform: "scale(0.92)" }, focusVisible: ring } as const;
+// The menu tiles' delays, as --d: they rise one after the other
 const delays = (n: number, from: number, step: number) =>
   Object.fromEntries(Array.from({ length: n }, (_, i) => [`& > :nth-child(${i + 1})`, { raw: { "--d": `${(from + i * step).toFixed(2)}s` } }]));
 
@@ -61,14 +64,14 @@ const st = {
   // The lockup, drawn once as the page loads, like the footer's. Once the page scrolls the pen un-draws
   // the word, and once it is gone the link closes on the icon (keeping its "Nuclo home" label); back at
   // the top it opens and the word is drawn again.
-  logo: css("components-header-logo", { display: "flex", alignItems: "center", flexShrink: 0, overflow: "hidden", padding: "4px 0", borderRadius: "6px", focusVisible: ring,
+  logo: css("components-header-logo", { display: "flex", alignItems: "center", flexShrink: 0, overflow: "hidden", padding: "7px 9px", margin: "0 -9px", borderRadius: "6px", focusVisible: ring,
     raw: { "--logo-h": "30px" },
     // The lockup's ink sits low in its box: the l's ascender tops it, while the icon's lobe and the word's body
     // rest on the baseline. Lifted by 3% of its height it sits optically centred in the bar, between the icon's
     // middle and the word's. The lift holds while the word comes and goes, so the icon never moves up or down
     "& > svg": { height: "var(--logo-h)", width: "auto", transform: "translateY(calc(var(--logo-h) * -0.03))" },
     '&[data-docs="on"] > svg[data-word="off"]': { clipPath: `inset(0 ${(100 * (1 - ICON_FRAC)).toFixed(2)}% 0 0)`, marginRight: `calc(var(--logo-h) * ${(LOCKUP_W * (ICON_FRAC - 1)).toFixed(4)})` },
-    [DESKTOP]: { raw: { "--logo-h": "36px" } } }),
+    [DESKTOP]: { raw: { "--logo-h": "36px" }, padding: "4px 9px" } }),
 
   // A three-way toggle: the links sit in a track as tall as the bar's buttons (its corners follow the pills' at its
   // 4px inset), and the current page sits on a handle that slides between them, taking each label's width.
@@ -93,8 +96,7 @@ const st = {
 
   right: css("components-header-right", { gridColumn: "3", justifySelf: "end", display: "flex", alignItems: "center", gap: "4px" }),
   iconBtn: css("components-header-iconBtn", { ...iconBtn, display: "none", width: "36px", height: "36px", [DESKTOP]: { display: "flex" } }),
-  localeMenu: css("components-header-localeMenu", { width: "100%", height: "48px", justifyContent: "space-between", padding: "0 16px", backgroundColor: colors.bgSecondary }),
-  locale: css("components-header-locale", { display: "flex", alignItems: "center", gap: "8px", height: "36px", padding: "0 10px", borderRadius: "10px", fontSize: "13px", color: colors.textDim, cursor: "pointer", hover: { color: colors.text, backgroundColor: colors.border }, focusVisible: ring }),
+  locale: css("components-header-locale", { display: "flex", alignItems: "center", gap: "8px", height: "44px", padding: "0 10px", borderRadius: "10px", fontSize: "13px", color: colors.textDim, cursor: "pointer", [CAN_HOVER]: { hover: { color: colors.text, backgroundColor: colors.border } }, focusVisible: ring, [DESKTOP]: { height: "36px" } }),
   languageDialog: css("components-header-languageDialog", { width: "min(700px, calc(100vw - 32px))", maxHeight: "calc(100dvh - 32px)", margin: "auto", padding: "0", border: `1px solid ${colors.borderLight}`, borderRadius: "24px", backgroundColor: colors.bgCard, color: colors.text, boxShadow: "0 32px 120px #0008", overflowY: "auto",
     "&::backdrop": { backgroundColor: "rgba(0,0,0,0.65)", raw: { "backdrop-filter": "blur(10px)" }, ...motion(`${A.ink} 0.2s ease`) },
     "&[open]": { ...motion(`${A.modalIn} 0.3s ${SLIDE}`) },
@@ -113,26 +115,26 @@ const st = {
   iconIn: css("components-header-iconIn", { "& path": { ...motion(`${A.strokeDraw} 0.5s ${EASE}`), raw: { "stroke-dasharray": "1" } } }),
   // The call to action wears the mark's gradient. It lifts on hover, and its arrow leads the way
   cta: css("components-header-cta", { alignItems: "center", justifyContent: "center", gap: "6px", borderRadius: "10px", backgroundImage: `linear-gradient(180deg, ${GRADIENT.from}, ${GRADIENT.to})`, color: "#fff", fontWeight: "600", whiteSpace: "nowrap", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 20px -12px var(--c-primary-glow)", transition: `transform 0.25s ${EASE}, box-shadow 0.25s ${EASE}, filter 0.25s ${EASE}`, hover: { transform: "translateY(-1px)", filter: "brightness(1.06)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 12px 26px -10px var(--c-primary-glow)", "& > svg": { transform: "translateX(2px)" } }, active: { transform: "translateY(0) scale(0.98)" }, focusVisible: ring, "& > svg": { transition: `transform 0.25s ${EASE}` } }),
-  ctaMenu: css("components-header-ctaMenu", { display: "flex", height: "52px", fontSize: "16px", borderRadius: "12px" }),
   menuBtn: css("components-header-menuBtn", { ...iconBtn, width: "44px", height: "44px", marginRight: "-12px", color: colors.text, [DESKTOP]: { display: "none" } }),
   // Two bars that fold into a cross while the menu is open
   burger: css("components-header-burger", { position: "relative", width: "20px", height: "14px", "& > span": { position: "absolute", left: "0", width: "100%", height: "2px", borderRadius: "2px", backgroundColor: "currentColor", transition: `top 0.25s ${EASE}, transform 0.3s ${EASE}` }, "& > span:first-child": { top: "0" }, "& > span:last-child": { top: "12px" }, '&[data-open="true"] > span': { top: "6px" }, '&[data-open="true"] > span:first-child': { transform: "rotate(45deg)" }, '&[data-open="true"] > span:last-child': { transform: "rotate(-45deg)" } }),
 
-  // ── Mobile menu ──
-  menu: css("components-header-menu", { position: "fixed", inset: "var(--header-h) 0 0 0", zIndex: 215, display: "flex", flexDirection: "column", backgroundColor: colors.bg }),
-  menuList: css("components-header-menuList", { flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: "12px 0", "& > div": delays(4, 0.05, 0.1) }),
-  // Each row: its divider is drawn, then its label inks in
-  menuItem: css("components-header-menuItem", { after: { content: '""', display: "block", height: "1px", backgroundColor: colors.border, transformOrigin: "left", ...motion(`${A.draw} 0.5s ${EASE} var(--d, 0s) backwards`) } }),
-  // A row is a plate like the bar's pills, bled into the gutter so its label stays on the logo's edge
-  menuRow: css("components-header-menuRow", { display: "flex", alignItems: "center", justifyContent: "space-between", height: "56px", margin: "6px -12px", padding: "0 12px", borderRadius: "12px", fontSize: "26px", fontWeight: "600", letterSpacing: "-0.02em", color: colors.text, textAlign: "left", transition: `color 0.2s ${EASE}`, ...motion(`${A.ink} 0.4s ${EASE} calc(var(--d, 0s) + 0.25s) backwards`), hover: { "& > span:last-child": { transform: "translateX(4px)", color: colors.text } } }),
-  menuRowOn: css("components-header-menuRowOn", { color: colors.primaryText, ...plateOn, "& > span:last-child": { color: colors.primaryText } }),
-  rowIcon: css("components-header-rowIcon", { display: "flex", color: colors.textMuted, transition: `transform 0.25s ${EASE}, color 0.18s ease` }),
+  // ── Mobile menu: a card that drops from the bar over the dimmed page ──
+  menu: css("components-header-menu", { position: "fixed", inset: "var(--header-h) 0 0 0", zIndex: 215, padding: "8px 10px", backgroundColor: "rgba(0,0,0,0.4)", raw: { "backdrop-filter": "blur(4px)" }, ...motion(`${A.ink} 0.2s ${EASE}`) }),
+  // Like the language dialog: a card on the page, its links in a grid of tiles
+  menuPanel: css("components-header-menuPanel", { display: "flex", flexDirection: "column", gap: "10px", maxHeight: "100%", overflowY: "auto", padding: "10px", border: `1px solid ${colors.borderLight}`, borderRadius: "24px", backgroundColor: colors.bgCard, boxShadow: "0 32px 80px -24px #0008", transformOrigin: "top right", raw: { "overscroll-behavior": "contain" }, ...motion(`${A.dropIn} 0.3s ${SLIDE}`) }),
+  menuGrid: css("components-header-menuGrid", { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "8px", ...delays(4, 0.04, 0.04) }),
+  // A tile: its number and arrow in mono on top, the page's name below. The current page wears the bar's plate
+  menuTile: css("components-header-menuTile", { display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "22px", minWidth: 0, padding: "14px 12px 14px 14px", borderRadius: "16px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary, color: colors.text, transition: `border-color 0.2s ${EASE}, transform 0.2s ${EASE}`, ...motion(`${A.riseIn} 0.35s ${SLIDE} var(--d, 0s) backwards`),
+    "& > span": { display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: "ui-monospace, monospace", fontSize: "11px", letterSpacing: "0.08em", color: colors.textMuted },
+    // A word too long for a narrow phone's tile (Documentazione at 360px) breaks with a hyphen
+    "& > strong": { fontSize: "clamp(16px, 4.8vw, 19px)", fontWeight: "600", letterSpacing: "-0.02em", lineHeight: "1.2", overflowWrap: "break-word", raw: { hyphens: "auto", "-webkit-hyphens": "auto" } },
+    '&[aria-current="page"]': { ...plateOn, borderColor: "transparent", color: colors.primaryText, "& > span": { color: "rgba(255,255,255,0.78)" } },
+    active: { transform: "scale(0.97)" }, focusVisible: ring, [CAN_HOVER]: { hover: { borderColor: colors.primary } } }),
   srOnly: css("components-header-srOnly", { position: "absolute", width: "1px", height: "1px", overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" }),
-  menuFoot: css("components-header-menuFoot", { flexShrink: 0, padding: "16px 0 max(16px, env(safe-area-inset-bottom))", borderTop: `1px solid ${colors.border}`, ...motion(`${A.ink} 0.4s ${EASE} 0.55s backwards`) }),
-  menuFootInner: css("components-header-menuFootInner", { display: "flex", flexDirection: "column", gap: "12px" }),
-  themeGroup: css("components-header-themeGroup", { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "4px", padding: "4px", height: "48px", borderRadius: "12px", backgroundColor: colors.bgSecondary }),
-  themeOpt: css("components-header-themeOpt", { borderRadius: "8px", fontSize: "14px", fontWeight: "500", color: colors.textDim, transition: `background-color 0.25s ${EASE}, color 0.25s ${EASE}, box-shadow 0.25s ${EASE}` }),
-  themeOptOn: css("components-header-themeOptOn", { color: colors.text, backgroundColor: colors.bgCard, boxShadow: "0 1px 3px rgba(0,0,0,0.12)" }),
+  menuFoot: css("components-header-menuFoot", { display: "flex", gap: "8px", ...motion(`${A.ink} 0.3s ${EASE} 0.2s backwards`) }),
+  menuTheme: css("components-header-menuTheme", { ...iconBtn, flexShrink: 0, width: "52px", height: "52px", borderRadius: "16px", border: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary, color: colors.text }),
+  ctaMenu: css("components-header-ctaMenu", { display: "flex", flex: "1", height: "52px", fontSize: "16px", borderRadius: "16px" }),
 };
 
 // The nav's handle follows the current page: read on every update, measured only when it changes or the nav resizes.
@@ -180,7 +182,8 @@ export function Header() {
       .then(() => { if (!menuOpen) { menuMounted = false; update(); } });
   }
 
-  function RouteLink({ label, route: r, hash }: NavItem, style: ReturnType<typeof css>, onStyle: ReturnType<typeof css>, trailing = false) {
+  // Its label, unless content is given
+  function RouteLink({ label, route: r, hash }: NavItem, style: ReturnType<typeof css>, onStyle: ReturnType<typeof css> | null, ...content: NodeModLike<"a">[]) {
     const on = () => !hash && route() === r;
     return a(
       {
@@ -190,8 +193,7 @@ export function Header() {
         // Not prevented: the router navigates, a same-page #hash is the browser's.
         onClick: closeMenu,
       },
-      t.nav[label],
-      ...(trailing ? [span(st.rowIcon, LineIcon("M5 12h14 M13 6l6 6-6 6", 18))] : []),
+      ...(content.length ? content : [t.nav[label]]),
     );
   }
 
@@ -209,6 +211,17 @@ export function Header() {
 
   const ThemeIcon = () => ({ class: () => cx(st.icon, themeSwapped ? st.iconIn : null).className });
 
+  function ThemeToggle(style: ReturnType<typeof css>, size = 17) {
+    return button(
+      style,
+      { type: "button", "aria-label": t.nav.switchTheme, onClick: () => { themeSwapped = true; toggleTheme(); } },
+      when(() => isDark(), span(ThemeIcon(), LineIcon(MOON, size))).else(span(ThemeIcon(), LineIcon(SUN, size))),
+    );
+  }
+
+  // A menu tile's top line: its number and where it goes
+  const TileHead = (i: number, d: string) => span(String(i + 1).padStart(2, "0"), LineIcon(d, 15));
+
   function GetStarted(variant: ReturnType<typeof css>) {
     return a(
       st.cta, variant,
@@ -218,9 +231,9 @@ export function Header() {
   }
 
 
-  function LanguageButton(variant?: ReturnType<typeof css>) {
+  function LanguageButton() {
     return button(
-      cx(st.locale, variant ?? null),
+      st.locale,
       { type: "button", "aria-label": t.nav.language, "aria-haspopup": "dialog", onClick: (e) => {
         languageTrigger = e.currentTarget;
         languageEl?.showModal();
@@ -286,20 +299,15 @@ export function Header() {
     );
   }
 
-  // ── Mobile menu (only rendered while open) ────────────────────────────────
+  // ── Mobile menu (only rendered while open): a card dropped from the bar. A tap on the dimmed page closes it ──
   function MobileMenu() {
     return div(
       st.menu,
       {
-        id: "site-menu",
-        role: "dialog",
-        "aria-modal": "true",
-        "aria-label": t.nav.menu,
+        onClick: (e) => { if (e.target === e.currentTarget) closeMenu(); },
         // Open/close side effects live on the overlay's own lifecycle.
         onMount: (el) => {
           menuEl = el;
-          // The rows draw and ink themselves (CSS); the panel just appears under them
-          el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: motion(160), easing: EASE });
           const ac = new AbortController();
           document.documentElement.style.overflow = "hidden";
           document.addEventListener("keydown", (e) => {
@@ -324,46 +332,21 @@ export function Header() {
           };
         },
       },
-      nav(
-        st.menuList,
-        { "aria-label": t.nav.main },
-        div(
-          s.container,
-          div(st.menuItem, RouteLink(NAV_LINKS[0], st.menuRow, st.menuRowOn, true)),
-          div(st.menuItem, RouteLink(NAV_LINKS[1], st.menuRow, st.menuRowOn, true)),
-          div(st.menuItem, RouteLink(NAV_LINKS[2], st.menuRow, st.menuRowOn, true)),
-          div(
-            st.menuItem,
-            a(
-              st.menuRow,
-              { href: GITHUB_URL, target: "_blank", rel: "noopener noreferrer" },
-              span("GitHub", span(st.srOnly, t.nav.opensInNewTab)),
-              span(st.rowIcon, LineIcon("M7 17L17 7 M8 7h9v9", 16)),
-            ),
-          ),
-        ),
-      ),
       div(
-        st.menuFoot,
-        div(
-          s.container, st.menuFootInner,
-          div(
-            st.themeGroup,
-            { role: "radiogroup", "aria-label": t.nav.theme },
-            ...THEMES.map((pref) => button(
-              {
-                type: "button",
-                role: "radio",
-                class: () => cx(st.themeOpt, getThemePreference() === pref ? st.themeOptOn : null).className,
-                "aria-checked": () => String(getThemePreference() === pref),
-                onClick: () => setThemePreference(pref),
-              },
-              t.nav.themes[pref],
-            )),
+        st.menuPanel,
+        { id: "site-menu", role: "dialog", "aria-modal": "true", "aria-label": t.nav.menu },
+        nav(
+          st.menuGrid,
+          { "aria-label": t.nav.main },
+          ...NAV_LINKS.map((l, i) => RouteLink(l, st.menuTile, null, TileHead(i, ARROW), strong(t.nav[l.label]))),
+          a(
+            st.menuTile,
+            { href: GITHUB_URL, target: "_blank", rel: "noopener noreferrer" },
+            TileHead(NAV_LINKS.length, OUT),
+            strong("GitHub", span(st.srOnly, t.nav.opensInNewTab)),
           ),
-          LanguageButton(st.localeMenu),
-          GetStarted(st.ctaMenu),
         ),
+        div(st.menuFoot, ThemeToggle(st.menuTheme, 20), GetStarted(st.ctaMenu)),
       ),
     );
   }
@@ -413,12 +396,7 @@ export function Header() {
           st.right,
           LanguageButton(),
           a(st.iconBtn, { href: GITHUB_URL, target: "_blank", rel: "noopener noreferrer", "aria-label": t.nav.nucloOnGitHub }, GitHubSvg({ size: 18 })),
-          button(
-            st.iconBtn,
-            { type: "button", "aria-label": t.nav.switchTheme, onClick: () => { themeSwapped = true; toggleTheme(); } },
-            when(() => isDark(), span(ThemeIcon(), LineIcon("M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z", 17)))
-              .else(span(ThemeIcon(), LineIcon("M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M6.34 17.66l-1.41 1.41 M19.07 4.93l-1.41 1.41", 17))),
-          ),
+          ThemeToggle(st.iconBtn),
           button(
             st.menuBtn,
             {

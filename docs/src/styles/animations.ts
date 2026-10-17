@@ -67,6 +67,11 @@ export const animations = {
     "from": { raw: {"opacity": "0", "transform": "translateY(18px) scale(0.98)"} },
     "to": { raw: {"opacity": "1", "transform": "none"} },
   }),
+  // The phone menu drops from the bar
+  dropIn: keyframes({
+    "from": { raw: {"opacity": "0", "transform": "translateY(-10px) scale(0.98)"} },
+    "to": { raw: {"opacity": "1", "transform": "none"} },
+  }),
   drift: keyframes({
     "from": { raw: {"transform": "translate(0, 0) scale(1)"} },
     "to": { raw: {"transform": "translate(-10%, 12%) scale(1.18)"} },

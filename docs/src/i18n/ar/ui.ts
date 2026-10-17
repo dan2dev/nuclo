@@ -14,8 +14,6 @@ export const nav = {
   nucloOnGitHub: "Nuclo على GitHub",
   opensInNewTab: " (يفتح في علامة تبويب جديدة)",
   switchTheme: "تبديل سمة الألوان",
-  theme: "السمة",
-  themes: { light: "فاتحة", dark: "داكنة", system: "النظام" },
   language: "اللغة",
 };
 

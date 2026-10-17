@@ -11,7 +11,8 @@ export function registerGlobalStyles() {
   globalStyle("*", { raw: {"box-sizing": "border-box", "margin": "0", "padding": "0"} });
   globalStyle("*::before", { raw: {"box-sizing": "border-box", "margin": "0", "padding": "0"} });
   globalStyle("*::after", { raw: {"box-sizing": "border-box", "margin": "0", "padding": "0"} });
-  globalStyle("html", { raw: { "font-size": "16px", "scrollbar-gutter": "stable" } });
+  // manipulation: no double-tap zoom, which iOS Safari still does despite user-scalable=no
+  globalStyle("html", { raw: { "font-size": "16px", "scrollbar-gutter": "stable", "touch-action": "manipulation" } });
   // Thin, theme-aware scrollbars everywhere.
   globalStyle("*", { raw: { "scrollbar-width": "thin", "scrollbar-color": "var(--c-border-light) transparent" } });
   globalStyle("::-webkit-scrollbar", { raw: { width: "8px", height: "8px" } });

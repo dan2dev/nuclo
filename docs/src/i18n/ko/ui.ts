@@ -14,8 +14,6 @@ export const nav = {
   nucloOnGitHub: "GitHub의 Nuclo",
   opensInNewTab: " (새 탭에서 열립니다)",
   switchTheme: "색상 테마 전환",
-  theme: "테마",
-  themes: { light: "밝게", dark: "어둡게", system: "시스템" },
   language: "언어",
 };
 

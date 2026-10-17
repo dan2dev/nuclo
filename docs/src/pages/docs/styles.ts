@@ -1,4 +1,4 @@
-import { css, colors } from "../../styles.ts";
+import { css, colors, CAN_HOVER } from "../../styles.ts";
 import { animations } from "../../styles/animations.ts";
 
 const mono = "ui-monospace, monospace";
@@ -50,10 +50,10 @@ export const ds = {
   filterWrap: css("pages-docs-styles-filterWrap", { display: "block" }),
   filter: css("pages-docs-styles-filter", { display: "block", width: "100%", height: "36px", padding: "0 12px", border: `1px solid ${colors.border}`, borderRadius: "8px", backgroundColor: colors.bg, color: colors.text, fontFamily: "inherit", fontSize: "14px", raw: { appearance: "none" }, "@media (max-width: 900px)": { height: "44px", borderRadius: "10px", fontSize: "16px" } }),
   navGroups: css("pages-docs-styles-navGroups", { display: "flex", flexDirection: "column", gap: "4px", "@media (max-width: 900px)": { gap: "0" } }),
-  navGroupButton: css("pages-docs-styles-navGroupButton", { display: "flex", alignItems: "center", gap: "8px", width: "100%", height: "32px", padding: "0 10px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", color: colors.text, textAlign: "left", hover: { backgroundColor: colors.bgSecondary }, "& span": { flex: "1" }, "& svg": { flexShrink: 0, color: colors.textMuted, transition: "transform 0.15s ease" }, '&[aria-expanded="false"] svg': { transform: "rotate(-90deg)" }, "@media (max-width: 900px)": { height: "44px", padding: "0 12px", borderRadius: "8px", color: colors.textMuted } }),
+  navGroupButton: css("pages-docs-styles-navGroupButton", { display: "flex", alignItems: "center", gap: "8px", width: "100%", height: "32px", padding: "0 10px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", color: colors.text, textAlign: "left", [CAN_HOVER]: { hover: { backgroundColor: colors.bgSecondary } }, "& span": { flex: "1" }, "& svg": { flexShrink: 0, color: colors.textMuted, transition: "transform 0.15s ease" }, '&[aria-expanded="false"] svg': { transform: "rotate(-90deg)" }, "@media (max-width: 900px)": { height: "44px", padding: "0 12px", borderRadius: "8px", color: colors.textMuted } }),
   navLinks: css("pages-docs-styles-navLinks", { margin: "2px 0 12px", "@media (max-width: 900px)": { margin: "0 0 8px" } }),
-  navLink: css("pages-docs-styles-navLink", { display: "block", padding: "6px 10px", borderRadius: "6px", fontSize: "14px", lineHeight: "20px", color: colors.textDim, hover: { color: colors.text, backgroundColor: colors.bgSecondary }, "@media (max-width: 900px)": { padding: "12px", borderRadius: "8px", fontSize: "15px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }),
-  navLinkActive: css("pages-docs-styles-navLinkActive", { color: colors.primaryInk, backgroundColor: colors.bgSecondary, fontWeight: "500", hover: { color: colors.primaryInk } }),
+  navLink: css("pages-docs-styles-navLink", { display: "block", padding: "6px 10px", borderRadius: "6px", fontSize: "14px", lineHeight: "20px", color: colors.textDim, [CAN_HOVER]: { hover: { color: colors.text, backgroundColor: colors.bgSecondary } }, "@media (max-width: 900px)": { padding: "12px", borderRadius: "8px", fontSize: "15px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }),
+  navLinkActive: css("pages-docs-styles-navLinkActive", { color: colors.primaryInk, backgroundColor: colors.bgSecondary, fontWeight: "500", [CAN_HOVER]: { hover: { color: colors.primaryInk } } }),
 
   content: css("pages-docs-styles-content", { padding: "0 0 76px", maxWidth: "820px", width: "100%", minWidth: "0", ...contentTypography, "@media (max-width: 1180px)": { maxWidth: "100%" }, "@media (max-width: 900px)": { padding: "0 0 60px", maxWidth: "100%", "& h3": { raw: { "scroll-margin-top": "calc(var(--header-h) + 64px)" } } }, "@media (max-width: 600px)": { "& h1": { raw: { "font-size": "2rem" } }, "& h2": { raw: { "font-size": "1.28rem" } } } }),
   hero: css("pages-docs-styles-hero", { position: "relative", animation: `${animations.riseIn} 0.58s cubic-bezier(0.22, 1, 0.36, 1) both`, borderRadius: "28px", backgroundColor: colors.bgCard, boxShadow: "var(--c-shadow)", padding: "28px 20px 32px", marginBottom: "40px", "@media (min-width: 600px)": { padding: "44px 40px 48px" } }),
@@ -85,7 +85,7 @@ export const ds = {
   sheetGrabber: css("pages-docs-styles-sheetGrabber", { flexShrink: 0, width: "32px", height: "4px", margin: "8px auto 0", borderRadius: "2px", backgroundColor: colors.borderLight }),
   sheetHead: css("pages-docs-styles-sheetHead", { flexShrink: 0, display: "flex", alignItems: "center", height: "52px", padding: "0 6px 0 20px" }),
   sheetTitle: css("pages-docs-styles-sheetTitle", { flex: "1", fontSize: "17px", fontWeight: "600", color: colors.text }),
-  sheetClose: css("pages-docs-styles-sheetClose", { display: "flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px", borderRadius: "8px", color: colors.textDim, hover: { color: colors.text, backgroundColor: colors.bgSecondary } }),
+  sheetClose: css("pages-docs-styles-sheetClose", { display: "flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px", borderRadius: "8px", color: colors.textDim, [CAN_HOVER]: { hover: { color: colors.text, backgroundColor: colors.bgSecondary } } }),
   sheetFilterWrap: css("pages-docs-styles-sheetFilterWrap", { display: "block", flexShrink: 0, padding: "4px 16px 12px" }),
   sheetList: css("pages-docs-styles-sheetList", { flex: "1", minHeight: "0", overflowY: "auto", padding: "0 8px 24px", raw: { "overscroll-behavior": "contain" } }),
 

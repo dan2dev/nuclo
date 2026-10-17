@@ -14,8 +14,6 @@ export const nav = {
   nucloOnGitHub: "Nuclo 的 GitHub",
   opensInNewTab: "（在新标签页中打开）",
   switchTheme: "切换配色主题",
-  theme: "主题",
-  themes: { light: "浅色", dark: "深色", system: "跟随系统" },
   language: "语言",
 };
 
