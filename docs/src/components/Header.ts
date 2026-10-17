@@ -1,12 +1,12 @@
 import { css, colors, cx, s } from "../styles.ts";
-import { router, currentRoute } from "../router.ts";
+import { href as sectionHref, currentRoute, switchLocale } from "../router.ts";
 import { toggleTheme, isDark, getThemePreference, setThemePreference, type ThemePreference } from "../theme.ts";
 import { docsSection } from "../docs-state.ts";
 import { NucloBrand } from "./NucloBrand.ts";
 import { GRADIENT, box, brandBox, brandIcon } from "./brand-geometry.ts";
 import { GitHubSvg } from "./icons.ts";
 import { animations } from "../styles/animations.ts";
-import { LOCALES, i18n, isLocale, setLocale, t, type Locale } from "../i18n/index.ts";
+import { LOCALES, LOCALE_CODES, i18n, isLocale, t } from "../i18n/index.ts";
 
 const GITHUB_URL = "https://github.com/dan2dev/nuclo";
 const DESKTOP = "@media (min-width: 768px)";
@@ -20,7 +20,6 @@ const NAV_LINKS: NavItem[] = [
 ];
 
 const THEMES: ThemePreference[] = ["light", "dark", "system"];
-const LOCALE_CODES = Object.keys(LOCALES) as Locale[];
 
 // Single-path stroked icon (menu, close, chevron, external arrow).
 function LineIcon(d: string, size = 20) {
@@ -146,7 +145,7 @@ export function Header() {
     navEl.style.setProperty("--x", `${link.offsetLeft}px`);
     navEl.style.setProperty("--w", `${link.offsetWidth}px`);
   }
-  const href = (r: string, hash?: string) => router.href(r === "home" ? "/" : `/${r}`) + (hash ? `#${hash}` : "");
+  const href = (r: string, hash?: string) => sectionHref(r === "home" ? "/" : `/${r}`) + (hash ? `#${hash}` : "");
 
   const motion = (ms: number) => (matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : ms);
 
@@ -205,9 +204,9 @@ export function Header() {
       {
         "aria-label": t.nav.language,
         value: () => i18n.locale,
-        onChange: (e) => { const code = e.currentTarget.value; if (isLocale(code)) void setLocale(code); },
+        onChange: (e) => { const code = e.currentTarget.value; if (isLocale(code)) switchLocale(code); },
       },
-      ...LOCALE_CODES.map((code) => option({ value: code, lang: code }, LOCALES[code])),
+      ...LOCALE_CODES.map((code) => option({ value: code, lang: LOCALES[code].lang }, LOCALES[code].name)),
     );
   }
 
@@ -292,12 +291,12 @@ export function Header() {
               {
                 type: "button",
                 role: "radio",
-                lang: code,
+                lang: LOCALES[code].lang,
                 class: () => cx(st.themeOpt, i18n.locale === code ? st.themeOptOn : null).className,
                 "aria-checked": () => String(i18n.locale === code),
-                onClick: () => void setLocale(code),
+                onClick: () => switchLocale(code),
               },
-              LOCALES[code],
+              LOCALES[code].name,
             )),
           ),
           GetStarted(st.ctaMenu),

@@ -34,6 +34,9 @@ export const footer = {
 
 export const app = {
   failedToLoad: "Falha ao carregar a página",
+  notFound: "Página não encontrada",
+  notFoundHint: "Não há nada neste endereço.",
+  goHome: "Ir para a página inicial",
   loadingLanguage: "Carregando idioma…",
 };
 

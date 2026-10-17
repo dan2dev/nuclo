@@ -1,4 +1,4 @@
-import { router } from "../../router.ts";
+import { href, router } from "../../router.ts";
 
 /** Where an example is opened from. It decides the URL, so the page beneath stays in the address bar's section. */
 export type ExampleSource = "examples" | "docs";
@@ -7,7 +7,7 @@ export const EXAMPLE_PREFIX = "example-";
 
 /** /examples/<id> from the grid, /docs/example-<id> from the docs. */
 export const exampleHref = (id: string, from: ExampleSource = "examples") =>
-  router.href(from === "docs" ? `/docs/${EXAMPLE_PREFIX}${id}` : `/examples/${id}`);
+  href(from === "docs" ? `/docs/${EXAMPLE_PREFIX}${id}` : `/examples/${id}`);
 
 /**
  * Click handler for a link to an example. A plain left click opens it as a layer

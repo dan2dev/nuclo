@@ -1,13 +1,14 @@
 import { test, expect } from '@playwright/test';
-import { routeDefinitions } from '../src/route-definitions.ts';
+import { isLocalized, routeDefinitions } from '../src/route-definitions.ts';
+import { LOCALE_CODES } from '../src/i18n/index.ts';
 
 test.use({ baseURL: 'http://127.0.0.1:5173' });
 
+// Every section in every locale, and the unlocalized standalone apps.
 const routes = [
-  '/',
-  ...routeDefinitions
-    .filter(route => route.path !== 'home')
-    .map(route => `/${route.path}`),
+  ...LOCALE_CODES.flatMap((locale) =>
+    routeDefinitions.filter(isLocalized).map((route) => (route.path === 'home' ? `/${locale}` : `/${locale}/${route.path}`))),
+  ...routeDefinitions.filter((route) => !isLocalized(route)).map((route) => `/${route.path}`),
 ];
 
 test.describe('Hydration - all docs pages', () => {

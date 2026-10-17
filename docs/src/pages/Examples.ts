@@ -4,7 +4,8 @@
  * load of /examples/:id renders the example as this page's child route instead:
  * it lands in outlet() and sends its modal to the app's region the same way.
  */
-import type { PageProps, RouteContext } from "nuclo-router";
+import type { DataLoader, PageProps, RouteContext } from "nuclo-router";
+import { applyLocale, loadLocale, type Locale } from "../i18n/index.ts";
 import { s } from "../styles.ts";
 import { withCode } from "../components/inline-code.ts";
 import { es } from "./examples/styles.ts";
@@ -45,7 +46,10 @@ function Group(group: ExampleGroup, offset: number) {
   );
 }
 
-export function ExamplesPage(_ctx: RouteContext, { outlet }: PageProps) {
+export const load: DataLoader<Locale | null> = (ctx) => loadLocale(ctx.params);
+
+export function ExamplesPage(_ctx: RouteContext, { outlet, data }: PageProps<Locale | null>) {
+  applyLocale(data);
   const L = examplesText().LABELS;
   let offset = 0;
   const groups = exampleGroups().map((g) => {

@@ -10,18 +10,18 @@
  * frame is built once and only its content changes from example to example.
  */
 import type { DataLoader, Layer, PageProps, RouteContext } from "nuclo-router";
-import { router } from "../router.ts";
+import { href, router } from "../router.ts";
+import { applyLocale, loadLocale, localeOf, t } from "../i18n/index.ts";
 import { cx } from "../styles.ts";
 import { CodeBlock } from "../components/CodeBlock.ts";
 import { withCode } from "../components/inline-code.ts";
 import { es } from "./examples/styles.ts";
 import { allExamples, examplesText, findExample, type Example } from "./examples/registry.ts";
-import { t } from "../i18n/index.ts";
 import { EXAMPLE_PREFIX, exampleHref, type ExampleSource } from "./examples/open.ts";
 import { BAR_REGION, BODY_REGION } from "./examples/frame.ts";
 
 /** Which parent the route sits under, from its pattern. */
-const sourceOf = (ctx: RouteContext): ExampleSource => (ctx.pattern.startsWith("/docs") ? "docs" : "examples");
+const sourceOf = (ctx: RouteContext): ExampleSource => (ctx.pattern.includes("/docs") ? "docs" : "examples");
 
 /** The example id of either URL shape; null for /docs/<anything else>. */
 function idOf(ctx: RouteContext): string | null {
@@ -30,8 +30,11 @@ function idOf(ctx: RouteContext): string | null {
   return seg.startsWith(EXAMPLE_PREFIX) ? seg.slice(EXAMPLE_PREFIX.length) : null;
 }
 
-// null means "no such example": the server answers with a 404 (see app-handler.ts).
-export const load: DataLoader<Example | null> = (ctx) => {
+// null means "no such example" (or no such locale): the server answers with a 404 (see app-handler.ts).
+export const load: DataLoader<Example | null> = async (ctx) => {
+  const locale = await loadLocale(ctx.params);
+  if (locale === null) return null;
+  applyLocale(locale); // findExample() reads the locale's titles
   const id = idOf(ctx);
   return (id ? findExample(id) : undefined) ?? null;
 };
@@ -42,7 +45,7 @@ let firstLayer: Layer | undefined;
 /** Closes every open example: back to the page beneath, or to the parent page on a direct load. */
 function closeExamples(layer: Layer, from: ExampleSource) {
   if (layer.depth > 0) firstLayer?.close();
-  else void router.go(router.href(from === "docs" ? "/docs" : "/examples"));
+  else void router.go(href(from === "docs" ? "/docs" : "/examples"));
 }
 
 /** Prev/next: another layer when stacked (Back steps through them), a sibling route on a direct load. */
@@ -134,7 +137,7 @@ function dialogBehavior(layer: Layer, from: ExampleSource, index: number) {
 function fillFrame(layer: Layer, from: ExampleSource, index: number, bar: NodeModLike, body: NodeModLike, fill = false) {
   const close = a(
     es.close,
-    { href: router.href(from === "docs" ? "/docs" : "/examples"), "aria-label": examplesText().LABELS.closeExample, title: examplesText().LABELS.closeEsc, onClick: (e: MouseEvent) => { e.preventDefault(); closeExamples(layer, from); } },
+    { href: href(from === "docs" ? "/docs" : "/examples"), "aria-label": examplesText().LABELS.closeExample, title: examplesText().LABELS.closeEsc, onClick: (e: MouseEvent) => { e.preventDefault(); closeExamples(layer, from); } },
     Icon("M6 6l12 12 M18 6L6 18"),
   );
   return into({
@@ -174,7 +177,7 @@ function AppLayout(ex: Example) {
         es.appLinks,
         a(es.standaloneLaunch, { href: router.href(`/apps/${ex.id}`), target: "_blank", rel: "noopener", title: L.openInNewTab(ex.title), "aria-label": L.openStandaloneInNewTab(ex.title) }, L.openInStandalone, Icon("M14 3h7v7 M21 3l-9 9 M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5")),
         StackBlitz(ex),
-        ex.docs ? a(es.appDocs, { href: router.href(`/docs#${ex.docs}`) }, t.common.readTheDocs) : null,
+        ex.docs ? a(es.appDocs, { href: href(`/docs#${ex.docs}`) }, t.common.readTheDocs) : null,
       ),
     ),
     div(es.appTabs, { role: "tablist" }, Tab(t.common.preview, 0), ...files.map((f, i) => Tab(f.name, i + 1))),
@@ -185,6 +188,7 @@ function AppLayout(ex: Example) {
 
 export default function ExampleDetail(ctx: RouteContext, { data, layer }: PageProps<Example | null>) {
   const from = sourceOf(ctx);
+  applyLocale(localeOf(ctx.params));
   const L = examplesText().LABELS;
   // The loaded example, in the current locale: data was resolved when the route was entered.
   const ex = data && findExample(data.id);
@@ -193,7 +197,7 @@ export default function ExampleDetail(ctx: RouteContext, { data, layer }: PagePr
       es.notFound,
       h2(es.detailTitle, { tabindex: "-1" }, L.notFound),
       p(L.noExampleCalled(idOf(ctx) ?? ctx.params.example)),
-      p(a({ href: router.href("/examples") }, L.allExamples)),
+      p(a({ href: href("/examples") }, L.allExamples)),
     ));
   }
 
@@ -211,7 +215,7 @@ export default function ExampleDetail(ctx: RouteContext, { data, layer }: PagePr
       ex.install
         ? div(es.installNote, { role: "note" }, strong(L.separatePackage), span(code(ex.install), L.mustBeInstalled), code(`npm install nuclo ${ex.install}`))
         : null,
-      div(es.detailLinks, StackBlitz(ex), ex.docs ? a(es.appDocs, { href: router.href(`/docs#${ex.docs}`) }, t.common.readTheDocs) : null),
+      div(es.detailLinks, StackBlitz(ex), ex.docs ? a(es.appDocs, { href: href(`/docs#${ex.docs}`) }, t.common.readTheDocs) : null),
     ),
     div(
       es.panes,

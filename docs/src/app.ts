@@ -12,7 +12,7 @@ import { router } from './router.ts';
 import { css, colors } from './styles.ts';
 import { animations } from './styles/animations.ts';
 import { ExampleFrame } from './pages/examples/frame.ts';
-import { i18n, t } from './i18n/index.ts';
+import { applyLocale, i18n, localeOf, t } from './i18n/index.ts';
 
 const appStyles = {
 	// --header-h is the fixed header's height; docs sticky offsets read it too.
@@ -40,6 +40,8 @@ function ErrorDisplay() {
 }
 
 export function App() {
+  // The chrome reads the URL's locale, like the page the outlet renders (its load() fetched the text).
+  applyLocale(localeOf(router.params));
   // Standalone apps own the viewport, without the documentation shell.
   if (router.pattern === '/desktop' || router.pattern === '/apps/:id') return div(router.outlet(), when(() => i18n.loading, LocaleLoader()));
   return div(

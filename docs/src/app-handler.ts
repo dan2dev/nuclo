@@ -14,10 +14,11 @@ import { renderToString, getCssText } from 'nuclo/ssr';
 import { App } from './app.ts';
 import { router } from './router.ts';
 import { pageModules } from './route-definitions.ts';
-import { SEO_BASE_URL, generateStructuredData, resolveMeta, type RouteInfo } from './seo.ts';
+import { SEO_BASE_URL, generateStructuredData, hreflangLinks, resolveMeta, type RouteInfo } from './seo.ts';
+import { DEFAULT_LOCALE, LOCALES, LOCALE_CODES, isLocale, localeOfPath, type Locale } from './i18n/index.ts';
 
 export const htmlTemplate = `<!doctype html>
-<html lang="en" data-theme="light">
+<html lang="{{lang}}" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <!-- Blocking theme script: runs synchronously before first paint so there
@@ -76,8 +77,11 @@ function buildSeoHead(ctx: RouteInfo, data: unknown, pathname: string, known: bo
   const pageUrl = known ? resolved.url : routeToAbsoluteUrl(pathname);
   const robots = known ? 'index, follow' : 'noindex, nofollow';
   const ogType = meta.type === 'TechArticle' ? 'article' : 'website';
+  const locale = known ? resolved.locale : null;
+  const lang = LOCALES[locale ?? DEFAULT_LOCALE];
+  const alternates = known ? hreflangLinks(resolved) : [];
   const jsonLdSchemas = known
-    ? generateStructuredData(meta, pageUrl)
+    ? generateStructuredData(meta, pageUrl, locale)
     : [
         {
           '@context': 'https://schema.org',
@@ -96,9 +100,11 @@ function buildSeoHead(ctx: RouteInfo, data: unknown, pathname: string, known: bo
     `<meta name="description" content="${escapeHtml(meta.description)}" />`,
     meta.keywords ? `<meta name="keywords" content="${escapeHtml(meta.keywords)}" />` : '',
     `<meta name="author" content="Danilo Castro (@dan2dev)" />`,
-    `<meta name="language" content="English" />`,
+    `<meta name="language" content="${lang.lang}" />`,
     `<meta name="robots" content="${robots}" />`,
     `<link rel="canonical" href="${escapeHtml(pageUrl)}" />`,
+    // The same page in every language, and the default for readers whose language is none of them.
+    ...alternates.map(({ hreflang, href }) => `<link rel="alternate" hreflang="${hreflang}" href="${escapeHtml(href)}" />`),
     `<meta property="og:type" content="${ogType}" />`,
     `<meta property="og:url" content="${escapeHtml(pageUrl)}" />`,
     `<meta property="og:title" content="${escapeHtml(meta.title)}" />`,
@@ -110,7 +116,8 @@ function buildSeoHead(ctx: RouteInfo, data: unknown, pathname: string, known: bo
     '<meta property="og:image:height" content="630" />',
     '<meta property="og:image:alt" content="Nuclo - a lightweight DOM framework" />',
     '<meta property="og:site_name" content="Nuclo" />',
-    '<meta property="og:locale" content="en_US" />',
+    `<meta property="og:locale" content="${lang.og}" />`,
+    ...(locale ? LOCALE_CODES.filter((code) => code !== locale).map((code) => `<meta property="og:locale:alternate" content="${LOCALES[code].og}" />`) : []),
     '<meta name="twitter:card" content="summary_large_image" />',
     `<meta name="twitter:url" content="${escapeHtml(pageUrl)}" />`,
     `<meta name="twitter:title" content="${escapeHtml(meta.title)}" />`,
@@ -165,6 +172,39 @@ export function buildProdTransform(manifest: ViteManifest): (html: string, url: 
 /** The embedded routing demo's prefix: its HTML is served for every path under it. */
 export const DEMO_PREFIX = '/demos/router';
 
+/** The locale a reader without one in the URL is sent to: the one they picked (cookie), else their browser's, else English. */
+export function preferredLocale(req: Request): Locale {
+  const cookie = req.headers.get('cookie')?.match(/(?:^|;\s*)nuclo-locale=([^;]+)/)?.[1];
+  if (isLocale(cookie)) return cookie;
+  const accepted = (req.headers.get('accept-language') ?? '')
+    .split(',')
+    .map((part) => part.trim().split(';')[0].toLowerCase())
+    .filter(Boolean);
+  for (const tag of accepted) {
+    if (tag === 'pt' || tag.startsWith('pt-')) return 'pt-br';
+    if (tag === 'es' || tag.startsWith('es-')) return 'es';
+    if (tag === 'en' || tag.startsWith('en-')) return 'en';
+  }
+  return DEFAULT_LOCALE;
+}
+
+/**
+ * Where a URL without a locale goes. The root picks the reader's locale (302: it depends on who asks);
+ * the sections' old English URLs moved to /en for good (301). null when the URL is fine as it is.
+ */
+export function localeRedirect(req: Request): Response | null {
+  const url = new URL(req.url);
+  if (localeOfPath(url.pathname)) return null;
+  if (url.pathname === '/' || url.pathname === '/index.html') {
+    return redirect(`/${preferredLocale(req)}${url.search}`, 302, { Vary: 'Cookie, Accept-Language', 'Cache-Control': 'no-store' });
+  }
+  if (/^\/(docs|examples)(\/|$)/.test(url.pathname)) return redirect(`/${DEFAULT_LOCALE}${url.pathname.replace(/\/+$/, '')}${url.search}${url.hash}`, 301);
+  return null;
+}
+
+const redirect = (location: string, status: 301 | 302, headers: Record<string, string> = {}): Response =>
+  new Response(null, { status, headers: { Location: location, ...headers } });
+
 /** Shared between dev and prod, and between the Bun server and Cloudflare Function. */
 export async function appFetch(
   req: Request,
@@ -177,6 +217,9 @@ export async function appFetch(
     const html = await demoHtml();
     if (html !== null) return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
+
+  const moved = localeRedirect(req);
+  if (moved) return moved;
 
   // One Route per request: App reads the shared router, and run() makes it this request's.
   const route = await router.start(req.url);
@@ -192,7 +235,9 @@ export async function appFetch(
   const nucloStyles = getCssText();
 
   const seoHead = buildSeoHead(route, route.data, pathname, known);
+  const lang = LOCALES[(known && resolveMeta(route, route.data).locale) || DEFAULT_LOCALE].lang;
   const html = (await transformHtml(htmlTemplate, known ? pathname : '/'))
+    .replace('{{lang}}', lang)
     .replace('{{seoHead}}', seoHead)
     .replace('{{html}}', ssrHtml)
     .replace('{{nucloStyles}}', nucloStyles);

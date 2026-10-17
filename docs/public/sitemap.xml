@@ -1,236 +1,2108 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://nuclo.dev/</loc>
-    <lastmod>2026-09-30</lastmod>
+    <loc>https://nuclo.dev/en</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en" />
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/docs</loc>
-    <lastmod>2026-09-30</lastmod>
+    <loc>https://nuclo.dev/pt-br</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en" />
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en" />
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/docs</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/docs" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/docs" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/docs" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/docs" />
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples</loc>
-    <lastmod>2026-09-30</lastmod>
+    <loc>https://nuclo.dev/pt-br/docs</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/docs" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/docs" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/docs" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/docs" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/docs</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/docs" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/docs" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/docs" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/docs" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples" />
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/counter</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/pt-br/examples</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples" />
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples" />
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/counter</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/counter" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/counter" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/counter" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/counter" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/todo</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/pt-br/examples/counter</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/counter" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/counter" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/counter" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/counter" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/search</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/es/examples/counter</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/counter" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/counter" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/counter" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/counter" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/styling</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/en/examples/todo</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/todo" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/todo" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/todo" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/todo" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/tag-builders</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/pt-br/examples/todo</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/todo" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/todo" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/todo" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/todo" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/components</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/es/examples/todo</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/todo" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/todo" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/todo" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/todo" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/attributes</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/en/examples/search</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/search" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/search" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/search" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/search" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/events</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/pt-br/examples/search</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/search" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/search" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/search" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/search" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/lifecycle</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/es/examples/search</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/search" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/search" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/search" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/search" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/explicit-updates</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/en/examples/styling</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/styling" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/styling" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/styling" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/styling" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/dynamic-functions</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/pt-br/examples/styling</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/styling" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/styling" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/styling" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/styling" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/api-update</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/es/examples/styling</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/styling" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/styling" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/styling" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/styling" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/api-scope</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/en/examples/component-props</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/component-props" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/component-props" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/component-props" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/component-props" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/api-when</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/pt-br/examples/component-props</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/component-props" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/component-props" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/component-props" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/component-props" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/api-list</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/es/examples/component-props</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/component-props" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/component-props" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/component-props" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/component-props" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/api-region</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/en/examples/component-children</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/component-children" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/component-children" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/component-children" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/component-children" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/api-force-update</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/pt-br/examples/component-children</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/component-children" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/component-children" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/component-children" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/component-children" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/css</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/es/examples/component-children</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/component-children" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/component-children" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/component-children" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/component-children" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/cx</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/en/examples/component-list</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/component-list" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/component-list" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/component-list" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/component-list" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/create-css</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/pt-br/examples/component-list</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/component-list" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/component-list" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/component-list" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/component-list" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/bar-chart</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/es/examples/component-list</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/component-list" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/component-list" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/component-list" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/component-list" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/line-chart</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/en/examples/component-tree</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/component-tree" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/component-tree" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/component-tree" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/component-tree" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/donut-chart</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/pt-br/examples/component-tree</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/component-tree" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/component-tree" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/component-tree" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/component-tree" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/svg-animation</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/es/examples/component-tree</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/component-tree" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/component-tree" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/component-tree" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/component-tree" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/router-app</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/en/examples/tag-builders</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/tag-builders" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/tag-builders" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/tag-builders" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/tag-builders" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/router-match</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/pt-br/examples/tag-builders</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/tag-builders" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/tag-builders" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/tag-builders" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/tag-builders" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/router-nested</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/es/examples/tag-builders</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/tag-builders" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/tag-builders" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/tag-builders" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/tag-builders" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/router-layers</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/en/examples/components</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/components" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/components" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/components" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/components" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/router-loader</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/pt-br/examples/components</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/components" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/components" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/components" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/components" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/form-validation</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/es/examples/components</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/components" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/components" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/components" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/components" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/form-wizard</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/en/examples/attributes</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/attributes" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/attributes" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/attributes" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/attributes" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/form-rows</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/pt-br/examples/attributes</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/attributes" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/attributes" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/attributes" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/attributes" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/component-props</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/es/examples/attributes</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/attributes" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/attributes" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/attributes" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/attributes" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/component-children</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/en/examples/events</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/events" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/events" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/events" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/events" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/component-list</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/pt-br/examples/events</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/events" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/events" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/events" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/events" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nuclo.dev/examples/component-tree</loc>
-    <lastmod>2026-10-12</lastmod>
+    <loc>https://nuclo.dev/es/examples/events</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/events" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/events" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/events" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/events" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/lifecycle</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/lifecycle" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/lifecycle" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/lifecycle" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/lifecycle" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/lifecycle</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/lifecycle" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/lifecycle" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/lifecycle" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/lifecycle" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/lifecycle</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/lifecycle" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/lifecycle" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/lifecycle" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/lifecycle" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/explicit-updates</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/explicit-updates" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/explicit-updates" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/explicit-updates" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/explicit-updates" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/explicit-updates</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/explicit-updates" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/explicit-updates" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/explicit-updates" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/explicit-updates" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/explicit-updates</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/explicit-updates" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/explicit-updates" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/explicit-updates" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/explicit-updates" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/dynamic-functions</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/dynamic-functions" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/dynamic-functions" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/dynamic-functions" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/dynamic-functions" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/dynamic-functions</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/dynamic-functions" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/dynamic-functions" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/dynamic-functions" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/dynamic-functions" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/dynamic-functions</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/dynamic-functions" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/dynamic-functions" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/dynamic-functions" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/dynamic-functions" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/api-update</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-update" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-update" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-update" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-update" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/api-update</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-update" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-update" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-update" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-update" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/api-update</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-update" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-update" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-update" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-update" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/api-scope</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-scope" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-scope" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-scope" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-scope" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/api-scope</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-scope" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-scope" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-scope" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-scope" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/api-scope</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-scope" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-scope" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-scope" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-scope" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/api-when</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-when" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-when" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-when" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-when" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/api-when</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-when" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-when" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-when" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-when" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/api-when</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-when" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-when" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-when" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-when" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/api-list</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-list" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-list" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-list" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-list" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/api-list</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-list" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-list" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-list" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-list" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/api-list</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-list" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-list" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-list" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-list" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/api-region</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-region" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-region" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-region" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-region" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/api-region</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-region" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-region" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-region" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-region" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/api-region</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-region" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-region" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-region" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-region" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/api-force-update</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-force-update" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-force-update" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-force-update" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-force-update" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/api-force-update</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-force-update" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-force-update" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-force-update" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-force-update" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/api-force-update</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/api-force-update" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/api-force-update" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/api-force-update" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/api-force-update" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/css</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/css" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/css" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/css" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/css" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/css</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/css" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/css" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/css" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/css" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/css</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/css" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/css" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/css" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/css" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/cx</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/cx" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/cx" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/cx" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/cx" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/cx</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/cx" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/cx" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/cx" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/cx" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/cx</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/cx" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/cx" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/cx" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/cx" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/create-css</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/create-css" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/create-css" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/create-css" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/create-css" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/create-css</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/create-css" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/create-css" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/create-css" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/create-css" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/create-css</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/create-css" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/create-css" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/create-css" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/create-css" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/form-validation</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/form-validation" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/form-validation" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/form-validation" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/form-validation" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/form-validation</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/form-validation" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/form-validation" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/form-validation" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/form-validation" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/form-validation</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/form-validation" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/form-validation" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/form-validation" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/form-validation" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/form-wizard</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/form-wizard" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/form-wizard" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/form-wizard" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/form-wizard" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/form-wizard</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/form-wizard" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/form-wizard" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/form-wizard" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/form-wizard" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/form-wizard</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/form-wizard" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/form-wizard" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/form-wizard" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/form-wizard" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/form-rows</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/form-rows" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/form-rows" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/form-rows" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/form-rows" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/form-rows</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/form-rows" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/form-rows" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/form-rows" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/form-rows" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/form-rows</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/form-rows" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/form-rows" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/form-rows" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/form-rows" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/bar-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/bar-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/bar-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/bar-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/bar-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/bar-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/bar-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/bar-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/bar-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/bar-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/bar-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/bar-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/bar-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/bar-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/bar-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/line-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/line-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/line-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/line-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/line-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/line-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/line-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/line-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/line-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/line-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/line-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/line-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/line-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/line-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/line-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/donut-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/donut-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/donut-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/donut-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/donut-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/donut-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/donut-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/donut-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/donut-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/donut-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/donut-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/donut-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/donut-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/donut-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/donut-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/svg-animation</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/svg-animation" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/svg-animation" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/svg-animation" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/svg-animation" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/svg-animation</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/svg-animation" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/svg-animation" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/svg-animation" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/svg-animation" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/svg-animation</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/svg-animation" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/svg-animation" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/svg-animation" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/svg-animation" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/gauge</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/gauge" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/gauge" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/gauge" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/gauge" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/gauge</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/gauge" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/gauge" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/gauge" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/gauge" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/gauge</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/gauge" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/gauge" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/gauge" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/gauge" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/radar-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/radar-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/radar-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/radar-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/radar-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/radar-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/radar-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/radar-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/radar-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/radar-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/radar-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/radar-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/radar-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/radar-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/radar-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/heatmap</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/heatmap" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/heatmap" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/heatmap" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/heatmap" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/heatmap</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/heatmap" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/heatmap" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/heatmap" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/heatmap" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/heatmap</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/heatmap" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/heatmap" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/heatmap" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/heatmap" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/hover-tooltip</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/hover-tooltip" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/hover-tooltip" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/hover-tooltip" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/hover-tooltip" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/hover-tooltip</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/hover-tooltip" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/hover-tooltip" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/hover-tooltip" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/hover-tooltip" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/hover-tooltip</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/hover-tooltip" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/hover-tooltip" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/hover-tooltip" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/hover-tooltip" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/curve-editor</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/curve-editor" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/curve-editor" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/curve-editor" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/curve-editor" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/curve-editor</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/curve-editor" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/curve-editor" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/curve-editor" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/curve-editor" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/curve-editor</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/curve-editor" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/curve-editor" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/curve-editor" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/curve-editor" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/clock</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/clock" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/clock" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/clock" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/clock" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/clock</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/clock" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/clock" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/clock" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/clock" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/clock</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/clock" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/clock" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/clock" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/clock" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/icon-toggles</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/icon-toggles" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/icon-toggles" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/icon-toggles" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/icon-toggles" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/icon-toggles</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/icon-toggles" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/icon-toggles" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/icon-toggles" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/icon-toggles" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/icon-toggles</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/icon-toggles" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/icon-toggles" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/icon-toggles" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/icon-toggles" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/live-stream</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/live-stream" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/live-stream" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/live-stream" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/live-stream" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/live-stream</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/live-stream" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/live-stream" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/live-stream" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/live-stream" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/live-stream</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/live-stream" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/live-stream" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/live-stream" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/live-stream" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/candlestick-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/candlestick-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/candlestick-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/candlestick-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/candlestick-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/candlestick-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/candlestick-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/candlestick-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/candlestick-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/candlestick-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/candlestick-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/candlestick-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/candlestick-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/candlestick-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/candlestick-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/bar-chart-race</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/bar-chart-race" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/bar-chart-race" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/bar-chart-race" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/bar-chart-race" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/bar-chart-race</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/bar-chart-race" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/bar-chart-race" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/bar-chart-race" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/bar-chart-race" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/bar-chart-race</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/bar-chart-race" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/bar-chart-race" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/bar-chart-race" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/bar-chart-race" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/stacked-area-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/stacked-area-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/stacked-area-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/stacked-area-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/stacked-area-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/stacked-area-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/stacked-area-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/stacked-area-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/stacked-area-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/stacked-area-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/stacked-area-chart</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/stacked-area-chart" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/stacked-area-chart" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/stacked-area-chart" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/stacked-area-chart" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/treemap</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/treemap" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/treemap" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/treemap" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/treemap" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/treemap</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/treemap" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/treemap" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/treemap" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/treemap" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/treemap</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/treemap" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/treemap" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/treemap" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/treemap" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/live-histogram</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/live-histogram" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/live-histogram" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/live-histogram" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/live-histogram" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/live-histogram</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/live-histogram" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/live-histogram" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/live-histogram" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/live-histogram" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/live-histogram</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/live-histogram" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/live-histogram" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/live-histogram" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/live-histogram" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/drawing-pad</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/drawing-pad" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/drawing-pad" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/drawing-pad" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/drawing-pad" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/drawing-pad</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/drawing-pad" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/drawing-pad" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/drawing-pad" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/drawing-pad" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/drawing-pad</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/drawing-pad" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/drawing-pad" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/drawing-pad" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/drawing-pad" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/rotary-knob</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/rotary-knob" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/rotary-knob" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/rotary-knob" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/rotary-knob" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/rotary-knob</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/rotary-knob" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/rotary-knob" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/rotary-knob" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/rotary-knob" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/rotary-knob</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/rotary-knob" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/rotary-knob" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/rotary-knob" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/rotary-knob" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/color-wheel</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/color-wheel" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/color-wheel" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/color-wheel" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/color-wheel" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/color-wheel</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/color-wheel" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/color-wheel" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/color-wheel" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/color-wheel" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/color-wheel</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/color-wheel" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/color-wheel" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/color-wheel" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/color-wheel" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/spirograph</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/spirograph" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/spirograph" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/spirograph" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/spirograph" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/spirograph</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/spirograph" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/spirograph" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/spirograph" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/spirograph" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/spirograph</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/spirograph" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/spirograph" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/spirograph" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/spirograph" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/bouncing-balls</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/bouncing-balls" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/bouncing-balls" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/bouncing-balls" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/bouncing-balls" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/bouncing-balls</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/bouncing-balls" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/bouncing-balls" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/bouncing-balls" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/bouncing-balls" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/bouncing-balls</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/bouncing-balls" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/bouncing-balls" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/bouncing-balls" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/bouncing-balls" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/gooey-blobs</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/gooey-blobs" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/gooey-blobs" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/gooey-blobs" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/gooey-blobs" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/gooey-blobs</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/gooey-blobs" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/gooey-blobs" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/gooey-blobs" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/gooey-blobs" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/gooey-blobs</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/gooey-blobs" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/gooey-blobs" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/gooey-blobs" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/gooey-blobs" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/force-graph</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/force-graph" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/force-graph" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/force-graph" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/force-graph" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/force-graph</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/force-graph" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/force-graph" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/force-graph" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/force-graph" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/force-graph</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/force-graph" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/force-graph" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/force-graph" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/force-graph" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/brush-zoom</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/brush-zoom" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/brush-zoom" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/brush-zoom" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/brush-zoom" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/brush-zoom</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/brush-zoom" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/brush-zoom" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/brush-zoom" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/brush-zoom" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/brush-zoom</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/brush-zoom" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/brush-zoom" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/brush-zoom" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/brush-zoom" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/tic-tac-toe</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/tic-tac-toe" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/tic-tac-toe" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/tic-tac-toe" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/tic-tac-toe" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/tic-tac-toe</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/tic-tac-toe" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/tic-tac-toe" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/tic-tac-toe" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/tic-tac-toe" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/tic-tac-toe</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/tic-tac-toe" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/tic-tac-toe" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/tic-tac-toe" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/tic-tac-toe" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/circular-text</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/circular-text" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/circular-text" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/circular-text" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/circular-text" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/circular-text</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/circular-text" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/circular-text" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/circular-text" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/circular-text" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/circular-text</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/circular-text" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/circular-text" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/circular-text" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/circular-text" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/router-app</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-app" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-app" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-app" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-app" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/router-app</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-app" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-app" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-app" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-app" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/router-app</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-app" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-app" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-app" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-app" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/router-nested</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-nested" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-nested" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-nested" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-nested" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/router-nested</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-nested" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-nested" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-nested" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-nested" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/router-nested</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-nested" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-nested" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-nested" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-nested" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/router-loader</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-loader" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-loader" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-loader" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-loader" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/router-loader</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-loader" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-loader" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-loader" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-loader" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/router-loader</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-loader" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-loader" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-loader" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-loader" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/router-layers</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-layers" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-layers" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-layers" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-layers" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/router-layers</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-layers" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-layers" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-layers" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-layers" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/router-layers</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-layers" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-layers" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-layers" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-layers" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/router-multi</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-multi" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-multi" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-multi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-multi" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/router-multi</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-multi" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-multi" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-multi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-multi" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/router-multi</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-multi" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-multi" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-multi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-multi" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/router-match</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-match" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-match" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-match" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-match" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/router-match</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-match" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-match" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-match" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-match" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/router-match</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/router-match" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/router-match" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/router-match" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/router-match" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/page-builder</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/page-builder" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/page-builder" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/page-builder" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/page-builder" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/page-builder</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/page-builder" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/page-builder" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/page-builder" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/page-builder" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/page-builder</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/page-builder" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/page-builder" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/page-builder" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/page-builder" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/sorting</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/sorting" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/sorting" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/sorting" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/sorting" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/sorting</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/sorting" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/sorting" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/sorting" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/sorting" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/sorting</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/sorting" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/sorting" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/sorting" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/sorting" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/kanban</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/kanban" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/kanban" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/kanban" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/kanban" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/kanban</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/kanban" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/kanban" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/kanban" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/kanban" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/kanban</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/kanban" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/kanban" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/kanban" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/kanban" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/three</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/three" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/three" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/three" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/three" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/three</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/three" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/three" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/three" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/three" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/three</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/three" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/three" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/three" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/three" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/infinite-scroll</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/infinite-scroll" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/infinite-scroll" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/infinite-scroll" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/infinite-scroll" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/infinite-scroll</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/infinite-scroll" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/infinite-scroll" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/infinite-scroll" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/infinite-scroll" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/infinite-scroll</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/infinite-scroll" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/infinite-scroll" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/infinite-scroll" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/infinite-scroll" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/desktop</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/desktop" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/desktop" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/desktop" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/desktop" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/desktop</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/desktop" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/desktop" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/desktop" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/desktop" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/desktop</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/desktop" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/desktop" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/desktop" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/desktop" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/node-graph</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/node-graph" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/node-graph" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/node-graph" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/node-graph" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/node-graph</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/node-graph" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/node-graph" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/node-graph" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/node-graph" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/node-graph</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/node-graph" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/node-graph" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/node-graph" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/node-graph" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/data-grid</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/data-grid" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/data-grid" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/data-grid" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/data-grid" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/data-grid</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/data-grid" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/data-grid" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/data-grid" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/data-grid" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/data-grid</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/data-grid" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/data-grid" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/data-grid" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/data-grid" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/chat</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/chat" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/chat" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/chat" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/chat" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/chat</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/chat" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/chat" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/chat" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/chat" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/chat</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/chat" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/chat" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/chat" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/chat" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/dashboard</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/dashboard" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/dashboard" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/dashboard" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/dashboard" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/dashboard</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/dashboard" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/dashboard" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/dashboard" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/dashboard" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/dashboard</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/dashboard" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/dashboard" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/dashboard" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/dashboard" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/pixel-editor</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/pixel-editor" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/pixel-editor" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/pixel-editor" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/pixel-editor" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/pixel-editor</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/pixel-editor" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/pixel-editor" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/pixel-editor" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/pixel-editor" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/pixel-editor</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/pixel-editor" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/pixel-editor" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/pixel-editor" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/pixel-editor" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/snake</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/snake" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/snake" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/snake" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/snake" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/snake</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/snake" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/snake" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/snake" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/snake" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/snake</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/snake" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/snake" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/snake" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/snake" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/sequencer</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/sequencer" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/sequencer" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/sequencer" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/sequencer" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/sequencer</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/sequencer" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/sequencer" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/sequencer" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/sequencer" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/sequencer</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/sequencer" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/sequencer" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/sequencer" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/sequencer" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/i18n</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/i18n" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/i18n" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/i18n" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/i18n" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/i18n</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/i18n" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/i18n" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/i18n" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/i18n" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/i18n</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/i18n" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/i18n" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/i18n" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/i18n" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/en/examples/theme-editor</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/theme-editor" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/theme-editor" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/theme-editor" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/theme-editor" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/pt-br/examples/theme-editor</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/theme-editor" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/theme-editor" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/theme-editor" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/theme-editor" />
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nuclo.dev/es/examples/theme-editor</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nuclo.dev/en/examples/theme-editor" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://nuclo.dev/pt-br/examples/theme-editor" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nuclo.dev/es/examples/theme-editor" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nuclo.dev/en/examples/theme-editor" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

@@ -11,7 +11,7 @@ export const BAR_REGION = "example-bar";
 export const BODY_REGION = "example-body";
 
 /** An example route is the active one: /examples/:id, or /docs/example-:id. */
-export const isExampleOpen = () => router.pattern === "/examples/:id" || router.pattern === "/docs/:example";
+export const isExampleOpen = () => router.pattern.endsWith("/examples/:id") || router.pattern.endsWith("/docs/:example");
 
 export function ExampleFrame() {
   return when(

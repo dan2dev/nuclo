@@ -1,6 +1,6 @@
-import { routeName } from './route-definitions.ts';
+import { LOCALE_PREFIX, routeName } from './route-definitions.ts';
 import { NUCLO_VERSION } from './generated/nuclo-stats.ts';
-import { t } from './i18n/index.ts';
+import { DEFAULT_LOCALE, LOCALES, LOCALE_CODES, localeOf, t, type Locale } from './i18n/index.ts';
 
 export interface PageMeta {
   title: string;
@@ -19,33 +19,67 @@ function routeMeta(route: string): PageMeta {
   return { ...text, type: routeTypes[route] ?? "WebPage" };
 }
 
-/** What a matched route needs for its meta: the pattern, the path and the page's load() result. */
-export interface RouteInfo { pattern: string; path: string }
+/** What a matched route needs for its meta: the pattern, the path, the params and the page's load() result. */
+export interface RouteInfo { pattern: string; path: string; params: Record<string, string> }
+
+export interface ResolvedMeta {
+  meta: PageMeta;
+  /** The canonical URL: this page in its own locale. */
+  url: string;
+  /** The page's locale, null for the unlocalized standalone apps. */
+  locale: Locale | null;
+  /** The same page in every locale, for hreflang; empty for an unlocalized page. */
+  alternates: { locale: Locale; url: string }[];
+}
 
 // The example page's load() returns the example (see pages/ExampleDetail.ts); SEO reads its title and text.
 type ExampleData = { id: string; title: string; desc: string } | null | undefined;
 
-export function resolveMeta(ctx: RouteInfo, data?: unknown): { meta: PageMeta; url: string } {
+/** The absolute URL of a section path, under a locale. */
+const absolute = (locale: Locale | null, path: string): string => {
+  const base = SEO_BASE_URL.replace(/\/$/, '');
+  return locale ? `${base}/${locale}${path === '/' ? '' : path}` : `${base}${path}`;
+};
+
+export function resolveMeta(ctx: RouteInfo, data?: unknown): ResolvedMeta {
   const route = routeName(ctx.pattern);
-  const url = route === 'home' ? SEO_BASE_URL : `${SEO_BASE_URL}${ctx.path.replace(/^\/|\/+$/g, '')}`;
-  const example = ctx.pattern === '/examples/:id' || ctx.pattern === '/docs/:example' || ctx.pattern === '/apps/:id' ? (data as ExampleData) : undefined;
-  if (example) {
-    return {
-      // One canonical URL per example: /docs/example-<id> is the same page over the docs.
-      url: `${SEO_BASE_URL}examples/${example.id}`,
-      meta: {
+  const localized = ctx.pattern.startsWith(LOCALE_PREFIX);
+  const locale = localized ? (localeOf(ctx.params) ?? DEFAULT_LOCALE) : null;
+  // The page's path without its locale: "/pt-br/docs" is "/docs".
+  const path = localized ? ctx.path.replace(/^\/[^/]+/, '') || '/' : ctx.path.replace(/\/+$/, '') || '/';
+  const pattern = localized ? ctx.pattern.slice(LOCALE_PREFIX.length) : ctx.pattern;
+  const example = pattern === '/examples/:id' || pattern === '/docs/:example' || pattern === '/apps/:id' ? (data as ExampleData) : undefined;
+  // One canonical URL per example: /docs/example-<id> is the same page over the docs.
+  const canonicalPath = example ? `/examples/${example.id}` : path;
+  const meta: PageMeta = example
+    ? {
         title: t.seo.exampleTitle(example.title),
         description: t.seo.exampleDescription(example.desc),
         keywords: t.seo.exampleKeywords(example.title),
         type: 'TechArticle',
-      },
-    };
-  }
-  return { meta: routeMeta(route), url };
+      }
+    : routeMeta(route);
+  return {
+    meta,
+    locale,
+    url: absolute(locale, canonicalPath),
+    alternates: localized ? LOCALE_CODES.map((code) => ({ locale: code, url: absolute(code, canonicalPath) })) : [],
+  };
+}
+
+/** `<link rel="alternate" hreflang>` for every locale, plus x-default on the site's default locale. */
+export function hreflangLinks(resolved: ResolvedMeta): { hreflang: string; href: string }[] {
+  if (resolved.alternates.length === 0) return [];
+  const byLocale = (code: Locale) => resolved.alternates.find((alt) => alt.locale === code)!.url;
+  return [
+    ...resolved.alternates.map((alt) => ({ hreflang: LOCALES[alt.locale].lang, href: alt.url })),
+    { hreflang: 'x-default', href: byLocale(DEFAULT_LOCALE) },
+  ];
 }
 
 export function updatePageMeta(ctx: RouteInfo, data?: unknown): void {
-  const { meta, url: pageUrl } = resolveMeta(ctx, data);
+  const resolved = resolveMeta(ctx, data);
+  const { meta, url: pageUrl } = resolved;
   document.title = meta.title;
 
   function setMeta(name: string, content: string) {
@@ -71,9 +105,20 @@ export function updatePageMeta(ctx: RouteInfo, data?: unknown): void {
   let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
   if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
   canonical.href = pageUrl;
+
+  // The language links follow the page: one per locale, none on an unlocalized page.
+  document.querySelectorAll('link[rel="alternate"][hreflang]').forEach((el) => el.remove());
+  for (const { hreflang, href } of hreflangLinks(resolved)) {
+    const link = document.createElement('link');
+    link.rel = 'alternate';
+    link.hreflang = hreflang;
+    link.href = href;
+    document.head.appendChild(link);
+  }
+  if (resolved.locale) setOg('og:locale', LOCALES[resolved.locale].og);
 }
 
-export function generateStructuredData(meta: PageMeta, pageUrl: string): object[] {
+export function generateStructuredData(meta: PageMeta, pageUrl: string, locale: Locale | null): object[] {
 
   const website = {
     "@context": "https://schema.org",
@@ -108,6 +153,7 @@ export function generateStructuredData(meta: PageMeta, pageUrl: string): object[
     url: pageUrl,
     isPartOf: { "@id": `${SEO_BASE_URL}#website` },
     about: { "@id": `${SEO_BASE_URL}#software` },
+    ...(locale ? { inLanguage: LOCALES[locale].lang } : {}),
   };
 
   return [website, software, page];

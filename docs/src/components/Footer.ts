@@ -1,5 +1,5 @@
 import { css, colors, s } from "../styles.ts";
-import { router } from "../router.ts";
+import { href } from "../router.ts";
 import { NucloBrand } from "./NucloBrand.ts";
 import { GitHubSvg } from "./icons.ts";
 import { NUCLO_VERSION } from "../generated/nuclo-stats.ts";
@@ -34,7 +34,7 @@ export function Footer() {
   const version = css("components-footer-version", { fontFamily: "ui-monospace, monospace", fontSize: "0.8125rem", color: colors.textMuted });
 
   function RouteLink(label: string, route: string) {
-    return li(a(linkStyle, { href: router.href(`/${route}`) }, label));
+    return li(a(linkStyle, { href: href(`/${route}`) }, label));
   }
 
   function ExternalLink(label: string, href: string, icon?: ReturnType<typeof svgSvg>) {

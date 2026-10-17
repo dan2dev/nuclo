@@ -4,13 +4,13 @@ import "nuclo";
 import { test, expect } from "bun:test";
 import * as en from "../src/i18n/en/docs.ts";
 import * as enHome from "../src/i18n/en/home.ts";
-import pt from "../src/i18n/pt/index.ts";
+import pt from "../src/i18n/pt-br/index.ts";
 import es from "../src/i18n/es/index.ts";
 import { ALL_EXAMPLES } from "../src/pages/examples/registry.ts";
 
 const sectionIds = (groups: { sections: { id: string }[] }[]) => groups.flatMap((g) => g.sections.map((s) => s.id));
 
-for (const [name, bundle] of [["pt", pt], ["es", es]] as const) {
+for (const [name, bundle] of [["pt-br", pt], ["es", es]] as const) {
   test(`${name}: the docs have the same groups and sections, in order`, () => {
     expect(sectionIds(bundle.docs.GROUPS)).toEqual(sectionIds(en.GROUPS));
     expect(bundle.docs.GROUPS.map((g) => g.sections.length)).toEqual(en.GROUPS.map((g) => g.sections.length));

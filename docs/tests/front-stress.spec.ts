@@ -351,7 +351,7 @@ async function runRouteScenario(
     await expect(page.locator("#examples-page")).toBeVisible({ timeout: 3000 });
 
     // Each example opens full screen at its own route; Escape goes back to the grid.
-    await page.locator('#examples-page a[href="/examples/counter"]').first().click();
+    await page.locator('#examples-page a[href="/en/examples/counter"]').first().click();
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 3000 });
     const plusButton = page.getByRole("button", { name: "+" }).first();
     if (await plusButton.isVisible().catch(() => false)) {

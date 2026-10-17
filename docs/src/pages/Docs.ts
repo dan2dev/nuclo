@@ -1,4 +1,5 @@
-import type { PageProps, RouteContext } from "nuclo-router";
+import type { DataLoader, PageProps, RouteContext } from "nuclo-router";
+import { applyLocale, loadLocale, type Locale } from "../i18n/index.ts";
 import { css, cx, s } from "../styles.ts";
 import { docsIndex, docsText, type DocSection } from "./docs/content.ts";
 import { ds, sectionDelay } from "./docs/styles.ts";
@@ -61,8 +62,11 @@ function icon(size: number, d: string) {
   );
 }
 
-export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
-  // The docs in the current locale. Read per build: a locale switch builds the page again.
+export const load: DataLoader<Locale | null> = (ctx) => loadLocale(ctx.params);
+
+export function DocsPage(ctx: RouteContext, { outlet, data }: PageProps<Locale | null>) {
+  // The docs in the URL's locale, fetched by load(). Read per build: a locale switch builds the page again.
+  applyLocale(data);
   const { groups: DOC_GROUPS, sections: SECTIONS, byId: SECTION_MAP } = docsIndex();
   const L = docsText().LABELS;
   const DOC_FACTS = [
