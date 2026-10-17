@@ -9,7 +9,6 @@ import { animations } from "../styles/animations.ts";
 
 const GITHUB_URL = "https://github.com/dan2dev/nuclo";
 const DESKTOP = "@media (min-width: 768px)";
-const WIDE = "@media (min-width: 1024px)";
 
 type NavItem = { label: string; route: string; hash?: string };
 
@@ -31,6 +30,10 @@ function LineIcon(d: string, size = 20) {
 
 // The logo's ease (0.5 - cos(πx) / 2), as a bezier
 const EASE = "cubic-bezier(0.37, 0, 0.63, 1)";
+// The nav handle's: quick to leave, settling softly on the next page
+const SLIDE = "cubic-bezier(0.22, 1, 0.36, 1)";
+// The current page's plate: solid deep orange, dark enough for white text (about 5:1), lit along its top edge
+const plateOn = { backgroundColor: colors.primaryDark, boxShadow: `inset 0 1px 0 rgba(255,255,255,0.16), 0 6px 16px -8px ${colors.primaryGlow}` } as const;
 const A = animations;
 const motion = (animation: string) => ({ animation, "@media (prefers-reduced-motion: reduce)": { animation: "none" } });
 const ring = { outline: `2px solid ${colors.primary}`, outlineOffset: "3px" } as const;
@@ -71,13 +74,21 @@ const st = {
     [DESKTOP]: { raw: { "--logo-h": "36px" } },
     "@media (prefers-reduced-motion: reduce)": { "& > svg": { transition: "none" } } }),
 
-  // The links sit in a track as tall as the bar's buttons; its corners follow the pills' at its 4px inset
-  nav: css("components-header-nav", { gridColumn: "2", display: "none", alignItems: "center", gap: "2px", padding: "4px", borderRadius: "14px", backgroundColor: colors.bgSecondary, boxShadow: `inset 0 0 0 1px ${colors.border}`, [DESKTOP]: { display: "flex" } }),
-  // A link is a pill. Hover lays a neutral plate under it; the current page sits on a warm one in the mark's
-  // colour, so the bar's bottom edge is left to the reading line.
-  navLink: css("components-header-navLink", { display: "flex", alignItems: "center", height: "28px", padding: "0 14px", borderRadius: "10px", fontSize: "14px", fontWeight: "500", letterSpacing: "0.01em", color: colors.textDim, whiteSpace: "nowrap", transition: `color 0.2s ${EASE}, background-color 0.2s ${EASE}, box-shadow 0.2s ${EASE}, transform 0.2s ${EASE}`,
-    hover: { color: colors.text, backgroundColor: colors.border }, active: { transform: "scale(0.96)" }, focusVisible: { ...ring, outlineOffset: "1px" } }),
-  navLinkOn: css("components-header-navLinkOn", { color: colors.text, backgroundColor: colors.primaryAlpha13, boxShadow: `inset 0 0 0 1px ${colors.primaryAlpha19}`, hover: { backgroundColor: colors.primaryAlpha19 } }),
+  // A three-way toggle: the links sit in a track as tall as the bar's buttons (its corners follow the pills' at its
+  // 4px inset), and the current page sits on a handle that slides between them, taking each label's width.
+  // Until the nav has measured the handle (and without JS) the current link wears the plate itself.
+  nav: css("components-header-nav", { position: "relative", gridColumn: "2", display: "none", alignItems: "center", gap: "2px", padding: "4px", borderRadius: "14px", backgroundColor: colors.bgNavTrack, boxShadow: `inset 0 0 0 1px ${colors.border}`, [DESKTOP]: { display: "flex" },
+    '&[data-ready] > a[aria-current="page"]': { backgroundColor: "transparent", boxShadow: "none" },
+    "&[data-ready] > span": { opacity: "1", transition: `transform 0.45s ${SLIDE}, width 0.45s ${SLIDE}, opacity 0.2s ${EASE}, filter 0.2s ${EASE}` },
+    '&[data-ready][data-at="-1"] > span': { opacity: "0" },
+    '&:has(> a[aria-current="page"]:hover) > span': { filter: "brightness(1.1)" },
+    "@media (prefers-reduced-motion: reduce)": { "&[data-ready][data-at] > span": { transition: "none" } } }),
+  handle: css("components-header-handle", { position: "absolute", top: "4px", left: "0", height: "28px", width: "var(--w, 0px)", transform: "translateX(var(--x, 0px))", borderRadius: "10px", ...plateOn, opacity: "0", pointerEvents: "none" }),
+  // A link is a pill above the handle. Hover lays a solid grey plate under it; the current page sits on the solid
+  // orange handle, so the bar's bottom edge is left to the reading line.
+  navLink: css("components-header-navLink", { position: "relative", display: "flex", alignItems: "center", height: "28px", padding: "0 14px", borderRadius: "10px", fontSize: "14px", fontWeight: "500", letterSpacing: "0.01em", color: colors.textDim, whiteSpace: "nowrap", transition: `color 0.2s ${EASE}, background-color 0.2s ${EASE}, box-shadow 0.2s ${EASE}, transform 0.2s ${EASE}`,
+    hover: { color: colors.text, backgroundColor: colors.bgLight }, active: { transform: "scale(0.96)" }, focusVisible: { ...ring, outlineOffset: "1px" } }),
+  navLinkOn: css("components-header-navLinkOn", { color: colors.primaryText, ...plateOn, hover: { color: colors.primaryText, ...plateOn } }),
 
   crumbDivider: css("components-header-crumbDivider", { display: "none", flexShrink: 0, width: "1px", height: "18px", backgroundColor: colors.borderLight, "@media (min-width: 1100px)": { display: "block" } }),
   crumb: css("components-header-crumb", { display: "none", alignItems: "center", gap: "8px", minWidth: 0, fontSize: "13px", color: colors.textMuted, whiteSpace: "nowrap", "@media (min-width: 1100px)": { display: "flex" } }),
@@ -91,7 +102,6 @@ const st = {
   iconIn: css("components-header-iconIn", { "& path": { ...motion(`${A.strokeDraw} 0.5s ${EASE}`), raw: { "stroke-dasharray": "1" } } }),
   // The call to action wears the mark's gradient. It lifts on hover, and its arrow leads the way
   cta: css("components-header-cta", { alignItems: "center", justifyContent: "center", gap: "6px", borderRadius: "10px", backgroundImage: `linear-gradient(180deg, ${GRADIENT.from}, ${GRADIENT.to})`, color: "#fff", fontWeight: "600", whiteSpace: "nowrap", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 20px -12px var(--c-primary-glow)", transition: `transform 0.25s ${EASE}, box-shadow 0.25s ${EASE}, filter 0.25s ${EASE}`, hover: { transform: "translateY(-1px)", filter: "brightness(1.06)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 12px 26px -10px var(--c-primary-glow)", "& > svg": { transform: "translateX(2px)" } }, active: { transform: "translateY(0) scale(0.98)" }, focusVisible: ring, "& > svg": { transition: `transform 0.25s ${EASE}` } }),
-  ctaBar: css("components-header-ctaBar", { display: "none", height: "36px", padding: "0 12px 0 15px", marginLeft: "10px", fontSize: "14px", [WIDE]: { display: "inline-flex" } }),
   ctaMenu: css("components-header-ctaMenu", { display: "flex", height: "52px", fontSize: "16px", borderRadius: "12px" }),
   menuBtn: css("components-header-menuBtn", { ...iconBtn, width: "44px", height: "44px", marginRight: "-12px", color: colors.text, [DESKTOP]: { display: "none" } }),
   // Two bars that fold into a cross while the menu is open
@@ -104,7 +114,7 @@ const st = {
   menuItem: css("components-header-menuItem", { after: { content: '""', display: "block", height: "1px", backgroundColor: colors.border, transformOrigin: "left", ...motion(`${A.draw} 0.5s ${EASE} var(--d, 0s) backwards`) } }),
   // A row is a plate like the bar's pills, bled into the gutter so its label stays on the logo's edge
   menuRow: css("components-header-menuRow", { display: "flex", alignItems: "center", justifyContent: "space-between", height: "56px", margin: "6px -12px", padding: "0 12px", borderRadius: "12px", fontSize: "26px", fontWeight: "600", letterSpacing: "-0.02em", color: colors.text, textAlign: "left", transition: `color 0.2s ${EASE}`, ...motion(`${A.ink} 0.4s ${EASE} calc(var(--d, 0s) + 0.25s) backwards`), hover: { "& > span:last-child": { transform: "translateX(4px)", color: colors.text } } }),
-  menuRowOn: css("components-header-menuRowOn", { backgroundColor: colors.primaryAlpha13, boxShadow: `inset 0 0 0 1px ${colors.primaryAlpha19}`, "& > span:last-child": { color: colors.primaryInk } }),
+  menuRowOn: css("components-header-menuRowOn", { color: colors.primaryText, ...plateOn, "& > span:last-child": { color: colors.primaryText } }),
   rowIcon: css("components-header-rowIcon", { display: "flex", color: colors.textMuted, transition: `transform 0.25s ${EASE}, color 0.18s ease` }),
   srOnly: css("components-header-srOnly", { position: "absolute", width: "1px", height: "1px", overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" }),
   menuFoot: css("components-header-menuFoot", { flexShrink: 0, padding: "16px 0 max(16px, env(safe-area-inset-bottom))", borderTop: `1px solid ${colors.border}`, ...motion(`${A.ink} 0.4s ${EASE} 0.55s backwards`) }),
@@ -121,6 +131,17 @@ export function Header() {
   let menuEl: HTMLElement | undefined;
 
   const route = currentRoute;
+
+  // The nav's handle follows the current page: read on every update, measured only when it changes or the nav resizes
+  let navEl: HTMLElement | undefined;
+  let handleAt = -2;
+  const currentLink = () => NAV_LINKS.findIndex((l) => !l.hash && route() === l.route);
+  function placeHandle() {
+    const link = navEl?.querySelectorAll<HTMLElement>(":scope > a")[handleAt];
+    if (!navEl || !link) return;
+    navEl.style.setProperty("--x", `${link.offsetLeft}px`);
+    navEl.style.setProperty("--w", `${link.offsetWidth}px`);
+  }
   const href = (r: string, hash?: string) => router.href(r === "home" ? "/" : `/${r}`) + (hash ? `#${hash}` : "");
 
   const motion = (ms: number) => (matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : ms);
@@ -170,7 +191,6 @@ export function Header() {
       st.cta, variant,
       { href: href("docs", "quick-start"), onClick: closeMenu },
       "Get started",
-      ...(variant === st.ctaBar ? [LineIcon("M5 12h14 M13 6l6 6-6 6", 15)] : []),
     );
   }
 
@@ -272,7 +292,29 @@ export function Header() {
             ),
           ),
         ),
-        nav(st.nav, { "aria-label": "Main" }, ...NAV_LINKS.map((l) => RouteLink(l, st.navLink, st.navLinkOn))),
+        nav(
+          st.nav,
+          {
+            "aria-label": "Main",
+            // The index of the current page's link, -1 for none. When it changes the handle moves there
+            "data-at": () => {
+              const i = currentLink();
+              if (i !== handleAt) { handleAt = i; placeHandle(); }
+              return String(i);
+            },
+            onMount: (el: HTMLElement) => {
+              navEl = el;
+              placeHandle();
+              void el.offsetWidth; // placed before the transitions are on, so the handle appears where it belongs
+              el.setAttribute("data-ready", "");
+              const ro = new ResizeObserver(placeHandle); // e.g. the nav shown again past the mobile breakpoint
+              ro.observe(el);
+              return () => { ro.disconnect(); navEl = undefined; };
+            },
+          },
+          span(st.handle, { "aria-hidden": "true" }),
+          ...NAV_LINKS.map((l) => RouteLink(l, st.navLink, st.navLinkOn)),
+        ),
         div(
           st.right,
           a(st.iconBtn, { href: GITHUB_URL, target: "_blank", rel: "noopener noreferrer", "aria-label": "Nuclo on GitHub" }, GitHubSvg({ size: 18 })),
@@ -282,7 +324,6 @@ export function Header() {
             when(() => isDark(), span(ThemeIcon(), LineIcon("M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z", 17)))
               .else(span(ThemeIcon(), LineIcon("M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M6.34 17.66l-1.41 1.41 M19.07 4.93l-1.41 1.41", 17))),
           ),
-          GetStarted(st.ctaBar),
           button(
             st.menuBtn,
             {

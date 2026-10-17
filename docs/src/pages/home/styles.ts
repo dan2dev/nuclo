@@ -27,18 +27,24 @@ export const hs = {
   cmpLi: css("pages-home-styles-cmpLi", { display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.6", padding: "7px 0", "& svg": { flexShrink: 0, marginTop: "4px" } }),
   cmpLiGood: css("pages-home-styles-cmpLiGood", { color: colors.text, "& svg": { color: colors.primary } }),
   cmpLiDim: css("pages-home-styles-cmpLiDim", { "& svg": { color: colors.textMuted } }),
-  // Cancels <main>'s 20px top gap so the card sits as far below the header as its edges sit in from the viewport's
-  // (one --gutter), on the same frame as the header and every section.
-  heroSection: css("pages-home-styles-heroSection", { marginTop: "-20px", padding: "var(--gutter) 0 0", medium: { padding: "var(--gutter) 0 24px" }, large: { padding: "var(--gutter) 0 32px" } }),
+  // Cancels <main>'s 20px top gap so the card sits one --gutter below the header.
+  // The card is the frame plus its own side padding: it sticks out past the content's edges by exactly as much as it
+  // pads its content, so the copy starts on the logo's edge. That padding is 64px where the page has room, less where
+  // it has not: the card keeps --hero-edge clear of the viewport (on phones it runs edge to edge). The section is a
+  // size container, so the copy's width can be taken from the page's (100cqw).
+  heroSection: css("pages-home-styles-heroSection", { marginTop: "-20px", padding: "var(--gutter) 0 0", raw: { "container-type": "inline-size", "--hero-edge": "8px" }, medium: { padding: "var(--gutter) 0 24px" }, large: { padding: "var(--gutter) 0 32px" }, "@media (max-width: 600px)": { raw: { "--hero-edge": "0px" } } }),
+
+  heroShell: css("pages-home-styles-heroShell", { width: "min(calc(min(var(--frame), 100%) - 2 * var(--gutter) + 128px), calc(100% - 2 * var(--hero-edge)))", margin: "0 auto" }),
 
   // Faint 1px scanlines every 4px over the flat orange; two soft lights drift behind the card.
   heroFrame: css("pages-home-styles-heroFrame", {
-    position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "24px", backgroundColor: HERO_BG, raw: { "background-image": "repeating-linear-gradient(to bottom, transparent 0 3px, rgba(87, 12, 0, 0.08) 3px 4px)" }, minHeight: "540px", padding: "28px 22px", medium: { padding: "52px 42px" }, large: { padding: "50px 64px" },
+    position: "relative", isolation: "isolate", overflow: "hidden", borderRadius: "24px", backgroundColor: HERO_BG, raw: { "background-image": "repeating-linear-gradient(to bottom, transparent 0 3px, rgba(87, 12, 0, 0.08) 3px 4px)" }, minHeight: "540px", padding: "28px 0", medium: { padding: "52px 0" }, large: { padding: "50px 0" }, "@media (max-width: 600px)": { borderRadius: "0" },
     before: { content: '""', position: "absolute", zIndex: -1, top: "-35%", right: "-20%", width: "75%", aspectRatio: "1", borderRadius: "50%", raw: { "background-image": "radial-gradient(closest-side, rgba(255, 190, 120, 0.42), transparent)" }, animation: `${animations.drift} 16s ease-in-out infinite alternate`, "@media (prefers-reduced-motion: reduce)": { animation: "none" } },
     after: { content: '""', position: "absolute", zIndex: -1, bottom: "-45%", left: "-25%", width: "80%", aspectRatio: "1", borderRadius: "50%", raw: { "background-image": "radial-gradient(closest-side, rgba(110, 8, 0, 0.4), transparent)" }, animation: `${animations.drift} 21s ease-in-out -7s infinite alternate-reverse`, "@media (prefers-reduced-motion: reduce)": { animation: "none" } },
   }),
 
-  heroInner: css("pages-home-styles-heroInner", { position: "relative", zIndex: 2, display: "grid", width: "100%", maxWidth: "1180px", margin: "0 auto", gridTemplateColumns: "minmax(0, 1fr)", gap: "36px", alignItems: "center", medium: { gap: "48px" }, large: { gridTemplateColumns: "minmax(0, 0.92fr) minmax(440px, 1.08fr)", gap: "64px" } }),
+  // The copy is exactly the frame's content width, centred in the centred card: its edges are the logo's and the CTA's
+  heroInner: css("pages-home-styles-heroInner", { position: "relative", zIndex: 2, display: "grid", width: "calc(min(var(--frame), 100cqw) - 2 * var(--gutter))", margin: "0 auto", gridTemplateColumns: "minmax(0, 1fr)", gap: "36px", alignItems: "center", medium: { gap: "48px" }, large: { gridTemplateColumns: "minmax(0, 0.92fr) minmax(440px, 1.08fr)", gap: "64px" } }),
 
   heroBadge: css("pages-home-styles-heroBadge", { display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "0.875rem", fontWeight: "600", color: "rgba(255,255,255,0.88)" }),
 

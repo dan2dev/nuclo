@@ -19,6 +19,7 @@ export const colors = {
   bgLight:      'var(--c-bg-light)',
   bgCode:       'var(--c-bg-code)',
   bgNav:        'var(--c-bg-nav)',
+  bgNavTrack:   'var(--c-bg-nav-track)', // the nav toggle's groove, a step darker than the bar
   bgIcon:       'var(--c-bg-icon)',
   bgFooter:     'var(--c-bg-footer)',
 
@@ -51,8 +52,8 @@ export const { css, cx } = createCss({
 // Shared style helpers.
 export const s = {
   // The site's one frame, wide enough for the docs' sidebar, page and outline. The header, every page and the footer
-  // share its edges. --gutter is set on the app root
-  container: css("styles-container", { maxWidth: '1336px', margin: '0 auto', padding: '0 var(--gutter)' }),
+  // share its edges. --frame and --gutter are set on the app root
+  container: css("styles-container", { maxWidth: 'var(--frame)', margin: '0 auto', padding: '0 var(--gutter)' }),
 
   sectionLabel: css("styles-sectionLabel", { fontSize: '0.875rem', fontWeight: '600', color: colors.primaryInk, marginBottom: '12px' }),
 
