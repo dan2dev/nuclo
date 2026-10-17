@@ -28,7 +28,7 @@ type Piece = { contours: number[][][]; fill: string; start: number; end: number;
 
 const ICON_DRAW = 1.4; // seconds the wheel takes
 const LETTER_DRAW = 0.6; // seconds a pen takes per letter
-const INK_SET = 0.28; // seconds the ink takes to set, starting just before the pen finishes
+const INK_SET = 0.28; // seconds the ink takes to set, once the pen has closed the outline
 const LEAD = 0.2;
 const UNDRAW = 1.6; // how much faster the word is un-drawn than drawn
 
@@ -60,7 +60,7 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
   function paint() {
     for (const p of pieces) {
       p.k = Math.round(ease(seg(at(p), p.start, p.end)) * N);
-      p.ink = seg(at(p), p.end - LEAD, p.end - LEAD + INK_SET);
+      p.ink = seg(at(p), p.end, p.end + INK_SET); // fills only once the outline is closed: an open path would fill its chord
     }
     update(id);
   }
