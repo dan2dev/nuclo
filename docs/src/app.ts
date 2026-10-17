@@ -15,7 +15,8 @@ import { ExampleFrame } from './pages/examples/frame.ts';
 
 const appStyles = {
 	// --header-h is the fixed header's height; docs sticky offsets read it too.
-	root: css("app-app-root", { minHeight: '100vh', raw: { '--header-h': '64px' }, '@media (max-width: 767px)': { raw: { '--header-h': '56px' } } }),
+	// --gutter is the site's side margin: s.container's padding and the home hero's inset.
+	root: css("app-app-root", { minHeight: '100vh', raw: { '--header-h': '64px', '--gutter': '28px' }, '@media (max-width: 767px)': { raw: { '--header-h': '56px' } }, '@media (min-width: 601px) and (max-width: 900px)': { raw: { '--gutter': '24px' } }, '@media (max-width: 600px)': { raw: { '--gutter': '18px' } } }),
   main: css("app-main", { minHeight: 'calc(100vh - 160px)', paddingTop: 'calc(var(--header-h) + 20px)', animation: `${animations.pageFadeIn} 0.28s ease backwards` }), // not `both`: a leftover transform would trap the docs' fixed elements
   errorState: css("app-errorState", { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '12px', padding: '48px' }),
   errorTitle: css("app-errorTitle", { fontSize: '15px', fontWeight: '600', color: '#ef4444' }),

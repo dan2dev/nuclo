@@ -1,5 +1,5 @@
 import type { PageProps, RouteContext } from "nuclo-router";
-import { css, cx } from "../styles.ts";
+import { css, cx, s } from "../styles.ts";
 import { DOC_GROUPS, DOC_SECTIONS, SECTION_MAP } from "./docs/content.ts";
 import { ds, sectionDelay } from "./docs/styles.ts";
 import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../generated/nuclo-stats.ts";
@@ -500,7 +500,7 @@ export function DocsPage(ctx: RouteContext, { outlet }: PageProps) {
   }
 
   const page = div(
-    ds.layout,
+    s.container, ds.layout,
     // Leaving the page with the sheet open (e.g. browser back) must not leave the body locked.
     {
       onDestroy: () => {

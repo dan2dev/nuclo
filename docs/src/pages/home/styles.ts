@@ -27,10 +27,9 @@ export const hs = {
   cmpLi: css("pages-home-styles-cmpLi", { display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "0.875rem", color: colors.textDim, lineHeight: "1.6", padding: "7px 0", "& svg": { flexShrink: 0, marginTop: "4px" } }),
   cmpLiGood: css("pages-home-styles-cmpLiGood", { color: colors.text, "& svg": { color: colors.primary } }),
   cmpLiDim: css("pages-home-styles-cmpLiDim", { "& svg": { color: colors.textMuted } }),
-  // Cancels <main>'s 20px top gap so the card sits as far below the header as from the side edges (heroShell: 8 / 14 / 20px).
-  heroSection: css("pages-home-styles-heroSection", { marginTop: "-20px", padding: "8px 0 0", medium: { padding: "14px 0 24px" }, large: { padding: "20px 0 32px" } }),
-
-  heroShell: css("pages-home-styles-heroShell", { width: "calc(100% - 16px)", maxWidth: "1560px", margin: "0 auto", medium: { width: "calc(100% - 28px)" }, large: { width: "calc(100% - 40px)" } }),
+  // Cancels <main>'s 20px top gap so the card sits as far below the header as its edges sit in from the viewport's
+  // (one --gutter), on the same frame as the header and every section.
+  heroSection: css("pages-home-styles-heroSection", { marginTop: "-20px", padding: "var(--gutter) 0 0", medium: { padding: "var(--gutter) 0 24px" }, large: { padding: "var(--gutter) 0 32px" } }),
 
   // Faint 1px scanlines every 4px over the flat orange; two soft lights drift behind the card.
   heroFrame: css("pages-home-styles-heroFrame", {

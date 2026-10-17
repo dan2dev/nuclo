@@ -3,7 +3,7 @@ import { router, currentRoute } from "../router.ts";
 import { toggleTheme, isDark, getThemePreference, setThemePreference, type ThemePreference } from "../theme.ts";
 import { docsSection } from "../docs-state.ts";
 import { NucloBrand } from "./NucloBrand.ts";
-import { GRADIENT, STROKE } from "./brand-geometry.ts";
+import { GRADIENT, STROKE, box, brandBox, brandIcon } from "./brand-geometry.ts";
 import { GitHubSvg } from "./icons.ts";
 import { animations } from "../styles/animations.ts";
 
@@ -34,34 +34,57 @@ const EASE = "cubic-bezier(0.37, 0, 0.63, 1)";
 const A = animations;
 const motion = (animation: string) => ({ animation, "@media (prefers-reduced-motion: reduce)": { animation: "none" } });
 const ring = { outline: `2px solid ${colors.primary}`, outlineOffset: "3px" } as const;
+// The reading line is scrubbed by the page's scroll where the browser can; elsewhere it stays undrawn
+const SCROLL = "@supports (animation-timeline: scroll())";
+// Past this much scroll the word is un-drawn and the logo closes on its icon: the lockup's width and the icon's, per px of its height
+const WORD_SCROLL = 96;
+const iconBox = box([brandIcon.shape]);
+const LOCKUP_W = (brandBox[2] / brandBox[3]).toFixed(4);
+const ICON_W = ((iconBox[0] + iconBox[2] - brandBox[0]) / brandBox[3]).toFixed(4);
 // A square hit area for an icon. The negative margin lines the icon up with the container edge.
-const iconBtn = { display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", color: colors.textDim, transition: `color 0.2s ${EASE}, background-color 0.2s ${EASE}, transform 0.2s ${EASE}`, hover: { color: colors.text, backgroundColor: colors.bgSecondary }, active: { transform: "scale(0.92)" }, focusVisible: ring } as const;
+const iconBtn = { display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", color: colors.textDim, transition: `color 0.2s ${EASE}, background-color 0.2s ${EASE}, transform 0.2s ${EASE}`, hover: { color: colors.text, backgroundColor: colors.border }, active: { transform: "scale(0.92)" }, focusVisible: ring } as const;
 // The menu rows' delays, as --d: the pen reaches them one after the other
 const delays = (n: number, from: number, step: number) =>
   Object.fromEntries(Array.from({ length: n }, (_, i) => [`& > :nth-child(${i + 1})`, { raw: { "--d": `${(from + i * step).toFixed(2)}s` } }]));
 
 const st = {
-  // The bar is translucent and blurs the page behind it, so the brand sits on the content rather than on a slab.
-  bar: css("components-header-bar", { userSelect: "none", position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "var(--header-h)", backgroundColor: colors.bgNav, backdropFilter: "saturate(180%) blur(14px)", raw: { "-webkit-backdrop-filter": "saturate(180%) blur(14px)" }, borderBottom: `1px solid ${colors.border}` }),
-  row: css("components-header-row", { display: "flex", alignItems: "center", gap: "28px", height: "100%", [WIDE]: { gap: "36px" } }),
-  // The lockup, still. Its wordmark's baseline sits on the nav's text line.
-  logo: css("components-header-logo", { display: "flex", alignItems: "center", flexShrink: 0, padding: "4px 0", borderRadius: "6px", focusVisible: ring, "& > svg": { height: "24px", width: "auto" }, [DESKTOP]: { "& > svg": { height: "27px" } } }),
+  // The bar is translucent and blurs the page behind it. Its rule is always drawn, so on a dark page the header
+  // still reads as its own band with everything centred in it, and the first block sits a gutter below it.
+  // The rule is also the pen's line, drawn from the left as far as the page has been read.
+  bar: css("components-header-bar", { userSelect: "none", position: "fixed", top: "0", left: "0", right: "0", zIndex: 220, height: "var(--header-h)", backgroundColor: colors.bgNav, backdropFilter: "saturate(180%) blur(14px)", raw: { "-webkit-backdrop-filter": "saturate(180%) blur(14px)" }, boxShadow: `inset 0 -1px 0 ${colors.border}`,
+    before: { content: '""', position: "absolute", left: "0", right: "0", bottom: "0", height: "2px", backgroundColor: STROKE, transformOrigin: "left", transform: "scaleX(0)" },
+    [SCROLL]: { before: { raw: { animation: `${A.draw} linear both`, "animation-timeline": "scroll(root)" } } } }),
+  // Three zones in the wide frame: the brand (and on docs pages, where you are), the nav dead centre, the actions.
+  // The side columns share what is left equally, so the nav stays put while the logo's word comes and goes
+  row: css("components-header-row", { display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)", alignItems: "center", columnGap: "24px", height: "100%" }),
+  brand: css("components-header-brand", { gridColumn: "1", display: "flex", alignItems: "center", gap: "14px", minWidth: 0 }),
+  // The lockup, drawn once as the page loads, like the footer's. Once the page scrolls the pen un-draws
+  // the word, and once it is gone the link closes on the icon (keeping its "Nuclo home" label); back at
+  // the top it opens and the word is drawn again.
+  logo: css("components-header-logo", { display: "flex", alignItems: "center", flexShrink: 0, overflow: "hidden", padding: "4px 0", borderRadius: "6px", focusVisible: ring,
+    raw: { "--logo-h": "30px", "--logo-w": `calc(var(--logo-h) * ${LOCKUP_W})`, "--logo-icon-w": `calc(var(--logo-h) * ${ICON_W})` },
+    // The lockup's ink sits low in its box: the l's ascender tops it, while the icon's lobe and the word's body
+    // rest on the baseline. Lifted by 11% of its height, the word's body lines up with the nav's labels; the
+    // icon alone settles back to the centre
+    "& > svg": { height: "var(--logo-h)", width: "auto", transform: "translateY(calc(var(--logo-h) * -0.11))", transition: `margin-right 0.4s ${EASE}, transform 0.4s ${EASE}` },
+    '& > svg[data-word="off"]': { marginRight: "calc(var(--logo-icon-w) - var(--logo-w))", transform: "none" },
+    [DESKTOP]: { raw: { "--logo-h": "36px" } },
+    "@media (prefers-reduced-motion: reduce)": { "& > svg": { transition: "none" } } }),
 
-  navWrap: css("components-header-navWrap", { display: "none", alignItems: "center", gap: "20px", height: "100%", minWidth: 0, [DESKTOP]: { display: "flex" } }),
-  nav: css("components-header-nav", { display: "flex", alignItems: "stretch", gap: "26px", height: "100%" }),
-  // A link's line is drawn from the left on hover, in the stroke; the current page's stays, in the primary.
-  // A route change draws the new line and retracts the old one.
-  navLink: css("components-header-navLink", { position: "relative", display: "flex", alignItems: "center", padding: "0 2px", fontSize: "14px", fontWeight: "500", letterSpacing: "0.01em", color: colors.textDim, whiteSpace: "nowrap", transition: `color 0.2s ${EASE}`,
-    after: { content: '""', position: "absolute", left: "0", right: "0", bottom: "-1px", height: "2px", borderRadius: "2px 2px 0 0", backgroundColor: STROKE, transformOrigin: "left", transform: "scaleX(0)", opacity: "0", transition: `transform 0.4s ${EASE}, opacity 0.25s ${EASE}, background-color 0.3s ${EASE}` },
-    hover: { color: colors.text, after: { transform: "scaleX(1)", opacity: "1" } }, focusVisible: { ...ring, outlineOffset: "-6px", borderRadius: "8px" } }),
-  navLinkOn: css("components-header-navLinkOn", { color: colors.text, after: { transform: "scaleX(1)", opacity: "1", backgroundColor: colors.primary } }),
+  // The links sit in a track as tall as the bar's buttons; its corners follow the pills' at its 4px inset
+  nav: css("components-header-nav", { gridColumn: "2", display: "none", alignItems: "center", gap: "2px", padding: "4px", borderRadius: "14px", backgroundColor: colors.bgSecondary, boxShadow: `inset 0 0 0 1px ${colors.border}`, [DESKTOP]: { display: "flex" } }),
+  // A link is a pill. Hover lays a neutral plate under it; the current page sits on a warm one in the mark's
+  // colour, so the bar's bottom edge is left to the reading line.
+  navLink: css("components-header-navLink", { display: "flex", alignItems: "center", height: "28px", padding: "0 14px", borderRadius: "10px", fontSize: "14px", fontWeight: "500", letterSpacing: "0.01em", color: colors.textDim, whiteSpace: "nowrap", transition: `color 0.2s ${EASE}, background-color 0.2s ${EASE}, box-shadow 0.2s ${EASE}, transform 0.2s ${EASE}`,
+    hover: { color: colors.text, backgroundColor: colors.border }, active: { transform: "scale(0.96)" }, focusVisible: { ...ring, outlineOffset: "1px" } }),
+  navLinkOn: css("components-header-navLinkOn", { color: colors.text, backgroundColor: colors.primaryAlpha13, boxShadow: `inset 0 0 0 1px ${colors.primaryAlpha19}`, hover: { backgroundColor: colors.primaryAlpha19 } }),
 
   crumbDivider: css("components-header-crumbDivider", { display: "none", flexShrink: 0, width: "1px", height: "18px", backgroundColor: colors.borderLight, "@media (min-width: 1100px)": { display: "block" } }),
   crumb: css("components-header-crumb", { display: "none", alignItems: "center", gap: "8px", minWidth: 0, fontSize: "13px", color: colors.textMuted, whiteSpace: "nowrap", "@media (min-width: 1100px)": { display: "flex" } }),
   crumbSep: css("components-header-crumbSep", { color: colors.border, fontSize: "15px" }),
   crumbTitle: css("components-header-crumbTitle", { maxWidth: "280px", overflow: "hidden", textOverflow: "ellipsis", color: colors.textDim, fontWeight: "500" }),
 
-  right: css("components-header-right", { display: "flex", alignItems: "center", gap: "4px", marginLeft: "auto" }),
+  right: css("components-header-right", { gridColumn: "3", justifySelf: "end", display: "flex", alignItems: "center", gap: "4px" }),
   iconBtn: css("components-header-iconBtn", { ...iconBtn, display: "none", width: "36px", height: "36px", [DESKTOP]: { display: "flex" } }),
   // A swapped theme icon's stroke is drawn end to end (not the first one: the header enters still)
   icon: css("components-header-icon", { display: "flex" }),
@@ -79,8 +102,9 @@ const st = {
   menuList: css("components-header-menuList", { flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: "12px 0", "& > div": delays(4, 0.05, 0.1) }),
   // Each row: its divider is drawn, then its label inks in
   menuItem: css("components-header-menuItem", { after: { content: '""', display: "block", height: "1px", backgroundColor: colors.border, transformOrigin: "left", ...motion(`${A.draw} 0.5s ${EASE} var(--d, 0s) backwards`) } }),
-  menuRow: css("components-header-menuRow", { display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", height: "68px", fontSize: "26px", fontWeight: "600", letterSpacing: "-0.02em", color: colors.text, textAlign: "left", transition: `color 0.2s ${EASE}`, ...motion(`${A.ink} 0.4s ${EASE} calc(var(--d, 0s) + 0.25s) backwards`), hover: { "& > span:last-child": { transform: "translateX(4px)", color: colors.text } } }),
-  menuRowOn: css("components-header-menuRowOn", { color: colors.primaryInk }),
+  // A row is a plate like the bar's pills, bled into the gutter so its label stays on the logo's edge
+  menuRow: css("components-header-menuRow", { display: "flex", alignItems: "center", justifyContent: "space-between", height: "56px", margin: "6px -12px", padding: "0 12px", borderRadius: "12px", fontSize: "26px", fontWeight: "600", letterSpacing: "-0.02em", color: colors.text, textAlign: "left", transition: `color 0.2s ${EASE}`, ...motion(`${A.ink} 0.4s ${EASE} calc(var(--d, 0s) + 0.25s) backwards`), hover: { "& > span:last-child": { transform: "translateX(4px)", color: colors.text } } }),
+  menuRowOn: css("components-header-menuRowOn", { backgroundColor: colors.primaryAlpha13, boxShadow: `inset 0 0 0 1px ${colors.primaryAlpha19}`, "& > span:last-child": { color: colors.primaryInk } }),
   rowIcon: css("components-header-rowIcon", { display: "flex", color: colors.textMuted, transition: `transform 0.25s ${EASE}, color 0.18s ease` }),
   srOnly: css("components-header-srOnly", { position: "absolute", width: "1px", height: "1px", overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" }),
   menuFoot: css("components-header-menuFoot", { flexShrink: 0, padding: "16px 0 max(16px, env(safe-area-inset-bottom))", borderTop: `1px solid ${colors.border}`, ...motion(`${A.ink} 0.4s ${EASE} 0.55s backwards`) }),
@@ -135,7 +159,7 @@ export function Header() {
     return a(
       st.logo,
       { href: href("home"), "aria-label": "Nuclo home", onClick: closeMenu },
-      NucloBrand({ height: 27 }),
+      NucloBrand({ height: 36, animate: true, hideWordAfter: WORD_SCROLL }),
     );
   }
 
@@ -235,10 +259,9 @@ export function Header() {
       st.bar,
       div(
         s.container, st.row,
-        Logo(),
         div(
-          st.navWrap,
-          nav(st.nav, { "aria-label": "Main" }, ...NAV_LINKS.map((l) => RouteLink(l, st.navLink, st.navLinkOn))),
+          st.brand,
+          Logo(),
           when(() => route() === "docs" && docsSection.title !== "",
             span(st.crumbDivider, { "aria-hidden": "true" }),
             div(
@@ -249,6 +272,7 @@ export function Header() {
             ),
           ),
         ),
+        nav(st.nav, { "aria-label": "Main" }, ...NAV_LINKS.map((l) => RouteLink(l, st.navLink, st.navLinkOn))),
         div(
           st.right,
           a(st.iconBtn, { href: GITHUB_URL, target: "_blank", rel: "noopener noreferrer", "aria-label": "Nuclo on GitHub" }, GitHubSvg({ size: 18 })),

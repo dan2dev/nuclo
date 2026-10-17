@@ -6,67 +6,101 @@ import { brandBox, brandIcon, glyphs, icon, pathD, GRADIENT, INK, N, STROKE, typ
 // as the next begins. SSR paints the finished logo; in the browser an animated instance starts
 // over: once on mount, or each time more than half of it scrolls into view (it clears again when it
 // leaves). `html[data-anim]` (set when JS runs and motion is allowed) hides it until then, so the
-// finished logo never flashes first.
+// finished logo never flashes first. With `hideWordAfter`, the word runs on a clock of its own: once the
+// page scrolls past that many px it is un-drawn, o to n, each ink lifting back to its line and the pen
+// winding it up; back above, it is drawn again. The svg's `data-word="off"` marks it gone, for a layout
+// that closes the space it leaves.
 
 const svg = css("components-nuclobrand-svg", { display: "block", height: "auto", flexShrink: 0 });
 
 let instances = 0;
 
-type Options = { animate?: boolean | "visible"; class?: ReturnType<typeof css> | null; label?: string };
+type Options = { animate?: boolean | "visible"; hideWordAfter?: number; class?: ReturnType<typeof css> | null; label?: string };
 
-// One drawn thing: its contours, its fill, and when its pen runs. k is how many points are drawn, ink its fill
-type Piece = { contours: number[][][]; fill: string; start: number; end: number; k: number; ink: number };
+// One drawn thing: its contours, its fill, and when its pen runs. k is how many points are drawn, ink its fill.
+// A letter runs on the word's clock
+type Piece = { contours: number[][][]; fill: string; start: number; end: number; letter: boolean; k: number; ink: number };
 
 const ICON_DRAW = 1.4; // seconds the wheel takes
 const LETTER_DRAW = 0.34; // seconds a pen takes per letter
 const INK_SET = 0.28; // seconds the ink takes to set, starting just before the pen finishes
 const LEAD = 0.1;
+const UNDRAW = 1.6; // how much faster the word is un-drawn than drawn
 
-function Drawing(ic: Icon, letters: number[][][][], view: [number, number, number, number], width: number, { animate = false, class: extra = null, label = "Nuclo" }: Options) {
+function Drawing(ic: Icon, letters: number[][][][], view: [number, number, number, number], width: number, { animate = false, hideWordAfter, class: extra = null, label = "Nuclo" }: Options) {
   const id = `nuclo-brand-${instances++}`;
 
   // The timeline: the icon's two pens share the wheel's window; each letter follows the last
-  const piece = (contours: number[][][], fill: string, start: number, end: number): Piece => ({ contours, fill, start, end, k: N, ink: 1 });
+  const piece = (contours: number[][][], fill: string, start: number, end: number, letter = false): Piece => ({ contours, fill, start, end, letter, k: N, ink: 1 });
   const pieces = [piece([ic.shape], `url(#${id}-fill)`, 0, ICON_DRAW), piece([ic.play], INK, 0, ICON_DRAW)];
   let t = ICON_DRAW;
   for (const contours of letters) {
-    pieces.push(piece(contours, "currentColor", t - LEAD, t - LEAD + LETTER_DRAW));
+    pieces.push(piece(contours, "currentColor", t - LEAD, t - LEAD + LETTER_DRAW, true));
     t += LETTER_DRAW - LEAD;
   }
   const wheel = pieces[0];
   const total = pieces[pieces.length - 1].end + INK_SET;
+  const bare = ICON_DRAW - LEAD; // the word's clock with no letter begun
 
-  let t0 = 0;
+  let el: SVGSVGElement;
   let now = Infinity; // seconds into the drawing; the finished logo for SSR
+  let wt = Infinity; // seconds into the word's part of it: it follows `now`, and runs back to `bare` while the word is hidden
+  let showWord = true;
+  let still = false; // no motion: the word goes and comes back at once
+  let last = 0;
   let raf = 0;
   const seg = (at: number, from: number, to: number) => Math.min(1, Math.max(0, (at - from) / (to - from)));
   const ease = (x: number) => 0.5 - Math.cos(Math.PI * x) / 2;
-  function tick(ms: number) {
-    now = (ms - t0) / 1000;
+  const at = (p: Piece) => (p.letter ? wt : now);
+  function paint() {
     for (const p of pieces) {
-      p.k = Math.round(ease(seg(now, p.start, p.end)) * N);
-      p.ink = seg(now, p.end - LEAD, p.end - LEAD + INK_SET);
+      p.k = Math.round(ease(seg(at(p), p.start, p.end)) * N);
+      p.ink = seg(at(p), p.end - LEAD, p.end - LEAD + INK_SET);
     }
     update(id);
-    if (now < total) raf = requestAnimationFrame(tick);
   }
-  function start(el: SVGSVGElement) {
-    el.classList.add("nuclo-draw-on");
-    for (const p of pieces) { p.k = 0; p.ink = 0; }
-    t0 = performance.now();
+  function tick(ms: number) {
+    const dt = Math.max(0, ms - last) / 1000;
+    last = ms;
+    now = Math.min(total, now + dt);
+    wt = showWord ? Math.min(now, wt + dt) : Math.min(wt, Math.max(bare, wt - dt * UNDRAW));
+    paint();
+    if (!showWord && wt <= bare) el.dataset.word = "off";
+    raf = now < total || (showWord ? wt < now : wt > bare) ? requestAnimationFrame(tick) : 0;
+  }
+  function run() {
+    if (raf) return;
+    last = performance.now();
     raf = requestAnimationFrame(tick);
   }
+  function start() {
+    el.classList.add("nuclo-draw-on");
+    now = wt = 0;
+    paint();
+    run();
+  }
   // Back to the blank page, hidden, ready to be drawn again
-  function clear(el: SVGSVGElement) {
+  function clear() {
     cancelAnimationFrame(raf);
+    raf = 0;
     el.classList.remove("nuclo-draw-on");
-    now = -1;
-    for (const p of pieces) { p.k = 0; p.ink = 0; }
-    update(id);
+    now = wt = -1;
+    paint();
+  }
+  function setWord(on: boolean) {
+    if (on === showWord) return;
+    showWord = on;
+    if (on) el.dataset.word = "on";
+    now = Math.min(now, total); // the finished logo's clock, from SSR
+    wt = Math.min(wt, now);
+    if (!still) return run();
+    wt = on ? now : bare;
+    paint();
+    if (!on) el.dataset.word = "off";
   }
 
   // A pen is on the page from the moment it starts until its ink has set
-  const penOpacity = (p: Piece) => (now < p.start ? 0 : 1 - p.ink);
+  const penOpacity = (p: Piece) => (at(p) <= p.start ? 0 : 1 - p.ink);
   const Pen = (p: Piece, pts: number[][]) =>
     circleSvg({ cx: () => pts[p.k][0], cy: () => pts[p.k][1], r: 5, fill: "currentColor", stroke: STROKE, "stroke-width": 1.5, opacity: () => penOpacity(p) });
   const Arm = (p: Piece) => lineSvg({ x1: () => ic.hub[p.k][0], y1: () => ic.hub[p.k][1], x2: () => p.contours[0][p.k][0], y2: () => p.contours[0][p.k][1] });
@@ -82,13 +116,22 @@ function Drawing(ic: Icon, letters: number[][][][], view: [number, number, numbe
       height: Math.round((width * view[3]) / view[2]),
       role: "img",
       "aria-label": label,
-      onMount: animate
-        ? (el: SVGSVGElement) => {
-            if (!document.documentElement.hasAttribute("data-anim")) return;
-            if (animate !== "visible") { start(el); return () => cancelAnimationFrame(raf); }
-            const io = new IntersectionObserver(([e]) => (e.isIntersecting ? start(el) : clear(el)), { threshold: 0.5 });
-            io.observe(el);
-            return () => { io.disconnect(); cancelAnimationFrame(raf); };
+      onMount: animate || hideWordAfter !== undefined
+        ? (node: SVGSVGElement) => {
+            el = node;
+            still = !document.documentElement.hasAttribute("data-anim");
+            const ac = new AbortController();
+            let io: IntersectionObserver | undefined;
+            if (animate === "visible" && !still) {
+              io = new IntersectionObserver(([e]) => (e.isIntersecting ? start() : clear()), { threshold: 0.5 });
+              io.observe(el);
+            } else if (animate && !still) start();
+            if (hideWordAfter !== undefined) {
+              const check = () => setWord(scrollY <= hideWordAfter);
+              addEventListener("scroll", check, { passive: true, signal: ac.signal });
+              check();
+            }
+            return () => { ac.abort(); io?.disconnect(); cancelAnimationFrame(raf); };
           }
         : undefined,
     },

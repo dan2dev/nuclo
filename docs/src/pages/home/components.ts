@@ -70,7 +70,7 @@ export function HomeHeroSection() {
   return section(
     hs.heroSection,
     div(
-      hs.heroShell,
+      s.container,
       div(
         hs.heroFrame,
         div(

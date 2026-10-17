@@ -50,7 +50,9 @@ export const { css, cx } = createCss({
 
 // Shared style helpers.
 export const s = {
-  container: css("styles-container", { maxWidth: '1240px', margin: '0 auto', padding: '0 22px', medium: { padding: '0 30px' } }),
+  // The site's one frame, wide enough for the docs' sidebar, page and outline. The header, every page and the footer
+  // share its edges. --gutter is set on the app root
+  container: css("styles-container", { maxWidth: '1336px', margin: '0 auto', padding: '0 var(--gutter)' }),
 
   sectionLabel: css("styles-sectionLabel", { fontSize: '0.875rem', fontWeight: '600', color: colors.primaryInk, marginBottom: '12px' }),
 

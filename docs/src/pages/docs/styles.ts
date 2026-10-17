@@ -41,7 +41,8 @@ const contentTypography = {
 } as const;
 
 export const ds = {
-  layout: css("pages-docs-styles-layout", { display: "grid", gridTemplateColumns: "228px minmax(0, 840px) 184px", gap: "34px", maxWidth: "1336px", margin: "0 auto", padding: "0 28px", minHeight: "100vh", alignItems: "start", "@media (max-width: 1180px)": { gridTemplateColumns: "224px minmax(0, 1fr)", maxWidth: "1080px", gap: "42px" }, "@media (max-width: 900px)": { display: "block", padding: "0 24px" }, "@media (max-width: 600px)": { padding: "0 18px" } }),
+  // Inside s.container, which sets its width and gutters
+  layout: css("pages-docs-styles-layout", { display: "grid", gridTemplateColumns: "228px minmax(0, 840px) 184px", gap: "34px", minHeight: "100vh", alignItems: "start", "@media (max-width: 1180px)": { gridTemplateColumns: "224px minmax(0, 1fr)", gap: "42px" }, "@media (max-width: 900px)": { display: "block" } }),
 
   sidebar: css("pages-docs-styles-sidebar", { display: "flex", flexDirection: "column", gap: "20px", padding: "0 16px 24px 0", borderRight: `1px solid ${colors.border}`, position: "sticky", top: "calc(var(--header-h) + 20px)", height: "calc(100vh - var(--header-h) - 36px)", overflowY: "auto", alignSelf: "start", "@media (max-width: 900px)": { display: "none" } }),
 
