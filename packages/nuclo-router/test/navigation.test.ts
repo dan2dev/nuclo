@@ -170,10 +170,13 @@ describe("link clicks", () => {
     window.history.replaceState(null, "", "/about?x=1");
     const route = await start(basicRouter());
     // The browser's only default left here is a full page reload.
+    (window.scrollTo as unknown as ReturnType<typeof vi.fn>).mockClear();
     expect(click(link({ href: "/about?x=1" }))).toBe(true);
     await flush();
     expect(route.path).toBe("/about");
     expect(window.location.pathname + window.location.search).toBe("/about?x=1");
+    // What the reload would have done: land at the top.
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
   });
 
   it("drops a fragment when the link to the same page has none", async () => {

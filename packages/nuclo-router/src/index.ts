@@ -754,9 +754,10 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       if (!to) return;
       const from = parse(here());
       if (from && from.ctx.path === to.ctx.path && from.ctx.search.toString() === to.ctx.search.toString()) {
-        // A fragment to scroll to is the browser's job. The same URL would only reload: swallow it, unless it drops a fragment.
+        // A fragment to scroll to is the browser's job. The same URL would only reload: swallow it, unless it drops a fragment, and land at the top as the reload would.
         if (url.hash) return;
         event.preventDefault();
+        window.scrollTo(0, 0);
         if (from.ctx.hash) void navigate(href, "push");
         return;
       }

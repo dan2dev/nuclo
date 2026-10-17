@@ -646,7 +646,9 @@ called `preventDefault()` on. Opt a link out explicitly with
 
 A pushed navigation preserves the current scroll position. When the new URL
 has a `#hash` matching an element on the page, that element is scrolled into
-view. `popstate` leaves scrolling to the browser. To land new pages at the
+view. A link to the page already showing (same path and query, no `#hash`)
+scrolls to the top, as the reload it replaces would. `popstate` leaves
+scrolling to the browser. To land new pages at the
 top, do it in `onNavigate`, which says how the navigation happened:
 
 ```ts
