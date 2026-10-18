@@ -11,8 +11,8 @@ export const GROUPS_1: DocGroupText[] = [
         id: "overview",
         title: "概述",
         content: `
-      <p>Nuclo 是一个轻量的 TypeScript DOM 库。<code>div()</code>、<code>button()</code> 这些再普通不过的函数就是你的积木，state 只是几个普通变量，界面想刷新的时候，喊一声 <code>update()</code> 就够了。</p>
-      <p>没有 virtual DOM，没有编译步骤，没有 Proxy，也没有 signal，整个库就是这么朴素。</p>
+      <p>Nuclo 是一个轻量的 TypeScript DOM 库。<code>div()</code>、<code>button()</code> 这些再普通不过的函数就是你的积木，state 放在普通变量里，页面需要变化时调用 <code>update()</code> 即可。</p>
+      <p>没有 virtual DOM，没有编译器，没有 Proxy，也没有 signal。</p>
       ${code("main.ts", `
 import 'nuclo'
 
@@ -30,8 +30,8 @@ render(App, document.getElementById('app')!)
       <ol>
         <li>用标签构建函数把 UI 搭起来。</li>
         <li>依赖 state 的值，一律包成函数传进去。</li>
-        <li>state 就用最普通的 JavaScript 去改，怎么顺手怎么来。</li>
-        <li>调用 <code>update()</code>。Nuclo 会把那些函数重新执行一遍，DOM 里只有真正变了的地方才会被改动。</li>
+        <li>用普通的 JavaScript 修改 state。</li>
+        <li>调用 <code>update()</code>。Nuclo 会重新执行这些函数，并更新 DOM。</li>
       </ol>
       <p>光改变量，DOM 纹丝不动。页面什么时候变，完全由你调用 <code>update()</code> 的时机说了算。</p>
     `,
@@ -71,12 +71,12 @@ render(App, document.getElementById('app')!)
         <li><strong>175 个标签构建函数</strong>：其中 112 个对应 HTML（<code>div</code>、<code>span</code>、<code>button</code>……），另外 63 个对应 SVG，名字带 <code>Svg</code> 后缀（<code>svgSvg</code>、<code>pathSvg</code>……）。详见<a href="#tag-builders">标签构建函数</a>。</li>
         <li><strong>16 个辅助函数</strong>：<code>update</code>、<code>scope</code>、<code>when</code>、<code>list</code>、<code>region</code>、<code>into</code>、<code>on</code>、<code>render</code>、<code>hydrate</code>、<code>forceUpdate</code>、<code>css</code>、<code>cx</code>、<code>createCss</code>、<code>variants</code>、<code>keyframes</code> 和 <code>globalStyle</code>。</li>
       </ul>
-      <p>这行 import 必须赶在所有调用构建函数的代码之前执行。ES 模块是按 import 顺序求值的，所以下面这种写法会直接翻车：</p>
+      <p>这行 import 必须赶在所有调用构建函数的代码之前执行。ES 模块是按 import 顺序求值的，所以下面这种写法会报错：</p>
       ${code("main.ts", `
 import { App } from './app' // app.ts calls div() → ReferenceError: div is not defined
 import 'nuclo'
 `)}
-      <p>解决办法很简单：把 <code>import 'nuclo'</code> 放在入口文件的第一行，或者在每个用到这些全局变量的文件里各 import 一次。</p>
+      <p>请把 <code>import 'nuclo'</code> 放在入口文件的第一行，或者在每个用到这些全局变量的文件里各 import 一次。</p>
       <h3>命名导入</h3>
       <p>辅助函数也提供具名导出，和全局变量指向的是同一批函数。<code>getCssText()</code> 与 <code>resetStyles()</code> 只能通过具名导出使用。至于标签构建函数，只有全局这一种形态，所以 <code>import { div } from 'nuclo'</code> 是行不通的。</p>
       ${code("main.ts", `
@@ -178,7 +178,7 @@ render(Card, document.body)
       </ul>
       <h3>几个坑</h3>
       <ul>
-        <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> 在条件为假时会老老实实渲染出 "false" 文本。正确的写法是 <code>div(when(() =&gt; isAdmin, span('Admin')))</code>。</li>
+        <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> 在条件为假时会渲染出 "false" 文本。正确的写法是 <code>div(when(() =&gt; isAdmin, span('Admin')))</code>。</li>
         <li>数组不能直接当子节点，得先展开：<code>ul(...names.map((n) =&gt; li(n)))</code>。如果列表会变，就交给 <code>list()</code>。</li>
         <li>和标签同名的局部变量会把构建函数 shadow 掉。比如在 <code>function Row(label: string)</code> 里，<code>label(...)</code> 就调用不了了。<code>label</code>、<code>title</code>、<code>data</code>、<code>p</code>、<code>a</code>、<code>i</code> 这类变量名，记得换个叫法。</li>
         <li>浏览器会把每个带 <code>id</code> 的元素自动暴露成全局变量。如果页面在 Nuclo 加载之前就已经有 <code>&lt;main id="main"&gt;</code>，Nuclo 不会覆盖这个全局变量，结果 <code>main(...)</code> 就会抛出 <code>TypeError</code>。换个 id 就能避开。</li>
@@ -196,7 +196,7 @@ const field = input((el) => {
 const el = div('Hello')() as HTMLDivElement
 document.body.append(el)
 `)}
-      <p>记得在下一次 <code>update()</code> 之前把它挂进文档。<code>update()</code> 执行时如果节点还游离在文档之外，它就会被永久踢出更新队列。</p>
+      <p>记得在下一次 <code>update()</code> 之前把它挂进文档。<code>update()</code> 执行时如果节点还游离在文档之外，它就会永久停止更新。</p>
       <h3>SVG</h3>
       <p>SVG 构建器的参数规则完全一样。Nuclo 对 SVG 一律使用 <code>setAttribute</code>，所以 <code>"stroke-width"</code> 这样的属性名直接照写就行。</p>
       ${code("icon.ts", `
@@ -206,7 +206,7 @@ const Icon = () =>
     circleSvg({ cx: 12, cy: 12, r: 10, fill: 'currentColor' }),
   )
 `)}
-      <h3>构建器全家福</h3>
+      <h3>所有标签构建函数</h3>
       <p><strong>HTML：</strong> a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark menu meta meter nav noscript object ol optgroup option output p picture pre progress q rp rt ruby s samp script search section select slot small source span strong style sub summary sup table tbody td template textarea tfoot th thead time title tr track u ul var_ video wbr</p>
       <p><strong>SVG：</strong> aSvg animateSvg animateMotionSvg animateTransformSvg circleSvg clipPathSvg defsSvg descSvg ellipseSvg feBlendSvg feColorMatrixSvg feComponentTransferSvg feCompositeSvg feConvolveMatrixSvg feDiffuseLightingSvg feDisplacementMapSvg feDistantLightSvg feDropShadowSvg feFloodSvg feFuncASvg feFuncBSvg feFuncGSvg feFuncRSvg feGaussianBlurSvg feImageSvg feMergeSvg feMergeNodeSvg feMorphologySvg feOffsetSvg fePointLightSvg feSpecularLightingSvg feSpotLightSvg feTileSvg feTurbulenceSvg filterSvg foreignObjectSvg gSvg imageSvg lineSvg linearGradientSvg markerSvg maskSvg metadataSvg mpathSvg pathSvg patternSvg polygonSvg polylineSvg radialGradientSvg rectSvg scriptSvg setSvg stopSvg styleSvg svgSvg switchSvg symbolSvg textSvg textPathSvg titleSvg tspanSvg useSvg viewSvg</p>
     `,
@@ -402,7 +402,7 @@ update() // App's onDestroy hooks and cleanups run
         id: "explicit-updates",
         title: "显式更新",
         content: `
-      <p>Nuclo 从不偷偷替你刷新页面：先改 state，再调用 <code>update()</code>，节奏就这么简单。</p>
+      <p>Nuclo 从不自动更新页面。先修改 state，再调用 <code>update()</code>。</p>
       ${code("counter.ts", `
 let count = 0
 
@@ -433,7 +433,7 @@ update() // one pass, both changes
         id: "dynamic-functions",
         title: "动态值",
         content: `
-      <p><strong>不带参数</strong>的函数，就是<strong>动态值</strong>。Nuclo 构建元素时会先跑它一遍，此后每次 <code>update()</code> 再跑一遍。文本子节点、属性值、<code>style</code>、<code>className</code> 都可以是动态值。如果是要出现、消失或重复的子节点，那是 <a href="#api-when"><code>when()</code></a> 和 <a href="#api-list"><code>list()</code></a> 的活。</p>
+      <p><strong>不带参数</strong>的函数，就是<strong>动态值</strong>。Nuclo 构建元素时会先跑它一遍，此后每次 <code>update()</code> 再跑一遍。文本子节点、属性值、<code>style</code>、<code>className</code> 都可以是动态值。如果是要出现、消失或重复的子节点，请使用 <a href="#api-when"><code>when()</code></a> 和 <a href="#api-list"><code>list()</code></a>。</p>
       ${code("example.ts", `
 let name = 'Alice'
 let busy = false
@@ -462,7 +462,7 @@ const Profile = () =>
         <li><code>style</code> 函数每次更新都会把返回的对象重新应用一遍。</li>
       </ul>
       <h3>错误</h3>
-      <p>动态值抛错时，Nuclo 会把它接住，本轮更新的其他部分照常进行：文本会变空或保留旧值，属性则保留旧值，等下一次 <code>update()</code> 成功就恢复正常。唯一的例外是：文本函数如果在<strong>第一次</strong>执行时就抛错，它会一直保持为空。</p>
+      <p>动态值抛出错误时，Nuclo 会捕获该错误，本轮更新的其他部分照常进行：文本会变空或保留旧值，属性则保留旧值，等下一次 <code>update()</code> 成功就恢复正常。唯一的例外是：文本函数如果在<strong>第一次</strong>执行时就抛错，它会一直保持为空。</p>
     `,
       },
       {
@@ -514,7 +514,7 @@ update()       // everything, the header now says "Hi, Grace"
         <li>一个元素可以同时带多个 id：<code>scope('cart', 'sidebar')</code>。</li>
         <li><code>update('a', 'b')</code> 会更新 <code>a</code> 和 <code>b</code> 内部的全部内容。多个元素共用同一个 id 时，它们都会被更新。</li>
         <li>作用域嵌套时，<code>update('outer')</code> 连内层一起刷新，而 <code>update('inner')</code> 不会波及外层。</li>
-        <li>如果文档里没有任何元素拥有这个 id，<strong>就什么也不会更新</strong>，而且不会报错，所以拼写要自己留意。</li>
+        <li>如果文档里没有任何元素拥有这个 id，<strong>就什么也不会更新</strong>，而且不会报错，所以请检查拼写。</li>
         <li><code>scope()</code> 在服务端是空操作。</li>
       </ul>
     `,
@@ -571,7 +571,7 @@ update()
       <h3>行是怎么对应的</h3>
       <ul>
         <li>还在列表里的 item 会保留它原来的行，必要时 Nuclo 只是把行挪个位置，不会再调用 <code>renderItem</code>。</li>
-        <li>新来的 item 得到新行；被移除的 item 它的行会消失，并触发 <code>onDestroy</code> hook。</li>
+        <li>新增的 item 会得到新行；被移除的 item 会失去它的行，并触发 <code>onDestroy</code> hook。</li>
         <li>重复的 item 各有各的行。</li>
         <li>数组可以原地修改（<code>push</code>、<code>splice</code>、<code>sort</code>），也可以每次返回一个新数组，都没问题。</li>
       </ul>
@@ -632,7 +632,7 @@ render(() => div(Layout(), Article()))
         <li>先后顺序无所谓。<code>into()</code> 比 region 先构建的话，会先等着，region 一构建完成就立刻显示出来。多个视图按书写顺序排列。</li>
         <li>内容的生命周期和视图同步：包着 <code>into()</code> 的 <code>when()</code> 关闭，或者它所在的 <code>list()</code> 行被删除，内容就会从 region 里撤走。再次打开时只会加回一份，不会重复。</li>
         <li>region 本身消失时（比如它外面的 <code>when()</code> 关了），视图会回到等待状态，之后只要用相同 id 重新构建 region，它们就会重新显示。</li>
-        <li>如果 <code>into()</code> 的 id 对不上任何 region，它什么也不渲染，也不会报错，拼写得自己多留心。</li>
+        <li>如果 <code>into()</code> 的 id 对不上任何 region，它什么也不渲染，也不会报错，所以请检查拼写。</li>
         <li>id 在整棵树里应当唯一。如果在一个还活着的 id 下再建一个 region，会记录一条警告。</li>
         <li>region 支持<a href="#api-ssr">服务端渲染</a>。<code>hydrate()</code> 时，每个视图会直接接管服务端渲染出的 HTML，而不是重新构建。</li>
       </ul>
@@ -890,7 +890,7 @@ hydrate(App, document.getElementById('root')!)
         id: "api-ssr",
         title: "服务端渲染",
         content: `
-      <p>在服务端把组件渲染成 HTML 字符串，到了浏览器里再用同一个组件调用 <a href="#api-hydrate"><code>hydrate()</code></a>，这段静态 HTML 就“活”过来了。服务端没有 <code>document</code>，所以要先 import <a href="#api-polyfill"><code>nuclo/polyfill</code></a>。</p>
+      <p>在服务端把组件渲染成 HTML 字符串，到了浏览器里再用同一个组件调用 <a href="#api-hydrate"><code>hydrate()</code></a>，这段 HTML 就具备了交互能力。服务端没有 <code>document</code>，所以要先 import <a href="#api-polyfill"><code>nuclo/polyfill</code></a>。</p>
       ${code("app.ts", `
 let count = 0
 const heading = css({ color: 'red' })

@@ -13,7 +13,7 @@ export const nav = {
   nucloHome: "Página inicial do Nuclo",
   nucloOnGitHub: "Nuclo no GitHub",
   opensInNewTab: " (abre em nova aba)",
-  switchTheme: "Alternar entre tema claro e escuro",
+  switchTheme: "Alternar o tema de cores",
   language: "Idioma",
 };
 
@@ -55,7 +55,7 @@ export const seo = {
   routes: {
     home: {
       title: "Nuclo - Framework DOM leve, com atualizações explícitas",
-      description: "Nuclo é uma lib de DOM em TypeScript, leve e sem dependências. Monte a UI com funções, mude o estado como quiser e chame update(). Sem DOM virtual, sem proxies, sem signals.",
+      description: "Nuclo é uma lib de DOM em TypeScript, leve e sem dependências. Monte a UI com funções, mude estado simples e chame update(). Sem DOM virtual, sem proxies, sem signals.",
       keywords: "nuclo, framework dom, valores dependentes de estado, atualizações explícitas, estado mutável, javascript, typescript, framework de ui, leve",
     },
     "apps/:id": {

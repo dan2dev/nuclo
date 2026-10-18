@@ -18,7 +18,7 @@ export const nav = {
 };
 
 export const footer = {
-  tagline: "runtime واجهات صريح لا يخفي شيئًا: دوال عادية، وstate قابلة للتعديل المباشر، واستدعاء واحد فقط بين بياناتك والـ DOM.",
+  tagline: "runtime صريح للواجهات: دوال عادية، وstate قابلة للتعديل المباشر، واستدعاء واحد فقط بين بياناتك والـ DOM.",
   builtWith: "هذا الموقع نفسه مبني بـ Nuclo.",
   explore: "استكشف",
   documentation: "التوثيق",

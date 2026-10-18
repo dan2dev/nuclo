@@ -358,7 +358,7 @@ const html = route.run(() => renderToString(App))
           <tr><td><code>*</code></td><td>alles, was sonst nirgends passt, also deine 404</td><td><code>{ '*': '…' }</code></td></tr>
         </tbody>
       </table>
-      <p>Die Reihenfolge der Priorität: erst statische Patterns, dann dynamische in der Reihenfolge ihrer Deklaration, zuletzt Catch-alls, wobei der längste Präfix zuerst drankommt. <code>'*'</code> greift also nur bei dem, was sonst niemand abfängt, und darf an beliebiger Stelle in der Tabelle stehen. Abschließende und doppelte Slashes sowie Prozent-Kodierung werden normalisiert, Param-Werte kommen dekodiert an. Gematcht wird segmentweise pro Pattern, Regexes werden weder gebaut noch ausgeführt.</p>
+      <p>Die Rangfolge lautet: erst statische Patterns, dann dynamische in der Reihenfolge ihrer Deklaration, zuletzt Catch-alls, wobei der längste Präfix zuerst drankommt. <code>'*'</code> greift also nur bei dem, was sonst niemand abfängt, und darf an beliebiger Stelle in der Tabelle stehen. Abschließende und doppelte Slashes sowie Prozent-Kodierung werden normalisiert, Param-Werte kommen dekodiert an. Gematcht wird segmentweise pro Pattern, Regexes werden weder gebaut noch ausgeführt.</p>
       <h3>Relative Routen</h3>
       <p>Ein Pattern mit <code>./</code> bezieht sich auf den Parent, der es deklariert, ein href mit <code>./</code> auf die aktive Route. Zusammen ergeben sie einen wiederverwendbaren Abschnitt, der unter jedem Parent dasselbe bedeutet. Der Wert in einer Tabelle ist entweder ein Loader oder eine weitere Tabelle, deren Keys relativ zu ihr gelten:</p>
       ${code("records/routes.ts", `
@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>ein gepushter Layer</td><td>rendert nur die passende Seite. Seine Parents sind in der Zeile darunter ja schon gemountet.</td></tr>
         </tbody>
       </table>
-      <p>Eine erhaltene Seite behält den <code>ctx</code>, mit dem sie gebaut wurde. So ist <code>ctx</code> überall gemeint: Für Live-Werte liest du <code>router.*</code>. State, der an der Query hängt, etwa Filter, Paginierung und Tabs, liest <code>router.search</code> in einem dynamischen Wert und schreibt mit <code>router.go('?page=2', { replace: true })</code>. Die Seite, ihr Fokus und das halb ausgefüllte Eingabefeld bleiben dabei, wo sie sind.</p>
+      <p>Eine erhaltene Seite behält den <code>ctx</code>, mit dem sie gebaut wurde. So verhält sich <code>ctx</code> überall: Für Live-Werte liest du <code>router.*</code>. State, der an der Query hängt, etwa Filter, Paginierung und Tabs, liest <code>router.search</code> in einem dynamischen Wert und schreibt mit <code>router.go('?page=2', { replace: true })</code>. Die Seite, ihr Fokus und das halb ausgefüllte Eingabefeld bleiben dabei, wo sie sind.</p>
     `,
       },
       {
@@ -475,8 +475,8 @@ export default function Report(ctx: RouteContext) {
       <h3>Welches Werkzeug wofür</h3>
       <ul>
         <li><strong><code>outlet()</code></strong> gehört zur Kind-Route: Inhalt, den die URL bestimmt und der innerhalb seiner Parent-Seite gerendert wird. Siehe <a href="#router-patterns">Verschachtelte Routen</a>.</li>
-        <li><strong><code>into()</code></strong> lässt die passende Seite ins Layout ausstrahlen. Der Inhalt gehört zur Seite und nutzt deren Daten.</li>
-        <li><strong><code>matches()</code></strong> überlässt dem Layout die Entscheidung, allein anhand der URL, mit einer eigenen kleinen Tabelle und ganz ohne Seite. Siehe <a href="#router-matches"><code>matches()</code></a>.</li>
+        <li><strong><code>into()</code></strong> ist für die passende Seite, die sich über das Layout verteilt. Der Inhalt gehört zur Seite und nutzt deren Daten.</li>
+        <li><strong><code>matches()</code></strong> ist für das Layout, das allein anhand der URL entscheidet, mit einer eigenen kleinen Tabelle und ganz ohne Seite. Siehe <a href="#router-matches"><code>matches()</code></a>.</li>
       </ul>
       <p>Das alles hängt an der einen passenden Route. Der Router steuert nicht zwei unabhängige Bereiche aus einer einzigen URL. Eine Sidebar mit eigenen Routen ist darum eine Region, die eine Seite füllt, und kein zweites Outlet. Wer für die Sidebar wirklich einen eigenen Router mit eigenem Laden und eigenem Fallback will, hält einen ungestarteten Router bereit und löst mit <code>match()</code> auf, mehr dazu unter <a href="#router-multi">Mehrere Router &amp; kombiniertes Laden</a>.</p>
     `,
@@ -513,7 +513,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
 await router.go(router.url, { replace: true })   // runs load() again
 `)}
       <h3>Daten zusammen mit dem Chunk starten</h3>
-      <p>Ein <code>load</code>, das das Seitenmodul exportiert, kann erst laufen, wenn das Modul da ist. Eine kalte Navigation holt also zuerst den Chunk und danach die Daten. Willst du beides parallel anstoßen, deklarier den Loader direkt in der Tabelle mit <code>withLoad()</code>:</p>
+      <p>Ein <code>load</code>-Export des Seitenmoduls kann erst laufen, wenn das Modul da ist. Eine kalte Navigation holt also zuerst den Chunk und danach die Daten. Willst du beides parallel anstoßen, deklarier den Loader direkt in der Tabelle mit <code>withLoad()</code>:</p>
       ${code("routes.ts", `
 import { createRouter, withLoad } from 'nuclo-router'
 import { loadPost } from './data.ts'   // small, in the main bundle
@@ -522,7 +522,7 @@ createRouter({
   '/blog/:slug': withLoad(() => import('./pages/Post.ts'), loadPost),
 })
 `)}
-      <p>Es tritt an die Stelle des eigenen <code>load</code> des Moduls und läuft wie dieses bei jedem Besuch. Eine Rejection, während der Chunk noch lädt, landet wie jede andere in <code>router.error</code>.</p>
+      <p>Diese Variante ersetzt das eigene <code>load</code> des Moduls und läuft wie dieses bei jedem Besuch. Eine Rejection, während der Chunk noch lädt, landet wie jede andere in <code>router.error</code>.</p>
       <p>Serverdaten werden bewusst nicht ins HTML serialisiert. Das <code>load</code> des Clients läuft bei der Hydration also noch einmal. Wenn dich das stört, lass den Server <code>route.data</code> ausgeben, zum Beispiel als <code>window.__DATA__</code>, und den Loader diese Daten zuerst verwenden. <code>route.data</code> enthält nur die Daten der passenden Seite, das Ergebnis eines Parent-<code>load()</code> ist nicht dabei.</p>
       <h3>Code-Splitting und Preloading</h3>
       <p>Der Wert einer Route ist immer eine Funktion, die die Seitenkomponente liefert. Geladen wird sie dadurch erst, wenn sie gebraucht wird:</p>
@@ -659,7 +659,7 @@ layer.close()          // dismissed: resolves with undefined
         <li><strong>Die URL ist der oberste Layer.</strong> <code>push()</code> legt einen History-Eintrag an, ein Layer ist also verlinkbar. Zurück schließt ihn und löst sein <code>push()</code> als verworfen auf, genau wie Abbrechen. Zurück und <code>close()</code> laufen über denselben Codepfad: <code>close()</code> merkt sich sein Ergebnis und geht in der History zurück, maßgeblich ist dabei die Tiefe in <code>history.state</code>. Browser behalten etwa 50 Einträge pro Tab, nach einem langen Weg durch Layer kann der Eintrag darunter also fehlen. Dann schließt <code>close()</code> die Layer an Ort und Stelle und überschreibt den aktuellen Eintrag mit der Seite, die sichtbar bleibt.</li>
         <li><strong>Eine gewöhnliche Navigation leert den Stack.</strong> Ein Link-Klick oder <code>go()</code> ist kein Layer. Er ersetzt alles und verwirft jeden offenen Layer, kein Aufrufer bleibt also ewig im Warten hängen.</li>
         <li><strong>Beim direkten Aufruf entsteht eine eigenständige Seite.</strong> Die URL benennt den obersten Layer, nicht den Stack darunter. Öffnest du die URL eines Layers direkt, wird er bei Tiefe 1 mit <code>layer.depth === 0</code> und einem wirkungslosen <code>close()</code> gerendert. Eine gepushte Route muss deshalb auch für sich allein Sinn ergeben. Verzweige auf <code>layer.depth</code>, um statt eines toten Abbrechen-Buttons einen Link nach draußen anzubieten.</li>
-        <li><strong>Das Promise überlebt keinen Reload</strong>, denn es lebt in einer Closure. Verstehe das Ergebnis als Abkürzung durch einen Ablauf, der auch auf dem langen Weg funktioniert.</li>
+        <li><strong>Das Promise überlebt keinen Reload</strong>, denn es lebt in einer Closure. Behandle das Ergebnis als Abkürzung durch einen Ablauf, der auch auf dem langen Weg funktioniert.</li>
         <li><strong>Nichts bleibt hängen.</strong> <code>stop()</code> verwirft jeden offenen Layer, und ein Layer, den eine Navigation aufgibt, wird mit <code>undefined</code> aufgelöst.</li>
       </ul>
       <h3>Leave-Guards</h3>
@@ -685,7 +685,7 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
         id: "router-matches",
         title: "matches() & Sub-Router",
         content: `
-      <p><code>router.outlet()</code> rendert die Seite. <code>router.matches(table)</code> rendert dagegen alles, was davon abhängt, wo du gerade bist, etwa eine Sidebar, Breadcrumbs oder eine Toolbar. Es nutzt dafür eine eigene kleine Tabelle und lädt weder eine Route noch braucht es eine Seite:</p>
+      <p><code>router.outlet()</code> rendert die Seite. <code>router.matches(table)</code> rendert dagegen alles, was davon abhängt, wo du gerade bist, etwa eine Sidebar, Breadcrumbs oder eine Toolbar. Es nutzt dafür eine eigene kleine Tabelle, lädt keine Route und fügt keine Seite hinzu:</p>
       ${code("app.ts", `
 div(
   aside(
@@ -808,7 +808,7 @@ createRouter(routes, {
       <ul>
         <li><strong><code>pending</code> gehört dem gestarteten Router.</strong> Ein nie gestarteter Router hat keine Route, kein <code>pending</code> und kein <code>error</code>. Der Bereich führt seine eigenen Flags, und ein zweiter Spinner kann neben dem ersten sitzen. In der Demo lädt die Sidebar 800 ms, während die Loader der Route 900 ms brauchen. Die Seite kann also vor der Sidebar fertig sein oder umgekehrt.</li>
         <li><strong><code>match()</code> hängt nichts ein.</strong> Beliebig viele ungestartete Router können sich ein Dokument teilen, jeder mit eigener Tabelle, eigener base und eigenem Modul-Cache, und keiner fasst die History an. Sie kosten eine Tabelle und einen Matcher.</li>
-        <li><strong>Seine Loader laufen nie.</strong> Der gestartete Router führt das <code>load()</code> der Seiten aus, auf die er passt. Ein nie gestarteter Router löst nur auf. Brauchen seine Views Daten, holst du sie selbst, so wie das <code>refreshSidebar()</code> der Demo. Willst du Loader, bleibt diese Aufgabe beim gestarteten Router, wenn du eine <a href="#router-matches">verschachtelte Tabelle</a> oder eine <a href="#router-regions">Region, die eine Seite füllt</a>, nimmst.</li>
+        <li><strong>Seine Loader laufen nie.</strong> Der gestartete Router führt das <code>load()</code> der Seiten aus, auf die er passt. Ein nie gestarteter Router löst nur auf. Brauchen seine Views Daten, holst du sie selbst, so wie das <code>refreshSidebar()</code> der Demo. Willst du Loader, nimm eine <a href="#router-matches">verschachtelte Tabelle</a> oder eine <a href="#router-regions">Region, die eine Seite füllt</a>: Dann bleibt diese Aufgabe beim gestarteten Router.</li>
         <li><strong>Schütz dich vor veralteten Antworten.</strong> Ein langsamer Sidebar-Fetch darf nicht auf der Section landen, von der du längst weg navigiert bist. Zähl pro Refresh einen Generationszähler hoch und verwirf Antworten, die nicht mehr passen, so wie der Router selbst überholte Navigationen zurückzieht.</li>
         <li><strong>Auch eine lazy <code>matches()</code>-View hat kein <code>pending</code>.</strong> Sie rendert nichts, bis ihr Modul eintrifft. Das ergibt drei Ladesysteme mit drei unabhängigen Uhren: das <code>pending</code> der Route, deine eigenen Flags und eine lazy View, die schlicht noch nicht da ist.</li>
       </ul>
@@ -987,8 +987,8 @@ async function loadData() {
       <h3>Warum steht auf meiner Seite "false"?</h3>
       <p>Booleans werden als Text gerendert. <code>div(ok &amp;&amp; span('Done'))</code> zeigt deshalb "false". Für Kinder nimmst du <code>when(() =&gt; ok, span('Done'))</code>, für Text <code>ok ? 'Done' : ''</code>.</p>
 
-      <h3>Warum ändert sich meine Listenzeile nicht, wenn ich das Element bearbeite?</h3>
-      <p>Zeilen zu Elementen, die noch in der Liste sind, bleiben bestehen und werden nicht neu gerendert. Für Felder, die sich ändern, brauchst du dynamische Werte wie <code>() =&gt; todo.text</code>. Siehe <a href="#api-list"><code>list()</code></a>.</p>
+      <h3>Warum ändert sich meine Listenzeile nicht, wenn ich den Eintrag bearbeite?</h3>
+      <p>Zeilen zu Einträgen, die noch in der Liste sind, bleiben bestehen und werden nicht neu gerendert. Für Felder, die sich ändern, brauchst du dynamische Werte wie <code>() =&gt; todo.text</code>. Siehe <a href="#api-list"><code>list()</code></a>.</p>
 
       <h3>Warum aktualisiert sich ein Teil meiner UI nicht mehr?</h3>
       <p>Meistens hing er beim <code>update()</code> nicht im Dokument. Nuclo hört dann auf, diese Knoten zu verfolgen, selbst wenn du sie später anhängst. Render deshalb in einen Container, der schon im Dokument steckt. Zwei weitere Ursachen: Ein <code>when()</code>, dessen Bedingung wirft, aktualisiert sich nicht mehr, und eine Textfunktion, die gleich beim ersten Durchlauf wirft, bleibt leer. Siehe <a href="#api-update"><code>update()</code></a>.</p>

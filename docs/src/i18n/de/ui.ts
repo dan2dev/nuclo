@@ -7,7 +7,7 @@ export const nav = {
   examples: "Beispiele",
   getStarted: "Loslegen",
   menu: "Menü",
-  main: "Hauptinhalt",
+  main: "Hauptnavigation",
   openMenu: "Menü öffnen",
   closeMenu: "Menü schließen",
   nucloHome: "Nuclo-Startseite",
@@ -60,11 +60,11 @@ export const seo = {
     },
     "apps/:id": {
       title: "Eigenständige Apps - Nuclo-Beispiele",
-      description: "Interaktive Nuclo-Apps im Vollbild, mit dem ganzen Browserfenster als Bühne.",
+      description: "Interaktive Nuclo-App-Beispiele in einem Arbeitsbereich, der das ganze Browserfenster füllt.",
     },
     desktop: {
       title: "Nuclo OS - Desktop",
-      description: "Ein kompletter Desktop im Browser mit voll funktionsfähigen Apps (Dateien, Notizen, Terminal, Rechner, Timer, Kanban-Board, Finanzen mit Diagrammen und Tabelle, Kalender) und einem simulierten Dateisystem, das lokal in deinem Browser liegt.",
+      description: "Ein eigenständiger Desktop mit funktionierenden Apps (Dateien, Notizen, Terminal, Rechner, Timer, Kanban-Board, Finanzen mit Diagrammen und Tabelle, Kalender) und einem simulierten Dateisystem, das lokal in deinem Browser liegt.",
     },
     docs: {
       title: "Nuclo-Dokumentation - Leitfaden & API-Referenz",
@@ -78,6 +78,6 @@ export const seo = {
     },
   } as Record<string, { title: string; description: string; keywords?: string }>,
   exampleTitle: (title: string) => `${title} - Nuclo-Beispiele`,
-  exampleDescription: (desc: string) => `${desc} Als Live-Beispiel für Nuclo, samt Quellcode.`,
+  exampleDescription: (desc: string) => `${desc} Ein Nuclo-Live-Beispiel mit Quellcode.`,
   exampleKeywords: (title: string) => `nuclo beispiel, ${title.toLowerCase()}, live demo, quellcode`,
 };

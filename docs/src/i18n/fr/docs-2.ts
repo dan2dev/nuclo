@@ -10,7 +10,7 @@ export const GROUPS_2: DocGroupText[] = [
         id: "api-styling",
         title: "css()",
         content: `
-      <p>Transforme un objet de style typé en classes CSS générées, que vous passez ensuite à n'importe quel constructeur de balise. Dans le navigateur, les règles atterrissent dans un unique élément <code>&lt;style id="nuclo-styles"&gt;</code> ; côté serveur, <a href="#api-css-text"><code>getCssText()</code></a> vous les renvoie.</p>
+      <p>Transforme un objet de style typé en classes CSS générées, que vous passez ensuite à n'importe quel constructeur de balise. Dans le navigateur, les règles sont regroupées dans un seul élément <code>&lt;style id="nuclo-styles"&gt;</code> ; côté serveur, <a href="#api-css-text"><code>getCssText()</code></a> vous les renvoie.</p>
       ${code("card.ts", `
 const card = css({
   p: 16,
@@ -40,7 +40,7 @@ pageTitle.className // "page-title page-title-<hash>"
         <li>Le nom doit être un nom de classe valide, sinon Nuclo prévient et en génère un à la place.</li>
         <li>Les noms sont globaux : si deux styles différents utilisent le même, Nuclo émet un avertissement.</li>
       </ul>
-      <h3>Exploiter le résultat</h3>
+      <h3>Utiliser le résultat</h3>
       ${code("example.ts", `
 const card = css({ p: 8 })
 
@@ -55,7 +55,7 @@ div(card, { class: 'featured' })     // replaces: only "featured" is left
         id: "style-objects",
         title: "Objets de style",
         content: `
-      <p>L'objet passé à <code>css()</code> accepte les propriétés CSS usuelles en camelCase, un jeu de raccourcis, et des clés imbriquées pour les pseudo-états, les sélecteurs et les media queries. TypeScript complète toutes ces clés. Les propriétés qui sortent du jeu typé, comme <code>borderTopLeftRadius</code>, <code>fill</code> ou <code>paddingInline</code>, se glissent dans <code>raw</code> (voir plus bas).</p>
+      <p>L'objet passé à <code>css()</code> accepte les propriétés CSS usuelles en camelCase, un jeu de raccourcis, et des clés imbriquées pour les pseudo-états, les sélecteurs et les media queries. TypeScript complète toutes ces clés. Les propriétés qui sortent du jeu typé, comme <code>borderTopLeftRadius</code>, <code>fill</code> ou <code>paddingInline</code>, vont dans <code>raw</code> (voir plus bas).</p>
       <h3>Les valeurs</h3>
       <ul>
         <li>Les nombres deviennent des <code>px</code>, sauf <code>0</code> et les propriétés sans unité : <code>zIndex</code>, <code>opacity</code>, <code>fontWeight</code>, <code>lineHeight</code>, <code>flex</code>, <code>flexGrow</code>, <code>flexShrink</code>, <code>order</code>, <code>aspectRatio</code>, <code>gridColumn</code> et <code>gridRow</code>. Dans <code>raw</code>, <code>zoom</code>, <code>scale</code>, <code>column-count</code>, <code>orphans</code>, <code>widows</code>, <code>tab-size</code> et <code>animation-iteration-count</code> sont eux aussi sans unité.</li>
@@ -254,7 +254,7 @@ globalStyle('body', { m: 0, font: 'system-ui, sans-serif' })
       <p><code>getCssText()</code> renvoie toutes les règles créées dans ce processus par <code>css()</code>, <code>cx()</code>, <code>variants()</code>, <code>keyframes()</code> et <code>globalStyle()</code> : les règles de base d'abord, puis les blocs <code>@media</code>, <code>@container</code> et <code>@supports</code>. C'est l'outil du rendu côté serveur.</p>
       <ul>
         <li>Appelez-le après <code>renderToString()</code> : les règles créées pendant le rendu sont ainsi incluses.</li>
-        <li>Il couvre tout le processus, pas une page ni une requête, et ne fait que grossir. Pas de souci : les noms de classe étant des hachages de contenu, cela reste sans risque.</li>
+        <li>Il couvre tout le processus, pas une page ni une requête, et ne fait que grossir. Sans risque, puisque les noms de classe sont des hachages de contenu.</li>
         <li>Placez-le dans <code>&lt;style id="nuclo-styles"&gt;</code> : le client réutilise cet élément et ignore les règles déjà présentes. Avec un autre id, ou sans id, le client ajoute une seconde feuille de style qui reprend toutes les règles.</li>
         <li>Le texte n'est pas échappé : ne mettez donc jamais d'entrée non fiable dans des valeurs de style.</li>
       </ul>
@@ -501,7 +501,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
         <thead><tr><th>Situation</th><th>Comportement</th></tr></thead>
         <tbody>
           <tr><td>pendant son exécution</td><td><code>router.pending</code> vaut true et la page où vous étiez reste affichée</td></tr>
-          <tr><td>il lève une exception ou rejette</td><td>l'erreur atterrit dans <code>router.error</code>. <code>go()</code> ne rejette toujours jamais, et la navigation peut être retentée.</td></tr>
+          <tr><td>il lève une exception ou rejette</td><td>l'erreur est placée dans <code>router.error</code>. <code>go()</code> ne rejette toujours jamais, et la navigation peut être retentée.</td></tr>
           <tr><td>pendant <code>start()</code></td><td>le rejet sort de <code>start()</code> : il n'y a pas encore de Route pour l'accueillir.</td></tr>
           <tr><td>une couche empilée</td><td>exécute son propre loader, avec ses propres données</td></tr>
           <tr><td>le préchargeur à l'inactivité</td><td>ne préchauffe que les modules : il n'a aucun contexte à transmettre, et irait chercher des données pour une route que vous n'ouvrirez peut-être jamais.</td></tr>
@@ -522,7 +522,7 @@ createRouter({
   '/blog/:slug': withLoad(() => import('./pages/Post.ts'), loadPost),
 })
 `)}
-      <p>Il remplace le <code>load</code> propre au module et se relance à chaque visite, exactement comme lui. Un rejet survenant alors que le chunk est encore en cours de chargement atterrit dans <code>router.error</code>, comme n'importe quel autre.</p>
+      <p>Il remplace le <code>load</code> propre au module et se relance à chaque visite, exactement comme lui. Un rejet survenant alors que le chunk est encore en cours de chargement est placé dans <code>router.error</code>, comme n'importe quel autre.</p>
       <p>Par conception, les données serveur ne sont pas sérialisées dans le HTML : le <code>load</code> du client se relance à l'hydration. Si cela vous gêne, faites émettre <code>route.data</code> par le serveur (par exemple dans <code>window.__DATA__</code>) et faites-le lire en premier par le loader. <code>route.data</code> ne contient que les données de la page correspondante, pas le résultat du <code>load()</code> d'un parent.</p>
       <h3>Découpage du code et préchargement</h3>
       <p>La valeur d'une route est toujours une fonction qui renvoie le composant de page : le composant est donc chargé à la demande :</p>
@@ -533,7 +533,7 @@ createRouter({
 '/d': () => ({ default: DPage, load: loadD }),     // eager, module-shaped
 `)}
       <p>Seules les formes en module peuvent porter un export <code>load</code>. Si vous piochez un composant nommé avec <code>.then(m =&gt; m.BPage)</code>, le routeur ne reçoit que la fonction.</p>
-      <p>Chaque module est importé une fois puis mis en cache, et des navigations concurrentes vers la même route partagent un seul <code>import()</code>. Quand l'utilisateur a laissé la page tranquille pendant <code>idleTimeout</code> (une seconde par défaut, sans toucher l'écran, sans frappe au clavier, sans molette ni défilement), les routes restantes se chargent en arrière-plan, une par tranche d'inactivité (<code>requestIdleCallback</code>). Dès qu'il se remet à interagir, ou qu'il déclenche une navigation qu'il attend, le préchargement se met en pause jusqu'à ce que la page redevienne inactive.</p>
+      <p>Chaque module est importé une fois puis mis en cache, et des navigations concurrentes vers la même route partagent un seul <code>import()</code>. Quand l'utilisateur n'a pas touché à la page pendant <code>idleTimeout</code> (une seconde par défaut, sans toucher l'écran, sans frappe au clavier, sans molette ni défilement), les routes restantes se chargent en arrière-plan, une par tranche d'inactivité (<code>requestIdleCallback</code>). Dès qu'il se remet à interagir, ou qu'il déclenche une navigation qu'il attend, le préchargement se met en pause jusqu'à ce que la page redevienne inactive.</p>
       <p>Une route préchargée ou chargée instantanément ne modifie jamais <code>router.pending</code> et s'affiche avant le prochain rafraîchissement de l'écran : aucun indicateur de chargement ne clignote, aucun décalage de mise en page. <code>router.pending</code> ne vaut true que pour un module ou un loader qu'il faut réellement attendre, la page sortante restant à l'écran pendant ce temps. Un chunk dont le chargement échoue apparaît dans <code>router.error</code>, jamais comme un rejet non géré, et peut simplement être retenté.</p>
     `,
       },
@@ -578,7 +578,7 @@ const owned = router.match(href) !== null
           <tr><td><code>error</code></td><td>le dernier chargement en échec, effacé par la navigation suivante</td></tr>
           <tr><td><code>data</code></td><td>ce qu'a renvoyé le <code>load()</code> de la page correspondante, à sérialiser par un serveur. Celui d'un parent n'y figure pas.</td></tr>
           <tr><td><code>depth</code></td><td>le nombre de couches dans la pile (1 pour une page ordinaire)</td></tr>
-          <tr><td><code>go(href, { replace })</code></td><td>naviguer, en chargeant le module si besoin. Ne rejette jamais : un module qui échoue, par rejet ou exception, atterrit dans <code>error</code>.</td></tr>
+          <tr><td><code>go(href, { replace })</code></td><td>naviguer, en chargeant le module si besoin. Ne rejette jamais : un module qui échoue, par rejet ou exception, est placé dans <code>error</code>.</td></tr>
           <tr><td><code>push(href)</code></td><td>ouvrir une route comme nouvelle couche par-dessus, avec une promesse résolue par son résultat de fermeture. Accepte <code>./</code>. Rejette s'il n'y a aucune correspondance ou si le module échoue.</td></tr>
           <tr><td><code>href(path)</code></td><td>préfixer un chemin avec <code>base</code>, pour <code>a({ href })</code>. Résout <code>./</code> et <code>../</code> par rapport à la route active.</td></tr>
           <tr><td><code>stop()</code></td><td>détacher tous les écouteurs, fermer les couches ouvertes, vider l'outlet. Idempotent. Une Route arrêtée répond toujours avec sa dernière correspondance, et <code>go()</code> n'y fait plus rien.</td></tr>
@@ -820,7 +820,7 @@ createRouter(routes, {
         content: `
       <p>L'écouteur délégué navigue sur un clic gauche sur un <code>&lt;a href&gt;</code>, un <code>&lt;a&gt;</code> SVG compris, ainsi que sur les clics sur tout ce qu'il contient, et s'efface devant tout le reste : clics avec modificateur et clics du milieu, un <code>target</code> autre que <code>_self</code>, <code>download</code>, <code>rel="external"</code>, les hrefs d'une autre origine, les liens vers un simple hash de la page courante, les chemins hors de <code>base</code>, ceux qu'aucune route ne reconnaît (une 404 rendue côté serveur reste donc accessible), et tout événement sur lequel un handler de l'application a déjà appelé <code>preventDefault()</code>. Pour exclure explicitement un lien, ajoutez <code>data-nuclo-router="off"</code>.</p>
       <h3>Le défilement</h3>
-      <p>Une navigation par push conserve la position de défilement courante. Quand la nouvelle URL contient un <code>#hash</code> qui correspond à un élément de la page, cet élément est amené dans la zone visible. <code>popstate</code> laisse le défilement au navigateur. Pour que les nouvelles pages atterrissent en haut, faites-le dans <code>onNavigate</code>, qui indique comment la navigation a eu lieu :</p>
+      <p>Une navigation par push conserve la position de défilement courante. Quand la nouvelle URL contient un <code>#hash</code> qui correspond à un élément de la page, cet élément est amené dans la zone visible. <code>popstate</code> laisse le défilement au navigateur. Pour que les nouvelles pages s'ouvrent en haut, faites-le dans <code>onNavigate</code>, qui indique comment la navigation a eu lieu :</p>
       ${code("routes.ts", `
 let shown = ''
 createRouter(routes, {
@@ -834,7 +834,7 @@ createRouter(routes, {
       <h3>Bon à savoir</h3>
       <ul>
         <li><strong>Rien n'est retenu.</strong> La Route détient la fonction de page et son contexte, jamais de DOM, et naviguer ailleurs libère la page précédente. <code>stop()</code> libère les écouteurs et tout chargement en cours, puis efface <code>pending</code> : une Route retirée ne laisse donc jamais un indicateur de chargement actif sans raison. Un module qui se résout après <code>stop()</code> est ignoré en silence.</li>
-        <li><strong>Requêtes concurrentes côté serveur : chacune chez soi.</strong> <code>start()</code> renvoie un état par requête et <code>run()</code> le limite à un rendu synchrone : des requêtes entrelacées ne peuvent donc pas voir la route les unes des autres. Seul le cache de modules est partagé. La portée prend fin quand la fonction de <code>run()</code> rend la main ; comme <code>renderToString()</code> est synchrone, cela suffit. Un rendu asynchrone ou en streaming devrait faire voyager la Route à travers les <code>await</code>, ce que <code>run()</code> ne fait pas.</li>
+        <li><strong>Sûr en concurrence côté serveur.</strong> <code>start()</code> renvoie un état par requête et <code>run()</code> le limite à un rendu synchrone : des requêtes entrelacées ne peuvent donc pas voir la route les unes des autres. Seul le cache de modules est partagé. La portée prend fin quand la fonction de <code>run()</code> rend la main ; comme <code>renderToString()</code> est synchrone, cela suffit. Un rendu asynchrone ou en streaming devrait faire voyager la Route à travers les <code>await</code>, ce que <code>run()</code> ne fait pas.</li>
         <li><strong>La restauration du défilement sur <code>popstate</code></strong> est celle du navigateur (<code>scrollRestoration</code>), pas celle du routeur.</li>
         <li><strong>Un seul routeur démarré par document.</strong> Chaque <code>start()</code> ajoute son propre écouteur <code>click</code> délégué, et le <code>start()</code> d'un second routeur ne retire pas celui du premier ; seul un second <code>start()</code> sur le même routeur le fait. Pour résoudre une URL contre une autre table, créez un routeur et n'appelez que <code>match()</code> : il n'attache rien. Une zone indépendante peut ainsi gérer son propre chargement à côté du <code>pending</code> de la route. Voir <a href="#router-multi">Routeurs multiples &amp; Chargement combiné</a>.</li>
         <li><strong>Volontairement absents :</strong> l'historique par hash et en mémoire, puisque la route vit dans le pathname et qu'un serveur doit servir chaque route ; deux zones routées indépendamment et pilotées par une seule URL, puisqu'une page peut remplir plusieurs régions avec <code>into()</code> mais qu'elles relèvent toutes de l'unique route correspondante — une zone indépendante peut toujours garder son propre routeur non démarré et son chargement, comme dans <a href="#router-multi">Routeurs multiples &amp; Chargement combiné</a> ; et le préchargement au survol, que vous obtenez en appelant le loader de la route depuis un <code>mouseenter</code>.</li>
@@ -906,12 +906,12 @@ async function loadData() {
       <ul>
         <li><strong>Regroupez les changements.</strong> Modifiez tout l'état nécessaire, puis appelez <code>update()</code> une seule fois.</li>
         <li><strong>Gardez des valeurs dynamiques rapides et pures.</strong> Elles s'exécutent toutes à chaque <code>update()</code>.</li>
-        <li><strong>Misez sur <code>scope()</code></strong> pour les petites mises à jour fréquentes, comme la saisie ou les minuteurs.</li>
-        <li><strong>Rendez dans le document.</strong> Les nœuds absents du document quand <code>update()</code> s'exécute cessent d'être mis à jour.</li>
+        <li><strong>Utilisez <code>scope()</code></strong> pour les petites mises à jour fréquentes, comme la saisie ou les minuteurs.</li>
+        <li><strong>Faites le rendu dans le document.</strong> Les nœuds absents du document quand <code>update()</code> s'exécute cessent d'être mis à jour.</li>
         <li><strong>Utilisez <code>when()</code> et <code>list()</code></strong> pour les enfants qui changent, plutôt qu'une fonction qui renvoie des nœuds.</li>
         <li><strong>Préférez <code>className</code> à <code>class</code></strong>, et passez par <code>() =&gt; cx(...)</code> ou <code>{ className: () =&gt; … }</code> pour les classes dynamiques.</li>
         <li><strong>Définissez vos styles une seule fois</strong>, au niveau du module.</li>
-        <li><strong>Rendu côté serveur :</strong> rendez d'abord, puis placez <code>getCssText()</code> dans <code>&lt;style id="nuclo-styles"&gt;</code>. Passez les données de la requête en arguments, et conservez les commentaires HTML dans la sortie.</li>
+        <li><strong>Rendu côté serveur :</strong> faites d'abord le rendu, puis placez <code>getCssText()</code> dans <code>&lt;style id="nuclo-styles"&gt;</code>. Passez les données de la requête en arguments, et conservez les commentaires HTML dans la sortie.</li>
       </ul>
     `,
       },
@@ -991,7 +991,7 @@ async function loadData() {
       <p>Les lignes des éléments toujours présents dans la liste sont conservées, pas rendues de nouveau. Pour les champs qui changent, utilisez des valeurs dynamiques comme <code>() =&gt; todo.text</code>. Voir <a href="#api-list"><code>list()</code></a>.</p>
 
       <h3>Pourquoi une partie de mon interface ne se met-elle plus à jour ?</h3>
-      <p>Le plus souvent, ses nœuds n'étaient pas dans le document au moment où <code>update()</code> s'est exécuté. Nuclo cesse alors de les suivre, même une fois rattachés : rendez donc dans un conteneur déjà présent dans le document. Deux autres causes possibles : un <code>when()</code> dont la condition lève une exception cesse de se mettre à jour, et une fonction texte qui lève une exception dès sa première exécution reste vide. Voir <a href="#api-update"><code>update()</code></a>.</p>
+      <p>Le plus souvent, ses nœuds n'étaient pas dans le document au moment où <code>update()</code> s'est exécuté. Nuclo cesse alors de les suivre, même une fois rattachés : faites donc le rendu dans un conteneur déjà présent dans le document. Deux autres causes possibles : un <code>when()</code> dont la condition lève une exception cesse de se mettre à jour, et une fonction texte qui lève une exception dès sa première exécution reste vide. Voir <a href="#api-update"><code>update()</code></a>.</p>
 
       <h3>Quand faut-il utiliser <code>forceUpdate()</code> ?</h3>
       <p>Seulement pour les changements rares qui touchent des valeurs statiques, comme un changement de langue. Pour tout le reste, utilisez <code>update()</code>. Voir <a href="#api-force-update"><code>forceUpdate()</code></a>.</p>

@@ -5,10 +5,10 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · null Abhängigkeiten`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["UIs, die nur dann", "*updaten*, wenn du", "es sagst."];
+export const HERO_TITLE_LINES = ["Baue *explizite*", "Interfaces mit", "nuclo."];
 
 export const HERO_DESC =
-  "Ein schlankes, durchgängig typisiertes DOM-Framework. Dein State bleibt ein ganz normales, veränderbares Objekt, und du entscheidest, wann das DOM nachzieht. Ohne Proxies, ohne Signals, ohne Virtual DOM.";
+  "Ein schlankes, durchgängig typisiertes DOM-Framework. Dein State bleibt schlicht und veränderbar, und du steuerst jedes Update. Ohne Proxies, ohne Signals, ohne Virtual DOM.";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
@@ -71,7 +71,7 @@ export function TodoList() {
 }`;
 
 export const PHILOSOPHY_QUOTE =
-  "Wer State ändert, ändert erst mal nur State. Erst mit update() zieht das DOM nach – genau so weit, wie du es wolltest. Nicht mehr, nicht weniger.";
+  "Wenn du State veränderst, passiert erst einmal nichts. Rufst du update() auf, tut Nuclo genau das, was du verlangt hast. Nicht mehr, nicht weniger.";
 
 export const PHILOSOPHY_POINTS = [
   {
@@ -86,7 +86,7 @@ export const PHILOSOPHY_POINTS = [
   },
   {
     num: "03",
-    title: "Funktionen statt Komponentenklassen",
+    title: "Funktionen statt Komponenten",
     desc: "Du schreibst ganz normale JavaScript-Funktionen, die DOM-Knoten zurückgeben. Klassen, Decorators oder Spezialsyntax braucht Nuclo nicht. Brauchst du einen Lifecycle-Hook, hängst du onMount oder onDestroy einfach als Modifier an.",
   },
 ];
@@ -95,7 +95,7 @@ export const FEATURES = [
   {
     num: "01 · Explizit",
     title: "Den Update-Zyklus bestimmst du",
-    desc: "Ändere, was du willst, und rufe dann einmal update() auf. Es gibt keine Subscriptions, keinen Scheduler und keinen Diff, der dich überrascht. Das DOM wird genau dann abgeglichen, wenn du es willst.",
+    desc: "Ändere, was du willst, und rufe dann einmal update() auf. Es gibt keine Subscriptions, keinen Scheduler und keinen Diff, der dich überrascht. Das DOM wird genau dann synchronisiert, wenn du es entscheidest.",
   },
   {
     num: "02 · Leichtgewichtig",
@@ -104,12 +104,12 @@ export const FEATURES = [
   },
   {
     num: "03 · Typisiert",
-    title: "Von Grund auf für TypeScript",
+    title: "TypeScript-first",
     desc: "175 voll typisierte HTML- und SVG-Builder liefern dir Autovervollständigung für jedes Attribut, jede Style-Eigenschaft und jedes Event.",
   },
   {
     num: "04 · Präzise",
-    title: "Chirurgische DOM-Updates",
+    title: "Feingranulares Patching",
     desc: "Bei update() werden alle dynamischen Ausdrücke neu ausgewertet, aber nur Werte, die sich wirklich geändert haben, landen im DOM.",
   },
 ];
@@ -124,9 +124,9 @@ export const PIPELINE_STEPS = [
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
-    kicker: "02 · Anwenden",
+    kicker: "02 · Übernehmen",
     title: "update() aufrufen",
-    desc: "Eine globale Funktion bringt deine Änderungen ins DOM. Ein ganzes Dutzend Änderungen steckt in einem einzigen Aufruf, und gerendert wird erst, wenn du es auslöst.",
+    desc: "Eine globale Funktion übernimmt deine Änderungen. Bündle ein Dutzend Änderungen und übernimm sie dann mit einem einzigen Aufruf. Gerendert wird erst, wenn du es sagst.",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
@@ -139,9 +139,9 @@ export const PIPELINE_STEPS = [
 ];
 
 // ── Comparison ──────────────────────────────────────────────────────────────
-export const COMPARISON_TITLE = "Kein Diffing. Keine Proxies. Keine bösen Überraschungen.";
+export const COMPARISON_TITLE = "Kein Diffing. Keine Proxies. Keine Überraschungen.";
 export const COMPARISON_SUB =
-  "Die Oberfläche ändert sich nur, wenn du update() aufrufst.";
+  "Nuclo aktualisiert die Oberfläche nur, wenn du update() aufrufst.";
 
 export const COMPARISON_COLS: {
   name: string;
@@ -151,7 +151,7 @@ export const COMPARISON_COLS: {
 }[] = [
   {
     name: "Virtual DOM",
-    sub: "Render → Diff → Patch",
+    sub: "Render → Diff → Commit",
     items: [
       { good: false, text: "Rendert bei jeder State-Änderung ganze Komponentenbäume neu" },
       { good: false, text: "Vergleicht alten und neuen Baum, um die Änderungen zu finden" },
@@ -177,7 +177,7 @@ export const COMPARISON_COLS: {
       { good: true, text: "Ganz normaler, veränderbarer State, ohne Wrapper und Proxies" },
       { good: true, text: "Ein einziger Aufruf, update(), ist das gesamte mentale Modell" },
       { good: true, text: "Patcht nur, was sich wirklich geändert hat" },
-      { good: true, text: `Rund ${NUCLO_GZIP_KB} KB, null Abhängigkeiten, für TypeScript gemacht` },
+      { good: true, text: `Rund ${NUCLO_GZIP_KB} KB, null Abhängigkeiten, TypeScript-first` },
     ],
   },
 ];
@@ -261,11 +261,11 @@ export const LABELS = {
   viewExamples: "Beispiele ansehen",
   copyInstall: "Installationsbefehl kopieren",
   howItWorks: "So funktioniert's",
-  pipelineTitle: "Ein Zyklus, null Magie.",
+  pipelineTitle: "Ein expliziter Zyklus.",
   pipelineSub: "Dynamische Werte, aber kein Abhängigkeitsgraph und kein Scheduler. Du bestimmst, wann sie ausgewertet werden: ein einziger, vorhersehbarer Weg von deinen Daten bis auf den Bildschirm.",
   philosophy: "Philosophie",
   features: "Features",
-  featuresTitle: "Gebaut für Durchblick.",
+  featuresTitle: "Gebaut für Klarheit.",
   featuresSub: "Keine Magie, keine Überraschungen. Jedes Update ist gewollt.",
   comparison: "Vergleich",
   theNucloWay: "der nuclo-Weg",
@@ -277,7 +277,7 @@ export const LABELS = {
   quickStartSub: "Drei Schritte, dann baust du echte UIs.",
   readFullDocs: "Zur vollständigen Dokumentation →",
   examples: "Beispiele",
-  examplesTitle: "Sieh es live.",
+  examplesTitle: "Sieh es in Aktion.",
   examplesSub: "Interaktive Demos zum Ausprobieren, mit dem Code gleich daneben.",
   viewAllExamples: "Alle Beispiele ansehen →",
   readTheDocs: "Zur Dokumentation",
@@ -298,15 +298,15 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "Das linke Raster ist ein schlichtes Boolean-Array. Darauf zu malen ändert nur Daten, sonst nichts. Das DOM rechts rührt sich erst, wenn update() läuft, und dann werden nur die geänderten Zellen gepatcht.",
   },
   Draw: {
-    title: "Zeichne das Logo nach",
-    note: "Das Nuclo-Logo ist ein Spirograph: ein Zahnrad, das in einem Ring abrollt, mit zwei Stiften darauf. Rad, Arme, Stifte und Linien sind allesamt Funktionen einer einzigen Zahl, t. Timeline und Frame-Loop setzen nur t, und update('draw') wertet aus, was davon abhängt, erneut aus.",
+    title: "Zeichne das Logo",
+    note: "Das Nuclo-Logo ist ein Spirograph: ein Rad, das in einem Ring abrollt, mit zwei Stiften darauf. Rad, Arme, Stifte und Linien sind allesamt Funktionen einer einzigen Zahl, t. Timeline und Frame-Loop setzen nur t, und update('draw') führt alles, was t liest, erneut aus.",
   },
   Fireworks: {
-    title: "Tipp in den Himmel",
+    title: "Tippe auf den Himmel",
     note: "Jeder Funke ist ein schlichtes Objekt in einem Array. list() gibt jedem eine <line> und entfernt sie in dem Frame, in dem das Objekt das Array verlässt. Ein update() pro Frame, und gedifft wird nichts.",
   },
   Waves: {
-    title: "Bring die Welle zum Schwingen",
+    title: "Verbieg die Welle",
     note: "Das d jedes Pfads ist eine simple Funktion dreier Zahlen. Slider und Frame-Loop ändern nur diese Zahlen, und update('waves') führt die Funktionen, die sie lesen, noch einmal aus.",
   },
   Sort: {
@@ -314,7 +314,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "Bubble Sort vertauscht Objekte in einem schlichten Array. list() bindet jeden Balken an sein Objekt, deshalb schiebt update() die vorhandenen Knoten einfach in die neue Reihenfolge. Wirf einen Blick auf den Zähler: Kein einziger Balken wird neu erzeugt.",
   },
   Chase: {
-    title: "Lenk das Seil",
+    title: "Führe das Seil",
     note: "Die Karte ist ein scope(). Pro Frame bewegen sich 32 schlichte Punkte, dann folgt update('chase'): Nuclo berechnet nur die Attribute innerhalb dieser Karte neu und lässt den Rest der Seite in Ruhe.",
   },
   Reflex: {

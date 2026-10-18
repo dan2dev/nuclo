@@ -43,7 +43,7 @@ render(App, document.getElementById('app')!)
       <p><code>create-nuclo</code> एक Vite + TypeScript project बना देता है जो Nuclo के लिए पहले से सेट है:</p>
     `,
         afterContent: `
-      <p>यह आपसे project का नाम पूछता है। prompt स्किप करना हो तो नाम और flags सीधे दे दीजिए। npm में flags से पहले <code>--</code> लगाना पड़ता है:</p>
+      <p>यह आपसे project का नाम पूछता है। prompt skip करना हो तो नाम और flags सीधे दे दीजिए। npm में flags से पहले <code>--</code> लगाना पड़ता है:</p>
       ${sh("npm create nuclo@latest my-app -- --template basic --yes")}
       <p>फिर dependencies install कीजिए और dev server चालू कीजिए:</p>
       ${sh("cd my-app", "npm install", "npm run dev")}
@@ -97,8 +97,8 @@ import { render, update, getCssText } from 'nuclo'
         content: `
       <p>Nuclo अपने types के साथ आता है। आपको बस दो चीज़ें चाहिए:</p>
       <ul>
-        <li><code>"moduleResolution": "bundler"</code>. <code>node16</code> और <code>nodenext</code> अभी supported नहीं हैं।</li>
-        <li><code>DOM</code> lib. आपने <code>lib</code> सेट नहीं किया है तो TypeScript इसे अपने आप शामिल कर लेता है।</li>
+        <li><code>"moduleResolution": "bundler"</code>। <code>node16</code> और <code>nodenext</code> अभी supported नहीं हैं।</li>
+        <li><code>DOM</code> lib। अगर आपने <code>lib</code> सेट नहीं किया है, तो TypeScript इसे अपने आप शामिल कर लेता है।</li>
       </ul>
       <p>project की कोई भी file <code>'nuclo'</code> import करती है, तो हर file को global types दिखने लगते हैं। इसके अलावा कुछ और नहीं चाहिए। अगर कोई file इसे import नहीं करती (जैसे tests के लिए अलग tsconfig में), तो types खुद जोड़ दीजिए:</p>
       ${code("tsconfig.json", `
@@ -124,7 +124,7 @@ import { render, update, getCssText } from 'nuclo'
         <li><code>MountCallback</code> और <code>DestroyCallback</code>: <code>onMount</code> और <code>onDestroy</code> handlers।</li>
         <li><code>WhenBuilder</code>, <code>ListModifier</code>: <code>when()</code> और <code>list()</code> जो लौटाते हैं।</li>
         <li><code>RegionOptions</code>, <code>RegionType</code>: <code>region()</code> के options।</li>
-        <li><code>StyleResult</code>, <code>Style</code>, <code>ThemeConfig</code>, <code>CssInstance</code> और बाकी style types। इन्हें आप import भी कर सकते हैं: <code>import type { StyleResult } from 'nuclo'</code>.</li>
+        <li><code>StyleResult</code>, <code>Style</code>, <code>ThemeConfig</code>, <code>CssInstance</code> और बाकी style types। इन्हें आप import भी कर सकते हैं: <code>import type { StyleResult } from 'nuclo'</code>।</li>
       </ul>
       ${code("badge.ts", `
 function Badge(text: string): NodeModFn<'span'> {
@@ -179,7 +179,7 @@ render(Card, document.body)
       <h3>इन बातों का ध्यान रखिए</h3>
       <ul>
         <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> "false" text render कर देता है। इसकी जगह <code>div(when(() =&gt; isAdmin, span('Admin')))</code> लिखिए।</li>
-        <li>Arrays child node नहीं होते। उन्हें spread कीजिए: <code>ul(...names.map((n) =&gt; li(n)))</code>. जो lists बदलती रहती हैं, उनके लिए <code>list()</code> इस्तेमाल कीजिए।</li>
+        <li>Arrays child node नहीं होते। उन्हें spread कीजिए: <code>ul(...names.map((n) =&gt; li(n)))</code>। जो lists बदलती रहती हैं, उनके लिए <code>list()</code> इस्तेमाल कीजिए।</li>
         <li>tag के नाम वाला local variable builder को shadow कर देता है। <code>function Row(label: string)</code> के अंदर <code>label(...)</code> कॉल नहीं हो सकता। <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> और <code>i</code> जैसे local नाम बदल दीजिए।</li>
         <li>Browsers हर <code>id</code> वाले element को global variable की तरह भी expose करते हैं। Nuclo load होने से पहले पेज में <code>&lt;main id="main"&gt;</code> मौजूद है, तो Nuclo उस global को वैसा ही छोड़ देता है, और <code>main(...)</code> कॉल करने पर <code>TypeError</code> आता है। कोई और id रखिए।</li>
       </ul>
@@ -190,8 +190,8 @@ const field = input((el) => {
   el.autocomplete = 'off'
 })
 `)}
-      <h3>Element हाथ में लेना</h3>
-      <p><code>render()</code> root element लौटाता है। tree के अंदर <code>on("mount", (el) =&gt; …)</code> या custom modifier इस्तेमाल कीजिए। चाहें तो अलग से element बनाने के लिए builder function को खुद भी कॉल कर सकते हैं:</p>
+      <h3>Element तक पहुँचना</h3>
+      <p><code>render()</code> root element लौटाता है। tree के अंदर <code>on("mount", (el) =&gt; …)</code> या custom modifier इस्तेमाल कीजिए। चाहें तो document से अलग (detached) element बनाने के लिए builder function को खुद भी कॉल कर सकते हैं:</p>
       ${code("example.ts", `
 const el = div('Hello')() as HTMLDivElement
 document.body.append(el)
@@ -688,7 +688,7 @@ const DeleteButton = () =>
     ),
   )
 `)}
-      <h3>Toasts</h3>
+      <h3>list की rows से Toasts</h3>
       <p><code>list()</code> की हर row एक view है। Stacked region उन्हें क्रम से दिखाता है, और array से कोई item हटाते ही उसका toast हट जाता है।</p>
       ${code("toasts.ts", `
 const toasts: { text: string }[] = []
@@ -731,7 +731,7 @@ const Settings = () =>
     form(/* … */),
   )
 `)}
-      <h3>Dynamic values</h3>
+      <h3>View के अंदर dynamic values</h3>
       <p><code>into()</code> का content आम Nuclo content ही है। उसमें जो functions state पर निर्भर हैं, वे region कहीं भी हो, <code>update()</code> पर refresh होते हैं।</p>
       ${code("status.ts", `
 const selected = new Set<string>()
@@ -819,7 +819,7 @@ forceUpdate() // same <h1> element, now "Olá"
         <li><code>list()</code> rows का मिलान position से भी होता है, item से नहीं, इसलिए दोबारा इस्तेमाल हुआ row element कोई अलग item दिखा सकता है।</li>
         <li>जो attributes नए build में सेट नहीं हैं, वे हटाए नहीं जाते।</li>
       </ul>
-      <div class="docs-callout"><strong>ध्यान दीजिए: </strong> Component function के अंदर declare किया गया state reset हो जाता है, क्योंकि function फिर से चलता है। जिस state को बचाकर रखना है, उसे component के बाहर रखिए।</div>
+      <div class="docs-callout"><strong>ध्यान दीजिए:</strong> Component function के अंदर declare किया गया state reset हो जाता है, क्योंकि function फिर से चलता है। जिस state को बचाकर रखना है, उसे component के बाहर रखिए।</div>
       <p><strong>Arguments वाला रूप।</strong> <code>forceUpdate(App(), parent)</code> <code>parent</code> में एक tree को दोबारा बनाता है और उसकी root लौटाता है। यह root को आगे की calls के लिए register नहीं करता। <code>hydrate()</code> की तरह यह मानकर चलता है कि root <code>parent</code> का पहला node है। पहले node का tag अलग हो, तो उसे बदल दिया जाता है।</p>
       <p>Server पर <code>forceUpdate()</code> कुछ नहीं करता।</p>
     `,
@@ -933,7 +933,7 @@ hydrate(App, document.getElementById('root')!)
         <li>Server पर <code>render()</code> कॉल मत कीजिए। यह shared <code>document.body</code> से जुड़ता है।</li>
       </ul>
       <h3><code>renderToString()</code></h3>
-      <p>Builder (<code>App()</code>), component (<code>App</code>) या DOM node लेता है। <code>null</code> और <code>undefined</code> पर <code>""</code> लौटता है। Root कोई element होना चाहिए. <code>renderToString(Page)</code> की तरह पास किया गया component कोई parameter नहीं ले सकता, इसलिए जो component data लेता है उसके लिए <code>Page(user)</code> पास कीजिए।</p>
+      <p>Builder (<code>App()</code>), component (<code>App</code>) या DOM node लेता है। <code>null</code> और <code>undefined</code> पर <code>""</code> लौटता है। Root कोई element होना चाहिए। <code>renderToString(Page)</code> की तरह पास किया गया component कोई parameter नहीं ले सकता, इसलिए जो component data लेता है उसके लिए <code>Page(user)</code> पास कीजिए।</p>
       ${code("example.ts", `
 renderToString(p('Hello'))
 // '<p><!-- text-0 -->Hello</p>'
@@ -956,7 +956,7 @@ renderToStringWithContainer(p('Hi'), 'section', { id: 'main', class: 'page' })
         id: "api-polyfill",
         title: "nuclo/polyfill",
         content: `
-      <p>एक छोटा DOM, ताकि Nuclo Node और Bun में tree बना सके। पहले render से पहले इसे एक बार import कर लीजिए। ज़्यादातर apps को बस सादा import चाहिए।</p>
+      <p>एक छोटा DOM, ताकि Nuclo Node और Bun में tree बना सके। अपने पहले render से पहले इसे एक बार import कर लीजिए। ज़्यादातर apps को बस सादा import चाहिए।</p>
       <ul>
         <li>जब <code>window</code> नहीं होता, तब यह <code>globalThis.document</code>, <code>Node</code>, <code>Element</code> और <code>HTMLElement</code> सेट करता है, लेकिन सिर्फ़ वही जो मौजूद नहीं हैं। यह <code>window</code> नहीं बनाता।</li>
         <li>Browser में, या jsdom के अंदर, यह कुछ नहीं करता।</li>

@@ -5,10 +5,10 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · zéro dépendance`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["Des mises à jour", "*explicites*,", "rien de caché."];
+export const HERO_TITLE_LINES = ["Construisez des interfaces", "*explicites*", "avec nuclo."];
 
 export const HERO_DESC =
-  "Un petit framework DOM, typé de bout en bout. Votre état reste un simple objet mutable, et c'est vous qui décidez quand l'écran se met à jour. Pas de proxies, pas de signaux, pas de DOM virtuel.";
+  "Un petit framework DOM, typé de bout en bout. Votre état reste ordinaire et mutable, et c'est vous qui décidez quand l'écran se met à jour. Pas de proxies, pas de signaux, pas de DOM virtuel.";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
@@ -177,7 +177,7 @@ export const COMPARISON_COLS: {
       { good: true, text: "Un état mutable ordinaire, sans enveloppe et sans proxies" },
       { good: true, text: "Tout le modèle mental tient dans un appel : update()" },
       { good: true, text: "Ne met à jour que les valeurs qui ont changé" },
-      { good: true, text: `Environ ${NUCLO_GZIP_KB} Ko, zéro dépendance, Pensé pour TypeScript` },
+      { good: true, text: `Environ ${NUCLO_GZIP_KB} Ko, zéro dépendance, pensé pour TypeScript` },
     ],
   },
 ];
@@ -270,7 +270,7 @@ export const LABELS = {
   comparison: "Comparaison",
   theNucloWay: "la méthode nuclo",
   benchmarks: "Benchmarks",
-  lowerIsBetter: "Un score plus faible est meilleur",
+  lowerIsBetter: "Plus bas, c'est mieux",
   benchmarkSource: "Source : js-framework-benchmark",
   quickStart: "Démarrage rapide",
   quickStartTitle: "Prêt en quelques minutes.",
@@ -302,11 +302,11 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "Le logo Nuclo est un spirographe : une roue qui roule à l'intérieur d'un anneau, deux stylos dessus. La roue, ses bras, les stylos et les lignes sont tous des fonctions d'un seul nombre, t. La timeline et la boucle d'animation ne font que fixer t ; update('draw') réexécute ce qui le lit.",
   },
   Fireworks: {
-    title: "Mettez le feu au ciel",
+    title: "Touchez le ciel",
     note: "Chaque étincelle est un objet ordinaire dans un tableau. list() donne à chacune une <line>, et la retire à l'image où son objet quitte le tableau. Un update() par image ; rien n'est comparé.",
   },
   Waves: {
-    title: "Surfez sur la vague",
+    title: "Courbez la vague",
     note: "Le d de chaque path est une simple fonction de trois nombres. Les curseurs et la boucle d'animation ne changent que les nombres ; update('waves') réexécute les fonctions qui les lisent.",
   },
   Sort: {
@@ -318,7 +318,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "La carte est un scope(). Chaque image déplace 32 points ordinaires et appelle update('chase') : Nuclo recalcule les attributs de cette carte et laisse le reste de la page tranquille.",
   },
   Reflex: {
-    title: "Touchez au vert",
+    title: "Appuyez sur le vert",
     note: "Une simple chaîne de caractères détermine ce que la scène affiche. Chaque branche when() est construite quand sa condition devient vraie et retirée quand elle cesse de l'être ; la classe de la scène est une fonction de la même chaîne.",
   },
   Warp: {

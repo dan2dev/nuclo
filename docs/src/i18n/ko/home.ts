@@ -5,7 +5,7 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · 외부 의존성 없음`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["UI는 *명시적*으로,", "업데이트는 내 손으로,", "nuclo."];
+export const HERO_TITLE_LINES = ["nuclo로 *명시적*인", "인터페이스를", "만드세요."];
 
 export const HERO_DESC =
   "작고 타입 안전한 DOM 프레임워크. 상태는 그냥 평범한 mutable 데이터이고, 업데이트 시점은 전부 내가 정합니다. 프록시도, 시그널도, 가상 DOM도 없습니다.";
@@ -76,7 +76,7 @@ export const PHILOSOPHY_QUOTE =
 export const PHILOSOPHY_POINTS = [
   {
     num: "01",
-    title: "알아서 해주는 것보다, 말한 대로 하는 것",
+    title: "암묵적인 것보다 명시적인 것이 낫습니다",
     desc: "프록시가 뒤에서 모든 걸 지켜보지 않습니다. 상태를 바꾸고, update()를 호출하면 끝. 원인과 결과가 한눈에 보입니다.",
   },
   {
@@ -95,7 +95,7 @@ export const FEATURES = [
   {
     num: "01 · 명시적",
     title: "업데이트 주기는 내 손에",
-    desc: "마음껏 바꾼 뒤 update()를 한 번 호출하세요. 구독도, 스케줄러도, 뜬금없는 diff도 없습니다. DOM은 내가 정한 순간에 맞춰집니다.",
+    desc: "마음껏 바꾼 뒤 update()를 한 번 호출하세요. 구독도, 스케줄러도 없고, 예기치 못한 diff도 없습니다. DOM은 내가 정한 순간에 맞춰집니다.",
   },
   {
     num: "02 · 경량",
@@ -103,7 +103,7 @@ export const FEATURES = [
     desc: `코어 런타임은 gzip 기준 약 ${NUCLO_GZIP_KB} KB. 컴파일러도 빌드 플러그인도 필요 없습니다. import 한 줄이면 시작할 수 있습니다.`,
   },
   {
-    num: "03 · 타입 지정",
+    num: "03 · 타입 안전",
     title: "TypeScript 중심 설계",
     desc: "타입이 빈틈없이 지정된 175개의 HTML·SVG 빌더 덕분에 속성, 스타일, 이벤트까지 전부 자동 완성됩니다.",
   },
@@ -139,7 +139,7 @@ export const PIPELINE_STEPS = [
 ];
 
 // ── Comparison ──────────────────────────────────────────────────────────────
-export const COMPARISON_TITLE = "트리 diff도, 프록시도, 깜짝 놀랄 일도 없습니다.";
+export const COMPARISON_TITLE = "트리 diff도, 프록시도, 예기치 못한 동작도 없습니다.";
 export const COMPARISON_SUB =
   "Nuclo의 UI는 update()를 호출할 때만 바뀝니다.";
 
@@ -177,7 +177,7 @@ export const COMPARISON_COLS: {
       { good: true, text: "래퍼도 프록시도 없는 평범한 mutable 상태" },
       { good: true, text: "update() 호출 하나가 동작 모델의 전부입니다" },
       { good: true, text: "바뀐 값만 패치합니다" },
-      { good: true, text: `약 ${NUCLO_GZIP_KB} KB, 의존성 0개, TypeScript 우선` },
+      { good: true, text: `약 ${NUCLO_GZIP_KB} KB, 의존성 0개, TypeScript 중심` },
     ],
   },
 ];
@@ -218,7 +218,7 @@ export const BENCHMARK_ENTRIES: {
 // ── CTA ─────────────────────────────────────────────────────────────────────
 export const CTA_TITLE = "지금 바로 시작해 보세요.";
 export const CTA_SUB =
-  "Nuclo를 설치하고 한 번 import하면, 내가 원하는 순간에 정확히 바뀌는 UI를 만들 수 있습니다. API 전체를 반나절이면 익힙니다.";
+  "Nuclo를 설치하고 한 번 import하면, 내가 원하는 순간에 정확히 바뀌는 UI를 만들 수 있습니다. API 전체를 반나절이면 익힐 수 있습니다.";
 
 export const QUICK_START_STEPS = [
   {
@@ -261,7 +261,7 @@ export const LABELS = {
   viewExamples: "예제 보기",
   copyInstall: "설치 명령 복사",
   howItWorks: "동작 방식",
-  pipelineTitle: "내가 쥔 단 하나의 업데이트 주기.",
+  pipelineTitle: "명시적인 업데이트 주기, 단 하나.",
   pipelineSub: "상태에 따라 달라지는 값만 있을 뿐, 의존성 그래프도 스케줄러도 없습니다. 언제 실행할지는 내가 정하고, 데이터가 화면에 닿는 경로는 언제나 예측 가능합니다.",
   philosophy: "철학",
   features: "특징",

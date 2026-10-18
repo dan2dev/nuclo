@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>プッシュされたレイヤー</td><td>一致したページだけを描画します。親はすでに下の行にマウント済みです。</td></tr>
         </tbody>
       </table>
-      <p>保持されたページは、構築時の <code>ctx</code> を持ち続けます。<code>ctx</code> とは、どこでもそういうものです。最新の値が欲しいときは <code>router.*</code> から読んでください。フィルター、ページネーション、タブのようなクエリ駆動の state は、動的な値の中で <code>router.search</code> を読み、<code>router.go('?page=2', { replace: true })</code> で書き込みます。こうすれば、ページもフォーカスも入力途中の値も、そのまま残ります。</p>
+      <p>保持されたページは、構築時の <code>ctx</code> を持ち続けます。これは <code>ctx</code> の意味として、どこでも変わりません。最新の値が欲しいときは <code>router.*</code> から読んでください。フィルター、ページネーション、タブのようなクエリ駆動の state は、動的な値の中で <code>router.search</code> を読み、<code>router.go('?page=2', { replace: true })</code> で書き込みます。こうすれば、ページもフォーカスも入力途中の値も、そのまま残ります。</p>
     `,
       },
       {
@@ -569,7 +569,7 @@ const owned = router.match(href) !== null
       <h3><code>router.matches(table)</code></h3>
       <p>アクティブなルートのパスに一致する、2 つ目のテーブルのビューを、好きな場所に置ける <code>list()</code> として描画します。<a href="#router-matches"><code>matches()</code></a> を参照してください。</p>
       <h3><code>Route</code></h3>
-      <p><code>run()</code> 以外のメンバーはルーターにも生えていて、アプリはそちらから読みます。</p>
+      <p><code>run()</code> 以外のメンバーはルーターにもあり、アプリはそちらから読みます。</p>
       <table>
         <thead><tr><th>メンバー</th><th></th></tr></thead>
         <tbody>
@@ -656,10 +656,10 @@ layer.close()          // dismissed: resolves with undefined
 `)}
       <p>レイヤーはネストできます。さらに別のダイアログが必要なダイアログは、Route を持ち出さずに <code>layer.push()</code> を呼んで await すれば済みます。</p>
       <ul>
-        <li><strong>URL は最上位のレイヤーを指します。</strong><code>push()</code> は history エントリを追加するので、レイヤーはリンクでき、「戻る」で閉じられ、その <code>push()</code> は Cancel とまったく同じく「閉じられた」として解決します。「戻る」と <code>close()</code> は、同じ 1 つのコードパスです。<code>close()</code> は結果を記録してから history を戻し、<code>history.state</code> の depth は正の値になります。ブラウザがタブごとに保持するエントリは約 50 個なので、レイヤーを深く辿ったあとは、下のエントリがすでに消えていることがあります。その場合 <code>close()</code> はレイヤーをその場で閉じ、現在のエントリを、表示され続けるページの内容に書き換えます。</li>
+        <li><strong>URL は最上位のレイヤーを指します。</strong><code>push()</code> は history エントリを追加するので、レイヤーはリンクでき、「戻る」で閉じられ、その <code>push()</code> は Cancel とまったく同じく「閉じられた」として解決します。「戻る」と <code>close()</code> は、同じ 1 つのコードパスです。<code>close()</code> は結果を記録してから history を戻し、<code>history.state</code> に記録された depth が唯一の拠り所です。ブラウザがタブごとに保持するエントリは約 50 個なので、レイヤーを深く辿ったあとは、下のエントリがすでに消えていることがあります。その場合 <code>close()</code> はレイヤーをその場で閉じ、現在のエントリを、表示され続けるページの内容に書き換えます。</li>
         <li><strong>通常のナビゲーションは、スタックをクリアします。</strong>リンクのクリックや <code>go()</code> はレイヤーではありません。すべてを置き換え、開いているレイヤーをすべて閉じるので、await したまま取り残される呼び出し元は出ません。</li>
         <li><strong>URL を直接開くと、独立したページになります。</strong>URL が示すのは最上位のレイヤーだけで、その下のスタックまでは示しません。そのため、レイヤーの URL を直接開くと、depth 1 で、<code>layer.depth === 0</code> かつ <code>close()</code> が無効な状態で描画されます。push されるルートは、単独でも意味が通るように作ってください。<code>layer.depth</code> で分岐して、効かない Cancel ボタンの代わりに、外へ出るリンクを置くのがおすすめです。</li>
-        <li><strong>Promise は、ページを再読み込みすると引き継がれません。</strong>クロージャの中にあるからです。結果はあくまで、遠回りでも成り立つフローの近道として扱ってください。</li>
+        <li><strong>Promise は、ページを再読み込みすると引き継がれません。</strong>クロージャの中にあるからです。結果は、遠回りの手順でも成り立つフローへの近道として扱ってください。</li>
         <li><strong>await したまま取り残されるものはありません。</strong><code>stop()</code> は開いているレイヤーをすべて閉じ、ナビゲーションで放棄されたレイヤーは <code>undefined</code> で解決します。</li>
       </ul>
       <h3>離脱ガード</h3>
@@ -809,7 +809,7 @@ createRouter(routes, {
         <li><strong><code>pending</code> は、開始したルーターのものです。</strong>開始していないルーターには、Route も <code>pending</code> も <code>error</code> もありません。領域は自分のフラグを管理して、2 つ目のスピナーを最初のスピナーの隣に置けます。デモではサイドバーに 800ms、ルートのローダーに 900ms かかるので、ページが先に終わることもあれば、サイドバーが先になることもあります。</li>
         <li><strong><code>match()</code> は、何も取り付けません。</strong>開始していないルーターは、いくつでもドキュメントを共有できます。それぞれが自分のテーブル、base、モジュールキャッシュを持ち、history には一切触れません。コストは、テーブルとマッチャー 1 つ分だけです。</li>
         <li><strong>ローダーは一切実行されません。</strong>開始したルーターは、一致したページの <code>load()</code> を実行します。開始していないルーターは解決するだけなので、ビューにデータが必要なら、自分でフェッチしてください。デモの <code>refreshSidebar()</code> がまさにそれです。ローダーを使いたいなら、<a href="#router-matches">ネストしたテーブル</a>か、<a href="#router-regions">ページが埋めるリージョン</a>にすれば、その仕事は開始したルーターに任せられます。</li>
-        <li><strong>古い応答には要注意です。</strong>サイドバーの取得が遅れても、すでに離れたセクションのデータを表示してはいけません。更新のたびに世代カウンターを進め、世代が合わなくなった応答は捨ててください。新しいナビゲーションが始まったときに、ルーターが古いナビゲーションを無効にするのと同じ手口です。</li>
+        <li><strong>古い応答には要注意です。</strong>サイドバーの取得が遅れても、すでに離れたセクションのデータを表示してはいけません。更新のたびに世代カウンターを進め、世代が合わなくなった応答は捨ててください。新しいナビゲーションが始まったときに、ルーターが古いナビゲーションを無効にするのと同じやり方です。</li>
         <li><strong>遅延 <code>matches()</code> ビューにも、<code>pending</code> はありません。</strong>モジュールの読み込みが終わるまで、何も描画しないだけです。ローディングの仕組みは 3 種類で、タイミングもそれぞれ独立しています。ルートの <code>pending</code>、自前のフラグ、そして「まだ存在していない」遅延ビューです。</li>
       </ul>
     `,

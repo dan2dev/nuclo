@@ -5,10 +5,10 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · cero dependencias`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["Interfaces que hacen", "justo lo que les pides,", "con *update()*."];
+export const HERO_TITLE_LINES = ["Construye interfaces", "*explícitas*", "con nuclo."];
 
 export const HERO_DESC =
-  "Un framework DOM pequeño y con tipado estricto. Tu estado es JavaScript de toda la vida, mutable y sin envoltorios. Tú decides cuándo se actualiza la UI. Sin proxies, sin signals, sin virtual DOM.";
+  "Un framework DOM pequeño y con seguridad de tipos. El estado sigue siendo simple y mutable, y tú controlas cada actualización. Sin proxies, sin signals, sin virtual DOM.";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
@@ -71,7 +71,7 @@ export function TodoList() {
 }`;
 
 export const PHILOSOPHY_QUOTE =
-  "Mutar el estado no dispara nada. Llamas a update() y Nuclo hace exactamente lo que le pediste, ni una cosa más.";
+  "Mutar el estado no dispara nada. Llamas a update() y Nuclo hace exactamente lo que le pediste, ni más ni menos.";
 
 export const PHILOSOPHY_POINTS = [
   {
@@ -119,7 +119,7 @@ export const PIPELINE_STEPS = [
   {
     kicker: "01 · Mutar",
     title: "Cambia tus datos",
-    desc: "El estado es JavaScript plano: variables, arrays, objetos. Mútalo como quieras y las veces que quieras.",
+    desc: "El estado es JavaScript simple: variables, arrays, objetos. Mútalo como quieras y las veces que quieras.",
     code: `<span class="pr">todos</span><span class="pt">.</span><span class="fn">push</span><span class="pt">(</span><span class="pr">newTodo</span><span class="pt">)</span>
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
@@ -174,7 +174,7 @@ export const COMPARISON_COLS: {
     sub: "mutar → update()",
     featured: true,
     items: [
-      { good: true, text: "Estado mutable plano, sin envoltorios ni proxies" },
+      { good: true, text: "Estado mutable simple, sin envoltorios ni proxies" },
       { good: true, text: "Una sola llamada, update(), es todo el modelo mental" },
       { good: true, text: "Parchea solo lo que cambió" },
       { good: true, text: `Unos ${NUCLO_GZIP_KB} KB, cero dependencias, pensado para TypeScript` },
@@ -302,7 +302,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "El logo de Nuclo es un espirógrafo: una rueda que gira dentro de un anillo, con dos plumas. La rueda, los brazos, las plumas y las líneas son funciones de un solo número, t. El timeline y el loop de frames solo asignan t; update('draw') vuelve a ejecutar lo que lo lee.",
   },
   Fireworks: {
-    title: "Enciende el cielo",
+    title: "Toca el cielo",
     note: "Cada chispa es un objeto plano dentro de un array. list() le da un <line> a cada una y lo retira en el frame en que su objeto sale del array. Un update() por frame y ninguna comparación.",
   },
   Waves: {
@@ -322,7 +322,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "Un único string decide qué muestra el escenario. Cada rama de when() se construye cuando su condición se cumple y se elimina cuando deja de cumplirse; la clase del escenario es una función de ese mismo string.",
   },
   Warp: {
-    title: "Mantén presionado para saltar",
+    title: "Mantén presionado para entrar en warp",
     note: "onMount arranca el loop de frames y devuelve una función de cleanup. Desmonta el campo y Nuclo la ejecuta: el loop se detiene y no queda nada corriendo.",
   },
   Life: {

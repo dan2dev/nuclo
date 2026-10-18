@@ -11,7 +11,7 @@ export const groups = {
   forms: {"title": "폼", "sub": "검증은 평범한 상태를 다루는 평범한 함수로 처리합니다. 건드린 필드, 단계, 동적 행까지 다룹니다."},
   svg: {"title": "SVG", "sub": "SVG 태그 빌더로 만든 차트, 애니메이션, 도구, 게임입니다. 평범한 데이터와 포인터 이벤트, update()가 움직입니다."},
   routing: {"title": "라우팅", "sub": "라우트 테이블, 매칭, 활성 라우트, 레이어, 로더를 다룹니다. nuclo-router는 별도 패키지이니 npm install nuclo nuclo-router로 설치하세요."},
-  apps: {"title": "앱", "sub": "전체 화면으로 실행되는 규모 있는 프로그램들이며, 실제 소스 코드는 탭에서 볼 수 있습니다. 창이 있는 데스크톱, 데이터 그리드, 채팅, 게임, 편집기, 자기 상태를 스스로 관리하는 라이브러리가 기다립니다."},
+  apps: {"title": "앱", "sub": "전체 화면으로 실행되는 규모 있는 프로그램들이며, 실제 소스 코드는 탭에서 볼 수 있습니다. 창이 있는 데스크톱, 데이터 그리드, 채팅, 게임, 편집기, 자체 상태를 가진 라이브러리까지 담았습니다."},
 };
 
 export type GroupKey = keyof typeof groups;
@@ -30,7 +30,7 @@ export const items: Record<string, { title: string; desc: string }> = {
   "components": {"title": "컴포넌트", "desc": "컴포넌트는 그저 함수입니다. Counter()를 부를 때마다 각자 자기만의 카운트를 가집니다."},
   "attributes": {"title": "속성", "desc": "속성 값은 함수여도 됩니다. 두 번째 버튼이 busy를 뒤집고 update()를 호출하면 Save 버튼의 disabled와 aria-busy가 함께 따라 바뀝니다."},
   "events": {"title": "이벤트", "desc": "onInput과 onKeyDown도 그냥 속성입니다. 글자를 입력한 뒤 Escape를 눌러 지워 보세요."},
-  "lifecycle": {"title": "생명주기", "desc": "onMount가 interval을 시작하며 정리 함수를 돌려줍니다. unmount하면 정리 함수가 실행되어, 다시 mount할 때까지 카운트가 멈춥니다."},
+  "lifecycle": {"title": "생명주기", "desc": "onMount가 interval을 시작하고 cleanup 함수를 반환합니다. unmount하면 cleanup이 실행되어, 다시 mount할 때까지 카운트가 멈춥니다."},
   "explicit-updates": {"title": "명시적 업데이트", "desc": "count++는 변수만 바꿀 뿐입니다. 화면의 텍스트는 이 버튼이든 페이지의 다른 무엇이든, 다음 update()가 불릴 때 비로소 따라잡습니다."},
   "dynamic-functions": {"title": "동적 값", "desc": "이름을 바꿔 보세요. 정적 텍스트는 요소를 만들 때 고정되고, 동적 텍스트는 update()마다 다시 계산됩니다. forceUpdate()는 트리를 통째로 다시 구성하므로 정적 텍스트도 그제야 따라옵니다."},
   "api-update": {"title": "update()", "desc": "update()는 데이터가 그대로여도 모든 동적 값을 한 번씩 실행합니다. 이 페이지의 다른 데모를 만져도 카운트가 올라가는 이유입니다."},
@@ -54,7 +54,7 @@ export const items: Record<string, { title: string; desc: string }> = {
   "heatmap": {"title": "히트맵", "desc": "fill-opacity가 단계 값을 따라가는 사각형 격자입니다. 셀을 클릭하면 값이 한 단계 오르고, 자식 titleSvg가 툴팁이 됩니다."},
   "hover-tooltip": {"title": "호버 툴팁", "desc": "SVG 요소의 포인터 이벤트만으로 만듭니다. onPointerEnter가 활성 포인트를 고르면 툴팁 그룹이 그 위치로 미끄러져 갑니다."},
   "curve-editor": {"title": "곡선 편집기", "desc": "3차 베지어 곡선의 핸들을 끌어 보세요. onPointerDown으로 점을 잡고 svg의 onPointerMove로 옮기면 경로가 바로 뒤따라옵니다."},
-  "clock": {"title": "시계", "desc": "시곗바늘은 시간에 따라 transform이 계산되는 선입니다. onMount가 타이머를 시작하고 정리 함수를 돌려줍니다."},
+  "clock": {"title": "시계", "desc": "시곗바늘은 시간에 따라 transform이 계산되는 선입니다. onMount가 타이머를 시작하고 cleanup 함수를 반환합니다."},
   "icon-toggles": {"title": "아이콘 토글", "desc": "CSS transition으로 X자로 변하는 메뉴 아이콘, 그리고 클릭하면 SMIL 애니메이션으로 통통 튀어 오르는 하트입니다."},
   "live-stream": {"title": "라이브 스트림", "desc": "타이머가 돌 때마다 두 데이터 계열이 왼쪽으로 흘러갑니다. 한 틱과 같은 길이의 CSS transition 덕분에 움직임이 매끄럽고, 마우스를 올리면 각 샘플의 값을 읽을 수 있습니다."},
   "candlestick-chart": {"title": "캔들스틱 차트", "desc": "슬롯 마흔 개가 저마다 자기 캔들을 읽습니다. 시간 범위를 바꾸고, 이동평균을 켜고 끄고, 마우스를 올려 수치를 확인하고, 실시간 캔들이 움직이는 모습을 지켜보세요."},
@@ -76,7 +76,7 @@ export const items: Record<string, { title: string; desc: string }> = {
   "router-nested": {"title": "중첩 라우트", "desc": "Docs는 하위 라우트를 가진 레이아웃입니다. 각 주제는 outlet()에 렌더링되고, ./topic 링크는 레이아웃의 라우트를 기준으로 풀립니다. 메모에 글을 쓴 뒤 주제를 바꿔 보세요. 레이아웃은 다시 만들어지지 않습니다."},
   "router-loader": {"title": "라우트 로더", "desc": "게시물 페이지는 페이지를 만들기 전에 실행되는 load()를 export합니다. 기다리는 동안의 router.pending을 지켜보고, 망가진 게시물에서 예외가 났을 때 나타나는 오류 상태와 Retry도 확인해 보세요."},
   "router-layers": {"title": "레이어", "desc": "주문 폼이 고객 페이지를 레이어로 push하고 결과를 기다립니다. 폼은 다시 렌더링되지 않으므로 적어 둔 메모가 그대로 남습니다. Save는 push를 이행하고, Cancel이나 뒤로 가기는 레이어를 닫습니다."},
-  "router-multi": {"title": "다중 라우터와 로딩", "desc": "라우터 둘, 스피너 둘. 상점 레이아웃과 그 안의 섹션은 둘 다 load()를 가지며, 하나의 router.pending 아래에서 병렬로 실행됩니다. 사이드바는 만들기만 하고 시작하지 않은 자기만의 라우터와 로딩 플래그를 가지고, onNavigate에서 갱신됩니다."},
+  "router-multi": {"title": "다중 라우터와 로딩", "desc": "라우터 둘, 스피너 둘. 상점 레이아웃과 그 안의 섹션은 둘 다 load()를 가지며, 하나의 router.pending 아래에서 병렬로 실행됩니다. 사이드바에는 만들기만 하고 시작하지 않은 자체 라우터가 있고, 그 로딩 플래그는 onNavigate에서 갱신됩니다."},
   "router-match": {"title": "패턴 매칭", "desc": "정적 패턴, :param, *rest 패턴과, 부모 두 곳에 마운트한 섹션 테이블입니다. 경로를 입력하고, 아무것도 불러오지 않은 채 결과를 돌려주는 match()를 지켜보세요."},
   "page-builder": {"title": "페이지 빌더", "desc": "페이지 위에 바로 글을 쓰고, 핸들을 끌어 블록 순서를 바꾸거나 레이아웃 안으로 옮겨 보세요. /로 블록을 삽입하고 오른쪽 클릭으로 작업 메뉴를 엽니다. grid·flex 레이아웃 스타일링, 실행 취소, 휴대폰 크기 미리보기, HTML 내보내기까지 지원합니다."},
   "sorting": {"title": "알고리즘 스테퍼", "desc": "엔진은 평범한 JavaScript입니다. 배열을 바꾸고 단계마다 yield하는 제너레이터가 전부입니다. 플레이어는 `next()`와 `update()`를 호출하고, 막대는 같은 객체를 쓰는 `list()`이므로 교환할 때 움직이는 요소는 두 개뿐입니다."},

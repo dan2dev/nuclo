@@ -282,7 +282,7 @@ beforeEach(() => resetStyles())
       ${sh("npm install nuclo nuclo-router")}
       <p>También sirve <code>pnpm add</code>, <code>yarn add</code> o <code>bun add</code> con los mismos dos nombres. Requiere <code>nuclo</code> 0.3 o posterior como peer dependency.</p>
       <p>El router decide <em>qué</em> cargar; la aplicación decide <em>dónde</em> con <code>router.outlet()</code>, un <code>list()</code> sobre la pila de capas con una fila por capa, de modo que una página normal es una sola fila. Servidor y cliente construyen el mismo árbol, así que <code>hydrate()</code> reutiliza los nodos del servidor en vez de reemplazarlos. El resto es <code>history</code>, un listener <code>click</code> delegado y <code>requestIdleCallback</code>.</p>
-      <h3>Un solo punto de entrada</h3>
+      <h3>Un solo import</h3>
       ${code("main.ts", `
 export const router = createRouter(routes)   // define once, import anywhere
 await router.start()                          // resolve the current URL
@@ -341,7 +341,7 @@ const html = route.run(() => renderToString(App))
 `)}
       <p>Eso es toda la integración. Los enlaces funcionan porque un <code>&lt;a href&gt;</code> es, sencillamente, un <code>&lt;a href&gt;</code>: un listener delegado en <code>document</code> intercepta los que pertenecen al router y deja el resto al navegador.</p>
       <p>En el servidor, <code>start()</code> devuelve un <code>Route</code> por petición y no toca el router, de modo que las peticiones concurrentes nunca ven la ruta de las demás. <code>route.run()</code> hace que ese Route sea el que el router (y por tanto el outlet) lee durante el renderizado. En el navegador hay un Route por carga de página y <code>start()</code> lo adopta como propio, así que no necesitas <code>run()</code>.</p>
-      <p>Una página recibe su <a href="#router-api"><code>RouteContext</code></a> y sus <a href="#router-api"><code>PageProps</code></a>, como <code>(ctx, { layer, data, outlet, beforeLeave })</code>, y puede declarar menos argumentos. Devuelve cualquier cosa que <code>list()</code> acepte. Si además quiere rellenar otra parte del layout, devuelve un <code>into()</code> desde la propia página, como <code>div(article(…), into('sidebar', nav(…)))</code>; ese contenido se va con la página. Más en <a href="#router-regions">Páginas y regiones</a>.</p>
+      <p>Una página recibe su <a href="#router-api"><code>RouteContext</code></a> y sus <a href="#router-api"><code>PageProps</code></a>, como <code>(ctx, { layer, data, outlet, beforeLeave })</code>, y puede declarar menos argumentos. Devuelve cualquier cosa que <code>list()</code> acepte. Si además quiere rellenar otra parte del layout, devuelve un <code>into()</code> desde la propia página, como <code>div(article(…), into('sidebar', nav(…)))</code>; ese contenido se va con la página. Ver <a href="#router-regions">Páginas y regiones</a>.</p>
     `,
       },
       {
@@ -476,7 +476,7 @@ export default function Report(ctx: RouteContext) {
       <ul>
         <li><strong><code>outlet()</code></strong> es para una ruta hija: contenido que decide la URL y que se renderiza dentro de su página padre. Ver <a href="#router-patterns">Rutas anidadas</a>.</li>
         <li><strong><code>into()</code></strong> sirve para que la página coincidente se extienda por el layout. El contenido es de la página y usa sus datos.</li>
-        <li><strong><code>matches()</code></strong> es para que el layout decida solo a partir de la URL, con su propia tablita y sin ninguna página de por medio. Ver <a href="#router-matches"><code>matches()</code></a>.</li>
+        <li><strong><code>matches()</code></strong> es para que el layout decida solo a partir de la URL, con su propia tabla pequeña y sin ninguna página de por medio. Ver <a href="#router-matches"><code>matches()</code></a>.</li>
       </ul>
       <p>Todo esto pertenece a la única ruta coincidente. El router no maneja dos áreas independientes desde una sola URL, así que una barra lateral con sus propias rutas es una región que rellena una página, no un segundo outlet. Si una barra lateral de verdad quiere su propio router, su propia carga y su propio fallback, mantén uno sin iniciar y resuélvelo con <code>match()</code>; ver <a href="#router-multi">Varios routers y carga combinada</a>.</p>
     `,
@@ -685,7 +685,7 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
         id: "router-matches",
         title: "matches() y sub-routers",
         content: `
-      <p><code>router.outlet()</code> renderiza la página. <code>router.matches(table)</code> renderiza todo lo demás que depende de dónde estás (una barra lateral, migas de pan, una barra de herramientas) a partir de su propia tablita, sin cargar una ruta ni agregar una página:</p>
+      <p><code>router.outlet()</code> renderiza la página. <code>router.matches(table)</code> renderiza todo lo demás que depende de dónde estás (una barra lateral, migas de pan, una barra de herramientas) a partir de su propia tabla pequeña, sin cargar una ruta ni agregar una página:</p>
       ${code("app.ts", `
 div(
   aside(
@@ -708,7 +708,7 @@ div(
         <li><strong>En el servidor</strong>, una vista con carga diferida no envía nada, porque su módulo llega en el cliente. Usa una vista sincrónica para todo lo que deba ir en el primer HTML.</li>
       </ul>
       <h3>Sub-routers</h3>
-      <p>Las rutas se anidan, así que un sub-router suele ser simplemente una tabla anidada. Es un solo router: la página <code>'/'</code> de la sección es su estructura de interfaz y sus hijos se renderizan en el <code>outlet()</code> de esa página, de modo que la estructura se conserva mientras navegas dentro de la sección:</p>
+      <p>Las rutas se anidan, así que un sub-router suele ser simplemente una tabla anidada. Es un solo router: la página <code>'/'</code> de la sección es su shell y sus hijos se renderizan en el <code>outlet()</code> de esa página, de modo que el shell se conserva mientras navegas dentro de la sección:</p>
       ${code("routes.ts", `
 createRouter({ '/': …, '/docs': docsRoutes, '*': … })
 `)}

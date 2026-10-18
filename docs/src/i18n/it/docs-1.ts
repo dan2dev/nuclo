@@ -11,7 +11,7 @@ export const GROUPS_1: DocGroupText[] = [
         id: "overview",
         title: "Panoramica",
         content: `
-      <p>Nuclo è una piccola libreria DOM per TypeScript. Costruisci la pagina con semplici funzioni come <code>div()</code> e <code>button()</code>, tieni lo stato in normali variabili e, quando qualcosa cambia, chiami <code>update()</code>. Fine della storia.</p>
+      <p>Nuclo è una piccola libreria DOM per TypeScript. Costruisci la pagina con semplici funzioni come <code>div()</code> e <code>button()</code>, tieni lo stato in normali variabili e chiami <code>update()</code> quando la pagina deve cambiare.</p>
       <p>Niente virtual DOM, niente compilatore, niente proxy, niente signal.</p>
       ${code("main.ts", `
 import 'nuclo'
@@ -30,7 +30,7 @@ render(App, document.getElementById('app')!)
       <ol>
         <li>Descrivi la UI con i builder dei tag.</li>
         <li>Ogni valore che dipende dallo stato lo scrivi come funzione.</li>
-        <li>Lo stato lo cambi con JavaScript qualunque.</li>
+        <li>Cambia lo stato con normale JavaScript.</li>
         <li>Poi chiami <code>update()</code>: Nuclo rilancia quelle funzioni e scrive nel DOM solo ciò che è davvero cambiato.</li>
       </ol>
       <p>Assegnare una variabile non tocca il DOM: la pagina si muove solo quando chiami <code>update()</code>.</p>
@@ -116,7 +116,7 @@ import { render, update, getCssText } from 'nuclo'
       <h3>Tipi utili</h3>
       <p>Sono tutti globali, quindi si usano senza import:</p>
       <ul>
-        <li><code>NodeModFn&lt;Tag&gt;</code>: ciò che restituisce un builder di tag. Perfetto come tipo di ritorno di un componente.</li>
+        <li><code>NodeModFn&lt;Tag&gt;</code>: ciò che restituisce un builder di tag. Usalo come tipo di ritorno di un componente.</li>
         <li><code>NodeModLike&lt;Tag&gt;</code>: tutto ciò che un builder di tag accetta come argomento.</li>
         <li><code>ExpandedElement&lt;Tag&gt;</code>: ciò che restituiscono <code>render()</code> e <code>hydrate()</code>.</li>
         <li><code>ElementTagName</code>: qualunque nome di tag HTML.</li>
@@ -178,7 +178,7 @@ render(Card, document.body)
       </ul>
       <h3>Trappole comuni</h3>
       <ul>
-        <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> stampa il testo "false". Scrivi invece <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
+        <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> mostra il testo "false". Scrivi invece <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
         <li>Gli array non sono figli: vanno espansi con <code>ul(...names.map((n) =&gt; li(n)))</code>. Per le liste che cambiano nel tempo, c'è <code>list()</code>.</li>
         <li>Una variabile locale con il nome di un tag oscura il builder: dentro <code>function Row(label: string)</code>, <code>label(...)</code> non si può chiamare. Evita per le variabili locali nomi come <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> e <code>i</code>.</li>
         <li>I browser espongono come variabile globale ogni elemento che ha un <code>id</code>. Se la pagina contiene <code>&lt;main id="main"&gt;</code> prima che Nuclo si carichi, Nuclo lascia intatto quel globale e <code>main(...)</code> lancia un <code>TypeError</code>. Scegli id diversi.</li>
@@ -261,10 +261,10 @@ const save = button(
         <li><code>null</code> e <code>undefined</code> vengono ignorati. Un valore dinamico che restituisce <code>null</code> o <code>undefined</code> lascia quello precedente. Per azzerare, restituisci <code>""</code>, oppure <code>false</code> se è una proprietà booleana.</li>
         <li>I booleani funzionano con le proprietà booleane del DOM, come <code>disabled</code> su un pulsante, <code>checked</code>, <code>hidden</code> e <code>required</code>. Ovunque altro, <code>true</code> e <code>false</code> vengono scritti come le stringhe "true" e "false".</li>
         <li>Usa le chiavi <code>"data-*"</code>: <code>dataset</code> non è supportato.</li>
-        <li><code>innerHTML</code> non viene escapato e il server-side rendering non lo emette. Meglio lasciarlo stare.</li>
+        <li><code>innerHTML</code> non viene escapato e il server-side rendering non lo emette. Evitalo.</li>
       </ul>
       <h3>Classi</h3>
-      <p>Usa <code>className</code>. Stringhe di classi statiche, risultati di <code>css()</code> e un <code>className</code> dinamico si sommano. Il <code>className</code> dinamico non butta via le classi statiche: se restituisce <code>""</code>, restano solo quelle.</p>
+      <p>Usa <code>className</code>. Stringhe di classi statiche, risultati di <code>css()</code> e un <code>className</code> dinamico si sommano. Il <code>className</code> dinamico mantiene le classi statiche: se restituisce <code>""</code>, restano solo quelle.</p>
       ${code("example.ts", `
 let active = false
 const base = css({ p: 8 })
@@ -272,7 +272,7 @@ const base = css({ p: 8 })
 const item = li(base, { className: 'item' }, { className: () => (active ? 'active' : '') }, 'Home')
 // class="<base> item", then "<base> item active" after active = true; update()
 `)}
-      <p>Evita la chiave <code>class</code> sugli elementi HTML: imposta l'attributo grezzo e sostituisce ogni classe applicata prima, comprese quelle di <code>css()</code>.</p>
+      <p>Non usare la chiave <code>class</code> sugli elementi HTML: imposta l'attributo grezzo e sostituisce ogni classe applicata prima, comprese quelle di <code>css()</code>.</p>
       <h3>Stili inline</h3>
       <p><code>style</code> accetta un oggetto con chiavi in camelCase, o una funzione che ne restituisce uno.</p>
       ${code("example.ts", `
@@ -462,7 +462,7 @@ const Profile = () =>
         <li>Una funzione <code>style</code> applica a ogni aggiornamento l'oggetto che restituisce.</li>
       </ul>
       <h3>Errori</h3>
-      <p>Se un valore dinamico lancia un errore, Nuclo lo intercetta e il resto dell'aggiornamento va avanti. Il testo diventa vuoto o tiene il valore precedente, e lo stesso vale per un attributo. Entrambi si riprendono al primo <code>update()</code> successivo che va a buon fine. Un'eccezione: una funzione di testo che fallisce alla <strong>prima</strong> esecuzione resta vuota per sempre.</p>
+      <p>Se un valore dinamico lancia un errore, Nuclo lo intercetta e il resto dell'aggiornamento va avanti. Il testo diventa vuoto o tiene il valore precedente, e un attributo tiene il valore precedente. Entrambi si riprendono al primo <code>update()</code> successivo che va a buon fine. Un'eccezione: una funzione di testo che fallisce alla <strong>prima</strong> esecuzione resta vuota per sempre.</p>
     `,
       },
       {
@@ -813,7 +813,7 @@ forceUpdate() // same <h1> element, now "Olá"
       <p>Senza argomenti, <code>forceUpdate()</code> ricostruisce ogni radice renderizzata con <code>render(App)</code> o <code>hydrate(App)</code>, mentre le radici renderizzate con <code>render(App())</code> vengono saltate. Se un componente lancia un errore, l'errore viene registrato e quella radice conserva il vecchio DOM. Anche un errore lanciato più tardi, mentre la nuova costruzione viene applicata, viene registrato, ma le parti già modificate restano tali.</p>
       <h3>Cosa resta e cosa cambia</h3>
       <ul>
-        <li>I figli vengono abbinati in ordine, per tag. Un elemento corrispondente viene riusato: il focus e i valori digitati negli input restano, e i suoi hook <code>onMount</code> non rigirano. Dal primo figlio con un tag diverso in poi, quel figlio e tutti i fratelli successivi vengono costruiti da zero.</li>
+        <li>I figli vengono abbinati in ordine, per tag. Un elemento corrispondente viene riusato: il focus e i valori digitati negli input restano, e i suoi hook <code>onMount</code> non vengono rieseguiti. Dal primo figlio con un tag diverso in poi, quel figlio e tutti i fratelli successivi vengono costruiti da zero.</li>
         <li>Testo, attributi, classi, stili, listener, rami di <code>when()</code> e righe di <code>list()</code> seguono la nuova costruzione.</li>
         <li>I nuovi elementi vengono creati e i loro hook <code>onMount</code> partono; quelli che la nuova costruzione non produce più vengono rimossi, e i loro hook <code>onDestroy</code> partono.</li>
         <li>Anche le righe di <code>list()</code> vengono abbinate per posizione e non per elemento, quindi una riga riusata può finire per mostrare un elemento diverso.</li>

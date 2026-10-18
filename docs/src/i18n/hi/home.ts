@@ -5,7 +5,7 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · zero dependencies`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["*Explicit* updates,", "plain state,", "पूरा कंट्रोल आपका।"];
+export const HERO_TITLE_LINES = ["Nuclo से बनाइए", "*explicit*", "interfaces।"];
 
 export const HERO_DESC =
   "छोटा सा, type-safe DOM framework। State बस एक plain variable है, जिसे आप सीधे बदल सकते हैं, और DOM तभी बदलता है जब आप कहें। न proxy, न signals, न virtual DOM।";
@@ -76,7 +76,7 @@ export const PHILOSOPHY_QUOTE =
 export const PHILOSOPHY_POINTS = [
   {
     num: "01",
-    title: "Magic से बेहतर है explicit",
+    title: "Implicit से बेहतर है explicit",
     desc: "कोई proxy पर्दे के पीछे आपकी हर हरकत track नहीं करती। आप state बदलते हैं, फिर update() call करते हैं। Cause और effect साफ़ दिखते हैं, और behavior predictable रहता है।",
   },
   {
@@ -95,7 +95,7 @@ export const FEATURES = [
   {
     num: "01 · Explicit",
     title: "Update cycle आपके हाथ में",
-    desc: "जितने चाहें changes कीजिए, फिर update() एक बार call कीजिए। न subscriptions, न scheduler, न कोई surprise tree diff। DOM उसी वक़्त sync होता है जब आप तय करते हैं।",
+    desc: "जितने चाहें changes कीजिए, फिर update() एक बार call कीजिए। न subscriptions, न schedulers, और tree diff का कोई surprise भी नहीं। DOM उसी वक़्त sync होता है जब आप तय करते हैं।",
   },
   {
     num: "02 · Lightweight",
@@ -139,7 +139,7 @@ export const PIPELINE_STEPS = [
 ];
 
 // ── Comparison ──────────────────────────────────────────────────────────────
-export const COMPARISON_TITLE = "न tree diff, न proxy, न कोई surprise।";
+export const COMPARISON_TITLE = "न diffing, न proxy, न कोई surprise।";
 export const COMPARISON_SUB =
   "Nuclo UI तभी update करता है जब आप update() call करते हैं। बस इतना ही।";
 
@@ -188,7 +188,7 @@ export const BENCHMARK_SUB =
   "ये js-framework-benchmark के independent results हैं: हज़ारों rows को create, update, swap और remove करना।";
 
 export const BENCHMARK_NOTE =
-  "Score यानी सबसे तेज़ implementation के मुकाबले लगा समय (ratio)। ये सभी keyed benchmarks का weighted geometric mean है।";
+  "Score यानी सबसे तेज़ implementation की तुलना में कितना धीमा (duration slowdown)। ये सभी keyed benchmarks का weighted geometric mean है।";
 
 export const BENCHMARK_SOURCE_URL =
   "https://krausest.github.io/js-framework-benchmark/2026/chrome152.html";
@@ -262,7 +262,7 @@ export const LABELS = {
   copyInstall: "Install command copy करें",
   howItWorks: "ये कैसे काम करता है",
   pipelineTitle: "एक साफ़, explicit cycle।",
-  pipelineSub: "State पर टिके values, बिना dependency graph या scheduler के। वे कब चलें, ये आप तय करते हैं: data से screen तक एक predictable रास्ता।",
+  pipelineSub: "State पर निर्भर values, बिना dependency graph या scheduler के। वे कब चलें, ये आप तय करते हैं: data से screen तक एक predictable रास्ता।",
   philosophy: "Philosophy",
   features: "Features",
   featuresTitle: "Clarity के लिए बना।",
@@ -314,7 +314,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "Bubble sort plain array में objects की अदला-बदली करता है। list() हर bar को उसके object से जोड़कर रखता है, इसलिए update() मौजूदा nodes को ही नए order में खिसका देता है। counter देखिए: कोई bar दोबारा नहीं बनता।",
   },
   Chase: {
-    title: "रस्सी को राह दिखाइए",
+    title: "रस्सी को अपने पीछे चलाइए",
     note: "ये card एक scope() है। हर frame 32 plain points खिसकाता है और update('chase') call करता है: Nuclo सिर्फ़ इस card के attributes दोबारा evaluate करता है, बाकी पेज को हाथ भी नहीं लगाता।",
   },
   Reflex: {
@@ -322,7 +322,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "एक plain string तय करती है कि stage पर क्या दिखेगा। हर when() branch condition true होने पर बनती है और false होने पर हट जाती है; stage की class भी उसी string का function है।",
   },
   Warp: {
-    title: "दबाए रखिए और बिगाड़िए",
+    title: "दबाए रखिए और warp कीजिए",
     note: "onMount frame loop शुरू करता है और उसका cleanup function return करता है। Field unmount होते ही Nuclo वो cleanup चला देता है: loop रुक जाता है, और पीछे कुछ चलता नहीं रहता।",
   },
   Life: {

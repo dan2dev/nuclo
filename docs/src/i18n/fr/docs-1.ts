@@ -11,7 +11,7 @@ export const GROUPS_1: DocGroupText[] = [
         id: "overview",
         title: "Vue d'ensemble",
         content: `
-      <p>Nuclo est une petite bibliothèque DOM pour TypeScript. Vous bâtissez la page avec de simples fonctions comme <code>div()</code> ou <code>button()</code>, vous rangez votre état dans des variables toutes bêtes, et vous appelez <code>update()</code> dès que la page doit bouger.</p>
+      <p>Nuclo est une petite bibliothèque DOM pour TypeScript. Vous construisez la page avec de simples fonctions comme <code>div()</code> ou <code>button()</code>, vous gardez votre état dans des variables ordinaires, et vous appelez <code>update()</code> dès que la page doit bouger.</p>
       <p>Pas de DOM virtuel, pas de compilateur, pas de proxies, pas de signaux : Nuclo se passe de tout cela.</p>
       ${code("main.ts", `
 import 'nuclo'
@@ -814,7 +814,7 @@ forceUpdate() // same <h1> element, now "Olá"
       <h3>Ce qui reste, ce qui change</h3>
       <ul>
         <li>Les enfants sont appariés dans l'ordre, balise par balise. Un élément qui correspond est réutilisé : le focus et les valeurs saisies sont préservés, et ses hooks <code>onMount</code> ne se relancent pas. Dès que la balise d'un enfant diffère, cet enfant et tous les suivants de même niveau sont reconstruits.</li>
-        <li>Le texte, les attributs, les classes, les styles, les écouteurs, les branches de <code>when()</code> et les lignes de <code>list()</code> épousent la nouvelle construction.</li>
+        <li>Le texte, les attributs, les classes, les styles, les écouteurs, les branches de <code>when()</code> et les lignes de <code>list()</code> suivent la nouvelle construction.</li>
         <li>Les nouveaux éléments sont créés et leurs hooks <code>onMount</code> s'exécutent ; ceux que la nouvelle construction ne produit plus sont retirés, et leurs hooks <code>onDestroy</code> s'exécutent.</li>
         <li>Les lignes de <code>list()</code> sont aussi appariées par position plutôt que par élément : un élément de ligne réutilisé peut donc se retrouver à afficher un autre élément.</li>
         <li>Les attributs que la nouvelle construction ne définit plus ne sont pas retirés.</li>
@@ -862,7 +862,7 @@ render(() => Page({ name: 'Ana' }), root)
         id: "api-hydrate",
         title: "hydrate()",
         content: `
-      <p>Prend en charge le HTML produit par <a href="#api-ssr"><code>renderToString()</code></a> : il réutilise les éléments existants, attache les écouteurs d'événements et reconnecte les valeurs dynamiques, <code>when()</code> et <code>list()</code>, pour que <code>update()</code> fonctionne ensuite. Les hooks <code>onMount</code> s'exécutent à la fin. <code>parent</code> vaut <code>document.body</code> par défaut, et la fonction renvoie l'élément racine.</p>
+      <p>Reprend la main sur le HTML produit par <a href="#api-ssr"><code>renderToString()</code></a> : il réutilise les éléments existants, attache les écouteurs d'événements et reconnecte les valeurs dynamiques, <code>when()</code> et <code>list()</code>, pour que <code>update()</code> fonctionne ensuite. Les hooks <code>onMount</code> s'exécutent à la fin. <code>parent</code> vaut <code>document.body</code> par défaut, et la fonction renvoie l'élément racine.</p>
       ${code("client.ts", `
 import 'nuclo'
 import { App } from './app.ts'
@@ -883,7 +883,7 @@ hydrate(App, document.getElementById('root')!)
         <li>Les enfants en trop côté serveur sont retirés, et ceux qui manquent sont créés.</li>
         <li>Les attributs écrits par le serveur mais que le client ne définit pas sont laissés tels quels.</li>
       </ul>
-      <p><code>renderToString()</code> écrit des commentaires HTML en guise de marqueurs, par exemple <code>&lt;!-- text-0 --&gt;</code> avant chaque nœud texte. <code>hydrate()</code> en a besoin : ne supprimez donc pas les commentaires du HTML serveur. Sans ces marqueurs, l'hydration supprime les lignes de <code>list()</code>, et <code>list()</code> comme <code>when()</code> cessent de se mettre à jour.</p>
+      <p><code>renderToString()</code> écrit des commentaires HTML en guise de marqueurs, par exemple <code>&lt;!-- text-0 --&gt;</code> avant chaque nœud texte. <code>hydrate()</code> en a besoin : ne supprimez donc pas les commentaires du HTML serveur. Sans ces marqueurs, l'hydratation supprime les lignes de <code>list()</code>, et <code>list()</code> comme <code>when()</code> cessent de se mettre à jour.</p>
     `,
       },
       {

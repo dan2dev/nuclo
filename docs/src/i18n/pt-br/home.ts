@@ -5,7 +5,7 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · zero dependências`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["Interfaces que só mudam", "quando você *manda*,", "no nuclo."];
+export const HERO_TITLE_LINES = ["Construa interfaces", "*explícitas*", "com o nuclo."];
 
 export const HERO_DESC =
   "Um framework DOM pequeno e totalmente tipado. O estado continua sendo JavaScript puro e mutável, e cada atualização acontece quando você decide. Sem proxies, sem signals, sem DOM virtual.";
@@ -95,7 +95,7 @@ export const FEATURES = [
   {
     num: "01 · Explícito",
     title: "O ciclo de atualização é seu",
-    desc: "Mude o estado à vontade e chame update() uma vez. Sem subscriptions, sem scheduler, sem diff surpresa. O DOM é sincronizado quando você decide.",
+    desc: "Mude o estado à vontade e chame update() uma vez. Sem subscriptions, sem scheduler, e o Nuclo nunca te surpreende com um diff. O DOM é sincronizado quando você decide.",
   },
   {
     num: "02 · Leve",
@@ -165,7 +165,7 @@ export const COMPARISON_COLS: {
     items: [
       { good: false, text: "Embrulha o seu estado em proxies e subscriptions" },
       { good: false, text: "Rastreia dependências por baixo dos panos, em runtime" },
-      { good: false, text: "Dispara atualizações em cascata, na hora que ele quiser" },
+      { good: false, text: "Dispara atualizações em cascata, em momentos que você não controla" },
       { good: false, text: "É difícil de depurar passo a passo" },
     ],
   },
@@ -177,7 +177,7 @@ export const COMPARISON_COLS: {
       { good: true, text: "Estado mutável puro, sem wrappers e sem proxies" },
       { good: true, text: "O modelo mental inteiro cabe em uma chamada: update()" },
       { good: true, text: "Aplica só o que mudou" },
-      { good: true, text: `Cerca de ${NUCLO_GZIP_KB} KB, zero dependências, TypeScript de ponta a ponta` },
+      { good: true, text: `Cerca de ${NUCLO_GZIP_KB} KB, zero dependências, TypeScript em primeiro lugar` },
     ],
   },
 ];
@@ -218,7 +218,7 @@ export const BENCHMARK_ENTRIES: {
 // ── CTA ─────────────────────────────────────────────────────────────────────
 export const CTA_TITLE = "Pronto quando você estiver.";
 export const CTA_SUB =
-  "Instale o Nuclo, importe uma vez e entregue UIs que atualizam exatamente quando você manda. A API inteira se aprende numa tarde.";
+  "Instale o Nuclo, importe uma vez e entregue UIs que atualizam exatamente quando você decide. A API inteira se aprende numa tarde.";
 
 export const QUICK_START_STEPS = [
   {
@@ -261,7 +261,7 @@ export const LABELS = {
   viewExamples: "Ver exemplos",
   copyInstall: "Copiar comando de instalação",
   howItWorks: "Como funciona",
-  pipelineTitle: "Um ciclo, explícito.",
+  pipelineTitle: "Um único ciclo, explícito.",
   pipelineSub: "Valores que dependem do estado, sem grafo de dependências e sem scheduler. Você decide quando rodam: um caminho único e previsível dos seus dados até a tela.",
   philosophy: "Filosofia",
   features: "Recursos",
@@ -318,7 +318,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "O card é um scope(). A cada frame, 32 pontos se movem e update('chase') é chamado: o Nuclo recalcula os atributos desse card e deixa o resto da página em paz.",
   },
   Reflex: {
-    title: "Clicou no verde, ganhou",
+    title: "Toque no verde",
     note: "Uma única string decide o que o palco mostra. Cada ramo de when() é montado quando sua condição vira verdadeira e removido quando deixa de ser. A classe do palco é função da mesma string.",
   },
   Warp: {

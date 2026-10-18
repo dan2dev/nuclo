@@ -10,7 +10,7 @@ export const GROUPS_2: DocGroupText[] = [
         id: "api-styling",
         title: "css()",
         content: `
-      <p>丢给它一个类型安全的样式对象，拿回一个 CSS 类，再把结果交给任意标签构建函数就行。浏览器里，规则会写进唯一的 <code>&lt;style id="nuclo-styles"&gt;</code> 元素；到了服务端，则由 <a href="#api-css-text"><code>getCssText()</code></a> 把它们吐出来。</p>
+      <p>把带类型的样式对象转换成生成的 CSS 类，再把结果传给任意标签构建函数。在浏览器里，规则会写进唯一的 <code>&lt;style id="nuclo-styles"&gt;</code> 元素；在服务端，则由 <a href="#api-css-text"><code>getCssText()</code></a> 返回这些规则。</p>
       ${code("card.ts", `
 const card = css({
   p: 16,
@@ -114,7 +114,7 @@ const menu = css({
       ${code("example.ts", `
 css({ raw: { '--gap': '8px', '-webkit-line-clamp': '2' } })
 `)}
-      <p>其他所有平铺的键都会被转成 kebab-case 原样输出，所以像 <code>colr: 'red'</code> 这样的手误，最后会变成一条被浏览器丢掉的声明。嵌套对象如果挂在非伪类状态、非 screen、也不是 <code>&amp;</code> 或 <code>@</code> 开头的键下面，同样会被忽略。这两种情况，TypeScript 都会替你报错。</p>
+      <p>其他所有平铺的键都会被转成 kebab-case 原样输出，所以像 <code>colr: 'red'</code> 这样的手误，最后会变成一条被浏览器丢掉的声明。嵌套对象如果挂在既不是伪类状态、也不是 screen，又不以 <code>&amp;</code> 或 <code>@</code> 开头的键下面，同样会被忽略。这两种情况，TypeScript 都会替你报错。</p>
     `,
       },
       {
@@ -254,7 +254,7 @@ globalStyle('body', { m: 0, font: 'system-ui, sans-serif' })
       <p><code>getCssText()</code> 会返回当前进程里 <code>css()</code>、<code>cx()</code>、<code>variants()</code>、<code>keyframes()</code> 和 <code>globalStyle()</code> 创建过的全部规则：先是基础规则，再是 <code>@media</code>、<code>@container</code> 和 <code>@supports</code> 块。它是为服务端渲染准备的。</p>
       <ul>
         <li>请在 <code>renderToString()</code> 之后调用，渲染过程中创建的规则也会一并包含进来。</li>
-        <li>它的范围是整个进程，而不是某一个页面或某一次请求，而且只增不减。别担心，类名是内容哈希，这样做是安全的。</li>
+        <li>它的范围是整个进程，而不是某一个页面或某一次请求，而且只增不减。这样做是安全的，因为类名是内容哈希。</li>
         <li>把结果放进 <code>&lt;style id="nuclo-styles"&gt;</code> 里。客户端会复用这个元素，并跳过其中已有的规则。要是换了别的 id，或者干脆不带 id，客户端就会再追加一张包含所有规则的样式表。</li>
         <li>文本不会做转义，所以千万别把不可信的输入放进样式值。</li>
       </ul>
@@ -278,7 +278,7 @@ beforeEach(() => resetStyles())
         title: "nuclo-router",
         content: `
       <div class="docs-callout"><strong>独立包：</strong><code>nuclo-router</code> 不在 Nuclo 核心包里，需要和 <code>nuclo</code> 一起安装。它目前还是预览版，API 仍有可能调整。</div>
-      <p>这是 Nuclo 官方的路由方案，支持服务端渲染、hydration、按路由做代码分割，还会在空闲时预加载，底层建立在 <code>list()</code> 和 <code>update()</code> 之上。gzip 后只有约 ${NUCLO_ROUTER_GZIP_KB} KB，除了 Nuclo 本身再无其他依赖，也没有副作用，所以没用到的话会被 tree-shake 干净。</p>
+      <p>Nuclo 的路由方案，支持服务端渲染、hydration、按路由做代码分割，还会在空闲时预加载，底层建立在 <code>list()</code> 和 <code>update()</code> 之上。gzip 后只有约 ${NUCLO_ROUTER_GZIP_KB} KB，除了 Nuclo 本身再无其他依赖，也没有副作用，所以没用到的话会被 tree-shake 干净。</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>用 <code>pnpm add</code>、<code>yarn add</code> 或 <code>bun add</code> 装这两个包也一样。它把 <code>nuclo</code> 0.3 及以上版本作为 peer dependency。</p>
       <p>router 负责决定加载<em>什么</em>，应用则通过 <code>router.outlet()</code> 来说明放<em>在哪</em>：它就是一个遍历整个图层栈的 <code>list()</code>，每个图层占一行，所以普通页面只是其中单独的一行。服务端和客户端会构建出同一棵树，因此 <code>hydrate()</code> 接管的是服务端已有的节点，而不是把它们换掉。剩下的部分，无非是 <code>history</code>、一个委托的 <code>click</code> 监听器，以及 <code>requestIdleCallback</code>。</p>
@@ -407,7 +407,7 @@ router.href('./preview')      // '/invoices/42/preview' or '/customers/7/preview
 await router.go('./preview')
 await layer.push('./preview') // the usual shape: a child layer
 `)}
-      <p><code>./x</code>、<code>../x</code>、<code>.</code> 和 <code>..</code> 都是相对于当前路由的路径来解析的，而不是 URL 的“目录”。从 <code>/invoices/42</code> 出发，<code>./preview</code> 得到 <code>/invoices/42/preview</code>，换成浏览器自己解析的话则会是 <code>/invoices/preview</code>；URL 末尾有没有斜杠，结果都一样。<code>../</code> 往上走一段，最多走到根。查询串和哈希会被带上，<code>base</code> 会重新加回去，最终写进 history 的是解析后的绝对路径。这跟 React Router 处理 <code>&lt;Link to="./x"&gt;</code> 时对 URL 解析规则的偏离，是同一种做法。</p>
+      <p><code>./x</code>、<code>../x</code>、<code>.</code> 和 <code>..</code> 都是相对于当前路由的路径来解析的，而不是 URL 的“目录”。从 <code>/invoices/42</code> 出发，<code>./preview</code> 得到 <code>/invoices/42/preview</code>，换成浏览器自己解析的话则会是 <code>/invoices/preview</code>；URL 末尾有没有斜杠，结果都一样。<code>../</code> 往上走一段，最多走到根。查询串和哈希会被带上，<code>base</code> 会重新加回去，最终写进 history 的是解析后的绝对路径。React Router 处理 <code>&lt;Link to="./x"&gt;</code> 时，也同样偏离了标准的 URL 解析规则。</p>
       <ul>
         <li>只有 <code>./</code> 和 <code>../</code> 是路由相对的。href 里光秃秃的 <code>preview</code>，仍然交给浏览器的常规规则处理。</li>
         <li>相对链接请用 <code>router.href('./preview')</code> 来构建，别手写 <code>href="./preview"</code>。<code>href()</code> 在渲染时就完成解析，输出的标记是绝对路径，所以对爬虫、中键点击和禁用 JavaScript 的场景依然正确。</li>
@@ -659,7 +659,7 @@ layer.close()          // dismissed: resolves with undefined
         <li><strong>URL 就是最顶层的图层。</strong><code>push()</code> 会添加一条 history 条目，所以图层可以被链接，后退会把它关掉，并让它的 <code>push()</code> 以取消的方式 resolve，和点击取消完全一样。后退与 <code>close()</code> 走的是同一条代码路径：<code>close()</code> 记录结果并让 history 往回走，<code>history.state</code> 里的深度才是权威来源。浏览器每个标签页大约只保留 50 条条目，所以在图层之间走了很远之后，下面那条条目可能已经不在了：这时 <code>close()</code> 会就地关闭图层，并把当前条目改写成留下来显示的那个页面。</li>
         <li><strong>普通导航会清空栈。</strong>点链接或 <code>go()</code> 都不算图层，它们会替换一切，并关闭所有已打开的图层，所以不会有哪个调用方一直 await 下去。</li>
         <li><strong>冷加载得是个独立页面。</strong>URL 只说明最顶层的图层，并不记录它下面的栈，所以直接打开某个图层的 URL 时，它会以 depth 1 渲染，此时 <code>layer.depth === 0</code>，<code>close()</code> 不会起作用。被推入的路由必须能独立成立。请根据 <code>layer.depth</code> 分支处理，提供一个“离开”的链接，而不是一个失效的取消按钮。</li>
-        <li><strong>Promise 撑不过页面刷新</strong>，因为它活在闭包里。靠返回结果能把交互流程写得简洁，但流程也应该考虑直接访问页面的情况。</li>
+        <li><strong>Promise 撑不过页面刷新</strong>，因为它活在闭包里。请把返回结果当作流程中的一条捷径，没有它时，流程走另一条更绕的路也应该能走通。</li>
         <li><strong>不会有悬而未决的 await。</strong><code>stop()</code> 会关闭所有打开的图层，被导航抛弃的图层则以 <code>undefined</code> resolve。</li>
       </ul>
       <h3>离开守卫</h3>

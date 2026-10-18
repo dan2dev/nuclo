@@ -12,7 +12,7 @@ export const LABELS = {
   quickStart: "Быстрый старт",
   quickStartLink: "Быстрый старт",
   nucloMark: "Знак Nuclo",
-  facts: { release: "Текущий выпуск", builders: "Функции построения элементов", gzipped: "Ядро, gzip", model: "Модель выполнения", modelValue: "Явная" },
+  facts: { release: "Текущий выпуск", builders: "Билдеры тегов", gzipped: "Ядро, gzip", model: "Модель выполнения", modelValue: "Явная" },
   filterSections: "Фильтровать разделы",
   filter: "Фильтр",
   closeNavigator: "Закрыть навигатор",

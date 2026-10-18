@@ -71,7 +71,7 @@ render(App, document.getElementById('app')!)
         <li><strong>175 Tag-Builder</strong>: 112 für HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) und 63 für SVG, die ein <code>Svg</code>-Suffix tragen (<code>svgSvg</code>, <code>pathSvg</code>, …). Mehr dazu unter <a href="#tag-builders">Tag-Builder</a>.</li>
         <li><strong>16 Helfer</strong>: <code>update</code>, <code>scope</code>, <code>when</code>, <code>list</code>, <code>region</code>, <code>into</code>, <code>on</code>, <code>render</code>, <code>hydrate</code>, <code>forceUpdate</code>, <code>css</code>, <code>cx</code>, <code>createCss</code>, <code>variants</code>, <code>keyframes</code> und <code>globalStyle</code>.</li>
       </ul>
-      <p>Der Import muss laufen, bevor irgendein Code einen Builder aufruft. ES-Module werden in Import-Reihenfolge ausgeführt, deshalb knallt es hier:</p>
+      <p>Der Import muss laufen, bevor irgendein Code einen Builder aufruft. ES-Module werden in Import-Reihenfolge ausgeführt, deshalb schlägt das hier fehl:</p>
       ${code("main.ts", `
 import { App } from './app' // app.ts calls div() → ReferenceError: div is not defined
 import 'nuclo'
@@ -190,7 +190,7 @@ const field = input((el) => {
   el.autocomplete = 'off'
 })
 `)}
-      <h3>An das Element kommen</h3>
+      <h3>Zugriff auf das Element</h3>
       <p><code>render()</code> gibt dir das Wurzelelement zurück. Mitten im Baum greifst du mit <code>on("mount", (el) =&gt; …)</code> oder einem eigenen Modifier darauf zu. Du kannst die Builder-Funktion auch selbst aufrufen und bekommst ein losgelöstes Element:</p>
       ${code("example.ts", `
 const el = div('Hello')() as HTMLDivElement
@@ -264,7 +264,7 @@ const save = button(
         <li><code>innerHTML</code> wird nicht escaped und beim serverseitigen Rendering nicht ausgegeben. Lass lieber die Finger davon.</li>
       </ul>
       <h3>Klassen</h3>
-      <p>Setz <code>className</code> ein. Statische Klassen-Strings, <code>css()</code>-Ergebnisse und ein dynamisches <code>className</code> werden alle zusammengeführt. Ein dynamisches <code>className</code> lässt die statischen Klassen unangetastet, und liefert es <code>""</code>, bleiben genau diese übrig.</p>
+      <p>Nimm <code>className</code>. Statische Klassen-Strings, <code>css()</code>-Ergebnisse und ein dynamisches <code>className</code> werden alle zusammengeführt. Ein dynamisches <code>className</code> lässt die statischen Klassen unangetastet, und liefert es <code>""</code>, bleiben genau diese übrig.</p>
       ${code("example.ts", `
 let active = false
 const base = css({ p: 8 })
@@ -326,7 +326,7 @@ const panel = div(
       <ul>
         <li>Jedes <code>on()</code> registriert einen weiteren Listener. Alle laufen nacheinander.</li>
         <li><code>options</code> geht unverändert an <code>addEventListener</code>: <code>capture</code>, <code>once</code>, <code>passive</code>, <code>signal</code>.</li>
-        <li>Gibst du <code>on()</code> direkt an einen Builder, wird der Elementtyp mitgeführt: <code>input(on('input', (e) =&gt; e.currentTarget.value))</code>.</li>
+        <li>Gibst du <code>on()</code> direkt an einen Builder, wird der Elementtyp abgeleitet: <code>input(on('input', (e) =&gt; e.currentTarget.value))</code>.</li>
         <li>Wirft ein Listener, loggt Nuclo den Fehler per <code>console.error</code>, und die übrigen Listener laufen trotzdem.</li>
         <li>Entfernt Nuclo das Element, räumt es den Listener gleich mit weg. Auf dem Server macht <code>on()</code> nichts.</li>
         <li>Einen <code>on()</code>-Wert kannst du auf beliebig vielen Elementen wiederverwenden.</li>
@@ -396,7 +396,7 @@ update() // App's onDestroy hooks and cleanups run
 
   // ── Updates ──────────────────────────────────────────────────────────────
   {
-    title: "Aktualisierungen",
+    title: "Updates",
     sections: [
       {
         id: "explicit-updates",
@@ -469,7 +469,7 @@ const Profile = () =>
         id: "api-update",
         title: "update()",
         content: `
-      <p>Geht synchron über jeden dynamischen Wert auf der Seite. Übergibst du IDs, aktualisiert es nur, was innerhalb der Elemente liegt, die mit diesen <a href="#api-scope"><code>scope()</code></a>-IDs markiert sind. Ein Durchlauf arbeitet diese Schritte der Reihe nach ab:</p>
+      <p>Führt einen synchronen Durchlauf über jeden dynamischen Wert auf der Seite aus. Übergibst du IDs, aktualisiert es nur, was innerhalb der Elemente liegt, die mit diesen <a href="#api-scope"><code>scope()</code></a>-IDs markiert sind. Ein Durchlauf arbeitet diese Schritte der Reihe nach ab:</p>
       <ol>
         <li><code>list()</code>: liest die Items neu ein und fügt Zeilen hinzu, verschiebt oder entfernt sie.</li>
         <li><code>when()</code>: wertet die Bedingungen erneut aus. Ein Zweig wird nur dann neu gebaut, wenn ein anderer Zweig aktiv wird.</li>
@@ -663,7 +663,7 @@ const Page = () =>
     sidebar: [h2('Related'), ul(li('One'), li('Two'))],
   })
 `)}
-      <h3>Ein Dialog, der tief im Baum aufgeht</h3>
+      <h3>Ein Dialog, der tief im Baum geöffnet wird</h3>
       <p>Die Overlay-Region sitzt ganz oben an der Wurzel. Jede Komponente, in beliebiger Tiefe, öffnet einen Dialog, indem sie ein <code>into()</code> in ein <code>when()</code> packt. Schließt das <code>when()</code>, verschwindet der Dialog wieder aus der Region.</p>
       ${code("dialog.ts", `
 let confirming = false
@@ -940,7 +940,7 @@ renderToString(p('Hello'))
 `)}
       <ul>
         <li>Text- und Attributwerte werden HTML-escaped. Text innerhalb von <code>script()</code> und <code>style()</code> wird unverändert ausgegeben, lediglich schließende Tags werden aufgebrochen. Setz dort also nie Nutzereingaben ein.</li>
-        <li>Fehler reicht es nicht an den Aufrufer weiter. Wirft die Komponente, eine <code>list()</code>-Funktion oder eine <code>when()</code>-Bedingung, oder fehlt der Polyfill, loggt es den Fehler und gibt <code>""</code> zurück. Soll der Request in dem Fall fehlschlagen, prüfe auf ein leeres Ergebnis. Wirft eine Text- oder Attributfunktion, entsteht lediglich ein leerer Wert.</li>
+        <li>Es wirft nie einen Fehler. Wirft die Komponente, eine <code>list()</code>-Funktion oder eine <code>when()</code>-Bedingung, oder fehlt der Polyfill, loggt es den Fehler und gibt <code>""</code> zurück. Soll der Request in dem Fall fehlschlagen, prüfe auf ein leeres Ergebnis. Wirft eine Text- oder Attributfunktion, entsteht lediglich ein leerer Wert.</li>
       </ul>
       <h3><code>renderManyToString()</code></h3>
       <p>Entspricht <code>inputs.map(renderToString)</code>.</p>

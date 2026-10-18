@@ -133,7 +133,7 @@ div(cx(base, blue), 'Blue text')
       <ul>
         <li>Gli input falsy vengono scartati, gli array appiattiti, le stringhe spezzate e deduplicate.</li>
         <li>Le classi generate per lo stesso blocco (base, stesso pseudo, stessa media query) si fondono in una classe nuova. Tutti gli altri nomi passano così come sono.</li>
-        <li>Solo <code>cx()</code> conosce l'ordine degli argomenti. Con <code>div(base, blue)</code> vengono aggiunte entrambe le classi e vince la regola creata per ultima. Quando due stili si pestano i piedi, mettili nella stessa chiamata a <code>cx()</code>.</li>
+        <li>Solo <code>cx()</code> conosce l'ordine degli argomenti. Con <code>div(base, blue)</code> vengono aggiunte entrambe le classi e vince la regola creata per ultima. Quando due stili si sovrascrivono a vicenda, mettili nella stessa chiamata a <code>cx()</code>.</li>
         <li>Quando il blocco di uno stile con nome si fonde con quello di un altro input, la classe che ne esce è <code>name-&lt;hash&gt;</code>, non il solo nome. I blocchi che non si fondono tengono la loro classe, quindi <code>cx(pageTitle, 'extra')</code> ha ancora <code>page-title</code>.</li>
       </ul>
       <h3>Classi dinamiche</h3>
@@ -360,7 +360,7 @@ const html = route.run(() => renderToString(App))
       </table>
       <p>L'ordine di precedenza è: statici, poi dinamici nell'ordine in cui li dichiari, poi catch-all, prima quello col prefisso più lungo. Per questo <code>'*'</code> intercetta solo ciò che nient'altro riconosce e può stare ovunque nella tabella. Slash finali, slash doppi e percent-encoding vengono normalizzati, e i valori dei parametri arrivano già decodificati. Il matching è un semplice confronto segmento per segmento per ogni pattern: nessuna regex viene costruita o eseguita.</p>
       <h3>Rotte relative</h3>
-      <p>Un pattern che comincia con <code>./</code> è relativo al genitore che lo dichiara, e un href che comincia con <code>./</code> è relativo alla rotta attiva. Insieme danno vita a una sezione riutilizzabile che significa la stessa cosa sotto qualsiasi genitore. Il valore di una tabella è un loader oppure un'altra tabella, le cui chiavi sono relative a essa:</p>
+      <p>Un pattern che comincia con <code>./</code> è relativo al genitore che lo dichiara, e un href che comincia con <code>./</code> è relativo alla rotta attiva. Insieme danno vita a una sezione riutilizzabile che ha lo stesso significato sotto qualsiasi genitore. Il valore di una tabella è un loader oppure un'altra tabella, le cui chiavi sono relative a essa:</p>
       ${code("records/routes.ts", `
 import type { RouteTable } from 'nuclo-router'
 
@@ -386,7 +386,7 @@ createRouter({
         <li>Le chiavi di primo livello valgono così come sono scritte: <code>'*'</code> resta <code>'*'</code>.</li>
         <li>Un figlio sotto un genitore <code>*catch-all</code> fa fallire <code>createRouter()</code>, perché un catch-all deve chiudere il suo pattern.</li>
       </ul>
-      <h3>Layout genitore e <code>outlet()</code></h3>
+      <h3>Pagine genitore e <code>outlet()</code></h3>
       <p>Genitore e figli formano una vera gerarchia: il genitore fa il render, e il figlio viene renderizzato al suo interno, nel punto in cui chiami <code>outlet()</code>:</p>
       ${code("records/Record.ts", `
 import type { PageProps, RouteContext } from 'nuclo-router'
@@ -457,7 +457,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
         <li><strong>Una pagina ricostruita le riempie da capo.</strong> Quando la rotta cambia, la vecchia riga sparisce e le viste <code>into()</code> della nuova pagina prendono il suo posto: non resta niente del passato.</li>
         <li><strong>Un layer aperto con push aggiunge una vista.</strong> Il layer è una riga successiva dell'outlet, quindi il suo <code>into()</code> è una vista più recente della stessa regione. Con il default <code>type: 'latest'</code> copre la vista della pagina finché il layer non si chiude, e a quel punto la vista della pagina riappare. Con <code>type: 'stack'</code> si vedono entrambe.</li>
         <li><strong>Anche una pagina genitore può riempire regioni.</strong> Le sue viste restano mentre i figli cambiano, perché il genitore non viene ricostruito.</li>
-        <li><strong>Il server-side rendering funziona senza fare nulla.</strong> Il server costruisce la pagina dentro <code>route.run()</code>, quindi le sue viste <code>into()</code> sono già nell'HTML e <code>hydrate()</code> le riutilizza.</li>
+        <li><strong>Il server-side rendering funziona così com'è.</strong> Il server costruisce la pagina dentro <code>route.run()</code>, quindi le sue viste <code>into()</code> sono già nell'HTML e <code>hydrate()</code> le riutilizza.</li>
       </ul>
       <h3>Più regioni da una sola pagina</h3>
       <p>Passa un oggetto per riempire più regioni in un colpo solo. Il contenuto principale della pagina passa comunque dall'outlet, quindi restituiscilo accanto all'<code>into()</code>:</p>
@@ -534,7 +534,7 @@ createRouter({
 `)}
       <p>Solo i valori con la forma di un modulo possono includere un export <code>load</code>. Se scegli un componente con nome tramite <code>.then(m =&gt; m.BPage)</code>, al router arriva soltanto la funzione.</p>
       <p>Ogni modulo viene importato una volta e messo in cache; navigazioni concorrenti verso la stessa rotta condividono un solo <code>import()</code>. Quando l'utente lascia la pagina in pace per <code>idleTimeout</code> (un secondo di default, senza tocchi, tasti, rotella o scroll), le rotte rimanenti si caricano in background, una per ogni intervallo idle (<code>requestIdleCallback</code>). Qualsiasi input, o una navigazione che l'utente sta aspettando, mette tutto in pausa finché la pagina non torna idle.</p>
-      <p>Una rotta precaricata o eager non attiva mai <code>router.pending</code> e appare prima del prossimo aggiornamento dello schermo: nessun frame con lo spinner, nessun salto del layout. <code>router.pending</code> è true solo per un modulo o un loader che va aspettato, e nel frattempo la pagina in uscita resta sullo schermo. Un chunk che non si carica emerge come <code>router.error</code>, mai come un rifiuto non gestito, e si può semplicemente ritentare.</p>
+      <p>Una rotta precaricata o eager non attiva mai <code>router.pending</code> e appare prima del prossimo aggiornamento dello schermo: nessun frame con lo spinner, nessun salto del layout. <code>router.pending</code> è true solo per un modulo o un loader che va aspettato, e nel frattempo la pagina in uscita resta sullo schermo. Un chunk che non si carica viene segnalato in <code>router.error</code>, mai come un rifiuto non gestito, e si può semplicemente ritentare.</p>
     `,
       },
       {
@@ -546,7 +546,7 @@ createRouter({
       <table>
         <thead><tr><th>Opzione</th><th>Default</th><th></th></tr></thead>
         <tbody>
-          <tr><td><code>base</code></td><td><code>'/'</code></td><td>Il prefisso URL sotto cui viene servita l'app, per esempio <code>'/docs'</code>. Combacia solo al confine di un segmento: <code>/docs/intro</code> è dentro <code>'/docs'</code>, <code>/docsearch</code> no. Gli URL fuori da <code>base</code> non corrispondono a nulla, quindi <code>start()</code> rifiuta (la tua 404 lato server) e i link verso di essi restano al browser.</td></tr>
+          <tr><td><code>base</code></td><td><code>'/'</code></td><td>Il prefisso URL sotto cui viene servita l'app, per esempio <code>'/docs'</code>. Combacia solo al confine di un segmento: <code>/docs/intro</code> è dentro <code>'/docs'</code>, <code>/docsearch</code> no. Gli URL fuori da <code>base</code> non corrispondono a nulla, quindi <code>start()</code> rifiuta (la tua 404 lato server) e i link che li puntano vengono lasciati al browser.</td></tr>
           <tr><td><code>preload</code></td><td><code>true</code></td><td>Carica in background i moduli delle rotte rimanenti quando la pagina è idle. Con <code>false</code> si disattiva.</td></tr>
           <tr><td><code>idleTimeout</code></td><td><code>1000</code></td><td>I millisecondi senza tocchi, tasti, rotella o scroll prima che il preloading parta, o riparta dopo un momento di attività.</td></tr>
           <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>, chiamata dopo ogni navigazione risolta nel browser, quella iniziale compresa, quando il DOM si è già aggiornato. <code>kind</code> è <code>'start'</code>, <code>'push'</code>, <code>'replace'</code>, <code>'pop'</code> (Indietro, Avanti, <code>close()</code>) o <code>'layer'</code>. È l'hook giusto per <code>document.title</code>, meta tag, focus, scroll e analytics. Non viene mai chiamata durante la SSR.</td></tr>
@@ -656,14 +656,14 @@ layer.close()          // dismissed: resolves with undefined
 `)}
       <p>I layer si annidano: un dialog che ha bisogno di un altro dialog chiama <code>layer.push()</code> e lo attende, senza alcun riferimento alla Route.</p>
       <ul>
-        <li><strong>L'URL è il layer in cima.</strong> <code>push()</code> aggiunge una voce alla history, quindi un layer è raggiungibile con un link e Indietro lo chiude, risolvendo il suo <code>push()</code> come chiuso senza risultato, esattamente come Annulla. Indietro e <code>close()</code> seguono lo stesso percorso di codice: <code>close()</code> registra il suo risultato e fa tornare indietro la history, e la profondità in <code>history.state</code> è l'autorità. I browser conservano circa 50 voci per tab, quindi dopo una lunga serie di navigazioni tra i layer la voce sottostante potrebbe non esserci più: in quel caso <code>close()</code> chiude i layer sul posto e riscrive la voce corrente con la pagina rimasta visibile.</li>
+        <li><strong>L'URL è il layer in cima.</strong> <code>push()</code> aggiunge una voce alla history, quindi un layer è raggiungibile con un link e Indietro lo chiude, risolvendo il suo <code>push()</code> come chiuso senza risultato, esattamente come Annulla. Indietro e <code>close()</code> seguono lo stesso percorso di codice: <code>close()</code> registra il suo risultato e fa tornare indietro la history, e a fare fede è la profondità in <code>history.state</code>. I browser conservano circa 50 voci per tab, quindi dopo una lunga serie di navigazioni tra i layer la voce sottostante potrebbe non esserci più: in quel caso <code>close()</code> chiude i layer sul posto e riscrive la voce corrente con la pagina rimasta visibile.</li>
         <li><strong>Una navigazione normale svuota lo stack.</strong> Un click su un link o un <code>go()</code> non è un layer: sostituisce tutto e chiude ogni layer aperto, così nessun chiamante resta in attesa.</li>
-        <li><strong>Un caricamento a freddo è una pagina a sé.</strong> L'URL indica il layer in cima ma non lo stack sotto di esso, quindi aprendo direttamente l'URL di un layer lo vedi a profondità 1, con <code>layer.depth === 0</code> e un <code>close()</code> inerte. Una rotta aperta con push deve avere senso anche da sola. Ramifica su <code>layer.depth</code> per offrire un link di uscita al posto di un pulsante Annulla che non fa nulla.</li>
+        <li><strong>Un caricamento a freddo è una pagina a sé.</strong> L'URL indica il layer in cima ma non lo stack sotto di esso, quindi aprendo direttamente l'URL di un layer lo vedi a profondità 1, con <code>layer.depth === 0</code> e un <code>close()</code> inerte. Una rotta aperta con push deve avere senso anche da sola. Controlla <code>layer.depth</code> per offrire un link di uscita al posto di un pulsante Annulla che non fa nulla.</li>
         <li><strong>La promise non sopravvive a un ricaricamento</strong>, perché vive in una closure. Considera il risultato una scorciatoia dentro un flusso che funziona anche per la strada lunga.</li>
         <li><strong>Nessuno resta in attesa.</strong> <code>stop()</code> chiude ogni layer aperto, e un layer abbandonato da una navigazione si risolve con <code>undefined</code>.</li>
       </ul>
       <h3>Guardie di uscita</h3>
-      <p>Una pagina che contiene qualcosa che vale la pena conservare, come un form compilato a metà, registra una guardia. La guardia viene consultata prima che la pagina venga scartata, e restituire <code>false</code> (o una promise che lo risolve) la mantiene al suo posto:</p>
+      <p>Una pagina che contiene qualcosa che vale la pena conservare, come un form compilato a metà, registra una guardia. La guardia viene consultata prima che la pagina venga scartata, e restituire <code>false</code> (o una promise che si risolve con quel valore) la mantiene al suo posto:</p>
       ${code("pages/Edit.ts", `
 import type { PageProps, RouteContext } from 'nuclo-router'
 
@@ -843,7 +843,7 @@ createRouter(routes, {
       <p>Nel repository ci sono due esempi eseguibili che si completano a vicenda, così ogni impostazione si può osservare da qualche parte:</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: un tour lato client dell'intera API. Ogni forma di pattern e regola di precedenza, le esclusioni della gestione dei link, ogni membro di Route con controlli live, un sub-router, lo stack di layer profondo tre, una sezione relativa montata su due genitori e loader di rotta con <code>pending</code> ed <code>error</code>. Imposta <code>preload: false</code>, così quegli stati restano visibili.</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> per ogni richiesta, hydration che mostra il riutilizzo dei nodi del server, veri codici di stato 404, un <code>base</code> non radice, preloading in idle osservabile nel pannello di rete e un loader i cui dati passano dal server al client, così l'hydration non rifà il fetch.</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> per ogni richiesta, hydration che riutilizza in modo dimostrabile i nodi del server, veri codici di stato 404, un <code>base</code> non radice, preloading in idle osservabile nel pannello di rete e un loader i cui dati passano dal server al client, così l'hydration non rifà il fetch.</li>
       </ul>
     `,
       },

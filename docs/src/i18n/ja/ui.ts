@@ -18,9 +18,9 @@ export const nav = {
 };
 
 export const footer = {
-  tagline: "更新のタイミングを自分で握る UI ランタイム。ふつうの関数とミュータブルな state で組み立てて、データから DOM へは update() ひとつで橋渡しします。",
+  tagline: "明示的な UI ランタイム。ふつうの関数とミュータブルな state で組み立て、データから DOM までは update() の 1 回の呼び出しでつなぎます。",
   builtWith: "このサイトは Nuclo で構築されています。",
-  explore: "探す",
+  explore: "探索",
   documentation: "ドキュメント",
   examples: "サンプル",
   readme: "README",
@@ -34,7 +34,7 @@ export const app = {
   failedToLoad: "ページの読み込みに失敗しました",
   loadingLanguage: "言語を読み込んでいます…",
   notFound: "ページが見つかりません",
-  notFoundHint: "このアドレスには、まだ何もありません。",
+  notFoundHint: "このアドレスには何もありません。",
   goHome: "ホームページへ移動",
 };
 

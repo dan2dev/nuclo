@@ -11,7 +11,7 @@ export const GROUPS_1: DocGroupText[] = [
         id: "overview",
         title: "Visión general",
         content: `
-      <p>Nuclo es una biblioteca DOM diminuta para TypeScript. Armas la página con funciones tan simples como <code>div()</code> y <code>button()</code>, guardas el estado en variables de toda la vida y, cuando quieres que la pantalla se entere del cambio, llamas a <code>update()</code>.</p>
+      <p>Nuclo es una biblioteca DOM diminuta para TypeScript. Armas la página con funciones tan simples como <code>div()</code> y <code>button()</code>, guardas el estado en variables de toda la vida y, cuando la página debe cambiar, llamas a <code>update()</code>.</p>
       <p>Sin virtual DOM, sin compilador, sin proxies y sin signals.</p>
       ${code("main.ts", `
 import 'nuclo'
@@ -61,7 +61,7 @@ render(App, document.getElementById('app')!)
         id: "installation",
         title: "Instalación e importaciones",
         content: `
-      <p>Para sumar Nuclo a un proyecto que ya tienes:</p>
+      <p>Para agregar Nuclo a un proyecto que ya tienes:</p>
       ${sh("npm install nuclo")}
       <p>También sirve <code>pnpm add nuclo</code>, <code>yarn add nuclo</code> o <code>bun add nuclo</code>. Nuclo no trae dependencias.</p>
       <p>El enrutamiento no viene en el paquete principal: se publica aparte como <a href="#router-overview"><code>nuclo-router</code></a>, y lo instalas junto a <code>nuclo</code> solo cuando lo necesites.</p>
@@ -71,7 +71,7 @@ render(App, document.getElementById('app')!)
         <li><strong>175 funciones constructoras de etiquetas</strong>: 112 de HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) y 63 de SVG, que llevan el sufijo <code>Svg</code> (<code>svgSvg</code>, <code>pathSvg</code>, …). Mira <a href="#tag-builders">Funciones constructoras de etiquetas</a>.</li>
         <li><strong>16 helpers</strong>: <code>update</code>, <code>scope</code>, <code>when</code>, <code>list</code>, <code>region</code>, <code>into</code>, <code>on</code>, <code>render</code>, <code>hydrate</code>, <code>forceUpdate</code>, <code>css</code>, <code>cx</code>, <code>createCss</code>, <code>variants</code>, <code>keyframes</code> y <code>globalStyle</code>.</li>
       </ul>
-      <p>La importación tiene que correr antes que cualquier código que llame a una función constructora. Los módulos ES se ejecutan en el orden en que se importan, así que esto revienta:</p>
+      <p>La importación tiene que correr antes que cualquier código que llame a una función constructora. Los módulos ES se ejecutan en el orden en que se importan, así que esto falla:</p>
       ${code("main.ts", `
 import { App } from './app' // app.ts calls div() → ReferenceError: div is not defined
 import 'nuclo'
@@ -116,11 +116,11 @@ import { render, update, getCssText } from 'nuclo'
       <h3>Tipos útiles</h3>
       <p>Todos son globales, así que los usas sin importar nada:</p>
       <ul>
-        <li><code>NodeModFn&lt;Tag&gt;</code>: lo que devuelve una constructora de etiquetas. Es el tipo de retorno natural de un componente.</li>
+        <li><code>NodeModFn&lt;Tag&gt;</code>: lo que devuelve una constructora de etiquetas. Úsalo como tipo de retorno de un componente.</li>
         <li><code>NodeModLike&lt;Tag&gt;</code>: cualquier cosa que una constructora de etiquetas acepta como argumento.</li>
         <li><code>ExpandedElement&lt;Tag&gt;</code>: lo que devuelven <code>render()</code> y <code>hydrate()</code>.</li>
         <li><code>ElementTagName</code>: cualquier nombre de etiqueta HTML.</li>
-        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: el objeto de atributos que acepta una constructora, con los handlers <code>on*</code>, <code>onMount</code> y <code>onDestroy</code> incluidos. Va muy bien en componentes que reenvían atributos.</li>
+        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: el objeto de atributos que acepta una constructora, con los handlers <code>on*</code>, <code>onMount</code> y <code>onDestroy</code> incluidos. Úsalo en componentes que reenvían atributos.</li>
         <li><code>MountCallback</code> y <code>DestroyCallback</code>: los handlers de <code>onMount</code> y <code>onDestroy</code>.</li>
         <li><code>WhenBuilder</code>, <code>ListModifier</code>: lo que devuelven <code>when()</code> y <code>list()</code>.</li>
         <li><code>RegionOptions</code>, <code>RegionType</code>: las opciones que recibe <code>region()</code>.</li>
@@ -168,7 +168,7 @@ render(Card, document.body)
         <li><strong>string, number, bigint</strong>: un nodo de texto.</li>
         <li><strong><code>() =&gt; value</code></strong>: texto que se refresca en cada <code>update()</code>. Mira <a href="#dynamic-functions">Valores dinámicos</a>.</li>
         <li><strong><code>null</code>, <code>undefined</code></strong>: se ignoran.</li>
-        <li><strong><code>true</code>, <code>false</code></strong>: se pintan como el texto "true" o "false". Para condiciones, usa <code>when()</code>.</li>
+        <li><strong><code>true</code>, <code>false</code></strong>: se renderizan como el texto "true" o "false". Para condiciones, usa <code>when()</code>.</li>
         <li><strong>Un objeto plano</strong>: atributos. Mira <a href="#attributes">Atributos</a>.</li>
         <li><strong>Un resultado de <code>css()</code>, <code>cx()</code> o <code>variants()</code></strong>: suma sus clases.</li>
         <li><strong><code>on(...)</code></strong>: un listener de eventos o un hook de ciclo de vida.</li>
@@ -178,7 +178,7 @@ render(Card, document.body)
       </ul>
       <h3>Trampas habituales</h3>
       <ul>
-        <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> pinta el texto "false". Lo correcto es <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
+        <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> renderiza el texto "false". Lo correcto es <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
         <li>Un array no cuenta como hijo: hay que expandirlo, así: <code>ul(...names.map((n) =&gt; li(n)))</code>. Si la lista va a cambiar, usa <code>list()</code>.</li>
         <li>Una variable local con el nombre de una etiqueta tapa a la constructora. Dentro de <code>function Row(label: string)</code>, <code>label(...)</code> ya no se puede llamar. Cambia el nombre de variables locales como <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> o <code>i</code>.</li>
         <li>Los navegadores exponen como variable global cada elemento que tiene <code>id</code>. Si la página trae un <code>&lt;main id="main"&gt;</code> antes de que cargue Nuclo, Nuclo respeta ese global y <code>main(...)</code> lanza un <code>TypeError</code>. Elige otros ids.</li>
@@ -196,7 +196,7 @@ const field = input((el) => {
 const el = div('Hello')() as HTMLDivElement
 document.body.append(el)
 `)}
-      <p>Insértalo antes del próximo <code>update()</code>: un nodo que no esté en el documento cuando se ejecuta <code>update()</code> deja de actualizarse para siempre.</p>
+      <p>Agrégalo al documento antes del próximo <code>update()</code>: un nodo que no esté en el documento cuando se ejecuta <code>update()</code> deja de actualizarse para siempre.</p>
       <h3>SVG</h3>
       <p>Las constructoras de SVG aceptan los mismos argumentos. Nuclo asigna cada atributo SVG con <code>setAttribute</code>, así que nombres como <code>"stroke-width"</code> funcionan exactamente como los escribes.</p>
       ${code("icon.ts", `
@@ -272,7 +272,7 @@ const base = css({ p: 8 })
 const item = li(base, { className: 'item' }, { className: () => (active ? 'active' : '') }, 'Home')
 // class="<base> item", then "<base> item active" after active = true; update()
 `)}
-      <p>En elementos HTML no uses la clave <code>class</code>: escribe el atributo en bruto y pisa todas las clases aplicadas antes, incluidas las de <code>css()</code>.</p>
+      <p>En elementos HTML no uses la clave <code>class</code>: escribe el atributo en bruto y reemplaza todas las clases aplicadas antes, incluidas las de <code>css()</code>.</p>
       <h3>Estilos en línea</h3>
       <p><code>style</code> acepta un objeto con claves en camelCase, o una función que devuelve uno.</p>
       ${code("example.ts", `
@@ -338,7 +338,7 @@ type PickEvent = CustomEvent<{ id: number }>
 const picker = ul(on<'pick', PickEvent>('pick', (e) => choose(e.detail.id)))
 `)}
       <h3>Cuál elegir</h3>
-      <p>Para el caso de todos los días, los atributos <code>on*</code>. Recurre a <code>on()</code> cuando necesites más de un listener para el mismo evento, opciones de listener o un nombre de evento personalizado como <code>"my-event"</code>.</p>
+      <p>Para el caso habitual, usa los atributos <code>on*</code>. Recurre a <code>on()</code> cuando necesites más de un listener para el mismo evento, opciones de listener o un nombre de evento personalizado como <code>"my-event"</code>.</p>
     `,
       },
       {
@@ -385,10 +385,10 @@ update() // App's onDestroy hooks and cleanups run
         <li><code>onDestroy</code> siempre ejecuta primero a los hijos y al final al padre.</li>
         <li>Los elementos se montan según el orden de su primer hook <code>onMount</code>, que sigue el orden de los argumentos, y cada elemento ejecuta todos sus hooks de una vez. Si los hijos dependen del hook de un padre, pásalo antes que a ellos.</li>
         <li>Si un hook lanza un error, se registra con <code>console.error</code> y los demás hooks se ejecutan igual.</li>
-        <li>El callback no debe devolver nada, salvo una función de cleanup, así que no lo marques como <code>async</code>: una Promise devuelta jamás se usa como cleanup. Lanza el trabajo asíncrono desde dentro: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
+        <li>El callback no debe devolver nada, salvo una función de cleanup, así que no lo marques como <code>async</code>: una Promise devuelta jamás se usa como cleanup. Inicia el trabajo asíncrono desde dentro: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
         <li>Los hooks nunca corren en el servidor. En el cliente, se ejecutan después de <code>hydrate()</code>.</li>
       </ul>
-      <div class="docs-callout"><strong>Ojo:</strong> los hooks no son efectos. No se vuelven a ejecutar cuando cambia el estado: cada uno corre, como máximo, una vez por elemento.</div>
+      <div class="docs-callout"><strong>Nota:</strong> los hooks no son efectos. No se vuelven a ejecutar cuando cambia el estado: cada uno corre, como máximo, una vez por elemento.</div>
     `,
       },
     ],
@@ -450,10 +450,10 @@ const Profile = () =>
       <p>Nuclo se fija en cuántos parámetros declara la función (<code>fn.length</code>). Si declara uno, es un <a href="#tag-builders">modificador personalizado</a> y se ejecuta una sola vez. <code>(x = 0) =&gt; …</code> y <code>(...args) =&gt; …</code> tienen longitud 0, así que cuentan como dinámicas.</p>
       <h3>Texto dinámico</h3>
       <ul>
-        <li>Un string, number, bigint o boolean se pinta como <code>String(value)</code>. <code>() =&gt; ok &amp;&amp; 'Saved'</code> muestra "false"; escríbelo mejor como <code>() =&gt; (ok ? 'Saved' : '')</code>.</li>
-        <li><code>null</code> y <code>undefined</code> se pintan como texto vacío.</li>
+        <li>Un string, number, bigint o boolean se renderiza como <code>String(value)</code>. <code>() =&gt; ok &amp;&amp; 'Saved'</code> muestra "false"; escríbelo mejor como <code>() =&gt; (ok ? 'Saved' : '')</code>.</li>
+        <li><code>null</code> y <code>undefined</code> se renderizan como texto vacío.</li>
         <li>Si en la primera ejecución la función devuelve un resultado de <code>css()</code> o <code>cx()</code>, se trata como una clase dinámica y no como texto. Mira <a href="#api-cx"><code>cx()</code></a>.</li>
-        <li>Un nodo, builder, array u objeto plano no pinta nada y nunca se actualiza.</li>
+        <li>Un nodo, builder, array u objeto plano no renderiza nada y nunca se actualiza.</li>
       </ul>
       <h3>Atributos dinámicos</h3>
       <ul>
@@ -862,7 +862,7 @@ render(() => Page({ name: 'Ana' }), root)
         id: "api-hydrate",
         title: "hydrate()",
         content: `
-      <p>Toma el control del HTML generado por <a href="#api-ssr"><code>renderToString()</code></a>: reutiliza los elementos que ya existen, engancha los listeners de eventos y conecta los valores dinámicos, <code>when()</code> y <code>list()</code>, para que <code>update()</code> funcione a partir de ahí. Al final ejecuta los hooks <code>onMount</code>. <code>parent</code> es <code>document.body</code> por defecto, y te devuelve el elemento raíz.</p>
+      <p>Toma el control del HTML generado por <a href="#api-ssr"><code>renderToString()</code></a>: reutiliza los elementos que ya existen, asocia los listeners de eventos y conecta los valores dinámicos, <code>when()</code> y <code>list()</code>, para que <code>update()</code> funcione a partir de ahí. Al final ejecuta los hooks <code>onMount</code>. <code>parent</code> es <code>document.body</code> por defecto, y te devuelve el elemento raíz.</p>
       ${code("client.ts", `
 import 'nuclo'
 import { App } from './app.ts'
@@ -872,7 +872,7 @@ hydrate(App, document.getElementById('root')!)
       <ul>
         <li>Usa el mismo componente, con los mismos datos, que usó el servidor.</li>
         <li>Hidrata en un contenedor propio. La raíz de la app debe ser su primer nodo (los espacios en blanco no cuentan). Si hay otro nodo antes, Nuclo lo reemplaza y la copia del servidor se queda sin usar.</li>
-        <li>Igual que con <code>render()</code>, pasa <code>App</code> y no <code>App()</code>, para que <code>forceUpdate()</code> pueda reconstruir la raíz después. <code>App</code> no debe recibir parámetros: con uno opcional, <code>hydrate()</code> no engancha nada y no avisa. Si el componente recibe props, envuélvelo: <code>hydrate(() =&gt; Page(props), root)</code>.</li>
+        <li>Igual que con <code>render()</code>, pasa <code>App</code> y no <code>App()</code>, para que <code>forceUpdate()</code> pueda reconstruir la raíz después. <code>App</code> no debe recibir parámetros: con uno opcional, <code>hydrate()</code> no asocia nada y no avisa. Si el componente recibe props, envuélvelo: <code>hydrate(() =&gt; Page(props), root)</code>.</li>
         <li>Si no hay HTML del servidor, usa <code>render()</code>.</li>
       </ul>
       <h3>Cuando el servidor y el cliente no coinciden</h3>
@@ -890,7 +890,7 @@ hydrate(App, document.getElementById('root')!)
         id: "api-ssr",
         title: "Renderizado en el servidor",
         content: `
-      <p>Convierte un componente en un string HTML dentro del servidor. En el navegador, llama a <a href="#api-hydrate"><code>hydrate()</code></a> con el mismo componente para que ese HTML cobre vida. Los runtimes de servidor no tienen <code>document</code>, así que primero importa <a href="#api-polyfill"><code>nuclo/polyfill</code></a>.</p>
+      <p>Convierte un componente en un string HTML en el servidor. En el navegador, llama a <a href="#api-hydrate"><code>hydrate()</code></a> con el mismo componente para que ese HTML sea interactivo. Los runtimes de servidor no tienen <code>document</code>, así que primero importa <a href="#api-polyfill"><code>nuclo/polyfill</code></a>.</p>
       ${code("app.ts", `
 let count = 0
 const heading = css({ color: 'red' })

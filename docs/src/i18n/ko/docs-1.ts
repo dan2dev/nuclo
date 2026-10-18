@@ -180,7 +180,7 @@ render(Card, document.body)
       <ul>
         <li><code>div(isAdmin &amp;&amp; span('Admin'))</code>은 "false"라는 텍스트를 그대로 그립니다. <code>div(when(() =&gt; isAdmin, span('Admin')))</code>처럼 쓰세요.</li>
         <li>배열은 자식으로 쓸 수 없으니 펼쳐서 넘기세요. <code>ul(...names.map((n) =&gt; li(n)))</code>처럼요. 내용이 바뀌는 목록에는 <code>list()</code>를 쓰면 됩니다.</li>
-        <li>태그와 이름이 같은 지역 변수는 빌더를 가려 버립니다. <code>function Row(label: string)</code> 안에서는 <code>label(...)</code>을 호출할 수 없어요. <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code>, <code>i</code> 같은 지역 이름은 다른 걸로 바꾸세요.</li>
+        <li>태그와 이름이 같은 지역 변수는 빌더를 가려 버립니다. <code>function Row(label: string)</code> 안에서는 <code>label(...)</code>을 호출할 수 없습니다. <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code>, <code>i</code> 같은 지역 이름은 다른 걸로 바꾸세요.</li>
         <li>브라우저는 <code>id</code>가 있는 요소를 전부 전역 변수로 노출합니다. Nuclo가 로드되기 전에 페이지에 <code>&lt;main id="main"&gt;</code>가 있으면 Nuclo는 그 전역을 건드리지 않기 때문에 <code>main(...)</code>이 <code>TypeError</code>를 던집니다. 다른 id를 쓰세요.</li>
       </ul>
       <h3>커스텀 modifier</h3>
@@ -272,7 +272,7 @@ const base = css({ p: 8 })
 const item = li(base, { className: 'item' }, { className: () => (active ? 'active' : '') }, 'Home')
 // class="<base> item", then "<base> item active" after active = true; update()
 `)}
-      <p>HTML 요소에 <code>class</code> 키는 쓰지 마세요. 날 속성을 그대로 설정하기 때문에, 그보다 앞서 적용된 <code>css()</code> 클래스를 포함한 모든 클래스를 덮어씁니다.</p>
+      <p>HTML 요소에 <code>class</code> 키는 쓰지 마세요. 원시(raw) 속성을 그대로 설정하기 때문에, 그보다 앞서 적용된 <code>css()</code> 클래스를 포함한 모든 클래스를 덮어씁니다.</p>
       <h3>인라인 스타일</h3>
       <p><code>style</code>에는 camelCase 키를 가진 객체, 또는 그런 객체를 반환하는 함수를 넘깁니다.</p>
       ${code("example.ts", `
@@ -611,7 +611,7 @@ update() // same <li>, its class is now "done"
       },
       {
         id: "api-region",
-        title: "region() 및 into()",
+        title: "region()과 into()",
         content: `
       <p><code>region()</code>은 트리에 이름 붙은 자리를 만들고, <code>into()</code>는 트리의 어느 깊이에서든 그 자리를 채웁니다. 레이아웃이 props로 콘텐츠를 받을 필요도, 콘텐츠를 만드는 컴포넌트가 놓일 위치를 알 필요도 없습니다.</p>
       ${code("app.ts", `
@@ -642,7 +642,7 @@ render(() => div(Layout(), Article()))
         <li><code>type</code>: <code>'latest'</code>(기본값)는 가장 최근 뷰 하나만 보여 주고, <code>'stack'</code>은 도착한 순서대로 모든 뷰를 보여 줍니다.</li>
         <li><code>empty</code>: 영역에 뷰가 하나도 없는 동안 렌더링됩니다.</li>
       </ul>
-      <h3>누적 영역</h3>
+      <h3>스택 영역</h3>
       <p><code>type: 'stack'</code>을 쓰면 다른 뷰 위에 열린 뷰가 아래 뷰를 다시 만들지 않습니다. DOM, 포커스, 폼 입력값이 그대로 유지됩니다. 페이지 위에 올라가는 대화 상자 같은 레이어에 쓰세요.</p>
       ${code("layers.ts", `
 let open = false
@@ -797,7 +797,7 @@ const Editor = () =>
         id: "api-force-update",
         title: "forceUpdate()",
         content: `
-      <p><code>update()</code>는 동적 값만 실행합니다. <code>h1(labels[lang].title)</code> 같은 정적 값은 트리를 만들 때 고정되죠. <code>forceUpdate()</code>는 컴포넌트를 다시 호출해, 정적 값까지 새 결과에 맞춰 실제 DOM을 갱신합니다. 언어 전환처럼 앱 전체가 드물게 바뀌는 경우에만 쓰고, 나머지는 <code>update()</code>로 충분합니다.</p>
+      <p><code>update()</code>는 동적 값만 실행합니다. <code>h1(labels[lang].title)</code> 같은 정적 값은 트리를 만들 때 고정됩니다. <code>forceUpdate()</code>는 컴포넌트를 다시 호출해, 정적 값까지 새 결과에 맞춰 실제 DOM을 갱신합니다. 언어 전환처럼 앱 전체가 드물게 바뀌는 경우에만 쓰고, 나머지는 <code>update()</code>로 충분합니다.</p>
       ${code("i18n.ts", `
 const labels = { en: { title: 'Hello' }, pt: { title: 'Olá' } }
 let lang: keyof typeof labels = 'en'

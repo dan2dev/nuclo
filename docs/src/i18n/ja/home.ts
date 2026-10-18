@@ -5,10 +5,10 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · 依存関係ゼロ`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["更新は*自分の手で*。", "余計なことは", "何もしない UI を。"];
+export const HERO_TITLE_LINES = ["*明示的*な UI を", "nuclo で", "作ろう。"];
 
 export const HERO_DESC =
-  "小さくて型安全な DOM フレームワーク。state は普通の変数やオブジェクトのまま、好きに書き換えてOK。画面に反映するタイミングは、あなたが決めます。プロキシも、シグナルも、仮想 DOM もありません。";
+  "小さくて型安全な DOM フレームワーク。state は普通の変数やオブジェクトのまま、好きに書き換えて OK。画面に反映するタイミングは、あなたが決めます。プロキシも、シグナルも、仮想 DOM もありません。";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
@@ -139,7 +139,7 @@ export const PIPELINE_STEPS = [
 ];
 
 // ── Comparison ──────────────────────────────────────────────────────────────
-export const COMPARISON_TITLE = "diff なし。プロキシなし。サプライズなし。";
+export const COMPARISON_TITLE = "diff なし。プロキシなし。不意打ちなし。";
 export const COMPARISON_SUB =
   "Nuclo が UI を更新するのは、update() を呼んだときだけです。";
 
@@ -151,7 +151,7 @@ export const COMPARISON_COLS: {
 }[] = [
   {
     name: "仮想 DOM",
-    sub: "レンダー → diff → コミット",
+    sub: "render → diff → commit",
     items: [
       { good: false, text: "state が変わるたびに、コンポーネントツリーを丸ごと再 render する" },
       { good: false, text: "変更箇所を探すため、新旧のツリーを diff する" },
@@ -218,7 +218,7 @@ export const BENCHMARK_ENTRIES: {
 // ── CTA ─────────────────────────────────────────────────────────────────────
 export const CTA_TITLE = "さあ、はじめましょう。";
 export const CTA_SUB =
-  "インストールして、import して、思いどおりに動く UI を作る。API 全体も半日あれば把握できます。";
+  "Nuclo をインストールして、import して、指示したタイミングでぴったり更新される UI を届けましょう。API の全体像も半日あれば把握できます。";
 
 export const QUICK_START_STEPS = [
   {

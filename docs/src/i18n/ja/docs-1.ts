@@ -11,7 +11,7 @@ export const GROUPS_1: DocGroupText[] = [
         id: "overview",
         title: "概要",
         content: `
-      <p>Nuclo は、TypeScript のための小さな DOM ライブラリです。<code>div()</code> や <code>button()</code> といった素の関数で UI を組み、state は普通の変数に置いておく。画面を変えたくなったら <code>update()</code> を呼ぶ。Nuclo の使い方は、本当にこれだけです。</p>
+      <p>Nuclo は、TypeScript のための小さな DOM ライブラリです。<code>div()</code> や <code>button()</code> といった素の関数で UI を組み、state は普通の変数に持たせ、画面を変えたいときに <code>update()</code> を呼びます。</p>
       <p>仮想 DOM もコンパイラも、Proxy もシグナルもありません。</p>
       ${code("main.ts", `
 import 'nuclo'
@@ -124,14 +124,14 @@ import { render, update, getCssText } from 'nuclo'
         <li><code>MountCallback</code> と <code>DestroyCallback</code>: <code>onMount</code> / <code>onDestroy</code> のハンドラー型。</li>
         <li><code>WhenBuilder</code>、<code>ListModifier</code>: <code>when()</code> と <code>list()</code> が返す型。</li>
         <li><code>RegionOptions</code>、<code>RegionType</code>: <code>region()</code> に渡すオプションの型。</li>
-        <li><code>StyleResult</code>、<code>Style</code>、<code>ThemeConfig</code>、<code>CssInstance</code> 、そのほかスタイリング関連の型。こちらは明示的に import することもできます: <code>import type { StyleResult } from 'nuclo'</code>。</li>
+        <li><code>StyleResult</code>、<code>Style</code>、<code>ThemeConfig</code>、<code>CssInstance</code>、そのほかスタイリング関連の型。こちらは明示的に import することもできます: <code>import type { StyleResult } from 'nuclo'</code>。</li>
       </ul>
       ${code("badge.ts", `
 function Badge(text: string): NodeModFn<'span'> {
   return span(text)
 }
 `)}
-      <p><code>ExpandedElement&lt;Tag&gt;</code> はは DOM のメンバーをすべて optional として扱います。フルの要素型がほしいときはキャストしましょう: <code>render(App, root) as HTMLDivElement</code>。</p>
+      <p><code>ExpandedElement&lt;Tag&gt;</code> は DOM のメンバーをすべて optional として扱います。フルの要素型がほしいときはキャストしましょう: <code>render(App, root) as HTMLDivElement</code>。</p>
     `,
       },
     ],
@@ -184,7 +184,7 @@ render(Card, document.body)
         <li>ブラウザーは <code>id</code> を持つ要素を、すべてグローバル変数として露出します。Nuclo が読み込まれる時点で、ページ上にすでに <code>&lt;main id="main"&gt;</code> があると、Nuclo はそのグローバルを上書きしません。結果、<code>main(...)</code> が <code>TypeError</code> になります。id は別の名前にしてください。</li>
       </ul>
       <h3>カスタムモディファイア</h3>
-      <p>パラメーターを 1 つ以上宣言した関数は、要素の構築中に、引数の並び順どおり 1 回だけ実行されます。第 1 引数は要素です。第 2 引数は内部用のインデックスなので、アテにしないでください。戻り値が文字列か数値ならテキストに、<code>Node</code> なら子として追加され、オブジェクトなら属性として適用されます。</p>
+      <p>パラメーターを 1 つ以上宣言した関数は、要素の構築中に、引数の並び順どおり 1 回だけ実行されます。第 1 引数は要素です。第 2 引数は内部用のインデックスなので、当てにしないでください。戻り値が文字列か数値ならテキストになり、<code>Node</code> なら子として追加され、オブジェクトなら属性として適用されます。</p>
       ${code("example.ts", `
 const field = input((el) => {
   el.autocomplete = 'off'
@@ -345,7 +345,7 @@ const picker = ul(on<'pick', PickEvent>('pick', (e) => choose(e.detail.id)))
         id: "lifecycle",
         title: "ライフサイクル",
         content: `
-      <p><code>onMount</code> は、要素が挿入されたあとに 1 回だけ呼ばれます。<code>onDestroy</code> は、Nuclo が要素を取り除くときに 1 回だけ呼ばれます。書き方は属性でも <code>on()</code> でも OK で、どちらも挙動は同じ。要素の型はタグから推論されます。</p>
+      <p><code>onMount</code> は、要素が挿入されたあとに 1 回だけ呼ばれます。<code>onDestroy</code> は、Nuclo が要素を取り除くときに 1 回だけ呼ばれます。書き方は属性でも <code>on()</code> でも構いません。どちらも挙動は同じで、要素の型はタグから推論されます。</p>
       ${code("timer.ts", `
 let seconds = 0
 
@@ -929,7 +929,7 @@ hydrate(App, document.getElementById('root')!)
         <li><code>renderToString()</code> は呼ぶたびにツリーを構築し、動的な値を 1 回ずつ実行します。</li>
         <li>イベントハンドラー、<code>onMount</code>、<code>onDestroy</code> は動きません。<code>update()</code>、<code>scope()</code>、<code>forceUpdate()</code> は何もしません。</li>
         <li>レンダリングは同期処理です。データは先に読み込んでから、レンダリングしてください。</li>
-        <li>レンダリングが終わったあとに登録済みの状態は何も残らないので、1 つのプロセスで多数のリクエストをさばけます。リクエスト固有のデータは、<code>renderToString(Page(user))</code> のように引数で渡してください。モジュールレベルの変数は、全リクエストで共有されます。</li>
+        <li>レンダリングのあとに登録されたまま残るものは何もないので、1 つのプロセスで多数のリクエストをさばけます。リクエスト固有のデータは、<code>renderToString(Page(user))</code> のように引数で渡してください。モジュールレベルの変数は、全リクエストで共有されます。</li>
         <li>サーバーで <code>render()</code> を呼ぶのはやめてください。共有の <code>document.body</code> に追加されてしまいます。</li>
       </ul>
       <h3><code>renderToString()</code></h3>

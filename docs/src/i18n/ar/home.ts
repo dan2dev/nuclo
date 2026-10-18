@@ -5,7 +5,7 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · بلا أي dependencies`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["واجهات تتحدّث", "حين *تأمرها*", "مع nuclo."];
+export const HERO_TITLE_LINES = ["ابنِ واجهات", "*صريحة* بالكامل", "مع nuclo."];
 
 export const HERO_DESC =
   "مكتبة DOM صغيرة ومحكمة الأنواع. الـ state تبقى متغيرات عادية تعدّلها كما تشاء، وأنت وحدك من يقرر متى تظهر التغييرات. بلا proxies ولا signals ولا virtual DOM.";
@@ -76,8 +76,8 @@ export const PHILOSOPHY_QUOTE =
 export const PHILOSOPHY_POINTS = [
   {
     num: "01",
-    title: "الصراحة تغلب السحر الخفي",
-    desc: "لا proxies تتجسس على كل حركة. تعدّل الـ state ثم تستدعي update()، فيبقى السبب والنتيجة أمام عينيك دائمًا.",
+    title: "الصريح أفضل من الضمني",
+    desc: "لا proxies تتعقّب كل حركة. تعدّل الـ state ثم تستدعي update()، فيبقى السبب والنتيجة أمام عينيك دائمًا.",
   },
   {
     num: "02",
@@ -124,9 +124,9 @@ export const PIPELINE_STEPS = [
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
-    kicker: "02 · أنفِذ",
+    kicker: "02 · طبّق",
     title: "استدعِ update()",
-    desc: "دالة عامة واحدة تُنفذ تعديلاتك. اجمع عشرات التعديلات ثم أنفِذها دفعة واحدة؛ ولن يُرسم شيء قبل أن تأمر.",
+    desc: "دالة عامة واحدة تطبّق تعديلاتك. اجمع عشرات التعديلات ثم طبّقها دفعة واحدة؛ ولن يُرسم شيء قبل أن تأمر.",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
@@ -151,7 +151,7 @@ export const COMPARISON_COLS: {
 }[] = [
   {
     name: "Virtual DOM",
-    sub: "render ← diff ← patch",
+    sub: "render ← diff ← commit",
     items: [
       { good: false, text: "يعيد render لشجرة الـ components عند كل تغيّر في الـ state" },
       { good: false, text: "يقارن الشجرة القديمة بالجديدة ليعرف ما تغيّر" },
@@ -177,13 +177,13 @@ export const COMPARISON_COLS: {
       { good: true, text: "state عادية قابلة للتعديل، بلا wrappers ولا proxies" },
       { good: true, text: "استدعاء update() واحد هو النموذج الذهني كله" },
       { good: true, text: "لا يكتب إلا القيم التي تغيّرت" },
-      { good: true, text: `نحو ${NUCLO_GZIP_KB} كيلوبايت، بلا dependencies، وبُني لـ TypeScript` },
+      { good: true, text: `نحو ${NUCLO_GZIP_KB} كيلوبايت، بلا dependencies، وTypeScript أولًا` },
     ],
   },
 ];
 
 // ── Benchmarks ──────────────────────────────────────────────────────────────
-export const BENCHMARK_TITLE = "سريع حيث يهمّ السريع.";
+export const BENCHMARK_TITLE = "سريع حيث يهمّ ذلك.";
 export const BENCHMARK_SUB =
   "أرقام مستقلة من js-framework-benchmark: إنشاء آلاف الصفوف وتحديثها وتبديلها وحذفها.";
 
@@ -218,7 +218,7 @@ export const BENCHMARK_ENTRIES: {
 // ── CTA ─────────────────────────────────────────────────────────────────────
 export const CTA_TITLE = "ابدأ متى شئت.";
 export const CTA_SUB =
-  "ثبّت Nuclo، واستورده مرة واحدة، وابنِ واجهات لا تتحدّث إلا حين تطلب. الـ API كله يُتقن في عصر يوم واحد.";
+  "ثبّت Nuclo، واستورده مرة واحدة، وابنِ واجهات لا تُحدَّث إلا حين تطلب. تستطيع تعلّم الـ API كله في عصر يوم واحد.";
 
 export const QUICK_START_STEPS = [
   {
@@ -261,7 +261,7 @@ export const LABELS = {
   viewExamples: "تصفّح الأمثلة",
   copyInstall: "نسخ أمر التثبيت",
   howItWorks: "كيف يعمل",
-  pipelineTitle: "دورة واحدة، وكل شيء معلن.",
+  pipelineTitle: "دورة واحدة صريحة.",
   pipelineSub: "قيم تعتمد على الـ state، بلا dependency graph ولا scheduler. أنت من يحدد متى تُعاد: مسار واحد متوقع من بياناتك إلى الشاشة.",
   philosophy: "الفلسفة",
   features: "المزايا",
@@ -270,7 +270,7 @@ export const LABELS = {
   comparison: "مقارنة",
   theNucloWay: "طريقة nuclo",
   benchmarks: "Benchmarks",
-  lowerIsBetter: "الأقل هو الأفضل",
+  lowerIsBetter: "الأقل أفضل",
   benchmarkSource: "المصدر: js-framework-benchmark",
   quickStart: "البدء السريع",
   quickStartTitle: "جاهز للانطلاق في دقائق.",
@@ -298,7 +298,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "الشبكة على اليسار مجرد مصفوفة من القيم المنطقية، والرسم عليها تعديل للبيانات لا أكثر. أما الـ DOM على اليمين فلا يتحرك إلا حين تستدعي update()، وحينها لا تتغير سوى الخلايا التي تغيّرت.",
   },
   Draw: {
-    title: "شعار يرسم نفسه",
+    title: "ارسم الشعار",
     note: "شعار Nuclo رسمة سبيروغراف: عجلة تدور داخل حلقة وتحمل قلمين. العجلة والأذرع والقلمان والخطوط كلها دوال لقيمة واحدة هي t. الـ timeline وحلقة الإطارات لا يغيّران سوى t، ثم يعيد update('draw') تشغيل كل ما يقرؤها.",
   },
   Fireworks: {
@@ -306,7 +306,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "كل شرارة كائن عادي في مصفوفة. تعطي list() كل شرارة عنصر <line>، وتزيله في الإطار الذي يخرج فيه كائنها من المصفوفة. استدعاء update() واحد لكل إطار، بلا diffing.",
   },
   Waves: {
-    title: "موّج الخطوط",
+    title: "لوِّ الموجة",
     note: "قيمة d لكل مسار دالة عادية لثلاثة أرقام. أشرطة التمرير وحلقة الإطارات لا تغيّر غير هذه الأرقام، ثم يعيد update('waves') تشغيل الدوال التي تقرؤها.",
   },
   Sort: {
@@ -314,7 +314,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "خوارزمية الفرز الفقاعي تبدّل الكائنات داخل مصفوفة عادية. تربط list() كل عمود بكائنه، فينقل update() العقد الموجودة إلى ترتيبها الجديد. راقب العدّاد: لا يُنشأ أي عمود من جديد.",
   },
   Chase: {
-    title: "اجرِ خلف الحبل",
+    title: "قُد الحبل",
     note: "البطاقة هنا scope(). في كل إطار تتحرك 32 نقطة عادية ثم يُستدعى update('chase')، فيعيد Nuclo حساب سمات هذه البطاقة وحدها ويترك بقية الصفحة وشأنها.",
   },
   Reflex: {

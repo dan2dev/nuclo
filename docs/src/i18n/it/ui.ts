@@ -55,7 +55,7 @@ export const seo = {
   routes: {
     home: {
       title: "Nuclo - Il framework DOM leggero dagli aggiornamenti espliciti",
-      description: "Nuclo è una libreria DOM in TypeScript, leggera e senza dipendenze. Costruisci la UI con semplici funzioni, muta lo stato come ti pare e chiama update(). Niente virtual DOM, proxy o signal.",
+      description: "Nuclo è una libreria DOM in TypeScript, leggera e senza dipendenze. Costruisci la UI con semplici funzioni, muta uno stato semplice e chiama update(). Niente virtual DOM, proxy o signal.",
       keywords: "nuclo, framework dom, valori dipendenti dallo stato, aggiornamenti espliciti, stato mutabile, javascript, typescript, framework ui, leggero",
     },
     "apps/:id": {

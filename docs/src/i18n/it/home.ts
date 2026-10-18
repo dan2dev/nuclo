@@ -5,7 +5,7 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · zero dipendenze`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["Con Nuclo,", "ogni aggiornamento", "lo decidi *tu*."];
+export const HERO_TITLE_LINES = ["Costruisci interfacce", "*esplicite* con", "nuclo."];
 
 export const HERO_DESC =
   "Un framework DOM minuscolo e type-safe. Lo stato resta semplice e mutabile, e a decidere quando aggiornare sei sempre tu. Niente proxy, niente signal, niente virtual DOM.";
@@ -86,7 +86,7 @@ export const PHILOSOPHY_POINTS = [
   },
   {
     num: "03",
-    title: "Funzioni, non framework dentro il framework",
+    title: "Funzioni, non componenti",
     desc: "Costruisci con normali funzioni JavaScript: niente classi, decoratori o sintassi speciali. Ogni funzione restituisce nodi DOM, e onMount e onDestroy sono semplici modificatori da aggiungere solo quando servono.",
   },
 ];
@@ -109,7 +109,7 @@ export const FEATURES = [
   },
   {
     num: "04 · Preciso",
-    title: "Aggiornamenti chirurgici del DOM",
+    title: "Aggiornamenti mirati del DOM",
     desc: "A ogni update() le espressioni dinamiche vengono rivalutate, ma al DOM arrivano solo i valori davvero cambiati.",
   },
 ];
@@ -151,22 +151,22 @@ export const COMPARISON_COLS: {
 }[] = [
   {
     name: "Virtual DOM",
-    sub: "rendering → confronto → applicazione",
+    sub: "render → diff → commit",
     items: [
       { good: false, text: "Rifà il render di interi alberi di componenti a ogni cambio di stato" },
       { good: false, text: "Confronta il vecchio albero col nuovo per capire cosa è cambiato" },
-      { good: false, text: "Serve la memoizzazione per recuperare performance" },
-      { good: false, text: "Ti lascia in dote closure stantie e array di dipendenze" },
+      { good: false, text: "Richiede memoizzazione per recuperare prestazioni" },
+      { good: false, text: "Lascia closure obsolete e array di dipendenze" },
     ],
   },
   {
     name: "Signal e proxy",
     sub: "signal · store · effect",
     items: [
-      { good: false, text: "Impacchetta il tuo stato in proxy e sottoscrizioni" },
+      { good: false, text: "Avvolge il tuo stato in proxy e sottoscrizioni" },
       { good: false, text: "Traccia le dipendenze di nascosto, a runtime" },
       { good: false, text: "Propaga gli aggiornamenti a cascata, con tempi che non controlli" },
-      { good: false, text: "Un incubo da seguire passo passo nel debugger" },
+      { good: false, text: "È difficile da seguire passo passo nel debugger" },
     ],
   },
   {
@@ -264,7 +264,7 @@ export const LABELS = {
   pipelineTitle: "Un unico ciclo esplicito.",
   pipelineSub: "Valori legati allo stato, nessun grafo di dipendenze, nessuno scheduler. Sei tu a decidere quando girano: un solo percorso, prevedibile, dai dati allo schermo.",
   philosophy: "Filosofia",
-  features: "Caratteristiche",
+  features: "Funzionalità",
   featuresTitle: "Progettato per la chiarezza.",
   featuresSub: "Niente magia, niente sorprese. Ogni aggiornamento è voluto.",
   comparison: "Confronto",
@@ -273,7 +273,7 @@ export const LABELS = {
   lowerIsBetter: "Più basso è meglio",
   benchmarkSource: "Fonte: js-framework-benchmark",
   quickStart: "Quick start",
-  quickStartTitle: "Operativo in cinque minuti.",
+  quickStartTitle: "Operativo in pochi minuti.",
   quickStartSub: "Tre passi e stai già costruendo UI vere.",
   readFullDocs: "Leggi la documentazione completa →",
   examples: "Esempi",
@@ -295,31 +295,31 @@ export const LABELS = {
 export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   Paint: {
     title: "Dipingi, poi aggiorna",
-    note: "La griglia a sinistra è un banale array di booleani: dipingere significa solo mutarlo. Il DOM a destra cambia soltanto quando scatta update(), che ritocca solo le celle modificate.",
+    note: "La griglia a sinistra è un semplice array di booleani: dipingere significa solo mutarlo. Il DOM a destra cambia soltanto quando scatta update(), che ritocca solo le celle modificate.",
   },
   Draw: {
     title: "Disegna il logo",
     note: "Il logo di Nuclo è uno spirografo: una ruota che gira dentro un anello, con due penne. Ruota, bracci, penne e linee sono tutte funzioni di un unico numero, t. La timeline e il loop dei frame si limitano a impostare t; update('draw') riesegue ciò che lo legge.",
   },
   Fireworks: {
-    title: "Accendi il cielo",
+    title: "Tocca il cielo",
     note: "Ogni scintilla è un semplice oggetto in un array. list() le assegna una <line> e la rimuove nel frame in cui l'oggetto esce dall'array. Un update() per frame, nessun confronto.",
   },
   Waves: {
-    title: "Cavalca l'onda",
+    title: "Piega l'onda",
     note: "L'attributo d di ogni path è una funzione di tre numeri. Slider e loop dei frame cambiano solo quei numeri; update('waves') riesegue le funzioni che li leggono.",
   },
   Sort: {
     title: "Ordina senza ricostruire",
-    note: "Il bubble sort scambia gli oggetti di un array qualunque. list() lega ogni barra al suo oggetto, quindi update() si limita a spostare i nodi esistenti. Guarda il contatore: nessuna barra viene mai ricreata.",
+    note: "Il bubble sort scambia gli oggetti di un semplice array. list() lega ogni barra al suo oggetto, quindi update() si limita a spostare i nodi esistenti. Guarda il contatore: nessuna barra viene mai ricreata.",
   },
   Chase: {
-    title: "Fai ballare la corda",
+    title: "Guida la corda",
     note: "La card è uno scope(). A ogni frame si spostano 32 semplici punti e parte update('chase'): Nuclo ricalcola gli attributi dentro questa card e lascia in pace il resto della pagina.",
   },
   Reflex: {
     title: "Clicca sul verde",
-    note: "Una semplice stringa decide cosa va in scena. Ogni ramo di when() viene costruito quando la sua condizione diventa vera e rimosso quando smette di esserlo; la classe del palco è funzione della stessa stringa.",
+    note: "Una semplice stringa decide cosa mostra la scena. Ogni ramo di when() viene costruito quando la sua condizione diventa vera e rimosso quando smette di esserlo; la classe della scena è funzione della stessa stringa.",
   },
   Warp: {
     title: "Tieni premuto per il salto a curvatura",

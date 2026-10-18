@@ -7,14 +7,14 @@ export const nav = {
   examples: "Examples",
   getStarted: "शुरू करें",
   menu: "Menu",
-  main: "Main navigation",
+  main: "मुख्य navigation",
   openMenu: "Menu खोलें",
   closeMenu: "Menu बंद करें",
   nucloHome: "Nuclo होम",
   nucloOnGitHub: "GitHub पर Nuclo",
   opensInNewTab: " (नए टैब में खुलता है)",
   switchTheme: "Theme बदलें",
-  language: "Language / भाषा",
+  language: "भाषा",
 };
 
 export const footer = {

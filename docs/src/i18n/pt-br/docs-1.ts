@@ -11,8 +11,8 @@ export const GROUPS_1: DocGroupText[] = [
         id: "overview",
         title: "Visão geral",
         content: `
-      <p>O Nuclo é uma lib de DOM enxuta para TypeScript. A página nasce de funções simples, como <code>div()</code> e <code>button()</code>. O estado fica em variáveis comuns, do jeito que você já escreve JavaScript, e quando algo precisa aparecer na tela você avisa com um <code>update()</code>.</p>
-      <p>Aqui não tem DOM virtual, compilador, proxies nem signals. Só funções, variáveis e o DOM de verdade.</p>
+      <p>O Nuclo é uma lib de DOM enxuta para TypeScript. A página nasce de funções simples, como <code>div()</code> e <code>button()</code>. O estado fica em variáveis comuns, e você chama <code>update()</code> quando a página deve mudar.</p>
+      <p>Aqui não tem DOM virtual, compilador, proxies nem signals.</p>
       ${code("main.ts", `
 import 'nuclo'
 
@@ -30,10 +30,10 @@ render(App, document.getElementById('app')!)
       <ol>
         <li>Monte a UI com os builders de tags.</li>
         <li>Onde um valor depende do estado, passe uma função no lugar dele.</li>
-        <li>Altere o estado com JavaScript puro, sem cerimônia.</li>
-        <li>Chame <code>update()</code>. O Nuclo executa as funções outra vez e leva ao DOM só o que realmente mudou.</li>
+        <li>Altere o estado com JavaScript puro.</li>
+        <li>Chame <code>update()</code>. O Nuclo executa as funções outra vez e atualiza o DOM.</li>
       </ol>
-      <p>Trocar o valor de uma variável não mexe no DOM. A página só muda quando você chama <code>update()</code>: a hora de atualizar é sempre sua.</p>
+      <p>Trocar o valor de uma variável não mexe no DOM. A página só muda quando você chama <code>update()</code>.</p>
     `,
       },
       {

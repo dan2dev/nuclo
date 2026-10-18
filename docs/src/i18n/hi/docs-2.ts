@@ -10,7 +10,7 @@ export const GROUPS_2: DocGroupText[] = [
         id: "api-styling",
         title: "css()",
         content: `
-      <p>Typed style object को generated CSS class में बदलता है। जो मिले, उसे किसी भी tag builder को दे दें। Browser में rules एक <code>&lt;style id="nuclo-styles"&gt;</code> element में जाते हैं। Server पर <a href="#api-css-text"><code>getCssText()</code></a> वही rules लौटा देता है।</p>
+      <p>Typed style object को generated CSS class में बदलता है। जो result मिले, उसे किसी भी tag builder को दे दें। Browser में rules एक <code>&lt;style id="nuclo-styles"&gt;</code> element में जाते हैं। Server पर <a href="#api-css-text"><code>getCssText()</code></a> वही rules लौटा देता है।</p>
       ${code("card.ts", `
 const card = css({
   p: 16,
@@ -24,7 +24,7 @@ const Card = () => div(card, 'Simple card')
       <ul>
         <li><code>css()</code> base declarations के लिए एक class बनाता है, और हर pseudo key, selector और media block के लिए एक-एक class अलग से। ऊपर वाले card को दो class मिलती हैं।</li>
         <li>Class के नाम content के hash होते हैं। एक जैसी style एक ही class share करती हैं, और server व client पर नाम भी वही बनते हैं।</li>
-        <li>Style को module level पर एक बार define करें। <code>css()</code> object के हिसाब से cache करता है, इसलिए हर call पर नया object बनाओगे तो हर बार दोबारा process होगा।</li>
+        <li>Style को module level पर एक बार define करें। <code>css()</code> object के हिसाब से cache करता है, इसलिए हर call पर नया object बनाएँगे तो वह हर बार दोबारा process होगा।</li>
         <li>Style object को <code>css()</code> में देने के बाद बदलने का कोई असर नहीं होता।</li>
         <li>हर style page या server process की पूरी life तक registered रहती है। जो values हर item के साथ बदलती हैं, जैसे data से आने वाली width, उनके लिए <a href="#attributes"><code>style</code> attribute</a> इस्तेमाल करें।</li>
       </ul>
@@ -277,7 +277,7 @@ beforeEach(() => resetStyles())
         id: "router-overview",
         title: "nuclo-router",
         content: `
-      <div class="docs-callout"><strong>अलग package: </strong> <code>nuclo-router</code> Nuclo core package का हिस्सा नहीं है। इसे <code>nuclo</code> के साथ install करें। यह preview release है, इसलिए इसका API अभी बदल सकता है।</div>
+      <div class="docs-callout"><strong>अलग package:</strong> <code>nuclo-router</code> Nuclo core package का हिस्सा नहीं है। इसे <code>nuclo</code> के साथ install करें। यह preview release है, इसलिए इसका API अभी बदल सकता है।</div>
       <p>Nuclo के लिए routing: server rendering, hydration, code-split routes और idle preloading, सब <code>list()</code> और <code>update()</code> के ऊपर बना है। gzip के बाद लगभग ${NUCLO_ROUTER_GZIP_KB} KB। Nuclo के अलावा कोई dependency नहीं और कोई side effect नहीं, इसलिए use न हो तो tree shaking इसे हटा देती है।</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>या यही दो नाम देकर <code>pnpm add</code>, <code>yarn add</code> या <code>bun add</code> use करें। Peer dependency के तौर पर इसे <code>nuclo</code> 0.3 या उससे नया version चाहिए।</p>
@@ -407,7 +407,7 @@ router.href('./preview')      // '/invoices/42/preview' or '/customers/7/preview
 await router.go('./preview')
 await layer.push('./preview') // the usual shape: a child layer
 `)}
-      <p><code>./x</code>, <code>../x</code>, <code>.</code> और <code>..</code> मौजूदा route के path के relative resolve होते हैं, URL की "directory" के नहीं। <code>/invoices/42</code> से <code>./preview</code> का मतलब <code>/invoices/42/preview</code> है, जबकि browser इसे <code>/invoices/preview</code> बनाता। URL के आखिर में slash हो या न हो, इससे फर्क नहीं पड़ता। <code>../</code> एक segment ऊपर जाता है और route की root पर रुक जाता है। Query और hash बचे रहते हैं, <code>base</code> दोबारा जुड़ता है और पूरा absolute path history में जाता है। React Router भी <code>&lt;Link to="./x"&gt;</code> के लिए आम URL resolution से यही बदलाव करता है।</p>
+      <p><code>./x</code>, <code>../x</code>, <code>.</code> और <code>..</code> मौजूदा route के path के relative resolve होते हैं, URL की "directory" के नहीं। <code>/invoices/42</code> से <code>./preview</code> का मतलब <code>/invoices/42/preview</code> है, जबकि browser इसे <code>/invoices/preview</code> बनाता। URL के आखिर में slash हो या न हो, इससे फर्क नहीं पड़ता। <code>../</code> एक segment ऊपर जाता है और route की root पर रुक जाता है। Query और hash बचे रहते हैं, <code>base</code> दोबारा जुड़ता है और पूरा absolute path history में जाता है। URL resolution के आम नियम से यही अलग रास्ता React Router भी <code>&lt;Link to="./x"&gt;</code> के लिए अपनाता है।</p>
       <ul>
         <li>सिर्फ <code>./</code> और <code>../</code> route के relative हैं। href में बिना prefix वाला <code>preview</code> browser के आम नियमों से resolve होता है।</li>
         <li>हाथ से <code>href="./preview"</code> लिखने की जगह <code>router.href('./preview')</code> से relative link बनाएँ। <code>href()</code> render के समय resolve हो जाता है, इसलिए जो markup मिलता है वह crawler के लिए, middle click के लिए और JavaScript बंद होने पर भी पूरा और सही रहता है।</li>
@@ -552,7 +552,7 @@ createRouter({
           <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>, browser में हर resolve हुई navigation के बाद call होता है, पहली navigation समेत, DOM update होने के बाद। <code>kind</code> <code>'start'</code>, <code>'push'</code>, <code>'replace'</code>, <code>'pop'</code> (back, forward, <code>close()</code>) या <code>'layer'</code> होता है। <code>document.title</code>, meta tags, focus, scrolling और analytics के लिए hook। SSR के दौरान कभी call नहीं होता।</td></tr>
         </tbody>
       </table>
-      <p>यह एक router लौटाता है: <code>Route</code> के सारे members, सिवाय <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code> और <code>run()</code> के। ये members active route पढ़ते हैं: browser में आखिरी पूरा हुए <code>start()</code> का route, या server पर वह route जिसका <code>run()</code> चल रहा है। Active route न हो तो member पढ़ने पर error throw होता है। Route table, compiled matcher और module cache router में रहते हैं, इसलिए server पर requests इन्हें share करती हैं।</p>
+      <p>यह router लौटाता है: <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code>, और <code>run()</code> को छोड़कर <code>Route</code> का हर member, जो active Route से पढ़े जाते हैं। Active Route वही है जो browser में आखिरी <code>start()</code> ने लौटाया, या server पर वह जिसका <code>run()</code> चल रहा है। Active route न हो तो member पढ़ने पर error throw होता है। Route table, compiled matcher और module cache router में रहते हैं, इसलिए server पर requests इन्हें share करती हैं।</p>
       <h3><code>router.start(url?)</code></h3>
       <p>Page modules में <code>url</code> (browser में default: <code>location.href</code>) को resolve करता है और <code>Promise&lt;Route&gt;</code> लौटाता है। कुछ भी match न हो और table में <code>'*'</code> route न हो, तो reject कर देता है। Server पर वही आपका 404 है। Browser में यह उस Route को router का active route बना देता है, <code>popstate</code> और delegated <code>click</code> listeners जोड़ता है और preloading schedule करता है। दूसरा <code>start()</code> पिछले route को आपके लिए खत्म कर देता है। Server पर यह कुछ भी share की हुई चीज़ नहीं छूता, इसलिए <code>route.run()</code> के अंदर render करें।</p>
       <h3><code>router.match(url?)</code></h3>
@@ -809,7 +809,7 @@ createRouter(routes, {
         <li><strong><code>pending</code> started router का है।</strong> Unstarted router में कोई route, <code>pending</code> या <code>error</code> नहीं होता। Region अपने flags रखता है और उसका spinner main spinner के साथ दिख सकता है। Demo में sidebar 800 milliseconds लेता है और route के loaders 900 milliseconds, इसलिए page या sidebar में से कोई भी पहले पूरा हो सकता है।</li>
         <li><strong><code>match()</code> कुछ भी attach नहीं करता।</strong> जितने चाहें उतने unstarted routers document share कर सकते हैं; हर एक की अपनी table, base और module cache है, और उनमें से कोई history को नहीं छूता। उनकी कीमत बस एक table और एक matcher है।</li>
         <li><strong>इसके loaders कभी नहीं चलते।</strong> Started router matching pages के <code>load()</code> चलाता है। Unstarted router सिर्फ URL match करता है, इसलिए अगर उसके view को data चाहिए, तो उसे खुद fetch करें, जैसे demo का <code>refreshSidebar()</code>। Loaders चाहिए, तो <a href="#router-matches">nested table</a> या <a href="#router-regions">page से भरा जाने वाला region</a> वह काम started router के साथ ही रखता है।</li>
-        <li><strong>पुराने responses से बचें।</strong> धीमे sidebar fetch का result उस section पर लागू न हो जहाँ से आप जा चुके हैं। हर refresh पर generation counter बढ़ाएँ और पुराने responses छोड़ दें। Router भी नई navigation के आगे निकलने पर पिछली navigation को इसी तरह बेअसर कर देता है।</li>
+        <li><strong>पुराने responses से बचें।</strong> धीमे sidebar fetch का result उस section पर लागू न होने दें जहाँ से आप जा चुके हैं। हर refresh पर generation counter बढ़ाएँ और पुराने responses छोड़ दें। Router भी नई navigation के आगे निकलने पर पिछली navigation को इसी तरह बेअसर कर देता है।</li>
         <li><strong>Lazy <code>matches()</code> view में भी <code>pending</code> नहीं होता।</strong> यह तब तक कुछ render नहीं करता जब तक उसका module land न हो जाए। तीन loading systems, तीन independent clocks: route का <code>pending</code>, आपके अपने flags, और lazy view जो अभी तक आया नहीं।</li>
       </ul>
     `,
@@ -843,7 +843,7 @@ createRouter(routes, {
       <p>Repository में दो चलने लायक examples एक-दूसरे के पूरक हैं, इसलिए हर setting कहीं न कहीं देखी जा सकती है:</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: पूरे API का client-side tour। हर pattern form और priority rule, link-handling opt-out, live controls के साथ हर route member, एक sub-router, तीन गहरी layer stack, दो parents पर एक relative section, और <code>pending</code> व <code>error</code> के साथ route loaders। यह <code>preload: false</code> set करता है ताकि वे states दिखती रहें।</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: हर request पर <code>renderToString()</code>, server के nodes reuse करने वाला hydration, असली 404 status code, route से अलग <code>base</code>, network panel में दिखने वाली idle preloading, और ऐसा loader जिसका data server से client को मिलता है ताकि hydration उसे दोबारा fetch न करे।</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: हर request पर <code>renderToString()</code>, server के nodes को सचमुच reuse करने वाला hydration (जिसे जाँचा जा सकता है), असली 404 status code, root के अलावा किसी और path पर <code>base</code>, network panel में दिखने वाली idle preloading, और ऐसा loader जिसका data server से client को मिलता है ताकि hydration उसे दोबारा fetch न करे।</li>
       </ul>
     `,
       },
@@ -962,14 +962,14 @@ async function loadData() {
         <li><a href="#router-loaders"><code>withLoad(loader, load)</code></a>: ऐसा route जिसका data loader उसके chunk के साथ शुरू होता है।</li>
         <li><a href="#router-api">Types</a>: <code>RouteContext</code>, <code>PageProps</code>, <code>Params</code>, <code>DataLoader</code>, <code>RouteTable</code> और भी।</li>
       </ul>
-      <h3>Globals</h3>
+      <h3>सिर्फ globals</h3>
       <ul>
         <li><a href="#tag-builders">175 tag builders</a>: <code>div</code>, <code>span</code>, ..., <code>var_</code>, और <code>svgSvg</code>, <code>pathSvg</code>, ....</li>
         <li><a href="#typescript-setup">Types</a>: <code>NodeModFn</code>, <code>NodeModLike</code>, <code>ExpandedElement</code> और भी। <code>StyleResult</code> जैसे styling types को <code>'nuclo'</code> से भी import किया जा सकता है।</li>
       </ul>
       <h3>Special keys</h3>
       <ul>
-        <li><a href="#attributes">Attributes</a>: <code>className</code>, <code>style</code>, <a href="#events"><code>on*</code> handlers</a>, <a href="#lifecycle"><code>onMount</code> और <code>onDestroy</code></a>.</li>
+        <li><a href="#attributes">Attributes</a>: <code>className</code>, <code>style</code>, <a href="#events"><code>on*</code> handlers</a>, <a href="#lifecycle"><code>onMount</code> और <code>onDestroy</code></a>।</li>
         <li><a href="#style-objects">Style objects</a>: shorthand, pseudo state, <code>&amp;</code> selectors, <code>@</code> rules और <code>raw</code>।</li>
       </ul>
     `,

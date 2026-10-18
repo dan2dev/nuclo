@@ -5,7 +5,7 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · 零依赖`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["用 nuclo 写界面，", "什么时候刷新，", "*你说了算*。"];
+export const HERO_TITLE_LINES = ["用 nuclo 构建", "*显式*更新的", "界面。"];
 
 export const HERO_DESC =
   "轻巧、类型安全的 DOM 框架。状态就是普通的可变数据，每一次更新都由你亲手触发。没有 Proxy，没有 signal，没有虚拟 DOM。";
@@ -183,9 +183,9 @@ export const COMPARISON_COLS: {
 ];
 
 // ── Benchmarks ──────────────────────────────────────────────────────────────
-export const BENCHMARK_TITLE = "该快的地方，一点不慢。";
+export const BENCHMARK_TITLE = "关键之处，足够快。";
 export const BENCHMARK_SUB =
-  "数据来自 js-framework-benchmark 的独立测试：创建、更新、交换、清空数千行，一项不落。";
+  "数据来自 js-framework-benchmark 的独立测试：涵盖创建、更新、交换和清空数千行。";
 
 export const BENCHMARK_NOTE =
   "分数是相对于最快实现的耗时倍数，取所有 keyed 基准的加权几何平均值。";
@@ -216,7 +216,7 @@ export const BENCHMARK_ENTRIES: {
 ];
 
 // ── CTA ─────────────────────────────────────────────────────────────────────
-export const CTA_TITLE = "装上就能用。";
+export const CTA_TITLE = "准备好了，就开始吧。";
 export const CTA_SUB =
   "安装 Nuclo，import 一次，就能写出只在你指定时刻更新的 UI。整套 API，一个下午就能学完。";
 
@@ -273,7 +273,7 @@ export const LABELS = {
   lowerIsBetter: "越低越好",
   benchmarkSource: "来源：js-framework-benchmark",
   quickStart: "快速开始",
-  quickStartTitle: "几分钟，上手。",
+  quickStartTitle: "几分钟就能上手。",
   quickStartSub: "三步，就能开始写 UI。",
   readFullDocs: "阅读完整文档 →",
   examples: "示例",
@@ -299,7 +299,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Draw: {
     title: "画出 Logo",
-    note: "Nuclo 的 Logo 其实是个繁花规（spirograph）：一个轮子在圆环里滚动，轮上带着两支笔。轮子、连杆、笔尖和轨迹，全是同一个数 t 的函数。时间轴和帧循环只负责设置 t，update('draw') 重新运行读取它的那部分。",
+    note: "Nuclo 的 Logo 其实是个万花尺（spirograph）：一个轮子在圆环里滚动，轮上带着两支笔。轮子、连杆、笔尖和轨迹，全是同一个数 t 的函数。时间轴和帧循环只负责设置 t，update('draw') 重新运行读取它的那部分。",
   },
   Fireworks: {
     title: "点亮夜空",

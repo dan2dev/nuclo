@@ -36,7 +36,7 @@ const pageTitle = css('page-title', { text: 24, hover: { color: 'red' } })
 pageTitle.className // "page-title page-title-<hash>"
 `)}
       <ul>
-        <li>A classe base é o nome, sem enfeite. Os demais blocos ganham <code>name-&lt;hash&gt;</code>.</li>
+        <li>A classe base é exatamente o nome. Os demais blocos ganham <code>name-&lt;hash&gt;</code>.</li>
         <li>O nome precisa ser um nome de classe válido. Se não for, o Nuclo emite um aviso e gera um por conta própria.</li>
         <li>Os nomes são globais. Dois estilos diferentes com o mesmo nome fazem o Nuclo avisar.</li>
       </ul>
@@ -214,7 +214,7 @@ button(buttonClass(), 'Save')                                                // 
 button(buttonClass({ intent: 'danger', size: 'lg', block: true }), 'Delete') // bold, full width
 `)}
       <ul>
-        <li>Os estilos são fundidos nesta ordem: <code>base</code>, o valor escolhido em cada grupo e, por fim, cada variante composta que bater. Em cada propriedade, o estilo mais tardio vence.</li>
+        <li>Os estilos são fundidos nesta ordem: <code>base</code>, o valor escolhido em cada grupo e, por fim, cada variante composta que bater. Em cada propriedade, o último vence.</li>
         <li>Uma opção ausente, <code>undefined</code> ou <code>null</code> cai no padrão. Grupo sem padrão é pulado.</li>
         <li>Um grupo que só tem as chaves <code>true</code> e <code>false</code> recebe um booleano.</li>
         <li>Uma variante composta vale quando todos os grupos que ela lista batem, contando os padrões.</li>
@@ -453,7 +453,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
       <p>O conteúdo da página é uma linha do <code>list()</code> do outlet, e um <code>into()</code> vive tanto quanto a linha que o contém. Por isso o conteúdo da sidebar chega junto com a página e sai junto com ela: navegar para uma página sem <code>into('sidebar', …)</code> faz a região voltar a exibir o conteúdo de <code>empty</code>. A página pode usar <code>ctx</code> e <code>data</code> nas duas partes, já que ambas são montadas pela mesma função.</p>
       <h3>O que acontece na navegação</h3>
       <ul>
-        <li><strong>Página preservada, regiões preservadas.</strong> Uma mudança de query ou hash que <a href="#router-patterns">mantém a página</a> também deixa o conteúdo das regiões em paz. Se a sidebar depende disso, leia <code>router.search</code> dentro de um valor dinâmico.</li>
+        <li><strong>Página preservada, regiões preservadas.</strong> Uma mudança de query ou hash que <a href="#router-patterns">mantém a página</a> também não mexe no conteúdo das regiões. Se a sidebar depende disso, leia <code>router.search</code> dentro de um valor dinâmico.</li>
         <li><strong>Página reconstruída, regiões preenchidas de novo.</strong> Quando a rota muda, a linha antiga sai e as views <code>into()</code> da nova página assumem. Nada fica para trás.</li>
         <li><strong>Uma camada empilhada acrescenta uma view.</strong> A camada é uma linha posterior do outlet, então o <code>into()</code> dela é uma view mais nova da mesma região. Com o <code>type: 'latest'</code> padrão, ela cobre a view da página até a camada fechar, e aí a da página volta a aparecer. Com <code>type: 'stack'</code>, as duas aparecem.</li>
         <li><strong>Uma página pai também pode preencher regiões.</strong> As views dela permanecem enquanto os filhos mudam, porque o pai não é reconstruído.</li>
@@ -476,7 +476,7 @@ export default function Report(ctx: RouteContext) {
       <ul>
         <li><strong><code>outlet()</code></strong> serve para uma rota filha: conteúdo que a URL decide, renderizado dentro da página pai. Veja <a href="#router-patterns">Rotas aninhadas</a>.</li>
         <li><strong><code>into()</code></strong> serve para a página correspondente se espalhar pelo layout. O conteúdo é da página e usa os dados dela.</li>
-        <li><strong><code>matches()</code></strong> serve para o layout decidir só pela URL, com uma tabelinha própria e sem nenhuma página no meio. Veja <a href="#router-matches"><code>matches()</code></a>.</li>
+        <li><strong><code>matches()</code></strong> serve para o layout decidir só pela URL, com uma tabela pequena própria e sem nenhuma página no meio. Veja <a href="#router-matches"><code>matches()</code></a>.</li>
       </ul>
       <p>Tudo isso pertence à única rota correspondente. O router não conduz duas áreas independentes a partir de uma URL: uma sidebar com rotas próprias é uma região que a página preenche, e não um segundo outlet. Se a sidebar realmente quer router, loading e fallback só dela, mantenha um router sem iniciar e resolva com <code>match()</code> — veja <a href="#router-multi">Múltiplos routers e loading combinado</a>.</p>
     `,
@@ -656,14 +656,14 @@ layer.close()          // dismissed: resolves with undefined
 `)}
       <p>Camadas se aninham. Um diálogo que precisa de outro diálogo chama <code>layer.push()</code> e aguarda, sem referência alguma ao Route.</p>
       <ul>
-        <li><strong>A URL é a camada do topo.</strong> O <code>push()</code> adiciona uma entrada no history, então a camada pode ser linkada e o Voltar a fecha, resolvendo o <code>push()</code> como dispensado, igualzinho ao Cancelar. Voltar e <code>close()</code> seguem o mesmo caminho de código: o <code>close()</code> registra o resultado e volta no history, e a profundidade em <code>history.state</code> é quem manda. Os navegadores guardam cerca de 50 entradas por aba, então, depois de uma longa caminhada por camadas, a entrada de baixo pode ter sumido. Nesse caso o <code>close()</code> fecha as camadas ali mesmo e reescreve a entrada atual para a página que ficou visível.</li>
+        <li><strong>A URL é a camada do topo.</strong> O <code>push()</code> adiciona uma entrada no history, então a camada pode ser linkada e o Voltar a fecha, resolvendo o <code>push()</code> como dispensado, exatamente como o Cancelar. Voltar e <code>close()</code> seguem o mesmo caminho de código: o <code>close()</code> registra o resultado e volta no history, e a profundidade em <code>history.state</code> é quem manda. Os navegadores guardam cerca de 50 entradas por aba, então, depois de uma longa caminhada por camadas, a entrada de baixo pode ter sumido. Nesse caso o <code>close()</code> fecha as camadas ali mesmo e reescreve a entrada atual para a página que ficou visível.</li>
         <li><strong>Uma navegação comum zera a pilha.</strong> Um clique em link ou um <code>go()</code> não é uma camada: substitui tudo e dispensa todas as camadas abertas, então ninguém fica pendurado num await.</li>
         <li><strong>Um carregamento a frio é uma página independente.</strong> A URL nomeia a camada do topo, mas não a pilha embaixo dela, então abrir a URL de uma camada diretamente a renderiza na profundidade 1, com <code>layer.depth === 0</code> e um <code>close()</code> inerte. Uma rota empilhada precisa fazer sentido sozinha. Ramifique em <code>layer.depth</code> para oferecer um link de saída em vez de um botão Cancelar que não faz nada.</li>
         <li><strong>A promise não sobrevive a um reload</strong>, porque mora numa closure. Trate o resultado como um atalho dentro de um fluxo que também funciona pelo caminho mais longo.</li>
         <li><strong>Ninguém fica esperando.</strong> O <code>stop()</code> dispensa todas as camadas abertas, e uma camada abandonada por uma navegação resolve com <code>undefined</code>.</li>
       </ul>
       <h3>Guards de saída</h3>
-      <p>Uma página que guarda algo que vale proteger, como um formulário preenchido pela metade, registra um guard. Ele é consultado antes de a página ser descartada, e retornar <code>false</code> (ou uma promise dele) mantém a página:</p>
+      <p>Uma página que guarda algo que vale a pena manter, como um formulário preenchido pela metade, registra um guard. Ele é consultado antes de a página ser descartada, e retornar <code>false</code> (ou uma promise dele) mantém a página:</p>
       ${code("pages/Edit.ts", `
 import type { PageProps, RouteContext } from 'nuclo-router'
 
@@ -685,7 +685,7 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
         id: "router-matches",
         title: "matches() e sub-routers",
         content: `
-      <p>O <code>router.outlet()</code> renderiza a página. O <code>router.matches(table)</code> renderiza outra coisa que depende de onde você está, como uma sidebar, breadcrumbs ou uma toolbar, a partir de uma tabelinha própria, sem carregar rota nem acrescentar página:</p>
+      <p>O <code>router.outlet()</code> renderiza a página. O <code>router.matches(table)</code> renderiza outra coisa que depende de onde você está, como uma sidebar, breadcrumbs ou uma toolbar, a partir de uma tabela pequena própria, sem carregar rota nem acrescentar página:</p>
       ${code("app.ts", `
 div(
   aside(
@@ -708,7 +708,7 @@ div(
         <li><strong>No servidor</strong>, uma view lazy não entrega nada, já que o módulo chega no cliente. Use uma view síncrona para tudo que o primeiro HTML precisa conter.</li>
       </ul>
       <h3>Sub-routers</h3>
-      <p>Rotas se aninham, então um sub-router costuma ser só uma tabela aninhada. Fica um router só: a página <code>'/'</code> da própria seção é o seu chrome, e os filhos renderizam no <code>outlet()</code> dessa página, de modo que o chrome sobrevive à navegação dentro da seção:</p>
+      <p>Rotas se aninham, então um sub-router costuma ser só uma tabela aninhada. Com um único router, a página <code>'/'</code> da própria seção é o seu chrome, e os filhos renderizam no <code>outlet()</code> dessa página, de modo que o chrome sobrevive à navegação dentro da seção:</p>
       ${code("routes.ts", `
 createRouter({ '/': …, '/docs': docsRoutes, '*': … })
 `)}
@@ -809,7 +809,7 @@ createRouter(routes, {
         <li><strong>O <code>pending</code> pertence ao router iniciado.</strong> Um router que nunca foi iniciado não tem Route, nem <code>pending</code>, nem <code>error</code>. A área cuida das próprias flags, e um segundo spinner pode ficar ao lado do primeiro. Na demo, a sidebar carrega por 800ms enquanto os loaders da rota levam 900ms, então a página pode terminar antes da sidebar ou o contrário.</li>
         <li><strong>O <code>match()</code> não anexa nada.</strong> Qualquer quantidade de routers sem iniciar pode dividir o documento: cada um tem tabela, base e cache de módulos próprios, e nenhum encosta no history. O custo é uma tabela e um matcher.</li>
         <li><strong>Os loaders dele nunca rodam.</strong> Quem executa o <code>load()</code> das páginas que casam é o router iniciado. Um router sem iniciar só resolve, então, se as views precisam de dados, busque-os você mesmo, como faz o <code>refreshSidebar()</code> da demo. Se você quer loaders, uma <a href="#router-matches">tabela aninhada</a> ou uma <a href="#router-regions">região que a página preenche</a> deixa esse trabalho com o router iniciado.</li>
-        <li><strong>Proteja-se de respostas atrasadas.</strong> O fetch lento de uma sidebar não pode aterrissar numa seção da qual você já saiu. Incremente um contador de geração a cada refresh e descarte as respostas que não correspondem mais, do mesmo jeito que o próprio router aposenta navegações ultrapassadas.</li>
+        <li><strong>Proteja-se de respostas defasadas.</strong> O fetch lento de uma sidebar não pode chegar numa seção da qual você já saiu. Incremente um contador de geração a cada refresh e descarte as respostas que não correspondem mais, do mesmo jeito que o próprio router aposenta navegações ultrapassadas.</li>
         <li><strong>Uma view lazy do <code>matches()</code> também não tem <code>pending</code>.</strong> Ela não renderiza nada até o módulo chegar. São três sistemas de loading e três relógios independentes: o <code>pending</code> da rota, as suas flags e uma view lazy que simplesmente ainda não está lá.</li>
       </ul>
     `,
@@ -842,7 +842,7 @@ createRouter(routes, {
       <h3>Exemplos</h3>
       <p>Dois exemplos executáveis no repositório se complementam, de modo que cada configuração fica observável em algum lugar:</p>
       <ul>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: um tour client-side por toda a API. Todas as formas de padrão e regras de precedência, as exceções do tratamento de links, cada membro de Route com controles ao vivo, um sub-router, a pilha de camadas três níveis abaixo, uma seção relativa montada em dois pais e loaders de rota com <code>pending</code> e <code>error</code>. Define <code>preload: false</code> para que esses estados fiquem visíveis.</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: um tour client-side por toda a API. Todas as formas de padrão e regras de precedência, as exceções do tratamento de links, cada membro de Route com controles ao vivo, um sub-router, a pilha de camadas com três níveis de profundidade, uma seção relativa montada em dois pais e loaders de rota com <code>pending</code> e <code>error</code>. Define <code>preload: false</code> para que esses estados fiquem visíveis.</li>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> por requisição, hydration que comprovadamente aproveita os nós do servidor, status 404 de verdade, um <code>base</code> fora da raiz, preload em idle que dá para acompanhar no painel de rede e um loader cujos dados passam do servidor para o cliente, para que a hydration não busque tudo de novo.</li>
       </ul>
     `,

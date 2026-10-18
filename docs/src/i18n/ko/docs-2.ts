@@ -22,7 +22,7 @@ const card = css({
 const Card = () => div(card, 'Simple card')
 `)}
       <ul>
-        <li><code>css()</code>는 기본 선언마다 클래스 하나를 만들고, 가상 선택자 키·선택자·미디어 블록마다 클래스를 하나씩 더 만듭니다. 위 카드는 클래스를 두 개 받습니다.</li>
+        <li><code>css()</code>는 기본 선언 전체에 클래스 하나를 만들고, 가상 선택자 키·선택자·미디어 블록마다 클래스를 하나씩 더 만듭니다. 위 카드는 클래스를 두 개 받습니다.</li>
         <li>클래스 이름은 내용을 해시한 값입니다. 같은 스타일은 클래스를 공유하고, 서버와 클라이언트가 만드는 이름도 서로 같습니다.</li>
         <li>스타일은 모듈 최상위에서 한 번만 정의하세요. <code>css()</code>는 객체 단위로 캐시하기 때문에, 호출할 때마다 새 객체를 넘기면 매번 처음부터 다시 처리합니다.</li>
         <li><code>css()</code>에 넘긴 뒤에 스타일 객체를 고쳐도 아무 일도 일어나지 않습니다.</li>
@@ -288,7 +288,7 @@ export const router = createRouter(routes)   // define once, import anywhere
 await router.start()                          // resolve the current URL
 render(App, document.getElementById('app')!) // App places router.outlet() and reads router.path, router.go(), …
 `)}
-      <p><code>start()</code>는 일치하는 라우트의 모듈을 모두 불러온 뒤에야 끝납니다. 덕분에 서버든 클라이언트든 첫 트리가 완성된 상태로 만들어집니다. 이후 이동은 라우터가 알아서 처리하므로, 앱에서는 <code>router.path</code>, <code>router.pending</code>, <code>router.go()</code>로 현재 Route를 다루면 됩니다.</p>
+      <p><code>start()</code>는 일치하는 라우트의 모듈을 모두 불러온 뒤에야 끝납니다. 덕분에 서버든 클라이언트든 첫 트리가 완성된 상태로 만들어집니다. 이후에는 라우터가 <code>start()</code>로 만든 Route의 값을 그대로 읽어 주므로, 앱에서는 <code>router.path</code>, <code>router.pending</code>, <code>router.go()</code>를 쓰면 됩니다.</p>
       <h3>앱 전체 예시</h3>
       ${code("routes.ts", `
 // isomorphic: imported by the browser and the server
@@ -399,7 +399,7 @@ export default function Record(ctx: RouteContext, { outlet }: PageProps) {
       <p>자식 사이를 오가도 부모는 다시 만들어지지 않습니다. DOM 노드가 그대로이므로 포커스, 스크롤 위치, 입력하다 만 텍스트, 클로저에 담긴 상태가 전부 살아남습니다.</p>
       <ul>
         <li>자식 라우트가 없는 페이지의 아웃렛은 아무것도 렌더링하지 않으므로, 레이아웃에서 조건 없이 호출해도 됩니다. 반대로 자식이 있는데 부모가 <code>outlet()</code>을 한 번도 호출하지 않으면 그 자식은 어디에도 나타나지 않습니다.</li>
-        <li>index 라우트는 없습니다. <code>'/'</code>는 레이아웃 그 자체라서, 부모 경로로 가면 별도의 index 페이지 대신 아웃렛이 빈 레이아웃이 렌더링됩니다. 첫 화면에 보여 줄 내용은 레이아웃에 넣거나 실제 자식 경로를 만들어 주세요.</li>
+        <li>index 라우트는 없습니다. <code>'/'</code>는 레이아웃 그 자체라서, 부모 경로로 가면 별도의 index 페이지 대신, 아웃렛이 빈 채로 레이아웃만 렌더링됩니다. 첫 화면에 보여 줄 내용은 레이아웃에 넣거나 실제 자식 경로를 만들어 주세요.</li>
       </ul>
       <p>그러면 같은 호출이 어느 부모 아래에서든 똑같이 동작하고, 자신이 어느 부모 안에 있는지 모르는 페이지에서도 쓸 수 있습니다.</p>
       ${code("example.ts", `
@@ -407,10 +407,10 @@ router.href('./preview')      // '/invoices/42/preview' or '/customers/7/preview
 await router.go('./preview')
 await layer.push('./preview') // the usual shape: a child layer
 `)}
-      <p><code>./x</code>, <code>../x</code>, <code>.</code>, <code>..</code>는 URL의 "디렉터리"가 아니라 현재 라우트의 경로를 기준으로 풀립니다. <code>/invoices/42</code>에서 <code>./preview</code>는 <code>/invoices/42/preview</code>가 됩니다. 브라우저라면 <code>/invoices/preview</code>라고 해석했을 테지만, 여기서는 URL 끝의 슬래시도 결과에 영향을 주지 않습니다. <code>../</code>는 세그먼트 하나씩 위로 올라가다 루트에서 멈춥니다. 쿼리와 해시는 그대로 이어지고 <code>base</code>는 다시 붙으며, 완성된 절대 경로가 히스토리에 기록됩니다. React Router도 <code>&lt;Link to="./x"&gt;</code>에서 URL 표준과 똑같이 어긋나게 동작합니다.</p>
+      <p><code>./x</code>, <code>../x</code>, <code>.</code>, <code>..</code>는 URL의 "디렉터리"가 아니라 현재 라우트의 경로를 기준으로 풀립니다. <code>/invoices/42</code>에서 <code>./preview</code>는 <code>/invoices/42/preview</code>가 됩니다. 브라우저라면 <code>/invoices/preview</code>라고 해석했을 테지만, 여기서는 URL 끝의 슬래시도 결과에 영향을 주지 않습니다. <code>../</code>는 세그먼트 하나씩 위로 올라가다 루트에서 멈춥니다. 쿼리와 해시는 그대로 이어지고 <code>base</code>는 다시 붙으며, 완성된 절대 경로가 히스토리에 기록됩니다. URL 해석 표준에서 이렇게 벗어나는 방식은 React Router가 <code>&lt;Link to="./x"&gt;</code>에서 택한 방식과 같습니다.</p>
       <ul>
         <li>라우트 기준으로 해석되는 것은 <code>./</code>와 <code>../</code>뿐입니다. href에 그냥 <code>preview</code>라고 쓰면 일반적인 브라우저 규칙을 따릅니다.</li>
-        <li>상대 링크는 <code>href="./preview"</code>를 손으로 쓰기보다 <code>router.href('./preview')</code>로 만드세요. <code>href()</code>는 렌더링 시점에 경로를 풀어 주기 때문에, 실제로 나가는 마크업은 절대 경로입니다. 그래서 크롤러, 가운데 버튼 클릭, JavaScript를 끈 환경에서도 올바르게 동작합니다.</li>
+        <li>상대 링크는 <code>href="./preview"</code>를 손으로 쓰기보다 <code>router.href('./preview')</code>로 만드세요. <code>href()</code>는 렌더링 시점에 경로를 풀어 주기 때문에, 실제로 나가는 마크업은 절대 경로입니다. 그래서 크롤러, 마우스 가운데 버튼 클릭, JavaScript를 끈 환경에서도 올바르게 동작합니다.</li>
       </ul>
       <h3>유지되는 것과 다시 만들어지는 것</h3>
       <table>
@@ -502,7 +502,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
         <tbody>
           <tr><td>실행되는 동안</td><td><code>router.pending</code>이 true가 되고, 보고 있던 페이지는 그대로 화면에 남습니다.</td></tr>
           <tr><td>예외를 던지거나 reject될 때</td><td><code>router.error</code>에 담깁니다. <code>go()</code>는 여전히 reject되지 않으며, 이동을 다시 시도할 수 있습니다.</td></tr>
-          <tr><td><code>start()</code> 도중</td><td>거부가 <code>start()</code> 밖으로 나옵니다. 오류를 담을 Route가 아직 없기 때문입니다.</td></tr>
+          <tr><td><code>start()</code> 도중</td><td>reject가 <code>start()</code> 밖으로 전파됩니다. 오류를 담을 Route가 아직 없기 때문입니다.</td></tr>
           <tr><td>push한 레이어</td><td>자체 로더를 실행하고, 데이터도 따로 가집니다.</td></tr>
           <tr><td>유휴 시간 프리로더</td><td>모듈만 미리 데워 둡니다. 넘겨 줄 컨텍스트가 없고, 사용자가 열지도 않을 라우트의 데이터를 가져오게 될 수 있기 때문입니다.</td></tr>
           <tr><td>같은 URL로 다시 이동</td><td>로더를 다시 실행하고 행도 새로 만듭니다. 로더가 없는 라우트는 행을 그대로 유지합니다.</td></tr>
@@ -522,7 +522,7 @@ createRouter({
   '/blog/:slug': withLoad(() => import('./pages/Post.ts'), loadPost),
 })
 `)}
-      <p>이 로더는 모듈 자체의 <code>load</code>를 대체하며, 마찬가지로 방문할 때마다 실행됩니다. 청크를 불러오는 중에 거부가 일어나면 다른 경우와 똑같이 <code>router.error</code>에 담깁니다.</p>
+      <p>이 로더는 모듈 자체의 <code>load</code>를 대체하며, 마찬가지로 방문할 때마다 실행됩니다. 청크를 불러오는 중에 reject되면 다른 경우와 똑같이 <code>router.error</code>에 담깁니다.</p>
       <p>서버 데이터를 HTML에 직렬화해 넣어 주지는 않으며, 이는 의도된 설계입니다. 클라이언트의 <code>load</code>는 하이드레이션 때 다시 실행됩니다. 이 점이 신경 쓰인다면 서버가 <code>route.data</code>를 <code>window.__DATA__</code> 같은 곳에 내보내고, 로더가 그것부터 읽게 하세요. <code>route.data</code>에는 일치한 페이지의 데이터만 들어 있고, 부모 <code>load()</code>의 결과는 없습니다.</p>
       <h3>코드 분할과 프리로드</h3>
       <p>라우트의 값은 언제나 페이지 컴포넌트를 돌려주는 함수라서, 컴포넌트는 필요한 시점에 지연 로딩됩니다.</p>
@@ -546,7 +546,7 @@ createRouter({
       <table>
         <thead><tr><th>옵션</th><th>기본값</th><th></th></tr></thead>
         <tbody>
-          <tr><td><code>base</code></td><td><code>'/'</code></td><td>앱을 서비스하는 URL 접두사로, 예를 들어 <code>'/docs'</code>입니다. 세그먼트 경계에서만 일치합니다. <code>/docs/intro</code>는 <code>'/docs'</code> 안이지만 <code>/docsearch</code>는 아닙니다. 범위 밖 URL은 아무것도 일치시키지 않으므로 <code>start()</code>가 거부되고(서버 쪽 404), 그런 URL로 가는 링크는 브라우저가 처리하게 둡니다.</td></tr>
+          <tr><td><code>base</code></td><td><code>'/'</code></td><td>앱을 서비스하는 URL 접두사로, 예를 들어 <code>'/docs'</code>입니다. 세그먼트 경계에서만 일치합니다. <code>/docs/intro</code>는 <code>'/docs'</code> 안이지만 <code>/docsearch</code>는 아닙니다. 범위 밖 URL은 아무것도 일치시키지 않으므로 <code>start()</code>가 reject되고(서버 쪽 404), 그런 URL로 가는 링크는 브라우저가 처리하게 둡니다.</td></tr>
           <tr><td><code>preload</code></td><td><code>true</code></td><td>페이지가 한가해지면 나머지 라우트의 모듈을 백그라운드에서 불러옵니다. <code>false</code>로 끌 수 있습니다.</td></tr>
           <tr><td><code>idleTimeout</code></td><td><code>1000</code></td><td>터치, 키 입력, 휠, 스크롤이 없는 상태가 이 시간(밀리초)만큼 이어지면 프리로드를 시작하거나, 사용자가 바빴다가 다시 한가해졌을 때 이어서 시작합니다.</td></tr>
           <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>. 브라우저에서 처음 이동을 포함해 이동이 해석될 때마다, DOM이 따라잡은 뒤에 호출됩니다. <code>kind</code>는 <code>'start'</code>, <code>'push'</code>, <code>'replace'</code>, <code>'pop'</code>(뒤로 가기, 앞으로 가기, <code>close()</code>), <code>'layer'</code> 중 하나입니다. <code>document.title</code>, meta 태그, 포커스, 스크롤, 분석 코드를 넣기에 알맞은 훅이며 SSR 중에는 호출되지 않습니다.</td></tr>
@@ -554,7 +554,7 @@ createRouter({
       </table>
       <p>라우터를 반환하며, 라우터는 <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code>와 <code>run()</code>을 뺀 모든 <code>Route</code> 멤버를 제공합니다. 이 멤버들은 활성 Route에서 읽어 옵니다. 브라우저에서는 마지막 <code>start()</code>가 반환한 Route가, 서버에서는 지금 <code>run()</code>이 실행 중인 Route가 활성 Route입니다. 둘 다 없는 상태에서 멤버를 읽으면 오류가 납니다. 라우트 테이블, 컴파일된 매처, 모듈 캐시는 라우터가 가지고 있으므로 서버에서는 요청끼리 공유됩니다.</p>
       <h3><code>router.start(url?)</code></h3>
-      <p><code>url</code>(브라우저에서는 기본값이 <code>location.href</code>)을 페이지 모듈로 해석하고 <code>Promise&lt;Route&gt;</code>를 반환합니다. 일치하는 패턴이 없고 테이블에 <code>'*'</code> 라우트도 없으면 거부됩니다. 서버라면 그것이 404입니다. 브라우저에서는 이 Route를 라우터의 활성 Route로 만들고, <code>popstate</code>와 위임된 <code>click</code> 리스너를 연결하며, 프리로드를 예약하기까지 합니다. <code>start()</code>를 다시 호출하면 이전 Route는 알아서 정리됩니다. 서버에서는 공유되는 것을 전혀 건드리지 않으므로 <code>route.run()</code> 안에서 렌더링하세요.</p>
+      <p><code>url</code>(브라우저에서는 기본값이 <code>location.href</code>)을 페이지 모듈로 해석하고 <code>Promise&lt;Route&gt;</code>를 반환합니다. 일치하는 패턴이 없고 테이블에 <code>'*'</code> 라우트도 없으면 reject됩니다. 서버라면 그것이 404입니다. 브라우저에서는 이 Route를 라우터의 활성 Route로 만들고, <code>popstate</code>와 위임된 <code>click</code> 리스너를 연결하며, 프리로드를 예약하기까지 합니다. <code>start()</code>를 다시 호출하면 이전 Route는 알아서 정리됩니다. 서버에서는 공유되는 것을 전혀 건드리지 않으므로 <code>route.run()</code> 안에서 렌더링하세요.</p>
       <h3><code>router.match(url?)</code></h3>
       <p>아무것도 불러오지 않고 URL을 테이블과 대조만 합니다. import도, 히스토리 변경도, 리스너 연결도, Route 생성도 없습니다. 결과로 <code>RouteContext</code>를 돌려주고, URL이 <code>base</code> 밖에 있거나 어떤 패턴과도 맞지 않거나 브라우저에서 다른 출처이면 <code>null</code>을 돌려줍니다. <code>./</code>를 해석하려면 활성 라우트가 필요하므로 절대 URL만 받습니다.</p>
       ${code("example.ts", `
@@ -654,12 +654,12 @@ if (created) { options.push(created); selected = created.id; update() }
 layer.close(created)   // resolves the push() above with the new option
 layer.close()          // dismissed: resolves with undefined
 `)}
-      <p>레이어는 중첩할 수 있습니다. 자체 대화 상자가 필요한 대화 상자는 Route를 직접 참조하지 않고 <code>layer.push()</code>를 호출해 결과를 기다리면 됩니다.</p>
+      <p>레이어는 중첩할 수 있습니다. 대화 상자 안에서 또 다른 대화 상자가 필요하면 Route를 직접 참조하지 않고 <code>layer.push()</code>를 호출해 결과를 기다리면 됩니다.</p>
       <ul>
-        <li><strong>URL은 맨 위 레이어를 가리킵니다.</strong> <code>push()</code>는 히스토리 항목을 추가하기 때문에 레이어에 직접 링크할 수 있고, 뒤로 가기를 누르면 취소를 누른 것처럼 레이어가 닫히며 그 <code>push()</code>가 dismissed로 이행됩니다. 뒤로 가기와 <code>close()</code>는 같은 코드 경로입니다. <code>close()</code>가 결과를 기록하고 히스토리를 한 칸 되돌리며, 깊이는 <code>history.state</code>에 든 값이 기준입니다. 브라우저는 탭당 항목을 50개 정도만 유지하므로 레이어를 오래 타고 들어가면 바로 아래 항목이 사라졌을 수 있습니다. 그럴 때 <code>close()</code>는 레이어를 그 자리에서 닫고, 현재 항목을 남은 페이지에 맞게 고쳐 씁니다.</li>
+        <li><strong>URL은 맨 위 레이어를 가리킵니다.</strong> <code>push()</code>는 히스토리 항목을 추가하기 때문에 레이어에 직접 링크할 수 있고, 뒤로 가기를 누르면 취소를 누른 것처럼 레이어가 닫히며 그 <code>push()</code>가 dismissed로 이행됩니다. 뒤로 가기와 <code>close()</code>는 같은 코드 경로입니다. <code>close()</code>가 결과를 기록하고 히스토리를 한 칸 되돌리며, 깊이는 <code>history.state</code>에 든 값이 기준입니다. 브라우저는 탭당 항목을 50개 정도만 유지하므로 레이어를 여러 단계 깊이 들어가면 바로 아래 항목이 사라졌을 수 있습니다. 그럴 때 <code>close()</code>는 레이어를 그 자리에서 닫고, 현재 항목을 남은 페이지에 맞게 고쳐 씁니다.</li>
         <li><strong>일반 이동은 스택을 비웁니다.</strong> 링크 클릭이나 <code>go()</code>는 레이어가 아닙니다. 모든 것을 교체하고 열려 있던 레이어를 전부 닫으므로, 기다리는 호출자가 남지 않습니다.</li>
         <li><strong>URL로 바로 들어오면 독립된 페이지가 됩니다.</strong> URL은 맨 위 레이어만 가리킬 뿐 그 아래 스택까지 알려 주지는 않습니다. 그래서 레이어의 URL로 곧장 접속하면 깊이 1짜리 스택에서 <code>layer.depth === 0</code>인 페이지로 렌더링되고, <code>close()</code>는 아무 동작도 하지 않습니다. 레이어로 push하는 라우트도 그 자체로 의미가 통해야 합니다. <code>layer.depth</code>로 분기해서 동작하지 않는 취소 버튼 대신 빠져나갈 링크를 보여 주세요.</li>
-        <li><strong>새로 고침하면 promise는 살아남지 못합니다.</strong> promise가 클로저 안에 있기 때문입니다. 결과 전달은 같은 일을 돌아가는 길로도 할 수 있는 흐름의 지름길 정도로만 생각하세요.</li>
+        <li><strong>새로 고침하면 promise는 살아남지 못합니다.</strong> promise가 클로저 안에 있기 때문입니다. 결과 전달은, 더 돌아가더라도 같은 일을 할 수 있는 흐름의 지름길 정도로만 생각하세요.</li>
         <li><strong>기다리는 채로 남는 호출은 없습니다.</strong> <code>stop()</code>은 열려 있는 레이어를 모두 닫고, 이동으로 버려진 레이어의 promise는 <code>undefined</code>로 이행됩니다.</li>
       </ul>
       <h3>이탈 가드</h3>
@@ -685,7 +685,7 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
         id: "router-matches",
         title: "matches()와 서브 라우터",
         content: `
-      <p><code>router.outlet()</code>은 페이지를 렌더링합니다. <code>router.matches(table)</code>는 지금 위치에 따라 달라지는 그 밖의 것, 이를테면 사이드바, 브레드크럼, 툴바를 라우트를 불러오거나 페이지를 더하지 않고 자체 작은 테이블로 렌더링합니다.</p>
+      <p><code>router.outlet()</code>은 페이지를 렌더링합니다. <code>router.matches(table)</code>는 사이드바, 브레드크럼, 툴바처럼 지금 위치에 따라 달라지는 다른 요소를 자체 작은 테이블로 렌더링하며, 라우트를 불러오거나 페이지를 추가하지 않습니다.</p>
       ${code("app.ts", `
 div(
   aside(
@@ -722,14 +722,14 @@ const docs = createRouter(docsRoutes, { base: '/docs' })
 const hit = docs.match()                       // { pattern: '/:topic', … }
 const page = await docsRoutes[hit.pattern]()   // the app's own lookup
 `)}
-      <p>시작하지 않는 것이 핵심입니다. 리스너를 붙이는 쪽이 <code>start()</code>라서 라우터 두 개를 시작하면 서로 충돌합니다. 대신 해석은 자식이 맡게 되므로, 시작된 라우터가 대신 실행해 주던 라우트 로더는 직접 호출해야 합니다. 이 방식은 나머지 경로가 바뀔 때 셸도 다시 만든다는 점도 다릅니다. 바깥 라우터에는 라우트 하나만 보이고 나머지는 셸이 직접 해석하기 때문입니다. 부모를 계속 마운트된 채로 두고 싶다면 중첩 테이블을 쓰세요. 그 기능에 자체 라우터와 base, 폴백이 정말 필요하지 않다면 중첩 테이블이 낫습니다.</p>
+      <p>시작하지 않는 것이 핵심입니다. 리스너를 붙이는 쪽이 <code>start()</code>라서 라우터 두 개를 시작하면 서로 충돌합니다. 대신 해석은 자식이 맡게 되므로, 시작된 라우터가 대신 실행해 주던 라우트 로더는 직접 호출해야 합니다. 이 방식은 나머지 경로가 바뀔 때 셸도 다시 만든다는 점도 다릅니다. 바깥 라우터에는 라우트 하나만 보이고 나머지는 셸이 직접 해석하기 때문입니다. 라우터가 마운트된 채로 유지해 주는 부모는 중첩 테이블로만 얻을 수 있으므로, 그 기능에 자체 라우터와 base, 폴백이 정말 필요한 경우가 아니라면 중첩 테이블을 쓰세요.</p>
     `,
       },
       {
         id: "router-multi",
         title: "여러 라우터와 결합 로딩",
         content: `
-      <p>앱은 영역 수만큼 라우터를 가질 수 있습니다. 단순하게 유지하는 규칙은 하나입니다. <strong>문서당 정확히 하나만 시작하고</strong>, 나머지는 시작하지 않은 채 <code>match()</code>로 URL을 해석하게 두세요. URL, 히스토리, click 리스너는 시작된 라우터만 가집니다. 나머지는 필요할 때 물어보는 테이블일 뿐이고, 그래서 영역마다 자기 시계로, 자기 스피너로 로드할 수 있습니다.</p>
+      <p>앱은 영역 수만큼 라우터를 가질 수 있습니다. 단순하게 유지하는 규칙은 하나입니다. <strong>문서당 정확히 하나만 시작하고</strong>, 나머지는 시작하지 않은 채 <code>match()</code>로 URL을 해석하게 두세요. URL, 히스토리, click 리스너는 시작된 라우터만 가집니다. 나머지는 필요할 때 물어보는 테이블일 뿐이고, 그래서 영역마다 자기만의 타이밍과 스피너로 로드할 수 있습니다.</p>
       <h3>결합 로딩: 로더 체인</h3>
       <p>일치한 체인 위의 페이지는 모두 <code>load()</code>를 export할 수 있습니다. 자식 라우트로 처음 이동하면 레이아웃의 로더와 페이지의 로더가 <strong>병렬로</strong> 실행되고, <code>router.pending</code> 하나가 체인 전체를 대표합니다. 둘이 모두 끝날 때까지 이전 페이지가 화면에 남기 때문에 반쯤 로드된 트리가 그려질 일은 없습니다. 각 컴포넌트는 자기 <code>data</code>를 받습니다.</p>
       ${code("routes.ts", `
@@ -810,7 +810,7 @@ createRouter(routes, {
         <li><strong><code>match()</code>는 아무것도 붙이지 않습니다.</strong> 시작하지 않은 라우터는 문서에 몇 개든 함께 둘 수 있습니다. 각자 자기 테이블, base, 모듈 캐시를 가지며 히스토리는 아무도 건드리지 않습니다. 비용은 테이블과 매처뿐입니다.</li>
         <li><strong>이 라우터의 로더는 실행되지 않습니다.</strong> 시작된 라우터는 일치한 페이지의 <code>load()</code>를 실행하지만, 시작하지 않은 라우터는 해석만 합니다. 뷰에 데이터가 필요하면 직접 가져오세요(데모의 <code>refreshSidebar()</code>). 로더가 필요하다면 <a href="#router-matches">중첩 테이블</a>이나 <a href="#router-regions">페이지가 채우는 영역</a>으로 구성해 그 일을 시작된 라우터에 맡기세요.</li>
         <li><strong>오래된 응답은 걸러 내세요.</strong> 느린 사이드바 요청의 응답이 이미 떠나온 섹션에 반영되면 안 됩니다. 새로 고칠 때마다 세대 카운터를 올리고, 더 이상 일치하지 않는 응답은 버리세요. 라우터도 새 이동이 앞선 이동을 추월하면 이전 결과를 같은 방식으로 버립니다.</li>
-        <li><strong>지연 로딩되는 <code>matches()</code> 뷰에도 <code>pending</code>은 없습니다.</strong> 모듈이 도착하기 전에는 아무것도 렌더링하지 않습니다. 로딩 시스템이 셋, 시계도 셋입니다. 라우트의 <code>pending</code>, 직접 만든 플래그, 그리고 아직 도착하지 않은 지연 로딩 뷰입니다.</li>
+        <li><strong>지연 로딩되는 <code>matches()</code> 뷰에도 <code>pending</code>은 없습니다.</strong> 모듈이 도착하기 전에는 아무것도 렌더링하지 않습니다. 로딩 시스템이 셋이고 타이밍도 각각 독립적입니다. 라우트의 <code>pending</code>, 직접 만든 플래그, 그리고 아직 도착하지 않은 지연 로딩 뷰입니다.</li>
       </ul>
     `,
       },
@@ -840,7 +840,7 @@ createRouter(routes, {
         <li><strong>의도적으로 넣지 않은 기능:</strong> 해시 히스토리와 메모리 히스토리가 없습니다. 라우트는 경로(pathname)에 담기고, 서버가 모든 라우트를 서비스해야 하기 때문입니다. URL 하나로 서로 독립된 두 영역을 라우팅하는 기능도 없습니다. 페이지가 <code>into()</code>로 여러 영역을 채울 수는 있지만 모두 일치한 라우트 하나에 속합니다. 독립 영역이 시작하지 않은 자체 라우터와 로딩을 따로 두는 방법은 <a href="#router-multi">다중 라우터와 결합 로딩</a>을 참고하세요. 호버 프리로드도 없지만, <code>mouseenter</code>에서 해당 라우트의 로더를 직접 호출하면 같은 효과를 얻을 수 있습니다.</li>
       </ul>
       <h3>예제</h3>
-      <p>저장소에는 실행해 볼 수 있는 예제가 두 개 있습니다. 서로 빈틈을 메워 주기 때문에 모든 설정을 어딘가에서는 직접 확인할 수 있습니다.</p>
+      <p>저장소에는 실행해 볼 수 있는 예제가 두 개 있습니다. 서로를 보완하므로 모든 설정을 어딘가에서는 직접 확인할 수 있습니다.</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: 클라이언트에서 API 전체를 훑어보는 예제입니다. 모든 패턴 형태와 우선순위 규칙, 링크 처리의 제외 옵션, 실시간으로 조작해 보는 모든 Route 멤버, 서브 라우터, 3단계로 쌓은 레이어 스택, 부모 두 곳에 마운트한 상대 섹션, <code>pending</code>과 <code>error</code>를 볼 수 있는 라우트 로더가 들어 있습니다. 이런 상태가 계속 보이도록 <code>preload: false</code>로 설정했습니다.</li>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: 요청마다 실행하는 <code>renderToString()</code>, 서버 노드를 실제로 이어받는 것을 확인할 수 있는 하이드레이션, 진짜 404 상태 코드, 루트가 아닌 <code>base</code>, 네트워크 패널에서 지켜볼 수 있는 유휴 시간 프리로드, 그리고 서버가 클라이언트에 데이터를 넘겨 하이드레이션 때 다시 가져오지 않는 로더를 보여 줍니다.</li>

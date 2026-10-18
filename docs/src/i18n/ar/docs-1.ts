@@ -51,7 +51,7 @@ render(App, document.getElementById('app')!)
       <ul>
         <li><code>[project-name]</code>: المجلد الذي سيُنشأ فيه المشروع، والافتراضي <code>nuclo-app</code>.</li>
         <li><code>-t, --template &lt;name&gt;</code>: القالب المطلوب. المتاح اليوم <code>basic</code> فقط.</li>
-        <li><code>-y, --yes</code>: بلا أسئلة، والإعدادات الافتراضية تكفي.</li>
+        <li><code>-y, --yes</code>: بلا أسئلة، مع استخدام القيم الافتراضية.</li>
         <li><code>-f, --force</code>: الكتابة داخل مجلد غير فارغ.</li>
         <li><code>-h, --help</code>: عرض المساعدة.</li>
       </ul>
@@ -366,7 +366,7 @@ const search = input(on('mount', (el) => el.focus()))
         afterContent: `
       <h3>متى تُنفَّذ؟</h3>
       <ul>
-        <li>يُنفَّذ <code>onMount</code> في آخر استدعاء <code>render()</code> أو <code>hydrate()</code> أو <code>update()</code> أو <code>forceUpdate()</code> أدرج العنصر، وليس أثناء بناء الشجرة.</li>
+        <li>يُنفَّذ <code>onMount</code> في نهاية استدعاء <code>render()</code> أو <code>hydrate()</code> أو <code>update()</code> أو <code>forceUpdate()</code> الذي أدرج العنصر، ولا يُنفَّذ أبدًا أثناء بناء الشجرة.</li>
         <li>إذا أرجع <code>onMount</code> دالة، فستُنفَّذ عند الإزالة، بعد دوال <code>onDestroy</code> الخاصة بالعنصر.</li>
         <li>يُنفَّذ <code>onDestroy</code> حين يزيل Nuclo العنصر: إذا أُزيل صف من <code>list()</code>، أو بدّله فرع في <code>when()</code>، أو غادر <code>into()</code> منطقته، أو أسقطه <code>forceUpdate()</code>. ويحدث ذلك قبل الإزالة مباشرة، فيبقى العنصر في المستند.</li>
       </ul>
@@ -385,10 +385,10 @@ update() // App's onDestroy hooks and cleanups run
         <li>تُنفَّذ hooks <code>onDestroy</code> للعناصر الفرعية أولًا، ثم للعنصر الأب.</li>
         <li>تُنفَّذ hooks <code>onMount</code> للعناصر بحسب ترتيب أول hook لكل عنصر، أي ترتيب الوسائط، وتُنفَّذ كل hooks العنصر الواحد معًا. فإن كانت الـ children تعتمد على الأب فمرّر hook الأب قبلها.</li>
         <li>إذا رمى hook استثناءً، يُسجَّل الخطأ باستخدام <code>console.error</code> ويستمر تنفيذ الـ hooks الأخرى.</li>
-        <li>يجب أن تُرجع الدالة لا شيء أو دالة تنظيف، فلا تجعلها <code>async</code>؛ إذ لا يُعامل الـ promise المُرجَع كدالة تنظيف أبدًا. ابدأ العمل غير المتزامن من داخلها: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
+        <li>يجب ألا تُرجع الدالة شيئًا، أو أن تُرجع دالة تنظيف، فلا تجعلها <code>async</code>؛ إذ لا يُعامل الـ promise المُرجَع كدالة تنظيف أبدًا. ابدأ العمل غير المتزامن من داخلها: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
         <li>لا تُنفَّذ الـ hooks على الخادم مطلقًا. وعلى العميل تُنفَّذ بعد <code>hydrate()</code>.</li>
       </ul>
-      <div class="docs-callout"><strong>تنبيه:</strong> الـ hooks ليست effects. لا تُعاد عند تغيّر الـ state، وكل hook يُنفَّذ مرة واحدة على الأكثر لكل عنصر.</div>
+      <div class="docs-callout"><strong>ملاحظة:</strong> الـ hooks ليست effects. لا تُعاد عند تغيّر الـ state، وكل hook يُنفَّذ مرة واحدة على الأكثر لكل عنصر.</div>
     `,
       },
     ],
@@ -447,7 +447,7 @@ const Profile = () =>
 `)}
     `,
         afterContent: `
-      <p>يتحقق Nuclo من عدد المعلمات (<code>fn.length</code>). الدالة التي تعرّف معلمة هي <a href="#tag-builders">معدّل مخصص</a> وتُنفَّذ مرة واحدة فقط. تبلغ قيمة length للدالتين <code>(x = 0) =&gt; …</code> و<code>(...args) =&gt; …</code> 0، لذا فهما ديناميكيان.</p>
+      <p>يتحقق Nuclo من عدد المعاملات (<code>fn.length</code>). الدالة التي تعرّف معاملًا هي <a href="#tag-builders">معدّل مخصص</a> وتُنفَّذ مرة واحدة فقط. تبلغ قيمة length للدالتين <code>(x = 0) =&gt; …</code> و<code>(...args) =&gt; …</code> 0، لذا فهما ديناميكيان.</p>
       <h3>النص الديناميكي</h3>
       <ul>
         <li>النص والرقم وbigint والقيمة المنطقية تُعرض كـ <code>String(value)</code>. فالدالة <code>() =&gt; ok &amp;&amp; 'Saved'</code> تعرض "false"، لذا اكتب <code>() =&gt; (ok ? 'Saved' : '')</code>.</li>
@@ -575,7 +575,7 @@ update()
         <li>كل ظهور مكرر لنفس العنصر له صفه الخاص.</li>
         <li>يمكنك تعديل المصفوفة نفسها (<code>push</code>، <code>splice</code>، <code>sort</code>) أو إرجاع مصفوفة جديدة.</li>
       </ul>
-      <p>دالة بناء الصف المحفوظ لا تُستدعى ثانية، فاستخدم قيمًا ديناميكية للحقول التي تتغير:</p>
+      <p>الصف المحتفَظ به لا يُعاد بناؤه أبدًا، فاستخدم قيمًا ديناميكية للحقول التي تتغير:</p>
       ${code("todos.ts", `
 const todos = [{ text: 'Write docs', done: false }]
 
@@ -591,7 +591,7 @@ render(Todos)
 todos[0].done = true
 update() // same <li>, its class is now "done"
 `)}
-      <p>الكائنات الجديدة عناصر جديدة من حيث الهوية، ولذلك فاستبدال المصفوفة بـ <code>todos.map((t) =&gt; ({ ...t }))</code> يعيد بناء كل الصفوف.</p>
+      <p>النسخ عناصر جديدة، ولذلك فاستبدال المصفوفة بـ <code>todos.map((t) =&gt; ({ ...t }))</code> يعيد بناء كل الصفوف.</p>
     `,
         afterContent: `
       <h3>ما تُرجعه <code>renderItem</code></h3>
@@ -630,7 +630,7 @@ render(() => div(Layout(), Article()))
       <ul>
         <li><code>into()</code> لا يترك سوى تعليق في موضعه، ويُعرض محتواه بين علامتي المنطقة.</li>
         <li>ترتيب البناء لا يهم. فإذا بُني <code>into()</code> قبل منطقته انتظر، وظهر فور بناء المنطقة. وتظهر المحتويات بترتيب تعريفها.</li>
-        <li>يبقى المحتوى ما بقي صاحبه حيًّا. فإذا أُغلق <code>when()</code> الذي يحوي <code>into()</code>، أو أُزيل صف <code>list()</code> الذي يحويه، غادر المحتوى المنطقة. وعند فتحه من جديد تُضاف نسخة واحدة لا نسختان.</li>
+        <li>يبقى المحتوى ما دام <code>into()</code> الذي يحمله موجودًا. فإذا أُغلق <code>when()</code> الذي يحوي <code>into()</code>، أو أُزيل صف <code>list()</code> الذي يحويه، غادر المحتوى المنطقة. وعند فتحه من جديد تُضاف نسخة واحدة لا نسختان.</li>
         <li>عندما تختفي منطقة، كأن يُغلق <code>when()</code> الذي يحويها، يعود محتواها إلى الانتظار، وتعرضه أي منطقة تُنشأ لاحقًا بالمعرّف نفسه.</li>
         <li>إذا لم يطابق معرّف <code>into()</code> أي منطقة فلا يُعرض شيء ولا يظهر خطأ، فتحقق من الإملاء.</li>
         <li>المعرّفات فريدة في الشجرة، وإنشاء منطقة ثانية بمعرّف منطقة ما زالت موجودة يسجّل تحذيرًا.</li>
@@ -862,7 +862,7 @@ render(() => Page({ name: 'Ana' }), root)
         id: "api-hydrate",
         title: "hydrate()",
         content: `
-      <p>تجعل HTML الذي أنتجته <a href="#api-ssr"><code>renderToString()</code></a> تفاعليًا: تعيد استخدام العناصر الموجودة، وتربط الـ event listeners، وتصل القيم الديناميكية وكتل <code>when()</code> وقوائم <code>list()</code>، فيعمل <code>update()</code> بعد ذلك، ثم تنفّذ hooks <code>onMount</code>. والـ <code>parent</code> الافتراضي هو <code>document.body</code>، وتُرجع الدالة العنصر الجذر.</p>
+      <p>تجعل HTML الذي أنتجته <a href="#api-ssr"><code>renderToString()</code></a> تفاعليًا: تعيد استخدام العناصر الموجودة، وتربط الـ event listeners، وتربط القيم الديناميكية وكتل <code>when()</code> وقوائم <code>list()</code> بالصفحة، فيعمل <code>update()</code> بعد ذلك، ثم تنفّذ hooks <code>onMount</code>. والـ <code>parent</code> الافتراضي هو <code>document.body</code>، وتُرجع الدالة العنصر الجذر.</p>
       ${code("client.ts", `
 import 'nuclo'
 import { App } from './app.ts'
