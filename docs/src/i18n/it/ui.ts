@@ -68,7 +68,7 @@ export const seo = {
     },
     docs: {
       title: "Documentazione di Nuclo - Guida e riferimento API",
-      description: "Tutto su Nuclo: installazione, builder dei tag, aggiornamenti espliciti con update(), when() e list(), eventi, lifecycle, SSR e hydration, CSS-in-TS tipizzato e il riferimento API completo.",
+      description: "Tutto su Nuclo: installazione, builder dei tag, aggiornamenti espliciti con update(), when() e list(), eventi, ciclo di vita, SSR e idratazione, CSS-in-TS tipizzato e il riferimento API completo.",
       keywords: "documentazione nuclo, riferimento api, guida introduttiva, update, list, when, on",
     },
     examples: {

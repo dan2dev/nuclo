@@ -11,7 +11,7 @@ export const groups = {
   forms: {"title": "Forms", "sub": "Plain state पर plain functions से validation, touched fields, steps और dynamic rows।"},
   svg: {"title": "SVG", "sub": "SVG tag builders से बने charts, animations, tools और games, जो plain data, pointer events और update() से चलते हैं।"},
   routing: {"title": "Routing", "sub": "Route tables, matching, active route, layers और loaders। nuclo-router एक अलग package है: npm install nuclo nuclo-router."},
-  apps: {"title": "Apps", "sub": "बड़े fullscreen programs, tabs में उनके असली source के साथ: windows वाला desktop, data grid, chat, games, editors और ऐसी libraries जो अपना state खुद संभालती हैं।"},
+  apps: {"title": "Apps", "sub": "बड़े फ़ुल-स्क्रीन programs, tabs में उनके असली source के साथ: windows वाला desktop, data grid, chat, games, editors और ऐसी libraries जो अपना state खुद संभालती हैं।"},
 };
 
 export type GroupKey = keyof typeof groups;
@@ -98,7 +98,7 @@ export const items: Record<string, { title: string; desc: string }> = {
 export const LABELS = {
   examples: "Examples",
   title: "Practical examples। Live demos।",
-  sub: "कोई example चुनिए और fullscreen में खोलिए: live preview और source code साथ-साथ।",
+  sub: "कोई example चुनिए और फ़ुल-स्क्रीन में खोलिए: live preview और source code साथ-साथ।",
   needsPackage: (pkg: string) => `${pkg} package चाहिए`,
   // The example modal
   openInStackBlitz: "StackBlitz में खोलें",

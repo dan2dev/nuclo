@@ -40,13 +40,13 @@ export const app = {
 
 // Shared by the docs' live frames, the examples and the home teasers.
 export const common = {
-  preview: "Preview",
+  preview: "Visualização",
   code: "Código",
   copy: "Copiar",
   copied: "✓ Copiado",
   copyToClipboard: "Copiar para a área de transferência",
   live: "Ao vivo",
-  openFullScreen: "Abrir em tela cheia",
+  openFullScreen: "Abrir em tela inteira",
   open: "Abrir ↗",
   readTheDocs: "Ler a documentação →",
 };

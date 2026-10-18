@@ -818,7 +818,7 @@ createRouter(routes, {
         id: "router-links",
         title: "Manejo de enlaces",
         content: `
-      <p>El listener delegado navega ante un clic izquierdo en un <code>&lt;a href&gt;</code>, incluido un <code>&lt;a&gt;</code> SVG y los clics sobre cualquier cosa anidada dentro de uno. Se hace a un lado en todo lo demás: clics con modificadores y con el botón central, un <code>target</code> distinto de <code>_self</code>, <code>download</code>, <code>rel="external"</code>, hrefs de otro origen, enlaces solo de hash en la página actual, rutas fuera de <code>base</code>, URLs que no coinciden con ninguna ruta (para que un 404 renderizado en el servidor siga siendo alcanzable) y cualquier evento en el que un handler de la aplicación ya haya llamado a <code>preventDefault()</code>. Para excluir un enlace de forma explícita, usa <code>data-nuclo-router="off"</code>.</p>
+      <p>El listener delegado navega ante un clic izquierdo en un <code>&lt;a href&gt;</code>, incluido un <code>&lt;a&gt;</code> SVG y los clics sobre cualquier cosa anidada dentro de uno. Se hace a un lado en todo lo demás: clics con modificadores y con el botón central, un <code>target</code> distinto de <code>_self</code>, <code>download</code>, <code>rel="external"</code>, hrefs de otro origen, enlaces solo de hash en la página actual, rutas fuera de <code>base</code>, URLs que no coinciden con ninguna ruta (para que un 404 renderizado en el servidor siga siendo alcanzable) y cualquier evento en el que un controlador de la aplicación ya haya llamado a <code>preventDefault()</code>. Para excluir un enlace de forma explícita, usa <code>data-nuclo-router="off"</code>.</p>
       <h3>Scroll</h3>
       <p>Una navegación con push conserva la posición de scroll actual. Si la nueva URL trae un <code>#hash</code> que coincide con un elemento de la página, ese elemento se desplaza a la vista, y <code>popstate</code> le deja el scroll al navegador. Si quieres que las páginas nuevas abran desde arriba, hazlo en <code>onNavigate</code>, que te dice cómo ocurrió la navegación:</p>
       ${code("routes.ts", `
@@ -969,7 +969,7 @@ async function loadData() {
       </ul>
       <h3>Claves especiales</h3>
       <ul>
-        <li><a href="#attributes">Atributos</a>: <code>className</code>, <code>style</code>, <a href="#events">handlers <code>on*</code></a>, <a href="#lifecycle"><code>onMount</code> y <code>onDestroy</code></a>.</li>
+        <li><a href="#attributes">Atributos</a>: <code>className</code>, <code>style</code>, <a href="#events">controladores <code>on*</code></a>, <a href="#lifecycle"><code>onMount</code> y <code>onDestroy</code></a>.</li>
         <li><a href="#style-objects">Objetos de estilo</a>: atajos, pseudoclases y pseudoelementos, selectores <code>&amp;</code>, reglas <code>@</code> y <code>raw</code>.</li>
       </ul>
     `,

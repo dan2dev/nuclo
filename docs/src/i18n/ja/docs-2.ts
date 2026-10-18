@@ -10,7 +10,7 @@ export const GROUPS_2: DocGroupText[] = [
         id: "api-styling",
         title: "css()",
         content: `
-      <p>型付きのスタイルオブジェクトを、CSS クラスに変えて返します。返り値はどのタグビルダーにもそのまま渡せます。ブラウザでは、ルールはすべて <code>&lt;style id="nuclo-styles"&gt;</code> という 1 つの要素に書き込まれ、サーバーでは <a href="#api-css-text"><code>getCssText()</code></a> が同じルールを文字列で返します。</p>
+      <p>型付きのスタイルオブジェクトを、CSS クラスに変えて返します。返り値はどのタグビルダーにもそのまま渡せます。ブラウザーでは、ルールはすべて <code>&lt;style id="nuclo-styles"&gt;</code> という 1 つの要素に書き込まれ、サーバーでは <a href="#api-css-text"><code>getCssText()</code></a> が同じルールを文字列で返します。</p>
       ${code("card.ts", `
 const card = css({
   p: 16,
@@ -114,7 +114,7 @@ const menu = css({
       ${code("example.ts", `
 css({ raw: { '--gap': '8px', '-webkit-line-clamp': '2' } })
 `)}
-      <p>その他のフラットなキーは kebab-case に変換され、そのまま出力されます。つまり <code>colr: 'red'</code> のようなタイプミスは、ブラウザに捨てられる宣言になるだけです。疑似状態・スクリーン・<code>&amp;</code> キー・<code>@</code> キーのどれでもないキーの下にネストしたオブジェクトは、無視されます。どちらも TypeScript がエラーとして教えてくれます。</p>
+      <p>その他のフラットなキーは kebab-case に変換され、そのまま出力されます。つまり <code>colr: 'red'</code> のようなタイプミスは、ブラウザーに捨てられる宣言になるだけです。疑似状態・スクリーン・<code>&amp;</code> キー・<code>@</code> キーのどれでもないキーの下にネストしたオブジェクトは、無視されます。どちらも TypeScript がエラーとして教えてくれます。</p>
     `,
       },
       {
@@ -339,8 +339,8 @@ import { router, App } from './routes.ts'
 const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
-      <p>組み込みに必要なのは、これだけです。リンクがそのまま動くのは、<code>&lt;a href&gt;</code> がただの <code>&lt;a href&gt;</code> だからです。<code>document</code> に付けた委譲リスナーが 1 つ、ルーターの管轄のリンクだけを拾い、あとはすべてブラウザに任せます。</p>
-      <p>サーバーでは、<code>start()</code> はリクエストごとに <code>Route</code> を返すだけで、ルーター自体には触れません。だから同時に来たリクエスト同士が、互いのルートを見ることはありません。<code>route.run()</code> は、レンダリングしている間だけ、その Route をルーター（つまり outlet）の参照先にします。ブラウザの場合、Route はページの読み込みごとに 1 つで、<code>start()</code> がそれをルーター自身のものにするので、<code>run()</code> は要りません。</p>
+      <p>組み込みに必要なのは、これだけです。リンクがそのまま動くのは、<code>&lt;a href&gt;</code> がただの <code>&lt;a href&gt;</code> だからです。<code>document</code> に付けた委譲リスナーが 1 つ、ルーターの管轄のリンクだけを拾い、あとはすべてブラウザーに任せます。</p>
+      <p>サーバーでは、<code>start()</code> はリクエストごとに <code>Route</code> を返すだけで、ルーター自体には触れません。だから同時に来たリクエスト同士が、互いのルートを見ることはありません。<code>route.run()</code> は、レンダリングしている間だけ、その Route をルーター（つまり outlet）の参照先にします。ブラウザーの場合、Route はページの読み込みごとに 1 つで、<code>start()</code> がそれをルーター自身のものにするので、<code>run()</code> は要りません。</p>
       <p>ページは <a href="#router-api"><code>RouteContext</code></a> と <a href="#router-api"><code>PageProps</code></a> を <code>(ctx, { layer, data, outlet, beforeLeave })</code> の形で受け取ります。要らない引数は省いて構いません。戻り値は、<code>list()</code> が受け付けるものなら何でも返せます。レイアウトの別の場所も埋めたいときは、<code>div(article(…), into('sidebar', nav(…)))</code> のように、ページの中から <code>into()</code> を一緒に返してください。そのコンテンツは、ページが破棄されると一緒に消えます。詳しくは<a href="#router-regions">ページとリージョン</a>を参照してください。</p>
     `,
       },
@@ -407,9 +407,9 @@ router.href('./preview')      // '/invoices/42/preview' or '/customers/7/preview
 await router.go('./preview')
 await layer.push('./preview') // the usual shape: a child layer
 `)}
-      <p><code>./x</code>、<code>../x</code>、<code>.</code>、<code>..</code> は、URL の「ディレクトリ」ではなく、現在のルートのパスを基準に解決されます。<code>/invoices/42</code> にいるときの <code>./preview</code> は <code>/invoices/42/preview</code> になります（ブラウザの素の解釈なら <code>/invoices/preview</code> です）。URL 末尾のスラッシュは結果を変えません。<code>../</code> は 1 セグメント上がり、ルートで止まります。クエリとハッシュは引き継がれ、<code>base</code> が付け直され、解決後の絶対パスが history に入ります。URL 解決の標準的な規則から外れる点は、React Router の <code>&lt;Link to="./x"&gt;</code> と同じです。</p>
+      <p><code>./x</code>、<code>../x</code>、<code>.</code>、<code>..</code> は、URL の「ディレクトリ」ではなく、現在のルートのパスを基準に解決されます。<code>/invoices/42</code> にいるときの <code>./preview</code> は <code>/invoices/42/preview</code> になります（ブラウザーの素の解釈なら <code>/invoices/preview</code> です）。URL 末尾のスラッシュは結果を変えません。<code>../</code> は 1 セグメント上がり、ルートで止まります。クエリとハッシュは引き継がれ、<code>base</code> が付け直され、解決後の絶対パスが history に入ります。URL 解決の標準的な規則から外れる点は、React Router の <code>&lt;Link to="./x"&gt;</code> と同じです。</p>
       <ul>
-        <li>ルート基準の相対パスになるのは、<code>./</code> と <code>../</code> だけです。href に素の <code>preview</code> と書いた場合は、ふつうのブラウザの規則に従います。</li>
+        <li>ルート基準の相対パスになるのは、<code>./</code> と <code>../</code> だけです。href に素の <code>preview</code> と書いた場合は、ふつうのブラウザーの規則に従います。</li>
         <li>相対リンクは、<code>href="./preview"</code> と手書きせず、<code>router.href('./preview')</code> で組み立ててください。<code>href()</code> はレンダリング時に解決するので、出力されるマークアップは絶対パスになり、クローラーでも、中クリックでも、JavaScript が無効な環境でも正しく動きます。</li>
       </ul>
       <h3>何が保持され、何が再構築されるか</h3>
@@ -546,17 +546,17 @@ createRouter({
       <table>
         <thead><tr><th>オプション</th><th>デフォルト</th><th></th></tr></thead>
         <tbody>
-          <tr><td><code>base</code></td><td><code>'/'</code></td><td>アプリを配信する URL のプレフィックス（例: <code>'/docs'</code>）。一致するのはセグメントの境界だけで、<code>/docs/intro</code> は <code>'/docs'</code> の内側ですが、<code>/docsearch</code> は外側です。外側の URL は何にも一致しないので、<code>start()</code> は reject し（サーバーなら 404）、そこへのリンクはブラウザに任されます。</td></tr>
+          <tr><td><code>base</code></td><td><code>'/'</code></td><td>アプリを配信する URL のプレフィックス（例: <code>'/docs'</code>）。一致するのはセグメントの境界だけで、<code>/docs/intro</code> は <code>'/docs'</code> の内側ですが、<code>/docsearch</code> は外側です。外側の URL は何にも一致しないので、<code>start()</code> は reject し（サーバーなら 404）、そこへのリンクはブラウザーに任されます。</td></tr>
           <tr><td><code>preload</code></td><td><code>true</code></td><td>ページがアイドルになったら、残りのルートのモジュールをバックグラウンドで読み込みます。<code>false</code> にすると無効になります。</td></tr>
           <tr><td><code>idleTimeout</code></td><td><code>1000</code></td><td>プリロードを始める（ユーザーの操作のあとで再開する）までに、タップ・キー・ホイール・スクロールがなくてもよいミリ秒数。</td></tr>
-          <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>。ブラウザで解決されたすべてのナビゲーション（最初の 1 回も含む）のあと、DOM が追いついた時点で呼ばれます。<code>kind</code> は <code>'start'</code>、<code>'push'</code>、<code>'replace'</code>、<code>'pop'</code>（戻る、進む、<code>close()</code>）、<code>'layer'</code> のいずれかです。<code>document.title</code>、メタタグ、フォーカス、スクロール、アナリティクスを扱うためのフックで、SSR 中には呼ばれません。</td></tr>
+          <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>。ブラウザーで解決されたすべてのナビゲーション（最初の 1 回も含む）のあと、DOM が追いついた時点で呼ばれます。<code>kind</code> は <code>'start'</code>、<code>'push'</code>、<code>'replace'</code>、<code>'pop'</code>（戻る、進む、<code>close()</code>）、<code>'layer'</code> のいずれかです。<code>document.title</code>、メタタグ、フォーカス、スクロール、アナリティクスを扱うためのフックで、SSR 中には呼ばれません。</td></tr>
         </tbody>
       </table>
-      <p>返ってくるルーターは、<code>start()</code>、<code>match()</code>、<code>outlet()</code>、<code>matches()</code> と、<code>run()</code> を除くすべての <code>Route</code> メンバーを持ちます。これらのメンバーは、アクティブな Route の値やメソッドを参照します。アクティブな Route とは、ブラウザでは最後の <code>start()</code> が返したもの、サーバーでは <code>run()</code> の実行中のものです。どちらもない状態でメンバーを読むと throw します。ルートテーブル、コンパイル済みのマッチャー、モジュールキャッシュはルーターが持つので、サーバーではリクエスト間で共有されます。</p>
+      <p>返ってくるルーターは、<code>start()</code>、<code>match()</code>、<code>outlet()</code>、<code>matches()</code> と、<code>run()</code> を除くすべての <code>Route</code> メンバーを持ちます。これらのメンバーは、アクティブな Route の値やメソッドを参照します。アクティブな Route とは、ブラウザーでは最後の <code>start()</code> が返したもの、サーバーでは <code>run()</code> の実行中のものです。どちらもない状態でメンバーを読むと throw します。ルートテーブル、コンパイル済みのマッチャー、モジュールキャッシュはルーターが持つので、サーバーではリクエスト間で共有されます。</p>
       <h3><code>router.start(url?)</code></h3>
-      <p><code>url</code>（デフォルトは、ブラウザなら <code>location.href</code>）をページモジュールに解決し、<code>Promise&lt;Route&gt;</code> を返します。何にも一致せず、テーブルに <code>'*'</code> ルートもなければ reject します。サーバーなら、それが 404 です。ブラウザではさらに、その Route をルーターのアクティブなものにして、<code>popstate</code> と委譲 <code>click</code> のリスナーを取り付け、プリロードをスケジュールします。<code>start()</code> を 2 回呼ぶと、前の Route は自動的に停止します。サーバーでは共有物に一切触れないので、レンダリングは <code>route.run()</code> の中で行ってください。</p>
+      <p><code>url</code>（デフォルトは、ブラウザーなら <code>location.href</code>）をページモジュールに解決し、<code>Promise&lt;Route&gt;</code> を返します。何にも一致せず、テーブルに <code>'*'</code> ルートもなければ reject します。サーバーなら、それが 404 です。ブラウザーではさらに、その Route をルーターのアクティブなものにして、<code>popstate</code> と委譲 <code>click</code> のリスナーを取り付け、プリロードをスケジュールします。<code>start()</code> を 2 回呼ぶと、前の Route は自動的に停止します。サーバーでは共有物に一切触れないので、レンダリングは <code>route.run()</code> の中で行ってください。</p>
       <h3><code>router.match(url?)</code></h3>
-      <p>何も読み込まずに、URL をテーブルに対して解決します。インポートも history もリスナーも Route も使いません。返り値は <code>RouteContext</code> で、URL が <code>base</code> の外にある、どのパターンにも一致しない、ブラウザで別オリジンである、のいずれかなら <code>null</code> です。<code>./</code> の解決にはアクティブなルートが要るため、受け付けるのは絶対 URL だけです。</p>
+      <p>何も読み込まずに、URL をテーブルに対して解決します。インポートも history もリスナーも Route も使いません。返り値は <code>RouteContext</code> で、URL が <code>base</code> の外にある、どのパターンにも一致しない、ブラウザーで別オリジンである、のいずれかなら <code>null</code> です。<code>./</code> の解決にはアクティブなルートが要るため、受け付けるのは絶対 URL だけです。</p>
       ${code("example.ts", `
 // 404 before importing a single chunk
 if (!router.match(request.url)) return new Response(null, { status: 404 })
@@ -656,7 +656,7 @@ layer.close()          // dismissed: resolves with undefined
 `)}
       <p>レイヤーはネストできます。さらに別のダイアログが必要なダイアログは、Route を持ち出さずに <code>layer.push()</code> を呼んで await すれば済みます。</p>
       <ul>
-        <li><strong>URL は最上位のレイヤーを指します。</strong><code>push()</code> は history エントリを追加するので、レイヤーはリンクでき、「戻る」で閉じられ、その <code>push()</code> は Cancel とまったく同じく「閉じられた」として解決します。「戻る」と <code>close()</code> は、同じ 1 つのコードパスです。<code>close()</code> は結果を記録してから history を戻し、<code>history.state</code> に記録された depth が唯一の拠り所です。ブラウザがタブごとに保持するエントリは約 50 個なので、レイヤーを深く辿ったあとは、下のエントリがすでに消えていることがあります。その場合 <code>close()</code> はレイヤーをその場で閉じ、現在のエントリを、表示され続けるページの内容に書き換えます。</li>
+        <li><strong>URL は最上位のレイヤーを指します。</strong><code>push()</code> は history エントリを追加するので、レイヤーはリンクでき、「戻る」で閉じられ、その <code>push()</code> は Cancel とまったく同じく「閉じられた」として解決します。「戻る」と <code>close()</code> は、同じ 1 つのコードパスです。<code>close()</code> は結果を記録してから history を戻し、<code>history.state</code> に記録された depth が唯一の拠り所です。ブラウザーがタブごとに保持するエントリは約 50 個なので、レイヤーを深く辿ったあとは、下のエントリがすでに消えていることがあります。その場合 <code>close()</code> はレイヤーをその場で閉じ、現在のエントリを、表示され続けるページの内容に書き換えます。</li>
         <li><strong>通常のナビゲーションは、スタックをクリアします。</strong>リンクのクリックや <code>go()</code> はレイヤーではありません。すべてを置き換え、開いているレイヤーをすべて閉じるので、await したまま取り残される呼び出し元は出ません。</li>
         <li><strong>URL を直接開くと、独立したページになります。</strong>URL が示すのは最上位のレイヤーだけで、その下のスタックまでは示しません。そのため、レイヤーの URL を直接開くと、depth 1 で、<code>layer.depth === 0</code> かつ <code>close()</code> が無効な状態で描画されます。push されるルートは、単独でも意味が通るように作ってください。<code>layer.depth</code> で分岐して、効かない Cancel ボタンの代わりに、外へ出るリンクを置くのがおすすめです。</li>
         <li><strong>Promise は、ページを再読み込みすると引き継がれません。</strong>クロージャの中にあるからです。結果は、遠回りの手順でも成り立つフローへの近道として扱ってください。</li>
@@ -820,7 +820,7 @@ createRouter(routes, {
         content: `
       <p>委譲リスナーがナビゲートするのは、<code>&lt;a href&gt;</code> への左クリック（SVG の <code>&lt;a&gt;</code> や、その内側にネストした要素へのクリックも含む）だけで、それ以外には一切手を出しません。具体的には、修飾キー付きクリックと中クリック、<code>_self</code> 以外の <code>target</code>、<code>download</code>、<code>rel="external"</code>、クロスオリジンの href、現在のページ内のハッシュだけのリンク、<code>base</code> の外のパス、どのルートにも一致しないパス（だからサーバーレンダリングされた 404 にも到達できます）、そしてアプリのハンドラーがすでに <code>preventDefault()</code> を呼んだイベントです。リンクを明示的に対象外にしたいときは、<code>data-nuclo-router="off"</code> を付けてください。</p>
       <h3>スクロール</h3>
-      <p>push によるナビゲーションでは、現在のスクロール位置が保たれます。新しい URL に、ページ内の要素と一致する <code>#hash</code> があれば、その要素までスクロールします。<code>popstate</code> のときのスクロールは、ブラウザに任せます。新しいページを先頭から見せたいなら、ナビゲーションの種類を教えてくれる <code>onNavigate</code> の中で行いましょう。</p>
+      <p>push によるナビゲーションでは、現在のスクロール位置が保たれます。新しい URL に、ページ内の要素と一致する <code>#hash</code> があれば、その要素までスクロールします。<code>popstate</code> のときのスクロールは、ブラウザーに任せます。新しいページを先頭から見せたいなら、ナビゲーションの種類を教えてくれる <code>onNavigate</code> の中で行いましょう。</p>
       ${code("routes.ts", `
 let shown = ''
 createRouter(routes, {
@@ -835,7 +835,7 @@ createRouter(routes, {
       <ul>
         <li><strong>余計なものは抱え込みません。</strong>Route が持つのはページ関数とそのコンテキストだけで、DOM は決して持ちません。離れたページは解放されます。<code>stop()</code> はリスナーと進行中の読み込みを解放して <code>pending</code> をクリアするので、停止した Route がスピナーを出しっぱなしにすることはありません。<code>stop()</code> のあとに解決したモジュールは、エラーを出さずに破棄されます。</li>
         <li><strong>サーバーでは、複数のリクエストを安全に並行処理できます。</strong><code>start()</code> はリクエストごとの状態を返し、<code>run()</code> はそれを 1 回の同期レンダリングの範囲に閉じ込めるので、同時に走るリクエストが互いのルートを見ることはありません。共有されるのはモジュールキャッシュだけです。スコープは、<code>run()</code> に渡した関数が戻った時点で終わります。<code>renderToString()</code> は同期なので、それで十分です。非同期やストリーミングのレンダリングでは Route を <code>await</code> の向こうまで運ぶ必要がありますが、<code>run()</code> はそこまで面倒を見ません。</li>
-        <li><strong><code>popstate</code> でのスクロール復元</strong>は、ルーターではなくブラウザの仕事（<code>scrollRestoration</code>）です。</li>
+        <li><strong><code>popstate</code> でのスクロール復元</strong>は、ルーターではなくブラウザーの仕事（<code>scrollRestoration</code>）です。</li>
         <li><strong>開始するルーターは、ドキュメントごとに 1 つにしてください。</strong><code>start()</code> のたびに専用の委譲 <code>click</code> リスナーが追加され、2 つ目のルーターの <code>start()</code> は、最初のルーターを止めてくれません。止まるのは、同じルーターに対して <code>start()</code> を 2 回呼んだときだけです。別のテーブルで URL を解決したいなら、ルーターを作って <code>match()</code> だけを呼んでください。何も取り付けません。独立した領域は、この方法で、ルートの <code>pending</code> の隣に自分専用のローディングを持てます。<a href="#router-multi">複数のルーターと複合ローディング</a>を参照してください。</li>
         <li><strong>あえて入れていないもの:</strong> ハッシュ history とメモリ history（ルートは pathname にあり、サーバーがすべてのルートを配信する必要があるため）。1 つの URL で動かす 2 つの独立したルーティング領域（ページは <code>into()</code> で複数のリージョンを埋められますが、それらはすべて 1 つの一致したルートに属します。独立した領域には、<a href="#router-multi">複数のルーターと複合ローディング</a>のように、開始しない専用のルーターとローディングを持たせられます）。そしてホバー時のプリロード（<code>mouseenter</code> からルート自身のローダーを呼べば実現できます）。</li>
       </ul>

@@ -323,7 +323,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Warp: {
     title: "Mantén presionado para entrar en warp",
-    note: "onMount arranca el loop de frames y devuelve una función de cleanup. Desmonta el campo y Nuclo la ejecuta: el loop se detiene y no queda nada corriendo.",
+    note: "onMount arranca el loop de frames y devuelve una función de limpieza. Desmonta el campo y Nuclo la ejecuta: el loop se detiene y no queda nada corriendo.",
   },
   Life: {
     title: "Juego de la vida",

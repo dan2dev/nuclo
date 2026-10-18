@@ -251,7 +251,7 @@ globalStyle('body', { m: 0, font: 'system-ui, sans-serif' })
         id: "api-css-text",
         title: "getCssText() & resetStyles()",
         content: `
-      <p><code>getCssText()</code> restituisce ogni regola creata in questo processo da <code>css()</code>, <code>cx()</code>, <code>variants()</code>, <code>keyframes()</code> e <code>globalStyle()</code>: prima le regole di base, poi i blocchi <code>@media</code>, <code>@container</code> e <code>@supports</code>. Ti serve per il server-side rendering.</p>
+      <p><code>getCssText()</code> restituisce ogni regola creata in questo processo da <code>css()</code>, <code>cx()</code>, <code>variants()</code>, <code>keyframes()</code> e <code>globalStyle()</code>: prima le regole di base, poi i blocchi <code>@media</code>, <code>@container</code> e <code>@supports</code>. Ti serve per il rendering lato server.</p>
       <ul>
         <li>Chiamala dopo <code>renderToString()</code>: includerà anche le regole create durante il render.</li>
         <li>Copre l'intero processo, non una singola pagina o richiesta, e può solo crescere. Non è un problema, perché i nomi delle classi sono hash del contenuto.</li>
@@ -278,7 +278,7 @@ beforeEach(() => resetStyles())
         title: "nuclo-router",
         content: `
       <div class="docs-callout"><strong>Pacchetto separato:</strong> <code>nuclo-router</code> non fa parte del core di Nuclo, quindi va installato accanto a <code>nuclo</code>. È una release in anteprima e la sua API può ancora cambiare.</div>
-      <p>Il routing per Nuclo: server-side rendering, hydration, rotte con code splitting e preloading in idle, il tutto costruito su <code>list()</code> e <code>update()</code>. Circa ${NUCLO_ROUTER_GZIP_KB} KB gzip, nessuna dipendenza oltre a Nuclo e nessun side effect, quindi il tree-shaking lo elimina se non lo usi.</p>
+      <p>Il routing per Nuclo: rendering lato server, idratazione, rotte con suddivisione del codice e precaricamento in idle, il tutto costruito su <code>list()</code> e <code>update()</code>. Circa ${NUCLO_ROUTER_GZIP_KB} KB gzip, nessuna dipendenza oltre a Nuclo e nessun side effect, quindi il tree-shaking lo elimina se non lo usi.</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>Va bene anche <code>pnpm add</code>, <code>yarn add</code> o <code>bun add</code> con gli stessi due nomi. Come peer dependency richiede <code>nuclo</code> 0.3 o successivo.</p>
       <p>Il router decide <em>cosa</em> caricare; sei tu a dire <em>dove</em> con <code>router.outlet()</code>: una <code>list()</code> sullo stack dei layer, una riga per layer, quindi una pagina normale è una riga sola. Server e client costruiscono lo stesso albero, così <code>hydrate()</code> riutilizza i nodi arrivati dal server invece di rimpiazzarli. Il resto è <code>history</code>, un listener <code>click</code> delegato e <code>requestIdleCallback</code>.</p>
@@ -457,7 +457,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
         <li><strong>Una pagina ricostruita le riempie da capo.</strong> Quando la rotta cambia, la vecchia riga sparisce e le viste <code>into()</code> della nuova pagina prendono il suo posto: non resta niente del passato.</li>
         <li><strong>Un layer aperto con push aggiunge una vista.</strong> Il layer è una riga successiva dell'outlet, quindi il suo <code>into()</code> è una vista più recente della stessa regione. Con il default <code>type: 'latest'</code> copre la vista della pagina finché il layer non si chiude, e a quel punto la vista della pagina riappare. Con <code>type: 'stack'</code> si vedono entrambe.</li>
         <li><strong>Anche una pagina genitore può riempire regioni.</strong> Le sue viste restano mentre i figli cambiano, perché il genitore non viene ricostruito.</li>
-        <li><strong>Il server-side rendering funziona così com'è.</strong> Il server costruisce la pagina dentro <code>route.run()</code>, quindi le sue viste <code>into()</code> sono già nell'HTML e <code>hydrate()</code> le riutilizza.</li>
+        <li><strong>Il rendering lato server funziona così com'è.</strong> Il server costruisce la pagina dentro <code>route.run()</code>, quindi le sue viste <code>into()</code> sono già nell'HTML e <code>hydrate()</code> le riutilizza.</li>
       </ul>
       <h3>Più regioni da una sola pagina</h3>
       <p>Passa un oggetto per riempire più regioni in un colpo solo. Il contenuto principale della pagina passa comunque dall'outlet, quindi restituiscilo accanto all'<code>into()</code>:</p>
@@ -483,7 +483,7 @@ export default function Report(ctx: RouteContext) {
       },
       {
         id: "router-loaders",
-        title: "Loader di rotta e code splitting",
+        title: "Loader di rotta e suddivisione del codice",
         content: `
       <p>Un modulo di pagina può esportare una funzione <code>load</code>. Gira prima che la pagina venga costruita, a ogni navigazione verso quella rotta, e ciò che restituisce arriva alla pagina come <code>data</code>:</p>
       ${code("pages/Post.ts", `
@@ -495,7 +495,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
   return article(h1(post.title), p(post.body))
 }
 `)}
-      <p>La tabella delle rotte non cambia: il loader viaggia insieme alla pagina. Riceve il <code>RouteContext</code> corrispondente, quindi <code>params</code>, <code>search</code> e <code>path</code> sono tutti a disposizione. Può essere sincrono o asincrono e gira anche sul server, quindi una pagina renderizzata lato server arriva con i suoi dati già nell'HTML, invece di fare fetch dopo l'hydration.</p>
+      <p>La tabella delle rotte non cambia: il loader viaggia insieme alla pagina. Riceve il <code>RouteContext</code> corrispondente, quindi <code>params</code>, <code>search</code> e <code>path</code> sono tutti a disposizione. Può essere sincrono o asincrono e gira anche sul server, quindi una pagina renderizzata lato server arriva con i suoi dati già nell'HTML, invece di fare fetch dopo l'idratazione.</p>
       <p><strong>Il modulo finisce in cache, i dati no.</strong> Il chunk di una rotta si scarica una volta e viene riusato, mentre il suo loader gira di nuovo a ogni navigazione. Per questo <code>/blog/a</code> e <code>/blog/b</code> non si possono confondere, e per questo un loader fallito si può semplicemente ritentare.</p>
       <table>
         <thead><tr><th>Situazione</th><th>Cosa succede</th></tr></thead>
@@ -504,7 +504,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
           <tr><td>lancia un'eccezione o rifiuta</td><td>l'errore finisce in <code>router.error</code>. <code>go()</code> continua a non rifiutare mai, e puoi ritentare la navigazione.</td></tr>
           <tr><td>durante <code>start()</code></td><td>il rifiuto esce da <code>start()</code>, perché non c'è ancora una Route su cui appoggiarlo</td></tr>
           <tr><td>un layer aperto con push</td><td>esegue il proprio loader, con i propri dati</td></tr>
-          <tr><td>il preloading in idle</td><td>precarica solo i moduli: non ha un contesto da passare, e scaricherebbe dati per una rotta che magari non aprirai mai</td></tr>
+          <tr><td>il precaricamento in idle</td><td>precarica solo i moduli: non ha un contesto da passare, e scaricherebbe dati per una rotta che magari non aprirai mai</td></tr>
           <tr><td>navigare di nuovo verso lo stesso URL</td><td>il loader gira di nuovo e la riga viene ricostruita. Una rotta senza loader mantiene la sua riga.</td></tr>
         </tbody>
       </table>
@@ -523,8 +523,8 @@ createRouter({
 })
 `)}
       <p>Prende il posto del <code>load</code> del modulo e, come lui, gira a ogni visita. Un rifiuto mentre il chunk è ancora in caricamento finisce in <code>router.error</code>, come tutti gli altri.</p>
-      <p>I dati del server non vengono serializzati nell'HTML: è una scelta voluta. Il <code>load</code> del client gira di nuovo durante l'hydration. Se ti interessa evitarlo, fai emettere al server <code>route.data</code>, per esempio come <code>window.__DATA__</code>, e fai in modo che il loader lo legga per primo. <code>route.data</code> contiene solo i dati della pagina corrispondente: il risultato del <code>load()</code> di un genitore non c'è.</p>
-      <h3>Code splitting e preloading</h3>
+      <p>I dati del server non vengono serializzati nell'HTML: è una scelta voluta. Il <code>load</code> del client gira di nuovo durante l'idratazione. Se ti interessa evitarlo, fai emettere al server <code>route.data</code>, per esempio come <code>window.__DATA__</code>, e fai in modo che il loader lo legga per primo. <code>route.data</code> contiene solo i dati della pagina corrispondente: il risultato del <code>load()</code> di un genitore non c'è.</p>
+      <h3>Suddivisione del codice e precaricamento</h3>
       <p>Il valore di una rotta è sempre una funzione che restituisce il componente di pagina, così il componente si raggiunge in modo lazy:</p>
       ${code("routes.ts", `
 '/a': () => import('./A.ts'),                      // default export (+ optional load)
@@ -548,13 +548,13 @@ createRouter({
         <tbody>
           <tr><td><code>base</code></td><td><code>'/'</code></td><td>Il prefisso URL sotto cui viene servita l'app, per esempio <code>'/docs'</code>. Combacia solo al confine di un segmento: <code>/docs/intro</code> è dentro <code>'/docs'</code>, <code>/docsearch</code> no. Gli URL fuori da <code>base</code> non corrispondono a nulla, quindi <code>start()</code> rifiuta (la tua 404 lato server) e i link che li puntano vengono lasciati al browser.</td></tr>
           <tr><td><code>preload</code></td><td><code>true</code></td><td>Carica in background i moduli delle rotte rimanenti quando la pagina è idle. Con <code>false</code> si disattiva.</td></tr>
-          <tr><td><code>idleTimeout</code></td><td><code>1000</code></td><td>I millisecondi senza tocchi, tasti, rotella o scroll prima che il preloading parta, o riparta dopo un momento di attività.</td></tr>
+          <tr><td><code>idleTimeout</code></td><td><code>1000</code></td><td>I millisecondi senza tocchi, tasti, rotella o scroll prima che il precaricamento parta, o riparta dopo un momento di attività.</td></tr>
           <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>, chiamata dopo ogni navigazione risolta nel browser, quella iniziale compresa, quando il DOM si è già aggiornato. <code>kind</code> è <code>'start'</code>, <code>'push'</code>, <code>'replace'</code>, <code>'pop'</code> (Indietro, Avanti, <code>close()</code>) o <code>'layer'</code>. È l'hook giusto per <code>document.title</code>, meta tag, focus, scroll e analytics. Non viene mai chiamata durante la SSR.</td></tr>
         </tbody>
       </table>
       <p>Restituisce il router, con <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code> e ogni membro di <code>Route</code> tranne <code>run()</code>, letti attraverso la Route attiva: quella restituita dall'ultimo <code>start()</code> nel browser, oppure quella il cui <code>run()</code> è in esecuzione sul server. Leggere un membro in assenza di entrambe lancia un'eccezione. La tabella delle rotte, il matcher compilato e la cache dei moduli vivono sul router, quindi su un server sono condivisi tra le richieste.</p>
       <h3><code>router.start(url?)</code></h3>
-      <p>Risolve <code>url</code> (di default <code>location.href</code> nel browser) nei suoi moduli di pagina e restituisce una <code>Promise&lt;Route&gt;</code>. Rifiuta quando nulla corrisponde e la tabella non ha una rotta <code>'*'</code>; sul server, quella è la tua 404. Nel browser, inoltre, rende la Route quella attiva del router, aggancia i listener <code>popstate</code> e <code>click</code> delegato e pianifica il preloading. Un secondo <code>start()</code> ritira da solo la Route precedente. Sul server non tocca nulla di condiviso, quindi fai il render dentro <code>route.run()</code>.</p>
+      <p>Risolve <code>url</code> (di default <code>location.href</code> nel browser) nei suoi moduli di pagina e restituisce una <code>Promise&lt;Route&gt;</code>. Rifiuta quando nulla corrisponde e la tabella non ha una rotta <code>'*'</code>; sul server, quella è la tua 404. Nel browser, inoltre, rende la Route quella attiva del router, aggancia i listener <code>popstate</code> e <code>click</code> delegato e pianifica il precaricamento. Un secondo <code>start()</code> ritira da solo la Route precedente. Sul server non tocca nulla di condiviso, quindi fai il render dentro <code>route.run()</code>.</p>
       <h3><code>router.match(url?)</code></h3>
       <p>Risolve un URL rispetto alla tabella senza caricare niente: nessun import, nessuna history, nessun listener, nessuna Route. Restituisce un <code>RouteContext</code>, oppure <code>null</code> se l'URL è fuori da <code>base</code>, non corrisponde a nessun pattern o, nel browser, appartiene a un'altra origine. Accetta solo URL assoluti, perché risolvere <code>./</code> richiede una rotta attiva.</p>
       ${code("example.ts", `
@@ -837,13 +837,13 @@ createRouter(routes, {
         <li><strong>Sicuro anche con la concorrenza sul server.</strong> <code>start()</code> restituisce uno stato per ogni richiesta e <code>run()</code> lo limita a un singolo render sincrono, quindi richieste interlacciate non vedono mai le rotte l'una dell'altra. Solo la cache dei moduli è condivisa. L'ambito termina quando la funzione di <code>run()</code> ritorna: <code>renderToString()</code> è sincrono, quindi basta. Un render asincrono o in streaming richiederebbe di portarsi dietro la Route attraverso gli <code>await</code>, cosa che <code>run()</code> non fa.</li>
         <li><strong>Il ripristino dello scroll su <code>popstate</code></strong> spetta al browser (<code>scrollRestoration</code>), non al router.</li>
         <li><strong>Avvia un solo router per documento.</strong> Ogni <code>start()</code> aggiunge il proprio listener <code>click</code> delegato, e lo <code>start()</code> di un secondo router non ritira il primo: lo fa solo un secondo <code>start()</code> sullo stesso router. Per risolvere un URL rispetto a un'altra tabella, crea un router e chiama solo <code>match()</code>, che non aggancia nulla. Così un'area indipendente può gestire il proprio caricamento accanto al <code>pending</code> della rotta. Vedi <a href="#router-multi">Più router e caricamento combinato</a>.</li>
-        <li><strong>Non incluso, per scelta:</strong> hash history e memory history, perché la rotta vive nel pathname e un server deve servire ogni rotta; due aree con routing indipendente guidate da un solo URL, perché una pagina può riempire più regioni con <code>into()</code> ma tutte appartengono all'unica rotta corrispondente (un'area indipendente può comunque tenere il proprio router non avviato e il proprio caricamento, come in <a href="#router-multi">Più router e caricamento combinato</a>); e il preloading all'hover, che si ottiene chiamando il loader della rotta da un <code>mouseenter</code>.</li>
+        <li><strong>Non incluso, per scelta:</strong> hash history e memory history, perché la rotta vive nel pathname e un server deve servire ogni rotta; due aree con routing indipendente guidate da un solo URL, perché una pagina può riempire più regioni con <code>into()</code> ma tutte appartengono all'unica rotta corrispondente (un'area indipendente può comunque tenere il proprio router non avviato e il proprio caricamento, come in <a href="#router-multi">Più router e caricamento combinato</a>); e il precaricamento all'hover, che si ottiene chiamando il loader della rotta da un <code>mouseenter</code>.</li>
       </ul>
       <h3>Esempi</h3>
       <p>Nel repository ci sono due esempi eseguibili che si completano a vicenda, così ogni impostazione si può osservare da qualche parte:</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: un tour lato client dell'intera API. Ogni forma di pattern e regola di precedenza, le esclusioni della gestione dei link, ogni membro di Route con controlli live, un sub-router, lo stack di layer profondo tre, una sezione relativa montata su due genitori e loader di rotta con <code>pending</code> ed <code>error</code>. Imposta <code>preload: false</code>, così quegli stati restano visibili.</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> per ogni richiesta, hydration che riutilizza in modo dimostrabile i nodi del server, veri codici di stato 404, un <code>base</code> non radice, preloading in idle osservabile nel pannello di rete e un loader i cui dati passano dal server al client, così l'hydration non rifà il fetch.</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> per ogni richiesta, idratazione che riutilizza in modo dimostrabile i nodi del server, veri codici di stato 404, un <code>base</code> non radice, precaricamento in idle osservabile nel pannello di rete e un loader i cui dati passano dal server al client, così l'idratazione non rifà il fetch.</li>
       </ul>
     `,
       },
@@ -911,7 +911,7 @@ async function loadData() {
         <li><strong>Usa <code>when()</code> e <code>list()</code></strong> per i figli che cambiano, non una funzione che restituisce nodi.</li>
         <li><strong>Usa <code>className</code>, non <code>class</code></strong>, e per le classi dinamiche scegli <code>() =&gt; cx(...)</code> oppure <code>{ className: () =&gt; … }</code>.</li>
         <li><strong>Definisci gli stili una volta sola</strong>, a livello di modulo.</li>
-        <li><strong>Server-side rendering:</strong> fai prima il render, poi metti <code>getCssText()</code> in <code>&lt;style id="nuclo-styles"&gt;</code>. Passa i dati della richiesta come argomenti e conserva i commenti HTML nell'output.</li>
+        <li><strong>Rendering lato server:</strong> fai prima il render, poi metti <code>getCssText()</code> in <code>&lt;style id="nuclo-styles"&gt;</code>. Passa i dati della richiesta come argomenti e conserva i commenti HTML nell'output.</li>
       </ul>
     `,
       },
@@ -1000,10 +1000,10 @@ async function loadData() {
       <p>Segna il punto con <code>region({ id: 'main' })</code> e fai restituire alla pagina <code>into('main', …)</code>. Vedi <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a>.</p>
 
       <h3>Come smonto un'app?</h3>
-      <p>Avvolgila in <code>when()</code> e spegni la condizione. Rimuovere il DOM da solo non esegue <code>onDestroy</code>. Vedi <a href="#lifecycle">Lifecycle</a>.</p>
+      <p>Avvolgila in <code>when()</code> e spegni la condizione. Rimuovere il DOM da solo non esegue <code>onDestroy</code>. Vedi <a href="#lifecycle">Ciclo di vita</a>.</p>
 
       <h3>Nuclo include un router?</h3>
-      <p>Non nel core: il routing è distribuito a parte come <code>nuclo-router</code>, con server-side rendering, hydration, rotte con code splitting e preloading in idle. Si installa con <code>npm install nuclo nuclo-router</code>. Vedi <a href="#router-overview">nuclo-router</a>.</p>
+      <p>Non nel core: il routing è distribuito a parte come <code>nuclo-router</code>, con rendering lato server, idratazione, rotte con suddivisione del codice e precaricamento in idle. Si installa con <code>npm install nuclo nuclo-router</code>. Vedi <a href="#router-overview">nuclo-router</a>.</p>
 
       <h3>Nuclo ha gli effetti?</h3>
       <p>No. <code>onMount</code> e <code>onDestroy</code> girano una volta per elemento, legati al suo inserimento e alla sua rimozione. Nulla viene rieseguito solo perché uno stato è cambiato.</p>

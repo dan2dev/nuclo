@@ -30,7 +30,7 @@ export const items: Record<string, { title: string; desc: string }> = {
   "components": { title: "Componenti", desc: "Un componente è una funzione come tante. Ogni chiamata a Counter() si porta dietro il proprio conteggio." },
   "attributes": { title: "Attributi", desc: "Anche i valori degli attributi possono essere funzioni. Il secondo pulsante inverte busy e chiama update(): disabled e aria-busy di Salva lo seguono a ruota." },
   "events": { title: "Eventi", desc: "onInput e onKeyDown sono attributi come gli altri. Scrivi qualcosa, poi premi Esc per ripulire tutto." },
-  "lifecycle": { title: "Lifecycle", desc: "onMount avvia un intervallo e restituisce una funzione di cleanup. Quando il timer viene smontato il cleanup scatta e il conteggio si ferma, fino a quando non lo rimonti." },
+  "lifecycle": { title: "Ciclo di vita", desc: "onMount avvia un intervallo e restituisce una funzione di cleanup. Quando il timer viene smontato il cleanup scatta e il conteggio si ferma, fino a quando non lo rimonti." },
   "explicit-updates": { title: "Aggiornamenti espliciti", desc: "count++ cambia solo la variabile. Il testo si allinea al prossimo update(), che arrivi dal pulsante o da qualsiasi altro punto della pagina." },
   "dynamic-functions": { title: "Valori dinamici", desc: "Cambia il nome. Il testo statico è stato fissato alla nascita dell'elemento, quello dinamico gira di nuovo a ogni update(). forceUpdate() ricostruisce l'albero, e allora si allinea anche il testo statico." },
   "api-update": { title: "update()", desc: "Ogni update() esegue ogni valore dinamico, anche quando i suoi dati non sono cambiati. Anche le altre demo di questa pagina fanno salire il conteggio." },

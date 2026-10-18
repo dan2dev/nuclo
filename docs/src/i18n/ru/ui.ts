@@ -68,7 +68,7 @@ export const seo = {
     },
     docs: {
       title: "Документация Nuclo — руководство и справочник API",
-      description: "Документация Nuclo: установка, билдеры тегов, явный update(), when() и list(), события, жизненный цикл, SSR и hydration, типизированный CSS-in-TS и полный справочник по API.",
+      description: "Документация Nuclo: установка, билдеры тегов, явный update(), when() и list(), события, жизненный цикл, SSR и гидратация, типизированный CSS-in-TS и полный справочник по API.",
       keywords: "документация nuclo, справочник API, быстрый старт, update, list, when, on",
     },
     examples: {

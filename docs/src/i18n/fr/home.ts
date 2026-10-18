@@ -95,7 +95,7 @@ export const FEATURES = [
   {
     num: "01 · Explicite",
     title: "Vous contrôlez le cycle de mise à jour",
-    desc: "Modifiez l'état à votre guise, puis appelez update() une fois. Pas d'abonnements, pas de scheduler, pas de diff qui vous surprend : le DOM se synchronise quand vous le décidez.",
+    desc: "Modifiez l'état à votre guise, puis appelez update() une fois. Pas d'abonnements, pas de planificateur, pas de diff qui vous surprend : le DOM se synchronise quand vous le décidez.",
   },
   {
     num: "02 · Léger",
@@ -262,7 +262,7 @@ export const LABELS = {
   copyInstall: "Copier la commande d'installation",
   howItWorks: "Comment ça marche",
   pipelineTitle: "Un seul cycle explicite.",
-  pipelineSub: "Des valeurs liées à l'état, sans graphe de dépendances ni scheduler. C'est vous qui décidez quand elles sont évaluées : un seul chemin, prévisible, de vos données jusqu'à l'écran.",
+  pipelineSub: "Des valeurs liées à l'état, sans graphe de dépendances ni planificateur. C'est vous qui décidez quand elles sont évaluées : un seul chemin, prévisible, de vos données jusqu'à l'écran.",
   philosophy: "Philosophie",
   features: "Fonctionnalités",
   featuresTitle: "Pensé pour y voir clair.",

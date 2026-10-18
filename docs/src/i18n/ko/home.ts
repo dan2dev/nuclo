@@ -8,7 +8,7 @@ export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · 외부 의존성 없음`;
 export const HERO_TITLE_LINES = ["nuclo로 *명시적*인", "인터페이스를", "만드세요."];
 
 export const HERO_DESC =
-  "작고 타입 안전한 DOM 프레임워크. 상태는 그냥 평범한 mutable 데이터이고, 업데이트 시점은 전부 내가 정합니다. 프록시도, 시그널도, 가상 DOM도 없습니다.";
+  "작고 타입 안전한 DOM 프레임워크. 상태는 그냥 평범하고 변경 가능한 데이터이고, 업데이트 시점은 전부 내가 정합니다. 프록시도, 시그널도, 가상 DOM도 없습니다.";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 

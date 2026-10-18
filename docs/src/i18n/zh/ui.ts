@@ -68,7 +68,7 @@ export const seo = {
     },
     docs: {
       title: "Nuclo 文档 - 指南与 API 参考",
-      description: "Nuclo 文档：安装、标签构建函数、显式 update()、when() 与 list()、事件、生命周期、SSR 与 hydration、类型安全的 CSS-in-TS，以及完整的 API 参考。",
+      description: "Nuclo 文档：安装、标签构建函数、显式 update()、when() 与 list()、事件、生命周期、SSR 与水合、类型安全的 CSS-in-TS，以及完整的 API 参考。",
       keywords: "nuclo 文档, api 参考, 入门, update, list, when, on",
     },
     examples: {

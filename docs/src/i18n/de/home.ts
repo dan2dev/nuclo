@@ -257,7 +257,7 @@ export const QUICK_START_STEPS = [
 
 // ── Section chrome: headings, buttons and labels written inline in home/components.ts ──
 export const LABELS = {
-  getStarted: "Loslegen",
+  getStarted: "Erste Schritte",
   viewExamples: "Beispiele ansehen",
   copyInstall: "Installationsbefehl kopieren",
   howItWorks: "So funktioniert's",

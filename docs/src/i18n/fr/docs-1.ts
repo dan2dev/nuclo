@@ -120,8 +120,8 @@ import { render, update, getCssText } from 'nuclo'
         <li><code>NodeModLike&lt;Tag&gt;</code> : tout ce qu'un constructeur de balise accepte en argument.</li>
         <li><code>ExpandedElement&lt;Tag&gt;</code> : ce que renvoient <code>render()</code> et <code>hydrate()</code>.</li>
         <li><code>ElementTagName</code> : n'importe quel nom de balise HTML.</li>
-        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code> : l'objet d'attributs qu'accepte un constructeur de balise, handlers <code>on*</code>, <code>onMount</code> et <code>onDestroy</code> compris. Pratique pour les composants qui relaient des attributs.</li>
-        <li><code>MountCallback</code> et <code>DestroyCallback</code> : les types des handlers <code>onMount</code> et <code>onDestroy</code>.</li>
+        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code> : l'objet d'attributs qu'accepte un constructeur de balise, gestionnaires <code>on*</code>, <code>onMount</code> et <code>onDestroy</code> compris. Pratique pour les composants qui relaient des attributs.</li>
+        <li><code>MountCallback</code> et <code>DestroyCallback</code> : les types des gestionnaires <code>onMount</code> et <code>onDestroy</code>.</li>
         <li><code>WhenBuilder</code>, <code>ListModifier</code> : ce que renvoient <code>when()</code> et <code>list()</code>.</li>
         <li><code>RegionOptions</code>, <code>RegionType</code> : les options de <code>region()</code>.</li>
         <li><code>StyleResult</code>, <code>Style</code>, <code>ThemeConfig</code>, <code>CssInstance</code> et les autres types liés aux styles. Ils s'importent aussi : <code>import type { StyleResult } from 'nuclo'</code>.</li>
@@ -294,7 +294,7 @@ const bar = div({ style: () => ({ width: \`\${progress}%\`, backgroundColor: 'te
         content: `
       <p>Deux façons d'écouter les événements : les attributs <code>on*</code> et le modificateur <code>on()</code>.</p>
       <h3>Les attributs <code>on*</code></h3>
-      <p>Dans un objet d'attributs, une fonction rangée sous une clé comme <code>onClick</code> (<code>on</code> suivi d'une majuscule) est un handler d'événement, pas une valeur dynamique.</p>
+      <p>Dans un objet d'attributs, une fonction rangée sous une clé comme <code>onClick</code> (<code>on</code> suivi d'une majuscule) est un gestionnaire d'événement, pas une valeur dynamique.</p>
       ${code("search.ts", `
 let query = ''
 
@@ -307,10 +307,10 @@ const search = input({
 `)}
       <ul>
         <li>TypeScript déduit le type de l'événement à partir de la clé et de l'élément. <code>e.currentTarget</code> et <code>this</code> désignent l'élément.</li>
-        <li>Nuclo affecte la propriété native : <code>onClick</code> devient <code>el.onclick</code>. Un seul handler par événement, donc un <code>onClick</code> placé plus loin remplace le précédent.</li>
+        <li>Nuclo affecte la propriété native : <code>onClick</code> devient <code>el.onclick</code>. Un seul gestionnaire par événement, donc un <code>onClick</code> placé plus loin remplace le précédent.</li>
         <li><code>onDoubleClick</code> et <code>onDblClick</code> désignent tous deux <code>dblclick</code>. Les clés en minuscules comme <code>onclick</code> sont des erreurs de type.</li>
         <li>Un nom qui ne correspond à aucun événement connu écoute sa version en minuscules : <code>onMyEvent</code> écoute <code>"myevent"</code>.</li>
-        <li>Les erreurs levées par le handler ne sont pas interceptées.</li>
+        <li>Les erreurs levées par le gestionnaire ne sont pas interceptées.</li>
       </ul>
     `,
         afterContent: `
@@ -367,7 +367,7 @@ const search = input(on('mount', (el) => el.focus()))
       <h3>À quel moment ils s'exécutent</h3>
       <ul>
         <li><code>onMount</code> s'exécute à la fin de l'appel à <code>render()</code>, <code>hydrate()</code>, <code>update()</code> ou <code>forceUpdate()</code> qui a inséré l'élément, mais jamais pendant la construction de l'arbre.</li>
-        <li>Si <code>onMount</code> renvoie une fonction, celle-ci s'exécute à la destruction, après les callbacks <code>onDestroy</code> de l'élément.</li>
+        <li>Si <code>onMount</code> renvoie une fonction, celle-ci s'exécute à la destruction, après les fonctions de rappel <code>onDestroy</code> de l'élément.</li>
         <li><code>onDestroy</code> s'exécute quand Nuclo retire l'élément : une ligne de <code>list()</code> disparaît, une branche de <code>when()</code> change, un <code>into()</code> quitte sa région, ou <code>forceUpdate()</code> l'abandonne. Il passe juste avant le retrait, l'élément est donc encore dans le document.</li>
       </ul>
       <h3>Quand vous retirez le DOM à la main</h3>
@@ -385,7 +385,7 @@ update() // App's onDestroy hooks and cleanups run
         <li><code>onDestroy</code> traite toujours les enfants d'abord, puis le parent.</li>
         <li>Les éléments sont montés dans l'ordre de leur premier hook <code>onMount</code>, lequel suit l'ordre des arguments, et chaque élément exécute tous ses hooks d'un coup. Si les enfants dépendent du hook d'un parent, passez celui-ci avant eux.</li>
         <li>Une erreur levée par un hook est consignée avec <code>console.error</code>, et les autres hooks s'exécutent malgré tout.</li>
-        <li>Le callback doit renvoyer une fonction de nettoyage ou rien du tout : ne le déclarez donc pas <code>async</code>. Une Promise renvoyée n'est jamais utilisée comme nettoyage. Lancez plutôt le travail asynchrone à l'intérieur : <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
+        <li>La fonction de rappel doit renvoyer une fonction de nettoyage ou rien du tout : ne la déclarez donc pas <code>async</code>. Une Promise renvoyée n'est jamais utilisée comme nettoyage. Lancez plutôt le travail asynchrone à l'intérieur : <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
         <li>Les hooks ne s'exécutent jamais côté serveur. Côté client, ils tournent après <code>hydrate()</code>.</li>
       </ul>
       <div class="docs-callout"><strong>À noter :</strong> les hooks ne sont pas des effets. Ils ne se relancent jamais quand l'état change, et chacun s'exécute au plus une fois par élément.</div>
@@ -426,7 +426,7 @@ first = 'Grace'
 last = 'Hopper'
 update() // one pass, both changes
 `)}
-      <p>Appelez <code>update()</code> depuis des handlers d'événements, des timers, des callbacks de fetch ou <code>onMount</code>, mais jamais depuis une valeur dynamique.</p>
+      <p>Appelez <code>update()</code> depuis des gestionnaires d'événements, des minuteurs, des fonctions de rappel de fetch ou <code>onMount</code>, mais jamais depuis une valeur dynamique.</p>
     `,
       },
       {
@@ -927,7 +927,7 @@ hydrate(App, document.getElementById('root')!)
       <h3>Ce qui s'exécute côté serveur</h3>
       <ul>
         <li>Chaque appel à <code>renderToString()</code> construit l'arbre et exécute chaque valeur dynamique une fois.</li>
-        <li>Les handlers d'événements, <code>onMount</code> et <code>onDestroy</code> ne s'exécutent jamais, et <code>update()</code>, <code>scope()</code> et <code>forceUpdate()</code> ne font rien.</li>
+        <li>Les gestionnaires d'événements, <code>onMount</code> et <code>onDestroy</code> ne s'exécutent jamais, et <code>update()</code>, <code>scope()</code> et <code>forceUpdate()</code> ne font rien.</li>
         <li>Le rendu est synchrone : chargez vos données d'abord, rendez ensuite.</li>
         <li>Rien ne reste enregistré après un rendu, si bien qu'un même processus peut servir de nombreuses requêtes. Passez les données de la requête en arguments, par exemple <code>renderToString(Page(user))</code> : les variables de niveau module, elles, sont partagées par toutes les requêtes.</li>
         <li>N'appelez pas <code>render()</code> côté serveur, car il ajoute au <code>document.body</code> partagé.</li>

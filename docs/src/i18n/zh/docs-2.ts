@@ -278,7 +278,7 @@ beforeEach(() => resetStyles())
         title: "nuclo-router",
         content: `
       <div class="docs-callout"><strong>独立包：</strong><code>nuclo-router</code> 不在 Nuclo 核心包里，需要和 <code>nuclo</code> 一起安装。它目前还是预览版，API 仍有可能调整。</div>
-      <p>Nuclo 的路由方案，支持服务端渲染、hydration、按路由做代码分割，还会在空闲时预加载，底层建立在 <code>list()</code> 和 <code>update()</code> 之上。gzip 后只有约 ${NUCLO_ROUTER_GZIP_KB} KB，除了 Nuclo 本身再无其他依赖，也没有副作用，所以没用到的话会被 tree-shake 干净。</p>
+      <p>Nuclo 的路由方案，支持服务端渲染、水合、按路由做代码分割，还会在空闲时预加载，底层建立在 <code>list()</code> 和 <code>update()</code> 之上。gzip 后只有约 ${NUCLO_ROUTER_GZIP_KB} KB，除了 Nuclo 本身再无其他依赖，也没有副作用，所以没用到的话会被 tree-shake 干净。</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>用 <code>pnpm add</code>、<code>yarn add</code> 或 <code>bun add</code> 装这两个包也一样。它把 <code>nuclo</code> 0.3 及以上版本作为 peer dependency。</p>
       <p>router 负责决定加载<em>什么</em>，应用则通过 <code>router.outlet()</code> 来说明放<em>在哪</em>：它就是一个遍历整个层栈的 <code>list()</code>，每层占一行，所以普通页面只是其中单独的一行。服务端和客户端会构建出同一棵树，因此 <code>hydrate()</code> 接管的是服务端已有的节点，而不是把它们换掉。剩下的部分，无非是 <code>history</code>、一个委托的 <code>click</code> 监听器，以及 <code>requestIdleCallback</code>。</p>
@@ -495,7 +495,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
   return article(h1(post.title), p(post.body))
 }
 `)}
-      <p>路由表不用改，加载器跟着页面走。它会拿到匹配的 <code>RouteContext</code>，所以 <code>params</code>、<code>search</code> 和 <code>path</code> 都能用。它可以是同步的也可以是异步的，同样会在服务端运行，所以服务端渲染出来的页面，数据已经在 HTML 里了，不必等到 hydration 之后再去请求。</p>
+      <p>路由表不用改，加载器跟着页面走。它会拿到匹配的 <code>RouteContext</code>，所以 <code>params</code>、<code>search</code> 和 <code>path</code> 都能用。它可以是同步的也可以是异步的，同样会在服务端运行，所以服务端渲染出来的页面，数据已经在 HTML 里了，不必等到水合之后再去请求。</p>
       <p><strong>模块会被缓存，数据不会。</strong>路由的 chunk 只获取一次，之后复用，而它的加载器每次导航都会重新跑一遍。这就是为什么 <code>/blog/a</code> 和 <code>/blog/b</code> 不会串数据，也是失败的加载器可以直接重试的原因。</p>
       <table>
         <thead><tr><th>情形</th><th>行为</th></tr></thead>
@@ -523,7 +523,7 @@ createRouter({
 })
 `)}
       <p>它会取代模块自己的 <code>load</code>，同样在每次访问时运行。chunk 还在加载时发生的 rejection，也和别的情形一样落到 <code>router.error</code> 上。</p>
-      <p>设计上，服务端数据不会被序列化进 HTML，客户端的 <code>load</code> 会在 hydration 时再跑一次。如果这点对你很重要，就让服务端把 <code>route.data</code> 输出出来（比如放进 <code>window.__DATA__</code>），再让加载器优先读它。要注意，<code>route.data</code> 只包含匹配页面的数据，父级 <code>load()</code> 的结果不在其中。</p>
+      <p>设计上，服务端数据不会被序列化进 HTML，客户端的 <code>load</code> 会在水合时再跑一次。如果这点对你很重要，就让服务端把 <code>route.data</code> 输出出来（比如放进 <code>window.__DATA__</code>），再让加载器优先读它。要注意，<code>route.data</code> 只包含匹配页面的数据，父级 <code>load()</code> 的结果不在其中。</p>
       <h3>代码分割与预加载</h3>
       <p>路由的值永远是一个返回页面组件的函数，所以组件是懒加载的：</p>
       ${code("routes.ts", `
@@ -843,7 +843,7 @@ createRouter(routes, {
       <p>仓库里有两个可运行的示例，互为补充，每一项设置都能在某处亲眼看到：</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>：对整套 API 的客户端巡礼。涵盖每种模式写法和优先级规则、链接处理的退出方式、带实时控件的每个 Route 成员、一个子 router、三层深的层栈、挂在两个父级下的相对分区，以及带 <code>pending</code> 和 <code>error</code> 的路由加载器。它设置了 <code>preload: false</code>，好让这些状态保持可见。</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>：每个请求一次 <code>renderToString()</code>、可验证地接管服务端节点的 hydration、真实的 404 状态码、非根的 <code>base</code>、能在网络面板里观察到的空闲预加载，以及一个把数据从服务端交给客户端、让 hydration 不必再重新请求的加载器。</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>：每个请求一次 <code>renderToString()</code>、可验证地接管服务端节点的水合、真实的 404 状态码、非根的 <code>base</code>、能在网络面板里观察到的空闲预加载，以及一个把数据从服务端交给客户端、让水合不必再重新请求的加载器。</li>
       </ul>
     `,
       },
@@ -1003,7 +1003,7 @@ async function loadData() {
       <p>把它包进 <code>when()</code>，再把条件关掉。自己手动移除 DOM 的话，<code>onDestroy</code> 是不会运行的。见<a href="#lifecycle">生命周期</a>。</p>
 
       <h3>Nuclo 自带 router 吗？</h3>
-      <p>核心包里没有。路由单独以 <code>nuclo-router</code> 发布，支持服务端渲染、hydration、按路由代码分割和空闲预加载。用 <code>npm install nuclo nuclo-router</code> 安装即可。见 <a href="#router-overview">nuclo-router</a>。</p>
+      <p>核心包里没有。路由单独以 <code>nuclo-router</code> 发布，支持服务端渲染、水合、按路由代码分割和空闲预加载。用 <code>npm install nuclo nuclo-router</code> 安装即可。见 <a href="#router-overview">nuclo-router</a>。</p>
 
       <h3>Nuclo 有 effect 吗？</h3>
       <p>没有。<code>onMount</code> 和 <code>onDestroy</code> 对每个元素各运行一次，分别对应插入和移除，不会因为某个状态变了就再跑一遍。</p>

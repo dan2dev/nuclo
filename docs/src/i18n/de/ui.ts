@@ -5,7 +5,7 @@ export const nav = {
   home: "Start",
   docs: "Dokumentation",
   examples: "Beispiele",
-  getStarted: "Loslegen",
+  getStarted: "Erste Schritte",
   menu: "Menü",
   main: "Hauptnavigation",
   openMenu: "Menü öffnen",

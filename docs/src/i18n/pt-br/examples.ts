@@ -5,13 +5,13 @@
 
 export const groups = {
   basics: { title: "Básico", sub: "Os padrões que estão na base de qualquer app Nuclo." },
-  components: { title: "Componentes", sub: "Funções simples com params estáticos e dinâmicos, children, listas associadas por identidade e dados aninhados. Cada preview conta quantas vezes foi montado." },
+  components: { title: "Componentes", sub: "Funções simples com params estáticos e dinâmicos, children, listas associadas por identidade e dados aninhados. Cada visualização conta quantas vezes foi montado." },
   api: { title: "API", sub: "Uma demo curta para cada peça da API, as mesmas que a documentação embute." },
   styling: { title: "Estilização", sub: "Crie uma classe, componha classes e monte um tema enxuto." },
   forms: { title: "Formulários", sub: "Validação como funções simples sobre estado simples, campos \"tocados\", etapas e linhas dinâmicas." },
   svg: { title: "SVG", sub: "Gráficos, animações, ferramentas e jogos feitos com os builders de SVG, movidos por dados simples, pointer events e update()." },
   routing: { title: "Roteamento", sub: "Tabela de rotas, matching, rota ativa, layers e loaders. O nuclo-router é um pacote à parte: npm install nuclo nuclo-router." },
-  apps: { title: "Apps", sub: "Programas maiores, em tela cheia, com o código-fonte real em abas: um desktop com janelas, data grid, chat, jogos, editores e libs que cuidam do próprio estado." },
+  apps: { title: "Apps", sub: "Programas maiores, em tela inteira, com o código-fonte real em abas: um desktop com janelas, data grid, chat, jogos, editores e libs que cuidam do próprio estado." },
 };
 
 export type GroupKey = keyof typeof groups;
@@ -78,11 +78,11 @@ export const items: Record<string, { title: string; desc: string }> = {
   "router-layers": { title: "Layers", desc: "O formulário de pedido abre a página do cliente como uma layer e espera o resultado. O formulário não é re-renderizado, então as notas dele sobrevivem. Save resolve o push; Cancel ou Back o descarta." },
   "router-multi": { title: "Vários routers e loading", desc: "Dois routers, dois indicadores de loading. O layout da loja e a seção dele têm funções load(), que rodam em paralelo sob um único router.pending. A sidebar tem um router próprio, criado mas nunca iniciado, com a própria flag de loading atualizada a partir do onNavigate." },
   "router-match": { title: "Pattern matching", desc: "Padrões estáticos, :param e *rest, e uma tabela de seções montada sob dois pais. Digite um caminho e veja o match() resolver sem carregar nada." },
-  "page-builder": { title: "Page Builder", desc: "Escreva direto na página, arraste as alças para reordenar blocos ou movê-los entre layouts, aperte / para inserir e clique com o botão direito para ver as ações. Estilize layouts grid e flex, desfaça edições, faça preview em tamanho de celular e exporte o HTML." },
+  "page-builder": { title: "Page Builder", desc: "Escreva direto na página, arraste as alças para reordenar blocos ou movê-los entre layouts, aperte / para inserir e clique com o botão direito para ver as ações. Estilize layouts grid e flex, desfaça edições, faça a visualização em tamanho de celular e exporte o HTML." },
   "sorting": { title: "Algoritmos passo a passo", desc: "O motor é JavaScript puro: generators que mexem num array e dão yield a cada passo. O player chama `next()` e `update()`; as barras são um `list()` sobre os mesmos objetos, então uma troca move dois elementos." },
   "kanban": { title: "Quadro Kanban", desc: "Um quadro de equipe: adicione tarefas, atribua a pessoas, edite num diálogo, filtre por pessoa ou por busca, arraste entre colunas e desfaça uma exclusão. Colunas e cards são arrays simples dos mesmos objetos, e cada movimento é um `splice()`. As linhas são associadas por identidade, então arrastar, ordenar, atribuir ou editar um card reaproveita o elemento dele. O contador de montagens na tela prova." },
   "three": { title: "Inspetor three.js", desc: "Uma lib que cuida do próprio estado. O painel lê posições, cores e flags direto dos objetos do three.js e grava as edições de volta neles. O render loop chama `update()` uma vez por frame, e nada é espelhado." },
-  "infinite-scroll": { title: "Scroll infinito", desc: "Um feed sem fim: um `fetch()` falso e rápido gera cada página na hora, num único array simples. Só as linhas perto da viewport ficam no DOM: o `list()` renderiza `posts.slice(start, end)` entre dois spacers, então a página continua leve mesmo com cem mil posts. Um elemento sentinela no fim real pede a próxima página antes de ela entrar em vista." },
+  "infinite-scroll": { title: "Rolagem infinita", desc: "Um feed sem fim: um `fetch()` falso e rápido gera cada página na hora, num único array simples. Só as linhas perto da viewport ficam no DOM: o `list()` renderiza `posts.slice(start, end)` entre dois spacers, então a página continua leve mesmo com cem mil posts. Um elemento sentinela no fim real pede a próxima página antes de ela entrar em vista." },
   "desktop": { title: "Desktop", desc: "Um desktop que funciona de verdade, com Arquivos, Notas, Terminal, Calculadora, Timer, quadro Kanban, Finanças e Calendário. Crie e organize pastas, edite notas e rode comandos de shell num disco simulado compartilhado, salvo no seu navegador. Digite na Calculadora direto pelo teclado, clique em qualquer ponto do Terminal para focar a linha de entrada, arraste cards entre colunas no quadro, ou mantenha um livro-caixa na planilha de Finanças e veja os gráficos se atualizarem (o livro-caixa fica no IndexedDB). As janelas guardam o estado enquanto você move, redimensiona e alterna entre apps, e um timer em execução preenche a bandeja da barra de tarefas com into()." },
   "node-graph": { title: "Node Graph", desc: "Conecte números, texto e toggles por meio de nós de matemática, comparação e If, e cada valor se atualiza enquanto você digita. Funções também são grafos: os nós Input e Output são as portas de cada Call, e um Call pode nomear a própria função, então factorial e sum fazem chamadas recursivas, com um If como condição de parada. O motor é JavaScript puro: cada nó é um generator que dá yield para pedir uma entrada, e um único loop os conduz a partir da própria pilha. Por isso sum(50000) aninha cinquenta mil chamadas em cerca de um décimo de segundo sem encostar na call stack do JavaScript. Um limite de passos interrompe recursões sem condição de parada. Arrastar grava x e y e atualiza só o scope do canvas; o contador de execuções mostra que mover um nó nunca executa o grafo." },
   "data-grid": { title: "Data Grid", desc: "Uma tabela de verdade sobre 10.000 objetos de linha simples. Busca, filtro, ordenação e paginação são funções comuns sobre o array, e o corpo da tabela é um list() sobre a página atual. As linhas são associadas por identidade, então ordenar move as que continuam na página, e uma linha editada é o mesmo objeto em qualquer lugar. O contador de linhas construídas prova." },
@@ -98,7 +98,7 @@ export const items: Record<string, { title: string; desc: string }> = {
 export const LABELS = {
   examples: "Exemplos",
   title: "Mão na massa. Tudo ao vivo.",
-  sub: "Escolha um exemplo para abrir em tela cheia, com o preview ao vivo e o código lado a lado.",
+  sub: "Escolha um exemplo para abrir em tela inteira, com a visualização ao vivo e o código lado a lado.",
   needsPackage: (pkg: string) => `Requer o pacote ${pkg}`,
   // The example modal
   openInStackBlitz: "Abrir no StackBlitz",

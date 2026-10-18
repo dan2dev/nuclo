@@ -483,7 +483,7 @@ export default function Report(ctx: RouteContext) {
       },
       {
         id: "router-loaders",
-        title: "Loaders de route & Découpage du code",
+        title: "Loaders de route & Fractionnement du code",
         content: `
       <p>Un module de page peut exporter une fonction <code>load</code>. Elle s'exécute avant la construction de la page, à chaque navigation vers cette route, et ce qu'elle renvoie arrive dans la page sous le nom <code>data</code> :</p>
       ${code("pages/Post.ts", `
@@ -524,7 +524,7 @@ createRouter({
 `)}
       <p>Il remplace le <code>load</code> propre au module et se relance à chaque visite, exactement comme lui. Un rejet survenant alors que le chunk est encore en cours de chargement est placé dans <code>router.error</code>, comme n'importe quel autre.</p>
       <p>Par conception, les données serveur ne sont pas sérialisées dans le HTML : le <code>load</code> du client se relance à l'hydratation. Si cela vous gêne, faites émettre <code>route.data</code> par le serveur (par exemple dans <code>window.__DATA__</code>) et faites-le lire en premier par le loader. <code>route.data</code> ne contient que les données de la page correspondante, pas le résultat du <code>load()</code> d'un parent.</p>
-      <h3>Découpage du code et préchargement</h3>
+      <h3>Fractionnement du code et préchargement</h3>
       <p>La valeur d'une route est toujours une fonction qui renvoie le composant de page : le composant est donc chargé à la demande :</p>
       ${code("routes.ts", `
 '/a': () => import('./A.ts'),                      // default export (+ optional load)
@@ -659,7 +659,7 @@ layer.close()          // dismissed: resolves with undefined
         <li><strong>L'URL est la couche du dessus.</strong> <code>push()</code> ajoute une entrée d'historique : une couche est donc accessible par un lien, et Précédent la ferme en résolvant son <code>push()</code> comme annulé, exactement comme Annuler. Précédent et <code>close()</code> passent par un seul chemin de code : <code>close()</code> enregistre son résultat puis recule dans l'historique, et la profondeur dans <code>history.state</code> fait foi. Les navigateurs gardent environ 50 entrées par onglet ; après un long parcours à travers des couches, l'entrée du dessous peut donc avoir disparu, et <code>close()</code> ferme alors les couches sur place et réécrit l'entrée courante vers la page restée affichée.</li>
         <li><strong>Une navigation ordinaire vide la pile.</strong> Un clic sur un lien ou <code>go()</code> n'est pas une couche : il remplace tout et annule toutes les couches ouvertes, si bien qu'aucun appelant ne reste suspendu.</li>
         <li><strong>Un chargement à froid est une page autonome.</strong> L'URL nomme la couche du dessus mais pas la pile du dessous : ouvrir directement l'URL d'une couche la rend donc à la profondeur 1, avec <code>layer.depth === 0</code> et un <code>close()</code> inerte. Une route empilée doit avoir un sens par elle-même. Testez <code>layer.depth</code> pour proposer un lien de sortie plutôt qu'un bouton Annuler qui ne fait rien.</li>
-        <li><strong>La promesse ne survit pas à un rechargement</strong>, car elle vit dans une closure. Voyez le résultat comme un raccourci dans un parcours qui doit aussi fonctionner par le chemin long.</li>
+        <li><strong>La promesse ne survit pas à un rechargement</strong>, car elle vit dans une fermeture. Voyez le résultat comme un raccourci dans un parcours qui doit aussi fonctionner par le chemin long.</li>
         <li><strong>Rien ne reste en suspens.</strong> <code>stop()</code> annule toutes les couches ouvertes, et une couche abandonnée par une navigation se résout avec <code>undefined</code>.</li>
       </ul>
       <h3>Les gardes de sortie</h3>
@@ -818,7 +818,7 @@ createRouter(routes, {
         id: "router-links",
         title: "Gestion des liens",
         content: `
-      <p>L'écouteur délégué navigue sur un clic gauche sur un <code>&lt;a href&gt;</code>, un <code>&lt;a&gt;</code> SVG compris, ainsi que sur les clics sur tout ce qu'il contient, et s'efface devant tout le reste : clics avec modificateur et clics du milieu, un <code>target</code> autre que <code>_self</code>, <code>download</code>, <code>rel="external"</code>, les hrefs d'une autre origine, les liens vers un simple hash de la page courante, les chemins hors de <code>base</code>, ceux qu'aucune route ne reconnaît (une 404 rendue côté serveur reste donc accessible), et tout événement sur lequel un handler de l'application a déjà appelé <code>preventDefault()</code>. Pour exclure explicitement un lien, ajoutez <code>data-nuclo-router="off"</code>.</p>
+      <p>L'écouteur délégué navigue sur un clic gauche sur un <code>&lt;a href&gt;</code>, un <code>&lt;a&gt;</code> SVG compris, ainsi que sur les clics sur tout ce qu'il contient, et s'efface devant tout le reste : clics avec modificateur et clics du milieu, un <code>target</code> autre que <code>_self</code>, <code>download</code>, <code>rel="external"</code>, les hrefs d'une autre origine, les liens vers un simple hash de la page courante, les chemins hors de <code>base</code>, ceux qu'aucune route ne reconnaît (une 404 rendue côté serveur reste donc accessible), et tout événement sur lequel un gestionnaire de l'application a déjà appelé <code>preventDefault()</code>. Pour exclure explicitement un lien, ajoutez <code>data-nuclo-router="off"</code>.</p>
       <h3>Le défilement</h3>
       <p>Une navigation par push conserve la position de défilement courante. Quand la nouvelle URL contient un <code>#hash</code> qui correspond à un élément de la page, cet élément est amené dans la zone visible. <code>popstate</code> laisse le défilement au navigateur. Pour que les nouvelles pages s'ouvrent en haut, faites-le dans <code>onNavigate</code>, qui indique comment la navigation a eu lieu :</p>
       ${code("routes.ts", `
@@ -969,7 +969,7 @@ async function loadData() {
       </ul>
       <h3>Clés spéciales</h3>
       <ul>
-        <li><a href="#attributes">Attributs</a> : <code>className</code>, <code>style</code>, <a href="#events">handlers <code>on*</code></a>, <a href="#lifecycle"><code>onMount</code> et <code>onDestroy</code></a>.</li>
+        <li><a href="#attributes">Attributs</a> : <code>className</code>, <code>style</code>, <a href="#events">gestionnaires <code>on*</code></a>, <a href="#lifecycle"><code>onMount</code> et <code>onDestroy</code></a>.</li>
         <li><a href="#style-objects">Objets de style</a> : raccourcis, pseudo-états, sélecteurs <code>&amp;</code>, règles <code>@</code> et <code>raw</code>.</li>
       </ul>
     `,

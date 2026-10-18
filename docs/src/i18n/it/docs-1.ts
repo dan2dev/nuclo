@@ -85,7 +85,7 @@ import { render, update, getCssText } from 'nuclo'
       <h3>Punti di ingresso</h3>
       <ul>
         <li><code>nuclo</code>: registra i globali ed esporta i 16 helper più <code>getCssText</code> e <code>resetStyles</code>.</li>
-        <li><code>nuclo/ssr</code>: <code>renderToString</code>, <code>renderManyToString</code>, <code>renderToStringWithContainer</code> e <code>getCssText</code>. Vedi <a href="#api-ssr">Server-side rendering</a>.</li>
+        <li><code>nuclo/ssr</code>: <code>renderToString</code>, <code>renderManyToString</code>, <code>renderToStringWithContainer</code> e <code>getCssText</code>. Vedi <a href="#api-ssr">Rendering lato server</a>.</li>
         <li><code>nuclo/polyfill</code>: un mini DOM per Node e Bun. Vedi <a href="#api-polyfill">nuclo/polyfill</a>.</li>
         <li><code>nuclo/types</code>: solo tipi. Vedi <a href="#typescript-setup">TypeScript</a>.</li>
       </ul>
@@ -171,7 +171,7 @@ render(Card, document.body)
         <li><strong><code>true</code>, <code>false</code></strong>: finiscono nella pagina come testo "true" o "false". Per le condizioni usa <code>when()</code>.</li>
         <li><strong>Un oggetto semplice</strong>: gli attributi. Vedi <a href="#attributes">Attributi</a>.</li>
         <li><strong>Un risultato di <code>css()</code>, <code>cx()</code> o <code>variants()</code></strong>: aggiunge le sue classi.</li>
-        <li><strong><code>on(...)</code></strong>: un listener di eventi o un hook del lifecycle.</li>
+        <li><strong><code>on(...)</code></strong>: un listener di eventi o un hook del ciclo di vita.</li>
         <li><strong>Un altro builder, <code>when()</code> o <code>list()</code></strong>: diventa un figlio.</li>
         <li><strong>Un <code>Node</code> del DOM</strong>: aggiunto così com'è.</li>
         <li><strong><code>(el, index) =&gt; …</code></strong>: un modificatore personalizzato, spiegato più sotto.</li>
@@ -261,7 +261,7 @@ const save = button(
         <li><code>null</code> e <code>undefined</code> vengono ignorati. Un valore dinamico che restituisce <code>null</code> o <code>undefined</code> lascia quello precedente. Per azzerare, restituisci <code>""</code>, oppure <code>false</code> se è una proprietà booleana.</li>
         <li>I booleani funzionano con le proprietà booleane del DOM, come <code>disabled</code> su un pulsante, <code>checked</code>, <code>hidden</code> e <code>required</code>. Ovunque altro, <code>true</code> e <code>false</code> vengono scritti come le stringhe "true" e "false".</li>
         <li>Usa le chiavi <code>"data-*"</code>: <code>dataset</code> non è supportato.</li>
-        <li><code>innerHTML</code> non viene escapato e il server-side rendering non lo emette. Evitalo.</li>
+        <li><code>innerHTML</code> non viene escapato e il rendering lato server non lo emette. Evitalo.</li>
       </ul>
       <h3>Classi</h3>
       <p>Usa <code>className</code>. Stringhe di classi statiche, risultati di <code>css()</code> e un <code>className</code> dinamico si sommano. Il <code>className</code> dinamico mantiene le classi statiche: se restituisce <code>""</code>, restano solo quelle.</p>
@@ -343,7 +343,7 @@ const picker = ul(on<'pick', PickEvent>('pick', (e) => choose(e.detail.id)))
       },
       {
         id: "lifecycle",
-        title: "Lifecycle",
+        title: "Ciclo di vita",
         content: `
       <p><code>onMount</code> parte una volta sola, dopo che l'elemento è stato inserito; <code>onDestroy</code> parte una volta sola, quando Nuclo rimuove l'elemento. Li scrivi come attributi o con <code>on()</code>: le due forme sono equivalenti e l'elemento è tipizzato in base al suo tag.</p>
       ${code("timer.ts", `
@@ -634,7 +634,7 @@ render(() => div(Layout(), Article()))
         <li>Quando una regione sparisce, per esempio perché il suo <code>when()</code> si chiude, le sue viste tornano in attesa, e una regione costruita più tardi con lo stesso id le mostra.</li>
         <li>Un <code>into()</code> con un id che non corrisponde a nessuna regione non rende nulla e non dà errori: controlla di averlo scritto giusto.</li>
         <li>Gli id sono unici nell'albero. Una seconda regione costruita con un id già attivo scrive un avviso in console.</li>
-        <li>Le regioni funzionano con il <a href="#api-ssr">server-side rendering</a>. Con <code>hydrate()</code>, ogni vista riusa l'HTML prodotto dal server invece di costruirlo da capo.</li>
+        <li>Le regioni funzionano con il <a href="#api-ssr">rendering lato server</a>. Con <code>hydrate()</code>, ogni vista riusa l'HTML prodotto dal server invece di costruirlo da capo.</li>
       </ul>
       <h3>Opzioni</h3>
       <ul>
@@ -871,7 +871,7 @@ hydrate(App, document.getElementById('root')!)
 `)}
       <ul>
         <li>Usa lo stesso componente, e gli stessi dati, del server.</li>
-        <li>Fai l'hydration in un container dedicato. La radice dell'app deve esserne il primo nodo, anche se gli spazi bianchi non danno problemi. Se un altro nodo viene prima, Nuclo sostituisce quel nodo e lascia lì la copia del server.</li>
+        <li>Fai l'idratazione in un container dedicato. La radice dell'app deve esserne il primo nodo, anche se gli spazi bianchi non danno problemi. Se un altro nodo viene prima, Nuclo sostituisce quel nodo e lascia lì la copia del server.</li>
         <li>Come con <code>render()</code>, passa <code>App</code> e non <code>App()</code>, così <code>forceUpdate()</code> potrà ricostruire la radice più tardi. <code>App</code> non deve avere parametri: con uno opzionale, <code>hydrate()</code> non collega nulla e non segnala errori. Se il componente accetta props, avvolgilo: <code>hydrate(() =&gt; Page(props), root)</code>.</li>
         <li>Se dal server non arriva HTML, usa <code>render()</code>.</li>
       </ul>
@@ -883,12 +883,12 @@ hydrate(App, document.getElementById('root')!)
         <li>I figli in più del server vengono rimossi, quelli che mancano vengono creati.</li>
         <li>Gli attributi scritti dal server ma non impostati dal client restano come sono.</li>
       </ul>
-      <p><code>renderToString()</code> scrive commenti HTML come marcatori, per esempio <code>&lt;!-- text-0 --&gt;</code> prima di ogni nodo di testo, e <code>hydrate()</code> ne ha bisogno: non togliere i commenti dall'HTML del server. Senza i marcatori, l'hydration elimina le righe di <code>list()</code> e sia <code>list()</code> che <code>when()</code> smettono di aggiornarsi.</p>
+      <p><code>renderToString()</code> scrive commenti HTML come marcatori, per esempio <code>&lt;!-- text-0 --&gt;</code> prima di ogni nodo di testo, e <code>hydrate()</code> ne ha bisogno: non togliere i commenti dall'HTML del server. Senza i marcatori, l'idratazione elimina le righe di <code>list()</code> e sia <code>list()</code> che <code>when()</code> smettono di aggiornarsi.</p>
     `,
       },
       {
         id: "api-ssr",
-        title: "Server-side rendering",
+        title: "Rendering lato server",
         content: `
       <p>Renderizza un componente in una stringa HTML sul server. Nel browser, chiami <a href="#api-hydrate"><code>hydrate()</code></a> con lo stesso componente per rendere interattivo quell'HTML. I runtime lato server non hanno <code>document</code>, quindi importa prima <a href="#api-polyfill"><code>nuclo/polyfill</code></a>.</p>
       ${code("app.ts", `

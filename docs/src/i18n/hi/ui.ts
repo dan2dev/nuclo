@@ -2,18 +2,18 @@
 // meta and the labels shared by every page. pt/ui.ts and es/ui.ts mirror it.
 
 export const nav = {
-  home: "Home",
+  home: "होम",
   docs: "Docs",
   examples: "Examples",
   getStarted: "शुरू करें",
-  menu: "Menu",
+  menu: "मेन्यू",
   main: "मुख्य navigation",
-  openMenu: "Menu खोलें",
-  closeMenu: "Menu बंद करें",
-  nucloHome: "Nuclo Home",
+  openMenu: "मेन्यू खोलें",
+  closeMenu: "मेन्यू बंद करें",
+  nucloHome: "Nuclo होम",
   nucloOnGitHub: "GitHub पर Nuclo",
   opensInNewTab: " (नए टैब में खुलता है)",
-  switchTheme: "Theme बदलें",
+  switchTheme: "थीम बदलें",
   language: "भाषा",
 };
 
@@ -31,11 +31,11 @@ export const footer = {
 };
 
 export const app = {
-  failedToLoad: "पेज load नहीं हो पाया",
-  loadingLanguage: "भाषा load हो रही है…",
+  failedToLoad: "पेज लोड नहीं हो पाया",
+  loadingLanguage: "भाषा लोड हो रही है…",
   notFound: "पेज नहीं मिला (404)",
   notFoundHint: "इस address पर कुछ नहीं है।",
-  goHome: "Home पर वापस जाएँ",
+  goHome: "होम पेज पर वापस जाएँ",
 };
 
 // Shared by the docs' live frames, the examples and the home teasers.
@@ -46,7 +46,7 @@ export const common = {
   copied: "✓ Copy हो गया",
   copyToClipboard: "Clipboard में copy करें",
   live: "Live",
-  openFullScreen: "ये example fullscreen में खोलें",
+  openFullScreen: "ये example फ़ुल-स्क्रीन में खोलें",
   open: "खोलें ↗",
   readTheDocs: "Docs पढ़ें →",
 };

@@ -277,7 +277,7 @@ beforeEach(() => resetStyles())
         id: "router-overview",
         title: "nuclo-router",
         content: `
-      <div class="docs-callout"><strong>Pacote separado:</strong> o <code>nuclo-router</code> não faz parte do pacote principal do Nuclo. Instale-o ao lado do <code>nuclo</code>. Ele ainda está em preview, então a API pode mudar.</div>
+      <div class="docs-callout"><strong>Pacote separado:</strong> o <code>nuclo-router</code> não faz parte do pacote principal do Nuclo. Instale-o ao lado do <code>nuclo</code>. Ele ainda está em pré-visualização, então a API pode mudar.</div>
       <p>Roteamento para o Nuclo: SSR, hydration, rotas com code splitting e preload em idle, tudo construído em cima de <code>list()</code> e <code>update()</code>. Pesa cerca de ${NUCLO_ROUTER_GZIP_KB} KB com gzip, não depende de nada além do próprio Nuclo e não tem side effects, então o tree-shaking o remove do bundle quando você não o usa.</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>Se preferir, use <code>pnpm add</code>, <code>yarn add</code> ou <code>bun add</code> com os mesmos dois nomes. É preciso ter o <code>nuclo</code> 0.3 ou superior como peer dependency.</p>

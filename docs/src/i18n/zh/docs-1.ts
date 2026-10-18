@@ -120,8 +120,8 @@ import { render, update, getCssText } from 'nuclo'
         <li><code>NodeModLike&lt;Tag&gt;</code>：标签构建函数能接收的任何参数。</li>
         <li><code>ExpandedElement&lt;Tag&gt;</code>：<code>render()</code> 和 <code>hydrate()</code> 返回的类型。</li>
         <li><code>ElementTagName</code>：所有 HTML 标签名的联合类型。</li>
-        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>：标签构建函数接收的属性对象类型，涵盖 <code>on*</code> handler、<code>onMount</code> 和 <code>onDestroy</code>。写需要透传属性的组件时很好用。</li>
-        <li><code>MountCallback</code> 和 <code>DestroyCallback</code>：分别对应 <code>onMount</code> 与 <code>onDestroy</code> 的 callback。</li>
+        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>：标签构建函数接收的属性对象类型，涵盖 <code>on*</code> 处理器、<code>onMount</code> 和 <code>onDestroy</code>。写需要透传属性的组件时很好用。</li>
+        <li><code>MountCallback</code> 和 <code>DestroyCallback</code>：分别对应 <code>onMount</code> 与 <code>onDestroy</code> 的回调函数。</li>
         <li><code>WhenBuilder</code>、<code>ListModifier</code>：<code>when()</code> 与 <code>list()</code> 的返回类型。</li>
         <li><code>RegionOptions</code>、<code>RegionType</code>：<code>region()</code> 的选项类型。</li>
         <li><code>StyleResult</code>、<code>Style</code>、<code>ThemeConfig</code>、<code>CssInstance</code> 等样式相关类型。它们同样可以显式 import：<code>import type { StyleResult } from 'nuclo'</code>。</li>
@@ -171,7 +171,7 @@ render(Card, document.body)
         <li><strong><code>true</code>、<code>false</code></strong>：会被渲染成 "true" 或 "false" 这样的文本。要做条件渲染，请用 <code>when()</code>。</li>
         <li><strong>普通对象</strong>：当作属性处理，见<a href="#attributes">属性</a>。</li>
         <li><strong><code>css()</code>、<code>cx()</code> 或 <code>variants()</code> 的结果</strong>：把对应的 class 加到元素上。</li>
-        <li><strong><code>on(...)</code></strong>：事件 listener 或生命周期 hook。</li>
+        <li><strong><code>on(...)</code></strong>：事件监听器或生命周期钩子。</li>
         <li><strong>另一个构建器、<code>when()</code> 或 <code>list()</code></strong>：作为子节点。</li>
         <li><strong>DOM <code>Node</code></strong>：原封不动地 append 进去。</li>
         <li><strong><code>(el, index) =&gt; …</code></strong>：自定义 modifier，后面会讲。</li>
@@ -294,7 +294,7 @@ const bar = div({ style: () => ({ width: \`\${progress}%\`, backgroundColor: 'te
         content: `
       <p>监听事件有两条路：<code>on*</code> 属性，以及 <code>on()</code> modifier。</p>
       <h3><code>on*</code> 属性</h3>
-      <p>在属性对象里，形如 <code>onClick</code>（<code>on</code> 加大写字母开头）的键，对应的函数会被当作事件 handler，而不是动态值。</p>
+      <p>在属性对象里，形如 <code>onClick</code>（<code>on</code> 加大写字母开头）的键，对应的函数会被当作事件处理器，而不是动态值。</p>
       ${code("search.ts", `
 let query = ''
 
@@ -307,10 +307,10 @@ const search = input({
 `)}
       <ul>
         <li>TypeScript 会根据键名和元素自动推断事件类型，<code>e.currentTarget</code> 和 <code>this</code> 指向的都是该元素。</li>
-        <li>Nuclo 设置的是原生 property，<code>onClick</code> 实际就是 <code>el.onclick</code>。因此每种事件只能挂一个 handler，后写的 <code>onClick</code> 会顶掉前一个。</li>
+        <li>Nuclo 设置的是原生 property，<code>onClick</code> 实际就是 <code>el.onclick</code>。因此每种事件只能挂一个处理器，后写的 <code>onClick</code> 会顶掉前一个。</li>
         <li><code>onDoubleClick</code> 与 <code>onDblClick</code> 都对应 <code>dblclick</code>。小写的 <code>onclick</code> 这种写法会触发类型错误。</li>
         <li>不在已知事件列表里的名字，会按小写形式去监听：<code>onMyEvent</code> 监听的就是 <code>"myevent"</code>。</li>
-        <li>handler 里抛出的错误不会被 Nuclo 捕获。</li>
+        <li>处理器里抛出的错误不会被 Nuclo 捕获。</li>
       </ul>
     `,
         afterContent: `
@@ -324,11 +324,11 @@ const panel = div(
 )
 `)}
       <ul>
-        <li>每写一个 <code>on()</code> 就多一个 listener，它们会按顺序全部执行。</li>
+        <li>每写一个 <code>on()</code> 就多一个监听器，它们会按顺序全部执行。</li>
         <li><code>options</code> 原样透传给 <code>addEventListener</code>：<code>capture</code>、<code>once</code>、<code>passive</code>、<code>signal</code>。</li>
         <li>把 <code>on()</code> 直接传给构建器，元素类型就能自动推断：<code>input(on('input', (e) =&gt; e.currentTarget.value))</code>。</li>
-        <li>某个 listener 抛了错，Nuclo 会用 <code>console.error</code> 记录下来，其余 listener 照常执行。</li>
-        <li>元素被 Nuclo 移除时，listener 也会一并清理。在服务端，<code>on()</code> 是空操作。</li>
+        <li>某个监听器抛了错，Nuclo 会用 <code>console.error</code> 记录下来，其余监听器照常执行。</li>
+        <li>元素被 Nuclo 移除时，监听器也会一并清理。在服务端，<code>on()</code> 是空操作。</li>
         <li>同一个 <code>on()</code> 的返回值可以放心地在多个元素上复用。</li>
       </ul>
       <p>碰到自定义事件，把事件类型当泛型传进去：</p>
@@ -338,7 +338,7 @@ type PickEvent = CustomEvent<{ id: number }>
 const picker = ul(on<'pick', PickEvent>('pick', (e) => choose(e.detail.id)))
 `)}
       <h3>怎么选</h3>
-      <p>日常用 <code>on*</code> 属性就够了。需要给同一个事件挂多个 listener、要传 listener 选项，或者事件名是 <code>"my-event"</code> 这类自定义的，再换成 <code>on()</code>。</p>
+      <p>日常用 <code>on*</code> 属性就够了。需要给同一个事件挂多个监听器、要传监听器选项，或者事件名是 <code>"my-event"</code> 这类自定义的，再换成 <code>on()</code>。</p>
     `,
       },
       {
@@ -367,7 +367,7 @@ const search = input(on('mount', (el) => el.focus()))
       <h3>何时触发</h3>
       <ul>
         <li><code>onMount</code> 会在把该元素插进页面的那次 <code>render()</code>、<code>hydrate()</code>、<code>update()</code> 或 <code>forceUpdate()</code> 调用收尾时触发，绝不会发生在树构建的过程中。</li>
-        <li>如果 <code>onMount</code> 返回了一个函数，它会在销毁阶段执行，排在该元素 <code>onDestroy</code> callback 的后面。</li>
+        <li>如果 <code>onMount</code> 返回了一个函数，它会在销毁阶段执行，排在该元素 <code>onDestroy</code> 回调函数的后面。</li>
         <li><code>onDestroy</code> 在 Nuclo 移除元素时触发：<code>list()</code> 的某一行被删掉、<code>when()</code> 切换了分支、<code>into()</code> 离开了所在区域，或者被 <code>forceUpdate()</code> 丢弃。它发生在真正移除之前，所以此刻元素还留在文档里。</li>
       </ul>
       <h3>用原生 DOM API 移除元素</h3>
@@ -381,14 +381,14 @@ update() // App's onDestroy hooks and cleanups run
 `)}
       <h3>顺序和错误处理</h3>
       <ul>
-        <li>两种写法都能注册任意数量的 hook，按注册顺序依次执行。</li>
+        <li>两种写法都能注册任意数量的钩子，按注册顺序依次执行。</li>
         <li><code>onDestroy</code> 永远是子元素先、父元素后。</li>
-        <li>元素是按各自第一个 <code>onMount</code> hook 出现的顺序（也就是参数顺序）来挂载的，每个元素会一口气跑完它所有的 hook。如果子元素依赖父元素的 hook，就把父元素的 hook 写在子元素前面。</li>
-        <li>hook 抛出的错误会通过 <code>console.error</code> 记录下来，不影响其他 hook 继续执行。</li>
-        <li>callback 要么什么都不返回，要么返回一个清理函数，所以别把它声明成 <code>async</code>：返回的 Promise 永远不会被当成清理函数。异步的活请在 callback 内部发起：<code>{ onMount: (el) =&gt; { void load(el) } }</code>。</li>
-        <li>hook 在服务端永远不会执行；到了客户端，则是在 <code>hydrate()</code> 之后触发。</li>
+        <li>元素是按各自第一个 <code>onMount</code> 钩子出现的顺序（也就是参数顺序）来挂载的，每个元素会一口气跑完它所有的钩子。如果子元素依赖父元素的钩子，就把父元素的钩子写在子元素前面。</li>
+        <li>钩子抛出的错误会通过 <code>console.error</code> 记录下来，不影响其他钩子继续执行。</li>
+        <li>回调函数要么什么都不返回，要么返回一个清理函数，所以别把它声明成 <code>async</code>：返回的 Promise 永远不会被当成清理函数。异步的活请在回调函数内部发起：<code>{ onMount: (el) =&gt; { void load(el) } }</code>。</li>
+        <li>钩子在服务端永远不会执行；到了客户端，则是在 <code>hydrate()</code> 之后触发。</li>
       </ul>
-      <div class="docs-callout"><strong>注意：</strong>这些 hook 并不是 effect。状态变了它们也不会重新执行，每个 hook 在每个元素上至多跑一次。</div>
+      <div class="docs-callout"><strong>注意：</strong>这些钩子并不是 effect。状态变了它们也不会重新执行，每个钩子在每个元素上至多跑一次。</div>
     `,
       },
     ],
@@ -426,7 +426,7 @@ first = 'Grace'
 last = 'Hopper'
 update() // one pass, both changes
 `)}
-      <p><code>update()</code> 可以放在事件 handler、定时器、fetch callback 或 <code>onMount</code> 里调用，唯独不要在动态值内部调用它。</p>
+      <p><code>update()</code> 可以放在事件处理器、定时器、fetch 回调函数或 <code>onMount</code> 里调用，唯独不要在动态值内部调用它。</p>
     `,
       },
       {
@@ -544,7 +544,7 @@ const Status = () =>
       <h3>什么会更新，什么会重建</h3>
       <ul>
         <li>只要还在同一个分支里，它的元素就会一直保留，里面的动态值、列表和嵌套的 <code>when()</code> 都会继续更新。</li>
-        <li>切到另一个分支时，旧内容被移除，触发它的 <code>onDestroy</code> hook；新分支从零开始构建，触发 <code>onMount</code> hook。旧元素里的输入文本、焦点之类的状态都会丢失。</li>
+        <li>切到另一个分支时，旧内容被移除，触发它的 <code>onDestroy</code> 钩子；新分支从零开始构建，触发 <code>onMount</code> 钩子。旧元素里的输入文本、焦点之类的状态都会丢失。</li>
       </ul>
       <h3>分支内容</h3>
       <p>分支里可以放文本、动态文本、构建器、<code>list()</code> 和嵌套的 <code>when()</code>。请传 <code>p('Hi')</code> 这样的构建器，别传现成的 DOM 节点，因为 DOM 节点所在的分支一旦隐藏过一次，它就不再更新了。</p>
@@ -571,7 +571,7 @@ update()
       <h3>行是怎么对应的</h3>
       <ul>
         <li>还在列表里的 item 会保留它原来的行，必要时 Nuclo 只是把行挪个位置，不会再调用 <code>renderItem</code>。</li>
-        <li>新增的 item 会得到新行；被移除的 item 会失去它的行，并触发 <code>onDestroy</code> hook。</li>
+        <li>新增的 item 会得到新行；被移除的 item 会失去它的行，并触发 <code>onDestroy</code> 钩子。</li>
         <li>重复的 item 各有各的行。</li>
         <li>数组可以原地修改（<code>push</code>、<code>splice</code>、<code>sort</code>），也可以每次返回一个新数组，都没问题。</li>
       </ul>
@@ -813,9 +813,9 @@ forceUpdate() // same <h1> element, now "Olá"
       <p>不传参数时，<code>forceUpdate()</code> 会重建所有以 <code>render(App)</code> 或 <code>hydrate(App)</code> 渲染的根，而以 <code>render(App())</code> 渲染的根会被跳过。某个组件抛错时，错误会被记录，对应的根保留旧 DOM；如果是在应用新构建结果的途中才抛错，同样只记录，已经更新的部分不会回滚。</p>
       <h3>哪些保留，哪些改变</h3>
       <ul>
-        <li>子节点按顺序、按标签一一对应。对上的元素会被复用，所以焦点和用户已输入的值都还在，<code>onMount</code> hook 也不会再跑一次。一旦某个子节点的标签对不上，它以及后面所有的兄弟节点都会重新构建。</li>
-        <li>文本、属性、class、样式、listener、<code>when()</code> 分支以及 <code>list()</code> 的行，全都以新的构建结果为准。</li>
-        <li>新增的元素会被创建，并触发 <code>onMount</code> hook；新构建里不再出现的元素会被移除，并触发 <code>onDestroy</code> hook。</li>
+        <li>子节点按顺序、按标签一一对应。对上的元素会被复用，所以焦点和用户已输入的值都还在，<code>onMount</code> 钩子也不会再跑一次。一旦某个子节点的标签对不上，它以及后面所有的兄弟节点都会重新构建。</li>
+        <li>文本、属性、class、样式、监听器、<code>when()</code> 分支以及 <code>list()</code> 的行，全都以新的构建结果为准。</li>
+        <li>新增的元素会被创建，并触发 <code>onMount</code> 钩子；新构建里不再出现的元素会被移除，并触发 <code>onDestroy</code> 钩子。</li>
         <li><code>list()</code> 的行也是按位置而不是按 item 对应，所以被复用的行元素，最终显示的可能是另一个 item。</li>
         <li>新构建里不再设置的属性，不会被清除。</li>
       </ul>
@@ -862,7 +862,7 @@ render(() => Page({ name: 'Ana' }), root)
         id: "api-hydrate",
         title: "hydrate()",
         content: `
-      <p>接管由 <a href="#api-ssr"><code>renderToString()</code></a> 生成的 HTML：复用现成的元素，挂上事件 listener，并把动态值、<code>when()</code>、<code>list()</code> 登记好，让之后的 <code>update()</code> 能正常工作，最后触发 <code>onMount</code> hook。<code>parent</code> 默认是 <code>document.body</code>，返回根元素。</p>
+      <p>接管由 <a href="#api-ssr"><code>renderToString()</code></a> 生成的 HTML：复用现成的元素，挂上事件监听器，并把动态值、<code>when()</code>、<code>list()</code> 登记好，让之后的 <code>update()</code> 能正常工作，最后触发 <code>onMount</code> 钩子。<code>parent</code> 默认是 <code>document.body</code>，返回根元素。</p>
       ${code("client.ts", `
 import 'nuclo'
 import { App } from './app.ts'
@@ -883,7 +883,7 @@ hydrate(App, document.getElementById('root')!)
         <li>服务端多出来的子节点会被删掉，缺的会被补上。</li>
         <li>服务端写了、客户端没设置的属性，保持原样不动。</li>
       </ul>
-      <p><code>renderToString()</code> 会写入一些 HTML 注释当作标记，比如每个文本节点前面的 <code>&lt;!-- text-0 --&gt;</code>。<code>hydrate()</code> 依赖它们，所以千万别把服务端 HTML 里的注释剥掉。没有这些标记，hydration 会删掉 <code>list()</code> 的行，<code>list()</code> 和 <code>when()</code> 也会不再更新。</p>
+      <p><code>renderToString()</code> 会写入一些 HTML 注释当作标记，比如每个文本节点前面的 <code>&lt;!-- text-0 --&gt;</code>。<code>hydrate()</code> 依赖它们，所以千万别把服务端 HTML 里的注释剥掉。没有这些标记，水合会删掉 <code>list()</code> 的行，<code>list()</code> 和 <code>when()</code> 也会不再更新。</p>
     `,
       },
       {
@@ -927,7 +927,7 @@ hydrate(App, document.getElementById('root')!)
       <h3>服务端会执行什么</h3>
       <ul>
         <li>每次调用 <code>renderToString()</code> 都会构建一遍树，并让每个动态值执行一次。</li>
-        <li>事件 handler、<code>onMount</code> 和 <code>onDestroy</code> 一概不执行，<code>update()</code>、<code>scope()</code>、<code>forceUpdate()</code> 都是空操作。</li>
+        <li>事件处理器、<code>onMount</code> 和 <code>onDestroy</code> 一概不执行，<code>update()</code>、<code>scope()</code>、<code>forceUpdate()</code> 都是空操作。</li>
         <li>渲染是同步的，数据要先加载好，再去渲染。</li>
         <li>渲染完不会留下任何注册状态，所以同一个进程可以放心地处理多个请求。请求相关的数据请当作参数传进去，例如 <code>renderToString(Page(user))</code>；模块级变量是所有请求共享的。</li>
         <li>服务端别调用 <code>render()</code>，它会往共享的 <code>document.body</code> 里追加内容。</li>
@@ -962,7 +962,7 @@ renderToStringWithContainer(p('Hi'), 'section', { id: 'main', class: 'page' })
         <li>在浏览器或 jsdom 环境下，它什么都不做。</li>
         <li><code>Event</code> 和 <code>CustomEvent</code> 用的是 runtime 自带的构造函数，<code>Node</code>、<code>Element</code>、<code>HTMLElement</code> 则是 polyfill 类的别名。</li>
       </ul>
-      <p>别把它当成浏览器，它只是一个够用来“搭树”的 DOM：没有 <code>innerHTML</code>，没有 <code>getElementById</code>，<code>querySelector()</code> 永远返回 <code>null</code>，事件 listener 会被直接忽略。要拿 HTML 请用 <code>renderToString()</code>。</p>
+      <p>别把它当成浏览器，它只是一个够用来“搭树”的 DOM：没有 <code>innerHTML</code>，没有 <code>getElementById</code>，<code>querySelector()</code> 永远返回 <code>null</code>，事件监听器会被直接忽略。要拿 HTML 请用 <code>renderToString()</code>。</p>
     `,
       },
     ],
