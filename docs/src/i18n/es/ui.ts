@@ -18,8 +18,8 @@ export const nav = {
 };
 
 export const footer = {
-  tagline: "El runtime de interfaces con actualizaciones explícitas. Funciones simples, estado mutable y una sola llamada entre tus datos y el DOM.",
-  builtWith: "Este sitio está construido con Nuclo.",
+  tagline: "El runtime de interfaces con actualizaciones explícitas: funciones simples, estado mutable y una sola llamada entre tus datos y el DOM.",
+  builtWith: "Este sitio está hecho con Nuclo.",
   explore: "Explorar",
   documentation: "Documentación",
   examples: "Ejemplos",
@@ -33,8 +33,8 @@ export const footer = {
 export const app = {
   failedToLoad: "No se pudo cargar la página",
   notFound: "Página no encontrada",
-  notFoundHint: "No hay nada en esta dirección.",
-  goHome: "Ir a la página de inicio",
+  notFoundHint: "Aquí no hay nada.",
+  goHome: "Volver al inicio",
   loadingLanguage: "Cargando idioma…",
 };
 
@@ -55,29 +55,29 @@ export const seo = {
   routes: {
     home: {
       title: "Nuclo - Framework DOM ligero con actualizaciones explícitas",
-      description: "Nuclo es una biblioteca DOM ligera en TypeScript, sin dependencias. Construye la UI con funciones, muta estado simple y llama a update(). Sin DOM virtual, proxies ni señales.",
+      description: "Nuclo es una biblioteca DOM ligera y sin dependencias, escrita en TypeScript. Construye la UI con funciones, muta estado simple y llama a update(). Sin virtual DOM, sin proxies, sin signals.",
       keywords: "nuclo, framework dom, valores dependientes del estado, actualizaciones explícitas, estado mutable, javascript, typescript, framework ui, ligero",
     },
     "apps/:id": {
       title: "Apps independientes - Ejemplos de Nuclo",
-      description: "Ejemplos interactivos de apps Nuclo en un espacio de trabajo a pantalla completa del navegador.",
+      description: "Apps de Nuclo interactivas, listas para explorar en un espacio de trabajo a pantalla completa del navegador.",
     },
     desktop: {
       title: "Nuclo OS - Escritorio",
-      description: "Un escritorio independiente con apps funcionales — Archivos, Notas, Terminal, Calculadora, Temporizador, un tablero Kanban, Finanzas con gráficos y una hoja de cálculo, y un Calendario — y un sistema de archivos simulado guardado en tu navegador.",
+      description: "Un escritorio independiente con apps que funcionan de verdad (Archivos, Notas, Terminal, Calculadora, Temporizador, un tablero Kanban, Finanzas con gráficos y hoja de cálculo, y un Calendario) sobre un sistema de archivos simulado que se guarda en tu navegador.",
     },
     docs: {
       title: "Documentación de Nuclo - Guía y referencia de API",
-      description: "Documentación de Nuclo: instalación, funciones constructoras de etiquetas, llamadas explícitas a update(), when() y list(), eventos, ciclo de vida, SSR e hidratación, CSS-in-TS tipado y la referencia completa de la API.",
+      description: "La documentación de Nuclo: instalación, funciones constructoras de etiquetas, llamadas explícitas a update(), when() y list(), eventos, ciclo de vida, SSR e hidratación, CSS-in-TS tipado y la referencia completa de la API.",
       keywords: "documentación nuclo, referencia de api, primeros pasos, update, list, when, on",
     },
     examples: {
       title: "Ejemplos de Nuclo - Contador, lista de tareas, búsqueda y estilos",
-      description: "Ejemplos de Nuclo en vivo con su código fuente: un contador, una lista de tareas, un filtro de búsqueda en tiempo real y estilos con CSS-in-TS tipado.",
+      description: "Ejemplos de Nuclo en vivo, con su código fuente: un contador, una lista de tareas, un filtro de búsqueda en tiempo real y estilos con CSS-in-TS tipado.",
       keywords: "ejemplos nuclo, contador, tareas, filtro de búsqueda, css-in-ts, demos en vivo",
     },
   } as Record<string, { title: string; description: string; keywords?: string }>,
   exampleTitle: (title: string) => `${title} - Ejemplos de Nuclo`,
-  exampleDescription: (desc: string) => `${desc} Un ejemplo de Nuclo en vivo con su código fuente.`,
+  exampleDescription: (desc: string) => `${desc} Ejemplo de Nuclo en vivo, con su código fuente.`,
   exampleKeywords: (title: string) => `ejemplo nuclo, ${title.toLowerCase()}, demo en vivo, código fuente`,
 };

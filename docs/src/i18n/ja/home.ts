@@ -5,10 +5,10 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · 依存関係ゼロ`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["更新を*明示する*", "インターフェースを", "nuclo で構築。"];
+export const HERO_TITLE_LINES = ["更新は*自分の手で*。", "余計なことは", "何もしない UI を。"];
 
 export const HERO_DESC =
-  "小さく型安全な DOM フレームワーク。状態には通常の変数やオブジェクトを使い、そのまま変更できます。更新のタイミングは自分で制御します。プロキシも、シグナルも、仮想 DOM もありません。";
+  "小さくて型安全な DOM フレームワーク。state は普通の変数やオブジェクトのまま、好きに書き換えてOK。画面に反映するタイミングは、あなたが決めます。プロキシも、シグナルも、仮想 DOM もありません。";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
@@ -71,23 +71,23 @@ export function TodoList() {
 }`;
 
 export const PHILOSOPHY_QUOTE =
-  "状態を変更しても、何も起こりません。update() を呼び出すと、Nuclo は求められたことだけを正確に行います。それ以上でも、それ以下でもありません。";
+  "state を書き換えても、何も起きません。update() を呼んだそのときに、Nuclo は頼まれたことだけを、きっちりやります。";
 
 export const PHILOSOPHY_POINTS = [
   {
     num: "01",
     title: "暗黙より明示",
-    desc: "プロキシによる変更の追跡はありません。状態を変更し、それから update() を呼び出します。原因と結果が明確で予測可能なままです。",
+    desc: "プロキシが裏で変更を見張ることはありません。state を書き換えて、update() を呼ぶ。原因と結果が一目でわかるので、挙動を予想しやすく保てます。",
   },
   {
     num: "02",
-    title: "自由にまとめて、一度だけ更新",
-    desc: "10 回変更してから、update() を一度だけ呼び出します。DOM に反映されるのは最終状態だけ。無駄なレンダリングはありません。",
+    title: "何度いじっても、更新は 1 回",
+    desc: "10 回書き換えても、update() は 1 回でかまいません。DOM に反映されるのは最終的な状態だけなので、無駄な render が走りません。",
   },
   {
     num: "03",
-    title: "コンポーネントではなく関数",
-    desc: "プレーンな JavaScript の関数で構築します。Nuclo にはクラスも、デコレーターも、特別な構文も必要ありません。各関数は DOM ノードを返します。onMount と onDestroy は、必要なときだけ通常のモディファイアとして追加します。",
+    title: "コンポーネントより、ただの関数",
+    desc: "UI はふつうの JavaScript の関数で組み立てます。クラスもデコレーターも独自構文も不要で、どの関数も DOM ノードを返すだけ。onMount と onDestroy は、必要になったときに通常のモディファイアとして足せば十分です。",
   },
 ];
 
@@ -95,22 +95,22 @@ export const FEATURES = [
   {
     num: "01 · 明示的",
     title: "更新のタイミングを自分で決める",
-    desc: "自由に変更し、それから update() を一度だけ呼び出します。Nuclo にはサブスクリプションもスケジューラーも必要なく、予期しない差分処理もありません。DOM はあなたが決めたときに同期します。",
+    desc: "好きなだけ書き換えて、update() を 1 回呼ぶ。購読もスケジューラーも、不意打ちの diff 処理もありません。DOM が同期されるのは、あなたが決めた瞬間だけです。",
   },
   {
     num: "02 · 軽量",
     title: "依存関係ゼロ",
-    desc: `コアランタイムは gzip 圧縮時で約 ${NUCLO_GZIP_KB} KB。Nuclo にはコンパイラーもビルドプラグインも必要ありません。import を 1 行追加して構築を始めましょう。`,
+    desc: `コアランタイムは gzip 後でわずか約 ${NUCLO_GZIP_KB} KB。コンパイラーもビルドプラグインも要りません。import を 1 行書けば、すぐに作り始められます。`,
   },
   {
     num: "03 · 型付き",
     title: "TypeScript ファースト",
-    desc: "完全に型付けされた 175 個の HTML および SVG ビルダーが、すべての属性、スタイルプロパティ、イベントに自動補完を提供します。",
+    desc: "175 個の HTML / SVG ビルダーはすべて型付き。属性もスタイルプロパティもイベントも、エディターの補完がしっかり効きます。",
   },
   {
     num: "04 · 精密",
-    title: "DOM の必要な箇所だけを更新",
-    desc: "動的な式は update() 時に再評価されます。実際に変わった値だけが DOM に書き込まれます。",
+    title: "変わったところだけ、DOM に書く",
+    desc: "動的な式は update() のたびに再評価され、実際に値が変わったものだけが DOM に書き込まれます。",
   },
 ];
 
@@ -119,29 +119,29 @@ export const PIPELINE_STEPS = [
   {
     kicker: "01 · 変更",
     title: "データを変える",
-    desc: "状態はプレーンな JavaScript です: 変数、配列、オブジェクト。好きなように、好きなだけ変更してください。",
+    desc: "state はただの JavaScript。変数、配列、オブジェクトを、好きなように好きなだけ書き換えてください。",
     code: `<span class="pr">todos</span><span class="pt">.</span><span class="fn">push</span><span class="pt">(</span><span class="pr">newTodo</span><span class="pt">)</span>
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
     kicker: "02 · コミット",
     title: "update() を呼び出す",
-    desc: "1 つのグローバル関数が変更をコミットします。十数回の変更をまとめて、一度だけコミットします。呼び出すまで画面は更新されません。",
+    desc: "変更を確定するのは、グローバル関数 1 つだけ。十数回の変更もまとめて 1 回でコミットします。呼ぶまで、画面は何も変わりません。",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
     kicker: "03 · パッチ",
     title: "Nuclo が DOM を同期する",
-    desc: "すべての動的な式が再評価されます。Nuclo は実際に変わった値だけを DOM に書き込みます。diff も再レンダリングもありません。",
-    code: `<span class="cm">// 2 ノードがパッチされ、</span>
-<span class="cm">// 残りはそのまま</span>`,
+    desc: "動的な式がすべて再評価され、変わった値だけが DOM に書き込まれます。diff も再 render もありません。",
+    code: `<span class="cm">// パッチされるのは 2 ノードだけ。</span>
+<span class="cm">// 残りには触れません。</span>`,
   },
 ];
 
 // ── Comparison ──────────────────────────────────────────────────────────────
-export const COMPARISON_TITLE = "diff なし。プロキシなし。驚きなし。";
+export const COMPARISON_TITLE = "diff なし。プロキシなし。サプライズなし。";
 export const COMPARISON_SUB =
-  "Nuclo は update() を呼び出したときにだけインターフェースを更新します。";
+  "Nuclo が UI を更新するのは、update() を呼んだときだけです。";
 
 export const COMPARISON_COLS: {
   name: string;
@@ -153,20 +153,20 @@ export const COMPARISON_COLS: {
     name: "仮想 DOM",
     sub: "レンダー → diff → コミット",
     items: [
-      { good: false, text: "状態が変わるたびにコンポーネントツリーを再レンダリングする" },
-      { good: false, text: "変更箇所を見つけるために新旧のツリーを diff する" },
-      { good: false, text: "パフォーマンスを取り戻すためにメモ化が必要" },
-      { good: false, text: "古い値を参照するクロージャーや依存配列への対処が必要" },
+      { good: false, text: "state が変わるたびに、コンポーネントツリーを丸ごと再 render する" },
+      { good: false, text: "変更箇所を探すため、新旧のツリーを diff する" },
+      { good: false, text: "速度を取り戻すには、メモ化が欠かせない" },
+      { good: false, text: "古い値を掴んだクロージャーや依存配列と付き合う羽目になる" },
     ],
   },
   {
     name: "シグナルとプロキシ",
     sub: "シグナル · ストア · エフェクト",
     items: [
-      { good: false, text: "状態をプロキシとサブスクリプションでラップする" },
-      { good: false, text: "実行時に依存関係を見えない形で追跡する" },
-      { good: false, text: "制御できないスケジュールで更新を連鎖させる" },
-      { good: false, text: "デバッガーでステップ実行しづらい" },
+      { good: false, text: "state をプロキシとサブスクリプションで包む" },
+      { good: false, text: "依存関係を、実行時に裏でこっそり追跡する" },
+      { good: false, text: "自分では制御できないタイミングで、更新が連鎖する" },
+      { good: false, text: "デバッガーでステップ実行しにくい" },
     ],
   },
   {
@@ -174,21 +174,21 @@ export const COMPARISON_COLS: {
     sub: "変更 → update()",
     featured: true,
     items: [
-      { good: true, text: "ラッパーもプロキシもない、通常の変数やオブジェクトで管理する、変更可能な状態" },
-      { good: true, text: "update() という 1 つの呼び出しがメンタルモデルのすべて" },
-      { good: true, text: "変わった値だけを DOM に反映する" },
+      { good: true, text: "ラッパーもプロキシもなし。普通の変数やオブジェクトを、そのまま書き換えられる state" },
+      { good: true, text: "覚えるのは update() の 1 回だけ。それがメンタルモデルのすべて" },
+      { good: true, text: "変わった値だけを DOM に反映" },
       { good: true, text: `約 ${NUCLO_GZIP_KB} KB、依存関係ゼロ、TypeScript ファースト` },
     ],
   },
 ];
 
 // ── Benchmarks ──────────────────────────────────────────────────────────────
-export const BENCHMARK_TITLE = "重要なところで速い。";
+export const BENCHMARK_TITLE = "速さが問われる場面で、速い。";
 export const BENCHMARK_SUB =
-  "これは js-framework-benchmark による独立した数値で、数千行の作成、更新、入れ替え、クリアを測定したものです。";
+  "第三者の js-framework-benchmark による実測値。数千行の作成、更新、入れ替え、クリアにかかる時間を計測しています。";
 
 export const BENCHMARK_NOTE =
-  "このスコアは、測定対象で最速の実装に対する所要時間の倍率を示します。すべての keyed ベンチマークの加重幾何平均です。";
+  "スコアは、最速の実装を 1 としたときの所要時間の倍率で、すべての keyed ベンチマークの加重幾何平均です。";
 
 export const BENCHMARK_SOURCE_URL =
   "https://krausest.github.io/js-framework-benchmark/2026/chrome152.html";
@@ -216,29 +216,29 @@ export const BENCHMARK_ENTRIES: {
 ];
 
 // ── CTA ─────────────────────────────────────────────────────────────────────
-export const CTA_TITLE = "準備ができたら、いつでも。";
+export const CTA_TITLE = "さあ、はじめましょう。";
 export const CTA_SUB =
-  "Nuclo をインストールし、一度 import して、意図したとおりに更新される UI を作りましょう。API 全体は半日で学べます。";
+  "インストールして、import して、思いどおりに動く UI を作る。API 全体も半日あれば把握できます。";
 
 export const QUICK_START_STEPS = [
   {
     num: "01 - インストール",
     title: "インストール",
-    desc: "npm、pnpm、yarn、bun のいずれかで Nuclo をプロジェクトに追加します。",
+    desc: "npm、pnpm、yarn、bun のどれでも、Nuclo をプロジェクトに追加できます。",
     code: `<span class="pt">$</span> <span class="fn">npm</span> create nuclo@latest<span class="tcaret"></span>`,
     lang: "terminal",
   },
   {
     num: "02 - インポート",
     title: "インポート",
-    desc: "副作用インポートを 1 行書くだけで、175 個すべてのタグビルダーがグローバルに登録されます。",
+    desc: "side-effect import を 1 行書くだけで、175 個すべてのタグビルダーがグローバルに登録されます。",
     code: `<span class="kw">import</span> <span class="st">'nuclo'</span>`,
     lang: "main.ts",
   },
   {
     num: "03 - 構築",
     title: "構築",
-    desc: "DOM ノードを返すプレーンな関数を書きます。状態が変わったら update() を呼び出します。",
+    desc: "DOM ノードを返す関数を書いて、state が変わったら update() を呼ぶ。それだけです。",
     code: `<span class="kw">let</span> <span class="pr">name</span> <span class="pt">=</span> <span class="st">'World'</span>
 
 <span class="kw">const</span> <span class="pr">app</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span>
@@ -261,24 +261,24 @@ export const LABELS = {
   viewExamples: "サンプルを見る",
   copyInstall: "インストールコマンドをコピー",
   howItWorks: "仕組み",
-  pipelineTitle: "1 つの明示的なサイクル。",
-  pipelineSub: "状態依存の値。依存グラフもスケジューラーもありません。実行のタイミングは自分で決めます。データから画面までの流れはシンプルで予測可能です。",
+  pipelineTitle: "明示的なサイクルは、たったの 1 つ。",
+  pipelineSub: "依存グラフもスケジューラーもなく、動くタイミングは自分次第。データが画面に届くまでの流れは、シンプルで予測できます。",
   philosophy: "設計思想",
   features: "機能",
-  featuresTitle: "明快さのために。",
-  featuresSub: "魔法なし。驚きなし。すべての更新は意図的です。",
+  featuresTitle: "わかりやすさを、最優先に。",
+  featuresSub: "魔法も、不意打ちもなし。すべての更新は、意図したものです。",
   comparison: "比較",
-  theNucloWay: "nuclo のやり方",
+  theNucloWay: "Nuclo のやり方",
   benchmarks: "ベンチマーク",
   lowerIsBetter: "低いほど良い",
   benchmarkSource: "出典: js-framework-benchmark",
   quickStart: "クイックスタート",
-  quickStartTitle: "数分で動き出す。",
-  quickStartSub: "3 ステップで本物の UI を構築できます。",
+  quickStartTitle: "数分で、動き出す。",
+  quickStartSub: "3 ステップで、本物の UI が動きます。",
   readFullDocs: "ドキュメント全体を読む →",
   examples: "サンプル",
-  examplesTitle: "実際に見てみる。",
-  examplesSub: "インタラクティブなデモ。各デモのコードも確認できます。",
+  examplesTitle: "動かして、確かめる。",
+  examplesSub: "触って試せるデモです。コードも一緒に見られます。",
   viewAllExamples: "すべてのサンプルを見る →",
   readTheDocs: "ドキュメントを読む",
   addATask: "タスクを追加…",
@@ -295,38 +295,38 @@ export const LABELS = {
 export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   Paint: {
     title: "描いて、DOM に反映",
-    note: "左のグリッドはプレーンな真偽値の配列です: 塗る操作は配列の値を変えるだけです。右の DOM は update() が実行されたときにだけ更新され、そのときも変わったセルだけがパッチされます。",
+    note: "左のグリッドはただの boolean の配列で、塗る操作は配列の値を書き換えるだけ。右の DOM が更新されるのは update() が走ったときだけで、パッチされるのも変わったセルだけです。",
   },
   Draw: {
     title: "マークを描く",
-    note: "Nuclo のマークはスピログラフです: リングの内側を転がる 1 つの車輪と、その上の 2 本のペン。車輪、そのアーム、ペン、線はすべて 1 つの数値 t の関数です。タイムラインとフレームループは t を設定するだけで、update('draw') がその値を参照する関数を再実行します。",
+    note: "Nuclo のロゴはスピログラフ。リングの内側を転がる 1 つの車輪と、その上に 2 本のペンがあります。車輪もアームもペンも線も、すべて 1 つの数値 t の関数です。タイムラインとフレームループは t を設定するだけ。update('draw') が、t を読む関数を再実行します。",
   },
   Fireworks: {
     title: "空をタップ",
-    note: "すべての火花は配列内のプレーンなオブジェクトです。list() がそれぞれに <line> を与え、オブジェクトが配列から消えたフレームでそれを取り除きます。1 フレームに 1 回の update()。diff は行われません。",
+    note: "火花は 1 つ残らず、配列の中のただのオブジェクトです。list() がそれぞれに <line> を割り当て、配列から消えたフレームでその要素を取り除きます。update() は 1 フレームに 1 回で、diff はありません。",
   },
   Waves: {
     title: "波を曲げる",
-    note: "各パスの d は 3 つの数値のプレーンな関数です。スライダーとフレームループは数値を変えるだけで、update('waves') がそれを読む関数を再実行します。",
+    note: "各 path の d は、3 つの数値から決まるただの関数です。スライダーとフレームループは数値を変えるだけ。update('waves') が、それを読む関数を再実行します。",
   },
   Sort: {
     title: "並び替えても、作り直さない",
-    note: "バブルソートがプレーンな配列内のオブジェクトを入れ替えます。list() は各バーをそのオブジェクトに紐づけるので、update() は既存のノードを新しい順序に移動させます。カウンターを見てください: バーが作り直されることは一度もありません。",
+    note: "バブルソートが、ふつうの配列の中のオブジェクトを入れ替えます。list() は各バーをオブジェクトに紐づけているので、update() は既存のノードを新しい順序へ動かすだけ。カウンターを見てください。バーが作り直されることは一度もありません。",
   },
   Chase: {
     title: "ロープを導く",
-    note: "このカードは scope() です。毎フレーム 32 個のプレーンな点を動かして update('chase') を呼び出します: Nuclo はこのカード内の属性を再計算し、ページの残りには触れません。",
+    note: "このカードは scope() です。毎フレーム 32 個の点を動かして update('chase') を呼ぶと、Nuclo が再計算するのはこのカード内の属性だけ。ページのほかの部分には触れません。",
   },
   Reflex: {
     title: "緑になったらタップ",
-    note: "1 つのプレーンな文字列がステージに何を表示するかを決めます。各 when() ブランチは条件が真になったときに構築され、偽になったときに取り除かれます。ステージのクラスは同じ文字列の関数です。",
+    note: "ステージに何を表示するかは、1 つの文字列で決まります。各 when() ブランチは条件が true になると作られ、false になると取り除かれます。ステージの class も、同じ文字列から導かれる関数です。",
   },
   Warp: {
     title: "長押しでワープ",
-    note: "onMount がフレームループを開始し、そのクリーンアップを返します。フィールドをアンマウントすると Nuclo がそのクリーンアップを実行します: ループは止まり、動き続けるものは何も残りません。",
+    note: "onMount がフレームループを開始し、そのクリーンアップ関数を返します。フィールドが unmount されると、Nuclo がクリーンアップを実行。ループは止まり、裏で動き続けるものは何も残りません。",
   },
   Life: {
     title: "ライフゲーム",
-    note: "盤面は各セルの生存期間を表す通常の配列です。ティックごとに次の状態を計算して update() を呼び出します。各セルのクラスはその生存期間から決まるので、変わったセルだけがパッチされます。",
+    note: "盤面は、各セルの生存期間を持つただの配列です。ティックごとに次の世代を計算して update() を呼びます。各セルの class は生存期間で決まるので、パッチされるのは変わったセルだけです。",
   },
 };

@@ -18,9 +18,9 @@ export const nav = {
 };
 
 export const footer = {
-  tagline: "明示的に更新する UI ランタイム。通常の関数と変更可能な状態を使い、1 回の呼び出しでデータを DOM に反映します。",
+  tagline: "更新のタイミングを自分で握る UI ランタイム。ふつうの関数とミュータブルな state で組み立てて、データから DOM へは update() ひとつで橋渡しします。",
   builtWith: "このサイトは Nuclo で構築されています。",
-  explore: "コンテンツ",
+  explore: "探す",
   documentation: "ドキュメント",
   examples: "サンプル",
   readme: "README",
@@ -34,7 +34,7 @@ export const app = {
   failedToLoad: "ページの読み込みに失敗しました",
   loadingLanguage: "言語を読み込んでいます…",
   notFound: "ページが見つかりません",
-  notFoundHint: "このアドレスには何もありません。",
+  notFoundHint: "このアドレスには、まだ何もありません。",
   goHome: "ホームページへ移動",
 };
 
@@ -54,26 +54,26 @@ export const common = {
 export const seo = {
   routes: {
     home: {
-      title: "Nuclo - 明示的な更新を行う軽量 DOM フレームワーク",
-      description: "Nuclo は依存関係ゼロの軽量な TypeScript DOM ライブラリです。関数で UI を構築し、プレーンな状態を変更し、update() を呼び出します。仮想 DOM、プロキシ、シグナルは使いません。",
+      title: "Nuclo - 更新を自分で決める軽量 DOM フレームワーク",
+      description: "Nuclo は依存ゼロで軽量な TypeScript 製 DOM ライブラリです。関数で UI を組み立て、ふつうの state を書き換えて、update() を呼ぶだけ。仮想 DOM もプロキシもシグナルも使いません。",
       keywords: "nuclo, dom フレームワーク, 状態依存の値, 明示的な更新, ミュータブルな状態, javascript, typescript, ui フレームワーク, 軽量",
     },
     "apps/:id": {
       title: "スタンドアロンアプリ - Nuclo サンプル",
-      description: "ブラウザ全体を使うワークスペースで動くインタラクティブな Nuclo アプリのサンプルです。",
+      description: "ブラウザ全体をワークスペースにして動かす、インタラクティブな Nuclo アプリのサンプルです。",
     },
     desktop: {
       title: "Nuclo OS - デスクトップ",
-      description: "動作するアプリ（ファイル、ノート、ターミナル、電卓、タイマー、カンバンボード、チャートとスプレッドシート付きのファイナンス、カレンダー）と、ブラウザに保存されるシミュレートされたファイルシステムを備えたスタンドアロンのデスクトップです。",
+      description: "ファイル、ノート、ターミナル、電卓、タイマー、カンバンボード、チャートとスプレッドシート付きのファイナンス、カレンダーが動く、スタンドアロンのデスクトップです。ファイルシステムはシミュレートされ、ブラウザに保存されます。",
     },
     docs: {
       title: "Nuclo ドキュメント - ガイドと API リファレンス",
-      description: "Nuclo のドキュメント: インストール、タグビルダー、明示的な update()、when() と list()、イベント、ライフサイクル、SSR とハイドレーション、型付き CSS-in-TS、そして完全な API リファレンス。",
+      description: "Nuclo のドキュメント。インストール、タグビルダー、明示的な update()、when() と list()、イベント、ライフサイクル、SSR とハイドレーション、型付き CSS-in-TS、そして API リファレンスの全体をまとめています。",
       keywords: "nuclo ドキュメント, api リファレンス, はじめに, update, list, when, on",
     },
     examples: {
       title: "Nuclo サンプル - カウンター、Todo リスト、検索、スタイリング",
-      description: "ソースコード付きの Nuclo ライブサンプル: カウンター、Todo リスト、リアルタイム検索フィルター、型付き CSS-in-TS スタイリング。",
+      description: "ソースコード付きの Nuclo ライブサンプル。カウンター、Todo リスト、リアルタイム検索フィルター、型付き CSS-in-TS スタイリングを動かして試せます。",
       keywords: "nuclo サンプル, カウンター, todo, 検索フィルター, css-in-ts, ライブデモ",
     },
   } as Record<string, { title: string; description: string; keywords?: string }>,

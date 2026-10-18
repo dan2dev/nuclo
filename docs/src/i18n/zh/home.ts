@@ -5,17 +5,17 @@ import { NUCLO_VERSION, NUCLO_GZIP_KB } from "../../generated/nuclo-stats.ts";
 export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · 零依赖`;
 
 // A *word* is marked: the hero draws a highlight behind it.
-export const HERO_TITLE_LINES = ["用 nuclo", "构建界面，", "*显式*更新。"];
+export const HERO_TITLE_LINES = ["用 nuclo 写界面，", "什么时候刷新，", "*你说了算*。"];
 
 export const HERO_DESC =
-  "一个轻量、类型安全的 DOM 框架。状态就是普通的可变数据。每一次更新都由你掌控。没有代理，没有信号，没有虚拟 DOM。";
+  "轻巧、类型安全的 DOM 框架。状态就是普通的可变数据，每一次更新都由你亲手触发。没有 Proxy，没有 signal，没有虚拟 DOM。";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
 export const HERO_STATS = [
-  { num: "0",   sup: "",   label: "依赖" },
+  { num: "0",   sup: "",   label: "运行时依赖" },
   { num: "175", sup: "",   label: "类型安全的 HTML 与 SVG 构建函数" },
-  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "gzip 压缩后，核心运行时" },
+  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "核心运行时，gzip 后" },
 ];
 
 export const COUNTER_TEASER_CODE = `import 'nuclo'
@@ -71,46 +71,46 @@ export function TodoList() {
 }`;
 
 export const PHILOSOPHY_QUOTE =
-  "修改状态时，DOM 不会变化。调用 update()，Nuclo 就精确地做你要求的事。不多，不少。";
+  "改状态，页面纹丝不动。直到你调用 update()，Nuclo 才动手，只做你交代的事，不多也不少。";
 
 export const PHILOSOPHY_POINTS = [
   {
     num: "01",
     title: "显式优于隐式",
-    desc: "没有代理在背后追踪状态。你修改状态，然后调用 update()。因果关系始终清晰可预期。",
+    desc: "没有 Proxy 在背后偷偷盯着状态。你改数据，再调用 update()，什么时候发生什么，一目了然。",
   },
   {
     num: "02",
-    title: "随意批量修改，只更新一次",
-    desc: "做十次修改，然后调用一次 update()。DOM 只更新到最终状态，省去中间的无效渲染。",
+    title: "改十次，刷新一次",
+    desc: "连改十次，只需调用一次 update()。DOM 直接到位，中间那些多余的 render 一概省掉。",
   },
   {
     num: "03",
-    title: "函数，而非组件",
-    desc: "用普通的 JavaScript 函数构建。Nuclo 不需要类、装饰器或特殊语法。每个函数返回 DOM 节点。onMount 和 onDestroy 是普通的修饰函数，只在需要时添加。",
+    title: "函数，不是组件",
+    desc: "写的就是普通 JavaScript 函数，不用类，不用装饰器，也没有特殊语法，每个函数返回的就是 DOM 节点。onMount 和 onDestroy 只是普通的修饰函数，用得上再加。",
   },
 ];
 
 export const FEATURES = [
   {
     num: "01 · 显式",
-    title: "更新周期由你掌控",
-    desc: "随意修改，然后调用一次 update()。Nuclo 不需要订阅，不需要调度器，也不会执行隐式 diff。DOM 在你决定的时刻同步。",
+    title: "更新节奏，你说了算",
+    desc: "想怎么改就怎么改，最后调用一次 update()。没有订阅，没有调度器，也没有暗中进行的 diff。DOM 在你决定的那一刻同步。",
   },
   {
     num: "02 · 轻量",
     title: "零依赖",
-    desc: `核心运行时 gzip 压缩后约 ${NUCLO_GZIP_KB} KB。Nuclo 不需要编译器，也不需要构建插件。添加一行 import 即可开始开发。`,
+    desc: `核心运行时 gzip 后只有约 ${NUCLO_GZIP_KB} KB。不需要编译器，也不需要构建插件，一行 import 就能开工。`,
   },
   {
     num: "03 · 类型安全",
     title: "TypeScript 优先",
-    desc: "175 个具有完整类型支持的 HTML 与 SVG 构建函数，为每个属性、样式属性和事件提供自动补全。",
+    desc: "175 个带完整类型的 HTML 与 SVG 构建函数，属性、样式和事件都有自动补全。",
   },
   {
     num: "04 · 精确",
-    title: "精准更新 DOM",
-    desc: "动态表达式在 update() 时重新求值。只有发生变化的值才会写入 DOM。",
+    title: "只动该动的 DOM",
+    desc: "update() 时，动态表达式会重新求值，只有真正变了的值才会写进 DOM。",
   },
 ];
 
@@ -119,29 +119,29 @@ export const PIPELINE_STEPS = [
   {
     kicker: "01 · 修改",
     title: "改变你的数据",
-    desc: "状态就是普通的 JavaScript：变量、数组、对象。想怎么改就怎么改，改多少次都可以。",
+    desc: "状态就是普通的 JavaScript：变量、数组、对象，想怎么改就怎么改，改几次都行。",
     code: `<span class="pr">todos</span><span class="pt">.</span><span class="fn">push</span><span class="pt">(</span><span class="pr">newTodo</span><span class="pt">)</span>
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
     kicker: "02 · 提交",
     title: "调用 update()",
-    desc: "一个全局函数提交你的更改。批量做十几次修改，然后提交一次。调用前，DOM 不会因这些修改而更新。",
+    desc: "一个全局函数，把改动一次性提交。哪怕攒了十几处修改，也只需调用一次；在此之前，DOM 不会有任何反应。",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
     kicker: "03 · 更新",
     title: "Nuclo 同步 DOM",
-    desc: "每个动态表达式重新求值。Nuclo 只把真正改变的值写入 DOM。没有 diff，没有重新渲染。",
-    code: `<span class="cm">// 修补了 2 个节点，</span>
+    desc: "所有动态表达式重新求值，Nuclo 只把真正变化的值写入 DOM。没有 diff，没有重新 render。",
+    code: `<span class="cm">// 只改了 2 个节点，</span>
 <span class="cm">// 其余一切未被触碰</span>`,
   },
 ];
 
 // ── Comparison ──────────────────────────────────────────────────────────────
-export const COMPARISON_TITLE = "没有 diff。没有代理。没有意外。";
+export const COMPARISON_TITLE = "没有 diff，没有 Proxy，没有意外。";
 export const COMPARISON_SUB =
-  "Nuclo 只在你调用 update() 时更新界面。";
+  "界面只在你调用 update() 时才会更新。";
 
 export const COMPARISON_COLS: {
   name: string;
@@ -153,20 +153,20 @@ export const COMPARISON_COLS: {
     name: "虚拟 DOM",
     sub: "渲染 → 比较 → 提交",
     items: [
-      { good: false, text: "每次状态变化都重新渲染组件树" },
-      { good: false, text: "对比新旧两棵树来找出变化" },
-      { good: false, text: "需要通过记忆化优化来弥补性能开销" },
-      { good: false, text: "需要处理陈旧闭包和依赖数组" },
+      { good: false, text: "状态一变，整棵组件树重新 render" },
+      { good: false, text: "新旧两棵树逐个比对，才能找出差异" },
+      { good: false, text: "还得靠 memo 之类的优化把性能补回来" },
+      { good: false, text: "要和过期闭包、依赖数组纠缠不清" },
     ],
   },
   {
-    name: "信号与代理",
-    sub: "信号 · 状态存储 · 副作用",
+    name: "Signal 与 Proxy",
+    sub: "signal · store · effect",
     items: [
-      { good: false, text: "把你的状态包进代理和订阅里" },
-      { good: false, text: "在运行时隐式追踪依赖" },
-      { good: false, text: "按你无法控制的时机级联更新" },
-      { good: false, text: "很难在调试器中逐步跟踪" },
+      { good: false, text: "状态被层层包进 Proxy 和订阅里" },
+      { good: false, text: "运行时偷偷追踪依赖关系" },
+      { good: false, text: "更新一环扣一环，时机不由你定" },
+      { good: false, text: "断点调试时很难一步步跟下来" },
     ],
   },
   {
@@ -174,21 +174,21 @@ export const COMPARISON_COLS: {
     sub: "修改 → update()",
     featured: true,
     items: [
-      { good: true, text: "普通的可变状态，没有包装，没有代理" },
-      { good: true, text: "一次调用 update()，就是全部的心智模型" },
-      { good: true, text: "只更新发生变化的值" },
+      { good: true, text: "普通的可变状态，不包装，不代理" },
+      { good: true, text: "一个 update()，就是全部心智模型" },
+      { good: true, text: "只更新真正变化的值" },
       { good: true, text: `约 ${NUCLO_GZIP_KB} KB，零依赖，TypeScript 优先` },
     ],
   },
 ];
 
 // ── Benchmarks ──────────────────────────────────────────────────────────────
-export const BENCHMARK_TITLE = "在关键之处足够快。";
+export const BENCHMARK_TITLE = "该快的地方，一点不慢。";
 export const BENCHMARK_SUB =
-  "这些是来自 js-framework-benchmark 的独立数据，涵盖创建、更新、交换和清除数千行。";
+  "数据来自 js-framework-benchmark 的独立测试：创建、更新、交换、清空数千行，一项不落。";
 
 export const BENCHMARK_NOTE =
-  "该分数是相对于测试中最快实现的耗时倍数，为所有 keyed 基准的加权几何平均值。";
+  "分数是相对于最快实现的耗时倍数，取所有 keyed 基准的加权几何平均值。";
 
 export const BENCHMARK_SOURCE_URL =
   "https://krausest.github.io/js-framework-benchmark/2026/chrome152.html";
@@ -216,29 +216,29 @@ export const BENCHMARK_ENTRIES: {
 ];
 
 // ── CTA ─────────────────────────────────────────────────────────────────────
-export const CTA_TITLE = "随时准备就绪。";
+export const CTA_TITLE = "装上就能用。";
 export const CTA_SUB =
-  "安装 Nuclo，导入一次，即可构建在你指定的时刻更新的 UI。一个下午就能学完整个 API。";
+  "安装 Nuclo，import 一次，就能写出只在你指定时刻更新的 UI。整套 API，一个下午就能学完。";
 
 export const QUICK_START_STEPS = [
   {
     num: "01 - 安装",
     title: "安装",
-    desc: "用 npm、pnpm、yarn 或 bun 把 Nuclo 添加到你的项目。",
+    desc: "用 npm、pnpm、yarn 或 bun 把 Nuclo 加进项目。",
     code: `<span class="pt">$</span> <span class="fn">npm</span> create nuclo@latest<span class="tcaret"></span>`,
     lang: "terminal",
   },
   {
     num: "02 - 导入",
     title: "导入",
-    desc: "一个副作用导入即可全局注册全部 175 个标签构建函数。",
+    desc: "一条 side-effect import，全部 175 个标签构建函数就注册到全局了。",
     code: `<span class="kw">import</span> <span class="st">'nuclo'</span>`,
     lang: "main.ts",
   },
   {
     num: "03 - 构建",
     title: "构建",
-    desc: "编写返回 DOM 节点的普通函数。状态变化时调用 update()。",
+    desc: "写几个返回 DOM 节点的普通函数，状态变了，就调用 update()。",
     code: `<span class="kw">let</span> <span class="pr">name</span> <span class="pt">=</span> <span class="st">'World'</span>
 
 <span class="kw">const</span> <span class="pr">app</span> <span class="pt">=</span> <span class="fn">div</span><span class="pt">(</span>
@@ -261,24 +261,24 @@ export const LABELS = {
   viewExamples: "查看示例",
   copyInstall: "复制安装命令",
   howItWorks: "工作原理",
-  pipelineTitle: "显式掌控更新周期。",
-  pipelineSub: "用函数表示依赖状态的值，没有依赖图，也没有调度器。何时运行由你决定——从数据到屏幕只有一条可预期的路径。",
+  pipelineTitle: "更新的节奏，握在你手里。",
+  pipelineSub: "依赖状态的值写成函数就行，没有依赖图，也没有调度器。何时运行，由你决定。数据到屏幕，只有一条看得见的路。",
   philosophy: "理念",
   features: "特性",
-  featuresTitle: "为清晰而生。",
-  featuresSub: "没有魔法。没有意外。每一次更新都是有意为之。",
+  featuresTitle: "一切清清楚楚。",
+  featuresSub: "没有黑魔法，没有意外，每一次更新都是你有意为之。",
   comparison: "对比",
-  theNucloWay: "nuclo 之道",
+  theNucloWay: "Nuclo 的做法",
   benchmarks: "基准测试",
   lowerIsBetter: "越低越好",
   benchmarkSource: "来源：js-framework-benchmark",
   quickStart: "快速开始",
-  quickStartTitle: "几分钟即可上手。",
-  quickStartSub: "只需三步，即可开始构建 UI。",
+  quickStartTitle: "几分钟，上手。",
+  quickStartSub: "三步，就能开始写 UI。",
   readFullDocs: "阅读完整文档 →",
   examples: "示例",
-  examplesTitle: "看看实际效果。",
-  examplesSub: "交互式演示。查看每个演示背后的代码。",
+  examplesTitle: "亲手试试看。",
+  examplesSub: "可以直接操作的演示，每一个都附带源码。",
   viewAllExamples: "查看全部示例 →",
   readTheDocs: "阅读文档",
   addATask: "添加任务…",
@@ -294,39 +294,39 @@ export const LABELS = {
 // ── The hero card's examples, keyed by their export in home/examples.ts and home/playground.ts ──
 export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   Paint: {
-    title: "先涂画，再更新",
-    note: "左侧网格是一个普通的布尔数组：涂画只会修改数组。右侧的 DOM 只在调用 update() 后才会更新，而且只更新发生变化的格子。",
+    title: "先涂，再更新",
+    note: "左边的网格只是一个布尔数组，涂抹只改数组本身。右边的 DOM 要等到调用 update() 才会更新，而且只更新变了的格子。",
   },
   Draw: {
-    title: "画出标志",
-    note: "Nuclo 的标志是一个万花尺：一个轮子在环内滚动，上面有两支笔。轮子、臂、笔和线条都是同一个数 t 的函数。时间轴和帧循环只设置 t；update('draw') 重新运行读取它的部分。",
+    title: "画出 Logo",
+    note: "Nuclo 的 Logo 其实是个繁花规（spirograph）：一个轮子在圆环里滚动，轮上带着两支笔。轮子、连杆、笔尖和轨迹，全是同一个数 t 的函数。时间轴和帧循环只负责设置 t，update('draw') 重新运行读取它的那部分。",
   },
   Fireworks: {
-    title: "点一下天空",
-    note: "每个火花都是数组中的一个普通对象。list() 给每个火花一个 <line>，并在其对象离开数组的那一帧把它移除。每帧一次 update()；没有任何 diff。",
+    title: "点亮夜空",
+    note: "每颗火花都是数组里的一个普通对象。list() 给每颗火花配一条 <line>，对象一离开数组，那条线在同一帧就被移除。每帧只调用一次 update()，没有任何 diff。",
   },
   Waves: {
-    title: "弯折波浪",
-    note: "每条 path 的 d 都是三个数的普通函数。滑块和帧循环只改变这些数；update('waves') 重新运行读取它们的函数。",
+    title: "拨动波浪",
+    note: "每条 path 的 d 都只是三个数的函数。滑块和帧循环只改这三个数，update('waves') 再重新运行读取它们的函数。",
   },
   Sort: {
-    title: "排好序，从不重建",
-    note: "冒泡排序在普通数组中交换对象。list() 把每个柱子绑定到它的对象，所以 update() 按新顺序移动现有节点。看看计数器：没有任何柱子被重新创建。",
+    title: "排序，但绝不重建",
+    note: "冒泡排序在普通数组里交换对象。list() 把每根柱子绑定到它的对象上，所以 update() 只是按新顺序移动现有节点。盯着计数器看：没有一根柱子被重新创建。",
   },
   Chase: {
-    title: "牵引绳索",
-    note: "这张卡片是一个 scope()。每一帧移动 32 个普通的点并调用 update('chase')：Nuclo 重新计算这张卡片里的属性，页面其余部分保持不动。",
+    title: "牵着绳子走",
+    note: "这张卡片是一个 scope()。每一帧移动 32 个普通的点，然后调用 update('chase')：Nuclo 只重新计算这张卡片里的属性，页面其他部分原封不动。",
   },
   Reflex: {
-    title: "变绿时点击",
-    note: "一个普通字符串决定显示区域的内容。每个 when() 分支在条件成立时构建，在条件失效时移除；显示区域的 class 是同一个字符串的函数。",
+    title: "变绿就点",
+    note: "一个普通字符串决定显示区域里是什么。每个 when() 分支在条件成立时构建、失效时移除，显示区域的 class 则是同一个字符串的函数。",
   },
   Warp: {
-    title: "按住进入曲速",
-    note: "onMount 启动帧循环并返回其清理函数。卸载这片星域，Nuclo 就会调用清理函数，停止循环。",
+    title: "按住，跃迁",
+    note: "onMount 启动帧循环，并返回它的清理函数。星空一旦卸载，Nuclo 就会调用清理函数，把循环停掉。",
   },
   Life: {
     title: "生命游戏",
-    note: "棋盘是一个普通的年龄数组。每一拍计算下一代并调用 update()；每个格子的 class 是其年龄的函数，所以只有发生变化的格子才会更新。",
+    note: "棋盘就是一个记录年龄的数组。每一拍算出下一代，再调用 update()。每个格子的 class 是它年龄的函数，所以只有变了的格子才会更新。",
   },
 };

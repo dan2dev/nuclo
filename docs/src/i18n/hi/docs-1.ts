@@ -9,10 +9,10 @@ export const GROUPS_1: DocGroupText[] = [
     sections: [
       {
         id: "overview",
-        title: "अवलोकन",
+        title: "Overview",
         content: `
-      <p>Nuclo TypeScript के लिए एक छोटी DOM लाइब्रेरी है। आप पेज को <code>div()</code> और <code>button()</code> जैसे साधारण फ़ंक्शन के साथ बनाते हैं, स्टेट को सामान्य वेरिएबल में रखते हैं, और जब पेज अपडेट करना हो तो <code>update()</code> कॉल करते हैं।</p>
-      <p>Nuclo में कोई वर्चुअल DOM, कोई कंपाइलर, कोई प्रॉक्सी और कोई सिग्नल नहीं है।</p>
+      <p>Nuclo TypeScript के लिए एक छोटी DOM library है। आप <code>div()</code> और <code>button()</code> जैसे आम functions से पेज बनाते हैं, state को सादे variables में रखते हैं, और पेज बदलना हो तो <code>update()</code> कॉल कर देते हैं।</p>
+      <p>Nuclo में न virtual DOM है, न compiler, न proxy और न signals।</p>
       ${code("main.ts", `
 import 'nuclo'
 
@@ -26,68 +26,68 @@ const App = () =>
 
 render(App, document.getElementById('app')!)
 `)}
-      <h3>मानसिक मॉडल</h3>
+      <h3>Mental model</h3>
       <ol>
-        <li>टैग बिल्डर के साथ UI बनाएँ।</li>
-        <li>स्टेट पर निर्भर प्रत्येक मान के लिए एक फ़ंक्शन पास करें।</li>
-        <li>साधारण JavaScript से स्टेट बदलें।</li>
-        <li><code>update()</code> कॉल करें। Nuclo फिर से फ़ंक्शन चलाता है और DOM को पैच करता है।</li>
+        <li>Tag builders से UI बनाइए।</li>
+        <li>जो भी value state पर निर्भर है, उसके लिए एक function पास कीजिए।</li>
+        <li>State को सादे JavaScript से बदलिए।</li>
+        <li><code>update()</code> कॉल कीजिए। Nuclo functions को दोबारा चलाता है और DOM को patch कर देता है।</li>
       </ol>
-      <p>किसी वेरिएबल को बदलने से DOM पर असर नहीं पड़ता है। पेज तभी बदलता है जब आप <code>update()</code> कॉल करते हैं।</p>
+      <p>सिर्फ़ variable बदलने से DOM पर कोई असर नहीं पड़ता। पेज तभी बदलता है जब आप <code>update()</code> कॉल करते हैं।</p>
     `,
       },
       {
         id: "quick-start",
-        title: "त्वरित शुरुआत",
+        title: "Quick start",
         content: `
-      <p><code>create-nuclo</code> Nuclo के लिए तैयार Vite और TypeScript प्रोजेक्ट बनाता है:</p>
+      <p><code>create-nuclo</code> एक Vite + TypeScript project बना देता है जो Nuclo के लिए पहले से सेट है:</p>
     `,
         afterContent: `
-      <p>यह प्रोजेक्ट का नाम पूछता है। प्रॉम्प्ट को छोड़ने के लिए, नाम और फ़्लैग पास करें। npm के साथ, फ़्लैग से पहले <code>--</code> लगाएँ:</p>
+      <p>यह आपसे project का नाम पूछता है। prompt स्किप करना हो तो नाम और flags सीधे दे दीजिए। npm में flags से पहले <code>--</code> लगाना पड़ता है:</p>
       ${sh("npm create nuclo@latest my-app -- --template basic --yes")}
-      <p>फिर डिपेंडेंसी इंस्टॉल करें और डेव सर्वर शुरू करें:</p>
+      <p>फिर dependencies install कीजिए और dev server चालू कीजिए:</p>
       ${sh("cd my-app", "npm install", "npm run dev")}
-      <h3>विकल्प</h3>
+      <h3>Options</h3>
       <ul>
-        <li><code>[project-name]</code>: प्रोजेक्ट का फ़ोल्डर। डिफ़ॉल्ट <code>nuclo-app</code> है।</li>
-        <li><code>-t, --template &lt;name&gt;</code>: कॉपी करने के लिए टेम्पलेट। फ़िलहाल केवल <code>basic</code> मौजूद है।</li>
-        <li><code>-y, --yes</code>: कभी प्रॉम्प्ट न दिखाएँ, डिफ़ॉल्ट का उपयोग करें।</li>
-        <li><code>-f, --force</code>: ऐसे फ़ोल्डर में लिखें जो खाली न हो।</li>
-        <li><code>-h, --help</code>: सहायता प्रिंट करें।</li>
+        <li><code>[project-name]</code>: project का folder। default <code>nuclo-app</code> है।</li>
+        <li><code>-t, --template &lt;name&gt;</code>: कौन सा template कॉपी करना है। अभी सिर्फ़ <code>basic</code> है।</li>
+        <li><code>-y, --yes</code>: कोई prompt नहीं दिखाता, defaults इस्तेमाल करता है।</li>
+        <li><code>-f, --force</code>: खाली न होने पर भी उसी folder में लिख देता है।</li>
+        <li><code>-h, --help</code>: help दिखाता है।</li>
       </ul>
     `,
       },
       {
         id: "installation",
-        title: "इंस्टॉलेशन और इम्पोर्ट",
+        title: "Installation और imports",
         content: `
-      <p>किसी मौजूदा प्रोजेक्ट में Nuclo जोड़ने के लिए:</p>
+      <p>पहले से बने project में Nuclo जोड़ने के लिए:</p>
       ${sh("npm install nuclo")}
-      <p>या <code>pnpm add nuclo</code>, <code>yarn add nuclo</code> या <code>bun add nuclo</code> का उपयोग करें। Nuclo की कोई निर्भरता नहीं है।</p>
-      <p>रूटिंग कोर पैकेज का हिस्सा नहीं है। यह अलग <a href="#router-overview"><code>nuclo-router</code></a> पैकेज में मिलता है, जिसे ज़रूरत पड़ने पर <code>nuclo</code> के साथ इंस्टॉल करें।</p>
-      <h3>ग्लोबल्स</h3>
-      <p><code>import 'nuclo'</code> इन्हें <code>globalThis</code> पर रखता है:</p>
+      <p>चाहें तो <code>pnpm add nuclo</code>, <code>yarn add nuclo</code> या <code>bun add nuclo</code> भी चलेगा। Nuclo की कोई dependency नहीं है।</p>
+      <p>Routing core package में नहीं आती। वह अलग package <a href="#router-overview"><code>nuclo-router</code></a> में है, जिसे ज़रूरत हो तो <code>nuclo</code> के साथ install कर लीजिए।</p>
+      <h3>Globals</h3>
+      <p><code>import 'nuclo'</code> ये सब <code>globalThis</code> पर रख देता है:</p>
       <ul>
-        <li><strong>175 टैग बिल्डर</strong>: HTML के लिए 112 (<code>div</code>, <code>span</code>, <code>button</code>, ...) और SVG के लिए 63, <code>Svg</code> सफ़िक्स के साथ (<code>svgSvg</code>, <code>pathSvg</code>,…)। <a href="#tag-builders">टैग बिल्डर</a> देखें।</li>
-        <li><strong>16 हेल्पर</strong>: <code>update</code>, <code>scope</code>, <code>when</code>, <code>list</code>, <code>region</code>, <code>into</code>, <code>on</code>, <code>render</code>, <code>hydrate</code>, <code>forceUpdate</code>, <code>css</code>, <code>cx</code>, <code>createCss</code>, <code>variants</code>, <code>keyframes</code> और <code>globalStyle</code>।</li>
+        <li><strong>175 tag builders</strong>: HTML के 112 (<code>div</code>, <code>span</code>, <code>button</code>, ...) और SVG के 63, जिनके नाम में <code>Svg</code> suffix लगता है (<code>svgSvg</code>, <code>pathSvg</code>,…)। <a href="#tag-builders">Tag builders</a> देखिए।</li>
+        <li><strong>16 helpers</strong>: <code>update</code>, <code>scope</code>, <code>when</code>, <code>list</code>, <code>region</code>, <code>into</code>, <code>on</code>, <code>render</code>, <code>hydrate</code>, <code>forceUpdate</code>, <code>css</code>, <code>cx</code>, <code>createCss</code>, <code>variants</code>, <code>keyframes</code> और <code>globalStyle</code>।</li>
       </ul>
-      <p>इम्पोर्ट किसी भी कोड से पहले चलना चाहिए जो बिल्डर को कॉल करता है। ES मॉड्यूल इम्पोर्ट के क्रम में चलते हैं, इसलिए यह विफल रहता है:</p>
+      <p>यह import उस हर कोड से पहले चलना चाहिए जो builders को कॉल करता है। ES modules import के क्रम में चलते हैं, इसलिए नीचे वाला कोड फ़ेल हो जाएगा:</p>
       ${code("main.ts", `
 import { App } from './app' // app.ts calls div() → ReferenceError: div is not defined
 import 'nuclo'
 `)}
-      <p>अपनी एंट्री फ़ाइल में <code>import 'nuclo'</code> को पहले रखें, या इसे ग्लोबल्स का उपयोग करने वाली प्रत्येक फ़ाइल में इम्पोर्ट करें।</p>
-      <h3>नेम्ड इम्पोर्ट</h3>
-      <p>हेल्पर नेम्ड एक्सपोर्ट के रूप में भी उपलब्ध हैं। ये वही फ़ंक्शन हैं जो ग्लोबल्स में हैं। <code>getCssText()</code> और <code>resetStyles()</code> केवल नेम्ड एक्सपोर्ट के रूप में मिलते हैं। टैग बिल्डर केवल ग्लोबल हैं, इसलिए <code>import { div } from 'nuclo'</code> काम नहीं करता है।</p>
+      <p>अपनी entry file में <code>import 'nuclo'</code> सबसे ऊपर रखिए, या जिस भी file में globals इस्तेमाल हों, उसमें इसे import कर लीजिए।</p>
+      <h3>Named imports</h3>
+      <p>Helpers को named exports की तरह भी import किया जा सकता है। ये वही functions हैं जो globals में हैं। <code>getCssText()</code> और <code>resetStyles()</code> सिर्फ़ named exports के रूप में मिलते हैं। Tag builders सिर्फ़ global हैं, इसलिए <code>import { div } from 'nuclo'</code> काम नहीं करेगा।</p>
       ${code("main.ts", `
 import { render, update, getCssText } from 'nuclo'
 `)}
-      <h3>एंट्री पॉइंट</h3>
+      <h3>Entry points</h3>
       <ul>
-        <li><code>nuclo</code>: ग्लोबल्स को पंजीकृत करता है और 16 हेल्पर के साथ <code>getCssText</code> और <code>resetStyles</code> को एक्सपोर्ट करता है।</li>
-        <li><code>nuclo/ssr</code>: <code>renderToString</code>, <code>renderManyToString</code>, <code>renderToStringWithContainer</code> और <code>getCssText</code>। <a href="#api-ssr">सर्वर रेंडरिंग</a> देखें।</li>
-        <li><code>nuclo/polyfill</code>: Node और Bun के लिए एक छोटा DOM। <a href="#api-polyfill">nuclo/polyfill</a> देखें।</li>
-        <li><code>nuclo/types</code>: केवल टाइप। <a href="#typescript-setup">TypeScript</a> देखें।</li>
+        <li><code>nuclo</code>: globals register करता है और 16 helpers के साथ <code>getCssText</code> और <code>resetStyles</code> भी export करता है।</li>
+        <li><code>nuclo/ssr</code>: <code>renderToString</code>, <code>renderManyToString</code>, <code>renderToStringWithContainer</code> और <code>getCssText</code>। <a href="#api-ssr">Server rendering</a> देखिए।</li>
+        <li><code>nuclo/polyfill</code>: Node और Bun के लिए एक छोटा DOM। <a href="#api-polyfill">nuclo/polyfill</a> देखिए।</li>
+        <li><code>nuclo/types</code>: सिर्फ़ types। <a href="#typescript-setup">TypeScript</a> देखिए।</li>
       </ul>
     `,
       },
@@ -95,12 +95,12 @@ import { render, update, getCssText } from 'nuclo'
         id: "typescript-setup",
         title: "TypeScript",
         content: `
-      <p>Nuclo अपने टाइप के साथ आता है। आपको दो चीज़ें चाहिए:</p>
+      <p>Nuclo अपने types के साथ आता है। आपको बस दो चीज़ें चाहिए:</p>
       <ul>
-        <li><code>"moduleResolution": "bundler"</code>. <code>node16</code> और <code>nodenext</code> अभी समर्थित नहीं हैं।</li>
-        <li><code>DOM</code> lib. जब आप <code>lib</code> सेट नहीं करते हैं तो TypeScript इसे डिफ़ॉल्ट रूप से शामिल करता है।</li>
+        <li><code>"moduleResolution": "bundler"</code>. <code>node16</code> और <code>nodenext</code> अभी supported नहीं हैं।</li>
+        <li><code>DOM</code> lib. आपने <code>lib</code> सेट नहीं किया है तो TypeScript इसे अपने आप शामिल कर लेता है।</li>
       </ul>
-      <p>यदि प्रोजेक्ट में कोई फ़ाइल <code>'nuclo'</code> इम्पोर्ट करती है, तो प्रत्येक फ़ाइल ग्लोबल टाइप देखती है। इसके अलावा कुछ नहीं चाहिए। यदि कोई फ़ाइल इसे इम्पोर्ट नहीं करती है, उदाहरण के लिए परीक्षणों के लिए एक अलग tsconfig में, टाइप खुद जोड़ें:</p>
+      <p>project की कोई भी file <code>'nuclo'</code> import करती है, तो हर file को global types दिखने लगते हैं। इसके अलावा कुछ और नहीं चाहिए। अगर कोई file इसे import नहीं करती (जैसे tests के लिए अलग tsconfig में), तो types खुद जोड़ दीजिए:</p>
       ${code("tsconfig.json", `
 {
   "compilerOptions": {
@@ -112,26 +112,26 @@ import { render, update, getCssText } from 'nuclo'
   }
 }
 `)}
-      <p>या <code>.d.ts</code> फ़ाइल में <code>/// &lt;reference types="nuclo/types" /&gt;</code> जोड़ें।</p>
-      <h3>उपयोगी टाइप</h3>
-      <p>ये टाइप ग्लोबल हैं, इसलिए आप इन्हें इम्पोर्ट के बिना उपयोग करते हैं:</p>
+      <p>या किसी <code>.d.ts</code> file में <code>/// &lt;reference types="nuclo/types" /&gt;</code> डाल दीजिए।</p>
+      <h3>काम के types</h3>
+      <p>ये types global हैं, इसलिए इन्हें बिना import किए इस्तेमाल कर सकते हैं:</p>
       <ul>
-        <li><code>NodeModFn&lt;Tag&gt;</code>: टैग बिल्डर का रिटर्न टाइप। इसे एक कंपोनेंट के रिटर्न टाइप के रूप में उपयोग करें।</li>
-        <li><code>NodeModLike&lt;Tag&gt;</code>: टैग बिल्डर आर्ग्युमेंट के रूप में जो कुछ स्वीकार करता है।</li>
-        <li><code>ExpandedElement&lt;Tag&gt;</code>: <code>render()</code> और <code>hydrate()</code> क्या लौटाते हैं।</li>
-        <li><code>ElementTagName</code>: कोई भी HTML टैग नाम।</li>
-        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: वह एट्रिब्यूट ऑब्जेक्ट जिसे टैग बिल्डर स्वीकार करता है, जिसमें <code>on*</code> हैंडलर, <code>onMount</code> और <code>onDestroy</code> शामिल हैं। इसका उपयोग उन कंपोनेंट के लिए करें जो एट्रिब्यूट आगे पास करते हैं।</li>
-        <li><code>MountCallback</code> और <code>DestroyCallback</code>: <code>onMount</code> और <code>onDestroy</code> हैंडलर।</li>
-        <li><code>WhenBuilder</code>, <code>ListModifier</code>: <code>when()</code> और <code>list()</code> क्या रिटर्न देते हैं।</li>
-        <li><code>RegionOptions</code>, <code>RegionType</code>: <code>region()</code> के विकल्प।</li>
-        <li><code>StyleResult</code>, <code>Style</code>, <code>ThemeConfig</code>, <code>CssInstance</code> और अन्य स्टाइल टाइप। आप इन्हें भी इम्पोर्ट कर सकते हैं: <code>import type { StyleResult } from 'nuclo'</code>.</li>
+        <li><code>NodeModFn&lt;Tag&gt;</code>: tag builder का return type। component का return type लिखने में इसे इस्तेमाल कीजिए।</li>
+        <li><code>NodeModLike&lt;Tag&gt;</code>: tag builder के argument के रूप में जो कुछ भी चल सकता है।</li>
+        <li><code>ExpandedElement&lt;Tag&gt;</code>: <code>render()</code> और <code>hydrate()</code> जो लौटाते हैं।</li>
+        <li><code>ElementTagName</code>: कोई भी HTML tag name।</li>
+        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: वह attributes object जो tag builder लेता है, जिसमें <code>on*</code> handlers, <code>onMount</code> और <code>onDestroy</code> भी आते हैं। जो components attributes आगे pass करते हैं, उनमें इसका इस्तेमाल कीजिए।</li>
+        <li><code>MountCallback</code> और <code>DestroyCallback</code>: <code>onMount</code> और <code>onDestroy</code> handlers।</li>
+        <li><code>WhenBuilder</code>, <code>ListModifier</code>: <code>when()</code> और <code>list()</code> जो लौटाते हैं।</li>
+        <li><code>RegionOptions</code>, <code>RegionType</code>: <code>region()</code> के options।</li>
+        <li><code>StyleResult</code>, <code>Style</code>, <code>ThemeConfig</code>, <code>CssInstance</code> और बाकी style types। इन्हें आप import भी कर सकते हैं: <code>import type { StyleResult } from 'nuclo'</code>.</li>
       </ul>
       ${code("badge.ts", `
 function Badge(text: string): NodeModFn<'span'> {
   return span(text)
 }
 `)}
-      <p><code>ExpandedElement&lt;Tag&gt;</code> प्रत्येक DOM सदस्य को वैकल्पिक के रूप में चिह्नित करता है। जब आपको पूर्ण एलिमेंट टाइप की आवश्यकता हो तो इसे कास्ट करें: <code>render(App, root) as HTMLDivElement</code>।</p>
+      <p><code>ExpandedElement&lt;Tag&gt;</code> में DOM के सारे members optional होते हैं। पूरा element type चाहिए तो cast कर लीजिए: <code>render(App, root) as HTMLDivElement</code>।</p>
     `,
       },
     ],
@@ -143,10 +143,10 @@ function Badge(text: string): NodeModFn<'span'> {
     sections: [
       {
         id: "tag-builders",
-        title: "टैग बिल्डर",
+        title: "Tag builders",
         content: `
-      <p>प्रत्येक HTML टैग एक ही नाम के साथ एक ग्लोबल फ़ंक्शन है: <code>div</code>, <code>span</code>, <code>input</code>, ... एक अपवाद <code>&lt;var&gt;</code> है, जो <code>var_</code> है क्योंकि <code>var</code> एक आरक्षित शब्द है। प्रत्येक SVG टैग में एक <code>Svg</code> प्रत्यय होता है: <code>svgSvg</code>, <code>pathSvg</code>, <code>circleSvg</code>, ...</p>
-      <p>टैग बिल्डर कॉल करते ही एलिमेंट नहीं बनता। <code>div('Hi')</code> एक <strong>builder</strong> लौटाता है: एक फ़ंक्शन जो बाद में एलिमेंट बनाता है। जब आप इसे <code>render()</code> के साथ माउंट करते हैं या किसी अन्य बिल्डर, <code>when()</code> या <code>list()</code> के अंदर रखते हैं तो Nuclo इसे कॉल करता है। प्रत्येक प्रयोग एक नया एलिमेंट बनाता है।</p>
+      <p>हर HTML tag एक global function है, जिसका नाम tag जैसा ही है: <code>div</code>, <code>span</code>, <code>input</code>, ... बस एक अपवाद है: <code>&lt;var&gt;</code> का function <code>var_</code> है, क्योंकि <code>var</code> reserved word है। हर SVG tag के नाम के आखिर में <code>Svg</code> लगता है: <code>svgSvg</code>, <code>pathSvg</code>, <code>circleSvg</code>, ...</p>
+      <p>Tag builder कॉल करते ही element नहीं बनता। <code>div('Hi')</code> एक <strong>builder</strong> लौटाता है, यानी ऐसा function जो element बाद में बनाएगा। Nuclo इसे तब कॉल करता है जब आप इसे <code>render()</code> से mount करते हैं, या किसी दूसरे builder, <code>when()</code> या <code>list()</code> के अंदर रखते हैं। हर बार इस्तेमाल पर नया element बनता है।</p>
       ${code("card.ts", `
 let name = 'Ada'
 
@@ -162,43 +162,43 @@ render(Card, document.body)
 `)}
     `,
         afterContent: `
-      <h3>आर्ग्युमेंट</h3>
-      <p>एक बिल्डर किसी भी संख्या में आर्ग्युमेंट लेता है और उन्हें बाएं से दाएं लागू करता है:</p>
+      <h3>Arguments</h3>
+      <p>Builder कितने भी arguments ले सकता है और उन्हें बाएँ से दाएँ apply करता है:</p>
       <ul>
-        <li><strong>string, number, bigint</strong>: एक टेक्स्ट नोड।</li>
-        <li><strong><code>() =&gt; value</code></strong>: टेक्स्ट जो <code>update()</code> पर बदलता है। <a href="#dynamic-functions">डायनेमिक मान</a> देखें।</li>
-        <li><strong><code>null</code>, <code>undefined</code></strong>: छोड़ दिया गया।</li>
-        <li><strong><code>true</code>, <code>false</code></strong>: "true" या "false" टेक्स्ट के रूप में रेंडर होते हैं। शर्तों के लिए <code>when()</code> का उपयोग करें।</li>
-        <li><strong>एक साधारण ऑब्जेक्ट</strong>: एट्रिब्यूट। <a href="#attributes">एट्रिब्यूट</a> देखें।</li>
-        <li><strong><code>css()</code>, <code>cx()</code> या <code>variants()</code> परिणाम</strong>: अपनी क्लास जोड़ता है।</li>
-        <li><strong><code>on(...)</code></strong>: एक इवेंट लिसनर या लाइफ़साइकल हुक।</li>
-        <li><strong>एक अन्य बिल्डर, <code>when()</code> या <code>list()</code></strong>: एक चाइल्ड नोड।</li>
-        <li><strong>एक DOM <code>Node</code></strong>: जैसा है वैसा ही जोड़ा गया।</li>
-        <li><strong><code>(el, index) =&gt; …</code></strong>: एक कस्टम मॉडिफ़ायर। नीचे देखें।</li>
+        <li><strong>string, number, bigint</strong>: एक text node।</li>
+        <li><strong><code>() =&gt; value</code></strong>: ऐसा text जो <code>update()</code> पर बदलता है। <a href="#dynamic-functions">Dynamic values</a> देखिए।</li>
+        <li><strong><code>null</code>, <code>undefined</code></strong>: ignore हो जाते हैं।</li>
+        <li><strong><code>true</code>, <code>false</code></strong>: "true" या "false" text की तरह render होते हैं। Conditions के लिए <code>when()</code> इस्तेमाल कीजिए।</li>
+        <li><strong>सादा object</strong>: attributes। <a href="#attributes">Attributes</a> देखिए।</li>
+        <li><strong><code>css()</code>, <code>cx()</code> या <code>variants()</code> का result</strong>: अपनी class जोड़ देता है।</li>
+        <li><strong><code>on(...)</code></strong>: event listener या lifecycle hook।</li>
+        <li><strong>कोई दूसरा builder, <code>when()</code> या <code>list()</code></strong>: child node।</li>
+        <li><strong>DOM <code>Node</code></strong>: जैसा है वैसा ही जुड़ जाता है।</li>
+        <li><strong><code>(el, index) =&gt; …</code></strong>: custom modifier। नीचे देखिए।</li>
       </ul>
-      <h3>ध्यान रखने योग्य बातें</h3>
+      <h3>इन बातों का ध्यान रखिए</h3>
       <ul>
-        <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> "false" टेक्स्ट रेंडर करता है। <code>div(when(() =&gt; isAdmin, span('Admin')))</code> लिखें।</li>
-        <li>ऐरे चाइल्ड नोड नहीं हैं। उन्हें स्प्रेड करें: <code>ul(...names.map((n) =&gt; li(n)))</code>. बदलने वाली सूचियों के लिए, <code>list()</code> का उपयोग करें।</li>
-        <li>टैग नाम वाला एक स्थानीय वैरिएबल बिल्डर को छुपाता है। <code>function Row(label: string)</code> के अंदर, <code>label(...)</code> कॉल करने योग्य नहीं है। <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> और <code>i</code> जैसे स्थानीय नाम बदलें।</li>
-        <li>ब्राउज़र हर <code>id</code> वाले एलिमेंट को एक ग्लोबल वेरिएबल के रूप में भी उपलब्ध कराते हैं। यदि Nuclo लोड होने से पहले पृष्ठ में <code>&lt;main id="main"&gt;</code> शामिल है, तो Nuclo उस ग्लोबल को जस का तस रखता है, इसलिए <code>main(...)</code> एक <code>TypeError</code> त्रुटि थ्रो करता है। अन्य आईडी का प्रयोग करें।</li>
+        <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> "false" text render कर देता है। इसकी जगह <code>div(when(() =&gt; isAdmin, span('Admin')))</code> लिखिए।</li>
+        <li>Arrays child node नहीं होते। उन्हें spread कीजिए: <code>ul(...names.map((n) =&gt; li(n)))</code>. जो lists बदलती रहती हैं, उनके लिए <code>list()</code> इस्तेमाल कीजिए।</li>
+        <li>tag के नाम वाला local variable builder को shadow कर देता है। <code>function Row(label: string)</code> के अंदर <code>label(...)</code> कॉल नहीं हो सकता। <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> और <code>i</code> जैसे local नाम बदल दीजिए।</li>
+        <li>Browsers हर <code>id</code> वाले element को global variable की तरह भी expose करते हैं। Nuclo load होने से पहले पेज में <code>&lt;main id="main"&gt;</code> मौजूद है, तो Nuclo उस global को वैसा ही छोड़ देता है, और <code>main(...)</code> कॉल करने पर <code>TypeError</code> आता है। कोई और id रखिए।</li>
       </ul>
-      <h3>कस्टम मॉडिफ़ायर</h3>
-      <p>एक फ़ंक्शन जो कम से कम एक पैरामीटर घोषित करता है, आर्ग्युमेंट क्रम में एक बार चलता है, जबकि एलिमेंट बनाया जा रहा है। इसका पहला आर्ग्युमेंट एलिमेंट है। दूसरा एक आंतरिक इंडेक्स है, इसलिए इस पर भरोसा न करें। यदि यह एक स्ट्रिंग या संख्या लौटाता है, तो वह टेक्स्ट बन जाता है। <code>Node</code> लौटाने पर उसे जोड़ दिया जाता है। किसी ऑब्जेक्ट को एट्रिब्यूट के रूप में लागू किया जाता है।</p>
+      <h3>Custom modifiers</h3>
+      <p>जो function कम से कम एक parameter declare करता है, वह element बनते समय arguments के क्रम में एक बार चलता है। पहला argument element होता है। दूसरा internal index है, इसलिए उस पर भरोसा मत कीजिए। string या number लौटाने पर वह text बन जाता है। <code>Node</code> लौटाने पर वह जुड़ जाता है। object लौटाने पर उसे attributes की तरह apply किया जाता है।</p>
       ${code("example.ts", `
 const field = input((el) => {
   el.autocomplete = 'off'
 })
 `)}
-      <h3>एलिमेंट प्राप्त करना</h3>
-      <p><code>render()</code> मूल एलिमेंट लौटाता है। किसी ट्री के अंदर, <code>on("mount", (el) =&gt; …)</code> या एक कस्टम मॉडिफ़ायर का उपयोग करें। अलग एलिमेंट बनाने के लिए आप बिल्डर फ़ंक्शन को स्वयं भी कॉल कर सकते हैं:</p>
+      <h3>Element हाथ में लेना</h3>
+      <p><code>render()</code> root element लौटाता है। tree के अंदर <code>on("mount", (el) =&gt; …)</code> या custom modifier इस्तेमाल कीजिए। चाहें तो अलग से element बनाने के लिए builder function को खुद भी कॉल कर सकते हैं:</p>
       ${code("example.ts", `
 const el = div('Hello')() as HTMLDivElement
 document.body.append(el)
 `)}
-      <p>इसे अगले <code>update()</code> से पहले संलग्न करें। <code>update()</code> चलते समय जो नोड document में नहीं होता, वह हमेशा के लिए अपडेट होना बंद कर देता है।</p>
+      <p>इसे अगले <code>update()</code> से पहले document में जोड़ दीजिए। <code>update()</code> चलते समय जो node document में नहीं है, वह हमेशा के लिए update होना बंद कर देता है।</p>
       <h3>SVG</h3>
-      <p>SVG बिल्डर भी यही आर्ग्युमेंट लेते हैं। Nuclo प्रत्येक SVG एट्रिब्यूट को <code>setAttribute</code> के साथ सेट करता है, इसलिए <code>"stroke-width"</code> जैसे नाम लिखित रूप में काम करते हैं।</p>
+      <p>SVG builders भी यही arguments लेते हैं। Nuclo हर SVG attribute <code>setAttribute</code> से सेट करता है, इसलिए <code>"stroke-width"</code> जैसे नाम ज्यों के त्यों काम करते हैं।</p>
       ${code("icon.ts", `
 const Icon = () =>
   svgSvg(
@@ -206,16 +206,16 @@ const Icon = () =>
     circleSvg({ cx: 12, cy: 12, r: 10, fill: 'currentColor' }),
   )
 `)}
-      <h3>सभी बिल्डर</h3>
+      <h3>सारे builders</h3>
       <p><strong>HTML:</strong> a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark menu meta meter nav noscript object ol optgroup option output p picture pre progress q rp rt ruby s samp script search section select slot small source span strong style sub summary sup table tbody td template textarea tfoot th thead time title tr track u ul var_ video wbr</p>
       <p><strong>SVG:</strong> aSvg animateSvg animateMotionSvg animateTransformSvg circleSvg clipPathSvg defsSvg descSvg ellipseSvg feBlendSvg feColorMatrixSvg feComponentTransferSvg feCompositeSvg feConvolveMatrixSvg feDiffuseLightingSvg feDisplacementMapSvg feDistantLightSvg feDropShadowSvg feFloodSvg feFuncASvg feFuncBSvg feFuncGSvg feFuncRSvg feGaussianBlurSvg feImageSvg feMergeSvg feMergeNodeSvg feMorphologySvg feOffsetSvg fePointLightSvg feSpecularLightingSvg feSpotLightSvg feTileSvg feTurbulenceSvg filterSvg foreignObjectSvg gSvg imageSvg lineSvg linearGradientSvg markerSvg maskSvg metadataSvg mpathSvg pathSvg patternSvg polygonSvg polylineSvg radialGradientSvg rectSvg scriptSvg setSvg stopSvg styleSvg svgSvg switchSvg symbolSvg textSvg textPathSvg titleSvg tspanSvg useSvg viewSvg</p>
     `,
       },
       {
         id: "components",
-        title: "कंपोनेंट",
+        title: "Components",
         content: `
-      <p>एक कंपोनेंट एक साधारण फ़ंक्शन है जो एक बिल्डर लौटाता है, जैसे <code>button(...)</code>। कोई कंपोनेंट API नहीं है। जब तक आप इसे रेंडर नहीं करते या इसे किसी ट्री पर नहीं रखते तब तक कुछ भी नहीं बनता है।</p>
+      <p>Component बस एक आम function है जो builder लौटाता है, जैसे <code>button(...)</code>। कोई अलग component API नहीं है। जब तक आप इसे render नहीं करते या tree में नहीं रखते, कुछ नहीं बनता।</p>
       ${code("counter.ts", `
 function Counter(label: string) {
   let count = 0 // one per call
@@ -228,8 +228,8 @@ render(() => div(Counter('A'), Counter('B')))
 `)}
     `,
         afterContent: `
-      <p>फ़ंक्शन के अंदर घोषित स्टेट उस इंस्टेंस का अपना है। बाहर घोषित स्टेट सभी इंस्टेंस में साझा होता है। <code>forceUpdate()</code> कंपोनेंट को फिर से कॉल करता है, जो उनके अंदर घोषित स्टेट को रीसेट करता है।</p>
-      <p>चाइल्ड नोड सिर्फ आर्ग्युमेंट हैं:</p>
+      <p>Function के अंदर declare किया गया state उसी instance का अपना होता है। बाहर declare किया गया state सब instances में shared रहता है। <code>forceUpdate()</code> components को दोबारा कॉल करता है, इसलिए उनके अंदर declare किया गया state reset हो जाता है।</p>
+      <p>Children सिर्फ़ arguments होते हैं:</p>
       ${code("card.ts", `
 function Card(heading: string, ...children: NodeModLike<'div'>[]) {
   return div({ className: 'card' }, h2(heading), ...children)
@@ -241,9 +241,9 @@ render(() => Card('Hi', p('one'), p('two')))
       },
       {
         id: "attributes",
-        title: "एट्रिब्यूट",
+        title: "Attributes",
         content: `
-      <p>एट्रिब्यूट सेट करने के लिए एक साधारण ऑब्जेक्ट पास करें। आप कई ऑब्जेक्ट पास कर सकते हैं। एक ही कुंजी के लिए बाद वाले मान को प्राथमिकता मिलती है। <code>className</code> और <code>style</code> अपवाद हैं: इनके मान मर्ज होते हैं। मान स्टैटिक हो सकता है, या बिना किसी पैरामीटर वाला एक फ़ंक्शन हो सकता है जो प्रत्येक <code>update()</code> पर फिर से चलता है।</p>
+      <p>Attributes सेट करने के लिए एक सादा object पास कीजिए। एक से ज़्यादा objects भी पास हो सकते हैं। एक ही key पर बाद वाली value जीतती है। <code>className</code> और <code>style</code> अपवाद हैं: इनकी values merge होती हैं। Value static हो सकती है, या बिना parameter वाला function, जो हर <code>update()</code> पर दोबारा चलता है।</p>
       ${code("example.ts", `
 let busy = false
 
@@ -254,17 +254,17 @@ const save = button(
 `)}
     `,
         afterContent: `
-      <h3>कोई मान कैसे सेट किया जाता है</h3>
+      <h3>Value कैसे सेट होती है</h3>
       <ul>
-        <li>यदि HTML एलिमेंट में उस नाम (<code>value</code>, <code>checked</code>, <code>disabled</code>, <code>htmlFor</code>, <code>tabIndex</code>,…) के साथ एक प्रॉपर्टी है, तो Nuclo प्रॉपर्टी सेट करता है। अन्यथा यह <code>setAttribute(key, String(value))</code> को कॉल करता है, उदाहरण के लिए <code>"aria-*"</code> और <code>"data-*"</code> के लिए।</li>
-        <li>SVG एलिमेंट पर, Nuclo हमेशा <code>setAttribute</code> को कॉल करता है।</li>
-        <li><code>null</code> और <code>undefined</code> को छोड़ दिया गया है। एक डायनेमिक मान जो <code>null</code> या <code>undefined</code> लौटाता है, पुराना मान रखता है। मान साफ़ करने के लिए <code>""</code> लौटाएँ, या बूलियन प्रॉपर्टी के लिए <code>false</code> लौटाएँ।</li>
-        <li>बूलियन मान DOM बूलियन प्रॉपर्टी के लिए काम करते हैं, जैसे एक बटन पर <code>disabled</code>, <code>checked</code>, <code>hidden</code> और <code>required</code>। कहीं और, <code>true</code> और <code>false</code> को स्ट्रिंग "true" और "false" के रूप में लिखा गया है।</li>
-        <li><code>"data-*"</code> कुंजियों का उपयोग करें। <code>dataset</code> समर्थित नहीं है।</li>
-        <li><code>innerHTML</code> एस्केप नहीं होता, और सर्वर रेंडरिंग इसे आउटपुट नहीं करता है। इसके उपयोग से बचें।</li>
+        <li>HTML element में उस नाम की property है (<code>value</code>, <code>checked</code>, <code>disabled</code>, <code>htmlFor</code>, <code>tabIndex</code>,…) तो Nuclo property सेट करता है। नहीं तो वह <code>setAttribute(key, String(value))</code> कॉल करता है, जैसे <code>"aria-*"</code> और <code>"data-*"</code> के लिए।</li>
+        <li>SVG elements पर Nuclo हमेशा <code>setAttribute</code> कॉल करता है।</li>
+        <li><code>null</code> और <code>undefined</code> ignore होते हैं। जो dynamic value <code>null</code> या <code>undefined</code> लौटाती है, उसकी पुरानी value बनी रहती है। value साफ़ करने के लिए <code>""</code> लौटाइए, या boolean property के लिए <code>false</code>।</li>
+        <li>Boolean values DOM की boolean properties पर काम करती हैं, जैसे button पर <code>disabled</code>, <code>checked</code>, <code>hidden</code> और <code>required</code>। बाकी जगह <code>true</code> और <code>false</code> string "true" और "false" बनकर लिखे जाते हैं।</li>
+        <li><code>"data-*"</code> keys इस्तेमाल कीजिए। <code>dataset</code> supported नहीं है।</li>
+        <li><code>innerHTML</code> escape नहीं होता, और server rendering इसे output भी नहीं करती। इससे बचिए।</li>
       </ul>
-      <h3>क्लास</h3>
-      <p><code>className</code> का उपयोग करें। स्टैटिक क्लास स्ट्रिंग्स, <code>css()</code> परिणाम और एक डायनेमिक <code>className</code> सभी विलीन हो जाते हैं। एक डायनेमिक <code>className</code> स्टैटिक क्लास रखता है, और जब यह <code>""</code> लौटाता है तो केवल स्टैटिक क्लास ही रहती हैं।</p>
+      <h3>Classes</h3>
+      <p><code>className</code> इस्तेमाल कीजिए। Static class strings, <code>css()</code> के results और dynamic <code>className</code>, सब merge हो जाते हैं। Dynamic <code>className</code> static classes को रखता है, और <code>""</code> लौटाने पर सिर्फ़ static classes बचती हैं।</p>
       ${code("example.ts", `
 let active = false
 const base = css({ p: 8 })
@@ -272,29 +272,29 @@ const base = css({ p: 8 })
 const item = li(base, { className: 'item' }, { className: () => (active ? 'active' : '') }, 'Home')
 // class="<base> item", then "<base> item active" after active = true; update()
 `)}
-      <p>HTML एलिमेंट पर <code>class</code> कुंजी का उपयोग न करें। यह सीधे एट्रिब्यूट सेट करता है और <code>css()</code> की क्लास सहित पहले लागू सभी क्लास को बदल देता है।</p>
-      <h3>इनलाइन स्टाइल</h3>
-      <p><code>style</code> camelCase कुंजियों के साथ एक ऑब्जेक्ट लेता है, या एक फ़ंक्शन जो एक लौटाता है।</p>
+      <p>HTML elements पर <code>class</code> key इस्तेमाल मत कीजिए। यह attribute सीधे सेट करती है और पहले से लगी सारी classes बदल देती है, <code>css()</code> की class भी।</p>
+      <h3>Inline styles</h3>
+      <p><code>style</code> camelCase keys वाला object लेता है, या ऐसा function जो object लौटाए।</p>
       ${code("example.ts", `
 let progress = 30
 
 const bar = div({ style: () => ({ width: \`\${progress}%\`, backgroundColor: 'teal' }) })
 `)}
       <ul>
-        <li>Nuclo कोई इकाई नहीं जोड़ता। <code>"12px"</code> लिखें, <code>12</code> नहीं। इकाई रहित गुण जैसे <code>opacity</code> और <code>zIndex</code> संख्याएँ स्वीकार करते हैं।</li>
-        <li><code>""</code>, <code>null</code> और <code>undefined</code> प्रॉपर्टी साफ़ कर देते हैं।</li>
-        <li>एक डायनेमिक स्टाइल केवल वही कुंजी सेट करती है जो वह लौटाती है। जिस कुंजी को वह लौटाना बंद कर देता है, उसका पुराना मान बना रहता है, इसलिए उसे साफ़ करने के लिए <code>""</code> लौटाएँ।</li>
-        <li>स्टाइल स्ट्रिंग्स (<code>"color: red"</code>) और कस्टम गुण (<code>"--gap"</code>) समर्थित नहीं हैं। इसके बजाय <code>css()</code> का उपयोग करें। यह <a href="#style-objects"><code>raw</code></a> के माध्यम से कस्टम गुण लेता है।</li>
+        <li>Nuclo कोई unit नहीं जोड़ता। <code>"12px"</code> लिखिए, <code>12</code> नहीं। <code>opacity</code> और <code>zIndex</code> जैसी unitless properties numbers ले लेती हैं।</li>
+        <li><code>""</code>, <code>null</code> और <code>undefined</code> property को साफ़ कर देते हैं।</li>
+        <li>Dynamic style सिर्फ़ वही keys सेट करती है जो वह लौटाती है। जो key लौटना बंद कर दे, उसकी पुरानी value बनी रहती है, इसलिए उसे साफ़ करने के लिए <code>""</code> लौटाइए।</li>
+        <li>Style strings (<code>"color: red"</code>) और custom properties (<code>"--gap"</code>) supported नहीं हैं। इनके लिए <code>css()</code> इस्तेमाल कीजिए। यह custom properties <a href="#style-objects"><code>raw</code></a> से लेता है।</li>
       </ul>
     `,
       },
       {
         id: "events",
-        title: "इवेंट",
+        title: "Events",
         content: `
-      <p>इवेंट को सुनने के दो तरीके हैं: <code>on*</code> एट्रिब्यूट और <code>on()</code> मॉडिफ़ायर।</p>
-      <h3><code>on*</code> एट्रिब्यूट</h3>
-      <p>एक एट्रिब्यूट ऑब्जेक्ट में, <code>onClick</code> (<code>on</code> जिसके बाद एक बड़ा अक्षर होता है) जैसी कुंजी के तहत एक फ़ंक्शन एक इवेंट हैंडलर है, डायनेमिक मान नहीं।</p>
+      <p>Events सुनने के दो तरीके हैं: <code>on*</code> attributes और <code>on()</code> modifier।</p>
+      <h3><code>on*</code> attributes</h3>
+      <p>Attributes object में <code>onClick</code> जैसी key (<code>on</code> के बाद capital letter) पर रखा function event handler होता है, dynamic value नहीं।</p>
       ${code("search.ts", `
 let query = ''
 
@@ -306,16 +306,16 @@ const search = input({
 })
 `)}
       <ul>
-        <li>TypeScript कुंजी और एलिमेंट से इवेंट टाइप का अनुमान लगाता है। <code>e.currentTarget</code> और <code>this</code> एलिमेंट हैं।</li>
-        <li>Nuclo मूल प्रॉपर्टी सेट करता है, इसलिए <code>onClick</code> <code>el.onclick</code> बन जाता है। प्रति इवेंट एक हैंडलर होता है: बाद वाला <code>onClick</code> पहले वाले की जगह लेता है।</li>
-        <li><code>onDoubleClick</code> और <code>onDblClick</code> दोनों का मतलब <code>dblclick</code> है। <code>onclick</code> जैसी लोअरकेस कुंजियाँ टाइप त्रुटियाँ हैं।</li>
-        <li>एक नाम जो ज्ञात इवेंट नहीं है, उसके लोअरकेस रूप को सुनता है: <code>onMyEvent</code> <code>"myevent"</code> को सुनता है।</li>
-        <li>हैंडलर द्वारा फेंकी गई त्रुटियाँ पकड़ में नहीं आतीं।</li>
+        <li>TypeScript key और element से event type खुद समझ लेता है। <code>e.currentTarget</code> और <code>this</code> दोनों element हैं।</li>
+        <li>Nuclo native property सेट करता है, इसलिए <code>onClick</code> असल में <code>el.onclick</code> बन जाता है। हर event पर एक ही handler रहता है: बाद वाला <code>onClick</code> पहले वाले की जगह ले लेता है।</li>
+        <li><code>onDoubleClick</code> और <code>onDblClick</code> दोनों का मतलब <code>dblclick</code> है। <code>onclick</code> जैसी lowercase keys type error देती हैं।</li>
+        <li>जो नाम जाना-पहचाना event नहीं है, उसका lowercase रूप सुना जाता है: <code>onMyEvent</code> <code>"myevent"</code> को सुनता है।</li>
+        <li>Handler के throw किए errors catch नहीं होते।</li>
       </ul>
     `,
         afterContent: `
       <h3><code>on()</code></h3>
-      <p><code>on()</code> एक मॉडिफ़ायर लौटाता है जो एलिमेंट पर <code>addEventListener</code> को कॉल करता है।</p>
+      <p><code>on()</code> एक modifier लौटाता है जो element पर <code>addEventListener</code> कॉल करता है।</p>
       ${code("panel.ts", `
 const panel = div(
   on('scroll', onScroll, { passive: true }),
@@ -324,28 +324,28 @@ const panel = div(
 )
 `)}
       <ul>
-        <li>प्रत्येक <code>on()</code> एक लिसनर जोड़ता है। वे सभी क्रम से चलते हैं।</li>
-        <li><code>options</code> सीधे <code>addEventListener</code> पर जाता है: <code>capture</code>, <code>once</code>, <code>passive</code>, <code>signal</code>।</li>
-        <li>सीधे बिल्डर के पास <code>on()</code> पास करें और एलिमेंट टाइप का अनुमान लगाया जाता है: <code>input(on('input', (e) =&gt; e.currentTarget.value))</code>।</li>
-        <li>यदि कोई लिसनर त्रुटि थ्रो करता है, तो Nuclo <code>console.error</code> के साथ त्रुटि लॉग करता है, और अन्य लिसनर अभी भी चलते हैं।</li>
-        <li>Nuclo एलिमेंट को हटाते समय लिसनर को हटा देता है। सर्वर पर, <code>on()</code> कुछ नहीं करता है।</li>
-        <li>आप कई एलिमेंट पर एक <code>on()</code> मान का पुन: उपयोग कर सकते हैं।</li>
+        <li>हर <code>on()</code> एक listener जोड़ता है। सब क्रम से चलते हैं।</li>
+        <li><code>options</code> सीधे <code>addEventListener</code> को जाता है: <code>capture</code>, <code>once</code>, <code>passive</code>, <code>signal</code>।</li>
+        <li><code>on()</code> को सीधे builder में पास कीजिए तो element type अपने आप पता चल जाता है: <code>input(on('input', (e) =&gt; e.currentTarget.value))</code>।</li>
+        <li>कोई listener error throw करे तो Nuclo उसे <code>console.error</code> से log करता है, और बाकी listeners फिर भी चलते हैं।</li>
+        <li>Element हटते समय Nuclo listener भी हटा देता है। Server पर <code>on()</code> कुछ नहीं करता।</li>
+        <li>एक <code>on()</code> value को आप कई elements पर दोबारा इस्तेमाल कर सकते हैं।</li>
       </ul>
-      <p>एक कस्टम इवेंट के लिए, इवेंट टाइप को जेनेरिक पैरामीटर के रूप में पास करें:</p>
+      <p>Custom event के लिए event type को generic parameter में पास कीजिए:</p>
       ${code("picker.ts", `
 type PickEvent = CustomEvent<{ id: number }>
 
 const picker = ul(on<'pick', PickEvent>('pick', (e) => choose(e.detail.id)))
 `)}
-      <h3>कौन सा उपयोग करना है</h3>
-      <p>आम मामलों में <code>on*</code> एट्रिब्यूट उपयोग करें। एक इवेंट के लिए कई लिसनर, लिसनर विकल्प या <code>"my-event"</code> जैसा कस्टम इवेंट नाम चाहिए, तो <code>on()</code> उपयोग करें।</p>
+      <h3>कौन सा इस्तेमाल करें</h3>
+      <p>आम मामलों में <code>on*</code> attributes ठीक हैं। एक event पर कई listeners चाहिए, listener options चाहिए, या <code>"my-event"</code> जैसा custom event name चाहिए, तो <code>on()</code> इस्तेमाल कीजिए।</p>
     `,
       },
       {
         id: "lifecycle",
-        title: "लाइफ़साइकल",
+        title: "Lifecycle",
         content: `
-      <p><code>onMount</code> एलिमेंट जुड़ने के बाद एक बार चलता है। <code>onDestroy</code> एक बार चलता है, जब Nuclo एलिमेंट हटा देता है। उन्हें एट्रिब्यूट के रूप में या <code>on()</code> के साथ लिखें। दोनों फॉर्म समान व्यवहार करते हैं, और एलिमेंट उसके टैग से टाइप किया जाता है।</p>
+      <p><code>onMount</code> element जुड़ने के बाद एक बार चलता है। <code>onDestroy</code> तब एक बार चलता है जब Nuclo element को हटाता है। इन्हें attributes की तरह लिखिए या <code>on()</code> से। दोनों तरीके एक जैसे चलते हैं, और element का type उसके tag से तय होता है।</p>
       ${code("timer.ts", `
 let seconds = 0
 
@@ -364,14 +364,14 @@ const search = input(on('mount', (el) => el.focus()))
 `)}
     `,
         afterContent: `
-      <h3>जब वे चलते हैं</h3>
+      <h3>ये कब चलते हैं</h3>
       <ul>
-        <li><code>onMount</code> उस <code>render()</code>, <code>hydrate()</code>, <code>update()</code> या <code>forceUpdate()</code> कॉल के अंत में चलता है जिसने एलिमेंट डाला था। ट्री के निर्माण के दौरान यह कभी नहीं चलता।</li>
-        <li>यदि <code>onMount</code> एक फ़ंक्शन लौटाता है, तो वह एलिमेंट हटने पर उसके <code>onDestroy</code> कॉलबैक के बाद चलता है।</li>
-        <li><code>onDestroy</code> तब चलता है जब Nuclo एलिमेंट को हटा देता है: एक <code>list()</code> पंक्ति हटा दी जाती है, एक <code>when()</code> शाखा स्विच हो जाती है, एक <code>into()</code> अपना रीजन छोड़ देता है, या <code>forceUpdate()</code> इसे छोड़ देता है। यह हटाने से ठीक पहले चलता है, इसलिए एलिमेंट अभी भी दस्तावेज़ में है।</li>
+        <li><code>onMount</code> उस <code>render()</code>, <code>hydrate()</code>, <code>update()</code> या <code>forceUpdate()</code> call के आख़िर में चलता है जिसने element डाला था। Tree बनने के दौरान यह कभी नहीं चलता।</li>
+        <li><code>onMount</code> कोई function लौटाए, तो वह element हटने पर उसके <code>onDestroy</code> callbacks के बाद चलता है।</li>
+        <li><code>onDestroy</code> तब चलता है जब Nuclo element हटाता है: <code>list()</code> की कोई row हट जाए, <code>when()</code> की branch बदल जाए, <code>into()</code> अपना region छोड़ दे, या <code>forceUpdate()</code> उसे छोड़ दे। यह हटाने से ठीक पहले चलता है, इसलिए element तब भी document में होता है।</li>
       </ul>
-      <h3>DOM को सीधे हटाना</h3>
-      <p>यदि आप <code>node.remove()</code> या <code>innerHTML = ''</code> के साथ किसी एलिमेंट को स्वयं हटाते हैं, तो इसका <code>onDestroy</code> और क्लीनअप कभी नहीं चलता है, और टाइमर चलते रहते हैं। Nuclo में कोई <code>unmount()</code> नहीं है। क्लीनअप चलाते हुए ऐप हटाने के लिए, उसे <code>when()</code> में लपेटें:</p>
+      <h3>DOM सीधे हटाना</h3>
+      <p>आप <code>node.remove()</code> या <code>innerHTML = ''</code> से खुद element हटाएँगे, तो उसका <code>onDestroy</code> और cleanup कभी नहीं चलेंगे, और timers चलते रहेंगे। Nuclo में <code>unmount()</code> नहीं है। Cleanup चलाते हुए app हटाना हो तो उसे <code>when()</code> में लपेट दीजिए:</p>
       ${code("main.ts", `
 let mounted = true
 render(() => div(when(() => mounted, App())), root)
@@ -379,16 +379,16 @@ render(() => div(when(() => mounted, App())), root)
 mounted = false
 update() // App's onDestroy hooks and cleanups run
 `)}
-      <h3>क्रम और त्रुटियाँ</h3>
+      <h3>Order और errors</h3>
       <ul>
-        <li>आप किसी भी रूप में जितने चाहें उतने हुक पंजीकृत कर सकते हैं। वे पंजीकरण क्रम में चलते हैं।</li>
-        <li><code>onDestroy</code> हुक हमेशा पहले चाइल्ड नोड पर चलते हैं, फिर पैरेंट पर।</li>
-        <li>एलिमेंट अपने पहले <code>onMount</code> हुक के क्रम में माउंट होते हैं, जो आर्ग्युमेंट क्रम का पालन करता है, और प्रत्येक एलिमेंट अपने सभी हुक को एक साथ चलाता है। यदि चाइल्ड नोड पैरेंट पर निर्भर हों, तो पैरेंट का मॉडिफ़ायर चाइल्ड नोड से पहले लिखें।</li>
-        <li>एक हुक जो त्रुटि थ्रो करता है उसे <code>console.error</code> के साथ लॉग किया जाता है। बाकी हुक फिर भी चलते हैं।</li>
-        <li>कॉलबैक को कुछ भी नहीं या क्लीनअप फ़ंक्शन लौटाना चाहिए, इसलिए इसे <code>async</code> न बनाएँ। लौटाया गया Promise क्लीनअप के रूप में इस्तेमाल नहीं होता। इसके अंदर async कार्य प्रारंभ करें: <code>{ onMount: (el) =&gt; { void load(el) } }</code>।</li>
-        <li>हुक कभी भी सर्वर पर नहीं चलते। क्लाइंट पर, वे <code>hydrate()</code> के बाद चलते हैं।</li>
+        <li>जितने चाहें उतने hooks register कर सकते हैं, किसी भी तरीके से। वे register होने के क्रम में चलते हैं।</li>
+        <li><code>onDestroy</code> hooks हमेशा पहले children पर चलते हैं, फिर parent पर।</li>
+        <li>Elements अपने पहले <code>onMount</code> hook के क्रम में mount होते हैं, जो arguments के क्रम पर चलता है, और हर element अपने सारे hooks एक साथ चलाता है। Children parent पर निर्भर हों, तो parent का modifier children से पहले लिखिए।</li>
+        <li>Hook error throw करे तो उसे <code>console.error</code> से log किया जाता है। बाकी hooks फिर भी चलते हैं।</li>
+        <li>Callback को कुछ नहीं, या cleanup function लौटाना चाहिए, इसलिए इसे <code>async</code> मत बनाइए। लौटाया गया Promise cleanup की तरह इस्तेमाल नहीं होता। Async काम इसके अंदर शुरू कीजिए: <code>{ onMount: (el) =&gt; { void load(el) } }</code>।</li>
+        <li>Hooks server पर कभी नहीं चलते। Client पर वे <code>hydrate()</code> के बाद चलते हैं।</li>
       </ul>
-      <div class="docs-callout"><strong>नोट:</strong> हुक इफ़ेक्ट नहीं हैं। स्टेट बदलने पर वे दोबारा नहीं चलते। हर हुक प्रति एलिमेंट अधिकतम एक बार चलता है।</div>
+      <div class="docs-callout"><strong>Note:</strong> Hooks effects नहीं हैं। State बदलने पर वे दोबारा नहीं चलते। हर hook हर element के लिए ज़्यादा से ज़्यादा एक बार चलता है।</div>
     `,
       },
     ],
@@ -396,13 +396,13 @@ update() // App's onDestroy hooks and cleanups run
 
   // ── Updates ──────────────────────────────────────────────────────────────
   {
-    title: "अपडेट",
+    title: "Updates",
     sections: [
       {
         id: "explicit-updates",
-        title: "स्पष्ट अपडेट",
+        title: "Explicit updates",
         content: `
-      <p>Nuclo कभी भी पेज को अपने आप अपडेट नहीं करता है। अपना स्टेट बदलें, फिर <code>update()</code> कॉल करें।</p>
+      <p>Nuclo पेज को कभी अपने आप update नहीं करता। अपना state बदलिए, फिर <code>update()</code> कॉल कीजिए।</p>
       ${code("counter.ts", `
 let count = 0
 
@@ -415,7 +415,7 @@ render(Counter)
 `)}
     `,
         afterContent: `
-      <p>जितना चाहें उतना स्टेट बदलें, फिर एक बार <code>update()</code> कॉल करें:</p>
+      <p>जितना चाहें state बदलिए, फिर एक बार <code>update()</code> कॉल कर दीजिए:</p>
       ${code("example.ts", `
 let first = 'Ada'
 let last = 'Lovelace'
@@ -426,14 +426,14 @@ first = 'Grace'
 last = 'Hopper'
 update() // one pass, both changes
 `)}
-      <p>इवेंट हैंडलर, टाइमर, फ़ेच कॉलबैक या <code>onMount</code> से <code>update()</code> कॉल करें। इसे डायनेमिक मान के अंदर से न बुलाएं।</p>
+      <p><code>update()</code> को event handler, timer, fetch callback या <code>onMount</code> से कॉल कीजिए। dynamic value के अंदर से इसे कॉल मत कीजिए।</p>
     `,
       },
       {
         id: "dynamic-functions",
-        title: "डायनेमिक मान",
+        title: "Dynamic values",
         content: `
-      <p><strong>बिना पैरामीटर</strong> वाला एक फ़ंक्शन एक <strong>डायनेमिक मान</strong> है। Nuclo एलिमेंट बनाते समय इसे एक बार चलाता है, और फिर प्रत्येक <code>update()</code> पर। टेक्स्ट चाइल्ड नोड, एट्रिब्यूट मान, <code>style</code> और <code>className</code> के लिए डायनेमिक मानों का उपयोग करें। दिखाई देने वाले, गायब होने वाले या दोहरने वाले चाइल्ड नोड के लिए, <a href="#api-when"><code>when()</code></a> और <a href="#api-list"><code>list()</code></a> का उपयोग करें।</p>
+      <p><strong>बिना parameter</strong> वाला function एक <strong>dynamic value</strong> होता है। Nuclo element बनाते समय इसे एक बार चलाता है, और फिर हर <code>update()</code> पर। Text children, attribute values, <code>style</code> और <code>className</code> के लिए dynamic values इस्तेमाल कीजिए। जो children दिखते, गायब होते या दोहराए जाते हैं, उनके लिए <a href="#api-when"><code>when()</code></a> और <a href="#api-list"><code>list()</code></a> हैं।</p>
       ${code("example.ts", `
 let name = 'Alice'
 let busy = false
@@ -447,42 +447,42 @@ const Profile = () =>
 `)}
     `,
         afterContent: `
-      <p>Nuclo पैरामीटर गिनती (<code>fn.length</code>) की जाँच करता है। एक फ़ंक्शन जो पैरामीटर घोषित करता है वह एक <a href="#tag-builders">कस्टम मॉडिफ़ायर</a> है और केवल एक बार चलता है। <code>(x = 0) =&gt; …</code> और <code>(...args) =&gt; …</code> की लंबाई 0 है, इसलिए वे डायनेमिक हैं।</p>
-      <h3>डायनेमिक टेक्स्ट</h3>
+      <p>Nuclo parameters की गिनती (<code>fn.length</code>) देखता है। जो function parameter declare करता है, वह <a href="#tag-builders">custom modifier</a> है और सिर्फ़ एक बार चलता है। <code>(x = 0) =&gt; …</code> और <code>(...args) =&gt; …</code> की length 0 होती है, इसलिए ये dynamic माने जाते हैं।</p>
+      <h3>Dynamic text</h3>
       <ul>
-        <li>एक स्ट्रिंग, संख्या, bigint या बूलियन <code>String(value)</code> के रूप में रेंडर होता है। <code>() =&gt; ok &amp;&amp; 'Saved'</code> "false" दिखाता है, इसलिए <code>() =&gt; (ok ? 'Saved' : '')</code> लिखें।</li>
-        <li><code>null</code> और <code>undefined</code> खाली टेक्स्ट के रूप में रेंडर होते हैं।</li>
-        <li><code>css()</code> या <code>cx()</code> परिणाम पहले रन पर फ़ंक्शन को एक डायनेमिक क्लास बनाता है, टेक्स्ट नहीं। <a href="#api-cx"><code>cx()</code></a> देखें।</li>
-        <li>एक नोड, बिल्डर, ऐरे या साधारण ऑब्जेक्ट कुछ भी रेंडर नहीं करता है, और कभी अपडेट नहीं होता है।</li>
+        <li>string, number, bigint या boolean <code>String(value)</code> बनकर render होता है। <code>() =&gt; ok &amp;&amp; 'Saved'</code> "false" दिखा देगा, इसलिए <code>() =&gt; (ok ? 'Saved' : '')</code> लिखिए।</li>
+        <li><code>null</code> और <code>undefined</code> खाली text की तरह render होते हैं।</li>
+        <li>पहली बार चलने पर जो function <code>css()</code> या <code>cx()</code> का result लौटाए, वह text नहीं बल्कि dynamic class बन जाता है। <a href="#api-cx"><code>cx()</code></a> देखिए।</li>
+        <li>node, builder, array या सादा object कुछ भी render नहीं करता, और कभी update भी नहीं होता।</li>
       </ul>
-      <h3>डायनेमिक एट्रिब्यूट</h3>
+      <h3>Dynamic attributes</h3>
       <ul>
-        <li>Nuclo मान तभी लिखता है जब वह उसके लिखे पिछले मान से अलग हो। तुलना मौजूदा DOM से नहीं होती। इसलिए उपयोगकर्ता इनपुट में कुछ टाइप करे और फ़ंक्शन पहले वाला ही मान लौटाए, तो टाइप किया टेक्स्ट बना रहता है।</li>
-        <li><code>null</code> या <code>undefined</code> का परिणाम कुछ भी नहीं लिखता है, इसलिए पुराना मान बना रहता है। <code>className</code> अपवाद है: कोई भी falsy परिणाम डायनेमिक क्लास को हटा देता है और स्टैटिक क्लास को रखता है।</li>
-        <li>एक <code>style</code> फ़ंक्शन प्रत्येक अपडेट पर लौटाए गए ऑब्जेक्ट को लागू करता है।</li>
+        <li>Nuclo value तभी लिखता है जब वह उसकी पिछली लिखी value से अलग हो। तुलना मौजूदा DOM से नहीं होती। इसलिए user input में कुछ टाइप करे और function पहले वाली ही value लौटाए, तो टाइप किया text बना रहता है।</li>
+        <li><code>null</code> या <code>undefined</code> का result कुछ नहीं लिखता, इसलिए पुरानी value बनी रहती है। <code>className</code> अपवाद है: कोई भी falsy result dynamic class हटा देता है और static classes रखता है।</li>
+        <li><code>style</code> function हर update पर लौटाया हुआ object apply करता है।</li>
       </ul>
-      <h3>त्रुटियाँ</h3>
-      <p>डायनेमिक मान त्रुटि थ्रो करे, तो Nuclo उसे पकड़ लेता है और बाकी अपडेट जारी रहता है। टेक्स्ट खाली हो जाता है या पिछला मान रखता है। एट्रिब्यूट पिछला मान रखता है। अगला सफल <code>update()</code> दोनों को ठीक कर देता है। अपवाद: टेक्स्ट फ़ंक्शन अपने <strong>पहले</strong> रन पर थ्रो करे, तो वह हमेशा खाली रहता है।</p>
+      <h3>Errors</h3>
+      <p>Dynamic value error throw करे, तो Nuclo उसे पकड़ लेता है और बाकी update चलता रहता है। Text खाली हो जाता है या पिछली value रखता है। Attribute पिछली value रखता है। अगला सफल <code>update()</code> दोनों को ठीक कर देता है। एक अपवाद: text function अपने <strong>पहले</strong> run में throw करे, तो वह हमेशा खाली रहता है।</p>
     `,
       },
       {
         id: "api-update",
         title: "update()",
         content: `
-      <p>पृष्ठ पर प्रत्येक डायनेमिक मान पर एक सिंक्रोनस पास चलाता है। आईडी देने पर यह केवल उन <a href="#api-scope"><code>scope()</code></a> आईडी से चिह्नित एलिमेंट के अंदर के मान अपडेट करता है। प्रत्येक पास इन चरणों को क्रम में चलाता है:</p>
+      <p>पेज की हर dynamic value पर एक synchronous pass चलाता है। id देने पर यह सिर्फ़ उन elements के अंदर की values update करता है जिन्हें <a href="#api-scope"><code>scope()</code></a> id से mark किया गया है। हर pass ये steps क्रम से चलाता है:</p>
       <ol>
-        <li><code>list()</code>: आइटम को दोबारा पढ़ता है और पंक्तियों को जोड़ता, स्थानांतरित या हटाता है।</li>
-        <li><code>when()</code>: शर्तों की दोबारा जाँच करता है। एक शाखा का पुनर्निर्माण तभी होता है जब कोई दूसरी शाखा सक्रिय हो जाती है।</li>
-        <li>डायनेमिक एट्रिब्यूट, जिनमें <code>style</code> और <code>className</code> शामिल हैं।</li>
-        <li>डायनेमिक टेक्स्ट।</li>
-        <li>चरण 1 और 2 में जोड़े गए एलिमेंट के <code>onMount</code> हुक।</li>
+        <li><code>list()</code>: items दोबारा पढ़ता है और rows जोड़ता, खिसकाता या हटाता है।</li>
+        <li><code>when()</code>: conditions फिर से जाँचता है। Branch तभी दोबारा बनती है जब कोई दूसरी branch active हो जाए।</li>
+        <li>Dynamic attributes, जिनमें <code>style</code> और <code>className</code> भी हैं।</li>
+        <li>Dynamic text।</li>
+        <li>Step 1 और 2 में जुड़े elements के <code>onMount</code> hooks।</li>
       </ol>
       <ul>
-        <li><strong>यह सब कुछ चलाता है।</strong> प्रत्येक डायनेमिक मान प्रत्येक कॉल पर चलता है, भले ही उसका डेटा नहीं बदला हो। बिना बदलाव वाले मान DOM में दोबारा नहीं लिखे जाते। डायनेमिक मानों को तेज़ और दुष्प्रभावों से मुक्त रखें।</li>
-        <li><strong> केवल document में मौजूद नोड।</strong> यदि <code>update()</code> चलने पर दस्तावेज़ में कोई नोड नहीं है, तो Nuclo इसे ट्रैक करना बंद कर देता है। आपके द्वारा इसे संलग्न करने के बाद भी यह कभी भी दोबारा अपडेट नहीं होता है। यह <code>list()</code> और <code>when()</code> पर भी लागू होता है। दस्तावेज़ में मौजूद कंटेनर में रेंडर करें।</li>
-        <li><strong>स्टैटिक मान कभी नहीं बदलते। </strong> एलिमेंट निर्मित होने पर साधारण स्ट्रिंग और एट्रिब्यूट मान तय हो जाते हैं। उन्हें फिर से बनाने के लिए, <a href="#api-force-update"><code>forceUpdate()</code></a> का उपयोग करें।</li>
-        <li><strong>त्रुटियाँ।</strong> टेक्स्ट और एट्रिब्यूट त्रुटियाँ पकड़ी जाती हैं, और पास जारी रहता है। यदि किसी <code>when()</code> की शर्त त्रुटि थ्रो करती है, तो त्रुटि लॉग हो जाती है और <code>when()</code> अपडेट होना बंद हो जाता है। यदि कोई <code>list()</code> <code>items</code> या <code>renderItem</code> फ़ंक्शन त्रुटि थ्रो करता है, तो वह <code>update()</code> से बाहर पहुँचती है और शेष चरण नहीं चलते हैं।</li>
-        <li><strong>सर्वर।</strong> <code>update()</code> सर्वर पर कुछ नहीं करता है।</li>
+        <li><strong>यह सब कुछ चलाता है।</strong> हर dynamic value हर call पर चलती है, चाहे उसका data बदला हो या नहीं। जिन values में बदलाव नहीं होता, वे DOM में दोबारा नहीं लिखी जातीं। Dynamic values को तेज़ रखिए और उनमें side effects मत रखिए।</li>
+        <li><strong>सिर्फ़ document में मौजूद nodes।</strong> <code>update()</code> चलते समय कोई node document में नहीं है, तो Nuclo उसे track करना बंद कर देता है। बाद में आप उसे जोड़ भी दें, तब भी वह दोबारा update नहीं होता। यह <code>list()</code> और <code>when()</code> पर भी लागू होता है। इसलिए ऐसे container में render कीजिए जो document में हो।</li>
+        <li><strong>Static values कभी नहीं बदलतीं।</strong> Element बनते ही सादे strings और attribute values तय हो जाते हैं। उन्हें दोबारा बनाना हो तो <a href="#api-force-update"><code>forceUpdate()</code></a> इस्तेमाल कीजिए।</li>
+        <li><strong>Errors।</strong> Text और attribute के errors पकड़ लिए जाते हैं, और pass चलता रहता है। किसी <code>when()</code> की condition error throw करे, तो error log होता है और वह <code>when()</code> update होना बंद कर देता है। <code>list()</code> का <code>items</code> या <code>renderItem</code> function error throw करे, तो वह <code>update()</code> से बाहर निकल जाता है और बाकी steps नहीं चलते।</li>
+        <li><strong>Server।</strong> <code>update()</code> server पर कुछ नहीं करता।</li>
       </ul>
     `,
       },
@@ -490,7 +490,7 @@ const Profile = () =>
         id: "api-scope",
         title: "scope()",
         content: `
-      <p>जिस एलिमेंट को यह पास किया जाता है, उसे एक या अधिक स्कोप आईडी देता है। <code>update('id')</code> तब केवल वही अपडेट करता है जो उस एलिमेंट के अंदर है, जिसमें एलिमेंट की अपनी एट्रिब्यूट भी शामिल हैं।</p>
+      <p>जिस element को यह पास किया जाए, उसे एक या ज़्यादा scope ids देता है। फिर <code>update('id')</code> सिर्फ़ उसी element के अंदर का हिस्सा update करता है, element के अपने attributes समेत।</p>
       ${code("example.ts", `
 let cartItems: string[] = []
 let user = 'Ada'
@@ -511,11 +511,11 @@ update()       // everything, the header now says "Hi, Grace"
     `,
         afterContent: `
       <ul>
-        <li>एक एलिमेंट में कई आईडी हो सकती हैं: <code>scope('cart', 'sidebar')</code>।</li>
-        <li><code>update('a', 'b')</code> <code>a</code> या <code>b</code> के अंदर सब कुछ अपडेट करता है। यदि कई एलिमेंट एक ही आईडी का उपयोग करते हैं, तो वे सभी अपडेट हो जाते हैं।</li>
-        <li>नेस्टेड स्कोप के साथ, <code>update('outer')</code> में आंतरिक स्कोप शामिल है। <code>update('inner')</code> बाहरी हिस्से को नहीं छूता है।</li>
-        <li>यदि आईडी किसी भी एलिमेंट पर नहीं है, तो <strong>कुछ भी</strong> अपडेट नहीं होता और कोई त्रुटि नहीं मिलती। इसलिए आईडी की वर्तनी जाँचें।</li>
-        <li><code>scope()</code> सर्वर पर कुछ नहीं करता है।</li>
+        <li>एक element की कई ids हो सकती हैं: <code>scope('cart', 'sidebar')</code>।</li>
+        <li><code>update('a', 'b')</code> <code>a</code> या <code>b</code> के अंदर का सब कुछ update करता है। कई elements की id एक ही हो, तो वे सब update होते हैं।</li>
+        <li>Nested scopes में <code>update('outer')</code> अंदर वाले scope को भी शामिल करता है। <code>update('inner')</code> बाहर वाले हिस्से को नहीं छूता।</li>
+        <li>id किसी भी element पर नहीं है, तो <strong>कुछ भी</strong> update नहीं होता और कोई error भी नहीं आता। इसलिए id की spelling दोबारा जाँच लीजिए।</li>
+        <li><code>scope()</code> server पर कुछ नहीं करता।</li>
       </ul>
     `,
       },
@@ -523,7 +523,7 @@ update()       // everything, the header now says "Hi, Grace"
         id: "api-when",
         title: "when()",
         content: `
-      <p>एक शर्त के आधार पर सामग्री रेंडर करता है। Nuclo प्रत्येक <code>update()</code> पर शर्तों की दोबारा जाँच करता है। पहली सही शर्त चुनी जाती है। यदि कोई शर्त सही नहीं है, तो <code>.else()</code> सामग्री रेंडर होती है। <code>.else()</code> के बिना, कुछ भी रेंडर नहीं होता।</p>
+      <p>किसी condition के आधार पर content render करता है। Nuclo हर <code>update()</code> पर conditions दोबारा जाँचता है। पहली सही condition चुनी जाती है। कोई भी सही न हो, तो <code>.else()</code> का content render होता है। <code>.else()</code> न हो तो कुछ render नहीं होता।</p>
       ${code("status.ts", `
 let status: 'loading' | 'error' | 'ready' = 'loading'
 
@@ -536,28 +536,28 @@ const Status = () =>
 `)}
     `,
         afterContent: `
-      <h3>शर्तें</h3>
+      <h3>Conditions</h3>
       <ul>
-        <li>स्टेट के लिए, एक फ़ंक्शन पास करें। एक साधारण बूलियन एक बार पढ़ा जाता है: <code>when(open, …)</code> कभी नहीं बदलता।</li>
-        <li>TypeScript में फ़ंक्शन को एक बूलियन लौटाना होगा। <code>() =&gt; items.length &gt; 0</code> या <code>() =&gt; user != null</code> लिखें।</li>
+        <li>State के लिए function पास कीजिए। सादा boolean सिर्फ़ एक बार पढ़ा जाता है: <code>when(open, …)</code> कभी नहीं बदलेगा।</li>
+        <li>TypeScript में function को boolean लौटाना होगा। <code>() =&gt; items.length &gt; 0</code> या <code>() =&gt; user != null</code> लिखिए।</li>
       </ul>
-      <h3>क्या अपडेट होता है</h3>
+      <h3>क्या update होता है</h3>
       <ul>
-        <li>जब तक एक ही शाखा सक्रिय रहती है, इसके एलिमेंट बने रहते हैं। इसके अंदर डायनेमिक मान, सूचियाँ और <code>when()</code> ब्लॉक अपडेट होते रहते हैं।</li>
-        <li>जब एक अलग शाखा सक्रिय हो जाती है, तो पुरानी सामग्री हटा दी जाती है और उसके <code>onDestroy</code> हुक चलते हैं। नई शाखा शुरू से बनती है और इसके <code>onMount</code> हुक चलते हैं। पुराने एलिमेंट की स्थिति, जैसे इनपुट टेक्स्ट या फ़ोकस, खो जाती है।</li>
+        <li>जब तक एक ही branch active रहती है, उसके elements बने रहते हैं। उसके अंदर की dynamic values, lists और <code>when()</code> blocks update होते रहते हैं।</li>
+        <li>दूसरी branch active होते ही पुराना content हट जाता है और उसके <code>onDestroy</code> hooks चलते हैं। नई branch शुरू से बनती है और उसके <code>onMount</code> hooks चलते हैं। पुराने elements का state, जैसे input का text या focus, चला जाता है।</li>
       </ul>
-      <h3>शाखा सामग्री</h3>
-      <p>चाइल्ड नोड को एक शाखा में रखें: टेक्स्ट, डायनेमिक टेक्स्ट, बिल्डर, <code>list()</code> और नेस्टेड <code>when()</code>। <code>p('Hi')</code> जैसे बिल्डर को पास करें, DOM नोड्स को नहीं: एक DOM नोड अपनी शाखा के एक बार छिपने के बाद अपडेट होना बंद कर देता है।</p>
-      <p>एट्रिब्यूट ऑब्जेक्ट और <code>on()</code> मूल एलिमेंट पर लागू होते हैं, और वे शाखा के छिपने के बाद भी बने रहते हैं। एक सशर्त एट्रिब्यूट के लिए, एक डायनेमिक एट्रिब्यूट का उपयोग करें: <code>{ className: () =&gt; (active ? 'active' : '') }</code>।</p>
-      <h3>चेनिंग</h3>
-      <p><code>.when()</code> और <code>.else()</code> एक नया बिल्डर लौटाते हैं और मूल को नहीं बदलते हैं। यदि आप <code>.else()</code> को दो बार कॉल करते हैं, तो अंतिम कॉल जीत जाती है।</p>
+      <h3>Branch का content</h3>
+      <p>Branch में children रखिए: text, dynamic text, builders, <code>list()</code> और nested <code>when()</code>। <code>p('Hi')</code> जैसे builders पास कीजिए, DOM nodes नहीं: DOM node अपनी branch एक बार छिपने के बाद update होना बंद कर देता है।</p>
+      <p>Attributes objects और <code>on()</code> parent element पर लगते हैं, और branch छिपने के बाद भी बने रहते हैं। Conditional attribute के लिए dynamic attribute इस्तेमाल कीजिए: <code>{ className: () =&gt; (active ? 'active' : '') }</code>।</p>
+      <h3>Chaining</h3>
+      <p><code>.when()</code> और <code>.else()</code> नया builder लौटाते हैं और original को नहीं बदलते। <code>.else()</code> को दो बार कॉल करें, तो आख़िरी call जीतती है।</p>
     `,
       },
       {
         id: "api-list",
         title: "list()",
         content: `
-      <p>प्रति आइटम एक पंक्ति रेंडर करता है। प्रत्येक <code>update()</code> पर, Nuclo फिर से <code>items()</code> को कॉल करता है और पहचान के आधार पर नए आइटम को मौजूदा पंक्तियों से मिलाता है (<code>===</code>)।</p>
+      <p>हर item के लिए एक row render करता है। हर <code>update()</code> पर Nuclo <code>items()</code> को फिर से कॉल करता है और identity (<code>===</code>) के आधार पर नए items को मौजूदा rows से मिलाता है।</p>
       ${code("fruits.ts", `
 let fruits = ['Apple', 'Banana']
 
@@ -568,14 +568,14 @@ render(Fruits)
 fruits.push('Cherry')
 update()
 `)}
-      <h3>पंक्तियों का मिलान कैसे किया जाता है</h3>
+      <h3>Rows का मिलान कैसे होता है</h3>
       <ul>
-        <li>एक आइटम जो अभी भी वहां है, अपनी पंक्ति बनाए रखता है। यदि आवश्यक हो तो Nuclo पंक्ति को स्थानांतरित करता है, और <code>renderItem</code> को दोबारा कॉल नहीं करता है।</li>
-        <li>एक नए आइटम को एक नई पंक्ति मिलती है। हटाया गया आइटम अपनी पंक्ति खो देता है, और उसके <code>onDestroy</code> हुक चलते हैं।</li>
-        <li>डुप्लिकेट आइटमों में से प्रत्येक को अपनी पंक्ति मिलती है।</li>
-        <li>आप ऐरे को उसके स्थान पर बदल सकते हैं (<code>push</code>, <code>splice</code>, <code>sort</code>) या एक नई ऐरे लौटा सकते हैं।</li>
+        <li>जो item अब भी मौजूद है, उसकी row बनी रहती है। ज़रूरत हो तो Nuclo row को खिसका देता है, और <code>renderItem</code> दोबारा कॉल नहीं करता।</li>
+        <li>नए item को नई row मिलती है। हटाए गए item की row चली जाती है, और उसके <code>onDestroy</code> hooks चलते हैं।</li>
+        <li>duplicate items में से हर एक को अपनी row मिलती है।</li>
+        <li>आप array को वहीं बदल सकते हैं (<code>push</code>, <code>splice</code>, <code>sort</code>) या नया array लौटा सकते हैं।</li>
       </ul>
-      <p>बनी हुई पंक्ति दोबारा रेंडर नहीं होती, इसलिए बदलने वाले फ़ील्ड के लिए डायनेमिक मान उपयोग करें:</p>
+      <p>जो row बनी रहती है, वह दोबारा render नहीं होती, इसलिए जो fields बदलते हैं उनके लिए dynamic values इस्तेमाल कीजिए:</p>
       ${code("todos.ts", `
 const todos = [{ text: 'Write docs', done: false }]
 
@@ -591,29 +591,29 @@ render(Todos)
 todos[0].done = true
 update() // same <li>, its class is now "done"
 `)}
-      <p>प्रतियां नए आइटम हैं, इसलिए ऐरे को <code>todos.map((t) =&gt; ({ ...t }))</code> से बदलने से प्रत्येक पंक्ति का पुनर्निर्माण होता है।</p>
+      <p>Copies नए items होते हैं, इसलिए array को <code>todos.map((t) =&gt; ({ ...t }))</code> से बदलने पर हर row दोबारा बनती है।</p>
     `,
         afterContent: `
-      <h3><code>renderItem</code> क्या लौटाता है</h3>
+      <h3><code>renderItem</code> क्या लौटाए</h3>
       <ul>
-        <li>एक एलिमेंट लौटाएँ, जैसे <code>li(...)</code>, <code>tr(...)</code> या SVG बिल्डर। किसी आइटम को छोड़ने के लिए <code>null</code> या <code>undefined</code> लौटाएँ। स्ट्रिंग, टेक्स्ट नोड और फ़्रैगमेंट कुछ भी रेंडर नहीं करते हैं।</li>
-        <li>सीधे <code>when()</code> या <code>list()</code> वापस न करें। उन्हें पंक्ति एलिमेंट के अंदर रखें: <code>li(todo.text, when(() =&gt; todo.done, ' ✓'))</code>।</li>
-        <li>आइटम छिपाने के लिए, <code>items()</code> में फ़िल्टर करें, <code>renderItem</code> में नहीं।</li>
-        <li><code>renderItem</code> को दुष्प्रभावों से मुक्त रखें। Nuclo एक ही आइटम के लिए इसे एक से अधिक बार कॉल कर सकता है।</li>
+        <li>कोई element लौटाइए, जैसे <code>li(...)</code>, <code>tr(...)</code> या SVG builder। किसी item को छोड़ना हो तो <code>null</code> या <code>undefined</code> लौटाइए। Strings, text nodes और fragments कुछ render नहीं करते।</li>
+        <li><code>when()</code> या <code>list()</code> सीधे return मत कीजिए। उन्हें row element के अंदर रखिए: <code>li(todo.text, when(() =&gt; todo.done, ' ✓'))</code>।</li>
+        <li>Items छिपाने हों तो <code>items()</code> में filter कीजिए, <code>renderItem</code> में नहीं।</li>
+        <li><code>renderItem</code> में side effects मत रखिए। Nuclo एक ही item के लिए इसे एक से ज़्यादा बार कॉल कर सकता है।</li>
       </ul>
-      <h3>इंडेक्स</h3>
-      <p><code>index</code> आइटम की वह स्थिति है जब उसकी पंक्ति बनाई गई थी। पंक्तियों के हिलने पर यह अपडेट नहीं होता है। वर्तमान स्थिति के लिए, एक डायनेमिक मान का उपयोग करें: <code>li(() =&gt; \`\${names.indexOf(name) + 1}. \${name}\`)</code>।</p>
-      <h3>इटरेबल</h3>
-      <p>किसी भी इटरेबल का उपयोग कर सकते हैं: ऐरे, <code>Set</code>, जनरेटर और <code>map.values()</code>। हर बार एक ही ऐरे या <code>Set</code> लौटाना ठीक है। एक इटरेटर, जैसे जनरेटर या <code>map.values()</code>, एक पास के बाद खत्म हो जाता है, इसलिए इसे प्रत्येक कॉल पर <code>items()</code> के अंदर बनाएँ। <code>Map</code> को पुनरावृत्त करने से हर बार सीधे नए <code>[key, value]</code> ऐरे बनती हैं, इसलिए प्रत्येक पंक्ति का पुनर्निर्माण किया जाता है। इसके बजाय <code>map.values()</code> का उपयोग करें।</p>
-      <h3>प्लेसमेंट</h3>
-      <p><code>list()</code> जहाँ लिखा है, वहीं दो कमेंट मार्कर के बीच उसकी पंक्तियाँ दिखाई देती हैं। पैरेंट के दूसरे चाइल्ड नोड जस के तस रहते हैं। <code>list()</code> SVG बिल्डर के अंदर भी काम करता है।</p>
+      <h3>Index</h3>
+      <p><code>index</code> उस समय की position है जब item की row बनी थी। Rows खिसकने पर यह update नहीं होता। मौजूदा position चाहिए तो dynamic value इस्तेमाल कीजिए: <code>li(() =&gt; \`\${names.indexOf(name) + 1}. \${name}\`)</code>।</p>
+      <h3>Iterables</h3>
+      <p>कोई भी iterable चलता है: arrays, <code>Set</code>, generators और <code>map.values()</code>। हर बार वही array या <code>Set</code> लौटाना ठीक है। Iterator, जैसे generator या <code>map.values()</code>, एक pass के बाद ख़त्म हो जाता है, इसलिए इसे हर call पर <code>items()</code> के अंदर बनाइए। <code>Map</code> को सीधे iterate करने पर हर बार नए <code>[key, value]</code> arrays बनते हैं, इसलिए हर row दोबारा बनती है। इसकी जगह <code>map.values()</code> इस्तेमाल कीजिए।</p>
+      <h3>Placement</h3>
+      <p><code>list()</code> जहाँ लिखा है, उसकी rows वहीं दो comment markers के बीच दिखती हैं। Parent के बाकी children जैसे हैं वैसे रहते हैं। <code>list()</code> SVG builders के अंदर भी चलता है।</p>
     `,
       },
       {
         id: "api-region",
         title: "region() और into()",
         content: `
-      <p><code>region()</code> ट्री में एक नामित स्थान को चिह्नित करता है। <code>into()</code> इसे कहीं और से, किसी भी गहराई से भर देता है। लेआउट सामग्री को प्रोप के रूप में प्राप्त नहीं करता है, और सामग्री बनाने वाले कंपोनेंट को यह नहीं पता होता है कि वह कहां पहुंचती है।</p>
+      <p><code>region()</code> tree में एक named जगह mark करता है। <code>into()</code> उसे कहीं और से, किसी भी depth से भर देता है। Layout को content props की तरह नहीं मिलता, और जो component content बनाता है उसे पता नहीं होता कि वह कहाँ पहुँचेगा।</p>
       ${code("app.ts", `
 const Layout = () =>
   div(
@@ -628,22 +628,22 @@ render(() => div(Layout(), Article()))
 `)}
       <h3>यह कैसे काम करता है</h3>
       <ul>
-        <li><code>into()</code> केवल एक टिप्पणी छोड़ता है जहां यह लिखा जाता है। इसकी सामग्री रीजन के मार्करों के बीच रेंडर होती है।</li>
-        <li>क्रम मायने नहीं रखता। रीजन से पहले बना <code>into()</code> इंतज़ार करता है और रीजन बनते ही दिखाई देता है। व्यू उसी क्रम में दिखते हैं जिस क्रम में लिखे गए हैं।</li>
-        <li>सामग्री तब तक जीवित रहती है जब तक व्यू रहता है। जब <code>into()</code> रखने वाला <code>when()</code> बंद हो जाता है, या इसकी <code>list()</code> पंक्ति हटा दी जाती है, तो सामग्री रीजन छोड़ देती है। इसे दोबारा खोलने पर एक प्रति जुड़ती है, दो नहीं।</li>
-        <li>जब कोई रीजन चला जाता है, उदाहरण के लिए उसका <code>when()</code> बंद हो जाता है, तो उसके व्यू फिर से प्रतीक्षा करते हैं। बाद में उसी आईडी से बनाया गया रीजन उन्हें दिखाता है।</li>
-        <li>जिस <code>into()</code> की आईडी किसी रीजन से नहीं मिलती, वह कुछ रेंडर नहीं करता और त्रुटि भी नहीं देता। इसलिए आईडी की वर्तनी जाँचें।</li>
-        <li>आईडी ट्री में अद्वितीय हैं। लाइव आईडी के अंतर्गत निर्मित दूसरा रीजन एक चेतावनी लॉग करता है।</li>
-        <li>रीजन <a href="#api-ssr">सर्वर रेंडरिंग</a> के साथ काम करते हैं। <code>hydrate()</code> पर हर व्यू सर्वर से मिले HTML को दोबारा बनाने के बजाय इस्तेमाल करता है।</li>
+        <li><code>into()</code> जहाँ लिखा है वहाँ सिर्फ़ एक comment छोड़ता है। इसका content region के markers के बीच render होता है।</li>
+        <li>क्रम मायने नहीं रखता। region से पहले बना <code>into()</code> इंतज़ार करता है और region बनते ही दिख जाता है। Views उसी क्रम में दिखते हैं जिस क्रम में लिखे गए हैं।</li>
+        <li>Content तब तक रहता है जब तक view रहता है। <code>into()</code> रखने वाला <code>when()</code> बंद हो जाए, या उसकी <code>list()</code> row हट जाए, तो content region छोड़ देता है। उसे दोबारा खोलने पर एक copy जुड़ती है, दो नहीं।</li>
+        <li>कोई region चला जाए, जैसे उसका <code>when()</code> बंद हो जाए, तो उसके views फिर इंतज़ार में चले जाते हैं। बाद में उसी id से बना region उन्हें दिखा देता है।</li>
+        <li>जिस <code>into()</code> की id किसी region से नहीं मिलती, वह कुछ render नहीं करता और error भी नहीं देता। इसलिए id की spelling जाँच लीजिए।</li>
+        <li>Ids पूरे tree में unique होती हैं। जिस id का region पहले से live है, उसी id का दूसरा region बनाने पर warning log होती है।</li>
+        <li>Regions <a href="#api-ssr">server rendering</a> के साथ चलते हैं। <code>hydrate()</code> पर हर view server से आए HTML को ही इस्तेमाल करता है, उसे दोबारा नहीं बनाता।</li>
       </ul>
-      <h3>विकल्प</h3>
+      <h3>Options</h3>
       <ul>
-        <li><code>id</code>: वह नाम जिससे <code>into()</code> रीजन खोजता है।</li>
-        <li><code>type</code>: <code>'latest'</code> (डिफ़ॉल्ट) केवल नवीनतम व्यू दिखाता है। <code>'stack'</code> प्रत्येक व्यू को आगमन क्रम में दिखाता है।</li>
-        <li><code>empty</code>: उस समय रेंडर किया गया जब इस रीजन में कोई व्यू नहीं है।</li>
+        <li><code>id</code>: वह नाम जिससे <code>into()</code> region को ढूँढता है।</li>
+        <li><code>type</code>: <code>'latest'</code> (default) सिर्फ़ सबसे नया view दिखाता है। <code>'stack'</code> हर view को आने के क्रम में दिखाता है।</li>
+        <li><code>empty</code>: जब इस region में कोई view नहीं होता, तब यह render होता है।</li>
       </ul>
-      <h3>स्टैक्ड रीजन</h3>
-      <p><code>type: 'stack'</code> के साथ नया व्यू ऊपर खुलने पर नीचे का व्यू दोबारा नहीं बनता। उसका DOM, फ़ोकस और फ़ॉर्म स्टेट बना रहता है। पेज के ऊपर डायलॉग जैसी लेयर के लिए इसका उपयोग करें।</p>
+      <h3>Stacked regions</h3>
+      <p><code>type: 'stack'</code> में ऊपर नया view खुलने पर नीचे वाला view दोबारा नहीं बनता। उसका DOM, focus और form state बना रहता है। पेज के ऊपर dialog जैसी layers के लिए इसे इस्तेमाल कीजिए।</p>
       ${code("layers.ts", `
 let open = false
 
@@ -654,8 +654,8 @@ const App = () =>
     when(() => open, into('main', div('On top'))),
   )
 `)}
-      <h3>एक साथ कई रीजन</h3>
-      <p>एक <code>into()</code> से एक से अधिक रीजनों को भरने के लिए एक ऑब्जेक्ट पास करें। एक मान एक चाइल्ड नोड या चाइल्ड नोड का ऐरे हो सकता है। दोनों रूपों को नेस्ट कर सकते हैं: किसी अन्य व्यू की सामग्री के अंदर एक <code>into()</code> अपने स्वयं के रीजन को लक्षित करता है।</p>
+      <h3>एक साथ कई regions</h3>
+      <p>एक <code>into()</code> से कई regions भरने के लिए object पास कीजिए। हर value एक child हो सकती है या children का array। दोनों रूप nest हो सकते हैं: किसी दूसरे view के content के अंदर का <code>into()</code> अपने ही region को target करता है।</p>
       ${code("page.ts", `
 const Page = () =>
   into({
@@ -663,8 +663,8 @@ const Page = () =>
     sidebar: [h2('Related'), ul(li('One'), li('Two'))],
   })
 `)}
-      <h3>ट्री में गहराई से डायलॉग खोलना</h3>
-      <p>ओवरले रीजन ट्री के रूट पर रहता है। कोई भी कंपोनेंट, किसी भी गहराई पर, <code>into()</code> को <code>when()</code> में लपेटकर एक डायलॉग खोलता है। <code>when()</code> को बंद करने से रीजन से डायलॉग हट जाता है।</p>
+      <h3>Tree में गहराई से dialog खोलना</h3>
+      <p>Overlay region tree की root पर रहता है। कोई भी component, किसी भी depth पर, <code>into()</code> को <code>when()</code> में लपेटकर dialog खोल सकता है। <code>when()</code> बंद करते ही dialog region से हट जाता है।</p>
       ${code("dialog.ts", `
 let confirming = false
 
@@ -688,8 +688,8 @@ const DeleteButton = () =>
     ),
   )
 `)}
-      <h3>टोस्ट</h3>
-      <p><code>list()</code> की प्रत्येक पंक्ति एक व्यू है। एक स्टैक्ड रीजन उन्हें क्रम में दिखाता है, और ऐरे से किसी आइटम को हटाने से उसका टोस्ट हट जाता है।</p>
+      <h3>Toasts</h3>
+      <p><code>list()</code> की हर row एक view है। Stacked region उन्हें क्रम से दिखाता है, और array से कोई item हटाते ही उसका toast हट जाता है।</p>
       ${code("toasts.ts", `
 const toasts: { text: string }[] = []
 
@@ -712,8 +712,8 @@ const App = () =>
     ),
   )
 `)}
-      <h3>पेज से शीर्षक सेट करना</h3>
-      <p>डिफ़ॉल्ट <code>type: 'latest'</code> में सबसे नया व्यू दिखता है। लेआउट शीर्षक की जगह तय करता है और खुला पेज उसका टेक्स्ट देता है। बिना <code>into('title', …)</code> वाला पेज <code>empty</code> का टेक्स्ट दिखने देता है।</p>
+      <h3>Page से title सेट करना</h3>
+      <p>Default <code>type: 'latest'</code> में सबसे नया view दिखता है। Layout तय करता है कि title कहाँ होगा, और जो page खुला है वही उसका text देता है। जिस page में <code>into('title', …)</code> नहीं है, वहाँ <code>empty</code> का text दिख जाता है।</p>
       ${code("title.ts", `
 let page: 'home' | 'settings' = 'home'
 
@@ -731,8 +731,8 @@ const Settings = () =>
     form(/* … */),
   )
 `)}
-      <h3>डायनेमिक मान</h3>
-      <p><code>into()</code> की सामग्री सामान्य Nuclo सामग्री है। इसमें फ़ंक्शन स्टेट-निर्भर मान हैं और रीजन जहां भी हो, <code>update()</code> पर ताज़ा होते हैं।</p>
+      <h3>Dynamic values</h3>
+      <p><code>into()</code> का content आम Nuclo content ही है। उसमें जो functions state पर निर्भर हैं, वे region कहीं भी हो, <code>update()</code> पर refresh होते हैं।</p>
       ${code("status.ts", `
 const selected = new Set<string>()
 
@@ -756,8 +756,8 @@ const Table = () =>
     ),
   )
 `)}
-      <h3>एक रीजन जो आता और जाता है</h3>
-      <p>डैशबोर्ड का <code>into()</code> एक ही बार लिखा गया है। उपयोगकर्ता साइन आउट हो, तो <code>main</code> रीजन नहीं होता और व्यू इंतज़ार करता है। साइन इन करने पर रीजन बनता है और व्यू दिखता है। साइन आउट करने पर रीजन हटता है और व्यू फिर इंतज़ार करता है।</p>
+      <h3>ऐसा region जो आता-जाता है</h3>
+      <p>Dashboard का <code>into()</code> सिर्फ़ एक बार लिखा गया है। User sign out हो, तो <code>main</code> region होता ही नहीं और view इंतज़ार करता है। Sign in करते ही region बनता है और view दिख जाता है। Sign out करने पर region हट जाता है और view फिर इंतज़ार करने लगता है।</p>
       ${code("auth.ts", `
 let user: { name: string } | null = null
 
@@ -771,8 +771,8 @@ const App = () =>
     into('main', Dashboard()),
   )
 `)}
-      <h3>अपने रीजन के साथ एक व्यू</h3>
-      <p>एक व्यू में <code>region()</code> हो सकता है, और अन्य व्यू इसे लक्षित कर सकते हैं। यहां संपादक पृष्ठ अपने साथ एक <code>tabs</code> रीजन लाता है, और प्रत्येक टैब इसे भरता है। जब संपादक बंद हो जाता है, तो उसका रीजन उसके साथ चला जाता है।</p>
+      <h3>अपने region वाला view</h3>
+      <p>View में अपना <code>region()</code> भी हो सकता है, और दूसरे views उसे target कर सकते हैं। यहाँ editor page अपने साथ <code>tabs</code> region लाता है, और हर tab उसे भरता है। Editor बंद होते ही उसका region भी उसके साथ चला जाता है।</p>
       ${code("editor.ts", `
 let tab: 'code' | 'preview' = 'code'
 
@@ -789,7 +789,7 @@ const Editor = () =>
       .else(into('tabs', iframe({ src: '/preview' }))),
   )
 `)}
-      <h3>लाइव उदाहरण</h3>
+      <h3>Live example</h3>
       ${code("region-app.ts", API_DEMOS.find((d) => d.id === "api-region")!.code)}
     `,
       },
@@ -797,7 +797,7 @@ const Editor = () =>
         id: "api-force-update",
         title: "forceUpdate()",
         content: `
-      <p><code>update()</code> केवल डायनेमिक मान चलाता है। <code>h1(labels[lang].title)</code> के टेक्स्ट जैसे स्टैटिक मान ट्री बनते समय तय होते हैं। <code>forceUpdate()</code> कंपोनेंट दोबारा कॉल करके लाइव DOM को नए परिणाम के अनुसार पैच करता है, स्टैटिक मान सहित। भाषा बदलने जैसे कभी-कभार पूरे ऐप में होने वाले बदलावों के लिए इसका उपयोग करें। बाकी बदलावों के लिए <code>update()</code> उपयोग करें।</p>
+      <p><code>update()</code> सिर्फ़ dynamic values चलाता है। Static values, जैसे <code>h1(labels[lang].title)</code> का text, tree बनते समय ही तय हो जाते हैं। <code>forceUpdate()</code> components को दोबारा कॉल करके live DOM को नए result के हिसाब से patch करता है, static values समेत। भाषा बदलने जैसे कभी-कभार होने वाले, पूरे app पर असर डालने वाले बदलावों के लिए इसे इस्तेमाल कीजिए। बाकी बदलावों के लिए <code>update()</code> ही रखिए।</p>
       ${code("i18n.ts", `
 const labels = { en: { title: 'Hello' }, pt: { title: 'Olá' } }
 let lang: keyof typeof labels = 'en'
@@ -810,18 +810,18 @@ forceUpdate() // same <h1> element, now "Olá"
 `)}
     `,
         afterContent: `
-      <p>बिना आर्ग्युमेंट के <code>forceUpdate()</code>, <code>render(App)</code> या <code>hydrate(App)</code> से रेंडर हुए हर रूट को दोबारा बनाता है। <code>render(App())</code> से बने रूट छोड़ दिए जाते हैं। कंपोनेंट थ्रो करे, तो त्रुटि लॉग होती है और उस रूट का पुराना DOM बना रहता है। नई बिल्ड लागू करते समय त्रुटि हो, तो वह भी लॉग होती है, लेकिन पहले से पैच हुए हिस्से वैसे ही रहते हैं।</p>
+      <p>बिना arguments के <code>forceUpdate()</code> उन सभी roots को दोबारा बनाता है जो <code>render(App)</code> या <code>hydrate(App)</code> से render हुए थे। <code>render(App())</code> से बने roots छोड़ दिए जाते हैं। Component throw करे, तो error log होता है और उस root का पुराना DOM वैसा ही रहता है। नया build apply करते समय error आए, तो वह भी log होता है, लेकिन जो हिस्से पहले patch हो चुके हैं वे वैसे ही रहते हैं।</p>
       <h3>क्या रहता है और क्या बदलता है</h3>
       <ul>
-        <li>चाइल्ड नोड का मिलान क्रम से, टैग द्वारा किया जाता है। एक मिलान एलिमेंट का पुन: उपयोग किया जाता है, इसलिए फोकस और टाइप किए गए इनपुट मान बने रहते हैं, और इसके <code>onMount</code> हुक दोबारा नहीं चलते हैं। एक बार जब एक चाइल्ड नोड का टैग अलग हो जाता है, तो उस चाइल्ड नोड और उसके बाद के हर सिब्लिंग नोड का निर्माण नए सिरे से होता है।</li>
-        <li>टेक्स्ट, एट्रिब्यूट, क्लास, स्टाइल, लिसनर, <code>when()</code> की शाखाएँ और <code>list()</code> की पंक्तियाँ नए निर्माण के अनुसार अपडेट होती हैं।</li>
-        <li>नए एलिमेंट बनते हैं और उनके <code>onMount</code> हुक चलते हैं। नई बिल्ड में न आने वाले एलिमेंट हटते हैं और उनके <code>onDestroy</code> हुक चलते हैं।</li>
-        <li><code>list()</code> पंक्तियों का मिलान स्थिति से भी किया जाता है, आइटम से नहीं, इसलिए पुन: उपयोग किया गया पंक्ति एलिमेंट एक अलग आइटम दिखा सकता है।</li>
-        <li>नई बिल्ड में सेट न किए गए एट्रिब्यूट हटाए नहीं जाते हैं।</li>
+        <li>Children का मिलान क्रम से, tag के हिसाब से होता है। मिलने वाला element दोबारा इस्तेमाल होता है, इसलिए focus और टाइप की हुई input values बनी रहती हैं, और उसके <code>onMount</code> hooks दोबारा नहीं चलते। जैसे ही किसी child का tag अलग निकलता है, उस child और उसके बाद के हर sibling को नए सिरे से बनाया जाता है।</li>
+        <li>Text, attributes, classes, styles, listeners, <code>when()</code> की branches और <code>list()</code> की rows नए build के हिसाब से update होती हैं।</li>
+        <li>नए elements बनते हैं और उनके <code>onMount</code> hooks चलते हैं। जो elements नए build में नहीं आते, वे हट जाते हैं और उनके <code>onDestroy</code> hooks चलते हैं।</li>
+        <li><code>list()</code> rows का मिलान position से भी होता है, item से नहीं, इसलिए दोबारा इस्तेमाल हुआ row element कोई अलग item दिखा सकता है।</li>
+        <li>जो attributes नए build में सेट नहीं हैं, वे हटाए नहीं जाते।</li>
       </ul>
-      <div class="docs-callout"><strong>देखें: </strong> कंपोनेंट फ़ंक्शन के अंदर घोषित स्टेट रीसेट हो जाती है, क्योंकि फ़ंक्शन फिर से चलता है। जो स्टेट बचाए रखना हो, उसे कंपोनेंट के बाहर रखें।</div>
-      <p><strong>आर्ग्युमेंट वाला रूप।</strong> <code>forceUpdate(App(), parent)</code> <code>parent</code> में एक ट्री का पुनर्निर्माण करता है और उसका रूट लौटाता है। यह बाद की कॉल के लिए रूट को पंजीकृत नहीं करता है। <code>hydrate()</code> की तरह, यह उम्मीद करता है कि रूट <code>parent</code> में पहला नोड होगा। यदि पहले नोड में एक अलग टैग है, तो उसे बदल दिया जाता है।</p>
-      <p>सर्वर पर, <code>forceUpdate()</code> कुछ नहीं करता है।</p>
+      <div class="docs-callout"><strong>ध्यान दीजिए: </strong> Component function के अंदर declare किया गया state reset हो जाता है, क्योंकि function फिर से चलता है। जिस state को बचाकर रखना है, उसे component के बाहर रखिए।</div>
+      <p><strong>Arguments वाला रूप।</strong> <code>forceUpdate(App(), parent)</code> <code>parent</code> में एक tree को दोबारा बनाता है और उसकी root लौटाता है। यह root को आगे की calls के लिए register नहीं करता। <code>hydrate()</code> की तरह यह मानकर चलता है कि root <code>parent</code> का पहला node है। पहले node का tag अलग हो, तो उसे बदल दिया जाता है।</p>
+      <p>Server पर <code>forceUpdate()</code> कुछ नहीं करता।</p>
     `,
       },
     ],
@@ -829,13 +829,13 @@ forceUpdate() // same <h1> element, now "Olá"
 
   // ── Rendering ────────────────────────────────────────────────────────────
   {
-    title: "रेंडरिंग",
+    title: "Rendering",
     sections: [
       {
         id: "api-render",
         title: "render()",
         content: `
-      <p>आपका ट्री बनाता है और उसके मूल एलिमेंट को <code>parent</code> में जोड़ता है। <code>parent</code> डिफ़ॉल्ट रूप से <code>document.body</code> है। यह मूल एलिमेंट लौटाता है।</p>
+      <p>आपका tree बनाता है और उसकी root element को <code>parent</code> में जोड़ देता है। <code>parent</code> का default <code>document.body</code> है। यह root element लौटाता है।</p>
       ${code("main.ts", `
 import 'nuclo'
 import { App } from './app.ts'
@@ -843,14 +843,14 @@ import { App } from './app.ts'
 render(App, document.getElementById('app')!)
 `)}
       <ul>
-        <li>आप कंपोनेंट (<code>render(App)</code>) या उसके लौटाए बिल्डर (<code>render(App())</code>) को पास कर सकते हैं। DOM वही है। केवल <code>render(App)</code> <a href="#api-force-update"><code>forceUpdate()</code></a> को बाद में रूट का पुनर्निर्माण करने देता है, इसलिए इसे प्राथमिकता दें।</li>
-        <li>यह जुड़ता है। यह <code>parent</code> को साफ़ नहीं करता है, इसलिए इसे दो बार कॉल करने से दो प्रतियां जुड़ जाती हैं।</li>
-        <li><code>render()</code> के वापस आने पर ट्री में प्रत्येक <code>onMount</code> चल चुका होता है।</li>
-        <li>दस्तावेज़ में मौजूद एलिमेंट में रेंडर करें। <a href="#api-update"><code>update()</code></a> देखें।</li>
-        <li>रूट एक एलिमेंट होना चाहिए, जैसे <code>div(...)</code>, <code>when()</code> या <code>list()</code> नहीं।</li>
-        <li><code>index</code> आंतरिक है। यह यह नहीं चुनता कि एलिमेंट कहाँ डाला गया है। इसे छोड़ दें।</li>
+        <li>आप component (<code>render(App)</code>) पास कर सकते हैं या उसका लौटाया builder (<code>render(App())</code>)। DOM वही बनता है। बस <code>render(App)</code> से <a href="#api-force-update"><code>forceUpdate()</code></a> बाद में root को दोबारा बना पाता है, इसलिए इसी को तरजीह दीजिए।</li>
+        <li>यह जोड़ता है। <code>parent</code> को साफ़ नहीं करता, इसलिए इसे दो बार कॉल करने पर दो copies जुड़ जाती हैं।</li>
+        <li><code>render()</code> के लौटने तक tree के हर <code>onMount</code> चल चुका होता है।</li>
+        <li>ऐसे element में render कीजिए जो document में हो। <a href="#api-update"><code>update()</code></a> देखिए।</li>
+        <li>Root कोई element होना चाहिए, जैसे <code>div(...)</code>। <code>when()</code> या <code>list()</code> नहीं चलेगा।</li>
+        <li><code>index</code> internal है। यह तय नहीं करता कि element कहाँ डलेगा। इसे छोड़ दीजिए।</li>
       </ul>
-      <p><code>render(App)</code> के रूप में पारित एक कंपोनेंट को कोई पैरामीटर नहीं लेना चाहिए। अनिवार्य पैरामीटर टाइप त्रुटि देता है। वैकल्पिक पैरामीटर टाइप जाँच पास कर लेता है, लेकिन <code>render()</code> रनटाइम पर थ्रो करता है। एक कंपोनेंट लपेटें जो प्रॉप्स लेता है:</p>
+      <p><code>render(App)</code> की तरह पास किया गया component कोई parameter नहीं लेना चाहिए। Required parameter पर type error आता है। Optional parameter type check पास कर लेता है, लेकिन <code>render()</code> runtime पर throw करता है। जो component props लेता है, उसे एक function में लपेट दीजिए:</p>
       ${code("main.ts", `
 const Page = (props: { name: string }) => div(h1('Hi ', props.name))
 
@@ -862,7 +862,7 @@ render(() => Page({ name: 'Ana' }), root)
         id: "api-hydrate",
         title: "hydrate()",
         content: `
-      <p><a href="#api-ssr"><code>renderToString()</code></a> से बने HTML को क्लाइंट पर सक्रिय करता है। यह मौजूदा एलिमेंट का पुन: उपयोग करता है, इवेंट लिसनर को जोड़ता है, और डायनेमिक मान, <code>when()</code> और <code>list()</code> को जोड़ता है, इसलिए <code>update()</code> बाद में काम करता है। फिर यह <code>onMount</code> हुक चलाता है। <code>parent</code> डिफ़ॉल्ट रूप से <code>document.body</code> है। यह मूल एलिमेंट लौटाता है।</p>
+      <p><a href="#api-ssr"><code>renderToString()</code></a> से बने HTML को client पर चालू कर देता है। यह मौजूदा elements को दोबारा इस्तेमाल करता है, event listeners जोड़ता है, और dynamic values, <code>when()</code> और <code>list()</code> को attach करता है, ताकि बाद में <code>update()</code> काम करे। फिर यह <code>onMount</code> hooks चलाता है। <code>parent</code> का default <code>document.body</code> है। यह root element लौटाता है।</p>
       ${code("client.ts", `
 import 'nuclo'
 import { App } from './app.ts'
@@ -870,27 +870,27 @@ import { App } from './app.ts'
 hydrate(App, document.getElementById('root')!)
 `)}
       <ul>
-        <li>सर्वर के समान कंपोनेंट और समान डेटा का उपयोग करें।</li>
-        <li>एक समर्पित कंटेनर में हाइड्रेट करें। ऐप का रूट उसका पहला नोड होना चाहिए, हालांकि व्हाइटस्पेस ठीक है। यदि कोई अन्य नोड पहले आता है, तो Nuclo उस नोड को बदल देता है और सर्वर कॉपी को पीछे छोड़ देता है।</li>
-        <li><code>render()</code> की तरह <code>App</code> पास करें, <code>App()</code> नहीं, ताकि <code>forceUpdate()</code> बाद में रूट दोबारा बना सके। <code>App</code> को कोई पैरामीटर नहीं लेना चाहिए। वैकल्पिक पैरामीटर होने पर <code>hydrate()</code> चुपचाप कुछ भी नहीं जोड़ता। प्रॉप्स लेने वाले कंपोनेंट को फ़ंक्शन में लपेटें: <code>hydrate(() =&gt; Page(props), root)</code>।</li>
-        <li>यदि कोई सर्वर HTML नहीं है, तो <code>render()</code> का उपयोग करें।</li>
+        <li>Server वाला ही component और वही data इस्तेमाल कीजिए।</li>
+        <li>अलग container में hydrate कीजिए। App की root उसका पहला node होनी चाहिए, whitespace चलेगा। उससे पहले कोई और node आए, तो Nuclo उसे बदल देता है और server वाली copy पीछे छोड़ देता है।</li>
+        <li><code>render()</code> की तरह <code>App</code> पास कीजिए, <code>App()</code> नहीं, ताकि <code>forceUpdate()</code> बाद में root को दोबारा बना सके। <code>App</code> कोई parameter नहीं ले सकता। Optional parameter हो तो <code>hydrate()</code> चुपचाप कुछ भी attach नहीं करता। जो component props लेता है, उसे function में लपेटिए: <code>hydrate(() =&gt; Page(props), root)</code>।</li>
+        <li>Server HTML नहीं है, तो <code>render()</code> इस्तेमाल कीजिए।</li>
       </ul>
-      <h3>जब सर्वर और क्लाइंट भिन्न होते हैं</h3>
-      <p>क्लाइंट के मान लागू होते हैं:</p>
+      <h3>जब server और client अलग हों</h3>
+      <p>Client की values लागू होती हैं:</p>
       <ul>
-        <li>एक अलग रूट टैग: उस नोड को ताज़ा DOM से बदल दिया गया है। एक खाली कंटेनर: ताज़ा DOM जोड़ा गया है।</li>
-        <li>अलग टेक्स्ट पैच किया गया है। विभिन्न <code>list()</code> आइटम और <code>when()</code> शाखाएँ क्लाइंट के अनुसार बदलती हैं।</li>
-        <li>अतिरिक्त सर्वर चिल्ड्रेन हटा दिए जाते हैं, और गायब चिल्ड्रन बनाए जाते हैं।</li>
-        <li>एट्रिब्यूट जो सर्वर ने लिखीं लेकिन क्लाइंट ने सेट नहीं कीं, उन्हें वैसे ही छोड़ दिया गया है।</li>
+        <li>अलग root tag: उस node की जगह नया DOM आ जाता है। खाली container: नया DOM जोड़ दिया जाता है।</li>
+        <li>अलग text patch हो जाता है। अलग <code>list()</code> items और <code>when()</code> branches client के हिसाब से बदल जाते हैं।</li>
+        <li>Server के फ़ालतू children हट जाते हैं, और जो children नहीं हैं वे बन जाते हैं।</li>
+        <li>जो attributes server ने लिखीं लेकिन client ने सेट नहीं कीं, वे जैसी हैं वैसी रहती हैं।</li>
       </ul>
-      <p><code>renderToString()</code> HTML टिप्पणियों को मार्कर के रूप में लिखता है, जैसे प्रत्येक टेक्स्ट नोड से पहले <code>&lt;!-- text-0 --&gt;</code>। <code>hydrate()</code> को उनकी आवश्यकता है, इसलिए सर्वर HTML से टिप्पणियाँ न हटाएँ। मार्करों के बिना, हाइड्रेशन <code>list()</code> पंक्तियों को हटा देता है, और <code>list()</code> और <code>when()</code> अपडेट करना बंद कर देते हैं।</p>
+      <p><code>renderToString()</code> HTML comments को markers की तरह लिखता है, जैसे हर text node से पहले <code>&lt;!-- text-0 --&gt;</code>। <code>hydrate()</code> को इनकी ज़रूरत होती है, इसलिए server HTML से comments मत हटाइए। Markers न हों, तो hydration <code>list()</code> की rows हटा देता है, और <code>list()</code> व <code>when()</code> update होना बंद कर देते हैं।</p>
     `,
       },
       {
         id: "api-ssr",
-        title: "सर्वर रेंडरिंग",
+        title: "Server rendering",
         content: `
-      <p>सर्वर पर एक कंपोनेंट को HTML स्ट्रिंग में रेंडर करें। ब्राउज़र में, उस HTML को इंटरैक्टिव बनाने के लिए उसी कंपोनेंट के साथ <a href="#api-hydrate"><code>hydrate()</code></a> कॉल करें। सर्वर रनटाइम में कोई <code>document</code> नहीं है, इसलिए पहले <a href="#api-polyfill"><code>nuclo/polyfill</code></a> इम्पोर्ट करें।</p>
+      <p>Server पर किसी component को HTML string में render कीजिए। Browser में उसी component के साथ <a href="#api-hydrate"><code>hydrate()</code></a> कॉल कीजिए, ताकि वह HTML interactive हो जाए। Server runtime में <code>document</code> नहीं होता, इसलिए पहले <a href="#api-polyfill"><code>nuclo/polyfill</code></a> import कीजिए।</p>
       ${code("app.ts", `
 let count = 0
 const heading = css({ color: 'red' })
@@ -923,29 +923,29 @@ import { App } from './app.ts'
 
 hydrate(App, document.getElementById('root')!)
 `)}
-      <p>स्टाइल टैग पर <code>id="nuclo-styles"</code> रखें। क्लाइंट उस एलिमेंट का पुन: उपयोग करता है और केवल नए नियम जोड़ता है। <a href="#api-css-text"><code>getCssText()</code></a> देखें।</p>
-      <h3>सर्वर पर क्या चलता है</h3>
+      <p>Style tag पर <code>id="nuclo-styles"</code> रखिए। Client उसी element को दोबारा इस्तेमाल करता है और सिर्फ़ नई rules जोड़ता है। <a href="#api-css-text"><code>getCssText()</code></a> देखिए।</p>
+      <h3>Server पर क्या चलता है</h3>
       <ul>
-        <li>प्रत्येक <code>renderToString()</code> कॉल ट्री बनाता है और प्रत्येक डायनेमिक मान को एक बार चलाता है।</li>
-        <li>इवेंट हैंडलर, <code>onMount</code> और <code>onDestroy</code> कभी नहीं चलते। <code>update()</code>, <code>scope()</code> और <code>forceUpdate()</code> कुछ नहीं करते।</li>
-        <li>रेंडरिंग सिंक्रोनस है। पहले अपना डेटा लोड करें, फिर रेंडर करें।</li>
-        <li>रेंडर के बाद कुछ भी पंजीकृत नहीं रहता है, इसलिए एक प्रक्रिया कई अनुरोधों को पूरा कर सकती है। अनुरोध डेटा को आर्ग्युमेंट के रूप में पास करें, जैसे <code>renderToString(Page(user))</code>। मॉड्यूल-स्तरीय चर सभी अनुरोधों द्वारा साझा किए जाते हैं।</li>
-        <li>सर्वर पर <code>render()</code> को कॉल न करें। यह साझा <code>document.body</code> से जुड़ता है।</li>
+        <li>हर <code>renderToString()</code> call tree बनाता है और हर dynamic value को एक बार चलाता है।</li>
+        <li>Event handlers, <code>onMount</code> और <code>onDestroy</code> कभी नहीं चलते। <code>update()</code>, <code>scope()</code> और <code>forceUpdate()</code> कुछ नहीं करते।</li>
+        <li>Rendering synchronous है। पहले अपना data load कीजिए, फिर render कीजिए।</li>
+        <li>Render के बाद कुछ भी register नहीं रहता, इसलिए एक process कई requests संभाल सकता है। Request का data arguments में पास कीजिए, जैसे <code>renderToString(Page(user))</code>। Module-level variables सारी requests में shared होते हैं।</li>
+        <li>Server पर <code>render()</code> कॉल मत कीजिए। यह shared <code>document.body</code> से जुड़ता है।</li>
       </ul>
       <h3><code>renderToString()</code></h3>
-      <p>एक बिल्डर (<code>App()</code>), एक कंपोनेंट (<code>App</code>) या एक DOM नोड लेता है। <code>null</code> और <code>undefined</code> <code>""</code> लौटाते हैं। रूट एक एलिमेंट होना चाहिए. <code>renderToString(Page)</code> के रूप में पारित कंपोनेंट को कोई पैरामीटर नहीं लेना चाहिए, इसलिए डेटा लेने वाले कंपोनेंट के लिए <code>Page(user)</code> पास करें।</p>
+      <p>Builder (<code>App()</code>), component (<code>App</code>) या DOM node लेता है। <code>null</code> और <code>undefined</code> पर <code>""</code> लौटता है। Root कोई element होना चाहिए. <code>renderToString(Page)</code> की तरह पास किया गया component कोई parameter नहीं ले सकता, इसलिए जो component data लेता है उसके लिए <code>Page(user)</code> पास कीजिए।</p>
       ${code("example.ts", `
 renderToString(p('Hello'))
 // '<p><!-- text-0 -->Hello</p>'
 `)}
       <ul>
-        <li>टेक्स्ट और एट्रिब्यूट मान HTML-एस्केप्ड हैं। <code>script()</code> और <code>style()</code> के अंदर टेक्स्ट वैसे ही लिखा गया है, केवल क्लोज़िंग टैग को तोड़ा जाता है, इसलिए वहां कभी भी यूजर इनपुट न डालें।</li>
-        <li>यह त्रुटि बाहर थ्रो नहीं करता। कंपोनेंट, <code>list()</code> का फ़ंक्शन या <code>when()</code> की शर्त विफल हो, या पॉलीफ़िल न मिले, तो यह त्रुटि लॉग करके <code>""</code> लौटाता है। ऐसी स्थिति में अनुरोध विफल करना हो, तो खाली परिणाम की जाँच करें। टेक्स्ट या एट्रिब्यूट फ़ंक्शन थ्रो करे, तो केवल उसका मान खाली रेंडर होता है।</li>
+        <li>Text और attribute values HTML-escape होती हैं। <code>script()</code> और <code>style()</code> के अंदर का text जैसा है वैसा लिखा जाता है, बस closing tag तोड़ दिया जाता है, इसलिए वहाँ user input कभी मत डालिए।</li>
+        <li>यह error बाहर throw नहीं करता। Component, <code>list()</code> का function या <code>when()</code> की condition fail हो, या polyfill न मिले, तो यह error log करके <code>""</code> लौटा देता है। ऐसे में request fail करनी हो, तो खाली result चेक कीजिए। Text या attribute function throw करे, तो सिर्फ़ उसकी value खाली render होती है।</li>
       </ul>
       <h3><code>renderManyToString()</code></h3>
-      <p><code>inputs.map(renderToString)</code> के समान।</p>
+      <p><code>inputs.map(renderToString)</code> जैसा ही।</p>
       <h3><code>renderToStringWithContainer()</code></h3>
-      <p>आउटपुट को एक एलिमेंट में लपेटता है। <code>containerTag</code> डिफ़ॉल्ट रूप से <code>"div"</code> पर और <code>containerAttrs</code> पर डिफ़ॉल्ट रूप से <code>{}</code> पर सेट होता है। एट्रिब्यूट मान एस्केप होते हैं। एट्रिब्यूट के नाम दिए गए अनुसार लिखे गए हैं, इसलिए <code>class</code> जैसे HTML नामों का उपयोग करें। उपयोगकर्ता इनपुट को कभी भी टैग के रूप में पास न करें।</p>
+      <p>Output को एक element में लपेट देता है। <code>containerTag</code> का default <code>"div"</code> है और <code>containerAttrs</code> का <code>{}</code>। Attribute values escape होती हैं। Attribute names जैसे दिए जाते हैं वैसे ही लिखे जाते हैं, इसलिए <code>class</code> जैसे HTML names इस्तेमाल कीजिए। User input को tag के रूप में कभी पास मत कीजिए।</p>
       ${code("example.ts", `
 renderToStringWithContainer(p('Hi'), 'section', { id: 'main', class: 'page' })
 // '<section id="main" class="page"><p><!-- text-0 -->Hi</p></section>'
@@ -956,13 +956,13 @@ renderToStringWithContainer(p('Hi'), 'section', { id: 'main', class: 'page' })
         id: "api-polyfill",
         title: "nuclo/polyfill",
         content: `
-      <p>एक छोटा DOM ताकि Nuclo Node और Bun में ट्री बना सके। अपने पहले रेंडर से पहले इसे एक बार इम्पोर्ट करें। अधिकांश ऐप्स को केवल साधारण इम्पोर्ट की आवश्यकता होती है।</p>
+      <p>एक छोटा DOM, ताकि Nuclo Node और Bun में tree बना सके। पहले render से पहले इसे एक बार import कर लीजिए। ज़्यादातर apps को बस सादा import चाहिए।</p>
       <ul>
-        <li>जब कोई <code>window</code> नहीं होता है, तो यह <code>globalThis.document</code>, <code>Node</code>, <code>Element</code> और <code>HTMLElement</code> सेट करता है, लेकिन केवल वे जो गायब हैं। यह <code>window</code> नहीं बनाता है।</li>
-        <li>किसी ब्राउज़र में, या jsdom के अंतर्गत, यह कुछ नहीं करता है।</li>
-        <li><code>Event</code> और <code>CustomEvent</code> रनटाइम के स्वयं के कंस्ट्रक्टर हैं। <code>Node</code>, <code>Element</code> और <code>HTMLElement</code> पॉलीफ़िल क्लास के उपनाम हैं।</li>
+        <li>जब <code>window</code> नहीं होता, तब यह <code>globalThis.document</code>, <code>Node</code>, <code>Element</code> और <code>HTMLElement</code> सेट करता है, लेकिन सिर्फ़ वही जो मौजूद नहीं हैं। यह <code>window</code> नहीं बनाता।</li>
+        <li>Browser में, या jsdom के अंदर, यह कुछ नहीं करता।</li>
+        <li><code>Event</code> और <code>CustomEvent</code> runtime के अपने constructors हैं। <code>Node</code>, <code>Element</code> और <code>HTMLElement</code> polyfill classes के aliases हैं।</li>
       </ul>
-      <p>यह ट्री बनाने के लिए DOM है, ब्राउज़र नहीं। इसमें कोई <code>innerHTML</code> नहीं है और कोई <code>getElementById</code> नहीं है, <code>querySelector()</code> हमेशा <code>null</code> लौटाता है, और इवेंट लिसनर को नजरअंदाज कर दिया जाता है। HTML प्राप्त करने के लिए <code>renderToString()</code> का उपयोग करें।</p>
+      <p>यह tree बनाने के लिए DOM है, browser नहीं। इसमें न <code>innerHTML</code> है और न <code>getElementById</code>, <code>querySelector()</code> हमेशा <code>null</code> लौटाता है, और event listeners ignore हो जाते हैं। HTML चाहिए तो <code>renderToString()</code> इस्तेमाल कीजिए।</p>
     `,
       },
     ],

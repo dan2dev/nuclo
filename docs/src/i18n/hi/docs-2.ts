@@ -4,13 +4,13 @@ import type { DocGroupText } from "../../pages/docs/content.ts";
 
 export const GROUPS_2: DocGroupText[] = [
   {
-    title: "स्टाइलिंग",
+    title: "Styling",
     sections: [
       {
         id: "api-styling",
         title: "css()",
         content: `
-      <p>टाइपयुक्त स्टाइल ऑब्जेक्ट को जेनरेट किए गए CSS क्लास में बदल देता है। परिणाम को किसी भी टैग बिल्डर को भेजें। ब्राउज़र में, नियम एक <code>&lt;style id="nuclo-styles"&gt;</code> एलिमेंट में जाते हैं। सर्वर पर, <a href="#api-css-text"><code>getCssText()</code></a> उन्हें लौटाता है।</p>
+      <p>Typed style object को generated CSS class में बदलता है। जो मिले, उसे किसी भी tag builder को दे दें। Browser में rules एक <code>&lt;style id="nuclo-styles"&gt;</code> element में जाते हैं। Server पर <a href="#api-css-text"><code>getCssText()</code></a> वही rules लौटा देता है।</p>
       ${code("card.ts", `
 const card = css({
   p: 16,
@@ -22,25 +22,25 @@ const card = css({
 const Card = () => div(card, 'Simple card')
 `)}
       <ul>
-        <li><code>css()</code> आधार घोषणाओं के लिए एक क्लास बनाता है, साथ ही प्रत्येक स्यूडो कुंजी, सेलेक्टर और मीडिया ब्लॉक के लिए एक क्लास बनाता है। उपरोक्त कार्ड को दो क्लास मिलते हैं।</li>
-        <li>क्लास नाम सामग्री के हैश हैं। समान स्टाइल एक क्लास साझा करती हैं, और सर्वर और क्लाइंट समान नाम उत्पन्न करते हैं।</li>
-        <li>मॉड्यूल स्तर पर एक बार स्टाइल को परिभाषित करें। <code>css()</code> ऑब्जेक्ट द्वारा कैश होता है, इसलिए प्रत्येक कॉल पर एक नया ऑब्जेक्ट हर बार फिर से संसाधित होता है।</li>
-        <li>किसी स्टाइल ऑब्जेक्ट को <code>css()</code> में पास करने के बाद उसे बदलने से कुछ नहीं होता है।</li>
-        <li>प्रत्येक स्टाइल पृष्ठ या सर्वर प्रक्रिया के जीवनकाल के लिए पंजीकृत रहती है। उन मानों के लिए जो प्रति आइटम बदलते हैं, जैसे डेटा से चौड़ाई, <a href="#attributes"><code>style</code> एट्रिब्यूट</a> का उपयोग करें।</li>
+        <li><code>css()</code> base declarations के लिए एक class बनाता है, और हर pseudo key, selector और media block के लिए एक-एक class अलग से। ऊपर वाले card को दो class मिलती हैं।</li>
+        <li>Class के नाम content के hash होते हैं। एक जैसी style एक ही class share करती हैं, और server व client पर नाम भी वही बनते हैं।</li>
+        <li>Style को module level पर एक बार define करें। <code>css()</code> object के हिसाब से cache करता है, इसलिए हर call पर नया object बनाओगे तो हर बार दोबारा process होगा।</li>
+        <li>Style object को <code>css()</code> में देने के बाद बदलने का कोई असर नहीं होता।</li>
+        <li>हर style page या server process की पूरी life तक registered रहती है। जो values हर item के साथ बदलती हैं, जैसे data से आने वाली width, उनके लिए <a href="#attributes"><code>style</code> attribute</a> इस्तेमाल करें।</li>
       </ul>
-      <h3>नाम वाली स्टाइल</h3>
-      <p>पठनीय क्लास नाम पाने के लिए पहले एक नाम पास करें:</p>
+      <h3>Named style</h3>
+      <p>Readable class name चाहिए तो पहले एक नाम पास करें:</p>
       ${code("title.ts", `
 const pageTitle = css('page-title', { text: 24, hover: { color: 'red' } })
 
 pageTitle.className // "page-title page-title-<hash>"
 `)}
       <ul>
-        <li>बेस क्लास बिल्कुल नाम है। अन्य ब्लॉकों को <code>name-&lt;hash&gt;</code> मिलता है।</li>
-        <li>नाम एक वैध क्लास नाम होना चाहिए। अन्यथा Nuclo चेतावनी देता है और एक उत्पन्न करता है।</li>
-        <li>नाम ग्लोबल हैं। यदि दो अलग-अलग स्टाइल एक ही नाम का उपयोग करती हैं, तो Nuclo चेतावनी देता है।</li>
+        <li>Base class ठीक वही नाम होती है जो आपने दिया। बाकी blocks को <code>name-&lt;hash&gt;</code> मिलता है।</li>
+        <li>नाम valid class name होना चाहिए। नहीं हुआ तो Nuclo warning देता है और खुद एक नाम बना लेता है।</li>
+        <li>नाम global होते हैं। दो अलग style एक ही नाम लें, तो Nuclo warning देता है।</li>
       </ul>
-      <h3>परिणाम का उपयोग करना</h3>
+      <h3>Result का इस्तेमाल</h3>
       ${code("example.ts", `
 const card = css({ p: 8 })
 
@@ -48,54 +48,54 @@ div(card)                           // best
 div(card, { className: 'featured' }) // className merges
 div(card, { class: 'featured' })     // replaces: only "featured" is left
 `)}
-      <p><code>String(card)</code> और <code>card.className</code> दोनों क्लास नाम लौटाते हैं।</p>
+      <p><code>String(card)</code> और <code>card.className</code>, दोनों class name लौटाते हैं।</p>
     `,
       },
       {
         id: "style-objects",
-        title: "स्टाइल ऑब्जेक्ट",
+        title: "Style objects",
         content: `
-      <p><code>css()</code> को दिए ऑब्जेक्ट में camelCase CSS प्रॉपर्टी, शॉर्टहैंड और स्यूडो स्टेट, सेलेक्टर व मीडिया क्वेरी के लिए नेस्टेड कुंजियाँ होती हैं। TypeScript इन सभी के लिए ऑटोकंप्लीट देता है। टाइपयुक्त सेट से बाहर की प्रॉपर्टी, जैसे <code>borderTopLeftRadius</code>, <code>fill</code> या <code>paddingInline</code>, <code>raw</code> में रखें (नीचे देखें)।</p>
-      <h3>मान</h3>
+      <p><code>css()</code> को दिए गए object में camelCase CSS properties, shorthand, और pseudo state, selector व media query के लिए nested keys हो सकती हैं। इन सबके लिए TypeScript autocomplete देता है। जो property typed set में नहीं है, जैसे <code>borderTopLeftRadius</code>, <code>fill</code> या <code>paddingInline</code>, उसे <code>raw</code> में रखें (नीचे देखें)।</p>
+      <h3>Values</h3>
       <ul>
-        <li>संख्याएँ <code>0</code> और इकाई रहित प्रॉपर्टी को छोड़कर <code>px</code> बन जाती हैं: <code>zIndex</code>, <code>opacity</code>, <code>fontWeight</code>, <code>lineHeight</code>, <code>flex</code>, <code>flexGrow</code>, <code>flexShrink</code>, <code>order</code>, <code>aspectRatio</code>, <code>gridColumn</code> और <code>gridRow</code>। <code>raw</code> में, <code>zoom</code>, <code>scale</code>, <code>column-count</code>, <code>orphans</code>, <code>widows</code>, <code>tab-size</code> और <code>animation-iteration-count</code> भी यूनिटलेस हैं।</li>
-        <li>स्ट्रिंग्स का उपयोग लिखित रूप में किया जाता है। <code>null</code>, <code>undefined</code> और <code>false</code> को छोड़ दिया गया है।</li>
-        <li><code>lineHeight</code> (और <code>leading</code>) इकाई रहित है, इसलिए <code>leading: 24</code> का अर्थ फ़ॉन्ट आकार का 24 गुना है। पिक्सेल के लिए <code>"24px"</code> लिखें।</li>
+        <li>Numbers में <code>px</code> अपने आप जुड़ जाता है, सिवाय <code>0</code> और unitless properties के: <code>zIndex</code>, <code>opacity</code>, <code>fontWeight</code>, <code>lineHeight</code>, <code>flex</code>, <code>flexGrow</code>, <code>flexShrink</code>, <code>order</code>, <code>aspectRatio</code>, <code>gridColumn</code> और <code>gridRow</code>। <code>raw</code> में <code>zoom</code>, <code>scale</code>, <code>column-count</code>, <code>orphans</code>, <code>widows</code>, <code>tab-size</code> और <code>animation-iteration-count</code> भी unitless हैं।</li>
+        <li>Strings जैसी लिखी हैं वैसी ही use होती हैं। <code>null</code>, <code>undefined</code> और <code>false</code> skip हो जाते हैं।</li>
+        <li><code>lineHeight</code> (और <code>leading</code>) unitless है, इसलिए <code>leading: 24</code> का मतलब font size का 24 गुना है। Pixels चाहिए तो <code>"24px"</code> लिखें।</li>
       </ul>
       ${code("example.ts", `
 css({ p: 16, m: 0, opacity: 0.5, leading: 1.5, z: 10, w: '50%' })
 // padding:16px; margin:0; opacity:0.5; line-height:1.5; z-index:10; width:50%
 `)}
-      <h3>शॉर्टहैंड</h3>
+      <h3>Shorthand</h3>
       <table>
-        <thead><tr><th>कुंजी</th><th>CSS</th></tr></thead>
+        <thead><tr><th>Key</th><th>CSS</th></tr></thead>
         <tbody>
-          <tr><td><code>p</code>, <code>pt</code>, <code>pr</code>, <code>pb</code>, <code>pl</code></td><td>पैडिंग, और प्रत्येक साइड</td></tr>
-          <tr><td><code>px</code> / <code>py</code></td><td>पैडिंग बाएँ और दाएँ / ऊपर और नीचे</td></tr>
-          <tr><td><code>m</code>, <code>mt</code>, <code>mr</code>, <code>mb</code>, <code>ml</code>, <code>mx</code>, <code>my</code></td><td>मार्जिन के लिए वही दिशाएँ</td></tr>
-          <tr><td><code>w</code>, <code>h</code>, <code>minW</code>, <code>maxW</code>, <code>minH</code>, <code>maxH</code></td><td>चौड़ाई, ऊंचाई और उनकी न्यूनतम और अधिकतम</td></tr>
-          <tr><td><code>size</code></td><td>चौड़ाई और ऊंचाई</td></tr>
-          <tr><td><code>bg</code></td><td>पृष्ठभूमि</td></tr>
+          <tr><td><code>p</code>, <code>pt</code>, <code>pr</code>, <code>pb</code>, <code>pl</code></td><td>padding, और हर side का padding</td></tr>
+          <tr><td><code>px</code> / <code>py</code></td><td>padding बाएँ-दाएँ / ऊपर-नीचे</td></tr>
+          <tr><td><code>m</code>, <code>mt</code>, <code>mr</code>, <code>mb</code>, <code>ml</code>, <code>mx</code>, <code>my</code></td><td>margin के लिए यही दिशाएँ</td></tr>
+          <tr><td><code>w</code>, <code>h</code>, <code>minW</code>, <code>maxW</code>, <code>minH</code>, <code>maxH</code></td><td>width, height और उनके min/max</td></tr>
+          <tr><td><code>size</code></td><td>width और height दोनों</td></tr>
+          <tr><td><code>bg</code></td><td>background</td></tr>
           <tr><td><code>text</code> / <code>font</code> / <code>weight</code></td><td>font-size / font-family / font-weight</td></tr>
           <tr><td><code>leading</code> / <code>tracking</code></td><td>line-height / letter-spacing</td></tr>
           <tr><td><code>align</code> / <code>items</code> / <code>justify</code></td><td>text-align / align-items / justify-content</td></tr>
           <tr><td><code>z</code> / <code>rounded</code> / <code>shadow</code> / <code>select</code></td><td>z-index / border-radius / box-shadow / user-select</td></tr>
         </tbody>
       </table>
-      <p>ये कुंजियाँ <code>true</code> लेती हैं:</p>
+      <p>ये keys <code>true</code> लेती हैं:</p>
       <table>
-        <thead><tr><th>कुंजी</th><th>CSS</th></tr></thead>
+        <thead><tr><th>Key</th><th>CSS</th></tr></thead>
         <tbody>
           <tr><td><code>row</code></td><td>display: flex; flex-direction: row</td></tr>
           <tr><td><code>col</code></td><td>display: flex; flex-direction: column</td></tr>
-          <tr><td><code>center</code></td><td>align-items: center; justify-content: center (डिस्प्ले सेट नहीं है)</td></tr>
+          <tr><td><code>center</code></td><td>align-items: center; justify-content: center (display set नहीं होता)</td></tr>
           <tr><td><code>truncate</code></td><td>overflow: hidden; text-overflow: ellipsis; white-space: nowrap</td></tr>
         </tbody>
       </table>
-      <h3>स्यूडो स्टेट</h3>
-      <p><code>hover</code>, <code>focus</code>, <code>focusVisible</code>, <code>focusWithin</code>, <code>active</code>, <code>visited</code>, <code>disabled</code>, <code>enabled</code>, <code>checked</code>, <code>required</code>, <code>invalid</code>, <code>valid</code>, <code>readOnly</code>, <code>first</code> (<code>:first-child</code>), <code>last</code> (<code>:last-child</code>), <code>only</code> (<code>:only-child</code>), <code>odd</code>, <code>even</code>, <code>empty</code>, <code>placeholderShown</code>, <code>placeholder</code>, <code>before</code>, <code>after</code>, <code>selection</code>, <code>marker</code>, <code>firstLine</code> और <code>firstLetter</code>। इन्हें नेस्ट कर सकते हैं: <code>hover: { focus: {…} }</code> <code>:hover:focus</code> देता है।</p>
-      <h3>सेलेक्टर और नियम</h3>
-      <p>एक कुंजी जो <code>&amp;</code> से शुरू होती है वह एक सेलेक्टर है, और प्रत्येक <code>&amp;</code> क्लास बन जाता है। एक कुंजी जो <code>@</code> से शुरू होती है वह एक नियम है: <code>@media</code>, <code>@container</code> या <code>@supports</code>।</p>
+      <h3>Pseudo state</h3>
+      <p><code>hover</code>, <code>focus</code>, <code>focusVisible</code>, <code>focusWithin</code>, <code>active</code>, <code>visited</code>, <code>disabled</code>, <code>enabled</code>, <code>checked</code>, <code>required</code>, <code>invalid</code>, <code>valid</code>, <code>readOnly</code>, <code>first</code> (<code>:first-child</code>), <code>last</code> (<code>:last-child</code>), <code>only</code> (<code>:only-child</code>), <code>odd</code>, <code>even</code>, <code>empty</code>, <code>placeholderShown</code>, <code>placeholder</code>, <code>before</code>, <code>after</code>, <code>selection</code>, <code>marker</code>, <code>firstLine</code> और <code>firstLetter</code>। इन्हें nest भी कर सकते हैं: <code>hover: { focus: {…} }</code> से <code>:hover:focus</code> बनता है।</p>
+      <h3>Selector और rules</h3>
+      <p>जो key <code>&amp;</code> से शुरू होती है वह selector है, और हर <code>&amp;</code> की जगह class आ जाती है। जो key <code>@</code> से शुरू होती है वह at-rule है: <code>@media</code>, <code>@container</code> या <code>@supports</code>।</p>
       ${code("menu.ts", `
 const menu = css({
   p: 8,
@@ -106,22 +106,22 @@ const menu = css({
 })
 `)}
       <ul>
-        <li>कुंजी <code>&amp;</code> से शुरू होनी चाहिए। <code>".dark &amp;"</code> जैसी कुंजी को नजरअंदाज कर दिया जाता है, इसलिए <code>"&amp;:is(.dark *)"</code> लिखें।</li>
-        <li>दो नेस्टेड <code>@media</code> ब्लॉक <code>and</code> से जुड़ते हैं। मीडिया टाइप (<code>print</code>, <code>only screen</code>) से शुरू होने वाली क्वेरी पहले रखी जाती है, क्योंकि सिंटैक्स में टाइप केवल शुरुआत में आ सकता है। यदि दोनों को एक क्वेरी में नहीं बदल सकते—दो मीडिया टाइप हों या शुरुआत में <code>not</code> हो—तो चेतावनी के साथ केवल अंदर वाली क्वेरी इस्तेमाल होती है। कोई भी दूसरा नेस्टेड एट-रूल बाहर वाले को बदल देता है।</li>
+        <li>Key <code>&amp;</code> से ही शुरू होनी चाहिए। <code>".dark &amp;"</code> जैसी key ignore हो जाती है, इसलिए <code>"&amp;:is(.dark *)"</code> लिखें।</li>
+        <li>दो nested <code>@media</code> blocks <code>and</code> से जुड़ जाते हैं। जिस query में media type है (<code>print</code>, <code>only screen</code>), उसे सबसे पहले रखा जाता है, क्योंकि syntax में type सिर्फ शुरुआत में आ सकता है। अगर दोनों को एक query में नहीं जोड़ा जा सकता, यानी दो media type हैं या शुरुआत में <code>not</code> है, तो warning आती है और सिर्फ अंदर वाली query use होती है। इसके अलावा कोई भी दूसरा nested at-rule बाहर वाले को replace कर देता है।</li>
       </ul>
       <h3><code>raw</code></h3>
-      <p>किसी भी प्रॉपर्टी के लिए <code>raw</code> का उपयोग करें, नाम बिल्कुल CSS जैसा लिखा गया है। संख्याओं में यहाँ भी <code>px</code> जुड़ता है, इसलिए स्ट्रिंग पास करें:</p>
+      <p>किसी भी property के लिए <code>raw</code> use करें, नाम बिल्कुल CSS वाला लिखें। यहाँ भी numbers में <code>px</code> जुड़ता है, इसलिए string पास करें:</p>
       ${code("example.ts", `
 css({ raw: { '--gap': '8px', '-webkit-line-clamp': '2' } })
 `)}
-      <p>किसी भी अन्य फ़्लैट कुंजी को कबाब-केस में बदल दिया जाता है और उसे वैसे ही लिखा जाता है, इसलिए <code>colr: 'red'</code> जैसी टाइपो एक घोषणा बन जाती है जिसे ब्राउज़र ड्रॉप कर देता है। किसी कुंजी के अंतर्गत एक नेस्टेड ऑब्जेक्ट जो एक स्यूडो स्थिति, एक स्क्रीन, या एक <code>&amp;</code> या <code>@</code> कुंजी नहीं है, को नजरअंदाज कर दिया जाता है। TypeScript दोनों की रिपोर्ट करता है।</p>
+      <p>कोई भी दूसरी flat key kebab-case में बदलकर जैसी है वैसी लिख दी जाती है। इसलिए <code>colr: 'red'</code> जैसा typo भी एक declaration बन जाता है, जिसे browser बस drop कर देता है। किसी key के नीचे जो nested object pseudo state, screen, या <code>&amp;</code>/<code>@</code> key नहीं है, वह ignore हो जाता है। दोनों गलतियाँ TypeScript पकड़ लेता है।</p>
     `,
       },
       {
         id: "api-cx",
         title: "cx()",
         content: `
-      <p>स्टाइल मर्ज करता है। दो इनपुट एक ही प्रॉपर्टी सेट करें, तो बाद वाले मान को प्राथमिकता मिलती है।</p>
+      <p>Styles को merge करता है। दो inputs एक ही property set करें, तो बाद वाली value जीतती है।</p>
       ${code("example.ts", `
 const base = css({ p: 8, color: 'red' })
 const blue = css({ color: 'blue' })
@@ -131,13 +131,13 @@ cx(base, false, null, 'extra')  // base's classes plus "extra"
 div(cx(base, blue), 'Blue text')
 `)}
       <ul>
-        <li>falsy इनपुट छोड़ दिए जाते हैं। ऐरे फ़्लैट किए जाते हैं। स्ट्रिंग में दिए क्लास नाम अलग किए जाते हैं और दोहराए गए नाम हटा दिए जाते हैं।</li>
-        <li>एक ही ब्लॉक (आधार, एक ही स्यूडो, एक ही मीडिया क्वेरी) के लिए जेनरेट की गई क्लास एक नई क्लास में विलय हो जाती हैं। अन्य क्लास के नाम अपरिवर्तित रहते हैं।</li>
-        <li>केवल <code>cx()</code> आर्ग्युमेंट क्रम जानता है। <code>div(base, blue)</code> के साथ, दोनों क्लास जोड़े जाते हैं, और जो नियम सबसे बाद में बना था उसे प्राथमिकता मिलती है। एक <code>cx()</code> कॉल में एक-दूसरे को ओवरराइड करने वाली स्टाइल डालें।</li>
-        <li>जब एक नामित स्टाइल का ब्लॉक किसी अन्य इनपुट के ब्लॉक के साथ विलय हो जाता है, तो मर्ज की गई क्लास <code>name-&lt;hash&gt;</code> होता है, न कि मूल नाम। जो ब्लॉक मर्ज नहीं होते हैं वे अपनी क्लास बनाए रखते हैं, इसलिए <code>cx(pageTitle, 'extra')</code> में अभी भी <code>page-title</code> है।</li>
+        <li>Falsy inputs skip हो जाते हैं। Arrays flatten होते हैं। String में दिए class names अलग किए जाते हैं और duplicate हटा दिए जाते हैं।</li>
+        <li>एक ही block (base, एक ही pseudo, एक ही media query) की generated classes मिलकर एक नई class बन जाती हैं। बाकी class names जैसे हैं वैसे रहते हैं।</li>
+        <li>Argument order सिर्फ <code>cx()</code> को पता होता है। <code>div(base, blue)</code> में दोनों classes जुड़ जाती हैं, और जो rule बाद में बना था वही जीतता है। जो styles एक-दूसरे को override करती हैं, उन्हें एक ही <code>cx()</code> call में डालें।</li>
+        <li>जब किसी named style का block दूसरे input के block से merge होता है, तो merged class <code>name-&lt;hash&gt;</code> बन जाती है, original नाम नहीं रहता। जो blocks merge नहीं होते, वे अपनी class रखते हैं, इसलिए <code>cx(pageTitle, 'extra')</code> में <code>page-title</code> अब भी रहता है।</li>
       </ul>
-      <h3>डायनेमिक क्लास</h3>
-      <p>एक फ़ंक्शन पास करें जो हमेशा <code>cx(...)</code> लौटाता है:</p>
+      <h3>Dynamic class</h3>
+      <p>ऐसा function पास करें जो हमेशा <code>cx(...)</code> लौटाए:</p>
       ${code("toggle.ts", `
 const baseButton = css({ px: 12, py: 8, border: '1px solid #ccc' })
 const activeButton = css({ bg: '#ff3f00', color: 'white' })
@@ -151,14 +151,14 @@ const Toggle = () =>
     { onClick: () => { active = !active; update() } },
   )
 `)}
-      <p>फ़ंक्शन को अपने पहले रन पर एक स्टाइल परिणाम लौटाना होगा। <code>() =&gt; active &amp;&amp; activeButton</code> एक क्लास के बजाय "false" टेक्स्ट को रेंडर करता है।</p>
+      <p>Function को अपने पहले run में ही style result लौटाना होगा। <code>() =&gt; active &amp;&amp; activeButton</code> class की जगह "false" text render कर देगा।</p>
     `,
       },
       {
         id: "api-create-css",
         title: "createCss()",
         content: `
-      <p>एक थीम से बंधे अपने स्वयं के <code>css</code>, <code>cx</code>, <code>variants</code>, <code>keyframes</code> और <code>globalStyle</code> लौटाता है। एक थीम मानों को नाम देती है: नीचे दी गई थीम के साथ, <code>borderColor: 'border'</code> <code>#e5e7eb</code> लिखता है, और TypeScript नामों को स्वतः पूर्ण करता है। <code>screens</code> में प्रत्येक प्रविष्टि मीडिया क्वेरी के लिए एक स्टाइल कुंजी बन जाती है, जैसे <code>md: {…}</code>।</p>
+      <p>एक theme से जुड़े अपने <code>css</code>, <code>cx</code>, <code>variants</code>, <code>keyframes</code> और <code>globalStyle</code> लौटाता है। Theme values को नाम देती है: नीचे वाली theme के साथ <code>borderColor: 'border'</code> से <code>#e5e7eb</code> लिखा जाता है, और TypeScript नाम autocomplete करता है। <code>screens</code> की हर entry media query के लिए एक style key बन जाती है, जैसे <code>md: {…}</code>।</p>
       ${code("theme.ts", `
 export const { css, cx, variants } = createCss({
   colors: { primary: '#ff3f00', border: '#e5e7eb' },
@@ -175,21 +175,21 @@ const panel = css({
 })
 `)}
       <table>
-        <thead><tr><th>थीम कुंजी</th><th>कहाँ उपयोग होती है</th></tr></thead>
+        <thead><tr><th>Theme key</th><th>कहाँ use होती है</th></tr></thead>
         <tbody>
-          <tr><td><code>colors</code></td><td><code>bg</code>, <code>backgroundColor</code>, <code>color</code>, <code>borderColor</code> और प्रत्येक पक्ष, <code>outlineColor</code>, <code>caretColor</code>, <code>textDecorationColor</code></td></tr>
+          <tr><td><code>colors</code></td><td><code>bg</code>, <code>backgroundColor</code>, <code>color</code>, <code>borderColor</code> और हर side की border color, <code>outlineColor</code>, <code>caretColor</code>, <code>textDecorationColor</code></td></tr>
           <tr><td><code>fonts</code></td><td><code>font</code>, <code>fontFamily</code></td></tr>
           <tr><td><code>shadows</code></td><td><code>shadow</code>, <code>boxShadow</code></td></tr>
           <tr><td><code>radii</code></td><td><code>rounded</code>, <code>borderRadius</code></td></tr>
-          <tr><td><code>screens</code></td><td>नई स्टाइल कुंजियाँ, जैसे <code>md: {…}</code></td></tr>
+          <tr><td><code>screens</code></td><td>नई style keys, जैसे <code>md: {…}</code></td></tr>
         </tbody>
       </table>
       <ul>
-        <li>एक थीम नाम तभी हल होता है जब वह संपूर्ण मान हो। <code>border: "1px solid primary"</code> में नाम हल नहीं होता।</li>
-        <li><code>@</code> के बिना एक स्क्रीन मान <code>@media &lt;value&gt;</code> हो जाता है। <code>@</code> से शुरू होने वाला मान लिखित रूप में उपयोग किया जाता है, उदाहरण के लिए <code>"@container (min-width: 400px)"</code>।</li>
-        <li>स्क्रीन केवल <code>createCss()</code> से बने इंस्टेंस पर मौजूद हैं। ग्लोबल <code>css()</code> में कोई नहीं है, लेकिन यह <code>@media</code> कुंजी स्वीकार करता है।</li>
-        <li>सभी इंस्टेंस और ग्लोबल हेल्पर एक स्टाइलशीट साझा करते हैं। स्क्रीन के मीडिया नियम घोषणा के क्रम में लिखे जाते हैं, उपयोग के क्रम में नहीं। इसलिए <code>min-width</code> स्क्रीन छोटे से बड़े क्रम में लिखें। हर ऐप में एक <code>createCss()</code> इंस्टेंस रखें ताकि क्रम आपकी थीम के अनुसार हो।</li>
-        <li><code>theme</code> वही थीम है जो आपने पास की थी।</li>
+        <li>Theme का नाम तभी resolve होता है जब वह पूरी value हो। <code>border: "1px solid primary"</code> में नाम resolve नहीं होता।</li>
+        <li>बिना <code>@</code> वाली screen value <code>@media &lt;value&gt;</code> बन जाती है। जो value <code>@</code> से शुरू होती है, वह जैसी है वैसी use होती है, जैसे <code>"@container (min-width: 400px)"</code>।</li>
+        <li>Screens सिर्फ <code>createCss()</code> से बने instance पर होती हैं। Global <code>css()</code> में कोई screen नहीं होती, पर वह <code>@media</code> key accept करता है।</li>
+        <li>सभी instances और global helpers एक ही stylesheet share करते हैं। Screens के media rules declaration के order में लिखे जाते हैं, use के order में नहीं। इसलिए <code>min-width</code> वाली screens छोटी से बड़ी के क्रम में लिखें। हर app में एक ही <code>createCss()</code> instance रखें, ताकि order आपकी theme के हिसाब से रहे।</li>
+        <li><code>theme</code> वही theme है जो आपने पास की थी।</li>
       </ul>
     `,
       },
@@ -197,7 +197,7 @@ const panel = css({
         id: "api-variants",
         title: "variants()",
         content: `
-      <p>एक फ़ंक्शन बनाता है जो विकल्पों के एक सेट के लिए एक स्टाइल लौटाता है, जैसे कि बटन का उद्देश्य और आकार।</p>
+      <p>ऐसा function बनाता है जो options के किसी set के लिए एक style लौटाता है, जैसे button का intent और size।</p>
       ${code("button.ts", `
 const buttonClass = variants({
   base: { px: 12, py: 8, rounded: 6 },
@@ -214,11 +214,11 @@ button(buttonClass(), 'Save')                                                // 
 button(buttonClass({ intent: 'danger', size: 'lg', block: true }), 'Delete') // bold, full width
 `)}
       <ul>
-        <li>स्टाइल इस क्रम में मर्ज होते हैं: <code>base</code>, हर समूह का चुना मान और फिर हर मिलता कंपाउंड वैरिएंट। हर प्रॉपर्टी के लिए बाद वाले मान को प्राथमिकता मिलती है।</li>
-        <li>एक अनुपलब्ध, <code>undefined</code> या <code>null</code> विकल्प डिफ़ॉल्ट का उपयोग करता है। बिना किसी डिफ़ॉल्ट वाले समूह को छोड़ दिया जाता है।</li>
-        <li>केवल <code>true</code> और <code>false</code> कुंजियों वाला एक समूह एक बूलियन लेता है।</li>
-        <li>एक कंपाउंड तब लागू होता है जब इसमें सूचीबद्ध प्रत्येक समूह मेल खाता है, डिफ़ॉल्ट शामिल हैं।</li>
-        <li>प्रत्येक चयन एक बार बनाया जाता है और कैश किया जाता है।</li>
+        <li>Styles इसी order में merge होती हैं: पहले <code>base</code>, फिर हर group की चुनी हुई value, फिर match होने वाला हर compound variant। हर property में बाद वाली value जीतती है।</li>
+        <li>Missing, <code>undefined</code> या <code>null</code> option होने पर default use होता है। जिस group का default नहीं है, वह skip हो जाता है।</li>
+        <li>जिस group में सिर्फ <code>true</code> और <code>false</code> keys हैं, वह boolean लेता है।</li>
+        <li>Compound तब लागू होता है जब उसमें लिखा हर group match करे, defaults भी गिने जाते हैं।</li>
+        <li>हर selection एक बार बनता है और cache हो जाता है।</li>
       </ul>
     `,
       },
@@ -226,7 +226,7 @@ button(buttonClass({ intent: 'danger', size: 'lg', block: true }), 'Delete') // 
         id: "api-keyframes",
         title: "keyframes() और globalStyle()",
         content: `
-      <p><code>keyframes()</code> एक एनीमेशन पंजीकृत करता है और उसका उत्पन्न नाम लौटाता है। फ़्रेम कुंजियाँ <code>from</code>, <code>to</code> और प्रतिशत हैं, जैसे <code>"50%"</code> या <code>"0%, 100%"</code>। फ़्रेम केवल फ़्लैट प्रॉपर्टी लेते हैं. समान फ़्रेम समान नाम लौटाते हैं.</p>
+      <p><code>keyframes()</code> एक animation register करता है और उसका generated नाम लौटाता है। Frame keys <code>from</code>, <code>to</code> और percentages होती हैं, जैसे <code>"50%"</code> या <code>"0%, 100%"</code>। Frames सिर्फ flat properties लेते हैं। एक जैसे frames से हमेशा एक ही नाम मिलता है।</p>
       ${code("fade.ts", `
 const fadeIn = keyframes({
   from: { opacity: 0 },
@@ -235,15 +235,15 @@ const fadeIn = keyframes({
 
 const panel = css({ animation: \`\${fadeIn} 200ms ease-out\` })
 `)}
-      <p><code>globalStyle()</code> किसी भी सेलेक्टर के लिए एक नियम जोड़ता है:</p>
+      <p><code>globalStyle()</code> किसी भी selector के लिए rule जोड़ता है:</p>
       ${code("reset.ts", `
 globalStyle('*, *::before, *::after', { boxSizing: 'border-box' })
 globalStyle('body', { m: 0, font: 'system-ui, sans-serif' })
 `)}
       <ul>
-        <li>सेलेक्टर का उपयोग बिल्कुल वैसे ही किया गया है जैसा लिखा गया है।</li>
-        <li>केवल फ्लैट प्रॉपर्टी ही काम करती हैं। स्यूडो कुंजियाँ, स्क्रीन और <code>@</code> कुंजियाँ नजरअंदाज कर दी जाती हैं, इसलिए <code>globalStyle()</code> मीडिया नियम नहीं लिख सकता।</li>
-        <li>एक ही नियम एक बार जोड़ा जाता है। एक ही सेलेक्टर के लिए एक अलग स्टाइल दूसरा नियम जोड़ती है, और बाद वाला जीतता है।</li>
+        <li>Selector बिल्कुल वैसे ही use होता है जैसा आपने लिखा।</li>
+        <li>सिर्फ flat properties काम करती हैं। Pseudo keys, screens और <code>@</code> keys ignore हो जाती हैं, इसलिए <code>globalStyle()</code> से media rule नहीं लिख सकते।</li>
+        <li>एक ही rule सिर्फ एक बार जुड़ता है। उसी selector के लिए अलग style दूसरा rule जोड़ देती है, और बाद वाला जीतता है।</li>
       </ul>
     `,
       },
@@ -251,14 +251,14 @@ globalStyle('body', { m: 0, font: 'system-ui, sans-serif' })
         id: "api-css-text",
         title: "getCssText() और resetStyles()",
         content: `
-      <p><code>getCssText()</code> हर नियम लौटाता है जो <code>css()</code>, <code>cx()</code>, <code>variants()</code>, <code>keyframes()</code> और <code>globalStyle()</code> ने इस प्रक्रिया में बनाया है: पहले आधार नियम, फिर <code>@media</code>, <code>@container</code> और <code>@supports</code> ब्लॉक। सर्वर रेंडरिंग के लिए इसका उपयोग करें।</p>
+      <p><code>getCssText()</code> इस process में <code>css()</code>, <code>cx()</code>, <code>variants()</code>, <code>keyframes()</code> और <code>globalStyle()</code> ने जो भी rules बनाए हैं, वो सब लौटाता है: पहले base rules, फिर <code>@media</code>, <code>@container</code> और <code>@supports</code> blocks। Server rendering में इसे use करें।</p>
       <ul>
-        <li>इसे <code>renderToString()</code> के बाद कॉल करें। रेंडर के दौरान बनाए गए नियम शामिल हैं।</li>
-        <li>यह एक पेज या अनुरोध को नहीं बल्कि पूरी प्रक्रिया को कवर करता है, और यह केवल बढ़ता है। यह सुरक्षित है, क्योंकि क्लास के नाम सामग्री हैश हैं।</li>
-        <li>इसे <code>&lt;style id="nuclo-styles"&gt;</code> में डालें। क्लाइंट उस एलिमेंट का पुन: उपयोग करता है और उसमें पहले से मौजूद नियमों को छोड़ देता है। किसी दूसरी आईडी के साथ, या बिना आईडी के, क्लाइंट प्रत्येक नियम के साथ फिर से एक दूसरी स्टाइलशीट जोड़ता है।</li>
-        <li>टेक्स्ट एस्केप नहीं होता, इसलिए स्टाइल मानों में कभी भी अविश्वसनीय इनपुट न डालें।</li>
+        <li>इसे <code>renderToString()</code> के बाद call करें। Render के दौरान बने rules भी इसमें आ जाते हैं।</li>
+        <li>यह किसी एक page या request को नहीं, पूरे process को cover करता है, और सिर्फ बढ़ता रहता है। इसमें कोई दिक्कत नहीं, क्योंकि class names content hash हैं।</li>
+        <li>इसे <code>&lt;style id="nuclo-styles"&gt;</code> में डालें। Client उसी element को reuse करता है और जो rules पहले से उसमें हैं उन्हें skip कर देता है। दूसरी id के साथ, या बिना id के, client हर rule के साथ एक नई stylesheet फिर से जोड़ देता है।</li>
+        <li>Text escape नहीं होता, इसलिए style values में untrusted input कभी न डालें।</li>
       </ul>
-      <p><code>resetStyles()</code> एक परीक्षण हेल्पर है। यह प्रत्येक नियम और <code>#nuclo-styles</code> एलिमेंट को हटा देता है। आपके द्वारा पहले बनाई गई स्टाइल अपने क्लास के नाम तो रखती हैं लेकिन अपना CSS खो देती हैं। इसे किसी ऐप या सर्वर पर कॉल न करें।</p>
+      <p><code>resetStyles()</code> testing के लिए helper है। यह हर rule और <code>#nuclo-styles</code> element हटा देता है। पहले बनी styles के class names तो रहते हैं, पर उनका CSS चला जाता है। इसे app या server में call न करें।</p>
       ${code("setup.test.ts", `
 import { resetStyles } from 'nuclo'
 
@@ -271,25 +271,25 @@ beforeEach(() => resetStyles())
 
   // ── Routing ──────────────────────────────────────────────────────────────
   {
-    title: "रूटिंग",
+    title: "Routing",
     sections: [
       {
         id: "router-overview",
         title: "nuclo-router",
         content: `
-      <div class="docs-callout"><strong>अलग पैकेज: </strong> <code>nuclo-router</code> Nuclo कोर पैकेज का हिस्सा नहीं है। इसे <code>nuclo</code> के साथ इंस्टॉल करें। यह एक प्रीव्यू रिलीज़ है, इसलिए इसका API अभी भी बदल सकता है।</div>
-      <p>Nuclo के लिए रूटिंग: सर्वर रेंडरिंग, हाइड्रेशन, कोड-स्प्लिट रूट और आइडल प्रीलोडिंग, <code>list()</code> और <code>update()</code> पर निर्मित। gzip के बाद लगभग ${NUCLO_ROUTER_GZIP_KB} KB। Nuclo के अलावा कोई डिपेंडेंसी नहीं और कोई साइड इफ़ेक्ट नहीं, इसलिए इस्तेमाल न होने पर ट्री शेकिंग इसे हटा देती है।</p>
+      <div class="docs-callout"><strong>अलग package: </strong> <code>nuclo-router</code> Nuclo core package का हिस्सा नहीं है। इसे <code>nuclo</code> के साथ install करें। यह preview release है, इसलिए इसका API अभी बदल सकता है।</div>
+      <p>Nuclo के लिए routing: server rendering, hydration, code-split routes और idle preloading, सब <code>list()</code> और <code>update()</code> के ऊपर बना है। gzip के बाद लगभग ${NUCLO_ROUTER_GZIP_KB} KB। Nuclo के अलावा कोई dependency नहीं और कोई side effect नहीं, इसलिए use न हो तो tree shaking इसे हटा देती है।</p>
       ${sh("npm install nuclo nuclo-router")}
-      <p>या समान दो नामों के साथ <code>pnpm add</code>, <code>yarn add</code> या <code>bun add</code> का उपयोग करें। इसे पीयर डिपेंडेंसी के रूप में <code>nuclo</code> 0.3 या उससे नया संस्करण चाहिए।</p>
-      <p>राउटर तय करता है कि <em>क्या</em> लोड होगा। ऐप बताता है कि <em>कहाँ</em> दिखेगा <code>router.outlet()</code> के साथ: लेयर स्टैक पर एक <code>list()</code>, प्रति लेयर एक पंक्ति, इसलिए एक साधारण पृष्ठ एक पंक्ति है। सर्वर और क्लाइंट एक ही ट्री बनाते हैं, इसलिए <code>hydrate()</code> सर्वर के मौजूदा नोड का पुनः उपयोग करता है। बाकी सब कुछ <code>history</code> है, एक डेलिगेटेड <code>click</code> लिसनर और <code>requestIdleCallback</code> है।</p>
-      <h3>एक इम्पोर्ट</h3>
+      <p>या यही दो नाम देकर <code>pnpm add</code>, <code>yarn add</code> या <code>bun add</code> use करें। Peer dependency के तौर पर इसे <code>nuclo</code> 0.3 या उससे नया version चाहिए।</p>
+      <p>Router तय करता है कि <em>क्या</em> load होगा। App तय करता है कि वह <em>कहाँ</em> दिखेगा, <code>router.outlet()</code> से: layer stack पर एक <code>list()</code>, हर layer की एक row, इसलिए साधारण page बस एक row है। Server और client एक ही tree बनाते हैं, इसलिए <code>hydrate()</code> server के बनाए nodes को reuse कर लेता है। बाकी सब कुछ <code>history</code>, एक delegated <code>click</code> listener और <code>requestIdleCallback</code> है।</p>
+      <h3>एक import</h3>
       ${code("main.ts", `
 export const router = createRouter(routes)   // define once, import anywhere
 await router.start()                          // resolve the current URL
 render(App, document.getElementById('app')!) // App places router.outlet() and reads router.path, router.go(), …
 `)}
-      <p><code>start()</code> लौटने से पहले मिलते रूट का मॉड्यूल लोड कर लेता है, इसलिए पहला ट्री सर्वर और क्लाइंट दोनों पर पूरा हो जाता है। उसके बाद राउटर उस रूट का स्टेट पढ़ता है जिसे उसने शुरू किया: <code>router.path</code>, <code>router.pending</code>, <code>router.go()</code>।</p>
-      <h3>एक संपूर्ण ऐप</h3>
+      <p><code>start()</code> लौटने से पहले matching route का module load कर लेता है, इसलिए पहली tree server और client, दोनों पर पूरी बनती है। उसके बाद router उसी route की state पढ़ता है जिसे उसने start किया: <code>router.path</code>, <code>router.pending</code>, <code>router.go()</code>।</p>
+      <h3>पूरी app</h3>
       ${code("routes.ts", `
 // isomorphic: imported by the browser and the server
 import { createRouter } from 'nuclo-router'
@@ -339,28 +339,28 @@ import { router, App } from './routes.ts'
 const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
-      <p>यह संपूर्ण एकीकरण है। लिंक काम करते हैं क्योंकि <code>&lt;a href&gt;</code> सिर्फ एक <code>&lt;a href&gt;</code> है। <code>document</code> पर एक डेलिगेटेड लिसनर राउटर के स्वामित्व वाले लिंक को रोकता है और ब्राउज़र पर हर दूसरे लिंक को छोड़ देता है।</p>
-      <p>सर्वर पर, <code>start()</code> प्रति अनुरोध एक <code>Route</code> लौटाता है और राउटर को अकेला छोड़ देता है, इसलिए एक साथ चलने वाले अनुरोध एक-दूसरे का रूट नहीं देख सकते। <code>route.run()</code> रेंडर पूरा होने तक उस रूट को राउटर का सक्रिय रूट बनाता है, इसलिए आउटलेट भी उसी को पढ़ता है। ब्राउज़र में प्रति पेज लोड एक रूट होता है, और <code>start()</code> इसे राउटर का अपना बनाता है। <code>run()</code> की ज़रूरत नहीं होती।</p>
-      <p>एक पृष्ठ को इसका <a href="#router-api"><code>RouteContext</code></a> और इसका <a href="#router-api"><code>PageProps</code></a>, <code>(ctx, { layer, data, outlet, beforeLeave })</code> के रूप में प्राप्त होता है, और कम आर्ग्युमेंट ले सकता है। यह <code>list()</code> द्वारा स्वीकार की गई कोई भी चीज़ लौटाता है। लेआउट के अन्य भाग को भी भरने के लिए, पृष्ठ के अंदर से एक <code>into()</code> लौटाएँ, जैसे <code>div(article(…), into('sidebar', nav(…)))</code>। वह सामग्री पृष्ठ के साथ चली जाती है। <a href="#router-regions">पेज और रीजन</a> देखें।</p>
+      <p>बस, इतना ही integration है। Links इसलिए काम करते हैं कि <code>&lt;a href&gt;</code> सिर्फ एक <code>&lt;a href&gt;</code> ही है। <code>document</code> पर लगा एक delegated listener router के अपने links को पकड़ लेता है, और बाकी हर link browser के हवाले छोड़ देता है।</p>
+      <p>Server पर <code>start()</code> हर request के लिए एक <code>Route</code> लौटाता है और router को छेड़ता नहीं, इसलिए एक साथ चल रही requests एक-दूसरे का route नहीं देख सकतीं। <code>route.run()</code> render पूरा होने तक उस route को router का active route बना देता है, इसलिए outlet भी वही पढ़ता है। Browser में हर page load पर एक ही route होता है, और <code>start()</code> उसे router का अपना बना देता है। वहाँ <code>run()</code> की ज़रूरत नहीं।</p>
+      <p>Page को अपना <a href="#router-api"><code>RouteContext</code></a> और <a href="#router-api"><code>PageProps</code></a> मिलता है, यानी <code>(ctx, { layer, data, outlet, beforeLeave })</code>, और वह इनमें से कम arguments भी ले सकता है। वह <code>list()</code> जो भी accept करता है, वह लौटा सकता है। Layout के किसी और हिस्से को भरना हो, तो page के अंदर से <code>into()</code> लौटाएँ, जैसे <code>div(article(…), into('sidebar', nav(…)))</code>। वह content page के साथ ही आता-जाता है। <a href="#router-regions">Pages और regions</a> देखें।</p>
     `,
       },
       {
         id: "router-patterns",
-        title: "पैटर्न और नेस्टेड रूट",
+        title: "Patterns और nested routes",
         content: `
       <table>
-        <thead><tr><th>पैटर्न</th><th>किससे मेल खाता है</th><th><code>params</code></th></tr></thead>
+        <thead><tr><th>Pattern</th><th>किससे match होता है</th><th><code>params</code></th></tr></thead>
         <tbody>
           <tr><td><code>/</code>, <code>/docs/intro</code></td><td>बिल्कुल वही path</td><td><code>{}</code></td></tr>
           <tr><td><code>/blog/:slug</code></td><td><code>/blog/hello</code></td><td><code>{ slug: 'hello' }</code></td></tr>
           <tr><td><code>/u/:id/edit</code></td><td><code>/u/7/edit</code></td><td><code>{ id: '7' }</code></td></tr>
           <tr><td><code>/files/*rest</code></td><td><code>/files/a/b.txt</code></td><td><code>{ rest: 'a/b.txt' }</code></td></tr>
-          <tr><td><code>*</code></td><td>बाकी सभी पथ, यानी आपका 404</td><td><code>{ '*': '…' }</code></td></tr>
+          <tr><td><code>*</code></td><td>बाकी सभी paths, यानी आपका 404</td><td><code>{ '*': '…' }</code></td></tr>
         </tbody>
       </table>
-      <p>पहले स्टैटिक पैटर्न, फिर घोषणा के क्रम में डायनेमिक पैटर्न और अंत में सबसे लंबे प्रीफ़िक्स वाला कैच-ऑल चुना जाता है। तो <code>'*'</code> केवल वही मेल खाता है जो कोई और नहीं करता है और तालिका में कहीं भी बैठ सकता है। ट्रेलिंग स्लैश, डुप्लिकेट स्लैश और प्रतिशत-एन्कोडिंग को सामान्यीकृत किया जाता है, और पैरामीटर के मान डिकोड किए जाते हैं। मिलान प्रति पैटर्न एक सेगमेंट की तुलना है। कोई रेगेक्स नहीं बनाया या चलाया जाता है।</p>
-      <h3>रूट के सापेक्ष पथ</h3>
-      <p><code>./</code> के साथ लिखा गया एक पैटर्न इसे घोषित करने वाले पैरेंट के सापेक्ष है, और <code>./</code> के साथ लिखा गया href सक्रिय रूट के सापेक्ष है। वे मिलकर एक पुन: प्रयोज्य अनुभाग बनाते हैं जिसका अर्थ प्रत्येक पैरेंट के लिए समान होता है। किसी तालिका का मान या तो एक लोडर होता है या कोई अन्य तालिका, जिसकी कुंजियाँ उससे संबंधित होती हैं:</p>
+      <p>पहले static patterns देखे जाते हैं, फिर dynamic patterns declaration के order में, और आखिर में सबसे लंबे prefix वाला catch-all चुना जाता है। इसलिए <code>'*'</code> सिर्फ वही पकड़ता है जो कोई और नहीं पकड़ता, और table में कहीं भी रखा जा सकता है। Trailing slash, duplicate slash और percent-encoding normalize हो जाते हैं, और param values decode होकर मिलती हैं। Matching हर pattern के लिए segment-by-segment comparison है। कोई regex न बनता है, न चलता है।</p>
+      <h3>Route के relative paths</h3>
+      <p><code>./</code> से लिखा pattern उस parent के relative होता है जिसमें वह declare हुआ है, और <code>./</code> से लिखा href active route के relative होता है। दोनों मिलकर एक reusable section बनाते हैं, जिसका मतलब हर parent के लिए एक ही रहता है। Table की value या तो loader होती है या दूसरी table, जिसकी keys उसी से जुड़ी होती हैं:</p>
       ${code("records/routes.ts", `
 import type { RouteTable } from 'nuclo-router'
 
@@ -380,14 +380,14 @@ createRouter({
   '*': () => import('./pages/NotFound.ts'),
 })
 `)}
-      <p>वे दो पंक्तियाँ सभी छह पैटर्न उत्पन्न करती हैं जिनमें कोई पथ दो बार नहीं लिखा होता है। पैरेंट दोनों को समान लोडर ऑब्जेक्ट मिलते हैं, इसलिए वे एक मॉड्यूल कैश और एक <code>import()</code> साझा करते हैं।</p>
+      <p>ये दो lines छहों patterns बना देती हैं, और कोई path दो बार नहीं लिखना पड़ता। दोनों parents को वही loader objects मिलते हैं, इसलिए वे एक module cache और एक <code>import()</code> share करते हैं।</p>
       <ul>
-        <li>एक चाइल्ड टेबल के अंदर, <code>'./x'</code>, <code>'/x'</code> और <code>'x'</code> सभी का मतलब एक ही है, <code>'/'</code> का मतलब मूल पथ ही है, और <code>'*rest'</code> अनुभाग को अपना स्वयं का कैच-ऑल देता है। इन्हें जितनी चाहें उतनी गहराई तक नेस्ट कर सकते हैं।</li>
-        <li>शीर्ष-स्तरीय कुंजियों का उपयोग लिखित रूप में किया जाता है, इसलिए <code>'*'</code> <code>'*'</code> रहता है।</li>
-        <li><code>*catch-all</code> पैरेंट के अंतर्गत एक चाइल्ड नोड एक <code>createRouter()</code> त्रुटि है, क्योंकि कैच-ऑल को अपना पैटर्न समाप्त करना होता है।</li>
+        <li>Child table के अंदर <code>'./x'</code>, <code>'/x'</code> और <code>'x'</code> का मतलब एक ही है, <code>'/'</code> का मतलब parent का अपना path है, और <code>'*rest'</code> section को उसका अपना catch-all देता है। इन्हें जितना चाहें उतना deep nest कर सकते हैं।</li>
+        <li>Top-level keys जैसी लिखी हैं वैसी ही use होती हैं, इसलिए <code>'*'</code> <code>'*'</code> ही रहता है।</li>
+        <li><code>*catch-all</code> के नीचे child node रखना <code>createRouter()</code> error है, क्योंकि catch-all को अपना pattern खुद खत्म करना होता है।</li>
       </ul>
-      <h3>पैरेंट पेज और <code>outlet()</code></h3>
-      <p>एक पैरेंट और उसके चाइल्ड नोड एक वास्तविक हायरार्की हैं। पैरेंट रेंडर होता है और चाइल्ड उसके अंदर रेंडर होता है, जहां भी वह <code>outlet()</code> कहता है:</p>
+      <h3>Parent page और <code>outlet()</code></h3>
+      <p>Parent और उसके child nodes एक असली hierarchy हैं। Parent render होता है और child उसके अंदर render होता है, जहाँ भी वह <code>outlet()</code> call करे:</p>
       ${code("records/Record.ts", `
 import type { PageProps, RouteContext } from 'nuclo-router'
 
@@ -396,40 +396,40 @@ export default function Record(ctx: RouteContext, { outlet }: PageProps) {
   return div(Header(ctx), input({ id: 'notes' }), main(outlet()))
 }
 `)}
-      <p>चाइल्ड रूट बदलने पर पैरेंट दोबारा नहीं बनता। उसका DOM नोड वही रहता है, इसलिए फ़ोकस, स्क्रॉल स्थिति, आधा लिखा इनपुट और क्लोज़र का स्टेट बने रहते हैं।</p>
+      <p>Child route बदलने पर parent दोबारा नहीं बनता। उसका DOM node वही रहता है, इसलिए focus, scroll position, आधा लिखा input और closure की state बनी रहती है।</p>
       <ul>
-        <li>चाइल्ड रूट न हो, तो पेज का आउटलेट कुछ रेंडर नहीं करता, इसलिए लेआउट उसे बिना शर्त कॉल कर सकता है। यदि पैरेंट के चाइल्ड रूट हों लेकिन वह <code>outlet()</code> कॉल न करे, तो चाइल्ड दिखाई नहीं देंगे।</li>
-        <li>अलग इंडेक्स रूट नहीं होते। <code>'/'</code> खुद लेआउट है, इसलिए पैरेंट पथ पर लेआउट खाली आउटलेट के साथ दिखता है, अलग इंडेक्स पेज के साथ नहीं। शुरुआती सामग्री लेआउट में रखें या उसके लिए चाइल्ड पथ बनाएँ।</li>
+        <li>Child route न हो, तो page का outlet कुछ render नहीं करता, इसलिए layout उसे बिना शर्त call कर सकता है। अगर parent के child routes हैं लेकिन वह <code>outlet()</code> call नहीं करता, तो children दिखेंगे नहीं।</li>
+        <li>अलग से index route नहीं होते। <code>'/'</code> खुद layout है, इसलिए parent path पर layout खाली outlet के साथ दिखता है, कोई अलग index page नहीं। शुरुआती content layout में रखें, या उसके लिए child path बना लें।</li>
       </ul>
-      <p>फिर वही कॉल पैरेंट में से किसी एक से और एक ऐसे पेज से काम करती है जो यह नहीं जानता कि यह किसमें है:</p>
+      <p>फिर वही call किसी भी parent के अंदर से काम करती है, और ऐसे page से भी जिसे पता ही नहीं कि वह किसके अंदर है:</p>
       ${code("example.ts", `
 router.href('./preview')      // '/invoices/42/preview' or '/customers/7/preview'
 await router.go('./preview')
 await layer.push('./preview') // the usual shape: a child layer
 `)}
-      <p><code>./x</code>, <code>../x</code>, <code>.</code> और <code>..</code> मौजूदा रूट के पथ के सापेक्ष हल होते हैं, URL की "डायरेक्टरी" के नहीं। <code>/invoices/42</code> से <code>./preview</code> का अर्थ <code>/invoices/42/preview</code> है, जबकि ब्राउज़र इसे <code>/invoices/preview</code> बनाता। URL के अंत में स्लैश से यह व्यवहार नहीं बदलता। <code>../</code> एक सेगमेंट ऊपर जाता है और रूट पर रुक जाता है। क्वेरी और हैश बचाए जाते हैं, <code>base</code> फिर जुड़ता है और पूरा एब्सोल्यूट पथ हिस्ट्री में जाता है। React Router भी <code>&lt;Link to="./x"&gt;</code> के लिए सामान्य URL रिज़ॉल्यूशन से यही बदलाव करता है।</p>
+      <p><code>./x</code>, <code>../x</code>, <code>.</code> और <code>..</code> मौजूदा route के path के relative resolve होते हैं, URL की "directory" के नहीं। <code>/invoices/42</code> से <code>./preview</code> का मतलब <code>/invoices/42/preview</code> है, जबकि browser इसे <code>/invoices/preview</code> बनाता। URL के आखिर में slash हो या न हो, इससे फर्क नहीं पड़ता। <code>../</code> एक segment ऊपर जाता है और route की root पर रुक जाता है। Query और hash बचे रहते हैं, <code>base</code> दोबारा जुड़ता है और पूरा absolute path history में जाता है। React Router भी <code>&lt;Link to="./x"&gt;</code> के लिए आम URL resolution से यही बदलाव करता है।</p>
       <ul>
-        <li>केवल <code>./</code> और <code>../</code> रूट के सापेक्ष हैं। href में बिना प्रीफ़िक्स वाले <code>preview</code> को ब्राउज़र के सामान्य नियमों से हल किया जाता है।</li>
-        <li>हाथ से <code>href="./preview"</code> लिखने के बजाय <code>router.href('./preview')</code> के साथ सापेक्ष लिंक बनाएँ। <code>href()</code> रेंडर समय पर हल हो जाता है, इसलिए जो मार्कअप उपलब्ध है वह क्रॉलर के लिए, मध्य-क्लिक के लिए और JavaScript अक्षम होने पर भी पूर्ण और सही होता है।</li>
+        <li>सिर्फ <code>./</code> और <code>../</code> route के relative हैं। href में बिना prefix वाला <code>preview</code> browser के आम नियमों से resolve होता है।</li>
+        <li>हाथ से <code>href="./preview"</code> लिखने की जगह <code>router.href('./preview')</code> से relative link बनाएँ। <code>href()</code> render के समय resolve हो जाता है, इसलिए जो markup मिलता है वह crawler के लिए, middle click के लिए और JavaScript बंद होने पर भी पूरा और सही रहता है।</li>
       </ul>
       <h3>क्या बचता है और क्या दोबारा बनता है</h3>
       <table>
-        <thead><tr><th>नोड</th><th>नेविगेशन पर</th></tr></thead>
+        <thead><tr><th>Node</th><th>Navigation पर</th></tr></thead>
         <tbody>
-          <tr><td>पैरेंट जिसका पैटर्न और पथ अपरिवर्तित है</td><td><strong>बना रहता है</strong>: वही नोड, और इसका <code>load()</code> दोबारा नहीं चलता</td></tr>
-          <tr><td> मिलान किया गया पृष्ठ</td><td><strong>बना रहता है</strong> जब इसका पैटर्न और पथ अपरिवर्तित होता है और इसमें कोई <code>load()</code> नहीं होता है, तो एक क्वेरी या हैश परिवर्तन इसे रखता है। प्रत्येक विज़िट पर लोडर वाला मार्ग ताज़ा हो जाता है।</td></tr>
-          <tr><td>वह पैरेंट जिसका पथ बदल गया</td><td>अपने अंदर की सारी सामग्री के साथ दोबारा बनता है</td></tr>
-          <tr><td>पुश की गई लेयर</td><td> अकेले मिलान किए गए पृष्ठ को रेंडर करता है। इसके पैरेंट पहले से ही इसके नीचे की पंक्ति में माउंट हैं।</td></tr>
+          <tr><td>Parent जिसका pattern और path नहीं बदला</td><td><strong>बना रहता है</strong>: वही node, और उसका <code>load()</code> दोबारा नहीं चलता</td></tr>
+          <tr><td>Matched page</td><td><strong>बना रहता है</strong> अगर उसका pattern और path नहीं बदला और उसमें कोई <code>load()</code> नहीं है, यानी query या hash बदलने पर वह वहीं रहता है। Loader वाला route हर visit पर fresh हो जाता है।</td></tr>
+          <tr><td>वह parent जिसका path बदल गया</td><td>अपने अंदर के सारे content के साथ दोबारा बनता है</td></tr>
+          <tr><td>Push की गई layer</td><td>सिर्फ matched page render करती है। उसके parents पहले से नीचे वाली row में mounted हैं।</td></tr>
         </tbody>
       </table>
-      <p>जो पेज बना रहता है, उसका <code>ctx</code> भी वही रहता है जिससे वह बना था। हर जगह <code>ctx</code> का यही अर्थ है। लाइव मानों के लिए <code>router.*</code> पढ़ें। क्वेरी पर निर्भर फ़िल्टर, पेजिनेशन और टैब के लिए डायनेमिक मान में <code>router.search</code> पढ़ें और <code>router.go('?page=2', { replace: true })</code> से लिखें। पेज, फ़ोकस और आधा लिखा इनपुट बने रहते हैं।</p>
+      <p>जो page बना रहता है, उसका <code>ctx</code> भी वही रहता है जिससे वह बना था। हर जगह <code>ctx</code> का यही मतलब है। Live values के लिए <code>router.*</code> पढ़ें। Query पर निर्भर filters, pagination और tabs के लिए dynamic value में <code>router.search</code> पढ़ें और <code>router.go('?page=2', { replace: true })</code> से लिखें। Page, focus और आधा लिखा input बने रहते हैं।</p>
     `,
       },
       {
         id: "router-regions",
-        title: "पेज और रीजन",
+        title: "Pages और regions",
         content: `
-      <p><code>router.outlet()</code> पेज को एक स्थान पर रखता है। जिस पृष्ठ को लेआउट में कहीं और साइडबार, टूलबार या शीर्षक की भी आवश्यकता होती है, उसे <a href="#api-region"><code>into()</code></a> से भर दिया जाता है। लेआउट <code>region()</code> के साथ स्थान को चिह्नित करता है, और पृष्ठ अपनी सामग्री के आगे एक <code>into()</code> लौटाता है। लेआउट कभी भी पृष्ठ सामग्री को प्रोप के रूप में प्राप्त नहीं करता है, और नेविगेशन कभी भी इसका पुनर्निर्माण नहीं करता है।</p>
+      <p><code>router.outlet()</code> page को एक जगह रखता है। जिस page को layout में कहीं और भी कुछ चाहिए, जैसे sidebar, toolbar या title, उसे <a href="#api-region"><code>into()</code></a> से भरा जाता है। Layout <code>region()</code> से जगह mark करता है, और page अपने content के साथ एक <code>into()</code> लौटाता है। Layout को page का content कभी props के रूप में नहीं मिलता, और navigation उसे कभी दोबारा नहीं बनाता।</p>
       ${code("app.ts", `
 export const App = () =>
   div(
@@ -450,17 +450,17 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
   )
 }
 `)}
-      <p>पृष्ठ की सामग्री आउटलेट के <code>list()</code> की एक पंक्ति है, और एक <code>into()</code> तब तक जीवित रहता है जब तक वह पंक्ति इसे धारण करती है। तो साइडबार सामग्री पृष्ठ के साथ आती है और उसके साथ चली जाती है: <code>into('sidebar', …)</code> के बिना किसी पृष्ठ पर नेविगेट करने से रीजन की <code>empty</code> सामग्री फिर से दिखाई देती है। पेज दोनों भागों के लिए अपने <code>ctx</code> और <code>data</code> का उपयोग कर सकता है, क्योंकि दोनों एक ही फ़ंक्शन द्वारा बनाए गए हैं।</p>
-      <h3>नेविगेशन पर क्या होता है</h3>
+      <p>Page का content outlet की <code>list()</code> की एक row है, और <code>into()</code> तब तक जिंदा रहता है जब तक वह row उसे पकड़े रखती है। इसलिए sidebar का content page के साथ आता है और उसी के साथ चला जाता है: जिस page में <code>into('sidebar', …)</code> नहीं है, उस पर जाते ही region का <code>empty</code> content फिर दिखने लगता है। Page दोनों हिस्सों के लिए अपना <code>ctx</code> और <code>data</code> use कर सकता है, क्योंकि दोनों एक ही function ने बनाए हैं।</p>
+      <h3>Navigation पर क्या होता है</h3>
       <ul>
-        <li><strong>जो पेज बना रहता है, उसके रीजन भी बने रहते हैं।</strong> पेज बचाए रखने वाले <a href="#router-patterns">क्वेरी या हैश बदलाव</a> रीजन की सामग्री भी नहीं बदलते। साइडबार क्वेरी पर निर्भर हो, तो डायनेमिक मान में <code>router.search</code> पढ़ें।</li>
-        <li><strong>दोबारा बना पेज उन्हें पुनः भर देता है। </strong> जब मार्ग बदलता है, तो पुरानी पंक्ति हटा दी जाती है और नए पृष्ठ के <code>into()</code> व्यू आ जाते हैं। कुछ भी पीछे नहीं छूटा.</li>
-        <li><strong>पुश की गई लेयर एक व्यू जोड़ती है। </strong> लेयर आउटलेट की बाद की पंक्ति है, इसलिए इसका <code>into()</code> उसी रीजन का एक नया व्यू है। डिफ़ॉल्ट <code>type: 'latest'</code> के साथ यह लेयर बंद होने तक पृष्ठ के व्यू को कवर करता है, और फिर पृष्ठ का व्यू फिर से दिखाई देता है। <code>type: 'stack'</code> के साथ दोनों दिखाई देते हैं।</li>
-        <li><strong>पैरेंट पेज रीजनों को भी भर सकता है।</strong> इसके व्यू तब भी बने रहते हैं जब इसके चाइल्ड नोड बदलते हैं, क्योंकि पैरेंट पेज का पुनर्निर्माण नहीं किया जाता है।</li>
-        <li><strong>सर्वर रेंडरिंग भी इसी तरह काम करती है। </strong> सर्वर <code>route.run()</code> के अंदर पेज बनाता है, इसलिए इसके <code>into()</code> व्यू HTML में हैं, और <code>hydrate()</code> उन्हें पुनः उपयोग करता है।</li>
+        <li><strong>जो page बना रहता है, उसके regions भी बने रहते हैं।</strong> जो <a href="#router-patterns">query या hash बदलाव</a> page को बचाए रखते हैं, वे region का content भी नहीं बदलते। Sidebar query पर निर्भर हो, तो dynamic value में <code>router.search</code> पढ़ें।</li>
+        <li><strong>दोबारा बना page उन्हें फिर भर देता है।</strong> Route बदलता है तो पुरानी row हट जाती है और नए page के <code>into()</code> views आ जाते हैं। पीछे कुछ नहीं बचता।</li>
+        <li><strong>Push की गई layer एक view जोड़ती है।</strong> Layer outlet की अगली row है, इसलिए उसका <code>into()</code> उसी region का नया view है। Default <code>type: 'latest'</code> में वह layer बंद होने तक page के view को ढक देता है, और फिर page का view वापस दिखता है। <code>type: 'stack'</code> में दोनों दिखते हैं।</li>
+        <li><strong>Parent page भी regions भर सकता है।</strong> उसके views तब भी बने रहते हैं जब उसके child nodes बदलते हैं, क्योंकि parent page दोबारा नहीं बनता।</li>
+        <li><strong>Server rendering भी इसी तरह काम करती है।</strong> Server <code>route.run()</code> के अंदर page बनाता है, इसलिए उसके <code>into()</code> views HTML में होते हैं, और <code>hydrate()</code> उन्हें reuse करता है।</li>
       </ul>
-      <h3>एक पृष्ठ से कई रीजन</h3>
-      <p>एक बार में एक से अधिक रीजन भरने के लिए किसी ऑब्जेक्ट को पास करें। पृष्ठ की मुख्य सामग्री अभी भी आउटलेट के माध्यम से जाती है, इसलिए इसे <code>into()</code> के पास लौटा दें:</p>
+      <h3>एक page से कई regions</h3>
+      <p>एक साथ कई regions भरने हों तो object पास करें। Page का main content फिर भी outlet से ही जाता है, इसलिए उसे <code>into()</code> के साथ लौटाएँ:</p>
       ${code("pages/Report.ts", `
 export default function Report(ctx: RouteContext) {
   return div(
@@ -472,20 +472,20 @@ export default function Report(ctx: RouteContext) {
   )
 }
 `)}
-      <h3>किस काम के लिए कौन सा टूल</h3>
+      <h3>कौन सा tool कब</h3>
       <ul>
-        <li><strong><code>outlet()</code></strong> एक चाइल्ड रूट के लिए है: यूआरएल द्वारा तय की गई सामग्री, उसके पैरेंट पेज के अंदर रेंडर की गई है। <a href="#router-patterns">नेस्टेड रूट</a> देखें।</li>
-        <li><strong><code>into()</code></strong> मिलान किए गए पेज के लिए है जो पूरे लेआउट में फैला हुआ है। सामग्री पृष्ठ से संबंधित है और उसके डेटा का उपयोग करती है।</li>
-        <li><strong><code>matches()</code></strong> अकेले यूआरएल से लेआउट तय करने के लिए है, इसकी अपनी छोटी तालिका है और इसमें कोई पेज शामिल नहीं है। <a href="#router-matches"><code>matches()</code></a> देखें।</li>
+        <li><strong><code>outlet()</code></strong> child route के लिए है: URL से तय होने वाला content, जो उसके parent page के अंदर render होता है। <a href="#router-patterns">Nested routes</a> देखें।</li>
+        <li><strong><code>into()</code></strong> matched page के लिए है जो पूरे layout में फैला है। Content page का ही है और उसी का data use करता है।</li>
+        <li><strong><code>matches()</code></strong> उस layout के लिए है जो सिर्फ URL से तय होता है: उसकी अपनी छोटी table होती है और कोई page शामिल नहीं होता। <a href="#router-matches"><code>matches()</code></a> देखें।</li>
       </ul>
-      <p>ये सभी एक ही मिलते रूट के हिस्से हैं। राउटर एक URL से दो स्वतंत्र रीजन नहीं चलाता। इसलिए अपने पथों वाला साइडबार पेज से भरा रीजन है, दूसरा आउटलेट नहीं। साइडबार को अपना राउटर, लोडिंग और फ़ॉलबैक चाहिए, तो राउटर शुरू न करें और <code>match()</code> से मिलान करें। <a href="#router-multi">कई राउटर और संयुक्त लोडिंग</a> देखें।</p>
+      <p>ये सब एक ही matched route के हिस्से हैं। Router एक URL से दो independent regions नहीं चलाता। इसलिए जिस sidebar के अपने paths हैं, वह page से भरा region है, कोई दूसरा outlet नहीं। Sidebar को अपना router, loading और fallback चाहिए, तो router start न करें और <code>match()</code> से match करें। <a href="#router-multi">कई routers और combined loading</a> देखें।</p>
     `,
       },
       {
         id: "router-loaders",
-        title: "रूट लोडर और कोड स्प्लिटिंग",
+        title: "Route loaders और code splitting",
         content: `
-      <p>एक पेज मॉड्यूल एक <code>load</code> फ़ंक्शन एक्सपोर्ट कर सकता है। यह पेज बनने से पहले, उस रूट के हर नेविगेशन पर चलता है, और जो कुछ भी लौटाता है उसे <code>data</code> के रूप में पेज पर भेज दिया जाता है:</p>
+      <p>Page module एक <code>load</code> function export कर सकता है। यह page बनने से पहले, उस route की हर navigation पर चलता है, और जो भी लौटाता है वह <code>data</code> बनकर page को मिल जाता है:</p>
       ${code("pages/Post.ts", `
 import type { DataLoader, PageProps, RouteContext } from 'nuclo-router'
 
@@ -495,25 +495,25 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
   return article(h1(post.title), p(post.body))
 }
 `)}
-      <p>रूट टेबल वही रहती है। लोडर पेज के मॉड्यूल में रहता है। उसे मिलान का <code>RouteContext</code> मिलता है, इसलिए <code>params</code>, <code>search</code> और <code>path</code> उपलब्ध हैं। यह सिंक या एसिंक हो सकता है और सर्वर पर भी चलता है। इसलिए सर्वर से भेजे HTML में डेटा पहले से होता है, उसे पहली बार दिखाने के लिए हाइड्रेशन के बाद डेटा आने का इंतज़ार नहीं करना पड़ता।</p>
-      <p><strong> मॉड्यूल कैश्ड है। डेटा नहीं है.</strong> एक रूट का चंक एक बार लाया जाता है और पुन: उपयोग किया जाता है, और इसका लोडर हर नेविगेशन पर फिर से चलता है। यही कारण है कि <code>/blog/a</code> और <code>/blog/b</code> को भ्रमित नहीं किया जा सकता है, और एक असफल लोडर को आसानी से पुनः प्रयास किया जा सकता है।</p>
+      <p>Route table वैसी की वैसी रहती है। Loader page के module में रहता है। उसे match का <code>RouteContext</code> मिलता है, इसलिए <code>params</code>, <code>search</code> और <code>path</code> मिल जाते हैं। यह sync या async हो सकता है और server पर भी चलता है। इसलिए server से आए HTML में data पहले से होता है, पहली बार दिखाने के लिए hydration के बाद data आने का इंतज़ार नहीं करना पड़ता।</p>
+      <p><strong>Module cache होता है। Data नहीं।</strong> Route का chunk एक बार fetch होकर reuse होता है, और उसका loader हर navigation पर फिर चलता है। इसीलिए <code>/blog/a</code> और <code>/blog/b</code> आपस में गड़बड़ नहीं हो सकते, और fail हुए loader को आसानी से retry किया जा सकता है।</p>
       <table>
-        <thead><tr><th>स्थिति</th><th>व्यवहार</th></tr></thead>
+        <thead><tr><th>Situation</th><th>Behaviour</th></tr></thead>
         <tbody>
-          <tr><td>लोडर चल रहा है</td><td><code>router.pending</code> true रहता है और पिछला पेज स्क्रीन पर बना रहता है</td></tr>
-          <tr><td>लोडर थ्रो या रिजेक्ट करता है</td><td>त्रुटि <code>router.error</code> में मिलती है। <code>go()</code> रिजेक्ट नहीं होता और नेविगेशन दोबारा आज़माया जा सकता है।</td></tr>
-          <tr><td><code>start()</code> के दौरान</td><td>रिजेक्शन <code>start()</code> से मिलता है। त्रुटि रखने के लिए अभी कोई रूट नहीं बना है।</td></tr>
-          <tr><td>पुश की गई लेयर</td><td> अपने स्वयं के डेटा के साथ अपना स्वयं का लोडर चलाता है</td></tr>
-          <tr><td>आइडल प्रीलोडर</td><td>केवल मॉड्यूल लोड करता है। इसे देने के लिए कोई कॉन्टेक्स्ट नहीं होता और डेटा लोड करने से ऐसे रूट का डेटा भी आ सकता है जिसे आप कभी खोलें ही नहीं।</td></tr>
-          <tr><td>उसी URL पर दोबारा नेविगेशन</td><td>लोडर फिर चलता है और पंक्ति दोबारा बनती है। बिना लोडर वाला रूट अपनी पंक्ति बनाए रखता है।</td></tr>
+          <tr><td>Loader चल रहा है</td><td><code>router.pending</code> true रहता है और पिछला page screen पर बना रहता है</td></tr>
+          <tr><td>Loader throw या reject करता है</td><td>Error <code>router.error</code> में मिलता है। <code>go()</code> reject नहीं होता और navigation दोबारा try की जा सकती है।</td></tr>
+          <tr><td><code>start()</code> के दौरान</td><td>Rejection <code>start()</code> से मिलता है। Error रखने के लिए अभी कोई route बना ही नहीं है।</td></tr>
+          <tr><td>Push की गई layer</td><td>अपने data के साथ अपना loader चलाती है</td></tr>
+          <tr><td>Idle preloader</td><td>सिर्फ module load करता है। उसे देने के लिए कोई context नहीं होता, और data load करने से ऐसे route का data भी आ सकता है जिसे आप कभी खोलें ही नहीं।</td></tr>
+          <tr><td>उसी URL पर दोबारा navigation</td><td>Loader फिर चलता है और row दोबारा बनती है। बिना loader वाला route अपनी row बनाए रखता है।</td></tr>
         </tbody>
       </table>
-      <p>पुनः सत्यापित करने के लिए, इतिहास प्रविष्टि जोड़े बिना उस स्थान पर नेविगेट करें जहां आप पहले से हैं:</p>
+      <p>Revalidate करना हो, तो history entry जोड़े बिना उसी जगह navigate करें जहाँ आप पहले से हैं:</p>
       ${code("example.ts", `
 await router.go(router.url, { replace: true })   // runs load() again
 `)}
-      <h3>चंक के साथ डेटा लोड करना</h3>
-      <p>पेज मॉड्यूल द्वारा एक्सपोर्ट किया गया <code>load</code> केवल उस मॉड्यूल के आने के बाद ही चल सकता है, इसलिए कैश खाली होने पर नेविगेशन पहले चंक और फिर डेटा लोड करता है। दोनों को एक साथ शुरू करने के लिए, लोडर को <code>withLoad()</code> के साथ तालिका में घोषित करें:</p>
+      <h3>Chunk के साथ data load करना</h3>
+      <p>Page module का export किया हुआ <code>load</code> उस module के आने के बाद ही चल सकता है, इसलिए cache खाली हो तो navigation पहले chunk load करता है और फिर data। दोनों को एक साथ शुरू करना हो, तो loader को table में <code>withLoad()</code> के साथ declare करें:</p>
       ${code("routes.ts", `
 import { createRouter, withLoad } from 'nuclo-router'
 import { loadPost } from './data.ts'   // small, in the main bundle
@@ -522,41 +522,41 @@ createRouter({
   '/blog/:slug': withLoad(() => import('./pages/Post.ts'), loadPost),
 })
 `)}
-      <p>यह मॉड्यूल के अपने <code>load</code> की जगह लेता है और हर विजिट पर इसी तरह चलता है। चंक लोड होने के दौरान डेटा लोडर रिजेक्ट हो, तो त्रुटि सामान्य रूप से <code>router.error</code> में मिलती है।</p>
-      <p>डिज़ाइन के अनुसार, HTML में सर्वर डेटा का सीरियलाइज़ेशन नहीं है। क्लाइंट का <code>load</code> फिर से हाइड्रेशन पर चलता है। यदि यह मायने रखता है, तो सर्वर को <code>route.data</code> आउटपुट में लिखने दें, उदाहरण के लिए <code>window.__DATA__</code> के रूप में, और लोडर इसे पहले ले। <code>route.data</code> केवल मिलान किए गए पृष्ठ का डेटा है। इसमें पैरेंट के <code>load()</code> का परिणाम नहीं होता।</p>
-      <h3>कोड स्प्लिटिंग और प्रीलोडिंग</h3>
-      <p>एक रूट का मान हमेशा एक फ़ंक्शन होता है जो पृष्ठ कंपोनेंट लौटाता है, इसलिए कंपोनेंट ज़रूरत पड़ने पर ही लोड होता है:</p>
+      <p>यह module के अपने <code>load</code> की जगह ले लेता है और हर visit पर इसी तरह चलता है। Chunk load होते समय data loader reject हो जाए, तो error आम तरीके से <code>router.error</code> में मिलता है।</p>
+      <p>Design के हिसाब से HTML में server का data serialize नहीं होता। Hydration पर client का <code>load</code> फिर चलता है। यह आपके लिए मायने रखता है, तो server को <code>route.data</code> output में लिखने दें, जैसे <code>window.__DATA__</code> के रूप में, और loader उसे पहले check करे। <code>route.data</code> सिर्फ matched page का data है। उसमें parent के <code>load()</code> का result नहीं होता।</p>
+      <h3>Code splitting और preloading</h3>
+      <p>Route की value हमेशा ऐसा function होती है जो page component लौटाता है, इसलिए component ज़रूरत पड़ने पर ही load होता है:</p>
       ${code("routes.ts", `
 '/a': () => import('./A.ts'),                      // default export (+ optional load)
 '/b': () => import('./B.ts').then(m => m.BPage),   // named export
 '/c': () => CPage,                                 // eager, not split
 '/d': () => ({ default: DPage, load: loadD }),     // eager, module-shaped
 `)}
-      <p>केवल मॉड्यूल के रूप वाले विकल्प ही <code>load</code> एक्सपोर्ट कर सकते हैं। <code>.then(m =&gt; m.BPage)</code> के साथ नामित कंपोनेंट को चुनने से राउटर को अकेले ही फ़ंक्शन सौंप दिया जाता है।</p>
-      <p>हर मॉड्यूल एक बार इम्पोर्ट होकर कैश होता है। एक ही रूट पर साथ चल रहे नेविगेशन एक <code>import()</code> साझा करते हैं। पेज पर <code>idleTimeout</code> तक कोई गतिविधि न हो (डिफ़ॉल्ट एक सेकंड; कोई टैप, कुंजी, व्हील इवेंट या स्क्रॉल नहीं), तो बाकी रूट पृष्ठभूमि में लोड होते हैं: हर आइडल अवधि (<code>requestIdleCallback</code>) में एक। कोई भी इनपुट या प्रतीक्षारत नेविगेशन इसे पेज के फिर आइडल होने तक रोक देता है।</p>
-      <p>एक प्रीलोडेड या पहले से लोड रूट कभी भी <code>router.pending</code> को फ्लिप नहीं करता है और अगले पेंट से पहले लैंड करता है: कोई स्पिनर फ्रेम नहीं, कोई लेआउट शिफ्ट नहीं। <code>router.pending</code> केवल एक मॉड्यूल या लोडर के लिए सही है जिसके लिए इंतजार करना पड़ता है, और आउटगोइंग पेज तब भी स्क्रीन पर रहता है। चंक लोड होने में विफलता <code>router.error</code> में मिलती है। यह अनहैंडल्ड रिजेक्शन नहीं बनती और दोबारा कोशिश की जा सकती है।</p>
+      <p>सिर्फ module वाले forms ही <code>load</code> export कर सकते हैं। <code>.then(m =&gt; m.BPage)</code> से named component चुनने पर router को सिर्फ function मिलता है।</p>
+      <p>हर module एक बार import होकर cache हो जाता है। एक ही route पर साथ चल रही navigations एक <code>import()</code> share करती हैं। Page पर <code>idleTimeout</code> तक कोई activity न हो (default एक second; कोई tap, key, wheel event या scroll नहीं), तो बाकी routes background में load होते हैं: हर idle period (<code>requestIdleCallback</code>) में एक। कोई भी input या pending navigation इसे तब तक रोक देता है जब तक page फिर idle न हो जाए।</p>
+      <p>Preloaded या पहले से load हो चुका route कभी <code>router.pending</code> को flip नहीं करता और अगले paint से पहले आ जाता है: कोई spinner frame नहीं, कोई layout shift नहीं। <code>router.pending</code> सिर्फ तब true होता है जब किसी module या loader का इंतज़ार करना पड़े, और तब भी जाने वाला page screen पर रहता है। Chunk load fail हो तो error <code>router.error</code> में मिलता है। वह unhandled rejection नहीं बनता और दोबारा try किया जा सकता है।</p>
     `,
       },
       {
         id: "router-api",
-        title: "राउटर API",
+        title: "Router API",
         content: `
       <h3><code>createRouter(table, options?)</code></h3>
-      <p><code>table</code> एक पैटर्न को लोडर, या नेस्टेड टेबल पर मैप करता है। विकल्प:</p>
+      <p><code>table</code> हर pattern को loader या nested table से map करती है। Options:</p>
       <table>
-        <thead><tr><th>विकल्प</th><th>डिफ़ॉल्ट</th><th></th></tr></thead>
+        <thead><tr><th>Option</th><th>Default</th><th></th></tr></thead>
         <tbody>
-          <tr><td><code>base</code></td><td><code>'/'</code></td><td>URL उपसर्ग के तहत ऐप परोसा जाता है, जैसे <code>'/docs'</code>। यह केवल खंड सीमा पर मेल खाता है: <code>/docs/intro</code> <code>'/docs'</code> के अंदर है, <code>/docsearch</code> नहीं है। इसके बाहर के यूआरएल किसी भी तरह से मेल नहीं खाते हैं, इसलिए <code>start()</code> अस्वीकार कर देता है (आपका सर्वर-साइड 404) और उनके लिंक ब्राउज़र पर छोड़ दिए जाते हैं।</td></tr>
-          <tr><td><code>preload</code></td><td><code>true</code></td><td>पृष्ठ निष्क्रिय होने पर शेष मार्गों के मॉड्यूल को पृष्ठभूमि में लोड करें। <code>false</code> इसे बंद कर देता है.</td></tr>
-          <tr><td><code>idleTimeout</code></td><td><code>1000</code></td><td>टैप, कुंजी, व्हील इवेंट या स्क्रॉल के बिना बीतने वाला समय, मिलीसेकंड में, जिसके बाद प्रीलोडिंग शुरू होती है या गतिविधि के बाद फिर शुरू होती है।</td></tr>
-          <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>, ब्राउज़र में प्रत्येक हल किए गए नेविगेशन के बाद कॉल किया जाता है, जिसमें शुरुआती नेविगेशन भी शामिल है, DOM अपडेट होने के बाद. <code>kind</code> <code>'start'</code>, <code>'push'</code>, <code>'replace'</code>, <code>'pop'</code> (पीछे, आगे, <code>close()</code>) या <code>'layer'</code> है। <code>document.title</code>, मेटा टैग, फोकस, स्क्रॉलिंग और एनालिटिक्स के लिए हुक। SSR के दौरान कभी कॉल नहीं होता।</td></tr>
+          <tr><td><code>base</code></td><td><code>'/'</code></td><td>वह URL prefix जिसके नीचे app serve होती है, जैसे <code>'/docs'</code>। यह सिर्फ segment boundary पर match करता है: <code>/docs/intro</code> <code>'/docs'</code> के अंदर है, <code>/docsearch</code> नहीं। इसके बाहर के URLs किसी से match नहीं होते, इसलिए <code>start()</code> reject कर देता है (आपका server-side 404) और उनके links browser पर छोड़ दिए जाते हैं।</td></tr>
+          <tr><td><code>preload</code></td><td><code>true</code></td><td>Page idle होने पर बाकी routes के modules background में load करें। <code>false</code> इसे बंद कर देता है।</td></tr>
+          <tr><td><code>idleTimeout</code></td><td><code>1000</code></td><td>बिना tap, key, wheel event या scroll के कितना समय (milliseconds में) बीते, तब preloading शुरू होती है या activity के बाद फिर शुरू होती है।</td></tr>
+          <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>, browser में हर resolve हुई navigation के बाद call होता है, पहली navigation समेत, DOM update होने के बाद। <code>kind</code> <code>'start'</code>, <code>'push'</code>, <code>'replace'</code>, <code>'pop'</code> (back, forward, <code>close()</code>) या <code>'layer'</code> होता है। <code>document.title</code>, meta tags, focus, scrolling और analytics के लिए hook। SSR के दौरान कभी call नहीं होता।</td></tr>
         </tbody>
       </table>
-      <p>यह एक राउटर लौटाता है: <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code> और <code>run()</code> को छोड़कर <code>Route</code> के सभी सदस्य। ये सदस्य सक्रिय रूट पढ़ते हैं: ब्राउज़र में आखिरी पूरे हुए <code>start()</code> का रूट, या सर्वर पर वह रूट जिसका <code>run()</code> चल रहा है। कोई सक्रिय रूट न होने पर सदस्य पढ़ने से त्रुटि थ्रो होती है। रूट टेबल, कंपाइल किया गया मैचर और मॉड्यूल कैश राउटर में रहते हैं, इसलिए सर्वर पर अनुरोध इन्हें साझा करते हैं।</p>
+      <p>यह एक router लौटाता है: <code>Route</code> के सारे members, सिवाय <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code> और <code>run()</code> के। ये members active route पढ़ते हैं: browser में आखिरी पूरा हुए <code>start()</code> का route, या server पर वह route जिसका <code>run()</code> चल रहा है। Active route न हो तो member पढ़ने पर error throw होता है। Route table, compiled matcher और module cache router में रहते हैं, इसलिए server पर requests इन्हें share करती हैं।</p>
       <h3><code>router.start(url?)</code></h3>
-      <p>अपने पेज मॉड्यूल में <code>url</code> (ब्राउज़र में डिफ़ॉल्ट: <code>location.href</code>) को हल करता है और एक <code>Promise&lt;Route&gt;</code> लौटाता है। जब कुछ भी मेल नहीं खाता और तालिका में कोई <code>'*'</code> रूट नहीं है तो अस्वीकार कर देता है। एक सर्वर पर, वह आपका 404 है। ब्राउज़र में यह उस Route को राउटर का सक्रिय रूट बनाता है, <code>popstate</code> और डेलिगेटेड <code>click</code> लिसनर को जोड़ता है और प्रीलोडिंग शेड्यूल करता है। दूसरा <code>start()</code> आपके लिए पिछले रूट को समाप्त कर देता है। सर्वर पर यह साझा की गई किसी भी चीज़ को नहीं छूता है, इसलिए <code>route.run()</code> के अंदर रेंडर करें।</p>
+      <p>Page modules में <code>url</code> (browser में default: <code>location.href</code>) को resolve करता है और <code>Promise&lt;Route&gt;</code> लौटाता है। कुछ भी match न हो और table में <code>'*'</code> route न हो, तो reject कर देता है। Server पर वही आपका 404 है। Browser में यह उस Route को router का active route बना देता है, <code>popstate</code> और delegated <code>click</code> listeners जोड़ता है और preloading schedule करता है। दूसरा <code>start()</code> पिछले route को आपके लिए खत्म कर देता है। Server पर यह कुछ भी share की हुई चीज़ नहीं छूता, इसलिए <code>route.run()</code> के अंदर render करें।</p>
       <h3><code>router.match(url?)</code></h3>
-      <p>बिना कुछ लोड किए टेबल से URL का मिलान करता है: कोई इम्पोर्ट, हिस्ट्री बदलाव, लिसनर या रूट नहीं बनता। मिलान होने पर <code>RouteContext</code> लौटाता है। URL <code>base</code> के बाहर हो, किसी पैटर्न से न मिले या ब्राउज़र में दूसरे ओरिजिन का हो, तो <code>null</code> लौटाता है। केवल एब्सोल्यूट URL लेता है, क्योंकि <code>./</code> रिज़ॉल्यूशन के लिए सक्रिय रूट चाहिए।</p>
+      <p>कुछ भी load किए बिना URL को table से match करता है: न import होता है, न history बदलती है, न listener या route बनता है। Match होने पर <code>RouteContext</code> लौटाता है। URL <code>base</code> के बाहर हो, किसी pattern से न मिले, या browser में दूसरे origin का हो, तो <code>null</code> लौटाता है। सिर्फ absolute URL लेता है, क्योंकि <code>./</code> resolve करने के लिए active route चाहिए।</p>
       ${code("example.ts", `
 // 404 before importing a single chunk
 if (!router.match(request.url)) return new Response(null, { status: 404 })
@@ -565,29 +565,29 @@ if (!router.match(request.url)) return new Response(null, { status: 404 })
 const owned = router.match(href) !== null
 `)}
       <h3><code>router.outlet()</code></h3>
-      <p>सक्रिय रूट के पेज एक <code>list()</code> के रूप में लौटाता है। पेज जहाँ दिखाने हों, वहाँ इसे एक बार रखें। पुश की गई लेयर इसमें बाद की पंक्ति होती है। <code>start()</code> पूरा होने से पहले और <code>stop()</code> के बाद यह खाली रहता है। सर्वर पर यह उसी रूट को रेंडर करता है जिसका <code>run()</code> चल रहा है।</p>
+      <p>Active route के pages को <code>list()</code> के रूप में लौटाता है। Pages जहाँ दिखाने हों, इसे वहाँ एक बार रखें। Push की गई layer इसमें अगली row होती है। <code>start()</code> पूरा होने से पहले और <code>stop()</code> के बाद यह खाली रहता है। Server पर यह वही route render करता है जिसका <code>run()</code> चल रहा है।</p>
       <h3><code>router.matches(table)</code></h3>
-      <p>एक दूसरी तालिका का व्यू रेंडर करता है जो सक्रिय रूट के पथ से मेल खाता है, <code>list()</code> के रूप में आप इसे कहीं भी रख सकते हैं। <a href="#router-matches"><code>matches()</code></a> देखें।</p>
+      <p>Active route के path से match होने वाली दूसरी table का view render करता है, एक <code>list()</code> के रूप में जिसे आप कहीं भी रख सकते हैं। <a href="#router-matches"><code>matches()</code></a> देखें।</p>
       <h3><code>Route</code></h3>
-      <p><code>run()</code> को छोड़कर प्रत्येक सदस्य राउटर पर भी है, जहां एक ऐप इसे पढ़ता है।</p>
+      <p><code>run()</code> को छोड़कर हर member router पर भी मौजूद है, जहाँ से app उसे पढ़ती है।</p>
       <table>
-        <thead><tr><th>सदस्य</th><th></th></tr></thead>
+        <thead><tr><th>Member</th><th></th></tr></thead>
         <tbody>
-          <tr><td><code>path</code>, <code>pattern</code>, <code>params</code>, <code>search</code>, <code>hash</code>, <code>url</code></td><td>सक्रिय मिलान। <code>search</code> एक <code>URLSearchParams</code> है। <code>search</code>, <code>hash</code> और <code>url</code> लाइव मान हैं।</td></tr>
-          <tr><td><code>pending</code></td><td>कोई नेविगेशन एक मॉड्यूल या लोडर की प्रतीक्षा कर रहा है</td></tr>
-          <tr><td><code>error</code></td><td>अंतिम विफल लोड, अगले नेविगेशन द्वारा साफ़ किया गया</td></tr>
-          <tr><td><code>data</code></td><td> मिलान किए गए पृष्ठ का <code>load()</code> क्या लौटा, सर्वर पर सीरियलाइज़ करने के लिए। इसमें पैरेंट का डेटा नहीं है.</td></tr>
-          <tr><td><code>depth</code></td><td> स्टैक पर कितनी लेयर हैं (एक सामान्य पृष्ठ के लिए 1)</td></tr>
-          <tr><td><code>go(href, { replace })</code></td><td>नेविगेट करता है और ज़रूरत हो तो मॉड्यूल लोड करता है। कभी रिजेक्ट नहीं होता: मॉड्यूल रिजेक्ट या थ्रो करे, तो त्रुटि <code>error</code> में मिलती है।</td></tr>
-          <tr><td><code>push(href)</code></td><td>रूट को ऊपर नई लेयर में खोलता है। लेयर बंद होने पर उसके परिणाम से रिज़ॉल्व होता है। <code>./</code> स्वीकार करता है। मिलान न होने या मॉड्यूल विफल होने पर रिजेक्ट होता है।</td></tr>
-          <tr><td><code>href(path)</code></td><td> <code>a({ href })</code> के लिए <code>base</code> के साथ एक पथ उपसर्ग करें। सक्रिय रूट के विरुद्ध <code>./</code> और <code>../</code> का समाधान करता है।</td></tr>
-          <tr><td><code>stop()</code></td><td> प्रत्येक लिसनर को अलग करें, खुली लेयरों को खारिज करें, आउटलेट खाली करें। दोबारा कॉल करने पर भी वही परिणाम रहता है। रुका हुआ रूट अभी भी अपने अंतिम मैच के साथ उत्तर देता है, और <code>go()</code> कुछ नहीं करता है।</td></tr>
-          <tr><td><code>run(fn)</code></td><td>इस रूट को राउटर का सक्रिय रूट बनाकर <code>fn</code> कॉल करता है और उसका परिणाम लौटाता है। सर्वर पर: <code>route.run(() =&gt; renderToString(App))</code>। केवल सिंक्रोनस। <code>fn</code> लौटते ही रूट का सक्रिय स्कोप खत्म हो जाता है।</td></tr>
+          <tr><td><code>path</code>, <code>pattern</code>, <code>params</code>, <code>search</code>, <code>hash</code>, <code>url</code></td><td>Active match। <code>search</code> एक <code>URLSearchParams</code> है। <code>search</code>, <code>hash</code> और <code>url</code> live values हैं।</td></tr>
+          <tr><td><code>pending</code></td><td>कोई navigation किसी module या loader का इंतज़ार कर रही है</td></tr>
+          <tr><td><code>error</code></td><td>आखिरी fail हुआ load, अगली navigation पर साफ़ हो जाता है</td></tr>
+          <tr><td><code>data</code></td><td>Matched page का <code>load()</code> क्या लौटा, server पर serialize करने के लिए। इसमें parent का data नहीं होता।</td></tr>
+          <tr><td><code>depth</code></td><td>Stack पर कितनी layers हैं (साधारण page के लिए 1)</td></tr>
+          <tr><td><code>go(href, { replace })</code></td><td>Navigate करता है और ज़रूरत हो तो modules load करता है। कभी reject नहीं होता: module reject या throw करे, तो error <code>error</code> में मिलता है।</td></tr>
+          <tr><td><code>push(href)</code></td><td>Route को ऊपर नई layer में खोलता है। Layer बंद होने पर उसके result से resolve होता है। <code>./</code> accept करता है। Match न होने या module fail होने पर reject होता है।</td></tr>
+          <tr><td><code>href(path)</code></td><td><code>a({ href })</code> के लिए path के आगे <code>base</code> जोड़ता है। <code>./</code> और <code>../</code> को active route के हिसाब से resolve करता है।</td></tr>
+          <tr><td><code>stop()</code></td><td>हर listener हटाता है, खुली layers dismiss करता है, outlet खाली करता है। दोबारा call करने पर भी वही result रहता है। Stop हुआ route अपने आखिरी match के साथ अब भी जवाब देता है, और <code>go()</code> कुछ नहीं करता।</td></tr>
+          <tr><td><code>run(fn)</code></td><td>इस route को router का active route बनाकर <code>fn</code> call करता है और उसका result लौटाता है। Server पर: <code>route.run(() =&gt; renderToString(App))</code>। सिर्फ synchronous। <code>fn</code> के लौटते ही route का active scope खत्म हो जाता है।</td></tr>
         </tbody>
       </table>
       <h3><code>RouteContext</code></h3>
-      <p>एक पृष्ठ का पहला आर्ग्युमेंट: <code>path</code>, <code>pattern</code>, <code>params</code>, <code>search</code>, <code>hash</code>, <code>url</code>। यह वह संदर्भ है जिसके साथ पेज बनाया गया था। जीवंत मानों के लिए <code>router.*</code> पढ़ें। वे केवल तभी भिन्न होते हैं जब क्वेरी या हैश पुनर्निर्माण के बिना बदल जाता है।</p>
-      <p><code>params</code> डिफ़ॉल्ट रूप से <code>{ [name]: string }</code> है। एक पेज इसे <code>Params</code> के साथ अपने पैटर्न से टाइप कर सकता है, जो <code>'/blog/:slug'</code> को <code>{ slug: string }</code> में और <code>'/files/*rest'</code> को <code>{ rest: string }</code> में बदल देता है:</p>
+      <p>Page का पहला argument: <code>path</code>, <code>pattern</code>, <code>params</code>, <code>search</code>, <code>hash</code>, <code>url</code>। यह वही context है जिसके साथ page बना था। Live values के लिए <code>router.*</code> पढ़ें। दोनों में फर्क सिर्फ तब आता है जब query या hash दोबारा बनाए बिना बदल जाए।</p>
+      <p><code>params</code> default में <code>{ [name]: string }</code> होता है। Page इसे <code>Params</code> से अपने pattern के हिसाब से type कर सकता है, जो <code>'/blog/:slug'</code> को <code>{ slug: string }</code> में और <code>'/files/*rest'</code> को <code>{ rest: string }</code> में बदल देता है:</p>
       ${code("pages/Post.ts", `
 import type { Params, RouteContext } from 'nuclo-router'
 
@@ -596,54 +596,54 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
 }
 `)}
       <h3><code>PageProps</code></h3>
-      <p>एक पेज का दूसरा आर्ग्युमेंट। पेज को जो चाहिए, उसे डीस्ट्रक्चर करके लें।</p>
+      <p>Page का दूसरा argument। Page को जो चाहिए, बस उसे destructure कर लें।</p>
       <table>
-        <thead><tr><th>प्रॉप</th><th></th></tr></thead>
+        <thead><tr><th>Prop</th><th></th></tr></thead>
         <tbody>
-          <tr><td><code>layer</code></td><td>जहां पेज स्टैक में बैठता है। नीचे <code>Layer</code> देखें।</td></tr>
-          <tr><td><code>data</code></td><td>रूट का <code>load()</code> क्या लौटा, या <code>undefined</code> जब लोडर न हो। <code>PageProps&lt;TData&gt;</code> से टाइप किया जाता है।</td></tr>
-          <tr><td><code>outlet</code></td><td> जहां एक पैरेंट पेज अपने चाइल्ड रूट को रेंडर करता है। <a href="#router-patterns">नेस्टेड रूट देखें</a>.</td></tr>
-          <tr><td><code>beforeLeave</code></td><td>एक गार्ड रजिस्टर करता है जिसे पेज हटाने से पहले कॉल किया जाता है। <a href="#router-layers">लीव गार्ड</a> देखें।</td></tr>
+          <tr><td><code>layer</code></td><td>Page stack में कहाँ बैठा है। नीचे <code>Layer</code> देखें।</td></tr>
+          <tr><td><code>data</code></td><td>Route का <code>load()</code> क्या लौटा, या loader न हो तो <code>undefined</code>। <code>PageProps&lt;TData&gt;</code> से type होता है।</td></tr>
+          <tr><td><code>outlet</code></td><td>वह जगह जहाँ parent page अपना child route render करता है। <a href="#router-patterns">Nested routes</a> देखें।</td></tr>
+          <tr><td><code>beforeLeave</code></td><td>Guard register करता है, जिसे page हटाने से पहले call किया जाता है। <a href="#router-layers">Leave guards</a> देखें।</td></tr>
         </tbody>
       </table>
       <h3><code>Layer</code></h3>
-      <p>स्टैक में पेज की जगह और उससे बाहर निकलने का तरीका।</p>
+      <p>Stack में page की जगह, और उससे बाहर निकलने का तरीका।</p>
       <table>
-        <thead><tr><th>सदस्य</th><th></th></tr></thead>
+        <thead><tr><th>Member</th><th></th></tr></thead>
         <tbody>
-          <tr><td><code>depth</code></td><td>बेस पेज के लिए 0, पुश की गई लेयर के लिए 1 और उससे ऊपर</td></tr>
-          <tr><td><code>push(href)</code></td><td><code>Route.push()</code> की तरह, पेज के अंदर से दूसरी लेयर खोलता है</td></tr>
-          <tr><td><code>close(result?)</code></td><td>इस लेयर और इसके ऊपर की सभी चीज़ों को बंद करें, इसे खोलने वाले <code>push()</code> को हल करें। बिना आर्ग्युमेंट के कॉल करने का मतलब रद्द करना है। गहराई 0 पर यह कुछ नहीं करता।</td></tr>
+          <tr><td><code>depth</code></td><td>Base page के लिए 0, push की गई layer के लिए 1 और उससे ऊपर</td></tr>
+          <tr><td><code>push(href)</code></td><td><code>Route.push()</code> की तरह, page के अंदर से दूसरी layer खोलता है</td></tr>
+          <tr><td><code>close(result?)</code></td><td>इस layer और इसके ऊपर की सब चीज़ें बंद करता है, और इसे खोलने वाले <code>push()</code> को resolve करता है। बिना argument के call करने का मतलब cancel है। Depth 0 पर यह कुछ नहीं करता।</td></tr>
         </tbody>
       </table>
       <h3><code>DataLoader</code> और <code>withLoad()</code></h3>
-      <p><code>DataLoader</code> <code>(ctx: RouteContext) =&gt; TData | Promise&lt;TData&gt;</code> है, जो एक पेज मॉड्यूल का वैकल्पिक <code>load</code> एक्सपोर्ट है। <code>withLoad(loader, load)</code> एक मार्ग बनाता है जिसका <code>load</code> उसके चंक के इम्पोर्ट के बाद शुरू होने के बजाय उसके साथ-साथ शुरू होता है। <a href="#router-loaders">रूट लोडर</a> देखें।</p>
-      <h3>टाइप</h3>
-      <p>हर टाइप <code>nuclo-router</code> का नेम्ड एक्सपोर्ट है, इसलिए एक पेज, एक लोडर या एक गार्ड को पथ से इम्पोर्ट किए बिना टाइप किया जा सकता है।</p>
+      <p><code>DataLoader</code> यानी <code>(ctx: RouteContext) =&gt; TData | Promise&lt;TData&gt;</code>, जो page module का optional <code>load</code> export है। <code>withLoad(loader, load)</code> ऐसा route बनाता है जिसका <code>load</code> उसके chunk के import के बाद शुरू होने की जगह उसके साथ-साथ शुरू होता है। <a href="#router-loaders">Route loaders</a> देखें।</p>
+      <h3>Types</h3>
+      <p>हर type <code>nuclo-router</code> का named export है, इसलिए page, loader या guard को type करने के लिए path से import करने की ज़रूरत नहीं।</p>
       <table>
-        <thead><tr><th>टाइप</th><th>यह क्या है</th></tr></thead>
+        <thead><tr><th>Type</th><th>यह क्या है</th></tr></thead>
         <tbody>
-          <tr><td><code>Params&lt;'/blog/:slug'&gt;</code></td><td> एक पैटर्न के लिए पैरामीटर ऑब्जेक्ट। <code>RouteParams</code> बिना विशेष टाइप वाला रूप है, और <code>Match</code> मिलानकर्ता का परिणाम है।</td></tr>
-          <tr><td><code>PageComponent</code></td><td>पेज: <code>(ctx, { layer, data, outlet, beforeLeave }) =&gt; …</code></td></tr>
-          <tr><td><code>RouteModule</code></td><td>पेज मॉड्यूल: खुद कंपोनेंट, या <code>import()</code> से मिलने वाला <code>{ default, load? }</code></td></tr>
-          <tr><td><code>RouteLoader</code></td><td><code>() =&gt; RouteModule | Promise&lt;RouteModule&gt;</code>, वैकल्पिक रूप से <code>withLoad()</code> से मिला <code>load</code> भी रखता है</td></tr>
-          <tr><td><code>RouteTable</code></td><td><code>createRouter()</code> को दी जाने वाली टेबल: पैटर्न से लोडर या नेस्टेड टेबल का मैप</td></tr>
+          <tr><td><code>Params&lt;'/blog/:slug'&gt;</code></td><td>किसी pattern के लिए params object। <code>RouteParams</code> इसका बिना specific type वाला रूप है, और <code>Match</code> matcher का result है।</td></tr>
+          <tr><td><code>PageComponent</code></td><td>Page: <code>(ctx, { layer, data, outlet, beforeLeave }) =&gt; …</code></td></tr>
+          <tr><td><code>RouteModule</code></td><td>Page module: खुद component, या <code>import()</code> से मिलने वाला <code>{ default, load? }</code></td></tr>
+          <tr><td><code>RouteLoader</code></td><td><code>() =&gt; RouteModule | Promise&lt;RouteModule&gt;</code>, optional तौर पर <code>withLoad()</code> से मिला <code>load</code> भी रखता है</td></tr>
+          <tr><td><code>RouteTable</code></td><td><code>createRouter()</code> को दी जाने वाली table: pattern से loader या nested table का map</td></tr>
           <tr><td><code>RouterOptions</code></td><td><code>{ base?, preload?, idleTimeout?, onNavigate? }</code></td></tr>
-          <tr><td><code>NavigateOptions</code></td><td><code>{ replace? }</code>, <code>go()</code> का दूसरा आर्ग्युमेंट</td></tr>
-          <tr><td><code>NavigationKind</code></td><td><code>'start' | 'push' | 'replace' | 'pop' | 'layer'</code>, <code>onNavigate</code> का दूसरा आर्ग्युमेंट</td></tr>
-          <tr><td><code>Outlet</code></td><td><code>PageProps</code> में <code>outlet()</code> का टाइप</td></tr>
-          <tr><td><code>LeaveGuard</code></td><td><code>(to) =&gt; boolean | void | Promise&lt;…&gt;</code>, <code>beforeLeave()</code> क्या लेता है</td></tr>
-          <tr><td><code>MatchView</code></td><td><code>matches()</code> का व्यू: पैरामीटर लेकर सामग्री या पेज का <code>import()</code> लौटाता है</td></tr>
+          <tr><td><code>NavigateOptions</code></td><td><code>{ replace? }</code>, <code>go()</code> का दूसरा argument</td></tr>
+          <tr><td><code>NavigationKind</code></td><td><code>'start' | 'push' | 'replace' | 'pop' | 'layer'</code>, <code>onNavigate</code> का दूसरा argument</td></tr>
+          <tr><td><code>Outlet</code></td><td><code>PageProps</code> में <code>outlet()</code> का type</td></tr>
+          <tr><td><code>LeaveGuard</code></td><td><code>(to) =&gt; boolean | void | Promise&lt;…&gt;</code>, <code>beforeLeave()</code> जो लेता है</td></tr>
+          <tr><td><code>MatchView</code></td><td><code>matches()</code> का view: params लेकर content या page का <code>import()</code> लौटाता है</td></tr>
         </tbody>
       </table>
     `,
       },
       {
         id: "router-layers",
-        title: "लेयर और लीव गार्ड",
+        title: "Layers और leave guards",
         content: `
-      <p><code>push()</code> मौजूदा रूट को बदलने के बजाय उसके ऊपर नया रूट खोलता है। लेयर बंद होने पर दिए परिणाम से इसका Promise रिज़ॉल्व होता है। पेज स्टैक पर एक ही <code>list()</code> है, इसलिए लेयर खोलना उसमें नई पंक्ति जोड़ना है। नीचे का पेज दोबारा रेंडर नहीं होता। लेयर बंद होने पर उसका DOM, फ़ोकस और आधा भरा फ़ॉर्म बना रहता है।</p>
-      <p>इससे उपयोगकर्ता का आधा भरा फ़ॉर्म हटाए बिना नया रिकॉर्ड बनाया जा सकता है, जब ज़रूरी रिकॉर्ड अभी मौजूद न हो:</p>
+      <p><code>push()</code> मौजूदा route को बदलने की जगह उसके ऊपर नया route खोलता है। Layer बंद होने पर जो result दिया गया हो, उससे इसका Promise resolve होता है। Page stack में बस एक ही <code>list()</code> है, इसलिए layer खोलना यानी उसमें नई row जोड़ना। नीचे वाला page दोबारा render नहीं होता। Layer बंद होने पर उसका DOM, focus और आधा भरा form वैसा ही मिलता है।</p>
+      <p>इससे user का आधा भरा form हटाए बिना नया record बनाया जा सकता है, जब ज़रूरी record अभी मौजूद न हो:</p>
       ${code("pages/Edit.ts", `
 // the page underneath
 const created = await layer.push<Option>('/options/new')
@@ -654,16 +654,16 @@ if (created) { options.push(created); selected = created.id; update() }
 layer.close(created)   // resolves the push() above with the new option
 layer.close()          // dismissed: resolves with undefined
 `)}
-      <p>लेयर को नेस्ट कर सकते हैं। दूसरे डायलॉग की ज़रूरत हो, तो डायलॉग <code>layer.push()</code> कॉल करके उसका इंतज़ार कर सकता है। उसे रूट का रेफ़रेंस नहीं चाहिए।</p>
+      <p>Layers को nest भी कर सकते हैं। दूसरे dialog की ज़रूरत हो, तो dialog खुद <code>layer.push()</code> call करके उसका इंतज़ार कर सकता है। उसे route का reference नहीं चाहिए।</p>
       <ul>
-        <li><strong>URL सबसे ऊपर की लेयर का होता है।</strong> <code>push()</code> हिस्ट्री में एंट्री जोड़ता है, इसलिए लेयर का लिंक बनाया जा सकता है। Back उसे Cancel की तरह बंद करता है और उसका <code>push()</code> रद्द होने के परिणाम से रिज़ॉल्व होता है। Back और <code>close()</code> एक ही कोड पथ इस्तेमाल करते हैं: <code>close()</code> परिणाम रखकर हिस्ट्री में पीछे जाता है और <code>history.state</code> की गहराई तय करती है कि क्या दिखेगा। ब्राउज़र हर टैब में लगभग 50 एंट्री रखते हैं। लेयर में लंबा नेविगेशन होने पर नीचे की एंट्री हट सकती है। तब <code>close()</code> लेयर को वहीं बंद करता है और मौजूदा एंट्री को दिख रहे पेज के URL से बदल देता है।</li>
-        <li><strong>एक साधारण नेविगेशन स्टैक को साफ़ करता है।</strong> एक लिंक क्लिक या <code>go()</code> एक लेयर नहीं है। यह सब कुछ बदल देता है और हर खुली लेयर को खारिज कर देता है, इसलिए किसी भी कॉल करने वाले को इंतजार नहीं करना पड़ता है।</li>
-        <li><strong>सीधे URL खोलने पर लेयर अलग पेज होती है।</strong> URL सबसे ऊपर की लेयर बताता है, नीचे का स्टैक नहीं। इसलिए उसका URL सीधे खोलने पर वह गहराई 1 पर रेंडर होती है, जहाँ <code>layer.depth === 0</code> है और <code>close()</code> कुछ नहीं करता। पुश किया जाने वाला रूट अपने आप में भी उपयोगी होना चाहिए। <code>layer.depth</code> जाँचकर Cancel बटन की जगह बाहर जाने का लिंक दिखाएँ।</li>
-        <li><strong>Promise रीलोड के बाद नहीं बच सकता,</strong> क्योंकि वह क्लोज़र के स्टेट में रहता है। परिणाम लौटाना इस प्रक्रिया को छोटा करने का तरीका है; प्रक्रिया को सीधे खोलने पर भी काम करना चाहिए।</li>
-        <li><strong> प्रतीक्षा में कुछ भी नहीं बचा है। </strong> <code>stop()</code> प्रत्येक खुली लेयर को खारिज कर देता है, और नेविगेशन द्वारा छोड़ी गई लेयर <code>undefined</code> के साथ हल हो जाती है।</li>
+        <li><strong>URL सबसे ऊपर वाली layer का होता है।</strong> <code>push()</code> history में entry जोड़ता है, इसलिए layer का link बन सकता है। Back उसे Cancel की तरह बंद करता है और उसका <code>push()</code> cancel वाले result से resolve होता है। Back और <code>close()</code> एक ही code path use करते हैं: <code>close()</code> result रखकर history में पीछे जाता है, और <code>history.state</code> की depth तय करती है कि क्या दिखेगा। Browsers हर tab में लगभग 50 entries रखते हैं। Layer में लंबी navigation हो, तो नीचे की entry हट सकती है। तब <code>close()</code> layer को वहीं बंद कर देता है और मौजूदा entry को दिख रहे page के URL से replace कर देता है।</li>
+        <li><strong>साधारण navigation stack साफ़ कर देती है।</strong> Link click या <code>go()</code> layer नहीं है। यह सब कुछ replace कर देता है और हर खुली layer dismiss कर देता है, इसलिए किसी caller को इंतज़ार नहीं करना पड़ता।</li>
+        <li><strong>सीधे URL खोलने पर layer अलग page होती है।</strong> URL सबसे ऊपर वाली layer बताता है, नीचे का stack नहीं। इसलिए उसका URL सीधे खोलने पर वह depth 1 पर render होती है, जहाँ <code>layer.depth === 0</code> है और <code>close()</code> कुछ नहीं करता। Push होने वाला route अपने आप में भी काम का होना चाहिए। <code>layer.depth</code> check करके Cancel button की जगह बाहर जाने का link दिखाएँ।</li>
+        <li><strong>Promise reload के बाद नहीं बचता,</strong> क्योंकि वह closure की state में रहता है। Result लौटाना इस flow को छोटा करने का तरीका है; flow को सीधे खोलने पर भी काम करना चाहिए।</li>
+        <li><strong>कोई भी इंतज़ार में अटका नहीं रहता।</strong> <code>stop()</code> हर खुली layer dismiss कर देता है, और navigation से छूटी हुई layer <code>undefined</code> के साथ resolve हो जाती है।</li>
       </ul>
-      <h3>लीव गार्ड</h3>
-      <p>एक पृष्ठ जिसमें रखने योग्य कुछ चीज़ होती है, जैसे कि आधा भरा हुआ फॉर्म, एक गार्ड को पंजीकृत करता है। पृष्ठ को त्यागने से पहले यह पूछा जाता है, और <code>false</code> (या इसका Promise) लौटाने से पृष्ठ बना रहता है:</p>
+      <h3>Leave guards</h3>
+      <p>जिस page में बचाने लायक कुछ हो, जैसे आधा भरा form, वह guard register करता है। Page छोड़ने से पहले guard से पूछा जाता है, और <code>false</code> (या उसका Promise) लौटाने पर page वहीं रहता है:</p>
       ${code("pages/Edit.ts", `
 import type { PageProps, RouteContext } from 'nuclo-router'
 
@@ -674,18 +674,18 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
 }
 `)}
       <ul>
-        <li><strong>केवल पेज हटने पर।</strong> लेआउट के चाइल्ड रूट बदलने या पेज बचाए रखने वाले क्वेरी/हैश बदलाव पर गार्ड नहीं पूछा जाता। गार्ड का जीवनकाल पेज से जुड़ा है, इसलिए उसे अलग से अनरजिस्टर नहीं करना पड़ता।</li>
-        <li><strong>पेज छोड़ने के सभी रास्तों पर।</strong> लिंक, <code>go()</code>, Back और Forward, लेयर का <code>close()</code> और राउटर के बाहर के URL पर <code>go()</code>—ऐप छोड़ते समय <code>to</code> का मान <code>null</code> होता है। गार्ड Back या Forward रोके, तो हिस्ट्री वापस की जाती है ताकि एड्रेस बार मौजूदा पेज से मेल खाए। टैब बंद करना या रीलोड करना <code>beforeunload</code> के ज़रिए संभालें।</li>
-        <li><strong><code>to</code></strong> गंतव्य का <code>RouteContext</code> है। गार्ड सबसे अंदर वाले पेज से शुरू होते हैं और पहले इनकार पर रुक जाते हैं। गार्ड त्रुटि थ्रो करे, तो पेज बना रहता है। <code>close(result)</code> भी गार्ड से होकर जाता है, इसलिए परिणाम के साथ बंद करने से पहले अपना फ़्लैग साफ़ करें।</li>
-        <li>राउटर केवल अपनी बनाई हिस्ट्री एंट्री का नेविगेशन वापस कर सकता है। ब्राउज़र के सामान्य <code>#fragment</code> लिंक या दूसरी स्क्रिप्ट के <code>pushState</code> से बनी एंट्री पर Back या Forward करने पर गार्ड नहीं पूछा जाता।</li>
+        <li><strong>सिर्फ page हटने पर।</strong> Layout के child route बदलने पर, या page को बचाए रखने वाले query/hash बदलाव पर guard से नहीं पूछा जाता। Guard की life page से जुड़ी है, इसलिए उसे अलग से unregister नहीं करना पड़ता।</li>
+        <li><strong>Page छोड़ने के सभी रास्तों पर।</strong> Links, <code>go()</code>, Back और Forward, layer का <code>close()</code> और router के बाहर के URL पर <code>go()</code>, यानी app छोड़ते समय <code>to</code> की value <code>null</code> होती है। Guard Back या Forward रोक दे, तो history वापस की जाती है ताकि address bar मौजूदा page से मेल खाए। Tab बंद करना या reload करना <code>beforeunload</code> से संभालें।</li>
+        <li><strong><code>to</code></strong> destination का <code>RouteContext</code> है। Guards सबसे अंदर वाले page से शुरू होते हैं और पहले इनकार पर रुक जाते हैं। Guard error throw करे, तो page वहीं रहता है। <code>close(result)</code> भी guard से होकर जाता है, इसलिए result के साथ बंद करने से पहले अपना flag साफ़ कर लें।</li>
+        <li>Router सिर्फ अपनी बनाई history entries की navigation वापस कर सकता है। Browser के आम <code>#fragment</code> links या किसी दूसरी script के <code>pushState</code> से बनी entry पर Back या Forward करने पर guard से नहीं पूछा जाता।</li>
       </ul>
     `,
       },
       {
         id: "router-matches",
-        title: "matches() और सब-राउटर",
+        title: "matches() और sub-routers",
         content: `
-      <p><code>router.outlet()</code> पेज रेंडर करता है। <code>router.matches(table)</code> मौजूदा पथ के अनुसार अपनी छोटी टेबल से साइडबार, ब्रेडक्रंब या टूलबार जैसी दूसरी सामग्री रेंडर करता है। इसके लिए रूट लोड करने या पेज जोड़ने की ज़रूरत नहीं:</p>
+      <p><code>router.outlet()</code> pages render करता है। <code>router.matches(table)</code> मौजूदा path के हिसाब से अपनी छोटी table से sidebar, breadcrumb या toolbar जैसा दूसरा content render करता है। इसके लिए routes load करने या pages जोड़ने की ज़रूरत नहीं:</p>
       ${code("app.ts", `
 div(
   aside(
@@ -700,19 +700,19 @@ div(
 )
 `)}
       <ul>
-        <li><strong>रूट टेबल के समान मिलान।</strong> पैटर्न, प्राथमिकता, कच्चे-पथ मिलान और <code>base</code> स्ट्रिपिंग राउटर के स्वयं के हैं, इसलिए एक व्यू और एक पृष्ठ हमेशा यूआरएल के बारे में सहमत होते हैं। यह <code>router.path</code> की तरह शीर्ष लेयर का पथ पढ़ता है।</li>
-        <li><strong>व्यू</strong> <code>(params, ctx) =&gt; content</code> है, जहां <code>params</code> इसके पैटर्न से टाइप किया गया है और <code>ctx</code> व्यू के <code>pattern</code> और <code>params</code> के साथ <code>RouteContext</code> है। इसके बजाय यह पेज मॉड्यूल का <code>import()</code> लौटा सकता है, जिसे लैंड करने के बाद <code>ctx</code> के साथ कॉल किया जाता है।</li>
-        <li><strong>कुछ भी मेल नहीं खाता, कुछ भी रेंडर नहीं करता।</strong> फ़ॉलबैक के लिए एक <code>'*'</code> व्यू जोड़ें। यह आउटलेट की तरह <code>start()</code> से पहले और <code>stop()</code> के बाद खाली है।</li>
-        <li><strong>यह केवल रूट बदलने पर दोबारा रेंडर होता है</strong>, इसलिए जिन बदलावों पर पेज बना रहता है, उन पर व्यू का DOM भी बना रहता है।</li>
-        <li><strong>लेज़ी व्यू अपने मॉड्यूल आने तक कुछ भी रेंडर नहीं करता है। </strong> एक विफल <code>import()</code> को <code>console.error</code> के साथ लॉग किया गया है, <code>router.error</code> सेट नहीं करता है, और अगले नेविगेशन पर पुनः प्रयास किया जाता है। एक साधारण <code>update()</code> पुनः प्रयास नहीं करता है।</li>
-        <li><strong> सर्वर</strong> पर लेज़ी व्यू कुछ भी नहीं भेजता है, क्योंकि इसका मॉड्यूल क्लाइंट पर लैंड करता है। पहले HTML में शामिल होने वाली किसी भी चीज़ के लिए एक सिंक्रोनस व्यू का उपयोग करें।</li>
+        <li><strong>Route table जैसा ही matching।</strong> Patterns, priority, raw-path matching और <code>base</code> stripping router के अपने हैं, इसलिए view और page URL को लेकर हमेशा एक ही बात कहते हैं। यह <code>router.path</code> की तरह सबसे ऊपर वाली layer का path पढ़ता है।</li>
+        <li><strong>View</strong> यानी <code>(params, ctx) =&gt; content</code>, जहाँ <code>params</code> उसके pattern से type होता है और <code>ctx</code> view के <code>pattern</code> और <code>params</code> वाला <code>RouteContext</code> है। इसकी जगह यह page module का <code>import()</code> भी लौटा सकता है, जिसे land होने के बाद <code>ctx</code> के साथ call किया जाता है।</li>
+        <li><strong>कुछ match न हो, तो कुछ render नहीं होता।</strong> Fallback के लिए <code>'*'</code> view जोड़ें। Outlet की तरह यह <code>start()</code> से पहले और <code>stop()</code> के बाद खाली रहता है।</li>
+        <li><strong>यह सिर्फ route बदलने पर दोबारा render होता है</strong>, इसलिए जिन बदलावों पर page बना रहता है, उन पर view का DOM भी बना रहता है।</li>
+        <li><strong>Lazy view तब तक कुछ render नहीं करता जब तक उसका module न आ जाए।</strong> Fail हुआ <code>import()</code> <code>console.error</code> के साथ log होता है, <code>router.error</code> set नहीं करता, और अगली navigation पर retry होता है। साधारण <code>update()</code> retry नहीं करता।</li>
+        <li><strong>Server</strong> पर lazy view कुछ नहीं भेजता, क्योंकि उसका module client पर land होता है। जो चीज़ पहले HTML में चाहिए, उसके लिए synchronous view use करें।</li>
       </ul>
-      <h3>सब-राउटर</h3>
-      <p>रूट नेस्ट होते हैं, इसलिए एक सब-राउटर आमतौर पर सिर्फ एक नेस्टेड टेबल होता है। एक राउटर: सेक्शन का अपना <code>'/'</code> पेज इसका बाहरी UI है, और इसके चाइल्ड नोड उस पेज के <code>outlet()</code> में रेंडर करते हैं, इसलिए बाहरी UI सेक्शन के भीतर नेविगेशन से बच जाता है:</p>
+      <h3>Sub-routers</h3>
+      <p>Routes nest होते हैं, इसलिए sub-router आमतौर पर बस एक nested table होती है। एक ही router: section का अपना <code>'/'</code> page उसका बाहरी UI है, और उसके child nodes उस page के <code>outlet()</code> में render होते हैं, इसलिए section के अंदर navigate करने पर बाहरी UI बचा रहता है:</p>
       ${code("routes.ts", `
 createRouter({ '/': …, '/docs': docsRoutes, '*': … })
 `)}
-      <p>या फ़ीचर का अलग राउटर बनाएँ और उसे शुरू न करें। पैरेंट में एक कैच-ऑल एंट्री हो और चाइल्ड अपने पैटर्न, पैरामीटर व फ़ॉलबैक के अनुसार बाकी पथ का मिलान करे:</p>
+      <p>या feature का अलग router बनाएँ और उसे start न करें। Parent में एक catch-all entry रखें, और child अपने pattern, params और fallback के हिसाब से बाकी path match करे:</p>
       ${code("routes.ts", `
 // parent table
 '/docs/*rest': () => import('./docs/Shell.ts'),
@@ -722,16 +722,16 @@ const docs = createRouter(docsRoutes, { base: '/docs' })
 const hit = docs.match()                       // { pattern: '/:topic', … }
 const page = await docsRoutes[hit.pattern]()   // the app's own lookup
 `)}
-      <p>इसे शुरू न करना ज़रूरी है। <code>start()</code> लिसनर जोड़ता है और दो शुरू किए गए राउटर आपस में टकराते हैं। इस रूप में चाइल्ड खुद रूट हल करता है, इसलिए शुरू किया गया राउटर जिन रूट लोडर को चलाता, उन्हें आपको कॉल करना होगा। शेष पथ बदलने पर शेल भी दोबारा बनता है: मुख्य राउटर को एक ही रूट दिखता है और शेल बाकी पथ खुद हल करता है। नेस्टेड टेबल पैरेंट पेज को माउंट रखती है। इसलिए उसे प्राथमिकता दें, जब तक फ़ीचर को अपना राउटर, बेस और फ़ॉलबैक चाहिए ही न हो।</p>
+      <p>इसे start न करना ज़रूरी है। <code>start()</code> listeners जोड़ता है, और दो started routers आपस में टकराते हैं। इस रूप में child खुद route resolve करता है, इसलिए started router जिन route loaders को चलाता, उन्हें आपको खुद call करना होगा। बाकी path बदलने पर shell भी दोबारा बनता है: main router को सिर्फ एक route दिखता है और shell बाकी path खुद resolve करता है। Nested table parent page को mounted रखती है। इसलिए उसे ही प्राथमिकता दें, जब तक feature को अपना router, base और fallback चाहिए ही न हो।</p>
     `,
       },
       {
         id: "router-multi",
-        title: "कई राउटर और संयुक्त लोडिंग",
+        title: "कई routers और combined loading",
         content: `
-      <p>ऐप में हर रीजन का अपना राउटर हो सकता है। नियम सरल है: <strong>हर document में एक ही राउटर शुरू करें</strong>। बाकी राउटर शुरू न करें और उनसे <code>match()</code> के ज़रिए URL का मिलान पूछें। केवल शुरू किया राउटर URL, हिस्ट्री और क्लिक लिसनर संभालता है। बाकी रूट टेबल हैं जिनसे मिलान पूछ सकते हैं। हर रीजन अपने स्पिनर के साथ स्वतंत्र रूप से लोड हो सकता है।</p>
-      <h3>संयुक्त लोडिंग: लोडर की एक श्रृंखला</h3>
-      <p>मिलान की श्रृंखला का हर पेज <code>load()</code> एक्सपोर्ट कर सकता है। कैश खाली होने पर चाइल्ड रूट खोलें, तो लेआउट और पेज के लोडर <strong>समानांतर चलते हैं</strong>। एक <code>router.pending</code> पूरी श्रृंखला की स्थिति बताता है। दोनों पूरे होने तक पिछला पेज स्क्रीन पर रहता है, इसलिए अधूरा ट्री कभी दिखाई नहीं देता। हर कंपोनेंट को अपना <code>data</code> मिलता है:</p>
+      <p>App में हर region का अपना router हो सकता है। नियम सीधा है: <strong>हर document में सिर्फ एक router start करें</strong>। बाकी routers start न करें, और उनसे <code>match()</code> के ज़रिए URL का match पूछें। सिर्फ started router URL, history और click listeners संभालता है। बाकी route tables हैं जिनसे match पूछा जा सकता है। हर region अपने spinner के साथ independently load हो सकता है।</p>
+      <h3>Combined loading: loaders की एक chain</h3>
+      <p>Match की chain का हर page <code>load()</code> export कर सकता है। Cache खाली हो और child route खोलें, तो layout और page के loaders <strong>parallel चलते हैं</strong>। एक <code>router.pending</code> पूरी chain की state बताता है। दोनों पूरे होने तक पिछला page screen पर रहता है, इसलिए अधूरी tree कभी दिखाई नहीं देती। हर component को अपना <code>data</code> मिलता है:</p>
       ${code("routes.ts", `
 '/shop': {
   '/':          () => import('./pages/Shop.ts'),    // layout, has a load()
@@ -766,9 +766,9 @@ export default function Section(_ctx: RouteContext, { data }: PageProps<SectionD
   return article(h2(data.section), ul(...data.items.map((i) => li(i))))
 }
 `)}
-      <p>दोनों लोडर एक के बाद एक चलने के बजाय साथ शुरू होते हैं। किसी का भी इंतज़ार हो, तो <code>router.pending</code> true होता है; बाकी समय false। पहले से उपलब्ध या प्रीलोड हुए रूट पर यह नहीं बदलता। सेक्शन बदलने पर लेआउट बना रहता है, इसलिए केवल सेक्शन का लोडर दोबारा चलता है। लेआउट का डेटा, DOM और आधा लिखा इनपुट बचा रहता है। उसी URL पर दोबारा नेविगेट करने पर अंतिम पेज का लोडर फिर चलता है और उसकी पंक्ति फिर बनती है, जैसे अकेले पेज के लिए होता है।</p>
-      <h3>एकाधिक लोडिंग: अपने स्वयं के स्पिनर के साथ एक दूसरा राउटर</h3>
-      <p>एक स्वतंत्र रीजन - एक साइडबार, एक ट्रे, एक लाइव रीजन - को अपना स्वयं का राउटर मिलता है, बनाया गया लेकिन कभी शुरू नहीं हुआ, और इसका अपना लोडिंग फ़्लैग होता है। <code>router.pending</code> प्रारंभ किए गए राउटर से संबंधित है और इस रीजन के बारे में कुछ नहीं कहता है, इसलिए दोनों साथ-साथ लोड हो सकते हैं और कोई भी पहले समाप्त कर सकता है:</p>
+      <p>दोनों loaders एक के बाद एक चलने की जगह साथ शुरू होते हैं। किसी का भी इंतज़ार हो, तो <code>router.pending</code> true होता है; बाकी समय false। पहले से available या preload हुए route पर यह नहीं बदलता। Section बदलने पर layout बना रहता है, इसलिए सिर्फ section का loader दोबारा चलता है। Layout का data, DOM और आधा लिखा input बचा रहता है। उसी URL पर दोबारा navigate करने पर आखिरी page का loader फिर चलता है और उसकी row फिर बनती है, जैसे अकेले page के साथ होता है।</p>
+      <h3>Multiple loading: अपने spinner के साथ दूसरा router</h3>
+      <p>Independent region, जैसे sidebar, tray या live region, को अपना router मिलता है, जो बनाया तो जाता है पर कभी start नहीं होता, और उसका अपना loading flag होता है। <code>router.pending</code> started router का है और इस region के बारे में कुछ नहीं कहता, इसलिए दोनों साथ-साथ load हो सकते हैं और कोई भी पहले खत्म हो सकता है:</p>
       ${code("sidebar.ts", `
 import { createRouter } from 'nuclo-router'
 
@@ -804,23 +804,23 @@ createRouter(routes, {
   },
 })
 `)}
-      <p>दूसरे राउटर से केवल मिलान पूछा जाता है; उसे नेविगेट करने को नहीं कहा जाता। <code>match()</code> URL पढ़कर कॉन्टेक्स्ट लौटाता है। साइडबार की कोई जानकारी मुख्य रूट टेबल में नहीं जाती। <code>onNavigate</code> हर पूरा हुए नेविगेशन के बाद चलता है, शुरुआती नेविगेशन सहित। इसलिए स्वतंत्र रीजन को URL के साथ सिंक रखने के लिए यही एक जगह पर्याप्त है।</p>
+      <p>दूसरे router से सिर्फ match पूछा जाता है; उसे navigate करने को नहीं कहा जाता। <code>match()</code> URL पढ़कर context लौटाता है। Sidebar की कोई जानकारी main route table में नहीं जाती। <code>onNavigate</code> हर पूरी हुई navigation के बाद चलता है, पहली navigation समेत। इसलिए independent region को URL के साथ sync रखने के लिए बस यही एक जगह काफी है।</p>
       <ul>
-        <li><strong><code>pending</code> शुरू किए गए राउटर का है।</strong> बिना शुरू किए राउटर में कोई रूट, <code>pending</code> या <code>error</code> नहीं होता। रीजन अपने फ़्लैग रखता है और उसका स्पिनर मुख्य स्पिनर के साथ दिख सकता है। डेमो में साइडबार 800 मिलीसेकंड लेता है और रूट के लोडर 900 मिलीसेकंड, इसलिए पेज या साइडबार में से कोई भी पहले पूरा हो सकता है।</li>
-        <li><strong><code>match()</code> कुछ भी नहीं जोड़ता है। </strong> किसी भी संख्या में अनस्टार्ट राउटर दस्तावेज़ साझा कर सकते हैं; प्रत्येक की अपनी तालिका, आधार और मॉड्यूल कैश है, और उनमें से कोई भी इतिहास को नहीं छूता है। उनकी कीमत एक टेबल और एक मैचर है।</li>
-        <li><strong>इसके लोडर कभी नहीं चलते हैं।</strong> प्रारंभ किया गया राउटर उससे मेल खाने वाले पृष्ठों के <code>load()</code> को चलाता है। बिना शुरू किया गया राउटर केवल URL का मिलान करता है, इसलिए यदि इसके व्यू को डेटा की आवश्यकता है, तो इसे स्वयं प्राप्त करें - डेमो का <code>refreshSidebar()</code>। यदि आप लोडर चाहते हैं, तो एक <a href="#router-matches">नेस्टेड टेबल</a> या एक <a href="#router-regions">पेज से भरा जाने वाला रीजन</a> उस काम को स्टार्ट किए गए राउटर के साथ रखता है।</li>
-        <li><strong>पुराने जवाबों से बचें।</strong> धीमे साइडबार फ़ेच का परिणाम उस सेक्शन पर लागू न हो जहाँ से आप जा चुके हैं। हर रीफ़्रेश पर जनरेशन काउंटर बढ़ाएँ और पुराने जवाब छोड़ दें। राउटर भी नए नेविगेशन के आगे निकलने पर पिछले नेविगेशन को इसी तरह निष्क्रिय कर देता है।</li>
-        <li><strong>लेज़ी <code>matches()</code> व्यू में कोई <code>pending</code> भी नहीं है। </strong> यह तब तक कुछ भी रेंडर नहीं करता जब तक इसका मॉड्यूल लैंड नहीं हो जाता। तीन लोडिंग सिस्टम, तीन स्वतंत्र घड़ियाँ: मार्ग का <code>pending</code>, आपके अपने फ़्लैग, और लेज़ी व्यू जो अभी तक वहाँ नहीं है।</li>
+        <li><strong><code>pending</code> started router का है।</strong> Unstarted router में कोई route, <code>pending</code> या <code>error</code> नहीं होता। Region अपने flags रखता है और उसका spinner main spinner के साथ दिख सकता है। Demo में sidebar 800 milliseconds लेता है और route के loaders 900 milliseconds, इसलिए page या sidebar में से कोई भी पहले पूरा हो सकता है।</li>
+        <li><strong><code>match()</code> कुछ भी attach नहीं करता।</strong> जितने चाहें उतने unstarted routers document share कर सकते हैं; हर एक की अपनी table, base और module cache है, और उनमें से कोई history को नहीं छूता। उनकी कीमत बस एक table और एक matcher है।</li>
+        <li><strong>इसके loaders कभी नहीं चलते।</strong> Started router matching pages के <code>load()</code> चलाता है। Unstarted router सिर्फ URL match करता है, इसलिए अगर उसके view को data चाहिए, तो उसे खुद fetch करें, जैसे demo का <code>refreshSidebar()</code>। Loaders चाहिए, तो <a href="#router-matches">nested table</a> या <a href="#router-regions">page से भरा जाने वाला region</a> वह काम started router के साथ ही रखता है।</li>
+        <li><strong>पुराने responses से बचें।</strong> धीमे sidebar fetch का result उस section पर लागू न हो जहाँ से आप जा चुके हैं। हर refresh पर generation counter बढ़ाएँ और पुराने responses छोड़ दें। Router भी नई navigation के आगे निकलने पर पिछली navigation को इसी तरह बेअसर कर देता है।</li>
+        <li><strong>Lazy <code>matches()</code> view में भी <code>pending</code> नहीं होता।</strong> यह तब तक कुछ render नहीं करता जब तक उसका module land न हो जाए। तीन loading systems, तीन independent clocks: route का <code>pending</code>, आपके अपने flags, और lazy view जो अभी तक आया नहीं।</li>
       </ul>
     `,
       },
       {
         id: "router-links",
-        title: "लिंक संभालना",
+        title: "Links handle करना",
         content: `
-      <p>डेलिगेटेड लिसनर <code>&lt;a href&gt;</code> या उसके अंदर के किसी एलिमेंट पर बाएँ क्लिक से नेविगेट करता है, SVG <code>&lt;a&gt;</code> सहित। बाकी मामलों को ब्राउज़र पर छोड़ देता है: मॉडिफ़ायर कुंजी के साथ क्लिक, मध्य क्लिक, <code>_self</code> से अलग <code>target</code>, <code>download</code>, <code>rel="external"</code>, दूसरे ओरिजिन के href, मौजूदा पेज के केवल हैश वाले लिंक, <code>base</code> के बाहर के पथ, किसी रूट से न मिलते पथ (ताकि सर्वर का 404 खुल सके) और वे इवेंट जिन पर ऐप का हैंडलर पहले ही <code>preventDefault()</code> कॉल कर चुका हो। किसी लिंक को इससे बाहर रखने के लिए <code>data-nuclo-router="off"</code> लगाएँ।</p>
-      <h3>स्क्रॉलिंग</h3>
-      <p>पुश नेविगेशन मौजूदा स्क्रॉल स्थिति बनाए रखता है। नए URL का <code>#hash</code> पेज के एलिमेंट से मिले, तो वह एलिमेंट स्क्रॉल करके दिखाया जाता है। <code>popstate</code> पर स्क्रॉल ब्राउज़र संभालता है। नए पेज को ऊपर से दिखाने के लिए <code>onNavigate</code> उपयोग करें, जो नेविगेशन का तरीका बताता है:</p>
+      <p>Delegated listener <code>&lt;a href&gt;</code> या उसके अंदर के किसी element पर left click से navigate करता है, SVG <code>&lt;a&gt;</code> समेत। बाकी सब कुछ browser पर छोड़ देता है: modifier key के साथ click, middle click, <code>_self</code> से अलग <code>target</code>, <code>download</code>, <code>rel="external"</code>, दूसरे origin के href, मौजूदा page के सिर्फ hash वाले links, <code>base</code> के बाहर के paths, किसी route से न मिलने वाले paths (ताकि server का 404 खुल सके) और वे events जिन पर app का handler पहले ही <code>preventDefault()</code> call कर चुका हो। किसी link को इससे बाहर रखना हो तो <code>data-nuclo-router="off"</code> लगाएँ।</p>
+      <h3>Scrolling</h3>
+      <p>Push navigation मौजूदा scroll position बनाए रखता है। नए URL का <code>#hash</code> page के किसी element से मिले, तो वह element scroll करके दिखाया जाता है। <code>popstate</code> पर scroll browser संभालता है। नए page को ऊपर से दिखाना हो तो <code>onNavigate</code> use करें, जो navigation का तरीका बताता है:</p>
       ${code("routes.ts", `
 let shown = ''
 createRouter(routes, {
@@ -831,19 +831,19 @@ createRouter(routes, {
   },
 })
 `)}
-      <h3>नोट्स</h3>
+      <h3>Notes</h3>
       <ul>
-        <li><strong>पिछले पेज को कैश में नहीं रखा जाता।</strong> रूट पेज का फ़ंक्शन और कॉन्टेक्स्ट रखता है, DOM नहीं। दूसरे पेज पर जाने पर पिछला पेज रिलीज़ होता है। <code>stop()</code> लिसनर और चल रहे लोड रिलीज़ करके <code>pending</code> साफ़ करता है, इसलिए निष्क्रिय रूट स्पिनर को अटका नहीं सकता। <code>stop()</code> के बाद लोड हुआ मॉड्यूल चुपचाप छोड़ दिया जाता है।</li>
-        <li><strong>सर्वर पर एक साथ चलने वाले अनुरोध सुरक्षित हैं।</strong> <code>start()</code> हर अनुरोध का अलग स्टेट लौटाता है और <code>run()</code> उसे एक सिंक्रोनस रेंडर तक सीमित रखता है, इसलिए बीच-बीच में चलने वाले अनुरोध एक-दूसरे का रूट नहीं पढ़ सकते। केवल मॉड्यूल कैश साझा होता है। <code>run()</code> का फ़ंक्शन लौटते ही स्कोप खत्म हो जाता है। <code>renderToString()</code> सिंक्रोनस है, इसलिए इतना पर्याप्त है। एसिंक या स्ट्रीमिंग रेंडर में रूट को <code>await</code> के पार भी बचाना पड़ता, जो <code>run()</code> नहीं करता।</li>
-        <li><strong><code>popstate</code></strong> पर स्क्रॉल पुनर्स्थापन ब्राउज़र का (<code>scrollRestoration</code>) है, राउटर का नहीं।</li>
-        <li><strong>हर document में एक राउटर शुरू करें।</strong> हर <code>start()</code> अपना डेलिगेटेड <code>click</code> लिसनर जोड़ता है। दूसरे राउटर का <code>start()</code> पहले को नहीं रोकता; उसी राउटर पर दूसरा <code>start()</code> ऐसा करता है। दूसरी टेबल से URL मिलाना हो, तो राउटर बनाकर केवल <code>match()</code> कॉल करें। यह कोई लिसनर नहीं जोड़ता। स्वतंत्र रीजन इस तरह रूट के <code>pending</code> से अलग अपनी लोडिंग चला सकता है। <a href="#router-multi">कई राउटर और संयुक्त लोडिंग</a> देखें।</li>
-        <li><strong>डिज़ाइन के कारण शामिल नहीं:</strong> हैश और मेमोरी हिस्ट्री, क्योंकि रूट pathname में होता है और सर्वर को हर रूट उपलब्ध कराना चाहिए; एक URL से दो स्वतंत्र रीजन की रूटिंग, क्योंकि पेज <code>into()</code> से कई रीजन भर सकता है लेकिन वे एक ही मिलते रूट के हिस्से होते हैं—स्वतंत्र रीजन फिर भी बिना शुरू किए अपना राउटर और लोडिंग रख सकता है, जैसा <a href="#router-multi">कई राउटर और संयुक्त लोडिंग</a> में है; और होवर प्रीलोडिंग, जिसे आप <code>mouseenter</code> से रूट का लोडर खुद कॉल करके कर सकते हैं।</li>
+        <li><strong>पिछला page cache में नहीं रखा जाता।</strong> Route page का function और context रखता है, DOM नहीं। दूसरे page पर जाते ही पिछला page release हो जाता है। <code>stop()</code> listeners और चल रहे loads release करके <code>pending</code> साफ़ कर देता है, इसलिए inactive route spinner को अटका नहीं सकता। <code>stop()</code> के बाद load हुआ module चुपचाप छोड़ दिया जाता है।</li>
+        <li><strong>Server पर एक साथ चलने वाली requests safe हैं।</strong> <code>start()</code> हर request की अलग state लौटाता है और <code>run()</code> उसे एक synchronous render तक सीमित रखता है, इसलिए बीच-बीच में चलने वाली requests एक-दूसरे का route नहीं पढ़ सकतीं। सिर्फ module cache share होता है। <code>run()</code> का function लौटते ही scope खत्म हो जाता है। <code>renderToString()</code> synchronous है, इसलिए इतना काफी है। Async या streaming render में route को <code>await</code> के पार भी बचाना पड़ता, जो <code>run()</code> नहीं करता।</li>
+        <li><strong><code>popstate</code></strong> पर scroll restoration browser का (<code>scrollRestoration</code>) है, router का नहीं।</li>
+        <li><strong>हर document में एक router start करें।</strong> हर <code>start()</code> अपना delegated <code>click</code> listener जोड़ता है। दूसरे router का <code>start()</code> पहले को नहीं रोकता; उसी router पर दूसरा <code>start()</code> ऐसा करता है। दूसरी table से URL match करना हो, तो router बनाकर सिर्फ <code>match()</code> call करें। यह कोई listener नहीं जोड़ता। Independent region इस तरह route के <code>pending</code> से अलग अपनी loading चला सकता है। <a href="#router-multi">कई routers और combined loading</a> देखें।</li>
+        <li><strong>Design के कारण शामिल नहीं:</strong> hash और memory history, क्योंकि route pathname में होता है और server को हर route available कराना चाहिए; एक URL से दो independent regions की routing, क्योंकि page <code>into()</code> से कई regions भर सकता है लेकिन वे एक ही matched route के हिस्से होते हैं, और independent region फिर भी बिना start किए अपना router और loading रख सकता है, जैसा <a href="#router-multi">कई routers और combined loading</a> में है; और hover preloading, जिसे आप <code>mouseenter</code> से route का loader खुद call करके कर सकते हैं।</li>
       </ul>
-      <h3>उदाहरण</h3>
-      <p>रिपॉजिटरी में दो रन करने योग्य उदाहरण एक दूसरे के पूरक हैं, इसलिए हर सेटिंग कहीं न कहीं देखने योग्य है:</p>
+      <h3>Examples</h3>
+      <p>Repository में दो चलने लायक examples एक-दूसरे के पूरक हैं, इसलिए हर setting कहीं न कहीं देखी जा सकती है:</p>
       <ul>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: संपूर्ण API का क्लाइंट-साइड टूर। प्रत्येक पैटर्न फॉर्म और प्राथमिकता नियम, लिंक-हैंडलिंग ऑप्ट-आउट, लाइव नियंत्रण के साथ प्रत्येक रूट सदस्य, एक उप-राउटर, लेयर स्टैक तीन गहरी, दो पैरेंट पर एक सापेक्ष अनुभाग, और <code>pending</code> और <code>error</code> के साथ रूट लोडर। <code>preload: false</code> सेट करता है ताकि वे स्थितियाँ दिखाई रहें।</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: हर अनुरोध पर <code>renderToString()</code>, सर्वर के नोड दोबारा इस्तेमाल करने वाला हाइड्रेशन, वास्तविक 404 स्टेटस कोड, रूट से अलग <code>base</code>, नेटवर्क पैनल में दिखने वाली आइडल प्रीलोडिंग और ऐसा लोडर जिसका डेटा सर्वर से क्लाइंट को मिलता है ताकि हाइड्रेशन उसे दोबारा न लाए।</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: पूरे API का client-side tour। हर pattern form और priority rule, link-handling opt-out, live controls के साथ हर route member, एक sub-router, तीन गहरी layer stack, दो parents पर एक relative section, और <code>pending</code> व <code>error</code> के साथ route loaders। यह <code>preload: false</code> set करता है ताकि वे states दिखती रहें।</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: हर request पर <code>renderToString()</code>, server के nodes reuse करने वाला hydration, असली 404 status code, route से अलग <code>base</code>, network panel में दिखने वाली idle preloading, और ऐसा loader जिसका data server से client को मिलता है ताकि hydration उसे दोबारा fetch न करे।</li>
       </ul>
     `,
       },
@@ -852,13 +852,13 @@ createRouter(routes, {
 
   // ── Patterns ─────────────────────────────────────────────────────────────
   {
-    title: "पैटर्न",
+    title: "Patterns",
     sections: [
       {
         id: "computed",
-        title: "गणना किए गए मान",
+        title: "Computed values",
         content: `
-      <p>Nuclo में computed API नहीं है। एक साधारण फ़ंक्शन लिखें और उसे डायनेमिक मानों से कॉल करें:</p>
+      <p>Nuclo में computed API नहीं है। बस एक सादा function लिखें और उसे dynamic values से call करें:</p>
       ${code("example.ts", `
 let items = ['apple', 'banana', 'cherry']
 let filter = ''
@@ -878,9 +878,9 @@ update()
       },
       {
         id: "async",
-        title: "एसिंक और लोडिंग",
+        title: "Async और loading",
         content: `
-      <p>साधारण <code>async</code>/<code>await</code> का उपयोग करें, और हर बार स्टेट बदलने पर <code>update()</code> कॉल करें। एक फ़ेच के लिए, इसका मतलब है एक बार <code>await</code> से पहले और एक बार बाद में:</p>
+      <p>आम <code>async</code>/<code>await</code> use करें, और state बदलते ही हर बार <code>update()</code> call करें। एक fetch के लिए इसका मतलब है: <code>await</code> से पहले एक बार और बाद में एक बार:</p>
       ${code("example.ts", `
 let status: 'idle' | 'loading' | 'done' | 'error' = 'idle'
 let result: unknown = null
@@ -901,17 +901,17 @@ async function loadData() {
       },
       {
         id: "best-practices",
-        title: "सुझाए गए तरीके",
+        title: "Best practices",
         content: `
       <ul>
-        <li><strong>बदलाव एक साथ करें।</strong> ज़रूरी सभी स्टेट बदलें, फिर एक बार <code>update()</code> कॉल करें।</li>
-        <li><strong> डायनेमिक मानों को तेज़ और साइड इफ़ेक्ट से मुक्त रखें। </strong> ये सभी प्रत्येक <code>update()</code> पर चलते हैं।</li>
-        <li><strong>छोटे, लगातार अपडेट, जैसे टाइपिंग या टाइमर के लिए <code>scope()</code></strong> का उपयोग करें।</li>
-        <li><strong>document में रेंडर करें।</strong> <code>update()</code> चलते समय जो नोड document में नहीं हैं, वे आगे अपडेट होना बंद कर देते हैं।</li>
-        <li><strong>बदलने वाले चाइल्ड नोड के लिए <code>when()</code> और <code>list()</code></strong> उपयोग करें, नोड लौटाने वाला फ़ंक्शन नहीं।</li>
-        <li><strong><code>className</code> का उपयोग करें, <code>class</code></strong> का नहीं, और डायनेमिक क्लास के लिए <code>() =&gt; cx(...)</code> या <code>{ className: () =&gt; … }</code> का उपयोग करें।</li>
-        <li><strong>मॉड्यूल स्तर पर स्टाइल को एक बार परिभाषित करें</strong>।</li>
-        <li><strong> सर्वर रेंडरिंग: </strong> पहले रेंडर करें, फिर <code>&lt;style id="nuclo-styles"&gt;</code> में <code>getCssText()</code> डालें। अनुरोध डेटा को आर्ग्युमेंट के रूप में पास करें, और आउटपुट में HTML टिप्पणियाँ रखें।</li>
+        <li><strong>बदलाव एक साथ करें।</strong> जितनी state बदलनी है सब बदलें, फिर एक बार <code>update()</code> call करें।</li>
+        <li><strong>Dynamic values को तेज़ रखें और उनमें side effects न डालें।</strong> ये सभी हर <code>update()</code> पर चलते हैं।</li>
+        <li><strong>छोटे और बार-बार होने वाले updates, जैसे typing या timer, के लिए <code>scope()</code></strong> use करें।</li>
+        <li><strong>Document में render करें।</strong> <code>update()</code> चलते समय जो nodes document में नहीं हैं, वे आगे update होना बंद कर देते हैं।</li>
+        <li><strong>बदलने वाले child nodes के लिए <code>when()</code> और <code>list()</code></strong> use करें, nodes लौटाने वाला function नहीं।</li>
+        <li><strong><code>className</code> use करें, <code>class</code></strong> नहीं, और dynamic classes के लिए <code>() =&gt; cx(...)</code> या <code>{ className: () =&gt; … }</code> use करें।</li>
+        <li><strong>Styles को module level पर एक बार define करें</strong>।</li>
+        <li><strong>Server rendering:</strong> पहले render करें, फिर <code>getCssText()</code> को <code>&lt;style id="nuclo-styles"&gt;</code> में डालें। Request data को argument के रूप में पास करें, और output में HTML comments रहने दें।</li>
       </ul>
     `,
       },
@@ -920,31 +920,31 @@ async function loadData() {
 
   // ── Reference ────────────────────────────────────────────────────────────
   {
-    title: "संदर्भ",
+    title: "Reference",
     sections: [
       {
         id: "api-index",
-        title: "API इंडेक्स",
+        title: "API index",
         content: `
-      <p>हर सार्वजनिक फ़ंक्शन और वह कहाँ से मिलता है।</p>
-      <h3><code>nuclo</code> (ग्लोबल और नेम्ड एक्सपोर्ट)</h3>
+      <p>हर public function और वह कहाँ से मिलता है।</p>
+      <h3><code>nuclo</code> (globals और named exports)</h3>
       <ul>
-        <li><a href="#api-update"><code>update(...scopeIds)</code></a>: सभी डायनेमिक मान, या दिए गए दायरे में चलाएँ।</li>
-        <li><a href="#api-scope"><code>scope(...ids)</code></a>: <code>update(id)</code> के लिए एक एलिमेंट स्कोप आईडी दें।</li>
-        <li><a href="#api-when"><code>when(condition, ...content)</code></a>: सशर्त सामग्री, <code>.when()</code> और <code>.else()</code> के साथ।</li>
-        <li><a href="#api-list"><code>list(items, renderItem)</code></a>: प्रति आइटम एक पंक्ति, पहचान से मेल खाती है।</li>
-        <li><a href="#api-region"><code>region(options)</code></a> और <a href="#api-region"><code>into(id, ...content)</code></a>: ट्री में एक नामित स्थान, और सामग्री जो इसे कहीं से भी भरती है।</li>
-        <li><a href="#events"><code>on(type, listener, options?)</code></a>: एक इवेंट लिसनर, या <a href="#lifecycle"><code>on('mount')</code> / <code>on('destroy')</code></a>।</li>
+        <li><a href="#api-update"><code>update(...scopeIds)</code></a>: सभी dynamic values चलाएँ, या दिए गए scopes में ही चलाएँ।</li>
+        <li><a href="#api-scope"><code>scope(...ids)</code></a>: <code>update(id)</code> के लिए element को scope id दें।</li>
+        <li><a href="#api-when"><code>when(condition, ...content)</code></a>: conditional content, <code>.when()</code> और <code>.else()</code> के साथ।</li>
+        <li><a href="#api-list"><code>list(items, renderItem)</code></a>: हर item की एक row, identity से match होती है।</li>
+        <li><a href="#api-region"><code>region(options)</code></a> और <a href="#api-region"><code>into(id, ...content)</code></a>: tree में एक named जगह, और वह content जो इसे कहीं से भी भरता है।</li>
+        <li><a href="#events"><code>on(type, listener, options?)</code></a>: event listener, या <a href="#lifecycle"><code>on('mount')</code> / <code>on('destroy')</code></a>।</li>
         <li><a href="#api-render"><code>render(App, parent?)</code></a>: बनाएँ और जोड़ें।</li>
-        <li><a href="#api-hydrate"><code>hydrate(App, parent?)</code></a>: सर्वर के HTML को क्लाइंट पर सक्रिय करें।</li>
-        <li><a href="#api-force-update"><code>forceUpdate()</code></a>: कंपोनेंट को फिर से कॉल करें और DOM को पैच करें।</li>
-        <li><a href="#api-styling"><code>css(name?, style)</code></a>: एक स्टाइल ऑब्जेक्ट से उत्पन्न क्लास।</li>
-        <li><a href="#api-cx"><code>cx(...inputs)</code></a>: स्टाइल मर्ज करें; बाद वाले मानों को प्राथमिकता मिलती है।</li>
-        <li><a href="#api-create-css"><code>createCss(theme)</code></a>: थीम वाले <code>css</code>, <code>cx</code>, <code>variants</code>, <code>keyframes</code> और <code>globalStyle</code>।</li>
-        <li><a href="#api-variants"><code>variants(config)</code></a>: विकल्पों में से स्टाइल।</li>
+        <li><a href="#api-hydrate"><code>hydrate(App, parent?)</code></a>: server के HTML को client पर active करें।</li>
+        <li><a href="#api-force-update"><code>forceUpdate()</code></a>: component को फिर से call करें और DOM को patch करें।</li>
+        <li><a href="#api-styling"><code>css(name?, style)</code></a>: style object से बनी class।</li>
+        <li><a href="#api-cx"><code>cx(...inputs)</code></a>: styles merge करें; बाद वाली values जीतती हैं।</li>
+        <li><a href="#api-create-css"><code>createCss(theme)</code></a>: theme वाले <code>css</code>, <code>cx</code>, <code>variants</code>, <code>keyframes</code> और <code>globalStyle</code>।</li>
+        <li><a href="#api-variants"><code>variants(config)</code></a>: options से बनने वाली styles।</li>
         <li><a href="#api-keyframes"><code>keyframes(frames)</code></a> और <a href="#api-keyframes"><code>globalStyle(selector, style)</code></a>।</li>
       </ul>
-      <h3><code>nuclo</code> (केवल नेम्ड एक्सपोर्ट)</h3>
+      <h3><code>nuclo</code> (सिर्फ named exports)</h3>
       <ul>
         <li><a href="#api-css-text"><code>getCssText()</code></a> और <a href="#api-css-text"><code>resetStyles()</code></a>।</li>
       </ul>
@@ -954,59 +954,59 @@ async function loadData() {
       </ul>
       <h3><code>nuclo/polyfill</code></h3>
       <ul>
-        <li><a href="#api-polyfill">साइड-इफ़ेक्ट इम्पोर्ट</a>, प्लस <code>document</code>, <code>Event</code>, <code>CustomEvent</code>, <code>Node</code>, <code>Element</code>, <code>HTMLElement</code> और <code>Nuclo*</code> क्लास।</li>
+        <li><a href="#api-polyfill">Side-effect import</a>, साथ में <code>document</code>, <code>Event</code>, <code>CustomEvent</code>, <code>Node</code>, <code>Element</code>, <code>HTMLElement</code> और <code>Nuclo*</code> classes।</li>
       </ul>
-      <h3><code>nuclo-router</code> (अलग पैकेज)</h3>
+      <h3><code>nuclo-router</code> (अलग package)</h3>
       <ul>
-        <li><a href="#router-api"><code>createRouter(table, options?)</code></a>: राउटर, <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code>, <code>go()</code>, <code>push()</code> के साथ, <code>href()</code> और <code>stop()</code>।</li>
-        <li><a href="#router-loaders"><code>withLoad(loader, load)</code></a>: ऐसा रूट जिसका डेटा लोडर उसके चंक के साथ शुरू होता है।</li>
-        <li><a href="#router-api">टाइप</a>: <code>RouteContext</code>, <code>PageProps</code>, <code>Params</code>, <code>DataLoader</code>, <code>RouteTable</code> और अधिक।</li>
+        <li><a href="#router-api"><code>createRouter(table, options?)</code></a>: router, जिसमें <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code>, <code>go()</code>, <code>push()</code>, <code>href()</code> और <code>stop()</code> हैं।</li>
+        <li><a href="#router-loaders"><code>withLoad(loader, load)</code></a>: ऐसा route जिसका data loader उसके chunk के साथ शुरू होता है।</li>
+        <li><a href="#router-api">Types</a>: <code>RouteContext</code>, <code>PageProps</code>, <code>Params</code>, <code>DataLoader</code>, <code>RouteTable</code> और भी।</li>
       </ul>
-      <h3>ग्लोबल्स</h3>
+      <h3>Globals</h3>
       <ul>
-        <li><a href="#tag-builders">175 टैग बिल्डर</a>: <code>div</code>, <code>span</code>, ..., <code>var_</code>, और <code>svgSvg</code>, <code>pathSvg</code>, ....</li>
-        <li><a href="#typescript-setup">टाइप</a>: <code>NodeModFn</code>, <code>NodeModLike</code>, <code>ExpandedElement</code> और अधिक। <code>StyleResult</code> जैसे स्टाइलिंग टाइप को <code>'nuclo'</code> से भी इम्पोर्ट किया जा सकता है।</li>
+        <li><a href="#tag-builders">175 tag builders</a>: <code>div</code>, <code>span</code>, ..., <code>var_</code>, और <code>svgSvg</code>, <code>pathSvg</code>, ....</li>
+        <li><a href="#typescript-setup">Types</a>: <code>NodeModFn</code>, <code>NodeModLike</code>, <code>ExpandedElement</code> और भी। <code>StyleResult</code> जैसे styling types को <code>'nuclo'</code> से भी import किया जा सकता है।</li>
       </ul>
-      <h3>विशेष कुंजी</h3>
+      <h3>Special keys</h3>
       <ul>
-        <li><a href="#attributes">एट्रिब्यूट</a>: <code>className</code>, <code>style</code>, <a href="#events"><code>on*</code> हैंडलर</a>, <a href="#lifecycle"><code>onMount</code> और <code>onDestroy</code></a>.</li>
-        <li><a href="#style-objects"> स्टाइल ऑब्जेक्ट</a>: शॉर्टहैंड, स्यूडो स्टेट, <code>&amp;</code> सेलेक्टर, <code>@</code> नियम और <code>raw</code>।</li>
+        <li><a href="#attributes">Attributes</a>: <code>className</code>, <code>style</code>, <a href="#events"><code>on*</code> handlers</a>, <a href="#lifecycle"><code>onMount</code> और <code>onDestroy</code></a>.</li>
+        <li><a href="#style-objects">Style objects</a>: shorthand, pseudo state, <code>&amp;</code> selectors, <code>@</code> rules और <code>raw</code>।</li>
       </ul>
     `,
       },
       {
         id: "faq",
-        title: "अक्सर पूछे जाने वाले प्रश्न",
+        title: "अक्सर पूछे जाने वाले सवाल",
         content: `
-      <h3>क्या स्टेट बदलने से UI अपडेट हो जाता है?</h3>
-      <p>नहीं। DOM तब तक वैसा ही रहता है जब तक आप <code>update()</code> कॉल नहीं करते।</p>
+      <h3>क्या state बदलने से UI अपने आप update हो जाता है?</h3>
+      <p>नहीं। जब तक आप <code>update()</code> call नहीं करते, DOM वैसा ही रहता है।</p>
 
-      <h3>क्या Nuclo सिग्नल, प्रॉक्सी या वर्चुअल DOM का उपयोग करता है?</h3>
-      <p>नहीं। स्टेट साधारण JavaScript रहता है। जब एक ट्री रेंडर किया जाता है, तो Nuclo वास्तविक एलिमेंट और टेक्स्ट नोड बनाता है। <code>update()</code> प्रत्येक पंजीकृत डायनेमिक मान, या दिए गए दायरे के अंदर चलाता है, और उन्हीं नोड्स को पैच करता है जहां मान बदल गया है। कोई निर्भरता ग्राफ़ और कोई वर्चुअल ट्री नहीं है।</p>
+      <h3>क्या Nuclo signals, proxies या virtual DOM use करता है?</h3>
+      <p>नहीं। State सादा JavaScript ही रहती है। Tree render होते समय Nuclo असली elements और text nodes बनाता है। <code>update()</code> हर registered dynamic value को चलाता है, या सिर्फ दिए गए scope के अंदर वालों को, और जहाँ value बदली हो वहीं के nodes को patch करता है। कोई dependency graph नहीं है और कोई virtual tree भी नहीं।</p>
 
-      <h3>मेरा पेज "false" क्यों दिखाता है?</h3>
-      <p>बूलियन मान टेक्स्ट के रूप में रेंडर करते हैं। <code>div(ok &amp;&amp; span('Done'))</code> "false" दिखाता है। चाइल्ड नोड के लिए <code>when(() =&gt; ok, span('Done'))</code> और टेक्स्ट के लिए <code>ok ? 'Done' : ''</code> का उपयोग करें।</p>
+      <h3>मेरा page "false" क्यों दिखा रहा है?</h3>
+      <p>Boolean values text के रूप में render होती हैं। <code>div(ok &amp;&amp; span('Done'))</code> "false" दिखाएगा। Child nodes के लिए <code>when(() =&gt; ok, span('Done'))</code> और text के लिए <code>ok ? 'Done' : ''</code> use करें।</p>
 
-      <h3>जब मैं आइटम संपादित करता हूं तो मेरी सूची पंक्ति क्यों नहीं बदलती?</h3>
-      <p>उन आइटमों की पंक्तियाँ जो अभी भी सूची में हैं, रखी जाती हैं, दोबारा रेंडर नहीं की जाती हैं। बदलने वाले फ़ील्ड के लिए <code>() =&gt; todo.text</code> जैसे डायनेमिक मानों का उपयोग करें। <a href="#api-list"><code>list()</code></a> देखें।</p>
+      <h3>Items edit करने पर मेरी list row क्यों नहीं बदलती?</h3>
+      <p>जो items अब भी list में हैं, उनकी rows रखी जाती हैं, दोबारा render नहीं होतीं। जो fields बदलते हैं, उनके लिए <code>() =&gt; todo.text</code> जैसी dynamic values use करें। <a href="#api-list"><code>list()</code></a> देखें।</p>
 
-      <h3>मेरे UI का हिस्सा अपडेट होना क्यों बंद हो जाता है?</h3>
-      <p>आमतौर पर जब <code>update()</code> चलता था तो इसके नोड्स दस्तावेज़ में नहीं होते थे। Nuclo उन नोड्स को ट्रैक करना बंद कर देता है, भले ही आप उन्हें संलग्न कर लें, इसलिए दस्तावेज़ में मौजूद कंटेनर में रेंडर करें। दो अन्य कारण: एक <code>when()</code> जिसकी शर्त थ्रो करे तो अपडेट होना बंद हो जाता है, और एक टेक्स्ट फ़ंक्शन जो अपने पहले रन पर थ्रो करता है वह खाली रहता है। <a href="#api-update"><code>update()</code></a> देखें।</p>
+      <h3>मेरे UI का कुछ हिस्सा update होना क्यों बंद हो जाता है?</h3>
+      <p>आमतौर पर इसकी वजह यह होती है कि <code>update()</code> चलते समय उसके nodes document में नहीं थे। Nuclo उन nodes को track करना छोड़ देता है, चाहे आप बाद में उन्हें attach कर लें, इसलिए ऐसे container में render करें जो document में मौजूद हो। दो और कारण: जिस <code>when()</code> की condition throw करे वह update होना बंद कर देता है, और जो text function अपने पहले run में throw करे वह खाली रहता है। <a href="#api-update"><code>update()</code></a> देखें।</p>
 
-      <h3>मुझे <code>forceUpdate()</code> का उपयोग कब करना चाहिए?</h3>
-      <p>केवल स्टैटिक मानों में दुर्लभ परिवर्तनों के लिए, जैसे भाषा बदलना। बाकी सभी चीज़ों के लिए, <code>update()</code> का उपयोग करें। <a href="#api-force-update"><code>forceUpdate()</code></a> देखें।</p>
+      <h3><code>forceUpdate()</code> कब use करना चाहिए?</h3>
+      <p>सिर्फ static values में कभी-कभार होने वाले बदलाव के लिए, जैसे language बदलना। बाकी हर चीज़ के लिए <code>update()</code> use करें। <a href="#api-force-update"><code>forceUpdate()</code></a> देखें।</p>
 
-      <h3>मैं किसी पेज को प्रोप के रूप में पास किए बिना लेआउट में कैसे डालूं?</h3>
-      <p><code>region({ id: 'main' })</code> से जगह चिह्नित करें और पेज से <code>into('main', …)</code> लौटाएँ। <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a> देखें।</p>
+      <h3>Page को props के रूप में पास किए बिना layout में कैसे डालूँ?</h3>
+      <p><code>region({ id: 'main' })</code> से जगह mark करें और page से <code>into('main', …)</code> लौटाएँ। <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a> देखें।</p>
 
-      <h3>मैं किसी ऐप को कैसे अनमाउंट करूं?</h3>
-      <p>इसे <code>when()</code> में लपेटें और शर्त false कर दें। DOM को स्वयं हटाने से <code>onDestroy</code> नहीं चलता है। <a href="#lifecycle">लाइफ़साइकल</a> देखें।</p>
+      <h3>App को unmount कैसे करूँ?</h3>
+      <p>उसे <code>when()</code> में लपेटें और condition false कर दें। DOM को खुद हटाने से <code>onDestroy</code> नहीं चलता। <a href="#lifecycle">Lifecycle</a> देखें।</p>
 
-      <h3>क्या Nuclo में राउटर शामिल है?</h3>
-      <p>कोर पैकेज में नहीं। रूटिंग अलग <code>nuclo-router</code> पैकेज में मिलती है, जिसमें सर्वर रेंडरिंग, हाइड्रेशन, कोड-स्प्लिट रूट और आइडल प्रीलोडिंग हैं। इसे <code>npm install nuclo nuclo-router</code> से इंस्टॉल करें। <a href="#router-overview">nuclo-router</a> देखें।</p>
+      <h3>क्या Nuclo में router शामिल है?</h3>
+      <p>Core package में नहीं। Routing अलग <code>nuclo-router</code> package में मिलती है, जिसमें server rendering, hydration, code-split routes और idle preloading हैं। इसे <code>npm install nuclo nuclo-router</code> से install करें। <a href="#router-overview">nuclo-router</a> देखें।</p>
 
-      <h3>क्या Nuclo में इफ़ेक्ट हैं?</h3>
-      <p>नहीं। <code>onMount</code> और <code>onDestroy</code> एलिमेंट जुड़ने और हटने पर प्रति एलिमेंट एक बार चलते हैं। केवल स्टेट बदलने से कुछ भी दोबारा नहीं चलता।</p>
+      <h3>क्या Nuclo में effects हैं?</h3>
+      <p>नहीं। <code>onMount</code> और <code>onDestroy</code> element जुड़ने और हटने पर हर element के लिए एक बार चलते हैं। सिर्फ state बदलने से कुछ भी दोबारा नहीं चलता।</p>
     `,
       },
     ],

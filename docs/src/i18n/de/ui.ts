@@ -7,7 +7,7 @@ export const nav = {
   examples: "Beispiele",
   getStarted: "Loslegen",
   menu: "Menü",
-  main: "Hauptbereich",
+  main: "Hauptinhalt",
   openMenu: "Menü öffnen",
   closeMenu: "Menü schließen",
   nucloHome: "Nuclo-Startseite",
@@ -18,7 +18,7 @@ export const nav = {
 };
 
 export const footer = {
-  tagline: "Die UI-Runtime mit expliziten Updates. Einfache Funktionen, veränderbarer State und ein Aufruf zwischen deinen Daten und dem DOM.",
+  tagline: "Die UI-Runtime mit expliziten Updates: schlichte Funktionen, veränderlicher State und ein einziger Aufruf zwischen deinen Daten und dem DOM.",
   builtWith: "Diese Seite ist mit Nuclo gebaut.",
   explore: "Entdecken",
   documentation: "Dokumentation",
@@ -31,10 +31,10 @@ export const footer = {
 };
 
 export const app = {
-  failedToLoad: "Seite konnte nicht geladen werden",
+  failedToLoad: "Die Seite konnte nicht geladen werden",
   loadingLanguage: "Sprache wird geladen…",
   notFound: "Seite nicht gefunden",
-  notFoundHint: "Unter dieser Adresse gibt es nichts.",
+  notFoundHint: "Unter dieser Adresse gibt es leider nichts zu sehen.",
   goHome: "Zur Startseite",
 };
 
@@ -55,29 +55,29 @@ export const seo = {
   routes: {
     home: {
       title: "Nuclo - Leichtgewichtiges DOM-Framework mit expliziten Updates",
-      description: "Nuclo ist eine leichtgewichtige TypeScript-DOM-Bibliothek ohne Abhängigkeiten. Baue UIs mit Funktionen, verändere einfachen State, rufe update() auf. Kein virtuelles DOM, keine Proxies, keine Signals.",
+      description: "Nuclo ist eine schlanke TypeScript-DOM-Bibliothek ohne Abhängigkeiten. UIs aus Funktionen, State einfach ändern, update() aufrufen. Kein Virtual DOM, keine Proxies, keine Signals.",
       keywords: "nuclo, dom framework, zustandsabhängige werte, explizite updates, veränderbarer state, javascript, typescript, ui framework, leichtgewichtig",
     },
     "apps/:id": {
       title: "Eigenständige Apps - Nuclo-Beispiele",
-      description: "Interaktive Nuclo-App-Beispiele in einem Arbeitsbereich, der das gesamte Browserfenster ausfüllt.",
+      description: "Interaktive Nuclo-Apps im Vollbild, mit dem ganzen Browserfenster als Bühne.",
     },
     desktop: {
       title: "Nuclo OS - Desktop",
-      description: "Ein eigenständiger Desktop mit funktionierenden Apps — Dateien, Notizen, Terminal, Rechner, Timer, ein Kanban-Board, Finanzen mit Diagrammen und einer Tabelle sowie ein Kalender — und einem simulierten Dateisystem, das in deinem Browser gespeichert wird.",
+      description: "Ein kompletter Desktop im Browser mit voll funktionsfähigen Apps (Dateien, Notizen, Terminal, Rechner, Timer, Kanban-Board, Finanzen mit Diagrammen und Tabelle, Kalender) und einem simulierten Dateisystem, das lokal in deinem Browser liegt.",
     },
     docs: {
       title: "Nuclo-Dokumentation - Leitfaden & API-Referenz",
-      description: "Nuclo-Dokumentation: Installation, Tag-Builder, explizites update(), when() und list(), Events, Lebenszyklus, SSR und Hydration, typisiertes CSS-in-TS und die vollständige API-Referenz.",
+      description: "Nuclo-Dokumentation: Installation, Tag-Builder, explizites update(), when() und list(), Events, Lifecycle, SSR und Hydration, typisiertes CSS-in-TS und die komplette API-Referenz.",
       keywords: "nuclo dokumentation, api referenz, erste schritte, update, list, when, on",
     },
     examples: {
       title: "Nuclo-Beispiele - Zähler, Todo-Liste, Suche & Styling",
-      description: "Live-Beispiele für Nuclo mit Quellcode: ein Zähler, eine Todo-Liste, ein Suchfilter in Echtzeit und typisiertes CSS-in-TS-Styling.",
+      description: "Nuclo live ausprobieren, inklusive Quellcode: Zähler, Todo-Liste, Suchfilter in Echtzeit und typisiertes CSS-in-TS-Styling.",
       keywords: "nuclo beispiele, zähler, todo, suchfilter, css-in-ts, live demos",
     },
   } as Record<string, { title: string; description: string; keywords?: string }>,
   exampleTitle: (title: string) => `${title} - Nuclo-Beispiele`,
-  exampleDescription: (desc: string) => `${desc} Ein Live-Beispiel für Nuclo mit seinem Quellcode.`,
+  exampleDescription: (desc: string) => `${desc} Als Live-Beispiel für Nuclo, samt Quellcode.`,
   exampleKeywords: (title: string) => `nuclo beispiel, ${title.toLowerCase()}, live demo, quellcode`,
 };

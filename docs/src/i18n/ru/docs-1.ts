@@ -11,8 +11,8 @@ export const GROUPS_1: DocGroupText[] = [
         id: "overview",
         title: "Обзор",
         content: `
-      <p>Nuclo — небольшая библиотека DOM для TypeScript. Вы создаете страницу с помощью простых функций, таких как <code>div()</code> и <code>button()</code>, сохраняете состояние в обычных переменных и вызываете <code>update()</code>, когда страница должна измениться.</p>
-      <p>Nuclo не имеет виртуального DOM, компилятора, прокси и сигналов.</p>
+      <p>Nuclo — крошечная DOM-библиотека для TypeScript. Интерфейс вы собираете из обычных функций вроде <code>div()</code> и <code>button()</code>, состояние хранится в самых обычных переменных, а когда пора перерисовать страницу, достаточно вызвать <code>update()</code>.</p>
+      <p>Никакого virtual DOM, компилятора, прокси и сигналов — всё это здесь не нужно.</p>
       ${code("main.ts", `
 import 'nuclo'
 
@@ -28,32 +28,32 @@ render(App, document.getElementById('app')!)
 `)}
       <h3>Ментальная модель</h3>
       <ol>
-        <li>Создайте UI с помощью функций построения элементов.</li>
-        <li>Передайте функцию для каждого значения, которое зависит от состояния.</li>
-        <li>Измените состояние с помощью простого JavaScript.</li>
-        <li>Вызовите <code>update()</code>. Nuclo снова запускает функции и обновляет DOM.</li>
+        <li>Опишите интерфейс билдерами элементов.</li>
+        <li>Всё, что зависит от состояния, заверните в функцию.</li>
+        <li>Меняйте состояние как в обычном JavaScript.</li>
+        <li>Вызовите <code>update()</code> — Nuclo перезапустит эти функции и поправит DOM.</li>
       </ol>
-      <p>Изменение переменной не затрагивает DOM. Страница меняется только при вызове <code>update()</code>.</p>
+      <p>Присваивание переменной DOM не затрагивает: страница изменится лишь после <code>update()</code>.</p>
     `,
       },
       {
         id: "quick-start",
         title: "Быстрый старт",
         content: `
-      <p><code>create-nuclo</code> создает заготовку проекта на Vite и TypeScript, готовую для Nuclo:</p>
+      <p><code>create-nuclo</code> разворачивает стартовый проект на Vite и TypeScript, где Nuclo уже настроен и готов к работе:</p>
     `,
         afterContent: `
-      <p>Запрашивает имя проекта. Чтобы пропустить запрос, передайте имя и флаги. Для npm поставьте <code>--</code> перед флагами:</p>
+      <p>Команда спросит, как назвать проект. Если вопросы не нужны, сразу передайте имя и флаги (в npm перед флагами ставится <code>--</code>):</p>
       ${sh("npm create nuclo@latest my-app -- --template basic --yes")}
-      <p>Затем установите и запустите сервер разработки:</p>
+      <p>Остаётся поставить зависимости и поднять dev-сервер:</p>
       ${sh("cd my-app", "npm install", "npm run dev")}
       <h3>Опции</h3>
       <ul>
-        <li><code>[project-name]</code>: целевая папка. По умолчанию — <code>nuclo-app</code>.</li>
-        <li><code>-t, --template &lt;name&gt;</code>: шаблон для копирования. Пока доступен только <code>basic</code>.</li>
-        <li><code>-y, --yes</code>: не задавать вопросов, использовать значения по умолчанию.</li>
-        <li><code>-f, --force</code>: запись в папку, которая не пуста.</li>
-        <li><code>-h, --help</code>: вывести справку.</li>
+        <li><code>[project-name]</code>: папка проекта. По умолчанию — <code>nuclo-app</code>.</li>
+        <li><code>-t, --template &lt;name&gt;</code>: какой шаблон взять за основу. Пока он один — <code>basic</code>.</li>
+        <li><code>-y, --yes</code>: не задавать вопросов и взять значения по умолчанию.</li>
+        <li><code>-f, --force</code>: писать в папку, даже если в ней уже что-то лежит.</li>
+        <li><code>-h, --help</code>: показать справку.</li>
       </ul>
     `,
       },
@@ -61,32 +61,32 @@ render(App, document.getElementById('app')!)
         id: "installation",
         title: "Установка и импорты",
         content: `
-      <p>Чтобы добавить Nuclo в существующий проект:</p>
+      <p>Чтобы добавить Nuclo в уже существующий проект:</p>
       ${sh("npm install nuclo")}
-      <p>Или используйте <code>pnpm add nuclo</code>, <code>yarn add nuclo</code> или <code>bun add nuclo</code>. Nuclo не имеет зависимостей.</p>
-      <p>Маршрутизация не является частью основного пакета. Она поставляется отдельно в пакете <a href="#router-overview"><code>nuclo-router</code></a>, который вы устанавливаете рядом с <code>nuclo</code>, когда он вам нужен.</p>
+      <p>Подойдут и <code>pnpm add nuclo</code>, <code>yarn add nuclo</code>, <code>bun add nuclo</code>. Зависимостей у Nuclo нет.</p>
+      <p>Роутинга в основном пакете нет — он вынесен в отдельный <a href="#router-overview"><code>nuclo-router</code></a>. Когда понадобится, поставьте его рядом с <code>nuclo</code>.</p>
       <h3>Глобальные функции</h3>
-      <p><code>import 'nuclo'</code> помещает их на <code>globalThis</code>:</p>
+      <p><code>import 'nuclo'</code> кладёт их прямо в <code>globalThis</code>:</p>
       <ul>
-        <li><strong>175 функций построения элементов</strong>: 112 для HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) и 63 для SVG, с суффиксом <code>Svg</code> (<code>svgSvg</code>, <code>pathSvg</code>, …). См. <a href="#tag-builders">Функции построения элементов</a>.</li>
+        <li><strong>175 билдеров элементов</strong>: 112 для HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) и 63 для SVG с суффиксом <code>Svg</code> (<code>svgSvg</code>, <code>pathSvg</code>, …). См. <a href="#tag-builders">Билдеры элементов</a>.</li>
         <li><strong>16 вспомогательных функций</strong>: <code>update</code>, <code>scope</code>, <code>when</code>, <code>list</code>, <code>region</code>, <code>into</code>, <code>on</code>, <code>render</code>, <code>hydrate</code>, <code>forceUpdate</code>, <code>css</code>, <code>cx</code>, <code>createCss</code>, <code>variants</code>, <code>keyframes</code> и <code>globalStyle</code>.</li>
       </ul>
-      <p>Импорт должен выполняться перед любым кодом, вызывающим построитель. Модули ES запускаются в порядке импорта, поэтому это не удается:</p>
+      <p>Импорт должен выполниться раньше любого кода, вызывающего билдеры. ES-модули исполняются в порядке импорта, так что вот такой код сломается:</p>
       ${code("main.ts", `
 import { App } from './app' // app.ts calls div() → ReferenceError: div is not defined
 import 'nuclo'
 `)}
-      <p>Поместите <code>import 'nuclo'</code> первым в файле точки входа или импортируйте его в каждый файл, использующий глобальные переменные.</p>
+      <p>Пишите <code>import 'nuclo'</code> первой строкой в точке входа — или импортируйте его в каждом файле, где используются глобальные функции.</p>
       <h3>Именованный импорт</h3>
-      <p>Вспомогательные функции также доступны как именованные экспорты. Это те же функции, что и глобальные переменные. <code>getCssText()</code> и <code>resetStyles()</code> являются только именованными экспортами. Функции построения элементов являются только глобальными, поэтому <code>import { div } from 'nuclo'</code> не работает.</p>
+      <p>Вспомогательные функции можно импортировать и по имени — это те же самые функции, что и глобальные. А вот <code>getCssText()</code> и <code>resetStyles()</code> существуют только как именованные экспорты, тогда как билдеры элементов — только как глобальные, поэтому <code>import { div } from 'nuclo'</code> не сработает.</p>
       ${code("main.ts", `
 import { render, update, getCssText } from 'nuclo'
 `)}
       <h3>Точки входа</h3>
       <ul>
-        <li><code>nuclo</code>: регистрирует глобальные переменные и экспортирует 16 вспомогательных функций, а также <code>getCssText</code> и <code>resetStyles</code>.</li>
+        <li><code>nuclo</code>: регистрирует глобальные переменные и экспортирует 16 вспомогательных функций плюс <code>getCssText</code> и <code>resetStyles</code>.</li>
         <li><code>nuclo/ssr</code>: <code>renderToString</code>, <code>renderManyToString</code>, <code>renderToStringWithContainer</code> и <code>getCssText</code>. См. <a href="#api-ssr">Серверный рендеринг</a>.</li>
-        <li><code>nuclo/polyfill</code>: небольшой DOM для Node и Bun. См. <a href="#api-polyfill">nuclo/polyfill</a>.</li>
+        <li><code>nuclo/polyfill</code>: мини-DOM для Node и Bun. См. <a href="#api-polyfill">nuclo/polyfill</a>.</li>
         <li><code>nuclo/types</code>: только типы. См. <a href="#typescript-setup">TypeScript</a>.</li>
       </ul>
     `,
@@ -95,12 +95,12 @@ import { render, update, getCssText } from 'nuclo'
         id: "typescript-setup",
         title: "TypeScript",
         content: `
-      <p>Nuclo поставляет свои собственные типы. Вам нужны две вещи:</p>
+      <p>Типы поставляются вместе с Nuclo. От вас нужны всего две вещи:</p>
       <ul>
         <li><code>"moduleResolution": "bundler"</code>. <code>node16</code> и <code>nodenext</code> пока не поддерживаются.</li>
-        <li><code>DOM</code> lib. TypeScript включает его по умолчанию, если вы не установили <code>lib</code>.</li>
+        <li>библиотека <code>DOM</code> в <code>lib</code>. TypeScript подключает её сам, пока вы не прописали <code>lib</code> руками.</li>
       </ul>
-      <p>Если какой-либо файл в проекте импортирует <code>'nuclo'</code>, каждый файл видит глобальные типы. Вам больше ничего не нужно. Если ни один файл его не импортирует, например в отдельный tsconfig для тестов, добавьте типы самостоятельно:</p>
+      <p>Если хотя бы один файл проекта импортирует <code>'nuclo'</code>, глобальные типы видны везде, и больше ничего настраивать не нужно. Если же ни один файл его не импортирует (например, в отдельном tsconfig для тестов), подключите типы вручную:</p>
       ${code("tsconfig.json", `
 {
   "compilerOptions": {
@@ -112,26 +112,26 @@ import { render, update, getCssText } from 'nuclo'
   }
 }
 `)}
-      <p>Или добавьте <code>/// &lt;reference types="nuclo/types" /&gt;</code> в файл <code>.d.ts</code>.</p>
+      <p>Или добавьте <code>/// &lt;reference types="nuclo/types" /&gt;</code> в любой <code>.d.ts</code>-файл.</p>
       <h3>Полезные типы</h3>
-      <p>Эти типы являются глобальными, поэтому их можно использовать без импорта:</p>
+      <p>Эти типы глобальные — импортировать их не нужно:</p>
       <ul>
-        <li><code>NodeModFn&lt;Tag&gt;</code>: что возвращает функция построения элементов. Используйте его как возвращаемый тип компонента.</li>
-        <li><code>NodeModLike&lt;Tag&gt;</code>: все, что функция построения элементов принимает в качестве аргумента.</li>
-        <li><code>ExpandedElement&lt;Tag&gt;</code>: что возвращают <code>render()</code> и <code>hydrate()</code>.</li>
-        <li><code>ElementTagName</code>: любое имя тега HTML.</li>
-        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: объект атрибутов, который принимает функция построения элементов, включая обработчики <code>on*</code>, <code>onMount</code> и <code>onDestroy</code>. Используйте его для компонентов, которые передают атрибуты.</li>
+        <li><code>NodeModFn&lt;Tag&gt;</code>: то, что возвращает билдер. Удобно как возвращаемый тип компонента.</li>
+        <li><code>NodeModLike&lt;Tag&gt;</code>: всё, что билдер готов принять в аргументах.</li>
+        <li><code>ExpandedElement&lt;Tag&gt;</code>: то, что возвращают <code>render()</code> и <code>hydrate()</code>.</li>
+        <li><code>ElementTagName</code>: любое имя HTML-тега.</li>
+        <li><code>ExpandedElementAttributes&lt;Tag&gt;</code>: объект атрибутов, который принимает билдер, вместе с обработчиками <code>on*</code>, <code>onMount</code> и <code>onDestroy</code>. Пригодится компонентам, которые пробрасывают атрибуты дальше.</li>
         <li><code>MountCallback</code> и <code>DestroyCallback</code>: обработчики <code>onMount</code> и <code>onDestroy</code>.</li>
-        <li><code>WhenBuilder</code>, <code>ListModifier</code>: что возвращают <code>when()</code> и <code>list()</code>.</li>
-        <li><code>RegionOptions</code>, <code>RegionType</code>: параметры, которые принимает <code>region()</code>.</li>
-        <li><code>StyleResult</code>, <code>Style</code>, <code>ThemeConfig</code>, <code>CssInstance</code> и другие типы стилей. Вы также можете импортировать их: <code>import type { StyleResult } from 'nuclo'</code>.</li>
+        <li><code>WhenBuilder</code>, <code>ListModifier</code>: то, что возвращают <code>when()</code> и <code>list()</code>.</li>
+        <li><code>RegionOptions</code>, <code>RegionType</code>: опции, которые принимает <code>region()</code>.</li>
+        <li><code>StyleResult</code>, <code>Style</code>, <code>ThemeConfig</code>, <code>CssInstance</code> и прочие типы стилей. Их можно и импортировать явно: <code>import type { StyleResult } from 'nuclo'</code>.</li>
       </ul>
       ${code("badge.ts", `
 function Badge(text: string): NodeModFn<'span'> {
   return span(text)
 }
 `)}
-      <p><code>ExpandedElement&lt;Tag&gt;</code> делает все члены DOM необязательными. Когда нужен полный тип элемента, используйте приведение типа: <code>render(App, root) as HTMLDivElement</code>.</p>
+      <p><code>ExpandedElement&lt;Tag&gt;</code> делает все поля DOM необязательными. Если нужен полноценный тип элемента, приведите его явно: <code>render(App, root) as HTMLDivElement</code>.</p>
     `,
       },
     ],
@@ -143,10 +143,10 @@ function Badge(text: string): NodeModFn<'span'> {
     sections: [
       {
         id: "tag-builders",
-        title: "Функции построения элементов",
+        title: "Билдеры элементов",
         content: `
-      <p>Каждый тег HTML представляет собой глобальную функцию с одинаковым именем: <code>div</code>, <code>span</code>, <code>input</code>,… Единственным исключением является <code>&lt;var&gt;</code>, который называется <code>var_</code>, поскольку <code>var</code> — зарезервированное слово. Каждый тег SVG имеет суффикс <code>Svg</code>: <code>svgSvg</code>, <code>pathSvg</code>, <code>circleSvg</code>,…</p>
-      <p>Вызов функции построения элемента еще не создает элемент. <code>div('Hi')</code> возвращает <strong>функцию построения элемента (builder)</strong>: функцию, которая создает элемент позже. Nuclo вызывает ее при монтировании с помощью <code>render()</code> или помещаете в другую функцию построения элемента, <code>when()</code> или <code>list()</code>. Каждое использование создает новый элемент.</p>
+      <p>У каждого HTML-тега есть одноимённая глобальная функция: <code>div</code>, <code>span</code>, <code>input</code>, … Исключение всего одно — <code>&lt;var&gt;</code>: билдер называется <code>var_</code>, ведь <code>var</code> в JavaScript зарезервировано. SVG-теги получают суффикс <code>Svg</code>: <code>svgSvg</code>, <code>pathSvg</code>, <code>circleSvg</code>,…</p>
+      <p>Вызов <code>div('Hi')</code> сам по себе элемент не создаёт. Он возвращает <strong>билдер (builder)</strong> — функцию, которая построит элемент чуть позже. Nuclo запускает её при монтировании через <code>render()</code> или когда билдер вложен в другой билдер, <code>when()</code> или <code>list()</code>. Каждый запуск даёт новый элемент.</p>
       ${code("card.ts", `
 let name = 'Ada'
 
@@ -163,42 +163,42 @@ render(Card, document.body)
     `,
         afterContent: `
       <h3>Аргументы</h3>
-      <p>Функция построения элемента принимает любое количество аргументов и применяет их слева направо:</p>
+      <p>Билдер принимает сколько угодно аргументов и применяет их слева направо:</p>
       <ul>
-        <li><strong>строка, число, bigint</strong>: текстовый узел.</li>
-        <li><strong><code>() =&gt; value</code></strong>: текст, который меняется на <code>update()</code>. См. <a href="#dynamic-functions">Динамические значения</a>.</li>
-        <li><strong><code>null</code>, <code>undefined</code></strong>: пропущено.</li>
-        <li><strong><code>true</code>, <code>false</code></strong>: отображается как текст «true» или «false». Используйте <code>when()</code> для условий.</li>
+        <li><strong>строка, число, bigint</strong>: превращаются в текстовый узел.</li>
+        <li><strong><code>() =&gt; value</code></strong>: текст, который пересчитывается при каждом <code>update()</code>. См. <a href="#dynamic-functions">Динамические значения</a>.</li>
+        <li><strong><code>null</code>, <code>undefined</code></strong>: пропускаются.</li>
+        <li><strong><code>true</code>, <code>false</code></strong>: выводятся текстом «true» или «false». Для условий есть <code>when()</code>.</li>
         <li><strong>Обычный объект</strong>: атрибуты. См. <a href="#attributes">Атрибуты</a>.</li>
-        <li><strong>Результат <code>css()</code>, <code>cx()</code> или <code>variants()</code></strong>: добавляет свои классы.</li>
-        <li><strong><code>on(...)</code></strong>: обработчик событий или хук жизненного цикла.</li>
-        <li><strong>Другая функция построения элемента, <code>when()</code> или <code>list()</code></strong>: дочерний узел.</li>
-        <li><strong>Узел DOM <code>Node</code></strong>: добавляется как есть.</li>
-        <li><strong><code>(el, index) =&gt; …</code></strong>: пользовательский модификатор. См. ниже.</li>
+        <li><strong>Результат <code>css()</code>, <code>cx()</code> или <code>variants()</code></strong>: добавляет свои классы к элементу.</li>
+        <li><strong><code>on(...)</code></strong>: обработчик события или хук жизненного цикла.</li>
+        <li><strong>Другой билдер, <code>when()</code> или <code>list()</code></strong>: дочерний узел.</li>
+        <li><strong>Узел DOM (<code>Node</code>)</strong>: вставляется как есть.</li>
+        <li><strong><code>(el, index) =&gt; …</code></strong>: собственный модификатор (см. ниже).</li>
       </ul>
-      <h3>Типичные ошибки</h3>
+      <h3>Частые ошибки</h3>
       <ul>
-        <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> отображает текст «false». Напишите <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
-        <li>Массив нельзя передать как дочерний узел. Используйте spread: <code>ul(...names.map((n) =&gt; li(n)))</code>. Для списков, которые изменяются, используйте <code>list()</code>.</li>
-        <li>Локальная переменная с именем тега скрывает построитель. Внутри <code>function Row(label: string)</code> <code>label(...)</code> не может быть вызван. Переименуйте локальные объекты, такие как <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> и <code>i</code>.</li>
-        <li>Браузеры предоставляют каждый элемент, имеющий <code>id</code>, как глобальную переменную. Если страница содержит <code>&lt;main id="main"&gt;</code> до загрузки Nuclo, Nuclo оставляет этот глобальный объект на месте, поэтому <code>main(...)</code> выдает <code>TypeError</code>. Используйте другие идентификаторы.</li>
+        <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> выведет на странице слово «false». Правильно так: <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
+        <li>Массив как дочерний узел не принимается — разверните его через spread: <code>ul(...names.map((n) =&gt; li(n)))</code>. А если список меняется со временем, берите <code>list()</code>.</li>
+        <li>Локальная переменная с именем тега затеняет билдер: внутри <code>function Row(label: string)</code> вызвать <code>label(...)</code> уже не выйдет. Не используйте такие имена для переменных: <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code>, <code>i</code>.</li>
+        <li>Браузер превращает каждый элемент с <code>id</code> в глобальную переменную. Если до загрузки Nuclo в разметке уже есть <code>&lt;main id="main"&gt;</code>, Nuclo эту переменную не перезапишет, и <code>main(...)</code> бросит <code>TypeError</code>. Берите другие <code>id</code>.</li>
       </ul>
-      <h3>Пользовательские модификаторы</h3>
-      <p>Функция, объявляющая хотя бы один параметр, выполняется один раз в порядке аргументов во время построения элемента. Ее первый аргумент — элемент. Второй — внутренний индекс, поэтому не полагайтесь на него. Если она возвращает строку или число, оно становится текстом. Добавляется <code>Node</code>. Объект применяется как атрибуты.</p>
+      <h3>Собственные модификаторы</h3>
+      <p>Функция, у которой объявлен хотя бы один параметр, выполняется один раз при построении элемента — в порядке аргументов. Первым параметром приходит сам элемент, вторым — внутренний индекс (опираться на него не стоит). Вернёте строку или число — получите текст, вернёте <code>Node</code> — он добавится в элемент, вернёте объект — он применится как атрибуты.</p>
       ${code("example.ts", `
 const field = input((el) => {
   el.autocomplete = 'off'
 })
 `)}
-      <h3>Получение элемента</h3>
-      <p><code>render()</code> возвращает корневой элемент. Внутри дерева используйте <code>on("mount", (el) =&gt; …)</code> или собственный модификатор. Вы также можете самостоятельно вызвать функцию построения элемента, чтобы создать отдельный элемент:</p>
+      <h3>Как получить элемент</h3>
+      <p><code>render()</code> возвращает корневой элемент. Внутри дерева его можно получить через <code>on("mount", (el) =&gt; …)</code> или собственный модификатор. Ещё один способ — вызвать билдер самому и получить готовый элемент:</p>
       ${code("example.ts", `
 const el = div('Hello')() as HTMLDivElement
 document.body.append(el)
 `)}
-      <p>Прикрепите его перед следующим <code>update()</code>. Узел, которого нет в документе при запуске <code>update()</code>, перестает обновляться навсегда.</p>
+      <p>Прикрепите его к документу до ближайшего <code>update()</code>: узел, которого в момент <code>update()</code> нет в документе, Nuclo перестаёт обновлять навсегда.</p>
       <h3>SVG</h3>
-      <p>Функции SVG принимают те же аргументы. Nuclo задает каждый атрибут SVG через <code>setAttribute</code>, поэтому такие имена, как <code>"stroke-width"</code>, работают так, как написано.</p>
+      <p>SVG-билдеры принимают те же аргументы. Каждый SVG-атрибут Nuclo выставляет через <code>setAttribute</code>, поэтому имена вроде <code>"stroke-width"</code> работают как есть.</p>
       ${code("icon.ts", `
 const Icon = () =>
   svgSvg(
@@ -206,7 +206,7 @@ const Icon = () =>
     circleSvg({ cx: 12, cy: 12, r: 10, fill: 'currentColor' }),
   )
 `)}
-      <h3>Все функции построения элементов</h3>
+      <h3>Полный список билдеров</h3>
       <p><strong>HTML:</strong> a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark menu meta meter nav noscript object ol optgroup option output p picture pre progress q rp rt ruby s samp script search section select slot small source span strong style sub summary sup table tbody td template textarea tfoot th thead time title tr track u ul var_ video wbr</p>
       <p><strong>SVG:</strong> aSvg animateSvg animateMotionSvg animateTransformSvg circleSvg clipPathSvg defsSvg descSvg ellipseSvg feBlendSvg feColorMatrixSvg feComponentTransferSvg feCompositeSvg feConvolveMatrixSvg feDiffuseLightingSvg feDisplacementMapSvg feDistantLightSvg feDropShadowSvg feFloodSvg feFuncASvg feFuncBSvg feFuncGSvg feFuncRSvg feGaussianBlurSvg feImageSvg feMergeSvg feMergeNodeSvg feMorphologySvg feOffsetSvg fePointLightSvg feSpecularLightingSvg feSpotLightSvg feTileSvg feTurbulenceSvg filterSvg foreignObjectSvg gSvg imageSvg lineSvg linearGradientSvg markerSvg maskSvg metadataSvg mpathSvg pathSvg patternSvg polygonSvg polylineSvg radialGradientSvg rectSvg scriptSvg setSvg stopSvg styleSvg svgSvg switchSvg symbolSvg textSvg textPathSvg titleSvg tspanSvg useSvg viewSvg</p>
     `,
@@ -215,7 +215,7 @@ const Icon = () =>
         id: "components",
         title: "Компоненты",
         content: `
-      <p>Компонент — это простая функция, возвращающая построитель, например <code>button(...)</code>. Отдельного API компонентов нет. Ничто не создается до тех пор, пока вы не отрендерите его или не поместите в дерево.</p>
+      <p>Компонент — это обычная функция, которая возвращает билдер, например <code>button(...)</code>. Никакого отдельного API для компонентов нет, и пока вы не отрендерите результат или не вставите его в дерево, ничего не создаётся.</p>
       ${code("counter.ts", `
 function Counter(label: string) {
   let count = 0 // one per call
@@ -228,8 +228,8 @@ render(() => div(Counter('A'), Counter('B')))
 `)}
     `,
         afterContent: `
-      <p>Состояние, объявленное внутри функции, принадлежит этому экземпляру. Состояние, объявленное снаружи, используется всеми экземплярами. <code>forceUpdate()</code> снова вызывает компоненты, что сбрасывает состояние, объявленное внутри них.</p>
-      <p>Дочерние узлы — обычные аргументы:</p>
+      <p>Состояние внутри функции принадлежит конкретному экземпляру, а состояние снаружи — общее для всех. <code>forceUpdate()</code> вызывает компоненты заново, так что всё, что объявлено внутри, обнуляется.</p>
+      <p>Дочерние узлы — просто аргументы функции:</p>
       ${code("card.ts", `
 function Card(heading: string, ...children: NodeModLike<'div'>[]) {
   return div({ className: 'card' }, h2(heading), ...children)
@@ -243,7 +243,7 @@ render(() => Card('Hi', p('one'), p('two')))
         id: "attributes",
         title: "Атрибуты",
         content: `
-      <p>Передайте простой объект для установки атрибутов. Вы можете передать несколько объектов. Для того же ключа побеждает более позднее значение, за исключением <code>className</code> и <code>style</code>, которые объединяются. Значение может быть статическим или функцией без параметров, которая запускается снова при каждом <code>update()</code>.</p>
+      <p>Атрибуты передаются обычным объектом. Таких объектов может быть несколько: при совпадении ключей побеждает последний, а <code>className</code> и <code>style</code> объединяются. Значение бывает статическим или функцией без параметров, которая вызывается заново при каждом <code>update()</code>.</p>
       ${code("example.ts", `
 let busy = false
 
@@ -254,17 +254,17 @@ const save = button(
 `)}
     `,
         afterContent: `
-      <h3>Как устанавливается значение</h3>
+      <h3>Как значение попадает в DOM</h3>
       <ul>
-        <li>Если элемент HTML имеет свойство с таким именем (<code>value</code>, <code>checked</code>, <code>disabled</code>, <code>htmlFor</code>, <code>tabIndex</code>, …), Nuclo устанавливает это свойство. В противном случае он вызывает <code>setAttribute(key, String(value))</code>, например для <code>"aria-*"</code> и <code>"data-*"</code>.</li>
-        <li>В элементах SVG Nuclo всегда вызывает <code>setAttribute</code>.</li>
-        <li><code>null</code> и <code>undefined</code> пропускаются. Динамическое значение, возвращающее <code>null</code> или <code>undefined</code>, сохраняет старое значение. Чтобы очистить значение, верните <code>""</code> или <code>false</code> для логического свойства.</li>
-        <li>Логические значения работают с логическими свойствами DOM, такими как <code>disabled</code> на кнопке, <code>checked</code>, <code>hidden</code> и <code>required</code>. В других местах <code>true</code> и <code>false</code> записываются как строки «true» и «false».</li>
-        <li>Используйте ключи <code>"data-*"</code>. <code>dataset</code> не поддерживается.</li>
-        <li><code>innerHTML</code> не экранирован, и серверный рендеринг не выводит его. Избегайте этого.</li>
+        <li>Если у HTML-элемента есть свойство с таким именем (<code>value</code>, <code>checked</code>, <code>disabled</code>, <code>htmlFor</code>, <code>tabIndex</code>, …), Nuclo пишет значение прямо в него. Если нет — вызывает <code>setAttribute(key, String(value))</code>; так работают, например, <code>"aria-*"</code> и <code>"data-*"</code>.</li>
+        <li>В SVG-элементах всегда используется <code>setAttribute</code>.</li>
+        <li><code>null</code> и <code>undefined</code> пропускаются. Если динамическое значение вернуло <code>null</code> или <code>undefined</code>, остаётся прежнее. Чтобы сбросить значение, верните <code>""</code>, а для булева свойства — <code>false</code>.</li>
+        <li>Булевы значения осмысленны только для булевых свойств DOM: <code>disabled</code> у кнопки, <code>checked</code>, <code>hidden</code>, <code>required</code>. В остальных случаях <code>true</code> и <code>false</code> запишутся как строки «true» и «false».</li>
+        <li>Для data-атрибутов используйте ключи <code>"data-*"</code>; <code>dataset</code> не поддерживается.</li>
+        <li><code>innerHTML</code> не экранируется, а серверный рендеринг его вообще не выводит. Лучше обойтись без него.</li>
       </ul>
       <h3>Классы</h3>
-      <p>Используйте <code>className</code>. Строки статического класса, результаты <code>css()</code> и динамический <code>className</code> объединяются. Динамический <code>className</code> сохраняет статические классы, а когда он возвращает <code>""</code>, остаются только статические классы.</p>
+      <p>Для классов берите <code>className</code>. Статические строки, результаты <code>css()</code> и динамический <code>className</code> складываются вместе. Динамический <code>className</code> статические классы не трогает: если он вернул <code>""</code>, остаются только они.</p>
       ${code("example.ts", `
 let active = false
 const base = css({ p: 8 })
@@ -272,19 +272,19 @@ const base = css({ p: 8 })
 const item = li(base, { className: 'item' }, { className: () => (active ? 'active' : '') }, 'Home')
 // class="<base> item", then "<base> item active" after active = true; update()
 `)}
-      <p>Не используйте ключ <code>class</code> для элементов HTML. Он устанавливает необработанный атрибут и заменяет каждый примененный до него класс, включая классы <code>css()</code>.</p>
-      <h3>Встроенные стили</h3>
-      <p><code>style</code> принимает объект с ключами camelCase или функцию, которая его возвращает.</p>
+      <p>Ключ <code>class</code> в HTML-элементах лучше не трогать: он ставит «сырой» атрибут и затирает все классы, применённые до него, в том числе из <code>css()</code>.</p>
+      <h3>Инлайн-стили</h3>
+      <p><code>style</code> принимает объект с ключами в camelCase или функцию, которая такой объект возвращает.</p>
       ${code("example.ts", `
 let progress = 30
 
 const bar = div({ style: () => ({ width: \`\${progress}%\`, backgroundColor: 'teal' }) })
 `)}
       <ul>
-        <li>Nuclo не добавляет единицы измерения. Пишите <code>"12px"</code>, а не <code>12</code>. Свойства без единиц измерения, такие как <code>opacity</code> и <code>zIndex</code>, принимают числа.</li>
-        <li><code>""</code>, <code>null</code> и <code>undefined</code> очищают свойство.</li>
-        <li>Динамический стиль устанавливает только те ключи, которые он возвращает. Ключ, который он перестает возвращать, сохраняет прежнее значение, поэтому верните <code>""</code>, чтобы очистить его.</li>
-        <li>Строки стиля (<code>"color: red"</code>) и пользовательские свойства (<code>"--gap"</code>) не поддерживаются. Вместо этого используйте <code>css()</code>. Он принимает пользовательские свойства через <a href="#style-objects"><code>raw</code></a>.</li>
+        <li>Единицы измерения Nuclo сам не добавляет: пишите <code>"12px"</code>, а не <code>12</code>. Безразмерные свойства вроде <code>opacity</code> и <code>zIndex</code> спокойно принимают числа.</li>
+        <li><code>""</code>, <code>null</code> и <code>undefined</code> сбрасывают свойство.</li>
+        <li>Динамический стиль выставляет только те ключи, которые вернул. Если ключ вдруг перестал приходить, его прежнее значение остаётся, поэтому для сброса возвращайте <code>""</code>.</li>
+        <li>Строки со стилями (<code>"color: red"</code>) и custom properties (<code>"--gap"</code>) здесь не поддерживаются — для этого есть <code>css()</code>, который принимает custom properties через <a href="#style-objects"><code>raw</code></a>.</li>
       </ul>
     `,
       },
@@ -292,9 +292,9 @@ const bar = div({ style: () => ({ width: \`\${progress}%\`, backgroundColor: 'te
         id: "events",
         title: "События",
         content: `
-      <p>Существует два способа прослушивания событий: атрибуты <code>on*</code> и модификатор <code>on()</code>.</p>
-      <h3><code>on*</code> атрибуты</h3>
-      <p>В объекте атрибутов функция под ключом, например <code>onClick</code> (<code>on</code>, за которым следует заглавная буква), является обработчиком событий, а не динамическим значением.</p>
+      <p>На события можно подписаться двумя способами: через атрибуты <code>on*</code> или модификатором <code>on()</code>.</p>
+      <h3>Атрибуты <code>on*</code></h3>
+      <p>Если в объекте атрибутов ключ выглядит как <code>onClick</code> (<code>on</code> и заглавная буква), то функция под ним — обработчик события, а не динамическое значение.</p>
       ${code("search.ts", `
 let query = ''
 
@@ -306,16 +306,16 @@ const search = input({
 })
 `)}
       <ul>
-        <li>TypeScript определяет тип события на основе ключа и элемента. <code>e.currentTarget</code> и <code>this</code> — это элемент.</li>
-        <li>Nuclo устанавливает собственное свойство, поэтому <code>onClick</code> становится <code>el.onclick</code>. Для каждого события существует один обработчик: более поздний <code>onClick</code> заменяет более ранний.</li>
-        <li><code>onDoubleClick</code> и <code>onDblClick</code> означают <code>dblclick</code>. Ключи нижнего регистра, такие как <code>onclick</code>, являются ошибками типа.</li>
-        <li>Имя, которое не является известным событием, прослушивает его строчную форму: <code>onMyEvent</code> прослушивает <code>"myevent"</code>.</li>
-        <li>Ошибки, выдаваемые обработчиком, не перехватываются.</li>
+        <li>TypeScript сам выводит тип события из ключа и элемента. <code>e.currentTarget</code> и <code>this</code> указывают на сам элемент.</li>
+        <li>Nuclo пишет обработчик в свойство элемента: <code>onClick</code> превращается в <code>el.onclick</code>. На событие приходится один обработчик, и более поздний <code>onClick</code> заменяет более ранний.</li>
+        <li><code>onDoubleClick</code> и <code>onDblClick</code> соответствуют <code>dblclick</code>. Ключи в нижнем регистре, вроде <code>onclick</code>, TypeScript отклонит как ошибку типов.</li>
+        <li>Если имя не совпадает ни с одним известным событием, Nuclo слушает его вариант в нижнем регистре: <code>onMyEvent</code> подписывается на <code>"myevent"</code>.</li>
+        <li>Исключения из обработчика Nuclo не перехватывает.</li>
       </ul>
     `,
         afterContent: `
       <h3><code>on()</code></h3>
-      <p><code>on()</code> возвращает модификатор, который вызывает <code>addEventListener</code> для элемента.</p>
+      <p><code>on()</code> возвращает модификатор, который вешает на элемент слушатель через <code>addEventListener</code>.</p>
       ${code("panel.ts", `
 const panel = div(
   on('scroll', onScroll, { passive: true }),
@@ -324,28 +324,28 @@ const panel = div(
 )
 `)}
       <ul>
-        <li>Каждый <code>on()</code> добавляет обработчик. Все обработчики выполняются по порядку.</li>
-        <li><code>options</code> переходит прямо к <code>addEventListener</code>: <code>capture</code>, <code>once</code>, <code>passive</code>, <code>signal</code>.</li>
-        <li>Передайте <code>on()</code> непосредственно функции построения элемента, чтобы TypeScript вывел тип элемента: <code>input(on('input', (e) =&gt; e.currentTarget.value))</code>.</li>
-        <li>Если обработчик выдает ошибку, Nuclo регистрирует ошибку с помощью <code>console.error</code>, а другие обработчики продолжают работать.</li>
-        <li>Nuclo удаляет обработчик при удалении элемента. На сервере <code>on()</code> ничего не делает.</li>
-        <li>Одно значение <code>on()</code> можно повторно использовать во многих элементах.</li>
+        <li>Каждый <code>on()</code> добавляет ещё один обработчик, и вызываются они все — по порядку.</li>
+        <li><code>options</code> уходят в <code>addEventListener</code> без изменений: <code>capture</code>, <code>once</code>, <code>passive</code>, <code>signal</code>.</li>
+        <li>Передавайте <code>on()</code> прямо в билдер — тогда TypeScript выведет тип элемента: <code>input(on('input', (e) =&gt; e.currentTarget.value))</code>.</li>
+        <li>Если обработчик бросил исключение, Nuclo пишет его в <code>console.error</code>, а остальные обработчики продолжают работать.</li>
+        <li>Когда элемент удаляется, Nuclo сам снимает слушатель. На сервере <code>on()</code> ничего не делает.</li>
+        <li>Один и тот же <code>on()</code> можно переиспользовать на нескольких элементах.</li>
       </ul>
-      <p>Для пользовательского события передайте тип события как параметр типа:</p>
+      <p>Для кастомного события передайте его тип в параметре типа:</p>
       ${code("picker.ts", `
 type PickEvent = CustomEvent<{ id: number }>
 
 const picker = ul(on<'pick', PickEvent>('pick', (e) => choose(e.detail.id)))
 `)}
-      <h3>Какой использовать</h3>
-      <p>В обычном случае используйте атрибуты <code>on*</code>. Используйте <code>on()</code>, если вам нужно несколько обработчиков для события, параметров прослушивателя или пользовательского имени события, например <code>"my-event"</code>.</p>
+      <h3>Что выбрать</h3>
+      <p>В большинстве случаев хватает атрибутов <code>on*</code>. К <code>on()</code> стоит обращаться, когда нужно несколько обработчиков на одно событие, опции слушателя или нестандартное имя события вроде <code>"my-event"</code>.</p>
     `,
       },
       {
         id: "lifecycle",
         title: "Жизненный цикл",
         content: `
-      <p><code>onMount</code> вызывается один раз после вставки элемента. <code>onDestroy</code> вызывается один раз, когда Nuclo удаляет элемент. Задавайте их как атрибуты или через <code>on()</code>. Обе формы работают одинаково, а тип элемента выводится из тега.</p>
+      <p><code>onMount</code> вызывается один раз — после того как элемент вставлен, а <code>onDestroy</code> — один раз, когда Nuclo его удаляет. Задавать их можно и атрибутами, и через <code>on()</code>: обе формы работают одинаково, а тип элемента выводится из тега.</p>
       ${code("timer.ts", `
 let seconds = 0
 
@@ -364,14 +364,14 @@ const search = input(on('mount', (el) => el.focus()))
 `)}
     `,
         afterContent: `
-      <h3>Когда вызываются хуки</h3>
+      <h3>Когда срабатывают хуки</h3>
       <ul>
-        <li><code>onMount</code> выполняется в конце вызова <code>render()</code>, <code>hydrate()</code>, <code>update()</code> или <code>forceUpdate()</code>, который вставил элемент. Он никогда не запускается, пока строится дерево.</li>
-        <li>Если <code>onMount</code> возвращает функцию, она вызывается при удалении элемента после его обработчиков <code>onDestroy</code>.</li>
-        <li><code>onDestroy</code> запускается, когда Nuclo удаляет элемент: строка <code>list()</code> удаляется, ветвь <code>when()</code> переключается, <code>into()</code> покидает свой регион или <code>forceUpdate()</code> удаляет его. Он запускается непосредственно перед удалением, поэтому элемент все еще находится в документе.</li>
+        <li><code>onMount</code> срабатывает в самом конце того вызова — <code>render()</code>, <code>hydrate()</code>, <code>update()</code> или <code>forceUpdate()</code>, — который вставил элемент. Пока дерево ещё строится, он не запускается.</li>
+        <li>Если <code>onMount</code> вернул функцию, она вызовется при удалении элемента — уже после его обработчиков <code>onDestroy</code>.</li>
+        <li><code>onDestroy</code> срабатывает, когда Nuclo удаляет элемент: исчезла строка <code>list()</code>, переключилась ветка <code>when()</code>, <code>into()</code> покинул свой регион или элемент убрал <code>forceUpdate()</code>. Это происходит прямо перед удалением, так что элемент ещё находится в документе.</li>
       </ul>
-      <h3>Удаление DOM вручную</h3>
-      <p>Если вы удаляете элемент самостоятельно с помощью <code>node.remove()</code> или <code>innerHTML = ''</code>, его <code>onDestroy</code> и очистка никогда не запускаются, а таймеры продолжают работать. Nuclo не имеет <code>unmount()</code>. Чтобы удалить приложение с помощью очистки, оберните его в <code>when()</code>:</p>
+      <h3>Если удалять DOM руками</h3>
+      <p>Если убрать элемент самому — через <code>node.remove()</code> или <code>innerHTML = ''</code>, — его <code>onDestroy</code> и функция очистки не вызовутся, а таймеры продолжат тикать. Метода <code>unmount()</code> в Nuclo нет. Чтобы снять приложение вместе со всей очисткой, оберните его в <code>when()</code>:</p>
       ${code("main.ts", `
 let mounted = true
 render(() => div(when(() => mounted, App())), root)
@@ -379,16 +379,16 @@ render(() => div(when(() => mounted, App())), root)
 mounted = false
 update() // App's onDestroy hooks and cleanups run
 `)}
-      <h3>Порядок и ошибки</h3>
+      <h3>Порядок вызова и ошибки</h3>
       <ul>
-        <li>Вы можете зарегистрировать любое количество хуков в любой форме. Они выполняются в порядке регистрации.</li>
-        <li>Обработчики <code>onDestroy</code> сначала вызываются у дочерних элементов, затем у родительского.</li>
-        <li>Хуки монтирования элементов выполняются в порядке регистрации первого <code>onMount</code>, который определяется порядком аргументов. Все хуки одного элемента выполняются вместе. Если дочерние элементы зависят от родительского хука, передайте его раньше дочерних узлов.</li>
-        <li>Если хук выбрасывает исключение, ошибка записывается через <code>console.error</code>. Остальные хуки продолжают выполняться.</li>
-        <li>Обработчик должен возвращать функцию очистки или ничего, поэтому не делайте его <code>async</code>. Возвращенный промис не используется для очистки. Запускайте асинхронную работу внутри обработчика: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
-        <li>Хуки никогда не запускаются на сервере. На клиенте они вызываются после <code>hydrate()</code>.</li>
+        <li>Хуков можно навесить сколько угодно и в любой форме — выполняются они в порядке регистрации.</li>
+        <li><code>onDestroy</code> вызывается сначала у дочерних элементов, затем у родителя.</li>
+        <li>Хуки монтирования идут в порядке, в котором зарегистрирован первый <code>onMount</code> каждого элемента, а тот определяется порядком аргументов. Все хуки одного элемента выполняются подряд. Если дочерним элементам нужен хук родителя, передайте его раньше дочерних узлов.</li>
+        <li>Если хук бросил исключение, ошибка уходит в <code>console.error</code>, а остальные хуки всё равно выполнятся.</li>
+        <li>Обработчик должен возвращать функцию очистки или ничего, так что <code>async</code> здесь ни к чему: возвращённый промис как cleanup не используется. Асинхронную работу запускайте внутри обработчика: <code>{ onMount: (el) =&gt; { void load(el) } }</code>.</li>
+        <li>На сервере хуки не запускаются вовсе, а на клиенте срабатывают после <code>hydrate()</code>.</li>
       </ul>
-      <div class="docs-callout"><strong>Примечание: </strong> Хуки не являются эффектами. Они никогда не запускаются снова, когда состояние меняется. Каждый из них запускается не более одного раза для каждого элемента.</div>
+      <div class="docs-callout"><strong>Примечание: </strong> Хуки — не эффекты. При изменении состояния они не перезапускаются: каждый срабатывает не больше одного раза на элемент.</div>
     `,
       },
     ],
@@ -402,7 +402,7 @@ update() // App's onDestroy hooks and cleanups run
         id: "explicit-updates",
         title: "Явные обновления",
         content: `
-      <p>Nuclo никогда не обновляет страницу самостоятельно. Измените состояние, затем вызовите <code>update()</code>.</p>
+      <p>Сам по себе Nuclo страницу не перерисовывает никогда. Меняете состояние — вызываете <code>update()</code>. Всё.</p>
       ${code("counter.ts", `
 let count = 0
 
@@ -415,7 +415,7 @@ render(Counter)
 `)}
     `,
         afterContent: `
-      <p>Внесите в состояние сколько угодно изменений, затем один раз вызовите <code>update()</code>:</p>
+      <p>Менять состояние можно сколько угодно раз, а <code>update()</code> достаточно вызвать один раз:</p>
       ${code("example.ts", `
 let first = 'Ada'
 let last = 'Lovelace'
@@ -426,14 +426,14 @@ first = 'Grace'
 last = 'Hopper'
 update() // one pass, both changes
 `)}
-      <p>Вызовите <code>update()</code> из обработчиков событий, таймеров, обработчиков завершения загрузки данных или <code>onMount</code>. Не вызывайте его изнутри динамического значения.</p>
+      <p><code>update()</code> можно звать из обработчиков событий, таймеров, колбэков после загрузки данных и из <code>onMount</code>. Единственное место, где этого делать нельзя, — внутри динамического значения.</p>
     `,
       },
       {
         id: "dynamic-functions",
         title: "Динамические значения",
         content: `
-      <p>Функция <strong>без параметров</strong> задает <strong>динамическое значение</strong>. Nuclo вызывает ее один раз при построении элемента и еще раз при каждом <code>update()</code>. Используйте динамические значения для текстовых дочерних узлов, значений атрибутов, <code>style</code> и <code>className</code>. Для дочерних элементов, которые появляются, исчезают или повторяются, используйте <a href="#api-when"><code>when()</code></a> и <a href="#api-list"><code>list()</code></a>.</p>
+      <p>Функция <strong>без параметров</strong> — это <strong>динамическое значение</strong>. Nuclo вызывает её один раз при построении элемента и потом при каждом <code>update()</code>. Так задают текст, значения атрибутов, <code>style</code> и <code>className</code>. А для дочерних элементов, которые появляются, исчезают или повторяются, есть <a href="#api-when"><code>when()</code></a> и <a href="#api-list"><code>list()</code></a>.</p>
       ${code("example.ts", `
 let name = 'Alice'
 let busy = false
@@ -447,42 +447,42 @@ const Profile = () =>
 `)}
     `,
         afterContent: `
-      <p>Nuclo проверяет количество параметров (<code>fn.length</code>). Функция, объявляющая параметр, является пользовательским модификатором <a href="#tag-builders"></a> и выполняется только один раз. <code>(x = 0) =&gt; …</code> и <code>(...args) =&gt; …</code> имеют длину 0, поэтому они динамические.</p>
+      <p>Nuclo смотрит на число параметров (<code>fn.length</code>). Функция с параметром — это <a href="#tag-builders">собственный модификатор</a>, и выполняется она лишь один раз. У <code>(x = 0) =&gt; …</code> и <code>(...args) =&gt; …</code> длина равна 0, поэтому они считаются динамическими.</p>
       <h3>Динамический текст</h3>
       <ul>
-        <li>Строка, число, bigint или логическое значение отображается как <code>String(value)</code>. <code>() =&gt; ok &amp;&amp; 'Saved'</code> показывает «false», поэтому напишите <code>() =&gt; (ok ? 'Saved' : '')</code>.</li>
-        <li><code>null</code> и <code>undefined</code> отображаются как пустой текст.</li>
-        <li>Результат <code>css()</code> или <code>cx()</code> при первом запуске делает функцию динамическим классом, а не текстовым. См. <a href="#api-cx"><code>cx()</code></a>.</li>
-        <li>Узел, построитель, массив или простой объект ничего не визуализирует и никогда не обновляет.</li>
+        <li>Строка, число, bigint или булево значение выводится как <code>String(value)</code>. Выражение <code>() =&gt; ok &amp;&amp; 'Saved'</code> покажет «false», так что пишите <code>() =&gt; (ok ? 'Saved' : '')</code>.</li>
+        <li><code>null</code> и <code>undefined</code> превращаются в пустой текст.</li>
+        <li>Если при первом вызове функция вернула результат <code>css()</code> или <code>cx()</code>, она становится динамическим классом, а не текстом. См. <a href="#api-cx"><code>cx()</code></a>.</li>
+        <li>Узел, билдер, массив или обычный объект ничего не отрисуют и обновляться не будут.</li>
       </ul>
       <h3>Динамические атрибуты</h3>
       <ul>
-        <li>Nuclo записывает значение только в том случае, если оно отличается от последнего записанного Nuclo значения. Он не сравнивается с действующим DOM, поэтому, если пользователь вводит текст в поле, а ваша функция возвращает то же значение, что и раньше, введенный им текст остается.</li>
-        <li>Результат <code>null</code> или <code>undefined</code> ничего не записывает, поэтому старое значение остается. <code>className</code> является исключением: любой результат, приводимый к false удаляет динамические классы и сохраняет статические.</li>
-        <li>Функция <code>style</code> применяет возвращаемый объект при каждом обновлении.</li>
+        <li>Nuclo записывает значение, только если оно отличается от записанного в прошлый раз. С реальным DOM он значение не сверяет: если пользователь печатает в поле, а функция возвращает то же, что и раньше, набранный текст остаётся на месте.</li>
+        <li>Если вернулся <code>null</code> или <code>undefined</code>, ничего не записывается, и прежнее значение остаётся. Исключение — <code>className</code>: любой ложный результат убирает динамические классы, а статические сохраняет.</li>
+        <li>Функция <code>style</code> применяет возвращённый объект при каждом обновлении заново.</li>
       </ul>
       <h3>Ошибки</h3>
-      <p>Если функция динамического значения выбрасывает исключение, Nuclo улавливает ошибку, и остальная часть обновления продолжает выполняться. Текст становится пустым или сохраняет прежнее значение, а атрибут сохраняет прежнее значение. Оба восстанавливаются при следующем успешном <code>update()</code>. Исключение: текстовая функция, которая выбрасывает исключение при <strong>первом</strong> запуске, навсегда остается пустой.</p>
+      <p>Если функция динамического значения бросила исключение, Nuclo его перехватывает, и остальное обновление продолжается. Текст при этом становится пустым или остаётся прежним, атрибут не меняется, а при следующем удачном <code>update()</code> оба восстановятся. Есть одно исключение: текстовая функция, которая упала уже на <strong>первом</strong> вызове, так и останется пустой.</p>
     `,
       },
       {
         id: "api-update",
         title: "update()",
         content: `
-      <p>Выполняет один синхронный проход для каждого динамического значения на странице. При использовании идентификаторов обновляется только то, что находится внутри элементов, отмеченных этими идентификаторами <a href="#api-scope"><code>scope()</code></a>. Каждый проход выполняет эти шаги по порядку:</p>
+      <p>Делает один синхронный проход по всем динамическим значениям на странице. Если передать идентификаторы, обновится только то, что лежит внутри элементов, помеченных ими через <a href="#api-scope"><code>scope()</code></a>. Шаги выполняются в таком порядке:</p>
       <ol>
-        <li><code>list()</code>: снова считывает элементы и добавляет, перемещает или удаляет строки.</li>
-        <li><code>when()</code>: снова проверяет условия. Ветка перестраивается только тогда, когда другая ветка становится активной.</li>
+        <li><code>list()</code>: заново читает элементы, добавляет, переставляет или удаляет строки.</li>
+        <li><code>when()</code>: заново проверяет условия. Ветка пересоздаётся, только если активной стала другая.</li>
         <li>Динамические атрибуты, включая <code>style</code> и <code>className</code>.</li>
         <li>Динамический текст.</li>
-        <li><code>onMount</code> для элементов, вставленных на шагах 1 и 2.</li>
+        <li><code>onMount</code> у элементов, вставленных на шагах 1 и 2.</li>
       </ol>
       <ul>
-        <li><strong>Он запускает все. </strong> Каждое динамическое значение выполняется при каждом вызове, даже если его данные не изменились. Пропускается только запись DOM. Функции динамических значений должны работать быстро и не иметь побочных эффектов.</li>
-        <li><strong>Только узлы в документе. </strong> Если во время запуска <code>update()</code> узла нет в документе, Nuclo прекращает его отслеживание. Он больше никогда не обновляется, даже после того, как вы его прикрепите. Это относится и к <code>list()</code> и <code>when()</code>. Выполните рендеринг в контейнер, который находится в документе.</li>
-        <li><strong>Статические значения никогда не меняются. </strong> Простые строки и значения атрибутов фиксируются при построении элемента. Чтобы их пересобрать, используйте <a href="#api-force-update"><code>forceUpdate()</code></a>.</li>
-        <li><strong>Ошибки.</strong> Ошибки текста и атрибутов перехватываются, и проход продолжается. Если условие <code>when()</code> выбрасывает исключение, ошибка регистрируется и <code>when()</code> прекращает обновление. Если функция <code>list()</code> <code>items</code> или <code>renderItem</code> выдает ошибку, ошибка переходит в <code>update()</code>, а остальные шаги не выполняются.</li>
-        <li><strong>На сервере.</strong> <code>update()</code> ничего не делает на сервере.</li>
+        <li><strong>Пересчитывается всё. </strong> Каждое динамическое значение вычисляется при каждом вызове, даже если данные не менялись; пропускается лишь запись в DOM. Поэтому функции динамических значений должны быть быстрыми и без побочных эффектов.</li>
+        <li><strong>Только узлы в документе. </strong> Если в момент <code>update()</code> узла нет в документе, Nuclo перестаёт за ним следить, и обновляться он больше не будет, даже если вы потом его прикрепите. Это касается и <code>list()</code> с <code>when()</code>. Рендерите в контейнер, который уже лежит в документе.</li>
+        <li><strong>Статические значения не меняются. </strong> Обычные строки и значения атрибутов фиксируются при построении элемента. Чтобы пересобрать и их, вызовите <a href="#api-force-update"><code>forceUpdate()</code></a>.</li>
+        <li><strong>Ошибки.</strong> Исключения в тексте и атрибутах перехватываются, проход продолжается. Если бросило условие <code>when()</code>, ошибка логируется, а этот <code>when()</code> больше не обновляется. Если бросила функция <code>items</code> или <code>renderItem</code> у <code>list()</code>, исключение вылетает из <code>update()</code>, и остальные шаги не выполняются.</li>
+        <li><strong>На сервере.</strong> Там <code>update()</code> ничего не делает.</li>
       </ul>
     `,
       },
@@ -490,7 +490,7 @@ const Profile = () =>
         id: "api-scope",
         title: "scope()",
         content: `
-      <p>Предоставляет элементу, которому он передается, один или несколько идентификаторов области. <code>update('id')</code> затем обновляет только то, что находится внутри этого элемента, включая собственные атрибуты элемента.</p>
+      <p>Присваивает элементу, в который его передали, один или несколько идентификаторов области. После этого <code>update('id')</code> обновляет только то, что находится внутри этого элемента, включая его собственные атрибуты.</p>
       ${code("example.ts", `
 let cartItems: string[] = []
 let user = 'Ada'
@@ -511,11 +511,11 @@ update()       // everything, the header now says "Hi, Grace"
     `,
         afterContent: `
       <ul>
-        <li>Элемент может иметь несколько идентификаторов: <code>scope('cart', 'sidebar')</code>.</li>
-        <li><code>update('a', 'b')</code> обновляет все внутри <code>a</code> или <code>b</code>. Если несколько элементов используют один и тот же идентификатор, все они обновляются.</li>
-        <li>При использовании вложенных областей <code>update('outer')</code> включает внутреннюю область. <code>update('inner')</code> не касается внешнего.</li>
-        <li>Идентификатор, которого нет ни у одного элемента в документе, <strong>ничего</strong> не обновляет и не вызывает ошибок, поэтому проверьте написание.</li>
-        <li><code>scope()</code> ничего не делает на сервере.</li>
+        <li>У элемента может быть несколько идентификаторов: <code>scope('cart', 'sidebar')</code>.</li>
+        <li><code>update('a', 'b')</code> обновляет всё внутри <code>a</code> и <code>b</code>. Если один идентификатор висит на нескольких элементах, обновятся все.</li>
+        <li>Области можно вкладывать друг в друга: <code>update('outer')</code> заденет и внутреннюю область, а <code>update('inner')</code> внешнюю не тронет.</li>
+        <li>Если такого идентификатора нет ни у одного элемента в документе, <strong>ничего</strong> не обновится — и без всяких ошибок, так что следите за опечатками.</li>
+        <li>На сервере <code>scope()</code> ничего не делает.</li>
       </ul>
     `,
       },
@@ -523,7 +523,7 @@ update()       // everything, the header now says "Hi, Grace"
         id: "api-when",
         title: "when()",
         content: `
-      <p>Отрисовывает содержимое на основе условия. Nuclo снова проверяет условия на каждом <code>update()</code>. Первое истинное условие побеждает. Если ни одно из них не соответствует действительности, отображается содержимое <code>.else()</code>. Без <code>.else()</code> ничего не рендерится.</p>
+      <p>Выводит содержимое по условию. Nuclo перепроверяет условия при каждом <code>update()</code>, и побеждает первое истинное. Если истинных нет, показывается <code>.else()</code>, а если и его нет — ничего.</p>
       ${code("status.ts", `
 let status: 'loading' | 'error' | 'ready' = 'loading'
 
@@ -538,26 +538,26 @@ const Status = () =>
         afterContent: `
       <h3>Условия</h3>
       <ul>
-        <li>Для состояния передайте функцию. Простое логическое значение считывается один раз: <code>when(open, …)</code> никогда не изменяется.</li>
-        <li>В TypeScript функция должна возвращать логическое значение. Напишите <code>() =&gt; items.length &gt; 0</code> или <code>() =&gt; user != null</code>.</li>
+        <li>Если условие зависит от состояния, передавайте функцию. Обычное булево значение читается один раз, и <code>when(open, …)</code> потом уже не изменится.</li>
+        <li>В TypeScript функция должна возвращать boolean, поэтому пишите <code>() =&gt; items.length &gt; 0</code> или <code>() =&gt; user != null</code>.</li>
       </ul>
       <h3>Что обновляется</h3>
       <ul>
-        <li>Пока одна и та же ветка остается активной, ее элементы сохраняются. Динамические значения, списки и блоки <code>when()</code> внутри него постоянно обновляются.</li>
-        <li>Когда другая ветка становится активной, старое содержимое удаляется и запускаются ее хуки <code>onDestroy</code>. Новая ветка создается с нуля, и ее хуки <code>onMount</code> работают. Состояние старых элементов, таких как вводимый текст или фокус, теряется.</li>
+        <li>Пока активна одна и та же ветка, её элементы сохраняются, а динамические значения, списки и вложенные <code>when()</code> внутри продолжают обновляться.</li>
+        <li>Когда активной становится другая ветка, старое содержимое удаляется, и срабатывают его хуки <code>onDestroy</code>. Новая ветка строится с нуля, и выполняются её хуки <code>onMount</code>. Состояние старых элементов (введённый текст, фокус) пропадает.</li>
       </ul>
       <h3>Содержимое ветки</h3>
-      <p>Поместите дочерние элементы в ветку: текст, динамический текст, функции построения элементов, <code>list()</code> и вложенный <code>when()</code>. Передайте функции построения элементов, такие как <code>p('Hi')</code>, а не узлы DOM: узел DOM перестает обновляться после того, как его ветвь скрывается один раз.</p>
-      <p>Объекты атрибутов и <code>on()</code> в ветке применяются к родительскому элементу и остаются после скрытия ветки. В качестве условного атрибута используйте динамический атрибут: <code>{ className: () =&gt; (active ? 'active' : '') }</code>.</p>
+      <p>В ветку можно класть текст, динамический текст, билдеры, <code>list()</code> и вложенный <code>when()</code>. Передавайте именно билдеры, например <code>p('Hi')</code>, а не готовые узлы DOM: готовый узел перестаёт обновляться после первого же скрытия ветки.</p>
+      <p>Объекты атрибутов и <code>on()</code> внутри ветки применяются к родительскому элементу и остаются, даже когда ветка скрыта. Для условного атрибута используйте динамический атрибут: <code>{ className: () =&gt; (active ? 'active' : '') }</code>.</p>
       <h3>Цепочка</h3>
-      <p><code>.when()</code> и <code>.else()</code> возвращают новую сборку и не меняют оригинал. Если вы вызовете <code>.else()</code> дважды, победит последний вызов.</p>
+      <p><code>.when()</code> и <code>.else()</code> возвращают новый билдер, а оригинал не меняют. Если вызвать <code>.else()</code> дважды, сработает последний.</p>
     `,
       },
       {
         id: "api-list",
         title: "list()",
         content: `
-      <p>Отрисовывает одну строку для каждого элемента. В каждом <code>update()</code> Nuclo снова вызывает <code>items()</code> и сопоставляет новые элементы с существующими строками по идентичности (<code>===</code>).</p>
+      <p>Выводит по одной строке на каждый элемент. При каждом <code>update()</code> Nuclo заново вызывает <code>items()</code> и сопоставляет элементы с уже существующими строками по идентичности (<code>===</code>).</p>
       ${code("fruits.ts", `
 let fruits = ['Apple', 'Banana']
 
@@ -570,12 +570,12 @@ update()
 `)}
       <h3>Как сопоставляются строки</h3>
       <ul>
-        <li>Элемент, который все еще существует, сохраняет свою строку. Nuclo перемещает строку, если это необходимо, и больше не вызывает <code>renderItem</code>.</li>
-        <li>Новый элемент получает новую строку. Удаленный элемент теряет свою строку, и его хуки <code>onDestroy</code> выполняются.</li>
-        <li>Каждому повторяющемуся элементу присваивается отдельная строка.</li>
-        <li>Вы можете изменить массив на месте (<code>push</code>, <code>splice</code>, <code>sort</code>) или вернуть новый массив.</li>
+        <li>Элемент, оставшийся в массиве, сохраняет свою строку: Nuclo при необходимости просто переставляет её, а <code>renderItem</code> повторно не вызывает.</li>
+        <li>Новый элемент получает новую строку. Если элемент пропал, его строка удаляется, и срабатывают её хуки <code>onDestroy</code>.</li>
+        <li>У каждого дубликата своя строка.</li>
+        <li>Массив можно менять на месте (<code>push</code>, <code>splice</code>, <code>sort</code>) или возвращать каждый раз новый.</li>
       </ul>
-      <p>Сохраненная строка никогда не строится заново, поэтому используйте динамические значения для изменяющихся полей:</p>
+      <p>Сохранённая строка заново не строится, поэтому для изменяемых полей берите динамические значения:</p>
       ${code("todos.ts", `
 const todos = [{ text: 'Write docs', done: false }]
 
@@ -591,29 +591,29 @@ render(Todos)
 todos[0].done = true
 update() // same <li>, its class is now "done"
 `)}
-      <p>Копии — это новые элементы, поэтому замена массива на <code>todos.map((t) =&gt; ({ ...t }))</code> перестраивает каждую строку.</p>
+      <p>Копии — это уже другие элементы, поэтому если подменить массив на <code>todos.map((t) =&gt; ({ ...t }))</code>, каждая строка пересоздастся.</p>
     `,
         afterContent: `
       <h3>Что возвращает <code>renderItem</code></h3>
       <ul>
-        <li>Возвращает один элемент, например <code>li(...)</code>, <code>tr(...)</code> или построитель SVG. Верните <code>null</code> или <code>undefined</code>, чтобы пропустить элемент. Строки, текстовые узлы и фрагменты ничего не отображают.</li>
-        <li>Не возвращайте <code>when()</code> или <code>list()</code> напрямую. Поместите их внутри элемента строки: <code>li(todo.text, when(() =&gt; todo.done, ' ✓'))</code>.</li>
-        <li>Чтобы скрыть элементы, фильтруйте по <code>items()</code>, а не по <code>renderItem</code>.</li>
-        <li>Берегите <code>renderItem</code> от побочных эффектов. Nuclo может вызывать его несколько раз для одного и того же элемента.</li>
+        <li>Верните один элемент — например, <code>li(...)</code>, <code>tr(...)</code> или SVG-билдер. Чтобы пропустить элемент, верните <code>null</code> или <code>undefined</code>. Строки, текстовые узлы и фрагменты ничего не выведут.</li>
+        <li><code>when()</code> и <code>list()</code> напрямую не возвращайте — вкладывайте их в элемент строки: <code>li(todo.text, when(() =&gt; todo.done, ' ✓'))</code>.</li>
+        <li>Чтобы скрыть элементы, отфильтруйте их в <code>items()</code>, а не в <code>renderItem</code>.</li>
+        <li>Не кладите в <code>renderItem</code> побочные эффекты: Nuclo может вызвать его для одного элемента не один раз.</li>
       </ul>
       <h3>Индекс</h3>
-      <p><code>index</code> — это позиция элемента на момент создания его строки. Он не обновляется при перемещении строк. Для текущей позиции используйте динамическое значение: <code>li(() =&gt; \`\${names.indexOf(name) + 1}. \${name}\`)</code>.</p>
+      <p><code>index</code> — позиция элемента на момент создания строки. Когда строки переставляются, он не обновляется. Актуальную позицию получайте динамическим значением: <code>li(() =&gt; \`\${names.indexOf(name) + 1}. \${name}\`)</code>.</p>
       <h3>Итерируемые объекты</h3>
-      <p>Подойдет любой итерируемый объект: массивы, <code>Set</code>, генераторы и <code>map.values()</code>. Возврат одного и того же массива или <code>Set</code> каждый раз — это нормально. Итератор, такой как генератор или <code>map.values()</code>, используется за один проход, поэтому создавайте его внутри <code>items()</code> при каждом вызове. Итерация <code>Map</code> каждый раз напрямую создает новые массивы <code>[key, value]</code>, поэтому каждая строка перестраивается. Вместо этого используйте <code>map.values()</code>.</p>
+      <p>Подойдёт любой итерируемый объект: массив, <code>Set</code>, генератор, <code>map.values()</code>. Возвращать каждый раз один и тот же массив или <code>Set</code> можно. А вот итератор вроде генератора или <code>map.values()</code> одноразовый, поэтому создавайте его внутри <code>items()</code> при каждом вызове. Если перебирать сам <code>Map</code>, на каждом проходе появятся новые пары <code>[key, value]</code>, и все строки пересоздадутся, так что берите <code>map.values()</code>.</p>
       <h3>Размещение</h3>
-      <p>Строки появляются там, где <code>list()</code> находится среди своих одноуровневых элементов, между двумя маркерами комментариев. Другие дочерние узлы родителя не затрагиваются. <code>list()</code> также работает внутри функций построения SVG-элементов.</p>
+      <p>Строки появляются там, где <code>list()</code> стоит среди соседних элементов, — между двумя комментариями-маркерами. Остальные дочерние узлы родителя не затрагиваются. <code>list()</code> работает и внутри SVG-билдеров.</p>
     `,
       },
       {
         id: "api-region",
         title: "region() и into()",
         content: `
-      <p><code>region()</code> отмечает именованное место в дереве. <code>into()</code> заполняет его откуда угодно, на любой глубине. Макет не получает контент в качестве параметра, а компонент, создающий контент, не знает, где он находится.</p>
+      <p><code>region()</code> помечает в дереве именованное место, а <code>into()</code> наполняет его откуда угодно и с любой глубины. Макету не нужно принимать контент параметром, а компоненту, который этот контент создаёт, — знать, где он окажется.</p>
       ${code("app.ts", `
 const Layout = () =>
   div(
@@ -628,22 +628,22 @@ render(() => div(Layout(), Article()))
 `)}
       <h3>Как это работает</h3>
       <ul>
-        <li><code>into()</code> оставляет только комментарий там, где это написано. Его содержимое отображается между маркерами региона.</li>
-        <li>Порядок не имеет значения. <code>into()</code>, созданный до того, как его регион, ждет и отображается сразу после создания региона. Представления отображаются в том порядке, в котором они были написаны.</li>
-        <li>Содержимое существует столько же, сколько его представление. Когда <code>when()</code>, содержащий <code>into()</code>, закрывается или его строка <code>list()</code> удаляется, содержимое покидает регион. При повторном открытии добавляется одна копия, а не две.</li>
-        <li>Когда регион исчезает, например закрывается <code>when()</code>, его представления снова ждут. Их показывает регион, созданный позже с тем же идентификатором.</li>
-        <li><code>into()</code>, идентификатор которого не соответствует ни одному региону, ничего не отображает и не выдает ошибок, поэтому проверьте правильность написания.</li>
-        <li>Идентификаторы уникальны в дереве. Второй регион, созданный с уже используемым идентификатором, регистрирует предупреждение.</li>
-        <li>Регионы поддерживают <a href="#api-ssr">серверный рендеринг</a>. В <code>hydrate()</code> каждое представление использует HTML, созданный сервером, вместо того, чтобы создавать его заново.</li>
+        <li><code>into()</code> оставляет на своём месте лишь комментарий, а само содержимое выводится между маркерами региона.</li>
+        <li>Порядок не важен. Если <code>into()</code> создан раньше своего региона, он подождёт и покажется, как только регион появится. Представления выводятся в порядке создания.</li>
+        <li>Содержимое живёт ровно столько же, сколько его представление. Когда закрывается <code>when()</code> с <code>into()</code> внутри или удаляется строка <code>list()</code>, содержимое уходит из региона. При повторном открытии добавится одна копия, а не две.</li>
+        <li>Когда исчезает сам регион (скажем, закрылся <code>when()</code>), его представления снова ждут, и их покажет регион, созданный позже с тем же идентификатором.</li>
+        <li><code>into()</code> с идентификатором, которому не соответствует ни один регион, молча ничего не выводит и ошибок не выдаёт, так что следите за опечатками.</li>
+        <li>Идентификаторы в дереве должны быть уникальны. Если создать второй регион с уже занятым идентификатором, в консоль попадёт предупреждение.</li>
+        <li>Регионы работают с <a href="#api-ssr">серверным рендерингом</a>. При <code>hydrate()</code> каждое представление подхватывает HTML, отрисованный сервером, а не создаёт его заново.</li>
       </ul>
       <h3>Опции</h3>
       <ul>
-        <li><code>id</code>: имя, которое вызывает <code>into()</code>, используется для поиска региона.</li>
-        <li><code>type</code>: <code>'latest'</code> (по умолчанию) показывает только самое новое представление. <code>'stack'</code> показывает все представления в порядке поступления.</li>
-        <li><code>empty</code>: отображается, когда в регионе нет представлений.</li>
+        <li><code>id</code>: имя, по которому <code>into()</code> находит нужный регион.</li>
+        <li><code>type</code>: <code>'latest'</code> (по умолчанию) показывает только самое свежее представление, <code>'stack'</code> — все по очереди, в порядке поступления.</li>
+        <li><code>empty</code>: что показывать, пока в регионе нет ни одного представления.</li>
       </ul>
       <h3>Регионы со стеком представлений</h3>
-      <p>При использовании <code>type: 'stack'</code> вид, открывающийся поверх другого, не перестраивает вид, расположенный под ним. Его DOM, фокус и состояние формы сохраняются. Используйте это для такого слоя, как диалог на странице.</p>
+      <p>При <code>type: 'stack'</code> представление, открытое поверх другого, нижнее не пересоздаёт: его DOM, фокус и состояние формы сохраняются. Это удобно для слоёв вроде диалога поверх страницы.</p>
       ${code("layers.ts", `
 let open = false
 
@@ -655,7 +655,7 @@ const App = () =>
   )
 `)}
       <h3>Сразу несколько регионов</h3>
-      <p>Передайте объект для заполнения более чем одной области из одного <code>into()</code>. Значением может быть один дочерний элемент или массив дочерних элементов. Любая форма вложена: <code>into()</code> внутри содержимого другого представления нацелен на свой собственный регион.</p>
+      <p>Передайте объект, чтобы заполнить несколько регионов одним <code>into()</code>. Значение — один дочерний элемент или массив. Формы можно вкладывать: <code>into()</code> внутри содержимого другого представления адресует уже свой регион.</p>
       ${code("page.ts", `
 const Page = () =>
   into({
@@ -663,8 +663,8 @@ const Page = () =>
     sidebar: [h2('Related'), ul(li('One'), li('Two'))],
   })
 `)}
-      <h3>Диалоговое окно, открытое из глубины дерева.</h3>
-      <p>Область наложения находится в корне. Любой компонент на любой глубине открывает диалоговое окно, заключая <code>into()</code> в <code>when()</code>. Закрытие <code>when()</code> удаляет диалоговое окно из региона.</p>
+      <h3>Диалог из глубины дерева</h3>
+      <p>Регион оверлея лежит в корне. Любой компонент на любой глубине может открыть диалог: достаточно обернуть <code>into()</code> в <code>when()</code>. Когда <code>when()</code> закрывается, диалог пропадает из региона.</p>
       ${code("dialog.ts", `
 let confirming = false
 
@@ -689,7 +689,7 @@ const DeleteButton = () =>
   )
 `)}
       <h3>Тосты из строк списка</h3>
-      <p>Каждая строка <code>list()</code> представляет собой представление. В регионе со стеком представлений они отображаются по порядку, а удаление элемента из массива удаляет его всплывающее уведомление.</p>
+      <p>Каждая строка <code>list()</code> — отдельное представление. В регионе-стеке они выводятся по порядку, а когда элемент удаляют из массива, вместе с ним исчезает и его тост.</p>
       ${code("toasts.ts", `
 const toasts: { text: string }[] = []
 
@@ -712,8 +712,8 @@ const App = () =>
     ),
   )
 `)}
-      <h3>Заголовок страницы, заданный страницей.</h3>
-      <p>При использовании <code>type: 'latest'</code> по умолчанию побеждает новейшее представление. Макету принадлежит заголовок, и какая бы страница ни была открыта, он получает имя. На странице без <code>into('title', …)</code> остается текст <code>empty</code>.</p>
+      <h3>Заголовок, который задаёт страница</h3>
+      <p>При <code>type: 'latest'</code> (по умолчанию) побеждает самое свежее представление. Заголовок принадлежит макету, а текст ему задаёт открытая страница. Если на странице нет <code>into('title', …)</code>, остаётся текст из <code>empty</code>.</p>
       ${code("title.ts", `
 let page: 'home' | 'settings' = 'home'
 
@@ -732,7 +732,7 @@ const Settings = () =>
   )
 `)}
       <h3>Динамические значения внутри представления</h3>
-      <p>Содержимое <code>into()</code> является обычным содержимым Nuclo. Функции в нем представляют собой значения, зависящие от состояния, и обновляются на <code>update()</code>, где бы ни находился регион.</p>
+      <p>Содержимое <code>into()</code> — самое обычное содержимое Nuclo. Функции внутри него остаются динамическими значениями и обновляются при <code>update()</code>, где бы ни находился регион.</p>
       ${code("status.ts", `
 const selected = new Set<string>()
 
@@ -757,7 +757,7 @@ const Table = () =>
   )
 `)}
       <h3>Регион, который приходит и уходит</h3>
-      <p><code>into()</code> панели управления записывается один раз. Пока пользователь вышел из системы, региона <code>main</code> нет, поэтому представление ожидает. При входе в систему создается регион, и отображается представление. При выходе из системы регион удаляется, и представление снова ожидает.</p>
+      <p><code>into()</code> для дашборда пишется один раз. Пока пользователь не вошёл, региона <code>main</code> нет, и представление ждёт. После входа регион создаётся, и представление появляется. После выхода регион удаляется, и представление снова уходит в ожидание.</p>
       ${code("auth.ts", `
 let user: { name: string } | null = null
 
@@ -771,8 +771,8 @@ const App = () =>
     into('main', Dashboard()),
   )
 `)}
-      <h3>Вид со своим регионом</h3>
-      <p>Представление может содержать <code>region()</code>, и другие представления могут нацеливаться на него. Здесь страница редактора содержит регион <code>tabs</code>, и каждая вкладка заполняет его. Когда редактор закрывается, его регион закрывается вместе с ним.</p>
+      <h3>Представление со своим регионом</h3>
+      <p>Внутри представления может быть свой <code>region()</code>, и другие представления могут писать в него. Здесь страница редактора содержит регион <code>tabs</code>, а каждая вкладка его наполняет. Когда редактор закрывается, вместе с ним исчезает и этот регион.</p>
       ${code("editor.ts", `
 let tab: 'code' | 'preview' = 'code'
 
@@ -797,7 +797,7 @@ const Editor = () =>
         id: "api-force-update",
         title: "forceUpdate()",
         content: `
-      <p><code>update()</code> обрабатывает только динамические значения. Статические значения, такие как текст в <code>h1(labels[lang].title)</code>, фиксируются при построении дерева. <code>forceUpdate()</code> снова вызывает ваши компоненты и обновляет существующий DOM в соответствии с новым деревом, включая статические значения. Используйте его для редких изменений всего приложения, таких как переключение языка. Для всего остального используйте <code>update()</code>.</p>
+      <p><code>update()</code> трогает только динамические значения. Статические — например, текст в <code>h1(labels[lang].title)</code> — фиксируются при построении дерева. <code>forceUpdate()</code> заново вызывает ваши компоненты и приводит существующий DOM в соответствие с новым деревом, статические значения тоже. Приберегите его для редких глобальных изменений вроде смены языка, а в остальных случаях пользуйтесь <code>update()</code>.</p>
       ${code("i18n.ts", `
 const labels = { en: { title: 'Hello' }, pt: { title: 'Olá' } }
 let lang: keyof typeof labels = 'en'
@@ -810,17 +810,17 @@ forceUpdate() // same <h1> element, now "Olá"
 `)}
     `,
         afterContent: `
-      <p>Без аргументов <code>forceUpdate()</code> перестраивает каждый корень, отображаемый с помощью <code>render(App)</code> или <code>hydrate(App)</code>. Корни, визуализированные с помощью <code>render(App())</code>, пропускаются. Если компонент выдает ошибку, ошибка регистрируется, и этот корень сохраняет свой старый DOM. Ошибка, возникающая позже, при применении новой сборки, также регистрируется, но уже примененные изменения сохраняются.</p>
-      <h3>Что остается, а что меняется</h3>
+      <p>Без аргументов <code>forceUpdate()</code> перестраивает каждый корень, созданный через <code>render(App)</code> или <code>hydrate(App)</code>. Корни, созданные через <code>render(App())</code>, пропускаются. Если компонент бросил исключение, ошибка логируется, а корень сохраняет старый DOM. Ошибка, случившаяся позже, уже при применении нового дерева, тоже логируется, но изменения, которые успели применить, остаются.</p>
+      <h3>Что остаётся, а что меняется</h3>
       <ul>
-        <li>Дочерние элементы сопоставляются по порядку, по тегам. Соответствующий элемент используется повторно, поэтому фокус и введенные значения полей остаются, а его хуки <code>onMount</code> больше не запускаются. Как только тег одного дочернего элемента отличается, этот дочерний элемент и все последующие узлы того же уровня создаются заново.</li>
-        <li>Текст, атрибуты, классы, стили, обработчики, ветки <code>when()</code> и строки <code>list()</code> соответствуют новой сборке.</li>
-        <li>Создаются новые элементы и запускаются их хуки <code>onMount</code>. Элементы, которые новая сборка больше не создает, удаляются, и их хуки <code>onDestroy</code> запускаются.</li>
-        <li><code>list()</code> также сопоставляются по позиции, а не по идентичности элемента, поэтому повторно используемый элемент строки может в конечном итоге отображать другой элемент.</li>
-        <li>Атрибуты, которые новое дерево больше не задает, не удаляются.</li>
+        <li>Дочерние элементы сопоставляются по порядку и по тегам. Подходящий элемент переиспользуется, поэтому фокус и введённые значения сохраняются, а его <code>onMount</code> повторно не вызывается. Как только тег очередного дочернего элемента не совпал, он и все следующие за ним соседи создаются заново.</li>
+        <li>Текст, атрибуты, классы, стили, обработчики, ветки <code>when()</code> и строки <code>list()</code> подгоняются под новое дерево.</li>
+        <li>Новые элементы создаются, и их <code>onMount</code> срабатывает. Элементы, которых в новом дереве больше нет, удаляются, и срабатывает их <code>onDestroy</code>.</li>
+        <li>Строки <code>list()</code> здесь тоже сопоставляются по позиции, а не по идентичности элемента, поэтому переиспользованная строка вполне может показать уже другой элемент.</li>
+        <li>Атрибуты, которые новое дерево больше не задаёт, не снимаются.</li>
       </ul>
-      <div class="docs-callout"><strong>Осторожно: состояние </strong>, объявленное внутри функции компонента, сбрасывается, поскольку функция запускается снова. Храните состояние, которое должно сохраниться, вне компонента.</div>
-      <p><strong>Явная форма.</strong> <code>forceUpdate(App(), parent)</code> перестраивает одно дерево в <code>parent</code> и возвращает его корень. Он не регистрирует корень для последующих вызовов. Как и <code>hydrate()</code>, он ожидает, что корнем будет первый узел в <code>parent</code>. Если первый узел имеет другой тег, он заменяется.</p>
+      <div class="docs-callout"><strong>Осторожно: </strong>состояние, объявленное внутри функции компонента, сбрасывается: функция ведь выполняется заново. Всё, что должно пережить перерисовку, храните вне компонента.</div>
+      <p><strong>Явная форма.</strong> <code>forceUpdate(App(), parent)</code> перестраивает одно дерево внутри <code>parent</code> и возвращает его корень. Для будущих вызовов этот корень не регистрируется. Как и <code>hydrate()</code>, он ожидает, что корень — первый узел в <code>parent</code>, а если у первого узла другой тег, заменяет его.</p>
       <p>На сервере <code>forceUpdate()</code> ничего не делает.</p>
     `,
       },
@@ -835,7 +835,7 @@ forceUpdate() // same <h1> element, now "Olá"
         id: "api-render",
         title: "render()",
         content: `
-      <p>Строит дерево и добавляет его корневой элемент в <code>parent</code>. <code>parent</code> по умолчанию равен <code>document.body</code>. Он возвращает корневой элемент.</p>
+      <p>Строит дерево и добавляет его корневой элемент в <code>parent</code> (по умолчанию <code>document.body</code>). Возвращает этот корневой элемент.</p>
       ${code("main.ts", `
 import 'nuclo'
 import { App } from './app.ts'
@@ -843,14 +843,14 @@ import { App } from './app.ts'
 render(App, document.getElementById('app')!)
 `)}
       <ul>
-        <li>Вы можете передать компонент (<code>render(App)</code>) или возвращаемый им построитель (<code>render(App())</code>). DOM будет одинаковым. Только <code>render(App)</code> позволяет <a href="#api-force-update"><code>forceUpdate()</code></a> позже пересобрать корень, поэтому предпочтите его.</li>
-        <li>Добавляет. Он не очищает <code>parent</code>, поэтому его двойной вызов добавляет две копии.</li>
-        <li>К моменту возврата из <code>render()</code> все хуки <code>onMount</code> в дереве уже выполнены.</li>
-        <li>Выполняйте рендеринг в элемент, находящийся в документе. См. <a href="#api-update"><code>update()</code></a>.</li>
-        <li>Корнем должен быть элемент, например <code>div(...)</code>, а не <code>when()</code> или <code>list()</code>.</li>
-        <li><code>index</code> является внутренним. Он не выбирает, куда вставлять элемент. Не передавайте его.</li>
+        <li>Можно передать компонент (<code>render(App)</code>) или билдер, который он возвращает (<code>render(App())</code>): DOM получится одинаковый. Но только <code>render(App)</code> позволяет <a href="#api-force-update"><code>forceUpdate()</code></a> позже пересобрать корень, так что лучше выбирать именно его.</li>
+        <li>Элемент именно добавляется: <code>parent</code> не очищается, поэтому два вызова дадут две копии.</li>
+        <li>К моменту, когда <code>render()</code> вернёт управление, все хуки <code>onMount</code> в дереве уже отработали.</li>
+        <li>Рендерите в элемент, который уже есть в документе. См. <a href="#api-update"><code>update()</code></a>.</li>
+        <li>Корнем должен быть элемент вроде <code>div(...)</code>, а не <code>when()</code> или <code>list()</code>.</li>
+        <li>Параметр <code>index</code> внутренний и не определяет, куда вставлять элемент. Его не нужно передавать.</li>
       </ul>
-      <p>Компонент, передаваемый как <code>render(App)</code>, не должен принимать никаких параметров. Обязательный параметр является ошибкой типа. Необязательный параметр проходит проверку типов, но <code>render()</code> выдает ошибку во время выполнения. Оберните компонент, который принимает параметр:</p>
+      <p>Компонент, который вы передаёте как <code>render(App)</code>, не должен принимать параметры. Обязательный параметр — это ошибка типов; необязательный проходит проверку типов, но <code>render()</code> упадёт в рантайме. Если компоненту нужны параметры, оберните его:</p>
       ${code("main.ts", `
 const Page = (props: { name: string }) => div(h1('Hi ', props.name))
 
@@ -862,7 +862,7 @@ render(() => Page({ name: 'Ana' }), root)
         id: "api-hydrate",
         title: "hydrate()",
         content: `
-      <p>Подключает интерактивность к HTML, созданному <a href="#api-ssr"><code>renderToString()</code></a>. Он повторно использует существующие элементы, подключает обработчики событий и регистрирует динамические значения, блоки <code>when()</code> и списки <code>list()</code>, чтобы последующие вызовы <code>update()</code> работали. Затем он запускает хуки <code>onMount</code>. <code>parent</code> по умолчанию равен <code>document.body</code>. Он возвращает корневой элемент.</p>
+      <p>Оживляет HTML, полученный из <a href="#api-ssr"><code>renderToString()</code></a>. Переиспользует существующие элементы, навешивает обработчики событий и регистрирует динамические значения, <code>when()</code> и <code>list()</code>, чтобы последующие <code>update()</code> работали, а затем запускает хуки <code>onMount</code>. <code>parent</code> по умолчанию — <code>document.body</code>. Возвращает корневой элемент.</p>
       ${code("client.ts", `
 import 'nuclo'
 import { App } from './app.ts'
@@ -870,27 +870,27 @@ import { App } from './app.ts'
 hydrate(App, document.getElementById('root')!)
 `)}
       <ul>
-        <li>Используйте тот же компонент и те же данные, что и сервер.</li>
-        <li>Гидратируйте в специальный контейнер. Корнем приложения должен быть его первый узел, хотя пробелы допустимы. Если первым появляется другой узел, Nuclo заменяет этот узел и оставляет копию сервера.</li>
-        <li>Как и в случае с <code>render()</code>, передайте <code>App</code>, а не <code>App()</code>, чтобы <code>forceUpdate()</code> мог позже пересобрать корень. <code>App</code> не должен принимать никаких параметров. При наличии необязательного параметра <code>hydrate()</code> ничего не подключает и не сообщает об ошибке. Оберните компонент, который принимает параметры: <code>hydrate(() =&gt; Page(props), root)</code>.</li>
-        <li>Если серверного HTML нет, используйте <code>render()</code>.</li>
+        <li>Берите тот же компонент и те же данные, что и на сервере.</li>
+        <li>Делайте hydration в отдельный контейнер: корень приложения должен быть его первым узлом (пробелы допустимы). Если первым идёт другой узел, Nuclo заменит его, а серверную копию не тронет.</li>
+        <li>Как и в <code>render()</code>, передавайте <code>App</code>, а не <code>App()</code>, чтобы <code>forceUpdate()</code> мог потом пересобрать корень. <code>App</code> не должен принимать параметры: с необязательным <code>hydrate()</code> молча ничего не подключит. Если компоненту нужны параметры, оберните его: <code>hydrate(() =&gt; Page(props), root)</code>.</li>
+        <li>Если серверного HTML нет, берите <code>render()</code>.</li>
       </ul>
-      <h3>Когда сервер и клиент различаются</h3>
-      <p>Клиент выигрывает:</p>
+      <h3>Если сервер и клиент расходятся</h3>
+      <p>Побеждает клиент:</p>
       <ul>
-        <li>Другой корневой тег: этот узел заменяется новым DOM. Пустой контейнер: добавлен свежий DOM.</li>
-        <li>Исправлен другой текст. Различные элементы <code>list()</code> и ветки <code>when()</code> следуют за клиентом.</li>
-        <li>Лишние дочерние узлы сервера удаляются и создаются недостающие.</li>
-        <li>Атрибуты, которые записал сервер, но не установил клиент, остаются без изменений.</li>
+        <li>Другой корневой тег: узел заменяется новым DOM. Пустой контейнер: новый DOM добавляется.</li>
+        <li>Расходящийся текст исправляется, а отличающиеся элементы <code>list()</code> и ветки <code>when()</code> подстраиваются под клиент.</li>
+        <li>Лишние дочерние узлы сервера удаляются, недостающие — создаются.</li>
+        <li>Атрибуты, которые записал сервер, но клиент не задаёт, остаются как были.</li>
       </ul>
-      <p><code>renderToString()</code> добавляет перед каждым текстовым узлом HTML-комментарий-маркер, например <code>&lt;!-- text-0 --&gt;</code>. Они нужны <code>hydrate()</code>, поэтому сохраняйте комментарии в серверном HTML. Без маркеров гидратация удаляет строки <code>list()</code>, а <code>list()</code> и <code>when()</code> перестают обновляться.</p>
+      <p><code>renderToString()</code> ставит перед каждым текстовым узлом HTML-комментарий-маркер, например <code>&lt;!-- text-0 --&gt;</code>. Они нужны <code>hydrate()</code>, поэтому не вырезайте комментарии из серверного HTML. Без маркеров hydration удалит строки <code>list()</code>, а <code>list()</code> и <code>when()</code> перестанут обновляться.</p>
     `,
       },
       {
         id: "api-ssr",
         title: "Серверный рендеринг",
         content: `
-      <p>Преобразуйте компонент в строку HTML на сервере. В браузере вызовите <a href="#api-hydrate"><code>hydrate()</code></a> с тем же компонентом, чтобы сделать HTML интерактивным. Среды выполнения сервера не имеют <code>document</code>, поэтому сначала импортируйте <a href="#api-polyfill"><code>nuclo/polyfill</code></a>.</p>
+      <p>На сервере превратите компонент в строку HTML, а в браузере вызовите <a href="#api-hydrate"><code>hydrate()</code></a> с тем же компонентом — и HTML оживёт. В серверном runtime нет <code>document</code>, поэтому сначала импортируйте <a href="#api-polyfill"><code>nuclo/polyfill</code></a>.</p>
       ${code("app.ts", `
 let count = 0
 const heading = css({ color: 'red' })
@@ -923,29 +923,29 @@ import { App } from './app.ts'
 
 hydrate(App, document.getElementById('root')!)
 `)}
-      <p>Оставьте <code>id="nuclo-styles"</code> в теге стиля. Клиент повторно использует этот элемент и добавляет только новые правила. См. <a href="#api-css-text"><code>getCssText()</code></a>.</p>
-      <h3>Что работает на сервере</h3>
+      <p>Не убирайте <code>id="nuclo-styles"</code> из тега style: клиент переиспользует этот элемент и дописывает в него только новые правила. См. <a href="#api-css-text"><code>getCssText()</code></a>.</p>
+      <h3>Как это работает на сервере</h3>
       <ul>
-        <li>Каждый вызов <code>renderToString()</code> строит дерево и запускает каждое динамическое значение один раз.</li>
-        <li>Обработчики событий и хуки <code>onMount</code> и <code>onDestroy</code> никогда не запускаются. <code>update()</code>, <code>scope()</code> и <code>forceUpdate()</code> ничего не делают.</li>
-        <li>Рендеринг синхронный. Сначала загрузите данные, затем выполните рендеринг.</li>
-        <li>После рендеринга ничего не остается зарегистрированным, поэтому один процесс может обслуживать множество запросов. Передавайте данные запроса в качестве аргументов, например <code>renderToString(Page(user))</code>. Переменные уровня модуля используются всеми запросами.</li>
-        <li>Не вызывайте <code>render()</code> на сервере. Он добавляется к общему <code>document.body</code>.</li>
+        <li>Каждый вызов <code>renderToString()</code> строит дерево и вычисляет каждое динамическое значение ровно один раз.</li>
+        <li>Обработчики событий и хуки <code>onMount</code> и <code>onDestroy</code> не запускаются, а <code>update()</code>, <code>scope()</code> и <code>forceUpdate()</code> ничего не делают.</li>
+        <li>Рендеринг синхронный: данные сначала загружайте, а уже потом рендерите.</li>
+        <li>После рендеринга ничего не остаётся зарегистрированным, так что один процесс спокойно обслуживает много запросов. Данные запроса передавайте аргументами, например <code>renderToString(Page(user))</code>. Переменные уровня модуля общие для всех запросов.</li>
+        <li><code>render()</code> на сервере не вызывайте: он дописывает в общий <code>document.body</code>.</li>
       </ul>
       <h3><code>renderToString()</code></h3>
-      <p>Принимает построитель (<code>App()</code>), компонент (<code>App</code>) или узел DOM. <code>null</code> и <code>undefined</code> возвращают <code>""</code>. Корень должен быть элементом. Компонент, передаваемый как <code>renderToString(Page)</code>, не должен принимать никаких параметров, поэтому передайте <code>Page(user)</code> для компонента, который принимает данные.</p>
+      <p>Принимает билдер (<code>App()</code>), компонент (<code>App</code>) или узел DOM. Для <code>null</code> и <code>undefined</code> вернёт <code>""</code>. Корень должен быть элементом. Компонент, переданный как <code>renderToString(Page)</code>, не должен принимать параметры, поэтому если ему нужны данные, передавайте <code>Page(user)</code>.</p>
       ${code("example.ts", `
 renderToString(p('Hello'))
 // '<p><!-- text-0 -->Hello</p>'
 `)}
       <ul>
-        <li>Значения текста и атрибутов экранируются HTML. Текст внутри <code>script()</code> и <code>style()</code> записывается как есть, с разбитыми только закрывающими тегами, поэтому никогда не помещайте туда пользовательский ввод.</li>
-        <li>Не выбрасывает исключений. Если компонент, функция <code>list()</code> или условие <code>when()</code> выдает ошибку или полифилл отсутствует, он регистрирует ошибку и возвращает <code>""</code>. Проверяйте пустой результат, если ошибка рендеринга должна приводить к ошибке запроса. Если исключение выбрасывает только функция текста или атрибута, соответствующее значение выводится пустым.</li>
+        <li>Текст и значения атрибутов экранируются как HTML. Текст внутри <code>script()</code> и <code>style()</code> выводится как есть (разрываются только закрывающие теги), поэтому пользовательский ввод туда не кладите.</li>
+        <li>Исключений не бросает. Если упал компонент, функция <code>list()</code> или условие <code>when()</code>, либо нет полифилла, ошибка логируется, а возвращается <code>""</code>. Проверяйте пустой результат, если сбой рендеринга должен превращаться в ошибку запроса. Если упала только функция текста или атрибута, это значение просто выводится пустым.</li>
       </ul>
       <h3><code>renderManyToString()</code></h3>
       <p>То же, что <code>inputs.map(renderToString)</code>.</p>
       <h3><code>renderToStringWithContainer()</code></h3>
-      <p>Заключает вывод в один элемент. Для <code>containerTag</code> по умолчанию используется <code>"div"</code>, а для <code>containerAttrs</code> — <code>{}</code>. Значения атрибутов экранируются. Имена атрибутов записываются как задано, поэтому используйте имена HTML, например <code>class</code>. Никогда не передавайте пользовательский ввод в качестве тега.</p>
+      <p>Оборачивает результат в один элемент. По умолчанию <code>containerTag</code> — <code>"div"</code>, а <code>containerAttrs</code> — <code>{}</code>. Значения атрибутов экранируются, а имена пишутся как есть, поэтому используйте HTML-имена вроде <code>class</code>. Пользовательский ввод в качестве тега передавать нельзя.</p>
       ${code("example.ts", `
 renderToStringWithContainer(p('Hi'), 'section', { id: 'main', class: 'page' })
 // '<section id="main" class="page"><p><!-- text-0 -->Hi</p></section>'
@@ -956,13 +956,13 @@ renderToStringWithContainer(p('Hi'), 'section', { id: 'main', class: 'page' })
         id: "api-polyfill",
         title: "nuclo/polyfill",
         content: `
-      <p>Небольшой DOM, поэтому Nuclo может строить деревья в Node и Bun. Импортируйте его один раз, перед первым рендерингом. Большинству приложений требуется только простой импорт.</p>
+      <p>Мини-DOM, благодаря которому Nuclo умеет строить деревья в Node и Bun. Импортируйте его один раз, до первого рендера: в большинстве приложений хватает простого импорта.</p>
       <ul>
-        <li>При отсутствии <code>window</code> устанавливаются <code>globalThis.document</code>, <code>Node</code>, <code>Element</code> и <code>HTMLElement</code>, но только те, которые отсутствуют. Он не создает <code>window</code>.</li>
-        <li>В браузере или под jsdom ничего не делает.</li>
-        <li><code>Event</code> и <code>CustomEvent</code> — собственные конструкторы среды выполнения. <code>Node</code>, <code>Element</code> и <code>HTMLElement</code> — это псевдонимы классов полифиллов.</li>
+        <li>Если <code>window</code> нет, подставляет <code>globalThis.document</code>, <code>Node</code>, <code>Element</code> и <code>HTMLElement</code> — только те, которых не хватает. Сам <code>window</code> он не создаёт.</li>
+        <li>В браузере и под jsdom ничего не делает.</li>
+        <li><code>Event</code> и <code>CustomEvent</code> — штатные конструкторы runtime, а <code>Node</code>, <code>Element</code> и <code>HTMLElement</code> — алиасы классов полифилла.</li>
       </ul>
-      <p>Это DOM для построения деревьев, а не браузер. У него нет <code>innerHTML</code> и <code>getElementById</code>, <code>querySelector()</code> возвращает <code>null</code>, а обработчики событий игнорируются. Используйте <code>renderToString()</code>, чтобы получить HTML.</p>
+      <p>Это DOM для построения деревьев, а не браузер: ни <code>innerHTML</code>, ни <code>getElementById</code> в нём нет, <code>querySelector()</code> возвращает <code>null</code>, а обработчики событий игнорируются. Чтобы получить HTML, берите <code>renderToString()</code>.</p>
     `,
       },
     ],
