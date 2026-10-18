@@ -340,7 +340,7 @@ const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
       <p>組み込みに必要なのは、これだけです。リンクがそのまま動くのは、<code>&lt;a href&gt;</code> がただの <code>&lt;a href&gt;</code> だからです。<code>document</code> に付けた委譲リスナーが 1 つ、ルーターの管轄のリンクだけを拾い、あとはすべてブラウザに任せます。</p>
-      <p>サーバーでは、<code>start()</code> はリクエストごとに <code>Route</code> を返すだけで、ルーター自体には触れません。だから同時に来たリクエスト同士が、互いのルートをのぞき見ることはありません。<code>route.run()</code> は、レンダリングしている間だけ、その Route をルーター（つまり outlet）の参照先にします。ブラウザの場合、Route はページの読み込みごとに 1 つで、<code>start()</code> がそれをルーター自身のものにするので、<code>run()</code> は要りません。</p>
+      <p>サーバーでは、<code>start()</code> はリクエストごとに <code>Route</code> を返すだけで、ルーター自体には触れません。だから同時に来たリクエスト同士が、互いのルートを見ることはありません。<code>route.run()</code> は、レンダリングしている間だけ、その Route をルーター（つまり outlet）の参照先にします。ブラウザの場合、Route はページの読み込みごとに 1 つで、<code>start()</code> がそれをルーター自身のものにするので、<code>run()</code> は要りません。</p>
       <p>ページは <a href="#router-api"><code>RouteContext</code></a> と <a href="#router-api"><code>PageProps</code></a> を <code>(ctx, { layer, data, outlet, beforeLeave })</code> の形で受け取ります。要らない引数は省いて構いません。戻り値は、<code>list()</code> が受け付けるものなら何でも返せます。レイアウトの別の場所も埋めたいときは、<code>div(article(…), into('sidebar', nav(…)))</code> のように、ページの中から <code>into()</code> を一緒に返してください。そのコンテンツは、ページが破棄されると一緒に消えます。詳しくは<a href="#router-regions">ページとリージョン</a>を参照してください。</p>
     `,
       },
@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>プッシュされたレイヤー</td><td>一致したページだけを描画します。親はすでに下の行にマウント済みです。</td></tr>
         </tbody>
       </table>
-      <p>保持されたページは、構築時の <code>ctx</code> を持ち続けます。これは <code>ctx</code> の意味として、どこでも変わりません。最新の値が欲しいときは <code>router.*</code> から読んでください。フィルター、ページネーション、タブのようなクエリ駆動の state は、動的な値の中で <code>router.search</code> を読み、<code>router.go('?page=2', { replace: true })</code> で書き込みます。こうすれば、ページもフォーカスも入力途中の値も、そのまま残ります。</p>
+      <p>保持されたページは、構築時の <code>ctx</code> を持ち続けます。<code>ctx</code> はどこでもそういうものです。最新の値が欲しいときは <code>router.*</code> から読んでください。フィルター、ページネーション、タブのようなクエリ駆動の state は、動的な値の中で <code>router.search</code> を読み、<code>router.go('?page=2', { replace: true })</code> で書き込みます。こうすれば、ページもフォーカスも入力途中の値も、そのまま残ります。</p>
     `,
       },
       {

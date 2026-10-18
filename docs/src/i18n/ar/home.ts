@@ -82,7 +82,7 @@ export const PHILOSOPHY_POINTS = [
   {
     num: "02",
     title: "عدّل كما تشاء، وحدّث مرة واحدة",
-    desc: "أجرِ عشرة تعديلات ثم استدعِ update() مرة واحدة. لا يرى الـ DOM إلا الحالة النهائية، فلا يضيع render واحد بلا داعٍ.",
+    desc: "أجرِ عشرة تعديلات ثم استدعِ update() مرة واحدة. لا يرى الـ DOM إلا الحالة النهائية، فلا يُهدر render واحد بلا داعٍ.",
   },
   {
     num: "03",
@@ -165,7 +165,7 @@ export const COMPARISON_COLS: {
     items: [
       { good: false, text: "يلفّ الـ state في proxies وsubscriptions" },
       { good: false, text: "يتتبع الـ dependencies في الخفاء أثناء التشغيل" },
-      { good: false, text: "يطلق تحديثات متسلسلة بجدول لا سيطرة لك عليه" },
+      { good: false, text: "يطلق تحديثات متسلسلة بتوقيت لا تتحكم فيه" },
       { good: false, text: "يصعب تتبعه خطوة بخطوة في الـ debugger" },
     ],
   },

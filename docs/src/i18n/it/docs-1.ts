@@ -176,7 +176,7 @@ render(Card, document.body)
         <li><strong>Un <code>Node</code> del DOM</strong>: aggiunto così com'è.</li>
         <li><strong><code>(el, index) =&gt; …</code></strong>: un modificatore personalizzato, spiegato più sotto.</li>
       </ul>
-      <h3>Trappole comuni</h3>
+      <h3>Insidie comuni</h3>
       <ul>
         <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> mostra il testo "false". Scrivi invece <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
         <li>Gli array non sono figli: vanno espansi con <code>ul(...names.map((n) =&gt; li(n)))</code>. Per le liste che cambiano nel tempo, c'è <code>list()</code>.</li>
@@ -643,7 +643,7 @@ render(() => div(Layout(), Article()))
         <li><code>empty</code>: ciò che viene reso finché la regione non ha viste.</li>
       </ul>
       <h3>Regioni stack</h3>
-      <p>Con <code>type: 'stack'</code>, una vista che si apre sopra un'altra non ricostruisce quella sotto: DOM, focus e stato del form restano al loro posto. Ottimo per un livello come un dialog sopra una pagina.</p>
+      <p>Con <code>type: 'stack'</code>, una vista che si apre sopra un'altra non ricostruisce quella sotto: DOM, focus e stato del form restano al loro posto. Ideale per un layer come un dialog sopra una pagina.</p>
       ${code("layers.ts", `
 let open = false
 

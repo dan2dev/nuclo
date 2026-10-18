@@ -407,7 +407,7 @@ router.href('./preview')      // '/invoices/42/preview' or '/customers/7/preview
 await router.go('./preview')
 await layer.push('./preview') // the usual shape: a child layer
 `)}
-      <p><code>./x</code>, <code>../x</code>, <code>.</code>, <code>..</code>는 URL의 "디렉터리"가 아니라 현재 라우트의 경로를 기준으로 풀립니다. <code>/invoices/42</code>에서 <code>./preview</code>는 <code>/invoices/42/preview</code>가 됩니다. 브라우저라면 <code>/invoices/preview</code>라고 해석했을 테지만, 여기서는 URL 끝의 슬래시도 결과에 영향을 주지 않습니다. <code>../</code>는 세그먼트 하나씩 위로 올라가다 루트에서 멈춥니다. 쿼리와 해시는 그대로 이어지고 <code>base</code>는 다시 붙으며, 완성된 절대 경로가 히스토리에 기록됩니다. URL 해석 표준에서 이렇게 벗어나는 방식은 React Router가 <code>&lt;Link to="./x"&gt;</code>에서 택한 방식과 같습니다.</p>
+      <p><code>./x</code>, <code>../x</code>, <code>.</code>, <code>..</code>는 URL의 "디렉터리"가 아니라 현재 라우트의 경로를 기준으로 풀립니다. <code>/invoices/42</code>에서 <code>./preview</code>는 <code>/invoices/42/preview</code>가 됩니다. 브라우저라면 <code>/invoices/preview</code>라고 해석했을 테지만, 여기서는 URL 끝의 슬래시도 결과에 영향을 주지 않습니다. <code>../</code>는 세그먼트 하나씩 위로 올라가다 루트에서 멈춥니다. 쿼리와 해시는 그대로 이어지고 <code>base</code>는 다시 붙으며, 완성된 절대 경로가 히스토리에 기록됩니다. URL 해석 표준과 다르게 처리하는 이 방식은 React Router가 <code>&lt;Link to="./x"&gt;</code>에서 택한 방식과 같습니다.</p>
       <ul>
         <li>라우트 기준으로 해석되는 것은 <code>./</code>와 <code>../</code>뿐입니다. href에 그냥 <code>preview</code>라고 쓰면 일반적인 브라우저 규칙을 따릅니다.</li>
         <li>상대 링크는 <code>href="./preview"</code>를 손으로 쓰기보다 <code>router.href('./preview')</code>로 만드세요. <code>href()</code>는 렌더링 시점에 경로를 풀어 주기 때문에, 실제로 나가는 마크업은 절대 경로입니다. 그래서 크롤러, 마우스 가운데 버튼 클릭, JavaScript를 끈 환경에서도 올바르게 동작합니다.</li>
@@ -504,7 +504,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
           <tr><td>예외를 던지거나 reject될 때</td><td><code>router.error</code>에 담깁니다. <code>go()</code>는 여전히 reject되지 않으며, 이동을 다시 시도할 수 있습니다.</td></tr>
           <tr><td><code>start()</code> 도중</td><td>reject가 <code>start()</code> 밖으로 전파됩니다. 오류를 담을 Route가 아직 없기 때문입니다.</td></tr>
           <tr><td>push한 레이어</td><td>자체 로더를 실행하고, 데이터도 따로 가집니다.</td></tr>
-          <tr><td>유휴 시간 프리로더</td><td>모듈만 미리 데워 둡니다. 넘겨 줄 컨텍스트가 없고, 사용자가 열지도 않을 라우트의 데이터를 가져오게 될 수 있기 때문입니다.</td></tr>
+          <tr><td>유휴 시간 프리로더</td><td>모듈만 미리 불러옵니다. 넘겨 줄 컨텍스트가 없고, 사용자가 열지도 않을 라우트의 데이터를 가져오게 될 수 있기 때문입니다.</td></tr>
           <tr><td>같은 URL로 다시 이동</td><td>로더를 다시 실행하고 행도 새로 만듭니다. 로더가 없는 라우트는 행을 그대로 유지합니다.</td></tr>
         </tbody>
       </table>
@@ -659,7 +659,7 @@ layer.close()          // dismissed: resolves with undefined
         <li><strong>URL은 맨 위 레이어를 가리킵니다.</strong> <code>push()</code>는 히스토리 항목을 추가하기 때문에 레이어에 직접 링크할 수 있고, 뒤로 가기를 누르면 취소를 누른 것처럼 레이어가 닫히며 그 <code>push()</code>가 dismissed로 이행됩니다. 뒤로 가기와 <code>close()</code>는 같은 코드 경로입니다. <code>close()</code>가 결과를 기록하고 히스토리를 한 칸 되돌리며, 깊이는 <code>history.state</code>에 든 값이 기준입니다. 브라우저는 탭당 항목을 50개 정도만 유지하므로 레이어를 여러 단계 깊이 들어가면 바로 아래 항목이 사라졌을 수 있습니다. 그럴 때 <code>close()</code>는 레이어를 그 자리에서 닫고, 현재 항목을 남은 페이지에 맞게 고쳐 씁니다.</li>
         <li><strong>일반 이동은 스택을 비웁니다.</strong> 링크 클릭이나 <code>go()</code>는 레이어가 아닙니다. 모든 것을 교체하고 열려 있던 레이어를 전부 닫으므로, 기다리는 호출자가 남지 않습니다.</li>
         <li><strong>URL로 바로 들어오면 독립된 페이지가 됩니다.</strong> URL은 맨 위 레이어만 가리킬 뿐 그 아래 스택까지 알려 주지는 않습니다. 그래서 레이어의 URL로 곧장 접속하면 깊이 1짜리 스택에서 <code>layer.depth === 0</code>인 페이지로 렌더링되고, <code>close()</code>는 아무 동작도 하지 않습니다. 레이어로 push하는 라우트도 그 자체로 의미가 통해야 합니다. <code>layer.depth</code>로 분기해서 동작하지 않는 취소 버튼 대신 빠져나갈 링크를 보여 주세요.</li>
-        <li><strong>새로 고침하면 promise는 살아남지 못합니다.</strong> promise가 클로저 안에 있기 때문입니다. 결과 전달은, 더 돌아가더라도 같은 일을 할 수 있는 흐름의 지름길 정도로만 생각하세요.</li>
+        <li><strong>새로 고침하면 promise는 살아남지 못합니다.</strong> promise가 클로저 안에 있기 때문입니다. 결과 전달은, 돌아가는 길로도 같은 일을 할 수 있는 흐름의 지름길 정도로만 생각하세요.</li>
         <li><strong>기다리는 채로 남는 호출은 없습니다.</strong> <code>stop()</code>은 열려 있는 레이어를 모두 닫고, 이동으로 버려진 레이어의 promise는 <code>undefined</code>로 이행됩니다.</li>
       </ul>
       <h3>이탈 가드</h3>
@@ -840,7 +840,7 @@ createRouter(routes, {
         <li><strong>의도적으로 넣지 않은 기능:</strong> 해시 히스토리와 메모리 히스토리가 없습니다. 라우트는 경로(pathname)에 담기고, 서버가 모든 라우트를 서비스해야 하기 때문입니다. URL 하나로 서로 독립된 두 영역을 라우팅하는 기능도 없습니다. 페이지가 <code>into()</code>로 여러 영역을 채울 수는 있지만 모두 일치한 라우트 하나에 속합니다. 독립 영역이 시작하지 않은 자체 라우터와 로딩을 따로 두는 방법은 <a href="#router-multi">다중 라우터와 결합 로딩</a>을 참고하세요. 호버 프리로드도 없지만, <code>mouseenter</code>에서 해당 라우트의 로더를 직접 호출하면 같은 효과를 얻을 수 있습니다.</li>
       </ul>
       <h3>예제</h3>
-      <p>저장소에는 실행해 볼 수 있는 예제가 두 개 있습니다. 서로를 보완하므로 모든 설정을 어딘가에서는 직접 확인할 수 있습니다.</p>
+      <p>저장소에는 실행해 볼 수 있는 예제가 두 개 있습니다. 서로 보완하는 관계라서 모든 설정을 둘 중 한쪽에서는 직접 확인할 수 있습니다.</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: 클라이언트에서 API 전체를 훑어보는 예제입니다. 모든 패턴 형태와 우선순위 규칙, 링크 처리의 제외 옵션, 실시간으로 조작해 보는 모든 Route 멤버, 서브 라우터, 3단계로 쌓은 레이어 스택, 부모 두 곳에 마운트한 상대 섹션, <code>pending</code>과 <code>error</code>를 볼 수 있는 라우트 로더가 들어 있습니다. 이런 상태가 계속 보이도록 <code>preload: false</code>로 설정했습니다.</li>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: 요청마다 실행하는 <code>renderToString()</code>, 서버 노드를 실제로 이어받는 것을 확인할 수 있는 하이드레이션, 진짜 404 상태 코드, 루트가 아닌 <code>base</code>, 네트워크 패널에서 지켜볼 수 있는 유휴 시간 프리로드, 그리고 서버가 클라이언트에 데이터를 넘겨 하이드레이션 때 다시 가져오지 않는 로더를 보여 줍니다.</li>

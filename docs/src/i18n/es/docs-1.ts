@@ -68,7 +68,7 @@ render(App, document.getElementById('app')!)
       <h3>Globales</h3>
       <p><code>import 'nuclo'</code> registra lo siguiente en <code>globalThis</code>:</p>
       <ul>
-        <li><strong>175 funciones constructoras de etiquetas</strong>: 112 de HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) y 63 de SVG, que llevan el sufijo <code>Svg</code> (<code>svgSvg</code>, <code>pathSvg</code>, …). Mira <a href="#tag-builders">Funciones constructoras de etiquetas</a>.</li>
+        <li><strong>175 funciones constructoras de etiquetas</strong>: 112 de HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) y 63 de SVG, que llevan el sufijo <code>Svg</code> (<code>svgSvg</code>, <code>pathSvg</code>, …). Consulta <a href="#tag-builders">Funciones constructoras de etiquetas</a>.</li>
         <li><strong>16 helpers</strong>: <code>update</code>, <code>scope</code>, <code>when</code>, <code>list</code>, <code>region</code>, <code>into</code>, <code>on</code>, <code>render</code>, <code>hydrate</code>, <code>forceUpdate</code>, <code>css</code>, <code>cx</code>, <code>createCss</code>, <code>variants</code>, <code>keyframes</code> y <code>globalStyle</code>.</li>
       </ul>
       <p>La importación tiene que correr antes que cualquier código que llame a una función constructora. Los módulos ES se ejecutan en el orden en que se importan, así que esto falla:</p>
@@ -85,9 +85,9 @@ import { render, update, getCssText } from 'nuclo'
       <h3>Puntos de entrada</h3>
       <ul>
         <li><code>nuclo</code>: registra los globales y exporta los 16 helpers, más <code>getCssText</code> y <code>resetStyles</code>.</li>
-        <li><code>nuclo/ssr</code>: <code>renderToString</code>, <code>renderManyToString</code>, <code>renderToStringWithContainer</code> y <code>getCssText</code>. Mira <a href="#api-ssr">Renderizado en el servidor</a>.</li>
-        <li><code>nuclo/polyfill</code>: un DOM mínimo para Node y Bun. Mira <a href="#api-polyfill">nuclo/polyfill</a>.</li>
-        <li><code>nuclo/types</code>: solo tipos. Mira <a href="#typescript-setup">TypeScript</a>.</li>
+        <li><code>nuclo/ssr</code>: <code>renderToString</code>, <code>renderManyToString</code>, <code>renderToStringWithContainer</code> y <code>getCssText</code>. Consulta <a href="#api-ssr">Renderizado en el servidor</a>.</li>
+        <li><code>nuclo/polyfill</code>: un DOM mínimo para Node y Bun. Consulta <a href="#api-polyfill">nuclo/polyfill</a>.</li>
+        <li><code>nuclo/types</code>: solo tipos. Consulta <a href="#typescript-setup">TypeScript</a>.</li>
       </ul>
     `,
       },
@@ -166,10 +166,10 @@ render(Card, document.body)
       <p>Un builder acepta tantos argumentos como quieras y los aplica de izquierda a derecha:</p>
       <ul>
         <li><strong>string, number, bigint</strong>: un nodo de texto.</li>
-        <li><strong><code>() =&gt; value</code></strong>: texto que se refresca en cada <code>update()</code>. Mira <a href="#dynamic-functions">Valores dinámicos</a>.</li>
+        <li><strong><code>() =&gt; value</code></strong>: texto que se refresca en cada <code>update()</code>. Consulta <a href="#dynamic-functions">Valores dinámicos</a>.</li>
         <li><strong><code>null</code>, <code>undefined</code></strong>: se ignoran.</li>
         <li><strong><code>true</code>, <code>false</code></strong>: se renderizan como el texto "true" o "false". Para condiciones, usa <code>when()</code>.</li>
-        <li><strong>Un objeto plano</strong>: atributos. Mira <a href="#attributes">Atributos</a>.</li>
+        <li><strong>Un objeto plano</strong>: atributos. Consulta <a href="#attributes">Atributos</a>.</li>
         <li><strong>Un resultado de <code>css()</code>, <code>cx()</code> o <code>variants()</code></strong>: suma sus clases.</li>
         <li><strong><code>on(...)</code></strong>: un listener de eventos o un hook de ciclo de vida.</li>
         <li><strong>Otro builder, <code>when()</code> o <code>list()</code></strong>: un hijo.</li>
@@ -180,7 +180,7 @@ render(Card, document.body)
       <ul>
         <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> renderiza el texto "false". Lo correcto es <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
         <li>Un array no cuenta como hijo: hay que expandirlo, así: <code>ul(...names.map((n) =&gt; li(n)))</code>. Si la lista va a cambiar, usa <code>list()</code>.</li>
-        <li>Una variable local con el nombre de una etiqueta tapa a la constructora. Dentro de <code>function Row(label: string)</code>, <code>label(...)</code> ya no se puede llamar. Cambia el nombre de variables locales como <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> o <code>i</code>.</li>
+        <li>Una variable local con el nombre de una etiqueta oculta a la constructora. Dentro de <code>function Row(label: string)</code>, <code>label(...)</code> ya no se puede llamar. Renombra variables locales como <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> o <code>i</code>.</li>
         <li>Los navegadores exponen como variable global cada elemento que tiene <code>id</code>. Si la página trae un <code>&lt;main id="main"&gt;</code> antes de que cargue Nuclo, Nuclo respeta ese global y <code>main(...)</code> lanza un <code>TypeError</code>. Elige otros ids.</li>
       </ul>
       <h3>Modificadores personalizados</h3>
@@ -452,7 +452,7 @@ const Profile = () =>
       <ul>
         <li>Un string, number, bigint o boolean se renderiza como <code>String(value)</code>. <code>() =&gt; ok &amp;&amp; 'Saved'</code> muestra "false"; escríbelo mejor como <code>() =&gt; (ok ? 'Saved' : '')</code>.</li>
         <li><code>null</code> y <code>undefined</code> se renderizan como texto vacío.</li>
-        <li>Si en la primera ejecución la función devuelve un resultado de <code>css()</code> o <code>cx()</code>, se trata como una clase dinámica y no como texto. Mira <a href="#api-cx"><code>cx()</code></a>.</li>
+        <li>Si en la primera ejecución la función devuelve un resultado de <code>css()</code> o <code>cx()</code>, se trata como una clase dinámica y no como texto. Consulta <a href="#api-cx"><code>cx()</code></a>.</li>
         <li>Un nodo, builder, array u objeto plano no renderiza nada y nunca se actualiza.</li>
       </ul>
       <h3>Atributos dinámicos</h3>
@@ -514,7 +514,7 @@ update()       // everything, the header now says "Hi, Grace"
         <li>Un elemento puede tener varios ids: <code>scope('cart', 'sidebar')</code>.</li>
         <li><code>update('a', 'b')</code> actualiza todo lo que esté dentro de <code>a</code> o de <code>b</code>. Si varios elementos comparten un id, se actualizan todos.</li>
         <li>Con ámbitos anidados, <code>update('outer')</code> abarca también el ámbito interior, pero <code>update('inner')</code> no toca el exterior.</li>
-        <li>Un id que ningún elemento del documento tiene no actualiza <strong>nada</strong> y tampoco lanza error, así que revisa bien cómo lo escribes.</li>
+        <li>Si ningún elemento del documento tiene ese id, no se actualiza <strong>nada</strong> y tampoco se lanza ningún error, así que revisa bien cómo lo escribes.</li>
         <li><code>scope()</code> no hace nada en el servidor.</li>
       </ul>
     `,
@@ -846,7 +846,7 @@ render(App, document.getElementById('app')!)
         <li>Puedes pasar el componente (<code>render(App)</code>) o el builder que devuelve (<code>render(App())</code>). El DOM resultante es el mismo, pero solo con <code>render(App)</code> puede <a href="#api-force-update"><code>forceUpdate()</code></a> reconstruir la raíz más adelante, por eso es la forma recomendada.</li>
         <li>Agrega al final y no vacía <code>parent</code>: si lo llamas dos veces, tendrás dos copias.</li>
         <li>Cuando <code>render()</code> retorna, ya se ejecutaron todos los <code>onMount</code> del árbol.</li>
-        <li>Renderiza en un elemento que esté en el documento. Mira <a href="#api-update"><code>update()</code></a>.</li>
+        <li>Renderiza en un elemento que esté en el documento. Consulta <a href="#api-update"><code>update()</code></a>.</li>
         <li>La raíz tiene que ser un elemento, como <code>div(...)</code>, no un <code>when()</code> ni un <code>list()</code>.</li>
         <li><code>index</code> es interno y no decide dónde se inserta el elemento. Déjalo fuera.</li>
       </ul>
@@ -923,7 +923,7 @@ import { App } from './app.ts'
 
 hydrate(App, document.getElementById('root')!)
 `)}
-      <p>Conserva <code>id="nuclo-styles"</code> en la etiqueta style: el cliente reutiliza ese elemento y solo agrega las reglas nuevas. Mira <a href="#api-css-text"><code>getCssText()</code></a>.</p>
+      <p>Conserva <code>id="nuclo-styles"</code> en la etiqueta style: el cliente reutiliza ese elemento y solo agrega las reglas nuevas. Consulta <a href="#api-css-text"><code>getCssText()</code></a>.</p>
       <h3>Qué se ejecuta en el servidor</h3>
       <ul>
         <li>Cada llamada a <code>renderToString()</code> construye el árbol y ejecuta cada valor dinámico una sola vez.</li>

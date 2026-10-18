@@ -166,7 +166,7 @@ render(Card, document.body)
       <p>تقبل دالة البناء أي عدد من الوسائط وتطبّقها من اليسار إلى اليمين:</p>
       <ul>
         <li><strong>string، number، bigint</strong>: تصير عقدة نصية.</li>
-        <li><strong><code>() =&gt; value</code></strong>: نص يتغير مع كل <code>update()</code>. راجع <a href="#dynamic-functions"> القيم الديناميكية </a>.</li>
+        <li><strong><code>() =&gt; value</code></strong>: نص يتغير مع كل <code>update()</code>. راجع <a href="#dynamic-functions">القيم الديناميكية</a>.</li>
         <li><strong><code>null</code>، <code>undefined</code></strong>: يُتجاهل.</li>
         <li><strong><code>true</code>، <code>false</code></strong>: تُعرض كنص "true" أو "false". استخدم <code>when()</code> للشروط.</li>
         <li><strong>كائن عادي</strong>: attributes. راجع <a href="#attributes">الـ attributes</a>.</li>
@@ -306,7 +306,7 @@ const search = input({
 })
 `)}
       <ul>
-        <li>يستنتج TypeScript نوع الحدث من المفتاح والعنصر، و<code>e.currentTarget</code> و<code>this</code> كلاهما هو العنصر.</li>
+        <li>يستنتج TypeScript نوع الحدث من المفتاح والعنصر، و<code>e.currentTarget</code> و<code>this</code> كلاهما يشير إلى العنصر.</li>
         <li>يضبط Nuclo الخاصية الأصلية، فيصير <code>onClick</code> هو <code>el.onclick</code>. لكل حدث معالج واحد فقط: <code>onClick</code> الأحدث يحل محل السابق.</li>
         <li>كل من <code>onDoubleClick</code> و<code>onDblClick</code> يعني <code>dblclick</code>. أما المفاتيح بأحرف صغيرة مثل <code>onclick</code> فتُظهر خطأ في الأنواع.</li>
         <li>أي اسم ليس حدثًا معروفًا يستمع إلى صيغته بالأحرف الصغيرة: <code>onMyEvent</code> يستمع إلى <code>"myevent"</code>.</li>
@@ -447,7 +447,7 @@ const Profile = () =>
 `)}
     `,
         afterContent: `
-      <p>يتحقق Nuclo من عدد المعاملات (<code>fn.length</code>). الدالة التي تعرّف معاملًا هي <a href="#tag-builders">معدّل مخصص</a> وتُنفَّذ مرة واحدة فقط. تبلغ قيمة length للدالتين <code>(x = 0) =&gt; …</code> و<code>(...args) =&gt; …</code> 0، لذا فهما ديناميكيان.</p>
+      <p>يتحقق Nuclo من عدد المعاملات (<code>fn.length</code>). الدالة التي تعرّف معاملًا هي <a href="#tag-builders">modifier مخصص</a> وتُنفَّذ مرة واحدة فقط. تبلغ قيمة length للدالتين <code>(x = 0) =&gt; …</code> و<code>(...args) =&gt; …</code> 0، لذا فهما ديناميكيان.</p>
       <h3>النص الديناميكي</h3>
       <ul>
         <li>النص والرقم وbigint والقيمة المنطقية تُعرض كـ <code>String(value)</code>. فالدالة <code>() =&gt; ok &amp;&amp; 'Saved'</code> تعرض "false"، لذا اكتب <code>() =&gt; (ok ? 'Saved' : '')</code>.</li>
@@ -548,7 +548,7 @@ const Status = () =>
       </ul>
       <h3>محتوى الفرع</h3>
       <p>ضع الـ children داخل الفرع: نصًا، أو نصًا ديناميكيًا، أو دوال بناء، أو <code>list()</code> و<code>when()</code> متداخلة. مرّر دوال بناء العقد مثل <code>p('Hi')</code> لا عقد DOM جاهزة؛ فعقدة DOM الجاهزة تتوقف عن التحديث بعد أن يُخفى فرعها مرة واحدة.</p>
-      <p>كائنات الـ attributes وقيم <code>on()</code> الموجودة داخل الفرع تُطبَّق على العنصر الأب، وتبقى حتى بعد إخفاء الفرع. وللـ attribute الشرطية استخدم attribute ديناميكية: <code>{ className: () =&gt; (active ? 'active' : '') }</code>.</p>
+      <p>كائنات الـ attributes وقيم <code>on()</code> الموجودة داخل الفرع تُطبَّق على العنصر الأب، وتبقى حتى بعد إخفاء الفرع. ولضبط attribute بشرط معيّن استخدم attribute ديناميكية: <code>{ className: () =&gt; (active ? 'active' : '') }</code>.</p>
       <h3>ربط الشروط</h3>
       <p>كل من <code>.when()</code> و<code>.else()</code> تُرجع دالة بناء جديدة ولا تعدّل الأصلية. وإذا استدعيت <code>.else()</code> مرتين فالاستدعاء الأخير هو المعتمد.</p>
     `,
@@ -591,7 +591,7 @@ render(Todos)
 todos[0].done = true
 update() // same <li>, its class is now "done"
 `)}
-      <p>النسخ عناصر جديدة، ولذلك فاستبدال المصفوفة بـ <code>todos.map((t) =&gt; ({ ...t }))</code> يعيد بناء كل الصفوف.</p>
+      <p>النسخ عناصر جديدة، لذا فاستبدال المصفوفة بـ <code>todos.map((t) =&gt; ({ ...t }))</code> يعيد بناء كل الصفوف.</p>
     `,
         afterContent: `
       <h3>ما تُرجعه <code>renderItem</code></h3>
@@ -844,7 +844,7 @@ render(App, document.getElementById('app')!)
 `)}
       <ul>
         <li>يمكنك تمرير الـ component نفسه (<code>render(App)</code>) أو دالة البناء التي يُرجعها (<code>render(App())</code>)، والـ DOM الناتج واحد. لكن <code>render(App)</code> وحده يتيح لـ <a href="#api-force-update"><code>forceUpdate()</code></a> إعادة بناء الجذر لاحقًا، فهو الأفضل.</li>
-        <li>الإلحاق يتم بالإضافة؛ فهي لا تمسح <code>parent</code>، وبالتالي استدعاؤها مرتين يضيف نسختين.</li>
+        <li>تُلحق الشجرة بـ <code>parent</code> دون مسح محتواه، فاستدعاؤها مرتين يضيف نسختين.</li>
         <li>تكون كل hooks <code>onMount</code> في الشجرة قد نُفّذت عند عودة <code>render()</code>.</li>
         <li>اعرض داخل عنصر موجود في المستند. راجع <a href="#api-update"><code>update()</code></a>.</li>
         <li>يجب أن يكون الجذر عنصرًا مثل <code>div(...)</code>، لا <code>when()</code> ولا <code>list()</code>.</li>

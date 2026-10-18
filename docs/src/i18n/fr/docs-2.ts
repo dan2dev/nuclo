@@ -278,9 +278,9 @@ beforeEach(() => resetStyles())
         title: "nuclo-router",
         content: `
       <div class="docs-callout"><strong>Package séparé :</strong> <code>nuclo-router</code> ne fait pas partie du package Nuclo de base : installez-le à côté de <code>nuclo</code>. Il s'agit d'une version preview, dont l'API peut encore évoluer.</div>
-      <p>Le routage pour Nuclo : rendu côté serveur, hydration, routes découpées en chunks et préchargement à l'inactivité, le tout bâti sur <code>list()</code> et <code>update()</code>. Environ ${NUCLO_ROUTER_GZIP_KB} Ko une fois gzippé, aucune dépendance en dehors de Nuclo lui-même et aucun effet de bord : le tree-shaking l'élimine s'il n'est pas utilisé.</p>
+      <p>Le routage pour Nuclo : rendu côté serveur, hydratation, routes découpées en chunks et préchargement à l'inactivité, le tout bâti sur <code>list()</code> et <code>update()</code>. Environ ${NUCLO_ROUTER_GZIP_KB} Ko une fois gzippé, aucune dépendance en dehors de Nuclo lui-même et aucun effet de bord : le tree-shaking l'élimine s'il n'est pas utilisé.</p>
       ${sh("npm install nuclo nuclo-router")}
-      <p>Vous pouvez aussi utiliser <code>pnpm add</code>, <code>yarn add</code> ou <code>bun add</code> avec les deux mêmes noms. Il exige <code>nuclo</code> 0.3 ou plus récent en peer dependency.</p>
+      <p>Vous pouvez aussi utiliser <code>pnpm add</code>, <code>yarn add</code> ou <code>bun add</code> avec les deux mêmes noms. Il exige <code>nuclo</code> 0.3 ou plus récent comme peer dependency.</p>
       <p>Le routeur décide <em>quoi</em> charger, et l'application dit <em>où</em> avec <code>router.outlet()</code> : un seul <code>list()</code> sur la pile de couches, une ligne par couche, si bien qu'une page ordinaire n'occupe qu'une ligne. Serveur et client construisent le même arbre, et <code>hydrate()</code> réutilise donc les nœuds du serveur au lieu de les remplacer. Pour le reste, il n'y a que <code>history</code>, un unique écouteur <code>click</code> délégué et <code>requestIdleCallback</code>.</p>
       <h3>Un seul import</h3>
       ${code("main.ts", `
@@ -495,7 +495,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
   return article(h1(post.title), p(post.body))
 }
 `)}
-      <p>La table de routes ne change pas : le loader se définit avec la page. Il reçoit le <code>RouteContext</code> correspondant, avec <code>params</code>, <code>search</code> et <code>path</code> à portée de main. Synchrone ou asynchrone, il s'exécute aussi côté serveur : une page rendue sur le serveur est donc livrée avec ses données déjà dans le HTML, au lieu de les aller chercher après l'hydration.</p>
+      <p>La table de routes ne change pas : le loader se définit avec la page. Il reçoit le <code>RouteContext</code> correspondant, avec <code>params</code>, <code>search</code> et <code>path</code> à portée de main. Synchrone ou asynchrone, il s'exécute aussi côté serveur : une page rendue sur le serveur est donc livrée avec ses données déjà dans le HTML, au lieu de les aller chercher après l'hydratation.</p>
       <p><strong>Le module est mis en cache, pas les données.</strong> Le chunk d'une route n'est récupéré qu'une fois et réutilisé, alors que son loader se relance à chaque navigation. C'est pourquoi <code>/blog/a</code> et <code>/blog/b</code> ne risquent pas d'être confondus, et pourquoi un loader en échec peut tout simplement être réessayé.</p>
       <table>
         <thead><tr><th>Situation</th><th>Comportement</th></tr></thead>
@@ -523,7 +523,7 @@ createRouter({
 })
 `)}
       <p>Il remplace le <code>load</code> propre au module et se relance à chaque visite, exactement comme lui. Un rejet survenant alors que le chunk est encore en cours de chargement est placé dans <code>router.error</code>, comme n'importe quel autre.</p>
-      <p>Par conception, les données serveur ne sont pas sérialisées dans le HTML : le <code>load</code> du client se relance à l'hydration. Si cela vous gêne, faites émettre <code>route.data</code> par le serveur (par exemple dans <code>window.__DATA__</code>) et faites-le lire en premier par le loader. <code>route.data</code> ne contient que les données de la page correspondante, pas le résultat du <code>load()</code> d'un parent.</p>
+      <p>Par conception, les données serveur ne sont pas sérialisées dans le HTML : le <code>load</code> du client se relance à l'hydratation. Si cela vous gêne, faites émettre <code>route.data</code> par le serveur (par exemple dans <code>window.__DATA__</code>) et faites-le lire en premier par le loader. <code>route.data</code> ne contient que les données de la page correspondante, pas le résultat du <code>load()</code> d'un parent.</p>
       <h3>Découpage du code et préchargement</h3>
       <p>La valeur d'une route est toujours une fonction qui renvoie le composant de page : le composant est donc chargé à la demande :</p>
       ${code("routes.ts", `
@@ -843,7 +843,7 @@ createRouter(routes, {
       <p>Deux exemples exécutables du dépôt se complètent, pour que chaque réglage soit observable quelque part :</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a> : une visite côté client de toute l'API. Chaque forme de motif et règle de priorité, les exclusions de la gestion des liens, chaque membre de Route avec des contrôles en direct, un sous-routeur, la pile de couches sur trois niveaux, une section relative montée sous deux parents, et des loaders de route avec <code>pending</code> et <code>error</code>. Il définit <code>preload: false</code> pour que ces états restent visibles.</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a> : un <code>renderToString()</code> par requête, une hydration dont on peut vérifier qu'elle réutilise les nœuds du serveur, de vrais codes de statut 404, une <code>base</code> non racine, un préchargement à l'inactivité observable dans le panneau réseau, et un loader dont les données passent du serveur au client pour que l'hydration ne refasse pas la requête.</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a> : un <code>renderToString()</code> par requête, une hydratation dont on peut vérifier qu'elle réutilise les nœuds du serveur, de vrais codes de statut 404, une <code>base</code> non racine, un préchargement à l'inactivité observable dans le panneau réseau, et un loader dont les données passent du serveur au client pour que l'hydratation ne refasse pas la requête.</li>
       </ul>
     `,
       },
@@ -1003,7 +1003,7 @@ async function loadData() {
       <p>Enveloppez-la dans un <code>when()</code> et faites passer la condition à faux. Retirer le DOM à la main n'exécute pas <code>onDestroy</code>. Voir <a href="#lifecycle">Cycle de vie</a>.</p>
 
       <h3>Nuclo inclut-il un routeur ?</h3>
-      <p>Pas dans le package de base. Le routage est livré à part sous le nom <code>nuclo-router</code>, avec rendu côté serveur, hydration, routes découpées en chunks et préchargement à l'inactivité. Installez-le avec <code>npm install nuclo nuclo-router</code>. Voir <a href="#router-overview">nuclo-router</a>.</p>
+      <p>Pas dans le package de base. Le routage est livré à part sous le nom <code>nuclo-router</code>, avec rendu côté serveur, hydratation, routes découpées en chunks et préchargement à l'inactivité. Installez-le avec <code>npm install nuclo nuclo-router</code>. Voir <a href="#router-overview">nuclo-router</a>.</p>
 
       <h3>Nuclo a-t-il des effets ?</h3>
       <p>Non. <code>onMount</code> et <code>onDestroy</code> s'exécutent une fois par élément, au rythme de l'insertion et du retrait. Rien ne se relance parce qu'un état a changé.</p>

@@ -22,7 +22,7 @@ const card = css({
 const Card = () => div(card, 'Simple card')
 `)}
       <ul>
-        <li>تنشئ <code>css()</code> class واحدًا للتصريحات الأساسية، وclass إضافيًا لكل pseudo key أو selector أو كتلة media. فالبطاقة أعلاه تحصل على classes اثنين.</li>
+        <li>تنشئ <code>css()</code> class واحدًا للتصريحات الأساسية، وclass إضافيًا لكل pseudo key أو selector أو كتلة media. فالبطاقة أعلاه تحصل على classين.</li>
         <li>أسماء الـ classes مشتقة من hash للمحتوى، فالتنسيقات المتطابقة تتشارك الـ class نفسه، وينتج الخادم والعميل الأسماء نفسها.</li>
         <li>عرّف الأنماط مرة واحدة على مستوى الـ module. فـ <code>css()</code> تخزّن النتيجة مؤقتًا (cache) بحسب الكائن نفسه، لذلك يُعالَج أي كائن جديد من الصفر في كل استدعاء.</li>
         <li>تعديل كائن النمط بعد تمريره إلى <code>css()</code> لا يغيّر شيئًا.</li>
@@ -178,9 +178,9 @@ const panel = css({
         <thead><tr><th>مفتاح الـ theme</th><th>تستخدمه</th></tr></thead>
         <tbody>
           <tr><td><code>colors</code></td><td><code>bg</code>، <code>backgroundColor</code>، <code>color</code>، <code>borderColor</code> وكل جانب منها، <code>outlineColor</code>، <code>caretColor</code>، <code>textDecorationColor</code></td></tr>
-          <tr><td><code>fonts</code></td><td><code>font</code>, <code>fontFamily</code></td></tr>
-          <tr><td><code>shadows</code></td><td><code>shadow</code>, <code>boxShadow</code></td></tr>
-          <tr><td><code>radii</code></td><td><code>rounded</code>, <code>borderRadius</code></td></tr>
+          <tr><td><code>fonts</code></td><td><code>font</code>، <code>fontFamily</code></td></tr>
+          <tr><td><code>shadows</code></td><td><code>shadow</code>، <code>boxShadow</code></td></tr>
+          <tr><td><code>radii</code></td><td><code>rounded</code>، <code>borderRadius</code></td></tr>
           <tr><td><code>screens</code></td><td>مفاتيح نمط جديدة، مثل <code>md: {…}</code></td></tr>
         </tbody>
       </table>
@@ -281,7 +281,7 @@ beforeEach(() => resetStyles())
       <p>router لـ Nuclo يدعم الـ SSR والـ hydration والـ code splitting للمسارات والتحميل المسبق وقت الخمول، ومبني على <code>list()</code> و<code>update()</code>. حجمه نحو ${NUCLO_ROUTER_GZIP_KB} كيلوبايت بعد gzip، ولا يعتمد إلا على Nuclo نفسه. ولأنه بلا آثار جانبية تستطيع أدوات البناء حذفه (tree-shaking) إن لم تستخدمه.</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>أو استخدم <code>pnpm add</code> أو <code>yarn add</code> أو <code>bun add</code> بالاسمين نفسيهما. ويحتاج إلى <code>nuclo</code> بإصدار 0.3 أو أحدث كـ peer dependency.</p>
-      <p>يحدد الـ router <em>ما يُحمَّل</em>، ويحدد التطبيق <em>موضع عرضه</em> باستخدام <code>router.outlet()</code>: استدعاء <code>list()</code> واحد يعرض مكدس الطبقات، بصف لكل طبقة، فتكون الصفحة العادية صفًا واحدًا. يبني الخادم والعميل الشجرة نفسها، لذا يعيد <code>hydrate()</code> استخدام عقد الخادم. ويعتمد ما تبقّى على <code>history</code> وlistener <code>click</code> مفوّض واحد و<code>requestIdleCallback</code>.</p>
+      <p>يحدد الـ router <em>ما يُحمَّل</em>، ويحدد التطبيق <em>موضع عرضه</em> باستخدام <code>router.outlet()</code>: استدعاء <code>list()</code> واحد يعرض مكدس الـ layers، بصف لكل layer، فتكون الصفحة العادية صفًا واحدًا. يبني الخادم والعميل الشجرة نفسها، لذا يعيد <code>hydrate()</code> استخدام عقد الخادم. ويعتمد ما تبقّى على <code>history</code> وlistener <code>click</code> مفوّض واحد و<code>requestIdleCallback</code>.</p>
       <h3>استيراد واحد</h3>
       ${code("main.ts", `
 export const router = createRouter(routes)   // define once, import anywhere
@@ -407,7 +407,7 @@ router.href('./preview')      // '/invoices/42/preview' or '/customers/7/preview
 await router.go('./preview')
 await layer.push('./preview') // the usual shape: a child layer
 `)}
-      <p>الصيغ <code>./x</code> و<code>../x</code> و<code>.</code> و<code>..</code> تُحَلّ نسبةً إلى مسار الـ route الحالي، لا إلى "المجلد" في عنوان URL. فمن <code>/invoices/42</code> تصير <code>./preview</code> هي <code>/invoices/42/preview</code>، بينما يحلّها المتصفح إلى <code>/invoices/preview</code>، والشرطة المائلة الأخيرة في العنوان لا تغيّر شيئًا. وتصعد <code>../</code> مقطعًا واحدًا وتتوقف عند الجذر. ويُحتفَظ بالـ query والـ #hash، ويعاد إضافة <code>base</code>، ويدخل المسار المطلق المحلول في سجل التصفح (history). وهذا هو الاختلاف نفسه عن حلّ الـ URL الذي يعتمده React Router في <code>&lt;Link to="./x"&gt;</code>.</p>
+      <p>الصيغ <code>./x</code> و<code>../x</code> و<code>.</code> و<code>..</code> تُحَلّ نسبةً إلى مسار الـ route الحالي، لا إلى "المجلد" في عنوان URL. فمن <code>/invoices/42</code> تصير <code>./preview</code> هي <code>/invoices/42/preview</code>، بينما يحلّها المتصفح إلى <code>/invoices/preview</code>، والشرطة المائلة الأخيرة في العنوان لا تغيّر شيئًا. وتصعد <code>../</code> مقطعًا واحدًا وتتوقف عند الجذر. ويُحتفَظ بالـ query والـ #hash، وتُضاف <code>base</code> من جديد، ويدخل المسار المطلق المحلول في سجل التصفح (history). وهذا هو الاختلاف نفسه عن حلّ الـ URL الذي يعتمده React Router في <code>&lt;Link to="./x"&gt;</code>.</p>
       <ul>
         <li>فقط <code>./</code> و<code>../</code> نسبيتان إلى المسار؛ أما <code>preview</code> المجردة في href فتبقى لقواعد المتصفح المعتادة.</li>
         <li>أنشئ الروابط النسبية بـ <code>router.href('./preview')</code> بدل كتابة <code>href="./preview"</code> يدويًا. فـ <code>href()</code> تُحَلّ وقت الـ render، فيكون الـ markup الصادر مطلقًا وتبقى صحيحة للـ crawler وللنقر بالزر الأوسط وعند تعطيل JavaScript.</li>
@@ -419,7 +419,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>صفحة أب لم يتغير نمطها ولا مسارها</td><td><strong>يُحتفَظ بها</strong>: العقدة نفسها، ولا تُنفَّذ <code>load()</code> الخاصة بها مجددًا</td></tr>
           <tr><td>الصفحة المطابقة</td><td><strong>يُحتفَظ بها</strong> إذا لم يتغير نمطها ومسارها ولم يكن لها <code>load()</code>، فتبقى عند تغيير الـ query أو الـ hash. أما المسار الذي له loader فيُحدَّث في كل زيارة.</td></tr>
           <tr><td>الأب الذي تغير مساره</td><td>يُعاد بناؤه، ومعه كل ما تحته</td></tr>
-          <tr><td>الطبقة المضافة (layer)</td><td>تعرض الصفحة المطابقة وحدها، أما صفحاتها الأب فمركَّبة أصلًا في الصف الذي تحتها.</td></tr>
+          <tr><td>الـ layer المضافة</td><td>تعرض الصفحة المطابقة وحدها، أما صفحاتها الأب فمركَّبة أصلًا في الصف الذي تحتها.</td></tr>
         </tbody>
       </table>
       <p>الصفحة المحفوظة تبقى بالـ <code>ctx</code> الذي أُنشئت به، وهذا هو معنى <code>ctx</code> في كل مكان: اقرأ <code>router.*</code> للقيم الحية. والـ state المبنية على الـ query، كالمرشحات وترقيم الصفحات والتبويبات، تقرأ <code>router.search</code> داخل قيمة ديناميكية وتكتب بـ <code>router.go('?page=2', { replace: true })</code>. فتبقى الصفحة في مكانها بما فيها الـ focus والمدخلات نصف المكتوبة.</p>
@@ -503,7 +503,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
           <tr><td>أثناء تشغيله</td><td><code>router.pending</code> تساوي true وتبقى الصفحة التي كنت عليها معروضة</td></tr>
           <tr><td>يرمي استثناءً أو يُرفض الـ promise الذي يُرجعه</td><td>يُحفظ الخطأ في <code>router.error</code>. لا يُرفض وعد <code>go()</code>، ويمكن إعادة محاولة التنقل.</td></tr>
           <tr><td>أثناء <code>start()</code></td><td>يُرفض وعد <code>start()</code> نفسه؛ إذ لا يوجد كائن Route بعد لحفظ الخطأ فيه.</td></tr>
-          <tr><td>الطبقة المضافة (layer)</td><td>تشغّل الـ loader الخاص بها، ببياناتها الخاصة</td></tr>
+          <tr><td>الـ layer المضافة</td><td>تشغّل الـ loader الخاص بها، ببياناتها الخاصة</td></tr>
           <tr><td>التحميل المسبق وقت الخمول</td><td>يحمّل الـ modules فقط ولا يجلب البيانات: فلا سياق لديه يمرره للـ loader، وقد لا يزور المستخدم ذلك المسار أصلًا.</td></tr>
           <tr><td>إعادة التنقل إلى العنوان نفسه</td><td>يُشغَّل الـ loader من جديد ويُعاد بناء الصف. أما المسار الذي لا loader له فيحتفظ بصفه.</td></tr>
         </tbody>
@@ -533,7 +533,7 @@ createRouter({
 '/d': () => ({ default: DPage, load: loadD }),     // eager, module-shaped
 `)}
       <p>الأشكال التي على هيئة module وحدها تستطيع حمل تصدير <code>load</code>. أما اختيار component مسمّى بـ <code>.then(m =&gt; m.BPage)</code> فيسلّم الدالة وحدها للـ router.</p>
-      <p>كل module يُستورد مرة واحدة ويُخزَّن مؤقتًا، والتنقلات المتزامنة إلى المسار نفسه تتشارك <code>import()</code> واحدًا. وبمجرد أن تُترك الصفحة وشأنها مدة <code>idleTimeout</code> (ثانية افتراضيًا، بلا نقرات أو مفاتيح أو عجلة أو تمرير) تُحمَّل بقية المسارات في الخلفية، مسار واحد في كل فترة خمول (<code>requestIdleCallback</code>). وأي إدخال أو تنقل ينتظره المستخدم يوقفها مؤقتًا حتى تخمل الصفحة ثانية.</p>
+      <p>كل module يُستورد مرة واحدة ويُخزَّن مؤقتًا، والتنقلات المتزامنة إلى المسار نفسه تتشارك <code>import()</code> واحدًا. وبمجرد أن تُترك الصفحة وشأنها مدة <code>idleTimeout</code> (ثانية افتراضيًا، بلا نقرات أو مفاتيح أو عجلة أو تمرير) تُحمَّل بقية المسارات في الخلفية، مسار واحد في كل فترة خمول (<code>requestIdleCallback</code>). وأي إدخال أو تنقل ينتظره المستخدم يوقفها مؤقتًا حتى تخمل الصفحة مجددًا.</p>
       <p>المسار المحمَّل مسبقًا أو المتاح مباشرة لا يغيّر <code>router.pending</code> ويظهر قبل رسم الإطار التالي، فلا يومض مؤشر تحميل ولا يتحرك الـ layout. فـ <code>router.pending</code> تعبّر فقط عن انتظار module أو loader، وتبقى الصفحة السابقة معروضة أثناء الانتظار. وفشل تحميل الـ chunk يُحفظ في <code>router.error</code> بدل رفض promise غير معالج، ويمكن إعادة المحاولة.</p>
     `,
       },
@@ -548,7 +548,7 @@ createRouter({
         <tbody>
           <tr><td><code>base</code></td><td><code>'/'</code></td><td>بادئة الـ URL التي يُخدَم التطبيق تحتها، مثل <code>'/docs'</code>. وهي تطابق عند حدود المقاطع فقط: <code>/docs/intro</code> داخل <code>'/docs'</code> أما <code>/docsearch</code> فلا. والعناوين خارجها لا تطابق شيئًا، فترفضها <code>start()</code> (وهو الـ 404 من جهة الخادم عندك) وتُترك الروابط إليها للمتصفح.</td></tr>
           <tr><td><code>preload</code></td><td><code>true</code></td><td>تحميل modules بقية المسارات في الخلفية متى خمدت الصفحة. والقيمة <code>false</code> توقفه.</td></tr>
-          <tr><td><code>idleTimeout</code></td><td><code>1000</code></td><td>عدد الميلي ثانية بلا نقرات أو مفاتيح أو عجلة أو تمرير قبل بدء التحميل المسبق، أو استئنافه بعد انشغال المستخدم.</td></tr>
+          <tr><td><code>idleTimeout</code></td><td><code>1000</code></td><td>عدد المللي ثانية بلا نقرات أو مفاتيح أو عجلة أو تمرير قبل بدء التحميل المسبق، أو استئنافه بعد انشغال المستخدم.</td></tr>
           <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>، تُستدعى بعد كل تنقل يكتمل في المتصفح، ومنه التنقل الأول، وبعد مزامنة الـ DOM. و<code>kind</code> هو <code>'start'</code> أو <code>'push'</code> أو <code>'replace'</code> أو <code>'pop'</code> (رجوع أو تقدم أو <code>close()</code>) أو <code>'layer'</code>. وهي الـ hook المناسبة لـ <code>document.title</code> والـ meta tags والـ focus والتمرير والتحليلات (analytics). ولا تُستدعى أبدًا أثناء الـ SSR.</td></tr>
         </tbody>
       </table>
@@ -573,7 +573,7 @@ const owned = router.match(href) !== null
       <table>
         <thead><tr><th>عضو</th><th></th></tr></thead>
         <tbody>
-          <tr><td><code>path</code>, <code>pattern</code>, <code>params</code>, <code>search</code>, <code>hash</code>, <code>url</code></td><td>المطابقة النشطة. و<code>search</code> كائن <code>URLSearchParams</code>. أما <code>search</code> و<code>hash</code> و<code>url</code> فقيم حية.</td></tr>
+          <tr><td><code>path</code>، <code>pattern</code>، <code>params</code>، <code>search</code>، <code>hash</code>، <code>url</code></td><td>المطابقة النشطة. و<code>search</code> كائن <code>URLSearchParams</code>. أما <code>search</code> و<code>hash</code> و<code>url</code> فقيم حية.</td></tr>
           <tr><td><code>pending</code></td><td>تنقل ينتظر module أو loader</td></tr>
           <tr><td><code>error</code></td><td>آخر تحميل فاشل، ويمسحه التنقل التالي</td></tr>
           <tr><td><code>data</code></td><td>نتيجة <code>load()</code> للصفحة المطابقة، لتمريرها من الخادم بعد تسلسلها. ولا تشمل بيانات الصفحات الأب.</td></tr>
@@ -640,7 +640,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
       },
       {
         id: "router-layers",
-        title: "الطبقات وحواجز المغادرة",
+        title: "الـ layers وحواجز المغادرة",
         content: `
       <p>تفتح <code>push()</code> مسارًا فوق الحالي بدل أن تستبدله، وتُرجع promise يكتمل بالنتيجة التي تُغلق بها تلك الـ layer. وبما أن الصفحات كلها <code>list()</code> واحدة فوق المكدس، فإن فتح layer مجرد إلحاق. فلا يُعاد render للصفحة التي تحتها، ويبقى الـ DOM والـ focus والنموذج نصف المملوء كما هي عند إغلاق الـ layer.</p>
       <p>وهذا يجعل سيناريو "أحتاج إلى عنصر غير موجود بعد" يعمل دون التخلص من النموذج الذي كان المستخدم يملؤه:</p>
@@ -942,11 +942,11 @@ async function loadData() {
         <li><a href="#api-cx"><code>cx(...inputs)</code></a>: دمج الأنماط، واللاحق يفوز.</li>
         <li><a href="#api-create-css"><code>createCss(theme)</code></a>: نسخ من <code>css</code> و<code>cx</code> و<code>variants</code> و<code>keyframes</code> و<code>globalStyle</code> مرتبطة بـ theme.</li>
         <li><a href="#api-variants"><code>variants(config)</code></a>: أنماط من خيارات.</li>
-        <li><a href="#api-keyframes"><code>keyframes(frames)</code></a> و <a href="#api-keyframes"><code>globalStyle(selector, style)</code></a>.</li>
+        <li><a href="#api-keyframes"><code>keyframes(frames)</code></a> و<a href="#api-keyframes"><code>globalStyle(selector, style)</code></a>.</li>
       </ul>
       <h3><code>nuclo</code> (named exports فقط)</h3>
       <ul>
-        <li><a href="#api-css-text"><code>getCssText()</code></a> و <a href="#api-css-text"><code>resetStyles()</code></a>.</li>
+        <li><a href="#api-css-text"><code>getCssText()</code></a> و<a href="#api-css-text"><code>resetStyles()</code></a>.</li>
       </ul>
       <h3><code>nuclo/ssr</code></h3>
       <ul>

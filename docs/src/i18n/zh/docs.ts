@@ -19,7 +19,7 @@ export const LABELS = {
   docsSections: "文档章节",
   docsNavigation: "文档导航",
   onThisPage: "本页内容",
-  publicApi: "公共 API",
+  publicApi: "公开 API",
   linkTo: (title: string) => `链接到 ${title}`,
   openExample: (title: string) => `打开示例 ${title}`,
   example: (title: string) => `示例：${title}`,

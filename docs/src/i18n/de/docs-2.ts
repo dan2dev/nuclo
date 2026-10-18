@@ -24,7 +24,7 @@ const Card = () => div(card, 'Simple card')
       <ul>
         <li>Für die Basisdeklarationen entsteht eine Klasse, dazu je eine weitere pro Pseudo-Key, Selektor und Media-Block. Die Card oben kommt deshalb auf zwei Klassen.</li>
         <li>Klassennamen sind Hashes des Inhalts: Gleiche Styles teilen sich eine Klasse, und Server und Client kommen auf dieselben Namen.</li>
-        <li>Definier Styles am besten einmal auf Modulebene. <code>css()</code> cacht pro Objekt. Wer bei jedem Aufruf ein frisches Objekt baut, zahlt jedes Mal für die Verarbeitung.</li>
+        <li>Definiere Styles am besten einmal auf Modulebene. <code>css()</code> cacht pro Objekt. Wer bei jedem Aufruf ein frisches Objekt baut, zahlt jedes Mal für die Verarbeitung.</li>
         <li>Ein Style-Objekt nachträglich zu ändern, bringt nichts. <code>css()</code> hat es dann längst gelesen.</li>
         <li>Jeder Style bleibt registriert, solange die Seite oder der Serverprozess lebt. Für Werte, die pro Element variieren, etwa eine Breite aus Daten, ist das <a href="#attributes"><code>style</code>-Attribut</a> die bessere Wahl.</li>
       </ul>
@@ -151,7 +151,7 @@ const Toggle = () =>
     { onClick: () => { active = !active; update() } },
   )
 `)}
-      <p>Schon beim ersten Durchlauf muss die Funktion ein Style-Ergebnis liefern. Mit <code>() =&gt; active &amp;&amp; activeButton</code> bekommst du statt einer Klasse den Text "false" auf die Seite.</p>
+      <p>Schon beim ersten Durchlauf muss die Funktion ein Style-Ergebnis liefern. Mit <code>() =&gt; active &amp;&amp; activeButton</code> bekommst du statt einer Klasse den Text „false“ auf die Seite.</p>
     `,
       },
       {
@@ -407,7 +407,7 @@ router.href('./preview')      // '/invoices/42/preview' or '/customers/7/preview
 await router.go('./preview')
 await layer.push('./preview') // the usual shape: a child layer
 `)}
-      <p><code>./x</code>, <code>../x</code>, <code>.</code> und <code>..</code> werden gegen den Pfad der aktuellen Route aufgelöst, nicht gegen das "Verzeichnis" der URL. Von <code>/invoices/42</code> aus ergibt <code>./preview</code> also <code>/invoices/42/preview</code>, während ein Browser daraus <code>/invoices/preview</code> gemacht hätte. Ein abschließender Slash in der URL ändert daran nichts. <code>../</code> geht ein Segment nach oben und hält an der Wurzel an. Query und Hash reisen mit, <code>base</code> wird wieder vorangestellt, und in die History wandert der aufgelöste absolute Pfad. Diese Abweichung von der normalen URL-Auflösung kennst du von React Router und <code>&lt;Link to="./x"&gt;</code>.</p>
+      <p><code>./x</code>, <code>../x</code>, <code>.</code> und <code>..</code> werden gegen den Pfad der aktuellen Route aufgelöst, nicht gegen das „Verzeichnis“ der URL. Von <code>/invoices/42</code> aus ergibt <code>./preview</code> also <code>/invoices/42/preview</code>, während ein Browser daraus <code>/invoices/preview</code> gemacht hätte. Ein abschließender Slash in der URL ändert daran nichts. <code>../</code> geht ein Segment nach oben und hält an der Wurzel an. Query und Hash reisen mit, <code>base</code> wird wieder vorangestellt, und in die History wandert der aufgelöste absolute Pfad. Diese Abweichung von der normalen URL-Auflösung kennst du von React Router und <code>&lt;Link to="./x"&gt;</code>.</p>
       <ul>
         <li>Nur <code>./</code> und <code>../</code> sind routen-relativ. Ein schlichtes <code>preview</code> im href folgt weiterhin den normalen Browserregeln.</li>
         <li>Bau relative Links mit <code>router.href('./preview')</code>, statt <code>href="./preview"</code> von Hand zu schreiben. <code>href()</code> löst beim Rendern auf, das ausgelieferte Markup ist also absolut und bleibt für Crawler, Mittelklick und deaktiviertes JavaScript korrekt.</li>
@@ -513,7 +513,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
 await router.go(router.url, { replace: true })   // runs load() again
 `)}
       <h3>Daten zusammen mit dem Chunk starten</h3>
-      <p>Ein <code>load</code>-Export des Seitenmoduls kann erst laufen, wenn das Modul da ist. Eine kalte Navigation holt also zuerst den Chunk und danach die Daten. Willst du beides parallel anstoßen, deklarier den Loader direkt in der Tabelle mit <code>withLoad()</code>:</p>
+      <p>Ein <code>load</code>-Export des Seitenmoduls kann erst laufen, wenn das Modul da ist. Eine kalte Navigation holt also zuerst den Chunk und danach die Daten. Willst du beides parallel anstoßen, deklariere den Loader direkt in der Tabelle mit <code>withLoad()</code>:</p>
       ${code("routes.ts", `
 import { createRouter, withLoad } from 'nuclo-router'
 import { loadPost } from './data.ts'   // small, in the main bundle
@@ -552,7 +552,7 @@ createRouter({
           <tr><td><code>onNavigate</code></td><td></td><td><code>(ctx, kind) =&gt; void</code>, wird im Browser nach jeder abgeschlossenen Navigation aufgerufen, auch nach der ersten, sobald das DOM nachgezogen hat. <code>kind</code> ist <code>'start'</code>, <code>'push'</code>, <code>'replace'</code>, <code>'pop'</code> (Zurück, Vorwärts, <code>close()</code>) oder <code>'layer'</code>. Der richtige Ort für <code>document.title</code>, Meta-Tags, Fokus, Scrollen und Analytics. Bei SSR wird er nie aufgerufen.</td></tr>
         </tbody>
       </table>
-      <p>Zurück kommt der Router: <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code> und jedes <code>Route</code>-Member außer <code>run()</code>, durchgereicht an die aktive Route. Im Browser ist das die Route, die das letzte <code>start()</code> geliefert hat, auf dem Server die, deren <code>run()</code> gerade läuft. Liest du Member, ohne dass eine der beiden Bedingungen zutrifft, wird ein Fehler geworfen. Routentabelle, kompilierter Matcher und Modul-Cache hängen am Router und werden auf einem Server deshalb über Requests hinweg geteilt.</p>
+      <p>Zurückgegeben wird der Router: <code>start()</code>, <code>match()</code>, <code>outlet()</code>, <code>matches()</code> und jedes <code>Route</code>-Member außer <code>run()</code>, durchgereicht an die aktive Route. Im Browser ist das die Route, die das letzte <code>start()</code> geliefert hat, auf dem Server die, deren <code>run()</code> gerade läuft. Liest du Member, ohne dass eine der beiden Bedingungen zutrifft, wird ein Fehler geworfen. Routentabelle, kompilierter Matcher und Modul-Cache hängen am Router und werden auf einem Server deshalb über Requests hinweg geteilt.</p>
       <h3><code>router.start(url?)</code></h3>
       <p>Löst <code>url</code> (Default: <code>location.href</code> im Browser) zu den passenden Seitenmodulen auf und liefert ein <code>Promise&lt;Route&gt;</code>. Das Promise wird abgelehnt, wenn nichts passt und die Tabelle keine <code>'*'</code>-Route hat, auf dem Server ist das deine 404. Im Browser macht <code>start()</code> die Route außerdem zur aktiven des Routers, hängt die <code>popstate</code>- und delegierten <code>click</code>-Listener ein und plant das Preloading. Ein zweites <code>start()</code> beendet die vorherige Route von selbst. Auf dem Server fasst es nichts Geteiltes an, rendere also innerhalb von <code>route.run()</code>.</p>
       <h3><code>router.match(url?)</code></h3>
@@ -596,7 +596,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
 }
 `)}
       <h3><code>PageProps</code></h3>
-      <p>Das zweite Argument einer Seite. Destrukturier einfach, was die Seite braucht.</p>
+      <p>Das zweite Argument einer Seite. Destrukturiere einfach, was die Seite braucht.</p>
       <table>
         <thead><tr><th>Prop</th><th></th></tr></thead>
         <tbody>
@@ -643,7 +643,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         title: "Layer & Leave-Guards",
         content: `
       <p><code>push()</code> öffnet eine Route über der aktuellen, statt sie zu ersetzen, und löst mit dem auf, womit der Layer schließt. Die Seiten sind eine einzige <code>list()</code> über den Stack, einen Layer zu öffnen heißt also schlicht, eine Zeile anzuhängen. Die Seite darunter wird nicht neu gerendert: DOM, Fokus und das halb ausgefüllte Formular sind noch da, wenn der Layer wieder zugeht.</p>
-      <p>So klappt der Ablauf "Ich brauche einen Datensatz, den es noch nicht gibt", ohne dass das Formular verloren geht, das der User gerade ausfüllt:</p>
+      <p>So klappt der Ablauf „Ich brauche einen Datensatz, den es noch nicht gibt“, ohne dass das Formular verloren geht, das der User gerade ausfüllt:</p>
       ${code("pages/Edit.ts", `
 // the page underneath
 const created = await layer.push<Option>('/options/new')
@@ -836,7 +836,7 @@ createRouter(routes, {
         <li><strong>Nichts wird festgehalten.</strong> Die Route hält die Seitenfunktion und ihren Kontext, nie DOM. Wer wegnavigiert, gibt die vorherige Seite frei. <code>stop()</code> löst die Listener, bricht jeden laufenden Ladevorgang ab und setzt <code>pending</code> zurück, eine gestoppte Route lässt also nie einen Spinner hängen. Ein Modul, das erst nach <code>stop()</code> eintrifft, wird stillschweigend verworfen.</li>
         <li><strong>Sicher bei parallelen Serveranfragen.</strong> <code>start()</code> liefert State pro Request, und <code>run()</code> beschränkt ihn auf einen synchronen Render. Verschränkte Requests sehen also nie die Route des jeweils anderen, geteilt wird nur der Modul-Cache. Der Scope endet, sobald die Funktion in <code>run()</code> zurückkehrt. <code>renderToString()</code> ist synchron, das reicht also. Ein asynchroner oder streamender Render müsste die Route über <code>await</code>s hinweg mitführen, und das tut <code>run()</code> nicht.</li>
         <li><strong>Die Scroll-Wiederherstellung bei <code>popstate</code></strong> übernimmt der Browser (<code>scrollRestoration</code>), nicht der Router.</li>
-        <li><strong>Starte einen Router pro Dokument.</strong> Jedes <code>start()</code> hängt einen eigenen delegierten <code>click</code>-Listener ein, und das <code>start()</code> eines zweiten Routers stoppt den ersten nicht. Das tut nur ein zweites <code>start()</code> auf demselben Router. Willst du eine URL gegen eine andere Tabelle auflösen, erzeug einen Router und ruf nur <code>match()</code> auf. Das hängt nichts ein. So kann ein unabhängiger Bereich sein eigenes Laden neben dem <code>pending</code> der Route betreiben. Siehe <a href="#router-multi">Mehrere Router &amp; kombiniertes Laden</a>.</li>
+        <li><strong>Starte einen Router pro Dokument.</strong> Jedes <code>start()</code> hängt einen eigenen delegierten <code>click</code>-Listener ein, und das <code>start()</code> eines zweiten Routers stoppt den ersten nicht. Das tut nur ein zweites <code>start()</code> auf demselben Router. Willst du eine URL gegen eine andere Tabelle auflösen, erzeuge einen Router und ruf nur <code>match()</code> auf. Das hängt nichts ein. So kann ein unabhängiger Bereich sein eigenes Laden neben dem <code>pending</code> der Route betreiben. Siehe <a href="#router-multi">Mehrere Router &amp; kombiniertes Laden</a>.</li>
         <li><strong>Bewusst nicht enthalten:</strong> Hash- und Memory-History, weil die Route im Pathname lebt und ein Server jede Route ausliefern muss. Ebenso zwei unabhängig geroutete Bereiche aus einer URL: Eine Seite kann mit <code>into()</code> zwar mehrere Regionen füllen, aber alle gehören zu der einen passenden Route. Ein unabhängiger Bereich darf trotzdem seinen eigenen ungestarteten Router und sein eigenes Laden behalten, wie in <a href="#router-multi">Mehrere Router &amp; kombiniertes Laden</a> beschrieben. Und schließlich Hover-Preloading, das du bekommst, indem du den Loader der Route aus einem <code>mouseenter</code> heraus aufrufst.</li>
       </ul>
       <h3>Beispiele</h3>
@@ -984,26 +984,26 @@ async function loadData() {
       <h3>Setzt Nuclo auf Signals, Proxies oder ein Virtual DOM?</h3>
       <p>Nein. State bleibt ganz normales JavaScript. Beim Rendern eines Baums erzeugt Nuclo echte Elemente und Textknoten. <code>update()</code> führt jeden registrierten dynamischen Wert aus, oder nur die innerhalb der angegebenen Scopes, und patcht genau die Knoten, deren Wert sich geändert hat. Es gibt keinen Abhängigkeitsgraphen und keinen virtuellen Baum.</p>
 
-      <h3>Warum steht auf meiner Seite "false"?</h3>
-      <p>Booleans werden als Text gerendert. <code>div(ok &amp;&amp; span('Done'))</code> zeigt deshalb "false". Für Kinder nimmst du <code>when(() =&gt; ok, span('Done'))</code>, für Text <code>ok ? 'Done' : ''</code>.</p>
+      <h3>Warum steht auf meiner Seite „false“?</h3>
+      <p>Booleans werden als Text gerendert. <code>div(ok &amp;&amp; span('Done'))</code> zeigt deshalb „false“. Für Kinder nimmst du <code>when(() =&gt; ok, span('Done'))</code>, für Text <code>ok ? 'Done' : ''</code>.</p>
 
       <h3>Warum ändert sich meine Listenzeile nicht, wenn ich den Eintrag bearbeite?</h3>
       <p>Zeilen zu Einträgen, die noch in der Liste sind, bleiben bestehen und werden nicht neu gerendert. Für Felder, die sich ändern, brauchst du dynamische Werte wie <code>() =&gt; todo.text</code>. Siehe <a href="#api-list"><code>list()</code></a>.</p>
 
       <h3>Warum aktualisiert sich ein Teil meiner UI nicht mehr?</h3>
-      <p>Meistens hing er beim <code>update()</code> nicht im Dokument. Nuclo hört dann auf, diese Knoten zu verfolgen, selbst wenn du sie später anhängst. Render deshalb in einen Container, der schon im Dokument steckt. Zwei weitere Ursachen: Ein <code>when()</code>, dessen Bedingung wirft, aktualisiert sich nicht mehr, und eine Textfunktion, die gleich beim ersten Durchlauf wirft, bleibt leer. Siehe <a href="#api-update"><code>update()</code></a>.</p>
+      <p>Meistens hing er beim <code>update()</code> nicht im Dokument. Nuclo hört dann auf, diese Knoten zu verfolgen, selbst wenn du sie später anhängst. Rendere deshalb in einen Container, der schon im Dokument steckt. Zwei weitere Ursachen: Ein <code>when()</code>, dessen Bedingung wirft, aktualisiert sich nicht mehr, und eine Textfunktion, die gleich beim ersten Durchlauf wirft, bleibt leer. Siehe <a href="#api-update"><code>update()</code></a>.</p>
 
       <h3>Wann brauche ich <code>forceUpdate()</code>?</h3>
       <p>Nur für seltene Änderungen an statischen Werten, etwa bei einem Sprachwechsel. Für alles andere ist <code>update()</code> das Richtige. Siehe <a href="#api-force-update"><code>forceUpdate()</code></a>.</p>
 
       <h3>Wie bekomme ich eine Seite in ein Layout, ohne sie als Prop durchzureichen?</h3>
-      <p>Markier die Stelle mit <code>region({ id: 'main' })</code> und lass die Seite <code>into('main', …)</code> zurückgeben. Siehe <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a>.</p>
+      <p>Markiere die Stelle mit <code>region({ id: 'main' })</code> und lass die Seite <code>into('main', …)</code> zurückgeben. Siehe <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a>.</p>
 
       <h3>Wie unmounte ich eine App?</h3>
       <p>Pack sie in ein <code>when()</code> und schalte die Bedingung aus. Entfernst du das DOM selbst, läuft <code>onDestroy</code> nicht. Siehe <a href="#lifecycle">Lifecycle</a>.</p>
 
       <h3>Hat Nuclo einen Router?</h3>
-      <p>Nicht im Kernpaket. Routing gibt es separat als <code>nuclo-router</code>, mit serverseitigem Rendering, Hydration, code-gesplitteten Routen und Idle-Preloading. Installieren kannst du es mit <code>npm install nuclo nuclo-router</code>. Siehe <a href="#router-overview">nuclo-router</a>.</p>
+      <p>Nicht im Kernpaket. Routing gibt es separat als <code>nuclo-router</code>, mit serverseitigem Rendering, Hydration, Code-Splitting pro Route und Idle-Preloading. Installieren kannst du es mit <code>npm install nuclo nuclo-router</code>. Siehe <a href="#router-overview">nuclo-router</a>.</p>
 
       <h3>Gibt es Effects in Nuclo?</h3>
       <p>Nein. <code>onMount</code> und <code>onDestroy</code> laufen einmal pro Element, gekoppelt ans Einfügen und Entfernen. Dass sich irgendein State geändert hat, löst nichts erneut aus.</p>

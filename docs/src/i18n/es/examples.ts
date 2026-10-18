@@ -66,7 +66,7 @@ export const items: Record<string, { title: string; desc: string }> = {
   "rotary-knob": { title: "Perilla giratoria", desc: "Un slider a medida: el ángulo del puntero fija el valor, las flechas del teclado lo ajustan paso a paso y pathLength=\"100\" convierte el valor en un trazo discontinuo." },
   "color-wheel": { title: "Rueda de color", desc: "Elige el tono por ángulo y la saturación por distancia. La rueda se arma con noventa cuñas, un gradiente radial y un disco oscuro." },
   "spirograph": { title: "Espirógrafo", desc: "Una rueda gira dentro de un anillo mientras una pluma dibuja la curva resultante. En cada frame se alarga un trazo y solo se actualiza su scope()." },
-  "bouncing-balls": { title: "Pelotas que rebotan", desc: "Gravedad, paredes y colisiones dentro de un loop de requestAnimationFrame. Tira hacia atrás y suelta para lanzar una pelota." },
+  "bouncing-balls": { title: "Pelotas que rebotan", desc: "Gravedad, paredes y colisiones dentro de un loop de requestAnimationFrame. Arrastra hacia atrás y suelta para lanzar una pelota." },
   "gooey-blobs": { title: "Manchas viscosas", desc: "Un desenfoque y un filtro de matriz de color funden las manchas entre sí, y un rastro de círculos persigue al puntero." },
   "force-graph": { title: "Grafo de fuerzas", desc: "Los nodos se repelen, los enlaces los atraen y la simulación se va asentando poco a poco. Arrastra un nodo, o haz clic en uno para colgarle un nodo hijo." },
   "brush-zoom": { title: "Selección y zoom", desc: "Selecciona un rango en la vista general para ampliar el gráfico de arriba. Un clipPath que sigue la selección tiñe la parte elegida." },

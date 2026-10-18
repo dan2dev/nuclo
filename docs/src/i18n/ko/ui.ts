@@ -7,7 +7,7 @@ export const nav = {
   examples: "예제",
   getStarted: "시작하기",
   menu: "메뉴",
-  main: "주 탐색",
+  main: "메인 내비게이션",
   openMenu: "메뉴 열기",
   closeMenu: "메뉴 닫기",
   nucloHome: "Nuclo 홈",
@@ -55,8 +55,8 @@ export const seo = {
   routes: {
     home: {
       title: "Nuclo - 명시적 업데이트를 사용하는 경량 DOM 프레임워크",
-      description: "Nuclo는 외부 의존성이 없는 경량 TypeScript DOM 라이브러리입니다. 함수로 UI를 만들고, 일반 상태를 변경한 다음 update()를 호출합니다. 가상 DOM, 프록시, 시그널을 사용하지 않습니다.",
-      keywords: "nuclo, DOM 프레임워크, 상태 의존 값, 명시적 업데이트, 변경 가능한 상태, javascript, typescript, UI 프레임워크, 경량",
+      description: "Nuclo는 외부 의존성이 없는 경량 TypeScript DOM 라이브러리입니다. 함수로 UI를 만들고, 평범한 상태를 바꾼 다음 update()를 호출합니다. 가상 DOM, 프록시, 시그널을 사용하지 않습니다.",
+      keywords: "nuclo, DOM 프레임워크, 상태에 의존하는 값, 명시적 업데이트, 변경 가능한 상태, javascript, typescript, UI 프레임워크, 경량",
     },
     "apps/:id": {
       title: "독립 실행형 앱 - Nuclo 예제",
@@ -64,7 +64,7 @@ export const seo = {
     },
     desktop: {
       title: "Nuclo OS - 데스크톱",
-      description: "파일, 메모, 터미널, 계산기, 타이머, 칸반 보드, 차트와 스프레드시트가 있는 재무 앱, 캘린더를 갖춘 독립 실행형 데스크톱입니다. 시뮬레이션된 파일 시스템은 브라우저에 저장됩니다.",
+      description: "파일, 메모, 터미널, 계산기, 타이머, 칸반 보드, 차트와 스프레드시트가 있는 재무 앱, 캘린더를 갖춘 독립 실행형 데스크톱입니다. 가상 파일 시스템은 브라우저에 저장됩니다.",
     },
     docs: {
       title: "Nuclo 문서 - 가이드 및 API 참조",

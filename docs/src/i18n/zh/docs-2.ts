@@ -40,7 +40,7 @@ pageTitle.className // "page-title page-title-<hash>"
         <li>名字得是合法的类名，不合法的话 Nuclo 会给出警告，并自动生成一个替代。</li>
         <li>名字是全局唯一的，两个不同的样式撞了名，Nuclo 同样会警告你。</li>
       </ul>
-      <h3>怎么用返回值</h3>
+      <h3>返回值怎么用</h3>
       ${code("example.ts", `
 const card = css({ p: 8 })
 
@@ -281,7 +281,7 @@ beforeEach(() => resetStyles())
       <p>Nuclo 的路由方案，支持服务端渲染、hydration、按路由做代码分割，还会在空闲时预加载，底层建立在 <code>list()</code> 和 <code>update()</code> 之上。gzip 后只有约 ${NUCLO_ROUTER_GZIP_KB} KB，除了 Nuclo 本身再无其他依赖，也没有副作用，所以没用到的话会被 tree-shake 干净。</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>用 <code>pnpm add</code>、<code>yarn add</code> 或 <code>bun add</code> 装这两个包也一样。它把 <code>nuclo</code> 0.3 及以上版本作为 peer dependency。</p>
-      <p>router 负责决定加载<em>什么</em>，应用则通过 <code>router.outlet()</code> 来说明放<em>在哪</em>：它就是一个遍历整个图层栈的 <code>list()</code>，每个图层占一行，所以普通页面只是其中单独的一行。服务端和客户端会构建出同一棵树，因此 <code>hydrate()</code> 接管的是服务端已有的节点，而不是把它们换掉。剩下的部分，无非是 <code>history</code>、一个委托的 <code>click</code> 监听器，以及 <code>requestIdleCallback</code>。</p>
+      <p>router 负责决定加载<em>什么</em>，应用则通过 <code>router.outlet()</code> 来说明放<em>在哪</em>：它就是一个遍历整个层栈的 <code>list()</code>，每层占一行，所以普通页面只是其中单独的一行。服务端和客户端会构建出同一棵树，因此 <code>hydrate()</code> 接管的是服务端已有的节点，而不是把它们换掉。剩下的部分，无非是 <code>history</code>、一个委托的 <code>click</code> 监听器，以及 <code>requestIdleCallback</code>。</p>
       <h3>一次导入，到处使用</h3>
       ${code("main.ts", `
 export const router = createRouter(routes)   // define once, import anywhere
@@ -407,7 +407,7 @@ router.href('./preview')      // '/invoices/42/preview' or '/customers/7/preview
 await router.go('./preview')
 await layer.push('./preview') // the usual shape: a child layer
 `)}
-      <p><code>./x</code>、<code>../x</code>、<code>.</code> 和 <code>..</code> 都是相对于当前路由的路径来解析的，而不是 URL 的“目录”。从 <code>/invoices/42</code> 出发，<code>./preview</code> 得到 <code>/invoices/42/preview</code>，换成浏览器自己解析的话则会是 <code>/invoices/preview</code>；URL 末尾有没有斜杠，结果都一样。<code>../</code> 往上走一段，最多走到根。查询串和哈希会被带上，<code>base</code> 会重新加回去，最终写进 history 的是解析后的绝对路径。React Router 处理 <code>&lt;Link to="./x"&gt;</code> 时，也同样偏离了标准的 URL 解析规则。</p>
+      <p><code>./x</code>、<code>../x</code>、<code>.</code> 和 <code>..</code> 都是相对于当前路由的路径来解析的，而不是 URL 的“目录”。从 <code>/invoices/42</code> 出发，<code>./preview</code> 得到 <code>/invoices/42/preview</code>，换成浏览器自己解析的话则会是 <code>/invoices/preview</code>；URL 末尾有没有斜杠，结果都一样。<code>../</code> 往上走一段，最多走到根。查询串和哈希会被带上，<code>base</code> 会重新加回去，最终写进 history 的是解析后的绝对路径。React Router 对 <code>&lt;Link to="./x"&gt;</code> 也做了同样的偏离。</p>
       <ul>
         <li>只有 <code>./</code> 和 <code>../</code> 是路由相对的。href 里光秃秃的 <code>preview</code>，仍然交给浏览器的常规规则处理。</li>
         <li>相对链接请用 <code>router.href('./preview')</code> 来构建，别手写 <code>href="./preview"</code>。<code>href()</code> 在渲染时就完成解析，输出的标记是绝对路径，所以对爬虫、中键点击和禁用 JavaScript 的场景依然正确。</li>
@@ -419,7 +419,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>模式和路径都没变的父级</td><td><strong>保留</strong>：还是同一个节点，它的 <code>load()</code> 也不会重新运行</td></tr>
           <tr><td>匹配到的页面</td><td>模式和路径没变、且没有 <code>load()</code> 时<strong>保留</strong>，所以只改查询串或哈希，它依然还在。带加载器的路由，每次访问都会刷新。</td></tr>
           <tr><td>路径变了的父级</td><td>重建，连同它下面的一切</td></tr>
-          <tr><td>推入的图层</td><td>只渲染匹配到的页面，它的父级已经挂载在下面那一行里了。</td></tr>
+          <tr><td>推入的层</td><td>只渲染匹配到的页面，它的父级已经挂载在下面那一行里了。</td></tr>
         </tbody>
       </table>
       <p>被保留下来的页面，用的还是构建时的那个 <code>ctx</code>。这正是 <code>ctx</code> 在所有场景下的含义：要读实时值，请读 <code>router.*</code>。由查询串驱动的状态（筛选、分页、选项卡之类），在动态值里读 <code>router.search</code>，再用 <code>router.go('?page=2', { replace: true })</code> 写回去。页面、焦点，还有写到一半的输入，全都纹丝不动。</p>
@@ -455,7 +455,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
       <ul>
         <li><strong>被保留的页面，区域也保留。</strong><a href="#router-patterns">保留页面</a>时，查询串或哈希的变化同样不会动区域内容。如果侧栏依赖它们，请在动态值里读 <code>router.search</code>。</li>
         <li><strong>被重建的页面，区域重新填充。</strong>路由一变，旧的那一行被移除，新页面的 <code>into()</code> 视图接管，不会留下任何残余。</li>
-        <li><strong>推入的图层会多出一个视图。</strong>图层是 outlet 里靠后的一行，所以它的 <code>into()</code> 就是同一区域的较新视图。默认的 <code>type: 'latest'</code> 下，它会盖过页面的视图，直到图层关闭，页面的视图才重新露面；<code>type: 'stack'</code> 下，两者会同时显示。</li>
+        <li><strong>推入的层会多出一个视图。</strong>层是 outlet 里靠后的一行，所以它的 <code>into()</code> 就是同一区域的较新视图。默认的 <code>type: 'latest'</code> 下，它会盖过页面的视图，直到层关闭，页面的视图才重新露面；<code>type: 'stack'</code> 下，两者会同时显示。</li>
         <li><strong>父页面也能填充区域。</strong>子级变化时，父级的视图不动，因为父级不会被重建。</li>
         <li><strong>服务端渲染开箱即用。</strong>服务端在 <code>route.run()</code> 里构建页面，所以它的 <code>into()</code> 视图已经在 HTML 里，<code>hydrate()</code> 会直接接管它们。</li>
       </ul>
@@ -503,7 +503,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
           <tr><td>运行期间</td><td><code>router.pending</code> 为 true，当前页面继续显示</td></tr>
           <tr><td>抛出异常或 reject</td><td>落到 <code>router.error</code> 上。<code>go()</code> 依然永不 reject，导航可以重试。</td></tr>
           <tr><td>在 <code>start()</code> 期间</td><td>rejection 会从 <code>start()</code> 抛出，因为此时还没有 Route 可以承载它。</td></tr>
-          <tr><td>推入的图层</td><td>运行它自己的加载器，拥有自己的数据</td></tr>
+          <tr><td>推入的层</td><td>运行它自己的加载器，拥有自己的数据</td></tr>
           <tr><td>空闲预加载器</td><td>只预热模块。它没有上下文可传，否则就等于在为一个你可能永远不会打开的路由请求数据。</td></tr>
           <tr><td>重新导航到同一 URL</td><td>加载器再次运行，该行重建。没有加载器的路由则保留它的行。</td></tr>
         </tbody>
@@ -565,7 +565,7 @@ if (!router.match(request.url)) return new Response(null, { status: 404 })
 const owned = router.match(href) !== null
 `)}
       <h3><code>router.outlet()</code></h3>
-      <p>以 <code>list()</code> 的形式呈现活动路由的页面。只需放置一次，放在页面该出现的地方。推入的图层是它靠后的一行。在 <code>start()</code> 解析之前和 <code>stop()</code> 之后，它是空的。在服务端，它渲染的是 <code>run()</code> 正在执行的那个 Route。</p>
+      <p>以 <code>list()</code> 的形式呈现活动路由的页面。只需放置一次，放在页面该出现的地方。推入的层是它靠后的一行。在 <code>start()</code> 解析之前和 <code>stop()</code> 之后，它是空的。在服务端，它渲染的是 <code>run()</code> 正在执行的那个 Route。</p>
       <h3><code>router.matches(table)</code></h3>
       <p>渲染第二张表里与活动路由路径相匹配的视图，以 <code>list()</code> 的形式存在，可以放在任何地方。见 <a href="#router-matches"><code>matches()</code></a>。</p>
       <h3><code>Route</code></h3>
@@ -577,11 +577,11 @@ const owned = router.match(href) !== null
           <tr><td><code>pending</code></td><td>有一次导航正在等待模块或加载器</td></tr>
           <tr><td><code>error</code></td><td>最近一次加载失败的错误，下一次导航会把它清掉</td></tr>
           <tr><td><code>data</code></td><td>匹配页面的 <code>load()</code> 返回的内容，供服务端序列化。父级的不包含在内。</td></tr>
-          <tr><td><code>depth</code></td><td>栈上有几个图层（普通页面为 1）</td></tr>
+          <tr><td><code>depth</code></td><td>栈有几层（普通页面为 1）</td></tr>
           <tr><td><code>go(href, { replace })</code></td><td>执行导航，需要时加载模块。永不 reject：模块失败（无论 reject 还是抛出）都会落到 <code>error</code> 上。</td></tr>
-          <tr><td><code>push(href)</code></td><td>把一条路由作为新图层打开在最上面，并以它关闭时的值 resolve。支持 <code>./</code>。没有匹配或模块失败时 reject。</td></tr>
+          <tr><td><code>push(href)</code></td><td>把一条路由作为新层打开在最上面，并以它关闭时的值 resolve。支持 <code>./</code>。没有匹配或模块失败时 reject。</td></tr>
           <tr><td><code>href(path)</code></td><td>给路径加上 <code>base</code> 前缀，用在 <code>a({ href })</code> 里。会相对于活动路由解析 <code>./</code> 和 <code>../</code>。</td></tr>
-          <tr><td><code>stop()</code></td><td>卸掉所有监听器，关闭已打开的图层，清空 outlet。幂等。已停止的 Route 仍会返回最后一次匹配的结果，<code>go()</code> 则什么都不做。</td></tr>
+          <tr><td><code>stop()</code></td><td>卸掉所有监听器，关闭已打开的层，清空 outlet。幂等。已停止的 Route 仍会返回最后一次匹配的结果，<code>go()</code> 则什么都不做。</td></tr>
           <tr><td><code>run(fn)</code></td><td>让这个 Route 充当 router 的活动 Route 来调用 <code>fn</code>，并返回它的结果，比如服务端上的 <code>route.run(() =&gt; renderToString(App))</code>。只支持同步。<code>fn</code> 返回之后，这个 Route 就不再是活动的了。</td></tr>
         </tbody>
       </table>
@@ -607,13 +607,13 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         </tbody>
       </table>
       <h3><code>Layer</code></h3>
-      <p>页面在栈里的位置，以及关闭该图层的办法。</p>
+      <p>页面在栈里的位置，以及关闭该层的办法。</p>
       <table>
         <thead><tr><th>成员</th><th></th></tr></thead>
         <tbody>
-          <tr><td><code>depth</code></td><td>基础页面是 0，推入的图层从 1 开始</td></tr>
-          <tr><td><code>push(href)</code></td><td>在页面内部再打开一个图层，和 <code>Route.push()</code> 一样</td></tr>
-          <tr><td><code>close(result?)</code></td><td>关闭此图层以及它之上的所有图层，并 resolve 打开它的那个 <code>push()</code>。不带参数表示取消。在 depth 0 上不起作用。</td></tr>
+          <tr><td><code>depth</code></td><td>基础页面是 0，推入的层从 1 开始</td></tr>
+          <tr><td><code>push(href)</code></td><td>在页面内部再打开一个层，和 <code>Route.push()</code> 一样</td></tr>
+          <tr><td><code>close(result?)</code></td><td>关闭此层以及它之上的所有层，并 resolve 打开它的那个 <code>push()</code>。不带参数表示取消。在 depth 0 上不起作用。</td></tr>
         </tbody>
       </table>
       <h3><code>DataLoader</code> 与 <code>withLoad()</code></h3>
@@ -640,9 +640,9 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
       },
       {
         id: "router-layers",
-        title: "图层与离开守卫",
+        title: "层与离开守卫",
         content: `
-      <p><code>push()</code> 会把一条路由打开在当前路由之上，而不是替换它，并以该图层关闭时的值 resolve。页面本质上是一个遍历整个栈的 <code>list()</code>，所以打开图层不过是追加一行。下面的页面不会重新渲染，图层关闭之后，它的 DOM、焦点和填了一半的表单都还原样待在那里。</p>
+      <p><code>push()</code> 会把一条路由打开在当前路由之上，而不是替换它，并以该层关闭时的值 resolve。页面本质上是一个遍历整个栈的 <code>list()</code>，所以打开层不过是追加一行。下面的页面不会重新渲染，层关闭之后，它的 DOM、焦点和填了一半的表单都还原样待在那里。</p>
       <p>有了它，“我需要一条还不存在的记录”这类流程就好办了：不必丢掉用户正在填的表单，就能先跳出去创建。</p>
       ${code("pages/Edit.ts", `
 // the page underneath
@@ -654,13 +654,13 @@ if (created) { options.push(created); selected = created.id; update() }
 layer.close(created)   // resolves the push() above with the new option
 layer.close()          // dismissed: resolves with undefined
 `)}
-      <p>图层可以层层嵌套。一个对话框里还要再弹一个对话框，只需调用 <code>layer.push()</code> 并 await 它，不用去引用 Route。</p>
+      <p>层还可以继续嵌套。一个对话框里还要再弹一个对话框，只需调用 <code>layer.push()</code> 并 await 它，不用去引用 Route。</p>
       <ul>
-        <li><strong>URL 就是最顶层的图层。</strong><code>push()</code> 会添加一条 history 条目，所以图层可以被链接，后退会把它关掉，并让它的 <code>push()</code> 以取消的方式 resolve，和点击取消完全一样。后退与 <code>close()</code> 走的是同一条代码路径：<code>close()</code> 记录结果并让 history 往回走，<code>history.state</code> 里的深度才是权威来源。浏览器每个标签页大约只保留 50 条条目，所以在图层之间走了很远之后，下面那条条目可能已经不在了：这时 <code>close()</code> 会就地关闭图层，并把当前条目改写成留下来显示的那个页面。</li>
-        <li><strong>普通导航会清空栈。</strong>点链接或 <code>go()</code> 都不算图层，它们会替换一切，并关闭所有已打开的图层，所以不会有哪个调用方一直 await 下去。</li>
-        <li><strong>冷加载得是个独立页面。</strong>URL 只说明最顶层的图层，并不记录它下面的栈，所以直接打开某个图层的 URL 时，它会以 depth 1 渲染，此时 <code>layer.depth === 0</code>，<code>close()</code> 不会起作用。被推入的路由必须能独立成立。请根据 <code>layer.depth</code> 分支处理，提供一个“离开”的链接，而不是一个失效的取消按钮。</li>
+        <li><strong>URL 对应的就是最顶上的那一层。</strong><code>push()</code> 会添加一条 history 条目，所以每一层都有自己的链接，后退会把它关掉，并让它的 <code>push()</code> 以取消的方式 resolve，和点击取消完全一样。后退与 <code>close()</code> 走的是同一条代码路径：<code>close()</code> 记录结果并让 history 往回走，<code>history.state</code> 里的深度才是权威来源。浏览器每个标签页大约只保留 50 条条目，所以在层之间走了很远之后，下面那条条目可能已经不在了：这时 <code>close()</code> 会就地关闭层，并把当前条目改写成留下来显示的那个页面。</li>
+        <li><strong>普通导航会清空栈。</strong>点链接或 <code>go()</code> 都不算层，它们会替换一切，并关闭所有已打开的层，所以不会有哪个调用方一直 await 下去。</li>
+        <li><strong>冷加载得是个独立页面。</strong>URL 只说明最上面那一层，并不记录它下面的栈，所以直接打开某个层的 URL 时，它会以 depth 1 渲染，此时 <code>layer.depth === 0</code>，<code>close()</code> 不会起作用。被推入的路由必须能独立成立。请根据 <code>layer.depth</code> 分支处理，提供一个“离开”的链接，而不是一个失效的取消按钮。</li>
         <li><strong>Promise 撑不过页面刷新</strong>，因为它活在闭包里。请把返回结果当作流程中的一条捷径，没有它时，流程走另一条更绕的路也应该能走通。</li>
-        <li><strong>不会有悬而未决的 await。</strong><code>stop()</code> 会关闭所有打开的图层，被导航抛弃的图层则以 <code>undefined</code> resolve。</li>
+        <li><strong>不会有悬而未决的 await。</strong><code>stop()</code> 会关闭所有打开的层，被导航抛弃的层则以 <code>undefined</code> resolve。</li>
       </ul>
       <h3>离开守卫</h3>
       <p>如果页面里有值得保住的东西（比如填了一半的表单），就可以注册一个守卫。页面被丢弃之前会先问它，返回 <code>false</code>（或 resolve 为 false 的 promise）就能把页面留住：</p>
@@ -675,7 +675,7 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
 `)}
       <ul>
         <li><strong>只在页面离开时才询问。</strong>布局下子级之间的导航，或保留页面时查询串、哈希的变化，都不会触发。守卫的生命周期与页面一致，所以没有什么需要注销的。</li>
-        <li><strong>所有离开页面的方式都在覆盖范围内。</strong>链接、<code>go()</code>、后退与前进、图层的 <code>close()</code>，还有 <code>go()</code> 到 router 不管的 URL（也就是离开应用，此时 <code>to</code> 为 <code>null</code>）。被守卫拦下的后退或前进会被撤销，地址栏仍停在当前页面。关闭标签页或刷新则是 <code>beforeunload</code> 的活儿。</li>
+        <li><strong>所有离开页面的方式都在覆盖范围内。</strong>链接、<code>go()</code>、后退与前进、层的 <code>close()</code>，还有 <code>go()</code> 到 router 不管的 URL（也就是离开应用，此时 <code>to</code> 为 <code>null</code>）。被守卫拦下的后退或前进会被撤销，地址栏仍停在当前页面。关闭标签页或刷新则是 <code>beforeunload</code> 的活儿。</li>
         <li><strong><code>to</code></strong> 是导航要前往的 <code>RouteContext</code>。守卫从最内层开始运行，遇到第一个拒绝就停下。守卫抛出异常时同样会留住页面。<code>close(result)</code> 同样要经过守卫，所以带着结果关闭之前，先把你的标记清掉。</li>
         <li>router 只能回到它自己写入的 history 条目。后退或前进到它没写过的条目（比如原生的 <code>#fragment</code> 链接，或其他脚本调用的 <code>pushState</code>）时，是不会询问的。</li>
       </ul>
@@ -700,7 +700,7 @@ div(
 )
 `)}
       <ul>
-        <li><strong>匹配规则与路由表完全一致。</strong>模式、优先级、原始路径匹配和 <code>base</code> 剥离都是 router 自己的那一套，所以视图和页面对 URL 的理解永远一致。它读取最顶层图层的路径，和 <code>router.path</code> 一样。</li>
+        <li><strong>匹配规则与路由表完全一致。</strong>模式、优先级、原始路径匹配和 <code>base</code> 剥离都是 router 自己的那一套，所以视图和页面对 URL 的理解永远一致。它读取最上面那一层的路径，和 <code>router.path</code> 一样。</li>
         <li><strong>视图</strong>是 <code>(params, ctx) =&gt; content</code>，<code>params</code> 的类型由模式推导而来，<code>ctx</code> 则是带着该视图 <code>pattern</code> 和 <code>params</code> 的 <code>RouteContext</code>。它也可以返回页面模块的 <code>import()</code>，模块到达后会以 <code>ctx</code> 去调用。</li>
         <li><strong>没有匹配就什么都不渲染。</strong>可以加一个 <code>'*'</code> 视图做兜底。和 outlet 一样，它在 <code>start()</code> 之前、<code>stop()</code> 之后都是空的。</li>
         <li><strong>只在路由变化时才重新渲染</strong>，所以凡是页面被保留的情况，视图也会保留它的 DOM。</li>
@@ -842,7 +842,7 @@ createRouter(routes, {
       <h3>示例</h3>
       <p>仓库里有两个可运行的示例，互为补充，每一项设置都能在某处亲眼看到：</p>
       <ul>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>：对整套 API 的客户端巡礼。涵盖每种模式写法和优先级规则、链接处理的退出方式、带实时控件的每个 Route 成员、一个子 router、三层深的图层栈、挂在两个父级下的相对分区，以及带 <code>pending</code> 和 <code>error</code> 的路由加载器。它设置了 <code>preload: false</code>，好让这些状态保持可见。</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>：对整套 API 的客户端巡礼。涵盖每种模式写法和优先级规则、链接处理的退出方式、带实时控件的每个 Route 成员、一个子 router、三层深的层栈、挂在两个父级下的相对分区，以及带 <code>pending</code> 和 <code>error</code> 的路由加载器。它设置了 <code>preload: false</code>，好让这些状态保持可见。</li>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>：每个请求一次 <code>renderToString()</code>、可验证地接管服务端节点的 hydration、真实的 404 状态码、非根的 <code>base</code>、能在网络面板里观察到的空闲预加载，以及一个把数据从服务端交给客户端、让 hydration 不必再重新请求的加载器。</li>
       </ul>
     `,

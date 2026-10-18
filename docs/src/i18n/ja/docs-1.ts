@@ -181,7 +181,7 @@ render(Card, document.body)
         <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> は "false" という文字が画面に出てしまいます。<code>div(when(() =&gt; isAdmin, span('Admin')))</code> と書きましょう。</li>
         <li>配列はそのままでは子要素になりません。スプレッドして渡します: <code>ul(...names.map((n) =&gt; li(n)))</code>。中身が変わるリストには <code>list()</code> を使います。</li>
         <li>タグ名と同じ名前のローカル変数は、ビルダーをシャドウイングします。たとえば <code>function Row(label: string)</code> の中では <code>label(...)</code> を呼べません。<code>label</code>、<code>title</code>、<code>data</code>、<code>p</code>、<code>a</code>、<code>i</code> といった名前の変数は、別名にしておきましょう。</li>
-        <li>ブラウザーは <code>id</code> を持つ要素を、すべてグローバル変数として露出します。Nuclo が読み込まれる時点で、ページ上にすでに <code>&lt;main id="main"&gt;</code> があると、Nuclo はそのグローバルを上書きしません。結果、<code>main(...)</code> が <code>TypeError</code> になります。id は別の名前にしてください。</li>
+        <li>ブラウザーは <code>id</code> を持つ要素を、すべてグローバル変数として公開します。Nuclo が読み込まれる時点で、ページ上にすでに <code>&lt;main id="main"&gt;</code> があると、Nuclo はそのグローバルを上書きしません。結果、<code>main(...)</code> が <code>TypeError</code> になります。id は別の名前にしてください。</li>
       </ul>
       <h3>カスタムモディファイア</h3>
       <p>パラメーターを 1 つ以上宣言した関数は、要素の構築中に、引数の並び順どおり 1 回だけ実行されます。第 1 引数は要素です。第 2 引数は内部用のインデックスなので、当てにしないでください。戻り値が文字列か数値ならテキストになり、<code>Node</code> なら子として追加され、オブジェクトなら属性として適用されます。</p>
@@ -426,7 +426,7 @@ first = 'Grace'
 last = 'Hopper'
 update() // one pass, both changes
 `)}
-      <p><code>update()</code> を呼ぶ場所は、イベントハンドラー、タイマー、fetch の callback、<code>onMount</code> などです。動的な値の中から呼ぶのはやめてください。</p>
+      <p><code>update()</code> を呼ぶ場所は、イベントハンドラー、タイマー、fetch のコールバック、<code>onMount</code> などです。動的な値の中から呼ぶのはやめてください。</p>
     `,
       },
       {
@@ -632,7 +632,7 @@ render(() => div(Layout(), Article()))
         <li>順序は問いません。リージョンより先に作られた <code>into()</code> は待機し、リージョンが構築された瞬間に表示されます。複数のビューは、書かれた順に並びます。</li>
         <li>中身のライフサイクルは、ビューに従います。<code>into()</code> を抱えた <code>when()</code> が閉じたり、その <code>list()</code> の行が消えたりすれば、中身もリージョンから外れます。再び開いたときに追加されるのは 1 つだけで、二重にはなりません。</li>
         <li>リージョン側が消えた場合（たとえばそれを含む <code>when()</code> が閉じたとき）、ビューは再び待機状態に戻ります。のちに同じ id のリージョンが構築されれば、そこに表示されます。</li>
-        <li>どのリージョンにも一致しない id の <code>into()</code> は、何も表示されず、エラーも出ません。スペルミスにご注意ください。</li>
+        <li>どのリージョンにも一致しない id の <code>into()</code> は、何も表示されず、エラーも出ません。スペルミスに気をつけてください。</li>
         <li>id はツリー内で一意にします。すでにあるリージョンと同じ id で 2 つ目を構築すると、警告がログに出ます。</li>
         <li>リージョンは<a href="#api-ssr">サーバーサイドレンダリング</a>でも動きます。<code>hydrate()</code> では、各ビューは作り直されず、サーバーが出力した HTML がそのまま引き継がれます。</li>
       </ul>

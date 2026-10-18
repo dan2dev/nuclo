@@ -153,10 +153,10 @@ export const COMPARISON_COLS: {
     name: "Virtual DOM",
     sub: "render → diff → commit",
     items: [
-      { good: false, text: "Rifà il render di interi alberi di componenti a ogni cambio di stato" },
+      { good: false, text: "Esegue di nuovo il render di interi alberi di componenti a ogni cambio di stato" },
       { good: false, text: "Confronta il vecchio albero col nuovo per capire cosa è cambiato" },
       { good: false, text: "Richiede memoizzazione per recuperare prestazioni" },
-      { good: false, text: "Lascia closure obsolete e array di dipendenze" },
+      { good: false, text: "Si porta dietro closure obsolete e array di dipendenze" },
     ],
   },
   {

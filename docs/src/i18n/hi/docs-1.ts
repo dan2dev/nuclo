@@ -100,7 +100,7 @@ import { render, update, getCssText } from 'nuclo'
         <li><code>"moduleResolution": "bundler"</code>। <code>node16</code> और <code>nodenext</code> अभी supported नहीं हैं।</li>
         <li><code>DOM</code> lib। अगर आपने <code>lib</code> सेट नहीं किया है, तो TypeScript इसे अपने आप शामिल कर लेता है।</li>
       </ul>
-      <p>project की कोई भी file <code>'nuclo'</code> import करती है, तो हर file को global types दिखने लगते हैं। इसके अलावा कुछ और नहीं चाहिए। अगर कोई file इसे import नहीं करती (जैसे tests के लिए अलग tsconfig में), तो types खुद जोड़ दीजिए:</p>
+      <p>अगर project की कोई भी file <code>'nuclo'</code> import करती है, तो हर file को global types दिखने लगते हैं। इसके अलावा कुछ और नहीं चाहिए। अगर कोई file इसे import नहीं करती (जैसे tests के लिए अलग tsconfig में), तो types खुद जोड़ दीजिए:</p>
       ${code("tsconfig.json", `
 {
   "compilerOptions": {
@@ -388,7 +388,7 @@ update() // App's onDestroy hooks and cleanups run
         <li>Callback को कुछ नहीं, या cleanup function लौटाना चाहिए, इसलिए इसे <code>async</code> मत बनाइए। लौटाया गया Promise cleanup की तरह इस्तेमाल नहीं होता। Async काम इसके अंदर शुरू कीजिए: <code>{ onMount: (el) =&gt; { void load(el) } }</code>।</li>
         <li>Hooks server पर कभी नहीं चलते। Client पर वे <code>hydrate()</code> के बाद चलते हैं।</li>
       </ul>
-      <div class="docs-callout"><strong>Note:</strong> Hooks effects नहीं हैं। State बदलने पर वे दोबारा नहीं चलते। हर hook हर element के लिए ज़्यादा से ज़्यादा एक बार चलता है।</div>
+      <div class="docs-callout"><strong>ध्यान दीजिए:</strong> Hooks effects नहीं हैं। State बदलने पर वे दोबारा नहीं चलते। हर hook हर element के लिए ज़्यादा से ज़्यादा एक बार चलता है।</div>
     `,
       },
     ],
@@ -613,7 +613,7 @@ update() // same <li>, its class is now "done"
         id: "api-region",
         title: "region() और into()",
         content: `
-      <p><code>region()</code> tree में एक named जगह mark करता है। <code>into()</code> उसे कहीं और से, किसी भी depth से भर देता है। Layout को content props की तरह नहीं मिलता, और जो component content बनाता है उसे पता नहीं होता कि वह कहाँ पहुँचेगा।</p>
+      <p><code>region()</code> tree में एक named जगह mark करता है। <code>into()</code> उसे कहीं और से, किसी भी depth से भर देता है। Layout को content prop के रूप में नहीं मिलता, और content बनाने वाले component को पता नहीं होता कि वह कहाँ पहुँचेगा।</p>
       ${code("app.ts", `
 const Layout = () =>
   div(
@@ -843,7 +843,7 @@ import { App } from './app.ts'
 render(App, document.getElementById('app')!)
 `)}
       <ul>
-        <li>आप component (<code>render(App)</code>) पास कर सकते हैं या उसका लौटाया builder (<code>render(App())</code>)। DOM वही बनता है। बस <code>render(App)</code> से <a href="#api-force-update"><code>forceUpdate()</code></a> बाद में root को दोबारा बना पाता है, इसलिए इसी को तरजीह दीजिए।</li>
+        <li>आप component (<code>render(App)</code>) पास कर सकते हैं या उसका लौटाया builder (<code>render(App())</code>)। DOM वही बनता है। बस <code>render(App)</code> से <a href="#api-force-update"><code>forceUpdate()</code></a> बाद में root को दोबारा बना पाता है, इसलिए इसी का इस्तेमाल कीजिए।</li>
         <li>यह जोड़ता है। <code>parent</code> को साफ़ नहीं करता, इसलिए इसे दो बार कॉल करने पर दो copies जुड़ जाती हैं।</li>
         <li><code>render()</code> के लौटने तक tree के हर <code>onMount</code> चल चुका होता है।</li>
         <li>ऐसे element में render कीजिए जो document में हो। <a href="#api-update"><code>update()</code></a> देखिए।</li>

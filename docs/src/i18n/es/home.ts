@@ -87,7 +87,7 @@ export const PHILOSOPHY_POINTS = [
   {
     num: "03",
     title: "Funciones, no componentes",
-    desc: "Todo se arma con funciones JavaScript normales: sin clases, sin decoradores, sin sintaxis propia. Cada función devuelve nodos DOM, y si necesitas onMount u onDestroy los añades como un modificador más, solo cuando hagan falta.",
+    desc: "Todo se arma con funciones JavaScript normales: sin clases, sin decoradores, sin sintaxis propia. Cada función devuelve nodos DOM, y si necesitas onMount u onDestroy los agregas como un modificador más, solo cuando hagan falta.",
   },
 ];
 

@@ -59,7 +59,7 @@ export const seo = {
       keywords: "nuclo, framework dom, valeurs dépendantes de l'état, mises à jour explicites, état mutable, javascript, typescript, framework ui, léger",
     },
     "apps/:id": {
-      title: "Applications autonomes - Exemples Nuclo",
+      title: "Applications standalone - Exemples Nuclo",
       description: "Des applications Nuclo interactives, dans un espace de travail qui prend toute la fenêtre du navigateur.",
     },
     desktop: {
@@ -68,7 +68,7 @@ export const seo = {
     },
     docs: {
       title: "Documentation Nuclo - Guide et référence API",
-      description: "La doc de Nuclo : installation, builders de balises, update() explicite, when() et list(), événements, cycle de vie, SSR et hydration, CSS-in-TS typé, et la référence complète de l'API.",
+      description: "La doc de Nuclo : installation, constructeurs de balises, update() explicite, when() et list(), événements, cycle de vie, SSR et hydratation, CSS-in-TS typé, et la référence complète de l'API.",
       keywords: "documentation nuclo, référence api, premiers pas, update, list, when, on",
     },
     examples: {

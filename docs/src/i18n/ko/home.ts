@@ -82,7 +82,7 @@ export const PHILOSOPHY_POINTS = [
   {
     num: "02",
     title: "마음껏 바꾸고, 업데이트는 한 번만",
-    desc: "값을 열 번 바꿔도 update()는 한 번이면 충분합니다. DOM에는 최종 상태만 반영되니 쓸데없는 render가 생기지 않습니다.",
+    desc: "값을 열 번 바꿔도 update()는 한 번이면 충분합니다. DOM에는 최종 상태만 반영되니 쓸데없는 렌더링이 생기지 않습니다.",
   },
   {
     num: "03",
@@ -110,7 +110,7 @@ export const FEATURES = [
   {
     num: "04 · 정밀함",
     title: "바뀐 곳만 정확히 패치",
-    desc: "동적 표현식은 update()가 호출될 때 다시 평가되고, 실제로 달라진 값만 DOM에 닿습니다.",
+    desc: "동적 표현식은 update()가 호출될 때 다시 평가되고, 실제로 달라진 값만 DOM에 반영됩니다.",
   },
 ];
 
@@ -126,7 +126,7 @@ export const PIPELINE_STEPS = [
   {
     kicker: "02 · 적용",
     title: "update()를 호출합니다",
-    desc: "전역 함수 하나로 변경 사항을 반영합니다. 여러 번 바꾼 뒤 한 번만 호출하면 됩니다. 시키기 전에는 아무것도 render되지 않습니다.",
+    desc: "전역 함수 하나로 변경 사항을 반영합니다. 여러 번 바꾼 뒤 한 번만 호출하면 됩니다. 호출하기 전에는 아무것도 렌더링되지 않습니다.",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
@@ -153,7 +153,7 @@ export const COMPARISON_COLS: {
     name: "가상 DOM",
     sub: "렌더링 → 비교 → 적용",
     items: [
-      { good: false, text: "상태가 바뀔 때마다 컴포넌트 트리를 다시 render합니다" },
+      { good: false, text: "상태가 바뀔 때마다 컴포넌트 트리를 다시 렌더링합니다" },
       { good: false, text: "이전 트리와 새 트리를 diff해서 바뀐 곳을 찾습니다" },
       { good: false, text: "성능을 되찾으려면 메모이제이션이 필수입니다" },
       { good: false, text: "stale closure와 의존성 배열이 따라옵니다" },
@@ -229,8 +229,8 @@ export const QUICK_START_STEPS = [
     lang: "terminal",
   },
   {
-    num: "02 - 가져오기",
-    title: "가져오기",
+    num: "02 - 임포트",
+    title: "Import",
     desc: "side-effect import 한 줄이면 175개 태그 빌더가 전역에 등록됩니다.",
     code: `<span class="kw">import</span> <span class="st">'nuclo'</span>`,
     lang: "main.ts",
@@ -262,7 +262,7 @@ export const LABELS = {
   copyInstall: "설치 명령 복사",
   howItWorks: "동작 방식",
   pipelineTitle: "명시적인 업데이트 주기, 단 하나.",
-  pipelineSub: "상태에 따라 달라지는 값만 있을 뿐, 의존성 그래프도 스케줄러도 없습니다. 언제 실행할지는 내가 정하고, 데이터가 화면에 닿는 경로는 언제나 예측 가능합니다.",
+  pipelineSub: "상태에 따라 달라지는 값만 있을 뿐, 의존성 그래프도 스케줄러도 없습니다. 언제 실행할지는 내가 정하고, 데이터가 화면에 반영되는 경로는 하나뿐이라 언제나 예측할 수 있습니다.",
   philosophy: "철학",
   features: "특징",
   featuresTitle: "명료함을 위해 설계했습니다.",
@@ -323,7 +323,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Warp: {
     title: "길게 눌러 워프하세요",
-    note: "onMount가 프레임 루프를 시작하고 cleanup 함수를 반환합니다. 별 영역이 unmount되면 Nuclo가 cleanup을 실행해 루프를 멈추므로, 백그라운드에 남는 작업이 없습니다.",
+    note: "onMount가 프레임 루프를 시작하고 cleanup 함수를 반환합니다. 별 영역이 언마운트되면 Nuclo가 cleanup을 실행해 루프를 멈추므로, 백그라운드에 남는 작업이 없습니다.",
   },
   Life: {
     title: "생명 게임",

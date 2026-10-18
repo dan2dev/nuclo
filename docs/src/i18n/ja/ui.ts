@@ -20,7 +20,7 @@ export const nav = {
 export const footer = {
   tagline: "明示的な UI ランタイム。ふつうの関数とミュータブルな state で組み立て、データから DOM までは update() の 1 回の呼び出しでつなぎます。",
   builtWith: "このサイトは Nuclo で構築されています。",
-  explore: "探索",
+  explore: "コンテンツ",
   documentation: "ドキュメント",
   examples: "サンプル",
   readme: "README",
@@ -35,7 +35,7 @@ export const app = {
   loadingLanguage: "言語を読み込んでいます…",
   notFound: "ページが見つかりません",
   notFoundHint: "このアドレスには何もありません。",
-  goHome: "ホームページへ移動",
+  goHome: "ホームへ戻る",
 };
 
 // Shared by the docs' live frames, the examples and the home teasers.

@@ -8,14 +8,14 @@ export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · 依存関係ゼロ`;
 export const HERO_TITLE_LINES = ["*明示的*な UI を", "nuclo で", "作ろう。"];
 
 export const HERO_DESC =
-  "小さくて型安全な DOM フレームワーク。state は普通の変数やオブジェクトのまま、好きに書き換えて OK。画面に反映するタイミングは、あなたが決めます。プロキシも、シグナルも、仮想 DOM もありません。";
+  "小さくて型安全な DOM フレームワーク。state はふつうの変数やオブジェクトのまま、自由に書き換えられます。画面に反映するタイミングは、あなたが決めます。プロキシも、シグナルも、仮想 DOM もありません。";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
 export const HERO_STATS = [
   { num: "0",   sup: "",   label: "依存関係" },
   { num: "175", sup: "",   label: "型付き HTML & SVG ビルダー" },
-  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "gzip 圧縮時、コアランタイム" },
+  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "コアランタイム (gzip 圧縮後)" },
 ];
 
 export const COUNTER_TEASER_CODE = `import 'nuclo'
@@ -236,8 +236,8 @@ export const QUICK_START_STEPS = [
     lang: "main.ts",
   },
   {
-    num: "03 - 構築",
-    title: "構築",
+    num: "03 - 作成",
+    title: "作成",
     desc: "DOM ノードを返す関数を書いて、state が変わったら update() を呼ぶ。それだけです。",
     code: `<span class="kw">let</span> <span class="pr">name</span> <span class="pt">=</span> <span class="st">'World'</span>
 

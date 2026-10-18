@@ -8,7 +8,7 @@ export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · null Abhängigkeiten`;
 export const HERO_TITLE_LINES = ["Baue *explizite*", "Interfaces mit", "nuclo."];
 
 export const HERO_DESC =
-  "Ein schlankes, durchgängig typisiertes DOM-Framework. Dein State bleibt schlicht und veränderbar, und du steuerst jedes Update. Ohne Proxies, ohne Signals, ohne Virtual DOM.";
+  "Ein schlankes, durchgängig typisiertes DOM-Framework. Dein State bleibt schlicht und veränderlich, und du steuerst jedes Update. Ohne Proxies, ohne Signals, ohne Virtual DOM.";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
@@ -174,7 +174,7 @@ export const COMPARISON_COLS: {
     sub: "ändern → update()",
     featured: true,
     items: [
-      { good: true, text: "Ganz normaler, veränderbarer State, ohne Wrapper und Proxies" },
+      { good: true, text: "Ganz normaler, veränderlicher State, ohne Wrapper und Proxies" },
       { good: true, text: "Ein einziger Aufruf, update(), ist das gesamte mentale Modell" },
       { good: true, text: "Patcht nur, was sich wirklich geändert hat" },
       { good: true, text: `Rund ${NUCLO_GZIP_KB} KB, null Abhängigkeiten, TypeScript-first` },
@@ -218,7 +218,7 @@ export const BENCHMARK_ENTRIES: {
 // ── CTA ─────────────────────────────────────────────────────────────────────
 export const CTA_TITLE = "Wir sind bereit, wenn du es bist.";
 export const CTA_SUB =
-  "Installieren, einmal importieren, loslegen: Deine UIs updaten genau dann, wenn du es willst. Die komplette API hast du an einem Nachmittag drauf.";
+  "Installieren, einmal importieren, loslegen: Deine UIs aktualisieren sich genau dann, wenn du es willst. Die komplette API hast du an einem Nachmittag drauf.";
 
 export const QUICK_START_STEPS = [
   {

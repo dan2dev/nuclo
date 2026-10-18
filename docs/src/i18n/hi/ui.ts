@@ -2,7 +2,7 @@
 // meta and the labels shared by every page. pt/ui.ts and es/ui.ts mirror it.
 
 export const nav = {
-  home: "होम",
+  home: "Home",
   docs: "Docs",
   examples: "Examples",
   getStarted: "शुरू करें",
@@ -10,7 +10,7 @@ export const nav = {
   main: "मुख्य navigation",
   openMenu: "Menu खोलें",
   closeMenu: "Menu बंद करें",
-  nucloHome: "Nuclo होम",
+  nucloHome: "Nuclo Home",
   nucloOnGitHub: "GitHub पर Nuclo",
   opensInNewTab: " (नए टैब में खुलता है)",
   switchTheme: "Theme बदलें",
@@ -45,7 +45,7 @@ export const common = {
   copy: "Copy",
   copied: "✓ Copy हो गया",
   copyToClipboard: "Clipboard में copy करें",
-  live: "लाइव",
+  live: "Live",
   openFullScreen: "ये example fullscreen में खोलें",
   open: "खोलें ↗",
   readTheDocs: "Docs पढ़ें →",

@@ -11,7 +11,7 @@ export const LABELS = {
   lead: "Практический справочник по установке Nuclo, созданию UI с явными обновлениями, типизированным стилям CSS и серверному рендерингу HTML.",
   quickStart: "Быстрый старт",
   quickStartLink: "Быстрый старт",
-  nucloMark: "Знак Nuclo",
+  nucloMark: "Логотип Nuclo",
   facts: { release: "Текущий выпуск", builders: "Билдеры тегов", gzipped: "Ядро, gzip", model: "Модель выполнения", modelValue: "Явная" },
   filterSections: "Фильтровать разделы",
   filter: "Фильтр",

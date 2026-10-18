@@ -112,7 +112,7 @@ export const LABELS = {
   more: "増やす",
   openInStandalone: "スタンドアロンで開く",
   openInNewTab: (title: string) => `${title} を新しいタブで開く`,
-  openStandaloneInNewTab: (title: string) => `${title} をスタンドアロンで新しいタブで開く`,
+  openStandaloneInNewTab: (title: string) => `${title} をスタンドアロンで新しいタブに開く`,
   notFound: "見つかりません",
   noExampleCalled: (id: string) => `"${id}" というサンプルはありません。`,
   allExamples: "すべてのサンプル",

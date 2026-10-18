@@ -26,7 +26,7 @@ const App = () =>
 
 render(App, document.getElementById('app')!)
 `)}
-      <h3>동작 모델</h3>
+      <h3>동작 방식</h3>
       <ol>
         <li>태그 빌더로 UI를 만듭니다.</li>
         <li>상태에 따라 달라지는 값은 함수로 넘깁니다.</li>
@@ -215,7 +215,7 @@ const Icon = () =>
         id: "components",
         title: "컴포넌트",
         content: `
-      <p>컴포넌트는 <code>button(...)</code> 같은 빌더를 반환하는 평범한 함수일 뿐, 별도의 컴포넌트 API는 없습니다. render하거나 트리에 놓기 전에는 아무것도 만들어지지 않습니다.</p>
+      <p>컴포넌트는 <code>button(...)</code> 같은 빌더를 반환하는 평범한 함수일 뿐, 별도의 컴포넌트 API는 없습니다. 렌더링하거나 트리에 놓기 전에는 아무것도 만들어지지 않습니다.</p>
       ${code("counter.ts", `
 function Counter(label: string) {
   let count = 0 // one per call
@@ -549,7 +549,7 @@ const Status = () =>
       <h3>분기 내용</h3>
       <p>분기에는 텍스트, 동적 텍스트, 빌더, <code>list()</code>, 중첩된 <code>when()</code>을 넣을 수 있습니다. DOM 노드가 아니라 <code>p('Hi')</code> 같은 빌더를 넘기세요. DOM 노드는 분기가 한 번 숨겨지고 나면 갱신되지 않습니다.</p>
       <p>분기 안의 속성 객체와 <code>on()</code>은 부모 요소에 적용되고, 분기가 숨겨진 뒤에도 남습니다. 조건부 속성이 필요하면 동적 속성을 쓰세요. <code>{ className: () =&gt; (active ? 'active' : '') }</code>처럼요.</p>
-      <h3>체인 연결</h3>
+      <h3>체이닝</h3>
       <p><code>.when()</code>과 <code>.else()</code>는 원본을 바꾸지 않고 새 빌더를 반환합니다. <code>.else()</code>를 두 번 호출하면 마지막 호출이 적용됩니다.</p>
     `,
       },
@@ -568,7 +568,7 @@ render(Fruits)
 fruits.push('Cherry')
 update()
 `)}
-      <h3>행 일치 방법</h3>
+      <h3>행이 짝지어지는 방식</h3>
       <ul>
         <li>계속 남아 있는 항목은 자기 행을 유지합니다. 필요하면 Nuclo가 행을 옮기지만 <code>renderItem</code>을 다시 호출하지는 않습니다.</li>
         <li>새 항목은 새 행을 받고, 사라진 항목은 행을 잃으면서 <code>onDestroy</code> 훅이 실행됩니다.</li>
@@ -626,7 +626,7 @@ const Article = () => into('main', article(h1('Hello')))
 
 render(() => div(Layout(), Article()))
 `)}
-      <h3>작동 방식</h3>
+      <h3>동작 방식</h3>
       <ul>
         <li><code>into()</code>는 쓴 자리에 주석 하나만 남기고, 내용은 영역의 마커 사이에 렌더링됩니다.</li>
         <li>순서는 상관없습니다. 영역보다 먼저 만들어진 <code>into()</code>는 기다렸다가, 영역이 만들어지는 순간 나타납니다. 뷰는 작성된 순서대로 표시됩니다.</li>
@@ -811,7 +811,7 @@ forceUpdate() // same <h1> element, now "Olá"
     `,
         afterContent: `
       <p>인수 없이 호출하면 <code>forceUpdate()</code>는 <code>render(App)</code>이나 <code>hydrate(App)</code>으로 렌더링한 모든 루트를 다시 만듭니다. <code>render(App())</code>으로 렌더링한 루트는 건너뜁니다. 컴포넌트가 오류를 던지면 오류를 기록하고 그 루트는 기존 DOM을 그대로 둡니다. 새 결과를 적용하다가 중간에 오류가 나도 기록은 하지만, 이미 반영된 부분은 그대로 남습니다.</p>
-      <h3>남는 것과 변화하는 것</h3>
+      <h3>유지되는 것과 바뀌는 것</h3>
       <ul>
         <li>자식은 태그 기준으로 순서대로 짝지어집니다. 짝이 맞는 요소는 재사용되므로 포커스와 입력값이 유지되고 <code>onMount</code> 훅도 다시 실행되지 않습니다. 어느 한 자식의 태그가 달라지면 그 자식과 뒤따르는 형제들은 전부 새로 만듭니다.</li>
         <li>텍스트, 속성, 클래스, 스타일, 리스너, <code>when()</code> 분기, <code>list()</code> 행은 새로 빌드한 결과를 따릅니다.</li>

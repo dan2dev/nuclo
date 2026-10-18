@@ -158,7 +158,7 @@ const Toggle = () =>
         id: "api-create-css",
         title: "createCss()",
         content: `
-      <p>Отдаёт собственные <code>css</code>, <code>cx</code>, <code>variants</code>, <code>keyframes</code> и <code>globalStyle</code>, привязанные к теме. Тема даёт значениям имена: с темой ниже <code>borderColor: 'border'</code> запишет <code>#e5e7eb</code>, а TypeScript подскажет эти имена в автодополнении. Каждая запись в <code>screens</code> становится ключом стилей для медиа-запроса — например, <code>md: {…}</code>.</p>
+      <p>Возвращает собственные <code>css</code>, <code>cx</code>, <code>variants</code>, <code>keyframes</code> и <code>globalStyle</code>, привязанные к теме. Тема даёт значениям имена: с темой ниже <code>borderColor: 'border'</code> запишет <code>#e5e7eb</code>, а TypeScript подскажет эти имена в автодополнении. Каждая запись в <code>screens</code> становится ключом стилей для медиа-запроса — например, <code>md: {…}</code>.</p>
       ${code("theme.ts", `
 export const { css, cx, variants } = createCss({
   colors: { primary: '#ff3f00', border: '#e5e7eb' },
@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>добавленный слой</td><td>показывает только подходящую страницу; его родители уже стоят в строках ниже</td></tr>
         </tbody>
       </table>
-      <p>Сохранённая страница держит тот <code>ctx</code>, с которым её создали. Так <code>ctx</code> работает везде, поэтому актуальные значения читайте из <code>router.*</code>. Фильтры, пагинация и вкладки, завязанные на query-строку, читают <code>router.search</code> внутри динамического значения и меняют URL через <code>router.go('?page=2', { replace: true })</code>. Страница, фокус и недописанный текст при этом остаются на месте.</p>
+      <p>Сохранённая страница держит тот <code>ctx</code>, с которым её создали. Это справедливо для <code>ctx</code> в любом месте, поэтому актуальные значения читайте из <code>router.*</code>. Фильтры, пагинация и вкладки, завязанные на query-строку, читают <code>router.search</code> внутри динамического значения и меняют URL через <code>router.go('?page=2', { replace: true })</code>. Страница, фокус и недописанный текст при этом остаются на месте.</p>
     `,
       },
       {
@@ -483,7 +483,7 @@ export default function Report(ctx: RouteContext) {
       },
       {
         id: "router-loaders",
-        title: "Загрузчики маршрутов и разделение кода",
+        title: "Загрузчики маршрутов и code splitting",
         content: `
       <p>Модуль страницы может экспортировать функцию <code>load</code>. Она запускается до создания страницы при каждом переходе на этот маршрут, а её результат приходит на страницу как <code>data</code>:</p>
       ${code("pages/Post.ts", `
@@ -842,7 +842,7 @@ createRouter(routes, {
       <h3>Примеры</h3>
       <p>В репозитории лежат два рабочих примера. Они дополняют друг друга, так что любую возможность можно где-нибудь увидеть вживую:</p>
       <ul>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: клиентская экскурсия по всему API — все формы шаблонов и правила приоритета, отказ от обработки ссылок, каждый член Route с живыми контролами, вложенный роутер, стек из трёх слоёв, относительный раздел, смонтированный под двумя родителями, и загрузчики маршрутов с <code>pending</code> и <code>error</code>. Задаёт <code>preload: false</code>, чтобы эти состояния были заметны.</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: клиентский обзор всего API — все формы шаблонов и правила приоритета, отказ от обработки ссылок, каждый член Route с живыми контролами, вложенный роутер, стек из трёх слоёв, относительный раздел, смонтированный под двумя родителями, и загрузчики маршрутов с <code>pending</code> и <code>error</code>. Задаёт <code>preload: false</code>, чтобы эти состояния были заметны.</li>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> на каждый запрос, hydration с проверкой, что серверные узлы переиспользуются, честные ответы 404, <code>base</code> не из корня, предзагрузка в простое (её видно на вкладке Network) и загрузчик, чьи данные переезжают с сервера на клиент, так что повторного запроса при hydration нет.</li>
       </ul>
     `,

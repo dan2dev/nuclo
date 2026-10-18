@@ -87,7 +87,7 @@ export const PHILOSOPHY_POINTS = [
   {
     num: "03",
     title: "函数，不是组件",
-    desc: "写的就是普通 JavaScript 函数，不用类，不用装饰器，也没有特殊语法，每个函数返回的就是 DOM 节点。onMount 和 onDestroy 只是普通的修饰函数，用得上再加。",
+    desc: "写的就是普通 JavaScript 函数，不用类，不用装饰器，也没有特殊语法，每个函数返回的就是 DOM 节点。onMount 和 onDestroy 只是普通的 modifier，用得上再加。",
   },
 ];
 

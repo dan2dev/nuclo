@@ -13,7 +13,7 @@ export const nav = {
   nucloHome: "Página inicial do Nuclo",
   nucloOnGitHub: "Nuclo no GitHub",
   opensInNewTab: " (abre em nova aba)",
-  switchTheme: "Alternar o tema de cores",
+  switchTheme: "Alternar tema",
   language: "Idioma",
 };
 
@@ -40,7 +40,7 @@ export const app = {
 
 // Shared by the docs' live frames, the examples and the home teasers.
 export const common = {
-  preview: "Pré-visualização",
+  preview: "Preview",
   code: "Código",
   copy: "Copiar",
   copied: "✓ Copiado",
@@ -48,7 +48,7 @@ export const common = {
   live: "Ao vivo",
   openFullScreen: "Abrir em tela cheia",
   open: "Abrir ↗",
-  readTheDocs: "Leia a documentação →",
+  readTheDocs: "Ler a documentação →",
 };
 
 export const seo = {
@@ -68,7 +68,7 @@ export const seo = {
     },
     docs: {
       title: "Documentação do Nuclo - Guia e referência da API",
-      description: "Documentação do Nuclo: instalação, construtores de tags, update() explícito, when() e list(), eventos, ciclo de vida, SSR e hydration, CSS-in-TS tipado e a referência completa da API.",
+      description: "Documentação do Nuclo: instalação, builders de tags, update() explícito, when() e list(), eventos, ciclo de vida, SSR e hydration, CSS-in-TS tipado e a referência completa da API.",
       keywords: "documentação nuclo, referência da api, primeiros passos, update, list, when, on",
     },
     examples: {

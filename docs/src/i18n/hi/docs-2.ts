@@ -407,7 +407,7 @@ router.href('./preview')      // '/invoices/42/preview' or '/customers/7/preview
 await router.go('./preview')
 await layer.push('./preview') // the usual shape: a child layer
 `)}
-      <p><code>./x</code>, <code>../x</code>, <code>.</code> और <code>..</code> मौजूदा route के path के relative resolve होते हैं, URL की "directory" के नहीं। <code>/invoices/42</code> से <code>./preview</code> का मतलब <code>/invoices/42/preview</code> है, जबकि browser इसे <code>/invoices/preview</code> बनाता। URL के आखिर में slash हो या न हो, इससे फर्क नहीं पड़ता। <code>../</code> एक segment ऊपर जाता है और route की root पर रुक जाता है। Query और hash बचे रहते हैं, <code>base</code> दोबारा जुड़ता है और पूरा absolute path history में जाता है। URL resolution के आम नियम से यही अलग रास्ता React Router भी <code>&lt;Link to="./x"&gt;</code> के लिए अपनाता है।</p>
+      <p><code>./x</code>, <code>../x</code>, <code>.</code> और <code>..</code> मौजूदा route के path के relative resolve होते हैं, URL की "directory" के नहीं। <code>/invoices/42</code> से <code>./preview</code> का मतलब <code>/invoices/42/preview</code> है, जबकि browser इसे <code>/invoices/preview</code> बनाता। URL के आखिर में slash हो या न हो, इससे फर्क नहीं पड़ता। <code>../</code> एक segment ऊपर जाता है और route की root पर रुक जाता है। Query और hash बचे रहते हैं, <code>base</code> दोबारा जुड़ता है और पूरा absolute path history में जाता है। URL resolution के आम नियम से हटकर यही तरीका React Router भी <code>&lt;Link to="./x"&gt;</code> के लिए अपनाता है।</p>
       <ul>
         <li>सिर्फ <code>./</code> और <code>../</code> route के relative हैं। href में बिना prefix वाला <code>preview</code> browser के आम नियमों से resolve होता है।</li>
         <li>हाथ से <code>href="./preview"</code> लिखने की जगह <code>router.href('./preview')</code> से relative link बनाएँ। <code>href()</code> render के समय resolve हो जाता है, इसलिए जो markup मिलता है वह crawler के लिए, middle click के लिए और JavaScript बंद होने पर भी पूरा और सही रहता है।</li>
@@ -450,7 +450,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
   )
 }
 `)}
-      <p>Page का content outlet की <code>list()</code> की एक row है, और <code>into()</code> तब तक जिंदा रहता है जब तक वह row उसे पकड़े रखती है। इसलिए sidebar का content page के साथ आता है और उसी के साथ चला जाता है: जिस page में <code>into('sidebar', …)</code> नहीं है, उस पर जाते ही region का <code>empty</code> content फिर दिखने लगता है। Page दोनों हिस्सों के लिए अपना <code>ctx</code> और <code>data</code> use कर सकता है, क्योंकि दोनों एक ही function ने बनाए हैं।</p>
+      <p>Page का content outlet की <code>list()</code> की एक row है, और <code>into()</code> तब तक ज़िंदा रहता है जब तक वह row उसे पकड़े रखती है। इसलिए sidebar का content page के साथ आता है और उसी के साथ चला जाता है: जिस page में <code>into('sidebar', …)</code> नहीं है, उस पर जाते ही region का <code>empty</code> content फिर दिखने लगता है। Page दोनों हिस्सों के लिए अपना <code>ctx</code> और <code>data</code> use कर सकता है, क्योंकि दोनों एक ही function ने बनाए हैं।</p>
       <h3>Navigation पर क्या होता है</h3>
       <ul>
         <li><strong>जो page बना रहता है, उसके regions भी बने रहते हैं।</strong> जो <a href="#router-patterns">query या hash बदलाव</a> page को बचाए रखते हैं, वे region का content भी नहीं बदलते। Sidebar query पर निर्भर हो, तो dynamic value में <code>router.search</code> पढ़ें।</li>
@@ -534,7 +534,7 @@ createRouter({
 `)}
       <p>सिर्फ module वाले forms ही <code>load</code> export कर सकते हैं। <code>.then(m =&gt; m.BPage)</code> से named component चुनने पर router को सिर्फ function मिलता है।</p>
       <p>हर module एक बार import होकर cache हो जाता है। एक ही route पर साथ चल रही navigations एक <code>import()</code> share करती हैं। Page पर <code>idleTimeout</code> तक कोई activity न हो (default एक second; कोई tap, key, wheel event या scroll नहीं), तो बाकी routes background में load होते हैं: हर idle period (<code>requestIdleCallback</code>) में एक। कोई भी input या pending navigation इसे तब तक रोक देता है जब तक page फिर idle न हो जाए।</p>
-      <p>Preloaded या पहले से load हो चुका route कभी <code>router.pending</code> को flip नहीं करता और अगले paint से पहले आ जाता है: कोई spinner frame नहीं, कोई layout shift नहीं। <code>router.pending</code> सिर्फ तब true होता है जब किसी module या loader का इंतज़ार करना पड़े, और तब भी जाने वाला page screen पर रहता है। Chunk load fail हो तो error <code>router.error</code> में मिलता है। वह unhandled rejection नहीं बनता और दोबारा try किया जा सकता है।</p>
+      <p>Preloaded या पहले से load हो चुका route कभी <code>router.pending</code> को नहीं बदलता और अगले paint से पहले आ जाता है: कोई spinner frame नहीं, कोई layout shift नहीं। <code>router.pending</code> सिर्फ तब true होता है जब किसी module या loader का इंतज़ार करना पड़े, और तब भी जाने वाला page screen पर रहता है। Chunk load fail हो तो error <code>router.error</code> में मिलता है। वह unhandled rejection नहीं बनता और दोबारा try किया जा सकता है।</p>
     `,
       },
       {

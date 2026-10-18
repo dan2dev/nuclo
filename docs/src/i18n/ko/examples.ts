@@ -117,7 +117,7 @@ export const LABELS = {
   noExampleCalled: (id: string) => `"${id}"라는 예제가 없습니다.`,
   allExamples: "모든 예제",
   separatePackage: "별도 패키지:",
-  mustBeInstalled: " 는 nuclo에 포함되지 않으므로 설치해야 합니다:",
+  mustBeInstalled: "는 nuclo에 포함되어 있지 않으므로 따로 설치해야 합니다:",
   // Standalone apps
   standalone: (title: string) => `${title} 독립 실행형`,
   appNotFound: "앱을 찾을 수 없습니다",

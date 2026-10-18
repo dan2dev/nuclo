@@ -95,7 +95,7 @@ export const FEATURES = [
   {
     num: "01 · Explícito",
     title: "O ciclo de atualização é seu",
-    desc: "Mude o estado à vontade e chame update() uma vez. Sem subscriptions, sem scheduler, e o Nuclo nunca te surpreende com um diff. O DOM é sincronizado quando você decide.",
+    desc: "Mude o estado à vontade e chame update() uma vez. Sem subscriptions e sem scheduler: o Nuclo nunca surpreende você com um diff. O DOM é sincronizado quando você decide.",
   },
   {
     num: "02 · Leve",
@@ -163,7 +163,7 @@ export const COMPARISON_COLS: {
     name: "Signals e proxies",
     sub: "signals · stores · effects",
     items: [
-      { good: false, text: "Embrulha o seu estado em proxies e subscriptions" },
+      { good: false, text: "Envolve o seu estado em proxies e subscriptions" },
       { good: false, text: "Rastreia dependências por baixo dos panos, em runtime" },
       { good: false, text: "Dispara atualizações em cascata, em momentos que você não controla" },
       { good: false, text: "É difícil de depurar passo a passo" },

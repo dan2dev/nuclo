@@ -180,7 +180,7 @@ render(Card, document.body)
       <ul>
         <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> escreve o texto "false" na tela. O certo é <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
         <li>Arrays não valem como filhos. Use o spread: <code>ul(...names.map((n) =&gt; li(n)))</code>. Se a lista muda com o tempo, use <code>list()</code>.</li>
-        <li>Uma variável local com nome de tag ofusca o builder. Dentro de <code>function Row(label: string)</code>, por exemplo, não dá para chamar <code>label(...)</code>. Fique de olho em nomes como <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> e <code>i</code> e renomeie essas variáveis.</li>
+        <li>Uma variável local com nome de tag esconde o builder. Dentro de <code>function Row(label: string)</code>, por exemplo, não dá para chamar <code>label(...)</code>. Fique de olho em nomes como <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> e <code>i</code> e renomeie essas variáveis.</li>
         <li>O navegador expõe todo elemento com <code>id</code> como variável global. Se a página já tiver um <code>&lt;main id="main"&gt;</code> antes de o Nuclo carregar, ele respeita essa global e <code>main(...)</code> estoura um <code>TypeError</code>. Escolha outros ids.</li>
       </ul>
       <h3>Modificadores personalizados</h3>
@@ -371,7 +371,7 @@ const search = input(on('mount', (el) => el.focus()))
         <li>O <code>onDestroy</code> roda quando o Nuclo remove o elemento: uma linha de <code>list()</code> sai, um ramo de <code>when()</code> é trocado, um <code>into()</code> deixa sua região ou o <code>forceUpdate()</code> o descarta. Ele dispara um instante antes da remoção, então o elemento ainda está no documento.</li>
       </ul>
       <h3>Remoção direta do DOM</h3>
-      <p>Se você remove o elemento por conta própria, com <code>node.remove()</code> ou <code>innerHTML = ''</code>, o <code>onDestroy</code> e as funções de cleanup nunca rodam, e os timers seguem ativos. O Nuclo não tem <code>unmount()</code>. Para desmontar um app com cleanup, embrulhe-o em um <code>when()</code>:</p>
+      <p>Se você remove o elemento por conta própria, com <code>node.remove()</code> ou <code>innerHTML = ''</code>, o <code>onDestroy</code> e as funções de cleanup nunca rodam, e os timers seguem ativos. O Nuclo não tem <code>unmount()</code>. Para desmontar um app com cleanup, envolva-o em um <code>when()</code>:</p>
       ${code("main.ts", `
 let mounted = true
 render(() => div(when(() => mounted, App())), root)
@@ -426,7 +426,7 @@ first = 'Grace'
 last = 'Hopper'
 update() // one pass, both changes
 `)}
-      <p>O lugar de chamar <code>update()</code> é em handlers de eventos, timers, callbacks de fetch ou <code>onMount</code>. Nunca de dentro de um valor dinâmico.</p>
+      <p>Chame <code>update()</code> em handlers de eventos, timers, callbacks de fetch ou <code>onMount</code>, e nunca de dentro de um valor dinâmico.</p>
     `,
       },
       {
@@ -664,7 +664,7 @@ const Page = () =>
   })
 `)}
       <h3>Um diálogo aberto lá do fundo da árvore</h3>
-      <p>A região de overlay fica na raiz. Qualquer componente, em qualquer profundidade, abre um diálogo ao embrulhar um <code>into()</code> em um <code>when()</code>. Quando o <code>when()</code> fecha, o diálogo sai da região.</p>
+      <p>A região de overlay fica na raiz. Qualquer componente, em qualquer profundidade, abre um diálogo ao envolver um <code>into()</code> em um <code>when()</code>. Quando o <code>when()</code> fecha, o diálogo sai da região.</p>
       ${code("dialog.ts", `
 let confirming = false
 
@@ -850,7 +850,7 @@ render(App, document.getElementById('app')!)
         <li>A raiz precisa ser um elemento, como <code>div(...)</code>, e não um <code>when()</code> ou <code>list()</code>.</li>
         <li>O <code>index</code> é interno e não define onde o elemento é inserido. Deixe-o de fora.</li>
       </ul>
-      <p>Um componente passado como <code>render(App)</code> não pode ter parâmetros. Um parâmetro obrigatório é erro de tipo. Um opcional passa pelo type check, mas o <code>render()</code> lança um erro em runtime. Se o componente recebe props, embrulhe-o:</p>
+      <p>Um componente passado como <code>render(App)</code> não pode ter parâmetros. Um parâmetro obrigatório é erro de tipo. Um opcional passa pelo type check, mas o <code>render()</code> lança um erro em runtime. Se o componente recebe props, envolva-o:</p>
       ${code("main.ts", `
 const Page = (props: { name: string }) => div(h1('Hi ', props.name))
 
@@ -872,7 +872,7 @@ hydrate(App, document.getElementById('root')!)
       <ul>
         <li>Use o mesmo componente, com os mesmos dados, que o servidor usou.</li>
         <li>Faça o hydrate em um container dedicado. A raiz do app deve ser o primeiro nó dele, e espaços em branco antes não atrapalham. Se outro nó vier primeiro, o Nuclo o substitui e deixa a cópia do servidor para trás.</li>
-        <li>Como no <code>render()</code>, passe <code>App</code> e não <code>App()</code>, para que o <code>forceUpdate()</code> consiga reconstruir a raiz depois. <code>App</code> não pode ter parâmetros: com um opcional, o <code>hydrate()</code> não anexa nada, sem avisar. Se o componente recebe props, embrulhe-o: <code>hydrate(() =&gt; Page(props), root)</code>.</li>
+        <li>Como no <code>render()</code>, passe <code>App</code> e não <code>App()</code>, para que o <code>forceUpdate()</code> consiga reconstruir a raiz depois. <code>App</code> não pode ter parâmetros: com um opcional, o <code>hydrate()</code> não anexa nada, sem avisar. Se o componente recebe props, envolva-o: <code>hydrate(() =&gt; Page(props), root)</code>.</li>
         <li>Se não há HTML vindo do servidor, use o <code>render()</code>.</li>
       </ul>
       <h3>Quando o servidor e o cliente diferem</h3>
@@ -945,7 +945,7 @@ renderToString(p('Hello'))
       <h3><code>renderManyToString()</code></h3>
       <p>Equivale a <code>inputs.map(renderToString)</code>.</p>
       <h3><code>renderToStringWithContainer()</code></h3>
-      <p>Embrulha a saída em um elemento. O <code>containerTag</code> é <code>"div"</code> por padrão, e o <code>containerAttrs</code>, <code>{}</code>. Os valores dos atributos passam por escape, mas os nomes são escritos exatamente como você os passa, então use nomes HTML, como <code>class</code>. Nunca passe entrada do usuário como a tag.</p>
+      <p>Envolve a saída em um elemento. O <code>containerTag</code> é <code>"div"</code> por padrão, e o <code>containerAttrs</code>, <code>{}</code>. Os valores dos atributos passam por escape, mas os nomes são escritos exatamente como você os passa, então use nomes HTML, como <code>class</code>. Nunca passe entrada do usuário como a tag.</p>
       ${code("example.ts", `
 renderToStringWithContainer(p('Hi'), 'section', { id: 'main', class: 'page' })
 // '<section id="main" class="page"><p><!-- text-0 -->Hi</p></section>'

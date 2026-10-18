@@ -11,7 +11,7 @@ export const GROUPS_1: DocGroupText[] = [
         id: "overview",
         title: "概述",
         content: `
-      <p>Nuclo 是一个轻量的 TypeScript DOM 库。<code>div()</code>、<code>button()</code> 这些再普通不过的函数就是你的积木，state 放在普通变量里，页面需要变化时调用 <code>update()</code> 即可。</p>
+      <p>Nuclo 是一个轻量的 TypeScript DOM 库。<code>div()</code>、<code>button()</code> 这些再普通不过的函数就是你的积木，状态放在普通变量里，页面需要变化时调用 <code>update()</code> 即可。</p>
       <p>没有 virtual DOM，没有编译器，没有 Proxy，也没有 signal。</p>
       ${code("main.ts", `
 import 'nuclo'
@@ -29,8 +29,8 @@ render(App, document.getElementById('app')!)
       <h3>心智模型</h3>
       <ol>
         <li>用标签构建函数把 UI 搭起来。</li>
-        <li>依赖 state 的值，一律包成函数传进去。</li>
-        <li>用普通的 JavaScript 修改 state。</li>
+        <li>依赖状态的值，一律包成函数传进去。</li>
+        <li>用普通的 JavaScript 修改状态。</li>
         <li>调用 <code>update()</code>。Nuclo 会重新执行这些函数，并更新 DOM。</li>
       </ol>
       <p>光改变量，DOM 纹丝不动。页面什么时候变，完全由你调用 <code>update()</code> 的时机说了算。</p>
@@ -228,7 +228,7 @@ render(() => div(Counter('A'), Counter('B')))
 `)}
     `,
         afterContent: `
-      <p>声明在函数内部的 state 属于当前这个实例，声明在函数外部的则是所有实例共用的。要留意 <code>forceUpdate()</code> 会重新调用组件，所以组件内部的 state 会被重置。</p>
+      <p>声明在函数内部的状态属于当前这个实例，声明在函数外部的则是所有实例共用的。要留意 <code>forceUpdate()</code> 会重新调用组件，所以组件内部的状态会被重置。</p>
       <p>想要子节点？它们就是普通参数：</p>
       ${code("card.ts", `
 function Card(heading: string, ...children: NodeModLike<'div'>[]) {
@@ -388,7 +388,7 @@ update() // App's onDestroy hooks and cleanups run
         <li>callback 要么什么都不返回，要么返回一个清理函数，所以别把它声明成 <code>async</code>：返回的 Promise 永远不会被当成清理函数。异步的活请在 callback 内部发起：<code>{ onMount: (el) =&gt; { void load(el) } }</code>。</li>
         <li>hook 在服务端永远不会执行；到了客户端，则是在 <code>hydrate()</code> 之后触发。</li>
       </ul>
-      <div class="docs-callout"><strong>注意：</strong>这些 hook 并不是 effect。state 变了它们也不会重新执行，每个 hook 在每个元素上至多跑一次。</div>
+      <div class="docs-callout"><strong>注意：</strong>这些 hook 并不是 effect。状态变了它们也不会重新执行，每个 hook 在每个元素上至多跑一次。</div>
     `,
       },
     ],
@@ -402,7 +402,7 @@ update() // App's onDestroy hooks and cleanups run
         id: "explicit-updates",
         title: "显式更新",
         content: `
-      <p>Nuclo 从不自动更新页面。先修改 state，再调用 <code>update()</code>。</p>
+      <p>Nuclo 从不自动更新页面。先修改状态，再调用 <code>update()</code>。</p>
       ${code("counter.ts", `
 let count = 0
 
@@ -538,7 +538,7 @@ const Status = () =>
         afterContent: `
       <h3>条件</h3>
       <ul>
-        <li>条件依赖 state 的话，要传函数。普通布尔值只会被读一次，<code>when(open, …)</code> 永远不会变。</li>
+        <li>条件依赖状态的话，要传函数。普通布尔值只会被读一次，<code>when(open, …)</code> 永远不会变。</li>
         <li>在 TypeScript 里，这个函数必须返回布尔值，像 <code>() =&gt; items.length &gt; 0</code> 或 <code>() =&gt; user != null</code> 这样写。</li>
       </ul>
       <h3>什么会更新，什么会重建</h3>
@@ -628,21 +628,21 @@ render(() => div(Layout(), Article()))
 `)}
       <h3>它是怎么工作的</h3>
       <ul>
-        <li><code>into()</code> 在原地只留下一个注释，真正的内容渲染在 region 的标记之间。</li>
-        <li>先后顺序无所谓。<code>into()</code> 比 region 先构建的话，会先等着，region 一构建完成就立刻显示出来。多个视图按书写顺序排列。</li>
-        <li>内容的生命周期和视图同步：包着 <code>into()</code> 的 <code>when()</code> 关闭，或者它所在的 <code>list()</code> 行被删除，内容就会从 region 里撤走。再次打开时只会加回一份，不会重复。</li>
-        <li>region 本身消失时（比如它外面的 <code>when()</code> 关了），视图会回到等待状态，之后只要用相同 id 重新构建 region，它们就会重新显示。</li>
-        <li>如果 <code>into()</code> 的 id 对不上任何 region，它什么也不渲染，也不会报错，所以请检查拼写。</li>
-        <li>id 在整棵树里应当唯一。如果在一个还活着的 id 下再建一个 region，会记录一条警告。</li>
+        <li><code>into()</code> 在原地只留下一个注释，真正的内容渲染在区域的标记之间。</li>
+        <li>先后顺序无所谓。<code>into()</code> 比区域先构建的话，会先等着，区域一构建完成就立刻显示出来。多个视图按书写顺序排列。</li>
+        <li>内容的生命周期和视图同步：包着 <code>into()</code> 的 <code>when()</code> 关闭，或者它所在的 <code>list()</code> 行被删除，内容就会从区域里撤走。再次打开时只会加回一份，不会重复。</li>
+        <li>区域本身消失时（比如它外面的 <code>when()</code> 关了），视图会回到等待状态，之后只要用相同 id 重新构建区域，它们就会重新显示。</li>
+        <li>如果 <code>into()</code> 的 id 对不上任何区域，它什么也不渲染，也不会报错，所以请检查拼写。</li>
+        <li>id 在整棵树里应当唯一。如果在一个还活着的 id 下再建一个区域，会记录一条警告。</li>
         <li>region 支持<a href="#api-ssr">服务端渲染</a>。<code>hydrate()</code> 时，每个视图会直接接管服务端渲染出的 HTML，而不是重新构建。</li>
       </ul>
       <h3>选项</h3>
       <ul>
-        <li><code>id</code>：<code>into()</code> 用来找到这个 region 的名字。</li>
+        <li><code>id</code>：<code>into()</code> 用来找到这个区域的名字。</li>
         <li><code>type</code>：<code>'latest'</code>（默认）只显示最新的那个视图；<code>'stack'</code> 则按到达顺序把所有视图都显示出来。</li>
-        <li><code>empty</code>：region 里没有任何视图时显示的内容。</li>
+        <li><code>empty</code>：区域里没有任何视图时显示的内容。</li>
       </ul>
-      <h3>堆叠 region</h3>
+      <h3>堆叠区域</h3>
       <p>用了 <code>type: 'stack'</code>，在已有视图之上再打开一个视图时，下面那个不会被重建，它的 DOM、焦点和表单状态都原样保留。页面上叠一层对话框，用它再合适不过。</p>
       ${code("layers.ts", `
 let open = false
@@ -654,8 +654,8 @@ const App = () =>
     when(() => open, into('main', div('On top'))),
   )
 `)}
-      <h3>一次填多个 region</h3>
-      <p>给 <code>into()</code> 传一个对象，就能一口气填充多个 region，值既可以是单个子节点，也可以是子节点数组。两种写法都能嵌套：写在某个视图内容里的 <code>into()</code>，指向的是它自己的 region。</p>
+      <h3>一次填多个区域</h3>
+      <p>给 <code>into()</code> 传一个对象，就能一口气填充多个区域，值既可以是单个子节点，也可以是子节点数组。两种写法都能嵌套：写在某个视图内容里的 <code>into()</code>，指向的是它自己的区域。</p>
       ${code("page.ts", `
 const Page = () =>
   into({
@@ -664,7 +664,7 @@ const Page = () =>
   })
 `)}
       <h3>在组件树深处弹出对话框</h3>
-      <p>浮层 region 放在根部，树里任意深度的组件只要把 <code>into()</code> 包进 <code>when()</code>，就能把对话框弹出来；<code>when()</code> 一关，对话框也就从 region 里撤掉了。</p>
+      <p>浮层区域放在根部，树里任意深度的组件只要把 <code>into()</code> 包进 <code>when()</code>，就能把对话框弹出来；<code>when()</code> 一关，对话框也就从区域里撤掉了。</p>
       ${code("dialog.ts", `
 let confirming = false
 
@@ -689,7 +689,7 @@ const DeleteButton = () =>
   )
 `)}
       <h3>由列表行驱动的 toast</h3>
-      <p><code>list()</code> 的每一行就是一个视图。stack 类型的 region 会依次把它们显示出来，从数组里删掉一个 item，对应的 toast 也就消失了。</p>
+      <p><code>list()</code> 的每一行就是一个视图。stack 类型的区域会依次把它们显示出来，从数组里删掉一个 item，对应的 toast 也就消失了。</p>
       ${code("toasts.ts", `
 const toasts: { text: string }[] = []
 
@@ -732,7 +732,7 @@ const Settings = () =>
   )
 `)}
       <h3>视图里的动态值</h3>
-      <p><code>into()</code> 里的内容就是再普通不过的 Nuclo 内容，里面的函数同样是依赖 state 的值，不管 region 在哪儿，<code>update()</code> 时都会刷新。</p>
+      <p><code>into()</code> 里的内容就是再普通不过的 Nuclo 内容，里面的函数同样是依赖状态的值，不管区域在哪儿，<code>update()</code> 时都会刷新。</p>
       ${code("status.ts", `
 const selected = new Set<string>()
 
@@ -756,8 +756,8 @@ const Table = () =>
     ),
   )
 `)}
-      <h3>时有时无的 region</h3>
-      <p>仪表盘的 <code>into()</code> 只需要写一次。用户没登录时不存在 <code>main</code> region，视图就在一旁等着；登录之后 region 建好了，视图随即显示；登出时 region 被移除，视图又回到等待状态。</p>
+      <h3>时有时无的区域</h3>
+      <p>仪表盘的 <code>into()</code> 只需要写一次。用户没登录时不存在 <code>main</code> 区域，视图就在一旁等着；登录之后区域建好了，视图随即显示；登出时区域被移除，视图又回到等待状态。</p>
       ${code("auth.ts", `
 let user: { name: string } | null = null
 
@@ -771,8 +771,8 @@ const App = () =>
     into('main', Dashboard()),
   )
 `)}
-      <h3>自带 region 的视图</h3>
-      <p>视图里也可以包含 <code>region()</code>，供其他视图往里填内容。下面这个例子里，编辑器页面自带一个 <code>tabs</code> region，各个标签页往里填充；编辑器一关，这个 region 也跟着消失。</p>
+      <h3>自带区域的视图</h3>
+      <p>视图里也可以包含 <code>region()</code>，供其他视图往里填内容。下面这个例子里，编辑器页面自带一个 <code>tabs</code> 区域，各个标签页往里填充；编辑器一关，这个区域也跟着消失。</p>
       ${code("editor.ts", `
 let tab: 'code' | 'preview' = 'code'
 
@@ -819,7 +819,7 @@ forceUpdate() // same <h1> element, now "Olá"
         <li><code>list()</code> 的行也是按位置而不是按 item 对应，所以被复用的行元素，最终显示的可能是另一个 item。</li>
         <li>新构建里不再设置的属性，不会被清除。</li>
       </ul>
-      <div class="docs-callout"><strong>注意：</strong>声明在组件函数内部的 state 会被重置，因为函数会重新执行一遍。需要保留的 state，请放到组件外面。</div>
+      <div class="docs-callout"><strong>注意：</strong>声明在组件函数内部的状态会被重置，因为函数会重新执行一遍。需要保留的状态，请放到组件外面。</div>
       <p><strong>显式写法。</strong><code>forceUpdate(App(), parent)</code> 会重建 <code>parent</code> 里的一棵树并返回它的根，但不会把这个根登记下来供以后的调用使用。和 <code>hydrate()</code> 一样，它要求根是 <code>parent</code> 的第一个节点；如果第一个节点的标签不一样，就直接替换掉。</p>
       <p>在服务端，<code>forceUpdate()</code> 是空操作。</p>
     `,

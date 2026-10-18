@@ -22,7 +22,7 @@ const card = css({
 const Card = () => div(card, 'Simple card')
 `)}
       <ul>
-        <li><code>css()</code> genera una classe per le dichiarazioni di base e una in più per ogni chiave pseudo, selettore o blocco media. La card qui sopra ne ottiene due.</li>
+        <li><code>css()</code> genera una classe per le dichiarazioni di base e una in più per ogni chiave pseudo, selettore o blocco media. La card qui sopra ne produce due.</li>
         <li>I nomi delle classi sono hash del contenuto: stili identici condividono la stessa classe, e server e client arrivano sempre agli stessi nomi.</li>
         <li>Definisci gli stili una volta sola, a livello di modulo. <code>css()</code> tiene una cache per oggetto, quindi se ne passi uno nuovo a ogni chiamata, il lavoro si rifà ogni volta.</li>
         <li>Modificare un oggetto di stile dopo averlo passato a <code>css()</code> non cambia nulla.</li>
@@ -340,7 +340,7 @@ const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
       <p>E questa è tutta l'integrazione. I link funzionano perché un <code>&lt;a href&gt;</code> resta un semplice <code>&lt;a href&gt;</code>: un listener delegato su <code>document</code> intercetta i link di cui il router è responsabile e lascia tutti gli altri al browser.</p>
-      <p>Sul server <code>start()</code> restituisce una <code>Route</code> per ogni richiesta senza toccare il router, quindi richieste concorrenti non si vedono mai le rotte a vicenda. <code>route.run()</code> fa di quella Route la rotta letta dal router (e quindi dall'outlet) per tutta la durata del render. Nel browser c'è una Route per ogni caricamento di pagina e <code>start()</code> la rende quella del router: non serve nessun <code>run()</code>.</p>
+      <p>Sul server <code>start()</code> restituisce una <code>Route</code> per ogni richiesta senza toccare il router, quindi richieste concorrenti non vedono mai le rotte l'una dell'altra. <code>route.run()</code> fa di quella Route la rotta letta dal router (e quindi dall'outlet) per tutta la durata del render. Nel browser c'è una Route per ogni caricamento di pagina e <code>start()</code> la rende quella del router: non serve nessun <code>run()</code>.</p>
       <p>Una pagina riceve il suo <a href="#router-api"><code>RouteContext</code></a> e le sue <a href="#router-api"><code>PageProps</code></a>, nella forma <code>(ctx, { layer, data, outlet, beforeLeave })</code>, e può accettarne anche meno. Restituisce qualsiasi cosa <code>list()</code> sappia digerire. Se la pagina deve riempire anche un'altra zona del layout, restituisci un <code>into()</code> dal suo interno, per esempio <code>div(article(…), into('sidebar', nav(…)))</code>: quel contenuto se ne va insieme alla pagina. Ne parliamo in <a href="#router-regions">Pagine e regioni</a>.</p>
     `,
       },
@@ -387,7 +387,7 @@ createRouter({
         <li>Un figlio sotto un genitore <code>*catch-all</code> fa fallire <code>createRouter()</code>, perché un catch-all deve chiudere il suo pattern.</li>
       </ul>
       <h3>Pagine genitore e <code>outlet()</code></h3>
-      <p>Genitore e figli formano una vera gerarchia: il genitore fa il render, e il figlio viene renderizzato al suo interno, nel punto in cui chiami <code>outlet()</code>:</p>
+      <p>Genitore e figli formano una vera gerarchia: il genitore viene renderizzato e il figlio finisce al suo interno, nel punto in cui chiami <code>outlet()</code>:</p>
       ${code("records/Record.ts", `
 import type { PageProps, RouteContext } from 'nuclo-router'
 
@@ -533,7 +533,7 @@ createRouter({
 '/d': () => ({ default: DPage, load: loadD }),     // eager, module-shaped
 `)}
       <p>Solo i valori con la forma di un modulo possono includere un export <code>load</code>. Se scegli un componente con nome tramite <code>.then(m =&gt; m.BPage)</code>, al router arriva soltanto la funzione.</p>
-      <p>Ogni modulo viene importato una volta e messo in cache; navigazioni concorrenti verso la stessa rotta condividono un solo <code>import()</code>. Quando l'utente lascia la pagina in pace per <code>idleTimeout</code> (un secondo di default, senza tocchi, tasti, rotella o scroll), le rotte rimanenti si caricano in background, una per ogni intervallo idle (<code>requestIdleCallback</code>). Qualsiasi input, o una navigazione che l'utente sta aspettando, mette tutto in pausa finché la pagina non torna idle.</p>
+      <p>Ogni modulo viene importato una volta e messo in cache; navigazioni concorrenti verso la stessa rotta condividono un solo <code>import()</code>. Quando l'utente non interagisce con la pagina per <code>idleTimeout</code> (un secondo di default, senza tocchi, tasti, rotella o scroll), le rotte rimanenti si caricano in background, una per ogni intervallo idle (<code>requestIdleCallback</code>). Qualsiasi input, o una navigazione che l'utente sta aspettando, mette tutto in pausa finché la pagina non torna idle.</p>
       <p>Una rotta precaricata o eager non attiva mai <code>router.pending</code> e appare prima del prossimo aggiornamento dello schermo: nessun frame con lo spinner, nessun salto del layout. <code>router.pending</code> è true solo per un modulo o un loader che va aspettato, e nel frattempo la pagina in uscita resta sullo schermo. Un chunk che non si carica viene segnalato in <code>router.error</code>, mai come un rifiuto non gestito, e si può semplicemente ritentare.</p>
     `,
       },
@@ -809,7 +809,7 @@ createRouter(routes, {
         <li><strong><code>pending</code> appartiene al router avviato.</strong> Un router mai avviato non ha una Route, né <code>pending</code> né <code>error</code>. L'area tiene traccia dei propri flag, e un secondo spinner può convivere con il primo. Nella demo la sidebar carica per 800ms mentre i loader della rotta ne impiegano 900, quindi la pagina può finire prima della sidebar o viceversa.</li>
         <li><strong><code>match()</code> non aggancia nulla.</strong> Un numero qualsiasi di router non avviati può convivere nello stesso documento: ciascuno ha la propria tabella, base e cache dei moduli, e nessuno tocca la history. Costano una tabella e un matcher.</li>
         <li><strong>I suoi loader non girano mai.</strong> Il router avviato esegue il <code>load()</code> delle pagine a cui corrisponde, mentre uno mai avviato si limita a risolvere: se le sue viste hanno bisogno di dati, vai a prenderteli tu, come fa il <code>refreshSidebar()</code> della demo. Se vuoi i loader, una <a href="#router-matches">tabella annidata</a> o una <a href="#router-regions">regione riempita da una pagina</a> lasciano quel compito al router avviato.</li>
-        <li><strong>Occhio alle risposte obsolete.</strong> Una risposta lenta della sidebar non deve aggiornare una sezione che hai già lasciato. Incrementa un contatore di generazione a ogni refresh e scarta le risposte che non corrispondono più, come fa il router stesso quando ritira le navigazioni superate.</li>
+        <li><strong>Attenzione alle risposte obsolete.</strong> Una risposta lenta della sidebar non deve aggiornare una sezione che hai già lasciato. Incrementa un contatore di generazione a ogni refresh e scarta le risposte che non corrispondono più, come fa il router stesso quando ritira le navigazioni superate.</li>
         <li><strong>Nemmeno una vista lazy di <code>matches()</code> ha un <code>pending</code>.</strong> Non renderizza nulla finché il suo modulo non arriva. Tre sistemi di caricamento, tre orologi indipendenti: il <code>pending</code> della rotta, i tuoi flag e una vista lazy che semplicemente non c'è ancora.</li>
       </ul>
     `,
@@ -818,7 +818,7 @@ createRouter(routes, {
         id: "router-links",
         title: "Gestione dei link",
         content: `
-      <p>Il listener delegato gestisce la navigazione quando fai clic con il tasto sinistro su un <code>&lt;a href&gt;</code>, anche un <code>&lt;a&gt;</code> SVG o un click su qualcosa di annidato al suo interno, e si fa da parte in tutti gli altri casi: click con modificatori o con il tasto centrale, un <code>target</code> diverso da <code>_self</code>, <code>download</code>, <code>rel="external"</code>, href cross-origin, link con solo hash sulla pagina corrente, percorsi fuori da <code>base</code>, percorsi a cui nessuna rotta corrisponde (così una 404 renderizzata lato server resta raggiungibile) e qualsiasi evento su cui un handler dell'app abbia già chiamato <code>preventDefault()</code>. Per escludere un link in modo esplicito usa <code>data-nuclo-router="off"</code>.</p>
+      <p>Il listener delegato gestisce la navigazione quando fai click con il tasto sinistro su un <code>&lt;a href&gt;</code>, anche un <code>&lt;a&gt;</code> SVG o un click su qualcosa di annidato al suo interno, e si fa da parte in tutti gli altri casi: click con modificatori o con il tasto centrale, un <code>target</code> diverso da <code>_self</code>, <code>download</code>, <code>rel="external"</code>, href cross-origin, link con solo hash sulla pagina corrente, percorsi fuori da <code>base</code>, percorsi a cui nessuna rotta corrisponde (così una 404 renderizzata lato server resta raggiungibile) e qualsiasi evento su cui un handler dell'app abbia già chiamato <code>preventDefault()</code>. Per escludere un link in modo esplicito usa <code>data-nuclo-router="off"</code>.</p>
       <h3>Scroll</h3>
       <p>Una navigazione con push conserva la posizione di scroll corrente. Se il nuovo URL ha un <code>#hash</code> che corrisponde a un elemento della pagina, quell'elemento viene portato in vista. Con <code>popstate</code> lo scroll resta al browser. Se vuoi aprire le nuove pagine dall'alto, fallo in <code>onNavigate</code>, che ti dice come è avvenuta la navigazione:</p>
       ${code("routes.ts", `

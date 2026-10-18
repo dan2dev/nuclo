@@ -22,7 +22,7 @@ export const items: Record<string, { title: string; desc: string }> = {
   "todo": {"title": "قائمة المهام", "desc": "استخدم list() للعناصر المتكررة، واستدعِ update() بعد كل تعديل."},
   "search": {"title": "مرشح البحث", "desc": "صفِّ مصفوفة باستخدام JavaScript عادي، واعرض النتائج باستخدام list()."},
   "styling": {"title": "التنسيق", "desc": "css() تنشئ الـ classes، وcx() تدمجها شرطيًا للتعديلات الصغيرة."},
-  "component-props": {"title":"props ثابتة وديناميكية","desc":"الـ prop العادية تُقرأ مرة واحدة وقت بناء الـ component، أما الـ prop الدالة فتُعاد قراءتها مع كل update(). والـ component نفسه يشتغل مرة واحدة فقط في الحالتين، وعدّاد الـ mount شاهد على ذلك."},
+  "component-props": {"title":"props ثابتة وديناميكية","desc":"الـ prop العادية تُقرأ مرة واحدة وقت بناء الـ component، أما الـ prop الدالة فتُعاد قراءتها مع كل update(). والـ component نفسه يُنفَّذ مرة واحدة فقط في الحالتين، وعدّاد الـ mount شاهد على ذلك."},
   "component-children": {"title":"Children وModifiers","desc":"يمرّر الـ component عناصره الفرعية بالـ spread: builders ونصوص وكائنات attributes وmodifiers. والأجزاء الشرطية تذهب إلى when()، فلا يُعاد بناء الـ component المحيط بها."},
   "component-list": {"title":"هوية عناصر القائمة","desc":"تحتفظ list() بالصف طالما عنصره موجود في المصفوفة، فيمكنك إعادة الترتيب والإضافة وتغيير الأسماء دون أن تضيع المدخلات أو الـ focus. أما مفتاح التبديل فينسخ الكائنات عند كل update ليريك ثمن كسر الهوية."},
   "component-tree": {"title":"بيانات متداخلة","desc":"فريق فيه أعضاء، ولكل عضو مهام: component لكل مستوى، واستدعاءات list() متداخلة، وعدّادات مشتقة تقرأ من الكائنات نفسها. والتعديل العميق لا يلمس إلا العقد المعنية به."},

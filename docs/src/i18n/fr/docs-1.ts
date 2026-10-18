@@ -174,7 +174,7 @@ render(Card, document.body)
         <li><strong><code>on(...)</code></strong> : un écouteur d'événement ou un hook de cycle de vie.</li>
         <li><strong>Un autre constructeur, un <code>when()</code> ou un <code>list()</code></strong> : un enfant.</li>
         <li><strong>Un <code>Node</code> du DOM</strong> : ajouté tel quel.</li>
-        <li><strong><code>(el, index) =&gt; …</code></strong> : un modificateur sur mesure, détaillé plus bas.</li>
+        <li><strong><code>(el, index) =&gt; …</code></strong> : un modificateur personnalisé, détaillé plus bas.</li>
       </ul>
       <h3>Les pièges</h3>
       <ul>
@@ -599,7 +599,7 @@ update() // same <li>, its class is now "done"
         <li>Renvoyez un seul élément, par exemple <code>li(...)</code>, <code>tr(...)</code> ou un constructeur SVG. <code>null</code> ou <code>undefined</code> permet d'ignorer un élément. Les chaînes, nœuds texte et fragments ne rendent rien.</li>
         <li>Ne renvoyez pas <code>when()</code> ni <code>list()</code> directement : glissez-les dans l'élément de ligne, comme dans <code>li(todo.text, when(() =&gt; todo.done, ' ✓'))</code>.</li>
         <li>Pour masquer des éléments, filtrez dans <code>items()</code>, pas dans <code>renderItem</code>.</li>
-        <li>Gardez <code>renderItem</code> exempt d'effets de bord : Nuclo peut l'appeler plusieurs fois pour le même élément.</li>
+        <li>Évitez les effets de bord dans <code>renderItem</code> : Nuclo peut l'appeler plusieurs fois pour le même élément.</li>
       </ul>
       <h3>L'index</h3>
       <p><code>index</code> est la position de l'élément au moment où sa ligne a été créée, et elle ne suit pas les déplacements de lignes. Pour obtenir la position courante, utilisez une valeur dynamique : <code>li(() =&gt; \`\${names.indexOf(name) + 1}. \${name}\`)</code>.</p>
@@ -789,7 +789,7 @@ const Editor = () =>
       .else(into('tabs', iframe({ src: '/preview' }))),
   )
 `)}
-      <h3>Essayez par vous-même</h3>
+      <h3>Essayez vous-même</h3>
       ${code("region-app.ts", API_DEMOS.find((d) => d.id === "api-region")!.code)}
     `,
       },

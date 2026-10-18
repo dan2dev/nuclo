@@ -453,7 +453,7 @@ const Profile = () =>
         <li>Ein String, eine Zahl, ein bigint oder ein Boolean wird als <code>String(value)</code> gerendert. <code>() =&gt; ok &amp;&amp; 'Saved'</code> würde "false" anzeigen, schreib deshalb <code>() =&gt; (ok ? 'Saved' : '')</code>.</li>
         <li><code>null</code> und <code>undefined</code> ergeben leeren Text.</li>
         <li>Liefert die Funktion im ersten Durchlauf ein <code>css()</code>- oder <code>cx()</code>-Ergebnis, wird sie zur dynamischen Klasse statt zu Text. Siehe <a href="#api-cx"><code>cx()</code></a>.</li>
-        <li>Ein Node, Builder, Array oder einfaches Objekt rendert nichts und wird nie aktualisiert.</li>
+        <li>Ein Node, ein Builder, ein Array oder ein einfaches Objekt rendert nichts und wird nie aktualisiert.</li>
       </ul>
       <h3>Dynamische Attribute</h3>
       <ul>

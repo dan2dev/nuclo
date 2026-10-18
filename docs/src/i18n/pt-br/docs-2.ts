@@ -23,7 +23,7 @@ const Card = () => div(card, 'Simple card')
 `)}
       <ul>
         <li><code>css()</code> gera uma classe para as declarações base e mais uma para cada pseudo-estado, seletor ou bloco de media. O card acima, por exemplo, termina com duas classes.</li>
-        <li>Os nomes de classe são hashes do conteúdo: estilos idênticos dividem a mesma classe, e servidor e cliente chegam exatamente aos mesmos nomes.</li>
+        <li>Os nomes de classe são hashes do conteúdo: estilos idênticos compartilham a mesma classe, e servidor e cliente chegam exatamente aos mesmos nomes.</li>
         <li>Declare os estilos uma vez só, no nível do módulo. O <code>css()</code> usa o objeto como chave de cache, então criar um objeto novo a cada chamada obriga o Nuclo a reprocessar tudo toda vez.</li>
         <li>Alterar um objeto de estilo depois de entregá-lo ao <code>css()</code> não surte efeito nenhum.</li>
         <li>Todo estilo continua registrado enquanto a página (ou o processo do servidor) estiver de pé. Para valores que variam por item, como uma largura vinda de dados, use o <a href="#attributes">atributo <code>style</code></a>.</li>
@@ -53,7 +53,7 @@ div(card, { class: 'featured' })     // replaces: only "featured" is left
       },
       {
         id: "style-objects",
-        title: "Objetos de Estilo",
+        title: "Objetos de estilo",
         content: `
       <p>O objeto que você passa para o <code>css()</code> aceita as propriedades CSS de sempre em camelCase, um punhado de atalhos e chaves aninhadas para pseudo-estados, seletores e media queries. O TypeScript autocompleta tudo isso. O que ficar fora do conjunto tipado, como <code>borderTopLeftRadius</code>, <code>fill</code> ou <code>paddingInline</code>, vai dentro de <code>raw</code> (mais abaixo).</p>
       <h3>Valores</h3>
@@ -188,7 +188,7 @@ const panel = css({
         <li>Um nome do tema só é resolvido quando ocupa o valor inteiro. <code>border: "1px solid primary"</code> não é resolvido.</li>
         <li>Um valor de screen sem <code>@</code> vira <code>@media &lt;value&gt;</code>. Se começar com <code>@</code>, é usado exatamente como está, por exemplo <code>"@container (min-width: 400px)"</code>.</li>
         <li>Screens só existem em instâncias criadas com <code>createCss()</code>. O <code>css()</code> global não tem nenhum, mas aceita chaves <code>@media</code>.</li>
-        <li>Todas as instâncias e os helpers globais dividem uma única folha de estilos. As regras de media dos screens saem na ordem em que os screens foram declarados, e não na ordem em que você os usa, então liste os screens de <code>min-width</code> do menor para o maior. Use uma única instância de <code>createCss()</code> por app, para que essa ordem seja sempre a do seu tema.</li>
+        <li>Todas as instâncias e os helpers globais compartilham uma única folha de estilos. As regras de media dos screens saem na ordem em que os screens foram declarados, e não na ordem em que você os usa, então liste os screens de <code>min-width</code> do menor para o maior. Use uma única instância de <code>createCss()</code> por app, para que essa ordem seja sempre a do seu tema.</li>
         <li><code>theme</code>, no resultado, é o tema que você passou.</li>
       </ul>
     `,
@@ -340,7 +340,7 @@ const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
       <p>Pronto, essa é a integração inteira. Os links funcionam porque um <code>&lt;a href&gt;</code> é só um <code>&lt;a href&gt;</code>: um listener delegado no <code>document</code> intercepta os links que pertencem ao router e deixa todos os outros com o navegador.</p>
-      <p>No servidor, o <code>start()</code> devolve um <code>Route</code> por requisição e não toca no router, então requisições concorrentes nunca enxergam a rota umas das outras. O <code>route.run()</code> faz desse Route o que o router (e, portanto, o outlet) lê enquanto durar o render. No navegador existe um Route por carregamento de página, e o <code>start()</code> o torna o do próprio router. Aqui não precisa de <code>run()</code>.</p>
+      <p>No servidor, o <code>start()</code> devolve um <code>Route</code> por requisição e não toca no router, então requisições concorrentes nunca enxergam a rota umas das outras. O <code>route.run()</code> faz desse Route o que o router (e, portanto, o outlet) lê enquanto durar o render. No navegador existe um Route por carregamento de página, e o <code>start()</code> o torna o do próprio router. Aqui não é preciso usar <code>run()</code>.</p>
       <p>Uma página recebe seu <a href="#router-api"><code>RouteContext</code></a> e suas <a href="#router-api"><code>PageProps</code></a>, no formato <code>(ctx, { layer, data, outlet, beforeLeave })</code>, e pode declarar menos argumentos. O retorno é qualquer coisa que o <code>list()</code> aceite. Para preencher também outro pedaço do layout, devolva um <code>into()</code> de dentro da página, como <code>div(article(…), into('sidebar', nav(…)))</code>. Esse conteúdo vai embora junto com a página. Veja <a href="#router-regions">Páginas e regiões</a>.</p>
     `,
       },
@@ -380,7 +380,7 @@ createRouter({
   '*': () => import('./pages/NotFound.ts'),
 })
 `)}
-      <p>Essas duas linhas geram os seis padrões, sem repetir caminho nenhum. Os dois pais recebem os mesmos objetos de loader, então dividem um único cache de módulos e um único <code>import()</code>.</p>
+      <p>Essas duas linhas geram os seis padrões, sem repetir caminho nenhum. Os dois pais recebem os mesmos objetos de loader, então compartilham um único cache de módulos e um único <code>import()</code>.</p>
       <ul>
         <li>Dentro de uma tabela filha, <code>'./x'</code>, <code>'/x'</code> e <code>'x'</code> querem dizer a mesma coisa, <code>'/'</code> é o próprio caminho do pai, e <code>'*rest'</code> dá à seção o seu próprio catch-all. O aninhamento pode ir tão fundo quanto você quiser.</li>
         <li>As chaves do nível superior valem como foram escritas, então <code>'*'</code> continua sendo <code>'*'</code>.</li>
@@ -396,7 +396,7 @@ export default function Record(ctx: RouteContext, { outlet }: PageProps) {
   return div(Header(ctx), input({ id: 'notes' }), main(outlet()))
 }
 `)}
-      <p>Navegar entre filhos não reconstrói o pai. O nó DOM dele é o mesmo, então foco, posição de scroll, input pela metade e qualquer state guardado na closure continuam intactos.</p>
+      <p>Navegar entre filhos não reconstrói o pai. O nó DOM dele é o mesmo, então foco, posição de scroll, input pela metade e qualquer estado guardado na closure continuam intactos.</p>
       <ul>
         <li>Uma página sem rota filha não renderiza nada no outlet, então o layout pode chamá-lo sem condição. Já um pai que tem uma rota filha e nunca chama <code>outlet()</code> engole essa rota.</li>
         <li>Não existem rotas index. O <code>'/'</code> é o próprio layout, então o caminho do pai renderiza o layout com o outlet vazio, e não uma página index separada lá dentro. Ponha o conteúdo de entrada no layout ou dê a ele um caminho filho de verdade.</li>
@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>uma camada empilhada</td><td>renderiza só a página correspondente. Os pais dela já estão montados na linha de baixo.</td></tr>
         </tbody>
       </table>
-      <p>Uma página preservada fica com o <code>ctx</code> com que foi construída. É esse o sentido de <code>ctx</code> em qualquer lugar: para valores atuais, leia <code>router.*</code>. State guiado pela query, como filtros, paginação e abas, lê <code>router.search</code> dentro de um valor dinâmico e escreve com <code>router.go('?page=2', { replace: true })</code>. A página, o foco e o input pela metade ficam exatamente onde estavam.</p>
+      <p>Uma página preservada fica com o <code>ctx</code> com que foi construída. É esse o sentido de <code>ctx</code> em qualquer lugar: para valores atuais, leia <code>router.*</code>. Estado guiado pela query, como filtros, paginação e abas, lê <code>router.search</code> dentro de um valor dinâmico e escreve com <code>router.go('?page=2', { replace: true })</code>. A página, o foco e o input pela metade ficam exatamente onde estavam.</p>
     `,
       },
       {
@@ -472,7 +472,7 @@ export default function Report(ctx: RouteContext) {
   )
 }
 `)}
-      <h3>Qual ferramenta para qual trabalho</h3>
+      <h3>Qual usar em cada caso</h3>
       <ul>
         <li><strong><code>outlet()</code></strong> serve para uma rota filha: conteúdo que a URL decide, renderizado dentro da página pai. Veja <a href="#router-patterns">Rotas aninhadas</a>.</li>
         <li><strong><code>into()</code></strong> serve para a página correspondente se espalhar pelo layout. O conteúdo é da página e usa os dados dela.</li>
@@ -512,7 +512,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
       ${code("example.ts", `
 await router.go(router.url, { replace: true })   // runs load() again
 `)}
-      <h3>Começando os dados junto com o chunk</h3>
+      <h3>Buscando os dados junto com o chunk</h3>
       <p>Um <code>load</code> exportado pelo módulo da página só pode rodar depois que o módulo chegou, então numa navegação a frio o chunk vem primeiro e os dados depois. Para disparar os dois ao mesmo tempo, declare o loader na tabela com <code>withLoad()</code>:</p>
       ${code("routes.ts", `
 import { createRouter, withLoad } from 'nuclo-router'
@@ -533,7 +533,7 @@ createRouter({
 '/d': () => ({ default: DPage, load: loadD }),     // eager, module-shaped
 `)}
       <p>Só as formas no formato de módulo podem carregar um export <code>load</code>. Se você escolhe um componente nomeado com <code>.then(m =&gt; m.BPage)</code>, o router recebe apenas a função.</p>
-      <p>Cada módulo é importado uma vez e fica em cache. Navegações concorrentes para a mesma rota compartilham um único <code>import()</code>. Depois que o usuário deixa a página quieta por <code>idleTimeout</code> (um segundo por padrão, sem toques, teclas, roda do mouse ou scroll), as rotas restantes são carregadas em segundo plano, uma por fatia de idle (<code>requestIdleCallback</code>). Qualquer interação, ou uma navegação que o usuário esteja esperando, pausa o processo até a página ficar ociosa de novo.</p>
+      <p>Cada módulo é importado uma vez e fica em cache. Navegações concorrentes para a mesma rota compartilham um único <code>import()</code>. Depois que o usuário deixa a página parada por <code>idleTimeout</code> (um segundo por padrão, sem toques, teclas, roda do mouse ou scroll), as rotas restantes são carregadas em segundo plano, uma por fatia de idle (<code>requestIdleCallback</code>). Qualquer interação, ou uma navegação que o usuário esteja esperando, pausa o processo até a página ficar ociosa de novo.</p>
       <p>Uma rota pré-carregada ou eager nunca liga o <code>router.pending</code> e aparece antes do próximo paint: sem frame de spinner, sem layout shift. O <code>router.pending</code> só fica true para um módulo ou loader que precisa ser esperado, e a página de saída permanece na tela enquanto isso. Um chunk que falha ao carregar aparece como <code>router.error</code>, nunca como rejeição não tratada, e pode ser tentado outra vez.</p>
     `,
       },
@@ -656,7 +656,7 @@ layer.close()          // dismissed: resolves with undefined
 `)}
       <p>Camadas se aninham. Um diálogo que precisa de outro diálogo chama <code>layer.push()</code> e aguarda, sem referência alguma ao Route.</p>
       <ul>
-        <li><strong>A URL é a camada do topo.</strong> O <code>push()</code> adiciona uma entrada no history, então a camada pode ser linkada e o Voltar a fecha, resolvendo o <code>push()</code> como dispensado, exatamente como o Cancelar. Voltar e <code>close()</code> seguem o mesmo caminho de código: o <code>close()</code> registra o resultado e volta no history, e a profundidade em <code>history.state</code> é quem manda. Os navegadores guardam cerca de 50 entradas por aba, então, depois de uma longa caminhada por camadas, a entrada de baixo pode ter sumido. Nesse caso o <code>close()</code> fecha as camadas ali mesmo e reescreve a entrada atual para a página que ficou visível.</li>
+        <li><strong>A URL é a camada do topo.</strong> O <code>push()</code> adiciona uma entrada no history, então a camada pode ser linkada e o Voltar a fecha, resolvendo o <code>push()</code> como dispensado, exatamente como o Cancelar. Voltar e <code>close()</code> seguem o mesmo caminho de código: o <code>close()</code> registra o resultado e volta no history, e a profundidade em <code>history.state</code> é quem manda. Os navegadores guardam cerca de 50 entradas por aba, então, depois de uma longa sequência de camadas empilhadas, a entrada de baixo pode ter sumido. Nesse caso o <code>close()</code> fecha as camadas ali mesmo e reescreve a entrada atual para a página que ficou visível.</li>
         <li><strong>Uma navegação comum zera a pilha.</strong> Um clique em link ou um <code>go()</code> não é uma camada: substitui tudo e dispensa todas as camadas abertas, então ninguém fica pendurado num await.</li>
         <li><strong>Um carregamento a frio é uma página independente.</strong> A URL nomeia a camada do topo, mas não a pilha embaixo dela, então abrir a URL de uma camada diretamente a renderiza na profundidade 1, com <code>layer.depth === 0</code> e um <code>close()</code> inerte. Uma rota empilhada precisa fazer sentido sozinha. Ramifique em <code>layer.depth</code> para oferecer um link de saída em vez de um botão Cancelar que não faz nada.</li>
         <li><strong>A promise não sobrevive a um reload</strong>, porque mora numa closure. Trate o resultado como um atalho dentro de um fluxo que também funciona pelo caminho mais longo.</li>
@@ -834,7 +834,7 @@ createRouter(routes, {
       <h3>Observações</h3>
       <ul>
         <li><strong>Nada é retido.</strong> O Route guarda a função da página e o contexto, nunca DOM. Navegar para outra página libera a anterior. O <code>stop()</code> libera os listeners e qualquer carregamento em andamento e limpa o <code>pending</code>, então um Route aposentado nunca deixa um spinner preso. Um módulo que resolve depois do <code>stop()</code> é descartado em silêncio.</li>
-        <li><strong>Seguro contra concorrência no servidor.</strong> O <code>start()</code> devolve state por requisição e o <code>run()</code> o limita a um render síncrono, então requisições intercaladas nunca enxergam a rota umas das outras. Só o cache de módulos é compartilhado. O escopo termina quando a função do <code>run()</code> retorna. Como o <code>renderToString()</code> é síncrono, isso basta. Um render assíncrono ou em streaming exigiria carregar o Route através de <code>await</code>s, o que o <code>run()</code> não faz.</li>
+        <li><strong>Seguro contra concorrência no servidor.</strong> O <code>start()</code> devolve um estado por requisição e o <code>run()</code> o limita a um render síncrono, então requisições intercaladas nunca enxergam a rota umas das outras. Só o cache de módulos é compartilhado. O escopo termina quando a função do <code>run()</code> retorna. Como o <code>renderToString()</code> é síncrono, isso basta. Um render assíncrono ou em streaming exigiria carregar o Route através de <code>await</code>s, o que o <code>run()</code> não faz.</li>
         <li><strong>A restauração de scroll no <code>popstate</code></strong> é do navegador (<code>scrollRestoration</code>), não do router.</li>
         <li><strong>Inicie um router por documento.</strong> Cada <code>start()</code> adiciona o seu próprio listener de <code>click</code> delegado, e o <code>start()</code> de um segundo router não aposenta o primeiro; só um segundo <code>start()</code> no mesmo router faz isso. Para resolver uma URL contra outra tabela, crie um router e chame apenas o <code>match()</code>, que não anexa nada. Assim, uma área independente pode ter seu próprio loading ao lado do <code>pending</code> da rota. Veja <a href="#router-multi">Múltiplos routers e loading combinado</a>.</li>
         <li><strong>Fica de fora, de propósito:</strong> hash history e memory history, já que a rota vive no pathname e o servidor precisa servir todas as rotas; duas áreas com roteamento independente guiadas por uma só URL, já que uma página pode preencher várias regiões com <code>into()</code>, mas todas pertencem à mesma rota correspondente (uma área independente ainda pode manter um router próprio sem iniciar e o seu loading, como em <a href="#router-multi">Múltiplos routers e loading combinado</a>); e preload no hover, que você consegue chamando o loader da própria rota a partir de um <code>mouseenter</code>.</li>
@@ -880,7 +880,7 @@ update()
         id: "async",
         title: "Assíncrono e loading",
         content: `
-      <p>Use <code>async</code>/<code>await</code> puro e chame <code>update()</code> a cada mudança de state. Num fetch, isso significa uma vez antes do <code>await</code> e outra depois:</p>
+      <p>Use <code>async</code>/<code>await</code> puro e chame <code>update()</code> a cada mudança de estado. Num fetch, isso significa uma vez antes do <code>await</code> e outra depois:</p>
       ${code("example.ts", `
 let status: 'idle' | 'loading' | 'done' | 'error' = 'idle'
 let result: unknown = null
@@ -904,7 +904,7 @@ async function loadData() {
         title: "Boas práticas",
         content: `
       <ul>
-        <li><strong>Agrupe as mudanças.</strong> Altere todo o state necessário e só então chame <code>update()</code>, uma única vez.</li>
+        <li><strong>Agrupe as mudanças.</strong> Altere todo o estado necessário e só então chame <code>update()</code>, uma única vez.</li>
         <li><strong>Mantenha os valores dinâmicos rápidos e puros.</strong> Todos eles rodam a cada <code>update()</code>.</li>
         <li><strong>Use <code>scope()</code></strong> para atualizações pequenas e frequentes, como digitação ou timers.</li>
         <li><strong>Renderize dentro do documento.</strong> Nós que não estão no documento quando o <code>update()</code> roda deixam de ser atualizados.</li>
@@ -978,11 +978,11 @@ async function loadData() {
         id: "faq",
         title: "Perguntas frequentes",
         content: `
-      <h3>Mudar o state atualiza a UI?</h3>
+      <h3>Mudar o estado atualiza a UI?</h3>
       <p>Não. O DOM fica como está até você chamar <code>update()</code>.</p>
 
       <h3>O Nuclo usa signals, proxies ou DOM virtual?</h3>
-      <p>Não. O state continua sendo JavaScript puro. Quando uma árvore é renderizada, o Nuclo cria elementos e nós de texto de verdade. O <code>update()</code> executa todos os valores dinâmicos registrados, ou só os que estão nos scopes indicados, e aplica o patch nesses mesmos nós onde algum valor mudou. Não há grafo de dependências nem árvore virtual.</p>
+      <p>Não. O estado continua sendo JavaScript puro. Quando uma árvore é renderizada, o Nuclo cria elementos e nós de texto de verdade. O <code>update()</code> executa todos os valores dinâmicos registrados, ou só os que estão nos scopes indicados, e aplica o patch nesses mesmos nós onde algum valor mudou. Não há grafo de dependências nem árvore virtual.</p>
 
       <h3>Por que minha página mostra "false"?</h3>
       <p>Booleanos são renderizados como texto. <code>div(ok &amp;&amp; span('Done'))</code> mostra "false". Para filhos, use <code>when(() =&gt; ok, span('Done'))</code>; para texto, <code>ok ? 'Done' : ''</code>.</p>
@@ -1006,7 +1006,7 @@ async function loadData() {
       <p>No pacote principal, não. O roteamento vem separado, como <code>nuclo-router</code>, com SSR, hydration, rotas com code splitting e preload em idle. Instale com <code>npm install nuclo nuclo-router</code>. Veja <a href="#router-overview">nuclo-router</a>.</p>
 
       <h3>O Nuclo tem effects?</h3>
-      <p>Não. <code>onMount</code> e <code>onDestroy</code> rodam uma vez por elemento, atrelados à inserção e à remoção. Nada roda de novo só porque algum state mudou.</p>
+      <p>Não. <code>onMount</code> e <code>onDestroy</code> rodam uma vez por elemento, atrelados à inserção e à remoção. Nada roda de novo só porque algum estado mudou.</p>
     `,
       },
     ],

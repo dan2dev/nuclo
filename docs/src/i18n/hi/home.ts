@@ -275,7 +275,7 @@ export const LABELS = {
   quickStart: "Quick start",
   quickStartTitle: "कुछ ही मिनटों में up and running।",
   quickStartSub: "तीन steps में असली UI बनाना शुरू कीजिए।",
-  readFullDocs: "पूरी Docs पढ़ें →",
+  readFullDocs: "पूरे Docs पढ़ें →",
   examples: "Examples",
   examplesTitle: "खुद चलते हुए देखिए।",
   examplesSub: "Interactive demos, और हर demo के पीछे का code भी।",

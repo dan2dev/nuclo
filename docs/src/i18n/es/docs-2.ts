@@ -26,7 +26,7 @@ const Card = () => div(card, 'Simple card')
         <li>Los nombres de clase son hashes del contenido: estilos idénticos comparten clase, y servidor y cliente generan exactamente los mismos nombres.</li>
         <li>Declara los estilos una sola vez, a nivel de módulo. <code>css()</code> cachea por objeto, así que si creas uno nuevo en cada llamada se vuelve a procesar cada vez.</li>
         <li>Mutar un objeto de estilo después de pasarlo a <code>css()</code> no surte efecto.</li>
-        <li>Cada estilo se registra y vive tanto como la página o el proceso del servidor. Para valores que cambian por elemento, como un ancho que viene de los datos, usa mejor el <a href="#attributes">atributo <code>style</code></a>.</li>
+        <li>Cada estilo se registra y vive tanto como la página o el proceso del servidor. Para valores que cambian por elemento, como un ancho que viene de los datos, es mejor usar el <a href="#attributes">atributo <code>style</code></a>.</li>
       </ul>
       <h3>Estilos con nombre</h3>
       <p>Dale un nombre primero y obtendrás una clase legible:</p>
@@ -596,7 +596,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
 }
 `)}
       <h3><code>PageProps</code></h3>
-      <p>El segundo argumento de una página. Desestructura solo lo que necesite.</p>
+      <p>El segundo argumento de una página. Desestructura solo lo que necesites.</p>
       <table>
         <thead><tr><th>Prop</th><th></th></tr></thead>
         <tbody>
@@ -643,7 +643,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         title: "Capas y guardas de salida",
         content: `
       <p><code>push()</code> abre una ruta encima de la actual en vez de reemplazarla, y se resuelve con lo que sea que cierre esa capa. Como las páginas son un único <code>list()</code> sobre la pila, abrir una capa es un simple append: la página de abajo no se vuelve a renderizar, así que su DOM, su foco y su formulario a medio rellenar siguen ahí cuando la capa se cierra.</p>
-      <p>Así funciona el flujo de "necesito un registro que todavía no existe" sin tirar a la basura el formulario que el usuario estaba llenando:</p>
+      <p>Así funciona el flujo de "necesito un registro que todavía no existe" sin descartar el formulario que el usuario estaba rellenando:</p>
       ${code("pages/Edit.ts", `
 // the page underneath
 const created = await layer.push<Option>('/options/new')
@@ -663,7 +663,7 @@ layer.close()          // dismissed: resolves with undefined
         <li><strong>Nadie se queda esperando.</strong> <code>stop()</code> descarta todas las capas abiertas, y una capa abandonada por una navegación se resuelve con <code>undefined</code>.</li>
       </ul>
       <h3>Guardas de salida</h3>
-      <p>Una página que guarda algo valioso, como un formulario a medio rellenar, registra una guarda. Se le consulta antes de descartar la página, y si devuelve <code>false</code> (o una promesa de ello) la página se queda:</p>
+      <p>Una página que guarda algo valioso, como un formulario a medio rellenar, registra una guarda. El router la consulta antes de descartar la página, y si devuelve <code>false</code> (o una promesa de ello) la página se queda:</p>
       ${code("pages/Edit.ts", `
 import type { PageProps, RouteContext } from 'nuclo-router'
 
@@ -991,7 +991,7 @@ async function loadData() {
       <p>Las filas de los elementos que siguen en la lista se conservan; no se vuelven a renderizar. Para los campos que cambian, usa valores dinámicos como <code>() =&gt; todo.text</code>. Ver <a href="#api-list"><code>list()</code></a>.</p>
 
       <h3>¿Por qué una parte de mi interfaz deja de actualizarse?</h3>
-      <p>Lo más probable es que sus nodos no estuvieran en el documento cuando corrió <code>update()</code>. Nuclo deja de rastrearlos, aunque los adjuntes después, así que renderiza dentro de un contenedor que ya esté en el documento. Hay otras dos causas: un <code>when()</code> cuya condición lanza un error deja de actualizarse, y una función de texto que lanza un error en su primera ejecución se queda vacía. Ver <a href="#api-update"><code>update()</code></a>.</p>
+      <p>Lo más probable es que sus nodos no estuvieran en el documento cuando corrió <code>update()</code>. Nuclo deja de rastrearlos, aunque los agregues después, así que renderiza dentro de un contenedor que ya esté en el documento. Hay otras dos causas: un <code>when()</code> cuya condición lanza un error deja de actualizarse, y una función de texto que lanza un error en su primera ejecución se queda vacía. Ver <a href="#api-update"><code>update()</code></a>.</p>
 
       <h3>¿Cuándo debo usar <code>forceUpdate()</code>?</h3>
       <p>Solo para cambios poco frecuentes en valores estáticos, como cambiar el idioma. Para todo lo demás, usa <code>update()</code>. Ver <a href="#api-force-update"><code>forceUpdate()</code></a>.</p>
