@@ -340,7 +340,7 @@ const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
       <p>集成工作到这里就做完了。链接能直接用，是因为 <code>&lt;a href&gt;</code> 本来就是普通的 <code>&lt;a href&gt;</code>：<code>document</code> 上挂着一个委托监听器，只拦截归 router 管的链接，其他的一律交还给浏览器。</p>
-      <p>在服务端，<code>start()</code> 会为每个请求返回一个独立的 <code>Route</code>，完全不碰 router 本身，所以并发请求之间不会看到彼此的路由。<code>route.run()</code> 则让这个 Route 在整个渲染期间充当 router（也就是 outlet）读取的那一个。浏览器里每次页面加载只有一个 Route，<code>start()</code> 会把它设成 router 自己的，所以不用调用 <code>run()</code>。</p>
+      <p>在服务端，<code>start()</code> 会为每个请求返回一个独立的 <code>Route</code>，完全不碰 router 本身，所以并发请求之间不会看到彼此的路由。<code>route.run()</code> 会在整个渲染期间，把这个 Route 设为 router（也就是 outlet）的活动 Route。浏览器里每次页面加载只有一个 Route，<code>start()</code> 会直接把它设为活动 Route，所以不用调用 <code>run()</code>。</p>
       <p>页面会以 <code>(ctx, { layer, data, outlet, beforeLeave })</code> 的形式拿到自己的 <a href="#router-api"><code>RouteContext</code></a> 和 <a href="#router-api"><code>PageProps</code></a>，用不上的参数完全可以不接。它可以返回 <code>list()</code> 能接受的任何内容。想顺便填充布局的其他位置，就在页面里再返回一个 <code>into()</code>，例如 <code>div(article(…), into('sidebar', nav(…)))</code>，这些内容会跟着页面一起离开。详见<a href="#router-regions">页面与区域</a>。</p>
     `,
       },
@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>推入的层</td><td>只渲染匹配到的页面，它的父级已经挂载在下面那一行里了。</td></tr>
         </tbody>
       </table>
-      <p>被保留下来的页面，用的还是构建时的那个 <code>ctx</code>。这正是 <code>ctx</code> 在所有场景下的含义：要读实时值，请读 <code>router.*</code>。由查询串驱动的状态（筛选、分页、选项卡之类），在动态值里读 <code>router.search</code>，再用 <code>router.go('?page=2', { replace: true })</code> 写回去。页面、焦点，还有写到一半的输入，全都纹丝不动。</p>
+      <p>被保留下来的页面，用的还是构建时的那个 <code>ctx</code>。任何地方的 <code>ctx</code> 都是如此：要读实时值，请读 <code>router.*</code>。由查询串驱动的状态（筛选、分页、选项卡之类），在动态值里读 <code>router.search</code>，再用 <code>router.go('?page=2', { replace: true })</code> 写回去。页面、焦点，还有写到一半的输入，全都纹丝不动。</p>
     `,
       },
       {
@@ -840,10 +840,10 @@ createRouter(routes, {
         <li><strong>有意不提供的功能：</strong>哈希 history 和内存 history，因为路由存在于 pathname 里，服务端必须能响应每一条路由；由同一个 URL 驱动的两个独立路由区域，因为页面可以用 <code>into()</code> 填充多个区域，但它们都隶属于唯一匹配到的那条路由，独立区域依然可以保留自己的未启动 router 和加载过程，见<a href="#router-multi">多 router 与组合加载</a>；还有悬停预加载，你可以在 <code>mouseenter</code> 里调用该路由自己的加载器来实现。</li>
       </ul>
       <h3>示例</h3>
-      <p>仓库里有两个可运行的示例，互为补充，每一项设置都能在某处亲眼看到：</p>
+      <p>仓库里有两个可运行的示例，互为补充，两个合起来，每项设置都能看到实际效果：</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>：对整套 API 的客户端巡礼。涵盖每种模式写法和优先级规则、链接处理的退出方式、带实时控件的每个 Route 成员、一个子 router、三层深的层栈、挂在两个父级下的相对分区，以及带 <code>pending</code> 和 <code>error</code> 的路由加载器。它设置了 <code>preload: false</code>，好让这些状态保持可见。</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>：每个请求一次 <code>renderToString()</code>、可验证地接管服务端节点的水合、真实的 404 状态码、非根的 <code>base</code>、能在网络面板里观察到的空闲预加载，以及一个把数据从服务端交给客户端、让水合不必再重新请求的加载器。</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>：每个请求一次 <code>renderToString()</code>、可以亲自验证确实接管了服务端节点的水合、真实的 404 状态码、非根的 <code>base</code>、能在网络面板里观察到的空闲预加载，以及一个把数据从服务端交给客户端、让水合不必再重新请求的加载器。</li>
       </ul>
     `,
       },

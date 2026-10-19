@@ -126,7 +126,7 @@ export const PIPELINE_STEPS = [
   {
     kicker: "02 · 提交",
     title: "调用 update()",
-    desc: "一个全局函数，把改动一次性提交。哪怕攒了十几处修改，也只需调用一次；在此之前，DOM 不会有任何反应。",
+    desc: "一个全局函数，把改动一次性应用到界面。哪怕攒了十几处修改，也只需调用一次；在此之前，DOM 不会有任何反应。",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {

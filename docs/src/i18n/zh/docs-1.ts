@@ -512,7 +512,7 @@ update()       // everything, the header now says "Hi, Grace"
         afterContent: `
       <ul>
         <li>一个元素可以同时带多个 id：<code>scope('cart', 'sidebar')</code>。</li>
-        <li><code>update('a', 'b')</code> 会更新 <code>a</code> 和 <code>b</code> 内部的全部内容。多个元素共用同一个 id 时，它们都会被更新。</li>
+        <li><code>update('a', 'b')</code> 会更新 <code>a</code> 或 <code>b</code> 内部的全部内容。多个元素共用同一个 id 时，它们都会被更新。</li>
         <li>作用域嵌套时，<code>update('outer')</code> 连内层一起刷新，而 <code>update('inner')</code> 不会波及外层。</li>
         <li>如果文档里没有任何元素拥有这个 id，<strong>就什么也不会更新</strong>，而且不会报错，所以请检查拼写。</li>
         <li><code>scope()</code> 在服务端是空操作。</li>
