@@ -722,7 +722,7 @@ const docs = createRouter(docsRoutes, { base: '/docs' })
 const hit = docs.match()                       // { pattern: '/:topic', … }
 const page = await docsRoutes[hit.pattern]()   // the app's own lookup
 `)}
-      <p>Entscheidend ist, diesen Router nie zu starten. <code>start()</code> hängt die Listener ein, und zwei gestartete Router kommen sich in die Quere. Der Preis: Der untergeordnete Router übernimmt nur die Auflösung, Routen-Loader, die ein gestarteter Router ausführen würde, musst du selbst aufrufen. Außerdem baut diese Variante die Shell neu, sobald sich der Rest ändert, denn der Router sieht nur eine Route, und die Shell löst den Rest selbst auf. Nur eine verschachtelte Tabelle gibt dir einen Parent, den der Router gemountet hält. Zieh sie deshalb vor, es sei denn, das Feature braucht wirklich einen eigenen Router mit eigener base und eigenem Fallback.</p>
+      <p>Entscheidend ist, diesen Router nie zu starten. <code>start()</code> hängt die Listener ein, und zwei gestartete Router kommen sich in die Quere. Der Preis: Der untergeordnete Router übernimmt nur die Auflösung, Routen-Loader, die ein gestarteter Router ausführen würde, musst du selbst aufrufen. Außerdem baut diese Variante den Rahmen neu, sobald sich der Rest ändert, denn der Router sieht nur eine Route, und der Rahmen löst den Rest selbst auf. Nur eine verschachtelte Tabelle gibt dir einen Parent, den der Router gemountet hält. Zieh sie deshalb vor, es sei denn, das Feature braucht wirklich einen eigenen Router mit eigener base und eigenem Fallback.</p>
     `,
       },
       {
@@ -766,7 +766,7 @@ export default function Section(_ctx: RouteContext, { data }: PageProps<SectionD
   return article(h2(data.section), ul(...data.items.map((i) => li(i))))
 }
 `)}
-      <p>Beide Loader starten gemeinsam und nicht nacheinander. <code>router.pending</code> ist true, solange noch einer von beiden läuft, und sonst false. Eine vorgeladene oder direkt verfügbare Route setzt es nie auf true. Beim Wechsel zwischen Sections bleibt das Layout bestehen, es läuft also nur der Loader der Section noch einmal. Die Daten des Layouts, sein DOM und ein halb ausgefülltes Eingabefeld überleben. Navigierst du erneut zur selben URL, läuft der Loader des Blatts wieder, und dessen Zeile wird neu gebaut, genau wie bei einer einzelnen Seite.</p>
+      <p>Beide Loader starten gemeinsam und nicht nacheinander. <code>router.pending</code> ist true, solange noch einer von beiden läuft, und sonst false. Eine vorgeladene oder direkt verfügbare Route setzt es nie auf true. Beim Wechsel zwischen Abschnitten bleibt das Layout bestehen, es läuft also nur der Loader des Abschnitts noch einmal. Die Daten des Layouts, sein DOM und ein halb ausgefülltes Eingabefeld überleben. Navigierst du erneut zur selben URL, läuft der Loader des Blatts wieder, und dessen Zeile wird neu gebaut, genau wie bei einer einzelnen Seite.</p>
       <h3>Mehrfaches Laden: ein zweiter Router mit eigenem Spinner</h3>
       <p>Ein unabhängiger Bereich, etwa eine Sidebar, ein Tray oder eine Live-Region, bekommt einen eigenen Router, der erzeugt, aber nie gestartet wird, plus ein eigenes Lade-Flag. <code>router.pending</code> gehört dem gestarteten Router und sagt nichts über diesen Bereich aus. Beide können also nebeneinander laden, und jeder darf zuerst fertig sein:</p>
       ${code("sidebar.ts", `
@@ -809,8 +809,8 @@ createRouter(routes, {
         <li><strong><code>pending</code> gehört dem gestarteten Router.</strong> Ein nie gestarteter Router hat keine Route, kein <code>pending</code> und kein <code>error</code>. Der Bereich führt seine eigenen Flags, und ein zweiter Spinner kann neben dem ersten sitzen. In der Demo lädt die Sidebar 800 ms, während die Loader der Route 900 ms brauchen. Die Seite kann also vor der Sidebar fertig sein oder umgekehrt.</li>
         <li><strong><code>match()</code> hängt nichts ein.</strong> Beliebig viele ungestartete Router können sich ein Dokument teilen, jeder mit eigener Tabelle, eigener base und eigenem Modul-Cache, und keiner fasst die History an. Sie kosten eine Tabelle und einen Matcher.</li>
         <li><strong>Seine Loader laufen nie.</strong> Der gestartete Router führt das <code>load()</code> der Seiten aus, auf die er passt. Ein nie gestarteter Router löst nur auf. Brauchen seine Views Daten, holst du sie selbst, so wie das <code>refreshSidebar()</code> der Demo. Willst du Loader, nimm eine <a href="#router-matches">verschachtelte Tabelle</a> oder eine <a href="#router-regions">Region, die eine Seite füllt</a>: Dann bleibt diese Aufgabe beim gestarteten Router.</li>
-        <li><strong>Schütz dich vor veralteten Antworten.</strong> Ein langsamer Sidebar-Fetch darf nicht auf der Section landen, von der du längst weg navigiert bist. Zähl pro Refresh einen Generationszähler hoch und verwirf Antworten, die nicht mehr passen, so wie der Router selbst überholte Navigationen zurückzieht.</li>
-        <li><strong>Auch eine lazy <code>matches()</code>-View hat kein <code>pending</code>.</strong> Sie rendert nichts, bis ihr Modul eintrifft. Das ergibt drei Ladesysteme mit drei unabhängigen Uhren: das <code>pending</code> der Route, deine eigenen Flags und eine lazy View, die schlicht noch nicht da ist.</li>
+        <li><strong>Schütz dich vor veralteten Antworten.</strong> Ein langsamer Sidebar-Fetch darf nicht in dem Abschnitt landen, von dem du längst weg navigiert bist. Zähl pro Refresh einen Generationszähler hoch und verwirf Antworten, die nicht mehr passen, so wie der Router selbst überholte Navigationen zurückzieht.</li>
+        <li><strong>Auch eine lazy <code>matches()</code>-View hat kein <code>pending</code>.</strong> Sie rendert nichts, bis ihr Modul eintrifft. Das ergibt drei Ladesysteme mit drei unabhängigen Taktgebern: das <code>pending</code> der Route, deine eigenen Flags und eine lazy View, die schlicht noch nicht da ist.</li>
       </ul>
     `,
       },
@@ -858,7 +858,7 @@ createRouter(routes, {
         id: "computed",
         title: "Berechnete Werte",
         content: `
-      <p>Eine Computed-API gibt es in Nuclo nicht, und du brauchst auch keine. Eine ganz normale Funktion, aus dynamischen Werten aufgerufen, erledigt den Job:</p>
+      <p>Eine Computed-API gibt es in Nuclo nicht. Eine ganz normale Funktion, aus dynamischen Werten aufgerufen, erledigt den Job:</p>
       ${code("example.ts", `
 let items = ['apple', 'banana', 'cherry']
 let filter = ''

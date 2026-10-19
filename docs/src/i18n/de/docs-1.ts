@@ -12,7 +12,7 @@ export const GROUPS_1: DocGroupText[] = [
         title: "Überblick",
         content: `
       <p>Nuclo ist eine kleine DOM-Bibliothek für TypeScript. Du baust deine Seite aus ganz normalen Funktionen wie <code>div()</code> und <code>button()</code>, hältst den State in schlichten Variablen und sagst Nuclo mit <code>update()</code> Bescheid, sobald sich etwas ändern soll.</p>
-      <p>Dafür braucht es weder Virtual DOM noch Compiler, weder Proxies noch Signals.</p>
+      <p>Nuclo hat weder Virtual DOM noch Compiler, weder Proxies noch Signals.</p>
       ${code("main.ts", `
 import 'nuclo'
 
@@ -166,7 +166,7 @@ render(Card, document.body)
       <p>Ein Builder nimmt beliebig viele Argumente und arbeitet sie von links nach rechts ab:</p>
       <ul>
         <li><strong>string, number, bigint</strong>: werden zu einem Textknoten.</li>
-        <li><strong><code>() =&gt; value</code></strong>: Text, der sich bei <code>update()</code> mitbewegt. Siehe <a href="#dynamic-functions">Dynamische Werte</a>.</li>
+        <li><strong><code>() =&gt; value</code></strong>: Text, der bei jedem <code>update()</code> aktualisiert wird. Siehe <a href="#dynamic-functions">Dynamische Werte</a>.</li>
         <li><strong><code>null</code>, <code>undefined</code></strong>: werden ignoriert.</li>
         <li><strong><code>true</code>, <code>false</code></strong>: erscheinen als Text "true" bzw. "false". Für Bedingungen nimmst du <code>when()</code>.</li>
         <li><strong>Ein einfaches Objekt</strong>: Attribute. Siehe <a href="#attributes">Attribute</a>.</li>
@@ -402,7 +402,7 @@ update() // App's onDestroy hooks and cleanups run
         id: "explicit-updates",
         title: "Explizite Updates",
         content: `
-      <p>Nuclo aktualisiert die Seite nie auf eigene Faust. Du änderst den State und rufst dann <code>update()</code> auf. Fertig.</p>
+      <p>Nuclo aktualisiert die Seite nie auf eigene Faust. Du änderst den State und rufst dann <code>update()</code> auf.</p>
       ${code("counter.ts", `
 let count = 0
 
@@ -890,7 +890,7 @@ hydrate(App, document.getElementById('root')!)
         id: "api-ssr",
         title: "Serverseitiges Rendering",
         content: `
-      <p>Rendert eine Komponente auf dem Server zu einem HTML-String. Im Browser ruft dann <a href="#api-hydrate"><code>hydrate()</code></a> mit derselben Komponente auf, um dieses HTML zum Leben zu erwecken. Server-Runtimes haben kein <code>document</code>, importiere deshalb zuerst <a href="#api-polyfill"><code>nuclo/polyfill</code></a>.</p>
+      <p>Rendert eine Komponente auf dem Server zu einem HTML-String. Im Browser ruft dann <a href="#api-hydrate"><code>hydrate()</code></a> mit derselben Komponente auf, um dieses HTML interaktiv zu machen. Server-Runtimes haben kein <code>document</code>, importiere deshalb zuerst <a href="#api-polyfill"><code>nuclo/polyfill</code></a>.</p>
       ${code("app.ts", `
 let count = 0
 const heading = css({ color: 'red' })

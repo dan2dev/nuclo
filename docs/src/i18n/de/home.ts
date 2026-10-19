@@ -222,7 +222,7 @@ export const CTA_SUB =
 
 export const QUICK_START_STEPS = [
   {
-    num: "01 - INSTALLATION",
+    num: "01 - INSTALLIEREN",
     title: "Installieren",
     desc: "Hol dir Nuclo per npm, pnpm, yarn oder bun ins Projekt.",
     code: `<span class="pt">$</span> <span class="fn">npm</span> create nuclo@latest<span class="tcaret"></span>`,
