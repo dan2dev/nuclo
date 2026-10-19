@@ -340,7 +340,7 @@ const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
       <p>E questa è tutta l'integrazione. I link funzionano perché un <code>&lt;a href&gt;</code> resta un semplice <code>&lt;a href&gt;</code>: un listener delegato su <code>document</code> intercetta i link di cui il router è responsabile e lascia tutti gli altri al browser.</p>
-      <p>Sul server <code>start()</code> restituisce una <code>Route</code> per ogni richiesta senza toccare il router, quindi richieste concorrenti non vedono mai le rotte l'una dell'altra. <code>route.run()</code> fa di quella Route la rotta letta dal router (e quindi dall'outlet) per tutta la durata del render. Nel browser c'è una Route per ogni caricamento di pagina e <code>start()</code> la rende quella del router: non serve nessun <code>run()</code>.</p>
+      <p>Sul server <code>start()</code> restituisce una <code>Route</code> per ogni richiesta senza toccare il router, quindi richieste concorrenti non vedono mai le rotte l'una dell'altra. <code>route.run()</code> rende quella Route la rotta attiva del router (e quindi dell'outlet) per tutta la durata del render. Nel browser c'è una Route per ogni caricamento di pagina e <code>start()</code> la rende subito attiva: non serve nessun <code>run()</code>.</p>
       <p>Una pagina riceve il suo <a href="#router-api"><code>RouteContext</code></a> e le sue <a href="#router-api"><code>PageProps</code></a>, nella forma <code>(ctx, { layer, data, outlet, beforeLeave })</code>, e può accettarne anche meno. Restituisce qualsiasi cosa <code>list()</code> sappia digerire. Se la pagina deve riempire anche un'altra zona del layout, restituisci un <code>into()</code> dal suo interno, per esempio <code>div(article(…), into('sidebar', nav(…)))</code>: quel contenuto se ne va insieme alla pagina. Ne parliamo in <a href="#router-regions">Pagine e regioni</a>.</p>
     `,
       },
@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>un layer aperto con push</td><td>renderizza solo la pagina corrispondente, perché i suoi genitori sono già montati nella riga sottostante</td></tr>
         </tbody>
       </table>
-      <p>Una pagina mantenuta conserva il <code>ctx</code> con cui è stata costruita. È questo il senso di <code>ctx</code> ovunque: per i valori live leggi <code>router.*</code>. Lo stato guidato dalla query (filtri, paginazione, tab) legge <code>router.search</code> dentro un valore dinamico e scrive con <code>router.go('?page=2', { replace: true })</code>. La pagina, il suo focus e l'input scritto a metà restano dove sono.</p>
+      <p>Una pagina mantenuta conserva il <code>ctx</code> con cui è stata costruita. Vale per qualsiasi <code>ctx</code>: per i valori live leggi <code>router.*</code>. Lo stato guidato dalla query (filtri, paginazione, tab) legge <code>router.search</code> dentro un valore dinamico e scrive con <code>router.go('?page=2', { replace: true })</code>. La pagina, il suo focus e l'input scritto a metà restano dove sono.</p>
     `,
       },
       {
@@ -642,7 +642,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         id: "router-layers",
         title: "Layer e guardie di uscita",
         content: `
-      <p><code>push()</code> apre una rotta sopra quella corrente invece di sostituirla, e si risolve con il valore con cui quel layer si chiude. Poiché le pagine sono un'unica <code>list()</code> sullo stack, aprire un layer equivale a un append. La pagina sotto non viene renderizzata di nuovo, quindi il suo DOM, il suo focus e il form compilato a metà sono ancora lì quando il layer si chiude.</p>
+      <p><code>push()</code> apre una rotta sopra quella corrente invece di sostituirla, e si risolve con il valore con cui quel layer si chiude. Poiché le pagine sono un'unica <code>list()</code> sullo stack, aprire un layer significa solo aggiungere una riga. La pagina sotto non viene renderizzata di nuovo, quindi il suo DOM, il suo focus e il form compilato a metà sono ancora lì quando il layer si chiude.</p>
       <p>È così che funziona il flusso "mi serve un record che non esiste ancora", senza buttare via il form che l'utente stava compilando:</p>
       ${code("pages/Edit.ts", `
 // the page underneath
@@ -703,7 +703,7 @@ div(
         <li><strong>Stesso matching della tabella delle rotte.</strong> Pattern, precedenza, matching sul percorso grezzo e rimozione di <code>base</code> sono quelli del router, quindi vista e pagina sono sempre d'accordo sull'URL. Legge il percorso del layer in cima, come <code>router.path</code>.</li>
         <li><strong>Una vista</strong> è <code>(params, ctx) =&gt; content</code>, dove <code>params</code> prende il tipo dal suo pattern e <code>ctx</code> è il <code>RouteContext</code> con il <code>pattern</code> e i <code>params</code> della vista. Può restituire anche l'<code>import()</code> di un modulo di pagina, che viene chiamato con <code>ctx</code> appena arriva.</li>
         <li><strong>Se nulla corrisponde, non viene renderizzato nulla.</strong> Aggiungi una vista <code>'*'</code> come fallback. Come l'outlet, è vuoto prima di <code>start()</code> e dopo <code>stop()</code>.</li>
-        <li><strong>Viene renderizzata di nuovo solo quando cambia la rotta</strong>, quindi una vista conserva il suo DOM in tutto ciò che mantiene la pagina.</li>
+        <li><strong>Viene renderizzata di nuovo solo quando cambia la rotta</strong>, quindi a ogni navigazione che mantiene la pagina anche la vista conserva il suo DOM.</li>
         <li><strong>Una vista lazy non renderizza nulla finché il suo modulo non arriva.</strong> Un <code>import()</code> fallito viene registrato con <code>console.error</code>, non imposta <code>router.error</code> e viene ritentato alla navigazione successiva. Un semplice <code>update()</code> non ritenta.</li>
         <li><strong>Sul server</strong> una vista lazy non emette nulla, perché il suo modulo arriva sul client. Per tutto ciò che deve stare già nel primo HTML usa una vista sincrona.</li>
       </ul>
@@ -840,10 +840,10 @@ createRouter(routes, {
         <li><strong>Non incluso, per scelta:</strong> hash history e memory history, perché la rotta vive nel pathname e un server deve servire ogni rotta; due aree con routing indipendente guidate da un solo URL, perché una pagina può riempire più regioni con <code>into()</code> ma tutte appartengono all'unica rotta corrispondente (un'area indipendente può comunque tenere il proprio router non avviato e il proprio caricamento, come in <a href="#router-multi">Più router e caricamento combinato</a>); e il precaricamento all'hover, che si ottiene chiamando il loader della rotta da un <code>mouseenter</code>.</li>
       </ul>
       <h3>Esempi</h3>
-      <p>Nel repository ci sono due esempi eseguibili che si completano a vicenda, così ogni impostazione si può osservare da qualche parte:</p>
+      <p>Nel repository ci sono due esempi eseguibili che si completano a vicenda: tra i due si vede all'opera ogni impostazione:</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: un tour lato client dell'intera API. Ogni forma di pattern e regola di precedenza, le esclusioni della gestione dei link, ogni membro di Route con controlli live, un sub-router, lo stack di layer a tre livelli, una sezione relativa montata su due genitori e loader di rotta con <code>pending</code> ed <code>error</code>. Imposta <code>preload: false</code>, così quegli stati restano visibili.</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> per ogni richiesta, idratazione che riutilizza in modo dimostrabile i nodi del server, veri codici di stato 404, un <code>base</code> non radice, precaricamento in idle osservabile nel pannello di rete e un loader i cui dati passano dal server al client, così l'idratazione non rifà il fetch.</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> per ogni richiesta, un'idratazione in cui puoi verificare che i nodi del server vengono riutilizzati, veri codici di stato 404, un <code>base</code> non radice, precaricamento in idle osservabile nel pannello di rete e un loader i cui dati passano dal server al client, così l'idratazione non rifà il fetch.</li>
       </ul>
     `,
       },

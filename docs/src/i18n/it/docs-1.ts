@@ -940,7 +940,7 @@ renderToString(p('Hello'))
 `)}
       <ul>
         <li>Testo e valori degli attributi vengono escapati come HTML. Il testo dentro <code>script()</code> e <code>style()</code> viene scritto così com'è, spezzando solo i tag di chiusura, quindi non metterci mai input dell'utente.</li>
-        <li>Non lancia errori. Se il componente, una funzione di <code>list()</code> o la condizione di un <code>when()</code> lancia un errore, o se manca il polyfill, registra l'errore e restituisce <code>""</code>: se la richiesta deve fallire, controlla che il risultato non sia vuoto. Una funzione di testo o di attributo che lancia un errore produce solo un valore vuoto.</li>
+        <li>Non lancia errori. Se il componente, una funzione di <code>list()</code> o la condizione di un <code>when()</code> lancia un errore, o se manca il polyfill, registra l'errore e restituisce <code>""</code>: se in quel caso la richiesta deve fallire, controlla se il risultato è vuoto. Una funzione di testo o di attributo che lancia un errore produce solo un valore vuoto.</li>
       </ul>
       <h3><code>renderManyToString()</code></h3>
       <p>Equivale a <code>inputs.map(renderToString)</code>.</p>
