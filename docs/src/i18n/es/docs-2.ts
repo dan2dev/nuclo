@@ -340,7 +340,7 @@ const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
       <p>Eso es toda la integración. Los enlaces funcionan porque un <code>&lt;a href&gt;</code> es, sencillamente, un <code>&lt;a href&gt;</code>: un listener delegado en <code>document</code> intercepta los que pertenecen al router y deja el resto al navegador.</p>
-      <p>En el servidor, <code>start()</code> devuelve un <code>Route</code> por petición y no toca el router, de modo que las peticiones concurrentes nunca ven la ruta de las demás. <code>route.run()</code> hace que ese Route sea el que el router (y por tanto el outlet) lee durante el renderizado. En el navegador hay un Route por carga de página y <code>start()</code> lo adopta como propio, así que no necesitas <code>run()</code>.</p>
+      <p>En el servidor, <code>start()</code> devuelve un <code>Route</code> por petición y no toca el router, de modo que las peticiones concurrentes nunca ven la ruta de las demás. <code>route.run()</code> convierte ese Route en el activo del router (y, por tanto, del outlet) mientras dura el renderizado. En el navegador hay un Route por carga de página y <code>start()</code> lo adopta como propio, así que no necesitas <code>run()</code>.</p>
       <p>Una página recibe su <a href="#router-api"><code>RouteContext</code></a> y sus <a href="#router-api"><code>PageProps</code></a>, como <code>(ctx, { layer, data, outlet, beforeLeave })</code>, y puede declarar menos argumentos. Devuelve cualquier cosa que <code>list()</code> acepte. Si además quiere rellenar otra parte del layout, devuelve un <code>into()</code> desde la propia página, como <code>div(article(…), into('sidebar', nav(…)))</code>; ese contenido se va con la página. Ver <a href="#router-regions">Páginas y regiones</a>.</p>
     `,
       },
@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>una capa apilada</td><td>renderiza solo la página coincidente; sus padres ya están montados en la fila de abajo</td></tr>
         </tbody>
       </table>
-      <p>Una página conservada se queda con el <code>ctx</code> con el que se construyó, y ese es el sentido de <code>ctx</code> en todas partes: lee <code>router.*</code> para obtener valores en vivo. El estado que depende de la query (filtros, paginación, pestañas) lee <code>router.search</code> dentro de un valor dinámico y escribe con <code>router.go('?page=2', { replace: true })</code>. La página, su foco y su input a medio escribir se quedan exactamente donde estaban.</p>
+      <p>Una página conservada se queda con el <code>ctx</code> con el que se construyó, y esto vale para cualquier <code>ctx</code>: lee <code>router.*</code> para obtener valores en vivo. El estado que depende de la query (filtros, paginación, pestañas) lee <code>router.search</code> dentro de un valor dinámico y escribe con <code>router.go('?page=2', { replace: true })</code>. La página, su foco y su input a medio escribir se quedan exactamente donde estaban.</p>
     `,
       },
       {
@@ -642,7 +642,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         id: "router-layers",
         title: "Capas y guardas de salida",
         content: `
-      <p><code>push()</code> abre una ruta encima de la actual en vez de reemplazarla, y se resuelve con lo que sea que cierre esa capa. Como las páginas son un único <code>list()</code> sobre la pila, abrir una capa es un simple append: la página de abajo no se vuelve a renderizar, así que su DOM, su foco y su formulario a medio rellenar siguen ahí cuando la capa se cierra.</p>
+      <p><code>push()</code> abre una ruta encima de la actual en vez de reemplazarla, y se resuelve con lo que sea que cierre esa capa. Como las páginas son un único <code>list()</code> sobre la pila, abrir una capa es solo agregar una fila: la página de abajo no se vuelve a renderizar, así que su DOM, su foco y su formulario a medio rellenar siguen ahí cuando la capa se cierra.</p>
       <p>Así funciona el flujo de "necesito un registro que todavía no existe" sin descartar el formulario que el usuario estaba rellenando:</p>
       ${code("pages/Edit.ts", `
 // the page underneath
@@ -677,7 +677,7 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
         <li><strong>Solo cuando la página se va.</strong> Una navegación hija bajo un layout, o un cambio de query o hash que conserva la página, no pregunta nada. Una guarda vive y muere con su página, así que no hay nada que desregistrar.</li>
         <li><strong>Todas las salidas.</strong> Un enlace, <code>go()</code>, Atrás y Adelante, el <code>close()</code> de una capa y un <code>go()</code> hacia una URL que el router no posee (salir de la aplicación, donde <code>to</code> es <code>null</code>). Un Atrás o Adelante rechazado se deshace, de modo que la barra de direcciones se queda en la página. Cerrar la pestaña o recargar es trabajo de <code>beforeunload</code>.</li>
         <li><strong><code>to</code></strong> es el <code>RouteContext</code> hacia el que va la navegación. Las guardas se ejecutan de la más interna hacia fuera y se detienen en el primer rechazo; una que lanza un error también conserva la página. <code>close(result)</code> pasa igualmente por la guarda, así que limpia tu flag antes de cerrar con un resultado.</li>
-        <li>El router solo puede deshacer entradas del historial que él mismo escribió. Un Atrás o Adelante hacia una que no escribió, como un enlace nativo <code>#fragment</code> o el <code>pushState</code> de otro script, no se consulta.</li>
+        <li>El router solo puede deshacer entradas del historial que él mismo escribió. Un Atrás o Adelante hacia una que no escribió, como un enlace nativo <code>#fragment</code> o el <code>pushState</code> de otro script, no consulta a la guarda.</li>
       </ul>
     `,
       },
@@ -703,7 +703,7 @@ div(
         <li><strong>La misma coincidencia que la tabla de rutas.</strong> Los patrones, la precedencia, la coincidencia sobre la ruta sin procesar y la eliminación de <code>base</code> son los del propio router, así que una vista y una página siempre coinciden en qué URL es. Lee la ruta de la capa superior, igual que <code>router.path</code>.</li>
         <li><strong>Una vista</strong> es <code>(params, ctx) =&gt; content</code>, donde <code>params</code> se tipa a partir de su patrón y <code>ctx</code> es el <code>RouteContext</code> con el <code>pattern</code> y los <code>params</code> de la vista. También puede devolver un <code>import()</code> de un módulo de página, que se llama con <code>ctx</code> cuando llega.</li>
         <li><strong>Si nada coincide, no se renderiza nada.</strong> Agrega una vista <code>'*'</code> como fallback. Como el outlet, está vacío antes de <code>start()</code> y después de <code>stop()</code>.</li>
-        <li><strong>Solo se vuelve a renderizar cuando cambia la ruta</strong>, así que una vista conserva su DOM ante cualquier cosa que conserve la página.</li>
+        <li><strong>Solo se vuelve a renderizar cuando cambia la ruta</strong>, así que, en toda navegación que conserva la página, la vista también conserva su DOM.</li>
         <li><strong>Una vista con carga diferida no renderiza nada hasta que llega su módulo.</strong> Un <code>import()</code> fallido se registra con <code>console.error</code>, no establece <code>router.error</code> y se reintenta en la siguiente navegación; un <code>update()</code> normal no lo reintenta.</li>
         <li><strong>En el servidor</strong>, una vista con carga diferida no envía nada, porque su módulo llega en el cliente. Usa una vista sincrónica para todo lo que deba ir en el primer HTML.</li>
       </ul>
