@@ -230,7 +230,7 @@ export const QUICK_START_STEPS = [
   },
   {
     num: "02 - 임포트",
-    title: "Import",
+    title: "임포트",
     desc: "side-effect import 한 줄이면 175개 태그 빌더가 전역에 등록됩니다.",
     code: `<span class="kw">import</span> <span class="st">'nuclo'</span>`,
     lang: "main.ts",

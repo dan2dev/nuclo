@@ -658,7 +658,7 @@ layer.close()          // dismissed: resolves with undefined
       <ul>
         <li><strong>URL은 맨 위 레이어를 가리킵니다.</strong> <code>push()</code>는 히스토리 항목을 추가하기 때문에 레이어에 직접 링크할 수 있고, 뒤로 가기를 누르면 취소를 누른 것처럼 레이어가 닫히며 그 <code>push()</code>가 dismissed로 이행됩니다. 뒤로 가기와 <code>close()</code>는 같은 코드 경로입니다. <code>close()</code>가 결과를 기록하고 히스토리를 한 칸 되돌리며, 깊이는 <code>history.state</code>에 든 값이 기준입니다. 브라우저는 탭당 항목을 50개 정도만 유지하므로 레이어를 여러 단계 깊이 들어가면 바로 아래 항목이 사라졌을 수 있습니다. 그럴 때 <code>close()</code>는 레이어를 그 자리에서 닫고, 현재 항목을 남은 페이지에 맞게 고쳐 씁니다.</li>
         <li><strong>일반 이동은 스택을 비웁니다.</strong> 링크 클릭이나 <code>go()</code>는 레이어가 아닙니다. 모든 것을 교체하고 열려 있던 레이어를 전부 닫으므로, 기다리는 호출자가 남지 않습니다.</li>
-        <li><strong>URL로 바로 들어오면 독립된 페이지가 됩니다.</strong> URL은 맨 위 레이어만 가리킬 뿐 그 아래 스택까지 알려 주지는 않습니다. 그래서 레이어의 URL로 곧장 접속하면 깊이 1짜리 스택에서 <code>layer.depth === 0</code>인 페이지로 렌더링되고, <code>close()</code>는 아무 동작도 하지 않습니다. 레이어로 push하는 라우트도 그 자체로 의미가 통해야 합니다. <code>layer.depth</code>로 분기해서 동작하지 않는 취소 버튼 대신 빠져나갈 링크를 보여 주세요.</li>
+        <li><strong>URL로 바로 들어오면 독립된 페이지가 됩니다.</strong> URL은 맨 위 레이어만 가리킬 뿐 그 아래 스택까지 알려 주지는 않습니다. 그래서 레이어의 URL로 곧장 접속하면 깊이 1짜리 스택에서 <code>layer.depth === 0</code>인 페이지로 렌더링되고, <code>close()</code>는 아무 동작도 하지 않습니다. 레이어로 push하는 라우트도 그 자체로 의미가 통해야 합니다. <code>layer.depth</code>를 확인해서 동작하지 않는 취소 버튼 대신 빠져나갈 링크를 보여 주세요.</li>
         <li><strong>새로 고침하면 promise는 살아남지 못합니다.</strong> promise가 클로저 안에 있기 때문입니다. 결과 전달은, 돌아가는 길로도 같은 일을 할 수 있는 흐름의 지름길 정도로만 생각하세요.</li>
         <li><strong>기다리는 채로 남는 호출은 없습니다.</strong> <code>stop()</code>은 열려 있는 레이어를 모두 닫고, 이동으로 버려진 레이어의 promise는 <code>undefined</code>로 이행됩니다.</li>
       </ul>
