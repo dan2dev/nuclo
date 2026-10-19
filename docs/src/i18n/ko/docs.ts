@@ -8,7 +8,7 @@ export const GROUPS: DocGroupText[] = [...GROUPS_1,...GROUPS_2];
 export const LABELS = {
   documentation: "문서",
   title: "Nuclo 문서",
-  lead: "Nuclo 설치부터 명시적 업데이트로 UI 만들기, 타입이 지정된 CSS 스타일링, 서버 사이드 HTML 렌더링까지 다루는 실용적인 레퍼런스입니다.",
+  lead: "Nuclo 설치부터 명시적 업데이트로 UI 만들기, 타입이 지정된 CSS 스타일링, 서버 사이드 HTML 렌더링까지 다루는 실용적인 참조 문서입니다.",
   quickStart: "빠른 시작",
   quickStartLink: "빠른 시작",
   nucloMark: "Nuclo 로고",

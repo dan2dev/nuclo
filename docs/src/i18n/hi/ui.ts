@@ -42,9 +42,9 @@ export const app = {
 export const common = {
   preview: "Preview",
   code: "Code",
-  copy: "Copy",
-  copied: "✓ Copy हो गया",
-  copyToClipboard: "Clipboard में copy करें",
+  copy: "कॉपी करें",
+  copied: "✓ कॉपी हो गया",
+  copyToClipboard: "Clipboard में कॉपी करें",
   live: "Live",
   openFullScreen: "ये example फ़ुल-स्क्रीन में खोलें",
   open: "खोलें ↗",

@@ -100,7 +100,7 @@ export const FEATURES = [
   {
     num: "02 · 軽量",
     title: "依存関係ゼロ",
-    desc: `コアランタイムは gzip 後でわずか約 ${NUCLO_GZIP_KB} KB。コンパイラもビルドプラグインも要りません。import を 1 行書けば、すぐに作り始められます。`,
+    desc: `コアランタイムは gzip 後でわずか約 ${NUCLO_GZIP_KB} KB。コンパイラーもビルドプラグインも要りません。import を 1 行書けば、すぐに作り始められます。`,
   },
   {
     num: "03 · 型付き",

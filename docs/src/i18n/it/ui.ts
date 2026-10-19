@@ -64,7 +64,7 @@ export const seo = {
     },
     desktop: {
       title: "Nuclo OS - Desktop",
-      description: "Un desktop standalone con app che funzionano davvero: File, Note, Terminale, Calcolatrice, Timer, una board Kanban, Finanze con grafici e foglio di calcolo, Calendario. Il file system è simulato e vive nel tuo browser.",
+      description: "Un desktop standalone con app che funzionano davvero: File, Note, Terminale, Calcolatrice, Timer, una bacheca Kanban, Finanze con grafici e foglio di calcolo, Calendario. Il file system è simulato e vive nel tuo browser.",
     },
     docs: {
       title: "Documentazione di Nuclo - Guida e riferimento API",

@@ -55,7 +55,7 @@ export const seo = {
   routes: {
     home: {
       title: "Nuclo - 显式更新的轻量 DOM 框架",
-      description: "Nuclo 是轻量、零依赖的 TypeScript DOM 库。用函数写 UI，直接修改普通状态，再调用 update() 即可。没有虚拟 DOM，没有 Proxy，也没有 signal。",
+      description: "Nuclo 是轻量、零依赖的 TypeScript DOM 库。用函数写 UI，直接修改普通状态，再调用 update() 即可。没有虚拟 DOM，没有 Proxy，也没有信号。",
       keywords: "nuclo, dom 框架, 显式更新, 可变状态, javascript, typescript, ui 框架, 轻量, 无虚拟 dom",
     },
     "apps/:id": {

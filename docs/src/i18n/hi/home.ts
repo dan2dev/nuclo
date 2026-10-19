@@ -259,7 +259,7 @@ export const QUICK_START_STEPS = [
 export const LABELS = {
   getStarted: "शुरू करें",
   viewExamples: "Examples देखें",
-  copyInstall: "Install command copy करें",
+  copyInstall: "Install command कॉपी करें",
   howItWorks: "ये कैसे काम करता है",
   pipelineTitle: "एक साफ़, explicit cycle।",
   pipelineSub: "State पर निर्भर values, बिना dependency graph या scheduler के। वे कब चलें, ये आप तय करते हैं: data से screen तक एक predictable रास्ता।",

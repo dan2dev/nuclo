@@ -299,7 +299,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Draw: {
     title: "Dibuja la marca",
-    note: "El logo de Nuclo es un espirógrafo: una rueda que gira dentro de un anillo, con dos plumas. La rueda, los brazos, las plumas y las líneas son funciones de un solo número, t. El timeline y el loop de frames solo asignan t; update('draw') vuelve a ejecutar lo que lo lee.",
+    note: "El logo de Nuclo es un espirógrafo: una rueda que gira dentro de un anillo, con dos plumas. La rueda, los brazos, las plumas y las líneas son funciones de un solo número, t. El timeline y el bucle de frames solo asignan t; update('draw') vuelve a ejecutar lo que lo lee.",
   },
   Fireworks: {
     title: "Toca el cielo",
@@ -307,7 +307,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Waves: {
     title: "Dobla la onda",
-    note: "El d de cada path es una función simple de tres números. Los sliders y el loop de frames solo cambian esos números; update('waves') vuelve a ejecutar las funciones que los leen.",
+    note: "El d de cada path es una función simple de tres números. Los deslizadores y el bucle de frames solo cambian esos números; update('waves') vuelve a ejecutar las funciones que los leen.",
   },
   Sort: {
     title: "Se ordena, jamás se reconstruye",
@@ -323,7 +323,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Warp: {
     title: "Mantén presionado para entrar en warp",
-    note: "onMount arranca el loop de frames y devuelve una función de limpieza. Desmonta el campo y Nuclo la ejecuta: el loop se detiene y no queda nada corriendo.",
+    note: "onMount arranca el bucle de frames y devuelve una función de limpieza. Desmonta el campo y Nuclo la ejecuta: el bucle se detiene y no queda nada corriendo.",
   },
   Life: {
     title: "Juego de la vida",

@@ -13,7 +13,7 @@ export const nav = {
   nucloHome: "صفحة Nuclo الرئيسية",
   nucloOnGitHub: "Nuclo على GitHub",
   opensInNewTab: " (يفتح في علامة تبويب جديدة)",
-  switchTheme: "تبديل سمة الألوان",
+  switchTheme: "تبديل المظهر",
   language: "اللغة",
 };
 
@@ -26,7 +26,7 @@ export const footer = {
   readme: "README",
   project: "المشروع",
   github: "GitHub",
-  license: "رخصة MIT",
+  license: "ترخيص MIT",
   fineprint: "© 2026 Danilo Castro (@dan2dev) · MIT License",
 };
 

@@ -8,7 +8,7 @@ export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · 零依赖`;
 export const HERO_TITLE_LINES = ["用 nuclo 构建", "*显式*更新的", "界面。"];
 
 export const HERO_DESC =
-  "轻巧、类型安全的 DOM 框架。状态就是普通的可变数据，每一次更新都由你亲手触发。没有 Proxy，没有 signal，没有虚拟 DOM。";
+  "轻巧、类型安全的 DOM 框架。状态就是普通的可变数据，每一次更新都由你亲手触发。没有 Proxy，没有信号，没有虚拟 DOM。";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
