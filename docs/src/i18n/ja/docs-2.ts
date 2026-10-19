@@ -340,7 +340,7 @@ const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
       <p>組み込みに必要なのは、これだけです。リンクがそのまま動くのは、<code>&lt;a href&gt;</code> がただの <code>&lt;a href&gt;</code> だからです。<code>document</code> に付けた委譲リスナーが 1 つ、ルーターの管轄のリンクだけを拾い、あとはすべてブラウザーに任せます。</p>
-      <p>サーバーでは、<code>start()</code> はリクエストごとに <code>Route</code> を返すだけで、ルーター自体には触れません。だから同時に来たリクエスト同士が、互いのルートを見ることはありません。<code>route.run()</code> は、レンダリングしている間だけ、その Route をルーター（つまり outlet）の参照先にします。ブラウザーの場合、Route はページの読み込みごとに 1 つで、<code>start()</code> がそれをルーター自身のものにするので、<code>run()</code> は要りません。</p>
+      <p>サーバーでは、<code>start()</code> はリクエストごとに <code>Route</code> を返すだけで、ルーター自体には触れません。だから同時に来たリクエスト同士が、互いのルートを見ることはありません。<code>route.run()</code> は、レンダリングしている間だけ、その Route をルーター（つまり outlet）のアクティブな Route にします。ブラウザーの場合、Route はページの読み込みごとに 1 つで、<code>start()</code> がそれをそのままアクティブにするので、<code>run()</code> は要りません。</p>
       <p>ページは <a href="#router-api"><code>RouteContext</code></a> と <a href="#router-api"><code>PageProps</code></a> を <code>(ctx, { layer, data, outlet, beforeLeave })</code> の形で受け取ります。要らない引数は省いて構いません。戻り値は、<code>list()</code> が受け付けるものなら何でも返せます。レイアウトの別の場所も埋めたいときは、<code>div(article(…), into('sidebar', nav(…)))</code> のように、ページの中から <code>into()</code> を一緒に返してください。そのコンテンツは、ページが破棄されると一緒に消えます。詳しくは<a href="#router-regions">ページとリージョン</a>を参照してください。</p>
     `,
       },
@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>プッシュされたレイヤー</td><td>一致したページだけを描画します。親はすでに下の行にマウント済みです。</td></tr>
         </tbody>
       </table>
-      <p>保持されたページは、構築時の <code>ctx</code> を持ち続けます。<code>ctx</code> はどこでもそういうものです。最新の値が欲しいときは <code>router.*</code> から読んでください。フィルター、ページネーション、タブのようなクエリ駆動の state は、動的な値の中で <code>router.search</code> を読み、<code>router.go('?page=2', { replace: true })</code> で書き込みます。こうすれば、ページもフォーカスも入力途中の値も、そのまま残ります。</p>
+      <p>保持されたページは、構築時の <code>ctx</code> を持ち続けます。これはどの <code>ctx</code> にも当てはまります。最新の値が欲しいときは <code>router.*</code> から読んでください。フィルター、ページネーション、タブのようなクエリ駆動の state は、動的な値の中で <code>router.search</code> を読み、<code>router.go('?page=2', { replace: true })</code> で書き込みます。こうすれば、ページもフォーカスも入力途中の値も、そのまま残ります。</p>
     `,
       },
       {
@@ -642,7 +642,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         id: "router-layers",
         title: "レイヤーと離脱ガード",
         content: `
-      <p><code>push()</code> は、現在のルートを置き換えるのではなく、その上にルートを重ねて開き、そのレイヤーが閉じたときの値で解決します。ページはスタック全体に対する 1 つの <code>list()</code> なので、レイヤーを開くのは行の追加（append）にすぎません。下のページは再レンダリングされず、DOM もフォーカスも入力途中のフォームも、レイヤーを閉じたときにそっくりそこにあります。</p>
+      <p><code>push()</code> は、現在のルートを置き換えるのではなく、その上にルートを重ねて開き、そのレイヤーが閉じたときの値で解決します。ページはスタック全体に対する 1 つの <code>list()</code> なので、レイヤーを開くのは行を 1 つ足すだけです。下のページは再レンダリングされず、DOM もフォーカスも入力途中のフォームも、レイヤーを閉じたときにそっくりそこにあります。</p>
       <p>おかげで、「まだ存在しないレコードが必要」というフローを、ユーザーが入力中のフォームを捨てさせることなく実現できます。</p>
       ${code("pages/Edit.ts", `
 // the page underneath
@@ -843,7 +843,7 @@ createRouter(routes, {
       <p>リポジトリには、動かして確かめられるサンプルが 2 つあります。互いに補い合っていて、あらゆる設定をどちらかで観察できます。</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: API 全体を巡る、クライアントサイドのツアーです。すべてのパターン形式と優先順位の規則、リンク処理から除外する方法、操作できるコントロール付きのすべての Route メンバー、サブルーター、3 段のレイヤースタック、2 つの親にマウントした相対セクション、そして <code>pending</code> と <code>error</code> を伴うルートローダー。これらの状態が目で追えるよう、<code>preload: false</code> にしてあります。</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: リクエストごとの <code>renderToString()</code>、サーバーのノードを確実に引き継ぐハイドレーション、本物の 404 ステータスコード、ルート以外の <code>base</code>、ネットワークパネルで眺められるアイドル時のプリロード、そしてハイドレーションで再フェッチが起きないよう、サーバーからクライアントへデータを渡すローダーを扱います。</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: リクエストごとの <code>renderToString()</code>、サーバーのノードを引き継いでいることを確かめられるハイドレーション、本物の 404 ステータスコード、ルート以外の <code>base</code>、ネットワークパネルで眺められるアイドル時のプリロード、そしてハイドレーションで再フェッチが起きないよう、サーバーからクライアントへデータを渡すローダーを扱います。</li>
       </ul>
     `,
       },

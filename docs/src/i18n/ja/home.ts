@@ -126,7 +126,7 @@ export const PIPELINE_STEPS = [
   {
     kicker: "02 · コミット",
     title: "update() を呼び出す",
-    desc: "変更を確定するのは、グローバル関数 1 つだけ。十数回の変更もまとめて 1 回でコミットします。呼ぶまで、画面は何も変わりません。",
+    desc: "変更を反映するのは、グローバル関数ひとつだけ。十数回の変更も、まとめて 1 回で反映できます。呼ぶまで、画面は何も変わりません。",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {

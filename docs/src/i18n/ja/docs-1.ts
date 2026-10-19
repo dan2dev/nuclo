@@ -940,7 +940,7 @@ renderToString(p('Hello'))
 `)}
       <ul>
         <li>テキストと属性値は HTML エスケープされます。<code>script()</code> と <code>style()</code> の中のテキストは、閉じタグを分断するだけでそのまま出力されるので、ユーザー入力は絶対に置かないでください。</li>
-        <li>例外は投げません。コンポーネントや <code>list()</code> の関数、<code>when()</code> の条件が例外を投げたとき、あるいは polyfill がないときは、エラーをログに出して <code>""</code> を返します。リクエストを失敗扱いにしたい場合は、結果が空でないかを確認してください。テキストや属性の関数が投げた場合は、その部分が空になるだけです。</li>
+        <li>例外は投げません。コンポーネントや <code>list()</code> の関数、<code>when()</code> の条件が例外を投げたとき、あるいは polyfill がないときは、エラーをログに出して <code>""</code> を返します。リクエストを失敗扱いにしたい場合は、結果が空かどうかを確認してください。テキストや属性の関数が投げた場合は、その部分が空になるだけです。</li>
       </ul>
       <h3><code>renderManyToString()</code></h3>
       <p><code>inputs.map(renderToString)</code> と同じです。</p>
