@@ -126,7 +126,7 @@ export const PIPELINE_STEPS = [
   {
     kicker: "02 · Confirmar",
     title: "Chame update()",
-    desc: "Uma função global confirma as mudanças. Faça uma dúzia de mutações e confirme de uma vez. Nada é renderizado até você mandar.",
+    desc: "Uma função global aplica as mudanças. Faça uma dúzia de mutações e aplique tudo de uma vez. Nada é renderizado até você mandar.",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {

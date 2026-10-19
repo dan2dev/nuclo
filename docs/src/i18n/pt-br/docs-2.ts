@@ -340,7 +340,7 @@ const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
       <p>Pronto, essa é a integração inteira. Os links funcionam porque um <code>&lt;a href&gt;</code> é só um <code>&lt;a href&gt;</code>: um listener delegado no <code>document</code> intercepta os links que pertencem ao router e deixa todos os outros com o navegador.</p>
-      <p>No servidor, o <code>start()</code> devolve um <code>Route</code> por requisição e não toca no router, então requisições concorrentes nunca enxergam a rota umas das outras. O <code>route.run()</code> faz desse Route o que o router (e, portanto, o outlet) lê enquanto durar o render. No navegador existe um Route por carregamento de página, e o <code>start()</code> o torna o do próprio router. Aqui não é preciso usar <code>run()</code>.</p>
+      <p>No servidor, o <code>start()</code> devolve um <code>Route</code> por requisição e não toca no router, então requisições concorrentes nunca enxergam a rota umas das outras. O <code>route.run()</code> torna esse Route o ativo do router (e, portanto, do outlet) durante o render. No navegador existe um Route por carregamento de página, e o próprio <code>start()</code> já o define como ativo, então o <code>run()</code> não é necessário.</p>
       <p>Uma página recebe seu <a href="#router-api"><code>RouteContext</code></a> e suas <a href="#router-api"><code>PageProps</code></a>, no formato <code>(ctx, { layer, data, outlet, beforeLeave })</code>, e pode declarar menos argumentos. O retorno é qualquer coisa que o <code>list()</code> aceite. Para preencher também outro pedaço do layout, devolva um <code>into()</code> de dentro da página, como <code>div(article(…), into('sidebar', nav(…)))</code>. Esse conteúdo vai embora junto com a página. Veja <a href="#router-regions">Páginas e regiões</a>.</p>
     `,
       },
@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>uma camada empilhada</td><td>renderiza só a página correspondente. Os pais dela já estão montados na linha de baixo.</td></tr>
         </tbody>
       </table>
-      <p>Uma página preservada fica com o <code>ctx</code> com que foi construída. É esse o sentido de <code>ctx</code> em qualquer lugar: para valores atuais, leia <code>router.*</code>. Estado guiado pela query, como filtros, paginação e abas, lê <code>router.search</code> dentro de um valor dinâmico e escreve com <code>router.go('?page=2', { replace: true })</code>. A página, o foco e o input pela metade ficam exatamente onde estavam.</p>
+      <p>Uma página preservada fica com o <code>ctx</code> com que foi construída. Isso vale para qualquer <code>ctx</code>: para valores atuais, leia <code>router.*</code>. Estado guiado pela query, como filtros, paginação e abas, lê <code>router.search</code> dentro de um valor dinâmico e escreve com <code>router.go('?page=2', { replace: true })</code>. A página, o foco e o input pela metade ficam exatamente onde estavam.</p>
     `,
       },
       {
@@ -642,7 +642,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         id: "router-layers",
         title: "Camadas e guards de saída",
         content: `
-      <p>O <code>push()</code> abre uma rota por cima da atual, sem substituí-la, e resolve com o valor com que essa camada for fechada. Como as páginas formam um único <code>list()</code> sobre a pilha, abrir uma camada é só um append. A página de baixo não é renderizada de novo, então DOM, foco e formulário preenchido pela metade continuam lá quando a camada fecha.</p>
+      <p>O <code>push()</code> abre uma rota por cima da atual, sem substituí-la, e resolve com o valor com que essa camada for fechada. Como as páginas formam um único <code>list()</code> sobre a pilha, abrir uma camada é só acrescentar uma linha. A página de baixo não é renderizada de novo, então DOM, foco e formulário preenchido pela metade continuam lá quando a camada fecha.</p>
       <p>É isso que faz o fluxo "preciso de um registro que ainda não existe" funcionar sem jogar fora o formulário que o usuário estava preenchendo:</p>
       ${code("pages/Edit.ts", `
 // the page underneath
@@ -703,7 +703,7 @@ div(
         <li><strong>O mesmo matching da tabela de rotas.</strong> Padrões, precedência, matching do caminho bruto e remoção do <code>base</code> são os do próprio router, então view e página sempre concordam sobre a URL. Ele lê o caminho da camada do topo, como o <code>router.path</code>.</li>
         <li><strong>Uma view</strong> é <code>(params, ctx) =&gt; content</code>, onde <code>params</code> é tipado a partir do padrão e <code>ctx</code> é o <code>RouteContext</code> com o <code>pattern</code> e os <code>params</code> da view. Ela também pode retornar o <code>import()</code> de um módulo de página, que é chamado com <code>ctx</code> assim que chega.</li>
         <li><strong>Sem correspondência, sem render.</strong> Acrescente uma view <code>'*'</code> como fallback. Como o outlet, fica vazio antes do <code>start()</code> e depois do <code>stop()</code>.</li>
-        <li><strong>Só renderiza de novo quando a rota muda</strong>, então a view mantém o DOM diante de qualquer coisa que preserve a página.</li>
+        <li><strong>Só renderiza de novo quando a rota muda</strong>, então, em toda navegação que preserva a página, a view também mantém o seu DOM.</li>
         <li><strong>Uma view lazy não renderiza nada até o módulo chegar.</strong> Um <code>import()</code> que falha é registrado com <code>console.error</code>, não preenche <code>router.error</code> e é tentado de novo na próxima navegação. Um <code>update()</code> comum não tenta de novo.</li>
         <li><strong>No servidor</strong>, uma view lazy não entrega nada, já que o módulo chega no cliente. Use uma view síncrona para tudo que o primeiro HTML precisa conter.</li>
       </ul>
@@ -840,10 +840,10 @@ createRouter(routes, {
         <li><strong>Fica de fora, de propósito:</strong> hash history e memory history, já que a rota vive no pathname e o servidor precisa servir todas as rotas; duas áreas com roteamento independente guiadas por uma só URL, já que uma página pode preencher várias regiões com <code>into()</code>, mas todas pertencem à mesma rota correspondente (uma área independente ainda pode manter um router próprio sem iniciar e o seu loading, como em <a href="#router-multi">Múltiplos routers e loading combinado</a>); e preload no hover, que você consegue chamando o loader da própria rota a partir de um <code>mouseenter</code>.</li>
       </ul>
       <h3>Exemplos</h3>
-      <p>Dois exemplos executáveis no repositório se complementam, de modo que cada configuração fica observável em algum lugar:</p>
+      <p>Dois exemplos executáveis no repositório se complementam: entre os dois, toda configuração aparece funcionando:</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: um tour client-side por toda a API. Todas as formas de padrão e regras de precedência, as exceções do tratamento de links, cada membro de Route com controles ao vivo, um sub-router, a pilha de camadas com três níveis de profundidade, uma seção relativa montada em dois pais e loaders de rota com <code>pending</code> e <code>error</code>. Define <code>preload: false</code> para que esses estados fiquem visíveis.</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> por requisição, hydration que comprovadamente aproveita os nós do servidor, status 404 de verdade, um <code>base</code> fora da raiz, preload em idle que dá para acompanhar no painel de rede e um loader cujos dados passam do servidor para o cliente, para que a hydration não busque tudo de novo.</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> por requisição, hydration em que dá para conferir o reaproveitamento dos nós do servidor, status 404 de verdade, um <code>base</code> fora da raiz, preload em idle que dá para acompanhar no painel de rede e um loader cujos dados passam do servidor para o cliente, para que a hydration não busque tudo de novo.</li>
       </ul>
     `,
       },

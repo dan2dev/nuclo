@@ -174,7 +174,7 @@ render(Card, document.body)
         <li><strong><code>on(...)</code></strong>: um listener de evento ou um hook de ciclo de vida.</li>
         <li><strong>Outro builder, <code>when()</code> ou <code>list()</code></strong>: entra como filho.</li>
         <li><strong>Um <code>Node</code> do DOM</strong>: é anexado do jeito que está.</li>
-        <li><strong><code>(el, index) =&gt; …</code></strong>: um modificador personalizado. Mais abaixo.</li>
+        <li><strong><code>(el, index) =&gt; …</code></strong>: um modificador personalizado (veja mais abaixo).</li>
       </ul>
       <h3>Pegadinhas</h3>
       <ul>
