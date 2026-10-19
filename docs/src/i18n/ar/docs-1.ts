@@ -598,7 +598,7 @@ update() // same <li>, its class is now "done"
       <ul>
         <li>أرجِع عنصرًا واحدًا، مثل <code>li(...)</code> أو <code>tr(...)</code> أو دالة بناء SVG، وأرجِع <code>null</code> أو <code>undefined</code> لتخطي عنصر. أما النصوص والعقد النصية والـ fragments فلا تُعرض.</li>
         <li>لا تُرجع <code>when()</code> أو <code>list()</code> مباشرة، بل ضعهما داخل عنصر الصف: <code>li(todo.text, when(() =&gt; todo.done, ' ✓'))</code>.</li>
-        <li>لإخفاء عناصر صفِّها في <code>items()</code> لا في <code>renderItem</code>.</li>
+        <li>لإخفاء عناصر معيّنة، صفِّها في <code>items()</code> لا في <code>renderItem</code>.</li>
         <li>اجعل <code>renderItem</code> خاليًا من الآثار الجانبية، فقد يستدعيه Nuclo أكثر من مرة للعنصر نفسه.</li>
       </ul>
       <h3>الفهرس</h3>

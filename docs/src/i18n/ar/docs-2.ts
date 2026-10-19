@@ -58,7 +58,7 @@ div(card, { class: 'featured' })     // replaces: only "featured" is left
       <p>الكائن الذي تمرره إلى <code>css()</code> يستخدم خصائص CSS الشائعة بصيغة camelCase، ومعها مجموعة اختصارات، ومفاتيح متداخلة للـ pseudo states والـ selectors والـ media queries، وكلها يكملها TypeScript تلقائيًا. أما الخصائص الخارجة عن المجموعة المضبوطة الأنواع، مثل <code>borderTopLeftRadius</code> أو <code>fill</code> أو <code>paddingInline</code>، فمكانها <code>raw</code> (انظر أدناه).</p>
       <h3>القيم</h3>
       <ul>
-        <li>الأرقام تصير <code>px</code>، إلا <code>0</code> والخصائص التي لا تأخذ وحدة: <code>zIndex</code>، <code>opacity</code>، <code>fontWeight</code>، <code>lineHeight</code>، <code>flex</code>، <code>flexGrow</code>، <code>flexShrink</code>، <code>order</code>، <code>aspectRatio</code>، <code>gridColumn</code> و<code>gridRow</code>. في <code>raw</code>، <code>zoom</code>، <code>scale</code>، <code>column-count</code>، <code>orphans</code>، <code>widows</code>، <code>tab-size</code> و<code>animation-iteration-count</code> هي الأخرى بلا وحدة.</li>
+        <li>الأرقام تصير <code>px</code>، إلا <code>0</code> والخصائص التي لا تأخذ وحدة: <code>zIndex</code>، <code>opacity</code>، <code>fontWeight</code>، <code>lineHeight</code>، <code>flex</code>، <code>flexGrow</code>، <code>flexShrink</code>، <code>order</code>، <code>aspectRatio</code>، <code>gridColumn</code> و<code>gridRow</code>. وداخل <code>raw</code> تبقى <code>zoom</code> و<code>scale</code> و<code>column-count</code> و<code>orphans</code> و<code>widows</code> و<code>tab-size</code> و<code>animation-iteration-count</code> بلا وحدة أيضًا.</li>
         <li>النصوص تُكتب كما هي، وتُتجاهل القيم <code>null</code> و<code>undefined</code> و<code>false</code>.</li>
         <li>الخاصية <code>lineHeight</code> (ومثلها <code>leading</code>) بلا وحدة، فـ <code>leading: 24</code> تعني 24 ضعف حجم الخط. اكتب <code>"24px"</code> إن أردت بكسلات.</li>
       </ul>
@@ -501,8 +501,8 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
         <thead><tr><th>الحالة</th><th>السلوك</th></tr></thead>
         <tbody>
           <tr><td>أثناء تشغيله</td><td><code>router.pending</code> تساوي true وتبقى الصفحة التي كنت عليها معروضة</td></tr>
-          <tr><td>يرمي استثناءً أو يُرفض الـ promise الذي يُرجعه</td><td>يُحفظ الخطأ في <code>router.error</code>. لا يُرفض وعد <code>go()</code>، ويمكن إعادة محاولة التنقل.</td></tr>
-          <tr><td>أثناء <code>start()</code></td><td>يُرفض وعد <code>start()</code> نفسه؛ إذ لا يوجد كائن Route بعد لحفظ الخطأ فيه.</td></tr>
+          <tr><td>يرمي استثناءً أو يُرفض الـ promise الذي يُرجعه</td><td>يُحفظ الخطأ في <code>router.error</code>. لا يُرفض الـ promise الذي تُرجعه <code>go()</code>، ويمكن إعادة محاولة التنقل.</td></tr>
+          <tr><td>أثناء <code>start()</code></td><td>يُرفض الـ promise الذي تُرجعه <code>start()</code> نفسها؛ إذ لا يوجد كائن Route بعد لحفظ الخطأ فيه.</td></tr>
           <tr><td>الـ layer المضافة</td><td>تشغّل الـ loader الخاص بها، ببياناتها الخاصة</td></tr>
           <tr><td>التحميل المسبق وقت الخمول</td><td>يحمّل الـ modules فقط ولا يجلب البيانات: فلا سياق لديه يمرره للـ loader، وقد لا يزور المستخدم ذلك المسار أصلًا.</td></tr>
           <tr><td>إعادة التنقل إلى العنوان نفسه</td><td>يُشغَّل الـ loader من جديد ويُعاد بناء الصف. أما المسار الذي لا loader له فيحتفظ بصفه.</td></tr>
@@ -578,7 +578,7 @@ const owned = router.match(href) !== null
           <tr><td><code>error</code></td><td>آخر تحميل فاشل، ويمسحه التنقل التالي</td></tr>
           <tr><td><code>data</code></td><td>نتيجة <code>load()</code> للصفحة المطابقة، لتمريرها من الخادم بعد تسلسلها. ولا تشمل بيانات الصفحات الأب.</td></tr>
           <tr><td><code>depth</code></td><td>عدد الـ layers في المكدس (layer واحدة للصفحة العادية)</td></tr>
-          <tr><td><code>go(href, { replace })</code></td><td>تنتقل وتحمّل الـ module عند الحاجة. ولا يُرفض وعدها أبدًا: فشل الـ module، سواء برفض الـ promise أو برمي استثناء، يُحفظ في <code>error</code>.</td></tr>
+          <tr><td><code>go(href, { replace })</code></td><td>تنتقل وتحمّل الـ module عند الحاجة. ولا يُرفض الـ promise الذي تُرجعه أبدًا: فشل الـ module، سواء برفض الـ promise أو برمي استثناء، يُحفظ في <code>error</code>.</td></tr>
           <tr><td><code>push(href)</code></td><td>تفتح المسار كـ layer جديدة في الأعلى وتُرجع promise يكتمل بنتيجة إغلاقها. تقبل <code>./</code>. ويُرفض الـ promise إن لم يوجد تطابق أو فشل الـ module.</td></tr>
           <tr><td><code>href(path)</code></td><td>تضيف بادئة <code>base</code> إلى المسار لاستخدامه في <code>a({ href })</code>. وتحل <code>./</code> و<code>../</code> نسبةً إلى المسار النشط.</td></tr>
           <tr><td><code>stop()</code></td><td>تفصل الـ listeners وتلغي الـ layers المفتوحة وتفرّغ الـ outlet. ويمكن استدعاؤها مرارًا بأمان. والمسار المتوقف يحتفظ بآخر مطابقة لكن <code>go()</code> لا تفعل شيئًا.</td></tr>
@@ -613,7 +613,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         <tbody>
           <tr><td><code>depth</code></td><td>0 للصفحة الأساسية، و1 فما فوق للـ layers المضافة</td></tr>
           <tr><td><code>push(href)</code></td><td>تفتح layer أخرى من داخل الصفحة، مثل <code>Route.push()</code></td></tr>
-          <tr><td><code>close(result?)</code></td><td>تغلق هذه الـ layer وكل ما فوقها، وتُكمل وعد <code>push()</code> الذي فتحها. وبلا وسيط تُعدّ الـ layer ملغاة وتكون النتيجة undefined. ولا تفعل شيئًا عند العمق 0.</td></tr>
+          <tr><td><code>close(result?)</code></td><td>تغلق هذه الـ layer وكل ما فوقها، وتُكمل الـ promise الخاص بـ <code>push()</code> التي فتحتها. وبلا وسيط تُعدّ الـ layer ملغاة وتكون النتيجة undefined. ولا تفعل شيئًا عند العمق 0.</td></tr>
         </tbody>
       </table>
       <h3><code>DataLoader</code> و<code>withLoad()</code></h3>
