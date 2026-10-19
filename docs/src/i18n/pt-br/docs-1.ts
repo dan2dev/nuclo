@@ -490,7 +490,7 @@ const Profile = () =>
         id: "api-scope",
         title: "scope()",
         content: `
-      <p>Dá ao elemento um ou mais ids de escopo. Com isso, <code>update('id')</code> atualiza só o que está dentro daquele elemento, atributos do próprio elemento incluídos.</p>
+      <p>Dá ao elemento um ou mais ids de scope. Com isso, <code>update('id')</code> atualiza só o que está dentro daquele elemento, atributos do próprio elemento incluídos.</p>
       ${code("example.ts", `
 let cartItems: string[] = []
 let user = 'Ada'
@@ -513,7 +513,7 @@ update()       // everything, the header now says "Hi, Grace"
       <ul>
         <li>Um elemento pode ter vários ids: <code>scope('cart', 'sidebar')</code>.</li>
         <li><code>update('a', 'b')</code> atualiza tudo que estiver dentro de <code>a</code> ou de <code>b</code>. Se vários elementos usam o mesmo id, todos são atualizados.</li>
-        <li>Em escopos aninhados, <code>update('outer')</code> inclui o escopo interno, mas <code>update('inner')</code> não toca no externo.</li>
+        <li>Com scopes aninhados, <code>update('outer')</code> inclui o scope interno, mas <code>update('inner')</code> não toca no externo.</li>
         <li>Um id que nenhum elemento do documento possui não atualiza <strong>nada</strong> e não gera erro, então confira a grafia.</li>
         <li>No servidor, o <code>scope()</code> não faz nada.</li>
       </ul>

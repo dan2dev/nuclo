@@ -490,7 +490,7 @@ const Profile = () =>
         id: "api-scope",
         title: "scope()",
         content: `
-      <p>Attribue un ou plusieurs ids de portée à l'élément auquel il est passé. <code>update('id')</code> ne met alors à jour que le contenu de cet élément, attributs de l'élément compris.</p>
+      <p>Attribue un ou plusieurs ids de scope à l'élément auquel il est passé. <code>update('id')</code> ne met alors à jour que le contenu de cet élément, attributs de l'élément compris.</p>
       ${code("example.ts", `
 let cartItems: string[] = []
 let user = 'Ada'
@@ -513,7 +513,7 @@ update()       // everything, the header now says "Hi, Grace"
       <ul>
         <li>Un élément peut porter plusieurs ids : <code>scope('cart', 'sidebar')</code>.</li>
         <li><code>update('a', 'b')</code> met à jour tout ce qui se trouve dans <code>a</code> ou dans <code>b</code>. Si plusieurs éléments partagent le même id, tous sont mis à jour.</li>
-        <li>Avec des portées imbriquées, <code>update('outer')</code> englobe la portée interne, alors que <code>update('inner')</code> laisse la portée externe tranquille.</li>
+        <li>Avec des scopes imbriqués, <code>update('outer')</code> englobe le scope interne, alors que <code>update('inner')</code> laisse le scope externe tranquille.</li>
         <li>Un id qu'aucun élément du document ne porte ne met <strong>rien</strong> à jour, sans la moindre erreur : vérifiez bien l'orthographe.</li>
         <li><code>scope()</code> ne fait rien côté serveur.</li>
       </ul>

@@ -26,7 +26,7 @@ const App = () =>
 
 render(App, document.getElementById('app')!)
 `)}
-      <h3>동작 방식</h3>
+      <h3>기본 개념</h3>
       <ol>
         <li>태그 빌더로 UI를 만듭니다.</li>
         <li>상태에 따라 달라지는 값은 함수로 넘깁니다.</li>

@@ -490,7 +490,7 @@ const Profile = () =>
         id: "api-scope",
         title: "scope()",
         content: `
-      <p>要素に、1 つ以上のスコープ id を付けます。すると <code>update('id')</code> で、その要素の内側だけを更新できます（要素自身の属性も対象です）。</p>
+      <p>要素に、1 つ以上の scope id を付けます。すると <code>update('id')</code> で、その要素の内側だけを更新できます（要素自身の属性も対象です）。</p>
       ${code("example.ts", `
 let cartItems: string[] = []
 let user = 'Ada'
@@ -513,7 +513,7 @@ update()       // everything, the header now says "Hi, Grace"
       <ul>
         <li>1 つの要素に、複数の id を付けられます: <code>scope('cart', 'sidebar')</code>。</li>
         <li><code>update('a', 'b')</code> は、<code>a</code> か <code>b</code> の内側をすべて更新します。同じ id の要素が複数あれば、そのすべてが対象です。</li>
-        <li>スコープがネストしていれば、<code>update('outer')</code> は内側のスコープも含みます。<code>update('inner')</code> が外側に触れることはありません。</li>
+        <li>scope がネストしていれば、<code>update('outer')</code> は内側の scope も含みます。<code>update('inner')</code> が外側に触れることはありません。</li>
         <li>ドキュメント内のどの要素にも付いていない id を渡すと、<strong>何も</strong>更新されず、エラーも出ません。スペルミスには気をつけてください。</li>
         <li><code>scope()</code> はサーバー上では何もしません。</li>
       </ul>

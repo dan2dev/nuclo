@@ -37,7 +37,7 @@ export const items: Record<string, { title: string; desc: string }> = {
   "api-scope": { title: "scope()", desc: "Os dois botões adicionam um item e renomeiam o usuário. update('cart') atualiza só o painel que está dentro desse scope." },
   "api-when": { title: "when()", desc: "A primeira condição verdadeira vence; se nenhuma for, entra o .else(). Cada ramo novo é montado do zero." },
   "api-list": { title: "list()", desc: "As linhas são associadas por identidade. Marque uma e clique em Reverse: o mesmo <li> troca de lugar, com checkbox e tudo." },
-  "api-region": { title: "region() e into()", desc: "Um layout com uma região principal empilhada e uma lateral, preenchidas por quem está fora do layout. Digite em Home, abra o diálogo e feche: o texto continua lá. Article preenche as duas regiões com um único into()." },
+  "api-region": { title: "region() e into()", desc: "Um layout com uma região principal empilhada e uma lateral, preenchidas de fora do layout. Digite em Home, abra o diálogo e feche: o texto continua lá. Article preenche as duas regiões com um único into()." },
   "api-force-update": { title: "forceUpdate()", desc: "update() atualiza só a linha dinâmica de lang. forceUpdate() chama App de novo e aplica as diferenças no mesmo <h1>. A forma explícita reconstrói só esta árvore, não a página toda." },
   "css": { title: "css()", desc: "Gere uma classe a partir de um objeto de estilo tipado." },
   "cx": { title: "cx()", desc: "Componha classes de forma condicional. O estilo que vem depois vence." },

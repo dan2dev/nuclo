@@ -10,7 +10,7 @@ export const groups = {
   styling: { title: "Estilos", sub: "Crea una clase, combina clases y saca partido de un tema diminuto." },
   forms: { title: "Formularios", sub: "Validación con funciones comunes que leen el estado: campos tocados, pasos y filas dinámicas." },
   svg: { title: "SVG", sub: "Gráficos, animaciones, herramientas y juegos hechos con las funciones constructoras de SVG, movidos por datos simples, eventos de puntero y update()." },
-  routing: { title: "Enrutamiento", sub: "Tablas de rutas, coincidencias, la ruta activa, capas y loaders. nuclo-router es un paquete aparte: npm install nuclo nuclo-router." },
+  routing: { title: "Enrutamiento", sub: "Tablas de rutas, coincidencias, la ruta activa, capas y cargadores. nuclo-router es un paquete aparte: npm install nuclo nuclo-router." },
   apps: { title: "Apps", sub: "Programas más grandes, a pantalla completa y con su código real a un clic en las pestañas: un escritorio con ventanas, una cuadrícula de datos, un chat, juegos, editores y bibliotecas que llevan su propio estado." },
 };
 
@@ -74,7 +74,7 @@ export const items: Record<string, { title: string; desc: string }> = {
   "circular-text": { title: "Texto circular", desc: "Escribe una insignia: textPath curva el texto alrededor de un círculo y textLength lo ajusta para que dé exactamente una vuelta." },
   "router-app": { title: "Una app con rutas", desc: "Una app de verdad con su propio router, corriendo dentro del marco de vista previa: tabla de rutas, un outlet(), enlaces simples, un estado pendiente y un 404. Navega un rato y luego prueba el botón Atrás." },
   "router-nested": { title: "Rutas anidadas", desc: "Docs es un layout con rutas hijas. Cada tema se renderiza en su outlet() y los enlaces ./topic se resuelven respecto a la ruta del layout. Escribe en las notas y cambia de tema: el layout nunca se reconstruye." },
-  "router-loader": { title: "Loaders de ruta", desc: "La página del post exporta un load() que corre antes de construir la página. Observa router.pending mientras espera, y el estado de error con Retry cuando el post con errores lanza una excepción." },
+  "router-loader": { title: "Cargadores de ruta", desc: "La página del post exporta un load() que corre antes de construir la página. Observa router.pending mientras espera, y el estado de error con Retry cuando el post con errores lanza una excepción." },
   "router-layers": { title: "Capas", desc: "El formulario de pedido abre la página de cliente como una capa y espera su resultado. El formulario no se vuelve a renderizar, así que sus notas sobreviven. Save resuelve el push; Cancel o el botón Atrás descartan la capa." },
   "router-multi": { title: "Varios routers y carga", desc: "Dos routers, dos spinners. El layout de la tienda y su sección tienen cada uno su load(), y corren en paralelo bajo un único router.pending. La barra lateral tiene su propio router, creado pero nunca iniciado, con su propio indicador de carga que se actualiza desde onNavigate." },
   "router-match": { title: "Coincidencia de patrones", desc: "Patrones estáticos, :param y *rest, y una tabla de secciones montada bajo dos padres. Escribe una ruta y mira cómo match() la resuelve sin cargar nada." },

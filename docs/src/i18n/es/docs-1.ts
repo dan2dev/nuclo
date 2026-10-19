@@ -490,7 +490,7 @@ const Profile = () =>
         id: "api-scope",
         title: "scope()",
         content: `
-      <p>Le pone uno o más ids de ámbito al elemento donde lo pasas. Después, <code>update('id')</code> actualiza solo lo que hay dentro de ese elemento, incluidos los atributos del propio elemento.</p>
+      <p>Le pone uno o más ids de scope al elemento donde lo pasas. Después, <code>update('id')</code> actualiza solo lo que hay dentro de ese elemento, incluidos los atributos del propio elemento.</p>
       ${code("example.ts", `
 let cartItems: string[] = []
 let user = 'Ada'
@@ -513,7 +513,7 @@ update()       // everything, the header now says "Hi, Grace"
       <ul>
         <li>Un elemento puede tener varios ids: <code>scope('cart', 'sidebar')</code>.</li>
         <li><code>update('a', 'b')</code> actualiza todo lo que esté dentro de <code>a</code> o de <code>b</code>. Si varios elementos comparten un id, se actualizan todos.</li>
-        <li>Con ámbitos anidados, <code>update('outer')</code> abarca también el ámbito interior, pero <code>update('inner')</code> no toca el exterior.</li>
+        <li>Con scopes anidados, <code>update('outer')</code> abarca también el scope interior, pero <code>update('inner')</code> no toca el exterior.</li>
         <li>Si ningún elemento del documento tiene ese id, no se actualiza <strong>nada</strong> y tampoco se lanza ningún error, así que revisa bien cómo lo escribes.</li>
         <li><code>scope()</code> no hace nada en el servidor.</li>
       </ul>
