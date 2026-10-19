@@ -224,7 +224,7 @@ button(buttonClass({ intent: 'danger', size: 'lg', block: true }), 'Delete') // 
       },
       {
         id: "api-keyframes",
-        title: "keyframes() & globalStyle()",
+        title: "keyframes() e globalStyle()",
         content: `
       <p><code>keyframes()</code> registra un'animazione e restituisce il nome generato. Le chiavi dei frame sono <code>from</code>, <code>to</code> e le percentuali, come <code>"50%"</code> o <code>"0%, 100%"</code>. Nei frame sono ammesse solo proprietà piatte, e frame identici restituiscono lo stesso nome.</p>
       ${code("fade.ts", `
@@ -249,7 +249,7 @@ globalStyle('body', { m: 0, font: 'system-ui, sans-serif' })
       },
       {
         id: "api-css-text",
-        title: "getCssText() & resetStyles()",
+        title: "getCssText() e resetStyles()",
         content: `
       <p><code>getCssText()</code> restituisce ogni regola creata in questo processo da <code>css()</code>, <code>cx()</code>, <code>variants()</code>, <code>keyframes()</code> e <code>globalStyle()</code>: prima le regole di base, poi i blocchi <code>@media</code>, <code>@container</code> e <code>@supports</code>. Ti serve per il rendering lato server.</p>
       <ul>
@@ -722,7 +722,7 @@ const docs = createRouter(docsRoutes, { base: '/docs' })
 const hit = docs.match()                       // { pattern: '/:topic', … }
 const page = await docsRoutes[hit.pattern]()   // the app's own lookup
 `)}
-      <p>Non avviarlo è proprio il punto: <code>start()</code> è ciò che aggancia i listener, e due router avviati entrano in conflitto. Il prezzo da pagare è che la risoluzione resta al figlio, quindi i loader di rotta, che un router avviato eseguirebbe da sé, devi chiamarli tu. Con questa forma, inoltre, la shell viene ricostruita quando la coda cambia, perché il router vede una sola rotta e la shell risolve il resto per conto suo. Una tabella annidata ti dà invece un genitore che il router tiene montato: preferiscila, a meno che la funzionalità non abbia davvero bisogno di un proprio router, base e fallback.</p>
+      <p>Non avviarlo è proprio il punto: <code>start()</code> è ciò che aggancia i listener, e due router avviati entrano in conflitto. Il prezzo da pagare è che la risoluzione resta al figlio, quindi i loader di rotta, che un router avviato eseguirebbe da sé, devi chiamarli tu. Con questa forma, inoltre, la cornice viene ricostruita quando la coda cambia, perché il router vede una sola rotta e la cornice risolve il resto per conto suo. Una tabella annidata ti dà invece un genitore che il router tiene montato: preferiscila, a meno che la funzionalità non abbia davvero bisogno di un proprio router, base e fallback.</p>
     `,
       },
       {
@@ -810,7 +810,7 @@ createRouter(routes, {
         <li><strong><code>match()</code> non aggancia nulla.</strong> Un numero qualsiasi di router non avviati può convivere nello stesso documento: ciascuno ha la propria tabella, base e cache dei moduli, e nessuno tocca la history. Costano una tabella e un matcher.</li>
         <li><strong>I suoi loader non girano mai.</strong> Il router avviato esegue il <code>load()</code> delle pagine a cui corrisponde, mentre uno mai avviato si limita a risolvere: se le sue viste hanno bisogno di dati, vai a prenderteli tu, come fa il <code>refreshSidebar()</code> della demo. Se vuoi i loader, una <a href="#router-matches">tabella annidata</a> o una <a href="#router-regions">regione riempita da una pagina</a> lasciano quel compito al router avviato.</li>
         <li><strong>Attenzione alle risposte obsolete.</strong> Una risposta lenta della sidebar non deve aggiornare una sezione che hai già lasciato. Incrementa un contatore di generazione a ogni refresh e scarta le risposte che non corrispondono più, come fa il router stesso quando ritira le navigazioni superate.</li>
-        <li><strong>Nemmeno una vista lazy di <code>matches()</code> ha un <code>pending</code>.</strong> Non renderizza nulla finché il suo modulo non arriva. Tre sistemi di caricamento, tre orologi indipendenti: il <code>pending</code> della rotta, i tuoi flag e una vista lazy che semplicemente non c'è ancora.</li>
+        <li><strong>Nemmeno una vista lazy di <code>matches()</code> ha un <code>pending</code>.</strong> Non renderizza nulla finché il suo modulo non arriva. Tre sistemi di caricamento, tre ritmi indipendenti: il <code>pending</code> della rotta, i tuoi flag e una vista lazy che semplicemente non c'è ancora.</li>
       </ul>
     `,
       },
@@ -842,7 +842,7 @@ createRouter(routes, {
       <h3>Esempi</h3>
       <p>Nel repository ci sono due esempi eseguibili che si completano a vicenda, così ogni impostazione si può osservare da qualche parte:</p>
       <ul>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: un tour lato client dell'intera API. Ogni forma di pattern e regola di precedenza, le esclusioni della gestione dei link, ogni membro di Route con controlli live, un sub-router, lo stack di layer profondo tre, una sezione relativa montata su due genitori e loader di rotta con <code>pending</code> ed <code>error</code>. Imposta <code>preload: false</code>, così quegli stati restano visibili.</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: un tour lato client dell'intera API. Ogni forma di pattern e regola di precedenza, le esclusioni della gestione dei link, ogni membro di Route con controlli live, un sub-router, lo stack di layer a tre livelli, una sezione relativa montata su due genitori e loader di rotta con <code>pending</code> ed <code>error</code>. Imposta <code>preload: false</code>, così quegli stati restano visibili.</li>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> per ogni richiesta, idratazione che riutilizza in modo dimostrabile i nodi del server, veri codici di stato 404, un <code>base</code> non radice, precaricamento in idle osservabile nel pannello di rete e un loader i cui dati passano dal server al client, così l'idratazione non rifà il fetch.</li>
       </ul>
     `,
@@ -997,10 +997,10 @@ async function loadData() {
       <p>Solo per cambiamenti rari ai valori statici, come il cambio di lingua. Per tutto il resto c'è <code>update()</code>. Vedi <a href="#api-force-update"><code>forceUpdate()</code></a>.</p>
 
       <h3>Come metto una pagina in un layout senza passarla come prop?</h3>
-      <p>Segna il punto con <code>region({ id: 'main' })</code> e fai restituire alla pagina <code>into('main', …)</code>. Vedi <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a>.</p>
+      <p>Segna il punto con <code>region({ id: 'main' })</code> e fai restituire alla pagina <code>into('main', …)</code>. Vedi <a href="#api-region"><code>region()</code> e <code>into()</code></a>.</p>
 
       <h3>Come smonto un'app?</h3>
-      <p>Avvolgila in <code>when()</code> e spegni la condizione. Rimuovere il DOM da solo non esegue <code>onDestroy</code>. Vedi <a href="#lifecycle">Ciclo di vita</a>.</p>
+      <p>Avvolgila in <code>when()</code> e spegni la condizione. Rimuovere il DOM a mano non esegue <code>onDestroy</code>. Vedi <a href="#lifecycle">Ciclo di vita</a>.</p>
 
       <h3>Nuclo include un router?</h3>
       <p>Non nel core: il routing è distribuito a parte come <code>nuclo-router</code>, con rendering lato server, idratazione, rotte con suddivisione del codice e precaricamento in idle. Si installa con <code>npm install nuclo nuclo-router</code>. Vedi <a href="#router-overview">nuclo-router</a>.</p>

@@ -33,7 +33,7 @@ render(App, document.getElementById('app')!)
         <li>Cambia lo stato con normale JavaScript.</li>
         <li>Poi chiami <code>update()</code>: Nuclo rilancia quelle funzioni e scrive nel DOM solo ciò che è davvero cambiato.</li>
       </ol>
-      <p>Assegnare una variabile non tocca il DOM: la pagina cambia solo quando chiami <code>update()</code>.</p>
+      <p>Cambiare una variabile non tocca il DOM: la pagina cambia solo quando chiami <code>update()</code>.</p>
     `,
       },
       {
@@ -71,7 +71,7 @@ render(App, document.getElementById('app')!)
         <li><strong>175 builder di tag</strong>: 112 HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) e 63 SVG, riconoscibili dal suffisso <code>Svg</code> (<code>svgSvg</code>, <code>pathSvg</code>, …). Vedi <a href="#tag-builders">Builder di tag</a>.</li>
         <li><strong>16 helper</strong>: <code>update</code>, <code>scope</code>, <code>when</code>, <code>list</code>, <code>region</code>, <code>into</code>, <code>on</code>, <code>render</code>, <code>hydrate</code>, <code>forceUpdate</code>, <code>css</code>, <code>cx</code>, <code>createCss</code>, <code>variants</code>, <code>keyframes</code> e <code>globalStyle</code>.</li>
       </ul>
-      <p>L'import deve girare prima di qualsiasi codice che chiami un builder. I moduli ES vengono eseguiti nell'ordine degli import, quindi questo si rompe:</p>
+      <p>L'import deve girare prima di qualsiasi codice che chiami un builder. I moduli ES vengono eseguiti nell'ordine degli import, quindi questo codice fallisce:</p>
       ${code("main.ts", `
 import { App } from './app' // app.ts calls div() → ReferenceError: div is not defined
 import 'nuclo'
