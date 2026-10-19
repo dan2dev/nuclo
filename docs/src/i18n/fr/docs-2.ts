@@ -278,7 +278,7 @@ beforeEach(() => resetStyles())
         title: "nuclo-router",
         content: `
       <div class="docs-callout"><strong>Package séparé :</strong> <code>nuclo-router</code> ne fait pas partie du package Nuclo de base : installez-le à côté de <code>nuclo</code>. Il s'agit d'une version preview, dont l'API peut encore évoluer.</div>
-      <p>Le routage pour Nuclo : rendu côté serveur, hydratation, routes découpées en chunks et préchargement à l'inactivité, le tout bâti sur <code>list()</code> et <code>update()</code>. Environ ${NUCLO_ROUTER_GZIP_KB} Ko une fois gzippé, aucune dépendance en dehors de Nuclo lui-même et aucun effet de bord : le tree-shaking l'élimine s'il n'est pas utilisé.</p>
+      <p>Le routage pour Nuclo : rendu côté serveur, hydratation, routes découpées en chunks et préchargement à l'inactivité, le tout bâti sur <code>list()</code> et <code>update()</code>. Environ ${NUCLO_ROUTER_GZIP_KB.replace(".", ",")} Ko une fois gzippé, aucune dépendance en dehors de Nuclo lui-même et aucun effet de bord : le tree-shaking l'élimine s'il n'est pas utilisé.</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>Vous pouvez aussi utiliser <code>pnpm add</code>, <code>yarn add</code> ou <code>bun add</code> avec les deux mêmes noms. Il exige <code>nuclo</code> 0.3 ou plus récent comme peer dependency.</p>
       <p>Le routeur décide <em>quoi</em> charger, et l'application dit <em>où</em> avec <code>router.outlet()</code> : un seul <code>list()</code> sur la pile de couches, une ligne par couche, si bien qu'une page ordinaire n'occupe qu'une ligne. Serveur et client construisent le même arbre, et <code>hydrate()</code> réutilise donc les nœuds du serveur au lieu de les remplacer. Pour le reste, il n'y a que <code>history</code>, un unique écouteur <code>click</code> délégué et <code>requestIdleCallback</code>.</p>
@@ -341,12 +341,12 @@ const html = route.run(() => renderToString(App))
 `)}
       <p>Et c'est tout ce qu'il y a à brancher. Les liens fonctionnent parce qu'un <code>&lt;a href&gt;</code> n'est qu'un <code>&lt;a href&gt;</code> : un unique écouteur délégué sur <code>document</code> intercepte les liens dont le routeur est responsable et laisse tous les autres au navigateur.</p>
       <p>Côté serveur, <code>start()</code> renvoie une <code>Route</code> par requête sans toucher au routeur : des requêtes concurrentes ne peuvent donc pas voir la route les unes des autres. <code>route.run()</code> fait de cette Route celle que le routeur, et donc l'outlet, lit pendant toute la durée du rendu. Dans le navigateur, il y a une Route par chargement de page, et <code>start()</code> en fait celle du routeur : aucun <code>run()</code> n'est nécessaire.</p>
-      <p>Une page reçoit son <a href="#router-api"><code>RouteContext</code></a> et ses <a href="#router-api"><code>PageProps</code></a>, sous la forme <code>(ctx, { layer, data, outlet, beforeLeave })</code>, et peut se contenter de moins d'arguments. Elle renvoie tout ce que <code>list()</code> accepte. Pour remplir aussi une autre partie du layout, renvoyez un <code>into()</code> depuis la page, par exemple <code>div(article(…), into('sidebar', nav(…)))</code> : ce contenu part avec la page. Voir <a href="#router-regions">Pages &amp; Régions</a>.</p>
+      <p>Une page reçoit son <a href="#router-api"><code>RouteContext</code></a> et ses <a href="#router-api"><code>PageProps</code></a>, sous la forme <code>(ctx, { layer, data, outlet, beforeLeave })</code>, et peut se contenter de moins d'arguments. Elle renvoie tout ce que <code>list()</code> accepte. Pour remplir aussi une autre partie du layout, renvoyez un <code>into()</code> depuis la page, par exemple <code>div(article(…), into('sidebar', nav(…)))</code> : ce contenu part avec la page. Voir <a href="#router-regions">Pages et régions</a>.</p>
     `,
       },
       {
         id: "router-patterns",
-        title: "Motifs & Routes imbriquées",
+        title: "Motifs et routes imbriquées",
         content: `
       <table>
         <thead><tr><th>Motif</th><th>Correspond à</th><th><code>params</code></th></tr></thead>
@@ -427,7 +427,7 @@ await layer.push('./preview') // the usual shape: a child layer
       },
       {
         id: "router-regions",
-        title: "Pages & Régions",
+        title: "Pages et régions",
         content: `
       <p><code>router.outlet()</code> place la page à un endroit précis. Quand une page a aussi besoin d'une barre latérale, d'une barre d'outils ou d'un titre ailleurs dans le layout, elle les remplit avec <a href="#api-region"><code>into()</code></a> : le layout marque l'emplacement avec <code>region()</code>, et la page renvoie un <code>into()</code> à côté de son propre contenu. Le layout ne reçoit jamais le contenu de la page en prop, et la navigation ne le reconstruit jamais.</p>
       ${code("app.ts", `
@@ -478,12 +478,12 @@ export default function Report(ctx: RouteContext) {
         <li><strong><code>into()</code></strong> sert à la page correspondante qui déborde dans le layout. Le contenu appartient à la page et utilise ses données.</li>
         <li><strong><code>matches()</code></strong> sert au layout qui décide à partir de la seule URL, avec sa propre petite table et sans aucune page en jeu. Voir <a href="#router-matches"><code>matches()</code></a>.</li>
       </ul>
-      <p>Tout cela se rattache à l'unique route correspondante. Le routeur ne pilote pas deux zones indépendantes à partir d'une seule URL : une barre latérale qui a ses propres routes est donc une région qu'une page remplit, et non un second outlet. Si une barre latérale veut vraiment son propre routeur, son propre chargement et son propre fallback, gardez-en un qui n'est jamais démarré et résolvez avec <code>match()</code> — voir <a href="#router-multi">Routeurs multiples &amp; Chargement combiné</a>.</p>
+      <p>Tout cela se rattache à l'unique route correspondante. Le routeur ne pilote pas deux zones indépendantes à partir d'une seule URL : une barre latérale qui a ses propres routes est donc une région qu'une page remplit, et non un second outlet. Si une barre latérale veut vraiment son propre routeur, son propre chargement et son propre fallback, gardez-en un qui n'est jamais démarré et résolvez avec <code>match()</code> — voir <a href="#router-multi">Routeurs multiples et chargement combiné</a>.</p>
     `,
       },
       {
         id: "router-loaders",
-        title: "Loaders de route & Fractionnement du code",
+        title: "Loaders de route et fractionnement du code",
         content: `
       <p>Un module de page peut exporter une fonction <code>load</code>. Elle s'exécute avant la construction de la page, à chaque navigation vers cette route, et ce qu'elle renvoie arrive dans la page sous le nom <code>data</code> :</p>
       ${code("pages/Post.ts", `
@@ -640,7 +640,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
       },
       {
         id: "router-layers",
-        title: "Couches & Gardes de sortie",
+        title: "Couches et gardes de sortie",
         content: `
       <p><code>push()</code> ouvre une route par-dessus la route courante au lieu de la remplacer, et renvoie une promesse résolue avec le résultat de fermeture de cette couche. Les pages formant un seul <code>list()</code> sur la pile, ouvrir une couche revient à ajouter une ligne à la fin. La page du dessous n'est pas rendue de nouveau : son DOM, son focus et son formulaire à moitié rempli sont toujours là quand la couche se ferme.</p>
       <p>C'est ce qui rend possible le parcours « il me faut un enregistrement qui n'existe pas encore » sans jeter le formulaire que l'utilisateur était en train de remplir :</p>
@@ -683,7 +683,7 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
       },
       {
         id: "router-matches",
-        title: "matches() & Sous-routeurs",
+        title: "matches() et sous-routeurs",
         content: `
       <p><code>router.outlet()</code> rend la page. <code>router.matches(table)</code> rend autre chose qui dépend de l'endroit où vous êtes (barre latérale, fil d'Ariane, barre d'outils) à partir de sa propre petite table, sans charger de route ni ajouter de page :</p>
       ${code("app.ts", `
@@ -727,7 +727,7 @@ const page = await docsRoutes[hit.pattern]()   // the app's own lookup
       },
       {
         id: "router-multi",
-        title: "Routeurs multiples & Chargement combiné",
+        title: "Routeurs multiples et chargement combiné",
         content: `
       <p>Une application peut avoir autant de routeurs que de zones. Pour que cela reste simple, une règle : <strong>démarrez-en un seul par document</strong> et laissez tous les autres non démarrés, en résolvant les URL avec <code>match()</code>. Seul le routeur démarré possède l'URL, l'historique et l'écouteur de clic ; les autres sont des tables que vous interrogez — et chaque zone peut charger à son rythme, avec son propre spinner.</p>
       <h3>Chargement combiné : une chaîne de loaders</h3>
@@ -836,8 +836,8 @@ createRouter(routes, {
         <li><strong>Rien n'est retenu.</strong> La Route détient la fonction de page et son contexte, jamais de DOM, et naviguer ailleurs libère la page précédente. <code>stop()</code> libère les écouteurs et tout chargement en cours, puis efface <code>pending</code> : une Route retirée ne laisse donc jamais un indicateur de chargement actif sans raison. Un module qui se résout après <code>stop()</code> est ignoré en silence.</li>
         <li><strong>Sûr en concurrence côté serveur.</strong> <code>start()</code> renvoie un état par requête et <code>run()</code> le limite à un rendu synchrone : des requêtes entrelacées ne peuvent donc pas voir la route les unes des autres. Seul le cache de modules est partagé. La portée prend fin quand la fonction de <code>run()</code> rend la main ; comme <code>renderToString()</code> est synchrone, cela suffit. Un rendu asynchrone ou en streaming devrait faire voyager la Route à travers les <code>await</code>, ce que <code>run()</code> ne fait pas.</li>
         <li><strong>La restauration du défilement sur <code>popstate</code></strong> est celle du navigateur (<code>scrollRestoration</code>), pas celle du routeur.</li>
-        <li><strong>Un seul routeur démarré par document.</strong> Chaque <code>start()</code> ajoute son propre écouteur <code>click</code> délégué, et le <code>start()</code> d'un second routeur ne retire pas celui du premier ; seul un second <code>start()</code> sur le même routeur le fait. Pour résoudre une URL contre une autre table, créez un routeur et n'appelez que <code>match()</code> : il n'attache rien. Une zone indépendante peut ainsi gérer son propre chargement à côté du <code>pending</code> de la route. Voir <a href="#router-multi">Routeurs multiples &amp; Chargement combiné</a>.</li>
-        <li><strong>Volontairement absents :</strong> l'historique par hash et en mémoire, puisque la route vit dans le pathname et qu'un serveur doit servir chaque route ; deux zones routées indépendamment et pilotées par une seule URL, puisqu'une page peut remplir plusieurs régions avec <code>into()</code> mais qu'elles relèvent toutes de l'unique route correspondante — une zone indépendante peut toujours garder son propre routeur non démarré et son chargement, comme dans <a href="#router-multi">Routeurs multiples &amp; Chargement combiné</a> ; et le préchargement au survol, que vous obtenez en appelant le loader de la route depuis un <code>mouseenter</code>.</li>
+        <li><strong>Un seul routeur démarré par document.</strong> Chaque <code>start()</code> ajoute son propre écouteur <code>click</code> délégué, et le <code>start()</code> d'un second routeur ne retire pas celui du premier ; seul un second <code>start()</code> sur le même routeur le fait. Pour résoudre une URL contre une autre table, créez un routeur et n'appelez que <code>match()</code> : il n'attache rien. Une zone indépendante peut ainsi gérer son propre chargement à côté du <code>pending</code> de la route. Voir <a href="#router-multi">Routeurs multiples et chargement combiné</a>.</li>
+        <li><strong>Volontairement absents :</strong> l'historique par hash et en mémoire, puisque la route vit dans le pathname et qu'un serveur doit servir chaque route ; deux zones routées indépendamment et pilotées par une seule URL, puisqu'une page peut remplir plusieurs régions avec <code>into()</code> mais qu'elles relèvent toutes de l'unique route correspondante — une zone indépendante peut toujours garder son propre routeur non démarré et son chargement, comme dans <a href="#router-multi">Routeurs multiples et chargement combiné</a> ; et le préchargement au survol, que vous obtenez en appelant le loader de la route depuis un <code>mouseenter</code>.</li>
       </ul>
       <h3>Les exemples</h3>
       <p>Deux exemples exécutables du dépôt se complètent, pour que chaque réglage soit observable quelque part :</p>
@@ -878,7 +878,7 @@ update()
       },
       {
         id: "async",
-        title: "Asynchrone & Chargement",
+        title: "Asynchrone et chargement",
         content: `
       <p>Il suffit d'<code>async</code>/<code>await</code>, avec un appel à <code>update()</code> à chaque changement d'état. Pour un fetch, cela donne un appel avant l'<code>await</code> et un autre après :</p>
       ${code("example.ts", `
@@ -987,7 +987,7 @@ async function loadData() {
       <h3>Pourquoi ma page affiche-t-elle « false » ?</h3>
       <p>Les booléens sont rendus comme du texte : <code>div(ok &amp;&amp; span('Done'))</code> affiche « false ». Pour les enfants, utilisez <code>when(() =&gt; ok, span('Done'))</code> ; pour du texte, <code>ok ? 'Done' : ''</code>.</p>
 
-      <h3>Pourquoi ma ligne de liste ne bouge-t-elle pas quand je modifie l'élément ?</h3>
+      <h3>Pourquoi ma ligne de liste ne change-t-elle pas quand je modifie l'élément ?</h3>
       <p>Les lignes des éléments toujours présents dans la liste sont conservées, pas rendues de nouveau. Pour les champs qui changent, utilisez des valeurs dynamiques comme <code>() =&gt; todo.text</code>. Voir <a href="#api-list"><code>list()</code></a>.</p>
 
       <h3>Pourquoi une partie de mon interface ne se met-elle plus à jour ?</h3>

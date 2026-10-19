@@ -33,7 +33,7 @@ export const footer = {
 export const app = {
   failedToLoad: "Não foi possível carregar a página",
   notFound: "Página não encontrada",
-  notFoundHint: "Aqui não tem nada.",
+  notFoundHint: "Não há nada neste endereço.",
   goHome: "Voltar para o início",
   loadingLanguage: "Carregando o idioma…",
 };
@@ -55,7 +55,7 @@ export const seo = {
   routes: {
     home: {
       title: "Nuclo - Framework DOM leve, com atualizações explícitas",
-      description: "Nuclo é uma lib de DOM em TypeScript, leve e sem dependências. Monte a UI com funções, mude estado simples e chame update(). Sem DOM virtual, sem proxies, sem signals.",
+      description: "Nuclo é uma biblioteca DOM leve para TypeScript, sem dependências. Monte a UI com funções, altere um estado simples e chame update(). Sem DOM virtual, sem proxies, sem signals.",
       keywords: "nuclo, framework dom, valores dependentes de estado, atualizações explícitas, estado mutável, javascript, typescript, framework de ui, leve",
     },
     "apps/:id": {
@@ -72,7 +72,7 @@ export const seo = {
       keywords: "documentação nuclo, referência da api, primeiros passos, update, list, when, on",
     },
     examples: {
-      title: "Exemplos do Nuclo - Contador, Lista de Tarefas, Busca e Estilização",
+      title: "Exemplos do Nuclo - Contador, lista de tarefas, busca e estilização",
       description: "Exemplos do Nuclo rodando ao vivo, com o código-fonte ao lado: contador, lista de tarefas, filtro de busca em tempo real e estilização com CSS-in-TS tipado.",
       keywords: "exemplos nuclo, contador, tarefas, filtro de busca, css-in-ts, demos ao vivo",
     },

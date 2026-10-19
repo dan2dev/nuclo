@@ -15,7 +15,7 @@ export const INSTALL_CMD = "npm create nuclo@latest";
 export const HERO_STATS = [
   { num: "0",   sup: "",   label: "зависимостей" },
   { num: "175", sup: "",   label: "типизированных билдеров для HTML и SVG" },
-  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "ядро в gzip" },
+  { num: `~${NUCLO_GZIP_KB.replace(".", ",")}`, sup: "КБ", label: "ядро в gzip" },
 ];
 
 export const COUNTER_TEASER_CODE = `import 'nuclo'
@@ -100,7 +100,7 @@ export const FEATURES = [
   {
     num: "02 · Лёгкость",
     title: "Ноль зависимостей",
-    desc: `Ядро весит около ${NUCLO_GZIP_KB} КБ в gzip. Ни компилятора, ни плагинов для сборки: один импорт — и можно писать.`,
+    desc: `Ядро весит около ${NUCLO_GZIP_KB.replace(".", ",")} КБ в gzip. Ни компилятора, ни плагинов для сборки: один импорт — и можно писать.`,
   },
   {
     num: "03 · Типизация",
@@ -177,7 +177,7 @@ export const COMPARISON_COLS: {
       { good: true, text: "Обычное изменяемое состояние: без обёрток и прокси" },
       { good: true, text: "Вся модель работы — один вызов update()" },
       { good: true, text: "Трогает только изменившиеся значения" },
-      { good: true, text: `~${NUCLO_GZIP_KB} КБ, ноль зависимостей, родной TypeScript` },
+      { good: true, text: `~${NUCLO_GZIP_KB.replace(".", ",")} КБ, ноль зависимостей, родной TypeScript` },
     ],
   },
 ];

@@ -11,8 +11,8 @@ export const GROUPS_1: DocGroupText[] = [
         id: "overview",
         title: "Visão geral",
         content: `
-      <p>O Nuclo é uma lib de DOM enxuta para TypeScript. A página nasce de funções simples, como <code>div()</code> e <code>button()</code>. O estado fica em variáveis comuns, e você chama <code>update()</code> quando a página deve mudar.</p>
-      <p>Aqui não tem DOM virtual, compilador, proxies nem signals.</p>
+      <p>O Nuclo é uma biblioteca DOM enxuta para TypeScript. A página nasce de funções simples, como <code>div()</code> e <code>button()</code>. O estado fica em variáveis comuns, e você chama <code>update()</code> quando a página deve mudar.</p>
+      <p>O Nuclo não tem DOM virtual, compilador, proxies nem signals.</p>
       ${code("main.ts", `
 import 'nuclo'
 
@@ -43,7 +43,7 @@ render(App, document.getElementById('app')!)
       <p>O <code>create-nuclo</code> monta para você um projeto Vite + TypeScript que já sai pronto para usar o Nuclo:</p>
     `,
         afterContent: `
-      <p>Ele começa perguntando o nome do projeto. Se preferir pular essa etapa, passe o nome e as flags já na linha de comando. No npm, lembre de colocar <code>--</code> antes das flags:</p>
+      <p>Ele começa perguntando o nome do projeto. Se preferir pular essa etapa, passe o nome e as flags já na linha de comando. No npm, lembre-se de colocar <code>--</code> antes das flags:</p>
       ${sh("npm create nuclo@latest my-app -- --template basic --yes")}
       <p>Agora é só instalar as dependências e subir o servidor de desenvolvimento:</p>
       ${sh("cd my-app", "npm install", "npm run dev")}
@@ -116,7 +116,7 @@ import { render, update, getCssText } from 'nuclo'
       <h3>Tipos úteis</h3>
       <p>Estes tipos são globais, então você os usa direto, sem import:</p>
       <ul>
-        <li><code>NodeModFn&lt;Tag&gt;</code>: o retorno de um builder de tag. Ótimo como tipo de retorno de componentes.</li>
+        <li><code>NodeModFn&lt;Tag&gt;</code>: o retorno de um builder de tag. Use-o como tipo de retorno dos seus componentes.</li>
         <li><code>NodeModLike&lt;Tag&gt;</code>: tudo o que um builder de tag aceita como argumento.</li>
         <li><code>ExpandedElement&lt;Tag&gt;</code>: o que <code>render()</code> e <code>hydrate()</code> devolvem.</li>
         <li><code>ElementTagName</code>: o nome de qualquer tag HTML.</li>
@@ -146,7 +146,7 @@ function Badge(text: string): NodeModFn<'span'> {
         title: "Builders de tags",
         content: `
       <p>Cada tag HTML vira uma função global com o mesmo nome: <code>div</code>, <code>span</code>, <code>input</code>, … Só uma foge à regra: <code>&lt;var&gt;</code> se chama <code>var_</code>, já que <code>var</code> é palavra reservada. As tags SVG seguem o mesmo princípio, mas com o sufixo <code>Svg</code>: <code>svgSvg</code>, <code>pathSvg</code>, <code>circleSvg</code>, …</p>
-      <p>Chamar um builder não cria elemento nenhum, ainda. <code>div('Hi')</code> devolve um <strong>builder</strong>: uma função que vai criar o elemento mais tarde. Quem a chama é o Nuclo, quando você a passa para <code>render()</code> ou a coloca dentro de outro builder, de um <code>when()</code> ou de um <code>list()</code>. A cada uso, nasce um elemento novo.</p>
+      <p>Chamar um builder ainda não cria nenhum elemento. <code>div('Hi')</code> devolve um <strong>builder</strong>: uma função que vai criar o elemento mais tarde. Quem a chama é o Nuclo, quando você a passa para <code>render()</code> ou a coloca dentro de outro builder, de um <code>when()</code> ou de um <code>list()</code>. A cada uso, nasce um elemento novo.</p>
       ${code("card.ts", `
 let name = 'Ada'
 
@@ -181,7 +181,7 @@ render(Card, document.body)
         <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> escreve o texto "false" na tela. O certo é <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
         <li>Arrays não valem como filhos. Use o spread: <code>ul(...names.map((n) =&gt; li(n)))</code>. Se a lista muda com o tempo, use <code>list()</code>.</li>
         <li>Uma variável local com nome de tag esconde o builder. Dentro de <code>function Row(label: string)</code>, por exemplo, não dá para chamar <code>label(...)</code>. Fique de olho em nomes como <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> e <code>i</code> e renomeie essas variáveis.</li>
-        <li>O navegador expõe todo elemento com <code>id</code> como variável global. Se a página já tiver um <code>&lt;main id="main"&gt;</code> antes de o Nuclo carregar, ele respeita essa global e <code>main(...)</code> estoura um <code>TypeError</code>. Escolha outros ids.</li>
+        <li>O navegador expõe todo elemento com <code>id</code> como variável global. Se a página já tiver um <code>&lt;main id="main"&gt;</code> antes de o Nuclo carregar, o Nuclo mantém essa global e <code>main(...)</code> lança um <code>TypeError</code>. Escolha outros ids.</li>
       </ul>
       <h3>Modificadores personalizados</h3>
       <p>Uma função que declara ao menos um parâmetro roda uma única vez, na ordem dos argumentos, durante a construção do elemento. O primeiro argumento é o próprio elemento. O segundo é um índice interno, então não conte com ele. Se a função devolver uma string ou um number, o valor vira texto. Se devolver um <code>Node</code>, ele é anexado. Se devolver um objeto, é aplicado como atributos.</p>
@@ -643,7 +643,7 @@ render(() => div(Layout(), Article()))
         <li><code>empty</code>: o que é renderizado enquanto a região não tem nenhuma view.</li>
       </ul>
       <h3>Regiões empilhadas</h3>
-      <p>Com <code>type: 'stack'</code>, uma view que abre por cima de outra não reconstrói a de baixo: DOM, foco e estado de formulário continuam intactos. É ideal para camadas, como um diálogo sobre uma página.</p>
+      <p>Com <code>type: 'stack'</code>, uma view que abre por cima de outra não reconstrói a de baixo: DOM, foco e estado de formulário continuam intactos. Use isso para uma camada, como um diálogo sobre uma página.</p>
       ${code("layers.ts", `
 let open = false
 
@@ -890,7 +890,7 @@ hydrate(App, document.getElementById('root')!)
         id: "api-ssr",
         title: "Renderização no servidor (SSR)",
         content: `
-      <p>Transforme um componente em uma string HTML no servidor. No navegador, chame <a href="#api-hydrate"><code>hydrate()</code></a> com o mesmo componente e esse HTML ganha vida. Runtimes de servidor não têm <code>document</code>, então importe o <a href="#api-polyfill"><code>nuclo/polyfill</code></a> antes de tudo.</p>
+      <p>Transforme um componente em uma string HTML no servidor. No navegador, chame <a href="#api-hydrate"><code>hydrate()</code></a> com o mesmo componente para tornar esse HTML interativo. Runtimes de servidor não têm <code>document</code>, então importe o <a href="#api-polyfill"><code>nuclo/polyfill</code></a> antes de tudo.</p>
       ${code("app.ts", `
 let count = 0
 const heading = css({ color: 'red' })

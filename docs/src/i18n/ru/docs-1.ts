@@ -11,8 +11,8 @@ export const GROUPS_1: DocGroupText[] = [
         id: "overview",
         title: "Обзор",
         content: `
-      <p>Nuclo — крошечная DOM-библиотека для TypeScript. Интерфейс вы собираете из обычных функций вроде <code>div()</code> и <code>button()</code>, состояние хранится в самых обычных переменных, а когда пора перерисовать страницу, достаточно вызвать <code>update()</code>.</p>
-      <p>В Nuclo нет virtual DOM, компилятора, proxy и signals.</p>
+      <p>Nuclo — небольшая DOM-библиотека для TypeScript. Интерфейс вы собираете из обычных функций вроде <code>div()</code> и <code>button()</code>, состояние хранится в самых обычных переменных, а когда пора перерисовать страницу, достаточно вызвать <code>update()</code>.</p>
+      <p>В Nuclo нет virtual DOM, компилятора, прокси и сигналов.</p>
       ${code("main.ts", `
 import 'nuclo'
 

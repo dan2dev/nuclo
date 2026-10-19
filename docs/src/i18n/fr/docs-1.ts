@@ -11,7 +11,7 @@ export const GROUPS_1: DocGroupText[] = [
         id: "overview",
         title: "Vue d'ensemble",
         content: `
-      <p>Nuclo est une petite bibliothèque DOM pour TypeScript. Vous construisez la page avec de simples fonctions comme <code>div()</code> ou <code>button()</code>, vous gardez votre état dans des variables ordinaires, et vous appelez <code>update()</code> dès que la page doit bouger.</p>
+      <p>Nuclo est une petite bibliothèque DOM pour TypeScript. Vous construisez la page avec de simples fonctions comme <code>div()</code> ou <code>button()</code>, vous gardez votre état dans des variables ordinaires, et vous appelez <code>update()</code> dès que la page doit changer.</p>
       <p>Pas de DOM virtuel, pas de compilateur, pas de proxies, pas de signaux : Nuclo se passe de tout cela.</p>
       ${code("main.ts", `
 import 'nuclo'
@@ -33,7 +33,7 @@ render(App, document.getElementById('app')!)
         <li>Modifiez l'état en JavaScript pur.</li>
         <li>Appelez <code>update()</code> : Nuclo réexécute les fonctions et met le DOM à jour.</li>
       </ol>
-      <p>Changer une variable ne touche pas au DOM. La page ne bouge que lorsque vous appelez <code>update()</code>.</p>
+      <p>Changer une variable ne touche pas au DOM. La page ne change que lorsque vous appelez <code>update()</code>.</p>
     `,
       },
       {
@@ -480,7 +480,7 @@ const Profile = () =>
       <ul>
         <li><strong>Tout est réexécuté.</strong> Chaque valeur dynamique tourne à chaque appel, même quand ses données n'ont pas bougé : seule l'écriture dans le DOM est épargnée. Gardez donc vos valeurs dynamiques rapides et sans effet de bord.</li>
         <li><strong>Seuls les nœuds du document comptent.</strong> Si un nœud n'est pas dans le document quand <code>update()</code> s'exécute, Nuclo cesse de le suivre : il ne sera plus jamais mis à jour, même une fois rattaché. Cela vaut aussi pour <code>list()</code> et <code>when()</code>. Rendez donc dans un conteneur déjà présent dans le document.</li>
-        <li><strong>Le statique ne bouge jamais.</strong> Les chaînes et valeurs d'attributs simples sont figées à la construction de l'élément. Pour les reconstruire, utilisez <a href="#api-force-update"><code>forceUpdate()</code></a>.</li>
+        <li><strong>Les valeurs statiques ne changent jamais.</strong> Les chaînes et valeurs d'attributs simples sont figées à la construction de l'élément. Pour les reconstruire, utilisez <a href="#api-force-update"><code>forceUpdate()</code></a>.</li>
         <li><strong>Erreurs.</strong> Les erreurs de texte et d'attributs sont interceptées, et la passe continue. Si la condition d'un <code>when()</code> lève une erreur, elle est consignée et ce <code>when()</code> cesse de se mettre à jour. Si c'est la fonction <code>items</code> ou <code>renderItem</code> d'un <code>list()</code> qui échoue, l'erreur remonte hors de <code>update()</code> et les étapes restantes ne s'exécutent pas.</li>
         <li><strong>Serveur.</strong> Côté serveur, <code>update()</code> ne fait rien.</li>
       </ul>

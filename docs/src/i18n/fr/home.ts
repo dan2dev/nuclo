@@ -15,7 +15,7 @@ export const INSTALL_CMD = "npm create nuclo@latest";
 export const HERO_STATS = [
   { num: "0",   sup: "",   label: "dépendance" },
   { num: "175", sup: "",   label: "constructeurs HTML et SVG typés" },
-  { num: `~${NUCLO_GZIP_KB}`, sup: "Ko", label: "runtime principal, compressé avec gzip" },
+  { num: `~${NUCLO_GZIP_KB.replace(".", ",")}`, sup: "Ko", label: "runtime principal, compressé avec gzip" },
 ];
 
 export const COUNTER_TEASER_CODE = `import 'nuclo'
@@ -100,7 +100,7 @@ export const FEATURES = [
   {
     num: "02 · Léger",
     title: "Zéro dépendance",
-    desc: `Environ ${NUCLO_GZIP_KB} Ko pour le runtime principal en gzip. Pas de compilateur, pas de plugin de build : un import, et vous écrivez votre interface.`,
+    desc: `Environ ${NUCLO_GZIP_KB.replace(".", ",")} Ko pour le runtime principal en gzip. Pas de compilateur, pas de plugin de build : un import, et vous écrivez votre interface.`,
   },
   {
     num: "03 · Typé",
@@ -177,7 +177,7 @@ export const COMPARISON_COLS: {
       { good: true, text: "Un état mutable ordinaire, sans enveloppe et sans proxies" },
       { good: true, text: "Tout le modèle mental tient dans un appel : update()" },
       { good: true, text: "Ne met à jour que les valeurs qui ont changé" },
-      { good: true, text: `Environ ${NUCLO_GZIP_KB} Ko, zéro dépendance, pensé pour TypeScript` },
+      { good: true, text: `Environ ${NUCLO_GZIP_KB.replace(".", ",")} Ko, zéro dépendance, pensé pour TypeScript` },
     ],
   },
 ];

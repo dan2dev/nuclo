@@ -27,7 +27,7 @@ export const footer = {
   project: "Projekt",
   github: "GitHub",
   license: "MIT-Lizenz",
-  fineprint: "© 2026 Danilo Castro (@dan2dev) · MIT License",
+  fineprint: "© 2026 Danilo Castro (@dan2dev) · MIT-Lizenz",
 };
 
 export const app = {

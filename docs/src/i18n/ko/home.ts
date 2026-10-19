@@ -8,7 +8,7 @@ export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · 외부 의존성 없음`;
 export const HERO_TITLE_LINES = ["nuclo로 *명시적*인", "인터페이스를", "만드세요."];
 
 export const HERO_DESC =
-  "작고 타입 안전한 DOM 프레임워크. 상태는 그냥 평범하고 변경 가능한 데이터이고, 업데이트 시점은 전부 내가 정합니다. 프록시도, 시그널도, 가상 DOM도 없습니다.";
+  "작고 타입 안전한 DOM 프레임워크. 상태는 그냥 평범하고 변경 가능한 데이터이고, 업데이트 시점은 직접 정합니다. 프록시도, 시그널도, 가상 DOM도 없습니다.";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
@@ -326,7 +326,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "onMount가 프레임 루프를 시작하고 cleanup 함수를 반환합니다. 별 영역이 언마운트되면 Nuclo가 cleanup을 실행해 루프를 멈추므로, 백그라운드에 남는 작업이 없습니다.",
   },
   Life: {
-    title: "생명 게임",
+    title: "라이프 게임",
     note: "보드는 각 셀의 나이를 담은 평범한 배열입니다. 틱마다 다음 배열을 계산해 update()를 호출하고, 셀의 클래스는 나이에 따라 정해지는 함수라서 바뀐 셀만 패치됩니다.",
   },
 };

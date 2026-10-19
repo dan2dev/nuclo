@@ -34,7 +34,7 @@ export const app = {
   failedToLoad: "Impossible de charger la page",
   loadingLanguage: "Chargement de la langue…",
   notFound: "Page introuvable",
-  notFoundHint: "Il n'y a rien par ici.",
+  notFoundHint: "Il n'y a rien à cette adresse.",
   goHome: "Retour à l'accueil",
 };
 

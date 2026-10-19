@@ -33,7 +33,7 @@ render(App, document.getElementById('app')!)
         <li>Cambia lo stato con normale JavaScript.</li>
         <li>Poi chiami <code>update()</code>: Nuclo rilancia quelle funzioni e scrive nel DOM solo ciò che è davvero cambiato.</li>
       </ol>
-      <p>Assegnare una variabile non tocca il DOM: la pagina si muove solo quando chiami <code>update()</code>.</p>
+      <p>Assegnare una variabile non tocca il DOM: la pagina cambia solo quando chiami <code>update()</code>.</p>
     `,
       },
       {

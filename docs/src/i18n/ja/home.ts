@@ -175,7 +175,7 @@ export const COMPARISON_COLS: {
     featured: true,
     items: [
       { good: true, text: "ラッパーもプロキシもなし。普通の変数やオブジェクトを、そのまま書き換えられる state" },
-      { good: true, text: "覚えるのは update() の 1 回だけ。それがメンタルモデルのすべて" },
+      { good: true, text: "update() の呼び出しひとつが、メンタルモデルのすべて" },
       { good: true, text: "変わった値だけを DOM に反映" },
       { good: true, text: `約 ${NUCLO_GZIP_KB} KB、依存関係ゼロ、TypeScript ファースト` },
     ],

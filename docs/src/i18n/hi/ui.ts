@@ -2,31 +2,31 @@
 // meta and the labels shared by every page. pt/ui.ts and es/ui.ts mirror it.
 
 export const nav = {
-  home: "होम",
+  home: "Home",
   docs: "Docs",
   examples: "Examples",
   getStarted: "शुरू करें",
-  menu: "मेन्यू",
+  menu: "Menu",
   main: "मुख्य navigation",
-  openMenu: "मेन्यू खोलें",
-  closeMenu: "मेन्यू बंद करें",
-  nucloHome: "Nuclo होम",
+  openMenu: "Menu खोलें",
+  closeMenu: "Menu बंद करें",
+  nucloHome: "Nuclo Home",
   nucloOnGitHub: "GitHub पर Nuclo",
   opensInNewTab: " (नए टैब में खुलता है)",
-  switchTheme: "थीम बदलें",
+  switchTheme: "Theme बदलें",
   language: "भाषा",
 };
 
 export const footer = {
   tagline: "Explicit UI runtime। Plain functions, mutable state, और आपके data से DOM तक बस एक call।",
   builtWith: "ये साइट भी Nuclo से ही बनी है।",
-  explore: "एक्सप्लोर करें",
+  explore: "Explore",
   documentation: "Documentation",
   examples: "Examples",
   readme: "README",
   project: "Project",
   github: "GitHub",
-  license: "MIT लाइसेंस",
+  license: "MIT License",
   fineprint: "© 2026 Danilo Castro (@dan2dev) · MIT License",
 };
 
@@ -35,18 +35,18 @@ export const app = {
   loadingLanguage: "भाषा लोड हो रही है…",
   notFound: "पेज नहीं मिला (404)",
   notFoundHint: "इस address पर कुछ नहीं है।",
-  goHome: "होम पेज पर वापस जाएँ",
+  goHome: "Home page पर वापस जाएँ",
 };
 
 // Shared by the docs' live frames, the examples and the home teasers.
 export const common = {
   preview: "Preview",
   code: "Code",
-  copy: "कॉपी करें",
-  copied: "✓ कॉपी हो गया",
-  copyToClipboard: "Clipboard में कॉपी करें",
+  copy: "Copy करें",
+  copied: "✓ Copy हो गया",
+  copyToClipboard: "Clipboard में copy करें",
   live: "Live",
-  openFullScreen: "ये example फ़ुल-स्क्रीन में खोलें",
+  openFullScreen: "ये example full screen में खोलें",
   open: "खोलें ↗",
   readTheDocs: "Docs पढ़ें →",
 };

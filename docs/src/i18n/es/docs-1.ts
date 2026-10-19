@@ -11,7 +11,7 @@ export const GROUPS_1: DocGroupText[] = [
         id: "overview",
         title: "Visión general",
         content: `
-      <p>Nuclo es una biblioteca DOM diminuta para TypeScript. Armas la página con funciones tan simples como <code>div()</code> y <code>button()</code>, guardas el estado en variables de toda la vida y, cuando la página debe cambiar, llamas a <code>update()</code>.</p>
+      <p>Nuclo es una biblioteca DOM pequeña para TypeScript. Armas la página con funciones tan simples como <code>div()</code> y <code>button()</code>, guardas el estado en variables comunes y, cuando la página debe cambiar, llamas a <code>update()</code>.</p>
       <p>Sin virtual DOM, sin compilador, sin proxies y sin signals.</p>
       ${code("main.ts", `
 import 'nuclo'
@@ -33,7 +33,7 @@ render(App, document.getElementById('app')!)
         <li>Modifica el estado con JavaScript normal y corriente.</li>
         <li>Llama a <code>update()</code>: Nuclo vuelve a ejecutar esas funciones y parchea el DOM.</li>
       </ol>
-      <p>Asignar una variable no toca el DOM. La página solo se mueve cuando tú llamas a <code>update()</code>.</p>
+      <p>Asignar una variable no toca el DOM. La página solo cambia cuando llamas a <code>update()</code>.</p>
     `,
       },
       {

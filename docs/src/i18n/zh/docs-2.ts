@@ -981,7 +981,7 @@ async function loadData() {
       <h3>改了状态，UI 就会更新吗？</h3>
       <p>不会。在你调用 <code>update()</code> 之前，DOM 会一直保持原样。</p>
 
-      <h3>Nuclo 用了信号（signal）、proxy 或虚拟 DOM 吗？</h3>
+      <h3>Nuclo 用了信号（signal）、Proxy 或虚拟 DOM 吗？</h3>
       <p>都没有。状态就是普通的 JavaScript。渲染一棵树时，Nuclo 创建的是真实的元素和文本节点；<code>update()</code> 会运行所有已注册的动态值（或者只运行给定作用域内的），值一变，就去更新现有节点。没有依赖图，也没有虚拟树。</p>
 
       <h3>页面上为什么显示了 "false"？</h3>

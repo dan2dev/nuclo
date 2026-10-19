@@ -33,7 +33,7 @@ render(App, document.getElementById('app')!)
         <li>Den State änderst du mit ganz normalem JavaScript.</li>
         <li>Dann rufst du <code>update()</code> auf. Nuclo führt die Funktionen noch einmal aus und patcht das DOM.</li>
       </ol>
-      <p>Eine Variable zu ändern, lässt das DOM kalt. Die Seite bewegt sich erst, wenn du <code>update()</code> aufrufst.</p>
+      <p>Eine Variable zu ändern, berührt das DOM nicht. Die Seite ändert sich erst, wenn du <code>update()</code> aufrufst.</p>
     `,
       },
       {

@@ -15,7 +15,7 @@ export const INSTALL_CMD = "npm create nuclo@latest";
 export const HERO_STATS = [
   { num: "0",   sup: "",   label: "dependências" },
   { num: "175", sup: "",   label: "builders HTML e SVG tipados" },
-  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "gzip, só o runtime" },
+  { num: `~${NUCLO_GZIP_KB.replace(".", ",")}`, sup: "KB", label: "runtime principal, com gzip" },
 ];
 
 export const COUNTER_TEASER_CODE = `import 'nuclo'
@@ -71,7 +71,7 @@ export function TodoList() {
 }`;
 
 export const PHILOSOPHY_QUOTE =
-  "Mudar o estado não faz nada acontecer. Chamou update(), o Nuclo faz exatamente o que você pediu. Nem mais, nem menos.";
+  "Mudar o estado, por si só, não faz nada acontecer. Chame update() e o Nuclo faz exatamente o que você pediu. Nem mais, nem menos.";
 
 export const PHILOSOPHY_POINTS = [
   {
@@ -100,7 +100,7 @@ export const FEATURES = [
   {
     num: "02 · Leve",
     title: "Zero dependências",
-    desc: `Cerca de ${NUCLO_GZIP_KB} KB em gzip no runtime principal. Sem compilador, sem plugin de build: é só adicionar um import e começar.`,
+    desc: `Cerca de ${NUCLO_GZIP_KB.replace(".", ",")} KB em gzip no runtime principal. Sem compilador, sem plugin de build: é só adicionar um import e começar.`,
   },
   {
     num: "03 · Tipado",
@@ -177,7 +177,7 @@ export const COMPARISON_COLS: {
       { good: true, text: "Estado mutável puro, sem wrappers e sem proxies" },
       { good: true, text: "O modelo mental inteiro cabe em uma chamada: update()" },
       { good: true, text: "Aplica só o que mudou" },
-      { good: true, text: `Cerca de ${NUCLO_GZIP_KB} KB, zero dependências, TypeScript em primeiro lugar` },
+      { good: true, text: `Cerca de ${NUCLO_GZIP_KB.replace(".", ",")} KB, zero dependências, TypeScript em primeiro lugar` },
     ],
   },
 ];
@@ -273,7 +273,7 @@ export const LABELS = {
   lowerIsBetter: "Menor é melhor",
   benchmarkSource: "Fonte: js-framework-benchmark",
   quickStart: "Início rápido",
-  quickStartTitle: "No ar em minutos.",
+  quickStartTitle: "Funcionando em minutos.",
   quickStartSub: "Três passos e você já está montando UI de verdade.",
   readFullDocs: "Ler a documentação completa →",
   examples: "Exemplos",
@@ -302,11 +302,11 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "A marca do Nuclo é um espirógrafo: uma roda girando dentro de um anel, com duas canetas. Roda, braços, canetas e traços são funções de um único número, t. A timeline e o loop de frames só definem t; update('draw') reexecuta o que lê esse valor.",
   },
   Fireworks: {
-    title: "Toque o céu",
+    title: "Toque no céu",
     note: "Cada faísca é um objeto num array. O list() dá um <line> a cada uma e o descarta no frame em que o objeto sai do array. Um update() por frame, sem comparar nada.",
   },
   Waves: {
-    title: "Dobre a onda",
+    title: "Curve a onda",
     note: "O d de cada path é uma função de três números. Os sliders e o loop de frames só mexem nos números; update('waves') reexecuta as funções que os leem.",
   },
   Sort: {
@@ -314,7 +314,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "O bubble sort troca objetos de lugar num array. O list() associa cada barra ao seu objeto, então o update() só move os nós existentes para a nova ordem. Olhe o contador: nenhuma barra é recriada.",
   },
   Chase: {
-    title: "Conduza a corda",
+    title: "Guie a corda",
     note: "O card é um scope(). A cada frame, 32 pontos se movem e update('chase') é chamado: o Nuclo recalcula os atributos desse card e deixa o resto da página em paz.",
   },
   Reflex: {
@@ -323,7 +323,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Warp: {
     title: "Segure para entrar em warp",
-    note: "onMount inicia o loop de frames e devolve uma função de cleanup. Desmontou o campo, o Nuclo roda o cleanup: o loop para e nada fica rodando por aí.",
+    note: "onMount inicia o loop de frames e devolve uma função de cleanup. Quando o campo é desmontado, o Nuclo executa esse cleanup: o loop para e nada fica rodando.",
   },
   Life: {
     title: "Jogo da Vida",

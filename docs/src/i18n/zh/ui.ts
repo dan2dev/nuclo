@@ -27,11 +27,11 @@ export const footer = {
   project: "项目",
   github: "GitHub",
   license: "MIT 许可证",
-  fineprint: "© 2026 Danilo Castro (@dan2dev) · MIT License",
+  fineprint: "© 2026 Danilo Castro (@dan2dev) · MIT 许可证",
 };
 
 export const app = {
-  failedToLoad: "页面加载失败了",
+  failedToLoad: "页面加载失败",
   loadingLanguage: "正在加载语言…",
   notFound: "页面未找到",
   notFoundHint: "这个地址下什么都没有。",

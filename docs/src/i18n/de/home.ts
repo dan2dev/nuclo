@@ -15,7 +15,7 @@ export const INSTALL_CMD = "npm create nuclo@latest";
 export const HERO_STATS = [
   { num: "0",   sup: "",   label: "Abhängigkeiten" },
   { num: "175", sup: "",   label: "typisierte HTML- und SVG-Builder" },
-  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "Kern-Runtime, gzipped" },
+  { num: `~${NUCLO_GZIP_KB.replace(".", ",")}`, sup: "KB", label: "Kern-Runtime, gzip-komprimiert" },
 ];
 
 export const COUNTER_TEASER_CODE = `import 'nuclo'
@@ -100,7 +100,7 @@ export const FEATURES = [
   {
     num: "02 · Leichtgewichtig",
     title: "Null Abhängigkeiten",
-    desc: `Die Kern-Runtime wiegt gzipped rund ${NUCLO_GZIP_KB} KB. Compiler und Build-Plugins sind unnötig: ein Import, und du kannst loslegen.`,
+    desc: `Die Kern-Runtime wiegt gzipped rund ${NUCLO_GZIP_KB.replace(".", ",")} KB. Compiler und Build-Plugins sind unnötig: ein Import, und du kannst loslegen.`,
   },
   {
     num: "03 · Typisiert",
@@ -177,7 +177,7 @@ export const COMPARISON_COLS: {
       { good: true, text: "Ganz normaler, veränderlicher State, ohne Wrapper und Proxies" },
       { good: true, text: "Ein einziger Aufruf, update(), ist das gesamte mentale Modell" },
       { good: true, text: "Patcht nur, was sich wirklich geändert hat" },
-      { good: true, text: `Rund ${NUCLO_GZIP_KB} KB, null Abhängigkeiten, TypeScript-first` },
+      { good: true, text: `Rund ${NUCLO_GZIP_KB.replace(".", ",")} KB, null Abhängigkeiten, TypeScript-first` },
     ],
   },
 ];
@@ -326,7 +326,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "onMount startet den Frame-Loop und gibt eine Cleanup-Funktion zurück. Wird das Feld entfernt, ruft Nuclo sie auf: Die Schleife stoppt, und nichts läuft im Hintergrund weiter.",
   },
   Life: {
-    title: "Game of Life",
+    title: "Spiel des Lebens",
     note: "Das Spielfeld ist ein schlichtes Array mit dem Alter jeder Zelle. Ein Tick berechnet die nächste Generation und ruft update() auf. Die Klasse jeder Zelle ist eine Funktion ihres Alters, deshalb werden nur die Zellen gepatcht, die sich geändert haben.",
   },
 };

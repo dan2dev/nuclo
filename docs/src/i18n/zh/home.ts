@@ -261,7 +261,7 @@ export const LABELS = {
   viewExamples: "查看示例",
   copyInstall: "复制安装命令",
   howItWorks: "工作原理",
-  pipelineTitle: "更新的节奏，握在你手里。",
+  pipelineTitle: "一个显式的更新循环。",
   pipelineSub: "依赖状态的值写成函数就行，没有依赖图，也没有调度器。何时运行，由你决定。数据到屏幕，只有一条看得见的路。",
   philosophy: "理念",
   features: "特性",

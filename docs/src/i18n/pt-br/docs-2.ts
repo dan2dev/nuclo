@@ -277,8 +277,8 @@ beforeEach(() => resetStyles())
         id: "router-overview",
         title: "nuclo-router",
         content: `
-      <div class="docs-callout"><strong>Pacote separado:</strong> o <code>nuclo-router</code> não faz parte do pacote principal do Nuclo. Instale-o ao lado do <code>nuclo</code>. Ele ainda está em pré-visualização, então a API pode mudar.</div>
-      <p>Roteamento para o Nuclo: SSR, hydration, rotas com code splitting e preload em idle, tudo construído em cima de <code>list()</code> e <code>update()</code>. Pesa cerca de ${NUCLO_ROUTER_GZIP_KB} KB com gzip, não depende de nada além do próprio Nuclo e não tem side effects, então o tree-shaking o remove do bundle quando você não o usa.</p>
+      <div class="docs-callout"><strong>Pacote separado:</strong> o <code>nuclo-router</code> não faz parte do pacote principal do Nuclo. Instale-o ao lado do <code>nuclo</code>. Ele ainda está em versão prévia, então a API pode mudar.</div>
+      <p>Roteamento para o Nuclo: SSR, hydration, rotas com code splitting e preload em idle, tudo construído em cima de <code>list()</code> e <code>update()</code>. Pesa cerca de ${NUCLO_ROUTER_GZIP_KB.replace(".", ",")} KB com gzip, não depende de nada além do próprio Nuclo e não tem side effects, então o tree-shaking o remove do bundle quando você não o usa.</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>Se preferir, use <code>pnpm add</code>, <code>yarn add</code> ou <code>bun add</code> com os mesmos dois nomes. É preciso ter o <code>nuclo</code> 0.3 ou superior como peer dependency.</p>
       <p>O router decide <em>o que</em> carregar; o app diz <em>onde</em>, com <code>router.outlet()</code>. Por baixo é um único <code>list()</code> sobre a pilha de camadas, com uma linha por camada, então uma página comum ocupa uma linha só. Servidor e cliente montam a mesma árvore, e por isso o <code>hydrate()</code> aproveita os nós que vieram do servidor em vez de trocá-los. O resto é <code>history</code>, um listener de <code>click</code> delegado e <code>requestIdleCallback</code>.</p>
@@ -504,7 +504,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
           <tr><td>ele lança erro ou rejeita</td><td>cai em <code>router.error</code>. O <code>go()</code> continua sem nunca rejeitar, e a navegação pode ser repetida.</td></tr>
           <tr><td>durante o <code>start()</code></td><td>a rejeição sai do próprio <code>start()</code>. Ainda não existe um Route para recebê-la.</td></tr>
           <tr><td>uma camada empilhada</td><td>roda o próprio loader, com os próprios dados</td></tr>
-          <tr><td>o preloader em idle</td><td>só esquenta módulos. Não tem contexto para passar, e acabaria buscando dados de uma rota que você talvez nunca abra.</td></tr>
+          <tr><td>o preloader em idle</td><td>só pré-carrega os módulos. Não tem contexto para passar, e acabaria buscando dados de uma rota que você talvez nunca abra.</td></tr>
           <tr><td>navegar de novo para a mesma URL</td><td>o loader roda outra vez e a linha é reconstruída. Uma rota sem loader mantém a linha.</td></tr>
         </tbody>
       </table>
@@ -658,7 +658,7 @@ layer.close()          // dismissed: resolves with undefined
       <ul>
         <li><strong>A URL é a camada do topo.</strong> O <code>push()</code> adiciona uma entrada no history, então a camada pode ser linkada e o Voltar a fecha, resolvendo o <code>push()</code> como dispensado, exatamente como o Cancelar. Voltar e <code>close()</code> seguem o mesmo caminho de código: o <code>close()</code> registra o resultado e volta no history, e a profundidade em <code>history.state</code> é quem manda. Os navegadores guardam cerca de 50 entradas por aba, então, depois de uma longa sequência de camadas empilhadas, a entrada de baixo pode ter sumido. Nesse caso o <code>close()</code> fecha as camadas ali mesmo e reescreve a entrada atual para a página que ficou visível.</li>
         <li><strong>Uma navegação comum zera a pilha.</strong> Um clique em link ou um <code>go()</code> não é uma camada: substitui tudo e dispensa todas as camadas abertas, então ninguém fica pendurado num await.</li>
-        <li><strong>Um carregamento a frio é uma página independente.</strong> A URL nomeia a camada do topo, mas não a pilha embaixo dela, então abrir a URL de uma camada diretamente a renderiza na profundidade 1, com <code>layer.depth === 0</code> e um <code>close()</code> inerte. Uma rota empilhada precisa fazer sentido sozinha. Ramifique em <code>layer.depth</code> para oferecer um link de saída em vez de um botão Cancelar que não faz nada.</li>
+        <li><strong>Um carregamento a frio é uma página independente.</strong> A URL nomeia a camada do topo, mas não a pilha embaixo dela, então abrir a URL de uma camada diretamente a renderiza na profundidade 1, com <code>layer.depth === 0</code> e um <code>close()</code> inerte. Uma rota empilhada precisa fazer sentido sozinha. Verifique <code>layer.depth</code> para oferecer um link de saída em vez de um botão Cancelar que não faz nada.</li>
         <li><strong>A promise não sobrevive a um reload</strong>, porque mora numa closure. Trate o resultado como um atalho dentro de um fluxo que também funciona pelo caminho mais longo.</li>
         <li><strong>Ninguém fica esperando.</strong> O <code>stop()</code> dispensa todas as camadas abertas, e uma camada abandonada por uma navegação resolve com <code>undefined</code>.</li>
       </ul>
@@ -708,7 +708,7 @@ div(
         <li><strong>No servidor</strong>, uma view lazy não entrega nada, já que o módulo chega no cliente. Use uma view síncrona para tudo que o primeiro HTML precisa conter.</li>
       </ul>
       <h3>Sub-routers</h3>
-      <p>Rotas se aninham, então um sub-router costuma ser só uma tabela aninhada. Com um único router, a página <code>'/'</code> da própria seção é o seu chrome, e os filhos renderizam no <code>outlet()</code> dessa página, de modo que o chrome sobrevive à navegação dentro da seção:</p>
+      <p>Rotas se aninham, então um sub-router costuma ser só uma tabela aninhada. Com um único router, a página <code>'/'</code> da própria seção é o seu shell, e os filhos renderizam no <code>outlet()</code> dessa página, de modo que o shell sobrevive à navegação dentro da seção:</p>
       ${code("routes.ts", `
 createRouter({ '/': …, '/docs': docsRoutes, '*': … })
 `)}
@@ -810,7 +810,7 @@ createRouter(routes, {
         <li><strong>O <code>match()</code> não anexa nada.</strong> Qualquer quantidade de routers sem iniciar pode dividir o documento: cada um tem tabela, base e cache de módulos próprios, e nenhum encosta no history. O custo é uma tabela e um matcher.</li>
         <li><strong>Os loaders dele nunca rodam.</strong> Quem executa o <code>load()</code> das páginas que casam é o router iniciado. Um router sem iniciar só resolve, então, se as views precisam de dados, busque-os você mesmo, como faz o <code>refreshSidebar()</code> da demo. Se você quer loaders, uma <a href="#router-matches">tabela aninhada</a> ou uma <a href="#router-regions">região que a página preenche</a> deixa esse trabalho com o router iniciado.</li>
         <li><strong>Proteja-se de respostas defasadas.</strong> O fetch lento de uma sidebar não pode chegar numa seção da qual você já saiu. Incremente um contador de geração a cada refresh e descarte as respostas que não correspondem mais, do mesmo jeito que o próprio router aposenta navegações ultrapassadas.</li>
-        <li><strong>Uma view lazy do <code>matches()</code> também não tem <code>pending</code>.</strong> Ela não renderiza nada até o módulo chegar. São três sistemas de loading e três relógios independentes: o <code>pending</code> da rota, as suas flags e uma view lazy que simplesmente ainda não está lá.</li>
+        <li><strong>Uma view lazy do <code>matches()</code> também não tem <code>pending</code>.</strong> Ela não renderiza nada até o módulo chegar. São três sistemas de loading e três ritmos independentes: o <code>pending</code> da rota, as suas flags e uma view lazy que simplesmente ainda não está lá.</li>
       </ul>
     `,
       },

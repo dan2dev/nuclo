@@ -278,7 +278,7 @@ beforeEach(() => resetStyles())
         title: "nuclo-router",
         content: `
       <div class="docs-callout"><strong>Pacchetto separato:</strong> <code>nuclo-router</code> non fa parte del core di Nuclo, quindi va installato accanto a <code>nuclo</code>. È una release in anteprima e la sua API può ancora cambiare.</div>
-      <p>Il routing per Nuclo: rendering lato server, idratazione, rotte con suddivisione del codice e precaricamento in idle, il tutto costruito su <code>list()</code> e <code>update()</code>. Circa ${NUCLO_ROUTER_GZIP_KB} KB gzip, nessuna dipendenza oltre a Nuclo e nessun side effect, quindi il tree-shaking lo elimina se non lo usi.</p>
+      <p>Il routing per Nuclo: rendering lato server, idratazione, rotte con suddivisione del codice e precaricamento in idle, il tutto costruito su <code>list()</code> e <code>update()</code>. Circa ${NUCLO_ROUTER_GZIP_KB.replace(".", ",")} KB gzip, nessuna dipendenza oltre a Nuclo e nessun side effect, quindi il tree-shaking lo elimina se non lo usi.</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>Va bene anche <code>pnpm add</code>, <code>yarn add</code> o <code>bun add</code> con gli stessi due nomi. Come peer dependency richiede <code>nuclo</code> 0.3 o successivo.</p>
       <p>Il router decide <em>cosa</em> caricare; sei tu a dire <em>dove</em> con <code>router.outlet()</code>: una <code>list()</code> sullo stack dei layer, una riga per layer, quindi una pagina normale è una riga sola. Server e client costruiscono lo stesso albero, così <code>hydrate()</code> riutilizza i nodi arrivati dal server invece di rimpiazzarli. Il resto è <code>history</code>, un listener <code>click</code> delegato e <code>requestIdleCallback</code>.</p>
@@ -642,7 +642,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         id: "router-layers",
         title: "Layer e guardie di uscita",
         content: `
-      <p><code>push()</code> apre una rotta sopra quella corrente invece di sostituirla, e si risolve con il valore con cui quel layer si chiude. Poiché le pagine sono un'unica <code>list()</code> sullo stack, aprire un layer equivale a un append. La pagina sotto non viene rirenderizzata, quindi il suo DOM, il suo focus e il form compilato a metà sono ancora lì quando il layer si chiude.</p>
+      <p><code>push()</code> apre una rotta sopra quella corrente invece di sostituirla, e si risolve con il valore con cui quel layer si chiude. Poiché le pagine sono un'unica <code>list()</code> sullo stack, aprire un layer equivale a un append. La pagina sotto non viene renderizzata di nuovo, quindi il suo DOM, il suo focus e il form compilato a metà sono ancora lì quando il layer si chiude.</p>
       <p>È così che funziona il flusso "mi serve un record che non esiste ancora", senza buttare via il form che l'utente stava compilando:</p>
       ${code("pages/Edit.ts", `
 // the page underneath
@@ -703,7 +703,7 @@ div(
         <li><strong>Stesso matching della tabella delle rotte.</strong> Pattern, precedenza, matching sul percorso grezzo e rimozione di <code>base</code> sono quelli del router, quindi vista e pagina sono sempre d'accordo sull'URL. Legge il percorso del layer in cima, come <code>router.path</code>.</li>
         <li><strong>Una vista</strong> è <code>(params, ctx) =&gt; content</code>, dove <code>params</code> prende il tipo dal suo pattern e <code>ctx</code> è il <code>RouteContext</code> con il <code>pattern</code> e i <code>params</code> della vista. Può restituire anche l'<code>import()</code> di un modulo di pagina, che viene chiamato con <code>ctx</code> appena arriva.</li>
         <li><strong>Se nulla corrisponde, non viene renderizzato nulla.</strong> Aggiungi una vista <code>'*'</code> come fallback. Come l'outlet, è vuoto prima di <code>start()</code> e dopo <code>stop()</code>.</li>
-        <li><strong>Si rirenderizza solo quando cambia la rotta</strong>, quindi una vista conserva il suo DOM in tutto ciò che mantiene la pagina.</li>
+        <li><strong>Viene renderizzata di nuovo solo quando cambia la rotta</strong>, quindi una vista conserva il suo DOM in tutto ciò che mantiene la pagina.</li>
         <li><strong>Una vista lazy non renderizza nulla finché il suo modulo non arriva.</strong> Un <code>import()</code> fallito viene registrato con <code>console.error</code>, non imposta <code>router.error</code> e viene ritentato alla navigazione successiva. Un semplice <code>update()</code> non ritenta.</li>
         <li><strong>Sul server</strong> una vista lazy non emette nulla, perché il suo modulo arriva sul client. Per tutto ciò che deve stare già nel primo HTML usa una vista sincrona.</li>
       </ul>

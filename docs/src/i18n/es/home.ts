@@ -15,7 +15,7 @@ export const INSTALL_CMD = "npm create nuclo@latest";
 export const HERO_STATS = [
   { num: "0",   sup: "",   label: "dependencias" },
   { num: "175", sup: "",   label: "funciones HTML y SVG con tipos" },
-  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "de runtime base, con gzip" },
+  { num: `~${NUCLO_GZIP_KB.replace(".", ",")}`, sup: "KB", label: "de runtime base, con gzip" },
 ];
 
 export const COUNTER_TEASER_CODE = `import 'nuclo'
@@ -100,7 +100,7 @@ export const FEATURES = [
   {
     num: "02 · Ligero",
     title: "Cero dependencias",
-    desc: `Unos ${NUCLO_GZIP_KB} KB con gzip para el runtime base. Sin compilador ni plugins de build: agrega un import y a programar.`,
+    desc: `Unos ${NUCLO_GZIP_KB.replace(".", ",")} KB con gzip para el runtime base. Sin compilador ni plugins de build: agrega un import y a programar.`,
   },
   {
     num: "03 · Tipado",
@@ -177,7 +177,7 @@ export const COMPARISON_COLS: {
       { good: true, text: "Estado mutable simple, sin envoltorios ni proxies" },
       { good: true, text: "Una sola llamada, update(), es todo el modelo mental" },
       { good: true, text: "Parchea solo lo que cambió" },
-      { good: true, text: `Unos ${NUCLO_GZIP_KB} KB, cero dependencias, pensado para TypeScript` },
+      { good: true, text: `Unos ${NUCLO_GZIP_KB.replace(".", ",")} KB, cero dependencias, pensado para TypeScript` },
     ],
   },
 ];
@@ -270,7 +270,7 @@ export const LABELS = {
   comparison: "Comparación",
   theNucloWay: "a la manera de Nuclo",
   benchmarks: "Benchmarks",
-  lowerIsBetter: "Menos es mejor",
+  lowerIsBetter: "Cuanto más bajo, mejor",
   benchmarkSource: "Fuente: js-framework-benchmark",
   quickStart: "Inicio rápido",
   quickStartTitle: "Funcionando en minutos.",
@@ -306,7 +306,7 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
     note: "Cada chispa es un objeto plano dentro de un array. list() le da un <line> a cada una y lo retira en el frame en que su objeto sale del array. Un update() por frame y ninguna comparación.",
   },
   Waves: {
-    title: "Dobla la onda",
+    title: "Curva la onda",
     note: "El d de cada path es una función simple de tres números. Los deslizadores y el bucle de frames solo cambian esos números; update('waves') vuelve a ejecutar las funciones que los leen.",
   },
   Sort: {

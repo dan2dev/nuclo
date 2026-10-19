@@ -12,7 +12,7 @@ export const GROUPS_1: DocGroupText[] = [
         title: "概要",
         content: `
       <p>Nuclo は、TypeScript のための小さな DOM ライブラリです。<code>div()</code> や <code>button()</code> といった素の関数で UI を組み、state は普通の変数に持たせ、画面を変えたいときに <code>update()</code> を呼びます。</p>
-      <p>仮想 DOM もコンパイラーも、Proxy もシグナルもありません。</p>
+      <p>仮想 DOM もコンパイラーも、プロキシもシグナルもありません。</p>
       ${code("main.ts", `
 import 'nuclo'
 

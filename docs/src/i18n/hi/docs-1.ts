@@ -50,7 +50,7 @@ render(App, document.getElementById('app')!)
       <h3>Options</h3>
       <ul>
         <li><code>[project-name]</code>: project का folder। default <code>nuclo-app</code> है।</li>
-        <li><code>-t, --template &lt;name&gt;</code>: कौन सा template कॉपी करना है। अभी सिर्फ़ <code>basic</code> है।</li>
+        <li><code>-t, --template &lt;name&gt;</code>: कौन सा template copy करना है। अभी सिर्फ़ <code>basic</code> है।</li>
         <li><code>-y, --yes</code>: कोई prompt नहीं दिखाता, defaults इस्तेमाल करता है।</li>
         <li><code>-f, --force</code>: खाली न होने पर भी उसी folder में लिख देता है।</li>
         <li><code>-h, --help</code>: help दिखाता है।</li>

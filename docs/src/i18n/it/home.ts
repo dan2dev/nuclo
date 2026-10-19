@@ -8,14 +8,14 @@ export const HERO_BADGE = `Nuclo v${NUCLO_VERSION} · zero dipendenze`;
 export const HERO_TITLE_LINES = ["Costruisci interfacce", "*esplicite* con", "nuclo."];
 
 export const HERO_DESC =
-  "Un framework DOM minuscolo e type-safe. Lo stato resta semplice e mutabile, e a decidere quando aggiornare sei sempre tu. Niente proxy, niente signal, niente virtual DOM.";
+  "Un framework DOM piccolo e type-safe. Lo stato resta semplice e mutabile, e a decidere quando aggiornare sei sempre tu. Niente proxy, niente signal, niente virtual DOM.";
 
 export const INSTALL_CMD = "npm create nuclo@latest";
 
 export const HERO_STATS = [
   { num: "0",   sup: "",   label: "dipendenze" },
   { num: "175", sup: "",   label: "builder HTML e SVG tipizzati" },
-  { num: `~${NUCLO_GZIP_KB}`, sup: "KB", label: "gzip, runtime core" },
+  { num: `~${NUCLO_GZIP_KB.replace(".", ",")}`, sup: "KB", label: "gzip, runtime core" },
 ];
 
 export const COUNTER_TEASER_CODE = `import 'nuclo'
@@ -100,7 +100,7 @@ export const FEATURES = [
   {
     num: "02 · Leggero",
     title: "Zero dipendenze",
-    desc: `Circa ${NUCLO_GZIP_KB} KB gzip per il runtime core. Nessun compilatore, nessun plugin di build: aggiungi un import e parti.`,
+    desc: `Circa ${NUCLO_GZIP_KB.replace(".", ",")} KB gzip per il runtime core. Nessun compilatore, nessun plugin di build: aggiungi un import e parti.`,
   },
   {
     num: "03 · Tipizzato",
@@ -175,9 +175,9 @@ export const COMPARISON_COLS: {
     featured: true,
     items: [
       { good: true, text: "Stato mutabile semplice: niente wrapper, niente proxy" },
-      { good: true, text: "Una sola chiamata, update(), ed è tutto il modello mentale" },
+      { good: true, text: "Tutto il modello mentale sta in una chiamata: update()" },
       { good: true, text: "Aggiorna solo i valori cambiati" },
-      { good: true, text: `Circa ${NUCLO_GZIP_KB} KB, zero dipendenze, TypeScript-first` },
+      { good: true, text: `Circa ${NUCLO_GZIP_KB.replace(".", ",")} KB, zero dipendenze, TypeScript-first` },
     ],
   },
 ];
