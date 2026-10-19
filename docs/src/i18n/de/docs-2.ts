@@ -340,7 +340,7 @@ const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
       <p>Mehr Integration gibt es nicht. Links funktionieren, weil ein <code>&lt;a href&gt;</code> einfach ein <code>&lt;a href&gt;</code> bleibt. Ein delegierter Listener auf <code>document</code> fängt die Links ab, die dem Router gehören, alle anderen überlässt er dem Browser.</p>
-      <p>Auf dem Server liefert <code>start()</code> pro Request eine eigene <code>Route</code> und fasst den Router selbst nicht an, parallele Requests sehen also nie die Route des jeweils anderen. <code>route.run()</code> macht diese Route für die Dauer des Renderns zu der, die der Router und damit das Outlet liest. Im Browser gibt es pro Seitenaufruf genau eine Route, und <code>start()</code> setzt sie als die des Routers. Ein <code>run()</code> ist dort nicht nötig.</p>
+      <p>Auf dem Server liefert <code>start()</code> pro Request eine eigene <code>Route</code> und fasst den Router selbst nicht an, parallele Requests sehen also nie die Route des jeweils anderen. <code>route.run()</code> macht diese Route für die Dauer des Renderns zur aktiven Route des Routers und damit auch des Outlets. Im Browser gibt es pro Seitenaufruf genau eine Route, und <code>start()</code> macht sie sofort zur aktiven. Ein <code>run()</code> ist dort nicht nötig.</p>
       <p>Eine Seite bekommt ihren <a href="#router-api"><code>RouteContext</code></a> und ihre <a href="#router-api"><code>PageProps</code></a> als <code>(ctx, { layer, data, outlet, beforeLeave })</code> übergeben, und sie darf auch mit weniger Argumenten auskommen. Zurückgeben kann sie alles, was <code>list()</code> versteht. Soll sie nebenbei einen anderen Teil des Layouts füllen, liefert sie zusätzlich ein <code>into()</code>, etwa <code>div(article(…), into('sidebar', nav(…)))</code>. Dieser Inhalt verschwindet zusammen mit der Seite. Mehr dazu unter <a href="#router-regions">Seiten &amp; Regionen</a>.</p>
     `,
       },
@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>ein gepushter Layer</td><td>rendert nur die passende Seite. Seine Parents sind in der Zeile darunter ja schon gemountet.</td></tr>
         </tbody>
       </table>
-      <p>Eine erhaltene Seite behält den <code>ctx</code>, mit dem sie gebaut wurde. So verhält sich <code>ctx</code> überall: Für Live-Werte liest du <code>router.*</code>. State, der an der Query hängt, etwa Filter, Paginierung und Tabs, liest <code>router.search</code> in einem dynamischen Wert und schreibt mit <code>router.go('?page=2', { replace: true })</code>. Die Seite, ihr Fokus und das halb ausgefüllte Eingabefeld bleiben dabei, wo sie sind.</p>
+      <p>Eine erhaltene Seite behält den <code>ctx</code>, mit dem sie gebaut wurde. Das gilt für jeden <code>ctx</code>: Für Live-Werte liest du <code>router.*</code>. State, der an der Query hängt, etwa Filter, Paginierung und Tabs, liest <code>router.search</code> in einem dynamischen Wert und schreibt mit <code>router.go('?page=2', { replace: true })</code>. Die Seite, ihr Fokus und das halb ausgefüllte Eingabefeld bleiben dabei, wo sie sind.</p>
     `,
       },
       {
@@ -703,7 +703,7 @@ div(
         <li><strong>Dasselbe Matching wie die Routentabelle.</strong> Patterns, Priorität, Raw-Path-Matching und das Entfernen von <code>base</code> stammen vom Router, View und Seite sind sich über die URL also immer einig. Gelesen wird der Pfad des obersten Layers, genau wie bei <code>router.path</code>.</li>
         <li><strong>Eine View</strong> ist <code>(params, ctx) =&gt; content</code>. Dabei ist <code>params</code> aus ihrem Pattern typisiert, und <code>ctx</code> ist der <code>RouteContext</code> mit <code>pattern</code> und <code>params</code> der View. Statt Inhalt darf sie auch das <code>import()</code> eines Seitenmoduls zurückgeben, das mit <code>ctx</code> aufgerufen wird, sobald es da ist.</li>
         <li><strong>Passt nichts, wird nichts gerendert.</strong> Ergänze eine <code>'*'</code>-View als Fallback. Vor <code>start()</code> und nach <code>stop()</code> ist es leer, wie das Outlet.</li>
-        <li><strong>Neu gerendert wird nur, wenn sich die Route ändert.</strong> Eine View behält ihr DOM also über alles hinweg, was auch die Seite behält.</li>
+        <li><strong>Neu gerendert wird nur, wenn sich die Route ändert.</strong> Bei jeder Navigation, die die Seite erhält, behält also auch die View ihr DOM.</li>
         <li><strong>Eine lazy View rendert nichts, bis ihr Modul angekommen ist.</strong> Ein fehlgeschlagenes <code>import()</code> landet in <code>console.error</code>, setzt <code>router.error</code> nicht und wird bei der nächsten Navigation noch einmal versucht. Ein bloßes <code>update()</code> löst keinen neuen Versuch aus.</li>
         <li><strong>Auf dem Server</strong> liefert eine lazy View nichts, denn ihr Modul trifft erst auf dem Client ein. Alles, was schon im ersten HTML stehen muss, gehört in eine synchrone View.</li>
       </ul>
@@ -840,10 +840,10 @@ createRouter(routes, {
         <li><strong>Bewusst nicht enthalten:</strong> Hash- und Memory-History, weil die Route im Pathname lebt und ein Server jede Route ausliefern muss. Ebenso zwei unabhängig geroutete Bereiche aus einer URL: Eine Seite kann mit <code>into()</code> zwar mehrere Regionen füllen, aber alle gehören zu der einen passenden Route. Ein unabhängiger Bereich darf trotzdem seinen eigenen ungestarteten Router und sein eigenes Laden behalten, wie in <a href="#router-multi">Mehrere Router &amp; kombiniertes Laden</a> beschrieben. Und schließlich Hover-Preloading, das du bekommst, indem du den Loader der Route aus einem <code>mouseenter</code> heraus aufrufst.</li>
       </ul>
       <h3>Beispiele</h3>
-      <p>Zwei lauffähige Beispiele im Repository ergänzen sich so, dass sich jede Einstellung irgendwo beobachten lässt:</p>
+      <p>Zwei lauffähige Beispiele im Repository ergänzen sich: Zusammen zeigen sie jede Einstellung in Aktion:</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: eine clientseitige Tour durch die gesamte API. Jede Pattern-Form und Prioritätsregel, die Opt-outs des Link-Handlings, jedes Route-Member mit Live-Bedienelementen, ein Sub-Router, ein Layer-Stack mit drei Ebenen, ein relativer Abschnitt unter zwei Parents und Routen-Loader mit <code>pending</code> und <code>error</code>. Mit <code>preload: false</code>, damit diese Zustände sichtbar bleiben.</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> pro Request, Hydration, die nachweislich die Knoten des Servers übernimmt, echte 404-Statuscodes, eine base ungleich Wurzel, Idle-Preloading, das du im Netzwerk-Panel verfolgen kannst, und ein Loader, dessen Daten vom Server zum Client wandern, damit die Hydration nicht noch einmal fetcht.</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> pro Request, eine Hydration, bei der du nachprüfen kannst, dass sie die Knoten des Servers übernimmt, echte 404-Statuscodes, eine base ungleich Wurzel, Idle-Preloading, das du im Netzwerk-Panel verfolgen kannst, und ein Loader, dessen Daten vom Server zum Client wandern, damit die Hydration nicht noch einmal fetcht.</li>
       </ul>
     `,
       },

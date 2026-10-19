@@ -146,7 +146,7 @@ function Badge(text: string): NodeModFn<'span'> {
         title: "Tag-Builder",
         content: `
       <p>Jeder HTML-Tag existiert als globale Funktion gleichen Namens: <code>div</code>, <code>span</code>, <code>input</code>, … Eine Ausnahme gibt es: <code>&lt;var&gt;</code> heißt <code>var_</code>, weil <code>var</code> ein reserviertes Wort ist. Bei SVG-Tags hängt hinten immer ein <code>Svg</code> dran: <code>svgSvg</code>, <code>pathSvg</code>, <code>circleSvg</code>, …</p>
-      <p>Ein Tag-Builder aufzurufen, erzeugt noch kein Element. <code>div('Hi')</code> liefert einen <strong>Builder</strong>, also eine Funktion, die das Element erst später baut. Nuclo ruft sie auf, wenn du den Builder per <code>render()</code> mountest oder in einen anderen Builder, in <code>when()</code> oder <code>list()</code> einsetzt. Jede Verwendung ergibt ein frisches Element.</p>
+      <p>Einen Tag-Builder aufzurufen, erzeugt noch kein Element. <code>div('Hi')</code> liefert einen <strong>Builder</strong>, also eine Funktion, die das Element erst später baut. Nuclo ruft sie auf, wenn du den Builder per <code>render()</code> mountest oder in einen anderen Builder, in <code>when()</code> oder <code>list()</code> einsetzt. Jede Verwendung ergibt ein frisches Element.</p>
       ${code("card.ts", `
 let name = 'Ada'
 
@@ -890,7 +890,7 @@ hydrate(App, document.getElementById('root')!)
         id: "api-ssr",
         title: "Serverseitiges Rendering",
         content: `
-      <p>Rendert eine Komponente auf dem Server zu einem HTML-String. Im Browser ruft dann <a href="#api-hydrate"><code>hydrate()</code></a> mit derselben Komponente auf, um dieses HTML interaktiv zu machen. Server-Runtimes haben kein <code>document</code>, importiere deshalb zuerst <a href="#api-polyfill"><code>nuclo/polyfill</code></a>.</p>
+      <p>Rendere eine Komponente auf dem Server zu einem HTML-String. Im Browser rufst du dann <a href="#api-hydrate"><code>hydrate()</code></a> mit derselben Komponente auf, um dieses HTML interaktiv zu machen. Server-Runtimes haben kein <code>document</code>, importiere deshalb zuerst <a href="#api-polyfill"><code>nuclo/polyfill</code></a>.</p>
       ${code("app.ts", `
 let count = 0
 const heading = css({ color: 'red' })

@@ -126,7 +126,7 @@ export const PIPELINE_STEPS = [
   {
     kicker: "02 · Übernehmen",
     title: "update() aufrufen",
-    desc: "Eine globale Funktion übernimmt deine Änderungen. Bündle ein Dutzend Änderungen und übernimm sie dann mit einem einzigen Aufruf. Gerendert wird erst, wenn du es sagst.",
+    desc: "Eine globale Funktion wendet deine Änderungen an. Bündle ein Dutzend Änderungen und wende sie mit einem einzigen Aufruf an. Gerendert wird erst, wenn du es sagst.",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
