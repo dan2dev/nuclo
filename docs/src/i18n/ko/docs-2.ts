@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>push한 레이어</td><td>일치한 페이지만 렌더링합니다. 부모는 이미 바로 아래 행에 마운트되어 있습니다.</td></tr>
         </tbody>
       </table>
-      <p>유지된 페이지는 만들어질 때 받은 <code>ctx</code>를 그대로 들고 있습니다. 문서 전체에서 <code>ctx</code>는 늘 이런 뜻입니다. 최신 값은 <code>router.*</code>에서 읽으세요. 필터, 페이지네이션, 탭처럼 쿼리로 관리하는 상태는 동적 값 안에서 <code>router.search</code>를 읽고 <code>router.go('?page=2', { replace: true })</code>로 바꿉니다. 그러면 페이지도, 포커스도, 입력하던 텍스트도 그 자리에 그대로 있습니다.</p>
+      <p>유지된 페이지는 만들어질 때 받은 <code>ctx</code>를 그대로 들고 있습니다. 다른 곳의 <code>ctx</code>도 모두 마찬가지입니다. 최신 값은 <code>router.*</code>에서 읽으세요. 필터, 페이지네이션, 탭처럼 쿼리로 관리하는 상태는 동적 값 안에서 <code>router.search</code>를 읽고 <code>router.go('?page=2', { replace: true })</code>로 바꿉니다. 그러면 페이지도, 포커스도, 입력하던 텍스트도 그 자리에 그대로 있습니다.</p>
     `,
       },
       {

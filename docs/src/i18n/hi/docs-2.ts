@@ -340,7 +340,7 @@ const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
       <p>बस, इतना ही integration है। Links इसलिए काम करते हैं कि <code>&lt;a href&gt;</code> सिर्फ एक <code>&lt;a href&gt;</code> ही है। <code>document</code> पर लगा एक delegated listener router के अपने links को पकड़ लेता है, और बाकी हर link browser के हवाले छोड़ देता है।</p>
-      <p>Server पर <code>start()</code> हर request के लिए एक <code>Route</code> लौटाता है और router को छेड़ता नहीं, इसलिए एक साथ चल रही requests एक-दूसरे का route नहीं देख सकतीं। <code>route.run()</code> render पूरा होने तक उस route को router का active route बना देता है, इसलिए outlet भी वही पढ़ता है। Browser में हर page load पर एक ही route होता है, और <code>start()</code> उसे router का अपना बना देता है। वहाँ <code>run()</code> की ज़रूरत नहीं।</p>
+      <p>Server पर <code>start()</code> हर request के लिए एक <code>Route</code> लौटाता है और router को छेड़ता नहीं, इसलिए एक साथ चल रही requests एक-दूसरे का route नहीं देख सकतीं। <code>route.run()</code> render पूरा होने तक उस route को router का active route बना देता है, इसलिए outlet भी वही पढ़ता है। Browser में हर page load पर एक ही route होता है, और <code>start()</code> उसे सीधे active route बना देता है। वहाँ <code>run()</code> की ज़रूरत नहीं।</p>
       <p>Page को अपना <a href="#router-api"><code>RouteContext</code></a> और <a href="#router-api"><code>PageProps</code></a> मिलता है, यानी <code>(ctx, { layer, data, outlet, beforeLeave })</code>, और वह इनमें से कम arguments भी ले सकता है। वह <code>list()</code> जो भी accept करता है, वह लौटा सकता है। Layout के किसी और हिस्से को भरना हो, तो page के अंदर से <code>into()</code> लौटाएँ, जैसे <code>div(article(…), into('sidebar', nav(…)))</code>। वह content page के साथ ही आता-जाता है। <a href="#router-regions">Pages और regions</a> देखें।</p>
     `,
       },
@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>Push की गई layer</td><td>सिर्फ matched page render करती है। उसके parents पहले से नीचे वाली row में mounted हैं।</td></tr>
         </tbody>
       </table>
-      <p>जो page बना रहता है, उसका <code>ctx</code> भी वही रहता है जिससे वह बना था। हर जगह <code>ctx</code> का यही मतलब है। Live values के लिए <code>router.*</code> पढ़ें। Query पर निर्भर filters, pagination और tabs के लिए dynamic value में <code>router.search</code> पढ़ें और <code>router.go('?page=2', { replace: true })</code> से लिखें। Page, focus और आधा लिखा input बने रहते हैं।</p>
+      <p>जो page बना रहता है, उसका <code>ctx</code> भी वही रहता है जिससे वह बना था। यह बात हर <code>ctx</code> पर लागू होती है। Live values के लिए <code>router.*</code> पढ़ें। Query पर निर्भर filters, pagination और tabs के लिए dynamic value में <code>router.search</code> पढ़ें और <code>router.go('?page=2', { replace: true })</code> से लिखें। Page, focus और आधा लिखा input बने रहते हैं।</p>
     `,
       },
       {

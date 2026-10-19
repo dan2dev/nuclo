@@ -340,7 +340,7 @@ const route = await router.start(request.url)
 const html = route.run(() => renderToString(App))
 `)}
       <p>هذا هو التكامل كله. الروابط تعمل لأن <code>&lt;a href&gt;</code> ليس إلا <code>&lt;a href&gt;</code> عاديًا؛ ومستمع واحد مفوَّض على <code>document</code> يلتقط الروابط التي يملكها الـ router ويترك كل ما عداها للمتصفح.</p>
-      <p>على الخادم تُرجع <code>start()</code> كائن <code>Route</code> لكل طلب ولا تمس الـ router نفسه، فلا ترى الطلبات المتزامنة مسارات بعضها. وتجعل <code>route.run()</code> ذلك المسار هو الذي يقرؤه الـ router، ومعه الـ outlet، طوال مدة الـ render. أما في المتصفح فهناك مسار واحد لكل تحميل صفحة، و<code>start()</code> تسلّمه للـ router، فلا حاجة إلى <code>run()</code>.</p>
+      <p>على الخادم تُرجع <code>start()</code> كائن <code>Route</code> لكل طلب ولا تمس الـ router نفسه، فلا ترى الطلبات المتزامنة مسارات بعضها. وتجعل <code>route.run()</code> ذلك المسار هو المسار النشط للـ router، ومعه الـ outlet، طوال مدة الـ render. أما في المتصفح فهناك مسار واحد لكل تحميل صفحة، و<code>start()</code> تجعله النشط مباشرة، فلا حاجة إلى <code>run()</code>.</p>
       <p>تستقبل الصفحة <a href="#router-api"><code>RouteContext</code></a> و<a href="#router-api"><code>PageProps</code></a>، على الشكل <code>(ctx, { layer, data, outlet, beforeLeave })</code>، ويمكنها أن تستقبل وسائط أقل من ذلك. وتُرجع أي شيء تقبله <code>list()</code>. ولكي تملأ جزءًا آخر من الـ layout أيضًا، أرجِع <code>into()</code> من داخل الصفحة، مثل <code>div(article(…), into('sidebar', nav(…)))</code>، ويغادر هذا المحتوى مع الصفحة. راجع <a href="#router-regions">الصفحات والمناطق</a>.</p>
     `,
       },
@@ -422,7 +422,7 @@ await layer.push('./preview') // the usual shape: a child layer
           <tr><td>الـ layer المضافة</td><td>تعرض الصفحة المطابقة وحدها، أما صفحاتها الأب فمركَّبة أصلًا في الصف الذي تحتها.</td></tr>
         </tbody>
       </table>
-      <p>الصفحة المحفوظة تبقى بالـ <code>ctx</code> الذي أُنشئت به، وهذا هو معنى <code>ctx</code> في كل مكان: اقرأ <code>router.*</code> للقيم الحية. والـ state المبنية على الـ query، كالمرشحات وترقيم الصفحات والتبويبات، تقرأ <code>router.search</code> داخل قيمة ديناميكية وتكتب بـ <code>router.go('?page=2', { replace: true })</code>. فتبقى الصفحة في مكانها بما فيها الـ focus والمدخلات نصف المكتوبة.</p>
+      <p>الصفحة المحفوظة تبقى بالـ <code>ctx</code> الذي أُنشئت به، وهذا ينطبق على أي <code>ctx</code>: اقرأ <code>router.*</code> للقيم الحية. والـ state المبنية على الـ query، كالمرشحات وترقيم الصفحات والتبويبات، تقرأ <code>router.search</code> داخل قيمة ديناميكية وتكتب بـ <code>router.go('?page=2', { replace: true })</code>. فتبقى الصفحة في مكانها بما فيها الـ focus والمدخلات نصف المكتوبة.</p>
     `,
       },
       {
@@ -642,7 +642,7 @@ export default function Post(ctx: RouteContext<Params<'/blog/:slug'>>) {
         id: "router-layers",
         title: "الـ layers وحواجز المغادرة",
         content: `
-      <p>تفتح <code>push()</code> مسارًا فوق الحالي بدل أن تستبدله، وتُرجع promise يكتمل بالنتيجة التي تُغلق بها تلك الـ layer. وبما أن الصفحات كلها <code>list()</code> واحدة فوق المكدس، فإن فتح layer مجرد إلحاق. فلا يُعاد render للصفحة التي تحتها، ويبقى الـ DOM والـ focus والنموذج نصف المملوء كما هي عند إغلاق الـ layer.</p>
+      <p>تفتح <code>push()</code> مسارًا فوق الحالي بدل أن تستبدله، وتُرجع promise يكتمل بالنتيجة التي تُغلق بها تلك الـ layer. وبما أن الصفحات كلها <code>list()</code> واحدة فوق المكدس، فإن فتح layer لا يعدو إضافة صف جديد. فلا يُعاد render للصفحة التي تحتها، ويبقى الـ DOM والـ focus والنموذج نصف المملوء كما هي عند إغلاق الـ layer.</p>
       <p>وهذا يجعل سيناريو "أحتاج إلى عنصر غير موجود بعد" يعمل دون التخلص من النموذج الذي كان المستخدم يملؤه:</p>
       ${code("pages/Edit.ts", `
 // the page underneath
@@ -703,7 +703,7 @@ div(
         <li><strong>المطابقة نفسها كجدول المسارات.</strong> الأنماط والأسبقية ومطابقة المسار الخام وتجريد <code>base</code> كلها من الـ router، فيتفق العرض والصفحة دائمًا على عنوان URL. وهي تقرأ مسار الـ layer العليا، مثل <code>router.path</code>.</li>
         <li><strong>العرض</strong> هو <code>(params, ctx) =&gt; content</code>، وتُستنتج أنواع <code>params</code> من نمطه، و<code>ctx</code> هو <code>RouteContext</code> مع <code>pattern</code> و<code>params</code> الخاصين بالعرض. وقد يُرجع بدل ذلك <code>import()</code> لـ module صفحة، فتُستدعى الصفحة بـ <code>ctx</code> حين يصل الـ module.</li>
         <li><strong>إن لم يطابق شيء لم يُعرض شيء.</strong> أضف عرض <code>'*'</code> كاحتياط. وهي فارغة قبل <code>start()</code> وبعد <code>stop()</code> كالـ outlet.</li>
-        <li><strong>لا يُعاد العرض إلا حين يتغير المسار</strong>، فيحتفظ العرض بالـ DOM عبر كل ما تبقى معه الصفحة.</li>
+        <li><strong>لا يُعاد العرض إلا حين يتغير المسار</strong>، ففي كل تنقل تبقى فيه الصفحة يحتفظ العرض أيضًا بالـ DOM الخاص به.</li>
         <li><strong>العرض المؤجل لا يعرض شيئًا حتى يصل الـ module الخاص به.</strong> وفشل <code>import()</code> يُسجَّل بـ <code>console.error</code> ولا يضبط <code>router.error</code>، وتُعاد محاولته في التنقل التالي. أما <code>update()</code> العادية فلا تعيد المحاولة.</li>
         <li><strong>على الخادم</strong> لا يعرض العرض المؤجل شيئًا لأن الـ module الخاص به يُحمَّل على العميل. استخدم عرضًا متزامنًا لكل ما يجب أن يحويه أول HTML.</li>
       </ul>
