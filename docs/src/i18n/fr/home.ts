@@ -327,6 +327,6 @@ export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   },
   Life: {
     title: "Jeu de la vie",
-    note: "Le plateau est un simple tableau d'âges. Chaque pas calcule le tableau suivant et appelle update() ; la classe de chaque cellule est une fonction de son âge, seules les cellules qui ont changé sont donc patchées.",
+    note: "Le plateau est un simple tableau d'âges. Chaque pas calcule le tableau suivant et appelle update() ; la classe de chaque cellule est une fonction de son âge, seules les cellules qui ont changé sont donc mises à jour.",
   },
 };

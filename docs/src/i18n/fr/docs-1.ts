@@ -12,7 +12,7 @@ export const GROUPS_1: DocGroupText[] = [
         title: "Vue d'ensemble",
         content: `
       <p>Nuclo est une petite bibliothèque DOM pour TypeScript. Vous construisez la page avec de simples fonctions comme <code>div()</code> ou <code>button()</code>, vous gardez votre état dans des variables ordinaires, et vous appelez <code>update()</code> dès que la page doit changer.</p>
-      <p>Pas de DOM virtuel, pas de compilateur, pas de proxies, pas de signaux : Nuclo se passe de tout cela.</p>
+      <p>Nuclo n'a ni DOM virtuel, ni compilateur, ni proxies, ni signaux.</p>
       ${code("main.ts", `
 import 'nuclo'
 
@@ -71,7 +71,7 @@ render(App, document.getElementById('app')!)
         <li><strong>175 constructeurs de balises</strong> : 112 pour HTML (<code>div</code>, <code>span</code>, <code>button</code>, …) et 63 pour SVG, reconnaissables à leur suffixe <code>Svg</code> (<code>svgSvg</code>, <code>pathSvg</code>, …). Voir <a href="#tag-builders">Constructeurs de balises</a>.</li>
         <li><strong>16 fonctions utilitaires</strong> : <code>update</code>, <code>scope</code>, <code>when</code>, <code>list</code>, <code>region</code>, <code>into</code>, <code>on</code>, <code>render</code>, <code>hydrate</code>, <code>forceUpdate</code>, <code>css</code>, <code>cx</code>, <code>createCss</code>, <code>variants</code>, <code>keyframes</code> et <code>globalStyle</code>.</li>
       </ul>
-      <p>Cet import doit s'exécuter avant tout code qui appelle un constructeur. Les modules ES s'exécutent dans l'ordre des imports : l'exemple suivant plante donc.</p>
+      <p>Cet import doit s'exécuter avant tout code qui appelle un constructeur. Les modules ES s'exécutent dans l'ordre des imports : l'exemple suivant échoue donc.</p>
       ${code("main.ts", `
 import { App } from './app' // app.ts calls div() → ReferenceError: div is not defined
 import 'nuclo'
@@ -116,7 +116,7 @@ import { render, update, getCssText } from 'nuclo'
       <h3>Les types utiles</h3>
       <p>Ces types sont globaux : aucun import n'est nécessaire.</p>
       <ul>
-        <li><code>NodeModFn&lt;Tag&gt;</code> : ce que renvoie un constructeur de balise. C'est le type de retour naturel d'un composant.</li>
+        <li><code>NodeModFn&lt;Tag&gt;</code> : ce que renvoie un constructeur de balise. Utilisez-le comme type de retour d'un composant.</li>
         <li><code>NodeModLike&lt;Tag&gt;</code> : tout ce qu'un constructeur de balise accepte en argument.</li>
         <li><code>ExpandedElement&lt;Tag&gt;</code> : ce que renvoient <code>render()</code> et <code>hydrate()</code>.</li>
         <li><code>ElementTagName</code> : n'importe quel nom de balise HTML.</li>

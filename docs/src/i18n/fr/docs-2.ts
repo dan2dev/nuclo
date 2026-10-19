@@ -224,7 +224,7 @@ button(buttonClass({ intent: 'danger', size: 'lg', block: true }), 'Delete') // 
       },
       {
         id: "api-keyframes",
-        title: "keyframes() & globalStyle()",
+        title: "keyframes() et globalStyle()",
         content: `
       <p><code>keyframes()</code> enregistre une animation et renvoie le nom généré. Les clés d'étapes sont <code>from</code>, <code>to</code> et des pourcentages comme <code>"50%"</code> ou <code>"0%, 100%"</code>. Les étapes n'acceptent que des propriétés plates, et des étapes identiques renvoient le même nom.</p>
       ${code("fade.ts", `
@@ -249,7 +249,7 @@ globalStyle('body', { m: 0, font: 'system-ui, sans-serif' })
       },
       {
         id: "api-css-text",
-        title: "getCssText() & resetStyles()",
+        title: "getCssText() et resetStyles()",
         content: `
       <p><code>getCssText()</code> renvoie toutes les règles créées dans ce processus par <code>css()</code>, <code>cx()</code>, <code>variants()</code>, <code>keyframes()</code> et <code>globalStyle()</code> : les règles de base d'abord, puis les blocs <code>@media</code>, <code>@container</code> et <code>@supports</code>. C'est l'outil du rendu côté serveur.</p>
       <ul>
@@ -277,7 +277,7 @@ beforeEach(() => resetStyles())
         id: "router-overview",
         title: "nuclo-router",
         content: `
-      <div class="docs-callout"><strong>Package séparé :</strong> <code>nuclo-router</code> ne fait pas partie du package Nuclo de base : installez-le à côté de <code>nuclo</code>. Il s'agit d'une version preview, dont l'API peut encore évoluer.</div>
+      <div class="docs-callout"><strong>Package séparé :</strong> <code>nuclo-router</code> ne fait pas partie du package Nuclo de base ; installez-le à côté de <code>nuclo</code>. Il s'agit d'une version preview, dont l'API peut encore évoluer.</div>
       <p>Le routage pour Nuclo : rendu côté serveur, hydratation, routes découpées en chunks et préchargement à l'inactivité, le tout bâti sur <code>list()</code> et <code>update()</code>. Environ ${NUCLO_ROUTER_GZIP_KB.replace(".", ",")} Ko une fois gzippé, aucune dépendance en dehors de Nuclo lui-même et aucun effet de bord : le tree-shaking l'élimine s'il n'est pas utilisé.</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>Vous pouvez aussi utiliser <code>pnpm add</code>, <code>yarn add</code> ou <code>bun add</code> avec les deux mêmes noms. Il exige <code>nuclo</code> 0.3 ou plus récent comme peer dependency.</p>
@@ -504,7 +504,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
           <tr><td>il lève une exception ou rejette</td><td>l'erreur est placée dans <code>router.error</code>. <code>go()</code> ne rejette toujours jamais, et la navigation peut être retentée.</td></tr>
           <tr><td>pendant <code>start()</code></td><td>le rejet sort de <code>start()</code> : il n'y a pas encore de Route pour l'accueillir.</td></tr>
           <tr><td>une couche empilée</td><td>exécute son propre loader, avec ses propres données</td></tr>
-          <tr><td>le préchargeur à l'inactivité</td><td>ne préchauffe que les modules : il n'a aucun contexte à transmettre, et irait chercher des données pour une route que vous n'ouvrirez peut-être jamais.</td></tr>
+          <tr><td>le préchargeur à l'inactivité</td><td>ne précharge que les modules : il n'a aucun contexte à transmettre, et irait chercher des données pour une route que vous n'ouvrirez peut-être jamais.</td></tr>
           <tr><td>renaviguer vers la même URL</td><td>le loader se relance et la ligne est reconstruite. Une route sans loader garde sa ligne.</td></tr>
         </tbody>
       </table>
@@ -997,7 +997,7 @@ async function loadData() {
       <p>Seulement pour les changements rares qui touchent des valeurs statiques, comme un changement de langue. Pour tout le reste, utilisez <code>update()</code>. Voir <a href="#api-force-update"><code>forceUpdate()</code></a>.</p>
 
       <h3>Comment placer une page dans un layout sans la passer en prop ?</h3>
-      <p>Marquez l'emplacement avec <code>region({ id: 'main' })</code> et faites renvoyer <code>into('main', …)</code> par la page. Voir <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a>.</p>
+      <p>Marquez l'emplacement avec <code>region({ id: 'main' })</code> et faites renvoyer <code>into('main', …)</code> par la page. Voir <a href="#api-region"><code>region()</code> et <code>into()</code></a>.</p>
 
       <h3>Comment démonter une application ?</h3>
       <p>Enveloppez-la dans un <code>when()</code> et faites passer la condition à faux. Retirer le DOM à la main n'exécute pas <code>onDestroy</code>. Voir <a href="#lifecycle">Cycle de vie</a>.</p>
