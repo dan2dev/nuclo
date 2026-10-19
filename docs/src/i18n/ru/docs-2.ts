@@ -271,14 +271,14 @@ beforeEach(() => resetStyles())
 
   // ── Routing ──────────────────────────────────────────────────────────────
   {
-    title: "Маршрутизация",
+    title: "Роутинг",
     sections: [
       {
         id: "router-overview",
         title: "nuclo-router",
         content: `
       <div class="docs-callout"><strong>Отдельный пакет:</strong> <code>nuclo-router</code> не входит в ядро Nuclo, его ставят рядом с <code>nuclo</code>. Пока это preview-релиз, так что API ещё может поменяться.</div>
-      <p>Роутер для Nuclo: серверный рендер, гидратация, маршруты с разделением кода и предзагрузка в моменты простоя — и всё это поверх <code>list()</code> и <code>update()</code>. Весит около ${NUCLO_ROUTER_GZIP_KB.replace(".", ",")} КБ в gzip, ничего не тянет за собой, кроме самого Nuclo, и не оставляет побочных эффектов, так что неиспользуемый роутер сборщик спокойно вырежет tree shaking'ом.</p>
+      <p>Роутер для Nuclo: серверный рендер, гидратация, code splitting маршрутов и предзагрузка в моменты простоя — и всё это поверх <code>list()</code> и <code>update()</code>. Весит около ${NUCLO_ROUTER_GZIP_KB.replace(".", ",")} КБ в gzip, ничего не тянет за собой, кроме самого Nuclo, и не оставляет побочных эффектов, так что неиспользуемый роутер сборщик спокойно вырежет tree shaking'ом.</p>
       ${sh("npm install nuclo nuclo-router")}
       <p>Подойдут и <code>pnpm add</code>, <code>yarn add</code>, <code>bun add</code> с теми же двумя именами. В качестве peer-зависимости нужен <code>nuclo</code> версии 0.3 или новее.</p>
       <p>Роутер решает, <em>что</em> загрузить, а приложение через <code>router.outlet()</code> указывает, <em>куда</em> это положить. Outlet — один <code>list()</code> поверх стека слоёв, по строке на слой, так что обычная страница занимает ровно одну строку. Сервер и клиент строят одно и то же дерево, поэтому <code>hydrate()</code> забирает серверные узлы, а не пересоздаёт их. Всё остальное — это <code>history</code>, один делегированный обработчик <code>click</code> и <code>requestIdleCallback</code>.</p>
@@ -495,7 +495,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
   return article(h1(post.title), p(post.body))
 }
 `)}
-      <p>Таблица маршрутов остаётся прежней: загрузчик едет вместе со страницей. Ему достаётся свой <code>RouteContext</code>, так что <code>params</code>, <code>search</code> и <code>path</code> под рукой. Он может быть синхронным или асинхронным и работает на сервере тоже, поэтому страница с SSR приходит с данными сразу в HTML, а не догружает их после hydration.</p>
+      <p>Таблица маршрутов остаётся прежней: загрузчик едет вместе со страницей. Ему достаётся свой <code>RouteContext</code>, так что <code>params</code>, <code>search</code> и <code>path</code> под рукой. Он может быть синхронным или асинхронным и работает на сервере тоже, поэтому страница с SSR приходит с данными сразу в HTML, а не догружает их после гидратации.</p>
       <p><strong>Модуль кешируется, данные — нет.</strong> Чанк маршрута грузится один раз и переиспользуется, а загрузчик запускается заново на каждую навигацию. Благодаря этому <code>/blog/a</code> и <code>/blog/b</code> не путаются, а упавший загрузчик можно просто перезапустить.</p>
       <table>
         <thead><tr><th>Ситуация</th><th>Поведение</th></tr></thead>
@@ -843,7 +843,7 @@ createRouter(routes, {
       <p>В репозитории лежат два рабочих примера. Они дополняют друг друга, так что любую возможность можно где-нибудь увидеть вживую:</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: клиентский обзор всего API — все формы шаблонов и правила приоритета, отказ от обработки ссылок, каждый член Route с живыми контролами, вложенный роутер, стек из трёх слоёв, относительный раздел, смонтированный под двумя родителями, и загрузчики маршрутов с <code>pending</code> и <code>error</code>. Задаёт <code>preload: false</code>, чтобы эти состояния были заметны.</li>
-        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> на каждый запрос, гидратация с проверкой, что серверные узлы переиспользуются, честные ответы 404, <code>base</code> не из корня, предзагрузка в простое (её видно на вкладке Network) и загрузчик, чьи данные переезжают с сервера на клиент, так что повторного запроса при hydration нет.</li>
+        <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router-ssr"><code>examples/router-ssr</code></a>: <code>renderToString()</code> на каждый запрос, гидратация с проверкой, что серверные узлы переиспользуются, честные ответы 404, <code>base</code> не из корня, предзагрузка в простое (её видно на вкладке Network) и загрузчик, чьи данные переезжают с сервера на клиент, так что при гидратации повторного запроса нет.</li>
       </ul>
     `,
       },
@@ -997,13 +997,13 @@ async function loadData() {
       <p>Только для редких изменений статических значений — например, при смене языка. В остальных случаях хватает <code>update()</code>. См. <a href="#api-force-update"><code>forceUpdate()</code></a>.</p>
 
       <h3>Как вставить страницу в макет, не передавая её параметром?</h3>
-      <p>Пометьте место через <code>region({ id: 'main' })</code> и возвращайте из страницы <code>into('main', …)</code>. См. <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a>.</p>
+      <p>Пометьте место через <code>region({ id: 'main' })</code> и возвращайте из страницы <code>into('main', …)</code>. См. <a href="#api-region"><code>region()</code> и <code>into()</code></a>.</p>
 
       <h3>Как размонтировать приложение?</h3>
       <p>Оберните его в <code>when()</code> и выключите условие. Если удалить DOM руками, <code>onDestroy</code> не сработает. См. <a href="#lifecycle">Жизненный цикл</a>.</p>
 
       <h3>Есть ли в Nuclo роутер?</h3>
-      <p>В основном пакете — нет. Роутинг вынесен в отдельный пакет <code>nuclo-router</code>: серверный рендер, гидратация, разделение кода и предзагрузка в простое. Ставится командой <code>npm install nuclo nuclo-router</code>. См. <a href="#router-overview">nuclo-router</a>.</p>
+      <p>В основном пакете — нет. Роутинг вынесен в отдельный пакет <code>nuclo-router</code>: серверный рендер, гидратация, code splitting и предзагрузка в простое. Ставится командой <code>npm install nuclo nuclo-router</code>. См. <a href="#router-overview">nuclo-router</a>.</p>
 
       <h3>Есть ли в Nuclo эффекты?</h3>
       <p>Нет. <code>onMount</code> и <code>onDestroy</code> вызываются по одному разу на элемент — при вставке и при удалении, — и изменения состояния их не перезапускают.</p>
