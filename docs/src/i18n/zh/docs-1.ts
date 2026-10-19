@@ -64,7 +64,7 @@ render(App, document.getElementById('app')!)
       <p>已有项目想接入 Nuclo，一条命令就行：</p>
       ${sh("npm install nuclo")}
       <p>换成 <code>pnpm add nuclo</code>、<code>yarn add nuclo</code> 或 <code>bun add nuclo</code> 也一样。Nuclo 本身零依赖。</p>
-      <p>router 没有塞进核心包，而是独立发布为 <a href="#router-overview"><code>nuclo-router</code></a>，用到的时候和 <code>nuclo</code> 一起装上就好。</p>
+      <p>路由功能没有放进核心包，而是独立发布为 <a href="#router-overview"><code>nuclo-router</code></a>，用到的时候和 <code>nuclo</code> 一起装上就好。</p>
       <h3>全局变量</h3>
       <p>一句 <code>import 'nuclo'</code>，下面这些东西就会被挂到 <code>globalThis</code> 上：</p>
       <ul>
@@ -415,7 +415,7 @@ render(Counter)
 `)}
     `,
         afterContent: `
-      <p>state 想改几处就改几处，最后只需调用一次 <code>update()</code>：</p>
+      <p>状态想改几处就改几处，最后只需调用一次 <code>update()</code>：</p>
       ${code("example.ts", `
 let first = 'Ada'
 let last = 'Lovelace'

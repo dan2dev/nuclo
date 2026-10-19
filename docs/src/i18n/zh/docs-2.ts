@@ -504,7 +504,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
           <tr><td>抛出异常或 reject</td><td>落到 <code>router.error</code> 上。<code>go()</code> 依然永不 reject，导航可以重试。</td></tr>
           <tr><td>在 <code>start()</code> 期间</td><td>rejection 会从 <code>start()</code> 抛出，因为此时还没有 Route 可以承载它。</td></tr>
           <tr><td>推入的层</td><td>运行它自己的加载器，拥有自己的数据</td></tr>
-          <tr><td>空闲预加载器</td><td>只预热模块。它没有上下文可传，否则就等于在为一个你可能永远不会打开的路由请求数据。</td></tr>
+          <tr><td>空闲预加载器</td><td>只预加载模块。它没有上下文可传，否则就等于在为一个你可能永远不会打开的路由请求数据。</td></tr>
           <tr><td>重新导航到同一 URL</td><td>加载器再次运行，该行重建。没有加载器的路由则保留它的行。</td></tr>
         </tbody>
       </table>
@@ -658,7 +658,7 @@ layer.close()          // dismissed: resolves with undefined
       <ul>
         <li><strong>URL 对应的就是最顶上的那一层。</strong><code>push()</code> 会添加一条 history 条目，所以每一层都有自己的链接，后退会把它关掉，并让它的 <code>push()</code> 以取消的方式 resolve，和点击取消完全一样。后退与 <code>close()</code> 走的是同一条代码路径：<code>close()</code> 记录结果并让 history 往回走，<code>history.state</code> 里的深度才是权威来源。浏览器每个标签页大约只保留 50 条条目，所以在层之间走了很远之后，下面那条条目可能已经不在了：这时 <code>close()</code> 会就地关闭层，并把当前条目改写成留下来显示的那个页面。</li>
         <li><strong>普通导航会清空栈。</strong>点链接或 <code>go()</code> 都不算层，它们会替换一切，并关闭所有已打开的层，所以不会有哪个调用方一直 await 下去。</li>
-        <li><strong>冷加载得是个独立页面。</strong>URL 只说明最上面那一层，并不记录它下面的栈，所以直接打开某个层的 URL 时，它会以 depth 1 渲染，此时 <code>layer.depth === 0</code>，<code>close()</code> 不会起作用。被推入的路由必须能独立成立。请根据 <code>layer.depth</code> 分支处理，提供一个“离开”的链接，而不是一个失效的取消按钮。</li>
+        <li><strong>冷加载得是个独立页面。</strong>URL 只说明最上面那一层，并不记录它下面的栈，所以直接打开某个层的 URL 时，它会以 depth 1 渲染，此时 <code>layer.depth === 0</code>，<code>close()</code> 不会起作用。被推入的路由必须能独立成立。请检查 <code>layer.depth</code>，提供一个“离开”的链接，而不是一个失效的取消按钮。</li>
         <li><strong>Promise 撑不过页面刷新</strong>，因为它活在闭包里。请把返回结果当作流程中的一条捷径，没有它时，流程走另一条更绕的路也应该能走通。</li>
         <li><strong>不会有悬而未决的 await。</strong><code>stop()</code> 会关闭所有打开的层，被导航抛弃的层则以 <code>undefined</code> resolve。</li>
       </ul>
@@ -766,7 +766,7 @@ export default function Section(_ctx: RouteContext, { data }: PageProps<SectionD
   return article(h2(data.section), ul(...data.items.map((i) => li(i))))
 }
 `)}
-      <p>两个加载器是同时起跑的，而不是一个接一个。只要有一个还在等，<code>router.pending</code> 就是 true，其余时间为 false，已预加载或同步提供的路由不会把它设为 true。在 section 之间切换时布局会被保留，所以只有 section 的加载器会再跑一遍；布局的数据、它的 DOM 和写到一半的输入都原样保留。重新导航到同一个 URL，会重新运行叶子的加载器并重建它的那一行，和单页面的情况完全一样。</p>
+      <p>两个加载器是同时起跑的，而不是一个接一个。只要有一个还在等，<code>router.pending</code> 就是 true，其余时间为 false，已预加载或同步提供的路由不会把它设为 true。在分区之间切换时布局会被保留，所以只有分区的加载器会再跑一遍；布局的数据、它的 DOM 和写到一半的输入都原样保留。重新导航到同一个 URL，会重新运行叶子的加载器并重建它的那一行，和单页面的情况完全一样。</p>
       <h3>多重加载：带独立加载指示器的第二个 router</h3>
       <p>一个独立的区域，比如侧栏、托盘、实时面板，可以拥有自己的 router（只创建，从不启动）和自己的加载标记。<code>router.pending</code> 属于已启动的 router，与这个区域无关，所以两边可以并排加载，谁先完成都行：</p>
       ${code("sidebar.ts", `
@@ -809,8 +809,8 @@ createRouter(routes, {
         <li><strong><code>pending</code> 属于已启动的 router。</strong>从未启动的 router 没有 Route，也就没有 <code>pending</code> 和 <code>error</code>。区域自己维护标记，第二个加载指示器就能和第一个并排显示。演示里侧栏加载 800ms，而路由的加载器要跑 900ms，所以可能页面先好，也可能侧栏先好。</li>
         <li><strong><code>match()</code> 不会挂任何东西。</strong>同一个 document 里可以共存任意多个未启动的 router，每个都有自己的表、base 和模块缓存，没有一个会碰 history。它们的开销，只是一张表加一个匹配器。</li>
         <li><strong>它的加载器永远不会运行。</strong>已启动的 router 才会运行它所匹配页面的 <code>load()</code>，从未启动的 router 只负责解析。所以视图要是需要数据，就得自己去取，就像演示里的 <code>refreshSidebar()</code> 那样。如果你想要加载器，<a href="#router-matches">嵌套表</a>或<a href="#router-regions">由页面填充的区域</a>可以把这活儿留给已启动的 router。</li>
-        <li><strong>当心过期的响应。</strong>慢吞吞的侧栏请求，不能落到你早已离开的 section 上。每次刷新都让请求序号计数器加一，丢掉不再匹配的响应，就像 router 会取消被后续导航取代的旧导航那样。</li>
-        <li><strong>惰性的 <code>matches()</code> 视图同样没有 <code>pending</code>。</strong>模块到达之前，它什么也不渲染。三套加载机制，三块各自独立的“时钟”：路由的 <code>pending</code>、你自己的标记，以及一个尚未出现的惰性视图。</li>
+        <li><strong>当心过期的响应。</strong>慢吞吞的侧栏请求，不能落到你早已离开的分区上。每次刷新都让请求序号计数器加一，丢掉不再匹配的响应，就像 router 会取消被后续导航取代的旧导航那样。</li>
+        <li><strong>惰性的 <code>matches()</code> 视图同样没有 <code>pending</code>。</strong>模块到达之前，它什么也不渲染。三套加载机制，各自按自己的节奏运行：路由的 <code>pending</code>、你自己的标记，以及一个尚未出现的惰性视图。</li>
       </ul>
     `,
       },

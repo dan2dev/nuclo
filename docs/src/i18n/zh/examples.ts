@@ -11,7 +11,7 @@ export const groups = {
   forms: { title: "表单", sub: "校验就是作用在普通状态上的普通函数：字段是否被碰过、多步表单、动态行，都能覆盖。" },
   svg: { title: "SVG", sub: "用 SVG 标签构建函数做出的图表、动画、小工具和游戏，全靠普通数据、指针事件和 update() 驱动。" },
   routing: { title: "路由", sub: "路由表、匹配、当前路由、层和加载器。nuclo-router 是独立的包：npm install nuclo nuclo-router。" },
-  apps: { title: "应用", sub: "更大的程序，全屏运行，完整源码就在代码标签页里：带窗口的桌面、数据表格、聊天、游戏、编辑器，还有自带状态的第三方库。" },
+  apps: { title: "应用", sub: "更大的程序，全屏运行，完整源码就在代码标签页里：带窗口的桌面、数据表格、聊天、游戏、编辑器，以及自己管理状态的库。" },
 };
 
 export type GroupKey = keyof typeof groups;
@@ -29,7 +29,7 @@ export const items: Record<string, { title: string; desc: string }> = {
   "tag-builders": { title: "标签构建函数", desc: "构建器能接收属性、静态子节点和动态文本。Rename 按钮先修改状态，再调用 update()。" },
   "components": { title: "组件", desc: "组件就是普通函数，每调用一次 Counter()，就得到一个各数各的计数器。" },
   "attributes": { title: "属性", desc: "属性值也可以是函数。第二个按钮翻转 busy 再调用 update()，Save 的 disabled 和 aria-busy 就随之变化。" },
-  "events": { title: "事件", desc: "onInput 和 onKeyDown 就是普通属性。输几个字，再按 Escape 清空。" },
+  "events": { title: "事件", desc: "onInput 和 onKeyDown 就是普通属性。输几个字，再按 Esc 键清空。" },
   "lifecycle": { title: "生命周期", desc: "onMount 启动一个定时器，并把清理函数返回出去。卸载时清理函数会运行，所以计数会暂停，直到定时器重新挂载。" },
   "explicit-updates": { title: "显式更新", desc: "count++ 只改了变量本身。文本要等到下一次 update() 才会跟上，不管这次调用来自按钮，还是页面上的任何其他地方。" },
   "dynamic-functions": { title: "动态值", desc: "试着改改名字。静态文本在元素构建时就定死了，动态文本则会在每次 update() 时重新运行。forceUpdate() 会重建整棵树，连静态文本也能跟上。" },
@@ -63,7 +63,7 @@ export const items: Record<string, { title: string; desc: string }> = {
   "treemap": { title: "矩形树图", desc: "一个可以逐级下钻的 squarified 布局。切换指标时，每个格子滑向新位置；点击一个分组，就换成它的子项。" },
   "live-histogram": { title: "实时直方图", desc: "样本源源不断地从四种分布里涌进来。每次变化都会重新给分箱计数，一条拟合出来的钟形曲线跟着均值走，滑块则决定分箱数。" },
   "drawing-pad": { title: "画板", desc: "用指针事件画折线。list() 为每一笔渲染一条线，正在画的那一笔，每次 update() 都会再延长一点。" },
-  "rotary-knob": { title: "旋钮", desc: "一个自定义滑块：指针的角度决定数值，方向键负责步进，pathLength=\"100\" 则把数值变成一段虚线。" },
+  "rotary-knob": { title: "旋钮", desc: "一个自定义滑块：指针的角度决定数值，方向键负责步进，pathLength=\"100\" 则把数值变成描边的长度。" },
   "color-wheel": { title: "色轮", desc: "角度选色相，距离选饱和度。九十个楔形、一个径向渐变和一个深色圆盘，拼成了这个色轮。" },
   "spirograph": { title: "万花尺", desc: "一个轮子在圆环内滚动，一支笔描出轨迹。每一帧只延长一小段轨迹，并且只更新它自己的 scope()。" },
   "bouncing-balls": { title: "弹跳球", desc: "requestAnimationFrame 循环里有重力、墙壁和碰撞。往回拉一下再松手，就能发射一个球。" },
@@ -90,14 +90,14 @@ export const items: Record<string, { title: string; desc: string }> = {
   "dashboard": { title: "实时仪表盘", desc: "一批以不同频率刷新的卡片，快的每秒 20 次，慢的每秒 1 次。每张卡片是一个 scope()，它的定时器带着卡片 id 调用 update()，所以每次定时触发，只会重新计算对应的那张卡片。每个动态值都在屏幕上计数：换成普通的 update()，时钟每秒会被求值上百次，却只变化一次。" },
   "pixel-editor": { title: "像素编辑器", desc: "图片就是一个装着 1024 个颜色字符串的普通数组，每个格子都从里面读自己的颜色。落一笔，就是写数组再调用 update()；这一笔结束时，编辑器用 slice() 留一份副本。撤销、重做，以及历史 list() 里的每一步，都只是把旧数组放回去：既不需要状态存储库，也不需要不可变数据结构。" },
   "snake": { title: "贪吃蛇", desc: "游戏循环就是一个定时器，在普通对象上调用 step()，然后每一拍调用一次 update()。蛇是由格子对象组成的 list()，每一拍，尾部的那个对象变成新的头部，所以只有一个元素在移动，没有任何元素被重新构建：已构建的段数只有蛇吃到食物时才会增加。食物则带着 keyframes() 动画弹出来。" },
-  "sequencer": { title: "步进音序器", desc: "一个带着自己时钟的库。Web Audio 在自己的时间线上提前调度每个音符，节奏模式是一个普通的二维布尔数组，网格负责切换其中的值，调度器负责读取它，所以你点一下，下一轮就能听到。播放头只有在当前播放的步进位置变化时，才会更新自己的 scope()。音频在第一次播放时启动，卸载时通过清理函数关闭，所以只要离开这个示例，声音就停了。" },
+  "sequencer": { title: "步进音序器", desc: "一个带着自己时钟的库。Web Audio 在自己的时间线上提前调度每个音符，节奏模式是一个普通的二维布尔数组，网格负责切换其中的值，调度器负责读取它，所以你点一下，下一轮就能听到。播放头只有在当前播放的步进位置变化时，才会更新自己的 scope()。音频在第一次点 Play 时启动，卸载时通过清理函数关闭，所以只要离开这个示例，声音就停了。" },
   "i18n": { title: "语言切换", desc: "每个标签都是静态值，写法和单语言应用没有区别，所以 update() 根本不会再去读它们：点购物车，只会刷新数量和总计。切换语言时，会在这棵树上调用 forceUpdate()，它再次运行组件并更新原有元素，连 lang 和 dir 也不例外。货币、复数、日期和列表都来自 Intl，购物车和已经输入的优惠码，切换之后依然保留。" },
   "theme-editor": { title: "主题编辑器", desc: "一个小型组件库：createCss() 给 token 起名字，variants() 用它们搭出按钮、徽章、卡片、输入框、警告和开关。token 就是 CSS 变量，所以每个类只需编译一次。每个控件都往一个普通的主题对象里写值，再调用 update()，由它重写某个 style 元素的文本。" },
 };
 
 export const LABELS = {
   examples: "示例",
-  title: "拿来就能用的示例。",
+  title: "实用示例，实时演示。",
   sub: "挑一个示例全屏打开，运行效果和源码并排呈现。",
   needsPackage: (pkg: string) => `需要 ${pkg} 包`,
   // The example modal
