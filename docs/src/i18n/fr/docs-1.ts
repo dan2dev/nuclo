@@ -452,7 +452,7 @@ const Profile = () =>
       <ul>
         <li>Une chaîne, un nombre, un bigint ou un booléen est rendu comme <code>String(value)</code>. <code>() =&gt; ok &amp;&amp; 'Saved'</code> affiche « false » : écrivez plutôt <code>() =&gt; (ok ? 'Saved' : '')</code>.</li>
         <li><code>null</code> et <code>undefined</code> donnent un texte vide.</li>
-        <li>Si <code>css()</code> ou <code>cx()</code> renvoie un résultat dès la première exécution, la fonction devient une classe dynamique, pas du texte. Voir <a href="#api-cx"><code>cx()</code></a>.</li>
+        <li>Si la fonction renvoie un résultat de <code>css()</code> ou de <code>cx()</code> dès sa première exécution, elle devient une classe dynamique, pas du texte. Voir <a href="#api-cx"><code>cx()</code></a>.</li>
         <li>Un nœud, un constructeur, un tableau ou un objet simple ne rend rien et ne se met jamais à jour.</li>
       </ul>
       <h3>Les attributs dynamiques</h3>

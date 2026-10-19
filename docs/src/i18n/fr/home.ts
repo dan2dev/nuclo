@@ -126,7 +126,7 @@ export const PIPELINE_STEPS = [
   {
     kicker: "02 · Valider",
     title: "Appelez update()",
-    desc: "Une seule fonction globale pour valider vos changements. Enchaînez une douzaine de mutations, puis validez une fois. Rien n'est rendu tant que vous ne l'avez pas demandé.",
+    desc: "Une seule fonction globale applique vos changements. Enchaînez une douzaine de mutations, puis appliquez-les d'un coup. Rien n'est rendu tant que vous ne l'avez pas demandé.",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
