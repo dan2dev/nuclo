@@ -124,7 +124,7 @@ export const PIPELINE_STEPS = [
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
-    kicker: "02 · Valider",
+    kicker: "02 · Appliquer",
     title: "Appelez update()",
     desc: "Une seule fonction globale applique vos changements. Enchaînez une douzaine de mutations, puis appliquez-les d'un coup. Rien n'est rendu tant que vous ne l'avez pas demandé.",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
@@ -166,7 +166,7 @@ export const COMPARISON_COLS: {
       { good: false, text: "Enveloppe votre état dans des proxies et des abonnements" },
       { good: false, text: "Suit les dépendances de façon invisible, à l'exécution" },
       { good: false, text: "Propage les mises à jour selon un ordonnancement que vous ne contrôlez pas" },
-      { good: false, text: "Est difficile à parcourir pas à pas dans un débogueur" },
+      { good: false, text: "Se suit mal pas à pas dans un débogueur" },
     ],
   },
   {
@@ -294,7 +294,7 @@ export const LABELS = {
 // ── The hero card's examples, keyed by their export in home/examples.ts and home/playground.ts ──
 export const HERO_EXAMPLES: Record<string, { title: string; note: string }> = {
   Paint: {
-    title: "Peignez, puis update()",
+    title: "Peignez, puis mettez à jour",
     note: "La grille de gauche est un simple tableau de booléens : la peindre ne fait que modifier ce tableau. Le DOM à droite ne bouge que quand update() s'exécute, et alors seules les cellules qui ont changé sont mises à jour.",
   },
   Draw: {

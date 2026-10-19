@@ -45,7 +45,7 @@ export const common = {
   copy: "Копировать",
   copied: "✓ Скопировано",
   copyToClipboard: "Копировать в буфер обмена",
-  live: "Демо",
+  live: "Вживую",
   openFullScreen: "Открыть этот пример на весь экран",
   open: "Открыть ↗",
   readTheDocs: "Читать документацию →",

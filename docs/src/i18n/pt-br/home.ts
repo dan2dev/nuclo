@@ -124,13 +124,13 @@ export const PIPELINE_STEPS = [
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
-    kicker: "02 · Confirmar",
+    kicker: "02 · Aplicar",
     title: "Chame update()",
     desc: "Uma função global aplica as mudanças. Faça uma dúzia de mutações e aplique tudo de uma vez. Nada é renderizado até você mandar.",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
-    kicker: "03 · Aplicar",
+    kicker: "03 · Sincronizar",
     title: "O Nuclo sincroniza o DOM",
     desc: "Cada expressão dinâmica é reavaliada e o Nuclo escreve no DOM só o que realmente mudou. Sem diffing, sem re-render.",
     code: `<span class="cm">// 2 nós atualizados,</span>

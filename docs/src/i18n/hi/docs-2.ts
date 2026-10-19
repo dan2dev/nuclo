@@ -831,7 +831,7 @@ createRouter(routes, {
   },
 })
 `)}
-      <h3>Notes</h3>
+      <h3>ध्यान रखने वाली बातें</h3>
       <ul>
         <li><strong>पिछला page cache में नहीं रखा जाता।</strong> Route page का function और context रखता है, DOM नहीं। दूसरे page पर जाते ही पिछला page release हो जाता है। <code>stop()</code> listeners और चल रहे loads release करके <code>pending</code> साफ़ कर देता है, इसलिए inactive route spinner को अटका नहीं सकता। <code>stop()</code> के बाद load हुआ module चुपचाप छोड़ दिया जाता है।</li>
         <li><strong>Server पर एक साथ चलने वाली requests safe हैं।</strong> <code>start()</code> हर request की अलग state लौटाता है और <code>run()</code> उसे एक synchronous render तक सीमित रखता है, इसलिए बीच-बीच में चलने वाली requests एक-दूसरे का route नहीं पढ़ सकतीं। सिर्फ module cache share होता है। <code>run()</code> का function लौटते ही scope खत्म हो जाता है। <code>renderToString()</code> synchronous है, इसलिए इतना काफी है। Async या streaming render में route को <code>await</code> के पार भी बचाना पड़ता, जो <code>run()</code> नहीं करता।</li>
@@ -839,7 +839,7 @@ createRouter(routes, {
         <li><strong>हर document में एक router start करें।</strong> हर <code>start()</code> अपना delegated <code>click</code> listener जोड़ता है। दूसरे router का <code>start()</code> पहले को नहीं रोकता; उसी router पर दूसरा <code>start()</code> ऐसा करता है। दूसरी table से URL match करना हो, तो router बनाकर सिर्फ <code>match()</code> call करें। यह कोई listener नहीं जोड़ता। Independent region इस तरह route के <code>pending</code> से अलग अपनी loading चला सकता है। <a href="#router-multi">कई routers और combined loading</a> देखें।</li>
         <li><strong>Design के कारण शामिल नहीं:</strong> hash और memory history, क्योंकि route pathname में होता है और server को हर route available कराना चाहिए; एक URL से दो independent regions की routing, क्योंकि page <code>into()</code> से कई regions भर सकता है लेकिन वे एक ही matched route के हिस्से होते हैं, और independent region फिर भी बिना start किए अपना router और loading रख सकता है, जैसा <a href="#router-multi">कई routers और combined loading</a> में है; और hover preloading, जिसे आप <code>mouseenter</code> से route का loader खुद call करके कर सकते हैं।</li>
       </ul>
-      <h3>Examples</h3>
+      <h3>उदाहरण</h3>
       <p>Repository में दो चलने लायक examples एक-दूसरे के पूरक हैं, इसलिए हर setting कहीं न कहीं देखी जा सकती है:</p>
       <ul>
         <li><a href="https://github.com/dan2dev/nuclo/tree/main/examples/router"><code>examples/router</code></a>: पूरे API का client-side tour। हर pattern form और priority rule, link-handling opt-out, live controls के साथ हर route member, एक sub-router, तीन गहरी layer stack, दो parents पर एक relative section, और <code>pending</code> व <code>error</code> के साथ route loaders। यह <code>preload: false</code> set करता है ताकि वे states दिखती रहें।</li>
@@ -901,7 +901,7 @@ async function loadData() {
       },
       {
         id: "best-practices",
-        title: "Best practices",
+        title: "अच्छी आदतें",
         content: `
       <ul>
         <li><strong>बदलाव एक साथ करें।</strong> जितनी state बदलनी है सब बदलें, फिर एक बार <code>update()</code> call करें।</li>
@@ -920,7 +920,7 @@ async function loadData() {
 
   // ── Reference ────────────────────────────────────────────────────────────
   {
-    title: "Reference",
+    title: "संदर्भ",
     sections: [
       {
         id: "api-index",

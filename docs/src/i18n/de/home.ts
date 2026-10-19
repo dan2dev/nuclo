@@ -117,14 +117,14 @@ export const FEATURES = [
 // ── "How update() works" pipeline ──────────────────────────────────────────
 export const PIPELINE_STEPS = [
   {
-    kicker: "01 · Verändern",
+    kicker: "01 · Ändern",
     title: "Daten ändern",
     desc: "State ist schlichtes JavaScript: Variablen, Arrays, Objekte. Ändere ihn, wie und wie oft du willst.",
     code: `<span class="pr">todos</span><span class="pt">.</span><span class="fn">push</span><span class="pt">(</span><span class="pr">newTodo</span><span class="pt">)</span>
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
-    kicker: "02 · Übernehmen",
+    kicker: "02 · Anwenden",
     title: "update() aufrufen",
     desc: "Eine globale Funktion wendet deine Änderungen an. Bündle ein Dutzend Änderungen und wende sie mit einem einzigen Aufruf an. Gerendert wird erst, wenn du es sagst.",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
@@ -216,7 +216,7 @@ export const BENCHMARK_ENTRIES: {
 ];
 
 // ── CTA ─────────────────────────────────────────────────────────────────────
-export const CTA_TITLE = "Wir sind bereit, wenn du es bist.";
+export const CTA_TITLE = "Leg los, wann immer du willst.";
 export const CTA_SUB =
   "Installieren, einmal importieren, loslegen: Deine UIs aktualisieren sich genau dann, wenn du es willst. Die komplette API hast du an einem Nachmittag drauf.";
 
@@ -265,7 +265,7 @@ export const LABELS = {
   pipelineSub: "Dynamische Werte, aber kein Abhängigkeitsgraph und kein Scheduler. Du bestimmst, wann sie ausgewertet werden: ein einziger, vorhersehbarer Weg von deinen Daten bis auf den Bildschirm.",
   philosophy: "Philosophie",
   features: "Features",
-  featuresTitle: "Gebaut für Klarheit.",
+  featuresTitle: "Auf Klarheit ausgelegt.",
   featuresSub: "Keine Magie, keine Überraschungen. Jedes Update ist gewollt.",
   comparison: "Vergleich",
   theNucloWay: "der nuclo-Weg",
@@ -277,7 +277,7 @@ export const LABELS = {
   quickStartSub: "Drei Schritte, dann baust du echte UIs.",
   readFullDocs: "Zur vollständigen Dokumentation →",
   examples: "Beispiele",
-  examplesTitle: "Sieh es in Aktion.",
+  examplesTitle: "Sieh es dir in Aktion an.",
   examplesSub: "Interaktive Demos zum Ausprobieren, mit dem Code gleich daneben.",
   viewAllExamples: "Alle Beispiele ansehen →",
   readTheDocs: "Zur Dokumentation",

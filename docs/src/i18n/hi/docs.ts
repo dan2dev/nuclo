@@ -12,7 +12,7 @@ export const LABELS = {
   quickStart: "Quick start",
   quickStartLink: "Quick start",
   nucloMark: "Nuclo logo",
-  facts: { release: "Current release", builders: "Tag builders", gzipped: "Core, gzipped", model: "Runtime model", modelValue: "Explicit" },
+  facts: { release: "मौजूदा release", builders: "Tag builders", gzipped: "Core, gzip के बाद", model: "Runtime model", modelValue: "Explicit" },
   filterSections: "Sections को filter करें",
   filter: "Filter",
   closeNavigator: "Navigator बंद करें",

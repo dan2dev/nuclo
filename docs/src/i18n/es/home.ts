@@ -124,7 +124,7 @@ export const PIPELINE_STEPS = [
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
-    kicker: "02 · Confirmar",
+    kicker: "02 · Aplicar",
     title: "Llama a update()",
     desc: "Una función global aplica los cambios. Junta una docena de mutaciones y aplícalas de una vez: nada se pinta hasta que tú lo digas.",
     code: `<span class="fn">update</span><span class="pt">()</span>`,

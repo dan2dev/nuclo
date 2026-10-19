@@ -117,20 +117,20 @@ export const FEATURES = [
 // ── "How update() works" pipeline ──────────────────────────────────────────
 export const PIPELINE_STEPS = [
   {
-    kicker: "01 · Mutate",
+    kicker: "01 · बदलें",
     title: "अपना data बदलिए",
     desc: "State बस plain JavaScript है: variables, arrays, objects। जैसे चाहें, जितनी बार चाहें बदलिए।",
     code: `<span class="pr">todos</span><span class="pt">.</span><span class="fn">push</span><span class="pt">(</span><span class="pr">newTodo</span><span class="pt">)</span>
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
-    kicker: "02 · Apply",
+    kicker: "02 · लागू करें",
     title: "update() call कीजिए",
     desc: "एक global function आपके changes apply करता है। कई changes करके सबको एक साथ apply कीजिए। जब तक आप न कहें, कुछ render नहीं होता।",
     code: `<span class="fn">update</span><span class="pt">()</span>`,
   },
   {
-    kicker: "03 · Patch",
+    kicker: "03 · Patch करें",
     title: "Nuclo DOM को sync करता है",
     desc: "हर dynamic expression दोबारा चलता है, और Nuclo DOM में सिर्फ़ बदली हुई values लिखता है। न tree diff, न re-render।",
     code: `<span class="cm">// 2 nodes patch हुए,</span>
@@ -265,15 +265,15 @@ export const LABELS = {
   pipelineSub: "State पर निर्भर values, बिना dependency graph या scheduler के। वे कब चलें, ये आप तय करते हैं: data से screen तक एक predictable रास्ता।",
   philosophy: "Philosophy",
   features: "Features",
-  featuresTitle: "Clarity के लिए बना।",
+  featuresTitle: "सब कुछ साफ़-साफ़।",
   featuresSub: "न कोई magic, न surprises। हर update सोच-समझकर होता है।",
   comparison: "Comparison",
-  theNucloWay: "The Nuclo way",
+  theNucloWay: "Nuclo का तरीका",
   benchmarks: "Benchmarks",
   lowerIsBetter: "जितना कम, उतना बेहतर",
   benchmarkSource: "Source: js-framework-benchmark",
   quickStart: "Quick start",
-  quickStartTitle: "कुछ ही मिनटों में up and running।",
+  quickStartTitle: "कुछ ही मिनटों में शुरू।",
   quickStartSub: "तीन steps में असली UI बनाना शुरू कीजिए।",
   readFullDocs: "पूरे Docs पढ़ें →",
   examples: "Examples",

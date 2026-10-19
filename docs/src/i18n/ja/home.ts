@@ -124,7 +124,7 @@ export const PIPELINE_STEPS = [
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
-    kicker: "02 · コミット",
+    kicker: "02 · 反映",
     title: "update() を呼び出す",
     desc: "変更を反映するのは、グローバル関数ひとつだけ。十数回の変更も、まとめて 1 回で反映できます。呼ぶまで、画面は何も変わりません。",
     code: `<span class="fn">update</span><span class="pt">()</span>`,

@@ -55,7 +55,7 @@ export const seo = {
   routes: {
     home: {
       title: "Nuclo - Leichtgewichtiges DOM-Framework mit expliziten Updates",
-      description: "Nuclo ist eine schlanke TypeScript-DOM-Bibliothek ohne Abhängigkeiten. UIs aus Funktionen, State einfach ändern, update() aufrufen. Kein Virtual DOM, keine Proxies, keine Signals.",
+      description: "Nuclo ist eine schlanke TypeScript-DOM-Bibliothek ohne Abhängigkeiten. Du baust die UI aus Funktionen, änderst den State und rufst update() auf. Kein Virtual DOM, keine Proxies, keine Signals.",
       keywords: "nuclo, dom framework, zustandsabhängige werte, explizite updates, veränderlicher state, javascript, typescript, ui framework, leichtgewichtig",
     },
     "apps/:id": {

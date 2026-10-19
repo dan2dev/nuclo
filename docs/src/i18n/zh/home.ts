@@ -118,13 +118,13 @@ export const FEATURES = [
 export const PIPELINE_STEPS = [
   {
     kicker: "01 · 修改",
-    title: "改变你的数据",
+    title: "修改数据",
     desc: "状态就是普通的 JavaScript：变量、数组、对象，想怎么改就怎么改，改几次都行。",
     code: `<span class="pr">todos</span><span class="pt">.</span><span class="fn">push</span><span class="pt">(</span><span class="pr">newTodo</span><span class="pt">)</span>
 <span class="pr">user</span><span class="pt">.</span><span class="pr">name</span> <span class="pt">=</span> <span class="st">'Ada'</span>`,
   },
   {
-    kicker: "02 · 提交",
+    kicker: "02 · 应用",
     title: "调用 update()",
     desc: "一个全局函数，把改动一次性应用到界面。哪怕攒了十几处修改，也只需调用一次；在此之前，DOM 不会有任何反应。",
     code: `<span class="fn">update</span><span class="pt">()</span>`,

@@ -9,7 +9,7 @@ export const GROUPS_1: DocGroupText[] = [
     sections: [
       {
         id: "overview",
-        title: "Overview",
+        title: "एक नज़र में",
         content: `
       <p>Nuclo TypeScript के लिए एक छोटी DOM library है। आप <code>div()</code> और <code>button()</code> जैसे आम functions से पेज बनाते हैं, state को सादे variables में रखते हैं, और पेज बदलना हो तो <code>update()</code> कॉल कर देते हैं।</p>
       <p>Nuclo में न virtual DOM है, न compiler, न proxy और न signals।</p>
@@ -47,7 +47,7 @@ render(App, document.getElementById('app')!)
       ${sh("npm create nuclo@latest my-app -- --template basic --yes")}
       <p>फिर dependencies install कीजिए और dev server चालू कीजिए:</p>
       ${sh("cd my-app", "npm install", "npm run dev")}
-      <h3>Options</h3>
+      <h3>विकल्प</h3>
       <ul>
         <li><code>[project-name]</code>: project का folder। default <code>nuclo-app</code> है।</li>
         <li><code>-t, --template &lt;name&gt;</code>: कौन सा template copy करना है। अभी सिर्फ़ <code>basic</code> है।</li>
@@ -536,7 +536,7 @@ const Status = () =>
 `)}
     `,
         afterContent: `
-      <h3>Conditions</h3>
+      <h3>शर्तें</h3>
       <ul>
         <li>State के लिए function पास कीजिए। सादा boolean सिर्फ़ एक बार पढ़ा जाता है: <code>when(open, …)</code> कभी नहीं बदलेगा।</li>
         <li>TypeScript में function को boolean लौटाना होगा। <code>() =&gt; items.length &gt; 0</code> या <code>() =&gt; user != null</code> लिखिए।</li>
@@ -605,7 +605,7 @@ update() // same <li>, its class is now "done"
       <p><code>index</code> उस समय की position है जब item की row बनी थी। Rows खिसकने पर यह update नहीं होता। मौजूदा position चाहिए तो dynamic value इस्तेमाल कीजिए: <code>li(() =&gt; \`\${names.indexOf(name) + 1}. \${name}\`)</code>।</p>
       <h3>Iterables</h3>
       <p>कोई भी iterable चलता है: arrays, <code>Set</code>, generators और <code>map.values()</code>। हर बार वही array या <code>Set</code> लौटाना ठीक है। Iterator, जैसे generator या <code>map.values()</code>, एक pass के बाद ख़त्म हो जाता है, इसलिए इसे हर call पर <code>items()</code> के अंदर बनाइए। <code>Map</code> को सीधे iterate करने पर हर बार नए <code>[key, value]</code> arrays बनते हैं, इसलिए हर row दोबारा बनती है। इसकी जगह <code>map.values()</code> इस्तेमाल कीजिए।</p>
-      <h3>Placement</h3>
+      <h3>Rows कहाँ दिखती हैं</h3>
       <p><code>list()</code> जहाँ लिखा है, उसकी rows वहीं दो comment markers के बीच दिखती हैं। Parent के बाकी children जैसे हैं वैसे रहते हैं। <code>list()</code> SVG builders के अंदर भी चलता है।</p>
     `,
       },
@@ -636,7 +636,7 @@ render(() => div(Layout(), Article()))
         <li>Ids पूरे tree में unique होती हैं। जिस id का region पहले से live है, उसी id का दूसरा region बनाने पर warning log होती है।</li>
         <li>Regions <a href="#api-ssr">server rendering</a> के साथ चलते हैं। <code>hydrate()</code> पर हर view server से आए HTML को ही इस्तेमाल करता है, उसे दोबारा नहीं बनाता।</li>
       </ul>
-      <h3>Options</h3>
+      <h3>विकल्प</h3>
       <ul>
         <li><code>id</code>: वह नाम जिससे <code>into()</code> region को ढूँढता है।</li>
         <li><code>type</code>: <code>'latest'</code> (default) सिर्फ़ सबसे नया view दिखाता है। <code>'stack'</code> हर view को आने के क्रम में दिखाता है।</li>
@@ -789,7 +789,7 @@ const Editor = () =>
       .else(into('tabs', iframe({ src: '/preview' }))),
   )
 `)}
-      <h3>Live example</h3>
+      <h3>लाइव उदाहरण</h3>
       ${code("region-app.ts", API_DEMOS.find((d) => d.id === "api-region")!.code)}
     `,
       },

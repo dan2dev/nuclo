@@ -55,7 +55,7 @@ export const seo = {
   routes: {
     home: {
       title: "Nuclo - Framework DOM ligero con actualizaciones explícitas",
-      description: "Nuclo es una biblioteca DOM ligera y sin dependencias, escrita en TypeScript. Construye la UI con funciones, muta estado simple y llama a update(). Sin virtual DOM, sin proxies, sin signals.",
+      description: "Nuclo es una biblioteca DOM ligera y sin dependencias, escrita en TypeScript. Construye la UI con funciones, modifica el estado y llama a update(). Sin virtual DOM, sin proxies, sin signals.",
       keywords: "nuclo, framework dom, valores dependientes del estado, actualizaciones explícitas, estado mutable, javascript, typescript, framework ui, ligero",
     },
     "apps/:id": {

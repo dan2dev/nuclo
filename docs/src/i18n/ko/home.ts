@@ -265,7 +265,7 @@ export const LABELS = {
   pipelineSub: "상태에 따라 달라지는 값만 있을 뿐, 의존성 그래프도 스케줄러도 없습니다. 언제 실행할지는 내가 정하고, 데이터가 화면에 반영되는 경로는 하나뿐이라 언제나 예측할 수 있습니다.",
   philosophy: "철학",
   features: "특징",
-  featuresTitle: "명료함을 위해 설계했습니다.",
+  featuresTitle: "무엇이든 명료하게.",
   featuresSub: "마법도, 예상 밖의 동작도 없습니다. 모든 업데이트에는 이유가 있습니다.",
   comparison: "비교",
   theNucloWay: "nuclo 방식",

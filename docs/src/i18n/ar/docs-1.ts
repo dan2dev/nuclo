@@ -263,7 +263,7 @@ const save = button(
         <li>استخدم مفاتيح <code>"data-*"</code> مباشرة؛ فـ <code>dataset</code> غير مدعوم.</li>
         <li>لا يُهرَّب محتوى <code>innerHTML</code> (escaping)، ولا يظهر في مخرجات الـ SSR. الأفضل ألا تستخدمه.</li>
       </ul>
-      <h3>CSS classes</h3>
+      <h3>أسماء الـ classes</h3>
       <p>استخدم <code>className</code>. تُدمج الـ classes الثابتة مع نتائج <code>css()</code> ومع <code>className</code> الديناميكية، والديناميكية منها لا تمسّ الثابتة؛ فإذا أرجعت <code>""</code> بقيت الثابتة وحدها.</p>
       ${code("example.ts", `
 let active = false
