@@ -384,10 +384,10 @@ createRouter({
       <ul>
         <li>Child table के अंदर <code>'./x'</code>, <code>'/x'</code> और <code>'x'</code> का मतलब एक ही है, <code>'/'</code> का मतलब parent का अपना path है, और <code>'*rest'</code> section को उसका अपना catch-all देता है। इन्हें जितना चाहें उतना deep nest कर सकते हैं।</li>
         <li>Top-level keys जैसी लिखी हैं वैसी ही use होती हैं, इसलिए <code>'*'</code> <code>'*'</code> ही रहता है।</li>
-        <li><code>*catch-all</code> के नीचे child node रखना <code>createRouter()</code> error है, क्योंकि catch-all को अपना pattern खुद खत्म करना होता है।</li>
+        <li><code>*catch-all</code> के नीचे child route रखना <code>createRouter()</code> error है, क्योंकि catch-all को अपना pattern खुद खत्म करना होता है।</li>
       </ul>
       <h3>Parent page और <code>outlet()</code></h3>
-      <p>Parent और उसके child nodes एक असली hierarchy हैं। Parent render होता है और child उसके अंदर render होता है, जहाँ भी वह <code>outlet()</code> call करे:</p>
+      <p>Parent और उसके child routes एक असली hierarchy हैं। Parent render होता है और child उसके अंदर render होता है, जहाँ भी वह <code>outlet()</code> call करे:</p>
       ${code("records/Record.ts", `
 import type { PageProps, RouteContext } from 'nuclo-router'
 
@@ -456,7 +456,7 @@ export default function Post(_ctx: RouteContext, { data: post }: PageProps<Post>
         <li><strong>जो page बना रहता है, उसके regions भी बने रहते हैं।</strong> जो <a href="#router-patterns">query या hash बदलाव</a> page को बचाए रखते हैं, वे region का content भी नहीं बदलते। Sidebar query पर निर्भर हो, तो dynamic value में <code>router.search</code> पढ़ें।</li>
         <li><strong>दोबारा बना page उन्हें फिर भर देता है।</strong> Route बदलता है तो पुरानी row हट जाती है और नए page के <code>into()</code> views आ जाते हैं। पीछे कुछ नहीं बचता।</li>
         <li><strong>Push की गई layer एक view जोड़ती है।</strong> Layer outlet की अगली row है, इसलिए उसका <code>into()</code> उसी region का नया view है। Default <code>type: 'latest'</code> में वह layer बंद होने तक page के view को ढक देता है, और फिर page का view वापस दिखता है। <code>type: 'stack'</code> में दोनों दिखते हैं।</li>
-        <li><strong>Parent page भी regions भर सकता है।</strong> उसके views तब भी बने रहते हैं जब उसके child nodes बदलते हैं, क्योंकि parent page दोबारा नहीं बनता।</li>
+        <li><strong>Parent page भी regions भर सकता है।</strong> उसके views तब भी बने रहते हैं जब उसके child routes बदलते हैं, क्योंकि parent page दोबारा नहीं बनता।</li>
         <li><strong>Server rendering भी इसी तरह काम करती है।</strong> Server <code>route.run()</code> के अंदर page बनाता है, इसलिए उसके <code>into()</code> views HTML में होते हैं, और <code>hydrate()</code> उन्हें reuse करता है।</li>
       </ul>
       <h3>एक page से कई regions</h3>
@@ -708,7 +708,7 @@ div(
         <li><strong>Server</strong> पर lazy view कुछ नहीं भेजता, क्योंकि उसका module client पर land होता है। जो चीज़ पहले HTML में चाहिए, उसके लिए synchronous view use करें।</li>
       </ul>
       <h3>Sub-routers</h3>
-      <p>Routes nest होते हैं, इसलिए sub-router आमतौर पर बस एक nested table होती है। एक ही router: section का अपना <code>'/'</code> page उसका बाहरी UI है, और उसके child nodes उस page के <code>outlet()</code> में render होते हैं, इसलिए section के अंदर navigate करने पर बाहरी UI बचा रहता है:</p>
+      <p>Routes nest होते हैं, इसलिए sub-router आमतौर पर बस एक nested table होती है। एक ही router: section का अपना <code>'/'</code> page उसका बाहरी UI है, और उसके child routes उस page के <code>outlet()</code> में render होते हैं, इसलिए section के अंदर navigate करने पर बाहरी UI बचा रहता है:</p>
       ${code("routes.ts", `
 createRouter({ '/': …, '/docs': docsRoutes, '*': … })
 `)}
@@ -810,7 +810,7 @@ createRouter(routes, {
         <li><strong><code>match()</code> कुछ भी attach नहीं करता।</strong> जितने चाहें उतने unstarted routers document share कर सकते हैं; हर एक की अपनी table, base और module cache है, और उनमें से कोई history को नहीं छूता। उनकी कीमत बस एक table और एक matcher है।</li>
         <li><strong>इसके loaders कभी नहीं चलते।</strong> Started router matching pages के <code>load()</code> चलाता है। Unstarted router सिर्फ URL match करता है, इसलिए अगर उसके view को data चाहिए, तो उसे खुद fetch करें, जैसे demo का <code>refreshSidebar()</code>। Loaders चाहिए, तो <a href="#router-matches">nested table</a> या <a href="#router-regions">page से भरा जाने वाला region</a> वह काम started router के साथ ही रखता है।</li>
         <li><strong>पुराने responses से बचें।</strong> धीमे sidebar fetch का result उस section पर लागू न होने दें जहाँ से आप जा चुके हैं। हर refresh पर generation counter बढ़ाएँ और पुराने responses छोड़ दें। Router भी नई navigation के आगे निकलने पर पिछली navigation को इसी तरह बेअसर कर देता है।</li>
-        <li><strong>Lazy <code>matches()</code> view में भी <code>pending</code> नहीं होता।</strong> यह तब तक कुछ render नहीं करता जब तक उसका module land न हो जाए। तीन loading systems, तीन independent clocks: route का <code>pending</code>, आपके अपने flags, और lazy view जो अभी तक आया नहीं।</li>
+        <li><strong>Lazy <code>matches()</code> view में भी <code>pending</code> नहीं होता।</strong> यह तब तक कुछ render नहीं करता जब तक उसका module land न हो जाए। तीन loading systems, तीनों की अपनी अलग timing: route का <code>pending</code>, आपके अपने flags, और lazy view जो अभी तक आया नहीं।</li>
       </ul>
     `,
       },
@@ -997,7 +997,7 @@ async function loadData() {
       <p>सिर्फ static values में कभी-कभार होने वाले बदलाव के लिए, जैसे language बदलना। बाकी हर चीज़ के लिए <code>update()</code> use करें। <a href="#api-force-update"><code>forceUpdate()</code></a> देखें।</p>
 
       <h3>Page को props के रूप में पास किए बिना layout में कैसे डालूँ?</h3>
-      <p><code>region({ id: 'main' })</code> से जगह mark करें और page से <code>into('main', …)</code> लौटाएँ। <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a> देखें।</p>
+      <p><code>region({ id: 'main' })</code> से जगह mark करें और page से <code>into('main', …)</code> लौटाएँ। <a href="#api-region"><code>region()</code> और <code>into()</code></a> देखें।</p>
 
       <h3>App को unmount कैसे करूँ?</h3>
       <p>उसे <code>when()</code> में लपेटें और condition false कर दें। DOM को खुद हटाने से <code>onDestroy</code> नहीं चलता। <a href="#lifecycle">Lifecycle</a> देखें।</p>

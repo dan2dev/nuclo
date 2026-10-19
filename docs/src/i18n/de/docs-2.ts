@@ -997,7 +997,7 @@ async function loadData() {
       <p>Nur für seltene Änderungen an statischen Werten, etwa bei einem Sprachwechsel. Für alles andere ist <code>update()</code> das Richtige. Siehe <a href="#api-force-update"><code>forceUpdate()</code></a>.</p>
 
       <h3>Wie bekomme ich eine Seite in ein Layout, ohne sie als Prop durchzureichen?</h3>
-      <p>Markiere die Stelle mit <code>region({ id: 'main' })</code> und lass die Seite <code>into('main', …)</code> zurückgeben. Siehe <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a>.</p>
+      <p>Markiere die Stelle mit <code>region({ id: 'main' })</code> und lass die Seite <code>into('main', …)</code> zurückgeben. Siehe <a href="#api-region"><code>region()</code> und <code>into()</code></a>.</p>
 
       <h3>Wie unmounte ich eine App?</h3>
       <p>Pack sie in ein <code>when()</code> und schalte die Bedingung aus. Entfernst du das DOM selbst, läuft <code>onDestroy</code> nicht. Siehe <a href="#lifecycle">Lifecycle</a>.</p>

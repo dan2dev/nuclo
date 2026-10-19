@@ -997,7 +997,7 @@ async function loadData() {
       <p>Só para mudanças raras em valores estáticos, como trocar o idioma. Para todo o resto, use <code>update()</code>. Veja <a href="#api-force-update"><code>forceUpdate()</code></a>.</p>
 
       <h3>Como encaixo uma página num layout sem passá-la como prop?</h3>
-      <p>Marque o ponto com <code>region({ id: 'main' })</code> e faça a página retornar <code>into('main', …)</code>. Veja <a href="#api-region"><code>region()</code> &amp; <code>into()</code></a>.</p>
+      <p>Marque o ponto com <code>region({ id: 'main' })</code> e faça a página retornar <code>into('main', …)</code>. Veja <a href="#api-region"><code>region()</code> e <code>into()</code></a>.</p>
 
       <h3>Como desmonto um app?</h3>
       <p>Envolva-o em um <code>when()</code> e desligue a condição. Remover o DOM por conta própria não executa o <code>onDestroy</code>. Veja <a href="#lifecycle">Ciclo de vida</a>.</p>
