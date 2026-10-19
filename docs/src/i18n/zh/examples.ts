@@ -109,7 +109,7 @@ export const LABELS = {
   closeExample: "关闭示例",
   closeEsc: "关闭（Esc）",
   less: "收起",
-  more: "更多",
+  more: "展开",
   openInStandalone: "独立打开",
   openInNewTab: (title: string) => `在新标签页中打开 ${title}`,
   openStandaloneInNewTab: (title: string) => `在新标签页中独立打开 ${title}`,

@@ -33,7 +33,7 @@ render(App, document.getElementById('app')!)
         <li>state は素の JavaScript でそのまま書き換えます。</li>
         <li>最後に <code>update()</code> を呼びます。Nuclo が関数を再実行し、差分だけ DOM に反映します。</li>
       </ol>
-      <p>変数を書き換えただけでは、DOM は何も変わりません。画面が動くのは、<code>update()</code> を呼んだ瞬間だけです。</p>
+      <p>変数を書き換えただけでは、DOM は何も変わりません。画面が変わるのは、<code>update()</code> を呼んだ瞬間だけです。</p>
     `,
       },
       {
@@ -63,7 +63,7 @@ render(App, document.getElementById('app')!)
         content: `
       <p>既存のプロジェクトに足すなら、これだけです。</p>
       ${sh("npm install nuclo")}
-      <p><code>pnpm add nuclo</code>、<code>yarn add nuclo</code>、<code>bun add nuclo</code> でも OK です。Nuclo 自体は依存パッケージを一切持ちません。</p>
+      <p><code>pnpm add nuclo</code>、<code>yarn add nuclo</code>、<code>bun add nuclo</code> でも構いません。Nuclo 自体は依存パッケージを一切持ちません。</p>
       <p>ルーティングはコアには入っていません。<a href="#router-overview"><code>nuclo-router</code></a> という別パッケージなので、必要になったときに <code>nuclo</code> と一緒に追加してください。</p>
       <h3>グローバル</h3>
       <p><code>import 'nuclo'</code> すると、次のものが <code>globalThis</code> に登録されます。</p>
@@ -71,7 +71,7 @@ render(App, document.getElementById('app')!)
         <li><strong>175 個のタグビルダー</strong>: HTML 用が 112 個（<code>div</code>、<code>span</code>、<code>button</code>、…）、SVG 用が 63 個で、こちらは <code>Svg</code> サフィックス付きです（<code>svgSvg</code>、<code>pathSvg</code>、…）。<a href="#tag-builders">タグビルダー</a>を参照してください。</li>
         <li><strong>16 個のヘルパー</strong>: <code>update</code>、<code>scope</code>、<code>when</code>、<code>list</code>、<code>region</code>、<code>into</code>、<code>on</code>、<code>render</code>、<code>hydrate</code>、<code>forceUpdate</code>、<code>css</code>、<code>cx</code>、<code>createCss</code>、<code>variants</code>、<code>keyframes</code>、<code>globalStyle</code>。</li>
       </ul>
-      <p>この import は、ビルダーを呼ぶどのコードよりも先に評価されている必要があります。ES モジュールは import の順に実行されるので、次のように書くと落ちます。</p>
+      <p>この import は、ビルダーを呼ぶどのコードよりも先に評価されている必要があります。ES モジュールは import の順に実行されるので、次のコードは失敗します。</p>
       ${code("main.ts", `
 import { App } from './app' // app.ts calls div() → ReferenceError: div is not defined
 import 'nuclo'
@@ -597,7 +597,7 @@ update() // same <li>, its class is now "done"
       <h3><code>renderItem</code> の戻り値</h3>
       <ul>
         <li><code>li(...)</code>、<code>tr(...)</code>、SVG ビルダーなど、要素を 1 つ返します。アイテムを飛ばしたいときは <code>null</code> か <code>undefined</code> を返します。文字列、テキストノード、フラグメントを返しても何も表示されません。</li>
-        <li><code>when()</code> や <code>list()</code> をそのまま返すのは NG です。行の要素の内側に置いてください: <code>li(todo.text, when(() =&gt; todo.done, ' ✓'))</code>。</li>
+        <li><code>when()</code> や <code>list()</code> を直接返さないでください。行の要素の内側に置いてください: <code>li(todo.text, when(() =&gt; todo.done, ' ✓'))</code>。</li>
         <li>アイテムを隠したいなら、<code>renderItem</code> ではなく <code>items()</code> の中でフィルタリングします。</li>
         <li><code>renderItem</code> に副作用を持たせないでください。同じアイテムに対して、複数回呼ばれることがあります。</li>
       </ul>
