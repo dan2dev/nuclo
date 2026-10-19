@@ -33,7 +33,7 @@ render(App, document.getElementById('app')!)
         <li>Modifica el estado con JavaScript normal y corriente.</li>
         <li>Llama a <code>update()</code>: Nuclo vuelve a ejecutar esas funciones y parchea el DOM.</li>
       </ol>
-      <p>Asignar una variable no toca el DOM. La página solo cambia cuando llamas a <code>update()</code>.</p>
+      <p>Cambiar una variable no toca el DOM. La página solo cambia cuando llamas a <code>update()</code>.</p>
     `,
       },
       {
@@ -181,7 +181,7 @@ render(Card, document.body)
         <li><code>div(isAdmin &amp;&amp; span('Admin'))</code> renderiza el texto "false". Lo correcto es <code>div(when(() =&gt; isAdmin, span('Admin')))</code>.</li>
         <li>Un array no cuenta como hijo: hay que expandirlo, así: <code>ul(...names.map((n) =&gt; li(n)))</code>. Si la lista va a cambiar, usa <code>list()</code>.</li>
         <li>Una variable local con el nombre de una etiqueta oculta a la constructora. Dentro de <code>function Row(label: string)</code>, <code>label(...)</code> ya no se puede llamar. Renombra variables locales como <code>label</code>, <code>title</code>, <code>data</code>, <code>p</code>, <code>a</code> o <code>i</code>.</li>
-        <li>Los navegadores exponen como variable global cada elemento que tiene <code>id</code>. Si la página trae un <code>&lt;main id="main"&gt;</code> antes de que cargue Nuclo, Nuclo respeta ese global y <code>main(...)</code> lanza un <code>TypeError</code>. Elige otros ids.</li>
+        <li>Los navegadores exponen como variable global cada elemento que tiene <code>id</code>. Si la página trae un <code>&lt;main id="main"&gt;</code> antes de que cargue Nuclo, Nuclo deja ese global como está y <code>main(...)</code> lanza un <code>TypeError</code>. Elige otros ids.</li>
       </ul>
       <h3>Modificadores personalizados</h3>
       <p>Una función que declara al menos un parámetro se ejecuta una sola vez, en el orden de los argumentos, mientras se construye el elemento. El primer parámetro es el elemento. El segundo es un índice interno, así que no cuentes con él. Si devuelve un string o un número, se convierte en texto; un <code>Node</code> se agrega como hijo, y un objeto se aplica como atributos.</p>
@@ -732,7 +732,7 @@ const Settings = () =>
   )
 `)}
       <h3>Valores dinámicos dentro de una vista</h3>
-      <p>El contenido de un <code>into()</code> es contenido Nuclo de toda la vida. Las funciones que lleva dentro son valores que dependen del estado y se refrescan en <code>update()</code>, esté donde esté la región.</p>
+      <p>El contenido de un <code>into()</code> es contenido Nuclo normal. Las funciones que lleva dentro son valores que dependen del estado y se refrescan en <code>update()</code>, esté donde esté la región.</p>
       ${code("status.ts", `
 const selected = new Set<string>()
 

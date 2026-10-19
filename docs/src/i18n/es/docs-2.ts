@@ -810,7 +810,7 @@ createRouter(routes, {
         <li><strong><code>match()</code> no engancha nada.</strong> Puede haber cualquier cantidad de routers sin iniciar en el documento; cada uno tiene su propia tabla, base y caché de módulos, y ninguno toca el historial. Te cuestan una tabla y un matcher.</li>
         <li><strong>Sus cargadores nunca se ejecutan.</strong> El router iniciado ejecuta el <code>load()</code> de las páginas con las que coincide; uno sin iniciar solo resuelve. Si sus vistas necesitan datos, tráelos tú mismo, como hace el <code>refreshSidebar()</code> de la demo. Y si quieres cargadores, una <a href="#router-matches">tabla anidada</a> o una <a href="#router-regions">región que rellena una página</a> mantiene ese trabajo dentro del router iniciado.</li>
         <li><strong>Protégete de respuestas obsoletas.</strong> La respuesta de una petición lenta de la barra lateral no debe aplicarse a una sección que ya dejaste atrás. Incrementa un contador de generación en cada refresco y descarta las respuestas que ya no correspondan, tal como el propio router descarta las navegaciones superadas.</li>
-        <li><strong>Una vista con carga diferida de <code>matches()</code> tampoco tiene <code>pending</code>.</strong> No renderiza nada hasta que llega su módulo. Son tres sistemas de carga con tres relojes independientes: el <code>pending</code> de la ruta, tus propios flags y una vista diferida que simplemente todavía no llegó.</li>
+        <li><strong>Una vista con carga diferida de <code>matches()</code> tampoco tiene <code>pending</code>.</strong> No renderiza nada hasta que llega su módulo. Son tres sistemas de carga con tres ritmos independientes: el <code>pending</code> de la ruta, tus propios flags y una vista diferida que simplemente todavía no llegó.</li>
       </ul>
     `,
       },
@@ -858,7 +858,7 @@ createRouter(routes, {
         id: "computed",
         title: "Valores calculados",
         content: `
-      <p>Nuclo no tiene una API para valores calculados, y no la necesita: usa una función normal y llámala desde los valores dinámicos:</p>
+      <p>Nuclo no tiene una API para valores calculados. Usa una función normal y llámala desde los valores dinámicos:</p>
       ${code("example.ts", `
 let items = ['apple', 'banana', 'cherry']
 let filter = ''
@@ -880,7 +880,7 @@ update()
         id: "async",
         title: "Asincronía y carga",
         content: `
-      <p>Usa <code>async</code>/<code>await</code> de toda la vida y llama a <code>update()</code> cada vez que el estado cambie. En un fetch, eso es una vez antes del <code>await</code> y otra después:</p>
+      <p>Usa <code>async</code>/<code>await</code> normal y llama a <code>update()</code> cada vez que el estado cambie. En un fetch, eso es una vez antes del <code>await</code> y otra después:</p>
       ${code("example.ts", `
 let status: 'idle' | 'loading' | 'done' | 'error' = 'idle'
 let result: unknown = null
