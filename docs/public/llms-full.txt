@@ -1565,7 +1565,7 @@ Source: https://nuclo.dev/docs#router-overview
 
 > **Separate package:** `nuclo-router` is not part of the Nuclo core package. Install it next to `nuclo`. It is a preview release, so its API may still change.
 
-Routing for Nuclo: server rendering, hydration, code-split routes and idle preloading, built on `list()` and `update()`. About 4.9 KB gzipped, with no dependencies beyond Nuclo itself and no side effects, so it tree-shakes away when unused.
+Routing for Nuclo: server rendering, hydration, code-split routes and idle preloading, built on `list()` and `update()`. About 5.1 KB gzipped, with no dependencies beyond Nuclo itself and no side effects, so it tree-shakes away when unused.
 
 ```bash
 npm install nuclo nuclo-router

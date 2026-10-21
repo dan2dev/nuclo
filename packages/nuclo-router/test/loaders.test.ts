@@ -133,6 +133,34 @@ describe("load()", () => {
     expect(container.querySelector("#n")!.textContent).toBe("2");
   });
 
+  it("keeps the page through a hash change: the hash never reaches load()", async () => {
+    let n = 0;
+    const Docs = {
+      load: () => ++n,
+      default: ((_c, { data: value }) => div({ id: "n" }, String(value))) as PageComponent<number>,
+    };
+    const route = await start(createRouter({ "/docs": () => Docs }, { preload: false }), "/docs");
+    const container = mount();
+    render(App(router), container);
+    const node = container.querySelector("#n");
+
+    // go() to an anchor on the page, then Back off a native #fragment entry.
+    await route.go("/docs#a");
+    window.history.pushState(null, "", "/docs#b");
+    window.history.replaceState(null, "", "/docs#a");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await flush();
+
+    expect(route.hash).toBe("#a");
+    expect(n).toBe(1);
+    expect(container.querySelector("#n")).toBe(node);
+
+    // A query is the loader's input: it runs again.
+    await route.go("/docs?v=2");
+    expect(n).toBe(2);
+    expect(container.querySelector("#n")!.textContent).toBe("2");
+  });
+
   it("still reuses the row for a route with no loader", async () => {
     const Plain: PageComponent = () => div({ id: "plain" });
     const route = await start(createRouter({ "/": () => Plain }, { preload: false }), "/");

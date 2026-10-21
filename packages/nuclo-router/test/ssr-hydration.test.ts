@@ -8,7 +8,7 @@ import { describe, it, expect, vi } from "vitest";
 import "nuclo";
 import { renderToString } from "nuclo/ssr";
 import { createRouter, type PageComponent, type Route, type Router } from "../src/index";
-import { mount, useRouterEnv } from "./helpers";
+import { flush, mount, useRouterEnv } from "./helpers";
 
 const routes = useRouterEnv();
 
@@ -153,7 +153,7 @@ describe("hydrate", () => {
     anchor.setAttribute("href", "/about");
 
     anchor.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await flush();
 
     expect(route.path).toBe("/about");
     expect(container.querySelector("#about")).not.toBeNull();

@@ -72,9 +72,10 @@ export function deferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-/** Lets every already-queued microtask run. */
-export function flush(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
+/** Lets a navigation started now land: what is already queued runs first, then the frame the router waits for before it commits. */
+export async function flush(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
 }
 
 /** The app the jsdom suites render: the router's outlet, where every layer lands bottom first. */

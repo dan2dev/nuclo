@@ -6,6 +6,8 @@ import { App, click, deferred, flush, mount, useRouterEnv } from "./helpers";
 afterEach(() => {
   vi.useRealTimers();
   delete (globalThis as Record<string, unknown>).requestIdleCallback;
+  delete (navigator as unknown as Record<string, unknown>).connection;
+  delete (navigator as unknown as Record<string, unknown>).deviceMemory;
 });
 
 const routes = useRouterEnv();
@@ -237,6 +239,74 @@ describe("DOM before address bar", () => {
   });
 });
 
+describe("the frame before a navigation lands", () => {
+  it("keeps the old page up until the input's frame is painted", async () => {
+    const route = await start(basicRouter(), "/");
+    const container = mount();
+    render(App(router), container);
+
+    vi.useFakeTimers();
+    click(link({ href: "/about" }));
+    // Everything queued has run, but no frame has been painted yet: the tap gets that frame first.
+    await vi.advanceTimersByTimeAsync(0);
+    expect(container.querySelector("#home")).not.toBeNull();
+    expect(window.location.pathname).toBe("/");
+
+    await vi.advanceTimersByTimeAsync(20);
+    expect(route.path).toBe("/about");
+    expect(container.querySelector("#about")).not.toBeNull();
+  });
+
+  it("does not wait in a hidden tab, which paints no frame", async () => {
+    vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+    const route = await start(basicRouter(), "/");
+    vi.useFakeTimers();
+
+    // No timer is advanced: the navigation must not be waiting on one.
+    await route.go("/about");
+    expect(route.path).toBe("/about");
+  });
+});
+
+describe("pressing a link", () => {
+  const press = (target: Element): void => void target.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+
+  it("starts loading its route before the click, which then reuses it", async () => {
+    let loads = 0;
+    const router = createRouter(
+      { "/": () => Home, "/about": () => (loads++, Promise.resolve({ default: About })) },
+      { preload: false },
+    );
+    const route = await start(router, "/");
+    const anchor = link({ href: "/about" });
+
+    press(anchor);
+    expect(loads).toBe(1);
+    click(anchor);
+    await flush();
+    expect(route.path).toBe("/about");
+    expect(loads).toBe(1);
+  });
+
+  it("leaves a failed chunk for the click to report", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const router = createRouter(
+      { "/": () => Home, "/broken": () => Promise.reject(new Error("no chunk")) },
+      { preload: false },
+    );
+    const route = await start(router, "/");
+    const anchor = link({ href: "/broken" });
+
+    press(anchor);
+    await flush();
+    expect(route.error).toBeNull();
+
+    click(anchor);
+    await flush();
+    expect(route.error?.message).toBe("no chunk");
+  });
+});
+
 describe("popstate", () => {
   it("renders the entry the browser went back to", async () => {
     const route = await start(basicRouter(), "/");
@@ -419,6 +489,8 @@ describe("idle preloading", () => {
     // Preloaded routes then navigate without flipping pending.
     const promise = route.go("/a");
     expect(route.pending).toBe(false);
+    // The frame the router lands after.
+    await vi.advanceTimersByTimeAsync(20);
     await promise;
     expect(route.path).toBe("/a");
   });
@@ -517,6 +589,30 @@ describe("idle preloading", () => {
     expect(loaded).toBe(false);
   });
 
+  for (const [name, device, preloads] of [
+    ["Save-Data", { connection: { saveData: true } }, false],
+    ["a 2G link", { connection: { effectiveType: "slow-2g" } }, false],
+    ["2 GB of memory", { deviceMemory: 2 }, false],
+    ["4 GB of memory", { deviceMemory: 4 }, true],
+  ] as const) {
+    it(`${preloads ? "still runs" : "is skipped"} with ${name}`, async () => {
+      vi.useFakeTimers();
+      for (const [key, value] of Object.entries(device)) Object.defineProperty(navigator, key, { value, configurable: true });
+      let loaded = false;
+      const router = createRouter({
+        "/": () => Home,
+        "/a": () => {
+          loaded = true;
+          return About;
+        },
+      });
+      routes.push(await router.start("/"));
+
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(loaded).toBe(preloads);
+    });
+  }
+
   it("waits for a custom idleTimeout", async () => {
     vi.useFakeTimers();
     let loaded = false;
@@ -559,6 +655,7 @@ describe("idle preloading", () => {
     expect(preloaded).toBe(false);
 
     gate.resolve({ default: About });
+    await vi.advanceTimersByTimeAsync(20);
     await navigation;
     await vi.advanceTimersByTimeAsync(1000);
     expect(preloaded).toBe(true);

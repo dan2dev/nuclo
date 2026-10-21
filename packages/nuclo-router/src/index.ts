@@ -114,7 +114,7 @@ export type RouteTable = Readonly<{ [pattern: string]: RouteLoader<any> | RouteT
 export interface RouterOptions {
   /** URL prefix the app is served under, e.g. "/docs". */
   base?: string;
-  /** Load the other routes' modules once the user has left the page alone for `idleTimeout`. Default true. */
+  /** Load the other routes' modules once the user has left the page alone for `idleTimeout`. Default true; skipped under Save-Data, on a 2G link or with 2 GB of memory or less. */
   preload?: boolean;
   /** Milliseconds without input before preloading starts, or resumes after the user was busy. Default 1000. */
   idleTimeout?: number;
@@ -215,6 +215,23 @@ const isPromise = (value: unknown): value is Promise<unknown> =>
   typeof (value as { then?: unknown } | null)?.then === "function";
 
 const toError = (value: unknown): Error => (value instanceof Error ? value : new Error(String(value)));
+
+/**
+ * Resolves after the browser paints its next frame. A navigation lands after it, so the tap or key that
+ * started it gets its frame (the pressed link, a pending state) before the new page is built: on a slow
+ * device the input answers at once instead of after the whole page. A hidden tab paints nothing, so it
+ * does not wait.
+ */
+const afterPaint = (): Promise<void> =>
+  typeof requestAnimationFrame !== "function" || document.hidden
+    ? Promise.resolve()
+    : new Promise((done) => requestAnimationFrame(() => setTimeout(done, 0)));
+
+/** Save-Data, a 2G link or a device with 2 GB of memory or less: idle preloading is skipped, and a route loads when a link to it is pressed. */
+function constrained(): boolean {
+  const nav = navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string }; deviceMemory?: number };
+  return !!nav.connection?.saveData || /2g/.test(nav.connection?.effectiveType ?? "") || (nav.deviceMemory ?? Infinity) <= 2;
+}
 
 function depthOf(state: unknown): number {
   const depth = (state as Record<string, unknown> | null)?.[DEPTH_KEY];
@@ -531,16 +548,24 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       return withBase(normalizePath(url.pathname)) + url.search + url.hash;
     }
 
-    /** The leading planned levels already mounted and unchanged, by pattern and path; the page itself only without a load() (one with a loader refreshes on every visit). A query or hash change keeps it: it reads router.search. */
-    function reusable(planned: readonly Planned[]): Level[] {
+    /**
+     * The leading planned levels already mounted and unchanged, by pattern and path. The page itself is kept
+     * through a query or hash change (it reads router.search). One with a load() refreshes on every visit,
+     * `revisit` (going to the URL already shown) included, but a hash change within it is no visit: the hash
+     * never reaches load().
+     */
+    function reusable(planned: readonly Planned[], revisit: boolean): Level[] {
       if (current.layer.depth !== 0 || slot.length !== 1) return [];
+      const mounted = levels(current).map((at) => at.level);
       const kept: Level[] = [];
-      for (const [i, have] of levels(current).map((at) => at.level).entries()) {
+      for (const [i, have] of mounted.entries()) {
         const want = planned[i];
         if (!want || have.node.pattern !== want.node.pattern || have.ctx.path !== want.ctx.path) break;
         if (i === planned.length - 1) {
           const shape = cache.get(want.node.loader);
-          if (!shape || isPromise(shape) || shape.load || want.node.loader.load || shape.component !== have.component) break;
+          if (!shape || isPromise(shape) || shape.component !== have.component) break;
+          const hashOnly = !revisit && mounted.length === planned.length && have.ctx.search.toString() === want.ctx.search.toString();
+          if ((shape.load || want.node.loader.load) && !hashOnly) break;
         }
         kept.push(have);
       }
@@ -590,9 +615,10 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         return;
       }
       // Going where we already are (same path, query, hash) is not a new history entry. Retry after an error, or with layers open, still runs.
-      if (mode === "push" && !error && pendingPath === null && slot.length <= 1 && new URL(href, window.location.href).href === window.location.href) return;
+      const revisit = mode !== "pop" && new URL(href, window.location.href).href === window.location.href;
+      if (mode === "push" && revisit && !error && pendingPath === null && slot.length <= 1) return;
       const planned = plan(parsed.chain, parsed.ctx);
-      const kept = reusable(planned);
+      const kept = reusable(planned, revisit);
       // Awaited only when a guard is set, so an unguarded navigation starts loading in this tick.
       const leaving = kept.length > 0 ? levels(current).slice(kept.length) : slot.flatMap(levels);
       if (guarded(leaving) && (mode !== "pop" || revert)) {
@@ -620,6 +646,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         update();
         return;
       }
+      await afterPaint();
       if (generation !== mine) return;
       // History is written once the page is on screen, so the address bar never names a page that is not.
       commit(kept, fresh, parsed.ctx, mode, href);
@@ -648,6 +675,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         // Rejected rather than surfaced: nothing opened, and the caller is awaiting.
         throw toError(cause);
       }
+      await afterPaint();
       // Overtaken by a navigation, or retired: open nothing.
       if (stopped || generation !== mine) return undefined;
       pendingPath = null;
@@ -763,6 +791,21 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       }
       event.preventDefault();
       void navigate(href, "push");
+    }
+
+    /** A press on a link starts loading its route's modules, so the click that follows finds them on their way. Data waits for the click. */
+    function onPress(event: PointerEvent): void {
+      const attr = (event.target as Element | null)?.closest?.("a")?.getAttribute("href");
+      const to = attr && attr[0] !== "#" ? parse(abs(attr)) : null;
+      for (const at of to?.chain ?? []) {
+        try {
+          const shape = load(at);
+          // A failure is the click's to report.
+          if (isPromise(shape)) shape.catch(() => {});
+        } catch {
+          // Likewise a loader that throws.
+        }
+      }
     }
 
     /** When the user last did something: the preloader only runs once idleTimeout ms have passed since. */
@@ -884,6 +927,7 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
         if (isBrowser) {
           window.removeEventListener("popstate", onLocationChange);
           document.removeEventListener("click", onClick);
+          document.removeEventListener("pointerdown", onPress, true);
           endWait();
           // The rows are [] now: the outlet empties.
           update();
@@ -907,10 +951,11 @@ export function createRouter(table: RouteTable, options: RouterOptions = {}): Ro
       window.history.replaceState({ ...window.history.state, [DEPTH_KEY]: 0, [INDEX_KEY]: index }, "");
       window.addEventListener("popstate", onLocationChange);
       document.addEventListener("click", onClick);
+      document.addEventListener("pointerdown", onPress, { capture: true, passive: true });
       onNavigate?.(leaf(current).ctx, "start");
       // An app rendered before start() resolved has an empty outlet until now.
       update();
-      if (options.preload !== false) void preload();
+      if (options.preload !== false && !constrained()) void preload();
     }
     return route;
   }

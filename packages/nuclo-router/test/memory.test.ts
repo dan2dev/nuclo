@@ -230,7 +230,7 @@ describe("navigation does not accumulate", () => {
 });
 
 describe("listeners", () => {
-  it("adds exactly one click and one popstate listener, and removes both", async () => {
+  it("adds exactly one click, one pointerdown and one popstate listener, and removes them all", async () => {
     const added: string[] = [];
     const removed: string[] = [];
     vi.spyOn(document, "addEventListener").mockImplementation(((type: string) => {
@@ -248,13 +248,13 @@ describe("listeners", () => {
 
     const router = createRouter(table(), { preload: false });
     const route = await router.start("/");
-    expect(added).toEqual(["window:popstate", "document:click"]);
+    expect(added).toEqual(["window:popstate", "document:click", "document:pointerdown"]);
 
     route.stop();
-    expect(removed).toEqual(["window:popstate", "document:click"]);
+    expect(removed).toEqual(["window:popstate", "document:click", "document:pointerdown"]);
     // Idempotent: a second stop() must not detach anything again.
     route.stop();
-    expect(removed).toHaveLength(2);
+    expect(removed).toHaveLength(3);
   });
 
   itGc("repeated start()/stop() cycles leave nothing behind", async () => {
@@ -336,13 +336,13 @@ describe("the layer stack", () => {
       const app = render(App(router), mount()) as unknown as Element;
 
       const pushed = route.push("/modal");
-      await new Promise((r) => setTimeout(r, 0));
+      await flush();
       // The layer's row, taken from children — never querySelector.
       const refs: WeakRef<object>[] = [new WeakRef(app.children[1])];
 
       window.history.back();
       await pushed;
-      await new Promise((r) => setTimeout(r, 0));
+      await flush();
 
       return { route, refs, depthAfter: route.depth };
     }
@@ -366,12 +366,12 @@ describe("the layer stack", () => {
       let maxRows = 0;
       for (let i = 0; i < 30; i++) {
         const pushed = route.push("/modal");
-        await new Promise((r) => setTimeout(r, 0));
+        await flush();
         refs.push(new WeakRef(app.children[1]));
         if (app.children.length > maxRows) maxRows = app.children.length;
         window.history.back();
         await pushed;
-        await new Promise((r) => setTimeout(r, 0));
+        await flush();
       }
       return { route, refs, maxRows };
     }
@@ -394,9 +394,9 @@ describe("the layer stack", () => {
       const app = render(App(router), container) as unknown as Element;
 
       const first = route.push("/modal");
-      await new Promise((r) => setTimeout(r, 0));
+      await flush();
       const second = route.push("/modal");
-      await new Promise((r) => setTimeout(r, 0));
+      await flush();
 
       const refs: WeakRef<object>[] = [new WeakRef(route), new WeakRef(container), new WeakRef(app)];
       // The outlet's markers and the three pages between them.
@@ -565,12 +565,12 @@ describe("an app that reads the router", () => {
       const outlet = shell.children[1];
 
       const pushed = router.push("/modal");
-      await new Promise((r) => setTimeout(r, 0));
+      await flush();
       const refs: WeakRef<object>[] = [new WeakRef(outlet.children[1])];
 
       window.history.back();
       await pushed;
-      await new Promise((r) => setTimeout(r, 0));
+      await flush();
       expect(outlet.children[0].id).toBe("page");
       return { route, refs };
     }

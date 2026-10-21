@@ -3,7 +3,7 @@
 > **Preview:** this is a preview version of the router. The API may change.
 
 Routing for [nuclo](https://nuclo.dev/) — SSR, hydration, code-split routes and
-idle preloading. **<!-- size:router-gzip -->4.9<!-- /size --> kB gzipped** (<!-- size:router-brotli -->4.4<!-- /size --> kB brotli), no dependencies beyond nuclo
+idle preloading. **<!-- size:router-gzip -->5.1<!-- /size --> kB gzipped** (<!-- size:router-brotli -->4.6<!-- /size --> kB brotli), no dependencies beyond nuclo
 itself, and no side effects — it tree-shakes away when unused.
 
 The router decides *what* to load; the app says *where* with `router.outlet()`:
@@ -223,7 +223,7 @@ React Router makes for `<Link to="./x">`. Two consequences worth knowing:
 | | |
 |---|---|
 | a parent whose pattern and path are unchanged | **kept** — same node, and its `load()` is not re-run |
-| the matched page | **kept** when its pattern and path are unchanged *and* it has no `load()` — so a query or hash change keeps it. A route with a loader refreshes on every visit |
+| the matched page | **kept** when its pattern and path are unchanged *and* it has no `load()` — so a query or hash change keeps it. A route with a loader refreshes on every visit, but a hash change alone (Back and Forward between `#anchors` included) keeps it too: the hash never reaches `load()` |
 | a parent whose path changed | rebuilt, along with everything under it |
 | a pushed layer | renders the matched page **alone** — its parents are already mounted in the row beneath it, so re-rendering them would show the layout twice |
 
@@ -329,10 +329,18 @@ route share one `import()`. Once the user has left the page alone for
 `idleTimeout` (a second by default; no taps, keys, wheel or scroll), the
 remaining routes are loaded in the background, one per idle slice
 (`requestIdleCallback`). Any input, or a navigation the user is actually
-waiting for, pauses it until the page is idle again.
+waiting for, pauses it until the page is idle again. Under Save-Data, on a 2G
+link or on a device reporting 2 GB of memory or less, idle preloading is
+skipped. Whatever the device, pressing a link (`pointerdown`) starts its
+route's import, so the click that follows finds it on the way.
+
+A navigation lands one frame after the input that started it: the browser
+first paints the tap's feedback, then the router builds the new page. On a
+slow device a heavy page no longer holds the tap's frame hostage. A hidden tab,
+which paints nothing, does not wait.
 
 The payoff: a preloaded or eager route never flips `router.pending` and lands
-before the next paint — no spinner frame, no layout shift. `router.pending` is
+on the next frame — no spinner frame, no layout shift. `router.pending` is
 only ever true for a module or loader that genuinely has to be waited for, and
 the outgoing page stays on screen while it is. A chunk that fails to load
 surfaces as `router.error` (never an unhandled rejection) and can simply be
@@ -347,7 +355,7 @@ retried.
 | Option | Default | |
 | --- | --- | --- |
 | `base` | `"/"` | URL prefix the app is served under, e.g. `"/docs"`. It only matches at a segment boundary — `/docs/intro` is inside `"/docs"`, `/docsearch` is not. URLs outside it match nothing, so `start()` rejects (your server-side 404) and links to them are left to the browser. |
-| `preload` | `true` | Load the remaining routes' modules in the background once the page is idle. `false` turns it off. |
+| `preload` | `true` | Load the remaining routes' modules in the background once the page is idle. Skipped under Save-Data, on a 2G link or with 2 GB of memory or less; `false` turns it off. |
 | `idleTimeout` | `1000` | Milliseconds without taps, keys, wheel or scroll before preloading starts, or resumes after the user was busy. |
 | `onNavigate` | — | `(ctx, kind) => void` after every resolved navigation in the browser, including the initial one, once the DOM has caught up. `kind` is `"start"`, `"push"`, `"replace"`, `"pop"` (Back, Forward, `close()`) or `"layer"`. The hook for `document.title`, meta tags, focus, scrolling and analytics. Never called during SSR. |
 
@@ -678,14 +686,15 @@ createRouter(routes, {
 - **Scroll restoration on `popstate`** is the browser's (`scrollRestoration`),
   not the router's.
 - **Start one router per document.** Each `start()` adds its own delegated
-  `click` listener, and a second router's `start()` does not retire the first
+  `click` and `pointerdown` listeners, and a second router's `start()` does not retire the first
   (only a second `start()` on the *same* router does). To resolve a URL against
   another table, create a router and call only `match()`: it attaches nothing.
 - **Not included, by design:** hash and memory history — the route lives in
   the pathname, and a server must serve every route; two independently routed
   areas driven by one URL — a page can fill several regions with `into()`, but
-  they all belong to the one matched route; and hover preloading — prefetch on
-  hover by calling the route's own loader from a `mouseenter`.
+  they all belong to the one matched route; and hover preloading — a route
+  starts loading on press, and to prefetch on hover, call the route's own
+  loader from a `mouseenter`.
 
 ## Examples
 
