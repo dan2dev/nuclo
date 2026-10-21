@@ -89,7 +89,9 @@ export const ds = {
   sheetFilterWrap: css("pages-docs-styles-sheetFilterWrap", { display: "block", flexShrink: 0, padding: "4px 16px 12px" }),
   sheetList: css("pages-docs-styles-sheetList", { flex: "1", minHeight: "0", overflowY: "auto", padding: "0 8px 24px", raw: { "overscroll-behavior": "contain" } }),
 
-  section: css("pages-docs-styles-section", { animation: `${animations.riseIn} 0.58s cubic-bezier(0.22, 1, 0.36, 1) both`, paddingTop: "46px", marginTop: "46px", borderTop: `1px solid ${colors.border}`, raw: { "scroll-margin-top": "calc(var(--header-h) + 28px)" }, hover: { "& .section-anchor": { opacity: "1" } }, "@media (max-width: 900px)": { raw: { "scroll-margin-top": "calc(var(--header-h) + 76px)" } }, "@media (max-width: 600px)": { paddingTop: "34px", marginTop: "34px" } }),
+  section: css("pages-docs-styles-section", { animation: `${animations.riseIn} 0.58s cubic-bezier(0.22, 1, 0.36, 1) both`, paddingTop: "46px", marginTop: "46px", borderTop: `1px solid ${colors.border}`, raw: { "scroll-margin-top": "calc(var(--header-h) + 28px)",
+    // Every section is in the DOM, but only those near the viewport are styled, laid out and painted: opening the docs is a screenful's work.
+    "content-visibility": "auto", "contain-intrinsic-size": "auto 1200px" }, hover: { "& .section-anchor": { opacity: "1" } }, "@media (max-width: 900px)": { raw: { "scroll-margin-top": "calc(var(--header-h) + 76px)" } }, "@media (max-width: 600px)": { paddingTop: "34px", marginTop: "34px" } }),
   sectionDelay1: css("pages-docs-styles-sectionDelay1", { raw: { "animation-delay": "0.04s" } }),
   sectionDelay2: css("pages-docs-styles-sectionDelay2", { raw: { "animation-delay": "0.08s" } }),
   sectionDelay3: css("pages-docs-styles-sectionDelay3", { raw: { "animation-delay": "0.12s" } }),

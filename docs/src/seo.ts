@@ -86,8 +86,10 @@ export function updatePageMeta(ctx: RouteInfo, data?: unknown): void {
   const language = LOCALES[resolved.locale ?? DEFAULT_LOCALE];
   const { meta, url: pageUrl } = resolved;
   document.title = meta.title;
-  document.documentElement.lang = language.lang;
-  document.documentElement.dir = language.dir;
+  // Written only when they change: any write to <html lang|dir>, even the same value, restyles the whole page.
+  const root = document.documentElement;
+  if (root.lang !== language.lang) root.lang = language.lang;
+  if (root.dir !== language.dir) root.dir = language.dir;
 
   function setMeta(name: string, content: string) {
     let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;

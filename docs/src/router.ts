@@ -7,7 +7,7 @@ import { createRouter, type RouteTable } from 'nuclo-router';
 import { LOCALE_PREFIX, routeDefinitions, routeName, routePattern } from './route-definitions.ts';
 import { updatePageMeta } from './seo.ts';
 import { scanReveals } from './reveal.ts';
-import { LOCALES, applyLocale, i18n, localeOf, localePath, swapLocale, type Locale } from './i18n/index.ts';
+import { applyLocale, i18n, localeOf, localePath, swapLocale, type Locale } from './i18n/index.ts';
 
 export { routeName };
 
@@ -42,10 +42,7 @@ export const router = createRouter(
       if (shownLocale !== null && shownLocale !== locale) forceUpdate();
       shownLocale = locale;
       i18n.loading = false;
-      if (ctx.params.locale) {
-        document.documentElement.lang = LOCALES[locale].lang;
-        document.documentElement.dir = LOCALES[locale].dir;
-      }
+      // Sets <html lang/dir> too.
       updatePageMeta(ctx, router.data);
       scanReveals();
     },
