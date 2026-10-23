@@ -2,6 +2,8 @@
 
 **A lightweight, type-safe DOM framework for JavaScript and TypeScript. State stays plain and mutable. You control every update.**
 
+> **Status: alpha.** Nuclo has not reached 1.0, so its API can still change between releases. Pin the version you install and test your app before you upgrade.
+
 Create elements with plain functions. Pass a function anywhere a value depends on state. Nuclo registers that function and can run it again later. Change your JavaScript values directly. Then call `update()` to make Nuclo synchronize the DOM. Nuclo has no virtual DOM, no proxies, no signals, and no automatic state tracking.
 
 Nuclo's workflow has three steps:

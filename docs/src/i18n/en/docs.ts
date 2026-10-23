@@ -18,6 +18,7 @@ export const GROUPS: DocGroup[] = [
         content: `
       <p>Nuclo is a small DOM library for TypeScript. You build the page with plain functions such as <code>div()</code> and <code>button()</code>, keep state in ordinary variables, and call <code>update()</code> when the page should change.</p>
       <p>Nuclo has no virtual DOM, no compiler, no proxies and no signals.</p>
+      <p><strong>Status: alpha.</strong> Nuclo has not reached 1.0, so its API can still change between releases. Pin the version you install and test your app before you upgrade.</p>
       ${code("main.ts", `
 import 'nuclo'
 

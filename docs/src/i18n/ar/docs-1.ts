@@ -13,6 +13,7 @@ export const GROUPS_1: DocGroupText[] = [
         content: `
       <p>Nuclo مكتبة DOM صغيرة لـ TypeScript. تبني صفحتك بدوال عادية مثل <code>div()</code> و<code>button()</code>، وتحتفظ بالـ state في متغيرات عادية، وتستدعي <code>update()</code> في اللحظة التي تريد أن تتغير فيها الصفحة.</p>
       <p>لا virtual DOM هنا، ولا compiler، ولا proxies، ولا signals.</p>
+      <p><strong>الحالة: ألفا.</strong> لم يصل Nuclo إلى الإصدار 1.0 بعد، لذلك قد تتغير الـ API بين إصدار وآخر. حدّد الإصدار الذي تستخدمه بدقة، واختبر تطبيقك قبل الترقية.</p>
       ${code("main.ts", `
 import 'nuclo'
 

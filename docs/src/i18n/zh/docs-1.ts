@@ -13,6 +13,7 @@ export const GROUPS_1: DocGroupText[] = [
         content: `
       <p>Nuclo 是一个轻量的 TypeScript DOM 库。<code>div()</code>、<code>button()</code> 这些再普通不过的函数就是你的积木，状态放在普通变量里，页面需要变化时调用 <code>update()</code> 即可。</p>
       <p>没有虚拟 DOM，没有编译器，没有 Proxy，也没有信号。</p>
+      <p><strong>状态：Alpha。</strong>Nuclo 尚未发布 1.0，API 在不同版本之间仍可能变化。请锁定所安装的版本，升级前先测试你的应用。</p>
       ${code("main.ts", `
 import 'nuclo'
 
