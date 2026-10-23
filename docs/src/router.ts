@@ -55,10 +55,10 @@ export const currentRoute = () => routeName(router.pattern);
 export const href = (path: string): string => router.href(localePath(path));
 
 /** Goes to the current page under another locale. The page loader fetches that locale's text; the app shows its loader meanwhile. */
-export function switchLocale(locale: Locale): void {
+export async function switchLocale(locale: Locale): Promise<void> {
   if (locale === i18n.locale) return;
   i18n.loading = true;
   update();
   try { document.cookie = `nuclo-locale=${locale}; path=/; max-age=31536000; samesite=lax`; } catch {}
-  void router.go(swapLocale(router.url, locale)).finally(() => { i18n.loading = false; update(); });
+  await router.go(swapLocale(router.url, locale)).finally(() => { i18n.loading = false; update(); });
 }

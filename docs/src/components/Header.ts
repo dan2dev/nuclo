@@ -77,10 +77,10 @@ const st = {
   // 4px inset), and the current page sits on a handle that slides between them, taking each label's width.
   // Until the nav has measured the handle (and without JS) the current link wears the plate itself.
   nav: css("components-header-nav", { position: "relative", gridColumn: "2", display: "none", alignItems: "center", gap: "2px", padding: "4px", borderRadius: "14px", backgroundColor: colors.bgNavTrack, boxShadow: `inset 0 0 0 1px ${colors.border}`, [DESKTOP]: { display: "flex" },
-    '&[data-ready] > a[aria-current="page"]': { backgroundColor: "transparent", boxShadow: "none" },
-    "&[data-ready] > span": { opacity: "1", transition: `transform 0.45s ${SLIDE}, width 0.45s ${SLIDE}, opacity 0.2s ${EASE}, filter 0.2s ${EASE}` },
+    // The picked link drops its hover plate at once (no fade over the arriving handle) and has no hover of its own
+    '&[data-ready] > a[aria-current="page"]': { backgroundColor: "transparent", boxShadow: "none", transition: `color 0.2s ${EASE}, transform 0.2s ${EASE}` },
+    "&[data-ready] > span": { opacity: "1", transition: `transform 0.45s ${SLIDE}, width 0.45s ${SLIDE}, opacity 0.2s ${EASE}` },
     '&[data-ready][data-at="-1"] > span': { opacity: "0" },
-    '&:has(> a[aria-current="page"]:hover) > span': { filter: "brightness(1.1)" },
     "@media (prefers-reduced-motion: reduce)": { "&[data-ready][data-at] > span": { transition: "none" } } }),
   handle: css("components-header-handle", { position: "absolute", top: "4px", left: "0", height: "28px", width: "var(--w, 0px)", transform: "translateX(var(--x, 0px))", borderRadius: "10px", ...plateOn, opacity: "0", pointerEvents: "none" }),
   // A link is a pill above the handle. Hover lays a solid grey plate under it; the current page sits on the solid
@@ -251,10 +251,11 @@ export function Header() {
     update();
     try {
       await loadLocale({ locale: code });
+      // The page switches under the open modal, which then closes in the new language.
+      await switchLocale(code);
       if (languageEl) await languageEl.animate([{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(0.97)" }], { duration: motion(180), easing: EASE }).finished;
       languageEl?.close();
       closeMenu();
-      switchLocale(code);
     } catch {
       // A normal navigation lets the page loader handle a failed translation fetch.
       languageEl?.close();
@@ -385,7 +386,15 @@ export function Header() {
               placeHandle();
               void el.offsetWidth; // placed before the transitions are on, so the handle appears where it belongs
               el.setAttribute("data-ready", "");
-              const ro = new ResizeObserver(placeHandle); // e.g. the nav shown again past the mobile breakpoint
+              // e.g. the nav shown again past the mobile breakpoint, or new labels after a locale switch:
+              // the handle snaps to the new measure, it only slides between pages
+              const handle = el.firstElementChild as HTMLElement;
+              const ro = new ResizeObserver(() => {
+                handle.style.transition = "none";
+                placeHandle();
+                void handle.offsetWidth;
+                handle.style.transition = "";
+              });
               ro.observe(el);
               return () => { ro.disconnect(); navEl = undefined; };
             },
