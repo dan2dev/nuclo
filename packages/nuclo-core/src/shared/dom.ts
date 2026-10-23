@@ -1,4 +1,5 @@
 import { logError } from "./errors";
+import { isBrowser } from "./environment";
 import { removeAllListeners } from "../element/events";
 import { cleanupReactiveTextNode, cleanupReactiveElement } from "../update/registry";
 import { disposeElementLifecycle, hasActiveLifecycleRegistrations } from "../element/lifecycle";
@@ -13,23 +14,31 @@ export function cleanupNodeTree(node: Node) {
   // Clean up the node itself based on its type. Order-independent bookkeeping
   // (listeners, reactive registrations) runs up front; onDestroy is fired
   // below, after descendants — see the comment there.
-  if (node.nodeType === Node.ELEMENT_NODE) {
+  const type = node.nodeType;
+  if (type === 1 /* ELEMENT_NODE */) {
     const element = node as HTMLElement;
     removeAllListeners(element);
     cleanupReactiveElement(element);
-  } else if (node.nodeType === Node.TEXT_NODE) {
+  } else if (type === 3 /* TEXT_NODE */) {
     cleanupReactiveTextNode(node as Text);
-  } else if (node.nodeType === 8) {
+    return;
+  } else if (type === 8) {
     // A region's start marker or a view's anchor carries a disposer.
     disposeElementLifecycle(node);
+    return;
   }
 
   // Recursively clean up all child nodes
-  // Destroy callbacks can mutate the live childNodes collection. Snapshot
-  // only when hooks exist; ordinary cleanup needs no additional allocation.
-  const children = hasActiveLifecycleRegistrations() ? Array.from(node.childNodes) : node.childNodes;
-  for (let i = 0; i < children.length; i++) {
-    cleanupNodeTree(children[i]);
+  // Destroy callbacks can mutate the tree: snapshot only when hooks exist. In
+  // a real DOM, ordinary cleanup walks siblings — reading `childNodes` makes
+  // the engine allocate and cache a live NodeList on every visited node, which
+  // dominated bulk list clears. The SSR polyfill keeps children in a plain
+  // array (its sibling getters are O(n)), so it iterates that directly.
+  if (isBrowser && !hasActiveLifecycleRegistrations()) {
+    for (let child = node.firstChild; child !== null; child = child.nextSibling) cleanupNodeTree(child);
+  } else {
+    const children = hasActiveLifecycleRegistrations() ? Array.from(node.childNodes) : node.childNodes;
+    for (let i = 0; i < children.length; i++) cleanupNodeTree(children[i]);
   }
 
   // Fire onDestroy last — after every descendant's onDestroy has already run
@@ -41,7 +50,7 @@ export function cleanupNodeTree(node: Node) {
   // before its child factories are even invoked) — so mount is top-down,
   // destroy is bottom-up, the same LIFO discipline nested resource scopes
   // always use. No-op unless this exact element registered a callback.
-  if (node.nodeType === Node.ELEMENT_NODE) {
+  if (type === 1) {
     disposeElementLifecycle(node as HTMLElement);
   }
 }
