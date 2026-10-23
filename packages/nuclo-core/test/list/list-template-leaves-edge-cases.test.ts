@@ -2,13 +2,13 @@
 // @vitest-environment jsdom
 /**
  * Edge cases for template rows' flat leaf storage (RowLeaves / LEAF_STRIDE),
- * the shared leafScratch collection buffer, and the skeleton's reactive-class
+ * the per-row exact-size leaves array (openLeaves), and the skeleton's reactive-class
  * scrub (the class attribute is removed instead of set to "").
  *
  * A row's dynamic leaves live in one flat array [kind, node, fn, last, ...]
  * owned by its list record. These tests pin the layout, flush semantics
  * (sanitising, error tolerance, write-on-change only), that records keep
- * flushing after the template is deactivated, that the scratch buffer is
+ * flushing after the template is deactivated, that the leaf cursor is
  * re-entrant and never leaks entries between rows, and that cloned rows carry
  * exactly the class attributes a normally built row would.
  */
@@ -220,7 +220,7 @@ describe("flushRowLeaves semantics", () => {
   });
 });
 
-describe("leafScratch — re-entrancy and failure paths", () => {
+describe("leaf cursor — re-entrancy and failure paths", () => {
   it("collects correct leaves when a resolver renders another list mid-row", () => {
     const rendered = new Set<number>();
     const innerHosts: HTMLElement[] = [];

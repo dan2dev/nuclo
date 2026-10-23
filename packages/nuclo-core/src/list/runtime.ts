@@ -19,7 +19,7 @@ import type { ListRuntime, ListItemRecord } from "./types";
 import { all, membersOf, track, LIST_KIND, type UpdateScope } from "../update/scope";
 import { isBrowser } from "../shared/environment";
 import { getFactoryMods, getFactoryTag, withMetadataOnlyFactories, getMetadataOnlyFactoryCheckpoint, releaseMetadataOnlyFactories } from "../element/factory-meta";
-import { analyzeFactory, prepareSkeleton, instantiateTemplate, adoptTemplateLeaves, flushRowLeaves, cleanupTemplateRow, NO_LEAVES, type RowLeaves } from "./template";
+import { analyzeFactory, prepareSkeleton, instantiateTemplate, adoptTemplateLeaves, flushRowLeaves, cleanupTemplateRow, openLeaves, leafCursor, restoreLeafCursor } from "./template";
 import { mountQueueMark, cancelMountsSince } from "../element/lifecycle";
 import { isViewAnchor } from "../region/runtime";
 
@@ -95,21 +95,6 @@ function rebuildRowNormally<TItem, TTagName extends ElementTagName>(
   return toRowElement(runtime.renderItem(item, index), runtime.host, index);
 }
 
-/**
- * Shared collection buffer for a template row's dynamic leaves. A per-row `[]`
- * grown by push() gets a ~16-slot backing store which the record then retains
- * for the row's whole lifetime; collecting here and keeping an exact-size
- * slice() drops that slack. Each use starts at the current length and
- * truncates back to it afterwards, so a nested render (a resolver that renders
- * another list) can't clobber an outer row's leaves, and the buffer never
- * retains nodes or resolvers between rows.
- */
-const leafScratch: RowLeaves = [];
-
-function takeLeaves(start: number): RowLeaves {
-  return leafScratch.length > start ? leafScratch.slice(start) : NO_LEAVES;
-}
-
 function renderItem<TItem, TTagName extends ElementTagName>(
   runtime: ListRuntime<TItem, TTagName>,
   item: TItem,
@@ -149,13 +134,14 @@ function renderItemWithTemplate<TItem, TTagName extends ElementTagName>(
         if (tmpl && el) {
           const skeleton = (el as unknown as Node).cloneNode(true) as Element;
           prepareSkeleton(tmpl, skeleton);
-          const start = leafScratch.length;
+          const outer = leafCursor();
+          const leaves = openLeaves(tmpl);
           let adopted = false;
           try {
-            adopted = adoptTemplateLeaves(tmpl, mods, el as unknown as Element, leafScratch);
-            if (adopted) runtime.lastRenderLeaves = takeLeaves(start);
+            adopted = adoptTemplateLeaves(tmpl, mods, el as unknown as Element, leaves);
+            if (adopted) runtime.lastRenderLeaves = leaves;
           } finally {
-            leafScratch.length = start;
+            restoreLeafCursor(outer);
           }
           if (!adopted) {
             runtime.template = null;
@@ -170,14 +156,15 @@ function renderItemWithTemplate<TItem, TTagName extends ElementTagName>(
         return el;
       }
       const clone = template.skeleton.cloneNode(true) as Element;
-      const start = leafScratch.length;
+      const outer = leafCursor();
+      const leaves = openLeaves(template.tmpl);
       try {
-        if (getFactoryTag(result) === template.tmpl.tag && instantiateTemplate(template.tmpl, mods, clone, leafScratch)) {
-          runtime.lastRenderLeaves = takeLeaves(start);
+        if (getFactoryTag(result) === template.tmpl.tag && instantiateTemplate(template.tmpl, mods, clone, leaves)) {
+          runtime.lastRenderLeaves = leaves;
           return clone as unknown as ExpandedElement<TTagName>;
         }
       } finally {
-        leafScratch.length = start;
+        restoreLeafCursor(outer);
       }
       // Heterogeneous rows: deactivate and rebuild this row normally. The
       // abandoned clone is disconnected and unregistered — plain garbage.

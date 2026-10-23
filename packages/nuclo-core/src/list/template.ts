@@ -80,17 +80,26 @@ export interface AttrSpec {
    * not copy (e.g. a <select>'s value) — those rows always write.
    */
   cloned: boolean;
-  /** Static attrs: first-row value. Events: normalized native property name. */
-  value?: unknown;
+  /** Static attrs: first-row value. Events: normalized native property name. Else undefined (one shape for every spec). */
+  value: unknown;
 }
 
-export type TemplateSlot =
-  | { kind: typeof SLOT_ATTRS; keys: AttrSpec[] }
-  | { kind: typeof SLOT_TEXT }
-  | { kind: typeof SLOT_REACTIVE_TEXT }
-  | { kind: typeof SLOT_CHILD; child: TemplateNode }
-  | { kind: typeof SLOT_NULL }
-  | { kind: typeof SLOT_EVENT };
+/**
+ * One object shape for every slot (unused fields null) so `slot.kind` reads
+ * stay monomorphic in the per-row patch loop; a union of shapes made that
+ * property access polymorphic for every slot of every row.
+ */
+export interface TemplateSlot {
+  kind: number;
+  /** SLOT_ATTRS only. */
+  keys: AttrSpec[] | null;
+  /** SLOT_CHILD only. */
+  child: TemplateNode | null;
+}
+
+function slot(kind: number, keys: AttrSpec[] | null = null, child: TemplateNode | null = null): TemplateSlot {
+  return { kind, keys, child };
+}
 
 export interface TemplateNode {
   tag: string;
@@ -106,6 +115,8 @@ export interface TemplateNode {
    * what to release — and cleanup nulls them.
    */
   eventProps: string[] | null;
+  /** Slots a row's RowLeaves array needs (LEAF_STRIDE per dynamic leaf, subtree included). */
+  leafCount: number;
   /**
    * Handlers that went through addEventListener (on() modifiers, or an `on*`
    * attribute the element has no IDL property for) and are tracked per
@@ -122,6 +133,36 @@ export interface TemplateNode {
  */
 export const NO_LEAVES: RowLeaves = [];
 
+/**
+ * Write cursor into the row being patched. A template knows its leaf count,
+ * so each row gets an exact-size array written by index — no shared scratch
+ * buffer to push into and slice out of. A resolver probed mid-row may render
+ * a nested list, which opens rows of its own: callers save the cursor with
+ * leafCursor() before openLeaves() and put it back after the row.
+ */
+let leafPos = 0;
+
+export function leafCursor() {
+  return leafPos;
+}
+
+export function restoreLeafCursor(pos: number) {
+  leafPos = pos;
+}
+
+export function openLeaves(tmpl: TemplateNode): RowLeaves {
+  leafPos = 0;
+  return tmpl.leafCount === 0 ? NO_LEAVES : new Array<unknown>(tmpl.leafCount);
+}
+
+function putLeaf(leaves: RowLeaves, kind: number, node: Node, fn: unknown, last: string) {
+  leaves[leafPos] = kind;
+  leaves[leafPos + 1] = node;
+  leaves[leafPos + 2] = fn;
+  leaves[leafPos + 3] = last;
+  leafPos += LEAF_STRIDE;
+}
+
 export interface ListTemplate {
   tmpl: TemplateNode;
   skeleton: Element;
@@ -132,8 +173,8 @@ function setsAttribute(slots: readonly TemplateSlot[], key: string) {
   for (let i = 0; i < slots.length; i++) {
     const slot = slots[i];
     if (slot.kind !== SLOT_ATTRS) continue;
-    for (let k = 0; k < slot.keys.length; k++) {
-      if (slot.keys[k].key === key && slot.keys[k].kind !== ATTR_NULL) return true;
+    for (let k = 0; k < slot.keys!.length; k++) {
+      if (slot.keys![k].key === key && slot.keys![k].kind !== ATTR_NULL) return true;
     }
   }
   return false;
@@ -149,7 +190,7 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
   for (let i = 0; i < mods.length; i++) {
     const mod = mods[i];
     if (mod == null) {
-      slots.push({ kind: SLOT_NULL });
+      slots.push(slot(SLOT_NULL));
       continue;
     }
 
@@ -162,7 +203,7 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
         if (!childTag) return null;
         const child = analyzeFactory(childTag, childMods);
         if (!child) return null;
-        slots.push({ kind: SLOT_CHILD, child });
+        slots.push(slot(SLOT_CHILD, null, child));
         continue;
       }
       if ((mod as () => unknown).length === 0) {
@@ -176,13 +217,13 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
           return null;
         }
         if (v == null || (typeof v !== "object" && typeof v !== "function")) {
-          slots.push({ kind: SLOT_REACTIVE_TEXT });
+          slots.push(slot(SLOT_REACTIVE_TEXT));
           continue;
         }
         return null;
       }
       if (isEventModifier(mod)) {
-        slots.push({ kind: SLOT_EVENT });
+        slots.push(slot(SLOT_EVENT));
         continue;
       }
       // on("mount"/"destroy"), when()/list() blocks, arbitrary NodeModFns.
@@ -198,7 +239,7 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
         const key = keys[k];
         const v = attrs[key];
         if (v == null) {
-          specs.push({ key, kind: ATTR_NULL, prop: false, cloned: false });
+          specs.push({ key, kind: ATTR_NULL, prop: false, cloned: false, value: undefined });
           continue;
         }
         if (key === "style") return null;
@@ -215,7 +256,7 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
             continue;
           }
           if (key === "className" && (v as () => unknown).length === 0) {
-            specs.push({ key, kind: ATTR_REACTIVE_CLASSNAME, prop: false, cloned: false });
+            specs.push({ key, kind: ATTR_REACTIVE_CLASSNAME, prop: false, cloned: false, value: undefined });
             continue;
           }
           // Reactive non-className attributes need skeleton scrubbing per
@@ -225,26 +266,33 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
         if (vt === "object") return null;
         specs.push({ key, kind: ATTR_STATIC, prop: false, cloned: false, value: v });
       }
-      slots.push({ kind: SLOT_ATTRS, keys: specs });
+      slots.push(slot(SLOT_ATTRS, specs));
       continue;
     }
 
     // string | number | boolean → static text child
-    slots.push({ kind: SLOT_TEXT });
+    slots.push(slot(SLOT_TEXT));
   }
 
   let events = false;
   let subtreeEvents = false;
+  let leafCount = 0;
   for (let i = 0; i < slots.length; i++) {
-    const slot = slots[i];
-    if (slot.kind === SLOT_EVENT) events = true;
-    else if (slot.kind === SLOT_CHILD) subtreeEvents ||= slot.child.subtreeEvents;
-    else if (slot.kind === SLOT_ATTRS) {
-      for (let k = 0; k < slot.keys.length; k++) if (slot.keys[k].kind === ATTR_EVENT) events = true;
+    const s = slots[i];
+    if (s.kind === SLOT_EVENT) events = true;
+    else if (s.kind === SLOT_REACTIVE_TEXT) leafCount += LEAF_STRIDE;
+    else if (s.kind === SLOT_CHILD) {
+      subtreeEvents ||= s.child!.subtreeEvents;
+      leafCount += s.child!.leafCount;
+    } else if (s.kind === SLOT_ATTRS) {
+      for (let k = 0; k < s.keys!.length; k++) {
+        if (s.keys![k].kind === ATTR_EVENT) events = true;
+        else if (s.keys![k].kind === ATTR_REACTIVE_CLASSNAME) leafCount += LEAF_STRIDE;
+      }
     }
   }
   // `tracked` starts conservative; prepareSkeleton() narrows it.
-  return { tag, slots, events, subtreeEvents: events || subtreeEvents, eventProps: null, tracked: events };
+  return { tag, slots, events, subtreeEvents: events || subtreeEvents, eventProps: null, tracked: events, leafCount };
 }
 
 /**
@@ -275,7 +323,7 @@ export function cleanupTemplateRow(tmpl: TemplateNode, el: Element) {
         child = child.nextSibling;
         break;
       case SLOT_CHILD:
-        if (slot.child.subtreeEvents) cleanupTemplateRow(slot.child, child as Element);
+        if (slot.child!.subtreeEvents) cleanupTemplateRow(slot.child!, child as Element);
         child = child.nextSibling;
         break;
       // SLOT_ATTRS / SLOT_NULL / SLOT_EVENT: no node produced
@@ -299,7 +347,7 @@ export function prepareSkeleton(tmpl: TemplateNode, skeleton: Element) {
         tracked = true;
         break;
       case SLOT_ATTRS: {
-        const specs = slot.keys;
+        const specs = slot.keys!;
         for (let k = 0; k < specs.length; k++) {
           const spec = specs[k];
           if (spec.kind === ATTR_EVENT) {
@@ -328,7 +376,7 @@ export function prepareSkeleton(tmpl: TemplateNode, skeleton: Element) {
         break;
       case SLOT_CHILD:
         if (!child) return;
-        prepareSkeleton(slot.child, child as Element);
+        prepareSkeleton(slot.child!, child as Element);
         child = child.nextSibling;
         break;
       // SLOT_NULL: no node produced
@@ -361,7 +409,7 @@ export function instantiateTemplate(
       case SLOT_ATTRS: {
         if (mod == null || typeof mod !== "object") return false;
         const attrs = mod as Record<string, unknown>;
-        const specs = slot.keys;
+        const specs = slot.keys!;
         let attrCount = 0;
         for (const _k in attrs) attrCount++;
         if (attrCount !== specs.length) return false;
@@ -405,7 +453,7 @@ export function instantiateTemplate(
               }
               const s = resolved ? String(resolved) : "";
               if (s) (el as HTMLElement).className = s;
-              leaves.push(LEAF_CLASSNAME, el, fn, s);
+              putLeaf(leaves, LEAF_CLASSNAME, el, fn, s);
               break;
             }
             case ATTR_NULL: {
@@ -442,7 +490,7 @@ export function instantiateTemplate(
         const s = toText(v);
         const textNode = child as Text;
         textNode.nodeValue = s;
-        leaves.push(LEAF_TEXT, textNode, mod, s);
+        putLeaf(leaves, LEAF_TEXT, textNode, mod, s);
         child = textNode.nextSibling;
         break;
       }
@@ -450,9 +498,9 @@ export function instantiateTemplate(
       case SLOT_CHILD: {
         const childMods = getFactoryMods(mod);
         if (childMods === undefined) return false;
-        if (getFactoryTag(mod) !== slot.child.tag) return false;
+        if (getFactoryTag(mod) !== slot.child!.tag) return false;
         if (!child) return false;
-        if (!instantiateTemplate(slot.child, childMods, child as Element, leaves)) return false;
+        if (!instantiateTemplate(slot.child!, childMods, child as Element, leaves)) return false;
         child = child.nextSibling;
         break;
       }
@@ -501,7 +549,7 @@ export function adoptTemplateLeaves(
       case SLOT_ATTRS: {
         if (mod == null || typeof mod !== "object") return false;
         const attrs = mod as Record<string, unknown>;
-        const specs = slot.keys;
+        const specs = slot.keys!;
         let k = 0;
         for (const key in attrs) {
           if (k >= specs.length) return false;
@@ -512,7 +560,7 @@ export function adoptTemplateLeaves(
           if (spec.kind === ATTR_REACTIVE_CLASSNAME) {
             if (typeof v !== "function" || (v as () => unknown).length !== 0) return false;
             cleanupReactiveElement(el);
-            leaves.push(LEAF_CLASSNAME, el, v, (el as HTMLElement).className);
+            putLeaf(leaves, LEAF_CLASSNAME, el, v, (el as HTMLElement).className);
           }
         }
         if (k !== specs.length) return false;
@@ -529,7 +577,7 @@ export function adoptTemplateLeaves(
         if (!child || child.nodeType !== 3) return false;
         const textNode = child as Text;
         cleanupReactiveTextNode(textNode);
-        leaves.push(LEAF_TEXT, textNode, mod, textNode.nodeValue ?? "");
+        putLeaf(leaves, LEAF_TEXT, textNode, mod, textNode.nodeValue ?? "");
         child = textNode.nextSibling;
         break;
       }
@@ -537,9 +585,9 @@ export function adoptTemplateLeaves(
       case SLOT_CHILD: {
         const childMods = getFactoryMods(mod);
         if (childMods === undefined) return false;
-        if (getFactoryTag(mod) !== slot.child.tag) return false;
+        if (getFactoryTag(mod) !== slot.child!.tag) return false;
         if (!child) return false;
-        if (!adoptTemplateLeaves(slot.child, childMods, child as Element, leaves)) return false;
+        if (!adoptTemplateLeaves(slot.child!, childMods, child as Element, leaves)) return false;
         child = child.nextSibling;
         break;
       }

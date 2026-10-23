@@ -2,7 +2,7 @@
 // @vitest-environment jsdom
 /**
  * Real-GC collectability edge cases for the list() template changes:
- * pinned-only placement, flat record-owned leaves, the shared leafScratch
+ * pinned-only placement, flat record-owned leaves, the per-row leaves
  * buffer, template deactivation, failed clones, on() rows and the retained
  * skeleton. Each case removes rows (or the whole list), drops every strong
  * reference, forces GC and asserts the rows and their items are gone.
