@@ -32,7 +32,7 @@ render(Counter, document.body);
 - **State-Dependent Values** – Pass a function for any text, attribute, condition, or list that depends on state; Nuclo can evaluate it again later
 - **Explicit and Predictable** – Reevaluation doesn't happen on mutation — you trigger it yourself with a simple `update()` call
 - **Real DOM, No Virtual Layer** – Nuclo creates and updates real DOM nodes directly; there's no virtual DOM to diff
-- **Tiny Footprint** – ~<!-- size:core-gzip -->18.4<!-- /size --> KB gzipped, zero dependencies
+- **Tiny Footprint** – ~<!-- size:core-gzip -->18.9<!-- /size --> KB gzipped, zero dependencies
 - **Global Tag Builders** – Natural API with global functions for all HTML and SVG elements
 - **TypeScript-First** – Full type definitions for all 175 HTML and SVG builders
 - **Targeted DOM Updates** – `update()` re-runs registered state-dependent values and only touches DOM where values changed
