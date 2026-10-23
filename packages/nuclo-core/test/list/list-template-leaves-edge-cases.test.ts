@@ -43,11 +43,14 @@ afterEach(() => {
 });
 
 describe("RowLeaves layout", () => {
-  it("stores null (no array at all) for template rows without dynamic leaves", () => {
+  it("stores one shared empty array for template rows without dynamic leaves", () => {
     const rows = makeRows(3);
     const runtime = createListRuntime(() => rows, (row: Row) => div({ className: "static" }, span(row.label)), container as never, 0);
     expect(runtime.template).toBeTruthy();
-    for (const record of runtime.records) expect(record.dyn).toBeNull();
+    // Non-null marks the row as template-built (cleanup follows the slot
+    // program); shared so leafless rows allocate nothing.
+    for (const record of runtime.records) expect(record.dyn).toEqual([]);
+    expect(runtime.records[1].dyn).toBe(runtime.records[0].dyn);
   });
 
   it("lays leaves out as [kind, node, fn, last] in slot order, identically for the first row and clones", () => {

@@ -12,10 +12,16 @@ const ON_DOUBLE_CLICK = "onDoubleClick";
  */
 const RESERVED_LIFECYCLE_ATTRIBUTES = new Set(["onMount", "onDestroy"]);
 
-type FallbackEventListenerList = Array<string | EventListener>;
+/**
+ * Flat [name, listener, name, listener, ...] pairs. A Map per element made
+ * every event-carrying list row pay a Map allocation (and its retained size);
+ * elements almost always carry one or two handlers, so a linear scan over a
+ * tiny array wins on both.
+ */
+type EventListenerPairs = Array<string | EventListener>;
 
-const fallbackEventListeners = new WeakMap<EventTarget, FallbackEventListenerList>();
-const nativeEventHandlers = new WeakMap<HTMLElement, Map<string, EventListener>>();
+const fallbackEventListeners = new WeakMap<EventTarget, EventListenerPairs>();
+const nativeEventHandlers = new WeakMap<HTMLElement, EventListenerPairs>();
 
 /** Converts a public camel-cased event attribute to its native IDL property. */
 export function eventAttributeToProperty(attribute: string): string | null {
@@ -45,9 +51,18 @@ export function setEventAttribute(
 ) {
   if (property in element) {
     (element as unknown as Record<string, unknown>)[property] = listener;
-    let handlers = nativeEventHandlers.get(element);
-    if (!handlers) nativeEventHandlers.set(element, handlers = new Map());
-    handlers.set(property, listener);
+    const handlers = nativeEventHandlers.get(element);
+    if (!handlers) {
+      nativeEventHandlers.set(element, [property, listener]);
+      return;
+    }
+    for (let i = 0; i < handlers.length; i += 2) {
+      if (handlers[i] === property) {
+        handlers[i + 1] = listener;
+        return;
+      }
+    }
+    handlers.push(property, listener);
     return;
   }
 
@@ -79,9 +94,10 @@ export function removeEventAttributes(element: HTMLElement) {
   const handlers = nativeEventHandlers.get(element);
   if (handlers) {
     const target = element as unknown as Record<string, unknown>;
-    for (const [property, listener] of handlers) {
+    for (let i = 0; i < handlers.length; i += 2) {
+      const property = handlers[i] as string;
       // Leave a handler that external code replaced after our assignment alone.
-      if (target[property] === listener) target[property] = null;
+      if (target[property] === handlers[i + 1]) target[property] = null;
     }
     nativeEventHandlers.delete(element);
   }

@@ -33,6 +33,7 @@
 
 import { getFactoryMods, getFactoryTag, isEventModifier } from "../element/factory-meta";
 import { eventAttributeToProperty, setEventAttribute } from "../element/event-attributes";
+import { removeAllListeners } from "../element/events";
 import { isNode } from "../shared/type-guards";
 import { cleanupReactiveElement, cleanupReactiveTextNode } from "../update/registry";
 import { toText } from "../update/reactive-text";
@@ -94,7 +95,32 @@ export type TemplateSlot =
 export interface TemplateNode {
   tag: string;
   slots: TemplateSlot[];
+  /** This element carries event handlers (an on() modifier or an `on*` attribute). */
+  events: boolean;
+  /** Any element in this subtree (itself included) carries event handlers. */
+  subtreeEvents: boolean;
+  /**
+   * Native IDL handler properties (`onclick`, ...) this element's `on*`
+   * attributes set. Filled by prepareSkeleton(). Clones assign these
+   * directly — no per-element bookkeeping, the slot program is the record of
+   * what to release — and cleanup nulls them.
+   */
+  eventProps: string[] | null;
+  /**
+   * Handlers that went through addEventListener (on() modifiers, or an `on*`
+   * attribute the element has no IDL property for) and are tracked per
+   * element; cleanup releases them with removeAllListeners().
+   */
+  tracked: boolean;
 }
+
+/**
+ * Shared leaves of a template row that has none. Every template-built row
+ * gets a non-null `dyn`, which is how the cleanup paths tell it from a row
+ * built normally (whose subtree may hold registrations the template never
+ * produces).
+ */
+export const NO_LEAVES: RowLeaves = [];
 
 export interface ListTemplate {
   tmpl: TemplateNode;
@@ -207,7 +233,54 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
     slots.push({ kind: SLOT_TEXT });
   }
 
-  return { tag, slots };
+  let events = false;
+  let subtreeEvents = false;
+  for (let i = 0; i < slots.length; i++) {
+    const slot = slots[i];
+    if (slot.kind === SLOT_EVENT) events = true;
+    else if (slot.kind === SLOT_CHILD) subtreeEvents ||= slot.child.subtreeEvents;
+    else if (slot.kind === SLOT_ATTRS) {
+      for (let k = 0; k < slot.keys.length; k++) if (slot.keys[k].kind === ATTR_EVENT) events = true;
+    }
+  }
+  // `tracked` starts conservative; prepareSkeleton() narrows it.
+  return { tag, slots, events, subtreeEvents: events || subtreeEvents, eventProps: null, tracked: events };
+}
+
+/**
+ * Releases a template row's event handlers before its DOM is dropped — the
+ * only bookkeeping a template row holds outside its record. Its reactive
+ * leaves are record-owned, and analysis bails on lifecycle hooks, nested
+ * blocks and anything else cleanupNodeTree() would have to visit, so the
+ * walk follows the slot program straight to the event-carrying elements and
+ * skips every subtree without one — instead of a WeakMap probe per node.
+ */
+export function cleanupTemplateRow(tmpl: TemplateNode, el: Element) {
+  if (!tmpl.subtreeEvents) return;
+  const props = tmpl.eventProps;
+  if (props !== null) {
+    const target = el as unknown as Record<string, unknown>;
+    // A clone's handler is whatever the row set; nothing else of nuclo's
+    // writes these properties on a template row.
+    for (let i = 0; i < props.length; i++) if (typeof target[props[i]] === "function") target[props[i]] = null;
+  }
+  if (tmpl.tracked) removeAllListeners(el as HTMLElement);
+  const slots = tmpl.slots;
+  let child: Node | null = el.firstChild;
+  for (let i = 0; i < slots.length && child !== null; i++) {
+    const slot = slots[i];
+    switch (slot.kind) {
+      case SLOT_TEXT:
+      case SLOT_REACTIVE_TEXT:
+        child = child.nextSibling;
+        break;
+      case SLOT_CHILD:
+        if (slot.child.subtreeEvents) cleanupTemplateRow(slot.child, child as Element);
+        child = child.nextSibling;
+        break;
+      // SLOT_ATTRS / SLOT_NULL / SLOT_EVENT: no node produced
+    }
+  }
 }
 
 /**
@@ -218,14 +291,22 @@ export function analyzeFactory(tag: string, mods: readonly unknown[]): TemplateN
 export function prepareSkeleton(tmpl: TemplateNode, skeleton: Element) {
   const slots = tmpl.slots;
   let child: Node | null = skeleton.firstChild;
+  let tracked = false;
   for (let i = 0; i < slots.length; i++) {
     const slot = slots[i];
     switch (slot.kind) {
+      case SLOT_EVENT:
+        tracked = true;
+        break;
       case SLOT_ATTRS: {
         const specs = slot.keys;
         for (let k = 0; k < specs.length; k++) {
           const spec = specs[k];
-          if (spec.kind === ATTR_STATIC) {
+          if (spec.kind === ATTR_EVENT) {
+            spec.prop = (spec.value as string) in skeleton;
+            if (spec.prop) (tmpl.eventProps ??= []).push(spec.value as string);
+            else tracked = true;
+          } else if (spec.kind === ATTR_STATIC) {
             spec.prop = spec.key in skeleton;
             spec.cloned = spec.prop
               ? (skeleton as unknown as Record<string, unknown>)[spec.key] === spec.value
@@ -250,9 +331,10 @@ export function prepareSkeleton(tmpl: TemplateNode, skeleton: Element) {
         prepareSkeleton(slot.child, child as Element);
         child = child.nextSibling;
         break;
-      // SLOT_NULL / SLOT_EVENT: no node produced
+      // SLOT_NULL: no node produced
     }
   }
+  tmpl.tracked = tracked;
 }
 
 /**
@@ -302,7 +384,11 @@ export function instantiateTemplate(
             case ATTR_EVENT: {
               if (typeof v !== "function") return false;
               const eventProperty = spec.value as string;
-              setEventAttribute(el as HTMLElement, eventProperty, v as EventListener);
+              // Fresh clone, known property: a plain assignment. The slot
+              // program (eventProps) is what cleanup consults, so no
+              // per-element handler bookkeeping is needed.
+              if (spec.prop) (el as unknown as Record<string, unknown>)[eventProperty] = v;
+              else setEventAttribute(el as HTMLElement, eventProperty, v as EventListener);
               break;
             }
             case ATTR_REACTIVE_CLASSNAME: {

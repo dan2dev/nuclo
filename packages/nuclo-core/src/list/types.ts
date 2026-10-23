@@ -1,4 +1,4 @@
-import type { ListTemplate, RowLeaves } from "./template";
+import type { ListTemplate, RowLeaves, TemplateNode } from "./template";
 
 export interface ListItemRecord<TItem, TTagName extends ElementTagName = ElementTagName> {
   item: TItem;
@@ -30,6 +30,12 @@ export interface ListRuntime<TItem, TTagName extends ElementTagName = ElementTag
    * shape (build rows normally forever), object = clone-and-patch active.
    */
   template: ListTemplate | null | undefined;
+  /**
+   * Slot program of the template this list's rows were cloned from. Set once
+   * with `template` and kept after the template deactivates: rows built from
+   * it (`dyn !== null`) are still cleaned up by it when they leave.
+   */
+  rowShape: TemplateNode | null;
   /**
    * Dynamic leaves of the most recent template-built row, for the record
    * creation sites to attach to the new record. Null when the row was built

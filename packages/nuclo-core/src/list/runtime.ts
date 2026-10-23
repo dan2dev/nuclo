@@ -19,7 +19,7 @@ import type { ListRuntime, ListItemRecord } from "./types";
 import { all, membersOf, track, LIST_KIND, type UpdateScope } from "../update/scope";
 import { isBrowser } from "../shared/environment";
 import { getFactoryMods, getFactoryTag, withMetadataOnlyFactories, getMetadataOnlyFactoryCheckpoint, releaseMetadataOnlyFactories } from "../element/factory-meta";
-import { analyzeFactory, prepareSkeleton, instantiateTemplate, adoptTemplateLeaves, flushRowLeaves, type RowLeaves } from "./template";
+import { analyzeFactory, prepareSkeleton, instantiateTemplate, adoptTemplateLeaves, flushRowLeaves, cleanupTemplateRow, NO_LEAVES, type RowLeaves } from "./template";
 import { mountQueueMark, cancelMountsSince } from "../element/lifecycle";
 import { isViewAnchor } from "../region/runtime";
 
@@ -106,8 +106,8 @@ function rebuildRowNormally<TItem, TTagName extends ElementTagName>(
  */
 const leafScratch: RowLeaves = [];
 
-function takeLeaves(start: number): RowLeaves | null {
-  return leafScratch.length > start ? leafScratch.slice(start) : null;
+function takeLeaves(start: number): RowLeaves {
+  return leafScratch.length > start ? leafScratch.slice(start) : NO_LEAVES;
 }
 
 function renderItem<TItem, TTagName extends ElementTagName>(
@@ -163,6 +163,7 @@ function renderItemWithTemplate<TItem, TTagName extends ElementTagName>(
             return el;
           }
           runtime.template = { tmpl, skeleton };
+          runtime.rowShape = tmpl;
         } else {
           runtime.template = null;
         }
@@ -195,12 +196,42 @@ function renderItemWithTemplate<TItem, TTagName extends ElementTagName>(
 }
 
 /**
+ * Releases a row's bookkeeping before its DOM goes. A template-built row
+ * (`dyn !== null`) holds nothing cleanupNodeTree() would find except event
+ * handlers, and its slot program says exactly where those are.
+ */
+function cleanupRow<TItem, TTagName extends ElementTagName>(
+  runtime: ListRuntime<TItem, TTagName>,
+  record: ListItemRecord<TItem, TTagName>,
+) {
+  const node = record.element as unknown as Node;
+  const shape = runtime.rowShape;
+  if (record.dyn !== null && shape) cleanupTemplateRow(shape, node as Element);
+  else cleanupNodeTree(node);
+}
+
+/** Detaches one row (partial removals); the bulk paths use bulkClearRecords. */
+function removeRow<TItem, TTagName extends ElementTagName>(
+  runtime: ListRuntime<TItem, TTagName>,
+  record: ListItemRecord<TItem, TTagName>,
+) {
+  const shape = runtime.rowShape;
+  if (record.dyn === null || !shape) return safeRemoveChild(record.element as unknown as Node);
+  const node = record.element as unknown as Node;
+  if (!node.parentNode) return false;
+  cleanupTemplateRow(shape, node as Element);
+  node.parentNode.removeChild(node);
+  return true;
+}
+
+/**
  * Cleans every row before detaching it. Weak bookkeeping permits collection,
  * but retained DOM nodes must stop invoking removed views' event handlers.
  * Keep the native bulk removal below to avoid Range's quadratic DOM walk.
  * Returns false without mutation when the markers no longer share a parent.
  */
 function bulkClearRecords<TItem, TTagName extends ElementTagName>(
+  runtime: ListRuntime<TItem, TTagName>,
   records: ReadonlyArray<ListItemRecord<TItem, TTagName>>,
   parent: Node & ParentNode,
   startMarker: Comment,
@@ -209,8 +240,7 @@ function bulkClearRecords<TItem, TTagName extends ElementTagName>(
   if (startMarker.parentNode !== parent || endMarker.parentNode !== parent) return false;
 
   for (let i = 0; i < records.length; i++) {
-    const node = records[i].element as unknown as Node | null;
-    if (node) cleanupNodeTree(node);
+    if (records[i].element) cleanupRow(runtime, records[i]);
   }
 
   // Fastest clear: when the list spans the whole parent (the common case — a
@@ -372,8 +402,8 @@ function diffRows<TItem, TTagName extends ElementTagName>(
 
   // Fast path — clear: clean the rows before the native bulk removal.
   if (newLen === 0) {
-    if (oldLen > 0 && !bulkClearRecords(oldRecords, parent, startMarker, endMarker)) {
-      for (let i = 0; i < oldLen; i++) safeRemoveChild(oldRecords[i].element as unknown as Node);
+    if (oldLen > 0 && !bulkClearRecords(runtime, oldRecords, parent, startMarker, endMarker)) {
+      for (let i = 0; i < oldLen; i++) removeRow(runtime, oldRecords[i]);
     }
     runtime.records = [];
     runtime.lastSyncedItems = [];
@@ -419,7 +449,7 @@ function diffRows<TItem, TTagName extends ElementTagName>(
   // Every new row was trimmed → pure removal. This is always partial (a full
   // clear was handled above), so remove each row eagerly.
   if (newStart === newEnd) {
-    for (let i = oldStart; i < oldEnd; i++) safeRemoveChild(oldRecords[i].element as unknown as Node);
+    for (let i = oldStart; i < oldEnd; i++) removeRow(runtime, oldRecords[i]);
     oldRecords.splice(oldStart, oldEnd - oldStart);
     runtime.allRecordsCreatedAt = undefined;
     runtime.lastSyncedItems = items.slice();
@@ -482,8 +512,8 @@ function diffRows<TItem, TTagName extends ElementTagName>(
   // Nothing survives anywhere → full replace: bulk-detach all old rows and
   // build every new row into a single fragment.
   if (reusedCount === 0 && oldStart === 0 && oldEnd === oldLen) {
-    if (!bulkClearRecords(oldRecords, parent, startMarker, endMarker)) {
-      for (let i = 0; i < oldLen; i++) safeRemoveChild(oldRecords[i].element as unknown as Node);
+    if (!bulkClearRecords(runtime, oldRecords, parent, startMarker, endMarker)) {
+      for (let i = 0; i < oldLen; i++) removeRow(runtime, oldRecords[i]);
     }
     const fresh: ListItemRecord<TItem, TTagName>[] = [];
     buildAndInsert(runtime, parent, items, 0, newLen, endMarker, fresh);
@@ -497,7 +527,7 @@ function diffRows<TItem, TTagName extends ElementTagName>(
   // would end up interleaved with the survivors the placement phase leaves
   // untouched.
   for (let i = oldStart; i < oldEnd; i++) {
-    if (!claimed[i - oldStart]) safeRemoveChild(oldRecords[i].element as unknown as Node);
+    if (!claimed[i - oldStart]) removeRow(runtime, oldRecords[i]);
   }
 
   // Determine the minimal set of survivors that must move. Survivors whose old
@@ -614,6 +644,7 @@ function newRuntime<TItem, TTagName extends ElementTagName>(
     host,
     lastSyncedItems,
     template: undefined,
+    rowShape: null,
     lastRenderLeaves: null,
     currentFlushEpoch: undefined,
     allRecordsCreatedAt: undefined,

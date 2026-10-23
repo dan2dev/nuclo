@@ -278,6 +278,37 @@ describe("SLOT_EVENT — no double attachment, no stray listeners", () => {
     expect(log).toEqual(["b:10", "b:11", "b:12"]);
   });
 
+  it("releases `on*` attribute handlers and on() listeners of every template row on a bulk clear", () => {
+    const log: string[] = [];
+    let rows = makeRows(4);
+    const runtime = createListRuntime(
+      () => rows,
+      (row: Row) =>
+        tr(
+          td(a({ onClick: () => { log.push(`attr:${row.id}`); } }, row.label)),
+          td(a(on("click", () => { log.push(`on:${row.id}`); }), "x")),
+        ),
+      container as never,
+      0,
+    );
+    expect(runtime.template).toBeTruthy();
+    // Both the normally built first row and the clones.
+    const retained = Array.from(container.querySelectorAll("tr"));
+    expect(retained).toHaveLength(4);
+    for (const el of Array.from(container.querySelectorAll("a"))) click(el);
+    expect(log).toHaveLength(8);
+    log.length = 0;
+
+    rows = [];
+    sync(runtime);
+    expect(container.querySelectorAll("tr")).toHaveLength(0);
+    for (const row of retained) {
+      expect((row.querySelectorAll("a")[0] as HTMLAnchorElement).onclick).toBeNull();
+      for (const el of Array.from(row.querySelectorAll("a"))) click(el);
+    }
+    expect(log).toEqual([]);
+  });
+
   it("removeAllListeners() on one clone detaches only that row's listeners", () => {
     const log: string[] = [];
     const rows = makeRows(3);
