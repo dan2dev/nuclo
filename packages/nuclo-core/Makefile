@@ -18,13 +18,16 @@ DOCS_STATS_MD     := ../../README.md README.md ../nuclo-router/README.md
 
 # create-nuclo's starter template. Its "nuclo" range is rewritten to
 # ^<new version> on every bump — a caret on 0.x never crosses a minor, so a
-# stale range would scaffold apps on an older API.
+# stale range would scaffold apps on an older API. create-nuclo itself is
+# versioned and published in lockstep with nuclo-core.
 TEMPLATE_PKG_FILE := ../create-nuclo/templates/basic/package.json
+CREATE_PKG_FILE   := ../create-nuclo/package.json
 
 # Bump version locally without invoking npm workspace resolution.
 bump-version:
 	@node -e 'const fs = require("node:fs"); const pkgPath = process.argv[1]; const bump = process.argv[2]; const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8")); const parts = pkg.version.split(".").map(Number); if (parts.length !== 3 || parts.some(Number.isNaN)) { console.error("Unsupported version format: " + pkg.version); process.exit(1); } if (bump === "patch") { parts[2] += 1; } else if (bump === "minor") { parts[1] += 1; parts[2] = 0; } else if (bump === "major") { parts[0] += 1; parts[1] = 0; parts[2] = 0; } else { console.error("Unsupported bump type: " + bump); process.exit(1); } pkg.version = parts.join("."); fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, "\t") + "\n"); console.log(pkg.version);' "$(PKG_FILE)" "$(BUMP)"
 	@node -e 'const fs = require("node:fs"); const [pkgPath, tplPath] = process.argv.slice(1); const version = JSON.parse(fs.readFileSync(pkgPath, "utf8")).version; const tpl = fs.readFileSync(tplPath, "utf8"); if (!/"nuclo": "[^"]*"/.test(tpl)) { console.error("No nuclo dependency in " + tplPath); process.exit(1); } fs.writeFileSync(tplPath, tpl.replace(/"nuclo": "[^"]*"/, "\"nuclo\": \"^" + version + "\""));' "$(PKG_FILE)" "$(TEMPLATE_PKG_FILE)"
+	@node -e 'const fs = require("node:fs"); const [pkgPath, createPath] = process.argv.slice(1); const create = JSON.parse(fs.readFileSync(createPath, "utf8")); create.version = JSON.parse(fs.readFileSync(pkgPath, "utf8")).version; fs.writeFileSync(createPath, JSON.stringify(create, null, "\t") + "\n");' "$(PKG_FILE)" "$(CREATE_PKG_FILE)"
 
 # Helper: extract current version from package.json
 version:
@@ -36,7 +39,7 @@ version:
 # 3. Bump version (no auto tag/commit)
 # 4. Refresh docs' generated version/bundle-size stats for the new version
 # 5. Commit version bump + docs stats together
-# 6. Publish to registry
+# 6. Publish nuclo, then create-nuclo (same version) to registry
 # 7. Create annotated tag v<version> (skip if exists)
 # 8. Push commit + tag
 publish:
@@ -54,7 +57,7 @@ publish:
 	  echo "==> Refreshing docs stats + markdown bundle sizes (version + gzip size) for $$new_version"; \
 	  bun $(DOCS_STATS_SCRIPT); \
 	  echo "==> Staging version bump + docs stats artifacts"; \
-	  git add $(PKG_FILE) $(DOCS_STATS_FILE) $(DOCS_STATS_MD) $(TEMPLATE_PKG_FILE); \
+	  git add $(PKG_FILE) $(DOCS_STATS_FILE) $(DOCS_STATS_MD) $(TEMPLATE_PKG_FILE) $(CREATE_PKG_FILE); \
 	  if git diff --cached --quiet; then \
 	    echo "==> No staged changes to commit (possibly already committed)"; \
 	  else \
@@ -62,6 +65,7 @@ publish:
 	  fi; \
 	  echo "==> Publishing to registry"; \
 	  bun publish --no-git-checks && \
+	  (cd ../create-nuclo && bun publish --no-git-checks) && \
 	  echo "==> Creating tag (if missing)"; \
 	  if git rev-parse -q --verify "refs/tags/v$$new_version" >/dev/null; then \
 	    echo "Tag v$$new_version already exists - skipping"; \
