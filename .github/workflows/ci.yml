@@ -34,7 +34,8 @@ jobs:
         working-directory: packages/nuclo-router
 
   # A package changed when its directory differs from the commit of its last
-  # release tag (v* for nuclo-core, nuclo-router-v* for nuclo-router).
+  # release tag (v* for nuclo-core, nuclo-router-v* for nuclo-router,
+  # create-nuclo-v* for create-nuclo).
   detect:
     runs-on: ubuntu-latest
     outputs:
@@ -42,6 +43,7 @@ jobs:
       release: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'chore(') }}
       core: ${{ steps.diff.outputs.core }}
       router: ${{ steps.diff.outputs.router }}
+      create: ${{ steps.diff.outputs.create }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,6 +57,7 @@ jobs:
           }
           echo "core=$(changed 'v[0-9]*' packages/nuclo-core)" >> "$GITHUB_OUTPUT"
           echo "router=$(changed 'nuclo-router-v*' packages/nuclo-router)" >> "$GITHUB_OUTPUT"
+          echo "create=$(changed 'create-nuclo-v*' packages/create-nuclo)" >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
 
   publish-nuclo:
@@ -135,6 +138,49 @@ jobs:
           git push --follow-tags
       - name: Publish
         working-directory: packages/nuclo-router
+        run: |
+          npm i -g npm@latest
+          npm publish --provenance --access public
+
+  # Republishes create-nuclo after every nuclo-core release (the core bump
+  # commit rewrites the template's "nuclo" range) or when create-nuclo itself
+  # changed, so `npm create nuclo@latest` always scaffolds the latest nuclo.
+  # Runs after publish-router: all three publish jobs push to main.
+  publish-create-nuclo:
+    needs: [nuclo-core, nuclo-router, detect, publish-nuclo, publish-router]
+    if: ${{ !cancelled() && needs.detect.outputs.release == 'true' && needs.nuclo-core.result == 'success' && needs.nuclo-router.result == 'success' && (needs.publish-nuclo.result == 'success' || (needs.publish-nuclo.result == 'skipped' && needs.detect.outputs.create == 'true')) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Check the scaffold pins the current nuclo version
+        working-directory: packages/create-nuclo
+        run: |
+          node src/create-nuclo.mjs "$RUNNER_TEMP/app" --yes
+          grep -F "\"nuclo\": \"^$(jq -r .version ../nuclo-core/package.json)\"" "$RUNNER_TEMP/app/package.json"
+      - name: Bump patch version
+        working-directory: packages/create-nuclo
+        run: echo "VERSION=$(make --no-print-directory bump-version BUMP=patch)" >> "$GITHUB_ENV"
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/create-nuclo/package.json
+          git commit -m "chore(create-nuclo): bump create-nuclo to $VERSION"
+      - name: Tag and push
+        run: |
+          git tag -a "create-nuclo-v$VERSION" -m "Release create-nuclo v$VERSION"
+          git push --follow-tags
+      - name: Publish
+        working-directory: packages/create-nuclo
         run: |
           npm i -g npm@latest
           npm publish --provenance --access public
