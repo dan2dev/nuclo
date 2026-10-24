@@ -1,4 +1,5 @@
 import "nuclo";
+import { Logo } from "./logo";
 import { styles as s } from "./styles";
 
 let count = 0;
@@ -12,12 +13,7 @@ const links = [
 export const App = () => main(
 	s.page,
 
-	header(
-		s.hero,
-		img(s.logo, { src: "/nuclo-logo.svg", alt: "Nuclo", width: 184, height: 48 }),
-		h1(s.title, "Your Nuclo app is ready"),
-		p(s.lead, "Edit ", code(s.code, "src/app.ts"), " and save to reload."),
-	),
+	Logo(),
 
 	section(
 		s.card,
@@ -26,7 +22,6 @@ export const App = () => main(
 			{ onClick: () => { count++; update(); } },
 			() => `Count is ${count}`,
 		),
-		p(s.hint, "State is a plain variable. Call ", code(s.code, "update()"), " to refresh the view."),
 	),
 
 	nav(

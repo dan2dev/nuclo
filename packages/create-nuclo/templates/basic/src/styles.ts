@@ -1,27 +1,21 @@
 import "nuclo";
 
 // Themed styling instance — tokens autocomplete inside css() calls.
-// light-dark() picks the first value in light mode and the second in dark mode,
-// following the visitor's system setting (see color-scheme on :root below).
-export const { css, globalStyle } = createCss({
+export const { css, globalStyle, keyframes } = createCss({
 	colors: {
-		text: "light-dark(#0b0d12, #fff8f2)",
-		textMuted: "light-dark(#5e6673, #a59d95)",
-		background: "light-dark(#ffffff, #080808)",
-		surface: "light-dark(#f7f7f8, #121212)",
-		border: "light-dark(rgba(16, 18, 24, 0.1), rgba(255, 248, 242, 0.1))",
-		accent: "light-dark(#c42800, #ff6a3d)",
-		code: "light-dark(#fff0e8, #1d1d1d)",
+		text: "#0b0d12",
+		textMuted: "#5e6673",
+		background: "#ffffff",
+		surface: "#f7f7f8",
+		border: "rgba(16, 18, 24, 0.1)",
+		accent: "#c42800",
 		primary: "#d92d00",
 		primaryHover: "#c42800",
 	},
 	fonts: {
 		body: "system-ui, -apple-system, sans-serif",
-		mono: "ui-monospace, SFMono-Regular, Menlo, monospace",
 	},
 });
-
-globalStyle(":root", { colorScheme: "light dark" });
 
 globalStyle("*, *::before, *::after", { boxSizing: "border-box" });
 
@@ -34,6 +28,17 @@ globalStyle("body", {
 });
 
 const focusRing = { outline: "2px solid", outlineColor: "accent", outlineOffset: 3 } as const;
+
+const rise = keyframes({
+	from: { opacity: 0, transform: "translateY(0.75rem)" },
+	to: { opacity: 1, transform: "none" },
+});
+
+// The intro: each block rises in `delay` seconds after load, as the logo's ink sets.
+const intro = (delay: number) => ({
+	animation: `${rise} 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) ${delay}s both`,
+	"@media (prefers-reduced-motion: reduce)": { animation: "none" },
+});
 
 export const styles = {
 	page: css({
@@ -48,27 +53,10 @@ export const styles = {
 		py: "4rem",
 	}),
 
-	hero: css({
-		col: true,
-		items: "center",
-		gap: "1rem",
-		align: "center",
-	}),
-
-	logo: css({ display: "block", h: "auto" }),
-
-	title: css({
-		m: 0,
-		text: "clamp(2rem, 6vw, 3rem)",
-		weight: 800,
-		leading: 1.1,
-		tracking: "-0.03em",
-		raw: { "text-wrap": "balance" },
-	}),
-
-	lead: css({ m: 0, text: "1.125rem", color: "textMuted" }),
+	logo: css({ display: "block", filter: "drop-shadow(0 18px 24px rgba(255, 63, 0, 0.22))" }),
 
 	card: css({
+		...intro(1.1),
 		col: true,
 		items: "center",
 		gap: "1rem",
@@ -99,18 +87,8 @@ export const styles = {
 		focusVisible: focusRing,
 	}),
 
-	hint: css({ m: 0, text: "0.875rem", color: "textMuted", align: "center" }),
-
-	code: css({
-		font: "mono",
-		text: "0.875em",
-		bg: "code",
-		rounded: 6,
-		py: "0.15em",
-		px: "0.4em",
-	}),
-
 	links: css({
+		...intro(1.2),
 		display: "grid",
 		gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
 		gap: "1rem",
