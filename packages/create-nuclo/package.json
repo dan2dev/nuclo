@@ -7,7 +7,7 @@
 	"author": "Danilo Celestino de Castro (https://github.com/dan2dev)",
 	"type": "module",
 	"bin": {
-		"create-nuclo": "./src/create-nuclo.mjs"
+		"create-nuclo": "src/create-nuclo.mjs"
 	},
 	"files": [
 		"src",

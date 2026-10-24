@@ -87,20 +87,26 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add packages/nuclo-core/package.json docs/src/generated/nuclo-stats.ts packages/create-nuclo/package.json packages/create-nuclo/templates/basic/package.json README.md packages/*/README.md
           git commit -m "chore(core): bump nuclo-core to $VERSION"
+      # A re-run rebuilds the same bump from the same commit. If an earlier
+      # attempt already pushed it, skip the push and only publish what's missing.
       - name: Tag and push
         run: |
-          git tag -a "v$VERSION" -m "Release v$VERSION"
-          git push --follow-tags
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+            echo "v$VERSION was already pushed by an earlier attempt"
+          else
+            git tag -a "v$VERSION" -m "Release v$VERSION"
+            git push --follow-tags
+          fi
       - name: Publish
         working-directory: packages/nuclo-core
         run: |
           npm i -g npm@latest
-          npm publish --provenance --access public
+          npm view "nuclo@$VERSION" version >/dev/null 2>&1 || npm publish --provenance --access public
       # Same version as nuclo-core, template pinned to ^$VERSION by bump-version,
       # so `npm create nuclo@latest` always scaffolds the latest nuclo.
       - name: Publish create-nuclo
         working-directory: packages/create-nuclo
-        run: npm publish --provenance --access public
+        run: npm view "create-nuclo@$VERSION" version >/dev/null 2>&1 || npm publish --provenance --access public
 
   # Runs after publish-nuclo (never in parallel: both push to main) and checks
   # out main again so it builds on top of the core bump commit, if any.
