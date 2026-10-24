@@ -21,7 +21,7 @@ bun create nuclo
 deno run -A npm:create-nuclo
 ```
 
-You'll be prompted for a project name and a template. To skip the prompts, pass a project name and flags directly:
+You'll be prompted for a project name. To skip the prompt, pass a project name and flags directly:
 
 ```bash
 npm create nuclo@latest my-app -- --template basic --yes
@@ -40,13 +40,12 @@ npm run dev
 ```
 Usage:
   npm create nuclo [project-name] [options]
-  npm init nuclo [project-name] [options]
 
 Options:
-  -t, --template <name>   Template to use (basic) [default: basic]
-  -y, --yes               Skip prompts and accept defaults
-  -f, --force             Scaffold into a non-empty directory
-  -h, --help               Show this help message
+  -t, --template <name>  Template to use [default: basic]
+  -y, --yes              Skip prompts and accept defaults
+  -f, --force            Scaffold into a non-empty directory
+  -h, --help             Show this help message
 ```
 
 ## Templates

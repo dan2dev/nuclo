@@ -3,20 +3,6 @@ import { styles as s } from "./styles";
 
 let count = 0;
 
-// The theme the user picked last, else the OS theme. Setting color-scheme on
-// <html> switches every light-dark() color token in styles.ts.
-const saved = localStorage.getItem("theme");
-let dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-if (saved) document.documentElement.style.colorScheme = dark ? "dark" : "light";
-
-const toggleTheme = () => {
-	dark = !dark;
-	const theme = dark ? "dark" : "light";
-	document.documentElement.style.colorScheme = theme;
-	localStorage.setItem("theme", theme);
-	update();
-};
-
 const links = [
 	{ href: "https://nuclo.dev/docs", title: "Docs", text: "Learn the API, from tags to SSR." },
 	{ href: "https://nuclo.dev/examples", title: "Examples", text: "Browse runnable apps and patterns." },
@@ -25,12 +11,6 @@ const links = [
 
 export const App = () => main(
 	s.page,
-
-	button(
-		s.themeToggle,
-		{ onClick: toggleTheme, "aria-label": "Toggle theme" },
-		() => dark ? "☀" : "☾",
-	),
 
 	header(
 		s.hero,

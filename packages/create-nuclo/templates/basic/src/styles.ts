@@ -48,27 +48,6 @@ export const styles = {
 		py: "4rem",
 	}),
 
-	themeToggle: css({
-		position: "absolute",
-		top: "1rem",
-		right: "1rem",
-		size: "2.5rem",
-		center: true,
-		display: "flex",
-		p: 0,
-		border: "1px solid",
-		borderColor: "border",
-		rounded: 9999,
-		text: "1.125rem",
-		leading: 1,
-		color: "text",
-		bg: "surface",
-		cursor: "pointer",
-		transition: "border-color 0.15s",
-		hover: { borderColor: "accent" },
-		focusVisible: focusRing,
-	}),
-
 	hero: css({
 		col: true,
 		items: "center",

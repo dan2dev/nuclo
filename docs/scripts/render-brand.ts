@@ -99,8 +99,8 @@ bufs.forEach((buf, i) => {
 writeFileSync(resolve(pub, "favicon.ico"), Buffer.concat([Buffer.from(header.buffer), ...bufs.map((b) => Buffer.from(b))]));
 unlinkSync(resolve(pub, "favicon-48x48.png"));
 
-// The create-nuclo template ships the same favicons and logo
-for (const name of ["favicon.ico", "favicon-16x16.png", "favicon-32x32.png", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "nuclo-logo.svg"]) {
+// The create-nuclo template ships the same favicon and logo
+for (const name of ["favicon.ico", "nuclo-logo.svg"]) {
   copyFileSync(resolve(pub, name), resolve(template, name));
 }
 console.log(`wrote ${Object.keys(files).length} SVGs, ${pngs.length} PNGs and favicon.ico to ${pub}`);
