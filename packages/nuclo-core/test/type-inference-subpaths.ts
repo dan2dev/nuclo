@@ -27,12 +27,15 @@ import {
   Element as PolyfillElement,
   HTMLElement as PolyfillHTMLElement,
 } from "../types/polyfill";
+import nucloLogo, { type NucloLogoOptions } from "../types/nuclo-logo";
 
 // Drift alarm: every declared name must also exist on the runtime modules.
 import * as ssrRuntime from "../src/ssr";
 import * as polyfillRuntime from "../src/polyfill";
+import * as logoRuntime from "../src/logo";
 import type * as declaredSsr from "../types/ssr";
 import type * as declaredPolyfill from "../types/polyfill";
+import type * as declaredLogo from "../types/nuclo-logo";
 
 type Equal<X, Y> =
   (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;
@@ -40,6 +43,7 @@ type Expect<T extends true> = T;
 // ...and the declared and runtime value surfaces are exactly the same.
 type _SameSsrSurface = Expect<Equal<keyof typeof declaredSsr, keyof typeof ssrRuntime>>;
 type _SamePolyfillSurface = Expect<Equal<keyof typeof declaredPolyfill, keyof typeof polyfillRuntime>>;
+type _SameLogoSurface = Expect<Equal<keyof typeof declaredLogo, keyof typeof logoRuntime>>;
 
 // ─── nuclo/ssr ───────────────────────────────────────────────────────────────
 
@@ -110,5 +114,19 @@ const _polyfillParity: {
   HTMLElement: unknown;
 } = polyfillRuntime;
 void _polyfillParity;
+
+// ─── nuclo/nuclo-logo ────────────────────────────────────────────────────────
+
+// A child of any element; options and extra svg modifiers are optional.
+const logo: DetachedSVGElementFactory<"svg"> = nucloLogo();
+const options: NucloLogoOptions = { height: 48, animate: false };
+div(nucloLogo(options, { className: "brand" }), logo);
+
+// @ts-expect-error height is a number of px
+nucloLogo({ height: "48px" });
+
+// Declared logo surface ⊆ runtime logo surface.
+const _logoParity: { default: typeof nucloLogo } = logoRuntime;
+void _logoParity;
 
 export {};

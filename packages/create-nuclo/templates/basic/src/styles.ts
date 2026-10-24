@@ -1,7 +1,8 @@
 import "nuclo";
 
-// Themed styling instance — tokens autocomplete inside css() calls.
-export const { css, globalStyle, keyframes } = createCss({
+// Your design tokens. Inside css() you can write color: "textMuted" instead of the hex value,
+// and wide: { ... } for styles that apply only on screens at least 40rem wide.
+export const { css, globalStyle } = createCss({
 	colors: {
 		text: "#0b0d12",
 		textMuted: "#5e6673",
@@ -9,107 +10,92 @@ export const { css, globalStyle, keyframes } = createCss({
 		surface: "#f7f7f8",
 		border: "rgba(16, 18, 24, 0.1)",
 		accent: "#c42800",
-		primary: "#d92d00",
-		primaryHover: "#c42800",
 	},
 	fonts: {
 		body: "system-ui, -apple-system, sans-serif",
+		mono: "ui-monospace, SFMono-Regular, Menlo, monospace",
+	},
+	screens: {
+		wide: "(min-width: 40rem)",
 	},
 });
 
-globalStyle("*, *::before, *::after", { boxSizing: "border-box" });
+// Styles for plain HTML elements.
+globalStyle("*", { boxSizing: "border-box" });
+globalStyle("body", { m: 0, font: "body", leading: 1.6, color: "text", bg: "background" });
 
-globalStyle("body", {
-	m: 0,
-	font: "body",
-	leading: 1.6,
-	color: "text",
-	bg: "background",
+// A dotted grid behind the logo, fading out toward the edges.
+globalStyle("body::before", {
+	content: '""',
+	position: "fixed",
+	inset: 0,
+	zIndex: -1,
+	backgroundImage: "radial-gradient(rgba(16, 18, 24, 0.12) 1px, transparent 1px)",
+	backgroundSize: "22px 22px",
+	raw: { "mask-image": "radial-gradient(ellipse 50% 45% at 50% 38%, #000, transparent)" },
 });
 
-const focusRing = { outline: "2px solid", outlineColor: "accent", outlineOffset: 3 } as const;
-
-const rise = keyframes({
-	from: { opacity: 0, transform: "translateY(0.75rem)" },
-	to: { opacity: 1, transform: "none" },
-});
-
-// The intro: each block rises in `delay` seconds after load, as the logo's ink sets.
-const intro = (delay: number) => ({
-	animation: `${rise} 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) ${delay}s both`,
-	"@media (prefers-reduced-motion: reduce)": { animation: "none" },
-});
-
+// Each css() call returns a class. Pass it to a tag: main(styles.page, ...).
 export const styles = {
 	page: css({
 		col: true,
 		items: "center",
 		justify: "center",
-		gap: "2.5rem",
+		gap: "3.5rem",
 		minH: "100svh",
-		maxW: "56rem",
+		maxW: "44rem",
 		mx: "auto",
 		px: "1.5rem",
 		py: "4rem",
 	}),
 
-	logo: css({ display: "block", filter: "drop-shadow(0 18px 24px rgba(255, 63, 0, 0.22))" }),
+	hero: css({ col: true, items: "center", gap: "1.5rem", align: "center" }),
 
-	card: css({
-		...intro(1.1),
-		col: true,
-		items: "center",
-		gap: "1rem",
-		w: "100%",
-		maxW: "28rem",
-		p: "2rem",
+	logo: css({ maxW: "100%", h: "auto", filter: "drop-shadow(0 18px 24px rgba(255, 63, 0, 0.22))" }),
+
+	message: css({ m: 0, text: "0.9375rem", color: "textMuted", raw: { "text-wrap": "balance" } }),
+
+	code: css({
+		font: "mono",
+		text: "0.875em",
+		color: "text",
 		bg: "surface",
 		border: "1px solid",
 		borderColor: "border",
-		rounded: 16,
+		rounded: 6,
+		px: "0.4em",
+		py: "0.1em",
 	}),
 
-	button: css({
-		minW: "10rem",
-		minH: "2.75rem",
-		px: "1.5rem",
-		border: "none",
-		rounded: 9999,
-		text: "1rem",
-		weight: 700,
-		fontVariantNumeric: "tabular-nums",
-		color: "#ffffff",
-		bg: "primary",
-		cursor: "pointer",
-		transition: "background-color 0.15s, transform 0.15s",
-		hover: { bg: "primaryHover" },
-		active: { transform: "scale(0.97)" },
-		focusVisible: focusRing,
-	}),
-
+	// One panel for all the links. The 1px gap between them shows the panel's
+	// background, which draws the dividers. Stacked on phones, side by side when wide.
 	links: css({
-		...intro(1.2),
 		display: "grid",
-		gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
-		gap: "1rem",
+		gap: "1px",
 		w: "100%",
+		bg: "border",
+		border: "1px solid",
+		borderColor: "border",
+		rounded: 16,
+		overflow: "hidden",
+		boxShadow: "0 24px 60px -36px rgba(15, 23, 42, 0.25)",
+		wide: { gridTemplateColumns: "repeat(3, 1fr)" },
 	}),
 
 	link: css({
 		col: true,
 		gap: "0.25rem",
 		p: "1.25rem",
-		border: "1px solid",
-		borderColor: "border",
-		rounded: 12,
 		color: "text",
+		bg: "background",
 		textDecoration: "none",
-		transition: "border-color 0.15s",
-		hover: { borderColor: "accent" },
-		focusVisible: focusRing,
+		hover: { bg: "surface" },
+		focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: -2 },
 	}),
+
+	linkTitle: css({ row: true, justify: "space-between", weight: 650 }),
 
 	arrow: css({ color: "accent" }),
 
-	linkText: css({ text: "0.875rem", color: "textMuted" }),
+	linkText: css({ text: "0.875rem", leading: 1.5, color: "textMuted" }),
 };

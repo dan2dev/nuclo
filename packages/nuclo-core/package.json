@@ -34,6 +34,11 @@
 			"import": "./dist/polyfill/nuclo.polyfill.mjs",
 			"require": "./dist/polyfill/nuclo.polyfill.cjs"
 		},
+		"./nuclo-logo": {
+			"types": "./types/nuclo-logo.d.ts",
+			"import": "./dist/logo/nuclo.logo.mjs",
+			"require": "./dist/logo/nuclo.logo.cjs"
+		},
 		"./types": {
 			"types": "./types/index.d.ts"
 		}

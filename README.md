@@ -790,6 +790,19 @@ On the client, call `hydrate(App, document.getElementById('app')!)` instead of `
 
 `nuclo/ssr` also exports two more functions. `renderManyToString(inputs)` renders a batch of trees at once. `renderToStringWithContainer(input, containerTag?, containerAttrs?)` wraps the output in a container element, without a second serialization pass.
 
+### Nuclo Logo
+
+`nuclo/nuclo-logo` draws the Nuclo logo (mark and name) as an `<svg>`, the way nuclo.dev does. It is a separate entry, so apps that do not import it do not ship it:
+
+```ts
+import 'nuclo';
+import nucloLogo from 'nuclo/nuclo-logo';
+
+render(() => header(nucloLogo({ height: 48 }, { className: 'brand' })), document.body);
+```
+
+`height` is in px (default `32`). The name takes the text color. It draws itself once on mount. Pass `animate: false`, or prefer reduced motion, to get the finished logo straight away. Extra modifiers after the options go on the `<svg>`.
+
 ---
 
 ## Best Practices

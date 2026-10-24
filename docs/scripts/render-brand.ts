@@ -99,6 +99,7 @@ bufs.forEach((buf, i) => {
 writeFileSync(resolve(pub, "favicon.ico"), Buffer.concat([Buffer.from(header.buffer), ...bufs.map((b) => Buffer.from(b))]));
 unlinkSync(resolve(pub, "favicon-48x48.png"));
 
-// The create-nuclo template ships the same favicon (its logo is drawn live, in src/logo.ts)
+// The create-nuclo template ships the same favicon; nuclo/nuclo-logo draws the logo from a copy of the geometry
 copyFileSync(resolve(pub, "favicon.ico"), resolve(template, "favicon.ico"));
+copyFileSync(resolve(import.meta.dir, "../src/components/brand-geometry.ts"), resolve(import.meta.dir, "../../packages/nuclo-core/src/logo/geometry.ts"));
 console.log(`wrote ${Object.keys(files).length} SVGs, ${pngs.length} PNGs and favicon.ico to ${pub}`);

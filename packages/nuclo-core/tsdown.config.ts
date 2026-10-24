@@ -14,6 +14,7 @@ export default defineConfig([
     entry: {
       'ssr/nuclo.ssr': 'src/ssr/index.ts',
       'polyfill/nuclo.polyfill': 'src/polyfill/index.ts',
+      'logo/nuclo.logo': 'src/logo/index.ts',
     },
     format: ['esm', 'cjs'],
     outDir: 'dist',
