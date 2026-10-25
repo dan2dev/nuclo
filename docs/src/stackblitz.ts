@@ -1,8 +1,7 @@
 // "Open in StackBlitz": a small TypeScript project of a docs example, posted to StackBlitz as a form.
 // Callers import this module when the button is clicked. openProject() is the shared part; the hero's and the examples page's own files come from callers.
 
-const NUCLO_VERSION = "0.3.29";
-const ROUTER_VERSION = "0.1.5";
+import { NUCLO_VERSION, NUCLO_ROUTER_VERSION as ROUTER_VERSION } from "./generated/nuclo-stats.ts";
 
 /** The files every project shares: package.json, tsconfig.json and index.html. */
 function scaffold(deps: Record<string, string>, devDeps: Record<string, string>): Record<string, string> {

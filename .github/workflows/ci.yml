@@ -156,6 +156,8 @@ jobs:
     # Deploy main changes even when neither package needs a new release.
     if: ${{ !cancelled() && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -177,3 +179,16 @@ jobs:
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             -H "Content-Type: application/json" \
             --data '{"purge_everything":true}'
+      # The deploy regenerated the docs' derived files (version and sizes, the README
+      # size spans, llms-full.txt, the sitemap, the demo sources): commit them so main
+      # matches the site. A chore( commit never releases, and a GITHUB_TOKEN push
+      # starts no new run.
+      - name: Commit regenerated docs files
+        run: |
+          git add README.md packages/*/README.md docs/src/generated docs/public/llms-full.txt docs/public/sitemap.xml
+          git diff --cached --quiet && { echo "Generated docs files are up to date"; exit 0; }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(docs): refresh generated docs files"
+          git pull --rebase origin main
+          git push
