@@ -16,7 +16,7 @@ npm run dev
 - `src/app.ts` — what the page shows, built from nuclo's tag functions
 - `src/styles.ts` — how it looks: your colors and fonts, and one class per element
 
-Start with `src/app.ts`. The [docs](https://nuclo.dev/docs) cover the rest.
+Start with `src/app.ts`. The [docs](https://nuclo.dev/en/docs) cover the rest.
 
 ## Scripts
 

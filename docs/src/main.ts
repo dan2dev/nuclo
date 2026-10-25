@@ -4,6 +4,7 @@ import { initTheme } from './theme.ts';
 import { router } from './router.ts';
 import { App } from './app.ts';
 import { scanReveals } from './reveal.ts';
+import { markHydrated } from './pages/examples/frame.ts';
 
 // Theme before styles so CSS vars are set on first paint.
 initTheme();
@@ -18,6 +19,7 @@ document.body.addEventListener('touchstart', () => {}, { passive: true });
 // hydrate() then claims existing SSR nodes - no remove+add, no CLS.
 await router.start();
 hydrate(App, document.getElementById('app')!);
+markHydrated();
 
 // Reveal-on-scroll: observe SSR'd nodes now; the router rescans after every navigation.
 scanReveals();

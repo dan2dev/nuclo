@@ -8,6 +8,7 @@ import { docsSection } from "../docs-state.ts";
 import { NucloLogo } from "../components/NucloBrand.ts";
 import { allExamples } from "./examples/registry.ts";
 import { exampleHref, onOpenExample } from "./examples/open.ts";
+import { showPageBeneath } from "./examples/frame.ts";
 
 // The route's hash, not window.location's: the page builds before the address bar changes.
 function getInitialSectionId(hash: string, known: Map<string, DocSection>): string {
@@ -31,7 +32,8 @@ function ExampleLinks(sectionId: string) {
   return div(
     ds.exampleLinks,
     ...related.map((ex) =>
-      a(ds.exampleLink, { href: exampleHref(ex.id, "docs"), title: L.openExample(ex.title), onClick: onOpenExample(ex.id, "docs") }, PlayIcon(), L.example(ex.title)),
+      // The href is the canonical URL (crawlers, new tabs); a plain click opens it over the docs.
+      a(ds.exampleLink, { href: exampleHref(ex.id), title: L.openExample(ex.title), onClick: onOpenExample(ex.id, "docs") }, PlayIcon(), L.example(ex.title)),
     ),
   );
 }
@@ -445,6 +447,8 @@ export function DocsPage(ctx: RouteContext, { outlet, data }: PageProps<Locale |
     return article(
       ds.content,
       { "data-docs-content": "" },
+      // On mount, not at build: under a directly loaded example the content arrives after hydration.
+      on("mount", observeSections),
       DocsIntro(),
       SectionBar(),
       ...SECTIONS.map((sec, index) =>
@@ -505,14 +509,14 @@ export function DocsPage(ctx: RouteContext, { outlet, data }: PageProps<Locale |
       },
     },
     Sidebar(),
-    Content(),
+    when(showPageBeneath, Content()),
     Rail(),
     Sheet(),
     outlet(), // /docs/example-<id> on a direct load; it renders into the app's modal region
   );
 
   // IntersectionObserver for sidebar active state - only on client
-  if (typeof window !== "undefined") {
+  function observeSections() {
     requestAnimationFrame(() => {
       const sections = document.querySelectorAll("[data-docs-content] section[id]");
       if (!sections.length) return;

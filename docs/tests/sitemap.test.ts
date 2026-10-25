@@ -14,8 +14,8 @@ const entries = [...xml.matchAll(/<url>([\s\S]*?)<\/url>/g)].map((match) => ({
 }));
 const urls = new Set(entries.map((entry) => entry.url));
 
-test("sitemap contains only main pages in each locale and static standalone pages", () => {
-  const paths = ["", "/docs", "/examples"];
+test("sitemap contains the main pages and every example in each locale, and static standalone pages", () => {
+  const paths = ["", "/docs", "/examples", ...ALL_EXAMPLES.map((example) => `/examples/${example.id}`)];
   const standalone = routeDefinitions.filter((route) => !isLocalized(route) && !route.path.includes(":"));
   const expected = [
     ...LOCALE_CODES.flatMap((locale) => paths.map((path) => `${base}/${locale}${path}`)),
@@ -42,11 +42,12 @@ test("every sitemap URL resolves directly to its own canonical page", async () =
   }
 });
 
-test("example detail pages are excluded even when standalone apps canonicalize to them", () => {
+test("standalone apps are left out and canonicalize to their listed example page", () => {
   for (const example of ALL_EXAMPLES.filter((example) => example.layout === "app")) {
     const meta = resolveMeta({ pattern: "/apps/:id", path: `/apps/${example.id}`, params: { id: example.id } }, example);
     expect(meta.url).toBe(`${base}/${DEFAULT_LOCALE}/examples/${example.id}`);
-    expect(urls.has(meta.url)).toBe(false);
+    expect(urls.has(`${base}/apps/${example.id}`)).toBe(false);
+    expect(urls.has(meta.url)).toBe(true);
     expect(meta.alternates).toEqual([]);
   }
 });

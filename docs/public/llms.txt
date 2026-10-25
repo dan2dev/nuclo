@@ -39,57 +39,57 @@ render(App, document.getElementById('app')!)
 ## Docs
 
 - [Full documentation as Markdown](https://nuclo.dev/llms-full.txt): every docs section plus all examples in one file. Prefer this for complete context.
-- [Overview](https://nuclo.dev/docs#overview): what Nuclo is and the mental model
-- [Quick Start](https://nuclo.dev/docs#quick-start): scaffold a project with create-nuclo
-- [Installation & Imports](https://nuclo.dev/docs#installation): globals, named exports and entry points (`nuclo`, `nuclo/ssr`, `nuclo/polyfill`, `nuclo/types`)
-- [TypeScript](https://nuclo.dev/docs#typescript-setup): tsconfig setup and global types such as `NodeModFn` and `NodeModLike`
-- [Tag Builders](https://nuclo.dev/docs#tag-builders): builder arguments, custom modifiers, SVG and the full list of builders
-- [Components](https://nuclo.dev/docs#components): plain functions, per-instance state and children
-- [Attributes](https://nuclo.dev/docs#attributes): properties vs attributes, `className` merging and inline styles
-- [Events](https://nuclo.dev/docs#events): `on*` attributes and the `on()` modifier
-- [Lifecycle](https://nuclo.dev/docs#lifecycle): `onMount`, `onDestroy`, cleanups and unmounting
-- [Explicit Updates](https://nuclo.dev/docs#explicit-updates): why and when to call `update()`
-- [Dynamic Values](https://nuclo.dev/docs#dynamic-functions): how zero-parameter functions become live text and attributes
+- [Overview](https://nuclo.dev/en/docs#overview): what Nuclo is and the mental model
+- [Quick Start](https://nuclo.dev/en/docs#quick-start): scaffold a project with create-nuclo
+- [Installation & Imports](https://nuclo.dev/en/docs#installation): globals, named exports and entry points (`nuclo`, `nuclo/ssr`, `nuclo/polyfill`, `nuclo/types`)
+- [TypeScript](https://nuclo.dev/en/docs#typescript-setup): tsconfig setup and global types such as `NodeModFn` and `NodeModLike`
+- [Tag Builders](https://nuclo.dev/en/docs#tag-builders): builder arguments, custom modifiers, SVG and the full list of builders
+- [Components](https://nuclo.dev/en/docs#components): plain functions, per-instance state and children
+- [Attributes](https://nuclo.dev/en/docs#attributes): properties vs attributes, `className` merging and inline styles
+- [Events](https://nuclo.dev/en/docs#events): `on*` attributes and the `on()` modifier
+- [Lifecycle](https://nuclo.dev/en/docs#lifecycle): `onMount`, `onDestroy`, cleanups and unmounting
+- [Explicit Updates](https://nuclo.dev/en/docs#explicit-updates): why and when to call `update()`
+- [Dynamic Values](https://nuclo.dev/en/docs#dynamic-functions): how zero-parameter functions become live text and attributes
 
 ## API reference
 
-- [update()](https://nuclo.dev/docs#api-update): run every dynamic value, or only those inside given scopes
-- [scope()](https://nuclo.dev/docs#api-scope): mark an element as a named update root
-- [when()](https://nuclo.dev/docs#api-when): conditional content with `.when()` and `.else()` chains
-- [list()](https://nuclo.dev/docs#api-list): render one row per item, matched by identity
-- [region() & into()](https://nuclo.dev/docs#api-region): a named place in the tree, filled from anywhere by `into()`; stacked layers, SSR-safe
-- [forceUpdate()](https://nuclo.dev/docs#api-force-update): re-run components to refresh static values, such as a language switch
-- [render()](https://nuclo.dev/docs#api-render): build a tree and append it to the DOM
-- [hydrate()](https://nuclo.dev/docs#api-hydrate): take over server-rendered HTML
-- [Server Rendering](https://nuclo.dev/docs#api-ssr): `renderToString`, `renderManyToString`, `renderToStringWithContainer` from `nuclo/ssr`
-- [nuclo/polyfill](https://nuclo.dev/docs#api-polyfill): the minimal DOM for Node and Bun
-- [css()](https://nuclo.dev/docs#api-styling): typed style objects compiled to shared classes
-- [Style Objects](https://nuclo.dev/docs#style-objects): shorthands, pseudo states, `&` selectors, `@` rules and `raw`
-- [cx()](https://nuclo.dev/docs#api-cx): compose styles with last-wins conflict resolution
-- [createCss()](https://nuclo.dev/docs#api-create-css): themed styling with colors, fonts, radii, shadows and screens
-- [variants()](https://nuclo.dev/docs#api-variants): typed style recipes with default and compound variants
-- [keyframes() & globalStyle()](https://nuclo.dev/docs#api-keyframes): animations and global rules
-- [getCssText() & resetStyles()](https://nuclo.dev/docs#api-css-text): collect CSS for SSR, reset styles in tests
-- [API Index](https://nuclo.dev/docs#api-index): every public function and where it is exported from
+- [update()](https://nuclo.dev/en/docs#api-update): run every dynamic value, or only those inside given scopes
+- [scope()](https://nuclo.dev/en/docs#api-scope): mark an element as a named update root
+- [when()](https://nuclo.dev/en/docs#api-when): conditional content with `.when()` and `.else()` chains
+- [list()](https://nuclo.dev/en/docs#api-list): render one row per item, matched by identity
+- [region() & into()](https://nuclo.dev/en/docs#api-region): a named place in the tree, filled from anywhere by `into()`; stacked layers, SSR-safe
+- [forceUpdate()](https://nuclo.dev/en/docs#api-force-update): re-run components to refresh static values, such as a language switch
+- [render()](https://nuclo.dev/en/docs#api-render): build a tree and append it to the DOM
+- [hydrate()](https://nuclo.dev/en/docs#api-hydrate): take over server-rendered HTML
+- [Server Rendering](https://nuclo.dev/en/docs#api-ssr): `renderToString`, `renderManyToString`, `renderToStringWithContainer` from `nuclo/ssr`
+- [nuclo/polyfill](https://nuclo.dev/en/docs#api-polyfill): the minimal DOM for Node and Bun
+- [css()](https://nuclo.dev/en/docs#api-styling): typed style objects compiled to shared classes
+- [Style Objects](https://nuclo.dev/en/docs#style-objects): shorthands, pseudo states, `&` selectors, `@` rules and `raw`
+- [cx()](https://nuclo.dev/en/docs#api-cx): compose styles with last-wins conflict resolution
+- [createCss()](https://nuclo.dev/en/docs#api-create-css): themed styling with colors, fonts, radii, shadows and screens
+- [variants()](https://nuclo.dev/en/docs#api-variants): typed style recipes with default and compound variants
+- [keyframes() & globalStyle()](https://nuclo.dev/en/docs#api-keyframes): animations and global rules
+- [getCssText() & resetStyles()](https://nuclo.dev/en/docs#api-css-text): collect CSS for SSR, reset styles in tests
+- [API Index](https://nuclo.dev/en/docs#api-index): every public function and where it is exported from
 
 ## Routing (nuclo-router, a separate package)
 
-- [nuclo-router](https://nuclo.dev/docs#router-overview): install, one import, a whole app with SSR and hydration
-- [Patterns & Nested Routes](https://nuclo.dev/docs#router-patterns): `:param`, `*rest`, `*`, relative `./` routes, `outlet()` and what is kept across navigations
-- [Pages & Regions](https://nuclo.dev/docs#router-regions): a page fills layout regions with `into()`, next to `router.outlet()`
-- [Route Loaders & Code Splitting](https://nuclo.dev/docs#router-loaders): `load`, `withLoad()`, `pending`, `error` and idle preloading
-- [Router API](https://nuclo.dev/docs#router-api): `createRouter()` options, `start()`, `match()`, `Route`, `RouteContext`, `PageProps`, `Layer` and types
-- [Layers & Leave Guards](https://nuclo.dev/docs#router-layers): `push()`, `close()` and `beforeLeave()`
-- [matches() & Sub-routers](https://nuclo.dev/docs#router-matches): route-dependent views and nested routers
-- [Link Handling](https://nuclo.dev/docs#router-links): which links the router owns, scrolling and server notes
+- [nuclo-router](https://nuclo.dev/en/docs#router-overview): install, one import, a whole app with SSR and hydration
+- [Patterns & Nested Routes](https://nuclo.dev/en/docs#router-patterns): `:param`, `*rest`, `*`, relative `./` routes, `outlet()` and what is kept across navigations
+- [Pages & Regions](https://nuclo.dev/en/docs#router-regions): a page fills layout regions with `into()`, next to `router.outlet()`
+- [Route Loaders & Code Splitting](https://nuclo.dev/en/docs#router-loaders): `load`, `withLoad()`, `pending`, `error` and idle preloading
+- [Router API](https://nuclo.dev/en/docs#router-api): `createRouter()` options, `start()`, `match()`, `Route`, `RouteContext`, `PageProps`, `Layer` and types
+- [Layers & Leave Guards](https://nuclo.dev/en/docs#router-layers): `push()`, `close()` and `beforeLeave()`
+- [matches() & Sub-routers](https://nuclo.dev/en/docs#router-matches): route-dependent views and nested routers
+- [Link Handling](https://nuclo.dev/en/docs#router-links): which links the router owns, scrolling and server notes
 
 ## Guides
 
-- [Computed Values](https://nuclo.dev/docs#computed): derived state with plain functions
-- [Async & Loading](https://nuclo.dev/docs#async): fetch with loading and error states
-- [Best Practices](https://nuclo.dev/docs#best-practices): batching, scopes, styles and SSR checklist
-- [FAQ](https://nuclo.dev/docs#faq): common pitfalls such as text showing "false" or parts of the UI not updating
-- [Examples](https://nuclo.dev/examples): live counter, todo list, search filter and styling demos with source
+- [Computed Values](https://nuclo.dev/en/docs#computed): derived state with plain functions
+- [Async & Loading](https://nuclo.dev/en/docs#async): fetch with loading and error states
+- [Best Practices](https://nuclo.dev/en/docs#best-practices): batching, scopes, styles and SSR checklist
+- [FAQ](https://nuclo.dev/en/docs#faq): common pitfalls such as text showing "false" or parts of the UI not updating
+- [Examples](https://nuclo.dev/en/examples): live counter, todo list, search filter and styling demos with source
 
 ## Optional
 

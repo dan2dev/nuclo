@@ -2,7 +2,8 @@
  * /examples - the grid of every example. A card opens its example as a layer
  * (see examples/open.ts), so the grid stays mounted beneath the modal. A direct
  * load of /examples/:id renders the example as this page's child route instead:
- * it lands in outlet() and sends its modal to the app's region the same way.
+ * it lands in outlet() and sends its modal to the app's region the same way,
+ * and the grid fills in after hydration (showPageBeneath).
  */
 import type { DataLoader, PageProps, RouteContext } from "nuclo-router";
 import { applyLocale, loadLocale, type Locale } from "../i18n/index.ts";
@@ -11,6 +12,7 @@ import { withCode } from "../components/inline-code.ts";
 import { es } from "./examples/styles.ts";
 import { exampleGroups, examplesText, type Example, type ExampleGroup } from "./examples/registry.ts";
 import { exampleHref, onOpenExample } from "./examples/open.ts";
+import { showPageBeneath } from "./examples/frame.ts";
 
 function ArrowIcon() {
   return svgSvg(
@@ -69,7 +71,7 @@ export function ExamplesPage(_ctx: RouteContext, { outlet, data }: PageProps<Loc
         p(s.sectionSub, L.sub),
       ),
     ),
-    ...groups,
+    when(showPageBeneath, ...groups),
     outlet(),
   );
 }

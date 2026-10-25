@@ -91,7 +91,7 @@ function PagerButton(layer: Layer, from: ExampleSource, target: Example | undefi
   return a(
     es.pagerBtn,
     target
-      ? { href: exampleHref(target.id, from), "aria-label": `${label}: ${target.title}`, title: `${label}: ${target.title}`, onClick: (e: MouseEvent) => { e.preventDefault(); stepTo(layer, from, target.id); } }
+      ? { href: exampleHref(target.id), "aria-label": `${label}: ${target.title}`, title: `${label}: ${target.title}`, onClick: (e: MouseEvent) => { e.preventDefault(); stepTo(layer, from, target.id); } }
       : { "aria-disabled": "true", "aria-label": label },
     !target ? es.pagerBtnOff : null,
     Icon(dir === "left" ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"),

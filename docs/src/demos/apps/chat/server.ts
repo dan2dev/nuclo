@@ -51,7 +51,7 @@ const MD = [
   "**merged** the router after `list()` matched every row by identity.",
   "`update()` twice, no store: the message showed before the server had it, and Retry just calls `send()` again.",
   "Pushed a fix for the **hydration** edge case: `scope()` ids are cleaned up now.",
-  "see https://nuclo.dev/docs/api-list for how a `list()` reconciles.",
+  "see https://nuclo.dev/en/docs#api-list for how a `list()` reconciles.",
   "@you have you tried **Shift+Enter** in the composer? `field-sizing` grows it for you.",
   "Benchmarked the style engine: `css()` compiles once, `cx()` just compares class strings.",
   "Rewrote the update loop with `queueMicrotask`: every `update()` in one tick coalesces.",

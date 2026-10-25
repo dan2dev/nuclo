@@ -632,7 +632,7 @@ export function Live(id: string) {
       ls.head,
       span(ls.badge, t.common.live),
       span(...withCode(bundle()?.examples.items[d.id]?.desc ?? d.desc)),
-      a(ls.open, { href: exampleHref(d.id, "docs"), title: t.common.openFullScreen, onClick: onOpenExample(d.id, "docs") }, t.common.open),
+      a(ls.open, { href: exampleHref(d.id), title: t.common.openFullScreen, onClick: onOpenExample(d.id, "docs") }, t.common.open),
     ),
     div(ls.body, d.preview()),
   );

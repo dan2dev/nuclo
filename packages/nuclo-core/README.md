@@ -964,9 +964,9 @@ Registered state-dependent values (text, attributes, `list()`, `when()`) are pru
 
 Full documentation is available at [https://nuclo.dev/](https://nuclo.dev/)
 
-- [Getting Started](https://nuclo.dev/docs#quick-start)
-- [API Reference](https://nuclo.dev/docs#api-index)
-- [Examples](https://nuclo.dev/examples)
+- [Getting Started](https://nuclo.dev/en/docs#quick-start)
+- [API Reference](https://nuclo.dev/en/docs#api-index)
+- [Examples](https://nuclo.dev/en/examples)
 
 ---
 

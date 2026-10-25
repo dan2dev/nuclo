@@ -963,10 +963,10 @@ When `update()` runs, Nuclo prunes the registered state-dependent values, such a
 
 Full documentation is available at [https://nuclo.dev/](https://nuclo.dev/)
 
-- [Getting Started](https://nuclo.dev/docs#quick-start)
-- [API Reference](https://nuclo.dev/docs#api-index)
-- [Routing with nuclo-router](https://nuclo.dev/docs#router-overview) (a separate package)
-- [Examples](https://nuclo.dev/examples)
+- [Getting Started](https://nuclo.dev/en/docs#quick-start)
+- [API Reference](https://nuclo.dev/en/docs#api-index)
+- [Routing with nuclo-router](https://nuclo.dev/en/docs#router-overview) (a separate package)
+- [Examples](https://nuclo.dev/en/examples)
 
 ---
 

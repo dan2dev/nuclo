@@ -6,8 +6,8 @@ import { styles } from "./styles";
 // Pass it a class from styles.ts, an attributes object like { href }, and its children.
 
 const links = [
-	{ href: "https://nuclo.dev/docs", title: "Docs", text: "Learn the API, from tags to SSR." },
-	{ href: "https://nuclo.dev/examples", title: "Examples", text: "Browse runnable apps and patterns." },
+	{ href: "https://nuclo.dev/en/docs", title: "Docs", text: "Learn the API, from tags to SSR." },
+	{ href: "https://nuclo.dev/en/examples", title: "Examples", text: "Browse runnable apps and patterns." },
 	{ href: "https://github.com/dan2dev/nuclo", title: "GitHub", text: "Read the source and report issues." },
 ];
 

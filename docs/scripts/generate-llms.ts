@@ -8,7 +8,7 @@ import { DOC_SECTIONS } from "../src/pages/docs/content.ts";
 import { EXAMPLES } from "../src/content/examples.ts";
 import { NUCLO_VERSION } from "../src/generated/nuclo-stats.ts";
 
-const DOCS_URL = "https://nuclo.dev/docs";
+const DOCS_URL = "https://nuclo.dev/en/docs";
 const outFile = join(resolve(import.meta.dir, ".."), "public", "llms-full.txt");
 
 const decode = (s: string) =>
@@ -87,7 +87,7 @@ for (const sec of DOC_SECTIONS) {
   }
 }
 
-parts.push("## Examples", "Live versions: https://nuclo.dev/examples");
+parts.push("## Examples", "Live versions: https://nuclo.dev/en/examples");
 for (const ex of EXAMPLES) {
   parts.push(`### ${ex.title}`, ex.desc, fence("ts", ex.code));
 }

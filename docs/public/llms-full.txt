@@ -1,6 +1,6 @@
 # Nuclo documentation
 
-> Complete Nuclo v0.3.31 documentation as a single Markdown file, generated from https://nuclo.dev/docs. Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript: build UI with global tag builders, keep state in plain mutable variables, and call `update()` to sync the real DOM. No virtual DOM, no compiler, no proxies, no signals.
+> Complete Nuclo v0.3.37 documentation as a single Markdown file, generated from https://nuclo.dev/en/docs. Nuclo is a lightweight, zero-dependency, type-safe DOM library for JavaScript and TypeScript: build UI with global tag builders, keep state in plain mutable variables, and call `update()` to sync the real DOM. No virtual DOM, no compiler, no proxies, no signals.
 
 Index: https://nuclo.dev/llms.txt · Source: https://github.com/dan2dev/nuclo · npm: https://www.npmjs.com/package/nuclo
 
@@ -8,11 +8,13 @@ Index: https://nuclo.dev/llms.txt · Source: https://github.com/dan2dev/nuclo ·
 
 ### Overview
 
-Source: https://nuclo.dev/docs#overview
+Source: https://nuclo.dev/en/docs#overview
 
 Nuclo is a small DOM library for TypeScript. You build the page with plain functions such as `div()` and `button()`, keep state in ordinary variables, and call `update()` when the page should change.
 
 Nuclo has no virtual DOM, no compiler, no proxies and no signals.
+
+**Status: alpha.** Nuclo has not reached 1.0, so its API can still change between releases. Pin the version you install and test your app before you upgrade.
 
 ```ts
 // main.ts
@@ -40,7 +42,7 @@ Changing a variable does not touch the DOM. The page changes only when you call 
 
 ### Quick Start
 
-Source: https://nuclo.dev/docs#quick-start
+Source: https://nuclo.dev/en/docs#quick-start
 
 `create-nuclo` scaffolds a Vite and TypeScript project that is ready for Nuclo:
 
@@ -74,7 +76,7 @@ npm run dev
 
 ### Installation & Imports
 
-Source: https://nuclo.dev/docs#installation
+Source: https://nuclo.dev/en/docs#installation
 
 To add Nuclo to an existing project:
 
@@ -84,13 +86,13 @@ npm install nuclo
 
 Or use `pnpm add nuclo`, `yarn add nuclo` or `bun add nuclo`. Nuclo has no dependencies.
 
-Routing is not part of the core package. It ships separately as [`nuclo-router`](https://nuclo.dev/docs#router-overview), which you install next to `nuclo` when you need it.
+Routing is not part of the core package. It ships separately as [`nuclo-router`](https://nuclo.dev/en/docs#router-overview), which you install next to `nuclo` when you need it.
 
 #### Globals
 
 `import 'nuclo'` puts these on `globalThis`:
 
-- **175 tag builders**: 112 for HTML (`div`, `span`, `button`, …) and 63 for SVG, with an `Svg` suffix (`svgSvg`, `pathSvg`, …). See [Tag Builders](https://nuclo.dev/docs#tag-builders).
+- **175 tag builders**: 112 for HTML (`div`, `span`, `button`, …) and 63 for SVG, with an `Svg` suffix (`svgSvg`, `pathSvg`, …). See [Tag Builders](https://nuclo.dev/en/docs#tag-builders).
 - **16 helpers**: `update`, `scope`, `when`, `list`, `region`, `into`, `on`, `render`, `hydrate`, `forceUpdate`, `css`, `cx`, `createCss`, `variants`, `keyframes` and `globalStyle`.
 
 The import must run before any code that calls a builder. ES modules run in import order, so this fails:
@@ -115,13 +117,13 @@ import { render, update, getCssText } from 'nuclo'
 #### Entry points
 
 - `nuclo`: registers the globals and exports the 16 helpers plus `getCssText` and `resetStyles`.
-- `nuclo/ssr`: `renderToString`, `renderManyToString`, `renderToStringWithContainer` and `getCssText`. See [Server Rendering](https://nuclo.dev/docs#api-ssr).
-- `nuclo/polyfill`: a small DOM for Node and Bun. See [nuclo/polyfill](https://nuclo.dev/docs#api-polyfill).
-- `nuclo/types`: types only. See [TypeScript](https://nuclo.dev/docs#typescript-setup).
+- `nuclo/ssr`: `renderToString`, `renderManyToString`, `renderToStringWithContainer` and `getCssText`. See [Server Rendering](https://nuclo.dev/en/docs#api-ssr).
+- `nuclo/polyfill`: a small DOM for Node and Bun. See [nuclo/polyfill](https://nuclo.dev/en/docs#api-polyfill).
+- `nuclo/types`: types only. See [TypeScript](https://nuclo.dev/en/docs#typescript-setup).
 
 ### TypeScript
 
-Source: https://nuclo.dev/docs#typescript-setup
+Source: https://nuclo.dev/en/docs#typescript-setup
 
 Nuclo ships its own types. You need two things:
 
@@ -172,7 +174,7 @@ function Badge(text: string): NodeModFn<'span'> {
 
 ### Tag Builders
 
-Source: https://nuclo.dev/docs#tag-builders
+Source: https://nuclo.dev/en/docs#tag-builders
 
 Every HTML tag is a global function with the same name: `div`, `span`, `input`, … The one exception is `<var>`, which is `var_` because `var` is a reserved word. Every SVG tag has an `Svg` suffix: `svgSvg`, `pathSvg`, `circleSvg`, …
 
@@ -198,10 +200,10 @@ render(Card, document.body)
 A builder takes any number of arguments and applies them from left to right:
 
 - **string, number, bigint**: a text node.
-- **`() => value`**: text that changes on `update()`. See [Dynamic Values](https://nuclo.dev/docs#dynamic-functions).
+- **`() => value`**: text that changes on `update()`. See [Dynamic Values](https://nuclo.dev/en/docs#dynamic-functions).
 - **`null`, `undefined`**: skipped.
 - **`true`, `false`**: rendered as the text "true" or "false". Use `when()` for conditions.
-- **A plain object**: attributes. See [Attributes](https://nuclo.dev/docs#attributes).
+- **A plain object**: attributes. See [Attributes](https://nuclo.dev/en/docs#attributes).
 - **A `css()`, `cx()` or `variants()` result**: adds its classes.
 - **`on(...)`**: an event listener or lifecycle hook.
 - **Another builder, `when()` or `list()`**: a child.
@@ -259,7 +261,7 @@ const Icon = () =>
 
 ### Components
 
-Source: https://nuclo.dev/docs#components
+Source: https://nuclo.dev/en/docs#components
 
 A component is a plain function that returns a builder, such as `button(...)`. There is no component API. Nothing is created until you render it or place it in a tree.
 
@@ -290,7 +292,7 @@ render(() => Card('Hi', p('one'), p('two')))
 
 ### Attributes
 
-Source: https://nuclo.dev/docs#attributes
+Source: https://nuclo.dev/en/docs#attributes
 
 Pass a plain object to set attributes. You can pass several objects. For the same key, the later value wins, except `className` and `style`, which merge. A value can be static, or a function with no parameters that runs again on every `update()`.
 
@@ -342,11 +344,11 @@ const bar = div({ style: () => ({ width: `${progress}%`, backgroundColor: 'teal'
 - Nuclo adds no units. Write `"12px"`, not `12`. Unitless properties such as `opacity` and `zIndex` accept numbers.
 - `""`, `null` and `undefined` clear a property.
 - A dynamic style sets only the keys it returns. A key it stops returning keeps its old value, so return `""` to clear it.
-- Style strings (`"color: red"`) and custom properties (`"--gap"`) are not supported. Use `css()` instead. It takes custom properties through [`raw`](https://nuclo.dev/docs#style-objects).
+- Style strings (`"color: red"`) and custom properties (`"--gap"`) are not supported. Use `css()` instead. It takes custom properties through [`raw`](https://nuclo.dev/en/docs#style-objects).
 
 ### Events
 
-Source: https://nuclo.dev/docs#events
+Source: https://nuclo.dev/en/docs#events
 
 ```ts
 // DOM events such as "click". El and Ev are inferred from the tag and the event name.
@@ -417,7 +419,7 @@ Use `on*` attributes for the usual case. Use `on()` when you need more than one 
 
 ### Lifecycle
 
-Source: https://nuclo.dev/docs#lifecycle
+Source: https://nuclo.dev/en/docs#lifecycle
 
 ```ts
 // As attributes
@@ -481,7 +483,7 @@ update() // App's onDestroy hooks and cleanups run
 
 ### Explicit Updates
 
-Source: https://nuclo.dev/docs#explicit-updates
+Source: https://nuclo.dev/en/docs#explicit-updates
 
 Nuclo never updates the page on its own. Change your state, then call `update()`.
 
@@ -515,9 +517,9 @@ Call `update()` from event handlers, timers, fetch callbacks or `onMount`. Do no
 
 ### Dynamic Values
 
-Source: https://nuclo.dev/docs#dynamic-functions
+Source: https://nuclo.dev/en/docs#dynamic-functions
 
-A function with **no parameters** is a **dynamic value**. Nuclo runs it once when it builds the element, and again on every `update()`. Use dynamic values for text children, attribute values, `style` and `className`. For children that appear, disappear or repeat, use [`when()`](https://nuclo.dev/docs#api-when) and [`list()`](https://nuclo.dev/docs#api-list).
+A function with **no parameters** is a **dynamic value**. Nuclo runs it once when it builds the element, and again on every `update()`. Use dynamic values for text children, attribute values, `style` and `className`. For children that appear, disappear or repeat, use [`when()`](https://nuclo.dev/en/docs#api-when) and [`list()`](https://nuclo.dev/en/docs#api-list).
 
 ```ts
 // example.ts
@@ -532,13 +534,13 @@ const Profile = () =>
   )
 ```
 
-Nuclo checks the parameter count (`fn.length`). A function that declares a parameter is a [custom modifier](https://nuclo.dev/docs#tag-builders) and runs only once. `(x = 0) => …` and `(...args) => …` have a length of 0, so they are dynamic.
+Nuclo checks the parameter count (`fn.length`). A function that declares a parameter is a [custom modifier](https://nuclo.dev/en/docs#tag-builders) and runs only once. `(x = 0) => …` and `(...args) => …` have a length of 0, so they are dynamic.
 
 #### Dynamic text
 
 - A string, number, bigint or boolean renders as `String(value)`. `() => ok && 'Saved'` shows "false", so write `() => (ok ? 'Saved' : '')`.
 - `null` and `undefined` render as empty text.
-- A `css()` or `cx()` result on the first run makes the function a dynamic class, not text. See [`cx()`](https://nuclo.dev/docs#api-cx).
+- A `css()` or `cx()` result on the first run makes the function a dynamic class, not text. See [`cx()`](https://nuclo.dev/en/docs#api-cx).
 - A node, builder, array or plain object renders nothing, and never updates.
 
 #### Dynamic attributes
@@ -553,13 +555,13 @@ If a dynamic value throws, Nuclo catches the error and the rest of the update st
 
 ### update()
 
-Source: https://nuclo.dev/docs#api-update
+Source: https://nuclo.dev/en/docs#api-update
 
 ```ts
 function update(...scopeIds: string[]): void
 ```
 
-Runs one synchronous pass over every dynamic value on the page. With ids, it only updates what is inside the elements marked with those [`scope()`](https://nuclo.dev/docs#api-scope) ids. Each pass runs these steps in order:
+Runs one synchronous pass over every dynamic value on the page. With ids, it only updates what is inside the elements marked with those [`scope()`](https://nuclo.dev/en/docs#api-scope) ids. Each pass runs these steps in order:
 
 1. `list()`: reads the items again and adds, moves or removes rows.
 2. `when()`: checks the conditions again. A branch is rebuilt only when a different branch becomes active.
@@ -569,13 +571,13 @@ Runs one synchronous pass over every dynamic value on the page. With ids, it onl
 
 - **It runs everything.** Every dynamic value runs on every call, even when its data did not change. Only the DOM write is skipped. Keep dynamic values fast and free of side effects.
 - **Only nodes in the document.** If a node is not in the document when `update()` runs, Nuclo stops tracking it. It never updates again, even after you attach it. This applies to `list()` and `when()` too. Render into a container that is in the document.
-- **Static values never change.** Plain strings and attribute values are fixed when the element is built. To rebuild them, use [`forceUpdate()`](https://nuclo.dev/docs#api-force-update).
+- **Static values never change.** Plain strings and attribute values are fixed when the element is built. To rebuild them, use [`forceUpdate()`](https://nuclo.dev/en/docs#api-force-update).
 - **Errors.** Text and attribute errors are caught, and the pass continues. If a `when()` condition throws, the error is logged and that `when()` stops updating. If a `list()` `items` or `renderItem` function throws, the error escapes `update()` and the remaining steps do not run.
 - **Server.** `update()` does nothing on the server.
 
 ### scope()
 
-Source: https://nuclo.dev/docs#api-scope
+Source: https://nuclo.dev/en/docs#api-scope
 
 ```ts
 function scope(...ids: string[]): NodeModFn
@@ -610,7 +612,7 @@ update()       // everything, the header now says "Hi, Grace"
 
 ### when()
 
-Source: https://nuclo.dev/docs#api-when
+Source: https://nuclo.dev/en/docs#api-when
 
 ```ts
 function when(condition: boolean | (() => boolean), ...content: NodeModLike[]): WhenBuilder
@@ -657,7 +659,7 @@ Attribute objects and `on()` in a branch apply to the parent element, and they s
 
 ### list()
 
-Source: https://nuclo.dev/docs#api-list
+Source: https://nuclo.dev/en/docs#api-list
 
 ```ts
 function list<T>(
@@ -729,7 +731,7 @@ Rows appear where `list()` sits among its siblings, between two comment markers.
 
 ### region() & into()
 
-Source: https://nuclo.dev/docs#api-region
+Source: https://nuclo.dev/en/docs#api-region
 
 ```ts
 function region(options: RegionOptions): NodeModFn
@@ -767,7 +769,7 @@ render(() => div(Layout(), Article()))
 - When a region goes away, for example its `when()` closes, its views wait again. A region built later with the same id shows them.
 - An `into()` whose id matches no region renders nothing and raises no error, so check the spelling.
 - Ids are unique in the tree. A second region built under a live id logs a warning.
-- Regions work with [server rendering](https://nuclo.dev/docs#api-ssr). On `hydrate()`, each view claims the HTML the server rendered instead of building it again.
+- Regions work with [server rendering](https://nuclo.dev/en/docs#api-ssr). On `hydrate()`, each view claims the HTML the server rendered instead of building it again.
 
 #### Options
 
@@ -1017,7 +1019,7 @@ export const RegionApp = () =>
 
 ### forceUpdate()
 
-Source: https://nuclo.dev/docs#api-force-update
+Source: https://nuclo.dev/en/docs#api-force-update
 
 ```ts
 function forceUpdate(): void
@@ -1058,7 +1060,7 @@ On the server, `forceUpdate()` does nothing.
 
 ### render()
 
-Source: https://nuclo.dev/docs#api-render
+Source: https://nuclo.dev/en/docs#api-render
 
 ```ts
 function render(nodeModFn: NodeModFn | (() => NodeModFn), parent?: Element, index?: number): ExpandedElement
@@ -1074,10 +1076,10 @@ import { App } from './app.ts'
 render(App, document.getElementById('app')!)
 ```
 
-- You can pass the component (`render(App)`) or the builder it returns (`render(App())`). The DOM is the same. Only `render(App)` lets [`forceUpdate()`](https://nuclo.dev/docs#api-force-update) rebuild the root later, so prefer it.
+- You can pass the component (`render(App)`) or the builder it returns (`render(App())`). The DOM is the same. Only `render(App)` lets [`forceUpdate()`](https://nuclo.dev/en/docs#api-force-update) rebuild the root later, so prefer it.
 - It appends. It does not clear `parent`, so calling it twice adds two copies.
 - Every `onMount` in the tree has run when `render()` returns.
-- Render into an element that is in the document. See [`update()`](https://nuclo.dev/docs#api-update).
+- Render into an element that is in the document. See [`update()`](https://nuclo.dev/en/docs#api-update).
 - The root must be an element, such as `div(...)`, not `when()` or `list()`.
 - `index` is internal. It does not choose where the element is inserted. Leave it out.
 
@@ -1092,13 +1094,13 @@ render(() => Page({ name: 'Ana' }), root)
 
 ### hydrate()
 
-Source: https://nuclo.dev/docs#api-hydrate
+Source: https://nuclo.dev/en/docs#api-hydrate
 
 ```ts
 function hydrate(nodeModFn: NodeModFn | (() => NodeModFn), parent?: Element): ExpandedElement
 ```
 
-Takes over HTML made by [`renderToString()`](https://nuclo.dev/docs#api-ssr). It reuses the existing elements, attaches event listeners, and connects dynamic values, `when()` and `list()`, so `update()` works afterward. Then it runs the `onMount` hooks. `parent` defaults to `document.body`. It returns the root element.
+Takes over HTML made by [`renderToString()`](https://nuclo.dev/en/docs#api-ssr). It reuses the existing elements, attaches event listeners, and connects dynamic values, `when()` and `list()`, so `update()` works afterward. Then it runs the `onMount` hooks. `parent` defaults to `document.body`. It returns the root element.
 
 ```ts
 // client.ts
@@ -1126,7 +1128,7 @@ The client wins:
 
 ### Server Rendering
 
-Source: https://nuclo.dev/docs#api-ssr
+Source: https://nuclo.dev/en/docs#api-ssr
 
 ```ts
 // import { ... } from 'nuclo/ssr'
@@ -1138,7 +1140,7 @@ function getCssText(): string
 type RenderableInput = NodeModFn | (() => NodeModFn) | Element | Node | null | undefined
 ```
 
-Render a component to an HTML string on the server. In the browser, call [`hydrate()`](https://nuclo.dev/docs#api-hydrate) with the same component to make that HTML interactive. Server runtimes have no `document`, so import [`nuclo/polyfill`](https://nuclo.dev/docs#api-polyfill) first.
+Render a component to an HTML string on the server. In the browser, call [`hydrate()`](https://nuclo.dev/en/docs#api-hydrate) with the same component to make that HTML interactive. Server runtimes have no `document`, so import [`nuclo/polyfill`](https://nuclo.dev/en/docs#api-polyfill) first.
 
 ```ts
 // app.ts
@@ -1178,7 +1180,7 @@ import { App } from './app.ts'
 hydrate(App, document.getElementById('root')!)
 ```
 
-Keep `id="nuclo-styles"` on the style tag. The client reuses that element and adds only new rules. See [`getCssText()`](https://nuclo.dev/docs#api-css-text).
+Keep `id="nuclo-styles"` on the style tag. The client reuses that element and adds only new rules. See [`getCssText()`](https://nuclo.dev/en/docs#api-css-text).
 
 #### What runs on the server
 
@@ -1217,7 +1219,7 @@ renderToStringWithContainer(p('Hi'), 'section', { id: 'main', class: 'page' })
 
 ### nuclo/polyfill
 
-Source: https://nuclo.dev/docs#api-polyfill
+Source: https://nuclo.dev/en/docs#api-polyfill
 
 ```ts
 import 'nuclo/polyfill'
@@ -1238,7 +1240,7 @@ It is a DOM for building trees, not a browser. It has no `innerHTML` and no `get
 
 ### css()
 
-Source: https://nuclo.dev/docs#api-styling
+Source: https://nuclo.dev/en/docs#api-styling
 
 ```ts
 function css(style: Style): StyleResult
@@ -1247,7 +1249,7 @@ function css(name: string, style: Style): StyleResult
 type StyleResult = { className: string }
 ```
 
-Turns a typed style object into generated CSS classes. Pass the result to any tag builder. In the browser, the rules go into one `<style id="nuclo-styles">` element. On the server, [`getCssText()`](https://nuclo.dev/docs#api-css-text) returns them.
+Turns a typed style object into generated CSS classes. Pass the result to any tag builder. In the browser, the rules go into one `<style id="nuclo-styles">` element. On the server, [`getCssText()`](https://nuclo.dev/en/docs#api-css-text) returns them.
 
 ```ts
 // card.ts
@@ -1265,7 +1267,7 @@ const Card = () => div(card, 'Simple card')
 - Class names are hashes of the content. Identical styles share a class, and the server and the client produce the same names.
 - Define styles once, at module level. `css()` caches by object, so a new object on every call is processed again each time.
 - Changing a style object after passing it to `css()` does nothing.
-- Every style stays registered for the life of the page or server process. For values that change per item, such as a width from data, use the [`style` attribute](https://nuclo.dev/docs#attributes).
+- Every style stays registered for the life of the page or server process. For values that change per item, such as a width from data, use the [`style` attribute](https://nuclo.dev/en/docs#attributes).
 
 #### Named styles
 
@@ -1297,7 +1299,7 @@ div(card, { class: 'featured' })     // replaces: only "featured" is left
 
 ### Style Objects
 
-Source: https://nuclo.dev/docs#style-objects
+Source: https://nuclo.dev/en/docs#style-objects
 
 The object you pass to `css()` uses common CSS properties in camelCase, a set of shorthands, and nested keys for pseudo states, selectors and media queries. TypeScript autocompletes all of them. Properties outside the typed set, such as `borderTopLeftRadius`, `fill` or `paddingInline`, go in `raw` (see below).
 
@@ -1372,7 +1374,7 @@ Any other flat key is converted to kebab-case and written out as is, so a typo s
 
 ### cx()
 
-Source: https://nuclo.dev/docs#api-cx
+Source: https://nuclo.dev/en/docs#api-cx
 
 ```ts
 function cx(...inputs: ClassInput[]): StyleResult
@@ -1420,7 +1422,7 @@ The function must return a style result on its first run. `() => active && activ
 
 ### createCss()
 
-Source: https://nuclo.dev/docs#api-create-css
+Source: https://nuclo.dev/en/docs#api-create-css
 
 ```ts
 function createCss<const T extends ThemeConfig>(theme?: T): CssInstance<T>
@@ -1463,7 +1465,7 @@ const panel = css({
 
 ### variants()
 
-Source: https://nuclo.dev/docs#api-variants
+Source: https://nuclo.dev/en/docs#api-variants
 
 ```ts
 function variants(config: {
@@ -1501,7 +1503,7 @@ button(buttonClass({ intent: 'danger', size: 'lg', block: true }), 'Delete') // 
 
 ### keyframes() & globalStyle()
 
-Source: https://nuclo.dev/docs#api-keyframes
+Source: https://nuclo.dev/en/docs#api-keyframes
 
 ```ts
 function keyframes(frames: KeyframeFrames): string
@@ -1534,7 +1536,7 @@ globalStyle('body', { m: 0, font: 'system-ui, sans-serif' })
 
 ### getCssText() & resetStyles()
 
-Source: https://nuclo.dev/docs#api-css-text
+Source: https://nuclo.dev/en/docs#api-css-text
 
 ```ts
 function getCssText(): string   // from 'nuclo/ssr' or 'nuclo'
@@ -1561,7 +1563,7 @@ beforeEach(() => resetStyles())
 
 ### nuclo-router
 
-Source: https://nuclo.dev/docs#router-overview
+Source: https://nuclo.dev/en/docs#router-overview
 
 > **Separate package:** `nuclo-router` is not part of the Nuclo core package. Install it next to `nuclo`. It is a preview release, so its API may still change.
 
@@ -1649,11 +1651,11 @@ That is the whole integration. Links work because an `<a href>` is just an `<a h
 
 On the server, `start()` returns a `Route` per request and leaves the router alone, so concurrent requests cannot see each other's route. `route.run()` makes that Route the one the router, and so the outlet, reads for the length of the render. In the browser there is one Route per page load, and `start()` makes it the router's own. No `run()` is needed.
 
-A page receives its [`RouteContext`](https://nuclo.dev/docs#router-api) and its [`PageProps`](https://nuclo.dev/docs#router-api), as `(ctx, { layer, data, outlet, beforeLeave })`, and may take fewer arguments. It returns anything `list()` accepts. To fill another part of the layout as well, return an `into()` from inside the page, such as `div(article(…), into('sidebar', nav(…)))`. That content leaves with the page. See [Pages & Regions](https://nuclo.dev/docs#router-regions).
+A page receives its [`RouteContext`](https://nuclo.dev/en/docs#router-api) and its [`PageProps`](https://nuclo.dev/en/docs#router-api), as `(ctx, { layer, data, outlet, beforeLeave })`, and may take fewer arguments. It returns anything `list()` accepts. To fill another part of the layout as well, return an `into()` from inside the page, such as `div(article(…), into('sidebar', nav(…)))`. That content leaves with the page. See [Pages & Regions](https://nuclo.dev/en/docs#router-regions).
 
 ### Patterns & Nested Routes
 
-Source: https://nuclo.dev/docs#router-patterns
+Source: https://nuclo.dev/en/docs#router-patterns
 
 | Pattern | Matches | `params` |
 | --- | --- | --- |
@@ -1744,9 +1746,9 @@ A kept page keeps the `ctx` it was built with. That is the meaning of `ctx` ever
 
 ### Pages & Regions
 
-Source: https://nuclo.dev/docs#router-regions
+Source: https://nuclo.dev/en/docs#router-regions
 
-`router.outlet()` puts the page in one place. A page that also needs a sidebar, a toolbar or a heading somewhere else in the layout fills it with [`into()`](https://nuclo.dev/docs#api-region). The layout marks the place with `region()`, and the page returns an `into()` next to its own content. The layout never receives page content as a prop, and navigation never rebuilds it.
+`router.outlet()` puts the page in one place. A page that also needs a sidebar, a toolbar or a heading somewhere else in the layout fills it with [`into()`](https://nuclo.dev/en/docs#api-region). The layout marks the place with `region()`, and the page returns an `into()` next to its own content. The layout never receives page content as a prop, and navigation never rebuilds it.
 
 ```ts
 // app.ts
@@ -1776,7 +1778,7 @@ The page's content is a row of the outlet's `list()`, and an `into()` lives as l
 
 #### What happens on navigation
 
-- **A kept page keeps its regions.** A query or hash change that [keeps the page](https://nuclo.dev/docs#router-patterns) does not touch the region content either. Read `router.search` inside a dynamic value if the sidebar depends on it.
+- **A kept page keeps its regions.** A query or hash change that [keeps the page](https://nuclo.dev/en/docs#router-patterns) does not touch the region content either. Read `router.search` inside a dynamic value if the sidebar depends on it.
 - **A rebuilt page refills them.** When the route changes, the old row is removed and the new page's `into()` views take over. Nothing is left behind.
 - **A pushed layer adds a view.** The layer is a later row of the outlet, so its `into()` is a newer view of the same region. With the default `type: 'latest'` it covers the page's view until the layer closes, and then the page's view shows again. With `type: 'stack'` both show.
 - **A parent page can fill regions too.** Its views stay while its children change, because the parent is not rebuilt.
@@ -1801,15 +1803,15 @@ export default function Report(ctx: RouteContext) {
 
 #### Which tool for which job
 
-- **`outlet()`** is for a child route: content the URL decides, rendered inside its parent page. See [Nested Routes](https://nuclo.dev/docs#router-patterns).
+- **`outlet()`** is for a child route: content the URL decides, rendered inside its parent page. See [Nested Routes](https://nuclo.dev/en/docs#router-patterns).
 - **`into()`** is for the matched page spreading itself across the layout. The content belongs to the page and uses its data.
-- **`matches()`** is for the layout deciding from the URL alone, with its own small table and no page involved. See [`matches()`](https://nuclo.dev/docs#router-matches).
+- **`matches()`** is for the layout deciding from the URL alone, with its own small table and no page involved. See [`matches()`](https://nuclo.dev/en/docs#router-matches).
 
-All of these belong to the one matched route. The router does not drive two independent areas from one URL, so a sidebar with its own routes is a region a page fills, not a second outlet. A sidebar that really wants its own router, loading and fallback keeps one unstarted and resolves with `match()` — see [Multiple Routers & Combined Loading](https://nuclo.dev/docs#router-multi).
+All of these belong to the one matched route. The router does not drive two independent areas from one URL, so a sidebar with its own routes is a region a page fills, not a second outlet. A sidebar that really wants its own router, loading and fallback keeps one unstarted and resolves with `match()` — see [Multiple Routers & Combined Loading](https://nuclo.dev/en/docs#router-multi).
 
 ### Route Loaders & Code Splitting
 
-Source: https://nuclo.dev/docs#router-loaders
+Source: https://nuclo.dev/en/docs#router-loaders
 
 A page module may export a `load` function. It runs before the page is built, on every navigation to that route, and whatever it returns is handed to the page as `data`:
 
@@ -1882,7 +1884,7 @@ A preloaded or eager route never flips `router.pending` and lands before the nex
 
 ### Router API
 
-Source: https://nuclo.dev/docs#router-api
+Source: https://nuclo.dev/en/docs#router-api
 
 ```ts
 // import { ... } from 'nuclo-router'
@@ -1928,7 +1930,7 @@ The active route's pages as a `list()`. Place it once, wherever the pages go. A 
 
 #### `router.matches(table)`
 
-Renders the view of a second table that the active route's path matches, as a `list()` you place anywhere. See [`matches()`](https://nuclo.dev/docs#router-matches).
+Renders the view of a second table that the active route's path matches, as a `list()` you place anywhere. See [`matches()`](https://nuclo.dev/en/docs#router-matches).
 
 #### `Route`
 
@@ -1970,8 +1972,8 @@ A page's second argument. Destructure what the page needs.
 | --- | --- |
 | `layer` | where the page sits in the stack. See `Layer` below. |
 | `data` | what the route's `load()` returned, or `undefined` without one. Typed by `PageProps<TData>`. |
-| `outlet` | where a parent page renders its child route. See [Nested Routes](https://nuclo.dev/docs#router-patterns). |
-| `beforeLeave` | registers a guard asked before this page is discarded. See [Leave guards](https://nuclo.dev/docs#router-layers). |
+| `outlet` | where a parent page renders its child route. See [Nested Routes](https://nuclo.dev/en/docs#router-patterns). |
+| `beforeLeave` | registers a guard asked before this page is discarded. See [Leave guards](https://nuclo.dev/en/docs#router-layers). |
 
 #### `Layer`
 
@@ -1985,7 +1987,7 @@ Where a page sits in the stack, and its way out.
 
 #### `DataLoader` and `withLoad()`
 
-`DataLoader` is `(ctx: RouteContext) => TData | Promise<TData>`, a page module's optional `load` export. `withLoad(loader, load)` makes a route whose `load` starts beside its chunk's import instead of after it. See [Route Loaders](https://nuclo.dev/docs#router-loaders).
+`DataLoader` is `(ctx: RouteContext) => TData | Promise<TData>`, a page module's optional `load` export. `withLoad(loader, load)` makes a route whose `load` starts beside its chunk's import instead of after it. See [Route Loaders](https://nuclo.dev/en/docs#router-loaders).
 
 #### Types
 
@@ -2007,7 +2009,7 @@ Every type is a named export of `nuclo-router`, so a page, a loader or a guard c
 
 ### Layers & Leave Guards
 
-Source: https://nuclo.dev/docs#router-layers
+Source: https://nuclo.dev/en/docs#router-layers
 
 `push()` opens a route on top of the current one instead of replacing it, and resolves with whatever that layer closes with. Because the pages are a single `list()` over the stack, opening a layer is an append. The page underneath is not re-rendered, so its DOM, its focus and its half-filled form are all still there when the layer closes.
 
@@ -2057,7 +2059,7 @@ export default function Edit(_ctx: RouteContext, { beforeLeave }: PageProps) {
 
 ### matches() & Sub-routers
 
-Source: https://nuclo.dev/docs#router-matches
+Source: https://nuclo.dev/en/docs#router-matches
 
 `router.outlet()` renders the page. `router.matches(table)` renders something else that depends on where you are, such as a sidebar, breadcrumbs or a toolbar, from its own small table, without loading a route or adding a page:
 
@@ -2111,7 +2113,7 @@ Never starting it is the point. `start()` is what attaches the listeners, and tw
 
 ### Multiple Routers & Combined Loading
 
-Source: https://nuclo.dev/docs#router-multi
+Source: https://nuclo.dev/en/docs#router-multi
 
 An app can have as many routers as it has areas. The rule that keeps this simple: **start exactly one per document**, and let every other router stay unstarted, resolving URLs with `match()`. Only the started router owns the URL, the history and the click listener. The rest are tables you ask questions of — and each area can load on its own clock, with its own spinner.
 
@@ -2208,13 +2210,13 @@ The second router is asked, never told: `match()` reads the URL and returns a co
 
 - **`pending` belongs to the started router.** A never-started router has no Route, no `pending` and no `error`. The area tracks its own flags, and a second spinner can sit next to the first. In the demo the sidebar loads for 800ms while the route's loaders run for 900ms, so the page can finish before the sidebar or the other way round.
 - **`match()` attaches nothing.** Any number of unstarted routers may share the document; each has its own table, base and module cache, and none of them touch history. They cost a table and a matcher.
-- **Its loaders never run.** The started router runs the `load()` of the pages it matches. A never-started router only resolves, so if its views need data, fetch it yourself — the demo's `refreshSidebar()`. If you want loaders, a [nested table](https://nuclo.dev/docs#router-matches) or a [region a page fills](https://nuclo.dev/docs#router-regions) keeps that job with the started router.
+- **Its loaders never run.** The started router runs the `load()` of the pages it matches. A never-started router only resolves, so if its views need data, fetch it yourself — the demo's `refreshSidebar()`. If you want loaders, a [nested table](https://nuclo.dev/en/docs#router-matches) or a [region a page fills](https://nuclo.dev/en/docs#router-regions) keeps that job with the started router.
 - **Guard stale replies.** A slow sidebar fetch must not land on the section you navigated away from. Bump a generation counter per refresh and drop replies that no longer match, the way the router itself retires overtaken navigations.
 - **A lazy `matches()` view has no `pending` either.** It renders nothing until its module lands. Three loading systems, three independent clocks: the route's `pending`, your own flags, and a lazy view that simply is not there yet.
 
 ### Link Handling
 
-Source: https://nuclo.dev/docs#router-links
+Source: https://nuclo.dev/en/docs#router-links
 
 The delegated listener navigates a left-click on an `<a href>`, including an SVG `<a>` and clicks on anything nested inside one, and steps aside for everything else: modifier-clicks and middle-clicks, a `target` other than `_self`, `download`, `rel="external"`, cross-origin hrefs, hash-only links on the current page, paths outside `base`, paths no route matches (so a server-rendered 404 is still reachable), and any event an app handler already called `preventDefault()` on. Opt a link out explicitly with `data-nuclo-router="off"`.
 
@@ -2239,8 +2241,8 @@ createRouter(routes, {
 - **Nothing is retained.** The Route holds the page function and its context, never DOM. Navigating away releases the previous page. `stop()` releases the listeners and any in-flight load, and clears `pending`, so a retired Route never strands a spinner. A module that resolves after `stop()` is dropped silently.
 - **Concurrency-safe on the server.** `start()` returns per-request state and `run()` scopes it to one synchronous render, so interleaved requests cannot see each other's route. Only the module cache is shared. The scope ends when `run()`'s function returns. `renderToString()` is synchronous, so that is enough. An async or streaming render would need the Route carried across `await`s, which `run()` does not do.
 - **Scroll restoration on `popstate`** is the browser's (`scrollRestoration`), not the router's.
-- **Start one router per document.** Each `start()` adds its own delegated `click` listener, and a second router's `start()` does not retire the first. Only a second `start()` on the same router does. To resolve a URL against another table, create a router and call only `match()`. It attaches nothing. An independent area can run its own loading beside the route's `pending` that way. See [Multiple Routers & Combined Loading](https://nuclo.dev/docs#router-multi).
-- **Not included, by design:** hash and memory history, since the route lives in the pathname and a server must serve every route; two independently routed areas driven by one URL, since a page can fill several regions with `into()` but they all belong to the one matched route — an independent area can still keep its own unstarted router and loading, as in [Multiple Routers & Combined Loading](https://nuclo.dev/docs#router-multi); and hover preloading, which you get by calling the route's own loader from a `mouseenter`.
+- **Start one router per document.** Each `start()` adds its own delegated `click` listener, and a second router's `start()` does not retire the first. Only a second `start()` on the same router does. To resolve a URL against another table, create a router and call only `match()`. It attaches nothing. An independent area can run its own loading beside the route's `pending` that way. See [Multiple Routers & Combined Loading](https://nuclo.dev/en/docs#router-multi).
+- **Not included, by design:** hash and memory history, since the route lives in the pathname and a server must serve every route; two independently routed areas driven by one URL, since a page can fill several regions with `into()` but they all belong to the one matched route — an independent area can still keep its own unstarted router and loading, as in [Multiple Routers & Combined Loading](https://nuclo.dev/en/docs#router-multi); and hover preloading, which you get by calling the route's own loader from a `mouseenter`.
 
 #### Examples
 
@@ -2253,7 +2255,7 @@ Two runnable examples in the repository complement each other, so every setting 
 
 ### Computed Values
 
-Source: https://nuclo.dev/docs#computed
+Source: https://nuclo.dev/en/docs#computed
 
 Nuclo has no computed API. Use a plain function, and call it from dynamic values:
 
@@ -2276,7 +2278,7 @@ update()
 
 ### Async & Loading
 
-Source: https://nuclo.dev/docs#async
+Source: https://nuclo.dev/en/docs#async
 
 Use plain `async`/`await`, and call `update()` each time the state changes. For a fetch, that means once before the `await` and once after:
 
@@ -2300,7 +2302,7 @@ async function loadData() {
 
 ### Best Practices
 
-Source: https://nuclo.dev/docs#best-practices
+Source: https://nuclo.dev/en/docs#best-practices
 
 - **Batch changes.** Change all the state you need, then call `update()` once.
 - **Keep dynamic values fast and pure.** All of them run on every `update()`.
@@ -2315,58 +2317,58 @@ Source: https://nuclo.dev/docs#best-practices
 
 ### API Index
 
-Source: https://nuclo.dev/docs#api-index
+Source: https://nuclo.dev/en/docs#api-index
 
 Every public function, and where it comes from.
 
 #### `nuclo` (global and named export)
 
-- [`update(...scopeIds)`](https://nuclo.dev/docs#api-update): run all dynamic values, or those in the given scopes.
-- [`scope(...ids)`](https://nuclo.dev/docs#api-scope): give an element scope ids for `update(id)`.
-- [`when(condition, ...content)`](https://nuclo.dev/docs#api-when): conditional content, with `.when()` and `.else()`.
-- [`list(items, renderItem)`](https://nuclo.dev/docs#api-list): one row per item, matched by identity.
-- [`region(options)`](https://nuclo.dev/docs#api-region) and [`into(id, ...content)`](https://nuclo.dev/docs#api-region): a named place in the tree, and content that fills it from anywhere.
-- [`on(type, listener, options?)`](https://nuclo.dev/docs#events): an event listener, or [`on('mount')` / `on('destroy')`](https://nuclo.dev/docs#lifecycle).
-- [`render(App, parent?)`](https://nuclo.dev/docs#api-render): build and append.
-- [`hydrate(App, parent?)`](https://nuclo.dev/docs#api-hydrate): take over server HTML.
-- [`forceUpdate()`](https://nuclo.dev/docs#api-force-update): call components again and patch the DOM.
-- [`css(name?, style)`](https://nuclo.dev/docs#api-styling): generated classes from a style object.
-- [`cx(...inputs)`](https://nuclo.dev/docs#api-cx): combine styles, later wins.
-- [`createCss(theme)`](https://nuclo.dev/docs#api-create-css): themed `css`, `cx`, `variants`, `keyframes` and `globalStyle`.
-- [`variants(config)`](https://nuclo.dev/docs#api-variants): styles from options.
-- [`keyframes(frames)`](https://nuclo.dev/docs#api-keyframes) and [`globalStyle(selector, style)`](https://nuclo.dev/docs#api-keyframes).
+- [`update(...scopeIds)`](https://nuclo.dev/en/docs#api-update): run all dynamic values, or those in the given scopes.
+- [`scope(...ids)`](https://nuclo.dev/en/docs#api-scope): give an element scope ids for `update(id)`.
+- [`when(condition, ...content)`](https://nuclo.dev/en/docs#api-when): conditional content, with `.when()` and `.else()`.
+- [`list(items, renderItem)`](https://nuclo.dev/en/docs#api-list): one row per item, matched by identity.
+- [`region(options)`](https://nuclo.dev/en/docs#api-region) and [`into(id, ...content)`](https://nuclo.dev/en/docs#api-region): a named place in the tree, and content that fills it from anywhere.
+- [`on(type, listener, options?)`](https://nuclo.dev/en/docs#events): an event listener, or [`on('mount')` / `on('destroy')`](https://nuclo.dev/en/docs#lifecycle).
+- [`render(App, parent?)`](https://nuclo.dev/en/docs#api-render): build and append.
+- [`hydrate(App, parent?)`](https://nuclo.dev/en/docs#api-hydrate): take over server HTML.
+- [`forceUpdate()`](https://nuclo.dev/en/docs#api-force-update): call components again and patch the DOM.
+- [`css(name?, style)`](https://nuclo.dev/en/docs#api-styling): generated classes from a style object.
+- [`cx(...inputs)`](https://nuclo.dev/en/docs#api-cx): combine styles, later wins.
+- [`createCss(theme)`](https://nuclo.dev/en/docs#api-create-css): themed `css`, `cx`, `variants`, `keyframes` and `globalStyle`.
+- [`variants(config)`](https://nuclo.dev/en/docs#api-variants): styles from options.
+- [`keyframes(frames)`](https://nuclo.dev/en/docs#api-keyframes) and [`globalStyle(selector, style)`](https://nuclo.dev/en/docs#api-keyframes).
 
 #### `nuclo` (named export only)
 
-- [`getCssText()`](https://nuclo.dev/docs#api-css-text) and [`resetStyles()`](https://nuclo.dev/docs#api-css-text).
+- [`getCssText()`](https://nuclo.dev/en/docs#api-css-text) and [`resetStyles()`](https://nuclo.dev/en/docs#api-css-text).
 
 #### `nuclo/ssr`
 
-- [`renderToString(input)`](https://nuclo.dev/docs#api-ssr), `renderManyToString(inputs)`, `renderToStringWithContainer(input, tag?, attrs?)` and `getCssText()`.
+- [`renderToString(input)`](https://nuclo.dev/en/docs#api-ssr), `renderManyToString(inputs)`, `renderToStringWithContainer(input, tag?, attrs?)` and `getCssText()`.
 
 #### `nuclo/polyfill`
 
-- [A side-effect import](https://nuclo.dev/docs#api-polyfill), plus `document`, `Event`, `CustomEvent`, `Node`, `Element`, `HTMLElement` and the `Nuclo*` classes.
+- [A side-effect import](https://nuclo.dev/en/docs#api-polyfill), plus `document`, `Event`, `CustomEvent`, `Node`, `Element`, `HTMLElement` and the `Nuclo*` classes.
 
 #### `nuclo-router` (separate package)
 
-- [`createRouter(table, options?)`](https://nuclo.dev/docs#router-api): the router, with `start()`, `match()`, `outlet()`, `matches()`, `go()`, `push()`, `href()` and `stop()`.
-- [`withLoad(loader, load)`](https://nuclo.dev/docs#router-loaders): a route whose data loader starts beside its chunk.
-- [Types](https://nuclo.dev/docs#router-api): `RouteContext`, `PageProps`, `Params`, `DataLoader`, `RouteTable` and more.
+- [`createRouter(table, options?)`](https://nuclo.dev/en/docs#router-api): the router, with `start()`, `match()`, `outlet()`, `matches()`, `go()`, `push()`, `href()` and `stop()`.
+- [`withLoad(loader, load)`](https://nuclo.dev/en/docs#router-loaders): a route whose data loader starts beside its chunk.
+- [Types](https://nuclo.dev/en/docs#router-api): `RouteContext`, `PageProps`, `Params`, `DataLoader`, `RouteTable` and more.
 
 #### Globals only
 
-- [175 tag builders](https://nuclo.dev/docs#tag-builders): `div`, `span`, …, `var_`, and `svgSvg`, `pathSvg`, ….
-- [Types](https://nuclo.dev/docs#typescript-setup): `NodeModFn`, `NodeModLike`, `ExpandedElement` and more. Styling types such as `StyleResult` can also be imported from `'nuclo'`.
+- [175 tag builders](https://nuclo.dev/en/docs#tag-builders): `div`, `span`, …, `var_`, and `svgSvg`, `pathSvg`, ….
+- [Types](https://nuclo.dev/en/docs#typescript-setup): `NodeModFn`, `NodeModLike`, `ExpandedElement` and more. Styling types such as `StyleResult` can also be imported from `'nuclo'`.
 
 #### Special keys
 
-- [Attributes](https://nuclo.dev/docs#attributes): `className`, `style`, [`on*` handlers](https://nuclo.dev/docs#events), [`onMount` and `onDestroy`](https://nuclo.dev/docs#lifecycle).
-- [Style objects](https://nuclo.dev/docs#style-objects): shorthands, pseudo states, `&` selectors, `@` rules and `raw`.
+- [Attributes](https://nuclo.dev/en/docs#attributes): `className`, `style`, [`on*` handlers](https://nuclo.dev/en/docs#events), [`onMount` and `onDestroy`](https://nuclo.dev/en/docs#lifecycle).
+- [Style objects](https://nuclo.dev/en/docs#style-objects): shorthands, pseudo states, `&` selectors, `@` rules and `raw`.
 
 ### Frequently Asked Questions
 
-Source: https://nuclo.dev/docs#faq
+Source: https://nuclo.dev/en/docs#faq
 
 #### Does changing state update the UI?
 
@@ -2382,27 +2384,27 @@ Booleans render as text. `div(ok && span('Done'))` shows "false". Use `when(() =
 
 #### Why doesn't my list row change when I edit the item?
 
-Rows for items that are still in the list are kept, not rendered again. Use dynamic values such as `() => todo.text` for fields that change. See [`list()`](https://nuclo.dev/docs#api-list).
+Rows for items that are still in the list are kept, not rendered again. Use dynamic values such as `() => todo.text` for fields that change. See [`list()`](https://nuclo.dev/en/docs#api-list).
 
 #### Why does part of my UI stop updating?
 
-Usually its nodes were not in the document when `update()` ran. Nuclo stops tracking those nodes, even after you attach them, so render into a container that is in the document. Two other causes: a `when()` whose condition throws stops updating, and a text function that throws on its first run stays empty. See [`update()`](https://nuclo.dev/docs#api-update).
+Usually its nodes were not in the document when `update()` ran. Nuclo stops tracking those nodes, even after you attach them, so render into a container that is in the document. Two other causes: a `when()` whose condition throws stops updating, and a text function that throws on its first run stays empty. See [`update()`](https://nuclo.dev/en/docs#api-update).
 
 #### When should I use `forceUpdate()`?
 
-Only for rare changes to static values, such as switching the language. For everything else, use `update()`. See [`forceUpdate()`](https://nuclo.dev/docs#api-force-update).
+Only for rare changes to static values, such as switching the language. For everything else, use `update()`. See [`forceUpdate()`](https://nuclo.dev/en/docs#api-force-update).
 
 #### How do I put a page into a layout without passing it down as a prop?
 
-Mark the place with `region({ id: 'main' })` and have the page return `into('main', …)`. See [`region()` & `into()`](https://nuclo.dev/docs#api-region).
+Mark the place with `region({ id: 'main' })` and have the page return `into('main', …)`. See [`region()` & `into()`](https://nuclo.dev/en/docs#api-region).
 
 #### How do I unmount an app?
 
-Wrap it in `when()` and switch the condition off. Removing the DOM yourself does not run `onDestroy`. See [Lifecycle](https://nuclo.dev/docs#lifecycle).
+Wrap it in `when()` and switch the condition off. Removing the DOM yourself does not run `onDestroy`. See [Lifecycle](https://nuclo.dev/en/docs#lifecycle).
 
 #### Does Nuclo include a router?
 
-Not in the core package. Routing ships separately as `nuclo-router`, with server rendering, hydration, code-split routes and idle preloading. Install it with `npm install nuclo nuclo-router`. See [nuclo-router](https://nuclo.dev/docs#router-overview).
+Not in the core package. Routing ships separately as `nuclo-router`, with server rendering, hydration, code-split routes and idle preloading. Install it with `npm install nuclo nuclo-router`. See [nuclo-router](https://nuclo.dev/en/docs#router-overview).
 
 #### Does Nuclo have effects?
 
@@ -2410,7 +2412,7 @@ No. `onMount` and `onDestroy` run once per element, tied to insertion and remova
 
 ## Examples
 
-Live versions: https://nuclo.dev/examples
+Live versions: https://nuclo.dev/en/examples
 
 ### Counter
 
