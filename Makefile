@@ -27,10 +27,17 @@ install:
 	cd ../../examples/basic && bun install && \
 	cd ../../docs && bun install
 
+# Bump every package.json in the repo (new untracked ones too, not node_modules)
+# to the latest versions their peers allow, then refresh bun.lock.
+# Per-package holds go in a .ncurc.yml next to that package.json.
 up:
-	cd packages/nuclo-core && bun update --latest && \
-	cd ../../examples/basic && bun update --latest && \
-	cd ../../docs && bun update --latest
+	bun install
+	git ls-files -co --exclude-standard ':(glob)**/package.json' | xargs -n1 dirname | \
+	while read -r dir; do \
+		echo "==> $$dir"; \
+		(cd "$$dir" && bunx npm-check-updates@23 -u --peer) || exit 1; \
+	done
+	bun install
 
 dev:
 	@echo "Starting all dev servers in parallel..."
