@@ -6,7 +6,7 @@ import type * as THREE from "three";
 
 // Loaded on demand, so this page costs nothing until the scene mounts.
 // In an app you would write: import * as THREE from "three".
-const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js";
+const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js";
 
 export interface World {
   renderer: THREE.WebGLRenderer;

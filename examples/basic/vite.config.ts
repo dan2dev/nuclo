@@ -2,11 +2,11 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks: {
-          // Split nuclo into its own chunk
-          'nuclo': ['nuclo'],
+        codeSplitting: {
+          // Split nuclo into its own chunk (workspace link resolves to packages/nuclo-core)
+          groups: [{ name: 'nuclo', test: /[\\/](nuclo-core|node_modules[\\/]nuclo)[\\/]/ }],
         },
       },
     },

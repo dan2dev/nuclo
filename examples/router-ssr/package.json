@@ -13,12 +13,12 @@
     "preview": "bun run build && bun run start"
   },
   "devDependencies": {
-    "@types/bun": "^1.4.2",
-    "@types/node": "^26.6.3",
-    "concurrently": "^10.0.5",
+    "@types/bun": "^1.4.4",
+    "@types/node": "^26.6.6",
+    "concurrently": "^10.0.6",
     "nuclo": "workspace:*",
     "nuclo-router": "workspace:*",
     "typescript": "~7.0.2",
-    "vite": "^8.3.2"
+    "vite": "^8.3.5"
   }
 }
