@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "nuclo": "^0.3.38"
+    "nuclo": "^0.3.39"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
