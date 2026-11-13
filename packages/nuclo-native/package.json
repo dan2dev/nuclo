@@ -1,0 +1,20 @@
+{
+	"name": "nuclo-native",
+	"private": true,
+	"version": "0.0.0",
+	"description": "POC: nuclo apps rendered with real native widgets on Android, iOS, macOS, Windows and Linux.",
+	"license": "MIT",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./router": "./src/router.ts"
+	},
+	"scripts": {
+		"build": "bun build example/app.ts --outfile dist/app.js --format iife && cp -r example/assets dist/",
+		"linux": "bun run build && gjs -m hosts/linux/host.js dist/app.js",
+		"test": "bun test"
+	},
+	"dependencies": {
+		"nuclo": "workspace:*"
+	}
+}

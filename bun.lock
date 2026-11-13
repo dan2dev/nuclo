@@ -147,14 +147,14 @@
     },
     "packages/create-nuclo": {
       "name": "create-nuclo",
-      "version": "0.3.38",
+      "version": "0.3.39",
       "bin": {
         "create-nuclo": "src/create-nuclo.mjs",
       },
     },
     "packages/nuclo-core": {
       "name": "nuclo",
-      "version": "0.3.38",
+      "version": "0.3.39",
       "devDependencies": {
         "@types/node": "^26.6.6",
         "@vitest/coverage-v8": "5.1.0",
@@ -164,9 +164,16 @@
         "vitest": "^5.1.0",
       },
     },
+    "packages/nuclo-native": {
+      "name": "nuclo-native",
+      "version": "0.0.0",
+      "dependencies": {
+        "nuclo": "workspace:*",
+      },
+    },
     "packages/nuclo-router": {
       "name": "nuclo-router",
-      "version": "0.1.8",
+      "version": "0.1.9",
       "devDependencies": {
         "@types/node": "^26.6.6",
         "jsdom": "^30.1.3",
@@ -845,6 +852,8 @@
     "nuclo-example-router-ssr": ["nuclo-example-router-ssr@workspace:examples/router-ssr"],
 
     "nuclo-example-styling": ["nuclo-example-styling@workspace:examples/styling"],
+
+    "nuclo-native": ["nuclo-native@workspace:packages/nuclo-native"],
 
     "nuclo-router": ["nuclo-router@workspace:packages/nuclo-router"],
 
