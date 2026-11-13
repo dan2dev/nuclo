@@ -93,7 +93,7 @@ Only nodes attached under `document.body` exist natively. Trees built off-docume
 | Linux | `hosts/linux/host.js` | GJS (SpiderMonkey) | GTK 4 | Ran the showcase; every route, the chart, images and the form checked |
 | Android | `hosts/android` | QuickJS-NG, built with the NDK | Android Views | Ran the showcase in a 16 KB-page emulator; every route, the chart, images and the form checked |
 | Windows | `hosts/windows` | Jint | WPF | Compiles; the bundle runs in Jint. The UI was never launched. |
-| macOS, iOS | `hosts/apple/main.swift` | JavaScriptCore | AppKit, UIKit | Written without a Swift toolchain. Never compiled. |
+| macOS, iOS | `hosts/apple/main.swift` | JavaScriptCore | AppKit, UIKit | macOS: compiles with Swift 6.4 and ran the showcase dashboard. iOS: ran the showcase in the simulator; the dashboard, the gallery tab and images checked. |
 | Web | `hosts/web` + `src/web.ts` | The browser's | The real DOM | Ran the showcase in a browser; routes, deep links, the form and offline reload checked |
 
 ## Web
@@ -124,8 +124,32 @@ bun test           # op-level tests against a mock host
 
 - **Android:** open `hosts/android` in Android Studio, or run `gradle assembleDebug` there with JDK 17. It needs NDK 27.1.12297006 and downloads the QuickJS-NG source on the first build. `dist/app.js` ships as an asset. The native library is linked for 16 KB pages.
 - **Windows:** `dotnet run` in `hosts/windows`.
-- **macOS:** `swiftc hosts/apple/main.swift -o dist/nuclo-app && dist/nuclo-app dist/app.js`
-- **iOS:** add `hosts/apple/main.swift` and `dist/app.js` to an iOS app target.
+- **macOS:** `swiftc -swift-version 6 hosts/apple/main.swift -o dist/nuclo-app && dist/nuclo-app dist/app.js`
+- **iOS simulator:** no Xcode project needed. Compile the same file for the simulator, wrap it in an `.app` with the bundle, and install it on the booted simulator:
+
+  ```bash
+  mkdir -p dist/NucloApp.app
+  xcrun -sdk iphonesimulator swiftc -swift-version 6 -target arm64-apple-ios17.0-simulator hosts/apple/main.swift -o dist/NucloApp.app/NucloApp
+  cp -R dist/app.js dist/assets dist/NucloApp.app/
+  cat > dist/NucloApp.app/Info.plist <<'EOF'
+  <?xml version="1.0" encoding="UTF-8"?>
+  <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+  <plist version="1.0"><dict>
+  	<key>CFBundleIdentifier</key><string>dev.nuclo.native</string>
+  	<key>CFBundleExecutable</key><string>NucloApp</string>
+  	<key>CFBundleName</key><string>nuclo</string>
+  	<key>CFBundlePackageType</key><string>APPL</string>
+  	<key>CFBundleVersion</key><string>1</string>
+  	<key>CFBundleShortVersionString</key><string>0.0.0</string>
+  	<key>UILaunchScreen</key><dict/>
+  </dict></plist>
+  EOF
+  codesign -s - --force dist/NucloApp.app
+  xcrun simctl install booted dist/NucloApp.app && xcrun simctl launch booted dev.nuclo.native
+  ```
+
+  Plain `swiftc` links against the macOS SDK, hence `xcrun -sdk iphonesimulator`. Without `UILaunchScreen` the app runs letterboxed.
+- **iOS device:** add `hosts/apple/main.swift` and `dist/app.js` to an iOS app target, so Xcode handles signing and provisioning.
 
 ## What the POC supports
 

@@ -1,6 +1,6 @@
 // nuclo-native host for macOS and iOS: AppKit / UIKit views driven by JavaScriptCore.
 //
-// macOS: swiftc hosts/apple/main.swift -o dist/nuclo-app && dist/nuclo-app dist/app.js
+// macOS: swiftc -swift-version 6 hosts/apple/main.swift -o dist/nuclo-app && dist/nuclo-app dist/app.js
 // iOS:   add this file and dist/app.js to an iOS app target (no storyboard, no scene manifest).
 import JavaScriptCore
 
