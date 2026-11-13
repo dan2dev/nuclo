@@ -1,6 +1,9 @@
 /**
- * A stack router for native apps: go() pushes a screen, back() pops it.
- * nuclo-router needs URL, history and location, which bare JS engines lack.
+ * A stack router: go() pushes a screen, back() pops it.
+ *
+ * Native keeps its own stack. On the web the browser history is the stack and
+ * the route lives in the URL hash (#/gallery/dunes), so links, reloads and the
+ * browser's back button work, on any static host.
  */
 type Params = Record<string, string>;
 type View = (params: Params) => unknown;
@@ -28,30 +31,54 @@ export function createRouter(routes: Record<string, View>, initial = "/") {
     throw new Error(`No route matches ${path}`);
   }
 
-  const stack = [resolve(initial)];
+  const web = typeof history !== "undefined" && typeof location !== "undefined";
+  const fromUrl = () => {
+    try {
+      return resolve(location.hash.slice(1) || initial);
+    } catch {
+      return resolve(initial);
+    }
+  };
+
+  const stack = [web ? fromUrl() : resolve(initial)];
   const top = () => stack[stack.length - 1];
+
+  if (web) {
+    addEventListener("hashchange", () => {
+      stack[0] = fromUrl();
+      update();
+    });
+  }
 
   return {
     get path() {
       return top().path;
     },
     get canGoBack() {
-      return stack.length > 1;
+      return web ? history.length > 1 : stack.length > 1;
     },
     /** Pushes a screen. */
     go(path: string) {
-      stack.push(resolve(path));
-      update();
+      if (web) location.hash = path;
+      else {
+        stack.push(resolve(path));
+        update();
+      }
     },
-    /** Swaps the whole stack for one screen, e.g. when switching tabs. */
+    /** Swaps the whole stack for one screen, e.g. when switching tabs. On the web this is a normal navigation. */
     reset(path: string) {
-      stack.splice(0, stack.length, resolve(path));
-      update();
+      if (web) location.hash = path;
+      else {
+        stack.splice(0, stack.length, resolve(path));
+        update();
+      }
     },
     back() {
-      if (stack.length < 2) return;
-      stack.pop();
-      update();
+      if (web) history.back();
+      else if (stack.length > 1) {
+        stack.pop();
+        update();
+      }
     },
     /** Where the current screen renders. */
     outlet: () => list(() => [top()], (entry) => entry.view(entry.params) as never),

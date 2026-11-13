@@ -6,12 +6,17 @@
 	"license": "MIT",
 	"type": "module",
 	"exports": {
-		".": "./src/index.ts",
+		".": {
+			"web": "./src/web.ts",
+			"default": "./src/index.ts"
+		},
 		"./router": "./src/router.ts"
 	},
 	"scripts": {
 		"build": "bun build example/app.ts --outfile dist/app.js --format iife && cp -r example/assets dist/",
 		"linux": "bun run build && gjs -m hosts/linux/host.js dist/app.js",
+		"build:web": "bun scripts/build-web.ts",
+		"web": "bun run build:web && python3 -m http.server 4173 -d dist-web",
 		"test": "bun test"
 	},
 	"dependencies": {

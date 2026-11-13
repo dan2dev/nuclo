@@ -1,6 +1,6 @@
 # nuclo-native (POC)
 
-Write a normal nuclo app. It renders with real native widgets — no webview — on Android, iOS, macOS, Windows and Linux.
+Write a normal nuclo app. It renders with real native widgets — no webview — on Android, iOS, macOS, Windows and Linux, and builds as a web app (SPA and installable PWA) from the same source.
 
 ```ts
 import "nuclo-native";
@@ -49,6 +49,8 @@ router.reset("/");           // switch tab
 router.outlet();             // where the current screen renders
 ```
 
+Native keeps its own stack. On the web the route lives in the URL hash (`#/gallery/dunes`) and the browser history is the stack, so links, reloads and the browser's back button work on any static host.
+
 `nuclo-router` itself needs `URL`, `history` and `location`, which the bare JS engines do not have.
 
 `example/todo.ts` is the smaller counter and todo example.
@@ -92,12 +94,31 @@ Only nodes attached under `document.body` exist natively. Trees built off-docume
 | Android | `hosts/android` | QuickJS-NG, built with the NDK | Android Views | Ran the showcase in a 16 KB-page emulator; every route, the chart, images and the form checked |
 | Windows | `hosts/windows` | Jint | WPF | Compiles; the bundle runs in Jint. The UI was never launched. |
 | macOS, iOS | `hosts/apple/main.swift` | JavaScriptCore | AppKit, UIKit | Written without a Swift toolchain. Never compiled. |
+| Web | `hosts/web` + `src/web.ts` | The browser's | The real DOM | Ran the showcase in a browser; routes, deep links, the form and offline reload checked |
+
+## Web
+
+On the web there is no bridge: nuclo writes to the real DOM. `import "nuclo-native"` resolves to `src/web.ts` (the `web` export condition), which adds only what makes the page lay out like the native hosts:
+
+- A zero-specificity base stylesheet: containers are flex columns, images cover their box.
+- Unitless style numbers get `px` (`padding: 16` → `16px`).
+
+Everything else the web has keeps working: `css()`, any tag, any CSS property, `fetch`, style inheritance.
+
+`bun run build:web` writes a static site to `dist-web`:
+
+- `app.js`: the minified bundle (about 62 KB for the showcase, nuclo included).
+- `index.html`, `manifest.webmanifest`, icons: the installable shell, from `hosts/web`.
+- `sw.js`: a service worker that precaches every built file, so the app works offline. Its cache name is a hash of the files, so a new build replaces the old cache.
+
+Host `dist-web` on any static server. A service worker needs HTTPS or `localhost`.
 
 ## Run
 
 ```bash
 bun run build      # example/app.ts → dist/app.js (one file, nuclo included) plus dist/assets
 bun run linux      # needs gjs and GTK 4
+bun run web        # builds dist-web and serves it on http://localhost:4173
 bun test           # op-level tests against a mock host
 ```
 
@@ -122,6 +143,7 @@ bun test           # op-level tests against a mock host
 - On Windows: `borderRadius`, placeholders and password fields. On Apple: text wrapping, password fields, and images are fitted, not cropped, on macOS.
 - Remote images. `src` is a bundled file.
 - The Android back button does not call `router.back()` yet.
+- On the web, `router.back()` is the browser's back, so it leaves the app when a detail screen was opened directly from a link.
 - Timers, `fetch` and `console` on the bare engines (JavaScriptCore, QuickJS, Jint). GJS has them.
 - Scrolling on Apple. The other hosts wrap the root in a scroll view.
 - Hot reload, a CLI, and packaging for app stores.
