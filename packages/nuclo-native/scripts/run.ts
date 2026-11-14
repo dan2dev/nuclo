@@ -53,7 +53,9 @@ function need(os_: string) {
 }
 
 /** The Swift host's sources, with the Hermes bridge's header for them to call. */
-const swift = ["main", "Navigation", "Device", "Engine"].map((name) => `hosts/apple/${name}.swift`);
+const swift = ["main", "Navigation", "Device", "Engine", "NativeView", "MultilineField"].map((name) => `hosts/apple/${name}.swift`);
+const nativeViews = `examples/${example}/NativeViews.swift`;
+if (existsSync(nativeViews)) swift.push("-DNUCLO_APP_NATIVE_VIEWS", nativeViews);
 const bridge = ["-O", "-swift-version", "6", "-import-objc-header", "hosts/hermes/nuclo_hermes.h", "-lc++", "-framework", "hermesvm"];
 
 /** Compiles the Hermes bridge (hosts/hermes) for an Apple target into `out`. */

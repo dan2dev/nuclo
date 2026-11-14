@@ -21,6 +21,7 @@ const field = (key: TextField, label: string, placeholder: string, type = "text"
     muted(label),
     input({
       type,
+      "aria-label": label,
       placeholder,
       value: () => form[key],
       style: { backgroundColor: color.field, color: color.text, borderRadius: 10, padding: 10, fontSize: 15 },
@@ -37,6 +38,7 @@ const toggle = (key: "news" | "terms", label: string) =>
     { style: row },
     input({
       type: "checkbox",
+      "aria-label": label,
       checked: () => form[key],
       onChange: (e) => {
         form[key] = (e.target as HTMLInputElement).checked;

@@ -9,6 +9,7 @@ useStylesheet(getCssText);
 
 export { flush };
 export { flatList, windowed } from "./windowed";
+export { nativeView } from "./native-view";
 
 // One host round-trip per render()/update(), however many nodes changed.
 const g = globalThis as unknown as Record<string, (...args: unknown[]) => unknown>;

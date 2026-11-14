@@ -9,6 +9,7 @@ g.__nuclo_measure = (_id: number, max: number) => `${max < 0 ? 80 : Math.min(80,
 afterAll(() => delete g.__nuclo_measure);
 
 const { flatList } = await import("../src/index");
+const { hooks } = await import("../src/dom");
 const { createRouter } = await import("../src/router");
 document.body.textContent = "";
 
@@ -40,4 +41,16 @@ test("scrolled far down, the rows there are built", () => {
   // Where the estimate puts that offset: around row 5,000, give or take the tenth above.
   expect(Math.min(...names)).toBeGreaterThan(4000);
   expect(Math.max(...names)).toBeLessThan(6000);
+});
+
+test("a list removed before its first layout unregisters its scroll and layout callbacks", () => {
+  const baseline = [hooks.scrolled.size, hooks.laidOut.size];
+  let show = false;
+  render(() => div(when(() => show, div(flatList(() => [{ id: 1 }], (row) => span(row.id), (row) => row.id)))), document.body);
+  show = true;
+  update();
+  expect([hooks.scrolled.size, hooks.laidOut.size]).toEqual(baseline.map((n) => n + 1));
+  show = false;
+  update();
+  expect([hooks.scrolled.size, hooks.laidOut.size]).toEqual(baseline);
 });

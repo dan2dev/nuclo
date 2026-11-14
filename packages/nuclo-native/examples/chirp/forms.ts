@@ -46,8 +46,10 @@ function publish() {
 export const Compose = () =>
   div(
     section(
-      input({
+      textarea({
         placeholder: "What's happening?",
+        "aria-label": "Post text",
+        rows: 4,
         value: () => draft.text,
         style: field,
         onInput: (e) => {

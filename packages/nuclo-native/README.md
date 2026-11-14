@@ -135,12 +135,12 @@ Limits: only lists reached through columns from the screen are culled, not a lis
 ```ts
 import { flatList } from "nuclo-native";
 
-flatList(() => people, personRow); // called as list() is
+flatList(() => people, personRow, (person) => person.id);
 ```
 
 `list()` is for short lists: every item has its row, and the rows are their container's own children. `flatList()` is for long ones: only the rows within three screens of what shows exist, in JS as on the host, so a thousand items that arrive together cost a few screens of rows. Against React Native's `FlatList` on the Android emulator it has the lower median in all eleven benchmark operations (`benchmarks/native-compare/REPORT.md`, where it is the `idiomatic` variant): creating 1,000 rows takes 22 ms against 35 ms, and 10,000 rows 23 ms against 31 ms. A plain `list()` builds every row in JS and takes 70 ms and 584 ms for the same.
 
-Its rows are the children of the list's own view, so the container's `gap` does not reach them: give the rows a margin. A row that leaves the window is built again from its item when it comes back, so state kept only in a row's views is lost; and rows not yet laid out count at the mean height of those that were. It is `windowed()` with each item as its own key:
+The optional third argument supplies a unique, stable key per item. Without it, the item itself is the key. Replacing a record rebuilds its row and keeps its measured height as an estimate until it is laid out. Keep selection and drafts in app state, keyed by ID, so they survive a row leaving and reentering the window. Rows not yet laid out use an estimated height. Use margins on rows for spacing, since the outer container's `gap` does not reach them.
 
 ### Lists without an end: `windowed()`
 
@@ -172,6 +172,14 @@ Rows before the window count at the height they were laid out at, so what shows 
 
 A player holds a decoder, so a long list should show posters and open a player on tap, as `chirp` does.
 
+## Native views
+
+`bun run ios native-map` and `bun run macos native-map` run an interactive MapKit view. Switching places updates the native map from TypeScript. Selecting its pin sends the place back. Hiding it exercises teardown. Other hosts show the app's fallback.
+
+Call `nativeView<Props, Event>(name, { props, style, onEvent, fallback })` on the TypeScript side. Supply JSON data for `props` (or a function for reactive props) and size the component through `style`, usually with an explicit height and the parent's stretching width. The host owns the frame. `onEvent` receives the JSON value emitted by the native component.
+
+The Apple runner compiles an example's optional `NativeViews.swift` into the app. Define `@MainActor func registerNativeViews(on host: Host)` and call `host.registerNativeView(name)` for each component. Return a `NativeComponent` with a view, an `update(Data)` callback to decode props and an optional `dispose` callback to release native resources. For your own Xcode target, add the Swift file and the `NUCLO_APP_NATIVE_VIEWS` compilation condition. See [the MapKit adapter](examples/native-map/NativeViews.swift).
+
 ## How it works
 
 ```
@@ -192,7 +200,7 @@ The whole host contract is seven ops and one callback:
 
 | Op | Meaning |
 | --- | --- |
-| `["create", id, kind]` | `view`, `text`, `button`, `input`, `checkbox`, `image` or `video`; navigation: `tabs`, `stack`, `screen` |
+| `["create", id, kind, inputMode?]` | `view`, `text`, `button`, `input`, `checkbox`, `image` or `video`; navigation: `tabs`, `stack`, `screen`; an input can request `password` or `multiline`; registered native views use `native:<name>` |
 | `["insert", parentId, id, beforeId]` | Insert or move. `beforeId` 0 appends. |
 | `["remove", id]` | Detach and destroy the subtree |
 | `["set", id, key, value]` | `text`, `value`, `checked`, `placeholder`, `type`, `disabled`, `src`; `title` (screen, or a stack's tab), `icon` (a stack's tab), `selected` (tabs) |
@@ -347,6 +355,8 @@ Commands behind them, if you want to run one by hand:
 ## What the POC supports
 
 - **Tags:** `button`, `input` (text, password, checkbox), `textarea`, `img`, `video`. Text tags (`span`, `p`, `h1`–`h6`, `label`, `strong`…) become one label holding their whole text. Every other tag is a flex container, column by default.
+- **Forms:** `textarea({ rows, value, onInput })` uses a native multiline editor on iOS, macOS and Android and a textarea in the browser. On those native hosts `focus()` and `blur()` work on mounted text fields during a Nuclo update. Native single-line fields commit on Enter and multiline fields commit on blur after an edit. On macOS, choose `type: "password"` when creating the field so the host mounts a secure control.
+- **Accessibility:** iOS, macOS and Android map `aria-label`, `aria-hidden`, `aria-selected`, headings and image `alt` to native semantics. `aria-description` supplies a hint on Apple and a supplemental description on Android API 36+. Font sizes follow Dynamic Type on iOS and the system font scale on Android. Fixed-height boxes still need enough room for larger text. Give custom clickable containers `role: "button"` and a label. Prefer `button()` for standard keyboard and assistive behavior.
 - **Styles:** inline `style`, `css()`, `createCss()` with `screens`, `cx()`, `variants()` and `globalStyle()` by tag or class: flexbox layout, the box model, positioning and paint, laid out the same everywhere and responsive to the window ([Styling](#styling-the-same-pixels-everywhere)). Text properties inherit. Text collapses whitespace as CSS does.
 - **Images:** `img({ src })` loads a file relative to the bundle: its natural size and aspect, or the box you give it, cropped to fill. On Android, iOS and macOS `src` can be a URL: the host fetches it once and keeps it while memory allows; an image without a size takes no room until it arrives, then lays out at its natural size (`test/images.test.ts`).
 - **Video:** see [Video](#video).
@@ -358,7 +368,7 @@ Commands behind them, if you want to run one by hand:
 ## Not done
 
 - On native: `:hover`, `:focus` and other pseudo-classes, combinator selectors, `@keyframes`/`transition`, `box-shadow`, `lineHeight`, `letterSpacing`, `fontStyle`, `transform`, `zIndex`, `order`, `aspectRatio`, `baseline` alignment, per-corner radii and per-side border colours. They still work on the web.
-- On Windows: placeholders and password fields. On macOS: password fields (iOS has them).
+- On Windows: placeholders and password fields. The GTK, Windows and GPUI hosts still use the single-line editor for `textarea`.
 - Moving a window to a screen of another scale does not lay it out again on Linux and Windows.
 - Remote videos; remote images on the GTK, Windows and GPUI hosts, where `src` is a bundled file. A remote image is decoded at full size, and shows nothing while it loads or when it fails.
 - On the web, `router.back()` is the browser's back, so it leaves the app when a detail screen was opened directly from a link. Tabs there reset instead of keeping a stack each.

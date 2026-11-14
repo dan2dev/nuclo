@@ -210,6 +210,7 @@ class MainActivity : Activity() {
     /** Counts what the UI thread sent to JS; `handled`: the last of them the ops being applied answer. */
     private var sent = 0
     private var handled = 0
+    private val multiline = HashSet<Int>()
     /** The last `input` or `change` each control sent. */
     private val edited = HashMap<Int, Int>()
     /** While the UI thread applies ops: the controls they change report nothing. */
@@ -420,11 +421,11 @@ class MainActivity : Activity() {
         return json.toString()
     }
 
-    /** A layout root's scroll view (the body's, or a screen's): tells JS the root's size, a screen's when its width changes. */
+    /** A layout root's scroll view (the body's, or a screen's): tells JS when the viewport changes. */
     private inner class Scroller(val root: Int) : ScrollView(this@MainActivity) {
         override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
             super.onSizeChanged(w, h, oldw, oldh)
-            if (w > 0 && (root == 1 || w != oldw)) emit(root, "resize", "${w / density} ${h / density} $density")
+            if (w > 0 && h > 0) emit(root, "resize", "${w / density} ${h / density} $density")
         }
 
         /** Back to the top, as a tap on the screen's title or on its own tab asks. */
@@ -456,6 +457,7 @@ class MainActivity : Activity() {
         val key = String(name)
         hook?.invoke(key)?.let { return it.toByteArray() }
         if (key == "window") return windowSize.toByteArray()
+        if (key == "textScale") return resources.configuration.fontScale.toString().toByteArray()
         if (key == "frames") {
             // The views are the UI thread's: it reads them once it has applied what this turn sent so far.
             deliver()
@@ -557,9 +559,14 @@ class MainActivity : Activity() {
                     setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14f)
                 }
                 "input" -> EditText(this).apply {
-                    setSingleLine()
-                    // Its text centred in the box and 8 in (until JS's `padding`), as the browser pads it.
-                    gravity = Gravity.CENTER_VERTICAL
+                    if (op.optString(3) == "multiline") {
+                        multiline.add(id)
+                        inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                        gravity = Gravity.TOP or Gravity.START
+                    } else {
+                        setSingleLine()
+                        gravity = Gravity.CENTER_VERTICAL
+                    }
                     includeFontPadding = false
                     setPadding(dp(8f), 0, dp(8f), 0)
                     typeface = inter
@@ -646,6 +653,7 @@ class MainActivity : Activity() {
         views.remove(view.id)
         frames.remove(view.id)
         edited.remove(view.id)
+        multiline.remove(view.id)
         sources.remove(view)
         fonts.remove(view)
         textColors.remove(view)
@@ -657,17 +665,44 @@ class MainActivity : Activity() {
         when {
             key == "text" && view is Label -> view.text = value as String? ?: ""
             key == "text" && view is Button -> view.text = value as String?
-            key == "value" -> (view as EditText).let {
+            key == "aria-label" && view is Label -> view.spokenLabel = value?.toString()
+            key == "aria-label" -> view.contentDescription = value?.toString()
+            key == "aria-description" -> {
+                if (android.os.Build.VERSION.SDK_INT >= 36) view.supplementalDescription = value?.toString()
+            }
+            key == "aria-hidden" -> view.importantForAccessibility =
+                if (value.toString() == "true") View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                else View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+            key == "aria-selected" -> view.isSelected = value.toString() == "true"
+            key == "role" -> {
+                view.isAccessibilityHeading = value == "heading"
+                if (view is Box) view.buttonRole = value == "button"
+            }
+            key == "focus" && view is EditText -> view.post {
+                if (view.isAttachedToWindow) {
+                    if (value == true) view.requestFocus() else view.clearFocus()
+                }
+            }
+            key == "value" && view is EditText -> view.let {
                 val text = value?.toString() ?: ""
                 if (it.text.toString() != text) it.setText(text)
             }
-            key == "placeholder" -> (view as EditText).hint = value as String?
-            key == "checked" -> (view as CheckBox).isChecked = value == true
-            // A password input type switches to monospace: keep the font.
-            key == "type" && value == "password" -> (view as EditText).let {
+            key == "placeholder" && view is EditText -> view.hint = value as String?
+            key == "checked" && view is CheckBox -> view.isChecked = value == true
+            key == "type" && view is EditText && view.id !in multiline -> view.let {
+                // Changing the keyboard can reset the font and move the caret.
                 val face = it.typeface
-                it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                val start = it.selectionStart
+                val end = it.selectionEnd
+                it.inputType = when (value) {
+                    "password" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                    "email" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+                    "tel" -> InputType.TYPE_CLASS_PHONE
+                    "number" -> InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED or InputType.TYPE_NUMBER_FLAG_DECIMAL
+                    else -> InputType.TYPE_CLASS_TEXT
+                }
                 it.typeface = face
+                if (start >= 0 && end >= 0) it.setSelection(start.coerceAtMost(it.length()), end.coerceAtMost(it.length()))
             }
             // VideoView plays files, not assets: the clip is copied out once.
             key == "src" && view is Video -> view.player.setVideoPath(
@@ -696,7 +731,8 @@ class MainActivity : Activity() {
                 val (t, r, b, l) = sides(value)
                 when (view) {
                     is Label -> view.padding = doubleArrayOf(t, r, b, l)
-                    is EditText -> view.setPadding(px(l), 0, px(r), 0)
+                    is EditText -> if (view.id in multiline) view.setPadding(px(l), px(t), px(r), px(b))
+                        else view.setPadding(px(l), 0, px(r), 0)
                     is Button -> view.setPadding(px(l), px(t), px(r), px(b))
                 }
             }
@@ -779,13 +815,27 @@ class MainActivity : Activity() {
                     view.foreground = ripple(Mask(view))
             }
             type == "change" && view is CheckBox -> view.setOnCheckedChangeListener { _, checked -> emit(id, type, checked) }
-            type == "change" -> (view as EditText).setOnEditorActionListener { _, _, _ -> emit(id, type); true }
-            type == "input" -> (view as EditText).addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                override fun afterTextChanged(s: Editable?) = emit(id, type, s.toString())
-            })
+            type == "change" && view is EditText && id in multiline -> {
+                var changed = false
+                watchText(view) { if (!applying) changed = true }
+                view.setOnFocusChangeListener { _, focused ->
+                    if (!focused && changed) {
+                        changed = false
+                        emit(id, type, view.text.toString())
+                    }
+                }
+            }
+            type == "change" && view is EditText -> view.setOnEditorActionListener { _, _, _ -> emit(id, type); true }
+            type == "input" && view is EditText -> watchText(view) { emit(id, type, it) }
         }
+    }
+
+    private fun watchText(view: EditText, change: (String) -> Unit) {
+        view.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) = change(s.toString())
+        })
     }
 
     private fun ripple(mask: Drawable) =
@@ -1123,6 +1173,10 @@ private class Video(context: Context) : FrameLayout(context) {
 private fun isClick(action: Runnable?) = action?.javaClass?.name == "android.view.View\$PerformClick"
 
 private class Box(context: Context) : ViewGroup(context) {
+    var buttonRole = false
+    override fun getAccessibilityClassName(): CharSequence =
+        if (buttonRole) Button::class.java.name else super.getAccessibilityClassName()
+
     // Children overflow their frames, as in CSS: a view clips (to its outline) only with overflow hidden.
     init {
         clipChildren = false
@@ -1338,8 +1392,13 @@ private class Label(context: Context, typeface: Typeface) : View(context) {
     var text = ""
         set(value) {
             field = value
-            contentDescription = value
+            contentDescription = spokenLabel ?: value
             invalidate()
+        }
+    var spokenLabel: String? = null
+        set(value) {
+            field = value
+            contentDescription = value ?: text
         }
     var color: Int
         get() = paint.color

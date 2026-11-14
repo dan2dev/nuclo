@@ -7,8 +7,8 @@
  * natively: they are realized in one pass when they get attached.
  *
  * Ops (the whole host contract):
- *   ["create", id, kind]             kind: view | text | button | input | checkbox | image | video
- *                                    navigation (router.ts): tabs | stack | screen
+ *   ["create", id, kind, inputMode?] kind: view | text | button | input | checkbox | image | video | native:<name>
+ *                                    inputMode: password | multiline; navigation: tabs | stack | screen
  *   ["insert", parentId, id, beforeId]   beforeId 0 = append; also moves
  *   ["remove", id]                   detach and destroy the subtree
  *   ["set",    id, key, value]       text, value, checked, placeholder, disabled, src…
@@ -58,7 +58,7 @@ import { fire } from "./timers";
 
 /** One host op (see the contract above): the first item tells the rest apart. */
 export type Op =
-  | ["create", id: number, kind: string]
+  | ["create", id: number, kind: string, inputType?: "password" | "multiline"]
   | ["insert", parent: number, id: number, before: number]
   | ["remove", id: number]
   | ["set", id: number, key: string, value: unknown]
@@ -74,6 +74,7 @@ const live = new Map<number, NElement>();
 const screens = new Set<NElement>();
 
 const TEXT_TAGS = new Set("span p h1 h2 h3 h4 h5 h6 label strong em b i small a".split(" "));
+const isHeading = (tag: string) => /^h[1-6]$/.test(tag);
 
 /** Kinds that hold child widgets. */
 const CONTAINERS = new Set(["view", "screen", "stack", "tabs"]);
@@ -95,6 +96,12 @@ export function useStylesheet(source: () => string) {
 }
 let cssText = "";
 let sheet = new Sheet("");
+const readTextScale = (value: unknown) => {
+  const scale = Number(value);
+  return Number.isFinite(scale) && scale > 0 ? scale : 1;
+};
+let textScale = readTextScale(globalThis.__nuclo_device?.("textScale"));
+let scaledStyles = new WeakMap<Styles, Styles>();
 const matching = new Set<string>();
 let matchKey = "";
 /** Nodes whose computed style may have changed: resolved, top-down, before the next batch. */
@@ -177,6 +184,16 @@ function computedOf(node: NNode) {
   return found;
 }
 
+function textStyle(style: Styles) {
+  if (textScale === 1) return style;
+  let scaled = scaledStyles.get(style);
+  if (!scaled) {
+    scaled = { ...style, fontSize: String((length(style.fontSize) ?? 14) * textScale) };
+    scaledStyles.set(style, scaled);
+  }
+  return scaled;
+}
+
 function resolveStyle(node: NNode) {
   restyled.delete(node);
   const before = node.computed;
@@ -188,8 +205,9 @@ function resolveStyle(node: NNode) {
   }
   if (node.live) {
     const kind = node instanceof NElement ? node.kind : "text";
-    const box: LayoutNode = { id: node.nid, kind, style: next, children: [] };
-    const want = paint(next, kind, kind === "view" || kind === "screen" ? undefined : insets(box));
+    const style = textStyle(next);
+    const box: LayoutNode = { id: node.nid, kind, style, children: [] };
+    const want = paint(style, kind, kind === "view" || kind === "screen" ? undefined : insets(box));
     const had = node.painted ?? {};
     for (const k in want) if (want[k] !== had[k]) ops.push(["style", node.nid, k, want[k]!]);
     for (const k in had) if (!(k in want)) ops.push(["style", node.nid, k, ""]);
@@ -424,9 +442,11 @@ function unlink(node: NNode, destroy: boolean) {
 function unrealize(node: NNode) {
   if (!node.live) return;
   node.live = false;
+  if (node instanceof NElement) windowWatchers.get(node)?.(false);
   // Realized again later, the host has no frames for it: lay it out anew, with nothing reused.
   node.dirty = true;
   node.box = undefined;
+  restyled.delete(node);
   forget(node);
   screens.delete(node as NElement);
   bulky.delete(node);
@@ -514,12 +534,19 @@ function realize(node: NNode) {
     return;
   }
   live.set(node.nid, node);
+  windowWatchers.get(node)?.(true);
   if (node.kind === "screen") {
     screens.add(node);
     presize(node.nid);
   }
-  ops.push(["create", node.nid, node.kind]);
+  if (node.kind === "input" && node.attrs.type === "password") ops.push(["create", node.nid, "input", "password"]);
+  else if (node.localName === "textarea") ops.push(["create", node.nid, "input", "multiline"]);
+  else ops.push(["create", node.nid, node.kind]);
   for (const key in node.attrs) if (key !== "class" && key !== "style") ops.push(["set", node.nid, key, node.attrs[key]]);
+  if (node.localName === "img" && !("aria-label" in node.attrs) && "alt" in node.attrs) {
+    ops.push(["set", node.nid, "aria-label", node.attrs.alt]);
+  }
+  if (isHeading(node.localName) && !("role" in node.attrs)) ops.push(["set", node.nid, "role", "heading"]);
   for (const type of node.listeners?.keys() ?? []) ops.push(["listen", node.nid, type]);
   if (!CONTAINERS.has(node.kind)) {
     ops.push(["set", node.nid, "text", shown(node.textContent)]);
@@ -673,11 +700,18 @@ class NElement extends NNode {
     return (this.attrs["data-native"] as string) || kindOf(this.localName);
   }
 
+  focus() {
+    if (this.live && this.kind === "input") ops.push(["set", this.nid, "focus", true]);
+  }
+
+  blur() {
+    if (this.live && this.kind === "input") ops.push(["set", this.nid, "focus", false]);
+  }
+
   setAttribute(key: string, value: unknown) {
     if (key === "style") return void setStyle(this.styles, "cssText", value);
     if (this.attrs[key] === value) return;
     this.attrs[key] = value;
-    if (key === "data-window") windows.set(String(value), this);
     if (key === "data-before" || key === "data-after") touch(this);
     if (key === "class") {
       if (this.live) restyled.add(this);
@@ -685,6 +719,9 @@ class NElement extends NNode {
     }
     if (this.live) {
       ops.push(["set", this.nid, key, value]);
+      if (key === "alt" && this.localName === "img" && !("aria-label" in this.attrs)) {
+        ops.push(["set", this.nid, "aria-label", value]);
+      }
       touch(this);
     }
   }
@@ -706,7 +743,10 @@ class NElement extends NNode {
       return;
     }
     if (this.live) {
-      ops.push(["set", this.nid, key, null]);
+      ops.push(["set", this.nid, key, key === "role" && isHeading(this.localName) ? "heading" : null]);
+      if (this.localName === "img" && (key === "alt" || key === "aria-label") && !("aria-label" in this.attrs)) {
+        ops.push(["set", this.nid, "aria-label", this.attrs.alt ?? null]);
+      }
       touch(this);
     }
   }
@@ -865,17 +905,33 @@ presize(1);
 
 /** Each windowed list's container, by its `data-window`. */
 const windows = new Map<string, NElement>();
+const windowWatchers = new WeakMap<NElement, (live: boolean) => void>();
 /** Called after a scroll was reported, and after a layout. */
 export const hooks = { scrolled: new Set<() => void>(), laidOut: new Set<() => void>() };
 
+export function watchWindow(element: HTMLDivElement, id: string, follow: () => void, laidOut: () => void) {
+  const node = element as unknown as NElement;
+  const watch = (live: boolean) => {
+    if (live) {
+      windows.set(id, node);
+      hooks.scrolled.add(follow);
+      hooks.laidOut.add(laidOut);
+    } else {
+      windows.delete(id);
+      hooks.scrolled.delete(follow);
+      hooks.laidOut.delete(laidOut);
+    }
+  };
+  windowWatchers.set(node, watch);
+  if (node.live) watch(true);
+}
+
 /**
- * Where its screen's visible part is in a windowed list's container: [y, height]. Undefined until the container is
- * laid out; null when it is not in the document (not yet, or no more: then it is forgotten here).
+ * Where the visible part of the screen falls within a laid-out list container: [y, height].
  */
-export function windowPlace(id: string): [y: number, h: number] | undefined | null {
+export function windowPlace(id: string): [y: number, h: number] | undefined {
   const el = windows.get(id);
   if (!el) return undefined;
-  if (!el.isConnected) return null;
   let y = 0;
   let node: NNode = el;
   for (; node !== body && !screens.has(node as NElement); node = node.parentNode!) {
@@ -892,8 +948,6 @@ export function windowPlace(id: string): [y: number, h: number] | undefined | nu
 /** The heights of a windowed list's container's children as laid out; undefined for one never laid out. */
 export const windowHeights = (id: string) =>
   windows.get(id)?.kids?.map((kid) => (sent.get(kid.nid) ?? parkedAt.get(kid.nid))?.[3]) ?? [];
-
-export const forgetWindow = (id: string) => void windows.delete(id);
 
 /** The frames sent to the host (for checks: see check.ts). */
 export const sentFrames = (): ReadonlyMap<number, Frame> => sent;
@@ -935,13 +989,16 @@ function tree(node: NNode): LayoutNode {
   }
   // A windowed list's rows before and after its window are its padding (windowed.ts). Not through its style: its
   // rows' styles are shared under it, and one more of it for every place the window has been would keep them all.
+  const computed = textStyle(node.computed ?? {});
   const style = el?.attrs["data-window"]
-    ? { ...node.computed, paddingTop: `${el.attrs["data-before"]}px`, paddingBottom: `${el.attrs["data-after"]}px` }
-    : (node.computed ?? {});
+    ? { ...computed, paddingTop: `${el.attrs["data-before"]}px`, paddingBottom: `${el.attrs["data-after"]}px` }
+    : computed;
   if (prev) prev.prev = undefined; // Only the last one: no chain of old nodes.
   // The same computed style parses the same: keep what layout read from it.
   const parsed = prev?.style === style ? prev.parsed : undefined;
-  const box: LayoutNode = (node.box = { id: node.nid, kind, style, children, prev, parsed, span });
+  const requestedRows = el?.localName === "textarea" ? Math.trunc(Number(el.attrs.rows)) : undefined;
+  const rows = requestedRows === undefined ? undefined : Number.isFinite(requestedRows) && requestedRows > 0 ? requestedRows : 2;
+  const box: LayoutNode = (node.box = { id: node.nid, kind, style, children, prev, parsed, span, rows });
   // Hosts that size by content (host.ts) are asked with it, not by node.
   if ((kind === "text" || kind === "button") && globalThis.__nuclo_text_size) box.content = shown(node.textContent);
   else if (kind === "image" && globalThis.__nuclo_image_size) box.content = String(el!.attrs.src ?? "");
@@ -1235,13 +1292,14 @@ function reachEnds() {
  * Runs an event's listeners as the DOM does: the element's, then each ancestor's (`bubbles`), until one stops it.
  * The host reports an event on the view that listens for it, so `target` is that element, not a child inside it.
  */
-function dispatch(el: NElement, type: string, bubbles = true) {
+function dispatch(el: NElement, type: string, bubbles = true, detail?: unknown) {
   let stopped = false;
   const event = {
     type,
     target: el,
     currentTarget: el as NNode,
     bubbles,
+    detail,
     defaultPrevented: false,
     preventDefault() {
       this.defaultPrevented = true;
@@ -1262,9 +1320,23 @@ function dispatch(el: NElement, type: string, bubbles = true) {
 
 /** Host → JS: a native event on a widget. `value` carries an input's text or a checkbox's state. */
 globalThis.__nuclo_event = (id, type, value) => {
+  if (type === "textScale") {
+    const next = readTextScale(value);
+    if (next !== textScale) {
+      textScale = next;
+      scaledStyles = new WeakMap();
+      restyleAll(body);
+      for (const node of restyled) touch(node);
+      resized = true;
+      flush();
+    }
+    return;
+  }
   if (type === "resize") {
     const [w, h, scale] = String(value).split(" ").map(Number);
     sizes.set(id, [w || 0, h || 0, scale || 0]);
+    const scroll = scrolled.get(id);
+    if (scroll && h > 0) scroll[1] = h;
     if (w > 0 && h > 0 && screens.has(live.get(id)!)) windowSize = [w, h, scale || 0];
     resized = true;
     flush();
@@ -1296,6 +1368,10 @@ globalThis.__nuclo_event = (id, type, value) => {
   }
   const el = live.get(id);
   if (!el) return;
+  if (type === "nativeevent") {
+    if (typeof value === "string" && el.kind.startsWith("native:")) dispatch(el, type, false, JSON.parse(value));
+    return;
+  }
   if (value !== undefined) el.attrs[typeof value === "boolean" ? "checked" : "value"] = value;
   dispatch(el, type);
 };
