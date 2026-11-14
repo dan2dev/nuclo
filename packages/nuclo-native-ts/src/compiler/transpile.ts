@@ -36,17 +36,15 @@ const displayPath = (file: string) => {
 
 export const formatDiagnostic = (d: Diagnostic) => `${d.file}:${d.line}:${d.column} - error: ${d.message}`;
 
-/** The options apps are checked with (examples/tsconfig.json matches them): ES only, no DOM, strict. */
-export const compilerOptions: ts.CompilerOptions = {
-  target: ts.ScriptTarget.ES2022,
-  module: ts.ModuleKind.ESNext,
-  moduleResolution: ts.ModuleResolutionKind.Bundler,
-  strict: true,
-  noEmit: true,
-  allowImportingTsExtensions: true,
-  lib: ["lib.es2022.d.ts"],
-  types: [],
-};
+/** The options apps are checked with: tsconfig.app.json, shared with the editor (examples/tsconfig.json). */
+export const APP_TSCONFIG = path.resolve(import.meta.dirname, "../../tsconfig.app.json");
+
+export function appCompilerOptions(): ts.CompilerOptions {
+  const { config, error } = ts.readConfigFile(APP_TSCONFIG, ts.sys.readFile);
+  if (error) throw new Error(ts.flattenDiagnosticMessageText(error.messageText, "\n"));
+  const parsed = ts.parseJsonConfigFileContent(config, ts.sys, path.dirname(APP_TSCONFIG));
+  return parsed.options;
+}
 
 const API_FILE = path.resolve(import.meta.dirname, "../index.ts");
 
@@ -91,6 +89,23 @@ const RESERVED_TYPES = new Set([
   "Array", "Data", "Date", "URL", "Error", "Exception", "Timer", "View", "Task", "Set", "Map", "List", "Any", "Unit", "Object",
 ]);
 
+/**
+ * Names the generated code calls or refers to unqualified (formatting helpers, runtime types). A user
+ * declaration with one of these names, at any level, would shadow it in Swift or Kotlin. Math
+ * functions are printed fully qualified (`Swift.min`, `kotlin.math.floor`), so they stay free.
+ */
+const IMPLICIT_NAMES = new Set([
+  "jsNum", "jsFixed", "jsRound", "jsNow", "jsNumber", "jsParseInt", "jsOr", "jsErrorMessage", "consoleLog", "launch",
+  "nucloMain", "MainActivity", "AppDelegate", "NucloActivity", "NucloAppDelegate", "Task", "A", "NJSON", "NError",
+  "NRoute", "NTab", "NRouter", "NTimer", "NResponse", "Compound", "Variants", "Style", "StyleClass", "Node", "NodeMod",
+  "WhenBuilder", "FlexDirection", "Align", "Justify", "Position", "Display", "FontWeight", "TextAlign", "Params",
+  "Content", "Cleanup", "InputTarget", "NativeEvent", "NativeElement", "Exception", "Error", "String", "Int", "Double",
+  "Bool", "Boolean", "Unit", "Any", "Void", "mutableListOf", "mutableMapOf", "listOf", "checkbox", "self", "it",
+  // The runtimes' own types (Swift shares one module with the app).
+  "Runtime", "Flex", "FlexView", "FlexLayout", "ScreenView", "LayerView", "RootController", "ScreenController", "MountProbe",
+  "TextViewDelegate", "PaddedLabel", "NButton", "PaddedTextField", "IntoEntry", "RegionState", "Attr",
+]);
+
 type NumKind = "int" | "double";
 type Slot = ts.Symbol | ts.Node;
 
@@ -106,7 +121,7 @@ interface Ctx {
 const camel = (s: string) => s.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
 
 export function transpile(entry: string): Program {
-  const program = ts.createProgram([path.resolve(entry)], compilerOptions);
+  const program = ts.createProgram([path.resolve(entry)], appCompilerOptions());
   const files = program
     .getSourceFiles()
     .filter((sf) => !sf.isDeclarationFile && path.resolve(sf.fileName) !== API_FILE && !sf.fileName.includes("/node_modules/"));
@@ -137,6 +152,9 @@ class Frontend {
   private readonly functionSymbols = new Set<ts.Symbol>();
   private readonly classes = new Map<ts.Symbol, ClassDecl>();
   private readonly asyncFunctions = new Set<ts.Node>();
+  /** Arrays are values in Swift: what mutates an array, and what makes two bindings share one (see checkArrays). */
+  private readonly mutations: ts.Expression[] = [];
+  private readonly aliases: { target: ts.Node; source: ts.Expression }[] = [];
 
   private readonly program: ts.Program;
   private readonly files: readonly ts.SourceFile[];
@@ -149,7 +167,9 @@ class Frontend {
 
   run(source: string): Program {
     for (const sf of this.files) this.collect(sf);
+    for (const sf of this.files) this.collectFunctionReferences(sf);
     this.inferNumbers();
+    this.checkArrays();
 
     const out: Program = { source, classes: [], globals: [], functions: [], main: [] };
     for (const sf of this.files) {
@@ -188,7 +208,8 @@ class Frontend {
       if (ts.isInterfaceDeclaration(node) || (ts.isTypeAliasDeclaration(node) && ts.isTypeLiteralNode(node.type))) {
         const symbol = this.checker.getSymbolAtLocation(node.name);
         if (symbol) this.classes.set(symbol, { name: node.name.text, fields: [], decodable: true });
-        if (RESERVED_TYPES.has(node.name.text)) this.error(node.name, `"${node.name.text}" is reserved by the native runtimes; rename the type.`);
+        if (RESERVED_TYPES.has(node.name.text) || IMPLICIT_NAMES.has(node.name.text)) this.error(node.name, `"${node.name.text}" is reserved by the native runtimes; rename the type.`);
+        if (node.typeParameters?.length) this.error(node.name, "Generic interfaces are not supported natively; declare a concrete interface per type.");
         const members = ts.isInterfaceDeclaration(node) ? node.members : (node.type as ts.TypeLiteralNode).members;
         for (const member of members) {
           if (!ts.isPropertySignature(member)) {
@@ -201,9 +222,26 @@ class Frontend {
       if ((ts.isFunctionDeclaration(node) || ts.isVariableDeclaration(node)) && node.name && ts.isIdentifier(node.name) && ts.isSourceFile(this.topLevelOf(node))) {
         if (RESERVED_TYPES.has(node.name.text)) this.error(node.name, `"${node.name.text}" is reserved by the native runtimes or platforms; rename it.`);
       }
+      if ((ts.isFunctionDeclaration(node) || ts.isVariableDeclaration(node) || ts.isParameter(node)) && node.name && ts.isIdentifier(node.name) && IMPLICIT_NAMES.has(node.name.text)) {
+        this.error(node.name, `"${node.name.text}" would shadow a name the generated Swift/Kotlin uses; rename it.`);
+      }
       if (ts.isFunctionDeclaration(node) && node.name) {
         const symbol = this.checker.getSymbolAtLocation(node.name);
         if (symbol) this.functionSymbols.add(symbol);
+        if (!node.body) this.error(node, "Function overloads are not supported natively; use one signature.");
+      }
+      if ((ts.isFunctionDeclaration(node) || this.isFunctionNode(node)) && node.typeParameters?.length) {
+        this.error(node, "Generic functions are not supported natively; write one function per type.");
+      }
+      if (ts.isVariableDeclaration(node) && node.initializer) this.aliases.push({ target: node.name, source: node.initializer });
+      if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+        this.aliases.push({ target: node.left, source: node.right });
+        if (ts.isElementAccessExpression(node.left)) this.mutations.push(node.left.expression);
+      }
+      if (ts.isPropertyAssignment(node) && ts.isObjectLiteralExpression(node.parent)) this.aliases.push({ target: node.name, source: node.initializer });
+      if (ts.isShorthandPropertyAssignment(node)) this.aliases.push({ target: node.name, source: node.name });
+      if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && ["push", "pop", "shift", "unshift", "splice"].includes(node.expression.name.text)) {
+        if (this.checker.isArrayType(this.checker.getNonNullableType(this.typeOf(node.expression.expression)))) this.mutations.push(node.expression.expression);
       }
       if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
         if (node.initializer && this.isFunctionNode(node.initializer) && ts.isVariableDeclarationList(node.parent) && node.parent.flags & ts.NodeFlags.Const) {
@@ -222,7 +260,7 @@ class Frontend {
         if (node.initializer) this.write(node.name, node.initializer);
         // An untyped callback parameter takes the kind of the parameter it is passed for.
         const fn = node.parent;
-        if (!node.type && (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn))) {
+        if (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) {
           const ctx = this.checker.getContextualType(fn as ts.Expression)?.getCallSignatures()[0];
           const source = ctx?.getParameters()[fn.parameters.indexOf(node)];
           const symbol = this.checker.getSymbolAtLocation(node.name);
@@ -274,6 +312,118 @@ class Frontend {
       ts.forEachChild(node, visit);
     };
     visit(sf);
+  }
+
+  /**
+   * A function passed by reference (`list(items, renderRow)`, `setTimeout(tick, 10)`): its parameters
+   * take the kinds of the parameters it is passed for, as a callback written inline does.
+   */
+  private collectFunctionReferences(sf: ts.SourceFile) {
+    const visit = (node: ts.Node): void => {
+      if (ts.isIdentifier(node) && !(ts.isCallExpression(node.parent) && node.parent.expression === node) && !this.isDeclarationName(node)) {
+        const symbol = this.resolveAlias(this.checker.getSymbolAtLocation(node));
+        const fn = symbol && this.functionSymbols.has(symbol) ? this.functionNodeOf(symbol) : undefined;
+        const ctx = fn && this.checker.getContextualType(node)?.getCallSignatures()[0];
+        if (fn && ctx) {
+          fn.parameters.forEach((param, i) => {
+            const slot = ts.isIdentifier(param.name) ? this.checker.getSymbolAtLocation(param.name) : undefined;
+            const source = ctx.getParameters()[i];
+            if (slot && source) this.writes.push({ slot, fromSlot: source });
+          });
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sf);
+  }
+
+  private isDeclarationName(node: ts.Identifier): boolean {
+    return "name" in node.parent && (node.parent as ts.NamedDeclaration).name === node;
+  }
+
+  /** The function a function symbol names: `function f() {}` or `const f = () => …`. */
+  private functionNodeOf(symbol: ts.Symbol): ts.SignatureDeclaration | undefined {
+    const decl = symbol.valueDeclaration;
+    if (decl && ts.isFunctionDeclaration(decl)) return decl;
+    if (decl && ts.isVariableDeclaration(decl) && decl.initializer && this.isFunctionNode(decl.initializer)) return decl.initializer;
+    return undefined;
+  }
+
+  /**
+   * Swift arrays are values; JavaScript arrays are shared references. Code where the difference
+   * shows is rejected: mutating a parameter (the caller's array wouldn't change), mutating a
+   * temporary (a call's result), and two bindings sharing one array that either side then mutates.
+   * `.slice()` makes an explicit copy, which behaves the same on every target.
+   */
+  private checkArrays() {
+    const mutated = new Set<ts.Symbol>();
+    for (const receiver of this.mutations) {
+      const symbol = this.storageSymbol(receiver);
+      if (!symbol) {
+        this.error(receiver, "This array is a temporary natively (Swift arrays are values): mutate the variable or property that holds it.");
+        continue;
+      }
+      const decl = symbol.valueDeclaration;
+      if (decl && ts.isParameter(decl)) {
+        this.error(receiver, `"${symbol.name}" is a parameter: Swift passes arrays by value, so the caller's array would not change. Return a new array, or mutate the variable that owns it.`);
+        continue;
+      }
+      mutated.add(symbol);
+    }
+    for (const { target, source } of this.aliases) {
+      if (!this.checker.isArrayType(this.checker.getNonNullableType(this.typeOf(source))) || this.isFresh(source, false)) continue;
+      const to = this.storageSymbol(target);
+      const from = this.storageSymbol(source);
+      if ((to && mutated.has(to)) || (from && mutated.has(from)) || (!from && to && mutated.has(to))) {
+        this.error(source, "This array would be shared in JavaScript but copied natively (Swift arrays are values), and one side is mutated. Copy it with .slice(), or keep one variable.");
+      }
+    }
+  }
+
+  /** The variable or property an expression reads (its base, for `xs[i]`); undefined for temporaries. */
+  private storageSymbol(node: ts.Node): ts.Symbol | undefined {
+    while (ts.isParenthesizedExpression(node) || ts.isNonNullExpression(node) || ts.isAsExpression(node)) node = node.expression;
+    if (ts.isElementAccessExpression(node)) return this.storageSymbol(node.expression);
+    if (ts.isPropertyAccessExpression(node)) return this.checker.getSymbolAtLocation(node.name);
+    if (ts.isIdentifier(node)) {
+      if (ts.isShorthandPropertyAssignment(node.parent)) return this.checker.getShorthandAssignmentValueSymbol(node.parent);
+      if ((ts.isPropertyAssignment(node.parent) || ts.isShorthandPropertyAssignment(node.parent)) && node.parent.name === node && ts.isObjectLiteralExpression(node.parent.parent)) {
+        return this.checker.getContextualType(node.parent.parent)?.getProperty(node.text);
+      }
+      return this.checker.getSymbolAtLocation(node);
+    }
+    return undefined;
+  }
+
+  /** Whether an array expression is a new array (nobody else holds it). */
+  private isFresh(node: ts.Expression, forReturn: boolean, seen = new Set<ts.Node>()): boolean {
+    while (ts.isParenthesizedExpression(node) || ts.isNonNullExpression(node) || ts.isAsExpression(node) || ts.isAwaitExpression(node)) node = node.expression;
+    if (ts.isArrayLiteralExpression(node)) return true;
+    if (ts.isConditionalExpression(node)) return this.isFresh(node.whenTrue, forReturn, seen) && this.isFresh(node.whenFalse, forReturn, seen);
+    if (ts.isBinaryExpression(node) && (node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken || node.operatorToken.kind === ts.SyntaxKind.BarBarToken)) {
+      return this.isFresh(node.left, forReturn, seen) && this.isFresh(node.right, forReturn, seen);
+    }
+    if (ts.isCallExpression(node)) {
+      const decl = this.checker.getResolvedSignature(node)?.getDeclaration();
+      if (!decl || this.isApi(decl) || decl.getSourceFile().isDeclarationFile || seen.has(decl)) return true;
+      seen.add(decl);
+      // A user function's result is new if everything it returns is.
+      const returns: ts.Expression[] = [];
+      const body = (decl as ts.FunctionLikeDeclaration).body;
+      if (body && !ts.isBlock(body)) returns.push(body);
+      const visit = (n: ts.Node): void => {
+        if (ts.isReturnStatement(n) && n.expression) returns.push(n.expression);
+        if (!this.isFunctionNode(n) && !ts.isFunctionDeclaration(n)) ts.forEachChild(n, visit);
+      };
+      if (body && ts.isBlock(body)) ts.forEachChild(body, visit);
+      return returns.every((r) => this.isFresh(r, true, seen));
+    }
+    // A function's own local array, returned: new to the caller.
+    if (forReturn && ts.isIdentifier(node)) {
+      const decl = this.checker.getSymbolAtLocation(node)?.valueDeclaration;
+      return !!decl && ts.isVariableDeclaration(decl) && !ts.isSourceFile(this.topLevelOf(decl)) && !!decl.initializer && this.isFresh(decl.initializer, false, seen);
+    }
+    return false;
   }
 
   /** The node's container: a source file for top-level declarations. */
@@ -375,6 +525,8 @@ class Frontend {
           return "int";
         case ts.SyntaxKind.CommaToken:
           return this.numKind(node.right);
+        case ts.SyntaxKind.QuestionQuestionToken:
+          return this.numKind(node.left) === "int" && this.numKind(node.right) === "int" ? "int" : "double";
         default:
           return this.isAssignment(node.operatorToken.kind) ? this.numKind(node.right) : "double";
       }
@@ -384,7 +536,7 @@ class Frontend {
       return symbol ? this.slotKind(symbol) : "double";
     }
     if (ts.isPropertyAccessExpression(node)) {
-      if (node.name.text === "length" && this.isSequence(this.typeOf(node.expression))) return "int";
+      if (node.name.text === "length" && this.isSequence(this.checker.getNonNullableType(this.typeOf(node.expression)))) return "int";
       const symbol = this.checker.getSymbolAtLocation(node.name);
       return symbol ? this.slotKind(symbol) : "double";
     }
@@ -547,10 +699,13 @@ class Frontend {
     const symbol = this.checker.getSymbolAtLocation(node.name);
     const cls = symbol && this.classes.get(symbol);
     if (!cls) return;
-    const members = ts.isInterfaceDeclaration(node) ? node.members : (node.type as ts.TypeLiteralNode).members;
-    for (const member of members) {
-      if (!ts.isPropertySignature(member) || !ts.isIdentifier(member.name)) continue;
-      const prop = this.checker.getSymbolAtLocation(member.name)!;
+    // Every property, inherited ones (`extends`) included.
+    for (const prop of this.checker.getPropertiesOfType(this.checker.getDeclaredTypeOfSymbol(symbol))) {
+      const member = prop.valueDeclaration;
+      if (!member || !ts.isPropertySignature(member) || !ts.isIdentifier(member.name)) {
+        this.error(member ?? node, "Only properties are supported in interfaces (they become native classes).");
+        continue;
+      }
       const ty = this.tyOfSymbol(prop, member);
       const readonly = !!member.modifiers?.some((m) => m.kind === ts.SyntaxKind.ReadonlyKeyword);
       cls.fields.push({ name: member.name.text, ty, readonly, optional: !!member.questionToken });
@@ -586,14 +741,19 @@ class Frontend {
     if (isAsync) retType = this.checker.getAwaitedType(retType) ?? retType;
     const ret = this.ty(retType, node, this.slotKind(node));
     const ctx: Ctx = { async: isAsync, ret, voidUnion: false, inTry: false };
-    return { name, params: this.params(node), ret, async: isAsync, body: this.body(node, ctx) };
+    return { name, params: this.params(node, ctx), ret, async: isAsync, body: this.body(node, ctx) };
   }
 
-  private params(node: ts.SignatureDeclaration): Param[] {
+  private params(node: ts.SignatureDeclaration, ctx?: Ctx): Param[] {
     return node.parameters.map((param) => {
       if (!ts.isIdentifier(param.name)) return this.error(param, "Destructured parameters are not supported."), { name: "_", ty: T.void };
+      if (param.dotDotDotToken) return this.error(param, "Rest parameters are not supported natively; take an array."), { name: "_", ty: T.void };
       const symbol = this.checker.getSymbolAtLocation(param.name)!;
-      return { name: param.name.text, ty: this.tyOfSymbol(symbol, param) };
+      const ty = this.tyOfSymbol(symbol, param);
+      if (!param.initializer && !param.questionToken) return { name: param.name.text, ty };
+      if (!ctx) return this.error(param, "Callbacks can't have default or optional parameters natively."), { name: param.name.text, ty };
+      const value: Expr = param.initializer ? this.expr(param.initializer, ctx, ty) : { e: "nil" };
+      return { name: param.name.text, ty, default: value };
     });
   }
 
@@ -609,7 +769,7 @@ class Frontend {
       }
     }
     if (ts.isBlock(body)) {
-      for (const s of body.statements) stmts.push(...this.stmt(s, ctx));
+      stmts.push(...this.block(body, ctx));
       if (ctx.voidUnion && !(stmts.at(-1)?.s === "return")) stmts.push({ s: "return", x: { e: "nil" } });
     } else if (ctx.ret.k === "void") {
       stmts.push(...this.exprStmt(body, ctx));
@@ -647,8 +807,12 @@ class Frontend {
   // Statements
   // -------------------------------------------------------------------------
 
+  /** A block's statements, with its function declarations first (they are hoisted in JavaScript). */
   private block(node: ts.Statement, ctx: Ctx): Stmt[] {
-    return ts.isBlock(node) ? node.statements.flatMap((s) => this.stmt(s, ctx)) : this.stmt(node, ctx);
+    if (!ts.isBlock(node)) return this.stmt(node, ctx);
+    const hoisted = node.statements.filter(ts.isFunctionDeclaration);
+    const rest = node.statements.filter((s) => !ts.isFunctionDeclaration(s));
+    return [...hoisted, ...rest].flatMap((s) => this.stmt(s, ctx));
   }
 
   private stmt(node: ts.Statement, ctx: Ctx): Stmt[] {
@@ -666,6 +830,7 @@ class Frontend {
     if (ts.isForOfStatement(node)) {
       const decl = node.initializer;
       if (!ts.isVariableDeclarationList(decl) || !ts.isIdentifier(decl.declarations[0]!.name)) return [this.unsupported(node, "this for-of form")];
+      if (!this.checker.isArrayType(this.typeOf(node.expression))) return [this.unsupported(node.expression, "for-of over anything but an array (strings iterate characters natively)")];
       return [{ s: "forOf", name: decl.declarations[0]!.name.text, of: this.expr(node.expression, ctx), body: this.block(node.statement, ctx) }];
     }
     if (ts.isForStatement(node)) return this.forRange(node, ctx);
@@ -687,10 +852,7 @@ class Frontend {
       return [this.unsupported(node, "throwing anything but `new Error(message)`")];
     }
     if (ts.isSwitchStatement(node)) return [this.switchStmt(node, ctx)];
-    if (ts.isFunctionDeclaration(node) && node.name) {
-      const fn = this.lambda(node as unknown as ts.FunctionExpression, ctx);
-      return [{ s: "let", name: node.name.text, ty: this.tyOfExpr(node as unknown as ts.Expression), init: fn, mutable: false }];
-    }
+    if (ts.isFunctionDeclaration(node) && node.name && node.body) return [{ s: "fn", decl: this.fnDecl(node.name.text, node) }];
     if (ts.isEmptyStatement(node) || ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) return [];
     return [this.unsupported(node, `the statement ${ts.SyntaxKind[node.kind]}`)];
   }
@@ -702,6 +864,10 @@ class Frontend {
 
   private varDecl(decl: ts.VariableDeclaration, list: ts.VariableDeclarationList, ctx: Ctx): Stmt {
     if (!ts.isIdentifier(decl.name)) return this.unsupported(decl, "destructuring");
+    // `const f = () => …` is a local function: it can call itself, and its numbers keep their kinds.
+    if (decl.initializer && list.flags & ts.NodeFlags.Const && (ts.isArrowFunction(decl.initializer) || ts.isFunctionExpression(decl.initializer))) {
+      return { s: "fn", decl: this.fnDecl(decl.name.text, decl.initializer) };
+    }
     const symbol = this.checker.getSymbolAtLocation(decl.name)!;
     const ty = this.tyOfSymbol(symbol, decl);
     const mutable = !(list.flags & ts.NodeFlags.Const);
@@ -825,6 +991,7 @@ class Frontend {
   }
 
   private coerce(x: Expr, node: ts.Expression, want: Ty): Expr {
+    this.checkNominal(node, want);
     const target = want.k === "optional" ? want.of : want;
     if (target.k === "double" || target.k === "int") {
       if (!this.isNumber(this.typeOf(node))) return x;
@@ -836,6 +1003,35 @@ class Frontend {
     return x;
   }
 
+  /**
+   * TypeScript is structural; Swift and Kotlin classes are nominal. A value of one interface used
+   * where another (same-shaped) interface is expected would be a different native class.
+   */
+  private checkNominal(node: ts.Expression, want: Ty) {
+    let n = node;
+    while (ts.isParenthesizedExpression(n)) n = n.expression;
+    if (!(ts.isIdentifier(n) || ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n) || ts.isCallExpression(n) || ts.isAwaitExpression(n))) return;
+    const type = this.typeOf(n);
+    if (type.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown) || type.getCallSignatures().length) return;
+    const classOf = (t: Ty): string | undefined =>
+      t.k === "class" ? t.name : t.k === "array" || t.k === "optional" || t.k === "map" ? classOf(t.of) : undefined;
+    const expected = classOf(want);
+    if (!expected) return;
+    const actual = this.classNameOf(this.checker.getNonNullableType(type));
+    if (actual && actual !== expected) {
+      this.error(node, `${actual} is used where ${expected} is expected: same shape in TypeScript, but different native classes. Build the ${expected} explicitly.`);
+    }
+  }
+
+  /** The interface a type is, looking through arrays and maps. */
+  private classNameOf(type: ts.Type): string | undefined {
+    if (this.checker.isArrayType(type)) return this.classNameOf(this.checker.getNonNullableType(this.checker.getTypeArguments(type as ts.TypeReference)[0]!));
+    const index = type.getStringIndexType();
+    if (index && type.getProperties().length === 0) return this.classNameOf(this.checker.getNonNullableType(index));
+    const symbol = type.aliasSymbol ?? type.getSymbol();
+    return symbol && this.isClassType(type) ? symbol.name : undefined;
+  }
+
   /** A function passed where one with more parameters is expected gets the extra ones, unused. */
   private adapt(x: Expr, node: ts.Expression, want: Extract<Ty, { k: "fn" }>): Expr {
     if (x.e === "lambda" && x.params.length < want.params.length) {
@@ -843,16 +1039,29 @@ class Frontend {
       return { ...x, params: [...x.params, ...extra] };
     }
     if (x.e === "id" && x.fnRef) {
-      const symbol = this.checker.getSymbolAtLocation(node);
-      const decl = symbol?.valueDeclaration;
-      const fn = decl && ts.isVariableDeclaration(decl) ? decl.initializer : decl;
-      const arity = fn && (ts.isFunctionDeclaration(fn) || this.isFunctionNode(fn)) ? fn.parameters.length : want.params.length;
-      if (arity < want.params.length) {
+      const symbol = this.resolveAlias(this.checker.getSymbolAtLocation(node));
+      const fn = symbol && this.functionNodeOf(symbol);
+      if (!fn) return x;
+      const arity = fn.parameters.length;
+      const own = fn.parameters.map((p) => (ts.isIdentifier(p.name) ? this.tyOfSymbol(this.checker.getSymbolAtLocation(p.name)!, p) : T.void));
+      const signature = this.checker.getSignatureFromDeclaration(fn);
+      const ownRet = signature ? this.ty(signature.getReturnType(), fn, this.slotKind(fn)) : want.ret;
+      const mismatch = (a: Ty | undefined, b: Ty) => !!a && ((a.k === "int" && b.k === "double") || (a.k === "double" && b.k === "int"));
+      const wrap = arity < want.params.length || want.params.some((p, i) => mismatch(own[i], p)) || mismatch(ownRet, want.ret);
+      if (wrap) {
         const params = want.params.map((ty, i) => ({ name: i < arity ? `p${i}` : `_${i}`, ty, unused: i >= arity }));
-        const call: Expr = { e: "call", callee: { e: "id", name: x.name }, args: params.slice(0, arity).map((p) => ({ e: "id", name: p.name })) };
-        return { e: "lambda", params, ret: want.ret, body: want.ret.k === "void" ? [{ s: "expr", x: call }] : call };
+        const args = params.slice(0, arity).map((p, i): Expr => this.convert({ e: "id", name: p.name }, p.ty, own[i]!));
+        const call: Expr = { e: "call", callee: { e: "id", name: x.name }, args };
+        return { e: "lambda", params, ret: want.ret, body: want.ret.k === "void" ? [{ s: "expr", x: call }] : this.convert(call, ownRet, want.ret) };
       }
     }
+    return x;
+  }
+
+  /** Int ↔ Double where two number kinds meet. */
+  private convert(x: Expr, from: Ty, to: Ty): Expr {
+    if (from.k === "int" && to.k === "double") return { e: "toDouble", x };
+    if (from.k === "double" && to.k === "int") return { e: "toInt", x };
     return x;
   }
 
@@ -907,7 +1116,13 @@ class Frontend {
       for (const span of node.templateSpans) parts.push(this.str(span.expression, ctx), span.literal.text);
       return { e: "tpl", parts: parts.filter((p) => p !== "") };
     }
-    if (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isSatisfiesExpression(node) || ts.isNonNullExpression(node)) {
+    if (ts.isNonNullExpression(node)) {
+      // `rows[i]!`: the read itself, which traps natively when out of range, as `!` would.
+      if (ts.isElementAccessExpression(node.expression)) return this.elementAccess(node.expression, ctx, true);
+      const inner = this.expr(node.expression, ctx, want);
+      return this.isNullable(this.typeOf(node.expression)) && inner.e !== "unwrap" ? { e: "unwrap", x: inner } : inner;
+    }
+    if (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isSatisfiesExpression(node)) {
       return this.expr(node.expression, ctx, want);
     }
     if (ts.isAwaitExpression(node)) {
@@ -917,13 +1132,7 @@ class Frontend {
       return this.error(node, "Only calls can be awaited.");
     }
     if (ts.isPropertyAccessExpression(node)) return this.property(node, ctx);
-    if (ts.isElementAccessExpression(node)) {
-      const objType = this.typeOf(node.expression);
-      const obj = this.expr(node.expression, ctx);
-      if (this.checker.isArrayType(objType)) return { e: "index", obj, index: this.expr(node.argumentExpression, ctx, T.int) };
-      const fallback = this.isString(this.typeOf(node)) ? [{ e: "str", v: "" } as Expr] : [];
-      return { e: "op", op: "map.get", args: [obj, this.expr(node.argumentExpression, ctx, T.string), ...fallback] };
-    }
+    if (ts.isElementAccessExpression(node)) return this.elementAccess(node, ctx, false);
     if (ts.isCallExpression(node)) return this.call(node, ctx);
     if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) return this.lambda(node, ctx, want?.k === "fn" ? want : undefined);
     if (ts.isConditionalExpression(node)) {
@@ -947,6 +1156,28 @@ class Frontend {
     if (ts.isNewExpression(node)) return this.error(node, "Unsupported: `new` (only `throw new Error(...)`).");
     if (ts.isTypeOfExpression(node)) return this.error(node, "Unsupported: `typeof` at run time.");
     return this.error(node, `Unsupported expression ${ts.SyntaxKind[node.kind]}.`);
+  }
+
+  /**
+   * `xs[i]` / `map[key]`. With noUncheckedIndexedAccess the read is `T | undefined`, and so is the
+   * native one: `jsAt(i)` / `getOrNull(i)` and the map's optional subscript, never a crash. A read
+   * TypeScript has narrowed (or `!`-asserted) is the plain subscript.
+   */
+  private elementAccess(node: ts.ElementAccessExpression, ctx: Ctx, asserted: boolean): Expr {
+    const objType = this.checker.getNonNullableType(this.typeOf(node.expression));
+    const obj = this.expr(node.expression, ctx);
+    const present = asserted || !this.isNullable(this.typeOf(node));
+    if (this.isString(objType)) return this.error(node, "Indexing a string is not supported natively (characters differ); use slice().");
+    if (this.checker.isArrayType(objType)) {
+      const index = this.expr(node.argumentExpression, ctx, T.int);
+      if (node.questionDotToken) return this.error(node, "Unsupported: ?.[] on an optional array; read it into a variable and narrow it first.");
+      return present ? { e: "index", obj, index } : { e: "op", op: "arr.at", args: [obj, index] };
+    }
+    if (objType.getStringIndexType()) {
+      const get: Expr = { e: "op", op: "map.get", args: [obj, this.expr(node.argumentExpression, ctx, T.string)] };
+      return present ? { e: "unwrap", x: get } : get;
+    }
+    return this.error(node, "Only arrays and Record<string, T> maps can be indexed natively.");
   }
 
   private identifier(node: ts.Identifier): Expr {
@@ -980,16 +1211,18 @@ class Frontend {
     const name = node.name.text;
     const objType = this.typeOf(node.expression);
     if (ts.isIdentifier(node.expression) && node.expression.text === "Math" && name === "PI") return { e: "op", op: "math.pi", args: [] };
-    if (name === "length" && this.checker.isArrayType(this.checker.getNonNullableType(objType))) return { e: "op", op: "arr.length", args: [this.expr(node.expression, ctx)] };
-    if (name === "length" && this.isString(objType)) return { e: "op", op: "str.length", args: [this.expr(node.expression, ctx)] };
+    const chain = (ts.isOptionalChain(node) && !node.questionDotToken) || undefined;
+    if (node.questionDotToken && name === "length") return this.error(node, "Unsupported: ?.length; narrow the value first.");
+    if (name === "length" && this.checker.isArrayType(this.checker.getNonNullableType(objType))) return { e: "op", op: "arr.length", args: [this.expr(node.expression, ctx)], chain };
+    if (name === "length" && this.isString(this.checker.getNonNullableType(objType))) return { e: "op", op: "str.length", args: [this.expr(node.expression, ctx)], chain };
     if (name === "message" && this.ty(objType, node).k === "rt") return { e: "op", op: "error.message", args: [this.expr(node.expression, ctx)] };
     const obj = this.expr(node.expression, ctx);
-    // Record<string, T>: a map lookup.
+    // Record<string, T>: a map lookup, optional unless TypeScript narrowed it.
     if (objType.getStringIndexType() && objType.getProperties().length === 0) {
-      const fallback = this.isString(this.typeOf(node)) ? [{ e: "str", v: "" } as Expr] : [];
-      return { e: "op", op: "map.get", args: [obj, { e: "str", v: name }, ...fallback] };
+      const get: Expr = { e: "op", op: "map.get", args: [obj, { e: "str", v: name }] };
+      return this.isNullable(this.typeOf(node)) ? get : { e: "unwrap", x: get };
     }
-    const x: Expr = { e: "prop", obj, name, optional: !!node.questionDotToken || undefined };
+    const x: Expr = { e: "prop", obj, name, optional: !!node.questionDotToken || undefined, chain };
     const symbol = this.checker.getSymbolAtLocation(node.name);
     return symbol ? this.unwrapIfNarrowed(x, node, symbol) : x;
   }
@@ -1001,7 +1234,9 @@ class Frontend {
     if (this.isAssignment(kind)) return this.error(node, "Unsupported: assignment inside an expression; make it a statement.");
     if (kind === ts.SyntaxKind.QuestionQuestionToken) {
       const ty = this.tyOfExpr(node);
-      return { e: "coalesce", l: this.expr(node.left, ctx), r: this.expr(node.right, ctx, ty) };
+      const left = this.expr(node.left, ctx);
+      // `x ?? y` where TypeScript narrowed x: keep it optional, so `??` stays meaningful natively.
+      return { e: "coalesce", l: left.e === "unwrap" ? left.x : left, r: this.expr(node.right, ctx, ty) };
     }
     if (kind === ts.SyntaxKind.AmpersandAmpersandToken || kind === ts.SyntaxKind.BarBarToken) {
       if (this.isBoolean(this.typeOf(node))) return this.cond(node, ctx);
@@ -1149,6 +1384,9 @@ class Frontend {
 
   private call(node: ts.CallExpression, ctx: Ctx): Expr {
     const callee = node.expression;
+    if (node.questionDotToken || (ts.isPropertyAccessExpression(callee) && callee.questionDotToken)) {
+      return this.error(node, "Unsupported: optional calls (?.()); narrow the value first (if (f) f()).");
+    }
     const api = ts.isIdentifier(callee) ? this.apiName(callee) : undefined;
     if (api) return this.nuclo(api, node, ctx);
 
@@ -1159,6 +1397,7 @@ class Frontend {
     }
     if (ts.isPropertyAccessExpression(callee)) {
       const method = this.method(callee, node, ctx);
+      if (method?.e === "op" && ts.isOptionalChain(node)) method.chain = true;
       if (method) return method;
     }
 
@@ -1176,7 +1415,9 @@ class Frontend {
       const param = params[i];
       return this.expr(arg, ctx, param ? this.tyOfSymbol(param, arg) : undefined);
     });
-    const fn = ts.isIdentifier(callee) ? ({ e: "id", name: callee.text } as Expr) : this.expr(callee, ctx);
+    // A declared function is called by name; a function value (maybe narrowed from null) is read as one.
+    const symbol = ts.isIdentifier(callee) ? this.resolveAlias(this.checker.getSymbolAtLocation(callee)) : undefined;
+    const fn = symbol && this.functionSymbols.has(symbol) ? ({ e: "id", name: callee.getText() } as Expr) : this.expr(callee, ctx);
     return { e: "call", callee: fn, args };
   }
 

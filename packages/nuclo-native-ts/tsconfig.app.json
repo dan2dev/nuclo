@@ -1,0 +1,25 @@
+{
+  // The options every app is checked with, by the editor (examples/tsconfig.json extends this)
+  // and by the compiler (src/compiler/transpile.ts loads this file). They make TypeScript as
+  // strict as the native targets:
+  //   - ES only: no DOM, no Node, no @types — only what @nuclo/native-ts declares exists;
+  //   - an array or map read may miss (Swift and Kotlin have no `undefined` to fall back on);
+  //   - every path of a function returns, switch cases don't fall through, no dead code.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": [],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "noImplicitOverride": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  }
+}

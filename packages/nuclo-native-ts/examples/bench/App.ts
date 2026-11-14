@@ -48,7 +48,7 @@ let runIndex = 0;
 let samples: number[] = [];
 
 function pick(words: string[]): string {
-  return words[Math.floor(Math.random() * words.length)];
+  return words[Math.floor(Math.random() * words.length)] ?? "";
 }
 
 function build(count: number): Row[] {
@@ -84,16 +84,20 @@ function act(step: string) {
       break;
     case "partial update (every 10th of 1,000)":
       for (let i = 0; i < rows.length; i++) {
-        if (i % 10 === 0) rows[i].label = rows[i].label + " !!!";
+        const row = rows[i];
+        if (row !== undefined && i % 10 === 0) row.label = row.label + " !!!";
       }
       break;
     case "select row":
-      selected = rows[500].id;
+      selected = rows[500]?.id ?? 0;
       break;
     case "swap rows": {
       const a = rows[1];
-      rows[1] = rows[998];
-      rows[998] = a;
+      const b = rows[998];
+      if (a !== undefined && b !== undefined) {
+        rows[1] = b;
+        rows[998] = a;
+      }
       break;
     }
     case "remove row":
@@ -131,7 +135,7 @@ function next() {
     update();
     return;
   }
-  const step = STEPS[stepIndex];
+  const step = STEPS[stepIndex] ?? "";
   status = `${step} · run ${runIndex + 1}/${RUNS}`;
   prepare(step);
   update();
@@ -153,7 +157,7 @@ function measure(step: string) {
 
 function record(step: string) {
   let total = 0;
-  let min = samples[0];
+  let min = samples[0] ?? 0;
   for (const ms of samples) {
     total += ms;
     if (ms < min) min = ms;

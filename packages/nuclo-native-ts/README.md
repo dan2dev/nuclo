@@ -135,7 +135,7 @@ On this machine (Linux):
   - pushing `/todos/:id` and `/feed/:id` (title from params), back by key and by arrow;
   - the feed's loading branch (progress on a scoped update), the decoded posts, and the HTTP 404 error branch.
 - **Swift**: **not compiled**. There is no Swift toolchain here, and UIKit only builds on macOS. The runtime and emitter were written for Swift 5.9+ / iOS 15 with `@MainActor` throughout. Expect a first build in Xcode to surface a few fixes.
-- **TypeScript**: `bun run typecheck` checks the compiler and the example.
+- **TypeScript**: `bun run typecheck` checks the compiler and the examples, and `bun test` checks the strictness rules (below).
 
 ## Performance (Android)
 
@@ -188,6 +188,43 @@ Building views remains the cost: about 40% of the main thread goes to constructi
 - **Swift dictionaries are unordered**, so on iOS `variants()` applies groups in name order (Kotlin keeps declaration order). It only matters when two groups set the same property.
 - **`when(cond, …)` with a non-function condition** is fixed when built, as in nuclo.
 
+## Strict TypeScript
+
+If an app type-checks and compiles, it builds on both targets and behaves the same on each. Two layers enforce that, and `bun test` covers both (`test/strict.test.ts`, one fixture per rule).
+
+**TypeScript options** (`tsconfig.app.json`, used by both the editor and the compiler):
+
+| Option | Why it is needed natively |
+| --- | --- |
+| `lib: ["ES2022"]`, `types: []` | No DOM, no Node: only what `@nuclo/native-ts` declares exists |
+| `strict` | No implicit `any`; `null` and `undefined` are tracked, and become optionals |
+| `noUncheckedIndexedAccess` | `xs[i]` and `map[key]` are `T \| undefined`, compiled to `jsAt(i)` / `getOrNull(i)` and optional map reads. A narrowed or `!`-asserted read is a plain subscript |
+| `noImplicitReturns` | Swift and Kotlin require a value on every path |
+| `noFallthroughCasesInSwitch` | Native `switch` / `when` don't fall through |
+| `allowUnreachableCode: false`, `allowUnusedLabels: false` | No dead code to translate |
+
+**Compiler rules**, for valid TypeScript that would build differently or not at all:
+
+| Rejected | Why |
+| --- | --- |
+| `any`, `eval`, classes, enums, namespaces, `this`, `delete`, generators, destructuring, rest parameters | No ahead-of-time equivalent |
+| Unions other than `T \| null` / `undefined` or string literals; tuples; generic functions and interfaces; overloads | A native value has one type |
+| A value of one interface used as another, same-shaped one | TypeScript is structural; native classes are nominal |
+| Mutating an array parameter or a temporary, or sharing one array between two bindings when either is mutated | Swift arrays are values: the change would not reach the other side. Copy with `.slice()` |
+| Names the generated code uses (`A`, `Style`, `jsNum`, the runtimes' types…) | They would shadow it. Math (`min`, `floor`…) is printed fully qualified, so those names stay free |
+| Text from `T \| undefined` without `??`; `?.()`; indexing or iterating strings | No `"undefined"` text, and characters differ between platforms |
+| `async` callbacks, `finally`, `++` inside expressions, callbacks with an index on `map` / `filter`… | Not translated yet |
+
+Supported because they could otherwise break the build:
+- `interface B extends A`: inherited fields are part of the class.
+- Optional chains: `a?.b.c` becomes `a?.b?.c` in Kotlin.
+- Default and optional parameters.
+- Local functions: hoisted, and able to call themselves.
+- Function references whose numbers differ in kind from the callback they're passed as (an `Int`/`Double` adapter is generated).
+- Callbacks narrowed from `null`.
+
+`bun run check:android` compiles `test/fixtures/accept.ts` and both examples to Kotlin with Gradle.
+
 ## Not supported (reported by the compiler)
 
-`any`, `eval`, classes, enums, namespaces, `this`, `delete`, destructuring, generators, spreads outside style objects, `finally`, `async` callbacks (call an async function instead), `++` inside expressions, and callbacks with an index on `map` / `filter` / `forEach` and similar. Also unsupported: DOM/Node APIs, SVG, SSR/hydration, `forceUpdate`, `windowed()`, video, and `nuclo-router`'s URL, loader and layer features (the router here is nuclo-native's stack router).
+Everything in the table above. Also unsupported: DOM/Node APIs, SVG, SSR/hydration, `forceUpdate`, `windowed()`, video, and `nuclo-router`'s URL, loader and layer features (the router here is nuclo-native's stack router).

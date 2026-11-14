@@ -468,7 +468,7 @@ const router = createRouter(
   {
     "/": { view: Home, title: "nuclo-native-ts" },
     "/todos": { view: Todos, title: "Todos" },
-    "/todos/:id": { view: TodoDetail, title: (params) => `Todo #${params.id}` },
+    "/todos/:id": { view: TodoDetail, title: (params) => `Todo #${params.id ?? ""}` },
     "/feed": { view: Feed, title: "Feed" },
     "/feed/:id": PostDetail,
   },

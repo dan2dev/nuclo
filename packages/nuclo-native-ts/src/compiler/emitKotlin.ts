@@ -39,7 +39,7 @@ class KotlinPrinter extends Printer {
       `package ${KOTLIN_PACKAGE}`,
       "",
       "import dev.nuclo.runtime.*",
-      "import kotlin.math.*",
+      "import kotlin.math.pow",
       "",
     ];
     for (const cls of program.classes) out.push(...this.classDecl(cls), "");
@@ -97,10 +97,10 @@ class KotlinPrinter extends Printer {
     }
   }
 
-  private fn(fn: FnDecl): string[] {
-    const params = fn.params.map((p) => `${this.name(p.name)}: ${this.ty(p.ty)}`).join(", ");
+  private fn(fn: FnDecl, ind = ""): string[] {
+    const params = fn.params.map((p) => `${this.name(p.name)}: ${this.ty(p.ty)}${p.default ? ` = ${this.expr(p.default, ind)}` : ""}`).join(", ");
     const ret = fn.ret.k === "void" ? "" : `: ${this.ty(fn.ret)}`;
-    return [`${fn.async ? "suspend " : ""}fun ${this.name(fn.name)}(${params})${ret} {`, ...this.block(fn.body, INDENT), "}"];
+    return [`${ind}${fn.async ? "suspend " : ""}fun ${this.name(fn.name)}(${params})${ret} {`, ...this.block(fn.body, ind + INDENT), `${ind}}`];
   }
 
   protected ty(t: Ty): string {
@@ -195,6 +195,13 @@ class KotlinPrinter extends Printer {
   protected override expr(x: Expr, ind: string): string {
     // `"key" to value` inside mutableMapOf.
     if (x.e === "rt" && x.name === "__pair") return `${this.expr(x.args[0]!, ind)} to ${this.expr(x.args[1]!, ind)}`;
+    // Kotlin doesn't short-circuit the rest of an optional chain: each later link is `?.` too.
+    if (x.e === "prop" && x.chain && !x.optional) return `${this.postfixOperand(x.obj, ind)}?.${this.name(x.name)}`;
+    if (x.e === "op" && x.chain) {
+      const receiver = this.postfixOperand(x.args[0]!, ind);
+      const s = this.op(x.op, x.args, ind);
+      return s.startsWith(`${receiver}.`) ? `${receiver}?.${s.slice(receiver.length + 1)}` : s;
+    }
     return super.expr(x, ind);
   }
 
@@ -241,6 +248,8 @@ class KotlinPrinter extends Printer {
         return `${r()}.size`;
       case "str.length":
         return `${r()}.length`;
+      case "arr.at":
+        return `${r()}.getOrNull(${e(b!)})`;
       case "arr.push":
         return `${r()}.add(${e(b!)})`;
       case "arr.pushAll":
@@ -293,29 +302,29 @@ class KotlinPrinter extends Printer {
       case "num.toFixed":
         return `jsFixed(${e(a!)}, ${e(b!)})`;
       case "math.floor":
-        return `floor(${e(a!)}).toInt()`;
+        return `kotlin.math.floor(${e(a!)}).toInt()`;
       case "math.ceil":
-        return `ceil(${e(a!)}).toInt()`;
+        return `kotlin.math.ceil(${e(a!)}).toInt()`;
       case "math.round":
         return `jsRound(${e(a!)})`;
       case "math.trunc":
         return `${r()}.toInt()`;
       case "math.abs":
-        return `abs(${e(a!)})`;
+        return `kotlin.math.abs(${e(a!)})`;
       case "math.min":
-        return `minOf(${args.map(e).join(", ")})`;
+        return `kotlin.comparisons.minOf(${args.map(e).join(", ")})`;
       case "math.max":
-        return `maxOf(${args.map(e).join(", ")})`;
+        return `kotlin.comparisons.maxOf(${args.map(e).join(", ")})`;
       case "math.sqrt":
-        return `sqrt(${e(a!)})`;
+        return `kotlin.math.sqrt(${e(a!)})`;
       case "math.pow":
         return `${r()}.pow(${e(b!)})`;
       case "math.random":
-        return "Math.random()";
+        return "kotlin.random.Random.nextDouble()";
       case "math.pi":
-        return "PI";
+        return "kotlin.math.PI";
       case "map.get":
-        return c ? `(${r()}[${e(b!)}] ?: ${e(c)})` : `${r()}[${e(b!)}]!!`;
+        return `${r()}[${e(b!)}]`;
       case "date.now":
         return "jsNow()";
       case "num.parse":
@@ -373,6 +382,8 @@ class KotlinPrinter extends Printer {
         ];
       case "throw":
         return [`${ind}throw Exception(${this.expr(s.message, ind)})`];
+      case "fn":
+        return this.fn(s.decl, ind);
       case "switch": {
         const lines = [`${ind}when (${this.expr(s.x, ind)}) {`];
         for (const c of s.cases) lines.push(`${i2}${c.values.map((v) => this.expr(v, i2)).join(", ")} -> {`, ...this.block(c.body, i2 + INDENT), `${i2}}`);

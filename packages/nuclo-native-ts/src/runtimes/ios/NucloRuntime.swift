@@ -174,7 +174,7 @@ public struct Compound {
     }
 }
 
-func color(_ value: String?) -> UIColor? {
+private func color(_ value: String?) -> UIColor? {
     guard var hex = value?.trimmingCharacters(in: .whitespaces).lowercased() else { return nil }
     switch hex {
     case "transparent": return .clear
@@ -907,7 +907,7 @@ final class RootController: UIViewController {
 
 // MARK: - Builders
 
-@MainActor func build(_ kind: Node.Kind, _ tag: String, _ mods: [NodeMod?]) -> Node {
+@MainActor private func build(_ kind: Node.Kind, _ tag: String, _ mods: [NodeMod?]) -> Node {
     let node = Node(kind, tag: tag)
     node.add(mods)
     node.syncViews()
@@ -1542,6 +1542,9 @@ public extension Array {
     }
 
     @discardableResult mutating func jsPop() -> Element? { popLast() }
+
+    /// `xs[i]` as JavaScript reads it: nil out of range instead of a trap.
+    func jsAt(_ i: Int) -> Element? { indices.contains(i) ? self[i] : nil }
 
     func jsSlice(_ start: Int, _ end: Int?) -> [Element] {
         let n = count

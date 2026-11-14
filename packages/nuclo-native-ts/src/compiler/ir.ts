@@ -51,7 +51,7 @@ export const T = {
  * `append` vs `add`); the first argument is the receiver.
  */
 export type Op =
-  | "arr.length" | "arr.push" | "arr.pushAll" | "arr.pop" | "arr.unshift" | "arr.splice" | "arr.indexOf" | "arr.includes"
+  | "arr.length" | "arr.at" | "arr.push" | "arr.pushAll" | "arr.pop" | "arr.unshift" | "arr.splice" | "arr.indexOf" | "arr.includes"
   | "arr.find" | "arr.findIndex" | "arr.filter" | "arr.map" | "arr.some" | "arr.every" | "arr.forEach" | "arr.join" | "arr.slice"
   | "str.length" | "str.trim" | "str.upper" | "str.lower" | "str.includes" | "str.startsWith" | "str.endsWith" | "str.slice"
   | "str.nonEmpty" | "str.or"
@@ -69,14 +69,15 @@ export type Expr =
   | { e: "tpl"; parts: (string | Expr)[] }
   /** `fnRef`: a declared function used as a value (Kotlin needs `::name`). */
   | { e: "id"; name: string; fnRef?: boolean }
-  | { e: "prop"; obj: Expr; name: string; optional?: boolean }
+  /** `optional`: `a?.b`. `chain`: a later link of an optional chain (`a?.b.c`'s `.c`): Kotlin needs `?.` there too. */
+  | { e: "prop"; obj: Expr; name: string; optional?: boolean; chain?: boolean }
   | { e: "index"; obj: Expr; index: Expr }
   | { e: "call"; callee: Expr; args: Expr[]; await?: boolean }
   /** A runtime function (`div`, `list`, `A.onClick`…). Named args are labels (Swift) / named arguments (Kotlin). */
   | { e: "rt"; name: string; args: Expr[]; named?: [string, Expr][]; await?: boolean }
   /** A method on a runtime object: `.when(...)`, `router.go(...)`, `res.text()`. */
   | { e: "method"; obj: Expr; name: string; args: Expr[]; await?: boolean }
-  | { e: "op"; op: Op; args: Expr[]; await?: boolean }
+  | { e: "op"; op: Op; args: Expr[]; await?: boolean; chain?: boolean }
   | { e: "bin"; op: BinOp; l: Expr; r: Expr }
   | { e: "not"; x: Expr }
   | { e: "neg"; x: Expr }
@@ -105,6 +106,8 @@ export interface Param {
   ty: Ty;
   /** Not read in the body: Swift prints `_`. */
   unused?: boolean;
+  /** A default value (`x = 2`, or nil for `x?: T`): call sites may leave it out. */
+  default?: Expr;
 }
 
 export type Stmt =
@@ -120,7 +123,9 @@ export type Stmt =
   | { s: "continue" }
   | { s: "try"; body: Stmt[]; catchName?: string; catchBody: Stmt[]; finally?: Stmt[] }
   | { s: "throw"; message: Expr }
-  | { s: "switch"; x: Expr; cases: { values: Expr[]; body: Stmt[] }[]; default?: Stmt[] };
+  | { s: "switch"; x: Expr; cases: { values: Expr[]; body: Stmt[] }[]; default?: Stmt[] }
+  /** A local function (hoisted to the top of its block, as JavaScript does). */
+  | { s: "fn"; decl: FnDecl };
 
 export interface ClassField {
   name: string;

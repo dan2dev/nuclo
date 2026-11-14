@@ -87,12 +87,13 @@ class SwiftPrinter extends Printer {
     }
   }
 
-  private fn(fn: FnDecl): string[] {
-    const params = fn.params.map((p) => `_ ${this.name(p.name)}: ${this.ty(p.ty)}`).join(", ");
+  /** A function: top level (`@MainActor`), or local (nested, isolated like its parent). */
+  private fn(fn: FnDecl, ind = "", local = false): string[] {
+    const params = fn.params.map((p) => `_ ${this.name(p.name)}: ${this.ty(p.ty)}${p.default ? ` = ${this.expr(p.default, ind)}` : ""}`).join(", ");
     const effects = fn.async ? " async throws" : "";
     const ret = fn.ret.k === "void" ? "" : ` -> ${this.ty(fn.ret)}`;
-    const attrs = fn.ret.k === "void" ? "@MainActor" : "@MainActor @discardableResult";
-    return [`${attrs} func ${this.name(fn.name)}(${params})${effects}${ret} {`, ...this.block(fn.body, INDENT), "}"];
+    const attrs = local ? (fn.ret.k === "void" ? "" : "@discardableResult ") : fn.ret.k === "void" ? "@MainActor " : "@MainActor @discardableResult ";
+    return [`${ind}${attrs}func ${this.name(fn.name)}(${params})${effects}${ret} {`, ...this.block(fn.body, ind + INDENT), `${ind}}`];
   }
 
   protected ty(t: Ty): string {
@@ -222,6 +223,9 @@ class SwiftPrinter extends Printer {
       case "str.length":
         s = `${r()}.count`;
         break;
+      case "arr.at":
+        s = `${r()}.jsAt(${e(b!)})`;
+        break;
       case "arr.push":
         s = `${r()}.append(${e(b!)})`;
         break;
@@ -311,19 +315,19 @@ class SwiftPrinter extends Printer {
         s = `Int(${e(a!)})`;
         break;
       case "math.abs":
-        s = `abs(${e(a!)})`;
+        s = `Swift.abs(${e(a!)})`;
         break;
       case "math.min":
-        s = `min(${args.map(e).join(", ")})`;
+        s = `Swift.min(${args.map(e).join(", ")})`;
         break;
       case "math.max":
-        s = `max(${args.map(e).join(", ")})`;
+        s = `Swift.max(${args.map(e).join(", ")})`;
         break;
       case "math.sqrt":
         s = `${r()}.squareRoot()`;
         break;
       case "math.pow":
-        s = `pow(${e(a!)}, ${e(b!)})`;
+        s = `Foundation.pow(${e(a!)}, ${e(b!)})`;
         break;
       case "math.random":
         s = "Double.random(in: 0..<1)";
@@ -332,7 +336,7 @@ class SwiftPrinter extends Printer {
         s = "Double.pi";
         break;
       case "map.get":
-        s = c ? `(${r()}[${e(b!)}] ?? ${e(c)})` : `${r()}[${e(b!)}]!`;
+        s = `${r()}[${e(b!)}]`;
         break;
       case "date.now":
         s = "jsNow()";
@@ -384,7 +388,7 @@ class SwiftPrinter extends Printer {
         return [`${ind}for ${this.name(s.name)} in ${this.expr(s.of, ind)} {`, ...this.block(s.body, i2), `${ind}}`];
       case "forRange":
         return [
-          `${ind}for ${this.name(s.name)} in stride(from: ${this.expr(s.from, ind)}, ${s.inclusive ? "through" : "to"}: ${this.expr(s.to, ind)}, by: 1) {`,
+          `${ind}for ${this.name(s.name)} in Swift.stride(from: ${this.expr(s.from, ind)}, ${s.inclusive ? "through" : "to"}: ${this.expr(s.to, ind)}, by: 1) {`,
           ...this.block(s.body, i2),
           `${ind}}`,
         ];
@@ -407,6 +411,8 @@ class SwiftPrinter extends Printer {
         ];
       case "throw":
         return [`${ind}throw NError(${this.expr(s.message, ind)})`];
+      case "fn":
+        return this.fn(s.decl, ind, true);
       case "switch": {
         const lines = [`${ind}switch ${this.expr(s.x, ind)} {`];
         for (const c of s.cases) {
