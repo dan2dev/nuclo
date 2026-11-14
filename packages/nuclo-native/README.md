@@ -322,7 +322,7 @@ Every target is one command, with an optional example (`showcase` by default). I
 ```bash
 bun run ios            # booted simulator; bun run ios todo, bun run ios battery…
 bun run macos
-bun run android        # running emulator or device
+bun run android        # connected device, or boots the first configured emulator
 bun run linux          # gjs + GTK 4 + libadwaita
 bun run windows        # on Windows
 bun run web            # http://localhost:4173
@@ -343,14 +343,26 @@ Requirements, all current releases and no package managers beyond each platform'
 Commands behind them, if you want to run one by hand:
 
 - **macOS:** the bridge first, `clang++ -std=c++20 -O2 -c -I build/hermes/include hosts/hermes/nuclo_hermes.cpp -o build/macos/nuclo_hermes.o`, then `swiftc -O -swift-version 6 -target arm64-apple-macos27.0 -import-objc-header hosts/hermes/nuclo_hermes.h hosts/apple/*.swift build/macos/nuclo_hermes.o -lc++ -F build/hermes/Library/Frameworks/macosx -framework hermesvm -Xlinker -rpath -Xlinker $PWD/build/hermes/Library/Frameworks/macosx -o build/macos/nuclo-app && build/macos/nuclo-app dist/app.js` (any bundle path works; `app.hbc` beside it is loaded in its place)
-- **iOS simulator:** no Xcode project. The same two steps with `xcrun -sdk iphonesimulator`, `-target arm64-apple-ios27.0-simulator` and the simulator's slice of `hermesvm.xcframework`, then an `.app` folder with the binary, `Frameworks/hermesvm.framework`, `app.js`, `app.hbc`, `assets/` and an `Info.plist` (`UILaunchScreen` included, or the app runs letterboxed, and the scene manifest naming `NucloSceneDelegate`), ad-hoc signed and installed with `xcrun simctl install booted`. `scripts/run.ts` has the exact steps.
-- **iOS device:** add `hosts/apple/*.swift`, `hosts/hermes/nuclo_hermes.*` (the header as the bridging header), `hermesvm.xcframework` and `dist/app.hbc` to an iOS app target, so Xcode handles signing and provisioning.
+- **iOS simulator (CLI):** `scripts/run.ts` compiles the host and Hermes bridge for the simulator, assembles an `.app`, signs it ad hoc, and installs it with `xcrun simctl install booted`.
 - **Android:** `bun scripts/hermes.ts` once, then open `hosts/android` in Android Studio, or `./gradlew assembleDebug` there. `dist/` ships as the assets.
 - **A bundle in Hermes, without a device:** `$(bun scripts/hermes.ts cli) dist/app.js` runs it on this Mac with no views (`hosts/hermes/cli.cpp`): for timing JS in the engine the phones run.
 - **Windows:** `dotnet run` in `hosts/windows`.
 - **GPUI, desktop:** `cargo run --manifest-path hosts/gpui/Cargo.toml -- dist/app.js`
 - **GPUI, iOS:** `cargo rustc --lib --target aarch64-apple-ios-sim --crate-type staticlib` in `hosts/gpui` (with `LIBCLANG_PATH` at Xcode's toolchain, since rquickjs generates its mobile bindings, and `IPHONEOS_DEPLOYMENT_TARGET=17.0` for the C parts), then link `hosts/gpui/ios/main.m` against `libnuclo_gpui.a`.
 - **GPUI, Android:** the same with `--target aarch64-linux-android --crate-type cdylib` and the NDK's clang as linker, the stripped `.so` in `hosts/gpui/android/app/build/jniLibs/arm64-v8a`, then `./gradlew assembleDebug` in `hosts/gpui/android`. Bindgen needs `--target=aarch64-linux-android30` in `BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android` with NDK 30.
+
+### Showcase in Xcode
+
+Install workspace dependencies with `bun install` from the Nuclo repo root. From the `nuclo-native` package directory, fetch the pinned Hermes release before opening the project:
+
+```sh
+bun scripts/hermes.ts
+open examples/showcase/apple/Showcase.xcodeproj
+```
+
+Select **Showcase iOS** and an iPhone or iPad simulator, or **Showcase macOS** and **My Mac**, then choose **Run**. Xcode builds the shared Apple host and packages the Showcase code, assets, fonts, and Hermes. For a physical iOS device or a signed archive, select your team in **Signing & Capabilities** and set a bundle ID registered to that team.
+
+The project keeps shared app metadata in `Showcase.xcconfig`, iOS launch and scene settings in `Info-iOS.plist`, and the Mac App Sandbox in `Showcase-macOS.entitlements`. Replace the icon in `Assets.xcassets`. When adding a protected resource, add its usage description to the corresponding target's Info settings and enable the relevant capability if needed. Update `PrivacyInfo.xcprivacy` when the app starts collecting data or using APIs that require a declared reason.
 
 ## What the POC supports
 

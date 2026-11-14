@@ -2,8 +2,7 @@
 // (Engine.swift). Navigation (tabs, stacks, screens) lives in Navigation.swift, device data (battery) in Device.swift.
 //
 // Built with the Hermes bridge (hosts/hermes) and hermesvm.framework: scripts/run.ts has the commands (macos, ios).
-// iOS device: add hosts/apple/*.swift, hosts/hermes/nuclo_hermes.*, hermesvm.xcframework and dist/app.hbc to an
-//        iOS app target (no storyboard; the scene configuration is made in code, AppDelegate below).
+// The Showcase Xcode project (examples/showcase/apple) packages this host for iOS and macOS.
 import AVKit
 import CoreText
 
@@ -970,7 +969,8 @@ let window = NSWindow(
 window.title = "nuclo-native"
 window.contentView = host.root
 host.window = window
-host.start(bundle: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "dist/app.js")
+let localBundle = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "dist/app.js"
+host.start(bundle: Bundle.main.path(forResource: "app", ofType: "js") ?? localBundle)
 window.center()
 window.makeKeyAndOrderFront(nil)
 app.activate()

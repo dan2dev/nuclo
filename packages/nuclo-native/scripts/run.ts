@@ -8,6 +8,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { homedir, platform } from "node:os";
 import { join } from "node:path";
 import { bytecode, hermes } from "./hermes";
+import { ensureAndroidDevice } from "./android";
 
 const [target = "", example = "showcase"] = process.argv.slice(2);
 const os = platform();
@@ -123,6 +124,7 @@ const targets: Record<string, () => Promise<unknown>> = {
   },
 
   async android() {
+    await ensureAndroidDevice(sdk);
     // Its CMake build takes JSI's headers and jsi.cpp from the release (hosts/android/app/src/main/cpp).
     await hermes();
     await android("hosts/android", "dev.nuclo.host", ".MainActivity");
