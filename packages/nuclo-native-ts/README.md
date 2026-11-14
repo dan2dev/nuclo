@@ -137,6 +137,48 @@ On this machine (Linux):
 - **Swift**: **not compiled**. There is no Swift toolchain here, and UIKit only builds on macOS. The runtime and emitter were written for Swift 5.9+ / iOS 15 with `@MainActor` throughout. Expect a first build in Xcode to surface a few fixes.
 - **TypeScript**: `bun run typecheck` checks the compiler and the example.
 
+## Performance (Android)
+
+Measured on a Galaxy S23 Ultra (SM-S918B, Android 17) with release builds (R8, not debuggable).
+
+**Size and start.** The showcase APK is 120 KB and the benchmark's 70 KB, runtime included, with no JS engine or bundle. A cold start of the showcase (three tabs built, `am start -W`, 5 launches) takes 276 ms on average (216–330 ms). Once settled it uses 111 MB PSS, of which 2.3 MB is Java heap.
+
+**Operations.** `examples/bench/App.ts` is modelled on js-framework-benchmark: a row is a box, two texts and a button, so four native views. Each operation is timed from just before it runs until after the frame that shows it (the operation, `update()`, measure, layout, draw). Results are the mean of 5 runs; the run starts by itself and logs `BENCH …` lines.
+
+```bash
+bun x tsx src/compiler/cli.ts build examples/bench/App.ts --out examples/bench/build
+cd hosts/android && ./gradlew assembleRelease -PnucloSources=../../../examples/bench/build/android
+```
+
+| Operation | First version | Now |
+| --- | --- | --- |
+| create 1,000 rows | 424 ms | 255 ms |
+| replace all 1,000 rows | 360 ms | 297 ms |
+| partial update (every 10th of 1,000) | 25 ms | 30 ms |
+| select row | 20 ms | 19 ms |
+| swap rows | 107 ms | 18 ms |
+| remove row | 38 ms | 24 ms |
+| create 10,000 rows | 4,057 ms | 3,460 ms |
+| append 1,000 to 1,000 rows | 456 ms | 362 ms |
+| clear 1,000 rows | 20 ms | 40 ms |
+
+Runs differ by 10–20% as the phone heats up, so the small changes (partial update, clear) are within noise.
+
+Profiling with simpleperf, then fixing the runtime, produced the "Now" column:
+- `list()` matches rows through a map instead of a linear search.
+- A move no longer re-attaches the views after it: layout follows the node order, and the view order is only the drawing order.
+- A container measured by its parent reuses that pass when it then gets the same size.
+- Rows built during an update don't re-run their bindings.
+- Texts skip the theme's default text style. Resolving it was 24% of the main thread when building rows.
+
+Building views remains the cost: about 40% of the main thread goes to constructing `View`s, 20% to drawing and 16% to measuring. That is the platform's own work, but this runtime does it for every row, as nuclo's `list()` does.
+
+**Scrolling** 1,000 rows (10 flings): 1,307 frames, 1 janky (0.08%), no missed vsync.
+
+**Memory.** With 10,000 rows (40,000 views) on screen the app uses 542 MB PSS: 213 MB Java, 242 MB native, 78 MB graphics. Every row view is released when the rows go (`Views: 22` after a run). Three runs in one process leave native heap at 112–117 MB, so it does not grow; that is the allocator keeping freed pages, not a leak.
+
+**What this means.** Updates are cheap: a binding that didn't change touches no view, and selecting, updating or swapping among 1,000 rows takes 18–30 ms including the frame. Creating thousands of rows at once is bounded by Android's view construction. A long list wants windowing (nuclo-native's `windowed()`), which this POC doesn't have.
+
 ## Differences from nuclo, on purpose
 
 - **Imports, not globals.** Apps import from `@nuclo/native-ts`. The lib is ES2022 only, with no DOM and no Node, so anything the compiler can't translate fails to type-check or is reported.

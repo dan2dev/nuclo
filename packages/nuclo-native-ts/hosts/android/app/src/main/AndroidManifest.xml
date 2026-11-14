@@ -5,6 +5,8 @@
         android:label="nuclo-native-ts"
         android:enableOnBackInvokedCallback="true"
         android:theme="@style/Nuclo">
+        <!-- Lets simpleperf and the Android Studio profiler sample release builds. -->
+        <profileable android:shell="true" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
