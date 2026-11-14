@@ -17,7 +17,6 @@ import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
-import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.RippleDrawable
@@ -33,14 +32,14 @@ import android.text.InputType
 import android.text.TextPaint
 import android.text.TextWatcher
 import android.util.TypedValue
+import android.view.ContextThemeWrapper
 import android.view.Gravity
+import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewOutlineProvider
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.WindowInsets
-import android.view.animation.PathInterpolator
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -48,14 +47,26 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.MediaController
-import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toolbar
 import android.widget.VideoView
 import android.window.BackEvent
 import android.window.OnBackAnimationCallback
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
+import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.widget.NestedScrollView
+import androidx.transition.Transition
+import androidx.transition.TransitionListenerAdapter
+import androidx.transition.TransitionManager
+import androidx.transition.TransitionSeekController
+import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.color.DynamicColors
+import com.google.android.material.navigation.NavigationBarView
+import com.google.android.material.navigationrail.NavigationRailView
+import com.google.android.material.transition.MaterialFadeThrough
+import com.google.android.material.transition.MaterialSharedAxis
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.ceil
@@ -121,8 +132,12 @@ class MainActivity : Activity() {
     private var rootStack: Stack? = null
     private var pageColor = Color.WHITE
 
-    // Material 3 emphasized easing.
-    private val emphasized = PathInterpolator(0.4f, 0f, 0.2f, 1f)
+    /** Material 3 + Material You dynamic color context for native navigation bars and transitions. */
+    private val materialContext by lazy {
+        DynamicColors.wrapContextIfAvailable(
+            ContextThemeWrapper(this, com.google.android.material.R.style.Theme_Material3_Light_NoActionBar),
+        )
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -176,9 +191,9 @@ class MainActivity : Activity() {
     private fun fit(view: View, insets: WindowInsets): WindowInsets {
         val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
         val bottom = max(bars.bottom, insets.getInsets(WindowInsets.Type.ime()).bottom)
-        val bar = tabs?.bar?.takeIf { it.isAttachedToWindow }
-        view.setPadding(bars.left, bars.top, bars.right, if (bar == null) bottom else 0)
-        bar?.apply {
+        val bottomBar = (tabs?.bar as? BottomNavigationView)?.takeIf { it.isAttachedToWindow }
+        view.setPadding(bars.left, bars.top, bars.right, if (bottomBar == null) bottom else 0)
+        bottomBar?.apply {
             setPadding(0, 0, 0, bottom)
             layoutParams.height = dp(80f) + bottom
             requestLayout()
@@ -421,8 +436,8 @@ class MainActivity : Activity() {
         return json.toString()
     }
 
-    /** A layout root's scroll view (the body's, or a screen's): tells JS when the viewport changes. */
-    private inner class Scroller(val root: Int) : ScrollView(this@MainActivity) {
+    /** A layout root's scroll view (the body's, or a screen's): NestedScrollView so AppBarLayout lifts on scroll. */
+    private inner class Scroller(val root: Int) : NestedScrollView(this@MainActivity) {
         override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
             super.onSizeChanged(w, h, oldw, oldh)
             if (w > 0 && h > 0) emit(root, "resize", "${w / density} ${h / density} $density")
@@ -438,6 +453,7 @@ class MainActivity : Activity() {
         /** JS loads more as the end comes near (dom.ts, "end"), and keeps the rows near what shows on the host. */
         override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
             super.onScrollChanged(l, t, oldl, oldt)
+            if (screenOf[root]?.shown?.lastOrNull() == root) screenOf[root]?.appBar?.setLifted(t > 0)
             emit(root, "scroll", "${scrollY / density} ${height / density}", token = this)
         }
     }
@@ -860,23 +876,15 @@ class MainActivity : Activity() {
 
     private fun reset(view: View) {
         view.animate().cancel()
-        view.animate().startDelay = 0
+        view.visibility = View.VISIBLE
         view.alpha = 1f
         view.translationX = 0f
+        view.translationY = 0f
         view.scaleX = 1f
         view.scaleY = 1f
-        view.elevation = 0f
-        view.clipToOutline = false
-        view.outlineProvider = ViewOutlineProvider.BACKGROUND
     }
 
-    /** The shrinking screen of a back gesture: rounded, lifted off the one below. */
-    private val card = object : ViewOutlineProvider() {
-        override fun getOutline(view: View, outline: Outline) =
-            outline.setRoundRect(0, 0, view.width, view.height, dp(28f).toFloat())
-    }
-
-    /** A navigation stack: an app bar over the top screen. */
+    /** A navigation stack: a Material 3 AppBarLayout + MaterialToolbar over the top screen in a CoordinatorLayout. */
     private inner class Stack(val id: Int) {
         /** Screen order from insert/remove ops, bottom to top. */
         val model = ArrayList<Int>()
@@ -884,72 +892,76 @@ class MainActivity : Activity() {
         var shown = listOf<Int>()
         /** Screens out of the model, forgotten once their animation ends. */
         val dropped = ArrayList<Int>()
+        var settling = false
+
+        var tabTitle = ""
+        var tabIcon = 0
 
         val frame = FrameLayout(this@MainActivity)
-        val toolbar = Toolbar(this@MainActivity).apply {
-            setTitleTextAppearance(context, android.R.style.TextAppearance_Material_Large)
+        val toolbar = MaterialToolbar(materialContext).apply {
             setNavigationContentDescription("Back")
             setNavigationOnClickListener { back(this@Stack, shown.size - 1) }
             setOnClickListener { toTop() }
         }
-        val box = LinearLayout(this@MainActivity).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(toolbar, LinearLayout.LayoutParams(MATCH_PARENT, dp(64f)))
-            addView(frame, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
+        val appBar = AppBarLayout(materialContext).apply {
+            isLiftOnScroll = true
+            addView(toolbar, AppBarLayout.LayoutParams(MATCH_PARENT, dp(64f)))
         }
-
-        // Its tab: a 24dp icon in a 64x32dp pill, a 12sp label below.
-        val icon = ImageView(this@MainActivity)
-        val pill = FrameLayout(this@MainActivity).apply {
-            background = GradientDrawable().apply { cornerRadius = dp(16f).toFloat() }
-            foreground = ripple(GradientDrawable().apply { cornerRadius = dp(16f).toFloat(); setColor(Color.WHITE) })
-            isDuplicateParentStateEnabled = true
-            addView(icon, FrameLayout.LayoutParams(dp(24f), dp(24f), Gravity.CENTER))
-        }
-        val label = TextView(this@MainActivity).apply {
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-        }
-        val item = LinearLayout(this@MainActivity).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(0, dp(12f), 0, 0)
-            addView(pill, LinearLayout.LayoutParams(dp(64f), dp(32f)))
-            addView(label, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { topMargin = dp(4f) })
-            setOnClickListener { tabs?.tap(this@Stack) }
+        val box = CoordinatorLayout(materialContext).apply {
+            addView(appBar, CoordinatorLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+            addView(frame, CoordinatorLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT).apply {
+                behavior = AppBarLayout.ScrollingViewBehavior()
+            })
         }
 
         fun set(key: String, value: String) {
             when (key) {
-                "title" -> label.text = value
-                "icon" -> icon.setImageResource(resources.getIdentifier("ic_$value", "drawable", packageName))
+                "title" -> tabTitle = value
+                "icon" -> tabIcon = resources.getIdentifier("ic_$value", "drawable", packageName)
             }
+            tabs?.syncMenu()
         }
 
         /** Scrolls the shown screen back to its top. */
         fun toTop() = (shown.lastOrNull()?.let(::outer) as? Scroller)?.toTop()
 
         fun refresh() {
-            toolbar.title = shown.lastOrNull()?.let { titles[it] } ?: ""
+            val top = shown.lastOrNull()
+            toolbar.title = top?.let { titles[it] } ?: ""
             toolbar.navigationIcon = if (shown.size > 1) getDrawable(R.drawable.ic_arrow_back) else null
+            appBar.setLifted(((top?.let(::outer) as? Scroller)?.scrollY ?: 0) > 0)
         }
     }
 
     /** Ends any running transition: only the shown top screen stays, at rest. */
     private fun settle(s: Stack) {
-        val top = s.shown.lastOrNull()?.let(::outer)
-        for (i in s.frame.childCount - 1 downTo 0) {
-            val view = s.frame.getChildAt(i)
-            reset(view)
-            if (view !== top) s.frame.removeViewAt(i)
+        if (s.settling) return
+        s.settling = true
+        try {
+            if (gesture == s) {
+                gesture = null
+                seek = null
+            }
+            TransitionManager.endTransitions(s.frame)
+            val top = s.shown.lastOrNull()?.let(::outer)
+            for (i in s.frame.childCount - 1 downTo 0) {
+                val view = s.frame.getChildAt(i)
+                reset(view)
+                if (view !== top) s.frame.removeViewAt(i)
+            }
+            if (top != null) {
+                reset(top)
+                if (top.parent == null) s.frame.addView(top)
+            }
+            for (id in s.dropped) if (id !in s.model) {
+                views[id]?.let(::forget)
+                screenOf.remove(id)
+                titles.remove(id)
+            }
+            s.dropped.clear()
+        } finally {
+            s.settling = false
         }
-        if (top != null && top.parent == null) s.frame.addView(top)
-        for (id in s.dropped) if (id !in s.model) {
-            views[id]?.let(::forget)
-            screenOf.remove(id)
-            titles.remove(id)
-        }
-        s.dropped.clear()
     }
 
     /** End of a batch: animate what changed since the last one. */
@@ -972,157 +984,202 @@ class MainActivity : Activity() {
         }
     }
 
-    /** Material shared axis X: both slide 30dp over 300ms; the fades are staggered (out 90ms, then in 210ms). */
+    private fun sharedAxis(s: Stack, from: View, to: View, forward: Boolean) =
+        MaterialSharedAxis(MaterialSharedAxis.X, forward).apply {
+            addTarget(from)
+            addTarget(to)
+            addListener(object : TransitionListenerAdapter() {
+                override fun onTransitionEnd(transition: Transition) = settle(s)
+            })
+        }
+
+    /** Material 3 Shared Axis X transition between screens. */
     private fun transition(s: Stack, from: View, to: View, forward: Boolean) {
-        val shift = dp(30f) * if (forward) 1f else -1f
-        s.frame.addView(to, if (forward) -1 else 0)
-        to.alpha = 0f
-        to.translationX = shift
-        to.animate().translationX(0f).setStartDelay(0).setDuration(300).setInterpolator(emphasized).start()
-        to.animate().alpha(1f).setStartDelay(90).setDuration(210).start()
-        from.animate().translationX(-shift).setStartDelay(0).setDuration(300).setInterpolator(emphasized)
-            .withEndAction { settle(s) }.start()
-        from.animate().alpha(0f).setDuration(90).start()
+        to.visibility = View.GONE
+        if (to.parent == null) s.frame.addView(to, if (forward) -1 else 0)
+        TransitionManager.beginDelayedTransition(s.frame, sharedAxis(s, from, to, forward))
+        from.visibility = View.GONE
+        to.visibility = View.VISIBLE
     }
 
     /** The user went back natively: pop to `depth` first, then tell JS. */
-    private fun back(s: Stack, depth: Int, gesture: Boolean = false) {
+    private fun back(s: Stack, depth: Int) {
         if (depth < 1 || s.shown.size <= depth) return
         val from = outer(s.shown.last())
-        if (!gesture) settle(s)
+        settle(s)
         while (s.model.size > depth) s.dropped += s.model.removeAt(s.model.lastIndex)
         s.shown = s.model.toList()
-        if (gesture) {
-            // The previous screen is already under it: let the top one go.
-            from.animate().alpha(0f).setDuration(150).setInterpolator(emphasized).withEndAction { settle(s) }.start()
-        } else {
-            transition(s, from, outer(s.shown.last()), forward = false)
-        }
+        transition(s, from, outer(s.shown.last()), forward = false)
         s.refresh()
         updateBack()
         emit(s.id, "pop", depth)
     }
 
-    /** One tab per stack, under a Material 3 navigation bar. */
+    /** One tab per stack, driven by Material 3 NavigationBarView (BottomNavigationView on compact, NavigationRailView on wide). */
     private inner class Tabs(val id: Int) {
         val stacks = ArrayList<Stack>()
         var selected = 0
+        private var syncing = false
 
-        private fun sys(res: Int, fallback: Long) = if (Build.VERSION.SDK_INT >= 31) getColor(res) else fallback.toInt()
-        private val container = sys(android.R.color.system_neutral1_50, 0xFFF3EDF7)
-        private val indicator = sys(android.R.color.system_accent2_100, 0xFFE8DEF8)
-        private val onIndicator = sys(android.R.color.system_accent2_900, 0xFF1D192B)
-        private val onSurface = sys(android.R.color.system_neutral1_900, 0xFF1D1B20)
-        private val onSurfaceVariant = sys(android.R.color.system_neutral2_700, 0xFF49454F)
-
+        val wide = resources.configuration.screenWidthDp >= 600
         val content = FrameLayout(this@MainActivity)
-        val bar = LinearLayout(this@MainActivity).apply { setBackgroundColor(container) }
+        val bar: NavigationBarView = (if (wide) NavigationRailView(materialContext) else BottomNavigationView(materialContext)).apply {
+            labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
+            setOnItemSelectedListener { item ->
+                if (!syncing) {
+                    val index = stacks.indexOfFirst { it.id == item.itemId }
+                    if (index >= 0 && index != selected) {
+                        select(index, animate = true, fromBar = true)
+                        updateBack()
+                        emit(this@Tabs.id, "select", index)
+                    }
+                }
+                true
+            }
+            setOnItemReselectedListener { item ->
+                if (!syncing) {
+                    val s = stacks.find { it.id == item.itemId } ?: return@setOnItemReselectedListener
+                    // Re-tapping the current tab pops it to its root; at its root, it scrolls to the top.
+                    if (s.shown.size > 1) back(s, 1) else s.toTop()
+                }
+            }
+        }
         val root = LinearLayout(this@MainActivity).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(content, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
-            addView(bar, LinearLayout.LayoutParams(MATCH_PARENT, dp(80f)))
+            if (wide) {
+                orientation = LinearLayout.HORIZONTAL
+                addView(bar, LinearLayout.LayoutParams(WRAP_CONTENT, MATCH_PARENT))
+                addView(content, LinearLayout.LayoutParams(0, MATCH_PARENT, 1f))
+            } else {
+                orientation = LinearLayout.VERTICAL
+                addView(content, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
+                addView(bar, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+            }
         }
 
         fun add(s: Stack, before: Int) {
             val index = stacks.indexOfFirst { it.id == before }.takeIf { it >= 0 } ?: stacks.size
             stacks.add(index, s)
             content.addView(s.box)
-            bar.addView(s.item, index, LinearLayout.LayoutParams(0, MATCH_PARENT, 1f))
-            render()
+            syncMenu()
+            render(fromBar = false)
         }
 
-        /** Final state: the selected stack visible, its tab highlighted. */
-        private fun render() {
-            stacks.forEachIndexed { i, s ->
-                val on = i == selected
-                s.box.animate().cancel()
-                s.box.visibility = if (on) View.VISIBLE else View.GONE
-                s.box.alpha = 1f
-                s.box.scaleX = 1f
-                s.box.scaleY = 1f
-                (s.pill.background as GradientDrawable).setColor(if (on) indicator else Color.TRANSPARENT)
-                s.icon.imageTintList = ColorStateList.valueOf(if (on) onIndicator else onSurfaceVariant)
-                s.label.setTextColor(if (on) onSurface else onSurfaceVariant)
-                s.item.isSelected = on
+        fun syncMenu() {
+            syncing = true
+            try {
+                bar.menu.clear()
+                stacks.forEachIndexed { i, s ->
+                    val item = bar.menu.add(Menu.NONE, s.id, i, s.tabTitle)
+                    if (s.tabIcon != 0) item.setIcon(s.tabIcon)
+                }
+                stacks.getOrNull(selected)?.let { bar.selectedItemId = it.id }
+            } finally {
+                syncing = false
             }
         }
 
-        /** Programmatic or user selection; fade through when animated. */
-        fun select(index: Int, animate: Boolean) {
+        /** Final state: the selected stack visible, its tab item checked in NavigationBarView. */
+        private fun render(fromBar: Boolean) {
+            stacks.forEachIndexed { i, s ->
+                s.box.visibility = if (i == selected) View.VISIBLE else View.GONE
+            }
+            if (!fromBar) {
+                stacks.getOrNull(selected)?.let {
+                    if (bar.selectedItemId != it.id) {
+                        syncing = true
+                        try {
+                            bar.selectedItemId = it.id
+                        } finally {
+                            syncing = false
+                        }
+                    }
+                }
+            }
+        }
+
+        /** Programmatic or user selection; MaterialFadeThrough when animated. */
+        fun select(index: Int, animate: Boolean, fromBar: Boolean = false) {
             if (index == selected) return
             val out = stacks.getOrNull(selected)
+            val inn = stacks.getOrNull(index)
             selected = index
-            render()
-            val inn = stacks.getOrNull(index) ?: return
-            if (!animate || out == null) return
-            out.box.visibility = View.VISIBLE
-            out.box.animate().alpha(0f).setStartDelay(0).setDuration(90).setInterpolator(emphasized)
-                .withEndAction { out.box.visibility = View.GONE; out.box.alpha = 1f }.start()
-            inn.box.alpha = 0f
-            inn.box.scaleX = 0.92f
-            inn.box.scaleY = 0.92f
-            inn.box.animate().alpha(1f).scaleX(1f).scaleY(1f).setStartDelay(90).setDuration(210)
-                .setInterpolator(emphasized).start()
-        }
-
-        fun tap(s: Stack) {
-            val index = stacks.indexOf(s)
-            if (index == selected) {
-                // Re-tapping the current tab pops it to its root; at its root, it scrolls to the top.
-                if (s.shown.size > 1) back(s, 1) else s.toTop()
-            } else {
-                select(index, animate = true)
-                updateBack()
-                emit(id, "select", index)
+            TransitionManager.endTransitions(content)
+            if (animate && out != null && inn != null) {
+                TransitionManager.beginDelayedTransition(content, MaterialFadeThrough().apply {
+                    addTarget(out.box)
+                    addTarget(inn.box)
+                })
             }
+            render(fromBar)
         }
     }
 
-    // ---- Back: predictive on API 34+, plain on 33, onBackPressed on 30-32 ----
+    // ---- Back: predictive seekable MaterialSharedAxis on API 34+, plain on 33, onBackPressed on 30-32 ----
 
     private fun active() = tabs?.let { it.stacks.getOrNull(it.selected) } ?: rootStack
 
     private var backRegistered = false
-    /** The stack whose previous screen is shown under a back gesture. */
+    /** The stack and seek controller driven by an in-progress predictive back gesture. */
     private var gesture: Stack? = null
+    private var seek: TransitionSeekController? = null
 
     private val backCallback: Any? by lazy {
         when {
             Build.VERSION.SDK_INT >= 34 -> object : OnBackAnimationCallback {
-                override fun onBackProgressed(event: BackEvent) {
+                override fun onBackStarted(event: BackEvent) {
                     val s = active() ?: return
                     if (s.shown.size < 2) return
-                    if (gesture == null) {
-                        settle(s)
-                        s.frame.addView(outer(s.shown[s.shown.size - 2]), 0)
-                        gesture = s
-                        outer(s.shown.last()).apply {
-                            outlineProvider = card
-                            clipToOutline = true
-                            elevation = dp(6f).toFloat()
-                        }
-                    }
-                    // Material predictive back: scale to 90%, drift with the swipe.
-                    val top = outer(s.shown.last())
-                    val p = event.progress
-                    val drift = (s.frame.width / 20f - dp(8f)) * p
-                    top.scaleX = 1f - 0.1f * p
-                    top.scaleY = 1f - 0.1f * p
-                    top.translationX = if (event.swipeEdge == BackEvent.EDGE_LEFT) drift else -drift
+                    settle(s)
+                    val from = outer(s.shown.last())
+                    val to = outer(s.shown[s.shown.size - 2])
+                    to.visibility = View.GONE
+                    if (to.parent == null) s.frame.addView(to, 0)
+                    gesture = s
+                    seek = TransitionManager.controlDelayedTransition(s.frame, sharedAxis(s, from, to, forward = false))
+                    from.visibility = View.GONE
+                    to.visibility = View.VISIBLE
+                }
+
+                override fun onBackProgressed(event: BackEvent) {
+                    val controller = seek ?: return
+                    if (controller.isReady) controller.currentFraction = event.progress
                 }
 
                 override fun onBackInvoked() {
                     val s = active() ?: return
                     val wasGesture = gesture == s
+                    val controller = seek
                     gesture = null
-                    back(s, s.shown.size - 1, wasGesture)
+                    seek = null
+                    if (wasGesture && controller != null && s.shown.size >= 2) {
+                        val depth = s.shown.size - 1
+                        while (s.model.size > depth) s.dropped += s.model.removeAt(s.model.lastIndex)
+                        s.shown = s.model.toList()
+                        controller.animateToEnd()
+                        s.refresh()
+                        updateBack()
+                        emit(s.id, "pop", depth)
+                    } else {
+                        back(s, s.shown.size - 1)
+                    }
                 }
 
                 override fun onBackCancelled() {
                     val s = gesture ?: return
+                    val controller = seek
                     gesture = null
-                    outer(s.shown.last()).animate().scaleX(1f).scaleY(1f).translationX(0f)
-                        .setDuration(200).setInterpolator(emphasized).withEndAction { settle(s) }.start()
+                    seek = null
+                    if (controller != null && s.shown.size >= 2) {
+                        val from = outer(s.shown.last())
+                        val to = outer(s.shown[s.shown.size - 2])
+                        controller.animateToStart {
+                            from.visibility = View.VISIBLE
+                            to.visibility = View.GONE
+                            settle(s)
+                        }
+                    } else {
+                        settle(s)
+                    }
                 }
             }
             Build.VERSION.SDK_INT >= 33 -> OnBackInvokedCallback {

@@ -62,4 +62,8 @@ dependencies {
     implementation("com.facebook.fbjni:fbjni:0.7.0")
     // fbjni's loader, which the host hands the system's (MainActivity's companion).
     implementation("com.facebook.soloader:nativeloader:0.10.5")
+    // Material 3 navigation (BottomNavigationView, NavigationRailView, AppBarLayout, MaterialToolbar, transitions).
+    implementation("com.google.android.material:material:1.13.0")
+    implementation("androidx.transition:transition-ktx:1.7.0")
+    implementation("androidx.coordinatorlayout:coordinatorlayout:1.2.0")
 }
