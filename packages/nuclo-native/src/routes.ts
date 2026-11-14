@@ -4,10 +4,10 @@ export type Params = Record<string, string>;
 export type View = (params: Params) => DetachedExpandedElementFactory;
 /**
  * A screen, optionally with the title its navigation bar shows, and onEndReached:
- * called when the screen scrolls to within half its height of its end, once per
- * content height (an infinite list loads its next page there).
+ * called, with the screen's params, when the screen scrolls to within half its
+ * height of its end, once per content height (an infinite list loads its next page there).
  */
-export type Route = View | { view: View; title?: string | ((params: Params) => string); onEndReached?: () => void };
+export type Route = View | { view: View; title?: string | ((params: Params) => string); onEndReached?: (params: Params) => void };
 /** A tab: its root path, label and icon (`chart`, `photo`, `person`; each host maps the name). */
 export interface Tab {
   path: string;
@@ -44,7 +44,8 @@ export function matcher(routes: Record<string, Route>) {
       });
       if (!matches) continue;
       const title = typeof route.title === "function" ? route.title(params) : (route.title ?? "");
-      return { path, params, view: route.view, title, onEndReached: route.onEndReached };
+      const { onEndReached } = route;
+      return { path, params, view: route.view, title, onEndReached: onEndReached && (() => onEndReached(params)) };
     }
     throw new Error(`No route matches ${path}`);
   };

@@ -30,6 +30,8 @@ pub struct Engine {
     queue: Rc<RefCell<Vec<String>>>,
     /// Device data JS asked for (`__nuclo_device`), so the host keeps it current.
     watched: Rc<RefCell<Vec<String>>>,
+    /// Timers JS asked for (`__nuclo_timer`): (id, ms), until the host schedules them.
+    timers: Rc<RefCell<Vec<(u32, f64)>>>,
 }
 
 impl Engine {
@@ -38,6 +40,7 @@ impl Engine {
         let context = Context::full(&runtime).expect("QuickJS context");
         let queue = Rc::new(RefCell::new(Vec::new()));
         let watched = Rc::new(RefCell::new(Vec::<String>::new()));
+        let timers = Rc::new(RefCell::new(Vec::new()));
         context.with(|ctx| {
             let globals = ctx.globals();
             let batches = queue.clone();
@@ -63,12 +66,15 @@ impl Engine {
             })
             .unwrap();
             globals.set("__nuclo_device", device).unwrap();
+            let pending = timers.clone();
+            let timer = Function::new(ctx.clone(), move |id: u32, ms: f64| pending.borrow_mut().push((id, ms))).unwrap();
+            globals.set("__nuclo_timer", timer).unwrap();
             let log = Function::new(ctx.clone(), |line: String| log::info!("JS: {line}")).unwrap();
             globals.set("__nuclo_log", log).unwrap();
             ctx.eval::<(), _>("globalThis.console = { log: (...a) => __nuclo_log(a.join(' ')) }; console.error = console.warn = console.info = console.log;")
                 .unwrap();
         });
-        Self { runtime, context, queue, watched }
+        Self { runtime, context, queue, watched, timers }
     }
 
     /// Runs the bundle; returns the batches it sent.
@@ -97,6 +103,11 @@ impl Engine {
 
     pub fn watched(&self) -> Vec<String> {
         self.watched.borrow().clone()
+    }
+
+    /// The timers JS asked for since the last call.
+    pub fn timers(&self) -> Vec<(u32, f64)> {
+        self.timers.borrow_mut().drain(..).collect()
     }
 
     /// `__nuclo_device_changed(name, json)`; returns the batches JS sent back.

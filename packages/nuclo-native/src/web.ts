@@ -8,6 +8,8 @@
  */
 import "nuclo";
 
+export { windowed } from "./windowed-web";
+
 // Containers are flex columns, as on native. :where() keeps specificity at
 // zero, so any app stylesheet or inline style wins.
 const base = document.createElement("style");

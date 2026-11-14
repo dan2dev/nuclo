@@ -147,6 +147,40 @@ test("a column laid out again reuses unchanged children and moves the ones below
   expect(height).toBeCloseTo(73);
 });
 
+test("a column told where its children differ lays out as one that is not", () => {
+  const rows = (n: number) => Array.from({ length: n }, (_, i) => box({ height: 10 + (i % 3) }));
+  const swap = (h: number) => box({ height: h });
+  // Each case: the new children from the old ones, and the span that tells them apart.
+  const cases: [string, (old: LayoutNode[]) => LayoutNode[], [number, number]][] = [
+    ["one replaced by one as tall", (old) => old.with(4, swap(11)), [4, 5]],
+    ["one replaced by a taller one", (old) => old.with(4, swap(40)), [4, 5]],
+    ["one inserted", (old) => old.toSpliced(3, 0, swap(7)), [3, 4]],
+    ["two removed", (old) => old.toSpliced(2, 2), [2, 2]],
+    ["some appended", (old) => [...old, swap(5), swap(6)], [8, 10]],
+    ["the first replaced", (old) => old.with(0, swap(10)), [0, 1]],
+    ["nothing", (old) => old, [0, 0]],
+  ];
+  for (const [name, edit, span] of cases) {
+    const old = rows(8);
+    const first = box({ gap: 4, padding: 6 }, ...old);
+    layout(first, 100, undefined, measure);
+    const children = edit(old);
+    const told: LayoutNode = { ...box({ gap: 4, padding: 6 }, ...children), id: first.id, prev: first, span };
+    const got = layout(told, 100, undefined, measure);
+    // The same children laid out from nothing: where each is, whether or not it got a frame this time.
+    const fresh = box({ gap: 4, padding: 6 }, ...children.map((kid) => box(kid.style)));
+    const want = layout(fresh, 100, undefined, measure);
+    expect([name, got.height]).toEqual([name, want.height]);
+    expect([name, told.ys, told.hs, told.ws]).toEqual([name, fresh.ys, fresh.hs, fresh.ws]);
+    children.forEach((kid, i) => {
+      const frame = got.frames.get(kid.id);
+      if (frame) expect([name, frame]).toEqual([name, want.frames.get(fresh.children[i]!.id)!]);
+      // One without a frame stays where it was.
+      else expect([name, first.ys![old.indexOf(kid)]]).toEqual([name, fresh.ys![i]]);
+    });
+  }
+});
+
 test("a video fills the width it gets at 16:9 unless sized, without measuring", () => {
   const free = node("video", {});
   const sized = node("video", { height: 120 });

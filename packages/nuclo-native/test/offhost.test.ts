@@ -75,3 +75,16 @@ test("a row parked far away comes back with its children placed", () => {
   const text = back.find((op) => op[0] === "set" && op[3] === "Row 0")![1];
   expect(back.some((op) => op[0] === "frame" && op[1] === text)).toBe(true);
 });
+
+test("rows on the screen that swap places move, and stay on the host", () => {
+  const from = ops.length;
+  [rows[0], rows[1]] = [rows[1], rows[0]];
+  update();
+  const moved = ops.slice(from);
+  expect(moved.some((op) => op[0] === "insert")).toBe(true);
+  expect(moved.filter((op) => op[0] === "create" || op[0] === "remove")).toEqual([]);
+  // Nothing left to bring back: a scroll that shows the same rows sends nothing.
+  const settled = ops.length;
+  g.__nuclo_event(screen, "scroll", "1 800");
+  expect(ops.length).toBe(settled);
+});

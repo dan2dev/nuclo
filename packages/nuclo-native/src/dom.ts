@@ -50,6 +50,7 @@
 import "./host";
 import { type Frame, type LayoutNode, insets, layout } from "./layout";
 import { INHERITED, Sheet, type Styles, compute, declarations, length, mediaMatches, paint } from "./style";
+import { fire } from "./timers";
 
 /** One host op (see the contract above): the first item tells the rest apart. */
 export type Op =
@@ -220,9 +221,16 @@ class NNode {
   /** Its computed style (style.ts) and the paint properties the host has. */
   computed?: Styles;
   painted?: Styles;
-  /** A container's laid-out children, in box.children order: cull finds them by index. */
+  /**
+   * A container's laid-out children, in box.children order: cull finds them by index. Children that come and go
+   * are spliced in and out, so the next layout takes up only what changed (edited); unset when that lost track.
+   */
   kids?: NNode[];
-  /** A long list being culled: the children that may be on the host lie in kept. Inserts and removes reset it. */
+  /** Where it last was in its parent's kids: looked for from there (indexIn). */
+  at = 0;
+  /** The kids that came, went or changed since the last layout lie in [from, to); the rest are as box.children has them. */
+  edited?: [number, number];
+  /** A long list being culled: the children that may be on the host lie in kept, which follows inserts and removes. */
   kept?: [number, number];
   /** A list longer than its screen keeps (cull): far children are parked, and new ones start parked. */
   culled = false;
@@ -278,8 +286,11 @@ class NNode {
     if (!container) touchText(this);
     else if (node.nodeType !== 8) {
       touch(this);
-      this.kept = undefined;
-      const size = this.culled && guess(this);
+      // One already on the host is moving: it stays there.
+      const usual = !node.live && this.culled && guess(this);
+      // A row that says how tall it is (windowed.ts) is parked at that, not at the usual size.
+      const told = usual && node instanceof NElement && Number(node.attrs["data-height"]);
+      const size = usual && told ? { ...usual, height: String(told) } : usual;
       if (size) {
         // Starts parked, as a box of the list's usual row: created and laid out only when it comes near what
         // shows (cull), a row at a time, not a page at once.
@@ -287,9 +298,11 @@ class NNode {
         node.box = { id: node.nid, kind: "view", style: size, children: [] };
         parked.add(node.nid);
         resized = true;
+        entered(this, node);
         return node;
       }
       realize(node);
+      entered(this, node);
       let before = node.nextSibling;
       while (before && !before.live) before = before.nextSibling;
       ops.push(["insert", this.nid, node.nid, before ? before.nid : 0]);
@@ -318,13 +331,73 @@ class NNode {
 
 /** Marks a node and its ancestors for layout; stops at one already marked, whose ancestors are. */
 function touch(node: NNode | null) {
-  for (; node && !node.dirty; node = node.parentNode) node.dirty = true;
+  for (; node && !node.dirty; node = node.parentNode) {
+    node.dirty = true;
+    if (node.parentNode) changed(node.parentNode, node);
+  }
+}
+
+/** Where `node` is in its parent's kids, looked for around where it last was; -1 when it is not near there. */
+function indexIn(parent: NNode, node: NNode) {
+  const kids = parent.kids!;
+  for (let d = 0; d <= 64; d++) {
+    if (kids[node.at + d] === node) return (node.at += d);
+    if (kids[node.at - d] === node) return (node.at -= d);
+  }
+  return -1;
+}
+
+/** Lost track of a container's kids: its next layout reads all its children again. */
+function forget(parent: NNode) {
+  parent.kids = parent.edited = parent.kept = undefined;
+}
+
+/** A child's box is to be taken anew by its parent's next layout. */
+function changed(parent: NNode, node: NNode) {
+  if (!parent.kids) return;
+  const i = indexIn(parent, node);
+  if (i < 0) return forget(parent);
+  const e = parent.edited;
+  if (!e) parent.edited = [i, i + 1];
+  else [e[0], e[1]] = [Math.min(e[0], i), Math.max(e[1], i + 1)];
+}
+
+/** A child came (`by` 1) or went (-1) at kids[i]: the edited range covers it, and the kept range follows. */
+function spliced(parent: NNode, i: number, by: 1 | -1, live: boolean) {
+  const e = parent.edited;
+  if (!e) parent.edited = [i, by > 0 ? i + 1 : i];
+  else [e[0], e[1]] = [Math.min(e[0], i), by > 0 ? Math.max(e[1], i) + 1 : i < e[1] ? e[1] - 1 : i];
+  const k = parent.kept;
+  if (!k) return;
+  // A parked child only moves the range; one on the host is in it.
+  if (by > 0 && live) [k[0], k[1]] = [Math.min(k[0], i), Math.max(k[1], i) + 1];
+  else [k[0], k[1]] = [i < k[0] ? k[0] + by : k[0], i < k[1] ? k[1] + by : k[1]];
+}
+
+/** A child (on the host, or parked) is in its container: into the kids, before the next sibling that is one. */
+function entered(parent: NNode, node: NNode) {
+  const kids = parent.kids;
+  if (!kids) return;
+  let next = node.nextSibling;
+  while (next && (next.nodeType === 8 || (!next.live && !next.parked))) next = next.nextSibling;
+  const i = next ? indexIn(parent, next) : kids.length;
+  if (i < 0) return forget(parent);
+  kids.splice(i, 0, node);
+  node.at = i;
+  spliced(parent, i, 1, node.live);
 }
 
 function unlink(node: NNode, destroy: boolean) {
   const parent = node.parentNode!;
   touch(parent);
-  parent.kept = undefined;
+  if (parent.kids && node.nodeType !== 8) {
+    const i = indexIn(parent, node);
+    if (i < 0) forget(parent);
+    else {
+      parent.kids.splice(i, 1);
+      spliced(parent, i, -1, false);
+    }
+  }
   if (node.previousSibling) node.previousSibling.nextSibling = node.nextSibling;
   else parent.firstChild = node.nextSibling;
   if (node.nextSibling) node.nextSibling.previousSibling = node.previousSibling;
@@ -350,6 +423,7 @@ function unrealize(node: NNode) {
   // Realized again later, the host has no frames for it: lay it out anew, with nothing reused.
   node.dirty = true;
   node.box = undefined;
+  forget(node);
   screens.delete(node as NElement);
   live.delete(node.nid);
   sent.delete(node.nid);
@@ -558,6 +632,8 @@ class NElement extends NNode {
     if (key === "style") return void setStyle(this.styles, "cssText", value);
     if (this.attrs[key] === value) return;
     this.attrs[key] = value;
+    if (key === "data-window") windows.set(String(value), this);
+    if (key === "data-before" || key === "data-after") touch(this);
     if (key === "class") {
       if (this.live) restyled.add(this);
       return;
@@ -691,6 +767,7 @@ export function flush() {
   resized = false;
   const frames = relayout();
   if (frames.length) send(frames);
+  for (const laidOut of hooks.laidOut) laidOut();
   if (cull()) flush();
   reachEnds();
 }
@@ -719,6 +796,40 @@ const sent = new Map<number, Frame>();
 const measured = new Map<number, Map<number, { w: number; h: number }>>();
 let resized = false;
 
+// ── Windowed lists (windowed.ts) ─────────────────────────────────────────
+
+/** Each windowed list's container, by its `data-window`. */
+const windows = new Map<string, NElement>();
+/** Called after a scroll was reported, and after a layout. */
+export const hooks = { scrolled: new Set<() => void>(), laidOut: new Set<() => void>() };
+
+/**
+ * Where its screen's visible part is in a windowed list's container: [y, height]. Undefined until the container is
+ * laid out; null when it is not in the document (not yet, or no more: then it is forgotten here).
+ */
+export function windowPlace(id: string): [y: number, h: number] | undefined | null {
+  const el = windows.get(id);
+  if (!el) return undefined;
+  if (!el.isConnected) return null;
+  let y = 0;
+  let node: NNode = el;
+  for (; node !== body && !screens.has(node as NElement); node = node.parentNode!) {
+    const frame = sent.get(node.nid);
+    if (!frame) return undefined;
+    y += frame[1];
+  }
+  const size = sizes.get(node.nid);
+  if (!size) return undefined;
+  const [top, h] = scrolled.get(node.nid) ?? [0, size[1]];
+  return [top - y, h];
+}
+
+/** The heights of a windowed list's container's children as laid out; undefined for one never laid out. */
+export const windowHeights = (id: string) =>
+  windows.get(id)?.kids?.map((kid) => (sent.get(kid.nid) ?? parkedAt.get(kid.nid))?.[3]) ?? [];
+
+export const forgetWindow = (id: string) => void windows.delete(id);
+
 /** The frames sent to the host (for checks: see check.ts). */
 export const sentFrames = (): ReadonlyMap<number, Frame> => sent;
 /** The largest device pixels per unit any layout root reported (1 before any did). */
@@ -730,24 +841,44 @@ function tree(node: NNode): LayoutNode {
   node.dirty = false;
   const el = node instanceof NElement ? node : null;
   const kind = el ? el.kind : "text";
-  const children: LayoutNode[] = [];
+  let children: LayoutNode[] = [];
+  const prev = node.box;
+  let span: [number, number] | undefined;
   if (el && CONTAINERS.has(kind)) {
-    const kids: NNode[] = (node.kids = []);
-    for (let c = node.firstChild; c; c = c.nextSibling) {
-      if ((!c.live && !c.parked) || c.nodeType === 8) continue;
-      kids.push(c);
-      // A parked child is the box it last had: nothing of it is measured or sent.
-      children.push(c.parked ? c.box! : tree(c));
+    // A parked child is the box it last had: nothing of it is measured or sent.
+    const boxOf = (c: NNode) => (c.parked ? c.box! : tree(c));
+    const [from, to] = node.edited ?? [0, 0];
+    node.edited = undefined;
+    const kids = node.kids;
+    const old = prev?.children;
+    const tail = old && kids ? to + old.length - kids.length : -1;
+    if (old && kids && tail >= from) {
+      // Only the edited kids: a long list with one row replaced takes up that row.
+      children = old.slice(0, from);
+      for (let i = from; i < to; i++) children.push(boxOf(kids[i]!));
+      children = children.concat(old.slice(tail));
+      span = [from, to];
+    } else {
+      const all: NNode[] = (node.kids = []);
+      for (let c = node.firstChild; c; c = c.nextSibling) {
+        if ((!c.live && !c.parked) || c.nodeType === 8) continue;
+        c.at = all.length;
+        all.push(c);
+        children.push(boxOf(c));
+      }
     }
   }
-  const style = node.computed ?? {};
-  const prev = node.box;
+  // A windowed list's rows before and after its window are its padding (windowed.ts). Not through its style: its
+  // rows' styles are shared under it, and one more of it for every place the window has been would keep them all.
+  const style = el?.attrs["data-window"]
+    ? { ...node.computed, paddingTop: `${el.attrs["data-before"]}px`, paddingBottom: `${el.attrs["data-after"]}px` }
+    : (node.computed ?? {});
   if (prev) prev.prev = undefined; // Only the last one: no chain of old nodes.
   // The same computed style parses the same: keep what layout read from it.
   const parsed = prev?.style === style ? prev.parsed : undefined;
-  const box: LayoutNode = (node.box = { id: node.nid, kind, style, children, prev, parsed });
+  const box: LayoutNode = (node.box = { id: node.nid, kind, style, children, prev, parsed, span });
   // Hosts that size by content (host.ts) are asked with it, not by node.
-  if (kind === "text" && globalThis.__nuclo_text_size) box.content = shown(node.textContent);
+  if ((kind === "text" || kind === "button") && globalThis.__nuclo_text_size) box.content = shown(node.textContent);
   else if (kind === "image" && globalThis.__nuclo_image_size) box.content = String(el!.attrs.src ?? "");
   return box;
 }
@@ -943,8 +1074,13 @@ function layoutUnparked(out: Op[]) {
     // One parked at a guessed size was never laid out: its list places it, and moves the rows after it.
     const guessed = node.guessed;
     node.guessed = false;
-    if (guessed || !node.live || node.parentNode !== parent || parent.dirty || !frame || !box?.ws || !box.hs) {
+    // Laid out with its list: the list takes its box anew.
+    const withList = () => {
       touch(parent);
+      if (node.parentNode === parent) changed(parent, node);
+    };
+    if (guessed || !node.live || node.parentNode !== parent || parent.dirty || !frame || !box?.ws || !box.hs) {
+      withList();
       continue;
     }
     let root: NNode = parent;
@@ -954,7 +1090,7 @@ function layoutUnparked(out: Op[]) {
     // again, keeps them. Sent frames are rounded (moved), so the height it had is compared within that.
     if (Math.abs(height - frame[3]) > 1e-4) {
       frames.delete(node.nid);
-      touch(parent);
+      withList();
     } else {
       box.children[i] = node.box!;
       frames.set(node.nid, frame);
@@ -998,8 +1134,14 @@ globalThis.__nuclo_event = (id, type, value) => {
     const [y, h] = String(value).split(" ").map(Number);
     scrolled.set(id, [y || 0, h || 0]);
     if (sending) return;
+    for (const scrolled of hooks.scrolled) scrolled();
     if (cull()) flush();
     reachEnds();
+    return;
+  }
+  if (type === "timer") {
+    fire(id);
+    flush();
     return;
   }
   const el = live.get(id);

@@ -38,7 +38,7 @@ Each folder in `examples/` is an app; `examples/ui.ts` is the small design syste
 - **`todo`**: a todo list. Add a task (Enter or Add), check it off, filter All / Active / Done, clear the finished ones. A task opens on its own screen, pushed on the native stack, to edit its title and notes or delete it.
 - **`battery`**: a battery monitor. A gauge drawn with views, the level, the status and the time to full or empty, live from the platform (see [Device data](#device-data)); a chart of the readings and a pushed screen listing them. A device without a battery says so.
 - **`people`**: a social network's directory with infinite scroll. Twenty people at a time, the next twenty as you scroll near the end (`onEndReached`, see [Navigation](#navigation)), a Follow toggle on each, and a footer once all 50,000 are in. Only rows near the screen stay on the host ([Long lists](#long-lists)); `bun test/people.bench.ts` times page loads, taps and scrolling as the list grows.
-- **`chirp`**: a small social app on four bottom tabs (Home, Explore, Alerts, Profile) with the native back stack. The home feed pages in 20 posts at a time until all 5,000 are in. Posts carry text, one or two photos, or a 6-second video. In lists a video is its poster with a play badge; an opened post and the full-screen viewer play it in the platform's own player ([Video](#video)). A post opens its thread, its likers and that viewer. A profile shows its friends, and each friend's profile shows theirs, so you can keep pushing screens through the friend graph. Likes, reposts and friend requests rebuild only the rows that show them, on every screen at once.
+- **`chirp`**: a small social app on four bottom tabs (Home, Explore, Alerts, Profile) with the native back stack. Its data is a faked server (`api.ts`) over 100,000 people and a million posts, each made from its id when first read: every call answers later, a varying time later so replies can cross, and can be made slow or to fail from the Settings form. The feed, topics, profiles, likers, notifications and the people search each load 20 at a time as you scroll, and show their request's state in their footer (loading, failed with a tap to retry, the end). Posts carry text, a topic, one or two photos, or a 6-second video. In lists a video is its poster with a play badge; an opened post and the full-screen viewer play it in the platform's own player ([Video](#video)). A post opens its thread, its likers and that viewer. A profile shows its friends, and each friend's profile shows theirs, so you can keep pushing screens through the friend graph. Likes, reposts and friend requests show at once and rebuild only the rows that show them, on every screen; the server is told after, one request per switch at a time, and a refusal puts the switch back. Forms: a new post (text with a counter, a photo, a topic), a reply on a thread, the profile (name, a handle the server checks as you type, bio, location, colour), the people search and the network settings. Each sends once however often its button is tapped, and a reply that arrives after you left the screen changes the data but not where you are. `bun test/chirp.bench.ts` times the feed as it grows.
 - **`docs`**: the nuclo docs site (`nuclo/docs`) as an app, in the site's design, on three tabs. **Home**: the site's hero, a live counter, the update() cycle, philosophy, features, comparison, benchmark and quick start. **Docs**: all 42 sections by group with a filter; each opens on its own screen with its code highlighted in the site's colours and its live demo inline, and from a desktop width the site's sidebar beside it. **Examples**: all 75 examples by group; each opens with its source (a tab per file) and, for the 27 that only need views (basics, components, API, styling, forms), a live preview on native widgets beside it. The SVG, routing and app examples run in the browser, so they show their source. Layouts follow the site's breakpoints (700 and 1024 px). The text is the site's own English text: `bun --tsconfig-override ../../docs/tsconfig.bun.json examples/docs/extract.ts` regenerates `content.json` from it. Inline formatting (links, inline code) shows as plain text.
 - **`basics`**: the smallest one, a counter and an inline todo list without navigation.
 
@@ -70,7 +70,7 @@ router.back();               // pop
 router.reset("/");           // select the tab that owns "/" and pop it to its root
 ```
 
-A route is a view, or `{ view, title, onEndReached }` where the title is the navigation bar's. `onEndReached` runs when the screen is scrolled to within half its height of its end, once per content height, so it is where an infinite list loads its next page; until that page grows the content it does not fire again, which also covers a page that arrives later. Each tab keeps its own stack. Icons are semantic names (`chart`, `photo`, `person`) each host maps to its icon set.
+A route is a view, or `{ view, title, onEndReached }` where the title is the navigation bar's. `onEndReached` gets the route's params and runs when the screen is scrolled to within half its height of its end, once per content height, so it is where an infinite list loads its next page; until that page grows the content it does not fire again, which also covers a page that arrives later. Each tab keeps its own stack. Icons are semantic names (`chart`, `photo`, `person`) each host maps to its icon set.
 
 | Target | Tabs | Push / pop | Back |
 | --- | --- | --- | --- |
@@ -126,7 +126,21 @@ Measured with `people` at 50,000 rows (`bun test/people.bench.ts`, and the simul
 | JS, page load at 50,000 (no JIT) | 259 ms (JIT) | 7.3 ms (16 ms) |
 | JS, scroll step at 50,000 (no JIT) | — | 0.1 ms (0.2 ms) |
 
-Limits: only lists reached through columns from the screen are culled, not a list inside a row. A single render of thousands of rows creates them all once before parking them. JS still holds every row's nodes: about 7 KB a row in JavaScriptCore and 27 to 39 KB in QuickJS, and its O(rows) passes (the list diff, a list's child arrays) are slow in QuickJS, so on Android the practical ceiling is about 20,000 rows.
+Limits: only lists reached through columns from the screen are culled, not a list inside a row. A single render of thousands of rows creates them all once before parking them. With `list()`, JS still holds every row's nodes: about 7 KB a row in JavaScriptCore and 27 to 39 KB in QuickJS, and nuclo's list diff reads every row on each update, so on Android the practical ceiling for a plain `list()` is about 20,000 rows. `windowed()` has neither limit.
+
+### Lists without an end: `windowed()`
+
+```ts
+import { windowed } from "nuclo-native";
+
+windowed(() => feed.ids, post, postRow); // the ids, an id's record, a record's row
+```
+
+`windowed(keys, item, render)` is `list()` for a list too long to keep. Only the rows within three screens of what shows exist, in JS as on the host: about seven screens of rows however long the list is. The rows before and after them are the container's padding, so the content is as tall as with them all and nothing moves as the window follows the scroll. A row that leaves is remembered by its height alone and built again from its record when it comes back; a row is rebuilt when its record is another object, as with `list()`.
+
+Rows before the window count at the height they were laid out at, so what shows stays exactly where it is (`test/windowed.test.ts` checks every row's position scrolling down and back). Rows never laid out (those after the window, or flung past without being shown) count at the mean and take their place when they are laid out; and JS keeps one number per row it has passed. On the web `windowed()` keeps every row, as `list()` does.
+
+`chirp` uses it for every list. Its feed with 50,000 posts loaded (`bun test/chirp.bench.ts 50000`): 10 MB of JS heap, against 417 MB at 20,000 with `list()`; a like takes 0.3 ms (2.6 ms), an update that changes nothing under 0.05 ms. Scrolled through in QuickJS itself (the Android host's engine, on a desktop): 9 MB after 2,000 posts and 11 MB after 16,000. On a Galaxy S23 Ultra the app's native heap is 52 MB after 220 flings and 51 MB after 440; with `list()` it was 90 MB after 220 and growing.
 
 ## Video
 
@@ -172,7 +186,11 @@ The whole host contract is seven ops and one callback:
 | `["listen", id, type]` | `click`, `input`, `change` |
 | `["frame", id, x, y, w, h]` | Where JS laid the node out (see [Styling](#styling-the-same-pixels-everywhere)) |
 
+Timers: the bare engines have no `setTimeout`, so their hosts expose `__nuclo_timer(id, ms)` and answer once, at least `ms` later, with `__nuclo_event(id, "timer")`; JS builds `setTimeout`, `setInterval` and their clears on it (`src/timers.ts`). Android, GPUI (checked on Linux), Windows and Apple have it (the last two compiled or written but never run); GJS has its own timers.
+
 The host exposes `__nuclo_host(json)` and calls `__nuclo_event(id, type, value?)`: `click`, `input` (value: text), `change` (value: checked), `scroll` on a layout root (value: `"y h"`, its scroll offset and visible height), `pop` on a stack (value: depth left after a native back) and `select` on the tabs (value: index). JS turns `scroll` into the route's `onEndReached`. Both take only strings and numbers, so any JS engine can bridge them.
+
+On Android JS runs on its own thread, so the UI thread scrolls, animates and takes touches while JS works. Events are posted to JS, and the batches of one JS turn (ops, then frames) are applied together on the UI thread. Only the latest scroll position waits for JS. A `value` or `checked` that JS sets is dropped when the user has changed the control since the event JS was answering: what they entered stands. A control JS changes reports no event for it, as in the browser. Device data and the debug frames are read on the UI thread, which never waits for JS; the engine is the process's, and an activity that starts takes it over. JS can run off the UI thread because this host sizes texts, buttons and images by content (`__nuclo_text_size`, `__nuclo_image_size`), never by view. The other hosts run JS on the UI thread.
 
 Navigation: screens go into stacks, stacks into tabs, and a tabs or stack inserted into the body is the window's root navigation. At the end of each batch the host compares every stack with what it shows: a new top screen is a push, a removed top screen a pop, both animated the platform's way.
 
@@ -201,7 +219,7 @@ A style lays out to the same boxes, and its text to the same lines, on every hos
 | --- | --- |
 | `["frame", id, x, y, w, h]` | An op: the node's box, relative to its parent's. A layout root's (the body, or a screen) is `[0, 0, w, content height]`: a screen scrolls to it. Sent after the batch that changed something, as a second batch. |
 | `__nuclo_measure(id, maxWidth) → "w h"` | The content size of a text, button or image (natural size) with its current text and font, at most `maxWidth` wide (-1: unconstrained). Widths round up to 1/100. |
-| `__nuclo_text_size(text, size, bold, system, maxWidth) → "w h"`, `__nuclo_image_size(src) → "w h"` | Optional: the same sizes without a node, so JS asks once per distinct text or image, not once per node. Android has them. |
+| `__nuclo_text_size(text, size, bold, system, maxWidth) → "w h"`, `__nuclo_image_size(src) → "w h"` | Optional: the same sizes without a node, so JS asks once per distinct text or image, not once per node, and buttons are sized by their text. Android has them. |
 | `__nuclo_event(rootId, "resize", "w h scale")` | A layout root's size and the device pixels per unit: the window's content for the body, the screen's width for a screen. |
 | `__nuclo_device("frames") → {id: [x, y, w, h]}` | Debug: every view's frame as placed, for the check below. |
 
@@ -227,7 +245,7 @@ Hosts snap each box's edges to device pixels from its position on screen, as the
 | --- | --- | --- | --- | --- |
 | `ios` | `hosts/apple` | JavaScriptCore | UIKit | Simulator: tabs, push, edge-swipe and button back, re-tap to root, JS kept in sync |
 | `macos` | `hosts/apple` | JavaScriptCore | AppKit | Ran scripted: sidebar, toolbar back, titles, push/pop, JS in sync. Trackpad swipe and ⌘[ not exercised |
-| `android` | `hosts/android` | QuickJS-NG (NDK) | Android Views | API 37 emulator: tabs, push, back key, edge swipe with the predictive-back card, up arrow, re-tap, ripples |
+| `android` | `hosts/android` | QuickJS-NG (NDK), on its own thread | Android Views | API 37 emulator: tabs, push, back key, edge swipe with the predictive-back card, up arrow, re-tap, ripples |
 | `linux` | `hosts/linux/host.js` | GJS | GTK 4 + libadwaita | Linux (GNOME, Wayland) and macOS (Homebrew GTK): tabs, push, native back with JS sync. Swipe and Alt+← not driven |
 | `windows` | `hosts/windows` | Jint | WPF (Fluent) | Compiles with the .NET 11 SDK, 0 warnings (also with `-warnaserror`). Never launched |
 | `web` | `hosts/web` + `src/web.ts` | the browser's | the DOM | Browser: push, pop and tab transitions, back button, URL |
@@ -311,8 +329,8 @@ Commands behind them, if you want to run one by hand:
 - Moving a window to a screen of another scale does not lay it out again on Linux and Windows.
 - Remote images and videos. `src` is a bundled file.
 - On the web, `router.back()` is the browser's back, so it leaves the app when a detail screen was opened directly from a link. Tabs there reset instead of keeping a stack each.
-- Timers and `fetch` on the bare engines (JavaScriptCore, QuickJS, Jint). GJS has them. The GPUI host forwards `console` to its log.
+- `fetch` on the bare engines (JavaScriptCore, QuickJS, Jint). GJS has it. The GPUI host forwards `console` to its log.
 - Scrolling on Apple outside the router: a plain app without `router.outlet` does not scroll.
 - GPUI: no video playback (a `video` is its box on black with a play glyph). Android's predictive-back progress is not wired (the back key pops with Material motion); the iOS look's bars are drawn, not Liquid Glass.
 - Hot reload and packaging for app stores.
-- Long lists keep every row's nodes in JS ([Long lists](#long-lists)): QuickJS on Android holds 27 to 39 KB a row. Not keeping JS nodes for far rows needs a virtual `list()` in nuclo itself.
+- `windowed()` on the web keeps every row ([Long lists](#long-lists)); and rows of a plain `list()` are all kept in JS on every target.

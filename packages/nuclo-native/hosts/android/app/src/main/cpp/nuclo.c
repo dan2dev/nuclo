@@ -8,12 +8,12 @@
 
 static JSRuntime *runtime;
 static JSContext *context;
-// Valid only while evaluate() is on the stack; everything runs on the main thread.
+// Valid only while evaluate() or event() is on the stack; everything runs on the host's JS thread (MainActivity.turn).
 static JNIEnv *env;
 static jobject activity;
 static jmethodID receive;
 static jmethodID device;
-static jmethodID measure;
+static jmethodID timer;
 static jmethodID textSize;
 static jmethodID imageSize;
 
@@ -55,12 +55,19 @@ static JSValue deviceValue(JSContext *ctx, JSValueConst self, int argc, JSValueC
     return string(ctx, json);
 }
 
-// __nuclo_measure(id, maxWidth): Kotlin's measure(id, maxWidth), "w h" (layout.ts).
+// __nuclo_measure(id, maxWidth): nothing is measured by node, since the views are the UI thread's. Texts, buttons and
+// images are sized by content (below); the other leaves have the contract's sizes (layout.ts).
 static JSValue measureValue(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv) {
+    return JS_NewString(ctx, "0 0");
+}
+
+// __nuclo_timer(id, ms): Kotlin's timer answers with __nuclo_event(id, "timer") (timers.ts).
+static JSValue timerValue(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv) {
     int32_t id;
-    double maxWidth;
-    if (JS_ToInt32(ctx, &id, argv[0]) || JS_ToFloat64(ctx, &maxWidth, argv[1])) return JS_EXCEPTION;
-    return string(ctx, (*env)->CallObjectMethod(env, activity, measure, (jint)id, (jdouble)maxWidth));
+    double ms;
+    if (JS_ToInt32(ctx, &id, argv[0]) || JS_ToFloat64(ctx, &ms, argv[1])) return JS_EXCEPTION;
+    (*env)->CallVoidMethod(env, activity, timer, (jint)id, (jdouble)ms);
+    return JS_UNDEFINED;
 }
 
 // __nuclo_text_size(text, size, bold, system, maxWidth): Kotlin's textSize, "w h" (host.ts).
@@ -117,13 +124,14 @@ Java_dev_nuclo_host_MainActivity_evaluate(JNIEnv *jni, jobject thiz, jbyteArray 
         JS_SetPropertyStr(context, global, "__nuclo_host", JS_NewCFunction(context, host, "__nuclo_host", 1));
         JS_SetPropertyStr(context, global, "__nuclo_device", JS_NewCFunction(context, deviceValue, "__nuclo_device", 1));
         JS_SetPropertyStr(context, global, "__nuclo_measure", JS_NewCFunction(context, measureValue, "__nuclo_measure", 2));
+        JS_SetPropertyStr(context, global, "__nuclo_timer", JS_NewCFunction(context, timerValue, "__nuclo_timer", 2));
         JS_SetPropertyStr(context, global, "__nuclo_text_size", JS_NewCFunction(context, textSizeValue, "__nuclo_text_size", 5));
         JS_SetPropertyStr(context, global, "__nuclo_image_size", JS_NewCFunction(context, imageSizeValue, "__nuclo_image_size", 1));
         JS_FreeValue(context, global);
         jclass type = (*jni)->GetObjectClass(jni, thiz);
         receive = (*jni)->GetMethodID(jni, type, "receive", "([B)V");
         device = (*jni)->GetMethodID(jni, type, "device", "([B)[B");
-        measure = (*jni)->GetMethodID(jni, type, "measure", "(ID)[B");
+        timer = (*jni)->GetMethodID(jni, type, "timer", "(ID)V");
         textSize = (*jni)->GetMethodID(jni, type, "textSize", "([BDZZD)[B");
         imageSize = (*jni)->GetMethodID(jni, type, "imageSize", "([B)[B");
     }

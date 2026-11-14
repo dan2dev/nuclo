@@ -46,10 +46,13 @@ export interface LayoutNode {
   parsed?: Style;
   /** The node this one replaces (dom.ts): a column of content height keeps the frames of children it shares with it. */
   prev?: LayoutNode;
-  /** A column of content height: its children's y, height and width as of its last placement. */
+  /** With prev: the children before `from` are prev's first ones, and those from `to` on are prev's last ones. */
+  span?: [from: number, to: number];
+  /** A column of content height: its children's y, height and width as of its last placement; flow: all are in flow. */
   ys?: number[];
   hs?: number[];
   ws?: number[];
+  flow?: boolean;
 }
 
 /** Content size of a text, button or image leaf; `maxWidth` Infinity means unconstrained. Images: natural size. */
@@ -579,22 +582,42 @@ export function layout(root: LayoutNode, width: number, height: number | undefin
 
   /**
    * A column of content height: each child takes its own height, so a child that is the same node at the same y as
-   * in the node this one replaces keeps its frame untouched. A long list that grew at the end, or had one row
-   * replaced, costs one quick pass plus the rows that changed.
+   * in the node this one replaces keeps its frame untouched. A long list that grew at the end costs one quick pass
+   * plus the new rows. Told where it differs from that node (span), it takes the children before as they were, and
+   * those after too when they start at the same y: one row replaced by one as tall costs that row.
    */
   function contentColumn(node: LayoutNode, s: Style, w: number, innerW: number, t: number, b: number, l: number, absolute: LayoutNode[]): number {
     const kids = node.children;
     const gap = at(s.rowGap, undefined) ?? 0;
     const p = node.prev;
     const same = p?.ys && p.placed?.[0] === w && p.placed[1] === undefined && p.placed[3] === scale && sameStyle(st(p), s);
-    const ys: number[] = (node.ys = []);
-    const hs: number[] = (node.hs = []);
-    const ws: number[] = (node.ws = []);
-    let y = t;
-    let first = true;
-    for (let i = 0; i < kids.length; i++) {
+    // Children out of flow are placed each time, so only a column without any is taken in runs.
+    const span = same && p.flow && (p.ys![0] ?? t) === t ? node.span : undefined;
+    const from = span?.[0] ?? 0;
+    // How many more children prev had. With as many, prev's own arrays go on, written where the children differ.
+    const d = span ? p!.children.length - kids.length : 0;
+    const take = (of: number[] | undefined) => (!span ? [] : d ? of!.slice(0, from) : of!);
+    let ys = take(p?.ys);
+    let hs = take(p?.hs);
+    let ws = take(p?.ws);
+    let flow = true;
+    let first = from === 0;
+    let y = first ? t : ys[from - 1]! + hs[from - 1]!;
+    for (let i = from; i < kids.length; i++) {
+      if (span && i === span[1]) {
+        if (p!.ys![i + d] === (first ? y : y + gap)) {
+          if (d) {
+            ys = ys.concat(p!.ys!.slice(i + d));
+            hs = hs.concat(p!.hs!.slice(i + d));
+            ws = ws.concat(p!.ws!.slice(i + d));
+          }
+          y = ys.at(-1)! + hs.at(-1)!;
+          break;
+        }
+      }
       const kid = kids[i]!;
       if (!inFlow(kid)) {
+        flow = false;
         if (st(kid).absolute) absolute.push(kid);
         ys[i] = hs[i] = ws[i] = NaN;
         continue;
@@ -620,6 +643,10 @@ export function layout(root: LayoutNode, width: number, height: number | undefin
       hs[i] = it.m[0] + it.main + it.m[2];
       y += it.main + it.m[2];
     }
+    node.ys = ys;
+    node.hs = hs;
+    node.ws = ws;
+    node.flow = flow;
     node.prev = undefined;
     return y + b;
   }

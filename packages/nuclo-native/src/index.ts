@@ -1,4 +1,5 @@
 import "./dom";
+import "./timers";
 import { getCssText } from "nuclo";
 import { flush, useStylesheet } from "./dom";
 
@@ -6,6 +7,7 @@ import { flush, useStylesheet } from "./dom";
 useStylesheet(getCssText);
 
 export { flush };
+export { windowed } from "./windowed";
 
 // One host round-trip per render()/update(), however many nodes changed.
 const g = globalThis as unknown as Record<string, (...args: unknown[]) => unknown>;

@@ -15,7 +15,6 @@ import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.RectF
 import android.graphics.Typeface
-import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
@@ -26,6 +25,9 @@ import android.icu.text.BreakIterator
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.text.Editable
 import android.text.InputType
 import android.text.TextPaint
@@ -61,9 +63,29 @@ import kotlin.math.floor
 import kotlin.math.max
 
 /**
+ * The JS thread, one for the process (QuickJS's runtime is, in nuclo.c), with the main thread's stack size: layout
+ * recurses as deep as the view tree. Lazy: started while a class initializes, the thread would wait for that class.
+ */
+/** The activity whose bundle the engine runs. The JS thread's. */
+private var running: MainActivity? = null
+
+private val js: Handler by lazy {
+    java.util.concurrent.CompletableFuture<Handler>().also { ready ->
+        Thread(null, {
+            Looper.prepare()
+            ready.complete(Handler(Looper.myLooper()!!))
+            Looper.loop()
+        }, "nuclo-js", 8L shl 20).start()
+    }.get()
+}
+
+/**
  * nuclo-native host for Android: platform Views driven by QuickJS (src/main/cpp).
  * JS lays everything out (src/layout.ts) and sends frames; this host places views at them,
  * measures text and paints.
+ *
+ * JS runs on its own thread, a turn at a time (the bundle, then each event), so the UI thread scrolls, animates
+ * and takes touches while JS works. Events are posted to it; the ops of a turn come back as one post.
  */
 class MainActivity : Activity() {
     private val views = HashMap<Int, View>()
@@ -76,6 +98,7 @@ class MainActivity : Activity() {
     private val moved = HashSet<Int>()
     /** Bundled images by path, decoded once: rows repeat them, and come and go as the list scrolls. */
     private val bitmaps = HashMap<String, Bitmap?>()
+    /** The JS thread's: it measures texts while the UI thread draws. */
     private val measuring = TextPaint(Paint.ANTI_ALIAS_FLAG or TEXT_FLAGS)
     private val density by lazy { resources.displayMetrics.density.toDouble() }
     private val inter by lazy { Typeface.createFromAsset(assets, "fonts/Inter-Regular.ttf") }
@@ -103,12 +126,24 @@ class MainActivity : Activity() {
         setContentView(Scroller(1).apply { isFillViewport = true; addView(root) })
         content.setOnApplyWindowInsetsListener { view, insets -> fit(view, insets) }
 
-        evaluate(assets.open("app.js").use { it.readBytes() })
+        js.post {
+            // The engine is the process's (nuclo.c): an activity that starts takes it over from one not yet destroyed.
+            if (running != null) close()
+            running = this
+            evaluate(assets.open("app.js").use { it.readBytes() })
+            deliver()
+        }
     }
 
     override fun onDestroy() {
         batteryWatch?.let(::unregisterReceiver)
-        close()
+        batteryWatch = null
+        js.post {
+            if (running === this) {
+                close()
+                running = null
+            }
+        }
         super.onDestroy()
     }
 
@@ -131,39 +166,100 @@ class MainActivity : Activity() {
         return WindowInsets.CONSUMED
     }
 
+    // ---- The JS thread ------------------------------------------------------
+
+    // The three run on the JS thread only (turn).
     private external fun evaluate(code: ByteArray)
     private external fun close()
-
-    /** Called by __nuclo_host(json) from JS. */
-    @Suppress("unused")
-    private fun receive(json: ByteArray) {
-        val ops = JSONArray(String(json))
-        for (i in 0 until ops.length()) apply(ops.getJSONArray(i))
-        if (moved.isNotEmpty()) snapFrames()
-        for (stack in stacks.values) sync(stack)
-        updateBack()
-    }
 
     /** Calls __nuclo_event(id, type, value): `value` as UTF-8, a JS string if `text`, else JSON (a number or boolean). */
     private external fun event(id: Int, type: ByteArray, value: ByteArray?, text: Boolean)
 
-    private fun emit(id: Int, type: String, value: Any? = null) =
-        event(id, type.toByteArray(), value?.toString()?.toByteArray(), value is String)
+    private val ui = Handler(Looper.getMainLooper())
+
+    /** From the JS thread: runs on the UI thread, which never waits for JS, and waits for its answer. */
+    private fun <T> onUi(run: () -> T): T = java.util.concurrent.FutureTask(run).also(ui::post).get()
+
+    /** Counts what the UI thread sent to JS; `handled`: the last of them the ops being applied answer. */
+    private var sent = 0
+    private var handled = 0
+    /** The last `input` or `change` each control sent. */
+    private val edited = HashMap<Int, Int>()
+    /** While the UI thread applies ops: the controls they change report nothing. */
+    private var applying = false
+    /** The JS thread's: the batches of the turn it is running, parsed, and what the turn answers. */
+    private val batches = ArrayList<JSONArray>()
+    private var answers = 0
+
+    /**
+     * Runs one JS turn on the JS thread, then hands the UI thread what it sent. A turn posted with a `token`
+     * replaces the one still waiting with it: only the latest scroll position matters.
+     */
+    private fun turn(token: Any? = null, run: () -> Unit) {
+        val at = ++sent
+        if (token != null) js.removeCallbacksAndMessages(token)
+        js.postAtTime({
+            if (running === this) {
+                answers = at
+                run()
+                deliver()
+            }
+        }, token, SystemClock.uptimeMillis())
+    }
+
+    /** On the JS thread: the turn's batches go to the UI thread as one, so no frame shows views before their frames. */
+    private fun deliver() {
+        if (batches.isEmpty()) return
+        val all = ArrayList(batches)
+        val at = answers
+        batches.clear()
+        ui.post {
+            if (isDestroyed) return@post
+            handled = at
+            applying = true
+            try {
+                for (ops in all) for (i in 0 until ops.length()) apply(ops.getJSONArray(i))
+            } finally {
+                applying = false
+            }
+            if (moved.isNotEmpty()) snapFrames()
+            for (stack in stacks.values) sync(stack)
+            updateBack()
+        }
+    }
+
+    /** Called by __nuclo_host(json) from JS, on its thread: parsed there, applied by deliver(). */
+    @Suppress("unused")
+    private fun receive(json: ByteArray) {
+        batches.add(JSONArray(String(json)))
+    }
+
+    /** Called by __nuclo_timer(id, ms) from JS, on its thread: a turn of its own, once, `ms` later (timers.ts). */
+    @Suppress("unused")
+    private fun timer(id: Int, ms: Double) {
+        js.postDelayed({
+            if (running === this) {
+                event(id, "timer".toByteArray(), null, false)
+                deliver()
+            }
+        }, ms.toLong())
+    }
+
+    private fun emit(id: Int, type: String, value: Any? = null, token: Any? = null) {
+        // What JS itself set is not news to it (as in the browser, where a script's change fires no event).
+        if (applying) return
+        val name = type.toByteArray()
+        val data = value?.toString()?.toByteArray()
+        turn(token) { event(id, name, data, value is String) }
+        if (type == "input" || type == "change") edited[id] = sent
+    }
 
     // ---- Layout: JS's frames, text measured and drawn the contract's way (layout.ts) ----
 
-    /** Called by __nuclo_measure(id, maxWidth) from JS: a leaf's content size, "w h" in dp (layout.ts adds padding and border). */
-    @Suppress("unused")
-    private fun measure(id: Int, maxWidth: Double): ByteArray = when (val view = views[id]) {
-        is Label -> view.measure(maxWidth)
-        is CheckBox -> "0 0"
-        is Button -> measureText(view.text.toString(), view.paint, view.textSize / density, maxWidth, density)
-        // Its natural size: the bitmap's pixels, as the browser's naturalWidth.
-        is ImageView -> (view.drawable as? BitmapDrawable)?.bitmap?.let { "${it.width} ${it.height}" } ?: "0 0"
-        else -> "0 0"
-    }.toByteArray()
-
-    /** Called by __nuclo_text_size from JS: a text's size as a Label with that font measures it, without the view. */
+    /**
+     * Called by __nuclo_text_size from JS, on its thread: a text's size as a Label with that font measures it, without
+     * the view (JS asks before the UI thread has made it). A button's text is measured the same.
+     */
     @Suppress("unused")
     private fun textSize(text: ByteArray, size: Double, bold: Boolean, system: Boolean, maxWidth: Double): ByteArray {
         measuring.typeface = face(bold, system)
@@ -176,6 +272,8 @@ class MainActivity : Activity() {
     private fun imageSize(src: ByteArray) =
         (bitmap(String(src))?.let { "${it.width} ${it.height}" } ?: "0 0").toByteArray()
 
+    /** Both threads ask: JS for the size, the UI thread for the picture. */
+    @Synchronized
     private fun bitmap(src: String) =
         bitmaps.getOrPut(src) { runCatching { assets.open(src).use(BitmapFactory::decodeStream) }.getOrNull() }
 
@@ -235,14 +333,11 @@ class MainActivity : Activity() {
         return json.toString()
     }
 
-    /**
-     * A layout root's scroll view (the body's, or a screen's): tells JS the root's size, a screen's when its width
-     * changes. Posted: frames that arrive during a layout pass would leave views measured at their old size.
-     */
+    /** A layout root's scroll view (the body's, or a screen's): tells JS the root's size, a screen's when its width changes. */
     private inner class Scroller(val root: Int) : ScrollView(this@MainActivity) {
         override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
             super.onSizeChanged(w, h, oldw, oldh)
-            if (w > 0 && (root == 1 || w != oldw)) post { emit(root, "resize", "${w / density} ${h / density} $density") }
+            if (w > 0 && (root == 1 || w != oldw)) emit(root, "resize", "${w / density} ${h / density} $density")
         }
 
         /** Back to the top, as a tap on the screen's title or on its own tab asks. */
@@ -252,25 +347,37 @@ class MainActivity : Activity() {
             smoothScrollTo(0, 0)
         }
 
-        /** JS loads more as the end comes near (dom.ts, "end"). Posted: a fling scrolls mid-draw. */
+        /** JS loads more as the end comes near (dom.ts, "end"), and keeps the rows near what shows on the host. */
         override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
             super.onScrollChanged(l, t, oldl, oldt)
-            post { emit(root, "scroll", "${scrollY / density} ${height / density}") }
+            emit(root, "scroll", "${scrollY / density} ${height / density}", token = this)
         }
     }
 
     // ---- Device (device.ts) -------------------------------------------
 
+    // The UI thread's: readings arrive there.
     private var batteryWatch: BroadcastReceiver? = null
     private var batteryJson = ""
 
-    /** Called by __nuclo_device(name) from JS: its JSON now, empty when there is none. The first call starts watching. */
+    /**
+     * Called by __nuclo_device(name) from JS, on its thread: its JSON now, empty when there is none. The first call
+     * starts watching.
+     */
     @Suppress("unused")
     private fun device(name: ByteArray): ByteArray {
         val key = String(name)
-        if (key == "frames") return framesJson().toByteArray()
+        if (key == "frames") {
+            // The views are the UI thread's: it reads them once it has applied what this turn sent so far.
+            deliver()
+            return onUi(::framesJson).toByteArray()
+        }
         if (key != "battery") return ByteArray(0)
-        if (batteryWatch == null) {
+        return onUi(::battery).toByteArray()
+    }
+
+    private fun battery(): String {
+        if (batteryWatch == null && !isDestroyed) {
             val watch = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
                     val json = battery(intent)
@@ -283,11 +390,11 @@ class MainActivity : Activity() {
             // The broadcast is sticky: registering returns the current reading.
             registerReceiver(watch, IntentFilter(Intent.ACTION_BATTERY_CHANGED))?.let { batteryJson = battery(it) }
         }
-        return batteryJson.toByteArray()
+        return batteryJson
     }
 
     private fun deviceChanged(name: String, json: String) =
-        evaluate("__nuclo_device_changed(${JSONObject.quote(name)},${JSONObject.quote(json)})".toByteArray())
+        turn { evaluate("__nuclo_device_changed(${JSONObject.quote(name)},${JSONObject.quote(json)})".toByteArray()) }
 
     private fun battery(intent: Intent): String {
         if (!intent.getBooleanExtra(BatteryManager.EXTRA_PRESENT, true)) return ""
@@ -428,11 +535,14 @@ class MainActivity : Activity() {
         if (view is Box) for (i in 0 until view.childCount) forget(view.getChildAt(i))
         views.remove(view.id)
         frames.remove(view.id)
+        edited.remove(view.id)
         fonts.remove(view)
         textColors.remove(view)
     }
 
     private fun set(view: View, key: String, value: Any?) {
+        // The user changed the control after the event these ops answer: what they entered stands, and is on its way to JS.
+        if ((key == "value" || key == "checked") && (edited[view.id] ?: 0) > handled) return
         when {
             key == "text" && view is Label -> view.text = value as String? ?: ""
             key == "text" && view is Button -> view.text = value as String?
@@ -1045,7 +1155,8 @@ private const val TEXT_FLAGS = Paint.LINEAR_TEXT_FLAG or Paint.SUBPIXEL_TEXT_FLA
 /** A line of a text: its characters, trailing spaces left out (they hang past the line, as in CSS), and its width in px. */
 private class Line(val start: Int, val end: Int, val width: Float)
 
-private val breaks = BreakIterator.getLineInstance()
+/** One per thread: the JS thread measures texts while the UI thread draws them. */
+private val lineBreaks = ThreadLocal.withInitial(BreakIterator::getLineInstance)
 
 /**
  * `text` broken into lines the browser's way: greedily at line-break opportunities, and at newlines,
@@ -1055,6 +1166,7 @@ private val breaks = BreakIterator.getLineInstance()
 private fun typeset(text: String, paint: Paint, max: Float): List<Line> {
     val lines = ArrayList<Line>()
     if (text.isEmpty()) return lines
+    val breaks = lineBreaks.get()!!
     fun line(start: Int, end: Int): Line {
         var visible = end
         while (visible > start && text[visible - 1].isWhitespace()) visible--
@@ -1142,8 +1254,6 @@ private class Label(context: Context, typeface: Typeface) : View(context) {
         boxWidth = width
         invalidate()
     }
-
-    fun measure(maxWidth: Double) = measureText(text, paint, size, maxWidth, scale)
 
     override fun onDraw(canvas: Canvas) {
         val (top, right, _, left) = padding.toList()

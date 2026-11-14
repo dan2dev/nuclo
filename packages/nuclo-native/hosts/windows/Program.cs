@@ -550,6 +550,13 @@ static partial class Program
             }
             return json;
         }));
+        // setTimeout for JS: fires once, as its own event.
+        Js.SetValue("__nuclo_timer", new Action<double, double>((id, ms) =>
+            new DispatcherTimer(TimeSpan.FromMilliseconds(Math.Max(0, ms)), DispatcherPriority.Normal, (timer, _) =>
+            {
+                ((DispatcherTimer)timer!).Stop();
+                Emit((int)id, "timer");
+            }, Dispatcher.CurrentDispatcher).Start()));
         Js.Execute(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "app.js")));
 
         app.Run(Win);

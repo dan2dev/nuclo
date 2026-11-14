@@ -397,6 +397,13 @@ final class Host: NSObject {
         context.setObject(measure, forKeyedSubscript: "__nuclo_measure" as NSString)
         let device: @convention(block) (String) -> String = { [unowned self] name in self.device(name) }
         context.setObject(device, forKeyedSubscript: "__nuclo_device" as NSString)
+        // setTimeout for JS: fires once, as its own event.
+        let timer: @convention(block) (Int, Double) -> Void = { [unowned self] id, ms in
+            DispatchQueue.main.asyncAfter(deadline: .now() + ms / 1000) { [weak self] in
+                MainActor.assumeIsolated { self?.emit(id: id, "timer") }
+            }
+        }
+        context.setObject(timer, forKeyedSubscript: "__nuclo_timer" as NSString)
         context.evaluateScript(try! String(contentsOfFile: path, encoding: .utf8))
         // Without the router the body is the layout root: JS lays it out at the window's size.
         root.resized = { [unowned self] size in

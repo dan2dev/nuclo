@@ -185,6 +185,14 @@ impl Host {
     }
 
     fn apply(&mut self, batches: Vec<String>, cx: &mut Context<Self>) {
+        // Every JS call ends here: schedule the timers it asked for (`__nuclo_timer`).
+        for (id, ms) in self.engine.timers() {
+            cx.spawn(async move |this, cx| {
+                cx.background_executor().timer(std::time::Duration::from_millis(ms as u64)).await;
+                let _ = this.update(cx, |host, cx| host.emit(id, "timer", Value::None, cx));
+            })
+            .detach();
+        }
         let mut changes = Changes::default();
         for json in &batches {
             self.tree.apply(json, &mut changes);
