@@ -230,6 +230,12 @@ class Screen : ScrollViewer
             width = size.Width;
             Program.Emit(int.Parse(Uid), "resize", Invariant($"{size.Width} {ActualHeight} {Program.Scale}"));
         };
+        // JS loads more as the end comes near (dom.ts, "end").
+        ScrollChanged += (_, e) =>
+        {
+            if (e.VerticalChange != 0 || e.ViewportHeightChange != 0)
+                Program.Emit(int.Parse(Uid), "scroll", Invariant($"{e.VerticalOffset} {e.ViewportHeight}"));
+        };
     }
 }
 

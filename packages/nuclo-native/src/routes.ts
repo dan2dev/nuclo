@@ -1,8 +1,12 @@
 /** Route matching shared by the native and web routers. */
 export type Params = Record<string, string>;
 export type View = (params: Params) => unknown;
-/** A screen, optionally with the title its navigation bar shows. */
-export type Route = View | { view: View; title?: string | ((params: Params) => string) };
+/**
+ * A screen, optionally with the title its navigation bar shows, and onEndReached:
+ * called when the screen scrolls to within half its height of its end, once per
+ * content height (an infinite list loads its next page there).
+ */
+export type Route = View | { view: View; title?: string | ((params: Params) => string); onEndReached?: () => void };
 /** A tab: its root path, label and icon (`chart`, `photo`, `person`; each host maps the name). */
 export interface Tab {
   path: string;
@@ -18,6 +22,7 @@ export interface Entry {
   params: Params;
   view: View;
   title: string;
+  onEndReached?: () => void;
 }
 
 export function matcher(routes: Record<string, Route>) {
@@ -38,7 +43,7 @@ export function matcher(routes: Record<string, Route>) {
       });
       if (!matches) continue;
       const title = typeof route.title === "function" ? route.title(params) : (route.title ?? "");
-      return { path, params, view: route.view, title };
+      return { path, params, view: route.view, title, onEndReached: route.onEndReached };
     }
     throw new Error(`No route matches ${path}`);
   };

@@ -79,7 +79,7 @@ extension Host {
 #if os(iOS)
 
 /// One screen: a scroll view holding the screen's content, which JS lays out at the screen's width.
-final class ScreenController: UIViewController {
+final class ScreenController: UIViewController, UIScrollViewDelegate {
     let id: Int
     let content = Box()
     private let scroll = UIScrollView()
@@ -91,8 +91,14 @@ final class ScreenController: UIViewController {
         self.host = host
         super.init(nibName: nil, bundle: nil)
         scroll.alwaysBounceVertical = true
+        scroll.delegate = self
         scroll.addSubview(content)
         applyBackground()
+    }
+
+    /// JS loads more as the end comes near (dom.ts, "end").
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        host.emit(id: id, "scroll", "\(scrollView.contentOffset.y) \(scrollView.bounds.height)")
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -227,7 +233,15 @@ final class ScreenController: NSViewController {
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
         scroll.documentView = content
+        // JS loads more as the end comes near (dom.ts, "end").
+        scroll.contentView.postsBoundsChangedNotifications = true
+        NotificationCenter.default.addObserver(self, selector: #selector(scrolled), name: NSView.boundsDidChangeNotification, object: scroll.contentView)
         applyBackground()
+    }
+
+    @objc private func scrolled() {
+        let visible = scroll.contentView.bounds
+        host.emit(id: id, "scroll", "\(visible.minY) \(visible.height)")
     }
 
     required init?(coder: NSCoder) { fatalError() }

@@ -33,8 +33,12 @@
  *
  * Events (host → JS): __nuclo_event(id, type, value?)
  *   click · input (value: text) · change (value: checked)
+ *   scroll on a layout root (value: "y h", its scroll offset and visible height)
  *   pop on a stack (value: depth left) after the user went back natively
  *   select on the tabs (value: index)
+ *
+ * A layout root listening for "end" gets it from JS when its content's end comes
+ * within half its visible height, once per content height: infinite lists load more on it.
  *
  * Device data (battery…) has its own two calls: see device.ts.
  */
@@ -171,6 +175,8 @@ function unrealize(node: NNode) {
   live.delete(node.nid);
   sent.delete(node.nid);
   measured.delete(node.nid);
+  scrolled.delete(node.nid);
+  ended.delete(node.nid);
   for (let c = node.firstChild; c; c = c.nextSibling) unrealize(c);
 }
 
@@ -394,16 +400,28 @@ g.WeakRef ??= class {
 export function flush() {
   const batch = ops;
   ops = [];
-  const host = g.__nuclo_host as (json: string) => void;
   if (batch.length) {
     // A new text or font changes a leaf's size.
     for (const op of batch) if (op[0] === "set" || op[0] === "style") measured.delete(op[1]);
-    host(JSON.stringify(batch));
+    send(batch);
   }
   if (!batch.length && !resized) return;
   resized = false;
   const frames = relayout();
-  if (frames.length) host(JSON.stringify(frames));
+  if (frames.length) send(frames);
+  reachEnds();
+}
+
+/** True while the host applies a batch: a scroll it reports then waits for the batch's end. */
+let sending = false;
+
+function send(batch: Op[]) {
+  sending = true;
+  try {
+    (g.__nuclo_host as (json: string) => void)(JSON.stringify(batch));
+  } finally {
+    sending = false;
+  }
 }
 
 // ── Layout ───────────────────────────────────────────────────────────────
@@ -469,6 +487,35 @@ function relayout(): Op[] {
   return out;
 }
 
+// ── Scrolling ────────────────────────────────────────────────────────────
+
+/** Each layout root's scroll offset and visible height, as its host reported them. */
+const scrolled = new Map<number, [number, number]>();
+/** The content height each root last got "end" at. */
+const ended = new Map<number, number>();
+
+/** Sends "end" to each listening root whose content's end is within half its visible height, once per content height. */
+function reachEnds() {
+  for (const [id, size] of sizes) {
+    const el = live.get(id);
+    const content = sent.get(id)?.[3];
+    if (!el?.listeners.has("end") || content === undefined || ended.get(id) === content) continue;
+    const [y, h] = scrolled.get(id) ?? [0, size[1]];
+    if (y + h * 1.5 < content) continue;
+    ended.set(id, content);
+    // Loading more grows the content; still short of filling the screen, the next flush loads again.
+    dispatch(el, "end");
+  }
+}
+
+// ── Events ───────────────────────────────────────────────────────────────
+
+function dispatch(el: NElement, type: string) {
+  const event = { type, target: el, currentTarget: el, preventDefault() {}, stopPropagation() {} };
+  for (const listener of [...(el.listeners.get(type) ?? [])]) listener.call(el, event);
+  flush();
+}
+
 /** Host → JS: a native event on a widget. `value` carries an input's text or a checkbox's state. */
 g.__nuclo_event = (id: number, type: string, value?: string | boolean) => {
   if (type === "resize") {
@@ -478,10 +525,14 @@ g.__nuclo_event = (id: number, type: string, value?: string | boolean) => {
     flush();
     return;
   }
+  if (type === "scroll") {
+    const [y, h] = String(value).split(" ").map(Number);
+    scrolled.set(id, [y || 0, h || 0]);
+    if (!sending) reachEnds();
+    return;
+  }
   const el = live.get(id);
   if (!el) return;
   if (value !== undefined) el.attrs[typeof value === "boolean" ? "checked" : "value"] = value;
-  const event = { type, target: el, currentTarget: el, preventDefault() {}, stopPropagation() {} };
-  for (const listener of [...(el.listeners.get(type) ?? [])]) listener.call(el, event);
-  flush();
+  dispatch(el, type);
 };

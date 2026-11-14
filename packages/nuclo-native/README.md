@@ -37,6 +37,7 @@ Each folder in `examples/` is an app; `examples/ui.ts` is the small design syste
   - **Account** (`/account`): text, email and password fields, a segmented choice, checkboxes, validation messages and a success state.
 - **`todo`**: a todo list. Add a task (Enter or Add), check it off, filter All / Active / Done, clear the finished ones. A task opens on its own screen, pushed on the native stack, to edit its title and notes or delete it.
 - **`battery`**: a battery monitor. A gauge drawn with views, the level, the status and the time to full or empty, live from the platform (see [Device data](#device-data)); a chart of the readings and a pushed screen listing them. A device without a battery says so.
+- **`people`**: a social network's directory with infinite scroll. Twenty people at a time, the next twenty as you scroll near the end (`onEndReached`, see [Navigation](#navigation)), a Follow toggle on each, and a footer once all 200 are in.
 - **`basics`**: the smallest one, a counter and an inline todo list without navigation.
 
 ## Navigation
@@ -67,7 +68,7 @@ router.back();               // pop
 router.reset("/");           // select the tab that owns "/" and pop it to its root
 ```
 
-A route is a view, or `{ view, title }` where the title is the navigation bar's. Each tab keeps its own stack. Icons are semantic names (`chart`, `photo`, `person`) each host maps to its icon set.
+A route is a view, or `{ view, title, onEndReached }` where the title is the navigation bar's. `onEndReached` runs when the screen is scrolled to within half its height of its end, once per content height, so it is where an infinite list loads its next page; until that page grows the content it does not fire again, which also covers a page that arrives later. Each tab keeps its own stack. Icons are semantic names (`chart`, `photo`, `person`) each host maps to its icon set.
 
 | Target | Tabs | Push / pop | Back |
 | --- | --- | --- | --- |
@@ -135,7 +136,7 @@ The whole host contract is seven ops and one callback:
 | `["listen", id, type]` | `click`, `input`, `change` |
 | `["frame", id, x, y, w, h]` | Where JS laid the node out (see [Styling](#styling-the-same-pixels-everywhere)) |
 
-The host exposes `__nuclo_host(json)` and calls `__nuclo_event(id, type, value?)`: `click`, `input` (value: text), `change` (value: checked), `pop` on a stack (value: depth left after a native back) and `select` on the tabs (value: index). Both take only strings and numbers, so any JS engine can bridge them.
+The host exposes `__nuclo_host(json)` and calls `__nuclo_event(id, type, value?)`: `click`, `input` (value: text), `change` (value: checked), `scroll` on a layout root (value: `"y h"`, its scroll offset and visible height), `pop` on a stack (value: depth left after a native back) and `select` on the tabs (value: index). JS turns `scroll` into the route's `onEndReached`. Both take only strings and numbers, so any JS engine can bridge them.
 
 Navigation: screens go into stacks, stacks into tabs, and a tabs or stack inserted into the body is the window's root navigation. At the end of each batch the host compares every stack with what it shows: a new top screen is a push, a removed top screen a pop, both animated the platform's way.
 

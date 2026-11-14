@@ -192,6 +192,12 @@ class MainActivity : Activity() {
             super.onSizeChanged(w, h, oldw, oldh)
             if (w > 0 && (root == 1 || w != oldw)) post { emit(root, "resize", "${w / density} ${h / density} $density") }
         }
+
+        /** JS loads more as the end comes near (dom.ts, "end"). Posted: a fling scrolls mid-draw. */
+        override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
+            super.onScrollChanged(l, t, oldl, oldt)
+            post { emit(root, "scroll", "${scrollY / density} ${height / density}") }
+        }
     }
 
     // ---- Device (device.ts) -------------------------------------------

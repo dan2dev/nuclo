@@ -339,6 +339,11 @@ const create = {
       box._width = width;
       emit(page._id, "resize", `${width} ${scroll.get_height()} ${deviceScale()}`);
     };
+    // JS loads more as the end comes near (dom.ts, "end"). A shrinking page moves it mid-allocate.
+    const adjustment = scroll.get_vadjustment();
+    adjustment.connect("value-changed", () =>
+      later(() => emit(page._id, "scroll", `${adjustment.get_value()} ${adjustment.get_page_size()}`)),
+    );
     return page;
   },
 };

@@ -9,7 +9,7 @@ use std::time::Instant;
 
 use gpui::{
     AnyElement, App, Context, Div, ElementId, Entity, FocusHandle, FontWeight, Image, ImageFormat, KeyBinding,
-    MouseButton, NavigationDirection, ObjectFit, Rgba, ScrollWheelEvent, SharedString, Styled, TouchPhase, Window,
+    MouseButton, NavigationDirection, ObjectFit, Rgba, ScrollHandle, ScrollWheelEvent, SharedString, Styled, TouchPhase, Window,
     actions, div, img, prelude::*, px, rgba, white,
 };
 
@@ -82,6 +82,9 @@ pub struct Host {
     /// What each layout root was last reported as ("w h scale").
     reported: HashMap<u32, String>,
     reporting: bool,
+    /// Each screen's scroller, and what its offset was last reported as ("y h"): JS loads more near the end.
+    scrolls: RefCell<HashMap<u32, ScrollHandle>>,
+    scrolled: HashMap<u32, String>,
 }
 
 /// A node's box as drawn, and where JS put it relative to that (text is drawn from there).
@@ -121,6 +124,8 @@ impl Host {
             widths: RefCell::default(),
             reported: HashMap::new(),
             reporting: false,
+            scrolls: RefCell::default(),
+            scrolled: HashMap::new(),
         };
         let batches = host.engine.eval(source);
         host.apply(batches, cx);
@@ -307,6 +312,8 @@ impl Host {
         self.tree.sweep(&keep);
         let tree = &self.tree;
         self.inputs.retain(|id, _| tree.nodes.contains_key(id));
+        self.scrolls.get_mut().retain(|id, _| tree.nodes.contains_key(id));
+        self.scrolled.retain(|id, _| tree.nodes.contains_key(id));
     }
 
     // ── Navigation ───────────────────────────────────────────────────────
@@ -610,10 +617,12 @@ impl Host {
         let height = node.frame.map_or(0., |f| f[3]);
         let content = div().relative().w_full().h(px(height)).children(node.children.iter().map(|&child| self.node(child, cx)));
         column = column.child(content).child(div().h(px(bottom)));
+        let scroll = self.scrolls.borrow_mut().entry(id).or_default().clone();
         div()
             .id(ElementId::NamedInteger("screen".into(), id as u64))
             .size_full()
             .overflow_y_scroll()
+            .track_scroll(&scroll)
             .restrict_scroll_to_axis()
             .bg(self.page())
             .child(column)
@@ -991,6 +1000,23 @@ impl Render for Host {
         let sizes: Vec<(u32, String)> = self.roots().into_iter().map(|(id, w, h)| (id, format!("{w} {h} {}", self.scale))).collect();
         if sizes.iter().any(|(id, size)| self.reported.get(id) != Some(size)) {
             cx.defer_in(window, |this, _, cx| this.report(cx));
+        }
+        // A screen scrolled (scrolling re-renders the host): tell JS, after this frame (dom.ts, "end").
+        let moved: Vec<(u32, String)> = self
+            .scrolls
+            .borrow()
+            .iter()
+            .filter(|(_, handle)| handle.bounds().size.height > px(0.))
+            .map(|(&id, handle)| (id, format!("{} {}", -f32::from(handle.offset().y), f32::from(handle.bounds().size.height))))
+            .filter(|(id, value)| self.scrolled.get(id) != Some(value))
+            .collect();
+        if !moved.is_empty() {
+            cx.defer_in(window, move |this, _, cx| {
+                for (id, value) in moved {
+                    this.scrolled.insert(id, value.clone());
+                    this.emit(id, "scroll", Value::Text(value), cx);
+                }
+            });
         }
         div()
             .size_full()

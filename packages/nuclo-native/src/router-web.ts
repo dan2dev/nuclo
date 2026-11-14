@@ -43,6 +43,19 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
   document.title = current.title || document.title;
   if (history.state?.depth === undefined) history.replaceState({ depth: 0 }, "");
 
+  // The page scrolls: a route's onEndReached runs when its end is within half a window, once per page height.
+  let endedAt = 0;
+  const reachEnd = () => {
+    const height = document.documentElement.scrollHeight;
+    if (!current.onEndReached || height === endedAt || scrollY + innerHeight * 1.5 < height) return;
+    endedAt = height;
+    current.onEndReached();
+    reachEnd(); // Still short of filling the window: load again.
+  };
+  addEventListener("scroll", reachEnd, { passive: true });
+  addEventListener("resize", reachEnd);
+  queueMicrotask(reachEnd); // After the app's first render.
+
   /** Applies a navigation, animated the way it moved. */
   function show(motion: Motion | null) {
     const run = () => {
@@ -50,6 +63,8 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
       shown = depth();
       document.title = current.title || document.title;
       update();
+      endedAt = 0;
+      reachEnd();
     };
     const doc = document as Document & { startViewTransition?: (arg: unknown) => unknown };
     if (!motion || !doc.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) return run();

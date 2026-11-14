@@ -27,7 +27,12 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
   const top = () => stacks[active][stacks[active].length - 1];
 
   const screen = (entry: Entry) =>
-    div({ "data-native": "screen", title: entry.title } as never, entry.view(entry.params) as never);
+    div(
+      { "data-native": "screen", title: entry.title } as never,
+      // dom.ts sends "end" when the screen's end scrolls near (from the host's "scroll").
+      entry.onEndReached ? on("end" as never, entry.onEndReached) : null,
+      entry.view(entry.params) as never,
+    );
 
   const stack = (i: number) =>
     div(
