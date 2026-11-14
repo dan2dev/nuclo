@@ -420,9 +420,6 @@ final class Host: NSObject {
     // Device data (Device.swift).
     var lastBattery = ""
     var batteryWatch: AnyObject?
-    #if os(macOS)
-    var chrome: Chrome?
-    #endif
 
     func registerNativeView(_ name: String, factory: @escaping NativeComponentFactory) {
         factories[name] = factory

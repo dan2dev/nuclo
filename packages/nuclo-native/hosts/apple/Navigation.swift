@@ -1,13 +1,17 @@
 // Native navigation for the Apple host: the router's tabs, stacks and screens.
 //
-// iOS:   UITabBarController › UINavigationController › screens. Large titles, the
-//        interactive edge-swipe back and re-tap-to-root are UIKit's own.
-// macOS: a sidebar split view › stacks that slide screens in and out. Back is the
-//        toolbar chevron, ⌘[ or a two-finger swipe; the window title is the screen's.
+// Shared SwiftUI navigation across iOS and macOS:
+//   - TabView with .tabViewStyle(.sidebarAdaptable): native bottom tab bar on iPhone
+//     (with Liquid Glass, bounce and re-tap behavior) and an adaptable sidebar on iPad and macOS.
+//   - NavigationStack(path:): native UINavigationController push/pop transitions, large titles
+//     on root screens, inline titles on pushed screens, interactive edge-swipe back on iOS,
+//     and native toolbar back button + window title integration on macOS.
 //
-// JS owns the stack (StackController.model, from insert/remove ops); sync()
-// animates the native side to it once per batch. When the user goes back
-// natively, the host pops first, then reports "pop" with the depth left.
+// JS owns the stack (StackController.model, from insert/remove ops); sync() updates the
+// NavigationStack path once per batch. When the user goes back natively, the host updates
+// its model first, then reports "pop" with the depth left.
+import Combine
+import SwiftUI
 #if os(macOS)
 import AppKit
 #else
@@ -20,7 +24,34 @@ func symbol(_ icon: String) -> String {
      "home": "house.fill", "search": "magnifyingglass", "bell": "bell.fill"][icon] ?? icon
 }
 
-extension StackController {
+@MainActor
+private func makeHosting<Content: SwiftUI.View>(_ rootView: Content) -> ViewController {
+    #if os(macOS)
+    let controller = NSHostingController(rootView: rootView)
+    controller.sizingOptions = []
+    return controller
+    #else
+    return UIHostingController(rootView: rootView)
+    #endif
+}
+
+@MainActor
+final class StackController: ObservableObject, Identifiable {
+    let id: Int
+    unowned let host: Host
+    var model: [ScreenController] = []
+    var dirty = false
+    @Published var root: ScreenController?
+    @Published var path: [ScreenController] = []
+    @Published var tabTitle = ""
+    @Published var tabIcon = ""
+    lazy var controller: ViewController = makeHosting(StackRootView(stack: self))
+
+    init(id: Int, host: Host) {
+        self.id = id
+        self.host = host
+    }
+
     func insert(_ screen: ScreenController, before: ScreenController?) {
         model.removeAll { $0 === screen }
         if let before, let index = model.firstIndex(where: { $0 === before }) {
@@ -39,6 +70,160 @@ extension StackController {
 
     var top: ScreenController? { model.last }
     var depth: Int { model.count }
+
+    func setTab(_ key: String, _ value: String) {
+        if key == "title" { tabTitle = value }
+        if key == "icon" { tabIcon = value }
+        host.rootTabs?.objectWillChange.send()
+    }
+
+    /// Synchronizes SwiftUI's NavigationStack with the JS stack model: a new top pushes, a removed top pops.
+    func sync() {
+        dirty = false
+        let nextRoot = model.first
+        let nextPath = Array(model.dropFirst())
+        let initial = root == nil
+        if root !== nextRoot { root = nextRoot }
+        guard !path.elementsEqual(nextPath, by: ===) else { return }
+        #if os(macOS)
+        if !initial, host.window?.isVisible == true, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            withAnimation(.easeInOut(duration: 0.25)) { path = nextPath }
+        } else {
+            path = nextPath
+        }
+        #else
+        path = nextPath
+        #endif
+    }
+
+    /// Called when SwiftUI's NavigationStack pops via back button, interactive edge swipe, or tab re-tap.
+    func didUpdatePath(_ next: [ScreenController]) {
+        path = next
+        let shown = (root.map { [$0] } ?? []) + next
+        guard shown.count < model.count, zip(shown, model).allSatisfy({ $0 === $1 }) else { return }
+        model = shown
+        host.emit(id: id, "pop", shown.count)
+        host.updateChrome()
+    }
+
+    /// Programmatic native back (macOS ⌘[ or two-finger trackpad swipe).
+    func goBack() {
+        guard model.count > 1 else { return }
+        model.removeLast()
+        sync()
+        host.emit(id: id, "pop", model.count)
+        host.updateChrome()
+    }
+
+    /// Pops all pushed screens back to the tab's root screen.
+    func popToRoot() {
+        guard model.count > 1 else { return }
+        model = [model[0]]
+        sync()
+        host.emit(id: id, "pop", 1)
+        host.updateChrome()
+    }
+}
+
+@MainActor
+final class TabsController: ObservableObject {
+    let id: Int
+    unowned let host: Host
+    @Published var stacks: [StackController] = []
+    @Published var selected = 0
+    lazy var controller: ViewController = makeHosting(TabsRootView(tabs: self))
+    var active: StackController? { stacks.indices.contains(selected) ? stacks[selected] : nil }
+
+    init(id: Int, host: Host) {
+        self.id = id
+        self.host = host
+    }
+
+    func add(_ stack: StackController) {
+        stacks.append(stack)
+    }
+
+    func select(_ index: Int) {
+        guard index >= 0, index != selected else { return }
+        selected = index
+        host.updateChrome()
+    }
+
+    func choose(_ index: Int) {
+        guard stacks.indices.contains(index) else { return }
+        if index == selected {
+            if let active {
+                if active.depth > 1 { active.popToRoot() }
+                else { active.top?.toTop() }
+            }
+            return
+        }
+        selected = index
+        host.emit(id: id, "select", index)
+        host.updateChrome()
+    }
+}
+
+private struct ScreenView: SwiftUI.View {
+    @ObservedObject var screen: ScreenController
+    let isRoot: Bool
+
+    var body: some SwiftUI.View {
+        ScreenSurface(screen: screen)
+            .id(screen.id)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            #if os(iOS)
+            .ignoresSafeArea()
+            .navigationBarTitleDisplayMode(isRoot ? .large : .inline)
+            #endif
+            .navigationTitle(screen.screenTitle)
+    }
+}
+
+private struct StackRootView: SwiftUI.View {
+    @ObservedObject var stack: StackController
+
+    private var pathBinding: Binding<[ScreenController]> {
+        Binding(
+            get: { stack.path },
+            set: { stack.didUpdatePath($0) }
+        )
+    }
+
+    var body: some SwiftUI.View {
+        NavigationStack(path: pathBinding) {
+            Group {
+                if let root = stack.root {
+                    ScreenView(screen: root, isRoot: true)
+                }
+            }
+            .navigationDestination(for: ScreenController.self) { screen in
+                ScreenView(screen: screen, isRoot: false)
+            }
+        }
+    }
+}
+
+private struct TabsRootView: SwiftUI.View {
+    @ObservedObject var tabs: TabsController
+
+    private var selectionBinding: Binding<Int> {
+        Binding(
+            get: { tabs.selected },
+            set: { tabs.choose($0) }
+        )
+    }
+
+    var body: some SwiftUI.View {
+        TabView(selection: selectionBinding) {
+            ForEach(Array(tabs.stacks.enumerated()), id: \.element.id) { index, stack in
+                Tab(stack.tabTitle, systemImage: symbol(stack.tabIcon), value: index) {
+                    StackRootView(stack: stack)
+                }
+            }
+        }
+        .tabViewStyle(.sidebarAdaptable)
+    }
 }
 
 extension Host {
@@ -46,6 +231,7 @@ extension Host {
 
     /// The router's tabs or stack becomes the window's root.
     func setRoot(_ controller: ViewController) {
+        for stack in stacks.values where stack.dirty { stack.sync() }
         #if os(macOS)
         guard let window else { return }
         var frame = window.frame
@@ -58,7 +244,6 @@ extension Host {
         window.styleMask.insert(.fullSizeContentView)
         window.contentViewController = controller
         window.setFrame(frame, display: true)
-        chrome = Chrome(host: self, window: window, sidebar: rootTabs != nil)
         #else
         window?.rootViewController = controller
         #endif
@@ -66,28 +251,57 @@ extension Host {
 
     func updateChrome() {
         #if os(macOS)
-        guard let chrome, let window else { return }
-        window.title = activeStack?.top?.title ?? "nuclo-native"
-        chrome.back.isEnabled = canGoBack
+        window?.title = activeStack?.top?.title ?? "nuclo-native"
         #endif
     }
 
     @objc func goBack(_ sender: Any?) {
-        #if os(macOS)
         activeStack?.goBack()
-        #endif
     }
 }
 
 #if os(iOS)
 
+private struct ScreenSurface: UIViewControllerRepresentable {
+    let screen: ScreenController
+
+    func makeUIViewController(context: Context) -> ScreenController {
+        if screen.parent != nil {
+            screen.view.removeFromSuperview()
+            screen.removeFromParent()
+        }
+        return screen
+    }
+
+    func updateUIViewController(_ uiViewController: ScreenController, context: Context) {}
+}
+
+/// Taps on the navigation bar's title area scroll the active screen to top without intercepting bar buttons.
+private final class BarTapDelegate: NSObject, UIGestureRecognizerDelegate {
+    static let shared = BarTapDelegate()
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        var view: UIView? = touch.view
+        while let current = view, current !== gestureRecognizer.view {
+            if current is UIControl { return false }
+            view = current.superview
+        }
+        return true
+    }
+}
+
 /// One screen: a scroll view holding the screen's content, which JS lays out at the screen's width.
-final class ScreenController: UIViewController, UIScrollViewDelegate {
+final class ScreenController: UIViewController, UIScrollViewDelegate, ObservableObject {
     let id: Int
     let content = Box()
+    @Published var screenTitle = ""
     private let scroll = UIScrollView()
     private var viewportSize = CGSize.zero
     unowned let host: Host
+
+    override var title: String? {
+        didSet { screenTitle = title ?? "" }
+    }
 
     init(id: Int, host: Host) {
         self.id = id
@@ -103,11 +317,16 @@ final class ScreenController: UIViewController, UIScrollViewDelegate {
 
     /// Back to the top, as a tap on the navigation bar or on the screen's own tab asks. From far down only the last
     /// two screens are scrolled through: the rows in between never reach the host.
-    func toTop() {
+    @objc func toTop() {
         let top = -scroll.adjustedContentInset.top
         let near = top + 2 * scroll.bounds.height
         if scroll.contentOffset.y > near { scroll.contentOffset.y = near }
         scroll.setContentOffset(CGPoint(x: 0, y: top), animated: true)
+    }
+
+    func scrollViewShouldScrollToTop(_ scrollView: UIScrollView) -> Bool {
+        toTop()
+        return false
     }
 
     /// JS loads more as the end comes near (dom.ts, "end").
@@ -118,6 +337,30 @@ final class ScreenController: UIViewController, UIScrollViewDelegate {
     required init?(coder: NSCoder) { fatalError() }
 
     override func loadView() { view = scroll }
+
+    override func didMove(toParent parent: UIViewController?) {
+        super.didMove(toParent: parent)
+        setContentScrollView(scroll)
+        parent?.setContentScrollView(scroll)
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        setContentScrollView(scroll)
+        parent?.setContentScrollView(scroll)
+        if let bar = navigationController?.navigationBar,
+           !(bar.gestureRecognizers ?? []).contains(where: { $0.name == "nuclo.toTop" }) {
+            let tap = UITapGestureRecognizer(target: self, action: #selector(barTapped))
+            tap.name = "nuclo.toTop"
+            tap.cancelsTouchesInView = false
+            tap.delegate = BarTapDelegate.shared
+            bar.addGestureRecognizer(tap)
+        }
+    }
+
+    @objc private func barTapped() {
+        host.activeStack?.top?.toTop()
+    }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
@@ -138,108 +381,46 @@ final class ScreenController: UIViewController, UIScrollViewDelegate {
     }
 }
 
-final class StackController: NSObject, UINavigationControllerDelegate {
-    let id: Int
-    unowned let host: Host
-    let nav = UINavigationController()
-    var model: [ScreenController] = []
-    var dirty = false
-    var controller: UIViewController { nav }
-
-    init(id: Int, host: Host) {
-        self.id = id
-        self.host = host
-        super.init()
-        nav.delegate = self
-        nav.navigationBar.prefersLargeTitles = true
-        // A tap on the bar goes back to the top; its buttons still get their touches.
-        let tap = UITapGestureRecognizer(target: self, action: #selector(toTop))
-        tap.cancelsTouchesInView = false
-        nav.navigationBar.addGestureRecognizer(tap)
-    }
-
-    @objc func toTop() {
-        (nav.topViewController as? ScreenController)?.toTop()
-    }
-
-    /// UIKit picks the transition: a new top pushes, a removed top pops.
-    func sync() {
-        dirty = false
-        for (index, screen) in model.enumerated() {
-            screen.navigationItem.largeTitleDisplayMode = index == 0 ? .always : .never
-        }
-        guard !nav.viewControllers.elementsEqual(model, by: ===) else { return }
-        nav.setViewControllers(model, animated: nav.view.window != nil)
-    }
-
-    func setTab(_ key: String, _ value: String) {
-        if key == "title" { nav.tabBarItem.title = value }
-        if key == "icon" { nav.tabBarItem.image = UIImage(systemName: symbol(value)) }
-    }
-
-    // The back button, the edge swipe or re-tapping the tab popped natively.
-    func navigationController(_ nav: UINavigationController, didShow controller: UIViewController, animated: Bool) {
-        let shown = nav.viewControllers.compactMap { $0 as? ScreenController }
-        guard shown.count < model.count, zip(shown, model).allSatisfy({ $0 === $1 }) else { return }
-        model = shown
-        host.emit(id: id, "pop", shown.count)
-    }
-}
-
-final class TabsController: NSObject, UITabBarControllerDelegate {
-    let id: Int
-    unowned let host: Host
-    let bar = UITabBarController()
-    var stacks: [StackController] = []
-    private var selected = 0
-    var controller: UIViewController { bar }
-    var active: StackController? { stacks.indices.contains(selected) ? stacks[selected] : nil }
-
-    init(id: Int, host: Host) {
-        self.id = id
-        self.host = host
-        super.init()
-        bar.delegate = self
-    }
-
-    func add(_ stack: StackController) {
-        stacks.append(stack)
-        bar.setViewControllers(stacks.map(\.nav), animated: false)
-        bar.selectedIndex = selected
-    }
-
-    func select(_ index: Int) {
-        guard stacks.indices.contains(index) else { return }
-        selected = index
-        bar.selectedIndex = index
-    }
-
-    /// The current tab, tapped again at its root, goes back to the top (UIKit pops a deeper one to its root).
-    func tabBarController(_ bar: UITabBarController, shouldSelect controller: UIViewController) -> Bool {
-        if let active, active.nav === controller, active.nav.viewControllers.count == 1 { active.toTop() }
-        return true
-    }
-
-    func tabBarController(_ bar: UITabBarController, didSelect controller: UIViewController) {
-        guard let index = stacks.firstIndex(where: { $0.nav === controller }), index != selected else { return }
-        selected = index
-        host.emit(id: id, "select", index)
-    }
-}
-
 #else
 
-/// A vertical scroller that leaves horizontal swipes to the stack (swipe back).
+private struct ScreenSurface: NSViewControllerRepresentable {
+    let screen: ScreenController
+
+    func makeNSViewController(context: Context) -> ScreenController {
+        if screen.parent != nil {
+            screen.view.removeFromSuperview()
+            screen.removeFromParent()
+        }
+        return screen
+    }
+
+    func updateNSViewController(_ nsViewController: ScreenController, context: Context) {}
+
+    func sizeThatFits(_ proposal: ProposedViewSize, nsViewController: ScreenController, context: Context) -> CGSize? {
+        guard let width = proposal.width, let height = proposal.height,
+              width.isFinite, height.isFinite else { return nil }
+        return CGSize(width: width, height: height)
+    }
+}
+
+/// A vertical scroller that forwards two-finger horizontal back swipes to the active NavigationStack.
 final class ScreenScroll: NSScrollView {
+    weak var host: Host?
+
     override func wantsScrollEventsForSwipeTracking(on axis: NSEvent.GestureAxis) -> Bool {
         axis == .horizontal && NSEvent.isSwipeTrackingFromScrollEventsEnabled
     }
 
     override func scrollWheel(with event: NSEvent) {
-        if event.phase == .began, abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) {
-            nextResponder?.scrollWheel(with: event)
-        } else {
-            super.scrollWheel(with: event)
+        guard event.phase == .began, NSEvent.isSwipeTrackingFromScrollEventsEnabled,
+              abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY),
+              let stack = host?.activeStack, stack.depth > 1
+        else { return super.scrollWheel(with: event) }
+        event.trackSwipeEvent(options: [.lockDirection, .clampGestureAmount], dampenAmountThresholdMin: 0, max: 1) {
+            amount, _, complete, _ in
+            MainActor.assumeIsolated {
+                if complete, amount > 0 { stack.goBack() }
+            }
         }
     }
 }
@@ -250,17 +431,23 @@ final class FlippedClip: NSClipView {
 }
 
 /// One screen: a scroll view holding the screen's content, which JS lays out at the screen's width.
-final class ScreenController: NSViewController {
+final class ScreenController: NSViewController, ObservableObject {
     let id: Int
     let content = Box()
+    @Published var screenTitle = ""
     private let scroll = ScreenScroll()
     private var viewportSize = CGSize.zero
     unowned let host: Host
+
+    override var title: String? {
+        didSet { screenTitle = title ?? "" }
+    }
 
     init(id: Int, host: Host) {
         self.id = id
         self.host = host
         super.init(nibName: nil, bundle: nil)
+        scroll.host = host
         scroll.contentView = FlippedClip()
         // A screen scrolls like a feed: no scroller beside the content.
         scroll.hasVerticalScroller = false
@@ -324,374 +511,6 @@ extension Host: NSMenuItemValidation {
 
     @objc fileprivate func selectTab(_ sender: NSMenuItem) {
         rootTabs?.choose(sender.tag)
-    }
-}
-
-/// Catches the two-finger swipe that goes back, like Safari's.
-final class SwipeView: NSView {
-    weak var stack: StackController?
-
-    override func wantsScrollEventsForSwipeTracking(on axis: NSEvent.GestureAxis) -> Bool { axis == .horizontal }
-
-    override func scrollWheel(with event: NSEvent) {
-        guard let stack, stack.depth > 1, event.phase == .began, NSEvent.isSwipeTrackingFromScrollEventsEnabled,
-              abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY)
-        else { return super.scrollWheel(with: event) }
-        stack.trackSwipe(event)
-    }
-}
-
-final class StackController: NSViewController {
-    let id: Int
-    unowned let host: Host
-    var model: [ScreenController] = []
-    var dirty = false
-    var tabTitle = ""
-    var tabIcon = ""
-    private var shown: ScreenController?
-    private var transitioning = false
-    private var trackingSwipe = false
-    var controller: NSViewController { self }
-
-    init(id: Int, host: Host) {
-        self.id = id
-        self.host = host
-        super.init(nibName: nil, bundle: nil)
-    }
-
-    required init?(coder: NSCoder) { fatalError() }
-
-    override func loadView() {
-        let swipe = SwipeView()
-        swipe.stack = self
-        swipe.wantsLayer = true
-        swipe.clipsToBounds = true
-        view = swipe
-    }
-
-    func setTab(_ key: String, _ value: String) {
-        if key == "title" { tabTitle = value }
-        if key == "icon" { tabIcon = value }
-    }
-
-    /// Slides the new top in: forward when it was pushed, backward when the old top was popped.
-    func sync() {
-        guard !transitioning, !trackingSwipe else { return }
-        dirty = false
-        guard let next = model.last else {
-            swapToTop()
-            return
-        }
-        guard next !== shown else {
-            prune()
-            return
-        }
-        let previous = shown
-        shown = next
-        if next.parent !== self { addChild(next) }
-        next.view.frame = view.bounds
-        next.view.autoresizingMask = [.width, .height]
-        if let previous, previous.view.superview === view, view.window != nil,
-           !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
-            transitioning = true
-            let push = model.contains { $0 === previous }
-            let width = view.bounds.width
-            next.view.frame.origin.x = push ? width : -width
-            view.addSubview(next.view)
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.28
-                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-                previous.view.animator().setFrameOrigin(NSPoint(x: push ? -width : width, y: 0))
-                next.view.animator().setFrameOrigin(.zero)
-            } completionHandler: { [weak self, weak previous, weak next] in
-                MainActor.assumeIsolated {
-                    guard let self else { return }
-                    previous?.view.removeFromSuperview()
-                    previous?.view.frame.origin = .zero
-                    next?.view.frame = self.view.bounds
-                    self.transitioning = false
-                    self.prune()
-                    if self.dirty { self.sync() }
-                }
-            }
-        } else {
-            previous?.view.removeFromSuperview()
-            view.addSubview(next.view)
-            prune()
-        }
-        host.updateChrome()
-    }
-
-    /// Lets go of screens that left the stack.
-    private func prune() {
-        for child in children where child !== shown && !model.contains(where: { $0 === child }) {
-            child.view.removeFromSuperview()
-            child.removeFromParent()
-        }
-    }
-
-    /// Back from the toolbar, ⌘[ or a completed swipe.
-    func goBack(animated: Bool = true) {
-        guard model.count > 1, !trackingSwipe else { return }
-        model.removeLast()
-        dirty = true
-        if animated { sync() } else { swapToTop() }
-        host.emit(id: id, "pop", model.count)
-    }
-
-    private func swapToTop() {
-        dirty = false
-        shown?.view.removeFromSuperview()
-        shown = model.last
-        if let shown {
-            if shown.parent !== self { addChild(shown) }
-            shown.view.frame = view.bounds
-            shown.view.autoresizingMask = [.width, .height]
-            view.addSubview(shown.view)
-        }
-        prune()
-        host.updateChrome()
-    }
-
-    /// The top screen follows the fingers; the one below slides in from the left.
-    func trackSwipe(_ event: NSEvent) {
-        guard !transitioning, !trackingSwipe, !dirty, let top = shown, model.count > 1
-        else { return }
-        trackingSwipe = true
-        let below = model[model.count - 2]
-        if below.parent !== self { addChild(below) }
-        below.view.frame = view.bounds
-        let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        if !reduceMotion { view.addSubview(below.view, positioned: .below, relativeTo: top.view) }
-        event.trackSwipeEvent(options: [.lockDirection, .clampGestureAmount], dampenAmountThresholdMin: 0, max: 1) {
-            amount, _, complete, _ in
-            MainActor.assumeIsolated {
-                if !reduceMotion {
-                    let width = self.view.bounds.width
-                    top.view.frame.origin.x = amount * width
-                    below.view.frame.origin.x = (amount - 1) * width * 0.3
-                }
-                guard complete else { return }
-                top.view.frame.origin.x = 0
-                below.view.frame.origin.x = 0
-                self.trackingSwipe = false
-                below.view.removeFromSuperview()
-                if amount == 1, !self.dirty, self.view.window != nil {
-                    self.goBack(animated: false)
-                } else if self.dirty {
-                    self.sync()
-                }
-            }
-        }
-    }
-}
-
-/// The sidebar: one row per tab, its SF Symbol and title.
-final class TabsController: NSSplitViewController, NSTableViewDataSource, NSTableViewDelegate {
-    let id: Int
-    unowned let host: Host
-    var stacks: [StackController] = []
-    private let table = NSTableView()
-    private let detail = NSViewController()
-    private let sidebar = NSViewController()
-    private let bottom = NSSegmentedControl()
-    private var compact: Bool?
-    private var selected = -1
-    var controller: NSViewController { self }
-    var active: StackController? { stacks.indices.contains(selected) ? stacks[selected] : nil }
-
-    init(id: Int, host: Host) {
-        self.id = id
-        self.host = host
-        super.init(nibName: nil, bundle: nil)
-    }
-
-    required init?(coder: NSCoder) { fatalError() }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        table.style = .sourceList
-        table.headerView = nil
-        table.addTableColumn(NSTableColumn(identifier: .init("tab")))
-        table.dataSource = self
-        table.delegate = self
-        table.target = self
-        table.action = #selector(clicked)
-        sidebarScroll.documentView = table
-        sidebarScroll.drawsBackground = false
-        sidebar.view = sidebarScroll
-        bottom.target = self
-        bottom.action = #selector(bottomSelected)
-        bottom.segmentStyle = .separated
-        bottom.trackingMode = .selectOne
-        bottom.translatesAutoresizingMaskIntoConstraints = false
-        let item = NSSplitViewItem(sidebarWithViewController: sidebar)
-        item.canCollapse = false
-        item.minimumThickness = 180
-        item.maximumThickness = 280
-        detail.view = NSView()
-        addSplitViewItem(item)
-        let content = NSSplitViewItem(viewController: detail)
-        content.minimumThickness = 360
-        addSplitViewItem(content)
-        if selected < 0, !stacks.isEmpty { select(0) }
-    }
-
-    override func viewDidLayout() {
-        super.viewDidLayout()
-        let size = view.bounds.size
-        guard size.width > 0, size.height > 0 else { return }
-        let narrow = size.width < size.height || size.width < 600
-        guard compact != narrow else { return }
-        compact = narrow
-        let sidebarItem = splitViewItems.first { $0.viewController === sidebar }!
-        let detailItem = splitViewItems.first { $0.viewController === detail }!
-        removeSplitViewItem(sidebarItem)
-        removeSplitViewItem(detailItem)
-        splitView.isVertical = !narrow
-        if narrow {
-            sidebarItem.minimumThickness = 60
-            sidebarItem.maximumThickness = 60
-            detailItem.minimumThickness = 0
-            let bar = NSView()
-            bar.addSubview(bottom)
-            NSLayoutConstraint.activate([
-                bottom.centerXAnchor.constraint(equalTo: bar.centerXAnchor),
-                bottom.centerYAnchor.constraint(equalTo: bar.centerYAnchor),
-                bottom.leadingAnchor.constraint(equalTo: bar.leadingAnchor, constant: 8),
-                bottom.trailingAnchor.constraint(equalTo: bar.trailingAnchor, constant: -8),
-            ])
-            sidebar.view = bar
-            addSplitViewItem(detailItem)
-            addSplitViewItem(sidebarItem)
-        } else {
-            sidebarItem.minimumThickness = 180
-            sidebarItem.maximumThickness = 280
-            detailItem.minimumThickness = 360
-            sidebar.view = sidebarScroll
-            addSplitViewItem(sidebarItem)
-            addSplitViewItem(detailItem)
-        }
-    }
-
-    private let sidebarScroll = NSScrollView()
-
-    @objc private func bottomSelected() {
-        let index = bottom.selectedSegment
-        if index == selected, let active, active.depth == 1 {
-            active.top?.toTop()
-        } else {
-            choose(index)
-        }
-    }
-
-    func add(_ stack: StackController) {
-        stacks.append(stack)
-        table.reloadData()
-        bottom.segmentCount = stacks.count
-        for (index, item) in stacks.enumerated() {
-            bottom.setLabel(item.tabTitle, forSegment: index)
-            bottom.setImage(NSImage(systemSymbolName: symbol(item.tabIcon), accessibilityDescription: item.tabTitle), forSegment: index)
-        }
-        bottom.selectedSegment = selected
-        if selected < 0, isViewLoaded { select(0) }
-    }
-
-    func select(_ index: Int) {
-        guard stacks.indices.contains(index), index != selected else { return }
-        if let active {
-            active.view.removeFromSuperview()
-            active.removeFromParent()
-        }
-        selected = index
-        bottom.selectedSegment = index
-        let stack = stacks[index]
-        detail.addChild(stack)
-        stack.view.frame = detail.view.bounds
-        stack.view.autoresizingMask = [.width, .height]
-        detail.view.addSubview(stack.view)
-        stack.sync()
-        if table.selectedRow != index { table.selectRowIndexes([index], byExtendingSelection: false) }
-        host.updateChrome()
-    }
-
-    func numberOfRows(in tableView: NSTableView) -> Int { stacks.count }
-
-    func tableView(_ tableView: NSTableView, viewFor column: NSTableColumn?, row: Int) -> NSView? {
-        let stack = stacks[row]
-        let cell = NSTableCellView()
-        let image = NSImageView(image: NSImage(systemSymbolName: symbol(stack.tabIcon), accessibilityDescription: nil) ?? NSImage())
-        let label = NSTextField(labelWithString: stack.tabTitle)
-        cell.imageView = image
-        cell.textField = label
-        let row = NSStackView(views: [image, label])
-        row.spacing = 6
-        row.translatesAutoresizingMaskIntoConstraints = false
-        cell.addSubview(row)
-        NSLayoutConstraint.activate([
-            row.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
-            row.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-        ])
-        return cell
-    }
-
-    /// The current tab, clicked again at its root, goes back to the top. A click that picked another tab changed
-    /// the selection first (on mouse down): that one only switches.
-    @objc private func clicked() {
-        defer { switched = false }
-        guard !switched, table.clickedRow == selected, let active, active.model.count == 1 else { return }
-        active.model[0].toTop()
-    }
-
-    private var switched = false
-
-    // The user picked a tab.
-    func tableViewSelectionDidChange(_ notification: Notification) {
-        let row = table.selectedRow
-        guard row >= 0, row != selected else { return }
-        switched = NSApp.currentEvent?.type == .leftMouseDown
-        choose(row)
-    }
-
-    fileprivate func choose(_ index: Int) {
-        guard stacks.indices.contains(index), index != selected else { return }
-        select(index)
-        host.emit(id: id, "select", index)
-    }
-}
-
-/// The unified toolbar: sidebar toggle and the navigational back chevron.
-@MainActor
-final class Chrome: NSObject, NSToolbarDelegate {
-    let back = NSToolbarItem(itemIdentifier: .init("back"))
-    private let sidebar: Bool
-
-    init(host: Host, window: NSWindow, sidebar: Bool) {
-        self.sidebar = sidebar
-        super.init()
-        back.image = NSImage(systemSymbolName: "chevron.backward", accessibilityDescription: "Back")
-        back.label = "Back"
-        back.isNavigational = true
-        back.isBordered = true
-        back.autovalidates = false
-        back.target = host
-        back.action = #selector(Host.goBack(_:))
-        let toolbar = NSToolbar(identifier: "nuclo")
-        toolbar.delegate = self
-        toolbar.displayMode = .iconOnly
-        window.toolbar = toolbar
-        window.toolbarStyle = .unified
-    }
-
-    private var items: [NSToolbarItem.Identifier] {
-        [back.itemIdentifier]
-    }
-
-    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { items }
-    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { items }
-
-    func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier id: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
-        id == back.itemIdentifier ? back : nil
     }
 }
 

@@ -2,7 +2,7 @@
 
 Write a normal nuclo app. It renders with real native widgets — no webview — on Android, iOS, macOS, Windows and Linux, and builds as a web app (SPA and installable PWA) from the same source. The same bundle also runs on a GPUI host that draws every platform itself.
 
-Navigation is each platform's own: `UINavigationController` and a tab bar on iOS, a sidebar and toolbar on macOS, Material motion and predictive back on Android, libadwaita on Linux, a Fluent nav pane on Windows.
+Navigation is each platform's own: SwiftUI `TabView(.sidebarAdaptable)` and `NavigationStack` on iOS and macOS, Material motion and predictive back on Android, libadwaita on Linux, a Fluent nav pane on Windows.
 
 ```ts
 import "nuclo-native";
@@ -74,8 +74,8 @@ A route is a view, or `{ view, title, onEndReached }` where the title is the nav
 
 | Target | Tabs | Push / pop | Back |
 | --- | --- | --- | --- |
-| iOS | `UITabBarController` | `UINavigationController`, large titles on root screens | back button, interactive edge swipe, re-tap the tab |
-| macOS | source-list sidebar (`NSSplitViewController`) | slide (`NSViewController` transition), the window title is the screen's | toolbar chevron, ⌘[, two-finger swipe |
+| iOS | SwiftUI `TabView(.sidebarAdaptable)` | SwiftUI `NavigationStack`, large titles on root screens | back button, interactive edge swipe, re-tap the tab |
+| macOS | SwiftUI `TabView(.sidebarAdaptable)` | SwiftUI `NavigationStack`, the window title is the screen's | toolbar chevron, ⌘[, two-finger swipe |
 | Android | Material 3 bottom bar, fade through | Material shared axis X | toolbar arrow, back key, predictive back gesture (API 34+), re-tap the tab |
 | Linux | `Adw.ViewStack` + `Adw.ViewSwitcherBar` | `Adw.NavigationView` | header bar back, swipe, Alt+←, mouse back |
 | Windows | Fluent nav pane | drill-in | back button, Alt+←, mouse back |
