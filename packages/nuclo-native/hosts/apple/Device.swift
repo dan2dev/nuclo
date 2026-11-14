@@ -10,7 +10,7 @@ import UIKit
 #endif
 
 extension Host {
-    /// __nuclo_device(name): JSON now, or "" when the device has none. Starts watching.
+    /// __nuclo_device(name): JSON now, or "" when the device has none. Starts watching. JS waits for it (Engine.device).
     func device(_ name: String) -> String {
         if name == "frames" { return framesJSON() }
         guard name == "battery" else { return "" }
@@ -24,7 +24,7 @@ extension Host {
         let json = readBattery()
         guard json != lastBattery else { return }
         lastBattery = json
-        context.objectForKeyedSubscript("__nuclo_device_changed").call(withArguments: ["battery", json])
+        engine.post { $0.deviceChanged("battery", json) }
     }
 }
 

@@ -1,5 +1,6 @@
 import "./dom";
 import "./timers";
+import "./fetch";
 import { getCssText } from "nuclo";
 import { flush, useStylesheet } from "./dom";
 

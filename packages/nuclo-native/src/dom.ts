@@ -28,7 +28,8 @@
  * button or image with the bundled font (maxWidth -1: unconstrained). After each
  * batch JS lays out what changed in every sized root (a clean subtree keeps its
  * layout: see tree() and layout.ts) and sends the frames that moved, as a second batch.
- * In a long list, rows far from what the screen shows leave the host (cull).
+ * In a long list, rows far from what the screen shows leave the host (cull), and rows that arrive many at once
+ * never all reach it (startsParked).
  *
  * Navigation: at the end of a batch the host compares each stack's screens with
  * the previous batch. A new top screen is a push, a removed top screen a pop,
@@ -36,20 +37,23 @@
  * the window's root navigation.
  *
  * Events (host → JS): __nuclo_event(id, type, value?)
- *   click · input (value: text) · change (value: checked)
+ *   click · input (value: text) · change (value: checked): they bubble as in the DOM (dispatch)
  *   scroll on a layout root (value: "y h", its scroll offset and visible height)
  *   pop on a stack (value: depth left) after the user went back natively
  *   select on the tabs (value: index)
+ *   load (value: src; the id is not read) when a remote image a host fetched has arrived
  *
  * A layout root listening for "end" gets it from JS when its content's end comes
  * within half its visible height, once per content height: infinite lists load more on it.
  *
- * Device data (battery…) has its own two calls: see device.ts.
+ * Device data (battery…) has its own two calls: see device.ts. Timers and requests are a call each, answered
+ * by an event (timers.ts, fetch.ts).
  */
 
 import "./host";
 import { type Frame, type LayoutNode, insets, layout } from "./layout";
 import { INHERITED, Sheet, type Styles, compute, declarations, length, mediaMatches, paint } from "./style";
+import { settle } from "./fetch";
 import { fire } from "./timers";
 
 /** One host op (see the contract above): the first item tells the rest apart. */
@@ -287,7 +291,7 @@ class NNode {
     else if (node.nodeType !== 8) {
       touch(this);
       // One already on the host is moving: it stays there.
-      const usual = !node.live && this.culled && guess(this);
+      const usual = !node.live && startsParked(this) && (guess(this) ?? unknownSize(this));
       // A row that says how tall it is (windowed.ts) is parked at that, not at the usual size.
       const told = usual && node instanceof NElement && Number(node.attrs["data-height"]);
       const size = usual && told ? { ...usual, height: String(told) } : usual;
@@ -425,12 +429,50 @@ function unrealize(node: NNode) {
   node.box = undefined;
   forget(node);
   screens.delete(node as NElement);
+  bulky.delete(node);
+  unsized.delete(node);
+  sizes.delete(node.nid);
   live.delete(node.nid);
   sent.delete(node.nid);
   measured.delete(node.nid);
   scrolled.delete(node.nid);
   ended.delete(node.nid);
   for (let c = node.firstChild; c; c = c.nextSibling) unrealize(c);
+}
+
+/** A column takes this many new children in one render as they come; a list's worth more start parked (startsParked). */
+const BULK = 24;
+/** The children each container took since the last layout. */
+const taken = new Map<NNode, number>();
+/** Columns that started parking on that count alone: the next cull() makes lists of them, or brings all back. */
+const bulky = new Set<NNode>();
+/** Lists whose new children are parked at `UNKNOWN`: none of theirs was laid out to go by. */
+const unsized = new Set<NNode>();
+/** A new child's box until one of its list is laid out: cull() then takes the rest to be as tall (resize). */
+const UNKNOWN: Styles = { height: "48" };
+
+/**
+ * Whether a new child of `list` starts parked, off the host: in a list being culled; and in a column that takes a
+ * list's worth of children in one render (a thousand rows that arrive together), where creating them all only to
+ * park most would cost the host thousands of views it never shows. cull() brings back the ones near the screen,
+ * and all of them when the column turns out to fit.
+ * ponytail: a column goes by its last layout, so a list rendered in the same pass as its container is still
+ * created whole; its computed style would tell, when that shows up.
+ */
+function startsParked(list: NNode) {
+  if (list.culled) return true;
+  if (!list.box?.ys) return false;
+  const n = (taken.get(list) ?? 0) + 1;
+  taken.set(list, n);
+  if (n <= BULK) return false;
+  list.culled = true;
+  bulky.add(list);
+  return true;
+}
+
+function unknownSize(list: NNode) {
+  unsized.add(list);
+  return UNKNOWN;
 }
 
 /** The box a culled list's new child starts as: the mean size of the list's children as last laid out. */
@@ -472,7 +514,10 @@ function realize(node: NNode) {
     return;
   }
   live.set(node.nid, node);
-  if (node.kind === "screen") screens.add(node);
+  if (node.kind === "screen") {
+    screens.add(node);
+    presize(node.nid);
+  }
   ops.push(["create", node.nid, node.kind]);
   for (const key in node.attrs) if (key !== "class" && key !== "style") ops.push(["set", node.nid, key, node.attrs[key]]);
   for (const type of node.listeners?.keys() ?? []) ops.push(["listen", node.nid, type]);
@@ -766,6 +811,7 @@ export function flush() {
   if (!batch.length && !resized) return;
   resized = false;
   const frames = relayout();
+  taken.clear();
   if (frames.length) send(frames);
   for (const laidOut of hooks.laidOut) laidOut();
   if (cull()) flush();
@@ -788,13 +834,32 @@ function send(batch: Op[]) {
 
 // ── Layout ───────────────────────────────────────────────────────────────
 
-/** Each layout root's size, as its host reported it. */
+/** Each layout root's size, as its host reported it (or, until it has, the window's: presize). */
 const sizes = new Map<number, [number, number, number]>();
+/** The window's size, from a host that knows it before its views are laid out (device "window"); null: not asked yet. */
+let windowSize: [number, number, number] | undefined | null = null;
+
+/**
+ * A new layout root is taken to be the window's size, where the host tells it ("w h scale", as a resize carries it),
+ * until the host reports the root's own: the first screen is then laid out in the turn that renders it, not a frame
+ * and a round trip later, and @media rules match from the start.
+ */
+function presize(id: number) {
+  if (sizes.has(id)) return;
+  if (windowSize === null) {
+    const [w, h, scale] = String(globalThis.__nuclo_device?.("window") ?? "").split(" ").map(Number);
+    windowSize = w && h ? [w, h, scale || 0] : undefined;
+  }
+  if (!windowSize) return;
+  sizes.set(id, [...windowSize]);
+  resized = true;
+}
 /** The frames hosts have, by node. */
 const sent = new Map<number, Frame>();
 /** Host measurements by node, then by max width. */
 const measured = new Map<number, Map<number, { w: number; h: number }>>();
 let resized = false;
+presize(1);
 
 // ── Windowed lists (windowed.ts) ─────────────────────────────────────────
 
@@ -981,6 +1046,7 @@ const unparked: [NNode, NNode, number][] = [];
  */
 function cull() {
   const start = ops.length;
+  resizedGuesses = false;
   for (const screen of screens) {
     const size = sizes.get(screen.nid);
     if (!size) continue;
@@ -988,7 +1054,54 @@ function cull() {
     if (h <= 0) continue;
     keep(screen, y - h, y + 2 * h, h);
   }
-  return ops.length > start;
+  // A column that parked its new children as a list would (startsParked) and that no screen's culling reached,
+  // under one that fits or is no column: it is no list, and shows them all.
+  for (const list of bulky) {
+    for (let c = list.firstChild; c; c = c.nextSibling) {
+      if (!c.parked) continue;
+      realize(c);
+      let before = c.nextSibling;
+      while (before && !before.live) before = before.nextSibling;
+      ops.push(["insert", list.nid, c.nid, before ? before.nid : 0]);
+      // Never laid out: its list places it.
+      c.guessed = true;
+      unparked.push([c, list, -1]);
+    }
+    list.culled = false;
+    list.kept = undefined;
+    unsized.delete(list);
+  }
+  bulky.clear();
+  return ops.length > start || resizedGuesses;
+}
+
+/** cull() gave parked children another size (resize): the caller lays out again, though the host got no op. */
+let resizedGuesses = false;
+
+/**
+ * The children of `list` parked at the unknown size are taken to be as tall as those laid out since, so the list is
+ * about as tall as it will be when they show.
+ */
+function resize(list: NNode, kids: NNode[], hs: number[], ws: number[]) {
+  let height = 0;
+  let width = 0;
+  let n = 0;
+  kids.forEach((kid, i) => {
+    if (kid.guessed || Number.isNaN(hs[i])) return;
+    height += hs[i]!;
+    width = ws[i]!;
+    n++;
+  });
+  if (!n) return;
+  unsized.delete(list);
+  const size = { width: String(width), height: String(height / n) };
+  for (const kid of kids) {
+    if (kid.box?.style !== UNKNOWN) continue;
+    kid.box = { id: kid.nid, kind: "view", style: size, children: [] };
+    changed(list, kid);
+  }
+  touch(list);
+  resized = resizedGuesses = true;
 }
 
 /** Children of `node` within [top, bottom] (its coordinates) are on the host; those `margin` further out leave it. */
@@ -998,14 +1111,17 @@ function keep(node: NNode, top: number, bottom: number, margin: number) {
   if (!node.live || !box?.ys || !box.hs || !kids) return;
   const { ys, hs } = box;
   const n = kids.length;
+  bulky.delete(node);
   if ((box.placed?.[2] ?? 0) <= bottom - top + 2 * margin) {
     // It fits: a list that shrank brings everything back.
     if (node.culled) kids.forEach((kid, i) => kid.parked && unpark(node, i));
     node.kept = undefined;
     node.culled = false;
+    unsized.delete(node);
     return;
   }
   node.culled = true;
+  if (unsized.has(node)) resize(node, kids, hs, box.ws!);
   /** The first child whose box ends past `y`, or (`end` false) starts past it. */
   const find = (y: number, end: boolean) => {
     let lo = 0;
@@ -1109,15 +1225,38 @@ function reachEnds() {
     if (y + h * 1.5 < content) continue;
     ended.set(id, content);
     // Loading more grows the content; still short of filling the screen, the next flush loads again.
-    dispatch(el, "end");
+    dispatch(el, "end", false);
   }
 }
 
 // ── Events ───────────────────────────────────────────────────────────────
 
-function dispatch(el: NElement, type: string) {
-  const event = { type, target: el, currentTarget: el, preventDefault() {}, stopPropagation() {} };
-  for (const listener of [...(el.listeners?.get(type) ?? [])]) listener.call(el, event);
+/**
+ * Runs an event's listeners as the DOM does: the element's, then each ancestor's (`bubbles`), until one stops it.
+ * The host reports an event on the view that listens for it, so `target` is that element, not a child inside it.
+ */
+function dispatch(el: NElement, type: string, bubbles = true) {
+  let stopped = false;
+  const event = {
+    type,
+    target: el,
+    currentTarget: el as NNode,
+    bubbles,
+    defaultPrevented: false,
+    preventDefault() {
+      this.defaultPrevented = true;
+    },
+    stopPropagation() {
+      stopped = true;
+    },
+  };
+  for (let node: NNode | null = el; node && !stopped; node = bubbles ? node.parentNode : null) {
+    const listeners = node instanceof NElement ? node.listeners?.get(type) : undefined;
+    if (!listeners) continue;
+    const at = node as NElement;
+    event.currentTarget = at;
+    for (const listener of [...listeners]) listener.call(at, event);
+  }
   flush();
 }
 
@@ -1141,6 +1280,16 @@ globalThis.__nuclo_event = (id, type, value) => {
   }
   if (type === "timer") {
     fire(id);
+    flush();
+    return;
+  }
+  // A request's answer: what the app does with it runs when its promise does, and flushes for itself (update()).
+  if (type === "fetch") return settle(id, String(value));
+  // A remote image arrived (value: its src): it has a natural size now, so the images showing it are laid out again.
+  if (type === "load") {
+    contentSizes.delete(`i${value}`);
+    for (const el of live.values()) if (el.attrs.src === value && el.kind === "image") touch(el);
+    resized = true;
     flush();
     return;
   }

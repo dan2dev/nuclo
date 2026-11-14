@@ -1,12 +1,11 @@
-// nuclo-native host for macOS and iOS: AppKit / UIKit views driven by JavaScriptCore.
-// Navigation (tabs, stacks, screens) lives in Navigation.swift, device data (battery) in Device.swift.
+// nuclo-native host for macOS and iOS: AppKit / UIKit views driven by Hermes, which runs on its own thread
+// (Engine.swift). Navigation (tabs, stacks, screens) lives in Navigation.swift, device data (battery) in Device.swift.
 //
-// macOS: swiftc -swift-version 6 hosts/apple/*.swift -o dist/nuclo-app && dist/nuclo-app dist/app.js
-// iOS:   add hosts/apple/*.swift and dist/app.js to an iOS app target (no storyboard; the scene
-//        configuration is made in code, AppDelegate below).
+// Built with the Hermes bridge (hosts/hermes) and hermesvm.framework: scripts/run.ts has the commands (macos, ios).
+// iOS device: add hosts/apple/*.swift, hosts/hermes/nuclo_hermes.*, hermesvm.xcframework and dist/app.hbc to an
+//        iOS app target (no storyboard; the scene configuration is made in code, AppDelegate below).
 import AVKit
 import CoreText
-import JavaScriptCore
 
 #if os(macOS)
 import AppKit
@@ -17,6 +16,7 @@ typealias Font = NSFont
 typealias Tap = NSClickGestureRecognizer
 typealias ViewController = NSViewController
 typealias Window = NSWindow
+typealias Picture = NSImage
 
 extension NSView {
     var alpha: CGFloat { get { alphaValue } set { alphaValue = newValue } }
@@ -69,6 +69,7 @@ typealias ImageView = UIImageView
 typealias Tap = UITapGestureRecognizer
 typealias ViewController = UIViewController
 typealias Window = UIWindow
+typealias Picture = UIImage
 
 /// An input: its text inset horizontally by its padding plus border (`padding` style).
 final class Field: UITextField {
@@ -344,7 +345,6 @@ final class CheckBox: UIButton {
 
 @MainActor
 final class Host: NSObject {
-    let context = JSContext()!
     let root = Box()
     private var views: [Int: View] = [:]
     private var ids: [ObjectIdentifier: Int] = [:]
@@ -355,6 +355,15 @@ final class Host: NSObject {
     /// Frames as JS sent them; views get them snapped to device pixels (snapFrames).
     private var layout: [Int: CGRect] = [:]
     private var placed = false
+    /// Counts what was sent to JS; `handled`: the last of them the ops being applied answer.
+    private var sent = 0
+    private var handled = 0
+    /// The last `input` or `change` each control sent.
+    private var edited: [Int: Int] = [:]
+    /// Remote images by URL, kept while memory allows; the URLs on their way; and the one each image view shows.
+    private let remote = NSCache<NSString, Picture>()
+    private var fetching = Set<String>()
+    private var shown: [ObjectIdentifier: String] = [:]
 
     // Navigation (Navigation.swift).
     var screens: [Int: ScreenController] = [:]
@@ -380,58 +389,32 @@ final class Host: NSObject {
             let url = URL(fileURLWithPath: "\(assets)/fonts/\(name).ttf")
             CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
         }
-        context.exceptionHandler = { _, error in print("JS error:", error?.toString() ?? "") }
-        let receive: @convention(block) (String) -> Void = { [unowned self] json in
-            let ops = try! JSONSerialization.jsonObject(with: Data(json.utf8)) as! [[Any]]
-            for op in ops { self.apply(op) }
-            if self.placed { self.snapFrames() }
-            // Animate what changed in each stack, once per batch.
-            for stack in self.stacks.values where stack.dirty { stack.sync() }
-            self.updateChrome()
-        }
-        context.setObject(receive, forKeyedSubscript: "__nuclo_host" as NSString)
-        let measure: @convention(block) (Int, Double) -> String = { [unowned self] id, maxWidth in
-            let size = self.measure(id, CGFloat(maxWidth))
-            return "\(size.width) \(size.height)"
-        }
-        context.setObject(measure, forKeyedSubscript: "__nuclo_measure" as NSString)
-        let device: @convention(block) (String) -> String = { [unowned self] name in self.device(name) }
-        context.setObject(device, forKeyedSubscript: "__nuclo_device" as NSString)
-        // setTimeout for JS: fires once, as its own event.
-        let timer: @convention(block) (Int, Double) -> Void = { [unowned self] id, ms in
-            DispatchQueue.main.asyncAfter(deadline: .now() + ms / 1000) { [weak self] in
-                MainActor.assumeIsolated { self?.emit(id: id, "timer") }
-            }
-        }
-        context.setObject(timer, forKeyedSubscript: "__nuclo_timer" as NSString)
-        context.evaluateScript(try! String(contentsOfFile: path, encoding: .utf8))
+        let size = root.bounds.size
+        // An iOS screen is as wide as the window: JS lays the first one out at the root's size, before the screen
+        // reports its own. A macOS screen shares the window with the sidebar, so its size is its own to report.
+        #if os(iOS)
+        let known = size.width > 0 ? "\(size.width) \(size.height) \(deviceScale())" : ""
+        #else
+        let known = ""
+        #endif
+        engine.run(bundle: path, window: known)
         // Without the router the body is the layout root: JS lays it out at the window's size.
         root.resized = { [unowned self] size in
             guard size != self.rootSize else { return }
             self.rootSize = size
             self.emit(id: 1, "resize", "\(size.width) \(size.height) \(deviceScale())")
         }
-        root.resized?(root.bounds.size)
+        root.resized?(size)
     }
 
-    /// __nuclo_measure: a leaf's content size (layout.ts adds padding).
-    private func measure(_ id: Int, _ maxWidth: CGFloat) -> CGSize {
-        switch views[id] {
-        case let text as TextView:
-            return text.measure(maxWidth, scale: deviceScale())
-        case let image as ImageView:
-            return image.image?.size ?? .zero
-        #if os(macOS)
-        case let button as NSButton:
-            let font = button.font ?? textFont()
-            return Typeset(button.title, font, maxWidth: maxWidth).size(font, scale: deviceScale())
-        #else
-        case let button as Button:
-            return Typeset(button.titleText, button.titleFont, maxWidth: maxWidth).size(button.titleFont, scale: deviceScale())
-        #endif
-        default:
-            return .zero
-        }
+    /// A JS turn's ops, on the main thread: applied together, so no frame shows views before their frames.
+    func apply(_ turn: Turn) {
+        handled = turn.answers
+        for ops in turn.batches { for op in ops { apply(op) } }
+        if placed { snapFrames() }
+        // Animate what changed in each stack, once per turn.
+        for stack in stacks.values where stack.dirty { stack.sync() }
+        updateChrome()
     }
 
     /// Places views at their frames with edges on device pixels, as the browser paints boxes:
@@ -473,9 +456,14 @@ final class Host: NSObject {
         emit(id: id, type, value)
     }
 
+    /// Posts an event to JS, which answers later with a turn's ops: a string as it is, a number or boolean as JSON.
     func emit(id: Int, _ type: String, _ value: Any? = nil) {
-        let arguments: [Any] = value.map { [id, type, $0] } ?? [id, type]
-        context.objectForKeyedSubscript("__nuclo_event").call(withArguments: arguments)
+        sent += 1
+        if type == "input" || type == "change" { edited[id] = sent }
+        let text = value as? String
+        if type == "scroll", let text { return engine.scrolled(id, text, answering: sent) }
+        let json = text ?? value.map { "\($0)" }
+        engine.post(answering: sent) { $0.event(id, type, json, text: text != nil) }
     }
 
     @objc private func clicked(_ sender: AnyObject) { emit(sender, "click") }
@@ -622,6 +610,9 @@ final class Host: NSObject {
                 stack.setTab(key, text)
             } else if let tabs = tabs[id] {
                 if key == "selected" { tabs.select(Int(text) ?? 0) }
+            } else if (key == "value" || key == "checked") && (edited[id] ?? 0) > handled {
+                // The user changed the control after the event these ops answer: what they entered stands, and is
+                // on its way to JS.
             } else {
                 set(views[id]!, key, op[3])
             }
@@ -657,8 +648,10 @@ final class Host: NSObject {
 
     private func forget(_ view: View) {
         if view is Box { view.subviews.forEach(forget) }
+        shown[ObjectIdentifier(view)] = nil
         guard let id = ids.removeValue(forKey: ObjectIdentifier(view)) else { return }
         views[id] = nil
+        edited[id] = nil
         fonts[id] = nil
         borders[id] = nil
         layout[id] = nil
@@ -694,13 +687,15 @@ final class Host: NSObject {
             (view as? CheckBox)?.isOn = on
             #endif
         case "src":
-            // Asset paths are relative to the bundle.
+            // Asset paths are relative to the bundle; a URL is fetched (remoteImage).
             let file = (assets as NSString).appendingPathComponent(text)
             if let video = view as? VideoView { video.load(URL(fileURLWithPath: file)); break }
-            #if os(macOS)
-            (view as? ImageView)?.image = NSImage(contentsOfFile: file)
-            #else
-            (view as? UIImageView)?.image = UIImage(contentsOfFile: file)
+            guard let image = view as? ImageView else { break }
+            if isRemote(text) { remoteImage(text, for: image) } else { image.image = Picture(contentsOfFile: file) }
+        case "type":
+            // ponytail: iOS only; AppKit's secure field is another class (NSSecureTextField), made at creation.
+            #if os(iOS)
+            (view as? UITextField)?.isSecureTextEntry = text == "password"
             #endif
         case "disabled":
             (view as? Control)?.isEnabled = (value as? Bool) != true
@@ -783,6 +778,26 @@ final class Host: NSObject {
         default:
             break
         }
+    }
+
+    /// A remote image: fetched once and kept while memory allows. Until it arrives the view is empty and JS has no
+    /// size for it; then the views showing it get it, and JS hears `load` to lay them out again (dom.ts).
+    private func remoteImage(_ src: String, for view: ImageView) {
+        shown[ObjectIdentifier(view)] = src
+        view.image = remote.object(forKey: src as NSString)
+        guard view.image == nil, let url = URL(string: src), fetching.insert(src).inserted else { return }
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            DispatchQueue.main.async { MainActor.assumeIsolated { host.arrived(src, data) } }
+        }.resume()
+    }
+
+    private func arrived(_ src: String, _ data: Data?) {
+        fetching.remove(src)
+        guard let data, let picture = Picture(data: data) else { return }
+        remote.setObject(picture, forKey: src as NSString, cost: data.count)
+        for view in views.values where shown[ObjectIdentifier(view)] == src { (view as? ImageView)?.image = picture }
+        let size = pixelSize(CGImageSourceCreateWithData(data as CFData, nil))
+        engine.post { $0.loaded(src, size) }
     }
 
     private func backing(_ view: View) -> CALayer {
@@ -891,9 +906,11 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             host.root.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
             host.root.trailingAnchor.constraint(equalTo: safe.trailingAnchor),
         ])
+        // Laid out before JS starts, so the root has its size from the first turn.
+        window.makeKeyAndVisible()
+        controller.view.layoutIfNeeded()
         // A router outlet in the body replaces this controller (Host.setRoot).
         host.start(bundle: Bundle.main.path(forResource: "app", ofType: "js")!)
-        window.makeKeyAndVisible()
     }
 }
 

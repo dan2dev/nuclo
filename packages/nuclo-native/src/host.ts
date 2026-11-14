@@ -15,14 +15,22 @@ declare global {
    */
   var __nuclo_text_size: ((text: string, size: number, bold: boolean, system: boolean, maxWidth: number) => string) | undefined;
   var __nuclo_image_size: ((src: string) => string) | undefined;
-  /** Device data (device.ts) as JSON, "" when the device has none; "frames" for check.ts. */
+  /**
+   * Device data (device.ts) as JSON, "" when the device has none; "frames" for check.ts; "window": the window's
+   * content size before any layout, "w h scale", from a host that knows it (dom.ts, presize).
+   */
   var __nuclo_device: ((name: string) => string) | undefined;
   /**
    * Optional, for engines without setTimeout (timers.ts): the host answers once, at least `ms` later, with
    * __nuclo_event(id, "timer").
    */
   var __nuclo_timer: ((id: number, ms: number) => void) | undefined;
-  /** A native event on a node: click, input, change, scroll, resize, pop, select; or a timer's (`timer`). */
+  /**
+   * Optional, for engines without fetch (fetch.ts): the host makes the request and answers once with
+   * __nuclo_event(id, "fetch", json): {status, statusText, url, headers, body}, or {error}.
+   */
+  var __nuclo_fetch: ((id: number, method: string, url: string, headers: string, body?: string) => void) | undefined;
+  /** A native event on a node: click, input, change, scroll, resize, pop, select; a timer's (`timer`) or a request's (`fetch`). */
   var __nuclo_event: (id: number, type: string, value?: string | number | boolean) => void;
   /** Device data changed: the host passes the new JSON, or "". */
   var __nuclo_device_changed: (name: string, json: string) => void;

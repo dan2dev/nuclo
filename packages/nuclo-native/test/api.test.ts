@@ -73,3 +73,20 @@ test("forceUpdate() calls the components again, static values included", () => {
   expect(texts()).not.toContain("Hello");
   expect(texts()).toContain("count 1");
 });
+
+test("events bubble to the ancestors that listen, until one stops them", () => {
+  const heard: string[] = [];
+  let stop = false;
+  const inner = (event: Event) => {
+    heard.push("inner");
+    if (stop) event.stopPropagation();
+  };
+  render(() => div(on("click", () => void heard.push("outer")), span("tap me", on("click", inner))), document.body);
+  const id = ops.findLast((op) => op[0] === "set" && op[3] === "tap me")![1];
+  globalThis.__nuclo_event(id, "click");
+  expect(heard).toEqual(["inner", "outer"]);
+  stop = true;
+  heard.length = 0;
+  globalThis.__nuclo_event(id, "click");
+  expect(heard).toEqual(["inner"]);
+});

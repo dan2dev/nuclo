@@ -116,7 +116,7 @@ The host side is two calls next to the ops: the host exposes `__nuclo_device(nam
 
 A screen keeps on the host only what is near its visible part, so a list can grow to tens of thousands of rows. Hosts report each screen's scroll position (`scroll`); in a column of content height several screens tall (a list), JS parks the rows more than a screen away from what shows: their views leave the host (`remove`), and layout keeps each as a box of its last size, so the scroll height and every position stay right. Rows come back (`insert`) within a screen of the visible part, laid out on their own at the width they had, so the list around them does not move. Hosts need nothing for this beyond the ops they already handle. The web build keeps every row in the DOM.
 
-Measured with `people` at 50,000 rows (`bun test/people.bench.ts`, and the simulator and emulator):
+Measured with `people` at 50,000 rows (`bun test/people.bench.ts`, and the simulator and emulator), on the engines these hosts had before Hermes (JavaScriptCore on iOS, QuickJS on Android), and not measured again since:
 
 | | Before | Now |
 | --- | --- | --- |
@@ -126,7 +126,9 @@ Measured with `people` at 50,000 rows (`bun test/people.bench.ts`, and the simul
 | JS, page load at 50,000 (no JIT) | 259 ms (JIT) | 7.3 ms (16 ms) |
 | JS, scroll step at 50,000 (no JIT) | — | 0.1 ms (0.2 ms) |
 
-Limits: only lists reached through columns from the screen are culled, not a list inside a row. A single render of thousands of rows creates them all once before parking them. With `list()`, JS still holds every row's nodes: about 7 KB a row in JavaScriptCore and 27 to 39 KB in QuickJS, and nuclo's list diff reads every row on each update, so on Android the practical ceiling for a plain `list()` is about 20,000 rows. `windowed()` has neither limit.
+Rows that arrive together never all reach the host either. A column that takes more than 24 new children in one render parks the rest as they come, at the size of the ones already laid out, and the host creates only those near the screen: 10,000 rows that load at once create about 30 rows' views, where they used to run Android out of memory. A column that turns out to fit shows them all (`test/bulk.test.ts`).
+
+Limits: only lists reached through columns from the screen are culled, not a list inside a row. A list rendered in the same pass as its container is still created whole. With `list()`, JS still holds every row's nodes, about 11 KB a row in Hermes, and nuclo's update reads every row's bindings each time: with 10,000 rows loaded an update takes about 90 ms on the emulator. `windowed()` has neither limit.
 
 ### Lists without an end: `windowed()`
 
@@ -140,7 +142,7 @@ windowed(() => feed.ids, post, postRow); // the ids, an id's record, a record's 
 
 Rows before the window count at the height they were laid out at, so what shows stays exactly where it is (`test/windowed.test.ts` checks every row's position scrolling down and back). Rows never laid out (those after the window, or flung past without being shown) count at the mean and take their place when they are laid out; and JS keeps one number per row it has passed. On the web `windowed()` keeps every row, as `list()` does.
 
-`chirp` uses it for every list. Its feed with 50,000 posts loaded (`bun test/chirp.bench.ts 50000`): 10 MB of JS heap, against 417 MB at 20,000 with `list()`; a like takes 0.3 ms (2.6 ms), an update that changes nothing under 0.05 ms. Scrolled through in QuickJS itself (the Android host's engine, on a desktop): 9 MB after 2,000 posts and 11 MB after 16,000. On a Galaxy S23 Ultra the app's native heap is 52 MB after 220 flings and 51 MB after 440; with `list()` it was 90 MB after 220 and growing.
+`chirp` uses it for every list. Its feed with 50,000 posts loaded (`bun test/chirp.bench.ts 50000`): 10 MB of JS heap, against 417 MB at 20,000 with `list()`; a like takes 0.3 ms (2.6 ms), an update that changes nothing under 0.05 ms. Scrolled through in QuickJS itself (the Android host's engine then, on a desktop): 9 MB after 2,000 posts and 11 MB after 16,000. On a Galaxy S23 Ultra the app's native heap is 52 MB after 220 flings and 51 MB after 440; with `list()` it was 90 MB after 220 and growing.
 
 ## Video
 
@@ -186,11 +188,26 @@ The whole host contract is seven ops and one callback:
 | `["listen", id, type]` | `click`, `input`, `change` |
 | `["frame", id, x, y, w, h]` | Where JS laid the node out (see [Styling](#styling-the-same-pixels-everywhere)) |
 
-Timers: the bare engines have no `setTimeout`, so their hosts expose `__nuclo_timer(id, ms)` and answer once, at least `ms` later, with `__nuclo_event(id, "timer")`; JS builds `setTimeout`, `setInterval` and their clears on it (`src/timers.ts`). Android, GPUI (checked on Linux), Windows and Apple have it (the last two compiled or written but never run); GJS has its own timers.
+Timers: the bare engines have no `setTimeout`, so their hosts expose `__nuclo_timer(id, ms)` and answer once, at least `ms` later, with `__nuclo_event(id, "timer")`; JS builds `setTimeout`, `setInterval` and their clears on it (`src/timers.ts`). Android, Apple, GPUI (checked on Linux) and Windows (compiled, never run) have it; GJS has its own timers.
+
+Requests: the same way, the hosts whose engine has no `fetch` expose `__nuclo_fetch(id, method, url, headers, body)` and answer once with `__nuclo_event(id, "fetch", json)`: `{status, statusText, url, headers, body}`, or `{error}` when the request got no answer (`src/fetch.ts`). JS builds `fetch()` on it: text and JSON bodies, no streaming. Android (`HttpURLConnection`) and Apple (`URLSession`) have it.
 
 The host exposes `__nuclo_host(json)` and calls `__nuclo_event(id, type, value?)`: `click`, `input` (value: text), `change` (value: checked), `scroll` on a layout root (value: `"y h"`, its scroll offset and visible height), `pop` on a stack (value: depth left after a native back) and `select` on the tabs (value: index). JS turns `scroll` into the route's `onEndReached`. Both take only strings and numbers, so any JS engine can bridge them.
 
-On Android JS runs on its own thread, so the UI thread scrolls, animates and takes touches while JS works. Events are posted to JS, and the batches of one JS turn (ops, then frames) are applied together on the UI thread. Only the latest scroll position waits for JS. A `value` or `checked` that JS sets is dropped when the user has changed the control since the event JS was answering: what they entered stands. A control JS changes reports no event for it, as in the browser. Device data and the debug frames are read on the UI thread, which never waits for JS; the engine is the process's, and an activity that starts takes it over. JS can run off the UI thread because this host sizes texts, buttons and images by content (`__nuclo_text_size`, `__nuclo_image_size`), never by view. The other hosts run JS on the UI thread.
+### The engine: Hermes on its own thread
+
+Android, iOS and macOS run the bundle in [Hermes](https://github.com/facebook/hermes) (release `260318099.0.7`, the engine React Native ships), on a thread of its own. One C interface, `hosts/hermes/nuclo_hermes.h`, is the whole of the bridge on all three: Kotlin reaches it through JNI (`hosts/android/app/src/main/cpp/nuclo.cpp`), Swift through a bridging header (`hosts/apple/Engine.swift`). `scripts/hermes.ts` fetches the release once into `build/hermes` (JSI's headers, the Apple frameworks, `hermesc`) and compiles each bundle to bytecode, `dist/app.hbc`, which the hosts load without parsing anything: on a desktop the engine starts and renders the benchmark app's first screen in about 3 ms, against 23 ms from source. A host given only `app.js` compiles it at launch.
+
+JS runs a turn at a time (the bundle, then each event), so the UI thread scrolls, animates and takes touches while JS works. Events are posted to JS, and the batches of one JS turn (ops, then frames) are applied together on the UI thread, so no frame shows views before their frames. Only the latest scroll position waits for JS. A `value` or `checked` that JS sets is dropped when the user has changed the control since the event JS was answering: what they entered stands. Device data and the debug frames are read on the UI thread, which never waits for JS. JS can run off the UI thread because these hosts size texts, buttons and images by content (`__nuclo_text_size`, `__nuclo_image_size`), never by view. On Android the engine is the process's, and an activity that starts takes it over; a control JS changes reports no event for it, as in the browser.
+
+What makes a tap fast on Android, each found by tracing one (`benchmarks/native-compare/REPORT.md`):
+
+- A turn's ops are posted to the UI thread as an asynchronous message. A view that asked for a frame (the ripple of the tap itself) holds the main queue's ordinary messages until that frame is drawn; the ops go in ahead of it and are part of that frame, not the next.
+- A tap's click is not posted behind the frame that shows the press, as `View` does it: the listener only posts to JS, so it runs at once.
+- The JS thread has display priority, as React Native's has.
+- The host tells JS the window's size before any view is laid out (`__nuclo_device("window")`), so the first screen is laid out in the turn that renders it, while the activity is still starting: the first frame Android draws is the app, not an empty window.
+
+The GPUI hosts run QuickJS (rquickjs), GTK runs in GJS and Windows in Jint, all on their UI thread: Hermes publishes no builds for Linux or Windows.
 
 Navigation: screens go into stacks, stacks into tabs, and a tabs or stack inserted into the body is the window's root navigation. At the end of each batch the host compares every stack with what it shows: a new top screen is a push, a removed top screen a pop, both animated the platform's way.
 
@@ -243,9 +260,9 @@ Hosts snap each box's edges to device pixels from its position on screen, as the
 
 | Target | Host | JS engine | Drawn with | Status |
 | --- | --- | --- | --- | --- |
-| `ios` | `hosts/apple` | JavaScriptCore | UIKit | Simulator: tabs, push, edge-swipe and button back, re-tap to root, JS kept in sync |
-| `macos` | `hosts/apple` | JavaScriptCore | AppKit | Ran scripted: sidebar, toolbar back, titles, push/pop, JS in sync. Trackpad swipe and ⌘[ not exercised |
-| `android` | `hosts/android` | QuickJS-NG (NDK), on its own thread | Android Views | API 37 emulator: tabs, push, back key, edge swipe with the predictive-back card, up arrow, re-tap, ripples |
+| `ios` | `hosts/apple` | Hermes, on its own thread | UIKit | Simulator (iOS 27.2), on Hermes: tabs, push, button back; taps reach JS and come back as ops; `fetch`, a remote image, timers, Intl and bubbling. Edge-swipe back and re-tap to root ran before the engine changed |
+| `macos` | `hosts/apple` | Hermes, on its own thread | AppKit | On Hermes: the showcase renders, its taps reach JS and come back as ops, `fetch`, a remote image and timers (scripted, the window rendered to a PNG). Sidebar, toolbar back and push/pop ran before the engine changed; trackpad swipe and ⌘[ not exercised |
+| `android` | `hosts/android` | Hermes, on its own thread | Android Views | API 37 emulator, on Hermes: tabs, push, back key, ripples, text input, `fetch`, a remote image, Intl, bubbling; the benchmark app's every operation. Edge swipe with the predictive-back card, up arrow and re-tap ran before the engine changed |
 | `linux` | `hosts/linux/host.js` | GJS | GTK 4 + libadwaita | Linux (GNOME, Wayland) and macOS (Homebrew GTK): tabs, push, native back with JS sync. Swipe and Alt+← not driven |
 | `windows` | `hosts/windows` | Jint | WPF (Fluent) | Compiles with the .NET 11 SDK, 0 warnings (also with `-warnaserror`). Never launched |
 | `web` | `hosts/web` + `src/web.ts` | the browser's | the DOM | Browser: push, pop and tab transitions, back button, URL |
@@ -294,19 +311,22 @@ bun run macos-gpui
 bun run android-gpui   # a device: emulators cannot run GPUI's renderer
 bun run linux-gpui     # on Linux
 bun run windows-gpui   # on Windows
-bun test               # op-level tests against a mock host
+bun run test           # op-level tests against a mock host, each file in a fresh global (bun test --isolate)
 bun run typecheck      # strict TypeScript over src, examples, tests and scripts
 bun test/people.bench.ts  # page-load, tap and scroll timings and host views up to 50,000 rows
 ```
 
-Requirements, all current releases and no package managers beyond each platform's own: Xcode 27 for the Apple targets (iOS 27 and macOS 27 deployment targets; the UIKit app uses the scene life cycle); a full JDK 17+ as `JAVA_HOME`, the Android SDK with API 37 and NDK 30.0.16248370 for Android (each project has a Gradle 9.9.1 wrapper and AGP 9.5.1, minSdk 30; `android` downloads the QuickJS-NG source on its first build); the .NET 11 SDK for Windows (Jint 4.18.0); Rust for the GPUI targets, with the `aarch64-apple-ios-sim` / `aarch64-linux-android` targets for mobile. GTK on macOS runs from Homebrew (`gjs gtk4 libadwaita gobject-introspection adwaita-icon-theme`). Android libraries are linked for 16 KB pages.
+The Hermes targets (`android`, `ios`, `macos`) download the Hermes release from Maven Central and GitHub into `build/hermes` on their first run (24 MB; `bun scripts/hermes.ts` does only that). `hermesc` comes with it for macOS only: built elsewhere, a bundle ships as source and the host compiles it at launch.
+
+Requirements, all current releases and no package managers beyond each platform's own: Xcode 27 for the Apple targets (iOS 27 and macOS 27 deployment targets; the UIKit app uses the scene life cycle); a full JDK 17+ as `JAVA_HOME`, the Android SDK with API 37 and NDK 30.0.16248370 for Android (each project has a Gradle 9.9.1 wrapper and AGP 9.5.1, minSdk 30; Gradle downloads Hermes and fbjni from Maven Central on the first build); the .NET 11 SDK for Windows (Jint 4.18.0); Rust for the GPUI targets, with the `aarch64-apple-ios-sim` / `aarch64-linux-android` targets for mobile. GTK on macOS runs from Homebrew (`gjs gtk4 libadwaita gobject-introspection adwaita-icon-theme`). Android libraries are linked for 16 KB pages.
 
 Commands behind them, if you want to run one by hand:
 
-- **macOS:** `swiftc -swift-version 6 -target arm64-apple-macos27.0 hosts/apple/*.swift -o build/macos/nuclo-app && build/macos/nuclo-app dist/app.js` (any bundle path works, e.g. one built from another example)
-- **iOS simulator:** no Xcode project. `xcrun -sdk iphonesimulator swiftc -swift-version 6 -target arm64-apple-ios27.0-simulator hosts/apple/*.swift`, then an `.app` folder with the binary, `app.js`, `assets/` and an `Info.plist` (`UILaunchScreen` included, or the app runs letterboxed, and the scene manifest naming `NucloSceneDelegate`), ad-hoc signed and installed with `xcrun simctl install booted`. `scripts/run.ts` has the exact steps.
-- **iOS device:** add `hosts/apple/*.swift` and `dist/app.js` to an iOS app target, so Xcode handles signing and provisioning.
-- **Android:** open `hosts/android` in Android Studio, or `./gradlew assembleDebug` there. `dist/` ships as the assets.
+- **macOS:** the bridge first, `clang++ -std=c++20 -O2 -c -I build/hermes/include hosts/hermes/nuclo_hermes.cpp -o build/macos/nuclo_hermes.o`, then `swiftc -O -swift-version 6 -target arm64-apple-macos27.0 -import-objc-header hosts/hermes/nuclo_hermes.h hosts/apple/*.swift build/macos/nuclo_hermes.o -lc++ -F build/hermes/Library/Frameworks/macosx -framework hermesvm -Xlinker -rpath -Xlinker $PWD/build/hermes/Library/Frameworks/macosx -o build/macos/nuclo-app && build/macos/nuclo-app dist/app.js` (any bundle path works; `app.hbc` beside it is loaded in its place)
+- **iOS simulator:** no Xcode project. The same two steps with `xcrun -sdk iphonesimulator`, `-target arm64-apple-ios27.0-simulator` and the simulator's slice of `hermesvm.xcframework`, then an `.app` folder with the binary, `Frameworks/hermesvm.framework`, `app.js`, `app.hbc`, `assets/` and an `Info.plist` (`UILaunchScreen` included, or the app runs letterboxed, and the scene manifest naming `NucloSceneDelegate`), ad-hoc signed and installed with `xcrun simctl install booted`. `scripts/run.ts` has the exact steps.
+- **iOS device:** add `hosts/apple/*.swift`, `hosts/hermes/nuclo_hermes.*` (the header as the bridging header), `hermesvm.xcframework` and `dist/app.hbc` to an iOS app target, so Xcode handles signing and provisioning.
+- **Android:** `bun scripts/hermes.ts` once, then open `hosts/android` in Android Studio, or `./gradlew assembleDebug` there. `dist/` ships as the assets.
+- **A bundle in Hermes, without a device:** `$(bun scripts/hermes.ts cli) dist/app.js` runs it on this Mac with no views (`hosts/hermes/cli.cpp`): for timing JS in the engine the phones run.
 - **Windows:** `dotnet run` in `hosts/windows`.
 - **GPUI, desktop:** `cargo run --manifest-path hosts/gpui/Cargo.toml -- dist/app.js`
 - **GPUI, iOS:** `cargo rustc --lib --target aarch64-apple-ios-sim --crate-type staticlib` in `hosts/gpui` (with `LIBCLANG_PATH` at Xcode's toolchain, since rquickjs generates its mobile bindings, and `IPHONEOS_DEPLOYMENT_TARGET=17.0` for the C parts), then link `hosts/gpui/ios/main.m` against `libnuclo_gpui.a`.
@@ -316,20 +336,22 @@ Commands behind them, if you want to run one by hand:
 
 - **Tags:** `button`, `input` (text, password, checkbox), `textarea`, `img`, `video`. Text tags (`span`, `p`, `h1`–`h6`, `label`, `strong`…) become one label holding their whole text. Every other tag is a flex container, column by default.
 - **Styles:** inline `style`, `css()`, `createCss()` with `screens`, `cx()`, `variants()` and `globalStyle()` by tag or class: flexbox layout, the box model, positioning and paint, laid out the same everywhere and responsive to the window ([Styling](#styling-the-same-pixels-everywhere)). Text properties inherit. Text collapses whitespace as CSS does.
-- **Images:** `img({ src })` loads a file relative to the bundle: its natural size and aspect, or the box you give it, cropped to fill.
+- **Images:** `img({ src })` loads a file relative to the bundle: its natural size and aspect, or the box you give it, cropped to fill. On Android, iOS and macOS `src` can be a URL: the host fetches it once and keeps it while memory allows; an image without a size takes no room until it arrives, then lays out at its natural size (`test/images.test.ts`).
 - **Video:** see [Video](#video).
-- **Events:** `click` on anything, `input` on text inputs, `change` on Enter and on checkbox toggles. Events do not bubble.
+- **Events:** `click` on anything, `input` on text inputs, `change` on Enter and on checkbox toggles. They bubble as in the DOM: the element's listeners, then each ancestor's, until one calls `stopPropagation()`. The host reports an event on the view that listens for it, so `target` is that element.
+- **Requests and timers:** `fetch()` (text and JSON) on Android, iOS and macOS; `setTimeout` and `setInterval` everywhere.
 - **nuclo features:** all of nuclo's API: reactive text, attributes, classes and styles, `list()`, `when()`/`else()`, `region()`/`into()`, `scope()` and `update(scope)`, `forceUpdate()`, `on()` with `mount` and `destroy` (`test/api.test.ts`). `hydrate()` and `renderToString()` are for the web and the server.
 - **Navigation:** `nuclo-native/router`, with each platform's tabs, stacks, transitions and back gestures.
 
 ## Not done
 
 - On native: `:hover`, `:focus` and other pseudo-classes, combinator selectors, `@keyframes`/`transition`, `box-shadow`, `lineHeight`, `letterSpacing`, `fontStyle`, `transform`, `zIndex`, `order`, `aspectRatio`, `baseline` alignment, per-corner radii and per-side border colours. They still work on the web.
-- On Windows: placeholders and password fields. On Apple: password fields.
+- On Windows: placeholders and password fields. On macOS: password fields (iOS has them).
 - Moving a window to a screen of another scale does not lay it out again on Linux and Windows.
-- Remote images and videos. `src` is a bundled file.
+- Remote videos; remote images on the GTK, Windows and GPUI hosts, where `src` is a bundled file. A remote image is decoded at full size, and shows nothing while it loads or when it fails.
 - On the web, `router.back()` is the browser's back, so it leaves the app when a detail screen was opened directly from a link. Tabs there reset instead of keeping a stack each.
-- `fetch` on the bare engines (JavaScriptCore, QuickJS, Jint). GJS has it. The GPUI host forwards `console` to its log.
+- `fetch` on the GPUI and Windows hosts (QuickJS, Jint); binary bodies, streaming and `AbortController` everywhere but GJS. The Hermes and GPUI hosts forward `console` to their log.
+- Hermes on the GPUI, Linux and Windows hosts: there is no published build of it for Linux or Windows, and the GTK host is itself a GJS script.
 - Scrolling on Apple outside the router: a plain app without `router.outlet` does not scroll.
 - GPUI: no video playback (a `video` is its box on black with a play glyph). Android's predictive-back progress is not wired (the back key pops with Material motion); the iOS look's bars are drawn, not Liquid Glass.
 - Hot reload and packaging for app stores.
