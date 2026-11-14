@@ -378,8 +378,8 @@ function guess(list: NNode) {
   return list.guess[1];
 }
 
-/** Text as CSS shows it (white-space: normal): whitespace runs are one space, none at the ends. */
-const shown = (text: string | null) => (text ?? "").replace(/[ \t\n\r\f]+/g, " ").trim();
+/** Text as CSS shows it (white-space: normal): whitespace runs are one space, none at the ends. Non-breaking spaces stay, as in CSS. */
+const shown = (text: string | null) => (text ?? "").replace(/[ \t\n\r\f]+/g, " ").replace(/^ | $/g, "");
 
 /** Creates a detached subtree on the host, parents before children. */
 function realize(node: NNode) {

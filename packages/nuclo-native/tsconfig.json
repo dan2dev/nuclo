@@ -13,5 +13,7 @@
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "types": ["bun"]
   },
-  "include": ["src", "examples", "test", "scripts"]
+  "include": ["src", "examples", "test", "scripts"],
+  // Runs against the docs site's sources, with their tsconfig (see the file).
+  "exclude": ["examples/docs/extract.ts"]
 }
