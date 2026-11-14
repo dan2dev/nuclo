@@ -30,10 +30,15 @@ test("the navigation is the root: tabs, one stack per tab, a root screen each", 
 });
 
 test("chart bars resize in place when the range changes", () => {
+  // Heights are layout: JS lays them out and the host gets frames, not styles.
+  g.__nuclo_measure = () => "10 10";
+  g.__nuclo_event(titled("Pulse"), "resize", "400 800 1");
   const mark = ops.length;
   tap("Month");
-  expect(since(mark, "style").some((op) => op[2] === "height")).toBe(true);
+  expect(since(mark, "frame").length).toBeGreaterThan(0);
+  expect(since(mark, "style").some((op) => op[2] === "height")).toBe(false);
   expect(shows("W3")).toBe(true);
+  delete g.__nuclo_measure;
 });
 
 test("go() pushes a titled screen onto the current tab's stack", () => {

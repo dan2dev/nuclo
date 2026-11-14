@@ -17,17 +17,17 @@ base.textContent = `
 html, body { height: 100%; margin: 0; }
 body { font: 14px/1.35 Inter, system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
 :where(body, div, main, section, header, footer, nav, article, aside, form, ul, ol, li) {
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: column; position: relative;
 }
-:where(body *) { box-sizing: border-box; flex-shrink: 0; min-width: 0; margin: 0; }
+:where(body *) { box-sizing: border-box; flex-shrink: 0; min-width: 0; min-height: 0; margin: 0; }
 :where(h1) { font-size: 32px; } :where(h2) { font-size: 24px; } :where(h3) { font-size: 20px; }
 :where(h1, h2, h3, strong, b) { font-weight: 700; }
 :where(img) { display: block; object-fit: cover; }
 :where(input, textarea, button) { font: inherit; line-height: 1.35; border: 0; padding: 8px; outline-offset: 2px; }
 :where(button) { padding: 8px 16px; }
 :where(input[type="checkbox"]) { width: 24px; height: 24px; padding: 0; }
-:where([style*="flex-direction: row"], [style*="align-items: flex-start"], [style*="align-items: center"], [style*="align-items: flex-end"])
-  > :where(input:not([type="checkbox"]), textarea) { width: 160px; }
+/* A text field's content is 144 wide (160 with its padding) unless it is stretched or sized. */
+:where(input:not([type="checkbox"]), textarea) { contain: inline-size; contain-intrinsic-inline-size: 144px; }
 
 /* The router's app shell: bar, screen, tab bar. Colours: --nuclo-accent. */
 .nuclo-app { min-height: 100%; }

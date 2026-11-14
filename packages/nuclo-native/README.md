@@ -160,15 +160,20 @@ Only nodes attached under `document.body` exist natively. Trees built off-docume
 
 ## Styling: the same pixels everywhere
 
-A style lays out to the same boxes, and its text to the same lines, on every host. The browser's CSS is the reference. The native hosts and GPUI do no layout of their own: one engine in JS (`src/layout.ts`, a CSS flexbox subset like React Native's Yoga) computes every frame, and the hosts place views where it says.
+A style lays out to the same boxes, and its text to the same lines, on every host. The browser's CSS is the reference. The native hosts and GPUI do no styling or layout of their own: JS resolves every node's style (`src/style.ts`) and one engine (`src/layout.ts`, CSS flexbox, like React Native's Yoga) computes every frame; the hosts paint what they are told and place views where JS says.
+
+**Where styles come from.** As in the browser: nuclo's `css()`, `createCss()` (tokens and `screens`), `cx()`, `variants()` and `globalStyle()` rules, then the inline `style`. The native runtime reads nuclo's stylesheet (`getCssText()`) and matches its rules to each element by class and tag, in specificity and source order; `@media` conditions (`min-width`, `max-width`, `min-height`, `max-height`, `orientation`) follow the window, so a resize that crosses a breakpoint restyles and lays out again. `color`, `fontSize`, `fontWeight`, `fontFamily` and `textAlign` inherit. Shorthands (`padding: "4px 8px"`, `border`, `flex`, `gap`, `background`…), kebab-case keys, `px`/`rem`/`em`/`%` and every CSS colour format work. Rules with pseudo-classes, attribute selectors or combinators (`:hover`, `.a > .b`), and `@keyframes`, do not apply on native.
 
 **The contract** (the header of `src/layout.ts`):
 
 - **Units.** 1 = 1 CSS px = 1 pt (Apple) = 1 dp (Android) = 1 logical px (GTK, GPUI) = 1 DIP (WPF).
-- **Boxes.** `box-sizing: border-box`, uniform `padding`, exact `width`/`height`. Containers are flex columns, or rows with `flexDirection: "row"`; `gap` between children; `alignItems` stretch (default), flex-start, center or flex-end. `flex: n` grows n from a basis of 0, as in CSS; nothing else shrinks. No wrapping.
+- **Boxes.** `box-sizing: border-box`; `width`/`height` in px or % of the parent's content box, with `min*`/`max*`; `padding`, `border` and `margin` per side (`margin: auto` takes free space). Every container is a flex container, a column unless `flexDirection: "row"` (or `-reverse`), and the containing block of its `position: "absolute"` children; `position: "relative"` shifts a box by its insets; `display: "none"` removes one.
+- **Flex.** `flexWrap`, `justifyContent` (start, center, end, space-between, -around, -evenly), `alignItems`, `alignSelf`, `alignContent`, `gap`/`rowGap`/`columnGap`, `flexGrow`, `flexShrink`, `flexBasis` and `flex`, with CSS's flexible-length algorithm. `flex: n` grows n from a basis of 0, as in CSS. Children only shrink when they set `flexShrink` (the web build sets `flex-shrink: 0` and `min-width`/`min-height: 0`, as React Native does).
 - **Text.** One bundled font, Inter (`fonts/`, SIL OFL), 14 px by default, weight 400 or 700 (`bold` or ≥ 600); `fontFamily: "system"` opts a text into the OS font. Line height 1.35 × size, text wraps at its box. As in the browser, which lays text out in device pixels: the line height sits on a 1/64 device-pixel grid, and the baseline is the font's ascent and descent each rounded to device pixels, with half the leading above them floored to a device pixel. The default colour is black (white in dark mode on the native hosts).
-- **Controls.** The native control, fitted into a contract box: a checkbox is 24 × 24; an input is one line plus 8 padding (34.9 tall at 14 px), 160 wide unless stretched, its text centred and 8 in; a button is its text plus 8 / 16 padding; an image takes `width`/`height` or its natural size and aspect, cropped to fill.
-- **Paint.** `backgroundColor`, `borderRadius` (which clips the children), `opacity`, `color`, `textAlign`.
+- **Controls.** The native control, fitted into a contract box: a checkbox is 24 × 24; an input is one line plus its padding (8 by default: 34.9 tall at 14 px), its content 144 wide (160 with the default padding) unless stretched or sized, its text centred and in by its padding; a button is its text plus 8 / 16 padding; an image takes `width`/`height` or its natural size and aspect, cropped to fill.
+- **Paint.** `backgroundColor`, `color`, `opacity`, `borderRadius`, borders (`borderWidth` per side, one `borderColor`), `overflow: "hidden"` (clips the children; an inline `borderRadius` sets it, on the web too), `textAlign`. A radius is uniform on native: the top-left corner's.
+
+**What a host paints.** `["style", id, key, value]` ops carry only computed paint, and `""` means back to the default: `backgroundColor`, `color` and `borderColor` as `#rrggbb` or `#rrggbbaa`; `opacity`; `fontSize`, `fontWeight`, `fontFamily`, `textAlign`; `borderRadius`; `borderWidth` as `"t r b l"`, drawn inside the frame without moving the children; `overflow: "hidden"`; `display: "none"`; and, for a text, button or input, `padding` as `"t r b l"`: where its text sits in its frame (padding plus border).
 
 **What a host does.** Hosts get layout as frames and answer three questions:
 
@@ -181,19 +186,19 @@ A style lays out to the same boxes, and its text to the same lines, on every hos
 
 Hosts snap each box's edges to device pixels from its position on screen, as the browser paints boxes, and draw text line by line at the contract's baselines from the unsnapped position. `hosts/apple/main.swift` is the reference (`Typeset`, `baseline`, `TextView`, `snapFrames`).
 
-**Checking it.** `examples/styles` shows one labelled case per rule, with a "Run check" button (`nuclo-native/check`). On the web it lays the screen out with the engine, measuring text the browser's way, and compares every box with `getBoundingClientRect`. On a native host it compares the frames JS sent with the views' real frames. Either way the screen says "N/N boxes match".
+**Checking it.** `examples/styles` shows one labelled case per rule, css() classes and responsive `screens` included, with a "Run check" button (`nuclo-native/check`). On the web it styles every element as the native runtime does (`src/style.ts`), lays the screen out with the engine, measuring text the browser's way, and compares every box with `getBoundingClientRect`. On a native host it compares the frames JS sent with the views' real frames (a native host keeps only the rows near the screen, so it checks those). Either way the screen says "N/N boxes match". The rows marked "176" ran before the box model, css() and responsive styles (when the page had 176 boxes) and have not run since.
 
 | Host | Check | Against the browser, pixel by pixel |
 | --- | --- | --- |
-| Web (Chrome) | 175/175, at 375 and 1024 wide | Is the reference |
+| Web (Chrome) | 355/355 at 375, 420, 700 and 1024 wide (both sides of each breakpoint) | Is the reference |
 | macOS | 176/176 | Headless Chrome, same width, 2×: every box edge on the same device pixel; text at the same baselines and advances, glyph anti-aliasing apart. Controls are AppKit's |
 | iOS (simulator) | 176/176 | Chrome at 3×, 402 wide: the same, over the first screen. Controls are UIKit's |
 | Android (emulator, API 37) | 176/176 | Chrome at 2.625×: box edges and text baselines on the same device pixels, glyph anti-aliasing apart. Its 411.43-dp width against Chrome's 411 px moves right-hand edges 1 px. Controls are Material's |
-| Linux (GTK 4.24 on Linux, Wayland; and on macOS, light and dark) | 176/176 at 1× and 2× (`NUCLO_SELFTEST=1` prints it) | Chrome at 1× and 2×, 420 wide: every box edge on the same device pixel, text within 0.1 px, the same line breaks. Controls are GTK's; Adwaita's checkbox is 26 px, a pixel past its box on each side |
+| Linux (GTK 4.24 on Linux, light and dark) | 356/356 at 1× (`NUCLO_SELFTEST=1` prints it); at 2×, every box near the screen | Chrome at 1×, 420 wide, the whole page: 1,502 of 2.2 M pixels differ, all in the controls and two glyphs' anti-aliasing; borders, wrapping, positioning and css() cases are pixel for pixel. Controls are GTK's; Adwaita's checkbox is 26 px, a pixel past its box on each side |
 | Windows | Not run | `dotnet build`: 0 warnings, 0 errors. The input's and checkbox's fit in their boxes is unverified |
 | ios-gpui (simulator) | 176/176 | The same as iOS. The button and checkbox are the look's |
 | macos-gpui | 176/176 (`NUCLO_CHECK=1` logs it) | Not captured: no screen-recording permission here |
-| linux-gpui (Wayland, and X11 at 2×) | 176/176 at 1× and 2× | Chrome at 1× and 2×: box edges on the same device pixels, text on the same pixels as the GTK host (grayscale anti-aliasing, as Chrome). The button and checkbox are the look's |
+| linux-gpui (Wayland, and X11 at 2×) | 356/356 at 2×; at 1×, every box near the screen | Chrome at 1×, 4,200 px of the page: apart from the look's own button, about 4,500 pixels differ, in controls and anti-aliasing; text on the same pixels as the GTK host (grayscale, as Chrome). The button and checkbox are the look's |
 
 ## Hosts
 
@@ -271,16 +276,15 @@ Commands behind them, if you want to run one by hand:
 ## What the POC supports
 
 - **Tags:** `button`, `input` (text, password, checkbox), `textarea`, `img`. Text tags (`span`, `p`, `h1`–`h6`, `label`, `strong`…) become one label holding their whole text. Every other tag is a flex container, column by default.
-- **Styles (inline `style` only):** `flexDirection`, `gap`, `alignItems`, `flex`, `padding`, `width`, `height`, `color`, `backgroundColor`, `borderRadius`, `fontSize`, `fontWeight`, `fontFamily: "system"`, `textAlign`, `opacity`, laid out the same everywhere ([Styling](#styling-the-same-pixels-everywhere)). Styles do not inherit: set `color` on the text itself. Text collapses whitespace as CSS does.
+- **Styles:** inline `style`, `css()`, `createCss()` with `screens`, `cx()`, `variants()` and `globalStyle()` by tag or class: flexbox layout, the box model, positioning and paint, laid out the same everywhere and responsive to the window ([Styling](#styling-the-same-pixels-everywhere)). Text properties inherit. Text collapses whitespace as CSS does.
 - **Images:** `img({ src })` loads a file relative to the bundle: its natural size and aspect, or the box you give it, cropped to fill.
 - **Events:** `click` on anything, `input` on text inputs, `change` on Enter and on checkbox toggles. Events do not bubble.
-- **nuclo features:** reactive text, attributes and styles, `list()`, `when()`, `update()`.
+- **nuclo features:** all of nuclo's API: reactive text, attributes, classes and styles, `list()`, `when()`/`else()`, `region()`/`into()`, `scope()` and `update(scope)`, `forceUpdate()`, `on()` with `mount` and `destroy` (`test/api.test.ts`). `hydrate()` and `renderToString()` are for the web and the server.
 - **Navigation:** `nuclo-native/router`, with each platform's tabs, stacks, transitions and back gestures.
 
 ## Not done
 
-- `css()` and class names. Only inline styles reach the host.
-- `flexWrap`, `justifyContent`, `margin`, borders, `position`, per-side padding: the layout engine covers the subset above.
+- On native: `:hover`, `:focus` and other pseudo-classes, combinator selectors, `@keyframes`/`transition`, `box-shadow`, `lineHeight`, `letterSpacing`, `fontStyle`, `transform`, `zIndex`, `order`, `aspectRatio`, `baseline` alignment, per-corner radii and per-side border colours. They still work on the web.
 - On Windows: placeholders and password fields. On Apple: password fields.
 - Moving a window to a screen of another scale does not lay it out again on Linux and Windows.
 - Remote images. `src` is a bundled file.

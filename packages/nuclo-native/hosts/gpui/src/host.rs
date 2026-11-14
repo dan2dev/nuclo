@@ -476,6 +476,9 @@ impl Host {
     /// A node at its frame (snapped), painted; nothing until JS has laid it out.
     fn node(&self, id: u32, cx: &mut Context<Self>) -> AnyElement {
         let (Some(node), Some(placed)) = (self.tree.get(id), self.placed.get(&id)) else { return div().into_any_element() };
+        if node.style.hidden {
+            return div().into_any_element();
+        }
         let [x, y, w, h] = placed.rect;
         let s = &node.style;
         let at = |d: Div| d.absolute().left(px(x)).top(px(y)).w(px(w)).h(px(h));
@@ -493,8 +496,8 @@ impl Host {
                 .opacity(s.opacity)
                 .into_any_element(),
             Kind::Input => {
-                // Its text centred, 8 in, as the browser pads an input.
-                let field = paint(at(div()), s).flex().items_center().px(px(8.)).text_size(px(s.text.size));
+                // Its text centred, in by its padding, as the browser pads an input.
+                let field = paint(at(div()), s).flex().items_center().pl(px(s.padding[3])).pr(px(s.padding[1])).text_size(px(s.text.size));
                 let field = field.when(s.background.is_none(), |d| d.bg(white()).rounded(px(8.)));
                 match self.inputs.get(&id) {
                     Some(input) => field.child(input.clone()).into_any_element(),
@@ -520,7 +523,8 @@ impl Host {
     /// A text's lines, each at the contract's baseline: broken as measured, drawn one by one.
     fn lines(&self, node: &Node, width: f32, offset: (f32, f32)) -> Vec<AnyElement> {
         let s = &node.style;
-        let inner = width - 2. * s.padding;
+        let [pad_top, pad_right, _, pad_left] = s.padding;
+        let inner = width - pad_left - pad_right;
         let shared = self.shared.borrow();
         let lines = shared.measurer.lines(&node.text, &s.text, Some(inner + 0.01));
         let line = line_height(s.text.size, self.scale);
@@ -543,12 +547,12 @@ impl Host {
             .map(|(i, line_text)| {
                 // GPUI lays elements out on whole device pixels, so a line starts at the box's snapped
                 // left and is painted from there at the unsnapped x, as the browser places text.
-                let dx = px(s.padding + offset.0 + (inner - line_text.width) * align);
+                let dx = px(pad_left + offset.0 + (inner - line_text.width) * align);
                 let text = SharedString::from(line_text.text);
                 let el = div()
                     .absolute()
                     .left(px(0.))
-                    .top(px(((s.padding + offset.1 + i as f32 * line + first) * scale).round() / scale - above))
+                    .top(px(((pad_top + offset.1 + i as f32 * line + first) * scale).round() / scale - above))
                     .w(px(width))
                     .h(px(painted_line));
                 let paint = canvas(
@@ -1059,14 +1063,26 @@ fn layer(screen: AnyElement, layer: Layer, edge_shadow: bool) -> Div {
         .when(layer.dim > 0., |d| d.child(div().absolute().inset_0().bg(gpui::black().opacity(layer.dim))))
 }
 
-/// Paint: background, corner radius (which clips the children), opacity.
+/// Paint: background, corner radius, opacity, border; overflow hidden clips the children.
 fn paint(el: Div, s: &Style) -> Div {
     let mut el = el.rounded(px(s.radius)).opacity(s.opacity);
-    if s.radius > 0. {
+    if s.clip {
         el = el.overflow_hidden();
     }
     if let Some(bg) = s.background {
         el = el.bg(bg);
+    }
+    if s.border.iter().any(|&w| w > 0.) {
+        // Drawn by an overlay: a border on the box itself would move its children, which JS placed.
+        let mut border = div().absolute().left_0().top_0().size_full().rounded(px(s.radius));
+        let style = border.style();
+        let [t, r, b, l] = s.border;
+        style.border_widths.top = Some(px(t).into());
+        style.border_widths.right = Some(px(r).into());
+        style.border_widths.bottom = Some(px(b).into());
+        style.border_widths.left = Some(px(l).into());
+        style.border_color = Some(s.border_color.unwrap_or(gpui::black().into()).into());
+        el = el.child(border);
     }
     el
 }

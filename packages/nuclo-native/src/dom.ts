@@ -13,7 +13,10 @@
  *   ["remove", id]                   detach and destroy the subtree
  *   ["set",    id, key, value]       text, value, checked, placeholder, disabled, src…
  *                                    screen: title · stack: title, icon (its tab) · tabs: selected
- *   ["style",  id, key, value]       camelCase CSS subset
+ *   ["style",  id, key, value]       computed paint (style.ts, paint()): backgroundColor, color, opacity,
+ *                                    fontSize, fontWeight, fontFamily, textAlign, borderRadius,
+ *                                    borderWidth "t r b l", borderColor, overflow, display, and a
+ *                                    text's, button's or input's padding "t r b l"; "" resets one
  *   ["listen", id, type]             click | input | change
  *
  *   ["frame",  id, x, y, w, h]       the node's box, relative to its parent's (layout.ts); a layout
@@ -45,7 +48,8 @@
  */
 
 import "./host";
-import { type Frame, type LayoutNode, layout } from "./layout";
+import { type Frame, type LayoutNode, insets, layout } from "./layout";
+import { INHERITED, Sheet, type Styles, compute, declarations, mediaMatches, paint } from "./style";
 
 /** One host op (see the contract above): the first item tells the rest apart. */
 export type Op =
@@ -65,13 +69,6 @@ const live = new Map<number, NElement>();
 const screens = new Set<NElement>();
 
 const TEXT_TAGS = new Set("span p h1 h2 h3 h4 h5 h6 label strong em b i small a".split(" "));
-const TAG_STYLE: Record<string, Record<string, string>> = {
-  h1: { fontSize: "32px", fontWeight: "bold" },
-  h2: { fontSize: "24px", fontWeight: "bold" },
-  h3: { fontSize: "20px", fontWeight: "bold" },
-  strong: { fontWeight: "bold" },
-  b: { fontWeight: "bold" },
-};
 
 /** Kinds that hold child widgets. */
 const CONTAINERS = new Set(["view", "screen", "stack", "tabs"]);
@@ -83,7 +80,100 @@ function kindOf(tag: string) {
   return TEXT_TAGS.has(tag) ? "text" : "view";
 }
 
+// ── Styles ───────────────────────────────────────────────────────────────
+
+/** nuclo's stylesheet (css(), globalStyle()), as text: index.ts hands it over. */
+let stylesheet = () => "";
+export function useStylesheet(source: () => string) {
+  stylesheet = source;
+}
+let cssText = "";
+let sheet = new Sheet("");
+const matching = new Set<string>();
+let matchKey = "";
+/** Nodes whose computed style may have changed: resolved, top-down, before the next batch. */
+const restyled = new Set<NNode>();
+
+/** The window's size for @media: the body's, else a screen's. */
+function viewport() {
+  const size = sizes.get(1) ?? [...sizes.values()][0];
+  return size ? [size[0], size[1]] : [0, 0];
+}
+
+function restyleAll(node: NNode) {
+  restyled.add(node);
+  for (let c = node.firstChild; c; c = c.nextSibling) if (c.live) restyleAll(c);
+}
+
+/** Resolves the restyled nodes (and the children their inherited properties reach) and queues the paint they changed. */
+function styleAll() {
+  const text = stylesheet();
+  if (text !== cssText) {
+    cssText = text;
+    sheet = new Sheet(text);
+    matchKey = "-";
+  }
+  const [w, h] = viewport();
+  const key = sheet.medias.map((m) => (mediaMatches(m, w, h) ? 1 : 0)).join("");
+  if (key !== matchKey) {
+    matchKey = key;
+    matching.clear();
+    sheet.medias.forEach((m, i) => key[i] === "1" && matching.add(m));
+    restyleAll(body);
+  }
+  if (!restyled.size) return;
+  const depth = (node: NNode) => {
+    let d = 0;
+    for (let n = node.parentNode; n; n = n.parentNode) d++;
+    return d;
+  };
+  for (const node of [...restyled].sort((a, b) => depth(a) - depth(b))) if (restyled.has(node)) resolveStyle(node);
+}
+
+const differs = (a: Styles, b: Styles) => {
+  let n = 0;
+  for (const k in a) {
+    if (a[k] !== b[k]) return true;
+    n++;
+  }
+  for (const _ in b) if (--n < 0) return true;
+  return false;
+};
+
+function resolveStyle(node: NNode) {
+  restyled.delete(node);
+  const before = node.computed;
+  const declared =
+    node instanceof NElement
+      ? sheet.cascade(node.localName, String(node.attrs.class ?? ""), (m) => matching.has(m), Object.entries(node.styles))
+      : [];
+  const next = compute(node.parentNode?.computed, declared);
+  node.computed = next;
+  if (!before || differs(next, before)) {
+    touch(node);
+    resized = true; // lay out again even when the host gets no op
+  }
+  if (node.live) {
+    const kind = node instanceof NElement ? node.kind : "text";
+    const box: LayoutNode = { id: node.nid, kind, style: next, children: [] };
+    const want = paint(next, kind, kind === "view" || kind === "screen" ? undefined : insets(box));
+    const had = node.painted ?? {};
+    for (const k in want) if (want[k] !== had[k]) ops.push(["style", node.nid, k, want[k]!]);
+    for (const k in had) if (!(k in want)) ops.push(["style", node.nid, k, ""]);
+    node.painted = want;
+  }
+  // Inherited properties reach the children (a leaf's own text is not a node on the host).
+  if (!before || INHERITED.some((k) => next[k] !== before[k])) {
+    for (let c = node.firstChild; c; c = c.nextSibling) if (c.live) resolveStyle(c);
+  }
+}
+
 class NNode {
+  // The DOM's node type constants: code that reads Node.ELEMENT_NODE (nuclo's builds do) finds them.
+  static readonly ELEMENT_NODE = 1;
+  static readonly TEXT_NODE = 3;
+  static readonly COMMENT_NODE = 8;
+  static readonly DOCUMENT_FRAGMENT_NODE = 11;
   nid = nextId++;
   nodeType = 1;
   parentNode: NNode | null = null;
@@ -99,6 +189,9 @@ class NNode {
   box?: LayoutNode;
   /** In a live container but off the host, far from the screen's visible part (cull); laid out as a box of its last size. */
   parked = false;
+  /** Its computed style (style.ts) and the paint properties the host has. */
+  computed?: Styles;
+  painted?: Styles;
   /** A container's laid-out children, in box.children order: cull finds them by index. */
   kids?: NNode[];
   /** A long list being culled: the children that may be on the host lie in kept. Inserts and removes reset it. */
@@ -235,6 +328,8 @@ function realize(node: NNode) {
     parked.delete(node.nid);
     node.box = undefined;
   }
+  node.painted = undefined;
+  restyled.add(node);
   if (!(node instanceof NElement)) {
     ops.push(["create", node.nid, "text"], ["set", node.nid, "text", shown(node.textContent)]);
     return;
@@ -242,9 +337,7 @@ function realize(node: NNode) {
   live.set(node.nid, node);
   if (node.kind === "screen") screens.add(node);
   ops.push(["create", node.nid, node.kind]);
-  const style = { ...TAG_STYLE[node.localName], ...node.styles };
-  for (const key in style) ops.push(["style", node.nid, key, style[key]]);
-  for (const key in node.attrs) ops.push(["set", node.nid, key, node.attrs[key]]);
+  for (const key in node.attrs) if (key !== "class" && key !== "style") ops.push(["set", node.nid, key, node.attrs[key]]);
   for (const type of node.listeners?.keys() ?? []) ops.push(["listen", node.nid, type]);
   if (!CONTAINERS.has(node.kind)) {
     ops.push(["set", node.nid, "text", shown(node.textContent)]);
@@ -331,17 +424,48 @@ class NFragment extends NNode {
 /** Each element's style values, back to the element: one proxy handler serves them all. */
 const styleOwner = new WeakMap<object, NElement>();
 const styleHandler: ProxyHandler<Record<string, string>> = {
-  set(styles, key: string, value: string) {
-    if (styles[key] === value) return true;
-    styles[key] = value;
-    const el = styleOwner.get(styles)!;
-    if (el.live) {
-      ops.push(["style", el.nid, key, value]);
-      touch(el);
-    }
+  set(styles, key: string, value: unknown) {
+    setStyle(styles, key, value);
     return true;
   },
+  deleteProperty(styles, key: string) {
+    setStyle(styles, key, "");
+    return true;
+  },
+  get(styles, key: string) {
+    switch (key) {
+      case "setProperty":
+        return (name: string, value: unknown) => setStyle(styles, name, value);
+      case "removeProperty":
+        return (name: string) => setStyle(styles, name, "");
+      case "getPropertyValue":
+        return (name: string) => styles[name] ?? "";
+      case "cssText":
+        return Object.entries(styles).map(([k, v]) => `${k}: ${v}`).join("; ");
+      default:
+        return styles[key] ?? "";
+    }
+  },
 };
+
+/** One inline style property: "" (or null) removes it. Resolved with the rest before the next batch. */
+function setStyle(styles: Record<string, string>, key: string, value: unknown) {
+  const v = value == null ? "" : String(value);
+  if (key === "cssText") {
+    for (const k in styles) delete styles[k];
+    for (const [k, val] of declarations(v)) styles[k] = val;
+  } else if (v === "") {
+    if (!(key in styles)) return;
+    delete styles[key];
+  } else if (styles[key] === v) return;
+  else {
+    styles[key] = v;
+    // A radius clips the children, as the web build's inline styles do.
+    if (key === "borderRadius") styles.overflow = "hidden";
+  }
+  const el = styleOwner.get(styles)!;
+  if (el.live) restyled.add(el);
+}
 
 class NElement extends NNode {
   localName: string;
@@ -368,8 +492,13 @@ class NElement extends NNode {
   }
 
   setAttribute(key: string, value: unknown) {
+    if (key === "style") return void setStyle(this.styles, "cssText", value);
     if (this.attrs[key] === value) return;
     this.attrs[key] = value;
+    if (key === "class") {
+      if (this.live) restyled.add(this);
+      return;
+    }
     if (this.live) {
       ops.push(["set", this.nid, key, value]);
       touch(this);
@@ -385,7 +514,13 @@ class NElement extends NNode {
   }
 
   removeAttribute(key: string) {
+    if (key === "style") return void setStyle(this.styles, "cssText", "");
+    if (!(key in this.attrs)) return;
     delete this.attrs[key];
+    if (key === "class") {
+      if (this.live) restyled.add(this);
+      return;
+    }
     if (this.live) {
       ops.push(["set", this.nid, key, null]);
       touch(this);
@@ -447,15 +582,26 @@ g.Element = g.HTMLElement = NElement;
 g.Text = NText;
 g.Comment = NComment;
 g.DocumentFragment = NFragment;
+const head = new NElement("head");
 g.document = {
   body,
-  head: new NElement("head"),
+  head,
   createElement: (tag: string) => new NElement(tag),
   createElementNS: (ns: string, tag: string) => new NElement(tag, ns),
   createTextNode: (data: string) => new NText(String(data)),
   createComment: (data: string) => new NComment(data),
   createDocumentFragment: () => new NFragment(),
-  getElementById: () => null,
+  getElementById: (id: string) => {
+    const find = (node: NNode): NElement | null => {
+      if (node instanceof NElement && node.attrs.id === id) return node;
+      for (let c = node.firstChild; c; c = c.nextSibling) {
+        const found = find(c);
+        if (found) return found;
+      }
+      return null;
+    };
+    return find(head) ?? find(body);
+  },
 };
 // Engines older than ES2021 (e.g. some QuickJS builds) lack WeakRef.
 g.WeakRef ??= class {
@@ -470,6 +616,7 @@ g.WeakRef ??= class {
 
 /** Sends the pending ops to the host as one batch. */
 export function flush() {
+  styleAll();
   const batch = ops;
   ops = [];
   if (batch.length) {
@@ -530,10 +677,12 @@ function tree(node: NNode): LayoutNode {
       children.push(c.parked ? c.box! : tree(c));
     }
   }
-  const style = el ? { ...TAG_STYLE[el.localName], ...el.styles } : {};
+  const style = node.computed ?? {};
   const prev = node.box;
   if (prev) prev.prev = undefined; // Only the last one: no chain of old nodes.
-  return (node.box = { id: node.nid, kind, style, children, prev });
+  // The same computed style parses the same: keep what layout read from it.
+  const parsed = prev?.style === style ? prev.parsed : undefined;
+  return (node.box = { id: node.nid, kind, style, children, prev, parsed });
 }
 
 function measure(node: LayoutNode, maxWidth: number) {
@@ -701,7 +850,7 @@ function layoutUnparked(out: Op[]) {
     let root: NNode = parent;
     while (root.parentNode && !screens.has(root as NElement)) root = root.parentNode;
     const { frames, height } = layout(tree(node), box.ws[i], undefined, measure, sizes.get(root.nid)?.[2] ?? 0);
-    if (height !== box.hs[i]) {
+    if (Math.abs(height - frame[3]) > 1e-9) {
       touch(parent);
       continue;
     }

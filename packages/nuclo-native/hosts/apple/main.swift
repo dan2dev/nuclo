@@ -38,8 +38,10 @@ final class ImageView: NSView {
         image.draw(in: NSRect(x: bounds.midX - size.width / 2, y: bounds.midY - size.height / 2, width: size.width, height: size.height))
     }
 }
-/// An input: its text centred in the box and 8 points in, as the browser pads it (layout.ts).
+/// An input: its text centred in the box, inset by its padding plus border (`padding` style).
 final class Field: NSTextField {
+    var insets = Edges.zero { didSet { needsDisplay = true } }
+
     override class var cellClass: AnyClass? {
         get { FieldCell.self }
         set {}
@@ -49,8 +51,10 @@ final class Field: NSTextField {
 final class FieldCell: NSTextFieldCell {
     override func drawingRect(forBounds rect: NSRect) -> NSRect {
         let height = NSLayoutManager().defaultLineHeight(for: font ?? NSFont.systemFont(ofSize: 14))
+        let insets = (controlView as? Field)?.insets ?? .zero
         // The field editor adds 2 points of line padding.
-        return NSRect(x: rect.minX + 6, y: rect.midY - height / 2, width: max(0, rect.width - 12), height: height)
+        let left = max(0, insets.left - 2), right = max(0, insets.right - 2)
+        return NSRect(x: rect.minX + left, y: rect.midY - height / 2, width: max(0, rect.width - left - right), height: height)
     }
 }
 #else
@@ -63,17 +67,50 @@ typealias ImageView = UIImageView
 typealias Tap = UITapGestureRecognizer
 typealias ViewController = UIViewController
 typealias Window = UIWindow
+
+/// An input: its text inset horizontally by its padding plus border (`padding` style).
+final class Field: UITextField {
+    var insets = Edges.zero { didSet { setNeedsLayout() } }
+
+    override func textRect(forBounds bounds: CGRect) -> CGRect {
+        CGRect(x: bounds.minX + insets.left, y: bounds.minY, width: max(0, bounds.width - insets.left - insets.right), height: bounds.height)
+    }
+
+    override func editingRect(forBounds bounds: CGRect) -> CGRect { textRect(forBounds: bounds) }
+    override func placeholderRect(forBounds bounds: CGRect) -> CGRect { textRect(forBounds: bounds) }
+}
 #endif
 
+/// "#rgb", "#rrggbb" or "#rrggbbaa" (alpha last).
 func color(_ hex: String) -> Color {
     var digits = String(hex.dropFirst())
     if digits.count == 3 { digits = digits.map { "\($0)\($0)" }.joined() }
-    let rgb = UInt32(digits, radix: 16) ?? 0
-    return Color(red: CGFloat(rgb >> 16 & 255) / 255, green: CGFloat(rgb >> 8 & 255) / 255, blue: CGFloat(rgb & 255) / 255, alpha: 1)
+    if digits.count == 6 { digits += "ff" }
+    let rgba = UInt32(digits, radix: 16) ?? 255
+    let channel = { (shift: UInt32) in CGFloat(rgba >> shift & 255) / 255 }
+    return Color(red: channel(24), green: channel(16), blue: channel(8), alpha: channel(0))
 }
 
 func px(_ value: String) -> CGFloat {
     CGFloat(Double(value.replacingOccurrences(of: "px", with: "")) ?? 0)
+}
+
+/// Four sides in px, from "t r b l" ("" or anything else: zero).
+struct Edges: Equatable {
+    var top: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = 0
+    static let zero = Edges()
+
+    init() {}
+    init(_ value: String) {
+        let n = value.split(separator: " ").map { px(String($0)) }
+        if n.count == 4 { (top, right, bottom, left) = (n[0], n[1], n[2], n[3]) }
+    }
+
+    var uniform: Bool { top == right && right == bottom && bottom == left }
+
+    func inset(_ rect: CGRect) -> CGRect {
+        CGRect(x: rect.minX + left, y: rect.minY + top, width: max(0, rect.width - left - right), height: max(0, rect.height - top - bottom))
+    }
 }
 
 /// A container. JS lays its children out (layout.ts) and sends their frames; the box only holds them.
@@ -195,7 +232,8 @@ final class TextView: View {
     var font = textFont() { didSet { changed() } }
     var color = labelColor { didSet { changed() } }
     var alignment = NSTextAlignment.left { didSet { changed() } }
-    var padding: CGFloat = 0 { didSet { changed() } }
+    /// Where the text sits inside the frame: padding plus border, "t r b l" (`padding` style).
+    var padding = Edges.zero { didSet { changed() } }
     /// The box JS laid out, relative to the one drawn: frames are snapped to device pixels, text is
     /// broken and placed as measured.
     var layout = CGRect.zero { didSet { if layout != oldValue { changed() } } }
@@ -237,7 +275,7 @@ final class TextView: View {
         #else
         guard let context = UIGraphicsGetCurrentContext() else { return }
         #endif
-        let box = (layout.isEmpty ? bounds : layout).insetBy(dx: padding, dy: padding)
+        let box = padding.inset(layout.isEmpty ? bounds : layout)
         let typeset = Typeset(text, font, color: color, maxWidth: box.width + 0.01)
         let scale = abs(context.userSpaceToDeviceSpaceTransform.d)
         let first = baseline(font, scale: scale), line = lineHeight(font, scale: scale)
@@ -273,6 +311,7 @@ final class Host: NSObject {
     private var views: [Int: View] = [:]
     private var ids: [ObjectIdentifier: Int] = [:]
     private var fonts: [Int: (size: CGFloat, bold: Bool, system: Bool)] = [:]
+    private var borders: [Int: (widths: Edges, color: Color)] = [:]
     private var assets = ""
     private var rootSize = CGSize.zero
     /// Frames as JS sent them; views get them snapped to device pixels (snapFrames).
@@ -367,6 +406,7 @@ final class Host: NSObject {
                     width: snap(x + frame.width) - edges.minX, height: snap(y + frame.height) - edges.minY
                 )
                 (child as? TextView)?.layout = CGRect(x: x - edges.minX, y: y - edges.minY, width: frame.width, height: frame.height)
+                if borders[id] != nil { paintBorder(id, child) }
                 place(child, at: CGPoint(x: x, y: y), snapped: edges.origin)
             }
         }
@@ -435,7 +475,7 @@ final class Host: NSObject {
             (field.cell as? NSTextFieldCell)?.sendsActionOnEndEditing = false
             return field
             #else
-            let field = UITextField()
+            let field = Field()
             field.borderStyle = .roundedRect
             field.font = textFont()
             field.addTarget(self, action: #selector(edited(_:)), for: .editingChanged)
@@ -572,6 +612,7 @@ final class Host: NSObject {
         guard let id = ids.removeValue(forKey: ObjectIdentifier(view)) else { return }
         views[id] = nil
         fonts[id] = nil
+        borders[id] = nil
         layout[id] = nil
     }
 
@@ -619,50 +660,63 @@ final class Host: NSObject {
         }
     }
 
-    /// Paint and text styles. Layout styles (flexDirection, gap, alignItems, flex, width,
-    /// height, padding) are JS's: they arrive as frames.
+    /// Paint and text styles, resolved by JS (style.ts); layout arrives as frames (layout.ts).
+    /// "" resets a key to its default; unknown keys are ignored.
     private func style(_ id: Int, _ view: View, _ key: String, _ value: String) {
+        let paint: Color? = value.isEmpty ? nil : color(value)
         switch key {
-        case "padding": (view as? TextView)?.padding = px(value)
-        case "opacity":
+        case "padding":
+            // The content inset of texts, buttons and inputs: padding plus border.
+            let insets = Edges(value)
+            (view as? TextView)?.padding = insets
+            (view as? Field)?.insets = insets
             #if os(iOS)
-            if let box = view as? Box { box.restAlpha = px(value); break }
+            (view as? UIButton)?.contentEdgeInsets = UIEdgeInsets(top: insets.top, left: insets.left, bottom: insets.bottom, right: insets.right)
             #endif
-            view.alpha = px(value)
+        case "opacity":
+            let alpha = value.isEmpty ? 1 : px(value)
+            #if os(iOS)
+            if let box = view as? Box { box.restAlpha = alpha; break }
+            #endif
+            view.alpha = alpha
+        case "display":
+            view.isHidden = value == "none"
         case "borderRadius":
-            #if os(macOS)
-            view.wantsLayer = true
-            view.layer?.cornerRadius = px(value)
-            view.layer?.masksToBounds = true
-            #else
-            view.layer.cornerRadius = px(value)
-            view.layer.masksToBounds = true
-            #endif
+            // Rounds the background, border and image; children clip only with overflow "hidden".
+            let layer = backing(view)
+            layer.cornerRadius = px(value)
+            if view is ImageView { layer.masksToBounds = true }
+        case "overflow":
+            backing(view).masksToBounds = value == "hidden" || view is ImageView
+        case "borderWidth", "borderColor":
+            var border = borders[id] ?? (Edges.zero, Color.black)
+            if key == "borderWidth" { border.widths = Edges(value) } else { border.color = paint ?? .black }
+            borders[id] = border
+            paintBorder(id, view)
         case "textAlign":
             (view as? TextView)?.alignment = value == "center" ? .center : value == "right" ? .right : .left
         case "backgroundColor":
             if id == 1 {
-                pageColor = color(value)
+                pageColor = paint
                 for screen in screens.values { screen.applyBackground() }
             }
             #if os(macOS)
-            view.wantsLayer = true
-            view.layer?.backgroundColor = color(value).cgColor
+            backing(view).backgroundColor = paint?.cgColor
             #else
-            view.backgroundColor = color(value)
+            view.backgroundColor = paint
             #endif
         case "color":
-            (view as? TextView)?.color = color(value)
+            (view as? TextView)?.color = paint ?? labelColor
             #if os(macOS)
-            (view as? NSTextField)?.textColor = color(value)
+            (view as? NSTextField)?.textColor = paint ?? .controlTextColor
             #else
-            (view as? UITextField)?.textColor = color(value)
-            (view as? UIButton)?.setTitleColor(color(value), for: .normal)
+            (view as? UITextField)?.textColor = paint
+            (view as? UIButton)?.setTitleColor(paint, for: .normal)
             #endif
         case "fontSize", "fontWeight", "fontFamily":
             var spec = fonts[id] ?? (14, false, false)
             switch key {
-            case "fontSize": spec.size = px(value)
+            case "fontSize": spec.size = value.isEmpty ? 14 : px(value)
             case "fontWeight": spec.bold = value == "bold" || (Int(value) ?? 400) >= 600
             default: spec.system = value == "system"
             }
@@ -678,6 +732,47 @@ final class Host: NSObject {
         default:
             break
         }
+    }
+
+    private func backing(_ view: View) -> CALayer {
+        #if os(macOS)
+        view.wantsLayer = true
+        return view.layer!
+        #else
+        return view.layer
+        #endif
+    }
+
+    /// A border inside the frame (CSS border-box), over the background: equal widths stroke the
+    /// rounded edge (CALayer's border), unequal ones fill each edge's rect, unrounded.
+    private func paintBorder(_ id: Int, _ view: View) {
+        let layer = backing(view)
+        let (widths, color) = borders[id] ?? (Edges.zero, Color.black)
+        let uniform = widths.uniform
+        layer.borderWidth = uniform ? widths.top : 0
+        layer.borderColor = color.cgColor
+        let edges = layer.sublayers?.first { $0.name == "nuclo.border" } as? CAShapeLayer
+        guard !uniform else {
+            edges?.removeFromSuperlayer()
+            return
+        }
+        let shape = edges ?? CAShapeLayer()
+        if edges == nil {
+            shape.name = "nuclo.border"
+            shape.fillRule = .evenOdd
+            layer.addSublayer(shape)
+        }
+        // The view's own coordinates: y down on both platforms (macOS views here are flipped).
+        let bounds = view.bounds
+        let path = CGMutablePath()
+        path.addRect(bounds)
+        path.addRect(widths.inset(bounds))
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        shape.frame = layer.bounds
+        shape.path = path
+        shape.fillColor = color.cgColor
+        CATransaction.commit()
     }
 }
 

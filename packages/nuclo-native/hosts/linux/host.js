@@ -146,9 +146,9 @@ function textSize(text, font, maxWidth) {
 
 /**
  * Every nuclo view: a container (children at the frames JS sent), a text, an image, or a button's label.
- * It paints itself: background, the text line by line at the contract's baselines, the image (cover), all
- * inside its rounded corners, which clip its children too. GTK sizes are whole logical pixels, so it paints
- * its snapped frame (_frame), not its allocation.
+ * It paints itself: background, the image (cover), the text line by line at the contract's baselines and the
+ * border, inside its rounded corners; with overflow hidden they clip its children to the padding box. GTK sizes
+ * are whole logical pixels, so it paints its snapped frame (_frame), not its allocation.
  */
 const View = GObject.registerClass(
   class NucloView extends Gtk.Widget {
@@ -170,10 +170,11 @@ const View = GObject.registerClass(
 
     vfunc_snapshot(snapshot) {
       const [w, h] = this._frame?.slice(2) ?? [this.get_width(), this.get_height()];
-      const rect = new Graphene.Rect().init(0, 0, w, h);
-      const clip = this._radius || this._texture;
-      if (clip) snapshot.push_rounded_clip(new Gsk.RoundedRect().init_from_rect(rect, this._radius ?? 0));
-      if (this._background) snapshot.append_color(this._background, rect);
+      const radius = this._radius ?? 0;
+      const outline = new Gsk.RoundedRect().init_from_rect(new Graphene.Rect().init(0, 0, w, h), radius);
+      const [bt, br, bb, bl] = this._border ?? [0, 0, 0, 0];
+      snapshot.push_rounded_clip(outline);
+      if (this._background) snapshot.append_color(this._background, outline.bounds);
       if (this._texture) {
         // Cover: scaled to fill, centred, cropped.
         const t = this._texture;
@@ -181,8 +182,18 @@ const View = GObject.registerClass(
         snapshot.append_texture(t, new Graphene.Rect().init((w - t.width * scale) / 2, (h - t.height * scale) / 2, t.width * scale, t.height * scale));
       }
       if (this._text) drawText(this, snapshot);
+      snapshot.pop();
+      if (this._border) {
+        const c = this._borderColor ?? rgba("#000");
+        snapshot.append_border(outline, [bt, br, bb, bl], [c, c, c, c]);
+      }
+      // overflow hidden: the children inside the padding box, its corners rounded inside the border.
+      if (this._clip) {
+        const inner = new Graphene.Rect().init(bl, bt, Math.max(0, w - bl - br), Math.max(0, h - bt - bb));
+        snapshot.push_rounded_clip(new Gsk.RoundedRect().init_from_rect(inner, Math.max(0, radius - Math.max(bt, br, bb, bl))));
+      }
       for (let c = this.get_first_child(); c; c = c.get_next_sibling()) this.snapshot_child(c, snapshot);
-      if (clip) snapshot.pop();
+      if (this._clip) snapshot.pop();
     }
   },
 );
@@ -211,8 +222,8 @@ function drawText(view, snapshot) {
   if (!owner._layout) return;
   const [, origin] = view.compute_point(owner, new Graphene.Point({ x: 0, y: 0 }));
   const [ox, oy] = owner._offset ?? [0, 0];
-  const [padX, padY] = view._pad;
-  const box = [padX + ox - (origin?.x ?? 0), padY + oy - (origin?.y ?? 0), owner._layout[2] - 2 * padX];
+  const [padT, padR, , padL] = view._pad;
+  const box = [padL + ox - (origin?.x ?? 0), padT + oy - (origin?.y ?? 0), owner._layout[2] - padL - padR];
   const scale = deviceScale();
   const font = view._font;
   const line = lineHeight(font.size, scale);
@@ -229,7 +240,7 @@ function drawText(view, snapshot) {
   });
 }
 
-function textView(pad = [0, 0], align = "left") {
+function textView(pad = [0, 0, 0, 0], align = "left") {
   const view = new View();
   Object.assign(view, { _text: "", _font: defaultFont(), _pad: pad, _align: align });
   return view;
@@ -286,7 +297,7 @@ const create = {
   image: () => new View(),
   // The button fills its frame; its label is a text view, so what is measured is what is drawn.
   button: () => {
-    const label = textView([16, 8], "center");
+    const label = textView([8, 16, 8, 16], "center");
     const button = new Gtk.Button({ child: label, css_classes: ["nuclo"] });
     label._owner = button;
     button._label = label;
@@ -469,37 +480,57 @@ const apply = {
     const widget = widgets.get(id);
     const text = widget._label ?? widget; // a button's label holds its font and colour
     const own = widget instanceof View;
-    if (id === 1 && key === "backgroundColor") screenCss.load_from_string(`.nuclo-screen{background-color:${value};}`);
+    if (id === 1 && key === "backgroundColor") screenCss.load_from_string(value ? `.nuclo-screen{background-color:${value};}` : "");
     const n = parseFloat(value);
+    const reset = value === "";
     switch (key) {
       case "backgroundColor":
-        if (own) widget._background = rgba(value);
-        else css(widget, "background", value);
+        if (own) widget._background = reset ? null : rgba(value);
+        else css(widget, "background", reset ? "none" : value);
         break;
       case "borderRadius":
-        if (own) widget._radius = n;
-        else css(widget, "border-radius", `${n}px`);
+        if (own) widget._radius = reset ? 0 : n;
+        else css(widget, "border-radius", `${reset ? 0 : n}px`);
+        break;
+      case "borderWidth": {
+        const widths = reset ? null : value.split(" ").map(Number);
+        if (own) widget._border = widths;
+        else css(widget, "border", widths ? `solid ${widths.map((v) => `${v}px`).join(" ")}` : "none");
+        break;
+      }
+      case "borderColor":
+        if (own) widget._borderColor = reset ? null : rgba(value);
+        else css(widget, "border-color", reset ? "currentColor" : value);
+        break;
+      case "overflow":
+        widget._clip = value === "hidden";
+        break;
+      case "display":
+        widget.visible = value !== "none";
         break;
       case "opacity":
-        widget.opacity = n;
+        widget.opacity = reset ? 1 : n;
         break;
-      case "padding":
-        // Only texts draw inset; an input keeps its text `padding` in.
-        if (text instanceof View) text._pad = [n, n];
-        else if (widget instanceof Gtk.Entry) css(widget, "padding", `0 ${n}px`);
+      case "padding": {
+        // Only texts draw inset (a button's label, in its box); an input keeps its text `padding` in.
+        const [t, r, b, l] = reset ? [0, 0, 0, 0] : value.split(" ").map(Number);
+        if (text instanceof View) text._pad = [t, r, b, l];
+        else if (widget instanceof Gtk.Entry) css(widget, "padding", `0 ${r}px 0 ${l}px`);
+        text._typeset = null;
         break;
+      }
       case "textAlign":
-        text._align = value;
+        text._align = reset ? "left" : value;
         break;
       case "color":
-        if (text instanceof View) text._color = rgba(value);
-        else css(widget, "color", value);
+        if (text instanceof View) text._color = reset ? null : rgba(value);
+        else css(widget, "color", reset ? "inherit" : value);
         break;
       case "fontSize":
       case "fontWeight":
       case "fontFamily": {
         const spec = (widget._spec ??= { size: 14, bold: false, system: false });
-        if (key === "fontSize") spec.size = n;
+        if (key === "fontSize") spec.size = reset ? 14 : n;
         else if (key === "fontWeight") spec.bold = value === "bold" || n >= 600;
         else spec.system = value === "system";
         if (text instanceof View) {

@@ -11,6 +11,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.Paint
+import android.graphics.PixelFormat
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
@@ -61,8 +63,9 @@ import kotlin.math.max
  */
 class MainActivity : Activity() {
     private val views = HashMap<Int, View>()
-    private val backgrounds = HashMap<View, GradientDrawable>()
     private val fonts = HashMap<View, Font>()
+    /** A button's or input's theme text colour, restored when `color` resets. */
+    private val textColors = HashMap<View, ColorStateList>()
     /** Frames as JS sent them (dp, relative to the parent); views get them snapped to device pixels (snapFrames). */
     private val frames = HashMap<Int, DoubleArray>()
     private var placed = false
@@ -125,7 +128,7 @@ class MainActivity : Activity() {
 
     // ---- Layout: JS's frames, text measured and drawn the contract's way (layout.ts) ----
 
-    /** Called by __nuclo_measure(id, maxWidth) from JS: a leaf's content size, "w h" in dp (layout.ts adds padding). */
+    /** Called by __nuclo_measure(id, maxWidth) from JS: a leaf's content size, "w h" in dp (layout.ts adds padding and border). */
     @Suppress("unused")
     private fun measure(id: Int, maxWidth: Double): ByteArray = when (val view = views[id]) {
         is Label -> view.measure(maxWidth)
@@ -270,7 +273,7 @@ class MainActivity : Activity() {
                 "text" -> Label(this, inter)
                 "button" -> Button(this).apply {
                     isAllCaps = false
-                    // Fills its frame (layout.ts adds the 8 / 16 padding): no insets, no minimum size.
+                    // Fills its frame, its text inset by the `padding` JS sends (8 16 8 16 by default): no insets, no minimum size.
                     background = uninset(background)
                     minWidth = 0
                     minHeight = 0
@@ -283,7 +286,7 @@ class MainActivity : Activity() {
                 }
                 "input" -> EditText(this).apply {
                     setSingleLine()
-                    // Its text centred in the box and 8 in, as the browser pads it.
+                    // Its text centred in the box and 8 in (until JS's `padding`), as the browser pads it.
                     gravity = Gravity.CENTER_VERTICAL
                     includeFontPadding = false
                     setPadding(dp(8f), 0, dp(8f), 0)
@@ -291,7 +294,8 @@ class MainActivity : Activity() {
                     setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14f)
                 }
                 "checkbox" -> Check(this).apply { setPadding(0, 0, 0, 0) }
-                "image" -> ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+                // Cropped to its padding (inside its border): views are not clipped to their bounds (overflow).
+                "image" -> ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; cropToPadding = true }
                 "stack" -> Stack(id).also { stacks[id] = it }.box
                 "tabs" -> Tabs(id).also { tabs = it }.root
                 "screen" -> screen(id)
@@ -366,8 +370,8 @@ class MainActivity : Activity() {
         if (view is Box) for (i in 0 until view.childCount) forget(view.getChildAt(i))
         views.remove(view.id)
         frames.remove(view.id)
-        backgrounds.remove(view)
         fonts.remove(view)
+        textColors.remove(view)
     }
 
     private fun set(view: View, key: String, value: Any?) {
@@ -394,39 +398,73 @@ class MainActivity : Activity() {
         }
     }
 
-    /** Paint and text styles. Layout styles (flexDirection, gap, alignItems, flex, width, height) are JS's: they arrive as frames. */
+    /**
+     * Paint and text styles (style.ts paint keys); "" resets one to its default. Layout is JS's: it arrives as
+     * frames. Unknown keys are ignored.
+     */
     private fun style(view: View, key: String, value: String) {
+        val reset = value.isEmpty()
         when (key) {
-            // Boxes are laid out padded already; a text draws inside its padding, an input's text sits that far in.
-            "padding" -> if (view is EditText) px(num(value)).let { view.setPadding(it, 0, it, 0) } else (view as? Label)?.padding = num(value)
-            "opacity" -> view.alpha = num(value).toFloat()
+            // The content inset (padding plus border), "t r b l": where a text, button or input draws its text.
+            "padding" -> {
+                val (t, r, b, l) = sides(value)
+                when (view) {
+                    is Label -> view.padding = doubleArrayOf(t, r, b, l)
+                    is EditText -> view.setPadding(px(l), 0, px(r), 0)
+                    is Button -> view.setPadding(px(l), px(t), px(r), px(b))
+                }
+            }
+            "opacity" -> view.alpha = if (reset) 1f else num(value).toFloat()
+            // Layout is JS's: a hidden view keeps its frame.
+            "display" -> view.visibility = if (value == "none") View.INVISIBLE else View.VISIBLE
             "backgroundColor" -> {
-                background(view).setColor(Color.parseColor(value))
+                val c = if (reset) Color.TRANSPARENT else color(value)
+                paintbox(view).fill = c
                 // The body's colour is the page behind every screen.
                 if (view.id == 1) {
-                    pageColor = Color.parseColor(value)
+                    pageColor = if (reset) Color.WHITE else c
                     window.setBackgroundDrawable(ColorDrawable(pageColor))
                     @Suppress("DEPRECATION")
                     window.statusBarColor = pageColor
                     for (screen in titles.keys) outer(screen).setBackgroundColor(pageColor)
                 }
             }
-            // The outline of the background clips the children.
-            "borderRadius" -> {
-                background(view).cornerRadius = (num(value) * density).toFloat()
-                view.clipToOutline = true
+            "borderColor" -> paintbox(view).stroke = if (reset) Color.BLACK else color(value)
+            // Drawn inside the frame; JS placed the children inside it already. An image's picture sits inside it.
+            "borderWidth" -> {
+                val w = sides(value).map { (it * density).toFloat() }
+                paintbox(view).widths = w.toFloatArray()
+                if (view is ImageView) view.setPadding(Math.round(w[3]), Math.round(w[0]), Math.round(w[1]), Math.round(w[2]))
             }
+            // Rounds the background, border and image; children are clipped only with overflow hidden.
+            "borderRadius" -> paintbox(view).radius = if (reset) 0f else (num(value) * density).toFloat()
+            "overflow" -> paintbox(view).hidden = value == "hidden"
             "textAlign" -> (view as? Label)?.align = when (value) { "center" -> 0.5f; "right" -> 1f; else -> 0f }
-            "color" -> Color.parseColor(value).let { if (view is Label) view.color = it else (view as? TextView)?.setTextColor(it) }
+            "color" -> when (view) {
+                is Label -> view.color = if (reset) Color.BLACK else color(value)
+                is TextView -> {
+                    val theme = textColors.getOrPut(view) { view.textColors }
+                    if (reset) view.setTextColor(theme) else view.setTextColor(color(value))
+                }
+            }
             "fontSize", "fontWeight", "fontFamily" -> font(view, key, value)
+        }
+        if (key == "borderRadius" || key == "overflow") (view.background as? Paintbox)?.let {
+            // The outline is the background's rounded rect (ViewOutlineProvider.BACKGROUND).
+            view.invalidateOutline()
+            view.clipToOutline = it.hidden || (view is ImageView && it.radius > 0)
         }
     }
 
-    /** Inter, or the system font for `fontFamily: "system"`; bold for `bold` or ≥ 600. */
+    /** "t r b l" in dp; "" is 0 0 0 0. */
+    private fun sides(value: String) =
+        if (value.isEmpty()) List(4) { 0.0 } else value.trim().split(Regex("\\s+")).map(::num)
+
+    /** Inter, or the system font for `fontFamily: "system"`; bold for `bold` or ≥ 600; "" resets each (14, regular, Inter). */
     private fun font(view: View, key: String, value: String) {
         val font = fonts.getOrPut(view) { Font() }
         when (key) {
-            "fontSize" -> font.size = num(value)
+            "fontSize" -> font.size = if (value.isEmpty()) 14.0 else num(value)
             "fontWeight" -> font.bold = value == "bold" || (value.toIntOrNull() ?: 400) >= 600
             else -> font.system = value == "system"
         }
@@ -442,17 +480,16 @@ class MainActivity : Activity() {
         }
     }
 
-    // One drawable carries both colour and corner radius.
-    private fun background(view: View) =
-        backgrounds.getOrPut(view) { GradientDrawable().also { view.background = it } }
+    // One drawable carries colour, border and corner radius.
+    private fun paintbox(view: View) = view.background as? Paintbox ?: Paintbox().also { view.background = it }
 
     private fun listen(view: View, id: Int, type: String) {
         when {
             type == "click" -> {
                 view.setOnClickListener { emit(id, type) }
-                // Press feedback for styled views; clipToOutline rounds it with the background.
+                // Press feedback for styled views, rounded as the background.
                 if (Build.VERSION.SDK_INT >= 23 && view !is Button && view.foreground == null)
-                    view.foreground = ripple(ColorDrawable(Color.WHITE))
+                    view.foreground = ripple(Mask(view))
             }
             type == "change" && view is CheckBox -> view.setOnCheckedChangeListener { _, checked -> emit(id, type, checked) }
             type == "change" -> (view as EditText).setOnEditorActionListener { _, _, _ -> emit(id, type); true }
@@ -777,6 +814,11 @@ class MainActivity : Activity() {
 
 /** A container. JS lays its children out (layout.ts); each sits at its snapped frame, kept in its MarginLayoutParams. */
 private class Box(context: Context) : ViewGroup(context) {
+    // Children overflow their frames, as in CSS: a view clips (to its outline) only with overflow hidden.
+    init {
+        clipChildren = false
+    }
+
     override fun generateDefaultLayoutParams() = MarginLayoutParams(0, 0)
 
     override fun shouldDelayChildPressedState() = false
@@ -823,6 +865,79 @@ private fun uninset(drawable: Drawable?): Drawable? = when (drawable) {
     is InsetDrawable -> drawable.drawable
     is LayerDrawable -> drawable.apply { for (i in 0 until numberOfLayers) setDrawable(i, uninset(getDrawable(i))) }
     else -> drawable
+}
+
+/** A CSS "#rrggbb" or "#rrggbbaa" (alpha last) as an Android colour (alpha first). */
+private fun color(value: String) =
+    Color.parseColor(if (value.length == 9) "#" + value.substring(7) + value.substring(1, 7) else value)
+
+/** A view's paint: its fill, then its border inside its bounds (CSS border-box), corners rounded by `radius` (px). */
+private class Paintbox : Drawable() {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val rect = RectF()
+    var fill = Color.TRANSPARENT
+        set(value) { field = value; invalidateSelf() }
+    var stroke = Color.BLACK
+        set(value) { field = value; invalidateSelf() }
+    /** Border widths t r b l, px. */
+    var widths = FloatArray(4)
+        set(value) { field = value; invalidateSelf() }
+    var radius = 0f
+        set(value) { field = value; invalidateSelf() }
+    /** overflow hidden: the view clips its children to the outline. */
+    var hidden = false
+
+    /** The radius as the browser clamps it: at most half the shorter side. */
+    private fun corner() = minOf(radius, bounds.width() / 2f, bounds.height() / 2f)
+
+    override fun draw(canvas: Canvas) {
+        val r = corner()
+        rect.set(bounds)
+        if (Color.alpha(fill) != 0) {
+            paint.style = Paint.Style.FILL
+            paint.color = fill
+            canvas.drawRoundRect(rect, r, r, paint)
+        }
+        val (t, right, b, l) = widths.toList()
+        if (t + right + b + l <= 0f) return
+        paint.color = stroke
+        if (t == right && t == b && t == l) {
+            // Uniform: a rounded stroke centred half its width in.
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = t
+            rect.inset(t / 2, t / 2)
+            canvas.drawRoundRect(rect, max(0f, r - t / 2), max(0f, r - t / 2), paint)
+        } else {
+            // Unequal: one rect per edge, square corners.
+            paint.style = Paint.Style.FILL
+            val (x0, y0, x1, y1) = listOf(rect.left, rect.top, rect.right, rect.bottom)
+            canvas.drawRect(x0, y0, x1, y0 + t, paint)
+            canvas.drawRect(x0, y1 - b, x1, y1, paint)
+            canvas.drawRect(x0, y0 + t, x0 + l, y1 - b, paint)
+            canvas.drawRect(x1 - right, y0 + t, x1, y1 - b, paint)
+        }
+    }
+
+    override fun getOutline(outline: Outline) = outline.setRoundRect(bounds, corner())
+    override fun setAlpha(alpha: Int) {}
+    override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) {}
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity() = PixelFormat.TRANSLUCENT
+}
+
+/** A ripple's mask: the view's rounded rect, as its Paintbox has it. */
+private class Mask(private val view: View) : Drawable() {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
+
+    override fun draw(canvas: Canvas) {
+        val r = minOf((view.background as? Paintbox)?.radius ?: 0f, bounds.width() / 2f, bounds.height() / 2f)
+        canvas.drawRoundRect(RectF(bounds), r, r, paint)
+    }
+
+    override fun setAlpha(alpha: Int) {}
+    override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) {}
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity() = PixelFormat.TRANSLUCENT
 }
 
 private class Font(var size: Double = 14.0, var bold: Boolean = false, var system: Boolean = false)
@@ -923,7 +1038,8 @@ private class Label(context: Context, typeface: Typeface) : View(context) {
             field = value
             invalidate()
         }
-    var padding = 0.0
+    /** Its content inset (padding plus border), t r b l in dp. */
+    var padding = DoubleArray(4)
         set(value) {
             field = value
             invalidate()
@@ -952,18 +1068,19 @@ private class Label(context: Context, typeface: Typeface) : View(context) {
     fun measure(maxWidth: Double) = measureText(text, paint, size, maxWidth, scale)
 
     override fun onDraw(canvas: Canvas) {
-        val room = (boxWidth - 2 * padding) * scale
+        val (top, right, _, left) = padding.toList()
+        val room = (boxWidth - left - right) * scale
         // Lines break at the width JS laid the box out at (a hair over: widths were rounded up).
         val lines = typeset(text, paint, (room + 0.01).toFloat())
         // The font's ascent and descent (Inter's are its hhea 0.96875 and 0.2412109375 em).
         val metrics = paint.fontMetrics
         val line = lineHeight(size, scale)
         val first = baseline(size, -metrics.ascent / scale, metrics.descent / scale, scale)
-        val left = (offsetX + padding) * scale
+        val x0 = (offsetX + left) * scale
         lines.forEachIndexed { i, l ->
-            val x = left + (room - l.width) * align
+            val x = x0 + (room - l.width) * align
             // The baseline lands on a device pixel, as the browser paints it.
-            val y = snap(offsetY + padding + i * line + first, scale)
+            val y = snap(offsetY + top + i * line + first, scale)
             canvas.drawText(text, l.start, l.end, x.toFloat(), y.toFloat(), paint)
         }
     }

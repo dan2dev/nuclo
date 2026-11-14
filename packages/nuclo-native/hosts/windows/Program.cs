@@ -27,13 +27,16 @@ class Place
     public Rect Frame;
     /// <summary>Unsnapped minus snapped origin: texts draw from where JS put the box.</summary>
     public Vector Offset;
+    /// <summary>An input's text inset (its padding op: padding plus border).</summary>
+    public Thickness Inset;
 
     public static Place Of(FrameworkElement view) => (Place)(view.Tag ??= new Place());
 }
 
 /// <summary>
 /// Every nuclo view: a container (children at the frames JS sent), a text, an image, or a button's label.
-/// It paints its background (Panel), image (cover) and text, all inside its rounded corners, which clip its children too.
+/// It paints its background, image (cover) and border inside its rounded corners, then its text; it clips its children
+/// (to the same rounded corners) only for overflow "hidden". Borders and padding never move children: JS placed them.
 /// </summary>
 class View : Panel
 {
@@ -42,13 +45,18 @@ class View : Panel
     /// <summary>A layout root reports its size (resize).</summary>
     public Action<Size>? Resized;
     public double Radius;
+    /// <summary>overflow "hidden": children are clipped to the rounded box.</summary>
+    public bool Clips;
+    /// <summary>borderWidth, drawn inside the frame (CSS border-box), in StrokeBrush (black by default).</summary>
+    public Thickness Stroke;
+    public Brush? StrokeBrush;
     public ImageSource? Image;
-    /// <summary>Text views and button labels: their text, font, colour, alignment and inset.</summary>
+    /// <summary>Text views and button labels: their text, font, colour, alignment and inset (padding plus border).</summary>
     public string? Text;
     public Font Font = new();
     public Brush? Color;
     public string Align = "left";
-    public Vector Pad;
+    public Thickness Pad;
     /// <summary>A button's label lays out in the button's box.</summary>
     public FrameworkElement? Owner;
 
@@ -73,26 +81,39 @@ class View : Panel
     protected override Size ArrangeOverride(Size final)
     {
         foreach (FrameworkElement child in InternalChildren) child.Arrange(FrameOf(child));
-        Clip = Radius > 0 || Image is not null ? new RectangleGeometry(new Rect(final), Radius, Radius) : null;
+        Clip = Clips ? Rounded(new Rect(final)) : null;
         return final;
+    }
+
+    /// <summary>The box with its corners rounded, the radius capped at half the shorter side (as CSS scales it).</summary>
+    RectangleGeometry Rounded(Rect box)
+    {
+        var r = Math.Min(Radius, Math.Min(box.Width, box.Height) / 2);
+        return new RectangleGeometry(box, r, r);
     }
 
     protected override void OnRender(DrawingContext dc)
     {
-        base.OnRender(dc); // the background
+        var box = new Rect(RenderSize);
+        var rounded = Rounded(box);
+        dc.DrawGeometry(Background, null, rounded); // the background (Panel's own is square)
         if (Image is { Width: > 0, Height: > 0 } image)
         {
-            // Cover: scaled to fill, centred, cropped by the clip.
-            var scale = Math.Max(RenderSize.Width / image.Width, RenderSize.Height / image.Height);
+            // Cover: scaled to fill, centred, cropped to the rounded box.
+            var scale = Math.Max(box.Width / image.Width, box.Height / image.Height);
             var size = new Size(image.Width * scale, image.Height * scale);
-            dc.DrawImage(image, new Rect(new Point((RenderSize.Width - size.Width) / 2, (RenderSize.Height - size.Height) / 2), size));
+            dc.PushClip(rounded);
+            dc.DrawImage(image, new Rect(new Point((box.Width - size.Width) / 2, (box.Height - size.Height) / 2), size));
+            dc.Pop();
         }
+        if (Stroke != default)
+            dc.DrawGeometry(StrokeBrush ?? Brushes.Black, null, new GeometryGroup { FillRule = FillRule.EvenOdd, Children = { rounded, Inner(box, rounded.RadiusX, Stroke) } });
         if (string.IsNullOrEmpty(Text) || (Owner ?? this).Tag is not Place place) return;
         // In its box from where JS put it (the frame is snapped, the text is not), each baseline on a device pixel.
         var origin = Owner is null ? default : TranslatePoint(default, Owner);
-        var x0 = Pad.X + place.Offset.X - origin.X;
-        var y0 = Pad.Y + place.Offset.Y - origin.Y;
-        var width = place.Layout.Width - 2 * Pad.X;
+        var x0 = Pad.Left + place.Offset.X - origin.X;
+        var y0 = Pad.Top + place.Offset.Y - origin.Y;
+        var width = place.Layout.Width - Pad.Left - Pad.Right;
         var pixels = VisualTreeHelper.GetDpi(this).DpiScaleX;
         var line = Typeset.LineHeight(Font.Size, pixels);
         var first = Typeset.Baseline(Font, pixels);
@@ -105,6 +126,29 @@ class View : Panel
             lines[i].Draw(dc, new Point(x, y), InvertAxes.None);
             lines[i].Dispose();
         }
+    }
+
+    /// <summary>The border's inner edge (CSS padding box): each corner's radii shrink by the widths beside it.</summary>
+    static Geometry Inner(Rect box, double r, Thickness w)
+    {
+        double x0 = box.Left + w.Left, y0 = box.Top + w.Top, x1 = box.Right - w.Right, y1 = box.Bottom - w.Bottom;
+        if (x1 <= x0 || y1 <= y0) return Geometry.Empty;
+        Size Corner(double side, double top) => new(Math.Min(Math.Max(0, r - side), (x1 - x0) / 2), Math.Min(Math.Max(0, r - top), (y1 - y0) / 2));
+        Size tl = Corner(w.Left, w.Top), tr = Corner(w.Right, w.Top), br = Corner(w.Right, w.Bottom), bl = Corner(w.Left, w.Bottom);
+        var inner = new StreamGeometry();
+        using (var c = inner.Open())
+        {
+            c.BeginFigure(new Point(x0 + tl.Width, y0), true, true);
+            c.LineTo(new Point(x1 - tr.Width, y0), false, false);
+            c.ArcTo(new Point(x1, y0 + tr.Height), tr, 0, false, SweepDirection.Clockwise, false, false);
+            c.LineTo(new Point(x1, y1 - br.Height), false, false);
+            c.ArcTo(new Point(x1 - br.Width, y1), br, 0, false, SweepDirection.Clockwise, false, false);
+            c.LineTo(new Point(x0 + bl.Width, y1), false, false);
+            c.ArcTo(new Point(x0, y1 - bl.Height), bl, 0, false, SweepDirection.Clockwise, false, false);
+            c.LineTo(new Point(x0, y0 + tl.Height), false, false);
+            c.ArcTo(new Point(x0 + tl.Width, y0), tl, 0, false, SweepDirection.Clockwise, false, false);
+        }
+        return inner;
     }
 }
 
@@ -494,7 +538,22 @@ static class Program
     }
 
     static double Px(string value) => double.Parse(value.Replace("px", ""), CultureInfo.InvariantCulture);
-    static Brush Color(string value) => (Brush)new BrushConverter().ConvertFromString(value)!;
+    /// <summary>"#rrggbb" or "#rrggbbaa" (CSS order; WPF reads #aarrggbb).</summary>
+    static Brush Color(string value) => (Brush)new BrushConverter().ConvertFromString(value.Length == 9 ? "#" + value[7..] + value[1..7] : value)!;
+    /// <summary>"t r b l" as a Thickness; "" is none.</summary>
+    static Thickness Sides(string value)
+    {
+        if (value == "") return default;
+        var v = value.Split(' ').Select(Px).ToArray();
+        return new Thickness(v[3], v[0], v[1], v[2]);
+    }
+
+    /// <summary>An input's text sits its inset in: WPF's text view adds 2 inside the template's border.</summary>
+    static void Inset(TextBox input)
+    {
+        var (inset, border) = (Place.Of(input).Inset, input.BorderThickness);
+        input.Padding = new Thickness(Math.Max(0, inset.Left - border.Left - 2), 0, Math.Max(0, inset.Right - border.Right - 2), 0);
+    }
 
     /// <summary>A button's label (it holds the button's text, font and colour), or the view itself.</summary>
     static View? TextOf(FrameworkElement view) => (view as Button)?.Content as View ?? view as View;
@@ -565,7 +624,7 @@ static class Program
     /// <summary>The toolkit's button filling its frame; its label is a text view, so what is measured is what is drawn.</summary>
     static Button NewButton()
     {
-        var label = new View { Text = "", Pad = new Vector(16, 8), Align = "center" };
+        var label = new View { Text = "", Align = "center" };
         var button = new Button
         {
             Content = label,
@@ -719,33 +778,65 @@ static class Program
         else if (key == "disabled") view.IsEnabled = value.ValueKind != JsonValueKind.True;
     }
 
-    /// <summary>Paint and text styles. Layout styles (flexDirection, gap, alignItems, flex, width, height) are JS's: they arrive as frames.</summary>
+    /// <summary>Paint and text styles, already resolved by JS (src/style.ts); "" resets a key to its default, unknown keys are
+    /// ignored. Layout is JS's: it arrives as frames, and padding and borders never move children.</summary>
     static void Style(FrameworkElement view, string key, string value)
     {
         var label = TextOf(view)?.Text is null ? null : TextOf(view); // texts and button labels
         var control = view as Control;
+        var reset = value == "";
         switch (key)
         {
-            case "opacity": view.Opacity = Px(value); break;
-            case "backgroundColor" when view is View box: box.Background = Color(value); break;
-            case "backgroundColor" when control is not null: control.Background = Color(value); break;
+            case "opacity": view.Opacity = reset ? 1 : Px(value); break;
+            // Hidden, not collapsed: JS laid it out without the box.
+            case "display": view.Visibility = value == "none" ? Visibility.Hidden : Visibility.Visible; break;
+            case "backgroundColor" when view is View box: box.Background = reset ? Brushes.Transparent : Color(value); break;
+            case "backgroundColor" when control is not null:
+                if (reset) control.ClearValue(Control.BackgroundProperty);
+                else control.Background = Color(value);
+                break;
             case "borderRadius" when view is View box:
-                box.Radius = Px(value);
+                box.Radius = reset ? 0 : Px(value);
                 box.InvalidateArrange();
                 break;
             // The Fluent templates round their border with the attached Border.CornerRadius.
-            case "borderRadius": view.SetValue(Border.CornerRadiusProperty, new CornerRadius(Px(value))); break;
-            // Only texts draw inset; an input keeps its text `padding` in.
-            case "padding" when label is not null: label.Pad = new Vector(Px(value), Px(value)); break;
-            case "padding" when view is TextBox input: input.Padding = new Thickness(Math.Max(0, Px(value) - 3), 0, Math.Max(0, Px(value) - 3), 0); break;
-            case "textAlign" when label is not null: label.Align = value; break;
-            case "color" when label is not null: label.Color = Color(value); break;
-            case "color" when control is not null: control.Foreground = Color(value); break;
+            case "borderRadius":
+                if (reset) view.ClearValue(Border.CornerRadiusProperty);
+                else view.SetValue(Border.CornerRadiusProperty, new CornerRadius(Px(value)));
+                break;
+            case "overflow" when view is View box:
+                box.Clips = value == "hidden";
+                box.InvalidateArrange();
+                break;
+            case "borderWidth" when view is View box: box.Stroke = Sides(value); break;
+            // A control's template border insets its content: a button's label draws from the button's box anyway, an input re-insets.
+            case "borderWidth" when control is not null:
+                if (reset) control.ClearValue(Control.BorderThicknessProperty);
+                else control.BorderThickness = Sides(value);
+                if (control is TextBox field) Inset(field);
+                break;
+            case "borderColor" when view is View box: box.StrokeBrush = reset ? null : Color(value); break;
+            case "borderColor" when control is not null:
+                if (reset) control.ClearValue(Control.BorderBrushProperty);
+                else control.BorderBrush = Color(value);
+                break;
+            // Texts and button labels draw their text inset; an input keeps its text the inset's left and right in.
+            case "padding" when label is not null: label.Pad = Sides(value); break;
+            case "padding" when view is TextBox input:
+                Place.Of(input).Inset = Sides(value);
+                Inset(input);
+                break;
+            case "textAlign" when label is not null: label.Align = reset ? "left" : value; break;
+            case "color" when label is not null: label.Color = reset ? null : Color(value); break;
+            case "color" when control is not null:
+                if (reset) control.ClearValue(Control.ForegroundProperty);
+                else control.Foreground = Color(value);
+                break;
             case "fontSize" or "fontWeight" or "fontFamily":
                 var font = label?.Font ?? new Font(control?.FontSize ?? 14, control?.FontWeight == FontWeights.Bold, control?.FontFamily != Font.Inter);
                 font = key switch
                 {
-                    "fontSize" => font with { Size = Px(value) },
+                    "fontSize" => font with { Size = reset ? 14 : Px(value) },
                     "fontWeight" => font with { Bold = value == "bold" || (int.TryParse(value, out var weight) && weight >= 600) },
                     _ => font with { Os = value == "system" },
                 };
@@ -758,7 +849,7 @@ static class Program
                 }
                 break;
         }
-        label?.InvalidateVisual();
+        (label ?? view as View)?.InvalidateVisual();
     }
 
     static void Listen(FrameworkElement view, int id, string type)

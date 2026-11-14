@@ -1,7 +1,7 @@
 //! The host's copy of the live tree, built from the ops in src/dom.ts.
 use std::collections::{HashMap, HashSet};
 
-use gpui::{Rgba, rgb};
+use gpui::{Rgba, rgb, rgba};
 use serde_json::Value;
 
 use crate::measure::{TextStyle, apply_style};
@@ -38,11 +38,18 @@ impl Kind {
 /// Paint and text styles. Layout styles are JS's (src/layout.ts): they arrive as frames.
 #[derive(Clone, Debug)]
 pub struct Style {
-    /// Insets a text from its box.
-    pub padding: f32,
+    /// Insets a text from its box (padding and border): top, right, bottom, left.
+    pub padding: [f32; 4],
     pub color: Option<Rgba>,
     pub background: Option<Rgba>,
     pub radius: f32,
+    /// Border widths (top, right, bottom, left) and colour, drawn inside the box.
+    pub border: [f32; 4],
+    pub border_color: Option<Rgba>,
+    /// overflow hidden: the children are clipped to the box.
+    pub clip: bool,
+    /// display none.
+    pub hidden: bool,
     pub text: TextStyle,
     /// left, center or right.
     pub text_align: String,
@@ -52,10 +59,14 @@ pub struct Style {
 impl Default for Style {
     fn default() -> Self {
         Self {
-            padding: 0.,
+            padding: [0.; 4],
             color: None,
             background: None,
             radius: 0.,
+            border: [0.; 4],
+            border_color: None,
+            clip: false,
+            hidden: false,
             text: TextStyle::default(),
             text_align: "left".into(),
             opacity: 1.,
@@ -264,12 +275,16 @@ impl Tree {
         let Some(node) = self.nodes.get_mut(&id) else { return };
         let s = &mut node.style;
         match key {
-            "padding" => s.padding = number(value),
+            "padding" => s.padding = sides(value),
             "color" => s.color = color(value),
             "backgroundColor" => s.background = color(value),
             "borderRadius" => s.radius = number(value),
-            "textAlign" => s.text_align = value.to_string(),
-            "opacity" => s.opacity = number(value),
+            "borderWidth" => s.border = sides(value),
+            "borderColor" => s.border_color = color(value),
+            "overflow" => s.clip = value == "hidden",
+            "display" => s.hidden = value == "none",
+            "textAlign" => s.text_align = if value.is_empty() { "left".into() } else { value.to_string() },
+            "opacity" => s.opacity = if value.is_empty() { 1. } else { number(value) },
             _ => apply_style(&mut s.text, key, value),
         }
     }
@@ -288,14 +303,25 @@ fn number(value: &str) -> f32 {
     value.trim().trim_end_matches("px").parse().unwrap_or(0.)
 }
 
+/// "t r b l" (one value: all four), as the padding and borderWidth ops send them.
+fn sides(value: &str) -> [f32; 4] {
+    let v: Vec<f32> = value.split_whitespace().map(number).collect();
+    match v[..] {
+        [a] => [a; 4],
+        [t, r, b, l] => [t, r, b, l],
+        _ => [0.; 4],
+    }
+}
+
+/// #rgb, #rrggbb or #rrggbbaa (dom.ts sends the last two).
 pub fn color(value: &str) -> Option<Rgba> {
     let hex = value.trim().strip_prefix('#')?;
-    let full = match hex.len() {
-        3 => hex.chars().flat_map(|c| [c, c]).collect(),
-        6 => hex.to_string(),
-        _ => return None,
-    };
-    u32::from_str_radix(&full, 16).ok().map(rgb)
+    match hex.len() {
+        3 => u32::from_str_radix(&hex.chars().flat_map(|c| [c, c]).collect::<String>(), 16).ok().map(rgb),
+        6 => u32::from_str_radix(hex, 16).ok().map(rgb),
+        8 => u32::from_str_radix(hex, 16).ok().map(rgba),
+        _ => None,
+    }
 }
 
 #[cfg(test)]

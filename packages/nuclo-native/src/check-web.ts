@@ -1,10 +1,13 @@
 /**
  * Layout check, web: does the layout engine the native hosts use (layout.ts)
- * agree with the browser's CSS? Lays the current screen out with the engine,
- * measuring leaves the browser's way, and compares every box with
- * getBoundingClientRect.
+ * agree with the browser's CSS? Styles each element as the native runtime does
+ * (style.ts: css() rules, @media, inline styles, inheritance), lays the current
+ * screen out with the engine, measuring leaves the browser's way, and compares
+ * every box with getBoundingClientRect.
  */
+import { getCssText } from "nuclo";
 import { type LayoutNode, layout } from "./layout";
+import { Sheet, type Styles, compute, declarations, mediaMatches } from "./style";
 
 export type { CheckResult, Mismatch } from "./check";
 import type { CheckResult, Mismatch } from "./check";
@@ -33,34 +36,29 @@ export function check(tolerance = 0.5): CheckResult {
   const parents = new Map<number, Node>();
   let next = 1;
 
-  const build = (node: Node, parent: Node | null): LayoutNode => {
+  const sheet = new Sheet(getCssText());
+  const active = (media: string) => mediaMatches(media, innerWidth, innerHeight);
+  const build = (node: Node, parent: Node | null, inherited: Styles | undefined): LayoutNode => {
     const id = next++;
-    nodes.set(id, node);
-    if (parent) parents.set(id, parent);
     if (node.nodeType === 3) {
-      const font = getComputedStyle(parent as Element);
-      return { id, kind: "text", style: { fontSize: font.fontSize }, children: [] };
+      nodes.set(id, node);
+      parents.set(id, parent!);
+      return { id, kind: "text", style: compute(inherited, []), children: [] };
     }
     const el = node as HTMLElement;
     const kind = kindOf(el);
-    const css = getComputedStyle(el);
-    const inline = el.style;
-    const style: Record<string, string> = { fontSize: css.fontSize };
-    if (kind === "view") {
-      style.flexDirection = css.flexDirection;
-      const gap = css.flexDirection === "row" ? css.columnGap : css.rowGap;
-      style.gap = gap === "normal" ? "0" : gap;
-      style.alignItems = css.alignItems === "normal" ? "stretch" : css.alignItems;
+    const inline = declarations(el.getAttribute("style") ?? "");
+    const style = compute(inherited, sheet.cascade(el.localName, el.getAttribute("class") ?? "", active, inline));
+    // A box the browser does not show has none to compare.
+    if (style.display !== "none") {
+      nodes.set(id, node);
+      if (parent) parents.set(id, parent);
     }
-    if (parseFloat(css.flexGrow) > 0) style.flex = css.flexGrow;
-    if (inline.padding) style.padding = css.paddingTop;
-    if (inline.width) style.width = inline.width;
-    if (inline.height) style.height = inline.height;
     const children =
-      kind === "view"
+      kind === "view" && style.display !== "none"
         ? [...el.childNodes]
             .filter((c) => c.nodeType === 1 || (c.nodeType === 3 && c.textContent!.trim()))
-            .map((c) => build(c, el))
+            .map((c) => build(c, el, style))
         : [];
     return { id, kind, style, children };
   };
@@ -84,7 +82,7 @@ export function check(tolerance = 0.5): CheckResult {
     return { w: rect.width, h: rect.height };
   };
 
-  const tree = build(root, null);
+  const tree = build(root, null, undefined);
   const rootBox = root.getBoundingClientRect();
   const { frames } = layout(tree, rootBox.width, root === document.body ? rootBox.height : undefined, measure, devicePixelRatio);
   const mismatches: Mismatch[] = [];

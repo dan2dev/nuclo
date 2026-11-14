@@ -1,6 +1,9 @@
 import "./dom";
-import "nuclo";
-import { flush } from "./dom";
+import { getCssText } from "nuclo";
+import { flush, useStylesheet } from "./dom";
+
+// css(), createCss() and globalStyle() rules reach the native hosts through this.
+useStylesheet(getCssText);
 
 export { flush };
 
