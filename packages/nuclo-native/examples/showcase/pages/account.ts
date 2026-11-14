@@ -1,4 +1,4 @@
-import { action, body, card, chip, color, heading, muted, row } from "../ui";
+import { action, body, card, chip, color, heading, muted, row } from "../../ui";
 
 const plans = ["Free", "Pro", "Team"];
 

@@ -13,10 +13,14 @@
 		"./router": {
 			"web": "./src/router-web.ts",
 			"default": "./src/router.ts"
+		},
+		"./device": {
+			"web": "./src/device-web.ts",
+			"default": "./src/device.ts"
 		}
 	},
 	"scripts": {
-		"build": "bun build example/app.ts --outfile dist/app.js --format iife && cp -r example/assets dist/",
+		"build": "bun scripts/run.ts build",
 		"build:web": "bun scripts/build-web.ts",
 		"ios": "bun scripts/run.ts ios",
 		"ios-gpui": "bun scripts/run.ts ios-gpui",

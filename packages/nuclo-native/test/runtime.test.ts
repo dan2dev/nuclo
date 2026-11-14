@@ -9,7 +9,7 @@ g.__nuclo_host = (json: string) => {
   history.push(...batches.at(-1)!);
 };
 
-await import("../example/todo");
+await import("../examples/basics/app");
 
 const all = () => batches.flat();
 const idOf = (text: string) => history.findLast((op) => op[0] === "set" && op[2] === "text" && op[3] === text)![1];

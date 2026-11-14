@@ -1,12 +1,15 @@
-// Builds the web app (SPA + PWA) into dist-web: bundle, shell, assets, service worker.
+// Builds an example as a web app (SPA + PWA) into dist-web: bundle, shell, assets, service worker.
+// `bun scripts/build-web.ts [example]`, showcase by default.
 import { Glob } from "bun";
+import { existsSync } from "node:fs";
 import { cp, rm } from "node:fs/promises";
 
 const out = "dist-web";
+const example = process.argv[2] ?? "showcase";
 await rm(out, { recursive: true, force: true });
 
 const result = await Bun.build({
-  entrypoints: ["example/app.ts"],
+  entrypoints: [`examples/${example}/app.ts`],
   outdir: out,
   naming: "app.js",
   target: "browser",
@@ -16,7 +19,15 @@ const result = await Bun.build({
 if (!result.success) throw new AggregateError(result.logs, "Web build failed");
 
 await cp("hosts/web", out, { recursive: true });
-await cp("example/assets", `${out}/assets`, { recursive: true });
+// The shell is the showcase's (Pulse); other examples go by their folder name.
+if (example !== "showcase") {
+  const name = example[0].toUpperCase() + example.slice(1);
+  for (const file of ["index.html", "manifest.webmanifest"]) {
+    const text = await Bun.file(`${out}/${file}`).text();
+    await Bun.write(`${out}/${file}`, text.replaceAll("Pulse", name).replace("A nuclo-native showcase app.", `The nuclo-native ${example} example.`));
+  }
+}
+if (existsSync(`examples/${example}/assets`)) await cp(`examples/${example}/assets`, `${out}/assets`, { recursive: true });
 
 // The service worker precaches every file; its cache name changes with their contents.
 const files = (await Array.fromAsync(new Glob("**/*").scan(out))).filter((file) => file !== "sw.js").sort();

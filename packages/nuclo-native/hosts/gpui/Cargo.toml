@@ -25,6 +25,8 @@ unicode-segmentation = "1"
 
 [target.'cfg(not(any(target_os = "ios", target_os = "android")))'.dependencies]
 gpui_platform = { package = "gpui-pre-platform", version = "=0.3.6", features = ["font-kit", "wayland", "x11"] }
+# The battery on macOS, Linux and Windows (device.rs).
+starship-battery = "0.12"
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 # gpui::guess_compositor() reads these features on the core crate: without them it picks
@@ -33,7 +35,7 @@ gpui = { package = "gpui-pre", version = "=0.3.6", default-features = false, fea
 
 [target.'cfg(any(target_os = "ios", target_os = "android"))'.dependencies]
 # Mobile GPUI platforms (wgpu on Metal / Vulkan). Pinned to the commit this host was built against.
-gpui-mobile = { git = "https://github.com/itsbalamurali/gpui-mobile", rev = "5fd54f4554263ae06753e90472c7f2e2ff5d7495", default-features = false, features = ["camera", "video_player"] }
+gpui-mobile = { git = "https://github.com/itsbalamurali/gpui-mobile", rev = "5fd54f4554263ae06753e90472c7f2e2ff5d7495", default-features = false, features = ["camera", "video_player", "battery"] }
 # rquickjs ships no prebuilt bindings for mobile targets: generate them (needs libclang).
 rquickjs = { version = "0.14", features = ["bindgen"] }
 

@@ -19,7 +19,7 @@ const App = () =>
 render(App, document.body);
 ```
 
-The showcase app (`example/app.ts`) on Linux, GTK 4:
+The showcase (`examples/showcase`) on Linux, GTK 4:
 
 ![Linux](docs/linux.png)
 
@@ -27,13 +27,17 @@ The same bundle on Android, platform Views:
 
 ![Android](docs/android.png)
 
-## The showcase
+## Examples
 
-`example/app.ts` is a three-tab app built only from nuclo calls and inline styles:
+Each folder in `examples/` is an app; `examples/ui.ts` is the small design system they share. Run any of them on any target: `bun run ios todo`, `bun run android battery`, `bun run web` (the showcase when no example is named).
 
-- **Dashboard** (`/`): stat cards, a bar chart that resizes when you switch Week / Month / Year and highlights the bar you tap, and horizontal share bars. Charts are plain views with a `height` or `width`, so they need no canvas.
-- **Gallery** (`/gallery`, `/gallery/:id`): an image grid that pushes a detail screen with a route parameter and a like toggle.
-- **Account** (`/account`): text, email and password fields, a segmented choice, checkboxes, validation messages and a success state.
+- **`showcase`**: a three-tab app built only from nuclo calls and inline styles.
+  - **Dashboard** (`/`): stat cards, a bar chart that resizes when you switch Week / Month / Year and highlights the bar you tap, and horizontal share bars. Charts are plain views with a `height` or `width`, so they need no canvas.
+  - **Gallery** (`/gallery`, `/gallery/:id`): an image grid that pushes a detail screen with a route parameter and a like toggle.
+  - **Account** (`/account`): text, email and password fields, a segmented choice, checkboxes, validation messages and a success state.
+- **`todo`**: a todo list. Add a task (Enter or Add), check it off, filter All / Active / Done, clear the finished ones. A task opens on its own screen, pushed on the native stack, to edit its title and notes or delete it.
+- **`battery`**: a battery monitor. A gauge drawn with views, the level, the status and the time to full or empty, live from the platform (see [Device data](#device-data)); a chart of the readings and a pushed screen listing them. A device without a battery says so.
+- **`basics`**: the smallest one, a counter and an inline todo list without navigation.
 
 ## Navigation
 
@@ -78,7 +82,30 @@ JS owns the state; the host owns the UI. When the user goes back natively, the h
 
 `nuclo-router` itself needs `URL`, `history` and `location`, which the bare JS engines do not have.
 
-`example/todo.ts` is the smaller counter and todo example.
+## Device data
+
+Some data only the platform has. `nuclo-native/device` reads it from the host and calls back when it changes:
+
+```ts
+import { battery } from "nuclo-native/device";
+
+const now = battery((next) => { /* every later reading */ update(); });
+// { level: 0.56, state: "discharging", minutes: 285 }, or null without a battery
+```
+
+`level` runs 0..1, `state` is `charging`, `discharging`, `full` or `unknown` (on power but not charging), and `minutes` is the time to full or to empty when the platform knows it.
+
+The host side is two calls next to the ops: the host exposes `__nuclo_device(name) → json` (or `""`), and calls `__nuclo_device_changed(name, json)` when the value changes.
+
+| Target | Battery from | Checked |
+| --- | --- | --- |
+| iOS | `UIDevice` battery monitoring | The simulator has no battery: shows "No battery" |
+| macOS | IOKit power sources, notified on change | This Mac: matches `pmset` (level, status, time left) |
+| Android | `ACTION_BATTERY_CHANGED`, `computeChargeTimeRemaining()` | Emulator, driven with `adb emu power`: discharging, charging, full, live |
+| Linux | UPower's display device over D-Bus | A fake UPower proxy (no UPower on macOS) |
+| Windows | `GetSystemPowerStatus`, polled every 10 s | Compiles |
+| Web | the Battery Status API (Chromium); elsewhere null | The browser pane: this Mac's battery |
+| GPUI | `starship-battery` on desktop, `gpui-mobile` on iOS and Android; polled every 5 s | This Mac (unit test), the iOS simulator ("No battery") |
 
 ## How it works
 
@@ -154,10 +181,10 @@ Host `dist-web` on any static server. A service worker needs HTTPS or `localhost
 
 ## Run
 
-Every target is one command. It builds the bundle (`dist/app.js` plus `dist/assets`), then builds and launches the app; app builds go to `build/<target>`.
+Every target is one command, with an optional example (`showcase` by default). It builds that example's bundle (`dist/app.js` plus `dist/assets`), then builds and launches the app; app builds go to `build/<target>`. `bun run build [example]` only bundles.
 
 ```bash
-bun run ios            # booted simulator
+bun run ios            # booted simulator; bun run ios todo, bun run ios battery…
 bun run macos
 bun run android        # running emulator or device
 bun run linux          # gjs + GTK 4 + libadwaita
@@ -175,7 +202,7 @@ Requirements: Xcode for the Apple targets; JDK 17, the Android SDK and NDK 27.1.
 
 Commands behind them, if you want to run one by hand:
 
-- **macOS:** `swiftc -swift-version 6 hosts/apple/*.swift -o build/macos/nuclo-app && build/macos/nuclo-app dist/app.js`
+- **macOS:** `swiftc -swift-version 6 hosts/apple/*.swift -o build/macos/nuclo-app && build/macos/nuclo-app dist/app.js` (any bundle path works, e.g. one built from another example)
 - **iOS simulator:** no Xcode project. `xcrun -sdk iphonesimulator swiftc -swift-version 6 -target arm64-apple-ios17.0-simulator hosts/apple/*.swift`, then an `.app` folder with the binary, `app.js`, `assets/` and an `Info.plist` (`UILaunchScreen` included, or the app runs letterboxed), ad-hoc signed and installed with `xcrun simctl install booted`. `scripts/run.ts` has the exact steps.
 - **iOS device:** add `hosts/apple/*.swift` and `dist/app.js` to an iOS app target, so Xcode handles signing and provisioning.
 - **Android:** open `hosts/android` in Android Studio, or `gradle assembleDebug` there. `dist/` ships as the assets.

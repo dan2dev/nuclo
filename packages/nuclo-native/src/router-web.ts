@@ -40,6 +40,7 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
 
   let current = fromUrl();
   let shown = depth();
+  document.title = current.title || document.title;
   if (history.state?.depth === undefined) history.replaceState({ depth: 0 }, "");
 
   /** Applies a navigation, animated the way it moved. */
@@ -47,6 +48,7 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
     const run = () => {
       current = fromUrl();
       shown = depth();
+      document.title = current.title || document.title;
       update();
     };
     const doc = document as Document & { startViewTransition?: (arg: unknown) => unknown };

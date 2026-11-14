@@ -1,4 +1,4 @@
-// The whole JS bridge: evaluate a script, and hand op batches back to Kotlin.
+// The whole JS bridge: evaluate a script, hand op batches back to Kotlin, ask it for device data.
 // Strings cross JNI as UTF-8 bytes; JNI's own string calls use modified UTF-8.
 #include <android/log.h>
 #include <jni.h>
@@ -12,17 +12,39 @@ static JSContext *context;
 static JNIEnv *env;
 static jobject activity;
 static jmethodID receive;
+static jmethodID device;
+
+// A JS string as a Java byte[] of its UTF-8; NULL with a JS exception pending.
+static jbyteArray utf8(JSContext *ctx, JSValueConst value) {
+    size_t length;
+    const char *text = JS_ToCStringLen(ctx, &length, value);
+    if (!text) return NULL;
+    jbyteArray bytes = (*env)->NewByteArray(env, (jsize)length);
+    (*env)->SetByteArrayRegion(env, bytes, 0, (jsize)length, (const jbyte *)text);
+    JS_FreeCString(ctx, text);
+    return bytes;
+}
 
 static JSValue host(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv) {
-    size_t length;
-    const char *json = JS_ToCStringLen(ctx, &length, argv[0]);
-    if (!json) return JS_EXCEPTION;
-    jbyteArray bytes = (*env)->NewByteArray(env, (jsize)length);
-    (*env)->SetByteArrayRegion(env, bytes, 0, (jsize)length, (const jbyte *)json);
-    JS_FreeCString(ctx, json);
+    jbyteArray bytes = utf8(ctx, argv[0]);
+    if (!bytes) return JS_EXCEPTION;
     (*env)->CallVoidMethod(env, activity, receive, bytes);
     (*env)->DeleteLocalRef(env, bytes);
     return JS_UNDEFINED;
+}
+
+// __nuclo_device(name): Kotlin's device(name) JSON, "" when there is none.
+static JSValue deviceValue(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv) {
+    jbyteArray name = utf8(ctx, argv[0]);
+    if (!name) return JS_EXCEPTION;
+    jbyteArray json = (*env)->CallObjectMethod(env, activity, device, name);
+    (*env)->DeleteLocalRef(env, name);
+    jsize length = (*env)->GetArrayLength(env, json);
+    jbyte *bytes = (*env)->GetByteArrayElements(env, json, NULL);
+    JSValue result = JS_NewStringLen(ctx, (const char *)bytes, (size_t)length);
+    (*env)->ReleaseByteArrayElements(env, json, bytes, JNI_ABORT);
+    (*env)->DeleteLocalRef(env, json);
+    return result;
 }
 
 static void report(JSValue result) {
@@ -47,8 +69,11 @@ Java_dev_nuclo_host_MainActivity_evaluate(JNIEnv *jni, jobject thiz, jbyteArray 
         context = JS_NewContext(runtime);
         JSValue global = JS_GetGlobalObject(context);
         JS_SetPropertyStr(context, global, "__nuclo_host", JS_NewCFunction(context, host, "__nuclo_host", 1));
+        JS_SetPropertyStr(context, global, "__nuclo_device", JS_NewCFunction(context, deviceValue, "__nuclo_device", 1));
         JS_FreeValue(context, global);
-        receive = (*jni)->GetMethodID(jni, (*jni)->GetObjectClass(jni, thiz), "receive", "([B)V");
+        jclass type = (*jni)->GetObjectClass(jni, thiz);
+        receive = (*jni)->GetMethodID(jni, type, "receive", "([B)V");
+        device = (*jni)->GetMethodID(jni, type, "device", "([B)[B");
     }
     // A widget callback fired by an op can re-enter here; restore on the way out.
     JNIEnv *outerEnv = env;

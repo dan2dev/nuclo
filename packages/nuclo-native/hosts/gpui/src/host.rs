@@ -65,6 +65,8 @@ pub struct Host {
     pub focus: FocusHandle,
     /// Safe-area top and bottom, in points.
     insets: (f32, f32),
+    /// The last device data sent to JS, by name.
+    devices: HashMap<String, String>,
     icons: RefCell<HashMap<(&'static str, u32), Arc<Image>>>,
 }
 
@@ -82,11 +84,36 @@ impl Host {
             tab_switch: None,
             focus: cx.focus_handle(),
             insets,
+            devices: HashMap::new(),
             icons: RefCell::default(),
         };
         let batches = host.engine.eval(source);
         host.apply(batches, cx);
+        for name in host.engine.watched() {
+            host.devices.insert(name.clone(), crate::device::read(&name));
+        }
+        // Device data has no change events here: read it again every few seconds.
+        cx.spawn(async move |this, cx| {
+            loop {
+                cx.background_executor().timer(std::time::Duration::from_secs(5)).await;
+                if this.update(cx, |host, cx| host.poll_devices(cx)).is_err() {
+                    break;
+                }
+            }
+        })
+        .detach();
         host
+    }
+
+    fn poll_devices(&mut self, cx: &mut Context<Self>) {
+        for name in self.engine.watched() {
+            let json = crate::device::read(&name);
+            if self.devices.get(&name) != Some(&json) {
+                self.devices.insert(name.clone(), json.clone());
+                let batches = self.engine.device_changed(&name, json);
+                self.apply(batches, cx);
+            }
+        }
     }
 
     // ── JS ↔ host ────────────────────────────────────────────────────────

@@ -5,7 +5,7 @@ const ops: Op[] = [];
 const g = globalThis as any;
 g.__nuclo_host = (json: string) => ops.push(...JSON.parse(json));
 
-const { router } = await import("../example/app");
+const { router } = await import("../examples/showcase/app");
 
 const textId = (text: string) => ops.findLast((op) => op[0] === "set" && op[2] === "text" && op[3] === text)![1];
 const parentOf = (id: number) => ops.findLast((op) => op[0] === "insert" && op[2] === id)![1] as number;

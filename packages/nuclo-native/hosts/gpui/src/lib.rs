@@ -4,6 +4,7 @@
 //! The bundle (dist/app.js) runs in QuickJS and drives the same op contract as
 //! the native hosts (src/dom.ts). GPUI draws everything, so the router's tabs and
 //! stacks are drawn the way each platform does them (see look.rs).
+pub mod device;
 pub mod engine;
 pub mod host;
 pub mod input;

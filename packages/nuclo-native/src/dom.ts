@@ -25,6 +25,8 @@
  *   click · input (value: text) · change (value: checked)
  *   pop on a stack (value: depth left) after the user went back natively
  *   select on the tabs (value: index)
+ *
+ * Device data (battery…) has its own two calls: see device.ts.
  */
 
 type Op = [string, number, ...unknown[]];

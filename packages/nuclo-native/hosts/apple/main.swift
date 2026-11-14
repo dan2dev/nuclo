@@ -1,5 +1,5 @@
 // nuclo-native host for macOS and iOS: AppKit / UIKit views driven by JavaScriptCore.
-// Navigation (tabs, stacks, screens) lives in Navigation.swift.
+// Navigation (tabs, stacks, screens) lives in Navigation.swift, device data (battery) in Device.swift.
 //
 // macOS: swiftc -swift-version 6 hosts/apple/*.swift -o dist/nuclo-app && dist/nuclo-app dist/app.js
 // iOS:   add hosts/apple/*.swift and dist/app.js to an iOS app target (no storyboard, no scene manifest).
@@ -186,6 +186,9 @@ final class Host: NSObject {
     var window: Window?
     var rootTabs: TabsController?
     var rootStack: StackController?
+    // Device data (Device.swift).
+    var lastBattery = ""
+    var batteryWatch: AnyObject?
     #if os(macOS)
     var chrome: Chrome?
     #endif
@@ -204,6 +207,8 @@ final class Host: NSObject {
             self.updateChrome()
         }
         context.setObject(receive, forKeyedSubscript: "__nuclo_host" as NSString)
+        let device: @convention(block) (String) -> String = { [unowned self] name in self.device(name) }
+        context.setObject(device, forKeyedSubscript: "__nuclo_device" as NSString)
         context.evaluateScript(try! String(contentsOfFile: path, encoding: .utf8))
     }
 

@@ -1,6 +1,10 @@
 package dev.nuclo.host
 
 import android.app.Activity
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.res.ColorStateList
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -10,6 +14,7 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
+import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
@@ -73,6 +78,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        batteryWatch?.let(::unregisterReceiver)
         close()
         super.onDestroy()
     }
@@ -96,6 +102,56 @@ class MainActivity : Activity() {
             else -> ",$value"
         }
         evaluate("__nuclo_event($id,'$type'$arg)".toByteArray())
+    }
+
+    // ---- Device (device.ts) -------------------------------------------
+
+    private var batteryWatch: BroadcastReceiver? = null
+    private var batteryJson = ""
+
+    /** Called by __nuclo_device(name) from JS: its JSON now, empty when there is none. The first call starts watching. */
+    @Suppress("unused")
+    private fun device(name: ByteArray): ByteArray {
+        if (String(name) != "battery") return ByteArray(0)
+        if (batteryWatch == null) {
+            val watch = object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    val json = battery(intent)
+                    if (json == batteryJson) return
+                    batteryJson = json
+                    deviceChanged("battery", json)
+                }
+            }
+            batteryWatch = watch
+            // The broadcast is sticky: registering returns the current reading.
+            registerReceiver(watch, IntentFilter(Intent.ACTION_BATTERY_CHANGED))?.let { batteryJson = battery(it) }
+        }
+        return batteryJson.toByteArray()
+    }
+
+    private fun deviceChanged(name: String, json: String) =
+        evaluate("__nuclo_device_changed(${JSONObject.quote(name)},${JSONObject.quote(json)})".toByteArray())
+
+    private fun battery(intent: Intent): String {
+        if (!intent.getBooleanExtra(BatteryManager.EXTRA_PRESENT, true)) return ""
+        val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+        val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+        val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
+        val state = when (intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)) {
+            BatteryManager.BATTERY_STATUS_CHARGING -> "charging"
+            BatteryManager.BATTERY_STATUS_FULL -> "full"
+            BatteryManager.BATTERY_STATUS_NOT_CHARGING -> if (plugged && level == scale) "full" else "discharging"
+            BatteryManager.BATTERY_STATUS_DISCHARGING -> "discharging"
+            else -> "unknown"
+        }
+        // Time to full (API 28+, -1 when unknown); Android has no public time to empty.
+        val ms = if (state == "charging" && Build.VERSION.SDK_INT >= 28)
+            getSystemService(BatteryManager::class.java).computeChargeTimeRemaining() else -1L
+        return JSONObject()
+            .put("level", if (level >= 0 && scale > 0) level.toDouble() / scale else JSONObject.NULL)
+            .put("state", state)
+            .put("minutes", if (ms >= 0) ms / 60_000 else JSONObject.NULL)
+            .toString()
     }
 
     companion object {

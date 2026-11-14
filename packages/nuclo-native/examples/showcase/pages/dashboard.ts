@@ -1,4 +1,4 @@
-import { body, card, chip, color, heading, muted, row } from "../ui";
+import { body, card, chip, color, heading, muted, row } from "../../ui";
 
 interface Point {
   label: string;

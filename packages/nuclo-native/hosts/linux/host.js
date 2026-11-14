@@ -7,6 +7,7 @@ import Gsk from "gi://Gsk";
 import Graphene from "gi://Graphene";
 import GObject from "gi://GObject";
 import GLib from "gi://GLib";
+import Gio from "gi://Gio";
 import { programArgs } from "system";
 
 const { HORIZONTAL, VERTICAL } = Gtk.Orientation;
@@ -260,6 +261,45 @@ const apply = {
     }
   },
 };
+
+/** Device data JS watches (src/device.ts): name → its last JSON, "" when the device has none. */
+const devices = new Map();
+
+globalThis.__nuclo_device = (name) => {
+  if (!devices.has(name)) {
+    devices.set(name, "");
+    try {
+      if (name === "battery") watchBattery();
+    } catch {
+      // No system bus (macOS) or no UPower: no battery.
+    }
+  }
+  return devices.get(name);
+};
+
+function changed(name, json) {
+  if (devices.get(name) === json) return;
+  devices.set(name, json);
+  globalThis.__nuclo_device_changed(name, json);
+}
+
+// UPower's display device: the battery the desktop's panel shows. Module-level so GC never drops the proxy (and its signal).
+let upower;
+function watchBattery() {
+  upower = Gio.DBusProxy.new_for_bus_sync(Gio.BusType.SYSTEM, Gio.DBusProxyFlags.NONE, null,
+    "org.freedesktop.UPower", "/org/freedesktop/UPower/devices/DisplayDevice", "org.freedesktop.UPower.Device", null);
+  const read = () => {
+    const get = (key) => upower.get_cached_property(key)?.unpack();
+    if (!get("IsPresent")) return "";
+    const percent = get("Percentage");
+    // 3 empty counts as discharging; 5/6 pending charge/discharge (plugged in, idle) as unknown.
+    const state = { 1: "charging", 2: "discharging", 3: "discharging", 4: "full" }[get("State")] ?? "unknown";
+    const seconds = { charging: get("TimeToFull"), discharging: get("TimeToEmpty") }[state]; // 0: unknown
+    return JSON.stringify({ level: percent == null ? null : percent / 100, state, minutes: seconds ? Math.round(seconds / 60) : null });
+  };
+  devices.set("battery", read());
+  upower.connect("g-properties-changed", () => changed("battery", read()));
+}
 
 const app = new Adw.Application({ application_id: "dev.nuclo.native" });
 app.connect("activate", () => {

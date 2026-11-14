@@ -19,6 +19,8 @@ pub struct Engine {
     runtime: Runtime,
     context: Context,
     queue: Rc<RefCell<Vec<String>>>,
+    /// Device data JS asked for (`__nuclo_device`), so the host keeps it current.
+    watched: Rc<RefCell<Vec<String>>>,
 }
 
 impl Engine {
@@ -26,17 +28,27 @@ impl Engine {
         let runtime = Runtime::new().expect("QuickJS runtime");
         let context = Context::full(&runtime).expect("QuickJS context");
         let queue = Rc::new(RefCell::new(Vec::new()));
+        let watched = Rc::new(RefCell::new(Vec::<String>::new()));
         context.with(|ctx| {
             let globals = ctx.globals();
             let batches = queue.clone();
             let host = Function::new(ctx.clone(), move |json: String| batches.borrow_mut().push(json)).unwrap();
             globals.set("__nuclo_host", host).unwrap();
+            let watching = watched.clone();
+            let device = Function::new(ctx.clone(), move |name: String| {
+                if !watching.borrow().contains(&name) {
+                    watching.borrow_mut().push(name.clone());
+                }
+                crate::device::read(&name)
+            })
+            .unwrap();
+            globals.set("__nuclo_device", device).unwrap();
             let log = Function::new(ctx.clone(), |line: String| log::info!("JS: {line}")).unwrap();
             globals.set("__nuclo_log", log).unwrap();
             ctx.eval::<(), _>("globalThis.console = { log: (...a) => __nuclo_log(a.join(' ')) }; console.error = console.warn = console.info = console.log;")
                 .unwrap();
         });
-        Self { runtime, context, queue }
+        Self { runtime, context, queue, watched }
     }
 
     /// Runs the bundle; returns the batches it sent.
@@ -59,6 +71,19 @@ impl Engine {
                 Value::Number(n) => event.call((id, kind, n)),
             };
             report(&ctx, result);
+        });
+        self.drain()
+    }
+
+    pub fn watched(&self) -> Vec<String> {
+        self.watched.borrow().clone()
+    }
+
+    /// `__nuclo_device_changed(name, json)`; returns the batches JS sent back.
+    pub fn device_changed(&self, name: &str, json: String) -> Vec<String> {
+        self.context.with(|ctx| {
+            let changed: Function = ctx.globals().get("__nuclo_device_changed").unwrap();
+            report(&ctx, changed.call::<_, ()>((name, json)));
         });
         self.drain()
     }

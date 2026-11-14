@@ -1,5 +1,5 @@
 import { router } from "../app";
-import { action, body, card, color, heading, muted, row } from "../ui";
+import { action, body, card, color, heading, muted, row } from "../../ui";
 
 interface Photo {
   id: string;

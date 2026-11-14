@@ -3,7 +3,7 @@ import { createRouter } from "nuclo-native/router";
 import { Account } from "./pages/account";
 import { Dashboard } from "./pages/dashboard";
 import { Gallery, PhotoDetail, photoTitle } from "./pages/gallery";
-import { color } from "./ui";
+import { color } from "../ui";
 
 export const router = createRouter(
   {

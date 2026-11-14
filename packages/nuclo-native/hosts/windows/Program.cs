@@ -1,5 +1,6 @@
 // nuclo-native host for Windows: WPF controls driven by Jint.
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Automation;
@@ -9,6 +10,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Jint;
 
 /// <summary>A flex container: direction, gap, alignItems, and per-child flex grow (in Tag).</summary>
@@ -228,6 +230,8 @@ static class Program
     static ScrollViewer RootScroll = null!;
     /// <summary>True while a JS batch is applied: selection changes then are programmatic, not the user's.</summary>
     internal static bool Batching;
+    /// <summary>Device data JS watches (src/device.ts): name → its last JSON, "" when the device has none.</summary>
+    static readonly Dictionary<string, string> Devices = new();
 
     [STAThread]
     static void Main()
@@ -260,6 +264,16 @@ static class Program
             }
             Batching = false;
         }));
+        Js.SetValue("__nuclo_device", new Func<string, string>(name =>
+        {
+            if (!Devices.TryGetValue(name, out var json))
+            {
+                Devices[name] = json = name == "battery" ? Battery() : "";
+                // Windows has no battery event without a window handle: poll.
+                if (name == "battery") new DispatcherTimer(TimeSpan.FromSeconds(10), DispatcherPriority.Background, (_, _) => Changed(name, Battery()), Dispatcher.CurrentDispatcher).Start();
+            }
+            return json;
+        }));
         Js.Execute(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "app.js")));
 
         app.Run(Win);
@@ -272,6 +286,39 @@ static class Program
     {
         if (value is null) Js.Invoke("__nuclo_event", id, type);
         else Js.Invoke("__nuclo_event", id, type, value);
+    }
+
+    static void Changed(string name, string json)
+    {
+        if (Devices[name] == json) return;
+        Devices[name] = json;
+        Js.Invoke("__nuclo_device_changed", name, json);
+    }
+
+    struct PowerStatus
+    {
+        public byte ACLineStatus, BatteryFlag, BatteryLifePercent, SystemStatusFlag;
+        public int BatteryLifeTime, BatteryFullLifeTime;
+    }
+
+    [DllImport("kernel32.dll")]
+    static extern bool GetSystemPowerStatus(out PowerStatus status);
+
+    /// <summary>The battery as src/device.ts's JSON, or "" when there is none.</summary>
+    static string Battery()
+    {
+        if (!GetSystemPowerStatus(out var s) || s.BatteryFlag == 128) return ""; // 128: no system battery
+        var state = s.BatteryFlag != 255 && (s.BatteryFlag & 8) != 0 ? "charging" // 255: flags unknown
+            : s.ACLineStatus == 0 ? "discharging"
+            : s.ACLineStatus == 1 && s.BatteryLifePercent == 100 ? "full"
+            : "unknown";
+        return JsonSerializer.Serialize(new
+        {
+            level = s.BatteryLifePercent == 255 ? null : (double?)s.BatteryLifePercent / 100,
+            state,
+            // Seconds to empty, -1 unknown; Windows does not say how long until full.
+            minutes = state == "discharging" && s.BatteryLifeTime >= 0 ? (int?)Math.Round(s.BatteryLifeTime / 60.0) : null,
+        });
     }
 
     static double Px(string value) => double.Parse(value.Replace("px", ""), System.Globalization.CultureInfo.InvariantCulture);

@@ -1,12 +1,13 @@
-// Builds the bundle, then builds and launches one target: `bun scripts/run.ts <target>`.
+// Builds an example's bundle, then builds and launches one target: `bun scripts/run.ts <target> [example]`.
 // Native hosts: ios macos android linux windows web. GPUI hosts: ios-gpui macos-gpui android-gpui linux-gpui windows-gpui.
+// `build` only bundles. Examples are the folders in examples/ (showcase by default).
 // App builds go to build/<target>; dist/ holds only the bundle (app.js + assets) the hosts load.
 import { $ } from "bun";
 import { existsSync, readdirSync } from "node:fs";
 import { homedir, platform } from "node:os";
 import { join } from "node:path";
 
-const target = process.argv[2] ?? "";
+const [target = "", example = "showcase"] = process.argv.slice(2);
 const os = platform();
 const home = homedir();
 const sdk = process.env.ANDROID_HOME ?? join(home, "Library/Android/sdk");
@@ -48,7 +49,9 @@ function gradle() {
 
 /** Wraps a built app in an .app bundle with the JS bundle, signs it, and runs it on the booted simulator. */
 async function simulator(app: string, id: string, exe: string) {
-  await $`cp -R dist/app.js dist/assets ${app}/`;
+  await $`rm -rf ${app}/assets`;
+  await $`cp dist/app.js ${app}/`;
+  if (existsSync("dist/assets")) await $`cp -R dist/assets ${app}/`;
   await Bun.write(`${app}/Info.plist`, plist(id, exe));
   await $`codesign -s - --force ${app}`.quiet();
   await $`xcrun simctl install booted ${app}`;
@@ -66,7 +69,7 @@ const targets: Record<string, () => Promise<unknown>> = {
     need("darwin");
     const app = "build/ios/NucloApp.app";
     await $`mkdir -p ${app}`;
-    await $`xcrun -sdk iphonesimulator swiftc -swift-version 6 -target arm64-apple-ios17.0-simulator hosts/apple/main.swift hosts/apple/Navigation.swift -o ${app}/NucloApp`;
+    await $`xcrun -sdk iphonesimulator swiftc -swift-version 6 -target arm64-apple-ios17.0-simulator hosts/apple/main.swift hosts/apple/Navigation.swift hosts/apple/Device.swift -o ${app}/NucloApp`;
     await simulator(app, "dev.nuclo.native", "NucloApp");
   },
 
@@ -87,7 +90,7 @@ const targets: Record<string, () => Promise<unknown>> = {
   async macos() {
     need("darwin");
     await $`mkdir -p build/macos`;
-    await $`swiftc -swift-version 6 hosts/apple/main.swift hosts/apple/Navigation.swift -o build/macos/nuclo-app`;
+    await $`swiftc -swift-version 6 hosts/apple/main.swift hosts/apple/Navigation.swift hosts/apple/Device.swift -o build/macos/nuclo-app`;
     await $`build/macos/nuclo-app dist/app.js`;
   },
 
@@ -126,8 +129,10 @@ const targets: Record<string, () => Promise<unknown>> = {
     await $`dotnet run --project hosts/windows`;
   },
 
+  async build() {},
+
   async web() {
-    await $`bun scripts/build-web.ts`;
+    await $`bun scripts/build-web.ts ${example}`;
     console.log("http://localhost:4173");
     await $`python3 -m http.server 4173 -d dist-web`;
   },
@@ -148,11 +153,13 @@ const targets: Record<string, () => Promise<unknown>> = {
   },
 };
 
+const examples = readdirSync("examples", { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);
 const run = targets[target];
-if (!run) {
-  console.error(`Usage: bun scripts/run.ts <${Object.keys(targets).join("|")}>`);
+if (!run || !examples.includes(example)) {
+  console.error(`Usage: bun scripts/run.ts <${Object.keys(targets).join("|")}> [${examples.join("|")}]`);
   process.exit(1);
 }
-await $`bun build example/app.ts --outfile dist/app.js --format iife`;
-await $`cp -r example/assets dist/`;
+await $`bun build examples/${example}/app.ts --outfile dist/app.js --format iife`;
+await $`rm -rf dist/assets`;
+if (existsSync(`examples/${example}/assets`)) await $`cp -r examples/${example}/assets dist/`;
 await run();
