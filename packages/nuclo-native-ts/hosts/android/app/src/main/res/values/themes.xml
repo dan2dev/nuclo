@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Nuclo" parent="@android:style/Theme.DeviceDefault.Light.NoActionBar">
+        <!-- Dark icons on the light system bars. -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <!-- API 30-34: see-through bars, as edge to edge draws them from API 35 (the attributes are ignored there). -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

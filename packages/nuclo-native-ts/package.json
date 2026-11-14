@@ -1,0 +1,26 @@
+{
+	"name": "@nuclo/native-ts",
+	"private": true,
+	"version": "0.0.0",
+	"description": "POC: nuclo apps compiled ahead of time from TypeScript to Swift (UIKit) and Kotlin (Android Views). No JavaScript engine ships with the app.",
+	"license": "MIT",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"bin": {
+		"nuclo-native-ts": "./src/compiler/cli.ts"
+	},
+	"scripts": {
+		"build:showcase": "tsx src/compiler/cli.ts build examples/full-showcase/App.ts --out examples/full-showcase/build",
+		"android": "bun run build:showcase && cd hosts/android && gradle assembleDebug --offline",
+		"typecheck": "tsc -p tsconfig.json && tsc -p examples/tsconfig.json"
+	},
+	"dependencies": {
+		"typescript": "^5.9.3"
+	},
+	"devDependencies": {
+		"@types/bun": "^1.4.4",
+		"tsx": "^4.23.15"
+	}
+}

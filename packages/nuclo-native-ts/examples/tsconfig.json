@@ -1,0 +1,16 @@
+{
+  // Apps see only the ES library and @nuclo/native-ts: no DOM, no Node, so nothing
+  // the native compiler can't translate type-checks by accident. The compiler uses
+  // the same options (see src/compiler/transpile.ts).
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "lib": ["ES2022"],
+    "types": []
+  },
+  "include": ["."]
+}
