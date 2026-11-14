@@ -92,9 +92,20 @@ final class ScreenController: UIViewController, UIScrollViewDelegate {
         self.host = host
         super.init(nibName: nil, bundle: nil)
         scroll.alwaysBounceVertical = true
+        // A screen scrolls like a feed: no scroll indicator over the content.
+        scroll.showsVerticalScrollIndicator = false
         scroll.delegate = self
         scroll.addSubview(content)
         applyBackground()
+    }
+
+    /// Back to the top, as a tap on the navigation bar or on the screen's own tab asks. From far down only the last
+    /// two screens are scrolled through: the rows in between never reach the host.
+    func toTop() {
+        let top = -scroll.adjustedContentInset.top
+        let near = top + 2 * scroll.bounds.height
+        if scroll.contentOffset.y > near { scroll.contentOffset.y = near }
+        scroll.setContentOffset(CGPoint(x: 0, y: top), animated: true)
     }
 
     /// JS loads more as the end comes near (dom.ts, "end").
@@ -139,6 +150,14 @@ final class StackController: NSObject, UINavigationControllerDelegate {
         super.init()
         nav.delegate = self
         nav.navigationBar.prefersLargeTitles = true
+        // A tap on the bar goes back to the top; its buttons still get their touches.
+        let tap = UITapGestureRecognizer(target: self, action: #selector(toTop))
+        tap.cancelsTouchesInView = false
+        nav.navigationBar.addGestureRecognizer(tap)
+    }
+
+    @objc func toTop() {
+        (nav.topViewController as? ScreenController)?.toTop()
     }
 
     /// UIKit picks the transition: a new top pushes, a removed top pops.
@@ -193,6 +212,12 @@ final class TabsController: NSObject, UITabBarControllerDelegate {
         bar.selectedIndex = index
     }
 
+    /// The current tab, tapped again at its root, goes back to the top (UIKit pops a deeper one to its root).
+    func tabBarController(_ bar: UITabBarController, shouldSelect controller: UIViewController) -> Bool {
+        if let active, active.nav === controller, active.nav.viewControllers.count == 1 { active.toTop() }
+        return true
+    }
+
     func tabBarController(_ bar: UITabBarController, didSelect controller: UIViewController) {
         guard let index = stacks.firstIndex(where: { $0.nav === controller }), index != selected else { return }
         selected = index
@@ -231,13 +256,25 @@ final class ScreenController: NSViewController {
         self.host = host
         super.init(nibName: nil, bundle: nil)
         scroll.contentView = FlippedClip()
-        scroll.hasVerticalScroller = true
-        scroll.autohidesScrollers = true
+        // A screen scrolls like a feed: no scroller beside the content.
+        scroll.hasVerticalScroller = false
         scroll.documentView = content
         // JS loads more as the end comes near (dom.ts, "end").
         scroll.contentView.postsBoundsChangedNotifications = true
         NotificationCenter.default.addObserver(self, selector: #selector(scrolled), name: NSView.boundsDidChangeNotification, object: scroll.contentView)
         applyBackground()
+    }
+
+    /// Back to the top, as a click on the screen's own tab asks. From far down only the last two screens are
+    /// scrolled through: the rows in between never reach the host.
+    func toTop() {
+        let clip = scroll.contentView
+        let near = 2 * clip.bounds.height
+        if clip.bounds.minY > near { clip.setBoundsOrigin(NSPoint(x: 0, y: near)) }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.25
+            clip.animator().setBoundsOrigin(.zero)
+        }
     }
 
     @objc private func scrolled() {
@@ -417,6 +454,8 @@ final class TabsController: NSSplitViewController, NSTableViewDataSource, NSTabl
         table.addTableColumn(NSTableColumn(identifier: .init("tab")))
         table.dataSource = self
         table.delegate = self
+        table.target = self
+        table.action = #selector(clicked)
         let scroll = NSScrollView()
         scroll.documentView = table
         scroll.drawsBackground = false
@@ -474,10 +513,21 @@ final class TabsController: NSSplitViewController, NSTableViewDataSource, NSTabl
         return cell
     }
 
+    /// The current tab, clicked again at its root, goes back to the top. A click that picked another tab changed
+    /// the selection first (on mouse down): that one only switches.
+    @objc private func clicked() {
+        defer { switched = false }
+        guard !switched, table.clickedRow == selected, let active, active.model.count == 1 else { return }
+        active.model[0].toTop()
+    }
+
+    private var switched = false
+
     // The user picked a tab.
     func tableViewSelectionDidChange(_ notification: Notification) {
         let row = table.selectedRow
         guard row >= 0, row != selected else { return }
+        switched = true
         select(row)
         host.emit(id: id, "select", row)
     }

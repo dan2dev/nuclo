@@ -319,9 +319,20 @@ const create = {
   tabs: () => {
     const views = new Adw.ViewStack();
     const tabs = new Adw.ToolbarView({ content: views });
-    tabs.add_bottom_bar(new Adw.ViewSwitcherBar({ stack: views, reveal: true }));
+    const bar = new Adw.ViewSwitcherBar({ stack: views, reveal: true });
+    tabs.add_bottom_bar(bar);
     tabs._views = views;
     tabs._tabs = [];
+    // The current tab's button, pressed again at its root, goes back to the screen's top. The switcher tells of
+    // changes only, so the press is caught on its way down to the button.
+    const press = new Gtk.GestureClick({ propagation_phase: Gtk.PropagationPhase.CAPTURE });
+    press.connect("pressed", (_gesture, _n, x, y) => {
+      let hit = bar.pick(x, y, Gtk.PickFlags.DEFAULT);
+      while (hit && !(hit instanceof Gtk.ToggleButton)) hit = hit.get_parent();
+      const nav = views.visible_child;
+      if (hit?.active && nav?.navigation_stack.get_n_items() === 1) nav.visible_page?._toTop();
+    });
+    bar.add_controller(press);
     views.connect("notify::visible-child", () => {
       if (!applying) emit(tabs._id, "select", tabs._tabs.indexOf(views.visible_child));
     });
@@ -344,11 +355,29 @@ const create = {
   // A screen is a layout root: JS lays its content out at the screen's width, and it scrolls.
   screen: () => {
     const box = new View();
-    const scroll = new Gtk.ScrolledWindow({ child: box, css_classes: ["nuclo-screen"], hscrollbar_policy: Gtk.PolicyType.NEVER });
+    // A screen scrolls like a feed: no scrollbar over the content (EXTERNAL scrolls without one).
+    const scroll = new Gtk.ScrolledWindow({
+      child: box,
+      css_classes: ["nuclo-screen"],
+      hscrollbar_policy: Gtk.PolicyType.NEVER,
+      vscrollbar_policy: Gtk.PolicyType.EXTERNAL,
+    });
     const content = new Adw.ToolbarView({ content: scroll });
-    content.add_top_bar(new Adw.HeaderBar());
+    const header = new Adw.HeaderBar();
+    content.add_top_bar(header);
     const page = new Adw.NavigationPage({ child: content });
     page._box = box;
+    // Back to the top, on a click on the header bar or on the screen's own tab. From far down only the last two
+    // screens are scrolled through: the rows in between never reach the host.
+    page._toTop = () => {
+      const adjustment = scroll.get_vadjustment();
+      const from = Math.min(adjustment.get_value(), 2 * adjustment.get_page_size());
+      const target = Adw.CallbackAnimationTarget.new((value) => adjustment.set_value(value));
+      Adw.TimedAnimation.new(scroll, from, 0, 250, target).play();
+    };
+    const click = new Gtk.GestureClick();
+    click.connect("released", () => page._toTop());
+    header.add_controller(click);
     box._resized = (width) => {
       if (width === box._width) return;
       box._width = width;

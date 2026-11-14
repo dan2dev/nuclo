@@ -245,6 +245,13 @@ class MainActivity : Activity() {
             if (w > 0 && (root == 1 || w != oldw)) post { emit(root, "resize", "${w / density} ${h / density} $density") }
         }
 
+        /** Back to the top, as a tap on the screen's title or on its own tab asks. */
+        fun toTop() {
+            // From far down only the last two screens are scrolled through: the rows in between never reach the host.
+            if (scrollY > 2 * height) scrollTo(0, 2 * height)
+            smoothScrollTo(0, 0)
+        }
+
         /** JS loads more as the end comes near (dom.ts, "end"). Posted: a fling scrolls mid-draw. */
         override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
             super.onScrollChanged(l, t, oldl, oldt)
@@ -568,6 +575,8 @@ class MainActivity : Activity() {
         val content = Box(this)
         Scroller(id).apply {
             setBackgroundColor(pageColor)
+            // A screen scrolls like a feed: no scrollbar over the content.
+            isVerticalScrollBarEnabled = false
             addView(content)
         }
         return content
@@ -607,6 +616,7 @@ class MainActivity : Activity() {
             setTitleTextAppearance(context, android.R.style.TextAppearance_Material_Large)
             setNavigationContentDescription("Back")
             setNavigationOnClickListener { back(this@Stack, shown.size - 1) }
+            setOnClickListener { toTop() }
         }
         val box = LinearLayout(this@MainActivity).apply {
             orientation = LinearLayout.VERTICAL
@@ -641,6 +651,9 @@ class MainActivity : Activity() {
                 "icon" -> icon.setImageResource(resources.getIdentifier("ic_$value", "drawable", packageName))
             }
         }
+
+        /** Scrolls the shown screen back to its top. */
+        fun toTop() = (shown.lastOrNull()?.let(::outer) as? Scroller)?.toTop()
 
         fun refresh() {
             toolbar.title = shown.lastOrNull()?.let { titles[it] } ?: ""
@@ -781,8 +794,8 @@ class MainActivity : Activity() {
         fun tap(s: Stack) {
             val index = stacks.indexOf(s)
             if (index == selected) {
-                // Re-tapping the current tab pops it to its root.
-                back(s, 1)
+                // Re-tapping the current tab pops it to its root; at its root, it scrolls to the top.
+                if (s.shown.size > 1) back(s, 1) else s.toTop()
             } else {
                 select(index, animate = true)
                 updateBack()

@@ -80,6 +80,8 @@ A route is a view, or `{ view, title, onEndReached }` where the title is the nav
 | Windows | Fluent nav pane | drill-in | back button, Alt+←, mouse back |
 | Web | bottom tab bar | directional view transitions | bar back button, browser back (its own swipe-back animation is kept) |
 
+A screen scrolls without a scrollbar. A tap on its bar, or on its own tab while at the tab's root, scrolls it back to the top (macOS: the sidebar row only).
+
 JS owns the state; the host owns the UI. When the user goes back natively, the host pops first and reports `pop` with the depth left; the router follows. On the web the route lives in the URL hash (`#/gallery/dunes`) and the browser history is the stack, so links, reloads and the back button work on any static host; switching tabs there resets the tab.
 
 `nuclo-router` itself needs `URL`, `history` and `location`, which the bare JS engines do not have.

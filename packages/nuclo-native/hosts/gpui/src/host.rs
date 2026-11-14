@@ -343,10 +343,19 @@ impl Host {
         true
     }
 
+    /// Scrolls a stack's top screen back to its top: a tap on its bar, or on its own tab at its root.
+    fn to_top(&mut self, stack: u32, cx: &mut Context<Self>) {
+        let top = self.tree.get(stack).and_then(|node| node.children.last().copied());
+        if let Some(scroll) = top.and_then(|id| self.scrolls.borrow().get(&id).cloned()) {
+            scroll.set_offset(point(px(0.), px(0.)));
+            cx.notify();
+        }
+    }
+
     fn pop_to_root(&mut self, stack: u32, cx: &mut Context<Self>) {
         let Some(node) = self.tree.nodes.get_mut(&stack) else { return };
         if node.children.len() < 2 {
-            return;
+            return self.to_top(stack, cx);
         }
         let top = *node.children.last().unwrap();
         node.children.truncate(1);
@@ -365,7 +374,7 @@ impl Host {
     fn select_tab(&mut self, tabs: u32, index: usize, cx: &mut Context<Self>) {
         let Some(node) = self.tree.nodes.get_mut(&tabs) else { return };
         if node.selected == index {
-            // Re-tapping the current tab goes back to its root.
+            // Re-tapping the current tab goes back to its root; at its root, to the screen's top.
             if let Some(&stack) = node.children.get(index) {
                 self.pop_to_root(stack, cx);
             }
@@ -709,7 +718,12 @@ impl Host {
             (None, Some(top)) => (vec![title(top)], if depth > 1 { 1. } else { 0. }),
             (None, None) => (Vec::new(), 0.),
         };
-        div().size_full().flex().flex_col().child(self.bar(stack, titles, back, depth > 1, cx)).child(area).into_any_element()
+        let bar = div()
+            .id(ElementId::NamedInteger("bar".into(), stack as u64))
+            .flex_shrink_0()
+            .on_click(cx.listener(move |this, _, _, cx| this.to_top(stack, cx)))
+            .child(self.bar(stack, titles, back, depth > 1, cx));
+        div().size_full().flex().flex_col().child(bar).child(area).into_any_element()
     }
 
     /// Titles stacked in one place, each at its own opacity; the first visible one sets the size.

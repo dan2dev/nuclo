@@ -92,6 +92,8 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
     show(motion);
   };
 
+  const toTop = () => scrollTo({ top: 0, behavior: "smooth" });
+
   const router = {
     get path() {
       return current.path;
@@ -113,7 +115,8 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
       div(
         { className: "nuclo-app" },
         header(
-          { className: "nuclo-bar" },
+          // A tap on the bar goes back to the top; on its back button, back.
+          { className: "nuclo-bar", onClick: (event: Event) => (event.target as Element).closest(".nuclo-back") || toTop() },
           when(
             () => depth() > 0,
             button({ className: "nuclo-back", "aria-label": "Back", onClick: () => history.back() }, icon("back")),
@@ -133,7 +136,8 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
                     {
                       className: "nuclo-tab",
                       "aria-current": () => (activeTab() === i ? "page" : "false"),
-                      onClick: () => router.reset(tab.path),
+                      // The current tab's root, tapped again, goes back to the top.
+                      onClick: () => (activeTab() === i && depth() === 0 ? toTop() : router.reset(tab.path)),
                     },
                     icon(tab.icon),
                     span(tab.title),

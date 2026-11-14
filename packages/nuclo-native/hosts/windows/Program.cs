@@ -320,7 +320,8 @@ class Screen : ScrollViewer
     public Screen(FrameworkElement body)
     {
         Content = Body;
-        VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+        // A screen scrolls like a feed: no scrollbar beside the content.
+        VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
         RenderTransform = Shift;
         // The page colour is the body's backgroundColor.
         SetBinding(BackgroundProperty, new Binding(nameof(Panel.Background)) { Source = body });
@@ -366,7 +367,10 @@ class Stack : DockPanel
         back.Content = new TextBlock { Text = "\uE72B", FontFamily = Icons, FontSize = 16 };
         AutomationProperties.SetName(back, "Back");
         back.Click += (_, _) => GoBack();
-        var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(16, 12, 16, 4), Children = { back, title } };
+        // A click on the header, or on this stack's item while it is selected, goes back to the screen's top.
+        var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(16, 12, 16, 4), Background = Brushes.Transparent, Children = { back, title } };
+        header.MouseLeftButtonUp += (_, _) => current?.ScrollToTop();
+        Item.PreviewMouseLeftButtonDown += (_, _) => { if (Item.IsSelected) current?.ScrollToTop(); };
         SetDock(header, Dock.Top);
         Children.Add(header);
         Children.Add(pages);

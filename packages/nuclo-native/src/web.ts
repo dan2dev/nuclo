@@ -15,6 +15,8 @@ base.textContent = `
 @font-face { font-family: Inter; src: url(fonts/Inter-Regular.ttf); font-weight: 400; font-display: block; }
 @font-face { font-family: Inter; src: url(fonts/Inter-Bold.ttf); font-weight: 700; font-display: block; }
 html, body { height: 100%; margin: 0; }
+/* The page scrolls like a feed: no scrollbar beside the content. */
+html { scrollbar-width: none; }
 body { font: 14px/1.35 Inter, system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
 :where(body, div, main, section, header, footer, nav, article, aside, form, ul, ol, li) {
   display: flex; flex-direction: column; position: relative;
