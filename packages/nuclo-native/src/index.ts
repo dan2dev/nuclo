@@ -8,7 +8,7 @@ import { flush, useStylesheet } from "./dom";
 useStylesheet(getCssText);
 
 export { flush };
-export { windowed } from "./windowed";
+export { flatList, windowed } from "./windowed";
 
 // One host round-trip per render()/update(), however many nodes changed.
 const g = globalThis as unknown as Record<string, (...args: unknown[]) => unknown>;

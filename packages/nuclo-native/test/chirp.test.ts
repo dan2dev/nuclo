@@ -49,6 +49,26 @@ test("the feed shows it is loading, then its first page", async () => {
   expect([shows(byline(0)), shows(byline(20)), feed.ids.length]).toEqual([true, false, 20]);
 });
 
+test("the feed fills compact screens and centers a capped column on wider ones", () => {
+  const column = ops.find((op) => op[0] === "insert" && op[1] === feedScreen)![2];
+  const frame = () => ops.findLast((op) => op[0] === "frame" && op[1] === column)!;
+  g.__nuclo_event(feedScreen, "resize", "1100 800 2");
+  expect([frame()[2], frame()[4]]).toEqual([210, 680]);
+  g.__nuclo_event(feedScreen, "resize", "375 800 3");
+  expect([frame()[2], frame()[4]]).toEqual([0, 375]);
+});
+
+test("a newly pushed screen is laid out before its first resize", () => {
+  g.__nuclo_event(feedScreen, "resize", "510 720 2");
+  const mark = ops.length;
+  router.go("/compose");
+  const screen = since(mark, "create", "screen")[0][1];
+  const frame = since(mark, "frame").find((op) => op[1] === screen);
+  expect(frame?.[4]).toBe(510);
+  router.back();
+  g.__nuclo_event(feedScreen, "resize", "375 800 3");
+});
+
 test("a like shows at once, wherever the post is", async () => {
   const heart = ops.find((op) => op[0] === "set" && op[2] === "text" && op[3] === "♡")![1]; // the feed's first post
   const mark = ops.length;

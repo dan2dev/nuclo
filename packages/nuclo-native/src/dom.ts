@@ -1265,6 +1265,7 @@ globalThis.__nuclo_event = (id, type, value) => {
   if (type === "resize") {
     const [w, h, scale] = String(value).split(" ").map(Number);
     sizes.set(id, [w || 0, h || 0, scale || 0]);
+    if (w > 0 && h > 0 && screens.has(live.get(id)!)) windowSize = [w, h, scale || 0];
     resized = true;
     flush();
     return;

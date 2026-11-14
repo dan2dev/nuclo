@@ -27,21 +27,25 @@ import {
   viewerTitle,
 } from "./views";
 
+// Keep reading and form widths comfortable on desktop while filling compact screens.
+const page = (content: NodeModLike<"div">) =>
+  div({ style: { width: "100%", maxWidth: 680, alignSelf: "center" } }, content);
+
 export const router = createRouter(
   {
-    "/": { view: Home, title: "Home", onEndReached: feed.load },
-    "/compose": { view: Compose, title: "New post" },
-    "/topic/:name": { view: Topic, title: ({ name }) => `#${name}`, onEndReached: loadTopic },
-    "/explore": { view: Explore, title: "Explore", onEndReached: loadPeople },
-    "/alerts": { view: Alerts, title: "Notifications", onEndReached: alerts.load },
-    "/me": { view: () => Profile({ id: "0" }), title: "Profile", onEndReached: loadProfile },
-    "/me/edit": { view: EditProfile, title: "Edit profile" },
-    "/me/settings": { view: Settings, title: "Settings" },
-    "/user/:id": { view: Profile, title: userTitle, onEndReached: loadProfile },
-    "/user/:id/friends": { view: Friends, title: friendsTitle },
-    "/post/:id": { view: Thread, title: "Post" },
-    "/post/:id/likes": { view: Likes, title: "Liked by", onEndReached: loadLikes },
-    "/media/:id/:index": { view: Viewer, title: viewerTitle },
+    "/": { view: () => page(Home()), title: "Home", onEndReached: feed.load },
+    "/compose": { view: () => page(Compose()), title: "New post" },
+    "/topic/:name": { view: (params) => page(Topic(params)), title: ({ name }) => `#${name}`, onEndReached: loadTopic },
+    "/explore": { view: () => page(Explore()), title: "Explore", onEndReached: loadPeople },
+    "/alerts": { view: () => page(Alerts()), title: "Notifications", onEndReached: alerts.load },
+    "/me": { view: () => page(Profile({ id: "0" })), title: "Profile", onEndReached: loadProfile },
+    "/me/edit": { view: () => page(EditProfile()), title: "Edit profile" },
+    "/me/settings": { view: () => page(Settings()), title: "Settings" },
+    "/user/:id": { view: (params) => page(Profile(params)), title: userTitle, onEndReached: loadProfile },
+    "/user/:id/friends": { view: (params) => page(Friends(params)), title: friendsTitle },
+    "/post/:id": { view: (params) => page(Thread(params)), title: "Post" },
+    "/post/:id/likes": { view: (params) => page(Likes(params)), title: "Liked by", onEndReached: loadLikes },
+    "/media/:id/:index": { view: (params) => page(Viewer(params)), title: viewerTitle },
   },
   {
     tabs: [

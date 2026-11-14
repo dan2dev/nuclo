@@ -49,9 +49,11 @@ extension Host {
         #if os(macOS)
         guard let window else { return }
         var frame = window.frame
-        if rootTabs != nil, frame.width < 860 {
-            frame.origin.x -= (860 - frame.width) / 2
-            frame.size.width = 860
+        if rootTabs != nil {
+            let visible = window.screen?.visibleFrame ?? frame
+            let width = min(max(frame.width, 860), visible.width)
+            frame.origin.x = max(visible.minX, min(frame.midX - width / 2, visible.maxX - width))
+            frame.size.width = width
         }
         window.styleMask.insert(.fullSizeContentView)
         window.contentViewController = controller
@@ -66,7 +68,7 @@ extension Host {
         #if os(macOS)
         guard let chrome, let window else { return }
         window.title = activeStack?.top?.title ?? "nuclo-native"
-        chrome.back.isEnabled = (activeStack?.depth ?? 0) > 1
+        chrome.back.isEnabled = canGoBack
         #endif
     }
 
@@ -84,7 +86,7 @@ final class ScreenController: UIViewController, UIScrollViewDelegate {
     let id: Int
     let content = Box()
     private let scroll = UIScrollView()
-    private var width: CGFloat = 0
+    private var viewportSize = CGSize.zero
     unowned let host: Host
 
     init(id: Int, host: Host) {
@@ -120,8 +122,8 @@ final class ScreenController: UIViewController, UIScrollViewDelegate {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         let size = scroll.bounds.size
-        guard size.width > 0, size.width != width else { return }
-        width = size.width
+        guard size.width > 0, size.height > 0, size != viewportSize else { return }
+        viewportSize = size
         host.emit(id: id, "resize", "\(size.width) \(size.height) \(deviceScale())")
     }
 
@@ -229,6 +231,10 @@ final class TabsController: NSObject, UITabBarControllerDelegate {
 
 /// A vertical scroller that leaves horizontal swipes to the stack (swipe back).
 final class ScreenScroll: NSScrollView {
+    override func wantsScrollEventsForSwipeTracking(on axis: NSEvent.GestureAxis) -> Bool {
+        axis == .horizontal && NSEvent.isSwipeTrackingFromScrollEventsEnabled
+    }
+
     override func scrollWheel(with event: NSEvent) {
         if event.phase == .began, abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) {
             nextResponder?.scrollWheel(with: event)
@@ -248,7 +254,7 @@ final class ScreenController: NSViewController {
     let id: Int
     let content = Box()
     private let scroll = ScreenScroll()
-    private var width: CGFloat = 0
+    private var viewportSize = CGSize.zero
     unowned let host: Host
 
     init(id: Int, host: Host) {
@@ -289,8 +295,8 @@ final class ScreenController: NSViewController {
     override func viewDidLayout() {
         super.viewDidLayout()
         let size = scroll.contentSize
-        guard size.width > 0, size.width != width else { return }
-        width = size.width
+        guard size.width > 0, size.height > 0, size != viewportSize else { return }
+        viewportSize = size
         host.emit(id: id, "resize", "\(size.width) \(size.height) \(deviceScale())")
     }
 
@@ -302,6 +308,22 @@ final class ScreenController: NSViewController {
     /// The content's laid-out size (its frame from JS).
     func setContent(_ size: CGSize) {
         content.frame = NSRect(origin: .zero, size: size)
+    }
+}
+
+extension Host: NSMenuItemValidation {
+    fileprivate var canGoBack: Bool { (activeStack?.depth ?? 0) > 1 }
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(goBack(_:)) { return canGoBack }
+        if menuItem.action == #selector(selectTab(_:)) {
+            return rootTabs?.stacks.indices.contains(menuItem.tag) == true
+        }
+        return true
+    }
+
+    @objc fileprivate func selectTab(_ sender: NSMenuItem) {
+        rootTabs?.choose(sender.tag)
     }
 }
 
@@ -327,6 +349,8 @@ final class StackController: NSViewController {
     var tabTitle = ""
     var tabIcon = ""
     private var shown: ScreenController?
+    private var transitioning = false
+    private var trackingSwipe = false
     var controller: NSViewController { self }
 
     init(id: Int, host: Host) {
@@ -341,6 +365,7 @@ final class StackController: NSViewController {
         let swipe = SwipeView()
         swipe.stack = self
         swipe.wantsLayer = true
+        swipe.clipsToBounds = true
         view = swipe
     }
 
@@ -351,17 +376,43 @@ final class StackController: NSViewController {
 
     /// Slides the new top in: forward when it was pushed, backward when the old top was popped.
     func sync() {
+        guard !transitioning, !trackingSwipe else { return }
         dirty = false
-        guard let next = model.last, next !== shown else { return }
+        guard let next = model.last else {
+            swapToTop()
+            return
+        }
+        guard next !== shown else {
+            prune()
+            return
+        }
         let previous = shown
         shown = next
         if next.parent !== self { addChild(next) }
         next.view.frame = view.bounds
         next.view.autoresizingMask = [.width, .height]
-        if let previous, previous.view.superview === view, view.window != nil {
+        if let previous, previous.view.superview === view, view.window != nil,
+           !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            transitioning = true
             let push = model.contains { $0 === previous }
-            transition(from: previous, to: next, options: push ? .slideForward : .slideBackward) { [weak self] in
-                MainActor.assumeIsolated { self?.prune() }
+            let width = view.bounds.width
+            next.view.frame.origin.x = push ? width : -width
+            view.addSubview(next.view)
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.28
+                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                previous.view.animator().setFrameOrigin(NSPoint(x: push ? -width : width, y: 0))
+                next.view.animator().setFrameOrigin(.zero)
+            } completionHandler: { [weak self, weak previous, weak next] in
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    previous?.view.removeFromSuperview()
+                    previous?.view.frame.origin = .zero
+                    next?.view.frame = self.view.bounds
+                    self.transitioning = false
+                    self.prune()
+                    if self.dirty { self.sync() }
+                }
             }
         } else {
             previous?.view.removeFromSuperview()
@@ -373,7 +424,7 @@ final class StackController: NSViewController {
 
     /// Lets go of screens that left the stack.
     private func prune() {
-        for child in children where !model.contains(where: { $0 === child }) {
+        for child in children where child !== shown && !model.contains(where: { $0 === child }) {
             child.view.removeFromSuperview()
             child.removeFromParent()
         }
@@ -381,16 +432,19 @@ final class StackController: NSViewController {
 
     /// Back from the toolbar, ⌘[ or a completed swipe.
     func goBack(animated: Bool = true) {
-        guard model.count > 1 else { return }
+        guard model.count > 1, !trackingSwipe else { return }
         model.removeLast()
+        dirty = true
         if animated { sync() } else { swapToTop() }
         host.emit(id: id, "pop", model.count)
     }
 
     private func swapToTop() {
+        dirty = false
         shown?.view.removeFromSuperview()
         shown = model.last
         if let shown {
+            if shown.parent !== self { addChild(shown) }
             shown.view.frame = view.bounds
             shown.view.autoresizingMask = [.width, .height]
             view.addSubview(shown.view)
@@ -401,27 +455,31 @@ final class StackController: NSViewController {
 
     /// The top screen follows the fingers; the one below slides in from the left.
     func trackSwipe(_ event: NSEvent) {
-        guard let top = shown, model.count > 1 else { return }
+        guard !transitioning, !trackingSwipe, !dirty, let top = shown, model.count > 1
+        else { return }
+        trackingSwipe = true
         let below = model[model.count - 2]
         if below.parent !== self { addChild(below) }
         below.view.frame = view.bounds
-        view.addSubview(below.view, positioned: .below, relativeTo: top.view)
-        let width = view.bounds.width
-        var committed = false
+        let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        if !reduceMotion { view.addSubview(below.view, positioned: .below, relativeTo: top.view) }
         event.trackSwipeEvent(options: [.lockDirection, .clampGestureAmount], dampenAmountThresholdMin: 0, max: 1) {
-            amount, phase, complete, _ in
+            amount, _, complete, _ in
             MainActor.assumeIsolated {
-                top.view.frame.origin.x = amount * width
-                below.view.frame.origin.x = (amount - 1) * width * 0.3
-                if phase == .ended { committed = amount > 0 }
-                if phase == .cancelled { committed = false }
+                if !reduceMotion {
+                    let width = self.view.bounds.width
+                    top.view.frame.origin.x = amount * width
+                    below.view.frame.origin.x = (amount - 1) * width * 0.3
+                }
                 guard complete else { return }
                 top.view.frame.origin.x = 0
                 below.view.frame.origin.x = 0
-                if committed {
+                self.trackingSwipe = false
+                below.view.removeFromSuperview()
+                if amount == 1, !self.dirty, self.view.window != nil {
                     self.goBack(animated: false)
-                } else {
-                    below.view.removeFromSuperview()
+                } else if self.dirty {
+                    self.sync()
                 }
             }
         }
@@ -435,6 +493,9 @@ final class TabsController: NSSplitViewController, NSTableViewDataSource, NSTabl
     var stacks: [StackController] = []
     private let table = NSTableView()
     private let detail = NSViewController()
+    private let sidebar = NSViewController()
+    private let bottom = NSSegmentedControl()
+    private var compact: Bool?
     private var selected = -1
     var controller: NSViewController { self }
     var active: StackController? { stacks.indices.contains(selected) ? stacks[selected] : nil }
@@ -456,23 +517,83 @@ final class TabsController: NSSplitViewController, NSTableViewDataSource, NSTabl
         table.delegate = self
         table.target = self
         table.action = #selector(clicked)
-        let scroll = NSScrollView()
-        scroll.documentView = table
-        scroll.drawsBackground = false
-        let sidebar = NSViewController()
-        sidebar.view = scroll
+        sidebarScroll.documentView = table
+        sidebarScroll.drawsBackground = false
+        sidebar.view = sidebarScroll
+        bottom.target = self
+        bottom.action = #selector(bottomSelected)
+        bottom.segmentStyle = .separated
+        bottom.trackingMode = .selectOne
+        bottom.translatesAutoresizingMaskIntoConstraints = false
         let item = NSSplitViewItem(sidebarWithViewController: sidebar)
+        item.canCollapse = false
         item.minimumThickness = 180
         item.maximumThickness = 280
         detail.view = NSView()
         addSplitViewItem(item)
-        addSplitViewItem(NSSplitViewItem(viewController: detail))
+        let content = NSSplitViewItem(viewController: detail)
+        content.minimumThickness = 360
+        addSplitViewItem(content)
         if selected < 0, !stacks.isEmpty { select(0) }
+    }
+
+    override func viewDidLayout() {
+        super.viewDidLayout()
+        let size = view.bounds.size
+        guard size.width > 0, size.height > 0 else { return }
+        let narrow = size.width < size.height || size.width < 600
+        guard compact != narrow else { return }
+        compact = narrow
+        let sidebarItem = splitViewItems.first { $0.viewController === sidebar }!
+        let detailItem = splitViewItems.first { $0.viewController === detail }!
+        removeSplitViewItem(sidebarItem)
+        removeSplitViewItem(detailItem)
+        splitView.isVertical = !narrow
+        if narrow {
+            sidebarItem.minimumThickness = 60
+            sidebarItem.maximumThickness = 60
+            detailItem.minimumThickness = 0
+            let bar = NSView()
+            bar.addSubview(bottom)
+            NSLayoutConstraint.activate([
+                bottom.centerXAnchor.constraint(equalTo: bar.centerXAnchor),
+                bottom.centerYAnchor.constraint(equalTo: bar.centerYAnchor),
+                bottom.leadingAnchor.constraint(equalTo: bar.leadingAnchor, constant: 8),
+                bottom.trailingAnchor.constraint(equalTo: bar.trailingAnchor, constant: -8),
+            ])
+            sidebar.view = bar
+            addSplitViewItem(detailItem)
+            addSplitViewItem(sidebarItem)
+        } else {
+            sidebarItem.minimumThickness = 180
+            sidebarItem.maximumThickness = 280
+            detailItem.minimumThickness = 360
+            sidebar.view = sidebarScroll
+            addSplitViewItem(sidebarItem)
+            addSplitViewItem(detailItem)
+        }
+    }
+
+    private let sidebarScroll = NSScrollView()
+
+    @objc private func bottomSelected() {
+        let index = bottom.selectedSegment
+        if index == selected, let active, active.depth == 1 {
+            active.top?.toTop()
+        } else {
+            choose(index)
+        }
     }
 
     func add(_ stack: StackController) {
         stacks.append(stack)
         table.reloadData()
+        bottom.segmentCount = stacks.count
+        for (index, item) in stacks.enumerated() {
+            bottom.setLabel(item.tabTitle, forSegment: index)
+            bottom.setImage(NSImage(systemSymbolName: symbol(item.tabIcon), accessibilityDescription: item.tabTitle), forSegment: index)
+        }
+        bottom.selectedSegment = selected
         if selected < 0, isViewLoaded { select(0) }
     }
 
@@ -483,6 +604,7 @@ final class TabsController: NSSplitViewController, NSTableViewDataSource, NSTabl
             active.removeFromParent()
         }
         selected = index
+        bottom.selectedSegment = index
         let stack = stacks[index]
         detail.addChild(stack)
         stack.view.frame = detail.view.bounds
@@ -527,9 +649,14 @@ final class TabsController: NSSplitViewController, NSTableViewDataSource, NSTabl
     func tableViewSelectionDidChange(_ notification: Notification) {
         let row = table.selectedRow
         guard row >= 0, row != selected else { return }
-        switched = true
-        select(row)
-        host.emit(id: id, "select", row)
+        switched = NSApp.currentEvent?.type == .leftMouseDown
+        choose(row)
+    }
+
+    fileprivate func choose(_ index: Int) {
+        guard stacks.indices.contains(index), index != selected else { return }
+        select(index)
+        host.emit(id: id, "select", index)
     }
 }
 
@@ -557,7 +684,7 @@ final class Chrome: NSObject, NSToolbarDelegate {
     }
 
     private var items: [NSToolbarItem.Identifier] {
-        sidebar ? [.toggleSidebar, .sidebarTrackingSeparator, back.itemIdentifier] : [back.itemIdentifier]
+        [back.itemIdentifier]
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { items }
@@ -593,7 +720,13 @@ func mainMenu(_ host: Host) -> NSMenu {
         item("Paste", #selector(NSText.paste(_:)), "v"),
         item("Select All", #selector(NSText.selectAll(_:)), "a"),
     ])
-    submenu("Go", [item("Back", #selector(Host.goBack(_:)), "[", target: host)])
+    let tabs = (0..<4).map { index in
+        let shortcut = String(index + 1)
+        let tab = item("Tab \(shortcut)", #selector(Host.selectTab(_:)), shortcut, target: host)
+        tab.tag = index
+        return tab
+    }
+    submenu("Go", [item("Back", #selector(Host.goBack(_:)), "[", target: host), .separator()] + tabs)
     return menu
 }
 

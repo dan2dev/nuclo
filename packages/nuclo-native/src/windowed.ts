@@ -123,3 +123,13 @@ export function windowed<K, T>(keys: () => readonly K[], item: (key: K) => T, re
     list(rows, (record) => div({ "data-height": String(height(keyOf.get(record)!)) }, render(record))),
   );
 }
+
+/**
+ * list() for a long list, called the same way: `flatList(() => people, personRow)`. Only the rows near the screen
+ * exist, in JS as on the host (windowed, with each item its own key), so a thousand items that arrive together cost
+ * a few screens of rows. Keep list() for short lists: its rows are their container's own children and all exist.
+ * Here they are the children of the list's own view, so the container's `gap` does not reach them: give the rows a
+ * margin.
+ */
+export const flatList = <T>(items: () => readonly T[], render: (item: T) => NodeModLike<"div">) =>
+  windowed(items, (item) => item, render);

@@ -130,6 +130,18 @@ Rows that arrive together never all reach the host either. A column that takes m
 
 Limits: only lists reached through columns from the screen are culled, not a list inside a row. A list rendered in the same pass as its container is still created whole. With `list()`, JS still holds every row's nodes, about 11 KB a row in Hermes, and nuclo's update reads every row's bindings each time: with 10,000 rows loaded an update takes about 90 ms on the emulator. `windowed()` has neither limit.
 
+### Long lists: `flatList()`
+
+```ts
+import { flatList } from "nuclo-native";
+
+flatList(() => people, personRow); // called as list() is
+```
+
+`list()` is for short lists: every item has its row, and the rows are their container's own children. `flatList()` is for long ones: only the rows within three screens of what shows exist, in JS as on the host, so a thousand items that arrive together cost a few screens of rows. Against React Native's `FlatList` on the Android emulator it has the lower median in all eleven benchmark operations (`benchmarks/native-compare/REPORT.md`, where it is the `idiomatic` variant): creating 1,000 rows takes 22 ms against 35 ms, and 10,000 rows 23 ms against 31 ms. A plain `list()` builds every row in JS and takes 70 ms and 584 ms for the same.
+
+Its rows are the children of the list's own view, so the container's `gap` does not reach them: give the rows a margin. A row that leaves the window is built again from its item when it comes back, so state kept only in a row's views is lost; and rows not yet laid out count at the mean height of those that were. It is `windowed()` with each item as its own key:
+
 ### Lists without an end: `windowed()`
 
 ```ts
