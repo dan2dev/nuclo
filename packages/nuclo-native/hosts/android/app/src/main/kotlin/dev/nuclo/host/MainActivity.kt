@@ -63,7 +63,7 @@ import kotlin.math.floor
 import kotlin.math.max
 
 /**
- * The JS thread, one for the process (QuickJS's runtime is, in nuclo.c), with the main thread's stack size: layout
+ * The JS thread, one for the process (Hermes's runtime is, in nuclo.cpp), with the main thread's stack size: layout
  * recurses as deep as the view tree. Lazy: started while a class initializes, the thread would wait for that class.
  */
 /** The activity whose bundle the engine runs. The JS thread's. */
@@ -72,6 +72,8 @@ private var running: MainActivity? = null
 private val js: Handler by lazy {
     java.util.concurrent.CompletableFuture<Handler>().also { ready ->
         Thread(null, {
+            // Above background work, below the UI thread: a tap's turn should not wait for a CPU.
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DISPLAY)
             Looper.prepare()
             ready.complete(Handler(Looper.myLooper()!!))
             Looper.loop()
@@ -80,7 +82,7 @@ private val js: Handler by lazy {
 }
 
 /**
- * nuclo-native host for Android: platform Views driven by QuickJS (src/main/cpp).
+ * nuclo-native host for Android: platform Views driven by Hermes (src/main/cpp, hosts/hermes).
  * JS lays everything out (src/layout.ts) and sends frames; this host places views at them,
  * measures text and paints.
  *
@@ -98,6 +100,13 @@ class MainActivity : Activity() {
     private val moved = HashSet<Int>()
     /** Bundled images by path, decoded once: rows repeat them, and come and go as the list scrolls. */
     private val bitmaps = HashMap<String, Bitmap?>()
+    /** Remote images by URL, the most recently used up to an eighth of the heap; views keep the ones they show. */
+    private val remote = object : android.util.LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / 8).toInt()) {
+        override fun sizeOf(key: String, value: Bitmap) = value.byteCount
+    }
+    /** The URLs on their way, and what each image view shows: a remote picture is set when it arrives. */
+    private val fetching = HashSet<String>()
+    private val sources = HashMap<View, String>()
     /** The JS thread's: it measures texts while the UI thread draws. */
     private val measuring = TextPaint(Paint.ANTI_ALIAS_FLAG or TEXT_FLAGS)
     private val density by lazy { resources.displayMetrics.density.toDouble() }
@@ -125,12 +134,20 @@ class MainActivity : Activity() {
         // Without the router the body is the layout root: JS lays it out at the window's size.
         setContentView(Scroller(1).apply { isFillViewport = true; addView(root) })
         content.setOnApplyWindowInsetsListener { view, insets -> fit(view, insets) }
+        // What the content will measure once the window is laid out, known now: JS lays the first screen out with it
+        // while the activity is still starting, and the first frame shows the app, not an empty window.
+        windowManager.currentWindowMetrics.let {
+            val bars = it.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+            windowSize = "${(it.bounds.width() - bars.left - bars.right) / density} ${(it.bounds.height() - bars.top - bars.bottom) / density} $density"
+        }
 
         js.post {
-            // The engine is the process's (nuclo.c): an activity that starts takes it over from one not yet destroyed.
+            // The engine is the process's (nuclo.cpp): an activity that starts takes it over from one not yet destroyed.
             if (running != null) close()
             running = this
-            evaluate(assets.open("app.js").use { it.readBytes() })
+            // Hermes bytecode when the build made it (scripts/hermes.ts): nothing to parse at launch. Else the source.
+            val bundle = if ("app.hbc" in assets.list("").orEmpty()) "app.hbc" else "app.js"
+            evaluate(assets.open(bundle).use { it.readBytes() })
             deliver()
         }
     }
@@ -148,6 +165,9 @@ class MainActivity : Activity() {
     }
 
     private val content: View get() = findViewById(android.R.id.content)
+
+    /** __nuclo_device("window"): the content's size before any layout, "w h scale" as a resize carries it. */
+    @Volatile private var windowSize = ""
 
     /**
      * Keeps the content clear of the system bars, the display cutout and the keyboard (adjustResize does not resize
@@ -168,14 +188,21 @@ class MainActivity : Activity() {
 
     // ---- The JS thread ------------------------------------------------------
 
-    // The three run on the JS thread only (turn).
+    // These run on the JS thread only (turn).
     private external fun evaluate(code: ByteArray)
     private external fun close()
+
+    /** Calls __nuclo_device_changed(name, json). */
+    private external fun changed(name: ByteArray, json: ByteArray)
 
     /** Calls __nuclo_event(id, type, value): `value` as UTF-8, a JS string if `text`, else JSON (a number or boolean). */
     private external fun event(id: Int, type: ByteArray, value: ByteArray?, text: Boolean)
 
-    private val ui = Handler(Looper.getMainLooper())
+    /**
+     * Asynchronous: a view that asked for a frame (a ripple starting, a layout) holds the main queue's ordinary
+     * messages until that frame is drawn. A turn's ops go in ahead of it, and are part of that frame, not the next.
+     */
+    private val ui = Handler.createAsync(Looper.getMainLooper())
 
     /** From the JS thread: runs on the UI thread, which never waits for JS, and waits for its answer. */
     private fun <T> onUi(run: () -> T): T = java.util.concurrent.FutureTask(run).also(ui::post).get()
@@ -190,6 +217,10 @@ class MainActivity : Activity() {
     /** The JS thread's: the batches of the turn it is running, parsed, and what the turn answers. */
     private val batches = ArrayList<JSONArray>()
     private var answers = 0
+    /** Where requests wait for their answers (fetch). */
+    private val network by lazy { java.util.concurrent.Executors.newCachedThreadPool() }
+    /** The JS thread's: what the embedding app wants run once the turn's ops are applied (afterTurn). */
+    private val after = ArrayList<Runnable>()
 
     /**
      * Runs one JS turn on the JS thread, then hands the UI thread what it sent. A turn posted with a `token`
@@ -209,10 +240,12 @@ class MainActivity : Activity() {
 
     /** On the JS thread: the turn's batches go to the UI thread as one, so no frame shows views before their frames. */
     private fun deliver() {
-        if (batches.isEmpty()) return
+        if (batches.isEmpty() && after.isEmpty()) return
         val all = ArrayList(batches)
+        val then = ArrayList(after)
         val at = answers
         batches.clear()
+        after.clear()
         ui.post {
             if (isDestroyed) return@post
             handled = at
@@ -225,6 +258,7 @@ class MainActivity : Activity() {
             if (moved.isNotEmpty()) snapFrames()
             for (stack in stacks.values) sync(stack)
             updateBack()
+            for (run in then) run.run()
         }
     }
 
@@ -243,6 +277,39 @@ class MainActivity : Activity() {
                 deliver()
             }
         }, ms.toLong())
+    }
+
+    /**
+     * Called by __nuclo_fetch from JS, on its thread: the request runs on a thread of its own, and its answer is a
+     * turn (fetch.ts): {status, statusText, url, headers, body}, or {error}.
+     */
+    @Suppress("unused")
+    private fun fetch(id: Int, method: ByteArray, url: ByteArray, headers: ByteArray, body: ByteArray?) {
+        val verb = String(method)
+        val address = String(url)
+        val fields = JSONObject(String(headers))
+        network.execute {
+            val answer = JSONObject()
+            try {
+                val connection = java.net.URL(address).openConnection() as java.net.HttpURLConnection
+                connection.requestMethod = verb
+                for (name in fields.keys()) connection.setRequestProperty(name, fields.getString(name))
+                if (body != null) {
+                    connection.doOutput = true
+                    connection.outputStream.use { it.write(body) }
+                }
+                val status = connection.responseCode
+                val text = (if (status >= 400) connection.errorStream else connection.inputStream)?.use { String(it.readBytes()) } ?: ""
+                val got = JSONObject()
+                for ((name, values) in connection.headerFields) if (name != null) got.put(name.lowercase(), values.joinToString(", "))
+                answer.put("status", status).put("statusText", connection.responseMessage ?: "").put("url", connection.url.toString())
+                    .put("headers", got).put("body", text)
+            } catch (error: Exception) {
+                answer.put("error", error.message ?: error.toString())
+            }
+            val json = answer.toString().toByteArray()
+            ui.post { turn { event(id, "fetch".toByteArray(), json, true) } }
+        }
     }
 
     private fun emit(id: Int, type: String, value: Any? = null, token: Any? = null) {
@@ -272,10 +339,30 @@ class MainActivity : Activity() {
     private fun imageSize(src: ByteArray) =
         (bitmap(String(src))?.let { "${it.width} ${it.height}" } ?: "0 0").toByteArray()
 
-    /** Both threads ask: JS for the size, the UI thread for the picture. */
+    /**
+     * Both threads ask: JS for the size, the UI thread for the picture. A remote one (http…) is fetched once, off
+     * both: until it arrives it has neither, then the views showing it get it and JS hears `load` (dom.ts).
+     * ponytail: decoded at full size; sampled down to its box when a feed of camera photos shows up.
+     */
     @Synchronized
-    private fun bitmap(src: String) =
-        bitmaps.getOrPut(src) { runCatching { assets.open(src).use(BitmapFactory::decodeStream) }.getOrNull() }
+    private fun bitmap(src: String): Bitmap? {
+        if (!src.startsWith("http://") && !src.startsWith("https://"))
+            return bitmaps.getOrPut(src) { runCatching { assets.open(src).use(BitmapFactory::decodeStream) }.getOrNull() }
+        remote.get(src)?.let { return it }
+        if (fetching.add(src)) network.execute {
+            val picture = runCatching { java.net.URL(src).openStream().use(BitmapFactory::decodeStream) }.getOrNull()
+            ui.post {
+                synchronized(this) {
+                    fetching.remove(src)
+                    if (picture != null) remote.put(src, picture)
+                }
+                if (picture == null || isDestroyed) return@post
+                for ((view, shown) in sources) if (shown == src) (view as ImageView).setImageBitmap(picture)
+                turn { event(0, "load".toByteArray(), src.toByteArray(), true) }
+            }
+        }
+        return null
+    }
 
     /**
      * Places views at their frames with edges on device pixels, as the browser paints boxes:
@@ -367,6 +454,8 @@ class MainActivity : Activity() {
     @Suppress("unused")
     private fun device(name: ByteArray): ByteArray {
         val key = String(name)
+        hook?.invoke(key)?.let { return it.toByteArray() }
+        if (key == "window") return windowSize.toByteArray()
         if (key == "frames") {
             // The views are the UI thread's: it reads them once it has applied what this turn sent so far.
             deliver()
@@ -393,8 +482,7 @@ class MainActivity : Activity() {
         return batteryJson
     }
 
-    private fun deviceChanged(name: String, json: String) =
-        turn { evaluate("__nuclo_device_changed(${JSONObject.quote(name)},${JSONObject.quote(json)})".toByteArray()) }
+    private fun deviceChanged(name: String, json: String) = turn { changed(name.toByteArray(), json.toByteArray()) }
 
     private fun battery(intent: Intent): String {
         if (!intent.getBooleanExtra(BatteryManager.EXTRA_PRESENT, true)) return ""
@@ -418,7 +506,29 @@ class MainActivity : Activity() {
     }
 
     companion object {
+        /**
+         * An embedding app's own device data: asked first, on the JS thread, and what it answers (not null) is
+         * __nuclo_device(name)'s reply.
+         */
+        @JvmStatic
+        var hook: ((String) -> String?)? = null
+
+        /**
+         * From `hook`, so during a JS turn: runs on the UI thread once the views are what that turn made them, before
+         * the frame that shows it. JS is done long before its ops are applied: a timer started from the hook itself
+         * would stop early.
+         */
+        @JvmStatic
+        fun afterTurn(run: Runnable) {
+            running?.after?.add(run)
+        }
+
         init {
+            // Hermes reaches the platform's Intl and Unicode (toLocaleString, localeCompare, normalize…) through fbjni,
+            // which registers itself when loaded by name; its Java side loads through SoLoader's NativeLoader, which
+            // wants a delegate first, or the first such call ends the process.
+            com.facebook.soloader.nativeloader.NativeLoader.initIfUninitialized(com.facebook.soloader.nativeloader.SystemDelegate())
+            System.loadLibrary("fbjni")
             System.loadLibrary("nuclo")
         }
     }
@@ -536,6 +646,7 @@ class MainActivity : Activity() {
         views.remove(view.id)
         frames.remove(view.id)
         edited.remove(view.id)
+        sources.remove(view)
         fonts.remove(view)
         textColors.remove(view)
     }
@@ -564,8 +675,11 @@ class MainActivity : Activity() {
                     if (!exists()) assets.open(value).use { input -> outputStream().use { input.copyTo(it) } }
                 }.path,
             )
-            // Asset paths are relative to the bundle.
-            key == "src" -> (view as ImageView).setImageBitmap(bitmap(value as String))
+            // Asset paths are relative to the bundle; a URL is fetched (bitmap).
+            key == "src" -> {
+                sources[view] = value as String
+                (view as ImageView).setImageBitmap(bitmap(value))
+            }
             key == "disabled" -> view.isEnabled = value != true
         }
     }
@@ -1001,11 +1115,20 @@ private class Video(context: Context) : FrameLayout(context) {
     }
 }
 
+/**
+ * A tap's click, which View posts to run after the frame that shows the press. The listener here only posts to JS,
+ * so it need not wait that frame: a view that refuses the post is clicked at once (View.onTouchEvent). Told by the
+ * runnable's class name; if Android renames it, clicks come the usual way, a frame later.
+ */
+private fun isClick(action: Runnable?) = action?.javaClass?.name == "android.view.View\$PerformClick"
+
 private class Box(context: Context) : ViewGroup(context) {
     // Children overflow their frames, as in CSS: a view clips (to its outline) only with overflow hidden.
     init {
         clipChildren = false
     }
+
+    override fun post(action: Runnable?) = !isClick(action) && super.post(action)
 
     override fun generateDefaultLayoutParams() = MarginLayoutParams(0, 0)
 
@@ -1209,6 +1332,8 @@ private class Label(context: Context, typeface: Typeface) : View(context) {
         it.color = Color.BLACK
     }
     private var size = 14.0
+
+    override fun post(action: Runnable?) = !isClick(action) && super.post(action)
 
     var text = ""
         set(value) {

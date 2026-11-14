@@ -37,7 +37,7 @@
 		"windows": "bun scripts/run.ts windows",
 		"windows-gpui": "bun scripts/run.ts windows-gpui",
 		"web": "bun scripts/run.ts web",
-		"test": "bun test",
+		"test": "bun test --isolate",
 		"typecheck": "tsc -p tsconfig.json"
 	},
 	"dependencies": {

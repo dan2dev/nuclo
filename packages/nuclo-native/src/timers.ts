@@ -1,5 +1,5 @@
 /**
- * setTimeout and setInterval for the bare engines (JavaScriptCore, QuickJS, Jint), which have none. The host has
+ * setTimeout and setInterval for the bare engines (Hermes, QuickJS, Jint), which have none. The host has
  * one call, __nuclo_timer(id, ms), and answers once, at least `ms` later, with __nuclo_event(id, "timer"). A cleared
  * timer is only forgotten here: the host fires it into nothing.
  */

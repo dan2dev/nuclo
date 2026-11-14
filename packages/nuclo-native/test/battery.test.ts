@@ -17,7 +17,8 @@ const textId = (text: string) => ops.findLast((op) => op[0] === "set" && op[2] =
 const parentOf = (id: number) => ops.findLast((op) => op[0] === "insert" && op[2] === id)![1];
 
 test("reads the battery from the host", () => {
-  expect(asked).toEqual(["battery"]);
+  // The window's size is asked once, as the runtime starts (dom.ts, presize); then only what the app reads.
+  expect(asked).toEqual(["window", "battery"]);
   expect(shows("83%")).toBe(true);
   expect(shows("On battery")).toBe(true);
   expect(shows("3 h 12 min left")).toBe(true);
