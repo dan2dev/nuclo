@@ -5,7 +5,8 @@ import { afterAll, expect, test } from "bun:test";
 import type { Op } from "../src/dom";
 const ops: Op[] = [];
 const g = globalThis;
-const size = (max: number) => `${max < 0 ? 80 : Math.min(80, max)} 18.9`;
+// A height frames do not keep exactly: they are sent rounded.
+const size = (max: number) => `${max < 0 ? 80 : Math.min(80, max)} 18.912345`;
 let asked = 0;
 g.__nuclo_host = (json: string) => ops.push(...JSON.parse(json));
 g.__nuclo_measure = (_id: number, max: number) => size(max);
@@ -64,4 +65,13 @@ test("a row added where the screen shows is created at once", () => {
   rows.push(103);
   update();
   expect(created(from, "Row 103")).toBe(true);
+});
+
+test("a row parked far away comes back with its children placed", () => {
+  // The screen is at the end of the list: row 0 is parked. Back at the top it is created again.
+  const from = ops.length;
+  g.__nuclo_event(screen, "scroll", "0 800");
+  const back = ops.slice(from);
+  const text = back.find((op) => op[0] === "set" && op[3] === "Row 0")![1];
+  expect(back.some((op) => op[0] === "frame" && op[1] === text)).toBe(true);
 });

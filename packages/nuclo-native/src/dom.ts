@@ -950,12 +950,15 @@ function layoutUnparked(out: Op[]) {
     let root: NNode = parent;
     while (root.parentNode && !screens.has(root as NElement)) root = root.parentNode;
     const { frames, height } = layout(tree(node), box.ws[i], undefined, measure, sizes.get(root.nid)?.[2] ?? 0);
-    if (Math.abs(height - frame[3]) > 1e-9) {
+    // Its subtree's frames stand either way (they are relative to it, at the width it had): its list, laid out
+    // again, keeps them. Sent frames are rounded (moved), so the height it had is compared within that.
+    if (Math.abs(height - frame[3]) > 1e-4) {
+      frames.delete(node.nid);
       touch(parent);
-      continue;
+    } else {
+      box.children[i] = node.box!;
+      frames.set(node.nid, frame);
     }
-    box.children[i] = node.box!;
-    frames.set(node.nid, frame);
     moved(frames, out);
   }
 }
