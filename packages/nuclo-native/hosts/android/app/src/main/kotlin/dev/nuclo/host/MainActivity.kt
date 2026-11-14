@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.ColorStateList
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
@@ -71,7 +72,11 @@ class MainActivity : Activity() {
     private val textColors = HashMap<View, ColorStateList>()
     /** Frames as JS sent them (dp, relative to the parent); views get them snapped to device pixels (snapFrames). */
     private val frames = HashMap<Int, DoubleArray>()
-    private var placed = false
+    /** Views whose frame arrived, or that changed parent, since frames were last snapped. */
+    private val moved = HashSet<Int>()
+    /** Bundled images by path, decoded once: rows repeat them, and come and go as the list scrolls. */
+    private val bitmaps = HashMap<String, Bitmap?>()
+    private val measuring = TextPaint(Paint.ANTI_ALIAS_FLAG or TEXT_FLAGS)
     private val density by lazy { resources.displayMetrics.density.toDouble() }
     private val inter by lazy { Typeface.createFromAsset(assets, "fonts/Inter-Regular.ttf") }
     private val interBold by lazy { Typeface.createFromAsset(assets, "fonts/Inter-Bold.ttf") }
@@ -134,19 +139,16 @@ class MainActivity : Activity() {
     private fun receive(json: ByteArray) {
         val ops = JSONArray(String(json))
         for (i in 0 until ops.length()) apply(ops.getJSONArray(i))
-        if (placed) snapFrames()
+        if (moved.isNotEmpty()) snapFrames()
         for (stack in stacks.values) sync(stack)
         updateBack()
     }
 
-    private fun emit(id: Int, type: String, value: Any? = null) {
-        val arg = when (value) {
-            null -> ""
-            is String -> "," + JSONObject.quote(value)
-            else -> ",$value"
-        }
-        evaluate("__nuclo_event($id,'$type'$arg)".toByteArray())
-    }
+    /** Calls __nuclo_event(id, type, value): `value` as UTF-8, a JS string if `text`, else JSON (a number or boolean). */
+    private external fun event(id: Int, type: ByteArray, value: ByteArray?, text: Boolean)
+
+    private fun emit(id: Int, type: String, value: Any? = null) =
+        event(id, type.toByteArray(), value?.toString()?.toByteArray(), value is String)
 
     // ---- Layout: JS's frames, text measured and drawn the contract's way (layout.ts) ----
 
@@ -161,16 +163,40 @@ class MainActivity : Activity() {
         else -> "0 0"
     }.toByteArray()
 
+    /** Called by __nuclo_text_size from JS: a text's size as a Label with that font measures it, without the view. */
+    @Suppress("unused")
+    private fun textSize(text: ByteArray, size: Double, bold: Boolean, system: Boolean, maxWidth: Double): ByteArray {
+        measuring.typeface = face(bold, system)
+        measuring.textSize = (size * density).toFloat()
+        return measureText(String(text), measuring, size, maxWidth, density).toByteArray()
+    }
+
+    /** Called by __nuclo_image_size from JS: a bundled image's natural size. */
+    @Suppress("unused")
+    private fun imageSize(src: ByteArray) =
+        (bitmap(String(src))?.let { "${it.width} ${it.height}" } ?: "0 0").toByteArray()
+
+    private fun bitmap(src: String) =
+        bitmaps.getOrPut(src) { runCatching { assets.open(src).use(BitmapFactory::decodeStream) }.getOrNull() }
+
     /**
      * Places views at their frames with edges on device pixels, as the browser paints boxes:
      * each edge rounds from its unsnapped position on screen, so boxes never blur or gap.
      */
     private fun snapFrames() {
-        placed = false
         val s = density
-        fun place(parent: Box, x0: Double, y0: Double, left: Int, top: Int) {
+        // A view's edges depend on where its ancestors are: one that moved takes its subtree along, and is reached
+        // through its ancestors. The rest stay as they are.
+        val around = HashSet<Int>()
+        for (id in moved) {
+            var parent = views[id]?.parent
+            while (parent is Box && around.add(parent.id)) parent = parent.parent
+        }
+        fun place(parent: Box, x0: Double, y0: Double, left: Int, top: Int, all: Boolean) {
             for (i in 0 until parent.childCount) {
                 val child = parent.getChildAt(i)
+                val subtree = all || child.id in moved
+                if (!subtree && child.id !in around) continue
                 val f = frames[child.id] ?: continue
                 val x = x0 + f[0]
                 val y = y0 + f[1]
@@ -188,11 +214,12 @@ class MainActivity : Activity() {
                 }
                 when (child) {
                     is Label -> child.place(x - l / s, y - t / s, f[2])
-                    is Box -> place(child, x, y, l, t)
+                    is Box -> place(child, x, y, l, t, subtree)
                 }
             }
         }
-        for (root in titles.keys.mapNotNull { views[it] } + views.getValue(1)) place(root as Box, 0.0, 0.0, 0, 0)
+        for (id in titles.keys + 1) if (id in around) place(views.getValue(id) as Box, 0.0, 0.0, 0, 0, false)
+        moved.clear()
     }
 
     /** __nuclo_device("frames"): every view's frame as placed, in dp relative to its parent (check.ts). */
@@ -349,6 +376,7 @@ class MainActivity : Activity() {
                     else -> {
                         val parent = view as Box
                         (child.parent as? ViewGroup)?.removeView(child)
+                        moved.add(child.id)
                         parent.addView(child, if (before == 0) parent.childCount else parent.indexOfChild(views[before]))
                     }
                 }
@@ -382,7 +410,7 @@ class MainActivity : Activity() {
                     id in titles -> view.layoutParams = FrameLayout.LayoutParams(px(f[2]), px(f[3]))
                     id != 1 -> {
                         frames[id] = f
-                        placed = true
+                        moved.add(id)
                     }
                 }
             }
@@ -420,9 +448,7 @@ class MainActivity : Activity() {
                 }.path,
             )
             // Asset paths are relative to the bundle.
-            key == "src" -> assets.open(value as String).use {
-                (view as ImageView).setImageBitmap(BitmapFactory.decodeStream(it))
-            }
+            key == "src" -> (view as ImageView).setImageBitmap(bitmap(value as String))
             key == "disabled" -> view.isEnabled = value != true
         }
     }
@@ -496,16 +522,18 @@ class MainActivity : Activity() {
             "fontWeight" -> font.bold = value == "bold" || (value.toIntOrNull() ?: 400) >= 600
             else -> font.system = value == "system"
         }
-        val face = when {
-            font.system -> if (font.bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-            font.bold -> interBold
-            else -> inter
-        }
+        val face = face(font.bold, font.system)
         if (view is Label) view.setFont(face, font.size)
         else (view as? TextView)?.apply {
             typeface = face
             setTextSize(TypedValue.COMPLEX_UNIT_DIP, font.size.toFloat())
         }
+    }
+
+    private fun face(bold: Boolean, system: Boolean) = when {
+        system -> if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+        bold -> interBold
+        else -> inter
     }
 
     // One drawable carries colour, border and corner radius.

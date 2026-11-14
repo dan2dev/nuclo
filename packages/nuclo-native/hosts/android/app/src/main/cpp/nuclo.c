@@ -14,6 +14,8 @@ static jobject activity;
 static jmethodID receive;
 static jmethodID device;
 static jmethodID measure;
+static jmethodID textSize;
+static jmethodID imageSize;
 
 // A JS string as a Java byte[] of its UTF-8; NULL with a JS exception pending.
 static jbyteArray utf8(JSContext *ctx, JSValueConst value) {
@@ -61,6 +63,36 @@ static JSValue measureValue(JSContext *ctx, JSValueConst self, int argc, JSValue
     return string(ctx, (*env)->CallObjectMethod(env, activity, measure, (jint)id, (jdouble)maxWidth));
 }
 
+// __nuclo_text_size(text, size, bold, system, maxWidth): Kotlin's textSize, "w h" (host.ts).
+static JSValue textSizeValue(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv) {
+    double size, maxWidth;
+    if (JS_ToFloat64(ctx, &size, argv[1]) || JS_ToFloat64(ctx, &maxWidth, argv[4])) return JS_EXCEPTION;
+    jbyteArray text = utf8(ctx, argv[0]);
+    if (!text) return JS_EXCEPTION;
+    jbyteArray reply = (*env)->CallObjectMethod(env, activity, textSize, text, (jdouble)size,
+        (jboolean)JS_ToBool(ctx, argv[2]), (jboolean)JS_ToBool(ctx, argv[3]), (jdouble)maxWidth);
+    (*env)->DeleteLocalRef(env, text);
+    return string(ctx, reply);
+}
+
+// __nuclo_image_size(src): Kotlin's imageSize, "w h".
+static JSValue imageSizeValue(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv) {
+    jbyteArray src = utf8(ctx, argv[0]);
+    if (!src) return JS_EXCEPTION;
+    jbyteArray reply = (*env)->CallObjectMethod(env, activity, imageSize, src);
+    (*env)->DeleteLocalRef(env, src);
+    return string(ctx, reply);
+}
+
+// A Java byte[] as a NUL-terminated copy (JS_Eval and JS_ParseJSON need one); the caller frees it.
+static char *copy(JNIEnv *jni, jbyteArray bytes, jsize *length) {
+    *length = (*jni)->GetArrayLength(jni, bytes);
+    char *text = malloc((size_t)*length + 1);
+    (*jni)->GetByteArrayRegion(jni, bytes, 0, *length, (jbyte *)text);
+    text[*length] = 0;
+    return text;
+}
+
 static void report(JSValue result) {
     if (JS_IsException(result)) {
         JSValue error = JS_GetException(context);
@@ -85,11 +117,15 @@ Java_dev_nuclo_host_MainActivity_evaluate(JNIEnv *jni, jobject thiz, jbyteArray 
         JS_SetPropertyStr(context, global, "__nuclo_host", JS_NewCFunction(context, host, "__nuclo_host", 1));
         JS_SetPropertyStr(context, global, "__nuclo_device", JS_NewCFunction(context, deviceValue, "__nuclo_device", 1));
         JS_SetPropertyStr(context, global, "__nuclo_measure", JS_NewCFunction(context, measureValue, "__nuclo_measure", 2));
+        JS_SetPropertyStr(context, global, "__nuclo_text_size", JS_NewCFunction(context, textSizeValue, "__nuclo_text_size", 5));
+        JS_SetPropertyStr(context, global, "__nuclo_image_size", JS_NewCFunction(context, imageSizeValue, "__nuclo_image_size", 1));
         JS_FreeValue(context, global);
         jclass type = (*jni)->GetObjectClass(jni, thiz);
         receive = (*jni)->GetMethodID(jni, type, "receive", "([B)V");
         device = (*jni)->GetMethodID(jni, type, "device", "([B)[B");
         measure = (*jni)->GetMethodID(jni, type, "measure", "(ID)[B");
+        textSize = (*jni)->GetMethodID(jni, type, "textSize", "([BDZZD)[B");
+        imageSize = (*jni)->GetMethodID(jni, type, "imageSize", "([B)[B");
     }
     // A widget callback fired by an op can re-enter here; restore on the way out.
     JNIEnv *outerEnv = env;
@@ -97,13 +133,45 @@ Java_dev_nuclo_host_MainActivity_evaluate(JNIEnv *jni, jobject thiz, jbyteArray 
     env = jni;
     activity = thiz;
 
-    // JS_Eval needs the source NUL-terminated.
-    jsize length = (*jni)->GetArrayLength(jni, code);
-    char *source = malloc((size_t)length + 1);
-    (*jni)->GetByteArrayRegion(jni, code, 0, length, (jbyte *)source);
-    source[length] = 0;
+    jsize length;
+    char *source = copy(jni, code, &length);
     report(JS_Eval(context, source, (size_t)length, "app.js", JS_EVAL_TYPE_GLOBAL));
     free(source);
+
+    JSContext *job;
+    while (JS_ExecutePendingJob(runtime, &job) > 0) {}
+
+    env = outerEnv;
+    activity = outerActivity;
+}
+
+// __nuclo_event(id, type, value?): a call, not a script to compile. `value` is a string if `text`, else JSON.
+JNIEXPORT void JNICALL
+Java_dev_nuclo_host_MainActivity_event(JNIEnv *jni, jobject thiz, jint id, jbyteArray type, jbyteArray value, jboolean text) {
+    if (!context) return;
+    JNIEnv *outerEnv = env;
+    jobject outerActivity = activity;
+    env = jni;
+    activity = thiz;
+
+    JSValue global = JS_GetGlobalObject(context);
+    JSValue function = JS_GetPropertyStr(context, global, "__nuclo_event");
+    JSValue args[3];
+    int argc = 2;
+    jsize length;
+    char *name = copy(jni, type, &length);
+    args[0] = JS_NewInt32(context, id);
+    args[1] = JS_NewStringLen(context, name, (size_t)length);
+    free(name);
+    if (value) {
+        char *data = copy(jni, value, &length);
+        args[argc++] = text ? JS_NewStringLen(context, data, (size_t)length) : JS_ParseJSON(context, data, (size_t)length, "value");
+        free(data);
+    }
+    report(JS_Call(context, function, global, argc, args));
+    for (int i = 0; i < argc; i++) JS_FreeValue(context, args[i]);
+    JS_FreeValue(context, function);
+    JS_FreeValue(context, global);
 
     JSContext *job;
     while (JS_ExecutePendingJob(runtime, &job) > 0) {}

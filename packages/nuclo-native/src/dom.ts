@@ -49,7 +49,7 @@
 
 import "./host";
 import { type Frame, type LayoutNode, insets, layout } from "./layout";
-import { INHERITED, Sheet, type Styles, compute, declarations, mediaMatches, paint } from "./style";
+import { INHERITED, Sheet, type Styles, compute, declarations, length, mediaMatches, paint } from "./style";
 
 /** One host op (see the contract above): the first item tells the rest apart. */
 export type Op =
@@ -113,11 +113,13 @@ function styleAll() {
     cssText = text;
     sheet = new Sheet(text);
     matchKey = "-";
+    shared = new WeakMap();
   }
   const [w, h] = viewport();
   const key = sheet.medias.map((m) => (mediaMatches(m, w, h) ? 1 : 0)).join("");
   if (key !== matchKey) {
     matchKey = key;
+    shared = new WeakMap();
     matching.clear();
     sheet.medias.forEach((m, i) => key[i] === "1" && matching.add(m));
     restyleAll(body);
@@ -141,16 +143,41 @@ const differs = (a: Styles, b: Styles) => {
   return false;
 };
 
+/**
+ * Computed styles by the parent's and what the node declares: nodes that declare the same under the same style
+ * share one object, never changed once made. A list's rows resolve their styles once, and layout parses them once.
+ */
+let shared = new WeakMap<Styles, Map<string, Styles>>();
+const unparented: Styles = {};
+
+/** A node's computed style, from its parent's and its own declarations. */
+function computedOf(node: NNode) {
+  const parent = node.parentNode?.computed;
+  const el = node instanceof NElement ? node : null;
+  const className = el ? String(el.attrs.class ?? "") : "";
+  let key = "";
+  if (el) {
+    key = `${el.localName}\n${className}`;
+    for (const k in el.styles) key += `\n${k}:${el.styles[k]}`;
+  }
+  let byKey = shared.get(parent ?? unparented);
+  if (!byKey) shared.set(parent ?? unparented, (byKey = new Map()));
+  let found = byKey.get(key);
+  if (!found) {
+    // ponytail: emptied when full; a style animated through many values under one parent would fill it.
+    if (byKey.size >= 512) byKey.clear();
+    found = compute(parent, el ? sheet.cascade(el.localName, className, (m) => matching.has(m), Object.entries(el.styles)) : []);
+    byKey.set(key, found);
+  }
+  return found;
+}
+
 function resolveStyle(node: NNode) {
   restyled.delete(node);
   const before = node.computed;
-  const declared =
-    node instanceof NElement
-      ? sheet.cascade(node.localName, String(node.attrs.class ?? ""), (m) => matching.has(m), Object.entries(node.styles))
-      : [];
-  const next = compute(node.parentNode?.computed, declared);
+  const next = computedOf(node);
   node.computed = next;
-  if (!before || differs(next, before)) {
+  if (!before || (next !== before && differs(next, before))) {
     touch(node);
     resized = true; // lay out again even when the host gets no op
   }
@@ -197,6 +224,12 @@ class NNode {
   kids?: NNode[];
   /** A long list being culled: the children that may be on the host lie in kept. Inserts and removes reset it. */
   kept?: [number, number];
+  /** A list longer than its screen keeps (cull): far children are parked, and new ones start parked. */
+  culled = false;
+  /** Parked since it was inserted, at a guessed size (guess): laid out when it first comes near the screen. */
+  guessed = false;
+  /** A culled list's guess for a new child's box, and the layout it was made from. */
+  guess?: [from: LayoutNode, style: Styles | undefined];
 
   get isConnected(): boolean {
     return this.live || (this.parentNode?.isConnected ?? false);
@@ -246,6 +279,16 @@ class NNode {
     else if (node.nodeType !== 8) {
       touch(this);
       this.kept = undefined;
+      const size = this.culled && guess(this);
+      if (size) {
+        // Starts parked, as a box of the list's usual row: created and laid out only when it comes near what
+        // shows (cull), a row at a time, not a page at once.
+        node.parked = node.guessed = true;
+        node.box = { id: node.nid, kind: "view", style: size, children: [] };
+        parked.add(node.nid);
+        resized = true;
+        return node;
+      }
       realize(node);
       let before = node.nextSibling;
       while (before && !before.live) before = before.nextSibling;
@@ -292,6 +335,7 @@ function unlink(node: NNode, destroy: boolean) {
     parked.delete(node.nid);
     parkedAt.delete(node.nid);
     node.box = undefined;
+    node.guessed = false;
   }
   if (!destroy) return;
   if (node.live) {
@@ -312,8 +356,26 @@ function unrealize(node: NNode) {
   measured.delete(node.nid);
   scrolled.delete(node.nid);
   ended.delete(node.nid);
-  culledAt.delete(node.nid);
   for (let c = node.firstChild; c; c = c.nextSibling) unrealize(c);
+}
+
+/** The box a culled list's new child starts as: the mean size of the list's children as last laid out. */
+function guess(list: NNode) {
+  const box = list.box;
+  if (!box) return undefined;
+  if (list.guess?.[0] !== box) {
+    let height = 0;
+    let width = 0;
+    let n = 0;
+    for (let i = 0; i < (box.hs?.length ?? 0); i++) {
+      if (Number.isNaN(box.hs![i])) continue;
+      height += box.hs![i]!;
+      width = box.ws![i]!;
+      n++;
+    }
+    list.guess = [box, n ? { width: String(width), height: String(height / n) } : undefined];
+  }
+  return list.guess[1];
 }
 
 /** Text as CSS shows it (white-space: normal): whitespace runs are one space, none at the ends. */
@@ -683,13 +745,39 @@ function tree(node: NNode): LayoutNode {
   if (prev) prev.prev = undefined; // Only the last one: no chain of old nodes.
   // The same computed style parses the same: keep what layout read from it.
   const parsed = prev?.style === style ? prev.parsed : undefined;
-  return (node.box = { id: node.nid, kind, style, children, prev, parsed });
+  const box: LayoutNode = (node.box = { id: node.nid, kind, style, children, prev, parsed });
+  // Hosts that size by content (host.ts) are asked with it, not by node.
+  if (kind === "text" && globalThis.__nuclo_text_size) box.content = shown(node.textContent);
+  else if (kind === "image" && globalThis.__nuclo_image_size) box.content = String(el!.attrs.src ?? "");
+  return box;
+}
+
+/** Content sizes by what was measured: rows repeat texts and images. */
+const contentSizes = new Map<string, { w: number; h: number }>();
+
+function measureContent(node: LayoutNode, content: string, key: number) {
+  const image = node.kind === "image";
+  const s = node.style;
+  const size = length(s.fontSize) ?? 14;
+  const bold = s.fontWeight === "bold" || parseInt(s.fontWeight ?? "") >= 600;
+  const system = s.fontFamily === "system";
+  const id = image ? `i${content}` : `${size} ${bold} ${system} ${key} ${content}`;
+  let found = contentSizes.get(id);
+  if (!found) {
+    const reply = image ? globalThis.__nuclo_image_size!(content) : globalThis.__nuclo_text_size!(content, size, bold, system, key);
+    const [w, h] = String(reply).split(" ").map(Number);
+    // ponytail: emptied when full; an LRU if one screen ever holds this many distinct texts.
+    if (contentSizes.size >= 20000) contentSizes.clear();
+    contentSizes.set(id, (found = { w: w || 0, h: h || 0 }));
+  }
+  return found;
 }
 
 function measure(node: LayoutNode, maxWidth: number) {
+  const key = Number.isFinite(maxWidth) ? Math.round(maxWidth * 100) / 100 : -1;
+  if (node.content !== undefined) return measureContent(node, node.content, key);
   let cache = measured.get(node.id);
   if (!cache) measured.set(node.id, (cache = new Map()));
-  const key = Number.isFinite(maxWidth) ? Math.round(maxWidth * 100) / 100 : -1;
   let size = cache.get(key);
   if (!size) {
     const reply = String(globalThis.__nuclo_measure?.(node.id, key) ?? "");
@@ -751,26 +839,22 @@ const parked = new Set<number>();
 const parkedAt = new Map<number, Frame>();
 /** Nodes back on the host since the last layout, with their parent and index. */
 const unparked: [NNode, NNode, number][] = [];
-/** Each screen's scroll offset at its last cull. */
-const culledAt = new Map<number, number>();
 
 /**
  * Keeps the host's views near what each screen shows. In a column of content height (a list) taller than the
  * window, children more than a screen past the visible part are parked: removed from the host, laid out as a box of
- * their last size. They come back within a screen of it. A page appended to a list is realized, measured and laid
- * out, then parked if it is far; a single render of thousands of rows still creates them all once.
+ * their last size. They come back within a screen of it. A row added to such a list starts parked, at a guessed
+ * size, and is created and laid out when it first comes near; a single render of thousands of rows still creates
+ * them all once.
  * Returns whether it changed anything (the caller flushes).
  */
-function cull(scrolling = false) {
+function cull() {
   const start = ops.length;
   for (const screen of screens) {
     const size = sizes.get(screen.nid);
     if (!size) continue;
     const [y, h] = scrolled.get(screen.nid) ?? [0, size[1]];
-    // What shows stays within a screen of the last pass until it has moved half a screen: check again then.
-    const last = culledAt.get(screen.nid);
-    if (h <= 0 || (scrolling && last !== undefined && Math.abs(y - last) < h / 2)) continue;
-    culledAt.set(screen.nid, y);
+    if (h <= 0) continue;
     keep(screen, y - h, y + 2 * h, h);
   }
   return ops.length > start;
@@ -785,10 +869,12 @@ function keep(node: NNode, top: number, bottom: number, margin: number) {
   const n = kids.length;
   if ((box.placed?.[2] ?? 0) <= bottom - top + 2 * margin) {
     // It fits: a list that shrank brings everything back.
-    if (node.kept) kids.forEach((kid, i) => kid.parked && unpark(node, i));
+    if (node.culled) kids.forEach((kid, i) => kid.parked && unpark(node, i));
     node.kept = undefined;
+    node.culled = false;
     return;
   }
+  node.culled = true;
   /** The first child whose box ends past `y`, or (`end` false) starts past it. */
   const find = (y: number, end: boolean) => {
     let lo = 0;
@@ -804,8 +890,18 @@ function keep(node: NNode, top: number, bottom: number, margin: number) {
   const [keepFrom, keepTo] = [find(top - margin, true), find(bottom + margin, false)];
   // Live children lie in the last kept range, unless children came or went since.
   const [from, to] = node.kept ?? [0, n];
+  let settled = true;
+  for (let i = showFrom; i < showTo; i++) {
+    if (!kids[i].parked) continue;
+    if (kids[i].guessed) settled = false;
+    unpark(node, i);
+  }
+  // Where the rest lies is a guess until the guessed sizes just brought back are laid out: nothing leaves on it.
+  if (!settled) {
+    node.kept = [Math.min(from, showFrom), Math.max(to, showTo)];
+    return;
+  }
   for (let i = from; i < to; i++) if ((i < keepFrom || i >= keepTo) && kids[i].live) park(node, i, hs[i]);
-  for (let i = showFrom; i < showTo; i++) if (kids[i].parked) unpark(node, i);
   node.kept = [keepFrom, keepTo];
   for (let i = showFrom; i < showTo; i++) keep(kids[i], top - ys[i], bottom - ys[i], margin);
 }
@@ -844,7 +940,10 @@ function layoutUnparked(out: Op[]) {
     const frame = parkedAt.get(node.nid);
     parkedAt.delete(node.nid);
     const box = parent.box;
-    if (!node.live || node.parentNode !== parent || parent.dirty || !frame || !box?.ws || !box.hs) {
+    // One parked at a guessed size was never laid out: its list places it, and moves the rows after it.
+    const guessed = node.guessed;
+    node.guessed = false;
+    if (guessed || !node.live || node.parentNode !== parent || parent.dirty || !frame || !box?.ws || !box.hs) {
       touch(parent);
       continue;
     }
@@ -896,7 +995,7 @@ globalThis.__nuclo_event = (id, type, value) => {
     const [y, h] = String(value).split(" ").map(Number);
     scrolled.set(id, [y || 0, h || 0]);
     if (sending) return;
-    if (cull(true)) flush();
+    if (cull()) flush();
     reachEnds();
     return;
   }

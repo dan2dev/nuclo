@@ -198,6 +198,7 @@ A style lays out to the same boxes, and its text to the same lines, on every hos
 | --- | --- |
 | `["frame", id, x, y, w, h]` | An op: the node's box, relative to its parent's. A layout root's (the body, or a screen) is `[0, 0, w, content height]`: a screen scrolls to it. Sent after the batch that changed something, as a second batch. |
 | `__nuclo_measure(id, maxWidth) → "w h"` | The content size of a text, button or image (natural size) with its current text and font, at most `maxWidth` wide (-1: unconstrained). Widths round up to 1/100. |
+| `__nuclo_text_size(text, size, bold, system, maxWidth) → "w h"`, `__nuclo_image_size(src) → "w h"` | Optional: the same sizes without a node, so JS asks once per distinct text or image, not once per node. Android has them. |
 | `__nuclo_event(rootId, "resize", "w h scale")` | A layout root's size and the device pixels per unit: the window's content for the body, the screen's width for a screen. |
 | `__nuclo_device("frames") → {id: [x, y, w, h]}` | Debug: every view's frame as placed, for the check below. |
 

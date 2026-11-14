@@ -34,6 +34,8 @@ export interface LayoutNode {
   /** The node's style: dom.ts gives the computed longhands; shorthands work too. */
   style: Styles;
   children: LayoutNode[];
+  /** What a host that sizes by content is asked with (dom.ts): a text's text, an image's src. */
+  content?: string;
   /**
    * Written by layout(): the node's last placement [w, h, height, scale] and max-content width. A caller that
    * reuses the node object across layouts promises its subtree did not change (dom.ts rebuilds changed nodes);
@@ -122,7 +124,17 @@ const at0 = (l: Len | "auto", base: number | undefined) => (l === "auto" ? 0 : (
 /** A control's default padding: [vertical, horizontal]. */
 const CONTROL_PADDING: Record<string, [number, number]> = { button: [8, 16], input: [8, 8] };
 
+/** What was read from each computed style (dom.ts shares one between like nodes); controls read theirs their own way. */
+const read = new WeakMap<Styles, Style>();
+
 function styleOf(node: LayoutNode): Style {
+  if (!isComputed(node.style) || node.kind in CONTROL_PADDING || node.kind === "checkbox") return parse(node);
+  let found = read.get(node.style);
+  if (!found) read.set(node.style, (found = parse(node)));
+  return found;
+}
+
+function parse(node: LayoutNode): Style {
   const s = isComputed(node.style) ? node.style : compute(undefined, Object.entries(node.style));
   const fontSize = length(s.fontSize) ?? FONT_SIZE;
   const l = (key: string) => len(s[key], fontSize);
