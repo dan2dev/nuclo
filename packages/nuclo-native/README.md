@@ -189,10 +189,11 @@ Hosts snap each box's edges to device pixels from its position on screen, as the
 | macOS | 176/176 | Headless Chrome, same width, 2×: every box edge on the same device pixel; text at the same baselines and advances, glyph anti-aliasing apart. Controls are AppKit's |
 | iOS (simulator) | 176/176 | Chrome at 3×, 402 wide: the same, over the first screen. Controls are UIKit's |
 | Android (emulator, API 37) | 176/176 | Chrome at 2.625×: box edges and text baselines on the same device pixels, glyph anti-aliasing apart. Its 411.43-dp width against Chrome's 411 px moves right-hand edges 1 px. Controls are Material's |
-| Linux (GTK 4 on macOS, light and dark) | 176/176 (`NUCLO_SELFTEST=1` prints it) | Chrome at 2×: every box edge on the same device pixel, text within one device pixel, the same line breaks. Controls are GTK's; Adwaita's checkbox is 26 px, a pixel past its box on each side |
+| Linux (GTK 4.24 on Linux, Wayland; and on macOS, light and dark) | 176/176 at 1× and 2× (`NUCLO_SELFTEST=1` prints it) | Chrome at 1× and 2×, 420 wide: every box edge on the same device pixel, text within 0.1 px, the same line breaks. Controls are GTK's; Adwaita's checkbox is 26 px, a pixel past its box on each side |
 | Windows | Not run | `dotnet build`: 0 warnings, 0 errors. The input's and checkbox's fit in their boxes is unverified |
 | ios-gpui (simulator) | 176/176 | The same as iOS. The button and checkbox are the look's |
 | macos-gpui | 176/176 (`NUCLO_CHECK=1` logs it) | Not captured: no screen-recording permission here |
+| linux-gpui (Wayland, and X11 at 2×) | 176/176 at 1× and 2× | Chrome at 1× and 2×: box edges on the same device pixels, text on the same pixels as the GTK host (grayscale anti-aliasing, as Chrome). The button and checkbox are the look's |
 
 ## Hosts
 
@@ -201,13 +202,13 @@ Hosts snap each box's edges to device pixels from its position on screen, as the
 | `ios` | `hosts/apple` | JavaScriptCore | UIKit | Simulator: tabs, push, edge-swipe and button back, re-tap to root, JS kept in sync |
 | `macos` | `hosts/apple` | JavaScriptCore | AppKit | Ran scripted: sidebar, toolbar back, titles, push/pop, JS in sync. Trackpad swipe and ⌘[ not exercised |
 | `android` | `hosts/android` | QuickJS-NG (NDK) | Android Views | API 37 emulator: tabs, push, back key, edge swipe with the predictive-back card, up arrow, re-tap, ripples |
-| `linux` | `hosts/linux/host.js` | GJS | GTK 4 + libadwaita | Ran on macOS (Homebrew GTK): tabs, push, native back with JS sync. Swipe and Alt+← not driven |
+| `linux` | `hosts/linux/host.js` | GJS | GTK 4 + libadwaita | Linux (GNOME, Wayland) and macOS (Homebrew GTK): tabs, push, native back with JS sync. Swipe and Alt+← not driven |
 | `windows` | `hosts/windows` | Jint | WPF (Fluent) | Compiles with the .NET 11 SDK, 0 warnings. Never launched |
 | `web` | `hosts/web` + `src/web.ts` | the browser's | the DOM | Browser: push, pop and tab transitions, back button, URL |
 | `ios-gpui` | `hosts/gpui` | QuickJS (rquickjs) | GPUI via gpui-mobile (Metal) | Simulator: tabs, push, interactive edge swipe, back button, JS in sync. The other four looks previewed with `NUCLO_LOOK` |
 | `macos-gpui` | `hosts/gpui` | QuickJS | GPUI (Metal) | Runs, no JS errors. Not screenshotted (no screen-recording permission); same renderer as `ios-gpui` |
 | `android-gpui` | `hosts/gpui` | QuickJS | GPUI via gpui-mobile (Vulkan) | Builds; on the emulator the bundle runs, but no emulator GPU can run GPUI's renderer (GLES 3.0 lacks compute, its Vulkan is non-conformant). Needs a device |
-| `linux-gpui` | `hosts/gpui` | QuickJS | GPUI (Vulkan) | Builds and links in a Debian container (arm64); opens its X11 window, picks Vulkan (Mesa lavapipe) and runs the bundle. Not seen drawing: under Xvfb GPUI presents no frames, its own hello world included. Needs a Linux desktop |
+| `linux-gpui` | `hosts/gpui` | QuickJS | GPUI (Vulkan) | Linux (GNOME): draws on Wayland and on X11 (Xwayland). Under Xvfb GPUI presents no frames, its own hello world included |
 | `windows-gpui` | `hosts/gpui` | QuickJS | GPUI (DirectX) | Cross-built from macOS with MinGW (GNU ABI): compiles and links `nuclo-gpui.exe`. Never launched |
 
 ## GPUI

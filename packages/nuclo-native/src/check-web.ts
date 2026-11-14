@@ -101,5 +101,5 @@ export function check(tolerance = 0.5): CheckResult {
     }
   }
   const total = nodes.size - 1;
-  return { total, matched: total - mismatches.length, mismatches, against: "the browser's CSS" };
+  return { total, matched: total - mismatches.length, mismatches, against: "the browser's CSS", tolerance };
 }

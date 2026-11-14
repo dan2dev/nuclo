@@ -9,8 +9,8 @@ use std::time::Instant;
 
 use gpui::{
     AnyElement, App, Context, Div, ElementId, Entity, FocusHandle, FontWeight, Image, ImageFormat, KeyBinding,
-    MouseButton, NavigationDirection, ObjectFit, Rgba, ScrollHandle, ScrollWheelEvent, SharedString, Styled, TouchPhase, Window,
-    actions, div, img, prelude::*, px, rgba, white,
+    MouseButton, NavigationDirection, ObjectFit, Rgba, ScrollHandle, ScrollWheelEvent, SharedString, Styled, TextAlign, TouchPhase,
+    Window, actions, canvas, div, img, point, prelude::*, px, rgba, white,
 };
 
 use crate::engine::{Engine, Shared, Value};
@@ -532,24 +532,37 @@ impl Host {
         let scale = self.scale;
         let above = (painted_ascent * scale).ceil() / scale;
         let painted_line = 2. * above - painted_ascent + painted_descent;
+        let align = match s.text_align.as_str() {
+            "center" => 0.5,
+            "right" => 1.,
+            _ => 0.,
+        };
         lines
             .into_iter()
             .enumerate()
-            .map(|(i, text)| {
+            .map(|(i, line_text)| {
+                // GPUI lays elements out on whole device pixels, so a line starts at the box's snapped
+                // left and is painted from there at the unsnapped x, as the browser places text.
+                let dx = px(s.padding + offset.0 + (inner - line_text.width) * align);
+                let text = SharedString::from(line_text.text);
                 let el = div()
                     .absolute()
-                    .left(px(s.padding + offset.0))
+                    .left(px(0.))
                     .top(px(((s.padding + offset.1 + i as f32 * line + first) * scale).round() / scale - above))
-                    .w(px(inner))
-                    .h(px(painted_line))
-                    .line_height(px(painted_line))
-                    .whitespace_nowrap();
-                let el = match s.text_align.as_str() {
-                    "center" => el.text_center(),
-                    "right" => el.text_right(),
-                    _ => el,
-                };
-                text_style(el, s).child(text.text).into_any_element()
+                    .w(px(width))
+                    .h(px(painted_line));
+                let paint = canvas(
+                    |_, _, _| {},
+                    move |bounds, _, window, cx| {
+                        let style = window.text_style();
+                        let size = style.font_size.to_pixels(window.rem_size());
+                        let run = style.to_run(text.len());
+                        let shaped = window.text_system().shape_line(text, size, &[run], None);
+                        let origin = point(bounds.origin.x + dx, bounds.origin.y);
+                        let _ = shaped.paint(origin, px(painted_line), TextAlign::Left, None, window, cx);
+                    },
+                );
+                text_style(el, s).child(paint.size_full()).into_any_element()
             })
             .collect()
     }

@@ -497,6 +497,8 @@ let resized = false;
 
 /** The frames sent to the host (for checks: see check.ts). */
 export const sentFrames = (): ReadonlyMap<number, Frame> => sent;
+/** The largest device pixels per unit any layout root reported (1 before any did). */
+export const deviceScale = () => Math.max(1, ...[...sizes.values()].map((size) => size[2]));
 
 /** The layout tree, rebuilt only along dirty paths: a clean node keeps its node object, and with it layout's cache. */
 function tree(node: NNode): LayoutNode {

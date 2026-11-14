@@ -23,6 +23,10 @@ extern crate gpui_mobile;
 pub fn open(bundle: PathBuf, cx: &mut App) {
     input::bind_keys(cx);
     host::bind_keys(cx);
+    // Grayscale glyph anti-aliasing, as the browser (the style contract's reference) draws text
+    // everywhere but Windows; GPUI's Linux default is subpixel, which fringes glyphs with colour.
+    #[cfg(not(target_os = "windows"))]
+    cx.set_text_rendering_mode(gpui::TextRenderingMode::Grayscale);
     let look = look::Look::detect();
     log::info!("nuclo-gpui: {} with the {look:?} look", bundle.display());
     cx.open_window(window_options(look, cx), move |window, cx| {

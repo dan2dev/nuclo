@@ -18,7 +18,7 @@ let result = "Not checked yet.";
 let details: string[] = [];
 const run = () => {
   const r = check();
-  result = `${r.matched}/${r.total} boxes match ${r.against} (±0.5)`;
+  result = `${r.matched}/${r.total} boxes match ${r.against} (±${r.tolerance})`;
   // Native hosts have no console: the first mismatches go on screen.
   details = r.mismatches
     .slice(0, 5)

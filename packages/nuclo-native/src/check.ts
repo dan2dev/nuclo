@@ -5,7 +5,7 @@
  *
  * The web build uses check-web.ts: the layout engine against the browser's CSS.
  */
-import { sentFrames } from "./dom";
+import { deviceScale, sentFrames } from "./dom";
 
 export interface Mismatch {
   id: number;
@@ -19,9 +19,13 @@ export interface CheckResult {
   mismatches: Mismatch[];
   /** What the frames were compared with. */
   against: string;
+  /** The largest difference, in units, that still matches. */
+  tolerance: number;
 }
 
-export function check(tolerance = 0.5): CheckResult {
+/** Hosts snap each edge to device pixels from its position on screen, and a frame is relative to its
+ * snapped parent: at 1× a box can sit up to one unit off the frame JS sent, at 2× half a unit. */
+export function check(tolerance = Math.max(0.5, 1 / deviceScale())): CheckResult {
   const device = (globalThis as Record<string, unknown>).__nuclo_device;
   const reply = typeof device === "function" ? String(device("frames") ?? "") : "";
   const applied: Record<string, number[]> = reply ? JSON.parse(reply) : {};
@@ -38,5 +42,5 @@ export function check(tolerance = 0.5): CheckResult {
     if (id !== 1 && !sent.has(id)) mismatches.push({ id, expected: [], actual: applied[id] });
   }
   const total = sent.size + mismatches.filter((m) => !m.expected.length).length;
-  return { total, matched: total - mismatches.length, mismatches, against: "the frames the host applied" };
+  return { total, matched: total - mismatches.length, mismatches, against: "the frames the host applied", tolerance };
 }
