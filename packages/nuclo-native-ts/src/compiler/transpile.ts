@@ -212,6 +212,9 @@ class Frontend {
         } else {
           this.declareSlot(node.name, node.type);
           if (node.initializer) this.write(node.name, node.initializer);
+          // A for-of variable holds the array's elements, and number[] elements are Double.
+          const symbol = this.checker.getSymbolAtLocation(node.name);
+          if (symbol && ts.isForOfStatement(node.parent.parent)) this.writes.push({ slot: symbol, forceDouble: true });
         }
       }
       if (ts.isParameter(node) && ts.isIdentifier(node.name)) {
@@ -322,7 +325,7 @@ class Frontend {
       changed = false;
       for (const { slot, from, fromSlot, forceDouble } of this.writes) {
         if (this.kinds.get(slot) !== "int" || this.isForced(slot)) continue;
-        const whole = !forceDouble && (from ? this.numKind(from) === "int" : this.slotKind(fromSlot!) === "int");
+        const whole = !forceDouble && (from ? this.numKind(from) === "int" : !!fromSlot && this.slotKind(fromSlot) === "int");
         if (!whole) {
           this.kinds.set(slot, "double");
           changed = true;
@@ -739,7 +742,7 @@ class Frontend {
       const stmts = clause.statements.flatMap((s) => this.stmt(s, ctx));
       const last = stmts.at(-1);
       if (stmts.length && last?.s === "break") stmts.pop();
-      else if (stmts.length && last?.s !== "return" && last?.s !== "throw") this.error(clause, "Unsupported: fallthrough between switch cases; end each case with break or return.");
+      else if (stmts.length && last?.s !== "return" && last?.s !== "throw" && clause !== node.caseBlock.clauses.at(-1)) this.error(clause, "Unsupported: fallthrough between switch cases; end each case with break or return.");
       if (ts.isDefaultClause(clause)) {
         defaultBody = stmts;
         continue;
