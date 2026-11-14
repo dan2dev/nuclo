@@ -1,86 +1,82 @@
 /**
- * A stack router: go() pushes a screen, back() pops it.
+ * The native router: navigation stacks the host shows with the platform's own
+ * navigation (bars, back gestures, push/pop transitions, tab bars).
  *
- * Native keeps its own stack. On the web the browser history is the stack and
- * the route lives in the URL hash (#/gallery/dunes), so links, reloads and the
- * browser's back button work, on any static host.
+ * JS owns the state; the host owns the UI. outlet() renders host kinds:
+ *   tabs   one per app, its children are stacks (one per tab)
+ *   stack  a navigation stack, its children are screens, bottom to top
+ *   screen one scrollable screen, with the title its bar shows
+ * The host animates whatever changed in a batch (new top = push, removed top =
+ * pop) and reports what the user did natively: "pop" on a stack (value = depth
+ * left) and "select" on the tabs (value = index).
+ *
+ * The web build uses router-web.ts instead (package.json `web` condition).
  */
-type Params = Record<string, string>;
-type View = (params: Params) => unknown;
-interface Entry {
-  path: string;
-  params: Params;
-  view: View;
-}
+import { type Entry, type Route, type RouterOptions, matcher, tabOf } from "./routes";
 
-export function createRouter(routes: Record<string, View>, initial = "/") {
-  const table = Object.entries(routes).map(([pattern, view]) => ({ parts: pattern.split("/"), view }));
+export type { Route, RouterOptions, Tab } from "./routes";
 
-  function resolve(path: string): Entry {
-    const parts = path.split("/");
-    for (const route of table) {
-      if (route.parts.length !== parts.length) continue;
-      const params: Params = {};
-      const matches = route.parts.every((part, i) => {
-        if (part[0] !== ":") return part === parts[i];
-        params[part.slice(1)] = parts[i];
-        return true;
-      });
-      if (matches) return { path, params, view: route.view };
-    }
-    throw new Error(`No route matches ${path}`);
-  }
+export function createRouter(routes: Record<string, Route>, { initial = "/", tabs = [] }: RouterOptions = {}) {
+  const resolve = matcher(routes);
+  let active = Math.max(0, tabOf(tabs, initial));
 
-  const web = typeof history !== "undefined" && typeof location !== "undefined";
-  const fromUrl = () => {
-    try {
-      return resolve(location.hash.slice(1) || initial);
-    } catch {
-      return resolve(initial);
-    }
-  };
+  const start = (root: string) => (root === initial ? [resolve(root)] : [resolve(root), resolve(initial)]);
+  const stacks: Entry[][] = tabs.length
+    ? tabs.map((tab, i) => (i === active ? start(tab.path) : [resolve(tab.path)]))
+    : [[resolve(initial)]];
+  const top = () => stacks[active][stacks[active].length - 1];
 
-  const stack = [web ? fromUrl() : resolve(initial)];
-  const top = () => stack[stack.length - 1];
+  const screen = (entry: Entry) =>
+    div({ "data-native": "screen", title: entry.title } as never, entry.view(entry.params) as never);
 
-  if (web) {
-    addEventListener("hashchange", () => {
-      stack[0] = fromUrl();
-      update();
-    });
-  }
+  const stack = (i: number) =>
+    div(
+      { "data-native": "stack", title: tabs[i]?.title ?? "", icon: tabs[i]?.icon ?? "" } as never,
+      // The user went back natively: the host already shows `depth` screens.
+      on("pop" as never, (event: Event) => {
+        stacks[i].length = Math.max(1, Number((event.target as HTMLInputElement).value));
+        update();
+      }),
+      list(() => stacks[i], screen),
+    );
 
   return {
     get path() {
       return top().path;
     },
     get canGoBack() {
-      return web ? history.length > 1 : stack.length > 1;
+      return stacks[active].length > 1;
     },
-    /** Pushes a screen. */
+    /** Pushes a screen onto the current stack. */
     go(path: string) {
-      if (web) location.hash = path;
-      else {
-        stack.push(resolve(path));
-        update();
-      }
+      stacks[active].push(resolve(path));
+      update();
     },
-    /** Swaps the whole stack for one screen, e.g. when switching tabs. On the web this is a normal navigation. */
+    /** Selects the tab that owns `path` and makes `path` its only screen. */
     reset(path: string) {
-      if (web) location.hash = path;
-      else {
-        stack.splice(0, stack.length, resolve(path));
-        update();
-      }
+      const tab = tabOf(tabs, path);
+      if (tab >= 0) active = tab;
+      // Back at the tab's root screen: pop to it, keeping its state.
+      const root = stacks[active][0];
+      stacks[active] = [root.path === path ? root : resolve(path)];
+      update();
     },
     back() {
-      if (web) history.back();
-      else if (stack.length > 1) {
-        stack.pop();
-        update();
-      }
+      if (stacks[active].length < 2) return;
+      stacks[active].pop();
+      update();
     },
-    /** Where the current screen renders. */
-    outlet: () => list(() => [top()], (entry) => entry.view(entry.params) as never),
+    /** The app's navigation. Render it as the root: render(router.outlet, document.body). */
+    outlet: () =>
+      tabs.length
+        ? div(
+            { "data-native": "tabs", selected: () => String(active) } as never,
+            on("select" as never, (event: Event) => {
+              active = Number((event.target as HTMLInputElement).value);
+              update();
+            }),
+            ...tabs.map((_, i) => stack(i)),
+          )
+        : stack(0),
   };
 }

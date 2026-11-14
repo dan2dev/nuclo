@@ -8,11 +8,23 @@
  *
  * Ops (the whole host contract):
  *   ["create", id, kind]             kind: view | text | button | input | checkbox | image
+ *                                    navigation (router.ts): tabs | stack | screen
  *   ["insert", parentId, id, beforeId]   beforeId 0 = append; also moves
  *   ["remove", id]                   detach and destroy the subtree
  *   ["set",    id, key, value]       text, value, checked, placeholder, disabled, src…
+ *                                    screen: title · stack: title, icon (its tab) · tabs: selected
  *   ["style",  id, key, value]       camelCase CSS subset
  *   ["listen", id, type]             click | input | change
+ *
+ * Navigation: at the end of a batch the host compares each stack's screens with
+ * the previous batch. A new top screen is a push, a removed top screen a pop,
+ * both animated the platform's way. A tabs or stack inserted into the body is
+ * the window's root navigation.
+ *
+ * Events (host → JS): __nuclo_event(id, type, value?)
+ *   click · input (value: text) · change (value: checked)
+ *   pop on a stack (value: depth left) after the user went back natively
+ *   select on the tabs (value: index)
  */
 
 type Op = [string, number, ...unknown[]];
@@ -30,6 +42,9 @@ const TAG_STYLE: Record<string, Record<string, string>> = {
   strong: { fontWeight: "bold" },
   b: { fontWeight: "bold" },
 };
+
+/** Kinds that hold child widgets. */
+const CONTAINERS = new Set(["view", "screen", "stack", "tabs"]);
 
 function kindOf(tag: string) {
   if (tag === "button") return "button";
@@ -82,7 +97,7 @@ class NNode {
     if (node === ref) return node;
     // A live node going to another live container moves; anything else leaving
     // the live tree is destroyed on the host.
-    const container = this.live && this instanceof NElement && this.kind === "view";
+    const container = this.live && this instanceof NElement && CONTAINERS.has(this.kind);
     if (node.parentNode) unlink(node, !(node.live && container));
 
     node.parentNode = this;
@@ -157,7 +172,7 @@ function realize(node: NNode) {
   for (const key in style) ops.push(["style", node.nid, key, style[key]]);
   for (const key in node.attrs) ops.push(["set", node.nid, key, node.attrs[key]]);
   for (const type of node.listeners.keys()) ops.push(["listen", node.nid, type]);
-  if (node.kind !== "view") {
+  if (!CONTAINERS.has(node.kind)) {
     ops.push(["set", node.nid, "text", node.textContent]);
     return;
   }
@@ -171,7 +186,7 @@ function realize(node: NNode) {
 /** Text changed under a leaf widget (button, label…): resend its whole text. */
 function touchText(node: NNode | null) {
   for (; node; node = node.parentNode) {
-    if (node instanceof NElement && node.kind !== "view") {
+    if (node instanceof NElement && !CONTAINERS.has(node.kind)) {
       if (node.live) ops.push(["set", node.nid, "text", node.textContent]);
       return;
     }
@@ -260,8 +275,9 @@ class NElement extends NNode {
     this.namespaceURI = namespaceURI;
   }
 
-  get kind() {
-    return this.attrs.type === "checkbox" ? "checkbox" : kindOf(this.localName);
+  get kind(): string {
+    if (this.attrs.type === "checkbox") return "checkbox";
+    return (this.attrs["data-native"] as string) || kindOf(this.localName);
   }
 
   setAttribute(key: string, value: unknown) {

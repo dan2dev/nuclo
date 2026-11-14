@@ -1,7 +1,8 @@
 // nuclo-native host for macOS and iOS: AppKit / UIKit views driven by JavaScriptCore.
+// Navigation (tabs, stacks, screens) lives in Navigation.swift.
 //
-// macOS: swiftc -swift-version 6 hosts/apple/main.swift -o dist/nuclo-app && dist/nuclo-app dist/app.js
-// iOS:   add this file and dist/app.js to an iOS app target (no storyboard, no scene manifest).
+// macOS: swiftc -swift-version 6 hosts/apple/*.swift -o dist/nuclo-app && dist/nuclo-app dist/app.js
+// iOS:   add hosts/apple/*.swift and dist/app.js to an iOS app target (no storyboard, no scene manifest).
 import JavaScriptCore
 
 #if os(macOS)
@@ -10,8 +11,9 @@ typealias View = NSView
 typealias Control = NSControl
 typealias Color = NSColor
 typealias Font = NSFont
-typealias ImageView = NSImageView
 typealias Tap = NSClickGestureRecognizer
+typealias ViewController = NSViewController
+typealias Window = NSWindow
 
 extension NSView {
     var alpha: CGFloat { get { alphaValue } set { alphaValue = newValue } }
@@ -19,6 +21,20 @@ extension NSView {
 extension NSTextField {
     var text: String? { get { stringValue } set { stringValue = newValue ?? "" } }
     var placeholder: String? { get { placeholderString } set { placeholderString = newValue } }
+}
+
+/// An image that covers its box, cropped, like UIKit's .scaleAspectFill: NSImageView can only fit.
+final class ImageView: NSView {
+    var image: NSImage? {
+        didSet { needsDisplay = true }
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let image, image.size.width > 0, image.size.height > 0 else { return }
+        let scale = max(bounds.width / image.size.width, bounds.height / image.size.height)
+        let size = NSSize(width: image.size.width * scale, height: image.size.height * scale)
+        image.draw(in: NSRect(x: bounds.midX - size.width / 2, y: bounds.midY - size.height / 2, width: size.width, height: size.height))
+    }
 }
 #else
 import UIKit
@@ -28,6 +44,8 @@ typealias Color = UIColor
 typealias Font = UIFont
 typealias ImageView = UIImageView
 typealias Tap = UITapGestureRecognizer
+typealias ViewController = UIViewController
+typealias Window = UIWindow
 #endif
 
 func color(_ hex: String) -> Color {
@@ -61,6 +79,31 @@ final class FlexView: View {
     override func layoutSubviews() {
         super.layoutSubviews()
         arrange()
+    }
+
+    // Tappable views dim while pressed, as UIKit buttons do. In a scroll view
+    // the press shows after UIKit's short touch delay, so scrolling never flashes.
+    var pressable = false
+    var restAlpha: CGFloat = 1 { didSet { alpha = restAlpha } }
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesBegan(touches, with: event)
+        if pressable { alpha = restAlpha * 0.5 }
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+        release()
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesCancelled(touches, with: event)
+        release()
+    }
+
+    private func release() {
+        guard pressable else { return }
+        UIView.animate(withDuration: 0.25) { self.alpha = self.restAlpha }
     }
     #endif
 
@@ -134,6 +177,19 @@ final class Host: NSObject {
     private var fonts: [Int: (size: CGFloat, bold: Bool)] = [:]
     private var assets = ""
 
+    // Navigation (Navigation.swift).
+    var screens: [Int: ScreenController] = [:]
+    var stacks: [Int: StackController] = [:]
+    var tabs: [Int: TabsController] = [:]
+    /// The body's background: every screen's background.
+    var pageColor: Color?
+    var window: Window?
+    var rootTabs: TabsController?
+    var rootStack: StackController?
+    #if os(macOS)
+    var chrome: Chrome?
+    #endif
+
     func start(bundle path: String) {
         views[1] = root
         assets = (path as NSString).deletingLastPathComponent
@@ -141,7 +197,11 @@ final class Host: NSObject {
         let receive: @convention(block) (String) -> Void = { [unowned self] json in
             let ops = try! JSONSerialization.jsonObject(with: Data(json.utf8)) as! [[Any]]
             for op in ops { self.apply(op) }
+            // Animate what changed in each stack, once per batch.
+            for stack in self.stacks.values where stack.dirty { stack.sync() }
             self.root.invalidate()
+            for screen in self.screens.values { screen.relayout() }
+            self.updateChrome()
         }
         context.setObject(receive, forKeyedSubscript: "__nuclo_host" as NSString)
         context.evaluateScript(try! String(contentsOfFile: path, encoding: .utf8))
@@ -149,6 +209,10 @@ final class Host: NSObject {
 
     private func emit(_ sender: AnyObject?, _ type: String, _ value: Any? = nil) {
         guard let sender, let id = ids[ObjectIdentifier(sender)] else { return }
+        emit(id: id, type, value)
+    }
+
+    func emit(id: Int, _ type: String, _ value: Any? = nil) {
         let arguments: [Any] = value.map { [id, type, $0] } ?? [id, type]
         context.objectForKeyedSubscript("__nuclo_event").call(withArguments: arguments)
     }
@@ -204,9 +268,7 @@ final class Host: NSObject {
             #endif
         case "image":
             let image = ImageView()
-            #if os(macOS)
-            image.imageScaling = .scaleProportionallyUpOrDown
-            #else
+            #if os(iOS)
             image.contentMode = .scaleAspectFill
             image.clipsToBounds = true
             #endif
@@ -220,13 +282,38 @@ final class Host: NSObject {
         let id = op[1] as! Int
         switch op[0] as! String {
         case "create":
-            let view = create(op[2] as! String)
-            views[id] = view
-            ids[ObjectIdentifier(view)] = id
+            switch op[2] as! String {
+            case "screen":
+                let screen = ScreenController(host: self)
+                screens[id] = screen
+                views[id] = screen.content
+                ids[ObjectIdentifier(screen.content)] = id
+            case "stack": stacks[id] = StackController(id: id, host: self)
+            case "tabs": tabs[id] = TabsController(id: id, host: self)
+            default:
+                let view = create(op[2] as! String)
+                views[id] = view
+                ids[ObjectIdentifier(view)] = id
+            }
 
         case "insert":
+            let childId = op[2] as! Int
+            if let stack = stacks[id], let screen = screens[childId] {
+                stack.insert(screen, before: screens[op[3] as! Int])
+                break
+            }
+            if let tabs = tabs[id], let stack = stacks[childId] {
+                tabs.add(stack)
+                break
+            }
+            if id == 1, let navigation = tabs[childId]?.controller ?? stacks[childId]?.controller {
+                rootTabs = tabs[childId]
+                rootStack = stacks[childId]
+                setRoot(navigation)
+                break
+            }
             let parent = views[id]!
-            let child = views[op[2] as! Int]!
+            let child = views[childId]!
             child.removeFromSuperview()
             if let before = views[op[3] as! Int] {
                 #if os(macOS)
@@ -239,21 +326,42 @@ final class Host: NSObject {
             }
 
         case "remove":
+            if let screen = screens.removeValue(forKey: id) {
+                // The stack lets it go at the end of the batch, animated.
+                for stack in stacks.values { stack.remove(screen) }
+                forget(screen.content)
+                break
+            }
+            if stacks.removeValue(forKey: id) != nil || tabs.removeValue(forKey: id) != nil { break }
             let view = views[id]!
             view.removeFromSuperview()
             forget(view)
 
         case "set":
-            set(views[id]!, op[2] as! String, op[3])
+            let key = op[2] as! String
+            let text = op[3] as? String ?? ""
+            if let screen = screens[id] {
+                if key == "title" { screen.title = text }
+            } else if let stack = stacks[id] {
+                stack.setTab(key, text)
+            } else if let tabs = tabs[id] {
+                if key == "selected" { tabs.select(Int(text) ?? 0) }
+            } else {
+                set(views[id]!, key, op[3])
+            }
 
         case "style":
-            style(id, views[id]!, op[2] as! String, op[3] as! String)
+            guard let view = views[id] else { break }
+            style(id, view, op[2] as! String, op[3] as! String)
 
         case "listen":
             // Buttons and inputs always report; anything else needs a recognizer.
-            let view = views[id]!
+            guard let view = views[id] else { break }
             if op[2] as! String == "click", !(view is Control) {
                 view.addGestureRecognizer(Tap(target: self, action: #selector(tapped(_:))))
+                #if os(iOS)
+                (view as? FlexView)?.pressable = true
+                #endif
             }
 
         default:
@@ -304,7 +412,7 @@ final class Host: NSObject {
             // Asset paths are relative to the bundle.
             let file = (assets as NSString).appendingPathComponent(text)
             #if os(macOS)
-            (view as? NSImageView)?.image = NSImage(contentsOfFile: file)
+            (view as? ImageView)?.image = NSImage(contentsOfFile: file)
             #else
             (view as? UIImageView)?.image = UIImage(contentsOfFile: file)
             #endif
@@ -323,7 +431,11 @@ final class Host: NSObject {
         case "padding": box?.padding = px(value)
         case "alignItems": box?.align = value
         case "flex": FlexView.grow[ObjectIdentifier(view)] = px(value)
-        case "opacity": view.alpha = px(value)
+        case "opacity":
+            #if os(iOS)
+            if let box { box.restAlpha = px(value); break }
+            #endif
+            view.alpha = px(value)
         case "width": FlexView.widths[ObjectIdentifier(view)] = px(value)
         case "height": FlexView.heights[ObjectIdentifier(view)] = px(value)
         case "borderRadius":
@@ -342,6 +454,10 @@ final class Host: NSObject {
             (view as? UILabel)?.textAlignment = value == "center" ? .center : .left
             #endif
         case "backgroundColor":
+            if id == 1 {
+                pageColor = color(value)
+                for screen in screens.values { screen.applyBackground() }
+            }
             #if os(macOS)
             view.wantsLayer = true
             view.layer?.backgroundColor = color(value).cgColor
@@ -385,6 +501,7 @@ extension Host: NSTextFieldDelegate, NSApplicationDelegate {
 let app = NSApplication.shared
 app.setActivationPolicy(.regular)
 app.delegate = host
+app.mainMenu = mainMenu(host)
 let window = NSWindow(
     contentRect: NSRect(x: 0, y: 0, width: 420, height: 640),
     styleMask: [.titled, .closable, .miniaturizable, .resizable],
@@ -393,6 +510,7 @@ let window = NSWindow(
 )
 window.title = "nuclo-native"
 window.contentView = host.root
+host.window = window
 host.start(bundle: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "dist/app.js")
 window.center()
 window.makeKeyAndOrderFront(nil)
@@ -406,7 +524,10 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        window = UIWindow(frame: UIScreen.main.bounds)
+        host.window = window
         let controller = UIViewController()
+        window?.rootViewController = controller
         controller.view.backgroundColor = .systemBackground
         controller.view.addSubview(host.root)
         host.root.translatesAutoresizingMaskIntoConstraints = false
@@ -417,10 +538,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
             host.root.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
             host.root.trailingAnchor.constraint(equalTo: safe.trailingAnchor),
         ])
+        // A router outlet in the body replaces this controller (Host.setRoot).
         host.start(bundle: Bundle.main.path(forResource: "app", ofType: "js")!)
-
-        window = UIWindow(frame: UIScreen.main.bounds)
-        window?.rootViewController = controller
         window?.makeKeyAndVisible()
         return true
     }

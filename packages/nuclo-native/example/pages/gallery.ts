@@ -28,6 +28,9 @@ const photos = [
   photo("glacier", "Blue ice", "Jökulsárlón, Iceland", 364, "Icebergs drift from the glacier to the sea, one by one."),
 ];
 
+/** The detail screen's navigation title. */
+export const photoTitle = (id: string) => photos.find((item) => item.id === id)?.title ?? "Photo";
+
 const src = (item: Photo) => `assets/${item.id}.jpg`;
 
 const pairs: Photo[][] = [];
@@ -46,7 +49,7 @@ const tile = (item: Photo) =>
 
 export const Gallery = () =>
   div(
-    { style: { gap: 12 } },
+    { style: { gap: 12, padding: 16 } },
     ...pairs.map((pair) => div({ style: { flexDirection: "row", gap: 12 } }, ...pair.map(tile))),
   );
 
@@ -56,8 +59,7 @@ export const PhotoDetail = ({ id }: Record<string, string>) => {
   const next = photos[(index + 1) % photos.length];
 
   return div(
-    { style: { gap: 12 } },
-    div({ style: row, onClick: () => router.back() }, span("‹ Gallery", { style: { color: color.accent, fontSize: 15, fontWeight: "bold" } })),
+    { style: { gap: 12, padding: 16 } },
     card(
       img({ src: src(item), style: { height: 210, borderRadius: 10 } }),
       heading(item.title, 20),

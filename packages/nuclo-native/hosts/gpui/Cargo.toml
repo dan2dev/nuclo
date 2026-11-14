@@ -1,0 +1,45 @@
+[package]
+name = "nuclo-gpui"
+version = "0.0.0"
+edition = "2024"
+publish = false
+description = "nuclo-native host drawn with GPUI: macOS, Linux, Windows (gpui-pre-platform), iOS and Android (gpui-mobile)."
+license = "MIT"
+
+[lib]
+name = "nuclo_gpui"
+# staticlib: linked into the iOS app (ios/main.m). cdylib: the Android .so NativeActivity loads.
+crate-type = ["rlib", "staticlib", "cdylib"]
+
+[[bin]]
+name = "nuclo-gpui"
+path = "src/main.rs"
+
+[dependencies]
+# One GPUI for every target: gpui-mobile is pinned to gpui-pre 0.3.6.
+gpui = { package = "gpui-pre", version = "=0.3.6", default-features = false }
+rquickjs = "0.14"
+serde_json = "1"
+log = "0.4"
+unicode-segmentation = "1"
+
+[target.'cfg(not(any(target_os = "ios", target_os = "android")))'.dependencies]
+gpui_platform = { package = "gpui-pre-platform", version = "=0.3.6", features = ["font-kit", "wayland", "x11"] }
+
+[target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
+# gpui::guess_compositor() reads these features on the core crate: without them it picks
+# the headless client and no window opens, even with gpui_platform's x11/wayland on.
+gpui = { package = "gpui-pre", version = "=0.3.6", default-features = false, features = ["wayland", "x11"] }
+
+[target.'cfg(any(target_os = "ios", target_os = "android"))'.dependencies]
+# Mobile GPUI platforms (wgpu on Metal / Vulkan). Pinned to the commit this host was built against.
+gpui-mobile = { git = "https://github.com/itsbalamurali/gpui-mobile", rev = "5fd54f4554263ae06753e90472c7f2e2ff5d7495", default-features = false, features = ["camera", "video_player"] }
+# rquickjs ships no prebuilt bindings for mobile targets: generate them (needs libclang).
+rquickjs = { version = "0.14", features = ["bindgen"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+android-activity = { version = "0.6", features = ["native-activity"] }
+android_logger = "0.15"
+
+[profile.dev.package."*"]
+opt-level = 2

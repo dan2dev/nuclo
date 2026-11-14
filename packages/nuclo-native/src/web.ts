@@ -1,7 +1,8 @@
 /**
  * The web target: nuclo on the real DOM, with the same layout model as the
  * native hosts. Everything else the web offers (css(), any tag, any CSS
- * property, fetch…) keeps working.
+ * property, fetch…) keeps working. The router's app shell (router-web.ts) is
+ * styled here too.
  */
 import "nuclo";
 
@@ -19,6 +20,46 @@ body { font: 14px/1.35 system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
 :where(img) { display: block; object-fit: cover; }
 :where(input, textarea, button) { font: inherit; border: 0; outline-offset: 2px; }
 :where(input[type="checkbox"]) { width: 18px; height: 18px; }
+
+/* The router's app shell: bar, screen, tab bar. Colours: --nuclo-accent. */
+.nuclo-app { min-height: 100%; }
+.nuclo-bar, .nuclo-tabs {
+  position: sticky; z-index: 1; flex-direction: row; align-items: center;
+  background: rgb(255 255 255 / 72%); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+}
+.nuclo-bar {
+  top: 0; gap: 4px; min-height: 52px; padding: env(safe-area-inset-top) 12px 0;
+  border-bottom: 1px solid rgb(0 0 0 / 6%); view-transition-name: nuclo-bar;
+}
+.nuclo-bar h1 { font-size: 17px; font-weight: 600; padding-left: 4px; }
+.nuclo-back {
+  display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+  border-radius: 20px; background: none; color: var(--nuclo-accent, #2563eb); cursor: pointer;
+}
+.nuclo-back:hover { background: rgb(0 0 0 / 5%); }
+.nuclo-screen { flex: 1; view-transition-name: nuclo-screen; }
+.nuclo-tabs {
+  bottom: 0; padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid rgb(0 0 0 / 6%); view-transition-name: nuclo-tabs;
+}
+.nuclo-tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 6px;
+  background: none; color: #6b7280; font-size: 11px; font-weight: 500; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.nuclo-tab[aria-current="page"] { color: var(--nuclo-accent, #2563eb); }
+.nuclo-back svg, .nuclo-tab svg { width: 24px; height: 24px; fill: currentColor; }
+
+/* Push slides the new screen in over the old one; pop reverses it. */
+@keyframes nuclo-from-right { from { transform: translateX(100%); } }
+@keyframes nuclo-to-right { to { transform: translateX(100%); } }
+@keyframes nuclo-from-left { from { transform: translateX(-30%); opacity: .7; } }
+@keyframes nuclo-to-left { to { transform: translateX(-30%); opacity: .7; } }
+::view-transition-group(nuclo-screen) { animation-duration: 380ms; animation-timing-function: cubic-bezier(.2, .9, .3, 1); }
+html:active-view-transition-type(push)::view-transition-old(nuclo-screen) { animation: 380ms cubic-bezier(.2, .9, .3, 1) both nuclo-to-left; }
+html:active-view-transition-type(push)::view-transition-new(nuclo-screen) { animation: 380ms cubic-bezier(.2, .9, .3, 1) both nuclo-from-right; }
+html:active-view-transition-type(pop)::view-transition-old(nuclo-screen) { animation: 380ms cubic-bezier(.2, .9, .3, 1) both nuclo-to-right; z-index: 1; }
+html:active-view-transition-type(pop)::view-transition-new(nuclo-screen) { animation: 380ms cubic-bezier(.2, .9, .3, 1) both nuclo-from-left; }
 `;
 document.head.prepend(base);
 

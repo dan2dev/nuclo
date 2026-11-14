@@ -1,6 +1,8 @@
 # nuclo-native (POC)
 
-Write a normal nuclo app. It renders with real native widgets — no webview — on Android, iOS, macOS, Windows and Linux, and builds as a web app (SPA and installable PWA) from the same source.
+Write a normal nuclo app. It renders with real native widgets — no webview — on Android, iOS, macOS, Windows and Linux, and builds as a web app (SPA and installable PWA) from the same source. The same bundle also runs on a GPUI host that draws every platform itself.
+
+Navigation is each platform's own: `UINavigationController` and a tab bar on iOS, a sidebar and toolbar on macOS, Material motion and predictive back on Android, libadwaita on Linux, a Fluent nav pane on Windows.
 
 ```ts
 import "nuclo-native";
@@ -30,26 +32,49 @@ The same bundle on Android, platform Views:
 `example/app.ts` is a three-tab app built only from nuclo calls and inline styles:
 
 - **Dashboard** (`/`): stat cards, a bar chart that resizes when you switch Week / Month / Year and highlights the bar you tap, and horizontal share bars. Charts are plain views with a `height` or `width`, so they need no canvas.
-- **Gallery** (`/gallery`, `/gallery/:id`): an image grid that pushes a detail screen with a route parameter, a like toggle and a back link.
+- **Gallery** (`/gallery`, `/gallery/:id`): an image grid that pushes a detail screen with a route parameter and a like toggle.
 - **Account** (`/account`): text, email and password fields, a segmented choice, checkboxes, validation messages and a success state.
 
-Routing comes from `nuclo-native/router`, a small stack router:
+## Navigation
+
+`nuclo-native/router` is a stack router whose screens, stacks and tabs the host shows with the platform's own navigation:
 
 ```ts
 import { createRouter } from "nuclo-native/router";
 
-export const router = createRouter({
-  "/": Dashboard,
-  "/gallery/:id": PhotoDetail, // receives { id }
-});
+export const router = createRouter(
+  {
+    "/": { view: Dashboard, title: "Pulse" },
+    "/gallery": { view: Gallery, title: "Gallery" },
+    "/gallery/:id": { view: PhotoDetail, title: ({ id }) => photoTitle(id) }, // receives { id }
+  },
+  {
+    tabs: [
+      { path: "/", title: "Dashboard", icon: "chart" },
+      { path: "/gallery", title: "Gallery", icon: "photo" },
+    ],
+  },
+);
 
-router.go("/gallery/dunes"); // push
+render(router.outlet, document.body); // the app's navigation is its root
+
+router.go("/gallery/dunes"); // push onto the current tab's stack
 router.back();               // pop
-router.reset("/");           // switch tab
-router.outlet();             // where the current screen renders
+router.reset("/");           // select the tab that owns "/" and pop it to its root
 ```
 
-Native keeps its own stack. On the web the route lives in the URL hash (`#/gallery/dunes`) and the browser history is the stack, so links, reloads and the browser's back button work on any static host.
+A route is a view, or `{ view, title }` where the title is the navigation bar's. Each tab keeps its own stack. Icons are semantic names (`chart`, `photo`, `person`) each host maps to its icon set.
+
+| Target | Tabs | Push / pop | Back |
+| --- | --- | --- | --- |
+| iOS | `UITabBarController` | `UINavigationController`, large titles on root screens | back button, interactive edge swipe, re-tap the tab |
+| macOS | source-list sidebar (`NSSplitViewController`) | slide (`NSViewController` transition), the window title is the screen's | toolbar chevron, ⌘[, two-finger swipe |
+| Android | Material 3 bottom bar, fade through | Material shared axis X | toolbar arrow, back key, predictive back gesture (API 34+), re-tap the tab |
+| Linux | `Adw.ViewStack` + `Adw.ViewSwitcherBar` | `Adw.NavigationView` | header bar back, swipe, Alt+←, mouse back |
+| Windows | Fluent nav pane | drill-in | back button, Alt+←, mouse back |
+| Web | bottom tab bar | directional view transitions | bar back button, browser back (its own swipe-back animation is kept) |
+
+JS owns the state; the host owns the UI. When the user goes back natively, the host pops first and reports `pop` with the depth left; the router follows. On the web the route lives in the URL hash (`#/gallery/dunes`) and the browser history is the stack, so links, reloads and the back button work on any static host; switching tabs there resets the tab.
 
 `nuclo-router` itself needs `URL`, `history` and `location`, which the bare JS engines do not have.
 
@@ -75,26 +100,40 @@ The whole host contract is six ops and one callback:
 
 | Op | Meaning |
 | --- | --- |
-| `["create", id, kind]` | `view`, `text`, `button`, `input`, `checkbox` or `image` |
+| `["create", id, kind]` | `view`, `text`, `button`, `input`, `checkbox` or `image`; navigation: `tabs`, `stack`, `screen` |
 | `["insert", parentId, id, beforeId]` | Insert or move. `beforeId` 0 appends. |
 | `["remove", id]` | Detach and destroy the subtree |
-| `["set", id, key, value]` | `text`, `value`, `checked`, `placeholder`, `type`, `disabled`, `src` |
+| `["set", id, key, value]` | `text`, `value`, `checked`, `placeholder`, `type`, `disabled`, `src`; `title` (screen, or a stack's tab), `icon` (a stack's tab), `selected` (tabs) |
 | `["style", id, key, value]` | A camelCase CSS subset |
 | `["listen", id, type]` | `click`, `input`, `change` |
 
-The host exposes `__nuclo_host(json)` and calls `__nuclo_event(id, type, value?)`. Both take only strings and numbers, so any JS engine can bridge them.
+The host exposes `__nuclo_host(json)` and calls `__nuclo_event(id, type, value?)`: `click`, `input` (value: text), `change` (value: checked), `pop` on a stack (value: depth left after a native back) and `select` on the tabs (value: index). Both take only strings and numbers, so any JS engine can bridge them.
+
+Navigation: screens go into stacks, stacks into tabs, and a tabs or stack inserted into the body is the window's root navigation. At the end of each batch the host compares every stack with what it shows: a new top screen is a push, a removed top screen a pop, both animated the platform's way.
 
 Only nodes attached under `document.body` exist natively. Trees built off-document, `list()` templates and comment markers send nothing until they are attached.
 
 ## Hosts
 
-| Platform | Host | JS engine | Widgets | Status |
+| Target | Host | JS engine | Drawn with | Status |
 | --- | --- | --- | --- | --- |
-| Linux | `hosts/linux/host.js` | GJS (SpiderMonkey) | GTK 4 | Ran the showcase; every route, the chart, images and the form checked |
-| Android | `hosts/android` | QuickJS-NG, built with the NDK | Android Views | Ran the showcase in a 16 KB-page emulator; every route, the chart, images and the form checked |
-| Windows | `hosts/windows` | Jint | WPF | Compiles; the bundle runs in Jint. The UI was never launched. |
-| macOS, iOS | `hosts/apple/main.swift` | JavaScriptCore | AppKit, UIKit | macOS: compiles with Swift 6.4 and ran the showcase dashboard. iOS: ran the showcase in the simulator; the dashboard, the gallery tab and images checked. |
-| Web | `hosts/web` + `src/web.ts` | The browser's | The real DOM | Ran the showcase in a browser; routes, deep links, the form and offline reload checked |
+| `ios` | `hosts/apple` | JavaScriptCore | UIKit | Simulator: tabs, push, edge-swipe and button back, re-tap to root, JS kept in sync |
+| `macos` | `hosts/apple` | JavaScriptCore | AppKit | Ran scripted: sidebar, toolbar back, titles, push/pop, JS in sync. Trackpad swipe and ⌘[ not exercised |
+| `android` | `hosts/android` | QuickJS-NG (NDK) | Android Views | API 37 emulator: tabs, push, back key, edge swipe with the predictive-back card, up arrow, re-tap, ripples |
+| `linux` | `hosts/linux/host.js` | GJS | GTK 4 + libadwaita | Ran on macOS (Homebrew GTK): tabs, push, native back with JS sync. Swipe and Alt+← not driven |
+| `windows` | `hosts/windows` | Jint | WPF (Fluent) | Compiles with the .NET 11 SDK, 0 warnings. Never launched |
+| `web` | `hosts/web` + `src/web.ts` | the browser's | the DOM | Browser: push, pop and tab transitions, back button, URL |
+| `ios-gpui` | `hosts/gpui` | QuickJS (rquickjs) | GPUI via gpui-mobile (Metal) | Simulator: tabs, push, interactive edge swipe, back button, JS in sync. The other four looks previewed with `NUCLO_LOOK` |
+| `macos-gpui` | `hosts/gpui` | QuickJS | GPUI (Metal) | Runs, no JS errors. Not screenshotted (no screen-recording permission); same renderer as `ios-gpui` |
+| `android-gpui` | `hosts/gpui` | QuickJS | GPUI via gpui-mobile (Vulkan) | Builds; on the emulator the bundle runs, but no emulator GPU can run GPUI's renderer (GLES 3.0 lacks compute, its Vulkan is non-conformant). Needs a device |
+| `linux-gpui` | `hosts/gpui` | QuickJS | GPUI (Vulkan) | Builds and links in a Debian container (arm64); opens its X11 window, picks Vulkan (Mesa lavapipe) and runs the bundle. Not seen drawing: under Xvfb GPUI presents no frames, its own hello world included. Needs a Linux desktop |
+| `windows-gpui` | `hosts/gpui` | QuickJS | GPUI (DirectX) | Cross-built from macOS with MinGW (GNU ABI): compiles and links `nuclo-gpui.exe`. Never launched |
+
+## GPUI
+
+`hosts/gpui` is one Rust crate for all five GPUI targets. QuickJS runs the bundle; the crate keeps the op tree and draws it with GPUI each frame. GPUI draws its own pixels, so the router's navigation is drawn the platform's way (`src/look.rs`): the iOS floating tab bar, large titles, parallax push and edge swipe; Material 3 bars and shared-axis motion; the macOS sidebar and toolbar; the Fluent nav pane and drill-in; the Adwaita header and view switcher. `NUCLO_LOOK=ios|android|macos|windows|linux` picks a look on any machine.
+
+Desktop builds use `gpui-pre-platform`; iOS and Android use the community [`gpui-mobile`](https://github.com/itsbalamurali/gpui-mobile) platform, pinned to a commit. Both sit on `gpui-pre =0.3.6`. The text field is adapted from GPUI's input example.
 
 ## Web
 
@@ -115,41 +154,35 @@ Host `dist-web` on any static server. A service worker needs HTTPS or `localhost
 
 ## Run
 
+Every target is one command. It builds the bundle (`dist/app.js` plus `dist/assets`), then builds and launches the app; app builds go to `build/<target>`.
+
 ```bash
-bun run build      # example/app.ts → dist/app.js (one file, nuclo included) plus dist/assets
-bun run linux      # needs gjs and GTK 4
-bun run web        # builds dist-web and serves it on http://localhost:4173
-bun test           # op-level tests against a mock host
+bun run ios            # booted simulator
+bun run macos
+bun run android        # running emulator or device
+bun run linux          # gjs + GTK 4 + libadwaita
+bun run windows        # on Windows
+bun run web            # http://localhost:4173
+bun run ios-gpui       # booted simulator
+bun run macos-gpui
+bun run android-gpui   # a device: emulators cannot run GPUI's renderer
+bun run linux-gpui     # on Linux
+bun run windows-gpui   # on Windows
+bun test               # op-level tests against a mock host
 ```
 
-- **Android:** open `hosts/android` in Android Studio, or run `gradle assembleDebug` there with JDK 17. It needs NDK 27.1.12297006 and downloads the QuickJS-NG source on the first build. `dist/app.js` ships as an asset. The native library is linked for 16 KB pages.
+Requirements: Xcode for the Apple targets; JDK 17, the Android SDK and NDK 27.1.12297006 for Android (`android` downloads the QuickJS-NG source on its first build); the .NET SDK for Windows; Rust for the GPUI targets, with the `aarch64-apple-ios-sim` / `aarch64-linux-android` targets for mobile. GTK on macOS runs from Homebrew (`gjs gtk4 libadwaita gobject-introspection adwaita-icon-theme`). Android libraries are linked for 16 KB pages.
+
+Commands behind them, if you want to run one by hand:
+
+- **macOS:** `swiftc -swift-version 6 hosts/apple/*.swift -o build/macos/nuclo-app && build/macos/nuclo-app dist/app.js`
+- **iOS simulator:** no Xcode project. `xcrun -sdk iphonesimulator swiftc -swift-version 6 -target arm64-apple-ios17.0-simulator hosts/apple/*.swift`, then an `.app` folder with the binary, `app.js`, `assets/` and an `Info.plist` (`UILaunchScreen` included, or the app runs letterboxed), ad-hoc signed and installed with `xcrun simctl install booted`. `scripts/run.ts` has the exact steps.
+- **iOS device:** add `hosts/apple/*.swift` and `dist/app.js` to an iOS app target, so Xcode handles signing and provisioning.
+- **Android:** open `hosts/android` in Android Studio, or `gradle assembleDebug` there. `dist/` ships as the assets.
 - **Windows:** `dotnet run` in `hosts/windows`.
-- **macOS:** `swiftc -swift-version 6 hosts/apple/main.swift -o dist/nuclo-app && dist/nuclo-app dist/app.js`
-- **iOS simulator:** no Xcode project needed. Compile the same file for the simulator, wrap it in an `.app` with the bundle, and install it on the booted simulator:
-
-  ```bash
-  mkdir -p dist/NucloApp.app
-  xcrun -sdk iphonesimulator swiftc -swift-version 6 -target arm64-apple-ios17.0-simulator hosts/apple/main.swift -o dist/NucloApp.app/NucloApp
-  cp -R dist/app.js dist/assets dist/NucloApp.app/
-  cat > dist/NucloApp.app/Info.plist <<'EOF'
-  <?xml version="1.0" encoding="UTF-8"?>
-  <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-  <plist version="1.0"><dict>
-  	<key>CFBundleIdentifier</key><string>dev.nuclo.native</string>
-  	<key>CFBundleExecutable</key><string>NucloApp</string>
-  	<key>CFBundleName</key><string>nuclo</string>
-  	<key>CFBundlePackageType</key><string>APPL</string>
-  	<key>CFBundleVersion</key><string>1</string>
-  	<key>CFBundleShortVersionString</key><string>0.0.0</string>
-  	<key>UILaunchScreen</key><dict/>
-  </dict></plist>
-  EOF
-  codesign -s - --force dist/NucloApp.app
-  xcrun simctl install booted dist/NucloApp.app && xcrun simctl launch booted dev.nuclo.native
-  ```
-
-  Plain `swiftc` links against the macOS SDK, hence `xcrun -sdk iphonesimulator`. Without `UILaunchScreen` the app runs letterboxed.
-- **iOS device:** add `hosts/apple/main.swift` and `dist/app.js` to an iOS app target, so Xcode handles signing and provisioning.
+- **GPUI, desktop:** `cargo run --manifest-path hosts/gpui/Cargo.toml -- dist/app.js`
+- **GPUI, iOS:** `cargo rustc --lib --target aarch64-apple-ios-sim --crate-type staticlib` in `hosts/gpui` (with `LIBCLANG_PATH` at Xcode's toolchain, since rquickjs generates its mobile bindings, and `IPHONEOS_DEPLOYMENT_TARGET=17.0` for the C parts), then link `hosts/gpui/ios/main.m` against `libnuclo_gpui.a`.
+- **GPUI, Android:** the same with `--target aarch64-linux-android --crate-type cdylib` and the NDK's clang as linker, the stripped `.so` in `hosts/gpui/android/app/build/jniLibs/arm64-v8a`, then `gradle assembleDebug` in `hosts/gpui/android`.
 
 ## What the POC supports
 
@@ -158,16 +191,16 @@ bun test           # op-level tests against a mock host
 - **Images:** `img({ src })` loads a file relative to the bundle and fills its box, cropped. Give it a `height`.
 - **Events:** `click` on anything, `input` on text inputs, `change` on Enter and on checkbox toggles. Events do not bubble.
 - **nuclo features:** reactive text, attributes and styles, `list()`, `when()`, `update()`.
-- **Routing:** `nuclo-native/router`.
+- **Navigation:** `nuclo-native/router`, with each platform's tabs, stacks, transitions and back gestures.
 
 ## Not done
 
 - `css()` and class names. Only inline styles reach the host.
 - `flex` weights on Linux: every growing child gets an equal share, whatever the number.
-- On Windows: `borderRadius`, placeholders and password fields. On Apple: text wrapping, password fields, and images are fitted, not cropped, on macOS.
+- On Windows: `borderRadius`, placeholders and password fields. On Apple: text wrapping and password fields.
 - Remote images. `src` is a bundled file.
-- The Android back button does not call `router.back()` yet.
-- On the web, `router.back()` is the browser's back, so it leaves the app when a detail screen was opened directly from a link.
-- Timers, `fetch` and `console` on the bare engines (JavaScriptCore, QuickJS, Jint). GJS has them.
-- Scrolling on Apple. The other hosts wrap the root in a scroll view.
-- Hot reload, a CLI, and packaging for app stores.
+- On the web, `router.back()` is the browser's back, so it leaves the app when a detail screen was opened directly from a link. Tabs there reset instead of keeping a stack each.
+- Timers and `fetch` on the bare engines (JavaScriptCore, QuickJS, Jint). GJS has them. The GPUI host forwards `console` to its log.
+- Scrolling on Apple outside the router: a plain app without `router.outlet` does not scroll.
+- GPUI: Android's predictive-back progress is not wired (the back key pops with Material motion); the iOS look's bars are drawn, not Liquid Glass.
+- Hot reload and packaging for app stores.

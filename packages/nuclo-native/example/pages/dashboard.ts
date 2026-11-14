@@ -61,7 +61,7 @@ const bar = (point: Point) =>
 
 export const Dashboard = () =>
   div(
-    { style: { gap: 14 } },
+    { style: { gap: 14, padding: 16 } },
     div(
       { style: row },
       stat("Revenue", () => money(total()), "▲ 12.4%", true),

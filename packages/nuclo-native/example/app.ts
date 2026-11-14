@@ -2,34 +2,25 @@ import "nuclo-native";
 import { createRouter } from "nuclo-native/router";
 import { Account } from "./pages/account";
 import { Dashboard } from "./pages/dashboard";
-import { Gallery, PhotoDetail } from "./pages/gallery";
-import { chip, color, heading, muted } from "./ui";
+import { Gallery, PhotoDetail, photoTitle } from "./pages/gallery";
+import { color } from "./ui";
 
-export const router = createRouter({
-  "/": Dashboard,
-  "/gallery": Gallery,
-  "/gallery/:id": PhotoDetail,
-  "/account": Account,
-});
+export const router = createRouter(
+  {
+    "/": { view: Dashboard, title: "Pulse" },
+    "/gallery": { view: Gallery, title: "Gallery" },
+    "/gallery/:id": { view: PhotoDetail, title: ({ id }) => photoTitle(id) },
+    "/account": { view: Account, title: "Account" },
+  },
+  {
+    tabs: [
+      { path: "/", title: "Dashboard", icon: "chart" },
+      { path: "/gallery", title: "Gallery", icon: "photo" },
+      { path: "/account", title: "Account", icon: "person" },
+    ],
+  },
+);
 
-const tabs = [
-  { path: "/", label: "Dashboard" },
-  { path: "/gallery", label: "Gallery" },
-  { path: "/account", label: "Account" },
-];
-
-const isActive = (path: string) => (path === "/" ? router.path === "/" : router.path.startsWith(path));
-
-const App = () =>
-  div(
-    { style: { padding: 16, gap: 14 } },
-    div({ style: { gap: 2 } }, heading("Pulse", 26), muted("A nuclo app on native widgets")),
-    div(
-      { style: { flexDirection: "row", gap: 8 } },
-      ...tabs.map((tab) => chip(tab.label, () => isActive(tab.path), () => router.reset(tab.path))),
-    ),
-    router.outlet(),
-  );
-
+// The page colour behind every screen.
 document.body.style.backgroundColor = color.page;
-render(App, document.body);
+render(router.outlet, document.body);

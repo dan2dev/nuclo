@@ -51,7 +51,7 @@ const summary = (label: string, value: () => string) =>
 
 export const Account = () =>
   div(
-    { style: { gap: 14 } },
+    { style: { gap: 14, padding: 16 } },
     when(
       () => done,
       card(
