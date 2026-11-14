@@ -12,6 +12,7 @@ import UIKit
 extension Host {
     /// __nuclo_device(name): JSON now, or "" when the device has none. Starts watching.
     func device(_ name: String) -> String {
+        if name == "frames" { return framesJSON() }
         guard name == "battery" else { return "" }
         watchBattery()
         lastBattery = readBattery()

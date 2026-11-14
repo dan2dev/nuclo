@@ -17,6 +17,10 @@
 		"./device": {
 			"web": "./src/device-web.ts",
 			"default": "./src/device.ts"
+		},
+		"./check": {
+			"web": "./src/check-web.ts",
+			"default": "./src/check.ts"
 		}
 	},
 	"scripts": {

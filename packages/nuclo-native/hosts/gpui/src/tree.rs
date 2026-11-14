@@ -4,6 +4,8 @@ use std::collections::{HashMap, HashSet};
 use gpui::{Rgba, rgb};
 use serde_json::Value;
 
+use crate::measure::{TextStyle, apply_style};
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Kind {
     View,
@@ -33,49 +35,29 @@ impl Kind {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Align {
-    Start,
-    Center,
-    End,
-    Stretch,
-}
-
-/// The inline-style subset the hosts understand (README "What the POC supports").
+/// Paint and text styles. Layout styles are JS's (src/layout.ts): they arrive as frames.
 #[derive(Clone, Debug)]
 pub struct Style {
-    pub row: bool,
-    pub gap: f32,
-    pub align: Option<Align>,
-    pub grow: f32,
+    /// Insets a text from its box.
     pub padding: f32,
-    pub width: Option<f32>,
-    pub height: Option<f32>,
     pub color: Option<Rgba>,
     pub background: Option<Rgba>,
     pub radius: f32,
-    pub font_size: Option<f32>,
-    pub bold: bool,
-    pub center: bool,
+    pub text: TextStyle,
+    /// left, center or right.
+    pub text_align: String,
     pub opacity: f32,
 }
 
 impl Default for Style {
     fn default() -> Self {
         Self {
-            row: false,
-            gap: 0.,
-            align: None,
-            grow: 0.,
             padding: 0.,
-            width: None,
-            height: None,
             color: None,
             background: None,
             radius: 0.,
-            font_size: None,
-            bold: false,
-            center: false,
+            text: TextStyle::default(),
+            text_align: "left".into(),
             opacity: 1.,
         }
     }
@@ -98,6 +80,8 @@ pub struct Node {
     pub selected: usize,
     pub style: Style,
     pub click: bool,
+    /// The box JS laid out, relative to the parent's: [x, y, w, h].
+    pub frame: Option<[f32; 4]>,
 }
 
 impl Node {
@@ -118,6 +102,7 @@ impl Node {
             selected: 0,
             style: Style::default(),
             click: false,
+            frame: None,
         }
     }
 }
@@ -128,6 +113,7 @@ pub struct Changes {
     pub created_inputs: Vec<u32>,
     pub values: Vec<u32>,
     pub stacks: HashSet<u32>,
+    pub frames: bool,
 }
 
 pub struct Tree {
@@ -169,6 +155,13 @@ impl Tree {
                 "remove" => self.remove(id, changes),
                 "set" => self.set(id, arg(2).as_str().unwrap_or(""), arg(3), changes),
                 "style" => self.style(id, arg(2).as_str().unwrap_or(""), arg(3).as_str().unwrap_or("")),
+                "frame" => {
+                    let n = |i: usize| op.get(i).and_then(Value::as_f64).unwrap_or(0.) as f32;
+                    if let Some(node) = self.nodes.get_mut(&id) {
+                        node.frame = Some([n(2), n(3), n(4), n(5)]);
+                        changes.frames = true;
+                    }
+                }
                 "listen" => {
                     if arg(2).as_str() == Some("click")
                         && let Some(node) = self.nodes.get_mut(&id)
@@ -271,28 +264,13 @@ impl Tree {
         let Some(node) = self.nodes.get_mut(&id) else { return };
         let s = &mut node.style;
         match key {
-            "flexDirection" => s.row = value == "row",
-            "gap" => s.gap = number(value),
-            "alignItems" => {
-                s.align = Some(match value {
-                    "center" => Align::Center,
-                    "flex-end" | "end" => Align::End,
-                    "flex-start" | "start" => Align::Start,
-                    _ => Align::Stretch,
-                })
-            }
-            "flex" => s.grow = number(value),
             "padding" => s.padding = number(value),
-            "width" => s.width = Some(number(value)),
-            "height" => s.height = Some(number(value)),
             "color" => s.color = color(value),
             "backgroundColor" => s.background = color(value),
             "borderRadius" => s.radius = number(value),
-            "fontSize" => s.font_size = Some(number(value)),
-            "fontWeight" => s.bold = value == "bold" || value.parse::<u32>().is_ok_and(|w| w >= 600),
-            "textAlign" => s.center = value == "center",
+            "textAlign" => s.text_align = value.to_string(),
             "opacity" => s.opacity = number(value),
-            _ => {}
+            _ => apply_style(&mut s.text, key, value),
         }
     }
 

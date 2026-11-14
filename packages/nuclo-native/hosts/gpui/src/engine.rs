@@ -7,6 +7,15 @@ use std::rc::Rc;
 
 use rquickjs::{Context, Ctx, Function, Runtime};
 
+use crate::measure::Measurer;
+
+/// What JS reads from the host synchronously, mid-render: sizes, and the frames as placed.
+pub struct Shared {
+    pub measurer: Measurer,
+    /// Every node's frame as drawn, relative to its parent (`__nuclo_device("frames")`).
+    pub frames: String,
+}
+
 /// An event value sent with `__nuclo_event`.
 pub enum Value {
     None,
@@ -24,7 +33,7 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn new() -> Self {
+    pub fn new(shared: Rc<RefCell<Shared>>) -> Self {
         let runtime = Runtime::new().expect("QuickJS runtime");
         let context = Context::full(&runtime).expect("QuickJS context");
         let queue = Rc::new(RefCell::new(Vec::new()));
@@ -32,10 +41,21 @@ impl Engine {
         context.with(|ctx| {
             let globals = ctx.globals();
             let batches = queue.clone();
-            let host = Function::new(ctx.clone(), move |json: String| batches.borrow_mut().push(json)).unwrap();
+            let observer = shared.clone();
+            let host = Function::new(ctx.clone(), move |json: String| {
+                observer.borrow_mut().measurer.observe(&json);
+                batches.borrow_mut().push(json)
+            })
+            .unwrap();
             globals.set("__nuclo_host", host).unwrap();
+            let sizes = shared.clone();
+            let measure = Function::new(ctx.clone(), move |id: u32, max_width: f64| sizes.borrow().measurer.measure(id, max_width)).unwrap();
+            globals.set("__nuclo_measure", measure).unwrap();
             let watching = watched.clone();
             let device = Function::new(ctx.clone(), move |name: String| {
+                if name == "frames" {
+                    return shared.borrow().frames.clone();
+                }
                 if !watching.borrow().contains(&name) {
                     watching.borrow_mut().push(name.clone());
                 }

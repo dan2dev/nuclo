@@ -49,8 +49,8 @@ function gradle() {
 
 /** Wraps a built app in an .app bundle with the JS bundle, signs it, and runs it on the booted simulator. */
 async function simulator(app: string, id: string, exe: string) {
-  await $`rm -rf ${app}/assets`;
-  await $`cp dist/app.js ${app}/`;
+  await $`rm -rf ${app}/assets ${app}/fonts`;
+  await $`cp -R dist/app.js dist/fonts ${app}/`;
   if (existsSync("dist/assets")) await $`cp -R dist/assets ${app}/`;
   await Bun.write(`${app}/Info.plist`, plist(id, exe));
   await $`codesign -s - --force ${app}`.quiet();
@@ -162,4 +162,6 @@ if (!run || !examples.includes(example)) {
 await $`bun build examples/${example}/app.ts --outfile dist/app.js --format iife`;
 await $`rm -rf dist/assets`;
 if (existsSync(`examples/${example}/assets`)) await $`cp -r examples/${example}/assets dist/`;
+// The bundled font every host lays text out with (see the style contract).
+await $`rm -rf dist/fonts && cp -r fonts dist/fonts`;
 await run();

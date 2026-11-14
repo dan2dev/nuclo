@@ -16,6 +16,16 @@
  *   ["style",  id, key, value]       camelCase CSS subset
  *   ["listen", id, type]             click | input | change
  *
+ *   ["frame",  id, x, y, w, h]       the node's box, relative to its parent's (layout.ts); a layout
+ *                                    root's is [0, 0, w, content height]
+ *
+ * Layout: hosts do none. They report each layout root's size (the body, or each
+ * screen) and their device pixels per unit with __nuclo_event(rootId, "resize", "w h scale"), and measure leaves on
+ * request: __nuclo_measure(id, maxWidth) → "w h", the content size of a text,
+ * button or image with the bundled font (maxWidth -1: unconstrained). After each
+ * batch JS lays every sized root out and sends the frames that changed, as a
+ * second batch.
+ *
  * Navigation: at the end of a batch the host compares each stack's screens with
  * the previous batch. A new top screen is a push, a removed top screen a pop,
  * both animated the platform's way. A tabs or stack inserted into the body is
@@ -28,6 +38,8 @@
  *
  * Device data (battery…) has its own two calls: see device.ts.
  */
+
+import { type Frame, type LayoutNode, layout } from "./layout";
 
 type Op = [string, number, ...unknown[]];
 type Listener = (this: NElement, event: unknown) => void;
@@ -157,15 +169,20 @@ function unrealize(node: NNode) {
   if (!node.live) return;
   node.live = false;
   live.delete(node.nid);
+  sent.delete(node.nid);
+  measured.delete(node.nid);
   for (let c = node.firstChild; c; c = c.nextSibling) unrealize(c);
 }
+
+/** Text as CSS shows it (white-space: normal): whitespace runs are one space, none at the ends. */
+const shown = (text: string | null) => (text ?? "").replace(/[ \t\n\r\f]+/g, " ").trim();
 
 /** Creates a detached subtree on the host, parents before children. */
 function realize(node: NNode) {
   if (node.live) return;
   node.live = true;
   if (!(node instanceof NElement)) {
-    ops.push(["create", node.nid, "text"], ["set", node.nid, "text", node.textContent]);
+    ops.push(["create", node.nid, "text"], ["set", node.nid, "text", shown(node.textContent)]);
     return;
   }
   live.set(node.nid, node);
@@ -175,7 +192,7 @@ function realize(node: NNode) {
   for (const key in node.attrs) ops.push(["set", node.nid, key, node.attrs[key]]);
   for (const type of node.listeners.keys()) ops.push(["listen", node.nid, type]);
   if (!CONTAINERS.has(node.kind)) {
-    ops.push(["set", node.nid, "text", node.textContent]);
+    ops.push(["set", node.nid, "text", shown(node.textContent)]);
     return;
   }
   for (let c = node.firstChild; c; c = c.nextSibling) {
@@ -189,7 +206,7 @@ function realize(node: NNode) {
 function touchText(node: NNode | null) {
   for (; node; node = node.parentNode) {
     if (node instanceof NElement && !CONTAINERS.has(node.kind)) {
-      if (node.live) ops.push(["set", node.nid, "text", node.textContent]);
+      if (node.live) ops.push(["set", node.nid, "text", shown(node.textContent)]);
       return;
     }
   }
@@ -209,7 +226,7 @@ class NCharacterData extends NNode {
 
   set data(value: string) {
     this.#data = String(value);
-    if (this.live) ops.push(["set", this.nid, "text", this.#data]);
+    if (this.live) ops.push(["set", this.nid, "text", shown(this.#data)]);
     else touchText(this.parentNode);
   }
 
@@ -375,14 +392,92 @@ g.WeakRef ??= class {
 
 /** Sends the pending ops to the host as one batch. */
 export function flush() {
-  if (!ops.length) return;
   const batch = ops;
   ops = [];
-  (g.__nuclo_host as (json: string) => void)(JSON.stringify(batch));
+  const host = g.__nuclo_host as (json: string) => void;
+  if (batch.length) {
+    // A new text or font changes a leaf's size.
+    for (const op of batch) if (op[0] === "set" || op[0] === "style") measured.delete(op[1]);
+    host(JSON.stringify(batch));
+  }
+  if (!batch.length && !resized) return;
+  resized = false;
+  const frames = relayout();
+  if (frames.length) host(JSON.stringify(frames));
+}
+
+// ── Layout ───────────────────────────────────────────────────────────────
+
+/** Each layout root's size, as its host reported it. */
+const sizes = new Map<number, [number, number, number]>();
+/** The frames hosts have, by node. */
+const sent = new Map<number, Frame>();
+/** Host measurements by node, then by max width. */
+const measured = new Map<number, Map<number, { w: number; h: number }>>();
+let resized = false;
+
+/** The frames sent to the host (for checks: see check.ts). */
+export const sentFrames = (): ReadonlyMap<number, Frame> => sent;
+
+function tree(node: NNode): LayoutNode {
+  const el = node instanceof NElement ? node : null;
+  const kind = el ? el.kind : "text";
+  const children: LayoutNode[] = [];
+  if (el && CONTAINERS.has(kind)) {
+    for (let c = node.firstChild; c; c = c.nextSibling) if (c.live && c.nodeType !== 8) children.push(tree(c));
+  }
+  return { id: node.nid, kind, style: el ? { ...TAG_STYLE[el.localName], ...el.styles } : {}, children };
+}
+
+function measure(node: LayoutNode, maxWidth: number) {
+  let cache = measured.get(node.id);
+  if (!cache) measured.set(node.id, (cache = new Map()));
+  const key = Number.isFinite(maxWidth) ? Math.round(maxWidth * 100) / 100 : -1;
+  let size = cache.get(key);
+  if (!size) {
+    const reply = String((g.__nuclo_measure as (id: number, max: number) => string)(node.id, key) ?? "");
+    const [w, h] = reply.split(" ").map(Number);
+    cache.set(key, (size = { w: w || 0, h: h || 0 }));
+  }
+  return size;
+}
+
+/** Lays out every sized root; returns frame ops for what moved. */
+function relayout(): Op[] {
+  if (typeof g.__nuclo_measure !== "function") return [];
+  // With the router, each screen is a root (its content scrolls); otherwise the body is.
+  let navigation = false;
+  for (let c = body.firstChild; c; c = c.nextSibling) {
+    if (c instanceof NElement && (c.kind === "tabs" || c.kind === "stack")) navigation = true;
+  }
+  const roots = navigation ? [...live.values()].filter((el) => el.kind === "screen") : [body];
+  const out: Op[] = [];
+  for (const root of roots) {
+    const size = sizes.get(root.nid);
+    if (!size) continue;
+    const { frames, height } = layout(tree(root), size[0], navigation ? undefined : size[1], measure, size[2]);
+    // The root's own box: a screen's is its scrollable content.
+    frames.set(root.nid, [0, 0, size[0], height]);
+    for (const [id, frame] of frames) {
+      const box = frame.map((v) => Math.round(v * 10000) / 10000) as Frame;
+      const old = sent.get(id);
+      if (old && old.every((v, i) => v === box[i])) continue;
+      sent.set(id, box);
+      out.push(["frame", id, ...box]);
+    }
+  }
+  return out;
 }
 
 /** Host → JS: a native event on a widget. `value` carries an input's text or a checkbox's state. */
 g.__nuclo_event = (id: number, type: string, value?: string | boolean) => {
+  if (type === "resize") {
+    const [w, h, scale] = String(value).split(" ").map(Number);
+    sizes.set(id, [w || 0, h || 0, scale || 0]);
+    resized = true;
+    flush();
+    return;
+  }
   const el = live.get(id);
   if (!el) return;
   if (value !== undefined) el.attrs[typeof value === "boolean" ? "checked" : "value"] = value;

@@ -9,6 +9,7 @@ pub mod engine;
 pub mod host;
 pub mod input;
 pub mod look;
+pub mod measure;
 pub mod tree;
 
 use std::path::PathBuf;
@@ -137,6 +138,8 @@ fn unpack(app: &android_activity::AndroidApp) -> PathBuf {
         }
     };
     copy("app.js");
+    copy("fonts/Inter-Regular.ttf");
+    copy("fonts/Inter-Bold.ttf");
     if let Some(listing) = manager.open_dir(c"assets") {
         let names: Vec<String> = listing.map(|name: CString| name.to_string_lossy().into_owned()).collect();
         for name in names {

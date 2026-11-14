@@ -123,7 +123,7 @@ host (one small file per platform) → native widgets
 
 nuclo already updates the DOM directly, with no virtual DOM. So the native DOM only records what nuclo does. There is no tree diff, no reconciler and no shadow tree. A counter click sends one op: `["set", 6, "text", "Count: 1"]`.
 
-The whole host contract is six ops and one callback:
+The whole host contract is seven ops and one callback:
 
 | Op | Meaning |
 | --- | --- |
@@ -133,12 +133,49 @@ The whole host contract is six ops and one callback:
 | `["set", id, key, value]` | `text`, `value`, `checked`, `placeholder`, `type`, `disabled`, `src`; `title` (screen, or a stack's tab), `icon` (a stack's tab), `selected` (tabs) |
 | `["style", id, key, value]` | A camelCase CSS subset |
 | `["listen", id, type]` | `click`, `input`, `change` |
+| `["frame", id, x, y, w, h]` | Where JS laid the node out (see [Styling](#styling-the-same-pixels-everywhere)) |
 
 The host exposes `__nuclo_host(json)` and calls `__nuclo_event(id, type, value?)`: `click`, `input` (value: text), `change` (value: checked), `pop` on a stack (value: depth left after a native back) and `select` on the tabs (value: index). Both take only strings and numbers, so any JS engine can bridge them.
 
 Navigation: screens go into stacks, stacks into tabs, and a tabs or stack inserted into the body is the window's root navigation. At the end of each batch the host compares every stack with what it shows: a new top screen is a push, a removed top screen a pop, both animated the platform's way.
 
 Only nodes attached under `document.body` exist natively. Trees built off-document, `list()` templates and comment markers send nothing until they are attached.
+
+## Styling: the same pixels everywhere
+
+A style lays out to the same boxes, and its text to the same lines, on every host. The browser's CSS is the reference. The native hosts and GPUI do no layout of their own: one engine in JS (`src/layout.ts`, a CSS flexbox subset like React Native's Yoga) computes every frame, and the hosts place views where it says.
+
+**The contract** (the header of `src/layout.ts`):
+
+- **Units.** 1 = 1 CSS px = 1 pt (Apple) = 1 dp (Android) = 1 logical px (GTK, GPUI) = 1 DIP (WPF).
+- **Boxes.** `box-sizing: border-box`, uniform `padding`, exact `width`/`height`. Containers are flex columns, or rows with `flexDirection: "row"`; `gap` between children; `alignItems` stretch (default), flex-start, center or flex-end. `flex: n` grows n from a basis of 0, as in CSS; nothing else shrinks. No wrapping.
+- **Text.** One bundled font, Inter (`fonts/`, SIL OFL), 14 px by default, weight 400 or 700 (`bold` or ≥ 600); `fontFamily: "system"` opts a text into the OS font. Line height 1.35 × size, text wraps at its box. As in the browser, which lays text out in device pixels: the line height sits on a 1/64 device-pixel grid, and the baseline is the font's ascent and descent each rounded to device pixels, with half the leading above them floored to a device pixel. The default colour is black (white in dark mode on the native hosts).
+- **Controls.** The native control, fitted into a contract box: a checkbox is 24 × 24; an input is one line plus 8 padding (34.9 tall at 14 px), 160 wide unless stretched, its text centred and 8 in; a button is its text plus 8 / 16 padding; an image takes `width`/`height` or its natural size and aspect, cropped to fill.
+- **Paint.** `backgroundColor`, `borderRadius` (which clips the children), `opacity`, `color`, `textAlign`.
+
+**What a host does.** Hosts get layout as frames and answer three questions:
+
+| Call | Meaning |
+| --- | --- |
+| `["frame", id, x, y, w, h]` | An op: the node's box, relative to its parent's. A layout root's (the body, or a screen) is `[0, 0, w, content height]`: a screen scrolls to it. Sent after the batch that changed something, as a second batch. |
+| `__nuclo_measure(id, maxWidth) → "w h"` | The content size of a text, button or image (natural size) with its current text and font, at most `maxWidth` wide (-1: unconstrained). Widths round up to 1/100. |
+| `__nuclo_event(rootId, "resize", "w h scale")` | A layout root's size and the device pixels per unit: the window's content for the body, the screen's width for a screen. |
+| `__nuclo_device("frames") → {id: [x, y, w, h]}` | Debug: every view's frame as placed, for the check below. |
+
+Hosts snap each box's edges to device pixels from its position on screen, as the browser paints boxes, and draw text line by line at the contract's baselines from the unsnapped position. `hosts/apple/main.swift` is the reference (`Typeset`, `baseline`, `TextView`, `snapFrames`).
+
+**Checking it.** `examples/styles` shows one labelled case per rule, with a "Run check" button (`nuclo-native/check`). On the web it lays the screen out with the engine, measuring text the browser's way, and compares every box with `getBoundingClientRect`. On a native host it compares the frames JS sent with the views' real frames. Either way the screen says "N/N boxes match".
+
+| Host | Check | Against the browser, pixel by pixel |
+| --- | --- | --- |
+| Web (Chrome) | 175/175, at 375 and 1024 wide | Is the reference |
+| macOS | 176/176 | Headless Chrome, same width, 2×: every box edge on the same device pixel; text at the same baselines and advances, glyph anti-aliasing apart. Controls are AppKit's |
+| iOS (simulator) | 176/176 | Chrome at 3×, 402 wide: the same, over the first screen. Controls are UIKit's |
+| Android (emulator, API 37) | 176/176 | Chrome at 2.625×: box edges and text baselines on the same device pixels, glyph anti-aliasing apart. Its 411.43-dp width against Chrome's 411 px moves right-hand edges 1 px. Controls are Material's |
+| Linux (GTK 4 on macOS, light and dark) | 176/176 (`NUCLO_SELFTEST=1` prints it) | Chrome at 2×: every box edge on the same device pixel, text within one device pixel, the same line breaks. Controls are GTK's; Adwaita's checkbox is 26 px, a pixel past its box on each side |
+| Windows | Not run | `dotnet build`: 0 warnings, 0 errors. The input's and checkbox's fit in their boxes is unverified |
+| ios-gpui (simulator) | 176/176 | The same as iOS. The button and checkbox are the look's |
+| macos-gpui | 176/176 (`NUCLO_CHECK=1` logs it) | Not captured: no screen-recording permission here |
 
 ## Hosts
 
@@ -158,7 +195,7 @@ Only nodes attached under `document.body` exist natively. Trees built off-docume
 
 ## GPUI
 
-`hosts/gpui` is one Rust crate for all five GPUI targets. QuickJS runs the bundle; the crate keeps the op tree and draws it with GPUI each frame. GPUI draws its own pixels, so the router's navigation is drawn the platform's way (`src/look.rs`): the iOS floating tab bar, large titles, parallax push and edge swipe; Material 3 bars and shared-axis motion; the macOS sidebar and toolbar; the Fluent nav pane and drill-in; the Adwaita header and view switcher. `NUCLO_LOOK=ios|android|macos|windows|linux` picks a look on any machine.
+`hosts/gpui` is one Rust crate for all five GPUI targets. QuickJS runs the bundle; the crate keeps the op tree and draws it with GPUI each frame, every node at the frame JS laid it out at. GPUI draws its own pixels, so the router's navigation is drawn the platform's way (`src/look.rs`): the iOS floating tab bar, large titles, parallax push and edge swipe; Material 3 bars and shared-axis motion; the macOS sidebar and toolbar; the Fluent nav pane and drill-in; the Adwaita header and view switcher. `NUCLO_LOOK=ios|android|macos|windows|linux` picks a look on any machine.
 
 Desktop builds use `gpui-pre-platform`; iOS and Android use the community [`gpui-mobile`](https://github.com/itsbalamurali/gpui-mobile) platform, pinned to a commit. Both sit on `gpui-pre =0.3.6`. The text field is adapted from GPUI's input example.
 
@@ -214,8 +251,8 @@ Commands behind them, if you want to run one by hand:
 ## What the POC supports
 
 - **Tags:** `button`, `input` (text, password, checkbox), `textarea`, `img`. Text tags (`span`, `p`, `h1`–`h6`, `label`, `strong`…) become one label holding their whole text. Every other tag is a flex container, column by default.
-- **Styles (inline `style` only):** `flexDirection`, `gap`, `alignItems`, `flex`, `padding`, `width`, `height`, `color`, `backgroundColor`, `borderRadius`, `fontSize`, `fontWeight`, `textAlign`, `opacity`. Linux also takes `margin` and `border`. Styles do not inherit: set `color` on the text itself.
-- **Images:** `img({ src })` loads a file relative to the bundle and fills its box, cropped. Give it a `height`.
+- **Styles (inline `style` only):** `flexDirection`, `gap`, `alignItems`, `flex`, `padding`, `width`, `height`, `color`, `backgroundColor`, `borderRadius`, `fontSize`, `fontWeight`, `fontFamily: "system"`, `textAlign`, `opacity`, laid out the same everywhere ([Styling](#styling-the-same-pixels-everywhere)). Styles do not inherit: set `color` on the text itself. Text collapses whitespace as CSS does.
+- **Images:** `img({ src })` loads a file relative to the bundle: its natural size and aspect, or the box you give it, cropped to fill.
 - **Events:** `click` on anything, `input` on text inputs, `change` on Enter and on checkbox toggles. Events do not bubble.
 - **nuclo features:** reactive text, attributes and styles, `list()`, `when()`, `update()`.
 - **Navigation:** `nuclo-native/router`, with each platform's tabs, stacks, transitions and back gestures.
@@ -223,8 +260,9 @@ Commands behind them, if you want to run one by hand:
 ## Not done
 
 - `css()` and class names. Only inline styles reach the host.
-- `flex` weights on Linux: every growing child gets an equal share, whatever the number.
-- On Windows: `borderRadius`, placeholders and password fields. On Apple: text wrapping and password fields.
+- `flexWrap`, `justifyContent`, `margin`, borders, `position`, per-side padding: the layout engine covers the subset above.
+- On Windows: placeholders and password fields. On Apple: password fields.
+- Moving a window to a screen of another scale does not lay it out again on Linux and Windows.
 - Remote images. `src` is a bundled file.
 - On the web, `router.back()` is the browser's back, so it leaves the app when a detail screen was opened directly from a link. Tabs there reset instead of keeping a stack each.
 - Timers and `fetch` on the bare engines (JavaScriptCore, QuickJS, Jint). GJS has them. The GPUI host forwards `console` to its log.

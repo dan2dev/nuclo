@@ -3589,6 +3589,7 @@ dependencies = [
  "gpui-mobile",
  "gpui-pre",
  "gpui-pre-platform",
+ "image",
  "log",
  "rquickjs",
  "serde_json",

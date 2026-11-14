@@ -1,6 +1,8 @@
 /**
- * The web target: nuclo on the real DOM, with the same layout model as the
- * native hosts. Everything else the web offers (css(), any tag, any CSS
+ * The web target: nuclo on the real DOM, laid out by the browser's CSS with
+ * the same style contract as the native hosts (see layout.ts): the bundled
+ * font, its line height, flex columns, `flex: n` from a basis of 0, the
+ * control boxes. Everything else the web offers (css(), any tag, any CSS
  * property, fetch…) keeps working. The router's app shell (router-web.ts) is
  * styled here too.
  */
@@ -10,16 +12,22 @@ import "nuclo";
 // zero, so any app stylesheet or inline style wins.
 const base = document.createElement("style");
 base.textContent = `
+@font-face { font-family: Inter; src: url(fonts/Inter-Regular.ttf); font-weight: 400; font-display: block; }
+@font-face { font-family: Inter; src: url(fonts/Inter-Bold.ttf); font-weight: 700; font-display: block; }
 html, body { height: 100%; margin: 0; }
-body { font: 14px/1.35 system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
+body { font: 14px/1.35 Inter, system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
 :where(body, div, main, section, header, footer, nav, article, aside, form, ul, ol, li) {
   display: flex; flex-direction: column;
 }
 :where(body *) { box-sizing: border-box; flex-shrink: 0; min-width: 0; margin: 0; }
 :where(h1) { font-size: 32px; } :where(h2) { font-size: 24px; } :where(h3) { font-size: 20px; }
+:where(h1, h2, h3, strong, b) { font-weight: 700; }
 :where(img) { display: block; object-fit: cover; }
-:where(input, textarea, button) { font: inherit; border: 0; outline-offset: 2px; }
-:where(input[type="checkbox"]) { width: 18px; height: 18px; }
+:where(input, textarea, button) { font: inherit; line-height: 1.35; border: 0; padding: 8px; outline-offset: 2px; }
+:where(button) { padding: 8px 16px; }
+:where(input[type="checkbox"]) { width: 24px; height: 24px; padding: 0; }
+:where([style*="flex-direction: row"], [style*="align-items: flex-start"], [style*="align-items: center"], [style*="align-items: flex-end"])
+  > :where(input:not([type="checkbox"]), textarea) { width: 160px; }
 
 /* The router's app shell: bar, screen, tab bar. Colours: --nuclo-accent. */
 .nuclo-app { min-height: 100%; }
@@ -79,6 +87,10 @@ Object.defineProperty(HTMLElement.prototype, "style", {
           return typeof value === "function" ? value.bind(style) : value;
         },
         set(style, key, value) {
+          // fontFamily "system": the OS font instead of the bundled one.
+          if (key === "fontFamily" && value === "system") value = "system-ui, sans-serif";
+          // A radius clips the children, as on the native hosts.
+          if (key === "borderRadius") Reflect.set(style, "overflow", "hidden");
           const unit = typeof key === "string" && !UNITLESS.has(key) && /^-?\d+(\.\d+)?$/.test(String(value));
           return Reflect.set(style, key, unit ? `${value}px` : value);
         },

@@ -1,4 +1,7 @@
 // nuclo-native host for Windows: WPF controls driven by Jint.
+// JS lays everything out (src/layout.ts): this host places views at the frames it sends,
+// measures text and draws it itself (TextFormatter, the bundled Inter) at the contract's baselines.
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -10,62 +13,209 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.TextFormatting;
 using System.Windows.Threading;
 using Jint;
+using static System.FormattableString;
 
-/// <summary>A flex container: direction, gap, alignItems, and per-child flex grow (in Tag).</summary>
-class FlexPanel : Panel
+/// <summary>Where JS put a view (Tag of every placed element).</summary>
+class Place
 {
-    public bool Row;
-    public double Gap;
-    public string Align = "stretch";
+    /// <summary>The frame JS sent, relative to the parent's.</summary>
+    public Rect Layout;
+    /// <summary>The frame applied: edges on device pixels, relative to the parent's snapped origin.</summary>
+    public Rect Frame;
+    /// <summary>Unsnapped minus snapped origin: texts draw from where JS put the box.</summary>
+    public Vector Offset;
 
-    double Main(Size s) => Row ? s.Width : s.Height;
-    double Cross(Size s) => Row ? s.Height : s.Width;
-    Size Sized(double main, double cross) => Row ? new Size(main, cross) : new Size(cross, main);
-    double Gaps => Gap * Math.Max(0, InternalChildren.Count - 1);
-    static double Flex(UIElement child) => ((FrameworkElement)child).Tag as double? ?? 0;
+    public static Place Of(FrameworkElement view) => (Place)(view.Tag ??= new Place());
+}
+
+/// <summary>
+/// Every nuclo view: a container (children at the frames JS sent), a text, an image, or a button's label.
+/// It paints its background (Panel), image (cover) and text, all inside its rounded corners, which clip its children too.
+/// </summary>
+class View : Panel
+{
+    /// <summary>A layout root's laid-out size (the frame op): a screen's content scrolls to its height.</summary>
+    public Size? Content;
+    /// <summary>A layout root reports its size (resize).</summary>
+    public Action<Size>? Resized;
+    public double Radius;
+    public ImageSource? Image;
+    /// <summary>Text views and button labels: their text, font, colour, alignment and inset.</summary>
+    public string? Text;
+    public Font Font = new();
+    public Brush? Color;
+    public string Align = "left";
+    public Vector Pad;
+    /// <summary>A button's label lays out in the button's box.</summary>
+    public FrameworkElement? Owner;
+
+    // Texts are black, white in dark mode. ponytail: read once at launch; follow SystemEvents if it must switch live.
+    static readonly Brush Ink = Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 1) is 0 ? Brushes.White : Brushes.Black;
+
+    public View()
+    {
+        // Hit-testable everywhere, as a web box is.
+        Background = Brushes.Transparent;
+        SizeChanged += (_, e) => Resized?.Invoke(e.NewSize);
+    }
+
+    static Rect FrameOf(FrameworkElement child) => (child.Tag as Place)?.Frame ?? default;
 
     protected override Size MeasureOverride(Size available)
     {
-        double main = Gaps, cross = 0;
-        foreach (UIElement child in InternalChildren)
-        {
-            child.Measure(Sized(double.PositiveInfinity, Cross(available)));
-            main += Main(child.DesiredSize);
-            cross = Math.Max(cross, Cross(child.DesiredSize));
-        }
-        return Sized(main, cross);
+        foreach (FrameworkElement child in InternalChildren) child.Measure(FrameOf(child).Size);
+        return new Size(0, Content?.Height ?? 0);
     }
 
     protected override Size ArrangeOverride(Size final)
     {
-        double used = Gaps, grow = 0, position = 0;
-        foreach (UIElement child in InternalChildren)
-        {
-            used += Main(child.DesiredSize);
-            grow += Flex(child);
-        }
-        var free = Math.Max(0, Main(final) - used);
-        foreach (UIElement child in InternalChildren)
-        {
-            var main = Main(child.DesiredSize) + (grow > 0 ? free * Flex(child) / grow : 0);
-            var cross = Align == "stretch" ? Cross(final) : Cross(child.DesiredSize);
-            var offset = Align == "center" ? (Cross(final) - cross) / 2 : Align == "flex-end" ? Cross(final) - cross : 0;
-            child.Arrange(Row ? new Rect(position, offset, main, cross) : new Rect(offset, position, cross, main));
-            position += main + Gap;
-        }
+        foreach (FrameworkElement child in InternalChildren) child.Arrange(FrameOf(child));
+        Clip = Radius > 0 || Image is not null ? new RectangleGeometry(new Rect(final), Radius, Radius) : null;
         return final;
+    }
+
+    protected override void OnRender(DrawingContext dc)
+    {
+        base.OnRender(dc); // the background
+        if (Image is { Width: > 0, Height: > 0 } image)
+        {
+            // Cover: scaled to fill, centred, cropped by the clip.
+            var scale = Math.Max(RenderSize.Width / image.Width, RenderSize.Height / image.Height);
+            var size = new Size(image.Width * scale, image.Height * scale);
+            dc.DrawImage(image, new Rect(new Point((RenderSize.Width - size.Width) / 2, (RenderSize.Height - size.Height) / 2), size));
+        }
+        if (string.IsNullOrEmpty(Text) || (Owner ?? this).Tag is not Place place) return;
+        // In its box from where JS put it (the frame is snapped, the text is not), each baseline on a device pixel.
+        var origin = Owner is null ? default : TranslatePoint(default, Owner);
+        var x0 = Pad.X + place.Offset.X - origin.X;
+        var y0 = Pad.Y + place.Offset.Y - origin.Y;
+        var width = place.Layout.Width - 2 * Pad.X;
+        var pixels = VisualTreeHelper.GetDpi(this).DpiScaleX;
+        var line = Typeset.LineHeight(Font.Size, pixels);
+        var first = Typeset.Baseline(Font, pixels);
+        var lines = Typeset.Lines(Text, Font, width + 0.01, Color ?? Ink, pixels);
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var slack = width - lines[i].Width;
+            var x = x0 + (Align == "center" ? slack / 2 : Align == "right" ? slack : 0);
+            var y = Typeset.Round((y0 + i * line + first) * pixels) / pixels - lines[i].Baseline;
+            lines[i].Draw(dc, new Point(x, y), InvertAxes.None);
+            lines[i].Dispose();
+        }
     }
 }
 
-/// <summary>One page of a stack: its children stack vertically and scroll.</summary>
+/// <summary>A text's font: Inter (fonts/ next to app.js), or the OS font for fontFamily "system".</summary>
+record Font(double Size = 14, bool Bold = false, bool Os = false)
+{
+    public static readonly FontFamily Inter = new(new Uri(AppContext.BaseDirectory + "fonts/"), "./#Inter");
+    FontFamily Family => Os ? SystemFonts.MessageFontFamily : Inter;
+    public Typeface Typeface => new(Family, FontStyles.Normal, Bold ? FontWeights.Bold : FontWeights.Normal, FontStretches.Normal);
+    /// <summary>Ascent and descent in em: Inter's hhea values, or the OS font's.</summary>
+    public (double Ascent, double Descent) Em => Os ? (Family.Baseline, Family.LineSpacing - Family.Baseline) : (0.96875, 0.2412109375);
+}
+
+/// <summary>Text the contract's way (layout.ts): line height 1.35 × size, lines broken by WPF's TextFormatter.</summary>
+static class Typeset
+{
+    static readonly TextFormatter Formatter = TextFormatter.Create(TextFormattingMode.Ideal);
+
+    /// <summary>JavaScript's Math.round (Math.Round rounds halves to even).</summary>
+    public static double Round(double v) => Math.Floor(v + 0.5);
+
+    /// <summary>A line's height on the browser's 1/64 device-pixel grid, `pixels` device pixels per DIP.</summary>
+    public static double LineHeight(double size, double pixels) => Math.Floor(size * 1.35 * pixels * 64 + 1e-6) / (pixels * 64);
+
+    /// <summary>Where the browser puts the baseline in a line: ascent and descent rounded to device pixels, half the leading above, floored.</summary>
+    public static double Baseline(Font font, double pixels)
+    {
+        var ascent = Round(font.Em.Ascent * font.Size * pixels);
+        var descent = Round(font.Em.Descent * font.Size * pixels);
+        return (ascent + Math.Floor((LineHeight(font.Size, pixels) * pixels - ascent - descent) / 2)) / pixels;
+    }
+
+    /// <summary>The lines as drawn, wrapped at maxWidth (&lt; 0: only at newlines); the caller disposes them.</summary>
+    public static List<TextLine> Lines(string text, Font font, double maxWidth, Brush brush, double pixels)
+    {
+        var run = new Run(font, brush) { PixelsPerDip = pixels };
+        var paragraph = new Paragraph(run, maxWidth < 0 ? TextWrapping.NoWrap : TextWrapping.WrapWithOverflow);
+        var lines = new List<TextLine>();
+        if (text.Length == 0) return lines;
+        foreach (var part in text.Split('\n'))
+        {
+            var source = new Source(part, run);
+            var at = 0;
+            do
+            {
+                // The paragraph's last line also holds its end mark, so `at` passes the length.
+                var line = Formatter.FormatLine(source, at, maxWidth < 0 ? 1e6 : Math.Max(maxWidth, 0.01), paragraph, null);
+                lines.Add(line);
+                at += line.Length;
+            } while (at < part.Length);
+        }
+        return lines;
+    }
+
+    /// <summary>__nuclo_measure for a text: the widest line without trailing spaces, rounded up to 1/100, and lines × line height.</summary>
+    public static string Measure(string text, Font font, double maxWidth, double pixels)
+    {
+        var lines = Lines(text, font, maxWidth, Brushes.Black, pixels);
+        var width = Math.Ceiling(lines.Select(l => l.Width).DefaultIfEmpty(0).Max() * 100 - 0.001) / 100;
+        var height = lines.Count * LineHeight(font.Size, pixels);
+        lines.ForEach(l => l.Dispose());
+        return Invariant($"{width} {height}");
+    }
+
+    sealed class Source(string text, TextRunProperties run) : TextSource
+    {
+        public override TextRun GetTextRun(int at) =>
+            at < text.Length ? new TextCharacters(text, at, text.Length - at, run) : new TextEndOfParagraph(1);
+
+        public override TextSpan<CultureSpecificCharacterBufferRange> GetPrecedingText(int limit)
+        {
+            var before = Math.Min(limit, text.Length);
+            return new(before, new CultureSpecificCharacterBufferRange(CultureInfo.InvariantCulture, new CharacterBufferRange(text, 0, before)));
+        }
+
+        public override int GetTextEffectCharacterIndexFromTextSourceCharacterIndex(int at) => at;
+    }
+
+    sealed class Run(Font font, Brush brush) : TextRunProperties
+    {
+        public override Typeface Typeface { get; } = font.Typeface;
+        public override double FontRenderingEmSize => font.Size;
+        public override double FontHintingEmSize => font.Size;
+        public override TextDecorationCollection TextDecorations => null!;
+        public override Brush ForegroundBrush => brush;
+        public override Brush BackgroundBrush => null!;
+        public override CultureInfo CultureInfo => CultureInfo.InvariantCulture;
+        public override TextEffectCollection TextEffects => null!;
+    }
+
+    sealed class Paragraph(TextRunProperties run, TextWrapping wrap) : TextParagraphProperties
+    {
+        public override FlowDirection FlowDirection => FlowDirection.LeftToRight;
+        public override TextAlignment TextAlignment => TextAlignment.Left;
+        public override double LineHeight => 0;
+        public override bool FirstLineInParagraph => true;
+        public override TextRunProperties DefaultTextRunProperties => run;
+        public override TextWrapping TextWrapping => wrap;
+        public override TextMarkerProperties? TextMarkerProperties => null;
+        public override double Indent => 0;
+    }
+}
+
+/// <summary>One page of a stack: a layout root, laid out at its width; its content scrolls.</summary>
 class Screen : ScrollViewer
 {
-    public readonly FlexPanel Body = new();
+    public readonly View Body = new() { UseLayoutRounding = false };
     public readonly TranslateTransform Shift = new();
     public Stack? Owner;
     public string Title = "";
+    double width;
 
     public Screen(FrameworkElement body)
     {
@@ -74,6 +224,12 @@ class Screen : ScrollViewer
         RenderTransform = Shift;
         // The page colour is the body's backgroundColor.
         SetBinding(BackgroundProperty, new Binding(nameof(Panel.Background)) { Source = body });
+        Body.Resized = size =>
+        {
+            if (size.Width == width) return;
+            width = size.Width;
+            Program.Emit(int.Parse(Uid), "resize", Invariant($"{size.Width} {ActualHeight} {Program.Scale}"));
+        };
     }
 }
 
@@ -227,11 +383,17 @@ static class Program
     static readonly Dictionary<int, FrameworkElement> Views = new();
     static readonly Engine Js = new();
     static Window Win = null!;
-    static ScrollViewer RootScroll = null!;
+    /// <summary>The body: without the router, the layout root at the window's content size.</summary>
+    static readonly View Root = new() { UseLayoutRounding = false };
     /// <summary>True while a JS batch is applied: selection changes then are programmatic, not the user's.</summary>
     internal static bool Batching;
+    /// <summary>A frame op arrived: the batch's end snaps the frames to device pixels.</summary>
+    static bool Placed;
     /// <summary>Device data JS watches (src/device.ts): name → its last JSON, "" when the device has none.</summary>
     static readonly Dictionary<string, string> Devices = new();
+
+    /// <summary>Device pixels per DIP.</summary>
+    internal static double Scale => VisualTreeHelper.GetDpi(Win).DpiScaleX;
 
     [STAThread]
     static void Main()
@@ -239,14 +401,15 @@ static class Program
 #pragma warning disable WPF0001 // ThemeMode is experimental
         var app = new Application { ThemeMode = ThemeMode.System };
 #pragma warning restore WPF0001
-        var root = new FlexPanel();
-        Views[1] = root;
-        Win = new Window
+        Views[1] = Root;
+        // The chrome lands on whole pixels; layout roots opt out and snap their own boxes (SnapFrames).
+        Win = new Window { Title = "nuclo-native", Width = 420, Height = 640, Content = Root, UseLayoutRounding = true };
+        var size = Size.Empty;
+        Root.Resized = next =>
         {
-            Title = "nuclo-native",
-            Width = 420,
-            Height = 640,
-            Content = RootScroll = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
+            if (next == size) return;
+            size = next;
+            Emit(1, "resize", Invariant($"{next.Width} {next.Height} {Scale}"));
         };
         // Back: Alt+Left and the mouse back button, like any Windows app.
         Win.PreviewKeyDown += (_, e) => { if (e.SystemKey == Key.Left && Keyboard.Modifiers == ModifierKeys.Alt) e.Handled = Back(); };
@@ -257,6 +420,7 @@ static class Program
             using var ops = JsonDocument.Parse(json);
             Batching = true;
             foreach (var op in ops.RootElement.EnumerateArray()) Apply(op);
+            if (Placed) SnapFrames();
             foreach (var view in Views.Values)
             {
                 if (view is Stack stack) stack.Sync();
@@ -264,8 +428,10 @@ static class Program
             }
             Batching = false;
         }));
+        Js.SetValue("__nuclo_measure", new Func<double, double, string>(Measure));
         Js.SetValue("__nuclo_device", new Func<string, string>(name =>
         {
+            if (name == "frames") return FramesJson();
             if (!Devices.TryGetValue(name, out var json))
             {
                 Devices[name] = json = name == "battery" ? Battery() : "";
@@ -321,8 +487,91 @@ static class Program
         });
     }
 
-    static double Px(string value) => double.Parse(value.Replace("px", ""), System.Globalization.CultureInfo.InvariantCulture);
+    static double Px(string value) => double.Parse(value.Replace("px", ""), CultureInfo.InvariantCulture);
     static Brush Color(string value) => (Brush)new BrushConverter().ConvertFromString(value)!;
+
+    /// <summary>A button's label (it holds the button's text, font and colour), or the view itself.</summary>
+    static View? TextOf(FrameworkElement view) => (view as Button)?.Content as View ?? view as View;
+
+    /// <summary>__nuclo_measure: a leaf's content size (layout.ts adds the padding). Images: their natural pixel size.</summary>
+    static string Measure(double id, double maxWidth)
+    {
+        var view = Views.GetValueOrDefault((int)id);
+        if (view is View { Image: BitmapSource bitmap }) return Invariant($"{bitmap.PixelWidth} {bitmap.PixelHeight}");
+        if (view is null || TextOf(view) is not { Text: { } text } label) return "0 0";
+        return Typeset.Measure(text, label.Font, maxWidth, Scale);
+    }
+
+    /// <summary>Places views at their frames with edges on device pixels, as the browser paints boxes: each edge
+    /// rounds from its unsnapped position on screen, so boxes never blur or gap. Texts keep the unsnapped offset.</summary>
+    static void SnapFrames()
+    {
+        Placed = false;
+        var pixels = Scale;
+        double Snap(double v) => Typeset.Round(v * pixels) / pixels;
+        void Walk(Panel parent, Point at, Point snapped)
+        {
+            foreach (FrameworkElement child in parent.Children)
+            {
+                if (child.Tag is not Place place) continue;
+                var x = at.X + place.Layout.X;
+                var y = at.Y + place.Layout.Y;
+                var edge = new Point(Snap(x), Snap(y));
+                var frame = new Rect(edge.X - snapped.X, edge.Y - snapped.Y,
+                    Math.Max(0, Snap(x + place.Layout.Width) - edge.X), Math.Max(0, Snap(y + place.Layout.Height) - edge.Y));
+                var offset = new Vector(x - edge.X, y - edge.Y);
+                if (frame != place.Frame)
+                {
+                    place.Frame = frame;
+                    parent.InvalidateMeasure();
+                    parent.InvalidateArrange();
+                }
+                if (offset != place.Offset)
+                {
+                    place.Offset = offset;
+                    TextOf(child)?.InvalidateVisual();
+                }
+                if (child is View view) Walk(view, new Point(x, y), edge);
+            }
+        }
+        Walk(Root, default, default);
+        foreach (var screen in Views.Values.OfType<Screen>()) Walk(screen.Body, default, default);
+    }
+
+    /// <summary>__nuclo_device("frames"): every view's frame as placed, relative to its parent; layout roots are their own origin (check.ts).</summary>
+    static string FramesJson()
+    {
+        var frames = new Dictionary<string, double[]>();
+        foreach (var (id, view) in Views)
+        {
+            Rect? frame = view switch
+            {
+                Stack or Tabs => null,
+                _ when id == 1 => new Rect(view.RenderSize),
+                Screen screen => screen.Body.Content is { } content ? new Rect(content) : null,
+                _ => (view.Tag as Place)?.Frame,
+            };
+            if (frame is { } f) frames[id.ToString()] = [.. new[] { f.X, f.Y, f.Width, f.Height }.Select(v => Math.Round(v * 100) / 100)];
+        }
+        return JsonSerializer.Serialize(frames);
+    }
+
+    /// <summary>The toolkit's button filling its frame; its label is a text view, so what is measured is what is drawn.</summary>
+    static Button NewButton()
+    {
+        var label = new View { Text = "", Pad = new Vector(16, 8), Align = "center" };
+        var button = new Button
+        {
+            Content = label,
+            Padding = new Thickness(0),
+            MinWidth = 0,
+            MinHeight = 0,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            VerticalContentAlignment = VerticalAlignment.Stretch,
+        };
+        label.Owner = button;
+        return button;
+    }
 
     static void Apply(JsonElement op)
     {
@@ -332,15 +581,31 @@ static class Program
             case "create":
                 Views[id] = op[2].GetString() switch
                 {
-                    "text" => new TextBlock { TextWrapping = TextWrapping.Wrap },
-                    "button" => new Button { Padding = new Thickness(12, 4, 12, 4) },
-                    "input" => new TextBox { Padding = new Thickness(4) },
-                    "checkbox" => new CheckBox(),
-                    "image" => new Image { Stretch = Stretch.UniformToFill, ClipToBounds = true },
+                    "text" => new View { Text = "" },
+                    "button" => NewButton(),
+                    // Fills its frame, text centred and 8 in (WPF's text view adds 2 inside the 1-DIP border).
+                    "input" => new TextBox
+                    {
+                        MinWidth = 0,
+                        MinHeight = 0,
+                        Padding = new Thickness(5, 0, 5, 0),
+                        VerticalContentAlignment = VerticalAlignment.Center,
+                        FontFamily = Font.Inter,
+                        FontSize = 14,
+                    },
+                    // The toolkit's checkbox, centred in its 24 × 24 box.
+                    "checkbox" => new CheckBox
+                    {
+                        MinWidth = 0,
+                        MinHeight = 0,
+                        Padding = new Thickness(0),
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                    },
                     "screen" => new Screen(Views[1]),
                     "stack" => new Stack(),
                     "tabs" => new Tabs(),
-                    _ => new FlexPanel(),
+                    _ => new View(), // view, image
                 };
                 Views[id].Uid = id.ToString();
                 break;
@@ -380,6 +645,21 @@ static class Program
                 Style(Views[id], op[2].GetString()!, op[3].GetString()!);
                 break;
 
+            case "frame":
+                // DIPs, relative to the parent. A screen's is its scrolling content; the body's is the window's.
+                var size = new Size(Math.Max(0, op[4].GetDouble()), Math.Max(0, op[5].GetDouble()));
+                if (Views[id] is Screen root)
+                {
+                    root.Body.Content = size;
+                    root.Body.InvalidateMeasure();
+                }
+                else if (id != 1)
+                {
+                    Place.Of(Views[id]).Layout = new Rect(new Point(op[2].GetDouble(), op[3].GetDouble()), size);
+                    Placed = true;
+                }
+                break;
+
             case "listen":
                 Listen(Views[id], id, op[2].GetString()!);
                 break;
@@ -392,7 +672,7 @@ static class Program
         if (view is Screen screen) screen.Owner?.Screens.Remove(screen);
         else if (view is Stack stack) stack.Owner?.Remove(stack);
         else (view.Parent as Panel)?.Children.Remove(view);
-        if (Win.Content == view) Win.Content = RootScroll;
+        if (Win.Content == view) Win.Content = Root;
     }
 
     static void Forget(FrameworkElement view)
@@ -416,44 +696,63 @@ static class Program
         else if (key == "title" && view is Stack stack) stack.Label.Text = text;
         else if (key == "icon" && view is Stack tab) tab.Icon = text;
         else if (key == "selected" && view is Tabs tabs) tabs.Selected = int.Parse(value.ToString());
-        else if (key == "text" && view is TextBlock label) label.Text = text;
-        else if (key == "text" && view is Button button) button.Content = text;
+        else if (key == "text" && TextOf(view) is { Text: not null } label)
+        {
+            label.Text = text;
+            label.InvalidateVisual();
+        }
         else if (key == "value" && view is TextBox box && box.Text != text) box.Text = text;
         else if (key == "checked" && view is CheckBox check) check.IsChecked = value.ValueKind == JsonValueKind.True;
-        // Asset paths are relative to the bundle.
-        else if (key == "src" && view is Image image) image.Source = new BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, text)));
+        else if (key == "src" && view is View image)
+        {
+            // Asset paths are relative to the bundle.
+            image.Image = new BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, text)));
+            image.InvalidateArrange();
+            image.InvalidateVisual();
+        }
         else if (key == "disabled") view.IsEnabled = value.ValueKind != JsonValueKind.True;
     }
 
+    /// <summary>Paint and text styles. Layout styles (flexDirection, gap, alignItems, flex, width, height) are JS's: they arrive as frames.</summary>
     static void Style(FrameworkElement view, string key, string value)
     {
-        var flex = view as FlexPanel;
+        var label = TextOf(view)?.Text is null ? null : TextOf(view); // texts and button labels
         var control = view as Control;
-        var label = view as TextBlock;
         switch (key)
         {
-            case "flexDirection" when flex is not null: flex.Row = value == "row"; flex.InvalidateMeasure(); break;
-            case "gap" when flex is not null: flex.Gap = Px(value); flex.InvalidateMeasure(); break;
-            case "alignItems" when flex is not null: flex.Align = value; flex.InvalidateArrange(); break;
-            case "flex": view.Tag = Px(value); (view.Parent as UIElement)?.InvalidateArrange(); break;
             case "opacity": view.Opacity = Px(value); break;
-            case "width": view.Width = Px(value); break;
-            case "height": view.Height = Px(value); break;
-            case "textAlign" when label is not null: label.TextAlignment = value == "center" ? TextAlignment.Center : TextAlignment.Left; break;
-            // A Panel has no Padding; with no border a margin looks the same.
-            case "padding" when control is not null: control.Padding = new Thickness(Px(value)); break;
-            case "padding" when label is not null: label.Padding = new Thickness(Px(value)); break;
-            case "padding": view.Margin = new Thickness(Px(value)); break;
+            case "backgroundColor" when view is View box: box.Background = Color(value); break;
             case "backgroundColor" when control is not null: control.Background = Color(value); break;
-            case "backgroundColor" when flex is not null: flex.Background = Color(value); break;
-            case "backgroundColor" when label is not null: label.Background = Color(value); break;
+            case "borderRadius" when view is View box:
+                box.Radius = Px(value);
+                box.InvalidateArrange();
+                break;
+            // The Fluent templates round their border with the attached Border.CornerRadius.
+            case "borderRadius": view.SetValue(Border.CornerRadiusProperty, new CornerRadius(Px(value))); break;
+            // Only texts draw inset; an input keeps its text `padding` in.
+            case "padding" when label is not null: label.Pad = new Vector(Px(value), Px(value)); break;
+            case "padding" when view is TextBox input: input.Padding = new Thickness(Math.Max(0, Px(value) - 3), 0, Math.Max(0, Px(value) - 3), 0); break;
+            case "textAlign" when label is not null: label.Align = value; break;
+            case "color" when label is not null: label.Color = Color(value); break;
             case "color" when control is not null: control.Foreground = Color(value); break;
-            case "color" when label is not null: label.Foreground = Color(value); break;
-            case "fontSize" when control is not null: control.FontSize = Px(value); break;
-            case "fontSize" when label is not null: label.FontSize = Px(value); break;
-            case "fontWeight" when control is not null: control.FontWeight = value == "bold" ? FontWeights.Bold : FontWeights.Normal; break;
-            case "fontWeight" when label is not null: label.FontWeight = value == "bold" ? FontWeights.Bold : FontWeights.Normal; break;
+            case "fontSize" or "fontWeight" or "fontFamily":
+                var font = label?.Font ?? new Font(control?.FontSize ?? 14, control?.FontWeight == FontWeights.Bold, control?.FontFamily != Font.Inter);
+                font = key switch
+                {
+                    "fontSize" => font with { Size = Px(value) },
+                    "fontWeight" => font with { Bold = value == "bold" || (int.TryParse(value, out var weight) && weight >= 600) },
+                    _ => font with { Os = value == "system" },
+                };
+                if (label is not null) label.Font = font;
+                else if (control is not null)
+                {
+                    control.FontSize = font.Size;
+                    control.FontWeight = font.Bold ? FontWeights.Bold : FontWeights.Normal;
+                    control.FontFamily = font.Os ? SystemFonts.MessageFontFamily : Font.Inter;
+                }
+                break;
         }
+        label?.InvalidateVisual();
     }
 
     static void Listen(FrameworkElement view, int id, string type)

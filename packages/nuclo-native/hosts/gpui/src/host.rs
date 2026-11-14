@@ -2,6 +2,7 @@
 //! the router's tabs and stacks the way the current platform does.
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
@@ -12,10 +13,11 @@ use gpui::{
     actions, div, img, prelude::*, px, rgba, white,
 };
 
-use crate::engine::{Engine, Value};
+use crate::engine::{Engine, Shared, Value};
+use crate::measure::{Measurer, baseline, line_height};
 use crate::input::{InputEvent, TextInput};
 use crate::look::{Layer, Look};
-use crate::tree::{Align, Changes, Kind, Node, Style, Tree};
+use crate::tree::{Changes, Kind, Node, Style, Tree};
 
 actions!(nuclo, [Back]);
 
@@ -68,17 +70,43 @@ pub struct Host {
     /// The last device data sent to JS, by name.
     devices: HashMap<String, String>,
     icons: RefCell<HashMap<(&'static str, u32), Arc<Image>>>,
+    /// Sizes and frames JS reads mid-render (engine.rs).
+    shared: Rc<RefCell<Shared>>,
+    /// Frames as drawn: edges on device pixels, relative to the parent's.
+    placed: HashMap<u32, Placed>,
+    /// Device pixels per point.
+    scale: f32,
+    /// The window's size, and each stack's width, as of the last render: the layout roots' sizes.
+    viewport: (f32, f32),
+    widths: RefCell<HashMap<u32, f32>>,
+    /// What each layout root was last reported as ("w h scale").
+    reported: HashMap<u32, String>,
+    reporting: bool,
+}
+
+/// A node's box as drawn, and where JS put it relative to that (text is drawn from there).
+struct Placed {
+    rect: [f32; 4],
+    offset: (f32, f32),
 }
 
 impl Host {
     pub fn new(bundle: PathBuf, look: Look, insets: (f32, f32), cx: &mut Context<Self>) -> Self {
         let source = std::fs::read_to_string(&bundle).unwrap_or_else(|e| panic!("{}: {e}", bundle.display()));
+        let dir = bundle.parent().map(PathBuf::from).unwrap_or_default();
+        // The bundled font (fonts/ next to app.js): every host sets text in it.
+        let fonts = ["Inter-Regular.ttf", "Inter-Bold.ttf"].iter().filter_map(|name| std::fs::read(dir.join("fonts").join(name)).ok());
+        if let Err(error) = cx.text_system().add_fonts(fonts.map(Into::into).collect()) {
+            log::error!("nuclo-gpui: fonts: {error}");
+        }
+        let measurer = Measurer::new(cx.text_system().clone(), dir.clone());
+        let shared = Rc::new(RefCell::new(Shared { measurer, frames: "{}".into() }));
         let mut host = Self {
-            engine: Engine::new(),
+            engine: Engine::new(shared.clone()),
             tree: Tree::new(),
             stacks: HashMap::new(),
             inputs: HashMap::new(),
-            dir: bundle.parent().map(PathBuf::from).unwrap_or_default(),
+            dir,
             look,
             swipe: None,
             tab_switch: None,
@@ -86,11 +114,26 @@ impl Host {
             insets,
             devices: HashMap::new(),
             icons: RefCell::default(),
+            shared,
+            placed: HashMap::new(),
+            scale: 2.,
+            viewport: (0., 0.),
+            widths: RefCell::default(),
+            reported: HashMap::new(),
+            reporting: false,
         };
         let batches = host.engine.eval(source);
         host.apply(batches, cx);
         for name in host.engine.watched() {
             host.devices.insert(name.clone(), crate::device::read(&name));
+        }
+        // NUCLO_CHECK=1: press the styles example's "Run check" and log what it says (README, Styling).
+        if std::env::var("NUCLO_CHECK").is_ok() {
+            cx.spawn(async move |this, cx| {
+                cx.background_executor().timer(std::time::Duration::from_secs(2)).await;
+                let _ = this.update(cx, |host, cx| host.self_check(cx));
+            })
+            .detach();
         }
         // Device data has no change events here: read it again every few seconds.
         cx.spawn(async move |this, cx| {
@@ -103,6 +146,19 @@ impl Host {
         })
         .detach();
         host
+    }
+
+    fn self_check(&mut self, cx: &mut Context<Self>) {
+        let find = |tree: &Tree, kind: Kind, text: &str| {
+            tree.nodes.iter().filter(|(_, n)| n.kind == kind && n.text.contains(text)).map(|(&id, n)| (id, n.text.clone())).collect::<Vec<_>>()
+        };
+        let Some((button, _)) = find(&self.tree, Kind::Button, "Run check").pop() else {
+            return log::error!("nuclo-gpui: no Run check button");
+        };
+        self.emit(button, "click", Value::None, cx);
+        for (_, text) in find(&self.tree, Kind::Text, "boxes match").into_iter().chain(find(&self.tree, Kind::Text, "expected")) {
+            log::info!("check: {text}");
+        }
     }
 
     fn poll_devices(&mut self, cx: &mut Context<Self>) {
@@ -150,7 +206,76 @@ impl Host {
             self.sync(stack);
         }
         self.sweep();
+        if changes.frames {
+            self.snap();
+        }
+        // New screens get their size now, so they are laid out before they are drawn.
+        self.report(cx);
         cx.notify();
+    }
+
+    /// The layout roots and their sizes: the body without the router, else every screen at its stack's width.
+    fn roots(&self) -> Vec<(u32, f32, f32)> {
+        if self.tree.root_nav.is_none() {
+            // The body sits inside the safe area.
+            return vec![(1, self.viewport.0, self.viewport.1 - self.insets.0 - self.insets.1)];
+        }
+        let widths = self.widths.borrow();
+        let screens = self.tree.nodes.iter().filter(|(_, n)| n.kind == Kind::Stack).flat_map(|(stack, n)| {
+            let width = widths.get(stack).copied().unwrap_or(self.viewport.0);
+            n.children.iter().map(move |&screen| (screen, width, self.viewport.1))
+        });
+        screens.collect()
+    }
+
+    /// Tells JS each layout root's size when it changed (`resize`); JS answers with frames.
+    fn report(&mut self, cx: &mut Context<Self>) {
+        if self.reporting || self.viewport.0 <= 0. {
+            return;
+        }
+        self.reporting = true;
+        for (id, w, h) in self.roots() {
+            let size = format!("{w} {h} {}", self.scale);
+            if self.reported.get(&id) != Some(&size) {
+                self.reported.insert(id, size.clone());
+                self.emit(id, "resize", Value::Text(size), cx);
+            }
+        }
+        self.reporting = false;
+    }
+
+    /// Places every laid-out node with its edges on device pixels, as the browser paints boxes:
+    /// each edge rounds from its unsnapped position in its layout root.
+    fn snap(&mut self) {
+        let scale = self.scale;
+        let round = |v: f32| (v * scale).round() / scale;
+        let mut placed = HashMap::new();
+        let mut frames = serde_json::Map::new();
+        let roots: Vec<u32> = if self.tree.root_nav.is_some() {
+            self.tree.nodes.iter().filter(|(_, n)| n.kind == Kind::Screen).map(|(&id, _)| id).collect()
+        } else {
+            vec![1]
+        };
+        let mut todo: Vec<(u32, (f32, f32), (f32, f32))> = Vec::new();
+        for root in roots {
+            let Some(node) = self.tree.get(root) else { continue };
+            if let Some([_, _, w, h]) = node.frame {
+                frames.insert(root.to_string(), serde_json::json!([0., 0., w, h]));
+            }
+            todo.extend(node.children.iter().map(|&c| (c, (0., 0.), (0., 0.))));
+        }
+        while let Some((id, origin, snapped)) = todo.pop() {
+            let Some(node) = self.tree.get(id) else { continue };
+            let Some([x, y, w, h]) = node.frame else { continue };
+            let (ax, ay) = (origin.0 + x, origin.1 + y);
+            let (left, top) = (round(ax), round(ay));
+            let rect = [left - snapped.0, top - snapped.1, round(ax + w) - left, round(ay + h) - top];
+            frames.insert(id.to_string(), serde_json::json!(rect.map(|v| (v * 100.).round() / 100.)));
+            placed.insert(id, Placed { rect, offset: (ax - left, ay - top) });
+            todo.extend(node.children.iter().map(|&c| (c, (ax, ay), (left, top))));
+        }
+        self.placed = placed;
+        self.shared.borrow_mut().frames = serde_json::Value::Object(frames).to_string();
     }
 
     /// Animates a stack to its new model: a new top is a push, a removed top a pop.
@@ -341,55 +466,85 @@ impl Host {
 
     // ── Rendering ────────────────────────────────────────────────────────
 
+    /// A node at its frame (snapped), painted; nothing until JS has laid it out.
     fn node(&self, id: u32, cx: &mut Context<Self>) -> AnyElement {
-        let Some(node) = self.tree.get(id) else { return div().into_any_element() };
+        let (Some(node), Some(placed)) = (self.tree.get(id), self.placed.get(&id)) else { return div().into_any_element() };
+        let [x, y, w, h] = placed.rect;
+        let s = &node.style;
+        let at = |d: Div| d.absolute().left(px(x)).top(px(y)).w(px(w)).h(px(h));
         match node.kind {
-            Kind::Text => style(div(), &node.style).child(node.text.clone()).into_any_element(),
-            Kind::Image => {
-                let s = &node.style;
-                let mut image = img(self.dir.join(&node.src)).object_fit(ObjectFit::Cover).flex_shrink_0().rounded(px(s.radius));
-                image = match s.width {
-                    Some(w) => image.w(px(w)),
-                    None => image.w_full(),
-                };
-                if let Some(h) = s.height {
-                    image = image.h(px(h));
-                }
-                image.into_any_element()
-            }
+            // Lines break at the width JS measured, not the snapped one.
+            Kind::Text => paint(at(div()), s).children(self.lines(node, node.frame.map_or(w, |f| f[2]), placed.offset)).into_any_element(),
+            Kind::Image => img(self.dir.join(&node.src))
+                .absolute()
+                .left(px(x))
+                .top(px(y))
+                .w(px(w))
+                .h(px(h))
+                .object_fit(ObjectFit::Cover)
+                .rounded(px(s.radius))
+                .opacity(s.opacity)
+                .into_any_element(),
             Kind::Input => {
-                let field = style(div().flex().min_h(px(20.)), &node.style).when(node.style.background.is_none(), |d| {
-                    d.bg(white()).rounded(px(8.)).px(px(10.)).py(px(8.))
-                });
+                // Its text centred, 8 in, as the browser pads an input.
+                let field = paint(at(div()), s).flex().items_center().px(px(8.)).text_size(px(s.text.size));
+                let field = field.when(s.background.is_none(), |d| d.bg(white()).rounded(px(8.)));
                 match self.inputs.get(&id) {
                     Some(input) => field.child(input.clone()).into_any_element(),
                     None => field.into_any_element(),
                 }
             }
-            Kind::Checkbox => self.checkbox(id, node, cx),
+            Kind::Checkbox => self.checkbox(id, node, at(div()), cx),
             Kind::Button => {
                 let accent = self.look.accent();
-                let button = style(div().flex().items_center().justify_center().px(px(14.)).py(px(8.)), &node.style)
-                    .when(node.style.background.is_none(), |d| d.bg(accent).text_color(white()).rounded(px(8.)))
+                let button = text_style(paint(at(div()), s).flex().items_center().justify_center(), s)
+                    .when(s.background.is_none(), |d| d.bg(accent).text_color(white()).rounded(px(8.)))
                     .child(node.text.clone());
                 self.clickable(id, button, node, cx)
             }
             Kind::Stack | Kind::Tabs => div().into_any_element(),
             Kind::View | Kind::Screen => {
-                let s = &node.style;
-                let mut el = style(div().flex(), s);
-                el = if s.row { el.flex_row() } else { el.flex_col() };
-                el = el.gap(px(s.gap));
-                el = match s.align {
-                    Some(Align::Start) => el.items_start(),
-                    Some(Align::Center) => el.items_center(),
-                    Some(Align::End) => el.items_end(),
-                    _ => el,
-                };
-                let el = el.children(node.children.iter().map(|&child| self.node(child, cx)));
+                let el = paint(at(div()), s).children(node.children.iter().map(|&child| self.node(child, cx)));
                 self.clickable(id, el, node, cx)
             }
         }
+    }
+
+    /// A text's lines, each at the contract's baseline: broken as measured, drawn one by one.
+    fn lines(&self, node: &Node, width: f32, offset: (f32, f32)) -> Vec<AnyElement> {
+        let s = &node.style;
+        let inner = width - 2. * s.padding;
+        let shared = self.shared.borrow();
+        let lines = shared.measurer.lines(&node.text, &s.text, Some(inner + 0.01));
+        let line = line_height(s.text.size, self.scale);
+        // The browser's baseline, landed on a device pixel. GPUI centres glyphs in the line height it
+        // is given and rounds positions to device pixels, so each line gets a top on a device pixel
+        // and the line height that puts its baseline `above` lower.
+        let ((ascent, descent), (painted_ascent, painted_descent)) = shared.measurer.metrics(&s.text);
+        let first = baseline(ascent, descent, line, self.scale);
+        let scale = self.scale;
+        let above = (painted_ascent * scale).ceil() / scale;
+        let painted_line = 2. * above - painted_ascent + painted_descent;
+        lines
+            .into_iter()
+            .enumerate()
+            .map(|(i, text)| {
+                let el = div()
+                    .absolute()
+                    .left(px(s.padding + offset.0))
+                    .top(px(((s.padding + offset.1 + i as f32 * line + first) * scale).round() / scale - above))
+                    .w(px(inner))
+                    .h(px(painted_line))
+                    .line_height(px(painted_line))
+                    .whitespace_nowrap();
+                let el = match s.text_align.as_str() {
+                    "center" => el.text_center(),
+                    "right" => el.text_right(),
+                    _ => el,
+                };
+                text_style(el, s).child(text.text).into_any_element()
+            })
+            .collect()
     }
 
     /// Any view can be tapped; it dims while pressed.
@@ -405,11 +560,12 @@ impl Host {
             .into_any_element()
     }
 
-    fn checkbox(&self, id: u32, node: &Node, cx: &mut Context<Self>) -> AnyElement {
+    /// The look's checkbox, centred in its 24 × 24 box.
+    fn checkbox(&self, id: u32, node: &Node, frame: Div, cx: &mut Context<Self>) -> AnyElement {
         let on = node.checked;
         let accent = self.look.accent();
         let round = if self.look == Look::Ios { 11. } else { 4. };
-        div()
+        let check = div()
             .id(ElementId::Integer(id as u64))
             .size(px(22.))
             .flex_shrink_0()
@@ -428,8 +584,8 @@ impl Host {
                     node.checked = on;
                 }
                 this.emit(id, "change", Value::Bool(on), cx);
-            }))
-            .into_any_element()
+            }));
+        frame.flex().items_center().justify_center().child(check).into_any_element()
     }
 
     fn page(&self) -> Rgba {
@@ -444,14 +600,16 @@ impl Host {
         // iOS: the root screen's large title scrolls with its content.
         if look == Look::Ios && root {
             column = column.child(
-                div().px(px(20.)).pt(px(4.)).pb(px(4.)).text_size(px(34.)).font_weight(FontWeight::BOLD).child(node.title.clone()),
+                div().px(px(20.)).pt(px(4.)).pb(px(4.)).text_size(px(34.)).line_height(px(41.)).font_weight(FontWeight::BOLD).child(node.title.clone()),
             );
         }
         let bottom = match look {
             Look::Ios => 110.,
             _ => 16.,
         };
-        column = column.children(node.children.iter().map(|&child| self.node(child, cx))).child(div().h(px(bottom)));
+        let height = node.frame.map_or(0., |f| f[3]);
+        let content = div().relative().w_full().h(px(height)).children(node.children.iter().map(|&child| self.node(child, cx)));
+        column = column.child(content).child(div().h(px(bottom)));
         div()
             .id(ElementId::NamedInteger("screen".into(), id as u64))
             .size_full()
@@ -464,6 +622,7 @@ impl Host {
 
     fn stack(&self, stack: u32, width: f32, cx: &mut Context<Self>) -> AnyElement {
         let Some(node) = self.tree.get(stack) else { return div().into_any_element() };
+        self.widths.borrow_mut().insert(stack, width);
         let look = self.look;
         let depth = node.children.len();
         let root = node.children.first().copied();
@@ -805,22 +964,40 @@ impl Host {
 impl Render for Host {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.tick(window);
-        let width = f32::from(window.viewport_size().width);
+        let size = window.viewport_size();
+        let width = f32::from(size.width);
+        if window.scale_factor() != self.scale {
+            self.scale = window.scale_factor();
+            self.shared.borrow_mut().measurer.scale = self.scale;
+        }
+        self.viewport = (width, f32::from(size.height));
         let content = match self.tree.root_nav.and_then(|id| self.tree.get(id).map(|n| (id, n.kind))) {
             Some((id, Kind::Tabs)) => self.tabs(id, width, cx),
             Some((id, _)) => self.stack(id, width, cx),
-            None => div()
-                .id("body")
-                .size_full()
-                .overflow_y_scroll()
-                .child(self.node(1, cx))
-                .into_any_element(),
+            None => {
+                let body = self.tree.get(1);
+                let height = body.and_then(|n| n.frame).map_or(0., |f| f[3]);
+                let children: Vec<u32> = body.map(|n| n.children.clone()).unwrap_or_default();
+                div()
+                    .id("body")
+                    .size_full()
+                    .overflow_y_scroll()
+                    .pt(px(self.insets.0))
+                    .child(div().relative().w_full().h(px(height)).children(children.into_iter().map(|c| self.node(c, cx))))
+                    .into_any_element()
+            }
         };
+        // A layout root changed size (the window, a stack): lay out again, after this frame.
+        let sizes: Vec<(u32, String)> = self.roots().into_iter().map(|(id, w, h)| (id, format!("{w} {h} {}", self.scale))).collect();
+        if sizes.iter().any(|(id, size)| self.reported.get(id) != Some(size)) {
+            cx.defer_in(window, |this, _, cx| this.report(cx));
+        }
         div()
             .size_full()
             .bg(self.page())
             .text_color(self.look.text())
-            .text_size(px(15.))
+            .font_family("Inter")
+            .text_size(px(14.))
             .key_context("NucloHost")
             .track_focus(&self.focus)
             .on_action(cx.listener(|this, _: &Back, _, cx| this.back(cx)))
@@ -843,32 +1020,27 @@ fn layer(screen: AnyElement, layer: Layer, edge_shadow: bool) -> Div {
         .when(layer.dim > 0., |d| d.child(div().absolute().inset_0().bg(gpui::black().opacity(layer.dim))))
 }
 
-/// Applies the inline style subset to any element.
-fn style<E: Styled + ParentElement>(el: E, s: &Style) -> E {
-    let mut el = el.flex_shrink_0().p(px(s.padding)).rounded(px(s.radius)).opacity(s.opacity);
-    if s.grow > 0. {
-        el = el.flex_grow(s.grow).flex_basis(px(0.));
-    }
-    if let Some(w) = s.width {
-        el = el.w(px(w));
-    }
-    if let Some(h) = s.height {
-        el = el.h(px(h));
+/// Paint: background, corner radius (which clips the children), opacity.
+fn paint(el: Div, s: &Style) -> Div {
+    let mut el = el.rounded(px(s.radius)).opacity(s.opacity);
+    if s.radius > 0. {
+        el = el.overflow_hidden();
     }
     if let Some(bg) = s.background {
         el = el.bg(bg);
     }
+    el
+}
+
+/// Text: the bundled font (or the OS's), its size and weight, its colour.
+fn text_style(el: Div, s: &Style) -> Div {
+    let t = &s.text;
+    let mut el = el
+        .font_family(if t.system { ".SystemUIFont" } else { "Inter" })
+        .text_size(px(t.size))
+        .font_weight(if t.bold { FontWeight::BOLD } else { FontWeight::NORMAL });
     if let Some(color) = s.color {
         el = el.text_color(color);
-    }
-    if let Some(size) = s.font_size {
-        el = el.text_size(px(size));
-    }
-    if s.bold {
-        el = el.font_weight(FontWeight::BOLD);
-    }
-    if s.center {
-        el = el.text_center();
     }
     el
 }

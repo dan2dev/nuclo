@@ -19,6 +19,7 @@ const result = await Bun.build({
 if (!result.success) throw new AggregateError(result.logs, "Web build failed");
 
 await cp("hosts/web", out, { recursive: true });
+await cp("fonts", `${out}/fonts`, { recursive: true });
 // The shell is the showcase's (Pulse); other examples go by their folder name.
 if (example !== "showcase") {
   const name = example[0].toUpperCase() + example.slice(1);

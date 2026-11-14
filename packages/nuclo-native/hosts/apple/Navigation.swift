@@ -78,13 +78,16 @@ extension Host {
 
 #if os(iOS)
 
-/// One screen: a scroll view holding the screen's flex content.
+/// One screen: a scroll view holding the screen's content, which JS lays out at the screen's width.
 final class ScreenController: UIViewController {
-    let content = FlexView()
+    let id: Int
+    let content = Box()
     private let scroll = UIScrollView()
+    private var width: CGFloat = 0
     unowned let host: Host
 
-    init(host: Host) {
+    init(id: Int, host: Host) {
+        self.id = id
         self.host = host
         super.init(nibName: nil, bundle: nil)
         scroll.alwaysBounceVertical = true
@@ -98,18 +101,20 @@ final class ScreenController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        relayout()
+        let size = scroll.bounds.size
+        guard size.width > 0, size.width != width else { return }
+        width = size.width
+        host.emit(id: id, "resize", "\(size.width) \(size.height) \(deviceScale())")
     }
 
     func applyBackground() {
         scroll.backgroundColor = host.pageColor ?? .systemGroupedBackground
     }
 
-    func relayout() {
-        let height = FlexView.measure(content).height
-        content.frame = CGRect(x: 0, y: 0, width: scroll.bounds.width, height: height)
-        scroll.contentSize = content.frame.size
-        content.invalidate()
+    /// The content's laid-out size (its frame from JS).
+    func setContent(_ size: CGSize) {
+        content.frame = CGRect(origin: .zero, size: size)
+        scroll.contentSize = size
     }
 }
 
@@ -201,15 +206,24 @@ final class ScreenScroll: NSScrollView {
     }
 }
 
-/// One screen: a scroll view holding the screen's flex content.
+/// Keeps a short screen's content at the top.
+final class FlippedClip: NSClipView {
+    override var isFlipped: Bool { true }
+}
+
+/// One screen: a scroll view holding the screen's content, which JS lays out at the screen's width.
 final class ScreenController: NSViewController {
-    let content = FlexView()
+    let id: Int
+    let content = Box()
     private let scroll = ScreenScroll()
+    private var width: CGFloat = 0
     unowned let host: Host
 
-    init(host: Host) {
+    init(id: Int, host: Host) {
+        self.id = id
         self.host = host
         super.init(nibName: nil, bundle: nil)
+        scroll.contentView = FlippedClip()
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
         scroll.documentView = content
@@ -222,7 +236,10 @@ final class ScreenController: NSViewController {
 
     override func viewDidLayout() {
         super.viewDidLayout()
-        relayout()
+        let size = scroll.contentSize
+        guard size.width > 0, size.width != width else { return }
+        width = size.width
+        host.emit(id: id, "resize", "\(size.width) \(size.height) \(deviceScale())")
     }
 
     func applyBackground() {
@@ -230,11 +247,9 @@ final class ScreenController: NSViewController {
         scroll.backgroundColor = host.pageColor ?? .windowBackgroundColor
     }
 
-    func relayout() {
-        let height = FlexView.measure(content).height
-        let visible = scroll.contentSize
-        content.frame = NSRect(x: 0, y: 0, width: visible.width, height: max(height, visible.height))
-        content.invalidate()
+    /// The content's laid-out size (its frame from JS).
+    func setContent(_ size: CGSize) {
+        content.frame = NSRect(origin: .zero, size: size)
     }
 }
 
