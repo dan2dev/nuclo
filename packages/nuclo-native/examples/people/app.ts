@@ -51,6 +51,15 @@ const fetchPeople = (from: number, count: number): Person[] =>
   });
 
 const people = fetchPeople(0, PAGE);
+let following = 0;
+
+// Rows are static: a follow swaps in a new person, and the keyed list rebuilds that one row. A reactive row would
+// make every update() re-check every loaded row, which costs more with each page.
+function toggleFollow(p: Person) {
+  people[p.id] = { ...p, following: !p.following, followers: p.followers + (p.following ? -1 : 1) };
+  following += p.following ? -1 : 1;
+  update();
+}
 
 function loadMore() {
   if (people.length >= TOTAL) return;
@@ -60,7 +69,6 @@ function loadMore() {
 
 const grouped = (n: number) => String(n).replace(/\B(?=(\d{3})+$)/g, ",");
 const short = (n: number) => (n < 1000 ? String(n) : `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`);
-const followingCount = () => people.filter((p) => p.following).length;
 
 const avatar = (p: Person) =>
   div(
@@ -71,21 +79,17 @@ const avatar = (p: Person) =>
 const followButton = (p: Person) =>
   div(
     {
-      style: () => ({
+      style: {
         width: 96,
         padding: 8,
         borderRadius: 16,
         alignItems: "center",
         backgroundColor: p.following ? color.accentSoft : color.accent,
-      }),
-      onClick: () => {
-        p.following = !p.following;
-        p.followers += p.following ? 1 : -1;
-        update();
       },
+      onClick: () => toggleFollow(p),
     },
-    span(() => (p.following ? "Following" : "Follow"), {
-      style: () => ({ color: p.following ? color.accent : "#ffffff", fontSize: 13, fontWeight: "bold" }),
+    span(p.following ? "Following" : "Follow", {
+      style: { color: p.following ? color.accent : "#ffffff", fontSize: 13, fontWeight: "bold" },
     }),
   );
 
@@ -96,7 +100,7 @@ const personRow = (p: Person) =>
     div(
       { style: { flex: 1, gap: 2 } },
       span(p.name, { style: { color: color.text, fontSize: 15, fontWeight: "bold" } }),
-      muted(() => `${p.handle} · ${short(p.followers)} followers`, 12),
+      muted(`${p.handle} · ${short(p.followers)} followers`, 12),
       muted(p.bio),
     ),
     followButton(p),
@@ -105,7 +109,7 @@ const personRow = (p: Person) =>
 const People = () =>
   div(
     { style: { padding: 16, gap: 8 } },
-    muted(() => `Showing ${grouped(people.length)} of ${grouped(TOTAL)} · following ${followingCount()}`),
+    muted(() => `Showing ${grouped(people.length)} of ${grouped(TOTAL)} · following ${following}`),
     list(() => people, personRow),
     div(
       { style: { padding: 16, alignItems: "center" } },

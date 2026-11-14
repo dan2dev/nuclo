@@ -29,6 +29,20 @@ export interface LayoutNode {
   kind: string;
   style: Record<string, string>;
   children: LayoutNode[];
+  /**
+   * Written by layout(): the node's last placement [w, h, height, scale] and max-content width. A caller that
+   * reuses the node object across layouts promises its subtree did not change (dom.ts rebuilds changed nodes);
+   * a container placed again as before then keeps its children where they are, and they get no frames.
+   */
+  placed?: [w: number, h: number | undefined, height: number, scale: number];
+  max?: number;
+  parsed?: Style;
+  /** The node this one replaces (dom.ts): a column of content height keeps the frames of children it shares with it. */
+  prev?: LayoutNode;
+  /** A column of content height: its children's y, height and width as of its last placement. */
+  ys?: number[];
+  hs?: number[];
+  ws?: number[];
 }
 
 /** Content size of a text, button or image leaf; `maxWidth` Infinity means unconstrained. Images: natural size. */
@@ -92,12 +106,7 @@ const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
 /** Lays `root` out at `width` (and `height` when definite); `scale`: the host's device pixels per unit. */
 export function layout(root: LayoutNode, width: number, height: number | undefined, measure: Measure, scale = 0) {
   const frames = new Map<number, Frame>();
-  const styles = new Map<LayoutNode, Style>();
-  const st = (node: LayoutNode) => {
-    let s = styles.get(node);
-    if (!s) styles.set(node, (s = styleOf(node)));
-    return s;
-  };
+  const st = (node: LayoutNode) => (node.parsed ??= styleOf(node));
 
   /** A leaf's border-box size with its width at most `maxWidth` (fit-content), or exactly `width`. */
   function leaf(node: LayoutNode, maxWidth: number, width?: number): { w: number; h: number } {
@@ -126,6 +135,10 @@ export function layout(root: LayoutNode, width: number, height: number | undefin
 
   /** Border-box max-content width: the width a node takes when nothing constrains it. */
   function maxContent(node: LayoutNode): number {
+    return (node.max ??= measureContent(node));
+  }
+
+  function measureContent(node: LayoutNode): number {
     const s = st(node);
     if (s.width != null) return s.width;
     if (!isContainer(node)) return leaf(node, Infinity).w;
@@ -134,14 +147,23 @@ export function layout(root: LayoutNode, width: number, height: number | undefin
     return content + 2 * s.padX;
   }
 
+  /** Containers whose children got frames in this layout: placed again, they must redo them. */
+  const redone = new Set<LayoutNode>();
+
   /** Lays a node out at border-box width `w` (and height `h` when definite); returns its height. */
   function place(node: LayoutNode, w: number, h?: number): number {
     const s = st(node);
     if (!isContainer(node)) return h ?? leaf(node, w, w).h;
-    return s.row ? row(node, s, w, h ?? s.height) : column(node, s, w, h ?? s.height);
+    const last = node.placed;
+    if (last && last[0] === w && last[1] === h && last[3] === scale && !redone.has(node)) return last[2];
+    redone.add(node);
+    const height = s.row ? row(node, s, w, h ?? s.height) : column(node, s, w, h ?? s.height);
+    node.placed = [w, h, height, scale];
+    return height;
   }
 
   function column(node: LayoutNode, s: Style, w: number, h: number | undefined): number {
+    if (h == null) return contentColumn(node, s, w);
     const kids = node.children;
     const inner = w - 2 * s.padX;
     // Cross size: a set width, stretched, or fit-content.
@@ -169,6 +191,42 @@ export function layout(root: LayoutNode, width: number, height: number | undefin
     return h ?? sum(heights) + gaps + 2 * s.padY;
   }
 
+  /**
+   * A column of content height: each child takes its own height, so a child that is the same node at the same y as
+   * in the node this one replaces keeps its frame untouched. A long list that grew at the end, or had one row
+   * replaced, costs one quick pass plus the rows that changed.
+   */
+  function contentColumn(node: LayoutNode, s: Style, w: number): number {
+    const kids = node.children;
+    const inner = w - 2 * s.padX;
+    const p = node.prev;
+    const same = p?.ys && p.placed?.[0] === w && p.placed[1] === undefined && p.placed[3] === scale && sameStyle(st(p), s);
+    const ys: number[] = (node.ys = []);
+    const hs: number[] = (node.hs = []);
+    const ws: number[] = (node.ws = []);
+    let y = s.padY;
+    for (let i = 0; i < kids.length; i++) {
+      const kid = kids[i];
+      if (same && p.children[i] === kid && p.ys![i] === y) {
+        ys[i] = y;
+        ws[i] = p.ws![i];
+        y += (hs[i] = p.hs![i]) + s.gap;
+        continue;
+      }
+      const k = st(kid);
+      const width = k.width ?? (s.align === "stretch" ? inner : Math.min(maxContent(kid), inner));
+      const height = k.height ?? place(kid, width);
+      // Containers of a set height lay their children out at it.
+      if (isContainer(kid) && k.height != null) place(kid, width, height);
+      frames.set(kid.id, [s.padX + offset(s.align, inner - width), y, width, height]);
+      ys[i] = y;
+      ws[i] = width;
+      y += (hs[i] = height) + s.gap;
+    }
+    node.prev = undefined;
+    return sum(hs) + s.gap * Math.max(0, kids.length - 1) + 2 * s.padY;
+  }
+
   function row(node: LayoutNode, s: Style, w: number, h: number | undefined): number {
     const kids = node.children;
     const inner = w - 2 * s.padX;
@@ -194,6 +252,9 @@ export function layout(root: LayoutNode, width: number, height: number | undefin
   const rootHeight = place(root, width, height);
   return { frames, height: rootHeight };
 }
+
+const sameStyle = (a: Style, b: Style) =>
+  a.row === b.row && a.gap === b.gap && a.align === b.align && a.padX === b.padX && a.padY === b.padY && a.width === b.width;
 
 /** Free space shared by `flex` (CSS: all of it once the weights sum to 1 or more). */
 function grow(sizes: number[], weights: number[], free: number) {

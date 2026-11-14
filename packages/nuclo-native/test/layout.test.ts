@@ -128,3 +128,21 @@ test("containers of a set height still lay their children out", () => {
   close(frames.get(inColumn.id), [40, 0, 20, 0]);
   close(frames.get(inRow.id), [0, 0, 30, 10]);
 });
+
+test("a column laid out again reuses unchanged children and moves the ones below a change", () => {
+  const [a, b, c] = [box({ height: 10 }), box({ height: 20 }), box({ height: 30 })];
+  const first = box({ gap: 4 }, a, b, c);
+  layout(first, 100, undefined, measure);
+  // dom.ts rebuilds a changed node as a new object that points at the one it replaces.
+  const again = (prev: LayoutNode, ...children: LayoutNode[]): LayoutNode => ({ ...node("view", { gap: 4 }, ...children), id: first.id, prev });
+  // Nothing moved: the same children at the same places get no frames.
+  const same = again(first, a, b, c);
+  expect(layout(same, 100, undefined, measure).frames.size).toBe(0);
+  // `a` grew: `b` and `c` are the same nodes, but lower.
+  const grown = { ...node("view", { height: 15 }), id: a.id };
+  const { frames, height } = layout(again(same, grown, b, c), 100, undefined, measure);
+  expect([...frames.keys()]).toEqual([a.id, b.id, c.id]);
+  close(frames.get(b.id), [0, 19, 100, 20]);
+  close(frames.get(c.id), [0, 43, 100, 30]);
+  expect(height).toBeCloseTo(73);
+});

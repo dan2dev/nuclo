@@ -37,7 +37,7 @@ Each folder in `examples/` is an app; `examples/ui.ts` is the small design syste
   - **Account** (`/account`): text, email and password fields, a segmented choice, checkboxes, validation messages and a success state.
 - **`todo`**: a todo list. Add a task (Enter or Add), check it off, filter All / Active / Done, clear the finished ones. A task opens on its own screen, pushed on the native stack, to edit its title and notes or delete it.
 - **`battery`**: a battery monitor. A gauge drawn with views, the level, the status and the time to full or empty, live from the platform (see [Device data](#device-data)); a chart of the readings and a pushed screen listing them. A device without a battery says so.
-- **`people`**: a social network's directory with infinite scroll. Twenty people at a time, the next twenty as you scroll near the end (`onEndReached`, see [Navigation](#navigation)), a Follow toggle on each, and a footer once all 200 are in.
+- **`people`**: a social network's directory with infinite scroll. Twenty people at a time, the next twenty as you scroll near the end (`onEndReached`, see [Navigation](#navigation)), a Follow toggle on each, and a footer once all 50,000 are in. Only rows near the screen stay on the host ([Long lists](#long-lists)); `bun test/people.bench.ts` times page loads, taps and scrolling as the list grows.
 - **`basics`**: the smallest one, a counter and an inline todo list without navigation.
 
 ## Navigation
@@ -107,6 +107,22 @@ The host side is two calls next to the ops: the host exposes `__nuclo_device(nam
 | Windows | `GetSystemPowerStatus`, polled every 10 s | Compiles |
 | Web | the Battery Status API (Chromium); elsewhere null | The browser pane: this Mac's battery |
 | GPUI | `starship-battery` on desktop, `gpui-mobile` on iOS and Android; polled every 5 s | This Mac (unit test), the iOS simulator ("No battery") |
+
+## Long lists
+
+A screen keeps on the host only what is near its visible part, so a list can grow to tens of thousands of rows. Hosts report each screen's scroll position (`scroll`); in a column of content height several screens tall (a list), JS parks the rows more than a screen away from what shows: their views leave the host (`remove`), and layout keeps each as a box of its last size, so the scroll height and every position stay right. Rows come back (`insert`) within a screen of the visible part, laid out on their own at the width they had, so the list around them does not move. Hosts need nothing for this beyond the ops they already handle. The web build keeps every row in the DOM.
+
+Measured with `people` at 50,000 rows (`bun test/people.bench.ts`, and the simulator and emulator):
+
+| | Before | Now |
+| --- | --- | --- |
+| Views on the host | every row: 8 views each | ~40 rows, however many are loaded |
+| iOS (UIKit), memory | 2.2 GB and a blank screen at 10,000 rows | 509 MB at 50,000, of which 4 MB is Core Animation |
+| Android, memory | out of memory before 10,000 (192 MB Java heap) | runs at 50,000: Java heap under 100 MB, but QuickJS holds 1.96 GB (545 MB at 20,000), and a tap takes 193 ms |
+| JS, page load at 50,000 (no JIT) | 259 ms (JIT) | 7.3 ms (16 ms) |
+| JS, scroll step at 50,000 (no JIT) | — | 0.1 ms (0.2 ms) |
+
+Limits: only lists reached through columns from the screen are culled, not a list inside a row. A single render of thousands of rows creates them all once before parking them. JS still holds every row's nodes: about 7 KB a row in JavaScriptCore and 27 to 39 KB in QuickJS, and its O(rows) passes (the list diff, a list's child arrays) are slow in QuickJS, so on Android the practical ceiling is about 20,000 rows.
 
 ## How it works
 
@@ -234,6 +250,7 @@ bun run android-gpui   # a device: emulators cannot run GPUI's renderer
 bun run linux-gpui     # on Linux
 bun run windows-gpui   # on Windows
 bun test               # op-level tests against a mock host
+bun test/people.bench.ts  # page-load, tap and scroll timings and host views up to 50,000 rows
 ```
 
 Requirements: Xcode for the Apple targets; JDK 17, the Android SDK and NDK 27.1.12297006 for Android (`android` downloads the QuickJS-NG source on its first build); the .NET SDK for Windows; Rust for the GPUI targets, with the `aarch64-apple-ios-sim` / `aarch64-linux-android` targets for mobile. GTK on macOS runs from Homebrew (`gjs gtk4 libadwaita gobject-introspection adwaita-icon-theme`). Android libraries are linked for 16 KB pages.
@@ -270,3 +287,4 @@ Commands behind them, if you want to run one by hand:
 - Scrolling on Apple outside the router: a plain app without `router.outlet` does not scroll.
 - GPUI: Android's predictive-back progress is not wired (the back key pops with Material motion); the iOS look's bars are drawn, not Liquid Glass.
 - Hot reload and packaging for app stores.
+- Long lists keep every row's nodes in JS ([Long lists](#long-lists)): QuickJS on Android holds 27 to 39 KB a row. Not keeping JS nodes for far rows needs a virtual `list()` in nuclo itself.
