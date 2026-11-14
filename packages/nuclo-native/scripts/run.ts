@@ -10,13 +10,30 @@ import { join } from "node:path";
 const [target = "", example = "showcase"] = process.argv.slice(2);
 const os = platform();
 const home = homedir();
-const sdk = process.env.ANDROID_HOME ?? join(home, "Library/Android/sdk");
-// NDK 27: newer NDKs break bindgen and the QuickJS build.
-const ndk = process.env.ANDROID_NDK_HOME ?? join(sdk, "ndk/27.1.12297006");
+const sdk = process.env.ANDROID_HOME ?? join(home, os === "darwin" ? "Library/Android/sdk" : "Android/Sdk");
+// The NDK both Android projects pin (ndkVersion in their app/build.gradle.kts).
+const ndk = process.env.ANDROID_NDK_HOME ?? join(sdk, "ndk/30.0.16248370");
 const libclang = "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib";
 const gpui = "hosts/gpui";
 
-const plist = (id: string, exe: string) => `<?xml version="1.0" encoding="UTF-8"?>
+/** The UIKit host's one scene (main.swift: NucloSceneDelegate); gpui-mobile opens its own window, so ios-gpui has none. */
+const sceneManifest = `
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key><false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key><string>Default Configuration</string>
+					<key>UISceneDelegateClassName</key><string>NucloSceneDelegate</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>`;
+
+const plist = (id: string, exe: string, scenes: boolean) => `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 	<key>CFBundleIdentifier</key><string>${id}</string>
@@ -25,7 +42,7 @@ const plist = (id: string, exe: string) => `<?xml version="1.0" encoding="UTF-8"
 	<key>CFBundlePackageType</key><string>APPL</string>
 	<key>CFBundleVersion</key><string>1</string>
 	<key>CFBundleShortVersionString</key><string>0.0.0</string>
-	<key>UILaunchScreen</key><dict/>
+	<key>UILaunchScreen</key><dict/>${scenes ? sceneManifest : ""}
 </dict></plist>
 `;
 
@@ -33,33 +50,20 @@ function need(os_: string) {
   if (os !== os_) throw new Error(`${target} builds on ${os_}; this machine is ${os}.`);
 }
 
-function gradle() {
-  if (Bun.which("gradle")) return "gradle";
-  const dists = join(home, ".gradle/wrapper/dists");
-  const found = existsSync(dists)
-    ? readdirSync(dists).filter((d) => d.startsWith("gradle-")).sort().reverse().flatMap((d) => {
-        const dir = join(dists, d);
-        return readdirSync(dir).map((hash) => join(dir, hash, d.replace(/-(bin|all)$/, ""), "bin/gradle"));
-      })
-    : [];
-  const gradle = found.find(existsSync);
-  if (!gradle) throw new Error("Gradle not found: install it or open the project in Android Studio once.");
-  return gradle;
-}
-
 /** Wraps a built app in an .app bundle with the JS bundle, signs it, and runs it on the booted simulator. */
-async function simulator(app: string, id: string, exe: string) {
+async function simulator(app: string, id: string, exe: string, scenes = false) {
   await $`rm -rf ${app}/assets ${app}/fonts`;
   await $`cp -R dist/app.js dist/fonts ${app}/`;
   if (existsSync("dist/assets")) await $`cp -R dist/assets ${app}/`;
-  await Bun.write(`${app}/Info.plist`, plist(id, exe));
+  await Bun.write(`${app}/Info.plist`, plist(id, exe, scenes));
   await $`codesign -s - --force ${app}`.quiet();
   await $`xcrun simctl install booted ${app}`;
   await $`xcrun simctl launch booted ${id}`;
 }
 
 async function android(project: string, id: string, activity: string) {
-  await $`${gradle()} assembleDebug`.cwd(project).env({ ...process.env, ANDROID_HOME: sdk });
+  // Each project's Gradle wrapper (Gradle 9.9.1, AGP 9.5): it needs a full JDK 17+ (JAVA_HOME).
+  await $`./gradlew assembleDebug`.cwd(project).env({ ...process.env, ANDROID_HOME: sdk });
   await $`adb install -r ${project}/app/build/outputs/apk/debug/app-debug.apk`;
   await $`adb shell am start -n ${id}/${activity}`;
 }
@@ -69,8 +73,8 @@ const targets: Record<string, () => Promise<unknown>> = {
     need("darwin");
     const app = "build/ios/NucloApp.app";
     await $`mkdir -p ${app}`;
-    await $`xcrun -sdk iphonesimulator swiftc -swift-version 6 -target arm64-apple-ios17.0-simulator hosts/apple/main.swift hosts/apple/Navigation.swift hosts/apple/Device.swift -o ${app}/NucloApp`;
-    await simulator(app, "dev.nuclo.native", "NucloApp");
+    await $`xcrun -sdk iphonesimulator swiftc -swift-version 6 -target arm64-apple-ios27.0-simulator hosts/apple/main.swift hosts/apple/Navigation.swift hosts/apple/Device.swift -o ${app}/NucloApp`;
+    await simulator(app, "dev.nuclo.native", "NucloApp", true);
   },
 
   async "ios-gpui"() {
@@ -90,7 +94,7 @@ const targets: Record<string, () => Promise<unknown>> = {
   async macos() {
     need("darwin");
     await $`mkdir -p build/macos`;
-    await $`swiftc -swift-version 6 hosts/apple/main.swift hosts/apple/Navigation.swift hosts/apple/Device.swift -o build/macos/nuclo-app`;
+    await $`swiftc -swift-version 6 -target arm64-apple-macos27.0 hosts/apple/main.swift hosts/apple/Navigation.swift hosts/apple/Device.swift -o build/macos/nuclo-app`;
     await $`build/macos/nuclo-app dist/app.js`;
   },
 
@@ -100,7 +104,7 @@ const targets: Record<string, () => Promise<unknown>> = {
 
   async "android-gpui"() {
     const tools = join(ndk, "toolchains/llvm/prebuilt", os === "darwin" ? "darwin-x86_64" : `${os}-x86_64`);
-    const clang = join(tools, "bin/aarch64-linux-android26-clang");
+    const clang = join(tools, "bin/aarch64-linux-android30-clang");
     const env = {
       ...process.env,
       ANDROID_NDK_HOME: ndk,
@@ -108,7 +112,8 @@ const targets: Record<string, () => Promise<unknown>> = {
       CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: clang,
       CC_aarch64_linux_android: clang,
       AR_aarch64_linux_android: join(tools, "bin/llvm-ar"),
-      BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android: `--sysroot=${join(tools, "sysroot")}`,
+      // Newer NDK headers reject an unversioned target triple.
+      BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android: `--sysroot=${join(tools, "sysroot")} --target=aarch64-linux-android30`,
       ...(os === "darwin" ? { LIBCLANG_PATH: libclang } : {}),
     };
     await $`cargo rustc --lib --target aarch64-linux-android --crate-type cdylib`.cwd(gpui).env(env);

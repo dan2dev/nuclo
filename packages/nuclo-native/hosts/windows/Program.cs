@@ -428,7 +428,7 @@ class Tabs : Grid
     }
 }
 
-static class Program
+static partial class Program
 {
     static readonly Dictionary<int, FrameworkElement> Views = new();
     static readonly Engine Js = new();
@@ -517,8 +517,9 @@ static class Program
         public int BatteryLifeTime, BatteryFullLifeTime;
     }
 
-    [DllImport("kernel32.dll")]
-    static extern bool GetSystemPowerStatus(out PowerStatus status);
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetSystemPowerStatus(out PowerStatus status);
 
     /// <summary>The battery as src/device.ts's JSON, or "" when there is none.</summary>
     static string Battery()

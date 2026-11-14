@@ -208,7 +208,7 @@ Hosts snap each box's edges to device pixels from its position on screen, as the
 | `macos` | `hosts/apple` | JavaScriptCore | AppKit | Ran scripted: sidebar, toolbar back, titles, push/pop, JS in sync. Trackpad swipe and ⌘[ not exercised |
 | `android` | `hosts/android` | QuickJS-NG (NDK) | Android Views | API 37 emulator: tabs, push, back key, edge swipe with the predictive-back card, up arrow, re-tap, ripples |
 | `linux` | `hosts/linux/host.js` | GJS | GTK 4 + libadwaita | Linux (GNOME, Wayland) and macOS (Homebrew GTK): tabs, push, native back with JS sync. Swipe and Alt+← not driven |
-| `windows` | `hosts/windows` | Jint | WPF (Fluent) | Compiles with the .NET 11 SDK, 0 warnings. Never launched |
+| `windows` | `hosts/windows` | Jint | WPF (Fluent) | Compiles with the .NET 11 SDK, 0 warnings (also with `-warnaserror`). Never launched |
 | `web` | `hosts/web` + `src/web.ts` | the browser's | the DOM | Browser: push, pop and tab transitions, back button, URL |
 | `ios-gpui` | `hosts/gpui` | QuickJS (rquickjs) | GPUI via gpui-mobile (Metal) | Simulator: tabs, push, interactive edge swipe, back button, JS in sync. The other four looks previewed with `NUCLO_LOOK` |
 | `macos-gpui` | `hosts/gpui` | QuickJS | GPUI (Metal) | Runs, no JS errors. Not screenshotted (no screen-recording permission); same renderer as `ios-gpui` |
@@ -220,7 +220,7 @@ Hosts snap each box's edges to device pixels from its position on screen, as the
 
 `hosts/gpui` is one Rust crate for all five GPUI targets. QuickJS runs the bundle; the crate keeps the op tree and draws it with GPUI each frame, every node at the frame JS laid it out at. GPUI draws its own pixels, so the router's navigation is drawn the platform's way (`src/look.rs`): the iOS floating tab bar, large titles, parallax push and edge swipe; Material 3 bars and shared-axis motion; the macOS sidebar and toolbar; the Fluent nav pane and drill-in; the Adwaita header and view switcher. `NUCLO_LOOK=ios|android|macos|windows|linux` picks a look on any machine.
 
-Desktop builds use `gpui-pre-platform`; iOS and Android use the community [`gpui-mobile`](https://github.com/itsbalamurali/gpui-mobile) platform, pinned to a commit. Both sit on `gpui-pre =0.3.6`. The text field is adapted from GPUI's input example.
+Desktop builds use `gpui-pre-platform`; iOS and Android use the community [`gpui-mobile`](https://github.com/itsbalamurali/gpui-mobile) platform, pinned to a commit. Both sit on `gpui-pre =0.3.6`: gpui-mobile's latest commit still requires it, so GPUI stays there (0.3.12 is out) until gpui-mobile moves. The text field is adapted from GPUI's input example.
 
 ## Web
 
@@ -260,18 +260,18 @@ bun run typecheck      # strict TypeScript over src, examples, tests and scripts
 bun test/people.bench.ts  # page-load, tap and scroll timings and host views up to 50,000 rows
 ```
 
-Requirements: Xcode for the Apple targets; JDK 17, the Android SDK and NDK 27.1.12297006 for Android (`android` downloads the QuickJS-NG source on its first build); the .NET SDK for Windows; Rust for the GPUI targets, with the `aarch64-apple-ios-sim` / `aarch64-linux-android` targets for mobile. GTK on macOS runs from Homebrew (`gjs gtk4 libadwaita gobject-introspection adwaita-icon-theme`). Android libraries are linked for 16 KB pages.
+Requirements, all current releases and no package managers beyond each platform's own: Xcode 27 for the Apple targets (iOS 27 and macOS 27 deployment targets; the UIKit app uses the scene life cycle); a full JDK 17+ as `JAVA_HOME`, the Android SDK with API 37 and NDK 30.0.16248370 for Android (each project has a Gradle 9.9.1 wrapper and AGP 9.5.1, minSdk 30; `android` downloads the QuickJS-NG source on its first build); the .NET 11 SDK for Windows (Jint 4.18.0); Rust for the GPUI targets, with the `aarch64-apple-ios-sim` / `aarch64-linux-android` targets for mobile. GTK on macOS runs from Homebrew (`gjs gtk4 libadwaita gobject-introspection adwaita-icon-theme`). Android libraries are linked for 16 KB pages.
 
 Commands behind them, if you want to run one by hand:
 
-- **macOS:** `swiftc -swift-version 6 hosts/apple/*.swift -o build/macos/nuclo-app && build/macos/nuclo-app dist/app.js` (any bundle path works, e.g. one built from another example)
-- **iOS simulator:** no Xcode project. `xcrun -sdk iphonesimulator swiftc -swift-version 6 -target arm64-apple-ios17.0-simulator hosts/apple/*.swift`, then an `.app` folder with the binary, `app.js`, `assets/` and an `Info.plist` (`UILaunchScreen` included, or the app runs letterboxed), ad-hoc signed and installed with `xcrun simctl install booted`. `scripts/run.ts` has the exact steps.
+- **macOS:** `swiftc -swift-version 6 -target arm64-apple-macos27.0 hosts/apple/*.swift -o build/macos/nuclo-app && build/macos/nuclo-app dist/app.js` (any bundle path works, e.g. one built from another example)
+- **iOS simulator:** no Xcode project. `xcrun -sdk iphonesimulator swiftc -swift-version 6 -target arm64-apple-ios27.0-simulator hosts/apple/*.swift`, then an `.app` folder with the binary, `app.js`, `assets/` and an `Info.plist` (`UILaunchScreen` included, or the app runs letterboxed, and the scene manifest naming `NucloSceneDelegate`), ad-hoc signed and installed with `xcrun simctl install booted`. `scripts/run.ts` has the exact steps.
 - **iOS device:** add `hosts/apple/*.swift` and `dist/app.js` to an iOS app target, so Xcode handles signing and provisioning.
-- **Android:** open `hosts/android` in Android Studio, or `gradle assembleDebug` there. `dist/` ships as the assets.
+- **Android:** open `hosts/android` in Android Studio, or `./gradlew assembleDebug` there. `dist/` ships as the assets.
 - **Windows:** `dotnet run` in `hosts/windows`.
 - **GPUI, desktop:** `cargo run --manifest-path hosts/gpui/Cargo.toml -- dist/app.js`
 - **GPUI, iOS:** `cargo rustc --lib --target aarch64-apple-ios-sim --crate-type staticlib` in `hosts/gpui` (with `LIBCLANG_PATH` at Xcode's toolchain, since rquickjs generates its mobile bindings, and `IPHONEOS_DEPLOYMENT_TARGET=17.0` for the C parts), then link `hosts/gpui/ios/main.m` against `libnuclo_gpui.a`.
-- **GPUI, Android:** the same with `--target aarch64-linux-android --crate-type cdylib` and the NDK's clang as linker, the stripped `.so` in `hosts/gpui/android/app/build/jniLibs/arm64-v8a`, then `gradle assembleDebug` in `hosts/gpui/android`.
+- **GPUI, Android:** the same with `--target aarch64-linux-android --crate-type cdylib` and the NDK's clang as linker, the stripped `.so` in `hosts/gpui/android/app/build/jniLibs/arm64-v8a`, then `./gradlew assembleDebug` in `hosts/gpui/android`. Bindgen needs `--target=aarch64-linux-android30` in `BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android` with NDK 30.
 
 ## What the POC supports
 

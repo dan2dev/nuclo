@@ -5,17 +5,28 @@ plugins {
 
 android {
     namespace = "dev.nuclo.gpui"
-    compileSdk = 36
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
     defaultConfig {
         applicationId = "dev.nuclo.gpui"
-        minSdk = 26 // Vulkan
-        targetSdk = 34
+        minSdk {
+            version = release(30)
+        }
+        targetSdk {
+            version = release(37)
+        }
         versionCode = 1
         versionName = "0.0.0"
         ndk { abiFilters += listOf("arm64-v8a") }
     }
 
-    sourceSets["main"].assets.srcDir("../../../../dist")
-    sourceSets["main"].jniLibs.srcDir("build/jniLibs")
+    // The NDK cargo links libnuclo_gpui.so with (scripts/run.ts); AGP strips the library with it.
+    ndkVersion = "30.0.16248370"
+
+    sourceSets["main"].assets.directories += "../../../../dist"
+    sourceSets["main"].jniLibs.directories += "build/jniLibs"
 }

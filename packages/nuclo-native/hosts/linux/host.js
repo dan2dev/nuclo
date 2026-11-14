@@ -389,18 +389,24 @@ function forget(widget) {
     forget(c);
     if (widget instanceof View) c.unparent();
   }
+  if (widget._provider) Gtk.StyleContext.remove_provider_for_display(widget.get_display(), widget._provider);
   widgets.delete(widget._id);
 }
 
-/** A control's own CSS (buttons and inputs: GTK draws them). */
+/**
+ * A control's own CSS (buttons and inputs: GTK draws them): a display-wide provider whose rule
+ * matches only this widget, by a class of its own (GTK 4.10 deprecated per-widget style contexts).
+ */
 function css(widget, name, value) {
   const rules = (widget._css ??= {});
   rules[name] = value;
+  const own = `nuclo-${widget._id}`;
   if (!widget._provider) {
     widget._provider = new Gtk.CssProvider();
-    widget.get_style_context().add_provider(widget._provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1);
+    widget.add_css_class(own);
+    Gtk.StyleContext.add_provider_for_display(widget.get_display(), widget._provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1);
   }
-  widget._provider.load_from_string(`* {${Object.entries(rules).map(([k, v]) => `${k}:${v};`).join("")}}`);
+  widget._provider.load_from_string(`.${own} {${Object.entries(rules).map(([k, v]) => `${k}:${v};`).join("")}}`);
 }
 
 const apply = {

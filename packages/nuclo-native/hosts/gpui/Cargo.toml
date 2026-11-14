@@ -16,7 +16,8 @@ name = "nuclo-gpui"
 path = "src/main.rs"
 
 [dependencies]
-# One GPUI for every target: gpui-mobile is pinned to gpui-pre 0.3.6.
+# One GPUI for every target, held at 0.3.6: gpui-mobile's latest commit (2026-10-23) requires
+# gpui-pre =0.3.6, and Cargo can't build two 0.3.x versions of one crate. Raise both together.
 gpui = { package = "gpui-pre", version = "=0.3.6", default-features = false }
 rquickjs = "0.14"
 serde_json = "1"

@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- enableOnBackInvokedCallback false: a NativeActivity has no OnBackInvokedCallback, and from targetSdk 36 back
+         would otherwise no longer reach the native code as KEYCODE_BACK (gpui-mobile's escape, host.rs). -->
     <application
         android:hasCode="false"
+        android:enableOnBackInvokedCallback="false"
         android:label="nuclo gpui"
         android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
         <activity

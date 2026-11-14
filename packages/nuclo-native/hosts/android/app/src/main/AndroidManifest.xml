@@ -3,7 +3,7 @@
     <application
         android:label="nuclo-native"
         android:enableOnBackInvokedCallback="true"
-        android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
+        android:theme="@style/Nuclo">
         <activity
             android:name=".MainActivity"
             android:exported="true"

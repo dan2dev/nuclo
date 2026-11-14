@@ -2,7 +2,8 @@
 // Navigation (tabs, stacks, screens) lives in Navigation.swift, device data (battery) in Device.swift.
 //
 // macOS: swiftc -swift-version 6 hosts/apple/*.swift -o dist/nuclo-app && dist/nuclo-app dist/app.js
-// iOS:   add hosts/apple/*.swift and dist/app.js to an iOS app target (no storyboard, no scene manifest).
+// iOS:   add hosts/apple/*.swift and dist/app.js to an iOS app target (no storyboard; the scene
+//        configuration is made in code, AppDelegate below).
 import CoreText
 import JavaScriptCore
 
@@ -292,6 +293,19 @@ final class TextView: View {
 }
 
 #if os(iOS)
+/// A plain button. Its configuration owns the title's style: `titleText` in `titleFont`
+/// (UIButton's own `font` is long deprecated), inset by the `padding` style.
+final class Button: UIButton {
+    var titleText = "" { didSet { restyle() } }
+    var titleFont = textFont() { didSet { restyle() } }
+
+    private func restyle() {
+        var title = AttributedString(titleText)
+        title.font = titleFont
+        configuration?.attributedTitle = title
+    }
+}
+
 /// The iOS checkbox: a circle that fills with a check, as in Reminders. A 24-point box, a 44-point touch area.
 final class CheckBox: UIButton {
     var isOn = false {
@@ -381,9 +395,8 @@ final class Host: NSObject {
             let font = button.font ?? textFont()
             return Typeset(button.title, font, maxWidth: maxWidth).size(font, scale: deviceScale())
         #else
-        case let button as UIButton:
-            let font = button.titleLabel?.font ?? textFont()
-            return Typeset(button.title(for: .normal) ?? "", font, maxWidth: maxWidth).size(font, scale: deviceScale())
+        case let button as Button:
+            return Typeset(button.titleText, button.titleFont, maxWidth: maxWidth).size(button.titleFont, scale: deviceScale())
         #endif
         default:
             return .zero
@@ -457,9 +470,11 @@ final class Host: NSObject {
             let button = NSButton(title: "", target: self, action: #selector(clicked(_:)))
             button.bezelStyle = .flexiblePush
             #else
-            let button = UIButton(type: .system)
+            // No insets of its own, as UIKit's system button had: the `padding` style sets them.
+            var configuration = UIButton.Configuration.plain()
+            configuration.contentInsets = .zero
+            let button = Button(configuration: configuration)
             button.addTarget(self, action: #selector(clicked(_:)), for: .touchUpInside)
-            button.titleLabel?.font = textFont()
             #endif
             #if os(macOS)
             button.font = textFont()
@@ -623,7 +638,7 @@ final class Host: NSObject {
             #if os(macOS)
             if let button = view as? NSButton { button.title = text }
             #else
-            if let button = view as? UIButton { button.setTitle(text, for: .normal) }
+            (view as? Button)?.titleText = text
             #endif
             (view as? TextView)?.text = text
         case "value":
@@ -671,7 +686,9 @@ final class Host: NSObject {
             (view as? TextView)?.padding = insets
             (view as? Field)?.insets = insets
             #if os(iOS)
-            (view as? UIButton)?.contentEdgeInsets = UIEdgeInsets(top: insets.top, left: insets.left, bottom: insets.bottom, right: insets.right)
+            (view as? Button)?.configuration?.contentInsets = NSDirectionalEdgeInsets(
+                top: insets.top, leading: insets.left, bottom: insets.bottom, trailing: insets.right
+            )
             #endif
         case "opacity":
             let alpha = value.isEmpty ? 1 : px(value)
@@ -711,7 +728,7 @@ final class Host: NSObject {
             (view as? NSTextField)?.textColor = paint ?? .controlTextColor
             #else
             (view as? UITextField)?.textColor = paint
-            (view as? UIButton)?.setTitleColor(paint, for: .normal)
+            (view as? Button)?.configuration?.baseForegroundColor = paint
             #endif
         case "fontSize", "fontWeight", "fontFamily":
             var spec = fonts[id] ?? (14, false, false)
@@ -727,7 +744,7 @@ final class Host: NSObject {
             (view as? NSControl)?.font = resolved
             #else
             (view as? UITextField)?.font = resolved
-            (view as? UIButton)?.titleLabel?.font = resolved
+            (view as? Button)?.titleFont = resolved
             #endif
         default:
             break
@@ -804,20 +821,32 @@ host.window = window
 host.start(bundle: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "dist/app.js")
 window.center()
 window.makeKeyAndOrderFront(nil)
-app.activate(ignoringOtherApps: true)
+app.activate()
 app.run()
 #else
+/// The scene life cycle: the app delegate names the scene delegate (no storyboard needed),
+/// which builds the one window when UIKit connects the app's scene.
 final class AppDelegate: UIResponder, UIApplicationDelegate {
-    var window: UIWindow?
-
     func application(
         _ application: UIApplication,
-        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-    ) -> Bool {
-        window = UIWindow(frame: UIScreen.main.bounds)
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+        configuration.delegateClass = SceneDelegate.self
+        return configuration
+    }
+}
+
+// An unqualified Objective-C name, so Info.plist's UISceneDelegateClassName can name it.
+@objc(NucloSceneDelegate)
+final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        guard let windowScene = scene as? UIWindowScene, host.window == nil else { return }
+        let window = UIWindow(windowScene: windowScene)
         host.window = window
         let controller = UIViewController()
-        window?.rootViewController = controller
+        window.rootViewController = controller
         controller.view.backgroundColor = .systemBackground
         controller.view.addSubview(host.root)
         host.root.translatesAutoresizingMaskIntoConstraints = false
@@ -830,8 +859,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         ])
         // A router outlet in the body replaces this controller (Host.setRoot).
         host.start(bundle: Bundle.main.path(forResource: "app", ofType: "js")!)
-        window?.makeKeyAndVisible()
-        return true
+        window.makeKeyAndVisible()
     }
 }
 

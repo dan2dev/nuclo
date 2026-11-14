@@ -11,5 +11,4 @@ FetchContent_MakeAvailable(quickjs)
 add_library(nuclo SHARED nuclo.c ${quickjs_SOURCE_DIR}/quickjs-amalgam.c)
 target_include_directories(nuclo PRIVATE ${quickjs_SOURCE_DIR})
 target_link_libraries(nuclo log m)
-# Required by Android 15+ devices with 16 KB memory pages.
-target_link_options(nuclo PRIVATE -Wl,-z,max-page-size=16384)
+# 16 KB page alignment (Android 15+ devices) is the NDK's default since r28.

@@ -36,6 +36,7 @@ import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.WindowInsets
 import android.view.animation.PathInterpolator
 import android.widget.Button
 import android.widget.CheckBox
@@ -88,12 +89,12 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         val root = Box(this).apply { id = 1 }
         views[1] = root
-        // Dark icons on the light system bars.
-        @Suppress("DEPRECATION")
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
-            if (Build.VERSION.SDK_INT >= 26) View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR else 0
+        // Edge to edge on every version: the window background shows through the transparent bars (the Nuclo theme),
+        // the content is padded clear of them (fit). targetSdk 35+ enforces it; 30-34 opt in (no replacement API).
+        if (Build.VERSION.SDK_INT < 35) @Suppress("DEPRECATION") window.setDecorFitsSystemWindows(false)
         // Without the router the body is the layout root: JS lays it out at the window's size.
         setContentView(Scroller(1).apply { isFillViewport = true; addView(root) })
+        content.setOnApplyWindowInsetsListener { view, insets -> fit(view, insets) }
 
         evaluate(assets.open("app.js").use { it.readBytes() })
     }
@@ -102,6 +103,25 @@ class MainActivity : Activity() {
         batteryWatch?.let(::unregisterReceiver)
         close()
         super.onDestroy()
+    }
+
+    private val content: View get() = findViewById(android.R.id.content)
+
+    /**
+     * Keeps the content clear of the system bars, the display cutout and the keyboard (adjustResize does not resize
+     * an edge-to-edge window). The tab bar's colour runs on under the navigation bar.
+     */
+    private fun fit(view: View, insets: WindowInsets): WindowInsets {
+        val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+        val bottom = max(bars.bottom, insets.getInsets(WindowInsets.Type.ime()).bottom)
+        val bar = tabs?.bar?.takeIf { it.isAttachedToWindow }
+        view.setPadding(bars.left, bars.top, bars.right, if (bar == null) bottom else 0)
+        bar?.apply {
+            setPadding(0, 0, 0, bottom)
+            layoutParams.height = dp(80f) + bottom
+            requestLayout()
+        }
+        return WindowInsets.CONSUMED
     }
 
     private external fun evaluate(code: ByteArray)
@@ -245,9 +265,8 @@ class MainActivity : Activity() {
             BatteryManager.BATTERY_STATUS_DISCHARGING -> "discharging"
             else -> "unknown"
         }
-        // Time to full (API 28+, -1 when unknown); Android has no public time to empty.
-        val ms = if (state == "charging" && Build.VERSION.SDK_INT >= 28)
-            getSystemService(BatteryManager::class.java).computeChargeTimeRemaining() else -1L
+        // Time to full (-1 when unknown); Android has no public time to empty.
+        val ms = if (state == "charging") getSystemService(BatteryManager::class.java).computeChargeTimeRemaining() else -1L
         return JSONObject()
             .put("level", if (level >= 0 && scale > 0) level.toDouble() / scale else JSONObject.NULL)
             .put("state", state)
@@ -322,6 +341,7 @@ class MainActivity : Activity() {
                     id == 1 && (child.id in stacks || child.id == tabs?.id) -> {
                         rootStack = stacks[child.id]
                         setContentView(child)
+                        content.requestApplyInsets()
                     }
                     else -> {
                         val parent = view as Box
@@ -423,9 +443,8 @@ class MainActivity : Activity() {
                 // The body's colour is the page behind every screen.
                 if (view.id == 1) {
                     pageColor = if (reset) Color.WHITE else c
+                    // Behind the status bar too (edge to edge).
                     window.setBackgroundDrawable(ColorDrawable(pageColor))
-                    @Suppress("DEPRECATION")
-                    window.statusBarColor = pageColor
                     for (screen in titles.keys) outer(screen).setBackgroundColor(pageColor)
                 }
             }
@@ -488,7 +507,7 @@ class MainActivity : Activity() {
             type == "click" -> {
                 view.setOnClickListener { emit(id, type) }
                 // Press feedback for styled views, rounded as the background.
-                if (Build.VERSION.SDK_INT >= 23 && view !is Button && view.foreground == null)
+                if (view !is Button && view.foreground == null)
                     view.foreground = ripple(Mask(view))
             }
             type == "change" && view is CheckBox -> view.setOnCheckedChangeListener { _, checked -> emit(id, type, checked) }
@@ -674,11 +693,6 @@ class MainActivity : Activity() {
 
         val content = FrameLayout(this@MainActivity)
         val bar = LinearLayout(this@MainActivity).apply { setBackgroundColor(container) }
-
-        init {
-            @Suppress("DEPRECATION")
-            window.navigationBarColor = container
-        }
         val root = LinearLayout(this@MainActivity).apply {
             orientation = LinearLayout.VERTICAL
             addView(content, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
@@ -740,7 +754,7 @@ class MainActivity : Activity() {
         }
     }
 
-    // ---- Back: predictive on API 34+, plain on 33, onBackPressed before ----
+    // ---- Back: predictive on API 34+, plain on 33, onBackPressed on 30-32 ----
 
     private fun active() = tabs?.let { it.stacks.getOrNull(it.selected) } ?: rootStack
 
@@ -805,7 +819,8 @@ class MainActivity : Activity() {
         else onBackInvokedDispatcher.unregisterOnBackInvokedCallback(callback)
     }
 
-    @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
+    /** API 30-32 only: from 33 the system calls the OnBackInvokedCallback instead (enableOnBackInvokedCallback). */
+    @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION", "GestureBackNavigation")
     override fun onBackPressed() {
         val s = active()
         if (s != null && s.shown.size > 1) back(s, s.shown.size - 1) else super.onBackPressed()
