@@ -245,8 +245,11 @@ private func tagStyle(_ tag: String) -> Style {
     private var painted: Style?
 
     var onEvent: [String: @MainActor (NativeEvent) -> Void] = [:]
+    /// The update pass this node was built in: its bindings already ran then.
+    private let born: Int
 
     init(_ kind: Kind, tag: String) {
+        born = Runtime.shared.generation
         self.kind = kind
         self.tag = tag
         switch kind {
@@ -338,7 +341,7 @@ private func tagStyle(_ tag: String) -> Style {
     // MARK: Refresh
 
     func refresh() {
-        guard !destroyed else { return }
+        guard !destroyed, born != Runtime.shared.generation else { return }
         reconcile?()
         for binding in bindings { binding() }
         applyStyle()
@@ -567,14 +570,15 @@ final class FlexView: UIView, UIGestureRecognizerDelegate {
     private(set) var items: [Node] = []
     private var onTap: (@MainActor () -> Void)?
 
+    /// Only views that arrive or leave are touched: layout places subviews in `items` order, so a
+    /// move (a swap, a sort) is a new frame, not a reorder. Subview order is only the drawing order.
     func setItems(_ next: [Node]) {
         let keep = Set(next.map { ObjectIdentifier($0) })
         for old in items where !keep.contains(ObjectIdentifier(old)) {
             if old.view?.superview === self { old.view?.removeFromSuperview() }
         }
-        for (i, item) in next.enumerated() {
-            guard let v = item.view else { continue }
-            if v.superview !== self || (i < items.count && items[i] !== item) { insertSubview(v, at: i) }
+        for item in next {
+            if let v = item.view, v.superview !== self { addSubview(v) }
         }
         items = next
         Runtime.shared.needsLayout()
@@ -816,6 +820,8 @@ final class RootController: UIViewController {
     static let shared = Runtime()
 
     let root = RootController()
+    /// Counts update passes (see Node.born).
+    private(set) var generation = 0
     private var roots: [Node] = []
     private var hasMain = false
     private var updating = false
@@ -868,6 +874,7 @@ final class RootController: UIViewController {
     }
 
     private func run(_ ids: [String]) {
+        generation += 1
         if ids.isEmpty {
             for node in roots { node.refresh() }
             return
@@ -1028,16 +1035,16 @@ public struct Attr: NodeMod {
 
 /// Rows keyed by identity (classes) as nuclo's list(): a row is rebuilt only when its item is new.
 @MainActor public func list<T: AnyObject>(_ items: @escaping @MainActor () -> [T], _ render: @escaping @MainActor (T, Int) -> Node?) -> NodeMod {
-    listFragment(items, render, same: { $0 === $1 })
+    listFragment(items, render, key: { AnyHashable(ObjectIdentifier($0)) })
 }
 
 /// Rows keyed by value (strings, numbers).
-@MainActor public func list<T: Equatable>(_ items: @escaping @MainActor () -> [T], _ render: @escaping @MainActor (T, Int) -> Node?) -> NodeMod {
-    listFragment(items, render, same: ==)
+@MainActor public func list<T: Hashable>(_ items: @escaping @MainActor () -> [T], _ render: @escaping @MainActor (T, Int) -> Node?) -> NodeMod {
+    listFragment(items, render, key: { AnyHashable($0) })
 }
 
 @MainActor private func listFragment<T>(
-    _ items: @escaping @MainActor () -> [T], _ render: @escaping @MainActor (T, Int) -> Node?, same: @escaping (T, T) -> Bool
+    _ items: @escaping @MainActor () -> [T], _ render: @escaping @MainActor (T, Int) -> Node?, key: @escaping (T) -> AnyHashable
 ) -> NodeMod {
     Attr { parent in
         let fragment = Node(.fragment, tag: "list")
@@ -1045,25 +1052,36 @@ public struct Attr: NodeMod {
         var rows: [(item: T, node: Node?)] = []
         fragment.reconcile = { [unowned fragment] in
             let next = items()
-            var old = rows
+            // Old rows by key, so matching is O(n): identity for classes, value otherwise.
+            var byKey: [AnyHashable: [Int]] = [:]
+            for (i, row) in rows.enumerated() { byKey[key(row.item), default: []].append(i) }
+            var used = [Bool](repeating: false, count: rows.count)
+            var fresh: [Node] = []
             var built: [(item: T, node: Node?)] = []
+            built.reserveCapacity(next.count)
             var changed = next.count != rows.count
             for (index, item) in next.enumerated() {
-                if let i = old.firstIndex(where: { same($0.item, item) }) {
-                    if i != 0 { changed = true }
-                    built.append(old.remove(at: i))
+                let k = key(item)
+                if let i = byKey[k]?.first {
+                    byKey[k]?.removeFirst()
+                    used[i] = true
+                    if i != index { changed = true }
+                    built.append(rows[i])
                 } else {
                     let node = render(item, index)
-                    if let node { node.parent = fragment }
+                    if let node {
+                        node.parent = fragment
+                        fresh.append(node)
+                    }
                     built.append((item, node))
                     changed = true
                 }
             }
-            for row in old { row.node?.destroy() }
+            for (i, row) in rows.enumerated() where !used[i] { row.node?.destroy() }
             rows = built
             if changed {
                 fragment.children = built.compactMap { $0.node }
-                for row in built { row.node?.applyStylesDeep() }
+                for node in fresh { node.applyStylesDeep() }
                 fragment.syncViews()
             }
         }

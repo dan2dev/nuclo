@@ -246,13 +246,13 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
     internal val view: View? = Runtime.activity.let { ctx ->
         when (kind) {
             Kind.Box -> FlexLayout(ctx, this)
-            Kind.Text -> TextView(ctx)
-            Kind.Button -> TextView(ctx).apply {
+            // No default style (defStyleAttr 0): the runtime sets every text property itself, and
+            // resolving the theme's textViewStyle was the largest cost of building a row.
+            Kind.Text -> TextView(ctx, null, 0, 0)
+            Kind.Button -> TextView(ctx, null, 0, 0).apply {
                 gravity = Gravity.CENTER
                 isClickable = true
-                val ripple = TypedValue()
-                ctx.theme.resolveAttribute(android.R.attr.selectableItemBackground, ripple, true)
-                foreground = ctx.getDrawable(ripple.resourceId)
+                foreground = ctx.getDrawable(Runtime.rippleId)
             }
             Kind.Input -> EditText(ctx).apply {
                 isSingleLine = true
@@ -293,6 +293,9 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
     internal var computed = Style()
         private set
     private var painted: Style? = null
+
+    /** The update pass this node was built in: its bindings already ran then. */
+    private val born = Runtime.generation
 
     private val listeners = HashMap<String, (NativeEvent) -> Unit>()
     /** Set while the runtime writes a control, so it reports no event (as in the browser). */
@@ -368,7 +371,7 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
     // Refresh ----------------------------------------------------------------
 
     internal fun refresh() {
-        if (destroyed) return
+        if (destroyed || born == Runtime.generation) return
         reconcile?.invoke()
         for (binding in bindings.toList()) binding()
         applyStyle()
@@ -401,12 +404,14 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
     private fun paint(v: View, s: Style) {
         val bg = parseColor(s.backgroundColor)
         val border = (s.borderWidth ?: 0.0) > 0
-        if (bg != null || border || (s.borderRadius ?: 0.0) > 0 || kind == Kind.Box || kind == Kind.Button) {
+        if (bg != null || border || (s.borderRadius ?: 0.0) > 0) {
             v.background = GradientDrawable().apply {
                 setColor(bg ?: Color.TRANSPARENT)
                 cornerRadius = px(s.borderRadius ?: 0.0)
                 if (border) setStroke(px(s.borderWidth!!).roundToInt(), parseColor(s.borderColor) ?: Color.BLACK)
             }
+        } else if (v.background != null && kind != Kind.Input && kind != Kind.Textarea && kind != Kind.Checkbox) {
+            v.background = null
         }
         val radius = s.borderRadius ?: 0.0
         v.clipToOutline = radius > 0 && (kind == Kind.Box || kind == Kind.Image || kind == Kind.Button)
@@ -550,31 +555,71 @@ class FlexLayout internal constructor(context: Context, internal val node: Node)
         private set
     private val frames = HashMap<Node, FloatArray>()
 
+    /**
+     * Makes `next`'s views the children. Only views that arrive or leave are touched: a move (a
+     * swap, a sort) changes nothing here, because layout places children in `items` order. The
+     * child order is only the drawing order, so overlays drawn later stay on top.
+     */
     internal fun setItems(next: List<Node>) {
-        val keep = next.toHashSet()
-        for (old in items) if (old !in keep && old.view?.parent === this) removeView(old.view)
-        next.forEachIndexed { i, item ->
-            val v = item.view ?: return@forEachIndexed
+        val wanted = HashSet<View>(next.size)
+        for (item in next) item.view?.let(wanted::add)
+        if (wanted.isEmpty()) {
+            removeAllViewsInLayout()
+        } else {
+            for (old in items) {
+                val v = old.view
+                if (v != null && v.parent === this && v !in wanted) removeViewInLayout(v)
+            }
+        }
+        for (item in next) {
+            val v = item.view ?: continue
             if (v.parent !== this) {
                 (v.parent as? ViewGroup)?.removeView(v)
-                addView(v, min(i, childCount))
-            } else if (indexOfChild(v) != i) {
-                removeViewInLayout(v)
-                addView(v, min(i, childCount))
+                addViewInLayout(v, -1, v.layoutParams ?: generateDefaultLayoutParams(), true)
             }
         }
         items = next
         requestLayout()
+        invalidate()
     }
 
-    internal fun measureFlex(width: Float, height: Float?): FloatArray = Flex.layout(this, width, height, null)
+    // The last natural-height pass (width → size, frames): a parent measures a child, then gives it that size.
+    private var memoWidth = -1f
+    private var memoSize: FloatArray? = null
+    private var memoFrames: HashMap<Node, FloatArray>? = null
+
+    override fun requestLayout() {
+        memoSize = null
+        super.requestLayout()
+    }
+
+    internal fun measureFlex(width: Float, height: Float?): FloatArray {
+        val memo = memoSize
+        if (height == null && memo != null && memoWidth == width) return memo
+        val f = HashMap<Node, FloatArray>()
+        val size = Flex.layout(this, width, height, f)
+        if (height == null) {
+            memoWidth = width
+            memoSize = size
+            memoFrames = f
+        }
+        return size
+    }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val wMode = MeasureSpec.getMode(widthMeasureSpec)
         val width = if (wMode == MeasureSpec.UNSPECIFIED) Float.MAX_VALUE / 4 else MeasureSpec.getSize(widthMeasureSpec).toFloat()
         val height = if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.EXACTLY) MeasureSpec.getSize(heightMeasureSpec).toFloat() else null
         frames.clear()
-        val size = Flex.layout(this, width, height, frames)
+        val memo = memoSize
+        // A definite height equal to the natural one lays out the same, unless a column shares free space (flex).
+        val sameHeight = height == null || (memo != null && height == memo[1] && !growsInColumn())
+        val size = if (memo != null && memoWidth == width && sameHeight) {
+            frames.putAll(memoFrames!!)
+            memo
+        } else {
+            Flex.layout(this, width, height, frames)
+        }
         // Children are measured at exactly their frames, so each lays out its own children.
         for ((child, f) in frames) {
             child.view?.measure(MeasureSpec.makeMeasureSpec(f[2].roundToInt(), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(f[3].roundToInt(), MeasureSpec.EXACTLY))
@@ -582,6 +627,9 @@ class FlexLayout internal constructor(context: Context, internal val node: Node)
         val w = if (wMode == MeasureSpec.EXACTLY) width else size[0]
         setMeasuredDimension(w.roundToInt(), (height ?: size[1]).roundToInt())
     }
+
+    private fun growsInColumn() =
+        node.computed.flexDirection != FlexDirection.Row && items.any { (it.computed.flex ?: 0.0) > 0 }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         for ((child, f) in frames) {
@@ -728,6 +776,11 @@ object Runtime {
         internal set
     internal var density = 1f
     internal val main = Handler(Looper.getMainLooper())
+    /** Counts update passes: a node built during one has already run its bindings. */
+    internal var generation = 0
+    internal val rippleId by lazy {
+        TypedValue().also { activity.theme.resolveAttribute(android.R.attr.selectableItemBackground, it, true) }.resourceId
+    }
 
     private lateinit var rootLayout: FrameLayout
     private val roots = mutableListOf<Node>()
@@ -802,6 +855,7 @@ object Runtime {
     }
 
     private fun run(ids: List<String>) {
+        generation++
         if (ids.isEmpty()) {
             for (node in roots.toList()) node.refresh()
             return
@@ -943,26 +997,32 @@ fun <T> list(items: () -> List<T>, render: (T, Int) -> Node?) = NodeMod { parent
     var rows = listOf<Pair<T, Node?>>()
     fragment.reconcile = {
         val next = items()
-        val old = rows.toMutableList()
+        // Old rows by item (identity for the generated classes, value for strings and numbers).
+        val byItem = HashMap<Any?, ArrayDeque<Int>>(rows.size * 2)
+        rows.forEachIndexed { i, row -> byItem.getOrPut(row.first) { ArrayDeque() }.addLast(i) }
+        val used = BooleanArray(rows.size)
+        val fresh = ArrayList<Node>()
         val built = ArrayList<Pair<T, Node?>>(next.size)
         var changed = next.size != rows.size
         next.forEachIndexed { index, item ->
-            val i = old.indexOfFirst { it.first == item }
-            if (i >= 0) {
-                if (i != 0) changed = true
-                built.add(old.removeAt(i))
+            val i = byItem[item]?.removeFirstOrNull()
+            if (i != null) {
+                used[i] = true
+                if (i != index) changed = true
+                built.add(rows[i])
             } else {
                 val node = render(item, index)
                 node?.parent = fragment
+                node?.let(fresh::add)
                 built.add(item to node)
                 changed = true
             }
         }
-        for ((_, node) in old) node?.destroy()
+        rows.forEachIndexed { i, row -> if (!used[i]) row.second?.destroy() }
         rows = built
         if (changed) {
             fragment.children = built.mapNotNull { it.second }.toMutableList()
-            for ((_, node) in built) node?.applyStylesDeep()
+            for (node in fresh) node.applyStylesDeep()
             fragment.syncViews()
         }
     }
