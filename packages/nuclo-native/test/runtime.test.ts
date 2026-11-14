@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 
-type Op = [string, number, ...unknown[]];
+import type { Op } from "../src/dom";
 const batches: Op[][] = [];
 const history: Op[] = [];
-const g = globalThis as any;
+const g = globalThis;
 g.__nuclo_host = (json: string) => {
   batches.push(JSON.parse(json));
   history.push(...batches.at(-1)!);

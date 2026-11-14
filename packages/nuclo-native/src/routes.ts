@@ -1,6 +1,7 @@
 /** Route matching shared by the native and web routers. */
 export type Params = Record<string, string>;
-export type View = (params: Params) => unknown;
+/** A screen's content: an element (div(), section()…). */
+export type View = (params: Params) => DetachedExpandedElementFactory;
 /**
  * A screen, optionally with the title its navigation bar shows, and onEndReached:
  * called when the screen scrolls to within half its height of its end, once per

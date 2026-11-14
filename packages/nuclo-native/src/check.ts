@@ -26,8 +26,7 @@ export interface CheckResult {
 /** Hosts snap each edge to device pixels from its position on screen, and a frame is relative to its
  * snapped parent: at 1× a box can sit up to one unit off the frame JS sent, at 2× half a unit. */
 export function check(tolerance = Math.max(0.5, 1 / deviceScale())): CheckResult {
-  const device = (globalThis as Record<string, unknown>).__nuclo_device;
-  const reply = typeof device === "function" ? String(device("frames") ?? "") : "";
+  const reply = String(globalThis.__nuclo_device?.("frames") ?? "");
   const applied: Record<string, number[]> = reply ? JSON.parse(reply) : {};
   const mismatches: Mismatch[] = [];
   const sent = sentFrames();

@@ -44,9 +44,18 @@
  * Device data (battery…) has its own two calls: see device.ts.
  */
 
+import "./host";
 import { type Frame, type LayoutNode, layout } from "./layout";
 
-type Op = [string, number, ...unknown[]];
+/** One host op (see the contract above): the first item tells the rest apart. */
+export type Op =
+  | ["create", id: number, kind: string]
+  | ["insert", parent: number, id: number, before: number]
+  | ["remove", id: number]
+  | ["set", id: number, key: string, value: unknown]
+  | ["style", id: number, key: string, value: string]
+  | ["listen", id: number, type: string]
+  | ["frame", id: number, x: number, y: number, w: number, h: number];
 type Listener = (this: NElement, event: unknown) => void;
 
 let ops: Op[] = [];
@@ -95,7 +104,7 @@ class NNode {
   /** A long list being culled: the children that may be on the host lie in kept. Inserts and removes reset it. */
   kept?: [number, number];
 
-  get isConnected() {
+  get isConnected(): boolean {
     return this.live || (this.parentNode?.isConnected ?? false);
   }
 
@@ -287,35 +296,35 @@ class NCharacterData extends NNode {
     this.data = value;
   }
 
-  get textContent() {
+  override get textContent() {
     return this.#data;
   }
 
-  set textContent(value: string) {
+  override set textContent(value: string) {
     this.data = value;
   }
 }
 
 class NText extends NCharacterData {
-  nodeType = 3;
+  override nodeType = 3;
   nodeName = "#text";
 
-  cloneNode() {
+  override cloneNode() {
     return new NText(this.data);
   }
 }
 
 class NComment extends NCharacterData {
-  nodeType = 8;
+  override nodeType = 8;
   nodeName = "#comment";
 
-  cloneNode() {
+  override cloneNode() {
     return new NComment(this.data);
   }
 }
 
 class NFragment extends NNode {
-  nodeType = 11;
+  override nodeType = 11;
   nodeName = "#document-fragment";
 }
 
@@ -397,7 +406,7 @@ class NElement extends NNode {
     this.listeners?.get(type)?.delete(listener);
   }
 
-  cloneNode(deep?: boolean) {
+  override cloneNode(deep?: boolean) {
     const clone = new NElement(this.localName, this.namespaceURI);
     Object.assign(clone.attrs, this.attrs);
     Object.assign(clone.styles, this.styles);
@@ -450,9 +459,12 @@ g.document = {
 };
 // Engines older than ES2021 (e.g. some QuickJS builds) lack WeakRef.
 g.WeakRef ??= class {
-  constructor(private target: object) {}
+  #target: object;
+  constructor(target: object) {
+    this.#target = target;
+  }
   deref() {
-    return this.target;
+    return this.#target;
   }
 };
 
@@ -479,7 +491,9 @@ let sending = false;
 function send(batch: Op[]) {
   sending = true;
   try {
-    (g.__nuclo_host as (json: string) => void)(JSON.stringify(batch));
+    const host = globalThis.__nuclo_host;
+    if (!host) throw new Error("nuclo-native: no __nuclo_host; the bundle runs inside a native host");
+    host(JSON.stringify(batch));
   } finally {
     sending = false;
   }
@@ -528,7 +542,7 @@ function measure(node: LayoutNode, maxWidth: number) {
   const key = Number.isFinite(maxWidth) ? Math.round(maxWidth * 100) / 100 : -1;
   let size = cache.get(key);
   if (!size) {
-    const reply = String((g.__nuclo_measure as (id: number, max: number) => string)(node.id, key) ?? "");
+    const reply = String(globalThis.__nuclo_measure?.(node.id, key) ?? "");
     const [w, h] = reply.split(" ").map(Number);
     cache.set(key, (size = { w: w || 0, h: h || 0 }));
   }
@@ -537,7 +551,7 @@ function measure(node: LayoutNode, maxWidth: number) {
 
 /** Lays out every sized root; returns frame ops for what moved. */
 function relayout(): Op[] {
-  if (typeof g.__nuclo_measure !== "function") return [];
+  if (typeof globalThis.__nuclo_measure !== "function") return [];
   // With the router, each screen is a root (its content scrolls); otherwise the body is.
   let navigation = false;
   for (let c = body.firstChild; c; c = c.nextSibling) {
@@ -720,7 +734,7 @@ function dispatch(el: NElement, type: string) {
 }
 
 /** Host → JS: a native event on a widget. `value` carries an input's text or a checkbox's state. */
-g.__nuclo_event = (id: number, type: string, value?: string | boolean) => {
+globalThis.__nuclo_event = (id, type, value) => {
   if (type === "resize") {
     const [w, h, scale] = String(value).split(" ").map(Number);
     sizes.set(id, [w || 0, h || 0, scale || 0]);

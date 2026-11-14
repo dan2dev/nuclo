@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 
-type Op = [string, number, ...unknown[]];
+import type { Op } from "../src/dom";
 const ops: Op[] = [];
-const g = globalThis as any;
+const g = globalThis;
 g.__nuclo_host = (json: string) => ops.push(...JSON.parse(json));
 const asked: string[] = [];
 g.__nuclo_device = (name: string) => {
@@ -14,7 +14,7 @@ const { router } = await import("../examples/battery/app");
 
 const shows = (text: string) => ops.some((op) => op[0] === "set" && op[2] === "text" && op[3] === text);
 const textId = (text: string) => ops.findLast((op) => op[0] === "set" && op[2] === "text" && op[3] === text)![1];
-const parentOf = (id: number) => ops.findLast((op) => op[0] === "insert" && op[2] === id)![1] as number;
+const parentOf = (id: number) => ops.findLast((op) => op[0] === "insert" && op[2] === id)![1];
 
 test("reads the battery from the host", () => {
   expect(asked).toEqual(["battery"]);

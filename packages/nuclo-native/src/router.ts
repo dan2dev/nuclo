@@ -28,17 +28,17 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
 
   const screen = (entry: Entry) =>
     div(
-      { "data-native": "screen", title: entry.title } as never,
+      { "data-native": "screen", title: entry.title },
       // dom.ts sends "end" when the screen's end scrolls near (from the host's "scroll").
-      entry.onEndReached ? on("end" as never, entry.onEndReached) : null,
-      entry.view(entry.params) as never,
+      entry.onEndReached ? on("end", entry.onEndReached) : null,
+      entry.view(entry.params),
     );
 
   const stack = (i: number) =>
     div(
-      { "data-native": "stack", title: tabs[i]?.title ?? "", icon: tabs[i]?.icon ?? "" } as never,
+      { "data-native": "stack", title: tabs[i]?.title ?? "", icon: tabs[i]?.icon ?? "" },
       // The user went back natively: the host already shows `depth` screens.
-      on("pop" as never, (event: Event) => {
+      on("pop", (event) => {
         stacks[i].length = Math.max(1, Number((event.target as HTMLInputElement).value));
         update();
       }),
@@ -75,8 +75,8 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
     outlet: () =>
       tabs.length
         ? div(
-            { "data-native": "tabs", selected: () => String(active) } as never,
-            on("select" as never, (event: Event) => {
+            { "data-native": "tabs", selected: () => String(active) },
+            on("select", (event) => {
               active = Number((event.target as HTMLInputElement).value);
               update();
             }),

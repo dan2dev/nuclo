@@ -251,6 +251,7 @@ bun run android-gpui   # a device: emulators cannot run GPUI's renderer
 bun run linux-gpui     # on Linux
 bun run windows-gpui   # on Windows
 bun test               # op-level tests against a mock host
+bun run typecheck      # strict TypeScript over src, examples, tests and scripts
 bun test/people.bench.ts  # page-load, tap and scroll timings and host views up to 50,000 rows
 ```
 

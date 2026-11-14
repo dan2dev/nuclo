@@ -11,8 +11,8 @@ const swatch = (style: Record<string, unknown> = {}, i = 0) =>
 
 const label = (text: string) => span(text, { style: { fontSize: 12, color: "#6b7280" } });
 
-const example = (title: string, ...content: unknown[]) =>
-  div({ style: { gap: 6 } }, label(title), div({ style: { backgroundColor: "#f3f4f6" } }, ...(content as never[])));
+const example = (title: string, ...content: NodeModLike<"div">[]) =>
+  div({ style: { gap: 6 } }, label(title), div({ style: { backgroundColor: "#f3f4f6" } }, ...content));
 
 let result = "Not checked yet.";
 let details: string[] = [];

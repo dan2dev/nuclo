@@ -1,8 +1,8 @@
 import { afterAll, expect, test } from "bun:test";
 
-type Op = [string, number, ...unknown[]];
+import type { Op } from "../src/dom";
 const ops: Op[] = [];
-const g = globalThis as any;
+const g = globalThis;
 g.__nuclo_host = (json: string) => ops.push(...JSON.parse(json));
 // Every leaf is one 18.9 px line: enough for the layout engine to give the screen a content height.
 g.__nuclo_measure = (_id: number, max: number) => `${max < 0 ? 80 : Math.min(80, max)} 18.9`;
@@ -14,7 +14,7 @@ document.body.textContent = "";
 await import("../examples/people/app");
 
 const [screen] = ops.filter((op) => op[0] === "create" && op[2] === "screen").map((op) => op[1]);
-const parentOf = (id: number) => ops.findLast((op) => op[0] === "insert" && op[2] === id)![1] as number;
+const parentOf = (id: number) => ops.findLast((op) => op[0] === "insert" && op[2] === id)![1];
 const shows = (text: string) => ops.some((op) => op[0] === "set" && op[2] === "text" && op[3] === text);
 const contentHeight = () => ops.findLast((op) => op[0] === "frame" && op[1] === screen)![5] as number;
 /** Scrolls the screen (800 tall) to `fromEnd` px above its content's end. */
@@ -74,7 +74,7 @@ test("rows far from what shows leave the host, and come back where they were", (
     };
     for (const op of ops) {
       if (op[0] === "create") alive.add(op[1]);
-      else if (op[0] === "insert") kids.set(op[1], [...(kids.get(op[1]) ?? []), op[2] as number]);
+      else if (op[0] === "insert") kids.set(op[1], [...(kids.get(op[1]) ?? []), op[2]]);
       else if (op[0] === "remove") drop(op[1]);
     }
     return alive;

@@ -1,14 +1,14 @@
 import { expect, test } from "bun:test";
 
-type Op = [string, number, ...unknown[]];
+import type { Op } from "../src/dom";
 const ops: Op[] = [];
-const g = globalThis as any;
+const g = globalThis;
 g.__nuclo_host = (json: string) => ops.push(...JSON.parse(json));
 
 const { router } = await import("../examples/todo/app");
 
 const textId = (text: string) => ops.findLast((op) => op[0] === "set" && op[2] === "text" && op[3] === text)![1];
-const parentOf = (id: number) => ops.findLast((op) => op[0] === "insert" && op[2] === id)![1] as number;
+const parentOf = (id: number) => ops.findLast((op) => op[0] === "insert" && op[2] === id)![1];
 const tap = (text: string) => g.__nuclo_event(parentOf(textId(text)), "click");
 const since = (mark: number, op: string, kind?: string) =>
   ops.slice(mark).filter((o) => o[0] === op && (!kind || o[2] === kind));

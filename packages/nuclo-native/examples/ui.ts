@@ -22,8 +22,8 @@ export const body = (text: Text) => span(text, { style: { color: color.text, fon
 
 export const muted = (text: Text, size = 13) => span(text, { style: { color: color.muted, fontSize: size } });
 
-export const card = (...children: unknown[]) =>
-  div({ style: { backgroundColor: color.card, borderRadius: 14, padding: 16, gap: 12 } }, ...(children as never[]));
+export const card = (...children: NodeModLike<"div">[]) =>
+  div({ style: { backgroundColor: color.card, borderRadius: 14, padding: 16, gap: 12 } }, ...children);
 
 /** A filled button. Any view is clickable, so buttons can be fully styled. */
 export const action = (label: Text, onClick: () => void, enabled: () => boolean = () => true) =>

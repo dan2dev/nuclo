@@ -1,8 +1,8 @@
 import { afterAll, expect, test } from "bun:test";
 
-type Op = [string, number, ...unknown[]];
+import type { Op } from "../src/dom";
 const batches: Op[][] = [];
-const g = globalThis as any;
+const g = globalThis;
 g.__nuclo_host = (json: string) => batches.push(JSON.parse(json));
 const texts = new Map<number, string>();
 const measured: number[] = [];

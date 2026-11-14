@@ -23,7 +23,7 @@ const ICONS: Record<string, string> = {
 };
 
 const icon = (name = "") =>
-  svgSvg({ viewBox: "0 0 24 24", "aria-hidden": "true" } as never, pathSvg({ d: ICONS[name] ?? "" } as never));
+  svgSvg({ viewBox: "0 0 24 24", "aria-hidden": "true" }, pathSvg({ d: ICONS[name] ?? "" }));
 
 type Motion = "push" | "pop" | "tab";
 
@@ -110,13 +110,13 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
           { className: "nuclo-bar" },
           when(
             () => depth() > 0,
-            button({ className: "nuclo-back", "aria-label": "Back", onClick: () => history.back() } as never, icon("back")),
+            button({ className: "nuclo-back", "aria-label": "Back", onClick: () => history.back() }, icon("back")),
           ),
           h1(() => current.title),
         ),
         main(
           { className: "nuclo-screen" },
-          list(() => [current], (entry) => entry.view(entry.params) as never),
+          list(() => [current], (entry) => entry.view(entry.params)),
         ),
         ...(tabs.length
           ? [
@@ -128,7 +128,7 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
                       className: "nuclo-tab",
                       "aria-current": () => (activeTab() === i ? "page" : "false"),
                       onClick: () => router.reset(tab.path),
-                    } as never,
+                    },
                     icon(tab.icon),
                     span(tab.title),
                   ),

@@ -20,11 +20,9 @@ export interface Battery {
   minutes: number | null;
 }
 
-type Host = Record<string, unknown> & { __nuclo_device?: (name: string) => string };
-const g = globalThis as Host;
 const listeners = new Map<string, Set<(json: string) => void>>();
 
-g.__nuclo_device_changed = (name: string, json: string) => {
+globalThis.__nuclo_device_changed = (name, json) => {
   for (const listener of [...(listeners.get(name) ?? [])]) listener(json);
   flush();
 };
@@ -36,7 +34,7 @@ function watch<T>(name: string, onChange?: (value: T | null) => void): T | null 
     if (!set) listeners.set(name, (set = new Set()));
     set.add((json) => onChange(parse(json)));
   }
-  return parse(typeof g.__nuclo_device === "function" ? String(g.__nuclo_device(name) ?? "") : "");
+  return parse(String(globalThis.__nuclo_device?.(name) ?? ""));
 }
 
 /** The battery now, or null when the device has none; `onChange` gets every later reading. */

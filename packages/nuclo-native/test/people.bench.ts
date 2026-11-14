@@ -2,8 +2,8 @@
 // Per milestone: ms to load the next page (scroll → update → layout → ops), ms for a Follow tap, ms for an update()
 // that changes nothing, ms for a 400 px scroll step, the views the host holds, and the live JS heap.
 // The host's own work (parsing, creating views) is not included.
-type Op = [string, number, ...unknown[]];
-const g = globalThis as any;
+import type { Op } from "../src/dom";
+const g = globalThis;
 const parent = new Map<number, number>();
 // The host's views: created, and gone with their subtree on remove.
 const alive = new Set<number>();
@@ -22,16 +22,16 @@ g.__nuclo_host = (json: string) => {
   const ops: Op[] = JSON.parse(json);
   for (const op of ops) {
     if (op[0] === "insert") {
-      parent.set(op[2] as number, op[1]);
+      parent.set(op[2], op[1]);
       const kids = kidsOf.get(op[1]);
-      if (kids) kids.push(op[2] as number);
-      else kidsOf.set(op[1], [op[2] as number]);
+      if (kids) kids.push(op[2]);
+      else kidsOf.set(op[1], [op[2]]);
     } else if (op[0] === "remove") drop(op[1]);
     else if (op[0] === "create") alive.add(op[1]);
     if (op[0] === "create" && op[2] === "screen") screen = op[1];
     else if (op[0] === "set" && (op[3] === "Follow" || op[3] === "Following")) follows.push(op[1]);
     else if (op[0] === "set" && String(op[3]).startsWith("@")) handles.add(String(op[3]).split(" ")[0]);
-    else if (op[0] === "frame" && op[1] === screen) content = op[5] as number;
+    else if (op[0] === "frame" && op[1] === screen) content = op[5];
   }
 };
 g.__nuclo_measure = (_id: number, max: number) => `${max < 0 ? 80 : Math.min(80, max)} 18.9`;
@@ -61,7 +61,7 @@ for (const milestone of milestones) {
   rows = loaded();
   // The newest Follow button still on the host (far rows are parked); a tap rebuilds its row, so look it up each time.
   const tap = median(() => g.__nuclo_event(parent.get(follows.findLast((id) => alive.has(id))!)!, "click"));
-  const idle = median(() => g.update());
+  const idle = median(() => update());
   let y = content - 800;
   const scroll = median(() => g.__nuclo_event(screen, "scroll", `${(y -= 400)} 800`));
   Bun.gc(true);
