@@ -38,6 +38,7 @@ Each folder in `examples/` is an app; `examples/ui.ts` is the small design syste
 - **`todo`**: a todo list. Add a task (Enter or Add), check it off, filter All / Active / Done, clear the finished ones. A task opens on its own screen, pushed on the native stack, to edit its title and notes or delete it.
 - **`battery`**: a battery monitor. A gauge drawn with views, the level, the status and the time to full or empty, live from the platform (see [Device data](#device-data)); a chart of the readings and a pushed screen listing them. A device without a battery says so.
 - **`people`**: a social network's directory with infinite scroll. Twenty people at a time, the next twenty as you scroll near the end (`onEndReached`, see [Navigation](#navigation)), a Follow toggle on each, and a footer once all 50,000 are in. Only rows near the screen stay on the host ([Long lists](#long-lists)); `bun test/people.bench.ts` times page loads, taps and scrolling as the list grows.
+- **`chirp`**: a small social app on four bottom tabs (Home, Explore, Alerts, Profile) with the native back stack. The home feed pages in 20 posts at a time until all 5,000 are in. Posts carry text, one or two photos, or a 6-second video. In lists a video is its poster with a play badge; an opened post and the full-screen viewer play it in the platform's own player ([Video](#video)). A post opens its thread, its likers and that viewer. A profile shows its friends, and each friend's profile shows theirs, so you can keep pushing screens through the friend graph. Likes, reposts and friend requests rebuild only the rows that show them, on every screen at once.
 - **`basics`**: the smallest one, a counter and an inline todo list without navigation.
 
 ## Navigation
@@ -124,6 +125,22 @@ Measured with `people` at 50,000 rows (`bun test/people.bench.ts`, and the simul
 
 Limits: only lists reached through columns from the screen are culled, not a list inside a row. A single render of thousands of rows creates them all once before parking them. JS still holds every row's nodes: about 7 KB a row in JavaScriptCore and 27 to 39 KB in QuickJS, and its O(rows) passes (the list diff, a list's child arrays) are slow in QuickJS, so on Android the practical ceiling is about 20,000 rows.
 
+## Video
+
+`video({ src: "assets/clip.mp4", controls: true, playsInline: true })` plays a bundled file in the platform's own player, paused on its first frame until the user plays it. Its box is its `width`/`height`, else the width it gets at 16:9, and the picture is fitted inside it on black. The native hosts always show their player's controls and ignore `controls`, `poster` and `playsInline`; those are for the web build, where it is a plain `<video>`. One H.264 MP4 plays everywhere.
+
+| Target | Player | Checked |
+| --- | --- | --- |
+| iOS | `AVPlayerViewController` | Not run: no Swift toolchain where this was written |
+| macOS | `AVPlayerView`, inline controls | Not run, as iOS |
+| Android | `VideoView` and `MediaController` (tap for the controls); the asset is copied to the cache, since `VideoView` plays files | Emulator: first frame, controls, plays |
+| Linux | `Gtk.Video` (GStreamer), its controls over the picture | GTK 4 on Ubuntu: first frame, plays |
+| Windows | `MediaElement` and a play/pause button: WPF has no player controls | Compiles (against .NET 10) |
+| Web | `<video>` | Chromium: plays |
+| GPUI | none: the box on black with a play glyph | Compiles |
+
+A player holds a decoder, so a long list should show posters and open a player on tap, as `chirp` does.
+
 ## How it works
 
 ```
@@ -144,7 +161,7 @@ The whole host contract is seven ops and one callback:
 
 | Op | Meaning |
 | --- | --- |
-| `["create", id, kind]` | `view`, `text`, `button`, `input`, `checkbox` or `image`; navigation: `tabs`, `stack`, `screen` |
+| `["create", id, kind]` | `view`, `text`, `button`, `input`, `checkbox`, `image` or `video`; navigation: `tabs`, `stack`, `screen` |
 | `["insert", parentId, id, beforeId]` | Insert or move. `beforeId` 0 appends. |
 | `["remove", id]` | Detach and destroy the subtree |
 | `["set", id, key, value]` | `text`, `value`, `checked`, `placeholder`, `type`, `disabled`, `src`; `title` (screen, or a stack's tab), `icon` (a stack's tab), `selected` (tabs) |
@@ -170,7 +187,7 @@ A style lays out to the same boxes, and its text to the same lines, on every hos
 - **Boxes.** `box-sizing: border-box`; `width`/`height` in px or % of the parent's content box, with `min*`/`max*`; `padding`, `border` and `margin` per side (`margin: auto` takes free space). Every container is a flex container, a column unless `flexDirection: "row"` (or `-reverse`), and the containing block of its `position: "absolute"` children; `position: "relative"` shifts a box by its insets; `display: "none"` removes one.
 - **Flex.** `flexWrap`, `justifyContent` (start, center, end, space-between, -around, -evenly), `alignItems`, `alignSelf`, `alignContent`, `gap`/`rowGap`/`columnGap`, `flexGrow`, `flexShrink`, `flexBasis` and `flex`, with CSS's flexible-length algorithm. `flex: n` grows n from a basis of 0, as in CSS. Children only shrink when they set `flexShrink` (the web build sets `flex-shrink: 0` and `min-width`/`min-height: 0`, as React Native does).
 - **Text.** One bundled font, Inter (`fonts/`, SIL OFL), 14 px by default, weight 400 or 700 (`bold` or ≥ 600); `fontFamily: "system"` opts a text into the OS font. Line height 1.35 × size, text wraps at its box. As in the browser, which lays text out in device pixels: the line height sits on a 1/64 device-pixel grid, and the baseline is the font's ascent and descent each rounded to device pixels, with half the leading above them floored to a device pixel. The default colour is black (white in dark mode on the native hosts).
-- **Controls.** The native control, fitted into a contract box: a checkbox is 24 × 24; an input is one line plus its padding (8 by default: 34.9 tall at 14 px), its content 144 wide (160 with the default padding) unless stretched or sized, its text centred and in by its padding; a button is its text plus 8 / 16 padding; an image takes `width`/`height` or its natural size and aspect, cropped to fill.
+- **Controls.** The native control, fitted into a contract box: a checkbox is 24 × 24; an input is one line plus its padding (8 by default: 34.9 tall at 14 px), its content 144 wide (160 with the default padding) unless stretched or sized, its text centred and in by its padding; a button is its text plus 8 / 16 padding; an image takes `width`/`height` or its natural size and aspect, cropped to fill; a video takes `width`/`height`, else the width it is given at 16:9, its picture fitted inside on black.
 - **Paint.** `backgroundColor`, `color`, `opacity`, `borderRadius`, borders (`borderWidth` per side, one `borderColor`), `overflow: "hidden"` (clips the children; an inline `borderRadius` sets it, on the web too), `textAlign`. A radius is uniform on native: the top-left corner's.
 
 **What a host paints.** `["style", id, key, value]` ops carry only computed paint, and `""` means back to the default: `backgroundColor`, `color` and `borderColor` as `#rrggbb` or `#rrggbbaa`; `opacity`; `fontSize`, `fontWeight`, `fontFamily`, `textAlign`; `borderRadius`; `borderWidth` as `"t r b l"`, drawn inside the frame without moving the children; `overflow: "hidden"`; `display: "none"`; and, for a text, button or input, `padding` as `"t r b l"`: where its text sits in its frame (padding plus border).
@@ -275,9 +292,10 @@ Commands behind them, if you want to run one by hand:
 
 ## What the POC supports
 
-- **Tags:** `button`, `input` (text, password, checkbox), `textarea`, `img`. Text tags (`span`, `p`, `h1`–`h6`, `label`, `strong`…) become one label holding their whole text. Every other tag is a flex container, column by default.
+- **Tags:** `button`, `input` (text, password, checkbox), `textarea`, `img`, `video`. Text tags (`span`, `p`, `h1`–`h6`, `label`, `strong`…) become one label holding their whole text. Every other tag is a flex container, column by default.
 - **Styles:** inline `style`, `css()`, `createCss()` with `screens`, `cx()`, `variants()` and `globalStyle()` by tag or class: flexbox layout, the box model, positioning and paint, laid out the same everywhere and responsive to the window ([Styling](#styling-the-same-pixels-everywhere)). Text properties inherit. Text collapses whitespace as CSS does.
 - **Images:** `img({ src })` loads a file relative to the bundle: its natural size and aspect, or the box you give it, cropped to fill.
+- **Video:** see [Video](#video).
 - **Events:** `click` on anything, `input` on text inputs, `change` on Enter and on checkbox toggles. Events do not bubble.
 - **nuclo features:** all of nuclo's API: reactive text, attributes, classes and styles, `list()`, `when()`/`else()`, `region()`/`into()`, `scope()` and `update(scope)`, `forceUpdate()`, `on()` with `mount` and `destroy` (`test/api.test.ts`). `hydrate()` and `renderToString()` are for the web and the server.
 - **Navigation:** `nuclo-native/router`, with each platform's tabs, stacks, transitions and back gestures.
@@ -287,10 +305,10 @@ Commands behind them, if you want to run one by hand:
 - On native: `:hover`, `:focus` and other pseudo-classes, combinator selectors, `@keyframes`/`transition`, `box-shadow`, `lineHeight`, `letterSpacing`, `fontStyle`, `transform`, `zIndex`, `order`, `aspectRatio`, `baseline` alignment, per-corner radii and per-side border colours. They still work on the web.
 - On Windows: placeholders and password fields. On Apple: password fields.
 - Moving a window to a screen of another scale does not lay it out again on Linux and Windows.
-- Remote images. `src` is a bundled file.
+- Remote images and videos. `src` is a bundled file.
 - On the web, `router.back()` is the browser's back, so it leaves the app when a detail screen was opened directly from a link. Tabs there reset instead of keeping a stack each.
 - Timers and `fetch` on the bare engines (JavaScriptCore, QuickJS, Jint). GJS has them. The GPUI host forwards `console` to its log.
 - Scrolling on Apple outside the router: a plain app without `router.outlet` does not scroll.
-- GPUI: Android's predictive-back progress is not wired (the back key pops with Material motion); the iOS look's bars are drawn, not Liquid Glass.
+- GPUI: no video playback (a `video` is its box on black with a play glyph). Android's predictive-back progress is not wired (the back key pops with Material motion); the iOS look's bars are drawn, not Liquid Glass.
 - Hot reload and packaging for app stores.
 - Long lists keep every row's nodes in JS ([Long lists](#long-lists)): QuickJS on Android holds 27 to 39 KB a row. Not keeping JS nodes for far rows needs a virtual `list()` in nuclo itself.

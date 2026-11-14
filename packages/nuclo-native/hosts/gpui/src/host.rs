@@ -449,6 +449,10 @@ impl Host {
             "chart" => ("chart", "M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"),
             "photo" => ("photo", "M22 16V4c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2zm-11-4 2.03 2.71L16 11l4 5H8l3-4zM2 6v14c0 1.1.9 2 2 2h14v-2H4V6H2z"),
             "person" => ("person", "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20z"),
+            "home" => ("home", "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"),
+            "search" => ("search", "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"),
+            "bell" => ("bell", "M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"),
+            "play" => ("play", "M8 5v14l11-7z"),
             "chevron" => ("chevron", "M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"),
             "arrow" => ("arrow", "M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"),
             "check" => ("check", "M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"),
@@ -494,6 +498,15 @@ impl Host {
                 .object_fit(ObjectFit::Cover)
                 .rounded(px(s.radius))
                 .opacity(s.opacity)
+                .into_any_element(),
+            Kind::Video => at(div())
+                .flex()
+                .items_center()
+                .justify_center()
+                .bg(gpui::black())
+                .rounded(px(s.radius))
+                .opacity(s.opacity)
+                .child(self.icon("play", white().into(), 48.))
                 .into_any_element(),
             Kind::Input => {
                 // Its text centred, in by its padding, as the browser pads an input.

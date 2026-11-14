@@ -146,3 +146,14 @@ test("a column laid out again reuses unchanged children and moves the ones below
   close(frames.get(c.id), [0, 43, 100, 30]);
   expect(height).toBeCloseTo(73);
 });
+
+test("a video fills the width it gets at 16:9 unless sized, without measuring", () => {
+  const free = node("video", {});
+  const sized = node("video", { height: 120 });
+  const root = box({ padding: 10, gap: 5 }, free, sized);
+  const { frames } = layout(root, 340, undefined, () => {
+    throw new Error("videos are not measured");
+  });
+  close(frames.get(free.id), [10, 10, 320, 180]);
+  close(frames.get(sized.id), [10, 195, 320, 120]);
+});

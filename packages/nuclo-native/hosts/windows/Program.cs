@@ -253,6 +253,62 @@ static class Typeset
 }
 
 /// <summary>One page of a stack: a layout root, laid out at its width; its content scrolls.</summary>
+/// <summary>A video: MediaElement, fitted on black, with a play/pause button (WPF has no player controls).</summary>
+class Video : Grid
+{
+    readonly MediaElement player = new()
+    {
+        LoadedBehavior = MediaState.Manual,
+        UnloadedBehavior = MediaState.Close,
+        Stretch = Stretch.Uniform,
+        ScrubbingEnabled = true,
+    };
+    readonly Button toggle = new()
+    {
+        FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),
+        Width = 40,
+        Height = 40,
+        Margin = new Thickness(8),
+        HorizontalAlignment = HorizontalAlignment.Left,
+        VerticalAlignment = VerticalAlignment.Bottom,
+    };
+    bool playing;
+
+    public Video()
+    {
+        Background = Brushes.Black;
+        ClipToBounds = true;
+        Children.Add(player);
+        Children.Add(toggle);
+        toggle.Click += (_, _) => Play(!playing);
+        player.MediaEnded += (_, _) =>
+        {
+            player.Stop();
+            Play(false);
+        };
+        Play(false);
+    }
+
+    public Uri Source
+    {
+        set
+        {
+            player.Source = value;
+            // Opens the file and shows its first frame.
+            player.Play();
+            player.Pause();
+        }
+    }
+
+    void Play(bool on)
+    {
+        playing = on;
+        if (on) player.Play();
+        else if (player.Source is not null) player.Pause();
+        toggle.Content = on ? "\uE769" : "\uE768"; // Pause, Play
+    }
+}
+
 class Screen : ScrollViewer
 {
     public readonly View Body = new() { UseLayoutRounding = false };
@@ -287,7 +343,7 @@ class Screen : ScrollViewer
 class Stack : DockPanel
 {
     static readonly FontFamily Icons = new("Segoe Fluent Icons, Segoe MDL2 Assets");
-    static readonly Dictionary<string, string> Glyphs = new() { ["chart"] = "\uE9D2", ["photo"] = "\uE91B", ["person"] = "\uE77B" };
+    static readonly Dictionary<string, string> Glyphs = new() { ["chart"] = "\uE9D2", ["photo"] = "\uE91B", ["person"] = "\uE77B", ["home"] = "\uE80F", ["search"] = "\uE721", ["bell"] = "\uEA8F" };
 
     /// <summary>The screens JS wants, bottom to top (insert/remove ops).</summary>
     public readonly List<Screen> Screens = new();
@@ -671,6 +727,7 @@ static partial class Program
                     "screen" => new Screen(Views[1]),
                     "stack" => new Stack(),
                     "tabs" => new Tabs(),
+                    "video" => new Video(),
                     _ => new View(), // view, image
                 };
                 Views[id].Uid = id.ToString();
@@ -769,6 +826,7 @@ static partial class Program
         }
         else if (key == "value" && view is TextBox box && box.Text != text) box.Text = text;
         else if (key == "checked" && view is CheckBox check) check.IsChecked = value.ValueKind == JsonValueKind.True;
+        else if (key == "src" && view is Video video) video.Source = new Uri(Path.Combine(AppContext.BaseDirectory, text));
         else if (key == "src" && view is View image)
         {
             // Asset paths are relative to the bundle.

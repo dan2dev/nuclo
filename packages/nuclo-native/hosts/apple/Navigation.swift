@@ -16,7 +16,8 @@ import UIKit
 
 /// Semantic tab icons → SF Symbols.
 func symbol(_ icon: String) -> String {
-    ["chart": "chart.bar.fill", "photo": "photo.on.rectangle", "person": "person.crop.circle"][icon] ?? icon
+    ["chart": "chart.bar.fill", "photo": "photo.on.rectangle", "person": "person.crop.circle",
+     "home": "house.fill", "search": "magnifyingglass", "bell": "bell.fill"][icon] ?? icon
 }
 
 extension StackController {

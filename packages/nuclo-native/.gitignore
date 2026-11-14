@@ -1,2 +1,6 @@
 dist-web/
 build/
+# Signed APKs, their v4 signatures, and JVM heap dumps from out-of-memory builds.
+*.apk
+*.apk.idsig
+*.hprof

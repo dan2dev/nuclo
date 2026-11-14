@@ -18,7 +18,8 @@ import { programArgs } from "system";
 
 const { HORIZONTAL, VERTICAL } = Gtk.Orientation;
 // The router's tab icon names → Adwaita symbolic icons.
-const ICONS = { chart: "x-office-presentation-symbolic", photo: "image-x-generic-symbolic", person: "avatar-default-symbolic" };
+const ICONS = { chart: "x-office-presentation-symbolic", photo: "image-x-generic-symbolic", person: "avatar-default-symbolic",
+  home: "go-home-symbolic", search: "system-search-symbolic", bell: "preferences-system-notifications-symbolic" };
 
 const bundle = programArgs[0] ?? "dist/app.js";
 const fontFiles = ["Inter-Regular.ttf", "Inter-Bold.ttf"].map((f) => GLib.build_filenamev([GLib.path_get_dirname(bundle), "fonts", f]));
@@ -39,7 +40,8 @@ const screenCss = new Gtk.CssProvider();
 const controlCss = new Gtk.CssProvider();
 controlCss.load_from_string(`
 button.nuclo { min-height: 0; min-width: 0; padding: 0; border: none; }
-entry.nuclo { min-height: 0; padding: 0 8px; font-family: Inter; font-size: 14px; }`);
+entry.nuclo { min-height: 0; padding: 0 8px; font-family: Inter; font-size: 14px; }
+video.nuclo { background-color: black; }`);
 /** True while a batch is applied: navigation changes then are the app's, not the user's. */
 let applying = false;
 /** Inside a size_allocate: resizes queued now would be lost, so they wait for the next idle. */
@@ -295,6 +297,8 @@ const create = {
   view: () => new View(),
   text: () => textView(),
   image: () => new View(),
+  // GTK's player (GStreamer): the picture fitted on black, its controls over it.
+  video: () => new Gtk.Video({ css_classes: ["nuclo"], autoplay: false }),
   // The button fills its frame; its label is a text view, so what is measured is what is drawn.
   button: () => {
     const label = textView([8, 16, 8, 16], "center");
@@ -474,6 +478,8 @@ const apply = {
     } else if (key === "selected" && widget._tabs) {
       widget._selected = Number(value);
       select(widget);
+    } else if (key === "src" && widget instanceof Gtk.Video) {
+      widget.set_filename(GLib.build_filenamev([GLib.path_get_dirname(bundle), value]));
     } else if (key === "src") {
       // Asset paths are relative to the bundle.
       widget._texture = Gdk.Texture.new_from_filename(GLib.build_filenamev([GLib.path_get_dirname(bundle), value]));

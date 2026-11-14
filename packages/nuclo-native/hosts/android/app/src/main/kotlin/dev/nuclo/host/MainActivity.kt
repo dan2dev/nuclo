@@ -44,9 +44,11 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.MediaController
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toolbar
+import android.widget.VideoView
 import android.window.BackEvent
 import android.window.OnBackAnimationCallback
 import android.window.OnBackInvokedCallback
@@ -315,6 +317,7 @@ class MainActivity : Activity() {
                 "checkbox" -> Check(this).apply { setPadding(0, 0, 0, 0) }
                 // Cropped to its padding (inside its border): views are not clipped to their bounds (overflow).
                 "image" -> ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; cropToPadding = true }
+                "video" -> Video(this)
                 "stack" -> Stack(id).also { stacks[id] = it }.box
                 "tabs" -> Tabs(id).also { tabs = it }.root
                 "screen" -> screen(id)
@@ -410,6 +413,12 @@ class MainActivity : Activity() {
                 it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 it.typeface = face
             }
+            // VideoView plays files, not assets: the clip is copied out once.
+            key == "src" && view is Video -> view.player.setVideoPath(
+                java.io.File(cacheDir, (value as String).replace('/', '_')).apply {
+                    if (!exists()) assets.open(value).use { input -> outputStream().use { input.copyTo(it) } }
+                }.path,
+            )
             // Asset paths are relative to the bundle.
             key == "src" -> assets.open(value as String).use {
                 (view as ImageView).setImageBitmap(BitmapFactory.decodeStream(it))
@@ -828,6 +837,19 @@ class MainActivity : Activity() {
 }
 
 /** A container. JS lays its children out (layout.ts); each sits at its snapped frame, kept in its MarginLayoutParams. */
+/** A video: the platform's VideoView, fitted on black (it keeps its aspect), and a MediaController on tap. */
+private class Video(context: Context) : FrameLayout(context) {
+    val player = VideoView(context)
+
+    init {
+        setBackgroundColor(Color.BLACK)
+        addView(player, LayoutParams(MATCH_PARENT, MATCH_PARENT, Gravity.CENTER))
+        player.setMediaController(MediaController(context))
+        // Paused at its first frame until played, as the other hosts show it.
+        player.setOnPreparedListener { player.seekTo(1) }
+    }
+}
+
 private class Box(context: Context) : ViewGroup(context) {
     // Children overflow their frames, as in CSS: a view clips (to its outline) only with overflow hidden.
     init {

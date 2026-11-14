@@ -14,6 +14,8 @@ pub enum Kind {
     Input,
     Checkbox,
     Image,
+    /// No playback in GPUI: its frame on black with a play glyph.
+    Video,
     Screen,
     Stack,
     Tabs,
@@ -27,6 +29,7 @@ impl Kind {
             "input" => Kind::Input,
             "checkbox" => Kind::Checkbox,
             "image" => Kind::Image,
+            "video" => Kind::Video,
             "screen" => Kind::Screen,
             "stack" => Kind::Stack,
             "tabs" => Kind::Tabs,

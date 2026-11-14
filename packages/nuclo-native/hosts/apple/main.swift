@@ -4,6 +4,7 @@
 // macOS: swiftc -swift-version 6 hosts/apple/*.swift -o dist/nuclo-app && dist/nuclo-app dist/app.js
 // iOS:   add hosts/apple/*.swift and dist/app.js to an iOS app target (no storyboard; the scene
 //        configuration is made in code, AppDelegate below).
+import AVKit
 import CoreText
 import JavaScriptCore
 
@@ -79,6 +80,29 @@ final class Field: UITextField {
 
     override func editingRect(forBounds bounds: CGRect) -> CGRect { textRect(forBounds: bounds) }
     override func placeholderRect(forBounds bounds: CGRect) -> CGRect { textRect(forBounds: bounds) }
+}
+#endif
+
+/// A video: AVKit's player, the picture fitted on black, with the platform's playback controls.
+#if os(macOS)
+final class VideoView: AVPlayerView {
+    func load(_ url: URL) { player = AVPlayer(url: url) }
+}
+#else
+final class VideoView: UIView {
+    private let controller = AVPlayerViewController()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .black
+        controller.view.frame = bounds
+        controller.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        addSubview(controller.view)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    func load(_ url: URL) { controller.player = AVPlayer(url: url) }
 }
 #endif
 
@@ -516,6 +540,8 @@ final class Host: NSObject {
             image.clipsToBounds = true
             #endif
             return image
+        case "video":
+            return VideoView(frame: .zero)
         default:
             return Box()
         }
@@ -663,6 +689,7 @@ final class Host: NSObject {
         case "src":
             // Asset paths are relative to the bundle.
             let file = (assets as NSString).appendingPathComponent(text)
+            if let video = view as? VideoView { video.load(URL(fileURLWithPath: file)); break }
             #if os(macOS)
             (view as? ImageView)?.image = NSImage(contentsOfFile: file)
             #else

@@ -7,7 +7,7 @@
  * natively: they are realized in one pass when they get attached.
  *
  * Ops (the whole host contract):
- *   ["create", id, kind]             kind: view | text | button | input | checkbox | image
+ *   ["create", id, kind]             kind: view | text | button | input | checkbox | image | video
  *                                    navigation (router.ts): tabs | stack | screen
  *   ["insert", parentId, id, beforeId]   beforeId 0 = append; also moves
  *   ["remove", id]                   detach and destroy the subtree
@@ -77,6 +77,7 @@ function kindOf(tag: string) {
   if (tag === "button") return "button";
   if (tag === "input" || tag === "textarea") return "input";
   if (tag === "img") return "image";
+  if (tag === "video") return "video";
   return TEXT_TAGS.has(tag) ? "text" : "view";
 }
 

@@ -20,6 +20,10 @@ const ICONS: Record<string, string> = {
     "M22 16V4c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2zm-11-4 2.03 2.71L16 11l4 5H8l3-4zM2 6v14c0 1.1.9 2 2 2h14v-2H4V6H2z",
   person:
     "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20z",
+  home: "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z",
+  search:
+    "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z",
+  bell: "M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z",
 };
 
 const icon = (name = "") =>
@@ -80,12 +84,13 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
     show(visual ? null : depth() < shown ? "pop" : "push");
   });
 
-  const goTo = (path: string, nextDepth: number, motion: Motion) => {
-    history.pushState({ depth: nextDepth }, "", `#${path}`);
+  // The tab a screen was pushed from: a path any tab can push (a profile) does not say which.
+  const activeTab = (): number => history.state?.tab ?? tabOf(tabs, current.path);
+
+  const goTo = (path: string, nextDepth: number, motion: Motion, tab = activeTab()) => {
+    history.pushState({ depth: nextDepth, tab }, "", `#${path}`);
     show(motion);
   };
-
-  const activeTab = () => tabOf(tabs, current.path);
 
   const router = {
     get path() {
@@ -98,7 +103,8 @@ export function createRouter(routes: Record<string, Route>, { initial = "/", tab
       goTo(path, depth() + 1, "push");
     },
     reset(path: string) {
-      goTo(path, 0, tabOf(tabs, path) === activeTab() ? "pop" : "tab");
+      const tab = tabOf(tabs, path);
+      goTo(path, 0, tab === activeTab() ? "pop" : "tab", tab);
     },
     back() {
       history.back();

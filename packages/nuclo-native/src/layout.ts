@@ -19,7 +19,8 @@
  *   with half the leading above them, floored to a device pixel (hosts draw text this way).
  * - Controls: checkbox 24×24; input = 1.35 × font + padding (8) tall, its content 144 wide (160 with its
  *   padding) unless stretched;
- *   button = its text plus 8 / 16 padding; image = `width`/`height`, else natural size and aspect.
+ *   button = its text plus 8 / 16 padding; image = `width`/`height`, else natural size and aspect;
+ *   video = `width`/`height`, else the width it is given (320 unconstrained) at 16:9.
  *
  * Hosts measure leaves (text, button, image) with the bundled font; everything
  * else is computed here, so every host gets the same frames.
@@ -28,7 +29,7 @@ import { type Styles, borderWidth, compute, isComputed, length } from "./style";
 
 export interface LayoutNode {
   id: number;
-  /** view | screen | text | button | input | checkbox | image */
+  /** view | screen | text | button | input | checkbox | image | video */
   kind: string;
   /** The node's style: dom.ts gives the computed longhands; shorthands work too. */
   style: Styles;
@@ -201,6 +202,11 @@ export function layout(root: LayoutNode, width: number, height: number | undefin
         const natural = measure(node, Infinity);
         const iw = w ?? Math.min(natural.w, maxWidth);
         return { w: iw, h: h ?? (natural.w > 0 ? (iw * natural.h) / natural.w : 0) };
+      }
+      case "video": {
+        // Its frame is known before the file loads: the host fits the picture in it.
+        const vw = w ?? (Number.isFinite(maxWidth) ? maxWidth : 320);
+        return { w: vw, h: h ?? (vw * 9) / 16 };
       }
       default: {
         // Text and buttons: the host measures the text inside the padding and border.

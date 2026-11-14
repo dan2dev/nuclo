@@ -23,6 +23,7 @@ body { font: 14px/1.35 Inter, system-ui, sans-serif; -webkit-text-size-adjust: 1
 :where(h1) { font-size: 32px; } :where(h2) { font-size: 24px; } :where(h3) { font-size: 20px; }
 :where(h1, h2, h3, strong, b) { font-weight: 700; }
 :where(img) { display: block; object-fit: cover; }
+:where(video) { display: block; aspect-ratio: 16 / 9; object-fit: contain; background: #000; }
 :where(input, textarea, button) { font: inherit; line-height: 1.35; border: 0; padding: 8px; outline-offset: 2px; }
 :where(button) { padding: 8px 16px; }
 :where(input[type="checkbox"]) { width: 24px; height: 24px; padding: 0; }

@@ -18,6 +18,7 @@ function kindOf(el: Element) {
   const tag = el.tagName;
   if (tag === "BUTTON") return "button";
   if (tag === "IMG") return "image";
+  if (tag === "VIDEO") return "video";
   if (tag === "INPUT") return (el as HTMLInputElement).type === "checkbox" ? "checkbox" : "input";
   if (tag === "TEXTAREA") return "input";
   return TEXT.has(tag) ? "text" : "view";
