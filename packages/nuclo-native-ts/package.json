@@ -15,10 +15,11 @@
 	"scripts": {
 		"examples": "bun scripts/examples.ts",
 		"web": "bun scripts/examples.ts web && bun scripts/serve.ts build/web",
+		"wasm": "bun scripts/examples.ts wasm && bun scripts/serve.ts build/wasm",
 		"test": "bun test",
 		"check:android": "bun scripts/examples.ts android && bun src/compiler/cli.ts build test/fixtures/accept.ts --out build/check/fixtures --target android && cd hosts/android && for app in ../../build/check/fixtures/android ../../build/android/*; do rm -rf app/build/kotlin app/build/intermediates/built_in_kotlinc app/build/tmp/kotlin-classes; ./gradlew compileDebugKotlin --offline -q -PnucloSources=../$app || exit 1; done",
 		"android": "bun scripts/examples.ts android && cd hosts/android && ./gradlew assembleRelease --offline",
-		"typecheck": "tsc -p tsconfig.json && tsc -p src/runtimes/web/tsconfig.json && tsc -p examples/tsconfig.json"
+		"typecheck": "tsc -p tsconfig.json && tsc -p src/runtimes/web/tsconfig.json && tsc -p src/runtimes/rust-wasm/tsconfig.json && tsc -p examples/tsconfig.json"
 	},
 	"dependencies": {
 		"typescript": "^5.9.3"

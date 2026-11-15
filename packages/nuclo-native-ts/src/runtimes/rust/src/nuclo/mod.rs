@@ -37,13 +37,13 @@ pub mod prelude {
     pub use super::backend::NativeView;
     pub use super::node::{
         article, aside, button, checkbox, div, el, em, footer, force_update, form, h1, h2, h3, h4, header, img, input, into, label, li, list, main, native_view, nav, p, region, render, scope,
-        section, small, span, strong, textarea, ul, update, when, InputTarget, KeyboardEvent, Mod, NativeComponent, NativeElement, NativeEvent, Node, PanEvent, Params, PinchEvent, PointerEvent,
+        section, select_event, small, span, strong, textarea, ul, update, when, InputTarget, KeyboardEvent, Mod, NativeComponent, NativeElement, NativeEvent, Node, PanEvent, Params, PinchEvent, PointerEvent,
         ScrollEvent, WhenBuilder, A,
     };
     pub use super::router::{render_outlet, Outlet, Route, Router, Tab};
     pub use super::style::*;
     pub use super::task::{
-        cancel_animation_frame, clear_interval, clear_timeout, console_log, delay, fetch, js_error_message, json, launch, request_animation_frame, set_interval, set_timeout, FetchInit, Frame,
+        cancel_animation_frame, clear_interval, clear_timeout, console_log, delay, fetch, host_call, host_call_sync, js_error_message, json, launch, request_animation_frame, set_interval, set_timeout, FetchInit, Frame,
         JsError, Json, Response, Timer,
     };
     pub use std::rc::Rc;

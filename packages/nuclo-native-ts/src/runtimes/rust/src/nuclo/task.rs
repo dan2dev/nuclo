@@ -91,7 +91,7 @@ pub fn launch<T>(call: impl Future<Output = Result<T, JsError>> + 'static) {
     let id = next_id();
     let task: Task = Box::pin(async move {
         if let Err(error) = call.await {
-            eprintln!("nuclo: uncaught error in an async function: {}", error.message);
+            backend().log(&format!("nuclo: uncaught error in an async function: {}", error.message), true);
         }
     });
     TASKS.with(|tasks| tasks.borrow_mut().insert(id, task));
@@ -232,7 +232,7 @@ pub fn cancel_animation_frame(frame: Frame) {
 }
 
 pub fn console_log(values: &[&str]) {
-    println!("{}", values.join(" "));
+    backend().log(&values.join(" "), false);
 }
 
 // ---------------------------------------------------------------------------
@@ -269,6 +269,7 @@ pub struct FetchInit {
     pub headers: Option<Map<String>>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn request(url: &str, method: &str, body: Option<String>, headers: &[(String, String)]) -> Result<ureq::http::Response<ureq::Body>, String> {
     // A 404 is a response, as with fetch(): only a failed exchange is an error.
     let agent = ureq::Agent::new_with_config(ureq::Agent::config_builder().http_status_as_error(false).build());
@@ -284,6 +285,7 @@ fn request(url: &str, method: &str, body: Option<String>, headers: &[(String, St
 }
 
 /// An HTTP exchange on its own thread; the caller resumes on the UI thread.
+#[cfg(not(target_arch = "wasm32"))]
 pub async fn fetch(url: &str, init: FetchInit) -> Result<Response, JsError> {
     let url = url.to_string();
     let method = init.method.unwrap_or_else(|| "GET".into());
@@ -301,8 +303,49 @@ pub async fn fetch(url: &str, init: FetchInit) -> Result<Response, JsError> {
     Ok(Response { status, body: text.into() })
 }
 
-/// An image's bytes, for `img({ src })`.
-pub(crate) fn download(url: &str) -> Option<Vec<u8>> {
+/// An HTTP exchange the web host makes with the browser's fetch.
+#[cfg(target_arch = "wasm32")]
+pub async fn fetch(url: &str, init: FetchInit) -> Result<Response, JsError> {
+    let (later, done) = Later::new();
+    let request = super::backend::HttpRequest {
+        method: init.method.unwrap_or_else(|| "GET".into()),
+        url: url.to_string(),
+        headers: init.headers.map(|headers| headers.entries()).unwrap_or_default(),
+        body: init.body,
+    };
+    backend().http(request, Box::new(done));
+    let (status, bytes) = later.await.map_err(JsError::new)?;
+    Ok(Response { status, body: String::from_utf8_lossy(&bytes).into_owned().into() })
+}
+
+/// Calls a function of the platform's own code (the web host's `declare function`s): arguments and result as JSON.
+pub fn host_call_sync(name: &str, args: Vec<Json>) -> Result<Json, JsError> {
+    let text = backend().call_sync(name, &Json::Array(args).to_string()).map_err(JsError::new)?;
+    serde_json::from_str(&text).map_err(|e| JsError::new(format!("{name} returned something that is not JSON: {e}")))
+}
+
+/// The same for a function that returns a promise.
+pub async fn host_call(name: &str, args: Vec<Json>) -> Result<Json, JsError> {
+    let (later, done) = Later::new();
+    backend().call(name, &Json::Array(args).to_string(), Box::new(done));
+    let text = later.await.map_err(JsError::new)?;
+    serde_json::from_str(&text).map_err(|e| JsError::new(format!("{name} returned something that is not JSON: {e}")))
+}
+
+/// An image's bytes, for `img({ src })`, on the UI thread (`None`: it did not download). The web host
+/// never gets here: its images load through `Backend::set_image_url`.
+pub(crate) fn download_async(url: String, done: impl FnOnce(Option<Vec<u8>>) + 'static) {
+    #[cfg(not(target_arch = "wasm32"))]
+    off_thread(move || download(&url), done);
+    #[cfg(target_arch = "wasm32")]
+    {
+        let _ = url;
+        done(None);
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn download(url: &str) -> Option<Vec<u8>> {
     let mut response = request(url, "GET", None, &[]).ok()?;
     if !response.status().is_success() {
         return None;

@@ -39,6 +39,11 @@ pub struct NativeEvent {
     pub target: InputTarget,
 }
 
+/// What a select reports when an option is picked: the event's target holds the option's value.
+pub fn select_event(value: impl AsRef<str>) -> NativeEvent {
+    NativeEvent { target: InputTarget { value: value.as_ref().to_string(), checked: false } }
+}
+
 /// Anything a builder accepts: a child node, text, an attribute, a style class, a fragment.
 #[derive(Clone)]
 pub enum Mod {
@@ -725,7 +730,7 @@ impl Node {
 
     fn measure_now(&self, max_width: f32, exact: bool) -> [f32; 2] {
         let s = self.computed.get();
-        let mut width = self.shown_width.get().or(s.width.map(px));
+        let mut width = self.shown_width.get().or(s.width.map(px)).or_else(|| s.width_pct.filter(|_| max_width < flex::UNBOUNDED).map(|pct| max_width * pct as f32 / 100.0));
         let mut height = self.shown_height.get().or(s.height.map(px));
         if exact && width.is_none() {
             width = Some(max_width);
@@ -1167,9 +1172,9 @@ builders!(Image: img);
 pub fn el(tag: &str, mods: Vec<Mod>) -> Node {
     const TEXT: &[&str] = &[
         "h5", "h6", "b", "i", "u", "s", "del", "ins", "mark", "code", "pre", "kbd", "samp", "var", "abbr", "cite", "q", "dfn", "sub", "sup", "time", "legend", "caption",
-        "figcaption", "summary", "dt", "dd", "a",
+        "figcaption", "summary", "dt", "dd", "a", "bdi", "bdo", "data", "output", "rt", "rp", "ruby",
     ];
-    const BOXES: &[&str] = &["th", "td", "tr", "hr"];
+    const BOXES: &[&str] = &["th", "td", "tr", "hr", "head", "base", "link", "meta", "script", "style", "title", "template", "noscript", "datalist", "area", "source", "track", "wbr", "br", "progress", "meter", "select"];
     match (TEXT.iter().find(|name| **name == tag), BOXES.iter().find(|name| **name == tag)) {
         (Some(name), _) => build(ViewKind::Text, name, mods),
         // The tag only matters for its default style: the boxes that have one keep their name.
@@ -1280,19 +1285,19 @@ impl A {
     pub fn src_fn(value: Rc<dyn Fn() -> String>) -> Mod {
         Mod::apply(move |node| {
             let target = Rc::downgrade(&node.0);
+            let view = node.view.unwrap();
             node.bind(value.clone(), move |url: &String| {
+                if backend().set_image_url(view, url) {
+                    return;
+                }
                 let target = target.clone();
-                let url = url.clone();
-                task::off_thread(
-                    move || task::download(&url),
-                    move |bytes| {
-                        if let (Some(node), Some(bytes)) = (target.upgrade(), bytes) {
-                            if !node.destroyed.get() {
-                                backend().set_image(node.view.unwrap(), &bytes);
-                            }
+                task::download_async(url.clone(), move |bytes| {
+                    if let (Some(node), Some(bytes)) = (target.upgrade(), bytes) {
+                        if !node.destroyed.get() {
+                            backend().set_image(node.view.unwrap(), &bytes);
                         }
-                    },
-                );
+                    }
+                });
             });
         })
     }

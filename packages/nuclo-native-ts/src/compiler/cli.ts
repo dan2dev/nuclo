@@ -10,8 +10,10 @@ import * as path from "node:path";
 import { emitKotlin } from "./emitKotlin.ts";
 import { emitRust } from "./emitRust.ts";
 import { emitSwift } from "./emitSwift.ts";
+import { emitWasmNative } from "./wasmNative.ts";
 import type { Program } from "./ir.ts";
 import { CompileError, transpile } from "./transpile.ts";
+import { buildWasm } from "./wasm.ts";
 import { buildWeb } from "./web.ts";
 
 const RUNTIMES = path.resolve(import.meta.dirname, "../runtimes");
@@ -79,6 +81,23 @@ const TARGETS: Record<string, (input: TargetInput) => string | Promise<string>> 
     const warn = (message: string) => console.warn(message.replaceAll("linux", "linux-gpui"));
     writeFileSync(path.join(dir, "src/app.rs"), emitRust(program, { native: existsSync(native), warn }));
     return path.join(dir, "src/app.rs");
+  },
+  // The same Rust core run as WebAssembly in the browser: the Cargo project of runtimes/rust-wasm
+  // (the web backend; host.ts is its DOM half), the core and the generated src/app.rs. The target
+  // builds it: the folder is a finished web page (index.html, host.js, app.wasm).
+  async wasm({ program, entry, dir }) {
+    cpSync(path.join(RUNTIMES, "rust-wasm"), dir, { recursive: true, filter: (source) => !/\.ts$|tsconfig\.json$/.test(source) });
+    cpSync(path.join(RUNTIMES, "rust/src/nuclo"), path.join(dir, "src/nuclo"), { recursive: true });
+    // The app's platform code is TypeScript for the DOM, run by the page: native/wasm/index.ts, or the web target's
+    // native/web/index.ts. The Rust side of it, the `native` module, is generated from the app's types.
+    const native = ["wasm", "web"].map((target) => path.join(path.dirname(entry), "native", target, "index.ts")).find(existsSync);
+    mkdirSync(path.join(dir, "src/native"), { recursive: true });
+    writeFileSync(path.join(dir, "src/native/mod.rs"), emitWasmNative(program));
+    const crate = "nuclo-" + (path.basename(path.dirname(entry)).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "app");
+    const manifest = path.join(dir, "Cargo.toml");
+    writeFileSync(manifest, readFileSync(manifest, "utf8").replace('name = "nuclo-app"', `name = "${crate}"`));
+    writeFileSync(path.join(dir, "src/app.rs"), emitRust(program, { native: true }));
+    return buildWasm(dir, crate, path.basename(path.dirname(entry)), native);
   },
 };
 

@@ -36,6 +36,9 @@ public struct NativeEvent {
     public let target: InputTarget
 }
 
+/// What a select reports when an option is picked: the event's target holds the option's value.
+public func selectEvent(_ value: String) -> NativeEvent { NativeEvent(target: InputTarget(value: value, checked: false)) }
+
 /// Coordinates in points: `x`/`y` from the view's top-left corner, `pageX`/`pageY` from the window's.
 public struct PointerEvent {
     public let x: Double
@@ -139,6 +142,7 @@ public struct Style: Equatable {
     public var paddingBottom: Double?
     public var paddingLeft: Double?
     public var width: Double?
+    public var widthPct: Double?
     public var height: Double?
     public var minWidth: Double?
     public var maxWidth: Double?
@@ -192,7 +196,7 @@ public struct Style: Equatable {
         flexWrap: FlexWrap? = nil, flex: Double? = nil, gap: Double? = nil, margin: Double? = nil, marginTop: Double? = nil,
         marginRight: Double? = nil, marginBottom: Double? = nil, marginLeft: Double? = nil, padding: Double? = nil,
         paddingTop: Double? = nil, paddingRight: Double? = nil, paddingBottom: Double? = nil, paddingLeft: Double? = nil,
-        width: Double? = nil, height: Double? = nil, minWidth: Double? = nil, maxWidth: Double? = nil, minHeight: Double? = nil,
+        width: Double? = nil, widthPct: Double? = nil, height: Double? = nil, minWidth: Double? = nil, maxWidth: Double? = nil, minHeight: Double? = nil,
         maxHeight: Double? = nil, aspectRatio: Double? = nil, overflow: Overflow? = nil, position: Position? = nil,
         top: Double? = nil, right: Double? = nil, bottom: Double? = nil, left: Double? = nil, zIndex: Double? = nil,
         display: Display? = nil, backgroundColor: String? = nil, color: String? = nil, opacity: Double? = nil,
@@ -210,7 +214,7 @@ public struct Style: Equatable {
         self.marginBottom = marginBottom; self.marginLeft = marginLeft
         self.padding = padding; self.paddingTop = paddingTop; self.paddingRight = paddingRight
         self.paddingBottom = paddingBottom; self.paddingLeft = paddingLeft
-        self.width = width; self.height = height; self.minWidth = minWidth; self.maxWidth = maxWidth
+        self.width = width; self.widthPct = widthPct; self.height = height; self.minWidth = minWidth; self.maxWidth = maxWidth
         self.minHeight = minHeight; self.maxHeight = maxHeight; self.aspectRatio = aspectRatio
         self.overflow = overflow; self.position = position
         self.top = top; self.right = right; self.bottom = bottom; self.left = left
@@ -254,7 +258,8 @@ public struct Style: Equatable {
         s.paddingRight = o.paddingRight ?? s.paddingRight
         s.paddingBottom = o.paddingBottom ?? s.paddingBottom
         s.paddingLeft = o.paddingLeft ?? s.paddingLeft
-        s.width = o.width ?? s.width
+        s.width = o.widthPct != nil ? nil : o.width ?? s.width
+        s.widthPct = o.width != nil ? nil : o.widthPct ?? s.widthPct
         s.height = o.height ?? s.height
         s.minWidth = o.minWidth ?? s.minWidth
         s.maxWidth = o.maxWidth ?? s.maxWidth
@@ -421,6 +426,7 @@ private func parseColor(_ value: String?) -> UIColor? {
 private let textTags: Set<String> = [
     "span", "p", "h1", "h2", "h3", "h4", "h5", "h6", "label", "strong", "b", "small", "em", "i", "u", "s", "del", "ins", "mark", "code",
     "pre", "kbd", "samp", "var", "abbr", "cite", "q", "dfn", "sub", "sup", "time", "legend", "caption", "figcaption", "summary", "dt", "dd", "a",
+    "bdi", "bdo", "data", "output", "rt", "rp", "ruby",
 ]
 
 /// What the browser (and nuclo-native) give each tag before any style.
@@ -444,6 +450,11 @@ private func tagStyle(_ tag: String) -> Style {
     case "code", "pre", "kbd", "samp": return Style(fontFamily: "monospace")
     case "a": return Style(color: "#2563eb")
     case "hr": return Style(height: 1, backgroundColor: "#cbd5e1")
+    case "head", "base", "link", "meta", "script", "style", "title", "template", "noscript", "datalist", "area", "source", "track", "wbr": return Style(display: .none)
+    case "br": return Style(height: 16)
+    case "select": return Style(overflow: .hidden, backgroundColor: "#ffffff", borderRadius: 8, borderWidth: 1, borderColor: "#cbd5e1")
+    case "progress": return Style(flexDirection: .row, width: 160, height: 16, overflow: .hidden, backgroundColor: "#e5e7eb", borderRadius: 8)
+    case "meter": return Style(flexDirection: .row, width: 80, height: 16, overflow: .hidden, backgroundColor: "#e5e7eb", borderRadius: 8)
     case "button": return Style(paddingTop: 8, paddingRight: 14, paddingBottom: 8, paddingLeft: 14, color: "#2563eb")
     case "input", "textarea": return Style(padding: 8)
     default: return Style()
@@ -1026,7 +1037,7 @@ private func points(_ value: Double?) -> CGFloat? {
     /// `exact`: the width is decided (a flex share, a stretch), and only the height is asked.
     func measure(maxWidth: CGFloat, exact: Bool = false) -> CGSize {
         let s = computed
-        var width = points(s.width)
+        var width = points(s.width) ?? s.widthPct.flatMap { maxWidth < Flex.unbounded ? maxWidth * CGFloat($0) / 100 : nil }
         var height = points(s.height)
         if exact && width == nil { width = maxWidth }
         if let ratio = points(s.aspectRatio), ratio > 0 {
@@ -1713,7 +1724,7 @@ final class ScrollBox: UIScrollView, UIScrollViewDelegate {
             let m = cs.margins
             let available = bounded ? max(0, innerW - m.left - m.right) : innerW
             // A stretched child is as wide as the column; one with its own width or alignment keeps its measure.
-            let ownSize = cs.width != nil || (cs.aspectRatio != nil && cs.height != nil)
+            let ownSize = cs.width != nil || cs.widthPct != nil || (cs.aspectRatio != nil && cs.height != nil)
             let stretched = bounded && crossAlign(s, cs) == .stretch && !ownSize
             let size = child.measure(maxWidth: available, exact: stretched)
             needs.append(stretched && fit ? child.measure(maxWidth: available).width : size.width)
@@ -1782,7 +1793,7 @@ final class ScrollBox: UIScrollView, UIScrollViewDelegate {
         let t = points(s.top)
         let b = points(s.bottom)
         let w: CGFloat
-        if let own = points(s.width) {
+        if let own = points(s.width) ?? s.widthPct.map({ bw * CGFloat($0) / 100 }) {
             w = own
         } else if let l, let r {
             w = bw - l - r

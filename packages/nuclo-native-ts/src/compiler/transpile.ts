@@ -10,6 +10,7 @@
  *    the router are lowered to runtime calls with lazily built content.
  * Anything it cannot translate is reported with its file and line, and nothing is emitted.
  */
+import { STYLE_ALIASES, STYLE_FLAGS } from "../styleAliases.ts";
 import * as path from "node:path";
 import ts from "typescript";
 import { type BinOp, type ClassDecl, type Expr, type FnDecl, type Op, type Param, type Program, type RuntimeType, type Stmt, T, type Ty } from "./ir.ts";
@@ -61,7 +62,31 @@ const NAMED_TAGS = new Set([
   "table", "thead", "tbody", "tfoot", "tr", "td", "th", "hr",
   "h5", "h6", "b", "i", "u", "s", "del", "ins", "mark", "code", "pre", "kbd", "samp", "var_", "abbr", "cite", "q", "dfn",
   "sub", "sup", "time", "legend", "caption", "figcaption", "summary", "dt", "dd", "a",
+  "bdi", "bdo", "data", "output", "rt", "rp", "ruby", "body", "html", "colgroup", "col", "map", "picture", "slot", "head", "base", "link", "meta", "script", "style", "title", "template", "noscript", "datalist", "area", "source", "track", "br", "wbr",
 ]);
+
+/** What the options of a `select` share while it is lowered (see `select()`). */
+interface SelectState {
+  /** The names of its variables: whether it is open, and what it holds when the app gives it no `value`. */
+  open: string;
+  chosen: string;
+  change: string;
+  /** What is chosen now, as an expression. */
+  selected: Expr;
+  /** The app's `onChange` handler. */
+  handler?: Expr;
+  /** The text of the chosen option, as pieces: one for each option, and one for each option a `list()` makes. */
+  labels: Expr[];
+  /** Where the next option adds its piece: `labels`, or what a `list()` collects for its rows. */
+  collect: Expr[];
+  first?: Expr;
+}
+
+/** The attributes of `select` that the compiler reads itself. */
+const SELECT_KEYS: ReadonlySet<string> = new Set(["value", "onChange", "disabled"]);
+
+/** The attributes of `progress` and `meter` that describe the bar; the compiler reads them itself. */
+const GAUGE_KEYS: ReadonlySet<string> = new Set(["value", "min", "max", "low", "high", "optimum"]);
 
 /** API interfaces and the runtime types they become. */
 const API_TYPES: Record<string, Ty> = {
@@ -194,6 +219,11 @@ class Frontend {
   private readonly aliases: { target: ts.Node; source: ts.Expression }[] = [];
   /** `const MapView = native<MapProps>("MapView")`: the platform type's name and the props type. */
   private readonly nativeComponents = new Map<ts.Symbol, { name: string; props: ts.Type }>();
+  /** The ones used, with the name of their props class. */
+  private readonly usedComponents = new Map<string, string>();
+  /** The selects being lowered, innermost last: their options find the state they share here. */
+  private readonly selects: SelectState[] = [];
+  private selectCount = 0;
 
   private readonly program: ts.Program;
   private readonly files: readonly ts.SourceFile[];
@@ -215,6 +245,7 @@ class Frontend {
       for (const statement of sf.statements) this.topLevel(statement, out);
     }
     out.classes = [...this.classes.values()];
+    if (this.usedComponents.size) out.components = [...this.usedComponents].map(([name, props]) => ({ name, props }));
     if (this.diagnostics.length) {
       throw new CompileError(this.diagnostics.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line || a.column - b.column));
     }
@@ -1427,11 +1458,46 @@ class Frontend {
         continue;
       }
       const key = prop.name.text;
+      const flag = STYLE_FLAGS[key];
+      if (flag) {
+        if (prop.initializer.kind === ts.SyntaxKind.TrueKeyword) for (const [target, value] of flag) given.set(target, typeof value === "number" ? { e: "double", v: value.toFixed(1) } : { e: "enum", type: STYLE_ENUMS[target]!, member: camel(value) });
+        else if (prop.initializer.kind !== ts.SyntaxKind.FalseKeyword) this.error(prop.initializer, `${key} takes true or false.`);
+        continue;
+      }
+      if (key === "width" && !this.isNumber(this.typeOf(prop.initializer))) {
+        given.set("widthPct", this.percent(prop.initializer, ctx));
+        continue;
+      }
+      const alias = STYLE_ALIASES[key];
+      if (alias) {
+        for (const target of alias) {
+          const aliasEnum = STYLE_ENUMS[target];
+          given.set(target, aliasEnum ? this.styleEnum(prop.initializer, aliasEnum, ctx) : this.expr(prop.initializer, ctx, this.isNumber(this.typeOf(prop.initializer)) ? T.double : T.string));
+        }
+        continue;
+      }
       const enumType = STYLE_ENUMS[key];
       if (STATE_STYLES.has(key)) given.set(key, this.expr(prop.initializer, ctx, T.rt("Style")));
       else given.set(key, enumType ? this.styleEnum(prop.initializer, enumType, ctx) : this.expr(prop.initializer, ctx, this.isNumber(this.typeOf(prop.initializer)) ? T.double : T.string));
     }
+    return this.styleOf(given, base);
+  }
+
+  /** A Style value from its keys, in the order the Style declares them (Swift labels follow it). */
+  private styleOf(given: Map<string, Expr>, base?: Expr): Expr {
     return { e: "style", props: this.styleKeys().filter((k) => given.has(k)).map((k) => [k, given.get(k)!]), base };
+  }
+
+  /** `"50%"` or `${n}%`: the number of percent, as a Double. */
+  private percent(node: ts.Expression, ctx: Ctx): Expr {
+    if (ts.isParenthesizedExpression(node)) return this.percent(node.expression, ctx);
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      const m = /^(-?\d+(?:\.\d+)?)%$/.exec(node.text);
+      if (m) return { e: "double", v: m[1]!.includes(".") ? m[1]! : `${m[1]}.0` };
+    } else if (ts.isTemplateExpression(node) && node.head.text === "" && node.templateSpans.length === 1 && node.templateSpans[0]!.literal.text === "%") {
+      return this.expr(node.templateSpans[0]!.expression, ctx, T.double);
+    }
+    return this.error(node, "Write a percent width as a literal (\"50%\") or a template of one number (`${value}%`).");
   }
 
   private styleEnum(node: ts.Expression, type: string, ctx: Ctx): Expr {
@@ -1447,7 +1513,10 @@ class Frontend {
   private styleKeys(): string[] {
     const api = this.program.getSourceFile(API_FILE);
     const decl = api?.statements.find((s): s is ts.InterfaceDeclaration => ts.isInterfaceDeclaration(s) && s.name.text === "Style");
-    return decl ? decl.members.flatMap((m) => (m.name && ts.isIdentifier(m.name) ? [m.name.text] : [])) : [];
+    const keys = decl ? decl.members.flatMap((m) => (m.name && ts.isIdentifier(m.name) ? [m.name.text] : [])) : [];
+    // `widthPct` is what `width: "50%"` becomes natively: it follows `width`.
+    keys.splice(keys.indexOf("width") + 1, 0, "widthPct");
+    return keys;
   }
 
   // -------------------------------------------------------------------------
@@ -1634,6 +1703,10 @@ class Frontend {
       return { e: "rt", name: tag, args: this.children(args, ctx) };
     }
     if (NAMED_TAGS.has(name)) return { e: "rt", name: "el", args: [{ e: "str", v: name.replace(/_$/, "") }, ...this.children(args, ctx)] };
+    if (name === "progress" || name === "meter") return this.gauge(name, args, ctx);
+    if (name === "select") return this.select(node, ctx);
+    if (name === "option") return this.option(node, ctx);
+    if (name === "optgroup") return this.optgroup(node, ctx);
     switch (name) {
       case "update":
       case "scope":
@@ -1652,7 +1725,11 @@ class Frontend {
       case "list": {
         const renderTy = this.tyOfExpr(args[1]!);
         const elem = renderTy.k === "fn" ? renderTy.params[0]! : T.void;
-        return {
+        // The options a list makes put their text in the select's label as a whole: one piece for every item.
+        const select = this.selects.at(-1);
+        const outer = select?.collect;
+        if (select) select.collect = [];
+        const list: Expr = {
           e: "rt",
           name,
           args: [
@@ -1660,6 +1737,18 @@ class Frontend {
             this.expr(args[1]!, ctx, { k: "fn", params: [elem, T.int], ret: T.optional(T.rt("Node")) }),
           ],
         };
+        if (select) {
+          const pieces = select.collect;
+          select.collect = outer!;
+          const render = args[1]!;
+          if (pieces.length && !ts.isArrowFunction(render)) this.error(render, "Write the render function of a list of options as an arrow function.");
+          else if (pieces.length && ts.isArrowFunction(render)) {
+            const items = ts.isArrowFunction(args[0]!) && !ts.isBlock(args[0].body) ? this.expr(args[0].body, ctx, T.array(elem)) : { e: "call" as const, callee: this.expr(args[0]!, ctx), args: [] };
+            const each: Expr = { e: "lambda", params: this.params(render).slice(0, 1), ret: T.string, body: { e: "tpl", parts: pieces } };
+            outer!.push({ e: "op", op: "arr.join", args: [{ e: "op", op: "arr.map", args: [items, each] }, { e: "str", v: "" }] });
+          }
+        }
+        return list;
       }
       case "when":
         return { e: "rt", name, args: [this.condition(args[0]!, ctx), this.content(args.slice(1), ctx)] };
@@ -1716,6 +1805,183 @@ class Frontend {
     return this.error(node, `${name}() is not supported natively.`);
   }
 
+  /**
+   * `progress` and `meter` are a track box with a fill box in it, so every platform draws the same
+   * bar: the fill's `widthPct` follows the value, and `meter` picks its color as HTML does.
+   * The range is written as literals (the colors depend on where `optimum` sits); `value` is a
+   * number or `() => number`, and a function becomes a dynamic style of the fill.
+   */
+  private gauge(name: "progress" | "meter", args: readonly ts.Expression[], ctx: Ctx): Expr {
+    const literal = (key: string): number | undefined => {
+      const init = this.attrValue(args, key);
+      if (!init) return undefined;
+      if (ts.isNumericLiteral(init)) return Number(init.text);
+      if (ts.isPrefixUnaryExpression(init) && init.operator === ts.SyntaxKind.MinusToken && ts.isNumericLiteral(init.operand)) return -Number(init.operand.text);
+      this.error(init, `${key} must be a number literal.`);
+      return undefined;
+    };
+    const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
+    const dbl = (n: number): Expr => ({ e: "double", v: Number.isInteger(n) ? n.toFixed(1) : String(n) });
+    const min = literal("min") ?? 0;
+    const max = literal("max") ?? 1;
+    const low = clamp(literal("low") ?? min, min, max);
+    const high = clamp(literal("high") ?? max, low, max);
+    const optimum = clamp(literal("optimum") ?? (min + max) / 2, min, max);
+
+    const value = this.attrValue(args, "value");
+    const body = value && ts.isArrowFunction(value) && !ts.isBlock(value.body) && value.parameters.length === 0 ? value.body : undefined;
+    if (value && this.isCallable(value) && !body) this.error(value, `Write the ${name} value as a number or an arrow function with an expression body: () => number.`);
+    const read: Expr = body ? { e: "id", name: "gaugeValue" } : value ? this.expr(value, ctx, T.double) : dbl(min);
+
+    const compare = (op: "<" | ">" | "<=" | ">=", n: number): Expr => ({ e: "bin", op, l: read, r: dbl(n) });
+    const str = (v: string): Expr => ({ e: "str", v });
+    const pick = (c: Expr, a: Expr, b: Expr): Expr => ({ e: "cond", c, a, b });
+    const [good, fair, poor] = [str("#22c55e"), str("#eab308"), str("#ef4444")];
+    const color: Expr =
+      name === "progress" ? str("#2563eb")
+      : optimum < low ? pick(compare("<", low), good, pick(compare(">", high), poor, fair))
+      : optimum > high ? pick(compare(">", high), good, pick(compare("<", low), poor, fair))
+      : pick({ e: "bin", op: "&&", l: compare(">=", low), r: compare("<=", high) }, good, fair);
+    const fill = this.styleOf(new Map<string, Expr>([
+      ["widthPct", { e: "op", op: "math.max", args: [dbl(0), { e: "op", op: "math.min", args: [dbl(100), { e: "bin", op: "*", l: { e: "bin", op: "/", l: { e: "bin", op: "-", l: read, r: dbl(min) }, r: dbl(max - min) }, r: dbl(100) }] }] }],
+      ["backgroundColor", color],
+    ]));
+    const style: Expr = body
+      ? { e: "lambda", params: [], ret: T.rt("Style"), body: [{ s: "let", name: "gaugeValue", ty: T.double, init: this.expr(body, ctx, T.double), mutable: false }, { s: "return", x: fill }] }
+      : fill;
+    const track: Expr[] = [{ e: "str", v: name }, ...this.children(args, ctx, GAUGE_KEYS)];
+    return { e: "rt", name: "el", args: [...track, { e: "rt", name: "div", args: [{ e: "rt", name: "A.style", args: [style] }] }] };
+  }
+
+  /** A value the select reads each time it is drawn: a plain value, or the body of `() => value`. */
+  private reading(node: ts.Expression, ctx: Ctx, ty: Ty, what: string): Expr {
+    if (ts.isArrowFunction(node) && !ts.isBlock(node.body) && node.parameters.length === 0) return this.expr(node.body, ctx, ty);
+    if (this.isCallable(node)) return this.error(node, `Write ${what} as a value or an arrow function with an expression body: () => value.`);
+    return this.expr(node, ctx, ty);
+  }
+
+  /**
+   * `select`, `option` and `optgroup` are built from boxes and text, so every platform draws the same
+   * control: a box (the `select` tag's: border, rounded, white) holding a row with the chosen option's
+   * text and a chevron, and below it, once the row is pressed, the options, one row each. What is
+   * chosen and whether it is open are variables of the select, in a closure that builds it:
+   *
+   *   (() => { var open = false; var chosen = "first"; return el("select", …row, when(() => open, …options)) })()
+   *
+   * The options are found where they are written: directly in the select, in an optgroup, or in the
+   * render function of a list(). The text of the chosen one is the one of the option whose value is
+   * `value`: each option adds `value == chosen ? text : ""` to the row's text, and a list adds a piece
+   * for each of its items.
+   */
+  private select(node: ts.CallExpression, ctx: Ctx): Expr {
+    const id = this.selectCount++;
+    const state: SelectState = { open: `selectOpen${id}`, chosen: `selectChosen${id}`, change: `selectChange${id}`, selected: { e: "nil" }, labels: [], collect: [] };
+    state.selected = { e: "id", name: state.chosen };
+    state.collect = state.labels;
+    const attributes = node.arguments.filter(ts.isObjectLiteralExpression);
+    const value = this.attrValue(attributes, "value");
+    if (value) state.selected = this.reading(value, ctx, T.string, "the value of a select");
+    const disabledNode = this.attrValue(attributes, "disabled");
+    const disabled = disabledNode ? this.reading(disabledNode, ctx, T.bool, "disabled") : undefined;
+    for (const object of attributes) {
+      for (const prop of object.properties) {
+        if (!prop.name || !ts.isIdentifier(prop.name) || prop.name.text !== "onChange") continue;
+        const handler = ts.isMethodDeclaration(prop) ? prop : ts.isPropertyAssignment(prop) ? prop.initializer : ts.isShorthandPropertyAssignment(prop) ? prop.name : undefined;
+        if (handler) state.handler = (this.attr("onChange", handler, ctx) as Extract<Expr, { e: "rt" }>).args[0]!;
+      }
+    }
+
+    this.selects.push(state);
+    let rows: Expr[];
+    try {
+      rows = node.arguments.filter((arg) => !ts.isObjectLiteralExpression(arg)).map((arg) => this.optionalChild(arg, ctx, T.rt("NodeMod")));
+    } finally {
+      this.selects.pop();
+    }
+    const mods = this.children(attributes, ctx, SELECT_KEYS);
+
+    const rt = (name: string, ...args: Expr[]): Expr => ({ e: "rt", name, args });
+    const num = (n: number): Expr => ({ e: "double", v: n.toFixed(1) });
+    const str = (v: string): Expr => ({ e: "str", v });
+    const style = (entries: [string, Expr][]) => rt("A.style", this.styleOf(new Map(entries)));
+    const enumOf = (key: string, value: string): Expr => ({ e: "enum", type: STYLE_ENUMS[key]!, member: camel(value) });
+    const lambda = (body: Stmt[] | Expr, ret: Ty): Expr => ({ e: "lambda", params: [], ret, body });
+    const press = (body: Stmt[]): Expr => rt("A.onClick", { e: "lambda", params: [{ name: "e", ty: T.rt("NativeEvent"), unused: true }], ret: T.void, body, typed: true });
+    const open: Expr = { e: "id", name: state.open };
+    const label: Expr = { e: "tpl", parts: state.labels.length ? state.labels : [""] };
+    const refresh: Stmt = { s: "expr", x: rt("update") };
+
+    const toggle: Stmt = { s: "assign", target: open, op: "=", value: { e: "not", x: open } };
+    const trigger = rt(
+      "div",
+      style([["flexDirection", enumOf("flexDirection", "row")], ["alignItems", enumOf("alignItems", "center")], ["justifyContent", enumOf("justifyContent", "space-between")], ["gap", num(8)], ["paddingTop", num(10)], ["paddingRight", num(12)], ["paddingBottom", num(10)], ["paddingLeft", num(12)]]),
+      press(disabled ? [{ s: "if", c: { e: "not", x: disabled }, then: [toggle, refresh] }] : [toggle, refresh]),
+      rt("span", style([["flex", num(1)]]), rt("A.text", lambda(label, T.string))),
+      rt("span", rt("A.text", str("▾"))),
+    );
+    const content: Expr = { e: "lambda", params: [], ret: T.array(T.optional(T.rt("NodeMod"))), body: { e: "arr", of: T.optional(T.rt("NodeMod")), items: [rt("el", str("hr")), ...rows] } };
+    const body: Stmt[] = [
+      { s: "let", name: state.open, ty: T.bool, init: { e: "bool", v: false }, mutable: true },
+      { s: "let", name: state.chosen, ty: T.string, init: state.first ?? str(""), mutable: true },
+    ];
+    if (state.handler) body.push({ s: "let", name: state.change, ty: { k: "fn", params: [T.rt("NativeEvent")], ret: T.void }, init: state.handler, mutable: false });
+    body.push({ s: "return", x: rt("el", str("select"), ...mods, trigger, rt("when", lambda(open, T.bool), content)) });
+    return { e: "call", callee: lambda(body, T.rt("Node")), args: [] };
+  }
+
+  /** The text an option shows: its children's, as a string expression. */
+  private optionText(args: readonly ts.Expression[], ctx: Ctx): Expr {
+    const parts = args.filter((arg) => !ts.isObjectLiteralExpression(arg)).map((arg): Expr => (this.isCallable(arg) ? this.reading(arg, ctx, T.string, "the text of an option") : this.str(arg, ctx)));
+    return { e: "tpl", parts: parts.length ? parts : [""] };
+  }
+
+  private option(node: ts.CallExpression, ctx: Ctx): Expr {
+    const state = this.selects.at(-1);
+    if (!state) return this.error(node, "option() belongs inside a select().");
+    const args = node.arguments;
+    const text = this.optionText(args, ctx);
+    const valueNode = this.attrValue(args, "value");
+    const value = valueNode ? this.expr(valueNode, ctx, T.string) : text;
+    const disabledNode = this.attrValue(args, "disabled");
+    const disabled = disabledNode?.kind === ts.SyntaxKind.TrueKeyword;
+    state.first ??= state.collect === state.labels ? value : undefined;
+    state.collect.push({ e: "cond", c: { e: "bin", op: "==", l: state.selected, r: value }, a: text, b: { e: "str", v: "" } });
+
+    const num = (n: number): Expr => ({ e: "double", v: n.toFixed(1) });
+    const chosenNow: Expr = { e: "bin", op: "==", l: state.selected, r: value };
+    const look: [string, Expr][] = [["flexDirection", { e: "enum", type: "FlexDirection", member: "row" }], ["paddingTop", num(10)], ["paddingRight", num(12)], ["paddingBottom", num(10)], ["paddingLeft", num(12)], ["backgroundColor", { e: "cond", c: chosenNow, a: { e: "str", v: "#eef2ff" }, b: { e: "str", v: "#ffffff" } }]];
+    if (disabled) look.push(["opacity", num(0.4)]);
+    const pick: Stmt[] = [
+      { s: "assign", target: { e: "id", name: state.chosen }, op: "=", value },
+      { s: "assign", target: { e: "id", name: state.open }, op: "=", value: { e: "bool", v: false } },
+    ];
+    if (state.handler) pick.push({ s: "expr", x: { e: "call", callee: { e: "id", name: state.change }, args: [{ e: "rt", name: "selectEvent", args: [value] }] } });
+    pick.push({ s: "expr", x: { e: "rt", name: "update", args: [] } });
+    const mods: Expr[] = [
+      { e: "rt", name: "A.style", args: [{ e: "lambda", params: [], ret: T.rt("Style"), body: this.styleOf(new Map(look)) }] },
+      ...(disabled ? [] : [{ e: "rt" as const, name: "A.onClick", args: [{ e: "lambda" as const, params: [{ name: "e", ty: T.rt("NativeEvent"), unused: true }], ret: T.void, body: pick, typed: true }] }]),
+      { e: "rt", name: "span", args: this.children(args.filter((arg) => !ts.isObjectLiteralExpression(arg)), ctx) },
+    ];
+    return { e: "rt", name: "div", args: mods };
+  }
+
+  private optgroup(node: ts.CallExpression, ctx: Ctx): Expr {
+    if (!this.selects.length) return this.error(node, "optgroup() belongs inside a select().");
+    const label = this.attrValue(node.arguments, "label");
+    const rows = node.arguments.filter((arg) => !ts.isObjectLiteralExpression(arg)).map((arg) => this.optionalChild(arg, ctx, T.rt("NodeMod")));
+    const heading: Expr[] = label
+      ? [{
+          e: "rt",
+          name: "span",
+          args: [
+            { e: "rt", name: "A.style", args: [this.styleOf(new Map<string, Expr>([["paddingTop", { e: "double", v: "10.0" }], ["paddingRight", { e: "double", v: "12.0" }], ["paddingBottom", { e: "double", v: "4.0" }], ["paddingLeft", { e: "double", v: "12.0" }], ["fontSize", { e: "double", v: "12.0" }], ["fontWeight", { e: "enum", type: STYLE_ENUMS.fontWeight!, member: "bold" }], ["color", { e: "str", v: "#64748b" }]]))] },
+            ...this.children([label], ctx),
+          ],
+        }]
+      : [];
+    return { e: "rt", name: "div", args: [...heading, ...rows] };
+  }
+
   /** A when() condition: a function, or a value fixed when the tree is built. */
   private condition(node: ts.Expression, ctx: Ctx): Expr {
     return this.isCallable(node)
@@ -1734,17 +2000,18 @@ class Frontend {
       if (!ts.isObjectLiteralExpression(arg)) continue;
       for (const prop of arg.properties) {
         if (ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name) && prop.name.text === key) return prop.initializer;
+        if (ts.isShorthandPropertyAssignment(prop) && prop.name.text === key) return prop.name;
       }
     }
     return undefined;
   }
 
   /** A builder's arguments: text, dynamic text, nodes, modifiers and expanded attribute objects. */
-  private children(args: readonly ts.Expression[], ctx: Ctx): Expr[] {
+  private children(args: readonly ts.Expression[], ctx: Ctx, skip?: ReadonlySet<string>): Expr[] {
     const out: Expr[] = [];
     for (const arg of args) {
       if (ts.isObjectLiteralExpression(arg)) {
-        out.push(...this.attributes(arg, ctx));
+        out.push(...this.attributes(arg, ctx, skip));
         continue;
       }
       if (ts.isSpreadElement(arg)) {
@@ -1787,8 +2054,9 @@ class Frontend {
     return this.isCallable(node) ? this.expr(node, ctx, { k: "fn", params: [], ret: ty }) : this.expr(node, ctx, ty);
   }
 
-  private attributes(node: ts.ObjectLiteralExpression, ctx: Ctx): Expr[] {
+  private attributes(node: ts.ObjectLiteralExpression, ctx: Ctx, skip?: ReadonlySet<string>): Expr[] {
     return node.properties.flatMap((prop): Expr[] => {
+      if (skip && prop.name && ts.isIdentifier(prop.name) && skip.has(prop.name.text)) return [];
       if (ts.isMethodDeclaration(prop) && ts.isIdentifier(prop.name)) return [this.attr(prop.name.text, prop, ctx)];
       if (ts.isShorthandPropertyAssignment(prop)) return [this.attr(prop.name.text, prop.name, ctx)];
       if (!ts.isPropertyAssignment(prop) || !ts.isIdentifier(prop.name)) return [this.error(prop, "Unsupported attribute.")];
@@ -1835,6 +2103,7 @@ class Frontend {
     const propsTy = this.ty(component.props, node);
     const cls = propsTy.k === "class" ? [...this.classes.values()].find((c) => c.name === propsTy.name) : undefined;
     if (!cls) return this.error(node, "A native component's props must be an interface of the app.");
+    this.usedComponents.set(component.name, cls.name);
     const [first, ...rest] = node.arguments;
     if (first && !ts.isObjectLiteralExpression(first)) return this.error(first, "Pass a native component's props as an object literal.");
     const initial: [string, Expr][] = [];

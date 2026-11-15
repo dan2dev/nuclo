@@ -289,7 +289,7 @@ pub fn js_round(d: f64) -> i64 {
 }
 
 pub fn js_now() -> f64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0.0, |t| t.as_millis() as f64)
+    super::backend::now()
 }
 
 pub fn js_random() -> f64 {

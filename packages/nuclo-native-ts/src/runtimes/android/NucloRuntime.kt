@@ -95,6 +95,9 @@ class InputTarget(val value: String, val checked: Boolean)
 
 class NativeEvent(val target: InputTarget)
 
+/** What a select reports when an option is picked: the event's target holds the option's value. */
+fun selectEvent(value: String) = NativeEvent(InputTarget(value, false))
+
 /** Coordinates in dp: `x`/`y` from the view's top-left corner, `pageX`/`pageY` from the screen's. */
 class PointerEvent(val x: Double, val y: Double, val pageX: Double, val pageY: Double, val pointerId: Int)
 
@@ -171,6 +174,7 @@ data class Style(
     val paddingBottom: Double? = null,
     val paddingLeft: Double? = null,
     val width: Double? = null,
+    val widthPct: Double? = null,
     val height: Double? = null,
     val minWidth: Double? = null,
     val maxWidth: Double? = null,
@@ -237,7 +241,8 @@ data class Style(
             paddingRight = o.paddingRight ?: if (resetPadding) null else paddingRight,
             paddingBottom = o.paddingBottom ?: if (resetPadding) null else paddingBottom,
             paddingLeft = o.paddingLeft ?: if (resetPadding) null else paddingLeft,
-            width = o.width ?: width,
+            width = if (o.widthPct != null) null else o.width ?: width,
+            widthPct = if (o.width != null) null else o.widthPct ?: widthPct,
             height = o.height ?: height,
             minWidth = o.minWidth ?: minWidth,
             maxWidth = o.maxWidth ?: maxWidth,
@@ -315,7 +320,7 @@ data class Style(
             flexWrap == o.flexWrap && flex == o.flex && gap == o.gap && margin == o.margin && marginTop == o.marginTop &&
             marginRight == o.marginRight && marginBottom == o.marginBottom && marginLeft == o.marginLeft && padding == o.padding &&
             paddingTop == o.paddingTop && paddingRight == o.paddingRight && paddingBottom == o.paddingBottom && paddingLeft == o.paddingLeft &&
-            width == o.width && height == o.height && minWidth == o.minWidth && maxWidth == o.maxWidth && minHeight == o.minHeight &&
+            width == o.width && widthPct == o.widthPct && height == o.height && minWidth == o.minWidth && maxWidth == o.maxWidth && minHeight == o.minHeight &&
             maxHeight == o.maxHeight && aspectRatio == o.aspectRatio && position == o.position && top == o.top && right == o.right &&
             bottom == o.bottom && left == o.left && zIndex == o.zIndex && display == o.display && borderWidth == o.borderWidth &&
             fontSize == o.fontSize && fontWeight == o.fontWeight && fontStyle == o.fontStyle && fontFamily == o.fontFamily &&
@@ -383,6 +388,7 @@ private fun parseColorText(value: String): Int? {
 private val TEXT_TAGS = hashSetOf(
     "span", "p", "h1", "h2", "h3", "h4", "h5", "h6", "label", "strong", "b", "small", "em", "i", "u", "s", "del", "ins", "mark", "code",
     "pre", "kbd", "samp", "var", "abbr", "cite", "q", "dfn", "sub", "sup", "time", "legend", "caption", "figcaption", "summary", "dt", "dd", "a",
+    "bdi", "bdo", "data", "output", "rt", "rp", "ruby",
 )
 
 private val TAG_STYLES = hashMapOf(
@@ -417,6 +423,24 @@ private val TAG_STYLES = hashMapOf(
     "samp" to Style(fontFamily = "monospace"),
     "a" to Style(color = "#2563eb"),
     "hr" to Style(height = 1.0, backgroundColor = "#cbd5e1"),
+    "head" to Style(display = Display.None),
+    "base" to Style(display = Display.None),
+    "link" to Style(display = Display.None),
+    "meta" to Style(display = Display.None),
+    "script" to Style(display = Display.None),
+    "style" to Style(display = Display.None),
+    "title" to Style(display = Display.None),
+    "template" to Style(display = Display.None),
+    "noscript" to Style(display = Display.None),
+    "datalist" to Style(display = Display.None),
+    "area" to Style(display = Display.None),
+    "source" to Style(display = Display.None),
+    "track" to Style(display = Display.None),
+    "wbr" to Style(display = Display.None),
+    "br" to Style(height = 16.0),
+    "select" to Style(overflow = Overflow.Hidden, backgroundColor = "#ffffff", borderRadius = 8.0, borderWidth = 1.0, borderColor = "#cbd5e1"),
+    "progress" to Style(flexDirection = FlexDirection.Row, width = 160.0, height = 16.0, overflow = Overflow.Hidden, backgroundColor = "#e5e7eb", borderRadius = 8.0),
+    "meter" to Style(flexDirection = FlexDirection.Row, width = 80.0, height = 16.0, overflow = Overflow.Hidden, backgroundColor = "#e5e7eb", borderRadius = 8.0),
     "button" to Style(paddingTop = 8.0, paddingRight = 14.0, paddingBottom = 8.0, paddingLeft = 14.0, color = "#2563eb"),
     "input" to Style(padding = 8.0),
     "textarea" to Style(padding = 8.0),
@@ -1021,7 +1045,7 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
      */
     internal fun measure(maxWidth: Float, exact: Boolean = false): FloatArray {
         val s = computed
-        var width = shownWidth ?: s.width?.let { px(it) }
+        var width = shownWidth ?: s.width?.let { px(it) } ?: s.widthPct?.let { if (maxWidth < Flex.UNBOUNDED) maxWidth * it.toFloat() / 100f else null }
         var height = shownHeight ?: s.height?.let { px(it) }
         val ratio = s.aspectRatio?.toFloat()
         if (exact && width == null) width = maxWidth
@@ -1480,7 +1504,7 @@ internal object Flex {
             val cs = flow[i].computed
             val available = if (bounded) max(0f, innerW - margins[i][1] - margins[i][3]) else innerW
             // A stretched child is as wide as the column; one with its own width or alignment keeps its measure.
-            val stretched = bounded && crossAlign(s, cs) == Align.Stretch && cs.width == null && !(cs.aspectRatio != null && cs.height != null)
+            val stretched = bounded && crossAlign(s, cs) == Align.Stretch && cs.width == null && cs.widthPct == null && !(cs.aspectRatio != null && cs.height != null)
             val size = flow[i].measure(available, exact = stretched)
             needs[i] = if (stretched && fit) flow[i].measure(available)[0] else size[0]
             size
@@ -1545,7 +1569,7 @@ internal object Flex {
         val r = s.right?.let { px(it) }
         val t = s.top?.let { px(it) }
         val b = s.bottom?.let { px(it) }
-        val w = s.width?.let { px(it) } ?: if (l != null && r != null) bw - l - r else child.measure(bw)[0]
+        val w = s.width?.let { px(it) } ?: s.widthPct?.let { bw * it.toFloat() / 100f } ?: if (l != null && r != null) bw - l - r else child.measure(bw)[0]
         val h = s.height?.let { px(it) } ?: if (t != null && b != null) bh - t - b else child.measure(w, exact = true)[1]
         val x = l ?: if (r != null) bw - r - w else 0f
         val y = t ?: if (b != null) bh - b - h else 0f

@@ -35,7 +35,7 @@ const STYLE: Record<string, "number" | "color" | "enum" | "font" | "state"> = {
   flexDirection: "enum", alignItems: "enum", alignSelf: "enum", justifyContent: "enum", flexWrap: "enum", flex: "number", gap: "number",
   margin: "number", marginTop: "number", marginRight: "number", marginBottom: "number", marginLeft: "number",
   padding: "number", paddingTop: "number", paddingRight: "number", paddingBottom: "number", paddingLeft: "number",
-  width: "number", height: "number", minWidth: "number", maxWidth: "number", minHeight: "number", maxHeight: "number", aspectRatio: "number",
+  width: "number", widthPct: "number", height: "number", minWidth: "number", maxWidth: "number", minHeight: "number", maxHeight: "number", aspectRatio: "number",
   overflow: "enum", position: "enum", top: "number", right: "number", bottom: "number", left: "number", zIndex: "number", display: "enum",
   backgroundColor: "color", color: "color", opacity: "number", borderRadius: "number", borderWidth: "number", borderColor: "color",
   shadowColor: "color", shadowRadius: "number", shadowOffsetX: "number", shadowOffsetY: "number",
@@ -483,6 +483,8 @@ class RustPrinter extends Printer {
       case "setTimeout":
       case "setInterval":
         return rt("Timer");
+      case "selectEvent":
+        return rt("NativeEvent");
       case "update":
       case "forceUpdate":
       case "render":
@@ -1000,6 +1002,8 @@ class RustPrinter extends Printer {
         return `${x.name}(${refs(x.args)})`;
       case "forceUpdate":
         return "force_update()";
+      case "selectEvent":
+        return `select_event(${this.strRef(x.args[0]!, ind)})`;
       case "requestAnimationFrame":
         return `request_animation_frame(${fn(x.args[0], undefined, ind)})`;
       case "cancelAnimationFrame":

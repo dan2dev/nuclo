@@ -8,6 +8,7 @@
 // Layout is the browser's flexbox, set up to give the boxes the native `Flex` algorithm gives:
 // every element is a border-box flex column that does not shrink, `flex: n` is `n 1 0%`.
 
+import { expandStyle } from "../../styleAliases.ts";
 import type * as API from "../../index.ts";
 
 // ---------------------------------------------------------------------------
@@ -69,7 +70,10 @@ const CSS_PROPS: Record<string, (v: never, s: API.Style) => string> = {
   paddingBottom: (v: number) => `padding-bottom:${px(v)}`,
   paddingLeft: (v: number) => `padding-left:${px(v)}`,
   // A box is at most as wide as its container, unless it says how wide it is.
-  width: (v: number, s) => (s.maxWidth == null ? `width:${px(v)};max-width:none` : `width:${px(v)}`),
+  width: (v: number | string, s) => {
+    const w = typeof v === "string" ? v : px(v);
+    return s.maxWidth == null ? `width:${w};max-width:none` : `width:${w}`;
+  },
   height: (v: number) => `height:${px(v)}`,
   minWidth: (v: number) => `min-width:${px(v)}`,
   maxWidth: (v: number) => `max-width:${px(v)}`,
@@ -107,7 +111,8 @@ const CSS_PROPS: Record<string, (v: never, s: API.Style) => string> = {
       : `display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:${v};overflow:hidden`,
 };
 
-function toCss(s: API.Style): string {
+function toCss(style: API.Style): string {
+  const s = expandStyle(style);
   const out: string[] = [];
   for (const key in s) {
     const value = (s as Record<string, unknown>)[key];
@@ -130,7 +135,9 @@ function toCss(s: API.Style): string {
 }
 
 /** `o`'s values win; a `padding` or `margin` shorthand resets the sides set before it, as in CSS. */
-function merge(a: API.Style, o: API.Style): API.Style {
+function merge(a0: API.Style, o0: API.Style): API.Style {
+  const a = expandStyle(a0);
+  const o = expandStyle(o0);
   const out: Record<string, unknown> = { ...a };
   for (const side of ["padding", "margin"]) {
     if ((o as Record<string, unknown>)[side] != null) for (const edge of ["Top", "Right", "Bottom", "Left"]) delete out[side + edge];
@@ -144,7 +151,7 @@ function merge(a: API.Style, o: API.Style): API.Style {
 }
 
 const BASE_CSS = `
-html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
+:root,:root>body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
 body{font:15px system-ui,sans-serif;color:#000;background:#fff;-webkit-text-size-adjust:100%}
 .n{box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;flex:0 0 auto;position:relative;margin:0;padding:0;
 border:0 solid #000;min-width:0;min-height:0;max-width:100%;list-style:none;background:none;font:inherit;color:inherit;text-align:inherit;
@@ -162,7 +169,9 @@ h4.n{font-size:17px;font-weight:bold}h5.n{font-size:15px;font-weight:bold}h6.n{f
 strong.n,b.n,th.n,dt.n{font-weight:bold}small.n,sub.n,sup.n{font-size:12px}em.n,i.n,cite.n,dfn.n,var.n{font-style:italic}
 u.n,ins.n{text-decoration:underline}s.n,del.n{text-decoration:line-through}mark.n{background-color:#fef08a}
 code.n,pre.n,kbd.n,samp.n{font-family:ui-monospace,monospace}a.n{color:#2563eb;cursor:pointer}
-tr.n{flex-direction:row}td.n,th.n{flex:1 1 0%}hr.n{height:1px;background-color:#cbd5e1}
+n-progress.n,n-meter.n{flex-direction:row;width:160px;height:16px;overflow:hidden;background-color:#e5e7eb;border-radius:8px}n-meter.n{width:80px}
+select.n{padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font:inherit;color:inherit;appearance:auto;cursor:pointer}option.n,optgroup.n{display:block;padding:0}
+tr.n{flex-direction:row}td.n,th.n{flex:1 1 0%}hr.n{height:1px;background-color:#cbd5e1}head.n,base.n,link.n,meta.n,script.n,style.n,title.n,template.n,noscript.n,datalist.n,area.n,source.n,track.n,wbr.n{display:none}
 #nuclo{position:fixed;inset:0;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 .nuclo-main{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
 .nuclo-screen{position:absolute;inset:0;overflow-y:auto;background:#fff;display:flex;flex-direction:column}
@@ -449,6 +458,9 @@ function applyAttributes(node: Node, attrs: API.Attributes) {
       case "ariaLabel":
         node.bind(dynamic(value as string), (text) => el.setAttribute("aria-label", text));
         break;
+      case "label":
+        node.bind(dynamic(value as string), (text) => ((el as HTMLOptGroupElement).label = text));
+        break;
       case "type":
         if (value !== "checkbox") field.type = value as string;
         break;
@@ -485,7 +497,7 @@ function listen(node: Node, type: string, handler: (event: never) => void) {
       return el.addEventListener(type, call);
     case "change":
       // A field reports change when it is committed (Enter), as the native fields do; a switch when it flips.
-      if (node.kind === "checkbox") return el.addEventListener("change", call);
+      if (node.kind === "checkbox" || el instanceof HTMLSelectElement) return el.addEventListener("change", call);
       return el.addEventListener("keydown", (e) => e.key === "Enter" && !e.isComposing && call(e));
     case "keyDown":
       if (node.kind === "box") el.tabIndex = 0;
@@ -734,6 +746,105 @@ export const summary = text("summary");
 export const dt = text("dt");
 export const dd = text("dd");
 export const a = text("a");
+export const bdi = text("bdi");
+export const bdo = text("bdo");
+export const data = text("data");
+export const output = text("output");
+export const rt = text("rt");
+export const rp = text("rp");
+export const ruby = text("ruby");
+export const body = box("body");
+export const html = box("html");
+export const colgroup = box("colgroup");
+export const col = box("col");
+export const map = box("map");
+export const picture = box("picture");
+export const slot = box("slot");
+export const head = box("head");
+export const base = box("base");
+export const link = box("link");
+export const meta = box("meta");
+export const script = box("script");
+export const style = box("style");
+export const title = box("title");
+export const template = box("template");
+export const noscript = box("noscript");
+export const datalist = box("datalist");
+export const area = box("area");
+export const source = box("source");
+export const track = box("track");
+export const wbr = box("wbr");
+// A real <br> measures one pixel taller than the 16 points the native runtimes give it.
+export const br = (...children: Child[]) => box("div")({ style: { height: 16 } }, ...children);
+
+/**
+ * `select`, `option` and `optgroup` are the browser's own: the other targets build the control from boxes (the
+ * compiler does it, since a native select has no common look), and the browser has one. A select's `value` is
+ * set once its options are in it, and again at every update: a `list()` may have made them since.
+ */
+export function select(...children: Child[]): API.Node {
+  return asApi<API.Node>({
+    [FACTORY]: () => {
+      const node = new Node("box", "select");
+      let value: API.Dynamic<string> | undefined;
+      const rest = children.map((child) => {
+        const c = child as Partial<Factory & Modifier & StyleClass> | null;
+        if (!c || typeof c !== "object" || c[FACTORY] || c[MODIFIER] || c[CLASS]) return child;
+        const { value: own, ...others } = c as API.Attributes;
+        value ??= own;
+        return others as API.Attributes;
+      });
+      node.add(rest);
+      node.syncViews();
+      if (value !== undefined) {
+        const field = node.el as HTMLSelectElement;
+        const read = dynamic(value);
+        const apply = () => {
+          const wanted = read();
+          if (field.value !== wanted) field.value = wanted;
+        };
+        apply();
+        node.bindings.push(apply);
+      }
+      return node;
+    },
+  });
+}
+export const option = text("option");
+export const optgroup = box("optgroup");
+
+/** `progress` and `meter` as the compiler lowers them: a track with a fill whose width follows the value. */
+function gauge(tag: "progress" | "meter"): (...children: (Child | API.GaugeAttributes)[]) => API.Node {
+  return (...children) => {
+    const spec: API.GaugeAttributes = {};
+    const rest = children.map((child) => {
+      const c = child as Partial<Factory & Modifier & StyleClass> | null;
+      if (!c || typeof c !== "object" || c[FACTORY] || c[MODIFIER] || c[CLASS]) return child as Child;
+      const own: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(c)) (["value", "min", "max", "low", "high", "optimum"].includes(key) ? (spec as Record<string, unknown>) : own)[key] = value;
+      return own as API.Attributes;
+    });
+    const min = spec.min ?? 0;
+    const max = spec.max ?? 1;
+    const low = Math.min(max, Math.max(min, spec.low ?? min));
+    const high = Math.min(max, Math.max(low, spec.high ?? max));
+    const optimum = Math.min(max, Math.max(min, spec.optimum ?? (min + max) / 2));
+    const read = dynamic(spec.value ?? min);
+    const fill = (): API.Style => {
+      const value = read();
+      const color =
+        tag === "progress" ? "#2563eb"
+        : optimum < low ? (value < low ? "#22c55e" : value > high ? "#ef4444" : "#eab308")
+        : optimum > high ? (value > high ? "#22c55e" : value < low ? "#ef4444" : "#eab308")
+        : value >= low && value <= high ? "#22c55e" : "#eab308";
+      return { width: `${Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100))}%`, backgroundColor: color };
+    };
+    // Not a <progress>: the browser would draw its own bar and ignore the children.
+    return box(`n-${tag}`)(...rest, div({ style: fill }));
+  };
+}
+export const progress = gauge("progress");
+export const meter = gauge("meter");
 
 export const button = builder("button", "button");
 export const input = builder("input", "input");
@@ -1237,9 +1348,12 @@ class RouterImpl {
     const top = this.stacks[this.active]!.at(-1)!;
     const slide = (entry: Entry, from: string, to: string, done: () => void) => {
       const axis = entry.modal ? "Y" : "X";
-      entry.el.animate([{ transform: `translate${axis}(${from})` }, { transform: `translate${axis}(${to})` }], { duration: 240, easing: "cubic-bezier(.2,.8,.2,1)" });
+      const animation = entry.el.animate([{ transform: `translate${axis}(${from})` }, { transform: `translate${axis}(${to})` }], { duration: 240, easing: "cubic-bezier(.2,.8,.2,1)" });
       // A timer, not the animation's end: a hidden tab does not run animations, and the stack must still settle.
-      window.setTimeout(done, 240);
+      window.setTimeout(() => {
+        animation.cancel();
+        done();
+      }, 240);
     };
     const host = (entry: Entry) => (entry.modal ? this.root : this.stackEl);
     const keepOnly = () => {

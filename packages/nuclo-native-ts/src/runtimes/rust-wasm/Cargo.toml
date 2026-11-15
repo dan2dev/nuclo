@@ -1,0 +1,20 @@
+# The Cargo project nuclo-native-ts writes for `--target wasm`: this host, the Rust runtime's core
+# (../rust/src/nuclo) and the generated src/app.rs, built as a WebAssembly module
+# (`cargo build --release --target wasm32-unknown-unknown`) that host.js runs in the page.
+[package]
+name = "nuclo-app"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+serde_json = "1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

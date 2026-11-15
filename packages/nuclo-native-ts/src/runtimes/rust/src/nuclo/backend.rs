@@ -298,12 +298,62 @@ pub trait Backend {
     fn cancel_frame(&self, frame: u64);
     /// Callable from any thread: makes the UI thread call `host::wake()`.
     fn waker(&self) -> Arc<dyn Fn() + Send + Sync>;
+
+    // Services of the platform. A native backend leaves them: the core uses the operating
+    // system's clock, console and sockets itself. The web host has none of those in its sandbox.
+
+    /// The time in milliseconds since the epoch, as `Date.now()` counts it.
+    fn now(&self) -> f64 {
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0.0, |t| t.as_millis() as f64)
+    }
+    /// A line of the app's log: `console.log`, or an error nobody caught.
+    fn log(&self, line: &str, error: bool) {
+        if error {
+            eprintln!("{line}");
+        } else {
+            println!("{line}");
+        }
+    }
+    /// An HTTP exchange the platform makes (only asked on the web host): `done` gets the status and body.
+    fn http(&self, _request: HttpRequest, done: Box<dyn FnOnce(Result<(i64, Vec<u8>), String>)>) {
+        done(Err("This platform has no network access.".into()));
+    }
+    /// Shows the image at `url` in an image view, if the platform fetches images itself (a browser does,
+    /// without the cross-origin rules of `http`). `false`: the core downloads the bytes, for `set_image`.
+    fn set_image_url(&self, _view: ViewId, _url: &str) -> bool {
+        false
+    }
+    /// Calls the platform's own function `name` (the app's `declare function`, where it is not written in
+    /// Rust: the web host's) with `args`, a JSON array, and returns what it returned as JSON.
+    fn call_sync(&self, name: &str, _args: &str) -> Result<String, String> {
+        Err(format!("{name}: this platform has no function of that name"))
+    }
+    /// The same for a function that returns a promise: `done` gets the result once it settles.
+    fn call(&self, name: &str, _args: &str, done: Box<dyn FnOnce(Result<String, String>)>) {
+        done(Err(format!("{name}: this platform has no function of that name")));
+    }
+}
+
+/// What `fetch()` sends.
+pub struct HttpRequest {
+    pub method: String,
+    pub url: String,
+    pub headers: Vec<(String, String)>,
+    pub body: Option<String>,
 }
 
 thread_local!(static BACKEND: std::cell::RefCell<Option<Rc<dyn Backend>>> = const { std::cell::RefCell::new(None) });
 
 pub(crate) fn install(backend: Rc<dyn Backend>) {
     BACKEND.with(|b| *b.borrow_mut() = Some(backend));
+}
+
+/// `Date.now()`, through the backend once there is one.
+pub(crate) fn now() -> f64 {
+    match BACKEND.with(|b| b.borrow().clone()) {
+        Some(backend) => backend.now(),
+        None => std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0.0, |t| t.as_millis() as f64),
+    }
 }
 
 pub(crate) fn backend() -> Rc<dyn Backend> {

@@ -168,4 +168,6 @@ export interface Program {
    * printer whose language doesn't infer argument types reads them here.
    */
   natives?: FnDecl[];
+  /** The native components the app uses (`native<P>("Name")`) and the class their props are. */
+  components?: { name: string; props: string }[];
 }

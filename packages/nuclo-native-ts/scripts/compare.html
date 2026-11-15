@@ -1,0 +1,63 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>compare</title>
+<!--
+  Loads an example built for `web` (the TypeScript runtime) and for `wasm` (the Rust core) at the same size
+  and lists what differs: ?ex=layouts. Serve the build folder: `bun scripts/serve.ts build`, then copy this
+  file to build/compare.html.
+-->
+<body style="margin:8px;font:12px ui-monospace,monospace;white-space:pre">
+<div id="out">loading…</div>
+<script>
+const ex = new URLSearchParams(location.search).get("ex");
+const W = +(new URLSearchParams(location.search).get("w") || 800), H = +(new URLSearchParams(location.search).get("h") || 600);
+const load = (src) => new Promise((resolve) => {
+  const f = document.createElement("iframe");
+  f.style.cssText = `width:${W}px;height:${H}px;border:0;position:absolute;left:0;top:0;visibility:hidden`;
+  f.onload = () => setTimeout(() => {
+    // The web build shows scrollbars; the wasm host hides them. Compare without.
+    f.contentDocument.head.append(Object.assign(f.contentDocument.createElement("style"), { textContent: "*{scrollbar-width:none}" }));
+    setTimeout(() => resolve(f), 300);
+  }, 1500);
+  f.src = src;
+  document.body.append(f);
+});
+// Every element that holds text, and every box that paints something.
+const dump = (f) => {
+  const d = f.contentDocument;
+  const out = [];
+  for (const e of d.querySelectorAll("body *")) {
+    if (e.classList.contains("nuclo-screen") || e.tagName === "SCRIPT" || e.tagName === "STYLE") continue;
+    const r = e.getBoundingClientRect();
+    if (!r.width && !r.height) continue;
+    if (getComputedStyle(e).visibility === "hidden") continue;
+    const own = [...e.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join("").trim();
+    const bg = getComputedStyle(e).backgroundColor;
+    if (own) out.push({ key: `"${own.slice(0, 28)}"`, x: r.x, y: r.y, w: r.width, h: r.height });
+    else if (bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") out.push({ key: `box ${bg}`, x: r.x, y: r.y, w: r.width, h: r.height });
+  }
+  return out;
+};
+(async () => {
+  const [web, wasm] = [await load(`/web/${ex}/`), await load(`/wasm/${ex}/`)];
+  const a = dump(web), b = dump(wasm);
+  const lines = [`${ex}: web ${a.length} items, wasm ${b.length} items`];
+  const tol = 1.01;
+  let bad = 0;
+  const used = new Set();
+  for (const p of a) {
+    const j = b.findIndex((q, i) => !used.has(i) && q.key === p.key && Math.abs(q.y - p.y) < 40);
+    if (j < 0) { bad++; lines.push(`only in web: ${p.key} ${p.x.toFixed(1)},${p.y.toFixed(1)} ${p.w.toFixed(1)}x${p.h.toFixed(1)}`); continue; }
+    used.add(j);
+    const q = b[j];
+    if (Math.abs(q.x - p.x) > tol || Math.abs(q.y - p.y) > tol || Math.abs(q.w - p.w) > tol || Math.abs(q.h - p.h) > tol) {
+      bad++;
+      lines.push(`differs ${p.key}: web ${p.x.toFixed(1)},${p.y.toFixed(1)} ${p.w.toFixed(1)}x${p.h.toFixed(1)} | wasm ${q.x.toFixed(1)},${q.y.toFixed(1)} ${q.w.toFixed(1)}x${q.h.toFixed(1)}`);
+    }
+  }
+  b.forEach((q, i) => { if (!used.has(i)) { bad++; lines.push(`only in wasm: ${q.key} ${q.x.toFixed(1)},${q.y.toFixed(1)} ${q.w.toFixed(1)}x${q.h.toFixed(1)}`); } });
+  lines.push(bad ? `${bad} differences` : "identical within 1px");
+  document.getElementById("out").textContent = lines.join("\n");
+  document.title = bad ? `${bad} differences` : "identical";
+})();
+</script>

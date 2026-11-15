@@ -1,11 +1,12 @@
 # @nuclo/native-ts (POC)
 
-Write a nuclo app in TypeScript. `nuclo-native-ts build` compiles it ahead of time to **Swift (UIKit)**, **Kotlin (Android Views)** and **Rust (GTK 4 or GPUI)**, and bundles it for the **web**. A native app ships no JavaScript engine and no JS bundle.
+Write a nuclo app in TypeScript. `nuclo-native-ts build` compiles it ahead of time to **Swift (UIKit)**, **Kotlin (Android Views)** and **Rust (GTK 4 or GPUI)**, and bundles it for the **web**, or runs the same Rust core in the browser as **WebAssembly**. A native app ships no JavaScript engine and no JS bundle.
 
 | Target | Output | State |
 | --- | --- | --- |
 | `android` | Kotlin + `NucloRuntime.kt`, built by `hosts/android` | compiled and run on an emulator |
 | `web` | `index.html` + `app.js` (the app bundled with `src/runtimes/web`) | run in a browser |
+| `wasm` | the Linux Rust core compiled to WebAssembly (`app.wasm`) and `host.js`, the DOM half of its backend: a finished web page | built and run in a browser; see [Web (wasm)](#web-wasm) |
 | `ios` | Swift + `NucloRuntime.swift` | written, **never compiled** (no Swift toolchain on Linux) |
 | `linux` | a Cargo project: `src/app.rs` + the Rust runtime (a core and a GTK 4 / libadwaita backend) | compiled and run on a GNOME Wayland session; see [Linux](#linux) |
 | `linux-gpui` | the same Cargo project with a GPUI backend in place of the GTK one: every view is drawn by GPUI | compiled and run under XWayland on a locked screen (about one frame a second); see [Linux (GPUI)](#linux-gpui) |
@@ -102,6 +103,21 @@ bun run web   # builds every example and serves build/web on http://localhost:41
 
 The web needs no translation: the app is bundled with `src/runtimes/web/index.ts` in place of the API module. Layout is the browser's flexbox, set up to give the boxes the native `Flex` gives. The router's address is the URL fragment, so a screen can be reloaded and linked to.
 
+### Web (wasm)
+
+```bash
+bun run wasm   # builds every example (cargo, with the wasm32-unknown-unknown target) and serves build/wasm on http://localhost:4173
+```
+
+The `web` target runs the app as JavaScript on a DOM runtime. This one is a host like the others: the app is compiled to Rust, the Rust core (the same `src/runtimes/rust/src/nuclo/` as both Linux targets) is compiled to WebAssembly, and the page only shows what the core describes. `<out>/wasm` is a Cargo project (`src/runtimes/rust-wasm`: `web_backend.rs`, the `Backend` implementation, with the core and the generated `src/app.rs`) that the target also builds, so the folder serves as it is: `index.html`, `host.js`, `app.wasm`. It needs `rustup target add wasm32-unknown-unknown` and the crate `serde_json` (`--offline`, as the Linux builds); there is no `wasm-bindgen` or `wasm-pack`.
+
+- **The core decides everything**: the views, their frames (the same `Flex` as Android, iOS and Linux, in whole pixels), their look and the transitions between looks. `web_backend.rs` turns a `Paint` into CSS and forwards the rest as calls to the page, plain numbers and (pointer, length) strings, no glue code generated.
+- **`host.ts`** (bundled to `host.js`) is the DOM half: one absolutely positioned element per view, the browser's own events for the core (clicks, a drag after the 8 px slop, long press, double click, pinch from two fingers or ctrl + wheel, keys, scroll, hover), `fetch`, timers and frames, and the router's chrome (app bar, bottom tabs, sheets) written as the web runtime has it. Text is measured for `Backend::measure`: one line of plain text by the canvas (a lookup), anything wrapped or in another script by the browser's layout, in an iframe of its own so that reading it does not lay out the app.
+- **Differences from the `web` target**: text is measured in whole pixels, as on the native targets, so a row of shrink-to-fit boxes can be a few pixels off the CSS layout's fractional widths; scrollbars are hidden, as on a phone; `fetch` is the browser's, so it follows the same cross-origin rules as the `web` target.
+- **Native components and functions**: the app's platform code for this target is TypeScript for the DOM, and it is the web target's: `native/wasm/index.ts`, or `native/web/index.ts` when there is none, with `registerNative` and the exported `declare function`s written as for `web` (the build bundles it with the host, and what it imports from the web runtime is the host's own). Only the Rust glue is new, and it is generated from the app's types (`wasmNative.ts`): a `native<P>("Name")` becomes a Rust `Name` that makes the page's component and sends it `P` as JSON on every update, a function prop (`onChange`) as a number the page turns into a function that calls back into the app with its arguments as JSON, and a `declare function` becomes a Rust function that calls the page's, with JSON arguments, and decodes what it returns (a promise, for an `async` declaration). Props and arguments are numbers, strings, booleans, optionals and arrays; results may also be the app's interfaces; anything else is a build error that says so. The component's element sits in a box the host places, so what the component sets on its element is its own.
+- `scripts/compare.html` loads one example built for `web` and for `wasm` at the same size and lists every text and painted box that is not in the same place (`bun scripts/serve.ts build`, copy the file to `build/compare.html`, open `?ex=layouts`). Every example matches within a pixel apart from the rounding above and, in `performance` and `full-showcase`, content that is random or a clock.
+- `?profile` on the page adds `nucloProfile()` to the console: the time spent in each call into the page.
+
 ### Linux
 
 ```bash
@@ -165,6 +181,9 @@ Each folder in `examples/` is an app; all of them build for every target.
 
 Natively there is no DOM, so what an app would reach for through it is part of the API (`src/index.ts` is the whole contract):
 
+- **Style keys**: nuclo-core's short keys work as well as the long ones (`p`, `px`, `py`, `m…`, `w`, `h`, `size`, `bg`, `rounded`, `text`, `weight`, `items`, `justify`, `z`, and the flags `row`, `col`, `center`, `truncate`). `width` also takes a share of the parent's width, `"50%"` or `` `${value}%` `` (a fixed or dynamic value; not `height`, not min/max). With a margin, the share is taken of the width the margin leaves.
+- **`progress` and `meter`**: bars drawn the same on every platform, a track with a fill (the compiler lowers them, so no runtime has a platform bar to differ from). `value` is a number or `() => number`; `min`, `max`, `low`, `high` and `optimum` are number literals. `meter` colors its fill as HTML does (green near `optimum`, yellow a range away, red two away). `style` is the track's (160×16, or 80×16 for `meter`); the fill's colors are fixed. A `progress` without a value is an empty track, not an animation.
+- **`select`, `option` and `optgroup`**: a box with a row (the chosen option's text and a chevron) that opens the options below it when pressed; an option sets what is chosen, closes the select and calls `onChange` with `event.target.value`; `value` (a string, or `() => string`) makes it controlled, and without one the select keeps its own choice, the first option at first. The options are written directly in the `select`, in an `optgroup`, or in the render function of a `list()` there; an `option` in a helper function is a build error, because the compiler builds the control around the options where they are written. The control is the same boxes and text on every compiled target (the platforms' own choosers have no common look), and the `web` target uses the browser's own `<select>`. `style` is the box around the control and its options (white, 1px border, rounded, and a `padding` of its own would pad the row and the options together), `disabled` stops it opening, a disabled option cannot be picked. The options open inline, pushing what is below them down; pressing outside does not close it.
 - **Layout**: flex with `margin`, min/max sizes, `alignSelf`, `flexWrap`, `aspectRatio`, `position: "absolute"`, `zIndex`, and `overflow: "scroll"` for the platform's own scrolling (it must be in a static style or class: the scroller exists before the children arrive).
 - **Paint**: shadows, fonts, `lineHeight`, `letterSpacing`, `textDecoration`, `numberOfLines`, and transforms as numbers (`translateX`, `translateY`, `scale`, `rotate`), so a gesture can drive them.
 - **Transitions**: `transitionDuration` / `Delay` / `Easing` animate a change of opacity, transform, background colour, corner radius and of the box's own `width` / `height`.
@@ -290,6 +309,8 @@ Measured on a Galaxy S23 Ultra (SM-S918B, Android 17) with release builds (R8, n
 
 **Operations.** `examples/bench/App.ts` is modelled on js-framework-benchmark: a row is a box, two texts and a button, so four native views. Each operation is timed from just before it runs until after the frame that shows it (the operation, `update()`, measure, layout, draw). Results are the mean of 5 runs; the run starts by itself and logs `BENCH …` lines.
 
+On a Samsung SM-S918B (release build with R8, 5 runs each, to the end of the frame): create 1,000 rows 250 ms, replace 293 ms, partial update 20 ms, select 13 ms, swap 16 ms, remove 17 ms, create 10,000 rows 3.6 s, append 1,000 403 ms, clear 35 ms. 259 MB PSS after the run; the release APK is 98 KB.
+
 ```bash
 bun x tsx src/compiler/cli.ts build examples/bench/App.ts --out examples/bench/build
 cd hosts/android && ./gradlew assembleRelease -PnucloSources=../../../examples/bench/build/android
@@ -372,4 +393,4 @@ Supported because they could otherwise break the build:
 
 ## Not supported (reported by the compiler)
 
-Everything in the table above. Also unsupported: DOM/Node APIs, SVG, SSR (`hydrate()` renders), `windowed()`, video, `keyframes()`, `globalStyle()`, `createCss()` themes, tags with no view behind them (`select`, `canvas`, `video`, `iframe`, document tags), arbitrary DOM attributes and events, and `nuclo-router`'s URL, loader and layer features (the router here is nuclo-native's stack router).
+Everything in the table above. Also unsupported: DOM/Node APIs, SVG, SSR (`hydrate()` renders), `windowed()`, video, `keyframes()`, `globalStyle()`, `createCss()` themes, tags with no view behind them (`canvas`, `video`, `iframe`, `embed`, `object`, document tags), arbitrary DOM attributes and events, and `nuclo-router`'s URL, loader and layer features (the router here is nuclo-native's stack router).

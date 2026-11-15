@@ -1,0 +1,7 @@
+{
+  // host.ts is the wasm host's DOM half: the only TypeScript besides the web runtime that sees the DOM.
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": { "lib": ["ESNext", "DOM", "DOM.Iterable"], "types": [] },
+  "include": ["host.ts"],
+  "exclude": []
+}

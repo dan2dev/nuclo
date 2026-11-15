@@ -126,6 +126,8 @@ export interface Attributes {
   href?: Dynamic<string>;
   /** What assistive technology reads for the view (`aria-label`, `accessibilityLabel`, `contentDescription`). */
   ariaLabel?: Dynamic<string>;
+  /** `optgroup`: the heading over its options. */
+  label?: Dynamic<string>;
   /** Static. `checkbox` builds a switch (`UISwitch` / `CheckBox`); the others a text field. */
   type?: "text" | "password" | "email" | "number" | "checkbox";
   onClick?: (event: NativeEvent) => void;
@@ -157,6 +159,26 @@ export interface Attributes {
 export type Child = Node | Modifier | StyleClass | Attributes | Primitive | (() => Primitive) | null | undefined | false;
 
 type Builder = (...children: Child[]) => Node;
+
+/**
+ * `progress` and `meter`: a bar drawn the same on every platform (a track with a fill). `value` is a
+ * number or `() => number`; the rest are number literals. `style` is the track's: 160×16 for
+ * `progress`, 80×16 for `meter`.
+ */
+export interface GaugeAttributes extends Omit<Attributes, "value"> {
+  value?: Dynamic<number>;
+  /** 0 by default. */
+  min?: number;
+  /** 1 by default. */
+  max?: number;
+  /** `meter`: the end of the low range. */
+  low?: number;
+  /** `meter`: the start of the high range. */
+  high?: number;
+  /** `meter`: the best value. The fill is green near it, yellow a range away and red two ranges away. */
+  optimum?: number;
+}
+type GaugeBuilder = (...children: (Child | GaugeAttributes)[]) => Node;
 
 // Containers: a flex column unless `style.flexDirection` is "row".
 export declare const div: Builder;
@@ -238,6 +260,55 @@ export declare const button: Builder;
 export declare const input: Builder;
 export declare const textarea: Builder;
 export declare const img: Builder;
+
+// Tags that are plain boxes, inline text, or draw nothing (head, meta, script, style, …: display none).
+export declare const bdi: Builder;
+export declare const bdo: Builder;
+export declare const data: Builder;
+export declare const output: Builder;
+export declare const rt: Builder;
+export declare const rp: Builder;
+export declare const ruby: Builder;
+export declare const body: Builder;
+export declare const html: Builder;
+export declare const colgroup: Builder;
+export declare const col: Builder;
+export declare const map: Builder;
+export declare const picture: Builder;
+export declare const slot: Builder;
+export declare const head: Builder;
+export declare const base: Builder;
+export declare const link: Builder;
+export declare const meta: Builder;
+export declare const script: Builder;
+export declare const style: Builder;
+export declare const title: Builder;
+export declare const template: Builder;
+export declare const noscript: Builder;
+export declare const datalist: Builder;
+export declare const area: Builder;
+export declare const source: Builder;
+export declare const track: Builder;
+/** A 16-point gap: the line break between block children. */
+export declare const br: Builder;
+/** Draws nothing. */
+export declare const wbr: Builder;
+/**
+ * A choice among `option`s (and `optgroup`s of them), written directly inside the `select`, or built by a
+ * `list()` there. It shows the chosen option's text and opens the options below it when pressed; `onChange`
+ * gets the picked option's value as `event.target.value`. `value` is what is chosen (a string, or a
+ * `() => string`): without it the select keeps its own choice, the first option at first. `style` is the
+ * box around the control and the options (1px border, rounded, white); `disabled` stops it opening.
+ */
+export declare const select: Builder;
+/** An option of a `select`: its `value` (the text, when there is none) and the text it shows. */
+export declare const option: Builder;
+/** A heading over the options in it: `label` is the heading. */
+export declare const optgroup: Builder;
+/** A bar filled to `value` of `max`; without a value the track is empty. */
+export declare const progress: GaugeBuilder;
+/** A bar filled to `value` between `min` and `max`, colored by `low`, `high` and `optimum`. */
+export declare const meter: GaugeBuilder;
 
 // ---------------------------------------------------------------------------
 // The update cycle
@@ -325,7 +396,8 @@ export interface Style {
   paddingRight?: number;
   paddingBottom?: number;
   paddingLeft?: number;
-  width?: number;
+  /** Points, or a share of the parent's width: `"50%"` or `` `${progress}%` ``. */
+  width?: number | `${number}%`;
   height?: number;
   minWidth?: number;
   maxWidth?: number;
@@ -390,6 +462,42 @@ export interface Style {
   hover?: Style;
   /** While a field has the focus (`:focus`). */
   focused?: Style;
+  // nuclo-core's short keys. Each is the native key (or keys) named in its comment.
+  /** padding */ p?: number;
+  /** paddingLeft + paddingRight */ px?: number;
+  /** paddingTop + paddingBottom */ py?: number;
+  pt?: number;
+  pr?: number;
+  pb?: number;
+  pl?: number;
+  /** margin */ m?: number;
+  /** marginLeft + marginRight */ mx?: number;
+  /** marginTop + marginBottom */ my?: number;
+  mt?: number;
+  mr?: number;
+  mb?: number;
+  ml?: number;
+  /** width */ w?: number;
+  /** height */ h?: number;
+  minW?: number;
+  maxW?: number;
+  minH?: number;
+  maxH?: number;
+  /** width + height */ size?: number;
+  /** fontSize */ text?: number;
+  /** fontWeight */ weight?: "normal" | "bold";
+  /** lineHeight */ leading?: number;
+  /** letterSpacing */ tracking?: number;
+  /** textAlign */ align?: "left" | "center" | "right";
+  /** alignItems */ items?: "flex-start" | "center" | "flex-end" | "stretch";
+  /** justifyContent */ justify?: "flex-start" | "center" | "flex-end" | "space-between" | "space-around" | "space-evenly";
+  /** zIndex */ z?: number;
+  /** backgroundColor */ bg?: string;
+  /** borderRadius */ rounded?: number;
+  /** flexDirection: row */ row?: boolean;
+  /** flexDirection: column */ col?: boolean;
+  /** alignItems and justifyContent: center */ center?: boolean;
+  /** numberOfLines: 1 */ truncate?: boolean;
 }
 
 /** A reusable style, applied as a child: `div(card, "Hello")`. Inline `style` wins over it. */

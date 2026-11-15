@@ -186,7 +186,7 @@ fn column(s: &Style, flow: &[&Node], inner_w: f32, inner_h: Option<f32>, pt: f32
             let cs = &styles[i];
             let available = if bounded { (inner_w - margins[i][1] - margins[i][3]).max(0.0) } else { inner_w };
             // A stretched child is as wide as the column; one with its own width or alignment keeps its measure.
-            let stretched = bounded && cross_align(s, cs) == Align::Stretch && cs.width.is_none() && !(cs.aspect_ratio.is_some() && cs.height.is_some());
+            let stretched = bounded && cross_align(s, cs) == Align::Stretch && cs.width.is_none() && cs.width_pct.is_none() && !(cs.aspect_ratio.is_some() && cs.height.is_some());
             let size = flow[i].measure(available, stretched);
             needs[i] = if stretched && fit { flow[i].measure(available, false)[0] } else { size[0] };
             size
@@ -260,7 +260,7 @@ fn column(s: &Style, flow: &[&Node], inner_w: f32, inner_h: Option<f32>, pt: f32
 fn absolute_frame(child: &Node, bw: f32, bh: f32) -> Frame {
     let s = child.computed.get();
     let (l, r, t, b) = (s.left.map(px), s.right.map(px), s.top.map(px), s.bottom.map(px));
-    let w = s.width.map(px).unwrap_or_else(|| match (l, r) {
+    let w = s.width.map(px).or_else(|| s.width_pct.map(|pct| bw * pct as f32 / 100.0)).unwrap_or_else(|| match (l, r) {
         (Some(l), Some(r)) => bw - l - r,
         _ => child.measure(bw, false)[0],
     });
