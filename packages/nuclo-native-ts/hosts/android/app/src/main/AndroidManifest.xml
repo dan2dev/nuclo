@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="nuclo-native-ts"
+        android:label="${appLabel}"
         android:enableOnBackInvokedCallback="true"
         android:theme="@style/Nuclo">
         <!-- Lets simpleperf and the Android Studio profiler sample release builds. -->

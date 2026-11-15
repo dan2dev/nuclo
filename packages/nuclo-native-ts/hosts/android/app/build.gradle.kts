@@ -11,7 +11,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "dev.nuclo.nativets"
+        applicationId = "dev.nuclo.nativets" + providers.gradleProperty("nucloAppIdSuffix").map { ".$it" }.getOrElse("")
+        manifestPlaceholders["appLabel"] = providers.gradleProperty("nucloAppLabel").getOrElse("nuclo-native-ts")
         minSdk {
             version = release(30)
         }
