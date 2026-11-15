@@ -1,0 +1,18 @@
+# The Cargo project nuclo-native-ts writes for `--target linux-gpui`: the Rust runtime's core
+# (../rust/src/nuclo), this GPUI backend and the generated src/app.rs. Build with
+# `cargo build --offline --release`.
+[package]
+name = "nuclo-app"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+# The `wayland` and `x11` features are needed on the core crate too: gpui::guess_compositor()
+# reads them there, and without them it picks the headless client and no window opens.
+gpui = { package = "gpui-pre", version = "=0.3.6", default-features = false, features = ["wayland", "x11"] }
+gpui_platform = { package = "gpui-pre-platform", version = "=0.3.6", features = ["font-kit", "wayland", "x11"] }
+ureq = "3.5"
+serde_json = "1"
+
+[profile.release]
+strip = true

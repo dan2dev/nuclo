@@ -2,22 +2,23 @@
 	"name": "@nuclo/native-ts",
 	"private": true,
 	"version": "0.0.0",
-	"description": "POC: nuclo apps compiled ahead of time from TypeScript to Swift (UIKit) and Kotlin (Android Views). No JavaScript engine ships with the app.",
+	"description": "POC: nuclo apps compiled ahead of time from TypeScript to Swift (UIKit), Kotlin (Android Views) and Rust (GTK 4, GPUI), and bundled for the web. No JavaScript engine ships with a native app.",
 	"license": "MIT",
 	"type": "module",
 	"exports": {
-		".": "./src/index.ts"
+		".": "./src/index.ts",
+		"./web": "./src/runtimes/web/index.ts"
 	},
 	"bin": {
 		"nuclo-native-ts": "./src/compiler/cli.ts"
 	},
 	"scripts": {
-		"build:showcase": "tsx src/compiler/cli.ts build examples/full-showcase/App.ts --out examples/full-showcase/build",
-		"build:bench": "tsx src/compiler/cli.ts build examples/bench/App.ts --out examples/bench/build",
+		"examples": "bun scripts/examples.ts",
+		"web": "bun scripts/examples.ts web && bun scripts/serve.ts build/web",
 		"test": "bun test",
-		"check:android": "for app in test/fixtures/accept.ts examples/full-showcase/App.ts examples/bench/App.ts; do tsx src/compiler/cli.ts build $app --out build/check/$(basename $(dirname $app)) && (cd hosts/android && ./gradlew compileDebugKotlin --offline -q -PnucloSources=../../../build/check/$(basename $(dirname $app))/android) || exit 1; done",
-		"android": "bun run build:showcase && cd hosts/android && ./gradlew assembleRelease --offline",
-		"typecheck": "tsc -p tsconfig.json && tsc -p examples/tsconfig.json"
+		"check:android": "bun scripts/examples.ts android && bun src/compiler/cli.ts build test/fixtures/accept.ts --out build/check/fixtures --target android && cd hosts/android && for app in ../../build/check/fixtures/android ../../build/android/*; do rm -rf app/build/kotlin app/build/intermediates/built_in_kotlinc app/build/tmp/kotlin-classes; ./gradlew compileDebugKotlin --offline -q -PnucloSources=../$app || exit 1; done",
+		"android": "bun scripts/examples.ts android && cd hosts/android && ./gradlew assembleRelease --offline",
+		"typecheck": "tsc -p tsconfig.json && tsc -p src/runtimes/web/tsconfig.json && tsc -p examples/tsconfig.json"
 	},
 	"dependencies": {
 		"typescript": "^5.9.3"

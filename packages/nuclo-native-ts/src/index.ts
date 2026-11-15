@@ -1,11 +1,12 @@
 /**
- * @nuclo/native-ts — the nuclo API, compiled ahead of time to Swift (UIKit) and Kotlin (Android Views).
+ * @nuclo/native-ts — the nuclo API, compiled ahead of time to Swift (UIKit), Kotlin (Android Views)
+ * and Rust (GTK 4, GPUI), and bundled for the web (DOM).
  *
  * An app is written as with nuclo and nuclo-native: plain mutable state, builders that take
  * static values or `() => value` functions, and an explicit `update()` that re-runs the functions
  * and touches only the native views whose value changed. There is no JavaScript at run time:
  * `nuclo-native-ts build App.ts` translates the app with the TypeScript type checker, and
- * `src/runtimes/{ios,android}` implement every declaration below natively.
+ * `src/runtimes/*` implement every declaration below, once per platform.
  *
  * This module only declares types: it is the contract both the type checker and the compiler read.
  * Apps import from it explicitly (`import { div, update } from "@nuclo/native-ts"`) instead of
@@ -28,6 +29,7 @@ declare const styleClassBrand: unique symbol;
 declare const elementBrand: unique symbol;
 declare const outletBrand: unique symbol;
 declare const timerBrand: unique symbol;
+declare const frameBrand: unique symbol;
 
 // ---------------------------------------------------------------------------
 // Nodes and children
@@ -58,6 +60,55 @@ export interface NativeEvent {
   readonly target: HTMLInputElement;
 }
 
+/** A pointer (finger, mouse, pen) on a view. Coordinates are in points, `x`/`y` from the view's top-left corner. */
+export interface PointerEvent {
+  readonly x: Double;
+  readonly y: Double;
+  readonly pageX: Double;
+  readonly pageY: Double;
+  readonly pointerId: Int;
+}
+
+export type GestureState = "start" | "move" | "end" | "cancel";
+
+/** A drag recognized by the platform (it starts once the pointer leaves the touch slop). */
+export interface PanEvent {
+  readonly state: GestureState;
+  /** Distance from where the drag started. */
+  readonly translationX: Double;
+  readonly translationY: Double;
+  /** Points per second, at the last movement. */
+  readonly velocityX: Double;
+  readonly velocityY: Double;
+  /** The pointer, from the view's top-left corner. */
+  readonly x: Double;
+  readonly y: Double;
+}
+
+/** Two fingers (or ctrl + wheel on a desktop) moving apart or together. */
+export interface PinchEvent {
+  readonly state: GestureState;
+  /** 1 when the gesture starts. */
+  readonly scale: Double;
+  readonly focalX: Double;
+  readonly focalY: Double;
+}
+
+/** The scroll position of an `overflow: "scroll"` box. */
+export interface ScrollEvent {
+  readonly scrollTop: Double;
+  readonly scrollLeft: Double;
+  readonly scrollHeight: Double;
+  readonly scrollWidth: Double;
+  readonly clientHeight: Double;
+  readonly clientWidth: Double;
+}
+
+export interface KeyboardEvent {
+  /** As in the DOM: "Enter", "Escape", "ArrowLeft", "a"… */
+  readonly key: string;
+}
+
 export type Primitive = string | number;
 
 /** A value given once, or a function `update()` calls again (dirty-checked before the view is touched). */
@@ -71,11 +122,31 @@ export interface Attributes {
   checked?: Dynamic<boolean>;
   disabled?: Dynamic<boolean>;
   src?: Dynamic<string>;
+  /** `a`: the URL the platform opens when the link is activated. */
+  href?: Dynamic<string>;
+  /** What assistive technology reads for the view (`aria-label`, `accessibilityLabel`, `contentDescription`). */
+  ariaLabel?: Dynamic<string>;
   /** Static. `checkbox` builds a switch (`UISwitch` / `CheckBox`); the others a text field. */
   type?: "text" | "password" | "email" | "number" | "checkbox";
   onClick?: (event: NativeEvent) => void;
   onInput?: (event: NativeEvent) => void;
   onChange?: (event: NativeEvent) => void;
+  onFocus?: (event: NativeEvent) => void;
+  onBlur?: (event: NativeEvent) => void;
+  /** A key pressed while the view (a field, or a focusable box on a desktop) has the focus. */
+  onKeyDown?: (event: KeyboardEvent) => void;
+  onPointerDown?: (event: PointerEvent) => void;
+  onPointerMove?: (event: PointerEvent) => void;
+  onPointerUp?: (event: PointerEvent) => void;
+  onPointerCancel?: (event: PointerEvent) => void;
+  /** A drag. The view keeps the gesture once it starts: a scrolling parent stops scrolling. */
+  onPan?: (event: PanEvent) => void;
+  onPinch?: (event: PinchEvent) => void;
+  /** The pointer held in place (500 ms). */
+  onLongPress?: (event: PointerEvent) => void;
+  onDoubleClick?: (event: PointerEvent) => void;
+  /** On an `overflow: "scroll"` box. */
+  onScroll?: (event: ScrollEvent) => void;
   /** Runs once the view is attached to the window. May return a cleanup, run on destroy. */
   onMount?: (element: NativeElement) => void | (() => void);
   /** Runs when nuclo removes the view (a list row goes, a when() branch switches, a screen is popped). */
@@ -98,7 +169,28 @@ export declare const article: Builder;
 export declare const aside: Builder;
 export declare const form: Builder;
 export declare const ul: Builder;
+export declare const ol: Builder;
 export declare const li: Builder;
+export declare const figure: Builder;
+export declare const fieldset: Builder;
+export declare const blockquote: Builder;
+export declare const address: Builder;
+export declare const hgroup: Builder;
+export declare const menu: Builder;
+export declare const search: Builder;
+export declare const dl: Builder;
+export declare const details: Builder;
+export declare const dialog: Builder;
+/** A column of `tr` rows; `td` / `th` cells share a row's width equally. */
+export declare const table: Builder;
+export declare const thead: Builder;
+export declare const tbody: Builder;
+export declare const tfoot: Builder;
+export declare const tr: Builder;
+export declare const td: Builder;
+export declare const th: Builder;
+/** A 1-point horizontal rule. */
+export declare const hr: Builder;
 
 // Text: a label whose text is its string and `() => string` children, joined.
 export declare const span: Builder;
@@ -107,10 +199,39 @@ export declare const h1: Builder;
 export declare const h2: Builder;
 export declare const h3: Builder;
 export declare const h4: Builder;
+export declare const h5: Builder;
+export declare const h6: Builder;
 export declare const label: Builder;
 export declare const strong: Builder;
+export declare const b: Builder;
 export declare const small: Builder;
 export declare const em: Builder;
+export declare const i: Builder;
+export declare const u: Builder;
+export declare const s: Builder;
+export declare const del: Builder;
+export declare const ins: Builder;
+export declare const mark: Builder;
+export declare const code: Builder;
+export declare const pre: Builder;
+export declare const kbd: Builder;
+export declare const samp: Builder;
+export declare const var_: Builder;
+export declare const abbr: Builder;
+export declare const cite: Builder;
+export declare const q: Builder;
+export declare const dfn: Builder;
+export declare const sub: Builder;
+export declare const sup: Builder;
+export declare const time: Builder;
+export declare const legend: Builder;
+export declare const caption: Builder;
+export declare const figcaption: Builder;
+export declare const summary: Builder;
+export declare const dt: Builder;
+export declare const dd: Builder;
+/** Text that opens its `href` with the platform (the browser, or the app that owns the URL). */
+export declare const a: Builder;
 
 // Controls.
 export declare const button: Builder;
@@ -134,6 +255,12 @@ export declare function scope(...ids: string[]): Modifier;
  * (overlays: modals, toasts).
  */
 export declare function render(view: (() => Node) | Outlet): void;
+
+/** nuclo's hydrate(): there is no server-rendered tree natively, so it renders. */
+export declare function hydrate(view: (() => Node) | Outlet): void;
+
+/** Re-runs every dynamic value and applies each one, whether or not it changed. */
+export declare function forceUpdate(): void;
 
 /** Renders one node per item, rebuilding only rows whose item is new (by identity, as nuclo). */
 export declare function list<T>(items: () => readonly T[], render: (item: T, index: Int) => Node | null): Modifier;
@@ -160,7 +287,12 @@ export declare function region(options: RegionOptions): Modifier;
 /** Puts content into the region `id` for as long as this into() is in the tree. */
 export declare function into(id: string, ...content: Child[]): Modifier;
 
-export declare function on(type: "click" | "input" | "change", listener: (event: NativeEvent) => void): Modifier;
+export declare function on(type: "click" | "input" | "change" | "focus" | "blur", listener: (event: NativeEvent) => void): Modifier;
+export declare function on(type: "pointerDown" | "pointerMove" | "pointerUp" | "pointerCancel" | "longPress" | "doubleClick", listener: (event: PointerEvent) => void): Modifier;
+export declare function on(type: "pan", listener: (event: PanEvent) => void): Modifier;
+export declare function on(type: "pinch", listener: (event: PinchEvent) => void): Modifier;
+export declare function on(type: "scroll", listener: (event: ScrollEvent) => void): Modifier;
+export declare function on(type: "keyDown", listener: (event: KeyboardEvent) => void): Modifier;
 export declare function on(type: "mount", listener: (element: NativeElement) => void | (() => void)): Modifier;
 export declare function on(type: "destroy", listener: (element: NativeElement) => void): Modifier;
 
@@ -175,10 +307,19 @@ export declare function on(type: "destroy", listener: (element: NativeElement) =
 export interface Style {
   flexDirection?: "row" | "column";
   alignItems?: "flex-start" | "center" | "flex-end" | "stretch";
-  justifyContent?: "flex-start" | "center" | "flex-end" | "space-between";
+  /** This item's own cross-axis alignment, over its parent's `alignItems`. */
+  alignSelf?: "flex-start" | "center" | "flex-end" | "stretch";
+  justifyContent?: "flex-start" | "center" | "flex-end" | "space-between" | "space-around" | "space-evenly";
+  /** `wrap`: items that don't fit start a new line (a row's lines stack downwards). */
+  flexWrap?: "nowrap" | "wrap";
   /** Grows along the parent's direction, sharing the free space by weight. */
   flex?: number;
   gap?: number;
+  margin?: number;
+  marginTop?: number;
+  marginRight?: number;
+  marginBottom?: number;
+  marginLeft?: number;
   padding?: number;
   paddingTop?: number;
   paddingRight?: number;
@@ -186,12 +327,24 @@ export interface Style {
   paddingLeft?: number;
   width?: number;
   height?: number;
+  minWidth?: number;
+  maxWidth?: number;
   minHeight?: number;
+  maxHeight?: number;
+  /** width / height: the missing dimension follows the other. */
+  aspectRatio?: number;
+  /**
+   * `hidden` clips children to the box. `scroll` makes the box scroll along its direction (a
+   * column vertically, a row horizontally) with the platform's own scrolling.
+   */
+  overflow?: "visible" | "hidden" | "scroll";
   position?: "relative" | "absolute";
   top?: number;
   right?: number;
   bottom?: number;
   left?: number;
+  /** Among siblings: a higher value is drawn (and touched) above. */
+  zIndex?: number;
   display?: "flex" | "none";
   backgroundColor?: string;
   color?: string;
@@ -199,9 +352,44 @@ export interface Style {
   borderRadius?: number;
   borderWidth?: number;
   borderColor?: string;
+  /** A drop shadow: all four, or `shadowRadius` alone for a soft black one. */
+  shadowColor?: string;
+  shadowRadius?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
   fontSize?: number;
   fontWeight?: "normal" | "bold";
+  fontStyle?: "normal" | "italic";
+  /** `monospace`, `serif` and `sans-serif` are the platform's own; other names are looked up. */
+  fontFamily?: string;
+  /** In points, as `fontSize`. */
+  lineHeight?: number;
+  letterSpacing?: number;
   textAlign?: "left" | "center" | "right";
+  textDecoration?: "none" | "underline" | "line-through";
+  /** Text is cut with an ellipsis after this many lines. */
+  numberOfLines?: number;
+  // Transforms are applied after layout, around the box's centre: translate, then rotate, then scale.
+  translateX?: number;
+  translateY?: number;
+  scale?: number;
+  /** Degrees, clockwise. */
+  rotate?: number;
+  /**
+   * Milliseconds. When set, a change of opacity, transform, background colour, border radius or
+   * of the box's `width` / `height` is animated by the platform instead of applied at once (the
+   * boxes around it follow, frame by frame).
+   */
+  transitionDuration?: number;
+  transitionDelay?: number;
+  /** `spring` overshoots and settles, as a platform sheet does. */
+  transitionEasing?: "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out" | "spring";
+  /** Merged over the style while a pointer is down on the view (`:active`). */
+  pressed?: Style;
+  /** While a pointer is over the view, where the platform has one (`:hover`). */
+  hover?: Style;
+  /** While a field has the focus (`:focus`). */
+  focused?: Style;
 }
 
 /** A reusable style, applied as a child: `div(card, "Hello")`. Inline `style` wins over it. */
@@ -209,6 +397,8 @@ export interface StyleClass {
   readonly [styleClassBrand]: true;
 }
 
+/** nuclo's named form: the name is a CSS class name on the web, and only a label natively. */
+export declare function css(name: string, style: Style): StyleClass;
 export declare function css(style: Style): StyleClass;
 
 /** Merges classes left to right; falsy entries are skipped. */
@@ -234,7 +424,14 @@ export declare function variants<const V extends VariantGroups>(config: Variants
 
 export type Params = Record<string, string>;
 export type View = (params: Params) => Node;
-export type Route = View | { view: View; title?: string | ((params: Params) => string) };
+export type Route = View | {
+  view: View;
+  title?: string | ((params: Params) => string);
+  /** `modal`: presented over the stack with the platform's sheet, and dismissed by `back()`. */
+  presentation?: "push" | "modal";
+  /** `false` hides the navigation bar on this screen. */
+  header?: boolean;
+};
 
 export interface Tab {
   path: string;
@@ -259,6 +456,8 @@ export interface Router {
   /** Pushes a screen onto the current tab's stack (`/posts/:id` patterns give params). */
   go(path: string): void;
   back(): void;
+  /** Replaces the current screen, without a transition. */
+  replace(path: string): void;
   /** Selects the tab that owns `path` and makes it the only screen there. */
   reset(path: string): void;
   readonly outlet: Outlet;
@@ -299,6 +498,40 @@ export declare function setTimeout(callback: () => void, ms: number): Timer;
 export declare function setInterval(callback: () => void, ms: number): Timer;
 export declare function clearTimeout(timer: Timer): void;
 export declare function clearInterval(timer: Timer): void;
+
+export interface Frame {
+  readonly [frameBrand]: true;
+}
+
+/** Runs `callback` before the next frame is drawn; `time` is in milliseconds, as `Date.now()` counts them. */
+export declare function requestAnimationFrame(callback: (time: Double) => void): Frame;
+export declare function cancelAnimationFrame(frame: Frame): void;
+
+// ---------------------------------------------------------------------------
+// Native components and functions
+// ---------------------------------------------------------------------------
+
+/** A component's props as an app passes them: values may be functions, callbacks stay callbacks. */
+export type NativeProps<P> = {
+  [K in keyof P]: NonNullable<P[K]> extends (...args: never[]) => unknown ? P[K] : Dynamic<P[K]>;
+} & Pick<Attributes, "style" | "className" | "onMount" | "onDestroy">;
+
+/**
+ * A view written for the platform, used like any builder:
+ *
+ *   interface MapProps { latitude: Double; longitude: Double; onMove?: (lat: Double, lng: Double) => void }
+ *   const MapView = native<MapProps>("MapView");
+ *   MapView({ latitude: () => lat, longitude: 13.4, style: { height: 240 } })
+ *
+ * `P` is an interface of the app; the compiler turns it into a class per target, and each target
+ * supplies a `MapView` implementing the runtime's `NativeComponent<MapProps>` in
+ * `native/<target>/` beside the app's entry file. A missing or mistyped implementation fails that
+ * platform's build. Each dynamic prop is dirty-checked; the component's `update` runs when one changed.
+ */
+export declare function native<P>(name: string): (props: NativeProps<P>, ...children: Child[]) => Node;
+
+// Native functions need no API: write `declare function vibrate(ms: Int): void` in the app, and
+// implement `vibrate` in `native/<target>/`. Numbers must be annotated `Int` or `Double`.
 
 export declare const console: {
   log(...values: (string | number | boolean)[]): void;

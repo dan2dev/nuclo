@@ -1,6 +1,14 @@
 # @nuclo/native-ts (POC)
 
-Write a nuclo app in TypeScript. `nuclo-native-ts build` compiles it ahead of time to **Swift (UIKit)** and **Kotlin (Android Views)**. The app ships no JavaScript engine and no JS bundle.
+Write a nuclo app in TypeScript. `nuclo-native-ts build` compiles it ahead of time to **Swift (UIKit)**, **Kotlin (Android Views)** and **Rust (GTK 4 or GPUI)**, and bundles it for the **web**. A native app ships no JavaScript engine and no JS bundle.
+
+| Target | Output | State |
+| --- | --- | --- |
+| `android` | Kotlin + `NucloRuntime.kt`, built by `hosts/android` | compiled and run on an emulator |
+| `web` | `index.html` + `app.js` (the app bundled with `src/runtimes/web`) | run in a browser |
+| `ios` | Swift + `NucloRuntime.swift` | written, **never compiled** (no Swift toolchain on Linux) |
+| `linux` | a Cargo project: `src/app.rs` + the Rust runtime (a core and a GTK 4 / libadwaita backend) | compiled and run on a GNOME Wayland session; see [Linux](#linux) |
+| `linux-gpui` | the same Cargo project with a GPUI backend in place of the GTK one: every view is drawn by GPUI | compiled and run under XWayland on a locked screen (about one frame a second); see [Linux (GPUI)](#linux-gpui) |
 
 It is the counterpart of `nuclo-native`. That package runs your bundle in a JS engine and drives native widgets from it; this one translates the bundle away. The syntax is nuclo's and the model is nuclo's: plain mutable state, builders that take a value or a `() => value`, and an explicit `update()`.
 
@@ -62,10 +70,12 @@ fun App(): Node {
 ## Build
 
 ```bash
-bun x tsx src/compiler/cli.ts build examples/full-showcase/App.ts --out examples/full-showcase/build
+bun src/compiler/cli.ts build examples/full-showcase/App.ts --out build/out            # every target
+bun src/compiler/cli.ts build examples/full-showcase/App.ts --out build/out --target web,android
+bun scripts/examples.ts web,android   # every example, into build/<target>/<example>/
 ```
 
-This writes `build/ios/{App.swift,NucloRuntime.swift}` and `build/android/{App.kt,NucloRuntime.kt}`. Each folder holds the complete sources of a native app. Type errors and unsupported constructs stop the build with `file:line:column`, and nothing is written:
+Each `<out>/<target>/` folder holds the complete sources of that platform's app, including the app's own `native/<target>/` code. Every target is checked by the same front-end, so an app that builds for one builds for all. Type errors and unsupported constructs stop the build with `file:line:column`, and nothing is written:
 
 ```
 Bad.ts:3:11 - error: `any` cannot be compiled to a native type; give the value a real type.
@@ -82,21 +92,118 @@ Bad.ts:7:7 - error: The type { a: number; } has no native equivalent; declare it
 cd hosts/android && JAVA_HOME=~/.jdks/jdk-17.0.20+8 ANDROID_HOME=~/Android/Sdk ./gradlew assembleDebug --offline
 ```
 
-Point `nucloSources` in `gradle.properties` at another build folder to build another app.
+Point `nucloSources` in `gradle.properties` (or `-PnucloSources=…`) at another build folder to build another app. When switching apps, delete `app/build/kotlin` first: Kotlin's incremental cache otherwise reports every runtime function as declared twice.
+
+### Web
+
+```bash
+bun run web   # builds every example and serves build/web on http://localhost:4173
+```
+
+The web needs no translation: the app is bundled with `src/runtimes/web/index.ts` in place of the API module. Layout is the browser's flexbox, set up to give the boxes the native `Flex` gives. The router's address is the URL fragment, so a screen can be reloaded and linked to.
+
+### Linux
+
+```bash
+bun src/compiler/cli.ts build examples/full-showcase/App.ts --out build/out --target linux
+cd build/out/linux && cargo build --offline --release && ./target/release/nuclo-full-showcase
+```
+
+`<out>/linux` is a complete Cargo project: the generated `src/app.rs`, the runtime (`src/nuclo/`, `src/gtk_backend.rs`) and the app's `native/linux/` as `src/native/`. It needs the GTK 4 (≥ 4.12) and libadwaita (≥ 1.5) development packages, and the crates `gtk4` 0.11, `libadwaita` 0.9, `ureq` 3.5 and `serde_json`; `--offline` builds from the local registry. The package and its binary are named after the app's folder (`nuclo-<folder>`), so several apps can share one `CARGO_TARGET_DIR` and compile the dependencies once.
+
+The runtime is in two parts, so that another toolkit can show the same apps:
+
+- **`src/runtimes/rust/src/nuclo/`**, the core, knows no toolkit: the node tree and its bindings, `list` / `when` / `region` / `into` / `scope`, styles and variants, transitions (it paints the values in between, frame by frame), the `Flex` layout ported from `NucloRuntime.kt` statement by statement, the router's stacks, async functions on a small single-threaded executor, timers, `fetch` (ureq on a thread) and JSON decoding.
+- **`src/runtimes/rust/src/gtk_backend.rs`** implements the `Backend` trait of `nuclo/backend.rs` (its header comment is the contract): GTK widgets (label, button, entry, check button, text view, picture, scrolled window) placed at the frames the core computes and measured with Pango, libadwaita's navigation view, header bar, view switcher bar and dialog for the router, GTK gestures for the pointer.
+
+What the Rust printer (`emitRust.ts`) adds to the IR, because Rust infers and shares less than Swift and Kotlin: it types every expression to wrap optionals and pick `A::text` or `A::text_fn`; interfaces are `Rc` structs with `Var` fields and identity equality, arrays and maps are shared handles (a global array is read without copying it), globals are thread-local `Var`s initialized in order by `nuclo_main`, a local that a closure captures and something reassigns is an `Rc<Var>`, closures are `move` closures over clones, a local function takes the locals it reads as extra parameters, every `async fn` returns a `Result`, and `try` is a labelled block. The generated code has no `unsafe`.
+
+`NUCLO_SCREENSHOT=file.png` makes the app keep `file.png` a picture of its window (it is written again whenever it is deleted): a Wayland window can't be captured from outside.
+
+### Linux (GPUI)
+
+```bash
+bun src/compiler/cli.ts build examples/full-showcase/App.ts --out build/out --target linux-gpui
+cd build/out/linux-gpui && cargo build --offline --release && ./target/release/nuclo-full-showcase
+```
+
+The same generated `src/app.rs` and the same core (`src/nuclo/`, copied from `src/runtimes/rust`), with `src/runtimes/rust-gpui` in place of the GTK backend: its own `Cargo.toml` (the crates `gpui-pre` and `gpui-pre-platform` =0.3.6 with their `wayland` and `x11` features, `ureq`, `serde_json`; no GTK), `main.rs`, `gpui_backend.rs` and `gpui_field.rs`, and the app's `native/linux-gpui/` as `src/native/`. Neither Linux target compiles the other's toolkit. It runs on Wayland, or on X11 when `WAYLAND_DISPLAY` is unset.
+
+GPUI has no widgets and keeps no tree: an element paints what is on screen, every frame. So the backend keeps the tree the core describes (kind, frame, paint and content per view) and one element paints it, at the frames the core's `Flex` computes:
+
+- boxes as quads and shadows, text shaped and measured by GPUI's text system (so the core lays out with the sizes that are drawn), images cut to cover their box, a checkbox, and a text field and textarea of its own (`gpui_field.rs`: selection, clipboard, the platform's text input);
+- the router's chrome with the sizes and colours of the Android and web runtimes: a 56 px app bar (← and the title), 64 px bottom tabs, a modal screen as a sheet over all of it, screens sliding in and out;
+- the pointer resolved against the same tree: click, pointer down / move / up / cancel, pan after an 8 px slop (then it owns the drag), double click, long press (500 ms), hover and pressed states, the wheel on the innermost scroller, pinch from a touchpad or ctrl + wheel, keys to the focused field or box. Escape, alt + ← and the mouse's back button go back.
+
+Text is set in the desktop's interface font (`gsettings`, as GTK) and fontconfig's serif and monospace, and measured as Pango measures it, so both Linux targets give a text the same box. GPUI 0.3.6 does not instantiate variable fonts: when the interface font is one variable file (Ubuntu), bold text is set in fontconfig's sans-serif instead, at the regular font's line height.
+
+A native component for this target is something that draws (`gpui_backend::Draw`: `measure`, `paint` with GPUI's paint calls, `pointer`), since there is no widget to hand over; `examples/native-components/native/linux-gpui/mod.rs` has a slider and a gauge written that way.
+
+There is no `NUCLO_SCREENSHOT` here: GPUI only reads a frame back under its test support, which its Linux windows do not implement. On X11 (XWayland) the window can be captured from outside: `ffmpeg -f x11grab -window_id <id> -i :0 -frames:v 1 shot.png`.
 
 ### iOS
 
 1. Create an iOS App project in Xcode (UIKit, iOS 15+).
 2. Delete its `AppDelegate`, `SceneDelegate` and storyboard. Remove `UIApplicationSceneManifest` and `UIMainStoryboardFile` from `Info.plist`.
-3. Add both files from `build/ios`.
+3. Add every file from `build/ios` (the app, the runtime, and the app's own `native/ios/*.swift` when it has any).
 
 `App.swift` declares the `@main` app delegate.
+
+## Examples
+
+Each folder in `examples/` is an app; all of them build for every target.
+
+- **`full-showcase`**: update(), scopes, variants, lifecycle, lists, a modal through `into()`, toasts, async fetch.
+- **`gestures`**: a card dragged with `onPan` that springs back, swipe-to-archive rows, pinch / double tap / long press, pointer tracking.
+- **`navigation`**: three tab stacks, pushed screens with path params, a modal sheet, `replace` and `reset`.
+- **`layouts`**: one dashboard — overlapping avatars, a sliding segmented control, a 2 × 2 grid, an animated bar chart, a horizontal carousel, wrapping chips, an accordion, a floating button on its own layer.
+- **`performance`**: `requestAnimationFrame` moving up to 1,000 platform views per frame through `update()`, with its own fps and update-time readout.
+- **`native-components`**: a platform slider and a platform-drawn gauge as typed components, and three native functions.
+- **`bench`**: list operations timed as js-framework-benchmark does.
+
+## Beyond nuclo's DOM API
+
+Natively there is no DOM, so what an app would reach for through it is part of the API (`src/index.ts` is the whole contract):
+
+- **Layout**: flex with `margin`, min/max sizes, `alignSelf`, `flexWrap`, `aspectRatio`, `position: "absolute"`, `zIndex`, and `overflow: "scroll"` for the platform's own scrolling (it must be in a static style or class: the scroller exists before the children arrive).
+- **Paint**: shadows, fonts, `lineHeight`, `letterSpacing`, `textDecoration`, `numberOfLines`, and transforms as numbers (`translateX`, `translateY`, `scale`, `rotate`), so a gesture can drive them.
+- **Transitions**: `transitionDuration` / `Delay` / `Easing` animate a change of opacity, transform, background colour, corner radius and of the box's own `width` / `height`.
+- **State styles**: `pressed`, `hover`, `focused`, merged over the style while the state holds.
+- **Events**: `onPan`, `onPinch`, `onLongPress`, `onDoubleClick`, pointer down / move / up / cancel, `onScroll`, `onFocus`, `onBlur`, `onKeyDown`, each with a typed event.
+- **Frames**: `requestAnimationFrame`; the nuclo way to animate by hand is to change numbers and call `update()`.
+- **Navigation**: `go`, `back`, `replace`, `reset`, tabs, `presentation: "modal"`, `header: false`.
+
+## Native components and functions
+
+Anything the platform can do, an app can use, typed on both sides:
+
+```ts
+interface SliderProps { value: Double; min: Double; max: Double; onChange: (value: Double) => void }
+const Slider = native<SliderProps>("Slider");
+
+declare function vibrate(milliseconds: Int): void;
+
+Slider({ value: () => volume, min: 0, max: 100, onChange: (v) => { volume = v; update(); }, style: { height: 40 } })
+```
+
+The implementations live beside the app's entry file and are compiled with the generated code:
+
+```
+native/android/*.kt    class Slider : NativeComponent<SliderProps>   fun vibrate(milliseconds: Int)
+native/ios/*.swift     final class Slider: NativeComponent           func vibrate(_ milliseconds: Int)
+native/web/index.ts    registerNative<SliderProps>("Slider", …)      export function vibrate(…)
+native/linux/mod.rs    #[derive(Default)] struct Slider; impl NativeComponent<SliderProps> for Slider   pub fn vibrate(milliseconds: i64)
+native/linux-gpui/mod.rs    the same, its view a `gpui_backend::Draw` instead of a GTK widget
+```
+
+`SliderProps` is the class the compiler generated from the app's interface, so platform code that misreads a prop does not build, and an app that passes a wrong prop does not type-check. A value given as a function is a binding: it is dirty-checked on `update()`, and the component's `update` runs only when one changed. Numbers of a `declare function` must be `Int` or `Double`; one returning a `Promise` is awaited (`suspend` / `async`).
 
 ## How it works
 
 ```
 App.ts ──ts.createProgram + TypeChecker──▶ transpile.ts ──typed IR (ir.ts)──┬─▶ emitSwift.ts  ─▶ App.swift + NucloRuntime.swift
-                                                                            └─▶ emitKotlin.ts ─▶ App.kt    + NucloRuntime.kt
+                                                                            ├─▶ emitKotlin.ts ─▶ App.kt    + NucloRuntime.kt
+                                                                            └─▶ emitRust.ts   ─▶ src/app.rs + the Rust runtime (see Linux)
 ```
 
 - **`transpile.ts`** settles every TypeScript question, so the printers only choose syntax:
@@ -110,18 +217,18 @@ App.ts ──ts.createProgram + TypeChecker──▶ transpile.ts ──typed IR
   - Fragment nodes for `list` / `when` / `region` / `into`, which own no view and reconcile in place.
   - One flex layout algorithm (`Flex`), written once per platform, so both lay out the same boxes.
 
-| nuclo | iOS | Android |
-| --- | --- | --- |
-| `update()` / `update("id")` + `scope("id")` | re-runs bindings of all roots / of the scope's subtrees | same |
-| `p(() => …)`, `{ style: () => … }`, `value`, `checked`, `disabled` | binding + `Equatable` dirty check → `UILabel.text`, layer paint… | binding + `==` → `TextView.text`, drawable… |
-| `list(items, render)` | rows keyed by identity (`===`), views inserted/moved/removed in their `FlexView` | same, in `FlexLayout` |
-| `when().when().else()` | branch built on open, destroyed on close | same |
-| `region()` / `into()` (`latest`, `stack`, `empty`) | content lives as long as the `into()` | same |
-| `onMount` / `onDestroy` (+ returned cleanup) | `didMoveToWindow` of a probe subview / node destroy | `OnAttachStateChangeListener` / node destroy |
-| `async` + `fetch` + `when()` branches | `URLSession`, resumes on the main actor | `HttpURLConnection` on a thread, stdlib coroutine resumed on the main looper |
-| `css()`, `cx()`, `variants()` | `Style` merges, cached per selection | same |
-| `createRouter(routes, { tabs })`, `go` / `back` / `reset` | `UITabBarController` + `UINavigationController`, edge swipe syncs the router | bottom bar, app bar, view stack, system back (predictive-back dispatcher on API 33+) |
-| `render(App)`, then `render(Overlay)` | main view, then a pass-through layer over it | same |
+| nuclo | iOS | Android | Linux (GTK 4) |
+| --- | --- | --- | --- |
+| `update()` / `update("id")` + `scope("id")` | re-runs bindings of all roots / of the scope's subtrees | same | same |
+| `p(() => …)`, `{ style: () => … }`, `value`, `checked`, `disabled` | binding + `Equatable` dirty check → `UILabel.text`, layer paint… | binding + `==` → `TextView.text`, drawable… | binding + `==` → `GtkLabel` text, a `Paint` the view draws |
+| `list(items, render)` | rows keyed by identity (`===`), views inserted/moved/removed in their `FlexView` | same, in `FlexLayout` | same, in the box's `NucloView` |
+| `when().when().else()` | branch built on open, destroyed on close | same | same |
+| `region()` / `into()` (`latest`, `stack`, `empty`) | content lives as long as the `into()` | same | same |
+| `onMount` / `onDestroy` (+ returned cleanup) | `didMoveToWindow` of a probe subview / node destroy | `OnAttachStateChangeListener` / node destroy | when the node is under a root that is on screen / node destroy |
+| `async` + `fetch` + `when()` branches | `URLSession`, resumes on the main actor | `HttpURLConnection` on a thread, stdlib coroutine resumed on the main looper | `async fn` on the core's executor, ureq on a thread, resumed from the GLib main loop |
+| `css()`, `cx()`, `variants()` | `Style` merges, cached per selection | same | same |
+| `createRouter(routes, { tabs })`, `go` / `back` / `reset` | `UITabBarController` + `UINavigationController`, edge swipe syncs the router | bottom bar, app bar, view stack, system back (predictive-back dispatcher on API 33+) | `AdwNavigationView` per tab under an `AdwHeaderBar`, `AdwViewSwitcherBar`, `AdwDialog` for a modal; the header's back button and swipe sync the router |
+| `render(App)`, then `render(Overlay)` | main view, then a pass-through layer over it | same | a scrolling page, then `GtkOverlay` layers that are not hit where they have no view |
 
 ## What was checked
 
@@ -134,7 +241,45 @@ On this machine (Linux):
   - adding a todo with Enter, toggling, filtering, the `into('modal')` dialog over the navigation, deleting, toasts;
   - pushing `/todos/:id` and `/feed/:id` (title from params), back by key and by arrow;
   - the feed's loading branch (progress on a scoped update), the decoded posts, and the HTTP 404 error branch.
-- **Swift**: **not compiled**. There is no Swift toolchain here, and UIKit only builds on macOS. The runtime and emitter were written for Swift 5.9+ / iOS 15 with `@MainActor` throughout. Expect a first build in Xcode to surface a few fixes.
+- **Kotlin, the new API**: all seven examples and `test/fixtures/accept.ts` compile with 0 errors and 0 warnings (`bun run check:android`). Run on the emulator: the pan drag and its spring back, swipe-to-archive, long press, double tap, the navigation example's pushes, modal sheet, system back, `replace` and `reset`, the focused style of a field, the layouts example (wrapping, shrink-to-fit pills, the segmented control, scrolling carousel), the native slider, gauge and functions. Not exercised: pinch (no two-finger input on the emulator), key events, `href`, the text tags added by name.
+- **Web**: the showcase, gestures, layouts, navigation (including a deep link) and native-components examples were driven in a browser with no console errors. The layouts example gives the same boxes as on Android, down to where the chip row wraps; fonts differ per platform.
+- **Rust (Linux, GTK 4.24, libadwaita 1.10, rustc 1.100)**: all seven examples and `test/fixtures/accept.ts` compile to Rust and build with `cargo build --offline --release`, with 0 errors and 0 warnings; the printer reports nothing unimplemented for any of them (`bun test` checks that). The apps were run on a GNOME Wayland session. There is no tool here that injects pointer or key events into a Wayland window, so they were driven in three ways, and what each proves differs:
+  - *Through the accessibility interface (AT-SPI)*, which activates real GTK buttons, tabs and fields: in the showcase, the counter, `disabled`, Even/Odd, `update('cart')` (1 inside the scope, 0 outside until a global update), the clock's `onMount` interval, its `onDestroy` log and its restart; adding a todo from the field and the Add button, the toast, the filters, the `into('modal')` dialog over the navigation and its Delete, pushing `/todos/:id` (title from the param), editing the title there, back by the header bar's button and by `router.back()`; the feed mounting when its tab is first shown, the progress bar on a scoped update, the posts fetched over HTTPS and decoded, the HTTP 404 error branch and Retry. In native-components, the GtkScale moved through AT-SPI changed the volume, the text and the gauge.
+  - *Through GTK's own hit test* (`gtk_widget_pick` at a point, from a hook patched into a scratch copy of the backend, then the input reported to the core as the backend reports it): a click on a box, on text and on a check button; the pointer passing through the overlay layer to the app and being stopped by the modal's scrim; in navigation, push, `replace`, the modal route as a libadwaita bottom sheet with `header: false`, and `back()` closing it; in gestures, the card following a pan with its rotation, scale and shadow, springing back on release, a row archived by a swipe, pinch, double click and long press handlers; in layouts, the segmented control's indicator and the chart's bars at their new places after a transition, and the theme change; the native functions. A transition's frames in between were seen once, as a view's position changing over about 250 ms after a release. **This does not exercise the GTK gesture recognizers themselves** (`GestureDrag`, `GestureZoom`, `GestureLongPress`, `GestureClick`), the hover controller or key events: that code compiles and has not been seen working.
+  - *By running*: the performance example (200 views moved by `requestAnimationFrame` at 60 frames/s) and the bench, which completes all nine operations.
+
+  Screenshots (the window's own rendering) were looked at for each example. Not seen at all: Enter in a field (`onChange`), `onKeyDown`, `onFocus` / `onBlur` and the `focused` style, `hover`, `href`, `img` loading, `textarea`, `forceUpdate()`, scrolling a scroll box by hand and `onScroll`, a transition of `width`, `zIndex` changing at run time, a row in a horizontal scroller wider than its viewport being dragged, and the frames against the Android runtime's numbers (the layout code is a port; text sizes come from Pango and differ from Android's).
+
+  The bench on this desktop (release build, 5 runs each, to the end of the frame): create 1,000 rows 392 ms, replace 480 ms, partial update 30 ms, select 10 ms, swap 11 ms, remove 19 ms, create 10,000 rows 4.2 s, append 1,000 420 ms, clear 65 ms. GTK widgets are the cost: about 850 MB resident with 10,000 rows (40,000 views), which the allocator keeps after the rows go; a second run in the same process peaked about 10% higher (it was started through AT-SPI, which adds its own objects), not twice as high.
+
+  Gaps on Linux: `fontFamily` knows `serif`, `sans-serif` and `monospace` only; a `textarea` keeps the theme's font; pinch has no focal point from ctrl + wheel; a pointer has no `pointerId`; selecting the active tab again does not reset its stack; the title bar of an app without a router shows the binary's name.
+- **Rust (Linux, GPUI 0.3.6)**: all seven examples compile to the `linux-gpui` project and build with `cargo build --offline --release`, with 0 errors and 0 warnings. The GTK target was rebuilt next to it: its project has no GPUI file in it, and its screenshot of the layouts example is the same picture, pixel for pixel, as before the GPUI backend existed (the core was not changed for it). What was seen is narrower than for GTK, and for two reasons that are this machine's:
+  - *The screen was locked the whole time.* On Wayland a locked session is given no frames, so there the apps were only run, not looked at. They were looked at under XWayland (`WAYLAND_DISPLAY` unset), where a hidden window still gets about one frame a second and can be captured from outside (`ffmpeg -f x11grab -window_id …`). **No frame rate above 1/s, no frame in between of a transition or of a sliding screen, and no timing to a presented frame was seen.**
+  - *Nothing here can inject input into another app's window* (XTEST goes through a consent prompt). Input was sent through GPUI's own dispatch (`Window::dispatch_event` and `dispatch_keystroke`, the entry the platform's events take) by a driver patched into a scratch copy of the backend. So everything below ran through the backend's real listeners, hit testing and gesture code, **but no real pointer, keyboard or touchpad event was involved**.
+
+  Seen that way, on the XWayland screenshots or (for what is a text, a frame or a colour) read from a dump of the backend's view tree while the app ran:
+  - *showcase*: the counter with the pressed and hovered shade of a button, a disabled button dimmed, Even/Odd, `update('cart')`, the clock; typing into the todo field through the platform's text input path, shift + arrows selecting, Backspace, Enter adding the todo, the checkbox, the `into('modal')` dialog with its scrim over the app bar and the tabs, Delete, the toast's text on its layer, pushing `/todos/:id` and the bar's ←, Escape and alt + ← going back; the feed mounting when its tab is first shown, fetched over HTTPS and decoded, and the page scrolled by the wheel;
+  - *gestures*: the card following a pan from where the 8 px slop was left, larger and with its deeper shadow while it is dragged (not rotated: see the gaps), back at its place after the release; a row swiped under the threshold coming back and over it archived; ctrl + wheel pinching to 1.21×; double click toggling 2×; a long press after 500 ms, and none after a short press or a drag; pointer down / move / up with the view's own coordinates;
+  - *navigation*: push with the ← and the title in the bar, `replace`, the modal route as a sheet over the whole window with `header: false`, `back()` closing it, the tabs;
+  - *layouts*: the segmented control's indicator, the chart's bars and the accordion's height at their new places after their transitions, the carousel scrolled by a horizontal wheel and by shift + wheel with its dots following `onScroll`, the chips wrapping, the floating button on its layer;
+  - *native-components*: the drawn slider dragged to 87, the gauge following and turning red, and the three functions;
+  - *performance* and *bench*: the `requestAnimationFrame` loop moving 200 views (at the 1 frame/s the locked screen gave), and the nine operations completing;
+  - *a scratch app*: wrapped, clamped (one line, with its ellipsis), serif, monospace, italic, underlined, struck and centred text, a password field, the `focused` style, a textarea growing on Enter, a selection dragged with the pointer, `onFocus` / `onBlur`, `onKeyDown` on a box, the `hover` style, and an `img` (a PNG over HTTPS, covering its rounded box).
+
+  **The boxes are the GTK backend's.** On the first screen of layouts and of the showcase, the edges of the cards, the buttons, the segmented control and the chart's bars are on the same pixel rows in both targets' pictures, and in the scratch app every text has the same frame in both (wrapped text included). What differs: bold text is wider (another font, see [Linux (GPUI)](#linux-gpui)), a checkbox is 20 px (GTK's is 26) and a field with no style of its own has no chrome (GTK's keeps the theme's, 1 px taller).
+
+  Only compiled, never seen working: a touchpad pinch, the mouse's back button, an input method composing text, the clipboard (copy and paste did nothing with the screen locked), `href`, JPEG / SVG / WebP images, resizing the window, a display scale other than 1, a selection drawn across wrapped rows.
+
+  The bench, with the driver drawing a frame every 30 ms because the compositor asked for none (the scene is built, not presented, and that 30 ms is most of the small numbers): create 1,000 rows 35 ms, replace 41 ms, create 10,000 rows 211 ms, append 1,000 48 ms, the others 26–32 ms. 396 MB resident at the peak with 10,000 rows, against 196 MB for an idle app (GPUI, its renderer and every system font's metadata).
+
+  Gaps against the GTK backend: `rotate` is not drawn (GPUI cannot transform a quad or text; `translate` and `scale` are); opacity is applied to each thing drawn, not to the group (what overlaps inside a faded box shows through), and not at all to an image or a native view that ignores it; `overflow: "hidden"` clips to the rectangle, not the rounded corners; `letterSpacing` and `ariaLabel` do nothing (no accessibility tree is published); `numberOfLines` above 1 cuts without an ellipsis; scrolling is the wheel only, with no scroll bar; Tab does not move the focus and a textarea has no ↑ / ↓; `type: "email" | "number"` change nothing; no `NUCLO_SCREENSHOT`; on GNOME Wayland the window has no title bar (GPUI asks the compositor for one, GNOME draws none). As on GTK: a pointer has no `pointerId`, and selecting the active tab again does not reset its stack.
+- **Swift**: **not compiled**. There is no Swift toolchain here, and UIKit only builds on macOS. The iOS runtime implements the same API as the Android one, written for Swift 5.9+ / iOS 15 with `@MainActor` throughout, and nothing of it has run:
+  - the `Flex` layout ported from Kotlin (wrapping rows, margins, `alignSelf`, min/max sizes, `aspectRatio`, shrink-to-fit widths, absolute children in the padding box), `overflow: "scroll"` boxes as `UIScrollView`, `zIndex`;
+  - paint and text styles on the layer and `UILabel` (shadows, fonts, line height, letter spacing, decoration, `numberOfLines`), transforms as `CGAffineTransform`, transitions with `UIView.animate`, the `pressed` / `hover` / `focused` state styles;
+  - pointers, pan, pinch, long press and double tap on the platform's gesture recognizers, `onScroll`, focus and key events of fields;
+  - the router's `replace()`, modal routes as sheets, `header: false`; `native<P>()` components and functions, `forceUpdate()`, `requestAnimationFrame()`, `href`, `ariaLabel`.
+
+  The generated Swift of every example and of `test/fixtures/accept.ts` was read against the runtime's signatures (names, argument labels and their order, enum cases, types), by hand. Expect a first build in Xcode to surface fixes, and behaviour to need a pass on a device. Known gaps: `onKeyDown` on a box does nothing (fields report Enter, Backspace and hardware keys), and a box that clips (`overflow: "hidden"`) shows no shadow of its own.
 - **TypeScript**: `bun run typecheck` checks the compiler and the examples, and `bun test` checks the strictness rules (below).
 
 ## Performance (Android)
@@ -223,8 +368,8 @@ Supported because they could otherwise break the build:
 - Function references whose numbers differ in kind from the callback they're passed as (an `Int`/`Double` adapter is generated).
 - Callbacks narrowed from `null`.
 
-`bun run check:android` compiles `test/fixtures/accept.ts` and both examples to Kotlin with Gradle.
+`bun run check:android` compiles `test/fixtures/accept.ts` and every example to Kotlin with Gradle.
 
 ## Not supported (reported by the compiler)
 
-Everything in the table above. Also unsupported: DOM/Node APIs, SVG, SSR/hydration, `forceUpdate`, `windowed()`, video, and `nuclo-router`'s URL, loader and layer features (the router here is nuclo-native's stack router).
+Everything in the table above. Also unsupported: DOM/Node APIs, SVG, SSR (`hydrate()` renders), `windowed()`, video, `keyframes()`, `globalStyle()`, `createCss()` themes, tags with no view behind them (`select`, `canvas`, `video`, `iframe`, document tags), arbitrary DOM attributes and events, and `nuclo-router`'s URL, loader and layer features (the router here is nuclo-native's stack router).

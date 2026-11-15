@@ -13,6 +13,12 @@ export type RuntimeType =
   | "StyleClass"
   | "Variants"
   | "NativeEvent"
+  | "PointerEvent"
+  | "PanEvent"
+  | "PinchEvent"
+  | "ScrollEvent"
+  | "KeyboardEvent"
+  | "Frame"
   | "NativeElement"
   | "InputTarget"
   | "Timer"
@@ -87,7 +93,8 @@ export type Expr =
   | { e: "toDouble"; x: Expr }
   | { e: "toInt"; x: Expr }
   | { e: "toStr"; x: Expr; from: Ty }
-  | { e: "lambda"; params: Param[]; ret: Ty; body: Stmt[] | Expr }
+  /** `typed`: nothing at the call site gives the parameters' types, so they are printed. */
+  | { e: "lambda"; params: Param[]; ret: Ty; body: Stmt[] | Expr; typed?: boolean }
   | { e: "new"; cls: string; args: [string, Expr][] }
   | { e: "arr"; of: Ty; items: Expr[] }
   | { e: "dict"; of: Ty; entries: [string, Expr][] }
@@ -156,4 +163,9 @@ export interface Program {
   functions: FnDecl[];
   /** Top-level statements, run by the generated entry point. */
   main: Stmt[];
+  /**
+   * `declare function`s: their signatures (no body). The app implements them per platform; a
+   * printer whose language doesn't infer argument types reads them here.
+   */
+  natives?: FnDecl[];
 }

@@ -18,6 +18,7 @@ const RUNTIME_NAMES: Record<string, string> = {
 
 const RUNTIME_TYPES: Record<string, string> = {
   Timer: "NTimer",
+  Frame: "NFrame",
   Router: "NRouter",
   Outlet: "NRouter",
   Response: "NResponse",
@@ -179,7 +180,8 @@ class SwiftPrinter extends Printer {
         return x.base ? `${this.postfixOperand(x.base, ind)}.merged(${style})` : style;
       }
       case "enum":
-        return `.${x.member}`;
+        // Against an optional parameter a bare `.none` is Optional's: the property would stay unset.
+        return x.member === "none" ? `${x.type}.none` : `.${x.member}`;
       case "decoder":
         return `{ json in ${this.decode(x.ty, "json", 0)} }`;
       case "launch":
@@ -201,7 +203,8 @@ class SwiftPrinter extends Printer {
 
   protected lambda(x: Extract<Expr, { e: "lambda" }>, ind: string): string {
     const names = this.paramNames(x.params, () => "_");
-    const head = names.length ? ` ${names.join(", ")} in` : "";
+    const typed = x.typed ? ` (${names.map((n, i) => `${n}: ${this.ty(x.params[i]!.ty)}`).join(", ")}) in` : "";
+    const head = typed || (names.length ? ` ${names.join(", ")} in` : "");
     if (!Array.isArray(x.body)) {
       const body = this.expr(x.body, ind + INDENT);
       if (!body.includes("\n") && body.length + ind.length < 90) return `{${head} ${body} }`;

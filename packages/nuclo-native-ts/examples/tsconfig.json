@@ -1,5 +1,7 @@
 {
-  // Apps are checked exactly as the native compiler checks them.
+  // Apps are checked exactly as the native compiler checks them. Their native/ folders are each
+  // platform's own code: the web ones are checked with the web runtime (src/runtimes/web/tsconfig.json).
   "extends": "../tsconfig.app.json",
-  "include": ["."]
+  "include": ["."],
+  "exclude": ["*/native", "*/build"]
 }

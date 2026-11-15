@@ -16,6 +16,7 @@ const RUNTIME_NAMES: Record<string, string> = {
 
 const RUNTIME_TYPES: Record<string, string> = {
   Timer: "NTimer",
+  Frame: "NFrame",
   Router: "NRouter",
   Outlet: "NRouter",
   Response: "NResponse",
@@ -43,7 +44,8 @@ class KotlinPrinter extends Printer {
       "",
     ];
     for (const cls of program.classes) out.push(...this.classDecl(cls), "");
-    for (const g of program.globals) out.push(...this.stmt(g, ""));
+    // Fields, not properties: a property `count` would get a JVM setter named like a function `setCount`.
+    for (const g of program.globals) out.push(...this.stmt(g, "").map((line, at) => (at === 0 ? `@JvmField ${line}` : line)));
     if (program.globals.length) out.push("");
     for (const fn of program.functions) out.push(...this.fn(fn), "");
     out.push("fun nucloMain() {", ...this.block(program.main, INDENT), "}", "");
@@ -226,7 +228,7 @@ class KotlinPrinter extends Printer {
       const ret = x.ret.k === "void" ? "" : `: ${this.ty(x.ret)}`;
       return `fun(${params})${ret} {\n${this.block(x.body, ind + INDENT).join("\n")}\n${ind}}`;
     }
-    const names = this.paramNames(x.params, () => "_");
+    const names = this.paramNames(x.params, () => "_").map((n, i) => (x.typed ? `${n}: ${this.ty(x.params[i]!.ty)}` : n));
     const head = names.length ? ` ${names.join(", ")} ->` : "";
     if (!Array.isArray(x.body)) {
       const body = this.expr(x.body, ind + INDENT);

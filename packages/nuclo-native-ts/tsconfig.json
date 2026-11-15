@@ -15,5 +15,6 @@
     "lib": ["ESNext"],
     "types": ["bun"]
   },
-  "include": ["src", "test/*.ts"]
+  "include": ["src", "test/*.ts"],
+  "exclude": ["src/runtimes"]
 }

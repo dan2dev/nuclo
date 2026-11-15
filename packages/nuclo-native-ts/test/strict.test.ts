@@ -6,9 +6,10 @@
  * test/fixtures/accept.ts and the examples must compile; `bun run check:android` also builds their Kotlin.
  */
 import { describe, expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 import { emitKotlin } from "../src/compiler/emitKotlin.ts";
+import { emitRust } from "../src/compiler/emitRust.ts";
 import { emitSwift } from "../src/compiler/emitSwift.ts";
 import { CompileError, transpile } from "../src/compiler/transpile.ts";
 
@@ -44,6 +45,19 @@ describe("compiles valid apps", () => {
       const program = transpile(file);
       expect(emitSwift(program)).toContain("func nucloMain()");
       expect(emitKotlin(program)).toContain("fun nucloMain()");
+      expect(emitRust(program)).toContain("pub fn nuclo_main()");
+    });
+  }
+
+  // The Rust printer reports what an app uses that the Linux runtime lacks: no example may need any of it.
+  const examples = path.join(import.meta.dir, "../examples");
+  for (const example of readdirSync(examples, { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
+    test(`examples/${example.name} on linux`, () => {
+      const warnings: string[] = [];
+      const native = existsSync(path.join(examples, example.name, "native/linux"));
+      const rust = emitRust(transpile(path.join(examples, example.name, "App.ts")), { native, warn: (message) => warnings.push(message) });
+      expect(rust).toContain("pub fn nuclo_main()");
+      expect(warnings).toEqual([]);
     });
   }
 });

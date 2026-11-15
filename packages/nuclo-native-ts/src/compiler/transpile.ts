@@ -12,7 +12,7 @@
  */
 import * as path from "node:path";
 import ts from "typescript";
-import { type BinOp, type ClassDecl, type Expr, type FnDecl, type Op, type Param, type Program, type Stmt, T, type Ty } from "./ir.ts";
+import { type BinOp, type ClassDecl, type Expr, type FnDecl, type Op, type Param, type Program, type RuntimeType, type Stmt, T, type Ty } from "./ir.ts";
 
 export interface Diagnostic {
   file: string;
@@ -48,10 +48,19 @@ export function appCompilerOptions(): ts.CompilerOptions {
 
 const API_FILE = path.resolve(import.meta.dirname, "../index.ts");
 
+/** Tags the runtimes have a builder function for. */
 const TAGS = new Set([
   "div", "section", "header", "footer", "main", "nav", "article", "aside", "form", "ul", "li",
   "span", "p", "h1", "h2", "h3", "h4", "label", "strong", "small", "em",
   "button", "input", "textarea", "img",
+]);
+
+/** The other tags are built by name, `el("figure", …)`: each runtime maps the name to a box or a text. */
+const NAMED_TAGS = new Set([
+  "ol", "figure", "fieldset", "blockquote", "address", "hgroup", "menu", "search", "dl", "details", "dialog",
+  "table", "thead", "tbody", "tfoot", "tr", "td", "th", "hr",
+  "h5", "h6", "b", "i", "u", "s", "del", "ins", "mark", "code", "pre", "kbd", "samp", "var_", "abbr", "cite", "q", "dfn",
+  "sub", "sup", "time", "legend", "caption", "figcaption", "summary", "dt", "dd", "a",
 ]);
 
 /** API interfaces and the runtime types they become. */
@@ -62,6 +71,12 @@ const API_TYPES: Record<string, Ty> = {
   Style: T.rt("Style"),
   StyleClass: T.rt("StyleClass"),
   NativeEvent: T.rt("NativeEvent"),
+  PointerEvent: T.rt("PointerEvent"),
+  PanEvent: T.rt("PanEvent"),
+  PinchEvent: T.rt("PinchEvent"),
+  ScrollEvent: T.rt("ScrollEvent"),
+  KeyboardEvent: T.rt("KeyboardEvent"),
+  Frame: T.rt("Frame"),
   NativeElement: T.rt("NativeElement"),
   HTMLInputElement: T.rt("InputTarget"),
   Timer: T.rt("Timer"),
@@ -74,17 +89,36 @@ const API_TYPES: Record<string, Ty> = {
 const STYLE_ENUMS: Record<string, string> = {
   flexDirection: "FlexDirection",
   alignItems: "Align",
+  alignSelf: "Align",
   justifyContent: "Justify",
+  flexWrap: "FlexWrap",
+  overflow: "Overflow",
   position: "Position",
   display: "Display",
   fontWeight: "FontWeight",
+  fontStyle: "FontStyle",
   textAlign: "TextAlign",
+  textDecoration: "TextDecoration",
+  transitionEasing: "Easing",
+};
+
+/** Style keys whose value is itself a style, merged over the box in that state. */
+const STATE_STYLES = new Set(["pressed", "hover", "focused"]);
+
+/** Event attributes and the runtime type their handler receives. */
+const EVENTS: Record<string, RuntimeType> = {
+  onClick: "NativeEvent", onInput: "NativeEvent", onChange: "NativeEvent", onFocus: "NativeEvent", onBlur: "NativeEvent",
+  onKeyDown: "KeyboardEvent",
+  onPointerDown: "PointerEvent", onPointerMove: "PointerEvent", onPointerUp: "PointerEvent", onPointerCancel: "PointerEvent",
+  onLongPress: "PointerEvent", onDoubleClick: "PointerEvent",
+  onPan: "PanEvent", onPinch: "PinchEvent", onScroll: "ScrollEvent",
 };
 
 /** Top-level names an app can't declare: they are the runtimes', Swift's or Foundation's own. */
 const RESERVED_TYPES = new Set([
   "Clock", "Duration", "Result", "Range", "Character", "Sequence", "Collection", "Optional", "Locale", "Calendar", "Notification",
   "Node", "NodeMod", "Style", "StyleClass", "Variants", "Compound", "WhenBuilder", "NativeEvent", "NativeElement", "InputTarget",
+  "PointerEvent", "PanEvent", "PinchEvent", "ScrollEvent", "KeyboardEvent", "Frame", "NFrame", "NativeComponent",
   "A", "NRouter", "NRoute", "NTab", "NTimer", "NResponse", "NJSON", "NError", "String", "Int", "Double", "Bool", "Boolean",
   "Array", "Data", "Date", "URL", "Error", "Exception", "Timer", "View", "Task", "Set", "Map", "List", "Any", "Unit", "Object",
 ]);
@@ -99,11 +133,14 @@ const IMPLICIT_NAMES = new Set([
   "nucloMain", "MainActivity", "AppDelegate", "NucloActivity", "NucloAppDelegate", "Task", "A", "NJSON", "NError",
   "NRoute", "NTab", "NRouter", "NTimer", "NResponse", "Compound", "Variants", "Style", "StyleClass", "Node", "NodeMod",
   "WhenBuilder", "FlexDirection", "Align", "Justify", "Position", "Display", "FontWeight", "TextAlign", "Params",
+  "FlexWrap", "Overflow", "FontStyle", "TextDecoration", "Easing", "el", "nativeView", "forceUpdate", "NFrame", "NativeComponent",
+  "PointerEvent", "PanEvent", "PinchEvent", "ScrollEvent", "KeyboardEvent",
   "Content", "Cleanup", "InputTarget", "NativeEvent", "NativeElement", "Exception", "Error", "String", "Int", "Double",
   "Bool", "Boolean", "Unit", "Any", "Void", "mutableListOf", "mutableMapOf", "listOf", "checkbox", "self", "it",
   // The runtimes' own types (Swift shares one module with the app).
   "Runtime", "Flex", "FlexView", "FlexLayout", "ScreenView", "LayerView", "RootController", "ScreenController", "MountProbe",
   "TextViewDelegate", "PaddedLabel", "NButton", "PaddedTextField", "IntoEntry", "RegionState", "Attr",
+  "Touch", "PointerRecognizer", "ScrollBox", "FixedScreenView", "ScreenRoot", "StyleRef", "Backdrop",
 ]);
 
 type NumKind = "int" | "double";
@@ -155,6 +192,8 @@ class Frontend {
   /** Arrays are values in Swift: what mutates an array, and what makes two bindings share one (see checkArrays). */
   private readonly mutations: ts.Expression[] = [];
   private readonly aliases: { target: ts.Node; source: ts.Expression }[] = [];
+  /** `const MapView = native<MapProps>("MapView")`: the platform type's name and the props type. */
+  private readonly nativeComponents = new Map<ts.Symbol, { name: string; props: ts.Type }>();
 
   private readonly program: ts.Program;
   private readonly files: readonly ts.SourceFile[];
@@ -228,7 +267,11 @@ class Frontend {
       if (ts.isFunctionDeclaration(node) && node.name) {
         const symbol = this.checker.getSymbolAtLocation(node.name);
         if (symbol) this.functionSymbols.add(symbol);
-        if (!node.body) this.error(node, "Function overloads are not supported natively; use one signature.");
+        if (!node.body) {
+          // `declare function`: implemented by each platform in native/<target>/.
+          if (ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Ambient) this.declareNative(node);
+          else this.error(node, "Function overloads are not supported natively; use one signature.");
+        }
       }
       if ((ts.isFunctionDeclaration(node) || this.isFunctionNode(node)) && node.typeParameters?.length) {
         this.error(node, "Generic functions are not supported natively; write one function per type.");
@@ -243,7 +286,9 @@ class Frontend {
       if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && ["push", "pop", "shift", "unshift", "splice"].includes(node.expression.name.text)) {
         if (this.checker.isArrayType(this.checker.getNonNullableType(this.typeOf(node.expression.expression)))) this.mutations.push(node.expression.expression);
       }
-      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && this.nativeComponent(node)) {
+        // Not a variable natively: each use builds the platform's component.
+      } else if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
         if (node.initializer && this.isFunctionNode(node.initializer) && ts.isVariableDeclarationList(node.parent) && node.parent.flags & ts.NodeFlags.Const) {
           const symbol = this.checker.getSymbolAtLocation(node.name);
           if (symbol) this.functionSymbols.add(symbol);
@@ -274,7 +319,7 @@ class Frontend {
         if (signature) {
           let ret = signature.getReturnType();
           if (this.asyncFunctions.has(fn)) ret = this.checker.getAwaitedType(ret) ?? ret;
-          if (this.isNumber(ret)) this.kinds.set(fn, this.forcedKind(fn.type) ?? "int");
+          if (this.isNumber(ret)) this.kinds.set(fn, this.forcedKind(this.promised(fn.type)) ?? "int");
         }
         if (ts.isArrowFunction(node) && !ts.isBlock(node.body)) this.writes.push({ slot: node, from: node.body });
       }
@@ -335,6 +380,43 @@ class Frontend {
       ts.forEachChild(node, visit);
     };
     visit(sf);
+  }
+
+  /** Records `const X = native<P>("Name")`; true when the declaration is one. */
+  private nativeComponent(node: ts.VariableDeclaration): boolean {
+    const init = node.initializer;
+    if (!init || !ts.isCallExpression(init) || !ts.isIdentifier(init.expression) || this.apiName(init.expression) !== "native") return false;
+    const symbol = this.checker.getSymbolAtLocation(node.name);
+    const name = init.arguments[0];
+    const props = init.typeArguments?.[0];
+    if (!symbol || !name || !ts.isStringLiteral(name) || !props) {
+      this.error(init, 'native() takes the props interface and the platform type\'s name: native<MapProps>("MapView").');
+      return true;
+    }
+    if (!ts.isSourceFile(this.topLevelOf(node)) || !(ts.getCombinedNodeFlags(node) & ts.NodeFlags.Const)) this.error(node, "Declare a native component as a top-level const.");
+    if (!/^[A-Z][A-Za-z0-9]*$/.test(name.text) || RESERVED_TYPES.has(name.text) || IMPLICIT_NAMES.has(name.text)) this.error(name, `"${name.text}" can't name a native type; use an unreserved UpperCamelCase name.`);
+    this.nativeComponents.set(symbol, { name: name.text, props: this.checker.getTypeFromTypeNode(props) });
+    return true;
+  }
+
+  /** A `declare function`: its numbers must say Int or Double, because the platform code is written against them. */
+  private declareNative(node: ts.FunctionDeclaration) {
+    const ret = this.promised(node.type);
+    if (node.type && ts.isTypeReferenceNode(node.type) && ts.isIdentifier(node.type.typeName) && node.type.typeName.text === "Promise") this.asyncFunctions.add(node);
+    const check = (typeNode: ts.TypeNode | undefined, at: ts.Node) => {
+      if (!typeNode) return void this.error(at, "A declared native function needs every type written out.");
+      if (this.isNumber(this.checker.getTypeFromTypeNode(typeNode)) && !this.forcedKind(typeNode)) {
+        this.error(typeNode, "Annotate numbers of a native function as Int or Double: the platform code is written against that type.");
+      }
+    };
+    for (const param of node.parameters) check(param.type, param);
+    check(ret, node);
+  }
+
+  /** `Promise<T>` → `T`. */
+  private promised(typeNode: ts.TypeNode | undefined): ts.TypeNode | undefined {
+    if (typeNode && ts.isTypeReferenceNode(typeNode) && ts.isIdentifier(typeNode.typeName) && typeNode.typeName.text === "Promise") return typeNode.typeArguments?.[0];
+    return typeNode;
   }
 
   private isDeclarationName(node: ts.Identifier): boolean {
@@ -677,9 +759,14 @@ class Frontend {
       out.functions.push(this.fnDecl(node.name.text, node));
       return;
     }
+    if (ts.isFunctionDeclaration(node) && !node.body) {
+      if (node.name) (out.natives ??= []).push(this.fnDecl(node.name.text, node));
+      return;
+    }
     if (ts.isVariableStatement(node)) {
       for (const decl of node.declarationList.declarations) {
         if (!ts.isIdentifier(decl.name)) continue;
+        if (this.nativeComponents.has(this.checker.getSymbolAtLocation(decl.name)!)) continue;
         if (decl.initializer && this.isFunctionNode(decl.initializer) && node.declarationList.flags & ts.NodeFlags.Const) {
           out.functions.push(this.fnDecl(decl.name.text, decl.initializer as ts.ArrowFunction));
         } else {
@@ -1341,7 +1428,8 @@ class Frontend {
       }
       const key = prop.name.text;
       const enumType = STYLE_ENUMS[key];
-      given.set(key, enumType ? this.styleEnum(prop.initializer, enumType, ctx) : this.expr(prop.initializer, ctx, this.isNumber(this.typeOf(prop.initializer)) ? T.double : T.string));
+      if (STATE_STYLES.has(key)) given.set(key, this.expr(prop.initializer, ctx, T.rt("Style")));
+      else given.set(key, enumType ? this.styleEnum(prop.initializer, enumType, ctx) : this.expr(prop.initializer, ctx, this.isNumber(this.typeOf(prop.initializer)) ? T.double : T.string));
     }
     return { e: "style", props: this.styleKeys().filter((k) => given.has(k)).map((k) => [k, given.get(k)!]), base };
   }
@@ -1389,6 +1477,8 @@ class Frontend {
     }
     const api = ts.isIdentifier(callee) ? this.apiName(callee) : undefined;
     if (api) return this.nuclo(api, node, ctx);
+    const component = ts.isIdentifier(callee) ? this.nativeComponents.get(this.resolveAlias(this.checker.getSymbolAtLocation(callee))!) : undefined;
+    if (component) return this.nativeView(component, node, ctx);
 
     if (ts.isIdentifier(callee)) {
       if (callee.text === "String" && node.arguments.length === 1) return this.str(node.arguments[0]!, ctx);
@@ -1543,12 +1633,22 @@ class Frontend {
       if (name === "input" && typeProp && ts.isStringLiteral(typeProp) && typeProp.text === "checkbox") tag = "checkbox";
       return { e: "rt", name: tag, args: this.children(args, ctx) };
     }
+    if (NAMED_TAGS.has(name)) return { e: "rt", name: "el", args: [{ e: "str", v: name.replace(/_$/, "") }, ...this.children(args, ctx)] };
     switch (name) {
       case "update":
       case "scope":
         return { e: "rt", name, args: args.map((a) => this.expr(a, ctx, T.string)) };
       case "render":
-        return { e: "rt", name, args: [this.expr(args[0]!, ctx, { k: "fn", params: [], ret: T.rt("Node") })] };
+      case "hydrate":
+        return { e: "rt", name: "render", args: [this.expr(args[0]!, ctx, { k: "fn", params: [], ret: T.rt("Node") })] };
+      case "forceUpdate":
+        return { e: "rt", name, args: [] };
+      case "requestAnimationFrame":
+        return { e: "rt", name, args: [this.expr(args[0]!, ctx, { k: "fn", params: [T.double], ret: T.void })] };
+      case "cancelAnimationFrame":
+        return { e: "rt", name, args: [this.expr(args[0]!, ctx)] };
+      case "native":
+        return this.error(node, "Declare a native component as a top-level const: const MapView = native<MapProps>(\"MapView\").");
       case "list": {
         const renderTy = this.tyOfExpr(args[1]!);
         const elem = renderTy.k === "fn" ? renderTy.params[0]! : T.void;
@@ -1585,7 +1685,8 @@ class Frontend {
         return this.attr(`on${type.text[0]!.toUpperCase()}${type.text.slice(1)}`, handler, ctx);
       }
       case "css":
-        return { e: "rt", name, args: [this.expr(args[0]!, ctx, T.rt("Style"))] };
+        // css("name", style): the name is the web's class name; natively a class is a value.
+        return { e: "rt", name, args: [this.expr(args.at(-1)!, ctx, T.rt("Style"))] };
       case "cx":
         return { e: "rt", name, args: args.map((a) => this.optionalChild(a, ctx, T.rt("StyleClass"))) };
       case "variants":
@@ -1710,20 +1811,75 @@ class Frontend {
       case "value":
       case "placeholder":
       case "src":
+      case "href":
+      case "ariaLabel":
         return { e: "rt", name: `A.${name}`, args: [this.dynamic(value as ts.Expression, ctx, T.string)] };
       case "checked":
       case "disabled":
         return { e: "rt", name: `A.${name}`, args: [this.dynamic(value as ts.Expression, ctx, T.bool)] };
-      case "onClick":
-      case "onInput":
-      case "onChange":
-        return { e: "rt", name: `A.${name}`, args: [lower(event(T.rt("NativeEvent"), T.void))] };
       case "onMount":
         return { e: "rt", name: "A.onMount", args: [lower(event(T.rt("NativeElement"), T.optional({ k: "fn", params: [], ret: T.void })))] };
       case "onDestroy":
         return { e: "rt", name: "A.onDestroy", args: [lower(event(T.rt("NativeElement"), T.void))] };
     }
+    const payload = EVENTS[name];
+    if (payload) return { e: "rt", name: `A.${name}`, args: [lower(event(T.rt(payload), T.void))] };
     return this.error(value, `The attribute ${name} is not supported natively.`);
+  }
+
+  /**
+   * `MapView({ latitude: () => lat, onMove, style })` → the platform's component, a props object
+   * built from the values as they are now, and one dirty-checked binding per dynamic prop.
+   */
+  private nativeView(component: { name: string; props: ts.Type }, node: ts.CallExpression, ctx: Ctx): Expr {
+    const propsTy = this.ty(component.props, node);
+    const cls = propsTy.k === "class" ? [...this.classes.values()].find((c) => c.name === propsTy.name) : undefined;
+    if (!cls) return this.error(node, "A native component's props must be an interface of the app.");
+    const [first, ...rest] = node.arguments;
+    if (first && !ts.isObjectLiteralExpression(first)) return this.error(first, "Pass a native component's props as an object literal.");
+    const initial: [string, Expr][] = [];
+    const mods: Expr[] = [];
+    const given = new Map<string, ts.Expression>();
+    for (const prop of first?.properties ?? []) {
+      if (ts.isShorthandPropertyAssignment(prop)) given.set(prop.name.text, prop.name);
+      else if (ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name)) given.set(prop.name.text, prop.initializer);
+      else this.error(prop, "Unsupported prop.");
+    }
+    for (const field of cls.fields) {
+      const value = given.get(field.name);
+      given.delete(field.name);
+      if (!value) continue;
+      const target = field.ty.k === "optional" ? field.ty.of : field.ty;
+      if (target.k === "fn" || !this.isCallable(value)) {
+        initial.push([field.name, this.expr(value, ctx, field.ty)]);
+        continue;
+      }
+      // The value now (to build the props), and the function update() re-runs.
+      const now: Expr = ts.isArrowFunction(value) && !ts.isBlock(value.body)
+        ? this.expr(value.body, ctx, field.ty)
+        : { e: "call", callee: this.expr(value, ctx), args: [] };
+      initial.push([field.name, now]);
+      mods.push({
+        e: "rt",
+        name: "A.prop",
+        args: [
+          this.expr(value, ctx, { k: "fn", params: [], ret: field.ty }),
+          {
+            e: "lambda",
+            params: [{ name: "props", ty: propsTy }, { name: "value", ty: field.ty }],
+            ret: T.void,
+            typed: true,
+            body: [{ s: "assign", target: { e: "prop", obj: { e: "id", name: "props" }, name: field.name }, op: "=", value: { e: "id", name: "value" } }],
+          },
+        ],
+      });
+    }
+    for (const [name, value] of given) mods.push(this.attr(name, value, ctx));
+    return {
+      e: "rt",
+      name: "nativeView",
+      args: [{ e: "new", cls: component.name, args: [] }, { e: "new", cls: cls.name, args: initial }, ...mods, ...this.children(rest, ctx)],
+    };
   }
 
   private variants(node: ts.CallExpression, ctx: Ctx): Expr {
@@ -1793,6 +1949,10 @@ class Frontend {
             : this.expr(t, ctx, title),
         ]);
       }
+      const presentation = this.attrValue([value], "presentation");
+      if (presentation) named.push(["presentation", this.expr(presentation, ctx, T.string)]);
+      const header = this.attrValue([value], "header");
+      if (header) named.push(["header", this.expr(header, ctx, T.bool)]);
       return { e: "rt", name: "Route", args: [pattern, v ? this.expr(v, ctx, view) : this.error(value, "A route needs a view.")], named };
     });
     const named: [string, Expr][] = [["routes", { e: "arr", of: { k: "class", name: "NRoute" }, items: routes }]];
