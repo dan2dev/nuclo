@@ -32,6 +32,8 @@ final class Engine: Thread, @unchecked Sendable {
     private var scale: CGFloat = 2
     private var assets = ""
     private var window = ""
+    private var nativeViews = ""
+    private var textScale = "1"
     private var imageSizes: [String: String] = [:]
 
     override init() {
@@ -82,9 +84,11 @@ final class Engine: Thread, @unchecked Sendable {
     /// Starts Hermes and runs the bundle: its bytecode (app.hbc beside it, scripts/hermes.ts) when there, else its source.
     /// `window`: the content's size when it is known before any layout, "w h scale" as a resize carries it (or ""):
     /// JS lays the first screen out with it in the turn that renders it.
-    func run(bundle path: String, window: String) {
+    func run(bundle path: String, window: String, nativeViews: String, textScale: String) {
         post { js in
             js.window = window
+            js.nativeViews = nativeViews
+            js.textScale = textScale
             js.assets = (path as NSString).deletingLastPathComponent
             var calls = js.calls()
             js.runtime = nuclo_create(&calls)
@@ -156,6 +160,8 @@ final class Engine: Thread, @unchecked Sendable {
     private func device(_ name: String) -> String {
         // Asked as the runtime starts, while the main thread is busy starting the app: answered here.
         if name == "window" { return window }
+        if name == "nativeViews" { return nativeViews }
+        if name == "textScale" { return textScale }
         guard name == "frames" || name == "battery" else { return "" }
         // The views show what this turn sent so far before their frames are read.
         if name == "frames" { deliver() }

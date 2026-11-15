@@ -46,8 +46,10 @@ function publish() {
 export const Compose = () =>
   div(
     section(
-      input({
+      textarea({
         placeholder: "What's happening?",
+        "aria-label": "Post text",
+        rows: 4,
         value: () => draft.text,
         style: field,
         onInput: (e) => {
@@ -181,7 +183,7 @@ export const EditProfile = () => {
     section(
       name("Colour", 14),
       div(
-        { style: { flexDirection: "row", gap: 10 } },
+        { style: { flexDirection: "row", flexWrap: "wrap", gap: 10 } },
         ...tints.map((t) =>
           div({
             style: () => ({ width: 32, height: 32, borderRadius: 16, backgroundColor: t, border: `3px solid ${profile.tint === t ? color.text : color.card}` }),

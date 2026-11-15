@@ -8,6 +8,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { homedir, platform } from "node:os";
 import { join } from "node:path";
 import { bytecode, hermes } from "./hermes";
+import { ensureAndroidDevice } from "./android";
 
 const [target = "", example = "showcase"] = process.argv.slice(2);
 const os = platform();
@@ -53,7 +54,9 @@ function need(os_: string) {
 }
 
 /** The Swift host's sources, with the Hermes bridge's header for them to call. */
-const swift = ["main", "Navigation", "Device", "Engine"].map((name) => `hosts/apple/${name}.swift`);
+const swift = ["main", "Navigation", "Device", "Engine", "NativeView", "MultilineField"].map((name) => `hosts/apple/${name}.swift`);
+const nativeViews = `examples/${example}/NativeViews.swift`;
+if (existsSync(nativeViews)) swift.push("-DNUCLO_APP_NATIVE_VIEWS", nativeViews);
 const bridge = ["-O", "-swift-version", "6", "-import-objc-header", "hosts/hermes/nuclo_hermes.h", "-lc++", "-framework", "hermesvm"];
 
 /** Compiles the Hermes bridge (hosts/hermes) for an Apple target into `out`. */
@@ -121,6 +124,7 @@ const targets: Record<string, () => Promise<unknown>> = {
   },
 
   async android() {
+    await ensureAndroidDevice(sdk);
     // Its CMake build takes JSI's headers and jsi.cpp from the release (hosts/android/app/src/main/cpp).
     await hermes();
     await android("hosts/android", "dev.nuclo.host", ".MainActivity");

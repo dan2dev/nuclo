@@ -2,7 +2,7 @@
 
 Write a normal nuclo app. It renders with real native widgets — no webview — on Android, iOS, macOS, Windows and Linux, and builds as a web app (SPA and installable PWA) from the same source. The same bundle also runs on a GPUI host that draws every platform itself.
 
-Navigation is each platform's own: `UINavigationController` and a tab bar on iOS, a sidebar and toolbar on macOS, Material motion and predictive back on Android, libadwaita on Linux, a Fluent nav pane on Windows.
+Navigation is each platform's own: SwiftUI `TabView(.sidebarAdaptable)` and `NavigationStack` on iOS and macOS, Material 3 `BottomNavigationView` / `NavigationRailView`, `AppBarLayout` + `MaterialToolbar`, `MaterialSharedAxis` and predictive back on Android, libadwaita on Linux, a Fluent nav pane on Windows.
 
 ```ts
 import "nuclo-native";
@@ -74,9 +74,9 @@ A route is a view, or `{ view, title, onEndReached }` where the title is the nav
 
 | Target | Tabs | Push / pop | Back |
 | --- | --- | --- | --- |
-| iOS | `UITabBarController` | `UINavigationController`, large titles on root screens | back button, interactive edge swipe, re-tap the tab |
-| macOS | source-list sidebar (`NSSplitViewController`) | slide (`NSViewController` transition), the window title is the screen's | toolbar chevron, ⌘[, two-finger swipe |
-| Android | Material 3 bottom bar, fade through | Material shared axis X | toolbar arrow, back key, predictive back gesture (API 34+), re-tap the tab |
+| iOS | SwiftUI `TabView(.sidebarAdaptable)` | SwiftUI `NavigationStack`, large titles on root screens | back button, interactive edge swipe, re-tap the tab |
+| macOS | SwiftUI `TabView(.sidebarAdaptable)` | SwiftUI `NavigationStack`, the window title is the screen's | toolbar chevron, ⌘[, two-finger swipe |
+| Android | Material 3 `BottomNavigationView` / `NavigationRailView`, `MaterialFadeThrough` | `AppBarLayout` + `MaterialToolbar` (lift on scroll), `MaterialSharedAxis` X | toolbar arrow, back key, seekable predictive back gesture (API 34+), re-tap the tab |
 | Linux | `Adw.ViewStack` + `Adw.ViewSwitcherBar` | `Adw.NavigationView` | header bar back, swipe, Alt+←, mouse back |
 | Windows | Fluent nav pane | drill-in | back button, Alt+←, mouse back |
 | Web | bottom tab bar | directional view transitions | bar back button, browser back (its own swipe-back animation is kept) |
@@ -130,6 +130,18 @@ Rows that arrive together never all reach the host either. A column that takes m
 
 Limits: only lists reached through columns from the screen are culled, not a list inside a row. A list rendered in the same pass as its container is still created whole. With `list()`, JS still holds every row's nodes, about 11 KB a row in Hermes, and nuclo's update reads every row's bindings each time: with 10,000 rows loaded an update takes about 90 ms on the emulator. `windowed()` has neither limit.
 
+### Long lists: `flatList()`
+
+```ts
+import { flatList } from "nuclo-native";
+
+flatList(() => people, personRow, (person) => person.id);
+```
+
+`list()` is for short lists: every item has its row, and the rows are their container's own children. `flatList()` is for long ones: only the rows within three screens of what shows exist, in JS as on the host, so a thousand items that arrive together cost a few screens of rows. Against React Native's `FlatList` on the Android emulator it has the lower median in all eleven benchmark operations (`benchmarks/native-compare/REPORT.md`, where it is the `idiomatic` variant): creating 1,000 rows takes 22 ms against 35 ms, and 10,000 rows 23 ms against 31 ms. A plain `list()` builds every row in JS and takes 70 ms and 584 ms for the same.
+
+The optional third argument supplies a unique, stable key per item. Without it, the item itself is the key. Replacing a record rebuilds its row and keeps its measured height as an estimate until it is laid out. Keep selection and drafts in app state, keyed by ID, so they survive a row leaving and reentering the window. Rows not yet laid out use an estimated height. Use margins on rows for spacing, since the outer container's `gap` does not reach them.
+
 ### Lists without an end: `windowed()`
 
 ```ts
@@ -160,6 +172,14 @@ Rows before the window count at the height they were laid out at, so what shows 
 
 A player holds a decoder, so a long list should show posters and open a player on tap, as `chirp` does.
 
+## Native views
+
+`bun run ios native-map` and `bun run macos native-map` run an interactive MapKit view. Switching places updates the native map from TypeScript. Selecting its pin sends the place back. Hiding it exercises teardown. Other hosts show the app's fallback.
+
+Call `nativeView<Props, Event>(name, { props, style, onEvent, fallback })` on the TypeScript side. Supply JSON data for `props` (or a function for reactive props) and size the component through `style`, usually with an explicit height and the parent's stretching width. The host owns the frame. `onEvent` receives the JSON value emitted by the native component.
+
+The Apple runner compiles an example's optional `NativeViews.swift` into the app. Define `@MainActor func registerNativeViews(on host: Host)` and call `host.registerNativeView(name)` for each component. Return a `NativeComponent` with a view, an `update(Data)` callback to decode props and an optional `dispose` callback to release native resources. For your own Xcode target, add the Swift file and the `NUCLO_APP_NATIVE_VIEWS` compilation condition. See [the MapKit adapter](examples/native-map/NativeViews.swift).
+
 ## How it works
 
 ```
@@ -180,7 +200,7 @@ The whole host contract is seven ops and one callback:
 
 | Op | Meaning |
 | --- | --- |
-| `["create", id, kind]` | `view`, `text`, `button`, `input`, `checkbox`, `image` or `video`; navigation: `tabs`, `stack`, `screen` |
+| `["create", id, kind, inputMode?]` | `view`, `text`, `button`, `input`, `checkbox`, `image` or `video`; navigation: `tabs`, `stack`, `screen`; an input can request `password` or `multiline`; registered native views use `native:<name>` |
 | `["insert", parentId, id, beforeId]` | Insert or move. `beforeId` 0 appends. |
 | `["remove", id]` | Detach and destroy the subtree |
 | `["set", id, key, value]` | `text`, `value`, `checked`, `placeholder`, `type`, `disabled`, `src`; `title` (screen, or a stack's tab), `icon` (a stack's tab), `selected` (tabs) |
@@ -302,7 +322,7 @@ Every target is one command, with an optional example (`showcase` by default). I
 ```bash
 bun run ios            # booted simulator; bun run ios todo, bun run ios battery…
 bun run macos
-bun run android        # running emulator or device
+bun run android        # connected device, or boots the first configured emulator
 bun run linux          # gjs + GTK 4 + libadwaita
 bun run windows        # on Windows
 bun run web            # http://localhost:4173
@@ -323,8 +343,7 @@ Requirements, all current releases and no package managers beyond each platform'
 Commands behind them, if you want to run one by hand:
 
 - **macOS:** the bridge first, `clang++ -std=c++20 -O2 -c -I build/hermes/include hosts/hermes/nuclo_hermes.cpp -o build/macos/nuclo_hermes.o`, then `swiftc -O -swift-version 6 -target arm64-apple-macos27.0 -import-objc-header hosts/hermes/nuclo_hermes.h hosts/apple/*.swift build/macos/nuclo_hermes.o -lc++ -F build/hermes/Library/Frameworks/macosx -framework hermesvm -Xlinker -rpath -Xlinker $PWD/build/hermes/Library/Frameworks/macosx -o build/macos/nuclo-app && build/macos/nuclo-app dist/app.js` (any bundle path works; `app.hbc` beside it is loaded in its place)
-- **iOS simulator:** no Xcode project. The same two steps with `xcrun -sdk iphonesimulator`, `-target arm64-apple-ios27.0-simulator` and the simulator's slice of `hermesvm.xcframework`, then an `.app` folder with the binary, `Frameworks/hermesvm.framework`, `app.js`, `app.hbc`, `assets/` and an `Info.plist` (`UILaunchScreen` included, or the app runs letterboxed, and the scene manifest naming `NucloSceneDelegate`), ad-hoc signed and installed with `xcrun simctl install booted`. `scripts/run.ts` has the exact steps.
-- **iOS device:** add `hosts/apple/*.swift`, `hosts/hermes/nuclo_hermes.*` (the header as the bridging header), `hermesvm.xcframework` and `dist/app.hbc` to an iOS app target, so Xcode handles signing and provisioning.
+- **iOS simulator (CLI):** `scripts/run.ts` compiles the host and Hermes bridge for the simulator, assembles an `.app`, signs it ad hoc, and installs it with `xcrun simctl install booted`.
 - **Android:** `bun scripts/hermes.ts` once, then open `hosts/android` in Android Studio, or `./gradlew assembleDebug` there. `dist/` ships as the assets.
 - **A bundle in Hermes, without a device:** `$(bun scripts/hermes.ts cli) dist/app.js` runs it on this Mac with no views (`hosts/hermes/cli.cpp`): for timing JS in the engine the phones run.
 - **Windows:** `dotnet run` in `hosts/windows`.
@@ -332,9 +351,24 @@ Commands behind them, if you want to run one by hand:
 - **GPUI, iOS:** `cargo rustc --lib --target aarch64-apple-ios-sim --crate-type staticlib` in `hosts/gpui` (with `LIBCLANG_PATH` at Xcode's toolchain, since rquickjs generates its mobile bindings, and `IPHONEOS_DEPLOYMENT_TARGET=17.0` for the C parts), then link `hosts/gpui/ios/main.m` against `libnuclo_gpui.a`.
 - **GPUI, Android:** the same with `--target aarch64-linux-android --crate-type cdylib` and the NDK's clang as linker, the stripped `.so` in `hosts/gpui/android/app/build/jniLibs/arm64-v8a`, then `./gradlew assembleDebug` in `hosts/gpui/android`. Bindgen needs `--target=aarch64-linux-android30` in `BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android` with NDK 30.
 
+### Showcase in Xcode
+
+Install workspace dependencies with `bun install` from the Nuclo repo root. From the `nuclo-native` package directory, fetch the pinned Hermes release before opening the project:
+
+```sh
+bun scripts/hermes.ts
+open examples/showcase/apple/Showcase.xcodeproj
+```
+
+Select **Showcase iOS** and an iPhone or iPad simulator, or **Showcase macOS** and **My Mac**, then choose **Run**. Xcode builds the shared Apple host and packages the Showcase code, assets, fonts, and Hermes. For a physical iOS device or a signed archive, select your team in **Signing & Capabilities** and set a bundle ID registered to that team.
+
+The project keeps shared app metadata in `Showcase.xcconfig`, iOS launch and scene settings in `Info-iOS.plist`, and the Mac App Sandbox in `Showcase-macOS.entitlements`. Replace the icon in `Assets.xcassets`. When adding a protected resource, add its usage description to the corresponding target's Info settings and enable the relevant capability if needed. Update `PrivacyInfo.xcprivacy` when the app starts collecting data or using APIs that require a declared reason.
+
 ## What the POC supports
 
 - **Tags:** `button`, `input` (text, password, checkbox), `textarea`, `img`, `video`. Text tags (`span`, `p`, `h1`–`h6`, `label`, `strong`…) become one label holding their whole text. Every other tag is a flex container, column by default.
+- **Forms:** `textarea({ rows, value, onInput })` uses a native multiline editor on iOS, macOS and Android and a textarea in the browser. On those native hosts `focus()` and `blur()` work on mounted text fields during a Nuclo update. Native single-line fields commit on Enter and multiline fields commit on blur after an edit. On macOS, choose `type: "password"` when creating the field so the host mounts a secure control.
+- **Accessibility:** iOS, macOS and Android map `aria-label`, `aria-hidden`, `aria-selected`, headings and image `alt` to native semantics. `aria-description` supplies a hint on Apple and a supplemental description on Android API 36+. Font sizes follow Dynamic Type on iOS and the system font scale on Android. Fixed-height boxes still need enough room for larger text. Give custom clickable containers `role: "button"` and a label. Prefer `button()` for standard keyboard and assistive behavior.
 - **Styles:** inline `style`, `css()`, `createCss()` with `screens`, `cx()`, `variants()` and `globalStyle()` by tag or class: flexbox layout, the box model, positioning and paint, laid out the same everywhere and responsive to the window ([Styling](#styling-the-same-pixels-everywhere)). Text properties inherit. Text collapses whitespace as CSS does.
 - **Images:** `img({ src })` loads a file relative to the bundle: its natural size and aspect, or the box you give it, cropped to fill. On Android, iOS and macOS `src` can be a URL: the host fetches it once and keeps it while memory allows; an image without a size takes no room until it arrives, then lays out at its natural size (`test/images.test.ts`).
 - **Video:** see [Video](#video).
@@ -346,7 +380,7 @@ Commands behind them, if you want to run one by hand:
 ## Not done
 
 - On native: `:hover`, `:focus` and other pseudo-classes, combinator selectors, `@keyframes`/`transition`, `box-shadow`, `lineHeight`, `letterSpacing`, `fontStyle`, `transform`, `zIndex`, `order`, `aspectRatio`, `baseline` alignment, per-corner radii and per-side border colours. They still work on the web.
-- On Windows: placeholders and password fields. On macOS: password fields (iOS has them).
+- On Windows: placeholders and password fields. The GTK, Windows and GPUI hosts still use the single-line editor for `textarea`.
 - Moving a window to a screen of another scale does not lay it out again on Linux and Windows.
 - Remote videos; remote images on the GTK, Windows and GPUI hosts, where `src` is a bundled file. A remote image is decoded at full size, and shows nothing while it loads or when it fails.
 - On the web, `router.back()` is the browser's back, so it leaves the app when a detail screen was opened directly from a link. Tabs there reset instead of keeping a stack each.

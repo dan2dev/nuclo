@@ -2,8 +2,7 @@
 // (Engine.swift). Navigation (tabs, stacks, screens) lives in Navigation.swift, device data (battery) in Device.swift.
 //
 // Built with the Hermes bridge (hosts/hermes) and hermesvm.framework: scripts/run.ts has the commands (macos, ios).
-// iOS device: add hosts/apple/*.swift, hosts/hermes/nuclo_hermes.*, hermesvm.xcframework and dist/app.hbc to an
-//        iOS app target (no storyboard; the scene configuration is made in code, AppDelegate below).
+// The Showcase Xcode project (examples/showcase/apple) packages this host for iOS and macOS.
 import AVKit
 import CoreText
 
@@ -53,11 +52,29 @@ final class Field: NSTextField {
 final class FieldCell: NSTextFieldCell {
     override func drawingRect(forBounds rect: NSRect) -> NSRect {
         let height = NSLayoutManager().defaultLineHeight(for: font ?? NSFont.systemFont(ofSize: 14))
-        let insets = (controlView as? Field)?.insets ?? .zero
-        // The field editor adds 2 points of line padding.
-        let left = max(0, insets.left - 2), right = max(0, insets.right - 2)
-        return NSRect(x: rect.minX + left, y: rect.midY - height / 2, width: max(0, rect.width - left - right), height: height)
+        return fieldRect(rect, height, (controlView as? Field)?.insets ?? .zero)
     }
+}
+
+final class SecureField: NSSecureTextField {
+    var insets = Edges.zero { didSet { needsDisplay = true } }
+    override class var cellClass: AnyClass? {
+        get { SecureFieldCell.self }
+        set {}
+    }
+}
+
+final class SecureFieldCell: NSSecureTextFieldCell {
+    override func drawingRect(forBounds rect: NSRect) -> NSRect {
+        let height = NSLayoutManager().defaultLineHeight(for: font ?? NSFont.systemFont(ofSize: 14))
+        return fieldRect(rect, height, (controlView as? SecureField)?.insets ?? .zero)
+    }
+}
+
+private func fieldRect(_ rect: NSRect, _ height: CGFloat, _ insets: Edges) -> NSRect {
+    // The field editor adds 2 points of line padding.
+    let left = max(0, insets.left - 2), right = max(0, insets.right - 2)
+    return NSRect(x: rect.minX + left, y: rect.midY - height / 2, width: max(0, rect.width - left - right), height: height)
 }
 #else
 import UIKit
@@ -143,14 +160,25 @@ struct Edges: Equatable {
 final class Box: View {
     /// The body reports its size: it is the layout root of an app without the router.
     var resized: ((CGSize) -> Void)?
+    var activate: (() -> Void)?
 
     #if os(macOS)
+    override func accessibilityPerformPress() -> Bool {
+        guard let activate else { return super.accessibilityPerformPress() }
+        activate()
+        return true
+    }
     override var isFlipped: Bool { true }
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
         resized?(newSize)
     }
     #else
+    override func accessibilityActivate() -> Bool {
+        guard let activate else { return super.accessibilityActivate() }
+        activate()
+        return true
+    }
     override func layoutSubviews() {
         super.layoutSubviews()
         resized?(bounds.size)
@@ -287,13 +315,21 @@ final class TextView: View {
 
     private func changed() {
         #if os(macOS)
-        setAccessibilityLabel(text)
         needsDisplay = true
         #else
-        accessibilityLabel = text
         setNeedsDisplay()
         #endif
     }
+
+    #if os(macOS)
+    var spokenLabel: String?
+    override func accessibilityLabel() -> String? { spokenLabel ?? text }
+    #else
+    override var accessibilityLabel: String? {
+        get { super.accessibilityLabel ?? text }
+        set { super.accessibilityLabel = newValue }
+    }
+    #endif
 
     override func draw(_ rect: CGRect) {
         #if os(macOS)
@@ -334,7 +370,10 @@ final class Button: UIButton {
 /// The iOS checkbox: a circle that fills with a check, as in Reminders. A 24-point box, a 44-point touch area.
 final class CheckBox: UIButton {
     var isOn = false {
-        didSet { setImage(UIImage(systemName: isOn ? "checkmark.circle.fill" : "circle"), for: .normal) }
+        didSet {
+            setImage(UIImage(systemName: isOn ? "checkmark.circle.fill" : "circle"), for: .normal)
+            isSelected = isOn
+        }
     }
 
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
@@ -347,6 +386,9 @@ final class CheckBox: UIButton {
 final class Host: NSObject {
     let root = Box()
     private var views: [Int: View] = [:]
+    private var components: [Int: (token: UUID, component: NativeComponent)] = [:]
+    private var factories: [String: NativeComponentFactory] = [:]
+    private var focusRequests: [(Int, Bool)] = []
     private var ids: [ObjectIdentifier: Int] = [:]
     private var fonts: [Int: (size: CGFloat, bold: Bool, system: Bool)] = [:]
     private var borders: [Int: (widths: Edges, color: Color)] = [:]
@@ -377,11 +419,15 @@ final class Host: NSObject {
     // Device data (Device.swift).
     var lastBattery = ""
     var batteryWatch: AnyObject?
-    #if os(macOS)
-    var chrome: Chrome?
-    #endif
+
+    func registerNativeView(_ name: String, factory: @escaping NativeComponentFactory) {
+        factories[name] = factory
+    }
 
     func start(bundle path: String) {
+        #if NUCLO_APP_NATIVE_VIEWS
+        registerNativeViews(on: self)
+        #endif
         views[1] = root
         assets = (path as NSString).deletingLastPathComponent
         // The bundled font (fonts/ next to app.js): every host sets text in it.
@@ -394,10 +440,13 @@ final class Host: NSObject {
         // reports its own. A macOS screen shares the window with the sidebar, so its size is its own to report.
         #if os(iOS)
         let known = size.width > 0 ? "\(size.width) \(size.height) \(deviceScale())" : ""
+        let textScale = UIFontMetrics(forTextStyle: .body).scaledValue(for: 100) / 100
+        NotificationCenter.default.addObserver(self, selector: #selector(textScaleChanged), name: UIContentSizeCategory.didChangeNotification, object: nil)
         #else
         let known = ""
+        let textScale = 1.0
         #endif
-        engine.run(bundle: path, window: known)
+        engine.run(bundle: path, window: known, nativeViews: factories.keys.sorted().joined(separator: "\n"), textScale: String(describing: textScale))
         // Without the router the body is the layout root: JS lays it out at the window's size.
         root.resized = { [unowned self] size in
             guard size != self.rootSize else { return }
@@ -415,6 +464,19 @@ final class Host: NSObject {
         // Animate what changed in each stack, once per turn.
         for stack in stacks.values where stack.dirty { stack.sync() }
         updateChrome()
+        for (id, focus) in focusRequests {
+            guard let view = views[id] else { continue }
+            #if os(macOS)
+            let target = (view as? MultilineField)?.editor ?? view
+            if focus { target.window?.makeFirstResponder(target) }
+            else if target.window?.firstResponder === target || (target as? NSTextField)?.currentEditor() != nil {
+                target.window?.makeFirstResponder(nil)
+            }
+            #else
+            if focus { view.becomeFirstResponder() } else { view.resignFirstResponder() }
+            #endif
+        }
+        focusRequests.removeAll(keepingCapacity: true)
     }
 
     /// Places views at their frames with edges on device pixels, as the browser paints boxes:
@@ -477,9 +539,12 @@ final class Host: NSObject {
         emit(sender, "change", sender.isOn)
     }
     @objc private func edited(_ sender: UITextField) { emit(sender, "input", sender.text ?? "") }
+    @objc private func textScaleChanged() {
+        emit(id: 1, "textScale", UIFontMetrics(forTextStyle: .body).scaledValue(for: 100) / 100)
+    }
     #endif
 
-    private func create(_ kind: String) -> View {
+    private func create(_ kind: String, inputType: String?) -> View {
         switch kind {
         case "text":
             return TextView()
@@ -500,8 +565,13 @@ final class Host: NSObject {
             #endif
             return button
         case "input":
+            if inputType == "multiline" {
+                let field = MultilineField()
+                field.report = { [weak self, weak field] event, value in self?.emit(field, event, value) }
+                return field
+            }
             #if os(macOS)
-            let field = Field()
+            let field: NSTextField = inputType == "password" ? SecureField() : Field()
             field.font = textFont()
             field.delegate = self
             field.target = self
@@ -510,6 +580,7 @@ final class Host: NSObject {
             return field
             #else
             let field = Field()
+            field.isSecureTextEntry = inputType == "password"
             field.borderStyle = .roundedRect
             field.font = textFont()
             field.addTarget(self, action: #selector(edited(_:)), for: .editingChanged)
@@ -555,7 +626,20 @@ final class Host: NSObject {
             case "stack": stacks[id] = StackController(id: id, host: self)
             case "tabs": tabs[id] = TabsController(id: id, host: self)
             default:
-                let view = create(op[2] as! String)
+                let kind = op[2] as! String
+                let view: View
+                if kind.hasPrefix("native:"), let factory = factories[String(kind.dropFirst("native:".count))] {
+                    let token = UUID()
+                    let component = factory { [weak self] event in
+                        guard let self, self.components[id]?.token == token,
+                              let data = try? JSONEncoder().encode(event) else { return }
+                        self.emit(id: id, "nativeevent", String(decoding: data, as: UTF8.self))
+                    }
+                    components[id] = (token, component)
+                    view = component.view
+                } else {
+                    view = create(kind, inputType: op.count > 3 ? op[3] as? String : nil)
+                }
                 views[id] = view
                 ids[ObjectIdentifier(view)] = id
             }
@@ -613,6 +697,10 @@ final class Host: NSObject {
             } else if (key == "value" || key == "checked") && (edited[id] ?? 0) > handled {
                 // The user changed the control after the event these ops answer: what they entered stands, and is
                 // on its way to JS.
+            } else if key == "native-props", let component = components[id]?.component {
+                component.update(Data(text.utf8))
+            } else if key == "focus", let focus = op[3] as? Bool {
+                focusRequests.append((id, focus))
             } else {
                 set(views[id]!, key, op[3])
             }
@@ -636,6 +724,7 @@ final class Host: NSObject {
             guard let view = views[id] else { break }
             if op[2] as! String == "click", !(view is Control) {
                 view.addGestureRecognizer(Tap(target: self, action: #selector(tapped(_:))))
+                (view as? Box)?.activate = { [weak self] in self?.emit(id: id, "click") }
                 #if os(iOS)
                 (view as? Box)?.pressable = true
                 #endif
@@ -650,6 +739,7 @@ final class Host: NSObject {
         if view is Box { view.subviews.forEach(forget) }
         shown[ObjectIdentifier(view)] = nil
         guard let id = ids.removeValue(forKey: ObjectIdentifier(view)) else { return }
+        components.removeValue(forKey: id)?.component.dispose()
         views[id] = nil
         edited[id] = nil
         fonts[id] = nil
@@ -660,6 +750,8 @@ final class Host: NSObject {
     private func set(_ view: View, _ key: String, _ value: Any) {
         let text = value as? String ?? ""
         switch key {
+        case "aria-label", "aria-description", "aria-hidden", "role", "aria-selected":
+            setAccessibility(view, key, value)
         case "text":
             #if os(macOS)
             if let button = view as? NSButton { button.title = text }
@@ -668,12 +760,14 @@ final class Host: NSObject {
             #endif
             (view as? TextView)?.text = text
         case "value":
+            (view as? MultilineField)?.value = text
             #if os(macOS)
-            (view as? NSTextField)?.text = text
+            if let field = view as? NSTextField, field.text != text { field.text = text }
             #else
-            (view as? UITextField)?.text = text
+            if let field = view as? UITextField, field.text != text { field.text = text }
             #endif
         case "placeholder":
+            (view as? MultilineField)?.placeholder = text
             #if os(macOS)
             (view as? NSTextField)?.placeholder = text
             #else
@@ -693,11 +787,13 @@ final class Host: NSObject {
             guard let image = view as? ImageView else { break }
             if isRemote(text) { remoteImage(text, for: image) } else { image.image = Picture(contentsOfFile: file) }
         case "type":
-            // ponytail: iOS only; AppKit's secure field is another class (NSSecureTextField), made at creation.
             #if os(iOS)
-            (view as? UITextField)?.isSecureTextEntry = text == "password"
+            guard let field = view as? UITextField else { break }
+            if field.isSecureTextEntry != (text == "password") { field.isSecureTextEntry = text == "password" }
+            field.keyboardType = text == "email" ? .emailAddress : text == "tel" ? .phonePad : text == "number" ? .decimalPad : .default
             #endif
         case "disabled":
+            (view as? MultilineField)?.isEditable = (value as? Bool) != true
             (view as? Control)?.isEnabled = (value as? Bool) != true
         default:
             break
@@ -712,8 +808,12 @@ final class Host: NSObject {
         case "padding":
             // The content inset of texts, buttons and inputs: padding plus border.
             let insets = Edges(value)
+            (view as? MultilineField)?.insets = insets
             (view as? TextView)?.padding = insets
             (view as? Field)?.insets = insets
+            #if os(macOS)
+            (view as? SecureField)?.insets = insets
+            #endif
             #if os(iOS)
             (view as? Button)?.configuration?.contentInsets = NSDirectionalEdgeInsets(
                 top: insets.top, leading: insets.left, bottom: insets.bottom, trailing: insets.right
@@ -752,6 +852,7 @@ final class Host: NSObject {
             view.backgroundColor = paint
             #endif
         case "color":
+            (view as? MultilineField)?.textColor = paint ?? labelColor
             (view as? TextView)?.color = paint ?? labelColor
             #if os(macOS)
             (view as? NSTextField)?.textColor = paint ?? .controlTextColor
@@ -768,6 +869,7 @@ final class Host: NSObject {
             }
             fonts[id] = spec
             let resolved = textFont(size: spec.size, bold: spec.bold, system: spec.system)
+            (view as? MultilineField)?.font = resolved
             (view as? TextView)?.font = resolved
             #if os(macOS)
             (view as? NSControl)?.font = resolved
@@ -867,7 +969,8 @@ let window = NSWindow(
 window.title = "nuclo-native"
 window.contentView = host.root
 host.window = window
-host.start(bundle: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "dist/app.js")
+let localBundle = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "dist/app.js"
+host.start(bundle: Bundle.main.path(forResource: "app", ofType: "js") ?? localBundle)
 window.center()
 window.makeKeyAndOrderFront(nil)
 app.activate()

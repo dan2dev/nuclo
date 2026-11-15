@@ -145,3 +145,19 @@ test("a row put first moves the rest down, as in any list", () => {
   check(0);
   expect(onHost().find(([i]) => i === 0)![1]).toBe(HEADER + heightOf(-1));
 });
+
+test("an in-place swap across the window updates the offset of visible rows", () => {
+  scrollTo(0);
+  for (let y = 0; y <= 30_000; y += 600) scrollTo(y);
+  const visible = onHost().find(([, y]) => y >= 30_000)![0];
+  expect(onHost().find(([id]) => id === visible)?.[1]).toBe(offsetOf(visible));
+  // Both rows have known, different heights. The first is above the window and the second is below it.
+  const a = 1, b = 600;
+  const known = keys[b]!;
+  scrollTo(offsetOf(known));
+  for (let y = offsetOf(known); y >= 30_000; y -= 600) scrollTo(y);
+  scrollTo(30_000);
+  [keys[a], keys[b]] = [keys[b]!, keys[a]!];
+  update();
+  expect(onHost().find(([id]) => id === visible)?.[1]).toBe(offsetOf(visible));
+});

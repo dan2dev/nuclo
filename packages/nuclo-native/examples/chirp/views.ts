@@ -50,6 +50,7 @@ export const avatar = (u: User, size = 44) =>
       style: {
         width: size,
         height: size,
+        flexShrink: 0,
         borderRadius: size / 2,
         backgroundColor: u.tint,
         alignItems: "center",
@@ -212,9 +213,9 @@ const postRow = (p: Post) => {
     },
     avatar(u),
     div(
-      { style: { flex: 1, gap: 8 } },
+      { style: { flex: 1, minWidth: 0, gap: 8 } },
       div(
-        { style: { ...row, gap: 4 }, onClick: go(`/user/${u.id}`) },
+        { style: { ...row, flexWrap: "wrap", gap: 4 }, onClick: go(`/user/${u.id}`) },
         name(u.name),
         muted(`${u.handle} · ${p.ago}`),
       ),
@@ -289,7 +290,7 @@ const reply = (r: Reply) => {
   return div(
     { style: { flexDirection: "row", gap: 12, padding: 14, backgroundColor: color.card, borderBottom: `1px solid ${line}` } },
     avatar(u, 36),
-    div({ style: { flex: 1, gap: 4 } }, div({ style: { ...row, gap: 4 }, onClick: go(`/user/${u.id}`) }, name(u.name, 14), muted(u.handle)), text(r.text, 14)),
+    div({ style: { flex: 1, minWidth: 0, gap: 4 } }, div({ style: { ...row, flexWrap: "wrap", gap: 4 }, onClick: go(`/user/${u.id}`) }, name(u.name, 14), muted(u.handle)), text(r.text, 14)),
   );
 };
 
@@ -318,19 +319,19 @@ const replyBox = (id: number, sent: () => void) => {
   return div(
     { style: { padding: 14, gap: 8, backgroundColor: color.card, borderBottom: `1px solid ${line}` } },
     div(
-      { style: row },
+      { style: { ...row, flexWrap: "wrap" } },
       input({
         placeholder: "Post your reply",
         value: () => draft,
         disabled: () => sending,
-        style: { ...field, flex: 1 },
+        style: { ...field, flex: "1 1 180px", minWidth: 0 },
         onInput: (e) => {
           draft = (e.target as HTMLInputElement).value;
           update();
         },
         onChange: send,
       }),
-      div({ style: { width: 88 } }, action(() => (sending ? "Sending…" : "Reply"), send, () => !!draft.trim() && !sending)),
+      div({ style: { width: 88, flexShrink: 0 } }, action(() => (sending ? "Sending…" : "Reply"), send, () => !!draft.trim() && !sending)),
     ),
     when(() => failed, span("Couldn't send your reply. Try again.", { style: { color: color.bad, fontSize: 13 } })),
   );
@@ -451,10 +452,10 @@ const header = (u: User) => {
     div(
       { style: { padding: 16, gap: 10 } },
       div(
-        { style: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" } },
+        { style: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "space-between", alignItems: "flex-end" } },
         avatar(u, 72),
         u.id === ME
-          ? div({ style: { flexDirection: "row", gap: 8 } }, pill("Edit profile", false, go("/me/edit")), pill("Settings", false, go("/me/settings")))
+          ? div({ style: { flexDirection: "row", flexWrap: "wrap", gap: 8 } }, pill("Edit profile", false, go("/me/edit")), pill("Settings", false, go("/me/settings")))
           : friendButton(u),
       ),
       div(name(u.name, 20), muted(u.handle, 14)),
@@ -466,7 +467,7 @@ const header = (u: User) => {
         muted(`${postCount(u.id)} posts`, 14),
       ),
       // The first few friends: one tap away from their profiles, and theirs from them.
-      div({ style: { flexDirection: "row", gap: 8 } }, ...friends.slice(0, 6).map((f) => avatar(user(f), 36))),
+      div({ style: { flexDirection: "row", flexWrap: "wrap", gap: 8 } }, ...friends.slice(0, 6).map((f) => avatar(user(f), 36))),
     ),
   );
 };

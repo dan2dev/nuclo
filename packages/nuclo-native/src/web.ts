@@ -8,7 +8,8 @@
  */
 import "nuclo";
 
-export { windowed } from "./windowed-web";
+export { flatList, windowed } from "./windowed-web";
+export { nativeView } from "./native-view";
 
 // Containers are flex columns, as on native. :where() keeps specificity at
 // zero, so any app stylesheet or inline style wins.

@@ -28,6 +28,7 @@
 import { type Styles, borderWidth, compute, isComputed, length } from "./style";
 
 export interface LayoutNode {
+  rows?: number;
   id: number;
   /** view | screen | text | button | input | checkbox | image | video */
   kind: string;
@@ -208,11 +209,12 @@ export function layout(root: LayoutNode, width: number, height: number | undefin
     const [t, r, b, l] = insets(node, cb);
     const w = width ?? at(s.width, cb);
     const h = at(s.height, undefined);
+    if (node.kind.startsWith("native:")) return { w: w ?? 0, h: h ?? 0 };
     switch (node.kind) {
       case "checkbox":
         return { w: w ?? CHECKBOX, h: h ?? CHECKBOX };
       case "input":
-        return { w: w ?? Math.min(INPUT_WIDTH + l + r, maxWidth), h: h ?? lineHeight(s.fontSize, scale) + t + b };
+        return { w: w ?? Math.min(INPUT_WIDTH + l + r, maxWidth), h: h ?? (node.rows ?? 1) * lineHeight(s.fontSize, scale) + t + b };
       case "image": {
         const natural = measure(node, Infinity);
         const iw = w ?? Math.min(natural.w, maxWidth);

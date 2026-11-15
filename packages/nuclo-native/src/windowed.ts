@@ -9,7 +9,7 @@
  *
  * The web build (windowed-web.ts) keeps every row: the browser has its own ways.
  */
-import { forgetWindow, hooks, windowHeights, windowPlace } from "./dom";
+import { watchWindow, windowHeights, windowPlace } from "./dom";
 
 let last = 0;
 /** Rows this far past the visible part exist, in screens; the window moves when the visible part comes within one. */
@@ -20,20 +20,29 @@ const AHEAD = 3;
  * object (as list() does); `render` builds a record's row. Rows are remembered by key.
  */
 export function windowed<K, T>(keys: () => readonly K[], item: (key: K) => T, render: (item: T) => NodeModLike<"div">) {
+  return virtualList(keys, (key) => key, item, render);
+}
+
+function virtualList<S, K, T>(
+  source: () => readonly S[],
+  keyOf: (value: S) => K,
+  item: (value: S) => T,
+  render: (item: T) => NodeModLike<"div">,
+) {
   const id = String(++last);
   const heights = new Map<K, number>();
+  // Check edits above the window on app updates without rescanning that prefix on a scroll update.
+  const prefix: K[] = [];
   let sum = 0;
-  /** The keys the window was last placed in, to tell a list that only grew at its end from one that changed. */
-  let all: readonly K[] = [];
-  let length = 0;
-  let first: K | undefined;
+  let all: readonly S[] = [];
+  let length = -1;
   /** The window: keys [from, to), with `top` px of rows before it and `end` px to its end. */
   let from = 0;
   let to = 0;
   let top = 0;
   let end = 0;
   let stale = true;
-  let shown = false;
+  let following = false;
 
   const mean = () => (heights.size ? sum / heights.size : 80);
   /** A row's height: as laid out, or the mean, which it then keeps until it is laid out: what is added before the window is taken off again. */
@@ -46,80 +55,110 @@ export function windowed<K, T>(keys: () => readonly K[], item: (key: K) => T, re
     }
     return h;
   };
-  /** The window's records, and the key of each. */
-  const keyOf = new Map<T, K>();
+  let entries = new Map<K, { key: K; record: T }>();
+  const keyAt = (i: number) => keyOf(all[i]!);
 
   /** Places the window around the visible part. */
-  function place() {
-    const now = keys();
-    const grew = now === all && now.length >= length && now[0] === first;
-    if (grew && now.length === length && !stale) return;
-    // Anything but growth at the end moves the rows before the window: counted again from the start.
-    if (!grew) from = top = 0;
-    [all, length, first, stale] = [now, now.length, now[0], false];
-    const n = now.length;
+  function place(checkOrder: boolean) {
+    all = source();
+    const n = all.length;
+    if (checkOrder && !following) {
+      // The array may have been edited in place. Only keys before the window affect its offset.
+      let i = 0;
+      while (i < from && i < n && Object.is(prefix[i], keyAt(i))) i++;
+      if (i !== from) {
+        from = top = 0;
+        stale = true;
+      }
+    }
+    if (!stale && n === length) return;
+    length = n;
+    stale = false;
     const at = windowPlace(id);
-    if (at) shown = true;
     // Not laid out yet: the first rows, to have something to lay out.
     const [y, h] = at ?? [0, 0];
     const [lo, hi] = at ? [y - AHEAD * h, y + h + AHEAD * h] : [0, 0];
-    from = Math.min(from, n);
-    while (from < n && top + height(now[from]!) < lo) top += height(now[from++]!);
-    while (from > 0 && top > lo) top -= height(now[--from]!);
+    while (from < n) {
+      const key = keyAt(from);
+      const h = height(key);
+      if (top + h >= lo) break;
+      prefix[from++] = key;
+      top += h;
+    }
+    while (from > 0 && top > lo) top -= height(prefix[--from]!);
+    prefix.length = from;
     if (!from) top = 0;
     end = top;
-    for (to = from; to < n && (at ? end < hi : to < 20); to++) end += height(now[to]!);
+    for (to = from; to < n && (at ? end < hi : to < 20); to++) end += height(keyAt(to));
   }
   const rows = () => {
-    place();
-    keyOf.clear();
-    return all.slice(from, to).map((key) => {
-      const record = item(key);
-      keyOf.set(record, key);
-      return record;
-    });
+    place(true);
+    const previous = entries;
+    entries = new Map();
+    const rows = [];
+    for (let i = from; i < to; i++) {
+      const key = keyAt(i);
+      const record = item(all[i]!);
+      const old = entries.has(key) ? undefined : previous.get(key);
+      const entry = old && Object.is(old.record, record) ? old : { key, record };
+      entries.set(key, entry);
+      rows.push(entry);
+    }
+    return rows;
   };
 
   // After each layout: the heights the window's rows have.
   const laidOut = () => {
     windowHeights(id).forEach((h, i) => {
-      const key = all[from + i];
       if (h === undefined || from + i >= to) return;
-      sum += h - (heights.get(key!) ?? 0);
-      heights.set(key!, h);
+      const key = keyAt(from + i);
+      sum += h - (heights.get(key) ?? 0);
+      heights.set(key, h);
     });
     // Where the window ends, now that its rows have their real heights: follow() goes by it.
     end = top;
-    for (let i = from; i < to; i++) end += height(all[i]!);
+    for (let i = from; i < to; i++) end += height(keyAt(i));
     follow();
   };
   // After each scroll and layout: the window moves once the visible part is within a screen of its end.
   const follow = () => {
     const at = windowPlace(id);
-    if (at === null && shown) {
-      // Its screen is gone.
-      hooks.laidOut.delete(laidOut);
-      hooks.scrolled.delete(follow);
-      return forgetWindow(id);
-    }
     if (!at) return;
     const [y, h] = at;
+    if (h <= 0) return;
     if (!((from > 0 && y - h < top) || (to < all.length && y + 2 * h > end))) return;
     stale = true;
-    update();
+    following = true;
+    try {
+      update();
+    } finally {
+      following = false;
+    }
   };
-  hooks.laidOut.add(laidOut);
-  hooks.scrolled.add(follow);
 
   return div(
     // Padding (dom.ts lays these two out as it), not rows of their height: a far row is parked as it is, and would
     // not follow.
     {
       "data-window": id,
-      "data-before": () => (place(), String(top)),
-      "data-after": () => (place(), String((all.length - to) * mean())),
+      onMount: (element) => watchWindow(element, id, follow, laidOut),
+      "data-before": () => (place(false), String(top)),
+      "data-after": () => (place(false), String((all.length - to) * mean())),
     },
     // A row says how tall it was (or is taken to be): it is parked at that until it comes near (dom.ts).
-    list(rows, (record) => div({ "data-height": String(height(keyOf.get(record)!)) }, render(record))),
+    list(rows, ({ key, record }) => div({ "data-height": String(height(key)) }, render(record))),
   );
 }
+
+/**
+ * list() for a long list, called the same way: `flatList(() => people, personRow)`. Only the rows near the screen
+ * exist, in JS as on the host (windowed, with each item its own key), so a thousand items that arrive together cost
+ * a few screens of rows. Keep list() for short lists: its rows are their container's own children and all exist.
+ * Here they are the children of the list's own view, so the container's `gap` does not reach them: give the rows a
+ * margin.
+ */
+export const flatList = <T, K = T>(
+  items: () => readonly T[],
+  render: (item: T) => NodeModLike<"div">,
+  keyOf?: (item: T) => K,
+) => virtualList(items, (item): T | K => keyOf ? keyOf(item) : item, (item) => item, render);

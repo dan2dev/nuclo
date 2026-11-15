@@ -1,0 +1,335 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		000000000000000000000015 /* main.swift in Sources (iOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000001 /* main.swift */; };
+		000000000000000000000016 /* Navigation.swift in Sources (iOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000002 /* Navigation.swift */; };
+		000000000000000000000017 /* Device.swift in Sources (iOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000003 /* Device.swift */; };
+		000000000000000000000018 /* Engine.swift in Sources (iOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000004 /* Engine.swift */; };
+		000000000000000000000019 /* NativeView.swift in Sources (iOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000005 /* NativeView.swift */; };
+		00000000000000000000001A /* MultilineField.swift in Sources (iOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000006 /* MultilineField.swift */; };
+		00000000000000000000001B /* nuclo_hermes.cpp in Sources (iOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000008 /* nuclo_hermes.cpp */; };
+		00000000000000000000001D /* hermesvm.xcframework in Frameworks (iOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000011 /* hermesvm.xcframework */; };
+		00000000000000000000001F /* Assets.xcassets in Resources (iOS) */ = { isa = PBXBuildFile; fileRef = 00000000000000000000000F /* Assets.xcassets */; };
+		000000000000000000000020 /* PrivacyInfo.xcprivacy in Resources (iOS) */ = { isa = PBXBuildFile; fileRef = 00000000000000000000000E /* PrivacyInfo.xcprivacy */; };
+		000000000000000000000022 /* hermesvm.xcframework in Embed Frameworks (iOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000011 /* hermesvm.xcframework */; settings = { ATTRIBUTES = ( CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		00000000000000000000002A /* main.swift in Sources (macOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000001 /* main.swift */; };
+		00000000000000000000002B /* Navigation.swift in Sources (macOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000002 /* Navigation.swift */; };
+		00000000000000000000002C /* Device.swift in Sources (macOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000003 /* Device.swift */; };
+		00000000000000000000002D /* Engine.swift in Sources (macOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000004 /* Engine.swift */; };
+		00000000000000000000002E /* NativeView.swift in Sources (macOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000005 /* NativeView.swift */; };
+		00000000000000000000002F /* MultilineField.swift in Sources (macOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000006 /* MultilineField.swift */; };
+		000000000000000000000030 /* nuclo_hermes.cpp in Sources (macOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000008 /* nuclo_hermes.cpp */; };
+		000000000000000000000032 /* hermesvm.framework in Frameworks (macOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000012 /* hermesvm.framework */; };
+		000000000000000000000034 /* Assets.xcassets in Resources (macOS) */ = { isa = PBXBuildFile; fileRef = 00000000000000000000000F /* Assets.xcassets */; };
+		000000000000000000000035 /* PrivacyInfo.xcprivacy in Resources (macOS) */ = { isa = PBXBuildFile; fileRef = 00000000000000000000000E /* PrivacyInfo.xcprivacy */; };
+		000000000000000000000037 /* hermesvm.framework in Embed Frameworks (macOS) */ = { isa = PBXBuildFile; fileRef = 000000000000000000000012 /* hermesvm.framework */; settings = { ATTRIBUTES = ( CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		000000000000000000000023 /* Embed Frameworks (iOS) */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ( 000000000000000000000022 /* hermesvm.xcframework in Embed Frameworks (iOS) */, );
+			runOnlyForDeploymentPostprocessing = 0;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			name = "Embed Frameworks";
+		};
+		000000000000000000000038 /* Embed Frameworks (macOS) */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ( 000000000000000000000037 /* hermesvm.framework in Embed Frameworks (macOS) */, );
+			runOnlyForDeploymentPostprocessing = 0;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			name = "Embed Frameworks";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		000000000000000000000001 /* main.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "main.swift"; sourceTree = "<group>"; };
+		000000000000000000000002 /* Navigation.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Navigation.swift"; sourceTree = "<group>"; };
+		000000000000000000000003 /* Device.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Device.swift"; sourceTree = "<group>"; };
+		000000000000000000000004 /* Engine.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Engine.swift"; sourceTree = "<group>"; };
+		000000000000000000000005 /* NativeView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NativeView.swift"; sourceTree = "<group>"; };
+		000000000000000000000006 /* MultilineField.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MultilineField.swift"; sourceTree = "<group>"; };
+		000000000000000000000008 /* nuclo_hermes.cpp */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "nuclo_hermes.cpp"; sourceTree = "<group>"; };
+		000000000000000000000009 /* nuclo_hermes.h */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "nuclo_hermes.h"; sourceTree = "<group>"; };
+		00000000000000000000000B /* Showcase.xcconfig */ = { isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Showcase.xcconfig"; sourceTree = "<group>"; };
+		00000000000000000000000C /* Info-iOS.plist */ = { isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-iOS.plist"; sourceTree = "<group>"; };
+		00000000000000000000000D /* Showcase-macOS.entitlements */ = { isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Showcase-macOS.entitlements"; sourceTree = "<group>"; };
+		00000000000000000000000E /* PrivacyInfo.xcprivacy */ = { isa = PBXFileReference; lastKnownFileType = text.xml; path = "PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
+		00000000000000000000000F /* Assets.xcassets */ = { isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
+		000000000000000000000010 /* bundle.sh */ = { isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "bundle.sh"; sourceTree = "<group>"; };
+		000000000000000000000011 /* hermesvm.xcframework */ = { isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = "universal/hermesvm.xcframework"; sourceTree = "<group>"; };
+		000000000000000000000012 /* hermesvm.framework */ = { isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = "macosx/hermesvm.framework"; sourceTree = "<group>"; };
+		000000000000000000000014 /* Showcase iOS.app */ = { isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Nuclo Showcase.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000000029 /* Showcase macOS.app */ = { isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Nuclo Showcase.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		00000000000000000000001E /* Frameworks (iOS) */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ( 00000000000000000000001D /* hermesvm.xcframework in Frameworks (iOS) */, );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		000000000000000000000033 /* Frameworks (macOS) */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ( 000000000000000000000032 /* hermesvm.framework in Frameworks (macOS) */, );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		000000000000000000000007 /* Apple Host */ = {
+			isa = PBXGroup;
+			children = ( 000000000000000000000001 /* main.swift */, 000000000000000000000002 /* Navigation.swift */, 000000000000000000000003 /* Device.swift */, 000000000000000000000004 /* Engine.swift */, 000000000000000000000005 /* NativeView.swift */, 000000000000000000000006 /* MultilineField.swift */, );
+			name = "Apple Host";
+			sourceTree = "<group>";
+			path = "../../../hosts/apple";
+		};
+		00000000000000000000000A /* Hermes Bridge */ = {
+			isa = PBXGroup;
+			children = ( 000000000000000000000008 /* nuclo_hermes.cpp */, 000000000000000000000009 /* nuclo_hermes.h */, );
+			name = "Hermes Bridge";
+			sourceTree = "<group>";
+			path = "../../../hosts/hermes";
+		};
+		000000000000000000000013 /* Hermes Frameworks */ = {
+			isa = PBXGroup;
+			children = ( 000000000000000000000011 /* hermesvm.xcframework */, 000000000000000000000012 /* hermesvm.framework */, );
+			name = "Hermes Frameworks";
+			sourceTree = "<group>";
+			path = "../../../build/hermes/Library/Frameworks";
+		};
+		00000000000000000000003E /* Products */ = {
+			isa = PBXGroup;
+			children = ( 000000000000000000000014 /* Showcase iOS.app */, 000000000000000000000029 /* Showcase macOS.app */, );
+			name = "Products";
+			sourceTree = "<group>";
+		};
+		00000000000000000000003F /* Main Group */ = {
+			isa = PBXGroup;
+			children = ( 000000000000000000000007 /* Apple Host */, 00000000000000000000000A /* Hermes Bridge */, 00000000000000000000000F /* Assets.xcassets */, 00000000000000000000000C /* Info-iOS.plist */, 00000000000000000000000D /* Showcase-macOS.entitlements */, 00000000000000000000000E /* PrivacyInfo.xcprivacy */, 00000000000000000000000B /* Showcase.xcconfig */, 000000000000000000000010 /* bundle.sh */, 000000000000000000000013 /* Hermes Frameworks */, 00000000000000000000003E /* Products */, );
+			name = "Main Group";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		000000000000000000000028 /* Showcase iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 000000000000000000000027 /* Build configuration list (Showcase iOS) */;
+			buildPhases = ( 00000000000000000000001C /* Sources (iOS) */, 00000000000000000000001E /* Frameworks (iOS) */, 000000000000000000000021 /* Resources (iOS) */, 000000000000000000000023 /* Embed Frameworks (iOS) */, 000000000000000000000024 /* Bundle Showcase (iOS) */, );
+			buildRules = ();
+			dependencies = ();
+			name = "Showcase iOS";
+			productName = "Showcase iOS";
+			productReference = 000000000000000000000014 /* Showcase iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		00000000000000000000003D /* Showcase macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 00000000000000000000003C /* Build configuration list (Showcase macOS) */;
+			buildPhases = ( 000000000000000000000031 /* Sources (macOS) */, 000000000000000000000033 /* Frameworks (macOS) */, 000000000000000000000036 /* Resources (macOS) */, 000000000000000000000038 /* Embed Frameworks (macOS) */, 000000000000000000000039 /* Bundle Showcase (macOS) */, );
+			buildRules = ();
+			dependencies = ();
+			name = "Showcase macOS";
+			productName = "Showcase macOS";
+			productReference = 000000000000000000000029 /* Showcase macOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		000000000000000000000043 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 2710;
+				LastUpgradeCheck = 2710;
+			};
+			buildConfigurationList = 000000000000000000000042 /* Build configuration list (project) */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = ( en, Base, );
+			mainGroup = 00000000000000000000003F /* Main Group */;
+			productRefGroup = 00000000000000000000003E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = ( 000000000000000000000028 /* Showcase iOS */, 00000000000000000000003D /* Showcase macOS */, );
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		000000000000000000000021 /* Resources (iOS) */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ( 00000000000000000000001F /* Assets.xcassets in Resources (iOS) */, 000000000000000000000020 /* PrivacyInfo.xcprivacy in Resources (iOS) */, );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		000000000000000000000036 /* Resources (macOS) */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ( 000000000000000000000034 /* Assets.xcassets in Resources (macOS) */, 000000000000000000000035 /* PrivacyInfo.xcprivacy in Resources (macOS) */, );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		000000000000000000000024 /* Bundle Showcase (iOS) */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+			alwaysOutOfDate = 1;
+			name = "Bundle Showcase";
+			shellPath = /bin/sh;
+			shellScript = "exec /bin/sh \"$PROJECT_DIR/bundle.sh\"\n";
+			outputPaths = ( "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/app.js", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/app.hbc", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/assets", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/fonts", );
+		};
+		000000000000000000000039 /* Bundle Showcase (macOS) */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+			alwaysOutOfDate = 1;
+			name = "Bundle Showcase";
+			shellPath = /bin/sh;
+			shellScript = "exec /bin/sh \"$PROJECT_DIR/bundle.sh\"\n";
+			outputPaths = ( "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/app.js", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/app.hbc", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/assets", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/fonts", );
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		00000000000000000000001C /* Sources (iOS) */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ( 000000000000000000000015 /* main.swift in Sources (iOS) */, 000000000000000000000016 /* Navigation.swift in Sources (iOS) */, 000000000000000000000017 /* Device.swift in Sources (iOS) */, 000000000000000000000018 /* Engine.swift in Sources (iOS) */, 000000000000000000000019 /* NativeView.swift in Sources (iOS) */, 00000000000000000000001A /* MultilineField.swift in Sources (iOS) */, 00000000000000000000001B /* nuclo_hermes.cpp in Sources (iOS) */, );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		000000000000000000000031 /* Sources (macOS) */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ( 00000000000000000000002A /* main.swift in Sources (macOS) */, 00000000000000000000002B /* Navigation.swift in Sources (macOS) */, 00000000000000000000002C /* Device.swift in Sources (macOS) */, 00000000000000000000002D /* Engine.swift in Sources (macOS) */, 00000000000000000000002E /* NativeView.swift in Sources (macOS) */, 00000000000000000000002F /* MultilineField.swift in Sources (macOS) */, 000000000000000000000030 /* nuclo_hermes.cpp in Sources (macOS) */, );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		000000000000000000000025 /* Debug (Showcase iOS) */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 00000000000000000000000B /* Showcase.xcconfig */;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				INFOPLIST_FILE = "Info-iOS.plist";
+				LD_RUNPATH_SEARCH_PATHS = ( "$(inherited)", "@executable_path/Frameworks", );
+			};
+			name = Debug;
+		};
+		000000000000000000000026 /* Release (Showcase iOS) */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 00000000000000000000000B /* Showcase.xcconfig */;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				INFOPLIST_FILE = "Info-iOS.plist";
+				LD_RUNPATH_SEARCH_PATHS = ( "$(inherited)", "@executable_path/Frameworks", );
+			};
+			name = Release;
+		};
+		00000000000000000000003A /* Debug (Showcase macOS) */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 00000000000000000000000B /* Showcase.xcconfig */;
+			buildSettings = {
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				CODE_SIGN_ENTITLEMENTS = "Showcase-macOS.entitlements";
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				LD_RUNPATH_SEARCH_PATHS = ( "$(inherited)", "@executable_path/../Frameworks", );
+			};
+			name = Debug;
+		};
+		00000000000000000000003B /* Release (Showcase macOS) */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 00000000000000000000000B /* Showcase.xcconfig */;
+			buildSettings = {
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				CODE_SIGN_ENTITLEMENTS = "Showcase-macOS.entitlements";
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				LD_RUNPATH_SEARCH_PATHS = ( "$(inherited)", "@executable_path/../Frameworks", );
+			};
+			name = Release;
+		};
+		000000000000000000000040 /* Debug (project) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				STRIP_INSTALLED_PRODUCT = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		000000000000000000000041 /* Release (project) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				STRIP_INSTALLED_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		000000000000000000000027 /* Build configuration list (Showcase iOS) */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = ( 000000000000000000000025 /* Debug (Showcase iOS) */, 000000000000000000000026 /* Release (Showcase iOS) */, );
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		00000000000000000000003C /* Build configuration list (Showcase macOS) */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = ( 00000000000000000000003A /* Debug (Showcase macOS) */, 00000000000000000000003B /* Release (Showcase macOS) */, );
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		000000000000000000000042 /* Build configuration list (project) */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = ( 000000000000000000000040 /* Debug (project) */, 000000000000000000000041 /* Release (project) */, );
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 000000000000000000000043 /* Project object */;
+}
