@@ -169,6 +169,9 @@ function merge(a0: API.Style | NativeStyle, o0: API.Style | NativeStyle): Native
   for (const [shorthand, side] of [["padding", "padding%"], ["margin", "margin%"], ["borderWidth", "border%Width"], ["borderColor", "border%Color"]] as const) {
     if (o[shorthand] != null) for (const edge of SIDES) delete out[side.replace("%", edge)];
   }
+  // A width in points and a percent width replace each other, as in the native runtimes' merge.
+  if (o.width != null) delete out.widthPct;
+  if (o.widthPct != null) delete out.width;
   for (const key in o) {
     const value = o[key];
     if (value == null) continue;

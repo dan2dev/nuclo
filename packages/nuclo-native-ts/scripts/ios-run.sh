@@ -26,6 +26,9 @@ cat > "$APP/Info.plist" <<EOF
 <key>CFBundleShortVersionString</key><string>1.0</string>
 <key>UIRequiredDeviceCapabilities</key><array><string>arm64</string></array>
 <key>UILaunchScreen</key><dict/>
+<key>UIDeviceFamily</key><array><integer>1</integer><integer>2</integer></array>
+<key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
+<key>UISupportedInterfaceOrientations~ipad</key><array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationPortraitUpsideDown</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
 <key>NSCameraUsageDescription</key><string>Takes photos in the app.</string>
 </dict></plist>
 EOF

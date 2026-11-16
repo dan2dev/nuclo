@@ -43,6 +43,14 @@ describe("normalizeStyle", () => {
     expect(s.placeholderColor).toBe("#e5e7eb");
   });
 
+  test("visibility: visible undoes hidden in a screen, and keeps an opacity written beside it", () => {
+    const s = normalizeStyle({ visibility: "hidden", md: { visibility: "visible" } }, theme);
+    expect([s.opacity, s.pointerEvents]).toEqual([0, "none"]);
+    expect(s.media).toEqual([{ min: 600, style: { opacity: 1, pointerEvents: "auto" } }]);
+    expect(normalizeStyle({ opacity: 0.5, visibility: "visible" }).opacity).toBe(0.5);
+    expect(normalizeStyle({ opacity: 0.5, visibility: "hidden" }).opacity).toBe(0);
+  });
+
   test("animation over keyframes()", () => {
     const name = registerKeyframes({ from: { opacity: 0 }, "50%": { opacity: 1 }, to: { opacity: 0 } });
     const anim = parseAnimation(`${name} 1.2s ease-in-out 100ms infinite alternate`, keyframesNamed);

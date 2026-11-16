@@ -386,7 +386,8 @@ export function lowerEntry(key: string, value: unknown, theme?: Theme): [string,
     case "fontFamily":
       return [["fontFamily", firstFont(String(token(theme, "fonts", value)))]];
     case "visibility":
-      return value === "hidden" ? [["opacity", 0], ["pointerEvents", "none"]] : [];
+      // `visible` undoes a `hidden` from a style it is merged over (a screen, a state).
+      return value === "hidden" ? [["opacity", 0], ["pointerEvents", "none"]] : [["opacity", 1], ["pointerEvents", "auto"]];
     case "whiteSpace":
       return value === "nowrap" || value === "pre" ? [["numberOfLines", 1]] : [];
     case "borderStyle":
@@ -550,7 +551,9 @@ export function normalizeStyle(style: Record<string, unknown>, theme?: Theme): N
       set(key, value);
       continue;
     }
-    for (const [k, v] of lowerEntry(key, value, theme)) set(k, v);
+    // `visible` beside an `opacity` keeps that opacity, in either order, as CSS keeps the two apart.
+    const keep = key === "visibility" && value === "visible" && "opacity" in style ? "opacity" : "";
+    for (const [k, v] of lowerEntry(key, value, theme)) if (k !== keep) set(k, v);
   }
   if (media.length) out.media = media;
   return out;
