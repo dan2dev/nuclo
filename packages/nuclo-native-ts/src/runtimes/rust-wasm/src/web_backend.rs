@@ -22,7 +22,7 @@ use std::sync::Arc;
 use serde_json::Value as Json;
 
 use crate::nuclo::backend::{host, Backend, Event, HttpRequest, Input, Kind, NativeView, Paint, PanEvent, PinchEvent, PointerEvent, PointerPhase, Rect, Screen, ScrollEvent, TabInfo, TextPaint, ViewId};
-use crate::nuclo::prelude::{Color, FontFamily, TextAlign, TextDecoration};
+use crate::nuclo::prelude::{Color, FontFamily, ObjectFit, TextAlign, TextDecoration};
 
 #[link(wasm_import_module = "nuclo")]
 extern "C" {
@@ -50,6 +50,7 @@ extern "C" {
     fn screen_show(root: u32);
     fn overlay_show(root: u32);
     fn layout_request();
+    fn viewport_width() -> f64;
     fn nav_create(tabs: *const u8, len: usize, active: u32);
     fn nav_push(tab: u32, root: u32, title: *const u8, len: usize, flags: u32);
     fn nav_pop(tab: u32, animated: u32);
@@ -117,8 +118,8 @@ fn rgba(color: Color) -> String {
 }
 
 /// The box: its fill, border, clip, shadow, transform, and the padding its content sits inside.
-/// A border is an inset shadow, not a CSS border: the core's frames count from the box's outer
-/// edge, and a child is positioned from the padding edge.
+/// A border is inset shadows (one per side), not a CSS border: the core's frames count from the
+/// box's outer edge, and a child is positioned from the padding edge.
 fn box_css(kind: Kind, paint: &Paint) -> String {
     let mut css = String::new();
     if !paint.visible {
@@ -137,8 +138,18 @@ fn box_css(kind: Kind, paint: &Paint) -> String {
     if let Some(shadow) = paint.shadow {
         shadows.push(format!("{}px {}px {}px {}", shadow.dx, shadow.dy, shadow.blur, rgba(shadow.color)));
     }
-    if paint.border_width > 0.0 {
-        shadows.push(format!("inset 0 0 0 {}px {}", paint.border_width, rgba(paint.border_color)));
+    let [top, right, bottom, left] = paint.borders;
+    let colors = paint.border_colors;
+    if paint.borders.iter().all(|width| *width == top) && colors.iter().all(|color| *color == colors[0]) {
+        if top > 0.0 {
+            shadows.push(format!("inset 0 0 0 {top}px {}", rgba(colors[0])));
+        }
+    } else {
+        // A side is an inset shadow moved in from that edge; the corners are where two overlap.
+        let sides = [(0.0, top, colors[0]), (-right, 0.0, colors[1]), (0.0, -bottom, colors[2]), (left, 0.0, colors[3])];
+        for (x, y, color) in sides.into_iter().filter(|(x, y, _)| *x != 0.0 || *y != 0.0) {
+            shadows.push(format!("inset {x}px {y}px 0 0 {}", rgba(color)));
+        }
     }
     if !shadows.is_empty() {
         let _ = write!(css, "box-shadow:{};", shadows.join(","));
@@ -151,6 +162,17 @@ fn box_css(kind: Kind, paint: &Paint) -> String {
     }
     if paint.blocks_pointer {
         css.push_str("pointer-events:auto;");
+    }
+    if !paint.pointer {
+        // Over the `pointer-events:auto` a listener adds after this.
+        css.push_str("pointer-events:none!important;");
+    }
+    if kind == Kind::Image {
+        css.push_str(match paint.fit {
+            ObjectFit::Cover => "",
+            ObjectFit::Contain => "object-fit:contain;",
+            ObjectFit::Fill => "object-fit:fill;",
+        });
     }
     if !matches!(kind, Kind::Box | Kind::Image | Kind::Checkbox | Kind::Native) {
         let [top, right, bottom, left] = paint.insets;
@@ -165,7 +187,7 @@ fn text_css(text: &TextPaint) -> String {
         FontFamily::Serif => "serif",
         FontFamily::Monospace => "ui-monospace,monospace",
     };
-    let mut css = format!("font:{} {} {}px {};color:{};", if text.italic { "italic" } else { "normal" }, if text.bold { 700 } else { 400 }, text.font_size, family, rgba(text.color));
+    let mut css = format!("font:{} {} {}px {};color:{};", if text.italic { "italic" } else { "normal" }, text.weight.css(), text.font_size, family, rgba(text.color));
     // `font` above resets the line height: it comes after.
     match text.line_height {
         Some(height) => {
@@ -186,6 +208,9 @@ fn text_css(text: &TextPaint) -> String {
         TextAlign::Center => "text-align:center;",
         TextAlign::Right => "text-align:right;",
     });
+    if let Some(color) = text.placeholder {
+        let _ = write!(css, "--ph:{};", rgba(color));
+    }
     if let Some(lines) = text.lines {
         let _ = write!(css, "display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:{lines};overflow:hidden;");
     }
@@ -339,6 +364,10 @@ impl Backend for Web {
 
     fn request_layout(&self) {
         unsafe { layout_request() };
+    }
+
+    fn window_width(&self) -> f32 {
+        unsafe { viewport_width() as f32 }
     }
 
     fn nav_create(&self, tabs: &[TabInfo], active: usize) {
@@ -533,6 +562,12 @@ pub extern "C" fn nuclo_measure_root(root: u32, width: f32) -> f32 {
 #[no_mangle]
 pub extern "C" fn nuclo_layout_root(root: u32, width: f32, height: f32) {
     host::layout_root(root, width, height)
+}
+
+/// A screen the page scrolls: how far, and how much of it shows.
+#[no_mangle]
+pub extern "C" fn nuclo_screen_scrolled(root: u32, top: f32, visible: f32) {
+    host::screen_scrolled(root, top, visible)
 }
 
 /// 0 click, 1 input, 2 change, 3 focus, 4 blur.

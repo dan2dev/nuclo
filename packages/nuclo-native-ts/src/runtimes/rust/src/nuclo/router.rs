@@ -15,12 +15,21 @@ pub struct Route {
     title: Option<Rc<dyn Fn(Params) -> String>>,
     modal: bool,
     header: bool,
+    on_end_reached: Option<Rc<dyn Fn(Params)>>,
 }
 
 impl Route {
-    /// `presentation` is "push" or "modal"; `header: false` hides the navigation bar on the screen.
-    pub fn new(pattern: &str, view: Rc<dyn Fn(Params) -> Node>, title: Option<Rc<dyn Fn(Params) -> String>>, presentation: &str, header: bool) -> Route {
-        Route { parts: pattern.split('/').map(str::to_string).collect(), view, title, modal: presentation == "modal", header }
+    /// `presentation` is "push" or "modal"; `header: false` hides the navigation bar on the screen;
+    /// `on_end_reached` runs when the screen is scrolled near its end (or is too short to scroll).
+    pub fn new(
+        pattern: &str,
+        view: Rc<dyn Fn(Params) -> Node>,
+        title: Option<Rc<dyn Fn(Params) -> String>>,
+        presentation: &str,
+        header: bool,
+        on_end_reached: Option<Rc<dyn Fn(Params)>>,
+    ) -> Route {
+        Route { parts: pattern.split('/').map(str::to_string).collect(), view, title, modal: presentation == "modal", header, on_end_reached }
     }
 
     /// The params when `path` matches the pattern (`/posts/:id`).
@@ -190,11 +199,15 @@ impl Router {
 
     fn entry(&self, path: &str) -> Entry {
         let found = self.0.routes.iter().find_map(|route| route.matches(path).map(|params| (route, params)));
-        let (node, title, modal, header) = match found {
-            Some((route, params)) => ((route.view)(params.clone()), route.title.as_ref().map_or_else(String::new, |title| title(params)), route.modal, route.header),
+        let (node, title, modal, header) = match &found {
+            Some((route, params)) => ((route.view)(params.clone()), route.title.as_ref().map_or_else(String::new, |title| title(params.clone())), route.modal, route.header),
             None => (p(vec![A::text(&format!("No route matches {path}"))]), "Not found".to_string(), false, true),
         };
         node::add_root(&node, false, false);
+        if let Some((Route { on_end_reached: Some(end), .. }, params)) = found {
+            let (end, params) = (end.clone(), params);
+            node::on_end_reached(&node, Rc::new(move || end(params.clone())));
+        }
         Entry { path: path.to_string(), node, title, modal, header }
     }
 

@@ -54,7 +54,9 @@ describe("compiles valid apps", () => {
   // The Rust printer reports what an app uses that the Linux runtime lacks: no example may need any of it.
   const examples = path.join(import.meta.dir, "../examples");
   for (const example of readdirSync(examples, { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
-    test(`examples/${example.name} on linux`, () => {
+    // An example with platform code builds only for the targets it has code for (as scripts/examples.ts does).
+    const phoneOnly = existsSync(path.join(examples, example.name, "native")) && !existsSync(path.join(examples, example.name, "native/linux"));
+    test.skipIf(phoneOnly)(`examples/${example.name} on linux`, () => {
       const warnings: string[] = [];
       const native = existsSync(path.join(examples, example.name, "native/linux"));
       const rust = emitRust(transpile(path.join(examples, example.name, "App.ts")), { native, warn: (message) => warnings.push(message) });

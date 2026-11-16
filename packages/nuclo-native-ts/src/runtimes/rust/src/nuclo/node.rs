@@ -13,7 +13,9 @@ use super::backend::{backend, Event, Input, Kind as ViewKind, NativeView, Paint,
 pub use super::backend::{KeyboardEvent, PanEvent, PinchEvent, PointerEvent, ScrollEvent};
 use super::flex;
 use super::js::{js_now, Arr, Map};
-use super::style::{px, tag_style, Color, Display, Easing, FontFamily, FontStyle, FontWeight, Overflow, Position, Style, StyleClass, TextAlign, TextDecoration};
+use super::style::{
+    global, px, tag_style, Animation, Color, Display, Easing, FontFamily, FontStyle, FontWeight, ObjectFit, Overflow, PointerEvents, Position, Style, StyleClass, TextAlign, TextDecoration, TextTransform,
+};
 use super::task;
 
 // ---------------------------------------------------------------------------
@@ -145,6 +147,8 @@ pub struct NodeData {
     /// What the view was last painted with, and the transition towards it while one runs.
     look: Cell<Option<Paint>>,
     motion: RefCell<Option<Motion>>,
+    /// The style's keyframes animation, from when it was given.
+    keyframes: Cell<Option<Keyframes>>,
     /// A transition of `width` / `height`: the size layout uses while it runs, in px.
     shown_width: Cell<Option<f32>>,
     shown_height: Cell<Option<f32>>,
@@ -225,6 +229,7 @@ impl Node {
             props_dirty: Cell::new(true),
             look: Cell::new(None),
             motion: RefCell::default(),
+            keyframes: Cell::new(None),
             shown_width: Cell::new(None),
             shown_height: Cell::new(None),
             items: RefCell::default(),
@@ -288,9 +293,16 @@ impl Node {
             }
             let ids: Vec<ViewId> = items.iter().filter_map(|item| item.view).collect();
             backend().set_children(self.view.unwrap(), &ids);
-            *self.items.borrow_mut() = items;
+            *self.items.borrow_mut() = items.clone();
             self.restack();
             invalidate_layout();
+            // `first`, `last`, `odd`… follow the views' places, and `empty` whether there are any.
+            for item in items.iter().filter(|item| item.computed.get().structural()) {
+                item.apply_styles_deep();
+            }
+            if self.computed.get().empty.is_some() {
+                self.apply_style();
+            }
         } else if let Some(parent) = self.parent() {
             // A fragment (or a leaf): the views live in the nearest box above.
             parent.sync_views();
@@ -369,10 +381,46 @@ impl Node {
         if !forced() && self.last_text.borrow().as_deref() == Some(text.as_str()) {
             return;
         }
-        backend().set_text(self.view.unwrap(), &text);
+        let was_empty = self.last_text.borrow().as_deref().is_none_or(str::is_empty);
         *self.last_text.borrow_mut() = Some(text);
+        self.show_text();
+        if was_empty != self.is_empty() && self.computed.get().empty.is_some() {
+            self.apply_style();
+        }
+    }
+
+    /// Writes the text into the view, as `textTransform` shows it.
+    fn show_text(&self) {
+        let Some(text) = self.last_text.borrow().clone() else { return };
+        let shown = match self.computed.get().text_transform.unwrap_or(TextTransform::None) {
+            TextTransform::None => text,
+            TextTransform::Uppercase => text.to_uppercase(),
+            TextTransform::Lowercase => text.to_lowercase(),
+            TextTransform::Capitalize => {
+                let mut start = true;
+                text.chars()
+                    .flat_map(|c| {
+                        let first = std::mem::replace(&mut start, c.is_whitespace());
+                        if first { c.to_uppercase().collect::<Vec<_>>() } else { vec![c] }
+                    })
+                    .collect()
+            }
+        };
+        backend().set_text(self.view.unwrap(), &shown);
         self.memo.set([None; 2]);
         invalidate_layout();
+    }
+
+    /// `:empty`: a box with no views, a text with no text.
+    fn is_empty(&self) -> bool {
+        if self.is(ViewKind::Box) { self.items.borrow().is_empty() } else { self.last_text.borrow().as_deref().is_none_or(str::is_empty) }
+    }
+
+    /// This view's index among the views of its container, and how many there are.
+    fn sibling_place(&self) -> Option<(usize, usize)> {
+        let host = self.host()?;
+        let items = host.items.borrow();
+        Some((items.iter().position(|item| item == self)?, items.len()))
     }
 
     // Refresh ----------------------------------------------------------------
@@ -410,7 +458,9 @@ impl Node {
             self.computed.set(parent.unwrap_or_default());
             return;
         };
-        let mut s = parent.map(|p| p.inherited()).unwrap_or_default().merged(&tag_style(self.tag));
+        // A root inherits the body's text style (globalStyle("body", …)).
+        let base = parent.map_or_else(|| global("body").unwrap_or_default().inherited(), |p| p.inherited());
+        let mut s = base.merged(&tag_style(self.tag));
         for class in self.classes.borrow().iter() {
             s = s.merged(class);
         }
@@ -422,6 +472,40 @@ impl Node {
         let dynamic_inline = self.dynamic_inline.borrow().clone();
         if let Some(inline) = dynamic_inline {
             s = s.merged(&inline());
+        }
+        // `@media` and screens, against the window's width.
+        if let Some(media) = s.media {
+            let width = viewport_width();
+            for rule in media.rules().iter().filter(|rule| rule.matches(width)) {
+                s = s.merged(&rule.style);
+            }
+        }
+        // The box's place among its siblings, and what it holds.
+        if s.structural() {
+            if let Some((index, count)) = self.sibling_place() {
+                let place = [(s.first, index == 0), (s.last, index + 1 == count), (s.only, count == 1), (s.odd, index % 2 == 0), (s.even, index % 2 == 1)];
+                for (state, holds) in place {
+                    if let (Some(state), true) = (state, holds) {
+                        s = s.merged(&state.get());
+                    }
+                }
+            }
+        }
+        if let (Some(empty), true) = (s.empty, self.is_empty()) {
+            s = s.merged(&empty.get());
+        }
+        if let (Some(checked), true) = (s.checked, self.is(ViewKind::Checkbox)) {
+            if backend().control_state(view).1 {
+                s = s.merged(&checked.get());
+            }
+        }
+        if let (Some(shown), true) = (s.placeholder_shown, self.is(ViewKind::Input) || self.is(ViewKind::Textarea)) {
+            if backend().control_state(view).0.is_empty() {
+                s = s.merged(&shown.get());
+            }
+        }
+        if let Some(state) = if self.disabled.get() { s.disabled } else { s.enabled } {
+            s = s.merged(&state.get());
         }
         // The state styles, over everything else while the state holds.
         if let Some(hover) = s.hover {
@@ -439,6 +523,10 @@ impl Node {
                 s = s.merged(&pressed.get());
             }
         }
+        // A screen without a background of its own shows the body's.
+        if parent.is_none() && s.background_color.is_none() && !self.is_overlay() {
+            s.background_color = global("body").and_then(|body| body.background_color);
+        }
         self.computed.set(s);
         let before = self.painted.get();
         if !forced() && before == Some(s) {
@@ -446,6 +534,9 @@ impl Node {
         }
         self.painted.set(Some(s));
         self.memo.set([None; 2]);
+        if before.map_or(s.text_transform.is_some(), |before| before.text_transform != s.text_transform) {
+            self.show_text();
+        }
         self.paint(view, &s, before.as_ref());
         if before.and_then(|b| b.z_index) != s.z_index {
             if let Some(parent) = self.host() {
@@ -465,6 +556,15 @@ impl Node {
             node = n.parent();
         }
         node
+    }
+
+    fn is_overlay(&self) -> bool {
+        RT.with(|rt| rt.roots.borrow().iter().any(|root| root.overlay && root.node == *self))
+    }
+
+    /// Whether the pointer reaches this view: not under a box with `pointerEvents: "none"`.
+    fn takes_pointer(&self, s: &Style) -> bool {
+        s.pointer_events != Some(PointerEvents::None) && self.host().is_none_or(|host| host.look.get().is_none_or(|look| look.pointer))
     }
 
     /// Asks the backend, once, to report a kind of input for this view.
@@ -490,8 +590,8 @@ impl Node {
         });
         Paint {
             background: s.background_color,
-            border_width: px(s.border_width.unwrap_or(0.0)),
-            border_color: s.border_color.unwrap_or(Color::BLACK),
+            borders: s.borders(),
+            border_colors: s.border_colors(),
             radius,
             clip: clips || (radius > 0.0 && kind == ViewKind::Image),
             shadow,
@@ -499,20 +599,23 @@ impl Node {
             visible: s.display != Some(Display::None),
             // An overlay box (absolute) takes the pointer over what is under it.
             blocks_pointer: kind == ViewKind::Box && s.position == Some(Position::Absolute),
+            pointer: self.takes_pointer(s),
+            fit: s.object_fit.unwrap_or(ObjectFit::Cover),
             translate: (px(s.translate_x.unwrap_or(0.0)), px(s.translate_y.unwrap_or(0.0))),
             rotate: s.rotate.unwrap_or(0.0) as f32,
             scale: s.scale.unwrap_or(1.0) as f32,
             text: TextPaint {
                 font_size: px(s.font_size.unwrap_or(15.0)),
-                bold: s.font_weight == Some(FontWeight::Bold),
+                weight: s.font_weight.unwrap_or(FontWeight::Normal),
                 italic: s.font_style == Some(FontStyle::Italic),
                 font_family: s.font_family.unwrap_or(FontFamily::SansSerif),
-                line_height: s.line_height.map(px),
+                line_height: Some(s.line_height_px()),
                 letter_spacing: px(s.letter_spacing.unwrap_or(0.0)),
                 decoration: s.text_decoration.unwrap_or(TextDecoration::None),
                 color: s.color.unwrap_or(Color::BLACK),
                 align: s.text_align.unwrap_or(TextAlign::Left),
                 lines: s.number_of_lines.map(|lines| lines.max(1.0) as u32),
+                placeholder: s.placeholder_color,
             },
             insets: s.insets(),
         }
@@ -563,15 +666,65 @@ impl Node {
                 backend().paint(view, kind, &target);
             }
         }
+        // A keyframes animation starts when the style gets it (or another one), and paints over the style at once.
+        if s.animation != self.keyframes.get().map(|k| k.animation) {
+            self.keyframes.set(s.animation.map(|animation| Keyframes { animation, start: js_now() + animation.get().delay, done: false }));
+        }
+        if self.keyframe_step(kind, view, js_now()) {
+            animate(self);
+        }
+    }
+
+    /// Paints the keyframes animation as it is at `now`, over the style's look; false once it is over.
+    fn keyframe_step(&self, kind: ViewKind, view: ViewId, now: f64) -> bool {
+        let (Some(k), Some(s)) = (self.keyframes.get(), self.painted.get()) else { return false };
+        if k.done {
+            return false;
+        }
+        let anim = k.animation.get();
+        let elapsed = now - k.start;
+        if elapsed < 0.0 {
+            return true;
+        }
+        let cycle = elapsed / anim.duration;
+        if anim.duration <= 0.0 || anim.frames.is_empty() || (anim.iterations >= 0 && cycle >= anim.iterations as f64) {
+            // Over: back to what the style shows, as CSS without a fill mode.
+            self.keyframes.set(Some(Keyframes { done: true, ..k }));
+            if let Some(look) = self.look.get() {
+                backend().paint(view, kind, &look);
+            }
+            return false;
+        }
+        let mut t = cycle.fract();
+        if anim.alternate && cycle as i64 % 2 == 1 {
+            t = 1.0 - t;
+        }
+        // One timing function over the whole cycle, as the iOS runtime runs it.
+        let t = ease(anim.easing, t as f32) as f64;
+        let next = anim.frames.iter().position(|stop| stop.at >= t).unwrap_or(anim.frames.len() - 1).max(1);
+        let (a, b) = (anim.frames[next - 1], anim.frames[next.min(anim.frames.len() - 1)]);
+        let span = b.at - a.at;
+        let local = if span > 0.0 { ((t - a.at) / span).clamp(0.0, 1.0) as f32 } else { 1.0 };
+        let (from, to) = (self.look_of(kind, &s.merged(&a.style)), self.look_of(kind, &s.merged(&b.style)));
+        let mut look = Motion { from, to, width: None, height: None, start: 0.0, duration: 0.0, easing: Easing::Linear }.at(local);
+        look.text.color = mix_color(from.text.color, to.text.color, local);
+        backend().paint(view, kind, &look);
+        true
     }
 
     /// One frame of this node's transition; false once it is over.
     fn step(&self, now: f64) -> bool {
         let (Kind::View(kind), Some(view)) = (self.kind, self.view) else { return false };
-        let Some(motion) = self.motion.borrow().clone() else { return false };
         if self.destroyed.get() {
             return false;
         }
+        let moving = self.step_motion(kind, view, now);
+        // Keyframes paint over the transition.
+        self.keyframe_step(kind, view, now) || moving
+    }
+
+    fn step_motion(&self, kind: ViewKind, view: ViewId, now: f64) -> bool {
+        let Some(motion) = self.motion.borrow().clone() else { return false };
         let t = ((now - motion.start) / motion.duration).clamp(0.0, 1.0) as f32;
         let done = t >= 1.0;
         let eased = if done { 1.0 } else { ease(motion.easing, t) };
@@ -651,6 +804,7 @@ impl Node {
         self.on_key.take();
         self.on_scroll.take();
         self.motion.take();
+        self.keyframes.take();
         self.native_props.take();
         self.items.take();
     }
@@ -693,6 +847,13 @@ impl Node {
 
     fn set_state(&self, state: &Cell<bool>, on: bool, style: impl Fn(&Style) -> bool) {
         if state.replace(on) != on && (style(&self.computed.get()) || self.painted.get().is_some_and(|s| style(&s))) {
+            self.apply_style();
+        }
+    }
+
+    /// Styles the view again if it was styled and `uses` says its style depends on what changed.
+    fn restyle_if(&self, uses: impl Fn(&Style) -> bool) {
+        if self.painted.get().is_some() && uses(&self.computed.get()) {
             self.apply_style();
         }
     }
@@ -833,11 +994,7 @@ impl Motion {
     /// The look at eased progress `t`: what can move is in between, the rest is the target's.
     fn at(&self, t: f32) -> Paint {
         let mix = |a: f32, b: f32| a + (b - a) * t;
-        let color = |a: Color, b: Color| {
-            let (a, b) = (a.rgba(), b.rgba());
-            let channel = |i: usize| ((mix(a[i], b[i]).clamp(0.0, 1.0) * 255.0).round() as u32) << (24 - 8 * i as u32);
-            Color(channel(0) | channel(1) | channel(2) | channel(3))
-        };
+        let color = |a: Color, b: Color| mix_color(a, b, t);
         let (from, to) = (&self.from, &self.to);
         let clear = |paint: &Paint, other: &Paint| paint.background.unwrap_or(Color(other.background.map_or(0, |c| c.0 & !0xff)));
         Paint {
@@ -850,6 +1007,20 @@ impl Motion {
             ..*to
         }
     }
+}
+
+fn mix_color(a: Color, b: Color, t: f32) -> Color {
+    let (a, b) = (a.rgba(), b.rgba());
+    let channel = |i: usize| (((a[i] + (b[i] - a[i]) * t).clamp(0.0, 1.0) * 255.0).round() as u32) << (24 - 8 * i as u32);
+    Color(channel(0) | channel(1) | channel(2) | channel(3))
+}
+
+/// A keyframes animation on a view: `start` is when its first cycle begins (after the delay).
+#[derive(Clone, Copy)]
+struct Keyframes {
+    animation: Animation,
+    start: f64,
+    done: bool,
 }
 
 /// A cubic Bézier timing function through (0,0), (x1,y1), (x2,y2), (1,1), as CSS defines them.
@@ -938,6 +1109,35 @@ struct Root {
     overlay: bool,
     /// On screen (a router's hidden screens are not): onMount runs only then.
     attached: bool,
+    /// A route's onEndReached, and what the screen's scrolling looks like.
+    end: Option<Rc<EndReached>>,
+}
+
+struct EndReached {
+    run: Rc<dyn Fn()>,
+    /// How far the screen is scrolled, how much of it shows, and how tall its content is, in px.
+    top: Cell<f32>,
+    visible: Cell<f32>,
+    content: Cell<f32>,
+    /// The content's height when it last ran: once per height, and a new page makes it taller.
+    fired: Cell<f32>,
+}
+
+impl EndReached {
+    /// Runs it when the content's end is within half a screen of the visible bottom.
+    fn check(self: &Rc<Self>) {
+        let (top, visible, content) = (self.top.get(), self.visible.get(), self.content.get());
+        if visible <= 0.0 || content <= 0.0 || content == self.fired.get() || content - (top + visible) > visible / 2.0 {
+            return;
+        }
+        self.fired.set(content);
+        // Not from inside the backend's layout pass or scroll handler: the app will change the tree.
+        let run = self.run.clone();
+        backend().set_timer(0, Box::new(move || {
+            run();
+            settle();
+        }));
+    }
 }
 
 #[derive(Default)]
@@ -961,12 +1161,39 @@ struct Runtime {
     forced: Cell<bool>,
     regions: RefCell<HashMap<String, Rc<RegionState>>>,
     waiting: RefCell<HashMap<String, Vec<Rc<IntoEntry>>>>,
+    /// The window's width the styles were last matched against, once a style has `@media`.
+    media_width: Cell<Option<f32>>,
+    restyle_pending: Cell<bool>,
 }
 
 thread_local!(static RT: Runtime = Runtime::default());
 
 fn forced() -> bool {
     RT.with(|rt| rt.forced.get())
+}
+
+/// The window's width, for `@media`. Styling with it means a resize styles again.
+fn viewport_width() -> f64 {
+    let width = backend().window_width();
+    RT.with(|rt| rt.media_width.set(Some(width)));
+    width as f64
+}
+
+/// The window's width changed under styles with `@media`: style every root again, soon (not
+/// inside the backend's layout pass, which is where it is noticed).
+fn restyle_for_width() {
+    let stale = RT.with(|rt| rt.media_width.get().is_some_and(|width| width != backend().window_width()) && !rt.restyle_pending.replace(true));
+    if !stale {
+        return;
+    }
+    backend().set_timer(0, Box::new(|| {
+        RT.with(|rt| rt.restyle_pending.set(false));
+        let roots: Vec<Node> = RT.with(|rt| rt.roots.borrow().iter().map(|root| root.node.clone()).collect());
+        for root in roots {
+            root.apply_styles_deep();
+        }
+        settle();
+    }));
 }
 
 fn invalidate_layout() {
@@ -987,7 +1214,7 @@ pub(crate) fn settle() {
 }
 
 pub(crate) fn add_root(node: &Node, overlay: bool, attached: bool) {
-    RT.with(|rt| rt.roots.borrow_mut().push(Root { node: node.clone(), overlay, attached }));
+    RT.with(|rt| rt.roots.borrow_mut().push(Root { node: node.clone(), overlay, attached, end: None }));
     node.apply_styles_deep();
 }
 
@@ -998,12 +1225,39 @@ pub(crate) fn remove_root(node: &Node) {
 
 /// A router screen came on screen or left it.
 pub(crate) fn set_attached(node: &Node, attached: bool) {
+    let end = RT.with(|rt| {
+        rt.mount_pending.set(true);
+        let mut roots = rt.roots.borrow_mut();
+        let root = roots.iter_mut().find(|root| root.node == *node)?;
+        root.attached = attached;
+        root.end.clone().filter(|_| attached)
+    });
+    if let Some(end) = end {
+        end.check();
+    }
+}
+
+/// A route's onEndReached, for the screen `node` is the root of.
+pub(crate) fn on_end_reached(node: &Node, run: Rc<dyn Fn()>) {
+    let end = Rc::new(EndReached { run, top: Cell::new(0.0), visible: Cell::new(0.0), content: Cell::new(0.0), fired: Cell::new(-1.0) });
     RT.with(|rt| {
         if let Some(root) = rt.roots.borrow_mut().iter_mut().find(|root| root.node == *node) {
-            root.attached = attached;
+            root.end = Some(end);
         }
-        rt.mount_pending.set(true);
     });
+}
+
+/// The attached screen's onEndReached whose root is `view`.
+fn end_of(view: ViewId) -> Option<Rc<EndReached>> {
+    RT.with(|rt| rt.roots.borrow().iter().find(|root| root.attached && root.node.view == Some(view)).and_then(|root| root.end.clone()))
+}
+
+pub(crate) fn screen_scrolled(view: ViewId, top: f32, visible: f32) {
+    if let Some(end) = end_of(view) {
+        end.top.set(top);
+        end.visible.set(visible);
+        end.check();
+    }
 }
 
 /// Re-runs every dynamic value, or only those inside `scope(id)` nodes for the given ids.
@@ -1085,13 +1339,19 @@ pub(crate) fn layout_root(view: ViewId, width: f32, height: f32) {
     if node.scrolls.get().is_some() {
         node.place_scrolled(width, height);
     } else {
-        let overlay = RT.with(|rt| rt.roots.borrow().iter().any(|root| root.overlay && root.node == node));
+        let overlay = node.is_overlay();
         // A screen is as tall as its content, or the window when that is taller (then a column's
         // free space is shared out). An overlay is exactly the window.
-        let definite = overlay || height > flex::layout(&node, width, None, None, false)[1];
-        node.place(width, definite.then_some(height));
+        let content = flex::layout(&node, width, None, None, false)[1];
+        node.place(width, (overlay || height > content).then_some(height));
+        // A short page asks for more without being scrolled.
+        if let Some(end) = end_of(view) {
+            end.content.set(content);
+            end.check();
+        }
     }
     RT.with(|rt| rt.laid_out.set(rt.epoch.get()));
+    restyle_for_width();
 }
 
 pub(crate) fn dispatch(view: ViewId, event: Event) {
@@ -1104,6 +1364,11 @@ pub(crate) fn dispatch(view: ViewId, event: Event) {
         }
         Event::Focus | Event::Blur => node.set_state(&node.focused, event == Event::Focus, |s| s.focused.is_some()),
         _ => {}
+    }
+    // States that follow what the user did to the control.
+    let s = node.computed.get();
+    if (event == Event::Input && s.placeholder_shown.is_some()) || (event == Event::Change && s.checked.is_some()) {
+        node.apply_style();
     }
     if event == Event::Click {
         node.click();
@@ -1260,9 +1525,10 @@ impl A {
             let target = Rc::downgrade(&node.0);
             node.bind(value.clone(), move |text: &String| {
                 // Never reset what the user is typing to the same text (the caret would jump).
-                if let Some(node) = target.upgrade() {
+                if let Some(node) = target.upgrade().map(Node) {
                     if backend().control_state(view).0 != *text {
-                        Node(node).write(|| backend().set_value(view, text));
+                        node.write(|| backend().set_value(view, text));
+                        node.restyle_if(|s| s.placeholder_shown.is_some());
                     }
                 }
             });
@@ -1310,9 +1576,10 @@ impl A {
             let view = node.view.unwrap();
             let target = Rc::downgrade(&node.0);
             node.bind(value.clone(), move |on: &bool| {
-                if let Some(node) = target.upgrade() {
+                if let Some(node) = target.upgrade().map(Node) {
                     if backend().control_state(view).1 != *on {
-                        Node(node).write(|| backend().set_checked(view, *on));
+                        node.write(|| backend().set_checked(view, *on));
+                        node.restyle_if(|s| s.checked.is_some());
                     }
                 }
             });
@@ -1330,6 +1597,7 @@ impl A {
                 let Some(node) = target.upgrade().map(Node) else { return };
                 backend().set_enabled(view, !off);
                 node.disabled.set(*off);
+                node.restyle_if(|s| s.disabled.is_some() || s.enabled.is_some());
                 // A disabled view is dimmed: paint again with the style it has.
                 if let Some(style) = node.painted.get() {
                     node.paint(view, &style, None);

@@ -372,128 +372,236 @@ export declare function on(type: "destroy", listener: (element: NativeElement) =
 // ---------------------------------------------------------------------------
 
 /**
- * The style subset every runtime lays out the same way: a flex box per container (column by
- * default), in points (iOS) or dp (Android).
+ * A length: points, or the CSS forms nuclo-core writes, each read at compile time: `"12px"`, `"1.5rem"` / `"1.5em"`
+ * (16 points each), `"auto"` (unset). `width` also takes a share of the parent's width (`"50%"`).
+ */
+export type Size = number | `${number}px` | `${number}rem` | `${number}em` | "auto";
+
+type AlignValue = "flex-start" | "center" | "flex-end" | "stretch" | "start" | "end" | "baseline";
+type JustifyValue = "flex-start" | "center" | "flex-end" | "space-between" | "space-around" | "space-evenly" | "start" | "end" | "stretch";
+type FontWeightValue =
+  | "normal" | "bold" | "lighter" | "bolder" | "light" | "medium" | "semibold"
+  | "100" | "200" | "300" | "400" | "500" | "600" | "700" | "800" | "900"
+  | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
+
+/**
+ * The style subset every runtime lays out the same way: a flex box per container (column by default), in points
+ * (iOS, macOS) or dp (Android). It is also nuclo-core's style object: its short keys, CSS strings (`"12px"`,
+ * `"1px solid #e5e7eb"`, `"0 1px 3px rgba(0,0,0,.2)"`, `"translateY(-2px) scale(1.05)"`, `"opacity 200ms ease"`),
+ * pseudo-class keys (`hover`, `active`, `focus`, `disabled`, `first`, `odd`…), `@media` blocks, theme tokens
+ * (createCss) and `animation` over keyframes() are read by the compiler and become the native keys below.
  */
 export interface Style {
   flexDirection?: "row" | "column";
-  alignItems?: "flex-start" | "center" | "flex-end" | "stretch";
+  alignItems?: AlignValue;
   /** This item's own cross-axis alignment, over its parent's `alignItems`. */
-  alignSelf?: "flex-start" | "center" | "flex-end" | "stretch";
-  justifyContent?: "flex-start" | "center" | "flex-end" | "space-between" | "space-around" | "space-evenly";
+  alignSelf?: AlignValue | "auto";
+  justifyContent?: JustifyValue;
   /** `wrap`: items that don't fit start a new line (a row's lines stack downwards). */
   flexWrap?: "nowrap" | "wrap";
-  /** Grows along the parent's direction, sharing the free space by weight. */
-  flex?: number;
-  gap?: number;
-  margin?: number;
-  marginTop?: number;
-  marginRight?: number;
-  marginBottom?: number;
-  marginLeft?: number;
-  padding?: number;
-  paddingTop?: number;
-  paddingRight?: number;
-  paddingBottom?: number;
-  paddingLeft?: number;
+  /** Grows along the parent's direction, sharing the free space by weight. A CSS `"1 1 0%"` string reads its grow. */
+  flex?: number | `${number}` | `${number} ${number}` | `${number} ${number} ${string}` | "auto" | "none";
+  /** `flex` alone. */
+  flexGrow?: number;
+  /** Boxes never shrink below their content natively (as `flex-shrink: 0` everywhere): accepted, and nothing changes. */
+  flexShrink?: number;
+  /** Accepted for CSS sources; a box's basis is its content natively. */
+  flexBasis?: Size;
+  gap?: Size;
+  margin?: Size;
+  marginTop?: Size;
+  marginRight?: Size;
+  marginBottom?: Size;
+  marginLeft?: Size;
+  padding?: Size;
+  paddingTop?: Size;
+  paddingRight?: Size;
+  paddingBottom?: Size;
+  paddingLeft?: Size;
   /** Points, or a share of the parent's width: `"50%"` or `` `${progress}%` ``. */
-  width?: number | `${number}%`;
-  height?: number;
-  minWidth?: number;
-  maxWidth?: number;
-  minHeight?: number;
-  maxHeight?: number;
-  /** width / height: the missing dimension follows the other. */
-  aspectRatio?: number;
+  width?: Size | `${number}%`;
+  height?: Size;
+  minWidth?: Size;
+  maxWidth?: Size;
+  minHeight?: Size;
+  maxHeight?: Size;
+  /** width / height: the missing dimension follows the other. `"16 / 9"` as in CSS. */
+  aspectRatio?: number | `${number} / ${number}` | `${number}/${number}`;
   /**
    * `hidden` clips children to the box. `scroll` makes the box scroll along its direction (a
-   * column vertically, a row horizontally) with the platform's own scrolling.
+   * column vertically, a row horizontally) with the platform's own scrolling. `auto` is `scroll`, `clip` is `hidden`.
    */
-  overflow?: "visible" | "hidden" | "scroll";
-  position?: "relative" | "absolute";
-  top?: number;
-  right?: number;
-  bottom?: number;
-  left?: number;
+  overflow?: "visible" | "hidden" | "scroll" | "auto" | "clip";
+  overflowX?: "visible" | "hidden" | "scroll" | "auto" | "clip";
+  overflowY?: "visible" | "hidden" | "scroll" | "auto" | "clip";
+  /** `static` is `relative`. */
+  position?: "relative" | "absolute" | "static";
+  /** top, right, bottom and left at once. */
+  inset?: Size;
+  top?: Size;
+  right?: Size;
+  bottom?: Size;
+  left?: Size;
   /** Among siblings: a higher value is drawn (and touched) above. */
-  zIndex?: number;
-  display?: "flex" | "none";
+  zIndex?: number | "auto";
+  /** Every box is a flex box: `block`, `flex` and the inline forms are `flex`. */
+  display?: "flex" | "none" | "block" | "inline" | "inline-block" | "inline-flex";
+  /** `hidden` keeps the box's place and draws nothing: `opacity: 0`, and it takes no touches. */
+  visibility?: "visible" | "hidden";
   backgroundColor?: string;
+  /** backgroundColor (a colour or a theme token). */
+  background?: string;
   color?: string;
-  opacity?: number;
-  borderRadius?: number;
-  borderWidth?: number;
+  opacity?: number | `${number}` | `${number}%`;
+  borderRadius?: Size | string;
+  borderWidth?: Size;
   borderColor?: string;
+  /** `none` / `hidden` take the border away. */
+  borderStyle?: "solid" | "none" | "hidden";
+  /** `"1px solid #e5e7eb"`: width, style and colour, in any order. */
+  border?: string;
+  borderTop?: string;
+  borderRight?: string;
+  borderBottom?: string;
+  borderLeft?: string;
+  borderTopWidth?: Size;
+  borderRightWidth?: Size;
+  borderBottomWidth?: Size;
+  borderLeftWidth?: Size;
+  borderTopColor?: string;
+  borderRightColor?: string;
+  borderBottomColor?: string;
+  borderLeftColor?: string;
   /** A drop shadow: all four, or `shadowRadius` alone for a soft black one. */
   shadowColor?: string;
   shadowRadius?: number;
   shadowOffsetX?: number;
   shadowOffsetY?: number;
-  fontSize?: number;
-  fontWeight?: "normal" | "bold";
-  fontStyle?: "normal" | "italic";
-  /** `monospace`, `serif` and `sans-serif` are the platform's own; other names are looked up. */
+  /** `"0 1px 3px rgba(0,0,0,0.2)"` (x, y, blur, colour), or a theme token. */
+  boxShadow?: string;
+  fontSize?: Size;
+  fontWeight?: FontWeightValue;
+  fontStyle?: "normal" | "italic" | "oblique";
+  /** `monospace`, `serif` and `sans-serif` are the platform's own; other names are looked up. A stack takes its first name. */
   fontFamily?: string;
-  /** In points, as `fontSize`. */
-  lineHeight?: number;
-  letterSpacing?: number;
-  textAlign?: "left" | "center" | "right";
+  /** In points, as `fontSize`; a bare number under 4 is a multiple of the font size, as in CSS. */
+  lineHeight?: Size;
+  letterSpacing?: Size;
+  textAlign?: "left" | "center" | "right" | "start" | "end" | "justify";
   textDecoration?: "none" | "underline" | "line-through";
+  textTransform?: "none" | "uppercase" | "lowercase" | "capitalize";
   /** Text is cut with an ellipsis after this many lines. */
   numberOfLines?: number;
+  /** `nowrap` keeps text on one line (as `numberOfLines: 1`, without the ellipsis unless `textOverflow` asks). */
+  whiteSpace?: "normal" | "nowrap" | "pre" | "pre-wrap" | "pre-line";
+  textOverflow?: "clip" | "ellipsis";
+  /** The text colour of a field's placeholder. */
+  placeholderColor?: string;
+  /** An image's fit in its box: `cover` (the default) or `contain`. */
+  objectFit?: "cover" | "contain" | "fill";
+  /** `none`: the box and its children take no touches. */
+  pointerEvents?: "auto" | "none";
   // Transforms are applied after layout, around the box's centre: translate, then rotate, then scale.
   translateX?: number;
   translateY?: number;
   scale?: number;
   /** Degrees, clockwise. */
   rotate?: number;
+  /** `"translate(4px, 0) rotate(45deg) scale(1.1)"`: written as translateX / translateY / rotate / scale. */
+  transform?: string;
   /**
-   * Milliseconds. When set, a change of opacity, transform, background colour, border radius or
-   * of the box's `width` / `height` is animated by the platform instead of applied at once (the
-   * boxes around it follow, frame by frame).
+   * Milliseconds (or `"200ms"`, `"0.2s"`). When set, a change of opacity, transform, background colour, border radius
+   * or of the box's `width` / `height` is animated by the platform instead of applied at once (the boxes around it
+   * follow, frame by frame).
    */
-  transitionDuration?: number;
-  transitionDelay?: number;
+  transitionDuration?: number | `${number}ms` | `${number}s`;
+  transitionDelay?: number | `${number}ms` | `${number}s`;
   /** `spring` overshoots and settles, as a platform sheet does. */
   transitionEasing?: "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out" | "spring";
-  /** Merged over the style while a pointer is down on the view (`:active`). */
+  transitionTimingFunction?: "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out";
+  /** `"opacity 200ms ease-out 50ms"`: the duration, easing and delay (every listed property transitions). */
+  transition?: string;
+  /** `` `${fadeIn} 300ms ease-out infinite alternate` ``: a keyframes() name, its duration, easing, delay, count and direction. */
+  animation?: string;
+  // Accepted from CSS sources for the web's sake; natively the platform decides (a pointer over a clickable box,
+  // text selection in fields only, border boxes everywhere).
+  cursor?: string;
+  userSelect?: "none" | "auto" | "text" | "all";
+  boxSizing?: "border-box" | "content-box";
+  outline?: string;
+  appearance?: "none" | "auto";
+  willChange?: string;
+  touchAction?: string;
+  /** Raw declarations, by their CSS names (`"border-bottom"`, `"line-height"`): read as the keys above. */
+  raw?: Record<string, string | number>;
+
+  // States: a style merged over the box while the state holds. The CSS names are nuclo-core's.
+  /** While a pointer is down on the view (`:active`). */
   pressed?: Style;
+  active?: Style;
   /** While a pointer is over the view, where the platform has one (`:hover`). */
   hover?: Style;
-  /** While a field has the focus (`:focus`). */
+  /** While the view has the focus (`:focus`, `:focus-visible`, `:focus-within`). */
   focused?: Style;
+  focus?: Style;
+  focusVisible?: Style;
+  focusWithin?: Style;
+  /** While `disabled` holds (`:disabled`), or not (`:enabled`). */
+  disabled?: Style;
+  enabled?: Style;
+  /** A checkbox that is on. */
+  checked?: Style;
+  /** A field showing its placeholder (`:placeholder-shown`). */
+  placeholderShown?: Style;
+  /** The placeholder's text (`::placeholder`): its `color`. */
+  placeholder?: Style;
+  // The box's place among its siblings (`:first-child`, `:last-child`, `:only-child`, `:nth-child(odd / even)`), and a box with no children.
+  first?: Style;
+  last?: Style;
+  only?: Style;
+  odd?: Style;
+  even?: Style;
+  empty?: Style;
+  /** `"@media (min-width: 768px)"`, `(max-width: …)` or both with `and`: merged while the window is that wide. */
+  [media: `@media ${string}`]: Style | undefined;
+  /** `"&:hover"`, `"&:nth-child(odd)"`…: the state keys above, by their CSS selectors. */
+  [selector: `&:${string}`]: Style | undefined;
+
   // nuclo-core's short keys. Each is the native key (or keys) named in its comment.
-  /** padding */ p?: number;
-  /** paddingLeft + paddingRight */ px?: number;
-  /** paddingTop + paddingBottom */ py?: number;
-  pt?: number;
-  pr?: number;
-  pb?: number;
-  pl?: number;
-  /** margin */ m?: number;
-  /** marginLeft + marginRight */ mx?: number;
-  /** marginTop + marginBottom */ my?: number;
-  mt?: number;
-  mr?: number;
-  mb?: number;
-  ml?: number;
-  /** width */ w?: number;
-  /** height */ h?: number;
-  minW?: number;
-  maxW?: number;
-  minH?: number;
-  maxH?: number;
-  /** width + height */ size?: number;
-  /** fontSize */ text?: number;
-  /** fontWeight */ weight?: "normal" | "bold";
-  /** lineHeight */ leading?: number;
-  /** letterSpacing */ tracking?: number;
-  /** textAlign */ align?: "left" | "center" | "right";
-  /** alignItems */ items?: "flex-start" | "center" | "flex-end" | "stretch";
-  /** justifyContent */ justify?: "flex-start" | "center" | "flex-end" | "space-between" | "space-around" | "space-evenly";
-  /** zIndex */ z?: number;
+  /** padding */ p?: Size;
+  /** paddingLeft + paddingRight */ px?: Size;
+  /** paddingTop + paddingBottom */ py?: Size;
+  pt?: Size;
+  pr?: Size;
+  pb?: Size;
+  pl?: Size;
+  /** margin */ m?: Size;
+  /** marginLeft + marginRight */ mx?: Size;
+  /** marginTop + marginBottom */ my?: Size;
+  mt?: Size;
+  mr?: Size;
+  mb?: Size;
+  ml?: Size;
+  /** width */ w?: Size | `${number}%`;
+  /** height */ h?: Size;
+  minW?: Size;
+  maxW?: Size;
+  minH?: Size;
+  maxH?: Size;
+  /** width + height */ size?: Size;
+  /** fontSize */ text?: Size;
+  /** fontFamily */ font?: string;
+  /** fontWeight */ weight?: FontWeightValue;
+  /** lineHeight */ leading?: Size;
+  /** letterSpacing */ tracking?: Size;
+  /** textAlign */ align?: "left" | "center" | "right" | "start" | "end" | "justify";
+  /** alignItems */ items?: AlignValue;
+  /** justifyContent */ justify?: JustifyValue;
+  /** zIndex */ z?: number | "auto";
   /** backgroundColor */ bg?: string;
-  /** borderRadius */ rounded?: number;
+  /** borderRadius */ rounded?: Size | string;
+  /** boxShadow */ shadow?: string;
+  /** userSelect */ select?: "none" | "auto" | "text" | "all";
   /** flexDirection: row */ row?: boolean;
   /** flexDirection: column */ col?: boolean;
   /** alignItems and justifyContent: center */ center?: boolean;
@@ -526,6 +634,57 @@ export interface VariantsConfig<V extends VariantGroups> {
 /** A typed recipe: an unknown variant name or value is a compile error, `true`/`false` groups take booleans. */
 export declare function variants<const V extends VariantGroups>(config: VariantsConfig<V>): (selection?: VariantSelection<V>) => StyleClass;
 
+/**
+ * A keyframes animation: stops (`from`, `to`, `"50%"`, `"0%, 100%"`) and the style at each (opacity, transforms,
+ * backgroundColor, color). The name it returns is used in a style's `animation`: `` `${pulse} 1s ease-in-out infinite` ``.
+ * Declare it as a top-level const.
+ */
+export declare function keyframes(frames: Record<string, Style>): string;
+
+/**
+ * Styles by selector, as nuclo-core's globalStyle(): `"body"` / `"html"` / `":root"` style the screens (their
+ * background, and the text style everything inherits), a tag name (`"h1"`, `"button"`…) or a list of them every
+ * element of that tag. Call it at the top level, before render().
+ */
+export declare function globalStyle(selector: string, style: Style): void;
+
+/** A theme: tokens a style may name instead of a value, and the screen widths of its responsive keys. */
+export interface ThemeConfig {
+  /** Colour tokens: backgroundColor / bg, color, borderColor and the side colours, placeholderColor. */
+  colors?: Record<string, string>;
+  /** Font tokens: fontFamily / font. */
+  fonts?: Record<string, string>;
+  /** Shadow tokens: boxShadow / shadow. */
+  shadows?: Record<string, string>;
+  /** Radius tokens: borderRadius / rounded. */
+  radii?: Record<string, string | number>;
+  /** Responsive keys: name → `"(min-width: 768px)"` (or max-width, or both with `and`), in cascade order. */
+  screens?: Record<string, string>;
+}
+
+/** A style that may also use the theme's screen names as keys: `{ p: 8, md: { p: 16 } }`. */
+export type ThemedStyle<T extends ThemeConfig> = Style & { [K in keyof T["screens"] & string]?: ThemedStyle<T> };
+
+type ThemedGroups<T extends ThemeConfig> = Record<string, Record<string, ThemedStyle<T>>>;
+
+export interface CssInstance<T extends ThemeConfig> {
+  css(name: string, style: ThemedStyle<T>): StyleClass;
+  css(style: ThemedStyle<T>): StyleClass;
+  cx: typeof cx;
+  variants<const V extends ThemedGroups<T>>(config: VariantsConfig<V>): (selection?: VariantSelection<V>) => StyleClass;
+  keyframes: typeof keyframes;
+  globalStyle: typeof globalStyle;
+  /** The theme as given: its values are read at compile time (`theme.colors.primary`). */
+  theme: T;
+}
+
+/**
+ * nuclo-core's themed styling: `const { css, cx, variants, keyframes, globalStyle, theme } = createCss({ colors: … })`.
+ * The theme is read at compile time, so give it as an object literal at the top level; a token is resolved where a
+ * style names it with a literal string. One theme per app.
+ */
+export declare function createCss<const T extends ThemeConfig>(theme: T): CssInstance<T>;
+
 // ---------------------------------------------------------------------------
 // Navigation (the nuclo-native router: native stacks and tabs)
 // ---------------------------------------------------------------------------
@@ -539,6 +698,8 @@ export type Route = View | {
   presentation?: "push" | "modal";
   /** `false` hides the navigation bar on this screen. */
   header?: boolean;
+  /** Runs when the screen is scrolled to near its end (half a screen away): load the next page there. */
+  onEndReached?: (params: Params) => void;
 };
 
 export interface Tab {

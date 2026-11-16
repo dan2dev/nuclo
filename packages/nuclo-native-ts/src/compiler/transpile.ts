@@ -10,7 +10,10 @@
  *    the router are lowered to runtime calls with lazily built content.
  * Anything it cannot translate is reported with its file and line, and nothing is emitted.
  */
-import { STYLE_ALIASES, STYLE_FLAGS } from "../styleAliases.ts";
+import {
+  COLOR_KEYS, ENUM_VALUES, NATIVE_STYLE_KEYS, SHORTHAND_RESETS, STATE_ALIASES, STYLE_ALIASES, STYLE_FLAGS, StyleError, type Theme,
+  UNSUPPORTED_PSEUDOS, lowerEntry, parseAnimation, parseMedia, parseBorder, keyframeStops,
+} from "../styleAliases.ts";
 import * as path from "node:path";
 import ts from "typescript";
 import { type BinOp, type ClassDecl, type Expr, type FnDecl, type Op, type Param, type Program, type RuntimeType, type Stmt, T, type Ty } from "./ir.ts";
@@ -108,6 +111,7 @@ const API_TYPES: Record<string, Ty> = {
   Router: T.rt("Router"),
   Outlet: T.rt("Outlet"),
   Response: T.rt("Response"),
+  ThemedStyle: T.rt("Style"),
 };
 
 /** Style keys whose string values are enums natively. */
@@ -124,11 +128,29 @@ const STYLE_ENUMS: Record<string, string> = {
   fontStyle: "FontStyle",
   textAlign: "TextAlign",
   textDecoration: "TextDecoration",
+  textTransform: "TextTransform",
   transitionEasing: "Easing",
+  objectFit: "ObjectFit",
+  pointerEvents: "PointerEvents",
 };
 
-/** Style keys whose value is itself a style, merged over the box in that state. */
-const STATE_STYLES = new Set(["pressed", "hover", "focused"]);
+/** `&:…` selectors and the state keys they are. */
+const STYLE_SELECTORS: Record<string, string> = {
+  ":hover": "hover", ":active": "pressed", ":focus": "focused", ":focus-visible": "focused", ":focus-within": "focused",
+  ":disabled": "disabled", ":enabled": "enabled", ":checked": "checked", ":placeholder-shown": "placeholderShown", "::placeholder": "placeholder",
+  ":first-child": "first", ":last-child": "last", ":only-child": "only", ":empty": "empty",
+  ":nth-child(odd)": "odd", ":nth-child(2n+1)": "odd", ":nth-child(even)": "even", ":nth-child(2n)": "even",
+};
+
+/** Keys a value written as a template (`` `${n}px` ``) may take as a number of points. */
+const LENGTH_KEYS = new Set([
+  "gap", "margin", "marginTop", "marginRight", "marginBottom", "marginLeft", "padding", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+  "width", "height", "minWidth", "maxWidth", "minHeight", "maxHeight", "top", "right", "bottom", "left", "fontSize", "lineHeight", "letterSpacing",
+  "borderRadius", "borderWidth", "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth",
+]);
+
+/** A value the compiler could not fold to a constant. */
+const DYNAMIC = Symbol("dynamic");
 
 /** Event attributes and the runtime type their handler receives. */
 const EVENTS: Record<string, RuntimeType> = {
@@ -223,6 +245,12 @@ class Frontend {
   private readonly usedComponents = new Map<string, string>();
   /** The selects being lowered, innermost last: their options find the state they share here. */
   private readonly selects: SelectState[] = [];
+  /** createCss()'s theme, read at compile time: its tokens and screens apply to every style. */
+  private theme: Theme = {};
+  /** `const fade = keyframes({…})`: the frames of each, by the const's symbol. */
+  private readonly keyframes = new Map<ts.Symbol, ts.ObjectLiteralExpression>();
+  /** Properties some code assigns: a const object's property is folded into a style only when none does. */
+  private assigned?: Set<ts.Symbol>;
   private selectCount = 0;
 
   private readonly program: ts.Program;
@@ -235,6 +263,7 @@ class Frontend {
   }
 
   run(source: string): Program {
+    for (const sf of this.files) this.collectStyling(sf);
     for (const sf of this.files) this.collect(sf);
     for (const sf of this.files) this.collectFunctionReferences(sf);
     this.inferNumbers();
@@ -558,7 +587,7 @@ class Frontend {
     else if (ts.isPropertyAccessExpression(node) && (node.name.text === "prototype" || node.name.text === "__proto__")) {
       this.error(node, "Prototype access is not supported.");
     } else if ((ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) && node.asteriskToken) this.error(node, "Generators are not supported.");
-    else if (ts.isObjectBindingPattern(node) || ts.isArrayBindingPattern(node)) this.error(node, "Destructuring is not supported; read the properties.");
+    else if ((ts.isObjectBindingPattern(node) || ts.isArrayBindingPattern(node)) && !this.isCreateCss(node.parent)) this.error(node, "Destructuring is not supported; read the properties.");
   }
 
   private declareSlot(name: ts.Node, typeNode: ts.TypeNode | undefined) {
@@ -689,9 +718,127 @@ class Frontend {
   }
 
   /** The API name an identifier refers to (`div`, `update`…), if it is the API's. */
+  /** `const { css, cx, … } = createCss({…})`. */
+  private isCreateCss(node: ts.Node | undefined): node is ts.VariableDeclaration {
+    if (!node || !ts.isVariableDeclaration(node) || !node.initializer || !ts.isCallExpression(node.initializer)) return false;
+    const callee = node.initializer.expression;
+    if (!ts.isIdentifier(callee)) return false;
+    const symbol = this.resolveAlias(this.checker.getSymbolAtLocation(callee));
+    const decl = symbol?.valueDeclaration ?? symbol?.declarations?.[0];
+    return !!decl && this.isApi(decl) && symbol!.name === "createCss";
+  }
+
+  /** The theme of createCss() and the frames of every keyframes() const, before any style is lowered. */
+  private collectStyling(sf: ts.SourceFile) {
+    const visit = (node: ts.Node): void => {
+      if (this.isCreateCss(node)) {
+        const arg = (node.initializer as ts.CallExpression).arguments[0];
+        const theme = arg ? this.constValue(arg) : {};
+        if (theme === DYNAMIC || typeof theme !== "object") this.error(node, "Give createCss() its theme as an object literal of literals: it is read at compile time.");
+        else this.theme = theme as Theme;
+        if (!ts.isObjectBindingPattern(node.name) && ts.isSourceFile(this.topLevelOf(node))) {
+          this.error(node.name, "Destructure createCss() where it is called: const { css, cx, variants, keyframes, globalStyle, theme } = createCss({…}).");
+        }
+      }
+      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer && ts.isCallExpression(node.initializer)) {
+        const callee = node.initializer.expression;
+        const frames = node.initializer.arguments[0];
+        if (ts.isIdentifier(callee) && this.apiName(callee) === "keyframes") {
+          const symbol = this.checker.getSymbolAtLocation(node.name);
+          if (!frames || !ts.isObjectLiteralExpression(frames)) this.error(node, "keyframes() takes its stops as an object literal.");
+          else if (!ts.isSourceFile(this.topLevelOf(node)) || !(ts.getCombinedNodeFlags(node) & ts.NodeFlags.Const)) this.error(node, "Declare keyframes() as a top-level const.");
+          else if (symbol) this.keyframes.set(symbol, frames);
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sf);
+  }
+
+  /**
+   * The value of an expression known at compile time: literals, templates of them, `-n`, a ternary of them, and
+   * `const`s (and their properties, when nothing assigns them) whose initializers are. DYNAMIC otherwise.
+   */
+  private constValue(node: ts.Expression): unknown {
+    if (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isSatisfiesExpression(node)) return this.constValue(node.expression);
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
+    if (ts.isNumericLiteral(node)) return Number(node.text);
+    if (node.kind === ts.SyntaxKind.TrueKeyword) return true;
+    if (node.kind === ts.SyntaxKind.FalseKeyword) return false;
+    if (ts.isPrefixUnaryExpression(node) && node.operator === ts.SyntaxKind.MinusToken) {
+      const v = this.constValue(node.operand);
+      return typeof v === "number" ? -v : DYNAMIC;
+    }
+    if (ts.isTemplateExpression(node)) {
+      let text = node.head.text;
+      for (const span of node.templateSpans) {
+        const v = this.constValue(span.expression);
+        if (v === DYNAMIC || typeof v === "object") return DYNAMIC;
+        text += String(v) + span.literal.text;
+      }
+      return text;
+    }
+    if (ts.isObjectLiteralExpression(node)) {
+      const out: Record<string, unknown> = {};
+      for (const prop of node.properties) {
+        if (!ts.isPropertyAssignment(prop) || !(ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name) || ts.isNumericLiteral(prop.name))) return DYNAMIC;
+        const v = this.constValue(prop.initializer);
+        if (v === DYNAMIC) return DYNAMIC;
+        out[prop.name.text] = v;
+      }
+      return out;
+    }
+    if (ts.isIdentifier(node)) {
+      const symbol = this.resolveAlias(this.checker.getSymbolAtLocation(node));
+      const decl = symbol?.valueDeclaration;
+      if (decl && ts.isBindingElement(decl) && this.isCreateCss(decl.parent.parent) && (decl.propertyName ?? decl.name).getText() === "theme") return this.theme;
+      if (!decl || !ts.isVariableDeclaration(decl) || !decl.initializer || !(ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const)) return DYNAMIC;
+      if (decl.getSourceFile().isDeclarationFile || this.isApi(decl)) return DYNAMIC;
+      return this.constValue(decl.initializer);
+    }
+    if (ts.isPropertyAccessExpression(node)) {
+      const symbol = this.checker.getSymbolAtLocation(node.name);
+      if (symbol && this.assignedProps().has(symbol)) return DYNAMIC;
+      const obj = this.constValue(node.expression);
+      if (obj === DYNAMIC || !obj || typeof obj !== "object") return DYNAMIC;
+      const v = (obj as Record<string, unknown>)[node.name.text];
+      return v === undefined ? DYNAMIC : v;
+    }
+    return DYNAMIC;
+  }
+
+  private themeRooted(node: ts.Expression): boolean {
+    let root = node;
+    while (ts.isPropertyAccessExpression(root)) root = root.expression;
+    if (!ts.isIdentifier(root)) return false;
+    const decl = this.resolveAlias(this.checker.getSymbolAtLocation(root))?.valueDeclaration;
+    return !!decl && ts.isBindingElement(decl) && this.isCreateCss(decl.parent.parent);
+  }
+
+  private assignedProps(): Set<ts.Symbol> {
+    if (this.assigned) return this.assigned;
+    const out = new Set<ts.Symbol>();
+    const visit = (node: ts.Node): void => {
+      const target = ts.isBinaryExpression(node) && node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && node.operatorToken.kind <= ts.SyntaxKind.LastAssignment
+        ? node.left
+        : (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) && (node.operator === ts.SyntaxKind.PlusPlusToken || node.operator === ts.SyntaxKind.MinusMinusToken)
+          ? node.operand
+          : undefined;
+      if (target && ts.isPropertyAccessExpression(target)) {
+        const symbol = this.checker.getSymbolAtLocation(target.name);
+        if (symbol) out.add(symbol);
+      }
+      ts.forEachChild(node, visit);
+    };
+    for (const sf of this.files) visit(sf);
+    return (this.assigned = out);
+  }
+
   private apiName(node: ts.Node): string | undefined {
     const symbol = this.resolveAlias(this.checker.getSymbolAtLocation(node));
     const decl = symbol?.valueDeclaration ?? symbol?.declarations?.[0];
+    // `const { css } = createCss(…)`: the theme's css is the API's (the theme is applied at compile time).
+    if (decl && ts.isBindingElement(decl) && this.isCreateCss(decl.parent.parent)) return (decl.propertyName ?? decl.name).getText();
     return decl && this.isApi(decl) ? symbol!.name : undefined;
   }
 
@@ -1104,6 +1251,13 @@ class Frontend {
 
   /** Lowers an expression; `want` is the type its position needs (numbers convert, functions adapt). */
   private expr(node: ts.Expression, ctx: Ctx, want?: Ty): Expr {
+    // `theme.colors.primary`: createCss()'s theme is read at compile time.
+    if (ts.isPropertyAccessExpression(node) && this.themeRooted(node)) {
+      const v = this.constValue(node);
+      if (typeof v === "string") return { e: "str", v };
+      if (typeof v === "number") return want?.k === "int" ? { e: "int", v: String(v) } : { e: "double", v: Number.isInteger(v) ? v.toFixed(1) : String(v) };
+      return this.error(node, "Read a single token of the theme (theme.colors.primary).");
+    }
     const x = this.rawExpr(node, ctx, want);
     return want ? this.coerce(x, node, want) : x;
   }
@@ -1171,6 +1325,17 @@ class Frontend {
         const args = params.slice(0, arity).map((p, i): Expr => this.convert({ e: "id", name: p.name }, p.ty, own[i]!));
         const call: Expr = { e: "call", callee: { e: "id", name: x.name }, args };
         return { e: "lambda", params, ret: want.ret, body: want.ret.k === "void" ? [{ s: "expr", x: call }] : this.convert(call, ownRet, want.ret) };
+      }
+      return x;
+    }
+    // A function value (a parameter, what a call returns) that takes fewer parameters: called from a closure that takes them all.
+    if (x.e !== "lambda") {
+      const [signature] = this.checker.getNonNullableType(this.typeOf(node)).getCallSignatures();
+      const arity = signature?.getParameters().length ?? want.params.length;
+      if (arity < want.params.length) {
+        const params = want.params.map((ty, i) => ({ name: `_${i}`, ty, unused: i >= arity }));
+        const call: Expr = { e: "call", callee: x, args: params.slice(0, arity).map((p): Expr => ({ e: "id", name: p.name })) };
+        return { e: "lambda", params, ret: want.ret, body: want.ret.k === "void" ? [{ s: "expr", x: call }] : call };
       }
     }
     return x;
@@ -1443,44 +1608,223 @@ class Frontend {
     return this.error(node, "An object literal needs an interface type to become a native class.");
   }
 
-  /** A Style literal: enums for keyword values, Double for numbers, `...base` merged under it. */
+  /**
+   * A Style literal: nuclo-core's keys, strings, states and media blocks lowered to the native keys (styleAliases.ts),
+   * enums for keyword values, Double for numbers, `...base` merged under it.
+   */
   private style(node: ts.ObjectLiteralExpression, ctx: Ctx): Expr {
     let base: Expr | undefined;
     const given = new Map<string, Expr>();
+    const media: Expr[] = [];
+    const set = (key: string, value: Expr) => {
+      // A shorthand written after a side resets it, as within one CSS rule.
+      for (const reset of SHORTHAND_RESETS[key] ?? []) given.delete(reset);
+      given.delete(key);
+      given.set(key, value);
+    };
     for (const prop of node.properties) {
       if (ts.isSpreadAssignment(prop)) {
         if (base || given.size) this.error(prop, "A style spread must come first.");
         base = this.expr(prop.expression, ctx);
         continue;
       }
-      if (!ts.isPropertyAssignment(prop) || !ts.isIdentifier(prop.name)) {
+      if (ts.isShorthandPropertyAssignment(prop)) {
+        this.error(prop, `Write ${prop.name.text}: ${prop.name.text} in a style.`);
+        continue;
+      }
+      if (!ts.isPropertyAssignment(prop) || !(ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name))) {
         this.error(prop, "Unsupported style entry.");
         continue;
       }
-      const key = prop.name.text;
-      const flag = STYLE_FLAGS[key];
-      if (flag) {
-        if (prop.initializer.kind === ts.SyntaxKind.TrueKeyword) for (const [target, value] of flag) given.set(target, typeof value === "number" ? { e: "double", v: value.toFixed(1) } : { e: "enum", type: STYLE_ENUMS[target]!, member: camel(value) });
-        else if (prop.initializer.kind !== ts.SyntaxKind.FalseKeyword) this.error(prop.initializer, `${key} takes true or false.`);
-        continue;
-      }
-      if (key === "width" && !this.isNumber(this.typeOf(prop.initializer))) {
-        given.set("widthPct", this.percent(prop.initializer, ctx));
-        continue;
-      }
-      const alias = STYLE_ALIASES[key];
-      if (alias) {
-        for (const target of alias) {
-          const aliasEnum = STYLE_ENUMS[target];
-          given.set(target, aliasEnum ? this.styleEnum(prop.initializer, aliasEnum, ctx) : this.expr(prop.initializer, ctx, this.isNumber(this.typeOf(prop.initializer)) ? T.double : T.string));
-        }
-        continue;
-      }
-      const enumType = STYLE_ENUMS[key];
-      if (STATE_STYLES.has(key)) given.set(key, this.expr(prop.initializer, ctx, T.rt("Style")));
-      else given.set(key, enumType ? this.styleEnum(prop.initializer, enumType, ctx) : this.expr(prop.initializer, ctx, this.isNumber(this.typeOf(prop.initializer)) ? T.double : T.string));
+      this.styleEntry(prop.name.text, prop.initializer, ctx, set, media);
     }
+    if (media.length) given.set("media", { e: "arr", of: { k: "class", name: "MediaRule" }, items: media });
     return this.styleOf(given, base);
+  }
+
+  /** One entry of a style literal. */
+  private styleEntry(key: string, init: ts.Expression, ctx: Ctx, set: (key: string, value: Expr) => void, media: Expr[]) {
+    const state = STATE_ALIASES[key] ?? (key.startsWith("&") ? STYLE_SELECTORS[key.slice(1)] : key === "placeholder" ? "placeholder" : undefined);
+    if (key.startsWith("&") && !state) {
+      this.error(init, `The selector "${key}" has no native equivalent; the state keys do (${Object.keys(STYLE_SELECTORS).map((k) => `&${k}`).join(", ")}).`);
+      return;
+    }
+    if (state === "placeholder") {
+      // `::placeholder` paints the placeholder's text: its colour is what a field has for it.
+      const style = this.constValue(init);
+      const color = style !== DYNAMIC && style && typeof style === "object" ? (style as Record<string, unknown>).color : undefined;
+      if (typeof color !== "string") this.error(init, "Write placeholder as { color: \"…\" } with a literal colour.");
+      else set("placeholderColor", { e: "str", v: String(this.theme.colors?.[color] ?? color) });
+      return;
+    }
+    if (state) {
+      set(state, this.expr(init, ctx, T.rt("Style")));
+      return;
+    }
+    if (UNSUPPORTED_PSEUDOS.has(key)) {
+      this.error(init, `The pseudo key ${key} has no native equivalent (generated content, visited links and form validation don't exist natively).`);
+      return;
+    }
+    const screen = this.theme.screens?.[key];
+    if (key.startsWith("@") || screen !== undefined) {
+      try {
+        const range = parseMedia(screen ?? key);
+        const bound = (v: number | undefined): Expr => (v === undefined ? { e: "nil" } : { e: "double", v: v.toFixed(1) });
+        media.push({ e: "rt", name: "MediaRule", args: [bound(range.min), bound(range.max), this.expr(init, ctx, T.rt("Style"))] });
+      } catch (error) {
+        if (!(error instanceof StyleError)) throw error;
+        this.error(init, error.message);
+      }
+      return;
+    }
+    if (key === "raw") {
+      if (!ts.isObjectLiteralExpression(init)) return void this.error(init, "Write raw as an object literal.");
+      for (const prop of init.properties) {
+        if (!ts.isPropertyAssignment(prop) || !(ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name))) this.error(prop, "Unsupported raw entry.");
+        else this.styleEntry(camel(prop.name.text), prop.initializer, ctx, set, media);
+      }
+      return;
+    }
+    if (key === "animation") {
+      const animation = this.animation(init, ctx);
+      if (animation) set("animation", animation);
+      return;
+    }
+    if (key === "width" && !this.isNumber(this.typeOf(init)) && this.constValue(init) === DYNAMIC && !ts.isConditionalExpression(init)) {
+      const pct = ts.isTemplateExpression(init) && init.templateSpans.length === 1 && init.templateSpans[0]!.literal.text === "%";
+      if (pct || ts.isParenthesizedExpression(init)) return void set("widthPct", this.percent(init, ctx));
+    }
+    // A value known now: read as CSS (tokens, units, shorthands), each native key a literal.
+    const value = this.constValue(init);
+    if (value !== DYNAMIC) {
+      for (const [k, v] of this.lowered(key, value, init)) set(k, this.styleLiteral(k, v));
+      return;
+    }
+    // A choice between two such values: each native key a choice.
+    if (ts.isConditionalExpression(init)) {
+      const a = this.constValue(init.whenTrue);
+      const b = this.constValue(init.whenFalse);
+      if (a !== DYNAMIC && b !== DYNAMIC) {
+        const left = new Map(this.lowered(key, a, init.whenTrue));
+        const right = new Map(this.lowered(key, b, init.whenFalse));
+        const keys = new Set([...left.keys(), ...right.keys()]);
+        for (const k of keys) {
+          if (!left.has(k) || !right.has(k)) {
+            this.error(init, `Both sides of this choice must set ${k}: give each the same kind of value.`);
+            continue;
+          }
+          set(k, { e: "cond", c: this.cond(init.condition, ctx), a: this.styleLiteral(k, left.get(k)), b: this.styleLiteral(k, right.get(k)) });
+        }
+        return;
+      }
+    }
+    // A value known at run time.
+    for (const target of STYLE_ALIASES[key] ?? [key]) this.dynamicStyleEntry(target, init, ctx, set);
+  }
+
+  /** lowerEntry() with the theme, its errors reported at `at`. */
+  private lowered(key: string, value: unknown, at: ts.Node): [string, unknown][] {
+    try {
+      return lowerEntry(key, value, this.theme);
+    } catch (error) {
+      if (!(error instanceof StyleError)) throw error;
+      this.error(at, error.message);
+      return [];
+    }
+  }
+
+  /** A native key's value known at compile time. */
+  private styleLiteral(key: string, value: unknown): Expr {
+    if (ENUM_VALUES[key] || STYLE_ENUMS[key]) return { e: "enum", type: STYLE_ENUMS[key]!, member: camel(String(value)) };
+    if (typeof value === "number") return { e: "double", v: Number.isInteger(value) ? value.toFixed(1) : String(value) };
+    return { e: "str", v: String(value) };
+  }
+
+  /** A style key whose value is computed at run time: numbers, colours, fonts, `${n}px` and `1px solid ${color}`. */
+  private dynamicStyleEntry(key: string, init: ts.Expression, ctx: Ctx, set: (key: string, value: Expr) => void) {
+    const type = this.typeOf(init);
+    const enumType = STYLE_ENUMS[key];
+    if (enumType) return void set(key, this.styleEnum(init, enumType, ctx));
+    if (this.isNumber(type)) {
+      if (key === "flexGrow") return void set("flex", this.expr(init, ctx, T.double));
+      if ((NATIVE_STYLE_KEYS as readonly string[]).includes(key) && !COLOR_KEYS.has(key)) return void set(key, this.expr(init, ctx, T.double));
+    }
+    if (COLOR_KEYS.has(key) || key === "fontFamily") return void set(key, this.expr(init, ctx, T.string));
+    // `${n}px`: the number.
+    if (LENGTH_KEYS.has(key) && ts.isTemplateExpression(init) && init.head.text === "" && init.templateSpans.length === 1 && init.templateSpans[0]!.literal.text === "px") {
+      return void set(key, this.expr(init.templateSpans[0]!.expression, ctx, T.double));
+    }
+    // `1px solid ${color}`: the width as written, the colour at run time.
+    const border = /^border(Top|Right|Bottom|Left)?$/.exec(key);
+    if (border && ts.isTemplateExpression(init) && init.templateSpans.length === 1 && init.templateSpans[0]!.literal.text.trim() === "") {
+      const parsed = parseBorder(init.head.text);
+      const side = border[1] ?? "";
+      if (parsed.width !== undefined) set(side ? `border${side}Width` : "borderWidth", { e: "double", v: parsed.width.toFixed(1) });
+      return void set(side ? `border${side}Color` : "borderColor", this.expr(init.templateSpans[0]!.expression, ctx, T.string));
+    }
+    this.error(init, `Write ${key} as a literal, a ternary of literals${LENGTH_KEYS.has(key) ? ", a number or `${n}px`" : COLOR_KEYS.has(key) ? " or a string" : ""}: it is read at compile time.`);
+  }
+
+  /** `` `${fade} 300ms ease-out infinite` ``: the keyframes const's frames and the timing written around it. */
+  private animation(init: ts.Expression, ctx: Ctx): Expr | undefined {
+    const frames = new Map<string, ts.ObjectLiteralExpression>();
+    let text: string;
+    const nameOf = (expr: ts.Expression): string | undefined => {
+      if (!ts.isIdentifier(expr)) return undefined;
+      const symbol = this.checker.getSymbolAtLocation(expr);
+      const literal = symbol && this.keyframes.get(this.resolveAlias(symbol)!);
+      if (!literal) return undefined;
+      frames.set(expr.text, literal);
+      return expr.text;
+    };
+    if (ts.isTemplateExpression(init)) {
+      text = init.head.text;
+      for (const span of init.templateSpans) {
+        const name = nameOf(span.expression);
+        const v = name ?? this.constValue(span.expression);
+        if (v === DYNAMIC) return void this.error(span.expression, "An animation names a keyframes() const and writes its timing as literals.");
+        text += String(v) + span.literal.text;
+      }
+    } else {
+      const name = nameOf(init);
+      if (!name) return void this.error(init, "Write animation as a template: `${name} 1s ease infinite`, with name a keyframes() const.");
+      text = name;
+    }
+    try {
+      // The stops' times only: their styles are lowered below, where each becomes a Style.
+      const anim = parseAnimation(text, (name) => (frames.has(name) ? keyframeStops(Object.fromEntries(frames.get(name)!.properties.map((p) => [p.name!.getText().replace(/^["']|["']$/g, ""), {}]))) : undefined));
+      const literal = frames.get(anim.name)!;
+      const stops: Expr[] = [];
+      for (const prop of literal.properties) {
+        if (!ts.isPropertyAssignment(prop) || !(ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name) || ts.isNumericLiteral(prop.name))) {
+          stops.push(this.error(prop, "Unsupported keyframe."));
+          continue;
+        }
+        const style = this.expr(prop.initializer, ctx, T.rt("Style"));
+        for (const selector of prop.name.text.split(",")) {
+          const stop = selector.trim();
+          const at = stop === "from" ? 0 : stop === "to" ? 1 : Number(stop.replace("%", "")) / 100;
+          if (Number.isNaN(at)) stops.push(this.error(prop, `"${stop}" is not a keyframe stop (from, to or a percentage).`));
+          else stops.push({ e: "rt", name: "KeyframeStop", args: [{ e: "double", v: at.toFixed(4) }, style] });
+        }
+      }
+      return {
+        e: "rt",
+        name: "StyleAnimation",
+        args: [
+          { e: "arr", of: { k: "class", name: "KeyframeStop" }, items: stops },
+          { e: "double", v: anim.duration.toFixed(1) },
+          { e: "double", v: anim.delay.toFixed(1) },
+          { e: "enum", type: "Easing", member: camel(anim.easing) },
+          { e: "int", v: String(anim.iterations) },
+          { e: "bool", v: anim.alternate },
+        ],
+      };
+    } catch (error) {
+      if (!(error instanceof StyleError)) throw error;
+      this.error(init, error.message);
+      return undefined;
+    }
   }
 
   /** A Style value from its keys, in the order the Style declares them (Swift labels follow it). */
@@ -1509,15 +1853,11 @@ class Frontend {
     return this.error(node, `Write ${type} values as literals (or a ternary of literals).`);
   }
 
-  /** The Style interface's keys in declaration order (Swift labels must follow it). */
-  private styleKeys(): string[] {
-    const api = this.program.getSourceFile(API_FILE);
-    const decl = api?.statements.find((s): s is ts.InterfaceDeclaration => ts.isInterfaceDeclaration(s) && s.name.text === "Style");
-    const keys = decl ? decl.members.flatMap((m) => (m.name && ts.isIdentifier(m.name) ? [m.name.text] : [])) : [];
-    // `widthPct` is what `width: "50%"` becomes natively: it follows `width`.
-    keys.splice(keys.indexOf("width") + 1, 0, "widthPct");
-    return keys;
+  /** The native Style keys, in the order the runtimes' Style initializers declare them (Swift labels follow it). */
+  private styleKeys(): readonly string[] {
+    return NATIVE_STYLE_KEYS;
   }
+
 
   // -------------------------------------------------------------------------
   // Functions and calls
@@ -1780,6 +2120,22 @@ class Frontend {
         return { e: "rt", name, args: args.map((a) => this.optionalChild(a, ctx, T.rt("StyleClass"))) };
       case "variants":
         return this.variants(node, ctx);
+      case "keyframes": {
+        // The frames go where an `animation` names this const; the value is only its name.
+        const decl = node.parent;
+        return { e: "str", v: ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) ? decl.name.text : "keyframes" };
+      }
+      case "globalStyle": {
+        if (!ts.isExpressionStatement(node.parent) || !ts.isSourceFile(node.parent.parent)) return this.error(node, "Call globalStyle() at the top level.");
+        const selector = this.constValue(args[0]!);
+        if (typeof selector !== "string") return this.error(args[0]!, "globalStyle() takes its selector as a literal.");
+        const tags = selector.split(",").map((part) => part.trim());
+        const bad = tags.find((tag) => !/^(\*|:root|[a-z][a-z0-9]*)$/.test(tag));
+        if (bad) return this.error(args[0]!, `globalStyle("${bad}"): natively a selector is "body", "html", ":root", "*" or a tag name.`);
+        return { e: "rt", name: "globalStyle", args: [{ e: "str", v: tags.join(",") }, this.expr(args[1]!, ctx, T.rt("Style"))] };
+      }
+      case "createCss":
+        return this.error(node, "Destructure createCss() where it is called: const { css, cx, variants, keyframes, globalStyle, theme } = createCss({…}).");
       case "createRouter":
         return this.router(node, ctx);
       case "fetch": {
@@ -1837,8 +2193,15 @@ class Frontend {
     const str = (v: string): Expr => ({ e: "str", v });
     const pick = (c: Expr, a: Expr, b: Expr): Expr => ({ e: "cond", c, a, b });
     const [good, fair, poor] = [str("#22c55e"), str("#eab308"), str("#ef4444")];
+    // A literal value is folded here: Swift reads `10.0 < 33.0` as ambiguous with other `<` overloads.
+    const fixed = !value ? min : ts.isNumericLiteral(value) ? Number(value.text) : undefined;
+    const fold = (v: number): Expr =>
+      optimum < low ? (v < low ? good : v > high ? poor : fair)
+      : optimum > high ? (v > high ? good : v < low ? poor : fair)
+      : v >= low && v <= high ? good : fair;
     const color: Expr =
       name === "progress" ? str("#2563eb")
+      : fixed !== undefined ? fold(fixed)
       : optimum < low ? pick(compare("<", low), good, pick(compare(">", high), poor, fair))
       : optimum > high ? pick(compare(">", high), good, pick(compare("<", low), poor, fair))
       : pick({ e: "bin", op: "&&", l: compare(">=", low), r: compare("<=", high) }, good, fair);
@@ -2222,6 +2585,8 @@ class Frontend {
       if (presentation) named.push(["presentation", this.expr(presentation, ctx, T.string)]);
       const header = this.attrValue([value], "header");
       if (header) named.push(["header", this.expr(header, ctx, T.bool)]);
+      const endReached = this.attrValue([value], "onEndReached");
+      if (endReached) named.push(["onEndReached", this.expr(endReached, ctx, { k: "fn", params: [T.map(T.string)], ret: T.void })]);
       return { e: "rt", name: "Route", args: [pattern, v ? this.expr(v, ctx, view) : this.error(value, "A route needs a view.")], named };
     });
     const named: [string, Expr][] = [["routes", { e: "arr", of: { k: "class", name: "NRoute" }, items: routes }]];

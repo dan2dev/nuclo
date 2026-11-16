@@ -34,7 +34,7 @@ class SwiftPrinter extends Printer {
   protected override readonly noTrailingComma = true;
 
   print(program: Program): string {
-    const out = [this.header(program, "//"), "import UIKit", ""];
+    const out = [this.header(program, "//"), "#if canImport(UIKit)", "import UIKit", "#else", "import AppKit", "#endif", ""];
     for (const cls of program.classes) out.push(...this.classDecl(cls), "");
     for (const g of program.globals) out.push(...this.stmt(g, "").map((l) => `@MainActor ${l}`));
     if (program.globals.length) out.push("");
@@ -50,7 +50,8 @@ class SwiftPrinter extends Printer {
     const lines = [`@MainActor final class ${cls.name} {`];
     for (const f of cls.fields) lines.push(`${i1}${f.readonly ? "let" : "var"} ${this.name(f.name)}: ${this.ty(f.ty)}`);
     lines.push("");
-    const params = cls.fields.map((f) => `${this.name(f.name)}: ${this.ty(f.ty)}${f.optional ? " = nil" : ""}`).join(", ");
+    // a stored closure parameter must be @escaping (an optional one already is)
+    const params = cls.fields.map((f) => `${this.name(f.name)}: ${f.ty.k === "fn" && !f.optional ? "@escaping " : ""}${this.ty(f.ty)}${f.optional ? " = nil" : ""}`).join(", ");
     lines.push(`${i1}init(${params}) {`);
     for (const f of cls.fields) lines.push(`${i2}self.${this.name(f.name)} = ${this.name(f.name)}`);
     lines.push(`${i1}}`);
@@ -90,7 +91,8 @@ class SwiftPrinter extends Printer {
 
   /** A function: top level (`@MainActor`), or local (nested, isolated like its parent). */
   private fn(fn: FnDecl, ind = "", local = false): string[] {
-    const params = fn.params.map((p) => `_ ${this.name(p.name)}: ${this.ty(p.ty)}${p.default ? ` = ${this.expr(p.default, ind)}` : ""}`).join(", ");
+    // A closure parameter may be kept (a handler, a binding): it escapes.
+    const params = fn.params.map((p) => `_ ${this.name(p.name)}: ${p.ty.k === "fn" ? "@escaping " : ""}${this.ty(p.ty)}${p.default ? ` = ${this.expr(p.default, ind)}` : ""}`).join(", ");
     const effects = fn.async ? " async throws" : "";
     const ret = fn.ret.k === "void" ? "" : ` -> ${this.ty(fn.ret)}`;
     const attrs = local ? (fn.ret.k === "void" ? "" : "@discardableResult ") : fn.ret.k === "void" ? "@MainActor " : "@MainActor @discardableResult ";
@@ -141,7 +143,8 @@ class SwiftPrinter extends Printer {
       case "nil":
         return "nil";
       case "tpl":
-        return `"${x.parts.map((p) => (typeof p === "string" ? this.escape(p) : `\\(${this.interpolated(p, ind)})`)).join("")}"`;
+        // A single-line string literal: an interpolated expression the printer wrapped is put back on one line.
+        return `"${x.parts.map((p) => (typeof p === "string" ? this.escape(p) : `\\(${this.interpolated(p, ind).replace(/,\n\s*/g, ", ").replace(/\n\s*/g, "")})`)).join("")}"`;
       case "id":
         return this.name(x.name);
       case "call":
@@ -407,8 +410,8 @@ class SwiftPrinter extends Printer {
         return [
           `${ind}do {`,
           ...this.block(s.body, i2),
-          `${ind}} catch {`,
-          ...(s.catchName ? [`${i2}let ${this.name(s.catchName)} = error`] : []),
+          // Bound by name: Swift's implicit `error` would hide an app variable called `error`.
+          `${ind}} catch ${s.catchName ? `let ${this.name(s.catchName)}` : "_"} {`,
           ...this.block(s.catchBody, i2),
           `${ind}}`,
         ];

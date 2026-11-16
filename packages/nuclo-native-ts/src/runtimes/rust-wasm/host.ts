@@ -11,6 +11,7 @@ interface Exports {
   nuclo_start(): void;
   nuclo_measure_root(root: number, width: number): number;
   nuclo_layout_root(root: number, width: number, height: number): void;
+  nuclo_screen_scrolled(root: number, top: number, visible: number): void;
   nuclo_event(view: number, event: number): void;
   nuclo_control(view: number, ptr: number, len: number, checked: number): void;
   nuclo_pointer(view: number, phase: number, x: number, y: number, pageX: number, pageY: number, pointerId: number): void;
@@ -144,6 +145,7 @@ user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparen
 .n.k3,.n.k5{pointer-events:auto;user-select:text;-webkit-user-select:text;appearance:none;border-radius:0;resize:none}
 .n.k4{pointer-events:auto;accent-color:#4f46e5;cursor:pointer}
 .n.k6{object-fit:cover}
+.n::placeholder{color:var(--ph,#757575)}
 .n.k7{pointer-events:auto}
 .n:disabled{opacity:.4;cursor:default}
 .n.off{pointer-events:none!important}
@@ -532,6 +534,7 @@ function layoutPass() {
     const height = root.overlay || v.host !== v.el ? available : Math.max(available, Math.ceil(wasm.nuclo_measure_root(id, width)));
     placeView(v, 0, 0, width, height);
     wasm.nuclo_layout_root(id, width, height);
+    if (!root.overlay && v.host === v.el) wasm.nuclo_screen_scrolled(id, root.box.scrollTop, available);
   }
   flushStyles();
   // What was asked to wait for the frame: timers that came due while the layout was stale.
@@ -590,6 +593,8 @@ const make = <K extends keyof HTMLElementTagNameMap>(tag: K, className = "") => 
 function screenOf(root: number, modal: boolean): HTMLElement {
   const el = make("div", modal ? "nuclo-screen nuclo-sheet" : "nuclo-screen");
   el.append(view(root).el);
+  // For the route's onEndReached.
+  el.addEventListener("scroll", () => run(() => wasm.nuclo_screen_scrolled(root, el.scrollTop, el.clientHeight)), { passive: true });
   roots.set(root, { box: el, overlay: false });
   return el;
 }
@@ -863,6 +868,7 @@ const imports = {
     requestLayout();
   },
   layout_request: requestLayout,
+  viewport_width: () => innerWidth,
   nav_create(ptr: number, len: number, active: number) {
     const list = read(ptr, len);
     navCreate(

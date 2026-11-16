@@ -100,7 +100,10 @@ class KotlinPrinter extends Printer {
   }
 
   private fn(fn: FnDecl, ind = ""): string[] {
-    const params = fn.params.map((p) => `${this.name(p.name)}: ${this.ty(p.ty)}${p.default ? ` = ${this.expr(p.default, ind)}` : ""}`).join(", ");
+    // Kotlin reserves `_`, `__`… as parameter names of a declared function.
+    const params = fn.params
+      .map((p, i) => `${/^_+$/.test(p.name) ? `unused${i}` : this.name(p.name)}: ${this.ty(p.ty)}${p.default ? ` = ${this.expr(p.default, ind)}` : ""}`)
+      .join(", ");
     const ret = fn.ret.k === "void" ? "" : `: ${this.ty(fn.ret)}`;
     return [`${ind}${fn.async ? "suspend " : ""}fun ${this.name(fn.name)}(${params})${ret} {`, ...this.block(fn.body, ind + INDENT), `${ind}}`];
   }
@@ -149,7 +152,8 @@ class KotlinPrinter extends Printer {
       case "id":
         return x.fnRef ? `::${this.name(x.name)}` : this.name(x.name);
       case "call":
-        return this.call(this.callee(x.callee, ind), x.args, [], ind, (l) => `${l} = `);
+        // No trailing lambda: it would bind to the last parameter, and an app function's may be a defaulted one after the lambda.
+        return this.call(this.callee(x.callee, ind), x.args, [], ind, (l) => `${l} = `, false);
       case "rt":
         return this.call(this.name(RUNTIME_NAMES[x.name] ?? x.name), x.args, x.named ?? [], ind, (l) => `${l} = `);
       case "method":

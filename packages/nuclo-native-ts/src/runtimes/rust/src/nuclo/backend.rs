@@ -17,7 +17,8 @@
 //!   * input: `listen` asks a view to report a kind of input from then on.
 //!   * windows: `show_screen` (the app's main view), `show_overlay` (a layer over everything
 //!     that lets the pointer through where it has no view) and the `nav_*` calls, which mirror
-//!     the router's stacks into the platform's own navigation.
+//!     the router's stacks into the platform's own navigation. `window_width` is what `@media`
+//!     rules are matched against.
 //!   * the main loop: `set_timer` / `clear_timer`, `request_frame` / `cancel_frame`, and
 //!     `waker`, a function any thread may call to have the UI thread run `host::wake()`.
 //!
@@ -26,6 +27,9 @@
 //!     was given (`show_screen`, `show_overlay`, `nav_push`…), after `request_layout` or a resize;
 //!   * `host::event`, `host::pointer`, `host::pan`, `host::pinch`, `host::key`, `host::hover`
 //!     and `host::scrolled` for the input a view was asked to report;
+//!   * `host::screen_scrolled` for a screen it scrolls itself (`show_screen`, `nav_push`… with a
+//!     root that is not scrollable): where it is scrolled to and how much of it shows, whenever
+//!     either changes (the first layout included), so a route's `onEndReached` can run;
 //!   * `host::nav_popped` / `host::nav_tab_selected` when a screen leaves a stack or the user
 //!     picks a tab, so the router's stacks follow;
 //!   * `host::wake` after `waker` was called.
@@ -34,7 +38,7 @@ use std::any::Any;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use super::style::{Color, FontFamily, TextAlign, TextDecoration};
+use super::style::{Color, FontFamily, FontWeight, ObjectFit, TextAlign, TextDecoration};
 
 pub type ViewId = u32;
 
@@ -82,10 +86,10 @@ pub struct Shadow {
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct TextPaint {
     pub font_size: f32,
-    pub bold: bool,
+    pub weight: FontWeight,
     pub italic: bool,
     pub font_family: FontFamily,
-    /// The height of a line in px, when the style sets one.
+    /// The height of a line in px (the core always gives one; the backend's chrome may not).
     pub line_height: Option<f32>,
     pub letter_spacing: f32,
     pub decoration: TextDecoration,
@@ -93,14 +97,18 @@ pub struct TextPaint {
     pub align: TextAlign,
     /// Text is cut with an ellipsis after this many lines.
     pub lines: Option<u32>,
+    /// A field's placeholder; the platform's own when `None`.
+    pub placeholder: Option<Color>,
 }
 
 /// How a view looks: its computed style, resolved to what a toolkit draws.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Paint {
     pub background: Option<Color>,
-    pub border_width: f32,
-    pub border_color: Color,
+    /// The border's width and colour per side: top, right, bottom, left. It is drawn inside the box.
+    pub borders: [f32; 4],
+    pub border_colors: [Color; 4],
+    /// Clamped to half the box's smaller side when drawn (a pill), as CSS does.
     pub radius: f32,
     /// Children are clipped to the rounded box.
     pub clip: bool,
@@ -111,6 +119,11 @@ pub struct Paint {
     pub visible: bool,
     /// The view takes the pointer over what is under it even without a listener (a modal's scrim).
     pub blocks_pointer: bool,
+    /// `false` (`pointerEvents: "none"`): neither the view nor anything in it takes the pointer.
+    /// The core sets it on every view under such a box too.
+    pub pointer: bool,
+    /// How an image fills its box.
+    pub fit: ObjectFit,
     /// Applied after layout, around the box's centre: translate, then rotate (degrees, clockwise), then scale.
     pub translate: (f32, f32),
     pub rotate: f32,
@@ -276,7 +289,10 @@ pub trait Backend {
     /// Shows `root` over everything, the size of the window.
     fn show_overlay(&self, root: ViewId);
     /// The roots' frames are stale: run a layout pass soon (the backend calls `host::layout_root`).
+    /// After the window's width changed, the core asks for one itself.
     fn request_layout(&self);
+    /// The window's width in px, now (before it is shown: the width it will open with).
+    fn window_width(&self) -> f32;
 
     /// Builds the navigation: one stack per tab (a single stack without a tab bar when `tabs` is
     /// empty), `active` selected.
@@ -402,6 +418,11 @@ pub mod host {
     /// The pointer came over the view, or left it.
     pub fn hover(view: ViewId, over: bool) {
         node::hover(view, over)
+    }
+
+    /// The screen whose root is `root` is scrolled `top` px down, and `visible` px of it show.
+    pub fn screen_scrolled(root: ViewId, top: f32, visible: f32) {
+        node::screen_scrolled(root, top, visible)
     }
 
     /// The screen `root` left `tab`'s stack. Report every pop, the user's (back button, swipe,

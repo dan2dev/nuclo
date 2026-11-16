@@ -22,7 +22,7 @@ use std::task::{Poll, Waker};
 use std::time::{Duration, Instant};
 
 use gpui::{
-    fill, point, prelude::*, px, quad, relative, size, AnyWindowHandle, App, AsyncApp, BorderStyle, Bounds, BoxShadow, ClipboardItem, ContentMask, Context, Corners, CursorStyle,
+    fill, point, prelude::*, px, quad, Edges, relative, size, AnyWindowHandle, App, AsyncApp, BorderStyle, Bounds, BoxShadow, ClipboardItem, ContentMask, Context, Corners, CursorStyle,
     DispatchPhase, FocusHandle, Font, FontStyle, FontWeight, GlobalElementId, Hitbox, HitboxBehavior, Hsla, Image, ImageFormat, InputHandler, InspectorElementId, KeyDownEvent, Keystroke,
     LayoutId, MouseButton, MouseDownEvent, MouseExitEvent, MouseMoveEvent, MouseUpEvent, NavigationDirection, PathBuilder, Pixels, Point, RenderImage, Rgba, ScrollWheelEvent, SharedString,
     Size, StrikethroughStyle, Style, SvgRenderer, Task, TextRun, TextSystem, TitlebarOptions, TouchPhase, TruncateFrom, UTF16Selection, UnderlineStyle, Window, WindowBounds, WindowOptions, WindowTextSystem,
@@ -31,7 +31,7 @@ use gpui::{
 
 use crate::gpui_field::Field;
 use crate::nuclo::backend::{host, Backend, Event, Input, Kind, NativeView, Paint, PanEvent, PinchEvent, PointerEvent, PointerPhase, Rect, Screen, ScrollEvent, TabInfo, TextPaint, ViewId};
-use crate::nuclo::prelude::{Color, FontFamily, TextAlign, TextDecoration};
+use crate::nuclo::prelude::{Color, FontFamily, ObjectFit, TextAlign, TextDecoration};
 
 /// The drag threshold: a pointer that moved less is still a press. As in the other runtimes.
 const SLOP: f32 = 8.0;
@@ -62,6 +62,33 @@ pub trait Draw {
 #[allow(dead_code)]
 pub fn native(draw: Rc<dyn Draw>) -> NativeView {
     Rc::new(draw)
+}
+
+/// For the app's `native/linux-gpui/`: text as the runtime draws its own, wrapped to `bounds` and, when `centred`,
+/// centred in it both ways.
+#[allow(dead_code, clippy::too_many_arguments)]
+pub fn paint_label(text: &str, font_size: f32, bold: bool, color: Color, centred: bool, bounds: Bounds<Pixels>, opacity: f32, window: &mut Window, cx: &mut App) {
+    let Some(gpui) = gpui_backend() else { return };
+    let mut style = label(font_size, bold, color, if centred { TextAlign::Center } else { TextAlign::Left });
+    style.lines = None;
+    gpui.paint_text(text, &style, bounds, 1.0, opacity, centred, window, cx);
+}
+
+/// For the app's `native/linux-gpui/`: puts `text` on the clipboard, once the event being handled is done.
+#[allow(dead_code)]
+pub fn copy_text(text: String) {
+    if let Some(gpui) = gpui_backend() {
+        gpui.cx.spawn(async move |cx| cx.update(|cx| cx.write_to_clipboard(ClipboardItem::new_string(text)))).detach();
+    }
+}
+
+/// For the app's `native/linux-gpui/`: draws the window again (a native view whose picture changed by itself).
+#[allow(dead_code)]
+pub fn repaint() {
+    if let Some(gpui) = gpui_backend() {
+        let window = gpui.window;
+        gpui.cx.spawn(async move |cx| window.update(cx, |_, window, _| window.refresh())).detach();
+    }
 }
 
 pub fn hsla(color: Color, opacity: f32) -> Hsla {
@@ -225,6 +252,14 @@ impl Fonts {
     /// The fonts GTK would use on this desktop, so both Linux targets measure text alike: the
     /// interface font of the desktop's settings, and fontconfig's serif and monospace.
     fn detect(text: &TextSystem) -> Fonts {
+        // macOS: the system font, as UIKit, AppKit and the web's `system-ui` draw it. fontconfig, when installed, names others.
+        #[cfg(target_os = "macos")]
+        {
+            let _ = text;
+            let family = |name: &str| SharedString::from(name.to_string());
+            return Fonts { sans: ".SystemUIFont".into(), sans_bold: ".SystemUIFont".into(), serif: family("Times New Roman"), mono: family("Menlo") };
+        }
+        #[allow(unreachable_code)]
         let names = text.all_font_names();
         let known = |name: Option<String>| name.filter(|name| names.contains(name)).map(SharedString::from);
         let generic = |family: &str| known(output("fc-match", &["-f", "%{family[0]}", family])).unwrap_or_else(|| ".SystemUIFont".into());
@@ -242,12 +277,12 @@ impl Fonts {
 
     fn font(&self, text: &TextPaint) -> Font {
         let family = match text.font_family {
-            FontFamily::SansSerif if text.bold => &self.sans_bold,
+            FontFamily::SansSerif if text.weight.bold() => &self.sans_bold,
             FontFamily::SansSerif => &self.sans,
             FontFamily::Serif => &self.serif,
             FontFamily::Monospace => &self.mono,
         };
-        Font { weight: if text.bold { FontWeight::BOLD } else { FontWeight::NORMAL }, style: if text.italic { FontStyle::Italic } else { FontStyle::Normal }, ..gpui::font(family.clone()) }
+        Font { weight: FontWeight(text.weight.css() as f32), style: if text.italic { FontStyle::Italic } else { FontStyle::Normal }, ..gpui::font(family.clone()) }
     }
 }
 
@@ -434,6 +469,23 @@ impl Gpui {
         Some(view.geometry(view.paint.as_ref()?, origin, scale))
     }
 
+    /// `NUCLO_DUMP=file`: writes `text|x|y|width|height` (window space) for every text and button.
+    fn dump_frames(&self, path: &str) {
+        let views = self.views.borrow();
+        let mut lines = Vec::new();
+        for (id, view) in views.iter() {
+            if view.text.is_empty() || !matches!(view.kind, Kind::Text | Kind::Button) {
+                continue;
+            }
+            if let Some((b, _)) = self.placed(&views, *id) {
+                let text: String = view.text.chars().take(24).collect();
+                lines.push((f32::from(b.origin.y), format!("{}|{:.1}|{:.1}|{:.1}|{:.1}", text, f32::from(b.origin.x), f32::from(b.origin.y), f32::from(b.size.width), f32::from(b.size.height))));
+            }
+        }
+        lines.sort_by(|a, b| a.0.total_cmp(&b.0));
+        let _ = std::fs::write(path, lines.into_iter().map(|l| l.1).collect::<Vec<_>>().join("\n"));
+    }
+
     /// The pointer at `at` (in the window), as `view` sees it.
     fn pointer_at(&self, view: ViewId, at: Point<Pixels>) -> Option<PointerEvent> {
         let (bounds, scale) = self.placed(&self.views.borrow(), view)?;
@@ -450,7 +502,7 @@ impl Gpui {
     /// whatever is drawn there; otherwise only a view that takes the pointer.
     fn pick(&self, views: &HashMap<ViewId, View>, id: ViewId, origin: Point<Pixels>, scale: f32, at: Point<Pixels>, any: bool) -> Option<ViewId> {
         let view = views.get(&id)?;
-        let paint = view.paint.as_ref().filter(|paint| paint.visible)?;
+        let paint = view.paint.as_ref().filter(|paint| paint.visible && paint.pointer)?;
         let (bounds, s) = view.geometry(paint, origin, scale);
         let inside = bounds.contains(&at);
         if (paint.clip || view.scroll.is_some()) && !inside {
@@ -500,7 +552,7 @@ impl Gpui {
     /// counts the regular family's, so a line is as tall whichever family draws it.
     fn line_height(&self, text: &TextPaint) -> f32 {
         text.line_height.unwrap_or_else(|| {
-            let font = self.text.resolve_font(&self.fonts.font(&TextPaint { bold: false, italic: false, ..*text }));
+            let font = self.text.resolve_font(&self.fonts.font(&TextPaint { weight: crate::nuclo::prelude::FontWeight::Normal, italic: false, ..*text }));
             let size = px(text.font_size);
             f32::from(self.text.ascent(font, size)) + f32::from(self.text.descent(font, size)).abs()
         })
@@ -573,9 +625,11 @@ impl Gpui {
     fn field_layout(&self, field: &Field, style: &TextPaint, inner: Bounds<Pixels>, scale: f32, opacity: f32) -> FieldLayout {
         let empty = field.text.is_empty();
         let text = if empty { field.placeholder.clone() } else { field.shown() };
-        let style = TextPaint { lines: None, ..*style };
+        let style = TextPaint { lines: None, color: style.placeholder.filter(|_| empty).unwrap_or(style.color), ..*style };
         let wrap = field.multiline.then(|| f32::from(inner.size.width));
-        let shaped = self.shape(&text, &style, scale, if empty { opacity * 0.4 } else { opacity }, wrap);
+        // The platform's placeholder is the text's colour, faded.
+        let faded = empty && style.placeholder.is_none();
+        let shaped = self.shape(&text, &style, scale, if faded { opacity * 0.4 } else { opacity }, wrap);
         let mut starts = Vec::with_capacity(shaped.lines.len());
         let mut start = 0;
         for line in &shaped.lines {
@@ -616,7 +670,9 @@ fn inset(bounds: Bounds<Pixels>, paint: &Paint, scale: f32) -> Bounds<Pixels> {
 }
 
 fn label(font_size: f32, bold: bool, color: Color, align: TextAlign) -> TextPaint {
-    TextPaint { font_size, bold, italic: false, font_family: FontFamily::SansSerif, line_height: None, letter_spacing: 0.0, decoration: TextDecoration::None, color, align, lines: Some(1) }
+    use crate::nuclo::prelude::FontWeight;
+    let weight = if bold { FontWeight::Bold } else { FontWeight::Normal };
+    TextPaint { font_size, weight, italic: false, font_family: FontFamily::SansSerif, line_height: None, letter_spacing: 0.0, decoration: TextDecoration::None, color, align, lines: Some(1), placeholder: None }
 }
 
 // ---------------------------------------------------------------------------
@@ -706,11 +762,13 @@ impl Gpui {
         } else {
             // A screen is as tall as its content, or the window when that is taller, and scrolls.
             let content = host::measure_root(root, width).ceil().max(height);
-            self.view_mut(root, |view| {
+            let offset = self.view_mut(root, |view| {
                 let offset = view.scroll.as_ref().map_or(0.0, |scroll| scroll.offset.get()).min(content - height);
                 view.scroll = Some(Scroll { horizontal: false, page: true, content: (width, content), offset: Cell::new(offset) });
+                offset
             });
             host::layout_root(root, width, content);
+            host::screen_scrolled(root, offset.unwrap_or(0.0), height);
         }
         self.laid.borrow_mut().insert(root, now);
     }
@@ -792,12 +850,16 @@ impl Gpui {
                 Kind::Checkbox => paint_checkbox(view.checked, bounds, s, o, window),
                 Kind::Image => {
                     if let Some(image) = &view.image {
-                        // Covers the box: scaled until both sides reach, and cut to the box.
+                        // Cover: scaled until both sides reach, and cut to the box; contain: until one does.
                         let pixels = image.size(0);
                         let (iw, ih) = (pixels.width.0 as f32, pixels.height.0 as f32);
-                        let fit = (f32::from(bounds.size.width) / iw).max(f32::from(bounds.size.height) / ih);
-                        let covered = Bounds::centered_at(bounds.center(), size(px(iw * fit), px(ih * fit)));
-                        let _ = window.paint_image(bounds, covered, Corners::all(radius), image.clone(), 0, false);
+                        let (sx, sy) = (f32::from(bounds.size.width) / iw, f32::from(bounds.size.height) / ih);
+                        let placed = match paint.fit {
+                            ObjectFit::Fill => bounds,
+                            ObjectFit::Cover => Bounds::centered_at(bounds.center(), size(px(iw * sx.max(sy)), px(ih * sx.max(sy)))),
+                            ObjectFit::Contain => Bounds::centered_at(bounds.center(), size(px(iw * sx.min(sy)), px(ih * sx.min(sy)))),
+                        };
+                        let _ = window.paint_image(bounds, placed, Corners::all(radius), image.clone(), 0, false);
                     }
                 }
                 Kind::Native => {
@@ -815,8 +877,19 @@ impl Gpui {
             let pressed = self.press.borrow().as_ref().is_some_and(|press| press.target == Target::View(id));
             window.paint_quad(fill(bounds, gpui::black().opacity(if pressed { 0.16 } else { 0.06 })).corner_radii(radius));
         }
-        if paint.border_width > 0.0 {
-            window.paint_quad(quad(bounds, radius, gpui::transparent_black(), px(paint.border_width * s), hsla(paint.border_color, o), BorderStyle::default()));
+        let [top, right, bottom, left] = paint.borders.map(|width| px(width * s));
+        let colors = paint.border_colors;
+        if colors.iter().all(|color| *color == colors[0]) {
+            if paint.borders.iter().any(|width| *width > 0.0) {
+                window.paint_quad(quad(bounds, radius, gpui::transparent_black(), Edges { top, right, bottom, left }, hsla(colors[0], o), BorderStyle::default()));
+            }
+        } else {
+            // A quad has one border colour: a side of another colour is a quad of its own.
+            let zero = px(0.0);
+            let sides = [Edges { top, ..Edges::all(zero) }, Edges { right, ..Edges::all(zero) }, Edges { bottom, ..Edges::all(zero) }, Edges { left, ..Edges::all(zero) }];
+            for (side, color) in sides.into_iter().zip(colors).filter(|(side, _)| (side.top + side.right + side.bottom + side.left) > zero) {
+                window.paint_quad(quad(bounds, radius, gpui::transparent_black(), side, hsla(color, o), BorderStyle::default()));
+            }
         }
     }
 
@@ -1223,13 +1296,16 @@ impl Gpui {
                         client_height: view.frame.h as f64,
                         client_width: view.frame.w as f64,
                     };
-                    (*id, view.listens(Input::Scroll).then_some(event))
+                    (*id, view.listens(Input::Scroll).then_some(event), scroll.page.then_some((to, viewport)))
                 })
             })
         };
-        if let Some((view, event)) = scrolled {
+        if let Some((view, event, page)) = scrolled {
             if let Some(event) = event {
                 host::scrolled(view, event);
+            }
+            if let Some((top, visible)) = page {
+                host::screen_scrolled(view, top, visible);
             }
             window.refresh();
         }
@@ -1605,6 +1681,10 @@ impl Backend for Gpui {
         self.frame_pending.set(true);
     }
 
+    fn window_width(&self) -> f32 {
+        f32::from(self.size.get().width)
+    }
+
     fn nav_create(&self, tabs: &[TabInfo], active: usize) {
         let stacks = (0..tabs.len().max(1)).map(|_| Vec::new()).collect();
         let tabs = tabs.iter().map(|tab| (glyph(&tab.icon).to_string(), tab.title.clone())).collect();
@@ -1885,6 +1965,14 @@ pub fn run(entry: fn()) {
             window.focus(&gpui.focus, cx);
             crate::nuclo::start(gpui.clone());
             entry();
+            if let Ok(path) = std::env::var("NUCLO_DUMP") {
+                let gpui = gpui.clone();
+                cx.spawn(async move |cx| {
+                    cx.background_executor().timer(std::time::Duration::from_secs(2)).await;
+                    gpui.dump_frames(&path);
+                })
+                .detach();
+            }
             cx.new(|_| Host { gpui })
         })
         .expect("the window did not open");

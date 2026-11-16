@@ -46,6 +46,14 @@ const TARGETS: Record<string, (input: TargetInput) => string | Promise<string>> 
     copyNative(entry, "ios", dir);
     return path.join(dir, `${name}.swift`);
   },
+  // The iOS runtime again, on AppKit: UIKitShim.swift defines the UIKit names the runtime uses. Built by scripts/macos-run.sh.
+  macos({ program, entry, name, dir }) {
+    writeFileSync(path.join(dir, `${name}.swift`), emitSwift(program));
+    copyFileSync(path.join(RUNTIMES, "ios/NucloRuntime.swift"), path.join(dir, "NucloRuntime.swift"));
+    copyFileSync(path.join(RUNTIMES, "macos/UIKitShim.swift"), path.join(dir, "UIKitShim.swift"));
+    copyNative(entry, "macos", dir);
+    return path.join(dir, `${name}.swift`);
+  },
   android({ program, entry, name, dir }) {
     writeFileSync(path.join(dir, `${name}.kt`), emitKotlin(program));
     copyFileSync(path.join(RUNTIMES, "android/NucloRuntime.kt"), path.join(dir, "NucloRuntime.kt"));
@@ -80,6 +88,17 @@ const TARGETS: Record<string, (input: TargetInput) => string | Promise<string>> 
     // The Rust printer names the GTK target's folder in its warning.
     const warn = (message: string) => console.warn(message.replaceAll("linux", "linux-gpui"));
     writeFileSync(path.join(dir, "src/app.rs"), emitRust(program, { native: existsSync(native), warn }));
+    return path.join(dir, "src/app.rs");
+  },
+  // The GPUI project again, for macOS: same backend, with the platform crate's Metal / Core Text
+  // side in place of its Wayland / X11 features.
+  "macos-gpui"({ program, entry, dir }) {
+    TARGETS["linux-gpui"]!({ program, entry, name: "", dir });
+    const manifest = path.join(dir, "Cargo.toml");
+    const toml = readFileSync(manifest, "utf8")
+      .replace('features = ["wayland", "x11"] }', "features = [] }")
+      .replace('features = ["font-kit", "wayland", "x11"] }', 'features = ["font-kit"] }');
+    writeFileSync(manifest, toml);
     return path.join(dir, "src/app.rs");
   },
   // The same Rust core run as WebAssembly in the browser: the Cargo project of runtimes/rust-wasm
@@ -126,6 +145,9 @@ try {
     const dir = path.join(out, target);
     mkdirSync(dir, { recursive: true });
     written.push(await TARGETS[target]!({ program, entry: path.resolve(entry), name, dir }));
+    // The app's files (images…) beside its entry, read by relative paths (`img({ src: "assets/a.jpg" })`).
+    const assets = path.join(path.dirname(path.resolve(entry)), "assets");
+    if (existsSync(assets)) cpSync(assets, path.join(dir, "assets"), { recursive: true });
   }
   console.log(`${entry} → ${written.join(", ")} (${Math.round(performance.now() - started)} ms)`);
 } catch (error) {

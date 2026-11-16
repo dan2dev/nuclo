@@ -8,7 +8,7 @@
 // Layout is the browser's flexbox, set up to give the boxes the native `Flex` algorithm gives:
 // every element is a border-box flex column that does not shrink, `flex: n` is `n 1 0%`.
 
-import { expandStyle } from "../../styleAliases.ts";
+import { type Animation, type MediaRule, type NativeStyle, STATE_KEYS, type Theme, normalizeStyle, registerKeyframes, keyframesNamed } from "../../styleAliases.ts";
 import type * as API from "../../index.ts";
 
 // ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ interface Modifier {
   [MODIFIER]: (node: Node) => void;
 }
 interface StyleClass {
-  [CLASS]: API.Style;
+  [CLASS]: NativeStyle;
 }
 type Child = API.Child;
 type Kind = "box" | "text" | "button" | "input" | "checkbox" | "textarea" | "image" | "native" | "fragment";
@@ -50,6 +50,7 @@ const EASING: Record<string, string> = {
   spring: "linear(0, 0.36 8%, 0.82 18%, 1.06 28%, 1.1 36%, 1.05 48%, 1 60%, 0.99 75%, 1)",
 };
 const TRANSITIONED = "opacity, transform, background-color, border-radius, width, height";
+const WEIGHTS: Record<string, string> = { light: "300", normal: "400", medium: "500", semibold: "600", bold: "700" };
 
 const CSS_PROPS: Record<string, (v: never, s: API.Style) => string> = {
   flexDirection: (v: string) => `flex-direction:${v}`,
@@ -97,11 +98,25 @@ const CSS_PROPS: Record<string, (v: never, s: API.Style) => string> = {
   borderRadius: (v: number) => `border-radius:${px(v)}`,
   borderWidth: (v: number) => `border-width:${px(v)}`,
   borderColor: (v: string) => `border-color:${v}`,
-  fontSize: (v: number) => `font-size:${px(v)}`,
-  fontWeight: (v: string) => `font-weight:${v}`,
+  borderTopWidth: (v: number) => `border-top-width:${px(v)}`,
+  borderRightWidth: (v: number) => `border-right-width:${px(v)}`,
+  borderBottomWidth: (v: number) => `border-bottom-width:${px(v)}`,
+  borderLeftWidth: (v: number) => `border-left-width:${px(v)}`,
+  borderTopColor: (v: string) => `border-top-color:${v}`,
+  borderRightColor: (v: string) => `border-right-color:${v}`,
+  borderBottomColor: (v: string) => `border-bottom-color:${v}`,
+  borderLeftColor: (v: string) => `border-left-color:${v}`,
+  textTransform: (v: string) => `text-transform:${v}`,
+  placeholderColor: (v: string) => `--nuclo-placeholder:${v}`,
+  objectFit: (v: string) => `object-fit:${v}`,
+  pointerEvents: (v: string) => `pointer-events:${v}`,
+  animation: (v: Animation) => `animation:${keyframesCss(v)} ${v.duration}ms ${EASING[v.easing] ?? v.easing} ${v.delay}ms ${v.iterations < 0 ? "infinite" : v.iterations}${v.alternate ? " alternate" : ""}`,
+  fontSize: (v: number, s) => `font-size:${px(v)}${s.lineHeight == null ? `;line-height:${px(Math.round(v * 1.2))}` : ""}`,
+  fontWeight: (v: string) => `font-weight:${WEIGHTS[v] ?? v}`,
   fontStyle: (v: string) => `font-style:${v}`,
   fontFamily: (v: string) => `font-family:${v === "sans-serif" ? "system-ui,sans-serif" : v === "monospace" ? "ui-monospace,monospace" : v}`,
-  lineHeight: (v: number) => `line-height:${px(v)}`,
+  // A bare number under 4 is a multiple of the font size, in whole pixels as natively.
+  lineHeight: (v: number, s) => `line-height:${px(v < 4 ? Math.round((s.fontSize as number ?? 15) * v) : v)}`,
   letterSpacing: (v: number) => `letter-spacing:${px(v)}`,
   textAlign: (v: string) => `text-align:${v}`,
   textDecoration: (v: string) => `text-decoration:${v}`,
@@ -111,17 +126,18 @@ const CSS_PROPS: Record<string, (v: never, s: API.Style) => string> = {
       : `display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:${v};overflow:hidden`,
 };
 
-function toCss(style: API.Style): string {
-  const s = expandStyle(style);
+function toCss(style: NativeStyle): string {
+  const s = style as API.Style & NativeStyle;
   const out: string[] = [];
   for (const key in s) {
     const value = (s as Record<string, unknown>)[key];
     const rule = value == null ? undefined : CSS_PROPS[key];
-    if (rule) out.push(rule(value as never, s));
+    if (rule) out.push(rule(value as never, s as API.Style));
   }
+  if (s.widthPct != null) out.push(`width:${s.widthPct}%${s.maxWidth == null ? ";max-width:none" : ""}`);
   // A box is at most as wide as the space its margins leave (negative margins widen it), as natively.
-  const sideMargins = (s.marginLeft ?? s.margin ?? 0) + (s.marginRight ?? s.margin ?? 0);
-  if (sideMargins !== 0 && s.width == null && s.maxWidth == null) out.push(`max-width:calc(100% - ${px(sideMargins)})`);
+  const sideMargins = ((s.marginLeft ?? s.margin ?? 0) as number) + ((s.marginRight ?? s.margin ?? 0) as number);
+  if (sideMargins !== 0 && s.width == null && s.widthPct == null && s.maxWidth == null) out.push(`max-width:calc(100% - ${px(sideMargins)})`);
   if (s.translateX != null || s.translateY != null || s.rotate != null || s.scale != null) {
     out.push(`transform:translate(${px(s.translateX ?? 0)},${px(s.translateY ?? 0)}) rotate(${s.rotate ?? 0}deg) scale(${s.scale ?? 1})`);
   }
@@ -129,30 +145,58 @@ function toCss(style: API.Style): string {
     out.push(`box-shadow:${px(s.shadowOffsetX ?? 0)} ${px(s.shadowOffsetY ?? 0)} ${px(s.shadowRadius ?? 0)} ${s.shadowColor ?? "#00000040"}`);
   }
   if (s.transitionDuration != null) {
-    out.push(`transition:${s.transitionDuration}ms ${EASING[s.transitionEasing ?? "ease"]} ${s.transitionDelay ?? 0}ms;transition-property:${TRANSITIONED}`);
+    out.push(`transition:${s.transitionDuration}ms ${EASING[(s.transitionEasing as string) ?? "ease"]} ${s.transitionDelay ?? 0}ms;transition-property:${TRANSITIONED}`);
   }
   return out.join(";");
 }
 
-/** `o`'s values win; a `padding` or `margin` shorthand resets the sides set before it, as in CSS. */
-function merge(a0: API.Style, o0: API.Style): API.Style {
-  const a = expandStyle(a0);
-  const o = expandStyle(o0);
-  const out: Record<string, unknown> = { ...a };
-  for (const side of ["padding", "margin"]) {
-    if ((o as Record<string, unknown>)[side] != null) for (const edge of ["Top", "Right", "Bottom", "Left"]) delete out[side + edge];
+/** The theme createCss() was given: its tokens and screens apply to every style. */
+let theme: Theme | undefined;
+const normalized = new WeakMap<object, NativeStyle>();
+/** A style written with nuclo-core's keys, as native keys (cached per object: classes are made once). */
+function nativeStyle(style: API.Style | NativeStyle): NativeStyle {
+  let out = normalized.get(style);
+  if (!out) normalized.set(style, (out = normalizeStyle(style as Record<string, unknown>, theme)));
+  return out;
+}
+
+const SIDES = ["Top", "Right", "Bottom", "Left"];
+/** `o`'s values win; a shorthand (padding, margin, borderWidth, borderColor) resets the sides set before it, as in CSS. */
+function merge(a0: API.Style | NativeStyle, o0: API.Style | NativeStyle): NativeStyle {
+  const a = nativeStyle(a0);
+  const o = nativeStyle(o0);
+  const out: NativeStyle = { ...a };
+  for (const [shorthand, side] of [["padding", "padding%"], ["margin", "margin%"], ["borderWidth", "border%Width"], ["borderColor", "border%Color"]] as const) {
+    if (o[shorthand] != null) for (const edge of SIDES) delete out[side.replace("%", edge)];
   }
   for (const key in o) {
-    const value = (o as Record<string, unknown>)[key];
+    const value = o[key];
     if (value == null) continue;
-    out[key] = key === "pressed" || key === "hover" || key === "focused" ? merge((out[key] as API.Style) ?? {}, value as API.Style) : value;
+    if (key === "media") out.media = [...((out.media as MediaRule[]) ?? []), ...(value as MediaRule[])];
+    else out[key] = STATE_KEYS.has(key) ? merge((out[key] as NativeStyle) ?? {}, value as NativeStyle) : value;
   }
-  return out as API.Style;
+  normalized.set(out, out);
+  return out;
+}
+
+/** The @keyframes rule of an animation, added once; its name. */
+const keyframeRules = new Set<string>();
+function keyframesCss(anim: Animation): string {
+  if (!keyframeRules.has(anim.name)) {
+    keyframeRules.add(anim.name);
+    const body = anim.frames.map((stop) => `${(stop.at * 100).toFixed(2)}%{${toCss(stop.style)}}`).join("");
+    addCss(`@keyframes ${anim.name}{${body}}`);
+  }
+  return anim.name;
+}
+
+function addCss(rule: string) {
+  document.head.append(Object.assign(document.createElement("style"), { textContent: rule }));
 }
 
 const BASE_CSS = `
 :root,:root>body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
-body{font:15px system-ui,sans-serif;color:#000;background:#fff;-webkit-text-size-adjust:100%}
+body{font:15px/18px system-ui,sans-serif;color:#000;background:#fff;-webkit-text-size-adjust:100%}
 .n{box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;flex:0 0 auto;position:relative;margin:0;padding:0;
 border:0 solid #000;min-width:0;min-height:0;max-width:100%;list-style:none;background:none;font:inherit;color:inherit;text-align:inherit;
 letter-spacing:inherit;outline:none;text-decoration:none;-webkit-tap-highlight-color:transparent}
@@ -164,9 +208,10 @@ appearance:none;user-select:none;-webkit-user-select:none;max-width:100%}
 .n.textarea{padding:8px;resize:none;min-height:3em}
 .n.checkbox{width:20px;height:20px;margin:0;accent-color:#4f46e5}
 .n.image{height:120px;object-fit:cover;max-width:100%}
-h1.n{font-size:32px;font-weight:bold}h2.n{font-size:22px;font-weight:bold}h3.n{font-size:19px;font-weight:bold}
-h4.n{font-size:17px;font-weight:bold}h5.n{font-size:15px;font-weight:bold}h6.n{font-size:13px;font-weight:bold}
-strong.n,b.n,th.n,dt.n{font-weight:bold}small.n,sub.n,sup.n{font-size:12px}em.n,i.n,cite.n,dfn.n,var.n{font-style:italic}
+.n::placeholder{color:var(--nuclo-placeholder,#757575)}
+h1.n{font-size:32px;line-height:38px;font-weight:bold}h2.n{font-size:22px;line-height:26px;font-weight:bold}h3.n{font-size:19px;line-height:23px;font-weight:bold}
+h4.n{font-size:17px;line-height:20px;font-weight:bold}h5.n{font-size:15px;line-height:18px;font-weight:bold}h6.n{font-size:13px;line-height:16px;font-weight:bold}
+strong.n,b.n,th.n,dt.n{font-weight:bold}small.n,sub.n,sup.n{font-size:12px;line-height:14px}em.n,i.n,cite.n,dfn.n,var.n{font-style:italic}
 u.n,ins.n{text-decoration:underline}s.n,del.n{text-decoration:line-through}mark.n{background-color:#fef08a}
 code.n,pre.n,kbd.n,samp.n{font-family:ui-monospace,monospace}a.n{color:#2563eb;cursor:pointer}
 n-progress.n,n-meter.n{flex-direction:row;width:160px;height:16px;overflow:hidden;background-color:#e5e7eb;border-radius:8px}n-meter.n{width:80px}
@@ -179,10 +224,10 @@ tr.n{flex-direction:row}td.n,th.n{flex:1 1 0%}hr.n{height:1px;background-color:#
 .nuclo-layer{position:absolute;inset:0;pointer-events:none}
 .nuclo-layer>.n{width:100%;height:100%}
 .nuclo-layer .touch{pointer-events:auto}
-.nuclo-bar{height:56px;flex:none;display:flex;align-items:center;background:#fff;box-shadow:0 1px 3px #0003;z-index:2;font-size:20px;font-weight:bold}
+.nuclo-bar{height:56px;flex:none;display:flex;align-items:center;background:#fff;box-shadow:0 1px 3px #0003;z-index:2;font-size:20px;line-height:24px;font-weight:bold}
 .nuclo-back{width:56px;height:56px;font:24px system-ui;background:none;border:0;cursor:pointer}
 .nuclo-tabs{height:64px;flex:none;display:flex;background:#f8fafc;box-shadow:0 -1px 4px #0002;z-index:2}
-.nuclo-tabs button{flex:1;border:0;background:none;font:12px system-ui;color:#64748b;white-space:pre-line;cursor:pointer}
+.nuclo-tabs button{flex:1;border:0;background:none;font:12px/14px system-ui;color:#64748b;white-space:pre-line;cursor:pointer}
 .nuclo-tabs button.active{color:#4f46e5}
 .nuclo-stack{flex:1;min-height:0;position:relative;overflow:hidden}
 .nuclo-sheet{position:absolute;inset:0;z-index:3;background:#fff;display:flex;flex-direction:column}
@@ -212,9 +257,9 @@ class Node {
   private readonly textParts: (() => string)[] = [];
   private textNode: Text | null = null;
 
-  readonly classes: API.Style[] = [];
+  readonly classes: NativeStyle[] = [];
   dynamicClass: (() => StyleClass) | null = null;
-  inline: API.Style = {};
+  inline: NativeStyle = {};
   dynamicInline: (() => API.Style) | null = null;
   private painted: string | null = null;
   private pressed = false;
@@ -276,11 +321,30 @@ class Node {
     for (const child of this.children) child.flatElements(wanted);
     const el = this.el!;
     const keep = new Set(wanted);
-    for (const old of [...el.children]) if (!keep.has(old as HTMLElement)) old.remove();
+    let moved = false;
+    for (const old of [...el.children]) {
+      if (!keep.has(old as HTMLElement)) {
+        old.remove();
+        moved = true;
+      }
+    }
     wanted.forEach((child, i) => {
-      if (el.children[i] !== child) el.insertBefore(child, el.children[i] ?? null);
+      if (el.children[i] !== child) {
+        el.insertBefore(child, el.children[i] ?? null);
+        moved = true;
+      }
     });
     for (const child of this.children) child.mountDeep();
+    // `:first-child`, `:odd`…: the places changed.
+    if (moved) this.restyleStructural();
+  }
+
+  private restyleStructural() {
+    for (const child of this.children) {
+      if (child.el) {
+        if (child.structural) child.applyStyle();
+      } else child.restyleStructural();
+    }
   }
 
   bind<T>(get: () => T, set: (value: T) => void) {
@@ -336,20 +400,43 @@ class Node {
   applyStyle() {
     const el = this.el;
     if (!el) return;
-    let s: API.Style = {};
+    let s: NativeStyle = {};
     for (const c of this.classes) s = merge(s, c);
     if (this.dynamicClass) s = merge(s, this.dynamicClass()[CLASS]);
     s = merge(s, this.inline);
     if (this.dynamicInline) s = merge(s, this.dynamicInline());
+    // `@media` and screens, against the window's width.
+    if (s.media) {
+      usesMedia = true;
+      for (const rule of s.media as MediaRule[]) if ((rule.min == null || innerWidth >= rule.min) && (rule.max == null || innerWidth <= rule.max)) s = merge(s, rule.style);
+    }
+    // The box's place among its siblings, and what it holds.
+    if (s.first || s.last || s.only || s.odd || s.even) {
+      const siblings = el.parentElement ? [...el.parentElement.children] : [el];
+      const at = siblings.indexOf(el);
+      if (at === 0 && s.first) s = merge(s, s.first as NativeStyle);
+      if (at === siblings.length - 1 && s.last) s = merge(s, s.last as NativeStyle);
+      if (siblings.length === 1 && s.only) s = merge(s, s.only as NativeStyle);
+      if (at % 2 === 0 && s.odd) s = merge(s, s.odd as NativeStyle);
+      if (at % 2 === 1 && s.even) s = merge(s, s.even as NativeStyle);
+      this.structural = true;
+    }
+    const field = el as HTMLInputElement;
+    if (s.empty && (this.kind === "box" ? !el.children.length : !el.textContent)) s = merge(s, s.empty as NativeStyle);
+    if (s.checked || s.placeholderShown) this.watchFields();
+    if (s.checked && field.checked) s = merge(s, s.checked as NativeStyle);
+    if (s.placeholderShown && field.value === "") s = merge(s, s.placeholderShown as NativeStyle);
+    if (s.disabled && this.disabled) s = merge(s, s.disabled as NativeStyle);
+    if (s.enabled && !this.disabled) s = merge(s, s.enabled as NativeStyle);
     if (s.pressed || s.hover || s.focused) this.watchStates();
-    if (this.hovered && s.hover) s = merge(s, s.hover);
-    if (this.focused && s.focused) s = merge(s, s.focused);
-    if (this.pressed && s.pressed) s = merge(s, s.pressed);
+    if (this.hovered && s.hover) s = merge(s, s.hover as NativeStyle);
+    if (this.focused && s.focused) s = merge(s, s.focused as NativeStyle);
+    if (this.pressed && s.pressed) s = merge(s, s.pressed as NativeStyle);
     this.row = s.flexDirection === "row";
-    this.align = s.alignItems ?? "stretch";
+    this.align = (s.alignItems as string) ?? "stretch";
     let css = toCss(s);
     // A field or an image has a natural width (180, 120) unless its column stretches it, as the native Flex does.
-    if ((this.kind === "input" || this.kind === "image") && s.width == null && !s.flex) {
+    if ((this.kind === "input" || this.kind === "image") && s.width == null && s.widthPct == null && !s.flex) {
       const host = this.host;
       if (!host || host.row || (s.alignSelf ?? host.align) !== "stretch") css += `;width:${this.kind === "input" ? 180 : 120}px`;
     }
@@ -358,6 +445,18 @@ class Node {
     el.style.cssText = css;
     // An absolute box is an overlay: it takes the pointer over what is under it; so does a scroller.
     if (this.kind === "box") el.classList.toggle("touch", s.position === "absolute" || s.overflow === "scroll" || el.dataset.touch === "1");
+  }
+
+  /** Whether its style follows its place among its siblings: list() restyles it when they change. */
+  structural = false;
+  /** Set by the disabled attribute: `disabled` / `enabled` styles follow it. */
+  disabled = false;
+  private watchingFields = false;
+
+  private watchFields() {
+    if (this.watchingFields || !this.el) return;
+    this.watchingFields = true;
+    for (const type of ["input", "change"]) this.el.addEventListener(type, () => this.applyStyle());
   }
 
   private watchStates() {
@@ -443,6 +542,7 @@ function applyAttributes(node: Node, attrs: API.Attributes) {
       case "disabled":
         node.bind(dynamic(value as boolean), (off) => {
           field.disabled = off;
+          node.disabled = off;
           if (node.kind === "box" || node.kind === "text") el.style.pointerEvents = off ? "none" : "";
         });
         break;
@@ -490,7 +590,11 @@ function listen(node: Node, type: string, handler: (event: never) => void) {
   switch (type) {
     case "click":
       if (node.kind === "box" || node.kind === "text") el.style.cursor = "pointer";
-      return el.addEventListener("click", call);
+      // The innermost clickable view takes the click, as on the native targets: it does not reach the boxes around it.
+      return el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        call(e);
+      });
     case "input":
     case "focus":
     case "blur":
@@ -918,6 +1022,23 @@ function removeRoot(node: Node) {
   node.destroy();
 }
 
+// `?dump` (before the #path): two seconds after launch, `text|x|y|width|height` of every text on the shown screen,
+// in a <pre id="nuclo-dump">, as NUCLO_DUMP writes them natively (checks of one build against another).
+if (typeof location !== "undefined" && new URLSearchParams(location.search).has("dump")) {
+  globalThis.setTimeout(() => {
+    const root = document.getElementById("nuclo")!.getBoundingClientRect();
+    const lines: string[] = [];
+    for (const el of document.querySelectorAll<HTMLElement>(".n.text, .n.button, .nuclo-bar > div")) {
+      const text = (el.textContent ?? "").slice(0, 24);
+      if (!text || !el.offsetParent || el.closest(".nuclo-stack > .nuclo-screen:not(:last-child)")) continue;
+      const screen = el.closest<HTMLElement>(".nuclo-screen");
+      const r = el.getBoundingClientRect();
+      lines.push(`${text}|${(r.left - root.left).toFixed(1)}|${(r.top - root.top + (screen?.scrollTop ?? 0)).toFixed(1)}|${r.width.toFixed(1)}|${r.height.toFixed(1)}`);
+    }
+    document.body.append(Object.assign(document.createElement("pre"), { id: "nuclo-dump", textContent: lines.join("\n") }));
+  }, 2000);
+}
+
 let app: HTMLElement | null = null;
 let mainEl: HTMLElement | null = null;
 
@@ -932,6 +1053,25 @@ function window_(): HTMLElement {
 }
 
 const make = (view: API.Node): Node => (view as unknown as Factory)[FACTORY]();
+
+/** Runs `call` when the screen's end comes within half a screen: once per content height, as natively. */
+function endReached(el: HTMLElement, call: () => void) {
+  let at = -1;
+  const check = () => {
+    if (!el.isConnected || !el.clientHeight || el.scrollHeight === at) return;
+    if (el.scrollTop + el.clientHeight < el.scrollHeight - el.clientHeight / 2) return;
+    at = el.scrollHeight;
+    call();
+  };
+  el.addEventListener("scroll", check, { passive: true });
+  new ResizeObserver(check).observe(el.firstElementChild ?? el);
+  requestAnimationFrame(check);
+}
+
+let usesMedia = false;
+addEventListener("resize", () => {
+  if (usesMedia) for (const root of roots) root.applyStylesDeep();
+});
 
 /** A scrolling screen around a root node. */
 function screen(node: Node): HTMLElement {
@@ -1166,12 +1306,35 @@ export function on(type: string, listener: (event: never) => void): API.Modifier
 // Styling
 // ---------------------------------------------------------------------------
 
-export const css = (nameOrStyle: string | API.Style, style?: API.Style) => asApi<API.StyleClass>({ [CLASS]: style ?? (nameOrStyle as API.Style) });
+export const css = (nameOrStyle: string | API.Style, style?: API.Style) => asApi<API.StyleClass>({ [CLASS]: nativeStyle(style ?? (nameOrStyle as API.Style)) });
+
+/** The name of a keyframes animation, for a style's `animation`. */
+export const keyframes = (frames: Record<string, API.Style>) => registerKeyframes(frames as Record<string, unknown>, theme);
+
+/** Rules for the screens ("body"), and for every element of a tag. */
+export function globalStyle(selector: string, style: API.Style) {
+  const s = nativeStyle(style);
+  for (const part of selector.split(",")) {
+    const tag = part.trim();
+    if (tag === "body" || tag === "html" || tag === ":root" || tag === "*") {
+      const { backgroundColor, ...text } = s;
+      // Under #nuclo: these win over the base rules, which are added later (on the first render).
+      if (backgroundColor) addCss(`#nuclo .nuclo-screen{background-color:${backgroundColor}}`);
+      addCss(`#nuclo{${toCss(text)}}`);
+    } else addCss(`#nuclo ${tag}.n{${toCss(s)}}`);
+  }
+}
+
+/** nuclo-core's themed styling: the theme's tokens and screens apply to every style from here on. */
+export function createCss<T extends API.ThemeConfig>(config: T) {
+  theme = config;
+  return { css, cx, variants, keyframes, globalStyle, theme: config };
+}
 
 export function cx(...classes: (API.StyleClass | null | undefined | false)[]): API.StyleClass {
-  let style: API.Style = {};
+  let style: NativeStyle = {};
   for (const c of classes) if (c) style = merge(style, (c as unknown as StyleClass)[CLASS]);
-  return css(style);
+  return css(style as API.Style);
 }
 
 type Selection = Record<string, string | boolean | undefined>;
@@ -1193,7 +1356,7 @@ export function variants(config: {
     const key = JSON.stringify(chosen);
     let cls = cache.get(key);
     if (!cls) {
-      let style = config.base ?? {};
+      let style: NativeStyle = (config.base ?? {}) as NativeStyle;
       for (const group in chosen) {
         const picked = config.variants[group]![chosen[group]!];
         if (picked) style = merge(style, picked);
@@ -1201,7 +1364,7 @@ export function variants(config: {
       for (const { css: extra, ...match } of config.compoundVariants ?? []) {
         if (Object.keys(match).every((group) => chosen[group] === String(match[group]))) style = merge(style, extra);
       }
-      cache.set(key, (cls = css(style)));
+      cache.set(key, (cls = css(style as API.Style)));
     }
     return cls;
   };
@@ -1211,7 +1374,13 @@ export function variants(config: {
 // Router: stacks per tab, the URL fragment as the address
 // ---------------------------------------------------------------------------
 
-type RouteOptions = { view: API.View; title?: string | ((params: API.Params) => string); presentation?: "push" | "modal"; header?: boolean };
+type RouteOptions = {
+  view: API.View;
+  title?: string | ((params: API.Params) => string);
+  presentation?: "push" | "modal";
+  header?: boolean;
+  onEndReached?: (params: API.Params) => void;
+};
 
 interface Entry {
   path: string;
@@ -1385,10 +1554,11 @@ class RouterImpl {
     for (const route of this.routes) {
       const params = match(route.parts, path);
       if (!params) continue;
-      const { view, title, presentation, header } = route.options;
+      const { view, title, presentation, header, onEndReached } = route.options;
       const node = make(view(params));
       addRoot(node);
       const el = screen(node);
+      if (onEndReached) endReached(el, () => onEndReached(params));
       const modal = presentation === "modal";
       if (modal) el.classList.add("nuclo-sheet");
       return { path, node, el, title: typeof title === "function" ? title(params) : (title ?? ""), modal, header: header ?? true };

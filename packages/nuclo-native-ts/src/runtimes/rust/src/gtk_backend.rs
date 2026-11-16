@@ -20,7 +20,7 @@ use gtk::subclass::prelude::*;
 use gtk::{gdk, gio, glib, graphene, gsk, pango};
 
 use crate::nuclo::backend::{host, Backend, Event, Input, Kind, NativeView, Paint, PanEvent, PinchEvent, PointerEvent, PointerPhase, Rect, Screen, ScrollEvent, TabInfo, TextPaint, ViewId};
-use crate::nuclo::prelude::{Color, FontFamily, TextAlign, TextDecoration};
+use crate::nuclo::prelude::{Color, FontFamily, FontWeight, ObjectFit, TextAlign, TextDecoration};
 
 mod imp {
     use super::*;
@@ -130,8 +130,8 @@ mod imp {
             if paint.clip {
                 snapshot.pop();
             }
-            if paint.border_width > 0.0 {
-                snapshot.append_border(&outline, &[paint.border_width; 4], &[rgba(paint.border_color); 4]);
+            if paint.borders.iter().any(|width| *width > 0.0) {
+                snapshot.append_border(&outline, &paint.borders, &paint.border_colors.map(rgba));
             }
         }
 
@@ -253,6 +253,9 @@ struct Gtk {
     /// A layout was requested and its frame is not painted yet: due timers wait for it.
     frame_pending: Cell<bool>,
     after_frame: RefCell<Vec<Box<dyn FnOnce()>>>,
+    /// The app's stylesheet: `CSS`, then a rule per placeholder colour the app uses.
+    css: gtk::CssProvider,
+    placeholders: RefCell<Vec<Color>>,
 }
 
 thread_local!(static GTK: RefCell<Option<Rc<Gtk>>> = const { RefCell::new(None) });
@@ -294,7 +297,12 @@ impl Gtk {
             let page = adw::Bin::builder().child(&widget).vexpand(true).build();
             page.upcast()
         } else {
-            gtk::ScrolledWindow::builder().hscrollbar_policy(gtk::PolicyType::Never).vexpand(true).child(&widget).build().upcast()
+            let scroller = gtk::ScrolledWindow::builder().hscrollbar_policy(gtk::PolicyType::Never).vexpand(true).child(&widget).build();
+            // Where the screen is scrolled and how much of it shows, for a route's onEndReached.
+            let report = move |adjustment: &gtk::Adjustment| host::screen_scrolled(root, adjustment.value() as f32, adjustment.page_size() as f32);
+            scroller.vadjustment().connect_value_changed(report);
+            scroller.vadjustment().connect_changed(report);
+            scroller.upcast()
         };
         page.add_css_class("nuclo-screen");
         page
@@ -333,6 +341,17 @@ impl Gtk {
         true
     }
 
+    /// The class that colours an entry's placeholder `color`. A placeholder has no property, only CSS.
+    fn placeholder_class(&self, color: Color) -> String {
+        let mut known = self.placeholders.borrow_mut();
+        if !known.contains(&color) {
+            known.push(color);
+            let rules: String = known.iter().map(|c| format!(".nuclo-ph-{:08x} > text > placeholder {{ color: {}; }}\n", c.0, rgba(*c).to_str())).collect();
+            self.css.load_from_string(&format!("{CSS}{rules}"));
+        }
+        format!("nuclo-ph-{:08x}", color.0)
+    }
+
     /// Runs what waited for the frame.
     fn frame_done(&self) {
         self.frame_pending.set(false);
@@ -365,7 +384,13 @@ fn text_attributes(text: &TextPaint) -> pango::AttrList {
     let scaled = |px: f32| (px * pango::SCALE as f32) as i32;
     let attrs = pango::AttrList::new();
     attrs.insert(pango::AttrSize::new_size_absolute(scaled(text.font_size)));
-    attrs.insert(pango::AttrInt::new_weight(if text.bold { pango::Weight::Bold } else { pango::Weight::Normal }));
+    attrs.insert(pango::AttrInt::new_weight(match text.weight {
+        FontWeight::Light => pango::Weight::Light,
+        FontWeight::Normal => pango::Weight::Normal,
+        FontWeight::Medium => pango::Weight::Medium,
+        FontWeight::Semibold => pango::Weight::Semibold,
+        FontWeight::Bold => pango::Weight::Bold,
+    }));
     if text.italic {
         attrs.insert(pango::AttrInt::new_style(pango::Style::Italic));
     }
@@ -560,7 +585,7 @@ impl Backend for Gtk {
     fn paint(&self, view: ViewId, kind: Kind, paint: &Paint) {
         let Some(widget) = self.widget(view) else { return };
         let before = widget.imp().paint.replace(Some(*paint));
-        let styled = paint.background.is_some() || paint.border_width > 0.0;
+        let styled = paint.background.is_some() || paint.borders.iter().any(|width| *width > 0.0);
         if before.map(|before| before.text) != Some(paint.text) {
             let attrs = text_attributes(&paint.text);
             if let Some(label) = self.view(view, View::label).flatten() {
@@ -579,6 +604,12 @@ impl Backend for Gtk {
             if let Some(entry) = self.native::<gtk::Entry>(view) {
                 entry.set_attributes(&attrs);
                 EntryExt::set_alignment(&entry, xalign(paint.text.align));
+                if let Some(before) = before.and_then(|before| before.text.placeholder) {
+                    entry.remove_css_class(&self.placeholder_class(before));
+                }
+                if let Some(color) = paint.text.placeholder {
+                    entry.add_css_class(&self.placeholder_class(color));
+                }
             }
         }
         if let (Kind::Input | Kind::Textarea, Some(native)) = (kind, self.native::<gtk::Widget>(view)) {
@@ -592,8 +623,17 @@ impl Backend for Gtk {
                 *fills = !styled;
             }
         }
+        if let Some(picture) = self.native::<gtk::Picture>(view) {
+            picture.set_content_fit(match paint.fit {
+                ObjectFit::Cover => gtk::ContentFit::Cover,
+                ObjectFit::Contain => gtk::ContentFit::Contain,
+                ObjectFit::Fill => gtk::ContentFit::Fill,
+            });
+        }
         widget.set_opacity(paint.opacity.clamp(0.0, 1.0) as f64);
         widget.set_visible(paint.visible);
+        // GTK does not pick a widget that can't be targeted, nor anything in it.
+        widget.set_can_target(paint.pointer);
         let moved = before.is_none_or(|before| (before.translate, before.rotate, before.scale) != (paint.translate, paint.rotate, paint.scale));
         if let (true, Some(parent)) = (moved, widget.parent()) {
             // The transform is part of where the parent puts this view.
@@ -898,6 +938,13 @@ impl Backend for Gtk {
         self.frame_pending.set(self.window.is_mapped());
     }
 
+    fn window_width(&self) -> f32 {
+        match self.window.width() {
+            0 => self.window.default_width() as f32,
+            width => width as f32,
+        }
+    }
+
     fn nav_create(&self, tabs: &[TabInfo], active: usize) {
         let stack = |tab: usize| {
             let stack = adw::NavigationView::new();
@@ -1192,6 +1239,8 @@ pub fn run(entry: fn()) {
             tick: RefCell::new(None),
             frame_pending: Cell::new(false),
             after_frame: RefCell::default(),
+            css: provider,
+            placeholders: RefCell::default(),
         });
         GTK.with(|slot| *slot.borrow_mut() = Some(gtk.clone()));
         window.connect_realize(|window| {

@@ -30,20 +30,25 @@ const RUNTIME_TYPES: Record<string, string> = { NodeMod: "Mod", Outlet: "Router"
 /** Runtime types read without a clone. */
 const COPY_RUNTIME_TYPES = new Set(["Style", "NativeElement", "PointerEvent", "ScrollEvent"]);
 
-/** The Style properties, and how a value is written: a number, a parsed colour or font, an enum, a nested style. */
-const STYLE: Record<string, "number" | "color" | "enum" | "font" | "state"> = {
+/** The Style properties, and how a value is written: a number, a parsed colour or font, an enum, a nested style, media rules, keyframes. */
+const STYLE: Record<string, "number" | "color" | "enum" | "font" | "state" | "media" | "animation"> = {
   flexDirection: "enum", alignItems: "enum", alignSelf: "enum", justifyContent: "enum", flexWrap: "enum", flex: "number", gap: "number",
   margin: "number", marginTop: "number", marginRight: "number", marginBottom: "number", marginLeft: "number",
   padding: "number", paddingTop: "number", paddingRight: "number", paddingBottom: "number", paddingLeft: "number",
   width: "number", widthPct: "number", height: "number", minWidth: "number", maxWidth: "number", minHeight: "number", maxHeight: "number", aspectRatio: "number",
   overflow: "enum", position: "enum", top: "number", right: "number", bottom: "number", left: "number", zIndex: "number", display: "enum",
   backgroundColor: "color", color: "color", opacity: "number", borderRadius: "number", borderWidth: "number", borderColor: "color",
+  borderTopWidth: "number", borderRightWidth: "number", borderBottomWidth: "number", borderLeftWidth: "number",
+  borderTopColor: "color", borderRightColor: "color", borderBottomColor: "color", borderLeftColor: "color",
   shadowColor: "color", shadowRadius: "number", shadowOffsetX: "number", shadowOffsetY: "number",
   fontSize: "number", fontWeight: "enum", fontStyle: "enum", fontFamily: "font", lineHeight: "number", letterSpacing: "number",
-  textAlign: "enum", textDecoration: "enum", numberOfLines: "number",
+  textAlign: "enum", textDecoration: "enum", textTransform: "enum", numberOfLines: "number",
+  placeholderColor: "color", objectFit: "enum", pointerEvents: "enum",
   translateX: "number", translateY: "number", scale: "number", rotate: "number",
   transitionDuration: "number", transitionDelay: "number", transitionEasing: "enum",
-  pressed: "state", hover: "state", focused: "state",
+  animation: "animation", media: "media",
+  pressed: "state", hover: "state", focused: "state", disabled: "state", enabled: "state", checked: "state", placeholderShown: "state",
+  first: "state", last: "state", only: "state", odd: "state", even: "state", empty: "state",
 };
 
 const TAGS = new Set([
@@ -128,6 +133,13 @@ class RustPrinter extends Printer {
   private tryLabel: string | undefined;
   private tryCount = 0;
   private warned = new Set<string>();
+  /**
+   * Top-level names that several modules declare (a module-private `page` in two files, a `feed`
+   * that is a variable in one and a function in another): every declaration, picked from by use.
+   * Two functions of one name get Rust names of their own.
+   */
+  private overloads = new Map<string, Binding[]>();
+  private rustNames = new Map<FnDecl, string>();
 
   private readonly options: RustOptions;
 
@@ -148,8 +160,17 @@ class RustPrinter extends Printer {
 
   print(program: Program): string {
     for (const cls of program.classes) this.classes.set(cls.name, cls);
-    for (const g of program.globals) this.declare(g.name, { kind: "global", ty: g.ty });
-    for (const fn of program.functions) this.declare(fn.name, { kind: "fn", decl: fn, captures: new Map() });
+    const top = (name: string, binding: Binding) => {
+      this.overloads.set(name, [...(this.overloads.get(name) ?? []), binding]);
+      if (binding.kind === "fn") {
+        const fns = this.overloads.get(name)!.filter((b) => b.kind === "fn").length;
+        if (fns > 1) this.rustNames.set(binding.decl, `${this.name(name)}__${fns}`);
+      }
+      this.declare(name, binding);
+    };
+    for (const g of program.globals) top(g.name, { kind: "global", ty: g.ty });
+    for (const fn of program.functions) top(fn.name, { kind: "fn", decl: fn, captures: new Map() });
+    for (const [name, bindings] of this.overloads) if (bindings.length < 2) this.overloads.delete(name);
     for (const fn of program.natives ?? []) {
       this.declare(fn.name, { kind: "fn", decl: fn, captures: new Map(), native: true });
       if (!this.options.native) this.options.warn?.(`linux: ${fn.name}() is declared but native/linux/mod.rs, where the app implements it, does not exist: cargo will not find it.`);
@@ -240,7 +261,14 @@ class RustPrinter extends Printer {
       if (fn.async && fn.ret.k === "void") body.push(`${ind + INDENT}Ok(())`);
       // A value on every path, but not one Rust sees after a loop or a try.
       else if (fn.ret.k !== "void" && ["try", "while", "forOf", "forRange"].includes(fn.body.at(-1)?.s ?? "")) body.push(`${ind + INDENT}unreachable!()`);
-      return [`${ind}${ind ? "" : "pub "}${fn.async ? "async " : ""}fn ${this.name(fn.name)}(${params})${ret} {`, ...body, `${ind}}`];
+      const head = `${ind}${ind ? "" : "pub "}`;
+      const name = this.rustNames.get(fn) ?? this.name(fn.name);
+      // An async fn that calls itself has a future of infinite size: it returns it boxed.
+      if (fn.async && names(fn.body).has(fn.name)) {
+        const future = `std::pin::Pin<Box<dyn std::future::Future<Output = Result<${value}, JsError>>>>`;
+        return [`${head}fn ${name}(${params}) -> ${future} {`, `${ind + INDENT}Box::pin(async move {`, ...body.map((line) => INDENT + line), `${ind + INDENT}})`, `${ind}}`];
+      }
+      return [`${head}${fn.async ? "async " : ""}fn ${name}(${params})${ret} {`, ...body, `${ind}}`];
     });
     this.frame = saved.frame;
     this.tryLabel = saved.tryLabel;
@@ -259,12 +287,35 @@ class RustPrinter extends Printer {
     this.scopes.at(-1)!.set(name, binding);
   }
 
-  private lookup(name: string): Binding | undefined {
+  /** What `name` is here. `use`: the arguments it is called with, or "fn" for a function as a value (for a top-level name several modules declare). */
+  private lookup(name: string, use?: Expr[] | "fn"): Binding | undefined {
     for (let i = this.scopes.length - 1; i >= 0; i--) {
       const found = this.scopes[i]!.get(name);
-      if (found) return found;
+      if (found) return (i === 0 && this.overloads.get(name) && this.pick(this.overloads.get(name)!, use)) || found;
     }
     return undefined;
+  }
+
+  /** The declaration a use of an overloaded name means: a variable when it is read, the function whose parameters fit when it is called. */
+  private pick(options: Binding[], use: Expr[] | "fn" | undefined): Binding | undefined {
+    if (use === undefined) return options.find((b) => b.kind === "global");
+    const params = (b: Binding): Ty[] | undefined => (b.kind === "fn" ? b.decl.params.map((p) => p.ty) : b.ty.k === "fn" ? b.ty.params : undefined);
+    const callable = options.filter((b) => params(b));
+    if (use === "fn") return callable[0];
+    const score = (b: Binding) => {
+      const ps = params(b)!;
+      if (use.length > ps.length) return -1;
+      return use.reduce((sum, arg, i) => {
+        const have = this.typeOf(arg);
+        return sum + (have.k === "unknown" || have.k === "nil" ? 1 : this.ty(have as Ty) === this.ty(ps[i]!) ? 2 : 0);
+      }, 0);
+    };
+    return callable.reduce<Binding | undefined>((best, b) => (best && score(best) >= score(b) ? best : b), undefined);
+  }
+
+  /** A function's name in Rust. */
+  private fnName(name: string, b: Fn): string {
+    return this.rustNames.get(b.decl) ?? this.name(name);
   }
 
   private scoped<T>(print: () => T): T {
@@ -391,6 +442,8 @@ class RustPrinter extends Printer {
         return obj.k === "array" || obj.k === "map" ? obj.of : UNKNOWN;
       }
       case "call": {
+        const picked = x.callee.e === "id" ? this.lookup(x.callee.name, x.args) : undefined;
+        if (picked?.kind === "fn") return picked.decl.ret;
         const callee = this.typeOf(x.callee);
         if (this.isRt(callee, "Variants")) return rt("StyleClass");
         return callee.k === "fn" ? callee.ret : UNKNOWN;
@@ -675,7 +728,7 @@ class RustPrinter extends Printer {
       case "launch": {
         const call = this.expr({ ...x.call, await: false } as Expr, ind);
         // launch() logs a failure: a native function has none to report.
-        const callee = x.call.e === "call" && x.call.callee.e === "id" ? this.lookup(x.call.callee.name) : undefined;
+        const callee = x.call.e === "call" && x.call.callee.e === "id" ? this.lookup(x.call.callee.name, x.call.args) : undefined;
         return callee?.kind === "fn" && callee.native ? `launch(async move { Ok::<_, JsError>(${call}.await) })` : `launch(${call})`;
       }
     }
@@ -856,7 +909,12 @@ class RustPrinter extends Printer {
         continue;
       }
       const inner = ind + INDENT;
-      const v = kind === "number" || kind === "enum" ? `Some(${this.expr(value, inner)})` : kind === "state" ? `css_state(${this.expr(value, inner)})` : `css_${kind}(${this.strRef(value, inner)})`;
+      const v =
+        kind === "number" || kind === "enum"
+          ? `Some(${this.expr(value, inner)})`
+          : kind === "state" || kind === "media" || kind === "animation"
+            ? `css_${kind}(${this.expr(value, inner)})`
+            : `css_${kind}(${this.strRef(value, inner)})`;
       fields.push(`${snake(key)}: ${v}`);
     }
     const literal = fields.length ? this.layout("Style ", [...fields, "..Style::default()"], ind, "{}").replace(/default\(\),\n/, "default()\n") : "Style::default()";
@@ -911,7 +969,7 @@ class RustPrinter extends Printer {
   /** A function as a value: an `Rc<dyn Fn>`, of the type `want` when the slot has one. */
   private fnValue(x: Expr, ind: string, want?: Extract<Ty, { k: "fn" }>): string {
     if (x.e === "lambda") return `f${x.params.length}(${this.lambda(x, ind)})`;
-    const b = x.e === "id" ? this.lookup(x.name) : undefined;
+    const b = x.e === "id" ? this.lookup(x.name, "fn") : undefined;
     if (x.e !== "id" || b?.kind !== "fn") return this.expr(x, ind);
     const own: Ty = { k: "fn", params: b.decl.params.map((p) => p.ty), ret: b.decl.ret };
     if (!want || this.ty(own) === this.ty(want)) return `f${b.decl.params.length}(${this.fnItem(x.name, b, ind)})`;
@@ -923,7 +981,7 @@ class RustPrinter extends Printer {
 
   /** A declared function as something callable: its name, or a closure supplying what it captures. */
   private fnItem(name: string, b: Fn, ind: string): string {
-    if (!b.captures.size && !b.decl.async) return this.name(name);
+    if (!b.captures.size && !b.decl.async) return this.fnName(name, b);
     const params: Param[] = b.decl.params.map((p) => ({ name: p.name, ty: p.ty }));
     const call: Expr = { e: "call", callee: { e: "id", name }, args: params.map((p) => ({ e: "id", name: p.name })) };
     return this.lambda({ e: "lambda", params, ret: b.decl.ret, body: b.decl.ret.k === "void" ? [{ s: "expr", x: call }] : call }, ind);
@@ -932,7 +990,7 @@ class RustPrinter extends Printer {
   /** A callback for an array method, called before the method returns: no `Rc` needed. */
   private callback(x: Expr, ind: string): string {
     if (x.e === "lambda") return this.lambda(x, ind);
-    const b = x.e === "id" ? this.lookup(x.name) : undefined;
+    const b = x.e === "id" ? this.lookup(x.name, "fn") : undefined;
     if (x.e === "id" && b?.kind === "fn") return this.fnItem(x.name, b, ind);
     return `&*${this.atom(x, ind)}`;
   }
@@ -947,7 +1005,7 @@ class RustPrinter extends Printer {
 
   private callExpr(x: Extract<Expr, { e: "call" }>, ind: string): string {
     const inner = ind + INDENT;
-    const b = x.callee.e === "id" ? this.lookup(x.callee.name) : undefined;
+    const b = x.callee.e === "id" ? this.lookup(x.callee.name, x.args) : undefined;
     if (x.callee.e === "id" && b?.kind === "fn") {
       const args = b.decl.params.map((p, i) => {
         const arg = x.args[i] ?? p.default;
@@ -956,7 +1014,7 @@ class RustPrinter extends Printer {
       // What a local function captures travels with each call.
       for (const [capture, local] of b.captures) args.push(local.boxed || !this.isCopy(local.ty) ? `${this.name(capture)}.clone()` : this.name(capture));
       // The app's own async functions return a Result; a native one returns its value.
-      return this.finish(this.layout(this.name(x.callee.name), args, ind), x.await, b.decl.async && !b.native);
+      return this.finish(this.layout(this.fnName(x.callee.name, b), args, ind), x.await, b.decl.async && !b.native);
     }
     const callee = this.typeOf(x.callee);
     if (this.isRt(callee, "Variants")) {
@@ -1056,10 +1114,25 @@ class RustPrinter extends Printer {
         return `Compound::new(&[${matches.join(", ")}], ${this.expr(x.args[1]!, ind)})`;
       }
       case "Route": {
-        const [title, presentation, header] = [named.get("title"), named.get("presentation"), named.get("header")];
-        const options = [title ? `Some(${fn(title)})` : "None", presentation ? this.strRef(presentation, ind) : '"push"', header ? this.expr(header, ind) : "true"];
+        const [title, presentation, header, end] = [named.get("title"), named.get("presentation"), named.get("header"), named.get("onEndReached")];
+        const options = [
+          title ? `Some(${fn(title)})` : "None",
+          presentation ? this.strRef(presentation, ind) : '"push"',
+          header ? this.expr(header, ind) : "true",
+          end ? `Some(${fn(end, { k: "fn", params: [{ k: "map", of: { k: "string" } }], ret: { k: "void" } })})` : "None",
+        ];
         return this.layout("Route::new", [this.strRef(x.args[0]!, ind), fn(x.args[1]), ...options], ind);
       }
+      case "MediaRule": {
+        const bound = (arg: Expr) => (arg.e === "nil" ? "None" : `Some(${this.expr(arg, inner)})`);
+        return this.layout("MediaRule::new", [bound(x.args[0]!), bound(x.args[1]!), this.expr(x.args[2]!, inner)], ind);
+      }
+      case "KeyframeStop":
+        return this.layout("KeyframeStop::new", [this.expr(x.args[0]!, inner), this.expr(x.args[1]!, inner)], ind);
+      case "StyleAnimation":
+        return this.layout("StyleAnimation::new", x.args.map((a) => this.expr(a, inner)), ind);
+      case "globalStyle":
+        return this.layout("global_style", [this.strRef(x.args[0]!, inner), this.expr(x.args[1]!, inner)], ind);
       case "Tab":
         return `Tab::new(${x.args.map((a) => this.strRef(a, ind)).join(", ")})`;
       case "Router": {

@@ -12,8 +12,19 @@
 //
 // Requires iOS 15 (URLSession async, UIAction). Swift 5.9+.
 
+#if canImport(UIKit)
 import UIKit
 import UIKit.UIGestureRecognizerSubclass
+
+extension UIView {
+    var cl: CALayer { layer }
+    var parentView: UIView? { superview }
+    var safeInsets: UIEdgeInsets { safeAreaInsets }
+    var gestures: [UIGestureRecognizer]? { gestureRecognizers }
+}
+#else
+import AppKit  // macOS: the UIKit names come from runtimes/macos/UIKitShim.swift
+#endif
 
 // MARK: - Types the generated code uses
 
@@ -109,11 +120,43 @@ public enum Position: Equatable { case relative, absolute }
 // `Display.none` and `TextDecoration.none` are always written in full: against an optional, a bare
 // `.none` is Optional's.
 public enum Display: Equatable { case flex, none }
-public enum FontWeight: Equatable { case normal, bold }
+public enum FontWeight: Equatable { case light, normal, medium, semibold, bold }
 public enum FontStyle: Equatable { case normal, italic }
 public enum TextAlign: Equatable { case left, center, right }
 public enum TextDecoration: Equatable { case none, underline, lineThrough }
 public enum Easing: Equatable { case linear, ease, easeIn, easeOut, easeInOut, spring }
+public enum TextTransform: Equatable { case none, uppercase, lowercase, capitalize }
+public enum ObjectFit: Equatable { case cover, contain, fill }
+public enum PointerEvents: Equatable { case auto, none }
+
+/// A style merged while the window's width is within `min`…`max` (`@media`, a theme's screens).
+public struct MediaRule: Equatable {
+    let min: Double?
+    let max: Double?
+    let style: Style
+    public init(_ min: Double?, _ max: Double?, _ style: Style) { self.min = min; self.max = max; self.style = style }
+    func matches(_ width: CGFloat) -> Bool { (min.map { Double(width) >= $0 } ?? true) && (max.map { Double(width) <= $0 } ?? true) }
+}
+
+/// A keyframes() stop: `at` in 0…1.
+public struct KeyframeStop: Equatable {
+    let at: Double
+    let style: Style
+    public init(_ at: Double, _ style: Style) { self.at = at; self.style = style }
+}
+
+/// A style's `animation`: keyframes, in milliseconds; `iterations` -1 runs forever.
+public struct StyleAnimation: Equatable {
+    let frames: [KeyframeStop]
+    let duration: Double
+    let delay: Double
+    let easing: Easing
+    let iterations: Int
+    let alternate: Bool
+    public init(_ frames: [KeyframeStop], _ duration: Double, _ delay: Double, _ easing: Easing, _ iterations: Int, _ alternate: Bool) {
+        self.frames = frames; self.duration = duration; self.delay = delay; self.easing = easing; self.iterations = iterations; self.alternate = alternate
+    }
+}
 
 /// A struct cannot contain itself: a style's state styles (`pressed`…) sit behind a reference.
 final class StyleRef: Equatable {
@@ -122,7 +165,7 @@ final class StyleRef: Equatable {
     static func == (a: StyleRef, b: StyleRef) -> Bool { a === b || a.style == b.style }
 }
 
-/// The style subset every runtime lays out the same way, in points. Parameters follow the TypeScript `Style` order.
+/// The style subset every runtime lays out the same way, in points. Parameters follow NATIVE_STYLE_KEYS (src/styleAliases.ts).
 public struct Style: Equatable {
     public var flexDirection: FlexDirection?
     public var alignItems: Align?
@@ -163,6 +206,14 @@ public struct Style: Equatable {
     public var borderRadius: Double?
     public var borderWidth: Double?
     public var borderColor: String?
+    public var borderTopWidth: Double?
+    public var borderRightWidth: Double?
+    public var borderBottomWidth: Double?
+    public var borderLeftWidth: Double?
+    public var borderTopColor: String?
+    public var borderRightColor: String?
+    public var borderBottomColor: String?
+    public var borderLeftColor: String?
     public var shadowColor: String?
     public var shadowRadius: Double?
     public var shadowOffsetX: Double?
@@ -175,7 +226,11 @@ public struct Style: Equatable {
     public var letterSpacing: Double?
     public var textAlign: TextAlign?
     public var textDecoration: TextDecoration?
+    public var textTransform: TextTransform?
     public var numberOfLines: Double?
+    public var placeholderColor: String?
+    public var objectFit: ObjectFit?
+    public var pointerEvents: PointerEvents?
     public var translateX: Double?
     public var translateY: Double?
     public var scale: Double?
@@ -183,60 +238,155 @@ public struct Style: Equatable {
     public var transitionDuration: Double?
     public var transitionDelay: Double?
     public var transitionEasing: Easing?
+    public var animation: StyleAnimation?
+    public var media: [MediaRule]?
     var pressedRef: StyleRef?
     var hoverRef: StyleRef?
     var focusedRef: StyleRef?
+    var disabledRef: StyleRef?
+    var enabledRef: StyleRef?
+    var checkedRef: StyleRef?
+    var placeholderShownRef: StyleRef?
+    var firstRef: StyleRef?
+    var lastRef: StyleRef?
+    var onlyRef: StyleRef?
+    var oddRef: StyleRef?
+    var evenRef: StyleRef?
+    var emptyRef: StyleRef?
 
     public var pressed: Style? { pressedRef?.style }
     public var hover: Style? { hoverRef?.style }
     public var focused: Style? { focusedRef?.style }
+    public var disabled: Style? { disabledRef?.style }
+    public var enabled: Style? { enabledRef?.style }
+    public var checked: Style? { checkedRef?.style }
+    public var placeholderShown: Style? { placeholderShownRef?.style }
+    public var first: Style? { firstRef?.style }
+    public var last: Style? { lastRef?.style }
+    public var only: Style? { onlyRef?.style }
+    public var odd: Style? { oddRef?.style }
+    public var even: Style? { evenRef?.style }
+    public var empty: Style? { emptyRef?.style }
 
     public init(
         flexDirection: FlexDirection? = nil, alignItems: Align? = nil, alignSelf: Align? = nil, justifyContent: Justify? = nil,
         flexWrap: FlexWrap? = nil, flex: Double? = nil, gap: Double? = nil, margin: Double? = nil, marginTop: Double? = nil,
         marginRight: Double? = nil, marginBottom: Double? = nil, marginLeft: Double? = nil, padding: Double? = nil,
         paddingTop: Double? = nil, paddingRight: Double? = nil, paddingBottom: Double? = nil, paddingLeft: Double? = nil,
-        width: Double? = nil, widthPct: Double? = nil, height: Double? = nil, minWidth: Double? = nil, maxWidth: Double? = nil, minHeight: Double? = nil,
-        maxHeight: Double? = nil, aspectRatio: Double? = nil, overflow: Overflow? = nil, position: Position? = nil,
-        top: Double? = nil, right: Double? = nil, bottom: Double? = nil, left: Double? = nil, zIndex: Double? = nil,
-        display: Display? = nil, backgroundColor: String? = nil, color: String? = nil, opacity: Double? = nil,
-        borderRadius: Double? = nil, borderWidth: Double? = nil, borderColor: String? = nil, shadowColor: String? = nil,
+        width: Double? = nil, widthPct: Double? = nil, height: Double? = nil, minWidth: Double? = nil, maxWidth: Double? = nil,
+        minHeight: Double? = nil, maxHeight: Double? = nil, aspectRatio: Double? = nil, overflow: Overflow? = nil,
+        position: Position? = nil, top: Double? = nil, right: Double? = nil, bottom: Double? = nil, left: Double? = nil,
+        zIndex: Double? = nil, display: Display? = nil, backgroundColor: String? = nil, color: String? = nil,
+        opacity: Double? = nil, borderRadius: Double? = nil, borderWidth: Double? = nil, borderColor: String? = nil,
+        borderTopWidth: Double? = nil, borderRightWidth: Double? = nil, borderBottomWidth: Double? = nil,
+        borderLeftWidth: Double? = nil, borderTopColor: String? = nil, borderRightColor: String? = nil,
+        borderBottomColor: String? = nil, borderLeftColor: String? = nil, shadowColor: String? = nil,
         shadowRadius: Double? = nil, shadowOffsetX: Double? = nil, shadowOffsetY: Double? = nil, fontSize: Double? = nil,
         fontWeight: FontWeight? = nil, fontStyle: FontStyle? = nil, fontFamily: String? = nil, lineHeight: Double? = nil,
         letterSpacing: Double? = nil, textAlign: TextAlign? = nil, textDecoration: TextDecoration? = nil,
-        numberOfLines: Double? = nil, translateX: Double? = nil, translateY: Double? = nil, scale: Double? = nil,
-        rotate: Double? = nil, transitionDuration: Double? = nil, transitionDelay: Double? = nil,
-        transitionEasing: Easing? = nil, pressed: Style? = nil, hover: Style? = nil, focused: Style? = nil
+        textTransform: TextTransform? = nil, numberOfLines: Double? = nil, placeholderColor: String? = nil,
+        objectFit: ObjectFit? = nil, pointerEvents: PointerEvents? = nil, translateX: Double? = nil, translateY: Double? = nil,
+        scale: Double? = nil, rotate: Double? = nil, transitionDuration: Double? = nil, transitionDelay: Double? = nil,
+        transitionEasing: Easing? = nil, animation: StyleAnimation? = nil, media: [MediaRule]? = nil, pressed: Style? = nil,
+        hover: Style? = nil, focused: Style? = nil, disabled: Style? = nil, enabled: Style? = nil, checked: Style? = nil,
+        placeholderShown: Style? = nil, first: Style? = nil, last: Style? = nil, only: Style? = nil, odd: Style? = nil,
+        even: Style? = nil, empty: Style? = nil
     ) {
-        self.flexDirection = flexDirection; self.alignItems = alignItems; self.alignSelf = alignSelf
-        self.justifyContent = justifyContent; self.flexWrap = flexWrap; self.flex = flex; self.gap = gap
-        self.margin = margin; self.marginTop = marginTop; self.marginRight = marginRight
-        self.marginBottom = marginBottom; self.marginLeft = marginLeft
-        self.padding = padding; self.paddingTop = paddingTop; self.paddingRight = paddingRight
-        self.paddingBottom = paddingBottom; self.paddingLeft = paddingLeft
-        self.width = width; self.widthPct = widthPct; self.height = height; self.minWidth = minWidth; self.maxWidth = maxWidth
-        self.minHeight = minHeight; self.maxHeight = maxHeight; self.aspectRatio = aspectRatio
-        self.overflow = overflow; self.position = position
-        self.top = top; self.right = right; self.bottom = bottom; self.left = left
-        self.zIndex = zIndex; self.display = display
-        self.backgroundColor = backgroundColor; self.color = color; self.opacity = opacity
-        self.borderRadius = borderRadius; self.borderWidth = borderWidth; self.borderColor = borderColor
-        self.shadowColor = shadowColor; self.shadowRadius = shadowRadius
-        self.shadowOffsetX = shadowOffsetX; self.shadowOffsetY = shadowOffsetY
-        self.fontSize = fontSize; self.fontWeight = fontWeight; self.fontStyle = fontStyle; self.fontFamily = fontFamily
-        self.lineHeight = lineHeight; self.letterSpacing = letterSpacing; self.textAlign = textAlign
-        self.textDecoration = textDecoration; self.numberOfLines = numberOfLines
-        self.translateX = translateX; self.translateY = translateY; self.scale = scale; self.rotate = rotate
-        self.transitionDuration = transitionDuration; self.transitionDelay = transitionDelay
+        self.flexDirection = flexDirection
+        self.alignItems = alignItems
+        self.alignSelf = alignSelf
+        self.justifyContent = justifyContent
+        self.flexWrap = flexWrap
+        self.flex = flex
+        self.gap = gap
+        self.margin = margin
+        self.marginTop = marginTop
+        self.marginRight = marginRight
+        self.marginBottom = marginBottom
+        self.marginLeft = marginLeft
+        self.padding = padding
+        self.paddingTop = paddingTop
+        self.paddingRight = paddingRight
+        self.paddingBottom = paddingBottom
+        self.paddingLeft = paddingLeft
+        self.width = width
+        self.widthPct = widthPct
+        self.height = height
+        self.minWidth = minWidth
+        self.maxWidth = maxWidth
+        self.minHeight = minHeight
+        self.maxHeight = maxHeight
+        self.aspectRatio = aspectRatio
+        self.overflow = overflow
+        self.position = position
+        self.top = top
+        self.right = right
+        self.bottom = bottom
+        self.left = left
+        self.zIndex = zIndex
+        self.display = display
+        self.backgroundColor = backgroundColor
+        self.color = color
+        self.opacity = opacity
+        self.borderRadius = borderRadius
+        self.borderWidth = borderWidth
+        self.borderColor = borderColor
+        self.borderTopWidth = borderTopWidth
+        self.borderRightWidth = borderRightWidth
+        self.borderBottomWidth = borderBottomWidth
+        self.borderLeftWidth = borderLeftWidth
+        self.borderTopColor = borderTopColor
+        self.borderRightColor = borderRightColor
+        self.borderBottomColor = borderBottomColor
+        self.borderLeftColor = borderLeftColor
+        self.shadowColor = shadowColor
+        self.shadowRadius = shadowRadius
+        self.shadowOffsetX = shadowOffsetX
+        self.shadowOffsetY = shadowOffsetY
+        self.fontSize = fontSize
+        self.fontWeight = fontWeight
+        self.fontStyle = fontStyle
+        self.fontFamily = fontFamily
+        self.lineHeight = lineHeight
+        self.letterSpacing = letterSpacing
+        self.textAlign = textAlign
+        self.textDecoration = textDecoration
+        self.textTransform = textTransform
+        self.numberOfLines = numberOfLines
+        self.placeholderColor = placeholderColor
+        self.objectFit = objectFit
+        self.pointerEvents = pointerEvents
+        self.translateX = translateX
+        self.translateY = translateY
+        self.scale = scale
+        self.rotate = rotate
+        self.transitionDuration = transitionDuration
+        self.transitionDelay = transitionDelay
         self.transitionEasing = transitionEasing
+        self.animation = animation
+        self.media = media
         self.pressedRef = pressed.map { StyleRef($0) }
         self.hoverRef = hover.map { StyleRef($0) }
         self.focusedRef = focused.map { StyleRef($0) }
+        self.disabledRef = disabled.map { StyleRef($0) }
+        self.enabledRef = enabled.map { StyleRef($0) }
+        self.checkedRef = checked.map { StyleRef($0) }
+        self.placeholderShownRef = placeholderShown.map { StyleRef($0) }
+        self.firstRef = first.map { StyleRef($0) }
+        self.lastRef = last.map { StyleRef($0) }
+        self.onlyRef = only.map { StyleRef($0) }
+        self.oddRef = odd.map { StyleRef($0) }
+        self.evenRef = even.map { StyleRef($0) }
+        self.emptyRef = empty.map { StyleRef($0) }
     }
 
-    /// `o`'s set values win, as later declarations do in CSS; a `padding` or `margin` shorthand resets the sides before it.
+    /// `o`'s set values win, as later declarations do in CSS; a shorthand (`padding`, `margin`, `borderWidth`, `borderColor`) resets the sides before it.
     public func merged(_ o: Style) -> Style {
         var s = self
+        if o.padding != nil { s.paddingTop = nil; s.paddingRight = nil; s.paddingBottom = nil; s.paddingLeft = nil }
+        if o.margin != nil { s.marginTop = nil; s.marginRight = nil; s.marginBottom = nil; s.marginLeft = nil }
+        if o.borderWidth != nil { s.borderTopWidth = nil; s.borderRightWidth = nil; s.borderBottomWidth = nil; s.borderLeftWidth = nil }
+        if o.borderColor != nil { s.borderTopColor = nil; s.borderRightColor = nil; s.borderBottomColor = nil; s.borderLeftColor = nil }
         s.flexDirection = o.flexDirection ?? s.flexDirection
         s.alignItems = o.alignItems ?? s.alignItems
         s.alignSelf = o.alignSelf ?? s.alignSelf
@@ -244,16 +394,12 @@ public struct Style: Equatable {
         s.flexWrap = o.flexWrap ?? s.flexWrap
         s.flex = o.flex ?? s.flex
         s.gap = o.gap ?? s.gap
-        if let m = o.margin {
-            s.margin = m; s.marginTop = nil; s.marginRight = nil; s.marginBottom = nil; s.marginLeft = nil
-        }
+        s.margin = o.margin ?? s.margin
         s.marginTop = o.marginTop ?? s.marginTop
         s.marginRight = o.marginRight ?? s.marginRight
         s.marginBottom = o.marginBottom ?? s.marginBottom
         s.marginLeft = o.marginLeft ?? s.marginLeft
-        if let p = o.padding {
-            s.padding = p; s.paddingTop = nil; s.paddingRight = nil; s.paddingBottom = nil; s.paddingLeft = nil
-        }
+        s.padding = o.padding ?? s.padding
         s.paddingTop = o.paddingTop ?? s.paddingTop
         s.paddingRight = o.paddingRight ?? s.paddingRight
         s.paddingBottom = o.paddingBottom ?? s.paddingBottom
@@ -280,6 +426,14 @@ public struct Style: Equatable {
         s.borderRadius = o.borderRadius ?? s.borderRadius
         s.borderWidth = o.borderWidth ?? s.borderWidth
         s.borderColor = o.borderColor ?? s.borderColor
+        s.borderTopWidth = o.borderTopWidth ?? s.borderTopWidth
+        s.borderRightWidth = o.borderRightWidth ?? s.borderRightWidth
+        s.borderBottomWidth = o.borderBottomWidth ?? s.borderBottomWidth
+        s.borderLeftWidth = o.borderLeftWidth ?? s.borderLeftWidth
+        s.borderTopColor = o.borderTopColor ?? s.borderTopColor
+        s.borderRightColor = o.borderRightColor ?? s.borderRightColor
+        s.borderBottomColor = o.borderBottomColor ?? s.borderBottomColor
+        s.borderLeftColor = o.borderLeftColor ?? s.borderLeftColor
         s.shadowColor = o.shadowColor ?? s.shadowColor
         s.shadowRadius = o.shadowRadius ?? s.shadowRadius
         s.shadowOffsetX = o.shadowOffsetX ?? s.shadowOffsetX
@@ -292,7 +446,11 @@ public struct Style: Equatable {
         s.letterSpacing = o.letterSpacing ?? s.letterSpacing
         s.textAlign = o.textAlign ?? s.textAlign
         s.textDecoration = o.textDecoration ?? s.textDecoration
+        s.textTransform = o.textTransform ?? s.textTransform
         s.numberOfLines = o.numberOfLines ?? s.numberOfLines
+        s.placeholderColor = o.placeholderColor ?? s.placeholderColor
+        s.objectFit = o.objectFit ?? s.objectFit
+        s.pointerEvents = o.pointerEvents ?? s.pointerEvents
         s.translateX = o.translateX ?? s.translateX
         s.translateY = o.translateY ?? s.translateY
         s.scale = o.scale ?? s.scale
@@ -300,9 +458,21 @@ public struct Style: Equatable {
         s.transitionDuration = o.transitionDuration ?? s.transitionDuration
         s.transitionDelay = o.transitionDelay ?? s.transitionDelay
         s.transitionEasing = o.transitionEasing ?? s.transitionEasing
+        s.animation = o.animation ?? s.animation
+        if let m = o.media { s.media = (s.media ?? []) + m }
         s.pressedRef = Style.mergedState(s.pressedRef, o.pressedRef)
         s.hoverRef = Style.mergedState(s.hoverRef, o.hoverRef)
         s.focusedRef = Style.mergedState(s.focusedRef, o.focusedRef)
+        s.disabledRef = Style.mergedState(s.disabledRef, o.disabledRef)
+        s.enabledRef = Style.mergedState(s.enabledRef, o.enabledRef)
+        s.checkedRef = Style.mergedState(s.checkedRef, o.checkedRef)
+        s.placeholderShownRef = Style.mergedState(s.placeholderShownRef, o.placeholderShownRef)
+        s.firstRef = Style.mergedState(s.firstRef, o.firstRef)
+        s.lastRef = Style.mergedState(s.lastRef, o.lastRef)
+        s.onlyRef = Style.mergedState(s.onlyRef, o.onlyRef)
+        s.oddRef = Style.mergedState(s.oddRef, o.oddRef)
+        s.evenRef = Style.mergedState(s.evenRef, o.evenRef)
+        s.emptyRef = Style.mergedState(s.emptyRef, o.emptyRef)
         return s
     }
 
@@ -316,18 +486,45 @@ public struct Style: Equatable {
     var inherited: Style {
         Style(
             color: color, fontSize: fontSize, fontWeight: fontWeight, fontStyle: fontStyle, fontFamily: fontFamily,
-            lineHeight: lineHeight, letterSpacing: letterSpacing, textAlign: textAlign
+            lineHeight: lineHeight, letterSpacing: letterSpacing, textAlign: textAlign, textTransform: textTransform
         )
+    }
+
+    /// The border's width on each side: a side's own, or `borderWidth`.
+    var borders: UIEdgeInsets {
+        let b = borderWidth ?? 0
+        return UIEdgeInsets(
+            top: CGFloat(borderTopWidth ?? b), left: CGFloat(borderLeftWidth ?? b),
+            bottom: CGFloat(borderBottomWidth ?? b), right: CGFloat(borderRightWidth ?? b)
+        )
+    }
+
+    /// Whether every side has the same border: the layer's own border draws it, with the corners rounded.
+    var uniformBorder: Bool {
+        let b = borders
+        let c = borderColor
+        return b.top == b.left && b.top == b.bottom && b.top == b.right
+            && (borderTopColor ?? c) == c && (borderRightColor ?? c) == c && (borderBottomColor ?? c) == c && (borderLeftColor ?? c) == c
     }
 
     /// Padding plus border.
     var insets: UIEdgeInsets {
-        let b = borderWidth ?? 0
+        let b = borders
         return UIEdgeInsets(
-            top: CGFloat((paddingTop ?? padding ?? 0) + b), left: CGFloat((paddingLeft ?? padding ?? 0) + b),
-            bottom: CGFloat((paddingBottom ?? padding ?? 0) + b), right: CGFloat((paddingRight ?? padding ?? 0) + b)
+            top: CGFloat(paddingTop ?? padding ?? 0) + b.top, left: CGFloat(paddingLeft ?? padding ?? 0) + b.left,
+            bottom: CGFloat(paddingBottom ?? padding ?? 0) + b.bottom, right: CGFloat(paddingRight ?? padding ?? 0) + b.right
         )
     }
+
+    /// `lineHeight` in points: a bare number under 4 is a multiple of the font size, as in CSS.
+    var lineHeightPoints: CGFloat {
+        let size = fontSize ?? 15
+        guard let lh = lineHeight else { return CGFloat((size * 1.2).rounded()) }
+        return CGFloat(lh < 4 ? (size * lh).rounded() : lh)
+    }
+
+    /// Whether the style changes with the box's place among its siblings.
+    var structural: Bool { firstRef != nil || lastRef != nil || onlyRef != nil || oddRef != nil || evenRef != nil }
 
     var margins: UIEdgeInsets {
         UIEdgeInsets(
@@ -340,8 +537,8 @@ public struct Style: Equatable {
 
     /// What a plain UILabel has no property for: the text is then set as an attributed string.
     var richText: Bool {
-        if letterSpacing != nil || lineHeight != nil { return true }
-        return textDecoration == .underline || textDecoration == .lineThrough
+        // Every label sets its line height (below), so every label is attributed.
+        return true
     }
 
     /// The style without what only paints or transforms: two styles equal here give the same boxes.
@@ -350,9 +547,12 @@ public struct Style: Equatable {
         s.overflow = nil; s.backgroundColor = nil; s.color = nil; s.opacity = nil; s.borderRadius = nil; s.borderColor = nil
         s.shadowColor = nil; s.shadowRadius = nil; s.shadowOffsetX = nil; s.shadowOffsetY = nil
         s.textAlign = nil; s.textDecoration = nil
+        s.borderTopColor = nil; s.borderRightColor = nil; s.borderBottomColor = nil; s.borderLeftColor = nil
+        s.placeholderColor = nil; s.objectFit = nil; s.pointerEvents = nil; s.animation = nil; s.media = nil
         s.translateX = nil; s.translateY = nil; s.scale = nil; s.rotate = nil
         s.transitionDuration = nil; s.transitionDelay = nil; s.transitionEasing = nil
-        s.pressedRef = nil; s.hoverRef = nil; s.focusedRef = nil
+        s.pressedRef = nil; s.hoverRef = nil; s.focusedRef = nil; s.disabledRef = nil; s.enabledRef = nil; s.checkedRef = nil
+        s.placeholderShownRef = nil; s.firstRef = nil; s.lastRef = nil; s.onlyRef = nil; s.oddRef = nil; s.evenRef = nil; s.emptyRef = nil
         return s
     }
 
@@ -403,17 +603,50 @@ public struct Compound {
     }
 }
 
-private func parseColor(_ value: String?) -> UIColor? {
-    guard var hex = value?.trimmingCharacters(in: .whitespaces).lowercased() else { return nil }
-    switch hex {
-    case "transparent": return .clear
-    case "white": return .white
-    case "black": return .black
-    case "red": return .red
-    default: break
+/// CSS colours: `#rgb(a)`, `#rrggbb(aa)`, `rgb()` / `rgba()`, `hsl()` / `hsla()`, `transparent` and the common names.
+@MainActor private func parseColor(_ value: String?) -> UIColor? {
+    guard let raw = value?.trimmingCharacters(in: .whitespaces).lowercased(), !raw.isEmpty else { return nil }
+    if let cached = colorCache[raw] { return cached }
+    let color = cssColor(raw)
+    colorCache[raw] = color
+    return color
+}
+
+@MainActor private var colorCache: [String: UIColor?] = [:]
+
+private let namedColors: [String: String] = [
+    "white": "#ffffff", "black": "#000000", "red": "#ff0000", "green": "#008000", "blue": "#0000ff", "yellow": "#ffff00",
+    "orange": "#ffa500", "purple": "#800080", "pink": "#ffc0cb", "gray": "#808080", "grey": "#808080", "silver": "#c0c0c0",
+    "navy": "#000080", "teal": "#008080", "maroon": "#800000", "olive": "#808000", "lime": "#00ff00", "aqua": "#00ffff",
+    "cyan": "#00ffff", "fuchsia": "#ff00ff", "magenta": "#ff00ff", "indigo": "#4b0082", "violet": "#ee82ee", "brown": "#a52a2a",
+    "gold": "#ffd700", "coral": "#ff7f50", "salmon": "#fa8072", "tomato": "#ff6347", "crimson": "#dc143c", "skyblue": "#87ceeb",
+    "lightgray": "#d3d3d3", "lightgrey": "#d3d3d3", "darkgray": "#a9a9a9", "darkgrey": "#a9a9a9", "whitesmoke": "#f5f5f5",
+]
+
+private func cssColor(_ text: String) -> UIColor? {
+    if text == "transparent" { return .clear }
+    if let named = namedColors[text] { return cssColor(named) }
+    if text.hasPrefix("rgb") || text.hasPrefix("hsl") {
+        guard let open = text.firstIndex(of: "("), let close = text.lastIndex(of: ")") else { return nil }
+        let parts = text[text.index(after: open)..<close].split(whereSeparator: { $0 == "," || $0 == " " || $0 == "/" }).map(String.init)
+        guard parts.count >= 3 else { return nil }
+        func number(_ part: String, _ full: Double) -> Double {
+            part.hasSuffix("%") ? (Double(part.dropLast()) ?? 0) / 100 * full : Double(part.replacingOccurrences(of: "deg", with: "")) ?? 0
+        }
+        let alpha = parts.count > 3 ? CGFloat(number(parts[3], 1)) : 1
+        if text.hasPrefix("rgb") {
+            return UIColor(red: CGFloat(number(parts[0], 255) / 255), green: CGFloat(number(parts[1], 255) / 255), blue: CGFloat(number(parts[2], 255) / 255), alpha: alpha)
+        }
+        // HSL → RGB, as CSS defines it.
+        let h = number(parts[0], 360), sat = number(parts[1], 1), l = number(parts[2], 1)
+        func f(_ n: Double) -> CGFloat {
+            let k = (n + h / 30).truncatingRemainder(dividingBy: 12)
+            return CGFloat(l - sat * min(l, 1 - l) * max(-1, min(k - 3, 9 - k, 1)))
+        }
+        return UIColor(red: f(0), green: f(8), blue: f(4), alpha: alpha)
     }
-    guard hex.hasPrefix("#") else { return nil }
-    hex.removeFirst()
+    guard text.hasPrefix("#") else { return nil }
+    var hex = String(text.dropFirst())
     if hex.count == 3 || hex.count == 4 { hex = hex.map { "\($0)\($0)" }.joined() }
     guard hex.count == 6 || hex.count == 8, let n = UInt64(hex, radix: 16) else { return nil }
     let rgba = hex.count == 6 ? (n << 8) | 0xff : n
@@ -423,14 +656,34 @@ private func parseColor(_ value: String?) -> UIColor? {
     )
 }
 
+/// globalStyle(): by tag name, and "body" for the screens and what every view inherits.
+@MainActor var globalStyles: [String: Style] = [:]
+
+@MainActor public func globalStyle(_ selector: String, _ style: Style) {
+    for part in selector.split(separator: ",") {
+        var tag = part.trimmingCharacters(in: .whitespaces)
+        if tag == "html" || tag == ":root" || tag == "*" { tag = "body" }
+        globalStyles[tag] = (globalStyles[tag] ?? Style()).merged(style)
+    }
+}
+
+/// The screens' background: the body's, or white.
+@MainActor var screenBackground: UIColor { parseColor(globalStyles["body"]?.backgroundColor) ?? .white }
+
 private let textTags: Set<String> = [
     "span", "p", "h1", "h2", "h3", "h4", "h5", "h6", "label", "strong", "b", "small", "em", "i", "u", "s", "del", "ins", "mark", "code",
     "pre", "kbd", "samp", "var", "abbr", "cite", "q", "dfn", "sub", "sup", "time", "legend", "caption", "figcaption", "summary", "dt", "dd", "a",
     "bdi", "bdo", "data", "output", "rt", "rp", "ruby",
 ]
 
-/// What the browser (and nuclo-native) give each tag before any style.
-private func tagStyle(_ tag: String) -> Style {
+/// What the browser (and nuclo-native) give each tag before any style, and what globalStyle() adds.
+@MainActor private func tagStyle(_ tag: String) -> Style {
+    let own = builtinTagStyle(tag)
+    guard let global = globalStyles[tag] else { return own }
+    return own.merged(global)
+}
+
+private func builtinTagStyle(_ tag: String) -> Style {
     switch tag {
     case "h1": return Style(fontSize: 32, fontWeight: .bold)
     case "h2": return Style(fontSize: 22, fontWeight: .bold)
@@ -450,7 +703,7 @@ private func tagStyle(_ tag: String) -> Style {
     case "code", "pre", "kbd", "samp": return Style(fontFamily: "monospace")
     case "a": return Style(color: "#2563eb")
     case "hr": return Style(height: 1, backgroundColor: "#cbd5e1")
-    case "head", "base", "link", "meta", "script", "style", "title", "template", "noscript", "datalist", "area", "source", "track", "wbr": return Style(display: .none)
+    case "head", "base", "link", "meta", "script", "style", "title", "template", "noscript", "datalist", "area", "source", "track", "wbr": return Style(display: Display.none)
     case "br": return Style(height: 16)
     case "select": return Style(overflow: .hidden, backgroundColor: "#ffffff", borderRadius: 8, borderWidth: 1, borderColor: "#cbd5e1")
     case "progress": return Style(flexDirection: .row, width: 160, height: 16, overflow: .hidden, backgroundColor: "#e5e7eb", borderRadius: 8)
@@ -461,24 +714,45 @@ private func tagStyle(_ tag: String) -> Style {
     }
 }
 
+/// UIKit's initializer is not optional and AppKit's is.
+private func makeFont(_ descriptor: UIFontDescriptor, _ size: CGFloat) -> UIFont? { UIFont(descriptor: descriptor, size: size) }
+
 private func textFont(_ s: Style) -> UIFont {
     let size = CGFloat(s.fontSize ?? 15)
-    let weight: UIFont.Weight = s.fontWeight == .bold ? .bold : .regular
+    let weight: UIFont.Weight
+    switch s.fontWeight ?? .normal {
+    case .light: weight = .light
+    case .normal: weight = .regular
+    case .medium: weight = .medium
+    case .semibold: weight = .semibold
+    case .bold: weight = .bold
+    }
     let system = UIFont.systemFont(ofSize: size, weight: weight)
     let family = s.fontFamily ?? "sans-serif"
     var font = system
     var traits: UIFontDescriptor.SymbolicTraits = []
+    #if canImport(UIKit)
+    let bold = UIFontDescriptor.SymbolicTraits.traitBold, italic = UIFontDescriptor.SymbolicTraits.traitItalic
+    #else
+    let bold = UIFontDescriptor.SymbolicTraits.bold, italic = UIFontDescriptor.SymbolicTraits.italic
+    #endif
     if family == "monospace" {
         font = .monospacedSystemFont(ofSize: size, weight: weight)
     } else if family == "serif" {
-        if let serif = system.fontDescriptor.withDesign(.serif) { font = UIFont(descriptor: serif, size: size) }
+        if let serif = system.fontDescriptor.withDesign(.serif), let f = makeFont(serif, size) { font = f }
     } else if family != "sans-serif", let named = UIFont(name: family, size: size) {
         font = named
-        if s.fontWeight == .bold { traits.insert(.traitBold) }
+        if s.fontWeight == .bold || s.fontWeight == .semibold { traits.insert(bold) }
     }
-    if s.fontStyle == .italic { traits.insert(.traitItalic) }
-    guard !traits.isEmpty, let styled = font.fontDescriptor.withSymbolicTraits(font.fontDescriptor.symbolicTraits.union(traits)) else { return font }
-    return UIFont(descriptor: styled, size: size)
+    if s.fontStyle == .italic { traits.insert(italic) }
+    guard !traits.isEmpty else { return font }
+    let descriptor = font.fontDescriptor
+    #if canImport(UIKit)
+    guard let styled = descriptor.withSymbolicTraits(descriptor.symbolicTraits.union(traits)) else { return font }
+    #else
+    let styled = descriptor.withSymbolicTraits(descriptor.symbolicTraits.union(traits))
+    #endif
+    return makeFont(styled, size) ?? font
 }
 
 /// Translate, then rotate, then scale, around the box's centre (as CSS `translate() rotate() scale()`).
@@ -679,7 +953,7 @@ private func points(_ value: Double?) -> CGFloat? {
             current.setNeedsLayout()
             top = current
             if current is ScreenRoot { break }
-            v = current.superview
+            v = current.parentView
         }
         return top
     }
@@ -730,7 +1004,7 @@ private func points(_ value: Double?) -> CGFloat? {
     /// Writes the text into the label: plain, or with the attributes a UILabel has no property for.
     private func setText() {
         guard let label else { return }
-        let text = lastText ?? ""
+        let text = transformed(lastText ?? "")
         guard rich else {
             label.text = text
             return
@@ -739,10 +1013,10 @@ private func points(_ value: Double?) -> CGFloat? {
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = label.textAlignment
         if s.numberOfLines != nil { paragraph.lineBreakMode = .byTruncatingTail }
-        if let lineHeight = s.lineHeight {
-            paragraph.minimumLineHeight = CGFloat(lineHeight)
-            paragraph.maximumLineHeight = CGFloat(lineHeight)
-        }
+        // Every runtime sets a line 1.2 times its font size, in whole points, unless the style says otherwise.
+        let lineHeight = s.lineHeightPoints
+        paragraph.minimumLineHeight = lineHeight
+        paragraph.maximumLineHeight = lineHeight
         var attributes: [NSAttributedString.Key: Any] = [
             .font: textFont(s),
             .foregroundColor: parseColor(s.color) ?? UIColor.black,
@@ -752,6 +1026,16 @@ private func points(_ value: Double?) -> CGFloat? {
         if s.textDecoration == .underline { attributes[.underlineStyle] = NSUnderlineStyle.single.rawValue }
         if s.textDecoration == .lineThrough { attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
         label.attributedText = NSAttributedString(string: text, attributes: attributes)
+    }
+
+    /// `textTransform`, as CSS applies it.
+    private func transformed(_ text: String) -> String {
+        switch computed.textTransform ?? TextTransform.none {
+        case .none: return text
+        case .uppercase: return text.uppercased()
+        case .lowercase: return text.lowercased()
+        case .capitalize: return text.split(separator: " ", omittingEmptySubsequences: false).map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: " ")
+        }
     }
 
     // MARK: Refresh
@@ -774,11 +1058,30 @@ private func points(_ value: Double?) -> CGFloat? {
             computed = parent?.computed ?? Style()
             return
         }
-        var s = (parent?.computed.inherited ?? Style()).merged(tagStyle(tag))
+        let root = parent == nil ? (globalStyles["body"]?.inherited ?? Style()) : Style()
+        var s = (parent?.computed.inherited ?? root).merged(tagStyle(tag))
         for c in classes { s = s.merged(c) }
         if let dynamicClass { s = s.merged(dynamicClass().style) }
         s = s.merged(inline)
         if let dynamicInline { s = s.merged(dynamicInline()) }
+        // `@media` and screens, against the window's width.
+        if let media = s.media {
+            Runtime.shared.usesMedia = true
+            for rule in media where rule.matches(Runtime.shared.viewportWidth) { s = s.merged(rule.style) }
+        }
+        // The box's place among its siblings, and what it holds.
+        if s.structural, let (index, count) = siblingPlace() {
+            if index == 0, let first = s.first { s = s.merged(first) }
+            if index == count - 1, let last = s.last { s = s.merged(last) }
+            if count == 1, let only = s.only { s = s.merged(only) }
+            if index % 2 == 0, let odd = s.odd { s = s.merged(odd) }
+            if index % 2 == 1, let even = s.even { s = s.merged(even) }
+        }
+        if let empty = s.empty, isEmpty { s = s.merged(empty) }
+        if let checked = s.checked, (view as? UISwitch)?.isOn == true { s = s.merged(checked) }
+        if let shown = s.placeholderShown, fieldText?.isEmpty == true { s = s.merged(shown) }
+        if disabledNow, let disabled = s.disabled { s = s.merged(disabled) }
+        if !disabledNow, let enabled = s.enabled { s = s.merged(enabled) }
         if s.hover != nil { touched()?.watchHover() }
         if hoveredNow, let hover = s.hover { s = s.merged(hover) }
         if focusedNow, let focused = s.focused { s = s.merged(focused) }
@@ -803,40 +1106,67 @@ private func points(_ value: Double?) -> CGFloat? {
         if let top, (s.transitionDuration ?? 0) > 0, widthMoves || heightMoves { Runtime.shared.animateLayout(top, s) }
     }
 
+    /// This view's index among the views of its container, and how many there are.
+    private func siblingPlace() -> (Int, Int)? {
+        guard let host else { return nil }
+        let views = host.children.flatMap { $0.flatViews }
+        guard let index = views.firstIndex(where: { $0 === self }) else { return nil }
+        return (index, views.count)
+    }
+
+    /// `:empty`: a box with no views, a text with no text.
+    private var isEmpty: Bool { flex != nil ? children.flatMap { $0.flatViews }.isEmpty : (lastText ?? "").isEmpty }
+
+    private var fieldText: String? { (view as? UITextField)?.text ?? (view as? UITextView)?.text }
+
     private func paint(_ view: UIView, _ s: Style, _ before: Style?) {
         let clips = s.overflow == .hidden || s.overflow == .scroll
-        // A scroller (and a textarea, which is one) always clips its content.
-        view.clipsToBounds = clips || kind == .image || view is UIScrollView
+        // A scroller (and a textarea, which is one) always clips its content; a label paints its own background,
+        // which only a clip rounds.
+        view.clipsToBounds = clips || kind == .image || view is UIScrollView || (view is UILabel && (s.borderRadius ?? 0) > 0)
         view.isHidden = s.display == Display.none
-        view.layer.borderWidth = CGFloat(s.borderWidth ?? 0)
-        view.layer.borderColor = (parseColor(s.borderColor) ?? UIColor.black).cgColor
+        if s.pointerEvents == PointerEvents.none { view.isUserInteractionEnabled = false } else if touch != nil || kind != .text { view.isUserInteractionEnabled = true }
+        if let image = view as? UIImageView {
+            image.contentMode = s.objectFit == .contain ? .scaleAspectFit : s.objectFit == .fill ? .scaleToFill : .scaleAspectFill
+        }
+        if s.uniformBorder {
+            view.cl.borderWidth = s.borders.top
+            view.cl.borderColor = (parseColor(s.borderColor) ?? UIColor.black).cgColor
+            sideBorders?.forEach { $0.removeFromSuperlayer() }
+            sideBorders = nil
+        } else {
+            view.cl.borderWidth = 0
+            paintSideBorders(view, s)
+        }
+        if s.animation != before?.animation { runAnimation(view, s) }
         if s.hasShadow {
             // As CSS: the colour carries the shadow's alpha, and the blur radius is twice the layer's (a standard deviation).
-            view.layer.shadowColor = (parseColor(s.shadowColor) ?? UIColor(white: 0, alpha: 0.25)).cgColor
-            view.layer.shadowOpacity = 1
-            view.layer.shadowRadius = CGFloat(s.shadowRadius ?? 0) / 2
-            view.layer.shadowOffset = CGSize(width: CGFloat(s.shadowOffsetX ?? 0), height: CGFloat(s.shadowOffsetY ?? 0))
+            view.cl.shadowColor = (parseColor(s.shadowColor) ?? UIColor(white: 0, alpha: 0.25)).cgColor
+            view.cl.shadowOpacity = 1
+            view.cl.shadowRadius = CGFloat(s.shadowRadius ?? 0) / 2
+            view.cl.shadowOffset = CGSize(width: CGFloat(s.shadowOffsetX ?? 0), height: CGFloat(s.shadowOffsetY ?? 0))
         } else {
-            view.layer.shadowOpacity = 0
+            view.cl.shadowOpacity = 0
         }
         shadowPath()
 
         let background = parseColor(s.backgroundColor) ?? UIColor.clear
         let alpha = CGFloat(s.opacity ?? 1) * (disabledNow ? 0.4 : 1)
         let transform = boxTransform(s)
-        let radius = CGFloat(s.borderRadius ?? 0)
+        // A radius past half the box is a pill, as in CSS.
+        let radius = min(CGFloat(s.borderRadius ?? 0), placed.map { min($0.width, $0.height) / 2 } ?? .greatestFiniteMagnitude)
         let changes = {
             view.backgroundColor = background
             view.alpha = alpha
             view.transform = transform
-            view.layer.cornerRadius = radius
+            view.cl.cornerRadius = radius
         }
         // A transition animates what changed since the last paint; the first paint is applied at once.
         if before != nil && (s.transitionDuration ?? 0) > 0 {
             animate(s, changes)
         } else {
             // A transition still running (a card springing back, grabbed again) must not add to the new values.
-            if (before?.transitionDuration ?? 0) > 0 { view.layer.removeAllAnimations() }
+            if (before?.transitionDuration ?? 0) > 0 { view.cl.removeAllAnimations() }
             changes()
         }
 
@@ -849,6 +1179,7 @@ private func points(_ value: Double?) -> CGFloat? {
         case let field as PaddedTextField:
             field.font = textFont(s)
             field.textColor = parseColor(s.color) ?? UIColor.black
+            field.placeholderColor = parseColor(s.placeholderColor)
             field.textAlignment = alignment
             field.insets = s.insets
         case let textView as UITextView:
@@ -871,10 +1202,73 @@ private func points(_ value: Double?) -> CGFloat? {
         }
     }
 
+    /// The sides' borders when they differ: a layer per side, over the content.
+    private var sideBorders: [CALayer]?
+
+    private func paintSideBorders(_ view: UIView, _ s: Style) {
+        let layers = sideBorders ?? (0..<4).map { _ in
+            let layer = CALayer()
+            layer.zPosition = 1000
+            view.cl.addSublayer(layer)
+            return layer
+        }
+        sideBorders = layers
+        let colors = [s.borderTopColor, s.borderRightColor, s.borderBottomColor, s.borderLeftColor]
+        for (layer, color) in zip(layers, colors) {
+            layer.backgroundColor = (parseColor(color ?? s.borderColor) ?? UIColor.black).cgColor
+        }
+        layoutSideBorders()
+    }
+
+    private func layoutSideBorders() {
+        guard let sideBorders, let view else { return }
+        let b = computed.borders
+        let size = view.bounds.size
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        sideBorders[0].frame = CGRect(x: 0, y: 0, width: size.width, height: b.top)
+        sideBorders[1].frame = CGRect(x: size.width - b.right, y: 0, width: b.right, height: size.height)
+        sideBorders[2].frame = CGRect(x: 0, y: size.height - b.bottom, width: size.width, height: b.bottom)
+        sideBorders[3].frame = CGRect(x: 0, y: 0, width: b.left, height: size.height)
+        CATransaction.commit()
+    }
+
+    /// A style's keyframes animation, on the layer: opacity, transform and background colour, frame by frame.
+    private func runAnimation(_ view: UIView, _ s: Style) {
+        view.cl.removeAnimation(forKey: "nuclo.animation")
+        guard let anim = s.animation, !anim.frames.isEmpty, anim.duration > 0 else { return }
+        let times = anim.frames.map { NSNumber(value: $0.at) }
+        let at = anim.frames.map { s.merged($0.style) }
+        var animations: [CAAnimation] = []
+        func track(_ key: String, _ values: [Any]) {
+            let a = CAKeyframeAnimation(keyPath: key)
+            a.values = values
+            a.keyTimes = times
+            animations.append(a)
+        }
+        if anim.frames.contains(where: { $0.style.opacity != nil }) { track("opacity", at.map { NSNumber(value: $0.opacity ?? 1) }) }
+        if anim.frames.contains(where: { $0.style.translateX != nil || $0.style.translateY != nil || $0.style.scale != nil || $0.style.rotate != nil }) {
+            track("transform", at.map { NSValue(caTransform3D: CATransform3DMakeAffineTransform(boxTransform($0))) })
+        }
+        if anim.frames.contains(where: { $0.style.backgroundColor != nil }) {
+            track("backgroundColor", at.map { (parseColor($0.backgroundColor) ?? UIColor.clear).cgColor })
+        }
+        let group = CAAnimationGroup()
+        group.animations = animations
+        group.duration = anim.duration / 1000
+        group.beginTime = CACurrentMediaTime() + anim.delay / 1000
+        group.autoreverses = anim.alternate
+        let count = anim.iterations < 0 ? Float.infinity : Float(anim.iterations)
+        group.repeatCount = anim.alternate ? count / 2 : count
+        let names: [Easing: CAMediaTimingFunctionName] = [.linear: .linear, .easeIn: .easeIn, .easeOut: .easeOut, .easeInOut: .easeInEaseOut]
+        group.timingFunction = CAMediaTimingFunction(name: names[anim.easing] ?? .default)
+        view.cl.add(group, forKey: "nuclo.animation")
+    }
+
     /// The layer's shadow is cast by the box (rounded as it is), not by whatever its content draws.
     private func shadowPath() {
         guard let view else { return }
-        view.layer.shadowPath = computed.hasShadow
+        view.cl.shadowPath = computed.hasShadow
             ? UIBezierPath(roundedRect: view.bounds, cornerRadius: CGFloat(computed.borderRadius ?? 0)).cgPath
             : nil
     }
@@ -892,6 +1286,9 @@ private func points(_ value: Double?) -> CGFloat? {
         // A view that arrives during an animated layout pass appears in place: it has nowhere to come from.
         if first { UIView.performWithoutAnimation(move) } else { move() }
         if computed.hasShadow { shadowPath() }
+        if sideBorders != nil { layoutSideBorders() }
+        // The pill radius depends on the size.
+        if let r = computed.borderRadius, CGFloat(r) * 2 > min(next.width, next.height) { view.cl.cornerRadius = min(CGFloat(r), min(next.width, next.height) / 2) }
     }
 
     // MARK: Lifecycle
@@ -929,6 +1326,8 @@ private func points(_ value: Double?) -> CGFloat? {
     // UIKit reports no event when the runtime itself writes a control (`text`, `setOn`), so nothing
     // has to be silenced here as it is on Android.
     private func fire(_ type: String) {
+        // States that follow what the user did to the control.
+        if (type == "input" && computed.placeholderShown != nil) || (type == "change" && computed.checked != nil) { applyStyle() }
         listeners[type]?(NativeEvent(target: target))
     }
 
@@ -1016,6 +1415,7 @@ private func points(_ value: Double?) -> CGFloat? {
 
     func setDisabled(_ off: Bool) {
         disabledNow = off
+        if computed.disabled != nil || computed.enabled != nil { applyStyle() }
         (view as? UIControl)?.isEnabled = !off
         view?.alpha = CGFloat(computed.opacity ?? 1) * (off ? 0.4 : 1)
     }
@@ -1061,15 +1461,22 @@ private func points(_ value: Double?) -> CGFloat? {
         if let flex {
             size = flex.measure(width: available, height: height, fit: width == nil)
         } else if view is UISwitch {
+            // A switch on iOS; on a Mac a checkbox, the size a browser gives one.
+            #if canImport(UIKit)
             size = CGSize(width: 51, height: 31)
+            #else
+            size = CGSize(width: 20, height: 20)
+            #endif
         } else if view is UIImageView {
             size = CGSize(width: min(available, 120), height: height ?? width ?? 120)
         } else if let field = view as? PaddedTextField {
-            let line = (field.font ?? UIFont.systemFont(ofSize: 15)).lineHeight.rounded(.up)
-            size = CGSize(width: min(available, 180), height: line + field.insets.top + field.insets.bottom + 6)
+            // One line of the style's line height inside the padding, as the web's field.
+            size = CGSize(width: min(available, 180), height: computed.lineHeightPoints + field.insets.top + field.insets.bottom)
         } else {
             let fit = view.sizeThatFits(CGSize(width: available, height: CGFloat.greatestFiniteMagnitude))
-            size = CGSize(width: min(fit.width.rounded(.up), available), height: fit.height.rounded(.up))
+            // Up to the device pixel, as a browser places text: whole points would put every box after it up to a point off.
+            let scale = Runtime.shared.scale
+            size = CGSize(width: min((fit.width * scale).rounded(.up) / scale, available), height: fit.height.rounded(.up))
         }
         if let width { size.width = width } else { size.width = clamp(size.width, minW, maxW) }
         if let height { size.height = height }
@@ -1324,9 +1731,9 @@ final class PointerRecognizer: UIGestureRecognizer {
         var v = touch.view
         while let current = v, current !== view {
             if current is UIControl || current is UITextView { return false }
-            let taps = current.gestureRecognizers?.contains { ($0 as? UITapGestureRecognizer)?.numberOfTapsRequired == 1 } ?? false
+            let taps = current.gestures?.contains { ($0 as? UITapGestureRecognizer)?.numberOfTapsRequired == 1 } ?? false
             if taps { return false }
-            v = current.superview
+            v = current.parentView
         }
         return true
     }
@@ -1377,6 +1784,14 @@ final class NButton: UIControl {
 final class PaddedTextField: UITextField {
     var insets = UIEdgeInsets.zero
     var onKey: (@MainActor (String) -> Void)?
+    /// `placeholderColor` / `::placeholder`: the placeholder is written in it.
+    var placeholderColor: UIColor? { didSet { if placeholderColor != oldValue { colorPlaceholder() } } }
+    override var placeholder: String? { didSet { colorPlaceholder() } }
+
+    private func colorPlaceholder() {
+        guard let placeholderColor, let text = placeholder else { return }
+        attributedPlaceholder = NSAttributedString(string: text, attributes: [.foregroundColor: placeholderColor, .font: font ?? UIFont.systemFont(ofSize: 15)])
+    }
 
     override func textRect(forBounds bounds: CGRect) -> CGRect { bounds.inset(by: insets) }
     override func editingRect(forBounds bounds: CGRect) -> CGRect { bounds.inset(by: insets) }
@@ -1418,9 +1833,13 @@ final class FlexView: UIView {
         for item in next {
             if let v = item.view, v.superview !== self { addSubview(v) }
         }
+        let moved = items.map { ObjectIdentifier($0) } != next.map { ObjectIdentifier($0) }
         items = next
         reorder()
         node?.invalidateLayout()
+        // `:first-child`, `:odd`…: the places changed.
+        if moved { for item in next where item.computed.structural { item.applyStyle() } }
+        if moved, node?.computed.empty != nil { node?.applyStyle() }
     }
 
     /// zIndex: subviews are drawn (and touched) in `items` order, lowest zIndex first.
@@ -1820,26 +2239,42 @@ final class ScrollBox: UIScrollView, UIScrollViewDelegate {
 protocol ScreenRoot: UIView {}
 
 /// A scrolling screen whose content is a node, as tall as its content or the screen.
-final class ScreenView: UIScrollView, ScreenRoot {
+final class ScreenView: UIScrollView, ScreenRoot, UIScrollViewDelegate {
     let root: Node
+    /// The route's onEndReached: run when the content's end comes within half a screen.
+    var onEndReached: (() -> Void)?
+    private var endAt: CGFloat = -1
 
     init(_ root: Node) {
         self.root = root
         super.init(frame: .zero)
-        backgroundColor = .white
+        backgroundColor = screenBackground
         alwaysBounceVertical = true
         keyboardDismissMode = .interactive
         if let v = root.view { addSubview(v) }
+        delegate = self
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        Runtime.shared.noteViewport(window.map { $0.frame.width } ?? bounds.width)
         let visible = bounds.height - adjustedContentInset.top - adjustedContentInset.bottom
         let size = CGSize(width: bounds.width, height: max(root.measure(maxWidth: bounds.width, exact: true).height, visible))
         root.place(CGRect(origin: .zero, size: size))
         if contentSize != size { contentSize = size }
+        checkEnd()
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) { checkEnd() }
+
+    /// Once per content height: a page that arrives makes the content taller, and the next end counts again.
+    private func checkEnd() {
+        guard let onEndReached, bounds.height > 0, contentSize.height != endAt else { return }
+        guard contentOffset.y + bounds.height >= contentSize.height - bounds.height / 2 else { return }
+        endAt = contentSize.height
+        DispatchQueue.main.async { onEndReached() }
     }
 }
 
@@ -1850,7 +2285,7 @@ final class FixedScreenView: UIView, ScreenRoot {
     init(_ root: Node) {
         self.root = root
         super.init(frame: .zero)
-        backgroundColor = .white
+        backgroundColor = screenBackground
         if let v = root.view { addSubview(v) }
     }
 
@@ -1863,7 +2298,7 @@ final class FixedScreenView: UIView, ScreenRoot {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        root.place(bounds.inset(by: safeAreaInsets))
+        root.place(bounds.inset(by: safeInsets))
     }
 }
 
@@ -1886,7 +2321,7 @@ final class LayerView: UIView, ScreenRoot {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        root.place(bounds.inset(by: safeAreaInsets))
+        root.place(bounds.inset(by: safeInsets))
     }
 
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
@@ -1908,8 +2343,16 @@ final class ScreenController: UIViewController {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
 
+    var onEndReached: (() -> Void)?
+
     override func loadView() {
-        if root.scrolls { view = FixedScreenView(root) } else { view = ScreenView(root) }
+        if root.scrolls {
+            view = FixedScreenView(root)
+        } else {
+            let screen = ScreenView(root)
+            screen.onEndReached = onEndReached
+            view = screen
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -1969,6 +2412,20 @@ final class RootController: UIViewController {
     func addRoot(_ node: Node) {
         roots.append(node)
         node.applyStylesDeep()
+    }
+
+    /// The window's width, which `@media` rules are matched against.
+    private(set) var viewportWidth: CGFloat = UIScreen.main.bounds.width
+    /// Whether some style has a media rule: only then does a new width restyle the app.
+    var usesMedia = false
+
+    func noteViewport(_ width: CGFloat) {
+        guard width > 0, width != viewportWidth else { return }
+        viewportWidth = width
+        guard usesMedia else { return }
+        DispatchQueue.main.async { [self] in
+            for root in roots { root.applyStylesDeep() }
+        }
     }
 
     func removeRoot(_ node: Node) {
@@ -2135,7 +2592,13 @@ public struct Attr: NodeMod {
     public static func src(_ value: @escaping @MainActor () -> String) -> NodeMod {
         Attr { node in
             node.bind(value) { url in
-                guard let image = node.view as? UIImageView, let u = URL(string: url) else { return }
+                guard let image = node.view as? UIImageView else { return }
+                // A relative path is one of the app's own files (an example's assets/, copied into the bundle).
+                if !url.contains("://") {
+                    image.image = Bundle.main.path(forResource: url, ofType: nil).flatMap { UIImage(contentsOfFile: $0) }
+                    return
+                }
+                guard let u = URL(string: url) else { return }
                 Task { @MainActor in
                     if let (data, _) = try? await URLSession.shared.data(from: u) { image.image = UIImage(data: data) }
                 }
@@ -2153,7 +2616,15 @@ public struct Attr: NodeMod {
 
     public static func ariaLabel(_ value: String) -> NodeMod { ariaLabel { value } }
     public static func ariaLabel(_ value: @escaping @MainActor () -> String) -> NodeMod {
-        Attr { node in node.bind(value) { node.view?.accessibilityLabel = $0 } }
+        Attr { node in
+            node.bind(value) {
+                #if canImport(UIKit)
+                node.view?.accessibilityLabel = $0
+                #else
+                node.view?.setAccessibilityLabel($0)
+                #endif
+            }
+        }
     }
 
     public static func checked(_ value: Bool) -> NodeMod { checked { value } }
@@ -2170,8 +2641,10 @@ public struct Attr: NodeMod {
         Attr { node in
             guard let field = node.view as? UITextField else { return }
             field.isSecureTextEntry = type == "password"
+            #if canImport(UIKit)
             field.keyboardType = type == "email" ? .emailAddress : type == "number" ? .decimalPad : .default
             field.autocapitalizationType = type == "email" ? .none : .sentences
+            #endif
         }
     }
 
@@ -2466,16 +2939,18 @@ public struct Attr: NodeMod {
     let title: (@MainActor (Params) -> String)?
     let presentation: String
     let header: Bool
+    let onEndReached: (@MainActor (Params) -> Void)?
 
     public init(
         _ pattern: String, _ view: @escaping @MainActor (Params) -> Node, title: (@MainActor (Params) -> String)? = nil,
-        presentation: String = "push", header: Bool = true
+        presentation: String = "push", header: Bool = true, onEndReached: (@MainActor (Params) -> Void)? = nil
     ) {
         parts = pattern.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
         self.view = view
         self.title = title
         self.presentation = presentation
         self.header = header
+        self.onEndReached = onEndReached
     }
 
     func match(_ path: String) -> Params? {
@@ -2526,6 +3001,8 @@ public struct NTab {
     public var canGoBack: Bool { !stacks.isEmpty && stacks[active].count > 1 }
 
     func makeController() -> UIViewController {
+        // `NUCLO_PATH=/a/b`: start there, as a web deep link does (for checks against the web build).
+        let initial = ProcessInfo.processInfo.environment["NUCLO_PATH"] ?? self.initial
         let roots = tabs.isEmpty ? [initial] : tabs.map { $0.path }
         active = max(0, tabOf(initial))
         for (i, rootPath) in roots.enumerated() {
@@ -2665,6 +3142,7 @@ public struct NTab {
             let node = route.view(params)
             Runtime.shared.addRoot(node)
             let controller = ScreenController(node, title: route.title?(params) ?? "", header: route.header)
+            if let end = route.onEndReached { controller.onEndReached = { end(params) } }
             return Entry(path: path, node: node, controller: controller, modal: route.presentation == "modal")
         }
         let node = p(A.text("No route matches \(path)"))
@@ -2895,19 +3373,157 @@ public extension String {
 
 // MARK: - App delegate
 
+#if canImport(UIKit)
+
 /// The generated `AppDelegate` subclasses this and calls the app's entry point in `start()`.
+/// The window is made by the scene delegate below: UIKit requires the scene lifecycle (Mac Catalyst and newer iOS).
 @MainActor open class NucloAppDelegate: UIResponder, UIApplicationDelegate {
     public var window: UIWindow?
 
     open func start() {}
 
     public func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        let window = UIWindow(frame: UIScreen.main.bounds)
+        start()
+        return true
+    }
+
+    public func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(name: "Default", sessionRole: connectingSceneSession.role)
+        configuration.delegateClass = NucloSceneDelegate.self
+        return configuration
+    }
+
+    /// `NUCLO_DUMP=file`: two seconds after launch, writes `text|x|y|width|height` (points, window space) for every label and button.
+    func dumpFrames(of window: UIWindow, to path: String) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            var lines: [String] = []
+            func walk(_ view: UIView) {
+                let text = (view as? UILabel)?.text ?? (view as? UIButton)?.currentTitle ?? (view as? UITextView)?.text
+                if let text, !text.isEmpty {
+                    let f = view.convert(view.bounds, to: window)
+                    lines.append(String(format: "%@|%.1f|%.1f|%.1f|%.1f", String(text.prefix(24)), f.minX, f.minY, f.width, f.height))
+                }
+                view.subviews.forEach(walk)
+            }
+            walk(window)
+            try? lines.joined(separator: "\n").write(toFile: path, atomically: true, encoding: .utf8)
+        }
+    }
+}
+
+@MainActor open class NucloSceneDelegate: UIResponder, UIWindowSceneDelegate {
+    public var window: UIWindow?
+
+    public func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        guard let windowScene = scene as? UIWindowScene else { return }
+        let window = UIWindow(windowScene: windowScene)
+        #if targetEnvironment(macCatalyst)
+        // A phone-sized window, as the GPUI target opens (420 x 780 points).
+        windowScene.sizeRestrictions?.minimumSize = CGSize(width: 420, height: 780)
+        windowScene.sizeRestrictions?.maximumSize = CGSize(width: 420, height: 780)
+        #endif
         window.overrideUserInterfaceStyle = .light
         window.rootViewController = Runtime.shared.root
         window.makeKeyAndVisible()
         self.window = window
-        start()
-        return true
+        if let delegate = UIApplication.shared.delegate as? NucloAppDelegate {
+            delegate.window = window
+            if let path = ProcessInfo.processInfo.environment["NUCLO_DUMP"] { delegate.dumpFrames(of: window, to: path) }
+        }
     }
 }
+#else
+/// macOS: `@main` calls `main()`, which runs the app: the app's `start()`, then a 420 x 780 window around the root view.
+@MainActor open class NucloAppDelegate: NSObject, NSApplicationDelegate {
+    public var window: NSWindow?
+    private static var keep: NucloAppDelegate?
+
+    public required override init() { super.init() }
+
+    open func start() {}
+
+    public static func main() {
+        let delegate = Self()
+        keep = delegate
+        let app = NSApplication.shared
+        app.setActivationPolicy(.regular)
+        app.delegate = delegate
+        let menu = NSMenu()
+        let item = NSMenuItem()
+        menu.addItem(item)
+        let appMenu = NSMenu()
+        appMenu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        item.submenu = appMenu
+        app.mainMenu = menu
+        app.run()
+    }
+
+    public func applicationDidFinishLaunching(_ notification: Notification) {
+        // The app paints a light interface (as the web build does): the platform's controls must match it.
+        NSApp.appearance = NSAppearance(named: .aqua)
+        start()
+        // `NUCLO_SIZE=700x900`: the window's content size at launch (checks of `@media` against the web build).
+        let size = ProcessInfo.processInfo.environment["NUCLO_SIZE"]?.split(separator: "x").compactMap { Double($0) }
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: size?.first ?? 420, height: size?.last ?? 780),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false
+        )
+        window.title = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? ProcessInfo.processInfo.processName
+        window.contentView = Runtime.shared.root.view
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        // No field has the focus until the user gives it one, as on the web.
+        window.makeFirstResponder(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        self.window = window
+        let environment = ProcessInfo.processInfo.environment
+        if let points = environment["NUCLO_SCROLL"].flatMap(Double.init) { scroll(window, by: CGFloat(points)) }
+        if let path = environment["NUCLO_DUMP"] { dumpFrames(of: window, to: path) }
+        if let path = environment["NUCLO_SHOT"] { shoot(window, to: path) }
+    }
+
+    /// `NUCLO_SCROLL=points`: a second after launch, the shown screen is scrolled by that much, as the wheel would.
+    func scroll(_ window: NSWindow, by points: CGFloat) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { MainActor.assumeIsolated {
+            @MainActor func find(_ view: NSView) -> ScreenView? {
+                if let screen = view as? ScreenView, !screen.isHidden, screen.window != nil { return screen }
+                for child in view.subviews { if let found = find(child) { return found } }
+                return nil
+            }
+            guard let root = window.contentView, let screen = find(root) else { return }
+            screen.contentOffset = CGPoint(x: 0, y: screen.contentOffset.y + points)
+        } }
+    }
+
+    public func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+
+    /// `NUCLO_DUMP=file`: two seconds after launch, writes `text|x|y|width|height` (points, content-view space) for every label and text view.
+    func dumpFrames(of window: NSWindow, to path: String) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { MainActor.assumeIsolated {
+            guard let root = window.contentView else { return }
+            var lines: [String] = []
+            @MainActor func walk(_ view: NSView) {
+                if view.isHidden { return }
+                // The attributed string is what shows (every label sets one): `text` may be an older value.
+                let text = (view as? UILabel)?.attributedText?.string ?? (view as? UILabel)?.text ?? (view as? UITextView)?.text
+                if let text, !text.isEmpty {
+                    let f = view.convert(view.bounds, to: root)
+                    lines.append(String(format: "%@|%.1f|%.1f|%.1f|%.1f", String(text.prefix(24)), f.minX, f.minY, f.width, f.height))
+                }
+                view.subviews.forEach(walk)
+            }
+            walk(root)
+            try? lines.joined(separator: "\n").write(toFile: path, atomically: true, encoding: .utf8)
+        } }
+    }
+
+    /// `NUCLO_SHOT=file.png`: two seconds after launch, a picture of the content view.
+    func shoot(_ window: NSWindow, to path: String) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            guard let root = window.contentView, let rep = root.bitmapImageRepForCachingDisplay(in: root.bounds) else { return }
+            root.cacheDisplay(in: root.bounds, to: rep)
+            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
+        }
+    }
+}
+#endif

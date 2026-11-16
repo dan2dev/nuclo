@@ -346,6 +346,10 @@ pub(crate) fn download_async(url: String, done: impl FnOnce(Option<Vec<u8>>) + '
 
 #[cfg(not(target_arch = "wasm32"))]
 fn download(url: &str) -> Option<Vec<u8>> {
+    // A file the app wrote (a photo it took), as the other platforms' images read it.
+    if let Some(path) = url.strip_prefix("file://") {
+        return std::fs::read(path).ok();
+    }
     let mut response = request(url, "GET", None, &[]).ok()?;
     if !response.status().is_success() {
         return None;

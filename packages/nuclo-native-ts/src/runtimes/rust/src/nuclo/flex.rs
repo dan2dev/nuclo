@@ -31,14 +31,14 @@ pub(crate) fn layout(node: &Node, width: f32, height: Option<f32>, frames: Optio
     if let Some(frames) = frames {
         frames.extend(flow.iter().zip(out).map(|(child, frame)| ((*child).clone(), frame)));
         // An absolute child is placed in the padding box, as in CSS.
-        let b = px(s.border_width.unwrap_or(0.0));
-        let box_w = (if width < UNBOUNDED { width } else { natural[0] }) - 2.0 * b;
+        let [bt, br, bb, bl] = s.borders();
+        let box_w = (if width < UNBOUNDED { width } else { natural[0] }) - bl - br;
         for child in &items {
             let cs = child.computed.get();
             if cs.position == Some(Position::Absolute) && cs.display != Some(Display::None) {
-                let mut frame = absolute_frame(child, box_w, h - 2.0 * b);
-                frame[0] += b;
-                frame[1] += b;
+                let mut frame = absolute_frame(child, box_w, h - bt - bb);
+                frame[0] += bl;
+                frame[1] += bt;
                 frames.push((child.clone(), frame));
             }
         }

@@ -148,13 +148,34 @@ enum class FlexWrap { Nowrap, Wrap }
 enum class Overflow { Visible, Hidden, Scroll }
 enum class Position { Relative, Absolute }
 enum class Display { Flex, None }
-enum class FontWeight { Normal, Bold }
+enum class FontWeight(internal val weight: Int) { Light(300), Normal(400), Medium(500), Semibold(600), Bold(700) }
 enum class FontStyle { Normal, Italic }
 enum class TextAlign { Left, Center, Right }
 enum class TextDecoration { None, Underline, LineThrough }
 enum class Easing { Linear, Ease, EaseIn, EaseOut, EaseInOut, Spring }
+enum class TextTransform { None, Uppercase, Lowercase, Capitalize }
+enum class ObjectFit { Cover, Contain, Fill }
+enum class PointerEvents { Auto, None }
 
-/** The style subset every runtime lays out the same way, in dp. */
+/** A style merged while the window's width (dp) is within `min`…`max` (`@media`, a theme's screens). */
+data class MediaRule(val min: Double?, val max: Double?, val style: Style) {
+    internal fun matches(width: Double) = (min == null || width >= min) && (max == null || width <= max)
+}
+
+/** A keyframes() stop: `at` in 0…1. */
+data class KeyframeStop(val at: Double, val style: Style)
+
+/** A style's `animation`: keyframes, in milliseconds; `iterations` -1 runs forever. */
+data class StyleAnimation(
+    val frames: List<KeyframeStop>,
+    val duration: Double,
+    val delay: Double,
+    val easing: Easing,
+    val iterations: Int,
+    val alternate: Boolean,
+)
+
+/** The style subset every runtime lays out the same way, in dp. Parameters follow NATIVE_STYLE_KEYS (src/styleAliases.ts). */
 data class Style(
     val flexDirection: FlexDirection? = null,
     val alignItems: Align? = null,
@@ -195,6 +216,14 @@ data class Style(
     val borderRadius: Double? = null,
     val borderWidth: Double? = null,
     val borderColor: String? = null,
+    val borderTopWidth: Double? = null,
+    val borderRightWidth: Double? = null,
+    val borderBottomWidth: Double? = null,
+    val borderLeftWidth: Double? = null,
+    val borderTopColor: String? = null,
+    val borderRightColor: String? = null,
+    val borderBottomColor: String? = null,
+    val borderLeftColor: String? = null,
     val shadowColor: String? = null,
     val shadowRadius: Double? = null,
     val shadowOffsetX: Double? = null,
@@ -207,7 +236,11 @@ data class Style(
     val letterSpacing: Double? = null,
     val textAlign: TextAlign? = null,
     val textDecoration: TextDecoration? = null,
+    val textTransform: TextTransform? = null,
     val numberOfLines: Double? = null,
+    val placeholderColor: String? = null,
+    val objectFit: ObjectFit? = null,
+    val pointerEvents: PointerEvents? = null,
     val translateX: Double? = null,
     val translateY: Double? = null,
     val scale: Double? = null,
@@ -215,14 +248,28 @@ data class Style(
     val transitionDuration: Double? = null,
     val transitionDelay: Double? = null,
     val transitionEasing: Easing? = null,
+    val animation: StyleAnimation? = null,
+    val media: List<MediaRule>? = null,
     val pressed: Style? = null,
     val hover: Style? = null,
     val focused: Style? = null,
+    val disabled: Style? = null,
+    val enabled: Style? = null,
+    val checked: Style? = null,
+    val placeholderShown: Style? = null,
+    val first: Style? = null,
+    val last: Style? = null,
+    val only: Style? = null,
+    val odd: Style? = null,
+    val even: Style? = null,
+    val empty: Style? = null,
 ) {
-    /** `o`'s set values win, as later declarations do in CSS; a `padding` or `margin` shorthand resets the sides before it. */
+    /** `o`'s set values win, as later declarations do in CSS; a shorthand (`padding`, `margin`, `borderWidth`, `borderColor`) resets the sides before it. */
     fun merged(o: Style): Style {
         val resetPadding = o.padding != null
         val resetMargin = o.margin != null
+        val resetWidths = o.borderWidth != null
+        val resetColors = o.borderColor != null
         return Style(
             flexDirection = o.flexDirection ?: flexDirection,
             alignItems = o.alignItems ?: alignItems,
@@ -263,6 +310,14 @@ data class Style(
             borderRadius = o.borderRadius ?: borderRadius,
             borderWidth = o.borderWidth ?: borderWidth,
             borderColor = o.borderColor ?: borderColor,
+            borderTopWidth = o.borderTopWidth ?: if (resetWidths) null else borderTopWidth,
+            borderRightWidth = o.borderRightWidth ?: if (resetWidths) null else borderRightWidth,
+            borderBottomWidth = o.borderBottomWidth ?: if (resetWidths) null else borderBottomWidth,
+            borderLeftWidth = o.borderLeftWidth ?: if (resetWidths) null else borderLeftWidth,
+            borderTopColor = o.borderTopColor ?: if (resetColors) null else borderTopColor,
+            borderRightColor = o.borderRightColor ?: if (resetColors) null else borderRightColor,
+            borderBottomColor = o.borderBottomColor ?: if (resetColors) null else borderBottomColor,
+            borderLeftColor = o.borderLeftColor ?: if (resetColors) null else borderLeftColor,
             shadowColor = o.shadowColor ?: shadowColor,
             shadowRadius = o.shadowRadius ?: shadowRadius,
             shadowOffsetX = o.shadowOffsetX ?: shadowOffsetX,
@@ -275,7 +330,11 @@ data class Style(
             letterSpacing = o.letterSpacing ?: letterSpacing,
             textAlign = o.textAlign ?: textAlign,
             textDecoration = o.textDecoration ?: textDecoration,
+            textTransform = o.textTransform ?: textTransform,
             numberOfLines = o.numberOfLines ?: numberOfLines,
+            placeholderColor = o.placeholderColor ?: placeholderColor,
+            objectFit = o.objectFit ?: objectFit,
+            pointerEvents = o.pointerEvents ?: pointerEvents,
             translateX = o.translateX ?: translateX,
             translateY = o.translateY ?: translateY,
             scale = o.scale ?: scale,
@@ -283,30 +342,71 @@ data class Style(
             transitionDuration = o.transitionDuration ?: transitionDuration,
             transitionDelay = o.transitionDelay ?: transitionDelay,
             transitionEasing = o.transitionEasing ?: transitionEasing,
-            pressed = if (o.pressed != null) pressed?.merged(o.pressed) ?: o.pressed else pressed,
-            hover = if (o.hover != null) hover?.merged(o.hover) ?: o.hover else hover,
-            focused = if (o.focused != null) focused?.merged(o.focused) ?: o.focused else focused,
+            animation = o.animation ?: animation,
+            media = if (o.media == null) media else if (media == null) o.media else media + o.media,
+            pressed = state(pressed, o.pressed),
+            hover = state(hover, o.hover),
+            focused = state(focused, o.focused),
+            disabled = state(disabled, o.disabled),
+            enabled = state(enabled, o.enabled),
+            checked = state(checked, o.checked),
+            placeholderShown = state(placeholderShown, o.placeholderShown),
+            first = state(first, o.first),
+            last = state(last, o.last),
+            only = state(only, o.only),
+            odd = state(odd, o.odd),
+            even = state(even, o.even),
+            empty = state(empty, o.empty),
         )
     }
+
+    private fun state(mine: Style?, theirs: Style?) = if (theirs == null) mine else mine?.merged(theirs) ?: theirs
 
     /** The properties a child takes from its parent unless it sets them. */
     internal val inherited
         get() = Style(
             color = color, fontSize = fontSize, fontWeight = fontWeight, fontStyle = fontStyle, fontFamily = fontFamily,
-            lineHeight = lineHeight, letterSpacing = letterSpacing, textAlign = textAlign,
+            lineHeight = lineHeight, letterSpacing = letterSpacing, textAlign = textAlign, textTransform = textTransform,
         )
+
+    /** The border's width on each side in dp, a side's own or `borderWidth`: top, right, bottom, left. */
+    internal val borders: DoubleArray
+        get() {
+            val b = borderWidth ?: 0.0
+            return doubleArrayOf(borderTopWidth ?: b, borderRightWidth ?: b, borderBottomWidth ?: b, borderLeftWidth ?: b)
+        }
+
+    /** Whether every side has the same border: the drawable's own stroke draws it, with the corners rounded. */
+    internal val uniformBorder: Boolean
+        get() {
+            val b = borders
+            val c = borderColor
+            return b[0] == b[1] && b[0] == b[2] && b[0] == b[3] &&
+                (borderTopColor ?: c) == c && (borderRightColor ?: c) == c && (borderBottomColor ?: c) == c && (borderLeftColor ?: c) == c
+        }
 
     /** Padding plus border, in px: top, right, bottom, left. */
     internal val insets: FloatArray
         get() {
-            val b = (borderWidth ?: 0.0)
+            val b = borders
             return floatArrayOf(
-                px((paddingTop ?: padding ?: 0.0) + b),
-                px((paddingRight ?: padding ?: 0.0) + b),
-                px((paddingBottom ?: padding ?: 0.0) + b),
-                px((paddingLeft ?: padding ?: 0.0) + b),
+                px((paddingTop ?: padding ?: 0.0) + b[0]),
+                px((paddingRight ?: padding ?: 0.0) + b[1]),
+                px((paddingBottom ?: padding ?: 0.0) + b[2]),
+                px((paddingLeft ?: padding ?: 0.0) + b[3]),
             )
         }
+
+    /** `lineHeight` in dp: a bare number under 4 is a multiple of the font size, as in CSS; 1.2 of it when unset. */
+    internal val lineHeightDp: Double
+        get() {
+            val size = fontSize ?: 15.0
+            val lh = lineHeight ?: return kotlin.math.round(size * 1.2)
+            return if (lh < 4) kotlin.math.round(size * lh) else lh
+        }
+
+    /** Whether the style changes with the box's place among its siblings. */
+    internal val structural get() = first != null || last != null || only != null || odd != null || even != null
 
     /** Margins in px: top, right, bottom, left. */
     internal val margins: FloatArray
@@ -323,6 +423,8 @@ data class Style(
             width == o.width && widthPct == o.widthPct && height == o.height && minWidth == o.minWidth && maxWidth == o.maxWidth && minHeight == o.minHeight &&
             maxHeight == o.maxHeight && aspectRatio == o.aspectRatio && position == o.position && top == o.top && right == o.right &&
             bottom == o.bottom && left == o.left && zIndex == o.zIndex && display == o.display && borderWidth == o.borderWidth &&
+            borderTopWidth == o.borderTopWidth && borderRightWidth == o.borderRightWidth && borderBottomWidth == o.borderBottomWidth &&
+            borderLeftWidth == o.borderLeftWidth && textTransform == o.textTransform &&
             fontSize == o.fontSize && fontWeight == o.fontWeight && fontStyle == o.fontStyle && fontFamily == o.fontFamily &&
             lineHeight == o.lineHeight && letterSpacing == o.letterSpacing && numberOfLines == o.numberOfLines
 }
@@ -368,13 +470,40 @@ internal fun parseColor(value: String?): Int? {
     return colorCache.getOrPut(value) { parseColorText(value) }
 }
 
-private fun parseColorText(value: String): Int? {
+private val NAMED_COLORS = hashMapOf(
+    "white" to "#ffffff", "black" to "#000000", "red" to "#ff0000", "green" to "#008000", "blue" to "#0000ff", "yellow" to "#ffff00",
+    "orange" to "#ffa500", "purple" to "#800080", "pink" to "#ffc0cb", "gray" to "#808080", "grey" to "#808080", "silver" to "#c0c0c0",
+    "navy" to "#000080", "teal" to "#008080", "maroon" to "#800000", "olive" to "#808000", "lime" to "#00ff00", "aqua" to "#00ffff",
+    "cyan" to "#00ffff", "fuchsia" to "#ff00ff", "magenta" to "#ff00ff", "indigo" to "#4b0082", "violet" to "#ee82ee", "brown" to "#a52a2a",
+    "gold" to "#ffd700", "coral" to "#ff7f50", "salmon" to "#fa8072", "tomato" to "#ff6347", "crimson" to "#dc143c", "skyblue" to "#87ceeb",
+    "lightgray" to "#d3d3d3", "lightgrey" to "#d3d3d3", "darkgray" to "#a9a9a9", "darkgrey" to "#a9a9a9", "whitesmoke" to "#f5f5f5",
+)
+
+/** CSS colours: `#rgb(a)`, `#rrggbb(aa)`, `rgb()` / `rgba()`, `hsl()` / `hsla()`, `transparent` and the common names. */
+internal fun parseColorText(value: String): Int? {
     val v = value.trim().lowercase()
-    when (v) {
-        "transparent" -> return Color.TRANSPARENT
-        "white" -> return Color.WHITE
-        "black" -> return Color.BLACK
-        "red" -> return Color.RED
+    if (v == "transparent") return Color.TRANSPARENT
+    NAMED_COLORS[v]?.let { return parseColorText(it) }
+    if (v.startsWith("rgb") || v.startsWith("hsl")) {
+        val open = v.indexOf('(')
+        val close = v.lastIndexOf(')')
+        if (open < 0 || close < open) return null
+        val parts = v.substring(open + 1, close).split(',', ' ', '/').filter { it.isNotEmpty() }
+        if (parts.size < 3) return null
+        fun number(part: String, full: Double) =
+            if (part.endsWith("%")) (part.dropLast(1).toDoubleOrNull() ?: 0.0) / 100 * full else part.removeSuffix("deg").toDoubleOrNull() ?: 0.0
+        fun channel(x: Double) = (x.coerceIn(0.0, 1.0) * 255).roundToInt()
+        val alpha = channel(if (parts.size > 3) number(parts[3], 1.0) else 1.0)
+        if (v.startsWith("rgb")) return Color.argb(alpha, channel(number(parts[0], 255.0) / 255), channel(number(parts[1], 255.0) / 255), channel(number(parts[2], 255.0) / 255))
+        // HSL → RGB, as CSS defines it.
+        val h = number(parts[0], 360.0)
+        val sat = number(parts[1], 1.0)
+        val l = number(parts[2], 1.0)
+        fun f(n: Double): Int {
+            val k = (n + h / 30) % 12
+            return channel(l - sat * min(l, 1 - l) * max(-1.0, minOf(k - 3, 9 - k, 1.0)))
+        }
+        return Color.argb(alpha, f(0.0), f(8.0), f(4.0))
     }
     if (!v.startsWith("#")) return null
     var hex = v.substring(1)
@@ -446,10 +575,24 @@ private val TAG_STYLES = hashMapOf(
     "textarea" to Style(padding = 8.0),
 )
 
-private val NO_STYLE = Style()
+internal val NO_STYLE = Style()
 
-/** What the browser (and nuclo-native) give each tag before any style. */
-private fun tagStyle(tag: String) = TAG_STYLES[tag] ?: NO_STYLE
+/** globalStyle(): "body" for the screens and what every root inherits; a tag's merged over its default style. */
+private val globalStyles = HashMap<String, Style>()
+
+fun globalStyle(selectors: String, style: Style) {
+    for (part in selectors.split(",")) {
+        var tag = part.trim()
+        if (tag == "html" || tag == ":root" || tag == "*") tag = "body"
+        globalStyles[tag] = (globalStyles[tag] ?: TAG_STYLES[tag] ?: NO_STYLE).merged(style)
+    }
+}
+
+/** The screens' background: the body's, or white. */
+internal val screenBackground get() = parseColor(globalStyles["body"]?.backgroundColor) ?: Color.WHITE
+
+/** What the browser (and nuclo-native) give each tag before any style, and what globalStyle() adds. */
+private fun tagStyle(tag: String) = globalStyles[tag] ?: TAG_STYLES[tag] ?: NO_STYLE
 
 internal fun px(dp: Double): Float = (dp * Runtime.density).toFloat()
 internal fun dp(px: Float): Double = (px / Runtime.density).toDouble()
@@ -466,14 +609,19 @@ internal class Backdrop : GradientDrawable() {
     var shadowX = 0f
     var shadowY = 0f
     var radius = 0f
+    /** Borders that differ per side, in px (top, right, bottom, left) and their colours; drawn over the fill. */
+    var sides: FloatArray? = null
+    val sideColors = IntArray(4)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val path = Path()
 
     override fun draw(canvas: Canvas) {
+        val b = bounds
+        // A radius past half the box is a pill, as in CSS (GradientDrawable clamps its fill, stroke and outline the same way).
+        val r = min(radius, min(b.width(), b.height()) / 2f)
         if (shadow) {
-            val b = bounds
             path.rewind()
-            path.addRoundRect(b.left.toFloat(), b.top.toFloat(), b.right.toFloat(), b.bottom.toFloat(), radius, radius, Path.Direction.CW)
+            path.addRoundRect(b.left.toFloat(), b.top.toFloat(), b.right.toFloat(), b.bottom.toFloat(), r, r, Path.Direction.CW)
             paint.color = shadowColor or 0xFF000000.toInt()
             // CSS blur is twice the standard deviation; Android's radius is about 1.73 of them.
             paint.setShadowLayer(max(shadowBlur * 0.87f, 0.01f), shadowX, shadowY, shadowColor)
@@ -483,6 +631,17 @@ internal class Backdrop : GradientDrawable() {
             canvas.restoreToCount(save)
         }
         super.draw(canvas)
+        val w = sides ?: return
+        val l = b.left.toFloat()
+        val t = b.top.toFloat()
+        val rt = b.right.toFloat()
+        val bt = b.bottom.toFloat()
+        paint.clearShadowLayer()
+        paint.style = Paint.Style.FILL
+        if (w[0] > 0) canvas.drawRect(l, t, rt, t + w[0], paint.apply { color = sideColors[0] })
+        if (w[1] > 0) canvas.drawRect(rt - w[1], t, rt, bt, paint.apply { color = sideColors[1] })
+        if (w[2] > 0) canvas.drawRect(l, bt - w[2], rt, bt, paint.apply { color = sideColors[2] })
+        if (w[3] > 0) canvas.drawRect(l, t, l + w[3], bt, paint.apply { color = sideColors[3] })
     }
 }
 
@@ -518,8 +677,8 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
             Kind.Box -> flex
             // No default style (defStyleAttr 0): the runtime sets every text property itself, and
             // resolving the theme's textViewStyle was the largest cost of building a row.
-            Kind.Text -> TextView(ctx, null, 0, 0)
-            Kind.Button -> TextView(ctx, null, 0, 0).apply {
+            Kind.Text -> NText(ctx)
+            Kind.Button -> NText(ctx).apply {
                 gravity = Gravity.CENTER
                 isClickable = true
                 foreground = ctx.getDrawable(Runtime.rippleId)
@@ -570,6 +729,7 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
     private var shape: Backdrop? = null
     private var shapeColor = Color.TRANSPARENT
     private var colorAnimator: ValueAnimator? = null
+    private var keyframes: ValueAnimator? = null
 
     // A transition of `width` / `height`: the size layout uses while it runs, in px.
     private var shownWidth: Float? = null
@@ -587,6 +747,7 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
     private var pressedNow = false
     private var hoveredNow = false
     private var focusedNow = false
+    private var disabledNow = false
     /** Set while the runtime writes a control, so it reports no event (as in the browser). */
     private var writing = false
 
@@ -698,7 +859,15 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
         val text = if (textParts.size == 1) textParts[0]() else textParts.joinToString("") { it() }
         if (text == lastText) return
         lastText = text
-        (view as? TextView)?.text = text
+        (view as? TextView)?.text = transformed(text)
+    }
+
+    /** `textTransform`, as CSS applies it. */
+    private fun transformed(text: String) = when (computed.textTransform) {
+        TextTransform.Uppercase -> text.uppercase()
+        TextTransform.Lowercase -> text.lowercase()
+        TextTransform.Capitalize -> text.split(" ").joinToString(" ") { w -> w.replaceFirstChar { it.uppercase() } }
+        else -> text
     }
 
     // Refresh ----------------------------------------------------------------
@@ -727,7 +896,7 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
         val from = parent?.computed
         var s = base ?: NO_STYLE
         if (base == null || from !== baseParent) {
-            s = (from?.inherited ?: NO_STYLE).merged(tagStyle(tag))
+            s = (from?.inherited ?: globalStyles["body"]?.inherited ?: NO_STYLE).merged(tagStyle(tag))
             for (c in classes) s = s.merged(c)
             if (dynamicClass == null) s = s.merged(inline)
             base = s
@@ -735,6 +904,23 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
         }
         dynamicClass?.let { s = s.merged(it().style).merged(inline) }
         dynamicInline?.let { s = s.merged(it()) }
+        // `@media` and screens, against the window's width.
+        s.media?.let { media ->
+            Runtime.usesMedia = true
+            for (rule in media) if (rule.matches(Runtime.viewportWidth)) s = s.merged(rule.style)
+        }
+        // The box's place among its siblings, and what it holds.
+        if (s.structural) siblingPlace()?.let { (index, count) ->
+            if (index == 0) s.first?.let { s = s.merged(it) }
+            if (index == count - 1) s.last?.let { s = s.merged(it) }
+            if (count == 1) s.only?.let { s = s.merged(it) }
+            if (index % 2 == 0) s.odd?.let { s = s.merged(it) }
+            if (index % 2 == 1) s.even?.let { s = s.merged(it) }
+        }
+        if (s.empty != null && isEmpty) s = s.merged(s.empty)
+        if (s.checked != null && (v as? CheckBox)?.isChecked == true) s = s.merged(s.checked)
+        if (s.placeholderShown != null && (v as? EditText)?.text?.isEmpty() == true) s = s.merged(s.placeholderShown)
+        if (disabledNow) s.disabled?.let { s = s.merged(it) } else s.enabled?.let { s = s.merged(it) }
         if (s.hover != null && !watchingHover) watchHover(v)
         if (hoveredNow) s.hover?.let { s = s.merged(it) }
         if (focusedNow) s.focused?.let { s = s.merged(it) }
@@ -750,6 +936,23 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
             v.requestLayout()
             if (before?.zIndex != s.zIndex) (v.parent as? FlexLayout)?.reorder()
         }
+    }
+
+    /** This view's index among the views of its container, and how many there are. */
+    private fun siblingPlace(): Pair<Int, Int>? {
+        val items = (view?.parent as? FlexLayout)?.items ?: return null
+        val index = items.indexOf(this)
+        return if (index < 0) null else index to items.size
+    }
+
+    /** `:empty`: a box with no views, a text with no text. */
+    private val isEmpty get() = if (flex != null) flex.items.isEmpty() else lastText.isNullOrEmpty()
+
+    internal fun setDisabled(off: Boolean) {
+        disabledNow = off
+        view?.isEnabled = !off
+        if (computed.disabled != null || computed.enabled != null) applyStyle()
+        view?.alpha = (computed.opacity ?: 1.0).toFloat() * (if (off) 0.4f else 1f)
     }
 
     private var watchingHover = false
@@ -773,9 +976,11 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
         val curve = if (duration > 0) interpolator(s.transitionEasing) else null
 
         val bg = parseColor(s.backgroundColor) ?: Color.TRANSPARENT
-        val border = (s.borderWidth ?: 0.0) > 0
+        val widths = s.borders
+        val border = widths.any { it > 0 }
         val radius = px(s.borderRadius ?: 0.0)
-        if (bg != Color.TRANSPARENT || border || radius > 0 || s.hasShadow) {
+        val animatesBackground = s.animation?.frames?.any { it.style.backgroundColor != null } == true
+        if (bg != Color.TRANSPARENT || border || radius > 0 || s.hasShadow || animatesBackground) {
             val d = shape ?: Backdrop().also {
                 shape = it
                 shapeColor = Color.TRANSPARENT
@@ -792,7 +997,15 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
                 d.shadowY = px(s.shadowOffsetY ?: 0.0)
             }
             d.invalidateSelf()
-            if (border) d.setStroke(px(s.borderWidth!!).roundToInt(), parseColor(s.borderColor) ?: Color.BLACK) else d.setStroke(0, Color.TRANSPARENT)
+            if (border && s.uniformBorder) {
+                d.sides = null
+                d.setStroke(px(widths[0]).roundToInt(), parseColor(s.borderColor) ?: Color.BLACK)
+            } else {
+                d.setStroke(0, Color.TRANSPARENT)
+                d.sides = if (border) FloatArray(4) { px(widths[it]) } else null
+                val colors = arrayOf(s.borderTopColor, s.borderRightColor, s.borderBottomColor, s.borderLeftColor)
+                for (i in 0..3) d.sideColors[i] = parseColor(colors[i] ?: s.borderColor) ?: Color.BLACK
+            }
             colorAnimator?.cancel()
             if (curve != null && bg != shapeColor) {
                 colorAnimator = ValueAnimator.ofArgb(shapeColor, bg).apply {
@@ -823,6 +1036,13 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
         v.visibility = if (s.display == Display.None) View.GONE else View.VISIBLE
         // An overlay box (absolute) takes the touches over what is under it.
         if (kind == Kind.Box && s.position == Position.Absolute) v.isClickable = true
+        if (v is ImageView && kind == Kind.Image) {
+            v.scaleType = when (s.objectFit) {
+                ObjectFit.Contain -> ImageView.ScaleType.FIT_CENTER
+                ObjectFit.Fill -> ImageView.ScaleType.FIT_XY
+                else -> ImageView.ScaleType.CENTER_CROP
+            }
+        }
 
         val alpha = (s.opacity ?: 1.0).toFloat() * (if (v.isEnabled) 1f else 0.4f)
         val tx = px(s.translateX ?: 0.0)
@@ -843,8 +1063,55 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
         }
 
         if (curve != null && before != null) resize(v, before, s, duration, delay, curve)
+        if (s.animation != before?.animation) runAnimation(v, s)
 
-        if (v is TextView && kind != Kind.Native) paintText(v, s)
+        if (v is TextView && kind != Kind.Native) paintText(v, s, before)
+    }
+
+    /**
+     * A style's keyframes animation: opacity, translate / scale / rotate and the background colour,
+     * interpolated between the stops on each frame. The easing applies to the whole run, as on iOS.
+     */
+    private fun runAnimation(v: View, s: Style) {
+        keyframes?.cancel()
+        keyframes = null
+        val anim = s.animation ?: return
+        if (anim.frames.isEmpty() || anim.duration <= 0) return
+        val stops = anim.frames.sortedBy { it.at }
+        val at = stops.map { s.merged(it.style) }
+        val opacity = stops.any { it.style.opacity != null }
+        val moves = stops.any { it.style.translateX != null || it.style.translateY != null || it.style.scale != null || it.style.rotate != null }
+        val colors = if (stops.any { it.style.backgroundColor != null }) at.map { parseColor(it.backgroundColor) ?: Color.TRANSPARENT } else null
+        val evaluator = android.animation.ArgbEvaluator()
+        val curve = interpolator(anim.easing)
+        keyframes = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = anim.duration.toLong()
+            startDelay = anim.delay.toLong()
+            interpolator = curve
+            repeatCount = if (anim.iterations < 0) ValueAnimator.INFINITE else max(0, anim.iterations - 1)
+            repeatMode = if (anim.alternate) ValueAnimator.REVERSE else ValueAnimator.RESTART
+            addUpdateListener {
+                val t = (it.animatedValue as Float).toDouble()
+                var j = stops.indexOfFirst { stop -> stop.at >= t }
+                if (j < 0) j = stops.size - 1
+                val i = if (j > 0 && stops[j].at > t) j - 1 else j
+                val span = stops[j].at - stops[i].at
+                val f = if (span > 0) ((t - stops[i].at) / span).coerceIn(0.0, 1.0) else 0.0
+                fun mix(a: Double?, b: Double?, unset: Double) = ((a ?: unset) + ((b ?: unset) - (a ?: unset)) * f)
+                val a = at[i]
+                val b = at[j]
+                if (opacity) v.alpha = mix(a.opacity, b.opacity, 1.0).toFloat()
+                if (moves) {
+                    v.translationX = px(mix(a.translateX, b.translateX, 0.0))
+                    v.translationY = px(mix(a.translateY, b.translateY, 0.0))
+                    v.scaleX = mix(a.scale, b.scale, 1.0).toFloat()
+                    v.scaleY = v.scaleX
+                    v.rotation = mix(a.rotate, b.rotate, 0.0).toFloat()
+                }
+                if (colors != null) shape?.setColor(evaluator.evaluate(f.toFloat(), colors[i], colors[j]) as Int)
+            }
+            start()
+        }
     }
 
     /**
@@ -883,7 +1150,7 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
 
 
 
-    private fun paintText(v: TextView, s: Style) {
+    private fun paintText(v: TextView, s: Style, before: Style?) {
         val size = (s.fontSize ?: 15.0).toFloat()
         v.setTextSize(TypedValue.COMPLEX_UNIT_DIP, size)
         val family = when (s.fontFamily) {
@@ -892,13 +1159,21 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
             "serif" -> Typeface.SERIF
             else -> Typeface.create(s.fontFamily, Typeface.NORMAL)
         }
-        val bold = s.fontWeight == FontWeight.Bold
+        val weight = s.fontWeight ?: FontWeight.Normal
+        val bold = weight == FontWeight.Bold
         val italic = s.fontStyle == FontStyle.Italic
-        v.typeface = if (family === Typeface.DEFAULT && !italic) (if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT)
-        else Typeface.create(family, (if (bold) Typeface.BOLD else 0) or (if (italic) Typeface.ITALIC else 0))
+        v.typeface = when {
+            weight != FontWeight.Normal && !bold -> Typeface.create(family, weight.weight, italic)
+            family === Typeface.DEFAULT && !italic -> if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+            else -> Typeface.create(family, (if (bold) Typeface.BOLD else 0) or (if (italic) Typeface.ITALIC else 0))
+        }
         v.setTextColor(parseColor(s.color) ?: Color.BLACK)
+        if (v is EditText) parseColor(s.placeholderColor)?.let { v.setHintTextColor(it) }
+        if (s.textTransform != before?.textTransform) lastText?.let { v.text = transformed(it) }
         v.letterSpacing = if (s.letterSpacing != null) (s.letterSpacing / size).toFloat() else 0f
-        s.lineHeight?.let { v.lineHeight = px(it).roundToInt() }
+        // every runtime sets a line 1.2 times its font size unless the style says otherwise
+        v.lineHeight = px(s.lineHeightDp).roundToInt()
+        v.includeFontPadding = false
         val decoration = when (s.textDecoration) {
             TextDecoration.Underline -> Paint.UNDERLINE_TEXT_FLAG
             TextDecoration.LineThrough -> Paint.STRIKE_THRU_TEXT_FLAG
@@ -951,6 +1226,7 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
         view?.let { v -> for (callback in destroyCallbacks) callback(v) }
         colorAnimator?.cancel()
         sizeAnimator?.cancel()
+        keyframes?.cancel()
         bindings.clear()
         reconcile = null
     }
@@ -958,6 +1234,8 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
     // Events -----------------------------------------------------------------
 
     private fun fire(type: String) {
+        // States that follow what the user (or the runtime) did to the control.
+        if ((type == "input" && computed.placeholderShown != null) || (type == "change" && computed.checked != null)) applyStyle()
         if (!writing) listeners[type]?.invoke(NativeEvent(target))
     }
 
@@ -1066,9 +1344,12 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
             }
             v is ImageView -> floatArrayOf(min(available, px(120.0)), height ?: width ?: px(120.0))
             else -> {
-                v.measure(View.MeasureSpec.makeMeasureSpec(available.toInt().coerceAtLeast(0), View.MeasureSpec.AT_MOST), View.MeasureSpec.UNSPECIFIED)
+                // Rounded up: a box's fractional insets (a 1 dp border) must not take the last pixel its text was measured with.
+                v.measure(View.MeasureSpec.makeMeasureSpec(kotlin.math.ceil(available).toInt().coerceAtLeast(0), View.MeasureSpec.AT_MOST), View.MeasureSpec.UNSPECIFIED)
                 val w = if (v is EditText && kind == Kind.Input) min(available, px(180.0)) else v.measuredWidth.toFloat()
-                floatArrayOf(w, v.measuredHeight.toFloat())
+                // A line is exactly lineHeight tall on every platform; TextView's own spacing adds only between lines.
+                val h = if (v is TextView && v !is EditText) (v.lineCount * v.lineHeight + v.paddingTop + v.paddingBottom).toFloat() else v.measuredHeight.toFloat()
+                floatArrayOf(w, h)
             }
         }
         if (width != null) size[0] = width else size[0] = clamp(size[0], minW, maxW)
@@ -1228,6 +1509,12 @@ internal class Touch(private val node: Node, private val view: View) : View.OnTo
 // Views and layout
 // ---------------------------------------------------------------------------
 
+/** A text or a button's view: a TextView that lets touches through under `pointerEvents: none`. */
+internal class NText(context: Context) : TextView(context, null, 0, 0) {
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean =
+        if ((tag as? Node)?.computed?.pointerEvents == PointerEvents.None) false else super.dispatchTouchEvent(event)
+}
+
 /** A container: a flex column (or row) of its node's child views. */
 class FlexLayout internal constructor(context: Context, internal val node: Node) : ViewGroup(context) {
     internal var items: List<Node> = emptyList()
@@ -1263,11 +1550,21 @@ class FlexLayout internal constructor(context: Context, internal val node: Node)
                 addViewInLayout(v, -1, v.layoutParams ?: generateDefaultLayoutParams(), true)
             }
         }
+        val moved = items != next
         items = next
         order = null
         requestLayout()
         invalidate()
+        // `:first-child`, `:odd`, `:empty`…: the places changed.
+        if (moved) {
+            for (item in next) if (item.computed.structural) item.applyStylesDeep()
+            if (node.computed.empty != null) node.applyStyle()
+        }
     }
+
+    // `pointerEvents: none`: the box and what it holds take no touches; they go to what is under it.
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean =
+        if (node.computed.pointerEvents == PointerEvents.None) false else super.dispatchTouchEvent(ev)
 
     // zIndex: children are drawn (and touched) in `items` order, lowest zIndex first.
     private var order: IntArray? = null
@@ -1578,19 +1875,40 @@ internal object Flex {
 }
 
 /** A scrolling screen whose content is a node, as tall as its content or the screen. */
-internal class ScreenView(context: Context, val root: Node) : ScrollView(context) {
+internal class ScreenView(context: Context, val root: Node, private val onEndReached: (() -> Unit)? = null) : ScrollView(context) {
+    private var endAt = -1
+
     init {
         isFillViewport = true
-        setBackgroundColor(Color.WHITE)
+        setBackgroundColor(screenBackground)
         addView(root.view, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+    }
+
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        super.onLayout(changed, l, t, r, b)
+        checkEnd()
+    }
+
+    override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
+        super.onScrollChanged(l, t, oldl, oldt)
+        checkEnd()
+    }
+
+    /** The route's onEndReached, once per content height: a page that arrives makes the content taller, and the next end counts again. */
+    private fun checkEnd() {
+        val end = onEndReached ?: return
+        val content = getChildAt(0)?.height ?: return
+        if (height <= 0 || content == endAt || scrollY + height < content - height / 2) return
+        endAt = content
+        Runtime.main.post(end)
     }
 }
 
 /** A screen around a root node: it scrolls, unless the root is itself a scrolling box. */
-internal fun screenView(context: Context, root: Node): View =
-    if (!root.scrolls) ScreenView(context, root)
+internal fun screenView(context: Context, root: Node, onEndReached: (() -> Unit)? = null): View =
+    if (!root.scrolls) ScreenView(context, root, onEndReached)
     else FrameLayout(context).apply {
-        setBackgroundColor(Color.WHITE)
+        setBackgroundColor(screenBackground)
         addView(root.view, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
     }
 
@@ -1619,6 +1937,11 @@ object Runtime {
     private val queuedIds = HashSet<String>()
     internal var backHandler: (() -> Boolean)? = null
 
+    /** The window's width in dp, which `@media` rules are matched against. */
+    internal var viewportWidth = 0.0
+    /** Whether some style has a media rule: only then does a new width restyle the app. */
+    internal var usesMedia = false
+
     internal val regions = HashMap<String, RegionState>()
     internal val waiting = HashMap<String, MutableList<IntoEntry>>()
 
@@ -1629,7 +1952,15 @@ object Runtime {
         regions.clear()
         waiting.clear()
         hasMain = false
-        rootLayout = FrameLayout(activity).apply { setBackgroundColor(Color.WHITE) }
+        viewportWidth = dp(activity.resources.displayMetrics.widthPixels.toFloat())
+        rootLayout = FrameLayout(activity).apply { setBackgroundColor(screenBackground) }
+        rootLayout.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
+            val width = dp(v.width.toFloat())
+            if (width > 0 && width != viewportWidth) {
+                viewportWidth = width
+                if (usesMedia) main.post { for (root in roots.toList()) root.applyStylesDeep() }
+            }
+        }
         // Edge to edge: keep content clear of the status and navigation bars and the keyboard.
         rootLayout.setOnApplyWindowInsetsListener { v, insets ->
             val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.ime())
@@ -1650,6 +1981,7 @@ object Runtime {
     }
 
     internal fun render(node: Node) {
+        rootLayout.setBackgroundColor(screenBackground)
         addRoot(node)
         if (hasMain) {
             rootLayout.addView(node.view, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
@@ -1660,6 +1992,7 @@ object Runtime {
     }
 
     internal fun render(router: NRouter) {
+        rootLayout.setBackgroundColor(screenBackground)
         hasMain = true
         rootLayout.addView(router.makeView(activity), 0)
     }
@@ -1806,10 +2139,7 @@ object A {
 
     fun disabled(value: Boolean) = disabled { value }
     fun disabled(value: () -> Boolean) = NodeMod { node ->
-        node.bind(value) { off ->
-            node.view?.isEnabled = !off
-            node.view?.alpha = (node.computed.opacity ?: 1.0).toFloat() * (if (off) 0.4f else 1f)
-        }
+        node.bind(value) { off -> node.setDisabled(off) }
     }
 
     fun inputType(type: String) = NodeMod { node ->
@@ -2050,6 +2380,8 @@ class NRoute(
     internal val title: ((Params) -> String)? = null,
     internal val presentation: String = "push",
     internal val header: Boolean = true,
+    /** Run when the screen's scroller comes within half a screen of its content's end. */
+    internal val onEndReached: ((Params) -> Unit)? = null,
 ) {
     private val parts = pattern.split("/")
 
@@ -2088,6 +2420,8 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
     val canGoBack: Boolean get() = (stacks.getOrNull(active)?.size ?: 0) > 1
 
     internal fun makeView(context: Context): View {
+        // `adb shell am start … --es NUCLO_PATH /a/b`: start there, as a web deep link does (for checks against the web build).
+        val initial = Runtime.activity.intent?.getStringExtra("NUCLO_PATH") ?: this.initial
         val roots = if (tabs.isEmpty()) listOf(initial) else tabs.map { it.path }
         active = max(0, tabOf(initial))
         roots.forEachIndexed { i, root ->
@@ -2260,7 +2594,8 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
             val params = route.match(path) ?: continue
             val node = route.view(params)
             Runtime.addRoot(node)
-            return Entry(path, node, screenView(Runtime.activity, node), route.title?.invoke(params) ?: "", route.presentation == "modal", route.header)
+            val end = route.onEndReached?.let { { it(params) } }
+            return Entry(path, node, screenView(Runtime.activity, node, end), route.title?.invoke(params) ?: "", route.presentation == "modal", route.header)
         }
         val node = p(A.text("No route matches $path"))
         Runtime.addRoot(node)
@@ -2300,6 +2635,22 @@ fun launch(block: suspend () -> Unit) {
 }
 
 suspend fun delay(ms: Double) = suspendCoroutine { cont -> Runtime.main.postDelayed({ cont.resume(Unit) }, ms.toLong()) }
+
+private val permissionWaits = HashMap<Int, (Boolean) -> Unit>()
+private var permissionCode = 0
+
+/** Asks for a runtime permission (`android.Manifest.permission.CAMERA`, …) when it isn't granted; true when it is. For an app's native code. */
+suspend fun requestPermission(permission: String): Boolean = suspendCoroutine { cont ->
+    val activity = Runtime.activity
+    if (activity.checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED) return@suspendCoroutine cont.resume(true)
+    val code = 0x6e00 + (permissionCode++ and 0xff)
+    permissionWaits[code] = { cont.resume(it) }
+    activity.requestPermissions(arrayOf(permission), code)
+}
+
+internal fun permissionResult(code: Int, grants: IntArray) {
+    permissionWaits.remove(code)?.invoke(grants.isNotEmpty() && grants.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED })
+}
 
 class NResponse internal constructor(val status: Int, private val body: String) {
     val ok get() = status in 200..299
@@ -2468,6 +2819,10 @@ open class NucloActivity(private val entry: () -> Unit) : Activity() {
                 if (Runtime.backHandler?.invoke() != true) finish()
             }
         }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        permissionResult(requestCode, grantResults)
     }
 
     @Deprecated("Android 12 and older")
