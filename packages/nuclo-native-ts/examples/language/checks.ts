@@ -523,7 +523,9 @@ export function classes(): string[] {
     privates(),
     kinds([new Rect(1, 2), new SquareShape(3), new Circle(0.5), new Rect(2, 2)]),
     classExpressions(),
-    `${scoreRows([30, 12.5])} | ${nameRows(["ana", "rui"])} | ${capturedCells("$", 1.5)}`,
+    `${scoreRows([30, 12.5])} | ${nameRows(["ana", "rui"])} | ${capturedCells("$", 1.5)} | ${sharedLocals(5)}`,
+    `${loopClasses()} | ${loopReassigned()}`,
+    `${destructuredShared([{ name: "ana", age: 30 }, { name: "rui", age: 7 }])} | ${patternLoops([3], { name: "eve", age: 3 })}`,
   ];
 }
 
@@ -689,6 +691,148 @@ function capturedCells(prefix: string, scale: number): string {
   })();
   const cells = new Sheet().cells();
   return `${cells.map((c) => c.text()).join(" ")} ${tag.label} seen ${seen.n}`;
+}
+
+// Locals a nested class shares with its function while either reassigns or mutates them: one box natively.
+function sharedLocals(start: number): string {
+  let total = start;
+  let label = "first";
+  const log: string[] = [];
+  class Adder {
+    add(n: number): number {
+      total += n;
+      log.push(`${label}+${n}`);
+      return total;
+    }
+    first(): number {
+      return start;
+    }
+  }
+  const read = () => total;
+  const adder = new Adder();
+  adder.add(2);
+  label = "second";
+  total *= 10;
+  log.push("x10");
+  start = -1;
+  return `${adder.add(1)} ${read()} [${log.join(",")}] ${adder.first()}`;
+}
+
+// A loop's variable in a nested class: each object keeps the turn it was made in, as in JavaScript.
+function loopClasses(): string {
+  const items: Named[] = [];
+  for (let i = 0; i < 6; i += 2) {
+    class Slot implements Named {
+      readonly label = `slot${i}`;
+    }
+    items.push(new Slot());
+  }
+  for (let i = 1; i <= 2; i++) items.push(new (class implements Named {
+    readonly label = `range${i}`;
+  })());
+  for (const word of ["a", "b"]) {
+    class Word implements Named {
+      get label(): string {
+        return word.toUpperCase();
+      }
+    }
+    items.push(new Word());
+  }
+  const later: (() => Named)[] = [];
+  for (let i = 0; i < 2; i++) {
+    class Tag implements Named {
+      readonly label = `later${i}`;
+    }
+    later.push(() => new Tag());
+  }
+  return [...items, ...later.map((make) => make())].map((n) => n.label).join(" ");
+}
+
+// A loop variable the body (or the class) reassigns: each turn's own, shared by the turn's objects.
+function loopReassigned(): string {
+  const out: Named[] = [];
+  for (let i = 0; i < 10; i++) {
+    class Step implements Named {
+      get label(): string {
+        return `s${i}`;
+      }
+      skip(): void {
+        i += 2;
+      }
+    }
+    const step = new Step();
+    step.skip();
+    out.push(step);
+    if (i > 6) continue;
+    i++;
+  }
+  for (let word of ["a", "b"]) {
+    class Shout implements Named {
+      get label(): string {
+        return word;
+      }
+    }
+    const shout = new Shout();
+    word = `${word}!`;
+    out.push(shout);
+  }
+  return out.map((n) => n.label).join(" ");
+}
+
+// Destructured bindings a nested class shares while something reassigns them: each in its own box.
+function destructuredShared(people: Person[]): string {
+  const out: Named[] = [];
+  for (let { name, age } of people) {
+    class Entry implements Named {
+      get label(): string {
+        return `${name}:${age}`;
+      }
+      birthday(): void {
+        age++;
+      }
+    }
+    const entry = new Entry();
+    entry.birthday();
+    name = name.toUpperCase();
+    out.push(entry);
+  }
+  let { label: title } = out[0] ?? { label: "none" };
+  let [first = "?", second = "?"] = title.split(":");
+  class Title implements Named {
+    get label(): string {
+      return `${title} (${first}/${second})`;
+    }
+  }
+  const heading = new Title();
+  title = `${title}!`;
+  second = "x";
+  return `${out.map((e) => e.label).join(" ")} | ${heading.label}`;
+}
+
+// A `for` loop's initializer that destructures: its bindings are loop variables like any other.
+function patternLoops(starts: number[], person: Person): string {
+  const out: Named[] = [];
+  for (let [n = 3, step = 1] = starts; n > 0; n -= step) {
+    class Tick implements Named {
+      readonly label = `t${n}`;
+    }
+    out.push(new Tick());
+  }
+  for (let { name: who, age } = person; age > 0; age--) {
+    class Year implements Named {
+      get label(): string {
+        return `${who}${age}`;
+      }
+      skip(): void {
+        age--;
+      }
+    }
+    const year = new Year();
+    if (age === 2) year.skip();
+    out.push(year);
+    who = who.toUpperCase();
+  }
+  return out.map((n) => n.label).join(" ");
 }
 
 function classExpressions(): string {

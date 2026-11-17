@@ -337,6 +337,18 @@ class Frontend {
   private readonly classNames = new Map<ts.Symbol, string>();
   /** The locals of the surrounding functions that a nested class uses (and passes on), in order: hidden constructor parameters. */
   private readonly captures = new Map<ts.Symbol, ts.Symbol[]>();
+  /**
+   * Captured locals a nested class must share with its function: reassigned ones, and arrays and maps
+   * something mutates (Swift's are values). Each lives in a `Ref__T` box, read and written as `x.value`.
+   */
+  private readonly boxed = new Set<ts.Symbol>();
+  private readonly refClasses = new Map<string, ClassDecl>();
+  /**
+   * Loop variables a nested class uses while the loop's body reassigns them: each turn has its own
+   * box (`i__box`), made at the top of the body and written back to the loop's variable at its end
+   * (and before a `continue`), so the step and the condition see what the turn left.
+   */
+  private readonly loopBoxes = new Map<ts.Symbol, { loop: ts.ForStatement | ts.ForOfStatement; name: string }>();
   /** Class expressions already lowered (where they are declared, or after the top level). */
   private readonly definedClasses = new Set<ts.ClassLikeDeclaration>();
   private readonly protocols = new Map<ts.Symbol, ts.InterfaceDeclaration>();
@@ -412,7 +424,7 @@ class Frontend {
         else if (ts.isFunctionDeclaration(decl) || ts.isArrowFunction(decl) || ts.isFunctionExpression(decl)) out.functions.push(this.fnDecl(name, decl));
       });
     }
-    out.classes = this.allClasses();
+    out.classes = [...this.allClasses(), ...this.refClasses.values()];
     if (plain.length || this.instanceProtocols.size) out.protocols = [...plain, ...this.instanceProtocols.values()];
     if (this.literalClasses.size) out.objectClasses = [...(out.objectClasses ?? []), ...this.literalClasses.values()];
     if (out.objectClasses) {
@@ -733,11 +745,7 @@ class Frontend {
     }
     // A nested class keeps its own copy of a captured array or map (Swift's are values).
     for (const values of this.captures.values()) {
-      for (const value of values) {
-        if (!mutated.has(value) || !value.valueDeclaration) continue;
-        const name = (value.valueDeclaration as ts.NamedDeclaration).name ?? value.valueDeclaration;
-        this.error(name, `"${value.name}" is used by a nested class and mutated: natively the class keeps a copy (Swift arrays and maps are values). Keep it in an object, or in a field of the class.`);
-      }
+      for (const value of values) if (mutated.has(value)) this.box(value, (value.valueDeclaration as ts.NamedDeclaration).name ?? value.valueDeclaration!);
     }
     for (const { target, source } of this.destructuredArrays) {
       const symbol = this.checker.getSymbolAtLocation(target);
@@ -986,7 +994,18 @@ class Frontend {
           const decl = value?.valueDeclaration;
           if (value && decl && !inside(decl, node) && this.isCapturable(decl) && !found.includes(value)) {
             found.push(value);
-            if (this.isReassignedLocal(decl)) this.error(n, `This class uses "${n.text}", which the function reassigns: natively the class keeps the value it had when the object was made. Copy it to a const first.`);
+            if (this.isReassignedLocal(decl)) {
+              // A loop's variable: each turn has its own in JavaScript, which the class copies when it is made.
+              // Only the loop's own step may change it (that makes the next turn's).
+              // A `for` loop's initializer may destructure: its bindings are the loop's variables too.
+              const loop = this.loopOf(decl) ?? this.forInitOf(decl);
+              const name = (decl as ts.VariableDeclaration | ts.BindingElement).name;
+              if (!loop) this.box(value, n);
+              else if (this.isReassigned(name as ts.Identifier, loop.statement)) {
+                if (ts.isForInStatement(loop) || !ts.isIdentifier(name)) this.error(n, `A nested class uses "${n.text}", which the loop's body reassigns: copy it to a const in the body.`);
+                else this.loopBoxes.set(value, { loop, name: `${name.text}__box` });
+              }
+            }
           }
         }
         ts.forEachChild(n, visit);
@@ -1012,6 +1031,76 @@ class Frontend {
         }
       }
     }
+  }
+
+  /**
+   * Shares a captured local through a box. A loop's variable can't be one (each turn has its own in
+   * JavaScript), nor a destructured one; a boxed variable needs an initial value.
+   */
+  private box(value: ts.Symbol, at: ts.Node) {
+    const decl = value.valueDeclaration!;
+    if (this.loopOf(decl)) return void this.error(at, `A nested class uses "${value.name}", a loop's variable that is mutated: JavaScript gives each turn its own. Copy it (with .slice()) to a const in the body.`);
+    // A destructured one is boxed where its pattern binds it (bindPattern): a `for-of` binds it again each turn.
+    if (this.forInitOf(decl)) return void this.error(at, `A nested class uses "${value.name}", a loop's variable that is mutated: JavaScript gives each turn its own. Copy it (with .slice()) to a const in the body.`);
+    if (!ts.isBindingElement(decl) && (ts.isVariableDeclaration(decl) ? !decl.initializer || !ts.isIdentifier(decl.name) : !ts.isParameter(decl) || !ts.isIdentifier(decl.name))) {
+      return void this.error(at, `A nested class uses "${value.name}", which is reassigned or mutated: declare it with an initial value so it can be shared.`);
+    }
+    this.boxed.add(value);
+  }
+
+  /** The loop a variable is declared by (`for (let i …)`, `for (const x of …)`). */
+  private loopOf(decl: ts.Declaration): ts.ForStatement | ts.ForOfStatement | ts.ForInStatement | undefined {
+    if (!ts.isVariableDeclaration(decl) || !ts.isVariableDeclarationList(decl.parent)) return undefined;
+    const loop = decl.parent.parent;
+    return ts.isForStatement(loop) || ts.isForOfStatement(loop) || ts.isForInStatement(loop) ? loop : undefined;
+  }
+
+  /** The box a read or a write of a shared local goes through here: its own name, or the loop turn's box inside the loop's body. */
+  private boxAt(value: ts.Symbol | undefined, node: ts.Node): string | undefined {
+    if (!value) return undefined;
+    if (this.boxed.has(value)) return value.name;
+    const turn = this.loopBoxes.get(value);
+    const body = turn?.loop.statement;
+    return body && node.pos >= body.pos && node.end <= body.end ? turn!.name : undefined;
+  }
+
+  /** A loop's turn box: made from the loop's variable at the top of the body; `back` writes it to the variable. */
+  private loopBox(binding: ts.Identifier): { make: Stmt; back: Stmt } | undefined {
+    const value = this.checker.getSymbolAtLocation(binding);
+    const turn = value && this.loopBoxes.get(value);
+    if (!turn) return undefined;
+    return {
+      make: { s: "let", name: turn.name, ty: this.refType(value!), init: this.newRef(value!, { e: "id", name: binding.text }), mutable: false },
+      back: { s: "assign", target: { e: "id", name: binding.text }, op: "=", value: { e: "prop", obj: { e: "id", name: turn.name }, name: "value" } },
+    };
+  }
+
+  /** The `for` loop whose initializer destructures a binding (`for (let [a, b] = …; …)`). */
+  private forInitOf(decl: ts.Declaration): ts.ForStatement | undefined {
+    if (!ts.isBindingElement(decl)) return undefined;
+    let root: ts.Node = decl;
+    while (ts.isBindingElement(root) || ts.isObjectBindingPattern(root) || ts.isArrayBindingPattern(root)) root = root.parent;
+    const loop = ts.isVariableDeclaration(root) ? this.loopOf(root) : undefined;
+    return loop && ts.isForStatement(loop) ? loop : undefined;
+  }
+
+  /** The names a declaration binds, through any destructuring. */
+  private bindingNames(name: ts.BindingName): ts.Identifier[] {
+    if (ts.isIdentifier(name)) return [name];
+    return name.elements.flatMap((el) => (ts.isBindingElement(el) ? this.bindingNames(el.name) : []));
+  }
+
+  /** The box type of a shared local: a class with one `value` field. */
+  private refType(value: ts.Symbol, ty = this.tyOfSymbol(value, value.valueDeclaration!)): Ty {
+    const name = `Ref__${mangle(ty)}`;
+    if (!this.refClasses.has(name)) this.refClasses.set(name, { name, fields: [{ name: "value", ty, readonly: false, optional: ty.k === "optional" }], decodable: false });
+    return { k: "class", name };
+  }
+
+  /** A shared local made: its box, holding the value. */
+  private newRef(value: ts.Symbol, init: Expr, of?: Ty): Expr {
+    const ty = this.refType(value, of) as Extract<Ty, { k: "class" }>;
+    return { e: "new", cls: ty.name, args: [["value", init]] };
   }
 
   /** The variable, parameter or local function an identifier reads (`{ x }` reads x, not the property). */
@@ -1061,7 +1150,7 @@ class Frontend {
     return (this.captures.get(cls) ?? []).map((value): Expr =>
       at && this.captures.get(at)!.includes(value)
         ? { e: "prop", obj: { e: "id", name: "this" }, name: this.captureField(at, value) }
-        : { e: "id", name: value.name, fnRef: this.functionSymbols.has(value) || undefined },
+        : { e: "id", name: this.boxAt(value, site) ?? value.name, fnRef: this.functionSymbols.has(value) || undefined },
     );
   }
 
@@ -1453,7 +1542,7 @@ class Frontend {
     }
     // Captured locals: hidden first parameters kept in fields, set before anything reads them; the base gets its own.
     const captured = this.captures.get(symbol) ?? [];
-    const capParams = captured.map((value): Param => ({ name: this.captureField(symbol, value), ty: this.tyOfSymbol(value, value.valueDeclaration!) }));
+    const capParams = captured.map((value): Param => ({ name: this.captureField(symbol, value), ty: this.boxed.has(value) || this.loopBoxes.has(value) ? this.refType(value) : this.tyOfSymbol(value, value.valueDeclaration!) }));
     // Those the base captures too are its fields: the base's constructor sets them.
     const inherited = new Set((baseClass ? (this.captures.get(baseClass) ?? []) : []).map((value) => this.captureField(symbol, value)));
     const ownCaps = capParams.filter((p) => !inherited.has(p.name));
@@ -2103,8 +2192,13 @@ class Frontend {
     for (const param of node.parameters) {
       if (!ts.isIdentifier(param.name)) stmts.push(...this.bindPattern(param.name, { e: "id", name: this.paramName(param) }, ctx, false));
     }
-    // Swift parameters are constants: a reassigned one is shadowed by a variable.
+    // Swift parameters are constants: a reassigned one is shadowed by a variable (a box, when a nested class shares it).
     for (const param of node.parameters) {
+      const boxed = ts.isIdentifier(param.name) ? this.checker.getSymbolAtLocation(param.name) : undefined;
+      if (boxed && this.boxed.has(boxed)) {
+        stmts.push({ s: "let", name: boxed.name, ty: this.refType(boxed), init: this.newRef(boxed, { e: "id", name: boxed.name }), mutable: false });
+        continue;
+      }
       if (ts.isIdentifier(param.name) && this.isReassigned(param.name, body)) {
         const symbol = this.checker.getSymbolAtLocation(param.name)!;
         stmts.push({ s: "let", name: param.name.text, ty: this.tyOfSymbol(symbol, param), init: { e: "id", name: param.name.text }, mutable: true });
@@ -2180,7 +2274,10 @@ class Frontend {
       if (!this.isArray(this.typeOf(node.expression))) return [this.unsupported(node.expression, "for-of over anything but an array (strings iterate characters natively)")];
       const binding = decl.declarations[0]!.name;
       const inner = { ...ctx, continueWith: undefined };
-      if (ts.isIdentifier(binding)) return [{ s: "forOf", name: binding.text, of: this.expr(node.expression, ctx), body: this.block(node.statement, inner) }];
+      if (ts.isIdentifier(binding)) {
+        const turn = this.loopBox(binding);
+        return [{ s: "forOf", name: binding.text, of: this.expr(node.expression, ctx), body: [...(turn ? [turn.make] : []), ...this.block(node.statement, inner)] }];
+      }
       const item = `it__${++this.temps}`;
       const binds = this.bindPattern(binding, { e: "id", name: item }, ctx, !(decl.flags & ts.NodeFlags.Const));
       return [{ s: "forOf", name: item, of: this.expr(node.expression, ctx), body: [...binds, ...this.block(node.statement, inner)] }];
@@ -2246,6 +2343,7 @@ class Frontend {
     }
     const symbol = this.checker.getSymbolAtLocation(decl.name)!;
     const ty = this.tyOfSymbol(symbol, decl);
+    if (this.boxed.has(symbol)) return [{ s: "let", name: decl.name.text, ty: this.refType(symbol), init: this.newRef(symbol, this.expr(decl.initializer!, ctx, ty)), mutable: false }];
     return [{ s: "let", name: decl.name.text, ty, init: decl.initializer && this.expr(decl.initializer, ctx, ty), mutable }];
   }
 
@@ -2293,7 +2391,9 @@ class Frontend {
         const elemType = el.dotDotDotToken ? this.checker.getIndexTypeOfType(sourceType, ts.IndexKind.Number) : undefined;
         const ty = elemType ? T.array(this.ty(elemType, el)) : this.tyOfSymbol(symbol, el);
         if (el.initializer && nullable) value = { e: "coalesce", l: value, r: this.expr(el.initializer, ctx, ty) };
-        out.push({ s: "let", name: el.name.text, ty, init: value, mutable });
+        // Shared with a nested class that reassigns it (or the function does): its box.
+        if (this.boxed.has(symbol)) out.push({ s: "let", name: el.name.text, ty: this.refType(symbol, ty), init: this.newRef(symbol, value, ty), mutable: false });
+        else out.push({ s: "let", name: el.name.text, ty, init: value, mutable });
         return;
       }
       const temp = `ds__${++this.temps}`;
@@ -2345,11 +2445,16 @@ class Frontend {
     const init = node.initializer;
     // JavaScript gives each iteration its own `let i`; a `while` has one. A closure would tell them apart.
     if (init && ts.isVariableDeclarationList(init)) {
-      const symbols = new Set(init.declarations.flatMap((d) => (ts.isIdentifier(d.name) ? [this.checker.getSymbolAtLocation(d.name)] : [])));
+      const symbols = new Set(init.declarations.flatMap((d) => this.bindingNames(d.name).map((id) => this.checker.getSymbolAtLocation(id))));
       let captured: ts.Node | undefined;
       const visit = (n: ts.Node, inClosure: boolean): void => {
         if (captured) return;
+        // A nested class copies the variable when an object is made (its `new` is checked instead).
+        if (ts.isClassLike(n)) return;
         if (inClosure && ts.isIdentifier(n) && symbols.has(this.checker.getSymbolAtLocation(n))) captured = n;
+        // A closure that makes such an object reads the variable then: it captures it too.
+        const made = inClosure && ts.isNewExpression(n) ? this.classRef(n.expression) : undefined;
+        if (made && this.captures.get(made)?.some((value) => symbols.has(value))) captured = n;
         ts.forEachChild(n, (c) => visit(c, inClosure || this.isFunctionNode(n) || ts.isFunctionDeclaration(n)));
       };
       visit(node.statement, false);
@@ -2357,8 +2462,11 @@ class Frontend {
     }
     const first: Stmt[] = !init ? [] : ts.isVariableDeclarationList(init) ? init.declarations.flatMap((d) => this.varDecl(d, init, ctx)) : this.exprStmt(init, ctx);
     const step = node.incrementor ? this.exprStmt(node.incrementor, ctx) : [];
-    const body = this.block(node.statement, { ...ctx, continueWith: step });
-    const loop: Stmt = { s: "while", c: node.condition ? this.cond(node.condition, ctx) : { e: "bool", v: true }, body: [...body, ...step] };
+    // Turn boxes: made first in the body, written back before the step (at its end and before a `continue`).
+    const turns = init && ts.isVariableDeclarationList(init) ? init.declarations.flatMap((d) => this.bindingNames(d.name).map((id) => this.loopBox(id)).filter((t) => !!t)) : [];
+    const back = turns.map((t) => t!.back);
+    const body = this.block(node.statement, { ...ctx, continueWith: [...back, ...step] });
+    const loop: Stmt = { s: "while", c: node.condition ? this.cond(node.condition, ctx) : { e: "bool", v: true }, body: [...turns.map((t) => t!.make), ...body, ...back, ...step] };
     // The loop's variables are its own: `if (true) { … }` scopes them (two loops may both declare `i`).
     return [{ s: "if", c: { e: "bool", v: true }, then: [...first, loop] }];
   }
@@ -2560,7 +2668,11 @@ class Frontend {
   }
 
   private lvalue(node: ts.Expression, ctx: Ctx): Expr {
-    if (ts.isIdentifier(node)) return { e: "id", name: node.text };
+    if (ts.isIdentifier(node)) {
+      const box = this.boxAt(this.valueSymbol(node), node);
+      if (box) return { e: "prop", obj: this.captureRead(node) ?? { e: "id", name: box }, name: "value" };
+      return { e: "id", name: node.text };
+    }
     const staticField = this.staticField(node);
     if (staticField) return staticField;
     if (ts.isPropertyAccessExpression(node) && node.expression.kind === ts.SyntaxKind.SuperKeyword) return this.superProperty(node, true)!;
@@ -2849,7 +2961,9 @@ class Frontend {
     }
     const captured = this.captureRead(node);
     const x: Expr = captured ?? { e: "id", name: node.text, fnRef: this.functionSymbols.has(resolved) || undefined };
-    return this.unwrapIfNarrowed(x, node, resolved);
+    const value = this.valueSymbol(node);
+    const box = this.boxAt(value, node);
+    return this.unwrapIfNarrowed(box ? { e: "prop", obj: captured ?? { e: "id", name: box }, name: "value" } : x, node, resolved);
   }
 
   /** A nullable value TypeScript has narrowed to non-null here is force-unwrapped. */

@@ -1,13 +1,14 @@
-// expect: which the function reassigns
-export function measure(values: number[]): string {
-  let unit = "cm";
-  class Measure {
-    constructor(readonly value: number) {}
-    text(): string {
-      return `${this.value} ${unit}`;
+// expect: a loop's variable that is mutated
+export function batches(sizes: number[][]): number[] {
+  const out: number[] = [];
+  for (let [batch = []] = sizes; batch.length < 3; ) {
+    class Filler {
+      fill(): void {
+        batch.push(batch.length);
+      }
     }
+    new Filler().fill();
+    out.push(batch.length);
   }
-  const first = new Measure(values[0] ?? 0).text();
-  unit = "m";
-  return first;
+  return out;
 }
